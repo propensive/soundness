@@ -114,4 +114,4 @@ final class Entry(val id: Test.Id, val kind: Entry.Kind):
 
     axis.domain match
       case Axis.Domain.Discrete => seen
-      case _                    => List.of(seen.stdlib.sortBy(_.numeric.or(0.0)))
+      case _                    => (seen.stdlib.sortBy(_.numeric.or(0.0))).to(List)

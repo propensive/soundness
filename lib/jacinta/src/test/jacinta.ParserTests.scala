@@ -243,7 +243,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       def shape(node: Any): Any = node.asMatchable match
         case nums: scala.Array[Double] @unchecked =>
           // Number-only array: recover Long for whole values, Double for the rest.
-          List.of(Array.unsafeFrozen(nums).readable.toList).map: d =>
+          Array.unsafeFrozen(nums).readable.toList.to(List).map: d =>
             if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
             then d.toLong
             else d
@@ -395,7 +395,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(identity)
 
       test(m"Hand-built boxed array of Longs equals a parsed number array"):
-        val elements: Array[Any] = Array.of(Json.Ast(1L), Json.Ast(2L), Json.Ast(3L))
+        val elements: Array[Any] = Array(Json.Ast(1L), Json.Ast(2L), Json.Ast(3L))
         val handBuilt = Json.ast(Json.Ast.arr(elements))
         handBuilt == t"[1, 2, 3]".read[Json]
       . assert(identity)

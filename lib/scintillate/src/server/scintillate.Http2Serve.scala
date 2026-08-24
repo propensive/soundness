@@ -111,21 +111,21 @@ object Http2Serve:
               val trailing: Boolean = !trailerEntries.isEmpty
 
               def sendTrailers(): Unit =
-                if trailing then connection0.sendTrailers(streamId, List.of(trailerEntries))
+                if trailing then connection0.sendTrailers(streamId, trailerEntries.to(List))
 
               response.body match
                 case Http.Body.Empty =>
-                  connection0.sendHeaders(streamId, List.of(headEntries), endStream = !trailing)
+                  connection0.sendHeaders(streamId, headEntries.to(List), endStream = !trailing)
                   sendTrailers()
 
                 case Http.Body.Fixed(data) =>
                   val headEnd = data.nil && !trailing
-                  connection0.sendHeaders(streamId, List.of(headEntries), endStream = headEnd)
+                  connection0.sendHeaders(streamId, headEntries.to(List), endStream = headEnd)
                   if !data.nil then connection0.sendData(streamId, data, endStream = !trailing)
                   sendTrailers()
 
                 case Http.Body.Flowing(source) =>
-                  connection0.sendHeaders(streamId, List.of(headEntries), endStream = false)
+                  connection0.sendHeaders(streamId, headEntries.to(List), endStream = false)
 
                   source().drain: region =>
                     range =>

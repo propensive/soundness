@@ -120,7 +120,7 @@ object Teletype:
 
   // Empty Teletype: dense form with no chars and one trailing entry.
   val empty: Teletype =
-    new Teletype(t"", Array.of(0L), Map.empty, TreeMap.empty, Array.empty[Int])
+    new Teletype(t"", Array(0L), Map.empty, TreeMap.empty, Array.empty[Int])
 
   given joinable: Teletype is Joinable = _.fold(empty)(_ + _)
   given printable: Teletype is Printable = _.render(_)
@@ -146,7 +146,7 @@ object Teletype:
 
   // Build a Teletype from text with no styling. Always sparse (1 run).
   def apply(text: Text): Teletype =
-    new Teletype(text, Array.of(0L, 0L), Map.empty, TreeMap.empty, Array.of(0))
+    new Teletype(text, Array(0L, 0L), Map.empty, TreeMap.empty, Array(0))
 
   // Build a Teletype with a single uniform style applied to all chars.
   def styled[value: Showable](value: value)(transform: Ansi.Transform): Teletype =
@@ -154,9 +154,9 @@ object Teletype:
     val styled: Long = transform(TextStyle()).styleWord
 
     if text.length == 0 then
-      new Teletype(t"", Array.of(styled, 0L), Map.empty, TreeMap.empty, Array.of(0))
+      new Teletype(t"", Array(styled, 0L), Map.empty, TreeMap.empty, Array(0))
     else
-      new Teletype(text, Array.of(styled, 0L), Map.empty, TreeMap.empty, Array.of(0))
+      new Teletype(text, Array(styled, 0L), Map.empty, TreeMap.empty, Array(0))
 
   // Compress a dense styles array into sparse form if it would benefit.
   // Returns the resulting (styles, boundaries) pair.
@@ -166,7 +166,7 @@ object Teletype:
     val n = plain.length
 
     if n == 0
-    then (Array.of(if denseStyles.length > 0 then denseStyles.readUnchecked(0) else 0L), Array.empty[Int])
+    then (Array(if denseStyles.length > 0 then denseStyles.readUnchecked(0) else 0L), Array.empty[Int])
     else
       // Count runs, tracking the previous style rather than reading `i - 1` again: the
       // confined scan visits each index once.
@@ -253,7 +253,7 @@ object Teletype:
       Teletype
         ( plainText,
           newStyles,
-          Map.of(hyperlinks.toMap),
+          hyperlinks.toMap.to(Map),
           insertions.to(TreeMap),
           newBoundaries )
 
@@ -303,7 +303,7 @@ case class Teletype
   // For an already-sparse Teletype this is O(1); for a dense one it's O(plain.length).
   def asSparseArrays: (Array[Long]^{}, Array[Int]^{}) =
     if !isDense then (styles, boundaries)
-    else if plain.length == 0 then (Array.of(if styles.length > 0 then styles.readUnchecked(0) else 0L), Array.of(0))
+    else if plain.length == 0 then (Array(if styles.length > 0 then styles.readUnchecked(0) else 0L), Array(0))
     else
       val n = plain.length
       // Count runs, tracking the previous style; see `compressIfBeneficial`.
@@ -370,8 +370,8 @@ case class Teletype
           Teletype(combinedPlain, styles, hyperlinks, insertions, boundaries)
         else
           // Add a new run starting at plain.length, with style = tail
-          val newBoundaries = Array[Int](k + 1)
-          val newStyles = Array[Long](k + 2)
+          val newBoundaries = Array.allocate[Int](k + 1)
+          val newStyles = Array.allocate[Long](k + 2)
           newBoundaries.copyFrom(boundaries, 0, 0, k)
           newBoundaries(k) = plain.length
           newStyles.copyFrom(styles, 0, 0, k)
@@ -392,8 +392,8 @@ case class Teletype
       val combinedPlain = plain+that.plain
 
       val shiftedLinks = if that.hyperlinks.nil then hyperlinks else
-        Map.of:
-          hyperlinks.stdlib ++ that.hyperlinks.stdlib.map: (k, v) => (k + aN) -> v
+        val moved = that.hyperlinks.stdlib.map { (k, v) => (k + aN) -> v }
+        (hyperlinks.stdlib ++ moved).to(Map)
 
       val shiftedInsertions = if that.insertions.isEmpty then insertions else
         insertions ++ that.insertions.map: (k, v) => (k + aN) -> v
@@ -401,7 +401,7 @@ case class Teletype
       if isDense && that.isDense then
         // Both dense — direct array copy
         val newLength = aN + that.plain.length + 1
-        val arr = Array[Long](newLength)
+        val arr = Array.allocate[Long](newLength)
         arr.copyFrom(styles, 0, 0, aN)
         arr.copyFrom(that.styles, 0, aN, that.styles.length)
 
@@ -421,8 +421,8 @@ case class Teletype
         val bFirstStyle = bStyles.readUnchecked(0)
         val merge = aLastStyle == bFirstStyle
         val newK = aK + bK - (if merge then 1 else 0)
-        val newBoundariesArr = Array[Int](newK)
-        val newStylesArr = Array[Long](newK + 1)
+        val newBoundariesArr = Array.allocate[Int](newK)
+        val newStylesArr = Array.allocate[Long](newK + 1)
         // Copy A's runs
         newBoundariesArr.copyFrom(aBoundaries, 0, 0, aK)
         newStylesArr.copyFrom(aStyles, 0, 0, aK)
@@ -454,7 +454,7 @@ case class Teletype
       if keepLength <= 0 then Teletype.empty
       else if n <= 0 then this
       else
-        val newHyperlinks = Map.from(hyperlinks.stdlib.collect { case (k, v) if k >= n => (k - n) -> v })
+        val newHyperlinks = (hyperlinks.stdlib.collect { case (k, v) if k >= n => (k - n) -> v }).to(Map)
 
         val newInsertions =
           insertions.collect { case (k, v) if k >= n => (k - n) -> v }.to(TreeMap)
@@ -501,7 +501,7 @@ case class Teletype
       if n <= 0 then Teletype.empty
       else if n >= plain.length then this
       else
-        val newHyperlinks = Map.of(hyperlinks.stdlib.filter { (k, _) => k < n })
+        val newHyperlinks = (hyperlinks.stdlib.filter { (k, _) => k < n }).to(Map)
         val newInsertions = insertions.rangeUntil(n)
 
         if isDense then

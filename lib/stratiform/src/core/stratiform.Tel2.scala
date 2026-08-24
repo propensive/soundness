@@ -262,7 +262,7 @@ trait Tel2 extends Tel3:
 
       if failed then null.asInstanceOf[derivation]
       else
-        val arguments = Array[Any](slots.length)
+        val arguments = Array.allocate[Any](slots.length)
         slot = 0
 
         while slot < slots.length do
@@ -299,7 +299,7 @@ trait Tel2 extends Tel3:
               buffer +=
                 ( if ctx.nature == Tel.Nature.Flag
                   then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
-                  else Tel.Compound(keyword, Array.of(atom), Unset, Array.empty) )
+                  else Tel.Compound(keyword, Array(atom), Unset, Array.empty) )
 
             telVal.childCompounds.each: compound =>
               if compound.keyword == keyword then buffer += compound
@@ -310,7 +310,7 @@ trait Tel2 extends Tel3:
           Tel.make
             ( Tel.Document
               ( Unset, Unset, Tel.LineEndings.Lf,
-               Array.of(Tel.Block(Array.empty, Unset, compounds, 0)) ) )
+               Array(Tel.Block(Array.empty, Unset, compounds, 0)) ) )
       else
         val match0 = telVal.field(keyword)
 
@@ -329,7 +329,7 @@ trait Tel2 extends Tel3:
               // it becomes a bare compound.
               if ctx.nature == Tel.Nature.Flag
               then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
-              else Tel.Compound(keyword, Array.of(positional.head), Unset, Array.empty)
+              else Tel.Compound(keyword, Array(positional.head), Unset, Array.empty)
 
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Tel.Decodable =
@@ -360,9 +360,10 @@ trait Tel2 extends Tel3:
         val fields: List[(Text, Morphology)] =
           // Not `to[List]`: inline re-elaboration freshens the array, so the conversion
           // goes through the underlying `IArray`.
-          List.of:
+
             contexts[derivation](): [field] => context => (label, context.shape())
             . readable.toList
+            . to(List)
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -438,8 +439,9 @@ trait Tel2 extends Tel3:
       // call, whose profile it dominated (map building plus generic-equality
       // lookups, per occurrence) — jacinta's map hoist.
       val labels: Map[Text, Text] =
-        Map.from:
+
           variantLabels.stdlib.map: label => Tel.camelToKebab(label.s) -> label
+          . to(Map)
 
       Tel.Decodable(() => Morphology.Any):
         telVal =>
@@ -481,9 +483,10 @@ trait Tel2 extends Tel3:
           val fields: List[(Text, Morphology)] =
             // See `shape` above: not `to[List]`, because inline re-elaboration freshens
             // the array.
-            List.of:
+
               contexts[derivation](): [field] => context => (label, context.shape())
               . readable.toList
+              . to(List)
 
           Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
 
@@ -563,7 +566,7 @@ trait Tel2 extends Tel3:
                             ( if child.atoms.length == 0 then t""
                               else Positional.text(child.atoms.readUnchecked(0)) )
 
-                        members += Mutation.Member.Value(keyword, List.of(texts.toList))
+                        members += Mutation.Member.Value(keyword, texts.toList.to(List))
 
                 case Tel.Nature.Struct =>
                   val encoded = contextual.constructed(fieldValue)
@@ -584,14 +587,14 @@ trait Tel2 extends Tel3:
         // The canonical child form: this record's compound with its §22.2
         // leading inline run, for embedding under a keyword.
         override def constructed(value: derivation^{}): Tel =
-          Tel.make(Mutation.construct(t"", List.of(membersOf(value)), '#'))
+          Tel.make(Mutation.construct(t"", membersOf(value).to(List), '#'))
 
         // The canonical document form: the root carries no atoms (§20.2),
         // so a leading `Break` suppresses the root's own run while nested
         // records keep theirs.
         override def canonicalized(value: derivation^{}): Tel =
           val compound =
-            Mutation.construct(t"", List.of(Mutation.Member.Break :: membersOf(value)), '#')
+            Mutation.construct(t"", (Mutation.Member.Break :: membersOf(value)).to(List), '#')
 
           Tel.make(Tel.Document(Unset, Unset, Tel.LineEndings.Lf, compound.children))
 
@@ -615,7 +618,7 @@ trait Tel2 extends Tel3:
 
               contextual.encode(v).subtree match
                 case compound: Tel.Compound =>
-                  Tel.compound(t"", Array.empty, Array.of(compound.copy(keyword = keyword)))
+                  Tel.compound(t"", Array.empty, Array(compound.copy(keyword = keyword)))
 
                 case other =>
                   Tel.make(other)
@@ -629,7 +632,7 @@ trait Tel2 extends Tel3:
 
               contextual.constructed(v).subtree match
                 case compound: Tel.Compound =>
-                  Tel.compound(t"", Array.empty, Array.of(compound.copy(keyword = keyword)))
+                  Tel.compound(t"", Array.empty, Array(compound.copy(keyword = keyword)))
 
                 case other =>
                   Tel.make(other)
@@ -896,7 +899,7 @@ trait Tel2 extends Tel3:
         map.stdlib.map: (k, v) =>
           val keyChild   = reKey(key.encoded(k), t"key")
           val valueChild = reKey(value.encoded(v), t"value")
-          reKey(Tel.compound(t"", Array.empty, Array.of(keyChild, valueChild)), t"entries")
+          reKey(Tel.compound(t"", Array.empty, Array(keyChild, valueChild)), t"entries")
 
       Tel.compound(t"", Array.empty, entries)
 
@@ -927,7 +930,7 @@ trait Tel2 extends Tel3:
   // text stays an empty inline atom: presentationally it serializes as no
   // atom, but the value level distinguishes present-empty from absent.
   def scalar(text: Text): Tel =
-    Tel.make(Tel.Compound(t"", Array.of(Mutation.chooseAtomForm(text, '#')), Unset, Array.empty))
+    Tel.make(Tel.Compound(t"", Array(Mutation.chooseAtomForm(text, '#')), Unset, Array.empty))
 
   def compound
     ( keyword: Text, atoms: Array[Tel.Atom]^{}, compounds: Array[Tel.Compound]^{} )
@@ -935,7 +938,7 @@ trait Tel2 extends Tel3:
 
     val children =
       if compounds.nil then Array.empty[Tel.Block]
-      else Array.of(Tel.Block(Array.empty, Unset, compounds, 0))
+      else Array(Tel.Block(Array.empty, Unset, compounds, 0))
 
     Tel.make(Tel.Compound(keyword, atoms, Unset, children))
 

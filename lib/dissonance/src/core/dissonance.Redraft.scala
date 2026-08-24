@@ -212,9 +212,10 @@ object Redraft:
     // Promote any ambiguous primary `+`/`-` marker to the forced `>`/`<` spelling.
     def deambiguate(directives: List[Directive]): List[Directive] =
       val ambiguous =
-        Set.from:
+
           analyze(directives, original, _ == _)(1).stdlib.collect:
             case Anomaly(line, _, Reason.Ambiguous) => line
+          . to(Set)
 
       if ambiguous.nil then directives
       else deambiguate:

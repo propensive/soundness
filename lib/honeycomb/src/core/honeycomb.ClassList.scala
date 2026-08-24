@@ -42,16 +42,16 @@ import typonym.*
 
 object ClassList:
   def apply[name <: Label: Reifiable to List[String]](): ClassList of name =
-    val classes = Set.from(name.reify.stdlib.map { label => unsafely(Name[CssClass](label.tt)) })
+    val classes = (name.reify.stdlib.map { label => unsafely(Name[CssClass](label.tt)) }).to(Set)
     new ClassList(classes) { type Topic = name }
 
   given addable: ClassList is Addable by ClassList to ClassList =
     Addable: (classes, additions) =>
-      ClassList(Set.of(classes.classes.stdlib ++ additions.classes.stdlib))
+      ClassList((classes.classes.stdlib ++ additions.classes.stdlib).to(Set))
 
   given subtractable: ClassList is Subtractable by ClassList to ClassList =
     Subtractable: (classes, subtractions) =>
-      ClassList(Set.of(classes.classes.stdlib -- subtractions.classes.stdlib))
+      ClassList((classes.classes.stdlib -- subtractions.classes.stdlib).to(Set))
 
   given empty: ClassList(Set()):
     type Topic = "apply"

@@ -60,7 +60,7 @@ private[facsimile] object ContentTokens:
       . or:
           done = true
 
-    List.of(instructions.result())
+    instructions.result().to(List)
 
   // `BI <key value ...> ID <bytes> EI`: the keys parse as ordinary tokens up to the `ID`
   // operator, the payload is consumed at the byte level, and the closing `EI` is checked.

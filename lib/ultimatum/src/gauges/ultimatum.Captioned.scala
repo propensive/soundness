@@ -65,7 +65,7 @@ object Captioned:
         val captioned = drawn.stdlib.zipWithIndex.map: (row, index) =>
           if index > 0 then row else layout.compose(row, gaugeWidth, status.caption, width, gauging)
 
-        List.of(captioned.toList)
+        captioned.toList.to(List)
 
 // Any status with a label beside it: `⠹ resolving dependencies`, `████░░ copying`. Generic over
 // what it labels, so one design serves every status type — and its given derives from the

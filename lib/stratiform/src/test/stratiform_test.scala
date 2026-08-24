@@ -771,7 +771,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       val recoverSchema = Tels(
         name     = t"recover",
         document = Tels.Struct(
-          members = Array.of(
+          members = Array(
             Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
                t"parent",
@@ -780,11 +780,11 @@ object Tests extends Suite(m"Stratiform Tests"):
           validators = Array.empty),
         layers   = Array.empty,
         sigil    = Unset,
-        records  = Array.of(Tels.RecordDefinition(
+        records  = Array(Tels.RecordDefinition(
           t"Parent",
-          Array.of(Tels.Field
+          Array(Tels.Field
                  ( Tels.Polarity.Loose, Tels.Polarity.Loose,
-                   t"child", Tels.Scalar(Array.of(t"string")), Unset )),
+                   t"child", Tels.Scalar(Array(t"string")), Unset )),
           Array.empty)),
         scalars  = Array.empty,
         selects  = Array.empty)
@@ -805,15 +805,15 @@ object Tests extends Suite(m"Stratiform Tests"):
         val tieSchema = Tels(
           name     = t"tie",
           document = Tels.Struct(
-            members = Array.of(Tels.Field
+            members = Array(Tels.Field
                             ( Tels.Polarity.Loose, Tels.Polarity.Loose,
                               t"thing", Tels.Reference(t"Thing"), Unset )),
             validators = Array.empty),
           layers   = Array.empty,
           sigil    = Unset,
-          records  = Array.of(Tels.RecordDefinition(
+          records  = Array(Tels.RecordDefinition(
             t"Thing",
-            Array.of(Tels.Field
+            Array(Tels.Field
                    ( Tels.Polarity.Loose, Tels.Polarity.Loose,
                      t"thing", Tels.Reference(t"Thing"), Unset )),
             Array.empty)),
@@ -883,10 +883,10 @@ object Tests extends Suite(m"Stratiform Tests"):
         val schema = Tels(
           name     = t"person",
           document = Tels.Struct(
-            members = Array.of(
+            members = Array(
               Tels.Field
                ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-                 t"name", Tels.Scalar(Array.of(t"string")), Unset )),
+                 t"name", Tels.Scalar(Array(t"string")), Unset )),
             validators = Array.empty),
           layers   = Array.empty,
           sigil    = Unset,
@@ -903,13 +903,13 @@ object Tests extends Suite(m"Stratiform Tests"):
       val personSchema = Tels(
         name     = t"person",
         document = Tels.Struct(
-          members = Array.of(
+          members = Array(
             Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-               t"name", Tels.Scalar(Array.of(t"string")), Unset ),
+               t"name", Tels.Scalar(Array(t"string")), Unset ),
             Tels.Field
              ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-               t"age", Tels.Scalar(Array.of(t"identifier")), Unset )),
+               t"age", Tels.Scalar(Array(t"identifier")), Unset )),
           validators = Array.empty),
         layers   = Array.empty,
         sigil    = Unset,
@@ -939,7 +939,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       val statusSchema = Tels(
         name     = t"status",
         document = Tels.Struct(
-          members = Array.of(Tels.SelectRef
+          members = Array(Tels.SelectRef
            ( required   = Tels.Polarity.Implicit,
              repeatable = Tels.Polarity.Implicit,
              reference  = t"Status" )),
@@ -948,9 +948,9 @@ object Tests extends Suite(m"Stratiform Tests"):
         sigil    = Unset,
         records  = Array.empty,
         scalars  = Array.empty,
-        selects  = Array.of(Tels.SelectDefinition(
+        selects  = Array(Tels.SelectDefinition(
           name     = t"Status",
-          variants = Array.of(
+          variants = Array(
             Tels.Variant(t"active",   Tels.Flag),
             Tels.Variant(t"archived", Tels.Flag)),
           validators = Array.empty)))
@@ -987,13 +987,13 @@ object Tests extends Suite(m"Stratiform Tests"):
       val contiguitySchema = Tels(
         name     = t"doc",
         document = Tels.Struct(
-          members = Array.of(
+          members = Array(
             Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
-               t"a", Tels.Scalar(Array.of(t"string")), Unset ),
+               t"a", Tels.Scalar(Array(t"string")), Unset ),
             Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
-               t"b", Tels.Scalar(Array.of(t"string")), Unset )),
+               t"b", Tels.Scalar(Array(t"string")), Unset )),
           validators = Array.empty),
         layers   = Array.empty,
         sigil    = Unset,
@@ -1018,7 +1018,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       val repeatableStatusSchema = Tels(
         name     = t"status",
         document = Tels.Struct(
-          members = Array.of(Tels.SelectRef
+          members = Array(Tels.SelectRef
            ( required   = Tels.Polarity.Implicit,
              repeatable = Tels.Polarity.Loose,
              reference  = t"Status" )),
@@ -1027,9 +1027,9 @@ object Tests extends Suite(m"Stratiform Tests"):
         sigil    = Unset,
         records  = Array.empty,
         scalars  = Array.empty,
-        selects  = Array.of(Tels.SelectDefinition(
+        selects  = Array(Tels.SelectDefinition(
           name     = t"Status",
-          variants = Array.of(
+          variants = Array(
             Tels.Variant(t"active",   Tels.Flag),
             Tels.Variant(t"archived", Tels.Flag)),
           validators = Array.empty)))
@@ -1063,15 +1063,15 @@ object Tests extends Suite(m"Stratiform Tests"):
       val treeSchema = Tels(
         name     = t"tree",
         document = Tels.Struct(
-          members = Array.of(Tels.Field
+          members = Array(Tels.Field
            ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
              t"node", Tels.Reference(t"Node"), Unset )),
           validators = Array.empty),
         layers   = Array.empty,
         sigil    = Unset,
-        records  = Array.of(Tels.RecordDefinition(
+        records  = Array(Tels.RecordDefinition(
           t"Node",
-          Array.of(Tels.Field
+          Array(Tels.Field
            ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
              t"node", Tels.Reference(t"Node"), Unset )),
           Array.empty)),
@@ -1116,13 +1116,13 @@ object Tests extends Suite(m"Stratiform Tests"):
         Tels(
           name     = t"test",
           document = Tels.Struct(
-            members = Array.of(Tels.Field
+            members = Array(Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
                t"item", Tels.Reference(t"Item"), Unset )),
             validators = Array.empty),
           layers   = Array.empty,
           sigil    = Unset,
-          records  = Array.of(Tels.RecordDefinition(t"Item", members, Array.empty)),
+          records  = Array(Tels.RecordDefinition(t"Item", members, Array.empty)),
           scalars  = Array.empty,
           selects  = selects)
 
@@ -1142,60 +1142,60 @@ object Tests extends Suite(m"Stratiform Tests"):
         case _ => Nil
 
       test(m"atom skips optional flag and fills scalar (worked example)"):
-        val schema = itemSchema(Array.of(
+        val schema = itemSchema(Array(
           Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"a", Tels.Flag, Unset),
           Tels.Field(Tels.Polarity.Loose, Tels.Polarity.Implicit, t"b", Tels.Flag, Unset),
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"c", Tels.Scalar(Array.of(t"string")), Unset )))
+             t"c", Tels.Scalar(Array(t"string")), Unset )))
 
         project(Tel.Type.assign(t"item a xyz\n".read[Tel], schema))
       . assert(_ == List((0, t""), (2, t"xyz")))
 
       test(m"repeatable scalar consumes every remaining atom"):
-        val schema = itemSchema(Array.of(
+        val schema = itemSchema(Array(
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"label", Tels.Scalar(Array.of(t"string")), Unset ),
+             t"label", Tels.Scalar(Array(t"string")), Unset ),
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
-             t"values", Tels.Scalar(Array.of(t"string")), Unset )))
+             t"values", Tels.Scalar(Array(t"string")), Unset )))
 
         project(Tel.Type.assign(t"item lbl 1 2 3\n".read[Tel], schema))
       . assert(_ == List((0, t"lbl"), (1, t"1"), (1, t"2"), (1, t"3")))
 
       test(m"optional scalar is never skipped (§20.8)"):
-        val schema = itemSchema(Array.of(
+        val schema = itemSchema(Array(
           Tels.Field
            ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-             t"first", Tels.Scalar(Array.of(t"string")), Unset ),
+             t"first", Tels.Scalar(Array(t"string")), Unset ),
           Tels.Field
            ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-             t"second", Tels.Scalar(Array.of(t"string")), Unset )))
+             t"second", Tels.Scalar(Array(t"string")), Unset )))
 
         project(Tel.Type.assign(t"item hello\n".read[Tel], schema))
       . assert(_ == List((0, t"hello")))
 
       test(m"source atom participates in positional assignment"):
-        val schema = itemSchema(Array.of(
+        val schema = itemSchema(Array(
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"body", Tels.Scalar(Array.of(t"string")), Unset )))
+             t"body", Tels.Scalar(Array(t"string")), Unset )))
 
         project(Tel.Type.assign(t"item\n    payload\n".read[Tel], schema))
       . assert(_ == List((0, t"payload")))
 
       test(m"excess atoms raise E302"):
-        val schema = itemSchema(Array.of(
+        val schema = itemSchema(Array(
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"only", Tels.Scalar(Array.of(t"string")), Unset )))
+             t"only", Tels.Scalar(Array(t"string")), Unset )))
 
         capture[Tel.Error](Tel.Type.assign(t"item x y\n".read[Tel], schema)).reason
       . assert(_ == Tel.Error.Reason.TooManyAtoms)
 
       test(m"atom at required struct-typed member raises E303"):
-        val schema = itemSchema(Array.of(
+        val schema = itemSchema(Array(
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
              t"address", Tels.Struct(Array.empty, Array.empty), Unset )))
@@ -1205,13 +1205,13 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"unmatched variant at required SelectRef raises E304"):
         val schema = itemSchema(
-          Array.of(Tels.SelectRef
+          Array(Tels.SelectRef
            ( required   = Tels.Polarity.Implicit,
              repeatable = Tels.Polarity.Implicit,
              reference  = t"Status" )),
-          selects = Array.of(Tels.SelectDefinition(
+          selects = Array(Tels.SelectDefinition(
             name     = t"Status",
-            variants = Array.of(
+            variants = Array(
               Tels.Variant(t"active",   Tels.Flag),
               Tels.Variant(t"archived", Tels.Flag)),
             validators = Array.empty)))
@@ -1220,17 +1220,17 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Tel.Error.Reason.AtomVariantUnmatched)
 
       test(m"mismatched atom at required flag raises E305"):
-        val schema = itemSchema(Array.of(
+        val schema = itemSchema(Array(
           Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"a", Tels.Flag, Unset)))
 
         capture[Tel.Error](Tel.Type.assign(t"item xyz\n".read[Tel], schema)).reason
       . assert(_ == Tel.Error.Reason.AtomFlagKeywordMismatch)
 
       test(m"atom plus child for a non-repeatable member raises E308"):
-        val schema = itemSchema(Array.of(
+        val schema = itemSchema(Array(
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"only", Tels.Scalar(Array.of(t"string")), Unset )))
+             t"only", Tels.Scalar(Array(t"string")), Unset )))
 
         capture[Tel.Error](Tel.Type.assign(t"item x\n  only y\n".read[Tel], schema)).reason
       . assert(_ == Tel.Error.Reason.NonRepeatableTooMany)
@@ -1242,13 +1242,13 @@ object Tests extends Suite(m"Stratiform Tests"):
       val defaultingSchema = Tels(
         name     = t"person",
         document = Tels.Struct(
-          members = Array.of(
+          members = Array(
             Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-               t"name", Tels.Scalar(Array.of(t"string")), t"Anonymous" ),
+               t"name", Tels.Scalar(Array(t"string")), t"Anonymous" ),
             Tels.Field
              ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-               t"age", Tels.Scalar(Array.of(t"identifier")), Unset )),
+               t"age", Tels.Scalar(Array(t"identifier")), Unset )),
           validators = Array.empty),
         layers   = Array.empty,
         sigil    = Unset,
@@ -1263,7 +1263,7 @@ object Tests extends Suite(m"Stratiform Tests"):
             val values = children.readable.collect:
               case Tel.Element.Value(_, _, t) => t
 
-            Set.from(values.toSeq)
+            values.toSeq.to(Set)
 
           case _ => Set()
       . assert(_ == Set(t"Anonymous", t"30"))
@@ -1320,9 +1320,9 @@ object Tests extends Suite(m"Stratiform Tests"):
         val schemaWithValidator = Tels(
           name     = t"ident",
           document = Tels.Struct(
-            members = Array.of(Tels.Field
+            members = Array(Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"name",
-               Tels.Scalar(Array.of(t"identifier")), Unset )),
+               Tels.Scalar(Array(t"identifier")), Unset )),
             validators = Array.empty),
           layers  = Array.empty,
           sigil   = Unset,
@@ -1341,16 +1341,16 @@ object Tests extends Suite(m"Stratiform Tests"):
         val base = Tels(
           name     = t"base",
           document = Tels.Struct(
-            members = Array.of(Tels.Field
+            members = Array(Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"name",
-               Tels.Scalar(Array.of(t"string")), Unset )),
+               Tels.Scalar(Array(t"string")), Unset )),
             validators = Array.empty),
-          layers = Array.of(Tels.Layer(
+          layers = Array(Tels.Layer(
             name     = t"extra",
             overlay  = Tels.Struct(
-              members = Array.of(Tels.Field
+              members = Array(Tels.Field
                ( Tels.Polarity.Loose, Tels.Polarity.Implicit, t"email",
-                 Tels.Scalar(Array.of(t"string")), Unset )),
+                 Tels.Scalar(Array(t"string")), Unset )),
               validators = Array.empty),
             records = Array.empty, scalars = Array.empty, selects = Array.empty)),
           sigil    = Unset,
@@ -1371,13 +1371,13 @@ object Tests extends Suite(m"Stratiform Tests"):
         val schema = Tels(
           name     = t"person",
           document = Tels.Struct(
-            members = Array.of(
+            members = Array(
               Tels.Field
                ( Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"name",
-                 Tels.Scalar(Array.of(t"string")), Unset ),
+                 Tels.Scalar(Array(t"string")), Unset ),
               Tels.Field
                ( Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"age",
-                 Tels.Scalar(Array.of(t"string")), Unset )),
+                 Tels.Scalar(Array(t"string")), Unset )),
             validators = Array.empty),
           layers  = Array.empty,
           sigil   = Unset,
@@ -1400,7 +1400,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val base = Tels(
           name = t"base",
           document = Tels.Struct(Array.empty, Array.empty),
-          layers = Array.of(layer, layer),
+          layers = Array(layer, layer),
           sigil = Unset,
           records = Array.empty, scalars = Array.empty, selects = Array.empty)
 
@@ -1449,7 +1449,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val tel    = doc("contact\n  name Alice\n")
         val newCompound = Tel.Compound
                           (t"email",
-                           Array.of(Tel.Atom.Inline(t"alice@example.com", 1)),
+                           Array(Tel.Atom.Inline(t"alice@example.com", 1)),
                            Unset, Array.empty)
         val ptr    = Tel.Pointer.of(t"contact")
         val result = Mutation(tel, Mutation.Op.Insert(ptr, newCompound))
@@ -1466,7 +1466,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"InsertBefore places a new sibling before the target"):
         val tel    = doc("b two\n")
         val a      = Tel.Compound
-                      (t"a", Array.of(Tel.Atom.Inline(t"one", 1)), Unset, Array.empty)
+                      (t"a", Array(Tel.Atom.Inline(t"one", 1)), Unset, Array.empty)
         val ptr    = Tel.Pointer.of(t"b")
         val result = Mutation(tel, Mutation.Op.InsertBefore(ptr, a))
         result.show
@@ -1475,7 +1475,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"InsertAfter places a new sibling after the target"):
         val tel    = doc("a one\n")
         val b      = Tel.Compound
-                      (t"b", Array.of(Tel.Atom.Inline(t"two", 1)), Unset, Array.empty)
+                      (t"b", Array(Tel.Atom.Inline(t"two", 1)), Unset, Array.empty)
         val ptr    = Tel.Pointer.of(t"a")
         val result = Mutation(tel, Mutation.Op.InsertAfter(ptr, b))
         result.show
@@ -1484,7 +1484,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"Replace swaps a compound for a new one"):
         val tel    = doc("name Alice\n")
         val replacement = Tel.Compound
-                           (t"name", Array.of(Tel.Atom.Inline(t"Charlie", 1)),
+                           (t"name", Array(Tel.Atom.Inline(t"Charlie", 1)),
                             Unset, Array.empty)
         val ptr    = Tel.Pointer.of(t"name")
         val result = Mutation(tel, Mutation.Op.Replace(ptr, replacement))
@@ -1734,7 +1734,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"Replace retains the original compound's remark (§22.2)"):
         val tel    = doc("email a@x  # personal\n")
         val replacement = Tel.Compound
-                           (t"email", Array.of(Tel.Atom.Inline(t"b@x", 1)), Unset, Array.empty)
+                           (t"email", Array(Tel.Atom.Inline(t"b@x", 1)), Unset, Array.empty)
         val ptr    = Tel.Pointer.of(t"email")
         val result = Mutation(tel, Mutation.Op.Replace(ptr, replacement))
         result.show
@@ -1749,7 +1749,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"Insert takes the natural position after the last same-member compound"):
         val tel    = doc("a 1\na 2\n\nb 3\n")
-        val nine   = Tel.Compound(t"a", Array.of(Tel.Atom.Inline(t"9", 1)), Unset, Array.empty)
+        val nine   = Tel.Compound(t"a", Array(Tel.Atom.Inline(t"9", 1)), Unset, Array.empty)
         val result = Mutation(tel, Mutation.Op.Insert(Tel.Pointer.Empty, nine))
         result.show
       . assert(_ == t"a 1\na 2\na 9\n\nb 3\n")
@@ -1773,14 +1773,14 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"InsertAfter a tabulated row opens a new block after the table (§22.2)"):
         val tel    = doc("# Name  # Age\nAlice   30\n")
-        val note   = Tel.Compound(t"note", Array.of(Tel.Atom.Inline(t"x", 1)), Unset, Array.empty)
+        val note   = Tel.Compound(t"note", Array(Tel.Atom.Inline(t"x", 1)), Unset, Array.empty)
         val result = Mutation(tel, Mutation.Op.InsertAfter(Tel.Pointer.of(t"Alice"), note))
         result.show
       . assert(_ == t"# Name  # Age\nAlice   30\n\nnote x\n")
 
       test(m"InsertBefore a tabulated row opens a new block before the table (§22.2)"):
         val tel    = doc("# Name  # Age\nAlice   30\n")
-        val note   = Tel.Compound(t"note", Array.of(Tel.Atom.Inline(t"x", 1)), Unset, Array.empty)
+        val note   = Tel.Compound(t"note", Array(Tel.Atom.Inline(t"x", 1)), Unset, Array.empty)
         val result = Mutation(tel, Mutation.Op.InsertBefore(Tel.Pointer.of(t"Alice"), note))
         result.show
       . assert(_ == t"note x\n\n# Name  # Age\nAlice   30\n")
@@ -1818,7 +1818,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val result = Mutation
                       ( tel,
                         List
-                         ( Mutation.Op.ResizeTabulation(Tel.Pointer.Empty, 0, Array.of(row)),
+                         ( Mutation.Op.ResizeTabulation(Tel.Pointer.Empty, 0, Array(row)),
                            Mutation.Op.InsertIntoBlock(Tel.Pointer.Empty, 0, row) ) )
 
         result.show
@@ -1874,7 +1874,7 @@ object Tests extends Suite(m"Stratiform Tests"):
     suite(m"Tel.fields repeated-keyword accessor"):
       test(m"fields returns all matching children in order"):
         val tel = t"item 1\nitem 2\nitem 3\n".read[Tel]
-        List.of(tel.fields(t"item").readable.map(_.primaryAtom).toList)
+        tel.fields(t"item").readable.map(_.primaryAtom).toList.to(List)
       . assert(_ == List(t"1", t"2", t"3"))
 
       test(m"fields returns empty array when none match"):
@@ -2340,9 +2340,9 @@ object Tests extends Suite(m"Stratiform Tests"):
     val nameSchema = Tels(
       name     = t"contact",
       document = Tels.Struct(
-        members = Array.of(Tels.Field
+        members = Array(Tels.Field
          ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-           t"name", Tels.Scalar(Array.of(t"string")), Unset )),
+           t"name", Tels.Scalar(Array(t"string")), Unset )),
         validators = Array.empty),
       layers   = Array.empty,
       sigil    = Unset,
@@ -2381,7 +2381,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"empty scalar value encodes as zero-length"):
         val scalar = Tels.Scalar(Array.empty)
         val value = Tel.Element.Value(0, scalar, t"")
-        val root = Tel.Element.Node(Unset, nameSchema.document, Array.of(value))
+        val root = Tel.Element.Node(Unset, nameSchema.document, Array(value))
         hex(root.bintel(nameSchema))
       . assert(_ == "01 00 00")
 
@@ -2389,7 +2389,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         // "café" = 0x63 0x61 0x66 0xC3 0xA9 = 5 bytes, 4 chars
         val scalar = Tels.Scalar(Array.empty)
         val value = Tel.Element.Value(0, scalar, t"café")
-        val root = Tel.Element.Node(Unset, nameSchema.document, Array.of(value))
+        val root = Tel.Element.Node(Unset, nameSchema.document, Array(value))
         hex(root.bintel(nameSchema))
       . assert(_ == "01 00 05 63 61 66 C3 A9")
 
@@ -2398,7 +2398,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val flagSchema = Tels(
           name     = t"feature",
           document = Tels.Struct(
-            members = Array.of(Tels.Field
+            members = Array(Tels.Field
              ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
                t"enabled", Tels.Flag, Unset )),
             validators = Array.empty),
@@ -2407,35 +2407,35 @@ object Tests extends Suite(m"Stratiform Tests"):
           records  = Array.empty,
           scalars  = Array.empty,
           selects  = Array.empty)
-        val root = Tel.Element.Node(Unset, flagSchema.document, Array.of(flagNode))
+        val root = Tel.Element.Node(Unset, flagSchema.document, Array(flagNode))
         hex(root.bintel(nameSchema))
       . assert(_ == "01 00")
 
       test(m"nested struct emits kidx + count + children recursively"):
         val innerScalar = Tels.Scalar(Array.empty)
         val innerStruct = Tels.Struct(
-          members = Array.of(Tels.Field
+          members = Array(Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
              t"host", innerScalar, Unset )),
           validators = Array.empty)
         val outerStruct = Tels.Struct(
-          members = Array.of(Tels.Field
+          members = Array(Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
              t"config", innerStruct, Unset )),
           validators = Array.empty)
 
         val configNode = Tel.Element.Node(
           0, innerStruct,
-          Array.of(Tel.Element.Value(0, innerScalar, t"example.com")))
+          Array(Tel.Element.Value(0, innerScalar, t"example.com")))
 
-        val root = Tel.Element.Node(Unset, outerStruct, Array.of(configNode))
+        val root = Tel.Element.Node(Unset, outerStruct, Array(configNode))
         hex(root.bintel(nameSchema))
       . assert(_ == "01 00 01 00 0B 65 78 61 6D 70 6C 65 2E 63 6F 6D")
 
       test(m"large keyword index uses multi-byte varint"):
         val scalar = Tels.Scalar(Array.empty)
         val value = Tel.Element.Value(128, scalar, t"x")
-        val root = Tel.Element.Node(Unset, nameSchema.document, Array.of(value))
+        val root = Tel.Element.Node(Unset, nameSchema.document, Array(value))
         hex(root.bintel(nameSchema))
       . assert(_ == "01 80 01 01 78")
 
@@ -2446,13 +2446,13 @@ object Tests extends Suite(m"Stratiform Tests"):
         // of source ordering.
         val scalar = Tels.Scalar(Array.empty)
         val struct = Tels.Struct(
-          members = Array.of(
+          members = Array(
             Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit,
                        t"first",  scalar, Unset),
             Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit,
                        t"second", scalar, Unset)),
           validators = Array.empty)
-        val children = Array.of[Tel.Element](
+        val children = Array[Tel.Element](
           Tel.Element.Value(1, scalar, t"B"),
           Tel.Element.Value(0, scalar, t"A"))
         val root = Tel.Element.Node(Unset, struct, children)
@@ -2463,10 +2463,10 @@ object Tests extends Suite(m"Stratiform Tests"):
         // Two values at the same member index must stay in source order.
         val scalar = Tels.Scalar(Array.empty)
         val struct = Tels.Struct(
-          members = Array.of(Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Loose,
+          members = Array(Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Loose,
                                        t"item", scalar, Unset)),
           validators = Array.empty)
-        val children = Array.of[Tel.Element](
+        val children = Array[Tel.Element](
           Tel.Element.Value(0, scalar, t"first"),
           Tel.Element.Value(0, scalar, t"second"))
         val root = Tel.Element.Node(Unset, struct, children)
@@ -2523,7 +2523,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"empty scalar value round-trips"):
         val scalar = Tels.Scalar(Array.empty)
         val root = Tel.Element.Node
-                    (Unset, nameSchema.document, Array.of(Tel.Element.Value(0, scalar, t"")))
+                    (Unset, nameSchema.document, Array(Tel.Element.Value(0, scalar, t"")))
         val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
@@ -2536,7 +2536,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"UTF-8 multi-byte scalar round-trips"):
         val scalar = Tels.Scalar(Array.empty)
         val root = Tel.Element.Node
-                    (Unset, nameSchema.document, Array.of(Tel.Element.Value(0, scalar, t"café")))
+                    (Unset, nameSchema.document, Array(Tel.Element.Value(0, scalar, t"café")))
         val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
@@ -2550,7 +2550,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val flagSchema = Tels(
           name     = t"feature",
           document = Tels.Struct(
-            members = Array.of(Tels.Field
+            members = Array(Tels.Field
              ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
                t"enabled", Tels.Flag, Unset )),
             validators = Array.empty),
@@ -2560,7 +2560,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           scalars  = Array.empty,
           selects  = Array.empty)
         val root = Tel.Element.Node
-                    (Unset, flagSchema.document, Array.of(Tel.Element.Node(0, Tels.Flag, Array.empty)))
+                    (Unset, flagSchema.document, Array(Tel.Element.Node(0, Tels.Flag, Array.empty)))
         val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, flagSchema)
         decoded match
@@ -2571,12 +2571,12 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"nested struct round-trips"):
         val innerScalar = Tels.Scalar(Array.empty)
         val innerStruct = Tels.Struct(
-          members = Array.of(Tels.Field
+          members = Array(Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
              t"host", innerScalar, Unset )),
           validators = Array.empty)
         val outerStruct = Tels.Struct(
-          members = Array.of(Tels.Field
+          members = Array(Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
              t"config", innerStruct, Unset )),
           validators = Array.empty)
@@ -2587,8 +2587,8 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val configNode = Tel.Element.Node(
           0, innerStruct,
-          Array.of(Tel.Element.Value(0, innerScalar, t"example.com")))
-        val root = Tel.Element.Node(Unset, outerStruct, Array.of(configNode))
+          Array(Tel.Element.Value(0, innerScalar, t"example.com")))
+        val root = Tel.Element.Node(Unset, outerStruct, Array(configNode))
 
         val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, outerSchema)
@@ -2972,7 +2972,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val schema  = Tels.Layers.compose(Tels.Reconstructor.fromTel(sd))
         val docBody = dataDoc.read[Tel].bintel(schema)
         val sig     = SchemaSignature.fromDocument(sd, axiom)
-        val garbage: Data = Array.of[Byte](0x7f, 0x7f, 0x7f, 0x7f)
+        val garbage: Data = Array[Byte](0x7f, 0x7f, 0x7f, 0x7f)
         val bytes = Bintel.frameSelfContained(sig, garbage, docBody)
         capture[Bintel.Error](Bintel.decodeDocumentSelfContained(bytes)).reason
       . assert(_ == Bintel.Error.Reason.EmbeddedSchemaUndecodable)
@@ -3057,25 +3057,25 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"a truly absent Optional field reads Unset"):
         // A hand-built body: one child, index 0 ("x"), scalar "7" — the
         // `note` field is genuinely absent.
-        val bytes = Array.of[Byte](0x01, 0x00, 0x01, '7'.toByte)
+        val bytes = Array[Byte](0x01, 0x00, 0x01, '7'.toByte)
         Bintel.parse[Tests.OptField](bytes)
       . assert(_ == Tests.OptField(7, Unset))
 
       test(m"a missing field with a declared default takes it"):
         // A hand-built body: one child, index 0 ("name"), scalar "Bob".
-        val bytes = Array.of[Byte](0x01, 0x00, 0x03, 'B'.toByte, 'o'.toByte, 'b'.toByte)
+        val bytes = Array[Byte](0x01, 0x00, 0x03, 'B'.toByte, 'o'.toByte, 'b'.toByte)
         Bintel.parse[Tests.WithDefault](bytes)
       . assert(_ == Tests.WithDefault(t"Bob", 18))
 
       test(m"a missing required field raises Absent with its sentinel"):
         // One child, index 1 ("age"), scalar "9" — "name" is missing.
-        val bytes = Array.of[Byte](0x01, 0x01, 0x01, '9'.toByte)
+        val bytes = Array[Byte](0x01, 0x01, 0x01, '9'.toByte)
         capture[Tel.Error](Bintel.parse[Tests.Person](bytes)).reason
       . assert(_ == Tel.Error.Reason.Absent)
 
       test(m"an unparseable scalar raises NotScalar"):
         // Two children: name "x", then age "abc".
-        val bytes = Array.of[Byte]
+        val bytes = Array[Byte]
           (0x02, 0x00, 0x01, 'x'.toByte, 0x01, 0x03, 'a'.toByte, 'b'.toByte, 'c'.toByte)
 
         capture[Tel.Error](Bintel.parse[Tests.Person](bytes)).reason match
@@ -3095,7 +3095,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"an out-of-range keyword index aborts"):
         // One child with index 9 in a two-field struct.
-        val bytes = Array.of[Byte](0x01, 0x09, 0x01, 'x'.toByte)
+        val bytes = Array[Byte](0x01, 0x09, 0x01, 'x'.toByte)
         capture[Bintel.Error](Bintel.parse[Tests.Person](bytes)).reason
       . assert(_ == Bintel.Error.Reason.BadKeywordIndex)
 

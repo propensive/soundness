@@ -47,6 +47,6 @@ enum Prose extends Markdown.Node:
   case HtmlInline(html: Text)
 
   def children: List[Prose] = this match
-    case Link(_, _, prose*)  => List.of(prose.toList)
-    case Image(_, _, prose*) => List.of(prose.toList)
+    case Link(_, _, prose*)  => prose.toList.to(List)
+    case Image(_, _, prose*) => prose.toList.to(List)
     case _                   => Nil

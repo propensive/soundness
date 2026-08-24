@@ -143,7 +143,7 @@ object Tar:
         def hasNext: Boolean = replenish()
 
         def next(): Data =
-          val block = Array[Byte](512)
+          val block = Array.allocate[Byte](512)
           var position = 0
 
           while position < 512 && replenish() do
@@ -490,7 +490,7 @@ object Tar:
       drain()
 
       if memo.length == 1 then memo(0) else
-        val whole = Array[Byte](size.toInt)
+        val whole = Array.allocate[Byte](size.toInt)
         var offset = 0
 
         memo.each: chunk =>

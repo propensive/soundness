@@ -93,4 +93,4 @@ object DtsDiscipline extends Discipline:
       declarations.stdlib.filter(_.exported).foreach: declaration =>
         atoms ++= DtsAtomizer.atomize(declaration).stdlib
 
-    Atomization.of(id, List.from(atoms.toList))
+    Atomization.of(id, atoms.toList.to(List))

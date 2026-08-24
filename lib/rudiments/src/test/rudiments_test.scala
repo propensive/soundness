@@ -82,11 +82,11 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == false)
 
       test(m"frozen array element membership"):
-        Array.of(1, 2, 3).has(2)
+        Array(1, 2, 3).has(2)
       . assert(_ == true)
 
       test(m"frozen array missing element"):
-        Array.of(1, 2, 3).has(4)
+        Array(1, 2, 3).has(4)
       . assert(_ == false)
 
       test(m"Array element membership"):
@@ -469,7 +469,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
     suite(m"Confined index tests"):
       val text = t"hello"
-      val array = Array.of(10, 20, 30)
+      val array = Array(10, 20, 30)
 
       test(m"Plain `at` returns Optional"):
         text(Prim)
@@ -542,7 +542,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == (0, 5))
 
       test(m"chained `prefix(after)` scans equal one combined scan"):
-        val digits = Array.of(1, 2, 0, 0, 7)
+        val digits = Array(1, 2, 0, 0, 7)
         val zeros = digits.prefix { i => digits.at(i) != 0 }
         val run = digits.prefix(zeros) { i => digits.at(i) == 0 }
         val combined = digits.prefix { i => digits.at(i) != 7 }
@@ -560,13 +560,13 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == 5)
 
       test(m"`pare` drops the matching suffix, respecting the floor"):
-        val digits = Array.of(3, 7, 0, 0, 0)
+        val digits = Array(3, 7, 0, 0, 0)
         val interval: Interval = digits.pare(1) { i => digits.at(i) == 0 }
         interval.size
       . assert(_ == 2)
 
       test(m"`pare` never shrinks below its floor"):
-        val zeros = Array.of(0, 0, 0)
+        val zeros = Array(0, 0, 0)
         val interval: Interval = zeros.pare(1) { i => zeros.at(i) == 0 }
         interval.size
       . assert(_ == 1)
@@ -595,7 +595,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == 7)
 
       test(m"`place` copies a whole frozen array, clamped to the space"):
-        val source = Array.of(1, 2, 3, 4, 5)
+        val source = Array(1, 2, 3, 4, 5)
 
         val target = Array.scribe[Int](4): scribe =>
           range => scribe.iterate { i => if (i: Ordinal) == Sec then scribe.place(source, i) }
@@ -638,7 +638,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == ((3, 'i')))
 
       test(m"a surveyor detects successive runs with their lengths"):
-        val styles = Array.of(7L, 7L, 7L, 9L, 9L, 3L)
+        val styles = Array(7L, 7L, 7L, 9L, 9L, 3L)
         var lengths: List[Int] = Nil
 
         styles.survey: surveyor =>
@@ -718,7 +718,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == List(2, 3))
 
       test(m"`triples` visits whole groups and returns the branded remainder"):
-        val data = Array.of[Byte](1, 2, 3, 4, 5, 6, 7, 8)
+        val data = Array[Byte](1, 2, 3, 4, 5, 6, 7, 8)
         var sums: List[Int] = Nil
         var rest = -1
 
@@ -729,7 +729,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == ((List(6, 15), 2)))
 
       test(m"`pairs` and `quads` group evenly with empty remainders"):
-        val data = Array.of[Byte](1, 2, 3, 4)
+        val data = Array[Byte](1, 2, 3, 4)
         var pairSum = 0
         var quadSum = 0
 
@@ -749,7 +749,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       test(m"a lattice mints whole rows within the storage"):
         // 10 elements, rows of 3 spaced 4 apart: rows at 0, 4 — a third row (start 8,
         // needing 8+3 <= 10) does not fit.
-        val data = Array.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+        val data = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
         var rows: List[List[Int]] = Nil
 
         data.lattice(3, 4, 0): lattice =>
@@ -762,7 +762,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == List(List(0, 1, 2), List(4, 5, 6)))
 
       test(m"`point` linearizes in-range coordinates and rejects others"):
-        val data = Array.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+        val data = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 
         data.lattice(3, 4, 0): lattice =>
           val hit = lattice.point(2, 1).let { i => data.at(i) }
@@ -770,7 +770,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == ((6, Unset, Unset, 3)))
 
       test(m"a lattice with an offset addresses a sub-plane"):
-        val data = Array.of(9, 9, 0, 1, 2, 3)
+        val data = Array(9, 9, 0, 1, 2, 3)
         var sum = 0
 
         data.lattice(2, 2, 2): lattice =>

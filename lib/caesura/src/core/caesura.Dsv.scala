@@ -377,7 +377,7 @@ object Dsv extends Dsv2:
 
       if failed then null.asInstanceOf[derivation]
       else
-        val arguments = Array[Any](slots.length)
+        val arguments = Array.allocate[Any](slots.length)
         slot = 0
 
         while slot < slots.length do
@@ -409,7 +409,7 @@ object Dsv extends Dsv2:
             // position.
             def fieldRow(label: Text, count: Int): Dsv =
               row.columns.lay(Dsv(row.data.skip(count))): columns =>
-                columns(label).lay(Dsv(Array.of[Text]())): i =>
+                columns(label).lay(Dsv(Array[Text]())): i =>
                   Dsv(row.data.skip(i))
 
             // A SINGLE field traversal serving both modes, branching on `foci.active` per

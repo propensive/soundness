@@ -123,7 +123,7 @@ object Recurrence:
 
     sequence =>
       val all = Chain.iterate(sequence.start)(addable.add(_, sequence.period))
-      sequence.repetitions.lay(all) { n => Chain.of(all.stdlib.take(n)) }
+      sequence.repetitions.lay(all) { n => all.stdlib.take(n).to(Chain) }
 
   // RecurrenceError → Recurrence.Error
   case class Error(value: Text)(using Diagnostics)

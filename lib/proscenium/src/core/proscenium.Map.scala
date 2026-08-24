@@ -42,7 +42,7 @@ import scala.collection.immutable as sci
 object Map:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
   // lambdas crashes the capture checker's boxer (boxDeeply assertion).
-  def of[key, value](map: sci.Map[key, value]): Map[key, value] =
+  private[proscenium] def of[key, value](map: sci.Map[key, value]): Map[key, value] =
     map.asInstanceOf[Map[key, value]]
 
   def apply[key, value](pairs: (key, value)*): Map[key, value] = of(sci.Map(pairs*))
@@ -50,6 +50,17 @@ object Map:
 
   def from[key, value](pairs: IterableOnce[(key, value)]^): Map[key, value] =
     of(sci.Map.from(pairs))
+
+  // `.to[Map]` support (see `List`): the conversion is on `Map.type` only, so it cannot
+  // expose members of `Map` values.
+  given factory: [key, value] => Conversion[Map.type, scala.collection.Factory[(key, value), Map[key, value]]] =
+    _ =>
+      new scala.collection.Factory[(key, value), Map[key, value]]:
+        def fromSpecific(elements: IterableOnce[(key, value)]^): Map[key, value] =
+          Map.from(elements)
+
+        def newBuilder: scala.collection.mutable.Builder[(key, value), Map[key, value]] =
+          sci.Map.newBuilder[key, value].mapResult(of(_))
 
   extension [key, value](map: Map[key, value])
     inline def stdlib: sci.Map[key, value] = map.asInstanceOf[sci.Map[key, value]]

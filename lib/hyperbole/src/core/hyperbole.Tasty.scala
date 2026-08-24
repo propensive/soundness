@@ -89,7 +89,7 @@ object Tasty:
           ( Column(e"$Bold(Property)", textAlign = TextAlignment.Right)(_(0)),
             Column(e"$Bold(Value)", sizing = columnar.ParagraphOrBreak)(_(1)) )
 
-        . tabulate(List.of(name :: (t"Flags", flags) :: (t"Properties", properties) :: details.stdlib))
+        . tabulate((name :: (t"Flags", flags) :: (t"Properties", properties) :: details.stdlib).to(List))
         . grid(120)
         . render
         . join(e"\n")
@@ -121,7 +121,7 @@ object Tasty:
           val tag2: Text = if node.tag == ' ' then "▪".tt else "⟨"+node.tag+"⟩"
 
           Expansion
-            ( e"${List.of(tiles.stdlib.drop(1).map(treeStyles.defaultTreeStyle.text(_))).join}$tag2 $text",
+            ( e"${(tiles.stdlib.drop(1).map(treeStyles.defaultTreeStyle.text(_))).to(List).join}$tag2 $text",
               node.typeName,
               node.param,
               node.shortCode,
@@ -200,6 +200,7 @@ object Tasty:
     // pickled with an empty extent at whatever position was to hand, and so cannot be innermost
     // anything; they sort last, to be reached only when a frame really is one of them.
     def covering(line: Int): List[Definition] =
-      List.of:
+
         definitions.stdlib.filter(_.covers(line)).sortBy: definition =>
           (if definition.span == 0 then 1 else 0, definition.span)
+        . to(List)

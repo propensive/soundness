@@ -52,7 +52,7 @@ object Spectrum:
         val db = srgb.blue - target.blue
         dr*dr + dg*dg + db*db
 
-      colors = Set.of(colors.stdlib - chosen)
+      colors = (colors.stdlib - chosen).to(Set)
       chosen
 
     new Spectrum:

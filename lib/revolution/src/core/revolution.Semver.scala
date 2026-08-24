@@ -122,8 +122,8 @@ object Semver:
       else
         val lh = left.head
         val rh = right.head
-        val lts = List.of(left.tail)
-        val rts = List.of(right.tail)
+        val lts = left.tail.to(List)
+        val rts = right.tail.to(List)
         lh.absolve match
           case lh: Text => rh.absolve match
             case rh: Long => false

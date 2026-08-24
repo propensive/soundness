@@ -48,7 +48,7 @@ object Strain:
         strain:      Strain )
     :   Report =
 
-      val latencies: List[(Metric, Double)] = List.of:
+      val latencies: List[(Metric, Double)] =
         List
           ( Metric.P50  -> strain.p50,
             Metric.P90  -> strain.p90,
@@ -57,6 +57,7 @@ object Strain:
 
         . stdlib.flatMap: (key, value) =>
             value.option.map(key -> _.toDouble)
+        . to(List)
 
       val slo: List[(Metric, Double)] =
         strain.compliance.option.map(Metric.Compliance -> _).to(List)
@@ -71,7 +72,7 @@ object Strain:
             Metric.GcCount    -> strain.gcCount.toDouble,
             Metric.GcTime     -> strain.gcTime.toDouble*1000000.0 )
 
-      val metrics = Ledger.from(counters.stdlib ++ latencies.stdlib ++ slo.stdlib)
+      val metrics = (counters.stdlib ++ latencies.stdlib ++ slo.stdlib).to(Ledger)
 
       // Concurrency is a coordinate, not a metric: every strain lands on the emergent `N`
       // axis, so a sweep's steps accumulate as cells of one entry. If the producer already

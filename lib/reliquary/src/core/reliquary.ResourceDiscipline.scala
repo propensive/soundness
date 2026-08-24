@@ -63,7 +63,7 @@ case class ResourceDiscipline(resources: List[Resource]) extends Discipline:
     Set(Discipline.Guarantee.Linkage, Discipline.Guarantee.Recompilation)
 
   private def named(mode: ResourceMode): List[TreePath] =
-    List.from(resources.stdlib.filter(_.mode == mode).map(_.path))
+    resources.stdlib.filter(_.mode == mode).map(_.path).to(List)
 
   def exports: List[TreePath] = named(ResourceMode.Export)
   def tracked: List[TreePath] = named(ResourceMode.Track)
@@ -95,7 +95,7 @@ case class ResourceDiscipline(resources: List[Resource]) extends Discipline:
         scala.List(Atom(path.text, Atom.Class.Replaceable, Lira.Hash(Lira.Hash.Domain.Atom(id), data)))
       else scala.List()  // claimed by a scan: atomless
 
-    Atomization.of(id, List.from(atoms))
+    Atomization.of(id, atoms.to(List))
 
 object ResourceDiscipline:
   // L124: declarations must be well-formed — no path declared twice, and no `export` or `track`

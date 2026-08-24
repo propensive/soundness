@@ -173,7 +173,7 @@ case class Buildpath(releases: List[Lira.Manifest]):
         // combination to report, only the module none of whose integrations hold.
         case _ => abort(Lira.Error(Reason.NoAssignment(manifest.module)))
 
-    Assignment(List.from(chosen))
+    Assignment(chosen.to(List))
 
   // §13.2 satisfaction, plus §13.4 spanning: the required snapshot must appear in the candidate's
   // lineage, or one of the snapshots the dependent has *proven* it spans must. A span is a
@@ -280,7 +280,7 @@ case class Buildpath(releases: List[Lira.Manifest]):
             candidate.version.let: actual =>
               if hint != actual then advisories += Lira.Advisory.VersionMismatch(hint, actual)
 
-    List.from(advisories)
+    advisories.to(List)
 
   // The sections a target and an assignment select (§13.3, §13.5): per release, the section for
   // the universe that release serves and its assigned integration.
@@ -295,11 +295,12 @@ case class Buildpath(releases: List[Lira.Manifest]):
   // The host-contract modules the selected sections' `requires` records name — the modules rule
   // 7 needs contracts for, and what `HostPending` reports when validation runs without any.
   def requiredContracts(universe: Text, assignment: Assignment): List[Text] =
-    List.from:
+
       selected(universe, assignment).flatMap: section =>
         section.requires.stdlib.map(_.module)
 
       . distinct
+      . to(List)
 
   // §13.3 rule 7 (L136, L137): every `requires` record of every selected section must be
   // satisfied by the given contracts, per hosts.md §7 — the required snapshot appears in the
@@ -400,7 +401,7 @@ case class Buildpath(releases: List[Lira.Manifest]):
       if required.stdlib.isEmpty then (assignment, advisories)
       else
         val pending = List(Lira.Advisory.HostPending(required))
-        (assignment, List.from(advisories.stdlib ++ pending.stdlib))
+        (assignment, (advisories.stdlib ++ pending.stdlib).to(List))
     else
       hostRequirements(universe, assignment, contracts, atoms, used)
       (assignment, advisories)

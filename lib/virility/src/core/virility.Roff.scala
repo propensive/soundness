@@ -73,7 +73,7 @@ object Roff:
   // Cons on the opaque `List` routes through the compat conversion to the stdlib `List`, so
   // sequences are assembled here by concatenation instead of `::`.
   private def concat[element](lists: List[element]*): List[element] =
-    List.of(lists.toList.flatMap(_.stdlib))
+    lists.toList.flatMap(_.stdlib).to(List)
 
   // A `.P` directly after `.SH`/`.SS` is redundant (mandoc lints it), so a section's leading
   // paragraph contributes only its text line.
@@ -141,6 +141,6 @@ case class Roff
       List(title.upper, section.show, date.or(t""), source.or(t""), manual.or(t""))
       . stdlib.reverse.dropWhile(_ == t"").reverse
 
-    val header = Roff.concat(List(t".TH"), List.of(arguments).map(Roff.quote)).join(t" ")
+    val header = Roff.concat(List(t".TH"), arguments.to(List).map(Roff.quote)).join(t" ")
 
     Roff.concat(List(header), blocks.flatMap(_.serialize)).join(t"", t"\n", t"\n")

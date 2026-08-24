@@ -387,7 +387,7 @@ object internal:
             ' {
                 val inputSchema =
                   JsonSchema.Object
-                    ( properties = $properties, required = List.of(${Expr.ofList(paramNames)}) )
+                    ( properties = $properties, required = List.from(${Expr.ofList(paramNames)}) )
 
                 val outputSchema =
                   JsonSchema.Object
@@ -458,7 +458,7 @@ object internal:
             ( name         = ${Expr(method.name.tt)},
               title        = $title,
               description  = $about,
-              arguments    = ${if params.isEmpty then 'Unset else '{List.of(${Expr.ofList(params)})}} )
+              arguments    = ${if params.isEmpty then 'Unset else '{List.from(${Expr.ofList(params)})}} )
         }
 
     val resourceEntries = resourceMethods.map: method =>
@@ -515,9 +515,9 @@ object internal:
     ' {
         new Mcp.Specification:
           type Self = interface
-          def tools(): List[Mcp.Tool] = List.of(${Expr.ofList(toolEntries)})
-          def resources(): List[Mcp.Resource] = List.of(${Expr.ofList(resourceEntries)})
-          def prompts(): List[Mcp.Prompt] = List.of(${Expr.ofList(promptEntries)})
+          def tools(): List[Mcp.Tool] = List.from(${Expr.ofList(toolEntries)})
+          def resources(): List[Mcp.Resource] = List.from(${Expr.ofList(resourceEntries)})
+          def prompts(): List[Mcp.Prompt] = List.from(${Expr.ofList(promptEntries)})
 
           def invokeTool(server: interface, client: Mcp.Client, method: Text, input: Json): Json =
             $toolInvocation(server)(method, input, client)

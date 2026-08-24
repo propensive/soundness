@@ -89,7 +89,7 @@ object HostContracts:
 
           case Grade.Minor =>
             version = Semver(version.major, version.minor + 1, 0)
-            lineage = List.from(lineage.stdlib :+ snapshot)
+            lineage = (lineage.stdlib :+ snapshot).to(List)
 
           case Grade.Major =>
             if !allowMajor(release.tag)
@@ -119,4 +119,4 @@ object HostContracts:
       results += ((release.tag, bytes))
       previous = atomizations
 
-    List.from(results.toList)
+    results.toList.to(List)

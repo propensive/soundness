@@ -259,7 +259,7 @@ trait Vernacular:
   protected final def conjoin(items: List[Text]): Text = items match
     case Nil        => t""
     case List(item) => item
-    case other      => t"${List.of(other.stdlib.init).join(t", ")} $conjunction ${other.stdlib.last}"
+    case other      => t"${other.stdlib.init.to(List).join(t", ")} $conjunction ${other.stdlib.last}"
 
   protected final def quantity(pair: (Long, TimeUnit)): Text = units(pair(0).abs, pair(1))
   protected final def durations(span: Timespan): List[Text] = Vernacular.components(span).map(quantity)

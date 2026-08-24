@@ -98,7 +98,7 @@ object internal:
     val charEnd = String(bytes, 0, byteEnd, utf8).length
 
     contextual.Interpolation.sourcePosition
-      ( proscenium.List.of(parts), contextual.Interpolation.decodeOrigins[origins],
+      ( parts.to(proscenium.List), contextual.Interpolation.decodeOrigins[origins],
         1, charStart, (charEnd - charStart).max(1) )
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
@@ -272,7 +272,7 @@ object internal:
               '{Unset}
 
           val layersExpr: Expr[proscenium.List[Text]] =
-            '{proscenium.List.of(${Expr.ofList(p.layers.stdlib.map { layer => '{${Expr(layer.s)}.tt} })})}
+            '{(${Expr.ofList(p.layers.stdlib.map { layer => '{${Expr(layer.s)}.tt} })}).to(proscenium.List)}
 
           val signatureExpr: Expr[Optional[Text]] = p.signature match
             case text: Text => '{${Expr(text.s)}.tt: Optional[Text]}
@@ -1005,10 +1005,10 @@ object internal:
                         Tel.Parsable.focusingUnlocated($foci, $keyText):
                           Tel.Parsable.gathered[fieldType]
                             ( $instances.readable(${Expr(index)}).asInstanceOf[Tel.Parsing],
-                              proscenium.List.of
-                                ( $bufferExpr match
-                                    case null   => Nil
-                                    case buffer => buffer.toList ) )
+                              ( $bufferExpr match
+                                  case null   => Nil
+                                  case buffer => buffer.toList )
+                              . to(proscenium.List) )
                       }.asTerm )
 
                 If('{ $repeatables.readable(${Expr(index)}) }.asTerm, gatherFinish, whenUnseen)
@@ -1062,16 +1062,16 @@ object internal:
         val tactic: Tactic[Tel.Error] = $tacticExpr
 
         val keys: Array[String]^{} =
-          Tel.Parsable.wireKeywords(Array.of[String](${Varargs(nameExprs)}*), $renames)
+          Tel.Parsable.wireKeywords(Array[String](${Varargs(nameExprs)}*), $renames)
 
-        lazy val instances: Array[Tel.Field | Null]^{} = Array.of(${Varargs(instanceExprs)}*)
+        lazy val instances: Array[Tel.Field | Null]^{} = Array(${Varargs(instanceExprs)}*)
 
         lazy val repeatables: Array[Boolean]^{} =
           instances.remap { instance => instance != null && Tel.Parsable.repeats(instance) }
 
-        lazy val fallbacks: Array[Any]^{} = Array.of[Any](${Varargs(fallbackExprs)}*)
+        lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs(fallbackExprs)}*)
 
-        lazy val natures: Array[Tel.Nature]^{} = Array.of[Tel.Nature](${Varargs(natureExprs)}*)
+        lazy val natures: Array[Tel.Nature]^{} = Array[Tel.Nature](${Varargs(natureExprs)}*)
 
         // The §19.2 profile table: one per generated instance, built on
         // first use so recursive self-references stay deferred, like the

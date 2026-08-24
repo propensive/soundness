@@ -260,10 +260,10 @@ object Dictionary:
       // of their path that is itself a path from root. `dictLink` skips
       // fail-chain ancestors that have no value. The four scratch buffers are
       // fresh `Array`s, so the checker tracks their separation directly.
-      val depthArr    = Array[Int](nodeCount)
-      val failArr     = Array[Int](nodeCount)
-      val dictLinkArr = Array[Int](nodeCount)
-      val queue       = Array[Int](nodeCount)
+      val depthArr    = Array.allocate[Int](nodeCount)
+      val failArr     = Array.allocate[Int](nodeCount)
+      val dictLinkArr = Array.allocate[Int](nodeCount)
+      val queue       = Array.allocate[Int](nodeCount)
       var qHead = 0
       var qTail = 0
       var c = 0

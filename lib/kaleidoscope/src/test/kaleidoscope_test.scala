@@ -227,49 +227,49 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         test(m"Simple capture"):
           Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)")), t"foobar")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
-              proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
+              g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(t"bar")))
 
         test(m"Two captures"):
           Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)", t"(baz)")), t"foobarbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
-              proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
+              g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(t"bar", t"baz")))
 
         test(m"Two captures, one repeating"):
           Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)", t"(baz)*")), t"foobarbazbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
-              proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
+              g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(t"bar", List(t"baz", t"baz"))))
 
         test(m"Two captures, both repeating"):
           Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar){4}", t"(baz)*")), t"foobarbarbarbarbazbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
-              proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
+              g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(List(t"bar", t"bar", t"bar", t"bar"), List(t"baz", t"baz"))))
 
         test(m"Two captures, one optional and absent, one repeating"):
           Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)+", t"(baz)?")), t"foobarbar")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
-              proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
+              g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(List(t"bar", t"bar"), Unset)))
 
         test(m"Two captures, one optional and present, one repeating"):
           Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(b.r)+", t"(baz)?")), t"fooberbirbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
-              proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
+              g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(List(t"ber", t"bir"), t"baz")))
 
         test(m"Nested captures, one optional and present, one repeating"):
           Jur.engine.matchGroups(Regex.parse(List(t"f(oo", t"(b.r)+", t"(baz)?)")), t"fooberbirbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
-              proscenium.List.of(g.readable.toList) } // explicit: inference boxes the element captures
+              g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(List(t"ber", t"bir"), t"baz")))
 
@@ -727,7 +727,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         def strip(result: Option[Array[List[Text | Char] | Optional[Text | Char]]^{}])
         :   Option[List[Any]] =
           result.map: (groups: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
-            proscenium.List.of(groups.readable.toList)
+            proscenium.List.from(groups.readable.toList)
 
         patterns.each: pattern =>
           val regex = Regex.parse(List(pattern))

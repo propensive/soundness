@@ -67,14 +67,14 @@ object Jar:
 
         val rejoined = main.foldLeft(List.empty[String]): (acc, line) =>
           if line.startsWith(" ") && !acc.nil
-          then (acc.stdlib.head + line.drop(1)) :: List.of(acc.stdlib.tail)
+          then (acc.stdlib.head + line.drop(1)) :: acc.stdlib.tail.to(List)
           else line :: acc
 
         rejoined.reverse.bind: line =>
           line.indexOf(": ") match
             case -1    => Nil
             case index => List((line.take(index).tt, line.drop(index + 2).tt))
-        . pipe(l => Map.from(l.stdlib))
+        . pipe(l => l.stdlib.to(Map))
 
       . or(Map())
 

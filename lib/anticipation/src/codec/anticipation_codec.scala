@@ -35,7 +35,7 @@ package anticipation
 import prepositional.*
 
 object Data:
-  def apply(xs: Byte*): Data = Array.of(xs*)
+  def apply(xs: Byte*): Data = Array(xs*)
 
   def build(count: Int)(lambda: scala.Array[Byte]^ => Unit): Data =
     val array: scala.Array[Byte]^ = new scala.Array[Byte](count)

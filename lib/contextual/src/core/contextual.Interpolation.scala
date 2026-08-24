@@ -93,7 +93,7 @@ object Interpolation:
       case Repeated(elems, _)          => elems.foldLeft(acc): (a, e) => collectLiterals(e, a)
       case _                           => acc
 
-    val collected = List.of(collectLiterals(context.asTerm, Nil).stdlib.reverse)
+    val collected = collectLiterals(context.asTerm, Nil).stdlib.reverse.to(List)
     if collected.stdlib.length == count then collected else List.fill(count)((0, 0))
 
   // Decode a type-level `Transport` tuple of string-literal types back into the parts. The
@@ -110,7 +110,7 @@ object Interpolation:
       case _ =>
         acc
 
-    List.of(recur[parts](scala.Nil))
+    recur[parts](scala.Nil).to(List)
 
   // Decode a type-level `Origins` tuple of (start, end) constant-integer pairs, as encoded by
   // `Interpolation.apply`. Like `Transport`, the tuple holds the origins in reverse.
@@ -133,7 +133,7 @@ object Interpolation:
         case _ =>
           acc
 
-    List.of(recur[origins](scala.Nil))
+    recur[origins](scala.Nil).to(List)
 
   // Translate a parser character offset into an "assembled" input — the literal parts joined
   // with `substitutionWidth` characters standing in for each substitution — to a source-file

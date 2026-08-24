@@ -45,7 +45,7 @@ case class Polyglot[+value, language](values: Map[Language, value]):
         (values.stdlib ++ polyglot.values.stdlib)(locale.language)
 
       case _ =>
-        Polyglot[value2, language & language2](Map.of(values.stdlib ++ polyglot.values.stdlib))
+        Polyglot[value2, language & language2]((values.stdlib ++ polyglot.values.stdlib).to(Map))
 
 
   def apply()(using locale: Locale[language]): value = values.stdlib(locale.language)

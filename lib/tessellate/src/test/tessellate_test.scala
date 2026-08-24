@@ -43,7 +43,7 @@ object Tests extends Suite(m"Tessellate tests"):
   def run(): Unit =
     suite(m"Flex.solve"):
       def widths(tracks: Flex*)(available: Int, gap: Int = 0): SList[Optional[Int]] =
-        Flex.solve(Sequence.of(tracks.toVector), available, gap).stdlib.to(SList)
+        Flex.solve(Sequence.from(tracks.toVector), available, gap).stdlib.to(SList)
 
       test(m"equal weights split space equally"):
         widths(Flex(Metrics(0)), Flex(Metrics(0)), Flex(Metrics(0)))(9)

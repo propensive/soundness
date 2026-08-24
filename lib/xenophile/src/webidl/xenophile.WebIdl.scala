@@ -234,7 +234,7 @@ object WebIdl:
         definitions += definition
         tokens = rest
 
-      List.from(definitions.toList)
+      definitions.toList.to(List)
 
     private def fail(detail: Text, tokens: SList[String]): Nothing raises Error =
       val near = Text(tokens.take(5).mkString(" "))
@@ -316,7 +316,7 @@ object WebIdl:
       tokens match
         case "[" :: rest =>
           val (scopes, more) = group(rest, 0, SList())
-          (List.from(scopes), more)
+          (scopes.to(List), more)
 
         case _ => (List(), tokens)
 
@@ -369,7 +369,7 @@ object WebIdl:
 
       rest match
         case "or" :: more => union(more, member :: acc)
-        case ")" :: more  => (Foreign.Type.Union(List.from((member :: acc).reverse)), more)
+        case ")" :: more  => (Foreign.Type.Union(((member :: acc).reverse).to(List)), more)
         case _            => fail(t"a union member must be followed by `or` or `)`", rest)
 
     private def typeArguments(tokens: SList[String], acc: SList[Foreign.Type])
@@ -379,7 +379,7 @@ object WebIdl:
 
       rest match
         case "," :: more => typeArguments(more, arg :: acc)
-        case ">" :: more => (List.from((arg :: acc).reverse), more)
+        case ">" :: more => (((arg :: acc).reverse).to(List), more)
         case _           => fail(t"a type argument must be followed by `,` or `>`", rest)
 
     // --- default values -------------------------------------------------------------------------
@@ -402,7 +402,7 @@ object WebIdl:
       :   (List[Argument], SList[String]) raises Error =
 
         tokens match
-          case ")" :: rest => (List.from(acc.reverse), rest)
+          case ")" :: rest => (acc.reverse.to(List), rest)
 
           case _ =>
             val (_, afterAttrs) = attributes(tokens)
@@ -424,7 +424,7 @@ object WebIdl:
 
                 afterDefault match
                   case "," :: more => recur(more, argument :: acc)
-                  case ")" :: more => (List.from((argument :: acc).reverse), more)
+                  case ")" :: more => (((argument :: acc).reverse).to(List), more)
                   case _           => fail(t"an argument must be followed by `,` or `)`", afterDefault)
 
               case SNil => fail(t"an argument name was expected", afterVariadic)
@@ -557,7 +557,7 @@ object WebIdl:
 
         tokens match
           case "}" :: ";" :: rest =>
-            (List.from(members.reverse), List.from(intrinsics.reverse), rest)
+            (members.reverse.to(List), intrinsics.reverse.to(List), rest)
 
           case "}" :: rest => fail(t"a definition must end `};`", rest)
           case SNil     => fail(t"a definition body is unterminated", tokens)
@@ -600,7 +600,7 @@ object WebIdl:
         :   (List[Field], SList[String]) raises Error =
 
           tokens match
-            case "}" :: ";" :: rest => (List.from(acc.reverse), rest)
+            case "}" :: ";" :: rest => (acc.reverse.to(List), rest)
             case SNil            => fail(t"a dictionary body is unterminated", tokens)
 
             case _ =>
@@ -661,7 +661,7 @@ object WebIdl:
           :   (List[Text], SList[String]) raises Error =
 
             tokens match
-              case "}" :: ";" :: rest => (List.from(acc.reverse), rest)
+              case "}" :: ";" :: rest => (acc.reverse.to(List), rest)
               case "," :: rest        => values(rest, acc)
 
               case value :: rest if value.startsWith("\"") =>

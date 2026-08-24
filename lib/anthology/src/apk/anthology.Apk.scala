@@ -120,12 +120,13 @@ object Apk extends Format.Application:
     :   Axml.Element =
 
       // Each requested runtime permission is a `<uses-permission android:name="…"/>` element.
-      val permissionElements: List[Axml.Element] = List.of:
+      val permissionElements: List[Axml.Element] =
         permissions.stdlib.map: permission =>
           Axml.Element
             ( t"uses-permission",
               List(android(t"name", nameAttr, Axml.Value.Str(permission))),
               Nil )
+        . to(List)
 
       val launcher =
         Axml.Element
@@ -188,7 +189,7 @@ object Apk extends Format.Application:
     private val magic:             Text = t"APK Sig Block 42"
 
     private def u32(value: Long): Data =
-      Array.of((value & 0xff).toByte, ((value >> 8) & 0xff).toByte, ((value >> 16) & 0xff).toByte,
+      Array((value & 0xff).toByte, ((value >> 8) & 0xff).toByte, ((value >> 16) & 0xff).toByte,
           ((value >> 24) & 0xff).toByte)
 
     private def u64(value: Long): Data =
@@ -197,7 +198,7 @@ object Apk extends Format.Application:
 
     private def concat(parts: Data*): Data =
       val total = parts.map(_.length).sum
-      val buffer = Array[Byte](total)
+      val buffer = Array.allocate[Byte](total)
       var offset = 0
 
       parts.foreach: part =>
@@ -231,13 +232,13 @@ object Apk extends Format.Application:
       while offset < until do
         val end = math.min(offset + chunkSize, until)
         val length = end - offset
-        val chunk = Array[Byte](length)
+        val chunk = Array.allocate[Byte](length)
         chunk.copyFrom(data, offset, 0, length)
-        val prefixed = concat(Array.of(0xa5.toByte), u32(length.toLong), Array.freeze(chunk))
+        val prefixed = concat(Array(0xa5.toByte), u32(length.toLong), Array.freeze(chunk))
         builder += sha256(prefixed)
         offset = end
 
-      List.of(builder.result())
+      builder.result().to(List)
 
     // Signs the finished, unsigned APK bytes with the RSA key and certificate loaded from the
     // keystore, returning the signed APK.
@@ -267,7 +268,7 @@ object Apk extends Format.Application:
           chunkDigests(unsigned, eocdOffset, unsigned.length)
 
       val count = digests.size
-      val topLevel = sha256(concat(Array.of(0x5a.toByte), u32(count.toLong), concat(digests*)))
+      val topLevel = sha256(concat(Array(0x5a.toByte), u32(count.toLong), concat(digests*)))
 
       // signed data: digests, certificates, additional attributes (none).
       val digestRecord = concat(u32(signAlgorithm), u32(topLevel.length.toLong), topLevel)
@@ -308,7 +309,7 @@ object Apk extends Format.Application:
 
       // The EOCD is copied out so its central-directory offset can be patched, so the buffer is
       // built exclusively here rather than laundered out of a frozen `slice`.
-      val eocd = Array[Byte](unsigned.length - eocdOffset)
+      val eocd = Array.allocate[Byte](unsigned.length - eocdOffset)
       eocd.copyFrom(unsigned, eocdOffset, 0, eocd.length)
       for i <- 0 until 4 do eocd(16 + i) = patch.readable(i)
 
@@ -316,6 +317,6 @@ object Apk extends Format.Application:
 
     private def slice(data: Data, from: Int, until: Int): Data =
       val length = until - from
-      val buffer = Array[Byte](length)
+      val buffer = Array.allocate[Byte](length)
       buffer.copyFrom(data, from, 0, length)
       Array.freeze(buffer)

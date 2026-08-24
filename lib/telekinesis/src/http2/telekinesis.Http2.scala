@@ -244,7 +244,7 @@ object Http2:
         builder += Setting(id, uint32(payload, i + 2))
         i += 6
 
-      List.of(builder.result())
+      builder.result().to(List)
 
     private def frameType(frame: Frame): FrameType = frame match
       case _: Frame.Headers      => FrameType.Headers

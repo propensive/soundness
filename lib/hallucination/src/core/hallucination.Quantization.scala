@@ -89,7 +89,7 @@ private[hallucination] object Quantization:
             shift = spreadShift
             candidate = index
 
-        if candidate == -1 then boxes += Array.of[Int]()
+        if candidate == -1 then boxes += Array[Int]()
         else
           val sorted = boxes(candidate).asInstanceOf[scala.Array[Int]].sortBy(channel(_, shift))
 

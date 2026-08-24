@@ -44,7 +44,7 @@ import scala.collection.immutable as sci
 object Sequence:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
   // lambdas crashes the capture checker's boxer (boxDeeply assertion).
-  def of[element](vector: sci.Vector[element]): Sequence[element] =
+  private[proscenium] def of[element](vector: sci.Vector[element]): Sequence[element] =
     vector.asInstanceOf[Sequence[element]]
 
   def apply[element](elements: element*): Sequence[element] = of(sci.Vector(elements*))

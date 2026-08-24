@@ -47,8 +47,8 @@ object Keyed:
       type Keys = Set[key]
       type Values = List[value]
 
-      def keys(map: Self): Keys = Set.of(map.stdlib.keySet)
-      def values(map: Self): Values = List.from(map.stdlib.values.iterator)
+      def keys(map: Self): Keys = map.stdlib.keySet.to(Set)
+      def values(map: Self): Values = map.stdlib.values.iterator.to(List)
 
   given ledger: [key, value]
   =>  (Ledger[key, value] is Keyed { type Keys = List[key]; type Values = List[value] }) =
@@ -57,8 +57,8 @@ object Keyed:
       type Keys = List[key]
       type Values = List[value]
 
-      def keys(ledger: Self): Keys = List.from(ledger.stdlib.keys.iterator)
-      def values(ledger: Self): Values = List.from(ledger.stdlib.values.iterator)
+      def keys(ledger: Self): Keys = ledger.stdlib.keys.iterator.to(List)
+      def values(ledger: Self): Values = ledger.stdlib.values.iterator.to(List)
 
 trait Keyed extends Typeclass.Pure:
   type Keys

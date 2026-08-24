@@ -77,7 +77,7 @@ object Ram:
     // Public: called from the grant-gated transparent-inline operations below, where a
     // `private` member's inline-accessor bridge would fail capture checking.
     def readFrom(offset: Long, length: Int): Data =
-      val array = Array[Byte](length)
+      val array = Array.allocate[Byte](length)
       buffer.get(offset.toInt, array.raw)
       Array.freeze(array)
 

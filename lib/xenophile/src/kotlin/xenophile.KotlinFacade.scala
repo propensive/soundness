@@ -59,7 +59,7 @@ object KotlinFacade:
   private def transport(using quotes: Quotes)(self: Expr[Facade]): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
-    Map.of(Xenophile.refinements(self.asTerm.tpe.widen))(t"Transport").or:
+    Xenophile.refinements(self.asTerm.tpe.widen).to(Map)(t"Transport").or:
       halt(m"xenophile: the facade does not record its underlying type")
 
   private def classNameOf(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Text =
@@ -246,7 +246,7 @@ object KotlinFacade:
     val stringy = TypeRepr.of[String] <:< target || target =:= TypeRepr.of[CharSequence]
 
     val transported =
-      Map.of(Xenophile.refinements(argument.tpe.widen))(t"Transport").lay(false)(_ <:< target)
+      Xenophile.refinements(argument.tpe.widen).to(Map)(t"Transport").lay(false)(_ <:< target)
 
     val direct = argument.tpe.widen <:< target || (textual && stringy) || transported
 
@@ -924,7 +924,7 @@ object KotlinFacade:
       defaulted match
         case member :: _ =>
           val provided = args.zipWithIndex.map(_.swap).toMap
-          return bridgeCall(self, repr, className, member, Map.of(provided), prototype)
+          return bridgeCall(self, repr, className, member, provided.to(Map), prototype)
 
         case Nil =>
           // `facade.property(x)` arrives as one Dynamic application; when the member is a
@@ -1309,7 +1309,7 @@ object KotlinFacade:
       case member :: _ => member
       case Nil         => halt(m"xenophile: $className.$field takes no named arguments")
 
-    val positions: Map[Text, Int] = Map.of(member.parameters.stdlib.zipWithIndex.toMap)
+    val positions: Map[Text, Int] = member.parameters.stdlib.zipWithIndex.toMap.to(Map)
 
     val provided: Map[Int, Term] =
       def assign(pairs: List[(Text, Term)], next: Int, acc: Map[Int, Term]): Map[Int, Term] =
@@ -1335,7 +1335,7 @@ object KotlinFacade:
     // All-or-nothing: `entire` is present exactly when every position was provided.
     (0 until member.arity).map(provided(_)).entire.lay:
       val absent =
-        proscenium.List.of((0 until member.arity).filter(!provided.stdlib.contains(_)).toList)
+        ((0 until member.arity).filter(!provided.stdlib.contains(_)).toList).to(proscenium.List)
 
       val undefaulted = absent.filter: index =>
         !member.defaults.stdlib.lift(index).getOrElse(false)

@@ -79,9 +79,9 @@ object Markup:
     kind.s match
       case "type" =>
         val placeholders =
-          List.of(attrs.filter(_(0) == t"p").stdlib.flatMap { (_, value) =>
+          (attrs.filter(_(0) == t"p").stdlib.flatMap { (_, value) =>
             Placeholder.decode(value).option
-          })
+          }).to(List)
 
         Typed(attr(t"tasty"), placeholders, rendition, children)
 

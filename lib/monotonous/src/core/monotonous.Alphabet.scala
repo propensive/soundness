@@ -319,7 +319,7 @@ case class Alphabet[encoding <: Serialization]
     else abort(Serialization.Error(position, char))
 
   lazy val inverse: Map[Char, Int] =
-    Map.of(tolerance.stdlib ++ chars.chars.readable.zipWithIndex.toMap)
+    (tolerance.stdlib ++ chars.chars.readable.zipWithIndex.toMap).to(Map)
 
   // Dense decode table, indexed directly by character code (-1 = invalid), so the
   // per-character hot path avoids boxed `Map` lookups.

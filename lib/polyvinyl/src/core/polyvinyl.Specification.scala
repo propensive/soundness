@@ -86,7 +86,7 @@ trait Specification extends Original:
                       ' {
                           data =>
                             $accessor.transform
-                              ( $target.access(${Expr(name)}, data), List.of(${Expr(params.to(List).stdlib)}) )
+                              ( $target.access(${Expr(name)}, data), List.from(${Expr(params.to(List).stdlib)}) )
                         }
 
                     val caseDefs2 =
@@ -112,7 +112,7 @@ trait Specification extends Original:
 
                   val nested = '{$target.access(${Expr(name)}, $value)}
                   val recordTypeRepr = TypeRepr.of[Record]
-                  val (nestedType, nestedCaseDefs) = refine(nested, List.of(map.stdlib.toList), recordTypeRepr)
+                  val (nestedType, nestedCaseDefs) = refine(nested, map.stdlib.toList.to(List), recordTypeRepr)
 
                   val matchFn: Expr[Text -> Origin -> Any] =
                     ' {
@@ -138,7 +138,7 @@ trait Specification extends Original:
                           caseDef :: caseDefs )
 
 
-    val (refined, caseDefs) = refine(value, List.of(fields.stdlib.toList), TypeRepr.of[Record])
+    val (refined, caseDefs) = refine(value, fields.stdlib.toList.to(List), TypeRepr.of[Record])
 
     val matchFn: Expr[Text -> Origin -> Any] =
       '{(name: Text) => ${Match('name.asTerm, caseDefs.stdlib).asExprOf[Origin => Any]}}

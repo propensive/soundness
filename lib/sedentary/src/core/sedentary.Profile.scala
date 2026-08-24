@@ -168,7 +168,8 @@ extends Rig:
             . sortBy(-_(1))
             . take(${Expr(frames2)})
 
-          List.of:
+
+          List.from:
             total.toString.tt :: sorted.map: (key, count) =>
               (count.toString + "\t" + key).tt
         }

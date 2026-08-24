@@ -409,4 +409,4 @@ object KotlinMetadataAtomizer:
             // none: claimed, but contributing no atoms.
             case _ => ()
 
-    List.from(atoms.toList)
+    atoms.toList.to(List)

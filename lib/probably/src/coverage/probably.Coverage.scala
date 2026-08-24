@@ -50,7 +50,7 @@ object Coverage:
     val hits = measurements(currentFile)
     val dirFile = File(dir.s)
 
-    if !dirFile.exists() then Coverage(dir, Array.of(), Set(), Set())
+    if !dirFile.exists() then Coverage(dir, Array(), Set(), Set())
     else
       // `listFiles` hands back a mutable array, which captures the root capability.
       // Wrapping it in an `Option` instantiates that type variable with a capturing
@@ -62,8 +62,8 @@ object Coverage:
 
       val measurementFiles = otherFiles.filter(_.getName.nn.startsWith("scoverage.measurements"))
 
-      val allHits: Set[Int] = Set.from(measurementFiles.iterator.flatMap(measurements(_).stdlib))
-      val oldHits: Set[Int] = Set.of(allHits.stdlib -- hits.stdlib)
+      val allHits: Set[Int] = (measurementFiles.iterator.flatMap(measurements(_).stdlib)).to(Set)
+      val oldHits: Set[Int] = (allHits.stdlib -- hits.stdlib).to(Set)
 
       Coverage(dir, spec(dir), oldHits, hits)
 
@@ -82,14 +82,14 @@ object Coverage:
             As.Boolean(branch) #:: _ #:: As.Boolean(ignored) #:: tail ) =>
 
           val juncture = Juncture(id, path, className, methodName, start, end, lineNo + 1,
-              symbolName, treeName, branch, ignored, List.from(tail.stdlib.takeWhile(!_.starts(t"\f"))))
+              symbolName, treeName, branch, ignored, (tail.stdlib.takeWhile(!_.starts(t"\f"))).to(List))
 
-          recur(Chain.of(tail.stdlib.dropWhile(!_.starts(t"\f")).tail), juncture :: junctures)
+          recur((tail.stdlib.dropWhile(!_.starts(t"\f")).tail).to(Chain), juncture :: junctures)
 
         case _ =>
           junctures.reverse
 
-    Array.from(recur(Chain.of(lines.stdlib.dropWhile(_.starts(t"#")))).stdlib)
+    Array.from(recur((lines.stdlib.dropWhile(_.starts(t"#"))).to(Chain)).stdlib)
 
   private def measurements(file: File): Set[Int] =
     val ids = BitSet()
@@ -98,7 +98,7 @@ object Coverage:
     else Source.fromFile(file).getLines().to(Chain).each: id =>
       ids(id.toInt) = true
 
-    Set.from(ids)
+    ids.to(Set)
 
 case class Coverage(path: Text, spec: Array[Juncture]^{}, oldHits: Set[Int], hits: Set[Int]):
   lazy val structure: Map[Text, List[Surface]] =

@@ -113,7 +113,7 @@ object UsedSets:
 
         case _ => ()
 
-    List.from(found.toList.map(_.tt))
+    found.toList.map(_.tt).to(List)
 
   // Splits reference keys against a contract's atom listing: the value hashes of the matched
   // keys — the used-set — and the keys the listing does not carry.
@@ -129,7 +129,7 @@ object UsedSets:
         case scala.Some(hash) => matched += hash
         case _                => unmatched += key
 
-    (List.from(matched.toList), List.from(unmatched.toList))
+    (matched.toList.to(List), unmatched.toList.to(List))
 
   // Partitions reference keys across a set of contract listings — one per platform module
   // (hosts.md §3, "Granularity") — into the used-set each contract carries, plus the remainder
@@ -146,7 +146,7 @@ object UsedSets:
       (module, matched)
 
     val used = parts.filter { part => !part(1).stdlib.isEmpty }
-    (List.from(used), remaining)
+    (used.to(List), remaining)
 
   // The Uses metadata blob for one module's use of one contract (§13.4, §14): the resolved
   // used-set, encoded for a `requires` or `dependency` record's `uses` field, with the

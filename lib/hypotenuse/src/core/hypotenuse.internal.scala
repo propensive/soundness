@@ -869,7 +869,7 @@ object internal:
       var index: Int = 0
       var n: Long = bitmap
 
-      val chars = Array[Char](8)
+      val chars = Array.allocate[Char](8)
 
       while index < 8 do
         chars(index) = if n < 0 then '1' else '0'
@@ -950,7 +950,7 @@ object internal:
     inline def zeros: S32 = 16 - JInt.bitCount(bitmap.toInt)
 
     @targetName("bytesB16")
-    def bytes: Array[Byte]^{} = Array.of[Byte]((bitmap >> 8).toByte, bitmap.toByte)
+    def bytes: Array[Byte]^{} = Array[Byte]((bitmap >> 8).toByte, bitmap.toByte)
 
     @targetName("hexB16")
     inline def hex: Text = String.format("%04x", bitmap).nn.tt
@@ -963,7 +963,7 @@ object internal:
       var index: Int = 0
       var n: Long = bitmap
 
-      val chars = Array[Char](16)
+      val chars = Array.allocate[Char](16)
 
       while index < 16 do
         chars(index) = if n < 0 then '1' else '0'
@@ -1045,7 +1045,7 @@ object internal:
 
     @targetName("bytesB32")
     def bytes: Array[Byte]^{} =
-      Array.of[Byte]
+      Array[Byte]
         ( (bitmap >> 24).toByte, (bitmap >> 16).toByte, (bitmap >> 8).toByte, bitmap.toByte )
 
     @targetName("hexB32")
@@ -1059,7 +1059,7 @@ object internal:
       var index: Int = 0
       var n: Long = bitmap
 
-      val chars = Array[Char](32)
+      val chars = Array.allocate[Char](32)
 
       while index < 32 do
         chars(index) = if n < 0 then '1' else '0'
@@ -1141,7 +1141,7 @@ object internal:
 
     @targetName("bytesB64")
     def bytes: Array[Byte]^{} =
-      Array.of[Byte]
+      Array[Byte]
         ( (bitmap >> (8*7)).toByte,
           (bitmap >> (8*6)).toByte,
           (bitmap >> (8*5)).toByte,
@@ -1162,7 +1162,7 @@ object internal:
       var index: Int = 0
       var n: Long = bitmap
 
-      val chars = Array[Char](64)
+      val chars = Array.allocate[Char](64)
 
       while index < 64 do
         chars(index) = if n < 0 then '1' else '0'

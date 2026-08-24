@@ -86,7 +86,7 @@ object Tests extends Suite(m"Gastronomy tests"):
 
     test(m"Encode to Binary"):
       import alphabets.binaryStandard
-      Array.of[Byte](1, 2, 3, 4).serialize[Binary]
+      Array[Byte](1, 2, 3, 4).serialize[Binary]
     . assert(_ == t"00000001000000100000001100000100")
 
     test(m"Long digest covers the low nibble"):
@@ -99,7 +99,7 @@ object Tests extends Suite(m"Gastronomy tests"):
     . assert(identity(_))
 
     test(m"Blake3 via Hash typeclass, empty input"):
-      Array.of[Byte]().digest[Blake3].serialize[Hex]
+      Array[Byte]().digest[Blake3].serialize[Hex]
     . assert: digest =>
         digest == t"AF1349B9F5F9A1A6A0404DEA36DCC9499BCB25C9ADC112B7CC9A93CAE41F3262"
 
@@ -197,7 +197,7 @@ object Tests extends Suite(m"Gastronomy tests"):
       // Feed the windowed `append` deliberately misaligned slices of a buffer with a
       // nonzero base offset, so block-boundary carry and offset arithmetic are exercised.
       def windowed(digestion: Digestion^): Text =
-        val buffer = Array[Byte](payload.length + 13)
+        val buffer = Array.allocate[Byte](payload.length + 13)
         buffer.copyFrom(payload, 0, 13, payload.length)
         val array = Array.freeze(buffer)
         var offset = 13

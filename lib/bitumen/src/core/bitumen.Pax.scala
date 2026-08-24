@@ -98,7 +98,7 @@ object Pax:
             builder += ((content.substring(0, eqIdx).nn.tt, content.substring(eqIdx + 1).nn.tt))
             pos = pos + length
 
-    Map.of(builder.result())
+    builder.result().to(Map)
 
   private def computeLength(payloadLen: Int): Int =
     var n = 1

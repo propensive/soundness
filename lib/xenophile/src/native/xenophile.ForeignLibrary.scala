@@ -105,7 +105,7 @@ object ForeignLibrary:
 
   // Reads `length` bytes back out of a native segment.
   def bytes(segment: MemorySegment, length: Int): Data =
-    val array = Array[Byte](length)
+    val array = Array.allocate[Byte](length)
     MemorySegment.copy(segment, ValueLayout.JAVA_BYTE, 0L, array.raw, 0, length)
     Array.freeze(array)
 

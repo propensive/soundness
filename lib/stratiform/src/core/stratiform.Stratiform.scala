@@ -101,7 +101,7 @@ object Stratiform:
   :   Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
 
     import quotes.reflect.*
-    val members = Map.of(refinements(self.asTerm.tpe.widen))
+    val members = refinements(self.asTerm.tpe.widen).to(Map)
 
     members(t"Topic").let: position => (position, members(t"Origin").or(position))
 

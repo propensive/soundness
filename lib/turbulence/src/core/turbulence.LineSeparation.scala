@@ -301,7 +301,7 @@ object LineSeparation:
 
             while count < targetSpace && !tail.nil do
               slots(targetOffset + count) = tail.stdlib.head.asInstanceOf[AnyRef]
-              tail = List.of(tail.stdlib.tail)
+              tail = tail.stdlib.tail.to(List)
               count += 1
 
             count
@@ -533,7 +533,7 @@ object LineSeparation:
 
         while count < targetSpace && !tail.nil do
           slots(targetOffset + count) = tail.stdlib.head.asInstanceOf[AnyRef]
-          tail = List.of(tail.stdlib.tail)
+          tail = tail.stdlib.tail.to(List)
           count += 1
 
         count

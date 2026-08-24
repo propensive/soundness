@@ -608,7 +608,7 @@ object Git:
         val push  = rows.collectFirst { case (_, url, t"push")  => url }
         Remote(name, fetch, push.getOrElse(Unset))
 
-      List.of(remotes)
+      remotes.to(List)
 
 
     def addRemote(name: Text, url: Text)

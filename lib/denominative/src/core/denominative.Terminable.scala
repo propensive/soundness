@@ -75,7 +75,7 @@ trait Terminable extends Typeclass.Pure, Operable:
 object Truncable:
   // O(1) amortised: `Vector` drops from either end cheaply.
   given sequence: [element, seq <: Sequence[element]] => seq is Truncable to Sequence[element] =
-    value => Sequence.of(value.stdlib.init)
+    value => Sequence.from(value.stdlib.init)
 
   given text: [text <: Text] => text is Truncable to Text =
     text => text.s.substring(0, text.s.length - 1).nn.tt
@@ -86,7 +86,7 @@ object Truncable:
   // Dropping the last element copies the whole spine.
   given list: [element, list <: List[element]] => (complexity: Dysasymptotic.LinearSize)
   =>  list is Truncable to List[element] =
-    value => List.of(value.stdlib.init)
+    value => value.stdlib.init.to(List)
 
   // The rebuilt array is fresh, so freezing it is discharged by construction.
   given frozenArray: [element: scala.reflect.ClassTag, array <: (Array[element]^{})]
@@ -96,7 +96,7 @@ object Truncable:
 
   given lazyList: [element, chain <: Chain[element]] => (complexity: Dysasymptotic.UnboundedSize)
   =>  chain is Truncable to Chain[element] =
-    value => Chain.of(value.stdlib.init)
+    value => value.stdlib.init.to(Chain)
 
 trait Truncable extends Typeclass.Pure, Resultant:
   def lead(value: Self): Result

@@ -125,7 +125,7 @@ class ProtobufParser(data: Data):
 
       accumulator.getOrElseUpdate(number, scm.ListBuffer()).addOne(value)
 
-    Map.from(accumulator.view.mapValues(_.to(List)))
+    (accumulator.view.mapValues(_.to(List))).to(Map)
 
   // ── The direct rim ─────────────────────────────────────────────────────
   // Byte-level reads for direct parsing (`Protobuf.Parsable`), bounded by a
@@ -350,4 +350,4 @@ class ProtobufParser(data: Data):
 
       builder += value
 
-    List.of(builder.result())
+    builder.result().to(List)

@@ -105,7 +105,7 @@ object Html extends Tag.Container
         case fragment: Fragment => count += fragment.nodes.length
         case _                  => count += 1
 
-      val buffer = Array[Node](count)
+      val buffer = Array.allocate[Node](count)
 
       var index = 0
 
@@ -172,11 +172,11 @@ object Html extends Tag.Container
       type Operand = Text
 
       def aggregate(input: Chain[Text]): Html of content =
-        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
+        val root = Tag.root(content.reify.stdlib.map(_.tt).to(Set))
         HtmlParser.fromIterator(input.stdlib.iterator, permissive = false).parseHtml(root).of[content]
 
       override def accept(stream: (Stream[Text] over Credit)^): Html of content =
-        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
+        val root = Tag.root(content.reify.stdlib.map(_.tt).to(Set))
         HtmlParser.fromStream(stream, permissive = false).parseHtml(root).of[content]
 
   given strictAggregable2: (dom: Dom, tactic: Tactic[Parse.Error])
@@ -229,14 +229,14 @@ object Html extends Tag.Container
 
       def aggregate(input: Chain[Text]): Html of content =
         given Tactic[Parse.Error] = lenientTactic
-        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
+        val root = Tag.root(content.reify.stdlib.map(_.tt).to(Set))
 
         lenient(Fragment().of[content]):
           HtmlParser.fromIterator(input.stdlib.iterator, permissive = true).parseHtml(root).of[content]
 
       override def accept(stream: (Stream[Text] over Credit)^): Html of content =
         given Tactic[Parse.Error] = lenientTactic
-        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
+        val root = Tag.root(content.reify.stdlib.map(_.tt).to(Set))
 
         lenient(Fragment().of[content]):
           HtmlParser.fromStream(stream, permissive = true).parseHtml(root).of[content]
@@ -646,7 +646,7 @@ object Html extends Tag.Container
 
     // Snapshot the trailing `count` accumulated nodes into a frozen array and release them.
     update def array(count: Int): Array[Node]^{} =
-      val result = Array[Node](count)
+      val result = Array.allocate[Node](count)
       System.arraycopy(nodes, 0.max(index - count), result.raw, 0, count)
       index -= count
       Array.freeze(result)
@@ -949,7 +949,7 @@ object Html extends Tag.Container
       // `read`'s `Token.Open` / `Token.Empty` arms don't have to repeat the
       // lookup against `dom.elements(content)`.
       var openTag: Tag = root
-      var fragment: Array[Node]^{} = Array.of()
+      var fragment: Array[Node]^{} = Array()
       var pendingAtDepth: Int = -1
       var inTableContent: Boolean = false
       var pendingFosterDescend: Boolean = false
@@ -1238,7 +1238,7 @@ object Html extends Tag.Container
 
         if n == 0 then Attributes.empty
         else
-          val arr = Array[String | Null](2*n)
+          val arr = Array.allocate[String | Null](2*n)
           jl.System.arraycopy(state.attrInterleaved, 0, arr.raw, 0, 2*n)
           Attributes.fromInterleaved(Array.freeze(arr))
 
@@ -1534,7 +1534,7 @@ object Html extends Tag.Container
                 current = Element(content, extra, state.array(count), parent.foreign)
 
               inline def empty(): Unit =
-                current = Element(content, extra, Array.of(), parent.foreign)
+                current = Element(content, extra, Array(), parent.foreign)
 
               inline def close(): Unit =
                 current = Element(parent.label, map, state.array(count), parent.foreign)
@@ -1748,19 +1748,19 @@ object Html extends Tag.Container
               val text = textual(begin(), parent.label, false)
 
               if text.nil
-              then Element(parent.label, parent.attributes, Array.of(), parent.foreign)
+              then Element(parent.label, parent.attributes, Array(), parent.foreign)
               else
                 Element(parent.label, parent.attributes,
-                  Array.of(TextNode(text)), parent.foreign)
+                  Array(TextNode(text)), parent.foreign)
 
             case Mode.Rcdata =>
               val text = textual(begin(), parent.label, true)
 
               if text.nil
-              then Element(parent.label, parent.attributes, Array.of(), parent.foreign)
+              then Element(parent.label, parent.attributes, Array(), parent.foreign)
               else
                 Element(parent.label, parent.attributes,
-                  Array.of(TextNode(text)), parent.foreign)
+                  Array(TextNode(text)), parent.foreign)
 
             case Mode.Normal =>
               val text = textual(begin(), Unset, true)

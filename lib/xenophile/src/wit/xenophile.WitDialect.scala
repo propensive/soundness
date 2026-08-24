@@ -108,7 +108,7 @@ object WitDialect extends Dialect:
 
       def signature(fn: Wit.Function, resource: Optional[Text]): Prototype =
         Prototype
-          ( List.from(fn.parameters.stdlib.map { (_, typed) => project(typed) }),
+          ( (fn.parameters.stdlib.map { (_, typed) => project(typed) }).to(List),
             if fn.constructor then Foreign.Type.Named(resource.or(t""))
             else fn.result.let(project(_)).or(Foreign.Type.Named(t"unit")),
             module,
@@ -182,14 +182,14 @@ object WitDialect extends Dialect:
       if applied.constructor == t"option" && arguments.length == 1
       then Foreign.Type.Union(List(arguments.head, Foreign.Type.Named(t"none")))
       else if applied.constructor == t"result" then padded(arguments)
-      else Foreign.Type.Applied(applied.constructor, List.from(arguments))
+      else Foreign.Type.Applied(applied.constructor, arguments.to(List))
 
     case Foreign.Type.Union(members) =>
       Foreign.Type.Union(members.map(project(_)))
 
   private def padded(args: scala.List[Foreign.Type]): Foreign.Type =
     val unit = Foreign.Type.Named(t"_")
-    Foreign.Type.Applied(t"result", List.from((args ++ scala.List(unit, unit)).take(2)))
+    Foreign.Type.Applied(t"result", ((args ++ scala.List(unit, unit)).take(2)).to(List))
 
   // The pseudo-member recording, for a memberless type declaration, the module that defines it.
   private def declaration(name: Text, module: Optional[Text]): Map[Text, Prototype] =

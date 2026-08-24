@@ -159,7 +159,7 @@ object Packager:
               Payload(label, patched, gzip = !label.starts(t"windows"))
 
             val data: Payload = Payload(DataName, appJar.read[Data], gzip = false)
-            write(config.output, Xeq.installer(List.of(stubs.stdlib :+ data)))
+            write(config.output, Xeq.installer((stubs.stdlib :+ data).to(List)))
             config.output
 
           case Packaging.Delivery.Download =>

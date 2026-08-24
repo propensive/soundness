@@ -40,7 +40,7 @@ object NoCache:
     val noStore = Http.Header("cache-control", "no-store")
     val noCache = Http.Header("pragma", "no-cache")
     val expiry = Http.Header("expires", "0")
-    val headers = List.of(noStore :: noCache :: expiry :: response.textHeaders.stdlib)
+    val headers = (noStore :: noCache :: expiry :: response.textHeaders.stdlib).to(List)
 
     response.status(headers, response.body)
 

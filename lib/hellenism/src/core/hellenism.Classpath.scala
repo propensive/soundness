@@ -119,7 +119,7 @@ object Classpath extends Root(t""):
       val provider0 = provider.nn
       if seen.add(provider0.`type`.nn) then result += provider0.get.nn
 
-    Set.from(result)
+    result.to(Set)
 
   // Defined here, rather than inline in `Classpath#classloader`, so the anonymous
   // `URLClassLoader` subclass carries no outer reference to a `Classpath` instance and so

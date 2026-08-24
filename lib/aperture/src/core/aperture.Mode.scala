@@ -52,4 +52,4 @@ class Mode:
 
     new Mode:
       type Grants = Mode.this.Grants & that.Grants
-      override def atoms: Set[Mode] = Set.of(these.stdlib ++ that.atoms.stdlib)
+      override def atoms: Set[Mode] = (these.stdlib ++ that.atoms.stdlib).to(Set)

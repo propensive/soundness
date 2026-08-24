@@ -101,4 +101,4 @@ object internal:
 
         hashes += hex
 
-    List.of(hashes.result())
+    hashes.result().to(List)

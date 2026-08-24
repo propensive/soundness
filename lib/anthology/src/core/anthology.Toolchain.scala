@@ -80,7 +80,7 @@ object Toolchain:
 
     if remaining > 0 then abort(Link.Error(Link.Error.Reason.CyclicToolchain))
 
-    new Toolchain(List.of(all))
+    new Toolchain(all.to(List))
 
   // ToolchainError → Toolchain.Error
   case class Error(tool: Text)(using Diagnostics)

@@ -126,7 +126,7 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
           recur()
 
         case _ =>
-          (List.of(operands.result()), word)
+          (operands.result().to(List), word)
 
       case token =>
         operands += interpret(token)
@@ -188,7 +188,7 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
           true
     do ()
 
-    Cos.Sequence(List.of(elements.result()))
+    Cos.Sequence(elements.result().to(List))
 
   private def dictionary()(using Tactic[Pdf.Error]): Cos =
     val entries = scala.collection.immutable.Map.newBuilder[Text, Cos]
@@ -209,4 +209,4 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
           abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, t"a name key")))
     do ()
 
-    Cos.Dictionary(Map.of(entries.result()))
+    Cos.Dictionary(entries.result().to(Map))

@@ -78,11 +78,11 @@ def evolve[element: ClassTag]
                 case Del(index, _)    => left.readable(index)
                 case Par(index, _, _) => left.readable(index).add(iteration)
 
-            List.of(updates ::: done.stdlib)
+            (updates ::: done.stdlib).to(List)
 
           edits match
             case Nil => atoms match
-              case Nil           => List.of(finish().stdlib.reverse)
+              case Nil           => finish().stdlib.reverse.to(List)
               case atom :: atoms => merge(atoms, Nil, done, atom :: skips, inserts)
 
             case edit :: edits => atoms match
@@ -120,7 +120,7 @@ def evolve[element: ClassTag]
   else
     recur
       ( Sec, versions,
-        Evolution(List.of(versions.stdlib.head.stdlib.map(Atom(_, Set(Prim))))) )
+        Evolution((versions.stdlib.head.stdlib.map(Atom(_, Set(Prim)))).to(List)) )
 
 def diff[element]
   ( leftSeries:  Sequence[element],
@@ -167,28 +167,28 @@ def diff[element]
     then
       backtrack
         ( position - 1, deletes, rows,
-          List.of(Par(position, rightPosition, left(position)).retained :: edits.stdlib) )
+          (Par(position, rightPosition, left(position)).retained :: edits.stdlib).to(List) )
 
     else if deletes < rows.size && (deletes == 0 || ins >= del)
     then
       if position == ins
       then
         backtrack
-          ( position, deletes, List.of(rows.stdlib.tail),
-            List.of(Ins(rightPosition, right(rightPosition)).retained :: edits.stdlib) )
+          ( position, deletes, rows.stdlib.tail.to(List),
+            (Ins(rightPosition, right(rightPosition)).retained :: edits.stdlib).to(List) )
       else
         backtrack
           ( position - 1, deletes, rows,
-          List.of(Par(position, rightPosition, left(position)).retained :: edits.stdlib) )
+          (Par(position, rightPosition, left(position)).retained :: edits.stdlib).to(List) )
     else
       if position == del
       then
         backtrack
-          ( del - 1, deletes - 1, List.of(rows.stdlib.tail),
-            List.of(Del(position, left(position)).retained :: edits.stdlib) )
+          ( del - 1, deletes - 1, rows.stdlib.tail.to(List),
+            (Del(position, left(position)).retained :: edits.stdlib).to(List) )
       else
         backtrack
           ( position - 1, deletes, rows,
-          List.of(Par(position, rightPosition, left(position)).retained :: edits.stdlib) )
+          (Par(position, rightPosition, left(position)).retained :: edits.stdlib).to(List) )
 
   trace(0, 0, Nil, Nil)

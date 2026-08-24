@@ -101,7 +101,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
     buffer.length - pos >= n
 
   private update def slice(n: Int): Bytes =
-    val out = Array[Byte](n)
+    val out = Array.allocate[Byte](n)
     System.arraycopy(buffer, pos, out.raw, 0, n)
     pos += n
     Array.freeze(out)

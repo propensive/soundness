@@ -137,7 +137,7 @@ object Revision:
   def construct(keyword: Text, members: List[Mutation.Member]): Tel.Compound =
     Mutation.construct(keyword, members)
 
-  private def single(op: Mutation.Op): Revision = new Revision(Array.of(op))
+  private def single(op: Mutation.Op): Revision = new Revision(Array(op))
 
 
 case class Revision private[stratiform] (ops: Array[Mutation.Op]^{}):

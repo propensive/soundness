@@ -45,7 +45,7 @@ import fulminate.*
 
 object Feed:
   def list: List[Feed] =
-    List.of:
+
       jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
         val info = info0.nn
         val mixer = jss.AudioSystem.getMixer(info).nn
@@ -56,6 +56,7 @@ object Feed:
 
         if canRecord then scala.collection.immutable.List(Feed(info))
         else scala.collection.immutable.Nil
+      . to(List)
 
   // FeedError → Feed.Error
   object Error:
@@ -80,7 +81,7 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
   def configurations: List[Configuration] =
     val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
 
-    List.of:
+
      mixer.getTargetLineInfo.nn.iterator.toList.flatMap:
       case dli: jss.DataLine.Info if dli.getLineClass == classOf[jss.TargetDataLine] =>
         dli.getFormats.nn.iterator.toList.map: f0 =>
@@ -96,6 +97,7 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
           Configuration(f.getChannels, rate, f.getSampleSizeInBits, encoding, f.isBigEndian)
 
       case _ => scala.collection.immutable.Nil
+     . to(List)
 
   def supports[layout: ChannelLayout as cl](rate: Quantity[Seconds[-1]], bits: Int): Boolean =
     val sampleRate = rate.value.toFloat

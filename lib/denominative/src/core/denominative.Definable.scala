@@ -51,7 +51,7 @@ object Definable:
 
     def define(sequence: Self, index: Ordinal, value: element): Self =
       if index.n0 >= 0 && index.n0 < sequence.stdlib.length
-      then Sequence.of(sequence.stdlib.updated(index.n0, value))
+      then Sequence.from(sequence.stdlib.updated(index.n0, value))
       else sequence
 
   // The rebuilt array is fresh, so freezing it is discharged by construction; the `ClassTag`
@@ -87,7 +87,7 @@ object Definable:
 
     def define(list: Self, index: Ordinal, value: element): Self =
       if index.n0 >= 0 && index.n0 < list.stdlib.length
-      then List.of(list.stdlib.updated(index.n0, value))
+      then list.stdlib.updated(index.n0, value).to(List)
       else list
 
   given indexedSeq: [element] => IndexedSeq[element] is Definable:
@@ -105,7 +105,7 @@ object Definable:
     type Result = value
 
     def define(map: Self, index: key, value: value): Self =
-      Map.of(map.stdlib.updated(index, value))
+      map.stdlib.updated(index, value).to(Map)
 
   given ledger: [key, value] => Ledger[key, value] is Definable:
     type Self = Ledger[key, value]
@@ -113,7 +113,7 @@ object Definable:
     type Result = value
 
     def define(ledger: Self, index: key, value: value): Self =
-      Ledger.of(ledger.stdlib.updated(index, value))
+      ledger.stdlib.updated(index, value).to(Ledger)
 
 trait Definable extends Typeclass.Pure, Operable, Resultant:
   def define(value: Self, index: Operand, result: Result): Self
@@ -128,14 +128,14 @@ object Omissible:
       type Self = Map[key, value]
       type Operand = key
 
-      def omit(map: Self, index: key): Self = Map.of(map.stdlib.removed(index))
+      def omit(map: Self, index: key): Self = map.stdlib.removed(index).to(Map)
 
   given ledger: [key, value] => (Ledger[key, value] is Omissible { type Operand = key }) =
     new Omissible:
       type Self = Ledger[key, value]
       type Operand = key
 
-      def omit(ledger: Self, index: key): Self = Ledger.of(ledger.stdlib.removed(index))
+      def omit(ledger: Self, index: key): Self = ledger.stdlib.removed(index).to(Ledger)
 
 trait Omissible extends Typeclass.Pure, Operable:
   def omit(value: Self, index: Operand): Self

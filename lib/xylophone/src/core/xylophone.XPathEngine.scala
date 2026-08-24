@@ -104,7 +104,7 @@ private[xylophone] object XPathEngine:
       case Expression.Union(left, right) =>
         (evaluate(left, context), evaluate(right, context)) match
           case (Value.NodeSet(left), Value.NodeSet(right)) =>
-            Value.NodeSet(List.of(sortDedup(left.stdlib ++ right.stdlib)))
+            Value.NodeSet(sortDedup(left.stdlib ++ right.stdlib).to(List))
 
           case _ =>
             abort(Error(Reason.NotNodeSet))
@@ -126,7 +126,7 @@ private[xylophone] object XPathEngine:
             call(name, arguments.stdlib.map(evaluate(_, context)), context)
 
       case Expression.Route(origin, steps) =>
-        Value.NodeSet(List.of(route(origin, steps.stdlib, context)))
+        Value.NodeSet(route(origin, steps.stdlib, context).to(List))
 
       case Expression.Substitution(_) =>
         abort(Error(Reason.Unresolved))
@@ -218,7 +218,7 @@ private[xylophone] object XPathEngine:
     case _                      => true
 
   private def appendIndex(path: List[Int], index: Int): List[Int] =
-    List.of(path.stdlib :+ index)
+    (path.stdlib :+ index).to(List)
 
   private def childLoci(locus: Locus): sci.List[Locus] =
     if attributeIndexOf(locus) >= 0 then sci.Nil else locus.subject match

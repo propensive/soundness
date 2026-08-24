@@ -46,7 +46,7 @@ object Spannable extends ProductDerivable[Spannable]:
     () => contexts[derivation](): [field] => context => context.spans().readable.sum
 
   given decoder: [decodable] => ((decodable is Decodable in Text)^) => decodable is Spannable =
-    () => Array.of(1)
+    () => Array(1)
 
   // An `Optional[T]` field spans exactly as many cells as its inner type: a present value
   // occupies the inner span, and an absent (trailing/missing) value leaves those cells empty.

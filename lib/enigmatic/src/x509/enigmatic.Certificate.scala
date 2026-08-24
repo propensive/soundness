@@ -120,8 +120,8 @@ object Certificate:
     // needs `keyCertSign` (5) and `cRLSign` (6); an end entity `digitalSignature` (0) and
     // `keyEncipherment` (2).
     val usage: Asn1 =
-      if authority then Asn1.BitString(Array.of[Byte](0x06.toByte), 1)
-      else Asn1.BitString(Array.of[Byte](0xa0.toByte), 5)
+      if authority then Asn1.BitString(Array[Byte](0x06.toByte), 1)
+      else Asn1.BitString(Array[Byte](0xa0.toByte), 5)
 
     // `dNSName` is `[2] IMPLICIT IA5String`, which is exactly what an implicit tag is for: the
     // choice is identified by its tag, and the string type never appears on the wire.
@@ -150,7 +150,7 @@ object Certificate:
           period,
           name,
           publicKey,
-          Asn1.Tagged(3, true, Asn1.Sequence(List.from(extensions.stdlib.compact))) )
+          Asn1.Tagged(3, true, Asn1.Sequence(extensions.stdlib.compact.to(List))) )
 
     val tbs: Asn1 = Asn1.Sequence(fields)
 

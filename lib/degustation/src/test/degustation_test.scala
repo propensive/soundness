@@ -106,7 +106,7 @@ object Tests extends Suite(m"Degustation Tests"):
           . filter { path => path.toString.endsWith(".tasty") }
           . map { path => Text(path.toString) }
 
-        (List.from(tastyFiles), List.from(Text(out.encode.s) :: libs), out.encode)
+        (tastyFiles.to(List), (Text(out.encode.s) :: libs).to(List), out.encode)
 
     def compile(source: Text): (List[Text], List[Text]) =
       val (tastyFiles, classpath0, _) = compileWith(source, classpath, libraryPaths, false)
@@ -308,15 +308,15 @@ object Tests extends Suite(m"Degustation Tests"):
         . filter { path => path.toString.endsWith(".tasty") }
         . map { path => Text(path.toString) }
 
-      val corpusClasspath = List.from(Text(corpus.toString) :: libraryPaths)
+      val corpusClasspath = (Text(corpus.toString) :: libraryPaths).to(List)
 
       test(m"a real module's TASTy atomizes without vocabulary gaps"):
-        Inspection.atomize(List.from(corpusTasty), corpusClasspath).stdlib.size
+        Inspection.atomize(corpusTasty.to(List), corpusClasspath).stdlib.size
       . assert(_ > 0)
 
       test(m"a real module's atomization is deterministic"):
         def once(): scala.List[(Text, Text)] =
-          Inspection.atomize(List.from(corpusTasty), corpusClasspath).stdlib
+          Inspection.atomize(corpusTasty.to(List), corpusClasspath).stdlib
           . map { atom => (atom.key, atom.encoding.serialize[Hex]) }
           . sortBy(_(0).s)
 
@@ -327,9 +327,9 @@ object Tests extends Suite(m"Degustation Tests"):
       import reliquary.*
       val path = TreePath(t"fixture/Alpha.tasty")
 
-      (TastyDiscipline.claims(path, Array.freeze(Array[Byte](0))),
-       TastyDiscipline.claims(TreePath(t"fixture/Alpha.class"), Array.freeze(Array[Byte](0))),
-       TastyDiscipline.claims(TreePath(t"readme.md"), Array.freeze(Array[Byte](0))))
+      (TastyDiscipline.claims(path, Array.freeze(Array.allocate[Byte](0))),
+       TastyDiscipline.claims(TreePath(t"fixture/Alpha.class"), Array.freeze(Array.allocate[Byte](0))),
+       TastyDiscipline.claims(TreePath(t"readme.md"), Array.freeze(Array.allocate[Byte](0))))
     . assert(_ == (true, true, false))
 
     test(m"a jvm-only lira assembles from a real compilation and verifies"):
@@ -348,7 +348,7 @@ object Tests extends Suite(m"Degustation Tests"):
           registry,
           toolchain = List(LiraBundle.tool[Universe.Classfile](t"3.9.0")),
           owns      = List(t"fixture"),
-          classpath = { _ => List.from(Text(out.s) :: libraryPaths) } )
+          classpath = { _ => (Text(out.s) :: libraryPaths).to(List) } )
 
       val lira = Lira.read(bytes)
       val report = Verification.install(lira)
@@ -388,8 +388,8 @@ object Tests extends Suite(m"Degustation Tests"):
         val registry = Discipline.Registry(List(TastyDiscipline))
 
         def contextClasspath(universe: Text): List[Text] =
-          if universe == t"sjsir" then List.from(Text(sjsOut.s) :: sjsLibraryPaths)
-          else List.from(Text(jvmOut.s) :: libraryPaths)
+          if universe == t"sjsir" then (Text(sjsOut.s) :: sjsLibraryPaths).to(List)
+          else (Text(jvmOut.s) :: libraryPaths).to(List)
 
         val bytes = LiraAssembler.assemble
           ( t"fixture-core",
@@ -418,9 +418,9 @@ object Tests extends Suite(m"Degustation Tests"):
         val data = Array.unsafeFrozen(Files.readAllBytes(Paths.get(file.s)).nn)
         (TreePath(t"fixture/$name"), data)
 
-      val binary = (TreePath(t"fixture/Alpha.class"), Array.freeze(Array[Byte](4)))
-      val all = List.from(content.stdlib :+ binary)
-      val context = Discipline.Context(t"jvm", classpath = List.from(libraryPaths))
+      val binary = (TreePath(t"fixture/Alpha.class"), Array.freeze(Array.allocate[Byte](4)))
+      val all = (content.stdlib :+ binary).to(List)
+      val context = Discipline.Context(t"jvm", classpath = libraryPaths.to(List))
       val atomization = TastyDiscipline.atomize(all, context)
 
       (atomization.discipline,

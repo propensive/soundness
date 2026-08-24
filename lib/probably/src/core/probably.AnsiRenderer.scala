@@ -565,15 +565,16 @@ private[probably] object AnsiRenderer:
 
     def render(junctures: List[Surface]): List[(Surface, Teletype)] =
       val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
-      List.of(diagram.nodes.stdlib.zip(diagram.render(describe).stdlib).toList)
+      (diagram.nodes.stdlib.zip(diagram.render(describe).stdlib).toList).to(List)
 
     val allHits = coverage.hits + coverage.oldHits
 
     val junctures2 =
-      List.of:
+
         coverage.structure.stdlib.values.toList.flatMap(_.stdlib)
         . filter(!_.covered(allHits))
         . map(_.copy(children = Nil))
+        . to(List)
 
     Scaffold[(Surface, Teletype)]
       ( escritoire.Column(e""): row =>
@@ -622,6 +623,6 @@ private[probably] object AnsiRenderer:
 
           bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join )
 
-    . tabulate(List.of(data)).grid(columns).render.each(Out.println(_))
+    . tabulate(data.to(List)).grid(columns).render.each(Out.println(_))
 
     Out.println(e"")

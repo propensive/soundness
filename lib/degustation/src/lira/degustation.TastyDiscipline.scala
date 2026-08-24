@@ -91,7 +91,7 @@ object TastyDiscipline extends Discipline:
             case Inspection.Error(reason) =>
               Discipline.Error(id, Discipline.Error.Reason.Malformed(t"$reason"))
 
-          . protect(Inspection.atomize(List.from(files), context.classpath))
+          . protect(Inspection.atomize(files.to(List), context.classpath))
 
         val atoms = scalaAtoms.map: atom =>
           val references = atom.references.map:

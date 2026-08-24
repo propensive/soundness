@@ -103,7 +103,7 @@ object Subsumption:
     def bounds(pc: Int): scala.IArray[Int] = ops(pc).absolve match
       case Program.Op.Symbol(bounds, _) => bounds
 
-  private def canonical(pcs: List[Int]): List[Int] = List.of(pcs.stdlib.distinct.sorted)
+  private def canonical(pcs: List[Int]): List[Int] = pcs.stdlib.distinct.sorted.to(List)
 
   private def within(bounds: scala.IArray[Int], symbol: Int): Boolean =
     var index = 0

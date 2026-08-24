@@ -155,7 +155,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
             val builder = scala.collection.immutable.List.newBuilder[BenchUser]
             reader.openArray()
             while reader.element() do builder += user()
-            users = List.of(builder.result())
+            users = builder.result().to(List)
           else reader.skipValue()
           true
       do ()
@@ -413,7 +413,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
                 elements = false
               else bail()
 
-          users = List.of(builder.result())
+          users = builder.result().to(List)
         else bail()
 
       if !usersSeen then bail()
@@ -444,7 +444,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   // reference identity (the extracted document is memoized, so its identity is stable),
   // costing one comparison per iteration rather than one copy.
   private var utf8Key: String | Null = null
-  private var utf8Value: Data = Array.of[Byte]()
+  private var utf8Value: Data = Array[Byte]()
 
   def utf8(text: String): Data =
     if utf8Key ne text then

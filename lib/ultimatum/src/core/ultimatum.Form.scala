@@ -67,7 +67,7 @@ object Form:
     val focusables: Sequence[Ordinal in entries.type] =
       val builder = scala.collection.immutable.Vector.newBuilder[Ordinal in entries.type]
       entries.iterate { index => if entries(index).focus.present then builder += index }
-      Sequence.of(builder.result())
+      Sequence.from(builder.result())
 
 // Drives an interactive layout. The pane tree is re-derived from its live
 // containers on every frame, so panes appended or inserted while the form runs
@@ -212,18 +212,18 @@ class Form
     val rects = frame.arrange(Rect(0, 0, root.width, height)).cells
 
     Form.Layout:
-      Sequence.from:
-        panes.stdlib.zip(rects.stdlib).map: (leaf, rect) =>
-          val fixture: Optional[Fixture] = leaf match
-            case Pane.Widget(_, fixture) => fixture
-            case _                       => Unset
 
-          val focus: Optional[Focus] = leaf match
-            case Pane.Widget(_, focus: Focus) => focus
-            case _                            => Unset
+        Sequence.from:
+          panes.stdlib.zip(rects.stdlib).map: (leaf, rect) =>
+            val fixture: Optional[Fixture] = leaf match
+              case Pane.Widget(_, fixture) => fixture
+              case _                       => Unset
 
-          Form.Entry(leaf, rect, fixture, focus)
+            val focus: Optional[Focus] = leaf match
+              case Pane.Widget(_, focus: Focus) => focus
+              case _                            => Unset
 
+            Form.Entry(leaf, rect, fixture, focus)
   // Paint one leaf of a solved layout. The index is confined to `layout.entries`, so
   // callers prove it in bounds (via `iterate`, `confine` or `focusables`) before it
   // crosses this boundary; both accesses below are then total.
@@ -308,7 +308,7 @@ class Form
       if current.entries(index).fixture.lay(false)(_.period.present)
       then builder += (index: Ordinal).n0
 
-    Set.of(builder.result())
+    builder.result().to(Set)
 
   // Repaint immediately, folding in any coalesced or pending-resize work. Used for
   // typing, focus changes and application redraws, which must stay responsive.

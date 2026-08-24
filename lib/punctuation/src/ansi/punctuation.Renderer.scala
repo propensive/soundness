@@ -67,7 +67,7 @@ object Renderer:
   :   Teletype =
 
     val blocks = markdown.children.stdlib.map(layoutLines(_, width)).filter(_.stdlib.nonEmpty)
-    List.of(blocks.map(joinLines(_))).join(e"\n\n")
+    (blocks.map(joinLines(_))).to(List).join(e"\n\n")
 
   // -- inline ---------------------------------------------------------------
 
@@ -138,18 +138,18 @@ object Renderer:
   :   List[Teletype] = node match
 
     case Layout.Heading(_, level, children*) =>
-      val text = List.of(children.map(inlineProse(_)).toList).join
+      val text = (children.map(inlineProse(_)).toList).to(List).join
       val styled = e"$Bold(${Fg(palette.heading)}($text))"
       val wrapped = wrap(styled, width)
 
       level match
         case 1 =>
           val rule = e"${Fg(palette.heading)}(${t"━"*width})"
-          List.of(wrapped.stdlib :+ rule)
+          (wrapped.stdlib :+ rule).to(List)
 
         case 2 =>
           val rule = e"${Fg(palette.heading)}(${t"─"*width})"
-          List.of(wrapped.stdlib :+ rule)
+          (wrapped.stdlib :+ rule).to(List)
 
         case _ =>
           val prefix = e"${Fg(palette.subdued)}(${t"#"*level} )"
@@ -274,4 +274,4 @@ object Renderer:
 
     val lines = Flow.wrap(content, width, hyphen = Hyphen).stdlib
 
-    if lines.isEmpty then List(Teletype.empty) else List.of(lines.to(scala.List))
+    if lines.isEmpty then List(Teletype.empty) else lines.to(scala.List).to(List)

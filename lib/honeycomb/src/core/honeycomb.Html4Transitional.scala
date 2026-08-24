@@ -104,7 +104,7 @@ object Html4Transitional:
   def attribute[self <: Label: ValueOf, plane <: Label: Reifiable to List[String], topic]()
   :   self is Attribute on plane of topic in Html4Transitional =
 
-    new Attribute(valueOf[self].tt, Set.from(plane.reify.stdlib.map(_.tt)), false)
+    new Attribute(valueOf[self].tt, plane.reify.stdlib.map(_.tt).to(Set), false)
     . asInstanceOf[self is Attribute on plane of topic in Html4Transitional]
 
 
@@ -350,7 +350,7 @@ class Html4Transitional() extends Dom:
   type Metadata = "title" | "base" | "script" | "style" | "meta" | "link" | "object"
 
   def insertable(tag: Tag): Set[Tag] =
-    Set.from(tag.admissible.stdlib.map(elements(_)).compact).filter(_.insertable)
+    (tag.admissible.stdlib.map(elements(_)).compact).to(Set).filter(_.insertable)
 
   def infer(parent: Tag, child: Tag): Optional[Tag] =
     def recur(parent: Tag): Boolean =

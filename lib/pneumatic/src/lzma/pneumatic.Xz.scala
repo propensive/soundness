@@ -79,7 +79,7 @@ private[pneumatic] trait XzEngine extends caps.Mutable:
     produced
 
   update def gather(): Data =
-    val result = Array[Byte](pending.length - delivered)
+    val result = Array.allocate[Byte](pending.length - delivered)
     var i = 0
 
     while delivered < pending.length do

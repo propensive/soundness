@@ -109,8 +109,9 @@ case class Argument
   def select[operand: Suggestible](options: List[operand])(using cli: Cli, interpreter: Interpreter)
   :   Optional[operand] =
 
-    val mapping: Map[Text, operand] = Map.from:
+    val mapping: Map[Text, operand] =
       options.stdlib.map: option => (operand.suggest(option).text, option)
+      . to(Map)
 
     suggest(options.map(operand.suggest(_)))
     mapping(this())

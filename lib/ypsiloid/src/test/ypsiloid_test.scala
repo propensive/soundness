@@ -254,7 +254,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == Sequence(10, 20, 30))
 
       test(m"Parse a flow sequence into a Set"):
-        t"[1, 2, 3]".read[Yaml].as[List[Int]].stdlib.pipe(Set.from(_))
+        t"[1, 2, 3]".read[Yaml].as[List[Int]].stdlib.pipe(_.to(Set))
       . assert(_ == Set(1, 2, 3))
 
       test(m"Empty flow sequence parses to Yaml.Ast.Sequence with no items"):

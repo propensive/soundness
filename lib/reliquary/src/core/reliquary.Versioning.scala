@@ -66,7 +66,7 @@ object Versioning:
 
     grade match
       case Grade.Patch => lineage
-      case Grade.Minor => List.from(lineage.stdlib :+ snapshot)
+      case Grade.Minor => (lineage.stdlib :+ snapshot).to(List)
 
       case Grade.Major =>
         if !forceMajor then abort(Lira.Error(Reason.UngradedSuccessor(t"the release")))
@@ -87,4 +87,4 @@ object Versioning:
 
       case _ => scala.Nil
 
-    List.from(numericAdvisory ++ projection)
+    (numericAdvisory ++ projection).to(List)

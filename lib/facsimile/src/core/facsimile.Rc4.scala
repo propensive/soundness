@@ -42,7 +42,7 @@ import vacuous.*
 // which would need per-call `Cipher` machinery for what is a dozen lines of arithmetic.
 private[facsimile] object Rc4:
   def apply(key: Data, data: Data): Data =
-    val state = Array[Int](256)
+    val state = Array.allocate[Int](256)
     var i = 0
 
     while i < 256 do
@@ -61,7 +61,7 @@ private[facsimile] object Rc4:
       i += 1
 
     // Pseudo-random generation, XORed into the data.
-    val out = Array[Byte](data.length)
+    val out = Array.allocate[Byte](data.length)
     var a = 0
     var b = 0
     var k = 0

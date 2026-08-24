@@ -937,7 +937,7 @@ object internal:
     def apply(pairs: (Text, Text)*): Attributes =
       if pairs.isEmpty then empty else
         val n = pairs.length
-        val buffer = Array[String](n*2)
+        val buffer = Array.allocate[String](n*2)
         var i = 0
 
         pairs.foreach: pair =>
@@ -951,7 +951,7 @@ object internal:
       val entries = map.stdlib
       if entries.isEmpty then empty else
         val n = entries.size
-        val buffer = Array[String](n*2)
+        val buffer = Array.allocate[String](n*2)
         var i = 0
 
         entries.foreach: (k, v) =>
@@ -1076,12 +1076,12 @@ object internal:
             i += 2
             pair
 
-      def toMap: Map[Text, Text] = Map.of:
+      def toMap: Map[Text, Text] =
         val a = storage(attrs)
 
         // `VectorMap` (the `Ledger` substrate), so the wrapped `Map` still iterates its
         // attributes in document order.
-        if a.length == 0 then VectorMap.empty else
+        if a.length == 0 then Map.from(VectorMap.empty[Text, Text]) else
           val b = VectorMap.newBuilder[Text, Text]
           var i = 0
 
@@ -1089,7 +1089,7 @@ object internal:
             b += ((a(i).asInstanceOf[Text], a(i + 1).asInstanceOf[Text]))
             i += 2
 
-          b.result()
+          Map.from(b.result())
 
       def toList: List[(Text, Text)] =
         val a = storage(attrs)
@@ -1137,7 +1137,7 @@ object internal:
           i += 2
 
         if idx < 0 then attrs else
-          val nu = Array[String](n - 2)
+          val nu = Array.allocate[String](n - 2)
           if idx > 0 then nu.copyFrom(Array.frozen(attrs), 0, 0, idx)
           if idx < n - 2 then nu.copyFrom(Array.frozen(attrs), idx + 2, idx, n - 2 - idx)
           Array.freeze(nu).readable
@@ -1162,12 +1162,12 @@ object internal:
           i += 2
 
         if idx >= 0 then
-          val nu = Array[String](n)
+          val nu = Array.allocate[String](n)
           nu.copyFrom(Array.frozen(attrs), 0, 0, n)
           nu(idx + 1) = value.s
           Array.freeze(nu).readable
         else
-          val nu = Array[String](n + 2)
+          val nu = Array.allocate[String](n + 2)
           nu.copyFrom(Array.frozen(attrs), 0, 0, n)
           nu(n) = keyStr
           nu(n + 1) = value.s
@@ -1181,7 +1181,7 @@ object internal:
         else if a.length == 0 then other
         else
           val total = a.length + b.length
-          val nu = Array[String](total)
+          val nu = Array.allocate[String](total)
           var written = 0
           var i = 0
 
@@ -1220,7 +1220,7 @@ object internal:
           val frozen = Array.freeze(nu)
 
           if written == total then frozen.readable else
-            val tu = Array[String](written)
+            val tu = Array.allocate[String](written)
             tu.copyFrom(frozen, 0, 0, written)
             Array.freeze(tu).readable
 
@@ -1720,7 +1720,7 @@ object internal:
                             ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing],
                               $bufferExpr match
                                 case null   => proscenium.Nil
-                                case buffer => proscenium.List.of(buffer.toList) )
+                                case buffer => buffer.toList.to(proscenium.List) )
                       }.asTerm )
 
                 If('{ $repeatables.readUnchecked(${Expr(index)}) }.asTerm, gatherFinish, whenUnseen)
@@ -1819,16 +1819,16 @@ object internal:
       // deferred until the first parse.
       caps.unsafe.unsafeAssumePure:
         val keys: Array[String]^{} =
-          Xml.Parsable.wireNames(Array.of[String](${Varargs(nameExprs)}*), $renames)
+          Xml.Parsable.wireNames(Array[String](${Varargs(nameExprs)}*), $renames)
 
-        val attrs: Array[Boolean]^{} = Array.of[Boolean](${Varargs(attrExprs)}*)
+        val attrs: Array[Boolean]^{} = Array[Boolean](${Varargs(attrExprs)}*)
 
-        lazy val instances: Array[Xml.Field | Null]^{} = Array.of(${Varargs(instanceExprs)}*)
+        lazy val instances: Array[Xml.Field | Null]^{} = Array(${Varargs(instanceExprs)}*)
 
         lazy val repeatables: Array[Boolean]^{} =
           instances.remap { instance => instance != null && Xml.Parsable.repeats(instance) }
 
-        lazy val fallbacks: Array[Any]^{} = Array.of[Any](${Varargs(fallbackExprs)}*)
+        lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs(fallbackExprs)}*)
         val fallback: Optional[() => value] = $defaultExpr
 
         new Xml.Parsable:

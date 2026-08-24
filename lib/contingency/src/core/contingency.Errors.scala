@@ -53,7 +53,7 @@ object Errors:
 
 case class Errors(errors: (Text, Error)*)(using Diagnostics)
 extends Error(218, 0)(Errors.format(errors.to(List))):
-  private lazy val errorMap: Map[Text, Error] = Map.from(errors)
+  private lazy val errorMap: Map[Text, Error] = errors.to(Map)
 
   @targetName("add")
   infix def + (focus: Text, error: Error): Errors = Errors((focus, error) +: errors*)

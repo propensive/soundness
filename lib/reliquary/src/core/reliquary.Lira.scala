@@ -75,7 +75,7 @@ object Lira:
     Unset
 
   private def slice(data: Data, from: Int, until: Int): Data =
-    val buffer = Array[Byte](until - from)
+    val buffer = Array.allocate[Byte](until - from)
     System.arraycopy(Array.unsafeJvm(data), from, buffer.raw, 0, until - from)
     Array.freeze(buffer)
 
@@ -135,7 +135,7 @@ object Lira:
 
     val text = manifest.copy(payload = payload).render
     val manifestData = charEncoders.utf8Encoder.encoded(text)
-    val buffer = Array[Byte](manifestData.length + 3 + compressed.length)
+    val buffer = Array.allocate[Byte](manifestData.length + 3 + compressed.length)
     System.arraycopy(Array.unsafeJvm(manifestData), 0, buffer.raw, 0, manifestData.length)
     buffer(manifestData.length) = '#'.toByte
     buffer(manifestData.length + 1) = '#'.toByte
@@ -181,9 +181,8 @@ object Lira:
 
       val beforeReplaceable = before.filter(_.atomClass == Atom.Class.Replaceable)
 
-      val afterReplaceable =
-        scala.collection.immutable.Map.from:
-          after.filter(_.atomClass == Atom.Class.Replaceable).map: atom => (atom.key, atom)
+      val afterReplaceable = scala.collection.immutable.Map.from:
+        after.filter(_.atomClass == Atom.Class.Replaceable).map: atom => (atom.key, atom)
 
       val replaced = beforeReplaceable
         . flatMap: atom =>
@@ -196,7 +195,7 @@ object Lira:
 
         . sortWith: (a, b) => Blob.compare(a.old, b.old) < 0
 
-      Lira.Delta(List.from(added), List.from(replaced))
+      Lira.Delta(added.to(List), replaced.to(List))
 
     def decode(data: Data): Lira.Delta raises Lira.Error =
       import Tels.Decoder.validate
@@ -245,7 +244,7 @@ object Lira:
         if atoms.length != 2 then abort(bad(t"a replace row does not have exactly two atoms"))
         Replacement(hash(atoms(0)), hash(atoms(1)))
 
-      Lira.Delta(List.from(added), List.from(replaced))
+      Lira.Delta(added.to(List), replaced.to(List))
 
   case class Delta(add: List[Data], replace: List[Replacement]):
 
@@ -396,7 +395,7 @@ object Lira:
 
     // The `0x00` byte separating the domain from the content; a fresh byte array is
     // zero-initialized, so freezing a unit array yields it directly.
-    private val separator: Data = Array.freeze(Array[Byte](1))
+    private val separator: Data = Array.freeze(Array.allocate[Byte](1))
 
     enum Domain:
       case Blob, Snapshot, Manifest, Key, Derivative
@@ -412,7 +411,7 @@ object Lira:
 
     def apply(domain: Domain, content: Data): Data =
       val prefix: Data = charEncoders.utf8Encoder.encoded(domain.text)
-      val buffer = Array[Byte](prefix.length + 1 + content.length)
+      val buffer = Array.allocate[Byte](prefix.length + 1 + content.length)
       System.arraycopy(Array.unsafeJvm(prefix), 0, buffer.raw, 0, prefix.length)
       System.arraycopy(Array.unsafeJvm(content), 0, buffer.raw, prefix.length + 1, content.length)
 
@@ -589,7 +588,7 @@ object Lira:
         Tool
           ( required(fields, t"name"),
             required(fields, t"version"),
-            List.from(repeated(fields, t"flag")) )
+            repeated(fields, t"flag").to(List) )
 
       val api = top.filter(_.keyword == t"api").map: compound =>
         val fields = children(compound)
@@ -603,11 +602,11 @@ object Lira:
             api         = hash(required(fields, t"api")),
             version     = field(fields, t"version").let(semver(_)),
             build       = field(fields, t"build").let(hash(_)),
-            universe    = List.from(repeated(fields, t"universe")),
+            universe    = repeated(fields, t"universe").to(List),
             serves      = field(fields, t"serves"),
-            integration = List.from(repeated(fields, t"integration")),
+            integration = repeated(fields, t"integration").to(List),
             uses        = field(fields, t"uses").let(hash(_)),
-            spans       = List.from(repeated(fields, t"spans").map(hash(_))) )
+            spans       = (repeated(fields, t"spans").map(hash(_))).to(List) )
 
       val resource = top.filter(_.keyword == t"resource").map: compound =>
         val mode = texts(compound) match
@@ -625,7 +624,7 @@ object Lira:
         val breaks = repeated(fields, t"breaks").map: keyword =>
           Guarantee.parse(keyword).or(abort(bad(t"$keyword is not a guarantee level")))
 
-        Profile(required(fields, t"id"), List.from(breaks))
+        Profile(required(fields, t"id"), breaks.to(List))
 
       val integration = top.filter(_.keyword == t"integration").map: compound =>
         val fields = children(compound)
@@ -657,9 +656,9 @@ object Lira:
           ( realm       = realm,
             integration = field(fields, t"integration"),
             tree        = hash(required(fields, t"tree")),
-            delete      = List.from(repeated(fields, t"delete").map(TreePath(_))),
+            delete      = (repeated(fields, t"delete").map(TreePath(_))).to(List),
             derivative  = field(fields, t"derivative").let(hash(_)),
-            requires    = List.from(requires) )
+            requires    = requires.to(List) )
 
       val payload = top.filter(_.keyword == t"payload").toList match
         case scala.List(compound) =>
@@ -684,19 +683,19 @@ object Lira:
       Lira.Manifest
         ( module      = required(top, t"module"),
           version     = field(top, t"version").let(semver(_)),
-          tag         = List.from(repeated(top, t"tag")),
-          lineage     = List.from(repeated(top, t"lineage").map(hash(_))),
-          toolchain   = List.from(toolchain),
-          owns        = List.from(repeated(top, t"owns")),
-          resource    = List.from(resource),
-          api         = List.from(api),
-          profile     = List.from(profile),
-          integration = List.from(integration),
-          dependency  = List.from(dependency),
+          tag         = repeated(top, t"tag").to(List),
+          lineage     = (repeated(top, t"lineage").map(hash(_))).to(List),
+          toolchain   = toolchain.to(List),
+          owns        = repeated(top, t"owns").to(List),
+          resource    = resource.to(List),
+          api         = api.to(List),
+          profile     = profile.to(List),
+          integration = integration.to(List),
+          dependency  = dependency.to(List),
           delta       = field(top, t"delta").let(hash(_)),
-          section     = List.from(section),
+          section     = section.to(List),
           payload     = payload,
-          signature   = List.from(signature) )
+          signature   = signature.to(List) )
 
   // The typed view of a `.lira` manifest (§14). Decoding always retains the parsed `Tel` alongside
   // (in `Lira`): signing and reserialization operate on the TEL semantic model; this class is the
@@ -913,7 +912,7 @@ object Lira:
       RecordDefinition(Text(name), Array.from(members), Array.empty[Text])
 
     private def scalar(name: String, validator: String): ScalarDefinition =
-      ScalarDefinition(Text(name), Array.of(Text(validator)))
+      ScalarDefinition(Text(name), Array(Text(validator)))
 
     private def select(name: String, variants: Variant*): SelectDefinition =
       SelectDefinition(Text(name), Array.from(variants), Array.empty[Text])
@@ -937,7 +936,7 @@ object Lira:
 
     // `Tels.Reconstructor.fromTel` prefixes every reconstructed schema's scalars with the TEL
     // built-ins, so the hand-encoded values carry them identically for structural equality.
-    private val builtins: Array[ScalarDefinition] = Array.of(
+    private val builtins: Array[ScalarDefinition] = Array(
       scalar("Identifier", "identifier"),
       scalar("TypeName", "type-name"),
       scalar("Sigil", "sigil"),
@@ -946,7 +945,7 @@ object Lira:
     val lira: Tels = Tels(
       name     = t"lira",
       document = Struct(
-        members = Array.of(
+        members = Array(
           field("module", moduleName),
           field("version", semver, required = Loose),
           field("tag", tagName, required = Loose, repeatable = Loose),
@@ -965,7 +964,7 @@ object Lira:
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
-      records  = Array.of(
+      records  = Array(
         record("Tool",
           field("name", identifier),
           field("version", string),
@@ -1023,7 +1022,7 @@ object Lira:
           field("algorithm", identifier),
           field("key", hash),
           field("value", string))),
-      scalars  = Array.frozen(builtins.readable ++ Array.of(
+      scalars  = Array.frozen(builtins.readable ++ Array(
         hashScalar,
         scalar("ModuleName", "module-name"),
         scalar("Namespace", "namespace"),
@@ -1034,7 +1033,7 @@ object Lira:
         scalar("ProfileId", "profile-id"),
         scalar("TreePath", "tree-path"),
         scalar("Guarantee", "guarantee")).readable),
-      selects  = Array.of(
+      selects  = Array(
         select("Realm",
           variant("jvm"),
           variant("sjsir"),
@@ -1049,33 +1048,33 @@ object Lira:
     val tree: Tels = Tels(
       name     = t"lira-tree",
       document = Struct(
-        members    = Array.of(field("entry", Reference(t"Entry"),
+        members    = Array(field("entry", Reference(t"Entry"),
             required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
-      records  = Array.of(
+      records  = Array(
         record("Entry",
           field("path", Reference(t"TreePath")),
           field("blob", hash))),
-      scalars  = Array.frozen(builtins.readable ++ Array.of(hashScalar, scalar("TreePath", "tree-path")).readable),
+      scalars  = Array.frozen(builtins.readable ++ Array(hashScalar, scalar("TreePath", "tree-path")).readable),
       selects  = Array.empty[SelectDefinition])
 
     val atoms: Tels = Tels(
       name     = t"lira-atoms",
       document = Struct(
-        members = Array.of(
+        members = Array(
           field("discipline", disciplineId),
           field("atom", Reference(t"Atom"), required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
-      records  = Array.of(
+      records  = Array(
         record("Atom",
           field("class", Reference(t"AtomClass")),
           field("hash", hash),
           field("key", string))),
-      scalars  = Array.frozen(builtins.readable ++ Array.of(
+      scalars  = Array.frozen(builtins.readable ++ Array(
         hashScalar,
         scalar("DisciplineId", "discipline-id"),
         scalar("AtomClass", "atom-class")).readable),
@@ -1084,30 +1083,30 @@ object Lira:
     val uses: Tels = Tels(
       name     = t"lira-uses",
       document = Struct(
-        members = Array.of(
+        members = Array(
           field("module", moduleName),
           field("atom", hash, required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
       records  = Array.empty[RecordDefinition],
-      scalars  = Array.frozen(builtins.readable ++ Array.of(hashScalar, scalar("ModuleName", "module-name")).readable),
+      scalars  = Array.frozen(builtins.readable ++ Array(hashScalar, scalar("ModuleName", "module-name")).readable),
       selects  = Array.empty[SelectDefinition])
 
     val delta: Tels = Tels(
       name     = t"lira-delta",
       document = Struct(
-        members = Array.of(
+        members = Array(
           field("add", hash, required = Loose, repeatable = Loose),
           field("replace", Reference(t"Replacement"), required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
-      records  = Array.of(
+      records  = Array(
         record("Replacement",
           field("old", hash),
           field("new", hash))),
-      scalars  = Array.frozen(builtins.readable ++ Array.of(hashScalar).readable),
+      scalars  = Array.frozen(builtins.readable ++ Array(hashScalar).readable),
       selects  = Array.empty[SelectDefinition])
 
     // The capability listing of a host contract with no formal carrier (hosts.md §5): the single
@@ -1116,12 +1115,12 @@ object Lira:
     val capabilities: Tels = Tels(
       name     = t"lira-capabilities",
       document = Struct(
-        members    = Array.of(field("capability", Reference(t"Capability"),
+        members    = Array(field("capability", Reference(t"Capability"),
             required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
-      records  = Array.of(
+      records  = Array(
         record("Capability",
           field("name", identifier),
           field("version", string, required = Loose),
@@ -1153,7 +1152,7 @@ object Lira:
         if a.path == b.path
         then abort(Lira.Error(Reason.InvalidTree(t"the path ${a.path.text} appears twice")))
 
-      Lira.Tree(List.from(sorted))
+      Lira.Tree(sorted.to(List))
 
     // Parses and checks a Tree metadata blob: a TEL document under the `lira-tree` schema, whose
     // pragma carries that schema's signature.
@@ -1209,7 +1208,7 @@ object Lira:
         if order >= 0 then abort(Lira.Error(Reason.InvalidTree(detail)))
         index += 1
 
-      Lira.Tree(List.from(entries))
+      Lira.Tree(entries.to(List))
 
   // A section's mapping from paths to blobs (§9.2), with rows in ascending bytewise path order.
   case class Tree private(entries: List[TreeEntry]):

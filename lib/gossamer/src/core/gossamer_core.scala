@@ -89,7 +89,7 @@ inline def builder[value](using value: value aka "builder"): value =
 
 extension (module: Array.type)
   def build[element: ClassTag](size: Int)(lambda: scala.Array[element]^ => Unit): Array[element]^{} =
-    val array = Array[element](size)
+    val array = Array.allocate[element](size)
     lambda(array.raw)
     Array.freeze(array)
 
@@ -461,8 +461,8 @@ package proximities:
     (left, right) =>
       val m = left.s.length
       val n = right.length
-      val old = Array[Int](n + 1)
-      val dist = Array[Int](n + 1)
+      val old = Array.allocate[Int](n + 1)
+      val dist = Array.allocate[Int](n + 1)
       var j = 1
 
       while j <= n do

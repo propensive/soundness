@@ -45,7 +45,7 @@ import scala.collection.immutable as sci
 object Ledger:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
   // lambdas crashes the capture checker's boxer (boxDeeply assertion).
-  def of[key, value](map: sci.VectorMap[key, value]): Ledger[key, value] =
+  private[proscenium] def of[key, value](map: sci.VectorMap[key, value]): Ledger[key, value] =
     map.asInstanceOf[Ledger[key, value]]
 
   def apply[key, value](pairs: (key, value)*): Ledger[key, value] = of(sci.VectorMap(pairs*))
@@ -53,6 +53,17 @@ object Ledger:
 
   def from[key, value](pairs: IterableOnce[(key, value)]^): Ledger[key, value] =
     of(sci.VectorMap.from(pairs))
+
+  // `.to(Ledger)` support (see `List`): the conversion is on `Ledger.type` only, so it cannot
+  // expose members of `Ledger` values.
+  given factory: [key, value] => Conversion[Ledger.type, scala.collection.Factory[(key, value), Ledger[key, value]]] =
+    _ =>
+      new scala.collection.Factory[(key, value), Ledger[key, value]]:
+        def fromSpecific(elements: IterableOnce[(key, value)]^): Ledger[key, value] =
+          Ledger.from(elements)
+
+        def newBuilder: scala.collection.mutable.Builder[(key, value), Ledger[key, value]] =
+          sci.VectorMap.newBuilder[key, value].mapResult(of(_))
 
   extension [key, value](ledger: Ledger[key, value])
     inline def stdlib: sci.VectorMap[key, value] = ledger.asInstanceOf[sci.VectorMap[key, value]]

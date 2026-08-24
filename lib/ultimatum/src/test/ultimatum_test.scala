@@ -1595,7 +1595,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         Form(root, Occupancy.Fullscreen, pane, () => (), 0, 0, delay => { recorded += delay; () })
         . run(scala.Iterator(Keypress.Escape))
 
-        List.of(recorded.toList)
+        recorded.toList.to(List)
 
       test(m"a layout containing a spinner arms a wake at the design's period"):
         given definite: (Fraction is Gaugeable) = spinners.brailleDotsSpinner

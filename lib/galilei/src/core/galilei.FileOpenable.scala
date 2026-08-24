@@ -63,7 +63,7 @@ extends Openable:
       (if mode.atoms.has(Read) then List(OpenFlag.Read).stdlib else Nil.stdlib) ++
         (if mode.atoms.has(Write) then List(OpenFlag.Write).stdlib else Nil.stdlib)
 
-    backend.open(value, List.of(modeFlags ++ flags.stdlib)): handle =>
+    backend.open(value, (modeFlags ++ flags.stdlib).to(List)): handle =>
       // `Granting` is a phantom marker, so the cast only refines the static type with the
       // grants that `modeFlags` has just made true operationally.
       block(using handle.asInstanceOf[Handle & Granting[grants]])

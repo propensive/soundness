@@ -149,4 +149,4 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
       sections.stdlib.to(Chain).bind: section =>
         (midRule #:: recur(section.widths, section.rows)): Chain[text]
 
-    Chain.of(topLine.stdlib #::: body.stdlib.tail #::: bottomLine.stdlib)
+    Chain.from(topLine.stdlib #::: body.stdlib.tail #::: bottomLine.stdlib)

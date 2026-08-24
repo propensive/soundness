@@ -395,7 +395,7 @@ object Tel extends Tel2:
           // A positional atom becomes a synthetic one-atom compound, exactly
           // the element form `gathered` re-assembles into its document.
           def parseAtomElement(text: Text)(using Tactic[Tel.Error]): Any =
-            Tel.make(Tel.Compound(t"", Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
+            Tel.make(Tel.Compound(t"", Array(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
 
           def gathered(elements: List[Any]): value =
             val compounds = Array.from:
@@ -421,7 +421,7 @@ object Tel extends Tel2:
           // one-atom compound, as the derived decoder hands one over.
           override def parseAtom(text: Text)(using Tactic[Tel.Error]): value =
             decodable.decoded:
-              Tel.make(Tel.Compound(t"", Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
+              Tel.make(Tel.Compound(t"", Array(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
 
     // The one-line opt-in to direct parsing for a structural type:
     // `given MyType is Tel.Parsable = Tel.Parsable.derived` — a
@@ -482,7 +482,7 @@ object Tel extends Tel2:
     private[stratiform] def gatheredDocument(compounds: Array[Tel.Compound]^{}): Tel.Document =
       Tel.Document
         ( Unset, Unset, Tel.LineEndings.Lf,
-          Array.of(Tel.Block(Array.empty[Tel.Comment], Unset, compounds, 0)) )
+          Array(Tel.Block(Array.empty[Tel.Comment], Unset, compounds, 0)) )
 
     // Shared collection implementation, used by the nominal `Tel.Parsable`
     // given (elements must themselves be nominally `Parsable`, so the read
@@ -973,7 +973,7 @@ object Tel extends Tel2:
 
             if parsing.repeatable then
               val elements: List[Any] = values(index) match
-                case buffer: scala.collection.mutable.ListBuffer[?] => List.of(buffer.toList)
+                case buffer: scala.collection.mutable.ListBuffer[?] => buffer.toList.to(List)
                 case _                                              => Nil
 
               parsing match
@@ -1230,7 +1230,7 @@ object Tel extends Tel2:
 
         idx += 1
 
-      Map.of(builder.toMap)
+      builder.toMap.to(Map)
 
     private def atomAssignable(member: Tels.Member, schema: Tels): Boolean raises Tel.Error =
       member match
@@ -2729,7 +2729,7 @@ object Tel extends Tel2:
       b += 1
 
     if !found then
-      if out.isEmpty then out += Block(Array.empty, Unset, Array.of(compound), 0)
+      if out.isEmpty then out += Block(Array.empty, Unset, Array(compound), 0)
       else
         val lastIdx = out.length - 1
         out(lastIdx) = out(lastIdx).copy(compounds = out(lastIdx).compounds :+ compound)
@@ -4166,7 +4166,7 @@ object Tel extends Tel2:
         recoverAt(Reason.MisplacedPragmaPhrase, line, firstLayerColumn, firstLayerLength):
           layerBuffer.clear()
 
-      Tel.Pragma(version, reference, List.of(layerBuffer.toList), signatureText, pragmaSigil)
+      Tel.Pragma(version, reference, layerBuffer.toList.to(List), signatureText, pragmaSigil)
 
     // `column` is the 1-indexed column of the version phrase within the pragma
     // line, so a malformed version is spanned at the phrase itself.
@@ -4236,7 +4236,7 @@ object Tel extends Tel2:
         parts += builder.toString
         offsets += start
 
-      (List.of(parts.toList), List.of(offsets.toList))
+      (parts.toList.to(List), offsets.toList.to(List))
 
     // ── Margin determination ─────────────────────────────────────────────────
 

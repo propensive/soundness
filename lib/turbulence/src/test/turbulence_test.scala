@@ -70,7 +70,7 @@ object Tests extends Suite(m"Turbulence tests"):
         . assert(_ === data)
 
     suite(m"Streaming Unicode tests"):
-      val ascii = Array.of(t"", t"a", t"ab", t"abc", t"abcd")
+      val ascii = Array(t"", t"a", t"ab", t"abc", t"abcd")
 
       val strings = for
         asc0 <- List(t"", t"a", t"ab", t"abc") // 4 combinations
@@ -473,11 +473,11 @@ object Tests extends Suite(m"Turbulence tests"):
               async:
                 for value <- 1 to 25 do relay.put(t"${index*100 + value}")
 
-          val reader = async(Set.from(relay.stream.records))
+          val reader = async(relay.stream.records.to(Set))
           producers.each(_.await())
           relay.stop()
           unsafely(scala.caps.unsafe.unsafeAssumeSeparate(reader.await()))
-      . assert(_ == Set.from(for index <- 1 to 4; value <- 1 to 25 yield t"${index*100 + value}"))
+      . assert(_ == (for index <- 1 to 4; value <- 1 to 25 yield t"${index*100 + value}").to(Set))
 
       // The relay's contract is that producers never block: it is the many-producer
       // record bus (HTTP/2's outbound frame mux relies on this to avoid distributed

@@ -79,12 +79,13 @@ private[facsimile] object Xref:
         hybrid =>
           val (hybridEntries, _) = stream(source, hybrid)
 
-          Map.of:
+
+          Map.from:
             hybridEntries.stdlib ++ classicEntries.stdlib.filter: (number, entry) =>
               entry != Entry.Free || !hybridEntries.defines(number)
 
-      val mergedEntries = Map.of(sectionEntries.stdlib ++ entries.stdlib)
-      val mergedTrailer = Map.of(sectionTrailer.stdlib ++ trailer.stdlib)
+      val mergedEntries = (sectionEntries.stdlib ++ entries.stdlib).to(Map)
+      val mergedTrailer = (sectionTrailer.stdlib ++ trailer.stdlib).to(Map)
 
       sectionTrailer(t"Prev").let(_.long)
       . lay(Xref(mergedEntries, mergedTrailer, head, streamed(source, head))): previous =>

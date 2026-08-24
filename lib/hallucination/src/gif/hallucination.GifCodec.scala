@@ -69,7 +69,7 @@ private[hallucination] object GifCodec:
           position += size*3
           table
         else
-          Array.of()
+          Array()
 
       var transparentIndex = -1
       val screen = new scala.Array[Long](width*height)

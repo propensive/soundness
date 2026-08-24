@@ -87,13 +87,14 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
 
     // The name each source was given, keyed by the canonical path it was written to, so that a
     // diagnostic reads as if the compiler had seen the name rather than the scratch file.
-    val names: Map[Text, Text] = Map.from:
+    val names: Map[Text, Text] =
       sources.stdlib.map: (name, code) =>
         val file = scratch.resolve(name.s).nn
         jnf.Files.createDirectories(file.getParent.nn)
         jnf.Files.writeString(file, code.s)
 
         (file.toRealPath().nn.toString.tt, name)
+      . to(Map)
 
     val collector = new MessageCollector:
       def clear(): Unit = ()

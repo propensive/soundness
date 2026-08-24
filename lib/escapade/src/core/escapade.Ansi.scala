@@ -187,16 +187,16 @@ object Ansi extends Ansi2:
     def popFrame(): Unit =
       stack.stdlib.head match
         case _: Frame.Style =>
-          stack = List.of(stack.stdlib.tail)
+          stack = stack.stdlib.tail.to(List)
           currentStyle = styleStack.stdlib.head
-          styleStack = List.of(styleStack.stdlib.tail)
+          styleStack = styleStack.stdlib.tail.to(List)
 
         case _: Frame.Link =>
-          stack = List.of(stack.stdlib.tail)
+          stack = stack.stdlib.tail.to(List)
           linkArmed = true
 
         case escape: Frame.Escape =>
-          stack = List.of(stack.stdlib.tail)
+          stack = stack.stdlib.tail.to(List)
           addInsertion(plain.length, t"\e"+escape.off)
 
     def applyOnce(transform: Transform): Unit =
@@ -322,7 +322,7 @@ object Ansi extends Ansi2:
       Teletype
         ( plainText,
           newStyles,
-          Map.of(state.hyperlinks.toMap),
+          state.hyperlinks.toMap.to(Map),
           state.insertions.to(TreeMap),
           newBoundaries )
 

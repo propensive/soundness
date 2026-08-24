@@ -169,7 +169,7 @@ object internal:
   :   Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
 
     import quotes.reflect.*
-    val members = Map.of(refinements(self.asTerm.tpe.widen))
+    val members = refinements(self.asTerm.tpe.widen).to(Map)
 
     members.at(t"Topic").let: position => (position, members.at(t"Origin").or(position))
 
@@ -526,7 +526,7 @@ object internal:
 
         val indexed = elements.readable.zipWithIndex
 
-        val pieces = List.of(indexed.toList).map: (elem, idx) =>
+        val pieces = indexed.toList.to(List).map: (elem, idx) =>
             elem.asMatchable match
               case Unset =>
                 if spreads.has(holeIndex) then
@@ -1310,7 +1310,7 @@ object internal:
         // The element types differ (`ValDef` and `Statement`), and `Concatenable` is invariant
         // where `:::` widened, so the concatenation happens on the stdlib side.
         ( ('{ $reader.openObject() }.asTerm
-            :: List.of(slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib))
+            :: (slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib).to(List))
           . stdlib,
           construct )
       . asExprOf[value]
@@ -1335,12 +1335,12 @@ object internal:
         val tactic: Tactic[Json.Error] = $tacticExpr
 
         val keys: Array[String]^{} =
-          Json.Parsable.wireKeys(Array.of[String](${Varargs[String](nameExprs)}*), $renames)
+          Json.Parsable.wireKeys(Array[String](${Varargs[String](nameExprs)}*), $renames)
 
         val table: Json.KeyTable = Json.KeyTable(keys)
         lazy val instances: Array[Json.Field | Null]^{} =
-          Array.of[Json.Field | Null](${Varargs[Json.Field | Null](instanceExprs.stdlib)}*)
-        lazy val fallbacks: Array[Any]^{} = Array.of[Any](${Varargs[Any](fallbackExprs.stdlib)}*)
+          Array[Json.Field | Null](${Varargs[Json.Field | Null](instanceExprs.stdlib)}*)
+        lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs[Any](fallbackExprs.stdlib)}*)
 
         new Json.Parsable:
           type Self = value
@@ -1447,10 +1447,10 @@ object internal:
         val tagField: Text = Json.Parsable.discriminantField(discriminable)
 
         val wireVariants: Array[String]^{} =
-          Json.Parsable.wireKeys(Array.of[String](${Varargs[String](nameExprs)}*), $renames)
+          Json.Parsable.wireKeys(Array[String](${Varargs[String](nameExprs)}*), $renames)
 
         lazy val variants: Array[Json.Field]^{} =
-          Array.of[Json.Field](${Varargs[Json.Field](variantExprs.stdlib)}*)
+          Array[Json.Field](${Varargs[Json.Field](variantExprs.stdlib)}*)
 
         new Json.Parsable:
           type Self = value

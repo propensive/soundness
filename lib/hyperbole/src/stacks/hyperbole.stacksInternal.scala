@@ -113,7 +113,7 @@ private[hyperbole] object stacksInternal:
           if (header & 1) != 0 then readInt()
           spans(address) = (start, end)
 
-      Positions(Lines(Array.unsafeFrozen(sizes)), Map.from(spans))
+      Positions(Lines(Array.unsafeFrozen(sizes)), spans.to(Map))
 
   class AttributeSection extends TastyUnpickler.SectionUnpickler[Optional[Text]](AttributesSection):
     def unpickle(reader: TastyReader, nameAtRef: TastyUnpickler.NameTable): Optional[Text] =

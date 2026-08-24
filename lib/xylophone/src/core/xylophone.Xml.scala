@@ -459,7 +459,7 @@ object Xml extends Tag.Container
 
       if failed then null.asInstanceOf[derivation]
       else
-        val arguments = Array[Any](slots.length)
+        val arguments = Array.allocate[Any](slots.length)
         slot = 0
 
         while slot < slots.length do
@@ -589,8 +589,9 @@ object Xml extends Tag.Container
       // generic-equality lookups, per occurrence) — jacinta's map hoist.
       val labels: List[Text] = variantLabels
 
-      val variantNames: Map[Text, Text] = Map.from:
+      val variantNames: Map[Text, Text] =
         variantRelabelling[derivation, Xml].stdlib.map: (variant, wire) => wire -> variant
+        . to(Map)
 
       xml =>
         provide[Foci[Xml.Focus]]:
@@ -684,7 +685,7 @@ object Xml extends Tag.Container
         Element(fieldName, Attributes.empty, Array.unsafeFrozen(nodes.toArray))
 
       case node: Node =>
-        Element(fieldName, Attributes.empty, Array.of(node))
+        Element(fieldName, Attributes.empty, Array(node))
 
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Xml =
@@ -1085,7 +1086,7 @@ object Xml extends Tag.Container
           given tactic: Tactic[Xml.Error] = reader.errorTactic
           val entries = fields
           val count = entries.length
-          val values = Array[Any](count)
+          val values = Array.allocate[Any](count)
           var index = 0
 
           while index < count do
@@ -1163,7 +1164,7 @@ object Xml extends Tag.Container
                 // zero occurrences build the empty collection, exactly as
                 // the AST derivation decodes an empty synthetic fragment.
                 val elements: List[Any] = values.readable(index) match
-                  case buffer: scm.ListBuffer[?] => List.of(buffer.toList)
+                  case buffer: scm.ListBuffer[?] => buffer.toList.to(List)
                   case _                         => Nil
 
                 values(index) =
@@ -1203,7 +1204,7 @@ object Xml extends Tag.Container
 
           val entries = fields
           val count = entries.length
-          val values = Array[Any](count)
+          val values = Array.allocate[Any](count)
           val focused = foci.active
           var index = 0
 
@@ -1497,7 +1498,7 @@ object Xml extends Tag.Container
         case fragment: Fragment => count += fragment.nodes.length
         case _                  => count += 1
 
-      val array = Array[Node](count)
+      val array = Array.allocate[Node](count)
 
       var index = 0
 
@@ -2817,7 +2818,7 @@ object Xml extends Tag.Container
 
       if n == 0 then Attributes.empty
       else
-        val arr = Array[String](2*n)
+        val arr = Array.allocate[String](2*n)
         jl.System.arraycopy(attrBuf, 0, arr.raw, 0, 2*n)
         Attributes.fromInterleaved(Array.freeze(arr))
 
@@ -3124,7 +3125,7 @@ object Xml extends Tag.Container
       val result =
         if children.nil then Array.empty[Node]
         else
-          val arr = Array[Node](children.length)
+          val arr = Array.allocate[Node](children.length)
           var i = 0
 
           while i < children.length do
@@ -3377,7 +3378,7 @@ object Xml extends Tag.Container
 
       if n == 0 then Attributes.empty
       else
-        val arr = Array[String](2*n)
+        val arr = Array.allocate[String](2*n)
         jl.System.arraycopy(attrBuf, 0, arr.raw, 0, 2*n)
         Attributes.fromInterleaved(Array.freeze(arr))
 
@@ -3448,7 +3449,7 @@ object Xml extends Tag.Container
       val result =
         if children.nil then Array.empty[Node]
         else
-          val arr = Array[Node](children.length)
+          val arr = Array.allocate[Node](children.length)
           var i = 0
 
           while i < children.length do
@@ -3745,7 +3746,7 @@ object Xml extends Tag.Container
     // The current element's text content, consumed together with its close
     // tag: the text when the content is exactly one text run (or empty), or
     // `null` for any other shape — mirroring `textOf`, which accepts only
-    // `Element(_, _, Array.of(TextNode(text)))` and `Element(_, _, Array.of())`.
+    // `Element(_, _, Array(TextNode(text)))` and `Element(_, _, Array())`.
     // A CDATA section, a comment, a processing instruction or a child
     // element therefore makes a leaf wrong-shaped on both paths.
     private[xylophone] def directText()(using Tactic[Parse.Error]): Text | Null =
@@ -4273,7 +4274,7 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
 
   private def selfNodes: Array[Node]^{} = this match
     case Fragment(nodes*) => Array.from(nodes)
-    case node: Node       => Array.of(node)
+    case node: Node       => Array(node)
 
   private def childElements(name: String): Array[Node]^{} =
     val buffer = scm.ArrayBuffer[Node]()

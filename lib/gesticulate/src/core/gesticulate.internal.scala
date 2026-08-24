@@ -60,11 +60,12 @@ object internal:
   // gesticulate's own types.
   private lazy val systemMediaTypes: Set[Text] =
     Optional(getClass.getResourceAsStream("/gesticulate/media.types")).lay(Set()): stream =>
-      Set.from:
+
         scala.io.Source.fromInputStream(stream)
         . getLines()
         . map(Text(_))
         . map(_.cut(t"\t").stdlib.head.lower)
+        . to(Set)
 
   private val validGroups: Set[Text] =
     Set

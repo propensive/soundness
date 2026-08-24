@@ -96,7 +96,7 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
       // Each feature wraps the session around the same single-owner terminal.
       scala.caps.unsafe.unsafeAssumeSeparate(feature(applyFeatures(rest)))
 
-  applyFeatures(List.of(features.values))
+  applyFeatures(features.values.to(List))
 
 
 package keyboards:

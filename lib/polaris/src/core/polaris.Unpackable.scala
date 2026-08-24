@@ -49,7 +49,7 @@ object Unpackable:
 
       count =>
         val local = Sextant(bytes, start)
-        val buffer = Array[pack](count)
+        val buffer = Array.allocate[pack](count)
         var index = 0
 
         while index < count do

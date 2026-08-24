@@ -115,8 +115,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   // The same 4 MB split into 64 KiB chunks, so aggregation/write loops iterate
   // (a single in-memory chunk would let `read[Data]` fold to an identity).
   lazy val inputChunks: Chain[Data] =
-    Chain.from((0 until input.length by 65536).map: offset =>
-      slice(offset, (offset + 65536).min(input.length)))
+    ((0 until input.length by 65536).map: offset =>
+      slice(offset, (offset + 65536).min(input.length))).to(Chain)
   // The same chunks as a stdlib `List`. The rival pipelines fold and map over the corpus with
   // their own combinators, which need a stdlib collection; like `inputSeq` above, this is a
   // deliberate interop boundary rather than a gap in `Chain`.

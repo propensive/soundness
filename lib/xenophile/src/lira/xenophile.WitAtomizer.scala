@@ -295,4 +295,4 @@ object WitAtomizer:
           uvarint(out, exports.length.toLong)
           exports.foreach { exported => utf8(out, exported) })
 
-    List.from(atoms.toList)
+    atoms.toList.to(List)

@@ -148,13 +148,13 @@ private[facsimile] object Guard:
       revision: Int, encryptMetadata: Boolean )
   :   Data =
 
-    val permissionsBytes: Data = Array.of((permissions & 0xff).toByte,
+    val permissionsBytes: Data = Array((permissions & 0xff).toByte,
         ((permissions >> 8) & 0xff).toByte, ((permissions >> 16) & 0xff).toByte,
         ((permissions >> 24) & 0xff).toByte)
 
     val metadataBytes: Data =
       if revision >= 4 && !encryptMetadata
-      then Array.of(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte)
+      then Array(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte)
       else Array.empty[Byte]
 
     var hash: Data =
@@ -302,12 +302,12 @@ private[facsimile] class Guard
   // Algorithm 1: the per-object key. For revision 6 the file key is used directly.
   private def objectKey(number: Int, generation: Int, aes: Boolean): Data =
     if revision >= 5 then fileKey else
-      val numbering: Data = Array.of((number & 0xff).toByte, ((number >> 8) & 0xff).toByte,
+      val numbering: Data = Array((number & 0xff).toByte, ((number >> 8) & 0xff).toByte,
           ((number >> 16) & 0xff).toByte, (generation & 0xff).toByte,
           ((generation >> 8) & 0xff).toByte)
 
       // the "sAlT" constant
-      val salt: Data = if aes then Array.of[Byte](0x73, 0x41, 0x6c, 0x54) else Array.empty[Byte]
+      val salt: Data = if aes then Array[Byte](0x73, 0x41, 0x6c, 0x54) else Array.empty[Byte]
 
       Guard.md5(Array.frozen(fileKey.readable ++ numbering.readable ++ salt.readable))
       . keep((fileKey.length + 5).min(16))

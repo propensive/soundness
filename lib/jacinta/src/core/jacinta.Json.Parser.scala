@@ -141,7 +141,7 @@ private[jacinta] object Parser:
   // multi-byte UTF-8 decoder in `tail`, not the fast slice path.
   // Immutable (frozen) so class methods can index it without a global-mutable uses clause.
   private val StringScanContinue: Array[Byte]^{} =
-    val arr = Array[Byte](256)
+    val arr = Array.allocate[Byte](256)
     var i = 0
 
     while i < 256 do

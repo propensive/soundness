@@ -65,7 +65,7 @@ class ForeignBuffer(private[xenophile] val memory: Ptr[Byte], val size: Int):
   def pointer: Address = Address(Intrinsics.castRawPtrToLong(toRawPtr(memory)))
 
   def data(length: Int): Data =
-    val array = Array[Byte](length)
+    val array = Array.allocate[Byte](length)
     var index = 0
 
     while index < length do

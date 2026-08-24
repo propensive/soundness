@@ -333,11 +333,11 @@ private[punctuation] object Serializer:
     case Layout.Heading(_, level, children*) =>
       writer.raw(t"#"*level)
       writer.raw(t" ")
-      writer.raw(inlineLine(List.of(children.toList)))
+      writer.raw(inlineLine(children.toList.to(List)))
       writer.newline()
 
     case Layout.Paragraph(_, children*) =>
-      flow(writer, List.of(children.toList), protectFirst = true)
+      flow(writer, children.toList.to(List), protectFirst = true)
       writer.newline()
 
     case Layout.ThematicBreak(_) =>
@@ -355,7 +355,7 @@ private[punctuation] object Serializer:
       writer.newline()
 
     case Layout.BlockQuote(_, children*) =>
-      trimNewline(render(List.of(children.toList), writer.width)).cut(t"\n").each: line =>
+      trimNewline(render(children.toList.to(List), writer.width)).cut(t"\n").each: line =>
         if line.length == 0 then writer.raw(t">")
         else
           writer.raw(t"> ")

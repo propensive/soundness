@@ -76,7 +76,7 @@ object Benchmarks extends Suite(m"Polysyllabic benchmarks"):
   // Wrap the whole text to 80 columns with English hyphenation in scope. The
   // returned line count keeps the JIT honest — anything dead-coded would
   // collapse this to zero.
-  def wrapAt80(text: Text): Int = Paragraph.fit[Text](Array.of(text), 80, TextAlignment.Left).size
+  def wrapAt80(text: Text): Int = Paragraph.fit[Text](Array(text), 80, TextAlignment.Left).size
 
   // Insert soft-hyphens at every admissible break point in every word. Exercises
   // the Liang algorithm on every word, regardless of column width — a tighter

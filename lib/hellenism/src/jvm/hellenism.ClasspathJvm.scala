@@ -60,14 +60,15 @@ extension (classpath: Classpath.type)
     if entries.exists:
       case _: Classpath.Entry.Url => true
       case _                     => false
-    then OnlineClasspath(List.of(entries))
+    then OnlineClasspath(entries.to(List))
     else
       type Entry = Classpath.Entry.Directory | Classpath.Entry.Jar | Classpath.Entry.JavaRuntime.type
 
-      val items: List[Entry] = List.of:
-        entries.collect:
-          case directory: Classpath.Entry.Directory      => directory
-          case jar: Classpath.Entry.Jar                  => jar
-          case runtime: Classpath.Entry.JavaRuntime.type => runtime
+      val items: List[Entry] =
+        List.from:
+          entries.collect:
+            case directory: Classpath.Entry.Directory      => directory
+            case jar: Classpath.Entry.Jar                  => jar
+            case runtime: Classpath.Entry.JavaRuntime.type => runtime
 
       LocalClasspath(items.stdlib*)

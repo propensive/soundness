@@ -85,7 +85,7 @@ object WebIdlDialect extends Dialect:
           case WebIdl.Member.Kind.Operation =>
             if member.special.present || member.name.s.isEmpty then SList()
             else
-              val parameters = List.from(member.arguments.stdlib.map(_.typed))
+              val parameters = member.arguments.stdlib.map(_.typed).to(List)
               SList(member.name -> Prototype(parameters, member.typed))
 
           case WebIdl.Member.Kind.Constructor => SList()

@@ -314,7 +314,7 @@ object Pdf:
                   case _ =>
                     ()
 
-                Map.of(builder.result())
+                builder.result().to(Map)
 
           case _ =>
             Map()
@@ -396,7 +396,7 @@ object Pdf:
             ()
 
         recur(elements.map(pdf.resolved(_)))
-        Map.of(builder.result())
+        builder.result().to(Map)
 
   // A font as a page's resources declare it (ISO 32000-2 §9): a pure, fully-materialized
   // value. An embedded font program surfaces as the phoenicia `Sfnt` its tables say it is —
@@ -1093,7 +1093,7 @@ extends caps.ExclusiveCapability:
       entry(0).lay(Sequence()): number =>
         Sequence(number -> index)
 
-    . pipe { sequence => Map.from(sequence.stdlib) }
+    . pipe { sequence => sequence.stdlib.to(Map) }
 
   // Named destinations from both homes: the old-style `/Dests` dictionary and the
   // `/Names /Dests` name tree, still as raw COS values.
@@ -1101,9 +1101,9 @@ extends caps.ExclusiveCapability:
     val old = resolved(catalog(t"Dests").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
 
     val tree = resolved(catalog(t"Names").or(Cos.Nil))(t"Dests")
-      . let(Trees.names(_)(using this).stdlib.pipe(Map.from(_))).or(Map[Text, Cos]())
+      . let(Trees.names(_)(using this).stdlib.pipe(_.to(Map))).or(Map[Text, Cos]())
 
-    Map.of(old.stdlib ++ (tree: Map[Text, Cos]).stdlib)
+    (old.stdlib ++ (tree: Map[Text, Cos]).stdlib).to(Map)
 
   def destinations(using Tactic[Pdf.Error]): Map[Text, Destination] =
     val pages = pageNumbers
@@ -1304,10 +1304,10 @@ extends caps.ExclusiveCapability:
         Cos.Sequence(elements.map(decryptStrings(_, number, generation, guard)))
 
       case Cos.Dictionary(entries) =>
-        Cos.Dictionary(Map.of(entries.stdlib.view.mapValues(decryptStrings(_, number, generation, guard)).toMap))
+        Cos.Dictionary((entries.stdlib.view.mapValues(decryptStrings(_, number, generation, guard)).toMap).to(Map))
 
       case Cos.Body(entries, start) =>
-        val decrypted = Map.of(entries.stdlib.view.mapValues(decryptStrings(_, number, generation, guard)).toMap)
+        val decrypted = (entries.stdlib.view.mapValues(decryptStrings(_, number, generation, guard)).toMap).to(Map)
         Cos.Body(decrypted, start)
 
       case other =>
@@ -1476,7 +1476,7 @@ extends caps.ExclusiveCapability:
   // dictionary: sufficient for `/Filter` and `/DecodeParms` shapes.
   private def deepResolved(value: Cos)(using Tactic[Pdf.Error]): Cos = resolved(value) match
     case Cos.Sequence(elements)  => Cos.Sequence(elements.map(resolved(_)))
-    case Cos.Dictionary(entries) => Cos.Dictionary(Map.of(entries.stdlib.view.mapValues(resolved(_)).toMap))
+    case Cos.Dictionary(entries) => Cos.Dictionary((entries.stdlib.view.mapValues(resolved(_)).toMap).to(Map))
     case other                   => other
 
   private def containerStream(container: Int)(using Tactic[Pdf.Error]): ObjectStream =

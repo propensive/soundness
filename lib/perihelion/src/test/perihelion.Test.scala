@@ -171,7 +171,7 @@ object Tests extends Suite(m"Perihelion tests"):
 
     def readMessages(frames: scala.Array[Byte]*): List[perihelion.Message] =
       val stream = Chain(frames*).map(Array.unsafeFrozen(_))
-      List.of(Reader(() => zephyrine.Stream(stream.iterator), Channel()).messages.stdlib.toList)
+      (Reader(() => zephyrine.Stream(stream.iterator), Channel()).messages.stdlib.toList).to(List)
 
     def texts(messages: List[perihelion.Message]): List[Text] = messages.map:
       case perihelion.Message.Text(text) => text

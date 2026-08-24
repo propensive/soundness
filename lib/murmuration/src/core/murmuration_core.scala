@@ -164,9 +164,10 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( using reshapable: self is Reshapable by traversable.Operand to result )
   :   Map[key, result] =
 
-    Map.of:
+
       traversable.traverse(self).toList.groupBy(lambda).map: (key, elements) =>
         (key, reshapable.reshape(elements.iterator))
+      . to(Map)
 
   // `Stable` receivers only: sorting an unordered shape (`Set`, `Map`) is honestly unavailable
   // rather than silently order-dropping.
@@ -214,9 +215,10 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )
   :   List[result] =
 
-    List.of:
+
       traversable.traverse(self).grouped(size).map { chunk => reshapable.reshape(chunk.iterator) }
       . toList
+      . to(List)
 
 // The `Text` fast path of the generic `subsumes` above (an overload sibling, so the
 // receiver selects it): substring containment through `String.indexOf`, with no

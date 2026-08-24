@@ -79,7 +79,7 @@ object JsigDiscipline extends Discipline:
 
     . to(scala.collection.immutable.Map)
 
-    val outcome = ClassfileAtomizer.atomize(Map.of(classes), context.classpath)
+    val outcome = ClassfileAtomizer.atomize(classes.to(Map), context.classpath)
 
     // `outcome.unresolved` is deliberately not consulted: a supertype outside the claimed
     // content contributes nothing to presented sets (`jsig.md` §4), exactly as a metadata-less

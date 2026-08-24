@@ -58,7 +58,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert: stream => stream === proscenium.Chain(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
 
       val longData: Chain[Data] =
-        proscenium.Chain.from(proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000))
+        (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000)).to(proscenium.Chain)
 
       test(m"Roundtrip compress/decompress a long repetitive stream with Gzip"):
         longData.compress[Gzip].decompress[Gzip]
@@ -302,7 +302,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == foxPlain.in[Data].to[List])
 
       val brotliLong: Chain[Data] =
-        proscenium.Chain.from(proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000))
+        (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000)).to(proscenium.Chain)
       val brotliWhole: Data = Array.frozen(Array.from((0 to 255).map(_.toByte)).readable ++ Data(1, 1, 2, 3, 5, 8, 13).readable)
       val brotliVaried: Data =
         Array.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
@@ -404,7 +404,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
         // The tampered copy is built in an exclusive buffer and frozen once, so corrupting a
         // byte asserts nothing.
-        val buffer = Array[Byte](source.length)
+        val buffer = Array.allocate[Byte](source.length)
         buffer.copyFrom(source, 0, 0, source.length)
         buffer(36) = (source.readable(36) ^ 0x55).toByte
         val corrupted: Data = Array.freeze(buffer)
@@ -430,7 +430,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       val xzWhole: Data = Array.frozen(Array.from((0 to 255).map(_.toByte)).readable ++ Data(1, 1, 2, 3, 5, 8, 13).readable)
       val xzLong: Chain[Data] =
-        proscenium.Chain.from(proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000))
+        (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000)).to(proscenium.Chain)
       val xzVaried: Data =
         Array.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
@@ -525,7 +525,7 @@ object Tests extends Suite(m"Pneumatic tests"):
     suite(m"LZMA2 tests"):
       val lzma2Whole: Data = Array.frozen(Array.from((0 to 255).map(_.toByte)).readable ++ Data(1, 1, 2, 3, 5, 8, 13).readable)
       val lzma2Long: Chain[Data] =
-        proscenium.Chain.from(proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000))
+        (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000)).to(proscenium.Chain)
       val lzma2Varied: Data =
         Array.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
@@ -648,7 +648,7 @@ object Tests extends Suite(m"Pneumatic tests"):
           case _ => ()
 
         scala.caps.unsafe.unsafeAssumeSeparate(recur())
-        proscenium.List.of(builder.result())
+        builder.result().to(proscenium.List)
       . assert(_ == mixed.readable.to(proscenium.List))
 
       test(m"gzip duct decompresses JDK-produced gzip"):

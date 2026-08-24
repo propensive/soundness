@@ -62,7 +62,7 @@ object Tests extends Suite(m"Coaxial tests"):
     def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
     def bytes(data: Data): List[Byte] = data.to[List]
     def joined(stream: Chain[Data]): List[Byte] =
-      List.of(stream.stdlib.flatMap { d => d.readable.toSeq }.toList)
+      (stream.stdlib.flatMap { d => d.readable.toSeq }.toList).to(List)
     def drained(stream: zephyrine.Stream[Data] over Credit): List[Byte] = stream.memoize.to[List]
 
     suite(m"Duplex streaming endpoints"):
@@ -292,7 +292,7 @@ object Tests extends Suite(m"Coaxial tests"):
       test(m"reuseAddress sets SO_REUSEADDR on a configured TCP server socket"):
         import socketOptions.reuseAddressSocketOption
         val server = jn.ServerSocket()
-        configure(server, List.of(summon[Every[Socket.Option.Tcp]].values))
+        configure(server, (summon[Every[Socket.Option.Tcp]].values).to(List))
         server.getOption(java.net.StandardSocketOptions.SO_REUSEADDR).nn.booleanValue
           .also(server.close())
       . assert(_ == true)
@@ -300,7 +300,7 @@ object Tests extends Suite(m"Coaxial tests"):
       test(m"broadcast sets SO_BROADCAST on a configured UDP socket"):
         import socketOptions.broadcastSocketOption
         val socket = jn.DatagramSocket()
-        configure(socket, List.of(summon[Every[Socket.Option.Udp]].values))
+        configure(socket, (summon[Every[Socket.Option.Udp]].values).to(List))
         socket.getOption(java.net.StandardSocketOptions.SO_BROADCAST).nn.booleanValue
           .also(socket.close())
       . assert(_ == true)

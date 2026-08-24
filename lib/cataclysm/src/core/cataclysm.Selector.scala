@@ -65,7 +65,7 @@ object Selector:
         case Combinator.Descendant => t" ${compound.show}"
         case other                 => t" ${other.show} ${compound.show}"
 
-    t"$lead${selector.head.show}${List.of(rest).join}"
+    t"$lead${selector.head.show}${rest.to(List).join}"
 
 // A complex selector: a head compound followed by combinator/compound steps.
 // `lead` is set only for a relative selector (e.g. the `>` in `:has(> img)`).

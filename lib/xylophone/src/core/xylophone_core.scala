@@ -61,7 +61,7 @@ extension (inline context: StringContext)
 // immutably; non-element nodes (text, comments) are preserved in place.
 private def xmlNodes(xml: Xml): Array[Node]^{} = xml match
   case Fragment(nodes*) => Array.from(nodes)
-  case node: Node       => Array.of(node)
+  case node: Node       => Array(node)
 
 private def firstNode(xml: Xml, fallback: Node): Node =
   val nodes = xmlNodes(xml)

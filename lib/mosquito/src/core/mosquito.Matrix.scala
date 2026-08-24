@@ -54,11 +54,14 @@ object Matrix:
       val textElements = matrix.elements.remap(_.show)
       val sizes = textElements.remap(_.length)
 
-      val columnWidths: Array[Int]^{} = Array.from:
-        (0 until matrix.columns).map: column =>
-          sizes.readUnchecked:
-            column + matrix.columns*(0 until matrix.rows).maxBy: row =>
-              sizes.readUnchecked(matrix.columns*row + column)
+      // `Array.from`, not `Array.from()`: the conversion route mints a fresh `any.rd` which
+      // cannot meet the declared `^{}`; `from` is the capture-precise constructor.
+      val columnWidths: Array[Int]^{} =
+        Array.from:
+          (0 until matrix.columns).map: column =>
+            sizes.readUnchecked:
+              column + matrix.columns*(0 until matrix.rows).maxBy: row =>
+                sizes.readUnchecked(matrix.columns*row + column)
 
       (0 until matrix.rows).map: row =>
         val before = if row == 0 then t"⎡ " else if row == matrix.rows - 1 then t"⎣ " else t"⎪ "
@@ -403,7 +406,7 @@ object Matrix:
       val dimension = matrix.rows
       val elements = matrix.elements
 
-      if dimension == 1 then new Matrix[element, n, n](1, 1, Array.of(unital.one))
+      if dimension == 1 then new Matrix[element, n, n](1, 1, Array(unital.one))
       else
         val fullMask: Long = (1L << dimension) - 1L
 
@@ -449,7 +452,7 @@ object Matrix:
       if determinantValue == zeroic.zero then Unset
       else if dimension == 1 then
         val one: element = elements.readUnchecked(0)/elements.readUnchecked(0)
-        new Matrix[element, n, n](1, 1, Array.of(one/elements.readUnchecked(0)))
+        new Matrix[element, n, n](1, 1, Array(one/elements.readUnchecked(0)))
       else
         val resultElements = Array.build[element](dimension*dimension): array =>
           var outputRow = 0

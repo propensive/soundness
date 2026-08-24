@@ -97,8 +97,8 @@ object Contrastable:
     given set: [element: Showable] => Set[element] is Contrastable.Foundation =
       (left, right) =>
         if left == right then Juxtaposition.Same(left.show) else
-          val leftOnly: Set[Text] = Set.of((left.stdlib -- right.stdlib).map(_.show))
-          val rightOnly: Set[Text] = Set.of((right.stdlib -- left.stdlib).map(_.show))
+          val leftOnly: Set[Text] = ((left.stdlib -- right.stdlib).map(_.show)).to(Set)
+          val rightOnly: Set[Text] = ((right.stdlib -- left.stdlib).map(_.show)).to(Set)
 
           def describe(set: Set[Text]): Text =
             ( if set.size > 5 then set.to[List].keep(4) :+ t"…${(set.size - 4).show.subscripts}"
@@ -218,26 +218,27 @@ object Contrastable:
   :   Juxtaposition =
 
     if left == right then Juxtaposition.Same(leftDebug) else
-      val comparison = Array.from:
-        dissonance.diff(Sequence.from(left.readable), Sequence.from(right.readable)).rdiff(_ == _, 10).changes.map:
-          case Par(leftIndex, rightIndex, value) =>
-            val label =
-              if leftIndex == rightIndex then leftIndex.show
-              else t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
+      val comparison =
+        Array.from:
+          dissonance.diff(Sequence.from(left.readable), Sequence.from(right.readable)).rdiff(_ == _, 10).changes.map:
+            case Par(leftIndex, rightIndex, value) =>
+              val label =
+                if leftIndex == rightIndex then leftIndex.show
+                else t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
-            label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
+              label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
 
-          case Ins(rightIndex, value) =>
-            t" ╱${rightIndex.show.subscripts}" -> Juxtaposition.Different(t"", value.short)
+            case Ins(rightIndex, value) =>
+              t" ╱${rightIndex.show.subscripts}" -> Juxtaposition.Different(t"", value.short)
 
-          case Del(leftIndex, value) =>
-            t"${leftIndex.show.superscripts}╱ " ->
-              Juxtaposition.Different(value.let(_.short).or(t"?"), t"")
+            case Del(leftIndex, value) =>
+              t"${leftIndex.show.superscripts}╱ " ->
+                Juxtaposition.Different(value.let(_.short).or(t"?"), t"")
 
-          case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
-            val label = t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
+            case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
+              val label = t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
-            label -> juxtaposition(t"", Decomposition(leftValue), Decomposition(rightValue))
+              label -> juxtaposition(t"", Decomposition(leftValue), Decomposition(rightValue))
 
       Juxtaposition.Collation(name, comparison.to[List], leftDebug, rightDebug)
 

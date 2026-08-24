@@ -163,7 +163,7 @@ object ClassSurface:
     // Members are sorted by selector: `java.lang.classfile` yields them in file order, and file
     // order is an artifact of the compilation run, not of the interface (§11.2 requirement 3).
     val members =
-      List.from((fields.stdlib ++ methods.stdlib).sortBy { member => member.selector.s })
+      ((fields.stdlib ++ methods.stdlib).sortBy { member => member.selector.s }).to(List)
 
     val name = model.thisClass.nn.asInternalName.nn.tt
     val attributes = model.attributes.nn.to[List]

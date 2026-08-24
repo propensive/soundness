@@ -322,11 +322,11 @@ object Mutation:
            ++ block.compounds.readable.drop(localIdx + 1) )
 
       if compounds.length == 0 then Array.empty
-      else Array.of(block.copy(compounds = compounds))
+      else Array(block.copy(compounds = compounds))
 
     op match
       case Op.UpdateAtom(_, atomIndex, text) =>
-        splice(Array.of(updateAtomAt(target, atomIndex, text, sigil)))
+        splice(Array(updateAtomAt(target, atomIndex, text, sigil)))
 
       case Op.Delete(_) =>
         splice(Array.empty)
@@ -336,34 +336,34 @@ object Mutation:
         // replacement carrying its own remark keeps it — `construct` never
         // produces one, so the two readings coincide for constructed
         // payloads.
-        splice(Array.of(compound.copy(remark = compound.remark.or(target.remark))))
+        splice(Array(compound.copy(remark = compound.remark.or(target.remark))))
 
       case Op.AttachRemark(_, text) =>
-        splice(Array.of(target.copy(remark = text)))
+        splice(Array(target.copy(remark = text)))
 
       case Op.RemoveRemark(_) =>
         // Removing an absent remark produces an identical document, so it
         // succeeds as the identity (§22.2).
-        if target.remark.absent then Array.of(block)
-        else splice(Array.of(target.copy(remark = Unset)))
+        if target.remark.absent then Array(block)
+        else splice(Array(target.copy(remark = Unset)))
 
       case Op.InsertBefore(_, compound) =>
         // §22.2: the same block as the sibling, unless that block is
         // tabulated — then a new block immediately before it, whose blank
         // line keeps the new compound from being read as a row.
         if block.tabulation.present
-        then Array.of(Tel.Block(Array.empty, Unset, Array.of(compound), 1), block)
-        else splice(Array.of(compound, target))
+        then Array(Tel.Block(Array.empty, Unset, Array(compound), 1), block)
+        else splice(Array(compound, target))
 
       case Op.InsertAfter(_, compound) =>
         // As `insert-before`; the tabulated block's blank line stops it
         // absorbing the new compound as a row (§16.2), and the new block
         // takes over the original separation from following content.
         if block.tabulation.present
-        then Array.of
+        then Array
               ( block.copy(trailingBlankLines = 1),
-                Tel.Block(Array.empty, Unset, Array.of(compound), block.trailingBlankLines) )
-        else splice(Array.of(target, compound))
+                Tel.Block(Array.empty, Unset, Array(compound), block.trailingBlankLines) )
+        else splice(Array(target, compound))
 
       case Op.SetFlag(_, keyword) =>
         val inlinePresent = target.atoms.exists:
@@ -390,10 +390,10 @@ object Mutation:
             case _                             => false
 
           val flagAtom = Tel.Atom.Inline(keyword, if hard then 2 else 1)
-          splice(Array.of(target.copy(atoms = target.atoms :+ flagAtom)))
+          splice(Array(target.copy(atoms = target.atoms :+ flagAtom)))
         else
           val flag = Tel.Compound(keyword, Array.empty, Unset, Array.empty)
-          splice(Array.of(target.copy(children = insertNatural(target.children, flag))))
+          splice(Array(target.copy(children = insertNatural(target.children, flag))))
 
       case Op.UnsetFlag(_, keyword) =>
         // An inline-atom flag is removed from the atom list, preserving
@@ -414,7 +414,7 @@ object Mutation:
         if atomIdx >= 0 then
           val atoms =
             Array.frozen(target.atoms.readable.take(atomIdx) ++ target.atoms.readable.drop(atomIdx + 1))
-          splice(Array.of(target.copy(atoms = atoms)))
+          splice(Array(target.copy(atoms = atoms)))
         else
           var foundBlock = -1
           var foundLocal = -1
@@ -437,7 +437,7 @@ object Mutation:
 
             b += 1
 
-          if foundBlock < 0 then Array.of(block)
+          if foundBlock < 0 then Array(block)
           else
             val childBlock = target.children.readable(foundBlock)
 
@@ -451,7 +451,7 @@ object Mutation:
               else Array.frozen
                     (target.children.readable.updated(foundBlock, childBlock.copy(compounds = remaining)))
 
-            splice(Array.of(target.copy(children = children)))
+            splice(Array(target.copy(children = children)))
 
       case Op.Insert(_, _) | Op.InsertIntoBlock(_, _, _) | Op.ReorderWithinGroup(_, _, _, _)
         | Op.ReorderGroups(_, _, _, _) | Op.ResizeTabulation(_, _, _) =>
@@ -532,11 +532,11 @@ object Mutation:
       // unchanged; a tabulated last block additionally keeps one blank
       // line so the new compound isn't read as a row (§16.2).
       if blocks.length == 0
-      then Array.of(Tel.Block(Array.empty, Unset, Array.of(compound), 1))
+      then Array(Tel.Block(Array.empty, Unset, Array(compound), 1))
       else
         val lastIdx = blocks.length - 1
         val last = blocks.readable(lastIdx)
-        val fresh = Tel.Block(Array.empty, Unset, Array.of(compound), last.trailingBlankLines)
+        val fresh = Tel.Block(Array.empty, Unset, Array(compound), last.trailingBlankLines)
         val separation = if last.tabulation.present then 1 else 0
         Array.frozen
          ( blocks.readable.updated(lastIdx, last.copy(trailingBlankLines = separation))
@@ -546,7 +546,7 @@ object Mutation:
 
       if block.tabulation.present then
         val separated = block.copy(trailingBlankLines = 1)
-        val fresh = Tel.Block(Array.empty, Unset, Array.of(compound), block.trailingBlankLines)
+        val fresh = Tel.Block(Array.empty, Unset, Array(compound), block.trailingBlankLines)
         Array.frozen
          ( blocks.readable.take(lastB) ++ scala.IArray(separated, fresh)
            ++ blocks.readable.drop(lastB + 1) )
@@ -580,7 +580,7 @@ object Mutation:
        ( blocks.readable.take(blockIdx - 1) ++ scala.IArray(absorbed)
          ++ blocks.readable.drop(blockIdx + 1) )
     else if blocks.length == 1 && nested && removed.trailingBlankLines > 0
-    then Array.of(Tel.Block(Array.empty, Unset, Array.empty, removed.trailingBlankLines))
+    then Array(Tel.Block(Array.empty, Unset, Array.empty, removed.trailingBlankLines))
     else Array.frozen(blocks.readable.drop(1))
 
   // §22.2 `insert-into-block` — append a compound to an existing block's
@@ -1037,7 +1037,7 @@ object Mutation:
 
     def scalarChild(kw: Text, value: Text): Tel.Compound =
       if value.s.isEmpty then Tel.Compound(kw, Array.empty, Unset, Array.empty)
-      else Tel.Compound(kw, Array.of(chooseAtomForm(value, sigil)), Unset, Array.empty)
+      else Tel.Compound(kw, Array(chooseAtomForm(value, sigil)), Unset, Array.empty)
 
     members.stdlib.foreach:
       case Member.Flag(kw) =>
@@ -1074,7 +1074,7 @@ object Mutation:
 
     val childBlocks: Array[Tel.Block]^{} =
       if children.length == 0 then Array.empty
-      else Array.of(Tel.Block(Array.empty, Unset, Array.from(children), 0))
+      else Array(Tel.Block(Array.empty, Unset, Array.from(children), 0))
 
     Tel.Compound(keyword, atoms, Unset, childBlocks)
 

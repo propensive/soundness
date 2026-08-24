@@ -61,24 +61,24 @@ object Message:
             apply[tail](tail.asInstanceOf[tail], communicable.message(message2) :: done)
 
       case _ =>
-        List.of(done.reverse)
+        done.reverse.to(List)
 
 
 case class Message(texts: List[Text], messages: List[Message] = Nil):
   @targetName("append")
   infix def + (right: Message): Message =
     Message
-      ( List.of
-         ( texts.stdlib.init
-           ++ ((texts.stdlib.last + right.texts.stdlib.head) :: right.texts.stdlib.tail) ),
+      ( ( texts.stdlib.init
+          ++ ((texts.stdlib.last + right.texts.stdlib.head) :: right.texts.stdlib.tail) )
+        . to(List),
         messages + right.messages )
 
   def segments: List[Text | Message] =
     def recur(parts: List[Text], messages: List[Message]): List[Text | Message] = parts match
-      case head :: tail => List.of(messages.stdlib.head :: head :: recur(tail, List.of(messages.stdlib.tail)).stdlib)
+      case head :: tail => (messages.stdlib.head :: head :: recur(tail, messages.stdlib.tail.to(List)).stdlib).to(List)
       case Nil          => Nil
 
-    List.of(texts.stdlib.head :: recur(List.of(texts.stdlib.tail), messages).stdlib)
+    (texts.stdlib.head :: recur(texts.stdlib.tail.to(List), messages).stdlib).to(List)
 
   def fold[render](initial: render)(append: (render, Text, Int) => render): render =
     def recur(done: render, textTodo: List[Text], messagesTodo: List[Message], level: Int): render =
@@ -87,7 +87,7 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
 
         case sub :: messages =>
           val prefix = recur(append(done, textTodo.stdlib.head, level), sub.texts, sub.messages, level + 1)
-          recur(prefix, List.of(textTodo.stdlib.tail), messages, level)
+          recur(prefix, textTodo.stdlib.tail.to(List), messages, level)
 
     recur(initial, texts, messages, 0)
 

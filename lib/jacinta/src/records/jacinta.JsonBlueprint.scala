@@ -357,18 +357,18 @@ object JsonBlueprint:
       format:     Optional[Text],
       pattern:    Optional[Text] ):
 
-    def requiredFields: Set[Text] = Set.from(required.or(Nil).stdlib)
+    def requiredFields: Set[Text] = required.or(Nil).stdlib.to(Set)
 
     def arrayFields =
-      items.let(x => Map.from(x.stdlib.map: (key, value) =>
-        key -> value.as[Property].field(requiredFields.has(key))))
+      items.let(x => (x.stdlib.map: (key, value) =>
+        key -> value.as[Property].field(requiredFields.has(key))).to(Map))
 
       . or:
           panic(m"Some items were missing")
 
     def objectFields =
-      properties.let(x => Map.from(x.stdlib.map: (key, value) =>
-        key -> value.as[Property].field(requiredFields.has(key))))
+      properties.let(x => (x.stdlib.map: (key, value) =>
+        key -> value.as[Property].field(requiredFields.has(key))).to(Map))
 
       . or:
           panic(m"Some properties were missing")
@@ -400,10 +400,11 @@ object JsonBlueprint:
       properties: Map[Text, JsonBlueprint.Property],
       required:   Optional[List[Text]] ):
 
-    lazy val requiredFields: Set[Text] = Set.from(required.or(Nil).stdlib)
+    lazy val requiredFields: Set[Text] = required.or(Nil).stdlib.to(Set)
 
-    def fields: Map[Text, Member] = Map.from:
+    def fields: Map[Text, Member] =
       properties.stdlib.map: (key, value) => key -> value.field(requiredFields.has(key))
+      . to(Map)
 
   // JsonBlueprintError → JsonBlueprint.Error
   object Error:

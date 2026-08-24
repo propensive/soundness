@@ -148,7 +148,7 @@ object Svg:
           ()
 
       walk(elem)
-      Svg(width, height, List.of(defs.toList), List.of(figures.toList))
+      Svg(width, height, defs.toList.to(List), figures.toList.to(List))
 
     private def decodeFigure(elem: Element)(using Tactic[Svg.Error]): Optional[Figure] =
       elem.label match
@@ -201,9 +201,10 @@ object Svg:
       val id = elem.attributes(t"id").let(Id(_)).or(Id(t""))
 
       val stops: List[Stop[Color in Srgb]] =
-        List.of:
+
           elem.children.readable.toList.collect:
             case e: Element if e.label == t"stop" => decodeStop(e)
+          . to(List)
 
       LinearGradient(id, stops*)
 
@@ -337,7 +338,7 @@ object Svg:
 
         skipWs()
 
-      List.of(ops.toList)
+      ops.toList.to(List)
 
     // Transform list parser. Recognises translate/scale/rotate/skewX/skewY/matrix.
     // Unknown function names are silently skipped.
@@ -394,7 +395,7 @@ object Svg:
 
             if pos < s.length then pos += 1 // skip )
 
-            (name, List.from(args)) match
+            (name, args.to(List)) match
               case ("translate", List(dx, dy))        => xs += Transform.Translate(Delta(dx, dy))
               case ("translate", List(dx))            => xs += Transform.Translate(Delta(dx, 0.0f))
               case ("scale", List(x))                 => xs += Transform.Scale(x, Unset)
@@ -414,7 +415,7 @@ object Svg:
           else
             if pos == nameStart then pos += 1 // avoid infinite loop on stray punctuation
 
-      List.of(xs.toList)
+      xs.toList.to(List)
 
     // Color parser: handles #rgb, #rrggbb, rgb(r,g,b), and a few named colours.
     private def parseColor(c: Text)(using Tactic[Svg.Error]): Color in Srgb =
@@ -505,11 +506,11 @@ extends Documentary:
       else List(Element(t"defs", Attributes.empty, defs.stdlib.map(_.xml).nodes))
 
     val figureNodes: List[Xml] =
-      if transforms.nil then List.of(figures.stdlib.map(_.xml))
+      if transforms.nil then figures.stdlib.map(_.xml).to(List)
       else
         val groupAttrs =
           Ledger(t"transform" -> transforms.map(_.encode).join(t" "))
-        List(Element(t"g", Attributes.from(Map.of(groupAttrs.stdlib)), figures.stdlib.map(_.xml).nodes))
+        List(Element(t"g", Attributes.from(groupAttrs.stdlib.to(Map)), figures.stdlib.map(_.xml).nodes))
 
     val children: Array[Node]^{} = (defsElement + figureNodes).stdlib.nodes
-    Element(t"svg", Attributes.from(Map.of(attrs.stdlib)), children)
+    Element(t"svg", Attributes.from(attrs.stdlib.to(Map)), children)

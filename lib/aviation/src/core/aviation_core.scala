@@ -583,15 +583,16 @@ extension [sequence](sequence: sequence)(using recurrent: sequence is Recurrent)
   def until(limit: recurrent.Topic)(using order: Ordering[recurrent.Topic])
   :   Chain[recurrent.Topic] =
 
-    Chain.of(recurrent.occurrences(sequence).stdlib.takeWhile(order.lt(_, limit)))
+    (recurrent.occurrences(sequence).stdlib.takeWhile(order.lt(_, limit))).to(Chain)
 
   def within(window: Period[recurrent.Topic])(using order: Ordering[recurrent.Topic])
   :   Chain[recurrent.Topic] =
 
-    Chain.of:
+
       recurrent.occurrences(sequence).stdlib
       . dropWhile(order.lt(_, window.start))
       . takeWhile(order.lt(_, window.finish))
+      . to(Chain)
 
   def following(after: recurrent.Topic)(using order: Ordering[recurrent.Topic])
   :   Optional[recurrent.Topic] =

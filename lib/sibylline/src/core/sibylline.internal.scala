@@ -79,7 +79,7 @@ object internal:
               m"there was no JSON schema for the parameter ${param.name} of ${method.name}"
 
       ' {
-          val required: List[Text] = List.of(${Expr.ofList(paramNames)})
+          val required: List[Text] = List.from(${Expr.ofList(paramNames)})
 
           Llm.Tool
             ( ${Expr(method.name)}.tt,
@@ -184,7 +184,7 @@ object internal:
 
     ' {
         new Toolkit:
-          def specs: List[Llm.Tool] = List.of(${Expr.ofList(entries)})
+          def specs: List[Llm.Tool] = List.from(${Expr.ofList(entries)})
 
           def invoke(name: Text, arguments: Json): Json raises Llm.Error =
             val tactic: Tactic[Llm.Error] = summon[Tactic[Llm.Error]]

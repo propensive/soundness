@@ -122,7 +122,7 @@ object Tests extends Suite(m"Harlequin Tests"):
       given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       import highlighting.typecheckedScala
 
-      typeOf(List.of(Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib)), t"xs").or(t"")
+      typeOf(Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib).to(List), t"xs").or(t"")
     .assert { rendered => rendered.subsumes(t"List") && rendered.subsumes(t"Int") }
 
     test(m"typechecked highlighting reports diagnostics for ill-typed code"):

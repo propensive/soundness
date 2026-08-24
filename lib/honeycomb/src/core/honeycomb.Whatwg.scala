@@ -149,7 +149,7 @@ object Whatwg:
   def attribute[self  <: Label: ValueOf, plane <: Label: Reifiable to List[String], topic]()
   :   self is Attribute on plane of topic in Whatwg =
 
-    new Attribute(valueOf[self].tt, plane.reify.pipe(x => Set.from(x.stdlib.map(_.tt))), false)
+    new Attribute(valueOf[self].tt, plane.reify.pipe(x => x.stdlib.map(_.tt).to(Set)), false)
     . asInstanceOf[self is Attribute on plane of topic in Whatwg]
 
 
@@ -391,7 +391,7 @@ class Whatwg() extends Dom:
   type Heading = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "hgroup"
 
   def insertable(tag: Tag): Set[Tag] =
-    Set.from(tag.admissible.stdlib.map(elements(_)).compact).filter(_.insertable)
+    (tag.admissible.stdlib.map(elements(_)).compact).to(Set).filter(_.insertable)
 
   def infer(parent: Tag, child: Tag): Optional[Tag] =
     def recur(parent: Tag): Boolean =

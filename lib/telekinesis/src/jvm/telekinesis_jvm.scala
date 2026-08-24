@@ -239,7 +239,7 @@ private def plaintextExchange
   val httpRequest = Http.Request(method, 1.1, host, target, headers, body)
 
   def connect(): Duplex =
-    try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, List.of(options.values)) catch
+    try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, options.values.to(List)) catch
       case error: jn.UnknownHostException => abort(Connect.Error(Dns))
 
       case error: jn.ConnectException =>

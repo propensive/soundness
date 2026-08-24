@@ -984,7 +984,7 @@ object stagedInternal:
                   ( Ref(slots(index)),
                     '{
                       if $seen then
-                        ${ seamDecode[fieldType]('{ Protobuf.Repeated(proscenium.List.of($buffer.toList)) }) }
+                        ${ seamDecode[fieldType]('{ Protobuf.Repeated(($buffer.toList).to(proscenium.List)) }) }
                       else $absent
                     }.asTerm )
 

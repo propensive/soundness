@@ -60,7 +60,7 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
     val titles: List[Array[Array[text]^{}]^{}] =
       List:
         Array.from[Array[text]^{}]:
-          columns0.map { column => Array.from[text](column.title.cut(t"\n").stdlib) }
+          columns0.map { column => Array.from(column.title.cut(t"\n").stdlib) }
 
     def tabulate(data: List[row]): Tabulation[text] { type Row = row } = new Tabulation[text]:
       type Row = row
@@ -72,4 +72,4 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
       val rows: List[Array[Array[text]^{}]^{}] =
         data.map: row =>
           columns.map[Array[text]^{}]: column =>
-            Array.from[text](column.get(row).lines.stdlib)
+            Array.from(column.get(row).lines.stdlib)

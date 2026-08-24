@@ -199,7 +199,7 @@ object Tests extends Suite(m"Charisma Tests"):
       . assert(_ == t"Cl⁻(aq)")
 
       test(m"Physical states are rendered in parentheses"):
-        List.from(Array.unsafeFrozen(PhysicalState.values).readable).map(_.show)
+        Array.unsafeFrozen(PhysicalState.values).readable.to(List).map(_.show)
       . assert(_ == List(t"(s)", t"(l)", t"(g)", t"(aq)"))
 
     suite(m"Chemical formula tests"):
@@ -261,7 +261,7 @@ object Tests extends Suite(m"Charisma Tests"):
       . assert(_ == t"2H₂ + O₂ → 2H₂O")
 
       test(m"Reactions are rendered with distinct arrows"):
-        List.from(Array.unsafeFrozen(Reaction.values).readable).map(_.show)
+        Array.unsafeFrozen(Reaction.values).readable.to(List).map(_.show)
       . assert(_ == List(t"→", t"⇄", t"⇋", t"↔", t"="))
 
       test(m"A resonance equation has a resonance reaction"):

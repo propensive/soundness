@@ -55,7 +55,7 @@ private[punctuation] object InlineParser:
   // handled there must also be flagged here, otherwise it'll be silently
   // batched as plain text.
   private val Specials: Array[Boolean]^{} =
-    val arr = Array[Boolean](128)
+    val arr = Array.allocate[Boolean](128)
     val special = "\\&`<\n*_[!]"
     var i = 0
 
@@ -286,9 +286,9 @@ private[punctuation] object InlineParser:
         // Replace bracket node with the link/image wrapper
         list.remove(entry.node)
 
-        if entry.isImage then list.append(ImageData(lm.dest, lm.title, List.of(children.toList)))
+        if entry.isImage then list.append(ImageData(lm.dest, lm.title, children.toList.to(List)))
         else
-          list.append(LinkData(lm.dest, lm.title, List.of(children.toList)))
+          list.append(LinkData(lm.dest, lm.title, children.toList.to(List)))
           // Deactivate any earlier `[` link markers (no nested links). Image
           // markers stay active — images can contain links.
           brackets.each: b => if !b.isImage then b.active = false

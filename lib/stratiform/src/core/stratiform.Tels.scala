@@ -224,7 +224,7 @@ object Tels extends Tels2:
     // The schema's root struct, mirroring the `document` block in the
     // canonical tels.tel.
     private val documentStruct: Struct = Struct(
-      members = Array.of(
+      members = Array(
         field("name",     identifierRef),
         field("sigil",    sigilRef,                              required = Loose),
         field("record",   Reference(kebab("Record")), required = Loose, repeatable = Loose),
@@ -239,7 +239,7 @@ object Tels extends Tels2:
       document = documentStruct,
       layers   = Array.empty,
       sigil    = Unset,
-      records  = Array.of(
+      records  = Array(
         record("Field",
           "A field declaration at a member position.",
           field("keyword",      identifierRef),
@@ -298,12 +298,12 @@ object Tels extends Tels2:
           field("scalar",  Reference(kebab("Scalar")), required = Loose, repeatable = Loose),
           field("select",  Reference(kebab("Select")), required = Loose, repeatable = Loose),
           field("overlay", Reference(kebab("Body")), required = Loose))),
-      scalars  = Array.of(
+      scalars  = Array(
         scalar("Identifier", "identifier"),
         scalar("TypeName",   "type-name"),
         scalar("Sigil",      "sigil"),
         scalar("String",     "string")),
-      selects  = Array.of(
+      selects  = Array(
         select("Member",
           "Members admissible inside a struct-shaped body: a field, select, or validator.",
           variant("field",    Reference(kebab("Field"))),
@@ -497,7 +497,7 @@ object Tels extends Tels2:
 
           if !found then abort(Tel.Error(Reason.LayerOrderMismatch))
 
-      List.of(chosen.toList)
+      chosen.toList.to(List)
 
     // Top-level entry: applies every layer in `schema.layers` to the
     // schema's base, returning a composed Schema with empty `layers`.
@@ -1009,11 +1009,11 @@ object Tels extends Tels2:
         i += 1
 
       val builtinScalars =
-        Array.of
-          ( ScalarDefinition(t"Identifier", Array.of(t"identifier")),
-            ScalarDefinition(t"TypeName",   Array.of(t"type-name")),
-            ScalarDefinition(t"Sigil",      Array.of(t"sigil")),
-            ScalarDefinition(t"String",     Array.of(t"string")) )
+        Array
+          ( ScalarDefinition(t"Identifier", Array(t"identifier")),
+            ScalarDefinition(t"TypeName",   Array(t"type-name")),
+            ScalarDefinition(t"Sigil",      Array(t"sigil")),
+            ScalarDefinition(t"String",     Array(t"string")) )
 
       Tels
         ( name     = name.or(abort(Tel.Error(Reason.RequiredMemberAbsent))),
@@ -1248,11 +1248,11 @@ object Tels extends Tels2:
       val layers   = nodesAt(ch, 6).remap(layerFromElement)
 
       val builtinScalars =
-        Array.of
-          ( ScalarDefinition(t"Identifier", Array.of(t"identifier")),
-            ScalarDefinition(t"TypeName",   Array.of(t"type-name")),
-            ScalarDefinition(t"Sigil",      Array.of(t"sigil")),
-            ScalarDefinition(t"String",     Array.of(t"string")) )
+        Array
+          ( ScalarDefinition(t"Identifier", Array(t"identifier")),
+            ScalarDefinition(t"TypeName",   Array(t"type-name")),
+            ScalarDefinition(t"Sigil",      Array(t"sigil")),
+            ScalarDefinition(t"String",     Array(t"string")) )
 
       Tels(name, document, layers, sigil, records, Array.frozen(builtinScalars.readable ++ scalars.readable), selects)
 

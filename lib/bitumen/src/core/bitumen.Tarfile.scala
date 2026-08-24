@@ -195,10 +195,10 @@ object Tarfile:
 
                 header.typeFlag.toInt & 0xff match
                   case 'x' =>
-                    paxOverlay = Map.of(paxOverlay.stdlib ++ Pax.parse(takeData(cursor, size)).stdlib)
+                    paxOverlay = (paxOverlay.stdlib ++ Pax.parse(takeData(cursor, size)).stdlib).to(Map)
 
                   case 'g' =>
-                    globalOverlay = Map.of(globalOverlay.stdlib ++ Pax.parse(takeData(cursor, size)).stdlib)
+                    globalOverlay = (globalOverlay.stdlib ++ Pax.parse(takeData(cursor, size)).stdlib).to(Map)
 
                   case 'L' =>
                     longName = TarHeader.decodeNulText(takeData(cursor, size))
@@ -222,7 +222,7 @@ object Tarfile:
                     val allSegments = (inlineSegments + extSegments).filter(_.length > 0)
 
                     val extras: Map[Text, Text] =
-                      Map.of(globalOverlay.stdlib ++ paxOverlay.stdlib).filter: (k, _) =>
+                      (globalOverlay.stdlib ++ paxOverlay.stdlib).to(Map).filter: (k, _) =>
                         !structuralPaxKeys.has(k)
 
                     lookahead =
@@ -235,7 +235,7 @@ object Tarfile:
                     val path = decodePath(nameText)
 
                     val extras: Map[Text, Text] =
-                      Map.of(globalOverlay.stdlib ++ paxOverlay.stdlib).filter: (k, _) =>
+                      (globalOverlay.stdlib ++ paxOverlay.stdlib).to(Map).filter: (k, _) =>
                         !structuralPaxKeys.has(k)
 
                     // The body pulls off the shared cursor; advancing to the
@@ -256,7 +256,7 @@ object Tarfile:
                     val path = decodePath(nameText)
 
                     val extras: Map[Text, Text] =
-                      Map.of(globalOverlay.stdlib ++ paxOverlay.stdlib).filter: (k, _) =>
+                      (globalOverlay.stdlib ++ paxOverlay.stdlib).to(Map).filter: (k, _) =>
                         !structuralPaxKeys.has(k)
 
                     // Drained here, not in `buildEntry` (a `consume`d cursor cannot cross that
@@ -352,7 +352,7 @@ object Tarfile:
       pos = pos + 24
       i = i + 1
 
-    List.of(builder.result())
+    builder.result().to(List)
 
   private def readSparseExtensions(cursor: Cursor[Data, {}]^, hasMore: Boolean)
     ( using Tactic[Tar.Error] )
@@ -377,7 +377,7 @@ object Tarfile:
           i = i + 1
 
         val moreExtended = head.readUnchecked(504) != 0.toByte
-        List.of(builder.result()) + readSparseExtensions(cursor, moreExtended)
+        builder.result().to(List) + readSparseExtensions(cursor, moreExtended)
 
   private def resolveName
     ( header:        TarHeader,
@@ -471,7 +471,7 @@ object Tarfile:
     paxOf(entry).foreach: (k, v) =>
       if !structuralPaxKeys.has(k) then builder += ((k, v))
 
-    List.of(builder.result())
+    builder.result().to(List)
 
   private def userAndGroup(entry: Tar.Entry): (UnixUser, UnixGroup) = entry match
     case f: Tar.Entry.File         => (f.user, f.group)

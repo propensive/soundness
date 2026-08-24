@@ -80,7 +80,7 @@ package counters:
         if showEstimate then status.estimate.let: remaining =>
           parts += Facet.fixed(3, muted(t"${Magnitude.interval(remaining.value)} left"))
 
-        List(Facet.solve(List.of(parts.toList), width))
+        List(Facet.solve(parts.toList.to(List), width))
 
   // Binary prefixes (`4.01 MiB`), the convention for anything counted in blocks on a disk or a
   // wire.

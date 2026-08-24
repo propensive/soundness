@@ -77,7 +77,7 @@ object internal:
     val parts2 = parts.stdlib
 
     extractor
-      ( List.of(parts2.head :: parts2.tail.map("([^/\\\\]*)"+_)),
+      ( (parts2.head :: parts2.tail.map("([^/\\\\]*)"+_)).to(List),
         List.fill(parts.size)((0, 0)),
         re2Backend )
 
@@ -104,7 +104,7 @@ object internal:
       given HaltTactic[Regex.Error, Regex] = new HaltTactic[Regex.Error, Regex]:
         override def abort(error: Diagnostics ?=> Regex.Error): Nothing = fail(error)
 
-      Regex.parse(List.of(parts.stdlib.map(Text(_))))
+      Regex.parse((parts.stdlib.map(Text(_))).to(List))
 
     val types = regex.captureGroups.stdlib.map: group =>
       group.quantifier match

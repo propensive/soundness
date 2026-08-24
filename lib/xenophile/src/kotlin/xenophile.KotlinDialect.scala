@@ -376,10 +376,10 @@ object KotlinDialect extends Dialect:
   :   Resolution =
 
     val prototypes: Map[Text, Prototype] =
-      Map.of(entries.stdlib.groupBy(_.name).view.mapValues(_.head.prototype).toMap)
+      entries.stdlib.groupBy(_.name).view.mapValues(_.head.prototype).toMap.to(Map)
 
     val jvmMembers: Map[Text, List[JvmMember]] =
-      Map.of(entries.stdlib.groupBy(_.name).view.mapValues(x => List.of(x.map(_.member))).toMap)
+      (entries.stdlib.groupBy(_.name).view.mapValues(x => x.map(_.member).to(List)).toMap).to(Map)
 
     Resolution(prototypes, jvmMembers, setters, identifiers, companion, enumeration)
 

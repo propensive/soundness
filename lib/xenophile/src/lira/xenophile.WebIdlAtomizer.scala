@@ -198,8 +198,8 @@ object WebIdlAtomizer:
 
         val intrinsics = interface.intrinsics.stdlib ++ partials.flatMap(_.intrinsics.stdlib)
 
-        SList(interface.copy(members = List.from(members),
-            intrinsics = List.from(intrinsics), partial = false))
+        SList(interface.copy(members = members.to(List),
+            intrinsics = intrinsics.to(List), partial = false))
 
       case dictionary: Dictionary =>
         val partials = all.collect:
@@ -207,14 +207,14 @@ object WebIdlAtomizer:
             partial
 
         val fields = dictionary.fields.stdlib ++ partials.flatMap(_.fields.stdlib)
-        SList(dictionary.copy(fields = List.from(fields), partial = false))
+        SList(dictionary.copy(fields = fields.to(List), partial = false))
 
       case namespace: Namespace =>
         val partials = all.collect:
           case partial: Namespace if partial.partial && partial.name == namespace.name => partial
 
         val members = namespace.members.stdlib ++ partials.flatMap(_.members.stdlib)
-        SList(namespace.copy(members = List.from(members), partial = false))
+        SList(namespace.copy(members = members.to(List), partial = false))
 
       case other => SList(other)
 
@@ -322,4 +322,4 @@ object WebIdlAtomizer:
 
       case Includes(_, _) => ()
 
-    List.from(atoms.toList)
+    atoms.toList.to(List)

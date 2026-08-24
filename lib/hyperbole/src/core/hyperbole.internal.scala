@@ -68,7 +68,7 @@ object internal:
                 ${Expr(name)},
                 ${Expr(expr)},
                 ${Expr(source)},
-                List.of(${Expr.ofList(nodes2.stdlib)}),
+                List.from(${Expr.ofList(nodes2.stdlib)}),
                 $param2.asInstanceOf[Optional[Text]],
                 ${Expr(term)},
                 ${Expr(definitional)} )
@@ -102,16 +102,16 @@ object internal:
 
     extension (tastyTree: Tasty.Tree)
       def children(nodes2: Tree*): Tasty.Tree =
-        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expand(' ', _))))
+        tastyTree.copy(nodes = (tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expand(' ', _))).to(List))
 
       def typeChildren(nodes2: TypeRepr*): Tasty.Tree =
-        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expandType(_))))
+        tastyTree.copy(nodes = (tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expandType(_))).to(List))
 
       def typed(nodes2: Tree*): Tasty.Tree =
-        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expand('t', _))))
+        tastyTree.copy(nodes = (tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expand('t', _))).to(List))
 
       def add(tag: Char, nodes2: Tree*): Tasty.Tree =
-        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expand(tag, _))))
+        tastyTree.copy(nodes = (tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expand(tag, _))).to(List))
 
     object TreeBuilder:
       def apply
@@ -480,7 +480,7 @@ object internal:
                 panic(m"unexpected parameter clause: ${clause.toString}")
 
             TreeBuilder(tag, typeName, t"DefDef", tree, parameter = name.tt)
-            . copy(nodes = List.of(clauses))
+            . copy(nodes = clauses.to(List))
             . typed(tpt)
             . children(rhs.to(List)*)
             . definition
@@ -635,21 +635,21 @@ object internal:
           t"Private within"   -> symbol.privateWithin.map(_.show).getOrElse(t""),
           t"Protected within" -> symbol.protectedWithin.map(_.show).getOrElse(t""),
           t"Documentation"    -> symbol.docstring.getOrElse("").tt,
-          t"Annotations"      -> List.of(symbol.annotations.map(annotation(_).plain)),
-          t"Declared fields"  -> List.of(symbol.declaredFields.sortBy(_.name).map(_.name.tt)),
-          t"Field members"    -> List.of(symbol.fieldMembers.sortBy(_.name).map(_.name.tt)),
-          t"Declared methods" -> List.of(symbol.declaredMethods.sortBy(_.name).map(_.name.tt)),
-          t"Method members"   -> List.of(symbol.methodMembers.sortBy(_.name).map(_.name.tt)),
-          t"Declared types"   -> List.of(symbol.declaredTypes.sortBy(_.name).map(_.name.tt)),
-          t"Type members"     -> List.of(symbol.typeMembers.sortBy(_.name).map(_.name.tt)),
-          t"Declarations"     -> List.of(symbol.declarations.sortBy(_.name).map(_.name.tt)),
-          t"Children"         -> List.of(symbol.children.sortBy(_.name).map(_.name.tt)),
+          t"Annotations"      -> (symbol.annotations.map(annotation(_).plain)).to(List),
+          t"Declared fields"  -> symbol.declaredFields.sortBy(_.name).map(_.name.tt).to(List),
+          t"Field members"    -> symbol.fieldMembers.sortBy(_.name).map(_.name.tt).to(List),
+          t"Declared methods" -> symbol.declaredMethods.sortBy(_.name).map(_.name.tt).to(List),
+          t"Method members"   -> symbol.methodMembers.sortBy(_.name).map(_.name.tt).to(List),
+          t"Declared types"   -> symbol.declaredTypes.sortBy(_.name).map(_.name.tt).to(List),
+          t"Type members"     -> symbol.typeMembers.sortBy(_.name).map(_.name.tt).to(List),
+          t"Declarations"     -> symbol.declarations.sortBy(_.name).map(_.name.tt).to(List),
+          t"Children"         -> symbol.children.sortBy(_.name).map(_.name.tt).to(List),
 
           t"Parameters" ->
-            List.of(symbol.paramSymss.map(_.map(_.name.tt).join(t"(", t" ", t")"))),
+            (symbol.paramSymss.map(_.map(_.name.tt).join(t"(", t" ", t")"))).to(List),
 
           t"All overridden symbols" ->
-            List.of(symbol.allOverriddenSymbols.map(_.name.tt).toList),
+            symbol.allOverriddenSymbols.map(_.name.tt).toList.to(List),
 
           t"Primary constructor" -> symbol.primaryConstructor.name.tt,
 
@@ -682,13 +682,13 @@ object internal:
           case (key, text: Text) => '{(${Expr(key)}, ${Expr(text)})}
 
           case (key, list: List[Text] @unchecked) =>
-            '{(${Expr(key)}, List.of(${Expr.ofList((list: List[Text]).stdlib.map(Expr(_)))}))}
+            '{(${Expr(key)}, List.from(${Expr.ofList((list: List[Text]).stdlib.map(Expr(_)))}))}
 
     ' {
         Tasty.Symbol
           ( ${Expr(symbol.prefix)},
             ${Expr(symbol.name)},
-            List.of(${Expr.ofList(flags)}),
-            List.of(${Expr.ofList(properties)}),
-            List.of(${Expr.ofList(details)}) )
+            List.from(${Expr.ofList(flags)}),
+            List.from(${Expr.ofList(properties)}),
+            List.from(${Expr.ofList(details)}) )
       }

@@ -60,7 +60,7 @@ object Reifier:
    *  so a sentinel can only appear as a complete type, never in constructor or
    *  prefix position. */
   def substitute(syntax: Syntax, placeholders: List[Placeholder]): Syntax =
-    val byId: Map[Int, Placeholder] = Map.of(placeholders.stdlib.map { placeholder => placeholder.id -> placeholder }.toMap)
+    val byId: Map[Int, Placeholder] = (placeholders.stdlib.map { placeholder => placeholder.id -> placeholder }.toMap).to(Map)
 
     def replace(text: Text): Optional[Syntax] =
       if text.s.length >= 2 && text.s.startsWith("\"") && text.s.endsWith("\"") then

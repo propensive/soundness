@@ -399,8 +399,8 @@ def cli[bus <: Matchable](using executive: Executive)
         val script: Text = line()
         val pwd: Text = line()
         val count: Int = line().as[Int]
-        val textArguments: List[Text] = List.of(chunk().cut(t"\u0000").stdlib.take(count))
-        val environment: List[Text] = List.of(chunk().cut(t"\u0000").stdlib.init)
+        val textArguments: List[Text] = chunk().cut(t"\u0000").stdlib.take(count).to(List)
+        val environment: List[Text] = chunk().cut(t"\u0000").stdlib.init.to(List)
 
         DaemonEvent.Init(pid, login, pwd, script, stdin, textArguments, environment)
 

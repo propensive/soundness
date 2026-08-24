@@ -330,7 +330,7 @@ object DtsAtomizer:
 
     atoms += Atom(key, Atom.Class.Rigid, encoding)
 
-    List.from(atoms.toList)
+    atoms.toList.to(List)
 
   private def parameters
     ( out:     java.io.ByteArrayOutputStream,

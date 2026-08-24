@@ -60,7 +60,7 @@ object Cuttable:
         . lay(text.segment(start till text.length.z) :: results):
             index => recur(index + dLength, text.segment(start till index) :: results)
 
-      List.of(recur(Prim, Nil).stdlib.reverse)
+      recur(Prim, Nil).stdlib.reverse.to(List)
 
   given textualRegex: [textual: {Textual, Countable}, form]
   =>  textual is Cuttable by (Regex in form) =
@@ -74,7 +74,7 @@ object Cuttable:
         then recur(matcher.end.z, text.segment(matcher.start.z thru matcher.end.z) :: results)
         else results
 
-      List.of(recur(Prim, Nil).stdlib.reverse)
+      recur(Prim, Nil).stdlib.reverse.to(List)
 
   // A manual `indexOf` scan rather than `String.split(Pattern.quote(…))`: splitting on a literal
   // delimiter needs no regex, and the scala-wasm javalib's regex engine traps at runtime
@@ -98,7 +98,7 @@ object Cuttable:
         index = string.indexOf(delim, start)
 
       buffer += string.substring(start).nn.tt
-      List.of(buffer.result())
+      buffer.result().to(List)
 
   given textRegex: [form] => Text is Cuttable by (Regex in form) = (text, regex, limit) =>
     text.s.split(regex.pattern.s, limit).nn.iterator.map(_.nn.tt).to(List)

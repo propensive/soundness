@@ -79,17 +79,16 @@ object internal:
     val lines: Iterator[List[Text]] =
       scala.io.Source.fromInputStream(stream).getLines().map(_.tt).map(_.cut(t","))
 
-    lines.flatMap: list =>
-      val fields = list.stdlib
+    Map.from:
+      lines.flatMap: list =>
+        val fields = list.stdlib
 
-      safely:
-        if fields(2) == t"tcp" then List((true, fields(0)) -> fields(1).as[Int]).stdlib
-        else if fields(2) == t"udp" then List((false, fields(0)) -> fields(1).as[Int]).stdlib
-        else Nil.stdlib
+        safely:
+          if fields(2) == t"tcp" then List((true, fields(0)) -> fields(1).as[Int]).stdlib
+          else if fields(2) == t"udp" then List((false, fields(0)) -> fields(1).as[Int]).stdlib
+          else Nil.stdlib
 
-      . or(Nil.stdlib)
-
-    . pipe(Map.from(_))
+        . or(Nil.stdlib)
 
   object Opaques:
     opaque type Ipv4 <: Matchable = Int

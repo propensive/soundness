@@ -66,7 +66,7 @@ class Panes(initial: Pane*):
   private[ultimatum] def bindWake(wake: () => Unit): Unit =
     onChange = caps.unsafe.unsafeAssumePure(wake)
 
-  def contents: Sequence[Pane] = Sequence.of(vector)
+  def contents: Sequence[Pane] = Sequence.from(vector)
   def size: Int = vector.length
   def apply(index: Int): Pane = vector(index)
 

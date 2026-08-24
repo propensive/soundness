@@ -279,7 +279,7 @@ object Regex:
 
     val captured: Set[Int] =
       if parts.size > 1
-      then captures(List.of(parts.stdlib.tail), parts.stdlib.head.s.size, Set())
+      then captures(parts.stdlib.tail.to(List), parts.stdlib.head.s.size, Set())
       else Set()
 
     val text: Text = parts.stdlib.mkString.tt

@@ -141,7 +141,7 @@ trait Cbor2:
 
       if failed then null.asInstanceOf[derivation]
       else
-        val arguments = Array[Any](slots.length)
+        val arguments = Array.allocate[Any](slots.length)
         slot = 0
 
         while slot < slots.length do
@@ -184,7 +184,7 @@ trait Cbor2:
           val key = root.key(index)
           if key.isTextString then builder += key.string -> root.value(index)
           index += 1
-        Map.of(builder.result())
+        builder.result().to(Map)
 
       // `@name[Cbor]` / bare `@name` renames: field name -> map key, read
       // back the same way they are written.
@@ -323,7 +323,7 @@ object Cbor extends Cbor2, Dynamic:
 
     def map(keys: Array[Any]^{}, values: Array[Any]^{}): Ast =
       val count = keys.length
-      val array = Array[Any](count*2)
+      val array = Array.allocate[Any](count*2)
       var index = 0
 
       while index < count do
@@ -337,7 +337,7 @@ object Cbor extends Cbor2, Dynamic:
       val count = elements.length
 
       if (count&1) == 1 then elements else
-        val padded = Array[Any](count + 1)
+        val padded = Array.allocate[Any](count + 1)
         padded.copyFrom(elements, 0, 0, count)
         padded(count) = Sentinel
         Array.freeze(padded)
@@ -568,7 +568,7 @@ object Cbor extends Cbor2, Dynamic:
         val n = origin.root.elements
 
         if n <= ordinal.n0 then origin else Cbor.ast:
-          val updated = Array[Any](n)
+          val updated = Array.allocate[Any](n)
           var i = 0
 
           while i < n do
@@ -588,7 +588,7 @@ object Cbor extends Cbor2, Dynamic:
         val n = origin.root.elements
 
         Cbor.ast:
-          val updated = Array[Any](n)
+          val updated = Array.allocate[Any](n)
           var i = 0
 
           while i < n do
@@ -610,7 +610,7 @@ object Cbor extends Cbor2, Dynamic:
         val n = origin.root.elements
 
         Cbor.ast:
-          val updated = Array[Any](n)
+          val updated = Array.allocate[Any](n)
           var i = 0
 
           while i < n do
@@ -940,7 +940,7 @@ object Cbor extends Cbor2, Dynamic:
     private inline val LongCacheSize = 65536
 
     private val longCache: Array[AnyRef]^{} =
-      val out = Array[AnyRef](LongCacheSize)
+      val out = Array.allocate[AnyRef](LongCacheSize)
       var index = 0
 
       while index < LongCacheSize do
@@ -1047,7 +1047,7 @@ object Cbor extends Cbor2, Dynamic:
         case _  => abort(Cbor.Error(Reason.Reserved(headOffset, info)))
 
     private def readBytes(length: Int): Array[Byte]^{} =
-      val result = Array[Byte](length)
+      val result = Array.allocate[Byte](length)
       System.arraycopy(data, offset, result.raw, 0, length)
       offset += length
       Array.freeze(result)
@@ -1178,7 +1178,7 @@ object Cbor extends Cbor2, Dynamic:
         val length = head & 0x1F
         val end = pos + 1 + length
         if end > data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
-        val out = Array[Byte](length)
+        val out = Array.allocate[Byte](length)
         System.arraycopy(data, pos + 1, out.raw, 0, length)
         offset = end
         return Cbor.Ast(Array.freeze(out))
@@ -1232,7 +1232,7 @@ object Cbor extends Cbor2, Dynamic:
 
             val count = items.length
             val padded = (count&1) == 0
-            val out = Array[Any](if padded then count + 1 else count)
+            val out = Array.allocate[Any](if padded then count + 1 else count)
             var index = 0
 
             while index < count do
@@ -1251,7 +1251,7 @@ object Cbor extends Cbor2, Dynamic:
             // (odd length, with sentinel pad if logical count is even). One allocation
             // instead of two; no separate Array.from copy.
             val padded = (count&1) == 0
-            val items = Array[Any](if padded then count + 1 else count)
+            val items = Array.allocate[Any](if padded then count + 1 else count)
             var index = 0
 
             while index < count do
@@ -1281,7 +1281,7 @@ object Cbor extends Cbor2, Dynamic:
                 items += value()
                 items += value()
 
-            val out = Array[Any](items.length)
+            val out = Array.allocate[Any](items.length)
             var index = 0
             while index < items.length do { out(index) = items(index); index += 1 }
             Cbor.Ast(Array.freeze(out))
@@ -1293,7 +1293,7 @@ object Cbor extends Cbor2, Dynamic:
             then abort(Cbor.Error(Reason.Overflow(headOffset)))
 
             val count = length.toInt
-            val items = Array[Any](count*2)
+            val items = Array.allocate[Any](count*2)
             var index = 0
 
             while index < count do
@@ -1426,7 +1426,7 @@ object Cbor extends Cbor2, Dynamic:
         val length = head & 0x1F
         val end = pos + 1 + length
         if end > data.length then abort(Cbor.Error(Reason.Truncated(pos.toLong)))
-        val out = Array[Byte](length)
+        val out = Array.allocate[Byte](length)
         System.arraycopy(data, pos + 1, out.raw, 0, length)
         offset = end
         Array.freeze(out)
@@ -1878,14 +1878,14 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
 
     root.index(field) match
       case -1 =>
-        val out = Array[Any](length + 2)
+        val out = Array.allocate[Any](length + 2)
         out.copyFrom(array, 0, 0, length)
         out(length) = field
         out(length + 1) = value.root
         Cbor.ast(Cbor.Ast(Array.freeze(out)))
 
       case index =>
-        val out = Array[Any](length)
+        val out = Array.allocate[Any](length)
         out.copyFrom(array, 0, 0, length)
         out(index*2 + 1) = value.root
         Cbor.ast(Cbor.Ast(Array.freeze(out)))
@@ -1899,7 +1899,7 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
       case -1 => Cbor.ast(root)
 
       case index =>
-        val out = Array[Any](length - 2)
+        val out = Array.allocate[Any](length - 2)
         System.arraycopy(array, 0, out.raw, 0, index*2)
 
         System.arraycopy(array, index*2 + 2, out.raw, index*2, length - index*2 - 2)

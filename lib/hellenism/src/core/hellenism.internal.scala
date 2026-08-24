@@ -85,7 +85,7 @@ object internal extends Hellenism2:
       ' {
           Resource:
             Path[Classpath, Classpath.type, Tuple]
-              ( ${Expr(rootString)}.tt, List.of(${Expr(descentStrings)}.map(_.tt)) )
+              ( ${Expr(rootString)}.tt, (${Expr(descentStrings)}.map(_.tt)).to(List) )
         }
 
     val locus = ConstantType(StringConstant(name))

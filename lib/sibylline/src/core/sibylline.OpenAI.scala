@@ -230,7 +230,7 @@ object OpenAI:
         case content: Json => List(Json.make(role = t"user".in[Json], content = content))
         case _             => List()
 
-      List.of(results.stdlib ++ turn.stdlib)
+      (results.stdlib ++ turn.stdlib).to(List)
 
   private[sibylline] def tool(tool: Llm.Tool): Json =
     Json.make
@@ -265,7 +265,7 @@ object OpenAI:
         ( text(call.id), text(call.function.name), Llm.parsed(text(call.function.arguments)) )
 
     Llm.Reply
-      ( Llm.Message(Llm.Role.Assistant, List.of(texts.stdlib ++ calls.stdlib)),
+      ( Llm.Message(Llm.Role.Assistant, (texts.stdlib ++ calls.stdlib).to(List)),
         safely(text(json.choices(0).finish_reason)).let(stop(_)).or(Llm.Stop.Ended),
         usage(json.usage).or(Llm.Usage(0, 0)),
         safely(text(json.model)),
@@ -301,7 +301,7 @@ object OpenAI:
           val opened: List[Llm.Event] =
             if progress.open(0) then List(Llm.Event.Opened(0, Llm.Content.Textual(t""))) else List()
 
-          List.of(opened.stdlib :+ Llm.Event.Delta(0, Llm.Event.Increment.Textual(content)))
+          (opened.stdlib :+ Llm.Event.Delta(0, Llm.Event.Increment.Textual(content))).to(List)
 
       . or(List())
 
@@ -327,11 +327,11 @@ object OpenAI:
 
             . or(List())
 
-          List.of(opened.stdlib ++ fragment.stdlib)
+          (opened.stdlib ++ fragment.stdlib).to(List)
 
       . or(List())
 
-      List.of(started.stdlib ++ texts.stdlib ++ calls.stdlib)
+      (started.stdlib ++ texts.stdlib ++ calls.stdlib).to(List)
 
   // The OpenAI error envelope, `{"error": {"message": …, "type": …, "code": …}}`, mapped
   // through the status first: the codes vary by deployment, the statuses do not.
@@ -411,7 +411,7 @@ class OpenAI private
 
     . or(List())
 
-    val messages = List.of(system.stdlib ++ turn.history.bind(OpenAI.messages(_)).stdlib)
+    val messages = (system.stdlib ++ turn.history.bind(OpenAI.messages(_)).stdlib).to(List)
     val tools = turn.tools.map(OpenAI.tool(_))
     val stops = turn.settings.stopSequences
 
@@ -523,7 +523,7 @@ private[sibylline] object ResponsesDialect:
                 role    = t"assistant".in[Json],
                 content = (List(part): List[Json]).in[Json] )
 
-      List.of(turn.stdlib ++ calls.stdlib)
+      (turn.stdlib ++ calls.stdlib).to(List)
 
     case Llm.Role.User =>
       val results: List[Json] = message.content.bind:
@@ -561,7 +561,7 @@ private[sibylline] object ResponsesDialect:
                 role    = t"user".in[Json],
                 content = parts.in[Json] )
 
-      List.of(results.stdlib ++ turn.stdlib)
+      (results.stdlib ++ turn.stdlib).to(List)
 
   private def tool(tool: Llm.Tool): Json =
     Json.make

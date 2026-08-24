@@ -82,20 +82,22 @@ object Pathname:
       // against the same argument (typically a `Subcommand`) must keep its suggestions.
       if argument() == t"." then argument.suggest:
         val wd: Path on Local = workingDirectory
-        val listing = List.of:
+        val listing =
           suggest(t"../") ::
             workingDirectory.children.stdlib.toList.filter(_.name.starts(t".")).map: path =>
               val directory = safely(path.entry() == galilei.Directory).or(false)
               suggest(if directory then path.name+t"/" else path.name)
+          . to(List)
 
         listing + prior
 
       else if argument() == t".." then argument.suggest:
-        val listing = List.of:
+        val listing =
           suggest(t"../") ::
             workingDirectory.children.stdlib.toList.filter(_.name.starts(t"..")).map: path =>
               val directory = safely(path.entry() == galilei.Directory).or(false)
               suggest(if directory then path.name+t"/" else path.name)
+          . to(List)
 
         listing + prior
 
@@ -105,10 +107,11 @@ object Pathname:
         val children =
           if !showAll then children0.filter(!_.name.starts(t".")) else children0
 
-        val listing = List.of:
+        val listing =
          children.map: path =>
           val directory = safely(path.entry() == galilei.Directory).or(false)
           suggest(if directory then path.name+t"/" else path.name)
+         . to(List)
 
         listing + prior
 
@@ -123,7 +126,7 @@ object Pathname:
           workingDirectory.resolve(expand(argument()))
         val showAll = argument.tab.or(Prim) > Prim || prototype.name.starts(t".")
         val base: Optional[Path on Local] = if directory then prototype else prototype.parent
-        val children0 = base.let(base => List.of(base.children.stdlib.toList)).or(List[Path on Local]())
+        val children0 = base.let(base => base.children.stdlib.toList.to(List)).or(List[Path on Local]())
 
         val children =
           if directory then children0

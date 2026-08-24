@@ -87,7 +87,7 @@ object Discipline:
     def declared: List[Discipline] = disciplines
 
     def all: List[Discipline] =
-      List.from(disciplines.stdlib :+ ResourceDiscipline(resources) :+ OpaqueDiscipline)
+      (disciplines.stdlib :+ ResourceDiscipline(resources) :+ OpaqueDiscipline).to(List)
 
     def atomize(content: List[(TreePath, Data)], context: Context)
     :   List[Atomization] raises Discipline.Error =
@@ -102,9 +102,10 @@ object Discipline:
         remaining = rest
         (discipline, claimed)
 
+
       List.from:
         results.filter { (_, claimed) => !claimed.isEmpty }.map: (discipline, claimed) =>
-          discipline.atomize(List.from(claimed), context)
+          discipline.atomize(claimed.to(List), context)
 
   // DisciplineError → Discipline.Error
   object Error:

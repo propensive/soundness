@@ -68,7 +68,7 @@ object Masking:
         case _   => 2
 
       val key: Data =
-        val bytes = Array[Byte](4)
+        val bytes = Array.allocate[Byte](4)
         random.nextBytes(bytes.raw)
         Array.freeze(bytes)
 

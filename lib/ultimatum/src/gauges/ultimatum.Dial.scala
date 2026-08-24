@@ -109,7 +109,7 @@ enum Dial:
           if filled <= 0 then gauging.tint(palette.track)(Teletype(t"░"))
           else gauging.tint(color)(Teletype(level(Fraction(filled))))
 
-        List.of(cells.toList) :+ gauging.tint(color)(Teletype(if plain then t"o" else t"◍"))
+        cells.toList.to(List) :+ gauging.tint(color)(Teletype(if plain then t"o" else t"◍"))
 
       case Battery =>
         // Caps, cells and a terminal nub. A battery reddens as it *empties*, so the severity ramp

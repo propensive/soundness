@@ -246,7 +246,7 @@ object Xenophile:
 
     import quotes.reflect.*
 
-    val members = Map.of(refinements(self.asTerm.tpe.widen))
+    val members = refinements(self.asTerm.tpe.widen).to(Map)
 
     val topic = members(t"Topic").or:
       halt(m"xenophile: the receiver is not a foreign type (it has no `Topic`)")
@@ -274,7 +274,7 @@ object Xenophile:
 
     import quotes.reflect.*
 
-    Map.of(refinements(self.asTerm.tpe.widen))(t"Locus")
+    refinements(self.asTerm.tpe.widen).to(Map)(t"Locus")
 
   // Summons the `Interface` given for a source language and reads its definitions path (`Locus`)
   // as the singleton path type, or `Unset` when no such `Interface` (or no path) is in scope.
@@ -290,7 +290,7 @@ object Xenophile:
         case None => Unset
 
         case Some(found) =>
-          val members = Map.of(refinements(found.asTerm.tpe) ++ refinements(found.asTerm.tpe.widen))
+          val members = (refinements(found.asTerm.tpe) ++ refinements(found.asTerm.tpe.widen)).to(Map)
           members(t"Locus")
 
   // The definitions path carried by a `Locus` singleton type.
@@ -375,7 +375,7 @@ object Xenophile:
     val paramTopic = reprOf(paramType)
     val argRepr = arg.asTerm.tpe.widen
 
-    val argTopic = Map.of(refinements(argRepr))(t"Topic").or:
+    val argTopic = refinements(argRepr).to(Map)(t"Topic").or:
       halt(m"xenophile: the foreign type of an argument to $method is not known")
 
     // The `ok` arm topic of a `result<ok, err>` parameter, if it is one — so a value of that arm's
@@ -546,7 +546,7 @@ object Xenophile:
   def interface[form: Type](resource: Expr[Locative]): Macro[Interface] =
     import quotes.reflect.*
 
-    val members = Map.of(refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen))
+    val members = (refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)).to(Map)
 
     val locusRepr = members(t"Locus").or:
       halt(m"xenophile: the resource does not carry a singleton path type (it has no `Locus`)")

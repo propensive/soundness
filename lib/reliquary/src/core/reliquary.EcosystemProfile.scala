@@ -129,7 +129,7 @@ object EcosystemProfile:
 
         case _ => unchecked += record.id
 
-    Audit(List.from(unchecked.toList), List.from(advisories.toList))
+    Audit(unchecked.toList.to(List), advisories.toList.to(List))
 
   // Both vocabularies omit `behavior` for the same reason — no hash scheme certifies it (§11.5,
   // §18) — so the mapping is total in both directions.

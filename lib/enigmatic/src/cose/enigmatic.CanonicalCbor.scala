@@ -58,8 +58,8 @@ object CanonicalCbor:
         index += 1
 
       val sorted = builder.sortWith: (a, b) => compareBytes(a._1, b._1) < 0
-      val keys = Array[Any](n)
-      val values = Array[Any](n)
+      val keys = Array.allocate[Any](n)
+      val values = Array.allocate[Any](n)
       var write = 0
 
       while write < n do
@@ -70,7 +70,7 @@ object CanonicalCbor:
       Cbor.Ast.map(Array.freeze(keys), Array.freeze(values))
     else if ast.isArray then
       val n = ast.elements
-      val out = Array[Any](n)
+      val out = Array.allocate[Any](n)
       var index = 0
 
       while index < n do

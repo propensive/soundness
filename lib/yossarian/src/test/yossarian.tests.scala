@@ -284,7 +284,7 @@ object Tests extends Suite(m"Yossarian Tests"):
     val Pty24x80: () => Pty = () => Pty(80, 24)
 
     def screen(pty: Pty): List[Text] =
-      List.of((0 until pty.buffer.height).toList.map(y => row(pty, y.z)))
+      ((0 until pty.buffer.height).toList.map(y => row(pty, y.z))).to(List)
 
     // Local Text helpers so we don't depend on extension-method imports that
     // collide with Chain[Data] versions.

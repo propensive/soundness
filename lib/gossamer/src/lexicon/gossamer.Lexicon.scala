@@ -54,7 +54,7 @@ object Lexicon:
     def search(query: Text, radius: Int): Set[element] = lexicon.lay(Set())(_.search(query, radius))
 
   def apply(terms: List[Text])(using Proximity { type Triangulable = true } by Int): Lexicon[Text] =
-    apply(Map.from(terms.stdlib.bi))
+    apply(terms.stdlib.bi.to(Map))
 
 
   def apply[element](terms: Map[Text, element])(using Proximity { type Triangulable = true } by Int)
@@ -76,12 +76,13 @@ object Lexicon:
     def search(query: Text, radius: Int): Set[element] =
       val distance = query.proximity(term)
 
-      val descendants: Set[element] = Set.from:
+      val descendants: Set[element] =
         children.collect:
           case (key, tree) if (distance - radius) <= key <= (distance + radius) =>
             tree.search(query, radius)
 
         . flatMap(_.stdlib)
+        . to(Set)
 
       descendants + (if distance <= radius then Set(value) else Set[element]())
 

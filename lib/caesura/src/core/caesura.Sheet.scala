@@ -248,7 +248,7 @@ object Sheet:
 
     private[caesura] def materialize(): Dsv =
       val n = cellsBuf.length
-      val arr = Array[Text](n)
+      val arr = Array.allocate[Text](n)
       cellsBuf.copyToArray(arr.raw)
       Dsv(Array.freeze(arr), headings)
 
@@ -371,7 +371,7 @@ object Sheet:
             mapBuilder += cellsBuf(i) -> i
             i += 1
 
-          headings = Map.of(mapBuilder.result())
+          headings = mapBuilder.result().to(Map)
           advanceData()
         else true
       else false

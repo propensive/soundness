@@ -59,7 +59,7 @@ given negatableTuple: [numeric: Numeric, numeric2: Numeric]
 
 extension [figure: Transformable as transformable](figure: figure)
   private def appended(transform: Transform): figure =
-    transformable.withTransforms(figure, List.of(transformable.transforms(figure).stdlib :+ transform))
+    transformable.withTransforms(figure, (transformable.transforms(figure).stdlib :+ transform).to(List))
 
   def transform(transform: Transform): figure = appended(transform)
   def translate(delta: Delta): figure = appended(Transform.Translate(delta))

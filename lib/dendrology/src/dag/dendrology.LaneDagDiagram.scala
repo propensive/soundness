@@ -288,7 +288,7 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
   def render[line](label: node => line)(using style: LaneDagStyle[line]): List[line] =
     val widths = LaneDagDiagram.defaultWidths(lines.iterator.map(_(0)))
     lines.map: (tiles, node) =>
-      style.serialize(proscenium.List.of(tiles), Map.empty, proscenium.List.of(widths), node.let(label))
+      style.serialize(tiles.to(proscenium.List), Map.empty, widths.to(proscenium.List), node.let(label))
 
   def render[line](glyph: node => line, label: node => line)(using style: LaneDagStyle[line])
   :   List[line] =
@@ -302,7 +302,7 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
         if nodeIdx < 0 then Map.empty else node.let{ n => Map(nodeIdx -> glyph(n)) }.or(Map.empty)
 
       style.serialize
-        ( proscenium.List.of(tiles), glyphs, proscenium.List.of(widths), node.let(label) )
+        ( tiles.to(proscenium.List), glyphs, widths.to(proscenium.List), node.let(label) )
 
   def compact: LaneDagDiagram[node] = LaneDagDiagram(lines.filter(LaneDagDiagram.keepRow))
 

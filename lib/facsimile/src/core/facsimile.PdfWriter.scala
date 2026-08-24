@@ -65,7 +65,7 @@ private[facsimile] object PdfWriter:
 
     // A binary comment after the header marks the file as containing binary data.
     ascii(t"%PDF-1.7\n")
-    raw(Array.of[Byte]('%'.toByte, 0xe2.toByte, 0xe3.toByte, 0xcf.toByte, 0xd3.toByte, '\n'.toByte))
+    raw(Array[Byte]('%'.toByte, 0xe2.toByte, 0xe3.toByte, 0xcf.toByte, 0xd3.toByte, '\n'.toByte))
 
     val maxNumber = pdf.nextNumber - 1
     val offsets = scala.collection.mutable.HashMap[Int, Long]()
@@ -141,14 +141,14 @@ private[facsimile] object PdfWriter:
     // Group the updated and freed object numbers (plus object 0, the free-list head, when
     // anything is freed) into ascending consecutive subsections.
     val zero = if freed.isEmpty then scala.List[Int]() else scala.List(0)
-    val numbers = List.of((changed ::: freed ::: zero).distinct.sorted)
+    val numbers = ((changed ::: freed ::: zero).distinct.sorted).to(List)
 
     // The trailer carries forward the original `/Root`, `/Info`, `/Encrypt` and `/ID`, with
     // any write-scope overrides (e.g. a newly-created `/Info`) taking precedence.
     val carried = List(t"Root", t"Info", t"Encrypt", t"ID").bind: key =>
       pdf.trailer(key).let(value => List(key -> value)).or(Nil)
 
-    val entries: List[(Text, Cos)] = List.of((carried.stdlib.toMap ++ pdf.trailerOverrides).toList)
+    val entries: List[(Text, Cos)] = ((carried.stdlib.toMap ++ pdf.trailerOverrides).toList).to(List)
 
     // A file whose newest cross-reference section is a stream takes a stream for its update too.
     // The two forms cannot be chained through `/Prev`, which is defined to address a section of
@@ -289,10 +289,10 @@ private[facsimile] object PdfWriter:
         Cos.Sequence(elements.map(encryptStrings(_, guard, number, generation)))
 
       case Cos.Dictionary(entries) =>
-        Cos.Dictionary(Map.of(entries.stdlib.view.mapValues(encryptStrings(_, guard, number, generation)).toMap))
+        Cos.Dictionary((entries.stdlib.view.mapValues(encryptStrings(_, guard, number, generation)).toMap).to(Map))
 
       case Cos.Body(entries, start) =>
-        Cos.Body(Map.of(entries.stdlib.view.mapValues(encryptStrings(_, guard, number, generation)).toMap), start)
+        Cos.Body((entries.stdlib.view.mapValues(encryptStrings(_, guard, number, generation)).toMap).to(Map), start)
 
       case other =>
         other
@@ -312,15 +312,15 @@ private[facsimile] object PdfWriter:
         numbers.each: number =>
           if number == previous + 1 then run += number
           else
-            runs += ((first, List.of(run.result())))
+            runs += ((first, run.result().to(List)))
             run = scala.collection.immutable.List.newBuilder[Int]
             run += number
             first = number
 
           previous = number
 
-        runs += ((first, List.of(run.result())))
-        List.of(runs.result())
+        runs += ((first, run.result().to(List)))
+        runs.result().to(List)
 
   private def pad10(value: Long): Text =
     val digits = value.toString

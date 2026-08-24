@@ -77,7 +77,7 @@ object CapabilityDiscipline extends Discipline:
   :   Atomization raises Discipline.Error =
 
     val atoms = content.stdlib.flatMap: (path, data) => rows(data)
-    Atomization.of(id, List.from(atoms))
+    Atomization.of(id, atoms.to(List))
 
   private def rows(data: Data): scala.List[Atom] raises Discipline.Error =
     val document =

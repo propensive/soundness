@@ -415,7 +415,7 @@ object Typescript:
                 index += 1
               else abort(Typescript.Error(Reason.Syntax(t"unexpected character", char.toString.tt)))
 
-      List.from(tokens.toList)
+      tokens.toList.to(List)
 
     def parse(source: Text): List[Typescript.Declaration] raises Typescript.Error =
       Cursor(lex(source)).declarations()
@@ -515,7 +515,7 @@ object Typescript:
           if !mergeable(declaration) && !seen.add(key)
           then abort(Typescript.Error(Reason.Duplicate(key)))
 
-        List.from(result.toList)
+        result.toList.to(List)
 
       // `ambient` marks a namespace body, where every declaration is exported implicitly: an
       // ambient namespace has no notion of a private member, so its contents are as reachable as
@@ -566,7 +566,7 @@ object Typescript:
           expect(t"{")
           // The namespace's own visibility becomes its contents': an unexported namespace exports
           // nothing, however its members are written.
-          block(List.from(scope.stdlib :+ name), module, into, ambient = visible)
+          block((scope.stdlib :+ name).to(List), module, into, ambient = visible)
           expect(t"}")
         else if at(t"interface") then into += interfaceDeclaration(scope, visible)
         else if at(t"class") || at(t"abstract") then into += classDeclaration(scope, visible)
@@ -648,7 +648,7 @@ object Typescript:
 
         expect(t"}")
 
-        Typescript.Declaration.Enumeration(name, scope, List.from(members.toList), constant, exported)
+        Typescript.Declaration.Enumeration(name, scope, members.toList.to(List), constant, exported)
 
       private def functionDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
       :   Typescript.Declaration raises Typescript.Error =
@@ -694,13 +694,13 @@ object Typescript:
           merged.get(selector) match
             case scala.Some(existing) =>
               val signatures: List[Typescript.Type] =
-                List.from(existing.signatures.stdlib ++ member.signatures.stdlib)
+                (existing.signatures.stdlib ++ member.signatures.stdlib).to(List)
 
               merged.put(selector, existing.copy(signatures = signatures))
 
             case scala.None => merged.put(selector, member)
 
-        List.from(merged.values.toList)
+        merged.values.toList.to(List)
 
       private def member(): Optional[Typescript.Member] raises Typescript.Error =
         if skip(t";") then Unset
@@ -821,7 +821,7 @@ object Typescript:
             skip(t",")
 
           expect(t">")
-          List.from(parameters.toList)
+          parameters.toList.to(List)
 
       private def typeArguments(): List[Typescript.Type] raises Typescript.Error =
         if !skip(t"<") then Nil else
@@ -832,14 +832,14 @@ object Typescript:
             skip(t",")
 
           expect(t">")
-          List.from(arguments.toList)
+          arguments.toList.to(List)
 
       private def typeList(): List[Typescript.Type] raises Typescript.Error =
         val types = scala.collection.mutable.ListBuffer[Typescript.Type]()
         types += typeExpression()
         while skip(t",") do types += typeExpression()
 
-        List.from(types.toList)
+        types.toList.to(List)
 
       private def parameterList(): List[Typescript.Type.Argument] raises Typescript.Error =
         expect(t"(")
@@ -863,7 +863,7 @@ object Typescript:
           skip(t",")
 
         expect(t")")
-        List.from(parameters.toList)
+        parameters.toList.to(List)
 
       private def skipDefault(): Unit =
         var depth = 0
@@ -887,7 +887,7 @@ object Typescript:
           members += first
           while skip(t"|") do members += intersection()
 
-          Typescript.Type.Union(List.from(members.toList))
+          Typescript.Type.Union(members.toList.to(List))
 
       private def intersection(): Typescript.Type raises Typescript.Error =
         val first = suffixed()
@@ -897,7 +897,7 @@ object Typescript:
           members += first
           while skip(t"&") do members += suffixed()
 
-          Typescript.Type.Intersection(List.from(members.toList))
+          Typescript.Type.Intersection(members.toList.to(List))
 
       // `T[]`, `T[][]` and `T[K]` all suffix a primary type, and they chain.
       private def suffixed(): Typescript.Type raises Typescript.Error =
@@ -992,7 +992,7 @@ object Typescript:
 
           expect(t"]")
 
-          Typescript.Type.Tuple(List.from(members.toList), List.from(names.toList))
+          Typescript.Type.Tuple(members.toList.to(List), names.toList.to(List))
 
         else if at(t"keyof") then
           next()

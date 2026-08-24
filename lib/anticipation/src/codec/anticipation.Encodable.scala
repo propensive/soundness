@@ -39,7 +39,7 @@ object Encodable:
 
   // A `Long` encodes to its eight bytes in big-endian order.
   given longData: Long is Encodable in Data =
-    long => Array.of((56 to 0 by -8).map(long >> _).map(_.toByte)*)
+    long => Array((56 to 0 by -8).map(long >> _).map(_.toByte)*)
 
   given int: Int is Encodable in Text = _.toString.tt
   given double: Double is Encodable in Text = _.toString.tt

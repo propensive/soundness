@@ -150,7 +150,7 @@ object Tests extends Suite(m"Sibylline tests"):
       def script(chunks: Text*): List[Event] =
         val head = scala.Seq(Event.Started(t"msg_1", t"scripted-1"), Event.Opened(0, Content.Textual(t"")))
         val tail = scala.Seq(Event.Closed(0), Event.Update(Stop.Ended, Usage(2, 9)), Event.Finished)
-        List.of((head ++ chunks.map { chunk => Event.Delta(0, Increment.Textual(chunk)) } ++ tail).toList)
+        ((head ++ chunks.map { chunk => Event.Delta(0, Increment.Textual(chunk)) } ++ tail).toList).to(List)
 
       test(m"text deltas stream in order"):
         val dialect = Scripted(scripts = List(script(t"fjord", t" of ", t"Norway")))

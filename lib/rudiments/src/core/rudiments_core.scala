@@ -301,9 +301,12 @@ extension [self <: Populated, result](value: self)(using truncable: self is Trun
 //
 // The generic receiver coexists with the receiver-specific `to`s (quantitative's
 // `quantity.convert[Pounds]`, the tuple `to[Product]` below) because extension resolution falls
-// through when no `Convertible` instance is found. The bracket form `xs.to[List]` replaces
-// the parens Factory form `xs.to(List)`, which survives only for stdlib receivers with no
-// `Convertible` instance.
+// through when no `Convertible` instance is found. The bracket form `xs.to[List]` is the
+// normal spelling; the parens Factory form `xs.to[List]` survives in four cases: below
+// `rudiments`, where this extension is not in scope; on `Iterator`/`IterableOnce` receivers,
+// which have no `Traversable` instance and so no `Convertible`; inside `transparent inline`
+// contexts where the type parameter cannot be elaborated; and where no expected type pins
+// `convertible.Result`, leaving the bare type constructor unapplied.
 extension [self](self: self)
   transparent inline def to[form <: AnyKind](using convertible: self is Convertible in form)
   :   convertible.Result =
@@ -457,9 +460,9 @@ extension [value](iterable: Iterable[value])
     iterable.map: value => (value, value, value)
 
   def indexBy[value2](lambda: value => value2): Map[value2, value] =
-    Map.from:
-      iterable.map: value =>
-        (lambda(value), value)
+    // `Map.from`, not a conversion: the conversion route lets the (vacuous, strict-map)
+    // `lambda` capture contaminate the result, where `from`'s signature is pure.
+    Map.from(iterable.map { value => (lambda(value), value) })
 
   def longestTrain(predicate: value => Boolean): (Int, Int) =
     @tailrec
@@ -494,7 +497,7 @@ extension [element](array: scala.Array[element])
   inline def immutable(using erased unsafe: Unsafe): Array[element]^{} = array.asInstanceOf[Array[element]^{}]
 
   def snapshot(using ClassTag[element]): Array[element]^{} =
-    val newArray = Array[element](array.length)
+    val newArray = Array.allocate[element](array.length)
     System.arraycopy(array, 0, newArray.raw, 0, array.length)
     Array.freeze(newArray)
 
@@ -504,24 +507,26 @@ extension [element](array: scala.Array[element])
 
 extension [key, value](map: Map[key, value])
   def upsert(key: key, optional: Optional[value] => value): Map[key, value] =
-    Map.of:
+
       map.stdlib.updated(key, optional(if map.defines(key) then map.stdlib(key) else Unset))
+      . to(Map)
 
   def collate(right: Map[key, value])(merge: (value, value) => value): Map[key, value] =
-    Map.of:
+
       right.fold(map.stdlib): (state, next) =>
         state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1))))
+      . to(Map)
 
 extension [key, value](map: scm.Map[key, value])
   inline def establish(key: key)(evaluate: => value): value = map.getOrElseUpdate(key, evaluate)
 
 extension [key, value](map: Map[key, List[value]])
   def plus(key: key, value: value): Map[key, List[value]] =
-    val values = List.of(value :: map.stdlib.get(key).fold(sci.List[value]())(_.stdlib))
-    Map.of(map.stdlib.updated(key, values))
+    val values = (value :: map.stdlib.get(key).fold(sci.List[value]())(_.stdlib)).to(List)
+    map.stdlib.updated(key, values).to(Map)
 
 extension [value](list: List[value])
-  def unwind(tail: List[value]): List[value] = List.of(tail.stdlib.reverse_:::(list.stdlib))
+  def unwind(tail: List[value]): List[value] = (tail.stdlib.reverse_:::(list.stdlib)).to(List)
 
 extension [element](sequence: List[element])
   def unique: Optional[element] =
@@ -548,7 +553,7 @@ extension [element](sequence: List[element])
         else recur(focus, todo.tail, sci.List(todo.head), run.reverse :: done)
 
     if stdlib.isEmpty then Nil
-    else List.of(recur(lambda(stdlib.head), stdlib.tail, sci.List(stdlib.head), sci.Nil).map(List.of(_)))
+    else (recur(lambda(stdlib.head), stdlib.tail, sci.List(stdlib.head), sci.Nil).map(_.to(List))).to(List)
 
 extension (bytes: Data)
   def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(Array.unsafeJvm(bytes))

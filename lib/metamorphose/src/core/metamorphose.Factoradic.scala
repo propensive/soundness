@@ -48,7 +48,7 @@ object Factoradic:
           if head >= base
           then raise(Permutation.Error(Permutation.Error.Reason.BaseRange(head, base)))
 
-          recur(tail, List.of(bases.stdlib.tail), result + bases.stdlib.head*head, base - 1)
+          recur(tail, bases.stdlib.tail.to(List), result + bases.stdlib.head*head, base - 1)
 
     val length = sequence.size
     Factoradic(recur(sequence, Factorial.sequence(length), 0, length))
@@ -58,7 +58,7 @@ case class Factoradic(number: BigInt):
     @tailrec
     def recur(current: BigInt, sequence: List[BigInt], result: List[Int]): List[Int] =
       sequence match
-        case Nil => List.of(result.stdlib.reverse)
+        case Nil => result.stdlib.reverse.to(List)
 
         case head :: tail =>
           val next = (current/head).toInt

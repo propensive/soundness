@@ -71,7 +71,7 @@ case class Truetype(data: Data) extends Sfnt:
   // glyphs keep empty outlines, so character mappings, metrics and glyph references remain
   // valid. Every other table is carried over unchanged.
   def subset(chars: Set[Char]): Truetype raises Font.Error =
-    val retained = glyphClosure(Set.of(chars.stdlib.map(glyph(_).id) + 0))
+    val retained = glyphClosure((chars.stdlib.map(glyph(_).id) + 0).to(Set))
     val glyphs = glyf
     val count = maxp.glyphCount
 
@@ -89,7 +89,7 @@ case class Truetype(data: Data) extends Sfnt:
 
     offsets(count) = position
 
-    val newGlyf = Array[Byte](position)
+    val newGlyf = Array.allocate[Byte](position)
     var written = 0
 
     parts.result().each: part =>
@@ -97,7 +97,7 @@ case class Truetype(data: Data) extends Sfnt:
       written += part.length
 
     // The rebuilt loca always uses the long format, so head's format field must agree.
-    val newLoca = Array[Byte]((count + 1)*4)
+    val newLoca = Array.allocate[Byte]((count + 1)*4)
 
     (0 to count).each: id =>
       newLoca(id*4) = (offsets(id) >> 24).toByte
@@ -107,7 +107,7 @@ case class Truetype(data: Data) extends Sfnt:
 
     val headRef = tables(Sfnt.Table.Ttf.Head).lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Head)))
     val headData = data.segment((headRef.offset).z till (headRef.offset + headRef.length).z)
-    val newHead = Array[Byte](headData.length)
+    val newHead = Array.allocate[Byte](headData.length)
     newHead.copyFrom(headData, 0, 0, headData.length)
     (8 to 11).each { index => newHead(index) = 0 } // adjustment is recomputed on assembly
     newHead(50) = 0
@@ -137,7 +137,7 @@ case class Truetype(data: Data) extends Sfnt:
 
       case head :: tail =>
         val fresh = table(head).components.filter(!seen.has(_))
-        expand(List.of(fresh.stdlib ++ tail.stdlib), Set.of(seen.stdlib ++ fresh.stdlib))
+        expand((fresh.stdlib ++ tail.stdlib).to(List), (seen.stdlib ++ fresh.stdlib).to(Set))
 
     expand(glyphIds.to[List], glyphIds)
 
@@ -179,4 +179,4 @@ case class Truetype(data: Data) extends Sfnt:
 
             more = (flags & 0x0020) != 0
 
-          List.of(builder.result())
+          builder.result().to(List)

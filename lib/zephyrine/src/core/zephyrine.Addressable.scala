@@ -179,7 +179,7 @@ object Addressable:
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
     def materialize(storage: scala.Array[AnyRef], off: Int, len: Int): Array[element]^{} =
-      val array = Array[element](len)
+      val array = Array.allocate[element](len)
       System.arraycopy(storage, off, array.raw, 0, len)
       Array.freeze(array)
 
@@ -209,13 +209,13 @@ object Addressable:
     // element type is generic), so materialized chunks must really be
     // `String[]`s; the storage stays `Array[AnyRef]`, which `String[]` enters
     // covariantly.
-    val empty: Array[Text]^{} = Array.freeze(Array[String](0)).asInstanceOf[Array[Text]^{}]
+    val empty: Array[Text]^{} = Array.freeze(Array.allocate[String](0)).asInstanceOf[Array[Text]^{}]
 
     def substrate: Substrate = Substrate.Boxes
     def blank(size: Int): scm.ArrayBuffer[Text] = scm.ArrayBuffer[Text]()
 
     def build(target: scm.ArrayBuffer[Text]): Array[Text]^{} =
-      val array = Array[String](target.length)
+      val array = Array.allocate[String](target.length)
       var index = 0
 
       while index < target.length do
@@ -270,7 +270,7 @@ object Addressable:
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
     def materialize(storage: scala.Array[AnyRef], off: Int, len: Int): Array[Text]^{} =
-      val array = Array[String](len)
+      val array = Array.allocate[String](len)
       System.arraycopy(storage, off, array.raw, 0, len)
       Array.freeze(array).asInstanceOf[Array[Text]^{}]
 
@@ -294,13 +294,13 @@ object Addressable:
     type Target = scm.ArrayBuffer[Data]
     type Storage = scala.Array[AnyRef]
 
-    val empty: Array[Data]^{} = Array.freeze(Array[Data](0))
+    val empty: Array[Data]^{} = Array.freeze(Array.allocate[Data](0))
 
     def substrate: Substrate = Substrate.Boxes
     def blank(size: Int): scm.ArrayBuffer[Data] = scm.ArrayBuffer[Data]()
 
     def build(target: scm.ArrayBuffer[Data]): Array[Data]^{} =
-      val array = Array[Data](target.length)
+      val array = Array.allocate[Data](target.length)
       var index = 0
 
       while index < target.length do
@@ -357,7 +357,7 @@ object Addressable:
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
     def materialize(storage: scala.Array[AnyRef], off: Int, len: Int): Array[Data]^{} =
-      val array = Array[Data](len)
+      val array = Array.allocate[Data](len)
       System.arraycopy(storage, off, array.raw, 0, len)
       Array.freeze(array)
 

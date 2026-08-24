@@ -65,7 +65,7 @@ object internal:
           _.absolve match
             case '[element] => reify[element]
 
-        '{List.of(${Expr.ofList(elements)})}
+        '{List.from(${Expr.ofList(elements)})}
 
       case '[type map <: Tuple; TypeMap[map]] =>
         val entries =
@@ -75,13 +75,13 @@ object internal:
             _.absolve match
               case '[(key, value)] => '{(${reify[key]}, ${reify[value]})}: Expr[(Any, Any)]
 
-          '{List.of(${Expr.ofList(keyValues)})}
+          '{List.from(${Expr.ofList(keyValues)})}
 
-        '{Map.from($entries.stdlib)}
+        '{($entries.stdlib).to(Map)}
 
       case '[type set; TypeSet[set]] =>
         def recur(repr: TypeRepr): List[Expr[set]] = repr.dealias match
-          case OrType(left, right) => List.of(recur(left).stdlib ::: recur(right).stdlib)
+          case OrType(left, right) => (recur(left).stdlib ::: recur(right).stdlib).to(List)
           case other               => List(constant(other).asExprOf[set])
 
         '{List[set](${Varargs(recur(TypeRepr.of[set]).stdlib)}*)}

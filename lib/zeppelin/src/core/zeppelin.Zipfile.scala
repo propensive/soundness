@@ -350,7 +350,7 @@ object Zipfile:
     val prefix: Optional[Data] =
       if prefixSize > 0 then source.read(0, prefixSize.toInt) else Unset
 
-    Zipfile(List.of(builder.result()), comment, prefix)
+    Zipfile(builder.result().to(List), comment, prefix)
 
   private def decodeText(bytes: Data): Text =
     bytes.utf8
@@ -421,7 +421,7 @@ object Zipfile:
         if needUncompressed then fields += entry.uncompressedSize
         if needCompressed then fields += entry.compressedSize
         if needOffset then fields += localOffset
-        val values = List.of(fields.result())
+        val values = fields.result().to(List)
 
         Data.build(4 + values.size*8): array =>
           Zip.putU16(array, 0, 1)
@@ -522,7 +522,7 @@ case class Zipfile
       builder += ((entry, name, header, offset))
       offset += header.length + entry.compressedSize
 
-    val records = List.of(builder.result())
+    val records = builder.result().to(List)
     val cdStart = offset
     val central = records.map: (entry, name, _, off) => Zipfile.centralHeader(entry, name, off)
     val cdSize = central.stdlib.foldLeft(0L)(_ + _.length)

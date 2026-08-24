@@ -119,7 +119,7 @@ extension (text: Text)
             Array.grow(scores, newSize + 1),
             Array.grow(breaks, newSize) )
 
-    walk(0, Array[Char](32), Array[Byte](33), Array[Int](32))
+    walk(0, Array.allocate[Char](32), Array.allocate[Byte](33), Array.allocate[Int](32))
     out.toString.tt
 
   // Split a single word at every admissible break point. For multi-word

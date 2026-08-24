@@ -170,7 +170,7 @@ object Math:
 
   private def quantityMathml(value: Double, units: Map[Text, Int]): Mathml =
     val unitNodes: List[Mathml] =
-      List.of(units.stdlib.toList.sortBy(_._1.s)).map: (symbol, power) =>
+      units.stdlib.toList.sortBy(_._1.s).to(List).map: (symbol, power) =>
         if power == 1 then Mi(symbol) else Msup(Mi(symbol), Mn(power.toString.tt))
 
     product(Mn(value.toString.tt) :: unitNodes)

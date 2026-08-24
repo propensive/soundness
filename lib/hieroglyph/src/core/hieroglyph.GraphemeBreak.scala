@@ -70,7 +70,7 @@ object GraphemeBreak:
     ( in: ji.InputStream, classify: Text => Optional[Int] )
   :   List[Entry] =
 
-    List.of:
+
      scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.${Hex(to)}([0-9A-Fa-f]+)\s*;\s*$name([A-Za-z_]+).*" =>
@@ -81,6 +81,7 @@ object GraphemeBreak:
 
         case _ =>
           None
+     . to(List)
 
   private def gbpClassify(name: Text): Optional[Int] =
     name.s.match
@@ -108,7 +109,7 @@ object GraphemeBreak:
     val Linker: Int = 2
 
   private def parseIncbEntries(in: ji.InputStream): List[Entry] =
-    List.of:
+
      scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.$rest(.*)" => rest match
@@ -122,6 +123,7 @@ object GraphemeBreak:
 
         case _ =>
           None
+     . to(List)
 
   private def incbClassify(name: Text): Optional[Int] = name.s match
     case "Consonant" => IncbValue.Consonant
@@ -134,9 +136,9 @@ object GraphemeBreak:
   private def buildTables(entries: List[Entry]): Tables =
     val sorted = entries.stdlib.sortBy(_.start).toArray
     val count = sorted.length
-    val starts = Array[Int](count)
-    val ends = Array[Int](count)
-    val props = Array[Byte](count)
+    val starts = Array.allocate[Int](count)
+    val ends = Array.allocate[Int](count)
+    val props = Array.allocate[Byte](count)
 
     var index = 0
 
@@ -201,12 +203,12 @@ object GraphemeBreak:
     // A pre-sized exclusive buffer rather than an `ArrayBuilder`: boundary count
     // is bounded by `n + 2`, and the stdlib builder's internal reads count as
     // uses the enclosing object would have to declare under separation checking.
-    val breaks = Array[Int](n + 2)
+    val breaks = Array.allocate[Int](n + 2)
     var size = 0
     breaks(size) = 0
     size += 1
 
-    if n == 0 then Array.freeze(Array[Int](1))
+    if n == 0 then Array.freeze(Array.allocate[Int](1))
     else
       var index = 0
       val firstCodepoint = Character.codePointAt(s, 0)
@@ -285,6 +287,6 @@ object GraphemeBreak:
       // Trimmed to the exact count, then frozen: the checked build-then-share
       // conversion.
       val frozen = Array.freeze(breaks)
-      val result = Array[Int](size)
+      val result = Array.allocate[Int](size)
       result.copyFrom(frozen, 0, 0, size)
       Array.freeze(result)

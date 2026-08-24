@@ -183,7 +183,7 @@ private[punctuation] object ParserSupport:
       i = walk(s, i): c => !isSpaceTab(c)
       if i > start then result += Text(s.substring(start, i).nn)
 
-    List.of(result.toList)
+    result.toList.to(List)
 
   // ─── leaf classifiers ─────────────────────────────────────────────────────
 

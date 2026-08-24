@@ -875,8 +875,8 @@ object Tests extends Suite(m"Ethereal Tests"):
           val output: Path on Linux = assemblyDir/t"launcher$entries"
 
           val contents: List[Zip.Entry] =
-            List.from((0 until entries).map: index =>
-              Zip.Entry(unsafely(t"e$index".as[Path on Zip]), Array.empty[Byte]))
+            ((0 until entries).map: index =>
+              Zip.Entry(unsafely(t"e$index".as[Path on Zip]), Array.empty[Byte])).to(List)
 
           Zipfile.write(jar)(contents.stdlib)
 

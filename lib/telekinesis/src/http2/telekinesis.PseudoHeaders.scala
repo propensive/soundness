@@ -65,7 +65,7 @@ object PseudoHeaders:
 
     val regular = request.textHeaders.map: header => Hpack.Entry(header.key.lower, header.value)
 
-    List.of(pseudo.stdlib ++ regular.stdlib)
+    (pseudo.stdlib ++ regular.stdlib).to(List)
 
   // Reconstruct an `Http.Response` from a decoded HEADERS block and the body stream.
   // `:status` selects the `Http.Status`; other fields become response headers.
@@ -134,4 +134,4 @@ object PseudoHeaders:
     . filter: entry =>
         !forbidden.has(entry.name)
 
-    List.of(Hpack.Entry(t":status", response.status.code.show) :: regular.stdlib)
+    (Hpack.Entry(t":status", response.status.code.show) :: regular.stdlib).to(List)

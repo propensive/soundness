@@ -166,7 +166,7 @@ enum Frame:
         val weight = members.map(childList(_).sizing.fraction).maxOption.getOrElse(1.0)
         Flex(Metrics(limits.min), weight, limits.max)
 
-      val colWidths = Flex.solve(Sequence.of(tracks), rect.width, gap).stdlib.map(_.or(0))
+      val colWidths = Flex.solve(Sequence.from(tracks), rect.width, gap).stdlib.map(_.or(0))
       val xs = colWidths.scanLeft(rect.left)((x, width) => x + width + gap)
       val rowHeights = Frame.gridRows(childList.map(_.measure(Arrangement.Stack)), cols)
       val ys = rowHeights.scanLeft(rect.top)((y, height) => y + height + gap)
@@ -178,7 +178,7 @@ enum Frame:
         val height = rowHeights(row).min((rect.top + rect.height - top).max(0))
         childList(index).arrange(Rect(xs(column), top, colWidths(column), height))
 
-      Placement.Split(rect, List.of(placements.to(scala.List)))
+      Placement.Split(rect, placements.to(scala.List).to(List))
 
     case Split(_, arrangement, children) =>
       val available = arrangement match
@@ -194,7 +194,7 @@ enum Frame:
           Flex(Metrics(limits.min), child.sizing.fraction, limits.max)
 
       val sizes =
-        Flex.solve(Sequence.of(tracks.stdlib.toVector), available).stdlib.map(_.or(0))
+        Flex.solve(Sequence.from(tracks.stdlib.toVector), available).stdlib.map(_.or(0))
 
       val start = arrangement match
         case Arrangement.Strip => rect.left
@@ -212,4 +212,4 @@ enum Frame:
 
           child.arrange(childRect)
 
-      Placement.Split(rect, List.of(placements))
+      Placement.Split(rect, placements.to(List))

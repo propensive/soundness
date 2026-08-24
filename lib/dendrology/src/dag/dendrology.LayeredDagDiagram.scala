@@ -262,7 +262,7 @@ case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
 
     rows.map: (tiles, nodesAt) =>
       val glyphs: Map[Int, line] = nodesAt.map: (col, n) => col -> glyph(n)
-      style.serialize(proscenium.List.of(tiles), glyphs, proscenium.List.of(widthsList), Unset)
+      style.serialize(tiles.to(proscenium.List), glyphs, widthsList.to(proscenium.List), Unset)
 
   def tiles: List[List[DagTile]] = rows.map(_(0))
   def nodesAt: List[Map[Int, node]] = rows.map(_(1))

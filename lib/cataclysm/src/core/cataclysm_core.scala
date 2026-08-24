@@ -53,15 +53,15 @@ extension (inline context: StringContext)
 // nested rules and the selector-list arguments of `:is()`/`:not()`/`:nth-…(of)`.
 extension (css: Css)
   def classes: Set[Name[CssClass]] =
-    Set.from(simples(css.rules).stdlib.collect { case Simple.Class(name) => name })
+    (simples(css.rules).stdlib.collect { case Simple.Class(name) => name }).to(Set)
 
   def ids: Set[Name[DomId]] =
-    Set.from(simples(css.rules).stdlib.collect { case Simple.Id(name) => name })
+    (simples(css.rules).stdlib.collect { case Simple.Id(name) => name }).to(Set)
 
 private def simples(nodes: List[Css.Node]): List[Simple] =
   nodes.bind:
     case Css.Node.Rule(selector, body) =>
-      List.of(listSimples(selector).stdlib ++ simples(body).stdlib)
+      (listSimples(selector).stdlib ++ simples(body).stdlib).to(List)
     case Css.Node.At(_, _, body)       => body.lay(Nil)(simples)
     case Css.Node.Declaration(_, _)    => Nil
 

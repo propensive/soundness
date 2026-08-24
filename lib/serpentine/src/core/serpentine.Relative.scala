@@ -141,7 +141,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
     inline !![topic] match
       case _: (head *: tail) =>
         infer[head is Admissible on filesystem].check(path.stdlib.head)
-        check[tail, filesystem](List.of(path.stdlib.tail)).unit
+        check[tail, filesystem](path.stdlib.tail.to(List)).unit
 
       case EmptyTuple =>
         ()

@@ -67,7 +67,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
     caps.unsafe.unsafeAssumePure:
       random =>
         given random0: (Random^{random}) = random
-        Set.from(List.fill(size.generate(random))(randomizable.randomize(random)).stdlib)
+        (List.fill(size.generate(random))(randomizable.randomize(random)).stdlib).to(Set)
 
   given iarray: [element] => (randomizable: => element is Randomizable) => (tag: ClassTag[element])
   =>  ( size: Random.Size )

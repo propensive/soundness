@@ -425,7 +425,7 @@ extends Rig:
 
           if jl.System.nanoTime < 0L then jl.System.err.nn.println(sink.get)
 
-          List.of(results.toList)
+          results.toList.to(List)
         }
 
     // Every step lands under the SAME test id: the probed concurrency is a coordinate on

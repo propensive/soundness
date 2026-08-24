@@ -51,7 +51,7 @@ package teletypeables:
           val fg = graphical.pixel(graphic, x, y)
           val bg = graphical.pixel(graphic, x, y + 1)
           val styled = TextStyle(fg, bg).styleWord
-          append(Teletype(t"▀", Array.of(styled, 0L)))
+          append(Teletype(t"▀", Array(styled, 0L)))
 
         append(e"\n")
 

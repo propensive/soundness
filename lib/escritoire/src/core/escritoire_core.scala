@@ -106,7 +106,11 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[textual] =
 
-      Sequence.of:
+      // `Sequence.from:` as a block, never `. pipe(Sequence.from(_))`: eta-expanding a
+      // polymorphic factory under this method's live type variables trips dotc's `wildApprox`
+      // assertion (scala/scala3#24824), which surfaces as a positionless crash compiling this
+      // whole module.
+      Sequence.from:
         lines.readable.to(IndexedSeq).bind(Flow.wrap(_, width).stdlib.to(List)).toVector
 
   object ParagraphOrBreak extends Columnar:
@@ -128,7 +132,8 @@ package columnar:
 
       if columnMetrics(lines).min < width then Paragraph.fit(lines, width, textAlign)
       else
-        Sequence.of:
+        // As above: the block form, not an eta-expanded `pipe`.
+        Sequence.from:
           lines.readable.to(IndexedSeq).bind(Flow.chop(_, width).stdlib.to(List)).toVector
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
@@ -144,7 +149,7 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[text] =
 
-      Sequence.of(lines.readable.toVector.map(Flow.shorten(_, width, ellipsis)))
+      Sequence.from(lines.readable.toVector.map(Flow.shorten(_, width, ellipsis)))
 
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     // Elastic between one cell and its natural width, truncating whatever exceeds the
@@ -163,7 +168,7 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[text] =
 
-      Sequence.of(lines.readable.toVector.map(Flow.shorten(_, width, ellipsis)))
+      Sequence.from(lines.readable.toVector.map(Flow.shorten(_, width, ellipsis)))
 
   case class Collapsible(threshold: Double) extends Columnar:
     // Rigid at its natural width, but drops from the table entirely when space runs out;
@@ -181,4 +186,4 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[text] =
 
-      Sequence.of(lines.readable.toVector)
+      Sequence.from(lines.readable.toVector)

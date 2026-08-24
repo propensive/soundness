@@ -279,8 +279,9 @@ object Atomizer:
       if atoms.contains(key) then throw Unencodable(s"duplicate key $key")
       val data = Array.unsafeFrozen(encoding.toByteArray.nn)
 
-      val listed = List.from:
+      val listed =
         references.map: reference => ScalaReference.Own(Text(reference))
+        . to(List)
 
       atoms(key) = ScalaAtom(Text(key), replaceable, data, listed)
 
@@ -662,9 +663,10 @@ object Atomizer:
     val keys = atoms.keySet.toSet
 
     atoms.values.toList.map: atom =>
-      val classified = List.from:
+      val classified =
         atom.references.stdlib.map:
           case ScalaReference.Own(key) if !keys.contains(key.s) => ScalaReference.Foreign(key)
           case reference                                        => reference
+        . to(List)
 
       atom.copy(references = classified)

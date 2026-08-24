@@ -48,14 +48,14 @@ object Reversible:
     new Reversible:
       type Self = container
       type Result = List[element]
-      def reverse(self: container): List[element] = List.of(self.stdlib.reverse)
+      def reverse(self: container): List[element] = self.stdlib.reverse.to(List)
 
   given sequence: [element, container <: Sequence[element]]
   =>  (container is Reversible { type Result = Sequence[element] }) =
     new Reversible:
       type Self = container
       type Result = Sequence[element]
-      def reverse(self: container): Sequence[element] = Sequence.of(self.stdlib.reverse)
+      def reverse(self: container): Sequence[element] = Sequence.from(self.stdlib.reverse)
 
   // `Text`'s companion (in `anticipation`) cannot host this — it sits below both `Reversible` and
   // `Textual` — but `Reversible`'s own companion is in implicit scope for `Text is Reversible`, and

@@ -152,7 +152,7 @@ object Css:
   // stylesheet of both rules.
   given addable: Css is Addable by Css to Css =
     Addable: (left, right) =>
-      Css(List.of(left.rules.stdlib ++ right.rules.stdlib))
+      Css((left.rules.stdlib ++ right.rules.stdlib).to(List))
 
   // Serve a stylesheet as an HTTP `text/css` response body (paired with the
   // `Streamable` instance above).
@@ -178,10 +178,10 @@ object Css:
     // bare `css"…"`s) join into one.
     given addable: Style is Addable by Style to Style =
       Addable: (left, right) =>
-        Style.of(List.of(left.properties.stdlib ++ right.properties.stdlib))
+        Style.of((left.properties.stdlib ++ right.properties.stdlib).to(List))
 
   class Style private (val properties: List[(Text, Text)]):
-    def text: Text = List.of(properties.stdlib.map { (name, value) => t"$name: $value" }).join(t"; ")
+    def text: Text = (properties.stdlib.map { (name, value) => t"$name: $value" }).to(List).join(t"; ")
 
   // A typed CSS value tagged with its value-definition-syntax type (e.g.
   // `Css.Value of "length"`). Native types convert in via `Css.Convertible`; the
@@ -263,7 +263,7 @@ object Css:
   // this once at the end (or returning the `Css` if there were none).
   case class Errors(errors: List[Css.Error])(using Diagnostics)
   extends fulminate.Error(m"the CSS contained ${errors.stdlib.length} errors"):
-    def + (error: Css.Error): Css.Errors = Css.Errors(List.of(errors.stdlib :+ error))
+    def + (error: Css.Error): Css.Errors = Css.Errors((errors.stdlib :+ error).to(List))
 
   // CssConvertible → Css.Convertible
   // Records that a native Scala type renders to a CSS value of the value-definition

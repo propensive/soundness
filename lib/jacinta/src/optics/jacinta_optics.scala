@@ -62,7 +62,7 @@ package optics:
           val n = origin.root.arrayLength
 
           if n <= ordinal.n0 then origin else Json.ast:
-            val updated = Array[Any](n)
+            val updated = Array.allocate[Any](n)
             var i = 0
 
             while i < n do
@@ -85,7 +85,7 @@ package optics:
         val n = origin.root.arrayLength
 
         Json.ast:
-          val updated = Array[Any](n)
+          val updated = Array.allocate[Any](n)
           var i = 0
 
           while i < n do
@@ -107,7 +107,7 @@ package optics:
         val n = origin.root.arrayLength
 
         Json.ast:
-          val updated = Array[Any](n)
+          val updated = Array.allocate[Any](n)
           var i = 0
 
           while i < n do

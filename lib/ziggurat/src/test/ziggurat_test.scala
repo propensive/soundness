@@ -77,7 +77,7 @@ object Tests extends Suite(m"Ziggurat tests"):
   private def runTestsBody(tempDir: () => Path on Linux): Unit =
     val labels: List[Text] = List(t"linux-x64", t"linux-arm64", t"macos-x64", t"macos-arm64")
 
-    val payloads: proscenium.List[Payload] = proscenium.List.of:
+    val payloads: proscenium.List[Payload] = proscenium.List.from:
       labels.stdlib.map: (label: Text) =>
         val src = t"#!/bin/sh\necho 'hello from $label'\n"
         Payload(label, src.in[Data], gzip = true)
@@ -161,7 +161,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       // launcher's download → verify → append-embedded-JAR → exec path runs end-to-end.
       test(m"downloads, verifies, assembles and runs host binary"):
         val dir = tempDir()
-        val entries: proscenium.List[(Text, Text, Text)] = proscenium.List.of:
+        val entries: proscenium.List[(Text, Text, Text)] = proscenium.List.from:
           labels.stdlib.map: (label: Text) =>
             fileEntry(dir, label, t"#!/bin/sh\necho 'fetched $label'\nexit 0\n")
         sh"${stageDownloader(t"JAR".in[Data], entries)}".exec[Text]().trim
@@ -170,7 +170,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       test(m"rejects a binary whose hash does not match"):
         val dir = tempDir()
         val badHash = t"0"*64
-        val entries: proscenium.List[(Text, Text, Text)] = proscenium.List.of:
+        val entries: proscenium.List[(Text, Text, Text)] = proscenium.List.from:
           labels.stdlib.map: (label: Text) =>
             fileEntry(dir, label, t"#!/bin/sh\necho oops\nexit 0\n", badHash)
         sh"${stageDownloader(t"JAR".in[Data], entries)}".exec[Exit]()

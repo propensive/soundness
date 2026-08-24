@@ -175,7 +175,7 @@ object SyntaxMatcher:
 
       List.range(0, terms.stdlib.length).bind: index =>
         consume(terms.stdlib(index), tokens).map: rem =>
-          (List.of(terms.stdlib.patch(index, List[Css.Syntax]().stdlib, 1)), rem)
+          ((terms.stdlib.patch(index, List[Css.Syntax]().stdlib, 1)).to(List), rem)
 
     private def allOf(terms: List[Css.Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
       if terms.nil then List(tokens)

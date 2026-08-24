@@ -38,7 +38,7 @@ import spectacular.*
 object Weekday:
   def apply(ordinal: Ordinal)(using hebdomad: Hebdomad): Weekday = hebdomad.weekday(ordinal)
 
-  val all: Array[Weekday] = Array.of(Mon, Tue, Wed, Thu, Fri, Sat, Sun)
+  val all: Array[Weekday] = Array(Mon, Tue, Wed, Thu, Fri, Sat, Sun)
 
   given showable: (weekdays: Weekdays) => Weekday is Showable = weekdays.name(_)
 

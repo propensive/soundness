@@ -47,11 +47,11 @@ import prepositional.*
 object Convertible:
   given list: [self] => (traversable: self is Traversable)
   =>  self is Convertible in List to List[traversable.Operand] =
-    self => List.from(traversable.traverse(self))
+    self => traversable.traverse(self).to(List)
 
   given set: [self] => (traversable: self is Traversable)
   =>  self is Convertible in Set to Set[traversable.Operand] =
-    self => Set.from(traversable.traverse(self))
+    self => traversable.traverse(self).to(Set)
 
   given sequence: [self] => (traversable: self is Traversable)
   =>  self is Convertible in Sequence to Sequence[traversable.Operand] =
@@ -63,11 +63,11 @@ object Convertible:
 
   given lazyList: [self] => (traversable: self is Traversable)
   =>  self is Convertible in Chain to Chain[traversable.Operand] =
-    self => Chain.from(traversable.traverse(self))
+    self => traversable.traverse(self).to(Chain)
 
   given map: [self, key, value] => (traversable: self is Traversable by (key, value))
   =>  self is Convertible in Map to Map[key, value] =
-    self => Map.from(traversable.traverse(self))
+    self => traversable.traverse(self).to(Map)
 
   // `xs.to[Array]` yields the frozen form, `Array[element]^{}`: the built array is fresh,
   // so no writer survives its construction.

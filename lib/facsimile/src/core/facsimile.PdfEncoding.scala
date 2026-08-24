@@ -42,7 +42,7 @@ import vacuous.*
 // which `/Differences` arrays speak. `'\u0000'` marks an undefined code.
 private[facsimile] object PdfEncoding:
   private def table(differences: (Int, Char)*): Array[Char]^{} =
-    val array = Array[Char](256)
+    val array = Array.allocate[Char](256)
     var i = 32
     while i < 256 do
       array(i) = if i == 0x7f || (i >= 0x80 && i <= 0x9f) then '\u0000' else i.toChar
@@ -186,16 +186,17 @@ private[facsimile] object PdfEncoding:
       t"nbspace" -> ' ', t"softhyphen" -> '­' )
 
   // The reverse of the WinAnsi table: a character's code, for encoding show-text operands.
-  private lazy val winAnsiCodes: Map[Char, Int] = Map.from:
+  private lazy val winAnsiCodes: Map[Char, Int] =
     (32 until 256).flatMap { code =>
       val char = winAnsi.readUnchecked(code)
       if char == ' ' && code != 32 then None else Some(char -> code)
     }
+    . to(Map)
 
   // Encodes text as bytes for a simple WinAnsi font; an unrepresentable character becomes a
   // question mark, as viewers do.
   private[facsimile] def winAnsiEncode(text: Text): Data =
-    val bytes = Array[Byte](text.s.length)
+    val bytes = Array.allocate[Byte](text.s.length)
     var i = 0
 
     while i < text.s.length do

@@ -81,9 +81,9 @@ object Rrule:
   :   Chain[point] =
 
     val capped = until.lay(stream): limit =>
-      Chain.of(stream.stdlib.takeWhile(!order.gt(_, limit)))
+      (stream.stdlib.takeWhile(!order.gt(_, limit))).to(Chain)
 
-    count.lay(capped) { n => Chain.of(capped.stdlib.take(n)) }
+    count.lay(capped) { n => capped.stdlib.take(n).to(Chain) }
 
   // ── RFC 5545 text form ───────────────────────────────────────────────────────────────────────
   // The rule is serialised on its own (the `DTSTART`/`start` is separate in iCalendar), e.g.
@@ -124,11 +124,12 @@ object Rrule:
   def parse[point: Decodable in Text](text: Text, start: point)(using Tactic[Rrule.Error])
   :   Rrule[point] =
 
-    val fields: Map[Text, Text] = Map.from:
+    val fields: Map[Text, Text] =
       text.cut(t";").stdlib.flatMap: pair =>
         pair.cut(t"=") match
           case List(key, value) => Some(key.upper -> value)
           case _                => None
+      . to(Map)
 
     def field(key: Text): Optional[Text] = fields(key)
 
@@ -218,8 +219,8 @@ object Rrule:
         Chain.iterate(start)(addSeconds(_, step)).filter(subDayMatch(_, rule))
 
       case _ =>
-        Chain.of(dates(start.date, rule).bind(expandTimes(_, start, rule).stdlib)
-        . stdlib.dropWhile(_ < start))
+        (dates(start.date, rule).bind(expandTimes(_, start, rule).stdlib)
+        . stdlib.dropWhile(_ < start)).to(Chain)
 
   // Expand a date into the times-of-day the rule selects (the `byHour`/`byMinute`/`bySecond` cross
   // product, each defaulting to the start's component).
@@ -306,7 +307,7 @@ object Rrule:
       case _ =>
         Chain.empty // sub-day frequencies not yet expanded
 
-    Chain.of(raw.stdlib.dropWhile(_.jdn < start.jdn))
+    raw.stdlib.dropWhile(_.jdn < start.jdn).to(Chain)
 
   // The months to expand within a `Yearly` period: the listed `byMonth`s, or every month if a
   // day-level rule is present, or else the start's own month.

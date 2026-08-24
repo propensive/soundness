@@ -230,7 +230,7 @@ object Tests extends Suite(m"Mandible tests"):
             val name = Text(root.relativize(path).nn.toString)
             (TreePath(name), Array.unsafeFrozen(Files.readAllBytes(path).nn))
 
-      (List.from(content), out)
+      (content.to(List), out)
 
     def atomize(base: Text, derived: Text, api: Text, holder: Text = holder): Atomization =
       val (content, out) = compile(base, derived, api, holder)
@@ -321,7 +321,7 @@ object Tests extends Suite(m"Mandible tests"):
     // first match, so a registry that lists it first leaves `classfile/1` nothing to atomize.
 
     test(m"the discipline claims classfiles and nothing else"):
-      val data = Array.freeze(Array[Byte](0))
+      val data = Array.freeze(Array.allocate[Byte](0))
 
       (ClassfileDiscipline.claims(TreePath(t"fixture/Base.class"), data),
        ClassfileDiscipline.claims(TreePath(t"fixture/Base.tasty"), data),
@@ -366,7 +366,7 @@ object Tests extends Suite(m"Mandible tests"):
             val name = Text(root.relativize(path).nn.toString)
             (TreePath(name), Array.unsafeFrozen(Files.readAllBytes(path).nn))
 
-      (List.from(content), out)
+      (content.to(List), out)
 
     def evidence(base: Text, derived: Text, api: Text, holder: Text = holder) =
       val (content, out) = compile(base, derived, api, holder)
@@ -509,7 +509,7 @@ object Tests extends Suite(m"Mandible tests"):
     // --- jsig/1 and host contracts ------------------------------------------------------------
 
     test(m"jsig claims signature files and classfiles in both its realms"):
-      val data = Array.freeze(Array[Byte](0))
+      val data = Array.freeze(Array.allocate[Byte](0))
 
       (JsigDiscipline.claims(TreePath(t"java.base/java/lang/Object.sig"), data),
        JsigDiscipline.claims(TreePath(t"android/view/View.class"), data),
@@ -521,7 +521,7 @@ object Tests extends Suite(m"Mandible tests"):
 
     test(m"a supertype outside the claimed content is a boundary, not an error"):
       val (content, _) = compile(base, derived, api)
-      val derivedOnly = List.from(content.filter { pair => pair(0).text.s.contains("Derived") })
+      val derivedOnly = (content.filter { pair => pair(0).text.s.contains("Derived") }).to(List)
 
       // The classpath is empty, so `Base` is unresolvable: `classfile/1` must fail here, and
       // `jsig/1` must not — the presented set simply lacks what the boundary hides.
@@ -613,7 +613,7 @@ object Tests extends Suite(m"Mandible tests"):
 
     def consumerContent(baseSource: Text, consumer: Text): List[(TreePath, Data)] =
       val (content, _) = compile(baseSource, derived, api, consumer)
-      List.from(content.filter { pair => pair(0).text.s.contains("Consumer") })
+      (content.filter { pair => pair(0).text.s.contains("Consumer") }).to(List)
 
     test(m"references spell membership keys and exclude the content's own classes"):
       val refs = UsedSets.references(consumerContent(base, consumerOld))
@@ -731,8 +731,8 @@ object Tests extends Suite(m"Mandible tests"):
 
     test(m"references partition across per-module contract listings"):
       val (surface, _) = compile(base, derived, api)
-      val baseOnly = List.from(surface.filter { pair => pair(0).text.s.contains("Base") })
-      val apiOnly = List.from(surface.filter { pair => pair(0).text.s.contains("Api") })
+      val baseOnly = (surface.filter { pair => pair(0).text.s.contains("Base") }).to(List)
+      val apiOnly = (surface.filter { pair => pair(0).text.s.contains("Api") }).to(List)
 
       val contracts = List(
         (t"mod.base", JsigDiscipline.atomize(baseOnly, Discipline.Context(t"host"))),

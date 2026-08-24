@@ -105,7 +105,7 @@ object UsesBlob:
 
         . protect(Base256.decodeStrict(row(0)))
 
-    (module, List.from(atoms))
+    (module, atoms.to(List))
 
   // Transitive closure of a direct-use set over the reference lists of replaceable atoms.
   // `Own` references resolve within the atom's own module; `Foreign` references resolve into
@@ -142,7 +142,7 @@ object UsesBlob:
 
           case scala.None => ()
 
-    List.from(used.values)
+    used.values.to(List)
 
   // §13.4 spanning: a module compiled against one release is also valid against any release
   // whose atom set includes everything the module uses.

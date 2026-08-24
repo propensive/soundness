@@ -99,7 +99,7 @@ object SchemaResolver:
       val names = schema.layers.readable.toList.map(_.name)
       val byName = names.zip(components(1).stdlib).toMap
       val chosenHashes = selection.stdlib.map(byName(_))
-      val identity = SchemaSignature.encode(components(0) :: List.of(chosenHashes))
+      val identity = SchemaSignature.encode(components(0) :: chosenHashes.to(List))
 
       Resolved(composed, tel, identity, step)
 
@@ -152,7 +152,7 @@ object SchemaResolver:
         val named = schema.layers.readable.toList.map(_.name).zip(components(1).stdlib)
 
         val decomposed =
-          SchemaSignature.decodeHinted(signature, components(0), List.of(named), selection)
+          SchemaSignature.decodeHinted(signature, components(0), named.to(List), selection)
 
         if decomposed.present then result = accept(candidate, Step.Library)
 

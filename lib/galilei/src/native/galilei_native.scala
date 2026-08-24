@@ -167,8 +167,9 @@ package filesystemBackends:
             val stream = jnf.Files.list(javaPath(path)).nn
 
             try
-              Chain.from:
+
                 stream.iterator().nn.asScala.map(_.getFileName.nn.toString.tt).toList
+                . to(Chain)
             finally stream.close()
 
       def createDirectory(path: Path on Plane)(using Tactic[Io.Error]): Unit =
