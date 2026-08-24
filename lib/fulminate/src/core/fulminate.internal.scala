@@ -107,10 +107,13 @@ object internal:
     def toMessage(items: List[String | Expr[Message]]): Expr[Message] =
       val texts: List[String] = (items.stdlib.collect { case text: String => text }).to(List)
       val msgs:  List[Expr[Message]] = (items.stdlib.collect { case expr: Expr[Message] @unchecked => expr }).to(List)
+      // `List.from` inside the quote, not a conversion: the Factory route mints a fresh
+      // capture in the *generated* code, which `Message`'s pure fields then reject at every
+      // `m""` call site.
       val textsExpr: Expr[List[Text]] =
-        '{(${Expr.ofList(texts.stdlib.map { text => '{${Expr(text)}.tt} })}).to(List)}
+        '{List.from(${Expr.ofList(texts.stdlib.map { text => '{${Expr(text)}.tt} })})}
 
-      '{Message($textsExpr, (${Expr.ofList(msgs.stdlib)}).to(List))}
+      '{Message($textsExpr, List.from(${Expr.ofList(msgs.stdlib)}))}
 
 
     def sequence(group: String, startIndex: Int, subListRef: Expr[List[Message]])

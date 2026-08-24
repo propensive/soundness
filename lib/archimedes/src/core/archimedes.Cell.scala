@@ -188,18 +188,18 @@ object Cell:
     val height = base.height + script.height
 
     val lines =
-      (0 until height).map: row =>
-        Writing(t"${slice(base, row - script.height)}${slice(script, row)}")
-      . pipe(Sequence.from(_))
+      Sequence.from:
+        (0 until height).map: row =>
+          Writing(t"${slice(base, row - script.height)}${slice(script, row)}")
     Cell(lines, base.width + script.width, base.baseline + script.height)
 
   def subscript(base: Cell, script: Cell): Cell =
     val height = base.height + script.height
 
     val lines =
-      (0 until height).map: row =>
-        Writing(t"${slice(base, row)}${slice(script, row - base.height)}")
-      . pipe(Sequence.from(_))
+      Sequence.from:
+        (0 until height).map: row =>
+          Writing(t"${slice(base, row)}${slice(script, row - base.height)}")
     Cell(lines, base.width + script.width, base.baseline)
 
   def subsup(base: Cell, subscript: Cell, superscript: Cell): Cell =
@@ -208,23 +208,23 @@ object Cell:
     val middle = superscript.height + base.height
 
     val lines =
-      (0 until height).map: row =>
-        val left = slice(base, row - superscript.height)
+      Sequence.from:
+        (0 until height).map: row =>
+          val left = slice(base, row - superscript.height)
 
-        // `confine` makes the branch guard and the bounds proof the same act: a confined
-        // ordinal indexes its own sequence bare, and an out-of-range row is simply `Unset`.
-        val fromSuperscript = superscript.lines.confine(row.z).let: ord =>
-          val pad = spaces(right - superscript.width).text
-          t"${superscript.lines(ord).text}$pad"
+          // `confine` makes the branch guard and the bounds proof the same act: a confined
+          // ordinal indexes its own sequence bare, and an out-of-range row is simply `Unset`.
+          val fromSuperscript = superscript.lines.confine(row.z).let: ord =>
+            val pad = spaces(right - superscript.width).text
+            t"${superscript.lines(ord).text}$pad"
 
-        val fromSubscript = subscript.lines.confine((row - middle).z).let: ord =>
-          val pad = spaces(right - subscript.width).text
-          t"${subscript.lines(ord).text}$pad"
+          val fromSubscript = subscript.lines.confine((row - middle).z).let: ord =>
+            val pad = spaces(right - subscript.width).text
+            t"${subscript.lines(ord).text}$pad"
 
-        val scripts = fromSuperscript.or(fromSubscript.or(spaces(right).text))
+          val scripts = fromSuperscript.or(fromSubscript.or(spaces(right).text))
 
-        Writing(t"$left$scripts")
-      . pipe(Sequence.from(_))
+          Writing(t"$left$scripts")
     Cell(lines, base.width + right, superscript.height + base.baseline)
 
   // Each of the three script schemata prefers the same-line Unicode form, and falls
@@ -301,9 +301,9 @@ object Cell:
   def bracket(char: Char, height: Int, baseline: Int, opening: Boolean): Cell =
     if height <= 1 then line(char.toString.tt) else
       val glyphs =
-        (0 until height).map: row =>
-          Writing(bracketGlyph(char, row, height, baseline, opening).toString.tt)
-        . pipe(Sequence.from(_))
+        Sequence.from:
+          (0 until height).map: row =>
+            Writing(bracketGlyph(char, row, height, baseline, opening).toString.tt)
       Cell(glyphs, 1, baseline)
 
   private def bracketGlyph(char: Char, row: Int, height: Int, axis: Int, opening: Boolean): Char =
@@ -340,18 +340,18 @@ object Cell:
       val (strokes, circle) = integralShape(char)
 
       val lines =
-        (0 until height).map: row =>
-          val glyphs = (0 until strokes).map: column =>
-            val glyph =
-              if row == 0 then '╭'
-              else if row == height - 1 then '╯'
-              else if circle && column == 0 && row == axis then '○'
-              else Stem
+        Sequence.from:
+          (0 until height).map: row =>
+            val glyphs = (0 until strokes).map: column =>
+              val glyph =
+                if row == 0 then '╭'
+                else if row == height - 1 then '╯'
+                else if circle && column == 0 && row == axis then '○'
+                else Stem
 
-            glyph.toString.tt
+              glyph.toString.tt
 
-          Writing(t"${glyphs.join} ")
-        . pipe(Sequence.from(_))
+            Writing(t"${glyphs.join} ")
       Cell(lines, strokes + 1, axis)
 
   private def integralShape(char: Char): (Int, Boolean) = char match
@@ -380,15 +380,15 @@ object Cell:
     val width = depth + 3
 
     val lines =
-      (0 until height).map: row =>
-        if row == 0 then repeat('▁', width)
-        else if row == height - 1 then repeat('▔', width) else
-          val fromTop = row - 1
-          val fromBottom = height - 2 - row
-          val column = min(fromTop, fromBottom)
-          val glyph = if fromTop <= fromBottom then Tick else '╱'
-          Writing(t"${spaces(column).text}$glyph${spaces(width - column - 1).text}")
-      . pipe(Sequence.from(_))
+      Sequence.from:
+        (0 until height).map: row =>
+          if row == 0 then repeat('▁', width)
+          else if row == height - 1 then repeat('▔', width) else
+            val fromTop = row - 1
+            val fromBottom = height - 2 - row
+            val column = min(fromTop, fromBottom)
+            val glyph = if fromTop <= fromBottom then Tick else '╱'
+            Writing(t"${spaces(column).text}$glyph${spaces(width - column - 1).text}")
     Cell(lines, width, height/2)
 
   // `∏`: a `┬──┬` lintel over two `│` legs.
@@ -396,10 +396,10 @@ object Cell:
     val width = 4
 
     val lines =
-      (0 until height).map: row =>
-        if row == 0 then Writing(t"┬${repeat(Bar, width - 2).text}┬")
-        else Writing(t"$Stem${spaces(width - 2).text}$Stem")
-      . pipe(Sequence.from(_))
+      Sequence.from:
+        (0 until height).map: row =>
+          if row == 0 then Writing(t"┬${repeat(Bar, width - 2).text}┬")
+          else Writing(t"$Stem${spaces(width - 2).text}$Stem")
     Cell(lines, width, height/2)
 
   private def stretchyChar(node: Mathml): Optional[Char] = node match

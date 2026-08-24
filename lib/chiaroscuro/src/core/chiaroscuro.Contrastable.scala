@@ -219,26 +219,26 @@ object Contrastable:
 
     if left == right then Juxtaposition.Same(leftDebug) else
       val comparison =
-        dissonance.diff(Sequence.from(left.readable), Sequence.from(right.readable)).rdiff(_ == _, 10).changes.map:
-          case Par(leftIndex, rightIndex, value) =>
-            val label =
-              if leftIndex == rightIndex then leftIndex.show
-              else t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
+        Array.from:
+          dissonance.diff(Sequence.from(left.readable), Sequence.from(right.readable)).rdiff(_ == _, 10).changes.map:
+            case Par(leftIndex, rightIndex, value) =>
+              val label =
+                if leftIndex == rightIndex then leftIndex.show
+                else t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
-            label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
+              label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
 
-          case Ins(rightIndex, value) =>
-            t" ╱${rightIndex.show.subscripts}" -> Juxtaposition.Different(t"", value.short)
+            case Ins(rightIndex, value) =>
+              t" ╱${rightIndex.show.subscripts}" -> Juxtaposition.Different(t"", value.short)
 
-          case Del(leftIndex, value) =>
-            t"${leftIndex.show.superscripts}╱ " ->
-              Juxtaposition.Different(value.let(_.short).or(t"?"), t"")
+            case Del(leftIndex, value) =>
+              t"${leftIndex.show.superscripts}╱ " ->
+                Juxtaposition.Different(value.let(_.short).or(t"?"), t"")
 
-          case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
-            val label = t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
+            case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
+              val label = t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
-            label -> juxtaposition(t"", Decomposition(leftValue), Decomposition(rightValue))
-        . pipe(Array.from(_))
+              label -> juxtaposition(t"", Decomposition(leftValue), Decomposition(rightValue))
 
       Juxtaposition.Collation(name, comparison.to[List], leftDebug, rightDebug)
 

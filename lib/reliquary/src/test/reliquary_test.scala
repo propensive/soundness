@@ -1987,10 +1987,9 @@ object Tests extends Suite(m"Reliquary Tests"):
 
         val bogus = blob(encode(t"not the derivative"))
 
-        val tampered = lira.manifest.copy(section =
+        val tampered = lira.manifest.copy(section = List.from:
           lira.manifest.section.stdlib.map: section =>
             section.copy(derivative = bogus))
-          . to(List)
 
         capture[Lira.Error](Derivative.verify(tampered, report)).reason
       . assert(_ == Lira.Error.Reason.BadDerivative(t"jvm"))

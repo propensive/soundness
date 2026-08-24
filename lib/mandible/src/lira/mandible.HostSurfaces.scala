@@ -108,9 +108,9 @@ object CtSym:
           += ((TreePath(Text(inner)), data))
 
 
+    List.from:
       grouped.toList.sortBy(_(0)).map: (module, entries) =>
         (Text(module), entries.toList.to(List))
-      . to(List)
 
   // The signature surface of one release: every `.sig` entry present in it, with the release
   // codes stripped from the path, so the tree reads `java.base/java/lang/Object.sig`.

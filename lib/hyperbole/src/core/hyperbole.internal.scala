@@ -68,7 +68,7 @@ object internal:
                 ${Expr(name)},
                 ${Expr(expr)},
                 ${Expr(source)},
-                (${Expr.ofList(nodes2.stdlib)}).to(List),
+                List.from(${Expr.ofList(nodes2.stdlib)}),
                 $param2.asInstanceOf[Optional[Text]],
                 ${Expr(term)},
                 ${Expr(definitional)} )
@@ -682,13 +682,13 @@ object internal:
           case (key, text: Text) => '{(${Expr(key)}, ${Expr(text)})}
 
           case (key, list: List[Text] @unchecked) =>
-            '{(${Expr(key)}, (${Expr.ofList((list: List[Text]).stdlib.map(Expr(_)))}).to(List))}
+            '{(${Expr(key)}, List.from(${Expr.ofList((list: List[Text]).stdlib.map(Expr(_)))}))}
 
     ' {
         Tasty.Symbol
           ( ${Expr(symbol.prefix)},
             ${Expr(symbol.name)},
-            (${Expr.ofList(flags)}).to(List),
-            (${Expr.ofList(properties)}).to(List),
-            (${Expr.ofList(details)}).to(List) )
+            List.from(${Expr.ofList(flags)}),
+            List.from(${Expr.ofList(properties)}),
+            List.from(${Expr.ofList(details)}) )
       }

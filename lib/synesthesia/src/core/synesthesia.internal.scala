@@ -375,7 +375,7 @@ object internal:
             case None =>
               halt(m"There was no JSON schema for ${param.name}")
 
-      val properties = '{(${Expr.ofList(params)}).to(Map)}
+      val properties = '{Map.from(${Expr.ofList(params)})}
 
       val result: TypeRepr = method.info.absolve match
         case MethodType(_, _, MethodType(_, _, result)) => result
@@ -387,7 +387,7 @@ object internal:
             ' {
                 val inputSchema =
                   JsonSchema.Object
-                    ( properties = $properties, required = (${Expr.ofList(paramNames)}).to(List) )
+                    ( properties = $properties, required = List.from(${Expr.ofList(paramNames)}) )
 
                 val outputSchema =
                   JsonSchema.Object
@@ -458,7 +458,7 @@ object internal:
             ( name         = ${Expr(method.name.tt)},
               title        = $title,
               description  = $about,
-              arguments    = ${if params.isEmpty then 'Unset else '{(${Expr.ofList(params)}).to(List)}} )
+              arguments    = ${if params.isEmpty then 'Unset else '{List.from(${Expr.ofList(params)})}} )
         }
 
     val resourceEntries = resourceMethods.map: method =>
@@ -515,9 +515,9 @@ object internal:
     ' {
         new Mcp.Specification:
           type Self = interface
-          def tools(): List[Mcp.Tool] = (${Expr.ofList(toolEntries)}).to(List)
-          def resources(): List[Mcp.Resource] = (${Expr.ofList(resourceEntries)}).to(List)
-          def prompts(): List[Mcp.Prompt] = (${Expr.ofList(promptEntries)}).to(List)
+          def tools(): List[Mcp.Tool] = List.from(${Expr.ofList(toolEntries)})
+          def resources(): List[Mcp.Resource] = List.from(${Expr.ofList(resourceEntries)})
+          def prompts(): List[Mcp.Prompt] = List.from(${Expr.ofList(promptEntries)})
 
           def invokeTool(server: interface, client: Mcp.Client, method: Text, input: Json): Json =
             $toolInvocation(server)(method, input, client)

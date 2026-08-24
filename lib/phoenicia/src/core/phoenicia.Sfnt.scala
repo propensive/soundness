@@ -213,19 +213,18 @@ trait Sfnt:
     hmtx.leftSideBearing(glyph(char).id)
 
   lazy val tables: Map[Sfnt.Table.Tag, TableOffset] =
-    (0 until numTables).flatMap: n =>
-      val start = 12 + n*16
-      val tableTag = String(Array.unsafeJvm(data), start, 4, StandardCharsets.US_ASCII).tt
-      val checksum = B32(data, start + 4)
-      val offset = B32(data, start + 8).s32.int
-      val length = B32(data, start + 12).s32.int
+    Map.from:
+      (0 until numTables).flatMap: n =>
+        val start = 12 + n*16
+        val tableTag = String(Array.unsafeJvm(data), start, 4, StandardCharsets.US_ASCII).tt
+        val checksum = B32(data, start + 4)
+        val offset = B32(data, start + 8).s32.int
+        val length = B32(data, start + 12).s32.int
 
-      tableTag match
-        case Sfnt.Table.Otf(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
-        case Sfnt.Table.Ttf(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
-        case _           => None
-
-    . pipe(Map.from(_))
+        tableTag match
+          case Sfnt.Table.Otf(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
+          case Sfnt.Table.Ttf(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
+          case _           => None
 
   def head: HeadTable raises Font.Error =
     tables(Sfnt.Table.Ttf.Head).let: ref =>

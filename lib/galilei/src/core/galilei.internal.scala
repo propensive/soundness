@@ -52,7 +52,7 @@ object internal:
     val name: String = context.valueOrAbort.parts.head
 
     safely(name.tt.as[Path on Posix]).let: path =>
-      '{Path[Posix, %.type, Tuple](${Expr(path.root)}, (${Expr.ofList(path.descent.map(Expr(_)))}).to(List))}
+      '{Path[Posix, %.type, Tuple](${Expr(path.root)}, List.from(${Expr.ofList(path.descent.map(Expr(_)))}))}
 
     . or:
         safely(name.tt.as[Path on Windows]).let: path =>

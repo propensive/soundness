@@ -115,7 +115,7 @@ class Classfile(data: scala.IArray[Byte]):
         attr.fold(Map.empty[jlc.Label, List[Bytecode.Frame]]): smt =>
           smt.entries.nn.to[List].map: entry =>
             val frames =
-              entry.stack.nn.to[List].stdlib.map(Bytecode.Frame.fromVerificationType).reverse.to(List)
+              List.from(entry.stack.nn.to[List].stdlib.map(Bytecode.Frame.fromVerificationType).reverse)
 
             entry.target.nn -> frames
 

@@ -1005,10 +1005,10 @@ object internal:
                         Tel.Parsable.focusingUnlocated($foci, $keyText):
                           Tel.Parsable.gathered[fieldType]
                             ( $instances.readable(${Expr(index)}).asInstanceOf[Tel.Parsing],
-                              proscenium.List.of
-                                ( $bufferExpr match
-                                    case null   => Nil
-                                    case buffer => buffer.toList ) )
+                              ( $bufferExpr match
+                                  case null   => Nil
+                                  case buffer => buffer.toList )
+                              . to(proscenium.List) )
                       }.asTerm )
 
                 If('{ $repeatables.readable(${Expr(index)}) }.asTerm, gatherFinish, whenUnseen)

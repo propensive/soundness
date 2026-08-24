@@ -129,7 +129,7 @@ object ClassSurface:
     attributes.stdlib.collectFirst:
       case attribute: jlca.ExceptionsAttribute =>
         // Sorted: the `Exceptions` attribute's order is source order, which is not contractual.
-        attribute.exceptions.nn.to[List].stdlib.map(_.asInternalName.nn.tt).sorted.to(List)
+        List.from(attribute.exceptions.nn.to[List].stdlib.map(_.asInternalName.nn.tt).sorted)
 
     . getOrElse(Nil)
 
@@ -172,7 +172,7 @@ object ClassSurface:
       ( name,
         model.flags.nn.flagsMask,
         Optional(model.superclass.nn.orElse(null)).let(_.asInternalName.nn.tt),
-        model.interfaces.nn.to[List].stdlib.map(_.asInternalName.nn.tt).sorted.to(List),
+        List.from(model.interfaces.nn.to[List].stdlib.map(_.asInternalName.nn.tt).sorted),
         signatureOf(attributes),
         members,
         innerFlagsOf(attributes, name) )

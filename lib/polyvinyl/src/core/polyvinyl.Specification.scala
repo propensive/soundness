@@ -86,7 +86,7 @@ trait Specification extends Original:
                       ' {
                           data =>
                             $accessor.transform
-                              ( $target.access(${Expr(name)}, data), (${Expr(params.to(List).stdlib)}).to(List) )
+                              ( $target.access(${Expr(name)}, data), List.from(${Expr(params.to(List).stdlib)}) )
                         }
 
                     val caseDefs2 =

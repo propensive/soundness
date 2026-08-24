@@ -74,7 +74,7 @@ object internal:
       case Some((_, keys)) => keys.to[List]
       case None            => Nil
 
-    '{(${Expr.ofList(paths.stdlib.map { k => '{${Expr(k)}.tt} })}).to(List)}
+    '{List.from(${Expr.ofList(paths.stdlib.map { k => '{${Expr(k)}.tt} })})}
 
   // The override set for `root` and the typeclass `typeclassConstructor`: a reference to the
   // in-scope `root is Specific over typeclass` given and the dotted paths it overrides — or `None`
@@ -247,7 +247,7 @@ object internal:
       productType(TypeRepr.of[derivation]).typeSymbol.caseFields.map: field =>
         '{${Expr(field.name)}.tt}
 
-    '{(${Expr.ofList(labels)}).to(List)}
+    '{List.from(${Expr.ofList(labels)})}
 
   // Whether `tpe` is a sum: a sealed trait / enum with `children`. A `Variant & Parent`
   // intersection (a sum's variant) is the variant — a product. A singleton (case object /
@@ -1008,7 +1008,7 @@ object internal:
 
     val labels = TypeRepr.of[derivation].typeSymbol.children.map: child => '{${Expr(child.name)}.tt}
 
-    '{(${Expr.ofList(labels)}).to(List)}
+    '{List.from(${Expr.ofList(labels)})}
 
   // Resolves a field's typeclass instance via an inline `summonInline` at the use site. Deferring
   // resolution to the splice site (rather than `Expr.summon` here) is what lets a recursive or

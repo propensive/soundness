@@ -234,7 +234,7 @@ object Redraft:
       case Context.Fixed(k) => Redraft(trim(resolved, k)*)
 
       case Context.Minimal =>
-        Redraft(minimize(resolved, original, diff.patch(original.to[List]).stdlib.to(List))*)
+        Redraft(minimize(resolved, original, List.from(diff.patch(original.to[List]).stdlib))*)
 
   private def trim(directives: List[Directive], k: Int): List[Directive] =
     val keep = directives.stdlib.map { case Directive.Keep(_) => false; case _ => true }.to(scala.Array)
@@ -261,7 +261,7 @@ object Redraft:
 
     def valid(candidate: List[Directive]): Boolean =
       val (edits, anomalies) = analyze(candidate, original, _ == _)
-      anomalies.nil && Diff(edits*).patch(original.to[List]).stdlib.to(List) == target
+      anomalies.nil && List.from(Diff(edits*).patch(original.to[List]).stdlib) == target
 
     val changes = array.indices.filter(!array(_).isInstanceOf[Directive.Keep])
 

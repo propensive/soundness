@@ -106,9 +106,13 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[textual] =
 
-
+      // `Sequence.from:` as a block, never `. pipe(Sequence.from(_))`: eta-expanding a
+      // polymorphic factory under this method's live type variables trips dotc's `wildApprox`
+      // assertion (scala/scala3#24824), which surfaces as a positionless crash compiling this
+      // whole module.
+      Sequence.from:
         lines.readable.to(IndexedSeq).bind(Flow.wrap(_, width).stdlib.to(List)).toVector
-        . pipe(Sequence.from(_))
+
   object ParagraphOrBreak extends Columnar:
     // Elastic between a single cell and its natural width: the strategy prefers word
     // wrapping but will chop mid-word rather than overflow, so it has no min-content floor.
@@ -128,9 +132,10 @@ package columnar:
 
       if columnMetrics(lines).min < width then Paragraph.fit(lines, width, textAlign)
       else
-
+        // As above: the block form, not an eta-expanded `pipe`.
+        Sequence.from:
           lines.readable.to(IndexedSeq).bind(Flow.chop(_, width).stdlib.to(List)).toVector
-          . pipe(Sequence.from(_))
+
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def flex[text: Textual { type Result = Char }](lines: Array[text]^{}, maxWidth: Int)
       ( using Text is Measurable )

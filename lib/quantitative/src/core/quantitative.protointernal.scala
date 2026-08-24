@@ -345,7 +345,10 @@ trait protointernal extends caps.Pure:
           unit.power(1).asType.absolve match
             case '[ref] =>
               val designation = Expr.summon[Designation[ref]].get
-              recur('{($expr.stdlib.updated($designation.text, ${Expr(power)})).to(proscenium.Map)}, todo2)
+              // `Map.from` inside the quote, not a conversion: a `Factory` conversion in
+              // *generated* code carries a capture into a capture-set position, which crashes
+              // capture checking with `IllegalCaptureRef` at every use of the macro.
+              recur('{proscenium.Map.from($expr.stdlib.updated($designation.text, ${Expr(power)}))}, todo2)
 
     Expr.summon[Redesignation[units]].absolve match
       case Some('{$redesignation: Redesignation[?]}) =>

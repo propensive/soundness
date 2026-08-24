@@ -103,9 +103,9 @@ object Discipline:
         (discipline, claimed)
 
 
+      List.from:
         results.filter { (_, claimed) => !claimed.isEmpty }.map: (discipline, claimed) =>
           discipline.atomize(claimed.to(List), context)
-        . to(List)
 
   // DisciplineError → Discipline.Error
   object Error:

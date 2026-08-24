@@ -69,7 +69,7 @@ object Mappable extends Mappable.Fallback:
       type Operand = element
       type Result[element2] = Set[element2]
       def map[element2](self: container, lambda: element => element2): Set[element2] =
-        // `Set.from`, not `.to(Set)`: the conversion route lets the (vacuous, strict-map)
+        // `Set.from`, not a conversion: the conversion route lets the (vacuous, strict-map)
         // `lambda` capture contaminate the result, where `from`'s signature is pure.
         Set.from(self.stdlib.map(lambda))
 

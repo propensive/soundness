@@ -181,10 +181,8 @@ object Lira:
 
       val beforeReplaceable = before.filter(_.atomClass == Atom.Class.Replaceable)
 
-      val afterReplaceable =
-        scala.collection.immutable.
-          after.filter(_.atomClass == Atom.Class.Replaceable).map: atom => (atom.key, atom)
-          . to(Map)
+      val afterReplaceable = scala.collection.immutable.Map.from:
+        after.filter(_.atomClass == Atom.Class.Replaceable).map: atom => (atom.key, atom)
 
       val replaced = beforeReplaceable
         . flatMap: atom =>
@@ -1215,9 +1213,8 @@ object Lira:
   // A section's mapping from paths to blobs (§9.2), with rows in ascending bytewise path order.
   case class Tree private(entries: List[TreeEntry]):
     lazy val index: scala.collection.immutable.Map[Text, TreeEntry] =
-      scala.collection.immutable.
+      scala.collection.immutable.Map.from:
         entries.stdlib.map: entry => (entry.path.text, entry)
-        . to(Map)
 
     def get(path: TreePath): Optional[TreeEntry] = index.get(path.text).getOrElse(Unset)
 

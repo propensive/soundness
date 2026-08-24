@@ -44,9 +44,8 @@ import Lira.Error.Reason
 // rather than an error.
 class Blobstore(val blobs: List[Blob]):
   private lazy val index: scala.collection.immutable.Map[Text, Blob] =
-    scala.collection.immutable.
+    scala.collection.immutable.Map.from:
       blobs.stdlib.map: blob => (Lira.Hash.text(blob.hash), blob)
-      . to(Map)
 
   def contains(hash: Data): Boolean = index.contains(Lira.Hash.text(hash))
 

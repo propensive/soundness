@@ -525,8 +525,7 @@ trait Mathml:
   def text: Optional[Text]
 
   def htmlAttributes: List[(Text, Optional[Text])] =
-    List.of[(Text, Optional[Text])]
-     (attributes.stdlib.map { case (key, value) => (key, value: Optional[Text]) })
+    attributes.stdlib.map { case (key, value) => (key, value: Optional[Text]) }.to(List)
 
   def xml: Xml =
     val children: List[Xml] = text.lay(contents.map(_.xml)): value =>

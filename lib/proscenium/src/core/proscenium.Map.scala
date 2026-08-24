@@ -51,7 +51,7 @@ object Map:
   def from[key, value](pairs: IterableOnce[(key, value)]^): Map[key, value] =
     of(sci.Map.from(pairs))
 
-  // `.to(Map)` support (see `List`): the conversion is on `Map.type` only, so it cannot
+  // `.to[Map]` support (see `List`): the conversion is on `Map.type` only, so it cannot
   // expose members of `Map` values.
   given factory: [key, value] => Conversion[Map.type, scala.collection.Factory[(key, value), Map[key, value]]] =
     _ =>

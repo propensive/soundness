@@ -63,10 +63,9 @@ object Manifest:
   given aggregable: Manifest is Aggregable by Data = parse(_)
 
   def apply(entries: Manifest.Entry*): Manifest = Manifest:
-    entries.map: entry =>
-      (entry.key, entry.value)
-
-    . pipe(Map.from(_))
+    Map.from:
+      entries.map: entry =>
+        (entry.key, entry.value)
 
   given addable: Manifest is Addable by Manifest.Entry to Manifest = Addable: (manifest, entry) =>
     Manifest(manifest.entries.define(entry.key, entry.value))

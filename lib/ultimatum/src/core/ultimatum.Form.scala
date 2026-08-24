@@ -213,17 +213,17 @@ class Form
 
     Form.Layout:
 
-        panes.stdlib.zip(rects.stdlib).map: (leaf, rect) =>
-          val fixture: Optional[Fixture] = leaf match
-            case Pane.Widget(_, fixture) => fixture
-            case _                       => Unset
+        Sequence.from:
+          panes.stdlib.zip(rects.stdlib).map: (leaf, rect) =>
+            val fixture: Optional[Fixture] = leaf match
+              case Pane.Widget(_, fixture) => fixture
+              case _                       => Unset
 
-          val focus: Optional[Focus] = leaf match
-            case Pane.Widget(_, focus: Focus) => focus
-            case _                            => Unset
+            val focus: Optional[Focus] = leaf match
+              case Pane.Widget(_, focus: Focus) => focus
+              case _                            => Unset
 
-          Form.Entry(leaf, rect, fixture, focus)
-        . pipe(Sequence.from(_))
+            Form.Entry(leaf, rect, fixture, focus)
   // Paint one leaf of a solved layout. The index is confined to `layout.entries`, so
   // callers prove it in bounds (via `iterate`, `confine` or `focusables`) before it
   // crosses this boundary; both accesses below are then total.

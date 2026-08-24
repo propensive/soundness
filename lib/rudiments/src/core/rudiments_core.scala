@@ -301,9 +301,12 @@ extension [self <: Populated, result](value: self)(using truncable: self is Trun
 //
 // The generic receiver coexists with the receiver-specific `to`s (quantitative's
 // `quantity.convert[Pounds]`, the tuple `to[Product]` below) because extension resolution falls
-// through when no `Convertible` instance is found. The bracket form `xs.to[List]` replaces
-// the parens Factory form `xs.to(List)`, which survives only for stdlib receivers with no
-// `Convertible` instance.
+// through when no `Convertible` instance is found. The bracket form `xs.to[List]` is the
+// normal spelling; the parens Factory form `xs.to[List]` survives in four cases: below
+// `rudiments`, where this extension is not in scope; on `Iterator`/`IterableOnce` receivers,
+// which have no `Traversable` instance and so no `Convertible`; inside `transparent inline`
+// contexts where the type parameter cannot be elaborated; and where no expected type pins
+// `convertible.Result`, leaving the bare type constructor unapplied.
 extension [self](self: self)
   transparent inline def to[form <: AnyKind](using convertible: self is Convertible in form)
   :   convertible.Result =
@@ -457,7 +460,7 @@ extension [value](iterable: Iterable[value])
     iterable.map: value => (value, value, value)
 
   def indexBy[value2](lambda: value => value2): Map[value2, value] =
-    // `Map.from`, not `.to(Map)`: the conversion route lets the (vacuous, strict-map)
+    // `Map.from`, not a conversion: the conversion route lets the (vacuous, strict-map)
     // `lambda` capture contaminate the result, where `from`'s signature is pure.
     Map.from(iterable.map { value => (lambda(value), value) })
 

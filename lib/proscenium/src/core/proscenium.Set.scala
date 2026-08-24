@@ -51,7 +51,7 @@ object Set:
   def from[element](elements: IterableOnce[element]^): Set[element] =
     of(sci.Set.from(elements))
 
-  // `.to(Set)` support (see `List`): the conversion is on `Set.type` only, so it cannot
+  // `.to[Set]` support (see `List`): the conversion is on `Set.type` only, so it cannot
   // expose members of `Set` values.
   given factory: [element] => Conversion[Set.type, scala.collection.Factory[element, Set[element]]] =
     _ =>

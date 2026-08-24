@@ -104,10 +104,10 @@ private[facsimile] object Filter:
         abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"DecodeParms", t"a dictionary or array")))
 
 
+    List.from:
       names.stdlib.zipWithIndex.map: (name, index) =>
         val id = Id.parse(name).or(abort(Pdf.Error(Pdf.Error.Reason.UnknownFilter(name))))
         (id, if index < parameters.stdlib.length then parameters.stdlib(index) else Map())
-      . to(List)
 
   // A streaming plan is plain data — closures at most — because ducts, being scoped
   // capabilities, may only be minted at the `via` call site (a lambda cannot return a fresh

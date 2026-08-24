@@ -436,7 +436,7 @@ case class Motif(pattern: Text, node: Node, captures: Int, program: Program):
   // the input does not match. A group which participated in no iteration of the match is
   // `Unset` within the list.
   def groups[input: Symbolizer](input: input): Optional[List[Optional[Interval]]] =
-    spans(input).let: all => List.of(all.stdlib.tail)
+    spans(input).let: all => all.stdlib.tail.to(List)
 
   // The winning thread's raw capture-slot array: the bounds of group `n` at indices `2n` and
   // `2n + 1` (the whole match at 0 and 1), with `-1` for a slot no thread reached. This exists

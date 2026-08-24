@@ -727,7 +727,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         def strip(result: Option[Array[List[Text | Char] | Optional[Text | Char]]^{}])
         :   Option[List[Any]] =
           result.map: (groups: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
-            proscenium.List.of(groups.readable.toList)
+            proscenium.List.from(groups.readable.toList)
 
         patterns.each: pattern =>
           val regex = Regex.parse(List(pattern))

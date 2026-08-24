@@ -55,11 +55,11 @@ object Sparkline:
 
     if count <= width || width <= 0 then samples else
 
-        (0 until width).map: cell =>
-          val from = cell*count/width
-          val to = (((cell + 1)*count/width).max(from + 1)).min(count)
-          Fraction(samples.stdlib.slice(from, to).map(_.value).max)
-        . pipe(Sequence.from(_))
+        Sequence.from:
+          (0 until width).map: cell =>
+            val from = cell*count/width
+            val to = (((cell + 1)*count/width).max(from + 1)).min(count)
+            Fraction(samples.stdlib.slice(from, to).map(_.value).max)
 // How a run of samples is drawn. `Blocks` gives eight levels in one row; `Tall` stacks two rows for
 // sixteen; `Dots` and `Ascii` trade resolution for a narrower character repertoire.
 enum Sparkline:
@@ -100,9 +100,9 @@ enum Sparkline:
     val span = upper - lower
 
     val normalized =
-      samples.stdlib.map: sample =>
-        if span <= 0 then Fraction(0.0) else Fraction((sample - lower)/span)
-      . pipe(Sequence.from(_))
+      Sequence.from:
+        samples.stdlib.map: sample =>
+          if span <= 0 then Fraction(0.0) else Fraction((sample - lower)/span)
     val values = Sparkline.decimate(normalized, width)
     val ascii = !gauging.permits(Gaugeable.Glyphs.Unicode)
 

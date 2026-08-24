@@ -72,7 +72,7 @@ object Optical:
       val predicate: key -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
       Optic: (origin, lambda) =>
-        // `Map.from`, not `.to(Map)`: the conversion route lets the (vacuous, strict-map)
+        // `Map.from`, not `.to[Map]`: the conversion route lets the (vacuous, strict-map)
         // `lambda` capture contaminate the result, where `from`'s signature is pure.
         Map.from:
           origin.stdlib.map: (key, value) =>

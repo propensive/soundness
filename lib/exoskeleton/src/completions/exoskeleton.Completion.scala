@@ -233,9 +233,9 @@ extends Cli:
               if !incomplete || !sole || suggestion.text.ends(t"/") then mainLines.to(List)
               else
 
+                List.from:
                   mainLines ++ (suggestion.text :: aliases.stdlib).map: text =>
                     t"$text "
-                  . to(List)
 
       case Shell.Powershell =>
         // PowerShell inserts a `CompletionResult` verbatim, so a trailing-space twin is

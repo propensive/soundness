@@ -65,7 +65,7 @@ object internal:
           _.absolve match
             case '[element] => reify[element]
 
-        '{(${Expr.ofList(elements)}).to(List)}
+        '{List.from(${Expr.ofList(elements)})}
 
       case '[type map <: Tuple; TypeMap[map]] =>
         val entries =
@@ -75,7 +75,7 @@ object internal:
             _.absolve match
               case '[(key, value)] => '{(${reify[key]}, ${reify[value]})}: Expr[(Any, Any)]
 
-          '{(${Expr.ofList(keyValues)}).to(List)}
+          '{List.from(${Expr.ofList(keyValues)})}
 
         '{($entries.stdlib).to(Map)}
 

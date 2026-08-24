@@ -94,7 +94,7 @@ abstract class Tabulation[text: ClassTag]():
     // dropped column saves.
     val solved =
       Flex.solve
-        // `Sequence.from`, not `.to(Sequence)`: the Factory search here trips the compiler's
+        // `Sequence.from`, not `.to[Sequence]`: the Factory search here trips the compiler's
         // `wildApprox` assertion (uninstantiated type variable in an implicit-scope walk).
         ( Sequence.from(visible.map(flexes(_))),
           width - style.columnCost - 1,
