@@ -783,7 +783,8 @@ object soundness extends Toolchain:
     nomenclature.lexicon,
     parasite.core, parasite.jvm, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
     pneumatic.core, pneumatic.flate, pneumatic.brotli, pneumatic.lzma, pneumatic.lzw,
-    prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
+    praxinoscope.core, prepositional.core, vacuous.core, wisteria.core, vicarious.core,
+    serpentine.core,
     concordance.core, corpuscular.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core,
     prophesy.core, murmuration.core, beneficence.core, proscenium.core, prescience.core,
@@ -2367,12 +2368,15 @@ object jacinta extends Library:
     )
 
 object kaleidoscope extends Library:
-  object core extends Component(contingency.core, contextual.core):
+  object core
+  extends Component(contingency.core, contextual.core, praxinoscope.core, prepositional.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
+  object bench extends Benchmarks(core, quantitative.units):
+    def mvnDeps = Seq(mvn"com.google.re2j:re2j:1.8")
 
 object larceny extends Library:
   object plugin extends Component():
@@ -2656,6 +2660,16 @@ object prescience extends Library:
   object test extends Tests(leaves):
     override def scalacOptions = Task:
       super.scalacOptions()
+
+object praxinoscope extends Library:
+  object core extends Component(contingency.core, contextual.core):
+    // Not capture-checked: the Pike VM's hot paths are built on locally-mutated arrays and
+    // swapped thread lists, which the separation checker cannot yet express efficiently.
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
 
 object prepositional extends Library:
   object core extends Component:
@@ -3428,7 +3442,8 @@ val allLibraries: Seq[Library] = Seq(
   kaleidoscope, larceny, legerdemain, locomotion, mandible, mercator, metamorphose,
   monotonous,
   mosquito, murmuration, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
-  perihelion, phoenicia, plutocrat, pneumatic, polaris, polysyllabic, polyvinyl, prepositional,
+  perihelion, phoenicia, plutocrat, pneumatic, polaris, polysyllabic, polyvinyl, praxinoscope,
+  prepositional,
   prescience,
   probably, profanity, prophesy,
   proscenium, punctuation, quantitative, querencia, reliquary, revolution, rudiments, savagery,

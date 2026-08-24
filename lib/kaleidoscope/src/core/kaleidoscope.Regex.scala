@@ -32,16 +32,17 @@
                                                                                                   */
 package kaleidoscope
 
-import scala.language.experimental.pureFunctions
-
 import java.util.regex as jur
 
 import scala.collection.concurrent.TrieMap
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
-import fulminate.*
 import denominative.*
+import fulminate.*
+import praxinoscope.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 
@@ -49,7 +50,146 @@ import Regex.Error.Reason.*
 import denominative.asymptotics.linearSizeComplexity
 
 object Regex:
-  private val cache: TrieMap[String, jur.Pattern] = TrieMap()
+  private[kaleidoscope] val cache: TrieMap[String, jur.Pattern] = TrieMap()
+
+  object Engine:
+    private val motifs: TrieMap[String, Motif] = TrieMap()
+
+    // The praxinoscope form of `regex`, cached by its rendered pattern. `r"…"` literals compiled
+    // under `regexBackends.re2` were validated during macro expansion; a `Regex` retagged with
+    // `to[Re2]` at runtime is validated here on first use instead, throwing `Motif.Error` if it
+    // strays outside the RE2 subset.
+    private[kaleidoscope] def motif(regex: Regex): Motif = compile(regex.plainPattern)
+
+    // Pre-seeds the cache with a Motif staged at compile time, so an `r"…"` literal compiled
+    // under `regexBackends.re2` never parses or compiles its pattern at runtime.
+    private[kaleidoscope] def install(motif: Motif): Unit =
+      if !motifs.contains(motif.pattern.s) then motifs(motif.pattern.s) = motif
+
+    private[kaleidoscope] def compile(pattern: Text): Motif =
+      motifs.getOrElseUpdate
+        ( pattern.s,
+          { given tactic: (ThrowTactic[Hazard, Any]^) = strategies.throwUnsafely
+            Motif.parse(pattern) } )
+
+    // `Re2`'s companion sits below this library, so per issue #1632 the instance lives in the
+    // typeclass companion. It bridges to praxinoscope: the pattern is re-rendered with a plain
+    // parenthesis around every group (`plainPattern`), and `captureIndices` maps kaleidoscope's
+    // capture groups onto praxinoscope's paren-ordered group numbers.
+    given re2: Re2 is Regex.Engine:
+      def matches(regex: Regex, text: Text)(using scanner: Scanner): Boolean =
+        scanner.nextStart match
+          case index: Int =>
+            motif(regex).slots(text, Ordinal.zerary(index), false).lay(false): slots =>
+              scanner.nextStart = slots(0) + 1
+              scanner.matchEnd = slots(1)
+              true
+
+          case _ =>
+            motif(regex).matches(text)
+
+      def seek(regex: Regex, input: Text, start: Ordinal): Optional[Interval] =
+        motif(regex).slots(input, start, false).let: slots => Interval.zerary(slots(0), slots(1))
+
+      def search(regex: Regex, input: Text, start: Ordinal, overlap: Boolean): Chain[Interval] =
+        val compiled = motif(regex)
+
+        // Restarting from `end + 1` (not `end`) after a non-overlapping match reproduces the
+        // `Jur` engine's behaviour exactly, including its skipping of immediately-adjacent
+        // matches. Positions advance over the raw slot bounds, since an empty match's
+        // `Interval` does not record where it occurred.
+        def recur(from: Int): Chain[Interval] =
+          if from > input.s.length then Chain() else
+            compiled.slots(input, Ordinal.zerary(from), false).lay(Chain()): slots =>
+              val next = if overlap then slots(0) + 1 else slots(1) + 1
+              Interval.zerary(slots(0), slots(1)) #:: recur(next)
+
+        recur(start.n0)
+
+
+      private[kaleidoscope] def matchGroups(regex: Regex, text: Text)(using scanner: Scanner)
+      :   Option[Array[List[Text | Char] | Optional[Text | Char]]^{}] =
+
+        val compiled = motif(regex)
+
+        val found = scanner.nextStart match
+          case index: Int => compiled.slots(text, Ordinal.zerary(index), false)
+          case _          => compiled.slots(text)
+
+        found.let: slots =>
+          scanner.nextStart match
+            case started: Int =>
+              scanner.nextStart = slots(0) + 1
+              scanner.matchEnd = slots(1)
+
+            case _ =>
+              ()
+
+          // The praxinoscope analogue of the `Jur` engine's sub-scan: a repeating group's span
+          // covers all its iterations, so the group's body is matched repeatedly over the span
+          // to recover each iteration.
+          def rescan(body: Text, region: Text): List[Text] =
+            val sub = compile(body)
+
+            def recur(from: Int, results: List[Text]): List[Text] =
+              if from > region.s.length then results.reverse else
+                sub.slots(region, Ordinal.zerary(from), false).lay(results.reverse): bounds =>
+                  val skip = if bounds(1) > bounds(0) then bounds(1) else bounds(1) + 1
+                  recur(skip, region.s.substring(bounds(0), bounds(1)).nn.tt :: results)
+
+            recur(0, Nil)
+
+
+          def recur
+            ( todo:    List[Regex.Group],
+              indices: List[Int],
+              values:  List[Optional[Text | Char] | List[Text | Char]] )
+          :   List[Optional[Text | Char] | List[Text | Char]] =
+
+            (todo, indices) match
+              case (group :: groups, index :: rest) =>
+                val first = slots(2*index)
+                val last = slots(2*index + 1)
+                val matched = if first < 0 then "".tt else text.s.substring(first, last).nn.tt
+                val optional = group.quantifier == Regex.Quantifier.Between(0, 1)
+
+                val value: Optional[Text | Char] | List[Text | Char] =
+                  if group.charMatcher then
+                    if group.quantifier.unitary then
+                      matched.s.charAt(0)
+                    else if optional then
+                      if matched.s.length > 0 then matched.s.charAt(0) else Unset
+                    else
+                      matched.s.toCharArray.nn.iterator.to(List)
+                  else if group.quantifier.unitary then
+                    matched
+                  else
+                    val body = regex.pattern.s.substring(group.start, group.end).nn.tt
+                    if optional then rescan(body, matched).prim else rescan(body, matched)
+
+                recur(groups, rest, value :: values)
+
+              case _ =>
+                values
+
+          val values = recur(regex.captureGroups, regex.captureIndices, Nil)
+          Some(Array.frozen(scala.IArray.from(values.stdlib.reverse)))
+
+        . or(None)
+
+  // A matching backend, selected by the `Form` refinement of the `Regex` it operates on:
+  // `Regex in Jur` dispatches to `java.util.regex` and `Regex in Re2` to praxinoscope. The
+  // `Jur` instance lives in `Jur`'s companion; `Re2`'s companion is below this library, so its
+  // instance lives in this trait's companion instead (issue #1632).
+  trait Engine:
+    type Self
+
+    def matches(regex: Regex, text: Text)(using Scanner): Boolean
+    def seek(regex: Regex, input: Text, start: Ordinal): Optional[Interval]
+    def search(regex: Regex, input: Text, start: Ordinal, overlap: Boolean): Chain[Interval]
+
+    private[kaleidoscope] def matchGroups(regex: Regex, text: Text)(using Scanner)
+    :   Option[Array[List[Text | Char] | Optional[Text | Char]]^{}]
 
   enum Greed:
     case Greedy, Reluctant, Possessive
@@ -87,40 +227,43 @@ object Regex:
       singleChar: Boolean     = false ):
 
     def outerStart: Int = if singleChar && !charClass then start else (start - 1).max(0)
+
     def allGroups: List[Regex.Group] = groups.bind: group =>
       (group :: group.allGroups): List[Regex.Group]
+
     def captureGroups: List[Regex.Group] = allGroups.filter(_.capture)
     def charMatcher: Boolean = charClass || singleChar
 
-    def serialize(pattern: Text, index: Int): (Int, Text) =
+    def serialize(pattern: Text, index: Int, named: Boolean): (Int, Text) =
       if charClass then
-        val groupName = (if capture then s"?<g$index>" else "").tt
+        val groupName = (if capture && named then s"?<g$index>" else "").tt
 
         if quantifier.unitary then (index, s"($groupName[${pattern.s.substring(start, end)}])")
         else
           val chars = pattern.s.substring(start, end)
           (index, s"($groupName[$chars]${quantifier.serialize}${greed.serialize})")
       else if singleChar then
-        val groupName = (if capture then s"?<g$index>" else "").tt
+        val groupName = (if capture && named then s"?<g$index>" else "").tt
         val token = pattern.s.substring(start, end)
 
         if quantifier.unitary then (index, s"($groupName$token)")
         else (index, s"($groupName$token${quantifier.serialize}${greed.serialize})")
       else
-        val (index2, subpattern) = Regex.makePattern(pattern, groups, start, "".tt, end, index)
-        val groupName = (if capture then s"?<g$index>" else "").tt
+        val (index2, subpattern) =
+          Regex.makePattern(pattern, groups, start, "".tt, end, index, named)
+
+        val groupName = (if capture && named then s"?<g$index>" else "").tt
 
         if quantifier.unitary then (index2, s"($groupName$subpattern)".tt)
         else (index2, s"($groupName($subpattern)${quantifier.serialize}${greed.serialize})".tt)
-
 
   def apply(parts: List[String])(using erased unsafe: Unsafe): Regex =
     given tactic: (ThrowTactic[Hazard, Any]^) = strategies.throwUnsafely
     parse(parts.map(_.tt))
 
-  def apply(text: Text): Regex raises Regex.Error = parse(List(text))
+  def apply(text: Text): Regex in Jur raises Regex.Error = parse(List(text))
 
-  def parse(parts: List[Text]): Regex raises Regex.Error =
+  def parse(parts: List[Text]): Regex in Jur raises Regex.Error =
     def validStart(part: Text): Boolean =
       val str = part.s
       str.startsWith("(") || str.startsWith("[") || str.startsWith(".") ||
@@ -130,12 +273,14 @@ object Regex:
       case head :: tail =>
         if !tail.all(validStart) then abort(Regex.Error(0, ExpectedGroup))
 
-    def captures(todo: List[Text], last: Int, done: Set[Int]): Set[Int] = todo match
+    def captures(todo: List[Text], last: Int, done: Set[Int]): Set[Int] = todo.absolve match
       case Nil          => done
       case head :: tail => captures(tail, last + head.s.length, done :+ last)
 
     val captured: Set[Int] =
-      if parts.size > 1 then captures(List.of(parts.stdlib.tail), parts.stdlib.head.s.size, Set()) else Set()
+      if parts.size > 1
+      then captures(List.of(parts.stdlib.tail), parts.stdlib.head.s.size, Set())
+      else Set()
 
     val text: Text = parts.stdlib.mkString.tt
 
@@ -296,21 +441,28 @@ object Regex:
 
     check(mainGroup.groups, true)
 
-    Regex(text, mainGroup.groups)
+    Regex(text, mainGroup.groups).to[Jur]
 
 
-  def makePattern(pattern: Text, todo: List[Group], last: Int, text: Text, end: Int, index: Int)
+  def makePattern
+    ( pattern: Text,
+      todo:    List[Group],
+      last:    Int,
+      text:    Text,
+      end:     Int,
+      index:   Int,
+      named:   Boolean = true )
   :   (Int, Text) =
 
-    todo match
+    todo.absolve match
       case Nil => (index, (text.s+pattern.s.substring(last, end).nn).tt)
 
       case head :: tail =>
-        val (index2, subpattern) = head.serialize(pattern, index)
+        val (index2, subpattern) = head.serialize(pattern, index, named)
         val partial = text.s+pattern.s.substring(last, head.outerStart)+subpattern.nn
         val index3 = if head.capture then index2 + 1 else index2
 
-        makePattern(pattern, tail, head.outerEnd, partial.tt, end, index3)
+        makePattern(pattern, tail, head.outerEnd, partial.tt, end, index3, named)
 
   // RegexError → Regex.Error
   object Error:
@@ -365,96 +517,68 @@ object Regex:
   extends fulminate.Error(397, reason.number)
     ( m"the regular expression could not be parsed because $reason at $index" )
 
-case class Regex(pattern: Text, groups: List[Regex.Group]):
-  def unapply(text: Text): Boolean = text.s.matches(pattern.s)
+case class Regex(pattern: Text, groups: List[Regex.Group]) extends Formal:
+  def to[form: Regex.Engine]: Regex in form = asInstanceOf[Regex in form]
+
+  def unapply(text: Text)(using engine: Form is Regex.Engine): Boolean =
+    engine.matches(this, text)(using Scanner(Unset))
+
+  // Matching operations are methods rather than extensions so they cannot collide with the
+  // generic collection extensions of the same names in the `soundness` package; the engine
+  // resolves from the `Form` refinement, so a `Regex in Re2` can never silently fall back to
+  // `java.util.regex`.
+  def matches(text: Text)(using scanner: Scanner, engine: Form is Regex.Engine): Boolean =
+    engine.matches(this, text)
+
+  def seek(input: Text, start: Ordinal = Prim)(using engine: Form is Regex.Engine)
+  :   Optional[Interval] =
+
+    engine.seek(this, input, start)
+
+  def search(input: Text, start: Ordinal = Prim, overlap: Boolean = false)
+    ( using engine: Form is Regex.Engine )
+  :   Chain[Interval] =
+
+    engine.search(this, input, start, overlap)
 
   lazy val capturePattern: Text =
     Regex.makePattern(pattern, groups, 0, "".tt, pattern.s.length, 0)(1)
 
+  // The pattern re-rendered with a plain `(…)` around every group, which is how it is handed to
+  // praxinoscope: RE2 syntax has no named groups, so capture groups are identified by paren
+  // order via `captureIndices` instead.
+  private[kaleidoscope] lazy val plainPattern: Text =
+    Regex.makePattern(pattern, groups, 0, "".tt, pattern.s.length, 0, false)(1)
+
+  // For each capture group (in `captureGroups` order), the 1-based index of its outer
+  // parenthesis in `plainPattern`, mirroring the paren-emission order of `Group.serialize`: one
+  // paren per group, plus an inner one for a quantified non-character group.
+  private[kaleidoscope] lazy val captureIndices: List[Int] =
+    var indices: List[Int] = Nil
+    var parens: Int = 0
+
+    def walk(groups: List[Regex.Group]): Unit =
+      groups.each: group =>
+        parens += 1
+        if group.capture then indices = parens :: indices
+        if !group.charMatcher && !group.quantifier.unitary then parens += 1
+        if !group.charMatcher then walk(group.groups)
+
+    walk(groups)
+    indices.reverse
+
+  // Containment analyses are available only on RE2-tagged values, whose lack of backreferences
+  // and lookaround is what makes the question decidable.
+  def subsumes(that: Regex in Re2)(using Form =:= Re2): Boolean raises Motif.Error =
+    Regex.Engine.motif(this).subsumes(Regex.Engine.motif(that))
+
+  def intersects(that: Regex in Re2)(using Form =:= Re2): Boolean raises Motif.Error =
+    Regex.Engine.motif(this).intersects(Regex.Engine.motif(that))
+
   def allGroups: List[Regex.Group] = groups.bind: group =>
     (group :: group.allGroups): List[Regex.Group]
+
   def captureGroups: List[Regex.Group] = allGroups.filter(_.capture)
 
   private[kaleidoscope] lazy val javaPattern: jur.Pattern =
     Regex.cache.getOrElseUpdate(capturePattern.s, jur.Pattern.compile(capturePattern.s).nn)
-
-  def seek(input: Text, start: Ordinal = Prim): Optional[Interval] =
-    val matcher: jur.Matcher = javaPattern.matcher(input.s).nn
-    if matcher.find(start.n0) then Interval.zerary(matcher.start, matcher.end) else Unset
-
-  def search(input: Text, start: Ordinal = Prim, overlap: Boolean = false): Chain[Interval] =
-    val matcher: jur.Matcher = javaPattern.matcher(input.s).nn
-
-    def recur(offset: Int): Chain[Interval] =
-      if matcher.find(offset)
-      then
-        Interval.zerary(matcher.start, matcher.end) #::
-          recur((if overlap then matcher.start else matcher.end) + 1)
-      else
-        Chain()
-
-    recur(start.n0)
-
-  def matches(text: Text)(using Scanner): Boolean = !matchGroups(text).nil
-
-
-  def matchGroups(text: Text)(using scanner: Scanner)
-  :   Option[Array[List[Text | Char] | Optional[Text | Char]]^{}] =
-
-    val matcher: jur.Matcher = javaPattern.matcher(text.s).nn
-
-
-    def recur
-      ( todo:    List[Regex.Group],
-        matches: List[Optional[Text | Char] | List[Text | Char]],
-        index:   Int )
-    :   List[Optional[Text | Char] | List[Text | Char]] =
-
-      todo match
-        case Nil => matches
-
-        case group :: tail =>
-          val matchedText = matcher.group(s"g$index").nn
-
-          val matches2 =
-            if group.capture then
-              if group.charMatcher then
-                if group.quantifier.unitary then matchedText.head :: matches
-                else if group.quantifier == Regex.Quantifier.Between(0, 1)
-                then matchedText.headOption.getOrElse(Unset) :: matches
-                else matchedText.toCharArray.nn.iterator.to(List) :: matches
-              else
-
-              if group.quantifier.unitary then matcher.group(s"g$index").nn.tt  :: matches
-              else
-                if group.charClass then matchedText.toCharArray.nn.iterator.to(List) :: matches else
-                  val subpattern = pattern.s.substring(group.start, group.end).nn
-
-                  val compiled =
-                    Regex.cache.getOrElseUpdate(subpattern, jur.Pattern.compile(subpattern).nn)
-
-                  val submatcher = compiled.matcher(matchedText).nn
-                  var submatches: List[Text] = Nil
-
-                  while submatcher.find()
-                  do submatches ::= submatcher.toMatchResult.nn.group(0).nn.tt
-
-                  if group.quantifier == Regex.Quantifier.Between(0, 1)
-                  then submatches.prim :: matches
-                  else submatches.reverse :: matches
-
-            else
-              matches
-
-          recur(tail, matches2, index + 1)
-
-
-    scanner.nextStart match
-      case index: Int =>
-        if !matcher.find(index) then None else
-          scanner.nextStart = matcher.start + 1
-          scanner.matchEnd = matcher.end
-          Some(Array.frozen(scala.IArray.from(recur(captureGroups, Nil, 0).stdlib.reverse)))
-
-      case _ =>
-        if !matcher.matches then None else Some(Array.frozen(scala.IArray.from(recur(captureGroups, Nil, 0).stdlib.reverse)))

@@ -226,7 +226,7 @@ extension [textual: Textual as instance](text: textual)
 
   def contains(substring: Text): Boolean = textual.indexOf(text, substring).present
 
-  def search(regex: Regex, overlap: Boolean = false): Chain[textual] =
+  def search[form: Regex.Engine](regex: Regex in form, overlap: Boolean = false): Chain[textual] =
     regex.search(textual.text(text), overlap = overlap).map(text.segment(_))
 
   inline def extract[value](inline start: Ordinal = Prim)

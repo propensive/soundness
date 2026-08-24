@@ -62,7 +62,8 @@ object Cuttable:
 
       List.of(recur(Prim, Nil).stdlib.reverse)
 
-  given textualRegex: [textual: {Textual, Countable}] => textual is Cuttable by Regex =
+  given textualRegex: [textual: {Textual, Countable}, form]
+  =>  textual is Cuttable by (Regex in form) =
     (text, regex, limit) =>
       val string = textual.text(text).s
       val matcher = Pattern.compile(regex.pattern.s).nn.matcher(string).nn
@@ -99,7 +100,7 @@ object Cuttable:
       buffer += string.substring(start).nn.tt
       List.of(buffer.result())
 
-  given textRegex: Text is Cuttable by Regex = (text, regex, limit) =>
+  given textRegex: [form] => Text is Cuttable by (Regex in form) = (text, regex, limit) =>
     text.s.split(regex.pattern.s, limit).nn.iterator.map(_.nn.tt).to(List)
 
   given textualText: [textual] => (cuttable: textual is Cuttable by Text)
