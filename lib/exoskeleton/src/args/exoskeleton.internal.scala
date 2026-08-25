@@ -49,16 +49,34 @@ object internal:
 
     // A status declared as `object CannotConnect extends Status(…)` appears in the union as a
     // `TypeRef` to its module class, and one referred to by a stable path as a `TermRef`; both
-    // yield the term to refer to again. Anything else — `Nothing` when a block returns no
-    // status, or a type which is not a singleton — contributes nothing.
+    // yield the term to refer to again. Any other `Termination` — `Exit` and its cases, or
+    // `Nothing` when a block never returns normally — sets an exit code without a meaning to
+    // document, and so contributes nothing. A non-singleton `Status` member has no value to
+    // recover: it means the union has been widened (soundness#1811), so the error is raised
+    // here rather than letting the statuses silently vanish from the documentation.
+    val statusType = TypeRepr.of[Status]
+    val terminationType = TypeRepr.of[rudiments.Termination]
+
     val values: sci.List[Expr[Status]] =
       decompose(TypeRepr.of[result]).distinct.flatMap: repr =>
-        if repr =:= TypeRepr.of[Nothing] then sci.Nil else repr match
+        if repr =:= TypeRepr.of[Nothing] then sci.Nil
+        else if repr <:< statusType then repr match
           case ref: TermRef => sci.List(Ref.term(ref).asExprOf[Status])
 
           case other =>
             val symbol = other.termSymbol
-            if symbol.exists then sci.List(Ref(symbol).asExprOf[Status]) else sci.Nil
+
+            if symbol.exists then sci.List(Ref(symbol).asExprOf[Status]) else
+              report.errorAndAbort
+               ( "exoskeleton: every status an execute block returns must be a singleton object "
+                 + "extending Status, but the result type includes "+other.show+", which is not "
+                 + "a singleton. Declare each status as a top-level object; if this type is "
+                 + "Status itself, the union of statuses has been widened (soundness#1811)." )
+        else if repr <:< terminationType then sci.Nil
+        else
+          report.errorAndAbort
+           ( "exoskeleton: an execute block must return a Termination, such as an Exit or a "
+             + "Status, but the result type includes "+repr.show+", which is neither." )
 
     '{
         new Status.Admissible:

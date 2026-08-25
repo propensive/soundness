@@ -51,17 +51,18 @@ import turbulence.*
 import vacuous.*
 import denominative.dysasymptotics.linearSize
 
-// The block's `result` type is the union of the singleton types of every `Status` it can
-// return, accumulated through the contravariant `Status.Registry` capability and kept precise
-// (rather than widened to `Status`) by the `Precise` bound. Those statuses are recorded on the
-// `Cli` even in completion mode — where the block itself is never run — so that a help-tree
-// probe can discover them for documentation.
+// The block returns any `Termination` — a `Status` object, an `Exit`, or a union of them —
+// and its `result` type, kept precise (rather than widened by lubbing to `Status`) by the
+// `Precise` bound, is the union of the types of every termination it can return. `Admissible`
+// reifies the statuses in that union, and they are recorded on the `Cli` even in completion
+// mode — where the block itself is never run — so that a help-tree probe can discover them for
+// documentation.
 // `scala.Precise`, not the `Precise` which `-Yimports:proscenium` supplies: the prelude's
 // `export scala.Precise` yields a distinct alias symbol which the compiler's union-widening
 // suppression does not recognise, so the bound would silently do nothing and the union of
 // statuses would be widened to `Status` (soundness#1811).
-def execute[result: scala.Precise]
-   ( block: (erased effectful: Effectful) ?=> Status.Registry[result] ?=> Invocation ?=> Exit )
+def execute[result <: Termination: scala.Precise]
+   ( block: (erased effectful: Effectful) ?=> Invocation ?=> result )
    ( using cli: Cli )
    ( using admissible: result is Status.Admissible )
 :   Execution to result =
@@ -73,8 +74,7 @@ def execute[result: scala.Precise]
     case completion: Completion => Execution.of[result](Exit.Ok, statuses)
 
     case invocation: Invocation =>
-      val registry = new Status.Registry[result] {}
-      Execution.of[result](block(using !!)(using registry)(using invocation), statuses)
+      Execution.of[result](block(using !!)(using invocation).exit, statuses)
 
 def explain(explanation: (Optional[Text] aka "prior") ?=> Optional[Text])(using cli: Cli): Unit =
   cli.explain(explanation(using Unset.aka["prior"]))
