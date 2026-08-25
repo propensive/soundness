@@ -77,6 +77,11 @@ extends Entrypoint, caps.ExclusiveCapability:
   // in tab-completion mode. Falls back to a name-only root if the executive cannot generate it.
   def help(): Help = helpThunk().or(Help(script, Unset, Nil, Nil))
 
+  // The help view narrowed to the subcommands this invocation has already matched during
+  // dispatch, so that a section of the application only documents itself. Falls back to the
+  // full tree when nothing has been matched, or the matched path is absent from it.
+  def localHelp()(using cli: Cli): Help = help().local(cli.matches).or(help())
+
   def started[instant: Instantiable across Instants from Long]: instant =
     instant(startTime)
 

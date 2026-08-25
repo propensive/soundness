@@ -34,6 +34,7 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
+import rudiments.*
 import turbulence.*
 import vacuous.*
 
@@ -48,6 +49,24 @@ case class Invocation
 extends Cli, Stdio:
 
   export stdio.{termcap, out, err, in}
+
+  @scala.caps.unsafe.untrackedCaptures
+  private var matchedArguments: List[Argument] = Nil
+
+  override def matched(argument: Argument): Unit = matchedArguments = argument :: matchedArguments
+
+  // The recorded matches, deduplicated (re-matches of one position record the identical
+  // argument) and restricted to the contiguous run from the first argument, so that a match
+  // against a later argument alone cannot fabricate a false prefix.
+  override def matches: List[Text] =
+    def recur(arguments: List[Argument], position: Int): List[Text] = arguments match
+      case argument :: rest if argument.position == position =>
+        argument() :: recur(rest, position + 1)
+
+      case _ =>
+        Nil
+
+    recur(matchedArguments.distinct.sort(_.position), 0)
 
   private lazy val parameters: interpreter.Topic = interpreter.interpret(arguments)
 

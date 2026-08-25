@@ -622,6 +622,21 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             Login(t"tester", Unset))
            (app)
 
+        // Run the application for real (in invocation mode, not completion mode) and return the
+        // spent invocation, so its recorded state can be inspected.
+        def invoke(textArguments: Text*): Invocation =
+          val invocation =
+            Invocation
+              (Cli.arguments(textArguments),
+               summon[Environment],
+               summon[WorkingDirectory],
+               summon[Stdio],
+               true,
+               Login(t"tester", Unset))
+
+          app(using invocation)
+          invocation
+
       test(m"Help root lists visible subcommands"):
         HelpApp.tree.subcommands.map(_.command)
       .assert(_ == List(t"alpha", t"beta", t"distribution", t"useradd", t"userdel"))
@@ -742,6 +757,95 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                t"Exit statuses:",
                t"  1                      the server could not be reached",
                t"  2                      the configuration file was invalid")
+
+      test(m"A matched subcommand is recorded on the invocation"):
+        HelpApp.invoke(t"useradd", t"--home", t"/home/x").matches
+      .assert(_ == List(t"useradd"))
+
+      test(m"Nested matched subcommands are recorded in order"):
+        HelpApp.invoke(t"distribution", t"ubuntu").matches
+      .assert(_ == List(t"distribution", t"ubuntu"))
+
+      test(m"An unrecognized subcommand records no matches"):
+        HelpApp.invoke(t"bogus").matches
+      .assert(_ == Nil)
+
+      test(m"An empty invocation records no matches"):
+        HelpApp.invoke().matches
+      .assert(_ == Nil)
+
+      test(m"A local view selects the subtree for a matched prefix"):
+        HelpApp.tree.local(List(t"useradd")).let(_.command)
+      .assert(_ == t"mytool useradd")
+
+      test(m"A local view carries ancestor flags as global options"):
+        HelpApp.tree.local(List(t"useradd")).let(_.parameters.filter(_.global).map(_.name))
+         .or(Nil)
+      .assert(_ == List(t"--verbose"))
+
+      test(m"A local view keeps the subcommand's own flags local"):
+        HelpApp.tree.local(List(t"useradd"))
+         .let(_.parameters.filter(!_.global).map(_.name).sort(identity)).or(Nil)
+      .assert(_ == List(t"--force", t"--groups", t"--home"))
+
+      test(m"A nested local view joins the full command path"):
+        HelpApp.tree.local(List(t"distribution", t"ubuntu")).let(_.command)
+      .assert(_ == t"mytool distribution ubuntu")
+
+      test(m"A local view of an unknown path is unset"):
+        HelpApp.tree.local(List(t"bogus"))
+      .assert(_ == Unset)
+
+      test(m"A local view of the empty path is the whole tree"):
+        HelpApp.tree.local(Nil)
+      .assert(_ == HelpApp.tree)
+
+      test(m"An invocation's matched prefix selects its local help"):
+        HelpApp.tree.local(HelpApp.invoke(t"useradd", t"extra").matches).let(_.command)
+      .assert(_ == t"mytool useradd")
+
+      test(m"Local help for a leaf renders its section with ancestor globals"):
+        HelpApp.tree.local(List(t"useradd")).let: local =>
+          summon[Help is Printable].print(local, stdios.muteStdio.termcap).cut(t"\n")
+        . or(Nil)
+      .assert:
+        _ == List
+              (t"Usage: mytool useradd [--verbose <value>] [options]",
+               t"",
+               t"add a user account",
+               t"",
+               t"Global options:",
+               t"  --verbose <value>    verbose output",
+               t"",
+               t"Options:",
+               t"  --groups <value>...  add the user to a group",
+               t"  --force <value>      do not ask for confirmation",
+               t"  --home <value>       specify the home directory",
+               t"",
+               t"Exit statuses:",
+               t"  1                    the server could not be reached",
+               t"  2                    the configuration file was invalid")
+
+      test(m"Local help for a non-leaf renders its subcommands"):
+        HelpApp.tree.local(List(t"distribution")).let: local =>
+          summon[Help is Printable].print(local, stdios.muteStdio.termcap).cut(t"\n")
+        . or(Nil)
+      .assert:
+        _ == List
+              (t"Usage: mytool distribution [--verbose <value>] <command> [options]",
+               t"",
+               t"a different command to run",
+               t"",
+               t"Global options:",
+               t"  --verbose <value>  verbose output",
+               t"",
+               t"Commands:",
+               t"  red hat            Red Hat Linux",
+               t"    --only <value>   there is only one",
+               t"",
+               t"  ubuntu             Ubuntu",
+               t"    --one <value>    the first one",
+               t"    --two <value>    the second one")
 
       suite(m"Manpage tests"):
         val manual = Manual

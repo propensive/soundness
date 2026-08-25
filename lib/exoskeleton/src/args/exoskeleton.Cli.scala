@@ -91,6 +91,11 @@ trait Cli extends Console, caps.ExclusiveCapability:
   def present(flag: Flag): Unit = ()
   def explain(update: (Optional[Text] aka "prior") ?=> Optional[Text]): Unit = ()
 
+  // Records a successful `Subcommand` match during dispatch; `matches` is the contiguous
+  // sequence of subcommand names matched so far, from the first argument onwards.
+  def matched(argument: Argument): Unit = ()
+  def matches: List[Text] = Nil
+
   private val signalHandlers:
   juca.AtomicReference[List[PartialFunction[UnixSignal | WindowsSignal, SignalResponse]]] =
     juca.AtomicReference(Nil)
