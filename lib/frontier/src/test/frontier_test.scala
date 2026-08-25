@@ -105,6 +105,14 @@ object Tests extends Suite(m"Frontier Tests"):
       . map(_.message)
     . assert(_ == Nil)
 
+    test(m"catch-all is in scope via plain import soundness.* without a given selector"):
+      demilitarize:
+        import soundness.*
+        trait Absent
+        summon[Absent]
+      . map(_.message)
+    . assert(_.exists(_.contains("contextual value not found")))
+
     test(m"explainMissingContext lists classpath givens for missing implicit"):
       demilitarize:
         import frontier.context.explainMissingContext
@@ -119,12 +127,12 @@ object Tests extends Suite(m"Frontier Tests"):
       . map(_.message)
     . assert(_.exists(_.contains("textual = Char")))
 
-    // Diagnostic-behavior tests: the catch-all fires at the deepest missing
-    // implicit. With a chain `summon[Alpha]` ← `mkAlpha(using Beta)` ← `Beta?`,
-    // the user sees the diagnostic for Beta, not for Alpha — the inner
-    // using-clause search resolves through the catch-all first, and the chain
-    // that led there is not available at macro-expansion time, so Frontier
-    // reports the innermost cause (Beta).
+    // Diagnostic-behavior tests: the catch-all fails the search normally (it
+    // is marked `@internal.diagnostic`, so its abort becomes the authoritative
+    // failure message rather than a spurious success). In a using-clause chain
+    // the surviving diagnostic is the one for the deepest missing implicit —
+    // with `summon[Alpha]` ← `mkAlpha(using Beta)` ← `Beta?`, the user sees
+    // the tree rooted at Beta, the innermost cause.
 
     test(m"explainMissingContext fires for a missing using-clause implicit"):
       demilitarize:
@@ -159,6 +167,39 @@ object Tests extends Suite(m"Frontier Tests"):
         msgs.exists: m =>
           m.contains("resolving") && m.contains("DecimalConverter")
           && m.contains("decimalConverters.javaDecimalConverter")
+
+    // Regression tests for the old deferred-fail scheme, which made failing
+    // searches spuriously succeed: with the catch-all in scope, constructs
+    // that depend on ordinary search *failure* must still compile.
+
+    test(m"explainMissingContext does not defeat NotGiven"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        trait Absent
+        summon[scala.util.NotGiven[Absent]]
+      . map(_.message)
+    . assert(_ == Nil)
+
+    test(m"explainMissingContext does not defeat default using arguments"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        class Cfg
+        def withDefault(using cfg: Cfg = new Cfg): Cfg = cfg
+        withDefault
+      . map(_.message)
+    . assert(_ == Nil)
+
+    test(m"explainMissingContext does not defeat summonFrom fallback"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        trait Absent
+        inline def choose: Int =
+          scala.compiletime.summonFrom:
+            case _: Absent => 1
+            case _         => 2
+        val n: Int = choose
+      . map(_.message)
+    . assert(_ == Nil)
 
     // `read` now resolves an ordinary `Readable` instance, so a missing
     // decoder is an ordinary failed implicit search that Frontier explains —
