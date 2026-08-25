@@ -130,6 +130,36 @@ case class Help
     statuses:    List[Status]           = Nil,
     variables:   List[Text]             = Nil ):
 
+  // The view of this help tree from inside the given subcommand path, as matched during
+  // dispatch: the selected node, its command joined to the full path (so the usage line names
+  // the subcommand), and every ancestor's flags carried in as global options. The node's own
+  // flags are normalized to local, whatever the probes recorded; from within the section they
+  // are its ordinary options. `Unset` when the path does not exist in the tree.
+  def local(prefix: List[Text]): Optional[Help] =
+    def recur(node: Help, path: List[Text], command: Text, inherited: List[Help.Param])
+    :   Optional[Help] =
+
+      path match
+        case Nil =>
+          // Ancestors first and nearest-root wins on a name collision; built in reverse with
+          // `::` and reversed once, since deduplication needs a fold anyway.
+          def dedupe(seen: List[Help.Param], param: Help.Param): List[Help.Param] =
+            if seen.exists(_.name == param.name) then seen else param :: seen
+
+          val globals: List[Help.Param] =
+            inherited.map(_.copy(global = true)).fold(Nil: List[Help.Param])(dedupe)
+
+          val all: List[Help.Param] =
+            node.parameters.map(_.copy(global = false)).fold(globals)(dedupe)
+
+          node.copy(command = command, parameters = all.reverse)
+
+        case name :: rest =>
+          node.subcommands.seek(_.command == name).let: child =>
+            recur(child, rest, t"$command $name", inherited + node.parameters)
+
+    if prefix == Nil then this else recur(this, prefix, command, Nil)
+
   def teletype(width: Int = Int.MaxValue)(using Hyphenation): Teletype =
     val globalParams: scala.List[Help.Param] = parameters.stdlib.filter(_.global)
     val localParams: scala.List[Help.Param] = parameters.stdlib.filter(!_.global)
@@ -179,11 +209,21 @@ case class Help
         (heading, Help.compact(Help.commandRows(factored, 1) ::: commonRows))
 
     // A tool without subcommands never reaches dispatch, so all of its flags count as "global";
-    // presenting them as anything other than plain options would be noise.
+    // presenting them as anything other than plain options would be noise. A *local* leaf view
+    // is the exception: it carries ancestor flags marked global alongside its own local flags,
+    // and then the distinction is worth a split — globals precede the subcommand on the command
+    // line, locals follow it.
     val leaf: Boolean = subcommands.stdlib.isEmpty
+    val split: Boolean = !leaf || (!globalParams.isEmpty && !localParams.isEmpty)
 
     val standard: scala.List[(scala.List[Teletype], scala.List[Help.Row])] =
-      if leaf then
+      if leaf && split then
+        scala.List
+          ( (scala.List(e"$Bold(Global options:)"),
+             Help.compact(Help.paramItems(globalParams, 1))),
+            (scala.List(e"$Bold(Options:)"),
+             Help.compact(Help.paramItems(localParams, 1))) )
+      else if leaf then
         scala.List
           ( (scala.List(e"$Bold(Options:)"),
              Help.compact(Help.paramItems(parameters.stdlib, 1))) )
@@ -248,7 +288,11 @@ case class Help
             else e"$padded  ${lines.head}" :: lines.tail.map: line => e"$margin$line"
 
     val usage: Teletype =
-      if leaf then e"$Bold(Usage:) $command${Help.summarize(parameters.stdlib, t"options")}"
+      if leaf && split then
+        val globals: Text = Help.summarize(globalParams, t"global options")
+        e"$Bold(Usage:) $command$globals${Help.summarize(localParams, t"options")}"
+      else if leaf then
+        e"$Bold(Usage:) $command${Help.summarize(parameters.stdlib, t"options")}"
       else
         val globals: Text = Help.summarize(globalParams, t"global options")
 
