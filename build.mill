@@ -54,10 +54,10 @@ object settings:
   //      https://github.com/propensive/proscala/releases; each release ships a single
   //      `proscala-<tag>.tar.gz` asset whose contents are a `lib` directory (the unversioned core
   //      jars plus the versioned third-party jars). The `toolchain` module below downloads
-  //      `SOUNDNESS_SCALA_RELEASE` (default `3.9.0-RC5-p14`, the latest in the 3.9.0 stream) and
+  //      `SOUNDNESS_SCALA_RELEASE` (default `3.9.0-RC6-p15`, the latest in the 3.9.0 stream) and
   //      extracts it into a shared cache, exposing its jars to every coursier resolution — no
   //      local compiler build and no publishing step needed. Switch streams by setting
-  //      `SOUNDNESS_SCALA_RELEASE` (e.g. `3.10.0-dev-p13`).
+  //      `SOUNDNESS_SCALA_RELEASE` (e.g. `3.10.0-dev-p15`).
   //
   //   2. Local (fork developers). Point `SOUNDNESS_SCALA_HOME` at a `make`-built `release`
   //      directory to use its `release/lib` jars directly instead of downloading. After
@@ -71,14 +71,14 @@ object settings:
   // (`SOUNDNESS_SCALA_RELEASE`) is a separate concept, though from `3.9.0-RC4-p1` on the two
   // coincide (earlier releases shipped jars built as e.g. `3.9.0-RC1-propensive`). Override the
   // coordinate with `SOUNDNESS_SCALA_VERSION`.
-  val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION", "3.9.0-RC5-p14")
+  val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION", "3.9.0-RC6-p15")
 
   // The compiler *stream* — the major Scala version, without the patch level — which is what
   // decides the shape of the compiler-internal APIs a handful of modules wrap. Everything else
   // in Soundness is written once and compiles on every stream; where an API genuinely differs
   // (see the `Shim` component trait), this selects the sources that bridge it.
   val scalaStream = if scalaVersion.startsWith("3.10") then "3.10" else "3.9"
-  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "3.9.0-RC5-p14")
+  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "3.9.0-RC6-p15")
   // Empty by default → download `scalaRelease`. Set to a local `release` directory to use its
   // `release/lib` jars directly (fork-developer mode).
   val scalaHome = sys.env.getOrElse("SOUNDNESS_SCALA_HOME", "")

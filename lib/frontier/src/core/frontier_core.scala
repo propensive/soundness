@@ -33,4 +33,5 @@
 package frontier
 
 package context:
+  @scala.annotation.internal.diagnostic
   transparent inline given explainMissingContext: [any] => any = internal.explanation[any]

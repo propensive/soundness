@@ -47,19 +47,13 @@ import vacuous.*
 import symbolism.*
 
 object internal:
-  inline def explanation[target]: target = ${explain[target]}
-
-  // Non-transparent inline: expands in the `inlining` phase (post-typer), so
-  // its `report.errorAndAbort` is a terminal error that always reaches the
-  // user — unlike an `errorAndAbort` fired during the nested implicit search
-  // that selected the transparent `explainMissingContext` catch-all, which
-  // Dotty buffers and shadows. The catch-all returns a call to this in place
-  // of a found value.
-  inline def fail[target](message: String): target = ${failMacro[target]('message)}
-
-  def failMacro[target: Type](message: Expr[String]): Macro[target] =
-    import quotes.reflect.*
-    report.errorAndAbort(message.valueOrAbort)
+  // `transparent` is essential: only transparent inline calls are expanded at
+  // typer, so a non-transparent `explanation` would leave the macro splice
+  // unexpanded while `explainMissingContext` is tried as a candidate — the
+  // search would spuriously succeed and the abort would fire only at the
+  // `inlining` phase. Transparency also lets Case B1's precise type reach the
+  // call site.
+  transparent inline def explanation[target]: target = ${explain[target]}
 
   private object SafeInlined:
     def unapply(using Quotes)(scrutinee: quotes.reflect.ImplicitSearchFailure)
@@ -88,9 +82,14 @@ object internal:
     // doesn't propose (or recurse into) itself. Resolved by name and guarded
     // against absence — the real recursion stop is the name check in `seek`.
     val self: List[Symbol] =
-      List("frontier.context.explainMissingContext", "soundness.context.explainMissingContext")
+      List("frontier.context.explainMissingContext", "soundness.explainMissingContext")
       . flatMap: path =>
           try List(Symbol.requiredMethod(path)) catch case _: Throwable => Nil
+      . concat:
+          // The `soundness` catch-all is a top-level definition, so it may only
+          // be reachable as a member of the package's synthetic file object.
+          try Symbol.requiredPackage("soundness").methodMember("explainMissingContext")
+          catch case _: Throwable => Nil
 
     sealed trait Result
 
@@ -519,22 +518,20 @@ object internal:
 
     // Build the diagnostic tree rooted at the type Frontier was asked to
     // resolve, with its tried candidates and proposed alternatives beneath it.
-    // The catch-all fires at the *deepest* missing implicit in any using-clause
-    // chain (the inner search resolves through the catch-all first), and the
-    // chain that led there isn't available at macro-expansion time, so the
-    // root is that deepest type — Frontier reports the innermost cause.
+    // In a using-clause chain the surviving report is the one for the deepest
+    // missing implicit (the catch-all expands there first, and its rendered
+    // tree is preserved verbatim by the `@internal.diagnostic` machinery), so
+    // the user sees the innermost cause.
     def buildDiagnostic(missing: Missing): Diagnostic =
       val children = missing.available.map(toDiagnostic) ++ missing.candidates.map(toDiagnostic)
       Diagnostic.Resolving(missing.name, Unset, children.to(proscenium.List))
 
-    // The transparent catch-all cannot emit a terminal error from inside the
-    // nested implicit search where it fires (Dotty buffers and shadows it).
-    // Instead it returns a call to the *non-transparent* `fail`, which expands
-    // later, in the `inlining` phase, where `report.errorAndAbort` is terminal
-    // and always reaches the user.
+    // The catch-all is marked `@internal.diagnostic`, so aborting here makes
+    // the candidate fail the search normally (`NotGiven`, `summonFrom` and
+    // default `using` arguments all behave), while the rendered tree becomes
+    // the authoritative message if the overall search fails.
     def emit(missing: Missing): Expr[target] =
-      val text = Diagnostic.render(buildDiagnostic(missing)).s
-      '{frontier.internal.fail[target](${Expr(text)})}
+      report.errorAndAbort(Diagnostic.render(buildDiagnostic(missing)).s)
 
     seek(TypeRepr.of[target], Nil, 1).absolve match
       case Found(_, expr) =>

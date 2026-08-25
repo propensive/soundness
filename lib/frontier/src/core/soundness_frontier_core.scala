@@ -34,5 +34,8 @@ package soundness
 
 import frontier.*
 
-package context:
-  transparent inline given explainMissingContext: [any] => any = internal.explanation[any]
+// An old-style `implicit`, not a `given`: wildcard imports exclude givens, and
+// this catch-all must be in scope for anyone who writes `import soundness.*`
+// without a separate `given` selector.
+@scala.annotation.internal.diagnostic
+transparent inline implicit def explainMissingContext[any]: any = internal.explanation[any]
