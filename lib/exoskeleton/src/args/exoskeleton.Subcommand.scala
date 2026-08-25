@@ -45,6 +45,9 @@ case class Subcommand
     hidden:      Boolean                    = false,
     group:       Optional[CommandGroup]     = Unset ):
 
-  def unapply(argument: Argument)(using Cli): Boolean =
+  def unapply(argument: Argument)(using cli: Cli): Boolean =
     argument.suggest(Suggestion(name, description, hidden, group = group) :: prior)
-    argument() == name
+
+    if argument() != name then false else
+      cli.matched(argument)
+      true
