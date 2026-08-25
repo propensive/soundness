@@ -113,5 +113,7 @@ case class Argument
       options.stdlib.map: option => (operand.suggest(option).text, option)
       . to(Map)
 
-    suggest(options.map(operand.suggest(_)))
+    // Marked as operand values, not subcommands: they are candidates *for* this argument, so the
+    // help tree must not descend into them (see `Suggestion.operand`).
+    suggest(options.map(operand.suggest(_).copy(operand = true)))
     mapping(this())

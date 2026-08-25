@@ -176,7 +176,7 @@ extends Cli:
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).maximize(identity).or(0) + 1
 
         val itemLines: List[Command] = items.bind:
-          case Suggestion(core0, description, hidden, incomplete, aliases, prefix, suffix, _, _) =>
+          case Suggestion(core0, description, hidden, incomplete, aliases, prefix, suffix, _, _, _) =>
             val hiddenParam = if hidden then sh"-n" else sh""
             val shortFlag = focusText.starts(t"-") && !focusText.starts(t"--")
             val aliasText = if shortFlag then core0 else aliases.join(t" ").fit(aliasesWidth)
@@ -222,7 +222,7 @@ extends Cli:
         val sole = items.stdlib.count(!_.hidden) == 1
 
         items.bind:
-          case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _, _) =>
+          case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _, _, _) =>
             if hidden then Nil else
               val mainLines = (suggestion.text :: aliases.stdlib).map: text =>
                 description.absolve match
@@ -241,7 +241,7 @@ extends Cli:
         // PowerShell inserts a `CompletionResult` verbatim, so a trailing-space twin is
         // just a visible duplicate; `incomplete` has no rendering there.
         items.bind:
-          case suggestion@Suggestion(core, description, hidden, _, aliases, _, _, _, _) =>
+          case suggestion@Suggestion(core, description, hidden, _, aliases, _, _, _, _, _) =>
             if hidden then Nil else
 
                 (suggestion.text :: aliases.stdlib).map: text =>
