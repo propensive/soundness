@@ -579,7 +579,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
           arguments match
             case Alpha() :: _ => execute(Exit.Ok)
-            case Beta() :: _  => execute(Exit.Ok)
+            case Beta() :: rest => execute(if rest == Nil then CannotConnect else Exit.Fail(3))
             case Gamma() :: _ => execute(Exit.Ok)
 
             case Distribution() :: rest => rest match
@@ -603,13 +603,13 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               val config = cli.environment.variable(t"MYTOOL_CONFIG")
 
               execute:
-                if config.absent then CannotConnect.exit else BadConfig.exit
+                if config.absent then CannotConnect else BadConfig
 
             case UserDel() :: _ =>
               Flag(t"force", description = t"do not ask for confirmation")()
               Flag[Delay](t"wait", description = t"delay the deletion")()
               cli.environment.variable(t"MYTOOL_HOME")
-              execute(CannotConnect.exit)
+              execute(CannotConnect)
 
             case _ => execute(Exit.Fail(1))
 
@@ -666,6 +666,10 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
       test(m"A single status is discovered without widening to Status"):
         HelpApp.tree.subcommands.filter(_.command == t"userdel").bind(_.statuses).map(_.code)
+      .assert(_ == List(1))
+
+      test(m"A status unioned with a plain Exit is discovered, and the Exit is skipped"):
+        HelpApp.tree.subcommands.filter(_.command == t"beta").bind(_.statuses).map(_.code)
       .assert(_ == List(1))
 
       test(m"A command returning a plain Exit contributes no statuses"):

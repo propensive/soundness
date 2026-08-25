@@ -35,9 +35,11 @@ package rudiments
 object Exit:
   def apply(value: Int): Exit = if value == 0 then Ok else Fail(value)
 
-enum Exit:
+enum Exit extends Termination:
   case Ok
   case Fail(status: Int)
+
+  def exit: Exit = this
 
   def apply(): Int = this match
     case Ok           => 0

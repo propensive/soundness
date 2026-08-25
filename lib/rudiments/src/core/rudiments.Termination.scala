@@ -30,56 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package rudiments
 
-import scala.collection.immutable as sci
-import scala.quoted.*
-
-object internal:
-  // Reify a union of `Status` singleton types as the list of their values. Each member of the
-  // union is a `TermRef` — the singleton type of the stable value the application declared —
-  // so the status values are recovered by referring to those terms again. `Nothing`, the
-  // instantiation when a block returns no status at all, contributes nothing.
-  def admissible[result: Type](using Quotes): Expr[result is Status.Admissible] =
-    import quotes.reflect.*
-
-    def decompose(repr: TypeRepr): sci.List[TypeRepr] = repr.dealias match
-      case OrType(left, right) => decompose(left) ++ decompose(right)
-      case other               => sci.List(other)
-
-    // A status declared as `object CannotConnect extends Status(…)` appears in the union as a
-    // `TypeRef` to its module class, and one referred to by a stable path as a `TermRef`; both
-    // yield the term to refer to again. Any other `Termination` — `Exit` and its cases, or
-    // `Nothing` when a block never returns normally — sets an exit code without a meaning to
-    // document, and so contributes nothing. A non-singleton `Status` member has no value to
-    // recover: it means the union has been widened (soundness#1811), so the error is raised
-    // here rather than letting the statuses silently vanish from the documentation.
-    val statusType = TypeRepr.of[Status]
-    val terminationType = TypeRepr.of[rudiments.Termination]
-
-    val values: sci.List[Expr[Status]] =
-      decompose(TypeRepr.of[result]).distinct.flatMap: repr =>
-        if repr =:= TypeRepr.of[Nothing] then sci.Nil
-        else if repr <:< statusType then repr match
-          case ref: TermRef => sci.List(Ref.term(ref).asExprOf[Status])
-
-          case other =>
-            val symbol = other.termSymbol
-
-            if symbol.exists then sci.List(Ref(symbol).asExprOf[Status]) else
-              report.errorAndAbort
-               ( "exoskeleton: every status an execute block returns must be a singleton object "
-                 + "extending Status, but the result type includes "+other.show+", which is not "
-                 + "a singleton. Declare each status as a top-level object; if this type is "
-                 + "Status itself, the union of statuses has been widened (soundness#1811)." )
-        else if repr <:< terminationType then sci.Nil
-        else
-          report.errorAndAbort
-           ( "exoskeleton: an execute block must return a Termination, such as an Exit or a "
-             + "Status, but the result type includes "+repr.show+", which is neither." )
-
-    '{
-        new Status.Admissible:
-          type Self = result
-          def statuses: List[Status] = List.from(${Expr.ofList(values)})
-     }
+// The outcome of a completed command: anything which can determine the process's exit status.
+// `scala.caps.Pure`: a termination is a plain datum which may never hold a live capability, so its
+// singleton type carries no capture set to obstruct a union of terminations.
+trait Termination extends scala.caps.Pure:
+  def exit: Exit

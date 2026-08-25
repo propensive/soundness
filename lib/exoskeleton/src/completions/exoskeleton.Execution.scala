@@ -36,9 +36,9 @@ import prepositional.*
 import rudiments.*
 
 object Execution:
-  // Refines `Result` to the union of statuses the executed block can return, so that the set
-  // is carried in the type as well as recorded for documentation. `Execution to Nothing` is
-  // the result for a block which returns only a plain `Exit`.
+  // Refines `Result` to the union of terminations the executed block can return, so that the
+  // set is carried in the type as well as recorded for documentation. `Execution to Nothing`
+  // is the result for a block which never returns normally.
   def of[result](exitStatus: Exit, statuses: List[Status]): Execution to result =
     new Execution(exitStatus, statuses):
       type Result = result

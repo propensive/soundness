@@ -42,20 +42,14 @@ import rudiments.*
 //     object CannotConnect extends Status(1, t"the server could not be reached")
 //
 // Returning one from an `execute` block both sets the process's exit code and makes the status
-// discoverable: each `Status.exit` demands a `Registry` for its own singleton type, so the
-// block's `execute` accumulates the union of every status it can return, and documents them
-// without the application having to list them twice.
+// discoverable: the block's result type — kept precise by `execute`'s `Precise` bound — is the
+// union of the singleton types of every status it can return, which `Admissible` reifies as the
+// list of their values, documenting them without the application having to list them twice.
 //
 // A status must be an object rather than a `val`, because capture checking currently rejects
 // `value.type <: value.type | other.type` for the singleton type of a `val` (soundness#1811),
 // which would stop that union from forming. Module singletons are unaffected.
 object Status:
-  // Contravariant, so that each `Registry[status.type]` demanded within a block adds a lower
-  // bound to the block's `result` type, which then instantiates to the union of them all —
-  // the same mechanism by which `Tactic[-error]` accumulates a `raises` union. The `Precise`
-  // context bound on `execute` is what stops that union being widened to `Status`.
-  trait Registry[-status]
-
   object Admissible:
     // Union types cannot be decomposed by recursive given resolution (the compiler will not
     // unify `a | b` with a concrete union, and instantiates both to `Nothing`), so the members
@@ -68,7 +62,5 @@ object Status:
     type Self
     def statuses: List[Status]
 
-// `caps.Pure`: a status is a plain datum which may never hold a live capability, and so its
-// singleton type carries no capture set to obstruct the union.
-open class Status(val code: Int, val description: Text) extends scala.caps.Pure:
-  def exit(using Status.Registry[this.type]): Exit = Exit(code)
+open class Status(val code: Int, val description: Text) extends Termination:
+  def exit: Exit = Exit(code)
