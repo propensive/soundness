@@ -32,19 +32,8 @@
                                                                                                   */
 package rudiments
 
-object Exit:
-  def apply(value: Int): Exit = if value == 0 then Ok else Fail(value)
-
-enum Exit extends Termination:
-  case Ok
-  case Fail(status: Int)
-
-  def exit: Exit = this
-
-  def apply(): Int = this match
-    case Ok           => 0
-    case Fail(status) => status
-
-  def terminate(): Nothing =
-    System.exit(apply())
-    ???
+// The outcome of a completed command: anything which can determine the process's exit status.
+// `scala.caps.Pure`: a termination is a plain datum which may never hold a live capability, so its
+// singleton type carries no capture set to obstruct a union of terminations.
+trait Termination extends scala.caps.Pure:
+  def exit: Exit
