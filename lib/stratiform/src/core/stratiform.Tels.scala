@@ -743,6 +743,10 @@ object Tels extends Tels2:
       // aborts exactly as the neighbouring E218 check does.
       else raise(Tel.Error(Reason.PatternNotContained)) yet inherited
 
+    private def sameTexts(left: Array[Text]^{}, right: Array[Text]^{}): Boolean =
+      left.length == right.length && (0 until left.length).forall: index =>
+        left.readUnchecked(index) == right.readUnchecked(index)
+
     // `∀ Pᵢ ∈ inherited : L(⋂replacing) ⊆ L(Pᵢ)`, which §20.3 gives as the way
     // to decide `L(⋂new) ⊆ L(⋂old)`.
     //
@@ -750,10 +754,6 @@ object Tels extends Tels2:
     // budget exhaustion (§21.8 requires exactly this), a word boundary the
     // analysis cannot model, or a pattern that does not compile — the last
     // being unreachable once `checkBase` has run, but fail-closed regardless.
-    private def sameTexts(left: Array[Text]^{}, right: Array[Text]^{}): Boolean =
-      left.length == right.length && (0 until left.length).forall: index =>
-        left.readUnchecked(index) == right.readUnchecked(index)
-
     private def contained(replacing: Array[Text]^{}, inherited: Array[Text]^{}): Boolean =
       val motifs = scala.collection.mutable.ArrayBuffer.empty[Motif]
       var compiled = true
