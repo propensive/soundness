@@ -64,9 +64,10 @@ object Countable:
 
   // `List#size` is O(n), so the `Countable` instance is gated behind `Dysasymptotic.LinearSize`; the O(1)
   // `nil`/`occupied` come from the ungated `Vacuiscible.list` instead.
-  given list: [element] => (complexity: Dysasymptotic.LinearSize) => List[element] is Countable:
-    def size(self: List[element]): Int = self.stdlib.length
-    override def nil(self: List[element]): Boolean = self.stdlib.isEmpty
+  given list: [element, list <: List[element]] => (complexity: Dysasymptotic.LinearSize)
+  =>  list is Countable:
+    def size(self: list): Int = self.stdlib.length
+    override def nil(self: list): Boolean = self.stdlib.isEmpty
 
   given iterable: [element] => Iterable[element] is Countable:
     def size(self: Iterable[element]): Int = self.size
@@ -110,9 +111,9 @@ object Countable:
     override def nil(self: IndexedSeq[element]): Boolean = self.isEmpty
 
   // Opaque `Sequence` is no longer an `IndexedSeq` subtype, so it needs its own instance.
-  given sequence: [element] => Sequence[element] is Countable:
-    def size(self: Sequence[element]): Int = self.stdlib.length
-    override def nil(self: Sequence[element]): Boolean = self.stdlib.isEmpty
+  given sequence: [element, sequence <: Sequence[element]] => sequence is Countable:
+    def size(self: sequence): Int = self.stdlib.length
+    override def nil(self: sequence): Boolean = self.stdlib.isEmpty
 
   given text: Text is Countable:
     def size(self: Text): Int = self.s.length

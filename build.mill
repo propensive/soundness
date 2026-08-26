@@ -1460,6 +1460,10 @@ object clavichord extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
+
 object cataclysm extends Library:
   object core extends Component(zephyrine.core, gossamer.core, gossamer.lexicon, turbulence.core,
       contingency.core, vacuous.core, fulminate.core, denominative.core, hellenism.core,
@@ -1543,6 +1547,10 @@ object concordance extends Library:
       vacuous.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
 
 object contextual extends Library:
   object core extends Component(gigantism.core, prepositional.core):
@@ -2966,8 +2974,7 @@ object superlunary extends Library:
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
 
-  object test extends Tests(jvm):
-    override def finalMainClass: Task.Simple[String] = "superlunary.run"
+  object test extends Tests(jvm)
 
 object surveillance extends Library:
   object core extends Component(anticipation.path, aperture.core, turbulence.core,

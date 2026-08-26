@@ -634,20 +634,23 @@ object Tests extends Suite(m"Pneumatic tests"):
                      . compress[Gzip].decompress[Gzip]
         val builder = scala.collection.immutable.List.newBuilder[Byte]
 
-        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
-         stream.refill(Credit(3)) match
-          case count: Int =>
-            val window = unsafely(stream.storage).asInstanceOf[scala.Array[Byte]]
-            var index = 0
-            while index < count do
-              builder += window(stream.start + index)
-              index += 1
-            stream.skip(count)
-            recur()
+        // A loop, not a recursion: `unsafeAssumeSeparate` takes its body as a lambda, so a
+        // recursive call inside it is not in tail position, and at three bytes per refill this
+        // runs for enough steps to overflow the stack.
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          var draining = true
 
-          case _ => ()
+          while draining do stream.refill(Credit(3)) match
+            case count: Int =>
+              val window = unsafely(stream.storage).asInstanceOf[scala.Array[Byte]]
+              var index = 0
+              while index < count do
+                builder += window(stream.start + index)
+                index += 1
+              stream.skip(count)
 
-        scala.caps.unsafe.unsafeAssumeSeparate(recur())
+            case _ => draining = false
+
         builder.result().to(proscenium.List)
       . assert(_ == mixed.readable.to(proscenium.List))
 

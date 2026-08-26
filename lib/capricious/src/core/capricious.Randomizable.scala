@@ -90,7 +90,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
     stochastic(using infer[Randomization]):
       val labels = variantLabels.stdlib
 
-      delegate(labels(random.long().abs.toInt%labels.length)):
+      delegate(labels(random.long().toInt.abs%labels.length)):
         [variant <: derivation] => _.randomize(summon[Random])
 
 trait Randomizable extends Typeclass:

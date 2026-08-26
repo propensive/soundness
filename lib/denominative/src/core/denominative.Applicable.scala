@@ -65,26 +65,27 @@ object Applicable:
     def access(sequence: IndexedSeq[element], index: Ordinal): Result = sequence(index.n0)
 
   // Opaque `Sequence` is no longer an `IndexedSeq` subtype, so it needs its own instance.
-  given sequence: [element] => Sequence[element] is Applicable:
-    type Self = Sequence[element]
+  given sequence: [element, sequence <: Sequence[element]] => sequence is Applicable:
+    type Self = sequence
     type Operand = Ordinal
     type Result = element
 
-    def contains(sequence: Sequence[element], index: Ordinal): Boolean =
+    def contains(sequence: Self, index: Ordinal): Boolean =
       index.n0 >= 0 && index.n0 < sequence.stdlib.length
 
-    def access(sequence: Sequence[element], index: Ordinal): Result = sequence.stdlib(index.n0)
+    def access(sequence: Self, index: Ordinal): Result = sequence.stdlib(index.n0)
 
   // Opaque `List`: positional access is O(n), so the instance is gated behind `Dysasymptotic.LinearAccess`.
-  given list: [element] => (complexity: Dysasymptotic.LinearAccess) => List[element] is Applicable:
-    type Self = List[element]
+  given list: [element, list <: List[element]] => (complexity: Dysasymptotic.LinearAccess)
+  =>  list is Applicable:
+    type Self = list
     type Operand = Ordinal
     type Result = element
 
-    def contains(list: List[element], index: Ordinal): Boolean =
+    def contains(list: Self, index: Ordinal): Boolean =
       index.n0 >= 0 && index.n0 < list.stdlib.length
 
-    def access(list: List[element], index: Ordinal): Result = list.stdlib(index.n0)
+    def access(list: Self, index: Ordinal): Result = list.stdlib(index.n0)
 
   given text: [element] => Text is Applicable:
     type Self = Text

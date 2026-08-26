@@ -35,7 +35,6 @@ package superlunary
 import java.lang as jl
 
 import scala.quoted.*
-import scala.Predef
 
 import soundness.*
 
@@ -48,22 +47,34 @@ case class Example(name: Text, count: Long)
 
 object Tests extends Suite(m"Superlunary Tests"):
   def run(): Unit =
-    try
-      def fn(message: Example): Example = Jvm.dispatch:
-        ' {
-            val x = ${message.name}
-            val y = ${message.count}
-            Predef.println(y)
-            Example(t"Time: $x $y ${jl.System.currentTimeMillis - ${message}.count}", 9)
-          }
+    // Every dispatch below runs in a freshly-compiled, separately-loaded JVM, so a failure here
+    // is a staging failure. It must be reported as one: this suite used to swallow every
+    // `Throwable` and assert nothing, which made it permanently green.
+    def fn(message: Example): Example = Jvm.dispatch:
+      ' {
+          val x = ${message.name}
+          val y = ${message.count}
+          Example(t"Time: $x $y ${jl.System.currentTimeMillis - ${message}.count}", 9)
+        }
 
-      fn(Example(t"one", jl.System.currentTimeMillis))
-      fn(Example(t"two", jl.System.currentTimeMillis))
+    suite(m"Dispatching to a compiled JVM"):
+      test(m"a dispatched quote returns the value its body constructs"):
+        fn(Example(t"one", jl.System.currentTimeMillis)).count
+      . assert(_ == 9L)
 
-      var count = 100
-      Isolation.dispatch:
-        '{"hello message"+($count + 1)}
+      test(m"spliced values reach the staged body"):
+        fn(Example(t"one", jl.System.currentTimeMillis)).name
+      . assert(_.starts(t"Time: one "))
 
-    catch
-      case error: Throwable =>
-        error.printStackTrace()
+      test(m"a second dispatch of the same quote splices its own values"):
+        fn(Example(t"two", jl.System.currentTimeMillis)).name
+      . assert(_.starts(t"Time: two "))
+
+    suite(m"Isolation"):
+      test(m"a captured local is spliced into the isolated quote"):
+        var count = 100
+
+        Isolation.dispatch:
+          '{"hello message"+($count + 1)}
+
+      . assert(_ == "hello message101")
