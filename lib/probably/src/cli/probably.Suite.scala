@@ -59,7 +59,13 @@ import themes.solarizedTheme
 import denominative.dysasymptotics.linearSize
 
 abstract class Suite(suiteName: Message) extends Testable(suiteName):
-  val suiteIo = safely(stdios.virtualMachineStdio).or(panic(m"the JVM stdio is always available"))
+  // The CURRENT `System.out`/`err`/`in` (`systemStdio`), read afresh at each use, rather than
+  // the process's file descriptors (`virtualMachineStdio`): an in-process host invoking the
+  // suite through `invoke` redirects `System.out` to its own stream for the duration, and the
+  // FD-backed streams would bypass that redirection entirely (the report would go to the host
+  // process's terminal, not the host's client). In a conventional `java -cp … <Suite>` run the
+  // two are indistinguishable, since `System.out` IS the process's stdout.
+  def suiteIo: Stdio = safely(stdios.systemStdio).or(panic(m"the JVM stdio is always available"))
 
   private def makeRunner(selection: Selection): Runner[Report] =
     given stdio: Stdio = suiteIo
