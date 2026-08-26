@@ -53,6 +53,28 @@ extends Cli, Stdio:
   @scala.caps.unsafe.untrackedCaptures
   private var matchedArguments: List[Argument] = Nil
 
+  @scala.caps.unsafe.untrackedCaptures
+  private var missingFlags: List[Flag] = Nil
+
+  override def demand(flag: Flag, present: Boolean): Unit =
+    if !present then missingFlags = flag :: missingFlags
+
+  // The required flags which were not specified, in the order they were demanded.
+  def missingRequisites: List[Flag] = missingFlags.stdlib.reverse.distinct.to(List)
+
+  @scala.caps.unsafe.untrackedCaptures
+  private var faultedFlags: List[(Flag, Text)] = Nil
+
+  override def fault(flag: Flag, message: Text): Unit =
+    faultedFlags = (flag, message) :: faultedFlags
+
+  // The validated flags whose operands failed to decode, with the reasons, in the order they
+  // were validated.
+  def faults: List[(Flag, Text)] = faultedFlags.stdlib.reverse.distinct.to(List)
+
+  override def locate(flag: Flag): Optional[List[Argument]] =
+    interpreter.locate(parameters, flag)
+
   override def matched(argument: Argument): Unit = matchedArguments = argument :: matchedArguments
 
   // The recorded matches, deduplicated (re-matches of one position record the identical

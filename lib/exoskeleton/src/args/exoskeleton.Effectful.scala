@@ -32,21 +32,9 @@
                                                                                                   */
 package exoskeleton
 
-import beneficence.*
-import vacuous.*
-
-trait Interpreter extends Findable:
-  type Topic
-
-  def interpret(arguments: List[Argument]): Topic
-  def focus(topic: Topic): Optional[Argument]
-  def find(topic: Topic, flag: Flag): List[Argument]
-
-  // The flag's raw operand arguments, or `Unset` if the flag itself was not specified — so a
-  // present flag with a malformed operand can be distinguished from a missing one. Defaulted
-  // for interpreters which cannot make the distinction.
-  def locate(topic: Topic, flag: Flag): Optional[List[Argument]] = Unset
-
-  def read[operand: Interpretable](topic: Topic, flag: Flag)
-    ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
-  :   Optional[operand]
+// The marker capability which distinguishes code running inside an `execute` block from the
+// pure section that precedes it. It is always erased: `execute` conjures it for its block, and
+// context-dependent operations (`Flag#apply`, `Flag#require`) dispatch on its presence with
+// `summonFrom`, resolving to a deferred handle in the pure section and to a direct value
+// inside `execute`.
+sealed trait Effectful

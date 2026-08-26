@@ -51,7 +51,8 @@ object Help:
       description: Optional[Text | Teletype],
       repeatable:  Boolean,
       global:      Boolean        = false,
-      operand:     Optional[Text] = Unset )
+      operand:     Optional[Text] = Unset,
+      required:    Boolean        = false )
 
   // A line of the rendered body: an indented label with an optional description, laid out so
   // that every description starts in the same column; a bold subheading, which does not
@@ -91,7 +92,14 @@ object Help:
     node.parameters.stdlib ::: node.subcommands.stdlib.flatMap(descendants)
 
   private def paramItems(params: scala.List[Param], depth: Int): scala.List[Row] =
-    params.map: param => Row.Item(depth, label(param), false, param.description)
+    params.map: param =>
+      val description: Optional[Text | Teletype] =
+        if !param.required then param.description else param.description.absolve match
+          case Unset              => t"(required)"
+          case text: Text         => t"$text (required)"
+          case teletype: Teletype => e"$teletype (required)"
+
+      Row.Item(depth, label(param), false, description)
 
   private def commandRows(children: scala.List[Help], depth: Int): scala.List[Row] =
     children.flatMap: sub =>

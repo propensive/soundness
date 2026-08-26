@@ -32,21 +32,13 @@
                                                                                                   */
 package exoskeleton
 
-import beneficence.*
-import vacuous.*
+import scala.language.experimental.pureFunctions
 
-trait Interpreter extends Findable:
-  type Topic
+import fulminate.*
 
-  def interpret(arguments: List[Argument]): Topic
-  def focus(topic: Topic): Optional[Argument]
-  def find(topic: Topic, flag: Flag): List[Argument]
-
-  // The flag's raw operand arguments, or `Unset` if the flag itself was not specified — so a
-  // present flag with a malformed operand can be distinguished from a missing one. Defaulted
-  // for interpreters which cannot make the distinction.
-  def locate(topic: Topic, flag: Flag): Optional[List[Argument]] = Unset
-
-  def read[operand: Interpretable](topic: Topic, flag: Flag)
-    ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
-  :   Optional[operand]
+// Raised when `require()` is called on an absent flag *inside* an `execute` block, where the
+// missing-requisite guard has already run and the failure cannot be accrued; it propagates to
+// the executive's backstop. In the pure section, `require()` never fails: it records the
+// missing flag on the `Cli`, and `execute` reports every missing requisite together.
+case class MissingFlagError(flag: Flag)(using Diagnostics)
+extends Error(m"the required flag ${Flag.serialize(flag.name)} was not specified")

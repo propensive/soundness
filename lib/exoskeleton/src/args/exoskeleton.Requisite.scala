@@ -32,21 +32,21 @@
                                                                                                   */
 package exoskeleton
 
-import beneficence.*
+import scala.language.experimental.pureFunctions
+
+import fulminate.*
 import vacuous.*
 
-trait Interpreter extends Findable:
-  type Topic
+// The handle for a required flag's value, obtained by calling `require()` on a `Flag` in the
+// pure section. Creating it records the requirement on the `Cli`: if the flag is missing,
+// `execute` reports every missing requisite in a single message and never runs its block, so
+// applying the handle inside `execute` yields the value unconditionally. As with
+// `Prospective`, resolution is eager and `value` may be consulted in the pure section.
+case class Requisite[topic](flag: Flag, value: Optional[topic]):
+  def present: Boolean = value.present
+  def absent: Boolean = value.absent
 
-  def interpret(arguments: List[Argument]): Topic
-  def focus(topic: Topic): Optional[Argument]
-  def find(topic: Topic, flag: Flag): List[Argument]
-
-  // The flag's raw operand arguments, or `Unset` if the flag itself was not specified — so a
-  // present flag with a malformed operand can be distinguished from a missing one. Defaulted
-  // for interpreters which cannot make the distinction.
-  def locate(topic: Topic, flag: Flag): Optional[List[Argument]] = Unset
-
-  def read[operand: Interpretable](topic: Topic, flag: Flag)
-    ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
-  :   Optional[operand]
+  // Infallible only because the guard in `execute` has already aborted if the flag is missing;
+  // under a conjured `Effectful` (the `effectful` escape hatch) that guarantee is void.
+  def apply()(using erased effectful: Effectful): topic =
+    value.or(panic(m"the required flag ${Flag.serialize(flag.name)} is not present"))

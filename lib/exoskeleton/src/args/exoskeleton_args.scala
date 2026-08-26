@@ -63,6 +63,9 @@ package interpreters:
     def focus(commandline: Commandline): Optional[Argument] = commandline.focus
     def find(commandline: Commandline, flag: Flag): List[Argument] = commandline.at(flag)
 
+    override def locate(commandline: Commandline, flag: Flag): Optional[List[Argument]] =
+      commandline.locate(flag)
+
 
     def read[operand: Interpretable](commandline: Commandline, flag: Flag)
       ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
@@ -76,6 +79,9 @@ package interpreters:
     def interpret(arguments: List[Argument]): Commandline = interpreter(arguments, false)
     def focus(commandline: Commandline): Optional[Argument] = commandline.focus
     def find(commandline: Commandline, flag: Flag): List[Argument] = commandline.at(flag)
+
+    override def locate(commandline: Commandline, flag: Flag): Optional[List[Argument]] =
+      commandline.locate(flag)
 
 
     def read[operand: Interpretable](commandline: Commandline, flag: Flag)
@@ -150,3 +156,9 @@ package interpreters:
     recur(arguments, Nil, Unset, Commandline())
 
 def arguments(using cli: Cli): List[Argument] = cli.arguments
+
+// An escape hatch: conjures the erased `Effectful` capability outside an `execute` block. Code
+// which uses it forgoes the guarantees `execute` provides — in particular, a `Requisite`
+// unwrapped under a conjured `Effectful` may panic, since the missing-flag guard has not run.
+inline def effectful[result](lambda: (erased effectful: Effectful) ?=> result): result =
+  lambda(using !![Effectful])

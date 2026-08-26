@@ -34,8 +34,9 @@ package soundness
 
 export
   exoskeleton
-  . { Argument, arguments, Cli, CommandGroup, Commandline, Discoverable, Flag, Interpretable,
-      Interpreter, Login, Setting, Shell, Status, Subcommand, Suggestible, Suggestion, Switch }
+  . { Argument, arguments, Cli, CommandGroup, Commandline, Discoverable, Effectful, effectful,
+      Flag, Interpretable, Interpreter, InvalidFlagError, Login, MissingFlagError, Prospective,
+      Requisite, Setting, Shell, Status, Subcommand, Suggestible, Suggestion, Switch }
 
 package interpreters:
   export exoskeleton.interpreters.{posixInterpreter, posixClusteringInterpreter, simpleInterpreter}
