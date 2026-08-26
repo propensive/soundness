@@ -6527,6 +6527,13 @@ object Tel extends Tel2:
           m"a key field must be effectively required and non-repeatable"
 
         case MultipleKeyFields        => m"more than one member of the Struct is key-flagged"
+        case InvalidPattern           => m"a `pattern` value is not a valid RE2 pattern"
+
+        case PatternNotContained =>
+          m"a layer's patterns are not contained in the patterns they replace"
+
+        case UnconstrainedScalar =>
+          m"a ScalarDefinition declares neither `validate` nor `pattern`"
 
         case NonStructCompound =>
           m"the compound's type is not a Struct"
@@ -6543,6 +6550,7 @@ object Tel extends Tel2:
         case FlagWithContent          => m"the Flag-typed compound has atoms or compound children"
         case EncodingRejected         => m"a scalar value was rejected by its encoding's codec"
         case EncodingUnresolved       => m"a scalar's declared encoding is not bound to a codec"
+        case PatternRejected          => m"a scalar value does not match a declared pattern"
 
         case DuplicateKeyValue =>
           m"two keyed children of the same parent have equal key values"
@@ -6593,11 +6601,12 @@ object Tel extends Tel2:
           | ExcludeEmptiesRequired | LayerVariantAddition | LayerLoosenRequired
           | LayerLoosenRepeatable | ExcludeOutsideSelect | ReferenceKindMismatch
           | EncodingConflict | KeyOnNonScalar | KeyOnLooseMember | MultipleKeyFields
+          | InvalidPattern | PatternNotContained | UnconstrainedScalar
           | NonStructCompound | TooManyAtoms | AtomAtNonAssignablePos
           | AtomVariantUnmatched | AtomFlagKeywordMismatch | UnknownKeyword
           | RequiredMemberAbsent | NonRepeatableTooMany | MembersNonContiguous
           | ValidatorRejected | FlagWithContent | EncodingRejected | EncodingUnresolved
-          | DuplicateKeyValue =>
+          | DuplicateKeyValue | PatternRejected =>
           Recovery.IgnoreErroneousNode
 
         // E4xx decode reasons and implementation-reserved resource errors have
@@ -6660,6 +6669,9 @@ object Tel extends Tel2:
       case KeyOnNonScalar          extends Reason(219)
       case KeyOnLooseMember        extends Reason(220)
       case MultipleKeyFields       extends Reason(221)
+      case InvalidPattern          extends Reason(222)
+      case PatternNotContained     extends Reason(223)
+      case UnconstrainedScalar     extends Reason(224)
 
       // E3xx — validation errors per §19.3 / §21.
       case NonStructCompound       extends Reason(301)
@@ -6676,6 +6688,7 @@ object Tel extends Tel2:
       case EncodingRejected        extends Reason(312)
       case EncodingUnresolved      extends Reason(313)
       case DuplicateKeyValue       extends Reason(314)
+      case PatternRejected         extends Reason(315)
 
       // E4xx — decode errors (mapping a TEL value onto a Scala type). Surfaced via
       // `Foci`-based accrual at decode time, not the §19.5 parser/validation
