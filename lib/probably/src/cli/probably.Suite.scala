@@ -118,7 +118,16 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
     runner0 = runner
     runner.suite(testableView, run())
 
-  final def main(arguments: Array[Text]^{}): Unit =
+  // Runs the suite as `main` does, but RETURNS the exit status (0 = passed, 1 = failures,
+  // 2 = the suite threw, 3 = environment error during reporting) instead of terminating the
+  // JVM, so a host process — a test-running tool such as fume — can invoke suites in-process
+  // without each one bringing the process down. The host is expected to load each suite in a
+  // FRESH classloader per invocation (the suite object holds per-run state in `runner0`), and
+  // may call this reflectively across an isolating classloader boundary: as a public method of
+  // the suite object it gains a static forwarder in the mirror class, and its signature erases
+  // to `invoke(String[]): int` — JDK types only, so no Soundness class need be shared between
+  // the host's world and the suite's.
+  final def invoke(arguments: Array[Text]^{}): Int =
     val selection = Selection.parse(arguments.to[List])
     if !arguments.nil then runner0 = makeRunner(selection)
 
@@ -136,26 +145,29 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
 
           Out.println(t"${id.id}  ${kindName(kind)}  $path")
 
-        jl.System.exit(0)
+        0
       catch case error: Throwable =>
         jl.System.out.nn.println(StackTrace(error).teletype.render)
-        jl.System.exit(2)
+        2
     else
-      try runner.suite(testableView, run())
-      catch case error: Throwable =>
-        runner.terminate(error)
-        jl.System.exit(2)
-      finally
+      try
+        runner.suite(testableView, run())
+
         try
           if runner.admitted == 0 && !selection.trivial then
             given stdio: Stdio = suiteIo
             Out.println(t"No tests matched the selection.")
 
           runner.complete()
-          if runner.report.passed then jl.System.exit(0) else jl.System.exit(1)
+          if runner.report.passed then 0 else 1
         catch case error: Environment.Error =>
           jl.System.out.nn.println(StackTrace(error).teletype)
-          jl.System.exit(3)
+          3
+      catch case error: Throwable =>
+        runner.terminate(error)
+        2
+
+  final def main(arguments: Array[Text]^{}): Unit = jl.System.exit(invoke(arguments))
 
   private def kindName(kind: Entry.Kind): Text = kind match
     case Entry.Kind.Check   => t"test"
