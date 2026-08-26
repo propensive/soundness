@@ -24,12 +24,49 @@ Document {
                     keyword: "name",
                     atoms: [
                         Inline {
-                            text: "minimal-example",
+                            text: "coded",
                             preceding_spaces: 1,
                         },
                     ],
                     remark: None,
                     children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "scalar",
+                    atoms: [
+                        Inline {
+                            text: "Code",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "pattern",
+                                    atoms: [
+                                        Inline {
+                                            text: "[A-Z]{2}-[0-9]{4}",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
                 },
             ],
             trailing_blank_lines: 1,
@@ -51,26 +88,11 @@ Document {
                                     keyword: "field",
                                     atoms: [
                                         Inline {
-                                            text: "name",
+                                            text: "code",
                                             preceding_spaces: 1,
                                         },
                                         Inline {
-                                            text: "String",
-                                            preceding_spaces: 1,
-                                        },
-                                    ],
-                                    remark: None,
-                                    children: [],
-                                },
-                                Compound {
-                                    keyword: "field",
-                                    atoms: [
-                                        Inline {
-                                            text: "age",
-                                            preceding_spaces: 1,
-                                        },
-                                        Inline {
-                                            text: "String",
+                                            text: "Code",
                                             preceding_spaces: 1,
                                         },
                                     ],

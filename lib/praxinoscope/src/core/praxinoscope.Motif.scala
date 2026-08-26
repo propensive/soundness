@@ -429,6 +429,12 @@ case class Motif(pattern: Text, node: Node, captures: Int, program: Program):
   def subsumes(that: Motif): Boolean raises Motif.Error =
     Subsumption.subsumes(program, that.program)
 
+  // True if this expression matches every input matched by *all* of `those` at once, i.e.
+  // L(⋂`those`) ⊆ L(`this`). Since RE2 has no intersection operator, this is the only way to
+  // ask the containment question about a set of expressions applied in conjunction.
+  def subsumes(those: List[Motif]): Boolean raises Motif.Error =
+    Subsumption.subsumes(program, those.stdlib.map(_.program).to(List))
+
   def intersects(that: Motif): Boolean raises Motif.Error =
     Subsumption.intersects(program, that.program)
 

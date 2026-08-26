@@ -1,0 +1,13 @@
+tel 1.0 specification.tel/tels:2.0.0
+
+name widened
+
+scalar Code
+  pattern [A-Z]{2}-[0-9]{4}
+
+document
+  field code Code
+
+layer regional
+  scalar Code
+    pattern (EU|USA)-[0-9]{4}

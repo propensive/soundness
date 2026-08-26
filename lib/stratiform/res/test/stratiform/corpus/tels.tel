@@ -74,14 +74,18 @@ record Record
   select Member optional repeatable
   field description String optional
 
-# A `scalar` declaration: a named scalar definition (one or more validators
-# and an optional binary encoding).
+# A `scalar` declaration: a named scalar definition constrained by named
+# validators and/or RE2 pattern constraints, with an optional binary
+# encoding. At least one `validate` or `pattern` is required (E224); the
+# disjunction cannot be expressed structurally, so both members are
+# optional here.
 
 record Scalar
   description
-      A scalar declaration: a named scalar definition with one or more validators and an optional encoding.
+      A scalar declaration: a named scalar definition constrained by validators and/or RE2 patterns, with an optional encoding.
   field name TypeName
-  field validate Identifier repeatable
+  field validate Identifier optional repeatable
+  field pattern String optional repeatable
   field encoding Identifier optional
   field description String optional
 

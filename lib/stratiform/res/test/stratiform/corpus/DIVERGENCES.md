@@ -23,3 +23,42 @@ fixture touching the pragma diverges from upstream until it regenerates:
   `e310-schema-plus-sigil` are local additions with hand-written `.check` files.
 - Error messages in `errors:` sections for E121/E122 follow the reworded
   specification text; only the codes are compared by the test suites.
+
+## Pattern constraints (§21.8)
+
+The RE2 pattern fixtures (`pos/schema-with-pattern`, `pos/pattern-value-matches`,
+`pos/schema-layer-refines-pattern`, `neg/e222-*`, `neg/e223-*`, `neg/e224-*`,
+`neg/e315-*`, and the shared `_coded.tel` schemas) were copied from upstream at
+tel commit `75e591b`, ahead of `UPSTREAM_SHA`. The rest of the corpus was left
+at the recorded commit, so `UPSTREAM_SHA` still names the commit the bulk of the
+fixtures came from.
+
+Pattern matching is backed by `praxinoscope`, whose RE2 subset is narrower than
+the syntax §21.8 refers to:
+
+- **Inline flags** (`(?i)`, `(?s)`, …) are rejected (`Motif.Error.Reason.Flag`),
+  though §21.8 explicitly permits them. A schema using one is reported **E222**.
+- **Unicode property classes** (`\p{…}`, `\P{…}`) are rejected likewise, as is
+  `\Z`.
+- **Word boundaries** (`\b`, `\B`) parse and match, but the containment
+  analysis cannot model them (`Unverifiable`), so a layer replacement involving
+  one is not provable and fails closed as **E223**.
+
+The first two are genuine conformance gaps against §21.8's requirement that two
+conforming implementations accept exactly the same values; they fail closed
+(E222, never silently permissive), so they are safe but not complete. No
+upstream fixture exercises them.
+
+The §21.8 resource budget this implementation documents is
+`praxinoscope.Subsumption.maxStates` = 100,000 product states, matching the Rust
+reference's `STATE_BUDGET`. Exhausting it is reported as E223, per §21.8's
+requirement that a budget exhaustion be treated as *not proven*.
+
+## Re-syncing
+
+Upstream has since adopted the LIRA pragma grammar described above, so the LIRA
+section is stale and a future re-sync should converge most of it. Note that
+`etc/sync-tel-corpus.sh` deletes fixtures before copying (`rm -f "$TARGET/pos"/*.tel`),
+which would drop the ~17 local-only fixtures listed above; it needs an allowlist
+before it is run again. It also does not copy `tels.tel` or `tels.bintel.hex`,
+which are maintained by hand.

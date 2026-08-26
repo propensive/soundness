@@ -39,6 +39,7 @@ import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import praxinoscope.Motif
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -113,7 +114,14 @@ object Tels extends Tels2:
 
   // `encoding` names the codec (§21.7) defining the scalar's binary
   // representation in BinTEL, or is absent for UTF-8 text scalars.
-  case class Scalar(validators: Array[Text]^{}, encoding: Optional[Text] = Unset) extends Type
+  // `patterns` holds the RE2 pattern constraints of §21.8, in declaration
+  // order; each matches the entire value text and they AND-conjoin, so the
+  // accepted language is the intersection of theirs.
+  case class Scalar
+    ( validators: Array[Text]^{},
+      encoding:   Optional[Text] = Unset,
+      patterns:   Array[Text]^{} = Array.empty )
+  extends Type
 
   case object Flag extends Type
 
@@ -130,11 +138,15 @@ object Tels extends Tels2:
       validators:  Array[Text]^{},
       description: Optional[Text] = Unset )
 
+  // §20: `validators` and `patterns` (§21.8) are each individually optional,
+  // but a declaration carrying neither is invalid (E224) — an unconstrained
+  // scalar names the built-in `String` instead.
   case class ScalarDefinition
     ( name:        Text,
       validators:  Array[Text]^{},
       description: Optional[Text] = Unset,
-      encoding:    Optional[Text] = Unset )
+      encoding:    Optional[Text] = Unset,
+      patterns:    Array[Text]^{} = Array.empty )
 
   // `excludes` is layer-only: the variant keywords a layer's `exclude`
   // children remove from the merged SelectDefinition (§20.3). A base-side
@@ -275,9 +287,13 @@ object Tels extends Tels2:
           field("description", stringRef, required = Loose)),
 
         record("Scalar",
-          "A scalar declaration: a named scalar definition with one or more validators and an optional encoding.",
+          "A scalar declaration: a named scalar definition constrained by validators and/or RE2 patterns, with an optional encoding.",
           field("name",        typeNameRef),
-          field("validate",    identifierRef, repeatable = Loose),
+          // §21.8 made `validate` optional and added `pattern`; the "at least
+          // one of the two" rule (E224) is not structurally expressible, so
+          // both members are optional here and the disjunction is checked.
+          field("validate",    identifierRef, required = Loose, repeatable = Loose),
+          field("pattern",     stringRef,     required = Loose, repeatable = Loose),
           field("encoding",    identifierRef, required = Loose),
           field("description", stringRef, required = Loose)),
 
@@ -681,8 +697,11 @@ object Tels extends Tels2:
             newDef.encoding.let { layer => if layer != base then abort(Tel.Error(Reason.EncodingConflict)) }
             base
 
+          val mergedPatterns = mergePatterns(out(existing).patterns, newDef.patterns)
+
           out(existing) = ScalarDefinition(newDef.name, mergedValidators,
-              newDef.description.or(out(existing).description), mergedEncoding)
+              newDef.description.or(out(existing).description), mergedEncoding,
+              mergedPatterns)
         else
           if records.exists(_.name == newDef.name) || selects.exists(_.name == newDef.name)
           then abort(Tel.Error(Reason.DuplicateDefinition))
@@ -692,6 +711,68 @@ object Tels extends Tels2:
         i += 1
 
       Array.from(out)
+
+    // §20.3's checked replacement: a layer's `pattern` lines *replace* the
+    // inherited list rather than appending to it, subject to the containment
+    // premise `L(⋂new) ⊆ L(⋂old)`. Patterns are the one constraint whose
+    // semantics the composition rules can inspect — validator names are opaque
+    // and therefore append-only — and RE2's decidable containment is what makes
+    // inspecting them sound.
+    //
+    // The first three cases avoid asking the (potentially budget-exhausting)
+    // containment question at all.
+    private def mergePatterns(inherited: Array[Text]^{}, replacing: Array[Text]^{})
+    :   Array[Text]^{} raises Tel.Error =
+
+      // A layer with no `pattern` lines inherits the base's list unchanged.
+      if replacing.nil then inherited
+
+      // Restating a textually identical list is a benign no-op, and needs no
+      // containment decision — which is what lets a layer restate a pattern the
+      // analysis could not decide.
+      else if sameTexts(replacing, inherited) then inherited
+
+      // An inherited empty list denotes Σ*, so any first patterns are contained.
+      else if inherited.nil then replacing
+
+      else if contained(replacing, inherited) then replacing
+
+      // Fail closed, retaining the inherited list. `raise` rather than `abort`
+      // so that under an accrual boundary §20.3's "retain the inherited list"
+      // is literally what happens; under the default fail-fast tactic this
+      // aborts exactly as the neighbouring E218 check does.
+      else raise(Tel.Error(Reason.PatternNotContained)) yet inherited
+
+    private def sameTexts(left: Array[Text]^{}, right: Array[Text]^{}): Boolean =
+      left.length == right.length && (0 until left.length).forall: index =>
+        left.readUnchecked(index) == right.readUnchecked(index)
+
+    // `∀ Pᵢ ∈ inherited : L(⋂replacing) ⊆ L(Pᵢ)`, which §20.3 gives as the way
+    // to decide `L(⋂new) ⊆ L(⋂old)`.
+    //
+    // Every failure mode is treated as *not proven* and so reports E223: a
+    // budget exhaustion (§21.8 requires exactly this), a word boundary the
+    // analysis cannot model, or a pattern that does not compile — the last
+    // being unreachable once `checkBase` has run, but fail-closed regardless.
+    private def contained(replacing: Array[Text]^{}, inherited: Array[Text]^{}): Boolean =
+      val motifs = scala.collection.mutable.ArrayBuffer.empty[Motif]
+      var compiled = true
+
+      replacing.each: pattern =>
+        Patterns.compile(pattern) match
+          case motif: Motif => motifs += motif
+          case _            => compiled = false
+
+      if !compiled then false else
+        val candidates = motifs.to(List)
+        var holds = true
+
+        inherited.each: pattern =>
+          if holds then
+            holds = Patterns.compile(pattern).lay(false): cover =>
+              safely[Motif.Error](cover.subsumes(candidates)).or(false)
+
+        holds
 
     private def mergeSelectList
       ( base:    Array[SelectDefinition]^{},
@@ -788,8 +869,40 @@ object Tels extends Tels2:
         if select.variants.nil then abort(Tel.Error(Reason.EmptySelectVariants))
         if !select.excludes.nil then abort(Tel.Error(Reason.ExcludeOutsideSelect))
 
+      // §21.8: every declared pattern, base-side or layer-side, must be valid
+      // RE2 (E222). Checking here — before `Layers.compose` runs — is what
+      // guarantees E222 precedes E223: the containment decision of §20.3 must
+      // never be asked about a pattern that does not compile. Like an
+      // unresolved encoding (E313), an unparseable pattern is never treated as
+      // satisfied; the schema is invalid instead.
+      checkPatterns(schema.scalars)
+      schema.layers.each { layer => checkPatterns(layer.scalars) }
+
+      // E224: a `scalar` declaration must carry at least one `validate` or
+      // `pattern` line. The disjunction is not structurally expressible in the
+      // `tels` meta-schema (both members are optional there), so it is checked
+      // here. Layer scalars are exempt: a same-name layer scalar that only
+      // adds an `encoding` is legal refinement, and one that introduces a
+      // fresh definition is caught post-composition by `checkComposed`.
+      schema.scalars.each: definition =>
+        if definition.validators.nil && definition.patterns.nil
+        then abort(Tel.Error(Reason.UnconstrainedScalar))
+
+    private def checkPatterns(scalars: Array[ScalarDefinition]^{}): Unit raises Tel.Error =
+      scalars.each: definition =>
+        definition.patterns.each: pattern =>
+          if Patterns.compile(pattern).absent then abort(Tel.Error(Reason.InvalidPattern))
+
     private def checkComposed(composed: Tels): Tels raises Tel.Error =
       checkStruct(composed.document, composed)
+
+      // E224 again, post-composition, to catch a scalar a layer introduced
+      // with neither constraint. A same-name layer scalar merges into a base
+      // that `checkBase` already vetted, so only genuinely new definitions can
+      // fail here.
+      composed.scalars.each: definition =>
+        if definition.validators.nil && definition.patterns.nil
+        then abort(Tel.Error(Reason.UnconstrainedScalar))
 
       composed.records.each: record =>
         checkStruct(Struct(record.members, record.validators), composed)
@@ -822,7 +935,8 @@ object Tels extends Tels2:
 
       case Reference(name) =>
         schema.scalars.readable.find(_.name == name) match
-          case scala.Some(definition) => Scalar(definition.validators, definition.encoding)
+          case scala.Some(definition) =>
+            Scalar(definition.validators, definition.encoding, definition.patterns)
 
           case scala.None =>
             if builtinScalar(name) then Scalar(Array.empty) else Unset
@@ -948,7 +1062,8 @@ object Tels extends Tels2:
       case (a: Struct, b: Struct)         => structEq(a, b)
 
       case (a: Scalar, b: Scalar) =>
-        seqEq(a.validators, b.validators, textEq) && a.encoding == b.encoding
+        seqEq(a.validators, b.validators, textEq) && a.encoding == b.encoding &&
+          seqEq(a.patterns, b.patterns, textEq)
       case (Flag, Flag)                   => true
       case (Reference(n1), Reference(n2)) => n1 == n2
       case _                              => false
@@ -958,9 +1073,13 @@ object Tels extends Tels2:
         seqEq(a.validators, b.validators, textEq) &&
         a.description == b.description
 
+    // Patterns compare textually and in order: §20.3 makes textual identity the
+    // benign-no-op test for layer merge, and schema *identity* is spelling-based
+    // throughout — only the merge rule of §20.3 inspects a pattern's meaning.
     private def scalarEq(a: ScalarDefinition, b: ScalarDefinition): Boolean =
       a.name == b.name && seqEq(a.validators, b.validators, textEq) &&
-        a.description == b.description && a.encoding == b.encoding
+        a.description == b.description && a.encoding == b.encoding &&
+        seqEq(a.patterns, b.patterns, textEq)
 
     private def selectEq(a: SelectDefinition, b: SelectDefinition): Boolean =
       a.name == b.name &&
@@ -1071,12 +1190,21 @@ object Tels extends Tels2:
       val validators = children.bind: cc =>
         if cc.keyword == t"validate" then atomTexts(cc) else Array.empty[Text]
 
+      // §21.8: one RE2 pattern per `pattern` child, in declaration order. The
+      // value is read with `scalarAtomText` rather than `atomTexts` because
+      // §20.5 makes `pattern` a compound child whose regex may be carried as a
+      // source atom (§14) when it contains a hard-space run.
+      val patterns = children.bind: cc =>
+        if cc.keyword == t"pattern"
+        then scalarAtomText(cc).lay(Array.empty[Text])(Array(_))
+        else Array.empty[Text]
+
       var encoding: Optional[Text] = Unset
 
       children.each: cc =>
         if cc.keyword == t"encoding" && encoding.absent then encoding = firstAtomText(cc)
 
-      ScalarDefinition(scName, validators, descriptionOf(children), encoding)
+      ScalarDefinition(scName, validators, descriptionOf(children), encoding, patterns)
 
     private def parseSelect(c: Tel.Compound): SelectDefinition raises Tel.Error =
       val seName = nameOf(c).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
@@ -1358,10 +1486,15 @@ object Tels extends Tels2:
       val (members, validators) = membersFromBody(ch, 1, 2, 3)
       RecordDefinition(textAt(ch, 0).or(t""), members, validators, textAt(ch, 4))
 
-    // Scalar meta: name=0, validate=1, encoding=2, description=3.
+    // Scalar meta: name=0, validate=1, pattern=2, encoding=3, description=4.
+    // These indices track the member order of the `Scalar` record in the
+    // Axiom; inserting `pattern` at 2 shifted `encoding` and `description`.
     private def scalarFromElement(element: Tel.Element): ScalarDefinition =
       val ch = childrenOf(element)
-      ScalarDefinition(textAt(ch, 0).or(t""), textsAt(ch, 1), textAt(ch, 3), textAt(ch, 2))
+
+      ScalarDefinition
+        ( textAt(ch, 0).or(t""), textsAt(ch, 1), textAt(ch, 4), textAt(ch, 3),
+          textsAt(ch, 2) )
 
     // Select meta: name=0, SelectChild{variant=1, exclude=2, validate=3}, description=4.
     private def selectFromElement(element: Tel.Element): SelectDefinition =

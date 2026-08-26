@@ -1,3 +1,4 @@
+_coded
 _contact-schema
 _keyed-schema
 contact-document-missing-name
@@ -53,6 +54,9 @@ e218-layer-encoding-conflict
 e219-key-on-non-scalar
 e220-key-on-optional
 e221-two-key-fields
+e222-invalid-pattern
+e223-layer-pattern-not-contained
+e224-unconstrained-scalar
 e302-schema-too-many-atoms
 e306-schema-unknown-keyword
 e307-schema-missing-name
@@ -63,3 +67,4 @@ e310-schema-invalid-name
 e310-schema-plus-sigil
 e311-schema-flag-with-content
 e314-duplicate-key-value
+e315-pattern-value-mismatch

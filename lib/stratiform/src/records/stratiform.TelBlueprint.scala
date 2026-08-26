@@ -157,6 +157,11 @@ object TelBlueprint:
   // Scalar / Flag / Reference types are translated to a Value member
   // with the validator name (or built-in tag) used as the Intensional
   // lookup key. Optional fields (required = Loose) get the `?` suffix.
+  //
+  // Since §21.8 made `validate` optional, a scalar may be constrained by
+  // patterns alone; it then has no validator name to key on and falls back to
+  // `string`, which is right — a pattern narrows the accepted text but does not
+  // change its Scala representation.
   private def memberOf(field: Tels.Field, schema: Tels): Member =
     val optional = field.required == Tels.Polarity.Loose
     val suffix   = if optional then "?" else ""

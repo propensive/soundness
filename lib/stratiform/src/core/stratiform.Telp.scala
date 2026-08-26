@@ -149,7 +149,8 @@ object Telp:
         case scala.Some(record) => Tels.Struct(record.members, record.validators)
 
         case scala.None => schema.scalars.readable.find(_.name == name) match
-          case scala.Some(scalar) => Tels.Scalar(scalar.validators, scalar.encoding)
+          case scala.Some(scalar) =>
+            Tels.Scalar(scalar.validators, scalar.encoding, scalar.patterns)
 
           case scala.None =>
             if name == Tels.Builtin.Flag then Tels.Flag

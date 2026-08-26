@@ -1138,8 +1138,24 @@ object Tel extends Tel2:
               case Tel.Validator.Response.Invalid(_) =>
                 recoverNode(Reason.ValidatorRejected)(())
 
-          // §21.7: the encoding check runs after the declared validators,
-          // in the same AND-conjunction.
+          // §21.8: each declared pattern must match the *entire* value text,
+          // AND-conjoined, in declaration order. `Motif.matches` is already
+          // whole-input anchored, which is exactly the spec's `\A(?:p)\z`.
+          //
+          // A pattern that does not compile means assignment was asked of a
+          // schema that never passed `Tels.Validation` (which raises E222 for
+          // exactly this); report it as the schema fault it is rather than as
+          // a value mismatch, and never as satisfied.
+          scalarType.patterns.each: pattern =>
+            stratiform.Patterns.compile(pattern) match
+              case motif: praxinoscope.Motif =>
+                if !motif.matches(text) then recoverNode(Reason.PatternRejected)(())
+
+              case _ =>
+                recoverNode(Reason.InvalidPattern)(())
+
+          // §21.7: the encoding check runs after the declared validators and
+          // the declared patterns, in the same AND-conjunction.
           scalarType.encoding.let: name =>
             codecs.let: resolver =>
               resolver(name) match
@@ -1174,7 +1190,7 @@ object Tel extends Tel2:
               then abort(Tel.Error(Reason.ReferenceKindMismatch))
               else abort(Tel.Error(Reason.UnresolvedReference))
             . apply: scalarDef =>
-              Tels.Scalar(scalarDef.validators, scalarDef.encoding)
+              Tels.Scalar(scalarDef.validators, scalarDef.encoding, scalarDef.patterns)
           . apply: record =>
             Tels.Struct(record.members, record.validators)
 
@@ -1888,7 +1904,7 @@ object Tel extends Tel2:
       // meta-schema, recognised at resolution step 1 without network
       // access.
       val tels: Reference =
-        Reference(t"specification.tel", t"tels", Selector.Version(1, 0, 0))
+        Reference(t"specification.tel", t"tels", Selector.Version(2, 0, 0))
 
       // Total form check: `Unset` for any grammar violation, so the
       // pragma parser (and later re-classification) chooses the error
@@ -6527,6 +6543,13 @@ object Tel extends Tel2:
           m"a key field must be effectively required and non-repeatable"
 
         case MultipleKeyFields        => m"more than one member of the Struct is key-flagged"
+        case InvalidPattern           => m"a `pattern` value is not a valid RE2 pattern"
+
+        case PatternNotContained =>
+          m"a layer's patterns are not contained in the patterns they replace"
+
+        case UnconstrainedScalar =>
+          m"a ScalarDefinition declares neither `validate` nor `pattern`"
 
         case NonStructCompound =>
           m"the compound's type is not a Struct"
@@ -6543,6 +6566,7 @@ object Tel extends Tel2:
         case FlagWithContent          => m"the Flag-typed compound has atoms or compound children"
         case EncodingRejected         => m"a scalar value was rejected by its encoding's codec"
         case EncodingUnresolved       => m"a scalar's declared encoding is not bound to a codec"
+        case PatternRejected          => m"a scalar value does not match a declared pattern"
 
         case DuplicateKeyValue =>
           m"two keyed children of the same parent have equal key values"
@@ -6593,11 +6617,12 @@ object Tel extends Tel2:
           | ExcludeEmptiesRequired | LayerVariantAddition | LayerLoosenRequired
           | LayerLoosenRepeatable | ExcludeOutsideSelect | ReferenceKindMismatch
           | EncodingConflict | KeyOnNonScalar | KeyOnLooseMember | MultipleKeyFields
+          | InvalidPattern | PatternNotContained | UnconstrainedScalar
           | NonStructCompound | TooManyAtoms | AtomAtNonAssignablePos
           | AtomVariantUnmatched | AtomFlagKeywordMismatch | UnknownKeyword
           | RequiredMemberAbsent | NonRepeatableTooMany | MembersNonContiguous
           | ValidatorRejected | FlagWithContent | EncodingRejected | EncodingUnresolved
-          | DuplicateKeyValue =>
+          | DuplicateKeyValue | PatternRejected =>
           Recovery.IgnoreErroneousNode
 
         // E4xx decode reasons and implementation-reserved resource errors have
@@ -6660,6 +6685,9 @@ object Tel extends Tel2:
       case KeyOnNonScalar          extends Reason(219)
       case KeyOnLooseMember        extends Reason(220)
       case MultipleKeyFields       extends Reason(221)
+      case InvalidPattern          extends Reason(222)
+      case PatternNotContained     extends Reason(223)
+      case UnconstrainedScalar     extends Reason(224)
 
       // E3xx — validation errors per §19.3 / §21.
       case NonStructCompound       extends Reason(301)
@@ -6676,6 +6704,7 @@ object Tel extends Tel2:
       case EncodingRejected        extends Reason(312)
       case EncodingUnresolved      extends Reason(313)
       case DuplicateKeyValue       extends Reason(314)
+      case PatternRejected         extends Reason(315)
 
       // E4xx — decode errors (mapping a TEL value onto a Scala type). Surfaced via
       // `Foci`-based accrual at decode time, not the §19.5 parser/validation

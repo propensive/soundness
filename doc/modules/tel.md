@@ -148,6 +148,21 @@ names and rejecting a leading hyphen, and the numeric and enumerated kinds. A sc
 own validators, so a domain constraint lives in the schema rather than in every program that reads
 it.
 
+A scalar may also be constrained by one or more RE2 *patterns*, which match against the whole
+value and combine by intersection:
+
+```
+scalar Code
+  pattern [A-Z]{2}-[0-9]{4}
+```
+
+Patterns are the one constraint whose meaning a schema can inspect. A validator is just a name, so
+a layer may only ever add validators; but RE2 excludes backreferences and lookaround, which makes
+containment between two patterns decidable, so a layer may *replace* a scalar's patterns provided
+the new language is contained in the old. Widening is rejected, and so is a containment the
+analysis cannot prove within its budget — the check fails closed, keeping a layer from ever
+loosening what the base accepted.
+
 ### Recovering from errors
 
 An indentation-based language is easy to get slightly wrong, and a parser that gives up at the

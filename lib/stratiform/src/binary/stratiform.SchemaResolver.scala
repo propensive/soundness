@@ -43,7 +43,7 @@ import vacuous.*
 //
 //   0. embedded-schema lookup (a self-contained BinTEL container)
 //   1. built-in lookup — the `tels` meta-schema, matched by its pinned
-//      coordinate `specification.tel/tels:1.0.0` or its signature,
+//      coordinate `specification.tel/tels:2.0.0` or its signature,
 //      without network access
 //   2. content-addressed store lookup (tel schema cache, LIRA store, …)
 //   3. library lookup (schema documents already in hand)
@@ -63,7 +63,7 @@ object SchemaResolver:
   // palimpsest of `SchemaSignature.fromDocument` over the canonical
   // tels.tel source. Pinned as a golden value, and recomputed from the
   // corpus by the test suite.
-  val telsSignature: Text = t"xȉyǶĮ22pĺsľȦĆẉƥǒӟҢώẂώĎῩPqŞẽῺτsϋΊΦ"
+  val telsSignature: Text = t"ÔŀưḞ2żbτȚÆAĄſЬMẍỳϋῩJλḤӛ3ñẉḢkŻẋzǓĥ"
 
   // A resolution outcome: the schema composed with the pragma's layer
   // selection; its source document (`Unset` for the built-in axiom);
@@ -120,7 +120,7 @@ object SchemaResolver:
 
       val byCoordinate = pragma.reference.let: reference =>
         reference.isTels && (reference.selector.absent || reference.selector.match
-          case Tel.Pragma.Reference.Selector.Version(1, 0, 0) => true
+          case Tel.Pragma.Reference.Selector.Version(2, 0, 0) => true
           case _                                              => false)
       . or(false)
 

@@ -1,0 +1,9 @@
+tel 1.0 specification.tel/tels:2.0.0
+
+name bad-pattern
+
+scalar Code
+  pattern [unclosed
+
+document
+  field code Code

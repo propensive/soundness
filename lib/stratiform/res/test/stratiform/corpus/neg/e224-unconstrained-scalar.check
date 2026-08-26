@@ -24,7 +24,25 @@ Document {
                     keyword: "name",
                     atoms: [
                         Inline {
-                            text: "minimal-example",
+                            text: "unconstrained",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "scalar",
+                    atoms: [
+                        Inline {
+                            text: "Loose",
                             preceding_spaces: 1,
                         },
                     ],
@@ -51,26 +69,11 @@ Document {
                                     keyword: "field",
                                     atoms: [
                                         Inline {
-                                            text: "name",
+                                            text: "x",
                                             preceding_spaces: 1,
                                         },
                                         Inline {
-                                            text: "String",
-                                            preceding_spaces: 1,
-                                        },
-                                    ],
-                                    remark: None,
-                                    children: [],
-                                },
-                                Compound {
-                                    keyword: "field",
-                                    atoms: [
-                                        Inline {
-                                            text: "age",
-                                            preceding_spaces: 1,
-                                        },
-                                        Inline {
-                                            text: "String",
+                                            text: "Loose",
                                             preceding_spaces: 1,
                                         },
                                     ],
@@ -87,3 +90,5 @@ Document {
         },
     ],
 }
+errors:
+  E224 [0,0): Scalar declares neither `validate` nor `pattern`: scalar `Loose` declares neither `validate` nor `pattern`
