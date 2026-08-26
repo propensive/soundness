@@ -36,6 +36,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
+import denominative.dysasymptotics.linearSize
 
 // The schema-validity checks of §20.1 beyond keys and encodings: E207
 // (sigil validity), E202/E216 base-side select constraints, E206 layer
@@ -43,6 +44,13 @@ import charEncoders.utf8Encoder
 // `exclude` operation (§20.3) with E211 (no such variant) and E212
 // (emptying a SelectDefinition referenced by a required SelectRef).
 object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
+
+  // An accrual accumulator, so a single value's codes can be observed in the
+  // order they are reported rather than only the first. Codes are prepended
+  // (appending to a `List` is linear) and reversed on the way out.
+  case class Accrued(codes: List[Int] = Nil)(using Diagnostics)
+  extends Error(m"${codes.size} accrued codes"):
+    def +(code: Int): Accrued = Accrued(code :: codes)
 
   private def schemaOf(text: Text): Tels = Tels.Reconstructor.fromTel(text.read[Tel])
 
@@ -355,6 +363,13 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
         schema.scalars.readable.find(_.name == t"Code").get.patterns.readable.map(_.s).toList
       . assert(_ == List("[A-Z]{2}-[0-9]{4}"))
 
+      // An inherited empty list denotes Σ*, so a layer's first patterns are
+      // trivially contained and need no decision.
+      test(m"a layer's first patterns are accepted over an unpatterned base"):
+        schemaCode(coded(t"  validate string\n",
+            t"layer l\n  scalar Code\n    pattern [A-Z]{2}-[0-9]{4}\n"))
+      . assert(_ == 0)
+
       test(m"restating an identical list needs no containment decision"):
         // A word boundary is `Unverifiable`, so this only passes if the
         // textual-identity short-circuit fires before any decision is made.
@@ -417,3 +432,18 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
 
         (code(t"code 12\n"), code(t"code 123\n"))
       . assert(_ == (0, 315))
+
+      // §21.8: validators report E310 and patterns E315 independently, and a
+      // value may accumulate several. Under an accrual boundary both are seen,
+      // in the §21.7 order — validators first, then patterns.
+      test(m"a value failing both a validator and a pattern accrues 310 then 315"):
+        val schema = Tels.Validation.validate(schemaOf(t"tel 1.0\n\nname coded\n\nscalar Code\n" +
+            t"  validate identifier\n  pattern [0-9]+\n\ndocument\n  field code Code\n"))
+
+        validate[Tel.Focus](Accrued()):
+          case error: Tel.Error => accrual + error.reason.number
+        . protect:
+            Tel.Type.assign(t"code -Bad\n".read[Tel], schema, Tel.Validator.Registry.builtins)
+            ()
+        . codes.stdlib.toList.reverse
+      . assert(_ == scala.List(310, 315))
