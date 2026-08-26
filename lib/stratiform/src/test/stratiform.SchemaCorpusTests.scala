@@ -57,8 +57,8 @@ object SchemaCorpusTests extends Suite(m"Stratiform schema corpus tests"):
   val implemented: scala.collection.immutable.Set[Int] =
     scala.collection.immutable.Set
       ( 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217,
-        218, 219, 220, 221,
-        301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 314 )
+        218, 219, 220, 221, 222, 223, 224,
+        301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 314, 315 )
 
   case class Collected(codes: List[Int] = Nil)(using Diagnostics)
   extends Error(m"${codes.size} collected codes"):

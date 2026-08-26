@@ -1,0 +1,40 @@
+Document {
+    interpreter_directive: None,
+    pragma: Some(
+        Pragma {
+            version: (
+                1,
+                0,
+            ),
+            reference: Some(
+                "example.org/coded",
+            ),
+            layers: [],
+            signature: None,
+            sigil: None,
+        },
+    ),
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "code",
+                    atoms: [
+                        Inline {
+                            text: "XY-12",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}
+errors:
+  E315 [0,0): Scalar value does not match a declared pattern: `code` value `XY-12` does not match pattern `[A-Z]{2}-[0-9]{4}`

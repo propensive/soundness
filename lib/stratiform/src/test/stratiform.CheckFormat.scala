@@ -240,7 +240,15 @@ object CheckFormat:
 
     while cursor.position < cursor.input.length do
       cursor.skipLineWhitespace()
-      if cursor.peek() == 'E' then
+
+      // An entry starts with `E` followed by its digits; anything else is a
+      // continuation of the preceding message. The reference implementation
+      // wraps a diagnostic over several lines when it quotes the offending
+      // input (an invalid RE2 pattern, for instance, is echoed with a caret
+      // and a trailing `error:` line), so those lines are skipped wholesale.
+      // Discarding the rest of the line is also what keeps this loop
+      // advancing: without it, a non-`E` line would never be consumed.
+      if cursor.peek() == 'E' && isDigit(cursor.peekAhead(1)) then
         cursor.advance(1)
         val code = parseInt(cursor)
         cursor.skipInlineWhitespace()
@@ -254,6 +262,7 @@ object CheckFormat:
         cursor.skipInlineWhitespace()
         val message = cursor.takeUntil(_ == '\n')
         builder += ExpectedError(code, start, end, Text(message))
+      else cursor.takeUntil(_ == '\n')
 
       cursor.skipLineWhitespace()
 
@@ -264,6 +273,9 @@ object CheckFormat:
 
   private final class Cursor(val input: String, var position: Int):
     def peek(): Char = if position < input.length then input.charAt(position) else '\u0000'
+
+    def peekAhead(offset: Int): Char =
+      if position + offset < input.length then input.charAt(position + offset) else '\u0000'
 
     def advance(n: Int): Unit = position += n
 

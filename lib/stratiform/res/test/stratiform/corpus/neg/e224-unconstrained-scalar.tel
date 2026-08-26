@@ -1,0 +1,8 @@
+tel 1.0 specification.tel/tels:2.0.0
+
+name unconstrained
+
+scalar Loose
+
+document
+  field x Loose

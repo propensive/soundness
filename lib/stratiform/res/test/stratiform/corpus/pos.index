@@ -1,3 +1,4 @@
+_coded
 _keyed-schema
 attached-comment-to-compound
 attached-comment-to-tabulation
@@ -60,6 +61,7 @@ nested-three-levels
 no-trailing-newline
 only-comments
 parent-child-indent
+pattern-value-matches
 peer-nodes
 pragma-after-blank-lines
 pragma-after-interpreter-and-blank
@@ -84,6 +86,7 @@ remark-on-compound
 remark-payload-preserved
 remark-sigil-not-in-payload
 schema-layer-adds-encoding
+schema-layer-refines-pattern
 schema-layer-restates-encoding
 schema-minimal-valid
 schema-recursive-definition
@@ -95,6 +98,7 @@ schema-with-flag
 schema-with-key
 schema-with-layer
 schema-with-layer-types
+schema-with-pattern
 schema-with-select
 schema-with-sigil
 sigil-at-eol-not-remark
