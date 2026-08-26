@@ -1138,8 +1138,24 @@ object Tel extends Tel2:
               case Tel.Validator.Response.Invalid(_) =>
                 recoverNode(Reason.ValidatorRejected)(())
 
-          // §21.7: the encoding check runs after the declared validators,
-          // in the same AND-conjunction.
+          // §21.8: each declared pattern must match the *entire* value text,
+          // AND-conjoined, in declaration order. `Motif.matches` is already
+          // whole-input anchored, which is exactly the spec's `\A(?:p)\z`.
+          //
+          // A pattern that does not compile means assignment was asked of a
+          // schema that never passed `Tels.Validation` (which raises E222 for
+          // exactly this); report it as the schema fault it is rather than as
+          // a value mismatch, and never as satisfied.
+          scalarType.patterns.each: pattern =>
+            stratiform.Patterns.compile(pattern) match
+              case motif: praxinoscope.Motif =>
+                if !motif.matches(text) then recoverNode(Reason.PatternRejected)(())
+
+              case _ =>
+                recoverNode(Reason.InvalidPattern)(())
+
+          // §21.7: the encoding check runs after the declared validators and
+          // the declared patterns, in the same AND-conjunction.
           scalarType.encoding.let: name =>
             codecs.let: resolver =>
               resolver(name) match

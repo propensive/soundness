@@ -39,6 +39,7 @@ import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import praxinoscope.Motif
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -696,8 +697,11 @@ object Tels extends Tels2:
             newDef.encoding.let { layer => if layer != base then abort(Tel.Error(Reason.EncodingConflict)) }
             base
 
+          val mergedPatterns = mergePatterns(out(existing).patterns, newDef.patterns)
+
           out(existing) = ScalarDefinition(newDef.name, mergedValidators,
-              newDef.description.or(out(existing).description), mergedEncoding)
+              newDef.description.or(out(existing).description), mergedEncoding,
+              mergedPatterns)
         else
           if records.exists(_.name == newDef.name) || selects.exists(_.name == newDef.name)
           then abort(Tel.Error(Reason.DuplicateDefinition))
@@ -707,6 +711,68 @@ object Tels extends Tels2:
         i += 1
 
       Array.from(out)
+
+    // §20.3's checked replacement: a layer's `pattern` lines *replace* the
+    // inherited list rather than appending to it, subject to the containment
+    // premise `L(⋂new) ⊆ L(⋂old)`. Patterns are the one constraint whose
+    // semantics the composition rules can inspect — validator names are opaque
+    // and therefore append-only — and RE2's decidable containment is what makes
+    // inspecting them sound.
+    //
+    // The first three cases avoid asking the (potentially budget-exhausting)
+    // containment question at all.
+    private def mergePatterns(inherited: Array[Text]^{}, replacing: Array[Text]^{})
+    :   Array[Text]^{} raises Tel.Error =
+
+      // A layer with no `pattern` lines inherits the base's list unchanged.
+      if replacing.nil then inherited
+
+      // Restating a textually identical list is a benign no-op, and needs no
+      // containment decision — which is what lets a layer restate a pattern the
+      // analysis could not decide.
+      else if sameTexts(replacing, inherited) then inherited
+
+      // An inherited empty list denotes Σ*, so any first patterns are contained.
+      else if inherited.nil then replacing
+
+      else if contained(replacing, inherited) then replacing
+
+      // Fail closed, retaining the inherited list. `raise` rather than `abort`
+      // so that under an accrual boundary §20.3's "retain the inherited list"
+      // is literally what happens; under the default fail-fast tactic this
+      // aborts exactly as the neighbouring E218 check does.
+      else raise(Tel.Error(Reason.PatternNotContained)) yet inherited
+
+    // `∀ Pᵢ ∈ inherited : L(⋂replacing) ⊆ L(Pᵢ)`, which §20.3 gives as the way
+    // to decide `L(⋂new) ⊆ L(⋂old)`.
+    //
+    // Every failure mode is treated as *not proven* and so reports E223: a
+    // budget exhaustion (§21.8 requires exactly this), a word boundary the
+    // analysis cannot model, or a pattern that does not compile — the last
+    // being unreachable once `checkBase` has run, but fail-closed regardless.
+    private def sameTexts(left: Array[Text]^{}, right: Array[Text]^{}): Boolean =
+      left.length == right.length && (0 until left.length).forall: index =>
+        left.readUnchecked(index) == right.readUnchecked(index)
+
+    private def contained(replacing: Array[Text]^{}, inherited: Array[Text]^{}): Boolean =
+      val motifs = scala.collection.mutable.ArrayBuffer.empty[Motif]
+      var compiled = true
+
+      replacing.each: pattern =>
+        Patterns.compile(pattern) match
+          case motif: Motif => motifs += motif
+          case _            => compiled = false
+
+      if !compiled then false else
+        val candidates = motifs.to(List)
+        var holds = true
+
+        inherited.each: pattern =>
+          if holds then
+            holds = Patterns.compile(pattern).lay(false): cover =>
+              safely[Motif.Error](cover.subsumes(candidates)).or(false)
+
+        holds
 
     private def mergeSelectList
       ( base:    Array[SelectDefinition]^{},
@@ -803,8 +869,40 @@ object Tels extends Tels2:
         if select.variants.nil then abort(Tel.Error(Reason.EmptySelectVariants))
         if !select.excludes.nil then abort(Tel.Error(Reason.ExcludeOutsideSelect))
 
+      // §21.8: every declared pattern, base-side or layer-side, must be valid
+      // RE2 (E222). Checking here — before `Layers.compose` runs — is what
+      // guarantees E222 precedes E223: the containment decision of §20.3 must
+      // never be asked about a pattern that does not compile. Like an
+      // unresolved encoding (E313), an unparseable pattern is never treated as
+      // satisfied; the schema is invalid instead.
+      checkPatterns(schema.scalars)
+      schema.layers.each { layer => checkPatterns(layer.scalars) }
+
+      // E224: a `scalar` declaration must carry at least one `validate` or
+      // `pattern` line. The disjunction is not structurally expressible in the
+      // `tels` meta-schema (both members are optional there), so it is checked
+      // here. Layer scalars are exempt: a same-name layer scalar that only
+      // adds an `encoding` is legal refinement, and one that introduces a
+      // fresh definition is caught post-composition by `checkComposed`.
+      schema.scalars.each: definition =>
+        if definition.validators.nil && definition.patterns.nil
+        then abort(Tel.Error(Reason.UnconstrainedScalar))
+
+    private def checkPatterns(scalars: Array[ScalarDefinition]^{}): Unit raises Tel.Error =
+      scalars.each: definition =>
+        definition.patterns.each: pattern =>
+          if Patterns.compile(pattern).absent then abort(Tel.Error(Reason.InvalidPattern))
+
     private def checkComposed(composed: Tels): Tels raises Tel.Error =
       checkStruct(composed.document, composed)
+
+      // E224 again, post-composition, to catch a scalar a layer introduced
+      // with neither constraint. A same-name layer scalar merges into a base
+      // that `checkBase` already vetted, so only genuinely new definitions can
+      // fail here.
+      composed.scalars.each: definition =>
+        if definition.validators.nil && definition.patterns.nil
+        then abort(Tel.Error(Reason.UnconstrainedScalar))
 
       composed.records.each: record =>
         checkStruct(Struct(record.members, record.validators), composed)
