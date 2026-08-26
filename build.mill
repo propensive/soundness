@@ -1460,6 +1460,10 @@ object clavichord extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
+
 object cataclysm extends Library:
   object core extends Component(zephyrine.core, gossamer.core, gossamer.lexicon, turbulence.core,
       contingency.core, vacuous.core, fulminate.core, denominative.core, hellenism.core,

@@ -60,6 +60,7 @@ object Tests extends Suite(m"Soundness tests"):
     cataclysm.Tests()
     charisma.Tests()
     chiaroscuro.Tests()
+    clavichord.Tests()
     coaxial.Tests()
     _root_.contextual.Tests()
     contingency.Tests()
