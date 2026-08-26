@@ -106,6 +106,13 @@ object Pike:
       case Node.Anchor.WordBoundary    => word(at) != wordBefore(at)
       case Node.Anchor.NonWordBoundary => word(at) == wordBefore(at)
 
+      // Under the `m` flag, `^` and `$` match either end of the input or a newline boundary.
+      case Node.Anchor.LineStart =>
+        at == 0 || symbolizer.before(input, at) == '\n'.toInt
+
+      case Node.Anchor.LineEnd =>
+        at == length || symbolizer.symbol(input, at) == '\n'.toInt
+
     def add(list: Threads, pc: Int, saved: scala.Array[Int], at: Int): Unit =
       if !list.marked(pc) then
         list.mark(pc)

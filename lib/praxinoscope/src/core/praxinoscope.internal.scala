@@ -67,6 +67,8 @@ object internal:
       case Node.Anchor.End             => '{Node.Anchor.End}
       case Node.Anchor.WordBoundary    => '{Node.Anchor.WordBoundary}
       case Node.Anchor.NonWordBoundary => '{Node.Anchor.NonWordBoundary}
+      case Node.Anchor.LineStart       => '{Node.Anchor.LineStart}
+      case Node.Anchor.LineEnd         => '{Node.Anchor.LineEnd}
 
   given op: ToExpr[Program.Op]:
     def apply(op: Program.Op)(using Quotes): Expr[Program.Op] = op match
@@ -117,7 +119,11 @@ object internal:
 
     while opIndex < ops.length do
       ops(opIndex) match
-        case Program.Op.Test(Node.Anchor.WordBoundary | Node.Anchor.NonWordBoundary, _) =>
+        // The generated DFA has no notion of the symbol before the cursor, so a
+        // context-dependent anchor falls back to the Pike VM.
+        case Program.Op.Test
+             ( Node.Anchor.WordBoundary | Node.Anchor.NonWordBoundary | Node.Anchor.LineStart
+               | Node.Anchor.LineEnd, _ ) =>
           unsupported = true
 
         case _ =>
