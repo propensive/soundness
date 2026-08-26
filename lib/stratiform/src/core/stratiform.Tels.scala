@@ -286,9 +286,13 @@ object Tels extends Tels2:
           field("description", stringRef, required = Loose)),
 
         record("Scalar",
-          "A scalar declaration: a named scalar definition with one or more validators and an optional encoding.",
+          "A scalar declaration: a named scalar definition constrained by validators and/or RE2 patterns, with an optional encoding.",
           field("name",        typeNameRef),
-          field("validate",    identifierRef, repeatable = Loose),
+          // §21.8 made `validate` optional and added `pattern`; the "at least
+          // one of the two" rule (E224) is not structurally expressible, so
+          // both members are optional here and the disjunction is checked.
+          field("validate",    identifierRef, required = Loose, repeatable = Loose),
+          field("pattern",     stringRef,     required = Loose, repeatable = Loose),
           field("encoding",    identifierRef, required = Loose),
           field("description", stringRef, required = Loose)),
 
@@ -1384,10 +1388,15 @@ object Tels extends Tels2:
       val (members, validators) = membersFromBody(ch, 1, 2, 3)
       RecordDefinition(textAt(ch, 0).or(t""), members, validators, textAt(ch, 4))
 
-    // Scalar meta: name=0, validate=1, encoding=2, description=3.
+    // Scalar meta: name=0, validate=1, pattern=2, encoding=3, description=4.
+    // These indices track the member order of the `Scalar` record in the
+    // Axiom; inserting `pattern` at 2 shifted `encoding` and `description`.
     private def scalarFromElement(element: Tel.Element): ScalarDefinition =
       val ch = childrenOf(element)
-      ScalarDefinition(textAt(ch, 0).or(t""), textsAt(ch, 1), textAt(ch, 3), textAt(ch, 2))
+
+      ScalarDefinition
+        ( textAt(ch, 0).or(t""), textsAt(ch, 1), textAt(ch, 4), textAt(ch, 3),
+          textsAt(ch, 2) )
 
     // Select meta: name=0, SelectChild{variant=1, exclude=2, validate=3}, description=4.
     private def selectFromElement(element: Tel.Element): SelectDefinition =

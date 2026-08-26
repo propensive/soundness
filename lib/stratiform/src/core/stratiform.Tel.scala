@@ -1888,7 +1888,7 @@ object Tel extends Tel2:
       // meta-schema, recognised at resolution step 1 without network
       // access.
       val tels: Reference =
-        Reference(t"specification.tel", t"tels", Selector.Version(1, 0, 0))
+        Reference(t"specification.tel", t"tels", Selector.Version(2, 0, 0))
 
       // Total form check: `Unset` for any grammar violation, so the
       // pragma parser (and later re-classification) chooses the error

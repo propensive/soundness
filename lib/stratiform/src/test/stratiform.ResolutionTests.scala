@@ -211,7 +211,7 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
 
       test(m"a mismatched tels version pin does not answer as built-in"):
         val reference = Tel.Pragma.Reference
-         ( t"specification.tel", t"tels", Tel.Pragma.Reference.Selector.Version(2, 0, 0) )
+         ( t"specification.tel", t"tels", Tel.Pragma.Reference.Selector.Version(3, 0, 0) )
 
         capture[Tels.Resolution.Error](SchemaResolver.resolve(pragma(reference = reference)))
         . reason

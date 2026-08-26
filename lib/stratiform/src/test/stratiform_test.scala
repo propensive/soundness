@@ -1931,7 +1931,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == List(t"publishing", t"maven"))
 
       test(m"the pinned tels coordinate is recognised"):
-        pragmaOf(t"tel 1.0 specification.tel/tels:1.0.0\nname Alice\n")
+        pragmaOf(t"tel 1.0 specification.tel/tels:2.0.0\nname Alice\n")
         . let(_.reference).let(_.isTels)
       . assert(_ == true)
 
@@ -2917,7 +2917,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         val digest = Tel.Type.assign(telBytes.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels)
         digest.data.readable.toSeq.map(b => f"${b & 0xff}%02x").mkString
-      . assert(_ == "780979f62e3232703a733e260689a5d2dfa2ce82ce0ee950715ebdfac473cb8a")
+      . assert(_ == "d440b01e327c62c41ac641047f2c4d8df3cbe94abb24db33f189226b7b8b7ad3")
 
     suite(m"BinTEL §6.2 self-contained mode"):
       val schemaDoc = """name greeting

@@ -108,12 +108,15 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
           ( "keyword", "type", "optional", "required", "repeatable", "irrepeatable", "key",
             "default", "description" ))
 
-      test(m"Scalar record members put encoding at index 2"):
+      // §21.8 inserted `pattern` at index 2, shifting `encoding` to 3. The
+      // `SemanticReconstructor` reads these positions by index, so this order
+      // is load-bearing, not decorative.
+      test(m"Scalar record members put pattern at index 2, before encoding"):
         val scalar = Tels.Axiom.tels.records.readable.find(_.name == t"Scalar").get
         scalar.members.readable.toList.map:
           case f: Tels.Field => f.keyword.s
           case _             => "?"
-      . assert(_ == List("name", "validate", "encoding", "description"))
+      . assert(_ == List("name", "validate", "pattern", "encoding", "description"))
 
     suite(m"Field declaration atom phase (§20.5)"):
       test(m"a trailing key atom sets the flag, not the default"):
