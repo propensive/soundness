@@ -470,3 +470,50 @@ object Tests extends Suite(m"Praxinoscope tests"):
       test(m"Word boundaries are unverifiable"):
         capture[Motif.Error](motif(t"\\bfoo\\b").subsumes(motif(t"foo")))
       . assert(_.reason == Reason.Unverifiable)
+
+    suite(m"Containment of an intersection"):
+      def motif(pattern: Text): Motif = Motif.parse(pattern)
+
+      // One conjunct also admits two digits and the other also admits six, so neither alone is
+      // contained in the cover; only their intersection is. This is the case a pairwise-only
+      // decision procedure gets wrong.
+      test(m"An intersection narrower than either conjunct is contained"):
+        motif(t"[A-Z]{2}-[0-9]{4}").subsumes
+         (List(motif(t"[A-Z]{2}-[0-9]{4}|[A-Z]{2}-[0-9]{2}"),
+               motif(t"[A-Z]{2}-[0-9]{4}|[A-Z]{2}-[0-9]{6}")))
+      . assert(_ == true)
+
+      test(m"Neither conjunct alone is contained"):
+        motif(t"[A-Z]{2}-[0-9]{4}").subsumes(motif(t"[A-Z]{2}-[0-9]{4}|[A-Z]{2}-[0-9]{2}"))
+      . assert(_ == false)
+
+      // Both conjuncts admit `AB-X-1234`, which the cover does not: a genuine widening that
+      // survives intersection.
+      test(m"An intersection wider than the cover is not contained"):
+        motif(t"[A-Z]{2}-[0-9]{4}")
+        . subsumes(List(motif(t"[A-Z]{2}-.*"), motif(t".*-[0-9]{4}")))
+      . assert(_ == false)
+
+      test(m"A singleton intersection agrees with the pairwise form"):
+        motif(t"[a-z]+").subsumes(List(motif(t"[a-z]{2,}")))
+      . assert(_ == true)
+
+      test(m"A widening intersection is not contained"):
+        motif(t"(EU|UK)-[0-9]{4}").subsumes(List(motif(t"[A-Z]{2}-[0-9]{4}")))
+      . assert(_ == false)
+
+      test(m"An unsatisfiable intersection is contained in anything"):
+        motif(t"zzz").subsumes(List(motif(t"[a-m]+"), motif(t"[n-z]+")))
+      . assert(_ == true)
+
+      test(m"A nullable intersection is contained in a nullable cover"):
+        motif(t"a*").subsumes(List(motif(t"a*"), motif(t"[ab]*")))
+      . assert(_ == true)
+
+      test(m"An empty input escaping the cover is not contained"):
+        motif(t"a+").subsumes(List(motif(t"a*"), motif(t"[ab]*")))
+      . assert(_ == false)
+
+      test(m"A word boundary in any conjunct is unverifiable"):
+        capture[Motif.Error](motif(t"foo").subsumes(List(motif(t"foo"), motif(t"\\bfoo\\b"))))
+      . assert(_.reason == Reason.Unverifiable)

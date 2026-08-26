@@ -128,10 +128,10 @@ object Subsumption:
 
       index += 1
 
-  // One representative symbol per equivalence class of the two programs' transition ranges:
-  // within a class, every `Symbol` op either accepts all members or none, so exploring one
+  // One representative symbol per equivalence class of the programs' transition ranges: within
+  // a class, every `Symbol` op either accepts all members or none, so exploring one
   // representative per class covers the whole alphabet.
-  private def representatives(first: Program, second: Program): scala.Array[Int] =
+  private def representatives(programs: scala.List[Program]): scala.Array[Int] =
     val cuts = HashSet[Int](0)
 
     def collect(program: Program): Unit =
@@ -152,56 +152,124 @@ object Subsumption:
 
         index += 1
 
-    collect(first)
-    collect(second)
+    programs.foreach(collect(_))
     val result = cuts.toArray
     java.util.Arrays.sort(result)
     result
 
-  // Decides whether every input matched by `second` is also matched by `first`, by exploring
-  // `second` pc-by-pc against an on-the-fly determinization of `first` and failing on any
-  // reachable point where `second` accepts and `first` does not.
+  // Every combination taking one pc from each candidate's option list: the states of the
+  // candidates' product automaton. Empty if any candidate has no option, which is exactly the
+  // case where no word can continue through all of them at once.
+  private def combinations(options: scala.Array[scala.List[Int]]): scala.List[scala.List[Int]] =
+    var result: scala.List[scala.List[Int]] = scala.List(scala.Nil)
+    var index = options.length - 1
+
+    while index >= 0 do
+      val tails = result
+      var built: scala.List[scala.List[Int]] = scala.Nil
+      var choices = options(index)
+
+      while choices != scala.Nil do
+        var rest = tails
+
+        while rest != scala.Nil do
+          built = (choices.head :: rest.head) :: built
+          rest = rest.tail
+
+        choices = choices.tail
+
+      result = built
+      index -= 1
+
+    result
+
+  // Decides whether every input matched by `second` is also matched by `first`.
   def subsumes(first: Program, second: Program): Boolean raises Motif.Error =
-    check(first)
-    check(second)
+    subsumes(first, second :: Nil)
 
-    val cover = Analysis(first)
-    val candidate = Analysis(second)
-    val reps = representatives(first, second)
+  // Decides whether every input matched by *all* of `candidates` is also matched by `cover`,
+  // i.e. `L(⋂candidates) ⊆ L(cover)`. RE2 has no intersection operator, so an intersection can
+  // only arise from several patterns applied together; deciding containment for one directly
+  // avoids having to express `⋂candidates` as a single pattern, which is not always possible.
+  //
+  // Each candidate is explored pc-by-pc while `cover` is determinized on the fly. That asymmetry
+  // is the point: a word is in `⋂candidates` iff *every* candidate has some accepting path on
+  // it, so a tuple of individual candidate paths is exactly the right witness; whereas a word
+  // escapes `cover` only if *no* cover path accepts, which needs the subset construction.
+  // Containment fails iff some reachable product state accepts in every candidate but not in
+  // `cover`.
+  def subsumes(cover: Program, candidates: List[Program]): Boolean raises Motif.Error =
+    check(cover)
+    candidates.each(check(_))
 
-    if candidate.accepts(0 :: Nil, true) && !cover.accepts(0 :: Nil, true) then false else
-      val visited = HashSet[(Int, List[Int])]()
-      val queue = ArrayBuffer[(Int, List[Int])]()
+    val covering = Analysis(cover)
+    val candidacy = candidates.stdlib.map(Analysis(_)).toArray
+    val reps = representatives(cover :: candidates.stdlib.to(scala.List))
+    val width = candidacy.length
+
+    def everyCandidateAccepts(raw: scala.Array[List[Int]]): Boolean =
+      var index = 0
+      var accepted = true
+
+      while accepted && index < width do
+        accepted = candidacy(index).accepts(raw(index), false)
+        index += 1
+
+      accepted
+
+    // An empty candidate list intersects to Σ*, which only an everything-matching `cover`
+    // contains. Rather than decide that case, report not-contained: callers reach this
+    // only by asking a degenerate question, and failing closed is always the safe answer.
+    if width == 0 then false
+    else if candidacy.forall(_.accepts(0 :: Nil, true)) && !covering.accepts(0 :: Nil, true)
+    then false
+    else
+      val visited = HashSet[(scala.List[Int], List[Int])]()
+      val queue = ArrayBuffer[(scala.List[Int], List[Int])]()
       var head = 0
       var result = true
 
-      val coverStart = cover.symbols(0 :: Nil, true)
+      val coverStart = covering.symbols(0 :: Nil, true)
 
-      candidate.symbols(0 :: Nil, true).each: pc =>
-        if visited.add((pc, coverStart)) then queue += ((pc, coverStart))
+      combinations(candidacy.map(_.symbols(0 :: Nil, true).stdlib.to(scala.List))).foreach: pcs =>
+        if visited.add((pcs, coverStart)) then queue += ((pcs, coverStart))
 
       while result && head < queue.size do
         if visited.size > maxStates then abort(Motif.Error(0, BudgetExceeded))
-        val (pc, coverSet) = queue(head)
+        val (pcs, coverSet) = queue(head)
         head += 1
-        val bounds = candidate.bounds(pc)
+        val current = pcs.toArray
         var rep = 0
 
         while result && rep < reps.length do
           val symbol = reps(rep)
           rep += 1
 
-          if within(bounds, symbol) then
-            val nextRaw = candidate.step(pc :: Nil, symbol)
-            val coverRaw = cover.step(coverSet, symbol)
+          // A word continues through the intersection only where every candidate admits the
+          // symbol; where one does not, no word in `⋂candidates` passes through this state.
+          var index = 0
+          var admitted = true
 
-            if candidate.accepts(nextRaw, false) && !cover.accepts(coverRaw, false)
+          while admitted && index < width do
+            admitted = within(candidacy(index).bounds(current(index)), symbol)
+            index += 1
+
+          if admitted then
+            val nextRaw = scala.Array.tabulate(width): index =>
+              candidacy(index).step(current(index) :: Nil, symbol)
+
+            val coverRaw = covering.step(coverSet, symbol)
+
+            if everyCandidateAccepts(nextRaw) && !covering.accepts(coverRaw, false)
             then result = false
             else
-              val coverNext = cover.symbols(coverRaw, false)
+              val coverNext = covering.symbols(coverRaw, false)
 
-              candidate.symbols(nextRaw, false).each: pc2 =>
-                if visited.add((pc2, coverNext)) then queue += ((pc2, coverNext))
+              val onward = scala.Array.tabulate(width): index =>
+                candidacy(index).symbols(nextRaw(index), false).stdlib.to(scala.List)
+
+              combinations(onward).foreach: pcs2 =>
+                if visited.add((pcs2, coverNext)) then queue += ((pcs2, coverNext))
 
       result
 
@@ -213,7 +281,7 @@ object Subsumption:
 
     val left = Analysis(first)
     val right = Analysis(second)
-    val reps = representatives(first, second)
+    val reps = representatives(scala.List(first, second))
 
     if left.accepts(0 :: Nil, true) && right.accepts(0 :: Nil, true) then true else
       val visited = HashSet[(Int, Int)]()
