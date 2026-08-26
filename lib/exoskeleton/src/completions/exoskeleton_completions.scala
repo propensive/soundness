@@ -74,18 +74,28 @@ def execute[result <: Termination: scala.Precise]
     case completion: Completion => Execution.of[result](Exit.Ok, statuses)
 
     case invocation: Invocation =>
-      // The guard for required flags: every `require()` call in the pure section accrued its
-      // missing flag on the invocation, so they can all be reported together, and the block —
-      // within which a `Requisite` unwraps unconditionally — is never run. Exit status 2, by
-      // the usage-error convention.
+      // The guard for required flags: every `require()` or `validate()` call in the pure
+      // section accrued its missing flag or decode fault on the invocation, so they can all be
+      // reported together, and the block — within which a `Requisite` unwraps unconditionally —
+      // is never run. Exit status 2, by the usage-error convention.
       val missing = invocation.missingRequisites
+      val invalid = invocation.faults
 
-      if missing.nil
+      if missing.nil && invalid.nil
       then Execution.of[result](block(using !!)(using invocation).exit, statuses)
       else
         given Stdio = invocation.stdio
-        Err.println(t"The following required options were not specified:")
-        missing.each { flag => Err.println(t"  ${Flag.serialize(flag.name)}") }
+
+        if !missing.nil then
+          Err.println(t"The following required options were not specified:")
+          missing.each { flag => Err.println(t"  ${Flag.serialize(flag.name)}") }
+
+        if !invalid.nil then
+          Err.println(t"The following options were given invalid values:")
+
+          invalid.each: (flag, message) =>
+            Err.println(t"  ${Flag.serialize(flag.name)}: $message")
+
         Execution.of[result](Exit.Fail(2), statuses)
 
 def explain(explanation: (Optional[Text] aka "prior") ?=> Optional[Text])(using cli: Cli): Unit =

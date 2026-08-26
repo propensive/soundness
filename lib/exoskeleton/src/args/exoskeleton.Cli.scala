@@ -96,6 +96,14 @@ trait Cli extends Console, caps.ExclusiveCapability:
   // offer suggestions — completing a command whose required flags are not yet all present is
   // the common case.
   def demand(flag: Flag, present: Boolean): Unit = ()
+
+  // Records that `flag` was specified but its operand could not be decoded, with the reason.
+  // Like `demand`, faults are accrued for `execute` to report together, and never preclude
+  // completions.
+  def fault(flag: Flag, message: Text): Unit = ()
+
+  // The flag's raw operand arguments, or `Unset` if the flag was not specified at all.
+  def locate(flag: Flag): Optional[List[Argument]] = Unset
   def explain(update: (Optional[Text] aka "prior") ?=> Optional[Text]): Unit = ()
 
   // Records a successful `Subcommand` match during dispatch; `matches` is the contiguous

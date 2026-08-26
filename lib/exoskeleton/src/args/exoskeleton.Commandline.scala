@@ -47,6 +47,12 @@ case class Commandline
   def at(flag: Flag): List[Argument] =
     parameters.seek { (key, value) => flag.matches(key) }.let(_(1)).or(Nil)
 
+  // Unlike `at`, distinguishes a flag which is absent (`Unset`) from one which is present with
+  // no operands (`Nil`), which `validate` needs in order to tell a missing flag from a
+  // malformed one.
+  def locate(flag: Flag): Optional[List[Argument]] =
+    parameters.seek { (key, value) => flag.matches(key) }.let(_(1))
+
   def read[operand: Interpretable](flag: Flag)
     ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
   :   Optional[operand] =

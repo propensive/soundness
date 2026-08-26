@@ -1016,6 +1016,15 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           try invoke(app)() yet t"returned" catch case error: MissingFlagError => t"raised"
         .assert(_ == t"raised")
 
+        class Wait(val text: Text)
+
+        given Wait is Interpretable:
+          override def placeholder: Optional[Text] = t"seconds"
+
+          def interpret(arguments: List[Argument]): Optional[Wait] = arguments match
+            case argument :: _ => Wait(argument())
+            case _             => Unset
+
         val requiredTree: Help =
           helpTree
            (t"reqtool",
@@ -1024,6 +1033,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             summon[Stdio],
             Login(t"tester", Unset)):
             Flag[Text](t"home", description = t"the home directory").require()
+            Flag[Wait](t"wait", description = t"how long to wait").validate()
             execute(Exit.Ok)
 
         test(m"Required flags are marked in the help tree"):
@@ -1033,3 +1043,77 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         test(m"Required flags are annotated in rendered help"):
           summon[Help is Printable].print(requiredTree, stdios.muteStdio.termcap)
         .assert(_.contains(t"the home directory (required)"))
+
+        test(m"A validated flag's operand placeholder is taken from its Interpretable"):
+          requiredTree.parameters.filter(_.name == t"--wait").map(_.operand)
+        .assert(_ == List(t"seconds"))
+
+        test(m"A validated flag is marked required in the help tree"):
+          requiredTree.parameters.filter(_.name == t"--wait").map(_.required)
+        .assert(_ == List(true))
+
+        test(m"A validated flag with a well-formed value yields it inside execute"):
+          def app(using cli: Cli): Execution =
+            val count: Requisite[Int] = Flag[Int](t"count").validate()
+            execute(if count() == 42 then Exit.Ok else Exit.Fail(1))
+
+          invoke(app)(t"--count", t"42")(0)
+        .assert(_ == Exit.Ok)
+
+        test(m"A validated flag's decoded value is visible in the pure section"):
+          def app(using cli: Cli): Execution =
+            val count = Flag[Int](t"count").validate()
+            if count.value == 42 then execute(Exit.Ok) else execute(Exit.Fail(1))
+
+          invoke(app)(t"--count", t"42")(0)
+        .assert(_ == Exit.Ok)
+
+        test(m"A malformed value precludes execution with a usage error"):
+          def app(using cli: Cli): Execution =
+            Flag[Int](t"count").validate()
+            execute(Exit.Ok)
+
+          invoke(app)(t"--count", t"4x")(0)
+        .assert(_ == Exit.Fail(2))
+
+        test(m"A malformed value accrues a fault with the decoder's explanation"):
+          def app(using cli: Cli): Execution =
+            Flag[Int](t"count").validate()
+            execute(Exit.Ok)
+
+          invoke(app)(t"--count", t"4x")(1).faults.map(_(1))
+        .assert(_.prim.let(_.contains(t"not a valid int")).or(false))
+
+        test(m"A missing validated flag is accrued as missing, not as a fault"):
+          def app(using cli: Cli): Execution =
+            Flag[Int](t"count").validate()
+            execute(Exit.Ok)
+
+          val (exit, invocation) = invoke(app)()
+          (exit, invocation.missingRequisites.map(_.name), invocation.faults)
+        .assert(_ == (Exit.Fail(2), List(t"count"), Nil))
+
+        test(m"Validating a well-formed flag inside execute yields the value directly"):
+          def app(using cli: Cli): Execution =
+            execute:
+              val count: Int = Flag[Int](t"count").validate()
+              if count == 42 then Exit.Ok else Exit.Fail(1)
+
+          invoke(app)(t"--count", t"42")(0)
+        .assert(_ == Exit.Ok)
+
+        test(m"Validating a malformed flag inside execute raises InvalidFlagError"):
+          def app(using cli: Cli): Execution =
+            execute(Flag[Int](t"count").validate() yet Exit.Ok)
+
+          try invoke(app)(t"--count", t"4x") yet t"returned"
+          catch case error: InvalidFlagError => t"raised"
+        .assert(_ == t"raised")
+
+        test(m"Validating a missing flag inside execute raises MissingFlagError"):
+          def app(using cli: Cli): Execution =
+            execute(Flag[Int](t"count").validate() yet Exit.Ok)
+
+          try invoke(app)() yet t"returned"
+          catch case error: MissingFlagError => t"raised"
+        .assert(_ == t"raised")

@@ -63,6 +63,9 @@ package interpreters:
     def focus(commandline: Commandline): Optional[Argument] = commandline.focus
     def find(commandline: Commandline, flag: Flag): List[Argument] = commandline.at(flag)
 
+    override def locate(commandline: Commandline, flag: Flag): Optional[List[Argument]] =
+      commandline.locate(flag)
+
 
     def read[operand: Interpretable](commandline: Commandline, flag: Flag)
       ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
@@ -76,6 +79,9 @@ package interpreters:
     def interpret(arguments: List[Argument]): Commandline = interpreter(arguments, false)
     def focus(commandline: Commandline): Optional[Argument] = commandline.focus
     def find(commandline: Commandline, flag: Flag): List[Argument] = commandline.at(flag)
+
+    override def locate(commandline: Commandline, flag: Flag): Optional[List[Argument]] =
+      commandline.locate(flag)
 
 
     def read[operand: Interpretable](commandline: Commandline, flag: Flag)

@@ -46,8 +46,9 @@ object Interpretable:
     def interpret(arguments: List[Argument]): Unit = ()
 
   given decoder: [operand: Decodable in Text] => operand is Interpretable = arguments =>
-    arguments.stdlib.headOption.absolve match
+    arguments.stdlib.headOption match
       case Some(value) => value().as[operand]
+      case None        => Unset
 
 trait Interpretable extends Typeclass:
   def operand: Boolean = true

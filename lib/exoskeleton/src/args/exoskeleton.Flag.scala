@@ -34,9 +34,12 @@ package exoskeleton
 
 import scala.language.experimental.pureFunctions
 
+import scala.caps
 import scala.compiletime.*
 
 import anticipation.*
+import contingency.*
+import fulminate.*
 import denominative.*
 import gossamer.*
 import prepositional.*
@@ -132,6 +135,86 @@ extends Topical:
 
       case _ =>
         Requisite(this, value)
+
+
+  // Validating a flag checks both its presence and its format: the operand arguments are
+  // interpreted with the `Topic`'s `Interpretable` — the typeclass specialized for command-line
+  // parameters — summoned at the expansion site as a context function over the tactic its
+  // decoding may raise through, so that no `Tactic` is needed at the call site; interpretation
+  // runs against a tactic conjured for it alone. (The summoned context function must be applied
+  // within a single expression each time — capture checking cannot name the instance's fresh
+  // capture in any storable type — hence the two separate summons below.) Like `require`,
+  // failures in the pure section are accrued — as missing or as faults, with the interpreter's
+  // own explanation where it raises one — and reported together by `execute`; inside `execute`,
+  // a missing flag raises `MissingFlagError` and a malformed one `InvalidFlagError`,
+  // immediately.
+  transparent inline def validate()
+    ( using cli:         Cli,
+            interpreter: Interpreter,
+            suggestions: (? <: Topic) is Discoverable = Discoverable.noSuggestions )
+  :   Requisite[Topic] | Topic =
+
+    given Diagnostics = Diagnostics.omit
+
+    // Reading the operand name cannot raise, so the deferred tactic is conjured trivially; the
+    // union in `Optional[Optional[Text]]` flattens to `Optional[Text]`.
+    val operandName: Optional[Text] =
+      safely[Hazard]:
+        summonInline
+         [(tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any}]
+        . operandName
+
+    cli.register(this, suggestions, operandName)
+
+    val located = cli.locate(this)
+
+    // A present flag whose interpretation yields no value without raising an error gets a
+    // generic explanation, distinguishing an operand which was never given from one which
+    // could not be interpreted.
+    val bland =
+      if located.or(Nil).nil then t"a value is required but none was given"
+      else t"the value is not valid"
+
+    // The plain conditionals below (rather than `let`/`or` chains) are deliberate: an `or`
+    // default which touches the `cli` would be a by-name closure capturing a capability, which
+    // `Optional#or` does not admit.
+    summonFrom:
+      case _: Effectful =>
+        // Unchecked deliberately: the failure is a user error, reported by the backstop, not a
+        // condition for the application to handle.
+        import scala.unsafeExceptions.canThrowAny
+
+        if located.absent then throw MissingFlagError(this)
+        else
+          attempt[Hazard]:
+            summonInline
+             [(tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any}]
+            . interpret(located.or(Nil))
+          . match
+              case Attempt.Success(value) => value.or(throw InvalidFlagError(this, bland))
+              case Attempt.Failure(error) =>
+                throw InvalidFlagError(this, Error(error).message.text)
+
+      case _ =>
+        if located.absent then
+          cli.demand(this, false)
+          Requisite[Topic](this, Unset)
+        else
+          cli.present(this)
+          cli.demand(this, true)
+
+          attempt[Hazard]:
+            summonInline
+             [(tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any}]
+            . interpret(located.or(Nil))
+          . match
+              case Attempt.Success(value) =>
+                if value.absent then cli.fault(this, bland)
+                Requisite[Topic](this, value)
+
+              case Attempt.Failure(error) =>
+                cli.fault(this, Error(error).message.text)
+                Requisite[Topic](this, Unset)
 
 
   transparent inline def select(options: Iterable[Topic])

@@ -127,6 +127,9 @@ extends Cli:
   override def demand(flag: Flag, present: Boolean): Unit =
     if !flag.secret then requiredFlags += flag
 
+  override def locate(flag: Flag): Optional[List[Argument]] =
+    interpreter.locate(parameters, flag)
+
   override def explain(update: (Optional[Text] aka "prior") ?=> Optional[Text]): Unit =
     explanation = update(using explanation.aka["prior"])
 

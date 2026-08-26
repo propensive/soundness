@@ -32,21 +32,15 @@
                                                                                                   */
 package exoskeleton
 
-import beneficence.*
-import vacuous.*
+import scala.language.experimental.pureFunctions
 
-trait Interpreter extends Findable:
-  type Topic
+import anticipation.*
+import fulminate.*
 
-  def interpret(arguments: List[Argument]): Topic
-  def focus(topic: Topic): Optional[Argument]
-  def find(topic: Topic, flag: Flag): List[Argument]
-
-  // The flag's raw operand arguments, or `Unset` if the flag itself was not specified — so a
-  // present flag with a malformed operand can be distinguished from a missing one. Defaulted
-  // for interpreters which cannot make the distinction.
-  def locate(topic: Topic, flag: Flag): Optional[List[Argument]] = Unset
-
-  def read[operand: Interpretable](topic: Topic, flag: Flag)
-    ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
-  :   Optional[operand]
+// Raised when `validate()` is called *inside* an `execute` block on a flag which is present
+// but whose operand cannot be decoded, where the fault guard has already run and the failure
+// cannot be accrued; it propagates to the executive's backstop. In the pure section,
+// `validate()` never fails: it records the fault on the `Cli`, and `execute` reports every
+// missing or invalid flag together.
+case class InvalidFlagError(flag: Flag, reason: Text)(using Diagnostics)
+extends Error(m"the value of ${Flag.serialize(flag.name)} is not valid: $reason")
