@@ -275,11 +275,12 @@ object Tests extends Suite(m"Praxinoscope tests"):
       test(m"Reject lookbehind")(capture[Motif.Error](Motif.parse(t"(?<=a)")))
       . assert(_.reason == Reason.Lookaround)
 
-      test(m"Reject a named group")(capture[Motif.Error](Motif.parse(t"(?<name>a)")))
-      . assert(_.reason == Reason.UnsupportedGroup)
+      test(m"Reject an unclosed named group"):
+        capture[Motif.Error](Motif.parse(t"(?<name a)"))
+      . assert(_.reason == Reason.UnclosedGroup)
 
-      test(m"Reject a P-style named group")(capture[Motif.Error](Motif.parse(t"(?P<name>a)")))
-      . assert(_.reason == Reason.UnsupportedGroup)
+      test(m"Reject an unknown group prefix")(capture[Motif.Error](Motif.parse(t"(?Qa)")))
+      . assert(_.reason == Reason.Flag)
 
       test(m"Reject an atomic group")(capture[Motif.Error](Motif.parse(t"(?>a)")))
       . assert(_.reason == Reason.AtomicGroup)
@@ -287,11 +288,15 @@ object Tests extends Suite(m"Praxinoscope tests"):
       test(m"Reject a possessive quantifier")(capture[Motif.Error](Motif.parse(t"a*+")))
       . assert(_.reason == Reason.PossessiveQuantifier)
 
-      test(m"Reject an inline flag")(capture[Motif.Error](Motif.parse(t"(?i)a")))
+      test(m"Reject an unknown inline flag")(capture[Motif.Error](Motif.parse(t"(?x)a")))
       . assert(_.reason == Reason.Flag)
 
-      test(m"Reject a unicode property escape")(capture[Motif.Error](Motif.parse(t"\\p{L}")))
-      . assert(_.reason == Reason.InvalidEscape)
+      test(m"Reject an unknown unicode class")(capture[Motif.Error](Motif.parse(t"\\p{Nope}")))
+      . assert(_.reason == Reason.UnknownUnicodeClass)
+
+      test(m"Reject an unknown POSIX class"):
+        capture[Motif.Error](Motif.parse(t"[[:nope:]]"))
+      . assert(_.reason == Reason.InvalidPosixClass)
 
     suite(m"Matching"):
       def motif(pattern: Text): Motif = Motif.parse(pattern)
@@ -391,11 +396,23 @@ object Tests extends Suite(m"Praxinoscope tests"):
       test(m"Agree on a corpus of patterns and inputs"):
         val patterns = List
           ( t"a*b", t"(a|b)*c", t"[a-m]+", t"a{2,4}", t"(ab)+", t"a?b?c?", t"\\d+", t"\\w+",
-            t"[^x]*x", t"a(b|c)d", t"(?:ab|cd)+", t"x[0-9]{2}y", t"a+b+c+", t"(a?)(a?)aa" )
+            t"[^x]*x", t"a(b|c)d", t"(?:ab|cd)+", t"x[0-9]{2}y", t"a+b+c+", t"(a?)(a?)aa",
+            // The RE2 syntax added later. Only the constructs `java.util.regex` spells the
+            // same way are listed: RE2's POSIX classes (`[[:alpha:]]`) have no `java.util.regex`
+            // equivalent — Java writes those `\\p{Alpha}` — and RE2's bare script names
+            // (`\\p{Greek}`) are `\\p{IsGreek}` there, so including either would compare
+            // two different languages rather than two implementations of one. Both are
+            // covered directly in the "POSIX and Unicode classes" suite.
+            t"\\p{Lu}+", t"\\p{L}+", t"\\P{L}+", t"[\\p{Lu}0-9]+", t"\\Qa.b\\E",
+            t"\\Qa+\\Eb",
+            t"(?i)abc", t"(?i)[a-m]+", t"(?i)\\p{Lu}+", t"a(?i)bc", t"(?i:ab)c", t"(?s).+",
+            t"(?i)mix", t"(?i)WORDY1" )
 
         val inputs = List
           ( t"", t"a", t"b", t"ab", t"abc", t"aab", t"aaab", t"abab", t"abababc", t"aabb",
-            t"123", t"x42y", t"xyz", t"aaaa", t"abcd", t"cdab", t"wordy1", t"mix", t"aax" )
+            t"123", t"x42y", t"xyz", t"aaaa", t"abcd", t"cdab", t"wordy1", t"mix", t"aax",
+            t"ABC", t"AbC", t"MIX", t"Wordy1", t"A1B", t"a.b", t"axb", t"a+b", t"\u00c5",
+            t"ABCdef", t"A", t"1", t"a\nb" )
 
         var failures: List[Text] = Nil
 
@@ -470,6 +487,112 @@ object Tests extends Suite(m"Praxinoscope tests"):
       test(m"Word boundaries are unverifiable"):
         capture[Motif.Error](motif(t"\\bfoo\\b").subsumes(motif(t"foo")))
       . assert(_.reason == Reason.Unverifiable)
+
+    suite(m"POSIX and Unicode classes"):
+      def motif(pattern: Text): Motif = Motif.parse(pattern)
+
+      test(m"A POSIX class matches its members")(motif(t"[[:alpha:]]").matches(t"a"))
+      . assert(_ == true)
+
+      test(m"A POSIX class rejects a non-member")(motif(t"[[:alpha:]]").matches(t"1"))
+      . assert(_ == false)
+
+      test(m"A negated POSIX class complements it")(motif(t"[[:^digit:]]").matches(t"a"))
+      . assert(_ == true)
+
+      test(m"A POSIX class combines with other class items"):
+        motif(t"[[:digit:]abc]+").matches(t"1a2b")
+      . assert(_ == true)
+
+      // `[:alpha:]` outside a bracket pair is an ordinary class of those characters, as RE2
+      // reads it — the POSIX form only exists nested inside a character class.
+      test(m"A bare colon form is an ordinary class")(motif(t"x[:alpha:]y").matches(t"xay"))
+      . assert(_ == true)
+
+      test(m"A general category matches")(motif(t"\\p{Lu}").matches(t"A")).assert(_ == true)
+
+      test(m"A general category rejects another category")(motif(t"\\p{Lu}").matches(t"a"))
+      . assert(_ == false)
+
+      test(m"A one-letter category is the union of its subcategories"):
+        motif(t"\\pL+").matches(t"abc\u00c5")
+      . assert(_ == true)
+
+      test(m"A negated category complements it")(motif(t"\\P{L}").matches(t"1"))
+      . assert(_ == true)
+
+      test(m"A script class matches its script")(motif(t"\\p{Greek}+").matches(t"\u03b1\u03b2"))
+      . assert(_ == true)
+
+      test(m"A script class rejects another script")(motif(t"\\p{Greek}+").matches(t"abc"))
+      . assert(_ == false)
+
+      test(m"A category nests inside a character class"):
+        motif(t"[\\p{Lu}0-9]+").matches(t"A1B")
+      . assert(_ == true)
+
+      test(m"Quoted text is literal")(motif(t"\\Qa.b\\E").matches(t"a.b")).assert(_ == true)
+
+      test(m"Quoted text does not act as a metacharacter"):
+        motif(t"\\Qa.b\\E").matches(t"axb")
+      . assert(_ == false)
+
+      test(m"Quoting ends at the terminator")(motif(t"\\Qa+b\\Ec").matches(t"a+bc"))
+      . assert(_ == true)
+
+    suite(m"Inline flags"):
+      def motif(pattern: Text): Motif = Motif.parse(pattern)
+
+      test(m"`i` folds a literal")(motif(t"(?i)abc").matches(t"AbC")).assert(_ == true)
+
+      test(m"`i` does not make unrelated letters match")(motif(t"(?i)abc").matches(t"abd"))
+      . assert(_ == false)
+
+      test(m"`i` folds a character class")(motif(t"(?i)[a-z]+").matches(t"AbC"))
+      . assert(_ == true)
+
+      test(m"`i` folds a Unicode class")(motif(t"(?i)\\p{Lu}").matches(t"a")).assert(_ == true)
+
+      test(m"`i` applies from where it is set")(motif(t"a(?i)bc").matches(t"aBC"))
+      . assert(_ == true)
+
+      test(m"`i` does not apply before where it is set")(motif(t"a(?i)bc").matches(t"Abc"))
+      . assert(_ == false)
+
+      test(m"A scoped flag applies to its group")(motif(t"(?i:ab)c").matches(t"ABc"))
+      . assert(_ == true)
+
+      test(m"A scoped flag is restored after its group")(motif(t"(?i:ab)c").matches(t"ABC"))
+      . assert(_ == false)
+
+      test(m"A cleared flag has no effect")(motif(t"(?-i)a").matches(t"a")).assert(_ == true)
+
+      // The Kelvin sign folds together with `K` and `k`, so a fold orbit is not always a pair.
+      test(m"`i` folds a whole orbit, not just a pair")(motif(t"(?i)K").matches(t"\u212a"))
+      . assert(_ == true)
+
+      test(m"`i` folds beyond ASCII")(motif(t"(?i)\u03a3").matches(t"\u03c3"))
+      . assert(_ == true)
+
+      test(m"`s` lets a dot match a newline")(motif(t"(?s).").matches(t"\n")).assert(_ == true)
+
+      test(m"A dot does not match a newline by default")(motif(t".").matches(t"\n"))
+      . assert(_ == false)
+
+      test(m"`m` anchors at a line boundary"):
+        motif(t"(?m)^b$$").seek(t"a\nb\nc").present
+      . assert(_ == true)
+
+      test(m"Anchors bind to the whole input by default"):
+        motif(t"^b$$").seek(t"a\nb\nc").present
+      . assert(_ == false)
+
+      test(m"A named group captures positionally"):
+        motif(t"(?<x>a)(b)").groups(t"ab").let(_.stdlib.size)
+      . assert(_ == 2)
+
+      test(m"A P-style named group captures too")(motif(t"(?P<x>a)b").matches(t"ab"))
+      . assert(_ == true)
 
     suite(m"Containment of an intersection"):
       def motif(pattern: Text): Motif = Motif.parse(pattern)

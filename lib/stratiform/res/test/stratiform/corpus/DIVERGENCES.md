@@ -33,21 +33,25 @@ tel commit `75e591b`, ahead of `UPSTREAM_SHA`. The rest of the corpus was left
 at the recorded commit, so `UPSTREAM_SHA` still names the commit the bulk of the
 fixtures came from.
 
-Pattern matching is backed by `praxinoscope`, whose RE2 subset is narrower than
-the syntax §21.8 refers to:
+Pattern matching is backed by `praxinoscope`, which implements RE2 syntax
+including inline flags (`i`, `m`, `s`, `U`, in both the `(?flags)` and
+`(?flags:…)` forms), POSIX classes (`[[:alpha:]]`), Unicode general categories
+and scripts (`\p{Lu}`, `\pL`, `\p{Greek}`, and their `\P` complements),
+quoted runs (`\Q…\E`), and named capturing groups.
 
-- **Inline flags** (`(?i)`, `(?s)`, …) are rejected (`Motif.Error.Reason.Flag`),
-  though §21.8 explicitly permits them. A schema using one is reported **E222**.
-- **Unicode property classes** (`\p{…}`, `\P{…}`) are rejected likewise, as is
-  `\Z`.
-- **Word boundaries** (`\b`, `\B`) parse and match, but the containment
-  analysis cannot model them (`Unverifiable`), so a layer replacement involving
-  one is not provable and fails closed as **E223**.
+One divergence remains, and it is in the *containment* analysis rather than in
+matching:
 
-The first two are genuine conformance gaps against §21.8's requirement that two
-conforming implementations accept exactly the same values; they fail closed
-(E222, never silently permissive), so they are safe but not complete. No
-upstream fixture exercises them.
+- **Word boundaries** (`\b`, `\B`) and, under the `m` flag, the line anchors
+  `^` and `$` parse and match correctly, but the containment analysis cannot
+  model them (`Unverifiable`) because they depend on the symbols surrounding a
+  position rather than on the position alone. A layer replacement involving one
+  is therefore not provable and fails closed as **E223**. Matching such a
+  pattern against a value is unaffected.
+
+(An earlier revision of this file claimed `\Z` was an unsupported gap. That was
+wrong: RE2 has no `\Z` — it spells end-of-text `\z` — so rejecting it is
+correct behaviour, not a divergence.)
 
 The §21.8 resource budget this implementation documents is
 `praxinoscope.Subsumption.maxStates` = 100,000 product states, matching the Rust

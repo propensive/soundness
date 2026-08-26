@@ -51,7 +51,7 @@ object Motif:
   // carries `Unset`.
   object Node:
     enum Anchor:
-      case Start, End, WordBoundary, NonWordBoundary
+      case Start, End, WordBoundary, NonWordBoundary, LineStart, LineEnd
 
   enum Node:
     case Empty
@@ -79,17 +79,26 @@ object Motif:
 
   def apply(text: Text): Motif raises Motif.Error = parse(text)
 
-  // A recursive-descent parser for the RE2 syntax subset: literals, `.`, escapes (including
-  // `\xHH` and `\x{…}`), the ASCII perl classes, character classes, alternation, groups
-  // (capturing and `(?:…)`), the `* + ? {n} {n,} {n,m}` quantifiers with an optional reluctant
-  // `?` suffix, and the anchors `^ $ \A \z \b \B`. Everything RE2 rejects by design is rejected
-  // here with a positioned error: backreferences, lookaround, possessive quantifiers, atomic
-  // groups, named groups and inline flags.
+  // A recursive-descent parser for RE2 syntax: literals, `.`, escapes (including `\xHH` and
+  // `\x{…}`), the ASCII perl classes, POSIX classes (`[[:alpha:]]`), Unicode general categories
+  // and scripts (`\p{Lu}`, `\pL`, `\p{Greek}`, and their `\P` complements), quoted runs
+  // (`\Q…\E`), character classes, alternation, groups (capturing, non-capturing and named),
+  // the inline flags `i`, `m`, `s` and `U` in both their `(?flags)` and `(?flags:…)` forms, the
+  // `* + ? {n} {n,} {n,m}` quantifiers with an optional reluctant `?` suffix, and the anchors
+  // `^ $ \A \z \b \B`. Everything RE2 rejects by design is rejected here with a positioned
+  // error: backreferences, lookaround, possessive quantifiers and atomic groups.
   def parse(text: Text): Motif raises Motif.Error =
     val input: String = text.s
     val length: Int = input.length
     var index: Int = 0
     var captures: Int = 0
+
+    // RE2's inline flags. Each applies from where it is set to the end of the enclosing group,
+    // which `group` implements by saving and restoring them around every group body.
+    var foldCase: Boolean = false
+    var dotAll: Boolean = false
+    var multiline: Boolean = false
+    var ungreedy: Boolean = false
 
     def current: Char = if index >= length then '\u0000' else input.charAt(index)
 
@@ -125,10 +134,12 @@ object Motif:
         case node :: Nil => node
         case _           => Node.Sequence(nodes.reverse)
 
+    // Under `U` the default greediness is swapped, so a bare quantifier is reluctant and a
+    // `?`-suffixed one is greedy.
     def reluctant(): Boolean = current match
-      case '?' => true.adv()
+      case '?' => (!ungreedy).adv()
       case '+' => abort(Motif.Error(index, PossessiveQuantifier))
-      case _   => false
+      case _   => ungreedy
 
     def quantified(node: Node): Node = current match
       case '*' => index += 1; Node.Repeat(node, 0, Unset, reluctant())
@@ -175,27 +186,72 @@ object Motif:
 
       count
 
+    // Every class-valued construct goes through here, so `i` folds them all uniformly —
+    // `[a-z]`, `\\p{Lu}` and `\\w` alike.
+    def klass(ranges: Ranges): Node = Node.Klass(if foldCase then ranges.folded else ranges)
+
     def atom(): Node = current match
       case '('             => group()
       case '['             => charClass()
-      case '.'             => Node.Klass(Ranges.any).adv()
-      case '^'             => Node.Boundary(Node.Anchor.Start).adv()
-      case '$'             => Node.Boundary(Node.Anchor.End).adv()
+      case '.'             => klass(if dotAll then Ranges.anySymbol else Ranges.any).adv()
+
+      case '^' =>
+        Node.Boundary(if multiline then Node.Anchor.LineStart else Node.Anchor.Start).adv()
+
+      case '$' =>
+        Node.Boundary(if multiline then Node.Anchor.LineEnd else Node.Anchor.End).adv()
       case '\\'            => escape()
       case '*' | '+' | '?' => abort(Motif.Error(index, UnexpectedChar))
-      case _               => Node.Literal(codepoint())
+
+      case _ =>
+        val symbol = codepoint()
+
+        // Under `i` a literal denotes its whole fold orbit, so it becomes a class.
+        if !foldCase then Node.Literal(symbol) else
+          val folded = Ranges.point(symbol).folded
+          if folded == Ranges.point(symbol) then Node.Literal(symbol) else Node.Klass(folded)
 
     def closeGroup(): Unit =
       if current == ')' then index += 1 else abort(Motif.Error(index, UnclosedGroup))
 
+    // Applies a run of flag letters, honouring a `-` that switches to clearing them. Returns
+    // false if a character is not a flag letter, so the caller can report it in position.
+    def applyFlags(): Boolean =
+      var setting = true
+      var valid = true
+
+      while valid && current != ')' && current != ':' && index < length do
+        current match
+          case '-' => setting = false.also(index += 1)
+          case 'i' => foldCase = setting.also(index += 1)
+          case 's' => dotAll = setting.also(index += 1)
+          case 'm' => multiline = setting.also(index += 1)
+          case 'U' => ungreedy = setting.also(index += 1)
+          case _   => valid = false
+
+      valid
+
     def group(): Node =
       index += 1
+
+      // Flags are scoped to the enclosing group, so every group body restores what it found.
+      val savedFold = foldCase
+      val savedDot = dotAll
+      val savedMulti = multiline
+      val savedUngreedy = ungreedy
+
+      def restore(): Unit =
+        foldCase = savedFold
+        dotAll = savedDot
+        multiline = savedMulti
+        ungreedy = savedUngreedy
 
       if current == '?' then lookahead() match
         case ':' =>
           index += 2
           val child = alternation()
           closeGroup()
+          restore()
           Node.Group(child, Unset)
 
         case '=' | '!' =>
@@ -203,16 +259,60 @@ object Motif:
 
         case '<' => lookahead(2) match
           case '=' | '!' => abort(Motif.Error(index - 1, Lookaround))
-          case _         => abort(Motif.Error(index - 1, UnsupportedGroup))
 
-        case 'P' => abort(Motif.Error(index - 1, UnsupportedGroup))
+          // `(?<name>…)` is a named capture: the name plays no part in the language, so the
+          // group is captured positionally as if unnamed, exactly as RE2 numbers it.
+          case _ =>
+            val close = input.indexOf('>', index + 2)
+            if close < 0 then abort(Motif.Error(index - 1, UnclosedGroup))
+            index = close + 1
+            captures += 1
+            val capture = captures
+            val child = alternation()
+            closeGroup()
+            restore()
+            Node.Group(child, capture)
+
+        // `(?P<name>…)` is the same thing under RE2's older spelling.
+        case 'P' =>
+          if lookahead(2) != '<' then abort(Motif.Error(index - 1, UnsupportedGroup))
+          val close = input.indexOf('>', index + 3)
+          if close < 0 then abort(Motif.Error(index - 1, UnclosedGroup))
+          index = close + 1
+          captures += 1
+          val capture = captures
+          val child = alternation()
+          closeGroup()
+          restore()
+          Node.Group(child, capture)
+
         case '>' => abort(Motif.Error(index - 1, AtomicGroup))
-        case _   => abort(Motif.Error(index - 1, Flag))
+
+        case _ =>
+          val start = index
+          index += 1
+          if !applyFlags() then abort(Motif.Error(index, Flag))
+
+          if current == ':' then
+            // `(?flags:…)` scopes the flags to this group alone.
+            index += 1
+            val child = alternation()
+            closeGroup()
+            restore()
+            Node.Group(child, Unset)
+          else if current == ')' then
+            // `(?flags)` sets them for the rest of the enclosing group, so the saved values
+            // are deliberately *not* restored here.
+            index += 1
+            Node.Empty
+          else abort(Motif.Error(start, Flag))
+
       else
         captures += 1
         val capture = captures
         val child = alternation()
         closeGroup()
+        restore()
         Node.Group(child, capture)
 
     def perlClass(char: Char): Boolean = "dDwWsS".indexOf(char) >= 0
@@ -226,6 +326,30 @@ object Motif:
       case 'S' => Ranges.space.negate().adv()
       case _   => abort(Motif.Error(index, InvalidEscape))
 
+    // `\\pN`, `\\p{Name}` and their negated `\\P` forms. The cursor is on the `p` or `P`.
+    def unicodeRanges(): Ranges =
+      val negated = current == 'P'
+      index += 1
+
+      val name =
+        if current != '{' then
+          val single = String.valueOf(current).nn
+          index += 1
+          single
+        else
+          val close = input.indexOf('}', index)
+          if close < 0 then abort(Motif.Error(index, UnclosedClass))
+          val braced = input.substring(index + 1, close).nn
+          index = close + 1
+          braced
+
+      // A `\\p{^Name}` is RE2's other spelling of negation.
+      val inverted = name.startsWith("^")
+      val plain = if inverted then name.substring(1).nn else name
+
+      Ranges.unicode(plain).lay(abort(Motif.Error(index, UnknownUnicodeClass))): ranges =>
+        if negated != inverted then ranges.negate() else ranges
+
     def charClass(): Node =
       index += 1
       val negated = current == '^'
@@ -238,12 +362,37 @@ object Motif:
         ranges = ranges.union(classItem())
 
       index += 1
-      Node.Klass(if negated then ranges.negate() else ranges)
+      klass(if negated then ranges.negate() else ranges)
+
+    // `[:name:]` and its negated `[:^name:]`, valid only inside a character class. RE2 treats a
+    // `[:` that does not close with `:]` as ordinary characters, so this only commits once the
+    // whole form is present.
+    def posixClass(): Optional[Ranges] =
+      val close = input.indexOf(":]", index + 2)
+
+      if current != '[' || lookahead() != ':' || close < 0 then Unset else
+        val negated = lookahead(2) == '^'
+        val from = index + (if negated then 3 else 2)
+        val name = input.substring(from, close).nn
+
+        Ranges.posix.stdlib.get(name) match
+          case scala.Some(ranges) =>
+            index = close + 2
+            if negated then ranges.negate() else ranges
+
+          case _ =>
+            abort(Motif.Error(index, InvalidPosixClass))
 
     def classItem(): Ranges =
+      posixClass().lay(nonPosixClassItem())(identity(_))
+
+    def nonPosixClassItem(): Ranges =
       if current == '\\' && perlClass(lookahead()) then
         index += 1
         perlRanges()
+      else if current == '\\' && (lookahead() == 'p' || lookahead() == 'P') then
+        index += 1
+        unicodeRanges()
       else
         val start = classChar()
 
@@ -269,18 +418,40 @@ object Motif:
 
       current match
         case '\u0000'  => abort(Motif.Error(index, UnclosedEscape))
-        case 'd'       => Node.Klass(Ranges.digit).adv()
-        case 'D'       => Node.Klass(Ranges.digit.negate()).adv()
-        case 'w'       => Node.Klass(Ranges.word).adv()
-        case 'W'       => Node.Klass(Ranges.word.negate()).adv()
-        case 's'       => Node.Klass(Ranges.space).adv()
-        case 'S'       => Node.Klass(Ranges.space.negate()).adv()
+        case 'd'       => klass(Ranges.digit).adv()
+        case 'D'       => klass(Ranges.digit.negate()).adv()
+        case 'w'       => klass(Ranges.word).adv()
+        case 'W'       => klass(Ranges.word.negate()).adv()
+        case 's'       => klass(Ranges.space).adv()
+        case 'S'       => klass(Ranges.space.negate()).adv()
         case 'b'       => Node.Boundary(Node.Anchor.WordBoundary).adv()
         case 'B'       => Node.Boundary(Node.Anchor.NonWordBoundary).adv()
         case 'A'       => Node.Boundary(Node.Anchor.Start).adv()
         case 'z'       => Node.Boundary(Node.Anchor.End).adv()
         case 'k'       => abort(Motif.Error(index, Backreference))
-        case 'p' | 'P' => abort(Motif.Error(index, InvalidEscape))
+        case 'p' | 'P' => klass(unicodeRanges())
+
+        // `\\Q…\\E` quotes a run of literal text, in which no character is special. An
+        // unterminated `\\Q` runs to the end of the pattern, as RE2 allows.
+        case 'Q' =>
+          index += 1
+          val close = input.indexOf("\\E", index)
+          val end = if close < 0 then length else close
+          val literal = input.substring(index, end).nn
+          index = if close < 0 then length else close + 2
+
+          if literal.isEmpty then Node.Empty else
+            var nodes: List[Node] = Nil
+            var at = 0
+
+            while at < literal.length do
+              val symbol = literal.codePointAt(at)
+              nodes = Node.Literal(symbol) :: nodes
+              at += Character.charCount(symbol)
+
+            nodes match
+              case node :: Nil => node
+              case _           => Node.Sequence(nodes.reverse)
 
         case char if char >= '1' && char <= '9' =>
           abort(Motif.Error(index, Backreference))
@@ -375,6 +546,9 @@ object Motif:
         case Unverifiable =>
           m"the pattern contains constructs which the analysis cannot verify"
 
+        case InvalidPosixClass   => m"the POSIX character class name is not recognised"
+        case UnknownUnicodeClass => m"the Unicode class name is not recognised"
+
     enum Reason(val number: Int) extends Clarification:
       case UnclosedGroup        extends Reason(1)
       case NotInGroup           extends Reason(2)
@@ -395,6 +569,8 @@ object Motif:
       case RepetitionTooLarge   extends Reason(17)
       case BudgetExceeded       extends Reason(18)
       case Unverifiable         extends Reason(19)
+      case InvalidPosixClass    extends Reason(20)
+      case UnknownUnicodeClass  extends Reason(21)
 
   case class Error(index: Int, reason: Motif.Error.Reason)(using Diagnostics)
   extends fulminate.Error(500, reason.number)

@@ -32,6 +32,8 @@
                                                                                                   */
 package praxinoscope
 
+import vacuous.*
+
 object Ranges:
   // The greatest symbol in the default (Unicode codepoint) domain. Other symbol domains (UTF-8
   // bytes, say) are strictly smaller, so this is a safe universal bound for `negate`.
@@ -52,6 +54,122 @@ object Ranges:
   val space: Ranges = new Ranges('\t'.toInt :: '\r'.toInt :: ' '.toInt :: ' '.toInt :: Nil)
   val any: Ranges = new Ranges(0 :: '\n'.toInt - 1 :: '\n'.toInt + 1 :: maxSymbol :: Nil)
   val anySymbol: Ranges = new Ranges(0 :: maxSymbol :: Nil)
+
+  // Every symbol the predicate admits, as coalesced runs. Scanning the whole domain is what
+  // makes the Unicode classes exact — the JDK's own tables answer the predicate, so there is no
+  // second copy of the Unicode database here to drift out of date — and it costs one pass per
+  // distinct class, which `unicode` memoises.
+  def where(predicate: Int => Boolean): Ranges =
+    val spans = scala.collection.mutable.ListBuffer.empty[Int]
+    var symbol = 0
+    var start = -1
+
+    while symbol <= maxSymbol do
+      if predicate(symbol) then (if start < 0 then start = symbol)
+      else if start >= 0 then
+        spans += start
+        spans += symbol - 1
+        start = -1
+
+      symbol += 1
+
+    if start >= 0 then
+      spans += start
+      spans += maxSymbol
+
+    new Ranges(spans.to(List))
+
+  // The POSIX classes of RE2's `[[:name:]]` form, all ASCII-only.
+  val posix: Map[String, Ranges] = Map
+    ( "alnum"  -> Ranges('0', '9').union(Ranges('A', 'Z')).union(Ranges('a', 'z')),
+      "alpha"  -> Ranges('A', 'Z').union(Ranges('a', 'z')),
+      "ascii"  -> Ranges(0x00, 0x7f),
+      "blank"  -> Ranges.point('\t').union(Ranges.point(' ')),
+      "cntrl"  -> Ranges(0x00, 0x1f).union(Ranges.point(0x7f)),
+      "digit"  -> digit,
+      "graph"  -> Ranges('!', '~'),
+      "lower"  -> Ranges('a', 'z'),
+      "print"  -> Ranges(' ', '~'),
+      "punct"  -> Ranges('!', '/').union(Ranges(':', '@')).union(Ranges('[', '`'))
+                  . union(Ranges('{', '~')),
+      "space"  -> Ranges('\t', '\r').union(Ranges.point(' ')),
+      "upper"  -> Ranges('A', 'Z'),
+      "word"   -> word,
+      "xdigit" -> Ranges('0', '9').union(Ranges('A', 'F')).union(Ranges('a', 'f')) )
+
+  private val unicodeClasses: scala.collection.concurrent.TrieMap[String, Optional[Ranges]] =
+    scala.collection.concurrent.TrieMap()
+
+  // A Unicode general category (`L`, `Lu`, `Nd`, …) or script (`Greek`, `Han`, …) by the name
+  // RE2's `\p{…}` uses, or `Unset` if no such class exists. `Any` is RE2's name for the whole
+  // domain. General categories are matched by prefix, so the one-letter `L` is the union of
+  // `Lu`, `Ll`, `Lt`, `Lm` and `Lo`, exactly as RE2 defines it.
+  def unicode(name: String): Optional[Ranges] =
+    unicodeClasses.getOrElseUpdate(name, compute(name))
+
+  private def compute(name: String): Optional[Ranges] =
+    if name == "Any" then anySymbol
+    else if categories.stdlib.contains(name) then where(symbol => categoryName(symbol) == name)
+    else if categoryGroups.stdlib.contains(name)
+    then where(symbol => categoryName(symbol).startsWith(name))
+    else
+      try
+        val script = Character.UnicodeScript.forName(name).nn
+        where(symbol => Character.UnicodeScript.of(symbol) == script)
+      catch case _: IllegalArgumentException => Unset
+
+  // The two-letter general-category abbreviation for a codepoint, as Unicode names them.
+  private def categoryName(symbol: Int): String = Character.getType(symbol) match
+    case Character.UPPERCASE_LETTER          => "Lu"
+    case Character.LOWERCASE_LETTER          => "Ll"
+    case Character.TITLECASE_LETTER          => "Lt"
+    case Character.MODIFIER_LETTER           => "Lm"
+    case Character.OTHER_LETTER              => "Lo"
+    case Character.NON_SPACING_MARK          => "Mn"
+    case Character.COMBINING_SPACING_MARK    => "Mc"
+    case Character.ENCLOSING_MARK            => "Me"
+    case Character.DECIMAL_DIGIT_NUMBER      => "Nd"
+    case Character.LETTER_NUMBER             => "Nl"
+    case Character.OTHER_NUMBER              => "No"
+    case Character.CONNECTOR_PUNCTUATION     => "Pc"
+    case Character.DASH_PUNCTUATION          => "Pd"
+    case Character.START_PUNCTUATION         => "Ps"
+    case Character.END_PUNCTUATION           => "Pe"
+    case Character.INITIAL_QUOTE_PUNCTUATION => "Pi"
+    case Character.FINAL_QUOTE_PUNCTUATION   => "Pf"
+    case Character.OTHER_PUNCTUATION         => "Po"
+    case Character.MATH_SYMBOL               => "Sm"
+    case Character.CURRENCY_SYMBOL           => "Sc"
+    case Character.MODIFIER_SYMBOL           => "Sk"
+    case Character.OTHER_SYMBOL              => "So"
+    case Character.SPACE_SEPARATOR           => "Zs"
+    case Character.LINE_SEPARATOR            => "Zl"
+    case Character.PARAGRAPH_SEPARATOR       => "Zp"
+    case Character.CONTROL                   => "Cc"
+    case Character.FORMAT                    => "Cf"
+    case Character.SURROGATE                 => "Cs"
+    case Character.PRIVATE_USE               => "Co"
+    case _                                   => "Cn"
+
+  private val categories: Set[String] = Set
+    ( "Lu", "Ll", "Lt", "Lm", "Lo", "Mn", "Mc", "Me", "Nd", "Nl", "No", "Pc", "Pd", "Ps", "Pe",
+      "Pi", "Pf", "Po", "Sm", "Sc", "Sk", "So", "Zs", "Zl", "Zp", "Cc", "Cf", "Cs", "Co", "Cn" )
+
+  private val categoryGroups: Set[String] = Set("L", "M", "N", "P", "S", "Z", "C")
+
+  // Codepoints equivalent under simple case folding, grouped into orbits keyed by their folded
+  // form. An orbit is not always a pair: `K`, `k` and the Kelvin sign all fold together, which
+  // is why folding cannot be done by mapping each symbol up and down in isolation.
+  private lazy val foldOrbits: scala.collection.immutable.Map[Int, scala.Array[Int]] =
+    val groups = scala.collection.mutable.HashMap.empty[Int, scala.List[Int]]
+    var symbol = 0
+
+    while symbol <= maxSymbol do
+      val folded = Character.toLowerCase(Character.toUpperCase(symbol))
+      if folded != symbol then groups(folded) = symbol :: groups.getOrElse(folded, scala.Nil)
+      symbol += 1
+
+    groups.map((key, members) => (key, (key :: members).toArray)).toMap
 
 // A set of symbols, represented as a sorted, disjoint, non-adjacent list of inclusive
 // `lo :: hi :: …` bounds. Symbols are `Int`-encoded members of an ordered alphabet: Unicode
@@ -99,3 +217,25 @@ case class Ranges private(spans: List[Int]):
     new Ranges(recur(spans, 0))
 
   def intersect(that: Ranges): Ranges = negate().union(that.negate()).negate()
+
+  // The closure of this set under simple case folding, as RE2's `i` flag defines it. Only the
+  // orbits are examined, not the whole domain, so this is proportional to the number of
+  // case-varying codepoints rather than to the size of the set.
+  def folded: Ranges =
+    var result = this
+
+    Ranges.foldOrbits.foreach: (_, members) =>
+      var index = 0
+      var hit = false
+
+      while !hit && index < members.length do
+        hit = contains(members(index))
+        index += 1
+
+      if hit then
+        var at = 0
+        while at < members.length do
+          result = result.union(Ranges.point(members(at)))
+          at += 1
+
+    result
