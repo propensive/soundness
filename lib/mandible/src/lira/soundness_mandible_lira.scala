@@ -33,4 +33,4 @@
 package soundness
 
 export mandible.{ClassfileAtomizer, ClassfileDiscipline, CtSym, HostArchive, HostContracts,
-    HostRelease, JsigDiscipline, JvmProfile, UsedSets}
+    HostRelease, HostTree, JsigDiscipline, JvmProfile, UsedSets}

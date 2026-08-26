@@ -48,9 +48,10 @@ import Lira.Error.Reason
 case class HostRelease(tag: Text, content: List[(TreePath, Data)])
 
 // Builds the release sequence of a host-contract module from harvested surfaces: each release
-// is atomized under `jsig/1`, graded against its predecessor by the ordinary algebra, given
-// the derived version §12.5 dictates, threaded onto the lineage — a major beginning a fresh
-// one — and assembled as a complete, tagged `.lira` host contract.
+// is atomized under the given discipline — `jsig/1` by default, `dts/1` or `wit/1` for
+// contracts whose carrier is declarations rather than stubs — graded against its predecessor
+// by the ordinary algebra, given the derived version §12.5 dictates, threaded onto the lineage
+// — a major beginning a fresh one — and assembled as a complete, tagged `.lira` host contract.
 //
 // A major is a removal in the host's history (the JDK 9 and 11 removals are the canonical
 // cases), and L110 requires the operator to sanction it: `allowMajor` is that sanction, per
@@ -61,12 +62,13 @@ object HostContracts:
     ( module:     Text,
       releases:   List[HostRelease],
       toolchain:  List[Lira.Manifest.Tool],
+      discipline: Discipline                 = JsigDiscipline,
       allowMajor: Text -> Boolean            = { _ => false },
       sign:       Lira.Manifest -> Lira.Manifest = { manifest => manifest } )
     ( using Tactic[Lira.Error], Tactic[Discipline.Error] )
   :   List[(Text, Data)] =
 
-    val registry = Discipline.Registry(List(JsigDiscipline))
+    val registry = Discipline.Registry(List(discipline))
     val context = Discipline.Context(t"host")
     val results = scala.collection.mutable.ListBuffer[(Text, Data)]()
 
