@@ -113,7 +113,14 @@ object Tels extends Tels2:
 
   // `encoding` names the codec (§21.7) defining the scalar's binary
   // representation in BinTEL, or is absent for UTF-8 text scalars.
-  case class Scalar(validators: Array[Text]^{}, encoding: Optional[Text] = Unset) extends Type
+  // `patterns` holds the RE2 pattern constraints of §21.8, in declaration
+  // order; each matches the entire value text and they AND-conjoin, so the
+  // accepted language is the intersection of theirs.
+  case class Scalar
+    ( validators: Array[Text]^{},
+      encoding:   Optional[Text] = Unset,
+      patterns:   Array[Text]^{} = Array.empty )
+  extends Type
 
   case object Flag extends Type
 
@@ -130,11 +137,15 @@ object Tels extends Tels2:
       validators:  Array[Text]^{},
       description: Optional[Text] = Unset )
 
+  // §20: `validators` and `patterns` (§21.8) are each individually optional,
+  // but a declaration carrying neither is invalid (E224) — an unconstrained
+  // scalar names the built-in `String` instead.
   case class ScalarDefinition
     ( name:        Text,
       validators:  Array[Text]^{},
       description: Optional[Text] = Unset,
-      encoding:    Optional[Text] = Unset )
+      encoding:    Optional[Text] = Unset,
+      patterns:    Array[Text]^{} = Array.empty )
 
   // `excludes` is layer-only: the variant keywords a layer's `exclude`
   // children remove from the merged SelectDefinition (§20.3). A base-side
@@ -822,7 +833,8 @@ object Tels extends Tels2:
 
       case Reference(name) =>
         schema.scalars.readable.find(_.name == name) match
-          case scala.Some(definition) => Scalar(definition.validators, definition.encoding)
+          case scala.Some(definition) =>
+            Scalar(definition.validators, definition.encoding, definition.patterns)
 
           case scala.None =>
             if builtinScalar(name) then Scalar(Array.empty) else Unset
@@ -948,7 +960,8 @@ object Tels extends Tels2:
       case (a: Struct, b: Struct)         => structEq(a, b)
 
       case (a: Scalar, b: Scalar) =>
-        seqEq(a.validators, b.validators, textEq) && a.encoding == b.encoding
+        seqEq(a.validators, b.validators, textEq) && a.encoding == b.encoding &&
+          seqEq(a.patterns, b.patterns, textEq)
       case (Flag, Flag)                   => true
       case (Reference(n1), Reference(n2)) => n1 == n2
       case _                              => false
@@ -958,9 +971,13 @@ object Tels extends Tels2:
         seqEq(a.validators, b.validators, textEq) &&
         a.description == b.description
 
+    // Patterns compare textually and in order: §20.3 makes textual identity the
+    // benign-no-op test for layer merge, and schema *identity* is spelling-based
+    // throughout — only the merge rule of §20.3 inspects a pattern's meaning.
     private def scalarEq(a: ScalarDefinition, b: ScalarDefinition): Boolean =
       a.name == b.name && seqEq(a.validators, b.validators, textEq) &&
-        a.description == b.description && a.encoding == b.encoding
+        a.description == b.description && a.encoding == b.encoding &&
+        seqEq(a.patterns, b.patterns, textEq)
 
     private def selectEq(a: SelectDefinition, b: SelectDefinition): Boolean =
       a.name == b.name &&
@@ -1071,12 +1088,21 @@ object Tels extends Tels2:
       val validators = children.bind: cc =>
         if cc.keyword == t"validate" then atomTexts(cc) else Array.empty[Text]
 
+      // §21.8: one RE2 pattern per `pattern` child, in declaration order. The
+      // value is read with `scalarAtomText` rather than `atomTexts` because
+      // §20.5 makes `pattern` a compound child whose regex may be carried as a
+      // source atom (§14) when it contains a hard-space run.
+      val patterns = children.bind: cc =>
+        if cc.keyword == t"pattern"
+        then scalarAtomText(cc).lay(Array.empty[Text])(Array(_))
+        else Array.empty[Text]
+
       var encoding: Optional[Text] = Unset
 
       children.each: cc =>
         if cc.keyword == t"encoding" && encoding.absent then encoding = firstAtomText(cc)
 
-      ScalarDefinition(scName, validators, descriptionOf(children), encoding)
+      ScalarDefinition(scName, validators, descriptionOf(children), encoding, patterns)
 
     private def parseSelect(c: Tel.Compound): SelectDefinition raises Tel.Error =
       val seName = nameOf(c).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))

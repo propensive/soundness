@@ -612,7 +612,7 @@ object Bintel:
     case Tels.Reference(name) =>
       schema.records.seek(_.name == name).lay:
         schema.scalars.seek(_.name == name).lay(t): sc =>
-          Tels.Scalar(sc.validators, sc.encoding)
+          Tels.Scalar(sc.validators, sc.encoding, sc.patterns)
       . apply: rec =>
         Tels.Struct(rec.members, rec.validators)
 

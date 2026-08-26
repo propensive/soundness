@@ -1174,7 +1174,7 @@ object Tel extends Tel2:
               then abort(Tel.Error(Reason.ReferenceKindMismatch))
               else abort(Tel.Error(Reason.UnresolvedReference))
             . apply: scalarDef =>
-              Tels.Scalar(scalarDef.validators, scalarDef.encoding)
+              Tels.Scalar(scalarDef.validators, scalarDef.encoding, scalarDef.patterns)
           . apply: record =>
             Tels.Struct(record.members, record.validators)
 
