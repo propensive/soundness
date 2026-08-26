@@ -133,8 +133,19 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
   // the suite object it gains a static forwarder in the mirror class, and its signature erases
   // to `invoke(String[]): int` — JDK types only, so no Soundness class need be shared between
   // the host's world and the suite's.
-  final def invoke(arguments: Array[Text]^{}): Int =
-    val selection = Selection.parse(arguments.to[List])
+  final def invoke(arguments: Array[Text]^{}): Int = invoke(arguments.to[List])
+
+  // A single-argument form for reflective and structural-type callers, taking the arguments
+  // newline-separated in one `Text` (a selection term can never contain a newline), the empty
+  // `Text` meaning none: its signature erases to `invoke(String): int`, which a host can
+  // describe as `{ def invoke(arguments: Text): Int }` and call through
+  // `reflectiveSelectable` — whereas a structural type over the array form is currently
+  // uncompilable under capture checking (`classOf` of an array type fails pickling).
+  final def invoke(arguments: Text): Int =
+    invoke(arguments.cut(t"\n").filter(_ != t""))
+
+  final def invoke(arguments: List[Text]): Int =
+    val selection = Selection.parse(arguments)
     if !arguments.nil then runner0 = makeRunner(selection)
 
     if selection.listOnly then
