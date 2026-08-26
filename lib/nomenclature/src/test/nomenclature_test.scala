@@ -44,6 +44,16 @@ sealed trait EndsO
 sealed trait Session
 sealed trait Other
 
+// Planes for the five rules that had no test. Their `Nominative` givens are declared inside the
+// `Rules` suite rather than here, so that they stay out of scope for the `n"…"` plane-inference
+// tests above, which assert over the exact set of planes visible to them.
+sealed trait Prefixed
+sealed trait Containing
+sealed trait NotEndingZ
+sealed trait Lowercase
+sealed trait NotDigits
+sealed trait Repeated
+
 object Tests extends Suite(m"Nomenclature tests"):
   def run(): Unit =
     inline given id: Id is Nominative under MustEnd["!"] & MustNotStart["0"] & MustNotContain["."] = !!
@@ -187,3 +197,156 @@ object Tests extends Suite(m"Nomenclature tests"):
       given (Vocabulary over Session) = Vocabulary(adjectives, animals)
       capture[Moniker.Error](t"notathing-leopard".as[Moniker over Session]).message.show
     . assert(_ == t"the moniker is not valid because the word notathing does not appear in the vocabulary")
+
+    suite(m"MustStart"):
+      inline given prefixed: Prefixed is Nominative under MustStart["x-"] = !!
+
+      test(m"a name with the required prefix is accepted"):
+        Name[Prefixed](t"x-ray")
+      . assert(_ == t"x-ray")
+
+      test(m"a name without the required prefix is rejected"):
+        capture[Name.Error](Name[Prefixed](t"ray")).message.show
+      . assert(_ == t"the name ray is not valid because it must start with x-")
+
+      test(m"the prefix must be at the start, not merely present"):
+        capture[Name.Error](Name[Prefixed](t"ray-x-")).message.show
+      . assert(_ == t"the name ray-x- is not valid because it must start with x-")
+
+      test(m"the prefix alone is a name"):
+        Name[Prefixed](t"x-")
+      . assert(_ == t"x-")
+
+      test(m"a conforming literal compiles"):
+        demilitarize:
+          val name: Name[Prefixed] = n"x-ray"
+      . assert(_ == Nil)
+
+      test(m"a non-conforming literal is a compile error"):
+        demilitarize:
+          val name: Name[Prefixed] = n"ray"
+      . assert(_.nonEmpty)
+
+    suite(m"MustContain"):
+      inline given containing: Containing is Nominative under MustContain["-"] = !!
+
+      test(m"a name containing the required text is accepted"):
+        Name[Containing](t"main-nav")
+      . assert(_ == t"main-nav")
+
+      test(m"a name not containing the required text is rejected"):
+        capture[Name.Error](Name[Containing](t"mainnav")).message.show
+      . assert(_ == t"the name mainnav is not valid because it must contain -")
+
+      test(m"the required text may be at the start"):
+        Name[Containing](t"-nav")
+      . assert(_ == t"-nav")
+
+      test(m"the required text may be at the end"):
+        Name[Containing](t"main-")
+      . assert(_ == t"main-")
+
+      test(m"a conforming literal compiles"):
+        demilitarize:
+          val name: Name[Containing] = n"main-nav"
+      . assert(_ == Nil)
+
+      test(m"a non-conforming literal is a compile error"):
+        demilitarize:
+          val name: Name[Containing] = n"mainnav"
+      . assert(_.nonEmpty)
+
+    suite(m"MustNotEnd"):
+      inline given notEndingZ: NotEndingZ is Nominative under MustNotEnd["z"] = !!
+
+      // `MustNotEnd` is defined as `Rule(…, !_.ends(_))`, where the prefix `!` sits outside a
+      // two-placeholder lambda. These two tests pin the sense of that expansion: an inverted
+      // predicate would pass one and fail the other.
+      test(m"a name not ending with the forbidden text is accepted"):
+        Name[NotEndingZ](t"quartz-a")
+      . assert(_ == t"quartz-a")
+
+      test(m"a name ending with the forbidden text is rejected"):
+        capture[Name.Error](Name[NotEndingZ](t"quartz")).message.show
+      . assert(_ == t"the name quartz is not valid because it must not end with z")
+
+      test(m"the forbidden text is permitted away from the end"):
+        Name[NotEndingZ](t"zebra")
+      . assert(_ == t"zebra")
+
+      test(m"a conforming literal compiles"):
+        demilitarize:
+          val name: Name[NotEndingZ] = n"zebra"
+      . assert(_ == Nil)
+
+      test(m"a non-conforming literal is a compile error"):
+        demilitarize:
+          val name: Name[NotEndingZ] = n"quartz"
+      . assert(_.nonEmpty)
+
+    suite(m"MustMatch"):
+      inline given lowercase: Lowercase is Nominative under MustMatch["[a-z]+"] = !!
+
+      test(m"a name matching the pattern is accepted"):
+        Name[Lowercase](t"abc")
+      . assert(_ == t"abc")
+
+      test(m"a name not matching the pattern is rejected"):
+        capture[Name.Error](Name[Lowercase](t"abc1")).message.show
+      . assert(_ == t"the name abc1 is not valid because it must match [a-z]+")
+
+      test(m"the empty name does not match a one-or-more pattern"):
+        capture[Name.Error](Name[Lowercase](t"")).message.show
+      . assert(_ == t"""the name “” is not valid because it must match [a-z]+""")
+
+      test(m"a conforming literal compiles"):
+        demilitarize:
+          val name: Name[Lowercase] = n"abc"
+      . assert(_ == Nil)
+
+      test(m"a non-conforming literal is a compile error"):
+        demilitarize:
+          val name: Name[Lowercase] = n"abc1"
+      . assert(_.nonEmpty)
+
+    suite(m"MustMatch anchoring"):
+      inline given repeated: Repeated is Nominative under MustMatch["a+"] = !!
+
+      // `MustMatch` delegates to `String.matches`, which anchors at both ends. That is invisible
+      // from the type, so it is pinned here: a pattern found *within* the name is not a match.
+      test(m"the pattern must match the whole name, not a substring"):
+        capture[Name.Error](Name[Repeated](t"baa")).message.show
+      . assert(_ == t"the name baa is not valid because it must match a+")
+
+      test(m"a trailing substring match is also not enough"):
+        capture[Name.Error](Name[Repeated](t"aab")).message.show
+      . assert(_ == t"the name aab is not valid because it must match a+")
+
+      test(m"the whole name matching is accepted"):
+        Name[Repeated](t"aaa")
+      . assert(_ == t"aaa")
+
+    suite(m"MustNotMatch"):
+      inline given notDigits: NotDigits is Nominative under MustNotMatch["[0-9]+"] = !!
+
+      test(m"a name not matching the forbidden pattern is accepted"):
+        Name[NotDigits](t"abc")
+      . assert(_ == t"abc")
+
+      test(m"a name matching the forbidden pattern is rejected"):
+        capture[Name.Error](Name[NotDigits](t"123")).message.show
+      . assert(_ == t"the name 123 is not valid because it must not match [0-9]+")
+
+      test(m"a partial match is permitted, since matching is anchored"):
+        Name[NotDigits](t"1a3")
+      . assert(_ == t"1a3")
+
+      test(m"a conforming literal compiles"):
+        demilitarize:
+          val name: Name[NotDigits] = n"abc"
+      . assert(_ == Nil)
+
+      test(m"a non-conforming literal is a compile error"):
+        demilitarize:
+          val name: Name[NotDigits] = n"123"
+      . assert(_.nonEmpty)
