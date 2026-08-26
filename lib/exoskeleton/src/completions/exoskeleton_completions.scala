@@ -74,7 +74,19 @@ def execute[result <: Termination: scala.Precise]
     case completion: Completion => Execution.of[result](Exit.Ok, statuses)
 
     case invocation: Invocation =>
-      Execution.of[result](block(using !!)(using invocation).exit, statuses)
+      // The guard for required flags: every `require()` call in the pure section accrued its
+      // missing flag on the invocation, so they can all be reported together, and the block —
+      // within which a `Requisite` unwraps unconditionally — is never run. Exit status 2, by
+      // the usage-error convention.
+      val missing = invocation.missingRequisites
+
+      if missing.nil
+      then Execution.of[result](block(using !!)(using invocation).exit, statuses)
+      else
+        given Stdio = invocation.stdio
+        Err.println(t"The following required options were not specified:")
+        missing.each { flag => Err.println(t"  ${Flag.serialize(flag.name)}") }
+        Execution.of[result](Exit.Fail(2), statuses)
 
 def explain(explanation: (Optional[Text] aka "prior") ?=> Optional[Text])(using cli: Cli): Unit =
   cli.explain(explanation(using Unset.aka["prior"]))
@@ -85,6 +97,7 @@ case class Probe
   ( suggestions: List[Suggestion],
     flags:       List[Flag],
     globals:     Set[Flag],
+    required:    Set[Flag],
     operands:    scala.collection.Map[Flag, Text],
     statuses:    List[Status],
     variables:   List[Text] )
@@ -138,6 +151,7 @@ def helpTree
       ( completion.cursorSuggestions,
         completion.flags.keySet.to(List),
         completion.globalFlags.foldLeft(Set[Flag]())(_ :+ _),
+        completion.requiredFlags.foldLeft(Set[Flag]())(_ :+ _),
         completion.operandNames,
         completion.statuses.to(scala.List).to(List),
         variables.to(scala.List).to(List) )
@@ -152,7 +166,8 @@ def helpTree
   :   Help =
 
     if seen.has(prefix) then Help(command, description, Nil, Nil, group) else
-      val Probe(suggestions, flags, globals, operands, statuses, variables) = probe(prefix)
+      val Probe(suggestions, flags, globals, required, operands, statuses, variables) =
+        probe(prefix)
 
       // Flags already attributed to an ancestor re-register at every deeper prefix, since each
       // probe re-runs the whole program; they belong to the ancestor, so drop them here.
@@ -165,7 +180,8 @@ def helpTree
             flag.description,
             flag.repeatable,
             globals.has(flag),
-            operands.get(flag).optional )
+            operands.get(flag).optional,
+            required.has(flag) )
 
       val known = flags.stdlib.foldLeft(inherited)(_ :+ _)
 

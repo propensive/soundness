@@ -68,6 +68,7 @@ extends Cli:
   val operandNames: scm.HashMap[Flag, Text] = scm.HashMap()
   val globalFlags: scm.HashSet[Flag] = scm.HashSet()
   val seenFlags: scm.HashSet[Flag] = scm.HashSet()
+  val requiredFlags: scm.HashSet[Flag] = scm.HashSet()
   val statuses: scm.LinkedHashSet[Status] = scm.LinkedHashSet()
 
   // Whether any suggestions have been offered yet for the focused argument. Flags registered
@@ -120,6 +121,11 @@ extends Cli:
   override def record(statuses: List[Status]): Unit = statuses.each(this.statuses += _)
 
   override def present(flag: Flag): Unit = if !flag.repeatable then seenFlags += flag
+
+  // Requiredness is an interface fact, recorded whether or not the flag is present; a failed
+  // requirement never precludes completions.
+  override def demand(flag: Flag, present: Boolean): Unit =
+    if !flag.secret then requiredFlags += flag
 
   override def explain(update: (Optional[Text] aka "prior") ?=> Optional[Text]): Unit =
     explanation = update(using explanation.aka["prior"])

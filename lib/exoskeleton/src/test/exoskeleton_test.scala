@@ -931,3 +931,105 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         test(m"The manpage synopsis matches the help text usage line"):
           HelpApp.tree.roff.serialize.cut(t"\n")
         . assert(_.has(t"\\fBmytool\\fP [\\-\\-verbose <value>] <command> [options]"))
+
+      suite(m"Prospective and requisite flags"):
+        import interpreters.posixInterpreter
+        import stdios.muteStdio
+
+        // Run the application in invocation mode and return its exit status along with the
+        // spent invocation, so accrued state can be inspected.
+        def invoke(app: Cli ?=> Execution)(textArguments: Text*): (Exit, Invocation) =
+          val invocation =
+            Invocation
+              (Cli.arguments(textArguments),
+               summon[Environment],
+               summon[WorkingDirectory],
+               summon[Stdio],
+               true,
+               Login(t"tester", Unset))
+
+          (app(using invocation).exitStatus, invocation)
+
+        test(m"A flag applied in the pure section yields a prospective handle"):
+          def app(using cli: Cli): Execution =
+            val count: Prospective[Text] = Flag[Text](t"count")()
+            execute(if count().let(_ == t"4").or(false) then Exit.Ok else Exit.Fail(1))
+
+          invoke(app)(t"--count", t"4")(0)
+        .assert(_ == Exit.Ok)
+
+        test(m"A prospective flag's presence is visible in the pure section"):
+          def app(using cli: Cli): Execution =
+            val count = Flag[Text](t"count")()
+            if count.present then execute(Exit.Ok) else execute(Exit.Fail(1))
+
+          invoke(app)(t"--count", t"4")(0)
+        .assert(_ == Exit.Ok)
+
+        test(m"A flag applied inside execute resolves directly to an optional value"):
+          def app(using cli: Cli): Execution =
+            execute:
+              val count: Optional[Text] = Flag[Text](t"count")()
+              if count == t"4" then Exit.Ok else Exit.Fail(1)
+
+          invoke(app)(t"--count", t"4")(0)
+        .assert(_ == Exit.Ok)
+
+        test(m"A required flag which is present yields its value inside execute"):
+          def app(using cli: Cli): Execution =
+            val count: Requisite[Text] = Flag[Text](t"count").require()
+            execute(if count() == t"4" then Exit.Ok else Exit.Fail(1))
+
+          invoke(app)(t"--count", t"4")(0)
+        .assert(_ == Exit.Ok)
+
+        test(m"A missing required flag precludes execution with a usage error"):
+          def app(using cli: Cli): Execution =
+            Flag[Text](t"count").require()
+            execute(Exit.Ok)
+
+          invoke(app)()(0)
+        .assert(_ == Exit.Fail(2))
+
+        test(m"All missing required flags are accrued in order"):
+          def app(using cli: Cli): Execution =
+            Flag[Text](t"alpha").require()
+            Flag[Text](t"beta").require()
+            execute(Exit.Ok)
+
+          invoke(app)()(1).missingRequisites.map(_.name)
+        .assert(_ == List(t"alpha", t"beta"))
+
+        test(m"Requiring a present flag inside execute yields the value directly"):
+          def app(using cli: Cli): Execution =
+            execute:
+              val count: Text = Flag[Text](t"count").require()
+              if count == t"4" then Exit.Ok else Exit.Fail(1)
+
+          invoke(app)(t"--count", t"4")(0)
+        .assert(_ == Exit.Ok)
+
+        test(m"Requiring a missing flag inside execute raises MissingFlagError"):
+          def app(using cli: Cli): Execution =
+            execute(Flag[Text](t"count").require() yet Exit.Ok)
+
+          try invoke(app)() yet t"returned" catch case error: MissingFlagError => t"raised"
+        .assert(_ == t"raised")
+
+        val requiredTree: Help =
+          helpTree
+           (t"reqtool",
+            summon[Environment],
+            summon[WorkingDirectory],
+            summon[Stdio],
+            Login(t"tester", Unset)):
+            Flag[Text](t"home", description = t"the home directory").require()
+            execute(Exit.Ok)
+
+        test(m"Required flags are marked in the help tree"):
+          requiredTree.parameters.filter(_.name == t"--home").map(_.required)
+        .assert(_ == List(true))
+
+        test(m"Required flags are annotated in rendered help"):
+          summon[Help is Printable].print(requiredTree, stdios.muteStdio.termcap)
+        .assert(_.contains(t"the home directory (required)"))

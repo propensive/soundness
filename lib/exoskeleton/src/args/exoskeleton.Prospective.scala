@@ -32,4 +32,18 @@
                                                                                                   */
 package exoskeleton
 
-sealed trait Effectful
+import scala.language.experimental.pureFunctions
+
+import vacuous.*
+
+// The handle for a flag's value, as resolved in the pure section before an `execute` block is
+// reached. Resolution is eager: the value is read from the arguments when the handle is
+// created (so the handle captures no `Cli`), and `value` may be consulted freely in the pure
+// section — for instance, to offer different completion suggestions according to whether the
+// flag is present. Applying the handle, by contrast, requires the `Effectful` capability which
+// only an `execute` block provides.
+case class Prospective[topic](flag: Flag, value: Optional[topic]):
+  def present: Boolean = value.present
+  def absent: Boolean = value.absent
+
+  def apply()(using erased effectful: Effectful): Optional[topic] = value

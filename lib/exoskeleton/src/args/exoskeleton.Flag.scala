@@ -34,6 +34,8 @@ package exoskeleton
 
 import scala.language.experimental.pureFunctions
 
+import scala.compiletime.*
+
 import anticipation.*
 import denominative.*
 import gossamer.*
@@ -87,20 +89,54 @@ extends Topical:
     flag == name || aliases.stdlib.contains(flag)
 
 
-  def apply()
+  // Both `apply` and `require` dispatch on the erased `Effectful` capability, which only an
+  // `execute` block provides. In the pure section they return a handle — a `Prospective` or a
+  // `Requisite` — resolved eagerly from the arguments; inside `execute` they resolve directly,
+  // to an `Optional` value and to the value itself respectively.
+  transparent inline def apply()
     ( using cli:           Cli,
             interpreter:   Interpreter,
             interpretable: Topic is Interpretable,
             suggestions:   (? <: Topic) is Discoverable = Discoverable.noSuggestions )
-  :   Optional[Topic] =
+  :   Prospective[Topic] | Optional[Topic] =
 
     cli.register(this, suggestions, interpretable.operandName)
-    cli.parameter(this)
+
+    summonFrom:
+      case _: Effectful => cli.parameter[Topic](this)
+      case _            => Prospective(this, cli.parameter[Topic](this))
 
 
-  def select(options: Iterable[Topic])
+  // Requiring a flag in the pure section never fails fast: there may be several missing
+  // requirements, and they are accrued on the `Cli` so that `execute` can report them all in
+  // one friendly message. Inside `execute`, where the guard has already run, a missing flag
+  // raises a `MissingFlagError` immediately instead, for the backstop to handle.
+  transparent inline def require()
+    ( using cli:           Cli,
+            interpreter:   Interpreter,
+            interpretable: Topic is Interpretable,
+            suggestions:   (? <: Topic) is Discoverable = Discoverable.noSuggestions )
+  :   Requisite[Topic] | Topic =
+
+    cli.register(this, suggestions, interpretable.operandName)
+    val value = cli.parameter[Topic](this)
+    cli.demand(this, value.present)
+
+    summonFrom:
+      case _: Effectful =>
+        // Unchecked deliberately: the failure is a user error, reported by the backstop, not a
+        // condition for the application to handle.
+        import scala.unsafeExceptions.canThrowAny
+        import fulminate.errorDiagnostics.emptyDiagnostics
+        value.or(throw MissingFlagError(this))
+
+      case _ =>
+        Requisite(this, value)
+
+
+  transparent inline def select(options: Iterable[Topic])
     ( using cli: Cli, interpreter: Interpreter, suggestible: Topic is Suggestible )
-  :   Optional[Topic] =
+  :   Prospective[Topic] | Optional[Topic] =
 
     val mapping: Map[Text, Topic] =
       (options.map { option => (suggestible.suggest(option).text, option) }).to(Map)

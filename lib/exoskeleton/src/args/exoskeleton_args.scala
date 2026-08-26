@@ -150,3 +150,9 @@ package interpreters:
     recur(arguments, Nil, Unset, Commandline())
 
 def arguments(using cli: Cli): List[Argument] = cli.arguments
+
+// An escape hatch: conjures the erased `Effectful` capability outside an `execute` block. Code
+// which uses it forgoes the guarantees `execute` provides — in particular, a `Requisite`
+// unwrapped under a conjured `Effectful` may panic, since the missing-flag guard has not run.
+inline def effectful[result](lambda: (erased effectful: Effectful) ?=> result): result =
+  lambda(using !![Effectful])
