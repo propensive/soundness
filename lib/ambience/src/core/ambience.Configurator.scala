@@ -32,6 +32,8 @@
                                                                                                   */
 package ambience
 
+import scala.caps
+
 import anticipation.*
 import gossamer.*
 import vacuous.*
@@ -60,9 +62,18 @@ object Configurator:
 // is keyed by a setting's canonical camelCase name (e.g. `logLevel`), and each source owns its
 // own mapping into its native namespace (`MYAPP_LOG_LEVEL`, `myapp.log.level`, and so on).
 // Configurators compose with `++`; composition order is priority order.
-trait Configurator:
+//
+// A CAPABILITY class: a configurator reaches outside the program (the environment, system
+// properties, configuration files), and its implementations capture the capabilities they read
+// through, so the unannotated type `Configurator` is tracked wherever it appears — users write
+// `using Configurator`, not `using Configurator^`. SHARED, not exclusive: a configurator is
+// read-only and freely aliasable.
+trait Configurator extends caps.SharedCapability:
   def read(name: Text): Optional[Text]
 
+  // The composed configurator is a FRESH capability (instantiating a capability class mints
+  // one), so the result is the unannotated — implicitly tracked — type rather than the
+  // previous hand-written `^{this, that}`.
   @targetName("compose")
-  infix def ++ (that: Configurator^): Configurator^{this, that} =
+  infix def ++ (that: Configurator): Configurator =
     name => read(name).or(that.read(name))
