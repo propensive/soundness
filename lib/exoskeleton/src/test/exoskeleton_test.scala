@@ -89,7 +89,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                 case Beta() :: _  => execute(Exit.Ok)
 
                 case Gamma() :: _ =>
-                  given Hue is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
+                  given Hue is Discoverable = (_, _) => List(Suggestion(t"red"), Suggestion(t"green"), Suggestion(t"blue"))
                   given Hue is Interpretable =
                     case argument :: Nil => Hue(argument())
                     case _               => Hue(t"unknown")
@@ -107,7 +107,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                       Flag("two", description = t"the second one")()
                       execute(Exit.Ok)
                     case Gentoo() :: _ =>
-                      given Hue is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
+                      given Hue is Discoverable = (_, _) => List(Suggestion(t"red"), Suggestion(t"green"), Suggestion(t"blue"))
                       given Hue is Interpretable =
                         case argument :: Nil => Hue(argument())
                         case _               => Hue(t"unknown")
@@ -118,12 +118,12 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                     case _             => execute(Exit.Ok)
 
                 case Tree() :: _ =>
-                  given Segment is Discoverable = _ => List(Suggestion(t"src/", incomplete = true))
+                  given Segment is Discoverable = (_, _) => List(Suggestion(t"src/", incomplete = true))
                   given Segment is Interpretable =
                     case argument :: Nil => Segment(argument())
                     case _               => Segment(t"")
 
-                  given Node is Discoverable = _ => List(Suggestion(t"key.", incomplete = true))
+                  given Node is Discoverable = (_, _) => List(Suggestion(t"key.", incomplete = true))
                   given Node is Interpretable =
                     case argument :: Nil => Node(argument())
                     case _               => Node(t"")
@@ -1117,3 +1117,63 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           try invoke(app)() yet t"returned"
           catch case error: MissingFlagError => t"raised"
         .assert(_ == t"raised")
+
+      suite(m"Pathname operand completion"):
+        import interfaces.paths.pathOnLinux
+        import interpreters.posixInterpreter
+        import stdios.muteStdio
+
+        // A directory of known content, used as the working directory below so that
+        // `Pathname.complete`'s listings are deterministic.
+        val fixture: Path on Linux = unsafely:
+          val dir: Path on Linux =
+            temporaryDirectory[Path on Linux]/t"exoskeleton-operand-${Uuid()}"
+
+          dir.create[Directory]()
+          (dir/t"one.txt").create[File]()
+          (dir/t"two.txt").create[File]()
+          (dir/t"src").create[Directory]()
+          (dir/t"src"/t"inner.txt").create[File]()
+          dir
+
+        given WorkingDirectory = () => fixture.encode
+
+        test(m"An empty operand lists the working directory's visible entries"):
+          Pathname.complete(t"", Prim).map(_.core).sort(identity)
+        .assert(_ == List(t"one.txt", t"src/", t"two.txt"))
+
+        test(m"A partial name narrows the candidates"):
+          Pathname.complete(t"on", Prim).map(_.core)
+        .assert(_ == List(t"one.txt"))
+
+        test(m"A directory operand descends into the directory"):
+          Pathname.complete(t"src/", Prim).map { s => t"${s.prefix}${s.core}" }
+        .assert(_ == List(t"src/inner.txt"))
+
+        test(m"The pathname Discoverable offers the extractor's candidates for a flag operand"):
+          pathnameDiscoverable.discover(t"src/", Prim).map(_.core)
+        .assert(_ == List(t"inner.txt"))
+
+        test(m"A flag operand's partial text reaches its Discoverable"):
+          val args = Cli.arguments(List(t"--hue", t"re"), 1, 2)
+
+          val completion =
+            Completion
+              (args,
+               args,
+               summon[Environment],
+               summon[WorkingDirectory],
+               Shell.Zsh,
+               1,
+               2,
+               summon[Stdio],
+               t"",
+               Prim,
+               Login(t"tester", Unset))
+
+          given Text is Discoverable = (operand, _) => List(Suggestion(t"[$operand]"))
+
+          def app(using cli: Cli): Unit = Flag[Text](t"hue")() yet ()
+          app(using completion)
+          completion.cursorSuggestions.map(_.core)
+        .assert(_ == List(t"[re]"))

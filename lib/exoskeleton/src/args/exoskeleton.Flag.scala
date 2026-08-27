@@ -231,6 +231,6 @@ extends Topical:
     // Marked as operand values, not subcommands: they are candidates for this flag's operand, so
     // the help tree must not descend into them (see `Suggestion.operand`).
     given suggestions: Topic is Discoverable =
-      _ => options.map(suggestible.suggest(_).copy(operand = true))
+      (_, _) => options.map(suggestible.suggest(_).copy(operand = true)).to(List)
 
     this()

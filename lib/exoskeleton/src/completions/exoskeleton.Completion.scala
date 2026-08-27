@@ -105,12 +105,17 @@ extends Cli:
     val operands = interpreter.find(parameters, flag)
 
     interpreter.focus(parameters).let: argument =>
+      // The partially-typed operand text is passed for the `Discoverable` to resolve. In the
+      // first case the focused argument is the operand itself (the `--flag=operand` form); in
+      // the second the focus is the flag, with the cursor on the following word — the flag's
+      // operand at that position, or empty if the word has not been started.
       if operands.prim == argument then
-        val allSuggestions = discoverable.discover(tab).to(List)
+        val allSuggestions = discoverable.discover(argument(), tab)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
       if flag.matches(argument) && currentArgument == argument.position + 1 then
-        val allSuggestions = discoverable.discover(tab).to(List)
+        val operand = operands.seek(_.position == currentArgument).let(_()).or(t"")
+        val allSuggestions = discoverable.discover(operand, tab)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
     if !flag.secret then

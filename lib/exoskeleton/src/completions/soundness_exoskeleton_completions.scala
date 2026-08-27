@@ -32,7 +32,8 @@
                                                                                                   */
 package soundness
 
-export exoskeleton.{CliEvent, Completion, Completions, execute, Execution, explain, Pathname}
+export exoskeleton.{CliEvent, Completion, Completions, execute, Execution, explain, Pathname,
+    pathnameDiscoverable}
 
 package executives:
   export exoskeleton.executives.completions
