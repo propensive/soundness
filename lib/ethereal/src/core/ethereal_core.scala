@@ -505,6 +505,13 @@ def cli[bus <: Matchable](using executive: Executive)
         val termcap: Termcap = new Termcap:
           def ansi: Boolean = true
 
+          // The client terminal's width, detected by the launcher with `TIOCGWINSZ` and
+          // forwarded as `COLUMNS` in the invocation environment (#1789). Absent when the
+          // client's output is not a terminal, in which case the width stays unbounded and
+          // nothing wraps.
+          override lazy val width: Int =
+            safely(Environment.columns[Text].s.toInt).or(Int.MaxValue)
+
           lazy val color: ColorDepth =
             import workingDirectories.systemWorkingDirectory
 
