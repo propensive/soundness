@@ -197,3 +197,56 @@ object PositionTests extends Suite(m"Stratiform position-index tests"):
       test(m"a position's span carries its length"):
         at(2, 8, 3).span.length
       . assert(_ == 3)
+
+    // `enclosing` is the reverse lookup (#1463): a 1-indexed source coordinate
+    // to the innermost compound containing it, with the keyword path that
+    // reaches it. The highlighted region follows the coordinate: the
+    // inline-atom run when the cursor is inside it, the keyword otherwise.
+    suite(m"Enclosing-node lookup"):
+      def enclosure(path: List[Text], position: Tel.Position): Tel.Enclosure =
+        Tel.Enclosure(Telp(path), position)
+
+      test(m"A coordinate on a top-level keyword encloses that compound"):
+        t"person\n  name Alice\n  age 30\n".read[Tel].enclosing(1, 2)
+      . assert(_ == enclosure(List(t"person"), at(1, 1, 6)))
+
+      test(m"A coordinate on a child's keyword encloses the child"):
+        t"person\n  name Alice\n  age 30\n".read[Tel].enclosing(2, 4)
+      . assert(_ == enclosure(List(t"person", t"name"), at(2, 3, 4)))
+
+      test(m"A coordinate inside the inline-atom run names the value region"):
+        t"person\n  name Alice\n  age 30\n".read[Tel].enclosing(2, 9)
+      . assert(_ == enclosure(List(t"person", t"name"), at(2, 8, 5)))
+
+      test(m"A coordinate in a child line's indentation encloses that child"):
+        t"person\n  name Alice\n".read[Tel].enclosing(2, 1)
+      . assert(_ == enclosure(List(t"person", t"name"), at(2, 3, 4)))
+
+      test(m"A coordinate on a later sibling encloses it, not the first"):
+        t"person\n  name Alice\n  age 30\n".read[Tel].enclosing(3, 5)
+      . assert(_ == enclosure(List(t"person", t"age"), at(3, 3, 3)))
+
+      test(m"A grandchild coordinate builds the full keyword path"):
+        t"a\n  b\n    c hello\n".read[Tel].enclosing(3, 5)
+      . assert(_ == enclosure(List(t"a", t"b", t"c"), at(3, 5, 1)))
+
+      test(m"A second top-level compound bounds its predecessor's extent"):
+        t"first\n  child x\nsecond y\n".read[Tel].enclosing(3, 1)
+      . assert(_ == enclosure(List(t"second"), at(3, 1, 6)))
+
+      test(m"A blank line between siblings belongs to the preceding subtree"):
+        t"first a\n\nsecond b\n".read[Tel].enclosing(2, 1)
+      . assert(_ == enclosure(List(t"first"), at(1, 1, 5)))
+
+      test(m"A coordinate after the last compound encloses its deepest node"):
+        t"a\n  b c\n".read[Tel].enclosing(3, 1)
+      . assert(_ == enclosure(List(t"a", t"b"), at(2, 3, 1)))
+
+      test(m"A coordinate enclosed only by the document root yields Unset"):
+        t"\nfirst a\n".read[Tel].enclosing(1, 1)
+      . assert(_ == Unset)
+
+      test(m"An untracked document yields Unset"):
+        given PositionTracking = PositionTracking.Off
+        t"greeting hello\n".read[Tel].enclosing(1, 1)
+      . assert(_ == Unset)
