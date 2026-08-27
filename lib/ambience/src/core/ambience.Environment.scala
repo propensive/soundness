@@ -41,6 +41,14 @@ import vacuous.*
 import fulminate.*
 
 object Environment extends Dynamic:
+  // A source of a canonical `Environment`, such as a CLI invocation. In the companion of the
+  // searched type, so no import is needed: an ambient `Cli` makes the environment summonable
+  // directly.
+  trait Provider:
+    def environment: Environment
+
+  given provided: (provider: Provider^) => Environment = provider.environment
+
   def apply[variable]
     ( variable: Text )
     ( using environment: Environment, reader: Variable[Label, variable] )

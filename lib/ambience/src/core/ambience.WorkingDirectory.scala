@@ -41,6 +41,14 @@ object WorkingDirectory:
   def apply[path: Abstractable across Paths to Text](path: path): WorkingDirectory =
     () => path.generic
 
+  // A source of a canonical `WorkingDirectory`, such as a CLI invocation (each daemon client
+  // has its own). In the companion of the searched type, so no import is needed: an ambient
+  // `Cli` makes the working directory summonable directly.
+  trait Provider:
+    def workingDirectory: WorkingDirectory
+
+  given provided: (provider: Provider^) => WorkingDirectory = provider.workingDirectory
+
   // WorkingDirectoryError → WorkingDirectory.Error
   case class Error()(using Diagnostics)
   extends fulminate.Error(913, 0)(m"there is no working directory")

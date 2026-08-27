@@ -46,7 +46,7 @@ case class Invocation
     proceed:          Boolean,
     login:            Login )
   ( using interpreter: Interpreter )
-extends Cli, Stdio:
+extends Cli, Stdio.Provider:
 
   export stdio.{termcap, out, err, in}
 
