@@ -433,7 +433,7 @@ private[xylophone] object XPathReader:
 
         case Token.DoubleSlash =>
           advance()
-          Expression.Route(Origin.Root, (descendantStep :: parseRelative().stdlib).to(List))
+          Expression.Route(Origin.Root, descendantStep :: parseRelative())
 
         case token if startsStep(token) =>
           Expression.Route(Origin.Here, parseRelative())
@@ -547,7 +547,7 @@ private[xylophone] object XPathReader:
         val descend = current == Token.DoubleSlash
         advance()
         val rest = parseRelative()
-        val steps = if descend then (descendantStep :: rest.stdlib).to(List) else rest
+        val steps = if descend then descendantStep :: rest else rest
         Expression.Route(Origin.Filter(primary, predicates), steps)
       else if predicates.nil then primary
       else Expression.Route(Origin.Filter(primary, predicates), Nil)
