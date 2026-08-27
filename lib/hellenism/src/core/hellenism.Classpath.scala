@@ -129,11 +129,24 @@ object Classpath extends Root(t""):
 
     // The anonymous classloader's only capture is the read view of the freshly-built URL
     // array, laundered here.
+    //
+    // Child-first delegation must still honour the `ClassLoader` contract: consult
+    // `findLoadedClass` under the per-name loading lock before defining. Without the check, a
+    // second request for an already-loaded class — or two threads racing on the same name, as
+    // concurrent test workers routinely do — reaches `defineClass` twice and dies with a
+    // `LinkageError: attempted duplicate class definition`.
     scala.caps.unsafe.unsafeAssumePure:
      new jn.URLClassLoader(urls, parent):
       override def loadClass(name: String | Null, resolve: Boolean): Class[?] | Null =
-        try findClass(name) catch case error: ClassNotFoundException =>
-          super.loadClass(name, resolve)
+        getClassLoadingLock(name).nn.synchronized:
+          val loaded = findLoadedClass(name)
+
+          if loaded != null then
+            if resolve then resolveClass(loaded)
+            loaded
+          else
+            try findClass(name) catch case error: ClassNotFoundException =>
+              super.loadClass(name, resolve)
 
   // ClasspathEntry → Classpath.Entry
   object Entry:
