@@ -92,6 +92,12 @@ object Variable extends Protovariable:
 
     pathVariable(instantiable)
 
+  given xdgBinHome: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
+  =>  Variable["xdgBinHome", path] =
+
+    pathVariable(instantiable)
+
   given xdgStateHome: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["xdgStateHome", path] =

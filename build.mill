@@ -1117,7 +1117,7 @@ object adversaria extends Library:
 
 object ambience extends Library:
   object core extends Component(anticipation.path, anticipation.print, gossamer.core,
-      distillate.core):
+      distillate.core, serpentine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // WASI-backed environment: an `Environment` given whose variables come from a Wasm Component

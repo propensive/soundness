@@ -727,3 +727,66 @@ object Tests extends Suite(m"Galilei tests"):
           Slice(windowed, 0L, 4L).open[File](Read & Write & Exclusive): window ?=>
             window.write(4L, t"zz".in[Data])
       . assert(_ == 0)
+
+    suite(m"Searchpaths"):
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+      import interfaces.paths.pathOnLinux
+
+      val spLeafA: Text = t"sp-a-${Uuid().show}"
+      val spLeafB: Text = t"sp-b-${Uuid().show}"
+      val stemA: Path on Linux = unsafely((% / "tmp" / spLeafA).on[Linux])
+      val stemB: Path on Linux = unsafely((% / "tmp" / spLeafB).on[Linux])
+
+      unsafely:
+        stemA.create[Directory]()
+        stemB.create[Directory]()
+        (stemA / "icons").create[Directory]()
+        (stemB / "icons").create[Directory]()
+        (stemA / "icons" / "app.png").write(t"A")
+        (stemB / "icons" / "app.png").write(t"B")
+        (stemB / "icons" / "extra.png").write(t"B2")
+        (stemB / "themes").create[Directory]()
+
+      given Searchpaths.Stems on Xdg.Data onto Linux = new Searchpaths.Stems:
+        type Plane = Xdg.Data
+        type Target = Linux
+        val stems: List[Path on Linux] = List(stemA, stemB)
+
+      test(m"locate finds the first stem's match"):
+        unsafely((% / "icons" / "app.png").on[Xdg.Data].search())
+      . assert(_ == unsafely(stemA / "icons" / "app.png"))
+
+      test(m"locate falls through to a later stem"):
+        unsafely((% / "icons" / "extra.png").on[Xdg.Data].search())
+      . assert(_ == unsafely(stemB / "icons" / "extra.png"))
+
+      test(m"a path present nowhere locates to Unset"):
+        unsafely((% / "icons" / "missing.png").on[Xdg.Data].search())
+      . assert(_ == Unset)
+
+      test(m"locations lists every extant match in precedence order"):
+        unsafely((% / "icons" / "app.png").on[Xdg.Data].locations())
+      . assert(_ == unsafely(List(stemA / "icons" / "app.png", stemB / "icons" / "app.png")))
+
+      test(m"entries merge across stems, earlier shadowing later"):
+        unsafely((% / "icons").on[Xdg.Data].listing().map(_.name).sort(identity))
+      . assert(_ == List(t"app.png", t"extra.png"))
+
+      test(m"a later-stem-only directory is found"):
+        unsafely((% / "themes").on[Xdg.Data].search().present)
+      . assert(_ == true)
+
+      test(m"destination is the head-stem realization"):
+        unsafely((% / "themes" / "new.css").on[Xdg.Data].destination())
+      . assert(_ == unsafely(stemA / "themes" / "new.css"))
+
+      test(m"the Xdg constructor reads the variables in spec order"):
+        import systems.javaSystem
+        given Environment = name =>
+          if name == t"XDG_DATA_HOME" then stemA.encode
+          else if name == t"XDG_DATA_DIRS" then stemB.encode
+          else Unset
+
+        Xdg.dataSearch().stems
+      . assert(_ == List(stemA, stemB))

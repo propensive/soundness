@@ -35,8 +35,8 @@ package soundness
 export
   ambience
   . { Architecture, Configurator, Directories, Environment, Property, Protovariable, System,
-      TemporaryDirectory, temporaryDirectory, Variable, variables, WorkingDirectory,
-      workingDirectory, Xdg }
+      Searchpath, TemporaryDirectory, temporaryDirectory, Variable, variables,
+      WorkingDirectory, workingDirectory, Xdg }
 
 package systems:
   export ambience.systems.{emptySystem, javaSystem}

@@ -32,85 +32,39 @@
                                                                                                   */
 package ambience
 
-import scala.language.experimental.pureFunctions
-
 import anticipation.*
 import contingency.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
 import rudiments.*
-import vacuous.*
+import serpentine.*
 
-object Xdg:
-  // The XDG searchpath planes (issue #602): a `Path on Xdg.Data` denotes a subpath searched
-  // across `dataHome` and every entry of `dataDirs`, in that precedence order — and likewise
-  // `Config` for `configHome` and `configDirs`. The joining machinery (`Searchpaths.Stems`,
-  // first-match resolution, merged listings) lives in galilei.
-  trait Data extends Searchpath
-  trait Config extends Searchpath
+import Path.%
 
-  def dataHome[path]
-    ( using instantiable: (path is Instantiable across Paths from Text)^ )
-    ( using environment: Environment, system: System )
-  :   path =
+// A *searchpath plane*: a virtual path plane joining an ordered list of real directories into
+// a single searchable, navigable view — XDG's `$XDG_DATA_DIRS`, or `$PATH` (issue #602).
+// Deliberately, a searchpath plane has no `Filesystem` instance: galilei's absolute-path
+// operations (bounded by `[plane: Filesystem]`) must not apply to a virtual path, which they
+// would resolve as a literal platform path. The joining machinery — `Searchpaths.Stems`,
+// first-match resolution and merged, shadowed listings — lives in galilei; the marker and the
+// serpentine givens live here, in implicit scope of every plane extending it, so that `Xdg`'s
+// own planes can extend it without ambience depending on galilei.
+trait Searchpath
 
-    safely(Environment.xdgDataHome[path]).or(instantiable(t"${Directories.homeText}/.local/share"))
+object Searchpath:
+  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
 
+  inline given nominative: [plane <: Searchpath] => plane is Nominative under Rules = !!
 
-  def configHome[path]
-    ( using instantiable: (path is Instantiable across Paths from Text)^ )
-    ( using environment: Environment, system: System )
-  :   path =
+  given submissible: [plane <: Searchpath] => %.type is Submissible on plane = _ => ()
 
-    safely(Environment.xdgConfigHome[path]).or(instantiable(t"${Directories.homeText}/.config"))
-
-
-  def cacheHome[path]
-    ( using instantiable: (path is Instantiable across Paths from Text)^ )
-    ( using environment: Environment, system: System )
-  :   path =
-
-    safely(Environment.xdgCacheHome[path]).or(instantiable(t"${Directories.homeText}/.cache"))
-
-
-  def stateHome[path]
-    ( using instantiable: (path is Instantiable across Paths from Text)^ )
-    ( using environment: Environment, system: System )
-  :   path =
-
-    safely(Environment.xdgStateHome[path]).or(instantiable(t"${Directories.homeText}/.local/state"))
-
-
-  def runtimeDir[path]
-    ( using instantiable: (path is Instantiable across Paths from Text)^ )
-    ( using environment: Environment )
-  :   Optional[path] =
-
-    safely(Environment.xdgRuntimeDir[path])
-
-
-  def bin[path]
-    ( using instantiable: (path is Instantiable across Paths from Text)^ )
-    ( using environment: Environment, system: System )
-  :   path =
-
-    // `XDG_BIN_HOME`, not `XDG_CONFIG_HOME`: this formerly read the config-home variable
-    // before falling back, so a set `XDG_CONFIG_HOME` misdirected `bin` entirely.
-    safely(Environment.xdgBinHome[path]).or(instantiable(t"${Directories.homeText}/.local/bin"))
-
-
-  def dataDirs[path]
-    ( using instantiable: (path is Instantiable across Paths from Text)^ )
-    ( using environment: Environment, system: System )
-  :   List[path] =
-
-    safely(Environment.xdgDataDirs[List[path]]).or:
-      List(t"/usr/local/share", t"/usr/share").map(instantiable(_))
-
-
-  def configDirs[path]
-    ( using instantiable: (path is Instantiable across Paths from Text)^ )
-    ( using Environment, System )
-  :   List[path] =
-
-    safely(Environment.xdgConfigDirs[List[path]]).or(List(t"/etc/xdg").map(instantiable(_)))
+  // Paths on a searchpath plane are rooted subpaths: the root encodes to nothing, as with a
+  // directory handle's base.
+  given radical: [plane <: Searchpath] => (%.type is Radical on plane) =
+    new Radical:
+      type Self = %.type
+      type Plane = plane
+      def length(text: Text): Int raises Path.Error = 0
+      def decode(text: Text): %.type raises Path.Error = %
+      def encode(root: %.type): Text = t""
