@@ -32,8 +32,6 @@
                                                                                                   */
 package spectacular
 
-import scala.collection.immutable.IndexedSeq
-
 import scala.reflect
 
 import scala.{caps, compiletime}
@@ -79,7 +77,7 @@ import wisteria.*
 // Notation in use, by category:
 //
 //     containers     [a, b] list       {a, b} set        {k → v} map
-//                    ⟨ a b ⟩ sequence  ⟨ a b ⟩ᵢ indexed  ⦋…⦌ array   ⁅…⁆ frozen array
+//                    ⟨ a b ⟩ sequence  ⟦k → v⟧ ledger    ⦋…⦌ array   ⁅…⁆ frozen array
 //                    a ⋰ b ⋰ ..? lazy  ∿∿∿ unforced      ⯁ end
 //     products       Name(field:value ╱ field2:value)    (a ╱ b) tuple
 //     optionality    ｢value｣ present   ○ absent
@@ -313,6 +311,23 @@ object Inspectable extends Inspectable2:
 
       . stdlib.mkString("{", ", ", "}").tt
 
+  // A `Ledger` keeps its insertion order, so it is bracketed differently from the unordered
+  // `Map` above: the rendering has to say which of the two a value is, since the entries of a
+  // `Map` may be printed in any order and those of a `Ledger` may not.
+  given ledger: [key, value]
+  =>  ( inspectableKey: => key is Inspectable, inspectableValue: => value is Inspectable )
+  =>  Ledger[key, value] is Inspectable =
+
+    val inspKey: () -> (key is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectableKey)
+
+    val inspValue: () -> (value is Inspectable) =
+      caps.unsafe.unsafeAssumePure(() => inspectableValue)
+
+    ledger =>
+      ledger.stdlib.map: (key, value) =>
+        inspKey().text(key).s+" → "+inspValue().text(value).s
+
+      . mkString("⟦", ", ", "⟧").tt
 
   // `Self` is subtype-parametric so branded literals (`Sequence(1, 2, 3)`, typed
   // `Sequence[Int] & Populated`) match; rendering produces no collection, so no proof leaks.
@@ -322,15 +337,6 @@ object Inspectable extends Inspectable2:
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     _.map(insp().text(_)).stdlib.mkString("⟨ ", " ", " ⟩").tt
-
-  // The one instance which is deliberately *not* parameterised over its subtypes: a
-  // `Sequence` is an `IndexedSeq`, so a subtype bound here would match every `Sequence` too
-  // and be ambiguous with `sequence` above. Keeping `Self` exact confines this instance to a
-  // stdlib `IndexedSeq` named as such, which is what the `ᵢ` in its rendering marks.
-  given indexedSeq: [element] => (inspectable: => element is Inspectable)
-  =>  IndexedSeq[element] is Inspectable =
-    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
-    _.map(insp().text(_)).mkString("⟨ ", " ", " ⟩ᵢ").tt
 
   given list: [element] => (inspectable: => element is Inspectable)
   =>  List[element] is Inspectable =

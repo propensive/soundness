@@ -411,9 +411,17 @@ object Tests extends Suite(m"Spectacular Tests"):
         Map(1 -> 2).inspect
       . assert(_ == t"{1 → 2}")
 
-      // Raw `Vector` is no longer `Sequence` (opaque) and matches no curated instance (the
-      // `IndexedSeq` instance's `Self` is invariant), so it falls back to the quoted
-      // `toString` rendering; `Sequence` itself renders as `⟨ 1 2 3 ⟩`.
+      // Bracketed differently from a `Map`, whose entries have no significant order.
+      test(m"serialize ledger"):
+        Ledger(1 -> 2, 3 -> 4).inspect
+      . assert(_ == t"⟦1 → 2, 3 → 4⟧")
+
+      test(m"a ledger keeps its insertion order"):
+        Ledger(3 -> 4, 1 -> 2).inspect
+      . assert(_ == t"⟦3 → 4, 1 → 2⟧")
+
+      // Raw `Vector` is not a `Sequence` (which is opaque) and matches no curated instance, so
+      // it falls back to the quoted `toString` rendering; `Sequence` renders as `⟨ 1 2 3 ⟩`.
       test(m"serialize vector"):
         Vector(1, 2, 3).inspect
       . assert(_ == t"“Vector(1, 2, 3)”")
