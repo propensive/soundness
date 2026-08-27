@@ -344,6 +344,68 @@ object Tests extends Suite(m"Spectacular Tests"):
         m"the file was not found".inspect
       . assert(_ == t"m\"the file was not found\"")
 
+    // A missing instance never fails to compile, so coverage can only be held in place by
+    // asserting on the renderings themselves. Each of these lists the types a library owns;
+    // a failure names the renderings which fell back rather than merely reporting a count.
+    suite(m"Native-rendering coverage"):
+      test(m"the types spectacular renders itself all inspect natively"):
+        Inspectable.fallbacks
+         ( t"text".inspect,
+           'x'.inspect,
+           42.inspect,
+           42L.inspect,
+           42.toByte.inspect,
+           42.toShort.inspect,
+           3.1.inspect,
+           3.1f.inspect,
+           true.inspect,
+           ().inspect,
+           BigInt(42).inspect,
+           BigDecimal("1.5").inspect,
+           Unset.inspect,
+           Bytes(1024L).inspect,
+           m"a message".inspect,
+           Ordinal.zerary(0).inspect,
+           Interval().inspect,
+           Span.empty.inspect,
+           Person(t"Simon", 72).inspect,
+           Colour.Red.inspect,
+           Shape.Circle(5).inspect )
+      . assert(_ == Nil)
+
+      test(m"the sized numeric types all inspect natively"):
+        Inspectable.fallbacks
+         ( U8(200.toByte.bits).inspect,
+           U16(40000.toShort.bits).inspect,
+           U32(7.bits).inspect,
+           U64(7L.bits).inspect,
+           S8((-7).toByte.bits).inspect,
+           S16((-7).toShort.bits).inspect,
+           S32(-7.bits).inspect,
+           S64(-7L.bits).inspect,
+           47.toByte.bits.inspect,
+           47.toShort.bits.inspect,
+           255.bits.inspect,
+           (-1L).bits.inspect,
+           F32(3.5f).inspect,
+           F64(3.5).inspect )
+      . assert(_ == Nil)
+
+      test(m"the collection types all inspect natively"):
+        Inspectable.fallbacks
+         ( (List(1, 2): List[Int]).inspect,
+           Set(1, 2).inspect,
+           Map(1 -> 2).inspect,
+           Ledger(1 -> 2).inspect,
+           Sequence(1, 2).inspect )
+      . assert(_ == Nil)
+
+      // The counterpart: a type with no instance must be *reported*, or the assertions above
+      // would pass vacuously.
+      test(m"a type with no instance is reported as a fallback"):
+        Inspectable.fallbacks(Underived(7).inspect)
+      . assert(_ == List(t"“Underived(7)”"))
+
     suite(m"Position tests"):
       test(m"inspect the first ordinal"):
         Ordinal.zerary(0).inspect

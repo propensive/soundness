@@ -78,6 +78,24 @@ object Tests extends Suite(m"Urticose tests"):
       // .assert(_ == List(CompileError.Id.MissingImplicitArgument))
 
 
+    // A missing `Inspectable` is never a compile error — `derived` always succeeds and
+    // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
+    // only be held in place by asserting on the renderings. A failure names the ones which
+    // fell back.
+    suite(m"Native-rendering coverage"):
+      test(m"urticose's network types all inspect natively"):
+        Inspectable.fallbacks
+         ( ip"192.168.0.1".inspect,
+           ip"2001:db8::1".inspect,
+           ip"255.123.143.0".subnet(12).inspect,
+           MacAddress(1, 2, 3, 4, 5, 6).inspect,
+           tcp"smtp".inspect,
+           t"www.example.com".as[Hostname].inspect,
+           t"simple@example.com".as[EmailAddress].inspect,
+           url"https://example.com/path".inspect,
+           url"https://example.com/path".scheme.inspect )
+      . assert(_ == Nil)
+
     suite(m"IPv4 tests"):
       test(m"Parse in IPv4 address"):
         t"1.2.3.4".as[Ipv4]

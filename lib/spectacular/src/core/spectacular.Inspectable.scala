@@ -265,6 +265,22 @@ object Inspectable extends Inspectable2:
   given message: [message <: Message] => message is Inspectable = message =>
     ("m\""+message.text.s+"\"").tt
 
+  // A missing instance is never a compile error: `derived` always succeeds, and quietly
+  // substitutes a `toString`, a `Showable` or an `Encodable` rendering, each marked as such.
+  // Nothing therefore stops coverage from regressing — a type gains a refinement, or a new
+  // type is added, and its rendering silently degrades. `fallbacks` is what a library's tests
+  // assert on to prevent that: it returns those of the given renderings which carry a marker,
+  // so a failure names the renderings which are not native rather than merely counting them.
+  //
+  //     test(m"aviation's core types inspect natively"):
+  //       Inspectable.fallbacks(instant.inspect, date.inspect, month.inspect)
+  //     . assert(_ == Nil)
+  //
+  def fallbacks(renderings: Text*): List[Text] =
+    renderings.filter { rendering => rendering.s.exists(marker(_)) }.to(List)
+
+  def marker(char: Char): Boolean = char == '“' || char == '⸢' || char == '⸤'
+
   def escape(char: Char, eEscape: Boolean = false): Text = char match
     case '\n'                => "\\n".tt
     case '\t'                => "\\t".tt

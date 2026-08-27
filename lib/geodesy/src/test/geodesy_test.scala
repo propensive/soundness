@@ -67,6 +67,18 @@ object Tests extends Suite(m"Geodesy tests"):
 
     . assert(_ == t"7.25°")
 
+    // A missing `Inspectable` never fails to compile — `derived` substitutes a marked
+    // `toString`, `Showable` or `Encodable` rendering — so coverage is held in place by
+    // asserting on the renderings themselves.
+    test(m"geodesy's types inspect natively"):
+      Inspectable.fallbacks
+       ( Angle.degrees(90).inspect,
+         CardinalWind.North.inspect,
+         IntercardinalWind.Northeast.inspect,
+         HalfWind.NorthNortheast.inspect )
+
+    . assert(_ == Nil)
+
     test(m"render principal angle"):
       val angle = Angle.degrees(375)
       angle.principal.show
