@@ -232,6 +232,31 @@ object Tests extends Suite(m"Savagery tests"):
         (result.dx, result.dy)
       .assert(_ == (-3.0f, -4.0f))
 
+      // By name: under `import soundness.*`, same-named generic extensions (savagery's own
+      // `transform`, functions' `andThen`) outrank the companion extensions.
+      import mosquito.Affine.{andThen, transform}
+
+      test(m"Affine transform applies the homogeneous formula"):
+        Affine(2.0f, 0.0f, 0.0f, 3.0f, 5.0f, 7.0f).transform(1.0f, 1.0f)
+      .assert(_ == (7.0f, 10.0f))
+
+      test(m"Affine andThen applies the first transform first"):
+        val translate = Affine(1.0f, 0.0f, 0.0f, 1.0f, 10.0f, 0.0f)
+        val scale = Affine(2.0f, 0.0f, 0.0f, 2.0f, 0.0f, 0.0f)
+        translate.andThen(scale).transform(1.0f, 1.0f)
+      .assert(_ == (22.0f, 2.0f))
+
+      test(m"Affine identity is neutral for composition"):
+        val affine = Affine(2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f)
+        val identity = Affine.identity[Float]
+        (affine.andThen(identity), identity.andThen(affine))
+      .assert(_ == (Affine(2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f),
+          Affine(2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f)))
+
+      test(m"Affine matrices compare structurally"):
+        Affine(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f)
+      .assert(_ == Affine(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f))
+
     suite(m"Gradient stops"):
       test(m"Stop with red at offset 0"):
         Stop(0.0, Red).xml.show

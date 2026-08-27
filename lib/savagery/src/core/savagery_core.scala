@@ -39,7 +39,9 @@ import prepositional.*
 import symbolism.*
 import vacuous.*
 
-export savagery.internal.Affine
+// The affine transform is mosquito's, shared with facsimile (#1867); savagery uses it at
+// `Float` and re-exports it for compatibility.
+export mosquito.Affine
 
 
 val Up:    Delta = Delta(0.0f, -1.0f)

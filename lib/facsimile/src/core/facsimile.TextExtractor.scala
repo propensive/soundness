@@ -34,6 +34,7 @@ package facsimile
 
 import anticipation.*
 import gossamer.*
+import mosquito.*
 import quantitative.*
 import rudiments.*
 import vacuous.*
@@ -67,11 +68,11 @@ private[facsimile] object TextExtractor:
     var lastY: Optional[Double] = Unset
 
     def offset(dx: Double, dy: Double): Unit =
-      tlm = Pdf.Matrix(1, 0, 0, 1, dx, dy)*tlm
+      tlm = Pdf.Matrix(1, 0, 0, 1, dx, dy).andThen(tlm)
       tm = tlm
 
     def show(bytes: Data): Unit = font.let: font =>
-      val combined = tm*ctm
+      val combined = tm.andThen(ctm)
       val decoded = font.decode(bytes)
 
       var advance = 0.0
@@ -80,7 +81,7 @@ private[facsimile] object TextExtractor:
         val word = if font.wordBoundary(code) then wordSpacing else 0.0
         advance += (font.width(code)/1000.0*size + charSpacing + word)*horizontal
 
-      val (x, y) = combined(0, rise)
+      val (x, y) = combined.transform(0, rise)
       val effective = size*scala.math.hypot(combined.c, combined.d)
       val width = advance*scala.math.hypot(combined.a, combined.b)
 
@@ -103,11 +104,11 @@ private[facsimile] object TextExtractor:
             Quantity[Points[1]](y*scale),
             Quantity[Points[1]](width*scale) )
 
-      tm = Pdf.Matrix(1, 0, 0, 1, advance, 0)*tm
+      tm = Pdf.Matrix(1, 0, 0, 1, advance, 0).andThen(tm)
 
     def kern(adjustment: Double): Unit =
       val gap = -adjustment/1000.0*size*horizontal
-      tm = Pdf.Matrix(1, 0, 0, 1, gap, 0)*tm
+      tm = Pdf.Matrix(1, 0, 0, 1, gap, 0).andThen(tm)
 
       // A large positive gap reads as a space the file never encoded.
       if gap > size*0.15 && !text.isEmpty && text.charAt(text.length - 1) != ' ' then
@@ -116,7 +117,7 @@ private[facsimile] object TextExtractor:
 
     operators.each:
       case Pdf.Operator.Save                  => stack = ctm :: stack
-      case Pdf.Operator.Concat(matrix)        => ctm = matrix*ctm
+      case Pdf.Operator.Concat(matrix)        => ctm = matrix.andThen(ctm)
       case Pdf.Operator.Offset(dx, dy)        => offset(dx, dy)
       case Pdf.Operator.NextLine              => offset(0, -leading)
       case Pdf.Operator.SetCharSpacing(space) => charSpacing = space

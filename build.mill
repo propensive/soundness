@@ -1990,7 +1990,8 @@ object exoskeleton extends Library:
 object facsimile extends Library:
   object core extends Component(aperture.core, turbulence.core,
       pneumatic.flate, pneumatic.lzw, zephyrine.core, gastronomy.core, enigmatic.core,
-      hypotenuse.core, phoenicia.core, quantitative.units, iridescence.core, aviation.core):
+      hypotenuse.core, phoenicia.core, quantitative.units, iridescence.core, aviation.core,
+      mosquito.core):
     override def scalaJs = false // JCE (`enigmatic`), for the `Guard` encryption layer
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))

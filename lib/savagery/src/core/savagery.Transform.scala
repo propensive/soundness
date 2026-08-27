@@ -61,4 +61,4 @@ enum Transform:
   case Scale(x: Float, y: Optional[Float])
   case Rotate(angle: Angle)
   case Skew(angle: Angle, orientation: Orientation = Orientation.Horizontal)
-  case Matrix(affine: Affine)
+  case Matrix(affine: Affine[Float])
