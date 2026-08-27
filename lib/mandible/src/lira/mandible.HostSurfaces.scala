@@ -145,6 +145,34 @@ object CtSym:
 
     finally zip.close()
 
+// A directory of carrier files — the `.wit` of a WASI world, the `.d.ts` of a JavaScript
+// runtime's builtins — read into the content tree a host contract carries. A single file is
+// admitted as a one-entry tree. Entries are sorted by path: a filesystem's traversal order is
+// not deterministic, and a harvest of the same bytes must build the same tree.
+object HostTree:
+
+  def surface(path: Text, suffix: Text): List[(TreePath, Data)] raises Lira.Error =
+    val root = java.nio.file.Paths.get(path.s).nn
+    val entries = scala.collection.mutable.ListBuffer[(TreePath, Data)]()
+
+    if java.nio.file.Files.isDirectory(root) then
+      val stream = java.nio.file.Files.walk(root).nn
+
+      try
+        stream.iterator.nn.asScala.foreach: item =>
+          if java.nio.file.Files.isRegularFile(item) && item.toString.endsWith(suffix.s) then
+            val relative = root.relativize(item).nn.toString.replace('\\', '/').nn
+            val bytes = java.nio.file.Files.readAllBytes(item).nn
+            entries += ((TreePath(Text(relative)), Array.unsafeFrozen(bytes)))
+
+      finally stream.close()
+
+    else if java.nio.file.Files.isRegularFile(root) && root.toString.endsWith(suffix.s) then
+      val bytes = java.nio.file.Files.readAllBytes(root).nn
+      entries += ((TreePath(Text(root.getFileName.nn.toString)), Array.unsafeFrozen(bytes)))
+
+    List.from(entries.toList.sortBy(_(0).text.s))
+
 // A stub jar — `android.jar` for one API level, or any signature-bearing archive — read into
 // the content tree a host contract carries.
 object HostArchive:
