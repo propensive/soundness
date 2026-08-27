@@ -30,33 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package galilei
 
-export
-  galilei
-  . { accessed, Apfs, attribute, attributes, Attributed, BlockDevice, Btrfs, C, CharDevice, children, CopyAttributes, copyInto,
-      copyTo, created, CreateFlag, CreateNonexistentParents, Creation, creation, CreationTimed,
-      D, delete, Ext4,
-      DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, Dos, Drive, Entry,
-      entry, executable, expanse, Explorable, existent, Fifo, file, File, FileOpenable,
-      FilesystemAttribute, FilesystemBackend,
-      glob, Handle, hardLinks, hardLinkTo, hidden, Io, Linux, Local,
-      MacOs, modified, MoveAtomically, moveInto, moveTo, Ntfs, OpenFlag,
-      OverwritePreexisting, p, Platform, Posix, readable, filesize, Sock, Stat,
-      Scratch, Shared, Slice, Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch,
-      TraversalOrder,
-      UnixEntry, Volume, volume, Windows, WindowsEntry, wipe, writable, write }
+import aperture.*
 
-package interfaces.paths:
-  export
-    anticipation.interfaces.paths
-    . { pathOnLinux, pathOnLocal, pathOnMacOs, pathOnPosix, pathOnWindows }
-
-package filesystemOptions:
-  export
-    galilei.filesystemOptions
-    . { copyAttributes, createNonexistentParents, deleteRecursively,
-        dereferenceSymlinks, moveAtomically, overwritePreexisting }
-
-package filesystemTraversal:
-  export galilei.filesystemTraversal.{postOrderTraversal, preOrderTraversal}
+// The shared-lock mode (issue #566): any number of `Shared` opens of one file may coexist —
+// across processes, through a shared OS advisory lock — but a `Shared` open conflicts with an
+// `Exclusive` one in either direction. `Read` deliberately does not imply it: taking even a
+// shared lock would make every ordinary read contend with exclusive lockers. Defined here
+// rather than in aperture, since shared locking is a filesystem concern; aperture's grant
+// hierarchy is deliberately open to exactly this kind of domain-specific extension.
+//
+//     path.open[File](Read & Shared): handle ?=> …
+object Shared extends Mode:
+  type Grants = Shared.Grant
+  trait Grant extends aperture.Grant

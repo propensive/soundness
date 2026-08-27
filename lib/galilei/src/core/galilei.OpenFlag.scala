@@ -38,8 +38,13 @@ package galilei
 enum OpenFlag:
   case Read, Write, Append, Create, Exclusive, Truncate, Sync, Dsync, NoFollow
 
-  // Hold an OS advisory lock on the file for the duration of the open (issue #566). Not an OS
-  // open flag itself: backends which can lock do so after opening, and those which cannot
-  // (WASI has no file-locking call) refuse the open as `Unsupported` rather than silently not
-  // locking. Added by `FileOpenable` when the mode grants `Exclusive`.
-  case Lock
+  // Hold an OS advisory lock on the file for the duration of the open (issue #566): `Lock` is
+  // exclusive, `LockShared` shared. Not OS open flags themselves: backends which can lock do
+  // so after opening, and those which cannot (WASI has no file-locking call) refuse the open
+  // as `Unsupported` rather than silently not locking. Added by `FileOpenable` when the mode
+  // grants `Exclusive` or `Shared` respectively.
+  case Lock, LockShared
+
+  // Block until the lock (and the intra-JVM registration) can be acquired, rather than
+  // failing immediately with `Busy` (issue #566).
+  case Await

@@ -69,9 +69,11 @@ extends Openable:
     val modeFlags =
       (if mode.atoms.has(Read) then List(OpenFlag.Read).stdlib else Nil.stdlib) ++
         (if mode.atoms.has(Write) then List(OpenFlag.Write).stdlib else Nil.stdlib) ++
-        (if mode.atoms.has(Exclusive) then List(OpenFlag.Lock).stdlib else Nil.stdlib)
+        (if mode.atoms.has(Exclusive) then List(OpenFlag.Lock).stdlib
+         else if mode.atoms.has(Shared) then List(OpenFlag.LockShared).stdlib
+         else Nil.stdlib)
 
-    val locking = mode.atoms.has(Exclusive)
+    val locking = mode.atoms.has(Exclusive) || mode.atoms.has(Shared)
 
     // The register works on real paths, so two routes to one file register as the same file
     // and overlap correctly with enclosing directory scopes; a file which is about to be
@@ -81,8 +83,12 @@ extends Openable:
         try value.nioPath.toRealPath().nn.toString.tt
         catch case _: Exception => value.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt
 
-    if locking && !AccessRegister.acquire(real, mode.atoms)
-    then abort(Io.Error(value, Operation.Open, Reason.Busy))
+    val awaiting = flags.stdlib.contains(OpenFlag.Await)
+
+    if locking then
+      if awaiting then AccessRegister.acquireAwait(real, mode.atoms)
+      else if !AccessRegister.acquire(real, mode.atoms)
+      then abort(Io.Error(value, Operation.Open, Reason.Busy))
 
     try
       backend.open(value, (modeFlags ++ flags.stdlib).to(List)): handle =>

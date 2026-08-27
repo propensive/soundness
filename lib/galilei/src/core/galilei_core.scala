@@ -478,6 +478,30 @@ package filesystemOptions:
         block
 
 
+// Extended attributes, gated by the storage-filesystem axis (issue #567): available only on a
+// path whose filesystem is known — by extractor probing — to support them. The setter is the
+// two-argument overload: `path.attribute(t"user.origin", data)`.
+extension [plane: Filesystem, transport <: Attributed](path: Path on plane over transport)
+  def attributes()(using backend: FilesystemBackend on plane): List[Text] raises Io.Error =
+    backend.attributes(path)
+
+  // Generic in its result — decoded through `Aggregable`, like turbulence's `read` — so the
+  // fresh capabilities of a byte-array result bind at the call site; a concrete `Data` result
+  // cannot cross the umbrella's synthesized export forwarder under capture checking.
+  def attribute[content: Aggregable by Data](name: Text)
+    ( using backend: FilesystemBackend on plane )
+  :   Optional[content] raises Io.Error =
+
+    backend.attribute(path, name).absolve match
+      case Unset => Unset
+
+      case data: Data =>
+        summon[content is Aggregable by Data].accept(zephyrine.Stream(scala.Iterator(data)))
+
+  def attribute(name: Text, value: Data)(using backend: FilesystemBackend on plane)
+  :   Unit raises Io.Error =
+    backend.attribute(path, name, value)
+
 // Metadata gated by the storage-filesystem axis (issue #567): available only on a path whose
 // filesystem is known — by extractor probing — to record it.
 extension [plane: Filesystem, transport <: CreationTimed](path: Path on plane over transport)

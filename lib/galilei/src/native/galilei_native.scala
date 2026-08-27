@@ -308,11 +308,89 @@ package filesystemBackends:
           lambda(view)
         finally channel.close()
 
+      def attributes(path: Path on Plane)(using Tactic[Io.Error]): List[Text] =
+        abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
+
+      def attribute(path: Path on Plane, name: Text)(using Tactic[Io.Error]): Optional[Data] =
+        abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
+
+      def attribute(path: Path on Plane, name: Text, value: Data)(using Tactic[Io.Error]): Unit =
+        abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
+
+      def slice[result]
+        ( path: Path on Plane, offset: Long, extent: Long, flags: List[OpenFlag] )
+        ( lambda: zephyrine.Expanse => result )
+        ( using Tactic[Io.Error] )
+      :   result =
+
+        // An exclusive range lock needs a writable channel, so one is requested when the
+        // flags ask for an exclusive lock, degrading — like whole-file locking on a
+        // read-only open — to a read-only channel and a *shared* OS lock where the file
+        // cannot be opened writable; the register still provides in-process exclusivity.
+        var writable = flags.stdlib.contains(OpenFlag.Lock)
+
+        val channel = protect(path, Operation.Open):
+          val optionSet = java.util.HashSet[jnf.OpenOption]()
+          optionSet.add(jnf.StandardOpenOption.READ)
+          if writable then optionSet.add(jnf.StandardOpenOption.WRITE)
+
+          try jnc.FileChannel.open(javaPath(path), optionSet).nn
+          catch case error: Exception =>
+            import scala.unsafeExceptions.canThrowAny
+            if !writable then throw error else
+              writable = false
+              optionSet.remove(jnf.StandardOpenOption.WRITE)
+              jnc.FileChannel.open(javaPath(path), optionSet).nn
+
+        try
+          val shared = flags.stdlib.contains(OpenFlag.LockShared) || !writable
+          val await = flags.stdlib.contains(OpenFlag.Await)
+
+          val lock =
+            if flags.stdlib.contains(OpenFlag.Lock) || flags.stdlib.contains(OpenFlag.LockShared)
+            then
+              // As for whole-file locks: an in-JVM shared overlap is benign, since the
+              // register has already admitted this open.
+              try Option:
+                if await then channel.lock(offset, extent, shared).nn
+                else channel.tryLock(offset, extent, shared).nn
+              catch case _: jnc.OverlappingFileLockException => if shared then Some(null) else None
+            else Some(null)
+
+          if lock.isEmpty then abort(Io.Error(path, Operation.Open, Reason.Busy))
+
+          try
+            val view = new zephyrine.Expanse:
+              def size: Long = channel.size
+
+              def read(readOffset: Long, length: Int): Data =
+                val buffer = java.nio.ByteBuffer.allocate(length).nn
+                var position = readOffset
+                var count = 0
+
+                while count >= 0 && buffer.hasRemaining do
+                  count = channel.read(buffer, position)
+                  if count > 0 then position += count
+
+                val filled = buffer.position
+                val array = Array.allocate[Byte](filled)
+                buffer.flip()
+                buffer.get(array.raw, 0, filled)
+                Array.freeze(array)
+
+            lambda(window(view, offset, extent))
+          finally lock.foreach: held =>
+            if held != null then
+              try held.release() catch case _: jnc.ClosedChannelException => ()
+        finally channel.close()
+
       def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
         ( using Tactic[Io.Error] )
       :   result =
 
-        val options: scala.collection.immutable.List[jnf.OpenOption] = flags.stdlib.filter(_ != OpenFlag.Lock).map:
+        val options: scala.collection.immutable.List[jnf.OpenOption] = flags.stdlib.filter: flag =>
+          flag != OpenFlag.Lock && flag != OpenFlag.LockShared && flag != OpenFlag.Await
+        . map:
           case OpenFlag.Read      => jnf.StandardOpenOption.READ
           case OpenFlag.Write     => jnf.StandardOpenOption.WRITE
           case OpenFlag.Append    => jnf.StandardOpenOption.APPEND
@@ -345,13 +423,24 @@ package filesystemBackends:
           // the access register, and a shared lock still excludes any cross-process
           // exclusive locker.
           val lock =
-            if flags.stdlib.contains(OpenFlag.Lock) then
+            if flags.stdlib.contains(OpenFlag.Lock) || flags.stdlib.contains(OpenFlag.LockShared)
+            then
               val writable = options2.contains(jnf.StandardOpenOption.WRITE) || appending
+              val shared = flags.stdlib.contains(OpenFlag.LockShared) || !writable
 
+              val await = flags.stdlib.contains(OpenFlag.Await)
+
+              // An overlapping lock held by this JVM throws even when both are shared; the
+              // register has already admitted this open, and the first holder's OS lock
+              // covers the cross-process case, so a shared overlap is benign. With `Await`,
+              // the blocking variants wait for the cross-process lock instead of failing.
               try Option:
-                if writable then channel.tryLock().nn
-                else channel.tryLock(0L, Long.MaxValue, true).nn
-              catch case _: jnc.OverlappingFileLockException => None
+                if shared then
+                  if await then channel.lock(0L, Long.MaxValue, true).nn
+                  else channel.tryLock(0L, Long.MaxValue, true).nn
+                else if await then channel.lock().nn
+                else channel.tryLock().nn
+              catch case _: jnc.OverlappingFileLockException => if shared then Some(null) else None
             else Some(null)
 
           if lock.isEmpty then abort(Io.Error(path, Operation.Open, Reason.Busy))

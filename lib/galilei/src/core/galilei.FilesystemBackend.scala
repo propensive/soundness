@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import serpentine.*
+import vacuous.*
 
 // The pluggable low-level filesystem backend for a plane: the complete set of primitive
 // operations that galilei's user-facing API is defined in terms of, expressed without reference
@@ -105,6 +106,32 @@ trait FilesystemBackend extends Planar:
   def expanse[result](path: Path on Plane)(lambda: zephyrine.Expanse => result)
     ( using Tactic[Io.Error] )
   :   result
+
+  // Extended (user-defined) attributes (issue #567). Support depends on the storage
+  // filesystem, so the typed accessors are gated on the `Attributed` axis marker; at the
+  // backend seam the operations are plain, and a backend or filesystem without extended
+  // attributes reports `Unsupported`.
+  def attributes(path: Path on Plane)(using Tactic[Io.Error]): List[Text]
+  def attribute(path: Path on Plane, name: Text)(using Tactic[Io.Error]): Optional[Data]
+  def attribute(path: Path on Plane, name: Text, value: Data)(using Tactic[Io.Error]): Unit
+
+  // Range-scoped positional reading (issue #566): like `expanse`, but the view is windowed
+  // to `[offset, offset + extent)` — its `size` is the window's, and reads are relative to
+  // the window's start and clamped to it — and, when `flags` request it, an OS advisory lock
+  // over exactly that byte range is held for the scope.
+  def slice[result]
+    ( path: Path on Plane, offset: Long, extent: Long, flags: List[OpenFlag] )
+    ( lambda: zephyrine.Expanse => result )
+    ( using Tactic[Io.Error] )
+  :   result
+
+  protected def window(view: zephyrine.Expanse, offset: Long, extent: Long): zephyrine.Expanse =
+    new zephyrine.Expanse:
+      def size: Long = (view.size - offset).max(0L).min(extent)
+
+      def read(readOffset: Long, length: Int): Data =
+        val available = (size - readOffset).max(0L).min(length.toLong).toInt
+        view.read(offset + readOffset, available)
 
   def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
     ( using Tactic[Io.Error] )

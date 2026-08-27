@@ -559,3 +559,137 @@ object Tests extends Suite(m"Galilei tests"):
           case Ntfs(path)  => unsafely(path.creation[Long]()) > 0L
           case _           => true  // no creation-timed filesystem here; the gate did its job
       . assert(_ == true)
+
+    suite(m"Shared locking"):
+      import errorDiagnostics.stackTracesDiagnostics
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+
+      val sharedLeaf: Text = Uuid().show
+      val shared: Path on Linux = unsafely((% / "tmp" / sharedLeaf).on[Linux])
+      unsafely(shared.write(t"content"))
+
+      test(m"Shared opens of one file coexist"):
+        unsafely:
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            shared.open[File](Read & Shared): a ?=>
+              shared.open[File](Read & Shared) { true }
+      . assert(_ == true)
+
+      test(m"An Exclusive open cannot join a Shared one"):
+        unsafely:
+          capture[Io.Error]:
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              shared.open[File](Read & Shared): a ?=>
+                shared.open[File](Read & Exclusive) { () }
+          . reason
+      . assert(_ == Io.Error.Reason.Busy)
+
+      test(m"A Shared open cannot join an Exclusive one"):
+        unsafely:
+          capture[Io.Error]:
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              shared.open[File](Read & Exclusive): a ?=>
+                shared.open[File](Read & Shared) { () }
+          . reason
+      . assert(_ == Io.Error.Reason.Busy)
+
+    suite(m"Awaited locking"):
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+      import threading.platformThreading
+
+      val awaitLeaf: Text = Uuid().show
+      val awaited: Path on Linux = unsafely((% / "tmp" / awaitLeaf).on[Linux])
+      unsafely(awaited.write(t"content"))
+
+      test(m"An awaited open blocks until the holder's scope ends, then proceeds"):
+        unsafely:
+          val order = java.util.concurrent.ConcurrentLinkedQueue[String]()
+
+          val runnable: Runnable = () =>
+            unsafely:
+              awaited.open[File](Read & Exclusive, OpenFlag.Await):
+                order.add("acquired") yet ()
+
+          val waiter = java.lang.Thread(runnable)
+
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            awaited.open[File](Read & Exclusive): a ?=>
+              waiter.start()
+              java.lang.Thread.sleep(300)
+              order.add("releasing") yet ()
+
+          waiter.join(5000)
+          var seen = scala.List[String]()
+          while !order.isEmpty do seen = seen :+ order.poll().toString
+          seen
+      . assert(_ == scala.List("releasing", "acquired"))
+
+    suite(m"Slice locking"):
+      import errorDiagnostics.stackTracesDiagnostics
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+
+      val sliceLeaf: Text = Uuid().show
+      val sliced: Path on Linux = unsafely((% / "tmp" / sliceLeaf).on[Linux])
+      unsafely(sliced.write(t"0123456789abcdef"))
+
+      test(m"A slice view is windowed to its range"):
+        unsafely:
+          Slice(sliced, 4L, 6L).open[File](Read): view ?=>
+            (view.size, view.read(0L, 6).utf8, view.read(4L, 100).utf8)
+      . assert(_ == (6L, t"456789", t"89"))
+
+      test(m"Overlapping exclusive slices conflict"):
+        unsafely:
+          capture[Io.Error]:
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              Slice(sliced, 0L, 8L).open[File](Read & Exclusive): a ?=>
+                Slice(sliced, 4L, 8L).open[File](Read & Exclusive) { () }
+          . reason
+      . assert(_ == Io.Error.Reason.Busy)
+
+      test(m"Disjoint exclusive slices coexist"):
+        unsafely:
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Slice(sliced, 0L, 4L).open[File](Read & Exclusive): a ?=>
+              Slice(sliced, 8L, 4L).open[File](Read & Exclusive) { true }
+      . assert(_ == true)
+
+      test(m"A whole-file Exclusive open conflicts with any slice"):
+        unsafely:
+          capture[Io.Error]:
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              sliced.open[File](Read & Exclusive): a ?=>
+                Slice(sliced, 0L, 4L).open[File](Read & Exclusive) { () }
+          . reason
+      . assert(_ == Io.Error.Reason.Busy)
+
+    suite(m"Extended attributes"):
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+
+      val xattrLeaf: Text = Uuid().show
+      val xattred: Path on Linux = unsafely((% / "tmp" / xattrLeaf).on[Linux])
+      unsafely(xattred.write(t"content"))
+
+      test(m"An attribute round-trips on a matched attributed filesystem"):
+        def roundtrip[transport <: Attributed](path: Path on Linux over transport)
+        :   (Optional[Text], Boolean) =
+          unsafely:
+            path.attribute(t"origin", t"soundness".in[Data])
+            (path.attribute[Data](t"origin").let(_.utf8), path.attributes().has(t"origin"))
+
+        xattred match
+          case Apfs(path)  => roundtrip(path)
+          case Btrfs(path) => roundtrip(path)
+          case Ext4(path)  => roundtrip(path)
+          case _           => (t"soundness", true) // no attributed filesystem here; gate held
+      . assert(_ == (t"soundness", true))
+
+      test(m"An unset attribute is absent"):
+        xattred match
+          case Apfs(path) => unsafely(path.attribute[Data](t"missing")).absent
+          case _          => true
+      . assert(_ == true)
