@@ -213,6 +213,17 @@ object Inspectable extends Inspectable2:
     else if double == Double.NegativeInfinity then "-∞"
     else double.toString
 
+  // The remaining hypotenuse numerics: two rationals, which render as a fraction, and two
+  // arbitrary-precision decimals. Each keeps hypotenuse's own textual form and adds the suffix
+  // which says which type produced it — without one, `3/4` and `3.14` would be as anonymous as
+  // the primitives the sized types erase to.
+  given q32: [q32 <: Q32] => q32 is Inspectable = q32 => ((q32: Q32).text.s+"ʳ³²").tt
+  given q64: [q64 <: Q64] => q64 is Inspectable = q64 => ((q64: Q64).text.s+"ʳ⁶⁴").tt
+  given bcd: [bcd <: Bcd] => bcd is Inspectable = bcd => ((bcd: Bcd).text+"ᵇᶜᵈ").tt
+
+  given decimal: [decimal <: Decimal] => decimal is Inspectable = decimal =>
+    ((decimal: Decimal).text.s+"ᵈ").tt
+
   // An `Ordinal` is rendered in its one-based form, with the English ordinal suffix, since that
   // is the number the programmer counts with; the zero-based `n0` is an implementation detail
   // of the type, and showing it would make every rendering off by one.

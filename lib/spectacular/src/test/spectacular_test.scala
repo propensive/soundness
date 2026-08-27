@@ -388,7 +388,10 @@ object Tests extends Suite(m"Spectacular Tests"):
            255.bits.inspect,
            (-1L).bits.inspect,
            F32(3.5f).inspect,
-           F64(3.5).inspect )
+           F64(3.5).inspect,
+           Q32(3, 4).inspect,
+           Q64(3L, 4L).inspect,
+           Decimal(314L, 2).inspect )
       . assert(_ == Nil)
 
       test(m"the collection types all inspect natively"):
