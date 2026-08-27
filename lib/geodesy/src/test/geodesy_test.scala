@@ -60,6 +60,13 @@ object Tests extends Suite(m"Geodesy tests"):
 
     . assert(_ == t"0.0°")
 
+    // Inspection keeps the precision which `show` rounds away.
+    test(m"inspect an angle at full precision"):
+      val angle = Angle.degrees(7.25)
+      angle.inspect
+
+    . assert(_ == t"7.25°")
+
     test(m"render principal angle"):
       val angle = Angle.degrees(375)
       angle.principal.show
