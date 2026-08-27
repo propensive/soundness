@@ -37,6 +37,7 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import prepositional.*
+import spectacular.*
 import scala.quoted.*
 
 object internal:
@@ -44,6 +45,22 @@ object internal:
 
   object Name:
     given encodable: [plane] => Name[plane] is Encodable in Text = identity(_)
+
+    // `Name` is a subtype of `Text`, so without an instance of its own it would reach
+    // spectacular's `Text` instance and render `t"…"` — a name would be indistinguishable from
+    // the text it is validated to be. The `n"…"` prefix says which of the two it is, and the
+    // characters are escaped exactly as a text literal's are.
+    // `Name` is covariant in its plane, so `Name[Any]` bounds every name.
+    given inspectable: [name <: Name[Any]] => name is Inspectable = name =>
+      val builder: StringBuilder = new StringBuilder("n\"")
+      val string: String = (name: Text).s
+      var index: Int = 0
+
+      while index < string.length do
+        builder.append(Inspectable.escape(string.charAt(index), true).s)
+        index += 1
+
+      builder.append('"').toString.tt
 
     inline given decodable: [plane] => (plane is Nominative, Tactic[Name.Error])
     =>  Name[plane] is Decodable in Text =

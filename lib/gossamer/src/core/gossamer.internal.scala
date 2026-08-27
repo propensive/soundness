@@ -133,6 +133,15 @@ object internal:
 
       given showable: Grapheme is Showable = grapheme => grapheme.tt
 
+      // A grapheme is a *cluster* of codepoints, and escaping it the way a `Text` is escaped
+      // would hide exactly the structure a reader is looking at (a ZWJ sequence would become a
+      // row of `\uXXXX`s), so the cluster is shown as it is, inside guillemets which
+      // distinguish it from the `t"…"` of the `Text` it erases to. The grapheme is widened to
+      // `Grapheme` before `text` is called: the accessor is an inline extension on an opaque
+      // type, and its expansion is not available through a subtype.
+      given inspectable: [grapheme <: Grapheme] => grapheme is Inspectable = grapheme =>
+        ("‹"+(grapheme: Grapheme).text.s+"›").tt
+
       // Width of a grapheme is the maximum width of its constituent codepoints. For
       // combining-mark sequences (e.g. e + ́) this gives the base character's width;
       // for joiner-glued graphemes (RI flag pairs, ZWJ family emoji, Hangul jamo
@@ -167,6 +176,16 @@ object internal:
       given showable: Ascii is Showable =
         // Read-only use of the underlying JVM array: the `String` constructor copies.
         ascii => String(ascii.asInstanceOf[scala.Array[Byte]], StandardCharsets.US_ASCII).nn.tt
+
+      // `Ascii` erases to an array of bytes, so without an instance it renders as an array of
+      // numbers, and its `Showable` produces bare text, indistinguishable from a `Text`. The
+      // bytes are shown as the characters they encode, escaped as a text literal's characters
+      // are escaped, and marked `ascii"…"`, which is close to the source form.
+      given inspectable: [ascii <: Ascii] => ascii is Inspectable = ascii =>
+        val builder: StringBuilder = new StringBuilder("ascii\"")
+        showable.text(ascii).each { char => builder.append(Inspectable.escape(char, true).s) }
+
+        builder.append('"').toString.tt
 
       given concatenable: Ascii is Concatenable:
         type Result = Ascii

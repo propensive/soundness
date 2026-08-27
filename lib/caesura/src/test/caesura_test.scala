@@ -246,6 +246,19 @@ object Tests extends Suite(m"Caesura tests"):
       Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")).dsv
     . assert(_ == Dsv(t"0.1", t"two", t"three", t"4", t"five", t"six"))
 
+    // A missing `Inspectable` is never a compile error — `derived` always succeeds and
+    // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
+    // only be held in place by asserting on the renderings themselves.
+    suite(m"Native-rendering coverage"):
+      test(m"caesura's types inspect natively"):
+        Inspectable.fallbacks(Sheet(Array(Dsv(t"hello", t"world"))).inspect)
+      . assert(_ == Nil)
+
+      test(m"a sheet inspects as its rows of cells"):
+        Sheet(Array(Dsv(t"hello", t"world"))).inspect
+      . assert:
+          _ == Text("Sheet(format:○ ╱ columns:○ ╱ rows:⟦⟨ t\"hello\" t\"world\" ⟩⟧)")
+
     test(m"convert simple row to string"):
       import dsvFormats.csvFormat
       Sheet(Array(Dsv(t"hello", t"world"))).show

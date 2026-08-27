@@ -64,6 +64,17 @@ case class Boxed[value](value: value) derives CanEqual
 
 object Tests extends Suite(m"Ypsiloid Tests"):
   def run(): Unit =
+    // A missing `Inspectable` is never a compile error, so coverage is held in place by
+    // asserting on the renderings: `fallbacks` returns those which used a marked fallback.
+    suite(m"Native-rendering coverage"):
+      test(m"a Yaml document inspects on one line, with its breaks escaped"):
+        42.in[Yaml].inspect
+      . assert(_ == t"yaml\"42\\n\"")
+
+      test(m"ypsiloid's types inspect natively"):
+        Inspectable.fallbacks(42.in[Yaml].inspect, t"foo".in[Yaml].inspect)
+      . assert(_ == Nil)
+
     suite(m"Plain scalar parsing"):
       test(m"Parse a plain integer"):
         t"42".read[Yaml].as[Int]

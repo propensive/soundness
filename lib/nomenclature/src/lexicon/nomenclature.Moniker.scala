@@ -39,6 +39,7 @@ import contingency.*
 import distillate.*
 import prepositional.*
 import fulminate.*
+import spectacular.*
 
 object Moniker:
   opaque type Moniker = Int
@@ -50,6 +51,15 @@ object Moniker:
     wrap(ordinal)
 
   extension (moniker: Moniker) def ordinal: Int = moniker
+
+  // The `Encodable` below needs the `Vocabulary` which supplies the words for the number, and a
+  // `Tactic` for a number the vocabulary cannot name; a debug rendering can rely on neither, so
+  // inspection shows the ordinal the moniker *is*, suffixed so that it is distinguishable from
+  // the `Int` it erases to. The value is widened to `Moniker` before `ordinal` is called: the
+  // accessor is an inline extension on an opaque type, and its expansion is not available
+  // through a subtype.
+  given inspectable: [moniker <: Moniker] => moniker is Inspectable = moniker =>
+    ((moniker: Moniker).ordinal.toString+"ᵐᵏ").tt
 
   // An honest capability: the instance retains the resolution-scoped tactic
   // (every given that includes a tactic is a capability; Jon, 2026-07-13).

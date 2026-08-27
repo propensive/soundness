@@ -117,6 +117,20 @@ object Sheet:
           else Sheet(rows, format)
 
   given showable: Dsv.Format => Sheet is Showable = _.rows.to[List].map(_.show).join(t"\n")
+
+  // The `Showable` above needs a `Dsv.Format` to know which delimiter to write and which cells
+  // to quote, and it produces the serialized form — in which a cell containing a delimiter is
+  // indistinguishable from two cells. Inspection needs no format: each row's cells are shown
+  // as inspected `Text`s inside `⟨ ⟩`, the rows inside `⟦ ⟧` (the sheet is ordered), preceded
+  // by the column headings and the format, if either is set.
+  given inspectable: [sheet <: Sheet] => sheet is Inspectable = sheet =>
+    def cells(row: Array[Text]^{}): Text =
+      row.readable.map(_.inspect.s).mkString("⟨ ", " ", " ⟩").tt
+
+    val rows = sheet.rows.readable.map { row => cells(row.data).s }.mkString("⟦", ", ", "⟧")
+    val columns = sheet.columns.lay(t"○")(cells(_))
+
+    t"Sheet(format:${sheet.format.lay(t"○")(_.inspect)} ╱ columns:$columns ╱ rows:${rows.tt})"
   given streamable: Dsv.Format => Sheet is Streamable by Text over Credit = sheet =>
     Stream(sheet.rows.readable.iterator.map(_.show+t"\n"))
 

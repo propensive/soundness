@@ -189,6 +189,17 @@ object Tests extends Suite(m"Jacinta Tests"):
         t"""{"inner":{"n":42}}""".read[Json].as[Outer]
       . assert(_ == Outer(Inner(42)))
 
+    // A missing `Inspectable` is never a compile error, so coverage is held in place by
+    // asserting on the renderings: `fallbacks` returns those which used a marked fallback.
+    suite(m"Native-rendering coverage"):
+      test(m"a Json document inspects compactly, whatever formatting is in scope"):
+        t"foo".in[Json].inspect
+      . assert(_ == t""""foo"""")
+
+      test(m"jacinta's types inspect natively"):
+        Inspectable.fallbacks(t"foo".in[Json].inspect, 42.in[Json].inspect)
+      . assert(_ == Nil)
+
     suite(m"Serialization"):
       test(m"Serialize string"):
         t"foo".in[Json].show

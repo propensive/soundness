@@ -212,6 +212,26 @@ object Tests extends Suite(m"internal Benchmarks"):
 
       . assert(_ == Relative(2, List(t"foo")))
 
+    // A missing `Inspectable` is never a compile error — `derived` always succeeds and
+    // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
+    // only be held in place by asserting on the renderings themselves.
+    suite(m"Native-rendering coverage"):
+      test(m"serpentine's types inspect natively"):
+        Inspectable.fallbacks((% / "foo" / "bar").inspect, (? / ^ / "foo").inspect, ?.inspect)
+      . assert(_ == Nil)
+
+      test(m"a path inspects as its path text"):
+        (% / "foo" / "bar").inspect
+      . assert(_ == t"/foo/bar")
+
+      test(m"a relative path inspects with its ascent"):
+        (? / ^ / ^ / "foo").inspect
+      . assert(_ == t"../../foo")
+
+      test(m"the self-relative path inspects as a dot"):
+        ?.inspect
+      . assert(_ == t".")
+
     suite(m"Encoding"):
       test(m"Serialize simple Linux path"):
         val path: Path on Linux = % / "foo"

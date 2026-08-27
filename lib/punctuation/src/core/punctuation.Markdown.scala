@@ -39,7 +39,7 @@ import gossamer.*
 import honeycomb.*
 import prepositional.*
 import rudiments.*
-import spectacular.Showable
+import spectacular.{Inspectable, Showable, inspect}
 import vacuous.*
 
 import attributives.textAttributive
@@ -141,6 +141,71 @@ object Markdown:
 
   given proseShowable: Markdown.Formatting => (Markdown of Prose) is Showable =
     (markdown: Markdown of Prose) => Serializer(markdown)
+
+  // Both `Showable`s above re-serialize the document to CommonMark source, which needs a
+  // `Markdown.Formatting` for the wrap width and which — being source again — says nothing
+  // about how the source was parsed. Inspection shows the tree instead: each node in product
+  // form, with the line it came from, since a `Markdown` value is normally being looked at to
+  // check what the parser made of the input. One instance serves both `Markdown of Layout` and
+  // `Markdown of Prose`, which are refinements of the same trait.
+  given inspectable: [markdown <: Markdown] => markdown is Inspectable = markdown =>
+    val linkRefs = markdown.linkRefs.stdlib.map: linkRef =>
+      val title = linkRef.title.lay(t"○")(_.inspect)
+      t"LinkRef(${linkRef.label.inspect} ╱ $title ╱ ${linkRef.destination.inspect})".s
+
+    . mkString("[", ", ", "]")
+
+    t"Markdown(linkRefs:${linkRefs.tt} ╱ children:${inspectNodes(markdown.children)})"
+
+  private def inspectNodes[node <: Markdown.Node](nodes: List[node]): Text =
+    nodes.stdlib.map(inspectNode(_).s).mkString("[", ", ", "]").tt
+
+  private def inspectNode(node: Markdown.Node): Text = node match
+    case Prose.Textual(text)    => t"Textual(${text.inspect})"
+    case Prose.Softbreak        => t"Softbreak"
+    case Prose.Linebreak        => t"Linebreak"
+    case Prose.Code(code)       => t"Code(${code.inspect})"
+    case Prose.HtmlInline(html) => t"HtmlInline(${html.inspect})"
+    case Prose.Emphasis(prose*) => t"Emphasis(${inspectNodes(prose.toList.to(List))})"
+    case Prose.Strong(prose*)   => t"Strong(${inspectNodes(prose.toList.to(List))})"
+    case Layout.ThematicBreak(line)  => t"ThematicBreak(${line.inspect})"
+    case Layout.HtmlBlock(line, html) => t"HtmlBlock(${line.inspect} ╱ ${html.inspect})"
+
+    case Prose.Link(destination, title, prose*) =>
+      val nodes = inspectNodes(prose.toList.to(List))
+      t"Link(${destination.inspect} ╱ ${title.lay(t"○")(_.inspect)} ╱ $nodes)"
+
+    case Prose.Image(destination, title, prose*) =>
+      val nodes = inspectNodes(prose.toList.to(List))
+      t"Image(${destination.inspect} ╱ ${title.lay(t"○")(_.inspect)} ╱ $nodes)"
+
+    case Layout.BlockQuote(line, layout*) =>
+      t"BlockQuote(${line.inspect} ╱ ${inspectNodes(layout.toList.to(List))})"
+
+    case Layout.Paragraph(line, prose*) =>
+      t"Paragraph(${line.inspect} ╱ ${inspectNodes(prose.toList.to(List))})"
+
+    case Layout.Heading(line, level, prose*) =>
+      t"Heading(${line.inspect} ╱ ${level.inspect} ╱ ${inspectNodes(prose.toList.to(List))})"
+
+    case Layout.CodeBlock(line, info, content) =>
+      t"CodeBlock(${line.inspect} ╱ ${info.inspect} ╱ ${content.inspect})"
+
+    case Layout.BulletList(line, tight, items*) =>
+      t"BulletList(${line.inspect} ╱ ${tight.inspect} ╱ ${inspectItems(items.toList)})"
+
+    case Layout.OrderedList(line, start, tight, delimiter, items*) =>
+      val head = t"${line.inspect} ╱ ${start.inspect} ╱ ${tight.inspect}"
+      val mark = delimiter.lay(t"○")(_.inspect)
+      t"OrderedList($head ╱ $mark ╱ ${inspectItems(items.toList)})"
+
+    // `Markdown.Node` is an open trait, so a node which is neither a `Layout` nor a `Prose`
+    // is marked as having no rendering of its own, exactly as spectacular's own fallback does.
+    case node =>
+      t"“${node.toString.tt}”"
+
+  private def inspectItems(items: scala.collection.immutable.List[List[Layout]]): Text =
+    items.map(inspectNodes(_).s).mkString("[", ", ", "]").tt
 
   given prose: (Markdown of Prose) is Renderable:
     type Form = Phrasing

@@ -2494,6 +2494,15 @@ object Json extends Json2, Dynamic:
 
   given showable: Formatting => Json is Showable = _.root.show
 
+  // `Json` is a plain class, so there is no reflection to derive from, and its `Showable`
+  // needs a `Formatting` which a debugger has no way to supply — without an instance it
+  // rendered as its `toString`. Inspection fixes the compact formatting rather than taking one
+  // from the call site: an inspection is single-line by convention, and the indented form
+  // would break that wherever a document appears inside another rendering.
+  given inspectable: [json <: Json] => json is Inspectable = json =>
+    given formatting: Formatting = Formatting(Unset, trailingNewline = false)
+    (json: Json).root.show
+
   given abstractable: (encoder: CharEncoder, formatting: Formatting)
   =>  Json is Abstractable across HttpStreams to HttpStreams.Content =
 

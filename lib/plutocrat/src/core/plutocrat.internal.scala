@@ -77,6 +77,13 @@ object internal:
         if result.isin != isin then abort(Isin.Error(Isin.Error.LuhnCheck))
         result
 
+    // The twelve-character ISIN is packed into a `Long`, so a rendering which showed the number
+    // would say nothing about the value; it is unpacked and rendered in the form of the
+    // `isin"…"` interpolator which produces it. The `Isin` is widened before its accessor is
+    // called: the extension unseals the underlying `Long`, and is unavailable through a subtype.
+    given inspectable: [isin <: Isin] => isin is Inspectable = isin =>
+      ("isin\""+(isin: Isin).isin.s+"\"").tt
+
     // IsinError → Isin.Error
     object Error:
       enum Reason(val number: Int) extends Clarification:
@@ -166,6 +173,17 @@ object internal:
         val subunit = (money.value%currency.modulus).toString.show.pad(2, Rtl, '0')
 
         currencyStyle.format(currency.code, currency.symbol, units, subunit)
+
+    // Unlike `showable`, this needs neither a `Currency` nor a `Currency.Style`: the currency
+    // code is packed into the value, and the amount is shown exactly, in minor units, since the
+    // modulus which places the decimal point is known only to the `Currency`. The `¤` marks the
+    // value as money and the `ₘ` marks the amount as minor units — without it, three euros and
+    // one cent would read as three hundred and one euros, which is the one misreading a
+    // rendering of money must not permit. The `Money` is widened before its accessors are
+    // called: they are extensions on an opaque type, whose expansion is unavailable through a
+    // subtype.
+    given inspectable: [money <: Money] => money is Inspectable = money =>
+      ("¤"+(money: Money).currency.s+(money: Money).value.toString+"ₘ").tt
 
     given addable: [currency <: Label]
     =>  (Money in currency) is Addable by (Money in currency) to (Money in currency) =

@@ -96,3 +96,12 @@ object Tests extends Suite(m"Inimitable Tests"):
           uuid"not-a-uuid"
         .map(_.message)
       . assert(_ == List(t"[↯SN-349] not-a-uuid is not a valid UUID"))
+
+    suite(m"Native-rendering coverage"):
+      test(m"inimitable's types inspect natively"):
+        Inspectable.fallbacks(uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".inspect)
+      . assert(_ == Nil)
+
+      test(m"A UUID shows its canonical hyphenated form"):
+        uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".inspect
+      . assert(_ == t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c")

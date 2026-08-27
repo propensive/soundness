@@ -93,8 +93,18 @@ object Tests extends Suite(m"Urticose tests"):
            t"www.example.com".as[Hostname].inspect,
            t"simple@example.com".as[EmailAddress].inspect,
            url"https://example.com/path".inspect,
-           url"https://example.com/path".scheme.inspect )
+           url"https://example.com/path".scheme.inspect,
+           t"user@example.com:8080".as[Authority].inspect,
+           Endpoint(t"example.com", 8080).inspect )
       . assert(_ == Nil)
+
+      test(m"An authority inspects as its URL form, introduced by `//`"):
+        t"user@example.com:8080".as[Authority].inspect
+      . assert(_ == t"//user@example.com:8080")
+
+      test(m"An endpoint inspects both its remote and its port"):
+        Endpoint(t"example.com", 8080).inspect
+      . assert(_ == t"""Endpoint(t"example.com":8080)""")
 
     suite(m"IPv4 tests"):
       test(m"Parse in IPv4 address"):

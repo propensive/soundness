@@ -64,6 +64,20 @@ object Tests extends Suite(m"Harlequin Tests"):
       tokens.seek(_.text == text).let: token =>
         token.meta.let(_.tpe.qualified)
 
+    // A missing `Inspectable` is never a compile error — `derived` always succeeds and
+    // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
+    // only be held in place by asserting on the renderings themselves.
+    suite(m"Native-rendering coverage"):
+      test(m"harlequin's types inspect natively"):
+        Inspectable.fallbacks
+         ( Token(t"val", Accent.Keyword).inspect,
+           Token(t"xs", Accent.Term, role = Role.Binding).inspect )
+      . assert(_ == Nil)
+
+      test(m"a token inspects with all of its state"):
+        Token(t"val", Accent.Keyword).inspect
+      . assert(_ == Text("Token(text:t\"val\" ╱ accent:Keyword ╱ meta:○ ╱ span:⟪∅⟫ ╱ role:○)"))
+
     test(m"tokenized highlighting attaches no type metadata"):
       Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib).flatMap(_.meta.option)
     .assert(_ == Nil)
