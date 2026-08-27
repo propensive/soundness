@@ -243,6 +243,38 @@ package filesystemBackends:
 
           if !success then abort(Io.Error(path, Operation.Metadata, Reason.PermissionDenied))
 
+      def expanse[result](path: Path on Plane)(lambda: zephyrine.Expanse => result)
+        ( using Tactic[Io.Error] )
+      :   result =
+
+        val channel = protect(path, Operation.Open):
+          val optionSet = java.util.HashSet[jnf.OpenOption]()
+          optionSet.add(jnf.StandardOpenOption.READ)
+          jnc.FileChannel.open(javaPath(path), optionSet).nn
+
+        try
+          val view = new zephyrine.Expanse:
+            def size: Long = channel.size
+
+            // A read overlapping the end of the file returns the bytes which exist.
+            def read(offset: Long, length: Int): Data =
+              val buffer = java.nio.ByteBuffer.allocate(length).nn
+              var position = offset
+              var count = 0
+
+              while count >= 0 && buffer.hasRemaining do
+                count = channel.read(buffer, position)
+                if count > 0 then position += count
+
+              val filled = buffer.position
+              val array = Array.allocate[Byte](filled)
+              buffer.flip()
+              buffer.get(array.raw, 0, filled)
+              Array.freeze(array)
+
+          lambda(view)
+        finally channel.close()
+
       def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
         ( using Tactic[Io.Error] )
       :   result =

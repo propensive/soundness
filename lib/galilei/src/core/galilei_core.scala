@@ -114,6 +114,21 @@ extension [plane: Filesystem](path: Path on plane)
   private[galilei] def nioPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
 
 
+  // Scoped positional (random-access) reading (issue #1608): passes a `zephyrine.Expanse`
+  // view of the file — `size` plus pread-style `read(offset, length)` — valid for the scope
+  // of the call. Platform-neutral: every filesystem backend implements it, so seek-oriented
+  // format readers need neither `java.nio` nor a whole-file memory mapping, and files beyond
+  // 2 GiB are addressable.
+  // A real `using` clause rather than the `raises` sugar: a context-function result would
+  // hide the `lambda` parameter, which the separation checker rejects (as on `write` above).
+  def expanse[result](lambda: zephyrine.Expanse => result)
+    ( using backend: FilesystemBackend on plane )
+    ( using Tactic[Io.Error]^ )
+  :   result =
+
+    backend.expanse(path)(lambda)
+
+
   def descendants(using DereferenceSymlinks, TraversalOrder, plane is Explorable)
   :   Chain[Path on plane] raises Io.Error =
 

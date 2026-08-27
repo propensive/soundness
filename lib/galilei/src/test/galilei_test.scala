@@ -513,3 +513,29 @@ object Tests extends Suite(m"Galilei tests"):
           target.open[File](Read & Exclusive) { () }
           target.open[File](Read & Exclusive) { true }
       . assert(_ == true)
+
+    suite(m"Positional reading"):
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+
+      val expanseLeaf: Text = Uuid().show
+      val source: Path on Linux = unsafely((% / "tmp" / expanseLeaf).on[Linux])
+      unsafely(source.write(t"0123456789abcdef"))
+
+      test(m"The expanse reports the file's size"):
+        unsafely(source.expanse(_.size))
+      . assert(_ == 16L)
+
+      test(m"A positional read returns the requested slice"):
+        unsafely(source.expanse(_.read(4L, 6)).utf8)
+      . assert(_ == t"456789")
+
+      test(m"Reads at different offsets are independent"):
+        unsafely:
+          source.expanse: expanse =>
+            (expanse.read(10L, 3).utf8, expanse.read(0L, 3).utf8)
+      . assert(_ == (t"abc", t"012"))
+
+      test(m"A read overlapping the end returns the bytes which exist"):
+        unsafely(source.expanse(_.read(12L, 100)).utf8)
+      . assert(_ == t"cdef")
