@@ -91,17 +91,9 @@ private[jacinta] object Parser:
   private inline val NullWord  = 0x6C6C_756E
   private inline val FalseWord = 0x0000_0065_736C_6166L
 
-  // Little-endian 64-bit view over the byte buffer, for SWAR scans: eight
-  // input bytes per step instead of one. Little-endian regardless of the
-  // platform so `numberOfTrailingZeros(mask) >> 3` is always the offset of
-  // the first flagged byte.
-  private val WordAccess: java.lang.invoke.VarHandle =
-    // `Class.forName("[J")` rather than `classOf[Array[Long]]`: under
-    // capture checking the latter's type does not adapt to the JDK
-    // signature's wildcard.
-    java.lang.invoke.MethodHandles
-      . byteArrayViewVarHandle(Class.forName("[J").nn, java.nio.ByteOrder.LITTLE_ENDIAN)
-      . nn
+  // The SWAR word reads go through `WordAccess.get` — a per-platform object, because the JVM's
+  // byte-array view `VarHandle` exists on neither Scala.js nor Scala Native (see
+  // `src/core-jvm` and `src/core-portable`).
 
   private inline val HighBits = 0x8080808080808080L
   private inline val EveryByte = 0x0101010101010101L
