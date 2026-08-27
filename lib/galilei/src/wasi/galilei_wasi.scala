@@ -403,15 +403,78 @@ package filesystemBackends:
 
       def slice[result]
         ( path: Path on Plane, offset: Long, extent: Long, flags: List[OpenFlag] )
-        ( lambda: zephyrine.Expanse => result )
+        ( lambda: Slice.Window => result )
         ( using Tactic[Io.Error] )
       :   result =
 
         // WASI has no file-locking call, so a locked slice is refused; an unlocked slice is
-        // simply a windowed positional view.
+        // a windowed positional view, whose writes go through `write-via-stream` at the
+        // window-adjusted offset (issue #1878).
         if flags.has(OpenFlag.Lock) || flags.has(OpenFlag.LockShared)
         then abort(Io.Error(path, Operation.Open, Reason.Unsupported))
-        else expanse(path) { view => lambda(window(view, offset, extent)) }
+        else protect(path, Operation.Open):
+          val (descriptor, relative) = resolve(path, Operation.Open)
+          val directory: Foreign of "descriptor" from Wit = descriptor
+          val writing = flags.has(OpenFlag.Write)
+
+          // open-flags none; descriptor-flags: read (1) | write (2).
+          val descriptorFlags = 1 | (if writing then 2 else 0)
+
+          val opened =
+            directory
+            . `open-at`(follow(true), relative, U32(0.bits), U32(descriptorFlags.bits))
+            . call[Wasm.Handle of "descriptor"]()
+
+          try
+            val target: Foreign of "descriptor" from Wit = opened
+
+            val view = new Slice.Window:
+              def size: Long =
+                (statOf(descriptor, relative, true).size - offset).max(0L).min(extent)
+
+              def readFrom(readOffset: Long, length: Int): Data =
+                val available = (extent - readOffset).max(0L).min(length.toLong).toInt
+
+                val streamHandle =
+                  target.`read-via-stream`(U64((offset + readOffset).bits))
+                  . call[Wasm.Handle of "input-stream"]()
+
+                val stream: Foreign of "input-stream" from Wit = streamHandle
+                var chunks: List[Data] = Nil
+                var remaining = available
+
+                try
+                  while remaining > 0 do
+                    val chunk = stream.`blocking-read`(U64(remaining.toLong.bits)).call[Data]()
+                    if chunk.length == 0 then remaining = 0 else
+                      chunks = chunk :: chunks
+                      remaining -= chunk.length
+                catch case error: Wasm.Error => ()
+
+                streamHandle.dispose()
+                summon[Data is Aggregable by Data].accept(zephyrine.Stream(chunks.stdlib.reverse.iterator))
+
+              def writeTo(writeOffset: Long, data: Data): Int =
+                if writeOffset >= extent then 0 else
+                  val available = (extent - writeOffset).min(data.length.toLong).toInt
+
+                  val limited =
+                    if available == data.length then data else
+                      val array = Array.allocate[Byte](available)
+                      java.lang.System.arraycopy(Array.unsafeJvm(data), 0, array.raw, 0, available)
+                      Array.freeze(array)
+
+                  val streamHandle =
+                    target.`write-via-stream`(U64((offset + writeOffset).bits))
+                    . call[Wasm.Handle of "output-stream"]()
+
+                  val stream: Foreign of "output-stream" from Wit = streamHandle
+                  stream.`blocking-write-and-flush`(limited).call[Unit]()
+                  streamHandle.dispose()
+                  available
+
+            lambda(view)
+          finally opened.dispose()
 
       def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
         ( using Tactic[Io.Error] )
