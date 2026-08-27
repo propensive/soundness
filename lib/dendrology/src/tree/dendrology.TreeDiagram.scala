@@ -79,10 +79,16 @@ case class TreeDiagram[node](lines: Chain[(List[TreeTile], node)]):
     lines.stdlib.to(Chain).flatMap: (tiles, node) =>
       val content = line(node)
       val textual = summon[line is Textual]
+
+      // Follow-on rows substitute tiles (a `Branch` becomes an `extender`, a `Last` becomes a
+      // `space`), and nothing requires the substitutes to have the same display width, so both
+      // prefixes are measured and the content wraps against the tighter budget — conservative
+      // for the first row under a wider follow-on prefix, but no row can exceed `width`.
       val prefix = style.serialize(tiles, textual(t"")).plain.metrics
+      val followOnPrefix = style.followOn(tiles, textual(t"")).plain.metrics
 
       val rows: scala.List[line] =
-        Flow.wrap(content, (width - prefix).max(1)).stdlib.to(scala.List)
+        Flow.wrap(content, (width - prefix.max(followOnPrefix)).max(1)).stdlib.to(scala.List)
 
       if rows.isEmpty then Chain(style.serialize(tiles, content))
       else
