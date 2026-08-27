@@ -130,7 +130,11 @@ object internal:
     val requiredHandlers = unpack(TypeRepr.of[error]).map(_.typeSymbol)
 
     def patternType(pattern: Tree): List[TypeRepr] = pattern match
-      case Typed(_, matchType)   => List(matchType.tpe)
+      // A union-typed pattern (`case _: (AlphaError | BetaError)`) covers each member of the
+      // union, so it contributes one handler per member; taken whole, the `OrType`'s
+      // `typeSymbol` is no symbol at all, and the handler would silently register nothing
+      // (issue #1793).
+      case Typed(_, matchType)   => internal.unpack(matchType.tpe)
       case Bind(_, pattern)      => patternType(pattern)
       case Alternatives(patters) => patters.flatMap(patternType)
       case Wildcard()            => halt(686, m"wildcard")
@@ -153,8 +157,10 @@ object internal:
     . to(sci.Map)
 
 
+  // Dealiased first, so an alias of a union (`type Both = AlphaError | BetaError`) decomposes
+  // the same way as the union written inline.
   def unpack(using Quotes)(repr: quotes.reflect.TypeRepr): List[quotes.reflect.TypeRepr] =
-    repr.asMatchable match
+    repr.dealias.asMatchable match
       case quotes.reflect.OrType(left, right) => unpack(left) ++ unpack(right)
       case other                              => List(other)
 
