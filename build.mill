@@ -2334,6 +2334,12 @@ object iridescence extends Library:
 
 object jacinta extends Library:
   object core extends Component(zephyrine.core, turbulence.core, urticose.url, adversaria.core, hypotenuse.core):
+    // The parser's SWAR word reads: the JVM variant is a byte-array view `VarHandle`, which
+    // neither Scala.js nor Scala Native provides, so the crosses compile the portable
+    // shift-and-or variant instead (the split `jslink.fastLinkJS` enforces).
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
+    override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "core-portable")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-portable")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The panopticon lens/optic instances for `Json`, and jacinta's only use of panopticon.
@@ -3549,7 +3555,18 @@ object jslink extends ScalaJSModule, Toolchain:
     settings.scalaOptions ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "jslink" / "src")
   override def mainClass = Some("jslink.Main")
-  override def moduleDeps = Seq(gossamer.core.js, jacinta.core.js, wisteria.core.js, ypsiloid.core.js, hypotenuse.core.js, spectacular.core.js, aviation.core.js, xenophile.typescript.js, xenophile.js.js)
+
+  // Mill resolves the linker under the hardcoded `org.scala-js` group, and through the *global*
+  // `jvmWorker()` resolver, so neither the `Toolchain` file repository nor a `repositories`
+  // override can satisfy the fork version. The scala-wasm fork publishes the same artifacts on
+  // Maven Central under `io.github.scala-wasm`, so remap the group and keep everything else
+  // (the js-env dependencies are stock artifacts at their own versions).
+  override def scalaJSLinkerClasspath: T[Seq[PathRef]] = Task:
+    jvmWorker().defaultResolver().classpath(Seq(
+      mvn"io.github.scala-wasm:scalajs-sbt-test-adapter_2.13:${settings.scalaJsVersion}",
+      mvn"io.github.scala-wasm:scalajs-linker_2.13:${settings.scalaJsVersion}")
+      ++ scalaJSJsEnvMvnDeps())
+  override def moduleDeps = Seq(gossamer.core.js, jacinta.core.js, wisteria.core.js, ypsiloid.core.js, hypotenuse.core.js, spectacular.core.js, aviation.core.js, parasite.core.js, xenophile.typescript.js, xenophile.js.js)
 
 // The Scala Native counterpart of `jslink`: `nativelink.binary` links a representative slice of the
 // Native-capable modules (`nativelink/src`) into a real executable via the `tools` linker, so any
