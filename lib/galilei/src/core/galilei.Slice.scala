@@ -30,33 +30,84 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package galilei
 
-export
-  galilei
-  . { accessed, Apfs, BlockDevice, Btrfs, C, CharDevice, children, CopyAttributes, copyInto,
-      copyTo, created, CreateFlag, CreateNonexistentParents, Creation, creation, CreationTimed,
-      D, delete, Ext4,
-      DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, Dos, Drive, Entry,
-      entry, executable, expanse, Explorable, existent, Fifo, file, File, FileOpenable,
-      FilesystemAttribute, FilesystemBackend,
-      glob, Handle, hardLinks, hardLinkTo, hidden, Io, Linux, Local,
-      MacOs, modified, MoveAtomically, moveInto, moveTo, Ntfs, OpenFlag,
-      OverwritePreexisting, p, Platform, Posix, readable, filesize, Sock, Stat,
-      Scratch, Shared, Slice, Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch,
-      TraversalOrder,
-      UnixEntry, Volume, volume, Windows, WindowsEntry, wipe, writable, write }
+import anticipation.*
+import aperture.*
+import contingency.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import vacuous.*
 
-package interfaces.paths:
-  export
-    anticipation.interfaces.paths
-    . { pathOnLinux, pathOnLocal, pathOnMacOs, pathOnPosix, pathOnWindows }
+import Io.Error.{Operation, Reason}
 
-package filesystemOptions:
-  export
-    galilei.filesystemOptions
-    . { copyAttributes, createNonexistentParents, deleteRecursively,
-        dereferenceSymlinks, moveAtomically, overwritePreexisting }
+// A byte range of a file, as a subject for `open` (issue #566): opening a `Slice` with an
+// `Exclusive` or `Shared` mode takes an OS advisory lock over exactly that range —
+// `FileChannel.lock(position, size, shared)` — and enrols the range in the access register,
+// where it conflicts only with overlapping ranges (a whole-file open overlaps every range).
+// The handle is a positional view (`zephyrine.Expanse`) windowed to the slice: its `size` is
+// the window's, and reads are relative to the window's start and clamped to it. Opened
+// without a locking mode, a `Slice` is simply a windowed view, which even lockless backends
+// (WASI) support.
+//
+//     Slice(path, 0L, 1024L).open[File](Read & Exclusive): view ?=>
+//       view.read(0L, 16)  // the file's first sixteen bytes, under a range lock
+case class Slice[plane](path: Path on plane, offset: Long, extent: Long)
 
-package filesystemTraversal:
-  export galilei.filesystemTraversal.{postOrderTraversal, preOrderTraversal}
+object Slice:
+  class SliceOpenable[filesystem: Filesystem, slice <: Slice[filesystem]]
+    ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error] )
+  extends Openable:
+
+    type Self = slice
+    type Form = File
+    type Operand = OpenFlag
+    type Result = zephyrine.Expanse
+
+    def open[grants <: Grant, result]
+      ( value: slice, mode: Mode granting grants, flags: List[OpenFlag] )
+      ( block: ((zephyrine.Expanse & Granting[grants])^) ?=> result )
+    :   result =
+
+      val lockFlags =
+        if mode.atoms.has(Exclusive) then List(OpenFlag.Lock)
+        else if mode.atoms.has(Shared) then List(OpenFlag.LockShared)
+        else List()
+
+      val locking = !lockFlags.stdlib.isEmpty
+      val range: (Long, Long) = (value.offset, value.extent)
+
+      // As in `FileOpenable`: the register works on real paths.
+      val real: Text =
+        if !locking then t"" else
+          try value.path.nioPath.toRealPath().nn.toString.tt
+          catch case _: Exception =>
+            value.path.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt
+
+      val awaiting = flags.stdlib.contains(OpenFlag.Await)
+
+      if locking then
+        if awaiting then AccessRegister.acquireAwait(real, mode.atoms, range)
+        else if !AccessRegister.acquire(real, mode.atoms, range)
+        then abort(Io.Error(value.path, Operation.Open, Reason.Busy))
+
+      try
+        backend.slice(value.path, value.offset, value.extent,
+            (lockFlags.stdlib ++ flags.stdlib).to(List)): view =>
+          // Mixed in rather than cast: `Expanse & Granting` is a trait intersection, whose
+          // erased cast is to `Granting`, which the backend's view does not implement.
+          val granted = new zephyrine.Expanse with Granting[grants]:
+            def size: Long = view.size
+            def read(offset: Long, length: Int): Data = view.read(offset, length)
+
+          block(using granted)
+      finally if locking then AccessRegister.release(real, mode.atoms, range)
+
+  // Capture-annotated by the tactic, as `Platform`'s `File` openable is.
+  given openable: [filesystem: Filesystem, slice <: Slice[filesystem]]
+  =>  ( backend: FilesystemBackend on filesystem,
+        tactic:  Tactic[Io.Error] )
+  =>  ( SliceOpenable[filesystem, slice]^{tactic} ) =
+    SliceOpenable[filesystem, slice]

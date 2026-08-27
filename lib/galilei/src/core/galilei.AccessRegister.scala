@@ -37,6 +37,7 @@ import anticipation.*
 import aperture.*
 import gossamer.*
 import rudiments.*
+import vacuous.*
 
 // The process-global register of open directory scopes, acquired when a directory is opened
 // and released when its scope ends. Conflicts are detected on the real (symlink-resolved)
@@ -48,7 +49,9 @@ import rudiments.*
 // This arbitrates only between scopes within one JVM: it says nothing about other processes
 // (OS advisory locks may complement it later), and file opens do not yet participate.
 object AccessRegister:
-  private case class Registration(real: Text, atoms: Set[Mode])
+  // `range` is the locked byte range for a `Slice` open; a whole-entry registration has none,
+  // and overlaps every range.
+  private case class Registration(real: Text, atoms: Set[Mode], range: Optional[(Long, Long)])
 
   @scala.caps.unsafe.untrackedCaptures
   private var registrations: List[Registration] = Nil
@@ -59,30 +62,41 @@ object AccessRegister:
   private def overlapping(left: Text, right: Text): Boolean =
     left == right || left.starts(t"$right/") || right.starts(t"$left/")
 
-  def acquire(real: Text, atoms: Set[Mode]): Boolean = synchronized:
-    val real2 = normalize(real)
+  private def rangesOverlap(left: Optional[(Long, Long)], right: Optional[(Long, Long)])
+  :   Boolean =
+    left.lay(true): (leftOffset, leftSize) =>
+      right.lay(true): (rightOffset, rightSize) =>
+        leftOffset < rightOffset + rightSize && rightOffset < leftOffset + leftSize
 
-    val conflict = registrations.stdlib.exists: registration =>
-      overlapping(real2, registration.real)
-        && (atoms.has(Exclusive) || registration.atoms.has(Exclusive))
+  def acquire(real: Text, atoms: Set[Mode], range: Optional[(Long, Long)] = Unset): Boolean =
+    synchronized:
+      val real2 = normalize(real)
 
-    if conflict then false else
-      registrations ::= Registration(real2, atoms)
-      true
+      val conflict = registrations.stdlib.exists: registration =>
+        overlapping(real2, registration.real)
+          && rangesOverlap(range, registration.range)
+          && (atoms.has(Exclusive) || registration.atoms.has(Exclusive))
+
+      if conflict then false else
+        registrations ::= Registration(real2, atoms, range)
+        true
 
   // The blocking variant (issue #566): waits until no conflicting registration remains,
   // rather than failing. In-process waiters are woken by `release`; fairness is the
   // monitor's, which suffices for scope-shaped holds.
-  def acquireAwait(real: Text, atoms: Set[Mode]): Unit = synchronized:
-    while !acquire(real, atoms) do wait()
+  def acquireAwait(real: Text, atoms: Set[Mode], range: Optional[(Long, Long)] = Unset)
+  :   Unit =
+    synchronized:
+      while !acquire(real, atoms, range) do wait()
 
-  def release(real: Text, atoms: Set[Mode]): Unit = synchronized:
-    val real2 = normalize(real)
+  def release(real: Text, atoms: Set[Mode], range: Optional[(Long, Long)] = Unset): Unit =
+    synchronized:
+      val real2 = normalize(real)
 
-    def remove(list: List[Registration]): List[Registration] = list match
-      case Nil                                                => Nil
-      case head :: tail if head == Registration(real2, atoms) => tail
-      case head :: tail                                       => head :: remove(tail)
+      def remove(list: List[Registration]): List[Registration] = list match
+        case Nil => Nil
+        case head :: tail if head == Registration(real2, atoms, range) => tail
+        case head :: tail => head :: remove(tail)
 
-    registrations = remove(registrations)
-    notifyAll()
+      registrations = remove(registrations)
+      notifyAll()

@@ -625,3 +625,43 @@ object Tests extends Suite(m"Galilei tests"):
           while !order.isEmpty do seen = seen :+ order.poll().toString
           seen
       . assert(_ == scala.List("releasing", "acquired"))
+
+    suite(m"Slice locking"):
+      import errorDiagnostics.stackTracesDiagnostics
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+
+      val sliceLeaf: Text = Uuid().show
+      val sliced: Path on Linux = unsafely((% / "tmp" / sliceLeaf).on[Linux])
+      unsafely(sliced.write(t"0123456789abcdef"))
+
+      test(m"A slice view is windowed to its range"):
+        unsafely:
+          Slice(sliced, 4L, 6L).open[File](Read): view ?=>
+            (view.size, view.read(0L, 6).utf8, view.read(4L, 100).utf8)
+      . assert(_ == (6L, t"456789", t"89"))
+
+      test(m"Overlapping exclusive slices conflict"):
+        unsafely:
+          capture[Io.Error]:
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              Slice(sliced, 0L, 8L).open[File](Read & Exclusive): a ?=>
+                Slice(sliced, 4L, 8L).open[File](Read & Exclusive) { () }
+          . reason
+      . assert(_ == Io.Error.Reason.Busy)
+
+      test(m"Disjoint exclusive slices coexist"):
+        unsafely:
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Slice(sliced, 0L, 4L).open[File](Read & Exclusive): a ?=>
+              Slice(sliced, 8L, 4L).open[File](Read & Exclusive) { true }
+      . assert(_ == true)
+
+      test(m"A whole-file Exclusive open conflicts with any slice"):
+        unsafely:
+          capture[Io.Error]:
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              sliced.open[File](Read & Exclusive): a ?=>
+                Slice(sliced, 0L, 4L).open[File](Read & Exclusive) { () }
+          . reason
+      . assert(_ == Io.Error.Reason.Busy)

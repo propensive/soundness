@@ -392,6 +392,18 @@ package filesystemBackends:
             lambda(view)
           finally opened.dispose()
 
+      def slice[result]
+        ( path: Path on Plane, offset: Long, extent: Long, flags: List[OpenFlag] )
+        ( lambda: zephyrine.Expanse => result )
+        ( using Tactic[Io.Error] )
+      :   result =
+
+        // WASI has no file-locking call, so a locked slice is refused; an unlocked slice is
+        // simply a windowed positional view.
+        if flags.has(OpenFlag.Lock) || flags.has(OpenFlag.LockShared)
+        then abort(Io.Error(path, Operation.Open, Reason.Unsupported))
+        else expanse(path) { view => lambda(window(view, offset, extent)) }
+
       def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
         ( using Tactic[Io.Error] )
       :   result =

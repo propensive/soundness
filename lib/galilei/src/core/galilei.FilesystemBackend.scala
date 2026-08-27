@@ -106,6 +106,24 @@ trait FilesystemBackend extends Planar:
     ( using Tactic[Io.Error] )
   :   result
 
+  // Range-scoped positional reading (issue #566): like `expanse`, but the view is windowed
+  // to `[offset, offset + extent)` — its `size` is the window's, and reads are relative to
+  // the window's start and clamped to it — and, when `flags` request it, an OS advisory lock
+  // over exactly that byte range is held for the scope.
+  def slice[result]
+    ( path: Path on Plane, offset: Long, extent: Long, flags: List[OpenFlag] )
+    ( lambda: zephyrine.Expanse => result )
+    ( using Tactic[Io.Error] )
+  :   result
+
+  protected def window(view: zephyrine.Expanse, offset: Long, extent: Long): zephyrine.Expanse =
+    new zephyrine.Expanse:
+      def size: Long = (view.size - offset).max(0L).min(extent)
+
+      def read(readOffset: Long, length: Int): Data =
+        val available = (size - readOffset).max(0L).min(length.toLong).toInt
+        view.read(offset + readOffset, available)
+
   def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
     ( using Tactic[Io.Error] )
   :   result

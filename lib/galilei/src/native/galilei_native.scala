@@ -308,6 +308,73 @@ package filesystemBackends:
           lambda(view)
         finally channel.close()
 
+      def slice[result]
+        ( path: Path on Plane, offset: Long, extent: Long, flags: List[OpenFlag] )
+        ( lambda: zephyrine.Expanse => result )
+        ( using Tactic[Io.Error] )
+      :   result =
+
+        // An exclusive range lock needs a writable channel, so one is requested when the
+        // flags ask for an exclusive lock, degrading — like whole-file locking on a
+        // read-only open — to a read-only channel and a *shared* OS lock where the file
+        // cannot be opened writable; the register still provides in-process exclusivity.
+        var writable = flags.stdlib.contains(OpenFlag.Lock)
+
+        val channel = protect(path, Operation.Open):
+          val optionSet = java.util.HashSet[jnf.OpenOption]()
+          optionSet.add(jnf.StandardOpenOption.READ)
+          if writable then optionSet.add(jnf.StandardOpenOption.WRITE)
+
+          try jnc.FileChannel.open(javaPath(path), optionSet).nn
+          catch case error: Exception =>
+            import scala.unsafeExceptions.canThrowAny
+            if !writable then throw error else
+              writable = false
+              optionSet.remove(jnf.StandardOpenOption.WRITE)
+              jnc.FileChannel.open(javaPath(path), optionSet).nn
+
+        try
+          val shared = flags.stdlib.contains(OpenFlag.LockShared) || !writable
+          val await = flags.stdlib.contains(OpenFlag.Await)
+
+          val lock =
+            if flags.stdlib.contains(OpenFlag.Lock) || flags.stdlib.contains(OpenFlag.LockShared)
+            then
+              // As for whole-file locks: an in-JVM shared overlap is benign, since the
+              // register has already admitted this open.
+              try Option:
+                if await then channel.lock(offset, extent, shared).nn
+                else channel.tryLock(offset, extent, shared).nn
+              catch case _: jnc.OverlappingFileLockException => if shared then Some(null) else None
+            else Some(null)
+
+          if lock.isEmpty then abort(Io.Error(path, Operation.Open, Reason.Busy))
+
+          try
+            val view = new zephyrine.Expanse:
+              def size: Long = channel.size
+
+              def read(readOffset: Long, length: Int): Data =
+                val buffer = java.nio.ByteBuffer.allocate(length).nn
+                var position = readOffset
+                var count = 0
+
+                while count >= 0 && buffer.hasRemaining do
+                  count = channel.read(buffer, position)
+                  if count > 0 then position += count
+
+                val filled = buffer.position
+                val array = Array.allocate[Byte](filled)
+                buffer.flip()
+                buffer.get(array.raw, 0, filled)
+                Array.freeze(array)
+
+            lambda(window(view, offset, extent))
+          finally lock.foreach: held =>
+            if held != null then
+              try held.release() catch case _: jnc.ClosedChannelException => ()
+        finally channel.close()
+
       def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
         ( using Tactic[Io.Error] )
       :   result =
