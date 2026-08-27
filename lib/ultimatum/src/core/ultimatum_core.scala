@@ -159,7 +159,11 @@ def border
 // terminal via the alternate screen buffer (restored on exit) and fills its
 // height; in `Inline` mode it renders a variable-height block at the cursor
 // without the alternate buffer, leaving scrollback intact.
-def form(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
+// Named `conduct` — it conducts the interaction — rather than `form`, which collided at the
+// `soundness` umbrella with telekinesis's HTML-form renderer, arbitrarily shadowing this
+// entry point for umbrella users (issue #1876); `Form`, the live pane-tree model it drives,
+// keeps its name.
+def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
   ( using terminal: Terminal,
           monitor:   Monitor,
           probate:   Probate,

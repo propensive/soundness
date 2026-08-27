@@ -37,6 +37,7 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 object Roff:
@@ -70,16 +71,11 @@ object Roff:
   private def line(text: Text): Text =
     if text.starts(t".") || text.starts(t"'") then t"\\&$text" else text
 
-  // Cons on the opaque `List` routes through the compat conversion to the stdlib `List`, so
-  // sequences are assembled here by concatenation instead of `::`.
-  private def concat[element](lists: List[element]*): List[element] =
-    lists.toList.flatMap(_.stdlib).to(List)
-
   // A `.P` directly after `.SH`/`.SS` is redundant (mandoc lints it), so a section's leading
   // paragraph contributes only its text line.
   private def sectionBody(blocks: List[Block]): List[Text] = blocks match
     case Block.Paragraph(prose) :: rest =>
-      concat(List(line(prose.map(_.serialize).join)), rest.flatMap(_.serialize))
+      line(prose.map(_.serialize).join) :: rest.flatMap(_.serialize)
 
     case other => other.flatMap(_.serialize)
 
@@ -108,15 +104,15 @@ object Roff:
 
     def serialize: List[Text] = this match
       case Section(title, blocks) =>
-        concat(List(t".SH ${quote(title)}"), sectionBody(blocks))
+        t".SH ${quote(title)}" :: sectionBody(blocks)
 
       case Subsection(title, blocks) =>
-        concat(List(t".SS ${quote(title)}"), sectionBody(blocks))
+        t".SS ${quote(title)}" :: sectionBody(blocks)
 
       case Paragraph(prose) => List(t".P", line(prose.map(_.serialize).join))
 
       case Example(lines) =>
-        concat(List(t".EX"), lines.map { text => line(escape(text)) }, List(t".EE"))
+        t".EX" :: (lines.map { text => line(escape(text)) } + List(t".EE"))
 
       // A tagged paragraph with nothing to say still names its subject; emitting an empty body
       // line would leave a stray blank line in the rendered page.
@@ -126,7 +122,7 @@ object Roff:
         if body.stdlib.isEmpty then List(t".TP", label)
         else List(t".TP", label, line(body.map(_.serialize).join))
 
-      case Indented(blocks) => concat(List(t".RS"), blocks.flatMap(_.serialize), List(t".RE"))
+      case Indented(blocks) => t".RS" :: (blocks.flatMap(_.serialize) + List(t".RE"))
 
 case class Roff
   ( title:   Text,
@@ -141,6 +137,6 @@ case class Roff
       List(title.upper, section.show, date.or(t""), source.or(t""), manual.or(t""))
       . stdlib.reverse.dropWhile(_ == t"").reverse
 
-    val header = Roff.concat(List(t".TH"), arguments.to(List).map(Roff.quote)).join(t" ")
+    val header = (t".TH" :: arguments.to(List).map(Roff.quote)).join(t" ")
 
-    Roff.concat(List(header), blocks.flatMap(_.serialize)).join(t"", t"\n", t"\n")
+    (header :: blocks.flatMap(_.serialize)).join(t"", t"\n", t"\n")

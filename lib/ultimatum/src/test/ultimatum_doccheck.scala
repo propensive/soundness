@@ -53,7 +53,7 @@ object Examples:
   def inALayout(using Terminal, Monitor, Probate): Unit =
     val progress = Reading(Fraction(0.0))
     progress() = Fraction.of(3, 10)
-    form(Occupancy.Inline)(stack(gauge(progress)))
+    conduct(Occupancy.Inline)(stack(gauge(progress)))
 
   def standalone(using Stdio, Monitor, Probate): Unit =
     whilst(Reading(Fraction.indeterminate)):

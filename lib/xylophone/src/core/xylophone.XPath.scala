@@ -601,7 +601,7 @@ derives CanEqual:
 
     expression match
       case XPath.Expression.Route(origin, steps) =>
-        XPath(XPath.Expression.Route(origin, (step :: steps.stdlib).to(List)))
+        XPath(XPath.Expression.Route(origin, step :: steps))
 
       case _ =>
         this

@@ -130,10 +130,16 @@ object List:
 
 val Nil: List[Nothing] = List.of(sci.Nil)
 
-// The cons constructor. Right-associative extensions read in usage order, so the receiver
-// is the HEAD (the left operand). It cannot be a top-level extension (the name would clash
-// with the extractor object), so it rides on a given, whose extensions are candidates
-// wherever the given is visible — everywhere, via `-Yimports`.
+// The cons constructor. The extension is *declared* in usage order — the receiver is the
+// HEAD, the left operand at a call site — but because `::` is right-associative, the
+// compiler swaps the operands during desugaring: in a typer print the receiver appears
+// syntactically as the RIGHT operand, with the parameter sections exchanged, which is easy
+// to misread as the extension being on the tail (issue #1809). It cannot be a top-level
+// extension (the name would clash with the extractor object), so it rides on a given, whose
+// extensions are candidates wherever the given is visible — everywhere, via `-Yimports`.
+// Note that a chained cons formerly resolved to the underlying `sci.List` member through a
+// prefix-sealing gap in implicit search, leaking the underlying type; fixed in proscala
+// (3.9.0-RC5-p14, `givenprefix`).
   // Subtype-parametric so branded lists (`List[T] & Populated`) splat too.
   given listIsSpreadable: [element, list <: List[element]]
   =>  (Spreadable[list] { type Out = sci.List[element] }) =
