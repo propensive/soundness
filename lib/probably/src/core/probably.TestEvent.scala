@@ -159,12 +159,18 @@ object TestEvent:
         case Axis.Domain.Decimal  => t"decimal"
 
       value match
-        case Value.Discrete(label)  => Coordinate(spec.label, domain, spec.emergent, label, Unset, Unset)
-        case Value.Integral(number) => Coordinate(spec.label, domain, spec.emergent, Unset, number, Unset)
-        case Value.Decimal(number)  => Coordinate(spec.label, domain, spec.emergent, Unset, Unset, number)
+        case Value.Discrete(label) =>
+          Coordinate(spec.label, domain, spec.emergent, label, Unset, Unset)
+
+        case Value.Integral(number) =>
+          Coordinate(spec.label, domain, spec.emergent, Unset, number, Unset)
+
+        case Value.Decimal(number) =>
+          Coordinate(spec.label, domain, spec.emergent, Unset, Unset, number)
 
     def of(coordinates: List[(Axis.Spec, Value)]): List[Coordinate] =
-      coordinates.map { (coordinate: (Axis.Spec, Value)) => of(coordinate(0), coordinate(1)) }
+      coordinates.map: (coordinate: (Axis.Spec, Value)) =>
+        of(coordinate(0), coordinate(1))
 
   // One metric of a result, keyed by the `Metric` enum case's NAME (stable across versions in
   // a way its display label is not).
@@ -172,7 +178,8 @@ object TestEvent:
 
   object MetricValue:
     def of(metrics: Ledger[Metric, Double]): List[MetricValue] =
-      metrics.to[List].map { (entry: (Metric, Double)) => MetricValue(entry(0).toString.tt, entry(1)) }
+      metrics.to[List].map: (entry: (Metric, Double)) =>
+        MetricValue(entry(0).toString.tt, entry(1))
 
   def kindName(kind: Entry.Kind): Text = kind match
     case Entry.Kind.Check   => t"check"

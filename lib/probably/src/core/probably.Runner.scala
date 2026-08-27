@@ -88,7 +88,7 @@ extends Findable:
   def maybeRun[result](test: Test[result]^): Optional[Trial[result]] =
     if skip(test.id) then Unset else run[result](test)
 
-  def redraw(size: Int): Unit = if !silent then
+  def redraw(size: Int): Unit = if !silent && reporter.live(report) then
     if size > 0 then Out.print(e"\e[${size}A\r\e[2K")
 
     active.stdlib.reverse.foreach: test =>
@@ -102,6 +102,8 @@ extends Findable:
       val size = active.size
       active ::= test.id
       redraw(size)
+
+    reporter.started(report, test.id, false)
 
     val context = Harness()
     Runner.harnessThreadLocal.set(Some(context))
@@ -118,6 +120,8 @@ extends Findable:
           active = active.filter(_ != test.id)
           redraw(size)
 
+        reporter.ended(report, test.id, false)
+
     catch case error: Exception =>
       val ns: Long = System.nanoTime - ns0
 
@@ -131,6 +135,8 @@ extends Findable:
           active = active.filter(_ != test.id)
           redraw(size)
 
+        reporter.ended(report, test.id, false)
+
     finally
       Runner.harnessThreadLocal.set(None)
 
@@ -143,12 +149,15 @@ extends Findable:
       redraw(size)
 
     reporter.declare(report, suite)
+    reporter.started(report, suite.id, true)
     block(using suite)
 
     mutex:
       val size = active.size
       active = active.filter(_ != suite.id)
       redraw(size)
+
+    reporter.ended(report, suite.id, true)
 
   def terminate(error: Throwable): Unit = mutex:
     reporter.fail(report, error, active.to[Set])
