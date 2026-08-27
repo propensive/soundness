@@ -45,6 +45,11 @@ object Signature:
 
   given encodable: [cipher <: Cipher] => Signature[cipher] is Encodable in Data = _.bytes
 
+  // Hexadecimal rather than `showable`'s Base64, which needs an `Alphabet` in scope; the whole
+  // signature is shown, since a signature which differs anywhere is a different signature.
+  given inspectable: [signature <: Signature[?]] => signature is Inspectable = signature =>
+    t"Signature(${Inspection.hex(signature.bytes)})"
+
   // SignatureDigest → Signature.Digest
   // The digest an asymmetric signature is taken over. RSA and ECDSA sign a hash of the message
   // rather than the message itself, and the choice of hash is part of the signature algorithm's

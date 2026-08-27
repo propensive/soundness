@@ -902,6 +902,10 @@ object Git:
     =>  ((Git.Tag is Decodable in Text)^{tactic}) = parse(_)
     given showable: Git.Tag is Showable = _.text
 
+    // The name alone would be indistinguishable from a branch name, a tag and a raw refspec,
+    // each of which is a different argument to git, so every ref names its own kind.
+    given inspectable: [tag <: Git.Tag] => tag is Inspectable = tag => t"Tag(${tag.text})"
+
   case class Tag(text: Text) extends octogenarian.internal.Refspec
 
   object Branch:
@@ -911,6 +915,9 @@ object Git:
     given decoder: (tactic: Tactic[Git.RefError])
     =>  ((Git.Branch is Decodable in Text)^{tactic}) = parse(_)
     given showable: Git.Branch is Showable = _.text
+
+    given inspectable: [branch <: Git.Branch] => branch is Inspectable = branch =>
+      t"Branch(${branch.text})"
 
   case class Branch(text: Text) extends octogenarian.internal.Refspec
 
@@ -928,6 +935,10 @@ object Git:
     given decoder: (tactic: Tactic[Git.RefError])
     =>  ((Git.Hash is Decodable in Text)^{tactic}) = apply(_)
     given showable: Git.Hash is Showable = _.text
+
+    // The full forty hexadecimal digits: an abbreviated hash is ambiguous between objects, and
+    // an inspection which abbreviated would hide exactly the difference being looked for.
+    given inspectable: [hash <: Git.Hash] => hash is Inspectable = hash => t"Hash(${hash.text})"
 
   class Hash(val text: Text) extends Root(t"$text/"), octogenarian.internal.Refspec:
     type Plane = Notes

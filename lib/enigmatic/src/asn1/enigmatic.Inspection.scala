@@ -33,58 +33,24 @@
 package enigmatic
 
 import anticipation.*
-import gastronomy.*, providers.javaStdlibProvider
-import gossamer.*
-import monotonous.*
-import prepositional.*
-import rudiments.*
-import spectacular.*
-import vacuous.*
 
-object PrivateKey:
-  def generate[cipher <: Cipher]()(using cipher: cipher, cloak: Cloak^)
-  :   PrivateKey[cipher]^{cloak} =
+// Shared rendering internals, kept in the lowest component so every other one can reach them.
+private[enigmatic] object Inspection:
+  private val digits: String = "0123456789abcdef"
 
-    PrivateKey(cipher.genKey())
+  // Full-width lowercase hexadecimal of a binary payload, for the `Inspectable` instances of
+  // the types which wrap `Data`. Monotonous's `serialize` would need an `Alphabet` in scope,
+  // and a debug rendering must always be available, with no context; nothing is abbreviated,
+  // since an inspection which dropped bytes would hide exactly what is being looked for.
+  def hex(data: Data): Text =
+    val bytes = data.readable
+    val builder: StringBuilder = new StringBuilder()
+    var index = 0
 
-  // Adopts freshly-generated key material: the `Data` is ours, so it is zeroed in place
-  // (through a mutable view) as it is cloaked.
-  private[enigmatic] def apply[cipher <: Cipher](data: Data)(using cloak: Cloak^)
-  :   PrivateKey[cipher]^{cloak} =
+    while index < bytes.length do
+      val byte = bytes(index)
+      builder.append(digits.charAt((byte & 0xf0) >>> 4))
+      builder.append(digits.charAt(byte & 0x0f))
+      index += 1
 
-    new PrivateKey(cloak.cloak(data.mutable(using Unsafe)))
-
-  // Redacted. `showable` uncloaks the key to fingerprint it; an inspection is produced in far
-  // more places (test output, a debugger's variable pane, a nested rendering of an enclosing
-  // value), so it reveals nothing of the key material at all, not even a digest of it.
-  given inspectable: [key <: PrivateKey[?]] => key is Inspectable =
-    _ => t"PrivateKey(•••)"
-
-  given showable: [key <: Cipher] => PrivateKey[key] is Showable = key =>
-    import alphabets.base64Standard
-
-    key.secret.uncloak: bytes =>
-      t"PrivateKey(${Array.unsafeFrozen(bytes).digest[Sha2[256]].serialize[Base64]})"
-
-// A private key held opaquely by whichever `Cloak` was in scope at construction, capturing
-// that cloak. Operations that need the key material — `public`, `sign`, `pem` — materialize
-// it transiently through the cloak, and the transient copy is zeroed as soon as the
-// operation completes; only `pem`, gated on `Divulgence`, lets the material escape.
-class PrivateKey[cipher <: Cipher](private[enigmatic] val secret: Secret^):
-  def public(using cipher: cipher): PublicKey[cipher] =
-    secret.uncloak: bytes =>
-      PublicKey(cipher.privateToPublic(Array.unsafeFrozen(bytes)))
-
-
-  def sign[encodable: Encodable in Data](value: encodable)
-    ( using cipher: cipher & Signing, erased weakness: Permit[Weakness[cipher]] )
-  :   Signature[cipher] =
-
-    secret.uncloak: bytes =>
-      Signature(cipher.sign(encodable.encode(value), Array.unsafeFrozen(bytes)))
-
-
-  // The immutable `Data` in the result outlives the cloak's zeroing, which is exactly why
-  // revealing it demands the explicit `Divulgence` token.
-  def pem(reveal: Divulgence.type): Pem = secret.uncloak: bytes =>
-    Pem(Pem.Label.PrivateKey, Array.unsafeFrozen(bytes.clone))
+    builder.toString.tt
