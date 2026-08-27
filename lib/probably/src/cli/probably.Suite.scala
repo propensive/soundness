@@ -65,7 +65,12 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
   // FD-backed streams would bypass that redirection entirely (the report would go to the host
   // process's terminal, not the host's client). In a conventional `java -cp … <Suite>` run the
   // two are indistinguishable, since `System.out` IS the process's stdout.
-  def suiteIo: Stdio = safely(stdios.systemStdio).or(panic(m"the JVM stdio is always available"))
+  // A host may also have NULLED `System.out` outright — superlunary's `Executor` does, so
+  // that stray prints from staged code cannot corrupt its protocol stream — and a staged
+  // expression which touches a suite object's statics initializes the whole suite there. In
+  // that case the FD-backed streams are the only ones left to fall back to.
+  def suiteIo: Stdio =
+    safely(stdios.systemStdio).or(stdios.virtualMachineStdio)
 
   private def makeRunner(selection: Selection): Runner[Report] = makeRunner(selection, Unset)
 
