@@ -19,7 +19,7 @@ object Main:
     // HMAC-SHA256 against a known vector — the same assertion the JVM suite makes, here proving
     // libcrypto was loaded and its symbols resolved at run time with nothing else linking it.
     val mac = enigmatic.OpensslCrypto.hmac(t"HmacSHA256").mac(t"key".in[Data], t"message".in[Data])
-    val hex = mac.to(List).map(b => String.format("%02x", Int.box(b & 255))).mkString
+    val hex = mac.to[List].stdlib.map(b => String.format("%02x", Int.box(b & 255))).mkString
     val expected = "6e9ef29b75fffc5b7abae527d58fdadb2fe42e7219011976917343065f58ed4a"
     out.println("crypto-only: hmac verified = "+(hex == expected))
 
@@ -30,4 +30,4 @@ object Main:
     val secret = t"attack at dawn!!".in[Data]
     val ciphertext = aes.encrypt(t"AES/CBC/PKCS7", key, iv, secret)
     val plaintext = aes.decrypt(t"AES/CBC/PKCS7", key, 16, ciphertext)
-    out.println("crypto-only: aes round-trip = "+(plaintext.to(List) == secret.to(List)))
+    out.println("crypto-only: aes round-trip = "+(plaintext.to[List] == secret.to[List]))

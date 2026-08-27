@@ -36,30 +36,30 @@ object Main:
 
     // xenophile native C FFI: real libc calls lowered by `NativeInvoke` — a nullary call and
     // (v2) calls with primitive arguments.
-    val pid: Int = Foreign["library", Native].getpid().invoke[Int]
+    val pid: Int = Foreign["library", Native].getpid().call[Int]()
     out.println("pid via native FFI: "+pid)
 
-    val absolute: Int = Foreign["library", Native].abs(-7).invoke[Int]
+    val absolute: Int = Foreign["library", Native].abs(-7).call[Int]()
     out.println("abs(-7) via native FFI: "+absolute)
 
-    val power: Double = Foreign["library", Native].pow(2.0, 10.0).invoke[Double]
+    val power: Double = Foreign["library", Native].pow(2.0, 10.0).call[Double]()
     out.println("pow(2, 10) via native FFI: "+power)
 
     // (v3) a string argument marshalled to a `CString`, and a string result read back.
-    val length: Long = Foreign["library", Native].strlen(t"hello, world").invoke[Long]
+    val length: Long = Foreign["library", Native].strlen(t"hello, world").call[Long]()
     out.println("strlen(hello, world) via native FFI: "+length)
 
-    val home: Text = Foreign["library", Native].getenv(t"HOME").invoke[Text]
+    val home: Text = Foreign["library", Native].getenv(t"HOME").call[Text]()
     out.println("getenv(HOME) via native FFI: "+home.s)
 
-    // (v4) raw pointers: a pointer-returning call (`malloc`), a `Pointer` argument satisfying a
-    // `void*` parameter (`memset`, whose pointer result is discarded into a `Pointer` too), and
-    // `free` returning `void` — the round-trip proving `Pointer` flows in both directions.
-    val block: Pointer = Foreign["library", Native].malloc(32L).invoke[Pointer]
+    // (v4) raw pointers: a pointer-returning call (`malloc`), an `Address` argument satisfying a
+    // `void*` parameter (`memset`, whose pointer result is discarded into an `Address` too), and
+    // `free` returning `void` — the round-trip proving `Address` flows in both directions.
+    val block: Address = Foreign["library", Native].malloc(32L).call[Address]()
     out.println("malloc(32) via native FFI: isNull = "+block.isNull)
-    val filled: Pointer = Foreign["library", Native].memset(block, 0, 32L).invoke[Pointer]
+    val filled: Address = Foreign["library", Native].memset(block, 0, 32L).call[Address]()
     out.println("memset(block, 0, 32) via native FFI: same = "+(filled.address == block.address))
-    Foreign["library", Native].free(block).invoke[Unit]
+    Foreign["library", Native].free(block).call[Unit]()
     out.println("free(block) via native FFI: ok")
 
     // galilei: a real filesystem round-trip driven straight through the native `FilesystemBackend`
@@ -80,9 +80,9 @@ object Main:
     if fs.exists(file, false) then unsafely(fs.delete(file))
     unsafely:
       fs.open(file, List(OpenFlag.Write, OpenFlag.Create)): handle =>
-        handle.writer(LazyList(t"hello native fs".in[Data]))
+        handle.writer(Chain(t"hello native fs".in[Data]))
     out.println("fs: file size after write = "+unsafely(fs.stat(file, false)).size)
-    val readBytes = unsafely(fs.open(file, List(OpenFlag.Read))(_.reader().map(_.length).sum))
+    val readBytes = unsafely(fs.open(file, List(OpenFlag.Read))(_.reader().stdlib.map(_.length).sum))
     out.println("fs: bytes read back       = "+readBytes)
     unsafely(fs.delete(file))
 
@@ -93,10 +93,10 @@ object Main:
     import environments.javaEnvironment
     out.println("ambience HOME = "+summon[Environment].variable(t"HOME").or(t"?").s)
 
-    // coaxial: a UDP loopback round-trip straight through the native `SocketBackend` — bind a
+    // coaxial: a UDP loopback round-trip straight through the native `Socket.Backend` — bind a
     // datagram socket, dispatch a payload to it, receive it back.
     import coaxial.socketBackends.native
-    val sb = summon[SocketBackend]
+    val sb = summon[Socket.Backend]
     val udpPort = Port.unsafe[Udp](55555)
     val server = sb.listenUdp(udpPort, Unset, Nil)
     val courier = sb.routeUdpPort(udpPort, Unset, Nil)
@@ -104,7 +104,7 @@ object Main:
     unsafely(sb.dispatch(courier, summon[Data is Streamable by Data over Credit].stream(payload)))
     val packet = unsafely(sb.receive(server))
     sb.unbind(server)
-    out.println("udp: received "+packet.data.length+" bytes = "+packet.data.to(List).map(_.toChar).mkString)
+    out.println("udp: received "+packet.data.length+" bytes = "+packet.data.to[List].stdlib.map(_.toChar).mkString)
 
     // ...and a TCP loopback round-trip: listen, dial back into the listener, write the payload and
     // hang up (so the server-side read sees EOF), then accept and read it back through the duplex.
@@ -119,7 +119,7 @@ object Main:
     val received = unsafely(duplex.source.memoize)
     duplex.close()
     sb.shutdown(tcpServer)
-    out.println("tcp: received "+received.length+" bytes = "+received.to(List).map(_.toChar).mkString)
+    out.println("tcp: received "+received.length+" bytes = "+received.to[List].stdlib.map(_.toChar).mkString)
 
     // parasite: real concurrency through the native supervisors — `virtualThreading` resolves to
     // the platform-thread twin (no Loom on native), and two workers running concurrently under
@@ -140,7 +140,7 @@ object Main:
     // `OpensslCrypto` source that runs on the JVM via Panama, here materialized as direct C
     // calls. The HMAC is checked against RFC 4231-style known output, and AES/CBC round-trips.
     val mac = enigmatic.OpensslCrypto.hmac(t"HmacSHA256").mac(t"key".in[Data], t"message".in[Data])
-    val hex = mac.to(List).map(b => String.format("%02x", Int.box(b & 255))).mkString
+    val hex = mac.to[List].stdlib.map(b => String.format("%02x", Int.box(b & 255))).mkString
     out.println("hmac-sha256(key, message) = "+hex)
     out.println("hmac verified = "+(hex == "6e9ef29b75fffc5b7abae527d58fdadb2fe42e7219011976917343065f58ed4a"))
 
@@ -150,7 +150,7 @@ object Main:
     val secret = t"attack at dawn!!".in[Data]
     val sealed0 = aes.encrypt(t"AES/CBC/PKCS7", aesKey, aesIv, secret)
     val opened = aes.decrypt(t"AES/CBC/PKCS7", aesKey, 16, sealed0)
-    out.println("aes-256-cbc round-trip = "+(opened.to(List) == secret.to(List)))
+    out.println("aes-256-cbc round-trip = "+(opened.to[List] == secret.to[List]))
 
     // coaxial TLS: a real HTTPS exchange through the OpenSSL-backed `SecureEndpoint` — the one
     // networked scenario, so gated on `SOUNDNESS_CI_ONLINE` like wasm-e2e's outgoing-HTTP check.
@@ -162,5 +162,5 @@ object Main:
       tlsDuplex.send(summon[Data is Streamable by Data over Credit].stream(request))
       val response = unsafely(tlsDuplex.source.memoize)
       tlsDuplex.close()
-      val status = response.to(List).takeWhile(_ != 13).map(_.toChar).mkString
+      val status = response.to[List].stdlib.takeWhile(_ != 13).map(_.toChar).mkString
       out.println("tls: "+status+" ("+response.length+" bytes)")
