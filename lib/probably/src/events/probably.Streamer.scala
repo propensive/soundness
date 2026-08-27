@@ -93,6 +93,14 @@ object Streamer:
 
   private def encode(event: TestEvent): Data = unsafely(event.tel.bintel(schema))
 
+  // The decode inverse, offered here for hosts whose own modules ARE separation-checked: the
+  // derived decoder's inline expansion is not sep-clean (like the rest of the derivation
+  // machinery), so it lives in this non-sep module, expanded exactly once. Decode failures
+  // throw; a host wraps calls in `safely`.
+  def read(data: Data): TestEvent =
+    import strategies.throwUnsafely
+    unsafely(Bintel.read[TestEvent](data))
+
   // One frame: a 4-byte big-endian length prefix, then the payload, flushed so the host's
   // chunk stream sees it promptly.
   private def frame(output: ji.OutputStream, payload: Data): Unit =
