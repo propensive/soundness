@@ -40,10 +40,11 @@ export
       DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, Dos, Drive, Entry,
       entry, executable, expanse, Explorable, existent, Fifo, file, File, FileOpenable,
       FilesystemAttribute, FilesystemBackend,
-      glob, Handle, hardLinks, hardLinkTo, hidden, Io, Linux, Local,
+      glob, Handle, hardLinks, hardLinkTo, hidden, Io, Linux, Local, locations,
+      dataSearch, configSearch, destination, listing, search,
       MacOs, modified, MoveAtomically, moveInto, moveTo, Ntfs, OpenFlag,
       OverwritePreexisting, p, Platform, Posix, readable, filesize, Sock, Stat,
-      Scratch, Shared, Slice, Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch,
+      Scratch, Searchpaths, searchpathCompliant, Shared, Slice, Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch,
       TraversalOrder,
       UnixEntry, Volume, volume, Windows, WindowsEntry, wipe, writable, write }
 
