@@ -64,6 +64,29 @@ object Tests extends Suite(m"Xylophone tests"):
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
 
+    // A missing `Inspectable` is never a compile error, so coverage is held in place by
+    // asserting on the renderings: `fallbacks` returns those which used a marked fallback.
+    suite(m"Native-rendering coverage"):
+      test(m"an element inspects as escaped, single-line XML source"):
+        x"<message>hello</message>".inspect
+      . assert(_ == t"xml\"<message>hello</message>\"")
+
+      test(m"attributes inspect as an element's start-tag text"):
+        Attributes(t"id" -> t"x", t"class" -> t"y").inspect
+      . assert(_ == t"xml{id=\"x\", class=\"y\"}")
+
+      test(m"xylophone's types inspect natively"):
+        Inspectable.fallbacks
+         ( x"<message>hello</message>".inspect,
+           elem(t"item", Map(t"id" -> t"1"), TextNode(t"hi")).inspect,
+           TextNode(t"hi").inspect,
+           Comment(t"hi").inspect,
+           Cdata(t"hi").inspect,
+           Doctype(t"html").inspect,
+           ProcessingInstruction(t"foo", t"bar").inspect,
+           Attributes(t"id" -> t"x").inspect )
+      . assert(_ == Nil)
+
     suite(m"Interpolator tests"):
       test(m"Simple interpolator"):
         x"<message>1</message>"

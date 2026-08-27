@@ -36,6 +36,29 @@ import soundness.*
 
 object Tests extends Suite(m"Synesthesia Tests"):
   def run(): Unit =
+    // A missing `Inspectable` is never a compile error, so coverage is held in place by
+    // asserting on the renderings: `fallbacks` returns those which used a marked fallback.
+    // synesthesia's own types are case classes and enums, rendered structurally by derivation;
+    // only `Mcp.TextInt`, whose `id` is a `Text | Int` union, needs an instance of its own.
+    suite(m"Native-rendering coverage"):
+      test(m"a Discourse message inspects structurally"):
+        Human(t"hello").inspect
+      . assert(_ == t"Human(message:t\"hello\")")
+
+      test(m"a TextInt inspects with its union field resolved"):
+        Mcp.TextInt(42).inspect
+      . assert(_ == t"TextInt(id:42)")
+
+      test(m"synesthesia's types inspect natively"):
+        Inspectable.fallbacks
+         ( Human(t"hello").inspect,
+           Agent(t"hi").inspect,
+           Mcp.BaseMetadata(t"name").inspect,
+           Mcp.LoggingLevel.Debug.inspect,
+           Mcp.TaskStatus.Working.inspect,
+           Mcp.TextInt(42).inspect )
+      . assert(_ == Nil)
+
     // Manual-only MCP server runner — NOT an automated test. It serves MCP on :8080
     // and `Thread.sleep`s to keep the server alive for an external MCP client to
     // connect to; it asserts nothing and blocked CI for ~16 minutes. Disabled here;

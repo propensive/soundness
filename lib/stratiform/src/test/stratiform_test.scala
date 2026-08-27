@@ -117,6 +117,17 @@ object Tests extends Suite(m"Stratiform Tests"):
     cell.writes += 1
 
   def run(): Unit =
+    // A missing `Inspectable` is never a compile error, so coverage is held in place by
+    // asserting on the renderings: `fallbacks` returns those which used a marked fallback.
+    suite(m"Native-rendering coverage"):
+      test(m"a Tel document inspects on one line, with its breaks escaped"):
+        t"name Jane\n".read[Tel].inspect
+      . assert(_ == t"tel\"name Jane\\n\"")
+
+      test(m"stratiform's types inspect natively"):
+        Inspectable.fallbacks(t"name Jane\n".read[Tel].inspect, Tel.empty.inspect)
+      . assert(_ == Nil)
+
     suite(m"Positive corpus"):
       CorpusLoader.positive.each: testcase =>
         test(m"parses ${testcase.stem}"):

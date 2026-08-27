@@ -196,8 +196,14 @@ object Tests extends Suite(m"Jacinta Tests"):
         t"foo".in[Json].inspect
       . assert(_ == t""""foo"""")
 
+      test(m"a bare Json.Ast is marked apart from the document wrapping it"):
+        Json.Ast("foo").inspect
+      . assert(_ == t"\"foo\"ᵃˢᵗ")
+
       test(m"jacinta's types inspect natively"):
-        Inspectable.fallbacks(t"foo".in[Json].inspect, 42.in[Json].inspect)
+        Inspectable.fallbacks
+         ( t"foo".in[Json].inspect, 42.in[Json].inspect, Json.Ast("foo").inspect,
+           Json.Ast(42L).inspect )
       . assert(_ == Nil)
 
     suite(m"Serialization"):

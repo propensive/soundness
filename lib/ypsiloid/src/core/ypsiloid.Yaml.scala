@@ -469,6 +469,17 @@ object Yaml extends Yaml2, Dynamic:
     // package; bring a `Yaml.Formatting` into scope to enable `.show`.
     given showable: (formatting: Formatting) => Ast is Showable = renderAst(_)
 
+    // `Yaml.Ast` is an opaque union with no reflection to derive from, and the `Showable` above
+    // needs a `Formatting` which a debugger cannot supply. The node is rendered as
+    // `Yaml.inspectable` renders a document — on one line, with its breaks escaped — and suffixed
+    // `ᵃˢᵗ`, so that a bare node is distinguishable from the `Yaml` which wraps it.
+    given inspectable: [ast <: Ast] => ast is Inspectable = ast =>
+      given formatting: Formatting = new Formatting {}
+      val builder: StringBuilder = new StringBuilder()
+      renderAst(ast: Ast).each { char => builder.append(Inspectable.escape(char).s) }
+
+      ("yaml\""+builder.toString+"\"ᵃˢᵗ").tt
+
     def name: Text = "YAML"
 
     case class Position

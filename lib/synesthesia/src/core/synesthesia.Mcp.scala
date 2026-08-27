@@ -177,6 +177,19 @@ object Mcp:
     given decodable: Tactic[Json.Error] => TextInt is Json.Decodable =
       Json.Decodable(Morphology.Any): json => TextInt(safely(json.as[Int]).or(json.as[Text]))
 
+    // Every other type in `Mcp` is a case class or an enum, and derives its inspection
+    // structurally. `TextInt` cannot: its `id` is a `Text | Int` union, for which no instance
+    // exists, so the derivation would render the field with its `toString`. Matching the union
+    // here keeps the product form and shows which side of it the identifier came from.
+    given inspectable: [textInt <: TextInt] => textInt is Inspectable = textInt =>
+      val value: Text | Int = (textInt: TextInt).id
+
+      val id = value.absolve match
+        case text: Text => text.inspect
+        case int: Int   => int.inspect
+
+      t"TextInt(id:$id)"
+
   case class TextInt(id: Text | Int)
 
   val ParseError = -32700

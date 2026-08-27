@@ -639,6 +639,35 @@ object internal:
   object Attributes:
     val empty: Attributes = scala.IArray.empty[String | Null]
 
+    // The attributes render as they would appear in an element's start tag, braced and prefixed
+    // `html`: distinct from a `Map`'s `{k → v}` (whose keys and values would show as `t"…"`
+    // literals) and from xylophone's `xml{…}`. A valueless attribute shows as a bare name, as it
+    // does in HTML source. The storage is read directly, since an accessor on the opaque type is
+    // unavailable through a subtype of it.
+    given inspectable: [attributes <: Attributes] => attributes is Inspectable = attributes =>
+      val array = storage(attributes)
+      val builder: StringBuilder = new StringBuilder("html{")
+      var index = 0
+
+      while index < array.length do
+        if index > 0 then builder.append(", ")
+        builder.append(array(index))
+        val value = array(index + 1)
+
+        if value != null then
+          builder.append("=\"")
+          var offset = 0
+
+          while offset < value.length do
+            builder.append(Inspectable.escape(value.charAt(offset)).s)
+            offset += 1
+
+          builder.append('"')
+
+        index += 2
+
+      builder.append('}').toString.tt
+
     def apply(pairs: (Text, Optional[Text])*): Attributes =
       if pairs.isEmpty then empty else
         val n = pairs.length

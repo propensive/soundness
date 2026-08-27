@@ -71,8 +71,14 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         42.in[Yaml].inspect
       . assert(_ == t"yaml\"42\\n\"")
 
+      test(m"a bare Yaml.Ast is marked apart from the document wrapping it"):
+        Yaml.Ast.Integer(42).inspect
+      . assert(_ == t"yaml\"42\\n\"ᵃˢᵗ")
+
       test(m"ypsiloid's types inspect natively"):
-        Inspectable.fallbacks(42.in[Yaml].inspect, t"foo".in[Yaml].inspect)
+        Inspectable.fallbacks
+         ( 42.in[Yaml].inspect, t"foo".in[Yaml].inspect, Yaml.Ast.Integer(42).inspect,
+           Yaml.Ast.Str(t"foo").inspect )
       . assert(_ == Nil)
 
     suite(m"Plain scalar parsing"):
