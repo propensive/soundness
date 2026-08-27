@@ -609,9 +609,18 @@ trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
   def finalMainClass = (moduleDir / ".." / "..").last + ".Benchmarks"
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
-  def moduleDeps: Seq[PublishModule] = probably.cli +: sedentary.core +: dependencies
+  // `probably.events` rides along for the same reason it does in `Tests`: a host process (fume)
+  // streams a benchmark run's `TestEvent`s out of the suite's classloader world via
+  // `probably.Streamer`, which therefore has to be ON the benchmark assembly's classpath.
+  def moduleDeps: Seq[PublishModule] = probably.cli +: probably.events +: sedentary.core +: dependencies
   def sources = Task.Sources(moduleDir)
   def consoleScalacOptions = scalacOptions()
+
+  // The beneficence plugin writes the `META-INF/services/probably.Suite` index, which is the
+  // ONLY way fume discovers suites: without it a benchmark assembly is runnable by main class
+  // but invisible to `fume run`/`fume list`.
+  override def scalacOptions = Task:
+    super.scalacOptions() :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
 
 // ------------------------ BUNDLES ------------------------
 
