@@ -41,7 +41,6 @@ import vacuous.*
 
 import decimalConverters.javaDecimalConverter
 
-import geodesy.angleInspectable
 
 object Transform:
   private def form(name: Text, parts: Text*): Text =

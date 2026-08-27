@@ -34,8 +34,8 @@ package soundness
 
 export
   geodesy
-  . { angleInspectable, angleShowable, CardinalWind, Compass, Directional, East, EastNortheast,
-      EastSoutheast, Geolocation, HalfWind, IntercardinalWind, Locatable, Location, North,
+  . { angleShowable, CardinalWind, Compass, Directional, East, EastNortheast, EastSoutheast,
+      Geolocation, HalfWind, IntercardinalWind, Locatable, Location, North,
       Northeast, NorthNortheast, NorthNorthwest, Northwest, South, Southeast, SouthSoutheast,
       SouthSouthwest, Southwest, West, WestNorthwest, WestSouthwest }
 

@@ -47,11 +47,6 @@ given angleShowable: Angle is Showable = angle =>
   given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
   t"${angle.degrees}°"
 
-// Likewise for inspection, which shows the degrees at full precision: `angleShowable` rounds
-// to one decimal place for display, and inspecting a value should not hide state.
-given angleInspectable: [angle <: Angle] => angle is Inspectable = angle =>
-  t"${(angle: Angle).degrees.inspect}°"
-
 export CardinalWind.{North, South, East, West}
 export IntercardinalWind.{Northeast, Southeast, Southwest, Northwest}
 

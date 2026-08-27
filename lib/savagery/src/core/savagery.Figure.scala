@@ -43,7 +43,6 @@ import spectacular.*
 import vacuous.*
 import xylophone.*
 
-import geodesy.angleInspectable
 
 sealed trait Figure:
   def xml: Xml

@@ -35,6 +35,7 @@ package iridescence
 import anticipation.*
 import prepositional.*
 import rudiments.*
+import spectacular.*
 
 object Rgb32Opaque:
   opaque type Rgb32 = Int
@@ -42,6 +43,13 @@ object Rgb32Opaque:
   object Rgb32:
     inline given underlying: Underlying[Rgb32, Int] = !!
     given chromatic: Rgb32 is Chromatic = _.chroma
+
+    // The three channels have unequal widths — 10, 12 and 10 bits — so they are shown
+    // separately rather than as a single hexadecimal number, which would imply otherwise, and
+    // the packed `Int` the type erases to would say nothing at all.
+    given inspectable: [rgb32 <: Rgb32] => rgb32 is Inspectable = rgb32 =>
+      val value: Rgb32 = rgb32
+      ("rgb32("+value.red+", "+value.green+", "+value.blue+")").tt
 
     def apply(red: Int, green: Int, blue: Int): Rgb32 =
       ((red&1023) << 22) + ((green&4095) << 10) + (blue&1023)
