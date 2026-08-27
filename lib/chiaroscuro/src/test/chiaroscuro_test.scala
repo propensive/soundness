@@ -42,6 +42,15 @@ case class Organization(name: Text, ceo: Person, staff: List[Person])
 
 case class IdName(id: Text, name: Text)
 
+// A plain class, so no reflection can decompose it structurally, whose `Showable` and
+// `Inspectable` deliberately disagree — which of the two a decomposition uses is then visible.
+class Divergent(val n: Int)
+
+object Divergent:
+  given showable: Divergent is Showable = divergent => t"shown-${divergent.n}"
+  given inspectable: [divergent <: Divergent] => divergent is Inspectable = divergent =>
+    t"inspected-${divergent.n}"
+
 import Decomposition.*
 
 object Tests extends Suite(m"Chiaroscuro tests"):
@@ -51,6 +60,16 @@ object Tests extends Suite(m"Chiaroscuro tests"):
         24.decompose
 
       . assert(_ == Primitive(t"Int", t"24", 24))
+
+      // Decomposition renders its leaves through `Inspectable`, not `Showable`: a test failure
+      // is read by a programmer, so it should show what `.inspect` shows. Before this, the two
+      // could disagree — the same value decomposed one way and inspected another.
+      test(m"A leaf is decomposed through Inspectable, not Showable"):
+        Divergent(7).decompose
+
+      . assert:
+          case Primitive(_, text, _) => text == t"inspected-7"
+          case _                     => false
 
       test(m"Decompose a known type"):
         t"hello".decompose
@@ -88,8 +107,8 @@ object Tests extends Suite(m"Chiaroscuro tests"):
         list.decompose
 
       . assert:
-          _ == Decomposition.Sequence(t"List", List(Primitive(t"Char", t"a", 'a'),
-                                      Primitive(t"Char", t"b", 'b')), List('a', 'b'))
+          _ == Decomposition.Sequence(t"List", List(Primitive(t"Char", t"'a'", 'a'),
+                                      Primitive(t"Char", t"'b'", 'b')), List('a', 'b'))
 
       test(m"Decompose an optional value"):
         val x: Optional[Int] = 12
@@ -108,11 +127,14 @@ object Tests extends Suite(m"Chiaroscuro tests"):
 
       . assert(_ == Primitive(t"Double", t"3.1415926", 3.1415926))
 
-      test(m"Decompose a showable value"):
+      // Decomposition renders through `Inspectable`, not `Showable`, so a `Decimalizer` in
+      // scope no longer rounds it: a test failure should report the value it compared, not a
+      // display form of it.
+      test(m"A Decimalizer does not round a decomposed value"):
         given Decimalizer(3)
         3.1415926.decompose
 
-      . assert(_ == Primitive(t"Double", t"3.14", 3.1415926))
+      . assert(_ == Primitive(t"Double", t"3.1415926", 3.1415926))
 
       test(m"Decompose an Any-typed value"):
         val x: Any = t"hello"

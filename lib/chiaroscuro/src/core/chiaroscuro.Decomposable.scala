@@ -98,6 +98,11 @@ trait Decomposable2 extends Decomposable3:
     case decomposable: (`entity` is Decomposable.Base) => decomposable
     case given ProductReflection[`entity`]             => Derivation.derived[entity]
     case given SumReflection[`entity`]                 => Derivation.disjunction[entity]
+
+    // Only `Any`, `AnyRef` and `Matchable` satisfy this — it asks whether `entity` is a
+    // *supertype* of `AnyRef`, not whether it is a reference type. It has to precede the
+    // `Optional` branch below, which `Unset.type <:< Any` would otherwise satisfy for any
+    // statically-`Any` value, decomposing it as an optional.
     case given (AnyRef <:< `entity`)                   => any[entity]
 
     case given (Unset.type <:< `entity`) =>
@@ -111,14 +116,16 @@ trait Decomposable2 extends Decomposable3:
 
               Decomposition.Sum(t"Optional", inside, value)
 
-    case given (`entity` is Showable) =>
-      value => Decomposition.Primitive(shortName[entity], value.show, value)
-
-    case given (`entity` is Encodable in Text) =>
-      value => Decomposition.Primitive(shortName[entity], value.encode, value)
-
+    // Every remaining leaf is rendered by `Inspectable`, which is the typeclass for showing a
+    // value to a programmer — which is what a test failure does. Previously this tail summoned
+    // `Showable`, then `Encodable`, then fell back to `toString`, duplicating `Inspectable`'s
+    // own chain with the first two in the opposite order, so the same value could decompose
+    // one way and inspect another. Delegating keeps a single answer to "how does this render",
+    // and is total: `Inspectable`'s `derived` always succeeds, so no `toString` tail is needed
+    // here — `Inspectable` supplies its own, and marks it.
     case _ =>
-      value => Decomposition.Primitive(t"Any", value.toString.tt, value)
+      val inspectable = summonInline[entity is Inspectable]
+      value => Decomposition.Primitive(shortName[entity], inspectable.text(value), value)
 
   def primitive[value](name: Text): value is Decomposable =
     value => Decomposition.Primitive(name, value.toString.tt, value)
