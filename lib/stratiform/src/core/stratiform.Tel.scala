@@ -2288,6 +2288,84 @@ object Tel extends Tel2:
         val child = offset + data.readUnchecked(offset + descriptorHeader + ordinal.n0)
         walkIndex(children.readUnchecked(ordinal.n0), data, child, segments, i + 1, keyMode)
 
+  // The result of `tel.enclosing(line, column)` (#1463): the innermost compound
+  // whose extent contains the coordinate, as the keyword path that reaches it
+  // and the source region to highlight — the inline-atom run when the
+  // coordinate falls within it, the keyword otherwise (the same two regions
+  // `locate` and `locateKey` name).
+  case class Enclosure(path: Telp, position: Tel.Error.Position) derives CanEqual
+
+  // The reverse of `walkIndex` (#1463): resolve a 1-indexed source coordinate
+  // to the innermost compound enclosing it. Descriptors are laid out in
+  // pre-order and TEL is line-ordered, so extents need not be stored and no
+  // inverted index is built: a compound's extent runs from its own line to the
+  // line before the next pre-order descriptor, the children's extents tile the
+  // parent's body, and the descent binary-searches the children at each level.
+  //
+  // Two attributions follow deliberately from that tiling. Blank, remark-only
+  // and payload lines carry no descriptors, so they belong to the nearest
+  // *preceding* compound's subtree — which places a source or literal payload
+  // under its owning compound, and the gap between two siblings under the
+  // earlier sibling. And a coordinate before the first top-level compound (or
+  // in an empty document) encloses only the document root, which is not a
+  // compound, so the result is `Unset` — as for `locateKey` at the root.
+  private def enclosingIn
+    ( node:   Tel.Subtree,
+      data:   Array[Int]^{},
+      offset: Int,
+      line:   Int,
+      column: Int,
+      path:   scala.List[Text] )
+  :   Optional[Tel.Enclosure] =
+
+    val children = node.children.bind(_.compounds)
+
+    def childOffset(k: Int): Int = offset + data.readUnchecked(offset + descriptorHeader + k)
+    def lineOf(k: Int): Int = data.readUnchecked(childOffset(k) + 1)
+    def columnOf(k: Int): Int = data.readUnchecked(childOffset(k) + 2)
+
+    // The last child starting on or before the coordinate's line; child lines
+    // ascend in document order, so a binary search finds it.
+    var low = 0
+    var high = children.length - 1
+    var found = -1
+
+    while low <= high do
+      val mid = (low + high) >>> 1
+      if lineOf(mid) <= line then { found = mid; low = mid + 1 } else high = mid - 1
+
+    // Children sharing the coordinate's own line (possible only where the
+    // grammar admits same-line siblings): prefer the last whose keyword starts
+    // at or before the column, and give the line's leading indentation to the
+    // first of them rather than to the preceding subtree.
+    while found > 0 && lineOf(found) == line && lineOf(found - 1) == line
+          && columnOf(found) > column
+    do found -= 1
+
+    if found < 0 then
+      if path.isEmpty then Unset else
+        val keyLine     = data.readUnchecked(offset + 1)
+        val valueColumn = data.readUnchecked(offset + 4)
+        val valueLength = data.readUnchecked(offset + 5)
+
+        val position =
+          if valueColumn != 0 && line == keyLine
+              && column >= valueColumn && column < valueColumn + valueLength
+          then Tel.Error.Position(keyLine, valueColumn, length = Optional(valueLength))
+          else Tel.Error.Position
+                ( keyLine,
+                  data.readUnchecked(offset + 2),
+                  length = Optional(data.readUnchecked(offset + 3)) )
+
+        Tel.Enclosure(Telp(List.from(path.reverse)), position)
+    else
+      val child = children.readUnchecked(found)
+      enclosingIn(child, data, childOffset(found), line, column, child.keyword :: path)
+
+  private[stratiform] def enclosingAt(tel: Tel, line: Int, column: Int): Optional[Tel.Enclosure] =
+    tel.positionIndex.let: index =>
+      enclosingIn(tel.subtree, index.ints, 0, line, column, scala.Nil)
+
   // Concatenate the chunks of a `Chain[Data]` source into a single byte array.
   private[stratiform] def concatenate(source: Chain[Data]): Data =
     import denominative.nil
@@ -6951,6 +7029,14 @@ extends scala.Dynamic, Documentary, Topical, Original:
     val result = value.decoded(this)
     Tel.supplementPositions(this)
     result
+
+  // The offset-to-node lookup (#1463), the reverse of `locate`/`locateKey`: the
+  // innermost compound enclosing the 1-indexed source coordinate, with the
+  // keyword path that reaches it. Requires a document parsed under
+  // `parsing.trackPositions` (hence carrying a `positionIndex`); otherwise, and
+  // for a coordinate enclosed only by the document root, yields `Unset`.
+  def enclosing(line: Int, column: Int): Optional[Tel.Enclosure] =
+    Tel.enclosingAt(this, line, column)
 
   // Total field access used by the schema-typed navigation macros and by
   // internal optics: an empty `Tel` for a missing field, never raising.
