@@ -30,32 +30,64 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package galilei
 
-export
-  galilei
-  . { accessed, Apfs, BlockDevice, Btrfs, C, CharDevice, children, CopyAttributes, copyInto,
-      copyTo, created, CreateFlag, CreateNonexistentParents, Creation, creation, CreationTimed,
-      D, delete, Ext4,
-      DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, Dos, Drive, Entry,
-      entry, executable, expanse, Explorable, existent, Fifo, file, File, FileOpenable,
-      FilesystemAttribute, FilesystemBackend,
-      glob, Handle, hardLinks, hardLinkTo, hidden, Io, Linux, Local,
-      MacOs, modified, MoveAtomically, moveInto, moveTo, Ntfs, OpenFlag,
-      OverwritePreexisting, p, Platform, Posix, readable, filesize, Sock, Stat,
-      Scratch, Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder,
-      UnixEntry, Volume, volume, Windows, WindowsEntry, wipe, writable, write }
+import anticipation.*
+import contingency.*
+import gossamer.*
+import prepositional.*
+import serpentine.*
+import vacuous.*
 
-package interfaces.paths:
-  export
-    anticipation.interfaces.paths
-    . { pathOnLinux, pathOnLocal, pathOnMacOs, pathOnPosix, pathOnWindows }
+// The storage-filesystem axis of a path's type (issue #567): which filesystem an entry is
+// stored on determines which metadata it can carry, orthogonally to the plane — `Btrfs` is
+// meaningful only under `Linux`, `Apfs` under `MacOs` and `Linux`, `Ntfs` under `Windows` and
+// `Linux`. A path cannot know its filesystem from its syntax, so the axis is established by
+// runtime probing, through each filesystem's extractor — the axis is `over`'s structural
+// `Transport` refinement, deliberately not a declared member of `Path`: refining it in is
+// enough for the gated extensions below to dispatch, and declaring it perturbed inference at
+// unrelated sites downstream:
+//
+//     path match
+//       case Btrfs(path2) => …   // `path2: Path on Linux over Btrfs`
+//       case _            => …
+//
+// The probe is the same platform query behind `path.volume()`, so no new backend method is
+// needed; a probe which fails (an unreadable volume, say) simply does not match. Filesystems
+// which record creation times extend `CreationTimed`, which gates a *total* `creation()`
+// accessor — unlike `Stat.created`, whose optionality exists because most POSIX filesystems
+// record none.
+sealed trait CreationTimed
 
-package filesystemOptions:
-  export
-    galilei.filesystemOptions
-    . { copyAttributes, createNonexistentParents, deleteRecursively,
-        dereferenceSymlinks, moveAtomically, overwritePreexisting }
+sealed trait Btrfs extends CreationTimed
+sealed trait Ext4
+sealed trait Apfs extends CreationTimed
+sealed trait Ntfs extends CreationTimed
 
-package filesystemTraversal:
-  export galilei.filesystemTraversal.{postOrderTraversal, preOrderTraversal}
+private def storageFormat[plane](path: Path on plane)(using backend: FilesystemBackend on plane)
+:   Optional[Text] =
+  safely(backend.volume(path).volumeType.lower)
+
+object Btrfs:
+  def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
+  :   Option[Path on plane over Btrfs] =
+    if storageFormat(path) == t"btrfs" then Some(path.asInstanceOf[Path on plane over Btrfs])
+    else None
+
+object Ext4:
+  def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
+  :   Option[Path on plane over Ext4] =
+    if storageFormat(path) == t"ext4" then Some(path.asInstanceOf[Path on plane over Ext4])
+    else None
+
+object Apfs:
+  def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
+  :   Option[Path on plane over Apfs] =
+    if storageFormat(path) == t"apfs" then Some(path.asInstanceOf[Path on plane over Apfs])
+    else None
+
+object Ntfs:
+  def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
+  :   Option[Path on plane over Ntfs] =
+    if storageFormat(path) == t"ntfs" then Some(path.asInstanceOf[Path on plane over Ntfs])
+    else None

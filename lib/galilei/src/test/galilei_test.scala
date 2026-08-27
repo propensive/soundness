@@ -539,3 +539,23 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"A read overlapping the end returns the bytes which exist"):
         unsafely(source.expanse(_.read(12L, 100)).utf8)
       . assert(_ == t"cdef")
+
+    suite(m"Storage filesystem axis"):
+      import anticipation.instantiables.instantInstantiable
+      val root: Path on Linux = unsafely((% / "tmp").on[Linux])
+
+      test(m"At most one storage filesystem extractor matches a path"):
+        List(
+          Btrfs.unapply(root).isDefined,
+          Ext4.unapply(root).isDefined,
+          Apfs.unapply(root).isDefined,
+          Ntfs.unapply(root).isDefined).count(identity)
+      . assert(_ <= 1)
+
+      test(m"A matched creation-timed filesystem offers a total creation time"):
+        root match
+          case Apfs(path)  => unsafely(path.creation[Long]()) > 0L
+          case Btrfs(path) => unsafely(path.creation[Long]()) > 0L
+          case Ntfs(path)  => unsafely(path.creation[Long]()) > 0L
+          case _           => true  // no creation-timed filesystem here; the gate did its job
+      . assert(_ == true)

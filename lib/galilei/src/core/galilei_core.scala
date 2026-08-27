@@ -476,3 +476,17 @@ package filesystemOptions:
       def apply[result](path: Path on plane)(block: => result)
       :   (Tactic[Io.Error]^) ?->{block} result =
         block
+
+
+// Metadata gated by the storage-filesystem axis (issue #567): available only on a path whose
+// filesystem is known — by extractor probing — to record it.
+extension [plane: Filesystem, transport <: CreationTimed](path: Path on plane over transport)
+  // Total, unlike `Stat.created`: the `CreationTimed` bound says the filesystem records
+  // creation times, so an absent value is a backend failure rather than an expected case.
+  def creation[instant: Instantiable across Instants from Long as instantiable]()
+    ( using backend: FilesystemBackend on plane )
+  :   instant raises Io.Error =
+
+    instantiable.apply:
+      backend.stat(path, true).created.or:
+        abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
