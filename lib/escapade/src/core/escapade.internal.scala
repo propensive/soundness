@@ -47,6 +47,7 @@ import denominative.*
 import fulminate.*
 import gossamer.*
 import hypotenuse.*
+import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
@@ -406,11 +407,12 @@ object internal:
       inline def applyTransform(mask: Long, bits: Long): StyleWord = (style & ~mask) | bits
 
 
+object Teletype2:
+  given addable: Teletype2 is Addable by Teletype2 to Teletype2 = (left, right) =>
+    Teletype2(left.plain+right.plain, Array.frozen(left.ansi.readable ++ right.ansi.readable))
+
 case class Teletype2(plain: Text, ansi: Array[escapade.internal.AnsiStyle]^{}):
   import escapade.internal.AnsiStyle
-
-  @targetName("concat")
-  def + (that: Teletype2): Teletype2 = Teletype2(plain+that.plain, Array.frozen(ansi.readable ++ that.ansi.readable))
 
   def render(using escapes: Ansi.Escapes): Text =
     Text.build:

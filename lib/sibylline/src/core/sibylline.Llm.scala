@@ -45,8 +45,10 @@ import hieroglyph.*, charDecoders.utf8Decoder, charEncoders.utf8Encoder,
     textSanitizers.strictSanitizer
 import jacinta.*
 import obligatory.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
@@ -102,23 +104,24 @@ object Llm:
   // Token accounting. Only input and output counts are universal; the remainder are reported by
   // some providers only, so a session total folds them optionally: absent plus absent stays
   // absent, and a count is never invented.
+  object Usage:
+    given addable: Usage is Addable by Usage to Usage = (left, right) =>
+      def sum(first: Optional[Int], second: Optional[Int]): Optional[Int] =
+        first.lay(second)(_ + second.or(0))
+
+      Usage
+        ( left.input + right.input,
+          left.output + right.output,
+          sum(left.cacheRead, right.cacheRead),
+          sum(left.cacheWrite, right.cacheWrite),
+          sum(left.reasoning, right.reasoning) )
+
   case class Usage
     ( input:      Int,
       output:     Int,
       cacheRead:  Optional[Int] = Unset,
       cacheWrite: Optional[Int] = Unset,
-      reasoning:  Optional[Int] = Unset ):
-
-    def + (that: Usage): Usage =
-      def sum(left: Optional[Int], right: Optional[Int]): Optional[Int] =
-        left.lay(right)(_ + right.or(0))
-
-      Usage
-        ( input + that.input,
-          output + that.output,
-          sum(cacheRead, that.cacheRead),
-          sum(cacheWrite, that.cacheWrite),
-          sum(reasoning, that.reasoning) )
+      reasoning:  Optional[Int] = Unset )
 
   // One completed assistant turn: pure data, so it may leave the session block.
   case class Reply
