@@ -308,6 +308,15 @@ package filesystemBackends:
           lambda(view)
         finally channel.close()
 
+      def attributes(path: Path on Plane)(using Tactic[Io.Error]): List[Text] =
+        abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
+
+      def attribute(path: Path on Plane, name: Text)(using Tactic[Io.Error]): Optional[Data] =
+        abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
+
+      def attribute(path: Path on Plane, name: Text, value: Data)(using Tactic[Io.Error]): Unit =
+        abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
+
       def slice[result]
         ( path: Path on Plane, offset: Long, extent: Long, flags: List[OpenFlag] )
         ( lambda: zephyrine.Expanse => result )

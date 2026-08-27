@@ -275,6 +275,34 @@ package filesystemBackends:
           lambda(view)
         finally channel.close()
 
+      private def attributeView(path: Path on Plane)(using Tactic[Io.Error])
+      :   jnf.attribute.UserDefinedFileAttributeView =
+        Optional(jnf.Files.getFileAttributeView
+            (javaPath(path), classOf[jnf.attribute.UserDefinedFileAttributeView]))
+        . or(abort(Io.Error(path, Operation.Metadata, Reason.Unsupported)))
+
+      def attributes(path: Path on Plane)(using Tactic[Io.Error]): List[Text] =
+        protect(path, Operation.Metadata):
+          val view = attributeView(path)
+          scala.List.from(view.list().nn.iterator().nn.asScala).map(_.nn.tt).to(List)
+
+      def attribute(path: Path on Plane, name: Text)(using Tactic[Io.Error]): Optional[Data] =
+        protect(path, Operation.Metadata):
+          val view = attributeView(path)
+
+          if !view.list().nn.contains(name.s) then Unset else
+            val buffer = java.nio.ByteBuffer.allocate(view.size(name.s)).nn
+            view.read(name.s, buffer)
+            buffer.flip()
+            val array = Array.allocate[Byte](buffer.remaining)
+            buffer.get(array.raw, 0, buffer.remaining)
+            Array.freeze(array)
+
+      def attribute(path: Path on Plane, name: Text, value: Data)(using Tactic[Io.Error]): Unit =
+        protect(path, Operation.Metadata):
+          attributeView(path).write(name.s, java.nio.ByteBuffer.wrap(Array.unsafeJvm(value)))
+          ()
+
       def slice[result]
         ( path: Path on Plane, offset: Long, extent: Long, flags: List[OpenFlag] )
         ( lambda: zephyrine.Expanse => result )

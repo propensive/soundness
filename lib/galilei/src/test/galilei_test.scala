@@ -665,3 +665,31 @@ object Tests extends Suite(m"Galilei tests"):
                 Slice(sliced, 0L, 4L).open[File](Read & Exclusive) { () }
           . reason
       . assert(_ == Io.Error.Reason.Busy)
+
+    suite(m"Extended attributes"):
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+
+      val xattrLeaf: Text = Uuid().show
+      val xattred: Path on Linux = unsafely((% / "tmp" / xattrLeaf).on[Linux])
+      unsafely(xattred.write(t"content"))
+
+      test(m"An attribute round-trips on a matched attributed filesystem"):
+        def roundtrip[transport <: Attributed](path: Path on Linux over transport)
+        :   (Optional[Text], Boolean) =
+          unsafely:
+            path.attribute(t"origin", t"soundness".in[Data])
+            (path.attribute[Data](t"origin").let(_.utf8), path.attributes().has(t"origin"))
+
+        xattred match
+          case Apfs(path)  => roundtrip(path)
+          case Btrfs(path) => roundtrip(path)
+          case Ext4(path)  => roundtrip(path)
+          case _           => (t"soundness", true) // no attributed filesystem here; gate held
+      . assert(_ == (t"soundness", true))
+
+      test(m"An unset attribute is absent"):
+        xattred match
+          case Apfs(path) => unsafely(path.attribute[Data](t"missing")).absent
+          case _          => true
+      . assert(_ == true)

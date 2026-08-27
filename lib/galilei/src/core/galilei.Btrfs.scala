@@ -59,10 +59,14 @@ import vacuous.*
 // record none.
 sealed trait CreationTimed
 
-sealed trait Btrfs extends CreationTimed
-sealed trait Ext4
-sealed trait Apfs extends CreationTimed
-sealed trait Ntfs extends CreationTimed
+// Filesystems which support extended (user-defined) attributes, gating the typed `attribute`
+// accessors (issue #567).
+sealed trait Attributed
+
+sealed trait Btrfs extends CreationTimed, Attributed
+sealed trait Ext4 extends Attributed
+sealed trait Apfs extends CreationTimed, Attributed
+sealed trait Ntfs extends CreationTimed, Attributed
 
 private def storageFormat[plane](path: Path on plane)(using backend: FilesystemBackend on plane)
 :   Optional[Text] =

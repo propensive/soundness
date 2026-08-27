@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import serpentine.*
+import vacuous.*
 
 // The pluggable low-level filesystem backend for a plane: the complete set of primitive
 // operations that galilei's user-facing API is defined in terms of, expressed without reference
@@ -105,6 +106,14 @@ trait FilesystemBackend extends Planar:
   def expanse[result](path: Path on Plane)(lambda: zephyrine.Expanse => result)
     ( using Tactic[Io.Error] )
   :   result
+
+  // Extended (user-defined) attributes (issue #567). Support depends on the storage
+  // filesystem, so the typed accessors are gated on the `Attributed` axis marker; at the
+  // backend seam the operations are plain, and a backend or filesystem without extended
+  // attributes reports `Unsupported`.
+  def attributes(path: Path on Plane)(using Tactic[Io.Error]): List[Text]
+  def attribute(path: Path on Plane, name: Text)(using Tactic[Io.Error]): Optional[Data]
+  def attribute(path: Path on Plane, name: Text, value: Data)(using Tactic[Io.Error]): Unit
 
   // Range-scoped positional reading (issue #566): like `expanse`, but the view is windowed
   // to `[offset, offset + extent)` — its `size` is the window's, and reads are relative to
