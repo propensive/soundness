@@ -1164,6 +1164,35 @@ object Tests extends Suite(m"Parasite tests"):
           supervise(async(42).await())
         . assert(_ == 42)
 
+      // The eager single-threaded model (issue #1450): platform-neutral, so its semantics are
+      // pinned here on the JVM, though its purpose is Scala.js.
+      suite(m"Javascript supervisor"):
+        import threading.javascriptThreading
+
+        test(m"a forked task runs eagerly and awaits immediately"):
+          supervise(async(42).await())
+        . assert(_ == 42)
+
+        test(m"tasks fork in order and gather their results"):
+          supervise:
+            val order = juca.AtomicInteger(0)
+            val tasks = Seq(async(order.incrementAndGet()), async(order.incrementAndGet()))
+            tasks.sequence.await()
+        . assert(_ == Seq(1, 2))
+
+        test(m"a task's failure is contained as on other supervisors"):
+          supervise:
+            import unsafeExceptions.canThrowAny
+            val task = async { throw Exception("boom") }
+            async(7).await()
+        . assert(_ == 7)
+
+        test(m"sleep completes instantly"):
+          val start = java.lang.System.currentTimeMillis
+          supervise(async(snooze(1.0*Second)).await())
+          java.lang.System.currentTimeMillis - start < 500
+        . assert(_ == true)
+
       suite(m"Promise.cancelled state queries"):
         test(m"Cancelled promise after fulfill remains cancelled.cancelled"):
           val promise = Promise[Int]()
