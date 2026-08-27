@@ -33,9 +33,16 @@
 package kaleidoscope
 
 import anticipation.*
+import distillate.*
+import prepositional.*
 import rudiments.*
+import vacuous.*
 
 object Glob:
+  // `parse` is total — any character outside the wildcard syntax is an `Exact` token — so
+  // glob-valued flags and configuration values decode without an explicit step.
+  given decodable: Glob is Decodable in Text = parse(_)
+
   import Glob.Token.*
 
   def parse(text: Text): Glob =
@@ -95,4 +102,15 @@ object Glob:
         chars.flatMap(Exact(_).regex).mkString(s"[${if inverse then "^" else ""}", "", "]")
 
 case class Glob(tokens: Glob.Token*):
-  def regex: Text = Text(tokens.map(_.regex).mkString)
+  lazy val regex: Text = Text(tokens.map(_.regex).mkString)
+
+  // Matches the whole of `text`, on the backend selected by an imported `RegexBackend`
+  // (`import regexBackends.re2`), defaulting to `java.util.regex` — the same selection
+  // mechanism as the `r"…"` and `g"…"` interpolators. The engines cache compilation by
+  // rendered pattern, so matching many candidates against one `Glob` compiles it only once.
+  def matches[form](text: Text)
+    ( using backend: RegexBackend[form] = regexBackends.jur )
+    ( using engine:  form is Regex.Engine )
+  :   Boolean =
+
+    Regex(regex, Nil).to[form].matches(text)(using Scanner(Unset))

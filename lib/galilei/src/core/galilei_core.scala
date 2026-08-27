@@ -38,6 +38,7 @@ import java.nio.file as jnf
 import anticipation.*
 import contingency.*
 import denominative.*
+import kaleidoscope.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -120,6 +121,54 @@ extension [plane: Filesystem](path: Path on plane)
       summon[TraversalOrder] match
         case TraversalOrder.PreOrder  => child #:: child.descendants
         case TraversalOrder.PostOrder => child.descendants #::: Chain(child)
+
+
+  // Expands `pattern` against the directory tree beneath this path, walking segment-wise:
+  // each ordinary segment filters the current directories' `children` by match, and a segment
+  // which is exactly `**` matches any number of intermediate directories — so only the
+  // directories on the pattern's spine are ever listed, rather than every descendant being
+  // walked and filtered. The pattern is relative to this path, which should name a directory.
+  // A `**` mixed into a segment (`a**b`) matches within a single name, exactly as `*` does:
+  // only a whole-segment `**` spans directories.
+  def glob(pattern: Glob)
+    ( using explorable: plane is Explorable,
+            symlinks:   DereferenceSymlinks,
+            backend:    FilesystemBackend on plane )
+  :   List[Path on plane] raises Io.Error =
+
+    import Glob.Token
+
+    def segments(tokens: scala.List[Token]): scala.List[scala.List[Token]] =
+      val head = tokens.takeWhile(_ != Token.Exact('/'))
+      val tail = tokens.dropWhile(_ != Token.Exact('/'))
+      if tail.isEmpty then scala.List(head) else head :: segments(tail.tail)
+
+    def directory(candidate: Path on plane): Boolean =
+      safely(candidate.entry() == Directory).or(false)
+
+    def recur(dirs: scala.List[Path on plane], todo: scala.List[scala.List[Token]])
+    :   scala.List[Path on plane] =
+
+      todo match
+        case scala.Nil => dirs
+
+        case scala.::(segment, rest) =>
+          if segment == scala.List(Token.Globstar) then
+            // `**` matches zero or more directories: the rest of the pattern is expanded both
+            // here and, with the `**` retained, in every subdirectory.
+            val deeper = dirs.flatMap: dir =>
+              recur(dir.children.stdlib.toList.filter(directory), todo)
+
+            recur(dirs, rest) ++ deeper
+          else
+            val matcher = Glob(segment*)
+
+            val matched = dirs.flatMap: dir =>
+              dir.children.stdlib.toList.filter { child => matcher.matches(child.name) }
+
+            recur(if rest.isEmpty then matched else matched.filter(directory), rest)
+
+    recur(scala.List(path), segments(pattern.tokens.toList)).distinct.to(List)
 
 
   // Named `filesize` (not `size`): a same-named export beside the collections' `size` at the

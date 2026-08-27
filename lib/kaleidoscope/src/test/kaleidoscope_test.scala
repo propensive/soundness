@@ -512,6 +512,36 @@ object Tests extends Suite(m"Kaleidoscope tests"):
 
       . assert(_ == t"hello[^a-z]world")
 
+      test(m"A star glob matches at runtime"):
+        Glob.parse(t"*.jar").matches(t"foo.jar")
+
+      . assert(_ == true)
+
+      test(m"A star does not cross a slash at runtime"):
+        Glob.parse(t"*.jar").matches(t"dir/foo.jar")
+
+      . assert(_ == false)
+
+      test(m"A globstar crosses slashes at runtime"):
+        Glob.parse(t"**/*.jar").matches(t"dir/deeper/foo.jar")
+
+      . assert(_ == true)
+
+      test(m"A question mark matches exactly one character at runtime"):
+        (Glob.parse(t"a?c").matches(t"abc"), Glob.parse(t"a?c").matches(t"abbc"))
+
+      . assert(_ == (true, false))
+
+      test(m"Ranges and negated ranges match at runtime"):
+        (Glob.parse(t"[a-c]").matches(t"b"), Glob.parse(t"[!a-c]").matches(t"b"))
+
+      . assert(_ == (true, false))
+
+      test(m"A glob decodes from text"):
+        t"h?llo*.jar".as[Glob]
+
+      . assert(_ == Glob.parse(t"h?llo*.jar"))
+
       test(m"Extract from a glob"):
         t"/home/work/docs" match
           case g"/$home/work/docs" => home

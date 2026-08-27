@@ -413,3 +413,52 @@ object Tests extends Suite(m"Galilei tests"):
           outer.open[Directory](Read & Exclusive) { () }
           outer.open[Directory](Read & Exclusive) { true }
       . assert(_ == true)
+
+    suite(m"Glob expansion"):
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+      import filesystemOptions.dereferenceSymlinks.enabled
+
+      val globLeaf: Text = Uuid().show
+      val root: Path on Linux = unsafely((% / "tmp" / globLeaf).on[Linux])
+
+      unsafely:
+        root.create[Directory]()
+        (root / "a.jar").write(t"a")
+        (root / "a.txt").write(t"a")
+        (root / "sub1").create[Directory]()
+        (root / "sub1" / "b.jar").write(t"b")
+        (root / "sub1" / "inner").create[Directory]()
+        (root / "sub1" / "inner" / "c.jar").write(t"c")
+        (root / "sub2").create[Directory]()
+        (root / "sub2" / "d.jar").write(t"d")
+
+      def names(paths: List[Path on Linux]): List[Text] = paths.map(_.name).sort(identity)
+
+      test(m"A star glob matches entries of the root only"):
+        unsafely(names(root.glob(Glob.parse(t"*.jar"))))
+      . assert(_ == List(t"a.jar"))
+
+      test(m"A question mark matches a single character"):
+        unsafely(names(root.glob(Glob.parse(t"?.txt"))))
+      . assert(_ == List(t"a.txt"))
+
+      test(m"A character range filters a wildcard segment"):
+        unsafely(names(root.glob(Glob.parse(t"*/[bd].jar"))))
+      . assert(_ == List(t"b.jar", t"d.jar"))
+
+      test(m"A literal segment descends directly"):
+        unsafely(names(root.glob(Glob.parse(t"sub1/*.jar"))))
+      . assert(_ == List(t"b.jar"))
+
+      test(m"A globstar spans any number of directories"):
+        unsafely(names(root.glob(Glob.parse(t"**/*.jar"))))
+      . assert(_ == List(t"a.jar", t"b.jar", t"c.jar", t"d.jar"))
+
+      test(m"A globstar below a literal segment spans its subtree only"):
+        unsafely(names(root.glob(Glob.parse(t"sub1/**/*.jar"))))
+      . assert(_ == List(t"b.jar", t"c.jar"))
+
+      test(m"A pattern matching nothing yields an empty list"):
+        unsafely(root.glob(Glob.parse(t"nowhere/*.jar")))
+      . assert(_ == List())

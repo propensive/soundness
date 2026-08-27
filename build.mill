@@ -2030,7 +2030,8 @@ object fulminate extends Library:
       settings.sep(super.scalacOptions())
 
 object galilei extends Library:
-  object core extends Component(aperture.core, serpentine.core, ambience.core, turbulence.core):
+  object core extends Component(aperture.core, serpentine.core, ambience.core, turbulence.core,
+      kaleidoscope.core):
     // The native `FilesystemBackend` (`filesystemBackends.native`) is folded into the native cross
     // via `nativeSources` — native has a single OS filesystem, so (unlike the JVM/WASI backends,
     // which are separate modules) it need not be an opt-in dependency.
@@ -2377,7 +2378,8 @@ object jacinta extends Library:
 
 object kaleidoscope extends Library:
   object core
-  extends Component(contingency.core, contextual.core, praxinoscope.core, prepositional.core):
+  extends Component(contingency.core, contextual.core, distillate.core, praxinoscope.core,
+      prepositional.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2698,7 +2700,8 @@ object proscenium extends Library:
 
 object probably extends Library:
   object core extends Component(anticipation.check, chiaroscuro.core, chiaroscuro.render,
-      ambience.core, digression.ansi, escapade.io, nomenclature.core, coverage):
+      ambience.core, digression.ansi, escapade.io, kaleidoscope.core, nomenclature.core,
+      coverage):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")

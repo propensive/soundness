@@ -111,8 +111,6 @@ object Selection:
             least.let { least => most.let(Constraint.Interval(axis, least, _)) }
           else Constraint.Membership(axis, value.cut(t",").to[Set])
 
-  private[probably] def globRegex(pattern: Text): Text =
-    pattern.cut(t"*").map { part => java.util.regex.Pattern.quote(part.s).nn.tt }.join(t".*")
 
 // A subset of a suite's tests, parsed from command-line terms: which tests run (and, for
 // axial tests and benchmarks, which of their cells), or — with `--list` — which are only
@@ -146,12 +144,15 @@ case class Selection
       case Selection.Term.Identifier(name) =>
         chain.exists: link => link.id == name || link.moniker.lay(false)(_ == name)
 
+      // Kaleidoscope glob semantics (`?`, `[a-z]`, `[!a-z]` now work): `*` matches within one
+      // `/`-joined link, so spanning a suite path takes `**`, e.g. `jacinta/**` or
+      // `**/parseJson`. (Formerly a private translation in which `*` crossed `/`.)
       case Selection.Term.Glob(pattern) =>
-        val regex = Selection.globRegex(pattern)
+        val glob = kaleidoscope.Glob.parse(pattern)
 
-        names.exists(_.s.matches(regex.s))
-        || path.s.matches(regex.s)
-        || monikerPath.s.matches(regex.s)
+        names.exists(glob.matches(_))
+        || glob.matches(path)
+        || glob.matches(monikerPath)
 
   private def admitted(coordinates: List[(Axis.Spec, Value)]): Boolean =
     constraints.all: constraint =>
