@@ -316,3 +316,19 @@ object Tests extends Suite(m"Ambience Tests"):
         val error = unsafely(Property.Error(t"user.home"))
         error.message.text
       . assert(_ == m"the system property user.home was not defined".text)
+
+    suite(m"Termcap tests"):
+      test(m"The environment termcap reads its width from COLUMNS"):
+        given Environment = fixedEnvironment(t"COLUMNS" -> t"120")
+        termcaps.environmentTermcap.width
+      . assert(_ == 120)
+
+      test(m"The width is unbounded when COLUMNS is not set"):
+        given Environment = fixedEnvironment()
+        termcaps.environmentTermcap.width
+      . assert(_ == Int.MaxValue)
+
+      test(m"The width is unbounded when COLUMNS is malformed"):
+        given Environment = fixedEnvironment(t"COLUMNS" -> t"wide")
+        termcaps.environmentTermcap.width
+      . assert(_ == Int.MaxValue)
