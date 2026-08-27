@@ -1021,3 +1021,22 @@ object Tests extends Suite(m"Escapade tests"):
       test(m"a styled Teletype carries its style per cell"):
         cellList(e"a$Bold(b)c").map(_._2.isBold)
       . assert(_ == List(false, true, false))
+
+    suite(m"Teletypeable prioritization"):
+      case class Fruit(name: Text)
+      given Fruit is Showable = _.name
+
+      val truecolor = termcapDefinitions.xtermTrueColorTermcap
+
+      test(m"a Showable-only value renders plainly"):
+        val rendered = Fruit(t"kiwi").teletype
+        (rendered.plain, rendered.render(truecolor).contains(t"\u001b["))
+      . assert(_ == (t"kiwi", false))
+
+      // Formerly ambiguous: with both upstream instances present, the two peer givens both
+      // matched (issue #261); the collapsed given now resolves, preferring `Colorable`.
+      test(m"a value with a Colorable instance resolves, and renders in colour"):
+        given Fruit is Colorable = Colorable(Red)
+        val rendered = Fruit(t"cherry").teletype
+        (rendered.plain, rendered.render(truecolor).contains(t"\u001b["))
+      . assert(_ == (t"cherry", true))
