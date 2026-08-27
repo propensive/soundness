@@ -127,6 +127,20 @@ object Tests extends Suite(m"Tessellate tests"):
 
       . assert(_ == SList(t"hyphen-", t"ation"))
 
+      // Regression check for #1788: a pre-tessellate implementation dropped the character
+      // before every hyphenation break (`artifact` became `art-`/`fact`), silently, at any
+      // width. Reassembling the wrapped lines — stripping the inserted hyphens and the spaces
+      // consumed at soft breaks — must reproduce the content's characters exactly.
+      test(m"hyphenated wrapping preserves every character at every width"):
+        val content = t"the realm to atomize a bare artifact in a derivative membership"
+        val expected = content.s.replace(" ", "")
+
+        (5 to 20).toList.map: width =>
+          wrapped(content, width).map(_.s.stripSuffix("-")).mkString.replace(" ", "")
+        . forall(_ == expected)
+
+      . assert(_ == true)
+
       test(m"wide characters wrap by display width, not char count"):
         wrapped(t"日本語 テスト", 6)
 
