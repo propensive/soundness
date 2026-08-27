@@ -43,7 +43,8 @@ export
       glob, Handle, hardLinks, hardLinkTo, hidden, Io, Linux, Local,
       MacOs, modified, MoveAtomically, moveInto, moveTo, Ntfs, OpenFlag,
       OverwritePreexisting, p, Platform, Posix, readable, filesize, Sock, Stat,
-      Scratch, Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder,
+      Scratch, Shared, Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch,
+      TraversalOrder,
       UnixEntry, Volume, volume, Windows, WindowsEntry, wipe, writable, write }
 
 package interfaces.paths:

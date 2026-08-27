@@ -279,7 +279,9 @@ package filesystemBackends:
         ( using Tactic[Io.Error] )
       :   result =
 
-        val options: scala.collection.immutable.List[jnf.OpenOption] = flags.stdlib.filter(_ != OpenFlag.Lock).map:
+        val options: scala.collection.immutable.List[jnf.OpenOption] = flags.stdlib.filter: flag =>
+          flag != OpenFlag.Lock && flag != OpenFlag.LockShared && flag != OpenFlag.Await
+        . map:
           case OpenFlag.Read      => jnf.StandardOpenOption.READ
           case OpenFlag.Write     => jnf.StandardOpenOption.WRITE
           case OpenFlag.Append    => jnf.StandardOpenOption.APPEND
@@ -308,13 +310,18 @@ package filesystemBackends:
           // the access register, and a shared lock still excludes any cross-process
           // exclusive locker.
           val lock =
-            if flags.stdlib.contains(OpenFlag.Lock) then
+            if flags.stdlib.contains(OpenFlag.Lock) || flags.stdlib.contains(OpenFlag.LockShared)
+            then
               val writable = options2.contains(jnf.StandardOpenOption.WRITE) || appending
+              val shared = flags.stdlib.contains(OpenFlag.LockShared) || !writable
 
+              // An overlapping lock held by this JVM throws even when both are shared; the
+              // register has already admitted this open, and the first holder's OS lock
+              // covers the cross-process case, so a shared overlap is benign.
               try Option:
-                if writable then channel.tryLock().nn
-                else channel.tryLock(0L, Long.MaxValue, true).nn
-              catch case _: jnc.OverlappingFileLockException => None
+                if shared then channel.tryLock(0L, Long.MaxValue, true).nn
+                else channel.tryLock().nn
+              catch case _: jnc.OverlappingFileLockException => if shared then Some(null) else None
             else Some(null)
 
           if lock.isEmpty then abort(Io.Error(path, Operation.Open, Reason.Busy))

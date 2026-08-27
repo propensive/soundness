@@ -399,7 +399,7 @@ package filesystemBackends:
         protect(path, Operation.Open):
           // WASI has no file-locking call, so a requested lock is refused rather than
           // silently not taken (issue #566).
-          if flags.has(OpenFlag.Lock)
+          if flags.has(OpenFlag.Lock) || flags.has(OpenFlag.LockShared)
           then abort(Io.Error(path, Operation.Open, Reason.Unsupported))
 
           val (descriptor, relative) = resolve(path, Operation.Open)

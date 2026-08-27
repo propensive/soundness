@@ -559,3 +559,37 @@ object Tests extends Suite(m"Galilei tests"):
           case Ntfs(path)  => unsafely(path.creation[Long]()) > 0L
           case _           => true  // no creation-timed filesystem here; the gate did its job
       . assert(_ == true)
+
+    suite(m"Shared locking"):
+      import errorDiagnostics.stackTracesDiagnostics
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+
+      val sharedLeaf: Text = Uuid().show
+      val shared: Path on Linux = unsafely((% / "tmp" / sharedLeaf).on[Linux])
+      unsafely(shared.write(t"content"))
+
+      test(m"Shared opens of one file coexist"):
+        unsafely:
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            shared.open[File](Read & Shared): a ?=>
+              shared.open[File](Read & Shared) { true }
+      . assert(_ == true)
+
+      test(m"An Exclusive open cannot join a Shared one"):
+        unsafely:
+          capture[Io.Error]:
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              shared.open[File](Read & Shared): a ?=>
+                shared.open[File](Read & Exclusive) { () }
+          . reason
+      . assert(_ == Io.Error.Reason.Busy)
+
+      test(m"A Shared open cannot join an Exclusive one"):
+        unsafely:
+          capture[Io.Error]:
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              shared.open[File](Read & Exclusive): a ?=>
+                shared.open[File](Read & Shared) { () }
+          . reason
+      . assert(_ == Io.Error.Reason.Busy)

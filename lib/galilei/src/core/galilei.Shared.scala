@@ -32,63 +32,16 @@
                                                                                                   */
 package galilei
 
-import anticipation.*
 import aperture.*
-import gossamer.*
-import contingency.*
-import prepositional.*
-import serpentine.*
-import rudiments.*
 
-import Io.Error.{Operation, Reason}
-
-// The `Openable` instance for opening a file's content: `path.open[File](Read & Write)`. A
-// named class rather than an anonymous given instance: instantiating an anonymous subclass
-// freshens `Handle`'s (capability) field types in the inferred `Result` member, which then
-// fails to conform to the declared `to Handle` refinement.
-class FileOpenable[filesystem: Filesystem, path <: Path on filesystem]
-  ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error] )
-extends Openable:
-
-  type Self = path
-  type Form = File
-  type Operand = OpenFlag
-  type Result = Handle
-
-  def open[grants <: Grant, result]
-    ( value: path, mode: Mode granting grants, flags: List[OpenFlag] )
-    ( block: ((Handle & Granting[grants])^) ?=> result )
-  :   result =
-
-    // The mode's atoms translate to OS open flags. `aperture.Exclusive` is deliberately not
-    // translated to `OpenFlag.Exclusive`: POSIX `O_EXCL` governs exclusive *creation*, not
-    // exclusive access. Instead it enrols the open in the access register — so file opens
-    // participate in the same intra-JVM arbitration as directory scopes — and asks the
-    // backend for an OS advisory lock (`OpenFlag.Lock`) to cover the cross-process case
-    // (issue #566).
-    val modeFlags =
-      (if mode.atoms.has(Read) then List(OpenFlag.Read).stdlib else Nil.stdlib) ++
-        (if mode.atoms.has(Write) then List(OpenFlag.Write).stdlib else Nil.stdlib) ++
-        (if mode.atoms.has(Exclusive) then List(OpenFlag.Lock).stdlib
-         else if mode.atoms.has(Shared) then List(OpenFlag.LockShared).stdlib
-         else Nil.stdlib)
-
-    val locking = mode.atoms.has(Exclusive) || mode.atoms.has(Shared)
-
-    // The register works on real paths, so two routes to one file register as the same file
-    // and overlap correctly with enclosing directory scopes; a file which is about to be
-    // created cannot be resolved, so it falls back to its normalized absolute form.
-    val real: Text =
-      if !locking then t"" else
-        try value.nioPath.toRealPath().nn.toString.tt
-        catch case _: Exception => value.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt
-
-    if locking && !AccessRegister.acquire(real, mode.atoms)
-    then abort(Io.Error(value, Operation.Open, Reason.Busy))
-
-    try
-      backend.open(value, (modeFlags ++ flags.stdlib).to(List)): handle =>
-        // `Granting` is a phantom marker, so the cast only refines the static type with the
-        // grants that `modeFlags` has just made true operationally.
-        block(using handle.asInstanceOf[Handle & Granting[grants]])
-    finally if locking then AccessRegister.release(real, mode.atoms)
+// The shared-lock mode (issue #566): any number of `Shared` opens of one file may coexist —
+// across processes, through a shared OS advisory lock — but a `Shared` open conflicts with an
+// `Exclusive` one in either direction. `Read` deliberately does not imply it: taking even a
+// shared lock would make every ordinary read contend with exclusive lockers. Defined here
+// rather than in aperture, since shared locking is a filesystem concern; aperture's grant
+// hierarchy is deliberately open to exactly this kind of domain-specific extension.
+//
+//     path.open[File](Read & Shared): handle ?=> …
+object Shared extends Mode:
+  type Grants = Shared.Grant
+  trait Grant extends aperture.Grant
