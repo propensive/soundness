@@ -113,7 +113,7 @@ object internal:
       // Dotted-quad notation identifies an IPv4 address on sight, so inspection needs no
       // decoration to distinguish it; without an instance it would render as the `Int` it
       // erases to. Referenced by name rather than summoned, as in `Ipv6Subnet` below.
-      given inspectable: Ipv4 is Inspectable = showable.text(_)
+      given inspectable: [ipv4 <: Ipv4] => ipv4 is Inspectable = showable.text(_)
 
       given encodable: Ipv4 is Encodable in Text = _.show
       given decodable: (tactic: Tactic[IpAddress.Error])
@@ -152,7 +152,7 @@ object internal:
 
       inline given underlying: Underlying[MacAddress, Long] = !!
       given showable: MacAddress is Showable = _.text
-      given inspectable: MacAddress is Inspectable = _.text
+      given inspectable: [mac <: MacAddress] => mac is Inspectable = (_: MacAddress).text
       given encodable: MacAddress is Encodable in Text = _.text
       given decoder: (tactic: Tactic[MacAddress.Error])
       =>  ((MacAddress is Decodable in Text)^{tactic}) =
@@ -307,7 +307,7 @@ object internal:
 
   object Ipv4Subnet:
     given showable: Ipv4Subnet is Showable = subnet => t"${subnet.ipv4}/${subnet.size}"
-    given inspectable: Ipv4Subnet is Inspectable = showable.text(_)
+    given inspectable: [subnet <: Ipv4Subnet] => subnet is Inspectable = showable.text(_)
     given encodable: Ipv4Subnet is Encodable in Text = _.show
     given decodable: (tactic: Tactic[IpAddress.Error])
     =>  ((Ipv4Subnet is Decodable in Text)^{tactic}) =
@@ -358,7 +358,7 @@ object internal:
 
     // Colon-separated hexadecimal groups identify an IPv6 address on sight; the abbreviated
     // form the `Showable` produces is also the form a programmer recognises.
-    given inspectable: Ipv6 is Inspectable = showable.text(_)
+    given inspectable: [ipv6 <: Ipv6] => ipv6 is Inspectable = showable.text(_)
 
     def apply(g0: Int, g1: Int, g2: Int, g3: Int, g4: Int, g5: Int, g6: Int, g7: Int): Ipv6 =
       Ipv6(pack(List(g0, g1, g2, g3)), pack(List(g4, g5, g6, g7)))
@@ -428,7 +428,7 @@ object internal:
     given showable: Ipv6Subnet is Showable = subnet =>
       t"${Ipv6.showable.text(subnet.ipv6)}/${subnet.size}"
 
-    given inspectable: Ipv6Subnet is Inspectable = showable.text(_)
+    given inspectable: [subnet <: Ipv6Subnet] => subnet is Inspectable = showable.text(_)
     given encodable: Ipv6Subnet is Encodable in Text = _.show
     given decodable: (tactic: Tactic[IpAddress.Error])
     =>  ((Ipv6Subnet is Decodable in Text)^{tactic}) =

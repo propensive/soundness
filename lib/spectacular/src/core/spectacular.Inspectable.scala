@@ -103,36 +103,50 @@ object Inspectable extends Inspectable2:
       variant(value):
         [variant <: derivation] => variant => contextual.give(variant.inspect)
 
-  given char: Char is Inspectable = char => ("'"+escape(char).s+"'").tt
-  given int: Int is Inspectable = int => int.toString.tt
-  given long: Long is Inspectable = long => (long.toString+"L").tt
-  given string: String is Inspectable = string => text.text(string.tt).s.substring(1).nn.tt
-  given byte: Byte is Inspectable = byte => (byte.toString+".toByte").tt
-  given short: Short is Inspectable = short => (short.toString+".toShort").tt
+  // Every instance below is parameterised over the subtypes of the type it renders, rather
+  // than written against that type alone. `Self` is invariant, so `Char is Inspectable` does
+  // not cover a singleton literal type like `'x'`, `Text is Inspectable` does not cover
+  // `nomenclature.Name`, and an instance for a refined type covers neither the bare type nor a
+  // further refinement of it. Each such near-miss falls silently through `derived` to the
+  // `“…”` toString case rather than failing to compile, so the bound is what keeps a rendering
+  // from disappearing when a type is refined.
+  given char: [char <: Char] => char is Inspectable = char => ("'"+escape(char).s+"'").tt
+  given int: [int <: Int] => int is Inspectable = int => int.toString.tt
+  given long: [long <: Long] => long is Inspectable = long => (long.toString+"L").tt
+  given byte: [byte <: Byte] => byte is Inspectable = byte => (byte.toString+".toByte").tt
+  given short: [short <: Short] => short is Inspectable = short => (short.toString+".toShort").tt
 
-  given text: Text is Inspectable = text =>
+  given string: [string <: String] => string is Inspectable = string =>
+    text.text(string.tt).s.substring(1).nn.tt
+
+  given text: [text <: Text] => text is Inspectable = text =>
     val builder: StringBuilder = new StringBuilder()
     text.each { char => builder.append(escape(char, true).s) }
 
     ("t\""+builder.toString+"\"").tt
 
-  given float: Float is Inspectable =
+  given float: [float <: Float] => float is Inspectable =
     case Float.PositiveInfinity => "Float.PositiveInfinity".tt
     case Float.NegativeInfinity => "Float.NegativeInfinity".tt
     case float if float.isNaN   => "Float.NaN".tt
     case float                  => (float.toString+"F").tt
 
-  given double: Double is Inspectable =
+  given double: [double <: Double] => double is Inspectable =
     case Double.PositiveInfinity => "Double.PositiveInfinity".tt
     case Double.NegativeInfinity => "Double.NegativeInfinity".tt
     case double if double.isNaN  => "Double.NaN".tt
     case double                  => double.toString.tt
 
-  given boolean: Boolean is Inspectable = boolean => if boolean then "true".tt else "false".tt
-  given unit: Unit is Inspectable = unit => "()".tt
-  given bigInt: BigInt is Inspectable = bigInt => ("BigInt("+bigInt+")").tt
-  given bigDecimal: BigDecimal is Inspectable = bigDecimal => ("BigDecimal("+bigDecimal+")").tt
-  given unset: Unset is Inspectable = unset => "○".tt
+  given boolean: [boolean <: Boolean] => boolean is Inspectable = boolean =>
+    if boolean then "true".tt else "false".tt
+
+  given unit: [unit <: Unit] => unit is Inspectable = unit => "()".tt
+  given bigInt: [bigInt <: BigInt] => bigInt is Inspectable = bigInt => ("BigInt("+bigInt+")").tt
+
+  given bigDecimal: [bigDecimal <: BigDecimal] => bigDecimal is Inspectable = bigDecimal =>
+    ("BigDecimal("+bigDecimal+")").tt
+
+  given unset: [unset <: Unset] => unset is Inspectable = unset => "○".tt
 
   // Only for a value statically typed as `reflect.Enum` itself, for which no reflection is
   // available; a value of a known enum type is rendered structurally by `enumeration`, below.
@@ -150,24 +164,34 @@ object Inspectable extends Inspectable2:
   // number would be indistinguishable from an `Int` or a `Long` — and, for the unsigned types,
   // would show the wrong number entirely. Each carries a superscript suffix naming its
   // interpretation (`ᵘ` unsigned, `ˢ` signed, `ᵇ` bits, `ᶠ` floating-point) and its width.
-  given u8: U8 is Inspectable = u8 => (u8.text.s+"ᵘ⁸").tt
-  given u16: U16 is Inspectable = u16 => (u16.text.s+"ᵘ¹⁶").tt
-  given u32: U32 is Inspectable = u32 => (u32.text.s+"ᵘ³²").tt
-  given u64: U64 is Inspectable = u64 => (u64.text.s+"ᵘ⁶⁴").tt
-  given s8: S8 is Inspectable = s8 => (s8.int.toString+"ˢ⁸").tt
-  given s16: S16 is Inspectable = s16 => (s16.int.toString+"ˢ¹⁶").tt
-  given s32: S32 is Inspectable = s32 => (s32.int.toString+"ˢ³²").tt
-  given s64: S64 is Inspectable = s64 => (s64.long.toString+"ˢ⁶⁴").tt
+  // Each value is widened to the exact type before its accessor is called: these are `inline`
+  // extensions on an opaque type, whose expansion unseals the underlying primitive, and that
+  // expansion is not available through a subtype of the opaque type.
+  given u8: [u8 <: U8] => u8 is Inspectable = u8 => ((u8: U8).text.s+"ᵘ⁸").tt
+  given u16: [u16 <: U16] => u16 is Inspectable = u16 => ((u16: U16).text.s+"ᵘ¹⁶").tt
+  given u32: [u32 <: U32] => u32 is Inspectable = u32 => ((u32: U32).text.s+"ᵘ³²").tt
+  given u64: [u64 <: U64] => u64 is Inspectable = u64 => ((u64: U64).text.s+"ᵘ⁶⁴").tt
+  given s8: [s8 <: S8] => s8 is Inspectable = s8 => ((s8: S8).int.toString+"ˢ⁸").tt
+  given s16: [s16 <: S16] => s16 is Inspectable = s16 => ((s16: S16).int.toString+"ˢ¹⁶").tt
+  given s32: [s32 <: S32] => s32 is Inspectable = s32 => ((s32: S32).int.toString+"ˢ³²").tt
+  given s64: [s64 <: S64] => s64 is Inspectable = s64 => ((s64: S64).long.toString+"ˢ⁶⁴").tt
 
   // The bit types are rendered as full-width hexadecimal — zero-padded, so that the width is
   // legible from the rendering itself, and uppercase, so that the digits are distinct from the
   // superscript suffix which follows them. The hexadecimal is formatted here rather than
   // through hypotenuse's own `hex`, whose inline expansion of `String.format` does not survive
   // separation checking at this use site.
-  given b8: B8 is Inspectable = b8 => (hexadecimal(b8.s8.int.toLong, 2)+"ᵇ⁸").tt
-  given b16: B16 is Inspectable = b16 => (hexadecimal(b16.s16.int.toLong, 4)+"ᵇ¹⁶").tt
-  given b32: B32 is Inspectable = b32 => (hexadecimal(b32.s32.int.toLong, 8)+"ᵇ³²").tt
-  given b64: B64 is Inspectable = b64 => (hexadecimal(b64.s64.long, 16)+"ᵇ⁶⁴").tt
+  given b8: [b8 <: B8] => b8 is Inspectable = b8 =>
+    (hexadecimal((b8: B8).s8.int.toLong, 2)+"ᵇ⁸").tt
+
+  given b16: [b16 <: B16] => b16 is Inspectable = b16 =>
+    (hexadecimal((b16: B16).s16.int.toLong, 4)+"ᵇ¹⁶").tt
+
+  given b32: [b32 <: B32] => b32 is Inspectable = b32 =>
+    (hexadecimal((b32: B32).s32.int.toLong, 8)+"ᵇ³²").tt
+
+  given b64: [b64 <: B64] => b64 is Inspectable = b64 =>
+    (hexadecimal((b64: B64).s64.long, 16)+"ᵇ⁶⁴").tt
 
   private def hexadecimal(value: Long, digits: Int): String =
     val masked = if digits >= 16 then value else value & ((1L << (digits*4)) - 1)
@@ -177,10 +201,13 @@ object Inspectable extends Inspectable2:
 
     builder.append(string).toString
 
-  given f32: F32 is Inspectable = f32 =>
-    (floatingPoint(f32.float.toDouble, f32.float.isNaN)+"ᶠ³²").tt
+  given f32: [f32 <: F32] => f32 is Inspectable = f32 =>
+    val float: Float = (f32: F32).float
+    (floatingPoint(float.toDouble, float.isNaN)+"ᶠ³²").tt
 
-  given f64: F64 is Inspectable = f64 => (floatingPoint(f64.double, f64.double.isNaN)+"ᶠ⁶⁴").tt
+  given f64: [f64 <: F64] => f64 is Inspectable = f64 =>
+    val double: Double = (f64: F64).double
+    (floatingPoint(double, double.isNaN)+"ᶠ⁶⁴").tt
 
   private def floatingPoint(double: Double, nan: Boolean): String =
     if nan then "NaN"
@@ -191,8 +218,12 @@ object Inspectable extends Inspectable2:
   // An `Ordinal` is rendered in its one-based form, with the English ordinal suffix, since that
   // is the number the programmer counts with; the zero-based `n0` is an implementation detail
   // of the type, and showing it would make every rendering off by one.
-  given ordinal: Ordinal is Inspectable = ordinal =>
-    (ordinal.n1.toString+ordinalSuffix(ordinal.n1)).tt
+  given ordinal: [ordinal <: Ordinal] => ordinal is Inspectable = ordinal(_)
+
+  // Shared by `ordinal` and `interval`; the givens themselves are parameterised, so neither
+  // can be referred to by name without a type application.
+  private def ordinal(value: Ordinal): Text =
+    (value.n1.toString+ordinalSuffix(value.n1)).tt
 
   private def ordinalSuffix(n1: Int): String =
     if n1 % 100 >= 11 && n1 % 100 <= 13 then "ᵗʰ" else n1 % 10 match
@@ -201,15 +232,15 @@ object Inspectable extends Inspectable2:
       case 3 => "ʳᵈ"
       case _ => "ᵗʰ"
 
-  given interval: Interval is Inspectable = interval =>
-    if interval.nil then "∅".tt
-    else (ordinal.text(interval.start).s+"‥"+ordinal.text(interval.end).s).tt
+  given interval: [interval <: Interval] => interval is Inspectable = interval =>
+    val value: Interval = interval
+    if value.nil then "∅".tt else (ordinal(value.start).s+"‥"+ordinal(value.end).s).tt
 
   // A `Span` packs one of five differently-shaped ranges into a `Long`, so its rendering shows
   // the shape as well as the numbers: `⟪∅⟫` empty, `⟪@4+5⟫` an offset and length, `⟪4:8+5⟫` a
   // line, column and length, `⟪4‥8⟫` a range of whole lines, and `⟪4:8‥6:2⟫` an area. The
   // numbers are one-based ordinals, without suffixes, which the `:` and `‥` keep unambiguous.
-  given span: Span is Inspectable = span =>
+  given span: [span <: Span] => span is Inspectable = span =>
     def n(ordinal: Optional[Ordinal]): String = ordinal.let(_.n1.toString).or("?")
 
     val body = span.mode match
@@ -228,12 +259,13 @@ object Inspectable extends Inspectable2:
   // `Bytes` is a count, not a quantity to be rounded for display: an inspection which showed
   // `4MB` would hide the difference between two nearby sizes, which is usually the reason for
   // looking.
-  given bytes: Bytes is Inspectable = bytes => (bytes.long.toString+"B").tt
-  given digit: Digit is Inspectable = digit => (digit.int.toString+"ᵈᵍ").tt
+  given bytes: [bytes <: Bytes] => bytes is Inspectable = bytes => (bytes.long.toString+"B").tt
+  given digit: [digit <: Digit] => digit is Inspectable = digit => (digit.int.toString+"ᵈᵍ").tt
 
   // A `Message` renders as its own text, in the style of a `t"…"` literal but marked `m"…"`,
   // since the interpolated parts are no longer distinguishable once the message is built.
-  given message: Message is Inspectable = message => ("m\""+message.text.s+"\"").tt
+  given message: [message <: Message] => message is Inspectable = message =>
+    ("m\""+message.text.s+"\"").tt
 
   def escape(char: Char, eEscape: Boolean = false): Text = char match
     case '\n'                => "\\n".tt
@@ -258,6 +290,10 @@ object Inspectable extends Inspectable2:
   // the by-name parameter directly — a seal on the lambda cannot reach that self-type check.
   // The thunk keeps resolution lazy, which recursive derivations depend on (the codec-thunk
   // seal pattern; see rep/DECISIONS.md).
+  // `Set`, `Map` and `List` keep an exact `Self`, unlike `sequence` below. They are opaque
+  // types, so their upper bound is abstract outside proscenium, and a *stdlib* collection
+  // reaching one of these instances would fail the bound check outright rather than fall
+  // through to another candidate — a subtype bound here turns a silent miss into a hard error.
   given set: [element] => (inspectable: => element is Inspectable) => Set[element] is Inspectable =
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     _.map(insp().text(_)).stdlib.mkString("{", ", ", "}").tt
@@ -287,6 +323,10 @@ object Inspectable extends Inspectable2:
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     _.map(insp().text(_)).stdlib.mkString("⟨ ", " ", " ⟩").tt
 
+  // The one instance which is deliberately *not* parameterised over its subtypes: a
+  // `Sequence` is an `IndexedSeq`, so a subtype bound here would match every `Sequence` too
+  // and be ambiguous with `sequence` above. Keeping `Self` exact confines this instance to a
+  // stdlib `IndexedSeq` named as such, which is what the `ᵢ` in its rendering marks.
   given indexedSeq: [element] => (inspectable: => element is Inspectable)
   =>  IndexedSeq[element] is Inspectable =
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
@@ -310,8 +350,9 @@ object Inspectable extends Inspectable2:
 
       . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
 
-  given arraySeq: [element] => (inspectable: => element is Inspectable)
-  =>  scm.ArraySeq[element] is Inspectable =
+  given arraySeq: [element, arraySeq <: scm.ArraySeq[element]]
+  =>  (inspectable: => element is Inspectable)
+  =>  arraySeq is Inspectable =
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
 
     array =>
@@ -321,6 +362,7 @@ object Inspectable extends Inspectable2:
 
       . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌ₛ").tt
 
+  // Exact `Self`, for the reason given at `set` above: `Chain` is opaque too.
   given stream: [element] => (inspectable: => element is Inspectable)
   =>  Chain[element] is Inspectable =
 

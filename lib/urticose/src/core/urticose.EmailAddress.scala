@@ -54,7 +54,7 @@ object EmailAddress:
 
   given encodable: EmailAddress is Encodable in Text = _.text
   given showable: EmailAddress is Showable = _.text
-  given inspectable: EmailAddress is Inspectable = _.text
+  given inspectable: [email <: EmailAddress] => email is Inspectable = (_: EmailAddress).text
 
   def parse(text: Text): EmailAddress raises EmailAddress.Error =
     val buffer: StringBuilder = StringBuilder()

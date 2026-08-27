@@ -41,7 +41,8 @@ object Scheme:
 
   // The trailing colon is what makes a bare scheme name recognisable as a scheme rather than
   // as some other text, and matches how it appears in the URL it belongs to.
-  given inspectable: Scheme[Label] is Inspectable = scheme => t"${scheme.name}:"
+  given inspectable: [scheme <: Scheme[Label]] => scheme is Inspectable = scheme =>
+    t"${scheme.name}:"
 
   object Http extends Scheme["http"](t"http")
   object Https extends Scheme["https"](t"https")

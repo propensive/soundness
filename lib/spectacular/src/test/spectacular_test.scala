@@ -269,6 +269,23 @@ object Tests extends Suite(m"Spectacular Tests"):
         42.inspect
       . assert(_ == t"42")
 
+      // `Self` is invariant, so an instance written against the bare type would not match a
+      // singleton literal type, and the value would fall through to the `“…”` toString case.
+      test(m"inspect a value typed as an integer literal"):
+        val three: 3 = 3
+        three.inspect
+      . assert(_ == t"3")
+
+      test(m"inspect a value typed as a character literal"):
+        val char: 'x' = 'x'
+        char.inspect
+      . assert(_ == t"'x'")
+
+      test(m"inspect a value typed as a boolean literal"):
+        val yes: true = true
+        yes.inspect
+      . assert(_ == t"true")
+
     suite(m"Sized numeric tests"):
       test(m"inspect an unsigned byte"):
         U8(200.toByte.bits).inspect

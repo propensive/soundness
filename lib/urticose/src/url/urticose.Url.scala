@@ -61,7 +61,8 @@ object Url:
   // `Url` is a plain class, not a case class, so there is no reflection to derive from and no
   // instance would leave it rendering as its `toString`. The canonical URL text shows every
   // part the type carries — scheme, authority, location, query and fragment.
-  given inspectable: [scheme <: Label] => Url[scheme] is Inspectable = showable.text(_)
+  given inspectable: [scheme <: Label, url <: Url[scheme]] => url is Inspectable =
+    showable.text(_)
 
   given decodable: [scheme <: Label] => (tactic: Tactic[Url.Error])
   =>  ((Url[scheme] is Decodable in Text)^{tactic}) =
