@@ -49,6 +49,7 @@ import gossamer.*
 import hypotenuse.maximize
 import hieroglyph.*
 import iridescence.*
+import mosquito.*
 import phoenicia.*
 import pneumatic.*
 import prepositional.*
@@ -572,28 +573,19 @@ object Pdf:
       created:  Optional[Info.Timing],
       modified: Optional[Info.Timing] )
 
+  // The six live entries of a PDF transformation matrix (ISO 32000-2 §8.3.4), shared with
+  // SVG as mosquito's `Affine` (#1867). PDF documents the transposed, row-vector layout
+  // ⎡ a b 0 / c d 0 / e f 1 ⎦, in which `this * that` transforms by `this` first: that
+  // composition is `Affine`'s `andThen`, and the six numbers appear in the same spec-defined
+  // order under both conventions, so the wire format is unaffected.
+  type Matrix = Affine[Double]
+
   // PdfMatrix → Pdf.Matrix
   object Matrix:
-    val Identity: Matrix = Matrix(1, 0, 0, 1, 0, 0)
+    val Identity: Matrix = Affine.identity[Double]
 
-  // The six live entries of a PDF transformation matrix (ISO 32000-2 §8.3.4):
-  //
-  //   ⎡ a b 0 ⎤
-  //   ⎢ c d 0 ⎥
-  //   ⎣ e f 1 ⎦
-  //
-  // applied to row vectors, so `this * that` transforms by `this` first.
-  case class Matrix(a: Double, b: Double, c: Double, d: Double, e: Double, f: Double):
-    def * (that: Matrix): Matrix =
-      Matrix
-        ( a*that.a + b*that.c,
-          a*that.b + b*that.d,
-          c*that.a + d*that.c,
-          c*that.b + d*that.d,
-          e*that.a + f*that.c + that.e,
-          e*that.b + f*that.d + that.f )
-
-    def apply(x: Double, y: Double): (Double, Double) = (a*x + c*y + e, b*x + d*y + f)
+    def apply(a: Double, b: Double, c: Double, d: Double, e: Double, f: Double): Matrix =
+      Affine(a, b, c, d, e, f)
 
   // PdfOperator → Pdf.Operator
   object Operator:
