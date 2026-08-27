@@ -46,6 +46,7 @@ import profanity.*
 import quantitative.*
 import rudiments.*
 import symbolism.*
+import turbulence.Stdio
 import vacuous.*
 
 object Cli:
@@ -80,7 +81,9 @@ object Cli:
 // A `Cli` is a *capability*: it carries the live stdio, signal-dispatch and completion state of
 // one command-line invocation, whose lifetime is the `process` scope that introduces it.
 // `Exclusive` because an invocation has a single owner; nothing may retain it past the exit.
-trait Cli extends Console, caps.ExclusiveCapability:
+trait Cli
+extends Console, caps.ExclusiveCapability, WorkingDirectory.Provider, Environment.Provider,
+    Stdio.Provider:
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory

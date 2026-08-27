@@ -41,6 +41,15 @@ import rudiments.*
 import vacuous.*
 
 object Stdio:
+  // A source of a canonical `Stdio`: typically a CLI invocation, which is itself a tracked
+  // capability but whose `stdio` member is a pure value. The conditional given lives here — in
+  // the companion of the SEARCHED type, so it needs no import — making a pure `Stdio`
+  // summonable wherever a `Provider` is ambient.
+  trait Provider:
+    val stdio: Stdio
+
+  given provided: (provider: Provider^) => Stdio = provider.stdio
+
   def apply
     ( out:     ji.PrintStream | Null,
       err:     ji.PrintStream | Null,
