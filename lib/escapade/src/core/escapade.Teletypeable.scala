@@ -42,14 +42,18 @@ import prepositional.*
 import spectacular.*
 import vacuous.*
 
-object Teletypeable:
+// The low-priority home of the plain `Showable` rendering: in the companion it competed,
+// ambiguously, with `colorable` — both subjects are bare type parameters, and a type with
+// both upstream instances matched both (issue #261). Owner priority resolves the choice
+// (`Decodable2` is the established precedent), preferring `colorable` where a `Colorable`
+// exists and falling back here; an inline `summonFrom` was rejected because its per-summon
+// expansion trips the `-scalajs` SAM/capture divergence at downstream sites.
+trait Teletypeable2:
+  given showable: [value: Showable] => value is Teletypeable = value => Teletype(value.show)
+
+object Teletypeable extends Teletypeable2:
   given teletype: Teletype is Teletypeable = identity(_)
   given text: Text is Teletypeable = text => Teletype(text)
-
-  given colorable: [value: {Showable as showable, Colorable as colorable}]
-  =>  value is Teletypeable =
-
-    value => e"${value.color}(${value.show})"
 
   given message: Message is Teletypeable = _.fold[Teletype](e""): (acc, next, level) =>
     level match
@@ -61,7 +65,15 @@ object Teletypeable:
     case None        => Teletype("empty".show)
     case Some(value) => value.teletype
 
-  given showable: [value: Showable] => value is Teletypeable = value => Teletype(value.show)
+  // A `Showable` value renders through its `Colorable` instance where one exists — in that
+  // type's colour — and plainly otherwise. A single prioritized given rather than two peers:
+  // as two, both subjects were bare type parameters, so a type with both upstream instances
+  // matched both, ambiguously (issue #261); `summonFrom` chooses `Colorable` first, in the
+  // manner of `telekinesis.Servable.media`.
+  given colorable: [value: {Showable as showable, Colorable as colorable}]
+  =>  value is Teletypeable =
+
+    value => e"${value.color}(${value.show})"
 
   given error: Error is Teletypeable = _.message.teletype
 
