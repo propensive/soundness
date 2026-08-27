@@ -130,6 +130,22 @@ object internal:
 
         new Vector[result, size](arr)
 
+    // A single-line counterpart to the (column-shaped, multi-line) `Showable`, sharing the `∣`
+    // element separator with `Matrix`'s rows. Unlike the `Showable` it needs neither the size as a
+    // singleton nor a text metric, so it is available for any vector.
+    given inspectable: [element: Inspectable, vector <: Vector[element, ?]]
+    =>  vector is Inspectable = vector =>
+
+      val builder: StringBuilder = new StringBuilder("⟨")
+      var index = 0
+
+      while index < vector.data.length do
+        if index > 0 then builder.append(" ∣ ")
+        builder.append(element.text(vector.data.readable(index).asInstanceOf[element]).s)
+        index += 1
+
+      builder.append("⟩").toString.tt
+
     given showable: [size <: Int: ValueOf, element: Showable] => Text is Measurable
     =>  Vector[element, size] is Showable =
 

@@ -128,6 +128,24 @@ object protointernal extends anteprotointernal:
         val nonzeroComponents = count.components.stdlib.filter(_(1) != 0)
         nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
 
+    // The components of a `Quanta` are recovered by a macro reading its type, so inspection has to
+    // be inline too — and therefore comes as the same pair as `showable`, with structured `Self`
+    // types: a `quanta <: Quanta[base]` bound in an inline given maximises `base` to `Any`, and
+    // `Quanta` is invariant, so such a given would never match. Every component is written out,
+    // including the zeroes the `Showable` drops, and the units are the type's own designations, so
+    // that a packed `Long` is never rendered as a bare number.
+    inline def inspectQuanta[base <: AnyUnit, quanta <: Quanta[base]]: quanta is Inspectable =
+      count =>
+        val components = count.components.stdlib
+        components.map { pair => pair(1).toString+pair(0) }.mkString("Quanta(", " ", ")").tt
+
+    inline given inspectable: [base <: AnyUnit, form <: Divisions]
+    =>  (Quanta[base] in form) is Inspectable =
+      inspectQuanta[base, Quanta[base] in form]
+
+    inline given inspectableBare: [base <: AnyUnit] => Quanta[base] is Inspectable =
+      inspectQuanta[base, Quanta[base]]
+
     inline given showable: [base <: AnyUnit, form <: Divisions]
     =>  (Quanta[base] in form) is Showable =
       showQuanta[base, Quanta[base] in form]

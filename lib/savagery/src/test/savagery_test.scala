@@ -564,3 +564,30 @@ object Tests extends Suite(m"Savagery tests"):
       .assert:
           case Svg.Error(Svg.Error.Reason.NotAnSvg(_)) => true
           case _                                     => false
+
+    suite(m"Native-rendering coverage"):
+      test(m"savagery's types inspect natively"):
+        Inspectable.fallbacks
+         ( Point(3, 4).inspect,
+           Delta(1, -2).inspect,
+           Svg.Id(t"logo").inspect,
+           Rectangle((0, 0), 10, 5).inspect,
+           Ellipse((1, 2), 3, 4, Angle(0)).inspect,
+           Outline().moveTo((0, 0)).lineTo((3, 4)).inspect,
+           Transform.Rotate(Angle(0)).inspect,
+           Transform.Matrix(Affine[Float](1, 0, 0, 1, 0, 0)).inspect,
+           Stroke.MoveTo(Point(0, 0)).inspect )
+
+      . assert(_ == Nil)
+
+      test(m"a point shows both coordinates"):
+        Point(3, 4).inspect
+      . assert(_ == t"Point(x:3.0F ╱ y:4.0F)")
+
+      test(m"a delta shows both components"):
+        Delta(1, -2).inspect
+      . assert(_ == t"Delta(dx:1.0F ╱ dy:-2.0F)")
+
+      test(m"an SVG id names its type"):
+        Svg.Id(t"logo").inspect
+      . assert(_ == t"""Svg.Id(t"logo")""")

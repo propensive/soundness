@@ -41,7 +41,23 @@ import vacuous.*
 
 import decimalConverters.javaDecimalConverter
 
+import geodesy.angleInspectable
+
 object Transform:
+  private def form(name: Text, parts: Text*): Text =
+    parts.map(_.s).mkString(s"${name.s}(", " ╱ ", ")").tt
+
+  // Written out case by case, rather than left to structural derivation, because `Angle`'s
+  // instance is a top-level given in geodesy (its companion sits below the text stack) and so is
+  // only in scope where it has been imported by name — here.
+  given inspectable: [transform <: Transform] => transform is Inspectable =
+    _.absolve match
+      case Translate(delta)         => form(t"Translate", delta.inspect)
+      case Scale(x, y)              => form(t"Scale", x.inspect, y.inspect)
+      case Rotate(angle)            => form(t"Rotate", angle.inspect)
+      case Skew(angle, orientation) => form(t"Skew", angle.inspect, orientation.inspect)
+      case Matrix(affine)           => form(t"Matrix", affine.inspect)
+
   private given floatShowable: Float is Showable = _.toString.tt
 
   given encodable: Transform is Encodable in Text =

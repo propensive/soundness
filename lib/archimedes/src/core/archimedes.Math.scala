@@ -108,6 +108,23 @@ object Math:
 
   def apply(children: Mathml*): Math = Math(children.to(List))
 
+  // Only a `Document[Math]` has a `Showable`, and it produces multi-line serialized MathML with an
+  // XML header. Inspection instead writes the node tree in a bracketed prefix form — each node as
+  // its MathML element name, its attributes, then its character data or its children — which is
+  // the structure a parse or layout bug is read from, on one line.
+  private def node(mathml: Mathml): Text =
+    val attributes = mathml.attributes.map { pair => t" ${pair(0)}=${pair(1).inspect}" }.join
+    val children = mathml.contents.map { child => t" ${node(child)}" }.join
+    val body = mathml.text.let { text => t" ${text.inspect}" }.or(children)
+
+    t"⟨${mathml.label}$attributes$body⟩"
+
+  given inspectable: [math <: Math] => math is Inspectable = math =>
+    val attributes = math.attributes.map { pair => t" ${pair(0)}=${pair(1).inspect}" }.join
+    val children = math.contents.map { child => t" ${node(child)}" }.join
+
+    t"Math(${math.display.inspect}$attributes$children)"
+
   // `Encodable in Math` instances: any value encodes to a `<math>` document, just
   // as `Encodable in Xml` yields an `Xml`. `Mathml.atom` collapses a root back to a
   // single node where one is needed (the `.mathml` extension, the `ergo""` macro).

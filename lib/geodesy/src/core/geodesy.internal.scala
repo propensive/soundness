@@ -50,6 +50,12 @@ object internal:
     given encodable: Location is Encodable in Text = location =>
       t"${location.latitude.degrees},${location.longitude.degrees}"
 
+    // The encoded form rounds to six decimal places (the file's `Decimalizer`) and is a bare pair
+    // of numbers; inspection reuses `Angle`'s own full-precision rendering for each component, and
+    // the crosshair marks the pair as a position on the globe rather than two loose angles.
+    given inspectable: [location <: Location] => location is Inspectable = location =>
+      t"⌖${(location: Location).latitude.inspect},${(location: Location).longitude.inspect}"
+
     private def fromAngle(latitude: Angle, longitude: Angle): Location =
       (encodeLatitude(latitude).toLong << 32) | (encodeLongitude(longitude) & 0xffffffffL)
 

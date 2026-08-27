@@ -75,9 +75,17 @@ object Tests extends Suite(m"Geodesy tests"):
        ( Angle.degrees(90).inspect,
          CardinalWind.North.inspect,
          IntercardinalWind.Northeast.inspect,
-         HalfWind.NorthNortheast.inspect )
+         HalfWind.NorthNortheast.inspect,
+         Location(Angle.degrees(51.5), Angle.degrees(0.126)).inspect )
 
     . assert(_ == Nil)
+
+    // Latitude and longitude are packed into 32 bits each, so the angles which come back out are
+    // the nearest representable ones; inspection shows them as they are, without rounding.
+    test(m"inspect a location as a pair of angles"):
+      Location(Angle.degrees(51.5), Angle.degrees(0.126)).inspect
+
+    . assert(_ == t"⌖51.4999999718275°,0.12600003747548583°")
 
     test(m"render principal angle"):
       val angle = Angle.degrees(375)

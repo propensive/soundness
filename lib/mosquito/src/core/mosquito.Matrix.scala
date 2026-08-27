@@ -49,6 +49,30 @@ import vacuous.*
 import mosquito.internal.Vector
 
 object Matrix:
+  // The `Showable` sets a matrix as a multi-line grid inside stretched brackets, which inspection
+  // (always one line) cannot use: rows are separated by `⫽` and elements within a row by `∣`,
+  // between the corner brackets which stand in for the tall ones. Elements are visited with an
+  // index loop over `elements`, as `toString` is, so that no derivation over the frozen `Array`
+  // leaks its capture set into this instance's `text`.
+  given inspectable: [element: Inspectable, matrix <: Matrix[element, ?, ?]]
+  =>  matrix is Inspectable = matrix =>
+
+    val builder: StringBuilder = new StringBuilder("⌈")
+    var row = 0
+
+    while row < matrix.rows do
+      if row > 0 then builder.append(" ⫽ ")
+      var column = 0
+
+      while column < matrix.columns do
+        if column > 0 then builder.append(" ∣ ")
+        builder.append(element.text(matrix.elements.readUnchecked(matrix.columns*row + column)).s)
+        column += 1
+
+      row += 1
+
+    builder.append("⌋").toString.tt
+
   given showable: [element: Showable] => Text is Measurable => Matrix[element, ?, ?] is Showable =
     matrix =>
       val textElements = matrix.elements.remap(_.show)

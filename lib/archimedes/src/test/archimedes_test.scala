@@ -460,3 +460,19 @@ object Tests extends Suite(m"Archimedes tests"):
           ergo"x + y"
         . map(_.focus)
       . assert(_ == List("x"))
+
+    suite(m"Native-rendering coverage"):
+      test(m"archimedes' types inspect natively"):
+        Inspectable.fallbacks
+         ( Math(Mfrac(Mn(t"1"), Mn(t"2"))).inspect,
+           Cell.of(Msup(Mi(t"x"), Mn(t"2"))).inspect )
+
+      . assert(_ == Nil)
+
+      test(m"a math value inspects as its node tree"):
+        Math(Mn(t"2")).inspect
+      . assert(_ == t"""Math(○ ⟨mn t"2"⟩)""")
+
+      test(m"a cell inspects with its dimensions and lines"):
+        Cell.line(t"xy").inspect
+      . assert(_ == t"""Cell(2×1@0 t"xy")""")

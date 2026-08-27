@@ -72,6 +72,15 @@ object timestampInternal:
 
   private def underlying(timestamp: Timestamp): Long = timestamp
 
+  // Zero-padding for the ISO renderings below; a negative number keeps its sign in front of the
+  // padded digits, so a year before the epoch is still legible.
+  private def pad(value: Int, digits: Int): Text =
+    val body = Math.abs(value).toString
+    val builder: StringBuilder = new StringBuilder(if value < 0 then "-" else "")
+    while builder.length + body.length < digits do builder.append('0')
+
+    builder.append(body).toString.tt
+
   // The shape of a `Timestamp - Timestamp` difference: a regular span of days/hours/mins/seconds.
   type Difference =
     Timespan of (aviation.internal.Day.type & Hour.type & Minute.type & Seconds[1])
@@ -81,6 +90,27 @@ object timestampInternal:
       date.jdn.toLong*aviation.internal.MillisPerDay +
         (time.hour*3600L + time.minute*60L + time.second)*1000L +
         time.nanos/1_000_000L
+
+    // ISO 8601 in the Gregorian calendar, which is self-identifying and — unlike `dateShowable`
+    // and `timestampShowable` — needs no `Calendar`, `Endianness`, `Years` or `Separation` in
+    // scope, as an inspection which must always be available cannot ask for them. The subtype
+    // bound covers `Date` and `Monthstamp` too, since each is a `Timestamp` refined by its `Form`;
+    // a `Date` shows its zeroed time-of-day, which is precisely its state. Milliseconds are
+    // written only when non-zero, and the grid is millisecond-precise, so nothing is truncated.
+    given inspectable: [timestamp <: Timestamp] => timestamp is Inspectable = timestamp =>
+      val value: Timestamp = timestamp
+      val calendar = calendars.gregorianCalendar
+      val date = value.date
+      val time = value.time
+      val year = calendar.annual(date)()
+      val month = calendar.mensual(date).numerical
+      val day = calendar.diurnal(date)()
+      val millis = time.nanos/1_000_000
+
+      val fraction = if millis == 0 then t"" else t".${pad(millis, 3)}"
+      val clock = t"${pad(time.hour, 2)}:${pad(time.minute, 2)}:${pad(time.second, 2)}"
+
+      t"${pad(year, 4)}-${pad(month, 2)}-${pad(day, 2)}T$clock$fraction"
 
     // Date-time display (any precision): "time, date".
     given timestampShowable: (Clockface is Showable, Date is Showable) => Timestamp is Showable =
