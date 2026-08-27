@@ -192,6 +192,10 @@ object TestEvent:
     case Entry.Kind.Profile => t"profile"
 
 enum TestEvent:
+  // The SCHEDULE: one per test a `--list` selection admits, before anything runs, so a
+  // consumer can pre-render every expected row and fill it in as results arrive.
+  case TestScheduled(test: TestEvent.Ref, kind: Text)
+
   case SuiteStarted(suite: TestEvent.Ref, timestamp: Long)
   case SuiteEnded(suite: TestEvent.Ref, timestamp: Long)
 
