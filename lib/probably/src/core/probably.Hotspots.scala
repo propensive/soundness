@@ -48,7 +48,7 @@ object Hotspots:
       report.emit:
         val frames =
           hotspots.frames.map: (frame: Hotspots.Frame) =>
-            TestEvent.Frame(frame.className, frame.method, Text(""), Unset)
+            TestEvent.Hotspot(frame.className, frame.method, frame.samples)
 
         TestEvent.HotspotsRecorded
           ( TestEvent.Ref.of(testId),
