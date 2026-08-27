@@ -115,13 +115,15 @@ trait FilesystemBackend extends Planar:
   def attribute(path: Path on Plane, name: Text)(using Tactic[Io.Error]): Optional[Data]
   def attribute(path: Path on Plane, name: Text, value: Data)(using Tactic[Io.Error]): Unit
 
-  // Range-scoped positional reading (issue #566): like `expanse`, but the view is windowed
-  // to `[offset, offset + extent)` — its `size` is the window's, and reads are relative to
-  // the window's start and clamped to it — and, when `flags` request it, an OS advisory lock
-  // over exactly that byte range is held for the scope.
+  // Range-scoped positional access (issues #566, #1878): like `expanse`, but the view is a
+  // `Slice.Window` confined to `[offset, offset + extent)` — its `size` is the window's,
+  // reads are relative to the window's start and clamped to it, and writes store as much as
+  // fits and return the count, `pwrite`-style. When `flags` request it, an OS advisory lock
+  // over exactly that byte range is held for the scope; a write is only meaningful when
+  // `flags` include `OpenFlag.Write`.
   def slice[result]
     ( path: Path on Plane, offset: Long, extent: Long, flags: List[OpenFlag] )
-    ( lambda: zephyrine.Expanse => result )
+    ( lambda: Slice.Window => result )
     ( using Tactic[Io.Error] )
   :   result
 

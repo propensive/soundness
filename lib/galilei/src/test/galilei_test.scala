@@ -693,3 +693,37 @@ object Tests extends Suite(m"Galilei tests"):
           case Apfs(path) => unsafely(path.attribute[Data](t"missing")).absent
           case _          => true
       . assert(_ == true)
+
+    suite(m"Slice windows write"):
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+      import charDecoders.utf8Decoder
+      import textSanitizers.skipSanitizer
+
+      val windowLeaf: Text = Uuid().show
+      val windowed: Path on Linux = unsafely((% / "tmp" / windowLeaf).on[Linux])
+      unsafely(windowed.write(t"0123456789abcdef"))
+
+      test(m"A write lands at the window-adjusted offset and reads back"):
+        unsafely:
+          Slice(windowed, 4L, 6L).open[File](Read & Write & Exclusive): window ?=>
+            window.write(2L, t"XY".in[Data]) yet ()
+
+          windowed.read[Text]
+      . assert(_ == t"012345XY89abcdef")
+
+      test(m"A write is clamped to the window and reports the count"):
+        unsafely:
+          Slice(windowed, 12L, 4L).open[File](Read & Write & Exclusive): window ?=>
+            window.write(2L, t"WXYZ".in[Data])
+      . assert(_ == 2)
+
+      test(m"A clamped write stores only the bytes which fit"):
+        unsafely(windowed.read[Text])
+      . assert(_ == t"012345XY89abcdWX")
+
+      test(m"A write past the window's end stores nothing"):
+        unsafely:
+          Slice(windowed, 0L, 4L).open[File](Read & Write & Exclusive): window ?=>
+            window.write(4L, t"zz".in[Data])
+      . assert(_ == 0)

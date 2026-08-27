@@ -305,15 +305,16 @@ package filesystemBackends:
 
       def slice[result]
         ( path: Path on Plane, offset: Long, extent: Long, flags: List[OpenFlag] )
-        ( lambda: zephyrine.Expanse => result )
+        ( lambda: Slice.Window => result )
         ( using Tactic[Io.Error] )
       :   result =
 
-        // An exclusive range lock needs a writable channel, so one is requested when the
-        // flags ask for an exclusive lock, degrading — like whole-file locking on a
-        // read-only open — to a read-only channel and a *shared* OS lock where the file
-        // cannot be opened writable; the register still provides in-process exclusivity.
-        var writable = flags.stdlib.contains(OpenFlag.Lock)
+        // A writable channel is needed for writes through the window, and for an exclusive
+        // range lock — degrading, like whole-file locking on a read-only open, to a
+        // read-only channel and a *shared* OS lock where the file cannot be opened
+        // writable; the register still provides in-process exclusivity.
+        var writable =
+          flags.stdlib.contains(OpenFlag.Lock) || flags.stdlib.contains(OpenFlag.Write)
 
         val channel = protect(path, Operation.Open):
           val optionSet = java.util.HashSet[jnf.OpenOption]()
@@ -346,12 +347,13 @@ package filesystemBackends:
           if lock.isEmpty then abort(Io.Error(path, Operation.Open, Reason.Busy))
 
           try
-            val view = new zephyrine.Expanse:
-              def size: Long = channel.size
+            val view = new Slice.Window:
+              def size: Long = (channel.size - offset).max(0L).min(extent)
 
-              def read(readOffset: Long, length: Int): Data =
-                val buffer = java.nio.ByteBuffer.allocate(length).nn
-                var position = readOffset
+              def readFrom(readOffset: Long, length: Int): Data =
+                val available = (extent - readOffset).max(0L).min(length.toLong).toInt
+                val buffer = java.nio.ByteBuffer.allocate(available).nn
+                var position = offset + readOffset
                 var count = 0
 
                 while count >= 0 && buffer.hasRemaining do
@@ -364,7 +366,18 @@ package filesystemBackends:
                 buffer.get(array.raw, 0, filled)
                 Array.freeze(array)
 
-            lambda(window(view, offset, extent))
+              def writeTo(writeOffset: Long, data: Data): Int =
+                if writeOffset >= extent then 0 else
+                  val available = (extent - writeOffset).min(data.length.toLong).toInt
+                  val buffer = java.nio.ByteBuffer.wrap(Array.unsafeJvm(data), 0, available).nn
+                  var position = offset + writeOffset
+
+                  while buffer.hasRemaining do
+                    position += channel.write(buffer, position)
+
+                  available
+
+            lambda(view)
           finally lock.foreach: held =>
             if held != null then
               try held.release() catch case _: jnc.ClosedChannelException => ()
