@@ -74,6 +74,10 @@ object TestEvent:
 
   case class Frame(className: Text, method: Text, file: Text, line: Optional[Int])
 
+  // One hot method of a profile: the (demangled) class and method names and how many
+  // execution samples landed in it (self time).
+  case class Hotspot(className: Text, method: Text, samples: Long)
+
   // One component of a flattened cause chain: the outermost exception first, each with its
   // class name, rendered message and frames.
   case class TraceComponent(className: Text, message: Text, frames: List[Frame])
@@ -247,7 +251,7 @@ enum TestEvent:
     ( test:        TestEvent.Ref,
       coordinates: List[TestEvent.Coordinate],
       total:       Long,
-      frames:      List[TestEvent.Frame],
+      frames:      List[TestEvent.Hotspot],
       timestamp:   Long )
 
   case AnchorRecorded
