@@ -265,6 +265,114 @@ object Tests extends Suite(m"Spectacular Tests"):
         BigDecimal("1.5").inspect
       . assert(_ == t"BigDecimal(1.5)")
 
+      test(m"serialize int"):
+        42.inspect
+      . assert(_ == t"42")
+
+    suite(m"Sized numeric tests"):
+      test(m"inspect an unsigned byte"):
+        U8(200.toByte.bits).inspect
+      . assert(_ == t"200ᵘ⁸")
+
+      test(m"inspect an unsigned 16-bit integer"):
+        U16(40000.toShort.bits).inspect
+      . assert(_ == t"40000ᵘ¹⁶")
+
+      test(m"inspect an unsigned 32-bit integer"):
+        U32(7.bits).inspect
+      . assert(_ == t"7ᵘ³²")
+
+      test(m"inspect an unsigned 64-bit integer"):
+        U64(7L.bits).inspect
+      . assert(_ == t"7ᵘ⁶⁴")
+
+      test(m"inspect a signed 32-bit integer"):
+        S32(-7.bits).inspect
+      . assert(_ == t"-7ˢ³²")
+
+      test(m"inspect a signed 64-bit integer"):
+        S64(-7L.bits).inspect
+      . assert(_ == t"-7ˢ⁶⁴")
+
+      test(m"inspect an 8-bit bitmap"):
+        47.toByte.bits.inspect
+      . assert(_ == t"2Fᵇ⁸")
+
+      test(m"inspect a 32-bit bitmap"):
+        255.bits.inspect
+      . assert(_ == t"000000FFᵇ³²")
+
+      test(m"inspect a 64-bit bitmap"):
+        (-1L).bits.inspect
+      . assert(_ == t"FFFFFFFFFFFFFFFFᵇ⁶⁴")
+
+      test(m"inspect a 64-bit floating-point number"):
+        F64(3.5).inspect
+      . assert(_ == t"3.5ᶠ⁶⁴")
+
+      test(m"inspect a floating-point infinity"):
+        F64(Double.PositiveInfinity).inspect
+      . assert(_ == t"∞ᶠ⁶⁴")
+
+    suite(m"Quantity and message tests"):
+      test(m"inspect a byte count"):
+        Bytes(4194304L).inspect
+      . assert(_ == t"4194304B")
+
+      test(m"inspect a digit"):
+        Digit(7).inspect
+      . assert(_ == t"｢7ᵈᵍ｣")
+
+      test(m"inspect a message"):
+        m"the file was not found".inspect
+      . assert(_ == t"m\"the file was not found\"")
+
+    suite(m"Position tests"):
+      test(m"inspect the first ordinal"):
+        Ordinal.zerary(0).inspect
+      . assert(_ == t"1ˢᵗ")
+
+      test(m"inspect the third ordinal"):
+        Ordinal.zerary(2).inspect
+      . assert(_ == t"3ʳᵈ")
+
+      test(m"inspect a teens ordinal"):
+        Ordinal.zerary(10).inspect
+      . assert(_ == t"11ᵗʰ")
+
+      test(m"inspect the twenty-first ordinal"):
+        Ordinal.zerary(20).inspect
+      . assert(_ == t"21ˢᵗ")
+
+      test(m"inspect an interval"):
+        (Ordinal.zerary(0) thru Ordinal.zerary(4)).inspect
+      . assert(_ == t"1ˢᵗ‥5ᵗʰ")
+
+      test(m"inspect an empty interval"):
+        Interval().inspect
+      . assert(_ == t"∅")
+
+      test(m"inspect an empty span"):
+        Span.empty.inspect
+      . assert(_ == t"⟪∅⟫")
+
+      test(m"inspect an offset span"):
+        Span.offset(Ordinal.zerary(3), 5).inspect
+      . assert(_ == t"⟪@4+5⟫")
+
+      test(m"inspect a line span"):
+        Span.line(Ordinal.zerary(3), Ordinal.zerary(7), 5).inspect
+      . assert(_ == t"⟪4:8+5⟫")
+
+      test(m"inspect a whole-lines span"):
+        Span.lines(Ordinal.zerary(3), 5).inspect
+      . assert(_ == t"⟪4‥8⟫")
+
+      test(m"inspect an area span"):
+        Span.area(Ordinal.zerary(3), Ordinal.zerary(7), Ordinal.zerary(5), Ordinal.zerary(1))
+        . inspect
+      . assert(_ == t"⟪4:8‥6:2⟫")
+
     suite(m"Collection tests"):
       test(m"serialize map"):
         Map(1 -> 2, 3 -> 4).inspect
@@ -345,7 +453,7 @@ object Tests extends Suite(m"Spectacular Tests"):
 
       test(m"inspect parameterised enum case"):
         (Shape.Circle(5): Shape).inspect
-      . assert(_ == t"Circle(5)")
+      . assert(_ == t"Circle(radius:5)")
 
     suite(m"Show tests"):
       test(m"Show a string"):
@@ -376,7 +484,9 @@ object Tests extends Suite(m"Spectacular Tests"):
         t"${true} ${false}"
       . assert(_ == t"1 0")
 
+      // Inspection borrows the `Showable` rendering only as a last resort, and marks it as
+      // borrowed: a human-facing form is not a debug form.
       test(m"Show a locally-declared showable"):
         given Exception is Showable = e => txt"<exception>"
         Exception("error message").inspect
-      . assert(_ == t"<exception>")
+      . assert(_ == t"⸢<exception>⸣")

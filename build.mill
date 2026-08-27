@@ -2912,7 +2912,13 @@ object sibylline extends Library:
       settings.sep(super.scalacOptions())
 
 object spectacular extends Library:
-  object core extends Component(stenography.core, wisteria.core):
+  // `hypotenuse.core` is a dependency so that the `Inspectable` instances for the sized numeric
+  // types (`U8`…`U64`, `S8`…`S64`, `B8`…`B64`, `F32`/`F64`) can live in the `Inspectable`
+  // companion, and so resolve with no import: neither library's companions can see the other's
+  // types otherwise, and an orphan component would make every debug rendering of a sized number
+  // depend on remembering an import. The closure grows by `hypotenuse.core` and
+  // `anticipation.opaque` only, and nothing at or below hypotenuse depends on spectacular.
+  object core extends Component(stenography.core, wisteria.core, hypotenuse.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):

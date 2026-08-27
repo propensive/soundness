@@ -42,11 +42,52 @@ import scala.collection.mutable as scm
 
 import anticipation.*
 import denominative.*
+import fulminate.*
+import hypotenuse.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
 import wisteria.*
 
+// Style guide for `Inspectable` instances
+// ═══════════════════════════════════════
+//
+// `Inspectable` renders a value for a programmer to read — in a debugger, or in test output.
+// It is not `Showable` (text for human consumption, locale- and configuration-sensitive) and
+// not `Encodable in Text` (a wire form intended to be decoded again). The principles:
+//
+//  1. Show every piece of state which is relevant at the value's *static* type. A rendering
+//     which omits state is worse than a verbose one: the reader is debugging precisely
+//     because their model of the value is wrong.
+//  2. Be unambiguous against every other type's rendering. Two different types must never
+//     render identically; this is what the suffixes and brackets below buy.
+//  3. Stay compact and on one line. Inspection output appears inline, in tables, and nested
+//     inside other renderings.
+//  4. Resemble valid source where that is cheap (`'x'`, `3L`, `t"…"`, `BigInt(42)`), and use
+//     Unicode decoration where it is not (`⟨ 1 2 3 ⟩`, `1ˢᵗ`, `42ᵘ⁸`).
+//
+// Two markers indicate that no native instance was found and something else was rendered in
+// its place. Both are signs of incomplete coverage rather than a working rendering:
+//
+//     “…”   no instance at all; the value's `toString`. Always a design failure.
+//     ⸢…⸣   borrowed from the type's `Showable` — a human-facing form, not a debug form.
+//     ⸤…⸥   borrowed from the type's `Encodable in Text` — a wire form, possibly encoded.
+//
+// A type whose `Showable` or `Encodable` output is escaped or encoded (URL-encoding, say)
+// *must* define its own `Inspectable`; see `legerdemain.Query` for the canonical case.
+//
+// Notation in use, by category:
+//
+//     containers     [a, b] list       {a, b} set        {k → v} map
+//                    ⟨ a b ⟩ sequence  ⟨ a b ⟩ᵢ indexed  ⦋…⦌ array   ⁅…⁆ frozen array
+//                    a ⋰ b ⋰ ..? lazy  ∿∿∿ unforced      ⯁ end
+//     products       Name(field:value ╱ field2:value)    (a ╱ b) tuple
+//     optionality    ｢value｣ present   ○ absent
+//     text           t"…" with escapes                   'x' char
+//     numbers        3 int   3L long   3.1F float   3.toByte byte   BigInt(42)
+//     sized numbers  42ᵘ⁸ unsigned     -7ˢ³² signed      2Fᵇ⁸ bits   3.14ᶠ⁶⁴ float
+//     positions      1ˢᵗ ordinal       1ˢᵗ‥5ᵗʰ interval  ⟪4:8+5⟫ span
+//
 object Inspectable extends Inspectable2:
   object Derivation extends Derivable[Inspectable]:
     inline def conjunction[derivation <: Product: ProductReflection]: derivation is Inspectable =
@@ -63,6 +104,7 @@ object Inspectable extends Inspectable2:
         [variant <: derivation] => variant => contextual.give(variant.inspect)
 
   given char: Char is Inspectable = char => ("'"+escape(char).s+"'").tt
+  given int: Int is Inspectable = int => int.toString.tt
   given long: Long is Inspectable = long => (long.toString+"L").tt
   given string: String is Inspectable = string => text.text(string.tt).s.substring(1).nn.tt
   given byte: Byte is Inspectable = byte => (byte.toString+".toByte").tt
@@ -91,7 +133,107 @@ object Inspectable extends Inspectable2:
   given bigInt: BigInt is Inspectable = bigInt => ("BigInt("+bigInt+")").tt
   given bigDecimal: BigDecimal is Inspectable = bigDecimal => ("BigDecimal("+bigDecimal+")").tt
   given unset: Unset is Inspectable = unset => "○".tt
+
+  // Only for a value statically typed as `reflect.Enum` itself, for which no reflection is
+  // available; a value of a known enum type is rendered structurally by `enumeration`, below.
   given reflectEnum: reflect.Enum is Inspectable = _.toString.show
+
+  // Enums reach `Showable`'s `enumeration` instance, which renders them with `toString` and so
+  // loses the field labels of a parameterised case — `Circle(5)` rather than `Circle(radius:5)`.
+  // Deriving them here, in the companion, takes priority over that borrowed rendering, while
+  // still yielding to an enum which defines its own instance (a more specific given wins).
+  inline given enumeration: [enumeration <: reflect.Enum: Reflection]
+  =>  enumeration is Inspectable =
+    Derivation.derived[enumeration]
+
+  // The sized numeric types all erase to a primitive, so a rendering which showed only the
+  // number would be indistinguishable from an `Int` or a `Long` — and, for the unsigned types,
+  // would show the wrong number entirely. Each carries a superscript suffix naming its
+  // interpretation (`ᵘ` unsigned, `ˢ` signed, `ᵇ` bits, `ᶠ` floating-point) and its width.
+  given u8: U8 is Inspectable = u8 => (u8.text.s+"ᵘ⁸").tt
+  given u16: U16 is Inspectable = u16 => (u16.text.s+"ᵘ¹⁶").tt
+  given u32: U32 is Inspectable = u32 => (u32.text.s+"ᵘ³²").tt
+  given u64: U64 is Inspectable = u64 => (u64.text.s+"ᵘ⁶⁴").tt
+  given s8: S8 is Inspectable = s8 => (s8.int.toString+"ˢ⁸").tt
+  given s16: S16 is Inspectable = s16 => (s16.int.toString+"ˢ¹⁶").tt
+  given s32: S32 is Inspectable = s32 => (s32.int.toString+"ˢ³²").tt
+  given s64: S64 is Inspectable = s64 => (s64.long.toString+"ˢ⁶⁴").tt
+
+  // The bit types are rendered as full-width hexadecimal — zero-padded, so that the width is
+  // legible from the rendering itself, and uppercase, so that the digits are distinct from the
+  // superscript suffix which follows them. The hexadecimal is formatted here rather than
+  // through hypotenuse's own `hex`, whose inline expansion of `String.format` does not survive
+  // separation checking at this use site.
+  given b8: B8 is Inspectable = b8 => (hexadecimal(b8.s8.int.toLong, 2)+"ᵇ⁸").tt
+  given b16: B16 is Inspectable = b16 => (hexadecimal(b16.s16.int.toLong, 4)+"ᵇ¹⁶").tt
+  given b32: B32 is Inspectable = b32 => (hexadecimal(b32.s32.int.toLong, 8)+"ᵇ³²").tt
+  given b64: B64 is Inspectable = b64 => (hexadecimal(b64.s64.long, 16)+"ᵇ⁶⁴").tt
+
+  private def hexadecimal(value: Long, digits: Int): String =
+    val masked = if digits >= 16 then value else value & ((1L << (digits*4)) - 1)
+    val string = java.lang.Long.toHexString(masked).nn.toUpperCase.nn
+    val builder: StringBuilder = new StringBuilder()
+    while builder.length + string.length < digits do builder.append('0')
+
+    builder.append(string).toString
+
+  given f32: F32 is Inspectable = f32 =>
+    (floatingPoint(f32.float.toDouble, f32.float.isNaN)+"ᶠ³²").tt
+
+  given f64: F64 is Inspectable = f64 => (floatingPoint(f64.double, f64.double.isNaN)+"ᶠ⁶⁴").tt
+
+  private def floatingPoint(double: Double, nan: Boolean): String =
+    if nan then "NaN"
+    else if double == Double.PositiveInfinity then "∞"
+    else if double == Double.NegativeInfinity then "-∞"
+    else double.toString
+
+  // An `Ordinal` is rendered in its one-based form, with the English ordinal suffix, since that
+  // is the number the programmer counts with; the zero-based `n0` is an implementation detail
+  // of the type, and showing it would make every rendering off by one.
+  given ordinal: Ordinal is Inspectable = ordinal =>
+    (ordinal.n1.toString+ordinalSuffix(ordinal.n1)).tt
+
+  private def ordinalSuffix(n1: Int): String =
+    if n1 % 100 >= 11 && n1 % 100 <= 13 then "ᵗʰ" else n1 % 10 match
+      case 1 => "ˢᵗ"
+      case 2 => "ⁿᵈ"
+      case 3 => "ʳᵈ"
+      case _ => "ᵗʰ"
+
+  given interval: Interval is Inspectable = interval =>
+    if interval.nil then "∅".tt
+    else (ordinal.text(interval.start).s+"‥"+ordinal.text(interval.end).s).tt
+
+  // A `Span` packs one of five differently-shaped ranges into a `Long`, so its rendering shows
+  // the shape as well as the numbers: `⟪∅⟫` empty, `⟪@4+5⟫` an offset and length, `⟪4:8+5⟫` a
+  // line, column and length, `⟪4‥8⟫` a range of whole lines, and `⟪4:8‥6:2⟫` an area. The
+  // numbers are one-based ordinals, without suffixes, which the `:` and `‥` keep unambiguous.
+  given span: Span is Inspectable = span =>
+    def n(ordinal: Optional[Ordinal]): String = ordinal.let(_.n1.toString).or("?")
+
+    val body = span.mode match
+      case Span.Mode.Empty  => "∅"
+      case Span.Mode.Offset => "@"+n(span.offset)+"+"+span.length.let(_.toString).or("?")
+      case Span.Mode.Lines  => n(span.startLine)+"‥"+n(span.endLine)
+
+      case Span.Mode.Line =>
+        n(span.startLine)+":"+n(span.startColumn)+"+"+span.length.let(_.toString).or("?")
+
+      case Span.Mode.Area =>
+        n(span.startLine)+":"+n(span.startColumn)+"‥"+n(span.endLine)+":"+n(span.endColumn)
+
+    ("⟪"+body+"⟫").tt
+
+  // `Bytes` is a count, not a quantity to be rounded for display: an inspection which showed
+  // `4MB` would hide the difference between two nearby sizes, which is usually the reason for
+  // looking.
+  given bytes: Bytes is Inspectable = bytes => (bytes.long.toString+"B").tt
+  given digit: Digit is Inspectable = digit => (digit.int.toString+"ᵈᵍ").tt
+
+  // A `Message` renders as its own text, in the style of a `t"…"` literal but marked `m"…"`,
+  // since the interpolated parts are no longer distinguishable once the message is built.
+  given message: Message is Inspectable = message => ("m\""+message.text.s+"\"").tt
 
   def escape(char: Char, eEscape: Boolean = false): Text = char match
     case '\n'                => "\\n".tt
@@ -239,9 +381,15 @@ object Inspectable extends Inspectable2:
   given none: None.type is Inspectable = none => "None".tt
 
 trait Inspectable2:
+  // The `Encodable` and `Showable` branches borrow a rendering which was designed for another
+  // purpose — a wire form and a human-facing form respectively — and neither is guaranteed to
+  // show the value's state as a programmer needs to see it. They are kept for coverage, but
+  // their output is bracketed so that a borrowed rendering is visible as such at a glance, and
+  // so that the types still relying on them can be found by inspecting output. A type whose
+  // encoded form is escaped (`legerdemain.Query`, URL-encoded) must define its own instance.
   inline given derived: [value] => value is Inspectable = compiletime.summonFrom:
-    case given (`value` is Encodable in Text) => _.encode
-    case given (`value` is Showable)          => _.show
+    case given (`value` is Encodable in Text) => value => ("⸤"+value.encode.s+"⸥").tt
+    case given (`value` is Showable)          => value => ("⸢"+value.show.s+"⸣").tt
 
     case mandatable: (`value` is Mandatable) =>
       val inspectable = compiletime.summonInline[mandatable.Result is Inspectable]
