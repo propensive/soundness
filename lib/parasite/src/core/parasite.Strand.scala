@@ -39,6 +39,16 @@ import java.util.concurrent.locks as jucl
 import scala.compiletime.asMatchable
 
 object Strand:
+  // The strand handle of an eagerly-completed task (`JavascriptSupervisor`): by construction
+  // the task ran to completion at `fork` time, so joining is immediate, interruption has
+  // nothing to cancel, and — since such a strand is never parked — unparking is empty. A
+  // single object: on a single-threaded platform the calling strand is always the same one,
+  // and `Promise`'s waiter-set semantics only need identity to coincide.
+  case object Eager extends Strand:
+    def interrupt(): Unit = ()
+    def join(): Unit = ()
+    def unpark(): Unit = ()
+
   // Equality delegates to the underlying thread: `Promise` stores waiters in a `Set[Strand]`, and
   // two handles on the same thread must coincide there, however they were obtained.
   final class Threaded(val thread: Thread) extends Strand:

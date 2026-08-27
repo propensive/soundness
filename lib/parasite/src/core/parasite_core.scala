@@ -57,6 +57,11 @@ package threading:
   given virtualThreading: Threading = () => VirtualSupervisor
   given adaptiveThreading: Threading = () => AdaptiveSupervisor
 
+  // The model for Scala.js (issue #1450): tasks run eagerly at `fork`, so structured
+  // gather-style concurrency works on the event loop, with the limitations documented on
+  // `JavascriptSupervisor`.
+  given javascriptThreading: Threading = () => JavascriptSupervisor
+
 package probates:
   // Cleanup runs on the completing worker's own strand, with no ambient `Monitor`: the dying
   // worker itself licenses the suspension (a `Worker` IS a `Monitor`).

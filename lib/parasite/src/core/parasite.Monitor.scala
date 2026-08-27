@@ -186,6 +186,33 @@ object PlatformSupervisor extends ThreadSupervisor:
         name().let(_.s).let(thread.setName(_))
         thread.start()
 
+// The single-threaded, eager supervision model (issue #1450): each forked task runs to
+// completion at `fork` time, on the calling strand, so every promise such a task settles is
+// already complete before anyone can await it, and parking is never needed. This is the model
+// for JavaScript's event loop, which has no block-and-resume primitive — parking would halt
+// the loop and deadlock — though it runs identically on any platform, which is how it is
+// tested. Its ceiling is that of single-threaded structured concurrency: no parallelism and no
+// interleaving, so awaiting a promise that no completed task has settled — a wait which could
+// never end — panics rather than deadlocking, and `sleep` completes instantly, since delaying
+// without blocking the loop is impossible.
+object JavascriptSupervisor extends Supervisor:
+  def name: Name[Async] = n"javascript"
+
+  def fork(name: () => Optional[Text])(block: => Unit): Strand =
+    block
+    Strand.Eager
+
+  def strand(): Strand = Strand.Eager
+
+  def park(blocker: AnyRef): Unit =
+    panic(m"a wait can never end under the eager single-threaded model: every forked task has already run to completion, so this promise can no longer be settled")
+
+  def park(blocker: AnyRef, deadline: Long): Unit =
+    panic(m"a timed wait can never be settled under the eager single-threaded model, and cannot block without halting the event loop")
+
+  def sleep(nanoseconds: Long): Unit = ()
+  def interrupted(): Boolean = false
+
 // The failure path is, in a long-lived process, the code most likely to run for the first time late
 // in that process's life — and classloading is not guaranteed to still work by then. A daemon whose
 // jar has been replaced underneath it (rebuilt in place while it runs) holds an open `JarFile` whose
