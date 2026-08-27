@@ -97,6 +97,17 @@ object Tests extends Suite(m"Dendrology tests"):
       . flow(13)(_.value).stdlib.to(List)
     . assert(_ == List(t"└─parent", t"  └─the quick", t"    brown fox"))
 
+    test(m"Tree flow: wider follow-on tiles never overflow the width"):
+      // The `space` replacing `last` on follow-on rows is a cell wider, so the wrap budget
+      // must come from the follow-on prefix, or every continuation row overflows by one.
+      given TreeStyle[Text] =
+        TextualTreeStyle(space = t"  ", last = t"└", branch = t"├", extender = t"│ ")
+
+      TreeDiagram.by[Tree](_.children)
+        ( Tree(t"parent", List(Tree(t"ab abcdef ghi jklmno"))) )
+      . flow(13)(_.value).stdlib.to(List)
+    . assert(_ == List(t"└parent", t"  └ab abcdef", t"    ghi", t"    jklmno"))
+
     test(m"Lane DAG: a wide glyph's column measures display cells, not chars"):
       import laneDagStyles.defaultLaneDagStyle
       import hieroglyph.textMetrics.wideCharacterWidthMetric
