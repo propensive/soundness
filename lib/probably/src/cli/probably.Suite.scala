@@ -231,11 +231,24 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
   // still accumulates (for `passed` and selection accounting), but every result leaves as a
   // `TestEvent` through `sink`, ending with `RunCompleted`. Exit codes as `invoke`:
   // 0 = passed, 1 = failures, 2 = the suite threw, 3 = environment error. A `--list`
-  // selection is not supported on this path (the caller uses the legacy `invoke` for that).
+  // selection emits one `TestScheduled` per admitted test — the run's schedule, with each
+  // test's REAL `Ref` (full path segments, file and line), which no text format could carry
+  // unambiguously (test and suite names may contain any character).
   final def invoke(arguments: Text, sink: TestEvent -> Unit): Int =
     val selection = Selection.parse(arguments.cut(t"\n").filter(_ != t""))
 
-    if selection.listOnly then 2 else
+    if selection.listOnly then
+      runner0 = makeRunner(selection, sink)
+
+      try
+        runner.suite(testableView, run())
+
+        runner.listed.each: (id, kind) =>
+          sink(TestEvent.TestScheduled(TestEvent.Ref.of(id), TestEvent.kindName(kind)))
+
+        0
+      catch case error: Throwable => 2
+    else
       runner0 = makeRunner(selection, sink)
 
       try
