@@ -64,6 +64,22 @@ object Benchmark:
 
       val headline = if benchmark.operationSize.present then Metric.Throughput else Metric.Mean
 
+      report.emit:
+        TestEvent.BenchmarkRecorded
+          ( TestEvent.Ref.of(testId),
+            TestEvent.Coordinate.of(coordinates),
+            benchmark.nanoseconds,
+            benchmark.iterations,
+            benchmark.runs,
+            benchmark.mean,
+            benchmark.min,
+            benchmark.max,
+            benchmark.sd,
+            benchmark.confidence,
+            benchmark.operationSize,
+            benchmark.operationRate,
+            java.lang.System.currentTimeMillis )
+
       report.record
         ( testId,
           Entry.Kind.Bench,

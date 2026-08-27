@@ -56,6 +56,15 @@ object Report:
       val metrics = Ledger(Metric.Duration -> verdict.duration.toDouble)
       val report2 = report.record(testId, Entry.Kind.Check, coordinates, Run(verdict, metrics))
 
+      report.emit:
+        TestEvent.TestCompleted
+          ( TestEvent.Ref.of(testId),
+            TestEvent.kindName(Entry.Kind.Check),
+            TestEvent.Coordinate.of(coordinates),
+            TestEvent.Outcome.of(verdict),
+            TestEvent.MetricValue.of(metrics),
+            java.lang.System.currentTimeMillis )
+
       verdict match
         case Verdict.Pass(_)       => report2
         case Verdict.Fail(_)       => report2
@@ -63,10 +72,20 @@ object Report:
         case Verdict.AspireFail(_) => report2
 
         case Verdict.Throws(error, _) =>
-          report2.addDetail(testId, Verdict.Detail.Throws(StackTrace(error)))
+          val stack = StackTrace(error)
+
+          report.emit:
+            TestEvent.DetailThrows(TestEvent.Ref.of(testId), false, TestEvent.Trace.of(stack))
+
+          report2.addDetail(testId, Verdict.Detail.Throws(stack))
 
         case Verdict.CheckThrows(error, _) =>
-          report2.addDetail(testId, Verdict.Detail.CheckThrows(StackTrace(error)))
+          val stack = StackTrace(error)
+
+          report.emit:
+            TestEvent.DetailThrows(TestEvent.Ref.of(testId), true, TestEvent.Trace.of(stack))
+
+          report2.addDetail(testId, Verdict.Detail.CheckThrows(stack))
 
   given anchor: Inclusion[Report, Anchor]:
     def include
@@ -75,6 +94,19 @@ object Report:
         coordinates: List[(Axis.Spec, Value)],
         anchor:      Anchor )
     :   Report =
+
+      report.emit:
+        val coordinate = TestEvent.Coordinate.of(anchor.axis, anchor.value)
+
+        TestEvent.AnchorRecorded
+          ( TestEvent.Ref.of(testId),
+            anchor.axis.label,
+            coordinate.discrete,
+            coordinate.integral,
+            coordinate.decimal,
+            anchor.baseline.compare.toString.tt,
+            anchor.baseline.metric.toString.tt,
+            anchor.baseline.mode.toString.tt )
 
       report.anchor(testId, anchor)
 
@@ -85,6 +117,26 @@ object Report:
         coordinates: List[(Axis.Spec, Value)],
         detail:      Verdict.Detail )
     :   Report =
+
+      report.emit:
+        val ref = TestEvent.Ref.of(testId)
+
+        detail match
+          case Verdict.Detail.Throws(stack) =>
+            TestEvent.DetailThrows(ref, false, TestEvent.Trace.of(stack))
+
+          case Verdict.Detail.CheckThrows(stack) =>
+            TestEvent.DetailThrows(ref, true, TestEvent.Trace.of(stack))
+
+          case Verdict.Detail.Captures(values) =>
+            TestEvent.DetailCaptures(ref, values)
+
+          case Verdict.Detail.Compare(expected, found, juxtaposition) =>
+            val rows = TestEvent.CompareRow.flatten(juxtaposition)
+            TestEvent.DetailCompare(ref, expected, found, rows)
+
+          case Verdict.Detail.Message(message) =>
+            TestEvent.DetailMessage(ref, message)
 
       report.addDetail(testId, detail)
 
@@ -148,6 +200,20 @@ enum ReportLine:
 // `final` so the capture checker infers a precise self-type rather than the universal capture an
 // extensible class would get.
 final class Report(using environment: Environment)(using palette: TestPalette):
+  // Event emission: when a sink has been installed (`stream`), every recorded datum also
+  // leaves as a `TestEvent`, and `complete` emits `RunCompleted` INSTEAD of rendering — the
+  // consumer owns presentation. With no sink (the default), behavior is exactly as before.
+  // The sink is a PURE function (`->`): `Report` appears as a pure type throughout the
+  // `Inclusion` machinery, so it may not retain a capability — and a real sink (writing
+  // through a host's untracked `OutputStream` under a `Mutex`) satisfies purity naturally.
+  @scala.caps.unsafe.untrackedCaptures
+  private var sink: Optional[TestEvent -> Unit] = Unset
+
+  private[probably] def stream(sink1: TestEvent -> Unit): Unit = sink = sink1
+  private[probably] def streaming: Boolean = sink != Unset
+
+  private[probably] def emit(event: => TestEvent): Unit = sink.let(_(event))
+
   @scala.caps.unsafe.untrackedCaptures
   private var failure0: Optional[(Throwable, Set[Test.Id])] = Unset
   @scala.caps.unsafe.untrackedCaptures
@@ -176,9 +242,17 @@ final class Report(using environment: Environment)(using palette: TestPalette):
   // An unconditional update would replace the earlier suite's whole subtree, silently
   // discarding everything it had recorded; merging into the existing node keeps both.
   def declare(suite: Testable): Report = this.also:
+    emit(TestEvent.SuiteStarted(TestEvent.Ref.of(suite.id), java.lang.System.currentTimeMillis))
     resolve(suite.parent).tests.getOrElseUpdate(suite.id, ReportLine.Suite(suite))
 
-  def fail(error: Throwable, active: Set[Test.Id]): Unit = failure0 = (error, active)
+  def fail(error: Throwable, active: Set[Test.Id]): Unit =
+    emit:
+      TestEvent.RunTerminated
+        ( TestEvent.Trace.of(StackTrace(error)),
+          active.to[List].map(TestEvent.Ref.of(_)),
+          java.lang.System.currentTimeMillis )
+
+    failure0 = (error, active)
 
   // Records one run at one coordinate of one test, creating the test's entry on first
   // sight. Repeated runs of the same coordinates accumulate in that cell; `headline`, when
@@ -214,5 +288,6 @@ final class Report(using environment: Environment)(using palette: TestPalette):
     val document = Documenting.document(this)
     pass = document.totals.failed == 0 && failure0.absent && document.totals.total > 0
 
-    if Ci.claudeCode then TerseRenderer.render(document)
+    if streaming then emit(TestEvent.RunCompleted(passed, java.lang.System.currentTimeMillis))
+    else if Ci.claudeCode then TerseRenderer.render(document)
     else AnsiRenderer.render(document, coverage)(using summon[Stdio], environment, palette)

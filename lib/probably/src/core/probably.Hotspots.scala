@@ -33,6 +33,8 @@
 package probably
 
 import anticipation.*
+import murmuration.*
+import vacuous.*
 
 object Hotspots:
   given inclusion: Inclusion[Report, Hotspots]:
@@ -42,6 +44,18 @@ object Hotspots:
         coordinates: List[(Axis.Spec, Value)],
         hotspots:    Hotspots )
     :   Report =
+
+      report.emit:
+        val frames =
+          hotspots.frames.map: (frame: Hotspots.Frame) =>
+            TestEvent.Frame(frame.className, frame.method, Text(""), Unset)
+
+        TestEvent.HotspotsRecorded
+          ( TestEvent.Ref.of(testId),
+            TestEvent.Coordinate.of(coordinates),
+            hotspots.total,
+            frames,
+            java.lang.System.currentTimeMillis )
 
       report.record
         ( testId,
