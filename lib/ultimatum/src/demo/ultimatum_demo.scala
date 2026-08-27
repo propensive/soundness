@@ -59,7 +59,7 @@ def demo(): Unit = cli:
   execute:
     supervise:
       interactive: terminal ?=>
-        form(Occupancy.Inline)(demoLayout)
+        conduct(Occupancy.Inline)(demoLayout)
         Exit.Ok
 
 // stack(title, strip(sidebar, stack(heading, compose, activity)), status), with the
