@@ -350,6 +350,11 @@ package filesystemBackends:
       :   result =
 
         protect(path, Operation.Open):
+          // WASI has no file-locking call, so a requested lock is refused rather than
+          // silently not taken (issue #566).
+          if flags.has(OpenFlag.Lock)
+          then abort(Io.Error(path, Operation.Open, Reason.Unsupported))
+
           val (descriptor, relative) = resolve(path, Operation.Open)
           val directory: Foreign of "descriptor" from Wit = descriptor
 

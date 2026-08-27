@@ -462,3 +462,54 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"A pattern matching nothing yields an empty list"):
         unsafely(root.glob(Glob.parse(t"nowhere/*.jar")))
       . assert(_ == List())
+
+    suite(m"File locking"):
+      import errorDiagnostics.stackTracesDiagnostics
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+      import filesystemOptions.deleteRecursively.enabled
+
+      val lockDirLeaf: Text = Uuid().show
+      val lockDir: Path on Linux = unsafely((% / "tmp" / lockDirLeaf).on[Linux])
+
+      unsafely:
+        lockDir.create[Directory]()
+        (lockDir / "target.txt").write(t"content")
+
+      val target: Path on Linux = unsafely(lockDir / "target.txt")
+
+      test(m"An Exclusive file open succeeds and reads its content"):
+        unsafely:
+          target.open[File](Read & Exclusive)(file.stream.read[Data]).utf8
+      . assert(_ == t"content")
+
+      test(m"A second Exclusive open of the same file is Busy"):
+        unsafely:
+          capture[Io.Error]:
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              target.open[File](Read & Exclusive): a ?=>
+                target.open[File](Read & Exclusive) { () }
+          . reason
+      . assert(_ == Io.Error.Reason.Busy)
+
+      test(m"Ordinary Read opens of one file coexist"):
+        unsafely:
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            target.open[File](Read): a ?=>
+              target.open[File](Read) { true }
+      . assert(_ == true)
+
+      test(m"An Exclusive file open conflicts with an enclosing Exclusive directory scope"):
+        unsafely:
+          capture[Io.Error]:
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              lockDir.open[Directory](Read & Exclusive): a ?=>
+                target.open[File](Read & Exclusive) { () }
+          . reason
+      . assert(_ == Io.Error.Reason.Busy)
+
+      test(m"The lock is released when the scope ends"):
+        unsafely:
+          target.open[File](Read & Exclusive) { () }
+          target.open[File](Read & Exclusive) { true }
+      . assert(_ == true)

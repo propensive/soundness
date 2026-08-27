@@ -32,11 +32,15 @@
                                                                                                   */
 package galilei
 
+import anticipation.*
 import aperture.*
+import gossamer.*
 import contingency.*
 import prepositional.*
 import serpentine.*
 import rudiments.*
+
+import Io.Error.{Operation, Reason}
 
 // The `Openable` instance for opening a file's content: `path.open[File](Read & Write)`. A
 // named class rather than an anonymous given instance: instantiating an anonymous subclass
@@ -58,12 +62,31 @@ extends Openable:
 
     // The mode's atoms translate to OS open flags. `aperture.Exclusive` is deliberately not
     // translated to `OpenFlag.Exclusive`: POSIX `O_EXCL` governs exclusive *creation*, not
-    // exclusive access, so honoring the `Exclusive` grant awaits the access register.
+    // exclusive access. Instead it enrols the open in the access register — so file opens
+    // participate in the same intra-JVM arbitration as directory scopes — and asks the
+    // backend for an OS advisory lock (`OpenFlag.Lock`) to cover the cross-process case
+    // (issue #566).
     val modeFlags =
       (if mode.atoms.has(Read) then List(OpenFlag.Read).stdlib else Nil.stdlib) ++
-        (if mode.atoms.has(Write) then List(OpenFlag.Write).stdlib else Nil.stdlib)
+        (if mode.atoms.has(Write) then List(OpenFlag.Write).stdlib else Nil.stdlib) ++
+        (if mode.atoms.has(Exclusive) then List(OpenFlag.Lock).stdlib else Nil.stdlib)
 
-    backend.open(value, (modeFlags ++ flags.stdlib).to(List)): handle =>
-      // `Granting` is a phantom marker, so the cast only refines the static type with the
-      // grants that `modeFlags` has just made true operationally.
-      block(using handle.asInstanceOf[Handle & Granting[grants]])
+    val locking = mode.atoms.has(Exclusive)
+
+    // The register works on real paths, so two routes to one file register as the same file
+    // and overlap correctly with enclosing directory scopes; a file which is about to be
+    // created cannot be resolved, so it falls back to its normalized absolute form.
+    val real: Text =
+      if !locking then t"" else
+        try value.nioPath.toRealPath().nn.toString.tt
+        catch case _: Exception => value.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt
+
+    if locking && !AccessRegister.acquire(real, mode.atoms)
+    then abort(Io.Error(value, Operation.Open, Reason.Busy))
+
+    try
+      backend.open(value, (modeFlags ++ flags.stdlib).to(List)): handle =>
+        // `Granting` is a phantom marker, so the cast only refines the static type with the
+        // grants that `modeFlags` has just made true operationally.
+        block(using handle.asInstanceOf[Handle & Granting[grants]])
+    finally if locking then AccessRegister.release(real, mode.atoms)
