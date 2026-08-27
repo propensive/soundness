@@ -51,6 +51,7 @@ import Hostname.Error.Reason.*
 
 object Hostname:
   given showable: Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
+  given inspectable: Hostname is Inspectable = showable.text(_)
   given decodable: (tactic: Tactic[Hostname.Error])
   =>  ((Hostname is Decodable in Text)^{tactic}) =
     parse(_)

@@ -99,6 +99,10 @@ object Tests extends Suite(m"Urticose tests"):
         Ipv4(192, 168, 0, 1).int
       . assert(_ == bin"11000000 10101000 00000000 00000001")
 
+      test(m"Inspect an Ipv4 address"):
+        Ipv4(127, 244, 197, 0).inspect
+      . assert(_ == t"127.244.197.0")
+
     suite(m"IPv6 tests"):
       test(m"Parse an IPv6 address"):
         t"2001:db8:0000:1:1:1:1:1".as[Ipv6]
@@ -106,6 +110,10 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"Render an IPv6 address"):
         t"2001:db8:0000:1:1:1:1:1".as[Ipv6].show
+      . assert(_ == t"2001:db8:0:1:1:1:1:1")
+
+      test(m"Inspect an IPv6 address"):
+        t"2001:db8:0000:1:1:1:1:1".as[Ipv6].inspect
       . assert(_ == t"2001:db8:0:1:1:1:1:1")
 
       test(m"Parse zero IPv6 address"):
@@ -382,6 +390,10 @@ object Tests extends Suite(m"Urticose tests"):
       . assert(_ == EmailAddress.Error(UnclosedIpAddress))
 
     suite(m"URL tests"):
+      test(m"inspect a URL"):
+        url"https://example.com/foo/bar".inspect
+      . assert(_ == t"https://example.com/foo/bar")
+
       test(m"parse Authority with username and password"):
         t"username:password@example.com".as[Authority]
       . assert(_ == Authority(example.com, t"username:password"))
@@ -616,6 +628,10 @@ object Tests extends Suite(m"Urticose tests"):
         t"www.example.com".as[Hostname]
       . assert(_ == Hostname(DnsLabel(t"www"), DnsLabel(t"example"), DnsLabel(t"com")))
 
+      test(m"Inspect a hostname"):
+        t"www.example.com".as[Hostname].inspect
+      . assert(_ == t"www.example.com")
+
       test(m"A hostname cannot end in a period"):
         capture[Hostname.Error](t"www.example.".as[Hostname])
       . assert(_ == Hostname.Error(t"www.example.", Hostname.Error.Reason.EmptyDnsLabel(2)))
@@ -716,10 +732,18 @@ object Tests extends Suite(m"Urticose tests"):
         MacAddress(1, 2, 3, 4, 5, 6).show
       . assert(_ == t"01-02-03-04-05-06")
 
+      test(m"Inspect a MAC address"):
+        MacAddress(1, 2, 3, 4, 5, 6).inspect
+      . assert(_ == t"01-02-03-04-05-06")
+
     suite(m"Named port services"):
       test(m"Check SMTP over TCP port"):
         tcp"smtp"
       . assert(_ == Port[Tcp](25))
+
+      test(m"Inspect a port"):
+        tcp"smtp".inspect
+      . assert(_ == t"⌗25")
 
       test(m"Check Docker over TCP port"):
         tcp"docker"
