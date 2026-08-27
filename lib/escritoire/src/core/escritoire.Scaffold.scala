@@ -73,3 +73,9 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
         data.map: row =>
           columns.map[Array[text]^{}]: column =>
             Array.from(column.get(row).lines.stdlib)
+
+      // Evaluated HERE, the last point at which the row value exists; carried as plain
+      // lists (no `ClassTag` exists for an `Optional` of a function).
+      override val decorations: List[List[Optional[text -> text]]] =
+        data.map: row =>
+          columns0.map { column => column.decorate(row) }.to(List)

@@ -65,6 +65,9 @@ abstract class Tabulation[text: ClassTag]():
   def rows: List[Array[Array[text]^{}]^{}]
   def dataLength: Int
 
+  // Per-row, per-column cell decorations, aligned with `rows`; empty means undecorated.
+  def decorations: List[List[Optional[text -> text]]] = Nil
+
 
   def grid(width: Int)
     ( using style: TableStyle, metrics: Text is Measurable )
@@ -108,15 +111,28 @@ abstract class Tabulation[text: ClassTag]():
 
     if totalWidth > width then attenuation(totalWidth, width)
 
-    def lines(data: List[Array[Array[text]^{}]^{}]): Chain[TableRow[text]] =
+    def lines
+      ( data: List[Array[Array[text]^{}]^{}],
+        decorations2: List[List[Optional[text -> text]]] )
+    :   Chain[TableRow[text]] =
+
+      val decorationIterator = decorations2.stdlib.iterator
+
       Chain.from(data.stdlib).map: cells =>
+        val rowDecorations: scala.List[Optional[text -> text]] =
+          if decorationIterator.hasNext then decorationIterator.next().stdlib else scala.Nil
+
         val tableCells = Array.from:
           survivors.map: (index, cellWidth) =>
             val column = columns.readUnchecked(index)
             val lines = column.sizing.fit[text](cells.readable(index), cellWidth, column.textAlign)
 
+            val decoration: Optional[text -> text] =
+              if index < rowDecorations.length then rowDecorations(index) else Unset
+
             TableCell
-              ( cellWidth, 1, lines, lines.size, column.textAlign, column.verticalAlign )
+              ( cellWidth, 1, lines, lines.size, column.textAlign, column.verticalAlign,
+                decoration )
 
         val height = tableCells.readable.maxBy(_.minHeight).minHeight
 
@@ -124,4 +140,6 @@ abstract class Tabulation[text: ClassTag]():
 
     val widths = Array.from(survivors.map(_(1)))
 
-    Grid(List(TableSection(widths, lines(titles)), TableSection(widths, lines(rows))), style)
+    Grid
+      ( List(TableSection(widths, lines(titles, Nil)), TableSection(widths, lines(rows, decorations))),
+        style )

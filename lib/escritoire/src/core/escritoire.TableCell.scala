@@ -32,12 +32,17 @@
                                                                                                   */
 package escritoire
 
+import scala.language.experimental.pureFunctions
+
+import vacuous.*
+
 case class TableCell[text]
   ( width:         Int,
     span:          Int,
     lines:         Sequence[text],
     minHeight:     Int,
     textAlign:     TextAlignment,
-    verticalAlign: VerticalAlignment = VerticalAlignment.Top ):
+    verticalAlign: VerticalAlignment = VerticalAlignment.Top,
+    decorate:      Optional[text -> text] = Unset ):
 
   def apply(line: Int): text = lines.stdlib(line)
