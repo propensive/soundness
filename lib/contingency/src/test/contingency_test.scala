@@ -98,6 +98,30 @@ object Tests extends Suite(m"Contingency"):
         . protect(failB(3))
       . assert(_ == "b:3")
 
+      // Issue #1793: a union-typed pattern must register a handler for each member of the
+      // union, discharging both obligations in the protected block.
+      test(m"a union-typed pattern registers a handler for each member"):
+        recover:
+          case error: (ErrorA | ErrorB) => "union"
+        . protect:
+            failA(1)
+            failB(2)
+      . assert(_ == "union")
+
+      test(m"a union-typed pattern recovers its second member alone"):
+        recover:
+          case error: (ErrorA | ErrorB) => "union"
+        . protect(failB(3))
+      . assert(_ == "union")
+
+      test(m"an alias of a union decomposes like the union written inline"):
+        type EitherError = ErrorA | ErrorB
+
+        recover:
+          case error: EitherError => "union"
+        . protect(failA(4))
+      . assert(_ == "union")
+
       test(m"mitigate transforms an inner error to an outer type"):
         recover:
           case ErrorB(n) => n
