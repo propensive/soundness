@@ -37,7 +37,7 @@ export
   . { Arrangement, BorderStyle, dirtyCells, editor, EditorField, Extent, Fixture, FlowExtent,
       conduct, Focus, Form, Frame, grid, InlineAnchoring, InlineGrowth, InlineRoot, InlineShrink,
       layout, Limits, menu, MenuField, Occupancy, paint, Pane, Panes, panel, Placement, Rect,
-      ScreenRoot, Sizing, stack, strip, Tick }
+      ScreenRoot, scrolling, ScrollFixture, Sizing, stack, strip, Tick }
 
 package inlineAnchoring:
   export
