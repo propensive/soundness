@@ -114,6 +114,21 @@ extension [plane: Filesystem](path: Path on plane)
   private[galilei] def nioPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
 
 
+  // Scoped positional (random-access) reading (issue #1608): passes a `zephyrine.Expanse`
+  // view of the file — `size` plus pread-style `read(offset, length)` — valid for the scope
+  // of the call. Platform-neutral: every filesystem backend implements it, so seek-oriented
+  // format readers need neither `java.nio` nor a whole-file memory mapping, and files beyond
+  // 2 GiB are addressable.
+  // A real `using` clause rather than the `raises` sugar: a context-function result would
+  // hide the `lambda` parameter, which the separation checker rejects (as on `write` above).
+  def expanse[result](lambda: zephyrine.Expanse => result)
+    ( using backend: FilesystemBackend on plane )
+    ( using Tactic[Io.Error]^ )
+  :   result =
+
+    backend.expanse(path)(lambda)
+
+
   def descendants(using DereferenceSymlinks, TraversalOrder, plane is Explorable)
   :   Chain[Path on plane] raises Io.Error =
 
@@ -461,3 +476,17 @@ package filesystemOptions:
       def apply[result](path: Path on plane)(block: => result)
       :   (Tactic[Io.Error]^) ?->{block} result =
         block
+
+
+// Metadata gated by the storage-filesystem axis (issue #567): available only on a path whose
+// filesystem is known — by extractor probing — to record it.
+extension [plane: Filesystem, transport <: CreationTimed](path: Path on plane over transport)
+  // Total, unlike `Stat.created`: the `CreationTimed` bound says the filesystem records
+  // creation times, so an absent value is a backend failure rather than an expected case.
+  def creation[instant: Instantiable across Instants from Long as instantiable]()
+    ( using backend: FilesystemBackend on plane )
+  :   instant raises Io.Error =
+
+    instantiable.apply:
+      backend.stat(path, true).created.or:
+        abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))

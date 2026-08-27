@@ -98,6 +98,14 @@ trait FilesystemBackend extends Planar:
 
   // Opens the entry's content for streaming, applies `lambda` to the open handle, and closes it,
   // whatever the outcome.
+  // Scoped positional (random-access) reading (issue #1608): opens the file for reading and
+  // passes a positional view, valid for the scope of the call, to `lambda`. Reads are
+  // pread-style — each independent of any sequential position, and no whole-file mapping is
+  // taken — so files beyond 2 GiB are addressable, unlike `Ram`'s single `Int`-addressed map.
+  def expanse[result](path: Path on Plane)(lambda: zephyrine.Expanse => result)
+    ( using Tactic[Io.Error] )
+  :   result
+
   def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
     ( using Tactic[Io.Error] )
   :   result

@@ -33,60 +33,61 @@
 package galilei
 
 import anticipation.*
-import aperture.*
-import gossamer.*
 import contingency.*
+import gossamer.*
 import prepositional.*
 import serpentine.*
-import rudiments.*
+import vacuous.*
 
-import Io.Error.{Operation, Reason}
+// The storage-filesystem axis of a path's type (issue #567): which filesystem an entry is
+// stored on determines which metadata it can carry, orthogonally to the plane — `Btrfs` is
+// meaningful only under `Linux`, `Apfs` under `MacOs` and `Linux`, `Ntfs` under `Windows` and
+// `Linux`. A path cannot know its filesystem from its syntax, so the axis is established by
+// runtime probing, through each filesystem's extractor — the axis is `over`'s structural
+// `Transport` refinement, deliberately not a declared member of `Path`: refining it in is
+// enough for the gated extensions below to dispatch, and declaring it perturbed inference at
+// unrelated sites downstream:
+//
+//     path match
+//       case Btrfs(path2) => …   // `path2: Path on Linux over Btrfs`
+//       case _            => …
+//
+// The probe is the same platform query behind `path.volume()`, so no new backend method is
+// needed; a probe which fails (an unreadable volume, say) simply does not match. Filesystems
+// which record creation times extend `CreationTimed`, which gates a *total* `creation()`
+// accessor — unlike `Stat.created`, whose optionality exists because most POSIX filesystems
+// record none.
+sealed trait CreationTimed
 
-// The `Openable` instance for opening a file's content: `path.open[File](Read & Write)`. A
-// named class rather than an anonymous given instance: instantiating an anonymous subclass
-// freshens `Handle`'s (capability) field types in the inferred `Result` member, which then
-// fails to conform to the declared `to Handle` refinement.
-class FileOpenable[filesystem: Filesystem, path <: Path on filesystem]
-  ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error] )
-extends Openable:
+sealed trait Btrfs extends CreationTimed
+sealed trait Ext4
+sealed trait Apfs extends CreationTimed
+sealed trait Ntfs extends CreationTimed
 
-  type Self = path
-  type Form = File
-  type Operand = OpenFlag
-  type Result = Handle
+private def storageFormat[plane](path: Path on plane)(using backend: FilesystemBackend on plane)
+:   Optional[Text] =
+  safely(backend.volume(path).volumeType.lower)
 
-  def open[grants <: Grant, result]
-    ( value: path, mode: Mode granting grants, flags: List[OpenFlag] )
-    ( block: ((Handle & Granting[grants])^) ?=> result )
-  :   result =
+object Btrfs:
+  def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
+  :   Option[Path on plane over Btrfs] =
+    if storageFormat(path) == t"btrfs" then Some(path.asInstanceOf[Path on plane over Btrfs])
+    else None
 
-    // The mode's atoms translate to OS open flags. `aperture.Exclusive` is deliberately not
-    // translated to `OpenFlag.Exclusive`: POSIX `O_EXCL` governs exclusive *creation*, not
-    // exclusive access. Instead it enrols the open in the access register — so file opens
-    // participate in the same intra-JVM arbitration as directory scopes — and asks the
-    // backend for an OS advisory lock (`OpenFlag.Lock`) to cover the cross-process case
-    // (issue #566).
-    val modeFlags =
-      (if mode.atoms.has(Read) then List(OpenFlag.Read).stdlib else Nil.stdlib) ++
-        (if mode.atoms.has(Write) then List(OpenFlag.Write).stdlib else Nil.stdlib) ++
-        (if mode.atoms.has(Exclusive) then List(OpenFlag.Lock).stdlib else Nil.stdlib)
+object Ext4:
+  def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
+  :   Option[Path on plane over Ext4] =
+    if storageFormat(path) == t"ext4" then Some(path.asInstanceOf[Path on plane over Ext4])
+    else None
 
-    val locking = mode.atoms.has(Exclusive)
+object Apfs:
+  def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
+  :   Option[Path on plane over Apfs] =
+    if storageFormat(path) == t"apfs" then Some(path.asInstanceOf[Path on plane over Apfs])
+    else None
 
-    // The register works on real paths, so two routes to one file register as the same file
-    // and overlap correctly with enclosing directory scopes; a file which is about to be
-    // created cannot be resolved, so it falls back to its normalized absolute form.
-    val real: Text =
-      if !locking then t"" else
-        try value.nioPath.toRealPath().nn.toString.tt
-        catch case _: Exception => value.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt
-
-    if locking && !AccessRegister.acquire(real, mode.atoms)
-    then abort(Io.Error(value, Operation.Open, Reason.Busy))
-
-    try
-      backend.open(value, (modeFlags ++ flags.stdlib).to(List)): handle =>
-        // `Granting` is a phantom marker, so the cast only refines the static type with the
-        // grants that `modeFlags` has just made true operationally.
-        block(using handle.asInstanceOf[Handle & Granting[grants]])
-    finally if locking then AccessRegister.release(real, mode.atoms)
+object Ntfs:
+  def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
+  :   Option[Path on plane over Ntfs] =
+    if storageFormat(path) == t"ntfs" then Some(path.asInstanceOf[Path on plane over Ntfs])
+    else None

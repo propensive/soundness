@@ -37,3 +37,9 @@ package galilei
 // passed as flags to `open`; all are interpreted by the `FilesystemBackend`.
 enum OpenFlag:
   case Read, Write, Append, Create, Exclusive, Truncate, Sync, Dsync, NoFollow
+
+  // Hold an OS advisory lock on the file for the duration of the open (issue #566). Not an OS
+  // open flag itself: backends which can lock do so after opening, and those which cannot
+  // (WASI has no file-locking call) refuse the open as `Unsupported` rather than silently not
+  // locking. Added by `FileOpenable` when the mode grants `Exclusive`.
+  case Lock

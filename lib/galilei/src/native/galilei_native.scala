@@ -276,11 +276,43 @@ package filesystemBackends:
 
           if !success then abort(Io.Error(path, Operation.Metadata, Reason.PermissionDenied))
 
+      def expanse[result](path: Path on Plane)(lambda: zephyrine.Expanse => result)
+        ( using Tactic[Io.Error] )
+      :   result =
+
+        val channel = protect(path, Operation.Open):
+          val optionSet = java.util.HashSet[jnf.OpenOption]()
+          optionSet.add(jnf.StandardOpenOption.READ)
+          jnc.FileChannel.open(javaPath(path), optionSet).nn
+
+        try
+          val view = new zephyrine.Expanse:
+            def size: Long = channel.size
+
+            // A read overlapping the end of the file returns the bytes which exist.
+            def read(offset: Long, length: Int): Data =
+              val buffer = java.nio.ByteBuffer.allocate(length).nn
+              var position = offset
+              var count = 0
+
+              while count >= 0 && buffer.hasRemaining do
+                count = channel.read(buffer, position)
+                if count > 0 then position += count
+
+              val filled = buffer.position
+              val array = Array.allocate[Byte](filled)
+              buffer.flip()
+              buffer.get(array.raw, 0, filled)
+              Array.freeze(array)
+
+          lambda(view)
+        finally channel.close()
+
       def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
         ( using Tactic[Io.Error] )
       :   result =
 
-        val options: scala.collection.immutable.List[jnf.OpenOption] = flags.stdlib.map:
+        val options: scala.collection.immutable.List[jnf.OpenOption] = flags.stdlib.filter(_ != OpenFlag.Lock).map:
           case OpenFlag.Read      => jnf.StandardOpenOption.READ
           case OpenFlag.Write     => jnf.StandardOpenOption.WRITE
           case OpenFlag.Append    => jnf.StandardOpenOption.APPEND
@@ -307,16 +339,40 @@ package filesystemBackends:
           protect(path, Operation.Open)(jnc.FileChannel.open(javaPath(path), optionSet).nn)
 
         try
-          // The `source`/`intake` closures capture the `FileChannel` capability, which native's
-          // capture checker (unlike the JVM's, on identical code) reports as leaking out of the
-          // closure. The channel is genuinely scoped — closed in the `finally` after `lambda`
-          // returns — so the capture is asserted safe with `unsafeAssumePure`.
-          lambda:
-           // The channel is this handle's single owner (see the comment above).
-           scala.caps.unsafe.unsafeAssumeSeparate:
-            Handle
-              ( () => unsafely(zephyrine.toProgression(Streamable.channel.stream(channel))),
-                data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data.stdlib.iterator))) )
-              ( () => unsafely(caps.unsafe.unsafeAssumePure(Streamable.channel.stream(channel))),
-                () => unsafely(caps.unsafe.unsafeAssumePure(Sink.channel.intake(channel))) )
+          // The advisory lock for the duration of the open (issue #566): exclusive when the
+          // channel is writable; a read-only channel cannot take an exclusive lock, so a
+          // shared lock is taken instead — in-process exclusivity is already arbitrated by
+          // the access register, and a shared lock still excludes any cross-process
+          // exclusive locker.
+          val lock =
+            if flags.stdlib.contains(OpenFlag.Lock) then
+              val writable = options2.contains(jnf.StandardOpenOption.WRITE) || appending
+
+              try Option:
+                if writable then channel.tryLock().nn
+                else channel.tryLock(0L, Long.MaxValue, true).nn
+              catch case _: jnc.OverlappingFileLockException => None
+            else Some(null)
+
+          if lock.isEmpty then abort(Io.Error(path, Operation.Open, Reason.Busy))
+
+          try
+            // The `source`/`intake` closures capture the `FileChannel` capability, which
+            // native's capture checker (unlike the JVM's, on identical code) reports as
+            // leaking out of the closure. The channel is genuinely scoped — closed in the
+            // `finally` after `lambda` returns — so the capture is asserted safe with
+            // `unsafeAssumePure`.
+            lambda:
+             // The channel is this handle's single owner (see the comment above).
+             scala.caps.unsafe.unsafeAssumeSeparate:
+              Handle
+                ( () => unsafely(zephyrine.toProgression(Streamable.channel.stream(channel))),
+                  data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data.stdlib.iterator))) )
+                ( () => unsafely(caps.unsafe.unsafeAssumePure(Streamable.channel.stream(channel))),
+                  () => unsafely(caps.unsafe.unsafeAssumePure(Sink.channel.intake(channel))) )
+          finally lock.foreach: held =>
+            // Closing the channel already releases the lock, and a fully-consumed stream
+            // closes the channel itself, so release after that is a no-op.
+            if held != null then
+              try held.release() catch case _: jnc.ClosedChannelException => ()
         finally channel.close()

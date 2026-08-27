@@ -462,3 +462,100 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"A pattern matching nothing yields an empty list"):
         unsafely(root.glob(Glob.parse(t"nowhere/*.jar")))
       . assert(_ == List())
+
+    suite(m"File locking"):
+      import errorDiagnostics.stackTracesDiagnostics
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+      import filesystemOptions.deleteRecursively.enabled
+
+      val lockDirLeaf: Text = Uuid().show
+      val lockDir: Path on Linux = unsafely((% / "tmp" / lockDirLeaf).on[Linux])
+
+      unsafely:
+        lockDir.create[Directory]()
+        (lockDir / "target.txt").write(t"content")
+
+      val target: Path on Linux = unsafely(lockDir / "target.txt")
+
+      test(m"An Exclusive file open succeeds and reads its content"):
+        unsafely:
+          target.open[File](Read & Exclusive)(file.stream.read[Data]).utf8
+      . assert(_ == t"content")
+
+      test(m"A second Exclusive open of the same file is Busy"):
+        unsafely:
+          capture[Io.Error]:
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              target.open[File](Read & Exclusive): a ?=>
+                target.open[File](Read & Exclusive) { () }
+          . reason
+      . assert(_ == Io.Error.Reason.Busy)
+
+      test(m"Ordinary Read opens of one file coexist"):
+        unsafely:
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            target.open[File](Read): a ?=>
+              target.open[File](Read) { true }
+      . assert(_ == true)
+
+      test(m"An Exclusive file open conflicts with an enclosing Exclusive directory scope"):
+        unsafely:
+          capture[Io.Error]:
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              lockDir.open[Directory](Read & Exclusive): a ?=>
+                target.open[File](Read & Exclusive) { () }
+          . reason
+      . assert(_ == Io.Error.Reason.Busy)
+
+      test(m"The lock is released when the scope ends"):
+        unsafely:
+          target.open[File](Read & Exclusive) { () }
+          target.open[File](Read & Exclusive) { true }
+      . assert(_ == true)
+
+    suite(m"Positional reading"):
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+
+      val expanseLeaf: Text = Uuid().show
+      val source: Path on Linux = unsafely((% / "tmp" / expanseLeaf).on[Linux])
+      unsafely(source.write(t"0123456789abcdef"))
+
+      test(m"The expanse reports the file's size"):
+        unsafely(source.expanse(_.size))
+      . assert(_ == 16L)
+
+      test(m"A positional read returns the requested slice"):
+        unsafely(source.expanse(_.read(4L, 6)).utf8)
+      . assert(_ == t"456789")
+
+      test(m"Reads at different offsets are independent"):
+        unsafely:
+          source.expanse: expanse =>
+            (expanse.read(10L, 3).utf8, expanse.read(0L, 3).utf8)
+      . assert(_ == (t"abc", t"012"))
+
+      test(m"A read overlapping the end returns the bytes which exist"):
+        unsafely(source.expanse(_.read(12L, 100)).utf8)
+      . assert(_ == t"cdef")
+
+    suite(m"Storage filesystem axis"):
+      import anticipation.instantiables.instantInstantiable
+      val root: Path on Linux = unsafely((% / "tmp").on[Linux])
+
+      test(m"At most one storage filesystem extractor matches a path"):
+        List(
+          Btrfs.unapply(root).isDefined,
+          Ext4.unapply(root).isDefined,
+          Apfs.unapply(root).isDefined,
+          Ntfs.unapply(root).isDefined).count(identity)
+      . assert(_ <= 1)
+
+      test(m"A matched creation-timed filesystem offers a total creation time"):
+        root match
+          case Apfs(path)  => unsafely(path.creation[Long]()) > 0L
+          case Btrfs(path) => unsafely(path.creation[Long]()) > 0L
+          case Ntfs(path)  => unsafely(path.creation[Long]()) > 0L
+          case _           => true  // no creation-timed filesystem here; the gate did its job
+      . assert(_ == true)

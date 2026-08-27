@@ -45,6 +45,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import vacuous.*
+import turbulence.Aggregable
 import soundness.{call, dispose}
 import xenophile.*
 
@@ -345,11 +346,62 @@ package filesystemBackends:
 
         abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
 
+      def expanse[result](path: Path on Plane)(lambda: zephyrine.Expanse => result)
+        ( using Tactic[Io.Error] )
+      :   result =
+
+        protect(path, Operation.Open):
+          val (descriptor, relative) = resolve(path, Operation.Open)
+          val directory: Foreign of "descriptor" from Wit = descriptor
+
+          // open-flags none; descriptor-flags: read (1).
+          val opened =
+            directory
+            . `open-at`(follow(true), relative, U32(0.bits), U32(1.bits))
+            . call[Wasm.Handle of "descriptor"]()
+
+          try
+            val target: Foreign of "descriptor" from Wit = opened
+
+            val view = new zephyrine.Expanse:
+              def size: Long = statOf(descriptor, relative, true).size
+
+              // WASI has no single positional-read call in this binding, but
+              // `read-via-stream` takes an offset, so each read drains a stream opened
+              // there; a read overlapping the end of the file returns the bytes which
+              // exist.
+              def read(offset: Long, length: Int): Data =
+                val streamHandle =
+                  target.`read-via-stream`(U64(offset.bits)).call[Wasm.Handle of "input-stream"]()
+
+                val stream: Foreign of "input-stream" from Wit = streamHandle
+                var chunks: List[Data] = Nil
+                var remaining = length
+
+                try
+                  while remaining > 0 do
+                    val chunk = stream.`blocking-read`(U64(remaining.toLong.bits)).call[Data]()
+                    if chunk.length == 0 then remaining = 0 else
+                      chunks = chunk :: chunks
+                      remaining -= chunk.length
+                catch case error: Wasm.Error => ()
+
+                streamHandle.dispose()
+                summon[Data is Aggregable by Data].accept(zephyrine.Stream(chunks.stdlib.reverse.iterator))
+
+            lambda(view)
+          finally opened.dispose()
+
       def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
         ( using Tactic[Io.Error] )
       :   result =
 
         protect(path, Operation.Open):
+          // WASI has no file-locking call, so a requested lock is refused rather than
+          // silently not taken (issue #566).
+          if flags.has(OpenFlag.Lock)
+          then abort(Io.Error(path, Operation.Open, Reason.Unsupported))
+
           val (descriptor, relative) = resolve(path, Operation.Open)
           val directory: Foreign of "descriptor" from Wit = descriptor
 
