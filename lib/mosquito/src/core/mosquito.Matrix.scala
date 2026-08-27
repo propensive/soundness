@@ -127,6 +127,114 @@ object Matrix:
       new Matrix[result, rows, columns](left.rows, left.columns, arr)
 
 
+  // The three shapes of multiplication — by scalar, by matrix and by vector — are separate
+  // instances distinguished by `Operand`; the scalar instance's operand is unconstrained, but
+  // it applies only where the elements themselves multiply by it (issue #687).
+  given scalarMultiplicable
+  :   [ element, rows <: Int, columns <: Int, left <: Matrix[element, rows, columns], scalar,
+        result ]
+  =>  ( multiplication: element is Multiplicable by scalar to result, classTag: ClassTag[result] )
+  =>  left is Multiplicable:
+
+    type Operand = scalar
+    type Result = Matrix[result, rows, columns]
+
+    def multiply(left: left, right: scalar): Matrix[result, rows, columns] =
+      val elements2 = Array.build[result](left.elements.length): array =>
+        left.elements.readable.indices.each: index =>
+          array(index) = left.elements.readUnchecked(index)*right
+
+      new Matrix(left.rows, left.columns, elements2)
+
+  given scalarDivisible
+  :   [ element, rows <: Int, columns <: Int, left <: Matrix[element, rows, columns], scalar,
+        result ]
+  =>  ( division: element is Divisible by scalar to result, classTag: ClassTag[result] )
+  =>  left is Divisible:
+
+    type Operand = scalar
+    type Result = Matrix[result, rows, columns]
+
+    def divide(left: left, right: scalar): Matrix[result, rows, columns] =
+      val elements2 = Array.build[result](left.elements.length): array =>
+        left.elements.readable.indices.each: index =>
+          array(index) = left.elements.readUnchecked(index)/right
+
+      new Matrix(left.rows, left.columns, elements2)
+
+  given matrixMultiplicable
+  :   [ element, rows <: Int, columns <: Int, left <: Matrix[element, rows, columns],
+        rightElement, rightColumns <: Int, result ]
+  =>  ( multiplication: element is Multiplicable by rightElement to result,
+        addition:       result is Addable by result to result,
+        columnValue:    ValueOf[columns],
+        rightColumnsValue: ValueOf[rightColumns],
+        classTag:       ClassTag[result] )
+  =>  left is Multiplicable:
+
+    type Operand = Matrix[rightElement, columns, rightColumns]
+    type Result = Matrix[result, rows, rightColumns]
+
+    def multiply(left: left, right: Matrix[rightElement, columns, rightColumns])
+    :   Matrix[result, rows, rightColumns] =
+
+      val columns2 = valueOf[rightColumns]
+      val inner = valueOf[columns]
+      val rowCount = left.rows
+
+      val elements = Array.build[result](rowCount*columns2): array =>
+        var row = 0
+
+        while row < rowCount do
+          var column = 0
+
+          while column < columns2 do
+            var sum: result = left(row, 0)*right(0, column)
+            var k = 1
+
+            while k < inner do
+              sum = sum + left(row, k)*right(k, column)
+              k += 1
+
+            array(columns2*row + column) = sum
+            column += 1
+
+          row += 1
+
+      new Matrix(rowCount, columns2, elements)
+
+  given vectorMultiplicable
+  :   [ element, rows <: Int, columns <: Int, left <: Matrix[element, rows, columns],
+        rightElement, result ]
+  =>  ( multiplication: element is Multiplicable by rightElement to result,
+        addition:       result is Addable by result to result,
+        columnValue:    ValueOf[columns] )
+  =>  left is Multiplicable:
+
+    type Operand = Vector[rightElement, columns]
+    type Result = Vector[result, rows]
+
+    def multiply(left: left, right: Vector[rightElement, columns]): Vector[result, rows] =
+      val inner = valueOf[columns]
+      val rowCount = left.rows
+
+      val arr = Array.build[Any](rowCount): array =>
+        var row = 0
+
+        while row < rowCount do
+          var sum: result = left(row, 0)*right.data.readUnchecked(0).asInstanceOf[rightElement]
+          var k = 1
+
+          while k < inner do
+            sum = sum + left(row, k)*right.data.readUnchecked(k).asInstanceOf[rightElement]
+            k += 1
+
+          array(row) = sum
+          row += 1
+
+      new Vector[result, rows](arr)
+
+
   def identity[element, dimension <: Int]
     ( using unital:        element is Unital,
             zeroic:        element is Zeroic,
@@ -782,92 +890,4 @@ class Matrix[element, rows <: Int, columns <: Int]
     builder.append("]").toString
 
 
-  @targetName("scalarMul")
-  def * [right](right: right)
-    ( using multiplication: element is Multiplicable by right )
-    ( using ClassTag[multiplication.Result] )
-  :   Matrix[multiplication.Result, rows, columns] =
 
-
-    val elements2 = Array.build[multiplication.Result](elements.length): array =>
-      elements.readable.indices.each: index =>
-        array(index) = elements.readUnchecked(index)*right
-
-    new Matrix(rows, columns, elements2)
-
-
-  @targetName("scalarDiv")
-  def / [right](right: right)(using div: element is Divisible by right)(using ClassTag[div.Result])
-  :   Matrix[div.Result, rows, columns] =
-
-    val elements2 = Array.build[div.Result](elements.length): array =>
-      elements.readable.indices.each: index =>
-        array(index) = elements.readUnchecked(index)/right
-
-    new Matrix(rows, columns, elements2)
-
-
-  @targetName("mul")
-  def * [right, rightColumns <: Int: ValueOf]
-    ( right: Matrix[right, columns, rightColumns] )
-    ( using multiplication: element is Multiplicable by right,
-            addition:       multiplication.Result is Addable by multiplication.Result,
-            equality:       addition.Result =:= multiplication.Result,
-            rowValue:       ValueOf[rows],
-            columnValue:    ValueOf[columns],
-            classTag:       ClassTag[multiplication.Result] )
-  :   Matrix[multiplication.Result, rows, rightColumns] =
-
-    val columns2 = valueOf[rightColumns]
-    val inner = valueOf[columns]
-
-    val elements = Array.build[multiplication.Result](rows*columns2): array =>
-      var row = 0
-
-      while row < rows do
-        var column = 0
-
-        while column < columns2 do
-          var sum: multiplication.Result = apply(row, 0)*right(0, column)
-          var k = 1
-
-          while k < inner do
-            sum = sum + apply(row, k)*right(k, column)
-            k += 1
-
-          array(columns2*row + column) = sum
-          column += 1
-
-        row += 1
-
-    new Matrix(rows, columns2, elements)
-
-
-  @targetName("mulVec")
-  def * [right]
-    ( right: Vector[right, columns] )
-    ( using multiplication: element is Multiplicable by right,
-            addition:       multiplication.Result is Addable by multiplication.Result,
-            equality:       addition.Result =:= multiplication.Result,
-            columnValue:    ValueOf[columns] )
-  :   Vector[multiplication.Result, rows] =
-
-    val inner = valueOf[columns]
-
-    val arr = Array.build[Any](rows): array =>
-      var row = 0
-
-      while row < rows do
-        var sum: multiplication.Result =
-          apply(row, 0)*right.data.readUnchecked(0).asInstanceOf[right]
-
-        var k = 1
-
-        while k < inner do
-          sum = sum + apply(row, k)*right.data.readUnchecked(k).asInstanceOf[right]
-          k += 1
-
-        array(row) = sum
-        row += 1
-
-    new Vector[multiplication.Result, rows](arr)

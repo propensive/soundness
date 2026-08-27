@@ -44,6 +44,24 @@ object Price:
     def divide(left: price, right: Double): Price in currency =
       Price(left.principal/right, left.tax/right)
 
+  given addable: [currency <: Label, price <: Price in currency] => price is Addable:
+    type Operand = Price in currency
+    type Result = Price in currency
+
+    def add(left: price, right: Price in currency): Price in currency =
+      Price(left.principal + right.principal, left.tax + right.tax)
+
+  given subtractable: [currency <: Label, price <: Price in currency] => price is Subtractable:
+    type Operand = Price in currency
+    type Result = Price in currency
+
+    def subtract(left: price, right: Price in currency): Price in currency =
+      Price(left.principal - right.principal, left.tax - right.tax)
+
+  given negatable: [currency <: Label, price <: Price in currency] => price is Negatable:
+    type Result = Price in currency
+    def negate(price: price): Price in currency = Price(-price.principal, -price.tax)
+
 
   def apply[currency <: Label](principal0: Money in currency, tax0: Money in currency)
   :   Price in currency =
@@ -60,17 +78,6 @@ trait Price:
   val tax: Money in Form
 
   def effectiveTaxRate: Double = tax/principal
-
-  @targetName("add")
-  infix def + (right: Price in Form): Price in Form =
-    Price(principal + right.principal, tax + right.tax)
-
-  @targetName("subtract")
-  infix def - (right: Price in Form): Price in Form =
-    Price(principal - right.principal, tax - right.tax)
-
-  @targetName("negate")
-  def `unary_-`: Price in Form = Price(-principal, -tax)
 
   def inclusive: Money in Form = principal + tax
   override def hashCode(): Int = (principal.asInstanceOf[Long] ^ tax.asInstanceOf[Long]*31).hashCode
