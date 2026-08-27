@@ -83,8 +83,12 @@ extends Openable:
         try value.nioPath.toRealPath().nn.toString.tt
         catch case _: Exception => value.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt
 
-    if locking && !AccessRegister.acquire(real, mode.atoms)
-    then abort(Io.Error(value, Operation.Open, Reason.Busy))
+    val awaiting = flags.stdlib.contains(OpenFlag.Await)
+
+    if locking then
+      if awaiting then AccessRegister.acquireAwait(real, mode.atoms)
+      else if !AccessRegister.acquire(real, mode.atoms)
+      then abort(Io.Error(value, Operation.Open, Reason.Busy))
 
     try
       backend.open(value, (modeFlags ++ flags.stdlib).to(List)): handle =>

@@ -315,11 +315,17 @@ package filesystemBackends:
               val writable = options2.contains(jnf.StandardOpenOption.WRITE) || appending
               val shared = flags.stdlib.contains(OpenFlag.LockShared) || !writable
 
+              val await = flags.stdlib.contains(OpenFlag.Await)
+
               // An overlapping lock held by this JVM throws even when both are shared; the
               // register has already admitted this open, and the first holder's OS lock
-              // covers the cross-process case, so a shared overlap is benign.
+              // covers the cross-process case, so a shared overlap is benign. With `Await`,
+              // the blocking variants wait for the cross-process lock instead of failing.
               try Option:
-                if shared then channel.tryLock(0L, Long.MaxValue, true).nn
+                if shared then
+                  if await then channel.lock(0L, Long.MaxValue, true).nn
+                  else channel.tryLock(0L, Long.MaxValue, true).nn
+                else if await then channel.lock().nn
                 else channel.tryLock().nn
               catch case _: jnc.OverlappingFileLockException => if shared then Some(null) else None
             else Some(null)

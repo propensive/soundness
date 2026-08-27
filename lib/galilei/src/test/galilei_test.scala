@@ -593,3 +593,35 @@ object Tests extends Suite(m"Galilei tests"):
                 shared.open[File](Read & Shared) { () }
           . reason
       . assert(_ == Io.Error.Reason.Busy)
+
+    suite(m"Awaited locking"):
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+      import threading.platformThreading
+
+      val awaitLeaf: Text = Uuid().show
+      val awaited: Path on Linux = unsafely((% / "tmp" / awaitLeaf).on[Linux])
+      unsafely(awaited.write(t"content"))
+
+      test(m"An awaited open blocks until the holder's scope ends, then proceeds"):
+        unsafely:
+          val order = java.util.concurrent.ConcurrentLinkedQueue[String]()
+
+          val runnable: Runnable = () =>
+            unsafely:
+              awaited.open[File](Read & Exclusive, OpenFlag.Await):
+                order.add("acquired") yet ()
+
+          val waiter = java.lang.Thread(runnable)
+
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            awaited.open[File](Read & Exclusive): a ?=>
+              waiter.start()
+              java.lang.Thread.sleep(300)
+              order.add("releasing") yet ()
+
+          waiter.join(5000)
+          var seen = scala.List[String]()
+          while !order.isEmpty do seen = seen :+ order.poll().toString
+          seen
+      . assert(_ == scala.List("releasing", "acquired"))

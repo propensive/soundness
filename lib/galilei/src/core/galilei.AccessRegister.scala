@@ -70,6 +70,12 @@ object AccessRegister:
       registrations ::= Registration(real2, atoms)
       true
 
+  // The blocking variant (issue #566): waits until no conflicting registration remains,
+  // rather than failing. In-process waiters are woken by `release`; fairness is the
+  // monitor's, which suffices for scope-shaped holds.
+  def acquireAwait(real: Text, atoms: Set[Mode]): Unit = synchronized:
+    while !acquire(real, atoms) do wait()
+
   def release(real: Text, atoms: Set[Mode]): Unit = synchronized:
     val real2 = normalize(real)
 
@@ -79,3 +85,4 @@ object AccessRegister:
       case head :: tail                                       => head :: remove(tail)
 
     registrations = remove(registrations)
+    notifyAll()
