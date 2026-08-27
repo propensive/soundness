@@ -46,7 +46,7 @@ object Stdio:
   // the companion of the SEARCHED type, so it needs no import — making a pure `Stdio`
   // summonable wherever a `Provider` is ambient.
   trait Provider:
-    def stdio: Stdio
+    val stdio: Stdio
 
   given provided: (provider: Provider^) => Stdio = provider.stdio
 
