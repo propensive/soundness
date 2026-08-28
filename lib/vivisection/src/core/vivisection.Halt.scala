@@ -96,8 +96,7 @@ extends caps.ExclusiveCapability:
 
   // The logical variables visible at the top frame — where the thread stopped.
   def variables(): List[Variable] =
-    topFrame.lay(List[Variable]()): (frame, location0) =>
-      variables(frame, location0)
+    topFrame.lay(List[Variable]()): (frame, location0) => variables(frame, location0)
 
   // The logical variables visible at a frame: the live local slots, then the state captured on
   // `this` and its `$outer` chain — un-flattened, unboxed and lazy-read before anything
@@ -108,7 +107,8 @@ extends caps.ExclusiveCapability:
 
     val locals = table.lay(sci.List[Variable]()): table =>
       val live = table.slots.stdlib.filter: slot =>
-        slot.index <= location0.index && location0.index < slot.index + slot.length
+        val index = location0.index
+        slot.name != t"this" && slot.index <= index && index < slot.index + slot.length
 
       val requests = live.map: slot => (slot.slot, Variable.tag(slot.signature))
       val values = connection.slotValues(thread, frame, List(requests*)).stdlib
@@ -230,7 +230,7 @@ extends caps.ExclusiveCapability:
       val values = connection.fieldValues(obj, List(fields.map(_.field)*)).stdlib
 
       fields.zip(values).flatMap: (field, value) =>
-        val name = field.name
+        val name = Variable.fieldName(field.name)
 
         if name == t"$$outer" then value match
           case Jdwp.Value.Reference(_, outer) if !outer.empty =>

@@ -157,6 +157,13 @@ object Variable:
     case Jdwp.Tag.ArrayTag   => t"Array"
     case _                   => t"Object"
 
+  // Strips the owner-qualified prefix from an outer-accessor field name: a class reaching an
+  // enclosing instance's member `seed` sees it as a field named `pkg$Owner$$seed`, where the `$$`
+  // separates the mangled owner path from the written name. Names without `$$` are returned as-is.
+  private[vivisection] def fieldName(name: Text): Text =
+    val index = name.s.lastIndexOf("$$")
+    if index < 0 then name else name.s.substring(index + 2).nn.tt
+
   // Recovers the written name from a compiler-mangled capture field: `x$3` was `x`. `Unset` for
   // any name which does not carry a purely numeric suffix.
   private[vivisection] def captured(name: Text): Optional[Text] =

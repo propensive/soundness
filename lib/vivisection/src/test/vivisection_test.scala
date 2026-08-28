@@ -697,3 +697,35 @@ object Tests extends Suite(m"Vivisection tests"):
     test(m"a string local reports its erased type"):
       erasedOf(t"text")
     . assert(_ == t"java.lang.String")
+
+    // ── Captured-state matrix ───────────────────────────────────────────────────────────────────
+    // At a breakpoint inside a local class's method, nothing is an ordinary local slot: every
+    // binding is recovered by un-flattening `this`'s captured fields and walking its `$outer` chain.
+    val closures: scala.collection.immutable.Map[Text, Variable] =
+      supervise:
+        debugFixture(t"vivisection.Closures", t"vivisection.Closures.scala", Ordinal.uniary(60)):
+          stop ?=> named(stop.variables())
+
+    test(m"captured bindings are recovered by their written names"):
+      closures.keys.toList.map(_.s).sorted.mkString(",")
+    . assert(_ == "cached,label,seed,tally")
+
+    test(m"a captured val is recovered with its value"):
+      closures.get(t"label").flatMap(_.value.option).getOrElse(Unset) match
+        case Variable.Snapshot.Str(_, text) => text
+        case _                              => t"«absent»"
+    . assert(_ == t"captured")
+
+    test(m"a captured var is unboxed from its ref cell and marked mutable"):
+      val tally = closures.get(t"tally")
+      val value = tally.flatMap(_.value.option).getOrElse(Unset)
+      (value == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(100)), tally.map(_.mutable))
+    . assert(_ == (true, scala.Some(true)))
+
+    test(m"a binding captured through the outer chain is recovered"):
+      closures.get(t"seed").flatMap(_.value.option).getOrElse(Unset)
+    . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(100)))
+
+    test(m"an unforced lazy val is reported unforced and never evaluated"):
+      closures.get(t"cached").map(_.state)
+    . assert(_ == scala.Some(Variable.State.Unforced))
