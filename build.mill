@@ -817,7 +817,8 @@ object soundness extends Toolchain:
     def summary = "Command-line applications: terminals, shells, files and processes"
 
   object data extends Bundle(caesura.core, dissonance.core, enigmatic.asn1, enigmatic.core,
-    facsimile.core, facsimile.file, gastronomy.core, chiaroscuro.core, chiaroscuro.render, jacinta.core,
+    facsimile.core, facsimile.file, gastronomy.core, gastronomy.multihash, chiaroscuro.core,
+    chiaroscuro.render, jacinta.core,
     monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
@@ -2080,7 +2081,13 @@ object gastronomy extends Library:
     override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  // The multihash envelope (#568): a digest prefixed with its algorithm's multicodec identifier
+  // and its length, so it can be exchanged without agreeing on the algorithm out of band. Its
+  // own component, because it is only wanted by content-addressing callers.
+  object multihash extends Component(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, multihash):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
