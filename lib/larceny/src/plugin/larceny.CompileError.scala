@@ -37,12 +37,36 @@ object CompileError:
   // raising `apply` would make `doReport` silently drop the diagnostic, and every
   // `demilitarize` test expecting it would quietly stop testing anything); map
   // unknown ordinals to `NoExplanation` so the message still comes through.
-  def apply(ordinal: Int, message: String, focus: String, start: Int, offset: Int): CompileError =
+  def apply
+    ( ordinal: Int,
+      message: String,
+      focus:   String,
+      start:   Int,
+      offset:  Int,
+      // No default: the case class's own synthesized `apply` already carries one for
+      // `importance`, and Scala permits default arguments on only one overload of `apply`.
+      level:   Int )
+  :   CompileError =
+
     val reason =
       if ordinal < CompileError.Reason.values.length then CompileError.Reason.fromOrdinal(ordinal)
       else CompileError.Reason.NoExplanation
 
-    new CompileError(reason, message, focus, start, offset)
+    new CompileError(reason, message, focus, start, offset, Importance(level))
+
+  // Severity, named as `anthology.Importance` and `harlequin`'s are. Larceny's plugin component
+  // has no Soundness dependencies at all (`object plugin extends Component()`), so the enum is
+  // restated here rather than imported; the case names are kept identical deliberately.
+  object Importance:
+    // dotc's diagnostic levels are `interfaces.Diagnostic`'s INFO(0), WARNING(1), ERROR(2). A
+    // level outside that range would come from a compiler newer than this enum, and must not
+    // raise for the same reason an unknown `Reason` ordinal must not: it would make `doReport`
+    // drop the diagnostic silently. Treat anything unrecognised as an error, the safe default.
+    def apply(level: Int): Importance =
+      if level >= 0 && level < values.length then fromOrdinal(level) else Error
+
+  enum Importance:
+    case Info, Warning, Error
 
   enum Reason:
     case NoExplanation
@@ -284,6 +308,14 @@ object CompileError:
     def unapply(compileError: CompileError): Some[CompileError.Reason] = Some(compileError.reason)
 
 case class CompileError
-  ( reason: CompileError.Reason, message: String, focus: String, start: Int, offset: Int ):
+  ( reason:     CompileError.Reason,
+    message:    String,
+    focus:      String,
+    start:      Int,
+    offset:     Int,
+    importance: CompileError.Importance = CompileError.Importance.Error ):
 
   def point: Int = start + offset
+
+  def warning: Boolean = importance == CompileError.Importance.Warning
+  def error: Boolean = importance == CompileError.Importance.Error

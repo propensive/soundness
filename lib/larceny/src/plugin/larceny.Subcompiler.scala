@@ -107,7 +107,9 @@ object Subcompiler:
         val offset = position.point - position.start
         val ordinal = diagnostic.msg.errorId.ordinal
 
-        errors += CompileError(ordinal, diagnostic.msg.message, focus, position.start, offset)
+        errors +=
+          CompileError
+            ( ordinal, diagnostic.msg.message, focus, position.start, offset, diagnostic.level )
 
       catch case error: Throwable => ()
 
@@ -145,7 +147,8 @@ object Subcompiler:
       plugins:   List[String],
       ccNew:     Boolean = false,
       yimports:  List[String] = Nil,
-      noPredef:  Boolean = false )
+      noPredef:  Boolean = false,
+      warnings:  List[String] = Nil )
   :   List[CompileError] =
 
     object driver extends Driver:
@@ -153,10 +156,16 @@ object Subcompiler:
         val context = initCtx.fresh
         val context2 = context.setSetting(context.settings.classpath, classpath)
         val ccOptions = if ccNew then List("-Ycc-new") else Nil
+
         val importOptions =
-          (if yimports.isEmpty then Nil else List(s"-Yimports:${yimports.mkString(",")}"))
-          ++ (if noPredef then List("-Yno-predef") else Nil)
-        val args = scala.Array[String]("") ++ ccOptions ++ importOptions ++ plugins.map: p => s"-Xplugin:$p"
+          (if yimports.isEmpty then Nil else List(s"-Yimports:${yimports.mkString(",")}")) ++
+            (if noPredef then List("-Yno-predef") else Nil)
+
+        val pluginOptions = plugins.map: plugin => s"-Xplugin:$plugin"
+
+        val args =
+          scala.Array[String]("") ++ ccOptions ++ importOptions ++ warnings ++ pluginOptions
+
         setup(args, context2).map(_(1)).get
 
 
@@ -212,7 +221,12 @@ object Subcompiler:
 
                       recompile(tail, done + region, newSource)
 
-          recompile(newErrors, Set(), source)
+          // Only *errors* get their region blanked. Blanking exists so that an error in one
+          // `demilitarize` block cannot stop the remaining blocks' diagnostics from being found:
+          // the region is replaced with `{}` and the file recompiled. A warning does not stop
+          // compilation, so blanking its region buys nothing and actively loses whatever else
+          // that region would have reported on the next pass.
+          recompile(newErrors.filter(_.error), Set(), source)
 
 
     driver.run(source, regions, Nil)
