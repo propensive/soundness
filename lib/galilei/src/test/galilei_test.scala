@@ -562,6 +562,48 @@ object Tests extends Suite(m"Galilei tests"):
           case _           => true  // no creation-timed filesystem here; the gate did its job
       . assert(_ == true)
 
+      test(m"A btrfs subvolume root is itself a subvolume root"):
+        root match
+          case Btrfs(path) => unsafely(path.subvolume().root.subvolumeRoot)
+          case _           => true  // not btrfs here; the gate did its job
+      . assert(_ == true)
+
+      test(m"An entry shares its subvolume root's device number"):
+        root match
+          case Btrfs(path) =>
+            path.entryIdentity.let(_.device)
+            == unsafely(path.subvolume()).root.entryIdentity.let(_.device)
+
+          case _ => true  // not btrfs here; the gate did its job
+      . assert(_ == true)
+
+    suite(m"Entry identity"):
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.deleteRecursively.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+
+      val identifiedLeaf: Text = Uuid().show
+      val linkedLeaf: Text = Uuid().show
+      val separateLeaf: Text = Uuid().show
+      val identified: Path on Linux = unsafely((% / "tmp" / identifiedLeaf).on[Linux])
+      val linked: Path on Linux = unsafely((% / "tmp" / linkedLeaf).on[Linux])
+      val separate: Path on Linux = unsafely((% / "tmp" / separateLeaf).on[Linux])
+      unsafely(identified.write(t"content"))
+      unsafely(separate.write(t"content"))
+      unsafely(identified.hardLinkTo(linked))
+
+      test(m"An entry has a device and inode number"):
+        identified.entryIdentity.let(_.inode).or(0L) > 0L
+      . assert(_ == true)
+
+      test(m"A hard link has the same identity as its target"):
+        identified.entryIdentity == linked.entryIdentity
+      . assert(_ == true)
+
+      test(m"Two distinct files have distinct identities"):
+        identified.entryIdentity == separate.entryIdentity
+      . assert(_ == false)
+
     suite(m"Shared locking"):
       import errorDiagnostics.stackTracesDiagnostics
       import filesystemOptions.createNonexistentParents.enabled

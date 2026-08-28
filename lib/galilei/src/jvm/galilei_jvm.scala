@@ -303,6 +303,21 @@ package filesystemBackends:
           attributeView(path).write(name.s, java.nio.ByteBuffer.wrap(Array.unsafeJvm(value)))
           ()
 
+      // Read through the `unix` attribute view rather than `BasicFileAttributes#fileKey`, whose
+      // `UnixFileKey` exposes the same two numbers only through its `toString`.
+      def identity(path: Path on Plane, dereference: Boolean): Optional[Stat.Identity] =
+        val options = dereferenceOptions(dereference)
+
+        try
+          val device = jnf.Files.getAttribute(javaPath(path), "unix:dev", options*).nn.absolve
+          val inode = jnf.Files.getAttribute(javaPath(path), "unix:ino", options*).nn.absolve
+
+          (device, inode) match
+            case (device: Long, inode: Long) => Stat.Identity(device, inode)
+            case _                           => Unset
+
+        catch case _: Exception => Unset
+
       def slice[result]
         ( path: Path on Plane, offset: Long, extent: Long, flags: List[OpenFlag] )
         ( lambda: Slice.Window => result )
