@@ -744,3 +744,26 @@ object Tests extends Suite(m"Vivisection tests"):
     test(m"an unforced lazy val is reported unforced and never evaluated"):
       closures.get(t"cached").map(_.state)
     . assert(_ == scala.Some(Variable.State.Unforced))
+
+    // ── Rendering / purity matrix ───────────────────────────────────────────────────────────────
+    // Three locals whose types render differently: a derived (real, pure) instance renders cleanly;
+    // a Showable-only type is borrowed under `⸢…⸣`; a toString-only type falls to `“…”`. The
+    // markers are how the debugger signals a value was not rendered through a verified-pure instance.
+    val renderings: (Text, Text, Text) =
+      supervise:
+        debugFixture(t"vivisection.Renderings", t"vivisection.Renderings.scala", Ordinal.uniary(62)):
+          stop ?=>
+            stop.evaluator(fixtureClasspath): eval ?=>
+              (eval.inspect(t"point"), eval.inspect(t"tagged"), eval.inspect(t"plain"))
+
+    test(m"a derived Inspectable renders structurally with no fallback marker"):
+      renderings(0)
+    . assert(_ == t"Point(x:3 ╱ y:4)")
+
+    test(m"a Showable-only type renders under the borrowed marker"):
+      renderings(1)
+    . assert(_ == t"⸢tag:alpha⸣")
+
+    test(m"a toString-only type renders under the toString marker"):
+      renderings(2)
+    . assert(_ == t"“Plain#7”")
