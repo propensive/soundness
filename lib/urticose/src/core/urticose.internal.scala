@@ -152,7 +152,9 @@ object internal:
 
       inline given underlying: Underlying[MacAddress, Long] = !!
       given showable: MacAddress is Showable = _.text
-      given inspectable: [mac <: MacAddress] => mac is Inspectable = (_: MacAddress).text
+      // Unascribed, so the parameter infers as `Self` — see the note on `EmailAddress`'s
+      // `inspectable`: an ascribed parameter fails the anon-class expansion under `-scalajs`.
+      given inspectable: [mac <: MacAddress] => mac is Inspectable = mac => mac.text
       given encodable: MacAddress is Encodable in Text = _.text
       given decoder: (tactic: Tactic[MacAddress.Error])
       =>  ((MacAddress is Decodable in Text)^{tactic}) =
