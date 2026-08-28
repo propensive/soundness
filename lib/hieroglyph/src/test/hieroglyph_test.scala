@@ -260,3 +260,99 @@ object Tests extends Suite(m"Hieroglyph tests"):
         failures.size
 
       . assert(_ == 0)
+
+    suite(m"Collation"):
+      val root = CollationTable.root
+
+      test(m"Hangul syllable decomposes arithmetically"):
+        Normalization.decompose(t"각").to[List]
+      . assert(_ == List(0x1100, 0x1161, 0x11a8))
+
+      test(m"é decomposes to e plus combining acute"):
+        Normalization.decompose(t"é").to[List]
+      . assert(_ == List('e'.toInt, 0x301))
+
+      test(m"combining marks reorder canonically by combining class"):
+        Normalization.decompose(t"ą́").to[List]
+      . assert(_ == List('a'.toInt, 0x328, 0x301))
+
+      test(m"æ expands to sort between ae and af"):
+        (root.compare(t"æ", t"ae") > 0, root.compare(t"æ", t"af") < 0)
+      . assert(_ == (true, true))
+
+      test(m"accents order before case: cafe < café < caff"):
+        (root.compare(t"cafe", t"café") < 0, root.compare(t"café", t"caff") < 0)
+      . assert(_ == (true, true))
+
+      test(m"case is a tertiary difference: abc < ABC"):
+        root.compare(t"abc", t"ABC") < 0
+      . assert(_ == true)
+
+      test(m"unmapped CJK take implicit weights in codepoint order"):
+        root.compare(t"丂", t"中") < 0
+      . assert(_ == true)
+
+      test(m"tailored ó sorts primary-after o and before p"):
+        val polish = root.tailor(List(CollationRule(t"o", t"ó", CollationLevel.Primary)))
+
+        ( polish.compare(t"oz", t"ó") < 0,
+          polish.compare(t"ó", t"p") < 0,
+          root.compare(t"ó", t"oz") < 0 )
+      . assert(_ == (true, true, true))
+
+      // UTS #10 conformance against the official CollationTest fixture: every line's sort
+      // key must be no greater than its successor's, with ties broken by comparing the NFD
+      // forms of the two lines by codepoint.
+      test(m"UTS #10 conformance (non-ignorable)"):
+        val resourcePath = "/hieroglyph/CollationTest_NON_IGNORABLE_SHORT.txt"
+        val stream = getClass.getResourceAsStream(resourcePath).nn
+        val lines = scala.io.Source.fromInputStream(stream).getLines().to(List)
+
+        def compareCps(left: Array[Int], right: Array[Int]): Int =
+          val leftView = left.readable
+          val rightView = right.readable
+          val limit = leftView.length.min(rightView.length)
+          var index = 0
+          var result = 0
+
+          while result == 0 && index < limit do
+            if leftView(index) != rightView(index)
+            then result = if leftView(index) < rightView(index) then -1 else 1
+
+            index += 1
+
+          if result == 0 then leftView.length.compare(rightView.length) else result
+
+        var previousCps = Array[Int]()
+        var previousKey = Array[Int]()
+        var first = true
+        var failures = 0
+
+        lines.each: rawLine =>
+          val hash = rawLine.indexOf('#')
+          val data = (if hash >= 0 then rawLine.substring(0, hash).nn else rawLine).trim.nn
+
+          if data.nonEmpty then
+            val tokens = data.split("\\s+").nn
+            val cps = Array.scratch[Int](tokens.length)
+            var index = 0
+
+            while index < tokens.length do
+              cps(index) = Integer.parseInt(tokens(index).nn, 16)
+              index += 1
+
+            val sequence = Normalization.decompose(Array.unsafeFrozen(cps))
+            val key = root.key(sequence)
+
+            if !first then
+              val order = root.compareKeys(previousKey, key)
+
+              if order > 0 || (order == 0 && compareCps(previousCps, sequence) > 0)
+              then failures += 1
+
+            previousCps = sequence
+            previousKey = key
+            first = false
+
+        failures
+      . assert(_ == 0)

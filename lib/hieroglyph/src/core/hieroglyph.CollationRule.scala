@@ -30,29 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package hieroglyph
 
-export
-  hieroglyph
-  . { Bel, Bs, Bsl, CharDecoder, CharEncoder, Chars, Cr,
-      description, Dqt, enc, Encoding, Esc, Ff, GraphemeBreak, Ht, Lf, majuscule, Measurable,
-      metrics, minuscule, Normalization, Nul, Sqt, subscript, superscript, TextSanitizer, ucs,
-      Unicode, WideCharacterWidth, whitespace, control, designation, printable, unicode }
+import anticipation.*
 
-package textSanitizers:
-  export hieroglyph.textSanitizers.{skipSanitizer, strictSanitizer, substituteSanitizer,
-      accrueSanitizer}
+// A tailoring of a collation table: `target` sorts immediately after `base`, differing at
+// `level`. Rules are applied in order, so a rule may use an earlier rule's target as its base
+// (Polish `ż` after `ź` after `z`). This deliberately covers only the common European tailoring
+// shape; it is not an interpreter for CLDR's full LDML rule syntax.
+case class CollationRule(base: Text, target: Text, level: CollationLevel)
 
-package textMetrics:
-  export hieroglyph.textMetrics.{eastAsianScriptsMetric, wideCharacterWidthMetric, uniformMetric}
-
-package charDecoders:
-  export hieroglyph.charDecoders.{asciiDecoder, utf16Decoder, utf16BeDecoder, utf16LeDecoder,
-      utf8Decoder}
-
-package charEncoders:
-  export hieroglyph.charEncoders.{asciiEncoder, utf16Encoder, utf16BeEncoder, utf16LeEncoder,
-      utf8Encoder}
-
-package communication:
-  export hieroglyph.communication.unicodeCharNamesCommunicable
+enum CollationLevel:
+  case Primary, Secondary, Tertiary
