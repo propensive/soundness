@@ -401,6 +401,11 @@ package filesystemBackends:
       def attribute(path: Path on Plane, name: Text, value: Data)(using Tactic[Io.Error]): Unit =
         abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
 
+      // `wasi:filesystem`'s `descriptor-stat` carries neither a device nor an inode number —
+      // `metadata-hash-at` offers only an opaque 128-bit identity, which cannot answer the
+      // device-number question subvolume detection asks — so the identity is unavailable.
+      def identity(path: Path on Plane, dereference: Boolean): Optional[Stat.Identity] = Unset
+
       def slice[result]
         ( path: Path on Plane, offset: Long, extent: Long, flags: List[OpenFlag] )
         ( lambda: Slice.Window => result )

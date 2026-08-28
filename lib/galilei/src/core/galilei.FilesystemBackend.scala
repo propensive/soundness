@@ -115,6 +115,13 @@ trait FilesystemBackend extends Planar:
   def attribute(path: Path on Plane, name: Text)(using Tactic[Io.Error]): Optional[Data]
   def attribute(path: Path on Plane, name: Text, value: Data)(using Tactic[Io.Error]): Unit
 
+  // The entry's identity on its storage device (issue #567). Total, and `Unset` where the
+  // platform does not expose it: WASI's `descriptor-stat` carries neither number, and the
+  // JVM's `unix` attribute view is absent off POSIX. It is separate from `stat` because the
+  // two platforms which cannot answer it are precisely the two for which every other `Stat`
+  // field is cheap, so folding it in would make the common call fallible for nothing.
+  def identity(path: Path on Plane, dereference: Boolean): Optional[Stat.Identity]
+
   // Range-scoped positional access (issues #566, #1878): like `expanse`, but the view is a
   // `Slice.Window` confined to `[offset, offset + extent)` — its `size` is the window's,
   // reads are relative to the window's start and clamped to it, and writes store as much as

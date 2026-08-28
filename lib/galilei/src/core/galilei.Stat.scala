@@ -43,3 +43,10 @@ case class Stat
     modified: Long,
     accessed: Long,
     created:  Optional[Long] )
+
+object Stat:
+  // An entry's identity on the storage device it lives on: the device number and the inode
+  // number, which together name a file uniquely. Btrfs's subvolume boundaries are read from
+  // the device number (issue #567) — every subvolume is given its own anonymous device number
+  // — and every btrfs subvolume root is inode 256.
+  case class Identity(device: Long, inode: Long)

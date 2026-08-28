@@ -222,6 +222,15 @@ extension [plane: Filesystem](path: Path on plane)
   def volume()(using backend: FilesystemBackend on plane): Volume raises Io.Error =
     backend.volume(path)
 
+  // The entry's identity on its storage device — its device number and inode number — which
+  // together name a file uniquely: two paths with equal identities are hard links to one file.
+  // `Unset`, rather than raising, where the platform does not record it: WASI's
+  // `descriptor-stat` carries neither number, and the JVM's `unix` view is absent off POSIX.
+  // Named for `entry()` rather than plainly `identity`, which would compete with
+  // `proscenium`'s function of that name wherever the `soundness` umbrella is imported.
+  def entryIdentity(using backend: FilesystemBackend on plane): Optional[Stat.Identity] =
+    backend.identity(path, true)
+
   def hardLinkTo(destination: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
             createNonexistentParents: CreateNonexistentParents on plane,
@@ -501,6 +510,33 @@ extension [plane: Filesystem, transport <: Attributed](path: Path on plane over 
   def attribute(name: Text, value: Data)(using backend: FilesystemBackend on plane)
   :   Unit raises Io.Error =
     backend.attribute(path, name, value)
+
+// Btrfs-specific metadata, gated by the storage-filesystem axis (issue #567). Btrfs gives every
+// subvolume its own anonymous device number and numbers every subvolume root's inode 256, so both
+// accessors here are answered from `stat` alone — no `ioctl` — at the cost of not being able to
+// report a subvolume's ID or UUID, which only `BTRFS_IOC_GET_SUBVOL_INFO` knows.
+extension [plane: Filesystem](path: Path on plane over Btrfs)
+
+  // The subvolume the entry is stored in, found by ascending while the device number holds:
+  // crossing out of a subvolume changes it, so the last ancestor to share the entry's device
+  // number is the subvolume's root.
+  def subvolume()(using FilesystemBackend on plane): Btrfs.Subvolume[plane] raises Io.Error =
+
+    val device =
+      path.entryIdentity.let(_.device).or:
+        abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
+
+    def ascend(current: Path on plane): Path on plane =
+      current.parent.lay(current): parent =>
+        if parent.entryIdentity.let(_.device) == device then ascend(parent) else current
+
+    Btrfs.Subvolume(ascend(path).asInstanceOf[Path on plane over Btrfs])
+
+  // Whether the entry is itself the root of a subvolume. Total rather than raising, like
+  // `exists`: an entry whose inode cannot be read is not a subvolume root as far as any
+  // operation gated on this can tell.
+  def subvolumeRoot(using FilesystemBackend on plane): Boolean =
+    path.entryIdentity.let(_.inode) == 256L
 
 // Metadata gated by the storage-filesystem axis (issue #567): available only on a path whose
 // filesystem is known — by extractor probing — to record it.

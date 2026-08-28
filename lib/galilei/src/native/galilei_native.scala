@@ -317,6 +317,19 @@ package filesystemBackends:
       def attribute(path: Path on Plane, name: Text, value: Data)(using Tactic[Io.Error]): Unit =
         abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
 
+      // As in `stat`, individual-argument varargs calls rather than an array splice: under the
+      // Scala Native javalib the varargs formals are pure Scala arrays, which no array value
+      // can satisfy under separation checking.
+      def identity(path: Path on Plane, dereference: Boolean): Optional[Stat.Identity] =
+        def read(name: String): Any | Null =
+          if dereference then jnf.Files.getAttribute(javaPath(path), name)
+          else jnf.Files.getAttribute(javaPath(path), name, jnf.LinkOption.NOFOLLOW_LINKS)
+
+        try (read("unix:dev").nn.absolve, read("unix:ino").nn.absolve) match
+          case (device: Long, inode: Long) => Stat.Identity(device, inode)
+          case _                           => Unset
+        catch case _: Exception => Unset
+
       def slice[result]
         ( path: Path on Plane, offset: Long, extent: Long, flags: List[OpenFlag] )
         ( lambda: Slice.Window => result )

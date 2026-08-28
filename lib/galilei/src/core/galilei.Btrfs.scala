@@ -78,6 +78,17 @@ object Btrfs:
     if storageFormat(path) == t"btrfs" then Some(path.asInstanceOf[Path on plane over Btrfs])
     else None
 
+  // A btrfs subvolume, named by the directory it is rooted at (issue #567). Btrfs partitions
+  // one filesystem into independently-snapshottable subtrees, so an entry's subvolume — not
+  // just its volume — is part of where it is stored, and `Subvolume` is the type in which that
+  // is answered.
+  //
+  // The subvolume's numeric ID, UUID and generation are not carried here: btrfs exposes those
+  // only through `BTRFS_IOC_GET_SUBVOL_INFO`, an `ioctl` no filesystem backend can currently
+  // issue, whereas the root — all `subvolume()` promises — is recoverable from `stat` alone.
+  // They are the natural fields to add once an `ioctl` seam exists.
+  case class Subvolume[plane](root: Path on plane over Btrfs)
+
 object Ext4:
   def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
   :   Option[Path on plane over Ext4] =
