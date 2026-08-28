@@ -227,7 +227,7 @@ trait protointernal extends caps.Pure:
           case None =>
             val dimensionName =
               dimensionality.quantityName.map: name => ("the physical quantity ": String)+name
-              . getOrElse("the same quantity": String)
+              . getOrElse(("the same quantity": String))
 
             halt:
               m"""

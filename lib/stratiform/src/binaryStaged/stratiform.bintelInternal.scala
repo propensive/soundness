@@ -622,7 +622,7 @@ object bintelInternal:
         case KBoolean => Expr(false)
         case KDouble  => Expr(0.0)
         case KText    => '{ t"" }
-        case KString  => Expr("": String)
+        case KString  => Expr(("": String))
 
       def seamRead(decoder: Any, encoding: Option[String]): Expr[Any] =
         val found = decoder.asInstanceOf[Expr[Any]]

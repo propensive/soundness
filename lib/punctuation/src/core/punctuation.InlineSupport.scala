@@ -88,7 +88,7 @@ private[punctuation] object InlineSupport:
         try Integer.parseInt(numStr, if isHex then 16 else 10)
         catch case _: NumberFormatException => return Unset
 
-      val ch =
+      val ch: String =
         if codePoint == 0 || codePoint > 0x10FFFF then "�"
         else String.valueOf(Character.toChars(codePoint).nn).nn
 

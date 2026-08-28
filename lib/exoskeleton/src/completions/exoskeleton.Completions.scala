@@ -247,7 +247,7 @@ object Completions:
           |}
           |_$command
           |return 0
-          |""".s.stripMargin.tt
+          |"("": String).stripMargin.tt
 
     case Shell.Fish =>
       t"""|function completions
@@ -256,7 +256,7 @@ object Completions:
           |    -- (commandline -o)
           |end
           |complete -f -c $command -a '(completions)'
-          |""".s.stripMargin.tt
+          |"("": String).stripMargin.tt
 
     case Shell.Bash =>
       t"""|_${command}_complete() {
@@ -265,7 +265,7 @@ object Completions:
           |    -- $${COMP_WORDS[@]})
           |}
           |complete -F _${command}_complete $command
-          |""".s.stripMargin.tt
+          |"("": String).stripMargin.tt
 
     case Shell.Powershell =>
       t"""|# $command tab-completions
@@ -281,7 +281,7 @@ object Completions:
           |            $$name, $$name, 'ParameterValue', $$desc)
           |    }
           |}
-          |""".s.stripMargin.tt
+          |"("": String).stripMargin.tt
 
   enum Installation:
     case CommandNotOnPath(script: Text)

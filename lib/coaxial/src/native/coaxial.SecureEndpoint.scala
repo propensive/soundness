@@ -74,11 +74,11 @@ object SecureEndpoint:
         // ignores `interface`).
         val nullPtr = null.asInstanceOf[Ptr[Byte]]
         val context = libssl.SSL_CTX_new(libssl.TLS_client_method())
-        if context == null then throw ji.IOException(("TLS: SSL_CTX_new failed: ": String)+opensslError())
+        if context == null then throw ji.IOException("TLS: SSL_CTX_new failed: ".s+opensslError())
 
         try
           if libssl.SSL_CTX_set_default_verify_paths(context) != 1
-          then throw ji.IOException(("TLS: no default certificate store: ": String)+opensslError())
+          then throw ji.IOException("TLS: no default certificate store: ".s+opensslError())
 
           val mode = if tls.verify then SSL_VERIFY_PEER else SSL_VERIFY_NONE
           libssl.SSL_CTX_set_verify(context, mode, nullPtr)
@@ -86,13 +86,13 @@ object SecureEndpoint:
           val bio = libssl.BIO_new_ssl_connect(context)
 
           if bio == null
-          then throw ji.IOException(("TLS: BIO_new_ssl_connect failed: ": String)+opensslError())
+          then throw ji.IOException("TLS: BIO_new_ssl_connect failed: ".s+opensslError())
 
           try
             val sslHolder = stackalloc[Ptr[Byte]]()
             libcrypto.BIO_ctrl(bio, BIO_C_GET_SSL, 0L, sslHolder.asInstanceOf[Ptr[Byte]])
             val ssl = !sslHolder
-            if ssl == null then throw ji.IOException(("TLS: BIO_get_ssl failed: ": String)+opensslError())
+            if ssl == null then throw ji.IOException("TLS: BIO_get_ssl failed: ".s+opensslError())
 
             Zone.acquire: zone =>
               val host = toCString(endpoint.host.s)(using zone)
@@ -105,16 +105,16 @@ object SecureEndpoint:
               // ...and `SSL_set1_host` then checks that certificate against the hostname
               // during the handshake (skipped only when verification is off).
               if tls.verify && libssl.SSL_set1_host(ssl, host) != 1
-              then throw ji.IOException(("TLS: SSL_set1_host failed: ": String)+opensslError())
+              then throw ji.IOException("TLS: SSL_set1_host failed: ".s+opensslError())
 
-              val target = toCString(endpoint.host.s+(":": String)+endpoint.port.toString)(using zone)
+              val target = toCString(endpoint.host.s+":".s+endpoint.port.toString)(using zone)
               libcrypto.BIO_ctrl(bio, BIO_C_SET_CONNECT, 0L, target.asInstanceOf[Ptr[Byte]])
 
             // Resolve, connect and handshake in one step; with `SSL_VERIFY_PEER` set, an
             // untrusted or mismatched certificate fails here.
             if libcrypto.BIO_ctrl(bio, BIO_C_DO_STATE_MACHINE, 0L, nullPtr) <= 0 then
-              val where = endpoint.host.s+(":": String)+endpoint.port.toString
-              throw ji.IOException(("TLS: connection to ": String)+where+(" failed: ": String)+opensslError())
+              val where = endpoint.host.s+":".s+endpoint.port.toString
+              throw ji.IOException("TLS: connection to ".s+where+" failed: ".s+opensslError())
 
             bioDuplex(bio, context)
 

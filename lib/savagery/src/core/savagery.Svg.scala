@@ -238,7 +238,7 @@ object Svg:
         }
         do pos += 1
 
-      def isCommand(c: Char): Boolean = ("MmLlHhVvCcQqZzAaSsTt": String).indexOf(c.toInt) >= 0
+      def isCommand(c: Char): Boolean = "MmLlHhVvCcQqZzAaSsTt".s.indexOf(c.toInt) >= 0
 
       def isNumberStart(c: Char): Boolean =
         c == '-' || c == '+' || c == '.' || (c >= '0' && c <= '9')
