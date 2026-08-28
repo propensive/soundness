@@ -255,14 +255,19 @@ object Jdwp:
   case class Version(description: Text, major: Int, minor: Int, vmVersion: Text, vmName: Text)
   case class ClassInfo(tag: TypeTag, cls: ReferenceTypeId, signature: Text, status: Int)
   case class MethodInfo(method: MethodId, name: Text, signature: Text, modifiers: Int)
+  case class FieldInfo(field: FieldId, name: Text, signature: Text, modifiers: Int)
   case class LineEntry(index: Long, line: Int)
   case class LineTable(start: Long, end: Long, lines: List[LineEntry])
   case class SlotInfo(index: Long, name: Text, signature: Text, length: Int, slot: Int)
   case class VariableTable(argCount: Int, slots: List[SlotInfo])
+  case class ThreadStatus(threadStatus: Int, suspendStatus: Int)
 
   // The capabilities a VM advertises (`VirtualMachine.CapabilitiesNew`); only the flags this
-  // library consults are named, the rest are carried positionally as needed.
-  case class Capabilities(canGetSourceDebugExtension: Boolean, canUseSourceNameFilters: Boolean)
+  // library consults are named, the rest are discarded on decoding.
+  case class Capabilities
+    ( canGetSyntheticAttribute:   Boolean,
+      canGetSourceDebugExtension: Boolean,
+      canUseSourceNameFilters:    Boolean )
 
   // JDWP strings are JNI *modified* UTF-8: the null character is `C0 80`, and characters outside
   // the basic multilingual plane arrive as two three-byte sequences (a surrogate pair), which we
@@ -376,6 +381,20 @@ object Jdwp:
       case Tag.VoidTag    => Value.Void
       case reference      => Value.Reference(reference, objectId())
 
+    // An arrayregion (`ArrayReference.GetValues`): one tag byte for the whole region, then a
+    // count. A primitive region packs untagged values of that one type; an object region carries
+    // ordinarily tagged values, since the elements' runtime types may differ.
+    def arrayRegion(): List[Value] =
+      val tag = Tag(next().toChar)
+      val count = int()
+
+      def recur(remaining: Int): List[Value] =
+        if remaining <= 0 then Nil else
+          val head = if Tag.isObject(tag) then value() else untaggedValue(tag)
+          head :: recur(remaining - 1)
+
+      recur(count)
+
   // Marshals a JDWP packet payload. Fluent: each write returns the writer. `data` snapshots the
   // accumulated bytes.
   class Writer(sizes: IdSizes):
@@ -450,6 +469,20 @@ object Jdwp:
       case Value.OfBoolean(boolean0) => byte(Tag.BooleanTag.id.toByte).boolean(boolean0)
       case Value.Void                => byte(Tag.VoidTag.id.toByte)
       case Value.Reference(tag, id0) => byte(tag.id.toByte).objectId(id0)
+
+    // Writes a value with no tag byte, for the commands whose receiver already knows the type: a
+    // field write (the field's signature fixes it) or a primitive array region.
+    def untaggedValue(value: Value): Writer = value match
+      case Value.OfByte(byte0)       => byte(byte0)
+      case Value.OfChar(char0)       => char(char0)
+      case Value.OfDouble(double0)   => double(double0)
+      case Value.OfFloat(float0)     => float(float0)
+      case Value.OfInt(int0)         => int(int0)
+      case Value.OfLong(long0)       => long(long0)
+      case Value.OfShort(short0)     => short(short0)
+      case Value.OfBoolean(boolean0) => boolean(boolean0)
+      case Value.Void                => this
+      case Value.Reference(_, id0)   => objectId(id0)
 
     def modifier(modifier: Modifier): Writer =
       byte(modifier.kind)
@@ -707,12 +740,10 @@ object Jdwp:
       pending.clear()
       composites.stop()
 
-    // The one seam every command goes through: allocate an id, frame the request, await the reply,
-    // and hand back a reader over its payload (raising the VM's error code on failure).
-    def request(set: Int, command: Int)(write: Writer => Unit)
-      ( using Tactic[Debugger.Error] )
-    :   Reader =
-
+    // The seam beneath every command: allocate an id, frame the request, and await the raw reply.
+    // Most commands go through `request`, which raises the VM's error code; the few that read a
+    // particular error code as data (absent debug information) call this directly.
+    private def submit(set: Int, command: Int)(write: Writer => Unit): Connection.Reply =
       val id = counter.getAndIncrement()
       val writer = Writer(sizes0)
       write(writer)
@@ -720,12 +751,20 @@ object Jdwp:
       pending(id) = promise
       outgoing.put(Packet.command(id, set, command, writer.data))
 
+      // The monitor is passed to `await` explicitly, not as a `given` (which would hide `this`).
+      // A cancelled await becomes a lost connection.
+      safely(promise.await()(using monitor)).or(Connection.Reply.Failed(-1))
+
+    // Frames and issues a command, handing back a reader over the reply's payload. On failure, an
+    // error is raised recoverably and an empty reader returned, so no `Nothing`-typed expression
+    // reaches the reply position.
+    def request(set: Int, command: Int)(write: Writer => Unit)
+      ( using Tactic[Debugger.Error] )
+    :   Reader =
+
       given Diagnostics = note
 
-      // The monitor is passed to `await` explicitly, not as a `given` (which would hide `this`). A
-      // cancelled await becomes a lost connection; an error is raised recoverably and an empty
-      // reader returned, so no `Nothing`-typed expression reaches the reply position.
-      safely(promise.await()(using monitor)).or(Connection.Reply.Failed(-1)) match
+      submit(set, command)(write) match
         case Connection.Reply.Ok(data) =>
           Reader(data, sizes0)
 
@@ -761,6 +800,12 @@ object Jdwp:
       val reader = request(1, 1)(_ => ())
       Version(reader.string(), reader.int(), reader.int(), reader.string(), reader.string())
 
+    def allClasses()(using Tactic[Debugger.Error]): List[ClassInfo] =
+      val reader = request(1, 3)(_ => ())
+
+      list(reader.int()): () =>
+        ClassInfo(TypeTag(reader.byte()), reader.referenceTypeId(), reader.string(), reader.int())
+
     def allThreads()(using Tactic[Debugger.Error]): List[ThreadId] =
       val reader = request(1, 4)(_ => ())
       list(reader.int()): () => reader.threadId()
@@ -768,6 +813,25 @@ object Jdwp:
     def suspendAll()(using Tactic[Debugger.Error]): Unit = command(1, 8)(_ => ())
     def resumeAll()(using Tactic[Debugger.Error]): Unit = command(1, 9)(_ => ())
     def dispose()(using Tactic[Debugger.Error]): Unit = command(1, 6)(_ => ())
+
+    // The reply is a fixed sequence of 32 booleans (the last eleven reserved); the flags this
+    // library consults are picked out by their published one-based positions, and a short reply
+    // from an old VM leaves the missing flags false.
+    def capabilitiesNew()(using Tactic[Debugger.Error]): Capabilities =
+      val reader = request(1, 17)(_ => ())
+      var canGetSyntheticAttribute = false
+      var canGetSourceDebugExtension = false
+      var canUseSourceNameFilters = false
+      var index = 1
+
+      while reader.remaining > 0 do
+        val flag = reader.boolean()
+        if index == 4 then canGetSyntheticAttribute = flag
+        if index == 13 then canGetSourceDebugExtension = flag
+        if index == 19 then canUseSourceNameFilters = flag
+        index += 1
+
+      Capabilities(canGetSyntheticAttribute, canGetSourceDebugExtension, canUseSourceNameFilters)
 
     // ReferenceType (command set 2).
     def signature(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): Text =
@@ -788,6 +852,12 @@ object Jdwp:
       list(reader.int()): () =>
         MethodInfo(reader.methodId(), reader.string(), reader.string(), reader.int())
 
+    def fields(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): List[FieldInfo] =
+      val reader = request(2, 4)(_.referenceTypeId(cls))
+
+      list(reader.int()): () =>
+        FieldInfo(reader.fieldId(), reader.string(), reader.string(), reader.int())
+
     // Method (command set 6).
     def lineTable(cls: ReferenceTypeId, method: MethodId)
       ( using Tactic[Debugger.Error] )
@@ -800,6 +870,60 @@ object Jdwp:
 
       LineTable(start, end, lines)
 
+    // The local-variable table is optional debug information: a class compiled without it makes
+    // the VM report ABSENT_INFORMATION (101), which decodes here as `Unset` rather than an error,
+    // since callers degrade to showing captured and field state only.
+    def variableTable(cls: ReferenceTypeId, method: MethodId)
+      ( using Tactic[Debugger.Error] )
+    :   Optional[VariableTable] =
+
+      given Diagnostics = note
+
+      submit(6, 2)(_.referenceTypeId(cls).methodId(method)) match
+        case Connection.Reply.Ok(data) =>
+          val reader = Reader(data, sizes0)
+          val argCount = reader.int()
+
+          val slots = list(reader.int()): () =>
+            SlotInfo(reader.long(), reader.string(), reader.string(), reader.int(), reader.int())
+
+          VariableTable(argCount, slots)
+
+        case Connection.Reply.Failed(101) =>
+          Unset
+
+        case Connection.Reply.Failed(code) =>
+          raise(Debugger.Error(Debugger.Error.Reason(code), t"command (6, 2)"))
+          Unset
+
+    // ObjectReference (command set 9).
+    def referenceType(obj: ObjectId)(using Tactic[Debugger.Error]): (TypeTag, ReferenceTypeId) =
+      val reader = request(9, 1)(_.objectId(obj))
+      (TypeTag(reader.byte()), reader.referenceTypeId())
+
+    def fieldValues(obj: ObjectId, fields: List[FieldId])
+      ( using Tactic[Debugger.Error] )
+    :   List[Value] =
+
+      val reader = request(9, 2): writer =>
+        writer.objectId(obj).int(fields.stdlib.length)
+        fields.stdlib.foreach(writer.fieldId)
+
+      list(reader.int()): () => reader.value()
+
+    // The values are written untagged: each field's declared signature already fixes its type.
+    def setFieldValues(obj: ObjectId, assignments: List[(FieldId, Value)])
+      ( using Tactic[Debugger.Error] )
+    :   Unit =
+
+      command(9, 3): writer =>
+        writer.objectId(obj).int(assignments.stdlib.length)
+        assignments.stdlib.foreach: (field, value) => writer.fieldId(field).untaggedValue(value)
+
+    // StringReference (command set 10).
+    def stringValue(string: StringId)(using Tactic[Debugger.Error]): Text =
+      request(10, 1)(_.stringId(string)).string()
+
     // ThreadReference (command set 11).
     def threadName(thread: ThreadId)(using Tactic[Debugger.Error]): Text =
       request(11, 1)(_.threadId(thread)).string()
@@ -810,6 +934,10 @@ object Jdwp:
     def resumeThread(thread: ThreadId)(using Tactic[Debugger.Error]): Unit =
       command(11, 3)(_.threadId(thread))
 
+    def threadStatus(thread: ThreadId)(using Tactic[Debugger.Error]): ThreadStatus =
+      val reader = request(11, 4)(_.threadId(thread))
+      ThreadStatus(reader.int(), reader.int())
+
     def frameCount(thread: ThreadId)(using Tactic[Debugger.Error]): Int =
       request(11, 7)(_.threadId(thread)).int()
 
@@ -819,6 +947,26 @@ object Jdwp:
 
       val reader = request(11, 6): writer => writer.threadId(thread).int(start).int(length)
       list(reader.int()): () => (reader.frameId(), reader.location())
+
+    // ArrayReference (command set 13).
+    def arrayLength(array: ObjectId)(using Tactic[Debugger.Error]): Int =
+      request(13, 1)(_.objectId(array)).int()
+
+    def arrayValues(array: ObjectId, first: Int, length: Int)
+      ( using Tactic[Debugger.Error] )
+    :   List[Value] =
+
+      request(13, 2)(_.objectId(array).int(first).int(length)).arrayRegion()
+
+    // A primitive region is written untagged, like the reply's arrayregion: the array's component
+    // type already fixes each element's encoding.
+    def setArrayValues(array: ObjectId, first: Int, values: List[Value])
+      ( using Tactic[Debugger.Error] )
+    :   Unit =
+
+      command(13, 3): writer =>
+        writer.objectId(array).int(first).int(values.stdlib.length)
+        values.stdlib.foreach(writer.untaggedValue)
 
     // EventRequest (command set 15). `set` returns the request id used to `clear` it later.
     def eventRequestSet(kind: EventKind, policy: SuspendPolicy, modifiers: List[Modifier])
@@ -836,3 +984,28 @@ object Jdwp:
     :   Unit =
 
       command(15, 2)(_.byte(kind.id.toByte).int(request0))
+
+    // StackFrame (command set 16). Slots are requested with the tag byte of their declared type,
+    // which the caller derives from the variable table's signatures.
+    def slotValues(thread: ThreadId, frame: FrameId, slots: List[(Int, Tag)])
+      ( using Tactic[Debugger.Error] )
+    :   List[Value] =
+
+      val reader = request(16, 1): writer =>
+        writer.threadId(thread).frameId(frame).int(slots.stdlib.length)
+        slots.stdlib.foreach: (slot, tag) => writer.int(slot).byte(tag.id.toByte)
+
+      list(reader.int()): () => reader.value()
+
+    def setSlotValues(thread: ThreadId, frame: FrameId, assignments: List[(Int, Value)])
+      ( using Tactic[Debugger.Error] )
+    :   Unit =
+
+      command(16, 2): writer =>
+        writer.threadId(thread).frameId(frame).int(assignments.stdlib.length)
+        assignments.stdlib.foreach: (slot, value) => writer.int(slot).value(value)
+
+    // The frame's `this`, as a tagged reference; a static or native frame answers the null object
+    // (identifier zero).
+    def thisObject(thread: ThreadId, frame: FrameId)(using Tactic[Debugger.Error]): Value =
+      request(16, 3)(_.threadId(thread).frameId(frame)).value()
