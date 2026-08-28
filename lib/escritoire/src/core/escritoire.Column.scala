@@ -42,7 +42,8 @@ object Column:
     ( title:         text,
       textAlign:     Optional[TextAlignment]     = Unset,
       verticalAlign: Optional[VerticalAlignment] = Unset,
-      sizing:        Columnar                    = columnar.Paragraph )
+      sizing:        Columnar                    = columnar.Paragraph,
+      decorate:      row -> Optional[text -> text] = { (_: Any) => Unset } )
     ( get: row -> cell )
     ( using columnAlignment: Column.Alignment[cell] = Column.Alignment.topLeft )
     ( using text.Show[cell] )
@@ -55,7 +56,8 @@ object Column:
         contents,
         textAlign.or(columnAlignment.text),
         verticalAlign.or(columnAlignment.vertical),
-        sizing )
+        sizing,
+        decorate )
 
   // ColumnAlignment → Column.Alignment
   object Alignment:
@@ -75,9 +77,20 @@ case class Column[row, text: Textual]
     get:           row -> text,
     textAlign:     TextAlignment,
     verticalAlign: VerticalAlignment,
-    sizing:        Columnar ):
+    sizing:        Columnar,
+
+    // A per-row DECORATION of the whole rendered cell — content plus its gutter padding —
+    // applied by `Grid.render` after alignment. The renderer knows nothing of styling (the
+    // `text` type stays abstract); a Teletype caller writes e.g.
+    // `row => if winner(row) then { (line: Teletype) => e"${Bg(color)}($line)" } else Unset`,
+    // and the e-interpolator's style combination fills the unstyled padding while any styles
+    // inside the cell content win. No default here: it would clash with the factory
+    // `apply`'s defaults (two overloads with default arguments); the factory supplies it.
+    decorate:      row -> Optional[text -> text] ):
 
   def contramap[row2](lambda: row2 -> row): Column[row2, text] =
-    Column[row2, text](title, row => get(lambda(row)), textAlign, verticalAlign, sizing)
+    Column[row2, text]
+      ( title, row => get(lambda(row)), textAlign, verticalAlign, sizing,
+        row => decorate(lambda(row)) )
 
   def retitle(title: text): Column[row, text] = copy(title = title)

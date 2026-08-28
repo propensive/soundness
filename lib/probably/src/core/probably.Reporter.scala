@@ -51,3 +51,11 @@ trait Reporter[report] extends Findable:
   def fail(report: report, error: Throwable, active: Set[Test.Id]): Unit
   def declare(report: report, suite: Testable): Unit
   def complete(report: report): Unit
+
+  // Execution brackets, called by `Runner` as a test (or nested suite, when `suite`) begins
+  // and ends; and `live`, gating `Runner`'s in-place ANSI progress. All defaulted, so existing
+  // reporters are unaffected; an event-emitting reporter overrides them to produce progress
+  // events and to suppress the runner's own drawing.
+  def started(report: report, id: Test.Id, suite: Boolean): Unit = ()
+  def ended(report: report, id: Test.Id, suite: Boolean): Unit = ()
+  def live(report: report): Boolean = true

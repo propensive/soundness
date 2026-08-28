@@ -59,13 +59,14 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
     ( using metrics: Text is Measurable, textual: text is Textual { type Result = Char } )
   :   Chain[text] =
     val pad = t" "*style.padding
-    val leftEdge = Textual(t"${style.charset(top = style.sideLines, bottom = style.sideLines)}$pad")
 
-    val rightEdge =
-      Textual(t"$pad${style.charset(top = style.sideLines, bottom = style.sideLines)}")
-
-    val midEdge =
-      Textual(t"$pad${style.charset(top = style.innerLines, bottom = style.innerLines)}$pad")
+    // The edges are BARE rule glyphs: the gutter padding belongs to each cell, so that a
+    // cell's decoration (a background, say) covers its whole width — padding included —
+    // while the rules stay undecorated. Line widths are unchanged: the padding moved, it
+    // was not added, so the `rule` joint arithmetic below is unaffected.
+    val leftEdge = Textual(t"${style.charset(top = style.sideLines, bottom = style.sideLines)}")
+    val rightEdge = leftEdge
+    val midEdge = Textual(t"${style.charset(top = style.innerLines, bottom = style.innerLines)}")
 
     def recur(widths: Array[Int]^{}, rows: Chain[TableRow[text]]): Chain[text] =
       rows match
@@ -81,13 +82,17 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
 
               val line = lineNumber - offset
 
-              if line >= 0 && line < cell.minHeight
-              then
-                cell.textAlign.pad
-                  ( cell(line), widths.readUnchecked(index), line == cell.minHeight - 1 )
+              val body: text =
+                if line >= 0 && line < cell.minHeight
+                then
+                  cell.textAlign.pad
+                    ( cell(line), widths.readUnchecked(index), line == cell.minHeight - 1 )
 
-              else
-                Textual((t" "*widths.readUnchecked(index)))
+                else
+                  Textual((t" "*widths.readUnchecked(index)))
+
+              val padded: text = textual.concat(textual.concat(Textual(pad), body), Textual(pad))
+              cell.decorate.lay(padded) { decoration => decoration(padded) }
 
             . join(leftEdge, midEdge, rightEdge)
 

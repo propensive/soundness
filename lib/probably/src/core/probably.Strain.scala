@@ -82,6 +82,26 @@ object Strain:
           val axis = Axis.Spec(t"N", Axis.Domain.Integral, emergent = true)
           coordinates :+ (axis -> Value.Integral(strain.concurrency))
 
+      report.emit:
+        TestEvent.StrainRecorded
+          ( TestEvent.Ref.of(testId),
+            TestEvent.Coordinate.of(coordinates2),
+            strain.concurrency,
+            strain.operations,
+            strain.nanoseconds,
+            strain.allocation,
+            strain.peakHeap,
+            strain.retained,
+            strain.gcCount,
+            strain.gcTime,
+            strain.p50,
+            strain.p90,
+            strain.p99,
+            strain.p999,
+            strain.compliance,
+            strain.sustained,
+            java.lang.System.currentTimeMillis )
+
       report.record
         ( testId,
           Entry.Kind.Stress,

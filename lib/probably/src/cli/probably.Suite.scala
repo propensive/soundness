@@ -65,9 +65,50 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
   // FD-backed streams would bypass that redirection entirely (the report would go to the host
   // process's terminal, not the host's client). In a conventional `java -cp … <Suite>` run the
   // two are indistinguishable, since `System.out` IS the process's stdout.
-  def suiteIo: Stdio = safely(stdios.systemStdio).or(panic(m"the JVM stdio is always available"))
+  // A host may also have NULLED `System.out` outright — superlunary's `Executor` does, so
+  // that stray prints from staged code cannot corrupt its protocol stream — and a staged
+  // expression which touches a suite object's statics initializes the whole suite there. In
+  // that case the FD-backed streams are the only ones left to fall back to.
+  def suiteIo: Stdio =
+    safely(stdios.systemStdio).or(stdios.virtualMachineStdio)
 
-  private def makeRunner(selection: Selection): Runner[Report] =
+  private def makeRunner(selection: Selection): Runner[Report] = makeRunner(selection, Unset)
+
+  // A `Reporter[Report]` which renders nothing: the report accumulates as usual (so `passed`
+  // and selection accounting still work), but every datum leaves as a `TestEvent` through the
+  // sink, execution brackets become progress events, and the runner's own ANSI drawing is
+  // suppressed (`live = false`) — the consumer owns all presentation.
+  private def eventReporter(sink: TestEvent -> Unit)(using Environment, TestPalette, Stdio)
+  :   Reporter[Report] =
+
+    new Reporter[Report]:
+      def report(): Report =
+        val report = Report()
+        report.stream(sink)
+        report
+
+      def declare(report: Report, suite: Testable): Unit = report.declare(suite)
+
+      def fail(report: Report, error: Throwable, active: Set[Test.Id]): Unit =
+        report.fail(error, active)
+
+      def complete(report: Report): Unit = report.complete(None)
+
+      override def started(report: Report, id: Test.Id, suite: Boolean): Unit =
+        if !suite then
+          report.emit:
+            TestEvent.TestStarted(TestEvent.Ref.of(id), jl.System.currentTimeMillis)
+
+      override def ended(report: Report, id: Test.Id, suite: Boolean): Unit =
+        report.emit:
+          if suite then TestEvent.SuiteEnded(TestEvent.Ref.of(id), jl.System.currentTimeMillis)
+          else TestEvent.TestEnded(TestEvent.Ref.of(id), jl.System.currentTimeMillis)
+
+      override def live(report: Report): Boolean = false
+
+  private def makeRunner(selection: Selection, sink: Optional[TestEvent -> Unit])
+  :   Runner[Report] =
+
     given stdio: Stdio = suiteIo
 
     given palette: (theme: Theme) => TestPalette = new TestPalette:
@@ -100,7 +141,9 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
       def positive:    Color in Srgb = pass
       def negative:    Color in Srgb = fail
 
-    try Runner(selection) catch case error: Environment.Error =>
+    val reporter: Reporter[Report] = sink.lay(Reporter.report)(eventReporter(_))
+
+    try Runner(selection)(using reporter) catch case error: Environment.Error =>
       jl.System.out.nn.println(StackTrace(error).teletype.render)
       ???
 
@@ -180,6 +223,43 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
         catch case error: Environment.Error =>
           jl.System.out.nn.println(StackTrace(error).teletype)
           3
+      catch case error: Throwable =>
+        runner.terminate(error)
+        2
+
+  // Runs the suite with an EVENT SINK: no rendering happens in this process — the report
+  // still accumulates (for `passed` and selection accounting), but every result leaves as a
+  // `TestEvent` through `sink`, ending with `RunCompleted`. Exit codes as `invoke`:
+  // 0 = passed, 1 = failures, 2 = the suite threw, 3 = environment error. A `--list`
+  // selection emits one `TestScheduled` per admitted test — the run's schedule, with each
+  // test's REAL `Ref` (full path segments, file and line), which no text format could carry
+  // unambiguously (test and suite names may contain any character).
+  final def invoke(arguments: Text, sink: TestEvent -> Unit): Int =
+    val selection = Selection.parse(arguments.cut(t"\n").filter(_ != t""))
+
+    if selection.listOnly then
+      runner0 = makeRunner(selection, sink)
+
+      try
+        runner.suite(testableView, run())
+
+        runner.listed.each: (id, kind) =>
+          sink(TestEvent.TestScheduled(TestEvent.Ref.of(id), TestEvent.kindName(kind)))
+
+        0
+      catch case error: Throwable => 2
+    else
+      runner0 = makeRunner(selection, sink)
+
+      try
+        runner.suite(testableView, run())
+
+        try
+          if runner.admitted == 0 && !selection.trivial then sink(TestEvent.NothingMatched(0))
+          runner.complete()
+          if runner.report.passed then 0 else 1
+        catch case error: Environment.Error => 3
+
       catch case error: Throwable =>
         runner.terminate(error)
         2

@@ -86,6 +86,10 @@ def menu[item: Showable]
 
 // A split whose children sit side by side as columns (distributing width): a
 // strip of panes across the terminal, on the `File` axis.
+// A scrolling viewport pane. Takes the FIXTURE rather than its content: the caller keeps
+// the handle to drive `scroll`/`toBottom` (a form focuses it for Up/Down instead).
+def scrolling(fixture: ScrollFixture): Pane = Pane.Widget(Sizing(), fixture)
+
 def strip(panes: Pane*): Pane = Pane.Branch(Sizing(), Arrangement.Strip, Panes(panes*))
 
 // A column split over a live container, whose children can change while running.
