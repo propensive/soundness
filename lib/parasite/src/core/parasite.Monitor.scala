@@ -270,11 +270,11 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
 
   def stack: Text =
     val ref = // The `(x: Text)` ascriptions widen singleton-bounded values (case-2 pure-value box).
-      name.lay((frame.text: Text).s)(name => (name: Text).s+"@"+(frame.text: Text).s)
+      name.lay((frame.text: Text).s)(name => (name: Text).s+("@": String)+(frame.text: Text).s)
 
     parent match
-      case root: Root         => ((root.supervisor.name: Text).s+"://"+ref).tt
-      case submonitor: Worker => ((submonitor.stack: Text).s+"//"+ref).tt
+      case root: Root         => ((root.supervisor.name: Text).s+("://": String)+ref).tt
+      case submonitor: Worker => ((submonitor.stack: Text).s+("//": String)+ref).tt
       case _                  => ref.tt
 
   def relent(): Unit =

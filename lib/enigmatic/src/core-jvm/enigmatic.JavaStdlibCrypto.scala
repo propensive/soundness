@@ -120,7 +120,7 @@ object JavaStdlibCrypto extends Crypto:
   def ecdsa(digest: Text): Crypto.SignatureScheme =
     new Signatory(t"${digest}withECDSA", t"EC"):
       def generateKeyPair(bits: Int): Data =
-        val curve = bits match
+        val curve: String = bits match
           case 256 => "secp256r1"
           case 384 => "secp384r1"
           case 521 => "secp521r1"

@@ -44,10 +44,10 @@ import symbolism.*
 
 object Pax:
   def record(key: Text, value: Text): Data =
-    val payload: Data = (key.s+"="+value.s+"\n").tt.in[Data]
+    val payload: Data = (key.s+("=": String)+value.s+"\n").tt.in[Data]
     val payloadLen: Int = payload.length
     val total: Int = computeLength(payloadLen)
-    (total.toString+" "+key.s+"="+value.s+"\n").tt.in[Data]
+    (total.toString+(" ": String)+key.s+("=": String)+value.s+"\n").tt.in[Data]
 
   def records(pairs: Iterable[(Text, Text)]): Data =
     // Accumulate on the `IArray` side: a `Concatenable` result is fresh, and a fresh capture

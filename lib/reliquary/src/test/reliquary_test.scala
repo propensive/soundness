@@ -53,7 +53,7 @@ import Tel.given
 
 object Tests extends Suite(m"Reliquary Tests"):
   // The pinned serialization of the two-blob stream `["a", "bc"]` (golden bytes of §8.2):
-  // `uvarint(1) ++ "a" ++ uvarint(2) ++ "bc"`, records in ascending blob-hash order.
+  // `uvarint(1) ++ ("a": String) ++ uvarint(2) ++ "bc"`, records in ascending blob-hash order.
   val goldenStream: Text = t"0161026263"
 
   // The pinned `lira/1:derivative` hash of the two-entry canonical jar built by the derivative

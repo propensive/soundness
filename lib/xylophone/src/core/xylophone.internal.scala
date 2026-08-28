@@ -1325,19 +1325,19 @@ object internal:
 
     if !classSymbol.flags.is(Flags.Case) then
       report.errorAndAbort
-        ("xylophone: staged parsing requires a case class; sums and other types use " +
+        (("xylophone: staged parsing requires a case class; sums and other types use ": String) +
           "`Xml.Parsable.derived`")
 
     if classSymbol.owner.isTerm then
       report.errorAndAbort
-        ("xylophone: staged parsing requires a top-level or object-nested case class; " +
+        (("xylophone: staged parsing requires a top-level or object-nested case class; ": String) +
           "method-local classes use `Xml.Parsable.derived`")
 
     val ctor = classSymbol.primaryConstructor
 
     if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
       report.errorAndAbort
-        ("xylophone: staged parsing requires a single parameter list; use " +
+        (("xylophone: staged parsing requires a single parameter list; use ": String) +
           "`Xml.Parsable.derived`")
 
     val fields = classSymbol.caseFields
@@ -1462,16 +1462,16 @@ object internal:
       val tactic = Ref(tacticSymbol).asExprOf[Tactic[Xml.Error]]
 
       val slots = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "slot"+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, ("slot": String)+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
 
       val seens = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "seen"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, ("seen": String)+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
 
       // Occurrence buffers for the fields that may gather (repeatable
       // instances), allocated lazily on the first occurrence.
       val buffers: List[Option[Symbol]] = List.range(0, arity).map: index =>
         if kinds(index) != InstanceK then None else
-          Some(Symbol.newVal(owner, "gather"+index, bufferType, Flags.Mutable, Symbol.noSymbol))
+          Some(Symbol.newVal(owner, ("gather": String)+index, bufferType, Flags.Mutable, Symbol.noSymbol))
 
       val slotDefs = List.range(0, arity).map: index =>
         ValDef(slots(index), Some(zero(fieldTypes(index))))

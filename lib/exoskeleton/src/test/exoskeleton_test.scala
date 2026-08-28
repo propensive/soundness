@@ -1021,7 +1021,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           Flag[Text](t"count", repeatable = true, aliases = List('c')).inspect
         . assert:
             _ == Text
-                  ( "Flag(--count ╱ aliases:[-c] ╱ repeatable:true ╱ secret:false ╱ "
+                  ( ("Flag(--count ╱ aliases:[-c] ╱ repeatable:true ╱ secret:false ╱ ": String)
                     +"description:○)" )
 
       suite(m"Prospective and requisite flags"):

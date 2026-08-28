@@ -1493,7 +1493,7 @@ object Json extends Json2, Dynamic:
         override val offset: Optional[Int] = Unset,
         override val length: Optional[Int] = Unset )
     extends Format.Position:
-      def describe: Text = ("line "+line+", column "+column).tt
+      def describe: Text = (("line ": String)+line+(", column ": String)+column).tt
 
       // `line`/`column` are 1-based here; the public span is 0-based.
       override def span: Span =

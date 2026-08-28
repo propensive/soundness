@@ -58,7 +58,7 @@ object Redraft:
 
   private def marker(text: Text): Boolean =
     val s = text.s
-    s == "+" || s == "-" || s == "<" || s == ">" || s.startsWith("+ ") || s.startsWith("- ") ||
+    s == "+" || s == "-" || s == "<" || s == ">(" || s.startsWith(": String)+ ") || s.startsWith("- ") ||
       s.startsWith("< ") || s.startsWith("> ")
 
   private def needsEscape(text: Text): Boolean = marker(text) || text.s.startsWith("\\")
@@ -70,7 +70,7 @@ object Redraft:
     val directives = lines.map: line =>
       val s = line.s
 
-      if s == "+" || s.startsWith("+ ") then Directive.Mark(payload(line), insert = true)
+      if s == "+(" || s.startsWith(": String)+ ") then Directive.Mark(payload(line), insert = true)
       else if s == "-" || s.startsWith("- ") then Directive.Mark(payload(line), insert = false)
       else if s == ">" || s.startsWith("> ") then Directive.Add(payload(line))
       else if s == "<" || s.startsWith("< ") then Directive.Cut(payload(line))
@@ -80,11 +80,11 @@ object Redraft:
     Redraft(directives.stdlib*)
 
   private def render1(directive: Directive): Text = directive match
-    case Directive.Keep(line)        => if needsEscape(line) then ("\\"+line.s).tt else line
-    case Directive.Add(line)         => ("> "+line.s).tt
-    case Directive.Cut(line)         => ("< "+line.s).tt
-    case Directive.Mark(line, true)  => ("+ "+line.s).tt
-    case Directive.Mark(line, false) => ("- "+line.s).tt
+    case Directive.Keep(line)        => if needsEscape(line) then (("\\": String)+line.s).tt else line
+    case Directive.Add(line)         => (("> ": String)+line.s).tt
+    case Directive.Cut(line)         => (("< ": String)+line.s).tt
+    case Directive.Mark(line, true)  => (("+ ": String)+line.s).tt
+    case Directive.Mark(line, false) => (("- ": String)+line.s).tt
 
   private case class Matcher(text: Text, index: Int, line: Int)
 

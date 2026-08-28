@@ -170,7 +170,7 @@ package hyphenations:
   // redistributed verbatim under the FSF all-permissive licence shown in its
   // comment header.
   given englishHyphenation: Hyphenation =
-    val resource = "/polysyllabic/hyph-en-us.tex"
+    val resource: String = "/polysyllabic/hyph-en-us.tex"
     val stream = Hyphenation.getClass.getResourceAsStream(resource)
 
     if stream == null then panic(m"could not find $resource on the classpath")

@@ -62,25 +62,25 @@ object Tests extends Suite(m"Gesticulate tests"):
 
       val singlePart =
         t"--xyz\r\n" +
-        t"Content-Disposition: form-data; name=\"field1\"\r\n" +
+        t"Content-Disposition: form-data; name=\("field1\"\r\n": String) +
         t"\r\n" +
         t"value1\r\n" +
         t"--xyz--\r\n"
 
       val twoParts =
         t"--xyz\r\n" +
-        t"Content-Disposition: form-data; name=\"field1\"\r\n" +
+        t"Content-Disposition: form-data; name=\("field1\"\r\n": String) +
         t"\r\n" +
         t"value1\r\n" +
         t"--xyz\r\n" +
-        t"Content-Disposition: form-data; name=\"field2\"\r\n" +
+        t"Content-Disposition: form-data; name=\("field2\"\r\n": String) +
         t"\r\n" +
         t"value2\r\n" +
         t"--xyz--\r\n"
 
       val partsWithFilename =
         t"--xyz\r\n" +
-        t"Content-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\n" +
+        t"Content-Disposition: form-data; name=\("file\"; filename=\"hello.txt\"\r\n": String) +
         t"Content-Type: text/plain\r\n" +
         t"\r\n" +
         t"file content\r\n" +
@@ -135,7 +135,7 @@ object Tests extends Suite(m"Gesticulate tests"):
       test(m"Body containing CR but not boundary"):
         val body =
           t"--xyz\r\n" +
-          t"Content-Disposition: form-data; name=\"field\"\r\n" +
+          t"Content-Disposition: form-data; name=\("field\"\r\n": String) +
           t"\r\n" +
           t"line1\rline2\r\n" +
           t"--xyz--\r\n"
@@ -146,7 +146,7 @@ object Tests extends Suite(m"Gesticulate tests"):
       test(m"Body containing CRLF but not boundary"):
         val body =
           t"--xyz\r\n" +
-          t"Content-Disposition: form-data; name=\"field\"\r\n" +
+          t"Content-Disposition: form-data; name=\("field\"\r\n": String) +
           t"\r\n" +
           t"line1\r\nstill body\r\n" +
           t"--xyz--\r\n"
@@ -157,7 +157,7 @@ object Tests extends Suite(m"Gesticulate tests"):
       test(m"Body containing partial boundary prefix"):
         val body =
           t"--xyz\r\n" +
-          t"Content-Disposition: form-data; name=\"field\"\r\n" +
+          t"Content-Disposition: form-data; name=\("field\"\r\n": String) +
           t"\r\n" +
           t"--xy not the boundary\r\n" +
           t"--xyz--\r\n"

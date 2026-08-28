@@ -82,7 +82,7 @@ object internal:
     // doesn't propose (or recurse into) itself. Resolved by name and guarded
     // against absence — the real recursion stop is the name check in `seek`.
     val self: List[Symbol] =
-      List("frontier.context.explainMissingContext", "soundness.explainMissingContext")
+      List[String]("frontier.context.explainMissingContext", "soundness.explainMissingContext")
       . flatMap: path =>
           try List(Symbol.requiredMethod(path)) catch case _: Throwable => Nil
       . concat:

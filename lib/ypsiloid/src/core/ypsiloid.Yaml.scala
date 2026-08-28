@@ -383,7 +383,7 @@ object Yaml extends Yaml2, Dynamic:
     val builder: StringBuilder = new StringBuilder()
     unseal(yaml: Yaml).show.each { char => builder.append(Inspectable.escape(char).s) }
 
-    ("yaml\""+builder.toString+"\"").tt
+    (("yaml\"": String)+builder.toString+"\"").tt
 
   // Controls how a `Yaml` value is serialized. YAML's block style is fixed and round-trip-
   // constrained, so this currently carries no options; importing `formatting.blockYamlFormatting`
@@ -478,7 +478,7 @@ object Yaml extends Yaml2, Dynamic:
       val builder: StringBuilder = new StringBuilder()
       renderAst(ast: Ast).each { char => builder.append(Inspectable.escape(char).s) }
 
-      ("yaml\""+builder.toString+"\"ᵃˢᵗ").tt
+      (("yaml\"": String)+builder.toString+"\"ᵃˢᵗ").tt
 
     def name: Text = "YAML"
 
@@ -488,7 +488,7 @@ object Yaml extends Yaml2, Dynamic:
         override val offset: Optional[Int] = Unset,
         override val length: Optional[Int] = Unset )
     extends Format.Position:
-      def describe: Text = ("line "+line+", column "+column).tt
+      def describe: Text = (("line ": String)+line+(", column ": String)+column).tt
 
       // `line`/`column` are 1-based here; the public span is 0-based.
       override def span: Span =

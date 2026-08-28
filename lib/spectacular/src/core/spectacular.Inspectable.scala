@@ -108,7 +108,7 @@ object Inspectable extends Inspectable2:
   // further refinement of it. Each such near-miss falls silently through `derived` to the
   // `“…”` toString case rather than failing to compile, so the bound is what keeps a rendering
   // from disappearing when a type is refined.
-  given char: [char <: Char] => char is Inspectable = char => ("'"+escape(char).s+"'").tt
+  given char: [char <: Char] => char is Inspectable = char => (("'": String)+escape(char).s+"'").tt
   given int: [int <: Int] => int is Inspectable = int => int.toString.tt
   given long: [long <: Long] => long is Inspectable = long => (long.toString+"L").tt
   given byte: [byte <: Byte] => byte is Inspectable = byte => (byte.toString+".toByte").tt
@@ -121,7 +121,7 @@ object Inspectable extends Inspectable2:
     val builder: StringBuilder = new StringBuilder()
     text.each { char => builder.append(escape(char, true).s) }
 
-    ("t\""+builder.toString+"\"").tt
+    (("t\"": String)+builder.toString+"\"").tt
 
   given float: [float <: Float] => float is Inspectable =
     case Float.PositiveInfinity => "Float.PositiveInfinity".tt
@@ -139,10 +139,10 @@ object Inspectable extends Inspectable2:
     if boolean then "true".tt else "false".tt
 
   given unit: [unit <: Unit] => unit is Inspectable = unit => "()".tt
-  given bigInt: [bigInt <: BigInt] => bigInt is Inspectable = bigInt => ("BigInt("+bigInt+")").tt
+  given bigInt: [bigInt <: BigInt] => bigInt is Inspectable = bigInt => (("BigInt(": String)+bigInt+")").tt
 
   given bigDecimal: [bigDecimal <: BigDecimal] => bigDecimal is Inspectable = bigDecimal =>
-    ("BigDecimal("+bigDecimal+")").tt
+    (("BigDecimal(": String)+bigDecimal+")").tt
 
   given unset: [unset <: Unset] => unset is Inspectable = unset => "○".tt
 
@@ -243,7 +243,7 @@ object Inspectable extends Inspectable2:
 
   given interval: [interval <: Interval] => interval is Inspectable = interval =>
     val value: Interval = interval
-    if value.nil then "∅".tt else (ordinal(value.start).s+"‥"+ordinal(value.end).s).tt
+    if value.nil then "∅".tt else (ordinal(value.start).s+("‥": String)+ordinal(value.end).s).tt
 
   // A `Span` packs one of five differently-shaped ranges into a `Long`, so its rendering shows
   // the shape as well as the numbers: `⟪∅⟫` empty, `⟪@4+5⟫` an offset and length, `⟪4:8+5⟫` a
@@ -254,16 +254,16 @@ object Inspectable extends Inspectable2:
 
     val body = span.mode match
       case Span.Mode.Empty  => "∅"
-      case Span.Mode.Offset => "@"+n(span.offset)+"+"+span.length.let(_.toString).or("?")
-      case Span.Mode.Lines  => n(span.startLine)+"‥"+n(span.endLine)
+      case Span.Mode.Offset => ("@(": String)+n(span.offset)+(": String)+": String)+span.length.let(_.toString).or("?")
+      case Span.Mode.Lines  => n(span.startLine)+("‥": String)+n(span.endLine)
 
       case Span.Mode.Line =>
-        n(span.startLine)+":"+n(span.startColumn)+"+"+span.length.let(_.toString).or("?")
+        n(span.startLine)+(":(": String)+n(span.startColumn)+(": String)+": String)+span.length.let(_.toString).or("?")
 
       case Span.Mode.Area =>
-        n(span.startLine)+":"+n(span.startColumn)+"‥"+n(span.endLine)+":"+n(span.endColumn)
+        n(span.startLine)+(":": String)+n(span.startColumn)+("‥": String)+n(span.endLine)+(":": String)+n(span.endColumn)
 
-    ("⟪"+body+"⟫").tt
+    (("⟪": String)+body+"⟫").tt
 
   // `Bytes` is a count, not a quantity to be rounded for display: an inspection which showed
   // `4MB` would hide the difference between two nearby sizes, which is usually the reason for
@@ -274,7 +274,7 @@ object Inspectable extends Inspectable2:
   // A `Message` renders as its own text, in the style of a `t"…"` literal but marked `m"…"`,
   // since the interpolated parts are no longer distinguishable once the message is built.
   given message: [message <: Message] => message is Inspectable = message =>
-    ("m\""+message.text.s+"\"").tt
+    (("m\"": String)+message.text.s+"\"").tt
 
   // A missing instance is never a compile error: `derived` always succeeds, and quietly
   // substitutes a `toString`, a `Showable` or an `Encodable` rendering, each marked as such.
@@ -334,7 +334,7 @@ object Inspectable extends Inspectable2:
 
     entries =>
       entries.remap: (key, value) =>
-        inspKey().text(key).s+" → "+inspValue().text(value).s
+        inspKey().text(key).s+(" → ": String)+inspValue().text(value).s
 
       . stdlib.mkString("{", ", ", "}").tt
 
@@ -352,7 +352,7 @@ object Inspectable extends Inspectable2:
 
     ledger =>
       ledger.stdlib.map: (key, value) =>
-        inspKey().text(key).s+" → "+inspValue().text(value).s
+        inspKey().text(key).s+(" → ": String)+inspValue().text(value).s
 
       . mkString("⟦", ", ", "⟧").tt
 
@@ -381,7 +381,7 @@ object Inspectable extends Inspectable2:
         val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
         (subscript+insp().text(value).s).tt
 
-      . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
+      . mkString(("⦋": String)+arrayPrefix(array.toString), "∣", "⦌").tt
 
   given arraySeq: [element, arraySeq <: scm.ArraySeq[element]]
   =>  (inspectable: => element is Inspectable)
@@ -393,7 +393,7 @@ object Inspectable extends Inspectable2:
         val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
         (subscript+insp().text(value).s).tt
 
-      . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌ₛ").tt
+      . mkString(("⦋": String)+arrayPrefix(array.toString), "∣", "⦌ₛ").tt
 
   // Exact `Self`, for the reason given at `set` above: `Chain` is opaque too.
   given stream: [element] => (inspectable: => element is Inspectable)
@@ -408,7 +408,7 @@ object Inspectable extends Inspectable2:
         // `sci.LazyList`, so the un-forced marker is spelt `LazyList(<not computed>)`.
         else if stream.toString == "LazyList(<not computed>)" then "∿∿∿".tt
         else stream match
-          case first #:: rest => (insp().text(first).s+" ⋰ "+recur(rest, todo - 1)).tt
+          case first #:: rest => (insp().text(first).s+(" ⋰ ": String)+recur(rest, todo - 1)).tt
           case _              => "⯁ ".tt
 
       recur(stream, 3)
@@ -428,7 +428,7 @@ object Inspectable extends Inspectable2:
   private def arrayPrefix(string: String): String =
     val brackets = string.count(_ == '[')
 
-    val arrayType = string.charAt(brackets) match
+    val arrayType: String = string.charAt(brackets) match
       case 'B' => "🅱" // Byte
       case 'C' => "🅲" // Char
       case 'D' => "🅳" // Double
@@ -440,7 +440,7 @@ object Inspectable extends Inspectable2:
       case 'Z' => "🆉" // Boolean
       case _   => "🯄" // Unknown
 
-    val dimension = if brackets < 2 then "".tt else brackets.toString.map { digit => "⁰¹²³⁴⁵⁶⁷⁸⁹".charAt(digit - '0') }.tt
+    val dimension = if brackets < 2 then "".tt else brackets.toString.map { digit => ("⁰¹²³⁴⁵⁶⁷⁸⁹": String).charAt(digit - '0') }.tt
 
     arrayType+dimension//+renderBraille(string.split("@").nn(1).nn)
 
@@ -463,8 +463,8 @@ trait Inspectable2:
   // so that the types still relying on them can be found by inspecting output. A type whose
   // encoded form is escaped (`legerdemain.Query`, URL-encoded) must define its own instance.
   inline given derived: [value] => value is Inspectable = compiletime.summonFrom:
-    case given (`value` is Encodable in Text) => value => ("⸤"+value.encode.s+"⸥").tt
-    case given (`value` is Showable)          => value => ("⸢"+value.show.s+"⸣").tt
+    case given (`value` is Encodable in Text) => value => (("⸤": String)+value.encode.s+"⸥").tt
+    case given (`value` is Showable)          => value => (("⸢": String)+value.show.s+"⸣").tt
 
     case mandatable: (`value` is Mandatable) =>
       val inspectable = compiletime.summonInline[mandatable.Result is Inspectable]
@@ -476,7 +476,7 @@ trait Inspectable2:
         . or("○".tt)
 
     case given Reflection[`value`] => Inspectable.Derivation.derived[value]
-    case _                         => value => ("“"+value+"”").tt
+    case _                         => value => (("“": String)+value+"”").tt
 
 trait Inspectable extends Typeclass.Pure:
   def text(value: Self): Text

@@ -745,7 +745,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
             if jvmRegex.matches(input) != re2Regex.matches(input)
             || jvmRegex.seek(input) != re2Regex.seek(input)
             || jvmRegex.search(input) != re2Regex.search(input)
-            then failures = (pattern.s+" on "+input.s).tt :: failures
+            then failures = (pattern.s+(" on ": String)+input.s).tt :: failures
 
         failures
 
@@ -769,7 +769,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
               strip(Regex.Engine.re2.matchGroups(regex, input)(using Scanner(Unset)))
 
             if jvmResult != re2Result
-            then failures = (pattern.s+" on "+input.s).tt :: failures
+            then failures = (pattern.s+(" on ": String)+input.s).tt :: failures
 
         failures
 

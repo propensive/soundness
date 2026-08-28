@@ -42,6 +42,10 @@ import scala.util.*
 import java.nio.charset.StandardCharsets
 import symbolism.*
 
+// This module compiles without the `literacy` root import (it defines it),
+// so the literal-conversion given is imported explicitly.
+import literacy.given
+
 object internal:
   into opaque type Text <: Matchable & caps.Pure = String & caps.Pure
 

@@ -68,15 +68,15 @@ object internal:
 
             if symbol.exists then sci.List(Ref(symbol).asExprOf[Status]) else
               report.errorAndAbort
-               ( "exoskeleton: every status an execute block returns must be a singleton object "
-                 + "extending Status, but the result type includes "+other.show+", which is not "
-                 + "a singleton. Declare each status as a top-level object; if this type is "
+               ( ("exoskeleton: every status an execute block returns must be a singleton object ": String)
+                 + ("extending Status, but the result type includes ": String)+other.show+(", which is not ": String)
+                 + ("a singleton. Declare each status as a top-level object; if this type is ": String)
                  + "Status itself, the union of statuses has been widened (soundness#1811)." )
         else if repr <:< terminationType then sci.Nil
         else
           report.errorAndAbort
-           ( "exoskeleton: an execute block must return a Termination, such as an Exit or a "
-             + "Status, but the result type includes "+repr.show+", which is neither." )
+           ( ("exoskeleton: an execute block must return a Termination, such as an Exit or a ": String)
+             + ("Status, but the result type includes ": String)+repr.show+", which is neither." )
 
     '{
         new Status.Admissible:

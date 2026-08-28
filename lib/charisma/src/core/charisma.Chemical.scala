@@ -85,7 +85,7 @@ object Chemical:
         val number: Text = count.show
         t"$number${molecule.inspect}"
 
-      if parts.stdlib.isEmpty then t"∅" else parts.join(t" + ")
+      if parts.stdlib.isEmpty then t"∅(" else parts.join(t": String) + ")
 
   case class Formula(molecules: Ledger[Molecule, Int]) extends Formulable:
     def formula: Formula = this

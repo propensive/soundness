@@ -252,7 +252,7 @@ object Conformance:
     val overallPassed = inScopePassed + outOfScopePassed
     val overallTotal = results.length
 
-    val divider = "=".repeat(80)
+    val divider = ("=": String).repeat(80)
     Predef.println()
     Predef.println(divider)
     Predef.println("YAML Test Suite Conformance")
@@ -349,7 +349,7 @@ object Conformance:
       // canonical JSON the test fixtures produce.
       if !d.isNaN && !d.isInfinity && d == d.toLong.toDouble then d.toLong.toString
       else d.toString
-    case s: String         => "\"" + s + "\""
+    case s: String         => ("\"": String) + s + "\""
 
     case nums: scala.Array[Double] @unchecked =>
       // jacinta stores number-only JSON arrays unboxed as `Array[Double]`.
@@ -372,7 +372,7 @@ object Conformance:
         val pairs = (0 until n/2).map: i =>
           (arr(i*2).asInstanceOf[String], arr(i*2 + 1))
         pairs.sort(_._1)
-            .map((k, v) => "\"" + k + "\":" + renderAny(v))
+            .map((k, v) => ("\"": String) + k + ("\":": String) + renderAny(v))
             .mkString("{", ",", "}")
       else
         val last = arr(n - 1)

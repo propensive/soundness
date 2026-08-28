@@ -1757,7 +1757,7 @@ object Tel extends Tel2:
             fail(t"the sigil must not be whitespace", (0, 1))
           else if (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') then
             fail(t"the sigil must not be a letter or digit", (0, 1))
-          else if "()[]{}<>".indexOf(c.toInt) >= 0 then
+          else if ("()[]{}<>": String).indexOf(c.toInt) >= 0 then
             fail(t"the sigil must not be a parenthetical symbol", (0, 1))
           else if c == '+' then
             fail(t"the sigil must not be the layer-selection marker '+'", (0, 1))
@@ -2637,7 +2637,7 @@ object Tel extends Tel2:
     import scala.language.unsafeNulls
 
     Producer.collect[Text](): producer =>
-      val newline = document.lineEndings match
+      val newline: String = document.lineEndings match
         case Tel.LineEndings.Lf   => "\n"
         case Tel.LineEndings.Crlf => "\r\n"
 
@@ -2649,7 +2649,7 @@ object Tel extends Tel2:
         producer.put(Text(text))
 
       def emitCompound(compound: Tel.Compound, indent: Int, sigil: Char): Unit =
-        val pad = "  "*indent
+        val pad = ("  ": String)*indent
         val line = StringBuilder()
         line.append(pad)
         line.append(compound.keyword.s)
@@ -2679,7 +2679,7 @@ object Tel extends Tel2:
 
         trailingAtom match
           case Tel.Atom.Source(text) =>
-            val sourcePad = "  "*(indent + 2)
+            val sourcePad = ("  ": String)*(indent + 2)
             // §14 "Convention A": `text` is LF-separated with no trailing LF, so each LF-delimited
             // segment is one source line (an empty segment is a blank line with no indentation).
             val sourceText = text.s
@@ -2693,7 +2693,7 @@ object Tel extends Tel2:
               if nl < 0 then start = sourceText.length + 1 else start = nl + 1
 
           case Tel.Atom.Literal(delimiter, text) =>
-            val delimiterLine = "  "*(indent + 3) + delimiter.s
+            val delimiterLine = ("  ": String)*(indent + 3) + delimiter.s
             out(delimiterLine)
             val payload = text.s
             var start = 0
@@ -2715,7 +2715,7 @@ object Tel extends Tel2:
           childIndex += 1
 
       def emitBlock(block: Tel.Block, indent: Int, sigil: Char): Unit =
-        val pad = "  "*indent
+        val pad = ("  ": String)*indent
 
         block.comments.each: comment =>
           val text = comment.text.s
@@ -2750,7 +2750,7 @@ object Tel extends Tel2:
 
       val sigil = document.pragma.let(_.sigil.or('#')).or('#')
 
-      document.interpreterDirective.let: payload => out("#!" + payload.s)
+      document.interpreterDirective.let: payload => out(("#!": String) + payload.s)
 
       document.pragma.let: pragma =>
         val parts = scala.collection.mutable.ArrayBuffer.empty[String]
@@ -2785,7 +2785,7 @@ object Tel extends Tel2:
     val builder: StringBuilder = new StringBuilder()
     showable.text(tel: Tel).each { char => builder.append(Inspectable.escape(char).s) }
 
-    ("tel\""+builder.toString+"\"").tt
+    (("tel\"": String)+builder.toString+"\"").tt
 
   // Macro-friendly factory: bypasses the private constructor so generated
   // code from the `tel"…"` interpolator can produce Tel values without
@@ -4250,7 +4250,7 @@ object Tel extends Tel2:
           // eight parenthetical symbols. (`+` never reaches here: it is
           // classified as a layer selection above.)
           // §19.5 UseDefaultSigil: an invalid sigil is dropped, keeping the default.
-          if c.isLetterOrDigit || "()[]{}<>".indexOf(c.toInt) >= 0 then
+          if c.isLetterOrDigit || ("()[]{}<>": String).indexOf(c.toInt) >= 0 then
             if isFinal
             then recoverAt(Reason.BadSigil, line, column, 1)(())
             else recoverAt(Reason.BadPragmaPhrase, line, column, 1)(())
@@ -5279,7 +5279,7 @@ object Tel extends Tel2:
         consumeLineEnding()
         d
 
-      val closingLine = (" "*literalIndent)+delimiter
+      val closingLine = ((" ": String)*literalIndent)+delimiter
       sb.setLength(0)
       var done = false
 
@@ -6477,8 +6477,8 @@ object Tel extends Tel2:
       val column = span.startColumn.lay(1)(_.n1)
       val length = span.length.or(0)
 
-      if length > 1 then Text("line "+line+", columns "+column+"-"+(column + length - 1))
-      else Text("line "+line+", column "+column)
+      if length > 1 then Text(("line ": String)+line+(", columns ": String)+column+("-": String)+(column + length - 1))
+      else Text(("line ": String)+line+(", column ": String)+column)
 
     // The `Line`-mode `Span` for a token of `length` characters starting at the
     // parser's 1-indexed `line`/`column`. `Span`'s own coordinates are 0-based, and
@@ -6513,7 +6513,7 @@ object Tel extends Tel2:
         override val offset: Optional[Int] = Unset,
         override val length: Optional[Int] = Unset )
     extends Format.Position derives CanEqual:
-      def describe: Text = Text("line "+line+", column "+column)
+      def describe: Text = Text(("line ": String)+line+(", column ": String)+column)
 
       override def span: Span =
         Span.line((line - 1).max(0).z, (column - 1).max(0).z, length.or(0))

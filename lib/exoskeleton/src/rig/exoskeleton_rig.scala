@@ -85,7 +85,7 @@ extension (shell: Shell)
             val psScript =
               s"""using namespace Microsoft.PowerShell
                  |function global:prompt { '> ' }
-                 |$$env:PATH = "${path}:" + $$env:PATH
+                 |$$env:PATH = ("${path}:": String) + $$env:PATH
                  |try {
                  |    Set-PSReadLineKeyHandler -Key Tab -ScriptBlock {
                  |        param($$key, $$arg)

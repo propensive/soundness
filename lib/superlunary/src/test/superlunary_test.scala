@@ -75,6 +75,6 @@ object Tests extends Suite(m"Superlunary Tests"):
         var count = 100
 
         Isolation.dispatch:
-          '{"hello message"+($count + 1)}
+          '{("hello message": String)+($count + 1)}
 
       . assert(_ == "hello message101")

@@ -925,7 +925,7 @@ object Tels extends Tels2:
     private def sigilValid(sigil: Char): Boolean =
       !(sigil == ' ' || sigil == '\n' || sigil == '\r' || sigil == '\t')
         && !sigil.isLetterOrDigit
-        && "()[]{}<>".indexOf(sigil.toInt) < 0
+        && ("()[]{}<>": String).indexOf(sigil.toInt) < 0
         && sigil != '+'
 
     // The Scalar a type resolves to through the composed namespace and

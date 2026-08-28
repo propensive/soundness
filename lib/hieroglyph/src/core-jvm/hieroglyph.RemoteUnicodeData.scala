@@ -43,5 +43,5 @@ import vacuous.*
 // native binaries embed the tables, and there is no downloading them at run time).
 private[hieroglyph] def remoteUnicodeData(name: Text): Optional[ji.InputStream] =
   safely:
-    val uri = new java.net.URI("https://www.unicode.org/Public/UNIDATA/"+name.s)
+    val uri = new java.net.URI(("https://www.unicode.org/Public/UNIDATA/": String)+name.s)
     uri.toURL().nn.openStream().nn: ji.InputStream

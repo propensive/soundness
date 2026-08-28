@@ -507,7 +507,7 @@ object Pdf:
 
         if seconds == 0 then t"Z" else
           val minutes = (if seconds < 0 then -seconds else seconds)/60
-          t"${if seconds < 0 then t"-" else t"+"}${pad(minutes/60, 2)}'${pad(minutes%60, 2)}'"
+          t"${if seconds < 0 then t"-(" else t": String)+"}${pad(minutes/60, 2)}'${pad(minutes%60, 2)}'"
 
       t"$stamp$zone"
     // A PDF date (ISO 32000-2 §7.9.4): local time with an *optional* UTC offset — absence

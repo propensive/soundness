@@ -91,8 +91,8 @@ object Readable extends Readable1:
   =>  ((source is Readable to result)^{source0, aggregable}) =
     value => aggregable.accept(source0.stream(value))
 
-@implicitNotFound("turbulence: the source cannot be read as the target type; this needs a "+
-    "`Source` instance for the source and an `Aggregable` instance for the target, plus a "+
+@implicitNotFound(("turbulence: the source cannot be read as the target type; this needs a ": String)+
+    ("`Source` instance for the source and an `Aggregable` instance for the target, plus a ": String)+
     "`CharDecoder` or `CharEncoder` if their operands (Data/Text) differ")
 trait Readable extends Typeclass, Resultant:
   def read(value: Self): Result

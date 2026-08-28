@@ -130,7 +130,7 @@ object ForeignLibrary:
         catch case _: Throwable => attempt(rest)
 
       case Nil =>
-        throw IllegalArgumentException("no native library could be loaded from "+paths)
+        throw IllegalArgumentException(("no native library could be loaded from ": String)+paths)
 
     registered.add(attempt(paths.to(List)))
 

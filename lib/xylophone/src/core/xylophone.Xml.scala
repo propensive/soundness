@@ -1894,7 +1894,7 @@ object Xml extends Tag.Container
     val builder: StringBuilder = new StringBuilder()
     markup.each { char => builder.append(Inspectable.escape(char).s) }
 
-    ("xml\""+builder.toString+"\"").tt
+    (("xml\"": String)+builder.toString+"\"").tt
 
   private enum Token:
     case Close, Comment, Empty, Open, Header, Cdata, Pi, Doctype

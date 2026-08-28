@@ -1052,19 +1052,19 @@ object internal:
 
     if !classSymbol.flags.is(Flags.Case) then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a case class; sums and other types use " +
+        (("jacinta: staged parsing requires a case class; sums and other types use ": String) +
           "`Json.Parsable.derived`")
 
     if classSymbol.owner.isTerm then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a top-level or object-nested case class; " +
+        (("jacinta: staged parsing requires a top-level or object-nested case class; ": String) +
           "method-local classes use `Json.Parsable.derived`")
 
     val ctor = classSymbol.primaryConstructor
 
     if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a single parameter list; use " +
+        (("jacinta: staged parsing requires a single parameter list; use ": String) +
           "`Json.Parsable.derived`")
 
     val fields = classSymbol.caseFields
@@ -1154,10 +1154,10 @@ object internal:
       val owner = Symbol.spliceOwner
 
       val slots = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "slot"+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, ("slot": String)+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
 
       val seens = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "seen"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, ("seen": String)+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
 
       val cursor = Symbol.newVal(owner, "index", TypeRepr.of[Int], Flags.Mutable, Symbol.noSymbol)
 
@@ -1390,7 +1390,7 @@ object internal:
 
     if !children.forall { child => child.isClassDef && child.flags.is(Flags.Case) } then
       report.errorAndAbort
-        ("jacinta: staged sum parsing requires every variant to be a case class; singleton " +
+        (("jacinta: staged sum parsing requires every variant to be a case class; singleton ": String) +
           "variants use `Json.Parsable.derived`")
 
     val variantTypes: scala.collection.immutable.List[TypeRepr] = children.map(_.typeRef)
@@ -1408,7 +1408,7 @@ object internal:
     val discriminableExpr: Expr[value is Discriminable in Json] =
       Expr.summon[value is Discriminable in Json].getOrElse:
         report.errorAndAbort
-          ("jacinta: staged sum parsing needs a contextual `Discriminable in Json`, like " +
+          (("jacinta: staged sum parsing needs a contextual `Discriminable in Json`, like ": String) +
             "`jacinta.discriminables.jsonByKindDiscriminable`")
 
     val nameExprs = variantNames.map { name => Expr(name) }

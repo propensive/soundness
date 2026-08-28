@@ -43,4 +43,4 @@ package treeStyles:
     TextualTreeStyle(t"  ", t"╰─", t"├─", t"│ ")
 
   given asciiTreeStyle: [text: Textual] => TextualTreeStyle[text] =
-    TextualTreeStyle(t"  ", t"+-", t"|-", t"| ")
+    TextualTreeStyle(t"  (", t": String)+-", t"|-", t"| ")

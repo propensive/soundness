@@ -92,7 +92,7 @@ extends Findable:
     if size > 0 then Out.print(e"\e[${size}A\r\e[2K")
 
     active.stdlib.reverse.foreach: test =>
-      val indent: Text = " ".repeat(test.depth*2).nn.tt
+      val indent: Text = (" ": String).repeat(test.depth*2).nn.tt
       Out.println(e"> ${WebColors.CadetBlue}(${test.id})$indent${test.name}\e[K")
 
     Out.print(e"\e[J")

@@ -217,7 +217,7 @@ object Subcompiler:
                     if done.contains(region) then recompile(tail, done, source) else
 
                       val newSource =
-                        source.take(from)+"{}"+(" "*(to - from - 2))+source.drop(to)
+                        source.take(from)+("{}": String)+(" "*(to - from - 2))+source.drop(to)
 
                       recompile(tail, done + region, newSource)
 

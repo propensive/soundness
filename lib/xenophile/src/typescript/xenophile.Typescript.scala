@@ -289,21 +289,21 @@ object Typescript:
         case Union(members)         => render(members, " | ")
         case Intersection(members)  => render(members, " & ")
         case Array(element)         => element.text.s+"[]"
-        case Keyof(target)          => "keyof "+target.text.s
-        case Typeof(target)         => "typeof "+target.s
-        case Named(name, arguments) => name.s+"<"+render(arguments, ", ")+">"
-        case Tuple(members, _)      => "["+render(members, ", ")+"]"
-        case Indexed(target, index) => target.text.s+"["+index.text.s+"]"
-        case Predicate(name, target) => name.s+" is "+target.text.s
+        case Keyof(target)          => ("keyof ": String)+target.text.s
+        case Typeof(target)         => ("typeof ": String)+target.s
+        case Named(name, arguments) => name.s+("<": String)+render(arguments, ", ")+">"
+        case Tuple(members, _)      => ("[": String)+render(members, ", ")+"]"
+        case Indexed(target, index) => target.text.s+("[": String)+index.text.s+"]"
+        case Predicate(name, target) => name.s+(" is ": String)+target.text.s
 
         case Object(members) =>
-          "{ "+members.stdlib.map { member => member.name.s }.mkString("; ")+" }"
+          ("{ ": String)+members.stdlib.map { member => member.name.s }.mkString("; ")+" }"
 
         case Function(parameters, result, _, construct) =>
           val arguments = parameters.stdlib.map: parameter =>
-            parameter.name.s+": "+parameter.typed.lay("any") { value => value.text.s }
+            parameter.name.s+(": ": String)+parameter.typed.lay("any") { value => value.text.s }
 
-          (if construct then "new " else "")+"("+arguments.mkString(", ")+") => "+result.text.s
+          ((if construct then "new " else ""): String)+("(": String)+arguments.mkString(", ")+(") => ": String)+result.text.s
 
       rendered.tt
 

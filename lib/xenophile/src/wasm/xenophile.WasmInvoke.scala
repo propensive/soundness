@@ -229,7 +229,7 @@ object WasmInvoke extends Materializer:
           val carriers = derived.map(_(0))
 
           val tupleClass =
-            Symbol.requiredClass("scala.scalajs.wit.Tuple" + elements.size.toString)
+            Symbol.requiredClass(("scala.scalajs.wit.Tuple": String) + elements.size.toString)
 
           val tupleCarrier = tupleClass.typeRef.appliedTo(carriers)
           val scalaTuple = defn.TupleClass(elements.size).companionModule
@@ -245,7 +245,7 @@ object WasmInvoke extends Materializer:
             while indexed.hasNext do
               val (derivation, index) = indexed.next()
               decodedBuffer +=
-                derivation(1)(Select.unique(cast, "_" + (index + 1).toString).asExprOf[Any]).asTerm
+                derivation(1)(Select.unique(cast, ("_": String) + (index + 1).toString).asExprOf[Any]).asTerm
 
             val decoded = decodedBuffer.result()
 
@@ -356,7 +356,7 @@ object WasmInvoke extends Materializer:
     // tuple. The descriptor is a tree of calls to the `wit*` markers in `scala.scalajs.wit`
     // (resolved here, downstream, like `witImportCall` itself), which the backend deconstructs by
     // symbol; `classOf` still supplies the (erasure-safe) IR result type.
-    def marker(name: String): Term = Ref(Symbol.requiredMethod("scala.scalajs.wit." + name))
+    def marker(name: String): Term = Ref(Symbol.requiredMethod(("scala.scalajs.wit.": String) + name))
 
     val primitives =
       Set("bool", "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64", "char",
@@ -462,7 +462,7 @@ object WasmInvoke extends Materializer:
       val missing =
         CaseDef
           ( Wildcard(), None,
-            '{throw new RuntimeException("xenophile: not a case of " + ${Expr(topic.s)})}.asTerm )
+            '{throw new RuntimeException(("xenophile: not a case of ": String) + ${Expr(topic.s)})}.asTerm )
 
       (facade.typeRef, Match(selector, caseDefs :+ missing))
 
@@ -506,7 +506,7 @@ object WasmInvoke extends Materializer:
         val applier = Select.unique(Ref(symbol.companionModule), "apply")
 
         val built = elements.zipWithIndex.map: (element, index) =>
-          buildFacade(element, Select.unique(value, "_" + (index + 1).toString))
+          buildFacade(element, Select.unique(value, ("_": String) + (index + 1).toString))
 
         Apply(TypeApply(applier, elements.map(Inferred(_))), built)
 
@@ -517,7 +517,7 @@ object WasmInvoke extends Materializer:
 
         val built = params.zipWithIndex.map: (param, index) =>
           val field = symbol.declaredField(param.name)
-          buildFacade(target.memberType(field), Select.unique(value, "_" + (index + 1).toString))
+          buildFacade(target.memberType(field), Select.unique(value, ("_": String) + (index + 1).toString))
 
         Apply(Select.unique(Ref(symbol.companionModule), "apply"), built)
 
@@ -635,14 +635,14 @@ object WasmInvoke extends Materializer:
 
           while indexed.hasNext do
             val (element, index) = indexed.next()
-            val field = Select.unique(value, "_" + (index + 1).toString)
+            val field = Select.unique(value, ("_": String) + (index + 1).toString)
             encodedBuffer += encodedArgument(field, element)
 
           val encodedElements = encodedBuffer.result()
           val carriers = encodedElements.map(_(0))
 
           val tupleClass =
-            Symbol.requiredClass("scala.scalajs.wit.Tuple" + elements.length.toString)
+            Symbol.requiredClass(("scala.scalajs.wit.Tuple": String) + elements.length.toString)
 
           val tupleCarrier = tupleClass.typeRef.appliedTo(carriers)
 
