@@ -283,6 +283,10 @@ object Jdwp:
   case class VariableTable(argCount: Int, slots: List[SlotInfo])
   case class ThreadStatus(threadStatus: Int, suspendStatus: Int)
 
+  // The outcome of an invoked method: its return value, and the exception it threw (the null
+  // reference when it returned normally).
+  case class Invocation(result: Value, exception: Value)
+
   // The capabilities a VM advertises (`VirtualMachine.CapabilitiesNew`); only the flags this
   // library consults are named, the rest are discarded on decoding.
   case class Capabilities
@@ -908,6 +912,10 @@ object Jdwp:
     def resumeAll()(using Tactic[Debugger.Error]): Unit = command(1, 9)(_ => ())
     def dispose()(using Tactic[Debugger.Error]): Unit = command(1, 6)(_ => ())
 
+    // Interns a string in the debuggee and returns its identifier, for passing to invoked methods.
+    def createString(text: Text)(using Tactic[Debugger.Error]): StringId =
+      request(1, 11)(_.string(text)).stringId()
+
     // The reply is a fixed sequence of 32 booleans (the last eleven reserved); the flags this
     // library consults are picked out by their published one-based positions, and a short reply
     // from an old VM leaves the missing flags false.
@@ -934,6 +942,10 @@ object Jdwp:
     def sourceFile(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): Text =
       request(2, 7)(_.referenceTypeId(cls)).string()
 
+    // The class loader that defined a type, or the null reference for a bootstrap-loaded class.
+    def classLoader(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): ClassLoaderId =
+      Ref(request(2, 2)(_.referenceTypeId(cls)).objectId().long)
+
     def sourceDebugExtension(cls: ReferenceTypeId)
       ( using Tactic[Debugger.Error] )
     :   Text =
@@ -951,6 +963,41 @@ object Jdwp:
 
       list(reader.int()): () =>
         FieldInfo(reader.fieldId(), reader.string(), reader.string(), reader.int())
+
+    // ClassType (command set 3). Both calls invoke on a suspended thread, single-threaded and
+    // timeout-bounded, exactly as `objectReference.invokeMethod`.
+    def invokeStatic
+      ( cls: ReferenceTypeId, thread: ThreadId, method: MethodId, args: List[Value] )
+      ( using Tactic[Debugger.Error] )
+    :   Invocation =
+
+      val reader = request(3, 3): writer =>
+        writer.referenceTypeId(cls).threadId(thread).methodId(method).int(args.stdlib.length)
+        args.stdlib.foreach(writer.value)
+        writer.int(1)
+
+      Invocation(reader.value(), reader.value())
+
+    def newInstance
+      ( cls: ReferenceTypeId, thread: ThreadId, constructor: MethodId, args: List[Value] )
+      ( using Tactic[Debugger.Error] )
+    :   Invocation =
+
+      val reader = request(3, 4): writer =>
+        writer.referenceTypeId(cls).threadId(thread).methodId(constructor).int(args.stdlib.length)
+        args.stdlib.foreach(writer.value)
+        writer.int(1)
+
+      Invocation(reader.value(), reader.value())
+
+    // ArrayType (command set 4): allocates a fresh array of the given length in the debuggee.
+    def newArray(arrayType: ReferenceTypeId, length: Int)
+      ( using Tactic[Debugger.Error] )
+    :   ObjectId =
+
+      request(4, 1)(_.referenceTypeId(arrayType).int(length)).value() match
+        case Value.Reference(_, id) => id
+        case _                      => Ref.empty
 
     // Method (command set 6).
     def lineTable(cls: ReferenceTypeId, method: MethodId)
@@ -1013,6 +1060,27 @@ object Jdwp:
       command(9, 3): writer =>
         writer.objectId(obj).int(assignments.stdlib.length)
         assignments.stdlib.foreach: (field, value) => writer.fieldId(field).untaggedValue(value)
+
+    // Invokes an instance method on a suspended thread and reads back its return value and any
+    // exception. `INVOKE_SINGLE_THREADED` (0x01) keeps every other thread suspended for the
+    // duration, so the call cannot progress another debugged thread; the caller bounds it with a
+    // timeout, since a method needing another thread would otherwise deadlock.
+    def invokeMethod
+      ( obj:    ObjectId,
+        thread: ThreadId,
+        cls:    ReferenceTypeId,
+        method: MethodId,
+        args:   List[Value] )
+      ( using Tactic[Debugger.Error] )
+    :   Invocation =
+
+      val reader = request(9, 6): writer =>
+        writer.objectId(obj).threadId(thread).referenceTypeId(cls).methodId(method)
+        writer.int(args.stdlib.length)
+        args.stdlib.foreach(writer.value)
+        writer.int(1)
+
+      Invocation(reader.value(), reader.value())
 
     // StringReference (command set 10).
     def stringValue(string: StringId)(using Tactic[Debugger.Error]): Text =
