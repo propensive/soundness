@@ -52,11 +52,7 @@ object Fixture:
     given (Port is Inspectable) = port => t"⟨port ${port: Int}⟩"
 
   def main(args: Array[String]): Unit =
-    // Construct first so `Specimen` is loaded, then pause to give the debugger a window to install
-    // its breakpoint before `marker` runs.
-    val specimen = Specimen(7)
-    Thread.sleep(1500)
-    specimen.compute(35)
+    Specimen(7).compute(35)
 
   class Specimen(seed: Int):
     lazy val squared: Int = seed*seed

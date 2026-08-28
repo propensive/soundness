@@ -154,20 +154,35 @@ extends caps.ExclusiveCapability:
       case -1    => source.s
       case index => source.s.substring(0, index).nn
 
-    def locations(info: Jdwp.ClassInfo): sci.List[Jdwp.Location] =
-      val sourced = safely(connection.sourceFile(info.cls)).let(_ == source).or(false)
+    val (likely, rest) = connection.allClasses().stdlib.partition(_.signature.s.contains(base))
 
-      if !sourced then sci.List() else
-        connection.methods(info.cls).stdlib.flatMap: method =>
-          safely(connection.lineTable(info.cls, method.method)) match
+    def resolve(info: Jdwp.ClassInfo): sci.List[Jdwp.Location] =
+      locateIn(info.tag, info.cls, source, line).stdlib
+
+    val found = likely.flatMap(resolve(_))
+    val results = if found.isEmpty then rest.flatMap(resolve(_)) else found
+    List(results*)
+
+  // Resolves a source position within one specific reference type — every method of `cls` compiled
+  // from `source` whose line table covers `line`. Unlike `locate`, it never enumerates all loaded
+  // classes, so it is safe to call while a thread is suspended at a `ClassPrepare` event (a
+  // whole-VM class scan can deadlock against the class-loading lock that thread still holds). A
+  // caller receiving a `ClassPrepared` event resolves against its reported type directly.
+  def locateIn(tag: Jdwp.TypeTag, cls: ReferenceTypeId, source: Text, line: Ordinal)
+    ( using Tactic[Debugger.Error] )
+  :   List[Jdwp.Location] =
+
+    val sourced = safely(connection.sourceFile(cls)).let(_ == source).or(false)
+
+    val results =
+      if !sourced then sci.List[Jdwp.Location]() else
+        connection.methods(cls).stdlib.flatMap: method =>
+          safely(connection.lineTable(cls, method.method)) match
             case table: Jdwp.LineTable =>
               table.lines.stdlib.filter(_.line == line.n1).take(1).map: entry =>
-                Jdwp.Location(info.tag, info.cls, method.method, entry.index)
+                Jdwp.Location(tag, cls, method.method, entry.index)
 
             case _ =>
               sci.List()
 
-    val (likely, rest) = connection.allClasses().stdlib.partition(_.signature.s.contains(base))
-    val found = likely.flatMap(locations(_))
-    val results = if found.isEmpty then rest.flatMap(locations(_)) else found
     List(results*)

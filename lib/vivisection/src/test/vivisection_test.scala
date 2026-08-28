@@ -87,25 +87,37 @@ object Tests extends Suite(m"Vivisection tests"):
     val debuggee: Debuggee = Debuggee(command, freePort())
 
     debuggee.session: debug ?=>
-      // Resume from the agent's start-up suspension, then poll until the target class is loaded and
-      // its line table resolves — the fixture pauses to keep that window open. (Deterministic,
-      // ClassPrepare-driven resolution is a possible refinement; see `Debug.classPrepare`.)
+      // Deterministic synchronisation with no race: ask to be notified as each of the fixture's
+      // classes is prepared, and resolve the target position against each newly-prepared class in
+      // turn (never a whole-VM scan, which would deadlock against the class-loading lock the
+      // suspended thread holds). When it resolves, that thread is suspended, so the breakpoint is
+      // installed strictly before the thread can reach it — and a class loaded only once execution
+      // reaches it (a method-local class) is handled the same way.
+      val prepare = debug.classPrepare(t"$fixtureClass*")
       debug.resume()
+      val events = debug.events.stdlib.iterator
 
-      def waitFor(remaining: Int): List[Jdwp.Location] =
-        val locations = debug.locate(source, line)
+      def awaitLocation(): List[Jdwp.Location] =
+        if !events.hasNext then List() else
+          val prepared = events.next().events.stdlib.collect:
+            case Jdwp.Event.ClassPrepared(_, _, tag, cls, _, _) => (tag, cls)
 
-        if locations.stdlib.nonEmpty then locations
-        else if remaining <= 0 then locations
-        else
-          Thread.sleep(50)
-          waitFor(remaining - 1)
+          val located = prepared.flatMap { (tag, cls) => debug.locateIn(tag, cls, source, line).stdlib }
 
-      waitFor(120).stdlib.foreach: location =>
+          if located.nonEmpty then List(located*)
+          else
+            debug.resume()
+            awaitLocation()
+
+      val located = awaitLocation()
+      debug.clear(Jdwp.EventKind.ClassPrepare, prepare)
+
+      located.stdlib.foreach: location =>
         debug.breakpoint(location): stop ?=>
           outcome.offer(handler(using stop))
           stop.remain()
 
+      debug.resume()
       outcome.await()
 
   // The visible variables at a stop, keyed by name, for concise assertions.
@@ -518,7 +530,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // enclosing `Specimen`'s state through `this` — a field, and an unforced lazy val.
     test(m"a live session recovers the variables at a breakpoint"):
       supervise:
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(71)):
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
           stop ?=> stop.variables()
 
     . assert: variables =>
@@ -548,7 +560,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(71)):
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
           stop ?=>
             stop.evaluator(classpath): eval ?=>
               eval(t"total + 1") match
@@ -564,7 +576,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(71)):
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
           stop ?=> stop.evaluator(classpath) { eval ?=> eval.inspect(t"values") }
 
     . assert(_.starts(t"⦋"))
@@ -576,7 +588,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(71)):
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
           stop ?=> stop.evaluator(classpath) { eval ?=> eval.inspect(t"port") }
 
     . assert(_ == t"⟨port 8080⟩")
@@ -588,7 +600,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(71)):
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
           stop ?=>
             stop.evaluator(classpath): eval ?=>
               val port = eval.variables().stdlib.find(_.name == t"port")
@@ -603,7 +615,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(71)):
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
           stop ?=>
             stop.evaluator(classpath): eval ?=>
               val gateway = eval.variables().stdlib.find(_.name == t"gateway")
@@ -618,7 +630,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // debuggee.
     val menagerie: scala.collection.immutable.Map[Text, Variable] =
       supervise:
-        debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(59)):
+        debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(57)):
           stop ?=> named(stop.variables())
 
     def valueOf(name: Text): Optional[Variable.Snapshot] =
@@ -706,7 +718,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // binding is recovered by un-flattening `this`'s captured fields and walking its `$outer` chain.
     val closures: scala.collection.immutable.Map[Text, Variable] =
       supervise:
-        debugFixture(t"vivisection.Closures", t"vivisection.Closures.scala", Ordinal.uniary(57)):
+        debugFixture(t"vivisection.Closures", t"vivisection.Closures.scala", Ordinal.uniary(56)):
           stop ?=> named(stop.variables())
 
     test(m"captured bindings are recovered by their written names"):

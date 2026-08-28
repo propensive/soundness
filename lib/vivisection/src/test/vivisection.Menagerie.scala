@@ -37,9 +37,7 @@ package vivisection
 // `println`, where every binding above it is live.
 object Menagerie:
   def main(args: Array[String]): Unit =
-    val specimen = Specimen()
-    Thread.sleep(1500)
-    specimen.primitives()
+    Specimen().primitives()
 
   class Specimen():
     def primitives(): Unit =
