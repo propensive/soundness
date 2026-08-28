@@ -56,6 +56,59 @@ object Attach:
   given showable: Attach is Showable = _ => t"attach"
 
 object Tests extends Suite(m"Vivisection tests"):
+  // An ephemeral free port, so live cases never collide on a fixed number and can run alongside
+  // one another. The brief gap between closing the probe socket and the debuggee binding is a
+  // negligible race for a test.
+  def freePort(): Int =
+    val socket = java.net.ServerSocket(0)
+    try socket.getLocalPort finally socket.close()
+
+  // The debuggee's classpath (this JVM's), for launching it and for opening evaluations against.
+  def fixtureClasspath: LocalClasspath = System.properties.java.`class`.path().as[LocalClasspath]
+
+  // Launches a fixture under the JDWP agent, breaks once at `source`:`line`, runs `handler` there
+  // and returns its result — the shared shape behind every live case. Call it inside a `supervise`
+  // block: the handler is defined there, so its `Monitor` (needed to open an evaluation) resolves
+  // from that scope, and `debugFixture` reuses the same monitor for the session. The handler runs
+  // on the dispatcher; `remain()` holds the thread so the result is read before the debuggee is
+  // torn down. The socket/system capabilities resolve from this file's given imports.
+  // `capture^` names whatever the handler closes over (typically the session monitor, via an
+  // evaluation opened inside it); `Monitor^{capture}` then declares the monitor to be among those
+  // captures, so a handler that captures the ambient monitor is honest rather than a separation
+  // failure. (See the same pattern in `exegesis`.)
+  def debugFixture[result, capture^](fixtureClass: Text, source: Text, line: Ordinal)
+    ( handler: (Halt^) ?->{capture} result )
+    ( using Monitor^{capture} )
+  :   result =
+
+    val classpathText = System.properties.java.`class`.path()
+    val outcome = Promise[result]()
+    val command: Command = sh"java -classpath $classpathText $fixtureClass"
+    val debuggee: Debuggee = Debuggee(command, freePort())
+
+    debuggee.session: debug ?=>
+      debug.resume()
+
+      def waitFor(remaining: Int): List[Jdwp.Location] =
+        val locations = debug.locate(source, line)
+
+        if locations.stdlib.nonEmpty then locations
+        else if remaining <= 0 then locations
+        else
+          Thread.sleep(50)
+          waitFor(remaining - 1)
+
+      waitFor(120).stdlib.foreach: location =>
+        debug.breakpoint(location): stop ?=>
+          outcome.offer(handler(using stop))
+          stop.remain()
+
+      outcome.await()
+
+  // The visible variables at a stop, keyed by name, for concise assertions.
+  def named(variables: List[Variable]): scala.collection.immutable.Map[Text, Variable] =
+    variables.stdlib.groupBy(_.name).view.mapValues(_.head).toMap
+
   def run(): Unit =
     val sizes = Jdwp.IdSizes.bootstrap
 
@@ -462,38 +515,11 @@ object Tests extends Suite(m"Vivisection tests"):
     // enclosing `Specimen`'s state through `this` — a field, and an unforced lazy val.
     test(m"a live session recovers the variables at a breakpoint"):
       supervise:
-        val classpath = System.properties.java.`class`.path()
-        val captured = Promise[List[Variable]]()
-        val marker = Ordinal.uniary(72)
-
-        // Ascribed to the bare types: `sh"…"` infers a singleton-refined `Command` and the case
-        // class tracks the field's identity, which the invariant `Sessional.Self` would not match.
-        val command: Command = sh"java -classpath $classpath vivisection.Fixture"
-        val debuggee: Debuggee = Debuggee(command, 5099)
-
-        debuggee.session: debug ?=>
-          // Resume from the agent's start-up suspension, then wait for `Specimen` to load so its
-          // line table resolves. `Fixture.main` pauses long enough for this to win the race.
-          debug.resume()
-
-          def waitFor(remaining: Int): List[Jdwp.Location] =
-            val locations = debug.locate(t"vivisection.Fixture.scala", marker)
-
-            if locations.stdlib.nonEmpty then locations
-            else if remaining <= 0 then locations
-            else
-              Thread.sleep(50)
-              waitFor(remaining - 1)
-
-          waitFor(120).stdlib.foreach: location =>
-            debug.breakpoint(location): halt ?=>
-              captured.offer(halt.variables())
-              halt.remain()
-
-          captured.await()
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(72)):
+          stop ?=> stop.variables()
 
     . assert: variables =>
-        val byName = variables.stdlib.groupBy(_.name).view.mapValues(_.head).toMap
+        val byName = named(variables)
 
         def snapshot(name: Text): Optional[Variable.Snapshot] =
           byName.get(name).flatMap(_.value.option).getOrElse(Unset)
@@ -517,36 +543,14 @@ object Tests extends Suite(m"Vivisection tests"):
     // runs the synthetic class in the debuggee — evaluating an expression over a live local.
     test(m"a live session evaluates an expression over a local"):
       supervise:
-        val classpathText = System.properties.java.`class`.path()
-        val classpath = classpathText.as[LocalClasspath]
-        val evaluated = Promise[Text]()
-        val marker = Ordinal.uniary(72)
+        val classpath = fixtureClasspath
 
-        val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
-        val debuggee: Debuggee = Debuggee(command, 5100)
-
-        debuggee.session: debug ?=>
-          debug.resume()
-
-          def waitFor(remaining: Int): List[Jdwp.Location] =
-            val locations = debug.locate(t"vivisection.Fixture.scala", marker)
-
-            if locations.stdlib.nonEmpty then locations
-            else if remaining <= 0 then locations
-            else
-              Thread.sleep(50)
-              waitFor(remaining - 1)
-
-          waitFor(120).stdlib.foreach: location =>
-            debug.breakpoint(location): halt ?=>
-              halt.evaluator(classpath): eval ?=>
-                eval(t"total + 1") match
-                  case Variable.Snapshot.Str(_, text) => evaluated.offer(text)
-                  case other                          => evaluated.offer(other.inspect)
-
-              halt.remain()
-
-          evaluated.await()
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(72)):
+          stop ?=>
+            stop.evaluator(classpath): eval ?=>
+              eval(t"total + 1") match
+                case Variable.Snapshot.Str(_, text) => text
+                case other                          => other.inspect
 
     . assert(_ == t"43")
 
@@ -555,34 +559,10 @@ object Tests extends Suite(m"Vivisection tests"):
     // (`⦋…⦌`) is produced — typeclass-driven rendering, not `toString`.
     test(m"a live session renders a local through its Inspectable instance"):
       supervise:
-        val classpathText = System.properties.java.`class`.path()
-        val classpath = classpathText.as[LocalClasspath]
-        val rendered = Promise[Text]()
-        val marker = Ordinal.uniary(72)
+        val classpath = fixtureClasspath
 
-        val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
-        val debuggee: Debuggee = Debuggee(command, 5101)
-
-        debuggee.session: debug ?=>
-          debug.resume()
-
-          def waitFor(remaining: Int): List[Jdwp.Location] =
-            val locations = debug.locate(t"vivisection.Fixture.scala", marker)
-
-            if locations.stdlib.nonEmpty then locations
-            else if remaining <= 0 then locations
-            else
-              Thread.sleep(50)
-              waitFor(remaining - 1)
-
-          waitFor(120).stdlib.foreach: location =>
-            debug.breakpoint(location): halt ?=>
-              halt.evaluator(classpath): eval ?=>
-                rendered.offer(eval.inspect(t"values"))
-
-              halt.remain()
-
-          rendered.await()
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(72)):
+          stop ?=> stop.evaluator(classpath) { eval ?=> eval.inspect(t"values") }
 
     . assert(_.starts(t"⦋"))
 
@@ -591,34 +571,10 @@ object Tests extends Suite(m"Vivisection tests"):
     // — rendering the domain value `⟨port 8080⟩` rather than the bare `8080` its runtime class would.
     test(m"a live session renders an opaque local through its declared type's instance"):
       supervise:
-        val classpathText = System.properties.java.`class`.path()
-        val classpath = classpathText.as[LocalClasspath]
-        val rendered = Promise[Text]()
-        val marker = Ordinal.uniary(72)
+        val classpath = fixtureClasspath
 
-        val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
-        val debuggee: Debuggee = Debuggee(command, 5102)
-
-        debuggee.session: debug ?=>
-          debug.resume()
-
-          def waitFor(remaining: Int): List[Jdwp.Location] =
-            val locations = debug.locate(t"vivisection.Fixture.scala", marker)
-
-            if locations.stdlib.nonEmpty then locations
-            else if remaining <= 0 then locations
-            else
-              Thread.sleep(50)
-              waitFor(remaining - 1)
-
-          waitFor(120).stdlib.foreach: location =>
-            debug.breakpoint(location): halt ?=>
-              halt.evaluator(classpath): eval ?=>
-                rendered.offer(eval.inspect(t"port"))
-
-              halt.remain()
-
-          rendered.await()
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(72)):
+          stop ?=> stop.evaluator(classpath) { eval ?=> eval.inspect(t"port") }
 
     . assert(_ == t"⟨port 8080⟩")
 
@@ -627,35 +583,13 @@ object Tests extends Suite(m"Vivisection tests"):
     // not the `Int` it erases to.
     test(m"a live session reports a binding's stenography-rendered static type"):
       supervise:
-        val classpathText = System.properties.java.`class`.path()
-        val classpath = classpathText.as[LocalClasspath]
-        val reported = Promise[Text]()
-        val marker = Ordinal.uniary(72)
+        val classpath = fixtureClasspath
 
-        val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
-        val debuggee: Debuggee = Debuggee(command, 5103)
-
-        debuggee.session: debug ?=>
-          debug.resume()
-
-          def waitFor(remaining: Int): List[Jdwp.Location] =
-            val locations = debug.locate(t"vivisection.Fixture.scala", marker)
-
-            if locations.stdlib.nonEmpty then locations
-            else if remaining <= 0 then locations
-            else
-              Thread.sleep(50)
-              waitFor(remaining - 1)
-
-          waitFor(120).stdlib.foreach: location =>
-            debug.breakpoint(location): halt ?=>
-              halt.evaluator(classpath): eval ?=>
-                val port = eval.variables().stdlib.find(_.name == t"port")
-                reported.offer(port.flatMap(_.static.option).getOrElse(t"«none»"))
-
-              halt.remain()
-
-          reported.await()
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(72)):
+          stop ?=>
+            stop.evaluator(classpath): eval ?=>
+              val port = eval.variables().stdlib.find(_.name == t"port")
+              port.flatMap(_.static.option).getOrElse(t"«none»")
 
     . assert(_ == t"vivisection.Fixture.Port")
 
@@ -664,35 +598,13 @@ object Tests extends Suite(m"Vivisection tests"):
     // as its static type and used to render it through `Port`'s own instance.
     test(m"a live session recovers a body-local val's static type and renders it"):
       supervise:
-        val classpathText = System.properties.java.`class`.path()
-        val classpath = classpathText.as[LocalClasspath]
-        val outcome = Promise[(Text, Text)]()
-        val marker = Ordinal.uniary(72)
+        val classpath = fixtureClasspath
 
-        val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
-        val debuggee: Debuggee = Debuggee(command, 5104)
-
-        debuggee.session: debug ?=>
-          debug.resume()
-
-          def waitFor(remaining: Int): List[Jdwp.Location] =
-            val locations = debug.locate(t"vivisection.Fixture.scala", marker)
-
-            if locations.stdlib.nonEmpty then locations
-            else if remaining <= 0 then locations
-            else
-              Thread.sleep(50)
-              waitFor(remaining - 1)
-
-          waitFor(120).stdlib.foreach: location =>
-            debug.breakpoint(location): halt ?=>
-              halt.evaluator(classpath): eval ?=>
-                val gateway = eval.variables().stdlib.find(_.name == t"gateway")
-                val static = gateway.flatMap(_.static.option).getOrElse(t"«none»")
-                outcome.offer((static, eval.inspect(t"gateway")))
-
-              halt.remain()
-
-          outcome.await()
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(72)):
+          stop ?=>
+            stop.evaluator(classpath): eval ?=>
+              val gateway = eval.variables().stdlib.find(_.name == t"gateway")
+              val static = gateway.flatMap(_.static.option).getOrElse(t"«none»")
+              (static, eval.inspect(t"gateway"))
 
     . assert(_ == (t"vivisection.Fixture.Port", t"⟨port 443⟩"))
