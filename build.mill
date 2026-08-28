@@ -848,7 +848,7 @@ object soundness extends Toolchain:
     anthology.`scala`, exegesis.core, espionage.core, hellenism.jvm, delicious.core,
     delicious.`scala`, delicious.compiler, harlequin.compiler,
     delicious.ansi, anthology.kotlin, anthology.oci, anthology.xeq, hyperbole.stacks,
-    vivisection.core):
+    vivisection.core, vivisection.eval):
     def summary = "Developer tools: compilers, build tooling, source analysis and version control"
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
