@@ -67,7 +67,7 @@ object Tests extends Suite(m"Soundness tests"):
     contingency.Tests()
     telekinesis.Http2Tests()
     corpuscular.Tests()
-    //cosmopolite.Tests()
+    cosmopolite.Tests()
     degustation.Tests()
     delicious.Tests()
     dendrology.Tests()

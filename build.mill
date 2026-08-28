@@ -1599,7 +1599,6 @@ object cosmopolite extends Library:
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
-    override def enabled = false
 
 object dendrology extends Library:
   object tree extends Component(anticipation.print, gossamer.core, tessellate.core):
