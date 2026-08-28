@@ -1082,6 +1082,13 @@ object Jdwp:
 
       Invocation(reader.value(), reader.value())
 
+    // The reference type a `java.lang.Class` instance stands for — how a class object handed back
+    // by `ClassLoader.defineClass` is turned into the reference type its methods are read from.
+    def reflectedType(classObject: ObjectId)(using Tactic[Debugger.Error]): ReferenceTypeId =
+      val reader = request(17, 1)(_.objectId(classObject))
+      reader.byte()
+      reader.referenceTypeId()
+
     // StringReference (command set 10).
     def stringValue(string: StringId)(using Tactic[Debugger.Error]): Text =
       request(10, 1)(_.stringId(string)).string()
