@@ -32,13 +32,19 @@
                                                                                                   */
 package vivisection
 
-import soundness.*
+// `Variable` is excluded so it resolves to this package's `vivisection.Variable` rather than the
+// `ambience.Variable` (an environment variable) which `soundness` also publishes.
+import soundness.{Variable as _, *}
 
 import errorDiagnostics.stackTracesDiagnostics
 import threading.platformThreading
 import probates.awaitProbate
 import logging.silentLogging
 import strategies.throwUnsafely
+import internetAccess.online
+import workingDirectories.javaWorkingDirectory
+import socketBackends.virtualMachineSockets
+import systems.javaSystem
 
 case class Attach(duplex: Duplex)
 
@@ -450,3 +456,59 @@ object Tests extends Suite(m"Vivisection tests"):
           resumed.await()
 
     . assert(_ == (1, 9))
+
+    // Launches a real JVM under the JDWP agent and recovers the variables at a breakpoint: the
+    // marker method's parameters (a primitive, a string, an array) as local slots, and the
+    // enclosing `Specimen`'s state through `this` — a field, and an unforced lazy val.
+    test(m"a live session recovers the variables at a breakpoint"):
+      supervise:
+        val classpath = System.properties.java.`class`.path()
+        val captured = Promise[List[Variable]]()
+        val marker = Ordinal.uniary(58)
+
+        // Ascribed to the bare types: `sh"…"` infers a singleton-refined `Command` and the case
+        // class tracks the field's identity, which the invariant `Sessional.Self` would not match.
+        val command: Command = sh"java -classpath $classpath vivisection.Fixture"
+        val debuggee: Debuggee = Debuggee(command, 5099)
+
+        debuggee.session: debug ?=>
+          // Resume from the agent's start-up suspension, then wait for `Specimen` to load so its
+          // line table resolves. `Fixture.main` pauses long enough for this to win the race.
+          debug.resume()
+
+          def waitFor(remaining: Int): List[Jdwp.Location] =
+            val locations = debug.locate(t"vivisection.Fixture.scala", marker)
+
+            if locations.stdlib.nonEmpty then locations
+            else if remaining <= 0 then locations
+            else
+              Thread.sleep(50)
+              waitFor(remaining - 1)
+
+          waitFor(120).stdlib.foreach: location =>
+            debug.breakpoint(location): halt ?=>
+              captured.offer(halt.variables())
+              halt.remain()
+
+          captured.await()
+
+    . assert: variables =>
+        val byName = variables.stdlib.groupBy(_.name).view.mapValues(_.head).toMap
+
+        def snapshot(name: Text): Optional[Variable.Snapshot] =
+          byName.get(name).flatMap(_.value.option).getOrElse(Unset)
+
+        val total = snapshot(t"total") == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(42))
+
+        val tag = snapshot(t"tag") match
+          case Variable.Snapshot.Str(_, text) => text == t"answer"
+          case _                              => false
+
+        val values = snapshot(t"values") match
+          case Variable.Snapshot.Arr(_, Jdwp.Tag.IntTag, 3, _) => true
+          case _                                               => false
+
+        val seed = snapshot(t"seed") == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(7))
+        val squared = byName.get(t"squared").map(_.state).contains(Variable.State.Unforced)
+
+        total && tag && values && seed && squared

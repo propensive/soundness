@@ -30,12 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-// `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
-// environment variable) into `soundness`, and a debugger variable is reached as
-// `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint}
+// A debuggee for the live JDWP suite: launched under the agent, suspended at start, and driven by
+// `vivisection_test`. `marker` is where the tests break; its parameters (a primitive, a string, an
+// array) exercise local-slot recovery, and the enclosing `Specimen` gives a `this` whose fields
+// exercise field recovery and an unforced lazy val. Kept in plain Java/Scala idiom (not Soundness
+// vocabulary) so its compiled shape is exactly what a debugger meets in ordinary code.
+object Fixture:
+  def main(args: Array[String]): Unit =
+    // Construct first, so `Specimen` is loaded and its line table is available, then pause briefly
+    // to give the attached debugger a window to install its breakpoint before `marker` runs. The
+    // agent starts suspended, so the debugger is connected before any of this executes.
+    val specimen = Specimen(7)
+    Thread.sleep(1500)
+    specimen.compute(35)
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+  class Specimen(seed: Int):
+    lazy val squared: Int = seed*seed
+
+    def compute(base: Int): Unit =
+      val label = "answer"
+      val numbers = Array(base, base + 1, base + 2)
+      marker(base + seed, label, numbers)
+
+    def marker(total: Int, tag: String, values: Array[Int]): Unit =
+      System.out.nn.println("marker")
