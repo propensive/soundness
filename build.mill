@@ -3281,7 +3281,7 @@ object vivisection extends Library:
   // launches the debuggee, digression supplies SMAP-aware line translation, and parasite runs
   // the reply-correlation and event-dispatch pumps.
   object core extends Component(coaxial.jvm, guillotine.core, aperture.core, digression.core,
-      parasite.core, zephyrine.core, gossamer.core):
+      parasite.core, zephyrine.core, gossamer.core, spectacular.core):
     override def scalaJs = false // debugs JVMs over TCP; depends on JVM-only `guillotine`
     override def scalaNative = false // JDWP is a JVM protocol; forks JVMs via `guillotine`
     override def scalacOptions = Task:

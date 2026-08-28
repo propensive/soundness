@@ -30,9 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, Variable}
+import contingency.*
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+// A revocable handle on an installed breakpoint: `clear()` removes its event request from the VM
+// and unregisters its handler, after which any hits already in flight are treated as unclaimed.
+class Breakpoint private[vivisection] (debug: Debug, val request: Int):
+  def clear()(using Tactic[Debugger.Error]): Unit = debug.remove(request)

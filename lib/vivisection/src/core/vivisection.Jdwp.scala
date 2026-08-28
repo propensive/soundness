@@ -82,7 +82,7 @@ object Jdwp:
 
     def apply[kind <: Kind](long: Long): Ref[kind] = long
 
-    // The JDWP null object: identifier zero. `absent` tests for it.
+    // The JDWP null object: identifier zero. The `empty` extension tests for it.
     def empty[kind <: Kind]: Ref[kind] = 0L
 
     given showable: [kind <: Kind] => Ref[kind] is Showable = ref => ref.long.show
@@ -91,7 +91,7 @@ object Jdwp:
 
   extension [kind <: Ref.Kind](ref: Ref[kind])
     def long: Long = ref
-    def absent: Boolean = ref == 0L
+    def empty: Boolean = ref == 0L
 
   // The five negotiated identifier widths, in bytes (each 1..8). `objectId` also sizes strings,
   // threads, thread groups, class loaders, class objects and arrays; `referenceTypeId` sizes
@@ -224,6 +224,24 @@ object Jdwp:
 
   // An executable location: a reference type, one of its methods, and a code index within it.
   case class Location(tag: TypeTag, cls: ReferenceTypeId, method: MethodId, index: Long)
+
+  object Value:
+    // Primitives delegate to their own notation; a reference — undecoded at this level — shows
+    // its wire tag character and object identifier, joined by the fullwidth `＠` which marks
+    // every remote identity in this library's renderings.
+    given inspectable: Value is Inspectable =
+      case OfByte(byte)       => byte.inspect
+      case OfChar(char)       => char.inspect
+      case OfDouble(double)   => double.inspect
+      case OfFloat(float)     => float.inspect
+      case OfInt(int)         => int.inspect
+      case OfLong(long)       => long.inspect
+      case OfShort(short)     => short.inspect
+      case OfBoolean(boolean) => boolean.inspect
+      case Void               => t"()"
+
+      case Reference(tag, id) =>
+        if id.empty then t"null" else (tag.id.toString+"＠"+id.long).tt
 
   // A tagged value read from or written to a frame slot, field, or array. Primitives are decoded
   // eagerly; references stay as identifiers for the semantics layer to interpret.
@@ -645,6 +663,10 @@ object Jdwp:
       case Ok(data: Data)
       case Failed(code: Int)
 
+    // Holds a breakpoint handler out of the capture-tracked world: the function captures the
+    // session, which no `TrieMap` value type can name, but it lives and dies with the session.
+    class Slot(@scala.caps.unsafe.untrackedCaptures val run: Halt => Unit)
+
     // Reads a big-endian 32-bit integer from a raw byte array at the given offset.
     private def int32(bytes: scala.Array[Byte], offset: Int): Int =
       ((bytes(offset) & 0xff) << 24) | ((bytes(offset + 1) & 0xff) << 16) |
@@ -705,12 +727,18 @@ object Jdwp:
 
         connection.disconnect()
 
+      // The dispatcher: the sole consumer of composites. Handlers run here, never on the reader
+      // task — a handler's first command would otherwise wait on the very task that must deliver
+      // its reply. Started with this session's clean monitor, capturing the laundered connection.
+      val dispatcher: Task[Unit] = async(connection.pump())
+
       try
         connection.negotiate()
         lambda(connection)
       finally
         reader.cancel()
         writer.cancel()
+        dispatcher.cancel()
 
   class Connection private[vivisection] (monitor: Monitor, note: Diagnostics)
   extends caps.ExclusiveCapability:
@@ -719,10 +747,72 @@ object Jdwp:
     private[vivisection] val outgoing: Relay[Data] = Relay()
     private[vivisection] val composites: Relay[Event.Composite] = Relay()
 
+    // Registered breakpoint handlers, keyed by (event kind, request id), and the composites no
+    // handler claimed. A handler captures session capabilities, which the map cannot carry, so it
+    // is held behind an untracked field; every handler dies with this sealed session anyway.
+    private val handlers: scc.TrieMap[(Int, Int), Connection.Slot] = scc.TrieMap()
+    private[vivisection] val unclaimed: Relay[Event.Composite] = Relay()
+
     @scala.caps.unsafe.untrackedCaptures
     private var sizes0: IdSizes = IdSizes.bootstrap
 
     def sizes: IdSizes = sizes0
+
+    private[vivisection] def register(kind: EventKind, request: Int)(handler: Halt => Unit): Unit =
+      handlers((kind.id, request)) = Connection.Slot(handler)
+
+    private[vivisection] def unregister(kind: EventKind, request: Int): Unit =
+      handlers.remove((kind.id, request))
+
+    // Drains composites until the stream ends, then closes the unclaimed stream that `Debug.events`
+    // reads.
+    private[vivisection] def pump(): Unit =
+      composites.lazyList.stdlib.foreach(process)
+      unclaimed.stop()
+
+    // Runs the handlers a composite's events claim, then settles its suspension. JDWP suspends
+    // once per *composite*, not per event, so it is resumed exactly once, by its policy — unless a
+    // handler asked to `remain()`, or no event was claimed, in which case the composite belongs to
+    // the raw `unclaimed` stream and its consumer owns any resumption.
+    private def process(composite: Event.Composite): Unit =
+      val retention = Halt.Retention()
+      var claimed = false
+      var suspended: Optional[ThreadId] = Unset
+
+      def run(request: Int, kind: EventKind, thread: ThreadId, location: Location): Unit =
+        handlers.get((kind.id, request)).foreach: slot =>
+          claimed = true
+          suspended = thread
+
+          val outcome: Optional[Unit] = contingency.safely[Debugger.Error]:
+            val halt = caps.unsafe.unsafeAssumePure(new Halt(this, thread, location, retention))
+            slot.run(halt)
+
+          outcome.let(identity)
+
+      composite.events.stdlib.foreach:
+        case Event.Breakpoint(request, thread, location) =>
+          run(request, EventKind.Breakpoint, thread, location)
+
+        case Event.SingleStep(request, thread, location) =>
+          run(request, EventKind.SingleStep, thread, location)
+
+        case Event.MethodEntry(request, thread, location) =>
+          run(request, EventKind.MethodEntry, thread, location)
+
+        case Event.MethodExit(request, thread, location) =>
+          run(request, EventKind.MethodExit, thread, location)
+
+        case _ =>
+          ()
+
+      if !claimed then unclaimed.put(composite)
+      else if !retention.retained then
+        contingency.safely[Debugger.Error]:
+          composite.policy match
+            case SuspendPolicy.None        => ()
+            case SuspendPolicy.EventThread => suspended.let(resumeThread(_))
+            case SuspendPolicy.All         => resumeAll()
 
     // Routes a decoded packet: a reply fulfils its pending promise (with the error code, or the
     // payload); a Composite command (command set 64, command 100) is enqueued for the dispatcher.
@@ -734,7 +824,8 @@ object Jdwp:
       else if packet.commandSet == 64 && packet.command == 100 then
         composites.put(Event.composite(Reader(packet.body, sizes0)))
 
-    // Fails every in-flight request and ends the event stream when the channel closes.
+    // Fails every in-flight request and ends the event stream when the channel closes. The
+    // dispatcher's `pump` then drains the now-terminated composites and stops `unclaimed`.
     private[vivisection] def disconnect(): Unit =
       pending.values.foreach(_.offer(Connection.Reply.Failed(-1)))
       pending.clear()
