@@ -4,8 +4,9 @@
 
 A [hash](https://en.wikipedia.org/wiki/Hash_function) reduces data of any size to a short,
 fixed-length fingerprint. Soundness computes the digest of any value — a case class, a collection,
-a stream of bytes — with the algorithm named as a type: `Sha2[256]`, `Sha1`, `Md5`, `Crc32`, or
-`Blake3`. The digest is a value whose bytes render to hexadecimal or Base64 through the same
+a stream of bytes — with the algorithm named as a type: `Sha2[256]`, `Sha1`, `Md5` or `Blake3`.
+The non-cryptographic checksums `Crc32`, `Crc64` and `Adler32` live in Corpuscular, and digest
+through exactly the same API. The digest is a value whose bytes render to hexadecimal or Base64 through the same
 [base encoding](base-encoding.md) used everywhere else.
 
 Anything that describes how to feed its bytes into a hash can be digested, and a case class does so

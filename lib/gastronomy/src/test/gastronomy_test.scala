@@ -231,9 +231,23 @@ object Tests extends Suite(m"Gastronomy tests"):
         windowed(PureHashes.md5)
       . assert(_ == whole(PureHashes.md5))
 
+      // The pure CRC-32 is corpuscular's accumulator now, reached through the Soundness provider
+      // rather than a second implementation here.
       test(m"windowed pure CRC-32 matches whole-value append"):
-        windowed(PureHashes.crc32)
-      . assert(_ == whole(PureHashes.crc32))
+        windowed(SoundnessHashing.crc32.digestion())
+      . assert(_ == whole(SoundnessHashing.crc32.digestion()))
+
+      test(m"windowed pure CRC-64 matches whole-value append"):
+        windowed(SoundnessHashing.crc64.digestion())
+      . assert(_ == whole(SoundnessHashing.crc64.digestion()))
+
+      test(m"windowed pure Adler-32 matches whole-value append"):
+        windowed(SoundnessHashing.adler32.digestion())
+      . assert(_ == whole(SoundnessHashing.adler32.digestion()))
+
+      test(m"windowed JDK Adler-32 matches whole-value append"):
+        windowed(JavaStdlibHashing.adler32.digestion())
+      . assert(_ == whole(JavaStdlibHashing.adler32.digestion()))
 
       test(m"windowed BLAKE3 matches whole-value append"):
         windowed(Blake3.digestion())
@@ -256,6 +270,50 @@ object Tests extends Suite(m"Gastronomy tests"):
       test(m"a whole value's checksum matches its digest"):
         payload.checksum[Sha2[256]].serialize[Hex]
       . assert(_ == payload.digest[Sha2[256]].serialize[Hex])
+
+    // The point of corpuscular hosting the checksum algorithms: a checksum is digested through
+    // exactly the same `.digest[…]` surface as a cryptographic hash, and provider selection is
+    // the same single import. `123456789` has the published CRC-32 check value 0xcbf43926.
+    suite(m"Checksums through the digest API"):
+      test(m"CRC-32 of the standard check vector, via the JDK provider"):
+        import providers.javaStdlibProvider
+        t"123456789".digest[Crc32].serialize[Hex].lower
+      . assert(_ == t"cbf43926")
+
+      test(m"CRC-32 agrees between the JDK and Soundness providers"):
+        val jdk =
+          locally:
+            import providers.javaStdlibProvider
+            t"123456789".digest[Crc32].serialize[Hex]
+
+        val pure =
+          locally:
+            import providers.soundnessProvider
+            t"123456789".digest[Crc32].serialize[Hex]
+
+        jdk == pure
+      . assert(_ == true)
+
+      test(m"Adler-32 agrees between the JDK and Soundness providers"):
+        val jdk =
+          locally:
+            import providers.javaStdlibProvider
+            t"123456789".digest[Adler32].serialize[Hex]
+
+        val pure =
+          locally:
+            import providers.soundnessProvider
+            t"123456789".digest[Adler32].serialize[Hex]
+
+        jdk == pure
+      . assert(_ == true)
+
+      // The JDK has no CRC-64, so only the Soundness provider offers it — the same disjoint-
+      // provider arrangement BLAKE3 already relies on.
+      test(m"CRC-64 digests under the Soundness provider"):
+        import providers.soundnessProvider
+        t"123456789".digest[Crc64].serialize[Hex].length
+      . assert(_ == 16)
 
     suite(m"Native-rendering coverage"):
       test(m"gastronomy's types inspect natively"):

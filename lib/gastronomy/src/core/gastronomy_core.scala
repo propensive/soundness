@@ -36,6 +36,7 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
+import corpuscular.*
 import denominative.*
 import vacuous.*
 import prepositional.*

@@ -32,6 +32,7 @@
                                                                                                   */
 package gastronomy
 
+import corpuscular.*
 import prepositional.*
 
 // A composable sequence of digest steps over an exclusive accumulator: `run` is a

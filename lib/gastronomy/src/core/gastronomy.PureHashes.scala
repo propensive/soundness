@@ -35,6 +35,7 @@ package gastronomy
 import scala.caps
 
 import anticipation.*
+import corpuscular.*
 
 // Pure-Scala implementations of the MD5, SHA-1 and SHA-2 hash families and the CRC-32 checksum,
 // so that hashing works on every platform (Scala.js and WASI, where `java.security.MessageDigest`
@@ -259,47 +260,12 @@ private[gastronomy] object PureHashes:
 
       Array.freeze(out)
 
-  object Crc32:
-    val table: Array[Int]^{} =
-      val result = Array.allocate[Int](256)
-      var n = 0
-
-      while n < 256 do
-        var c = n
-        var k = 8
-        while k > 0 do { k -= 1; c = if (c & 1) != 0 then 0xedb88320 ^ (c >>> 1) else c >>> 1 }
-        result(n) = c
-        n += 1
-
-      Array.freeze(result)
-
-  // CRC-32 (RFC 1952), the checksum used by gzip and zip.
-  final class Crc32 extends Digestion:
-    private var value: Int = 0
-
-    update def append(bytes: Data): Unit = append(bytes, 0, bytes.length)
-
-    override update def append(data: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
-      val end = start + count
-      var c = ~value
-      var i = start
-
-      while i < end do
-        c = Crc32.table.readable((c ^ data.readUnchecked(i)) & 0xff) ^ (c >>> 8)
-        i += 1
-
-      value = ~c
-
-    update def digest(): Data =
-      Array[Byte]((value >>> 24).toByte, (value >>> 16).toByte, (value >>> 8).toByte, value.toByte)
-
   private def rotr(x: Int, n: Int): Int = (x >>> n) | (x << (32 - n))
   private def rotl(x: Int, n: Int): Int = (x << n) | (x >>> (32 - n))
   private def rotrL(x: Long, n: Int): Long = (x >>> n) | (x << (64 - n))
 
   def sha1: Digestion^ = Sha1()
   def md5: Digestion^ = Md5()
-  def crc32: Digestion^ = Crc32()
 
   def sha2(bits: Int): Digestion^ = bits match
     case 224 => Sha256(sha224H.readable, 28)

@@ -34,8 +34,8 @@ package soundness
 
 export
   gastronomy
-  . { Algorithm, Blake3, checksum, Concession, Crc32, Digest, digest, Digester, Digestible,
-      Digestion, Feistel, Hash, Hashing, JavaStdlibHashing, Md5, Permit, ProcessingPermit, Provider,
+  . { Blake3, checksum, Concession, Digest, digest, Digester, Digestible,
+      Feistel, Hash, Hashing, JavaStdlibHashing, Md5, Permit, ProcessingPermit, Provider,
       Sha1, Sha2, Sha384, Sha512, SoundnessHashing }
 
 package providers:

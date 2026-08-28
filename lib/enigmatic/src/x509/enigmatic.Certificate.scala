@@ -46,6 +46,7 @@ import rudiments.*
 import vacuous.*
 
 import Certificate.Error.Reason
+import corpuscular.*
 
 // An X.509 certificate. It is held as the ASN.1 value it is, so that it encodes to DER — and hence
 // to PEM — through the ordinary codec, and so that a certificate read back from the wire re-encodes
