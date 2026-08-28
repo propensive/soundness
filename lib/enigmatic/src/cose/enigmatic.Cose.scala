@@ -35,6 +35,7 @@ package enigmatic
 import anticipation.*
 import breviloquence.*
 import contingency.*
+import corpuscular.*
 import enigmatic.*
 import prepositional.*
 import turbulence.*

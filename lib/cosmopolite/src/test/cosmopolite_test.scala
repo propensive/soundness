@@ -32,6 +32,19 @@
                                                                                                   */
 package cosmopolite
 
+import soundness.*
+
+object Tests extends Suite(m"Cosmopolite tests"):
+  def run(): Unit =
+    suite(m"Native-rendering coverage"):
+      test(m"cosmopolite's types inspect natively"):
+        Inspectable.fallbacks(Locale(en).inspect)
+      . assert(_ == Nil)
+
+      test(m"A locale shows its language code"):
+        Locale(en).inspect
+      . assert(_ == t"Locale(en)")
+
 // import languages.common.*
 
 // import probably.*

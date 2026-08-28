@@ -46,6 +46,12 @@ object PublicKey:
 
   given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Data = _.bytes
 
+  // The same hexadecimal `showable` produces, but rendered without needing an `Alphabet[Hex]`
+  // in scope: a debug rendering must always be available. A public key is not a secret, so it
+  // is shown in full.
+  given inspectable: [key <: PublicKey[?]] => key is Inspectable = key =>
+    t"PublicKey(${Inspection.hex(key.bytes)})"
+
 case class PublicKey[cipher <: Cipher](bytes: Data):
   def verify[encodable: Encodable in Data](value: encodable, signature: Signature[cipher])
     ( using algorithm: cipher & Signing, erased weakness: ProcessingPermit[Weakness[cipher]] )

@@ -35,10 +35,17 @@ package telekinesis
 import anticipation.*
 import beneficence.*
 import distillate.*
+import gossamer.*
 import prepositional.*
+import spectacular.*
 
 object Session:
   given encodable: Session is Encodable in Text = _.key
   given decodable: Session is Decodable in Text = Session(_)
+
+  // The encoded form is the bare key, which would be indistinguishable from `Text`, so the
+  // inspected form names the type and quotes the key as the `Text` it is.
+  given inspectable: [session <: Session] => session is Inspectable = session =>
+    t"Session(${session.key.inspect})"
 
 case class Session(key: Text) extends Findable

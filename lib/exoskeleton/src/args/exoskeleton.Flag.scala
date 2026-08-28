@@ -56,6 +56,20 @@ object Flag:
     case name: Text => t"--$name"
     case name: Char => t"-$name"
 
+  // The `Showable` shows the flag's canonical form alone, which is what a usage message needs;
+  // inspection keeps that form as the leading field — it is how the flag is written on a
+  // command line — and adds the state which decides how the flag is parsed and listed: its
+  // aliases, in the same form, and whether it is repeatable or secret. The description is the
+  // help text, so it is shown as an inspected `Text`.
+  given inspectable: [flag <: Flag] => flag is Inspectable = flag =>
+    val aliases = flag.aliases.stdlib.map(serialize(_).s).mkString("[", ", ", "]").tt
+    val description = flag.description.lay(t"○")(_.inspect)
+
+    val fields =
+      t"aliases:$aliases ╱ repeatable:${flag.repeatable.inspect} ╱ secret:${flag.secret.inspect}"
+
+    t"Flag(${serialize(flag.name)} ╱ $fields ╱ description:$description)"
+
   @targetName("make")
   def apply[topic]
     ( name:        Text | Char,

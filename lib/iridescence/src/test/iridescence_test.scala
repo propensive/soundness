@@ -40,6 +40,21 @@ given Colorimetry = colorimetry.daylight
 
 object Tests extends Suite(m"Iridescence tests"):
   def run(): Unit =
+    // A missing `Inspectable` is never a compile error, so coverage is held in place by
+    // asserting on the renderings: `fallbacks` returns those which used a marked fallback.
+    suite(m"Native-rendering coverage"):
+      test(m"a packed 12-bit colour inspects as hexadecimal"):
+        Rgb12(15, 0, 15).inspect
+      . assert(_ == t"#f0f")
+
+      test(m"a packed 32-bit colour inspects as its three channels"):
+        Rgb32(1023, 4095, 0).inspect
+      . assert(_ == t"rgb32(1023, 4095, 0)")
+
+      test(m"iridescence's packed colour types inspect natively"):
+        Inspectable.fallbacks(Rgb12(15, 0, 15).inspect, Rgb32(1023, 4095, 0).inspect)
+      . assert(_ == Nil)
+
     suite(m"Roundtrip tests"):
 
       given Srgb is Checkable against Srgb = (left, right) =>

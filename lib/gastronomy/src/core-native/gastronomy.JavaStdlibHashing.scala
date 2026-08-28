@@ -41,3 +41,8 @@ object JavaStdlibHashing extends Hashing:
   def sha1: Hashing.Function = SoundnessHashing.sha1
   def sha2(bits: Int): Hashing.Function = SoundnessHashing.sha2(bits)
   def crc32: Hashing.Function = SoundnessHashing.crc32
+
+  // The checksums forward too, so `.digest[Crc32]`/`.digest[Adler32]` resolve under this
+  // provider on every platform. CRC-64 is deliberately absent here as it is on the JVM: no
+  // `java.util.zip` equivalent exists, so it is reached through the Soundness provider only.
+  def adler32: Hashing.Function = SoundnessHashing.adler32

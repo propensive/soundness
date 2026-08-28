@@ -41,12 +41,25 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import spectacular.*
 import symbolism.*
 
 import filesystemBackends.virtualMachineFilesystem
 
 object LocalClasspath:
   given encodable: System => LocalClasspath is Encodable in Text = _()
+
+  // `encodable` needs a `System`, since the separator between entries is a system property, and
+  // a debug rendering must always be available; the entries are therefore joined here with `:`
+  // regardless of platform, and the whole rendering is tagged so that it cannot be mistaken for
+  // the platform-specific text which `encodable` produces.
+  given inspectable: [localClasspath <: LocalClasspath] => localClasspath is Inspectable =
+    _.entries.map:
+      case Classpath.Entry.Directory(directory) => directory
+      case Classpath.Entry.Jar(jar)             => jar
+      case Classpath.Entry.JavaRuntime          => t"‹jrt›"
+
+    . join(t"classpath⟨", t":", t"⟩")
 
   given decodable: (System, Tactic[Property.Error])
   =>  LocalClasspath is Decodable in Text =

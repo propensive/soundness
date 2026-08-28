@@ -108,6 +108,30 @@ object Math:
 
   def apply(children: Mathml*): Math = Math(children.to(List))
 
+  // Only a `Document[Math]` has a `Showable`, and it produces multi-line serialized MathML with an
+  // XML header. Inspection instead writes the node tree in a bracketed prefix form — each node as
+  // its MathML element name, its attributes, then its character data or its children — which is
+  // the structure a parse or layout bug is read from, on one line.
+  private def node(mathml: Mathml): Text =
+    val attributes = mathml.attributes.map { pair => t" ${pair(0)}=${pair(1).inspect}" }.join
+    val children = mathml.contents.map { child => t" ${node(child)}" }.join
+    val body = mathml.text.let { text => t" ${text.inspect}" }.or(children)
+
+    t"⟨${mathml.label}$attributes$body⟩"
+
+  // Renders an `Optional` exactly as `Inspectable.derived`'s `Mandatable` case would, spelt out
+  // rather than summoned: that instance cannot be constructed under `-scalajs`, where the SAM is
+  // expanded to an anonymous class whose parameter acquires a capture variable that `Self` does
+  // not carry (soundness#1892, proscala#46). Inline this again once the fork accepts it.
+  private def optional[value: Inspectable](value: Optional[value]): Text =
+    value.let { present => t"｢${present.inspect}｣" }.or(t"○")
+
+  given inspectable: [math <: Math] => math is Inspectable = math =>
+    val attributes = math.attributes.map { pair => t" ${pair(0)}=${pair(1).inspect}" }.join
+    val children = math.contents.map { child => t" ${node(child)}" }.join
+
+    t"Math(${optional(math.display)}$attributes$children)"
+
   // `Encodable in Math` instances: any value encodes to a `<math>` document, just
   // as `Encodable in Xml` yields an `Xml`. `Mathml.atom` collapses a root back to a
   // single node where one is needed (the `.mathml` extension, the `ergo""` macro).

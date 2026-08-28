@@ -1,0 +1,56 @@
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.64.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
+package corpuscular
+
+import scala.caps
+
+import anticipation.*
+
+// An incremental hash computation: feed bytes with `append`, then read the result
+// with `digest`. Implementations live beside their algorithm (corpuscular's checksums) or
+// are supplied by a `Hashing` provider (gastronomy's cryptographic hashes). A `Digestion`
+// is honestly mutable: each `append` updates its interior state, so the mutators are
+// `update` methods and fresh instances are exclusive (`Digestion^`).
+trait Digestion extends caps.Mutable:
+  update def append(bytes: Data): Unit
+
+  // The windowed form: hash `count` bytes of `array` from `start`, so a streaming
+  // consumer can feed a reusable window without snapshotting it — hashing consumes
+  // its input synchronously and never retains it. The default copies the window;
+  // providers that can consume a slice in place override it.
+  update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+    val copy = Array.allocate[Byte](count)
+    copy.copyFrom(array, start, 0, count)
+    append(Array.freeze(copy))
+
+  update def digest(): Data

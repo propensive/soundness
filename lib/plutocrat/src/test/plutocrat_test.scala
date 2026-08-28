@@ -186,3 +186,16 @@ object Tests extends Suite(m"Plutocrat tests"):
       test(m"Compiletime ISIN Luhn check failure"):
         demilitarize(isin"GB00BH4HKS34").map(_.message)
       . assert(_ == List(t"[↯SN-515.4] the ISIN number is not valid because its last digit failed the Luhn check"))
+
+    suite(m"Native-rendering coverage"):
+      test(m"plutocrat's types inspect natively"):
+        Inspectable.fallbacks(Eur(3.01).inspect, isin"US0378331005".inspect)
+      . assert(_ == Nil)
+
+      test(m"A monetary value shows its currency and exact minor units"):
+        Eur(3.01).inspect
+      . assert(_ == t"¤EUR301ₘ")
+
+      test(m"An ISIN shows the form its interpolator takes"):
+        isin"US0378331005".inspect
+      . assert(_ == t"isin\"US0378331005\"")

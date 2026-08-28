@@ -41,6 +41,7 @@ import fulminate.*
 import gigantism.*
 import prepositional.*
 import serpentine.*
+import spectacular.*
 import vacuous.*
 
 object internal extends Hellenism2:
@@ -49,6 +50,11 @@ object internal extends Hellenism2:
   object ClassRef:
     def apply(javaClass: Class[?]): ClassRef = javaClass
     inline def apply[template <: AnyKind]: ClassRef = ${hellenism.internal.makeClass[template]}
+
+    // A `Class`'s own `toString` is `class java.lang.String`, which reads as two words rather
+    // than one value; the rendering instead resembles the source which produces a `ClassRef`.
+    given inspectable: [classRef <: ClassRef] => classRef is Inspectable = classRef =>
+      ("classOf["+classRef.getName.nn+"]").tt
 
   extension (classRef: ClassRef)
     def classloader: Classloader = new Classloader(classRef.getClassLoader().nn)

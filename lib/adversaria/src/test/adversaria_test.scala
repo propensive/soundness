@@ -122,3 +122,59 @@ object Tests extends Suite(m"Adversaria tests"):
     test(m"Get all members of a particular type"):
       Example1.membersOfType[Int].to[Set]
     . assert(_ == Set(12, 42))
+
+    // The discovered accessors are panopticon `Lens`es (#490), so they write as well as read.
+    suite(m"Field accessors as lenses"):
+      val dereferenceable = summon[Letters is Dereferenceable to Int]
+      val letters = Letters(1, 2, 3, 4)
+
+      test(m"a lens reads the field it names"):
+        dereferenceable.lens(t"beta").let(_(letters))
+      . assert(_ == 2)
+
+      test(m"a lens writes the field it names, leaving the others"):
+        dereferenceable.lens(t"beta").let(_.update(letters, 20))
+      . assert(_ == Letters(1, 20, 3, 4))
+
+      test(m"a lens modifies in place"):
+        dereferenceable.lens(t"delta").let(_.modify(letters)(_*10))
+      . assert(_ == Letters(1, 2, 3, 40))
+
+      test(m"update through the typeclass"):
+        dereferenceable.update(letters, t"alpha", 100)
+      . assert(_ == Letters(100, 2, 3, 4))
+
+      test(m"modify through the typeclass"):
+        dereferenceable.modify(letters, t"gamma")(_ + 7)
+      . assert(_ == Letters(1, 2, 10, 4))
+
+      test(m"a name which is not a field has no lens"):
+        dereferenceable.lens(t"epsilon")
+      . assert(_ == Unset)
+
+      // Reading is unchanged: every discovered field still reports, whether or not it is
+      // writable, so nothing that depended on the read-only accessors changes.
+      test(m"reading still covers every discovered field"):
+        dereferenceable.members(letters)
+      . assert(_ == Map(t"alpha" -> 1, t"beta" -> 2, t"gamma" -> 3, t"delta" -> 4))
+
+      // An object's `val`s are not constructor parameters, so there is nothing to write: they
+      // remain readable, and simply have no lens.
+      test(m"a field which is not a constructor parameter is readable"):
+        summon[Example1.type is Dereferenceable to Int].select(Example1, t"foo")
+      . assert(_ == 42)
+
+      test(m"a field which is not a constructor parameter has no lens"):
+        summon[Example1.type is Dereferenceable to Int].lens(t"foo")
+      . assert(_ == Unset)
+
+      // Finding an annotated field and then writing through it, which is what the name alone
+      // could not do.
+      test(m"an annotated field yields a lens onto itself"):
+        val annotated = summon[Person is Annotated by ident]
+        annotated.lens.update(Person(t"Jack", t"jack@example.com"), t"jill@example.com")
+      . assert(_ == Person(t"Jack", t"jill@example.com"))
+
+      test(m"an annotated field's lens reads it"):
+        summon[Person is Annotated by ident].lens(Person(t"Jack", t"jack@example.com"))
+      . assert(_ == t"jack@example.com")

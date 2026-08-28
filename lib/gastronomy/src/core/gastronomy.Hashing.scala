@@ -32,6 +32,8 @@
                                                                                                   */
 package gastronomy
 
+import corpuscular.*
+
 object Hashing:
   // One hash algorithm's implementation: a factory for a fresh incremental
   // `Digestion`.

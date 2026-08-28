@@ -109,7 +109,7 @@ private[pneumatic] trait FlateChecksum extends caps.Mutable:
 // lived here, ported from JZlib, until they were shared; the JVM backend still supplies its own
 // `java.util.zip`-backed `FlateChecksum`, which is faster than any of them.
 private[pneumatic] final class Adler32 extends FlateChecksum:
-  private val adler: corpuscular.Adler32^ = corpuscular.Adler32()
+  private val adler: corpuscular.Adler32.Accumulator^ = corpuscular.Adler32()
 
   update def update(buffer: scala.Array[Byte]^{caps.any.rd}, index: Int, length: Int): Unit =
     adler.update(buffer, index, length)
@@ -118,7 +118,7 @@ private[pneumatic] final class Adler32 extends FlateChecksum:
   def value: Long = adler.value
 
 private[pneumatic] final class Crc32 extends FlateChecksum:
-  private val crc: corpuscular.Crc32^ = corpuscular.Crc32()
+  private val crc: corpuscular.Crc32.Accumulator^ = corpuscular.Crc32()
 
   update def update(buffer: scala.Array[Byte]^{caps.any.rd}, index: Int, length: Int): Unit =
     crc.update(buffer, index, length)

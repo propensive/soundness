@@ -50,6 +50,13 @@ object Authority:
   given showable: Authority is Showable = auth =>
     t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host.show}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
+  // The authority as it appears in a URL, with the `//` which introduces it: that prefix says
+  // which part of a URL the value is, and keeps the rendering from being mistaken for a bare
+  // hostname or for `Text`. The user info and port appear exactly when they are set, delimited
+  // by the `@` and `:` which the syntax gives them, so no state is hidden.
+  given inspectable: [authority <: Authority] => authority is Inspectable = authority =>
+    t"//${showable.text(authority)}"
+
   given decodable: (hostnameTactic: Tactic[Hostname.Error])
   =>  (ipTactic: Tactic[IpAddress.Error])
   =>  (urlTactic: Tactic[Url.Error])

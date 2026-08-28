@@ -77,7 +77,15 @@ export scala.{deprecated, unchecked, volatile, transient, native, main}
 export scala.unsafeExceptions
 
 // Miscellaneous `scala`-package types with existing instances or uses.
-export scala.{CanThrow, DummyImplicit, MatchError, NamedTuple, Precise, Specializable, ValueOf}
+//
+// `Precise` is deliberately NOT among them (#1811). Exporting it yields a distinct alias
+// symbol which the compiler's union-widening suppression does not recognise, so a context
+// bound written `[t: Precise]` against the alias compiles and then does nothing: inference
+// widens the union anyway, with no warning. Since every module compiles with
+// `-Yimports:proscenium`, re-exporting it here would make that silent failure the default.
+// Write `scala.Precise` explicitly, which works; naming the bare `Precise` now fails to
+// compile rather than degrading quietly.
+export scala.{CanThrow, DummyImplicit, MatchError, NamedTuple, Specializable, ValueOf}
 
 // Exception aliases the `scala` package object provides for `java.util` types.
 export scala.NoSuchElementException

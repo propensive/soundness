@@ -198,6 +198,24 @@ object Tests extends Suite(m"Nomenclature tests"):
       capture[Moniker.Error](t"notathing-leopard".as[Moniker over Session]).message.show
     . assert(_ == t"the moniker is not valid because the word notathing does not appear in the vocabulary")
 
+    // A missing `Inspectable` is never a compile error — `derived` always succeeds and
+    // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
+    // only be held in place by asserting on the renderings themselves.
+    suite(m"Native-rendering coverage"):
+      test(m"nomenclature's types inspect natively"):
+        given (Vocabulary over Session) = Vocabulary(adjectives, animals)
+        Inspectable.fallbacks(Name[EndsO](t"foo").inspect, Moniker[Session](10351).inspect)
+      . assert(_ == Nil)
+
+      test(m"a name is distinguishable from the text it is"):
+        Name[EndsO](t"foo").inspect
+      . assert(_ == t"n\"foo\"")
+
+      test(m"a moniker inspects as its ordinal"):
+        given (Vocabulary over Session) = Vocabulary(adjectives, animals)
+        Moniker[Session](10351).inspect
+      . assert(_ == Text("10351ᵐᵏ"))
+
     suite(m"MustStart"):
       inline given prefixed: Prefixed is Nominative under MustStart["x-"] = !!
 

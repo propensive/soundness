@@ -305,6 +305,21 @@ object Html extends Tag.Container
     Producer.collect[Text](): producer =>
       writeHtml(producer, doms.html.whatwg, node, 0, false, Mode.Whitespace)
 
+  // `Element`, `Fragment`, `TextNode`, `Comment` and `Doctype` are all covered here, in the
+  // companion of the trait they share, exactly as `showable` above covers them: the bound admits
+  // every node type and every topic- or DOM-refined form of one. The rendering is the node's own
+  // un-indented HTML source, escaped into an `html"…"` literal — compact, on one line, and
+  // showing the tag, its attributes and its children. It is distinguishable both from the `Text`
+  // holding the same markup and from xylophone's `xml"…"`, following ypsiloid's `yaml"…"`.
+  given inspectable: [html <: Html] => html is Inspectable = node =>
+    val markup: Text = Producer.collect[Text](): producer =>
+      writeHtml(producer, doms.html.whatwg, node, 0, false, Mode.Whitespace)
+
+    val builder: StringBuilder = new StringBuilder()
+    markup.each { char => builder.append(Inspectable.escape(char).s) }
+
+    ("html\""+builder.toString+"\"").tt
+
   // HTML5 text-content escaping: `&`, `<` and `>`. Raw-text elements such as `script` and `style`
   // use `Mode.Raw` and are written verbatim by `writeHtml`.
   private def writeEscapedText(producer: Producer[Text]^, text: Text): Unit =

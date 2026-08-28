@@ -39,6 +39,20 @@ import anticipation.*
 // The standard CRC-32 (polynomial 0xedb88320, reflected), shared by gzip, PNG, ZIP and XZ.
 // Three copies of this table and loop existed — in pneumatic, hallucination and zeppelin — and
 // this is the one they all delegate to.
+// The standard CRC-32 (polynomial 0xedb88320, reflected), shared by gzip, PNG, ZIP and XZ.
+// Three copies of this table and loop existed — in pneumatic, hallucination and zeppelin — and
+// this is the one they all delegate to.
+//
+// Each checksum is a `sealed trait ... extends Algorithm`: a marker naming the algorithm in a
+// type position, so a value can be digested with `.digest[Crc32]` exactly as with
+// `.digest[Md5]`. The running state lives in the companion's `Accumulator`, which implements
+// `Digestion` directly — its windowed `append` is the native loop, so a streaming consumer
+// feeds a reusable window with no copy. `value` reads the checksum as the integer the
+// compressed-container formats write into their trailers; `digest` reads it as the big-endian
+// bytes the digest framework expects.
+sealed trait Crc32 extends Algorithm:
+  type Bits = 32
+
 object Crc32:
   val table: Array[Int]^{} =
     val result = Array.allocate[Int](256)
@@ -69,26 +83,48 @@ object Crc32:
 
     crc ^ 0xffffffff
 
-// The running form, for streaming compressors. Mutable state, so each use makes a fresh one.
-final class Crc32 extends caps.Mutable:
-  private var v: Int = 0
+  def apply(): Accumulator^ = Accumulator()
 
-  update def update(buffer: scala.Array[Byte]^{caps.any.rd}, index0: Int, length0: Int): Unit =
-    var index = index0
-    var length = length0
-    var c = ~v
+  // The running form, for streaming compressors. Mutable state, so each use makes a fresh one.
+  final class Accumulator extends Digestion:
+    private var v: Int = 0
 
-    while length > 0 do
-      length -= 1
-      c = Crc32.table.readable((c ^ buffer(index)) & 0xff) ^ (c >>> 8)
-      index += 1
+    // `Digestion`'s two `append`s delegate to the native `update` loop below, which takes the
+    // JVM array directly: `Array.unsafeJvm` is a view, not a copy, so the windowed path stays
+    // allocation-free — the property a streaming consumer feeding a reusable window needs.
+    update def append(bytes: Data): Unit = update(Array.unsafeJvm(bytes), 0, bytes.length)
 
-    v = ~c
+    override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+      update(Array.unsafeJvm(array), start, count)
 
-  update def reset(): Unit = v = 0
-  def value: Long = v.toLong & 0xffffffffL
+    // The form pneumatic's `FlateChecksum` drives, kept as the primitive.
+    update def update(buffer: scala.Array[Byte]^{caps.any.rd}, index0: Int, length0: Int): Unit =
 
-// CRC-64, in the ECMA-182 form XZ uses (polynomial 0xc96c5795d7870f42, reflected).
+      var index = index0
+      var length = length0
+      var c = ~v
+
+      while length > 0 do
+        length -= 1
+        c = table.readable((c ^ buffer(index)) & 0xff) ^ (c >>> 8)
+        index += 1
+
+      v = ~c
+
+    update def reset(): Unit = v = 0
+    def value: Long = v.toLong & 0xffffffffL
+
+    update def digest(): Data =
+      val v0 = v
+
+      Array(((v0 >>> 24) & 0xff).toByte, ((v0 >>> 16) & 0xff).toByte,
+            ((v0 >>> 8) & 0xff).toByte, (v0 & 0xff).toByte)
+
+// CRC-64, in the ECMA-182 form XZ uses (polynomial 0xc96c5795d7870f42, reflected). The JDK has
+// no CRC-64, so only the Soundness provider offers it.
+sealed trait Crc64 extends Algorithm:
+  type Bits = 64
+
 object Crc64:
   val table: Array[Long]^{} =
     val poly = 0xc96c5795d7870f42L
@@ -107,44 +143,85 @@ object Crc64:
 
     Array.freeze(result)
 
-final class Crc64 extends caps.Mutable:
-  private var v: Long = -1L
+  def apply(): Accumulator^ = Accumulator()
 
-  update def update(buffer: scala.Array[Byte]^{caps.any.rd}, index0: Int, length0: Int): Unit =
-    var index = index0
-    var length = length0
-    var c = v
+  final class Accumulator extends Digestion:
+    private var v: Long = -1L
 
-    while length > 0 do
-      length -= 1
-      c = Crc64.table.readable(((c ^ buffer(index)) & 0xff).toInt) ^ (c >>> 8)
-      index += 1
+    // `Digestion`'s two `append`s delegate to the native `update` loop below, which takes the
+    // JVM array directly: `Array.unsafeJvm` is a view, not a copy, so the windowed path stays
+    // allocation-free — the property a streaming consumer feeding a reusable window needs.
+    update def append(bytes: Data): Unit = update(Array.unsafeJvm(bytes), 0, bytes.length)
 
-    v = c
+    override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+      update(Array.unsafeJvm(array), start, count)
 
-  update def reset(): Unit = v = -1L
-  def value: Long = ~v
+    // The form pneumatic's `FlateChecksum` drives, kept as the primitive.
+    update def update(buffer: scala.Array[Byte]^{caps.any.rd}, index0: Int, length0: Int): Unit =
+
+      var index = index0
+      var length = length0
+      var c = v
+
+      while length > 0 do
+        length -= 1
+        c = table.readable(((c ^ buffer(index)) & 0xff).toInt) ^ (c >>> 8)
+        index += 1
+
+      v = c
+
+    update def reset(): Unit = v = -1L
+    def value: Long = ~v
+
+    update def digest(): Data =
+      val v0 = ~v
+
+      Array(((v0 >>> 56) & 0xff).toByte, ((v0 >>> 48) & 0xff).toByte,
+            ((v0 >>> 40) & 0xff).toByte, ((v0 >>> 32) & 0xff).toByte,
+            ((v0 >>> 24) & 0xff).toByte, ((v0 >>> 16) & 0xff).toByte,
+            ((v0 >>> 8) & 0xff).toByte, (v0 & 0xff).toByte)
 
 // Adler-32, the zlib wrapper's checksum.
-final class Adler32 extends caps.Mutable:
-  private var s1: Long = 1L
-  private var s2: Long = 0L
-
-  update def reset(): Unit =
-    s1 = 1L
-    s2 = 0L
-
-  def value: Long = (s2 << 16) | s1
-
-  update def update(buffer: scala.Array[Byte]^{caps.any.rd}, index0: Int, length0: Int): Unit =
-    var index = index0
-    var length = length0
-
-    while length > 0 do
-      length -= 1
-      s1 = (s1 + (buffer(index) & 0xff)) % Adler32.Base
-      s2 = (s2 + s1) % Adler32.Base
-      index += 1
+sealed trait Adler32 extends Algorithm:
+  type Bits = 32
 
 object Adler32:
   private[corpuscular] final val Base = 65521 // largest prime smaller than 65536
+
+  def apply(): Accumulator^ = Accumulator()
+
+  final class Accumulator extends Digestion:
+    private var s1: Long = 1L
+    private var s2: Long = 0L
+
+    // `Digestion`'s two `append`s delegate to the native `update` loop below, which takes the
+    // JVM array directly: `Array.unsafeJvm` is a view, not a copy, so the windowed path stays
+    // allocation-free — the property a streaming consumer feeding a reusable window needs.
+    update def append(bytes: Data): Unit = update(Array.unsafeJvm(bytes), 0, bytes.length)
+
+    override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+      update(Array.unsafeJvm(array), start, count)
+
+    // The form pneumatic's `FlateChecksum` drives, kept as the primitive.
+    update def update(buffer: scala.Array[Byte]^{caps.any.rd}, index0: Int, length0: Int): Unit =
+
+      var index = index0
+      var length = length0
+
+      while length > 0 do
+        length -= 1
+        s1 = (s1 + (buffer(index) & 0xff)) % Base
+        s2 = (s2 + s1) % Base
+        index += 1
+
+    update def reset(): Unit =
+      s1 = 1L
+      s2 = 0L
+
+    def value: Long = (s2 << 16) | s1
+
+    update def digest(): Data =
+      val v0 = (s2 << 16) | s1
+
+      Array(((v0 >>> 24) & 0xff).toByte, ((v0 >>> 16) & 0xff).toByte,
+            ((v0 >>> 8) & 0xff).toByte, (v0 & 0xff).toByte)

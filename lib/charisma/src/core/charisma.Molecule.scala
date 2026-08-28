@@ -34,6 +34,8 @@ package charisma
 
 import anticipation.*
 import gossamer.*
+import gossamer.collationOrdering
+import gossamer.collations.codepoints
 import hieroglyph.*
 import hypotenuse.*
 import rudiments.*
@@ -80,6 +82,11 @@ object Molecule:
 
     . join +
       suffix
+
+  // The chemical formula which `Showable` builds — element symbols with subscript counts, then the
+  // charge and physical state — is a complete rendering of a molecule's state, needs no contextual
+  // givens, and is how a reader recognises the value, so inspection delegates to it.
+  given inspectable: [molecule <: Molecule] => molecule is Inspectable = showable.text(_)
 
   def apply(element: Chemical.Element): Molecule = element.molecule
 

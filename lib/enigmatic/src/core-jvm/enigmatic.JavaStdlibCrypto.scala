@@ -37,6 +37,7 @@ import javax.crypto as jc, javax.crypto.spec.*
 
 import anticipation.*
 import contingency.*
+import corpuscular.*
 import distillate.*
 import fulminate.*
 import gossamer.*

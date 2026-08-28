@@ -40,6 +40,8 @@ import digression.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import gossamer.collationOrdering
+import gossamer.collations.codepoints
 import hieroglyph.*
 import hypotenuse.*
 import nomenclature.*

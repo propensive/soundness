@@ -54,6 +54,11 @@ object EmailAddress:
 
   given encodable: EmailAddress is Encodable in Text = _.text
   given showable: EmailAddress is Showable = _.text
+  // The lambda parameter is left unascribed so it infers as `Self`: under `-scalajs` a SAM over
+  // an ordinary trait is expanded to an anonymous class before conformance is checked, and its
+  // `text` must then match `text(value: Self)` exactly, which an `EmailAddress` ascription does
+  // not (the JVM keeps a closure typed as the SAM, and so accepts either).
+  given inspectable: [email <: EmailAddress] => email is Inspectable = email => email.text
 
   def parse(text: Text): EmailAddress raises EmailAddress.Error =
     val buffer: StringBuilder = StringBuilder()

@@ -105,7 +105,9 @@ object Command:
 
     . join(t" ")
 
-  given inspectable: Command is Inspectable = command =>
+  // Subtype-bounded, so that the type `sh"…"` expands to — a refinement of `Command`, not
+  // `Command` itself — still finds this instance rather than falling through to `showable`.
+  given inspectable: [command <: Command] => command is Inspectable = command =>
     val commandText: Text = formattedArguments(command.arguments.to(List))
     if commandText.contains(t"\"") then t"sh\"\"\"$commandText\"\"\"" else t"sh\"$commandText\""
 
@@ -140,7 +142,9 @@ object Pipeline:
   given communicable: Pipeline is Communicable =
     pipeline => m"${pipeline.commands.map(_.show).join(t" | ")}"
 
-  given inspectable: Pipeline is Inspectable = _.commands.map(_.inspect).join(t" | ")
+  // Subtype-bounded for the same reason as `Command.inspectable`, above.
+  given inspectable: [pipeline <: Pipeline] => pipeline is Inspectable =
+    _.commands.map(_.inspect).join(t" | ")
   given showable: Pipeline is Showable = _.commands.map(_.show).join(t" | ")
 
 case class Pipeline(commands: Command*) extends Executable:

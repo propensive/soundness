@@ -817,7 +817,8 @@ object soundness extends Toolchain:
     def summary = "Command-line applications: terminals, shells, files and processes"
 
   object data extends Bundle(caesura.core, dissonance.core, enigmatic.asn1, enigmatic.core,
-    facsimile.core, facsimile.file, gastronomy.core, chiaroscuro.core, chiaroscuro.render, jacinta.core,
+    facsimile.core, facsimile.file, gastronomy.core, gastronomy.multihash, chiaroscuro.core,
+    chiaroscuro.render, jacinta.core,
     monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
@@ -1114,7 +1115,10 @@ object acyclicity extends Library:
       settings.sep(super.scalacOptions())
 
 object adversaria extends Library:
-  object core extends Component(rudiments.core):
+  // `panopticon.core` so the generated field accessors are `Lens`es — read/write and composable —
+  // rather than bare getters (#490). Both libraries previously depended on `rudiments.core` alone,
+  // so the edge adds one module and no cycle.
+  object core extends Component(rudiments.core, panopticon.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object examples extends Internal(core):
@@ -2071,12 +2075,22 @@ object gastronomy extends Library:
   // are shared, while the `JavaStdlibHashing` provider is compiled against `java.security` on the
   // JVM (`core-jvm`, native `MessageDigest`) and against the pure implementations elsewhere
   // (`core-native`), selected by the `jsSources` platform split.
-  object core extends Component(monotonous.core, turbulence.core):
+  // `corpuscular.core` supplies `Algorithm` and `Digestion` (the marker and the incremental
+  // interface) plus the non-cryptographic checksums, so `.digest[Crc32]` reaches corpuscular's
+  // implementation. The edge is nearly free: corpuscular's own dependency, `anticipation.codec`,
+  // is already in this closure. The reverse edge is what the split exists to avoid.
+  object core extends Component(monotonous.core, turbulence.core, corpuscular.core):
     override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
     override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  // The multihash envelope (#568): a digest prefixed with its algorithm's multicodec identifier
+  // and its length, so it can be exchanged without agreeing on the algorithm out of band. Its
+  // own component, because it is only wanted by content-addressing callers.
+  object multihash extends Component(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, multihash):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2085,7 +2099,11 @@ object geodesy extends Library:
   // `hypotenuse` (π and floor-mod) and `symbolism` (the operator typeclasses), while `core` sits
   // on the text stack for rendering and geohashing. Modules below that stack — `iridescence`,
   // whose hue is an angle — depend on this component alone.
-  object angle extends Component(hypotenuse.core):
+  // `spectacular.core` is a dependency so that `Angle`'s `Inspectable` can live in its
+  // companion. As a top-level given it had to be imported by name at every use site, and a
+  // library which forgot — savagery, rendering a rotation — silently got `“0.0”` instead of an
+  // angle. Inspection is the one rendering which must never depend on remembering an import.
+  object angle extends Component(hypotenuse.core, spectacular.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object core extends Component(distillate.core, angle, gossamer.core):
@@ -2912,7 +2930,13 @@ object sibylline extends Library:
       settings.sep(super.scalacOptions())
 
 object spectacular extends Library:
-  object core extends Component(stenography.core, wisteria.core):
+  // `hypotenuse.core` is a dependency so that the `Inspectable` instances for the sized numeric
+  // types (`U8`…`U64`, `S8`…`S64`, `B8`…`B64`, `F32`/`F64`) can live in the `Inspectable`
+  // companion, and so resolve with no import: neither library's companions can see the other's
+  // types otherwise, and an orphan component would make every debug rendering of a sized number
+  // depend on remembering an import. The closure grows by `hypotenuse.core` and
+  // `anticipation.opaque` only, and nothing at or below hypotenuse depends on spectacular.
+  object core extends Component(stenography.core, wisteria.core, hypotenuse.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):

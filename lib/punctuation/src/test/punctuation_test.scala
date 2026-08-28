@@ -77,6 +77,21 @@ object Tests extends Suite(m"Punctuation tests"):
         . children.size
       . assert(_ == 2)
 
+    // A missing `Inspectable` is never a compile error — `derived` always succeeds and
+    // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
+    // only be held in place by asserting on the renderings themselves.
+    suite(m"Native-rendering coverage"):
+      test(m"punctuation's types inspect natively"):
+        Inspectable.fallbacks
+         ( Parser.parse(t"# Title\n\nA *word*.\n").inspect,
+           Parser.parse(t"- one\n- two\n\n> quoted\n\n```scala\nval x = 1\n```\n").inspect )
+      . assert(_ == Nil)
+
+      test(m"a document inspects as its parsed tree"):
+        Parser.parse(t"# Title\n").inspect
+      . assert:
+          _ == Text("Markdown(linkRefs:[] ╱ children:[Heading(1ˢᵗ ╱ 1 ╱ [Textual(t\"Title\")])])")
+
     suite(m"Serializer round-trip"):
       def roundTrip(markdown: Text): Markdown of Layout =
         Parser.parse(Parser.parse(markdown).show)

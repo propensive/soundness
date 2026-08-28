@@ -231,9 +231,23 @@ object Tests extends Suite(m"Gastronomy tests"):
         windowed(PureHashes.md5)
       . assert(_ == whole(PureHashes.md5))
 
+      // The pure CRC-32 is corpuscular's accumulator now, reached through the Soundness provider
+      // rather than a second implementation here.
       test(m"windowed pure CRC-32 matches whole-value append"):
-        windowed(PureHashes.crc32)
-      . assert(_ == whole(PureHashes.crc32))
+        windowed(SoundnessHashing.crc32.digestion())
+      . assert(_ == whole(SoundnessHashing.crc32.digestion()))
+
+      test(m"windowed pure CRC-64 matches whole-value append"):
+        windowed(SoundnessHashing.crc64.digestion())
+      . assert(_ == whole(SoundnessHashing.crc64.digestion()))
+
+      test(m"windowed pure Adler-32 matches whole-value append"):
+        windowed(SoundnessHashing.adler32.digestion())
+      . assert(_ == whole(SoundnessHashing.adler32.digestion()))
+
+      test(m"windowed JDK Adler-32 matches whole-value append"):
+        windowed(JavaStdlibHashing.adler32.digestion())
+      . assert(_ == whole(JavaStdlibHashing.adler32.digestion()))
 
       test(m"windowed BLAKE3 matches whole-value append"):
         windowed(Blake3.digestion())
@@ -256,3 +270,155 @@ object Tests extends Suite(m"Gastronomy tests"):
       test(m"a whole value's checksum matches its digest"):
         payload.checksum[Sha2[256]].serialize[Hex]
       . assert(_ == payload.digest[Sha2[256]].serialize[Hex])
+
+    // The point of corpuscular hosting the checksum algorithms: a checksum is digested through
+    // exactly the same `.digest[…]` surface as a cryptographic hash, and provider selection is
+    // the same single import. `123456789` has the published CRC-32 check value 0xcbf43926.
+    // Each digest additionally concedes that a checksum is not a hash.
+    suite(m"Checksums through the digest API"):
+      import crypto.permitNonCryptographicHashes
+
+      test(m"CRC-32 of the standard check vector, via the JDK provider"):
+        import providers.javaStdlibProvider
+        t"123456789".digest[Crc32].serialize[Hex].lower
+      . assert(_ == t"cbf43926")
+
+      test(m"CRC-32 agrees between the JDK and Soundness providers"):
+        val jdk =
+          locally:
+            import providers.javaStdlibProvider
+            t"123456789".digest[Crc32].serialize[Hex]
+
+        val pure =
+          locally:
+            import providers.soundnessProvider
+            t"123456789".digest[Crc32].serialize[Hex]
+
+        jdk == pure
+      . assert(_ == true)
+
+      test(m"Adler-32 agrees between the JDK and Soundness providers"):
+        val jdk =
+          locally:
+            import providers.javaStdlibProvider
+            t"123456789".digest[Adler32].serialize[Hex]
+
+        val pure =
+          locally:
+            import providers.soundnessProvider
+            t"123456789".digest[Adler32].serialize[Hex]
+
+        jdk == pure
+      . assert(_ == true)
+
+      // The JDK has no CRC-64, so only the Soundness provider offers it — the same disjoint-
+      // provider arrangement BLAKE3 already relies on.
+      test(m"CRC-64 digests under the Soundness provider"):
+        import providers.soundnessProvider
+        t"123456789".digest[Crc64].serialize[Hex].length
+      . assert(_ == 16)
+
+    suite(m"The non-cryptographic concession"):
+      test(m"digesting with a checksum needs the permit"):
+        demilitarize:
+          import providers.javaStdlibProvider
+          t"123456789".digest[Crc32]
+        . map(_.message)
+      . assert(_.nonEmpty)
+
+      test(m"digesting with SHA-2 needs no permit"):
+        demilitarize:
+          import providers.javaStdlibProvider
+          t"123456789".digest[Sha2[256]]
+      . assert(_ == Nil)
+
+    // The multihash envelope (#568), checked against the specification's own published test
+    // vectors (multiformats/multihash `tests/values/test_cases.csv`): the input bytes are hashed,
+    // enveloped, and the result compared to the multihash the vector gives.
+    suite(m"Multihash"):
+      import providers.javaStdlibProvider
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+
+      def hex(text: Text): Data =
+        Array.unsafeFrozen:
+          text.s.grouped(2).map(java.lang.Integer.parseInt(_, 16).toByte).toArray
+
+      def rendered(multihash: Multihash): Text =
+        multihash.serialize.readable.map(byte => String.format("%02x", Int.box(byte & 255))).mkString.tt
+
+      // The vectors' `input` column is the ASCII *string* of those hex characters — the
+      // generator pipes lines of text into the `multihash` tool — not bytes to be decoded.
+      // Hashing the decoded bytes instead yields a digest that matches no vector.
+      val input = t"431fb5d4c9b735ba1a34d0df045118806ae2336f2c"
+      val input2 = t"2d6db2d7882fa8b7d56e74b8e24036deb475de8c94"
+
+      test(m"SHA-1 envelope matches the published vector"):
+        rendered(Multihash(input.digest[Sha1]))
+      . assert(_ == t"1114e861e452cfd84dca9a176258c3d06e020a0c93d8")
+
+      test(m"SHA-2-256 envelope matches the published vector"):
+        rendered(Multihash(input.digest[Sha2[256]]))
+      . assert(_ == t"1220ffb31f07aa15348368c90c73a834dbf9f8710365860fa0fd4ddce9ac2782cc17")
+
+      val sha512Vector =
+        t"1340abffa1926b038a2f1833092d93859ba2ee56e07a86b158200fc7d4d5d1eaf350b0f0e51"
+        + t"1ea6f5043a9f4a7c7886f93355652114709d75b2db4c33741124fd4fe"
+
+      test(m"SHA-2-512 envelope matches the published vector"):
+        rendered(Multihash(input.digest[Sha2[512]]))
+      . assert(_ == sha512Vector)
+
+      test(m"a second SHA-2-256 vector"):
+        rendered(Multihash(input2.digest[Sha2[256]]))
+      . assert(_ == t"12203afa34fba2f3572ac56d80f52002e8727dd95f17a2e7c9376a3147a96d3e78ac")
+
+      // Decoding recovers the code and the bytes, and round-trips.
+      test(m"parsing a published vector recovers its code"):
+        unsafely(Multihash.parse(hex(t"1114e861e452cfd84dca9a176258c3d06e020a0c93d8"))).code
+      . assert(_ == 0x11)
+
+      test(m"parsing recovers the registered algorithm name"):
+        unsafely(Multihash.parse(hex(t"1220ffb31f07aa15348368c90c73a834dbf9f8710365860fa0fd4ddce9ac2782cc17")))
+        . algorithm
+      . assert(_ == t"sha2-256")
+
+      test(m"an envelope round-trips through parse"):
+        val original = Multihash(input.digest[Sha2[256]])
+        unsafely(Multihash.parse(original.serialize)) == original
+      . assert(_ == true)
+
+      // A truncated digest is legal — the length is explicit — and the vectors include them.
+      test(m"a truncated digest is parsed at its declared length"):
+        unsafely(Multihash.parse(hex(t"110ae861e452cfd84dca9a17"))).digest.length
+      . assert(_ == 10)
+
+      // An algorithm this library cannot compute is representable, not an error: a consumer may
+      // only need to compare or forward it.
+      test(m"an unsupported algorithm decodes to its code and bytes"):
+        val decoded = unsafely(Multihash.parse(hex(t"1604aabbccdd")))
+        (decoded.code, decoded.digest.length, decoded.algorithm)
+      . assert(_ == (0x16, 4, Unset))
+
+      // Multi-byte varints: SHA-2-224 is 0x1013, which does not fit in one group.
+      test(m"a two-group varint code round-trips"):
+        val original = Multihash(0x1013, hex(t"aabbcc"))
+        unsafely(Multihash.parse(original.serialize)).code
+      . assert(_ == 0x1013)
+
+      test(m"a length shorter than the remaining bytes is rejected"):
+        capture[Multihash.Error](Multihash.parse(hex(t"1103aabbccdd"))).reason
+      . assert(_ == Multihash.Reason.Trailing)
+
+      test(m"a length longer than the remaining bytes is rejected"):
+        capture[Multihash.Error](Multihash.parse(hex(t"1108aabbccdd"))).reason
+      . assert(_ == Multihash.Reason.Truncated)
+
+    suite(m"Native-rendering coverage"):
+      test(m"gastronomy's types inspect natively"):
+        Inspectable.fallbacks(t"Hello world".digest[Sha2[256]].inspect)
+      . assert(_ == Nil)
+
+      test(m"A digest shows every byte, in lowercase hexadecimal"):
+        t"Hello world".digest[Sha2[256]].inspect
+      . assert(_ == t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3cᴰ")

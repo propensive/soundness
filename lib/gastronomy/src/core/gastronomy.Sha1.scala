@@ -35,6 +35,7 @@ package gastronomy
 import scala.reflect.Selectable.reflectiveSelectable
 
 import anticipation.*
+import corpuscular.*
 import gossamer.*
 import prepositional.*
 

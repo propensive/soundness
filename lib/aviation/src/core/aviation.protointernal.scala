@@ -36,10 +36,12 @@ import java.time as jt
 
 import anticipation.*
 import contingency.*
+import gossamer.*
 import hypotenuse.*
 import prepositional.*
 import quantitative.*
 import rudiments.*
+import spectacular.*
 import symbolism.*
 
 object protointernal:
@@ -73,6 +75,13 @@ object protointernal:
           (duration.normalize.value*1_000_000_000L).toLong
 
   object Instant:
+    // What an `Instant`'s ticks mean is fixed by its phantom `Transport` — the timeline's
+    // `Resolution` is a typeclass, not runtime state — so a rendering which is always available
+    // (no context parameters) can only show the raw tick count. The hourglass keeps it from
+    // reading as the `Long` it erases to; converting it to a date needs `.in(timezone)`.
+    given inspectable: [instant <: Instant] => instant is Inspectable = instant =>
+      t"⧗${raw(instant)}"
+
     def Min[transport]: Instant over transport = Long.MinValue.asInstanceOf[Instant over transport]
     def Max[transport]: Instant over transport = Long.MaxValue.asInstanceOf[Instant over transport]
 

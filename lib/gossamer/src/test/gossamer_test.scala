@@ -1113,6 +1113,29 @@ object Tests extends Suite(m"Gossamer Tests"):
           words2.all: word =>
             dictionary(word) == word.upper
 
+    // A missing `Inspectable` is never a compile error — `derived` always succeeds and
+    // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
+    // only be held in place by asserting on the renderings themselves.
+    suite(m"Native-rendering coverage"):
+      test(m"gossamer's types inspect natively"):
+        Inspectable.fallbacks
+         ( a"hello".inspect,
+           Grapheme("é").inspect,
+           Writing(t"a\r\nb").inspect )
+      . assert(_ == Nil)
+
+      test(m"an Ascii value inspects as an `ascii` literal"):
+        a"hi there".inspect
+      . assert(_ == t"ascii\"hi there\"")
+
+      test(m"a grapheme inspects as its cluster in guillemets"):
+        Grapheme("👨‍👩‍👧").inspect
+      . assert(_ == Text("‹👨‍👩‍👧›"))
+
+      test(m"a Writing inspects with its grapheme boundaries marked"):
+        Writing(t"a\r\nb").inspect
+      . assert(_ == t"w\"a·\r\n·b\"")
+
     suite(m"Writing and grapheme clusters"):
       test(m"empty Text has zero graphemes"):
         Writing(t"").graphemeCount
@@ -1333,3 +1356,37 @@ object Tests extends Suite(m"Gossamer Tests"):
           a"hello $name café"
         . map(_.focus)
       . assert(_ == List("é"))
+
+    suite(m"Collation"):
+      test(m"Text is not sortable without a collation in scope"):
+        demilitarize:
+          List(t"b", t"a").sorted
+        . map(_.reason)
+      . assert(_ == List(CompileError.Reason.MissingImplicitArgument))
+
+      test(m"dictionary order ranks accents before case: cafe < café < caff"):
+        import collations.unicode
+        List(t"caff", t"café", t"cafe").sorted
+      . assert(_ == List(t"cafe", t"café", t"caff"))
+
+      test(m"comparison operators work once a collation is chosen"):
+        import collations.unicode
+        t"apple" < t"banana"
+      . assert(_ == true)
+
+      test(m"codepoint order sorts supplementary characters after the BMP"):
+        import collations.codepoints
+        List(t"𝓐", t"�").sorted
+      . assert(_ == List(t"�", t"𝓐"))
+
+      test(m"codepoint and dictionary orders differ on case"):
+        val upper = List(t"a", t"B")
+        import collations.unicode
+        val dictionary = upper.sorted
+
+        val codepoint =
+          import collations.codepoints
+          upper.sorted
+
+        (dictionary, codepoint)
+      . assert(_ == (List(t"a", t"B"), List(t"B", t"a")))

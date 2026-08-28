@@ -33,6 +33,8 @@
 package exoskeleton
 
 import soundness.*
+import soundness.collationOrdering
+import soundness.collations.codepoints
 
 import classloaders.systemClassloader
 import environments.javaEnvironment
@@ -58,6 +60,7 @@ object BadConfig extends Status(2, t"the configuration file was invalid")
 object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
     CaptureTests()
+    InterpreterTests()
     SettingTests()
 
     supervise:
@@ -847,6 +850,78 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                t"    --one <value>    the first one",
                t"    --two <value>    the second one")
 
+      // Clustered short flags (#1888). The `Interpreter` that completion consults is resolved
+      // where the `Cli` is built, not per subcommand, so exercising clustering needs an
+      // application of its own. Three single-character flags, so typing `-ab` leaves exactly
+      // `-c` to offer.
+      Enclave(t"clstr").dispatch:
+        ' {
+            import executives.completions
+            import interpreters.posixClusteringInterpreter
+
+            cli:
+              Flag('a', description = t"the first flag")()
+              Flag('b', description = t"the second flag")()
+              Flag('c', description = t"the third flag")()
+              execute(Exit.Ok)
+
+            t"finished"
+          }
+
+      . sandbox:
+          val tool = summon[Enclave.Tool].path
+
+          // Typing `-ab` and choosing `-c` must extend the word to `-abc`, not replace it with
+          // `-c`, and must not terminate the word — the next letter may follow. Each shell is
+          // driven through the completions executive directly, so these assert on exactly what
+          // the shell is told.
+          suite(m"Clustered short-flag completion"):
+            // Each `compadd` invocation is one line of NUL-separated arguments.
+            def zsh(text: Text): List[List[Text]] =
+              sh"$tool '{completions}' zsh 2 3 /dev/null -- clstr $text".exec[Text]()
+              . cut(t"\n").stdlib.filter(_.length > 0)
+              . map(_.cut(t"\u0000").stdlib.to(List)).to(List)
+
+            def adjacent(line: List[Text], first: Text, second: Text): Boolean =
+              line.stdlib.sliding(2).exists: pair =>
+                pair.headOption == Some(first) && pair.lastOption == Some(second)
+
+            // `compadd -p <prefix>` is zsh's *hidden* prefix: inserted, but neither displayed
+            // nor matched against, so the word grows by the single new character.
+            test(m"zsh takes the typed cluster as a hidden prefix"):
+              zsh(t"-ab").stdlib.exists(adjacent(_, t"-p", t"-ab"))
+            . assert(_ == true)
+
+            test(m"zsh inserts only the character being added"):
+              zsh(t"-ab").stdlib.exists(adjacent(_, t"--", t"c"))
+            . assert(_ == true)
+
+            // The menu still names the flag, rather than showing the bare letter.
+            test(m"zsh names the flag in full in the menu"):
+              zsh(t"-ab").prim.let(_.prim).or(t"").starts(t"-c ")
+            . assert(_ == true)
+
+            test(m"zsh offers a no-trailing-space variant, so the cluster can grow"):
+              zsh(t"-ab").stdlib.exists(adjacent(_, t"-S", t""))
+            . assert(_ == true)
+
+            // Fish and bash insert whole words, so the candidate is the extended cluster.
+            test(m"fish offers the extended cluster"):
+              sh"$tool '{completions}' fish 2 3 /dev/null -- clstr -ab".exec[Text]()
+              . cut(t"\n").stdlib.to(List).map(_.cut(t"\t").prim.or(t""))
+            . assert(_.contains(t"-abc"))
+
+            test(m"bash offers the extended cluster"):
+              sh"$tool '{completions}' bash 2 3 /dev/null -- clstr -ab".exec[Text]()
+              . cut(t"\n").stdlib.to(List)
+            . assert(_.contains(t"-abc"))
+
+            // A two-character argument is not a cluster: the interpreter only expands beyond
+            // two characters, so `-a` still completes as an ordinary short flag.
+            test(m"a two-character flag is completed without a prefix"):
+              zsh(t"-a").stdlib.exists(adjacent(_, t"-p", t"-a"))
+            . assert(_ == false)
+
       suite(m"Manpage tests"):
         val manual = Manual
           ( version  = v"1.2.3",
@@ -931,6 +1006,23 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         test(m"The manpage synopsis matches the help text usage line"):
           HelpApp.tree.roff.serialize.cut(t"\n")
         . assert(_.has(t"\\fBmytool\\fP [\\-\\-verbose <value>] <command> [options]"))
+
+      // A missing `Inspectable` is never a compile error — `derived` always succeeds and
+      // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
+      // only be held in place by asserting on the renderings themselves.
+      suite(m"Native-rendering coverage"):
+        test(m"exoskeleton's types inspect natively"):
+          Inspectable.fallbacks
+           ( Flag[Text](t"count").inspect,
+             Flag[Text]('c', aliases = List(t"count"), description = t"how many").inspect )
+        . assert(_ == Nil)
+
+        test(m"a flag inspects with the state which governs its parsing"):
+          Flag[Text](t"count", repeatable = true, aliases = List('c')).inspect
+        . assert:
+            _ == Text
+                  ( "Flag(--count ╱ aliases:[-c] ╱ repeatable:true ╱ secret:false ╱ "
+                    +"description:○)" )
 
       suite(m"Prospective and requisite flags"):
         import interpreters.posixInterpreter

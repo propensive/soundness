@@ -51,11 +51,13 @@ object Suggestion:
       suffix:      Text                      = t"",
       expanded:    Boolean                   = false,
       group:       Optional[CommandGroup]    = Unset,
-      operand:     Boolean                   = false )
+      operand:     Boolean                   = false,
+      display:     Optional[Text]            = Unset )
   :   Suggestion =
 
     new Suggestion
-      (core, description, hidden, incomplete, aliases, prefix, suffix, expanded, group, operand)
+      (core, description, hidden, incomplete, aliases, prefix, suffix, expanded, group, operand,
+       display)
 
 
 case class Suggestion
@@ -73,6 +75,12 @@ case class Suggestion
     // part of the command's interface, and the help tree is built by probing these same
     // suggestions: without this distinction, `--help` enumerates the working directory (or
     // whatever else the machine happens to hold) as though it were syntax.
-    operand:     Boolean = false ):
+    operand:     Boolean = false,
+    // What to show in the menu when it differs from what is inserted. Completing inside a
+    // clustered short flag is the case that needs it: typing `-ab` and choosing `-c` inserts
+    // only `c` (behind the hidden prefix `-ab`, so the word becomes `-abc`), but the menu should
+    // still name the flag as `-c`. Only shells that can separate the two honour it — zsh, via
+    // `compadd`'s display array; elsewhere the whole word is shown, as those shells do anyway.
+    display:     Optional[Text] = Unset ):
 
   def text: Text = prefix+core+suffix

@@ -60,6 +60,33 @@ object Tests extends Suite(m"Geodesy tests"):
 
     . assert(_ == t"0.0°")
 
+    // Inspection keeps the precision which `show` rounds away.
+    test(m"inspect an angle at full precision"):
+      val angle = Angle.degrees(7.25)
+      angle.inspect
+
+    . assert(_ == t"7.25°")
+
+    // A missing `Inspectable` never fails to compile — `derived` substitutes a marked
+    // `toString`, `Showable` or `Encodable` rendering — so coverage is held in place by
+    // asserting on the renderings themselves.
+    test(m"geodesy's types inspect natively"):
+      Inspectable.fallbacks
+       ( Angle.degrees(90).inspect,
+         CardinalWind.North.inspect,
+         IntercardinalWind.Northeast.inspect,
+         HalfWind.NorthNortheast.inspect,
+         Location(Angle.degrees(51.5), Angle.degrees(0.126)).inspect )
+
+    . assert(_ == Nil)
+
+    // Latitude and longitude are packed into 32 bits each, so the angles which come back out are
+    // the nearest representable ones; inspection shows them as they are, without rounding.
+    test(m"inspect a location as a pair of angles"):
+      Location(Angle.degrees(51.5), Angle.degrees(0.126)).inspect
+
+    . assert(_ == t"⌖51.4999999718275°,0.12600003747548583°")
+
     test(m"render principal angle"):
       val angle = Angle.degrees(375)
       angle.principal.show

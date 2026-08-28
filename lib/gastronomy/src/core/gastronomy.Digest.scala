@@ -37,6 +37,7 @@ import java.util as ju
 import scala.compiletime.*
 
 import anticipation.*
+import corpuscular.*
 import monotonous.*
 import prepositional.*
 import spectacular.*
@@ -49,6 +50,25 @@ object Digest:
     _.data.serialize[Base64]
 
   given encodable: [digest <: Algorithm] => Digest in digest is Encodable in Data = _.data
+
+  // `showable` needs an `Alphabet[Base64]`, and a debug rendering must always be available, so
+  // the bytes are rendered here as full-width lowercase hexadecimal instead — every byte shown,
+  // in the order they are held. The `ᴰ` suffix distinguishes the digits from any other
+  // hexadecimal rendering; the algorithm is a phantom type, so it cannot be shown at runtime.
+  given inspectable: [digest <: Digest] => digest is Inspectable = digest =>
+    val bytes = digest.data.readable
+    val builder: StringBuilder = new StringBuilder()
+    var index = 0
+
+    while index < bytes.length do
+      val byte = bytes(index)
+      builder.append(hexadecimal.charAt((byte & 0xf0) >>> 4))
+      builder.append(hexadecimal.charAt(byte & 0x0f))
+      index += 1
+
+    (builder.toString+"ᴰ").tt
+
+  private val hexadecimal: String = "0123456789abcdef"
 
 class Digest(val data: Data):
   type Form <: Algorithm

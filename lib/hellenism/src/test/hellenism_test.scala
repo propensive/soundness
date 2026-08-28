@@ -73,3 +73,19 @@ object Tests extends Suite(m"Hellenism Tests"):
       val classpath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       classpath.services[TestService].stdlib.map(_.name).to(Set)
     . assert(_ == Set(t"A", t"B"))
+
+    suite(m"Native-rendering coverage"):
+      val classpath = LocalClasspath(Classpath.Entry.Jar(t"/x.jar"),
+                                     Classpath.Entry.Directory(t"/a/b/"))
+
+      test(m"hellenism's types inspect natively"):
+        Inspectable.fallbacks(classpath.inspect, ClassRef(classOf[String]).inspect)
+      . assert(_ == Nil)
+
+      test(m"A classpath shows its entries, separated by colons"):
+        classpath.inspect
+      . assert(_ == t"classpath⟨/x.jar:/a/b/⟩")
+
+      test(m"A class reference shows the source which produces it"):
+        ClassRef(classOf[String]).inspect
+      . assert(_ == t"classOf[java.lang.String]")

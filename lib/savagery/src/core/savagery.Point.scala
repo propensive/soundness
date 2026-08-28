@@ -46,6 +46,11 @@ object Point:
 
   given showable: Point is Showable = point => t"${point.x.toString} ${point.y.toString}"
 
+  // The `Showable` is the SVG path-data form, where a point is a bare pair of numbers; inspection
+  // names the type and labels the coordinates, so a `Point` cannot be mistaken for a `Delta`.
+  given inspectable: [point <: Point] => point is Inspectable = point =>
+    t"Point(x:${point.x.inspect} ╱ y:${point.y.inspect})"
+
   given fromTuple: [numeric: Numeric, numeric2: Numeric]
   =>  Conversion[(numeric, numeric2), Point] =
     tuple => Point(numeric.toFloat(tuple(0)), numeric2.toFloat(tuple(1)))

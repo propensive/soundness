@@ -1317,6 +1317,14 @@ object Json extends Json2, Dynamic:
             // consuming parser as a neutral reference.
             Json.Ast.parse(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^])
 
+    // `Json.Ast` is an opaque union of primitives and arrays, so there is no reflection to derive
+    // from, and its `Showable` (below) needs a `Formatting` which a debugger has no way to supply.
+    // Inspection fixes the compact formatting, exactly as `Json.inspectable` does, and marks the
+    // result `ᵃˢᵗ` so that a bare node is distinguishable from the `Json` document wrapping it.
+    given inspectable: [ast <: Json.Ast] => ast is Inspectable = ast =>
+      given formatting: Json.Formatting = Json.Formatting(Unset, trailingNewline = false)
+      ((ast: Json.Ast).show.s+"ᵃˢᵗ").tt
+
     // Renders a `Json.Ast` node to its serialized text. The whole serialization fold lives in this
     // instance so that `ast.show` is the single route to JSON text; the producer is driven
     // synchronously and the result collected into one `Text`. Number nodes are emitted from their
@@ -2493,6 +2501,15 @@ object Json extends Json2, Dynamic:
       data => parseDirect(data, parsable).asInstanceOf[value in Json]
 
   given showable: Formatting => Json is Showable = _.root.show
+
+  // `Json` is a plain class, so there is no reflection to derive from, and its `Showable`
+  // needs a `Formatting` which a debugger has no way to supply — without an instance it
+  // rendered as its `toString`. Inspection fixes the compact formatting rather than taking one
+  // from the call site: an inspection is single-line by convention, and the indented form
+  // would break that wherever a document appears inside another rendering.
+  given inspectable: [json <: Json] => json is Inspectable = json =>
+    given formatting: Formatting = Formatting(Unset, trailingNewline = false)
+    (json: Json).root.show
 
   given abstractable: (encoder: CharEncoder, formatting: Formatting)
   =>  Json is Abstractable across HttpStreams to HttpStreams.Content =

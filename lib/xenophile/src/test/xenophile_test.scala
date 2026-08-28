@@ -35,6 +35,8 @@ package xenophile
 import scala.caps
 
 import soundness.*
+import soundness.collationOrdering
+import soundness.collations.codepoints
 
 import ambience.systems.javaSystem
 

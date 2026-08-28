@@ -40,6 +40,30 @@ import strategies.throwUnsafely
 
 object Tests extends Suite(m"Honeycombd Tests"):
   def run(): Unit =
+    // A missing `Inspectable` is never a compile error, so coverage is held in place by
+    // asserting on the renderings: `fallbacks` returns those which used a marked fallback.
+    suite(m"Native-rendering coverage"):
+      import doms.html.whatwg
+      import whatwg.*
+
+      test(m"an element inspects as escaped, single-line HTML source"):
+        Div(style = t"bar")("hello").inspect
+      . assert(_ == t"html\"<div style=\\\"bar\\\">hello</div>\"")
+
+      test(m"attributes inspect as an element's start-tag text"):
+        internal.Attributes(t"class" -> t"a", t"hidden" -> Unset).inspect
+      . assert(_ == t"html{class=\"a\", hidden}")
+
+      test(m"honeycomb's types inspect natively"):
+        Inspectable.fallbacks
+         ( Div(style = t"bar")("hello").inspect,
+           Fragment(Div("content"), P("more content")).inspect,
+           Comment(t"hi").inspect,
+           Doctype(t"html").inspect,
+           TextNode(t"hi").inspect,
+           internal.Attributes(t"class" -> t"a", t"hidden" -> Unset).inspect )
+      . assert(_ == Nil)
+
     test(m"show comment"):
       Comment("hello world").show
     . assert(_ == t"<!--hello world-->")

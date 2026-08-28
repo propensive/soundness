@@ -32,5 +32,7 @@
                                                                                                   */
 package gastronomy
 
+import corpuscular.*
+
 sealed trait Sha384 extends Algorithm:
   type Bits = 384

@@ -64,21 +64,6 @@ private[pneumatic] object XzCheck:
 
   def encoder(checkType: Int): XzChecker^ = checker(checkType)
 
-private[pneumatic] object Crc64:
-  val table: Array[Long]^{} =
-    val result = Array.allocate[Long](256)
-    val poly = 0xc96c5795d7870f42L
-    var n = 0
-
-    while n < 256 do
-      var c = n.toLong
-      var k = 8
-      while k > 0 do { k -= 1; c = if (c & 1L) != 0 then (c >>> 1) ^ poly else c >>> 1 }
-      result(n) = c
-      n += 1
-
-    Array.freeze(result)
-
 // A check that accumulates over the uncompressed bytes and yields its little-endian trailer
 // bytes. Checkers are mutable running state, so each use instantiates a fresh one (including
 // `NoChecker`, whose instances are trivially cheap).
@@ -106,20 +91,18 @@ private[pneumatic] final class Crc32Checker extends XzChecker:
     while i < 4 do { out(i) = ((value >>> (i*8)) & 0xff).toByte; i += 1 }
     out
 
+// XZ's CRC-64 is ECMA-182, which is exactly `corpuscular.Crc64` — the table and loop lived here
+// too until they were shared. `value` already returns the finalized (complemented) checksum, so
+// the trailer writes it directly, little-endian.
 private[pneumatic] final class Crc64Checker extends XzChecker:
-  private var v: Long = -1L
+  private val crc: corpuscular.Crc64.Accumulator^ = corpuscular.Crc64()
   def size: Int = 8
 
   update def absorb(buffer: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
-    var i = offset
-    val end = offset + length
-
-    while i < end do
-      v = Crc64.table.readable(((v ^ buffer(i)) & 0xff).toInt) ^ (v >>> 8)
-      i += 1
+    crc.update(buffer, offset, length)
 
   update def bytes: scala.Array[Byte]^ =
-    val value = v ^ -1L
+    val value = crc.value
     val out: scala.Array[Byte]^ = new scala.Array[Byte](8)
     var i = 0
     while i < 8 do { out(i) = ((value >>> (i*8)) & 0xff).toByte; i += 1 }

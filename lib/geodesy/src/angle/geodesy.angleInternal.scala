@@ -32,8 +32,10 @@
                                                                                                   */
 package geodesy
 
+import anticipation.*
 import hypotenuse.*
 import prepositional.*
+import spectacular.*
 import symbolism.*
 
 object angleInternal:
@@ -59,6 +61,11 @@ object angleInternal:
 
     given multiplicable2: Double is Multiplicable by Angle to Angle =
       Multiplicable: (left, right) => (left*right)%c
+
+    // Degrees at full precision, unlike `angleShowable`, which fixes one decimal place because
+    // it is for display: an inspection which rounded would hide the state it exists to show.
+    given inspectable: [angle <: Angle] => angle is Inspectable = angle =>
+      ((angle: Angle).degrees.toString+"°").tt
 
   extension (angle: Angle)
     def degrees: Double = angle*180/π

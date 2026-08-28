@@ -72,6 +72,18 @@ object Recurrence:
       val period: Timespan = recurrence.period
       t"R$number/${recurrence.start.encode}/${period.encode}"
 
+  // The ISO 8601 repeating-interval form, as `encodable` produces, but built from the point's and
+  // the period's own inspections rather than their encodings — so it is available for any point
+  // type which can be inspected, and asks for none of the `Locale` context the `Showable`s do.
+  given inspectable
+  :   [ point: Inspectable, span <: Timespan, recurrence <: (Recurrence of point by span) ]
+  =>  recurrence is Inspectable =
+
+    recurrence =>
+      val number = recurrence.repetitions.lay(t""): repetitions => repetitions.show
+      val period: Timespan = recurrence.period
+      t"R$number/${recurrence.start.inspect}/${period.inspect}"
+
   // A natural-language description, e.g. "every 2 weeks, 5 times from <start>". `.encode` is the
   // ISO wire form; `.show` is for people. Each language is a `Vernacular`, gated on its `Locale`.
   given englishShowable: [point: Showable, span <: Timespan] => Locale[en]

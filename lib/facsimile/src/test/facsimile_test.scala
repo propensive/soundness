@@ -37,6 +37,13 @@ import scala.collection.immutable.Seq
 
 import soundness.*
 
+// Adversaria's accessors are panopticon lenses (#490), which puts `panopticon.Filter` on this
+// classpath. This suite is `package facsimile`, but a package member declared in another file
+// loses to a wildcard import, so `import soundness.*` would otherwise supply panopticon's
+// `Filter` here in place of facsimile's own (which is `private[facsimile]`, so no umbrella
+// collision exists — only this shadowing). Naming it explicitly outranks the wildcard.
+import facsimile.Filter
+
 import charEncoders.utf8Encoder
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely

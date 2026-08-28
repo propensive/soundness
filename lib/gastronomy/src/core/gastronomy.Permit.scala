@@ -53,8 +53,10 @@ object ProcessingPermit:
 
 trait ProcessingPermit[concession]
 
-@implicitNotFound("this operation uses a sub-optimal algorithm, key length or mode; import the "+
-    "matching permit (`crypto.permitUnauthenticatedCrypto`, `crypto.permitDeprecatedCrypto` or "+
+@implicitNotFound("this operation uses a sub-optimal algorithm, key length or mode — or a "+
+    "checksum in place of a hash; import the matching permit "+
+    "(`crypto.permitNonCryptographicHashes` for CRC-32/CRC-64/Adler-32, or "+
+    "`crypto.permitUnauthenticatedCrypto`, `crypto.permitDeprecatedCrypto` or "+
     "`crypto.permitDisallowedCrypto`) to allow it")
 object Permit:
   // `Acceptable` crypto needs no permission, so this permit is always available.

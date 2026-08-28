@@ -33,6 +33,7 @@
 package enigmatic
 
 import anticipation.*
+import corpuscular.*
 import gastronomy.*
 import gossamer.*
 import monotonous.*
@@ -47,6 +48,11 @@ object Hmac:
     t"Hmac(${hmac.bytes.serialize[Base64]})"
 
   given encodable: [hmac <: Algorithm] => Hmac in hmac is Encodable in Data = _.bytes
+
+  // `showable` needs an `Alphabet[Base64]`, so the code is rendered here as full-width lowercase
+  // hexadecimal, which needs no context. The algorithm is a phantom type, so it cannot appear.
+  given inspectable: [hmac <: Hmac] => hmac is Inspectable = hmac =>
+    t"Hmac(${Inspection.hex(hmac.bytes)})"
 
 class Hmac(val bytes: Data):
   type Form <: Algorithm

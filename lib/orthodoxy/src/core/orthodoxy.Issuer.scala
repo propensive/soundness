@@ -167,7 +167,7 @@ class Issuer
         lambda(using Issuer.Context[this.type]())
 
 
-  def require[scope <: Scope & Singleton: Precise](scopes: scope*)
+  def require[scope <: Scope & Singleton: scala.Precise](scopes: scope*)
     ( using store: OAuth, session: Session, request: Http.Request )
     ( using Issuer.Context of this.type )
     ( lambda: Authorization of scope ?=> Http.Response )
