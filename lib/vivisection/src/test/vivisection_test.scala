@@ -549,3 +549,39 @@ object Tests extends Suite(m"Vivisection tests"):
           evaluated.await()
 
     . assert(_ == t"43")
+
+    // Renders a live local through its `Inspectable` instance, resolved and invoked in the
+    // debuggee: the array is typed as `Array[Int]` in the synthetic class, so its own notation
+    // (`⦋…⦌`) is produced — typeclass-driven rendering, not `toString`.
+    test(m"a live session renders a local through its Inspectable instance"):
+      supervise:
+        val classpathText = System.properties.java.`class`.path()
+        val classpath = classpathText.as[LocalClasspath]
+        val rendered = Promise[Text]()
+        val marker = Ordinal.uniary(58)
+
+        val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
+        val debuggee: Debuggee = Debuggee(command, 5101)
+
+        debuggee.session: debug ?=>
+          debug.resume()
+
+          def waitFor(remaining: Int): List[Jdwp.Location] =
+            val locations = debug.locate(t"vivisection.Fixture.scala", marker)
+
+            if locations.stdlib.nonEmpty then locations
+            else if remaining <= 0 then locations
+            else
+              Thread.sleep(50)
+              waitFor(remaining - 1)
+
+          waitFor(120).stdlib.foreach: location =>
+            debug.breakpoint(location): halt ?=>
+              halt.evaluator(classpath): eval ?=>
+                rendered.offer(eval.inspect(t"values"))
+
+              halt.remain()
+
+          rendered.await()
+
+    . assert(_.starts(t"⦋"))

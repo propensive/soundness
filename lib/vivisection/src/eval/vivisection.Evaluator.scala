@@ -44,6 +44,7 @@ import gossamer.*
 import hellenism.*
 import parasite.*
 import proscenium.*
+import spectacular.*
 import vacuous.*
 
 object Evaluator:
@@ -68,13 +69,12 @@ object Evaluator:
       loaded(t"Ljava/lang/ClassLoader;")
 
     private lazy val defineClass: MethodId =
-      connection.methods(classLoaderClass).stdlib
-        .find: method =>
-          method.name == t"defineClass"
-          && method.signature == t"(Ljava/lang/String;[BII)Ljava/lang/Class;"
+      val signature = t"(Ljava/lang/String;[BII)Ljava/lang/Class;"
 
-        . map(_.method)
-        . getOrElse(Jdwp.Ref.empty)
+      val found = connection.methods(classLoaderClass).stdlib.find: method =>
+        method.name == t"defineClass" && method.signature == signature
+
+      found.map(_.method).getOrElse(Jdwp.Ref.empty)
 
     private def loaded(signature: Text): ReferenceTypeId =
       connection.allClasses().stdlib.find(_.signature == signature).map(_.cls)
@@ -92,16 +92,15 @@ object Evaluator:
 
       connection.setArrayValues(array, 0, values)
       val nameString = connection.createString(name)
+      val nameArg = Jdwp.Value.Reference(Jdwp.Tag.StringTag, Jdwp.Ref(nameString.long))
+      val arrayArg = Jdwp.Value.Reference(Jdwp.Tag.ArrayTag, array)
+      val arguments = List(nameArg, arrayArg, Jdwp.Value.OfInt(0), Jdwp.Value.OfInt(length))
+      val loaderId = Jdwp.Ref(loader.long)
 
-      val arguments =
-        List
-         ( Jdwp.Value.Reference(Jdwp.Tag.StringTag, Jdwp.Ref(nameString.long)),
-           Jdwp.Value.Reference(Jdwp.Tag.ArrayTag, array),
-           Jdwp.Value.OfInt(0),
-           Jdwp.Value.OfInt(length) )
+      val defined =
+        connection.invokeMethod(loaderId, thread, classLoaderClass, defineClass, arguments)
 
-      connection.invokeMethod(Jdwp.Ref(loader.long), thread, classLoaderClass, defineClass, arguments)
-        .result match
+      defined.result match
         case Jdwp.Value.Reference(_, id) if !id.empty => connection.reflectedType(id)
         case _                                        => Unset
 
@@ -135,12 +134,12 @@ extends caps.ExclusiveCapability:
       val locals: sci.List[(Text, Text, Jdwp.Value)] =
         table.lay(sci.List[(Text, Text, Jdwp.Value)]()): table =>
           val live = table.slots.stdlib.filter: slot =>
-            slot.index <= location.index && location.index < slot.index + slot.length
-            && slot.name != t"this"
+            val index = location.index
+            slot.name != t"this" && slot.index <= index && index < slot.index + slot.length
 
-          val requests = live.map { slot => (slot.slot, Variable.tag(slot.signature)) }
+          val requests = live.map: slot => (slot.slot, Variable.tag(slot.signature))
           val values = connection.slotValues(thread, frame, List(requests*)).stdlib
-          live.zip(values).map { (slot, value) => (slot.name, slot.signature, value) }
+          live.zip(values).map: (slot, value) => (slot.name, slot.signature, value)
 
       val className = t"vivisection$$eval$$${Evaluator.counter.getAndIncrement()}"
       val pkg = packageOf(connection.signature(location.cls))
@@ -187,14 +186,28 @@ extends caps.ExclusiveCapability:
         case other =>
           Variable.Snapshot.Primitive(other)
 
+  // Renders a visible binding through its `Inspectable` instance, resolved and invoked in the
+  // debuggee. Because the synthetic class types the binding at its declared type, the summon is a
+  // *static* one — the instance the programmer's own code would pick — so a type's own notation is
+  // used rather than a generic `toString`. `Inspectable` is a `Typeclass.Pure`, so a resolved
+  // instance is verified side-effect-free; only the derived `toString`/`Showable` fallbacks (which
+  // mark their output) are unverified. The declared type is the erased runtime type until TASTy
+  // static typing (a later phase) supplies the source type, so an opaque type still renders through
+  // its underlying representation's instance for now.
+  def inspect(binding: Text): Text =
+    apply(t"($binding).inspect") match
+      case Variable.Snapshot.Str(_, text) => text
+      case other                          => other.inspect
+
   private def loadedType(signature: Text): ReferenceTypeId =
     connection.allClasses().stdlib.find(_.signature == signature).map(_.cls)
       .getOrElse(Jdwp.Ref.empty)
 
   private def methodId(cls: ReferenceTypeId, name: Text, signature: Text): MethodId =
-    connection.methods(cls).stdlib
-      .find { info => info.name == name && info.signature == signature }
-      .map(_.method).getOrElse(Jdwp.Ref.empty)
+    val found = connection.methods(cls).stdlib.find: info =>
+      info.name == name && info.signature == signature
+
+    found.map(_.method).getOrElse(Jdwp.Ref.empty)
 
   // Prepares the freshly-defined entry class and returns its reference type, by forcing linkage
   // through `Class.forName(name, initialize = true, loader)` and reflecting the resulting `Class`
@@ -202,17 +215,12 @@ extends caps.ExclusiveCapability:
   // so its method table cannot yet be read.
   private def prepared(qualified: Text, loader: ClassLoaderId): ReferenceTypeId =
     val classClass = loadedType(t"Ljava/lang/Class;")
-
-    val forName =
-      methodId(classClass, t"forName", t"(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;")
-
+    val descriptor = t"(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;"
+    val forName = methodId(classClass, t"forName", descriptor)
     val nameString = connection.createString(qualified)
-
-    val arguments =
-      List
-       ( Jdwp.Value.Reference(Jdwp.Tag.StringTag, Jdwp.Ref(nameString.long)),
-         Jdwp.Value.OfBoolean(true),
-         Jdwp.Value.Reference(Jdwp.Tag.ObjectTag, Jdwp.Ref(loader.long)) )
+    val nameArg = Jdwp.Value.Reference(Jdwp.Tag.StringTag, Jdwp.Ref(nameString.long))
+    val loaderArg = Jdwp.Value.Reference(Jdwp.Tag.ObjectTag, Jdwp.Ref(loader.long))
+    val arguments = List(nameArg, Jdwp.Value.OfBoolean(true), loaderArg)
 
     connection.invokeStatic(classClass, thread, forName, arguments).result match
       case Jdwp.Value.Reference(_, id) if !id.empty => connection.reflectedType(id)
@@ -224,17 +232,8 @@ extends caps.ExclusiveCapability:
     val loader = connection.classLoader(cls)
 
     if !loader.empty then loader else
-      val classLoaderClass =
-        connection.allClasses().stdlib.find(_.signature == t"Ljava/lang/ClassLoader;")
-          .map(_.cls).getOrElse(Jdwp.Ref.empty)
-
-      val method =
-        connection.methods(classLoaderClass).stdlib
-          .find: info =>
-            info.name == t"getSystemClassLoader"
-            && info.signature == t"()Ljava/lang/ClassLoader;"
-
-          . map(_.method).getOrElse(Jdwp.Ref.empty)
+      val classLoaderClass = loadedType(t"Ljava/lang/ClassLoader;")
+      val method = methodId(classLoaderClass, t"getSystemClassLoader", t"()Ljava/lang/ClassLoader;")
 
       connection.invokeStatic(classLoaderClass, thread, method, List()).result match
         case Jdwp.Value.Reference(_, id) => Jdwp.Ref(id.long)
@@ -242,23 +241,26 @@ extends caps.ExclusiveCapability:
 
   // `pkg/Name.class` (or `Name.class`) → the binary class name `pkg.Name`.
   private def classNameOf(path: Text): Text =
-    val withoutExtension =
-      if path.s.endsWith(".class") then path.s.substring(0, path.s.length - 6).nn else path.s
-
-    val trimmed = if withoutExtension.startsWith("/") then withoutExtension.substring(1).nn
-                  else withoutExtension
-
+    val raw = path.s
+    val base = if raw.endsWith(".class") then raw.substring(0, raw.length - 6).nn else raw
+    val trimmed = if base.startsWith("/") then base.substring(1).nn else base
     trimmed.replace('/', '.').nn.tt
 
   // The synthetic compilation unit: a class whose constructor parameters mirror the frame's
   // locals and whose `run` renders the expression as text through `String.valueOf`, so every
   // result — primitive, string or object — comes back over one decode path.
-  private def render(name: Text, pkg: Text, params: sci.List[(Text, Text)], expression: Text): Text =
-    val parameters =
-      params.map { (field, signature) => s"${field.s}: ${Variable.demangle(signature).s}" }
-        .mkString(", ")
+  private def render(name: Text, pkg: Text, params: sci.List[(Text, Text)], expression: Text)
+  :   Text =
 
-    val header = if pkg == t"" then "" else s"package ${pkg.s}\n\n"
+    val rendered = params.map: (field, signature) =>
+      s"${field.s}: ${Variable.demangle(signature).s}"
+
+    val parameters = rendered.mkString(", ")
+
+    // `spectacular` is imported so `.inspect` resolves for the rendering path; an evaluation which
+    // does not use it simply leaves the import unused.
+    val imports = "import spectacular.*\n\n"
+    val header = if pkg == t"" then imports else s"package ${pkg.s}\n\n$imports"
     val run = s"java.lang.String.valueOf((${expression.s}): scala.Any)"
 
     s"${header}class ${name.s}($parameters):\n  def run(): java.lang.String = $run\n".tt
