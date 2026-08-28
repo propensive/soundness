@@ -36,6 +36,7 @@ import scala.quoted.*
 
 import anticipation.*
 import denominative.*
+import panopticon.*
 import rudiments.*
 import vacuous.*
 import prepositional.*
@@ -63,6 +64,13 @@ object Annotated:
 
   trait Field extends Fields, Targetable, Topical:
     def field: Text
+
+    // The lens onto the annotated field, which is usually what a caller wants once it has found
+    // it (#490). `Target` is the field's name as a `Label`, and panopticon's `deref` resolves that
+    // against `Self` — so the lens is summoned at the use site, where `Self` is known to be a
+    // product, rather than built here where it is not.
+    transparent inline def lens(using lens: Target is Lens from Self): Target is Lens from Self =
+      lens
 
   class AnnotatedField[operand <: StaticAnnotation, self, plane, limit, topic, target <: Label]
     ( annotations0: Set[operand], fields0: Map[Text, Set[operand]] )
