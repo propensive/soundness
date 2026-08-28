@@ -119,11 +119,18 @@ object Math:
 
     t"⟨${mathml.label}$attributes$body⟩"
 
+  // Renders an `Optional` exactly as `Inspectable.derived`'s `Mandatable` case would, spelt out
+  // rather than summoned: that instance cannot be constructed under `-scalajs`, where the SAM is
+  // expanded to an anonymous class whose parameter acquires a capture variable that `Self` does
+  // not carry (soundness#1892, proscala#46). Inline this again once the fork accepts it.
+  private def optional[value: Inspectable](value: Optional[value]): Text =
+    value.let { present => t"｢${present.inspect}｣" }.or(t"○")
+
   given inspectable: [math <: Math] => math is Inspectable = math =>
     val attributes = math.attributes.map { pair => t" ${pair(0)}=${pair(1).inspect}" }.join
     val children = math.contents.map { child => t" ${node(child)}" }.join
 
-    t"Math(${math.display.inspect}$attributes$children)"
+    t"Math(${optional(math.display)}$attributes$children)"
 
   // `Encodable in Math` instances: any value encodes to a `<math>` document, just
   // as `Encodable in Xml` yields an `Xml`. `Mathml.atom` collapses a root back to a

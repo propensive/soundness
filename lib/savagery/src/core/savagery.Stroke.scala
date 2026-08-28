@@ -49,6 +49,13 @@ object Stroke:
   // As with `Transform`, spelt out rather than derived: the arc cases carry an `Angle`, whose
   // instance is a named import rather than a companion given, and the encoded path-data form
   // (`A 3.0 4.0 0.0 1 0 …`) drops the case names a reader is matching against the source.
+  // Renders an `Optional` exactly as `Inspectable.derived`'s `Mandatable` case would, spelt out
+  // rather than summoned: that instance cannot be constructed under `-scalajs`, where the SAM is
+  // expanded to an anonymous class whose parameter acquires a capture variable that `Self` does
+  // not carry (soundness#1892, proscala#46). Inline this again once the fork accepts it.
+  private def optional[value: Inspectable](value: Optional[value]): Text =
+    value.let { present => t"｢${present.inspect}｣" }.or(t"○")
+
   given inspectable: [stroke <: Stroke] => stroke is Inspectable =
     _.absolve match
       case Close                        => t"Close"
@@ -56,14 +63,14 @@ object Stroke:
       case Move(shift)                  => form(t"Move", shift.inspect)
       case DrawTo(point)                => form(t"DrawTo", point.inspect)
       case Draw(shift)                  => form(t"Draw", shift.inspect)
-      case QuadraticTo(ctrl1, point)    => form(t"QuadraticTo", ctrl1.inspect, point.inspect)
-      case Quadratic(ctrl1, shift)      => form(t"Quadratic", ctrl1.inspect, shift.inspect)
+      case QuadraticTo(ctrl1, point)    => form(t"QuadraticTo", optional(ctrl1), point.inspect)
+      case Quadratic(ctrl1, shift)      => form(t"Quadratic", optional(ctrl1), shift.inspect)
 
       case CubicTo(ctrl1, ctrl2, point) =>
-        form(t"CubicTo", ctrl1.inspect, ctrl2.inspect, point.inspect)
+        form(t"CubicTo", optional(ctrl1), ctrl2.inspect, point.inspect)
 
       case Cubic(ctrl1, ctrl2, shift) =>
-        form(t"Cubic", ctrl1.inspect, ctrl2.inspect, shift.inspect)
+        form(t"Cubic", optional(ctrl1), ctrl2.inspect, shift.inspect)
 
       case ArcTo(rx, ry, angle, largeArc, sweep, point) =>
         form
