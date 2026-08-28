@@ -1361,7 +1361,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       test(m"Text is not sortable without a collation in scope"):
         demilitarize:
           List(t"b", t"a").sorted
-        . map(_.reason)
+        . filter(_.error).map(_.reason)
       . assert(_ == List(CompileError.Reason.MissingImplicitArgument))
 
       test(m"dictionary order ranks accents before case: cafe < café < caff"):
