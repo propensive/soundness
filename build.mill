@@ -1115,7 +1115,10 @@ object acyclicity extends Library:
       settings.sep(super.scalacOptions())
 
 object adversaria extends Library:
-  object core extends Component(rudiments.core):
+  // `panopticon.core` so the generated field accessors are `Lens`es — read/write and composable —
+  // rather than bare getters (#490). Both libraries previously depended on `rudiments.core` alone,
+  // so the edge adds one module and no cycle.
+  object core extends Component(rudiments.core, panopticon.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object examples extends Internal(core):

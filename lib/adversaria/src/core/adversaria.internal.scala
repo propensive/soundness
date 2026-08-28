@@ -42,6 +42,7 @@ import anticipation.*
 import denominative.*
 import fulminate.*
 import gigantism.*
+import panopticon.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -169,12 +170,55 @@ object internal:
           val name = '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
           '{($name, (value: entity) => ${'value.asTerm.select(field).asExprOf[value]})}
 
+    // A lens for each discovered field which is also a parameter of the primary constructor, so
+    // that it can be written as well as read: the setter rebuilds the entity from its own fields
+    // with one replaced. A field which is not a constructor parameter — a `val` computed in the
+    // body — remains readable through `select` but has no lens, since there is nothing to write.
+    // The lens's `Self` is the field-name singleton, matching panopticon's own `deref`.
+    def lensMap: Expr[List[(Text, Lens from entity onto value)]] =
+      val symbol = TypeRepr.of[entity].typeSymbol
+      val parameters = symbol.primaryConstructor.paramSymss.flatten.filter(!_.isTypeParam)
+      val names = parameters.map(_.name).toSet
+
+      Expr.ofList:
+        symbol.fieldMembers
+        . filter(_.info <:< TypeRepr.of[value])
+        . filter { field => names.contains(field.name) }
+        . map: field =>
+            val name = '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
+
+            val get: Expr[entity => value] =
+              '{ (entity: entity) => ${'entity.asTerm.select(field).asExprOf[value]} }
+
+            val set: Expr[(entity, value) => entity] =
+              '{ (entity: entity, replacement: value) =>
+                   ${
+                       val arguments = parameters.map: parameter =>
+                         if parameter.name == field.name then 'replacement.asTerm
+                         else 'entity.asTerm.select(symbol.fieldMember(parameter.name))
+
+                       Select(New(TypeTree.of[entity]), symbol.primaryConstructor)
+                       . appliedToArgs(arguments)
+                       . asExprOf[entity]
+                   } }
+
+            ConstantType(StringConstant(field.name)).asType.absolve match
+              case '[type label; label] =>
+                '{($name, Lens[label, entity, value]($get, $set))}
+
     ' {
         new Dereferenceable:
           type Self = entity
           type Result = value
           private val lambdas: scala.collection.immutable.Map[Text, Self => Result] =
             ${lambdaMap}.toMap
+
+          private val lenses
+          :   scala.collection.immutable.Map[Text, Lens from entity onto value] =
+            ${lensMap}.toMap
+
           def names(entity: Self): proscenium.List[Text] = (${namesList}).to(proscenium.List)
           def select(entity: entity, name: Text): Result = lambdas(name)(entity)
+          override def lens(name: Text): Optional[Lens from Self onto Result] =
+            lenses.get(name).getOrElse(Unset)
       }
