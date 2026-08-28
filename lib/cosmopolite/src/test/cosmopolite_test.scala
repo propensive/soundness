@@ -33,40 +33,57 @@
 package cosmopolite
 
 import soundness.*
+import soundness.collationOrdering
+import soundness.localeCollation
 
 object Tests extends Suite(m"Cosmopolite tests"):
   def run(): Unit =
-    suite(m"Native-rendering coverage"):
-      test(m"cosmopolite's types inspect natively"):
-        Inspectable.fallbacks(Locale(en).inspect)
-      . assert(_ == Nil)
+    suite(m"Language sort orders"):
+      test(m"English uses dictionary order: cafe < café < caff"):
+        given Locale[en] = Locale(en)
+        List(t"caff", t"café", t"cafe").sorted
+      . assert(_ == List(t"cafe", t"café", t"caff"))
 
-      test(m"A locale shows its language code"):
-        Locale(en).inspect
-      . assert(_ == t"Locale(en)")
+      test(m"Polish ó sorts as a letter between o and p"):
+        given Locale[pl] = Locale(pl)
+        List(t"pod", t"ó", t"oz").sorted
+      . assert(_ == List(t"oz", t"ó", t"pod"))
 
-// import languages.common.*
+      test(m"Polish ż chains after ź after z"):
+        given Locale[pl] = Locale(pl)
+        List(t"ż", t"z", t"ź").sorted
+      . assert(_ == List(t"z", t"ź", t"ż"))
 
-// import probably.*
-// import rudiments.*
-// import gossamer.*
+      test(m"Polish uppercase is a tertiary difference: ó < Ó"):
+        given Locale[pl] = Locale(pl)
+        t"ó" < t"Ó"
+      . assert(_ == true)
 
-// import unsafeExceptions.canThrowAny
+      test(m"Spanish ñ sorts as a letter between n and o"):
+        given Locale[es] = Locale(es)
+        List(t"año", t"anzuelo", t"ano").sorted
+      . assert(_ == List(t"ano", t"anzuelo", t"año"))
 
-// object Tests extends Suite(m"Cosmopolite Tests"):
-//   def run(): Unit =
-//     test(m"extract language from string (English)"):
-//       val two = en"two" & fr"deux"
-//       two[En]
-//     . assert(_ == t"two")
+      test(m"English keeps ñ with n: año < anzuelo"):
+        given Locale[en] = Locale(en)
+        List(t"año", t"anzuelo", t"ano").sorted
+      . assert(_ == List(t"ano", t"año", t"anzuelo"))
 
-//     test(m"extract language from string (French)"):
-//       val two = en"two" & fr"deux"
-//       two[Fr]
-//     . assert(_ == t"deux")
+      test(m"German umlauts differ at the secondary level"):
+        given Locale[de] = Locale(de)
+        (t"äb" > t"ab", t"äa" < t"ab")
+      . assert(_ == (true, true))
 
-//     test(m"extract default language"):
-//       val two = en"two" & fr"deux"
-//       given Language[Fr] = Language[Fr]("fr")
-//       two()
-//     . assert(_ == t"deux")
+      // Forward secondary accents: modern CLDR French. The reversed relative order of coté
+      // and côte under traditional (now Canadian) French would need backward secondaries.
+      test(m"French uses forward secondary accents: coté < côte"):
+        given Locale[fr] = Locale(fr)
+        List(t"côté", t"coté", t"côte", t"cote").sorted
+      . assert(_ == List(t"cote", t"coté", t"côte", t"côté"))
+
+    suite(m"Locale integration"):
+      test(m"a via-typed value sees its language's collation"):
+        def first: Text via pl = List(t"ó", t"oz").sorted.head
+        given Locale[pl] = Locale(pl)
+        first
+      . assert(_ == t"oz")

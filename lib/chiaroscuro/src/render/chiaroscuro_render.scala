@@ -138,7 +138,7 @@ package teletypeables:
               case Same(value)                           => Nil
               case Different(left, right, difference)    => Nil
 
-              case Collation(_, comparison, left, right) =>
+              case Juxtaposition.Collation(_, comparison, left, right) =>
                 if comparison.all(_(1).singleChar) then Nil else comparison
 
             case class Row(treeLine: Text, left: Teletype, right: Teletype, memo: Teletype)
@@ -164,7 +164,7 @@ package teletypeables:
                       e"${Fg(palette.negative)}($right)",
                       difference.let(_.teletype).or(e"") )
 
-                case Collation(_, comparison, left, right) =>
+                case Juxtaposition.Collation(_, comparison, left, right) =>
                   if comparison.all(_(1).singleChar)
                   then
                     import proximities.levenshteinProximity

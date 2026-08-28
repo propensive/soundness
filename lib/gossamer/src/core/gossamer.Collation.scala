@@ -35,6 +35,11 @@ package gossamer
 import anticipation.*
 import beneficence.*
 
+object Collation:
+  def apply(table: hieroglyph.CollationTable): Collation = new Collation:
+    def compare(left: Text, right: Text): Int = table.compare(left, right)
+    def key(text: Text): Array[Int]^{} = table.key(text)
+
 // A collation: a total ordering of `Text` values. There is deliberately no ambient default
 // (issue #575): a sort order is a policy, chosen either by importing a given from the
 // `collations` package, or — with cosmopolite — derived from a contextual `Locale`.
