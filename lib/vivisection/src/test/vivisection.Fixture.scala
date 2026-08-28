@@ -52,9 +52,8 @@ object Fixture:
     given (Port is Inspectable) = port => t"⟨port ${port: Int}⟩"
 
   def main(args: Array[String]): Unit =
-    // Construct first, so `Specimen` is loaded and its line table is available, then pause briefly
-    // to give the attached debugger a window to install its breakpoint before `marker` runs. The
-    // agent starts suspended, so the debugger is connected before any of this executes.
+    // Construct first so `Specimen` is loaded, then pause to give the debugger a window to install
+    // its breakpoint before `marker` runs.
     val specimen = Specimen(7)
     Thread.sleep(1500)
     specimen.compute(35)

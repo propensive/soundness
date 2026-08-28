@@ -93,6 +93,14 @@ extends caps.ExclusiveCapability:
     val modifiers: List[Jdwp.Modifier] = List(Jdwp.Modifier.LocationOnly(location))
     connection.eventRequestSet(Jdwp.EventKind.Breakpoint, policy, modifiers)
 
+  // Requests notification when a reference type whose name matches `pattern` is prepared (loaded
+  // and linked). Each match arrives as a `ClassPrepared` event on `events`, suspending the loading
+  // thread — so a caller can resolve a breakpoint in a class not yet loaded when the session began.
+  // `pattern` follows the JDWP class-match form: an exact name, or one bounded by a single `*`.
+  def classPrepare(pattern: Text)(using Tactic[Debugger.Error]): Int =
+    val modifiers: List[Jdwp.Modifier] = List(Jdwp.Modifier.ClassMatch(pattern))
+    connection.eventRequestSet(Jdwp.EventKind.ClassPrepare, Jdwp.SuspendPolicy.EventThread, modifiers)
+
   // Requests a single step on a thread; the VM reports it as a `SingleStep` event on `events`.
   def step
     ( thread: ThreadId,

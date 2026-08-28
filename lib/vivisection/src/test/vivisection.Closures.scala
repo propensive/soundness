@@ -36,12 +36,9 @@ package vivisection
 // breakpoint (the `println` in `go`) `this` is a `Helper` whose fields hold the captured `label`
 // (a val) and `tally` (a `var`, boxed in a ref cell), and whose `$outer` reaches the enclosing
 // `Outer` — itself carrying `seed` (a field) and an unforced lazy `cached`. This is the path
-// variable un-flattening walks; none of it appears as an ordinary local slot.
-//
-// The pause sits *inside* `go`, not in `main`: `Helper` is a method-local class that is not loaded
-// until `run` runs it, so the debugger can only install a breakpoint in it once execution has
-// reached here (installing in a not-yet-loaded class needs deferred, ClassPrepare-based resolution,
-// which the harness does not do).
+// variable un-flattening walks; none of it appears as an ordinary local slot. The pause sits inside
+// `go`, since `Helper` is a method-local class not loaded until `run` runs it, so the debugger can
+// only install a breakpoint once execution has reached here.
 object Closures:
   def main(args: Array[String]): Unit =
     Outer(100).run()

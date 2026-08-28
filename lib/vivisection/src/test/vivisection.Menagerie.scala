@@ -33,9 +33,8 @@
 package vivisection
 
 // A debuggee whose `primitives` method binds a local of each primitive kind, plus strings and
-// arrays, so one breakpoint can exercise the whole width of value recovery. Line 66 (the `println`)
-// is where the suite breaks — every binding above it is live there. As with `Fixture`, the object
-// is constructed before a pause so its class is loaded when the debugger attaches.
+// arrays, so one breakpoint can exercise the whole width of value recovery. The suite breaks at the
+// `println`, where every binding above it is live.
 object Menagerie:
   def main(args: Array[String]): Unit =
     val specimen = Specimen()

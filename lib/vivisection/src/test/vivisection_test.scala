@@ -87,6 +87,9 @@ object Tests extends Suite(m"Vivisection tests"):
     val debuggee: Debuggee = Debuggee(command, freePort())
 
     debuggee.session: debug ?=>
+      // Resume from the agent's start-up suspension, then poll until the target class is loaded and
+      // its line table resolves — the fixture pauses to keep that window open. (Deterministic,
+      // ClassPrepare-driven resolution is a possible refinement; see `Debug.classPrepare`.)
       debug.resume()
 
       def waitFor(remaining: Int): List[Jdwp.Location] =
@@ -515,7 +518,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // enclosing `Specimen`'s state through `this` — a field, and an unforced lazy val.
     test(m"a live session recovers the variables at a breakpoint"):
       supervise:
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(72)):
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(71)):
           stop ?=> stop.variables()
 
     . assert: variables =>
@@ -545,7 +548,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(72)):
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(71)):
           stop ?=>
             stop.evaluator(classpath): eval ?=>
               eval(t"total + 1") match
@@ -561,7 +564,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(72)):
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(71)):
           stop ?=> stop.evaluator(classpath) { eval ?=> eval.inspect(t"values") }
 
     . assert(_.starts(t"⦋"))
@@ -573,7 +576,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(72)):
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(71)):
           stop ?=> stop.evaluator(classpath) { eval ?=> eval.inspect(t"port") }
 
     . assert(_ == t"⟨port 8080⟩")
@@ -585,7 +588,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(72)):
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(71)):
           stop ?=>
             stop.evaluator(classpath): eval ?=>
               val port = eval.variables().stdlib.find(_.name == t"port")
@@ -600,7 +603,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(72)):
+        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(71)):
           stop ?=>
             stop.evaluator(classpath): eval ?=>
               val gateway = eval.variables().stdlib.find(_.name == t"gateway")
@@ -615,7 +618,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // debuggee.
     val menagerie: scala.collection.immutable.Map[Text, Variable] =
       supervise:
-        debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(60)):
+        debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(59)):
           stop ?=> named(stop.variables())
 
     def valueOf(name: Text): Optional[Variable.Snapshot] =
@@ -703,7 +706,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // binding is recovered by un-flattening `this`'s captured fields and walking its `$outer` chain.
     val closures: scala.collection.immutable.Map[Text, Variable] =
       supervise:
-        debugFixture(t"vivisection.Closures", t"vivisection.Closures.scala", Ordinal.uniary(60)):
+        debugFixture(t"vivisection.Closures", t"vivisection.Closures.scala", Ordinal.uniary(57)):
           stop ?=> named(stop.variables())
 
     test(m"captured bindings are recovered by their written names"):
