@@ -352,7 +352,7 @@ object Inspectable extends Inspectable2:
 
     ledger =>
       Showable.enclose
-        ( ledger.remap { (key, value) => inspKey().text(key).s+" → "+inspValue().text(value).s },
+        ( ledger.remap { (key, value) => inspKey().text(key).s+(" → ": String)+inspValue().text(value).s },
           "⟦", ", ", "⟧" )
 
   // `Self` is subtype-parametric so branded literals (`Sequence(1, 2, 3)`, typed

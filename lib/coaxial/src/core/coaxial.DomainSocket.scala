@@ -43,7 +43,7 @@ object DomainSocket:
   // rendering prefixes it with `⇄`, marking it as the bidirectional endpoint it is — in the same
   // spirit as `⌗8080` for a port.
   given inspectable: [domainSocket <: DomainSocket] => domainSocket is Inspectable =
-    domainSocket => ("⇄"+domainSocket.address.s).tt
+    domainSocket => (("⇄": String)+domainSocket.address.s).tt
 
   def apply[path: Abstractable across Paths to Text](path: path): DomainSocket =
     DomainSocket(path.generic)

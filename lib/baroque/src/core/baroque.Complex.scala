@@ -96,7 +96,7 @@ object Complex:
       val imaginary = complex.imaginary.inspect.s
 
       val body =
-        if imaginary.startsWith("-") then "-"+imaginary.substring(1).nn else "+"+imaginary
+        if imaginary.startsWith("-") then ("-": String)+imaginary.substring(1).nn else ("+": String)+imaginary
 
       (complex.real.inspect.s+body+"i").tt
 

@@ -49,7 +49,7 @@ object Rgb32Opaque:
     // the packed `Int` the type erases to would say nothing at all.
     given inspectable: [rgb32 <: Rgb32] => rgb32 is Inspectable = rgb32 =>
       val value: Rgb32 = rgb32
-      ("rgb32("+value.red+", "+value.green+", "+value.blue+")").tt
+      (("rgb32(": String)+value.red+(", ": String)+value.green+(", ": String)+value.blue+")").tt
 
     def apply(red: Int, green: Int, blue: Int): Rgb32 =
       ((red&1023) << 22) + ((green&4095) << 10) + (blue&1023)

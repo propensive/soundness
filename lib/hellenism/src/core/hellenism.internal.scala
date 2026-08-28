@@ -54,7 +54,7 @@ object internal extends Hellenism2:
     // A `Class`'s own `toString` is `class java.lang.String`, which reads as two words rather
     // than one value; the rendering instead resembles the source which produces a `ClassRef`.
     given inspectable: [classRef <: ClassRef] => classRef is Inspectable = classRef =>
-      ("classOf["+classRef.getName.nn+"]").tt
+      (("classOf[": String)+classRef.getName.nn+"]").tt
 
   extension (classRef: ClassRef)
     def classloader: Classloader = new Classloader(classRef.getClassLoader().nn)

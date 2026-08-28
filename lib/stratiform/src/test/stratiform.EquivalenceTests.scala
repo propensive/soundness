@@ -66,13 +66,13 @@ object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence test
     val buffer = scala.collection.mutable.ListBuffer.empty[(String, String)]
 
     def recur(element: Tel.Element, prefix: String): Unit = element match
-      case Tel.Element.Value(idx, _, text) => buffer += ((prefix + "/" + idx, text.s))
+      case Tel.Element.Value(idx, _, text) => buffer += ((prefix + ("/": String) + idx, text.s))
 
       case Tel.Element.Node(idx, Tels.Flag, _) =>
-        buffer += ((prefix + "/" + idx.or(-1), "+"))
+        buffer += ((prefix + ("/": String) + idx.or(-1), "+"))
 
       case Tel.Element.Node(idx, _, children) =>
-        val next = idx.lay(prefix)(prefix + "/" + _)
+        val next = idx.lay(prefix)(prefix + ("/": String) + _)
         var i = 0
 
         while i < children.length do

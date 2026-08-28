@@ -140,7 +140,7 @@ object Atomizer:
 
         case ConstantType(constant) =>
           tag(out, 'C')
-          utf8(out, constant.getClass.getName.nn + ":" + constant.show)
+          utf8(out, constant.getClass.getName.nn + (":": String) + constant.show)
 
         case tpe: TypeLambda =>
           tag(out, 'L')
@@ -230,7 +230,7 @@ object Atomizer:
         "scala.annotation.implicitAmbiguous", "scala.annotation.migration",
         "scala.annotation.nowarn", "scala.annotation.unused")
 
-      val interop = scala.List(
+      val interop = scala.List[String](
         "scala.scalajs.js.annotation.", "scala.scalanative.unsafe.",
         "scala.annotation.internal.", "scala.annotation.unchecked.")
 
@@ -370,7 +370,7 @@ object Atomizer:
 
           case Literal(constant) =>
             tag(out, 'k')
-            utf8(out, constant.getClass.getName.nn + ":" + constant.show)
+            utf8(out, constant.getClass.getName.nn + (":": String) + constant.show)
 
           case This(_) =>
             tag(out, 'z')

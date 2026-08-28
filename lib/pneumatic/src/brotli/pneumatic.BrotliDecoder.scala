@@ -81,7 +81,7 @@ private[pneumatic] object BrotliDecoder:
           0x020000, 0x020004, 0x020003, 0x030002, 0x020000, 0x020004, 0x020003, 0x040005)
 
   private[pneumatic] def corrupt(message: String): Nothing =
-    throw IllegalStateException("the Brotli data is corrupt: "+message)
+    throw IllegalStateException(("the Brotli data is corrupt: ": String)+message)
 
   // Builds a Huffman lookup table assuming code lengths are in symbol order (reference `Huffman`).
   private[pneumatic] def buildHuffmanTable

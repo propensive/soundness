@@ -204,15 +204,15 @@ package ordinalTextualizables:
     case Quin    => "quin".tt
     case Sen     => "sen".tt
     case Sept    => "sept".tt
-    case ordinal => (""+ordinal+".z").tt
+    case ordinal => (("": String)+ordinal+".z").tt
 
-  given uniaryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n1+"♭"
-  given zeraryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n0+"♯"
-  given unmarkedUniaryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n1
-  given unmarkedZeraryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n0
+  given uniaryOrdinal: Ordinal is Textualizable = ordinal => ("": String)+ordinal.n1+"♭"
+  given zeraryOrdinal: Ordinal is Textualizable = ordinal => ("": String)+ordinal.n0+"♯"
+  given unmarkedUniaryOrdinal: Ordinal is Textualizable = ordinal => ("": String)+ordinal.n1
+  given unmarkedZeraryOrdinal: Ordinal is Textualizable = ordinal => ("": String)+ordinal.n0
 
   given intermediateOrdinal: Ordinal is Textualizable =
-    ordinal => "⌞"+ordinal.n0+"⌟|⌞"+ordinal.n1+"⌟"
+    ordinal => ("⌞": String)+ordinal.n0+("⌟|⌞": String)+ordinal.n1+"⌟"
 
   given englishOrdinal: Ordinal is Textualizable = ordinal =>
     ordinal.n1%100 match

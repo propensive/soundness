@@ -322,7 +322,7 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == Cos.Sequence(List(Cos.Integral(1), Cos.Integral(3))))
 
       test(m"a value spanning many scan windows"):
-        textOf(parse(("(" + "a".repeat(20000).nn + ")").tt)).length
+        textOf(parse((("(": String) + ("a": String).repeat(20000).nn + ")").tt)).length
       . assert(_ == 20000)
 
     suite(m"Stream filters"):

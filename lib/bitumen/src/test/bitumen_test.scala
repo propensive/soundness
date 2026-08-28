@@ -105,7 +105,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == List('d', 'a', 't', 'a', '/'))
 
     suite(m"PAX extended headers for long names"):
-      val longPath: Text = "a".repeat(150).nn.tt
+      val longPath: Text = ("a": String).repeat(150).nn.tt
       val longFile = Tar.Entry.File
                       ( path  = longPath.as[Relative on Tar],
                         mode  = UnixMode(),
@@ -144,7 +144,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == ('a', 'a'))
 
     suite(m"PAX extended headers for long link targets"):
-      val longTarget: Text = "b".repeat(150).nn.tt
+      val longTarget: Text = ("b": String).repeat(150).nn.tt
       val longSymlink = Tar.Entry.Symlink
                          ( path   = t"link".as[Relative on Tar],
                            mode   = UnixMode(),
@@ -256,7 +256,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == t"data")
 
     suite(m"Reader: PAX long name round-trip"):
-      val longPath: Text = "a".repeat(150).nn.tt
+      val longPath: Text = ("a": String).repeat(150).nn.tt
       val longFile = Tar.Entry.File
                       ( path  = longPath.as[Relative on Tar],
                         mode  = UnixMode(),
@@ -277,7 +277,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == longPath)
 
     suite(m"Reader: PAX long linkpath round-trip"):
-      val longTarget: Text = "b".repeat(150).nn.tt
+      val longTarget: Text = ("b": String).repeat(150).nn.tt
       val longSymlink = Tar.Entry.Symlink
                          ( path   = t"link".as[Relative on Tar],
                            mode   = UnixMode(),
@@ -379,7 +379,7 @@ object Tests extends Suite(m"Bitumen Tests"):
           i += 1
 
         val octal: String = java.lang.Long.toOctalString(sum).nn
-        val padded: String = "000000".substring(octal.length).nn + octal
+        val padded: String = ("000000": String).substring(octal.length).nn + octal
 
         var patchedBlock = flagged
         i = 0
@@ -404,8 +404,8 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == (1, true, Some(true)))
 
     suite(m"PAX: long uname / gname round-trip"):
-      val longName: Text = "u".repeat(40).nn.tt
-      val longGroup: Text = "g".repeat(40).nn.tt
+      val longName: Text = ("u": String).repeat(40).nn.tt
+      val longGroup: Text = ("g": String).repeat(40).nn.tt
 
       val file = Tar.Entry.File
                   ( path  = t"a".as[Relative on Tar],
@@ -444,7 +444,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == longGroup)
 
     suite(m"GNU long-name: writer emits 'L' block and round-trips"):
-      val longPath: Text = "a".repeat(150).nn.tt
+      val longPath: Text = ("a": String).repeat(150).nn.tt
       val longFile = Tar.Entry.File
                       ( path  = longPath.as[Relative on Tar],
                         mode  = UnixMode(),
@@ -477,7 +477,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == longPath)
 
     suite(m"GNU long-name: 'K' block emitted for long link target"):
-      val longTarget: Text = "b".repeat(150).nn.tt
+      val longTarget: Text = ("b": String).repeat(150).nn.tt
       val longSymlink = Tar.Entry.Symlink
                          ( path   = t"link".as[Relative on Tar],
                            mode   = UnixMode(),
@@ -577,8 +577,8 @@ object Tests extends Suite(m"Bitumen Tests"):
         listing(writeArchive(Tarfile(List(helloFile, emptyDir)), t"both.tar"))
       . assert(_ == List(t"hello.txt", t"data/"))
 
-      val longPathA: Text = "a".repeat(150).nn.tt
-      val longPathB: Text = "b".repeat(150).nn.tt
+      val longPathA: Text = ("a": String).repeat(150).nn.tt
+      val longPathB: Text = ("b": String).repeat(150).nn.tt
 
       val longFileA = Tar.Entry.File
                        ( path  = longPathA.as[Relative on Tar],
@@ -610,7 +610,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            user   = UnixUser(0),
                            group  = UnixGroup(0),
                            mtime  = 0.bits.u32,
-                           target = "t".repeat(150).nn.tt )
+                           target = ("t": String).repeat(150).nn.tt )
 
       test(m"long PAX linkpath is readable by external tar"):
         listing(writeArchive(Tarfile(List(longSymlink)), t"linkpax.tar"))

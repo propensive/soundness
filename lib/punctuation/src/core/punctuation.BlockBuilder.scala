@@ -95,7 +95,7 @@ final class BlockQuoteBuilder(val line: Ordinal) extends ContainerBuilder:
 
         case _ => ()
 
-    val rest = if i >= n then "" else s.substring(i, n).nn
+    val rest = if i >= n then ("": String) else s.substring(i, n).nn
     Text(ParserSupport.buildResidual(rest, startCol, leftover))
 
   def finish(refs: LinkRefs): Optional[Layout] =
@@ -134,7 +134,7 @@ final class ListItemBuilder(val line: Ordinal, val indent: Int) extends Containe
 
     if col < indent then return Unset
     val leftover = col - indent
-    val tail = if i >= n then "" else s.substring(i, n).nn
+    val tail = if i >= n then ("": String) else s.substring(i, n).nn
     Text(ParserSupport.buildResidual(tail, col, leftover))
 
   def finish(refs: LinkRefs): Optional[Layout] =

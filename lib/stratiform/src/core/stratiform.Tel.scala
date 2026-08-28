@@ -4332,7 +4332,7 @@ object Tel extends Tel2:
           // The sigil form is a *final* single character; a non-final one
           // matches no form (E121), whatever the character.
           if !isFinal then bad(column, 1)
-          else if c.isLetterOrDigit || "()[]{}<>".indexOf(c.toInt) >= 0
+          else if c.isLetterOrDigit || ("()[]{}<>": String).indexOf(c.toInt) >= 0
           then recoverAt(Reason.BadSigil, line, column, 1)(())
           else
             sigil = c.toByte

@@ -236,14 +236,14 @@ object Regex:
 
     def serialize(pattern: Text, index: Int, named: Boolean): (Int, Text) =
       if charClass then
-        val groupName = (if capture && named then s"?<g$index>" else "").tt
+        val groupName = (if capture && named then s"?<g$index>" else ("": String)).tt
 
         if quantifier.unitary then (index, s"($groupName[${pattern.s.substring(start, end)}])")
         else
           val chars = pattern.s.substring(start, end)
           (index, s"($groupName[$chars]${quantifier.serialize}${greed.serialize})")
       else if singleChar then
-        val groupName = (if capture && named then s"?<g$index>" else "").tt
+        val groupName = (if capture && named then s"?<g$index>" else ("": String)).tt
         val token = pattern.s.substring(start, end)
 
         if quantifier.unitary then (index, s"($groupName$token)")
@@ -252,7 +252,7 @@ object Regex:
         val (index2, subpattern) =
           Regex.makePattern(pattern, groups, start, "".tt, end, index, named)
 
-        val groupName = (if capture && named then s"?<g$index>" else "").tt
+        val groupName = (if capture && named then s"?<g$index>" else ("": String)).tt
 
         if quantifier.unitary then (index2, s"($groupName$subpattern)".tt)
         else (index2, s"($groupName($subpattern)${quantifier.serialize}${greed.serialize})".tt)
@@ -267,7 +267,7 @@ object Regex:
     def validStart(part: Text): Boolean =
       val str = part.s
       str.startsWith("(") || str.startsWith("[") || str.startsWith(".") ||
-        (str.length >= 2 && str.charAt(0) == '\\' && "dDwWsS".indexOf(str.charAt(1)) >= 0)
+        (str.length >= 2 && str.charAt(0) == '\\' && ("dDwWsS": String).indexOf(str.charAt(1)) >= 0)
 
     parts.absolve match
       case head :: tail =>
@@ -369,7 +369,7 @@ object Regex:
 
         case '\\' if !escape && !charClass && captured.has(index) &&
           index + 1 < text.s.length &&
-          "dDwWsS".indexOf(text.s.charAt(index + 1)) >= 0 =>
+          ("dDwWsS": String).indexOf(text.s.charAt(index + 1)) >= 0 =>
 
           val groupStart = index
           index += 2

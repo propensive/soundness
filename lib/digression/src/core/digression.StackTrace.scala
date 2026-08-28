@@ -314,8 +314,8 @@ object StackTrace:
                 val types = List.iterator(List.tail(arguments)).mkString("Σ((", ", ", ")")
 
                 val name2 =
-                  if arguments.size == 2 then "Σ("+List.last(arguments)+" -> "+head+")"
-                  else types+" -> "+head+")"
+                  if arguments.size == 2 then ("Σ(": String)+List.last(arguments)+(" -> ": String)+head+")"
+                  else types+(" -> ": String)+head+")"
 
                 val mc = name.substring(index, index + 3).nn
                 token(index, mc, name2)
@@ -380,7 +380,7 @@ object StackTrace:
       val args =
         if n < 2 then s"Any" else List.iterator(List.fill(n)("Any")).mkString("(", ", ", ")")
 
-      "("+args+" => Unit)"
+      ("(": String)+args+" => Unit)"
 
     else if rewritten.s.endsWith("#") then
       val pivot = rewritten.s.lastIndexOf(".")

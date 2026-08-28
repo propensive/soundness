@@ -61,4 +61,4 @@ object Pid:
   extends fulminate.Error(909, 0)(m"the process with PID ${pid.value} is not running")
 
 case class Pid(value: Long):
-  override def toString(): String = "\u21af"+value
+  override def toString(): String = ("\u21af": String)+value

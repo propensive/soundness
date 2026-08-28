@@ -115,7 +115,7 @@ object BintelInlinable:
     :   Expr[Iterable[element]] =
 
       quotes.reflect.report.errorAndAbort
-        ("stratiform: a repeatable field parses through its struct's generated parser; a " +
+        (("stratiform: a repeatable field parses through its struct's generated parser; a ": String) +
           "collection has no standalone BinTEL form")
 
   // The structural instance for a *top-level* sealed sum, whose schema root

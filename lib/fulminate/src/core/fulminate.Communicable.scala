@@ -39,7 +39,7 @@ import anticipation.*
 object Communicable:
   given text: Text is Communicable = text =>
     Message:
-      if text.s.length == 0 || text.s(0) == ' ' || text.s.last == ' ' then ("“"+text+"”").tt
+      if text.s.length == 0 || text.s(0) == ' ' || text.s.last == ' ' then (("“": String)+text+"”").tt
       else text
 
   given string: String is Communicable = text.contramap(_.tt)

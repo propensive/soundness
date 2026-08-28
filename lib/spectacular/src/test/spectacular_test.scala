@@ -59,7 +59,7 @@ case class Dog(name: Text) extends Animal
 case object Cat extends Animal
 
 class Underived(val x: Int):
-  override def toString: String = "Underived("+x+")"
+  override def toString: String = ("Underived(": String)+x+")"
 
 case class Holder(item: Underived, count: Int)
 

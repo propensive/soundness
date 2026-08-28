@@ -287,7 +287,7 @@ private[punctuation] final class BlockParser:
       closeOpenLeafForNewBlock()
       val bq = BlockQuoteBuilder(ln)
       openStack += bq
-      val tail = if i >= n then "" else s.substring(i, n).nn
+      val tail = if i >= n then ("": String) else s.substring(i, n).nn
       val rest = Text(ParserSupport.buildResidual(tail, startCol, leftover))
       return (rest, true)
 

@@ -140,7 +140,7 @@ object internal:
       // `Grapheme` before `text` is called: the accessor is an inline extension on an opaque
       // type, and its expansion is not available through a subtype.
       given inspectable: [grapheme <: Grapheme] => grapheme is Inspectable = grapheme =>
-        ("‹"+(grapheme: Grapheme).text.s+"›").tt
+        (("‹": String)+(grapheme: Grapheme).text.s+"›").tt
 
       // Width of a grapheme is the maximum width of its constituent codepoints. For
       // combining-mark sequences (e.g. e + ́) this gives the base character's width;

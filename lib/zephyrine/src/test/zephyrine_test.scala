@@ -401,7 +401,7 @@ object Tests extends Suite(m"Zephyrine tests"):
                 for i <- 0 until length do cursor.next()
                 cursor.grab(start, cursor.mark)
 
-            . assert(_ == "Hello world!".substring(offset, offset + length).nn)
+            . assert(_ == ("Hello world!": String).substring(offset, offset + length).nn)
 
         test(m"Grab spanning multi-character blocks"):
           val cursor = Cursor(Iterator[Text]("hello", "world"))

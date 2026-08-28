@@ -422,7 +422,7 @@ object Tests extends Suite(m"Praxinoscope tests"):
 
           inputs.each: input =>
             if motif.matches(input) != rival.matcher(input.s).nn.matches
-            then failures = (pattern.s+" on "+input.s).tt :: failures
+            then failures = (pattern.s+(" on ": String)+input.s).tt :: failures
 
         failures
 

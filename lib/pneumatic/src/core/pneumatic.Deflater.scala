@@ -1380,7 +1380,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
     val produced = space - availOut
 
     if result == ZStreamEnd then streamEnded = true
-    else if result == ZStreamError then throw IllegalStateException("deflate failure: "+msg)
+    else if result == ZStreamError then throw IllegalStateException(("deflate failure: ": String)+msg)
 
     produced
 

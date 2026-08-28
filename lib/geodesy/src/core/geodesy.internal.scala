@@ -109,7 +109,7 @@ object internal:
 
       Text:
         Array.tabulate[Char](length): index =>
-          "0123456789bcdefghjkmnpqrstuvwxyz".charAt((binary >> ((length - index - 1)*5)&31).toInt)
+          ("0123456789bcdefghjkmnpqrstuvwxyz": String).charAt((binary >> ((length - index - 1)*5)&31).toInt)
 
     def surfaceDistance(right: Location): Angle =
       val lat0 = left.latitude.radians

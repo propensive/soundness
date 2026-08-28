@@ -132,15 +132,15 @@ object stagedInternal:
 
   private val primitiveClasses: scala.collection.immutable.Map[String, Class[?]] =
     scala.collection.immutable.Map
-      ( "scala.Int"     -> classOf[Int],
-        "scala.Long"    -> classOf[Long],
-        "scala.Double"  -> classOf[Double],
-        "scala.Float"   -> classOf[Float],
-        "scala.Boolean" -> classOf[Boolean],
-        "scala.Short"   -> classOf[Short],
-        "scala.Byte"    -> classOf[Byte],
-        "scala.Char"    -> classOf[Char],
-        "scala.Unit"    -> classOf[Unit] )
+      ( ("scala.Int": String)     -> classOf[Int],
+        ("scala.Long": String)    -> classOf[Long],
+        ("scala.Double": String)  -> classOf[Double],
+        ("scala.Float": String)   -> classOf[Float],
+        ("scala.Boolean": String) -> classOf[Boolean],
+        ("scala.Short": String)   -> classOf[Short],
+        ("scala.Byte": String)    -> classOf[Byte],
+        ("scala.Char": String)    -> classOf[Char],
+        ("scala.Unit": String)    -> classOf[Unit] )
 
   // The binary name of a class symbol: package segments joined with dots,
   // enclosing type segments with dollars.
@@ -152,10 +152,10 @@ object stagedInternal:
 
       if owner.isPackageDef then
         val prefix = owner.fullName
-        if prefix == "<empty>" then symbol.name else prefix+"."+symbol.name
+        if prefix == "<empty>" then symbol.name else prefix+(".": String)+symbol.name
       else
         val ownerName = build(if owner.isClassDef then owner else owner.owner)
-        ownerName+"$"+symbol.name
+        ownerName+("$": String)+symbol.name
 
     build(symbol)
 
@@ -458,7 +458,7 @@ object stagedInternal:
     if !productSupported(tpe) then
       report.errorAndAbort
         (s"jacinta: ${tpe.show} is not an inlinable product (a non-generic, top-level or " +
-          "object-nested case class with a single parameter list and no `@name` renames); " +
+          ("object-nested case class with a single parameter list and no `@name` renames); ": String) +
           "use `Json.Parsable.staged` or `derived`")
 
     val classSymbol = tpe.classSymbol.get
@@ -499,10 +499,10 @@ object stagedInternal:
       val owner = Symbol.spliceOwner
 
       val slots = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "slot"+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, ("slot": String)+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
 
       val seens = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "seen"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, ("seen": String)+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
 
       def zero(fieldType: TypeRepr): Term =
         if fieldType =:= TypeRepr.of[Int] then Literal(IntConstant(0))
@@ -562,12 +562,12 @@ object stagedInternal:
       // key-step arms always inline it.
       val readDefs = List.range(0, arity).map: index =>
         Symbol.newMethod
-          ( owner, "readField"+index,
+          ( owner, ("readField": String)+index,
             MethodType(Nil)(_ => Nil, _ => fieldTypes(index)) )
 
       val slowDefs = List.range(0, arity).map: index =>
         Symbol.newMethod
-          ( owner, "readFieldSlow"+index,
+          ( owner, ("readFieldSlow": String)+index,
             MethodType(Nil)(_ => Nil, _ => fieldTypes(index)) )
 
       val readDefDefs: List[Statement] = List.range(0, arity).flatMap: index =>
@@ -595,7 +595,7 @@ object stagedInternal:
               if builtin then None else
                 val symbol =
                   Symbol.newMethod
-                    ( owner, "readNested"+index,
+                    ( owner, ("readNested": String)+index,
                       MethodType(Nil)(_ => Nil, _ => fieldTypes(index)) )
 
                 val rhs = rawParse().asTerm.changeOwner(symbol)

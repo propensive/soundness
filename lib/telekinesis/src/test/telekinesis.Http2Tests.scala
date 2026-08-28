@@ -208,7 +208,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
       . assert(_ == true)
 
       test(m"a padded DATA frame decodes to its unpadded payload"):
-        // length=5: padLength byte (0x02) + "hi" + 2 pad bytes; PADDED flag = 0x08
+        // length=5: padLength byte (0x02) + ("hi": String) + 2 pad bytes; PADDED flag = 0x08
         val padded = bytes(t"0000050008000000030268690000")
         Frame.decode(padded, 0)(0) match
           case Frame.Data(_, p, _) => p.to[List] == ascii(t"hi").to[List]
