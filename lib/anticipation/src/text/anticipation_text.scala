@@ -37,4 +37,14 @@ extension (texts: Iterable[Text])
 
 extension (string: String) def tt: Text = Text(string)
 
+// The compiler's Literate hook: with this given in scope, a string literal
+// whose expected type does not require a String is re-typed as
+// `Text { type Topic = <literal>.type }` — its singleton carried as a type
+// member rather than by subtyping, so the opaque surface stays sealed.
+final class TextLiterate[str <: String & Singleton] extends scala.Literate[str]:
+  type Result = Text { type Topic = str }
+  inline def convert(inline value: str): Result = value.asInstanceOf[Result]
+
+given literate: [str <: String & Singleton] => TextLiterate[str] = TextLiterate[str]()
+
 export internal.Text
