@@ -152,3 +152,16 @@ object Tests extends Suite(m"Baroque tests"):
     test(m"Negate a complex quantity"):
       -Complex(10*Inch, 7*Inch)
     . assert(_ == Complex(-10*Inch, -7*Inch))
+
+    suite(m"Native-rendering coverage"):
+      test(m"baroque's types inspect natively"):
+        Inspectable.fallbacks(Complex(1, 3).inspect, Complex(1.0, -3.0).inspect)
+      . assert(_ == Nil)
+
+      test(m"A complex number shows both parts, as the parts inspect"):
+        Complex(1, 3).inspect
+      . assert(_ == t"1+3i")
+
+      test(m"A negative imaginary part is shown with a minus sign"):
+        Complex(1.0, -3.0).inspect
+      . assert(_ == t"1.0-3.0i")

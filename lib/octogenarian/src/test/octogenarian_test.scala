@@ -102,6 +102,30 @@ object Tests extends Suite(m"Octogenarian Tests"):
 
     // ----- Refspec validation (unit tests, no git) ------------------------
 
+    // A missing `Inspectable` is never a compile error — `derived` always succeeds and
+    // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
+    // only be held in place by asserting on the renderings.
+    suite(m"Native-rendering coverage"):
+
+      test(m"octogenarian's ref types inspect natively"):
+        Inspectable.fallbacks
+         ( Git.Hash.unsafe(t"5c1d2b7e3a4f60918273645566778899aabbccdd").inspect,
+           Git.Branch.unsafe(t"main").inspect,
+           Git.Tag.unsafe(t"v1.0").inspect,
+           Refspec.head(2).inspect )
+      .assert(_ == Nil)
+
+      test(m"a hash inspects with all forty digits"):
+        Git.Hash.unsafe(t"5c1d2b7e3a4f60918273645566778899aabbccdd").inspect
+      .assert(_ == t"Hash(5c1d2b7e3a4f60918273645566778899aabbccdd)")
+
+      test(m"a branch, a tag and a raw refspec each name their kind"):
+        List
+         ( Git.Branch.unsafe(t"main").inspect,
+           Git.Tag.unsafe(t"v1.0").inspect,
+           Refspec.head(2).inspect )
+      .assert(_ == List(t"Branch(main)", t"Tag(v1.0)", t"Refspec(HEAD~2)"))
+
     suite(m"Refspec validation"):
 
       test(m"a valid branch name parses unchanged"):

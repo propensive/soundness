@@ -469,6 +469,10 @@ object Svg:
 
     extension (id: Id) def text: Text = id
 
+    // An `Id` is a `Text` underneath, so a bare rendering of its text would be indistinguishable
+    // from a `Text`; the constructor form names the type it belongs to.
+    given inspectable: [id <: Id] => id is Inspectable = id => t"Svg.Id(${(id: Id).text.inspect})"
+
   opaque type Id = Text
 
   // SvgDef → Svg.Def, with LinearGradient, its only subtype: a sealed trait pins its

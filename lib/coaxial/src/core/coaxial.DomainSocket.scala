@@ -39,6 +39,12 @@ import spectacular.*
 object DomainSocket:
   given showable: DomainSocket is Showable = _.address
 
+  // The socket's path alone would be indistinguishable from any other path-like text, so the
+  // rendering prefixes it with `⇄`, marking it as the bidirectional endpoint it is — in the same
+  // spirit as `⌗8080` for a port.
+  given inspectable: [domainSocket <: DomainSocket] => domainSocket is Inspectable =
+    domainSocket => ("⇄"+domainSocket.address.s).tt
+
   def apply[path: Abstractable across Paths to Text](path: path): DomainSocket =
     DomainSocket(path.generic)
 

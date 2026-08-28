@@ -44,6 +44,11 @@ object Pid:
   given showable: Pid is Showable = _.toString.tt
   given encodable: Pid is Encodable in Text = _.toString.tt
 
+  // `Pid`'s `toString` already prefixes the number with `↯`, which distinguishes it from a plain
+  // number, so the debug rendering is the same text as `showable`'s; it takes no context, so it
+  // is delegated to by name rather than by summoning `Pid is Showable`.
+  given inspectable: [pid <: Pid] => pid is Inspectable = showable.text(_)
+
   given sshAgentPid: (tactic: Tactic[Number.Error]) => ((Variable["sshAgentPid", Pid])^{tactic}) =
     text => Pid(text.as[Int])
 

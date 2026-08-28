@@ -996,3 +996,22 @@ object Tests extends Suite(m"Telekinesis tests"):
         given TlsAcceptance = TlsAcceptance().permitRevoked
         url"https://revoked.badssl.com/".fetch().status
       . aspire(_ == Http.Ok)
+
+    // A missing `Inspectable` is never a compile error — `derived` always succeeds and
+    // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
+    // only be held in place by asserting on the renderings.
+    suite(m"Native-rendering coverage"):
+      test(m"telekinesis's types inspect natively"):
+        Inspectable.fallbacks
+         ( new Cookie[Text](t"session", Unset, Unset, true, true, Unset).inspect,
+           Cookie.Value(t"session", t"abc", secure = true).inspect,
+           Session(t"a3f1").inspect )
+      . assert(_ == Nil)
+
+      test(m"A cookie template inspects with its attributes"):
+        new Cookie[Text](t"session", Unset, 3600L, true, false, Unset).inspect
+      . assert(_ == t"""Cookie(t"session" ╱ expiry:3600L ╱ secure)""")
+
+      test(m"A session inspects with its key quoted"):
+        Session(t"a3f1").inspect
+      . assert(_ == t"""Session(t"a3f1")""")

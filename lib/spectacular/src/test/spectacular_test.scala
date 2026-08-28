@@ -265,6 +265,196 @@ object Tests extends Suite(m"Spectacular Tests"):
         BigDecimal("1.5").inspect
       . assert(_ == t"BigDecimal(1.5)")
 
+      test(m"serialize int"):
+        42.inspect
+      . assert(_ == t"42")
+
+      // `Self` is invariant, so an instance written against the bare type would not match a
+      // singleton literal type, and the value would fall through to the `“…”` toString case.
+      test(m"inspect a value typed as an integer literal"):
+        val three: 3 = 3
+        three.inspect
+      . assert(_ == t"3")
+
+      test(m"inspect a value typed as a character literal"):
+        val char: 'x' = 'x'
+        char.inspect
+      . assert(_ == t"'x'")
+
+      test(m"inspect a value typed as a boolean literal"):
+        val yes: true = true
+        yes.inspect
+      . assert(_ == t"true")
+
+    suite(m"Sized numeric tests"):
+      test(m"inspect an unsigned byte"):
+        U8(200.toByte.bits).inspect
+      . assert(_ == t"200ᵘ⁸")
+
+      test(m"inspect an unsigned 16-bit integer"):
+        U16(40000.toShort.bits).inspect
+      . assert(_ == t"40000ᵘ¹⁶")
+
+      test(m"inspect an unsigned 32-bit integer"):
+        U32(7.bits).inspect
+      . assert(_ == t"7ᵘ³²")
+
+      test(m"inspect an unsigned 64-bit integer"):
+        U64(7L.bits).inspect
+      . assert(_ == t"7ᵘ⁶⁴")
+
+      test(m"inspect a signed 32-bit integer"):
+        S32(-7.bits).inspect
+      . assert(_ == t"-7ˢ³²")
+
+      test(m"inspect a signed 64-bit integer"):
+        S64(-7L.bits).inspect
+      . assert(_ == t"-7ˢ⁶⁴")
+
+      test(m"inspect an 8-bit bitmap"):
+        47.toByte.bits.inspect
+      . assert(_ == t"2Fᵇ⁸")
+
+      test(m"inspect a 32-bit bitmap"):
+        255.bits.inspect
+      . assert(_ == t"000000FFᵇ³²")
+
+      test(m"inspect a 64-bit bitmap"):
+        (-1L).bits.inspect
+      . assert(_ == t"FFFFFFFFFFFFFFFFᵇ⁶⁴")
+
+      test(m"inspect a 64-bit floating-point number"):
+        F64(3.5).inspect
+      . assert(_ == t"3.5ᶠ⁶⁴")
+
+      test(m"inspect a floating-point infinity"):
+        F64(Double.PositiveInfinity).inspect
+      . assert(_ == t"∞ᶠ⁶⁴")
+
+    suite(m"Quantity and message tests"):
+      test(m"inspect a byte count"):
+        Bytes(4194304L).inspect
+      . assert(_ == t"4194304B")
+
+      test(m"inspect a digit"):
+        Digit(7).inspect
+      . assert(_ == t"｢7ᵈᵍ｣")
+
+      test(m"inspect a message"):
+        m"the file was not found".inspect
+      . assert(_ == t"m\"the file was not found\"")
+
+    // A missing instance never fails to compile, so coverage can only be held in place by
+    // asserting on the renderings themselves. Each of these lists the types a library owns;
+    // a failure names the renderings which fell back rather than merely reporting a count.
+    suite(m"Native-rendering coverage"):
+      test(m"the types spectacular renders itself all inspect natively"):
+        Inspectable.fallbacks
+         ( t"text".inspect,
+           'x'.inspect,
+           42.inspect,
+           42L.inspect,
+           42.toByte.inspect,
+           42.toShort.inspect,
+           3.1.inspect,
+           3.1f.inspect,
+           true.inspect,
+           ().inspect,
+           BigInt(42).inspect,
+           BigDecimal("1.5").inspect,
+           Unset.inspect,
+           Bytes(1024L).inspect,
+           m"a message".inspect,
+           Ordinal.zerary(0).inspect,
+           Interval().inspect,
+           Span.empty.inspect,
+           Person(t"Simon", 72).inspect,
+           Colour.Red.inspect,
+           Shape.Circle(5).inspect )
+      . assert(_ == Nil)
+
+      test(m"the sized numeric types all inspect natively"):
+        Inspectable.fallbacks
+         ( U8(200.toByte.bits).inspect,
+           U16(40000.toShort.bits).inspect,
+           U32(7.bits).inspect,
+           U64(7L.bits).inspect,
+           S8((-7).toByte.bits).inspect,
+           S16((-7).toShort.bits).inspect,
+           S32(-7.bits).inspect,
+           S64(-7L.bits).inspect,
+           47.toByte.bits.inspect,
+           47.toShort.bits.inspect,
+           255.bits.inspect,
+           (-1L).bits.inspect,
+           F32(3.5f).inspect,
+           F64(3.5).inspect,
+           Q32(3, 4).inspect,
+           Q64(3L, 4L).inspect,
+           Decimal(314L, 2).inspect )
+      . assert(_ == Nil)
+
+      test(m"the collection types all inspect natively"):
+        Inspectable.fallbacks
+         ( (List(1, 2): List[Int]).inspect,
+           Set(1, 2).inspect,
+           Map(1 -> 2).inspect,
+           Ledger(1 -> 2).inspect,
+           Sequence(1, 2).inspect )
+      . assert(_ == Nil)
+
+      // The counterpart: a type with no instance must be *reported*, or the assertions above
+      // would pass vacuously.
+      test(m"a type with no instance is reported as a fallback"):
+        Inspectable.fallbacks(Underived(7).inspect)
+      . assert(_ == List(t"“Underived(7)”"))
+
+    suite(m"Position tests"):
+      test(m"inspect the first ordinal"):
+        Ordinal.zerary(0).inspect
+      . assert(_ == t"1ˢᵗ")
+
+      test(m"inspect the third ordinal"):
+        Ordinal.zerary(2).inspect
+      . assert(_ == t"3ʳᵈ")
+
+      test(m"inspect a teens ordinal"):
+        Ordinal.zerary(10).inspect
+      . assert(_ == t"11ᵗʰ")
+
+      test(m"inspect the twenty-first ordinal"):
+        Ordinal.zerary(20).inspect
+      . assert(_ == t"21ˢᵗ")
+
+      test(m"inspect an interval"):
+        (Ordinal.zerary(0) thru Ordinal.zerary(4)).inspect
+      . assert(_ == t"1ˢᵗ‥5ᵗʰ")
+
+      test(m"inspect an empty interval"):
+        Interval().inspect
+      . assert(_ == t"∅")
+
+      test(m"inspect an empty span"):
+        Span.empty.inspect
+      . assert(_ == t"⟪∅⟫")
+
+      test(m"inspect an offset span"):
+        Span.offset(Ordinal.zerary(3), 5).inspect
+      . assert(_ == t"⟪@4+5⟫")
+
+      test(m"inspect a line span"):
+        Span.line(Ordinal.zerary(3), Ordinal.zerary(7), 5).inspect
+      . assert(_ == t"⟪4:8+5⟫")
+
+      test(m"inspect a whole-lines span"):
+        Span.lines(Ordinal.zerary(3), 5).inspect
+      . assert(_ == t"⟪4‥8⟫")
+
+      test(m"inspect an area span"):
+        Span.area(Ordinal.zerary(3), Ordinal.zerary(7), Ordinal.zerary(5), Ordinal.zerary(1))
+        . inspect
+      . assert(_ == t"⟪4:8‥6:2⟫")
+
     suite(m"Collection tests"):
       test(m"serialize map"):
         Map(1 -> 2, 3 -> 4).inspect
@@ -286,9 +476,17 @@ object Tests extends Suite(m"Spectacular Tests"):
         Map(1 -> 2).inspect
       . assert(_ == t"{1 → 2}")
 
-      // Raw `Vector` is no longer `Sequence` (opaque) and matches no curated instance (the
-      // `IndexedSeq` instance's `Self` is invariant), so it falls back to the quoted
-      // `toString` rendering; `Sequence` itself renders as `⟨ 1 2 3 ⟩`.
+      // Bracketed differently from a `Map`, whose entries have no significant order.
+      test(m"serialize ledger"):
+        Ledger(1 -> 2, 3 -> 4).inspect
+      . assert(_ == t"⟦1 → 2, 3 → 4⟧")
+
+      test(m"a ledger keeps its insertion order"):
+        Ledger(3 -> 4, 1 -> 2).inspect
+      . assert(_ == t"⟦3 → 4, 1 → 2⟧")
+
+      // Raw `Vector` is not a `Sequence` (which is opaque) and matches no curated instance, so
+      // it falls back to the quoted `toString` rendering; `Sequence` renders as `⟨ 1 2 3 ⟩`.
       test(m"serialize vector"):
         Vector(1, 2, 3).inspect
       . assert(_ == t"“Vector(1, 2, 3)”")
@@ -345,7 +543,7 @@ object Tests extends Suite(m"Spectacular Tests"):
 
       test(m"inspect parameterised enum case"):
         (Shape.Circle(5): Shape).inspect
-      . assert(_ == t"Circle(5)")
+      . assert(_ == t"Circle(radius:5)")
 
     suite(m"Show tests"):
       test(m"Show a string"):
@@ -376,7 +574,9 @@ object Tests extends Suite(m"Spectacular Tests"):
         t"${true} ${false}"
       . assert(_ == t"1 0")
 
+      // Inspection borrows the `Showable` rendering only as a last resort, and marks it as
+      // borrowed: a human-facing form is not a debug form.
       test(m"Show a locally-declared showable"):
         given Exception is Showable = e => txt"<exception>"
         Exception("error message").inspect
-      . assert(_ == t"<exception>")
+      . assert(_ == t"⸢<exception>⸣")

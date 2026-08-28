@@ -44,6 +44,11 @@ object Delta:
 
   given showable: Delta is Showable = delta => t"${delta.dx.toString} ${delta.dy.toString}"
 
+  // Labelled like `Point`'s, but with the `dx`/`dy` names which distinguish a displacement from
+  // the absolute position it would otherwise render identically to.
+  given inspectable: [delta <: Delta] => delta is Inspectable = delta =>
+    t"Delta(dx:${delta.dx.inspect} ╱ dy:${delta.dy.inspect})"
+
   given addable: Delta is Addable by Delta to Delta = Addable: (left, right) =>
     Delta(left.dx + right.dx, left.dy + right.dy)
 

@@ -43,8 +43,51 @@ import spectacular.*
 import vacuous.*
 import xylophone.*
 
+
 sealed trait Figure:
   def xml: Xml
+
+object Figure:
+  private def fields(pairs: (Text, Text)*): Text =
+    pairs.map { (label, value) => s"${label.s}:${value.s}" }.mkString(" ╱ ").tt
+
+  // A figure's `xml` is its serialized form: multi-line, and (for an `Outline`) with every path
+  // operation compressed into one `d` attribute. Inspection names the case and labels each field
+  // instead, so the strokes and the transform list — the state a misplaced figure is debugged
+  // from — stay individually legible. A `Css.Style` has no inspection of its own, so its property
+  // text is rendered here rather than borrowed.
+  given inspectable: [figure <: Figure] => figure is Inspectable = figure =>
+    figure.absolve match
+      case Rectangle(position, width, height, transforms) =>
+        val body =
+          fields
+            ( t"position"   -> position.inspect,
+              t"width"      -> width.inspect,
+              t"height"     -> height.inspect,
+              t"transforms" -> transforms.inspect )
+
+        t"Rectangle($body)"
+
+      case Outline(ops, style, id, transforms) =>
+        val body =
+          fields
+            ( t"ops"        -> ops.inspect,
+              t"style"      -> style.lay(t"○") { css => t"｢${css.text.inspect}｣" },
+              t"id"         -> id.lay(t"○") { svgId => t"｢${svgId.inspect}｣" },
+              t"transforms" -> transforms.inspect )
+
+        t"Outline($body)"
+
+      case Ellipse(center, xRadius, yRadius, angle, transforms) =>
+        val body =
+          fields
+            ( t"center"     -> center.inspect,
+              t"xRadius"    -> xRadius.inspect,
+              t"yRadius"    -> yRadius.inspect,
+              t"angle"      -> angle.inspect,
+              t"transforms" -> transforms.inspect )
+
+        t"Ellipse($body)"
 
 case class Rectangle
   ( position:   Point,

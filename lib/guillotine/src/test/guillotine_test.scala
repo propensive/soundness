@@ -564,3 +564,12 @@ object Tests extends Suite(m"Guillotine tests"):
       test(m"Command#escape wraps each argument in single quotes"):
         Command(t"echo", t"a b").escape
       . assert(_ == t"'echo' 'a b'")
+
+    suite(m"Native-rendering coverage"):
+      test(m"guillotine's types inspect natively"):
+        Inspectable.fallbacks(Pid(1234L).inspect, sh"ls -la".inspect)
+      . assert(_ == Nil)
+
+      test(m"A PID shows its number, marked as a process"):
+        Pid(1234L).inspect
+      . assert(_ == t"↯1234")

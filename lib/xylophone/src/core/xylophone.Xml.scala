@@ -1879,6 +1879,23 @@ object Xml extends Tag.Container
       writeXml(producer, formatting, node, 0)
       if formatting.trailingNewline then producer.put("\n")
 
+  // `Element`, `Fragment`, `TextNode`, `Cdata`, `Comment`, `Doctype`, `ProcessingInstruction` and
+  // `Header` are all covered here, in the companion of the trait they share, exactly as `showable`
+  // above covers them. The `Showable` needs a `Formatting` which a debugger cannot supply, so
+  // inspection fixes the compact one and renders the node's own XML source, escaped into an
+  // `xml"…"` literal: compact and on one line, showing the tag, its attributes and its children,
+  // and distinguishable from the `Text` holding the same markup and from honeycomb's `html"…"`.
+  given inspectable: [xml <: Xml] => xml is Inspectable = node =>
+    val formatting: Formatting = Formatting(Unset, trailingNewline = false)
+
+    val markup: Text = Producer.collect[Text](): producer =>
+      writeXml(producer, formatting, node, 0)
+
+    val builder: StringBuilder = new StringBuilder()
+    markup.each { char => builder.append(Inspectable.escape(char).s) }
+
+    ("xml\""+builder.toString+"\"").tt
+
   private enum Token:
     case Close, Comment, Empty, Open, Header, Cdata, Pi, Doctype
 

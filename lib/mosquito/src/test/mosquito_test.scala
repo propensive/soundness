@@ -692,3 +692,20 @@ object Tests extends Suite(m"Mosquito tests"):
         mat.solve(Vector(2.0, 3.0)).lay(Double.MaxValue): solution =>
           math.abs(solution(0) - 3.0) + math.abs(solution(1) - 2.0)
       . assert(_ < 0.000001)
+
+    suite(m"Native-rendering coverage"):
+      test(m"mosquito's types inspect natively"):
+        Inspectable.fallbacks
+         ( Vector(1, 2, 3).inspect,
+           Matrix[2, 2]((1, 2), (3, 4)).inspect,
+           Affine[Double](1.0, 0.0, 0.0, 1.0, 0.0, 0.0).inspect )
+
+      . assert(_ == Nil)
+
+      test(m"a vector inspects on one line"):
+        Vector(1, 2, 3).inspect
+      . assert(_ == t"⟨1 ∣ 2 ∣ 3⟩")
+
+      test(m"a matrix inspects row by row"):
+        Matrix[2, 2]((1, 2), (3, 4)).inspect
+      . assert(_ == t"⌈1 ∣ 2 ⫽ 3 ∣ 4⌋")

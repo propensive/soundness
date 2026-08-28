@@ -110,6 +110,11 @@ object internal:
       given showable: Ipv4 is Showable = ip =>
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
+      // Dotted-quad notation identifies an IPv4 address on sight, so inspection needs no
+      // decoration to distinguish it; without an instance it would render as the `Int` it
+      // erases to. Referenced by name rather than summoned, as in `Ipv6Subnet` below.
+      given inspectable: [ipv4 <: Ipv4] => ipv4 is Inspectable = showable.text(_)
+
       given encodable: Ipv4 is Encodable in Text = _.show
       given decodable: (tactic: Tactic[IpAddress.Error])
       =>  ((Ipv4 is Decodable in Text)^{tactic}) =
@@ -147,6 +152,9 @@ object internal:
 
       inline given underlying: Underlying[MacAddress, Long] = !!
       given showable: MacAddress is Showable = _.text
+      // Unascribed, so the parameter infers as `Self` — see the note on `EmailAddress`'s
+      // `inspectable`: an ascribed parameter fails the anon-class expansion under `-scalajs`.
+      given inspectable: [mac <: MacAddress] => mac is Inspectable = mac => mac.text
       given encodable: MacAddress is Encodable in Text = _.text
       given decoder: (tactic: Tactic[MacAddress.Error])
       =>  ((MacAddress is Decodable in Text)^{tactic}) =
@@ -210,6 +218,13 @@ object internal:
       inline given underlying: Underlying[Port, Int] = !!
       given showable: Port is Showable = _.number.show
       given encodable: Port is Encodable in Text = _.number.show
+
+      // A port shown as a bare number would be indistinguishable from the `Int` it erases to,
+      // so inspection prefixes it. `Self` is invariant, and a port is routinely refined more
+      // than once — `tcp"smtp"` is a `Port over Tcp of number` — so this is parameterised over
+      // any subtype of `Port` rather than written once per refinement; an instance for
+      // `Port over transport` alone would leave a named port rendering as its `toString`.
+      given inspectable: [port <: Port] => port is Inspectable = port => t"⌗${port.number}"
 
       // `Self` is invariant in a typeclass, so the bare-`Port` instances above do not cover a
       // transport-refined `Port over transport` (e.g. `Port over Tcp`); provide it explicitly.
@@ -294,6 +309,7 @@ object internal:
 
   object Ipv4Subnet:
     given showable: Ipv4Subnet is Showable = subnet => t"${subnet.ipv4}/${subnet.size}"
+    given inspectable: [subnet <: Ipv4Subnet] => subnet is Inspectable = showable.text(_)
     given encodable: Ipv4Subnet is Encodable in Text = _.show
     given decodable: (tactic: Tactic[IpAddress.Error])
     =>  ((Ipv4Subnet is Decodable in Text)^{tactic}) =
@@ -341,6 +357,10 @@ object internal:
 
       if middleLength < 2 then hex(groups)
       else t"${hex(groups.keep(middleIndex))}::${hex(groups.skip(middleIndex + middleLength))}"
+
+    // Colon-separated hexadecimal groups identify an IPv6 address on sight; the abbreviated
+    // form the `Showable` produces is also the form a programmer recognises.
+    given inspectable: [ipv6 <: Ipv6] => ipv6 is Inspectable = showable.text(_)
 
     def apply(g0: Int, g1: Int, g2: Int, g3: Int, g4: Int, g5: Int, g6: Int, g7: Int): Ipv6 =
       Ipv6(pack(List(g0, g1, g2, g3)), pack(List(g4, g5, g6, g7)))
@@ -410,6 +430,7 @@ object internal:
     given showable: Ipv6Subnet is Showable = subnet =>
       t"${Ipv6.showable.text(subnet.ipv6)}/${subnet.size}"
 
+    given inspectable: [subnet <: Ipv6Subnet] => subnet is Inspectable = showable.text(_)
     given encodable: Ipv6Subnet is Encodable in Text = _.show
     given decodable: (tactic: Tactic[IpAddress.Error])
     =>  ((Ipv6Subnet is Decodable in Text)^{tactic}) =

@@ -75,6 +75,12 @@ object internal:
     given parameterizable: Refspec is Parameterizable = _.text
     given showable: Refspec is Showable = _.text
 
+    // Covers the revision specifiers which are not named refs — `HEAD~2`, `main..feature` — as
+    // well as any `Refspec` seen only through the trait; `Git.Hash`, `Git.Branch` and `Git.Tag`
+    // each have their own, more specific, instance.
+    given inspectable: [refspec <: Refspec] => refspec is Inspectable = refspec =>
+      t"Refspec(${refspec.text})"
+
   trait Refspec:
     def text: Text
 

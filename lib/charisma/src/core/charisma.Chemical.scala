@@ -45,6 +45,12 @@ object Chemical:
   object Element:
     given showable: Element is Showable = _.symbol
 
+    // The `Showable` is the bare symbol, which is indistinguishable from any other short `Text`;
+    // the atom sign marks it as an element and the atomic number (which, with the symbol, fixes
+    // the periodic-table entry the value came from) follows it.
+    given inspectable: [element <: Element] => element is Inspectable = element =>
+      t"⚛${element.symbol}(${element.number})"
+
   case class Element(number: Int, symbol: Text, name: Text) extends Molecular:
     def apply[count <: Nat: ValueOf]: Molecule = Molecule(Map(this -> valueOf[count]), 0)
     def molecule: Molecule = apply[1]
@@ -53,6 +59,11 @@ object Chemical:
   object Equation:
     given showable: Equation is Showable = equation =>
       t"${equation.lhs} ${equation.reaction} ${equation.rhs}"
+
+    // The reaction is named rather than drawn as its arrow: an arrow glyph is what `Reaction`'s
+    // `Showable` produces, and a borrowed rendering is exactly what inspection must not look like.
+    given inspectable: [equation <: Equation] => equation is Inspectable = equation =>
+      t"Equation(${equation.lhs.inspect} ╱ ${equation.reaction.inspect} ╱ ${equation.rhs.inspect})"
 
   case class Equation(lhs: Formula, reaction: Reaction, rhs: Formula):
     def balanced: Boolean = lhs.atoms == rhs.atoms
@@ -66,6 +77,15 @@ object Chemical:
         (if count == 1 then t"" else count.show)+molecule.show
 
       . join(t" + ")
+
+    // Every coefficient is written out, including a `1` which the `Showable` leaves implicit, so
+    // that a one-molecule formula is never rendered identically to the `Molecule` it holds.
+    given inspectable: [formula <: Formula] => formula is Inspectable = formula =>
+      val parts = formula.molecules.to[List].map: (molecule, count) =>
+        val number: Text = count.show
+        t"$number${molecule.inspect}"
+
+      if parts.stdlib.isEmpty then t"∅" else parts.join(t" + ")
 
   case class Formula(molecules: Ledger[Molecule, Int]) extends Formulable:
     def formula: Formula = this

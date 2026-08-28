@@ -62,6 +62,12 @@ object Password:
   // Never renders the secret: a `Password` is safe to log or embed in a message.
   given showable: Password is Showable = _ => t"Password(•••)"
 
+  // Redacted, exactly as `showable` is: a debugger, a log and a test report are all places a
+  // password must never reach, and the cleartext is only ever legitimately seen inside an
+  // `uncloak` block.
+  given inspectable: [password <: Password] => password is Inspectable =
+    _ => t"Password(•••)"
+
 // A password held opaquely by whichever `Cloak` was in scope at construction, capturing that
 // cloak, with no way to read the cleartext back except through `uncloak`, which lends it — as
 // a scoped `Cleartext` capability over a mutable char array — to a block, exactly as

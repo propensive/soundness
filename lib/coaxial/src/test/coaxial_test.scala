@@ -333,3 +333,12 @@ object Tests extends Suite(m"Coaxial tests"):
           Array.unsafeFrozen(nic.getHardwareAddress.nn).readable.toSeq.each: byte => value = (value << 8) | (byte & 0xFF)
           interfaceFor(urticose.MacAddress(value)).let(_ => true).or(false)
       . assert(_ == true)
+
+    suite(m"Native-rendering coverage"):
+      test(m"coaxial's types inspect natively"):
+        Inspectable.fallbacks(DomainSocket(t"/tmp/example.sock").inspect)
+      . assert(_ == Nil)
+
+      test(m"A domain socket shows its path, marked as an endpoint"):
+        DomainSocket(t"/tmp/example.sock").inspect
+      . assert(_ == t"⇄/tmp/example.sock")

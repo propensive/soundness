@@ -1121,4 +1121,34 @@ object Tests extends Suite(m"Enigmatic tests"):
         Pem(Pem.Label.Certificate, value.in[Der]).serialize
       . assert(_ == certificate.trim)
 
+    // A missing `Inspectable` is never a compile error — `derived` always succeeds and
+    // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
+    // only be held in place by asserting on the renderings.
+    suite(m"Native-rendering coverage"):
+      test(m"enigmatic's types inspect natively"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+
+        Inspectable.fallbacks
+         ( (Asn1.Integer(BigInt(42)): Asn1).in[Der].inspect,
+           pangram.hmac[Sha2[256]](t"a key".in[Data]).inspect,
+           Password(t"secret").inspect,
+           key.inspect,
+           key.public.inspect,
+           key.sign(pangram).inspect,
+           certificate.read[Pem].inspect,
+           Certificate(certificate.read[Asn1 in Pem]).inspect )
+      . assert(_ == Nil)
+
+      test(m"A DER document inspects as its full hexadecimal"):
+        (Asn1.Integer(BigInt(42)): Asn1).in[Der].inspect
+      . assert(_ == t"Der(02012a)")
+
+      test(m"A password never reveals its cleartext"):
+        Password(t"secret").inspect
+      . assert(_ == t"Password(\u2022\u2022\u2022)")
+
+      test(m"A private key never reveals its key material"):
+        PrivateKey.generate[Rsa[2048]]().inspect
+      . assert(_ == t"PrivateKey(\u2022\u2022\u2022)")
+
     CaptureTests()

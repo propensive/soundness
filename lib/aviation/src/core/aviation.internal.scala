@@ -55,6 +55,14 @@ import symbolism.*
 import vacuous.*
 
 object internal:
+  // Zero-padding for the ISO rendering of an `Anniversary`, below.
+  private def pad(value: Int, digits: Int): Text =
+    val body = value.toString
+    val builder: StringBuilder = new StringBuilder()
+    while builder.length + body.length < digits do builder.append('0')
+
+    builder.append(body).toString.tt
+
   opaque type Year = Int
   opaque type Day = Int
   opaque type WorkingDays = Int
@@ -81,6 +89,10 @@ object internal:
   object WorkingDays:
     def apply(n: Int): WorkingDays = n
 
+    // A count of working days, distinguished from the `Day`-of-the-month suffix above.
+    given inspectable: [workingDays <: WorkingDays] => workingDays is Inspectable = days =>
+      t"${(days: Int)}ʷᵈ"
+
   extension (days: WorkingDays) def apply(): Int = days
 
   object Anniversary:
@@ -88,6 +100,13 @@ object internal:
       def round(year: Year): Date
 
     def apply(month: Month, day: Day): Anniversary = ((month.ordinal << 6) + day).toShort
+
+    // ISO 8601's yearless date (`--MM-DD`), which is self-identifying and, unlike the `Showable`,
+    // needs no `Endianness`, `Months` or `Separation` in scope — an inspection must always be
+    // available. The month is its number, not its name, since a name is a `Months` decision.
+    given inspectable: [anniversary <: Anniversary] => anniversary is Inspectable = anniversary =>
+      val value: Anniversary = anniversary
+      t"--${pad(value.month.numerical, 2)}-${pad(value.day, 2)}"
 
     given showable: (endianness: Endianness, months: Months, separation: Date.Separation)
     =>  Anniversary is Showable =
@@ -112,6 +131,10 @@ object internal:
 
     given multiplicable: Int is Multiplicable by Year.type to (Timespan of Year.type) =
       Multiplicable: (n, _) => Timespan(Year, n)
+
+    // The `Showable` is the bare number, which is indistinguishable from an `Int`; the suffix
+    // names the type the number belongs to, as hypotenuse's sized numerics do.
+    given inspectable: [year <: Year] => year is Inspectable = year => t"${(year: Int)}ʸ"
 
     given showable: Year is Showable = _.toString.tt
     given addable: Year is Addable by Int to Year = Addable(_ + _)
@@ -138,6 +161,9 @@ object internal:
 
     given decodable: (Int is Decodable in Text) => Day is Decodable in Text = day =>
       Day(day.as[Int])
+
+    // As `Year`'s, above: a day of the month is an `Int` underneath, and must not render as one.
+    given inspectable: [day <: Day] => day is Inspectable = day => t"${(day: Int)}ᵈ"
 
     given showable: Day is Showable = _.toString.tt
 

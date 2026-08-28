@@ -44,6 +44,20 @@ object Token:
   val Newline: Token = Token("\n", Accent.Unparsed)
   given showable: Token is Showable = _.text
 
+  // The `Showable` above is the token's text alone, which is what a rendered source listing
+  // needs, but it hides the accent, span and role — the state a reader of highlighted source
+  // is usually checking. Inspection shows each field, in product form. A `Meta` wraps a
+  // `Syntax`, whose textual form needs an `Imports` context which inspection cannot supply, so
+  // a present `Meta` is shown as `｢Meta｣`, without its type.
+  given inspectable: [token <: Token] => token is Inspectable = token =>
+    val meta = if token.meta.present then t"｢Meta｣" else t"○"
+    val role = token.role.lay(t"○"): role => t"｢${role.inspect}｣"
+
+    val fields =
+      t"text:${token.text.inspect} ╱ accent:${token.accent.inspect} ╱ meta:$meta"
+
+    t"Token($fields ╱ span:${token.span.inspect} ╱ role:$role)"
+
   case class Meta(tpe: Syntax)
 
 // `span` locates the token in its `SourceCode`: a `Line`-mode `Span` carrying the

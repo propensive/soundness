@@ -41,8 +41,9 @@ import hieroglyph.Measurable
 import hieroglyph.textMetrics.wideCharacterWidthMetric
 import denominative.*
 import rudiments.*
-import vacuous.*
+import spectacular.*
 import symbolism.*
+import vacuous.*
 
 import Mathml.*
 import denominative.dysasymptotics.linearSize
@@ -82,6 +83,14 @@ object Cell:
   // The text of `cell`'s row, or a full-width blank when the row is out of bounds.
   private def slice(cell: Cell, row: Int): Text =
     cell.lines(row.z).let(_.text).or(spaces(cell.width).text)
+
+  // `render` lays the block out as it will appear — several lines of monospaced text — which an
+  // inspection cannot be. The dimensions and the baseline row (the state which composition depends
+  // on, and which `render` shows only implicitly) are written first, then each line as a text
+  // literal, so that trailing padding spaces are visible.
+  given inspectable: [cell <: Cell] => cell is Inspectable = cell =>
+    val lines = cell.lines.stdlib.map(_.text.inspect).mkString(" ").tt
+    t"Cell(${cell.width}×${cell.height}@${cell.baseline} $lines)"
 
   val empty: Cell = Cell(Sequence(Writing.empty), 0, 0)
 

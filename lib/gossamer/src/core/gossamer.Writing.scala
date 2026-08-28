@@ -54,6 +54,20 @@ object Writing:
 
   given showable: Writing is Showable = _.text
 
+  // A `Writing` is a `Text` together with the grapheme boundaries computed for it, and its
+  // `Showable` shows only the text, which is indistinguishable from a `Text`. Inspection
+  // separates the clusters with `·`, since the segmentation is both the state which
+  // distinguishes one `Writing` from another and the reason for looking at one.
+  given inspectable: [writing <: Writing] => writing is Inspectable = writing =>
+    val string = writing.text.s
+    val builder: StringBuilder = new StringBuilder("w\"")
+
+    writing.boundaries.adjacent: (start, limit) =>
+      if start > 0 then builder.append('·')
+      builder.append(string.substring(start, limit).nn)
+
+    builder.append('"').toString.tt
+
   given concatenable: Writing is Concatenable:
     type Result = Writing
     type Operand = Writing

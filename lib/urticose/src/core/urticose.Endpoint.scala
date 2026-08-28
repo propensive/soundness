@@ -40,4 +40,13 @@ object Endpoint:
   given showable: [port: Showable] => Endpoint[port] is Showable = endpoint =>
     t"${endpoint.remote}:${endpoint.port.show}"
 
+  // `showable` needs a `Showable` for the port type, so it is not delegated to; the port is
+  // inspected instead, which is always available. Both fields are rendered in their own
+  // inspected forms, so the remote is quoted as `Text` and the port carries whatever marks its
+  // own type (`⌗8080` for a `Port`, `8080` for an `Int`).
+  given inspectable: [port, endpoint <: Endpoint[port]]
+  =>  (port is Inspectable)
+  =>  endpoint is Inspectable =
+    endpoint => t"Endpoint(${endpoint.remote.inspect}:${endpoint.port.inspect})"
+
 case class Endpoint[+port](remote: Text, port: port)

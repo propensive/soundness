@@ -1113,6 +1113,29 @@ object Tests extends Suite(m"Gossamer Tests"):
           words2.all: word =>
             dictionary(word) == word.upper
 
+    // A missing `Inspectable` is never a compile error — `derived` always succeeds and
+    // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
+    // only be held in place by asserting on the renderings themselves.
+    suite(m"Native-rendering coverage"):
+      test(m"gossamer's types inspect natively"):
+        Inspectable.fallbacks
+         ( a"hello".inspect,
+           Grapheme("é").inspect,
+           Writing(t"a\r\nb").inspect )
+      . assert(_ == Nil)
+
+      test(m"an Ascii value inspects as an `ascii` literal"):
+        a"hi there".inspect
+      . assert(_ == t"ascii\"hi there\"")
+
+      test(m"a grapheme inspects as its cluster in guillemets"):
+        Grapheme("👨‍👩‍👧").inspect
+      . assert(_ == Text("‹👨‍👩‍👧›"))
+
+      test(m"a Writing inspects with its grapheme boundaries marked"):
+        Writing(t"a\r\nb").inspect
+      . assert(_ == t"w\"a·\r\n·b\"")
+
     suite(m"Writing and grapheme clusters"):
       test(m"empty Text has zero graphemes"):
         Writing(t"").graphemeCount

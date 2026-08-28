@@ -39,6 +39,7 @@ import java.util as ju
 import scala.compiletime.*
 
 import anticipation.*
+import gossamer.*
 import monotonous.*
 import prepositional.*
 import rudiments.*
@@ -59,6 +60,13 @@ object Der:
   given streamable: Der is Streamable by Data over Credit = der => Stream(der.data)
   given aggregable: Der is Aggregable by Data = Aggregable.bytesData.map(Der(_))
   given showable: Alphabet[Hex] => Der is Showable = _.data.serialize[Hex]
+
+  // `showable` needs an `Alphabet[Hex]`, and a debug rendering must always be available, so the
+  // document's bytes are rendered here as full-width lowercase hexadecimal instead. The whole
+  // document is shown: a DER document is defined by its bytes, and two which differ in one byte
+  // decode to different values.
+  given inspectable: [der <: Der] => der is Inspectable = der =>
+    t"Der(${Inspection.hex(der.data)})"
 
 final class Der(val data: Data):
   override def equals(that: Any): Boolean = that.asMatchable match

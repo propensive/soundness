@@ -925,6 +925,31 @@ object internal:
   object Attributes:
     val empty: Attributes = scala.IArray.empty[String]
 
+    // The attributes render as they would appear in an element's start tag, braced and prefixed
+    // `xml`: distinct from a `Map`'s `{k → v}` (whose keys and values would show as `t"…"`
+    // literals) and from honeycomb's `html{…}`. The storage is read directly, since an accessor on
+    // the opaque type is unavailable through a subtype of it.
+    given inspectable: [attributes <: Attributes] => attributes is Inspectable = attributes =>
+      val array = storage(attributes)
+      val builder: StringBuilder = new StringBuilder("xml{")
+      var index = 0
+
+      while index < array.length do
+        if index > 0 then builder.append(", ")
+        builder.append(array(index))
+        builder.append("=\"")
+        val value = array(index + 1)
+        var offset = 0
+
+        while offset < value.length do
+          builder.append(Inspectable.escape(value.charAt(offset)).s)
+          offset += 1
+
+        builder.append('"')
+        index += 2
+
+      builder.append('}').toString.tt
+
     // `Attributes` is a `Text`-keyed map, so it indexes through the shared `at` (giving
     // `Optional`).
     given indexable: Attributes is Applicable:

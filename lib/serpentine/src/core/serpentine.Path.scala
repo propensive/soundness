@@ -123,6 +123,14 @@ object Path:
 
   given showable: [filesystem: Filesystem] => Path on filesystem is Showable = _.encode
 
+  // As for `Relative`: the `Showable` and `Encodable` above need a `Filesystem` for the
+  // separator and the escaping rules, and an unqualified `Path` has none, while a debug
+  // rendering must always be available. The root is shown as it is stored — it already carries
+  // the filesystem's own notation, `/` or `C:\` — and the descent is joined with `/`, without
+  // escaping, so that the segments are shown exactly as they are held.
+  given inspectable: [path <: Path] => path is Inspectable = path =>
+    path.descent.reverse.join(path.root, t"/", t"")
+
   given communicable: [filesystem: Filesystem] => Path on filesystem is Communicable =
     path => Message(path.encode)
 

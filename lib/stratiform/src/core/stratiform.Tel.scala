@@ -2776,6 +2776,17 @@ object Tel extends Tel2:
 
     document.show
 
+  // `Tel` is a plain class, so there is no reflection to derive from, and TEL's block syntax is
+  // multi-line, which an inspection is not. The document is rendered with its line breaks
+  // escaped, so all of it is visible on one line and is distinguishable from the `Text` holding
+  // the same document; this follows the `yaml"…"` precedent in ypsiloid. Delegation is to
+  // `showable` by name, since it needs no context of its own.
+  given inspectable: [tel <: Tel] => tel is Inspectable = tel =>
+    val builder: StringBuilder = new StringBuilder()
+    showable.text(tel: Tel).each { char => builder.append(Inspectable.escape(char).s) }
+
+    ("tel\""+builder.toString+"\"").tt
+
   // Macro-friendly factory: bypasses the private constructor so generated
   // code from the `tel"…"` interpolator can produce Tel values without
   // tripping the inline-private-constructor restriction.

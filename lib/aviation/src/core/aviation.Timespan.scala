@@ -92,6 +92,12 @@ object Timespan:
     else if time == t"" then t"P$date"
     else t"P${date}T$time"
 
+  // The ISO-8601 duration is also the inspection form: it is self-identifying, complete (a
+  // component which is not written is zero), and needs none of the `Locale`-sensitive context the
+  // opt-in `Showable` does. The bound covers the refined `Timespan of topic` types, which is how
+  // a timespan is almost always typed; the `Topic` radix set is phantom, so nothing is lost.
+  given inspectable: [timespan <: Timespan] => timespan is Inspectable = renderDuration(_)
+
   // The ISO-8601 duration is the encoded (machine) form; a human-readable `Showable` is opt-in via
   // `import timespanFormats.relativeTimespan`.
   given encodable: Timespan is Encodable in Text = renderDuration(_)

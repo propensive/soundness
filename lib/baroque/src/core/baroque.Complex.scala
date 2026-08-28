@@ -36,6 +36,7 @@ import scala.{compiletime, math}
 
 import scala.annotation.*
 
+import anticipation.tt
 import geodesy.*
 import gossamer.*
 import hypotenuse.*
@@ -82,6 +83,22 @@ object Complex:
 
     distributive.place(complex.real, parts2)
 
+
+  // Both parts are rendered by the component's own `Inspectable`, so the rendering says which
+  // numeric type the complex number is built from; unlike `showable`, no `Zeroic` is needed,
+  // since a zero part is shown rather than elided — it is state the reader may be looking for.
+  // A negative imaginary part is rendered with `-` in place of the `+`, by inspecting the
+  // rendering of the part itself, which is the only handle on its sign available generically.
+  given inspectable: [component: Inspectable, complex <: Complex[component]]
+  =>  complex is Inspectable =
+
+    complex =>
+      val imaginary = complex.imaginary.inspect.s
+
+      val body =
+        if imaginary.startsWith("-") then "-"+imaginary.substring(1).nn else "+"+imaginary
+
+      (complex.real.inspect.s+body+"i").tt
 
   given addable: [result, component2, component: Addable by component2 to result as addable]
   =>  Complex[component] is Addable by Complex[component2] to Complex[result] =

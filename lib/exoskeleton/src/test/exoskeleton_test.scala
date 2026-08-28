@@ -933,6 +933,23 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           HelpApp.tree.roff.serialize.cut(t"\n")
         . assert(_.has(t"\\fBmytool\\fP [\\-\\-verbose <value>] <command> [options]"))
 
+      // A missing `Inspectable` is never a compile error — `derived` always succeeds and
+      // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
+      // only be held in place by asserting on the renderings themselves.
+      suite(m"Native-rendering coverage"):
+        test(m"exoskeleton's types inspect natively"):
+          Inspectable.fallbacks
+           ( Flag[Text](t"count").inspect,
+             Flag[Text]('c', aliases = List(t"count"), description = t"how many").inspect )
+        . assert(_ == Nil)
+
+        test(m"a flag inspects with the state which governs its parsing"):
+          Flag[Text](t"count", repeatable = true, aliases = List('c')).inspect
+        . assert:
+            _ == Text
+                  ( "Flag(--count ╱ aliases:[-c] ╱ repeatable:true ╱ secret:false ╱ "
+                    +"description:○)" )
+
       suite(m"Prospective and requisite flags"):
         import interpreters.posixInterpreter
         import stdios.muteStdio

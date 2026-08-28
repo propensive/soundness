@@ -56,6 +56,11 @@ object Uuid extends Extractor[Text, Uuid]:
   // `inimitable`; being companion-to-companion, this is the same implicit scope as before.
   given showable: Uuid is Showable = _.text
 
+  // The canonical hyphenated form shows both halves of the UUID in full, and its shape makes it
+  // unmistakable, so the debug rendering is the same text; it needs no context, so it delegates
+  // to `showable` by name rather than by summoning `Uuid is Showable`.
+  given inspectable: [uuid <: Uuid] => uuid is Inspectable = showable.text(_)
+
   def parse(text: Text): Uuid raises Uuid.Error =
     extract(text).lest(Uuid.Error(text))
 

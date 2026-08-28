@@ -197,6 +197,12 @@ object Pem:
           // See `aggregable` above.
           parseAll(Cursor(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
 
+  // The armored form is multi-line and base64-encoded, so it is not what an inspection shows:
+  // the label identifies the block, and the payload is rendered as full-width hexadecimal, on
+  // one line and with nothing dropped.
+  given inspectable: [pem <: Pem] => pem is Inspectable = pem =>
+    t"Pem(${Pem.Label.showable.text(pem.label)}:${Inspection.hex(pem.data)})"
+
   // The armored form, one line at a time: the `serialize` counterpart for
   // streaming consumers (each line carries its terminator).
   given streamable: Pem is Streamable by Text over Credit = pem =>

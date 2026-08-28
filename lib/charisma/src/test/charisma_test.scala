@@ -279,3 +279,25 @@ object Tests extends Suite(m"Charisma Tests"):
       test(m"A stoichiometric equation is stoichiometric"):
         (water === water).reaction
       . assert(_ == Reaction.Stoichiometric)
+
+    suite(m"Native-rendering coverage"):
+      test(m"charisma's types inspect natively"):
+        Inspectable.fallbacks
+         ( H.inspect,
+           (H[2]*O).inspect,
+           (H[2]*2 + O[2]).inspect,
+           (H[2]*2 + O[2] --> (H[2]*O)*2).inspect )
+
+      . assert(_ == Nil)
+
+      test(m"an element is marked as one"):
+        H.inspect
+      . assert(_ == t"⚛H(1)")
+
+      test(m"a molecule inspects as its formula"):
+        (H[2]*O).inspect
+      . assert(_ == t"H₂O")
+
+      test(m"a formula writes out every coefficient"):
+        (H[2]*2 + O[2]).inspect
+      . assert(_ == t"2H₂ + 1O₂")

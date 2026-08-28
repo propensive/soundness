@@ -30,62 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package enigmatic
 
-import soundness.*
+import anticipation.*
 
-import classloaders.threadContextClassloader
+// Shared rendering internals, kept in the lowest component so every other one can reach them.
+private[enigmatic] object Inspection:
+  private val digits: String = "0123456789abcdef"
 
-trait TestService:
-  def name: Text
+  // Full-width lowercase hexadecimal of a binary payload, for the `Inspectable` instances of
+  // the types which wrap `Data`. Monotonous's `serialize` would need an `Alphabet` in scope,
+  // and a debug rendering must always be available, with no context; nothing is abbreviated,
+  // since an inspection which dropped bytes would hide exactly what is being looked for.
+  def hex(data: Data): Text =
+    val bytes = data.readable
+    val builder: StringBuilder = new StringBuilder()
+    var index = 0
 
-class TestServiceA extends TestService:
-  def name: Text = t"A"
+    while index < bytes.length do
+      val byte = bytes(index)
+      builder.append(digits.charAt((byte & 0xf0) >>> 4))
+      builder.append(digits.charAt(byte & 0x0f))
+      index += 1
 
-class TestServiceB extends TestService:
-  def name: Text = t"B"
-
-object Tests extends Suite(m"Hellenism Tests"):
-  def run(): Unit =
-    test(m"check that a classpath file is accessible"):
-      cp"/scala/Option.class"
-    . assert()
-
-    test(m"Decode a classpath"):
-      unsafely:
-        t"/scala/Option.class".as[Path on Classpath]
-    . assert(_ == Classpath / "scala" / "Option.class")
-
-    test(m"check that a classpath file is streamable"):
-      cp"/scala/Option.class".read[Data]
-    . assert(_.readable.length > 0)
-
-    test(m"check that a nonexistent classpath file is an error"):
-      demilitarize(cp"/missing.txt").map(_.message)
-    . assert(_ == List(t"hellenism: the path /missing.txt is not on the classpath"))
-
-    test(m"check that an invalid classpath path is an error"):
-      demilitarize(cp"foobar").map(_.message)
-    . assert(_ == List(t"hellenism: the path foobar is not a valid classpath path"))
-
-    test(m"load services from META-INF/services"):
-      import systems.javaSystem
-      val classpath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
-      classpath.services[TestService].stdlib.map(_.name).to(Set)
-    . assert(_ == Set(t"A", t"B"))
-
-    suite(m"Native-rendering coverage"):
-      val classpath = LocalClasspath(Classpath.Entry.Jar(t"/x.jar"),
-                                     Classpath.Entry.Directory(t"/a/b/"))
-
-      test(m"hellenism's types inspect natively"):
-        Inspectable.fallbacks(classpath.inspect, ClassRef(classOf[String]).inspect)
-      . assert(_ == Nil)
-
-      test(m"A classpath shows its entries, separated by colons"):
-        classpath.inspect
-      . assert(_ == t"classpath⟨/x.jar:/a/b/⟩")
-
-      test(m"A class reference shows the source which produces it"):
-        ClassRef(classOf[String]).inspect
-      . assert(_ == t"classOf[java.lang.String]")
+    builder.toString.tt

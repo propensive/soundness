@@ -2927,3 +2927,61 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"A truncated ISO 8601 date accrues one error, not a masqueraded today()"):
         collectTime { Iso8601.parse(t"2011-"); () }.count
       . assert(_ == 1)
+
+    suite(m"Native-rendering coverage"):
+      test(m"aviation's types inspect natively"):
+        Inspectable.fallbacks
+         ( (ts"2024": Year).inspect,
+           (2024-Jan-15).inspect,
+           ts"2024-01-15T09:30:00".inspect,
+           dur"P1Y2M3DT4H5M6S".inspect,
+           Instant.of[Unix](1720000000000L).inspect,
+           (Day(8): Day).inspect,
+           WorkingDays(5).inspect,
+           (2024-Jan-15).anniversary.inspect,
+           rec"R3/2024-01-01/P1M".inspect,
+           Rrule(2024-Jan-15, Frequency.Monthly, count = 4).inspect )
+
+      . assert(_ == Nil)
+
+      test(m"a date inspects as an ISO 8601 timestamp"):
+        (2024-Jan-15).inspect
+      . assert(_ == t"2024-01-15T00:00:00")
+
+      test(m"a timestamp keeps its time of day"):
+        ts"2024-01-15T09:30:00".inspect
+      . assert(_ == t"2024-01-15T09:30:00")
+
+      // Ascribed: `Year.apply` is `inline`, so an unascribed `ts"2024"` types as the underlying
+      // `Int` and would reach `Int`'s instance rather than `Year`'s.
+      test(m"a year is not rendered as a bare number"):
+        (ts"2024": Year).inspect
+      . assert(_ == t"2024ʸ")
+
+      test(m"a day of the month is not rendered as a bare number"):
+        (Day(8): Day).inspect
+      . assert(_ == t"8ᵈ")
+
+      test(m"a count of working days has its own suffix"):
+        WorkingDays(5).inspect
+      . assert(_ == t"5ʷᵈ")
+
+      test(m"an instant shows its raw ticks"):
+        Instant.of[Unix](1720000000000L).inspect
+      . assert(_ == t"⧗1720000000000")
+
+      test(m"an anniversary inspects as an ISO yearless date"):
+        (2024-Jan-15).anniversary.inspect
+      . assert(_ == t"--01-15")
+
+      test(m"a timespan inspects as an ISO 8601 duration"):
+        dur"P1Y2M3DT4H5M6S".inspect
+      . assert(_ == t"P1Y2M3DT4H5M6S")
+
+      test(m"a recurrence inspects as an ISO repeating interval"):
+        rec"R3/2024-01-01/P1M".inspect
+      . assert(_ == t"R3/2024-01-01T00:00:00/P1M")
+
+      test(m"a recurrence rule carries its start"):
+        Rrule(2024-Jan-15, Frequency.Monthly, count = 4).inspect
+      . assert(_ == t"Rrule(2024-01-15T00:00:00 ╱ FREQ=MONTHLY;COUNT=4)")

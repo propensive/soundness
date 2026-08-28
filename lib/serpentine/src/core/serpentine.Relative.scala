@@ -102,6 +102,17 @@ object Relative:
 
     _.encode
 
+  // Both the `Showable` and the `Encodable` above need a `Filesystem` to supply the separator
+  // and the parent and self names, and a `Relative` which has not been qualified with a
+  // filesystem has neither; a debug rendering, though, must always be available. Inspection
+  // therefore uses the POSIX-like notation which every filesystem's own notation is read
+  // against — `..` for each step of ascent, `/` between segments, `.` for the self-relative
+  // path — regardless of the filesystem the value is (or is not) qualified with.
+  given inspectable: [relative <: Relative] => relative is Inspectable = relative =>
+    if relative.descent.nil then
+      if relative.ascent == 0 then t"." else List.fill(relative.ascent)(t"..").join(t"/")
+    else relative.descent.stdlib.reverse.join(t"../"*relative.ascent, t"/", t"")
+
   // The explicit type ascription after this method is used to force silent failure of this `given`
   // definition, so that contextual search can continue normally if it fails. This would not be the
   // case for a non-`transparent` `inline given`, which would cause contextual resolution to fail.

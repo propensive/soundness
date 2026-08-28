@@ -213,3 +213,14 @@ object Tests extends Suite(m"Abacist Tests"):
         test(m"Mean of several values"):
           List(Quanta(10): Weight, Quanta(1, 6), Quanta(2, 4, 1)).mean
         . assert(_ == (Quanta(11, 6): Weight))
+
+    suite(m"Native-rendering coverage"):
+      type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
+
+      test(m"abacist's types inspect natively"):
+        Inspectable.fallbacks((Quanta(1, 3, 2): Weight).inspect, (Quanta(9): TimeSeconds).inspect)
+      . assert(_ == Nil)
+
+      test(m"a quanta shows every component, including zeroes"):
+        (Quanta(3, 2): Weight).inspect
+      . assert(_ == t"Quanta(0st 3lb 2oz)")

@@ -256,3 +256,12 @@ object Tests extends Suite(m"Gastronomy tests"):
       test(m"a whole value's checksum matches its digest"):
         payload.checksum[Sha2[256]].serialize[Hex]
       . assert(_ == payload.digest[Sha2[256]].serialize[Hex])
+
+    suite(m"Native-rendering coverage"):
+      test(m"gastronomy's types inspect natively"):
+        Inspectable.fallbacks(t"Hello world".digest[Sha2[256]].inspect)
+      . assert(_ == Nil)
+
+      test(m"A digest shows every byte, in lowercase hexadecimal"):
+        t"Hello world".digest[Sha2[256]].inspect
+      . assert(_ == t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3cᴰ")

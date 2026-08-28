@@ -59,6 +59,21 @@ object Cookie:
 
     new Cookie[value](name, domain, expiry.let(_.generic/1_000_000L), secure, httpOnly, path)
 
+  // A `Cookie` is the template a value is written into, not a cookie which has been sent, so
+  // its rendering shows the attributes it will impose: the name, and each optional attribute
+  // which is set. `Optional` fields are rendered only when present, and the two flags appear
+  // as bare words, so the rendering says exactly which attributes the template carries.
+  given inspectable: [cookie <: Cookie[?]] => cookie is Inspectable = cookie =>
+    Iterable
+     ( cookie.name.inspect,
+       cookie.domain.let { domain => t"domain:${domain.inspect}" },
+       cookie.path.let { path => t"path:${path.inspect}" },
+       cookie.expiry.let { expiry => t"expiry:${expiry.inspect}" },
+       if cookie.secure then t"secure" else Unset,
+       if cookie.httpOnly then t"httpOnly" else Unset )
+
+    . compact.join(t"Cookie(", t" ╱ ", t")")
+
   object Value:
     given showable: Value is Showable = cookie =>
       Iterable
@@ -70,6 +85,12 @@ object Cookie:
           if cookie.httpOnly then t"HttpOnly" else Unset )
 
       . compact.join(t"; ")
+
+    // `showable` renders the `Set-Cookie` form, which already shows every attribute the value
+    // carries and omits only those which are unset; wrapping it names the type, so the
+    // rendering cannot be mistaken for the header text itself.
+    given inspectable: [value <: Cookie.Value] => value is Inspectable = value =>
+      t"Cookie.Value(${showable.text(value)})"
 
     given encodable: Cookie.Value is Encodable in Http.Header = cookie =>
       Http.Header("Set-Cookie", cookie.show)
