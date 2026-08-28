@@ -3289,9 +3289,11 @@ object vivisection extends Library:
   // Expression evaluation: `anthology` compiles a synthetic class against the debuggee's
   // classpath and the Evaluator injects and runs it over JDWP. Kept out of `core` so the
   // compiler dependency does not reach a caller who only inspects variables.
-  object eval extends Component(core, anthology.`scala`, hellenism.jvm):
+  object eval extends Component(core, anthology.`scala`, hellenism.jvm, stenography.core):
     override def scalaJs = false // hosts the Scala compiler and debugs JVMs
     override def scalaNative = false
+    // `Purview` reads static types out of the compiler's own symbol loader.
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The offline suite drives the protocol against a scripted fake VM over an in-memory duplex;

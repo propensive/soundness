@@ -464,7 +464,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = System.properties.java.`class`.path()
         val captured = Promise[List[Variable]]()
-        val marker = Ordinal.uniary(58)
+        val marker = Ordinal.uniary(71)
 
         // Ascribed to the bare types: `sh"…"` infers a singleton-refined `Command` and the case
         // class tracks the field's identity, which the invariant `Sessional.Self` would not match.
@@ -520,7 +520,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val classpathText = System.properties.java.`class`.path()
         val classpath = classpathText.as[LocalClasspath]
         val evaluated = Promise[Text]()
-        val marker = Ordinal.uniary(58)
+        val marker = Ordinal.uniary(71)
 
         val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
         val debuggee: Debuggee = Debuggee(command, 5100)
@@ -558,7 +558,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val classpathText = System.properties.java.`class`.path()
         val classpath = classpathText.as[LocalClasspath]
         val rendered = Promise[Text]()
-        val marker = Ordinal.uniary(58)
+        val marker = Ordinal.uniary(71)
 
         val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
         val debuggee: Debuggee = Debuggee(command, 5101)
@@ -585,3 +585,39 @@ object Tests extends Suite(m"Vivisection tests"):
           rendered.await()
 
     . assert(_.starts(t"⦋"))
+
+    // The headline case: `port` erases to `Int`, but Purview recovers its declared type `Port` from
+    // TASTy, so the synthetic class types it as `Port` and `.inspect` selects `Port`'s own instance
+    // — rendering the domain value `⟨port 8080⟩` rather than the bare `8080` its runtime class would.
+    test(m"a live session renders an opaque local through its declared type's instance"):
+      supervise:
+        val classpathText = System.properties.java.`class`.path()
+        val classpath = classpathText.as[LocalClasspath]
+        val rendered = Promise[Text]()
+        val marker = Ordinal.uniary(71)
+
+        val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
+        val debuggee: Debuggee = Debuggee(command, 5102)
+
+        debuggee.session: debug ?=>
+          debug.resume()
+
+          def waitFor(remaining: Int): List[Jdwp.Location] =
+            val locations = debug.locate(t"vivisection.Fixture.scala", marker)
+
+            if locations.stdlib.nonEmpty then locations
+            else if remaining <= 0 then locations
+            else
+              Thread.sleep(50)
+              waitFor(remaining - 1)
+
+          waitFor(120).stdlib.foreach: location =>
+            debug.breakpoint(location): halt ?=>
+              halt.evaluator(classpath): eval ?=>
+                rendered.offer(eval.inspect(t"port"))
+
+              halt.remain()
+
+          rendered.await()
+
+    . assert(_ == t"⟨port 8080⟩")

@@ -58,6 +58,7 @@ extension (halt: Halt)
     // `-experimental` because the debuggee's own types (and `Inspectable`) use experimental
     // language features, so a renderer or expression referencing them must compile in that mode.
     val options = List(Scalac.Option[3.9](t"-experimental"))
+    val purview = Purview(classpath)
 
     Scalac[3.9](options).on(classpath).session: session ?=>
-      body(using new Evaluator(halt, session, classpath))
+      body(using new Evaluator(halt, session, classpath, purview))

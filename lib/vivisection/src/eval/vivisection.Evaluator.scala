@@ -111,7 +111,7 @@ object Evaluator:
 // `String.valueOf` form), which keeps a single decode path across every result type; the typed,
 // structured rendering arrives with the rendering phase.
 class Evaluator private[vivisection]
-  ( halt: Halt, session: Scalac.Session^, classpath: LocalClasspath )
+  ( halt: Halt, session: Scalac.Session^, classpath: LocalClasspath, purview: Purview )
   ( using Monitor, Tactic[Async.Error], Tactic[Debugger.Error], Tactic[Compiler.Error] )
 extends caps.ExclusiveCapability:
 
@@ -142,8 +142,21 @@ extends caps.ExclusiveCapability:
           live.zip(values).map: (slot, value) => (slot.name, slot.signature, value)
 
       val className = t"vivisection$$eval$$${Evaluator.counter.getAndIncrement()}"
-      val pkg = packageOf(connection.signature(location.cls))
-      val source = render(className, pkg, locals.map { (name, sig, _) => (name, sig) }, expression)
+      val ownerSignature = connection.signature(location.cls)
+      val pkg = packageOf(ownerSignature)
+
+      // Prefer each binding's declared static type (opaque and generic types recovered from TASTy)
+      // over its erased runtime type, so `.inspect` selects the instance the programmer's own code
+      // would. Only a method's value parameters are resolved this way for now; other locals keep
+      // the erased type.
+      val owner = Variable.demangle(ownerSignature)
+      val method = methodName(location.cls, location.method)
+      val statics = purview.parameters(owner, method)
+
+      val typed = locals.map: (name, signature, _) =>
+        (name, statics.get(name).getOrElse(Variable.demangle(signature)))
+
+      val source = render(className, pkg, typed, expression)
 
       val process = session.compile(Map(t"$className.scala" -> source))
       process.complete()
@@ -246,16 +259,18 @@ extends caps.ExclusiveCapability:
     val trimmed = if base.startsWith("/") then base.substring(1).nn else base
     trimmed.replace('/', '.').nn.tt
 
+  // The name of the method at a location, read back from its class's method table.
+  private def methodName(cls: ReferenceTypeId, method: MethodId): Text =
+    connection.methods(cls).stdlib.find(_.method == method).map(_.name).getOrElse(t"")
+
   // The synthetic compilation unit: a class whose constructor parameters mirror the frame's
-  // locals and whose `run` renders the expression as text through `String.valueOf`, so every
-  // result — primitive, string or object — comes back over one decode path.
+  // locals (each already typed at its declared or erased type) and whose `run` renders the
+  // expression as text through `String.valueOf`, so every result — primitive, string or object —
+  // comes back over one decode path.
   private def render(name: Text, pkg: Text, params: sci.List[(Text, Text)], expression: Text)
   :   Text =
 
-    val rendered = params.map: (field, signature) =>
-      s"${field.s}: ${Variable.demangle(signature).s}"
-
-    val parameters = rendered.mkString(", ")
+    val parameters = params.map { (field, kind) => s"${field.s}: ${kind.s}" }.mkString(", ")
 
     // `spectacular` is imported so `.inspect` resolves for the rendering path; an evaluation which
     // does not use it simply leaves the import unused.
