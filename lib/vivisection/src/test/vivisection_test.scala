@@ -795,3 +795,33 @@ object Tests extends Suite(m"Vivisection tests"):
     test(m"an optional's static type is recovered"):
       typeShapes.get(t"option")
     . assert(_ == scala.Some(t"scala.Option[Int]"))
+
+    // ── Evaluation matrix ───────────────────────────────────────────────────────────────────────
+    // Compile-and-run expressions over the `Menagerie` locals: arithmetic, a comparison, a method
+    // call, and array indexing, each producing a value read back as text.
+    val evaluations: (Text, Text, Text, Text) =
+      supervise:
+        debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(57)):
+          stop ?=>
+            stop.evaluator(fixtureClasspath): eval ?=>
+              def text(expression: Text): Text = eval(expression) match
+                case Variable.Snapshot.Str(_, string) => string
+                case other                            => other.inspect
+
+              (text(t"int*2"), text(t"int > 40"), text(t"text.length"), text(t"ints(0)"))
+
+    test(m"an arithmetic expression over a local evaluates"):
+      evaluations(0)
+    . assert(_ == t"84")
+
+    test(m"a comparison expression over a local evaluates"):
+      evaluations(1)
+    . assert(_ == t"true")
+
+    test(m"a method call on a local evaluates"):
+      evaluations(2)
+    . assert(_ == t"5")
+
+    test(m"an array-indexing expression over a local evaluates"):
+      evaluations(3)
+    . assert(_ == t"10")
