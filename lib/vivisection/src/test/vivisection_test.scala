@@ -767,3 +767,31 @@ object Tests extends Suite(m"Vivisection tests"):
     test(m"a toString-only type renders under the toString marker"):
       renderings(2)
     . assert(_ == t"“Plain#7”")
+
+    // ── Static-type matrix ──────────────────────────────────────────────────────────────────────
+    // Richer declared types recovered from TASTy and rendered through stenography, keyed by name.
+    val typeShapes: scala.collection.immutable.Map[Text, Text] =
+      supervise:
+        debugFixture(t"vivisection.Types", t"vivisection.Types.scala", Ordinal.uniary(48)):
+          stop ?=>
+            stop.evaluator(fixtureClasspath): eval ?=>
+              val bindings = eval.variables().stdlib.flatMap: variable =>
+                variable.static.option.map(static => (variable.name, static))
+
+              bindings.toMap
+
+    test(m"a generic collection's static type keeps its type argument"):
+      typeShapes.get(t"list")
+    . assert(_ == scala.Some(t"List[Int]"))
+
+    test(m"a tuple's static type is rendered in tuple syntax"):
+      typeShapes.get(t"pair")
+    . assert(_ == scala.Some(t"(Int, java.lang.String)"))
+
+    test(m"a function's static type is rendered in arrow syntax"):
+      typeShapes.get(t"function")
+    . assert(_ == scala.Some(t"Int => java.lang.String"))
+
+    test(m"an optional's static type is recovered"):
+      typeShapes.get(t"option")
+    . assert(_ == scala.Some(t"scala.Option[Int]"))
