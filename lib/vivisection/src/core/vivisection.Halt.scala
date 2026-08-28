@@ -63,7 +63,7 @@ object Halt:
 // cannot outlive the stop it describes — once the dispatcher resumes the thread, every
 // identifier this halt handed out may be stale.
 class Halt private[vivisection]
-  ( connection:   Jdwp.Connection,
+  ( private[vivisection] val connection: Jdwp.Connection,
     val thread:   ThreadId,
     val location: Jdwp.Location,
     retention:    Halt.Retention )
@@ -87,11 +87,17 @@ extends caps.ExclusiveCapability:
       case Jdwp.Value.Reference(_, id) => if id.empty then Unset else id
       case _                           => Unset
 
+  // The frame where the thread stopped — the innermost, and the default subject of variable
+  // recovery and evaluation.
+  private[vivisection] def topFrame: Optional[(FrameId, Jdwp.Location)] =
+    connection.frames(thread, 0, 1).stdlib.headOption match
+      case scala.Some(frame) => frame
+      case _                 => Unset
+
   // The logical variables visible at the top frame — where the thread stopped.
   def variables(): List[Variable] =
-    connection.frames(thread, 0, 1).stdlib.headOption match
-      case scala.Some((frame, location0)) => variables(frame, location0)
-      case _                              => List()
+    topFrame.lay(List[Variable]()): (frame, location0) =>
+      variables(frame, location0)
 
   // The logical variables visible at a frame: the live local slots, then the state captured on
   // `this` and its `$outer` chain — un-flattened, unboxed and lazy-read before anything

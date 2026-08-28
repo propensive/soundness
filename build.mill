@@ -3286,9 +3286,17 @@ object vivisection extends Library:
     override def scalaNative = false // JDWP is a JVM protocol; forks JVMs via `guillotine`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // Expression evaluation: `anthology` compiles a synthetic class against the debuggee's
+  // classpath and the Evaluator injects and runs it over JDWP. Kept out of `core` so the
+  // compiler dependency does not reach a caller who only inspects variables.
+  object eval extends Component(core, anthology.`scala`, hellenism.jvm):
+    override def scalaJs = false // hosts the Scala compiler and debugs JVMs
+    override def scalaNative = false
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The offline suite drives the protocol against a scripted fake VM over an in-memory duplex;
   // the live suite launches real JVMs under the jdwp agent.
-  object test extends Tests(core, eucalyptus.core, ambience.core):
+  object test extends Tests(core, eval, eucalyptus.core, ambience.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

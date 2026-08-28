@@ -512,3 +512,40 @@ object Tests extends Suite(m"Vivisection tests"):
         val squared = byName.get(t"squared").map(_.state).contains(Variable.State.Unforced)
 
         total && tag && values && seed && squared
+
+    // Compiles `total + 1` against the debuggee's classpath, injects the classfiles over JDWP, and
+    // runs the synthetic class in the debuggee — evaluating an expression over a live local.
+    test(m"a live session evaluates an expression over a local"):
+      supervise:
+        val classpathText = System.properties.java.`class`.path()
+        val classpath = classpathText.as[LocalClasspath]
+        val evaluated = Promise[Text]()
+        val marker = Ordinal.uniary(58)
+
+        val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
+        val debuggee: Debuggee = Debuggee(command, 5100)
+
+        debuggee.session: debug ?=>
+          debug.resume()
+
+          def waitFor(remaining: Int): List[Jdwp.Location] =
+            val locations = debug.locate(t"vivisection.Fixture.scala", marker)
+
+            if locations.stdlib.nonEmpty then locations
+            else if remaining <= 0 then locations
+            else
+              Thread.sleep(50)
+              waitFor(remaining - 1)
+
+          waitFor(120).stdlib.foreach: location =>
+            debug.breakpoint(location): halt ?=>
+              halt.evaluator(classpath): eval ?=>
+                eval(t"total + 1") match
+                  case Variable.Snapshot.Str(_, text) => evaluated.offer(text)
+                  case other                          => evaluated.offer(other.inspect)
+
+              halt.remain()
+
+          evaluated.await()
+
+    . assert(_ == t"43")
