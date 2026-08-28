@@ -464,7 +464,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = System.properties.java.`class`.path()
         val captured = Promise[List[Variable]]()
-        val marker = Ordinal.uniary(71)
+        val marker = Ordinal.uniary(72)
 
         // Ascribed to the bare types: `sh"…"` infers a singleton-refined `Command` and the case
         // class tracks the field's identity, which the invariant `Sessional.Self` would not match.
@@ -520,7 +520,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val classpathText = System.properties.java.`class`.path()
         val classpath = classpathText.as[LocalClasspath]
         val evaluated = Promise[Text]()
-        val marker = Ordinal.uniary(71)
+        val marker = Ordinal.uniary(72)
 
         val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
         val debuggee: Debuggee = Debuggee(command, 5100)
@@ -558,7 +558,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val classpathText = System.properties.java.`class`.path()
         val classpath = classpathText.as[LocalClasspath]
         val rendered = Promise[Text]()
-        val marker = Ordinal.uniary(71)
+        val marker = Ordinal.uniary(72)
 
         val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
         val debuggee: Debuggee = Debuggee(command, 5101)
@@ -594,7 +594,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val classpathText = System.properties.java.`class`.path()
         val classpath = classpathText.as[LocalClasspath]
         val rendered = Promise[Text]()
-        val marker = Ordinal.uniary(71)
+        val marker = Ordinal.uniary(72)
 
         val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
         val debuggee: Debuggee = Debuggee(command, 5102)
@@ -630,7 +630,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val classpathText = System.properties.java.`class`.path()
         val classpath = classpathText.as[LocalClasspath]
         val reported = Promise[Text]()
-        val marker = Ordinal.uniary(71)
+        val marker = Ordinal.uniary(72)
 
         val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
         val debuggee: Debuggee = Debuggee(command, 5103)
@@ -658,3 +658,41 @@ object Tests extends Suite(m"Vivisection tests"):
           reported.await()
 
     . assert(_ == t"vivisection.Fixture.Port")
+
+    // Static types for a method's *body* locals, not just its parameters: `gateway` is a local
+    // `val` in `marker`, and Purview recovers its declared `Port` from the method's tree — reported
+    // as its static type and used to render it through `Port`'s own instance.
+    test(m"a live session recovers a body-local val's static type and renders it"):
+      supervise:
+        val classpathText = System.properties.java.`class`.path()
+        val classpath = classpathText.as[LocalClasspath]
+        val outcome = Promise[(Text, Text)]()
+        val marker = Ordinal.uniary(72)
+
+        val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
+        val debuggee: Debuggee = Debuggee(command, 5104)
+
+        debuggee.session: debug ?=>
+          debug.resume()
+
+          def waitFor(remaining: Int): List[Jdwp.Location] =
+            val locations = debug.locate(t"vivisection.Fixture.scala", marker)
+
+            if locations.stdlib.nonEmpty then locations
+            else if remaining <= 0 then locations
+            else
+              Thread.sleep(50)
+              waitFor(remaining - 1)
+
+          waitFor(120).stdlib.foreach: location =>
+            debug.breakpoint(location): halt ?=>
+              halt.evaluator(classpath): eval ?=>
+                val gateway = eval.variables().stdlib.find(_.name == t"gateway")
+                val static = gateway.flatMap(_.static.option).getOrElse(t"«none»")
+                outcome.offer((static, eval.inspect(t"gateway")))
+
+              halt.remain()
+
+          outcome.await()
+
+    . assert(_ == (t"vivisection.Fixture.Port", t"⟨port 443⟩"))

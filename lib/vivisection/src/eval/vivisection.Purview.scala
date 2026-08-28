@@ -38,7 +38,9 @@ import scala.collection.immutable as sci
 import scala.language.adhocExtensions
 
 import dotty.tools.dotc as dtd
+import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.core.Contexts
+import dotty.tools.dotc.core.Flags
 import dotty.tools.dotc.core.Symbols
 import dotty.tools.dotc.core.Types
 import dotty.tools.dotc.quoted.QuotesCache
@@ -72,6 +74,9 @@ class Purview(classpath: LocalClasspath):
     object driver extends dtd.Driver:
       def context: Contexts.Context =
         val args = ju.ArrayList[String]()
+        // `-Yretain-trees` keeps the method-body trees the symbol loader unpickles from TASTy, so
+        // a method's local `val`s (which live in its tree, not on its symbol) can be read.
+        args.add("-Yretain-trees")
         args.add("-classpath")
         args.add(entries.s)
         args.add("")
@@ -93,16 +98,43 @@ class Purview(classpath: LocalClasspath):
   // and its `Inspectable` — resolve there. A domain type like `Port` is unaffected.
   private def normalise(text: Text): Text = text.s.replace("proscenium.", "").nn.tt
 
-  // The value parameters of a method, as (name, declared type), under the standalone context. The
-  // types are compiler `Type`s, rendered differently by the two public methods below.
-  private def valueParameters(className: Text, methodName: Text)(using Contexts.Context)
+  // Every binding a debugger might see at a frame in a method, as (name, declared type) under the
+  // standalone context: the method's value parameters (read from its symbol) and the `val`s in its
+  // body (read from its unpickled tree). The types are compiler `Type`s, rendered differently by
+  // the two public methods below. A later binding of the same name — a shadowing inner `val` —
+  // wins, matching what is live at a stop.
+  private def bindings(className: Text, methodName: Text)(using Contexts.Context)
   :   sci.List[(Text, Types.Type)] =
 
     val cls = Symbols.requiredClass(className.s)
     val method = cls.requiredMethod(methodName.s)
     val terms = method.paramSymss.flatten.filter(_.isTerm)
+    val parameters = for param <- terms yield (param.name.show.tt, param.info)
 
-    for param <- terms yield (param.name.show.tt, param.info)
+    // Walk the method body for its own `val`s (non-parameter, non-synthetic), reading each's
+    // declared type from its type tree. `defTree` is the tree the symbol loader unpickled from
+    // TASTy; if it is absent (trees not retained) the body simply contributes nothing.
+    val locals = scala.collection.mutable.ListBuffer[(Text, Types.Type)]()
+
+    val traverser = new tpd.TreeTraverser:
+      def traverse(tree: tpd.Tree)(using Contexts.Context): Unit =
+        tree match
+          case valDef: tpd.ValDef =>
+            val symbol = valDef.symbol
+
+            if !symbol.is(Flags.Param) && !symbol.is(Flags.Synthetic)
+            then locals += ((valDef.name.show.tt, valDef.tpt.tpe))
+
+          case _ =>
+            ()
+
+        traverseChildren(tree)
+
+    method.defTree match
+      case defDef: tpd.DefDef => traverser.traverse(defDef.rhs)
+      case _                  => ()
+
+    parameters ++ locals.to(sci.List)
 
   // The compile-usable source type of each value parameter, keyed by name — the compiler's own
   // printed form. Consumed by the evaluator to type the synthetic class's parameters, so it must
@@ -113,8 +145,7 @@ class Purview(classpath: LocalClasspath):
       given Contexts.Context = context
 
       val entries =
-        for (name, tpe) <- valueParameters(className, methodName)
-        yield (name, normalise(tpe.show.tt))
+        for (name, tpe) <- bindings(className, methodName) yield (name, normalise(tpe.show.tt))
 
       entries.toMap
 
@@ -129,7 +160,7 @@ class Purview(classpath: LocalClasspath):
       val quotes = scala.quoted.runtime.impl.QuotesImpl()
 
       val entries =
-        for (name, tpe) <- valueParameters(className, methodName) yield
+        for (name, tpe) <- bindings(className, methodName) yield
           val repr = tpe.asInstanceOf[quotes.reflect.TypeRepr]
           (name, normalise(Syntax(using quotes)(repr).qualified))
 

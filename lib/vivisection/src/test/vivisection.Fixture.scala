@@ -68,4 +68,5 @@ object Fixture:
       marker(base + seed, label, numbers, Port(8080))
 
     def marker(total: Int, tag: String, values: Array[Int], port: Port): Unit =
-      System.out.nn.println("marker")
+      val gateway: Port = Port(443)
+      System.out.nn.println(gateway.toString)
