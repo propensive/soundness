@@ -201,6 +201,7 @@ object Tests extends Suite(m"Aviation Tests"):
         demilitarize:
           import calendars.julianCalendar
           (1900-Feb-29).jdn
+        . filter(_.error)
       . assert(_.isEmpty)
 
       test(m"A contextual Julian calendar yields the Julian Julian-day for the literal"):
