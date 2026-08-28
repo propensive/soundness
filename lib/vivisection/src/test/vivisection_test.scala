@@ -608,3 +608,92 @@ object Tests extends Suite(m"Vivisection tests"):
               (static, eval.inspect(t"gateway"))
 
     . assert(_ == (t"vivisection.Fixture.Port", t"⟨port 443⟩"))
+
+    // ── Variable-recovery matrix ────────────────────────────────────────────────────────────────
+    // One launch of `Menagerie` captures every local at a single breakpoint; the cases below are
+    // granular assertions over that one snapshot, so the whole width of value recovery costs one
+    // debuggee.
+    val menagerie: scala.collection.immutable.Map[Text, Variable] =
+      supervise:
+        debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(60)):
+          stop ?=> named(stop.variables())
+
+    def valueOf(name: Text): Optional[Variable.Snapshot] =
+      menagerie.get(name).flatMap(_.value.option).getOrElse(Unset)
+
+    def erasedOf(name: Text): Optional[Text] =
+      menagerie.get(name).map(_.erased).getOrElse(Unset)
+
+    test(m"a byte local is recovered with its value"):
+      valueOf(t"byte")
+    . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfByte(-7)))
+
+    test(m"a short local is recovered with its value"):
+      valueOf(t"short")
+    . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfShort(1234)))
+
+    test(m"an int local is recovered with its value"):
+      valueOf(t"int")
+    . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(42)))
+
+    test(m"a long local is recovered with its value"):
+      valueOf(t"long")
+    . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfLong(9999999999L)))
+
+    test(m"a float local is recovered with its value"):
+      valueOf(t"float")
+    . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfFloat(3.5f)))
+
+    test(m"a double local is recovered with its value"):
+      valueOf(t"double")
+    . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfDouble(2.5)))
+
+    test(m"a char local is recovered with its value"):
+      valueOf(t"char")
+    . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfChar('Z')))
+
+    test(m"a boolean local is recovered with its value"):
+      valueOf(t"boolean")
+    . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfBoolean(true)))
+
+    test(m"a string local is recovered with its text"):
+      valueOf(t"text") match
+        case Variable.Snapshot.Str(_, text) => text
+        case _                              => t"«not a string»"
+    . assert(_ == t"hello")
+
+    test(m"an empty string local is recovered"):
+      valueOf(t"empty") match
+        case Variable.Snapshot.Str(_, text) => text
+        case _                              => t"«not a string»"
+    . assert(_ == t"")
+
+    test(m"an int-array local is recovered with component and length"):
+      valueOf(t"ints") match
+        case Variable.Snapshot.Arr(_, tag, length, _) => (tag, length)
+        case _                                        => (Jdwp.Tag.VoidTag, -1)
+    . assert(_ == (Jdwp.Tag.IntTag, 3))
+
+    test(m"a byte-array local is recovered with component and length"):
+      valueOf(t"bytes") match
+        case Variable.Snapshot.Arr(_, tag, length, _) => (tag, length)
+        case _                                        => (Jdwp.Tag.VoidTag, -1)
+    . assert(_ == (Jdwp.Tag.ByteTag, 3))
+
+    test(m"a long array reports full length but a bounded prefix"):
+      valueOf(t"many") match
+        case Variable.Snapshot.Arr(_, _, length, prefix) => (length, prefix.stdlib.length)
+        case _                                           => (-1, -1)
+    . assert(_ == (13, 10))
+
+    test(m"an int local reports its erased type"):
+      erasedOf(t"int")
+    . assert(_ == t"Int")
+
+    test(m"an int-array local reports its erased type"):
+      erasedOf(t"ints")
+    . assert(_ == t"Array[Int]")
+
+    test(m"a string local reports its erased type"):
+      erasedOf(t"text")
+    . assert(_ == t"java.lang.String")
