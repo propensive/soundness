@@ -258,7 +258,7 @@ extends Element(label, Attributes.from(presets), Array(), foreign),
   val isTable: Boolean = label == t"table"
 
 
-  inline def applyDynamicNamed[label <: Label: Precise: ValueOf](inline method: label)
+  inline def applyDynamicNamed[label <: Label: scala.Precise: ValueOf](inline method: label)
     ( inline attributes: (String, Any)* )
   :   Result =
 

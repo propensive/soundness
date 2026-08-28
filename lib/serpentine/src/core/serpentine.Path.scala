@@ -157,11 +157,17 @@ object Path:
         else Some((radical.decode(path.root), Relative(0, path.descent*))) )
     :   path is Quotient of root over (Relative on filesystem) | Text
 
-  extension [path <: Path: Precise](left: path)
-    transparent inline def conjunction[right <: Path: Precise](right: right): Optional[Path] =
+  // These carried a `Precise` bound which, resolved through the prelude's export, silently did
+  // nothing (#1811) — so this is what they have always meant. It cannot simply be corrected to
+  // `scala.Precise`: with the bound actually in force, the parameter's singleton type acquires a
+  // reach capture its argument's type lacks, and callers stop compiling (`exoskeleton.Pathname`
+  // is the one in this repository). That is the capture-checking half of the same issue, so the
+  // bound can only be restored once the compiler is fixed.
+  extension [path <: Path](left: path)
+    transparent inline def conjunction[right <: Path](right: right): Optional[Path] =
       ${serpentine.internal.conjunction[path, right]('left, 'right)}
 
-    transparent inline def toward[target <: Path: Precise](target: target): Optional[Relative] =
+    transparent inline def toward[target <: Path](target: target): Optional[Relative] =
       ${serpentine.internal.toward[path, target]('left, 'target)}
 
   // PathError → Path.Error
