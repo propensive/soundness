@@ -61,7 +61,7 @@ object Tests extends Suite(m"Enigmatic tests"):
     |ozakE+8p06BpxegR4BR3FMHf6p+0jQxUEAkAyb/mVgm66TyghDGC6/YkiKoZptXQ
     |98TwDIK/39WEB/V607As+KoYazQG8drorw==
     |-----END CERTIFICATE REQUEST-----
-    "("": String).stripMargin.show
+    """.s.stripMargin.show
 
   // A self-signed certificate, produced by `openssl req -x509 -newkey rsa:2048`. It is here for its
   // shape rather than its content: v3 extensions behind a `[3] EXPLICIT` tag, a `[0] EXPLICIT`
@@ -89,7 +89,7 @@ object Tests extends Suite(m"Enigmatic tests"):
     |eeoVq8kR6euQcL4Vyrg9XpOolSlBpJSOnG/S8CP4/JOQxfoXIr1ERuJrLTF+Kniw
     |VWAjJOn3se6f9d+2rhKmV9Z7W21pdb87yuXgWXl/F6c/wVmOallb/Fw=
     |-----END CERTIFICATE-----
-    "("": String).stripMargin.show
+    """.s.stripMargin.show
 
   val pangram: Text = t"The quick brown fox jumps over the lazy dog"
 
@@ -128,7 +128,7 @@ object Tests extends Suite(m"Enigmatic tests"):
         |-----BEGIN EXAMPLE-----
         |MIIB9TCCAWACAQAwgbgxGTAXBgNVBAoMEFF1b1ZhZGlzIExpbWl0ZWQxHDAaBgNV
         |-----END EXAMPLE-----
-        "("": String).stripMargin.show
+        """.s.stripMargin.show
 
       example.read[Pem].label
     . assert(_ == Pem.Label.Proprietary(t"EXAMPLE"))

@@ -55,7 +55,7 @@ object Tests extends Suite(m"Gastronomy tests"):
     |ozakE+8p06BpxegR4BR3FMHf6p+0jQxUEAkAyb/mVgm66TyghDGC6/YkiKoZptXQ
     |98TwDIK/39WEB/V607As+KoYazQG8drorw==
     |-----END CERTIFICATE REQUEST-----
-    "("": String).stripMargin.show
+    """.s.stripMargin.show
 
   val pangram: Text = t"The quick brown fox jumps over the lazy dog"
 

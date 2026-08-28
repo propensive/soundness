@@ -286,7 +286,7 @@ object Tests extends Suite(m"Delicious Tests"):
           t"""|object Bad:
               |  class Local
               |  val xs: List[String] = List(new Local)
-              |"("": String).stripMargin.tt
+              |""".s.stripMargin.tt
 
         val process =
           Scalac[3.9](List(scalacOptions.semanticDiagnostics))

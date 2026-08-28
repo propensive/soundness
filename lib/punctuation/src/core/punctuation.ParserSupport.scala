@@ -320,11 +320,11 @@ private[punctuation] object ParserSupport:
       val firstCh = s.charAt(markerEnd)
       val firstAdvance = if firstCh == ' ' then 1 else 4 - (markerColEnd & 3)
       val nextCol = markerColEnd + firstAdvance
-      val tail = if markerEnd + 1 >= n then "" else s.substring(markerEnd + 1, n).nn
+      val tail: String = if markerEnd + 1 >= n then "" else s.substring(markerEnd + 1, n).nn
       ((markerColEnd + 1).z, Text(buildResidual(tail, nextCol, firstAdvance - 1)))
     else
       // 1–4 cols of follow consume all post-marker whitespace.
-      val tail = if j >= n then "" else s.substring(j, n).nn
+      val tail: String = if j >= n then "" else s.substring(j, n).nn
       ((markerColEnd + postCol).z, Text(buildResidual(tail, markerColEnd + postCol, 0)))
 
   // Bullet list marker: ^ {0,3}([-*+])( +|\t|$)(.*)$. `contentIndent` is the

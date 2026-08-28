@@ -63,28 +63,28 @@ object Tests extends Suite(m"Mandible tests"):
         |  protected int guarded() { return 2; }
         |  private int hidden() { return 3; }
         |}
-        |"("": String).stripMargin.tt
+        |""".s.stripMargin.tt
 
   val derived: Text =
     t"""|package fixture;
         |public class Derived extends Base {
         |  public int own() { return 4; }
         |}
-        |"("": String).stripMargin.tt
+        |""".s.stripMargin.tt
 
   val api: Text =
     t"""|package fixture;
         |public interface Api {
         |  int one();
         |}
-        |"("": String).stripMargin.tt
+        |""".s.stripMargin.tt
 
   val holder: Text =
     t"""|package fixture;
         |public class Holder<T> {
         |  public Object get() { return null; }
         |}
-        |"("": String).stripMargin.tt
+        |""".s.stripMargin.tt
 
   // Fixture variants are made by editing the source text, so each test states exactly the one
   // change whose grade it is asserting.
@@ -609,7 +609,7 @@ object Tests extends Suite(m"Mandible tests"):
           |class Consumer {
           |  public int use(Base b) { return b.inherited(); }
           |}
-          |"("": String).stripMargin.tt
+          |""".s.stripMargin.tt
 
     def consumerContent(baseSource: Text, consumer: Text): List[(TreePath, Data)] =
       val (content, _) = compile(baseSource, derived, api, consumer)
