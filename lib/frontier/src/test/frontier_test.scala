@@ -177,7 +177,7 @@ object Tests extends Suite(m"Frontier Tests"):
         import frontier.context.explainMissingContext
         trait Absent
         summon[scala.util.NotGiven[Absent]]
-      . map(_.message)
+      . filter(_.error).map(_.message)
     . assert(_ == Nil)
 
     test(m"explainMissingContext does not defeat default using arguments"):
@@ -186,7 +186,7 @@ object Tests extends Suite(m"Frontier Tests"):
         class Cfg
         def withDefault(using cfg: Cfg = new Cfg): Cfg = cfg
         withDefault
-      . map(_.message)
+      . filter(_.error).map(_.message)
     . assert(_ == Nil)
 
     test(m"explainMissingContext does not defeat summonFrom fallback"):
@@ -198,7 +198,7 @@ object Tests extends Suite(m"Frontier Tests"):
             case _: Absent => 1
             case _         => 2
         val n: Int = choose
-      . map(_.message)
+      . filter(_.error).map(_.message)
     . assert(_ == Nil)
 
     // `read` now resolves an ordinary `Readable` instance, so a missing

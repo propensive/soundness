@@ -2426,8 +2426,7 @@ object larceny extends Library:
     override def scalaJs = false // compiler plugin: uses the JVM-only dotty compiler API
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends Tests:
-    override def finalMainClass: Task.Simple[String] = "run"
+  object test extends Tests
 
 object legerdemain extends Library:
   // The `Query` type and its `Parametric` typeclass: the form-encoded half of the library, with

@@ -130,6 +130,44 @@ class LarcenyTransformer() extends PluginPhase:
     val yimports = ctx.settings.Yimports.value
     val noPredef = ctx.settings.YnoPredef.value
 
+    // Warnings used to be invisible to `demilitarize` in all but one case. The sub-compilation
+    // starts from `initCtx.fresh` -- a compiler-default context, not the parent's -- so none of
+    // the parent's warning flags applied, and every flag-gated warning (deprecation and unused
+    // above all) simply never fired, while default-on warnings leaked in unmarked. Propagate the
+    // flags that decide *which* warnings exist.
+    //
+    // `-Wconf` is the load-bearing one: without the parent's `:s` rules the sub-compilation would
+    // report warnings the outer build deliberately silences, so `demilitarize` blocks would start
+    // capturing diagnostics that the surrounding file is configured never to see.
+    //
+    // `-Werror`/`-Xfatal-warnings` is deliberately NOT propagated: promoting warnings to errors
+    // would stop compilation at the first one and defeat the point of capturing them as warnings.
+    //
+    // `Wunused` is `private[config]`, so it is read back through the `WunusedHas` predicates and
+    // restated as an explicit choice list. That is equivalent in effect, though not always
+    // textually identical to what the parent was given (`-Wunused:all` comes back expanded).
+    val unusedChoices: List[(String, Boolean)] =
+      List
+        ( "imports"   -> ctx.settings.WunusedHas.imports,
+          "privates"  -> ctx.settings.WunusedHas.privates,
+          "locals"    -> ctx.settings.WunusedHas.locals,
+          "explicits" -> ctx.settings.WunusedHas.explicits,
+          "implicits" -> ctx.settings.WunusedHas.implicits,
+          "params"    -> ctx.settings.WunusedHas.params,
+          "patvars"   -> ctx.settings.WunusedHas.patvars,
+          "linted"    -> ctx.settings.WunusedHas.linted )
+
+    val unused: List[String] = unusedChoices.collect:
+      case (choice, true) => choice
+
+    val warnings: List[String] =
+      (if ctx.settings.deprecation.value then List("-deprecation") else Nil) ++
+        (if ctx.settings.feature.value then List("-feature") else Nil) ++
+        (if ctx.settings.unchecked.value then List("-unchecked") else Nil) ++
+        (if ctx.settings.Wall.value then List("-Wall") else Nil) ++
+        (if unused.isEmpty then Nil else List("-Wunused:"+unused.mkString(","))) ++
+        ctx.settings.Wconf.value.map("-Wconf:"+_)
+
     object collector extends UntypedTreeMap:
       val regions: scm.ListBuffer[(Int, Int)] = scm.ListBuffer()
 
@@ -155,7 +193,8 @@ class LarcenyTransformer() extends PluginPhase:
       ctx.settings.plugin.value.filterNot(LarcenyTransformer.isLarceny)
 
     val errors: List[CompileError] =
-      Subcompiler.compile(language, classpath, source, regions, plugins, ccNew, yimports, noPredef)
+      Subcompiler.compile
+        ( language, classpath, source, regions, plugins, ccNew, yimports, noPredef, warnings )
 
     object transformer extends UntypedTreeMap:
       override def transform(tree: Tree)(using Context): Tree = tree match
@@ -186,7 +225,8 @@ class LarcenyTransformer() extends PluginPhase:
                     Literal(Constant(error.message)),
                     Literal(Constant(error.focus)),
                     Literal(Constant(error.start)),
-                    Literal(Constant(error.offset)) ) )
+                    Literal(Constant(error.offset)),
+                    Literal(Constant(error.importance.ordinal)) ) )
 
           Apply
             ( Ident(name),
