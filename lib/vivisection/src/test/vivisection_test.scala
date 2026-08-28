@@ -621,3 +621,40 @@ object Tests extends Suite(m"Vivisection tests"):
           rendered.await()
 
     . assert(_ == t"⟨port 8080⟩")
+
+    // The declared static type of a binding, recovered from TASTy and rendered through stenography,
+    // surfaced to the caller as `Variable.static`: `port` is reported as its opaque type `Port`,
+    // not the `Int` it erases to.
+    test(m"a live session reports a binding's stenography-rendered static type"):
+      supervise:
+        val classpathText = System.properties.java.`class`.path()
+        val classpath = classpathText.as[LocalClasspath]
+        val reported = Promise[Text]()
+        val marker = Ordinal.uniary(71)
+
+        val command: Command = sh"java -classpath $classpathText vivisection.Fixture"
+        val debuggee: Debuggee = Debuggee(command, 5103)
+
+        debuggee.session: debug ?=>
+          debug.resume()
+
+          def waitFor(remaining: Int): List[Jdwp.Location] =
+            val locations = debug.locate(t"vivisection.Fixture.scala", marker)
+
+            if locations.stdlib.nonEmpty then locations
+            else if remaining <= 0 then locations
+            else
+              Thread.sleep(50)
+              waitFor(remaining - 1)
+
+          waitFor(120).stdlib.foreach: location =>
+            debug.breakpoint(location): halt ?=>
+              halt.evaluator(classpath): eval ?=>
+                val port = eval.variables().stdlib.find(_.name == t"port")
+                reported.offer(port.flatMap(_.static.option).getOrElse(t"«none»"))
+
+              halt.remain()
+
+          reported.await()
+
+    . assert(_ == t"vivisection.Fixture.Port")

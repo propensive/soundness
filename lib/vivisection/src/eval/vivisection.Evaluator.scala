@@ -199,14 +199,30 @@ extends caps.ExclusiveCapability:
         case other =>
           Variable.Snapshot.Primitive(other)
 
+  // The frame's visible variables, each enriched with its declared static type where one can be
+  // recovered from TASTy — the `stenography` rendering the user sees as `Variable.static`. A
+  // binding whose static type could not be recovered (a non-parameter local, for now) keeps
+  // `Unset` there and its erased runtime type in `Variable.erased`.
+  def variables(): List[Variable] =
+    val bindings = halt.variables()
+
+    halt.topFrame.lay(bindings): (_, location) =>
+      val owner = Variable.demangle(connection.signature(location.cls))
+      val statics = purview.rendered(owner, methodName(location.cls, location.method))
+
+      val enriched = bindings.stdlib.map: variable =>
+        statics.get(variable.name) match
+          case scala.Some(static) => variable.copy(static = static)
+          case _                  => variable
+
+      List(enriched*)
+
   // Renders a visible binding through its `Inspectable` instance, resolved and invoked in the
   // debuggee. Because the synthetic class types the binding at its declared type, the summon is a
   // *static* one — the instance the programmer's own code would pick — so a type's own notation is
   // used rather than a generic `toString`. `Inspectable` is a `Typeclass.Pure`, so a resolved
   // instance is verified side-effect-free; only the derived `toString`/`Showable` fallbacks (which
-  // mark their output) are unverified. The declared type is the erased runtime type until TASTy
-  // static typing (a later phase) supplies the source type, so an opaque type still renders through
-  // its underlying representation's instance for now.
+  // mark their output) are unverified.
   def inspect(binding: Text): Text =
     apply(t"($binding).inspect") match
       case Variable.Snapshot.Str(_, text) => text

@@ -40,12 +40,15 @@ import scala.language.adhocExtensions
 import dotty.tools.dotc as dtd
 import dotty.tools.dotc.core.Contexts
 import dotty.tools.dotc.core.Symbols
+import dotty.tools.dotc.core.Types
+import dotty.tools.dotc.quoted.QuotesCache
 import dotty.tools.dotc.reporting.Reporter
 import dotty.tools.dotc.util.SourceFile
 
 import anticipation.*
 import hellenism.*
 import proscenium.*
+import stenography.*
 
 // Recovers the *static* Scala types of a frame's bindings from the debuggee's compiled program,
 // so that a value renders through the instance its declared type selects rather than its erased
@@ -78,26 +81,57 @@ class Purview(classpath: LocalClasspath):
     val base = driver.context.fresh.setReporter(Reporter.NoReporter)
     val run = dtd.Compiler().newRun(using base)
     run.compileSources(List(SourceFile.virtual("<purview>", "")).stdlib)
-    run.runContext
 
-  // The declared source types of a method's value parameters, keyed by parameter name. `Unset`
-  // per entry is never produced — a name simply absent means its type could not be recovered, and
-  // the caller falls back to the erased runtime type. The whole lookup degrades to an empty map on
-  // any failure (an unloadable class, a name that does not resolve): a debugger reads types
+    // Quote unpickling — which `stenography`'s `TypeRepr.of` comparisons trigger — expects the
+    // quote-cache context property a macro-expansion context carries; a standalone context must
+    // install it explicitly (as `delicious.Reifier` does).
+    QuotesCache.init(run.runContext.fresh)
+
+  // The debuggee compiles with `proscenium` imported, so the printer qualifies standard types as
+  // `proscenium.Int`/`proscenium.Array`; the synthetic evaluation class compiles under the ordinary
+  // `scala` imports, where those are the plain names, so the prefix is stripped to let the type —
+  // and its `Inspectable` — resolve there. A domain type like `Port` is unaffected.
+  private def normalise(text: Text): Text = text.s.replace("proscenium.", "").nn.tt
+
+  // The value parameters of a method, as (name, declared type), under the standalone context. The
+  // types are compiler `Type`s, rendered differently by the two public methods below.
+  private def valueParameters(className: Text, methodName: Text)(using Contexts.Context)
+  :   sci.List[(Text, Types.Type)] =
+
+    val cls = Symbols.requiredClass(className.s)
+    val method = cls.requiredMethod(methodName.s)
+    val terms = method.paramSymss.flatten.filter(_.isTerm)
+
+    for param <- terms yield (param.name.show.tt, param.info)
+
+  // The compile-usable source type of each value parameter, keyed by name — the compiler's own
+  // printed form. Consumed by the evaluator to type the synthetic class's parameters, so it must
+  // be valid, resolvable Scala. Degrades to an empty map on any failure: a debugger reads types
   // opportunistically and must never fail the frame.
   def parameters(className: Text, methodName: Text): sci.Map[Text, Text] =
     try
       given Contexts.Context = context
-      val cls = Symbols.requiredClass(className.s)
-      val method = cls.requiredMethod(methodName.s)
 
-      // The debuggee compiles with `proscenium` imported, so the printer qualifies standard types
-      // as `proscenium.Int`/`proscenium.Array`; the synthetic evaluation class compiles under the
-      // ordinary `scala` imports, where those are the plain names, so the prefix is stripped to let
-      // the type — and its `Inspectable` — resolve there. A domain type like `Port` is unaffected.
-      val entries = method.paramSymss.flatten.filter(_.isTerm).map: param =>
-        val printed = param.info.show.replace("proscenium.", "").nn.tt
-        (param.name.show.tt, printed)
+      val entries =
+        for (name, tpe) <- valueParameters(className, methodName)
+        yield (name, normalise(tpe.show.tt))
+
+      entries.toMap
+
+    catch case scala.util.control.NonFatal(_) => sci.Map()
+
+  // The human-facing rendering of each value parameter's declared type, through `stenography` —
+  // capture-set-aware and source-accurate — keyed by name. This is what a debugger surfaces to the
+  // user as `Variable.static`. Degrades to an empty map on any failure.
+  def rendered(className: Text, methodName: Text): sci.Map[Text, Text] =
+    try
+      given Contexts.Context = context
+      val quotes = scala.quoted.runtime.impl.QuotesImpl()
+
+      val entries =
+        for (name, tpe) <- valueParameters(className, methodName) yield
+          val repr = tpe.asInstanceOf[quotes.reflect.TypeRepr]
+          (name, normalise(Syntax(using quotes)(repr).qualified))
 
       entries.toMap
 
