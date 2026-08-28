@@ -274,7 +274,10 @@ object Tests extends Suite(m"Gastronomy tests"):
     // The point of corpuscular hosting the checksum algorithms: a checksum is digested through
     // exactly the same `.digest[…]` surface as a cryptographic hash, and provider selection is
     // the same single import. `123456789` has the published CRC-32 check value 0xcbf43926.
+    // Each digest additionally concedes that a checksum is not a hash.
     suite(m"Checksums through the digest API"):
+      import crypto.permitNonCryptographicHashes
+
       test(m"CRC-32 of the standard check vector, via the JDK provider"):
         import providers.javaStdlibProvider
         t"123456789".digest[Crc32].serialize[Hex].lower
@@ -314,6 +317,20 @@ object Tests extends Suite(m"Gastronomy tests"):
         import providers.soundnessProvider
         t"123456789".digest[Crc64].serialize[Hex].length
       . assert(_ == 16)
+
+    suite(m"The non-cryptographic concession"):
+      test(m"digesting with a checksum needs the permit"):
+        demilitarize:
+          import providers.javaStdlibProvider
+          t"123456789".digest[Crc32]
+        . map(_.message)
+      . assert(_.nonEmpty)
+
+      test(m"digesting with SHA-2 needs no permit"):
+        demilitarize:
+          import providers.javaStdlibProvider
+          t"123456789".digest[Sha2[256]]
+      . assert(_ == Nil)
 
     suite(m"Native-rendering coverage"):
       test(m"gastronomy's types inspect natively"):
