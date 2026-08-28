@@ -93,7 +93,7 @@ object KotlinMetadataAtomizer:
   // Kotlin spelling with nullability marks; type parameters as `#<id>` (metadata ids are
   // already declaration-order indices, so binder names never enter a hash).
   private def render(tpe: KmType): Text =
-    val base = tpe.classifier match
+    val base: String = tpe.classifier match
       case classifier: KmClassifier.Class =>
         val name = classifier.getName.nn.replace("/", ".").nn
 

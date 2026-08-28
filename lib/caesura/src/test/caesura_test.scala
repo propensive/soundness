@@ -50,7 +50,7 @@ object Tests extends Suite(m"Caesura tests"):
       . assert(_ == List(Dsv(t"a", t"b"), Dsv(t"c", t"d"), Dsv(t"e", t"f")))
 
       test(m"quoted newlines survive one-char chunks"):
-        t"\"1\n2\",x\ny,z".s.grouped(1).map(_.tt).stream.rows.to(List)
+        t"\("1\n2\",x\ny,z": String).grouped(1).map(_.tt).stream.rows.to(List)
       . assert(_ == List(Dsv(t"1\n2", t"x"), Dsv(t"y", t"z")))
 
       test(m"header rows carry column names"):

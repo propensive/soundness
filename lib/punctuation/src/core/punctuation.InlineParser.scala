@@ -56,7 +56,7 @@ private[punctuation] object InlineParser:
   // batched as plain text.
   private val Specials: Array[Boolean]^{} =
     val arr = Array.allocate[Boolean](128)
-    val special = "\\&`<\n*_[!]"
+    val special: String = "\\&`<\n*_[!]"
     var i = 0
 
     while i < special.length do

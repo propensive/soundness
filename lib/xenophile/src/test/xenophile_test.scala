@@ -831,7 +831,7 @@ object Tests extends Suite(m"Xenophile tests"):
                 |declare enum E { A, B }
                 |declare function f(x: number): string;
                 |declare const k: number;
-                |""".s.stripMargin.tt)
+                |"("": String).stripMargin.tt)
     . assert(_ == scala.List(t"C", t"E", t"f", t"k"))
 
     test(m"a namespace qualifies the declarations it encloses"):
@@ -994,7 +994,7 @@ object Tests extends Suite(m"Xenophile tests"):
           |}
           |export type Handle = string | number;
           |export declare function connect(url: string): Client;
-          |""".s.stripMargin.tt
+          |"("": String).stripMargin.tt
 
     test(m"the discipline claims declaration files and nothing else"):
       val data = Array.freeze(Array.allocate[Byte](0))
@@ -1117,7 +1117,7 @@ object Tests extends Suite(m"Xenophile tests"):
           |  long retries = 3;
           |};
           |enum Direction { "up", "down" };
-          |""".s.stripMargin.tt
+          |"("": String).stripMargin.tt
 
     suite(m"The `webidl/1` discipline"):
       test(m"the discipline claims idl files in the host world and nothing else"):
@@ -1164,7 +1164,7 @@ object Tests extends Suite(m"Xenophile tests"):
           t"""|interface Base {};
               |interface mixin Extras { undefined extra(); };
               |Base includes Extras;
-              |""".s.stripMargin.tt
+              |"("": String).stripMargin.tt
 
         keys(mixed)
       . assert(_ == scala.List(t"Base", t"Base#extra()"))
@@ -1244,7 +1244,7 @@ object Tests extends Suite(m"Xenophile tests"):
           |  import random;
           |  export run;
           |}
-          |""".s.stripMargin.tt
+          |"("": String).stripMargin.tt
 
     suite(m"The `wit/1` discipline"):
       test(m"the discipline claims wit files in its two worlds and nothing else"):
@@ -1297,7 +1297,7 @@ object Tests extends Suite(m"Xenophile tests"):
               |  use one.{id};
               |  get: func() -> id;
               |}
-              |""".s.stripMargin.tt
+              |"("": String).stripMargin.tt
 
         val renamed = direct.s.replace("use one.{id};", "use one.{id as key};").nn
           .replace("-> id;", "-> key;").nn.tt
@@ -1320,7 +1320,7 @@ object Tests extends Suite(m"Xenophile tests"):
               |  @since(version = 0.2.1)
               |  get: func() -> u64;
               |}
-              |""".s.stripMargin.tt
+              |"("": String).stripMargin.tt
 
         val unstable = gated.s.replace("@since(version = 0.2.1)",
             "@unstable(feature = fancy)").nn.tt
@@ -1377,7 +1377,7 @@ object Tests extends Suite(m"Xenophile tests"):
           |typedef enum { LEFT, RIGHT } Direction;
           |int add(int a, int b);
           |size_t strlen(const char* s);
-          |""".s.stripMargin.tt
+          |"("": String).stripMargin.tt
 
     suite(m"The `cheader/1` discipline"):
       test(m"the discipline claims headers in the host world and nothing else"):

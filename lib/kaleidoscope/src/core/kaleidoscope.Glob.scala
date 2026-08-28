@@ -74,7 +74,7 @@ object Glob:
 
   // GlobToken → Glob.Token
   object Token:
-    private val needsEscaping: Set[Char] = (("\\.[]{}()<>*+-=!?^$|": String).iterator).to(Set)
+    private val needsEscaping: Set[Char] = ("\\.[]{}()<>*+-=!?^$|".s.iterator).to(Set)
 
   enum Token:
     case Star, Globstar, OneChar

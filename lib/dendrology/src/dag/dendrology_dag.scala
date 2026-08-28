@@ -41,7 +41,7 @@ package dagStyles:
     TextualDagStyle("  ".tt, "└─".tt, "│ ".tt, "├─".tt, "──".tt, "┴─".tt, "│─".tt, "┼─".tt)
 
   given asciiDagStyle: [text: Textual] => TextualDagStyle[text] =
-    TextualDagStyle("  (".tt, ": String)+-".tt, "| (".tt, ": String)+-".tt, "--(".tt, ": String)+-".tt, "|-(".tt, ": String)+-".tt)
+    TextualDagStyle("  ".tt, ".s+-".tt, "| ".tt, ".s+-".tt, "--".tt, ".s+-".tt, "|-".tt, ".s+-".tt)
 
 package laneDagStyles:
   given defaultLaneDagStyle: [text: Textual] => (Text is Measurable)
@@ -53,5 +53,5 @@ package laneDagStyles:
   given asciiLaneDagStyle: [text: Textual] => (Text is Measurable)
   =>  TextualLaneDagStyle[text] =
     TextualLaneDagStyle
-      ( "  ".tt, "| ".tt, "--(".tt, ": String)+-(".tt, ": String)+ (".tt, ": String)+-(".tt, ": String)+ ".tt,
-        "+-(".tt, ": String)+-(".tt, ": String)+-(".tt, ": String)+ (".tt, ": String)+-".tt, "--".tt, "* ".tt )
+      ( "  ".tt, "| ".tt, "--".tt, ".s+-".tt, ".s+ ".tt, ".s+-".tt, ".s+ ".tt,
+        "+-".tt, ".s+-".tt, ".s+-".tt, ".s+ ".tt, ".s+-".tt, "--".tt, "* ".tt )

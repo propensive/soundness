@@ -101,7 +101,7 @@ extends Exception(message.text.s, cause, false, diagnostics.captureStack), caps.
     // bare literal would convert to Text, which has no `+` member (its
     // concatenation is typeclass-based); this platform-facing method wants
     // plain String concatenation.
-    if d == 0 then component.s+(": ": String)+message.text
-    else ("[↯": String)+errorCode+("] ": String)+message.text
+    if d == 0 then component.s+": ".s+message.text
+    else "[↯".s+errorCode+"] ".s+message.text
 
   override def getCause: Throwable | Null = cause

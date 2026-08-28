@@ -71,7 +71,7 @@ object Semver:
           val prerelease2: List[Text] = prerelease.let(_.skip(1).cut(t".")).or(Nil)
           val build2: List[Text] = build.let(_.skip(1).cut(t".")).or(Nil)
 
-          if prerelease == t"-(" || build == t": String)+" then
+          if prerelease == t"-" || build == t".s+" then
             raise(Semver.Error(text, Semver.Error.Reason.EmptyIdentifier))
 
           for

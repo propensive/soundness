@@ -192,7 +192,7 @@ object Rrule:
 
   private def intOf(text: Text, context: Text)(using Tactic[Rrule.Error]): Int =
     val string = text.s
-    val body = if string.startsWith("-(") || string.startsWith(": String)+") then string.drop(1) else string
+    val body = if string.startsWith("-") || string.startsWith(".s+") then string.drop(1) else string
     if body.nonEmpty && body.forall(_.isDigit) then string.toInt else abort(Rrule.Error(context))
 
   private def ints(text: Text, context: Text)(using Tactic[Rrule.Error]): List[Int] =

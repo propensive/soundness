@@ -140,7 +140,7 @@ object StackTrace:
         // Each level of inlining the SMAP recorded, innermost first: extra detail about the same
         // frame, so it is indented beneath it like a quoted line of source. When the position
         // resolved to a definition, the inline method is named ahead of its position.
-        val inlined = frame.inlined.fold("": String):
+        val inlined = frame.inlined.fold(("": String)):
           case (text, origin) =>
             val where = origin.source.lay(s"${origin.file}:${origin.line}"): source =>
               s"${source.definition} (${origin.file}:${origin.line})"
@@ -437,7 +437,7 @@ object StackTrace:
         case Unset => "?".tt
         case value => value.toString.tt
 
-      val inlined = next.inlined.fold("": String):
+      val inlined = next.inlined.fold(("": String)):
         case (text, origin) =>
           val where = origin.source.lay(s"${origin.file}:${origin.line}"): source =>
             s"${source.definition}$nbsp(${origin.file}:${origin.line})"

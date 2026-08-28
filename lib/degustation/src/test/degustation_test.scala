@@ -79,7 +79,7 @@ object Tests extends Suite(m"Degustation Tests"):
         |  val value: Int = 3
         |
         |inline def double(n: Int): Int = n * 2
-        |""".s.stripMargin.tt
+        |"("": String).stripMargin.tt
 
   def run(): Unit = proscalaLibrary().let: lib =>
     val jars = scala.List("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
@@ -140,7 +140,7 @@ object Tests extends Suite(m"Degustation Tests"):
           |class Scoped:
           |  private[fixture] def limited: Int = 0
           |  private def hidden: Int = 0
-          |""".s.stripMargin.tt)
+          |"("": String).stripMargin.tt)
 
       (qualified.exists(_(0).s.contains("limited")), qualified.exists(_(0).s.contains("hidden")))
     . assert(_ == (true, false))
@@ -153,7 +153,7 @@ object Tests extends Suite(m"Degustation Tests"):
           |
           |object Front:
           |  export Impl.value
-          |""".s.stripMargin.tt)
+          |"("": String).stripMargin.tt)
 
       val written = listing(t"""|package fixture
           |
@@ -162,7 +162,7 @@ object Tests extends Suite(m"Degustation Tests"):
           |
           |object Front:
           |  final def value: Int = Impl.value
-          |""".s.stripMargin.tt)
+          |"("": String).stripMargin.tt)
 
       exported == written
     . assert(identity)
@@ -200,7 +200,7 @@ object Tests extends Suite(m"Degustation Tests"):
             |trait Openish:
             |  def concrete: Int = 1
             |  def abstractOne: Int
-            |""".s.stripMargin.tt
+            |"("": String).stripMargin.tt
 
       listing(reordered) == baseline
     . assert(identity)
@@ -246,7 +246,7 @@ object Tests extends Suite(m"Degustation Tests"):
             |inline def compute(a: Int): Int =
             |  val b = a + 1
             |  b*2
-            |""".s.stripMargin.tt
+            |"("": String).stripMargin.tt
 
       val imported: Text =
         t"""|package lexical
@@ -255,7 +255,7 @@ object Tests extends Suite(m"Degustation Tests"):
             |  import scala.math.*
             |  val b = a + 1
             |  b*2
-            |""".s.stripMargin.tt
+            |"("": String).stripMargin.tt
 
       listing(plain).toMap == listing(imported).toMap
     . assert(identity)
@@ -267,7 +267,7 @@ object Tests extends Suite(m"Degustation Tests"):
             |def helper(n: Int): Int = n + 1
             |inline def outer(n: Int): Int = helper(n) * 2
             |inline def nested(n: Int): Int = outer(n) + 1
-            |""".s.stripMargin.tt
+            |"("": String).stripMargin.tt
 
       val (tastyFiles, classpath0) = compile(source)
       val atoms = Inspection.atomize(tastyFiles, classpath0).stdlib
