@@ -33,6 +33,8 @@
 package rudiments
 
 import soundness.*
+import soundness.collationOrdering
+import soundness.collations.codepoints
 import denominative.dysasymptotics.linearSize
 
 case class Person(name: Text, age: Int)

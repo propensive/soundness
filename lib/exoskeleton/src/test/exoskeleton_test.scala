@@ -33,6 +33,8 @@
 package exoskeleton
 
 import soundness.*
+import soundness.collationOrdering
+import soundness.collations.codepoints
 
 import classloaders.systemClassloader
 import environments.javaEnvironment

@@ -43,6 +43,8 @@ import escapade.*
 import eucalyptus.*
 import fulminate.*
 import gossamer.*
+import gossamer.collationOrdering
+import gossamer.collations.codepoints
 import guillotine.*
 import prepositional.*
 import rudiments.*

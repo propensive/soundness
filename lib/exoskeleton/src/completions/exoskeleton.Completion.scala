@@ -39,6 +39,8 @@ import anticipation.*
 import denominative.*
 import escapade.*
 import gossamer.*
+import gossamer.collationOrdering
+import gossamer.collations.codepoints
 import guillotine.*
 import hieroglyph.*, textMetrics.uniformMetric
 import hypotenuse.*
