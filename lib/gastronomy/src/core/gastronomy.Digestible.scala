@@ -37,6 +37,7 @@ import scala.{caps, util}
 import java.lang as jl
 
 import anticipation.*
+import corpuscular.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*

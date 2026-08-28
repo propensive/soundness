@@ -37,6 +37,7 @@ import java.util as ju
 import scala.compiletime.*
 
 import anticipation.*
+import corpuscular.*
 import monotonous.*
 import prepositional.*
 import spectacular.*

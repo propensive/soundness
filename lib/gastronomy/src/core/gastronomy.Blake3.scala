@@ -39,6 +39,7 @@ import java.nio.charset.StandardCharsets
 import scala.reflect.Selectable.reflectiveSelectable
 
 import anticipation.*
+import corpuscular.*
 import fulminate.*
 import gossamer.*
 import prepositional.*

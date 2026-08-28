@@ -33,6 +33,7 @@
 package enigmatic
 
 import anticipation.*
+import corpuscular.*
 import gossamer.*
 import vacuous.*
 

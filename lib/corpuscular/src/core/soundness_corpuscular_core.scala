@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export corpuscular.{Adler32, Crc32, Crc64}
+export corpuscular.{Adler32, Algorithm, Crc32, Crc64, Digestion}

@@ -46,6 +46,11 @@ object Concession:
   sealed trait Md5
   sealed trait Sha1
 
+  // Not a weakness in the algorithm — CRC-32, CRC-64 and Adler-32 do exactly what they claim —
+  // but a checksum offers no collision resistance against an adversary, so digesting with one
+  // where a hash is meant is a category error the permit makes deliberate.
+  sealed trait NonCryptographic
+
   // TLS concessions (telekinesis): peer configurations a connection may be
   // permitted to accept, from deprecated protocol versions and key sizes to
   // certificate-validation relaxations.

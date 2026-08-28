@@ -32,5 +32,7 @@
                                                                                                   */
 package gastronomy
 
+import corpuscular.*
+
 sealed trait Sha512 extends Algorithm:
   type Bits = 512

@@ -34,14 +34,6 @@ package corpuscular
 
 import soundness.*
 
-// Both corpuscular and gastronomy export a toplevel `Crc32` into `soundness` — corpuscular's
-// concrete checksum object, gastronomy's algorithm marker for its digest framework — and the
-// umbrella keeps just one, by classpath order. A package member declared in another file of
-// this package has lower precedence than a wildcard import, so `import soundness.*` would
-// otherwise decide which `Crc32` this suite tests; naming it explicitly (an explicit import
-// outranks a wildcard) pins it to corpuscular's, whatever the classpath order.
-import corpuscular.Crc32
-
 import strategies.throwUnsafely
 import errorDiagnostics.emptyDiagnostics
 import charEncoders.utf8Encoder

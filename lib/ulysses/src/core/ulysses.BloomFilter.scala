@@ -36,6 +36,7 @@ import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 
 import cardinality.*
+import corpuscular.*
 import gastronomy.*
 import hypotenuse.*
 import prepositional.*

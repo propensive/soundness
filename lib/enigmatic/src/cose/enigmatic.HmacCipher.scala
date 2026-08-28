@@ -33,6 +33,7 @@
 package enigmatic
 
 import anticipation.*
+import corpuscular.*
 import enigmatic.*
 import gastronomy.*
 import prepositional.*

@@ -36,6 +36,7 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
+import corpuscular.*
 import denominative.*
 import vacuous.*
 import prepositional.*
@@ -86,6 +87,12 @@ package crypto:
 
   // Connections to peers whose certificates' revocation status is not checked.
   erased given permitUncheckedRevocation: Permit[Concession.UncheckedRevocation] =
+    caps.unsafe.unsafeErasedValue
+
+  // Digesting with a checksum: CRC-32, CRC-64 and Adler-32 detect accidental corruption and
+  // nothing more, so `digest[Crc32]` states that no adversary is in the threat model. Named for
+  // what it concedes rather than for a weakness, since the algorithms are not defective.
+  erased given permitNonCryptographicHashes: Permit[Concession.NonCryptographic] =
     caps.unsafe.unsafeErasedValue
 
   // "Legacy use": processing already-protected data only (decrypt/verify).
@@ -169,9 +176,13 @@ extension [source: Streamable by Data over Credit](source: source)
     digester.apply
 
 
-// The concession of a hash algorithm: MD5 and SHA-1 are weak; everything else
-// (SHA-2, BLAKE3, CRC-32) is `Acceptable` and needs no permission.
+// The concession of a hash algorithm: MD5 and SHA-1 are cryptographically weak, and the
+// checksums are not cryptographic at all; SHA-2 and BLAKE3 are `Acceptable` and need no
+// permission. The checksum cases precede the catch-all, as match types are ordered.
 type HashWeakness[algorithm] = algorithm match
-  case Md5  => Concession.Md5
-  case Sha1 => Concession.Sha1
-  case _    => Concession.Acceptable
+  case Md5     => Concession.Md5
+  case Sha1    => Concession.Sha1
+  case Crc32   => Concession.NonCryptographic
+  case Crc64   => Concession.NonCryptographic
+  case Adler32 => Concession.NonCryptographic
+  case _       => Concession.Acceptable

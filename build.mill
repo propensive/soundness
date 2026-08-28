@@ -2071,7 +2071,11 @@ object gastronomy extends Library:
   // are shared, while the `JavaStdlibHashing` provider is compiled against `java.security` on the
   // JVM (`core-jvm`, native `MessageDigest`) and against the pure implementations elsewhere
   // (`core-native`), selected by the `jsSources` platform split.
-  object core extends Component(monotonous.core, turbulence.core):
+  // `corpuscular.core` supplies `Algorithm` and `Digestion` (the marker and the incremental
+  // interface) plus the non-cryptographic checksums, so `.digest[Crc32]` reaches corpuscular's
+  // implementation. The edge is nearly free: corpuscular's own dependency, `anticipation.codec`,
+  // is already in this closure. The reverse edge is what the split exists to avoid.
+  object core extends Component(monotonous.core, turbulence.core, corpuscular.core):
     override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
     override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:

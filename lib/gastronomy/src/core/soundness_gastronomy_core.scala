@@ -34,8 +34,8 @@ package soundness
 
 export
   gastronomy
-  . { Algorithm, Blake3, checksum, Concession, Crc32, Digest, digest, Digester, Digestible,
-      Digestion, Feistel, Hash, Hashing, JavaStdlibHashing, Md5, Permit, ProcessingPermit, Provider,
+  . { Blake3, checksum, Concession, Digest, digest, Digester, Digestible,
+      Feistel, Hash, Hashing, JavaStdlibHashing, Md5, Permit, ProcessingPermit, Provider,
       Sha1, Sha2, Sha384, Sha512, SoundnessHashing }
 
 package providers:
@@ -45,4 +45,4 @@ package crypto:
   export gastronomy.crypto.{permitUnauthenticatedCrypto, permitDeprecatedCrypto, permitLegacyCrypto,
       permitDisallowedCrypto, permitCryptoThrough2014, permitCryptoThrough2024,
       permitCryptoThrough2030, permitLegacyTls, permitUntrustedCertificates,
-      permitUncheckedRevocation}
+      permitUncheckedRevocation, permitNonCryptographicHashes}
