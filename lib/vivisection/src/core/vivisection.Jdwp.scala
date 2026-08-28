@@ -228,8 +228,11 @@ object Jdwp:
   object Value:
     // Primitives delegate to their own notation; a reference — undecoded at this level — shows
     // its wire tag character and object identifier, joined by the fullwidth `＠` which marks
-    // every remote identity in this library's renderings.
-    given inspectable: Value is Inspectable =
+    // every remote identity in this library's renderings. Parameterised over subtypes because
+    // `Inspectable`'s `Self` is invariant, so an instance for `Value` alone would not cover the
+    // enumeration's case types (`OfInt`, `Reference`, …), which would silently fall through to
+    // the derived rendering.
+    given inspectable: [value <: Value] => value is Inspectable =
       case OfByte(byte)       => byte.inspect
       case OfChar(char)       => char.inspect
       case OfDouble(double)   => double.inspect

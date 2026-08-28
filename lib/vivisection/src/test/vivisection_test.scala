@@ -141,6 +141,87 @@ object Tests extends Suite(m"Vivisection tests"):
       roundtrip(_.value(Jdwp.Value.Void))(_.value())
     . assert(_ == Jdwp.Value.Void)
 
+    test(m"untagged int value round-trips"):
+      roundtrip(_.untaggedValue(Jdwp.Value.OfInt(1234)))(_.untaggedValue(Jdwp.Tag.IntTag))
+    . assert(_ == Jdwp.Value.OfInt(1234))
+
+    test(m"untagged reference value round-trips"):
+      val value = Jdwp.Value.Reference(Jdwp.Tag.ObjectTag, Jdwp.Ref(66L))
+      roundtrip(_.untaggedValue(value))(_.untaggedValue(Jdwp.Tag.ObjectTag))
+    . assert(_ == Jdwp.Value.Reference(Jdwp.Tag.ObjectTag, Jdwp.Ref(66L)))
+
+    test(m"a primitive arrayregion round-trips its untagged elements"):
+      val region = Jdwp.Writer(sizes)
+      region.byte(Jdwp.Tag.IntTag.id.toByte)
+      region.int(3)
+      region.int(10).int(20).int(30)
+      Jdwp.Reader(region.data, sizes).arrayRegion()
+    . assert(_ == List(Jdwp.Value.OfInt(10), Jdwp.Value.OfInt(20), Jdwp.Value.OfInt(30)))
+
+    test(m"an object arrayregion round-trips its tagged elements"):
+      val region = Jdwp.Writer(sizes)
+      region.byte(Jdwp.Tag.ObjectTag.id.toByte)
+      region.int(2)
+      region.value(Jdwp.Value.Reference(Jdwp.Tag.StringTag, Jdwp.Ref(1L)))
+      region.value(Jdwp.Value.Reference(Jdwp.Tag.ObjectTag, Jdwp.Ref(2L)))
+      Jdwp.Reader(region.data, sizes).arrayRegion()
+    . assert: values =>
+        values == List(Jdwp.Value.Reference(Jdwp.Tag.StringTag, Jdwp.Ref(1L)),
+            Jdwp.Value.Reference(Jdwp.Tag.ObjectTag, Jdwp.Ref(2L)))
+
+    test(m"an int value inspects as its literal"):
+      Jdwp.Value.OfInt(3).inspect
+    . assert(_ == t"3")
+
+    test(m"a long value inspects with its suffix"):
+      Jdwp.Value.OfLong(3L).inspect
+    . assert(_ == t"3L")
+
+    test(m"a reference value inspects as tag and identity"):
+      Jdwp.Value.Reference(Jdwp.Tag.ObjectTag, Jdwp.Ref(77L)).inspect
+    . assert(_ == t"L＠77")
+
+    test(m"a null reference value inspects as null"):
+      Jdwp.Value.Reference(Jdwp.Tag.ObjectTag, Jdwp.Ref(0L)).inspect
+    . assert(_ == t"null")
+
+    test(m"an object snapshot inspects as its simple name and identity"):
+      Variable.Snapshot.Obj(Jdwp.Ref(4021L), t"scala.collection.immutable.List").inspect
+    . assert(_ == t"List＠4021")
+
+    test(m"a string snapshot inspects as text"):
+      Variable.Snapshot.Str(Jdwp.Ref(1L), t"answer").inspect
+    . assert(_ == t"t\"answer\"")
+
+    test(m"an unforced variable inspects with the unforced marker"):
+      Variable(t"x", Unset, t"Int", Unset, Variable.Provenance.Field(t"Holder"), false,
+          Variable.State.Unforced).inspect
+    . assert(_ == t"x:∿∿∿")
+
+    test(m"a demangled primitive signature names the Scala type"):
+      Variable.demangle(t"I")
+    . assert(_ == t"Int")
+
+    test(m"a demangled class signature reads as a dotted name"):
+      Variable.demangle(t"Lscala/collection/immutable/List;")
+    . assert(_ == t"scala.collection.immutable.List")
+
+    test(m"a demangled array signature nests"):
+      Variable.demangle(t"[I")
+    . assert(_ == t"Array[Int]")
+
+    test(m"a captured field recovers the written name"):
+      Variable.captured(t"seed$$1")
+    . assert(_ == t"seed")
+
+    test(m"a plain field is not treated as a capture"):
+      Variable.captured(t"plain")
+    . assert(_ == Unset)
+
+    test(m"a lazy backing field recovers the written name"):
+      Variable.lazyField(t"squared$$lzy1")
+    . assert(_ == t"squared")
+
     test(m"command packet decodes to its fields"):
       val body = Jdwp.Writer(sizes).int(42).data
       Jdwp.Packet.decode(Jdwp.Packet.command(7, 1, 9, body))
@@ -268,7 +349,7 @@ object Tests extends Suite(m"Vivisection tests"):
           vmSide.send(Stream(Jdwp.Packet.command(999, 64, 100, event.data)))
 
         Debugger(Attach(clientSide)).session: debug ?=>
-          debug.breakpoint(location)
+          debug.breakpoint(location, Jdwp.SuspendPolicy.All)
           debug.events.stdlib.head.events
 
     . assert:
@@ -276,3 +357,96 @@ object Tests extends Suite(m"Vivisection tests"):
           request == 1 && thread.long == 5L && where == location
         case _ =>
           false
+
+    test(m"a breakpoint handler runs on the dispatcher with the stopped thread"):
+      supervise:
+        val (vmSide, clientSide) = Duplex.pair()
+        val fired = Promise[Long]()
+
+        // The composite is sent only after the client's `resume`, mirroring real JDWP (a
+        // suspended VM emits no events until resumed) and making handler registration deterministic
+        // — the client has installed the handler before it resumes.
+        val vm = async:
+          val incoming = vmSide.source.toProgression.stdlib.iterator
+          vmSide.send(Stream(incoming.next()))
+
+          val idSizes = Jdwp.Packet.decode(incoming.next())
+          val idBody = Jdwp.Writer(sizes).int(8).int(8).int(8).int(8).int(8).data
+          vmSide.send(Stream(Jdwp.Packet.reply(idSizes.id, 0, idBody)))
+
+          val request = Jdwp.Packet.decode(incoming.next())
+          vmSide.send(Stream(Jdwp.Packet.reply(request.id, 0, Jdwp.Writer(sizes).int(1).data)))
+
+          val resume = Jdwp.Packet.decode(incoming.next())
+          vmSide.send(Stream(Jdwp.Packet.reply(resume.id, 0, Jdwp.Writer(sizes).data)))
+
+          val event = Jdwp.Writer(sizes)
+          event.byte(Jdwp.SuspendPolicy.All.id)
+          event.int(1)
+          event.byte(Jdwp.EventKind.Breakpoint.id.toByte)
+          event.int(1)
+          event.objectId(Jdwp.Ref(5L))
+          event.location(location)
+          vmSide.send(Stream(Jdwp.Packet.command(999, 64, 100, event.data)))
+
+          // Close so the client reader reaches EOF: chunk order delivers the composite first, then
+          // the composites stream stops, the dispatcher's pump returns, and the session tears down
+          // without relying on cancellation.
+          vmSide.close()
+
+        Debugger(Attach(clientSide)).session: debug ?=>
+          debug.breakpoint(location): halt ?=>
+            fired.offer(halt.thread.long)
+            halt.remain()
+
+          debug.resume()
+          fired.await()
+
+    . assert(_ == 5L)
+
+    test(m"an unclaimed composite resumes exactly once, by policy"):
+      supervise:
+        val (vmSide, clientSide) = Duplex.pair()
+        val resumed = Promise[(Int, Int)]()
+
+        val vm = async:
+          val incoming = vmSide.source.toProgression.stdlib.iterator
+          vmSide.send(Stream(incoming.next()))
+
+          val idSizes = Jdwp.Packet.decode(incoming.next())
+          val idBody = Jdwp.Writer(sizes).int(8).int(8).int(8).int(8).int(8).data
+          vmSide.send(Stream(Jdwp.Packet.reply(idSizes.id, 0, idBody)))
+
+          val request = Jdwp.Packet.decode(incoming.next())
+          vmSide.send(Stream(Jdwp.Packet.reply(request.id, 0, Jdwp.Writer(sizes).int(1).data)))
+
+          // The client's own resume (before any event); reply so it returns.
+          val resume = Jdwp.Packet.decode(incoming.next())
+          vmSide.send(Stream(Jdwp.Packet.reply(resume.id, 0, Jdwp.Writer(sizes).data)))
+
+          // One composite with TWO breakpoint events; a handler claims both, so the dispatcher
+          // must resume the whole VM once — never once per event.
+          val event = Jdwp.Writer(sizes)
+          event.byte(Jdwp.SuspendPolicy.All.id)
+          event.int(2)
+          event.byte(Jdwp.EventKind.Breakpoint.id.toByte).int(1).objectId(Jdwp.Ref(5L))
+          event.location(location)
+          event.byte(Jdwp.EventKind.Breakpoint.id.toByte).int(1).objectId(Jdwp.Ref(5L))
+          event.location(location)
+          vmSide.send(Stream(Jdwp.Packet.command(999, 64, 100, event.data)))
+
+          // The dispatcher's auto-resume for the composite: report its (set, command), then close
+          // so its reply promise fails and the dispatcher unwinds rather than blocking on a reply
+          // we never send.
+          val auto = Jdwp.Packet.decode(incoming.next())
+          resumed.offer((auto.commandSet, auto.command))
+          vmSide.close()
+
+        Debugger(Attach(clientSide)).session: debug ?=>
+          debug.breakpoint(location): halt ?=>
+            ()
+
+          debug.resume()
+          resumed.await()
+
+    . assert(_ == (1, 9))
