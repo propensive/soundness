@@ -186,31 +186,43 @@ extends Cli:
         val title = explanation.let { explanation => List(sh"'' -X $explanation") }.or(Nil)
         val termcap: Termcap = termcapDefinitions.xtermTrueColorTermcap
 
-        lazy val width = items.map(_.core.length).maximize(identity).or(0)
+        lazy val width = items.map { item => item.display.or(item.core).length }.maximize(identity).or(0)
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).maximize(identity).or(0) + 1
 
         val itemLines: List[Command] = items.bind:
-          case Suggestion(core0, description, hidden, incomplete, aliases, prefix, suffix, _, _, _) =>
+          case Suggestion(core0, description, hidden, incomplete, aliases, prefix, suffix, _, _, _,
+                          display) =>
             val hiddenParam = if hidden then sh"-n" else sh""
             val shortFlag = focusText.starts(t"-") && !focusText.starts(t"--")
-            val aliasText = if shortFlag then core0 else aliases.join(t" ").fit(aliasesWidth)
+            // The short-flag menu names the flag, then its long form. A clustered candidate has
+            // already been named in full by `display`, so repeating the bare character there
+            // would just print it twice.
+            val aliasText =
+              if shortFlag && display.absent then core0 else aliases.join(t" ").fit(aliasesWidth)
             val prefix2 = if prefix.nil then sh"" else sh"-p $prefix"
             val suffix2 = if suffix.nil then sh"" else sh"-s $suffix"
             val core = if shortFlag then aliases.prim.or(core0) else core0
 
+            // What the menu shows, where that differs from what is inserted — a clustered short
+            // flag inserts one character behind a hidden prefix but is still named in full
+            // (#1888). `compadd`'s display array already carries the described form, so only the
+            // undescribed line needs `-d` adding.
+            val shown = display.or(core)
+
             val mainLine = description.absolve match
               case Unset =>
                 if prefix.nil then sh"'' $hiddenParam -- $core"
-                else sh"'' $hiddenParam $prefix2 $suffix2 -- $core"
+                else if display.absent then sh"'' $hiddenParam $prefix2 $suffix2 -- $core"
+                else sh"'$shown' $hiddenParam $prefix2 $suffix2 -l -d desc -- $core"
 
               case description: Text =>
                 val params = sh"$prefix2 $suffix2 -l -d desc $hiddenParam -- $core"
-                sh"'${core.fit(width)} $aliasText -- $description' $params"
+                sh"'${shown.fit(width)} $aliasText -- $description' $params"
 
               case description: Teletype =>
                 val desc = description.render(termcap)
                 val params = sh"$prefix2 $suffix2 -l -d desc $hiddenParam -- $core"
-                sh"'${core.fit(width)} $aliasText -- $desc' $params"
+                sh"'${shown.fit(width)} $aliasText -- $desc' $params"
 
             val duplicateLine: List[Command] =
               if !incomplete then List()
@@ -236,7 +248,7 @@ extends Cli:
         val sole = items.stdlib.count(!_.hidden) == 1
 
         items.bind:
-          case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _, _, _) =>
+          case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _, _, _, _) =>
             if hidden then Nil else
               val mainLines = (suggestion.text :: aliases.stdlib).map: text =>
                 description.absolve match
@@ -255,7 +267,7 @@ extends Cli:
         // PowerShell inserts a `CompletionResult` verbatim, so a trailing-space twin is
         // just a visible duplicate; `incomplete` has no rendering there.
         items.bind:
-          case suggestion@Suggestion(core, description, hidden, _, aliases, _, _, _, _, _) =>
+          case suggestion@Suggestion(core, description, hidden, _, aliases, _, _, _, _, _, _) =>
             if hidden then Nil else
 
                 (suggestion.text :: aliases.stdlib).map: text =>

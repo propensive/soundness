@@ -63,7 +63,20 @@ case class Argument
   def wrap(suggestion: Suggestion): Suggestion = format match
     case Argument.Format.Full            => suggestion
     case Argument.Format.FlagSuffix      => suggestion.copy(prefix = value.keep(2))
-    case Argument.Format.CharFlag(index) => suggestion // FIXME
+    // Completing inside a clustered short flag (#1888). The characters already typed become a
+    // hidden prefix and only the new one is inserted, so choosing `-c` at `-ab` extends the word
+    // to `-abc` rather than replacing it; `display` keeps the menu naming the flag as `-c`, and
+    // `incomplete` stops the shell terminating the word, so the next letter can follow. A
+    // suggestion that is not a flag (an operand value offered at the same position) is left
+    // alone: there is no cluster to extend.
+    case Argument.Format.CharFlag(index) =>
+      if !suggestion.core.starts(t"-") then suggestion
+      else
+        suggestion.copy
+         ( core       = suggestion.core.skip(1),
+           prefix     = value,
+           display    = suggestion.core,
+           incomplete = true )
 
     case Argument.Format.EqualityPrefix =>
       suggestion.copy(core = suggestion.core+t"="+value.after(value.offsetOf("=").or(Prim)))
