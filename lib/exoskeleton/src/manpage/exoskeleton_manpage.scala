@@ -36,6 +36,8 @@ import anticipation.*
 import aviation.*, dateFormats.iso8601DateFormat
 import escapade.*
 import gossamer.*
+import gossamer.collationOrdering
+import gossamer.collations.codepoints
 import spectacular.*
 import vacuous.*
 import virility.*

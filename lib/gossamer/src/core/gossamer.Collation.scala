@@ -30,67 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package charisma
+package gossamer
 
 import anticipation.*
-import gossamer.*
-import gossamer.collationOrdering
-import gossamer.collations.codepoints
-import hieroglyph.*
-import hypotenuse.*
-import rudiments.*
-import spectacular.*
-import symbolism.*
-import vacuous.*
+import beneficence.*
 
-object Molecule:
-  def apply(): Molecule = Molecule(Map(), 0)
-
-  given showable: Molecule is Showable = molecule =>
-    val orderedElements =
-      if !molecule.elements.defines(PeriodicTable.C)
-      then molecule.elements.stdlib.toList.to(List).sort(_(0).symbol)
-      else
-        val carbon = PeriodicTable.C -> molecule.elements.stdlib(PeriodicTable.C)
-
-        // Ascribed: the branded literal constructor narrows the `else` branch to
-        // `... & Populated`, and the branch lub would otherwise be a union.
-        val hydrogen: List[(Chemical.Element, Int)] =
-          if !molecule.elements.defines(PeriodicTable.H) then Nil else
-            List(PeriodicTable.H -> molecule.elements.stdlib(PeriodicTable.H))
-
-        val rest =
-          (molecule.elements.stdlib - PeriodicTable.C - PeriodicTable.H)
-          . to(List).sort(_(0).symbol)
-
-        carbon :: hydrogen + rest
-
-    val suffix =
-      val polarity =
-        if molecule.charge == 0 then t"" else if molecule.charge < 0 then t"⁻" else t"⁺"
-
-      val magnitude = if molecule.charge.abs < 2 then t"" else
-        t"${molecule.charge.abs.show.chars.readable.map(_.superscript).sift[Char].map(_.show).join}"
-
-      t"$magnitude$polarity${molecule.state.let(_.show).or(t"")}"
-
-    orderedElements.map: (element, count) =>
-      val number =
-        if count == 1 then t"" else count.show.chars.readable.map(_.subscript).sift[Char].map(_.show).join
-
-      t"${element.symbol}$number"
-
-    . join +
-      suffix
-
-  // The chemical formula which `Showable` builds — element symbols with subscript counts, then the
-  // charge and physical state — is a complete rendering of a molecule's state, needs no contextual
-  // givens, and is how a reader recognises the value, so inspection delegates to it.
-  given inspectable: [molecule <: Molecule] => molecule is Inspectable = showable.text(_)
-
-  def apply(element: Chemical.Element): Molecule = element.molecule
-
-case class Molecule
-  ( elements: Map[Chemical.Element, Int], charge: Int, state: Optional[PhysicalState] = Unset )
-extends Molecular:
-  def molecule: Molecule = this
+// A collation: a total ordering of `Text` values. There is deliberately no ambient default
+// (issue #575): a sort order is a policy, chosen either by importing a given from the
+// `collations` package, or — with cosmopolite — derived from a contextual `Locale`.
+trait Collation extends Findable:
+  def compare(left: Text, right: Text): Int
+  def key(text: Text): Array[Int]^{}

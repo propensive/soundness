@@ -84,7 +84,6 @@ object internal:
 
       def multiply(text: Text, n: Int): Text = recur(text, n.max(0), "".tt)
 
-    given ordering: Ordering[Text] = Ordering.String.on[Text](identity)
     given fromString: CommandLineParser.FromString[Text] = make(_)
 
     given fromExpr: (fromExpr: FromExpr[String]) => FromExpr[Text]:

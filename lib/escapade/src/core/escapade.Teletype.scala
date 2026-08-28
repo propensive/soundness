@@ -39,6 +39,8 @@ import scala.util.*
 import anticipation.*
 import denominative.*
 import gossamer.*
+import gossamer.collationOrdering
+import gossamer.collations.codepoints
 import hieroglyph.*
 import mercator.*
 import prepositional.*

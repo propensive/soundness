@@ -33,6 +33,8 @@
 package galilei
 
 import soundness.*
+import soundness.collationOrdering
+import soundness.collations.codepoints
 
 import filesystemBackends.virtualMachineFilesystem
 

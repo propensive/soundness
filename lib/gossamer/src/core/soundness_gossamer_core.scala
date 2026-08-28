@@ -37,6 +37,7 @@ export
   . { add, append, appendln, Ascii, ascii, AsciiBuilder, Bidi, blank,
       broken, build, Builder, builder, camel, capitalize, CaseSensitivity, center, chars, chomp,
       contains, tally, cut, Cuttable, Decimalizer, ends, erase, extract, fill, fit,
+      Collation, collationOrdering,
       fuzzy, Grapheme, init, join, Joinable, kebab, length, lines, lower,
       Ltr, Numerous, ossify, pad, pascal, plain, Proximity, proximity, Pue, pue, punycode,
       Range, reversibleTextual, traversableTextual, Rtl, search, offsetOf, SimpleTExtractor, slices, snake,
@@ -57,3 +58,6 @@ package proximities:
 
 package caseSensitivity:
   export gossamer.caseSensitivity.{caseInsensitive, caseSensitive, smartCase}
+
+package collations:
+  export gossamer.collations.{codepoints, unicode}

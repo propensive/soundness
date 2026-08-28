@@ -37,6 +37,8 @@ import java.lang.classfile.attribute as jlca
 
 import anticipation.*
 import gossamer.*
+import gossamer.collationOrdering
+import gossamer.collations.codepoints
 import rudiments.*
 import vacuous.*
 

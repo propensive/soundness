@@ -617,3 +617,59 @@ package caseSensitivity:
 
   given smartCase: CaseSensitivity = (left, right) =>
     left == right || left.isLower && left.majuscule == right
+
+// Lexically-scoped by necessity, with a library-qualified name: neither `Ordering`'s nor
+// `Text`'s companion can see gossamer, so this cannot live in implicit scope. It fires only
+// when a `Collation` is in scope, making `Text` sortable exactly when a sort order has been
+// chosen (issue #575).
+given collationOrdering: (collation: Collation) => Ordering[Text] =
+  Ordering.fromLessThan: (left, right) => collation.compare(left, right) < 0
+
+package collations:
+  // Dictionary order: the root table of the Unicode Collation Algorithm (UTS #10),
+  // non-ignorable, with three levels. Language-specific orderings tailor this table.
+  given unicode: Collation:
+    def compare(left: Text, right: Text): Int = hieroglyph.CollationTable.root.compare(left, right)
+    def key(text: Text): Array[Int]^{} = hieroglyph.CollationTable.root.key(text)
+
+  // Raw codepoint order: deterministic and table-free, for machine-facing sorting such as
+  // stable file listings. Not `String` order, which compares UTF-16 code units and so places
+  // supplementary characters before U+E000..U+FFFF.
+  given codepoints: Collation:
+    def compare(left: Text, right: Text): Int =
+      val leftString = left.s
+      val rightString = right.s
+      var leftIndex = 0
+      var rightIndex = 0
+      var result = 0
+
+      while result == 0 && leftIndex < leftString.length && rightIndex < rightString.length do
+        val leftCodepoint = Character.codePointAt(leftString, leftIndex)
+        val rightCodepoint = Character.codePointAt(rightString, rightIndex)
+
+        if leftCodepoint != rightCodepoint
+        then result = if leftCodepoint < rightCodepoint then -1 else 1
+
+        leftIndex += Character.charCount(leftCodepoint)
+        rightIndex += Character.charCount(rightCodepoint)
+
+      if result != 0 then result
+      else if leftIndex < leftString.length then 1
+      else if rightIndex < rightString.length then -1
+      else 0
+
+    def key(text: Text): Array[Int]^{} =
+      val string = text.s
+      val buffer = Array.scratch[Int](string.length)
+      var size = 0
+      var index = 0
+
+      while index < string.length do
+        val codepoint = Character.codePointAt(string, index)
+        buffer(size) = codepoint
+        size += 1
+        index += Character.charCount(codepoint)
+
+      val result = Array.scratch[Int](size)
+      java.lang.System.arraycopy(buffer, 0, result, 0, size)
+      Array.unsafeFrozen(result)
