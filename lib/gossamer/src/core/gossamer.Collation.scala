@@ -30,34 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package gossamer
 
-export
-  gossamer
-  . { add, append, appendln, Ascii, ascii, AsciiBuilder, Bidi, blank,
-      broken, build, Builder, builder, camel, capitalize, CaseSensitivity, center, chars, chomp,
-      contains, tally, cut, Cuttable, Decimalizer, ends, erase, extract, fill, fit,
-      Collation, collationOrdering,
-      fuzzy, Grapheme, init, join, Joinable, kebab, length, lines, lower,
-      Ltr, Numerous, ossify, pad, pascal, plain, Proximity, proximity, Pue, pue, punycode,
-      Range, reversibleTextual, traversableTextual, Rtl, search, offsetOf, SimpleTExtractor, slices, snake,
-      spaced, starts, sub, subscripts, superscripts, sysData, t, text,
-      TextBuilder,
-      Textual, tr, trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, urlDecode,
-      urlEncode, utf16, utf8, pinpoint, words, Writing, WritingBuilder, a, justify, punch }
+import anticipation.*
+import beneficence.*
 
-package decimalConverters:
-  export gossamer.decimalConverters.javaDecimalConverter
-
-package proximities:
-  export gossamer.proximities.jaroProximity
-  export gossamer.proximities.jaroWinklerProximity
-  export gossamer.proximities.prefixProximity
-  export gossamer.proximities.levenshteinProximity
-  export gossamer.proximities.normalizedLevenshteinProximity
-
-package caseSensitivity:
-  export gossamer.caseSensitivity.{caseInsensitive, caseSensitive, smartCase}
-
-package collations:
-  export gossamer.collations.{codepoints, unicode}
+// A collation: a total ordering of `Text` values. There is deliberately no ambient default
+// (issue #575): a sort order is a policy, chosen either by importing a given from the
+// `collations` package, or — with cosmopolite — derived from a contextual `Locale`.
+trait Collation extends Findable:
+  def compare(left: Text, right: Text): Int
+  def key(text: Text): Array[Int]^{}

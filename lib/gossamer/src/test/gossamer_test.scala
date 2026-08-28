@@ -1356,3 +1356,37 @@ object Tests extends Suite(m"Gossamer Tests"):
           a"hello $name café"
         . map(_.focus)
       . assert(_ == List("é"))
+
+    suite(m"Collation"):
+      test(m"Text is not sortable without a collation in scope"):
+        demilitarize:
+          List(t"b", t"a").sorted
+        . map(_.reason)
+      . assert(_ == List(CompileError.Reason.MissingImplicitArgument))
+
+      test(m"dictionary order ranks accents before case: cafe < café < caff"):
+        import collations.unicode
+        List(t"caff", t"café", t"cafe").sorted
+      . assert(_ == List(t"cafe", t"café", t"caff"))
+
+      test(m"comparison operators work once a collation is chosen"):
+        import collations.unicode
+        t"apple" < t"banana"
+      . assert(_ == true)
+
+      test(m"codepoint order sorts supplementary characters after the BMP"):
+        import collations.codepoints
+        List(t"𝓐", t"�").sorted
+      . assert(_ == List(t"�", t"𝓐"))
+
+      test(m"codepoint and dictionary orders differ on case"):
+        val upper = List(t"a", t"B")
+        import collations.unicode
+        val dictionary = upper.sorted
+
+        val codepoint =
+          import collations.codepoints
+          upper.sorted
+
+        (dictionary, codepoint)
+      . assert(_ == (List(t"a", t"B"), List(t"B", t"a")))
