@@ -228,7 +228,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
       // UAX #29 conformance against the official GraphemeBreakTest.txt fixture.
       test(m"UAX #29 conformance"):
-        val resourcePath = "/hieroglyph/GraphemeBreakTest.txt"
+        val resourcePath: String = "/hieroglyph/GraphemeBreakTest.txt"
         val stream = getClass.getResourceAsStream(resourcePath).nn
         val lines = scala.io.Source.fromInputStream(stream).getLines().to(List)
 
@@ -304,7 +304,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
       // key must be no greater than its successor's, with ties broken by comparing the NFD
       // forms of the two lines by codepoint.
       test(m"UTS #10 conformance (non-ignorable)"):
-        val resourcePath = "/hieroglyph/CollationTest_NON_IGNORABLE_SHORT.txt"
+        val resourcePath: String = "/hieroglyph/CollationTest_NON_IGNORABLE_SHORT.txt"
         val stream = getClass.getResourceAsStream(resourcePath).nn
         val lines = scala.io.Source.fromInputStream(stream).getLines().to(List)
 

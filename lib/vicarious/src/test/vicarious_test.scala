@@ -65,10 +65,10 @@ object Tests extends Suite(m"Vicarious Tests"):
     suite(m"Specific builder tests"):
       test(m"Specific records the overridden paths"):
         orgSpecific.instances.keys
-      . assert(_ == Set("cto.name", "ceo.age"))
+      . assert(_ == Set[String]("cto.name", "ceo.age"))
 
       test(m"Specific stores the instance for a path"):
-        orgSpecific.instances("cto.name").asInstanceOf[AnyRef] eq nameCodec
+        orgSpecific.instances("cto.name".s).asInstanceOf[AnyRef] eq nameCodec
       . assert(identity(_))
 
       test(m"An invalid field path does not compile"):

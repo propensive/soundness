@@ -82,7 +82,7 @@ object Tests extends Suite(m"Degustation Tests"):
         |""".s.stripMargin.tt
 
   def run(): Unit = proscalaLibrary().let: lib =>
-    val jars = scala.List("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
+    val jars = scala.List[String]("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
     val classpath = LocalClasspath(jars.map { jar => Classpath.Entry.Jar(jar.toString.tt) }*)
     val libraryPaths = jars.map { jar => Text(jar.toString) }
 
@@ -361,7 +361,7 @@ object Tests extends Suite(m"Degustation Tests"):
     . assert(_ == (t"fixture-core", scala.List(t"tasty/1"), scala.List(t"jvm"), true,
         scala.List(t"tasty/1")))
 
-    val sjsJars = scala.List("scala3-library_sjs1.jar", "scalajs-scalalib_2.13.jar")
+    val sjsJars = scala.List[String]("scala3-library_sjs1.jar", "scalajs-scalalib_2.13.jar")
       . map(lib.resolve(_).nn)
       . filter(Files.exists(_))
       . ++ (Files.list(lib).nn.iterator.nn.asScala.to(scala.List).filter: path =>

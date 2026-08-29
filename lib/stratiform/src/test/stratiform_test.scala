@@ -3144,7 +3144,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                     |
                     |layer ext
                     |  scalar Number identifier
-                    |""".stripMargin.tt
+                    |""".s.stripMargin.tt
         val sig = SchemaSignature.fromDocument(src.read[Tel], Tels.Axiom.tels)
         sig.readable.length
       . assert(_ == 37)
@@ -3165,7 +3165,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                     |
                     |layer ext2
                     |  scalar Symbol identifier
-                    |""".stripMargin.tt
+                    |""".s.stripMargin.tt
         val sig = SchemaSignature.fromDocument(src.read[Tel], Tels.Axiom.tels)
         sig.readable.length
       . assert(_ == 39)
@@ -3236,7 +3236,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                         |
                         |document
                         |  field name Identifier
-                        |""".stripMargin.tt
+                        |""".s.stripMargin.tt
       val dataDoc = t"name Alice\n"
 
       def selfContained(): Data =

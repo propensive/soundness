@@ -196,7 +196,7 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
         val input = t"<root><name><![CDATA[A]]></name><age>1</age></root>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (direct, ast) => direct == ast && direct == Set("/name[1]") }
+      . assert { (direct, ast) => direct == ast && direct == Set[String]("/name[1]") }
 
       test(m"A primitive root element parses directly"):
         val input = t"<message>1</message>"
@@ -307,13 +307,13 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
         val input = t"<root><name>Alice</name></root>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (direct, ast) => direct == ast && direct == Set("/age[1]") }
+      . assert { (direct, ast) => direct == ast && direct == Set[String]("/age[1]") }
 
       test(m"A wrong-type primitive accrues the same focus on both paths"):
         val input = t"<root><name>Alice</name><age>old</age></root>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (direct, ast) => direct == ast && direct == Set("/age[1]") }
+      . assert { (direct, ast) => direct == ast && direct == Set[String]("/age[1]") }
 
       test(m"A missing nested product expands per sub-field on both paths"):
         val input = t"<root><title>Acme</title></root>"
@@ -321,17 +321,17 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
           issues(input.read[Xml].as[PFirm]) )
       . assert: (direct, ast) =>
           direct == ast &&
-            direct == Set("/boss[1]", "/boss[1]/name[1]", "/boss[1]/age[1]")
+            direct == Set[String]("/boss[1]", "/boss[1]/name[1]", "/boss[1]/age[1]")
 
       test(m"An empty root element accrues every field on both paths"):
         val input = t"<root/>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (direct, ast) => direct == ast && direct == Set("/name[1]", "/age[1]") }
+      . assert { (direct, ast) => direct == ast && direct == Set[String]("/name[1]", "/age[1]") }
 
       test(m"Default[PWorker] collapses a missing nested value into one error"):
         DirectDefaultScope.run()
-      . assert(_ == Set("/boss[1]"))
+      . assert(_ == Set[String]("/boss[1]"))
 
     suite(m"Malformed input"):
       test(m"A mismatched close tag is a Parse.Error on the direct path too"):
@@ -441,13 +441,13 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
         val input = t"<root><name>Alice</name></root>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (staged, ast) => staged == ast && staged == Set("/age[1]") }
+      . assert { (staged, ast) => staged == ast && staged == Set[String]("/age[1]") }
 
       test(m"A staged wrong-type primitive accrues the same focus as the AST path"):
         val input = t"<root><name>Alice</name><age>old</age></root>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (staged, ast) => staged == ast && staged == Set("/age[1]") }
+      . assert { (staged, ast) => staged == ast && staged == Set[String]("/age[1]") }
 
       test(m"A staged missing nested product expands per sub-field, as on the AST path"):
         val input = t"<root><title>Acme</title></root>"
@@ -455,10 +455,10 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
           issues(input.read[Xml].as[PFirm]) )
       . assert: (staged, ast) =>
           staged == ast &&
-            staged == Set("/boss[1]", "/boss[1]/name[1]", "/boss[1]/age[1]")
+            staged == Set[String]("/boss[1]", "/boss[1]/name[1]", "/boss[1]/age[1]")
 
       test(m"An empty root element accrues every staged field, as on the AST path"):
         val input = t"<root/>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (staged, ast) => staged == ast && staged == Set("/name[1]", "/age[1]") }
+      . assert { (staged, ast) => staged == ast && staged == Set[String]("/name[1]", "/age[1]") }

@@ -75,7 +75,7 @@ object Tests extends Suite(m"Perihelion tests"):
       keytool.redirectOutput(java.lang.ProcessBuilder.Redirect.DISCARD)
       keytool.start().nn.waitFor()
 
-      val password = "changeit".toCharArray.nn
+      val password = "changeit".s.toCharArray.nn
       val keystore = java.security.KeyStore.getInstance("PKCS12").nn
       keystore.load(java.io.FileInputStream(path), password)
       val keyManagers = javax.net.ssl.KeyManagerFactory.getInstance("SunX509").nn

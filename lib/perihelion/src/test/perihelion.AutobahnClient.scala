@@ -55,7 +55,7 @@ object AutobahnClient:
   private val agent: Text = t"soundness-perihelion"
 
   def main(args: scala.Array[String]): Unit =
-    val host: Text = (if args.length > 0 then args(0) else "localhost").tt
+    val host: Text = if args.length > 0 then args(0).tt else t"localhost"
     val port: Int = if args.length > 1 then Integer.parseInt(args(1)) else 9001
 
     supervise:

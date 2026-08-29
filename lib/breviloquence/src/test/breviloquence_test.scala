@@ -326,7 +326,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
         val cbor = Renamed(List(1L, 2L), List(3L)).in[Cbor]
         val ast = Cbor.unseal(cbor)
         val keys = (0 until ast.entries).map(ast.key(_).string).toSet
-        keys == Set("data_files", "index_files")
+        keys == Set[String]("data_files", "index_files")
       . assert(identity)
 
       test(m"Decode reads wire keys back into Scala fields"):
@@ -340,7 +340,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
         val cbor = original.in[Cbor]
         val ast = Cbor.unseal(cbor)
         val keys = (0 until ast.entries).map(ast.key(_).string).toSet
-        keys == Set("values", "label")
+        keys == Set[String]("values", "label")
       . assert(identity)
 
       test(m"@name renames a variant's discriminator"):
@@ -575,11 +575,11 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"Two mistyped fields both accrue, with their pointers"):
         collectCbor(BadPerson(1, t"x").in[Cbor])(_.as[Person]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("name", "age"))
+      . assert(_ == Set[String]("name", "age"))
 
       test(m"Two missing fields both accrue"):
         collectCbor(Point(1, 2).in[Cbor])(_.as[Person]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("name", "age"))
+      . assert(_ == Set[String]("name", "age"))
 
       test(m"A fully-valid record accrues nothing"):
         collectCbor(Person(t"Ada", 36).in[Cbor])(_.as[Person]).items.size

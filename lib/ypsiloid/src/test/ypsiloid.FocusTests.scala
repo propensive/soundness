@@ -70,12 +70,12 @@ object FocusTests extends Suite(m"Ypsiloid focus + position tests"):
       test(m"Missing field reports the focus pointer (no position)"):
         val yaml = t"name: Alice\nage: 30".read[Yaml]
         captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to[Set]
-      . assert(_ == Set("#/email"))
+      . assert(_ == Set[String]("#/email"))
 
       test(m"Wrong-type field reports the focus pointer (no position)"):
         val yaml = t"name: Alice\nage: thirty\nemail: a@b".read[Yaml]
         captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to[Set]
-      . assert(_ == Set("#/age"))
+      . assert(_ == Set[String]("#/age"))
 
       test(m"Nested case-class missing field reports root-first path"):
         val yaml = t"""
@@ -91,7 +91,7 @@ address:
         // their own errors rather than the first one aborting the
         // whole decode.
         captureFoci(yaml)(_.as[FContact]).map(_(0).s).to[Set]
-      . assert(_ == Set("#/address/city", "#/address/zip"))
+      . assert(_ == Set[String]("#/address/city", "#/address/zip"))
 
       test(m"Untracked roots leave the focus position Unset"):
         val yaml = t"name: Alice\nage: 30".read[Yaml]
@@ -110,7 +110,7 @@ address:
         // `withPosition` plumbing in a separate direct test below.
         val yaml = t"name: Alice\nage: 30".read[Yaml]
         captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to[Set]
-      . assert(_ == Set("#/email"))
+      . assert(_ == Set[String]("#/email"))
 
       test(m"Nested missing field reports root-first path on a tracked root"):
         val source = t"""person:
@@ -121,7 +121,7 @@ address:
   street: X
 """
         captureFoci(source.read[Yaml])(_.as[FContact]).map(_(0).s).to[Set]
-      . assert(_ == Set("#/address/city", "#/address/zip"))
+      . assert(_ == Set[String]("#/address/city", "#/address/zip"))
 
       test(m"withPosition on a tracked Yaml resolves the pointer to a real position"):
         // Direct exercise of `Yaml.Focus#withPosition`. Even though the

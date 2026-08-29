@@ -109,7 +109,7 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == t"a𐍈b".in[Data].readable.to(List))
 
       test(m"per-char-chunk streams roundtrip through encode and decode"):
-        val string = "aë€𐍈z"
+        val string: String = "aë€𐍈z"
 
         val chunks =
           (0 until string.length).map { index => string.charAt(index).toString.tt }.to(Chain)

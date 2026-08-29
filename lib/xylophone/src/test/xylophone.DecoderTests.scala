@@ -145,7 +145,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
       test(m"A failing sum field and a missing sibling both accrue"):
         validateXml(x"<root><shape><foo>bar</foo></shape></root>")(_.as[XMix])
         . items.map(_(0).s).to[Set]
-      . assert(_ == Set("/shape[1]", "/name[1]"))
+      . assert(_ == Set[String]("/shape[1]", "/name[1]"))
 
     suite(m"Sum type by element label"):
       test(m"Decode the Circle variant"):
@@ -170,7 +170,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
       test(m"Pointer identifies the missing field"):
         val xml = x"<root><name>Alice</name><age>30</age></root>"
         validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("/email[1]"))
+      . assert(_ == Set[String]("/email[1]"))
 
       test(m"Two missing primitive fields accrue two errors"):
         val xml = x"<root><name>Alice</name></root>"
@@ -180,7 +180,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
       test(m"Pointers identify both missing primitive fields"):
         val xml = x"<root><name>Alice</name></root>"
         validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("/age[1]", "/email[1]"))
+      . assert(_ == Set[String]("/age[1]", "/email[1]"))
 
       test(m"Wrong-type primitive field accrues an error"):
         val xml = x"<root><name>Alice</name><age>oldish</age><email>a@b.c</email></root>"
@@ -190,12 +190,12 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
       test(m"Wrong-type primitive field reports the field's path"):
         val xml = x"<root><name>Alice</name><age>oldish</age><email>a@b.c</email></root>"
         validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("/age[1]"))
+      . assert(_ == Set[String]("/age[1]"))
 
       test(m"Wrong-type and missing-field errors mix"):
         val xml = x"<root><name>Alice</name><age>oldish</age></root>"
         validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("/age[1]", "/email[1]"))
+      . assert(_ == Set[String]("/age[1]", "/email[1]"))
 
       test(m"Nested missing primitive field reports both segments"):
         val xml = x"""<root>
@@ -203,7 +203,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
                        <company>Acme</company>
                      </root>"""
         validateXml(xml)(_.as[DContact]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("/person[1]/email[1]"))
+      . assert(_ == Set[String]("/person[1]/email[1]"))
 
       test(m"Missing nested case-class field expands per sub-field"):
         // A missing `person` triggers the nested conjunction's
@@ -213,7 +213,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
         val xml = x"<root><company>Acme</company></root>"
         validateXml(xml)(_.as[DContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
-          paths == Set
+          paths == Set[String]
             ( "/person[1]",
               "/person[1]/name[1]",
               "/person[1]/age[1]",
@@ -228,11 +228,11 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
 
       test(m"Default[DPerson] collapses a missing nested into one error"):
         DefaultPersonScope.run()
-      . assert(_ == Set("/person[1]"))
+      . assert(_ == Set[String]("/person[1]"))
 
       test(m"Default[DShape] handles an unknown discriminator at the top level"):
         DefaultShapeScope.run()
-      . assert((paths, count) => count == 1 && paths == Set("#"))
+      . assert((paths, count) => count == 1 && paths == Set[String]("#"))
 
       test(m"Without Default[DShape], unknown discriminator aborts"):
         // Outside a `Default[DShape]`, the disjunction calls `abort`,
@@ -248,7 +248,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
         val xml = x"<root><company>Acme</company></root>"
         validateXml(xml)(_.as[DContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
-          paths == Set
+          paths == Set[String]
             ( "/person[1]",
               "/person[1]/name[1]",
               "/person[1]/age[1]",

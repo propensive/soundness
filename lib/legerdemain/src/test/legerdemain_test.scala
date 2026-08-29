@@ -80,7 +80,7 @@ object Tests extends Suite(m"Legerdemain tests"):
     suite(m"Validation accrual"):
       test(m"Two missing parameters both accrue, with their pointers"):
         validateQuery(t"".as[Query])(_.as[QPerson]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("name", "email"))
+      . assert(_ == Set[String]("name", "email"))
 
       test(m"One missing parameter accrues one error; the present one does not"):
         validateQuery(t"name=Ada".as[Query])(_.as[QPerson]).items.map(_(0).s)
@@ -88,7 +88,7 @@ object Tests extends Suite(m"Legerdemain tests"):
 
       test(m"Nested parameters accrue with dotted pointers"):
         validateQuery(t"title=Skunkworks".as[Query])(_.as[QTeam]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("leader.name", "leader.email"))
+      . assert(_ == Set[String]("leader.name", "leader.email"))
 
       test(m"A fully-valid query accrues nothing"):
         validateQuery(t"name=Ada&email=a%40b.c".as[Query])(_.as[QPerson]).items.size
