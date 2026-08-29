@@ -509,7 +509,8 @@ object SourceCode:
   :   Optional[Completions] =
 
     try
-      val settings = ("-classpath" :: cp.s :: scalac.commandLineArguments.map(_.s)).map(_.nn)
+      val settings =
+        (("-classpath": String) :: cp.s :: scalac.commandLineArguments.map(_.s)).map(_.nn)
       // stdlib bridge: the presentation compiler's own API takes a `scala.List[String]`.
       val driver = Shim.interactiveDriver(settings.stdlib)
       // The driver resolves the URI as a path, so it must use the `file` scheme, though no

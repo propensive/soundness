@@ -859,7 +859,7 @@ object Mcp:
     :   Json
 
     def log(message: Text): Unit =
-      `notifications/message`(LoggingLevel.Info, "updates", Map("message" -> message).in[Json])
+      `notifications/message`(LoggingLevel.Info, "updates", Map(t"message" -> message).in[Json])
 
     def elicit[result: Schematic over JsonSchema](message: Text): Json =
       `elicitation/create`(t"form", message, result.schema().in[Json])

@@ -540,7 +540,7 @@ object internal:
         t"${render(subject)}[$params2]"
 
       case _ =>
-        term.show.unless(_ => term.show.length > 12).or("...").tt
+        term.show.unless(_ => term.show.length > 12).let(_.tt).or(t"...")
 
     def annotation(term: Term): Teletype = e"@${render(term)}"
 
@@ -634,7 +634,7 @@ object internal:
           t"Position"         -> position,
           t"Private within"   -> symbol.privateWithin.map(_.show).getOrElse(t""),
           t"Protected within" -> symbol.protectedWithin.map(_.show).getOrElse(t""),
-          t"Documentation"    -> symbol.docstring.getOrElse("").tt,
+          t"Documentation"    -> symbol.docstring.map(_.tt).getOrElse(t""),
           t"Annotations"      -> (symbol.annotations.map(annotation(_).plain)).to(List),
           t"Declared fields"  -> symbol.declaredFields.sortBy(_.name).map(_.name.tt).to(List),
           t"Field members"    -> symbol.fieldMembers.sortBy(_.name).map(_.name.tt).to(List),
