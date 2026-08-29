@@ -35,6 +35,7 @@ package vivisection
 import java.io as ji
 import java.lang as jl
 import java.nio.charset as jnc
+import java.util.concurrent as juc
 import java.util.concurrent.atomic as juca
 
 import scala.caps
@@ -710,11 +711,12 @@ object Jdwp:
     class Slot(@scala.caps.unsafe.untrackedCaptures val run: Halt => Unit)
 
     // Likewise for a class-prepare handler, which receives the raw event rather than a `Halt`:
-    // the prepared class has no stopped frame to inspect. The tactic is lent contextually by the
-    // dispatcher, exactly as a `Halt` carries it for breakpoint handlers.
-    class PrepareSlot
-      ( @scala.caps.unsafe.untrackedCaptures
-        val run: Tactic[Debugger.Error] ?=> Event.ClassPrepared => Unit )
+    // the prepared class has no stopped frame to inspect. It carries no error channel; a handler
+    // wanting one opens it inline with `safely`.
+    class PrepareSlot(@scala.caps.unsafe.untrackedCaptures val run: Event.ClassPrepared => Unit)
+
+    // The queue sentinel which ends the dispatcher's pump when the channel closes.
+    private[vivisection] object Terminate
 
     // Reads a big-endian 32-bit integer from a raw byte array at the given offset.
     private def int32(bytes: scala.Array[Byte], offset: Int): Int =
@@ -787,6 +789,10 @@ object Jdwp:
       finally
         reader.cancel()
         writer.cancel()
+        // The dispatcher blocks in a queue `take`, which cooperative cancellation cannot
+        // unstick, so the terminate sentinel is delivered first; when the reader observed the
+        // channel close it already sent one, and a second is harmless.
+        connection.disconnect()
         dispatcher.cancel()
 
   class Connection private[vivisection] (monitor: Monitor, note: Diagnostics)
@@ -794,7 +800,16 @@ object Jdwp:
     private val counter: juca.AtomicInteger = juca.AtomicInteger(0)
     private val pending: scc.TrieMap[Int, Promise[Connection.Reply]] = scc.TrieMap()
     private[vivisection] val outgoing: Relay[Data] = Relay()
-    private[vivisection] val composites: Relay[Event.Composite] = Relay()
+
+    // Composite events queue here for the dispatcher: a plain blocking queue rather than a relay,
+    // because `submit` must be able to pump it *re-entrantly* while awaiting a reply on the
+    // dispatcher task (see `submit`), and a relay admits only one consumer position. The
+    // dispatcher's thread is recorded when the pump starts, so `submit` can recognise itself.
+    private val composites: juc.LinkedBlockingQueue[Event.Composite | Connection.Terminate.type] =
+      juc.LinkedBlockingQueue()
+
+    private val dispatcher0: juca.AtomicReference[Thread | Null] = juca.AtomicReference(null)
+    private val closed0: juca.AtomicBoolean = juca.AtomicBoolean(false)
 
     // Registered breakpoint handlers, keyed by (event kind, request id), and the composites no
     // handler claimed. A handler captures session capabilities, which the map cannot carry, so it
@@ -814,8 +829,7 @@ object Jdwp:
     private[vivisection] def unregister(kind: EventKind, request: Int): Unit =
       handlers.remove((kind.id, request))
 
-    private[vivisection] def registerPrepare(request: Int)
-      ( handler: Tactic[Debugger.Error] ?=> Event.ClassPrepared => Unit )
+    private[vivisection] def registerPrepare(request: Int)(handler: Event.ClassPrepared => Unit)
     :   Unit =
 
       preparers(request) = Connection.PrepareSlot(handler)
@@ -823,10 +837,25 @@ object Jdwp:
     private[vivisection] def unregisterPrepare(request: Int): Unit =
       preparers.remove(request)
 
-    // Drains composites until the stream ends, then closes the unclaimed stream that `Debug.events`
-    // reads.
+    // Drains composites until the connection closes, then closes the unclaimed stream that
+    // `Debug.events` reads. The wait is a bounded poll re-checking `closed0`, never an unbounded
+    // block: an unbounded `take` proved able to outlive teardown when a cancellation interrupt
+    // or the terminate sentinel was lost to a racing nested pump, so the pump's exit must not
+    // *depend* on either arriving — the sentinel only makes it prompt.
     private[vivisection] def pump(): Unit =
-      composites.lazyList.stdlib.foreach(process)
+      dispatcher0.set(Thread.currentThread)
+
+      def recur(): Unit =
+        if !closed0.get then
+          composites.poll(100, juc.TimeUnit.MILLISECONDS) match
+            case composite: Event.Composite =>
+              process(composite)
+              recur()
+
+            case _ =>
+              recur()
+
+      recur()
       unclaimed.stop()
 
     // Runs the handlers a composite's events claim, then settles its suspension. JDWP suspends
@@ -894,11 +923,7 @@ object Jdwp:
           preparers.get(event.request).foreach: slot =>
             claimed = true
             suspended = event.thread
-
-            val outcome: Optional[Unit] = contingency.safely[Debugger.Error]:
-              slot.run(event)
-
-            outcome.let(identity)
+            slot.run(event)
 
         case _ =>
           ()
@@ -922,11 +947,13 @@ object Jdwp:
         composites.put(Event.composite(Reader(packet.body, sizes0)))
 
     // Fails every in-flight request and ends the event stream when the channel closes. The
-    // dispatcher's `pump` then drains the now-terminated composites and stops `unclaimed`.
+    // in-flight failures come first, so a nested pump blocked on a reply observes its promise
+    // settled before (or without) meeting the sentinel.
     private[vivisection] def disconnect(): Unit =
+      closed0.set(true)
       pending.values.foreach(_.offer(Connection.Reply.Failed(-1)))
       pending.clear()
-      composites.stop()
+      composites.put(Connection.Terminate)
 
     // The seam beneath every command: allocate an id, frame the request, and await the raw reply.
     // Most commands go through `request`, which raises the VM's error code; the few that read a
@@ -939,9 +966,29 @@ object Jdwp:
       pending(id) = promise
       outgoing.put(Packet.command(id, set, command, writer.data))
 
-      // The monitor is passed to `await` explicitly, not as a `given` (which would hide `this`).
-      // A cancelled await becomes a lost connection.
-      safely(promise.await()(using monitor)).or(Connection.Reply.Failed(-1))
+      // On the dispatcher itself — a handler issuing a command — the reply is awaited by pumping
+      // the composite queue re-entrantly. An invoked method can trigger an event (typically a
+      // class prepare during linking) which suspends the very thread running the invoke; only
+      // the dispatcher can settle that suspension, so blocking here without pumping would
+      // deadlock the invoke against its own event. Any composite processed here runs its
+      // handlers nested within the current one, exactly as the top-level pump would.
+      val nested = dispatcher0.get match
+        case null   => false
+        case thread => thread eq Thread.currentThread.nn
+
+      if nested then
+        while !promise.ready && !closed0.get do
+          composites.poll(10, juc.TimeUnit.MILLISECONDS) match
+            case composite: Event.Composite => process(composite)
+            case Connection.Terminate       => composites.put(Connection.Terminate)
+            case null                       => ()
+
+        promise().or(Connection.Reply.Failed(-1))
+
+      // Elsewhere, the monitor is passed to `await` explicitly, not as a `given` (which would
+      // hide `this`). A cancelled await becomes a lost connection.
+      else
+        safely(promise.await()(using monitor)).or(Connection.Reply.Failed(-1))
 
     // Frames and issues a command, handing back a reader over the reply's payload. On failure, an
     // error is raised recoverably and an empty reader returned, so no `Nothing`-typed expression
