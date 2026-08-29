@@ -155,7 +155,8 @@ extends Rig:
 
               if method != null then
                 val cls = method.getType.nn.getName
-                val key = (if cls == null then "?" else cls) + ("\t": String) + method.getName
+                val key =
+                  ((if cls == null then "?" else cls): String) + ("\t": String) + method.getName
                 val previous = counts.get(key)
                 counts.put(key, (if previous == null then 0L else previous) + 1L)
                 total += 1L
