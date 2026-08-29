@@ -34,7 +34,8 @@ package vivisection
 
 import contingency.*
 
-// A revocable handle on an installed breakpoint: `clear()` removes its event request from the VM
-// and unregisters its handler, after which any hits already in flight are treated as unclaimed.
-class Breakpoint private[vivisection] (debug: Debug, val request: Int):
-  def clear()(using Tactic[Debugger.Error]): Unit = debug.remove(request)
+// A revocable handle on an installed event request with a handler — a breakpoint, an exception
+// request, or a watchpoint: `clear()` removes the request from the VM and unregisters its
+// handler, after which any hits already in flight are treated as unclaimed.
+class Breakpoint private[vivisection] (debug: Debug, kind: Jdwp.EventKind, val request: Int):
+  def clear()(using Tactic[Debugger.Error]): Unit = debug.remove(kind, request)

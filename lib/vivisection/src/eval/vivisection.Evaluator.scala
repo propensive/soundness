@@ -127,7 +127,31 @@ extends caps.ExclusiveCapability:
     if slash < 0 then t"" else body.substring(0, slash).nn.replace('/', '.').nn.tt
 
   def apply(expression: Text): Variable.Snapshot =
-    halt.topFrame.lay(Variable.Snapshot.Null): (frame, location) =>
+    execute(t"java.lang.String.valueOf(($expression): scala.Any)", t"java.lang.String") match
+      case Jdwp.Value.Reference(Jdwp.Tag.StringTag, id) if !id.empty =>
+        Variable.Snapshot.Str(id, connection.stringValue(Jdwp.Ref(id.long)))
+
+      case other =>
+        Variable.Snapshot.Primitive(other)
+
+  // Evaluates `expression` at the variable's declared (or, failing that, erased) type and writes
+  // the result back into the named variable, routed by its provenance — a frontend's variable
+  // edit. Typing the synthetic `run` at the variable's own type makes the compiler enforce
+  // assignability, and returns a primitive as a primitive, which the slot or field write
+  // requires.
+  def assign(binding: Text, expression: Text): Unit =
+    variables().stdlib.find(_.name == binding) match
+      case scala.Some(variable) =>
+        val kind: Text = variable.static.or(variable.erased)
+        halt.assign(variable, execute(t"($expression)", kind))
+
+      case _ =>
+        ()
+
+  // Compiles a synthetic class whose `run(): resultType = body` closes over the frame's locals,
+  // injects it, and invokes it, returning the invoke's raw result.
+  private def execute(body: Text, resultType: Text): Jdwp.Value =
+    halt.topFrame.lay(Jdwp.Value.Void): (frame, location) =>
       val table = connection.variableTable(location.cls, location.method)
 
       // The locals live at the stop, in declaration order: name, Scala type, and current value.
@@ -156,7 +180,7 @@ extends caps.ExclusiveCapability:
       val typed = locals.map: (name, signature, _) =>
         (name, statics.get(name).getOrElse(Variable.demangle(signature)))
 
-      val source = render(className, pkg, typed, expression)
+      val source = render(className, pkg, typed, resultType, body)
 
       val process = session.compile(Map(t"$className.scala" -> source))
       process.complete()
@@ -176,7 +200,7 @@ extends caps.ExclusiveCapability:
       val run = connection.methods(cls).stdlib.find(_.name == t"run").map(_.method)
       val arguments = List(locals.map { (_, _, value) => value }*)
 
-      val result: Jdwp.Value = constructor match
+      constructor match
         case scala.Some(ctor) => run match
           case scala.Some(runMethod) =>
             connection.newInstance(cls, thread, ctor, arguments).result match
@@ -191,13 +215,6 @@ extends caps.ExclusiveCapability:
 
         case _ =>
           Jdwp.Value.Void
-
-      result match
-        case Jdwp.Value.Reference(Jdwp.Tag.StringTag, id) if !id.empty =>
-          Variable.Snapshot.Str(id, connection.stringValue(Jdwp.Ref(id.long)))
-
-        case other =>
-          Variable.Snapshot.Primitive(other)
 
   // The frame's visible variables, each enriched with its declared static type where one can be
   // recovered from TASTy — the `stenography` rendering the user sees as `Variable.static`. A
@@ -280,10 +297,11 @@ extends caps.ExclusiveCapability:
     connection.methods(cls).stdlib.find(_.method == method).map(_.name).getOrElse(t"")
 
   // The synthetic compilation unit: a class whose constructor parameters mirror the frame's
-  // locals (each already typed at its declared or erased type) and whose `run` renders the
-  // expression as text through `String.valueOf`, so every result — primitive, string or object —
-  // comes back over one decode path.
-  private def render(name: Text, pkg: Text, params: sci.List[(Text, Text)], expression: Text)
+  // locals (each already typed at its declared or erased type) and whose `run` evaluates the
+  // given body at the given result type — `String.valueOf` text for a plain evaluation, or a
+  // variable's own type for an assignment.
+  private def render
+    ( name: Text, pkg: Text, params: sci.List[(Text, Text)], resultType: Text, body: Text )
   :   Text =
 
     val parameters = params.map { (field, kind) => s"${field.s}: ${kind.s}" }.mkString(", ")
@@ -292,6 +310,5 @@ extends caps.ExclusiveCapability:
     // does not use it simply leaves the import unused.
     val imports = "import spectacular.*\n\n"
     val header = if pkg == t"" then imports else s"package ${pkg.s}\n\n$imports"
-    val run = s"java.lang.String.valueOf((${expression.s}): scala.Any)"
 
-    s"${header}class ${name.s}($parameters):\n  def run(): java.lang.String = $run\n".tt
+    s"${header}class ${name.s}($parameters):\n  def run(): ${resultType.s} = ${body.s}\n".tt

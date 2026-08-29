@@ -73,6 +73,10 @@ object Halt:
     case Modification(cls: ReferenceTypeId, field: FieldId, target: Optional[ObjectId],
         incoming: Jdwp.Value)
 
+  // A summary of the exception in flight at an exception stop: its class, the detail message it
+  // was constructed with (absent when null), and whether the throw will be caught.
+  case class ExceptionInfo(className: Text, message: Optional[Text], caught: Boolean)
+
 // The capability lent to an event handler while its thread stands suspended: a view over the
 // stopped thread's frames and their logical variables. Sealed (`ExclusiveCapability`), so it
 // cannot outlive the stop it describes — once the dispatcher resumes the thread, every
@@ -96,6 +100,35 @@ extends caps.ExclusiveCapability:
 
   def frames(): List[(FrameId, Jdwp.Location)] =
     connection.frames(thread, 0, connection.frameCount(thread))
+
+  // Describes the exception in flight, when this stop reports one. The message is read directly
+  // from `Throwable`'s `detailMessage` field — walking up the type hierarchy to the class which
+  // declares it — rather than by invoking `getMessage`, so no debuggee code runs and none of the
+  // invoke hazards apply.
+  def exceptionInfo(): Optional[Halt.ExceptionInfo] = cause match
+    case Halt.Cause.Thrown(exception, catchLocation) =>
+      val (_, cls) = connection.referenceType(exception)
+      val className = Variable.demangle(connection.signature(cls))
+
+      def declaring(cls0: ReferenceTypeId): Optional[FieldId] =
+        if cls0.empty then Unset else
+          connection.fields(cls0).stdlib.find(_.name == t"detailMessage") match
+            case scala.Some(info) => info.field
+            case scala.None       => declaring(connection.superclass(cls0))
+
+      val message: Optional[Text] = declaring(cls).lay(Unset):
+        fieldId =>
+          connection.fieldValues(exception, List(fieldId)).stdlib.headOption match
+            case scala.Some(Jdwp.Value.Reference(Jdwp.Tag.StringTag, id)) if !id.empty =>
+              connection.stringValue(Jdwp.Ref(id.long))
+
+            case _ =>
+              Unset
+
+      Halt.ExceptionInfo(className, message, catchLocation != Unset)
+
+    case _ =>
+      Unset
 
   // The stopped frame's `this`, absent in a static or native frame.
   def thisObject(frame: FrameId): Optional[ObjectId] =
@@ -145,7 +178,8 @@ extends caps.ExclusiveCapability:
         val values = connection.fieldValues(id, List(fields.map(_.field)*)).stdlib
 
         val children = fields.zip(values).map: (field, value) =>
-          variable(field.name, field.signature, value, Variable.Provenance.Field(cls))
+          variable(field.name, field.signature, value,
+              Variable.Provenance.Field(cls, id, field.field))
 
         List(children*)
 
@@ -157,12 +191,44 @@ extends caps.ExclusiveCapability:
 
         val children = values.zipWithIndex.map: (value, index) =>
           Variable(index.toString.tt, Unset, Variable.tagName(component), snapshot(value),
-              Variable.Provenance.Element(index), true, Variable.State.Forced)
+              Variable.Provenance.Element(id, index), true, Variable.State.Forced)
 
         List(children*)
 
       case _ =>
         List()
+
+  // Discards the given frame and every frame above it, leaving the thread suspended at the call
+  // which created it, so resuming re-executes the call — a frontend's frame restart. Requires
+  // the VM's `canPopFrames` capability and no native frame among those popped.
+  def pop(frame: FrameId): Unit = connection.popFrames(thread, frame)
+
+  // Writes a new value into a variable at the stopped frame.
+  def assign(variable: Variable, value: Jdwp.Value): Unit =
+    topFrame.let { (frame, _) => assign(frame, variable, value) }
+
+  // Writes a new value into a variable, routed by its provenance: a local slot in the given
+  // frame, a captured or member field on its holding object, an array element, or — through a
+  // ref cell — the cell's `elem`, so assigning a captured `var` behaves as the source suggests.
+  // The value must be of the variable's erased type; the identifiers a provenance carries are
+  // only valid while this halt's thread stands suspended, which is exactly when assignment is
+  // meaningful.
+  def assign(frame: FrameId, variable: Variable, value: Jdwp.Value): Unit =
+    variable.provenance match
+      case Variable.Provenance.Local(slot) =>
+        connection.setSlotValues(thread, frame, List((slot, value)))
+
+      case Variable.Provenance.Captured(_, holder, field) =>
+        connection.setFieldValues(holder, List((field, value)))
+
+      case Variable.Provenance.Field(_, target, field) =>
+        connection.setFieldValues(target, List((field, value)))
+
+      case Variable.Provenance.Element(array, index) =>
+        connection.setArrayValues(array, index, List(value))
+
+      case Variable.Provenance.Cell(cell, elem, _) =>
+        connection.setFieldValues(cell, List((elem, value)))
 
   private def instanceFields(cls: ReferenceTypeId): sci.List[Jdwp.FieldInfo] =
     connection.fields(cls).stdlib.filter: field => (field.modifiers & 0x8) == 0
@@ -193,8 +259,11 @@ extends caps.ExclusiveCapability:
           elem match
             case scala.Some(field) =>
               connection.fieldValues(id, List(field.field)).stdlib.headOption match
-                case scala.Some(value0) => (value0, Variable.Provenance.Cell(provenance), true)
-                case _                  => (value, provenance, false)
+                case scala.Some(value0) =>
+                  (value0, Variable.Provenance.Cell(id, field.field, provenance), true)
+
+                case _ =>
+                  (value, provenance, false)
 
             case _ =>
               (value, provenance, false)
@@ -266,12 +335,15 @@ extends caps.ExclusiveCapability:
           val snap = if unforced then Unset else snapshot(value)
 
           sci.List(Variable(base, Unset, Variable.demangle(field.signature), snap,
-              Variable.Provenance.Field(owner), false, state))
+              Variable.Provenance.Field(owner, obj, field.field), false, state))
 
         else if Variable.captured(name).present then
           val base = Variable.captured(name).or(name)
           val trail = List((path :+ name)*)
-          sci.List(variable(base, field.signature, value, Variable.Provenance.Captured(trail)))
+
+          sci.List(variable(base, field.signature, value,
+              Variable.Provenance.Captured(trail, obj, field.field)))
 
         else
-          sci.List(variable(name, field.signature, value, Variable.Provenance.Field(owner)))
+          sci.List(variable(name, field.signature, value,
+              Variable.Provenance.Field(owner, obj, field.field)))

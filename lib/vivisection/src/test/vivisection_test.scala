@@ -87,35 +87,15 @@ object Tests extends Suite(m"Vivisection tests"):
     val debuggee: Debuggee = Debuggee(command, freePort())
 
     debuggee.session: debug ?=>
-      // Deterministic synchronisation with no race: ask to be notified as each of the fixture's
-      // classes is prepared, and resolve the target position against each newly-prepared class in
-      // turn (never a whole-VM scan, which would deadlock against the class-loading lock the
-      // suspended thread holds). When it resolves, that thread is suspended, so the breakpoint is
-      // installed strictly before the thread can reach it — and a class loaded only once execution
-      // reaches it (a method-local class) is handled the same way.
-      val prepare = debug.classPrepare(t"$fixtureClass*")
-      debug.resume()
-      val events = debug.events.stdlib.iterator
-
-      def awaitLocation(): List[Jdwp.Location] =
-        if !events.hasNext then List() else
-          val prepared = events.next().events.stdlib.collect:
-            case Jdwp.Event.ClassPrepared(_, _, tag, cls, _, _) => (tag, cls)
-
-          val located = prepared.flatMap { (tag, cls) => debug.locateIn(tag, cls, source, line).stdlib }
-
-          if located.nonEmpty then List(located*)
-          else
-            debug.resume()
-            awaitLocation()
-
-      val located = awaitLocation()
-      debug.clear(Jdwp.EventKind.ClassPrepare, prepare)
-
-      located.stdlib.foreach: location =>
-        debug.breakpoint(location): stop ?=>
-          outcome.offer(handler(using stop))
-          stop.remain()
+      // The breakpoint is set by source position while the VM stands suspended at startup, before
+      // any fixture class is loaded; deferred binding resolves it as each matching class is
+      // prepared — deterministically, since the loading thread stands suspended while the
+      // breakpoint is installed, strictly before execution can reach it. This is the launch
+      // ordering a frontend uses (breakpoints placed before resuming), exercised by every live
+      // test.
+      debug.breakpoint(source, line): stop ?=>
+        outcome.offer(handler(using stop))
+        stop.remain()
 
       debug.resume()
       outcome.await()
@@ -123,6 +103,28 @@ object Tests extends Suite(m"Vivisection tests"):
   // The visible variables at a stop, keyed by name, for concise assertions.
   def named(variables: List[Variable]): scala.collection.immutable.Map[Text, Variable] =
     variables.stdlib.groupBy(_.name).view.mapValues(_.head).toMap
+
+  // Launches a fixture and installs an exception request rather than a breakpoint; the first
+  // stop it reports is delivered to `handler`, exactly as `debugFixture` delivers a breakpoint
+  // hit. The `within` filter scopes the request to throws from fixture code, keeping the
+  // platform's own exception-driven control flow out of a caught-exception request.
+  def exceptionFixture[result, capture^](fixtureClass: Text, uncaught: Boolean, caught: Boolean)
+    ( handler: (Halt^) ?->{capture} result )
+    ( using Monitor^{capture} )
+  :   result =
+
+    val classpathText = System.properties.java.`class`.path()
+    val outcome = Promise[result]()
+    val command: Command = sh"java -classpath $classpathText $fixtureClass"
+    val debuggee: Debuggee = Debuggee(command, freePort())
+
+    debuggee.session: debug ?=>
+      debug.exceptions(uncaught, caught, within = t"vivisection.*"): stop ?=>
+        outcome.offer(handler(using stop))
+        stop.remain()
+
+      debug.resume()
+      outcome.await()
 
   def run(): Unit =
     val sizes = Jdwp.IdSizes.bootstrap
@@ -268,8 +270,9 @@ object Tests extends Suite(m"Vivisection tests"):
     . assert(_ == t"t\"answer\"")
 
     test(m"an unforced variable inspects with the unforced marker"):
-      Variable(t"x", Unset, t"Int", Unset, Variable.Provenance.Field(t"Holder"), false,
-          Variable.State.Unforced).inspect
+      val provenance = Variable.Provenance.Field(t"Holder", Jdwp.Ref(9L), Jdwp.Ref(1L))
+
+      Variable(t"x", Unset, t"Int", Unset, provenance, false, Variable.State.Unforced).inspect
     . assert(_ == t"x:∿∿∿")
 
     test(m"a demangled primitive signature names the Scala type"):
@@ -825,3 +828,146 @@ object Tests extends Suite(m"Vivisection tests"):
     test(m"an array-indexing expression over a local evaluates"):
       evaluations(3)
     . assert(_ == t"10")
+
+    // An exception request scoped to uncaught throws skips the caught `IllegalStateException`
+    // and stops at the `RuntimeException` which ends the run, reporting its class, its message
+    // (read from `detailMessage` directly — no debuggee code is invoked) and that nothing
+    // catches it.
+    test(m"an uncaught-exception request stops at the uncaught throw only"):
+      supervise:
+        exceptionFixture(t"vivisection.Exceptions", uncaught = true, caught = false):
+          stop ?=> stop.exceptionInfo()
+
+    . assert(_ == Halt.ExceptionInfo(t"java.lang.RuntimeException", t"unhandled", false))
+
+    // With caught throws included, the first stop is the `IllegalStateException` inside `flaky`,
+    // reported as caught.
+    test(m"a caught-exception request stops at the caught throw first"):
+      supervise:
+        exceptionFixture(t"vivisection.Exceptions", uncaught = true, caught = true):
+          stop ?=> stop.exceptionInfo()
+
+    . assert(_ == Halt.ExceptionInfo(t"java.lang.IllegalStateException", t"recoverable", true))
+
+    // Assignment writes through provenance: a local slot is written in place and observed
+    // changed when the variables are read again at the same stop.
+    test(m"assigning a local slot changes its value at the stop"):
+      supervise:
+        debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(57)):
+          stop ?=>
+            named(stop.variables()).get(t"int").foreach: variable =>
+              stop.assign(variable, Jdwp.Value.OfInt(99))
+
+            named(stop.variables()).get(t"int").map(_.value)
+
+    . assert(_ == scala.Some(Variable.Snapshot.Primitive(Jdwp.Value.OfInt(99))))
+
+    // A captured `var` lives in a ref cell; its assignment routes through the cell's `elem`.
+    test(m"assigning a captured var writes through its ref cell"):
+      supervise:
+        debugFixture(t"vivisection.Closures", t"vivisection.Closures.scala", Ordinal.uniary(56)):
+          stop ?=>
+            named(stop.variables()).get(t"tally").foreach: variable =>
+              stop.assign(variable, Jdwp.Value.OfInt(7))
+
+            named(stop.variables()).get(t"tally").map(_.value)
+
+    . assert(_ == scala.Some(Variable.Snapshot.Primitive(Jdwp.Value.OfInt(7))))
+
+    // A watchpoint placed once `Account` is loaded (from a function-breakpoint stop at
+    // `deposit`) reports each write to `balance` before it lands. The handler holds the thread
+    // only for the write it cares about — the remain-based conditional pattern — so the `30`
+    // write resumes automatically and the `100` write is the one observed.
+    test(m"a watchpoint reports a field write with its incoming value"):
+      supervise:
+        val classpathText = System.properties.java.`class`.path()
+        val outcome = Promise[Jdwp.Value]()
+        val command: Command = sh"java -classpath $classpathText vivisection.Ledger"
+        val debuggee: Debuggee = Debuggee(command, freePort())
+
+        debuggee.session: debug ?=>
+          // The watch needs `Account` loaded, so a deferred function breakpoint holds the VM at
+          // the first `deposit`; the watch is then installed from this thread and the entry
+          // breakpoint cleared before resuming.
+          val loaded = Promise[Unit]()
+
+          val entry = debug.breakpoint(t"vivisection.Ledger$$Account", t"deposit"): stop ?=>
+            loaded.offer(())
+            stop.remain()
+
+          debug.resume()
+          loaded.await()
+          entry.clear()
+
+          debug.watch(t"vivisection.Ledger$$Account", t"balance"): stop ?=>
+            stop.cause match
+              case Halt.Cause.Modification(_, _, _, incoming) =>
+                if incoming == Jdwp.Value.OfInt(100) then
+                  outcome.offer(incoming)
+                  stop.remain()
+
+              case _ =>
+                ()
+
+          debug.resume()
+          outcome.await()
+
+    . assert(_ == Jdwp.Value.OfInt(100))
+
+    // A function breakpoint named before its class is loaded binds on preparation and stops at
+    // the method's entry.
+    test(m"a function breakpoint set before class load stops at method entry"):
+      supervise:
+        val classpathText = System.properties.java.`class`.path()
+        val outcome = Promise[Boolean]()
+        val command: Command = sh"java -classpath $classpathText vivisection.Recount"
+        val debuggee: Debuggee = Debuggee(command, freePort())
+
+        debuggee.session: debug ?=>
+          debug.breakpoint(t"vivisection.Recount$$", t"tally"): stop ?=>
+            outcome.offer(true)
+            stop.remain()
+
+          debug.resume()
+          outcome.await()
+
+    . assert(_ == true)
+
+    // Popping the stopped frame and resuming re-executes the call: `tally` runs once from
+    // `main`, so a second hit at the same line is proof of the restart.
+    test(m"popping the stopped frame re-executes the call on resume"):
+      supervise:
+        val classpathText = System.properties.java.`class`.path()
+        val outcome = Promise[Int]()
+        val hits = java.util.concurrent.atomic.AtomicInteger(0)
+        val command: Command = sh"java -classpath $classpathText vivisection.Recount"
+        val debuggee: Debuggee = Debuggee(command, freePort())
+
+        debuggee.session: debug ?=>
+          debug.breakpoint(t"vivisection.Recount.scala", Ordinal.uniary(43)): stop ?=>
+            if hits.incrementAndGet() == 1
+            then stop.frames().stdlib.headOption.foreach { (frame, _) => stop.pop(frame) }
+            else
+              outcome.offer(hits.get)
+              stop.remain()
+
+          debug.resume()
+          outcome.await()
+
+    . assert(_ == 2)
+
+    // An assignment through the evaluator compiles the right-hand side at the variable's declared
+    // type, writes it into the slot, and a subsequent evaluation over the same frame sees the new
+    // value.
+    test(m"an evaluated assignment writes a local which evaluation then sees"):
+      supervise:
+        debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(57)):
+          stop ?=>
+            stop.evaluator(fixtureClasspath): eval ?=>
+              eval.assign(t"int", t"int + 58")
+
+              eval(t"int") match
+                case Variable.Snapshot.Str(_, text) => text
+                case other                          => other.inspect
+
+    . assert(_ == t"100")

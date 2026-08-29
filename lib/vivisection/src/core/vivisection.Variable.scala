@@ -42,12 +42,16 @@ object Variable:
   // Where a variable's storage was found. The JVM flattens a source-level scope into slots and
   // fields; the provenance records the storage each logical variable was recovered from, so that
   // an assignment later knows where to write.
+  // Where a variable's value lives, carrying whatever identity a write needs: the frame slot, the
+  // object holding the (captured or member) field, the array, or the ref cell. The identifiers
+  // are only stable while the halt's thread stands suspended — exactly the lifetime of the halt
+  // which produced the variable.
   enum Provenance:
     case Local(slot: Int)
-    case Captured(fieldPath: List[Text])
-    case Field(owner: Text)
-    case Element(index: Int)
-    case Cell(inner: Provenance)
+    case Captured(fieldPath: List[Text], holder: ObjectId, field: FieldId)
+    case Field(owner: Text, target: ObjectId, field: FieldId)
+    case Element(array: ObjectId, index: Int)
+    case Cell(cell: ObjectId, elem: FieldId, inner: Provenance)
 
   // Whether a lazy binding has been evaluated. An unforced lazy val is *never* forced by the
   // debugger — forcing would change the program under observation — so its value is absent and
