@@ -269,6 +269,7 @@ object Jdwp:
     case ClassExclude(pattern: Text) extends Modifier(6)
     case LocationOnly(location: Location) extends Modifier(7)
     case ExceptionOnly(cls: ReferenceTypeId, caught: Boolean, uncaught: Boolean) extends Modifier(8)
+    case FieldOnly(cls: ReferenceTypeId, field: FieldId) extends Modifier(9)
     case Step(thread: ThreadId, size: StepSize, depth: StepDepth) extends Modifier(10)
     case SourceNameMatch(pattern: Text) extends Modifier(12)
 
@@ -290,7 +291,10 @@ object Jdwp:
   // The capabilities a VM advertises (`VirtualMachine.CapabilitiesNew`); only the flags this
   // library consults are named, the rest are discarded on decoding.
   case class Capabilities
-    ( canGetSyntheticAttribute:   Boolean,
+    ( canWatchFieldModification:  Boolean,
+      canWatchFieldAccess:        Boolean,
+      canGetSyntheticAttribute:   Boolean,
+      canPopFrames:               Boolean,
       canGetSourceDebugExtension: Boolean,
       canUseSourceNameFilters:    Boolean )
 
@@ -524,6 +528,9 @@ object Jdwp:
         case Modifier.ExceptionOnly(cls, caught, uncaught) =>
           referenceTypeId(cls).boolean(caught).boolean(uncaught)
 
+        case Modifier.FieldOnly(cls, field) =>
+          referenceTypeId(cls).fieldId(field)
+
         case Modifier.Step(thread, size, depth) =>
           threadId(thread).int(size.id).int(depth.id)
 
@@ -573,9 +580,31 @@ object Jdwp:
         case EventKind.Exception =>
           val thread = reader.threadId()
           val location = reader.location()
+          reader.byte() // the exception reference arrives tagged; it is always an object
           val exception = reader.objectId()
           val catchLocation = reader.location()
           Thrown(request, thread, location, exception, catchLocation)
+
+        case EventKind.FieldAccess =>
+          val thread = reader.threadId()
+          val location = reader.location()
+          val tag = TypeTag(reader.byte())
+          val cls = reader.referenceTypeId()
+          val field = reader.fieldId()
+          reader.byte() // the target reference arrives tagged; it is always an object
+          val obj = reader.objectId()
+          FieldAccess(request, thread, location, tag, cls, field, obj)
+
+        case EventKind.FieldModified =>
+          val thread = reader.threadId()
+          val location = reader.location()
+          val tag = TypeTag(reader.byte())
+          val cls = reader.referenceTypeId()
+          val field = reader.fieldId()
+          reader.byte() // the target reference arrives tagged; it is always an object
+          val obj = reader.objectId()
+          val incoming = reader.value()
+          FieldModified(request, thread, location, tag, cls, field, obj, incoming)
 
         case EventKind.ClassPrepare =>
           val thread = reader.threadId()
@@ -599,6 +628,12 @@ object Jdwp:
 
     case Thrown(request: Int, thread: ThreadId, location: Location, exception: ObjectId,
         catchLocation: Location)
+
+    case FieldAccess(request: Int, thread: ThreadId, location: Location, tag: TypeTag,
+        cls: ReferenceTypeId, field: FieldId, obj: ObjectId)
+
+    case FieldModified(request: Int, thread: ThreadId, location: Location, tag: TypeTag,
+        cls: ReferenceTypeId, field: FieldId, obj: ObjectId, incoming: Value)
 
     case ClassPrepared(request: Int, thread: ThreadId, tag: TypeTag, cls: ReferenceTypeId,
         signature: Text, status: Int)
@@ -673,6 +708,13 @@ object Jdwp:
     // Holds a breakpoint handler out of the capture-tracked world: the function captures the
     // session, which no `TrieMap` value type can name, but it lives and dies with the session.
     class Slot(@scala.caps.unsafe.untrackedCaptures val run: Halt => Unit)
+
+    // Likewise for a class-prepare handler, which receives the raw event rather than a `Halt`:
+    // the prepared class has no stopped frame to inspect. The tactic is lent contextually by the
+    // dispatcher, exactly as a `Halt` carries it for breakpoint handlers.
+    class PrepareSlot
+      ( @scala.caps.unsafe.untrackedCaptures
+        val run: Tactic[Debugger.Error] ?=> Event.ClassPrepared => Unit )
 
     // Reads a big-endian 32-bit integer from a raw byte array at the given offset.
     private def int32(bytes: scala.Array[Byte], offset: Int): Int =
@@ -758,6 +800,7 @@ object Jdwp:
     // handler claimed. A handler captures session capabilities, which the map cannot carry, so it
     // is held behind an untracked field; every handler dies with this sealed session anyway.
     private val handlers: scc.TrieMap[(Int, Int), Connection.Slot] = scc.TrieMap()
+    private val preparers: scc.TrieMap[Int, Connection.PrepareSlot] = scc.TrieMap()
     private[vivisection] val unclaimed: Relay[Event.Composite] = Relay()
 
     @scala.caps.unsafe.untrackedCaptures
@@ -770,6 +813,15 @@ object Jdwp:
 
     private[vivisection] def unregister(kind: EventKind, request: Int): Unit =
       handlers.remove((kind.id, request))
+
+    private[vivisection] def registerPrepare(request: Int)
+      ( handler: Tactic[Debugger.Error] ?=> Event.ClassPrepared => Unit )
+    :   Unit =
+
+      preparers(request) = Connection.PrepareSlot(handler)
+
+    private[vivisection] def unregisterPrepare(request: Int): Unit =
+      preparers.remove(request)
 
     // Drains composites until the stream ends, then closes the unclaimed stream that `Debug.events`
     // reads.
@@ -786,13 +838,22 @@ object Jdwp:
       var claimed = false
       var suspended: Optional[ThreadId] = Unset
 
-      def run(request: Int, kind: EventKind, thread: ThreadId, location: Location): Unit =
+      def run
+        ( request:  Int,
+          kind:     EventKind,
+          thread:   ThreadId,
+          location: Location,
+          cause:    Halt.Cause = Halt.Cause.Stopped )
+      :   Unit =
+
         handlers.get((kind.id, request)).foreach: slot =>
           claimed = true
           suspended = thread
 
           val outcome: Optional[Unit] = contingency.safely[Debugger.Error]:
-            val halt = caps.unsafe.unsafeAssumePure(new Halt(this, thread, location, retention))
+            val halt =
+              caps.unsafe.unsafeAssumePure(new Halt(this, thread, location, cause, retention))
+
             slot.run(halt)
 
           outcome.let(identity)
@@ -809,6 +870,35 @@ object Jdwp:
 
         case Event.MethodExit(request, thread, location) =>
           run(request, EventKind.MethodExit, thread, location)
+
+        case Event.Thrown(request, thread, location, exception, catchLocation) =>
+          val caught: Optional[Location] =
+            if catchLocation.cls.empty then Unset else catchLocation
+
+          run(request, EventKind.Exception, thread, location,
+              Halt.Cause.Thrown(exception, caught))
+
+        case Event.FieldAccess(request, thread, location, _, cls, field, obj) =>
+          val target: Optional[ObjectId] = if obj.empty then Unset else obj
+
+          run(request, EventKind.FieldAccess, thread, location,
+              Halt.Cause.Access(cls, field, target))
+
+        case Event.FieldModified(request, thread, location, _, cls, field, obj, incoming) =>
+          val target: Optional[ObjectId] = if obj.empty then Unset else obj
+
+          run(request, EventKind.FieldModified, thread, location,
+              Halt.Cause.Modification(cls, field, target, incoming))
+
+        case event: Event.ClassPrepared =>
+          preparers.get(event.request).foreach: slot =>
+            claimed = true
+            suspended = event.thread
+
+            val outcome: Optional[Unit] = contingency.safely[Debugger.Error]:
+              slot.run(event)
+
+            outcome.let(identity)
 
         case _ =>
           ()
@@ -904,6 +994,15 @@ object Jdwp:
       list(reader.int()): () =>
         ClassInfo(TypeTag(reader.byte()), reader.referenceTypeId(), reader.string(), reader.int())
 
+    // Finds the loaded classes with exactly the given JNI signature (one per defining loader),
+    // without enumerating every class in the VM — so, unlike `allClasses`, it is safe to call
+    // while a thread is suspended holding a class-loading lock.
+    def classesBySignature(signature: Text)(using Tactic[Debugger.Error]): List[ClassInfo] =
+      val reader = request(1, 2)(_.string(signature))
+
+      list(reader.int()): () =>
+        ClassInfo(TypeTag(reader.byte()), reader.referenceTypeId(), signature, reader.int())
+
     def allThreads()(using Tactic[Debugger.Error]): List[ThreadId] =
       val reader = request(1, 4)(_ => ())
       list(reader.int()): () => reader.threadId()
@@ -921,19 +1020,31 @@ object Jdwp:
     // from an old VM leaves the missing flags false.
     def capabilitiesNew()(using Tactic[Debugger.Error]): Capabilities =
       val reader = request(1, 17)(_ => ())
+      var canWatchFieldModification = false
+      var canWatchFieldAccess = false
       var canGetSyntheticAttribute = false
+      var canPopFrames = false
       var canGetSourceDebugExtension = false
       var canUseSourceNameFilters = false
       var index = 1
 
       while reader.remaining > 0 do
         val flag = reader.boolean()
+        if index == 1 then canWatchFieldModification = flag
+        if index == 2 then canWatchFieldAccess = flag
         if index == 4 then canGetSyntheticAttribute = flag
+        if index == 11 then canPopFrames = flag
         if index == 13 then canGetSourceDebugExtension = flag
         if index == 19 then canUseSourceNameFilters = flag
         index += 1
 
-      Capabilities(canGetSyntheticAttribute, canGetSourceDebugExtension, canUseSourceNameFilters)
+      Capabilities
+        ( canWatchFieldModification,
+          canWatchFieldAccess,
+          canGetSyntheticAttribute,
+          canPopFrames,
+          canGetSourceDebugExtension,
+          canUseSourceNameFilters )
 
     // ReferenceType (command set 2).
     def signature(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): Text =
@@ -964,8 +1075,13 @@ object Jdwp:
       list(reader.int()): () =>
         FieldInfo(reader.fieldId(), reader.string(), reader.string(), reader.int())
 
-    // ClassType (command set 3). Both calls invoke on a suspended thread, single-threaded and
-    // timeout-bounded, exactly as `objectReference.invokeMethod`.
+    // ClassType (command set 3): the immediate superclass, or the empty reference for
+    // `java.lang.Object`; walking it reaches inherited fields, which `referenceType.fields` omits.
+    def superclass(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): ReferenceTypeId =
+      request(3, 1)(_.referenceTypeId(cls)).referenceTypeId()
+
+    // Both calls below invoke on a suspended thread, single-threaded and timeout-bounded, exactly
+    // as `objectReference.invokeMethod`.
     def invokeStatic
       ( cls: ReferenceTypeId, thread: ThreadId, method: MethodId, args: List[Value] )
       ( using Tactic[Debugger.Error] )
@@ -1178,3 +1294,9 @@ object Jdwp:
     // (identifier zero).
     def thisObject(thread: ThreadId, frame: FrameId)(using Tactic[Debugger.Error]): Value =
       request(16, 3)(_.threadId(thread).frameId(frame)).value()
+
+    // Discards all frames up to and including the given frame, leaving the thread suspended at
+    // the instruction which called the popped frame — so resuming re-executes the call. Requires
+    // the `canPopFrames` capability and a thread suspended by an event.
+    def popFrames(thread: ThreadId, frame: FrameId)(using Tactic[Debugger.Error]): Unit =
+      command(16, 4)(_.threadId(thread).frameId(frame))

@@ -99,7 +99,8 @@ extends caps.ExclusiveCapability:
   // `pattern` follows the JDWP class-match form: an exact name, or one bounded by a single `*`.
   def classPrepare(pattern: Text)(using Tactic[Debugger.Error]): Int =
     val modifiers: List[Jdwp.Modifier] = List(Jdwp.Modifier.ClassMatch(pattern))
-    connection.eventRequestSet(Jdwp.EventKind.ClassPrepare, Jdwp.SuspendPolicy.EventThread, modifiers)
+    val policy = Jdwp.SuspendPolicy.EventThread
+    connection.eventRequestSet(Jdwp.EventKind.ClassPrepare, policy, modifiers)
 
   // Requests a single step on a thread; the VM reports it as a `SingleStep` event on `events`.
   def step

@@ -58,6 +58,21 @@ object Halt:
     private[vivisection] def set(): Unit = flag.set(true)
     private[vivisection] def retained: Boolean = flag.get()
 
+  // Why the thread stopped: the event which minted this halt. `Stopped` covers breakpoints, steps
+  // and method entry and exit, where the handler already knows which request it registered; the
+  // other causes carry payloads the stop's location alone cannot — the exception in flight, or
+  // the field being touched (and, on modification, the value about to be written). The `target`
+  // is absent when a static field is touched.
+  enum Cause:
+    case Stopped
+
+    case Thrown(exception: ObjectId, catchLocation: Optional[Jdwp.Location])
+
+    case Access(cls: ReferenceTypeId, field: FieldId, target: Optional[ObjectId])
+
+    case Modification(cls: ReferenceTypeId, field: FieldId, target: Optional[ObjectId],
+        incoming: Jdwp.Value)
+
 // The capability lent to an event handler while its thread stands suspended: a view over the
 // stopped thread's frames and their logical variables. Sealed (`ExclusiveCapability`), so it
 // cannot outlive the stop it describes — once the dispatcher resumes the thread, every
@@ -66,6 +81,7 @@ class Halt private[vivisection]
   ( private[vivisection] val connection: Jdwp.Connection,
     val thread:   ThreadId,
     val location: Jdwp.Location,
+    val cause:    Halt.Cause,
     retention:    Halt.Retention )
   // The tactic the dispatcher supplied when it minted this halt is a `using` parameter, so it is
   // already the given the connection commands below resolve: a handler runs on the dispatcher
