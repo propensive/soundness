@@ -50,6 +50,7 @@ import rudiments.*
 import spectacular.*
 import urticose.*
 import vacuous.*
+import zephyrine.*
 
 // A launch target: a JVM to start under the JDWP agent and then debug. `target.session { debug ?=>
 // … }` forks the process with the agent listening, waits for it to bind its port, attaches, and
@@ -96,6 +97,22 @@ object Debuggee:
       given portTactic: (Tactic[Port.Error]^) = tactic.contramap(_ => badPort)
 
       val job = target.agented.fork[Exit]()
+      val console = new Debug.Console()
+
+      // The child's output and error pipes are drained from the moment of the fork — before the
+      // readiness probe, since a chatty debuggee can fill the OS pipe buffer (and then block)
+      // long before its agent port answers. Each drain closes its window at the pipe's end, and
+      // the exit watcher settles the exit promise; all three end naturally when the process
+      // dies, whether by running to completion or by the `abort` below.
+      val outDrain: Task[Unit] = async:
+        safely(job.stdout().toProgression.stdlib.iterator.foreach(console.out.put(_)))
+        console.out.stop()
+
+      val errDrain: Task[Unit] = async:
+        safely(job.stderr().toProgression.stdlib.iterator.foreach(console.err.put(_)))
+        console.err.stop()
+
+      val exitWatch: Task[Unit] = async(console.exited.offer(job.exitStatus()))
 
       try
         def waitFor(remaining: Int): Unit =
@@ -113,9 +130,15 @@ object Debuggee:
         val endpoint = Endpoint(t"localhost", Port[Tcp](target.port))
         val duplex = summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
 
-        try Jdwp.Connection.exchange(duplex): connection => lambda(using new Debug(connection))
+        try
+          Jdwp.Connection.exchange(duplex): connection =>
+            lambda(using new Debug(connection, console))
         finally duplex.close()
-      finally job.abort()
+      finally
+        job.abort()
+        outDrain.attend()
+        errDrain.attend()
+        exitWatch.attend()
 
   given sessional: ( online:     Online,
                      monitor:    Monitor,

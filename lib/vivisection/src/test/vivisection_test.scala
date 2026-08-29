@@ -829,6 +829,25 @@ object Tests extends Suite(m"Vivisection tests"):
       evaluations(3)
     . assert(_ == t"10")
 
+    // A launch session drains the debuggee's console from the moment of the fork: its output is
+    // readable as a stream, and its exit status resolves when it terminates — so a debuggee
+    // can never block against a full pipe, and a frontend can relay its output.
+    test(m"a launch session captures the debuggee's output and exit status"):
+      supervise:
+        val classpathText = System.properties.java.`class`.path()
+        val command: Command = sh"java -classpath $classpathText vivisection.Recount"
+        val debuggee: Debuggee = Debuggee(command, freePort())
+
+        debuggee.session: debug ?=>
+          debug.resume()
+
+          debug.console.let: console =>
+            // The agent's own "Listening for transport" banner precedes the program's output.
+            val text = console.stdout.stdlib.toList.map(_.utf8).mkString.tt.trim
+            (text.ends(t"mark"), console.exited.await())
+
+    . assert(_ == (true, Exit.Ok))
+
     // An exception request scoped to uncaught throws skips the caught `IllegalStateException`
     // and stops at the `RuntimeException` which ends the run, reporting its class, its message
     // (read from `detailMessage` directly — no debuggee code is invoked) and that nothing

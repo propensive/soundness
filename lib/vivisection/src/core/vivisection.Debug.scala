@@ -40,10 +40,26 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
+import parasite.*
 import proscenium.*
+import rudiments.*
+import turbulence.*
 import vacuous.*
 
 object Debug:
+  // A launched debuggee's console and lifecycle, present only in a launch session: windows over
+  // its standard output and error — drained continuously from the moment of the fork, so the
+  // child can never block against a full pipe — and a promise of its exit status. An attach
+  // session has no console: the target's streams belong to whoever started it.
+  class Console private[vivisection]():
+    private[vivisection] val out: Relay[Data] = Relay()
+    private[vivisection] val err: Relay[Data] = Relay()
+
+    val exited: Promise[Exit] = Promise()
+
+    def stdout: Chain[Data] = out.lazyList
+    def stderr: Chain[Data] = err.lazyList
+
   object Event:
     given communicable: Event is Communicable =
       case Logpoint(message) => m"$message"
@@ -61,7 +77,8 @@ object Debug:
 // (`ExclusiveCapability`), so it cannot outlive the session that lends it. Its operations are the
 // programmer-facing surface over the wire-level `Jdwp.Connection` it wraps; event dispatch and the
 // handler registry live in the connection, which owns the session monitor.
-class Debug private[vivisection] (connection: Jdwp.Connection)
+class Debug private[vivisection]
+  ( connection: Jdwp.Connection, val console: Optional[Debug.Console] = Unset )
 extends caps.ExclusiveCapability:
   @scala.caps.unsafe.untrackedCaptures
   private var capabilities0: Optional[Jdwp.Capabilities] = Unset
@@ -212,6 +229,13 @@ extends caps.ExclusiveCapability:
     ( using Tactic[Debugger.Error] )
   :   SourceBreakpoint^{this} =
 
+    breakpoint(className, method, (_: Jdwp.Location) => ())(handler)
+
+  def breakpoint(className: Text, method: Text, bound: Jdwp.Location => Unit)
+    ( handler: Debug.Handler )
+    ( using Tactic[Debugger.Error] )
+  :   SourceBreakpoint^{this} =
+
     val modifiers: List[Jdwp.Modifier] = List(Jdwp.Modifier.ClassMatch(className))
     val policy = Jdwp.SuspendPolicy.EventThread
     val prepare = connection.eventRequestSet(Jdwp.EventKind.ClassPrepare, policy, modifiers)
@@ -221,7 +245,10 @@ extends caps.ExclusiveCapability:
       if handle.admits(location) then
         val request = breakpoint(location, Jdwp.SuspendPolicy.All)
         connection.register(Jdwp.EventKind.Breakpoint, request): halt => handler(using halt)
-        handle.record(location, request).let(remove(Jdwp.EventKind.Breakpoint, _))
+
+        handle.record(location, request) match
+          case revoked: Int => remove(Jdwp.EventKind.Breakpoint, revoked)
+          case _            => bound(location)
 
     def entries(tag: Jdwp.TypeTag, cls: ReferenceTypeId)(using Tactic[Debugger.Error])
     :   sci.List[Jdwp.Location] =
@@ -283,6 +310,16 @@ extends caps.ExclusiveCapability:
     ( using Tactic[Debugger.Error] )
   :   SourceBreakpoint^{this} =
 
+    breakpoint(source, line, (_: Jdwp.Location) => ())(handler)
+
+  // `bound` is notified at each successful binding — after the initial sweep for a loaded
+  // class, or from the dispatcher when a deferred binding lands — which is how a frontend
+  // learns that an unverified breakpoint has become real.
+  def breakpoint(source: Text, line: Ordinal, bound: Jdwp.Location => Unit)
+    ( handler: Debug.Handler )
+    ( using Tactic[Debugger.Error] )
+  :   SourceBreakpoint^{this} =
+
     // HotSpot does not support source-name filters (JDI emulates them in its front end), so the
     // fallback receives every prepared class and discards non-matches — except the platform's own
     // namespaces, excluded VM-side: each notification suspends the loading thread for a round
@@ -308,7 +345,10 @@ extends caps.ExclusiveCapability:
       if handle.admits(location) then
         val request = breakpoint(location, Jdwp.SuspendPolicy.All)
         connection.register(Jdwp.EventKind.Breakpoint, request): halt => handler(using halt)
-        handle.record(location, request).let(remove(Jdwp.EventKind.Breakpoint, _))
+
+        handle.record(location, request) match
+          case revoked: Int => remove(Jdwp.EventKind.Breakpoint, revoked)
+          case _            => bound(location)
 
     // The prepare handler is registered before the sweep of already-loaded classes, so a class
     // prepared between the two is bound by both and deduplicated by the handle, rather than
