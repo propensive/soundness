@@ -122,7 +122,7 @@ object Tests extends Suite(m"Scintillate tests"):
           try
             val socket = java.net.Socket("localhost", port)
             val out = socket.getOutputStream.nn
-            val request = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes("US-ASCII").nn
+            val request = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n".s.getBytes("US-ASCII").nn
 
             request.foreach: byte =>
               out.write(scala.Array(byte))
@@ -206,7 +206,7 @@ object Tests extends Suite(m"Scintillate tests"):
             // interest is withdrawn, and service resumes only as we drain.
             val socket = java.net.Socket("localhost", port)
             val out = socket.getOutputStream.nn
-            val request = "GET / HTTP/1.1\r\nHost: x\r\n\r\n".getBytes("US-ASCII").nn
+            val request = "GET / HTTP/1.1\r\nHost: x\r\n\r\n".s.getBytes("US-ASCII").nn
 
             var index = 0
             while index < 64 do
@@ -480,7 +480,7 @@ object Tests extends Suite(m"Scintillate tests"):
           keytool.redirectOutput(java.lang.ProcessBuilder.Redirect.DISCARD)
           keytool.start().nn.waitFor()
 
-          val password = "changeit".toCharArray.nn
+          val password = "changeit".s.toCharArray.nn
           val keystore = java.security.KeyStore.getInstance("PKCS12").nn
           keystore.load(java.io.FileInputStream(path), password)
           val keyManagers = javax.net.ssl.KeyManagerFactory.getInstance("SunX509").nn
@@ -531,7 +531,7 @@ object Tests extends Suite(m"Scintillate tests"):
           keytool.redirectOutput(java.lang.ProcessBuilder.Redirect.DISCARD)
           keytool.start().nn.waitFor()
 
-          val password = "changeit".toCharArray.nn
+          val password = "changeit".s.toCharArray.nn
           val keystore = java.security.KeyStore.getInstance("PKCS12").nn
           keystore.load(java.io.FileInputStream(path), password)
           val keyManagers = javax.net.ssl.KeyManagerFactory.getInstance("SunX509").nn

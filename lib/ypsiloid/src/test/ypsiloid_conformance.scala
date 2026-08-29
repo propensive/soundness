@@ -131,7 +131,7 @@ object Conformance:
         else
           val description =
             try new String(Files.readAllBytes(dir.resolve("===")).nn).trim.nn
-            catch case _: IOException => "?"
+            catch case _: IOException => ("?": String)
 
           val isError = Files.isReadable(dir.resolve("error"))
           val yamlText = new String(Files.readAllBytes(inYaml).nn, "UTF-8")
@@ -300,7 +300,7 @@ object Conformance:
 
   private def printFailure(result: Result): Unit =
     val descShort = result.testCase.description.linesIterator.next().take(60)
-    val tagsShort = if result.testCase.tags.isEmpty then ""
+    val tagsShort = if result.testCase.tags.isEmpty then ("": String)
                     else result.testCase.tags.toList.sorted.mkString(" {", ",", "}")
     result.outcome match
       case Outcome.Mismatch(actual, expected) =>

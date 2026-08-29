@@ -75,7 +75,7 @@ object Tests extends Suite(m"Panopticon tests"):
     . assert(_ == Company(Person("John", List(Role("Changed", 1), Role("CFO", 2), Role("CIO", 3))), "Acme"))
 
     test(m"adjust each role names"):
-      company.lens(_.ceo.roles(Each).name = prior+"!")
+      company.lens(_.ceo.roles(Each).name = prior+t"!")
     . assert(_ == Company(Person("John", List(Role("CEO!", 1), Role("CFO!", 2), Role("CIO!", 3))), "Acme"))
 
     val user = User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("CFO", 2), t"cio" -> Role("CIO", 3)))
@@ -175,8 +175,8 @@ object Tests extends Suite(m"Panopticon tests"):
 
     test(m"prior used inside multi-update"):
       val r = org.lens
-       ( _.name    = prior+"!",
-         _.hq.city = prior+"?" )
+       ( _.name    = prior+t"!",
+         _.hq.city = prior+t"?" )
       ( r.name, r.hq.city )
     . assert(_ == ("Acme!", "Townville?"))
 

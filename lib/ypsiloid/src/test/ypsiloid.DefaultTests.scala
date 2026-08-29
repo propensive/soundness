@@ -98,11 +98,11 @@ object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
     suite(m"Default-driven sentinels"):
       test(m"Default[DPerson] collapses a missing nested into one error"):
         DefaultPersonScope.run()
-      . assert(_ == Set("#/person"))
+      . assert(_ == Set[String]("#/person"))
 
       test(m"Default[DShape] handles an unknown discriminator at the top level"):
         DefaultShapeScope.runIssues()
-      . assert((paths, count) => count == 1 && paths == Set("#"))
+      . assert((paths, count) => count == 1 && paths == Set[String]("#"))
 
       test(m"Without Default[DPerson], a missing nested still expands"):
         // Confirms the existing (no-Default) PR-3 accrual semantics
@@ -110,7 +110,7 @@ object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
         val yaml = t"company: Acme\n".read[Yaml]
         validateYaml(yaml)(_.as[DContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
-          paths == Set
+          paths == Set[String]
            ( "#/person/name",
              "#/person/age",
              "#/person/email" )
@@ -146,4 +146,4 @@ object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
       test(m"A failing sum field and a missing sibling both accrue"):
         val yaml = t"shape:\n  foo: bar\n".read[Yaml]
         validateYaml(yaml)(_.as[YMix]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("#/shape", "#/name"))
+      . assert(_ == Set[String]("#/shape", "#/name"))

@@ -568,7 +568,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       val server = csnh.HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).nn
 
       server.createContext("/fixed", { exchange =>
-        val data = "Hello, native!".getBytes("UTF-8").nn
+        val data = "Hello, native!".s.getBytes("UTF-8").nn
         exchange.nn.getResponseHeaders.nn.set("Content-Type", "text/plain")
         exchange.nn.sendResponseHeaders(200, data.length)
         exchange.nn.getResponseBody.nn.write(data)
@@ -692,7 +692,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       keytool.redirectOutput(java.lang.ProcessBuilder.Redirect.DISCARD)
       keytool.start().nn.waitFor()
 
-      val password = "changeit".toCharArray.nn
+      val password = "changeit".s.toCharArray.nn
       val keystore = java.security.KeyStore.getInstance("PKCS12").nn
       keystore.load(java.io.FileInputStream(path), password)
       val keyManagers = javax.net.ssl.KeyManagerFactory.getInstance("SunX509").nn
@@ -721,7 +721,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         server.setHttpsConfigurator(csnh.HttpsConfigurator(serverContext))
 
         server.createContext("/tls", { exchange =>
-          val data = "secure-native".getBytes("UTF-8").nn
+          val data = "secure-native".s.getBytes("UTF-8").nn
           exchange.nn.sendResponseHeaders(200, data.length)
           exchange.nn.getResponseBody.nn.write(data)
           exchange.nn.close() })

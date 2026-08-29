@@ -290,7 +290,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"Pointers identify the missing fields"):
         val tel = t"name Alice\n".read[Tel]
         validateTel(tel)(_.as[APerson]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("/age", "/email"))
+      . assert(_ == Set[String]("/age", "/email"))
 
       test(m"Each missing-field error has reason Absent"):
         val tel = t"name Alice\n".read[Tel]
@@ -307,7 +307,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"Pointers identify the wrong-type fields"):
         val tel = t"width wide\nheight tall\n".read[Tel]
         validateTel(tel)(_.as[APair]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("/width", "/height"))
+      . assert(_ == Set[String]("/width", "/height"))
 
       test(m"Wrong-type errors have reason NotScalar"):
         val tel = t"width wide\nheight tall\n".read[Tel]
@@ -322,7 +322,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         val tel = t"company Acme\n".read[Tel]
         validateTel(tel)(_.as[AContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
-          paths == Set
+          paths == Set[String]
            ( "/person/name",
              "/person/age",
              "/person/email" )
@@ -474,7 +474,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     suite(m"Located schema-validation errors (LSP diagnostics)"):
       test(m"Unknown-keyword errors carry their keyword pointer"):
         assignPositions(t"foo a\nbar b\n", optionalFieldSchema).items.map(_(0).s).to[Set]
-      . assert(_ == Set("/foo", "/bar"))
+      . assert(_ == Set[String]("/foo", "/bar"))
 
       test(m"Unknown-keyword errors are located at the offending compound"):
         assignPositions(t"foo a\nbar b\n", optionalFieldSchema).items.map(_(1)).to[Set]
@@ -489,12 +489,12 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
                        error)
         . protect(Tel.Type.assign(tel, optionalFieldSchema))
         . items.map(_(0).s).to[Set]
-      . assert(_ == Set(""))
+      . assert(_ == Set[String](""))
 
       test(m"Missing required members carry a pointer but no source span"):
         assignPositions(t"", twoRequiredSchema).items.map { case (p, span) => (p.s, span.exists) }
         . to[Set]
-      . assert(_ == Set(("/name", false), ("/email", false)))
+      . assert(_ == Set[(String, Boolean)](("/name", false), ("/email", false)))
 
       // The excess atom is read by `assignAtoms`, deep inside `assignCompound`,
       // so this proves the per-compound focus covers a compound's whole subtree
@@ -502,7 +502,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"An excess atom is located at the enclosing compound"):
         assignPositions(t"item x y\nname n\n", atomAccrualSchema).items
         . map { case (pointer, span) => (pointer.s, span.startLine.lay(-1)(_.n1)) }.to[Set]
-      . assert(_ == Set(("/item", 1)))
+      . assert(_ == Set[(String, Int)](("/item", 1)))
 
       // E308 is a property of a member's whole run, not of one node, so it is
       // raised outside every `focus` block: the entry has no focus at all and
@@ -511,13 +511,13 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"A run-level E308 accrues at the root without panicking"):
         assignPositions(t"name Alice\nname Bob\nemail e\n", twoRequiredSchema).items
         . map { case (p, span) => (p.s, span.exists) }.to[Set]
-      . assert(_ == Set(("/", false)))
+      . assert(_ == Set[(String, Boolean)](("/", false)))
 
     suite(m"Located decode errors"):
       test(m"A malformed field's focus names the field"):
         decodePositions(t"name Alice\nage notanumber\nemail e\n")(_.as[APerson])
         . items.map(_(0).s).to[Set]
-      . assert(_ == Set("/age"))
+      . assert(_ == Set[String]("/age"))
 
       test(m"A malformed field is located at its value, not its keyword"):
         decodePositions(t"name Alice\nage notanumber\nemail e\n")(_.as[APerson])
@@ -532,7 +532,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"The direct path accrues a located focus at all"):
         directPerson(t"name Alice\nage notanumber\nemail e\n")
         . items.map { case (pointer, span) => (pointer.s, span.exists) }.to[Set]
-      . assert(_ == Set(("/age", true)))
+      . assert(_ == Set[(String, Boolean)](("/age", true)))
 
       test(m"A malformed field is located at its value, as on the AST path"):
         directPerson(t"name Alice\nage notanumber\nemail e\n").items.map(_(1)).to[Set]
@@ -559,7 +559,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"A nested field is located at its own value, not its parent's keyword"):
         directContact(t"person\n  name Alice\n  age nope\n  email e\ncompany Acme\n")
         . items.map { case (pointer, span) => (pointer.s, span) }.to[Set]
-      . assert(_ == Set(("/person/age", Tel.Error.spanAt(3, 7, 4))))
+      . assert(_ == Set(("/person/age": String, Tel.Error.spanAt(3, 7, 4))))
 
       // With no `Foci` at all, the focus machinery is inert and the span has to
       // ride on the error itself — the common fail-fast read, and the reason

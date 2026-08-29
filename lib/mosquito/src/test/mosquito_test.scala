@@ -123,8 +123,8 @@ object Tests extends Suite(m"Mosquito tests"):
       . assert(_ == List(1, 2, 3))
 
       test(m"iarray conversion"):
-        Vector("a", "b", "c").iarray.to[List]
-      . assert(_ == List("a", "b", "c"))
+        Vector(t"a", t"b", t"c").iarray.to[List]
+      . assert(_ == List(t"a", t"b", t"c"))
 
       test(m"size of a 4-vector"):
         Vector(1, 2, 3, 4).size
