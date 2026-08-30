@@ -91,6 +91,13 @@ object Media:
       case CborSeq => t"cbor-seq"
       case other   => other.toString.tt.uncamel.kebab
 
+  // The `media""` interpolation's runtime entry: the literal was validated at compile
+  // time, so parsing cannot fail. A plain method, so `unsafely`'s capability context
+  // function elaborates once here rather than at every literal site — the 3.10 stream
+  // mis-checks the second expansion of an inline capability combinator in a unit
+  // (memoized-root family; cf. #1829).
+  def parseTrusted(string: Text): MediaType = unsafely(parse(string))
+
   def parse(string: Text)(using Tactic[MediaType.Error]^): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
       ps match

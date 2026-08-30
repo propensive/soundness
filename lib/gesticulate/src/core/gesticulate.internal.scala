@@ -142,4 +142,4 @@ object internal:
 
     internal.validateLiteral(raw.tt).let(halt(_))
 
-    '{unsafely(Media.parse(${Expr(raw)}.tt))}
+    '{Media.parseTrusted(${Expr(raw)}.tt)}
