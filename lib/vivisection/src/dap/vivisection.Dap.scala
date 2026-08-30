@@ -34,11 +34,21 @@ package vivisection
 
 import scala.caps
 
+import ambience.{System, WorkingDirectory}
+import anthology.*
 import anticipation.*
+import coaxial.*
 import contingency.*
+import fulminate.*
+import gigantism.*
 import gossamer.*
+import guillotine.*
+import hieroglyph.*
 import jacinta.*
+import parasite.*
 import proscenium.*
+import turbulence.*
+import urticose.*
 import vacuous.*
 
 // The Debug Adapter Protocol's message model — the subset this adapter speaks. Requests arrive
@@ -50,6 +60,47 @@ import vacuous.*
 // reserved-word `type`.
 object Dap:
   import dynamicJsonAccess.enabled
+
+  // Serves the protocol over the ambient standard streams until the input is exhausted — the
+  // canonical stdio transport a frontend launches. All outgoing traffic flows through a single
+  // writer task, so responses and events never interleave, and each request is handled in
+  // arrival order on this thread. The observer sees every message's raw text, both directions.
+  def listen(observer: Text => Unit = { _ => () })
+    ( using online:     Online,
+            monitor:    Monitor,
+            probate:    Probate,
+            backend:    Socket.Backend,
+            options:    Every[Socket.Option.Tcp],
+            system:     System,
+            asyncError: Tactic[Async.Error],
+            working:    WorkingDirectory,
+            stdio:      Stdio^,
+            loggable:   (Socket.Event is Loggable)^,
+            exec:       (Exec.Event is Loggable)^,
+            compile:    (CompileEvent is Loggable)^,
+            note:       Diagnostics )
+  :   Unit =
+
+    import strategies.throwUnsafely
+    import charEncoders.utf8Encoder
+
+    val outgoing: Relay[Json] = Relay()
+
+    val writer: Task[Unit] = async:
+      outgoing.lazyList.stdlib.foreach: json =>
+        val body: Text = json.encode
+        observer(body)
+        stdio.write(DapTransport.frame(body))
+        stdio.out.flush()
+
+    val session = DapSession(outgoing.put(_))
+
+    try
+      DapTransport.pump(stdio.in.source[Data], observer): message =>
+        safely(message.read[Json]).let(session.handle(_))
+    finally
+      outgoing.stop()
+      writer.attend()
 
   object Envelope:
     // Pure and throwing: each internal summon mints its own throwing tactic; a decode failure

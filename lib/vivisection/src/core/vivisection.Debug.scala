@@ -144,6 +144,32 @@ extends caps.ExclusiveCapability:
 
     connection.eventRequestSet(Jdwp.EventKind.SingleStep, Jdwp.SuspendPolicy.EventThread, modifiers)
 
+  // Requests a single step whose completion runs `handler` on the dispatcher, exactly as a
+  // breakpoint hit does; the step suspends only the stepped thread.
+  def step(thread: ThreadId, depth: Jdwp.StepDepth)(handler: Debug.Handler)
+    ( using Tactic[Debugger.Error] )
+  :   Unit =
+
+    val request = step(thread, depth, Jdwp.StepSize.Line)
+    connection.register(Jdwp.EventKind.SingleStep, request): halt => handler(using halt)
+
+  // Suspends a thread on the caller's initiative — no event marks it — and hands back a halt
+  // over its topmost frame, so a client-driven pause offers the same view of the stopped thread
+  // as a breakpoint would. The caller owns the suspension: dropping the halt does not resume.
+  // Laundered exactly as the dispatcher's halts are: it lives and dies with this session.
+  def pause(thread: ThreadId)(using Tactic[Debugger.Error]): Halt =
+    connection.suspendThread(thread)
+
+    val location = connection.frames(thread, 0, 1).stdlib.headOption match
+      case scala.Some((_, location)) =>
+        location
+
+      case _ =>
+        Jdwp.Location(Jdwp.TypeTag.Class, Jdwp.Ref.empty, Jdwp.Ref.empty, 0L)
+
+    caps.unsafe.unsafeAssumePure
+      ( new Halt(connection, thread, location, Halt.Cause.Stopped, Halt.Retention()) )
+
   // Cancels a previously-set event request.
   def clear(kind: Jdwp.EventKind, request: Int)(using Tactic[Debugger.Error]): Unit =
     connection.eventRequestClear(kind, request)

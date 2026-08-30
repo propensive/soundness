@@ -101,6 +101,22 @@ extends caps.ExclusiveCapability:
   def frames(): List[(FrameId, Jdwp.Location)] =
     connection.frames(thread, 0, connection.frameCount(thread))
 
+  // A human-readable position for a frame — `pkg.Cls.method` and its source line, resolved from
+  // the class's method and line tables; line 0 where no line information exists.
+  def describe(location: Jdwp.Location): (Text, Int) =
+    val cls = Variable.demangle(connection.signature(location.cls))
+    val method = connection.methods(location.cls).stdlib.find(_.method == location.method)
+    val name = method.map { info => t"$cls.${info.name}" }.getOrElse(cls)
+
+    val line = safely(connection.lineTable(location.cls, location.method)) match
+      case table: Jdwp.LineTable =>
+        table.lines.stdlib.filter(_.index <= location.index).lastOption.map(_.line).getOrElse(0)
+
+      case _ =>
+        0
+
+    (name, line)
+
   // Describes the exception in flight, when this stop reports one. The message is read directly
   // from `Throwable`'s `detailMessage` field — walking up the type hierarchy to the class which
   // declares it — rather than by invoking `getMessage`, so no debuggee code runs and none of the
@@ -205,7 +221,7 @@ extends caps.ExclusiveCapability:
 
   // Writes a new value into a variable at the stopped frame.
   def assign(variable: Variable, value: Jdwp.Value): Unit =
-    topFrame.let { (frame, _) => assign(frame, variable, value) }
+    topFrame.let: (frame, _) => assign(frame, variable, value)
 
   // Writes a new value into a variable, routed by its provenance: a local slot in the given
   // frame, a captured or member field on its holding object, an array element, or — through a

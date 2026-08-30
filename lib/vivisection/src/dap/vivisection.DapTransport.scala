@@ -39,7 +39,6 @@ import hieroglyph.*
 import obligatory.*
 import prepositional.*
 import rudiments.*
-import turbulence.*
 import zephyrine.*
 
 // The Debug Adapter Protocol's base framing: `Content-Length`-framed JSON over a byte channel —
