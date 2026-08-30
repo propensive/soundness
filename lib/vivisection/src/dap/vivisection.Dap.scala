@@ -99,8 +99,9 @@ object Dap:
       DapTransport.pump(stdio.in.source[Data], observer): message =>
         safely(message.read[Json]).let(session.handle(_))
     finally
+      session.close()
       outgoing.stop()
-      writer.attend()
+      writer.cancel()
 
   object Envelope:
     // Pure and throwing: each internal summon mints its own throwing tactic; a decode failure

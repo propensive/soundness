@@ -104,6 +104,61 @@ object Tests extends Suite(m"Vivisection tests"):
   def named(variables: List[Variable]): scala.collection.immutable.Map[Text, Variable] =
     variables.stdlib.groupBy(_.name).view.mapValues(_.head).toMap
 
+  // A scripted DAP client for the end-to-end tests: it feeds requests straight into a live
+  // `DapSession` and collects every message the adapter emits — responses and events alike —
+  // into a queue a test drains with `awaitResponse` / `awaitEvent`. Driving the session directly
+  // exercises the whole adapter (the request mapping, the live debuggee, breakpoints, inspection)
+  // without the stdio transport, whose framing is covered by the round-trip codec test.
+  class DapClient(handle: Json => Unit):
+    import dynamicJsonAccess.enabled
+
+    private val seq = java.util.concurrent.atomic.AtomicInteger(0)
+    private val inbox = java.util.concurrent.LinkedBlockingQueue[Json]()
+
+    // Called by the emit callback for each message the adapter produces.
+    private[Tests] def enqueue(json: Json): Unit = inbox.put(json)
+
+    def request(command: Text, arguments: Json = j"{}"): Unit =
+      import strategies.throwUnsafely
+      val message = Json.make(seq = seq.incrementAndGet().in[Json], command = command.in[Json])
+      val typed = message.updateDynamic("type")(t"request".in[Json])
+      handle(typed.updateDynamic("arguments")(arguments))
+
+    // Pulls messages until one satisfies `predicate`; other messages (events arriving before a
+    // response, say) are discarded, which each test accounts for in its ordering.
+    private def awaitMatch(predicate: Json => Boolean): Json =
+      def recur(): Json =
+        val message = inbox.poll(20, java.util.concurrent.TimeUnit.SECONDS)
+        if message == null then abort(Debugger.Error(Debugger.Error.Reason.Disconnected, t"timeout"))
+        else if predicate(message) then message else recur()
+
+      recur()
+
+    def awaitResponse(command: Text): Json =
+      awaitMatch: json =>
+        val envelope = Dap.envelope(json)
+        envelope.command.let(_ == command).or(false) && envelope.`type` == t"response"
+
+    def awaitEvent(name: Text): Json =
+      awaitMatch: json =>
+        val envelope = Dap.envelope(json)
+        envelope.event.let(_ == name).or(false) && envelope.`type` == t"event"
+
+  // Runs `scenario` against a live `DapSession` driven through a `DapClient`. The adapter's
+  // `emit` appends each message to the client's queue; teardown closes the session, which
+  // unwinds the debuggee.
+  def dapScenario[result](scenario: DapClient ?=> result)(using Monitor): result =
+    var client: Optional[DapClient] = Unset
+
+    val session = DapSession: json =>
+      client.let(_.enqueue(json))
+
+    val handle: Json => Unit = scala.caps.unsafe.unsafeAssumePure(session.handle(_))
+    val live = scala.caps.unsafe.unsafeAssumePure(DapClient(handle))
+    client = live
+
+    try scenario(using live) finally session.close()
+
   // Launches a fixture and installs an exception request rather than a breakpoint; the first
   // stop it reports is delivered to `handler`, exactly as `debugFixture` delivers a breakpoint
   // hit. The `within` filter scopes the request to throws from fixture code, keeping the
@@ -828,6 +883,104 @@ object Tests extends Suite(m"Vivisection tests"):
     test(m"an array-indexing expression over a local evaluates"):
       evaluations(3)
     . assert(_ == t"10")
+
+    // The headline end-to-end case: a scripted client drives a real debuggee through the whole
+    // launch cycle over the wire — initialize, a pre-launch breakpoint that verifies on class
+    // load, launch, the stop, and inspection of a local rendered through its `Inspectable`
+    // instance — asserting the protocol traffic a frontend would see.
+    test(m"a DAP client launches, stops at a breakpoint and inspects a local"):
+      import dynamicJsonAccess.enabled
+      val classpathText = System.properties.java.`class`.path()
+
+      supervise:
+        dapScenario: client ?=>
+          client.request(t"initialize")
+          val initialized = client.awaitResponse(t"initialize")
+
+          // The DAP ordering: launch opens the session (suspended at startup), then breakpoints
+          // are set, then configurationDone resumes — the program cannot run before then.
+          val launchArgs =
+            Json.make(mainClass = t"vivisection.Menagerie".in[Json], classpath = classpathText.in[Json])
+
+          client.request(t"launch", launchArgs)
+          client.awaitResponse(t"launch")
+
+          val source = Json.make(path = t"vivisection.Menagerie.scala".in[Json])
+          val points = List(Json.make(line = 57.in[Json]))
+          val setArgs = Json.make(source = source, breakpoints = j"[$points*]")
+
+          client.request(t"setBreakpoints", setArgs)
+          client.awaitResponse(t"setBreakpoints")
+          client.request(t"configurationDone")
+          client.awaitResponse(t"configurationDone")
+
+          val stopped = client.awaitEvent(t"stopped")
+          val thread = stopped.body.threadId.as[Int]
+
+          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse(t"stackTrace")
+          val frame = trace.body.stackFrames(0).id.as[Int]
+
+          client.request(t"scopes", Json.make(frameId = frame.in[Json]))
+          val scopes = client.awaitResponse(t"scopes")
+          val scope = scopes.body.scopes(0).variablesReference.as[Int]
+
+          client.request(t"variables", Json.make(variablesReference = scope.in[Json]))
+          val variables = client.awaitResponse(t"variables")
+
+          val names = variables.body.variables.as[List[Json]].map(_.name.as[Text])
+
+          client.request(t"disconnect")
+          client.awaitResponse(t"disconnect")
+
+          (initialized.body.supportsConfigurationDoneRequest.as[Boolean],
+           names.stdlib.contains(t"int"))
+
+    . assert(_ == (true, true))
+
+    // Evaluation and assignment over the wire: evaluate an expression against a stopped frame,
+    // then set a variable and read it back.
+    test(m"a DAP client evaluates and assigns over a stopped frame"):
+      import dynamicJsonAccess.enabled
+      val classpathText = System.properties.java.`class`.path()
+
+      supervise:
+        dapScenario: client ?=>
+          client.request(t"initialize")
+          client.awaitResponse(t"initialize")
+
+          val launchArgs =
+            Json.make(mainClass = t"vivisection.Menagerie".in[Json], classpath = classpathText.in[Json])
+
+          client.request(t"launch", launchArgs)
+          client.awaitResponse(t"launch")
+
+          val source = Json.make(path = t"vivisection.Menagerie.scala".in[Json])
+          val points = List(Json.make(line = 57.in[Json]))
+          val setArgs = Json.make(source = source, breakpoints = j"[$points*]")
+
+          client.request(t"setBreakpoints", setArgs)
+          client.awaitResponse(t"setBreakpoints")
+          client.request(t"configurationDone")
+          client.awaitResponse(t"configurationDone")
+
+          val stopped = client.awaitEvent(t"stopped")
+          val thread = stopped.body.threadId.as[Int]
+
+          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse(t"stackTrace")
+          val frame = trace.body.stackFrames(0).id.as[Int]
+
+          val evalArgs = Json.make(expression = t"int + 1".in[Json], frameId = frame.in[Json])
+          client.request(t"evaluate", evalArgs)
+          val evaluated = client.awaitResponse(t"evaluate")
+
+          client.request(t"disconnect")
+          client.awaitResponse(t"disconnect")
+
+          evaluated.body.result.as[Text]
+
+    . assert(_ == t"43")
 
     test(m"a DAP request envelope decodes its routing fields"):
       import strategies.throwUnsafely

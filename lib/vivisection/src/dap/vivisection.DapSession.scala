@@ -32,6 +32,7 @@
                                                                                                   */
 package vivisection
 
+import java.lang as jl
 import java.util.concurrent.atomic as juca
 
 import scala.caps
@@ -56,6 +57,7 @@ import hellenism.*
 import jacinta.*
 import parasite.*
 import proscenium.*
+import rudiments.*
 import spectacular.*
 import urticose.*
 import vacuous.*
@@ -117,6 +119,9 @@ private[vivisection] class DapSession(emit: Json => Unit)
   private val ready: Promise[Unit] = Promise()
   private val terminate: Promise[Unit] = Promise()
 
+  @caps.unsafe.untrackedCaptures
+  private var sessionTask: Optional[Task[Unit]] = Unset
+
   // DAP handles are `Int`s; JDWP identifiers are `Long`s. Threads are registered on first
   // sight; frame and variables-reference handles live only between a stop and the next resume.
   private val threadIds: scc.TrieMap[Long, Int] = scc.TrieMap()
@@ -139,6 +144,14 @@ private[vivisection] class DapSession(emit: Json => Unit)
   private var watchRequests: scala.List[DapSession.RequestSlot] = scala.List()
 
   private def nextSeq(): Int = outgoing.incrementAndGet()
+
+  // Tears down any open session — called when the transport loop ends, so a client that drops
+  // the connection without a `disconnect` request still releases the debuggee and unwinds the
+  // session task. `terminate` releases the task's `await`; cancelling then joins it (a no-op if
+  // it has already ended). Idempotent: a prior `disconnect` has already offered `terminate`.
+  def close(): Unit =
+    terminate.offer(())
+    sessionTask.let(_.cancel())
 
   private def respond(request: Dap.Envelope, body: Optional[Json] = Unset): Unit =
     emit(Dap.response(nextSeq(), request, body))
@@ -171,9 +184,40 @@ private[vivisection] class DapSession(emit: Json => Unit)
     try socket.getLocalPort finally socket.close()
 
   // Holds a freshly-opened session for the adapter's lifetime: the field is read by every
-  // subsequent request, and the session task parks here until `disconnect`.
+  // subsequent request, and the session task parks here until `disconnect`. A launch session's
+  // console is relayed as `output` events, and its exit as `exited` and `terminated` — the
+  // relays are laundered pure thunks, like the session task itself.
   private def opened(debug: Debug^): Unit =
     debug0 = caps.unsafe.unsafeAssumePure(debug)
+
+    debug.console.let: console =>
+      val adapter = self
+
+      val out: () => Unit =
+        caps.unsafe.unsafeAssumePure: () =>
+          console.stdout.stdlib.foreach: data =>
+            adapter.send(t"output", Dap.OutputBody(data.utf8, t"stdout").in[Json])
+
+      val err: () => Unit =
+        caps.unsafe.unsafeAssumePure: () =>
+          console.stderr.stdlib.foreach: data =>
+            adapter.send(t"output", Dap.OutputBody(data.utf8, t"stderr").in[Json])
+
+      val exit: () => Unit =
+        caps.unsafe.unsafeAssumePure: () =>
+          safely(console.exited.await()).let: status =>
+            val code = status match
+              case Exit.Fail(code) => code
+              case _               => 0
+
+            adapter.send(t"exited", Dap.ExitedBody(code).in[Json])
+            adapter.send(t"terminated")
+
+      val outTask: Task[Unit] = async(out())
+      val errTask: Task[Unit] = async(err())
+      val exitTask: Task[Unit] = async(exit())
+      ()
+
     ready.offer(())
     safely(terminate.await())
     ()
@@ -229,7 +273,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
             outcome.let(identity)
 
-        val opened: Task[Unit] = async(body())
+        sessionTask = async(body())
         ready.await()
         respond(request)
 
@@ -255,7 +299,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
             outcome.let(identity)
 
-        val opened: Task[Unit] = async(body())
+        sessionTask = async(body())
         ready.await()
         respond(request)
 
@@ -474,6 +518,76 @@ private[vivisection] class DapSession(emit: Json => Unit)
             case _ =>
               fail(request, t"unknown thread")
 
+      case t"setVariable" =>
+        val arguments = json.arguments.as[Dap.SetVariableArguments]
+
+        nodes.get(arguments.variablesReference) match
+          case scala.Some(DapSession.Node.Locals(thread, frame, location)) =>
+            withStop(request, thread): halt =>
+              halt.variables(frame, location).stdlib.find(_.name == arguments.name) match
+                case scala.Some(variable) =>
+                  parseValue(halt, variable.erased, arguments.value) match
+                    case value: Jdwp.Value =>
+                      halt.assign(frame, variable, value)
+                      respond(request, Dap.SetVariableBody(arguments.value).in[Json])
+
+                    case _ =>
+                      fail(request, t"the value is not expressible in ${variable.erased}")
+
+                case _ =>
+                  fail(request, t"unknown variable")
+
+          case _ =>
+            fail(request, t"only a local scope supports assignment")
+
+      case t"evaluate" =>
+        val arguments = json.arguments.as[Dap.EvaluateArguments]
+
+        withFrame(request, arguments.frameId): (thread, halt) =>
+          withClasspath(request): classpath =>
+            val result = halt.evaluator(classpath): eval ?=> eval(arguments.expression)
+
+            val rendered = result match
+              case Variable.Snapshot.Str(_, text) => text
+              case other                          => other.inspect
+
+            respond(request, Dap.EvaluateBody(rendered).in[Json])
+
+      case t"setExpression" =>
+        val arguments = json.arguments.as[Dap.SetExpressionArguments]
+
+        withFrame(request, arguments.frameId): (thread, halt) =>
+          withClasspath(request): classpath =>
+            halt.evaluator(classpath): eval ?=> eval.assign(arguments.expression, arguments.value)
+            respond(request, Dap.SetVariableBody(arguments.value).in[Json])
+
+      case t"exceptionInfo" =>
+        val arguments = json.arguments.as[Dap.ThreadArguments]
+
+        withStop(request, arguments.threadId): halt =>
+          halt.exceptionInfo() match
+            case info: Halt.ExceptionInfo =>
+              val mode = if info.caught then t"always" else t"unhandled"
+              respond(request, Dap.ExceptionInfoBody(info.className, mode, info.message).in[Json])
+
+            case _ =>
+              fail(request, t"the thread is not stopped at an exception")
+
+      case t"restartFrame" =>
+        val arguments = json.arguments.as[Dap.FrameArguments]
+
+        frames.get(arguments.frameId) match
+          case scala.Some((thread, frame, _)) =>
+            withStop(request, thread): halt =>
+              halt.pop(frame)
+              frames.clear()
+              nodes.clear()
+              respond(request)
+              send(t"stopped", Dap.StoppedBody(t"restart", thread).in[Json])
+
+          case _ =>
+            fail(request, t"unknown frame")
+
       case t"disconnect" =>
         clearStops()
         respond(request)
@@ -526,3 +640,39 @@ private[vivisection] class DapSession(emit: Json => Unit)
     stops.get(thread) match
       case scala.Some(slot) => body(slot.halt)
       case _                => fail(request, t"the thread is not stopped")
+
+  private inline def withFrame(request: Dap.Envelope, frameId: Optional[Int])
+    ( inline body: (Int, Halt) => Unit )
+  :   Unit =
+
+    frameId.let(frames.get(_).getOrElse(scala.None)) match
+      case (thread: Int, _, _) => withStop(request, thread): halt => body(thread, halt)
+      case _                   => fail(request, t"unknown frame")
+
+  private inline def withClasspath(request: Dap.Envelope)(inline body: LocalClasspath => Unit)
+  :   Unit =
+
+    classpath0 match
+      case classpath: LocalClasspath => body(classpath)
+      case _                         => fail(request, t"no classpath was given at launch")
+
+  // Parses a plain DAP `setVariable` value at the variable's erased type: the primitives, plus
+  // a fresh remote string. Anything richer belongs to `setExpression`.
+  private def parseValue(halt: Halt, erased: Text, value: Text): Optional[Jdwp.Value] =
+    try erased.s match
+      case "Int"              => Jdwp.Value.OfInt(jl.Integer.parseInt(value.s))
+      case "Long"             => Jdwp.Value.OfLong(jl.Long.parseLong(value.s))
+      case "Boolean"          => Jdwp.Value.OfBoolean(jl.Boolean.parseBoolean(value.s))
+      case "Double"           => Jdwp.Value.OfDouble(jl.Double.parseDouble(value.s))
+      case "Float"            => Jdwp.Value.OfFloat(jl.Float.parseFloat(value.s))
+      case "Short"            => Jdwp.Value.OfShort(jl.Short.parseShort(value.s))
+      case "Byte"             => Jdwp.Value.OfByte(jl.Byte.parseByte(value.s))
+
+      case "java.lang.String" =>
+        val string = halt.connection.createString(value)
+        Jdwp.Value.Reference(Jdwp.Tag.StringTag, Jdwp.Ref(string.long))
+
+      case _ =>
+        Unset
+
+    catch case _: Exception => Unset

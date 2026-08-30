@@ -3303,6 +3303,13 @@ object vivisection extends Library:
     override def scalaNative = false
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // A runnable DAP server over stdio, for pointing a frontend (VS Code) at manually. Kept out of
+  // the library surface: it is an entry point, not an API.
+  object demo extends Internal(dap, exoskeleton.completions, ethereal.core):
+    override def scalacOptions = Task:
+      settings.maxInlines(settings.sep(super.scalacOptions() ++ Seq("-Yno-predef",
+        "-Yimports:java.lang,proscenium")), "48")
+    override def mainClass: Task.Simple[Option[String]] = Some("vivisection.DapServer")
   // The offline suite drives the protocol against a scripted fake VM over an in-memory duplex;
   // the live suite launches real JVMs under the jdwp agent.
   object test extends Tests(core, eval, dap, eucalyptus.core, ambience.core):
