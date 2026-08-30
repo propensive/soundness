@@ -254,11 +254,11 @@ object Inspectable extends Inspectable2:
 
     val body = span.mode match
       case Span.Mode.Empty  => "∅"
-      case Span.Mode.Offset => ("@(": String)+n(span.offset)+(": String)+": String)+span.length.let(_.toString).or("?")
+      case Span.Mode.Offset => ("@": String)+n(span.offset)+("+": String)+span.length.let(_.toString).or("?")
       case Span.Mode.Lines  => n(span.startLine)+("‥": String)+n(span.endLine)
 
       case Span.Mode.Line =>
-        n(span.startLine)+(":(": String)+n(span.startColumn)+(": String)+": String)+span.length.let(_.toString).or("?")
+        n(span.startLine)+(":": String)+n(span.startColumn)+("+": String)+span.length.let(_.toString).or("?")
 
       case Span.Mode.Area =>
         n(span.startLine)+(":": String)+n(span.startColumn)+("‥": String)+n(span.endLine)+(":": String)+n(span.endColumn)

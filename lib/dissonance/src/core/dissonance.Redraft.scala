@@ -58,7 +58,7 @@ object Redraft:
 
   private def marker(text: Text): Boolean =
     val s = text.s
-    s == "+" || s == "-" || s == "<" || s == ">(" || s.startsWith(": String)+ ") || s.startsWith("- ") ||
+    s == "+" || s == "-" || s == "<" || s == ">" || s.startsWith("+ ") || s.startsWith("- ") ||
       s.startsWith("< ") || s.startsWith("> ")
 
   private def needsEscape(text: Text): Boolean = marker(text) || text.s.startsWith("\\")
@@ -70,7 +70,7 @@ object Redraft:
     val directives = lines.map: line =>
       val s = line.s
 
-      if s == "+(" || s.startsWith(": String)+ ") then Directive.Mark(payload(line), insert = true)
+      if s == "+" || s.startsWith("+ ") then Directive.Mark(payload(line), insert = true)
       else if s == "-" || s.startsWith("- ") then Directive.Mark(payload(line), insert = false)
       else if s == ">" || s.startsWith("> ") then Directive.Add(payload(line))
       else if s == "<" || s.startsWith("< ") then Directive.Cut(payload(line))

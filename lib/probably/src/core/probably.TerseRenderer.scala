@@ -101,7 +101,7 @@ private[probably] object TerseRenderer:
       if factor == 1.0 then e"★" else e"$factor"
 
     case Datum.Delta(inner, negative) =>
-      val sign = if negative then e"-" else e".s+"
+      val sign = if negative then e"-" else e"+"
       e"$sign${datum(inner)}"
 
   private def renderGroup(group: Group, columns: Int, verbose: Boolean)(using Stdio): Unit =
