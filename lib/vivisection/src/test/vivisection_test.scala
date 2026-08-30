@@ -829,6 +829,57 @@ object Tests extends Suite(m"Vivisection tests"):
       evaluations(3)
     . assert(_ == t"10")
 
+    test(m"a DAP request envelope decodes its routing fields"):
+      import strategies.throwUnsafely
+      val message = j"""{"seq": 3, "type": "request", "command": "initialize"}"""
+      Dap.envelope(message)
+    . assert(_ == Dap.Envelope(3, t"request", t"initialize", Unset))
+
+    test(m"a malformed DAP message still yields an envelope"):
+      import strategies.throwUnsafely
+      Dap.envelope(j"""[1, 2, 3]""")
+    . assert(_ == Dap.Envelope())
+
+    test(m"a DAP response carries its type, correlation and body"):
+      import strategies.throwUnsafely
+      import dynamicJsonAccess.enabled
+      val request = Dap.Envelope(seq = 3, command = t"threads")
+      val body = Dap.ThreadsBody(List(Dap.ThreadInfo(1, t"main"))).in[Json]
+      val response = Dap.response(7, request, body)
+
+      ( response.`type`.as[Text], response.request_seq.as[Int], response.success.as[Boolean],
+        response.body.threads(0).name.as[Text] )
+    . assert(_ == (t"response", 3, true, t"main"))
+
+    test(m"a DAP failure response reports its message"):
+      import strategies.throwUnsafely
+      import dynamicJsonAccess.enabled
+      val request = Dap.Envelope(seq = 9, command = t"nonesuch")
+      val failure = Dap.failure(2, request, t"unrecognized command")
+      (failure.success.as[Boolean], failure.message.as[Text])
+    . assert(_ == (false, t"unrecognized command"))
+
+    test(m"an Unset member is absent from the wire"):
+      import strategies.throwUnsafely
+      import formatting.compactJsonFormatting
+      Dap.Breakpoint(verified = true).in[Json].show
+    . assert(_ == t"""{"verified":true}""")
+
+    test(m"a DAP event names itself and carries its body"):
+      import strategies.throwUnsafely
+      import dynamicJsonAccess.enabled
+      val event = Dap.event(4, t"stopped", Dap.StoppedBody(t"breakpoint", threadId = 1).in[Json])
+      (event.`type`.as[Text], event.event.as[Text], event.body.reason.as[Text])
+    . assert(_ == (t"event", t"stopped", t"breakpoint"))
+
+    test(m"a Content-Length frame round-trips through the transport"):
+      import strategies.throwUnsafely
+      val received = scala.collection.mutable.ArrayBuffer[Text]()
+      val data = DapTransport.frame(t"""{"seq":1}""")
+      DapTransport.pump(Stream(data), _ => ())(received.append(_))
+      received.toList
+    . assert(_ == scala.List(t"""{"seq":1}"""))
+
     // A launch session drains the debuggee's console from the moment of the fork: its output is
     // readable as a stream, and its exit status resolves when it terminates — so a debuggee
     // can never block against a full pipe, and a frontend can relay its output.

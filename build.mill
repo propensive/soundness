@@ -848,7 +848,7 @@ object soundness extends Toolchain:
     anthology.`scala`, exegesis.core, espionage.core, hellenism.jvm, delicious.core,
     delicious.`scala`, delicious.compiler, harlequin.compiler,
     delicious.ansi, anthology.kotlin, anthology.oci, anthology.xeq, hyperbole.stacks,
-    vivisection.core, vivisection.eval):
+    vivisection.core, vivisection.eval, vivisection.dap):
     def summary = "Developer tools: compilers, build tooling, source analysis and version control"
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
@@ -3296,9 +3296,16 @@ object vivisection extends Library:
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The Debug Adapter Protocol transport: Content-Length-framed JSON over stdio, adapting a
+  // debug session to the requests and events a DAP frontend (such as VS Code) speaks.
+  object dap extends Component(eval, jacinta.core, obligatory.core):
+    override def scalaJs = false // serves a JVM debug session
+    override def scalaNative = false
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The offline suite drives the protocol against a scripted fake VM over an in-memory duplex;
   // the live suite launches real JVMs under the jdwp agent.
-  object test extends Tests(core, eval, eucalyptus.core, ambience.core):
+  object test extends Tests(core, eval, dap, eucalyptus.core, ambience.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
