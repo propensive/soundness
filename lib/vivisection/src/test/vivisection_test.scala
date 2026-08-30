@@ -159,6 +159,74 @@ object Tests extends Suite(m"Vivisection tests"):
 
     try scenario(using live) finally session.close()
 
+  // A client that drives `Dap.listen` over real pipes — the full stdio transport, framing and
+  // all — rather than calling the adapter directly. Requests are `Content-Length`-framed onto
+  // the server's input; a reader task collects framed responses. Modelled on exegesis's
+  // loopback fixture: the server runs under `supervise`, and teardown closes the pipe ends so
+  // both the server (on stdin EOF) and the reader (on its input closing) end naturally and the
+  // supervision scope awaits them — nothing is force-cancelled.
+  class DapStdioClient(toServer: java.io.OutputStream):
+    import dynamicJsonAccess.enabled
+
+    private val seq = java.util.concurrent.atomic.AtomicInteger(0)
+    private val inbox = java.util.concurrent.LinkedBlockingQueue[Json]()
+
+    private[Tests] def enqueue(json: Json): Unit = inbox.put(json)
+
+    def request(command: Text, arguments: Json = j"{}"): Unit =
+      import strategies.throwUnsafely
+      val message = Json.make(seq = seq.incrementAndGet().in[Json], command = command.in[Json])
+      val typed = message.updateDynamic("type")(t"request".in[Json])
+      val full = typed.updateDynamic("arguments")(arguments)
+      toServer.write(DapTransport.frame(full.encode).mutable(using Unsafe))
+      toServer.flush()
+
+    private def awaitMatch(predicate: Json => Boolean): Json =
+      def recur(): Json =
+        val message = inbox.poll(20, java.util.concurrent.TimeUnit.SECONDS)
+        if message == null then abort(Debugger.Error(Debugger.Error.Reason.Disconnected, t"timeout"))
+        else if predicate(message) then message else recur()
+
+      recur()
+
+    def awaitResponse(command: Text): Json =
+      awaitMatch: json =>
+        val envelope = Dap.envelope(json)
+        envelope.command.let(_ == command).or(false) && envelope.`type` == t"response"
+
+    def awaitEvent(name: Text): Json =
+      awaitMatch: json =>
+        val envelope = Dap.envelope(json)
+        envelope.event.let(_ == name).or(false) && envelope.`type` == t"event"
+
+  def dapStdioScenario[result](scenario: DapStdioClient => result)(using Monitor): result =
+    val toServer = java.io.PipedOutputStream()
+    val serverIn = java.io.PipedInputStream(toServer, 65536)
+    val toClient = java.io.PipedOutputStream()
+    val clientIn = java.io.PipedInputStream(toClient, 65536)
+
+    val stdio =
+      Stdio(java.io.PrintStream(toClient, true), null, serverIn, termcapDefinitions.basicTermcap)
+
+    supervise:
+      val server = async:
+        given Stdio = stdio
+        safely(Dap.listen())
+        ()
+
+      val client = DapStdioClient(toServer)
+
+      val reader = async:
+        import strategies.throwUnsafely
+        safely(clientIn.source[Data].toProgression.stdlib.iterator.frames[ContentLength].each:
+          frame => client.enqueue(frame.read[Json]))
+        ()
+
+      try scenario(client)
+      finally
+        safely(toServer.close())
+        safely(clientIn.close())
+
   // Launches a fixture and installs an exception request rather than a breakpoint; the first
   // stop it reports is delivered to `handler`, exactly as `debugFixture` delivers a breakpoint
   // hit. The `within` filter scopes the request to throws from fixture code, keeping the
@@ -981,6 +1049,66 @@ object Tests extends Suite(m"Vivisection tests"):
           evaluated.body.result.as[Text]
 
     . assert(_ == t"43")
+
+    // The transport itself, over real pipes: `initialize` and `disconnect` without ever opening
+    // a debuggee, so this exercises the framing and the server's teardown-on-EOF in isolation.
+    test(m"a DAP server initializes and disconnects over stdio"):
+      import dynamicJsonAccess.enabled
+
+      supervise:
+        dapStdioScenario: client =>
+          client.request(t"initialize")
+          val initialized = client.awaitResponse(t"initialize")
+          client.request(t"disconnect")
+          client.awaitResponse(t"disconnect")
+          initialized.body.supportsConfigurationDoneRequest.as[Boolean]
+
+    . assert(_ == true)
+
+    // The full cycle over the real stdio transport: launch a debuggee, break, inspect, and
+    // disconnect — all `Content-Length`-framed JSON over pipes, proving the transport and its
+    // teardown carry a live debug session end to end, not just the adapter in isolation.
+    test(m"a DAP server drives a live debuggee over stdio"):
+      import dynamicJsonAccess.enabled
+      val classpathText = System.properties.java.`class`.path()
+
+      supervise:
+        dapStdioScenario: client =>
+          client.request(t"initialize")
+          client.awaitResponse(t"initialize")
+
+          val launchArgs =
+            Json.make(mainClass = t"vivisection.Menagerie".in[Json], classpath = classpathText.in[Json])
+
+          client.request(t"launch", launchArgs)
+          client.awaitResponse(t"launch")
+
+          val source = Json.make(path = t"vivisection.Menagerie.scala".in[Json])
+          val points = List(Json.make(line = 57.in[Json]))
+          client.request(t"setBreakpoints", Json.make(source = source, breakpoints = j"[$points*]"))
+          client.awaitResponse(t"setBreakpoints")
+          client.request(t"configurationDone")
+          client.awaitResponse(t"configurationDone")
+
+          val stopped = client.awaitEvent(t"stopped")
+          val thread = stopped.body.threadId.as[Int]
+
+          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse(t"stackTrace")
+          val frame = trace.body.stackFrames(0).id.as[Int]
+
+          client.request(t"scopes", Json.make(frameId = frame.in[Json]))
+          val scope = client.awaitResponse(t"scopes").body.scopes(0).variablesReference.as[Int]
+
+          client.request(t"variables", Json.make(variablesReference = scope.in[Json]))
+          val variables = client.awaitResponse(t"variables")
+          val names = variables.body.variables.as[List[Json]].map(_.name.as[Text])
+
+          client.request(t"disconnect")
+          client.awaitResponse(t"disconnect")
+          names.stdlib.contains(t"int")
+
+    . assert(_ == true)
 
     test(m"a DAP request envelope decodes its routing fields"):
       import strategies.throwUnsafely

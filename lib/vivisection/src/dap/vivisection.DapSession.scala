@@ -147,11 +147,11 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
   // Tears down any open session — called when the transport loop ends, so a client that drops
   // the connection without a `disconnect` request still releases the debuggee and unwinds the
-  // session task. `terminate` releases the task's `await`; cancelling then joins it (a no-op if
-  // it has already ended). Idempotent: a prior `disconnect` has already offered `terminate`.
-  def close(): Unit =
-    terminate.offer(())
-    sessionTask.let(_.cancel())
+  // session task. Offering `terminate` releases the task's `await`, and it then unwinds the
+  // debuggee on its own (exactly as a normal session teardown does); the task is left for the
+  // enclosing supervision scope to await, rather than cancelled mid-unwind. Idempotent: a prior
+  // `disconnect` has already offered `terminate`.
+  def close(): Unit = terminate.offer(())
 
   private def respond(request: Dap.Envelope, body: Optional[Json] = Unset): Unit =
     emit(Dap.response(nextSeq(), request, body))
