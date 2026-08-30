@@ -217,6 +217,54 @@ object Tests extends Suite(m"Digression Tests"):
 
       . assert(_ == Smap.Expansion(List(Smap.Origin(t"Util.scala", t"Util.scala", 3)), Unset))
 
+    suite(m"SMAP inversion"):
+      // Util.scala line 3 inlined at two distinct sites, the second with a two-line increment.
+      val multi: Optional[Smap] =
+        Smap.parse:
+          Text:
+            List
+              ( "SMAP", "Main.scala", "Scala",
+                "*S Scala",
+                "*F", "+ 1 Main.scala", "Main.scala", "+ 2 Util.scala", "foo/Util.scala",
+                "*L", "1#1,100:1", "3#2:101", "3#2,2:105,2",
+                "*E" )
+            . mkString("\n")
+
+      test(m"An inlined line answers the generated range standing for it"):
+        smap.let(_.sites(t"Util.scala", 3))
+
+      . assert(_ == List((121, 122)))
+
+      test(m"Each line of a coalesced run answers its own range"):
+        smap.let(_.sites(t"Util.scala", 4))
+
+      . assert(_ == List((122, 123)))
+
+      test(m"A line beyond the inlined run answers nothing"):
+        smap.let(_.sites(t"Util.scala", 5).stdlib.isEmpty)
+
+      . assert(_ == true)
+
+      test(m"The generated file's own lines are not sites"):
+        smap.let(_.sites(t"Main.scala", 3).stdlib.isEmpty)
+
+      . assert(_ == true)
+
+      test(m"A file foreign to the SMAP answers nothing"):
+        smap.let(_.sites(t"Nowhere.scala", 3).stdlib.isEmpty)
+
+      . assert(_ == true)
+
+      test(m"A line inlined at several sites answers every range"):
+        multi.let(_.sites(t"Util.scala", 3))
+
+      . assert(_ == List((101, 102), (105, 107)))
+
+      test(m"Nested inlining sites resolve per file"):
+        (nested.let(_.sites(t"B.scala", 3)), nested.let(_.sites(t"A.scala", 3)))
+
+      . assert(_ == (List((11, 12)), List((12, 13))))
+
     suite(m"Rendering inlined frames"):
       val method = StackTrace.Method(t"Main", t"run()")
 

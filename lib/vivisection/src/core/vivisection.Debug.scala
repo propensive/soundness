@@ -395,9 +395,9 @@ extends caps.ExclusiveCapability:
   // Resolves a source position to the executable locations currently loaded for it: every method
   // of every loaded class compiled from that file whose line table covers the line. Classes
   // named after the file are tried first, so the common case costs a handful of round trips; a
-  // full sweep of loaded classes backstops it. Classes not yet loaded are not found, and inlined
-  // code is not mapped (resolution on ClassPrepare and SMAP awareness belong to the stepping
-  // campaign).
+  // full sweep of loaded classes backstops it. Classes not yet loaded are not found here — the
+  // source-breakpoint form defers to their preparation — and each resolved class is also checked
+  // for inlined copies of the position through its SMAP (see `locateIn`).
   def locate(source: Text, line: Ordinal)(using Tactic[Debugger.Error]): List[Jdwp.Location] =
     val base = source.s.indexOf('.') match
       case -1    => source.s
@@ -434,7 +434,7 @@ extends caps.ExclusiveCapability:
 
     val sourced = safely(connection.sourceFile(cls)).let(_ == source).or(false)
 
-    val results =
+    val exact =
       if !sourced then sci.List[Jdwp.Location]() else
         connection.methods(cls).stdlib.flatMap: method =>
           safely(connection.lineTable(cls, method.method)) match
@@ -445,4 +445,25 @@ extends caps.ExclusiveCapability:
             case _ =>
               sci.List()
 
+    // The SMAP pass, unguarded by the class's own source file: its SMAP's file table decides
+    // whether the requested position was inlined into this class, and `sites` answers the
+    // generated-line ranges standing for it — one binding per site, at the first line-table
+    // entry each range covers.
+    val ranges = connection.smap(cls).lay(sci.List[(Int, Int)]())(_.sites(source, line.n1).stdlib)
+
+    val inlined =
+      if ranges.isEmpty then sci.List[Jdwp.Location]() else
+        connection.methods(cls).stdlib.flatMap: method =>
+          safely(connection.lineTable(cls, method.method)) match
+            case table: Jdwp.LineTable =>
+              ranges.flatMap: (start, end) =>
+                val within = table.lines.stdlib.find: entry =>
+                  entry.line >= start && entry.line < end
+
+                within.map { entry => Jdwp.Location(tag, cls, method.method, entry.index) }.toList
+
+            case _ =>
+              sci.List()
+
+    val results = (exact ++ inlined).distinctBy: location => (location.method.long, location.index)
     List(results*)

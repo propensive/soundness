@@ -816,6 +816,7 @@ object Jdwp:
     // is held behind an untracked field; every handler dies with this sealed session anyway.
     private val handlers: scc.TrieMap[(Int, Int), Connection.Slot] = scc.TrieMap()
     private val preparers: scc.TrieMap[Int, Connection.PrepareSlot] = scc.TrieMap()
+    private val smaps: scc.TrieMap[Long, Optional[digression.Smap]] = scc.TrieMap()
     private[vivisection] val unclaimed: Relay[Event.Composite] = Relay()
 
     @scala.caps.unsafe.untrackedCaptures
@@ -1103,6 +1104,11 @@ object Jdwp:
     // The class loader that defined a type, or the null reference for a bootstrap-loaded class.
     def classLoader(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): ClassLoaderId =
       Ref(request(2, 2)(_.referenceTypeId(cls)).objectId().long)
+
+    // The class's parsed SMAP, memoized for the session — including its absence, so a class
+    // with no debug extension (or a VM without the capability) costs one round trip, ever.
+    def smap(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): Optional[digression.Smap] =
+      smaps.getOrElseUpdate(cls.long, safely(sourceDebugExtension(cls)).let(digression.Smap.parse(_)))
 
     def sourceDebugExtension(cls: ReferenceTypeId)
       ( using Tactic[Debugger.Error] )

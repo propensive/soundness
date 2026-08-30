@@ -450,11 +450,18 @@ private[vivisection] class DapSession(emit: Json => Unit)
         val arguments = json.arguments.as[Dap.StackTraceArguments]
 
         withStop(request, arguments.threadId): halt =>
-          val trace = halt.frames().stdlib.map: (frame, location) =>
-            val id = counter.incrementAndGet()
-            frames(id) = (arguments.threadId, frame, location)
-            val (name, line) = halt.describe(location)
-            Dap.StackFrame(id, name, line)
+          // One DAP frame per *logical* position: a physical frame inside inlined code expands
+          // into its inline origins (marked `subtle`) followed by the frame itself at its real
+          // line. Every logical frame shares the physical frame's registry entry, so scopes,
+          // variables, evaluation and restart against an inline frame resolve to the enclosing
+          // physical frame.
+          val trace = halt.frames().stdlib.flatMap: (frame, location) =>
+            halt.positions(location).stdlib.map: position =>
+              val id = counter.incrementAndGet()
+              frames(id) = (arguments.threadId, frame, location)
+              val source = position.source.let(Dap.Source(_, position.path))
+              val hint: Optional[Text] = if position.inlined then t"subtle" else Unset
+              Dap.StackFrame(id, position.name, position.line, 0, source, hint)
 
           respond(request, Dap.StackTraceBody(List(trace*), trace.length).in[Json])
 
