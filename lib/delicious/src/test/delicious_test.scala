@@ -225,12 +225,13 @@ object Tests extends Suite(m"Delicious Tests"):
     //     class Local
     //     val xs: List[String] = List(1.5)
     //     def f: Option[Int] = List(new Local)
-    // TASTy is version-locked (28.9-1), so these decode under any 3.9-stream compiler.
+    // TASTy is version-locked (28.9-0, the stable 3.9.0 release), so these decode under any
+    // compiler built from the 3.9.0-final-based stream.
     val stringPayload: Text =
-      t"XKGrH5yJgZpTY2FsYSAzLjkuMC1SQzEtcHJvcGVuc2l2ZQAadmNlJOIHAAAAAAAAAACeAYRBU1RzAYZTdHJpbmcBhGphdmEBhGxhbmcCgoKDgIR1gUCE"
+      t"XKGrH5yJgJpTY2FsYSAzLjkuMC1SQzYtcHJvcGVuc2l2ZQAadmNlJOIHAAAAAAAAAACeAYRBU1RzAYZTdHJpbmcBhGphdmEBhGxhbmcCgoKDgIR1gUCE"
 
     val placeholderPayload: Text =
-      t"XKGrH5yJgZpTY2FsYSAzLjkuMC1SQzEtcHJvcGVuc2l2ZQDQKNr7HmsuAAAAAAAAAADGAYRBU1RzAYRMaXN0AYVzY2FsYQGKY29sbGVjdGlvbgKCgoMBiWltbXV0YWJsZQKChIUBkuKfqHNjYWxhLWRpYWc6MOKfqYCIoYZ1gUCGSoc="
+      t"XKGrH5yJgJpTY2FsYSAzLjkuMC1SQzYtcHJvcGVuc2l2ZQDQKNr7HmsuAAAAAAAAAADGAYRBU1RzAYRMaXN0AYVzY2FsYQGKY29sbGVjdGlvbgKCgoMBiWltbXV0YWJsZQKChIUBkuKfqHNjYWxhLWRpYWc6MOKfqYCIoYZ1gUCGSoc="
 
     proscalaLibrary().let: lib =>
       val jars = List("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
