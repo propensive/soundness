@@ -360,11 +360,12 @@ object Dap:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
   case class StackFrame
-    ( id:     Int,
-      name:   Text,
-      line:   Int,
-      column: Int = 0,
-      source: Optional[Source] = Unset )
+    ( id:               Int,
+      name:             Text,
+      line:             Int,
+      column:           Int = 0,
+      source:           Optional[Source] = Unset,
+      presentationHint: Optional[Text] = Unset )
 
   object StackTraceBody:
     given encodable: StackTraceBody is Json.Encodable =

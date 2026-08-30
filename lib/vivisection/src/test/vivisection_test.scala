@@ -1110,6 +1110,66 @@ object Tests extends Suite(m"Vivisection tests"):
 
     . assert(_ == true)
 
+    // The SMAP path end to end: a breakpoint on the body of an inline method — in a file whose
+    // class never loads at runtime — binds at the inlined copy inside the caller's class, and
+    // the stop expands into its logical positions: the inline origin first, then the physical
+    // frame at its call-site line.
+    test(m"a breakpoint on an inline body binds cross-file and expands its positions"):
+      supervise:
+        debugFixture(t"vivisection.Inlined", t"vivisection.Doubling.scala", Ordinal.uniary(40)):
+          stop ?=>
+            stop.positions(stop.location).stdlib.map: position =>
+              (position.source, position.line, position.inlined)
+
+    . assert(_ == scala.List(
+          (t"vivisection.Doubling.scala", 40, true),
+          (t"vivisection.Inlined.scala", 40, false)))
+
+    // The same stop through the protocol: the stack trace carries a subtle frame at the inline
+    // origin and the real frame at its call site, each with its source; scopes against the
+    // inline frame resolve to the enclosing physical frame.
+    test(m"DAP expands an inline stop into subtle and real frames"):
+      import dynamicJsonAccess.enabled
+      val classpathText = System.properties.java.`class`.path()
+
+      supervise:
+        dapScenario: client ?=>
+          client.request(t"initialize")
+          client.awaitResponse(t"initialize")
+
+          val launchArgs =
+            Json.make(mainClass = t"vivisection.Inlined".in[Json], classpath = classpathText.in[Json])
+
+          client.request(t"launch", launchArgs)
+          client.awaitResponse(t"launch")
+
+          val source = Json.make(path = t"vivisection.Doubling.scala".in[Json])
+          val points = List(Json.make(line = 40.in[Json]))
+          client.request(t"setBreakpoints", Json.make(source = source, breakpoints = j"[$points*]"))
+          client.awaitResponse(t"setBreakpoints")
+          client.request(t"configurationDone")
+          client.awaitResponse(t"configurationDone")
+
+          val stopped = client.awaitEvent(t"stopped")
+          val thread = stopped.body.threadId.as[Int]
+
+          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse(t"stackTrace")
+          val inline = trace.body.stackFrames(0)
+          val real = trace.body.stackFrames(1)
+
+          client.request(t"scopes", Json.make(frameId = inline.id.as[Int].in[Json]))
+          val scopes = client.awaitResponse(t"scopes")
+
+          client.request(t"disconnect")
+          client.awaitResponse(t"disconnect")
+
+          ( inline.presentationHint.as[Text], inline.source.name.as[Text], inline.line.as[Int],
+            real.source.name.as[Text], real.line.as[Int], scopes.success.as[Boolean] )
+
+    . assert(_ == (t"subtle", t"vivisection.Doubling.scala", 40,
+          t"vivisection.Inlined.scala", 40, true))
+
     test(m"a DAP request envelope decodes its routing fields"):
       import strategies.throwUnsafely
       val message = j"""{"seq": 3, "type": "request", "command": "initialize"}"""

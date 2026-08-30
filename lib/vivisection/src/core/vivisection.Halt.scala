@@ -77,6 +77,16 @@ object Halt:
   // was constructed with (absent when null), and whether the throw will be caught.
   case class ExceptionInfo(className: Text, message: Optional[Text], caught: Boolean)
 
+  // One logical position a physical frame stands for: for inlined code, the file and line where
+  // the code was written; for the frame itself, its own source and its real line. `source` is
+  // the file's recorded basename and `path` its fuller path, when known.
+  case class Position
+    ( name:    Text,
+      source:  Optional[Text],
+      path:    Optional[Text],
+      line:    Int,
+      inlined: Boolean )
+
 // The capability lent to an event handler while its thread stands suspended: a view over the
 // stopped thread's frames and their logical variables. Sealed (`ExclusiveCapability`), so it
 // cannot outlive the stop it describes — once the dispatcher resumes the thread, every
@@ -100,6 +110,27 @@ extends caps.ExclusiveCapability:
 
   def frames(): List[(FrameId, Jdwp.Location)] =
     connection.frames(thread, 0, connection.frameCount(thread))
+
+  // The logical positions a frame stands for, innermost first: one per inline origin recovered
+  // from the class's SMAP, then the physical frame itself at its real (call-site) line. A frame
+  // with no SMAP, one stopped at a real line, or a VM without the source-debug-extension
+  // capability yields exactly the single raw position `describe` reports.
+  def positions(location: Jdwp.Location): List[Halt.Position] =
+    val (name, line) = describe(location)
+    val smap = connection.smap(location.cls)
+    val source = safely(connection.sourceFile(location.cls))
+    val path = smap.let(_.path)
+
+    smap.let(_.expand(line)).lay(List(Halt.Position(name, source, path, line, false))):
+      expansion =>
+        val inlined = expansion.inlined.stdlib.map: origin =>
+          // The `ScalaClass` stratum records binary-ish names with `$u002E` escapes; failing
+          // that, the origin's file names the frame.
+          val cls = origin.cls.lay(origin.file) { cls => cls.s.replace("$u002E", ".").nn.tt }
+          Halt.Position(cls, origin.file, origin.path, origin.line, true)
+
+        val real = Halt.Position(name, source, path, expansion.line.or(line), false)
+        List((inlined :+ real)*)
 
   // A human-readable position for a frame — `pkg.Cls.method` and its source line, resolved from
   // the class's method and line tables; line 0 where no line information exists.
