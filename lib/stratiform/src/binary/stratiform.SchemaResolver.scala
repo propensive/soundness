@@ -78,7 +78,8 @@ object SchemaResolver:
       delegate: Optional[Tels.Resolution.Delegate] = Unset,
       embedded: Optional[(Data, Data)]           = Unset,
       axiom:    Tels                             = Tels.Axiom.tels )
-  :   Resolved raises Tel.Error raises Bintel.Error raises ResolutionError =
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error], Tactic[ResolutionError] )
+  :   Resolved =
 
     val selection = pragma.layers
     val claimed: Optional[Data] = pragma.signature.let(Base256.decode(_))

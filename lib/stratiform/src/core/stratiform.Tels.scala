@@ -477,7 +477,8 @@ object Tels extends Tels2:
     // §8.1: compose the base plus exactly the named layer selection.
     // Unknown names and order violations are raised by `select`.
     def compose(schema: Tels, selection: List[Text])
-    :   Tels raises Tel.Error raises Resolution.Error =
+      (using Tactic[Tel.Error], Tactic[Resolution.Error])
+    :   Tels =
 
       val chosen = select(schema, selection)
       var composed = schema.copy(layers = Array.empty)
@@ -493,7 +494,8 @@ object Tels extends Tels2:
     // out-of-order or duplicate selection is E124, so each selected
     // layer set has exactly one canonical pragma spelling.
     def select(schema: Tels, selection: List[Text])
-    :   List[Tels.Layer] raises Tel.Error raises Resolution.Error =
+      (using Tactic[Tel.Error], Tactic[Resolution.Error])
+    :   List[Tels.Layer] =
 
       val declared = schema.layers.readable
       val chosen = scala.collection.mutable.ListBuffer.empty[Tels.Layer]
@@ -847,7 +849,8 @@ object Tels extends Tels2:
     // selected layers; the post-composition checks run against the
     // composition in use.
     def validate(schema: Tels, selection: List[Text])
-    :   Tels raises Tel.Error raises Resolution.Error =
+      (using Tactic[Tel.Error], Tactic[Resolution.Error])
+    :   Tels =
 
       checkBase(schema)
       checkComposed(Layers.compose(schema, selection))
