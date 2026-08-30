@@ -64,7 +64,7 @@ object CheckFormat:
     cursor.skipWhitespace()
     val errors =
       if cursor.matchesLiteral("errors:") then
-        cursor.advance("errors:".length)
+        cursor.advance("errors:".s.length)
         parseErrors(cursor)
       else Nil
 

@@ -653,7 +653,7 @@ trait Tel2 extends Tel3:
   given stringDecodable: (tactic: Tactic[Tel.Error]) => ((String is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar): tel =>
       if tel.atomTexts.nil && bareCompound(tel) then ""
-      else primitiveFault(tel, t"String", ""): atom => atom.s
+      else primitiveFault(tel, t"String", "": String): atom => atom.s
 
   given intDecodable: (tactic: Tactic[Tel.Error]) => ((Int is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Whole, Tel.Nature.Scalar): tel =>

@@ -60,7 +60,7 @@ object Rgb12Opaque:
     // transparent, so `hex` on an `Int` channel resolves back to this very extension and
     // recurses until the stack is exhausted.
     def hex: Text =
-      ("#"+Integer.toHexString(red).nn+Integer.toHexString(green).nn+Integer.toHexString(blue).nn)
+      (("#": String)+Integer.toHexString(red).nn+Integer.toHexString(green).nn+Integer.toHexString(blue).nn)
       . tt
     def color: Color in Srgb = Srgb(red/15.0, green/15.0, blue/15.0)
     def chroma: Chroma = Chroma(red*17, green*17, blue*17)

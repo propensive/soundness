@@ -446,7 +446,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       test(m"Get camel-case words"):
         t"oneTwoThree".uncamel
 
-      . assert(_ == Seq(t"one", "two", "three"))
+      . assert(_ == List(t"one", t"two", t"three"))
 
       test(m"Camel-case to dashed words"):
         t"oneTwoThree".uncamel.kebab

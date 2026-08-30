@@ -104,7 +104,7 @@ extends RequestServable:
 
     def startServer()(using Tactic[Httpd.Error]): com.sun.net.httpserver.HttpServer =
       try
-        val host = if local then "localhost" else "0.0.0.0"
+        val host: String = if local then "localhost" else "0.0.0.0"
         val httpServer = csnh.HttpServer.create(jn.InetSocketAddress(host, port), 0).nn
         httpServer.createContext("/").nn.setHandler(handle(_))
         httpServer.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())

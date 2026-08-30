@@ -486,7 +486,7 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     Anthropic.reply(Llm.receive(response))
 
-  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
+  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, caps.any} =
     // As in `exchange`: the send thunk captures the tactic `fetch` raises through.
     val response =
       caps.unsafe.unsafeAssumeSeparate:

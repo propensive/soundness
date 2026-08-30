@@ -135,7 +135,7 @@ object Css:
 
     if formatter.newlines then put(t"\n")
 
-  private def indentText(indent: Int): Text = ("\n" + " ".repeat(2*indent).nn).tt
+  private def indentText(indent: Int): Text = (("\n": String) + (" ": String).repeat(2*indent).nn).tt
 
   // The `css"…"` interpolator: substitutions are checked against the property they
   // sit in (see `internal.expand`). Wired through `contextual` like `x"…"`/`h"…"`.

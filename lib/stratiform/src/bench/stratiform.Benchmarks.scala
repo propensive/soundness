@@ -89,8 +89,8 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
 
   // Load a benchmark resource as raw UTF-8 bytes.
   private def loadBytes(name: String): Data =
-    val stream = getClass.getResourceAsStream("/stratiform/" + name)
-    if stream == null then sys.error("missing benchmark resource: " + name)
+    val stream = getClass.getResourceAsStream(("/stratiform/": String) + name)
+    if stream == null then sys.error(("missing benchmark resource: ": String) + name)
     val out = new _root_.java.io.ByteArrayOutputStream
     val buf = new scala.Array[Byte](8192)
     var n = stream.read(buf)

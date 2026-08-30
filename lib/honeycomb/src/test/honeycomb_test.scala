@@ -880,7 +880,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         test(m"modify attribute"):
           val img = Img(alt = "hello")
-          img.alt = img.alt+" world"
+          img.alt = img.alt+t" world"
         . assert(_ == Img(alt = "hello world"))
 
         test(m"class can be added to element with children"):

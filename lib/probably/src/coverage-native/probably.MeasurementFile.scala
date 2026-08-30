@@ -39,4 +39,4 @@ import anticipation.*
 // directly. (Reached only under `-coverage-out` instrumentation; test binaries do not
 // currently measure coverage on native.)
 private[probably] def measurementFileIn(dir: Text): java.io.File =
-  java.io.File(java.io.File(dir.s), "scoverage.measurements." + Thread.currentThread.nn.getId)
+  java.io.File(java.io.File(dir.s), "scoverage.measurements.".s + Thread.currentThread.nn.getId)

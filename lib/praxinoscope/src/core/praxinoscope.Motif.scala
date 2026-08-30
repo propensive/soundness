@@ -315,7 +315,7 @@ object Motif:
         restore()
         Node.Group(child, capture)
 
-    def perlClass(char: Char): Boolean = "dDwWsS".indexOf(char) >= 0
+    def perlClass(char: Char): Boolean = ("dDwWsS": String).indexOf(char) >= 0
 
     def perlRanges(): Ranges = current match
       case 'd' => Ranges.digit.adv()

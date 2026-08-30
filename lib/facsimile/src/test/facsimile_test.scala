@@ -93,7 +93,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
     def pad10(value: Long): Text =
       val digits = value.toString
-      ("0".repeat(10 - digits.length).nn + digits).tt
+      ("0".s.repeat(10 - digits.length).nn + digits).tt
 
     // Assembles a complete classic-xref PDF from pre-rendered object bodies, numbering them
     // from 1 and computing correct byte offsets; object 1 is the catalog by convention.
@@ -322,7 +322,7 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == Cos.Sequence(List(Cos.Integral(1), Cos.Integral(3))))
 
       test(m"a value spanning many scan windows"):
-        textOf(parse(("(" + "a".repeat(20000).nn + ")").tt)).length
+        textOf(parse((("(": String) + ("a": String).repeat(20000).nn + ")").tt)).length
       . assert(_ == 20000)
 
     suite(m"Stream filters"):
@@ -1512,7 +1512,7 @@ object Tests extends Suite(m"Facsimile tests"):
             val e = cipher.doFinal(input).nn
             var sum = 0
             for i <- 0 until 16 do sum += e(i) & 0xff
-            val algo = sum%3 match
+            val algo: String = sum%3 match
               case 0 => "SHA-256"
               case 1 => "SHA-384"
               case _ => "SHA-512"

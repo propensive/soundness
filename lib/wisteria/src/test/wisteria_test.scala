@@ -62,7 +62,7 @@ object Tests extends Suite(m"Wisteria tests"):
     inline def disjunction[derivation: SumReflection]: Presentation[derivation] = value =>
       variant(value):
         [variant <: derivation] =>
-          variant => (typeName[derivation].s+"."+contextual.present(variant)).tt
+          variant => (typeName[derivation].s+(".": String)+contextual.present(variant)).tt
 
   extension [value](value: value)
     def present(using presentation: Presentation[value]): Text = presentation.present(value)
@@ -159,7 +159,7 @@ object Tests extends Suite(m"Wisteria tests"):
       inline if choice[derivation] then
         variant(value):
           [variant <: derivation] =>
-            arm => typeName[derivation].s+"."+contextual.show(arm)
+            arm => typeName[derivation].s+(".": String)+contextual.show(arm)
       else
         compiletime.error("cannot derive Show for adt")
 

@@ -202,13 +202,13 @@ object internal:
   // Canonical ISO 8601: a four-digit year, then optional `-MM`, optional `-DD`, optional
   // `THH:MM` with optional `:SS` and fractional seconds, and an optional `Z`/offset zone.
   private val IsoPattern =
-    ("""(\d{4})(?:-(\d{2})(?:-(\d{2})(?:[T ](\d{2}):(\d{2})""" +
+    (("""(\d{4})(?:-(\d{2})(?:-(\d{2})(?:[T ](\d{2}):(\d{2})""": String) +
       """(?::(\d{2})(?:[.,](\d{1,9}))?)?(Z|[+-]\d{2}:?\d{2}|[+-]\d{2})?)?)?)?""").r
 
   // RFC 1123, e.g. `Tue, 17 Jun 2024 14:30:45 GMT`.
   private val RfcPattern =
-    ("""(Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d{2}) """ +
-      """(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) """ +
+    (("""(Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d{2}) """: String) +
+      ("""(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) """: String) +
       """(\d{4}) (\d{2}):(\d{2}):(\d{2}) GMT""").r
 
   // Validate a date against the given calendar (rejecting e.g. month 13 or 31 February) and return
@@ -232,7 +232,7 @@ object internal:
     else Right(())
 
   private def normalizeZone(zone: String): Either[Message, String] =
-    val normalized =
+    val normalized: String =
       if zone == "Z" then "Z" else
         val sign = zone.charAt(0)
         val rest = zone.drop(1).filter(_ != ':')
@@ -324,7 +324,7 @@ object internal:
   // with at least one component, so bare `P`/`PT` are rejected. Shared by the runtime `Timespan`
   // decoder and the compile-time `dur"…"` interpolator.
   private val DurationPattern =
-    ("""P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?""" +
+    (("""P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?""": String) +
       """(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?""").r
 
   def parseDuration(text: String): Either[Message, (Int, Int, Int, Int, Int, Int, Double)] =

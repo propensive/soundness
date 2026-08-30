@@ -37,4 +37,28 @@ extension (texts: Iterable[Text])
 
 extension (string: String) def tt: Text = Text(string)
 
+// Churn-reduction shim: a converted literal flowing into an existing
+// `"...".tt` site is already a Text; `.tt` becomes the identity on it. The
+// target name differs because Text erases to String, which would otherwise
+// clash with the String `.tt` above. Remove both when the migration
+// completes.
+extension (text: Text)
+  @scala.annotation.targetName("ttIdentity")
+  inline def tt: Text = text
+
+// The compiler's Literate hook: with this given in scope, a string literal
+// whose expected type does not require a String is re-typed as
+// `Text { type Topic = <literal>.type }` — its singleton carried as a type
+// member rather than by subtyping, so the opaque surface stays sealed.
+final class TextLiterate[str <: String & Singleton] extends scala.Literate[str]:
+  type Result = Text { type Topic = str }
+  inline def convert(inline value: str): Result = value.asInstanceOf[Result]
+
+// In `literacy` rather than at the package top level: wildcard imports and
+// exports exclude givens, so the ambient route is a root import
+// (`-Yimports:...,anticipation.literacy`), which does carry them — the
+// stand-in for the instance's eventual home in the proscenium prelude.
+object literacy:
+  given literate: [str <: String & Singleton] => TextLiterate[str] = TextLiterate[str]()
+
 export internal.Text

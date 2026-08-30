@@ -80,11 +80,11 @@ object Redraft:
     Redraft(directives.stdlib*)
 
   private def render1(directive: Directive): Text = directive match
-    case Directive.Keep(line)        => if needsEscape(line) then ("\\"+line.s).tt else line
-    case Directive.Add(line)         => ("> "+line.s).tt
-    case Directive.Cut(line)         => ("< "+line.s).tt
-    case Directive.Mark(line, true)  => ("+ "+line.s).tt
-    case Directive.Mark(line, false) => ("- "+line.s).tt
+    case Directive.Keep(line)        => if needsEscape(line) then (("\\": String)+line.s).tt else line
+    case Directive.Add(line)         => (("> ": String)+line.s).tt
+    case Directive.Cut(line)         => (("< ": String)+line.s).tt
+    case Directive.Mark(line, true)  => (("+ ": String)+line.s).tt
+    case Directive.Mark(line, false) => (("- ": String)+line.s).tt
 
   private case class Matcher(text: Text, index: Int, line: Int)
 

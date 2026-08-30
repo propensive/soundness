@@ -77,7 +77,7 @@ object internal:
     val parts2 = parts.stdlib
 
     extractor
-      ( (parts2.head :: parts2.tail.map("([^/\\\\]*)"+_)).to(List),
+      ( (parts2.head :: parts2.tail.map(("([^/\\\\]*)": String)+_)).to(List),
         List.fill(parts.size)((0, 0)),
         re2Backend )
 

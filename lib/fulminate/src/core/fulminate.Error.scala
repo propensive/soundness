@@ -97,6 +97,11 @@ extends Exception(message.text.s, cause, false, diagnostics.captureStack), caps.
     if d == 0 then message else m"[↯$errorCode] $message"
 
   override def getMessage: String =
-    if d == 0 then component.s+": "+message.text else "[↯"+errorCode+"] "+message.text
+    // The leading literal is ascribed: with the literate given in scope a
+    // bare literal would convert to Text, which has no `+` member (its
+    // concatenation is typeclass-based); this platform-facing method wants
+    // plain String concatenation.
+    if d == 0 then component.s+": ".s+message.text
+    else "[↯".s+errorCode+"] ".s+message.text
 
   override def getCause: Throwable | Null = cause

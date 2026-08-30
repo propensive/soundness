@@ -986,7 +986,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"Take Map#upsert as an update"):
         val map = Map(1 -> "one", 2 -> "two")
-        map.upsert(2, _.or("")+"!")
+        map.upsert(2, _.or(t"")+t"!")
       . assert(_ == Map(1 -> "one", 2 -> "two!"))
 
       test(m"Collation"):

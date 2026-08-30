@@ -50,7 +50,7 @@ import denominative.dysasymptotics.linearSize
 
 case class Foo(x: Int, y: Text) derives CanEqual
 
-case class InvalidState(name: String) extends Exception("Not a valid state: "+name)
+case class InvalidState(name: String) extends Exception(("Not a valid state: ": String)+name)
 
 case class Empty()
 case class Inner(n: Int)

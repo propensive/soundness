@@ -137,10 +137,10 @@ object Diff:
           else if inss.nil then s"${range(left + 1, left + dels.size)}d${right}".tt
           else s"${range(left + 1, left + dels.size)}c${range(right + 1, right + inss.size)}".tt
 
-        val delSeq = dels.map: del => Text("< "+del.value)
+        val delSeq = dels.map: del => Text(("< ": String)+del.value)
         val sep =
           if inss.size > 0 && dels.size > 0 then List(Text("---")) else List[Text]()
-        val insSeq = inss.map: ins => Text("> "+ins.value)
+        val insSeq = inss.map: ins => Text(("> ": String)+ins.value)
 
         List(command) + delSeq + sep + insSeq
 

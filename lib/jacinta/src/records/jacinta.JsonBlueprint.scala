@@ -380,16 +380,16 @@ object JsonBlueprint:
       case "string" =>
         val suffix = if required then "" else "?"
 
-        pattern.let(Member.Value("pattern"+suffix, _)).or:
+        pattern.let(Member.Value("pattern".s+suffix, _)).or:
           Member.Value(format.or("string".tt)+suffix)
 
       case "integer" =>
         val end = if minimum.absent && maximum.absent then (if required then "" else "?") else "!"
 
-        Member.Value("integer"+end, minimum.let(_.toString).or(""), maximum.let(_.toString).or(""))
+        Member.Value("integer".s+end, minimum.let(_.toString).or("".s), maximum.let(_.toString).or("".s))
 
       case other =>
-        Member.Value(if required then other else other+"?")
+        Member.Value(if required then other else other+"?".s)
 
   // JsonBlueprintDoc → JsonBlueprint.Doc
   case class Doc

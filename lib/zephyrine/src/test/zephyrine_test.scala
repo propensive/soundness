@@ -70,7 +70,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val producer = Producer[Text](4, 2)
           producer.put("zerofour")
           producer.iterator
-          var out = ""
+          var out = t""
           if producer.iterator.hasNext then out += producer.iterator.next()
           if producer.iterator.hasNext then out += producer.iterator.next()
           out
@@ -80,7 +80,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val producer = Producer[Text](4, 2)
           producer.put("zerofoursix")
           producer.iterator
-          var out = ""
+          var out = t""
           if producer.iterator.hasNext then out += producer.iterator.next()
           if producer.iterator.hasNext then out += producer.iterator.next()
           out
@@ -96,7 +96,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           producer.put("7")
           producer.put("8")
           producer.iterator
-          var out = ""
+          var out = t""
           if producer.iterator.hasNext then out += producer.iterator.next()
           if producer.iterator.hasNext then out += producer.iterator.next()
           out
@@ -119,13 +119,13 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List("1234", "5678", "9012", "3456", "78"))
 
         for i <- 0 to 30 do
-          val string = (0 to i).map(_.toString).foldLeft("")(_ + _)
+          val string = (0 to i).map(_.toString).foldLeft("": String)(_ + _)
           test(m"String length $i, sent whole, async puts"):
             val producer = Producer[Text](5, 2)
             val fiber = async:
               producer.put(string)
               producer.finish()
-            producer.iterator.foldLeft("")(_ + _)
+            producer.iterator.foldLeft(t"")(_ + _)
           . assert(_ == string)
 
           test(m"String length $i, sent unitarily, async puts"):
@@ -134,12 +134,12 @@ object Tests extends Suite(m"Zephyrine tests"):
               string.tt.chars.each: char =>
                 producer.put(char.toString)
               producer.finish()
-            producer.iterator.foldLeft("")(_ + _)
+            producer.iterator.foldLeft(t"")(_ + _)
           . assert(_ == string)
 
           test(m"String length $i, sent whole, async reads"):
             val producer = Producer[Text](5, 2)
-            val output = async(producer.iterator.foldLeft("")(_ + _))
+            val output = async(producer.iterator.foldLeft(t"")(_ + _))
             producer.put(string)
             producer.finish()
             unsafely(scala.caps.unsafe.unsafeAssumeSeparate(output.await()))
@@ -147,7 +147,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
           test(m"String length $i, sent unitarily, async reads"):
             val producer = Producer[Text](5, 2)
-            val output = async(producer.iterator.foldLeft("")(_ + _))
+            val output = async(producer.iterator.foldLeft(t"")(_ + _))
             string.tt.chars.each: char =>
               producer.put(char.toString)
             producer.finish()
@@ -401,7 +401,7 @@ object Tests extends Suite(m"Zephyrine tests"):
                 for i <- 0 until length do cursor.next()
                 cursor.grab(start, cursor.mark)
 
-            . assert(_ == "Hello world!".substring(offset, offset + length).nn)
+            . assert(_ == ("Hello world!": String).substring(offset, offset + length).nn)
 
         test(m"Grab spanning multi-character blocks"):
           val cursor = Cursor(Iterator[Text]("hello", "world"))
@@ -1308,7 +1308,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           handoff.offer("x")
           consumer.join(10000)
           (parked, received.get())
-        . assert(_ == ((true, "x")))
+        . assert(_ == ((true, "x": String)))
 
         test(m"interrupting a parked producer raises InterruptedException"):
           val handoff = Handoff(2)

@@ -72,7 +72,7 @@ object internal:
     import quotes.reflect.*
 
     TypeRepr.of[product].typeSymbol.caseFields.flatMap: field =>
-      val label = if prefix == "" then field.name else prefix+"."+field.name
+      val label = if prefix == "" then field.name else prefix+(".": String)+field.name
 
       field.info.asType.absolve match
         case '[fieldType] => label :: fieldNames[fieldType](label)
@@ -104,10 +104,10 @@ object internal:
     val all = paths[key]
     val prefix = all(index)
     val name = key.valueOrAbort
-    val label = if prefix == "" then name else prefix+"."+name
+    val label = if prefix == "" then name else prefix+(".": String)+name
     val target = all.indexOf(label)
 
-    if target < 0 then report.errorAndAbort("vicarious: "+label+" is not a valid field path")
+    if target < 0 then report.errorAndAbort(("vicarious: ": String)+label+" is not a valid field path")
 
     ConstantType(IntConstant(target)).asType.absolve match
       case '[type id <: Nat; id] => '{Proxy[key, value, id](${Expr(target)})}
@@ -156,7 +156,7 @@ object internal:
 
       if !(body.tpe.widen <:< required) then
         report.errorAndAbort
-          ( "vicarious: the instance for this path is not a "+required.show, body.pos )
+          ( ("vicarious: the instance for this path is not a ": String)+required.show, body.pos )
 
       '{(${Expr(all(index))}, ${body.asExpr})}
 
@@ -186,7 +186,7 @@ object internal:
         TypeRepr.of[Proxy].appliedTo(List(TypeRepr.of[key], TypeRepr.of[value], nat))
 
       repr.typeSymbol.caseFields.fuse(base):
-        val label = if prefix == "" then next.name else prefix+"."+next.name
+        val label = if prefix == "" then next.name else prefix+(".": String)+next.name
         val fieldType: TypeRepr = next.info
         Refinement(state, next.name, recur(label, fieldType))
 

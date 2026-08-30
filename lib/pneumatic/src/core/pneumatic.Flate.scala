@@ -73,7 +73,7 @@ private[pneumatic] object Flate:
   val emptyShorts: Array[Short]^{} = Array.unsafeFrozen(new scala.Array[Short](0))
 
   def corrupt(message: String): Nothing =
-    throw IllegalStateException("the compressed data is corrupt: "+message)
+    throw IllegalStateException(("the compressed data is corrupt: ": String)+message)
 
 // The engine interfaces the `flate` formats compile against. Each platform supplies a
 // `FlateBackend` returning its own implementations: `java.util.zip` on the JVM (native zlib),

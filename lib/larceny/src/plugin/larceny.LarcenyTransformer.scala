@@ -209,7 +209,7 @@ class LarcenyTransformer() extends PluginPhase:
                       "Subcompiler".toTermName ),
                   "compile".toTermName ),
               List
-                ( Literal(Constant(javaClasspath+":"+ctx.settings.classpath.value)),
+                ( Literal(Constant(javaClasspath+(":": String)+ctx.settings.classpath.value)),
                   Literal(Constant(source2)) ) )
 
         case Apply(Ident(name), List(content)) if name.toString == "demilitarize" =>

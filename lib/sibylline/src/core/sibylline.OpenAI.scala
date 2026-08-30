@@ -252,8 +252,9 @@ object OpenAI:
 
   // The non-streamed Chat reply: `choices[0].message`, its tool calls (arguments arrive as a
   // *string* of JSON), the finish reason and the usage.
-  private[sibylline] def reply(json: Json)(using Diagnostics)
-  :   Llm.Reply raises Json.Error raises Llm.Error =
+  private[sibylline] def reply(json: Json)
+    (using Diagnostics, Tactic[Json.Error], Tactic[Llm.Error])
+  :   Llm.Reply =
 
     val message = json.choices(0).message
 
@@ -461,7 +462,7 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     OpenAI.reply(Llm.receive(response))
 
-  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
+  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, caps.any} =
     val response =
       caps.unsafe.unsafeAssumeSeparate:
         Llm.fetch(OpenAI.failure(_, _)):
@@ -594,8 +595,9 @@ private[sibylline] object ResponsesDialect:
     case other => OpenAI.choice(other)
 
   // One output item as neutral content blocks.
-  private def blocks(item: Json)(using Diagnostics)
-  :   List[Llm.Content] raises Json.Error raises Llm.Error =
+  private def blocks(item: Json)
+    (using Diagnostics, Tactic[Json.Error], Tactic[Llm.Error])
+  :   List[Llm.Content] =
 
     safely(text(item.`type`)).or(t"") match
       case t"message" =>
@@ -613,8 +615,9 @@ private[sibylline] object ResponsesDialect:
       case t"reasoning" => List()
       case _            => List(Llm.Content.Opaque(t"openai-responses", item))
 
-  private[sibylline] def reply(json: Json)(using Diagnostics)
-  :   Llm.Reply raises Json.Error raises Llm.Error =
+  private[sibylline] def reply(json: Json)
+    (using Diagnostics, Tactic[Json.Error], Tactic[Llm.Error])
+  :   Llm.Reply =
 
     val content: List[Llm.Content] = list(json.output).bind(blocks(_))
 
@@ -743,7 +746,7 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     ResponsesDialect.reply(Llm.receive(response))
 
-  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
+  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, caps.any} =
     val response =
       caps.unsafe.unsafeAssumeSeparate:
         Llm.fetch(OpenAI.failure(_, _)):

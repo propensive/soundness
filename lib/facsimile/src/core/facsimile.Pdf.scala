@@ -74,7 +74,7 @@ object Pdf:
 
     def pad(value: Int): Text =
       val digits = value.toString
-      ("0".repeat(10 - digits.length).nn + digits).tt
+      ("0".s.repeat(10 - digits.length).nn + digits).tt
 
     val table =
       t"xref\n0 3\n0000000000 65535 f \n${pad(offset1)} 00000 n \n${pad(offset2)} 00000 n \n"
@@ -493,7 +493,7 @@ object Pdf:
 
       def pad(n: Int, width: Int): Text =
         val digits = n.toString
-        ("0".repeat(width - digits.length).nn + digits).tt
+        ("0".s.repeat(width - digits.length).nn + digits).tt
 
       val year: Int = ts.year.apply()
       val month: Int = ts.month.ordinal + 1
@@ -507,7 +507,7 @@ object Pdf:
 
         if seconds == 0 then t"Z" else
           val minutes = (if seconds < 0 then -seconds else seconds)/60
-          t"${if seconds < 0 then t"-" else t"+"}${pad(minutes/60, 2)}'${pad(minutes%60, 2)}'"
+          t"${if seconds < 0 then t"-(" else t": String)+"}${pad(minutes/60, 2)}'${pad(minutes%60, 2)}'"
 
       t"$stamp$zone"
     // A PDF date (ISO 32000-2 §7.9.4): local time with an *optional* UTC offset — absence
@@ -1183,7 +1183,7 @@ extends caps.ExclusiveCapability:
         t"$prefix$formatted"
 
   private def roman(number: Long): Text =
-    val numerals =
+    val numerals: List[(Long, String)] =
       List
         ( 1000L -> "M", 900L -> "CM", 500L -> "D", 400L -> "CD", 100L -> "C", 90L -> "XC",
           50L -> "L", 40L -> "XL", 10L -> "X", 9L -> "IX", 5L -> "V", 4L -> "IV", 1L -> "I" )

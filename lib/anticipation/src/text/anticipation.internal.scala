@@ -42,6 +42,10 @@ import scala.util.*
 import java.nio.charset.StandardCharsets
 import symbolism.*
 
+// This module compiles without the `literacy` root import (it defines it),
+// so the literal-conversion given is imported explicitly.
+import literacy.given
+
 object internal:
   into opaque type Text <: Matchable & caps.Pure = String & caps.Pure
 
@@ -58,7 +62,10 @@ object internal:
     extension (text: Text) inline def s: String = text.asInstanceOf[String]
 
     given zeroic: Text is Zeroic:
-      inline def zero: Text = "".tt
+      // Bare literal: with the literate given in scope, `""` at expected type
+      // `Text` converts by itself — `.tt` is a String extension and would now
+      // (correctly) fail on the converted literal.
+      inline def zero: Text = ""
 
     given concatenable: [text <: Text] => text is Concatenable:
       type Self = text

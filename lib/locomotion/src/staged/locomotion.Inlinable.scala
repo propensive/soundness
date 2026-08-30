@@ -123,7 +123,7 @@ object Inlinable:
     :   Expr[Iterable[element]] =
 
       quotes.reflect.report.errorAndAbort
-        ("locomotion: a repeated field parses through its message's generated parser; a " +
+        (("locomotion: a repeated field parses through its message's generated parser; a ": String) +
           "collection has no standalone wire form")
 
   // The structural instance for a sealed-sum oneof: the variant is chosen

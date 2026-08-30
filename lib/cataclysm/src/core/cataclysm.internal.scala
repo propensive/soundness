@@ -154,9 +154,9 @@ object internal:
       expr match
         case '{$value: tpe} =>
           if TypeRepr.of[tpe] <:< TypeRepr.of[Name[CssClass]]
-          then '{(${Expr(".")} + ${value.asExprOf[Text]}.s).tt}
+          then '{(${Expr((".": String))} + ${value.asExprOf[Text]}.s).tt}
           else if TypeRepr.of[tpe] <:< TypeRepr.of[Name[DomId]]
-          then '{(${Expr("#")} + ${value.asExprOf[Text]}.s).tt}
+          then '{(${Expr(("#": String))} + ${value.asExprOf[Text]}.s).tt}
           else halt(m"cataclysm: only a CSS class or DOM id may be substituted in a selector", pos)
 
         case _ =>

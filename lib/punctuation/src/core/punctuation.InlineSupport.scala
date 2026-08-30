@@ -88,7 +88,7 @@ private[punctuation] object InlineSupport:
         try Integer.parseInt(numStr, if isHex then 16 else 10)
         catch case _: NumberFormatException => return Unset
 
-      val ch =
+      val ch: String =
         if codePoint == 0 || codePoint > 0x10FFFF then "�"
         else String.valueOf(Character.toChars(codePoint).nn).nn
 
@@ -173,7 +173,7 @@ private[punctuation] object InlineSupport:
       AutolinkMatch(link, i + 1)
     else if EmailRegex.matcher(content).nn.matches then
       val text = Text(content)
-      val mailto = Text("mailto:" + content)
+      val mailto = Text(("mailto:": String) + content)
       val link = Prose.Link(mailto, Unset, Prose.Textual(text))
       AutolinkMatch(link, i + 1)
     else

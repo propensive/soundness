@@ -118,7 +118,7 @@ object Tasty:
             case (false, false) => palette.typeReference
 
           val text = e"$color(${node.name})"
-          val tag2: Text = if node.tag == ' ' then "▪".tt else "⟨"+node.tag+"⟩"
+          val tag2: Text = if node.tag == ' ' then "▪".tt else "⟨".s+node.tag+"⟩"
 
           Expansion
             ( e"${(tiles.stdlib.drop(1).map(treeStyles.defaultTreeStyle.text(_))).to(List).join}$tag2 $text",

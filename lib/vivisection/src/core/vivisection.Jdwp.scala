@@ -60,7 +60,7 @@ import zephyrine.*
 object Jdwp:
   // The 14 bytes each end sends, and expects back, before any packet flows.
   val Handshake: Data =
-    Array.unsafeFrozen("JDWP-Handshake".getBytes(jnc.StandardCharsets.US_ASCII).nn)
+    Array.unsafeFrozen(("JDWP-Handshake": String).getBytes(jnc.StandardCharsets.US_ASCII).nn)
 
   // Every JDWP identifier is an integer that fits a `Long`, but the wire width of each *kind* of
   // identifier is negotiated per connection (`VirtualMachine.IDSizes`). `Ref` is one opaque

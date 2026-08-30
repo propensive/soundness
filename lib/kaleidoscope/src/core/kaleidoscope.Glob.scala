@@ -74,7 +74,7 @@ object Glob:
 
   // GlobToken → Glob.Token
   object Token:
-    private val needsEscaping: Set[Char] = ("\\.[]{}()<>*+-=!?^$|".iterator).to(Set)
+    private val needsEscaping: Set[Char] = ("\\.[]{}()<>*+-=!?^$|".s.iterator).to(Set)
 
   enum Token:
     case Star, Globstar, OneChar
@@ -84,7 +84,7 @@ object Glob:
 
     def regex: String = this match
       case Exact(char) =>
-        (if Glob.Token.needsEscaping.has(char) then "\\" else "")+char
+        ((if Glob.Token.needsEscaping.has(char) then "\\" else ""): String)+char
 
       case Star =>
         "[^/\\\\]*"

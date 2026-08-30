@@ -324,8 +324,8 @@ private[facsimile] object PdfWriter:
 
   private def pad10(value: Long): Text =
     val digits = value.toString
-    ("0".repeat(10 - digits.length).nn + digits).tt
+    ("0".s.repeat(10 - digits.length).nn + digits).tt
 
   private def pad5(value: Int): Text =
     val digits = value.toString
-    ("0".repeat(5 - digits.length).nn + digits).tt
+    ("0".s.repeat(5 - digits.length).nn + digits).tt

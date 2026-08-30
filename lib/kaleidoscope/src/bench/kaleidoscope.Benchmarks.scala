@@ -131,7 +131,7 @@ object Benchmarks extends Suite(m"Kaleidoscope regex benchmarks"):
   // There is no static-FSA arm: the generated matcher is a whole-input test, and seeking runs
   // the Pike VM with the literal-prefix (memchr-style, via the `String.indexOf` intrinsic) or
   // first-symbol-class jump.
-  val seekFiller: String = "lorem ipsum dolor sit amet ".repeat(150).nn
+  val seekFiller: String = ("lorem ipsum dolor sit amet ": String).repeat(150).nn
 
   val seekPatterns: scala.IArray[Text] = scala.IArray
     ( t"ERROR [a-z.]+",
@@ -165,17 +165,17 @@ object Benchmarks extends Suite(m"Kaleidoscope regex benchmarks"):
 
     while corpus < 4 do
       val expected = jurMatches(corpus)
-      assert(pikeMatches(corpus) == expected, "Pike VM disagrees on corpus "+corpus)
-      assert(fsaMatches(corpus) == expected, "static FSA disagrees on corpus "+corpus)
-      assert(re2jMatches(corpus) == expected, "re2j disagrees on corpus "+corpus)
+      assert(pikeMatches(corpus) == expected, ("Pike VM disagrees on corpus ": String)+corpus)
+      assert(fsaMatches(corpus) == expected, ("static FSA disagrees on corpus ": String)+corpus)
+      assert(re2jMatches(corpus) == expected, ("re2j disagrees on corpus ": String)+corpus)
       corpus += 1
 
     var seekCorpus = 0
 
     while seekCorpus < 2 do
-      assert(jurSeek(seekCorpus), "jur seek missed corpus "+seekCorpus)
-      assert(pikeSeek(seekCorpus), "praxinoscope seek missed corpus "+seekCorpus)
-      assert(re2jSeek(seekCorpus), "re2j seek missed corpus "+seekCorpus)
+      assert(jurSeek(seekCorpus), ("jur seek missed corpus ": String)+seekCorpus)
+      assert(pikeSeek(seekCorpus), ("praxinoscope seek missed corpus ": String)+seekCorpus)
+      assert(re2jSeek(seekCorpus), ("re2j seek missed corpus ": String)+seekCorpus)
       seekCorpus += 1
 
     val bench = Bench()

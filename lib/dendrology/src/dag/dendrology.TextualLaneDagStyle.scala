@@ -81,12 +81,12 @@ extends LaneDagStyle[line]:
         val base = text(t)
 
         val cell =
-          if base.s.length >= 1 then base.s.charAt(0).toString else " "
+          if base.s.length >= 1 then base.s.charAt(0).toString else " ".s
 
         val filler =
-          if base.s.length >= 2 then base.s.charAt(1).toString else " "
+          if base.s.length >= 2 then base.s.charAt(1).toString else " ".s
 
-        val padding = if w > 1 then filler.repeat(w - 1).nn else ""
+        val padding = if w > 1 then filler.repeat(w - 1).nn else "".s
         line(Text(cell + padding))
 
     parts.fold(line(t""))(_+_)+label.or(line(t""))

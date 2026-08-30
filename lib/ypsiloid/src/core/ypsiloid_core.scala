@@ -93,7 +93,7 @@ private[ypsiloid] def renderAst(yaml: Yaml.Ast)(using formatting: Yaml.Formattin
 
   def unicode(char: Char): Text =
     val hex = Integer.toHexString(char.toInt).nn
-    Text("\\u" + "0"*(4 - hex.length) + hex)
+    Text(("\\u": String) + "0"*(4 - hex.length) + hex)
 
   Producer.collect[Text](): producer =>
     def indent(count: Int): Unit =

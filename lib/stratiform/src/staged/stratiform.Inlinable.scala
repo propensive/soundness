@@ -215,7 +215,7 @@ object Inlinable:
     def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[String])
     :   Expr[String] =
 
-      '{ $reader.atom().lay({ $reader.fault(Tel.Error.Reason.Absent); "" }) { atom => atom.s } }
+      '{ $reader.atom().lay({ $reader.fault(Tel.Error.Reason.Absent); "": String }) { atom => atom.s } }
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[String])
     :   Expr[String] =

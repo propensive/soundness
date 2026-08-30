@@ -45,7 +45,7 @@ object Locale:
   // The wire form of a `Locale` is a bare language code, which says nothing about the type it
   // came from, so the debug rendering wraps it in the constructor which produces it.
   given inspectable: [language, locale <: Locale[language]] => locale is Inspectable =
-    locale => ("Locale("+locale.language.code.s+")").tt
+    locale => ("Locale(".s+locale.language.code.s+")").tt
 
   given decodable: Locale[en & pl & fr & de & es] is Decodable in Text =
     case t"pl" => Locale(pl)

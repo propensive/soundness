@@ -341,7 +341,7 @@ object Tests extends Suite(m"Praxinoscope tests"):
 
     suite(m"Seek acceleration"):
       def motif(pattern: Text): Motif = Motif.parse(pattern)
-      val filler = ("lorem ipsum dolor sit amet ".repeat(64).nn).tt
+      val filler = ("lorem ipsum dolor sit amet ".s.repeat(64).nn).tt
       val haystack = (filler.s + "ERROR overload").tt
 
       test(m"A literal-prefix pattern is found deep in the input"):
@@ -422,7 +422,7 @@ object Tests extends Suite(m"Praxinoscope tests"):
 
           inputs.each: input =>
             if motif.matches(input) != rival.matcher(input.s).nn.matches
-            then failures = (pattern.s+" on "+input.s).tt :: failures
+            then failures = (pattern.s+(" on ": String)+input.s).tt :: failures
 
         failures
 
@@ -430,11 +430,11 @@ object Tests extends Suite(m"Praxinoscope tests"):
 
     suite(m"Linearity"):
       test(m"A pathological pattern completes in linear time"):
-        Motif.parse(t"(?:a+)+b").matches(("a".repeat(200).nn).tt)
+        Motif.parse(t"(?:a+)+b").matches(("a".s.repeat(200).nn).tt)
       . assert(_ == false)
 
       test(m"A pathological alternation completes")
-        (Motif.parse(t"(?:a|a)*c").matches(("a".repeat(200).nn).tt))
+        (Motif.parse(t"(?:a|a)*c").matches(("a".s.repeat(200).nn).tt))
       . assert(_ == false)
 
     suite(m"Containment"):

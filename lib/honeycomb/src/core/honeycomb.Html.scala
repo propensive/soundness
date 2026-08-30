@@ -318,7 +318,7 @@ object Html extends Tag.Container
     val builder: StringBuilder = new StringBuilder()
     markup.each { char => builder.append(Inspectable.escape(char).s) }
 
-    ("html\""+builder.toString+"\"").tt
+    (("html\"": String)+builder.toString+"\"").tt
 
   // HTML5 text-content escaping: `&`, `<` and `>`. Raw-text elements such as `script` and `style`
   // use `Mode.Raw` and are written verbatim by `writeHtml`.

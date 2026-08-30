@@ -82,7 +82,7 @@ object internal:
     // `isin"…"` interpolator which produces it. The `Isin` is widened before its accessor is
     // called: the extension unseals the underlying `Long`, and is unavailable through a subtype.
     given inspectable: [isin <: Isin] => isin is Inspectable = isin =>
-      ("isin\""+(isin: Isin).isin.s+"\"").tt
+      (("isin\"": String)+(isin: Isin).isin.s+"\"").tt
 
     // IsinError → Isin.Error
     object Error:
@@ -183,7 +183,7 @@ object internal:
     // called: they are extensions on an opaque type, whose expansion is unavailable through a
     // subtype.
     given inspectable: [money <: Money] => money is Inspectable = money =>
-      ("¤"+(money: Money).currency.s+(money: Money).value.toString+"ₘ").tt
+      (("¤": String)+(money: Money).currency.s+(money: Money).value.toString+"ₘ").tt
 
     given addable: [currency <: Label]
     =>  (Money in currency) is Addable by (Money in currency) to (Money in currency) =

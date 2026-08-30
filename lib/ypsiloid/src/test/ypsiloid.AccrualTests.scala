@@ -87,7 +87,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
       test(m"Pointers identify the missing fields"):
         val yaml = t"name: Alice\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("#/age", "#/email"))
+      . assert(_ == Set[String]("#/age", "#/email"))
 
       test(m"Each missing-field error has reason Absent"):
         val yaml = t"name: Alice\n".read[Yaml]
@@ -109,7 +109,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
       test(m"Pointers identify the wrong-type fields"):
         val yaml = t"name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("#/name", "#/age"))
+      . assert(_ == Set[String]("#/name", "#/age"))
 
       test(m"Wrong-type errors have reason NotType"):
         val yaml = t"name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
@@ -123,7 +123,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
       test(m"One wrong-type plus two missing: three errors at the right pointers"):
         val yaml = t"name: 42\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("#/name", "#/age", "#/email"))
+      . assert(_ == Set[String]("#/name", "#/age", "#/email"))
 
     suite(m"Nested case-class errors"):
       test(m"Missing nested case-class field expands per sub-field"):
@@ -134,7 +134,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
         val yaml = t"company: Acme\n".read[Yaml]
         validateYaml(yaml)(_.as[AContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
-          paths == Set
+          paths == Set[String]
            ( "#/person/name",
              "#/person/age",
              "#/person/email" )
@@ -144,4 +144,4 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
         // person is present but missing `age` and `email`; company is
         // present.
         validateYaml(yaml)(_.as[AContact]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("#/person/age", "#/person/email"))
+      . assert(_ == Set[String]("#/person/age", "#/person/email"))
