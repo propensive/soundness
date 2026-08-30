@@ -35,6 +35,7 @@ package vivisection
 import java.io as ji
 import java.lang as jl
 import java.nio.charset as jnc
+import java.util.concurrent as juc
 import java.util.concurrent.atomic as juca
 
 import scala.caps
@@ -82,7 +83,7 @@ object Jdwp:
 
     def apply[kind <: Kind](long: Long): Ref[kind] = long
 
-    // The JDWP null object: identifier zero. `absent` tests for it.
+    // The JDWP null object: identifier zero. The `empty` extension tests for it.
     def empty[kind <: Kind]: Ref[kind] = 0L
 
     given showable: [kind <: Kind] => Ref[kind] is Showable = ref => ref.long.show
@@ -91,7 +92,7 @@ object Jdwp:
 
   extension [kind <: Ref.Kind](ref: Ref[kind])
     def long: Long = ref
-    def absent: Boolean = ref == 0L
+    def empty: Boolean = ref == 0L
 
   // The five negotiated identifier widths, in bytes (each 1..8). `objectId` also sizes strings,
   // threads, thread groups, class loaders, class objects and arrays; `referenceTypeId` sizes
@@ -225,6 +226,27 @@ object Jdwp:
   // An executable location: a reference type, one of its methods, and a code index within it.
   case class Location(tag: TypeTag, cls: ReferenceTypeId, method: MethodId, index: Long)
 
+  object Value:
+    // Primitives delegate to their own notation; a reference — undecoded at this level — shows
+    // its wire tag character and object identifier, joined by the fullwidth `＠` which marks
+    // every remote identity in this library's renderings. Parameterised over subtypes because
+    // `Inspectable`'s `Self` is invariant, so an instance for `Value` alone would not cover the
+    // enumeration's case types (`OfInt`, `Reference`, …), which would silently fall through to
+    // the derived rendering.
+    given inspectable: [value <: Value] => value is Inspectable =
+      case OfByte(byte)       => byte.inspect
+      case OfChar(char)       => char.inspect
+      case OfDouble(double)   => double.inspect
+      case OfFloat(float)     => float.inspect
+      case OfInt(int)         => int.inspect
+      case OfLong(long)       => long.inspect
+      case OfShort(short)     => short.inspect
+      case OfBoolean(boolean) => boolean.inspect
+      case Void               => t"()"
+
+      case Reference(tag, id) =>
+        if id.empty then t"null" else (tag.id.toString+"＠"+id.long).tt
+
   // A tagged value read from or written to a frame slot, field, or array. Primitives are decoded
   // eagerly; references stay as identifiers for the semantics layer to interpret.
   enum Value:
@@ -248,6 +270,7 @@ object Jdwp:
     case ClassExclude(pattern: Text) extends Modifier(6)
     case LocationOnly(location: Location) extends Modifier(7)
     case ExceptionOnly(cls: ReferenceTypeId, caught: Boolean, uncaught: Boolean) extends Modifier(8)
+    case FieldOnly(cls: ReferenceTypeId, field: FieldId) extends Modifier(9)
     case Step(thread: ThreadId, size: StepSize, depth: StepDepth) extends Modifier(10)
     case SourceNameMatch(pattern: Text) extends Modifier(12)
 
@@ -255,14 +278,26 @@ object Jdwp:
   case class Version(description: Text, major: Int, minor: Int, vmVersion: Text, vmName: Text)
   case class ClassInfo(tag: TypeTag, cls: ReferenceTypeId, signature: Text, status: Int)
   case class MethodInfo(method: MethodId, name: Text, signature: Text, modifiers: Int)
+  case class FieldInfo(field: FieldId, name: Text, signature: Text, modifiers: Int)
   case class LineEntry(index: Long, line: Int)
   case class LineTable(start: Long, end: Long, lines: List[LineEntry])
   case class SlotInfo(index: Long, name: Text, signature: Text, length: Int, slot: Int)
   case class VariableTable(argCount: Int, slots: List[SlotInfo])
+  case class ThreadStatus(threadStatus: Int, suspendStatus: Int)
+
+  // The outcome of an invoked method: its return value, and the exception it threw (the null
+  // reference when it returned normally).
+  case class Invocation(result: Value, exception: Value)
 
   // The capabilities a VM advertises (`VirtualMachine.CapabilitiesNew`); only the flags this
-  // library consults are named, the rest are carried positionally as needed.
-  case class Capabilities(canGetSourceDebugExtension: Boolean, canUseSourceNameFilters: Boolean)
+  // library consults are named, the rest are discarded on decoding.
+  case class Capabilities
+    ( canWatchFieldModification:  Boolean,
+      canWatchFieldAccess:        Boolean,
+      canGetSyntheticAttribute:   Boolean,
+      canPopFrames:               Boolean,
+      canGetSourceDebugExtension: Boolean,
+      canUseSourceNameFilters:    Boolean )
 
   // JDWP strings are JNI *modified* UTF-8: the null character is `C0 80`, and characters outside
   // the basic multilingual plane arrive as two three-byte sequences (a surrogate pair), which we
@@ -376,6 +411,20 @@ object Jdwp:
       case Tag.VoidTag    => Value.Void
       case reference      => Value.Reference(reference, objectId())
 
+    // An arrayregion (`ArrayReference.GetValues`): one tag byte for the whole region, then a
+    // count. A primitive region packs untagged values of that one type; an object region carries
+    // ordinarily tagged values, since the elements' runtime types may differ.
+    def arrayRegion(): List[Value] =
+      val tag = Tag(next().toChar)
+      val count = int()
+
+      def recur(remaining: Int): List[Value] =
+        if remaining <= 0 then Nil else
+          val head = if Tag.isObject(tag) then value() else untaggedValue(tag)
+          head :: recur(remaining - 1)
+
+      recur(count)
+
   // Marshals a JDWP packet payload. Fluent: each write returns the writer. `data` snapshots the
   // accumulated bytes.
   class Writer(sizes: IdSizes):
@@ -451,6 +500,20 @@ object Jdwp:
       case Value.Void                => byte(Tag.VoidTag.id.toByte)
       case Value.Reference(tag, id0) => byte(tag.id.toByte).objectId(id0)
 
+    // Writes a value with no tag byte, for the commands whose receiver already knows the type: a
+    // field write (the field's signature fixes it) or a primitive array region.
+    def untaggedValue(value: Value): Writer = value match
+      case Value.OfByte(byte0)       => byte(byte0)
+      case Value.OfChar(char0)       => char(char0)
+      case Value.OfDouble(double0)   => double(double0)
+      case Value.OfFloat(float0)     => float(float0)
+      case Value.OfInt(int0)         => int(int0)
+      case Value.OfLong(long0)       => long(long0)
+      case Value.OfShort(short0)     => short(short0)
+      case Value.OfBoolean(boolean0) => boolean(boolean0)
+      case Value.Void                => this
+      case Value.Reference(_, id0)   => objectId(id0)
+
     def modifier(modifier: Modifier): Writer =
       byte(modifier.kind)
 
@@ -465,6 +528,9 @@ object Jdwp:
 
         case Modifier.ExceptionOnly(cls, caught, uncaught) =>
           referenceTypeId(cls).boolean(caught).boolean(uncaught)
+
+        case Modifier.FieldOnly(cls, field) =>
+          referenceTypeId(cls).fieldId(field)
 
         case Modifier.Step(thread, size, depth) =>
           threadId(thread).int(size.id).int(depth.id)
@@ -515,9 +581,31 @@ object Jdwp:
         case EventKind.Exception =>
           val thread = reader.threadId()
           val location = reader.location()
+          reader.byte() // the exception reference arrives tagged; it is always an object
           val exception = reader.objectId()
           val catchLocation = reader.location()
           Thrown(request, thread, location, exception, catchLocation)
+
+        case EventKind.FieldAccess =>
+          val thread = reader.threadId()
+          val location = reader.location()
+          val tag = TypeTag(reader.byte())
+          val cls = reader.referenceTypeId()
+          val field = reader.fieldId()
+          reader.byte() // the target reference arrives tagged; it is always an object
+          val obj = reader.objectId()
+          FieldAccess(request, thread, location, tag, cls, field, obj)
+
+        case EventKind.FieldModified =>
+          val thread = reader.threadId()
+          val location = reader.location()
+          val tag = TypeTag(reader.byte())
+          val cls = reader.referenceTypeId()
+          val field = reader.fieldId()
+          reader.byte() // the target reference arrives tagged; it is always an object
+          val obj = reader.objectId()
+          val incoming = reader.value()
+          FieldModified(request, thread, location, tag, cls, field, obj, incoming)
 
         case EventKind.ClassPrepare =>
           val thread = reader.threadId()
@@ -541,6 +629,12 @@ object Jdwp:
 
     case Thrown(request: Int, thread: ThreadId, location: Location, exception: ObjectId,
         catchLocation: Location)
+
+    case FieldAccess(request: Int, thread: ThreadId, location: Location, tag: TypeTag,
+        cls: ReferenceTypeId, field: FieldId, obj: ObjectId)
+
+    case FieldModified(request: Int, thread: ThreadId, location: Location, tag: TypeTag,
+        cls: ReferenceTypeId, field: FieldId, obj: ObjectId, incoming: Value)
 
     case ClassPrepared(request: Int, thread: ThreadId, tag: TypeTag, cls: ReferenceTypeId,
         signature: Text, status: Int)
@@ -612,6 +706,18 @@ object Jdwp:
       case Ok(data: Data)
       case Failed(code: Int)
 
+    // Holds a breakpoint handler out of the capture-tracked world: the function captures the
+    // session, which no `TrieMap` value type can name, but it lives and dies with the session.
+    class Slot(@scala.caps.unsafe.untrackedCaptures val run: Halt => Unit)
+
+    // Likewise for a class-prepare handler, which receives the raw event rather than a `Halt`:
+    // the prepared class has no stopped frame to inspect. It carries no error channel; a handler
+    // wanting one opens it inline with `safely`.
+    class PrepareSlot(@scala.caps.unsafe.untrackedCaptures val run: Event.ClassPrepared => Unit)
+
+    // The queue sentinel which ends the dispatcher's pump when the channel closes.
+    private[vivisection] object Terminate
+
     // Reads a big-endian 32-bit integer from a raw byte array at the given offset.
     private def int32(bytes: scala.Array[Byte], offset: Int): Int =
       ((bytes(offset) & 0xff) << 24) | ((bytes(offset + 1) & 0xff) << 16) |
@@ -672,24 +778,163 @@ object Jdwp:
 
         connection.disconnect()
 
+      // The dispatcher: the sole consumer of composites. Handlers run here, never on the reader
+      // task — a handler's first command would otherwise wait on the very task that must deliver
+      // its reply. Started with this session's clean monitor, capturing the laundered connection.
+      val dispatcher: Task[Unit] = async(connection.pump())
+
       try
         connection.negotiate()
         lambda(connection)
       finally
         reader.cancel()
         writer.cancel()
+        // The dispatcher blocks in a queue `take`, which cooperative cancellation cannot
+        // unstick, so the terminate sentinel is delivered first; when the reader observed the
+        // channel close it already sent one, and a second is harmless.
+        connection.disconnect()
+        dispatcher.cancel()
 
   class Connection private[vivisection] (monitor: Monitor, note: Diagnostics)
   extends caps.ExclusiveCapability:
     private val counter: juca.AtomicInteger = juca.AtomicInteger(0)
     private val pending: scc.TrieMap[Int, Promise[Connection.Reply]] = scc.TrieMap()
     private[vivisection] val outgoing: Relay[Data] = Relay()
-    private[vivisection] val composites: Relay[Event.Composite] = Relay()
+
+    // Composite events queue here for the dispatcher: a plain blocking queue rather than a relay,
+    // because `submit` must be able to pump it *re-entrantly* while awaiting a reply on the
+    // dispatcher task (see `submit`), and a relay admits only one consumer position. The
+    // dispatcher's thread is recorded when the pump starts, so `submit` can recognise itself.
+    private val composites: juc.LinkedBlockingQueue[Event.Composite | Connection.Terminate.type] =
+      juc.LinkedBlockingQueue()
+
+    private val dispatcher0: juca.AtomicReference[Thread | Null] = juca.AtomicReference(null)
+    private val closed0: juca.AtomicBoolean = juca.AtomicBoolean(false)
+
+    // Registered breakpoint handlers, keyed by (event kind, request id), and the composites no
+    // handler claimed. A handler captures session capabilities, which the map cannot carry, so it
+    // is held behind an untracked field; every handler dies with this sealed session anyway.
+    private val handlers: scc.TrieMap[(Int, Int), Connection.Slot] = scc.TrieMap()
+    private val preparers: scc.TrieMap[Int, Connection.PrepareSlot] = scc.TrieMap()
+    private[vivisection] val unclaimed: Relay[Event.Composite] = Relay()
 
     @scala.caps.unsafe.untrackedCaptures
     private var sizes0: IdSizes = IdSizes.bootstrap
 
     def sizes: IdSizes = sizes0
+
+    private[vivisection] def register(kind: EventKind, request: Int)(handler: Halt => Unit): Unit =
+      handlers((kind.id, request)) = Connection.Slot(handler)
+
+    private[vivisection] def unregister(kind: EventKind, request: Int): Unit =
+      handlers.remove((kind.id, request))
+
+    private[vivisection] def registerPrepare(request: Int)(handler: Event.ClassPrepared => Unit)
+    :   Unit =
+
+      preparers(request) = Connection.PrepareSlot(handler)
+
+    private[vivisection] def unregisterPrepare(request: Int): Unit =
+      preparers.remove(request)
+
+    // Drains composites until the connection closes, then closes the unclaimed stream that
+    // `Debug.events` reads. The wait is a bounded poll re-checking `closed0`, never an unbounded
+    // block: an unbounded `take` proved able to outlive teardown when a cancellation interrupt
+    // or the terminate sentinel was lost to a racing nested pump, so the pump's exit must not
+    // *depend* on either arriving — the sentinel only makes it prompt.
+    private[vivisection] def pump(): Unit =
+      dispatcher0.set(Thread.currentThread)
+
+      def recur(): Unit =
+        if !closed0.get then
+          composites.poll(100, juc.TimeUnit.MILLISECONDS) match
+            case composite: Event.Composite =>
+              process(composite)
+              recur()
+
+            case _ =>
+              recur()
+
+      recur()
+      unclaimed.stop()
+
+    // Runs the handlers a composite's events claim, then settles its suspension. JDWP suspends
+    // once per *composite*, not per event, so it is resumed exactly once, by its policy — unless a
+    // handler asked to `remain()`, or no event was claimed, in which case the composite belongs to
+    // the raw `unclaimed` stream and its consumer owns any resumption.
+    private def process(composite: Event.Composite): Unit =
+      val retention = Halt.Retention()
+      var claimed = false
+      var suspended: Optional[ThreadId] = Unset
+
+      def run
+        ( request:  Int,
+          kind:     EventKind,
+          thread:   ThreadId,
+          location: Location,
+          cause:    Halt.Cause = Halt.Cause.Stopped )
+      :   Unit =
+
+        handlers.get((kind.id, request)).foreach: slot =>
+          claimed = true
+          suspended = thread
+
+          val outcome: Optional[Unit] = contingency.safely[Debugger.Error]:
+            val halt =
+              caps.unsafe.unsafeAssumePure(new Halt(this, thread, location, cause, retention))
+
+            slot.run(halt)
+
+          outcome.let(identity)
+
+      composite.events.stdlib.foreach:
+        case Event.Breakpoint(request, thread, location) =>
+          run(request, EventKind.Breakpoint, thread, location)
+
+        case Event.SingleStep(request, thread, location) =>
+          run(request, EventKind.SingleStep, thread, location)
+
+        case Event.MethodEntry(request, thread, location) =>
+          run(request, EventKind.MethodEntry, thread, location)
+
+        case Event.MethodExit(request, thread, location) =>
+          run(request, EventKind.MethodExit, thread, location)
+
+        case Event.Thrown(request, thread, location, exception, catchLocation) =>
+          val caught: Optional[Location] =
+            if catchLocation.cls.empty then Unset else catchLocation
+
+          run(request, EventKind.Exception, thread, location,
+              Halt.Cause.Thrown(exception, caught))
+
+        case Event.FieldAccess(request, thread, location, _, cls, field, obj) =>
+          val target: Optional[ObjectId] = if obj.empty then Unset else obj
+
+          run(request, EventKind.FieldAccess, thread, location,
+              Halt.Cause.Access(cls, field, target))
+
+        case Event.FieldModified(request, thread, location, _, cls, field, obj, incoming) =>
+          val target: Optional[ObjectId] = if obj.empty then Unset else obj
+
+          run(request, EventKind.FieldModified, thread, location,
+              Halt.Cause.Modification(cls, field, target, incoming))
+
+        case event: Event.ClassPrepared =>
+          preparers.get(event.request).foreach: slot =>
+            claimed = true
+            suspended = event.thread
+            slot.run(event)
+
+        case _ =>
+          ()
+
+      if !claimed then unclaimed.put(composite)
+      else if !retention.retained then
+        contingency.safely[Debugger.Error]:
+          composite.policy match
+            case SuspendPolicy.None        => ()
+            case SuspendPolicy.EventThread => suspended.let(resumeThread(_))
+            case SuspendPolicy.All         => resumeAll()
 
     // Routes a decoded packet: a reply fulfils its pending promise (with the error code, or the
     // payload); a Composite command (command set 64, command 100) is enqueued for the dispatcher.
@@ -701,18 +946,19 @@ object Jdwp:
       else if packet.commandSet == 64 && packet.command == 100 then
         composites.put(Event.composite(Reader(packet.body, sizes0)))
 
-    // Fails every in-flight request and ends the event stream when the channel closes.
+    // Fails every in-flight request and ends the event stream when the channel closes. The
+    // in-flight failures come first, so a nested pump blocked on a reply observes its promise
+    // settled before (or without) meeting the sentinel.
     private[vivisection] def disconnect(): Unit =
+      closed0.set(true)
       pending.values.foreach(_.offer(Connection.Reply.Failed(-1)))
       pending.clear()
-      composites.stop()
+      composites.put(Connection.Terminate)
 
-    // The one seam every command goes through: allocate an id, frame the request, await the reply,
-    // and hand back a reader over its payload (raising the VM's error code on failure).
-    def request(set: Int, command: Int)(write: Writer => Unit)
-      ( using Tactic[Debugger.Error] )
-    :   Reader =
-
+    // The seam beneath every command: allocate an id, frame the request, and await the raw reply.
+    // Most commands go through `request`, which raises the VM's error code; the few that read a
+    // particular error code as data (absent debug information) call this directly.
+    private def submit(set: Int, command: Int)(write: Writer => Unit): Connection.Reply =
       val id = counter.getAndIncrement()
       val writer = Writer(sizes0)
       write(writer)
@@ -720,12 +966,40 @@ object Jdwp:
       pending(id) = promise
       outgoing.put(Packet.command(id, set, command, writer.data))
 
+      // On the dispatcher itself — a handler issuing a command — the reply is awaited by pumping
+      // the composite queue re-entrantly. An invoked method can trigger an event (typically a
+      // class prepare during linking) which suspends the very thread running the invoke; only
+      // the dispatcher can settle that suspension, so blocking here without pumping would
+      // deadlock the invoke against its own event. Any composite processed here runs its
+      // handlers nested within the current one, exactly as the top-level pump would.
+      val nested = dispatcher0.get match
+        case null   => false
+        case thread => thread eq Thread.currentThread.nn
+
+      if nested then
+        while !promise.ready && !closed0.get do
+          composites.poll(10, juc.TimeUnit.MILLISECONDS) match
+            case composite: Event.Composite => process(composite)
+            case Connection.Terminate       => composites.put(Connection.Terminate)
+            case null                       => ()
+
+        promise().or(Connection.Reply.Failed(-1))
+
+      // Elsewhere, the monitor is passed to `await` explicitly, not as a `given` (which would
+      // hide `this`). A cancelled await becomes a lost connection.
+      else
+        safely(promise.await()(using monitor)).or(Connection.Reply.Failed(-1))
+
+    // Frames and issues a command, handing back a reader over the reply's payload. On failure, an
+    // error is raised recoverably and an empty reader returned, so no `Nothing`-typed expression
+    // reaches the reply position.
+    def request(set: Int, command: Int)(write: Writer => Unit)
+      ( using Tactic[Debugger.Error] )
+    :   Reader =
+
       given Diagnostics = note
 
-      // The monitor is passed to `await` explicitly, not as a `given` (which would hide `this`). A
-      // cancelled await becomes a lost connection; an error is raised recoverably and an empty
-      // reader returned, so no `Nothing`-typed expression reaches the reply position.
-      safely(promise.await()(using monitor)).or(Connection.Reply.Failed(-1)) match
+      submit(set, command)(write) match
         case Connection.Reply.Ok(data) =>
           Reader(data, sizes0)
 
@@ -761,6 +1035,21 @@ object Jdwp:
       val reader = request(1, 1)(_ => ())
       Version(reader.string(), reader.int(), reader.int(), reader.string(), reader.string())
 
+    def allClasses()(using Tactic[Debugger.Error]): List[ClassInfo] =
+      val reader = request(1, 3)(_ => ())
+
+      list(reader.int()): () =>
+        ClassInfo(TypeTag(reader.byte()), reader.referenceTypeId(), reader.string(), reader.int())
+
+    // Finds the loaded classes with exactly the given JNI signature (one per defining loader),
+    // without enumerating every class in the VM — so, unlike `allClasses`, it is safe to call
+    // while a thread is suspended holding a class-loading lock.
+    def classesBySignature(signature: Text)(using Tactic[Debugger.Error]): List[ClassInfo] =
+      val reader = request(1, 2)(_.string(signature))
+
+      list(reader.int()): () =>
+        ClassInfo(TypeTag(reader.byte()), reader.referenceTypeId(), signature, reader.int())
+
     def allThreads()(using Tactic[Debugger.Error]): List[ThreadId] =
       val reader = request(1, 4)(_ => ())
       list(reader.int()): () => reader.threadId()
@@ -769,12 +1058,51 @@ object Jdwp:
     def resumeAll()(using Tactic[Debugger.Error]): Unit = command(1, 9)(_ => ())
     def dispose()(using Tactic[Debugger.Error]): Unit = command(1, 6)(_ => ())
 
+    // Interns a string in the debuggee and returns its identifier, for passing to invoked methods.
+    def createString(text: Text)(using Tactic[Debugger.Error]): StringId =
+      request(1, 11)(_.string(text)).stringId()
+
+    // The reply is a fixed sequence of 32 booleans (the last eleven reserved); the flags this
+    // library consults are picked out by their published one-based positions, and a short reply
+    // from an old VM leaves the missing flags false.
+    def capabilitiesNew()(using Tactic[Debugger.Error]): Capabilities =
+      val reader = request(1, 17)(_ => ())
+      var canWatchFieldModification = false
+      var canWatchFieldAccess = false
+      var canGetSyntheticAttribute = false
+      var canPopFrames = false
+      var canGetSourceDebugExtension = false
+      var canUseSourceNameFilters = false
+      var index = 1
+
+      while reader.remaining > 0 do
+        val flag = reader.boolean()
+        if index == 1 then canWatchFieldModification = flag
+        if index == 2 then canWatchFieldAccess = flag
+        if index == 4 then canGetSyntheticAttribute = flag
+        if index == 11 then canPopFrames = flag
+        if index == 13 then canGetSourceDebugExtension = flag
+        if index == 19 then canUseSourceNameFilters = flag
+        index += 1
+
+      Capabilities
+        ( canWatchFieldModification,
+          canWatchFieldAccess,
+          canGetSyntheticAttribute,
+          canPopFrames,
+          canGetSourceDebugExtension,
+          canUseSourceNameFilters )
+
     // ReferenceType (command set 2).
     def signature(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): Text =
       request(2, 1)(_.referenceTypeId(cls)).string()
 
     def sourceFile(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): Text =
       request(2, 7)(_.referenceTypeId(cls)).string()
+
+    // The class loader that defined a type, or the null reference for a bootstrap-loaded class.
+    def classLoader(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): ClassLoaderId =
+      Ref(request(2, 2)(_.referenceTypeId(cls)).objectId().long)
 
     def sourceDebugExtension(cls: ReferenceTypeId)
       ( using Tactic[Debugger.Error] )
@@ -788,6 +1116,52 @@ object Jdwp:
       list(reader.int()): () =>
         MethodInfo(reader.methodId(), reader.string(), reader.string(), reader.int())
 
+    def fields(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): List[FieldInfo] =
+      val reader = request(2, 4)(_.referenceTypeId(cls))
+
+      list(reader.int()): () =>
+        FieldInfo(reader.fieldId(), reader.string(), reader.string(), reader.int())
+
+    // ClassType (command set 3): the immediate superclass, or the empty reference for
+    // `java.lang.Object`; walking it reaches inherited fields, which `referenceType.fields` omits.
+    def superclass(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): ReferenceTypeId =
+      request(3, 1)(_.referenceTypeId(cls)).referenceTypeId()
+
+    // Both calls below invoke on a suspended thread, single-threaded and timeout-bounded, exactly
+    // as `objectReference.invokeMethod`.
+    def invokeStatic
+      ( cls: ReferenceTypeId, thread: ThreadId, method: MethodId, args: List[Value] )
+      ( using Tactic[Debugger.Error] )
+    :   Invocation =
+
+      val reader = request(3, 3): writer =>
+        writer.referenceTypeId(cls).threadId(thread).methodId(method).int(args.stdlib.length)
+        args.stdlib.foreach(writer.value)
+        writer.int(1)
+
+      Invocation(reader.value(), reader.value())
+
+    def newInstance
+      ( cls: ReferenceTypeId, thread: ThreadId, constructor: MethodId, args: List[Value] )
+      ( using Tactic[Debugger.Error] )
+    :   Invocation =
+
+      val reader = request(3, 4): writer =>
+        writer.referenceTypeId(cls).threadId(thread).methodId(constructor).int(args.stdlib.length)
+        args.stdlib.foreach(writer.value)
+        writer.int(1)
+
+      Invocation(reader.value(), reader.value())
+
+    // ArrayType (command set 4): allocates a fresh array of the given length in the debuggee.
+    def newArray(arrayType: ReferenceTypeId, length: Int)
+      ( using Tactic[Debugger.Error] )
+    :   ObjectId =
+
+      request(4, 1)(_.referenceTypeId(arrayType).int(length)).value() match
+        case Value.Reference(_, id) => id
+        case _                      => Ref.empty
+
     // Method (command set 6).
     def lineTable(cls: ReferenceTypeId, method: MethodId)
       ( using Tactic[Debugger.Error] )
@@ -800,6 +1174,88 @@ object Jdwp:
 
       LineTable(start, end, lines)
 
+    // The local-variable table is optional debug information: a class compiled without it makes
+    // the VM report ABSENT_INFORMATION (101), which decodes here as `Unset` rather than an error,
+    // since callers degrade to showing captured and field state only.
+    def variableTable(cls: ReferenceTypeId, method: MethodId)
+      ( using Tactic[Debugger.Error] )
+    :   Optional[VariableTable] =
+
+      given Diagnostics = note
+
+      submit(6, 2)(_.referenceTypeId(cls).methodId(method)) match
+        case Connection.Reply.Ok(data) =>
+          val reader = Reader(data, sizes0)
+          val argCount = reader.int()
+
+          val slots = list(reader.int()): () =>
+            SlotInfo(reader.long(), reader.string(), reader.string(), reader.int(), reader.int())
+
+          VariableTable(argCount, slots)
+
+        case Connection.Reply.Failed(101) =>
+          Unset
+
+        case Connection.Reply.Failed(code) =>
+          raise(Debugger.Error(Debugger.Error.Reason(code), t"command (6, 2)"))
+          Unset
+
+    // ObjectReference (command set 9).
+    def referenceType(obj: ObjectId)(using Tactic[Debugger.Error]): (TypeTag, ReferenceTypeId) =
+      val reader = request(9, 1)(_.objectId(obj))
+      (TypeTag(reader.byte()), reader.referenceTypeId())
+
+    def fieldValues(obj: ObjectId, fields: List[FieldId])
+      ( using Tactic[Debugger.Error] )
+    :   List[Value] =
+
+      val reader = request(9, 2): writer =>
+        writer.objectId(obj).int(fields.stdlib.length)
+        fields.stdlib.foreach(writer.fieldId)
+
+      list(reader.int()): () => reader.value()
+
+    // The values are written untagged: each field's declared signature already fixes its type.
+    def setFieldValues(obj: ObjectId, assignments: List[(FieldId, Value)])
+      ( using Tactic[Debugger.Error] )
+    :   Unit =
+
+      command(9, 3): writer =>
+        writer.objectId(obj).int(assignments.stdlib.length)
+        assignments.stdlib.foreach: (field, value) => writer.fieldId(field).untaggedValue(value)
+
+    // Invokes an instance method on a suspended thread and reads back its return value and any
+    // exception. `INVOKE_SINGLE_THREADED` (0x01) keeps every other thread suspended for the
+    // duration, so the call cannot progress another debugged thread; the caller bounds it with a
+    // timeout, since a method needing another thread would otherwise deadlock.
+    def invokeMethod
+      ( obj:    ObjectId,
+        thread: ThreadId,
+        cls:    ReferenceTypeId,
+        method: MethodId,
+        args:   List[Value] )
+      ( using Tactic[Debugger.Error] )
+    :   Invocation =
+
+      val reader = request(9, 6): writer =>
+        writer.objectId(obj).threadId(thread).referenceTypeId(cls).methodId(method)
+        writer.int(args.stdlib.length)
+        args.stdlib.foreach(writer.value)
+        writer.int(1)
+
+      Invocation(reader.value(), reader.value())
+
+    // The reference type a `java.lang.Class` instance stands for — how a class object handed back
+    // by `ClassLoader.defineClass` is turned into the reference type its methods are read from.
+    def reflectedType(classObject: ObjectId)(using Tactic[Debugger.Error]): ReferenceTypeId =
+      val reader = request(17, 1)(_.objectId(classObject))
+      reader.byte()
+      reader.referenceTypeId()
+
+    // StringReference (command set 10).
+    def stringValue(string: StringId)(using Tactic[Debugger.Error]): Text =
+      request(10, 1)(_.stringId(string)).string()
+
     // ThreadReference (command set 11).
     def threadName(thread: ThreadId)(using Tactic[Debugger.Error]): Text =
       request(11, 1)(_.threadId(thread)).string()
@@ -810,6 +1266,10 @@ object Jdwp:
     def resumeThread(thread: ThreadId)(using Tactic[Debugger.Error]): Unit =
       command(11, 3)(_.threadId(thread))
 
+    def threadStatus(thread: ThreadId)(using Tactic[Debugger.Error]): ThreadStatus =
+      val reader = request(11, 4)(_.threadId(thread))
+      ThreadStatus(reader.int(), reader.int())
+
     def frameCount(thread: ThreadId)(using Tactic[Debugger.Error]): Int =
       request(11, 7)(_.threadId(thread)).int()
 
@@ -819,6 +1279,26 @@ object Jdwp:
 
       val reader = request(11, 6): writer => writer.threadId(thread).int(start).int(length)
       list(reader.int()): () => (reader.frameId(), reader.location())
+
+    // ArrayReference (command set 13).
+    def arrayLength(array: ObjectId)(using Tactic[Debugger.Error]): Int =
+      request(13, 1)(_.objectId(array)).int()
+
+    def arrayValues(array: ObjectId, first: Int, length: Int)
+      ( using Tactic[Debugger.Error] )
+    :   List[Value] =
+
+      request(13, 2)(_.objectId(array).int(first).int(length)).arrayRegion()
+
+    // A primitive region is written untagged, like the reply's arrayregion: the array's component
+    // type already fixes each element's encoding.
+    def setArrayValues(array: ObjectId, first: Int, values: List[Value])
+      ( using Tactic[Debugger.Error] )
+    :   Unit =
+
+      command(13, 3): writer =>
+        writer.objectId(array).int(first).int(values.stdlib.length)
+        values.stdlib.foreach(writer.untaggedValue)
 
     // EventRequest (command set 15). `set` returns the request id used to `clear` it later.
     def eventRequestSet(kind: EventKind, policy: SuspendPolicy, modifiers: List[Modifier])
@@ -836,3 +1316,34 @@ object Jdwp:
     :   Unit =
 
       command(15, 2)(_.byte(kind.id.toByte).int(request0))
+
+    // StackFrame (command set 16). Slots are requested with the tag byte of their declared type,
+    // which the caller derives from the variable table's signatures.
+    def slotValues(thread: ThreadId, frame: FrameId, slots: List[(Int, Tag)])
+      ( using Tactic[Debugger.Error] )
+    :   List[Value] =
+
+      val reader = request(16, 1): writer =>
+        writer.threadId(thread).frameId(frame).int(slots.stdlib.length)
+        slots.stdlib.foreach: (slot, tag) => writer.int(slot).byte(tag.id.toByte)
+
+      list(reader.int()): () => reader.value()
+
+    def setSlotValues(thread: ThreadId, frame: FrameId, assignments: List[(Int, Value)])
+      ( using Tactic[Debugger.Error] )
+    :   Unit =
+
+      command(16, 2): writer =>
+        writer.threadId(thread).frameId(frame).int(assignments.stdlib.length)
+        assignments.stdlib.foreach: (slot, value) => writer.int(slot).value(value)
+
+    // The frame's `this`, as a tagged reference; a static or native frame answers the null object
+    // (identifier zero).
+    def thisObject(thread: ThreadId, frame: FrameId)(using Tactic[Debugger.Error]): Value =
+      request(16, 3)(_.threadId(thread).frameId(frame)).value()
+
+    // Discards all frames up to and including the given frame, leaving the thread suspended at
+    // the instruction which called the popped frame — so resuming re-executes the call. Requires
+    // the `canPopFrames` capability and a thread suspended by an event.
+    def popFrames(thread: ThreadId, frame: FrameId)(using Tactic[Debugger.Error]): Unit =
+      command(16, 4)(_.threadId(thread).frameId(frame))

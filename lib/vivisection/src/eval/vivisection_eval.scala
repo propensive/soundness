@@ -30,12 +30,35 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-// `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
-// environment variable) into `soundness`, and a debugger variable is reached as
-// `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint}
+import ambience.*
+import anthology.*
+import anticipation.*
+import aperture.*
+import contingency.*
+import gossamer.*
+import hellenism.*
+import parasite.*
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+extension (halt: Halt)
+  // Opens a warm compiler session over the debuggee's classpath and lends an `Evaluator` for the
+  // block, so the compiler session lexically encloses every evaluation. The session and the
+  // evaluator both die with the block: neither can outlive the stop that lent the halt.
+  def evaluator[result](classpath: LocalClasspath)
+    ( body: (evaluator: Evaluator^) ?=> result )
+    ( using Monitor,
+            System,
+            (CompileEvent is Loggable)^,
+            Tactic[Async.Error],
+            Tactic[Compiler.Error],
+            Tactic[Debugger.Error] )
+  :   result =
+
+    // `-experimental` because the debuggee's own types (and `Inspectable`) use experimental
+    // language features, so a renderer or expression referencing them must compile in that mode.
+    val options = List(Scalac.Option[3.9](t"-experimental"))
+    val purview = Purview(classpath)
+
+    Scalac[3.9](options).on(classpath).session: session ?=>
+      body(using new Evaluator(halt, session, classpath, purview))

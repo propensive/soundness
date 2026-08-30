@@ -30,12 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-// `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
-// environment variable) into `soundness`, and a debugger variable is reached as
-// `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint}
+// A debuggee whose `Account` mutates a plain member field twice, so a watchpoint test can
+// observe the incoming value of a specific write.
+object Ledger:
+  def main(args: Array[String]): Unit =
+    val account = Account()
+    account.deposit(30)
+    account.deposit(70)
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+  class Account extends scala.caps.Mutable:
+    var balance: Int = 0
+
+    update def deposit(amount: Int): Unit =
+      balance = balance + amount

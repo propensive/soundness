@@ -30,12 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-// `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
-// environment variable) into `soundness`, and a debugger variable is reached as
-// `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint}
+// A debuggee whose `tally` runs exactly once from `main` — unless a debugger pops its frame and
+// resumes, re-executing the call. A second breakpoint hit inside `tally` is therefore proof of
+// frame restart.
+object Recount:
+  def main(args: Array[String]): Unit =
+    tally()
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+  def tally(): Unit =
+    java.lang.System.out.nn.println("mark")

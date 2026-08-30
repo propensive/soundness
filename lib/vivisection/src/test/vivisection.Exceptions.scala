@@ -30,12 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-// `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
-// environment variable) into `soundness`, and a debugger variable is reached as
-// `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint}
+// A debuggee that throws twice: an exception caught within `flaky`, then an uncaught one which
+// terminates the run — the two stops an exception-breakpoint test observes.
+object Exceptions:
+  def main(args: Array[String]): Unit =
+    try flaky() catch case exception: Exception => ()
+    throw new RuntimeException("unhandled")
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+  def flaky(): Unit = throw new IllegalStateException("recoverable")

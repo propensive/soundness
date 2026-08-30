@@ -30,12 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-// `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
-// environment variable) into `soundness`, and a debugger variable is reached as
-// `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint}
+import gossamer.*
+import spectacular.*
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+// A debuggee holding three locals whose types differ only in how they render: `Point` is a case
+// class, so a structural `Inspectable` is derived (a real, pure instance); `Tagged` has only a
+// `Showable`, so rendering borrows it under the `⸢…⸣` marker; `Plain` has neither, so it falls to
+// `toString` under the `“…”` marker. The two markers are how a debugger flags that a value was not
+// rendered through a purpose-built, verified-pure instance.
+object Renderings:
+  case class Point(x: Int, y: Int)
+
+  class Tagged(val name: String)
+
+  object Tagged:
+    given (Tagged is Showable) = tagged => t"tag:${tagged.name}"
+
+  class Plain(val id: Int):
+    override def toString: String = "Plain#"+id
+
+  def main(args: Array[String]): Unit =
+    Specimen().render()
+
+  class Specimen():
+    def render(): Unit =
+      val point = Point(3, 4)
+      val tagged = Tagged("alpha")
+      val plain = Plain(7)
+      System.out.nn.println("here")

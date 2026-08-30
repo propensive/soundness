@@ -30,12 +30,32 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-// `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
-// environment variable) into `soundness`, and a debugger variable is reached as
-// `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint}
+import soundness.*
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+import backstops.stackTraceBackstop
+import errorDiagnostics.stackTracesDiagnostics
+import executives.completions
+import internetAccess.online
+import interpreters.posixInterpreter
+import logging.silentLogging
+import probates.awaitProbate
+import socketBackends.virtualMachineSockets
+import strategies.throwUnsafely
+import systems.javaSystem
+import threading.virtualThreading
+import workingDirectories.javaWorkingDirectory
+
+// A runnable Debug Adapter Protocol server over stdio: point a DAP frontend (VS Code with a
+// generic DAP launch configuration, say) at this executable and it drives a vivisection debug
+// session — launching a JVM by main class and classpath, setting breakpoints, stepping, and
+// inspecting variables rendered through their `Inspectable` instances. `main` is a plain
+// (non-inline) method so the object's static `main` forwarder is a valid JVM entry point.
+object DapServer:
+  def main(args: Array[Text]): Unit = cli:
+    execute:
+      supervise:
+        Dap.listen()
+
+      Exit.Ok

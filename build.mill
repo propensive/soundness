@@ -848,7 +848,7 @@ object soundness extends Toolchain:
     anthology.`scala`, exegesis.core, espionage.core, hellenism.jvm, delicious.core,
     delicious.`scala`, delicious.compiler, harlequin.compiler,
     delicious.ansi, anthology.kotlin, anthology.oci, anthology.xeq, hyperbole.stacks,
-    vivisection.core):
+    vivisection.core, vivisection.eval, vivisection.dap):
     def summary = "Developer tools: compilers, build tooling, source analysis and version control"
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
@@ -3281,14 +3281,38 @@ object vivisection extends Library:
   // launches the debuggee, digression supplies SMAP-aware line translation, and parasite runs
   // the reply-correlation and event-dispatch pumps.
   object core extends Component(coaxial.jvm, guillotine.core, aperture.core, digression.core,
-      parasite.core, zephyrine.core, gossamer.core):
+      parasite.core, zephyrine.core, gossamer.core, spectacular.core):
     override def scalaJs = false // debugs JVMs over TCP; depends on JVM-only `guillotine`
     override def scalaNative = false // JDWP is a JVM protocol; forks JVMs via `guillotine`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // Expression evaluation: `anthology` compiles a synthetic class against the debuggee's
+  // classpath and the Evaluator injects and runs it over JDWP. Kept out of `core` so the
+  // compiler dependency does not reach a caller who only inspects variables.
+  object eval extends Component(core, anthology.`scala`, hellenism.jvm, stenography.core):
+    override def scalaJs = false // hosts the Scala compiler and debugs JVMs
+    override def scalaNative = false
+    // `Purview` reads static types out of the compiler's own symbol loader.
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The Debug Adapter Protocol transport: Content-Length-framed JSON over stdio, adapting a
+  // debug session to the requests and events a DAP frontend (such as VS Code) speaks.
+  object dap extends Component(eval, jacinta.core, obligatory.core):
+    override def scalaJs = false // serves a JVM debug session
+    override def scalaNative = false
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // A runnable DAP server over stdio, for pointing a frontend (VS Code) at manually. Kept out of
+  // the library surface: it is an entry point, not an API.
+  object demo extends Internal(dap, exoskeleton.completions, ethereal.core):
+    override def scalacOptions = Task:
+      settings.maxInlines(settings.sep(super.scalacOptions() ++ Seq("-Yno-predef",
+        "-Yimports:java.lang,proscenium")), "48")
+    override def mainClass: Task.Simple[Option[String]] = Some("vivisection.DapServer")
   // The offline suite drives the protocol against a scripted fake VM over an in-memory duplex;
   // the live suite launches real JVMs under the jdwp agent.
-  object test extends Tests(core, eucalyptus.core, ambience.core):
+  object test extends Tests(core, eval, dap, eucalyptus.core, ambience.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

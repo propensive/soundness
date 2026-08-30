@@ -30,12 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-// `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
-// environment variable) into `soundness`, and a debugger variable is reached as
-// `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint}
+// A debuggee binding locals of richer shapes — a generic collection, a tuple, a function, an
+// optional — so a test can check that their declared static types are recovered from TASTy and
+// rendered through stenography, not lost to erasure.
+object Types:
+  def main(args: Array[String]): Unit =
+    Specimen().shapes()
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+  class Specimen():
+    def shapes(): Unit =
+      val list: List[Int] = List(1, 2, 3)
+      val pair: (Int, String) = (1, "a")
+      val function: Int => String = _.toString
+      val option: Option[Int] = Some(5)
+      System.out.nn.println("here")

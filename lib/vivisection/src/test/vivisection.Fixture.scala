@@ -30,12 +30,38 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-// `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
-// environment variable) into `soundness`, and a debugger variable is reached as
-// `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint}
+import gossamer.*
+import spectacular.*
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+// A debuggee for the live JDWP suite: launched under the agent, suspended at start, and driven by
+// `vivisection_test`. `marker` is where the tests break; its parameters (a primitive, a string, an
+// array, an opaque type) exercise local-slot recovery, and the enclosing `Specimen` gives a `this`
+// whose fields exercise field recovery and an unforced lazy val. Kept close to plain idiom so its
+// compiled shape is what a debugger meets in ordinary code; the one exception is the opaque `Port`
+// and its `Inspectable`, which exist so a test can show static-type-driven rendering.
+object Fixture:
+  // An opaque type erasing to `Int`, with its own `Inspectable`: a debugger that types a binding by
+  // its *runtime* class would render a `Port` as a bare `Int`, while one that recovers the static
+  // type renders it through this instance.
+  opaque type Port = Int
+
+  object Port:
+    def apply(number: Int): Port = number
+    given (Port is Inspectable) = port => t"⟨port ${port: Int}⟩"
+
+  def main(args: Array[String]): Unit =
+    Specimen(7).compute(35)
+
+  class Specimen(seed: Int):
+    lazy val squared: Int = seed*seed
+
+    def compute(base: Int): Unit =
+      val label = "answer"
+      val numbers = Array(base, base + 1, base + 2)
+      marker(base + seed, label, numbers, Port(8080))
+
+    def marker(total: Int, tag: String, values: Array[Int], port: Port): Unit =
+      val gateway: Port = Port(443)
+      System.out.nn.println(gateway.toString)

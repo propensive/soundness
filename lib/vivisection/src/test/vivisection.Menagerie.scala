@@ -30,12 +30,28 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-// `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
-// environment variable) into `soundness`, and a debugger variable is reached as
-// `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint}
+// A debuggee whose `primitives` method binds a local of each primitive kind, plus strings and
+// arrays, so one breakpoint can exercise the whole width of value recovery. The suite breaks at the
+// `println`, where every binding above it is live.
+object Menagerie:
+  def main(args: Array[String]): Unit =
+    Specimen().primitives()
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+  class Specimen():
+    def primitives(): Unit =
+      val byte: Byte = -7
+      val short: Short = 1234
+      val int: Int = 42
+      val long: Long = 9999999999L
+      val float: Float = 3.5
+      val double: Double = 2.5
+      val char: Char = 'Z'
+      val boolean: Boolean = true
+      val text: String = "hello"
+      val empty: String = ""
+      val ints: Array[Int] = Array(10, 20, 30)
+      val bytes: Array[Byte] = Array(1, 2, 3)
+      val many: Array[Int] = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+      System.out.nn.println("here")

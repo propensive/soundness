@@ -30,12 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-// `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
-// environment variable) into `soundness`, and a debugger variable is reached as
-// `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint}
+// A debuggee that exercises captured state. `Helper` is a class local to `Outer.run`, so at the
+// breakpoint (the `println` in `go`) `this` is a `Helper` whose fields hold the captured `label`
+// (a val) and `tally` (a `var`, boxed in a ref cell), and whose `$outer` reaches the enclosing
+// `Outer` — itself carrying `seed` (a field) and an unforced lazy `cached`. This is the path
+// variable un-flattening walks; none of it appears as an ordinary local slot. `Helper` is a
+// method-local class, not loaded until `run` runs it, which the harness handles by resolving the
+// breakpoint when `Helper`'s ClassPrepare notification arrives.
+object Closures:
+  def main(args: Array[String]): Unit =
+    Outer(100).run()
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+  class Outer(seed: Int):
+    lazy val cached: Int = seed*seed
+
+    def run(): Unit =
+      val label = "captured"
+      var tally = 0
+
+      class Helper:
+        def go(): Unit =
+          tally += seed
+          System.out.nn.println(label)
+
+      Helper().go()

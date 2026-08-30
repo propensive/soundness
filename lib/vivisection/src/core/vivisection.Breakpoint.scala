@@ -30,12 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-// `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
-// environment variable) into `soundness`, and a debugger variable is reached as
-// `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint}
+import contingency.*
 
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+// A revocable handle on an installed event request with a handler — a breakpoint, an exception
+// request, or a watchpoint: `clear()` removes the request from the VM and unregisters its
+// handler, after which any hits already in flight are treated as unclaimed.
+class Breakpoint private[vivisection] (debug: Debug, kind: Jdwp.EventKind, val request: Int):
+  def clear()(using Tactic[Debugger.Error]): Unit = debug.remove(kind, request)
