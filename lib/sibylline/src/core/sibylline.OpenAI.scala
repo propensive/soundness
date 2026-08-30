@@ -462,7 +462,7 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     OpenAI.reply(Llm.receive(response))
 
-  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
+  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, caps.any} =
     val response =
       caps.unsafe.unsafeAssumeSeparate:
         Llm.fetch(OpenAI.failure(_, _)):
@@ -746,7 +746,7 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     ResponsesDialect.reply(Llm.receive(response))
 
-  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
+  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, caps.any} =
     val response =
       caps.unsafe.unsafeAssumeSeparate:
         Llm.fetch(OpenAI.failure(_, _)):

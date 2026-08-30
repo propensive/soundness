@@ -386,7 +386,7 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     Gemini.reply(Llm.receive(response))
 
-  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
+  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, caps.any} =
     val response =
       caps.unsafe.unsafeAssumeSeparate:
         Llm.fetch(Gemini.failure(_, _)):

@@ -197,7 +197,7 @@ object Llm:
   trait Dialect:
     def name: Text
     def exchange(turn: Exchange): Reply
-    def stream(turn: Exchange): Iterator[Event]^{this}
+    def stream(turn: Exchange): Iterator[Event]^{this, caps.any}
 
   object Error:
     // The numbers are the `SN-990.e` subcodes, and are frozen: codes added later append.
