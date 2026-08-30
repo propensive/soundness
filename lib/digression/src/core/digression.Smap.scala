@@ -186,12 +186,39 @@ case class Smap(generated: Text, default: Text, strata: Map[Text, Smap.Stratum])
     stratum.let: stratum =>
       stratum.files.seek { (_, file) => file.name == generated }.let(_(0))
 
+  // The generated file's fuller path, when its file table records one.
+  lazy val path: Optional[Text] =
+    stratum.let: stratum =>
+      stratum.files.seek { (_, file) => file.name == generated }.let(_(1).path)
+
   // A line which maps to itself in the generated file—or which the SMAP says nothing about—is a
   // real line, not a synthetic one.
   private def real(line: Int): Boolean =
     stratum.lay(true): stratum =>
       stratum(line).lay(true): (fileId, input) =>
         input == line && generatedId.lay(false)(_ == fileId)
+
+  // The generated-line ranges standing for a source position: one `[start, end)` range per site
+  // the line was inlined at, excluding the identity run (a line's natural occurrence in the
+  // generated file itself, which the class's own line table already locates). Empty when the
+  // file is foreign to this SMAP. One line inlined at many call sites yields many ranges — a
+  // breakpoint on the line belongs at every one. This is `expand`'s inverse, for resolution:
+  // `expand` asks what a generated line stands for; `sites` asks where a source line went.
+  def sites(file: Text, line: Int): List[(Int, Int)] =
+    stratum.lay(List()): stratum =>
+      val ids =
+        stratum.files.stdlib.collect { case (id, entry) if entry.name == file => id }.toSet
+
+      val ranges = stratum.entries.stdlib.flatMap: entry =>
+        val identity = generatedId.lay(false)(_ == entry.fileId)
+        val covers = line >= entry.inputLine && line < entry.inputLine + entry.repeat
+        val sound = entry.increment >= 1 && entry.repeat >= 1
+
+        if !sound || identity || !ids.contains(entry.fileId) || !covers then sci.List() else
+          val start = entry.outputLine + (line - entry.inputLine)*entry.increment
+          sci.List((start, start + entry.increment))
+
+      List(ranges*)
 
   // Expands a synthetic line into the inline origins it stands for, innermost first, and the
   // real call-site line the chain leads back to. A real line—or a line in a classfile whose SMAP
