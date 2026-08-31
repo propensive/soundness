@@ -183,10 +183,10 @@ object TarBuilder:
       ( block: ((TarBuilder & Granting[Grant.Read & Grant.Write])^) ?=> result )
     :   result =
 
-      val format = flags.glean { case format: LongNameFormat => format }
+      val format = flags.reap { case format: LongNameFormat => format }
         . or(LongNameFormat.Pax)
 
-      val compression = flags.glean { case flag: Tar.Flag => flag }
+      val compression = flags.reap { case flag: Tar.Flag => flag }
       val createFlags = flags.sweep { case flag: CreateFlag => flag }
 
       compression match

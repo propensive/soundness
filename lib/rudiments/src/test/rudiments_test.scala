@@ -231,15 +231,15 @@ object Tests extends Suite(m"Rudiments Tests"):
         interval.limit.n0
       . assert(_ == 3)
 
-    suite(m"glean and omit tests"):
-      test(m"glean transforms the first match"):
+    suite(m"reap and omit tests"):
+      test(m"reap transforms the first match"):
         val xs: List[Int] = List(1, 2, 3, 4)
-        xs.glean { case n if n%2 == 0 => n*10 }
+        xs.reap { case n if n%2 == 0 => n*10 }
       . assert(_ == 20)
 
-      test(m"glean without a match is Unset"):
+      test(m"reap without a match is Unset"):
         val xs: List[Int] = List(1, 3)
-        xs.glean { case n if n%2 == 0 => n*10 }
+        xs.reap { case n if n%2 == 0 => n*10 }
       . assert(_ == Unset)
 
       test(m"omit removes a map key"):

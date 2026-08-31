@@ -35,6 +35,8 @@ package galilei
 import scala.caps
 
 import java.io as ji
+
+import murmuration.has
 import java.nio.channels as jnc
 import java.nio.file as jnf
 import java.nio.file.attribute as jnfa
@@ -414,7 +416,7 @@ package filesystemBackends:
         ( using Tactic[Io.Error] )
       :   result =
 
-        val options: scala.collection.immutable.List[jnf.OpenOption] = flags.filter: flag =>
+        val options: scala.collection.immutable.List[jnf.OpenOption] = flags.stdlib.filter: flag =>
           flag != OpenFlag.Lock && flag != OpenFlag.LockShared && flag != OpenFlag.Await
         . map:
           case OpenFlag.Read      => jnf.StandardOpenOption.READ

@@ -33,7 +33,7 @@
 package embarcadero
 
 import aperture.*
-import rudiments.{glean, prim}
+import rudiments.{reap, prim}
 import murmuration.has
 import fulminate.*
 import jacinta.*
@@ -180,7 +180,7 @@ object Image:
 
       val name = t"blobs/sha256/${digest.s.stripPrefix("sha256:").tt}"
 
-      entries.glean { case file: Tar.Entry.File if file.entryName == name => file.data }
+      entries.reap { case file: Tar.Entry.File if file.entryName == name => file.data }
       . or(abort(Oci.Error(Oci.Error.Reason.MissingBlob(digest))))
 
     // The blob addressed by a canonical `sha256:<hex>` digest, as a stream of its stored
@@ -284,7 +284,7 @@ object Image:
 
     // The gathered bytes of a named top-level document (`oci-layout` or `index.json`).
     private def document(name: Text, reason: Oci.Error.Reason)(using Tactic[Oci.Error]): Data =
-      entries.glean { case file: Tar.Entry.File if file.entryName == name => file.data }
+      entries.reap { case file: Tar.Entry.File if file.entryName == name => file.data }
       . or(abort(Oci.Error(reason)))
       . memoize
 

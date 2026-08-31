@@ -150,7 +150,7 @@ class Form
         case _                       => false
 
     if !stays then
-      focused = panes.glean { case Pane.Widget(_, focus: Focus) => focus }
+      focused = panes.reap { case Pane.Widget(_, focus: Focus) => focus }
 
     panes
 

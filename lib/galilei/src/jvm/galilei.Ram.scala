@@ -180,7 +180,7 @@ object Ram:
       ( block: (RamHandle & Granting[Grant.Read & Grant.Write]) ?=> result )
     :   result =
 
-      val size: Long = flags.glean { case RamFlag.Size(bytes) => bytes }
+      val size: Long = flags.reap { case RamFlag.Size(bytes) => bytes }
         . lay(abort(Io.Error(value, Operation.Create, Reason.Unsupported)))(identity(_))
 
       if size <= 0 || size > Int.MaxValue

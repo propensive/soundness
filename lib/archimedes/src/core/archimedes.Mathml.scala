@@ -386,7 +386,7 @@ object Mathml:
       case _                => t"<unknown>"
 
     def findMath(nodes: List[Node])(using Tactic[Mathml.Error]): Element =
-      nodes.glean { case element: Element if element.label == t"math" => element }
+      nodes.reap { case element: Element if element.label == t"math" => element }
       . or:
         abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))
 
