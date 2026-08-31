@@ -37,6 +37,7 @@ import contingency.*
 import gossamer.*
 import reliquary.*
 import rudiments.*
+import vacuous.let
 
 // The `classfile/1` discipline: the JVM's *linkage* contract, as atoms.
 //
@@ -89,7 +90,7 @@ object ClassfileDiscipline extends Discipline:
     // An unresolvable supertype is fatal, never skipped: its member set is unknown, so the
     // presented set of everything below it is understated, and an understated interface is a
     // compatibility claim made over content nobody read.
-    outcome.unresolved.stdlib.headOption.foreach: name =>
+    outcome.unresolved.prim.let: name =>
       abort(Discipline.Error(id, Discipline.Error.Reason.Unresolved(name)))
 
     Atomization.of(id, outcome.atoms)

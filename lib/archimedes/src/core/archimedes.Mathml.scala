@@ -386,8 +386,8 @@ object Mathml:
       case _                => t"<unknown>"
 
     def findMath(nodes: List[Node])(using Tactic[Mathml.Error]): Element =
-      nodes.stdlib.collectFirst { case element: Element if element.label == t"math" => element }
-      . getOrElse:
+      nodes.glean { case element: Element if element.label == t"math" => element }
+      . or:
         abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))
 
     def rootElement(xml: Xml)(using Tactic[Mathml.Error]): Element = xml match

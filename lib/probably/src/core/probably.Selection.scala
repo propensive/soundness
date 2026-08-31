@@ -72,7 +72,7 @@ object Selection:
   // unioned; `kind:` terms and axis constraints (`parser=jacinta`, `N<32`, `N=4..64`)
   // intersect with that union. Unrecognized terms are treated as name globs.
   def parse(arguments: List[Text]): Selection =
-    arguments.stdlib.foldLeft(all): (selection, argument) =>
+    arguments.fold(all): (selection, argument) =>
       if argument == t"--list" then selection.copy(listOnly = true)
       else if argument.starts(t"kind:") then
         val kinds = argument.skip(5) match

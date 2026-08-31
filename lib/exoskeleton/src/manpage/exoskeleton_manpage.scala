@@ -33,6 +33,7 @@
 package exoskeleton
 
 import anticipation.*
+import denominative.nil
 import aviation.*, dateFormats.iso8601DateFormat
 import escapade.*
 import gossamer.*
@@ -55,7 +56,7 @@ extension (help: Help)
       case text: Text         => text
       case teletype: Teletype => teletype.plain
 
-    val leaf: Boolean = help.subcommands.stdlib.isEmpty
+    val leaf: Boolean = help.subcommands.nil
     val globalParams: scala.List[Help.Param] = help.parameters.stdlib.filter(_.global)
     val localParams: scala.List[Help.Param] = help.parameters.stdlib.filter(!_.global)
     val ungrouped: scala.List[Help] = help.subcommands.stdlib.filter(_.group == Unset)

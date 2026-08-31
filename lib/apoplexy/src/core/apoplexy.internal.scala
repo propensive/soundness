@@ -574,10 +574,10 @@ object Apoplexy:
 
   // Resolve the response-schema `JsonSchema` at a JSON-pointer into the spec.
   private def resolveSchema(using Quotes)(source: Text, pointer: Text): JsonSchema =
-    val segments = pointer.cut(t"/").stdlib.drop(1)
+    val segments = pointer.cut(t"/").skip(1)
 
     val node =
-      segments.foldLeft(specJson(source)): (node, segment) =>
+      segments.fold(specJson(source)): (node, segment) =>
         try node(segment.sub(t"~1", t"/").sub(t"~0", t"~"))
         catch case error: Exception => halt(m"apoplexy: could not resolve the schema at $pointer")
 

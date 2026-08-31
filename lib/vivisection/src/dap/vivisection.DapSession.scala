@@ -201,12 +201,12 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
       val out: () => Unit =
         caps.unsafe.unsafeAssumePure: () =>
-          console.stdout.stdlib.foreach: data =>
+          console.stdout.each: data =>
             adapter.send(t"output", Dap.OutputBody(data.utf8, t"stdout").in[Json])
 
       val err: () => Unit =
         caps.unsafe.unsafeAssumePure: () =>
-          console.stderr.stdlib.foreach: data =>
+          console.stderr.each: data =>
             adapter.send(t"output", Dap.OutputBody(data.utf8, t"stderr").in[Json])
 
       val exit: () => Unit =
@@ -348,8 +348,8 @@ private[vivisection] class DapSession(emit: Json => Unit)
           val adapter = self
           exceptionRequests.foreach: slot => safely(slot.handle.clear())
 
-          val uncaught = arguments.filters.stdlib.contains(t"uncaught")
-          val caught = arguments.filters.stdlib.contains(t"caught")
+          val uncaught = arguments.filters.has(t"uncaught")
+          val caught = arguments.filters.has(t"caught")
 
           exceptionRequests =
             if !uncaught && !caught then scala.List() else
@@ -389,16 +389,14 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
         val target = arguments.variablesReference.let(nodes.get(_).getOrElse(scala.None)) match
           case DapSession.Node.Locals(thread, frame, location) =>
-            stops.get(thread).map: slot =>
-              slot.halt.variables(frame, location).stdlib.find(_.name == arguments.name)
-
-            . getOrElse(scala.None)
+            stops.get(thread).optional.let: slot =>
+              slot.halt.variables(frame, location).seek(_.name == arguments.name)
 
           case _ =>
-            scala.None
+            Unset
 
         target match
-          case scala.Some(variable) => variable.provenance match
+          case variable: Variable => variable.provenance match
             case Variable.Provenance.Field(owner, _, _) =>
               respond(request, Dap.DataBreakpointInfoBody(t"$owner:${arguments.name}",
                   t"${arguments.name} on $owner", List(t"write")).in[Json])
@@ -548,8 +546,8 @@ private[vivisection] class DapSession(emit: Json => Unit)
         nodes.get(arguments.variablesReference) match
           case scala.Some(DapSession.Node.Locals(thread, frame, location)) =>
             withStop(request, thread): halt =>
-              halt.variables(frame, location).stdlib.find(_.name == arguments.name) match
-                case scala.Some(variable) =>
+              halt.variables(frame, location).seek(_.name == arguments.name) match
+                case variable: Variable =>
                   parseValue(halt, variable.erased, arguments.value) match
                     case value: Jdwp.Value =>
                       halt.assign(frame, variable, value)

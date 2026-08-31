@@ -33,6 +33,8 @@
 package embarcadero
 
 import aperture.*
+import rudiments.{glean, prim}
+import murmuration.has
 import fulminate.*
 import jacinta.*
 import pneumatic.*
@@ -178,8 +180,8 @@ object Image:
 
       val name = t"blobs/sha256/${digest.s.stripPrefix("sha256:").tt}"
 
-      entries.stdlib.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
-      . getOrElse(abort(Oci.Error(Oci.Error.Reason.MissingBlob(digest))))
+      entries.glean { case file: Tar.Entry.File if file.entryName == name => file.data }
+      . or(abort(Oci.Error(Oci.Error.Reason.MissingBlob(digest))))
 
     // The blob addressed by a canonical `sha256:<hex>` digest, as a stream of its stored
     // (for layers: compressed) chunks — undecoded and unverified. (An explicit `Tactic`
@@ -209,7 +211,7 @@ object Image:
     // digest-verified against its descriptor before decoding.
     def manifest(using Tactic[Oci.Error]): Oci.Manifest =
       val descriptor =
-        index.manifests.stdlib.headOption.getOrElse(abort(Oci.Error(Oci.Error.Reason.NoManifest)))
+        index.manifests.prim.or(abort(Oci.Error(Oci.Error.Reason.NoManifest)))
 
       manifest(descriptor)
 
@@ -259,7 +261,7 @@ object Image:
     // A layer's content as the uncompressed tar byte stream, decompressing according to
     // the descriptor's media type; unrecognised types stream verbatim.
     def layer(descriptor: Descriptor)(using Tactic[Oci.Error]): (Stream[Data] over Credit)^ =
-      if descriptor.mediaType.suffixes.stdlib.contains(Media.Suffix.Gzip)
+      if descriptor.mediaType.suffixes.has(Media.Suffix.Gzip)
       then compressed(descriptor).decompress[Gzip]
       else compressed(descriptor)
 
@@ -282,8 +284,8 @@ object Image:
 
     // The gathered bytes of a named top-level document (`oci-layout` or `index.json`).
     private def document(name: Text, reason: Oci.Error.Reason)(using Tactic[Oci.Error]): Data =
-      entries.stdlib.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
-      . getOrElse(abort(Oci.Error(reason)))
+      entries.glean { case file: Tar.Entry.File if file.entryName == name => file.data }
+      . or(abort(Oci.Error(reason)))
       . memoize
 
     // Runs a JSON decode, translating any failure — parse, JSON or media-type errors,
@@ -311,7 +313,7 @@ object Image:
       ( block: ((Image.Handle & Granting[grants])^) ?=> result )
     :   result =
 
-      if mode.atoms.stdlib.contains(Write) then abort(Oci.Error(Oci.Error.Reason.WriteUnsupported))
+      if mode.atoms.has(Write) then abort(Oci.Error(Oci.Error.Reason.WriteUnsupported))
       block(using new Image.Handle(Tarfile.read(value.stream).to(List).asInstanceOf[List[bitumen.Tar.Entry]]) with Granting[grants] {})
 
 case class Image

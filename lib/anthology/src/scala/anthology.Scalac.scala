@@ -124,7 +124,7 @@ object Scalac:
       def save[path: Abstractable across Paths to Text](directory: path): Unit =
         val root = jnf.Paths.get(directory.generic.s).nn
 
-        classfiles.stdlib.foreach: (path, data) =>
+        classfiles.each: (path, data) =>
           // The classpath root renders as empty text, so `encode` is already the
           // `directory`-relative form, `pkg/Name.class`.
           val target = root.resolve(path.encode.s).nn

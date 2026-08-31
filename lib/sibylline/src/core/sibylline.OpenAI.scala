@@ -35,6 +35,7 @@ package sibylline
 import scala.caps
 
 import anticipation.*
+import denominative.nil
 import contingency.*
 import distillate.*
 import fulminate.*
@@ -199,7 +200,7 @@ object OpenAI:
         Json.make
           ( role       = t"assistant".in[Json],
             content    = (if body == t"" then Unset else body).in[Json],
-            tool_calls = (if calls.stdlib.isEmpty then Unset else calls).in[Json] )
+            tool_calls = (if calls.nil then Unset else calls).in[Json] )
 
     case Llm.Role.User =>
       val results: List[Json] = message.content.bind:
@@ -224,7 +225,7 @@ object OpenAI:
         case scala.List(Llm.Content.Textual(text)) => text.in[Json]
 
         case _ =>
-          if parts.stdlib.isEmpty then Unset else parts.in[Json]
+          if parts.nil then Unset else parts.in[Json]
 
       val turn: List[Json] = plain match
         case content: Json => List(Json.make(role = t"user".in[Json], content = content))
@@ -421,10 +422,10 @@ class OpenAI private
         max_completion_tokens = turn.settings.maxTokens.in[Json],
         temperature           = turn.settings.temperature.in[Json],
         top_p                 = turn.settings.topP.in[Json],
-        stop                  = (if stops.stdlib.isEmpty then Unset else stops).in[Json],
+        stop                  = (if stops.nil then Unset else stops).in[Json],
         stream                = (if streaming then streaming else Unset).in[Json],
         stream_options        = streamOptions(streaming),
-        tools                 = (if tools.stdlib.isEmpty then Unset else tools).in[Json],
+        tools                 = (if tools.nil then Unset else tools).in[Json],
         tool_choice           = turn.settings.toolChoice.let(OpenAI.choice(_)).in[Json] )
 
   private def streamOptions(streaming: Boolean): Json =
@@ -553,7 +554,7 @@ private[sibylline] object ResponsesDialect:
         case _ => List()
 
       val turn: List[Json] =
-        if parts.stdlib.isEmpty then List()
+        if parts.nil then List()
         else
           List:
             Json.make
@@ -583,7 +584,7 @@ private[sibylline] object ResponsesDialect:
         temperature       = turn.settings.temperature.in[Json],
         top_p             = turn.settings.topP.in[Json],
         stream            = (if streaming then streaming else Unset).in[Json],
-        tools             = (if tools.stdlib.isEmpty then Unset else tools).in[Json],
+        tools             = (if tools.nil then Unset else tools).in[Json],
         tool_choice       = turn.settings.toolChoice.let(choice(_)).in[Json] )
 
   // Unlike Chat Completions, a named Responses tool choice is flat, not nested.
@@ -618,7 +619,7 @@ private[sibylline] object ResponsesDialect:
 
     val content: List[Llm.Content] = list(json.output).bind(blocks(_))
 
-    val called = content.stdlib.exists:
+    val called = content.exists:
       case Llm.Content.ToolUse(_, _, _) => true
       case _                            => false
 

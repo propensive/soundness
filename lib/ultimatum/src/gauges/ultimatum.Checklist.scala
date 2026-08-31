@@ -36,6 +36,7 @@ import anticipation.*
 import escapade.*
 import gossamer.*
 import hieroglyph.*
+import rudiments.{seek, count}
 import symbolism.*
 import tessellate.*
 import vacuous.*
@@ -71,8 +72,8 @@ enum Checklist:
 
   def draw(steps: Sequence[Step], tick: Tick, width: Int, gauging: Gauging): List[Teletype] =
     // Derived here rather than carried by a wrapper type: a run of steps is just a `Sequence`.
-    val current: Optional[Step] = steps.stdlib.find(_.standing == Standing.Running).optional
-    val started = steps.stdlib.count(_.standing != Standing.Pending)
+    val current: Optional[Step] = steps.seek(_.standing == Standing.Running)
+    val started = steps.count(_.standing != Standing.Pending)
     val count = steps.stdlib.length
 
     val palette = gauging.palette

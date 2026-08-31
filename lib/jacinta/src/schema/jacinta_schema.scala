@@ -36,6 +36,7 @@ package jacinta
 import scala.annotation.*
 
 import anticipation.*
+import murmuration.exists
 import contingency.*
 import prepositional.*
 import telekinesis.*
@@ -96,7 +97,7 @@ private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises Json.Error =
     case obj: JsonSchema.Object => obj.oneOf match
       case variants: List[JsonSchema] @scala.unchecked =>
         if
-          !(variants: List[JsonSchema]).stdlib.exists: variant =>
+          !(variants: List[JsonSchema]).exists: variant =>
             safely(conform(variant, ast)).present
         then
           mismatch(Json.Primitive.Object)

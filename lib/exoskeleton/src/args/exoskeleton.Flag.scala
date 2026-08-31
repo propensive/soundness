@@ -103,7 +103,7 @@ extends Topical:
       if key().starts(t"--") then key().skip(2) else if key().starts(t"-")
       then key()(Sec) else Unset
 
-    flag == name || aliases.stdlib.contains(flag)
+    flag == name || aliases.has(flag)
 
 
   // Both `apply` and `require` dispatch on the erased `Effectful` capability, which only an

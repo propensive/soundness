@@ -34,6 +34,7 @@ package anthology
 
 import ambience.*
 import anticipation.*
+import denominative.nil
 import contingency.*
 import ethereal.*
 import fulminate.*
@@ -127,7 +128,7 @@ object xeqEdges:
       // With no explicit targets, target every platform the runner source names; a local
       // directory names none, so explicit targets are required there.
       val targets: List[Text] =
-        if !settings.targets.stdlib.isEmpty then settings.targets else runners.absolve match
+        if !settings.targets.nil then settings.targets else runners.absolve match
           case Packaging.RunnerSource.Remote(_, hashes) =>
             List(hashes.stdlib.keys.toSeq.sortBy(_.s)*)
 

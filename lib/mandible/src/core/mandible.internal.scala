@@ -38,6 +38,7 @@ import anticipation.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
+import rudiments.seek
 import hellenism.*
 import symbolism.*
 import vacuous.*
@@ -60,6 +61,6 @@ object internal:
     ' {
         val classfile = Classfile(${Expr(classname)})(using $classloader)
 
-        classfile.let(_.methods.stdlib.find(_.name == ${Expr(name.tt)}).getOrElse(Unset))
+        classfile.let(_.methods.seek(_.name == ${Expr(name.tt)}).or(Unset))
         . let(_.bytecode)
       }

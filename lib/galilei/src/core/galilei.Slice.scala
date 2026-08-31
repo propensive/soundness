@@ -33,6 +33,7 @@
 package galilei
 
 import anticipation.*
+import denominative.nil
 import aperture.*
 import contingency.*
 import gossamer.*
@@ -112,7 +113,7 @@ object Slice:
           catch case _: Exception =>
             value.path.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt
 
-      val awaiting = flags.stdlib.contains(OpenFlag.Await)
+      val awaiting = flags.has(OpenFlag.Await)
 
       if locking then
         if awaiting then AccessRegister.acquireAwait(real, mode.atoms, range)

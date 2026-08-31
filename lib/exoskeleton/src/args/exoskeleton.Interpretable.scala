@@ -35,6 +35,7 @@ package exoskeleton
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
+import rudiments.prim
 import distillate.*
 import gossamer.*
 import prepositional.*
@@ -46,9 +47,7 @@ object Interpretable:
     def interpret(arguments: List[Argument]): Unit = ()
 
   given decoder: [operand: Decodable in Text] => operand is Interpretable = arguments =>
-    arguments.stdlib.headOption match
-      case Some(value) => value().as[operand]
-      case None        => Unset
+    arguments.prim.let(_().as[operand])
 
 trait Interpretable extends Typeclass:
   def operand: Boolean = true

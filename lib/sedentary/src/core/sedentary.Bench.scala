@@ -310,7 +310,7 @@ object Bench:
         index += 1
 
       anchor.let: anchorValue =>
-        values.stdlib.find(_ == anchorValue).foreach: value =>
+        values.seek(_ == anchorValue).let: value =>
           anchors.include
             ( runner.report, testId, Nil, Anchor(axis.spec, axis.point(value), comparison) )
 

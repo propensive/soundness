@@ -220,7 +220,7 @@ object SchemaSignature:
   def decodeHinted(signature: Data, base: Data, layers: List[(Text, Data)], selection: List[Text])
   :   Optional[List[Data]] =
 
-    val hinted = layers.stdlib.filter { (name, _) => selection.stdlib.contains(name) }.map(_(1))
+    val hinted = layers.stdlib.filter { (name, _) => selection.has(name) }.map(_(1))
     val full = layers.stdlib.map(_(1))
 
     safely(decode(signature, base :: hinted.to(List)))

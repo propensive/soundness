@@ -119,7 +119,7 @@ extends Figure:
   import Stroke.*
 
   def xml: Xml =
-    val d: Text = ops.stdlib.reverse.map(_.encode).to(List).join(t" ")
+    val d: Text = ops.reverse.map(_.encode).join(t" ")
     val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"d" -> d
     id.let: svgId => attrs += t"id" -> svgId.text

@@ -59,7 +59,7 @@ object TypescriptDialect extends Dialect:
 
     val byName = scala.collection.mutable.LinkedHashMap[Text, Typescript.Declaration]()
 
-    declarations.stdlib.foreach: declaration =>
+    declarations.each: declaration =>
       declaration match
         case _: Typescript.Declaration.Interface => byName.put(declaration.key, declaration)
         case _: Typescript.Declaration.Class     => byName.put(declaration.key, declaration)
@@ -90,7 +90,7 @@ object TypescriptDialect extends Dialect:
                   case Typescript.Type.Named(name, _) => accumulated ++ members(name, seen + key)
                   case _                             => accumulated
 
-            declaration.declaredMembers.stdlib.foldLeft(inherited): (accumulated, member) =>
+            declaration.declaredMembers.fold(inherited): (accumulated, member) =>
               prototype(member).lay(accumulated): value =>
                 accumulated.updated(member.name, value)
 
@@ -104,19 +104,17 @@ object TypescriptDialect extends Dialect:
          | Typescript.Member.Kind.Index => Unset
 
       case Typescript.Member.Kind.Property | Typescript.Member.Kind.Getter =>
-        member.signatures.stdlib.headOption.map: signature =>
+        member.signatures.prim.let: signature =>
           val result = signature match
             case Typescript.Type.Function(_, result, _, _) => foreign(result)
             case other                                    => foreign(other)
 
           Prototype(Unset, if member.optional then optional(result) else result)
 
-        . getOrElse(Unset)
-
       case Typescript.Member.Kind.Method | Typescript.Member.Kind.Setter =>
         // The first declared signature wins where a member is overloaded: `Prototype` records one
         // arity, and TypeScript resolves against the signatures in order.
-        member.signatures.stdlib.headOption.map: signature =>
+        member.signatures.prim.let: signature =>
           signature match
             case Typescript.Type.Function(parameters, result, _, _) =>
               val arguments = parameters.map: parameter =>
@@ -127,7 +125,6 @@ object TypescriptDialect extends Dialect:
 
             case other => Prototype(Unset, foreign(other))
 
-        . getOrElse(Unset)
 
   private def optional(foreign: Foreign.Type): Foreign.Type =
     Foreign.Type.Union(List(foreign, Foreign.Type.Named(t"undefined")))

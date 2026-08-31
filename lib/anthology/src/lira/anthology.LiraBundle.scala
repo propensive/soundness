@@ -37,6 +37,7 @@ import java.nio.file as jnf
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 import anticipation.*
+import murmuration.exists
 import contingency.*
 import gossamer.*
 import reliquary.*
@@ -67,7 +68,7 @@ object LiraBundle:
     val root = jnf.Paths.get(out.s).nn
 
     def wanted(path: jnf.Path): Boolean =
-      suffixes.stdlib.exists: suffix => path.toString.endsWith(suffix.s)
+      suffixes.exists: suffix => path.toString.endsWith(suffix.s)
 
     val content = jnf.Files.walk(root).nn.iterator.nn.asScala.to(scala.List)
       . filter(wanted)

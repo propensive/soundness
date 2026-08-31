@@ -341,7 +341,7 @@ package filesystemBackends:
         // read-only channel and a *shared* OS lock where the file cannot be opened
         // writable; the register still provides in-process exclusivity.
         var writable =
-          flags.stdlib.contains(OpenFlag.Lock) || flags.stdlib.contains(OpenFlag.Write)
+          flags.has(OpenFlag.Lock) || flags.has(OpenFlag.Write)
 
         val channel = protect(path, Operation.Open):
           val optionSet = java.util.HashSet[jnf.OpenOption]()
@@ -357,11 +357,11 @@ package filesystemBackends:
               jnc.FileChannel.open(javaPath(path), optionSet).nn
 
         try
-          val shared = flags.stdlib.contains(OpenFlag.LockShared) || !writable
-          val await = flags.stdlib.contains(OpenFlag.Await)
+          val shared = flags.has(OpenFlag.LockShared) || !writable
+          val await = flags.has(OpenFlag.Await)
 
           val lock =
-            if flags.stdlib.contains(OpenFlag.Lock) || flags.stdlib.contains(OpenFlag.LockShared)
+            if flags.has(OpenFlag.Lock) || flags.has(OpenFlag.LockShared)
             then
               // As for whole-file locks: an in-JVM shared overlap is benign, since the
               // register has already admitted this open.
@@ -449,12 +449,12 @@ package filesystemBackends:
           // the access register, and a shared lock still excludes any cross-process
           // exclusive locker.
           val lock =
-            if flags.stdlib.contains(OpenFlag.Lock) || flags.stdlib.contains(OpenFlag.LockShared)
+            if flags.has(OpenFlag.Lock) || flags.has(OpenFlag.LockShared)
             then
               val writable = options2.contains(jnf.StandardOpenOption.WRITE) || appending
-              val shared = flags.stdlib.contains(OpenFlag.LockShared) || !writable
+              val shared = flags.has(OpenFlag.LockShared) || !writable
 
-              val await = flags.stdlib.contains(OpenFlag.Await)
+              val await = flags.has(OpenFlag.Await)
 
               // An overlapping lock held by this JVM throws even when both are shared; the
               // register has already admitted this open, and the first holder's OS lock

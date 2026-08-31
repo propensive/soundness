@@ -525,7 +525,7 @@ case class Zipfile
     val records = builder.result().to(List)
     val cdStart = offset
     val central = records.map: (entry, name, _, off) => Zipfile.centralHeader(entry, name, off)
-    val cdSize = central.stdlib.foldLeft(0L)(_ + _.length)
+    val cdSize = central.fold(0L)(_ + _.length)
     val tail = Zipfile.endRecords(records.size.toLong, cdStart, cdSize, comment)
 
     val prefixIterator: Iterator[Data] =

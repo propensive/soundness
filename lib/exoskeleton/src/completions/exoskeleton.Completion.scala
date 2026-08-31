@@ -247,7 +247,7 @@ extends Cli:
         // candidates their longest common prefix stops the insertion short anyway; only a
         // sole, non-slash, incomplete candidate needs the trailing-space twin, which makes
         // the LCP the candidate itself so fish inserts it without terminating the word.
-        val sole = items.stdlib.count(!_.hidden) == 1
+        val sole = items.count(!_.hidden) == 1
 
         items.bind:
           case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _, _, _, _) =>

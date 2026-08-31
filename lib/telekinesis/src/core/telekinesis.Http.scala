@@ -100,7 +100,7 @@ object Http:
     // lowered before lookup. An unknown field is treated as a singleton: that is the safe default,
     // since duplicating a singleton is a protocol error while collapsing a repeat of an unlisted
     // list-based field only loses a value the caller has explicitly replaced.
-    def repeatable(key: Text): Boolean = repeatableFields.stdlib.contains(key.lower)
+    def repeatable(key: Text): Boolean = repeatableFields.has(key.lower)
 
   case class Header(key: Text, value: Text)
 
@@ -768,7 +768,7 @@ object Http:
         // Comparison is case-insensitive, as field names are.
         val derived = response.textHeaders.stdlib.filterNot: header =>
           !Header.repeatable(header.key)
-          && headers.stdlib.exists(_.key.lower == header.key.lower)
+          && headers.exists(_.key.lower == header.key.lower)
 
         Response
           ( 1.1,
@@ -1293,11 +1293,11 @@ object Http:
             val code = response.status.code
 
             if !isRedirect(code) || remaining <= 0 then response else
-              response.textHeaders.stdlib.find(_.key.lower == t"location") match
-                case None =>
+              response.textHeaders.seek(_.key.lower == t"location") match
+                case Unset =>
                   response
 
-                case Some(header) =>
+                case header: Http.Header =>
                   // Drain the discarded intermediate body to free its connection.
                   safely(response.body.stream.drain { _ => _ => () })
 

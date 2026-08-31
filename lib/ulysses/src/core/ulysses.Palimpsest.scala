@@ -126,7 +126,7 @@ case class Palimpsest(data: Data, length: Int):
                   if body(k) != 0.toByte then allZero = false
                   k += 1
 
-                if allZero then matched.stdlib.reverse.to(List) else Unset
+                if allZero then matched.reverse else Unset
               else
                 val o         = cadence.offset(item)
                 val prefixLen = if item == 0 then cadence.initial else cadence.regular

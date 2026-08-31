@@ -38,6 +38,8 @@ import adversaria.*
 import anticipation.*
 import contingency.*
 import prepositional.*
+import rudiments.seek
+import vacuous.or
 
 object Resolvable:
   def apply[result](store: -> Set[result])[operand]
@@ -60,7 +62,7 @@ object Resolvable:
         // casts the unforced thunk, so bind it first.
         val entries: Set[result] = store
 
-        entries.stdlib.find(deref(_) == reference).getOrElse:
+        entries.seek(deref(_) == reference).or:
           abort(Reference.Error(reference.encode, Reference.Error.Reason.NotFound))
 
 

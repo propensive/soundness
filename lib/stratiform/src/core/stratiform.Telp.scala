@@ -38,7 +38,9 @@ import fulminate.*
 import gossamer.*
 import prepositional.*
 import vacuous.*
-import rudiments.`:+`
+import murmuration.exists
+import rudiments.each
+import rudiments.{`:+`, prim, seek}
 import denominative.dysasymptotics.linearSize
 
 // TELP, the TEL Path companion specification: a schema-aware textual path
@@ -128,7 +130,7 @@ object Telp:
   // components exhaust all twenty-one delimiters is unaddressable (§8);
   // rendering falls back to `/` rather than failing.
   given encodable: Telp is Encodable in Text = path =>
-    def free(delimiter: Char): Boolean = !path.components.stdlib.exists(_.s.indexOf(delimiter.toInt) >= 0)
+    def free(delimiter: Char): Boolean = !path.components.exists(_.s.indexOf(delimiter.toInt) >= 0)
     val candidates = t"/.".s + delimiters.s.filterNot { ch => ch == '/' || ch == '.' }
     val delimiter = Text(candidates).s.find(free(_)).getOrElse('/')
     Text(s"$delimiter${path.components.join(Text(delimiter.toString))}")
@@ -275,7 +277,7 @@ case class Telp(components: List[Text]) derives CanEqual:
     var current: Tel.Element = context
     var i = 0
 
-    components.stdlib.foreach: component =>
+    components.each: component =>
       pendingType.let: slotType =>
         // Selector step (§4 step 2). An all-digit component is always a
         // zero-based occurrence index (§5); otherwise the keyword's type
@@ -290,9 +292,9 @@ case class Telp(components: List[Text]) derives CanEqual:
           if !Telp.structKeyed(slotType, schema)
           then abort(Telp.Error(Telp.Error.Reason.TypeNotKeyed, i))
 
-          current = pendingOccurrences.stdlib.find: occurrence =>
+          current = pendingOccurrences.seek: occurrence =>
             Telp.keyValueOf(occurrence, slotType, schema).let(_ == component).or(false)
-          . getOrElse(abort(Telp.Error(Telp.Error.Reason.KeyNotFound, i)))
+          . or(abort(Telp.Error(Telp.Error.Reason.KeyNotFound, i)))
 
         pendingType = Unset
         pendingOccurrences = Nil
@@ -310,9 +312,8 @@ case class Telp(components: List[Text]) derives CanEqual:
                 if slot.repeatable then
                   pendingType = slot.slotType
                   pendingOccurrences = occurrences
-                else occurrences.stdlib.headOption match
-                  case scala.Some(child) => current = child
-                  case scala.None => abort(Telp.Error(Telp.Error.Reason.AbsentMember, i))
+                else occurrences.prim.let { child => current = child }
+                . or(abort(Telp.Error(Telp.Error.Reason.AbsentMember, i)))
 
               case _ => abort(Telp.Error(Telp.Error.Reason.NonStructDescent, i))
 

@@ -35,6 +35,7 @@ package sibylline
 import scala.caps
 
 import anticipation.*
+import denominative.nil
 import contingency.*
 import distillate.*
 import fulminate.*
@@ -203,13 +204,13 @@ object Gemini:
         ( temperature     = turn.settings.temperature.in[Json],
           topP            = turn.settings.topP.in[Json],
           maxOutputTokens = turn.settings.maxTokens.in[Json],
-          stopSequences   = (if stops.stdlib.isEmpty then Unset else stops).in[Json] )
+          stopSequences   = (if stops.nil then Unset else stops).in[Json] )
 
     val instruction: Optional[Json] = turn.system.let: system =>
       Json.make(parts = (List(Json.make(text = system.in[Json])): List[Json]).in[Json])
 
     val tools: Optional[Json] =
-      if turn.tools.stdlib.isEmpty then Unset
+      if turn.tools.nil then Unset
       else (List(Json.make(functionDeclarations = declarations.in[Json])): List[Json]).in[Json]
 
     Json.make
@@ -231,7 +232,7 @@ object Gemini:
     val candidate = json.candidates(0)
     val content: List[Llm.Content] = list(candidate.content.parts).map(block(_))
 
-    val called = content.stdlib.exists:
+    val called = content.exists:
       case Llm.Content.ToolUse(_, _, _) => true
       case _                            => false
 

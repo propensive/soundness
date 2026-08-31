@@ -219,4 +219,4 @@ object Multipart:
   extends fulminate.Error(937, reason.number)(m"multipart data could not be read because $reason")
 
 case class Multipart(parts: Chain[Part]):
-  def at(name: Text): Optional[Part] = parts.stdlib.find(_.name == name).getOrElse(Unset)
+  def at(name: Text): Optional[Part] = parts.seek(_.name == name).or(Unset)

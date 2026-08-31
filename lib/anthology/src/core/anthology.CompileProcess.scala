@@ -35,6 +35,9 @@ package anthology
 import scala.caps
 
 import anticipation.*
+import murmuration.fold
+import rudiments.each
+import rudiments.reverse
 import contingency.*
 import parasite.*
 import prepositional.*
@@ -105,4 +108,4 @@ class CompileProcess():
   // The diagnostics reported so far, oldest first: a strict snapshot for post-hoc
   // inspection, complete once `complete()` has returned. Live consumers should prefer
   // `updates`.
-  def notices: List[Notice] = noticeList.stdlib.reverse.to(List)
+  def notices: List[Notice] = noticeList.reverse

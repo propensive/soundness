@@ -33,6 +33,7 @@
 package charisma
 
 import anticipation.*
+import denominative.nil
 import gossamer.*
 import rudiments.*
 import spectacular.*
@@ -85,7 +86,7 @@ object Chemical:
         val number: Text = count.show
         t"$number${molecule.inspect}"
 
-      if parts.stdlib.isEmpty then t"∅" else parts.join(t" + ")
+      if parts.nil then t"∅" else parts.join(t" + ")
 
   case class Formula(molecules: Ledger[Molecule, Int]) extends Formulable:
     def formula: Formula = this

@@ -60,7 +60,7 @@ extends Cli, Stdio:
     if !present then missingFlags = flag :: missingFlags
 
   // The required flags which were not specified, in the order they were demanded.
-  def missingRequisites: List[Flag] = missingFlags.stdlib.reverse.distinct.to(List)
+  def missingRequisites: List[Flag] = missingFlags.reverse.distinct
 
   @scala.caps.unsafe.untrackedCaptures
   private var faultedFlags: List[(Flag, Text)] = Nil
@@ -70,7 +70,7 @@ extends Cli, Stdio:
 
   // The validated flags whose operands failed to decode, with the reasons, in the order they
   // were validated.
-  def faults: List[(Flag, Text)] = faultedFlags.stdlib.reverse.distinct.to(List)
+  def faults: List[(Flag, Text)] = faultedFlags.reverse.distinct
 
   override def locate(flag: Flag): Optional[List[Argument]] =
     interpreter.locate(parameters, flag)

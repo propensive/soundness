@@ -197,7 +197,7 @@ package httpBackends:
       bodyHandle.dispose()
       responseHandle.dispose()
 
-      val content: Data = Array.frozen(chunks.stdlib.reverse.foldLeft(scala.IArray.empty[Byte])(_ ++ _.readable))
+      val content: Data = Array.frozen(chunks.reverse.fold(scala.IArray.empty[Byte])(_ ++ _.readable))
       status(textHeaders, Http.Body.Fixed(content))
 
 // Serves HTTP from a Wasm Component: the bridge from `wasi:http/incoming-handler`'s exported
@@ -246,7 +246,7 @@ object WasiHttpServer:
     bodyHandle.dispose()
     requestHandle.dispose()
 
-    val content: Data = Array.frozen(chunks.stdlib.reverse.foldLeft(scala.IArray.empty[Byte])(_ ++ _.readable))
+    val content: Data = Array.frozen(chunks.reverse.fold(scala.IArray.empty[Byte])(_ ++ _.readable))
 
     // The request's host is the server's own; a component behind `wasi:http` is not addressed by
     // hostname, so `Localhost` stands in (and avoids parsing the authority, which would reach the

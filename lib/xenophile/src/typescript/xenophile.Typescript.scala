@@ -33,6 +33,7 @@
 package xenophile
 
 import anticipation.*
+import denominative.nil
 import contingency.*
 import fulminate.*
 import gossamer.*
@@ -89,7 +90,7 @@ object Typescript:
 
     extension (scope: Scope)
       def qualify(name: Text): Text =
-        if scope.stdlib.isEmpty then name else t"${scope.join(t".")}.$name"
+        if scope.nil then name else t"${scope.join(t".")}.$name"
 
   // What every declaration has in common. Declared abstractly here rather than as methods on the
   // enum, so that each case's own parameters implement them: an enum whose cases redeclare a

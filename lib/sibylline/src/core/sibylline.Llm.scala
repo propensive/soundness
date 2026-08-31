@@ -36,6 +36,7 @@ import scala.caps
 import scala.collection.mutable as scm
 
 import anticipation.*
+import denominative.nil
 import contingency.*
 import distillate.*
 import fulminate.*
@@ -519,7 +520,7 @@ object Llm:
 
         // With no tools on offer, a `ToolCall` reply is the caller's to handle: the loop only
         // owns calls it advertised.
-        if reply.stop != Stop.ToolCall || toolkit.specs.stdlib.isEmpty then answer = reply
+        if reply.stop != Stop.ToolCall || toolkit.specs.nil then answer = reply
         else if remaining == 0 then
           abort(Error(Error.Reason.ToolLoopExceeded, t"the limit is $limit calls"))
         else

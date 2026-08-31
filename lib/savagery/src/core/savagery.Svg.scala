@@ -111,7 +111,7 @@ object Svg:
 
 
     def findSvg(nodes: List[Node])(using Tactic[Svg.Error]): Element =
-      nodes.stdlib.collectFirst { case e: Element if e.label == t"svg" => e }.getOrElse:
+      nodes.glean { case e: Element if e.label == t"svg" => e }.or:
         abort(Svg.Error(Svg.Error.Reason.NotAnSvg(t"<missing>")))
 
     def rootElement(xml: Xml)(using Tactic[Svg.Error]): Element = xml match

@@ -248,12 +248,8 @@ extends caps.ExclusiveCapability:
   def pause(thread: ThreadId)(using Tactic[Debugger.Error]): Halt =
     connection.suspendThread(thread)
 
-    val location = connection.frames(thread, 0, 1).stdlib.headOption match
-      case scala.Some((_, location)) =>
-        location
-
-      case _ =>
-        Jdwp.Location(Jdwp.TypeTag.Class, Jdwp.Ref.empty, Jdwp.Ref.empty, 0L)
+    val location = connection.frames(thread, 0, 1).prim.let(_(1)).or:
+      Jdwp.Location(Jdwp.TypeTag.Class, Jdwp.Ref.empty, Jdwp.Ref.empty, 0L)
 
     caps.unsafe.unsafeAssumePure
       ( new Halt(connection, thread, location, Halt.Cause.Stopped, Halt.Retention()) )
@@ -316,10 +312,10 @@ extends caps.ExclusiveCapability:
     if !capable then Unset else
       val signature = t"L${className.s.replace('.', '/').nn};"
 
-      connection.classesBySignature(signature).stdlib.headOption match
-        case scala.Some(info) =>
-          connection.fields(info.cls).stdlib.find(_.name == field) match
-            case scala.Some(fieldInfo) =>
+      connection.classesBySignature(signature).prim match
+        case info: Jdwp.ClassInfo =>
+          connection.fields(info.cls).seek(_.name == field) match
+            case fieldInfo: Jdwp.FieldInfo =>
               val kind =
                 if access then Jdwp.EventKind.FieldAccess else Jdwp.EventKind.FieldModified
 
@@ -387,7 +383,7 @@ extends caps.ExclusiveCapability:
 
     val signature = t"L${className.s.replace('.', '/').nn};"
 
-    connection.classesBySignature(signature).stdlib.foreach: info =>
+    connection.classesBySignature(signature).each: info =>
       entries(info.tag, info.cls).foreach(bind(_))
 
     handle
@@ -471,13 +467,13 @@ extends caps.ExclusiveCapability:
     val prepareHandler: Jdwp.Event.ClassPrepared => Unit =
       caps.unsafe.unsafeAssumePure: event =>
         val outcome: Optional[Unit] = safely[Debugger.Error]:
-          locateIn(event.tag, event.cls, source, line).stdlib.foreach(bind(_))
+          locateIn(event.tag, event.cls, source, line).each(bind(_))
 
         outcome.let(identity)
 
     connection.registerPrepare(prepare)(prepareHandler)
 
-    locate(source, line).stdlib.foreach(bind(_))
+    locate(source, line).each(bind(_))
     handle
 
   // Resolves a source position to the executable locations currently loaded for it: every method
@@ -545,10 +541,10 @@ extends caps.ExclusiveCapability:
           safely(connection.lineTable(cls, method.method)) match
             case table: Jdwp.LineTable =>
               ranges.flatMap: (start, end) =>
-                val within = table.lines.stdlib.find: entry =>
+                val within = table.lines.seek: entry =>
                   entry.line >= start && entry.line < end
 
-                within.map { entry => Jdwp.Location(tag, cls, method.method, entry.index) }.toList
+                within.let { entry => Jdwp.Location(tag, cls, method.method, entry.index) }.option.toList
 
             case _ =>
               sci.List()
