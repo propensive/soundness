@@ -116,6 +116,9 @@ private[vivisection] class DapSession(emit: Json => Unit)
   @caps.unsafe.untrackedCaptures
   private var classpath0: Optional[LocalClasspath] = Unset
 
+  @caps.unsafe.untrackedCaptures
+  private var namer0: Optional[Namer] = Unset
+
   private val ready: Promise[Unit] = Promise()
   private val terminate: Promise[Unit] = Promise()
 
@@ -257,6 +260,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
       case t"launch" =>
         val arguments = json.arguments.as[Dap.LaunchArguments]
         classpath0 = arguments.classpath.as[LocalClasspath]
+        namer0 = classpath0.let(Namer(_))
 
         // The session task's body is laundered into a pure thunk: opening the session uses
         // this adapter's capabilities, which the task must not be seen to smuggle; the task
@@ -461,7 +465,17 @@ private[vivisection] class DapSession(emit: Json => Unit)
               frames(id) = (arguments.threadId, frame, location)
               val source = position.source.let(Dap.Source(_, position.path))
               val hint: Optional[Text] = if position.inlined then t"subtle" else Unset
-              Dap.StackFrame(id, position.name, position.line, 0, source, hint)
+
+              // An inline frame is named for the definition the programmer wrote, when the
+              // launch classpath's TASTy can resolve it; the class-based name is the fallback.
+              val name =
+                if !position.inlined then position.name else
+                  val defined = namer0.let: namer =>
+                    position.cls.let: cls => position.path.let(namer.define(cls, _, position.line))
+
+                  defined.or(position.name)
+
+              Dap.StackFrame(id, name, position.line, 0, source, hint)
 
           respond(request, Dap.StackTraceBody(List(trace*), trace.length).in[Json])
 

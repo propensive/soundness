@@ -1252,10 +1252,11 @@ object Tests extends Suite(m"Vivisection tests"):
           client.awaitResponse(t"disconnect")
 
           ( inline.presentationHint.as[Text], inline.source.name.as[Text], inline.line.as[Int],
-            real.source.name.as[Text], real.line.as[Int], scopes.success.as[Boolean] )
+            real.source.name.as[Text], real.line.as[Int], scopes.success.as[Boolean],
+            inline.name.as[Text].starts(t"vivisection.Doubling.double") )
 
     . assert(_ == (t"subtle", t"vivisection.Doubling.scala", 40,
-          t"vivisection.Inlined.scala", 40, true))
+          t"vivisection.Inlined.scala", 40, true, true))
 
     test(m"a DAP request envelope decodes its routing fields"):
       import strategies.throwUnsafely
