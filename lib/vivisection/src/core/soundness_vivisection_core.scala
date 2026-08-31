@@ -35,7 +35,8 @@ package soundness
 // `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
 // environment variable) into `soundness`, and a debugger variable is reached as
 // `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint}
+export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint,
+    debug}
 
 export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
     MethodId, FieldId, FrameId}
