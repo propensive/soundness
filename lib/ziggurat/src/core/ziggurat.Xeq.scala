@@ -172,7 +172,7 @@ object Xeq:
     val runnerPayloads: List[Payload] =
       children
       . filter(_.name.starts(RunnerPrefix))
-      . sort(_.name.s)
+      . order(_.name.s)
       . map: path =>
           val name = path.name
           val withoutPrefix = name.skip(RunnerPrefix.length)

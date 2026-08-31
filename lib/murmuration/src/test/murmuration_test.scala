@@ -232,7 +232,7 @@ object Tests extends Suite(m"Murmuration tests"):
       . assert(_ == Map(1 -> List(1, 3), 0 -> List(2, 4)))
 
       test(m"sorting by a key orders the elements"):
-        List(3, 1, 2).sort(-_)
+        List(3, 1, 2).order(-_)
       . assert(_ == List(3, 2, 1))
 
       test(m"sorting without a key uses the elements' own order"):
@@ -276,6 +276,15 @@ object Tests extends Suite(m"Murmuration tests"):
       test(m"sweep filters and maps in one pass"):
         List(1, 2, 3, 4).sweep { case n if n%2 == 0 => n*10 }
       . assert(_ == List(20, 40))
+
+      test(m"partition splits by the predicate, keeping order on both sides"):
+        List(1, 2, 3, 4, 5).partition(_%2 == 0)
+      . assert(_ == (List(2, 4), List(1, 3, 5)))
+
+      // Unlike `span`, `partition` ignores position, so it is not `Stable`-gated.
+      test(m"a set can be partitioned"):
+        Set(1, 2, 3, 4).partition(_%2 == 0)
+      . assert(_ == (Set(2, 4), Set(1, 3)))
 
       test(m"batched splits into runs of at most the given size"):
         List(1, 2, 3, 4, 5).batched(2)

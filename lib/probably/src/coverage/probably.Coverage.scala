@@ -105,4 +105,4 @@ case class Coverage(path: Text, spec: Array[Juncture]^{}, oldHits: Set[Int], hit
     val index: Int = spec.readable.lastIndexWhere(_.id == 0)
 
     spec.to[List].skip(index).group(_.path).map: junctures =>
-      Surface.collapse(junctures.sort(-_.end).sort(_.start), Nil)
+      Surface.collapse(junctures.order(-_.end).order(_.start), Nil)

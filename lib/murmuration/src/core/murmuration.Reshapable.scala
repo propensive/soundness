@@ -105,7 +105,7 @@ object Reshapable extends Reshapable.Fallback:
   trait Fallback extends Fallback2:
     // A `Stable` pair-rebuild of a `Map` yields a `Ledger`: the unordered `Map` shape cannot
     // honestly receive an order-sensitive result, but the insertion-ordered map can — so
-    // `map.sort(…)` is an ordered map iterating in sorted order. Lower priority than `map`
+    // `map.order(…)` is an ordered map iterating in sorted order. Lower priority than `map`
     // above, so plain reshapes (`filter`, pairwise `bind`) still rebuild the cheaper `Map`.
     given mapToLedger: [key, value, key2, value2]
     =>  Map[key, value] is Reshapable.Stable by (key2, value2) to Ledger[key2, value2] =

@@ -152,7 +152,7 @@ extends Cli:
         if suggestion.expanded then suggestion
         else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
 
-      . sort(_.core)
+      . order(_.core)
 
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
     (flags.keySet -- seenFlags).to(List).bind: flag =>

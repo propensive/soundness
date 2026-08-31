@@ -189,7 +189,7 @@ object Redraft:
         if matcher.index != rightIndex
         then anomalies = Anomaly(matcher.line, matcher.text, Reason.Unanchored) :: anomalies
 
-    (edits.reverse, anomalies.sort(_.line))
+    (edits.reverse, anomalies.order(_.line))
 
   // Demands a `Retained` diff: rendering reproduces every kept and deleted line verbatim, so
   // presence is required in the type rather than vouched for edit-by-edit.

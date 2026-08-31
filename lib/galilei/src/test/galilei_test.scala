@@ -435,7 +435,7 @@ object Tests extends Suite(m"Galilei tests"):
         (root / "sub2").create[Directory]()
         (root / "sub2" / "d.jar").write(t"d")
 
-      def names(paths: List[Path on Linux]): List[Text] = paths.map(_.name).sort(identity)
+      def names(paths: List[Path on Linux]): List[Text] = paths.map(_.name).order(identity)
 
       test(m"A star glob matches entries of the root only"):
         unsafely(names(root.glob(Glob.parse(t"*.jar"))))
@@ -814,7 +814,7 @@ object Tests extends Suite(m"Galilei tests"):
       . assert(_ == unsafely(List(stemA / "icons" / "app.png", stemB / "icons" / "app.png")))
 
       test(m"entries merge across stems, earlier shadowing later"):
-        unsafely((% / "icons").on[Xdg.Data].listing().map(_.name).sort(identity))
+        unsafely((% / "icons").on[Xdg.Data].listing().map(_.name).order(identity))
       . assert(_ == List(t"app.png", t"extra.png"))
 
       test(m"a later-stem-only directory is found"):

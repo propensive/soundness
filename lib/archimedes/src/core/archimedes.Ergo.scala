@@ -256,12 +256,8 @@ object Ergo:
 
   private def serializeTable(table: Mtable)(using Tactic[Ergo.Error]): Text =
     val rows: List[List[Text]] =
-      // Not `sweep`: `cellText` captures the `Tactic`, so the synthesized partial function
-      // cannot be pure. The `.stdlib` partial function has no such requirement.
-
-        table.contents.stdlib.collect:
-          case Mtr(cells, _) => cells.map(cellText)
-        . to(List)
+      table.contents.sweep:
+        case Mtr(cells, _) => cells.map(cellText)
 
     if rows.size == 1 then
       val row = rows.stdlib.head.join

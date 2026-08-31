@@ -215,7 +215,7 @@ object Apoplexy:
 
   // The wire format of an operation's first 2xx response body, if any.
   private def responseWire(operation: OpenApi.Operation): Optional[Wire] =
-    val status = operation.responses.keys.filter(_.starts(t"2")).to[List].sort(_.s).prim
+    val status = operation.responses.keys.filter(_.starts(t"2")).to[List].order(_.s).prim
 
     status.let(operation.responses(_)).let: response => wireOf(response.content)
 
@@ -293,7 +293,7 @@ object Apoplexy:
     val queryExpr = Expr.ofList(queryEntries.stdlib)
 
     val status =
-      operation.responses.keys.filter(_.starts(t"2")).to[List].sort(_.s).prim.or(t"200")
+      operation.responses.keys.filter(_.starts(t"2")).to[List].order(_.s).prim.or(t"200")
 
     // The wire format the spec dictates for this operation: the response body's
     // media type, else the request body's, else JSON. An operation that mixes

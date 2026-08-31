@@ -320,7 +320,7 @@ object Rrule:
             else if !rule.byWeekNo.nil then weekNoDates(year, start, rule)
             else yearMonths(year, start, rule).bind(expandMonth(year, _, start, rule))
 
-          setPos(candidates.distinct.sort(_.jdn), rule.bySetPos).stdlib
+          setPos(candidates.distinct.order(_.jdn), rule.bySetPos).stdlib
 
       case Frequency.Monthly =>
         months(start, rule.interval).bind: (year, month) =>
@@ -374,7 +374,7 @@ object Rrule:
       byDayDates.lay(byMonthDayDates.or(list(monthDay(year, month, dayOf(start))))): byDay =>
         byMonthDayDates.lay(byDay)(monthDays => byDay.filter(monthDays.has(_)))
 
-    candidates.distinct.sort(_.jdn)
+    candidates.distinct.order(_.jdn)
 
   // The candidate dates within one week (the 7 days from `weekStart`), per `byDay` (or the start's
   // weekday), filtered by `byMonth`.
@@ -437,7 +437,7 @@ object Rrule:
         val index = if position > 0 then position - 1 else count + position
         if index >= 0 && index < count then List(candidates.stdlib(index)) else Nil
 
-      chosen.distinct.sort(_.jdn)
+      chosen.distinct.order(_.jdn)
 
   // RruleError → Rrule.Error
   case class Error(value: Text)(using Diagnostics)
