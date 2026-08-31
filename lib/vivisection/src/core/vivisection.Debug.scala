@@ -144,14 +144,102 @@ extends caps.ExclusiveCapability:
 
     connection.eventRequestSet(Jdwp.EventKind.SingleStep, Jdwp.SuspendPolicy.EventThread, modifiers)
 
-  // Requests a single step whose completion runs `handler` on the dispatcher, exactly as a
-  // breakpoint hit does; the step suspends only the stepped thread.
+  // The logical reading of a location: the source position it stands for — the innermost
+  // inline origin for a synthetic line, or the raw position for a real one — and, for
+  // synthetic lines only, the real call-site position the inline chain leads back to. Two
+  // locations share a logical position exactly when they stand for the same line the
+  // programmer wrote; the call site is what lets a step *over* a line pass through inlining
+  // that originates from it.
+  private def logical(location: Jdwp.Location)(using Tactic[Debugger.Error])
+  :   ((Text, Int), Optional[(Text, Int)]) =
+
+    val source = safely(connection.sourceFile(location.cls)).or(t"")
+
+    val line = safely(connection.lineTable(location.cls, location.method)) match
+      case table: Jdwp.LineTable =>
+        table.lines.stdlib.filter(_.index <= location.index).lastOption.map(_.line).getOrElse(0)
+
+      case _ =>
+        0
+
+    connection.smap(location.cls).let(_.expand(line)) match
+      case expansion: digression.Smap.Expansion =>
+        val callSite: Optional[(Text, Int)] = expansion.line.let: line => (source, line)
+
+        expansion.inlined.stdlib.headOption match
+          case scala.Some(origin) => ((origin.file, origin.line), callSite)
+          case _                  => ((source, expansion.line.or(line)), Unset)
+
+      case _ =>
+        ((source, line), Unset)
+
+  // Requests a *logical* step whose completion runs `handler` on the dispatcher, exactly as a
+  // breakpoint hit does; the step suspends only the stepped thread. A logical step completes
+  // when the logical source position changes: landings on synthetic lines still standing for
+  // the starting position are stepped through silently, so stepping over a line containing an
+  // inline call no longer descends into the inlined body, while stepping into one stops at its
+  // first line — as if it were a call. An unreadable landing, or the iteration cap (a safety
+  // net against pathological SMAPs), reports the stop as-is.
   def step(thread: ThreadId, depth: Jdwp.StepDepth)(handler: Debug.Handler)
     ( using Tactic[Debugger.Error] )
   :   Unit =
 
+    // The thread stands suspended at request time, so its top frame gives the starting
+    // logical reading.
+    val start: Optional[((Text, Int), Optional[(Text, Int)])] =
+      connection.frames(thread, 0, 1).stdlib.headOption match
+        case scala.Some((_, location)) => logical(location)
+        case _                         => Unset
+
+    stepUntil(thread, depth, start, 0)(handler)
+
+  private def stepUntil
+    ( thread:    ThreadId,
+      depth:     Jdwp.StepDepth,
+      start:     Optional[((Text, Int), Optional[(Text, Int)])],
+      iteration: Int )
+    ( handler: Debug.Handler )
+    ( using Tactic[Debugger.Error] )
+  :   Unit =
+
     val request = step(thread, depth, Jdwp.StepSize.Line)
-    connection.register(Jdwp.EventKind.SingleStep, request): halt => handler(using halt)
+
+    // Laundered like the prepare handlers: the closure captures this session, which the
+    // connection's registry cannot name, but it dies with it.
+    val onStep: Halt => Unit =
+      caps.unsafe.unsafeAssumePure: halt =>
+        // The `Count(1)` request is spent the moment it fires; without this it would linger in
+        // the VM's request table for the rest of the session.
+        val cleared: Optional[Unit] = safely[Debugger.Error]:
+          connection.eventRequestClear(Jdwp.EventKind.SingleStep, request)
+
+        cleared.let(identity)
+        connection.unregister(Jdwp.EventKind.SingleStep, request)
+
+        val landing: Optional[((Text, Int), Optional[(Text, Int)])] =
+          safely[Debugger.Error](logical(halt.location))
+
+        // Stepping *over* advances the real (outermost) source line — the call-site line when
+        // inside inlining — so the whole of a line, inlined expansions included, is one step.
+        // Stepping *into* (or out) advances the logical (innermost) line, so entering an
+        // inline body stops at its first line, and stepping within a body moves line by line.
+        val skip = start.lay(false): (startPosition, startCall) =>
+          landing.lay(false): (position, callSite) =>
+            if depth == Jdwp.StepDepth.Over
+            then callSite.or(position) == startCall.or(startPosition)
+            else position == startPosition
+
+        if skip && iteration < 64 then
+          // Still on the same logical line: request the next step and return without running
+          // the user handler — the dispatcher's auto-resume continues the thread.
+          val stepped: Optional[Unit] = safely[Debugger.Error]:
+            stepUntil(thread, depth, start, iteration + 1)(handler)
+
+          stepped.let(identity)
+        else
+          handler(using halt)
+
+    connection.register(Jdwp.EventKind.SingleStep, request)(onStep(_))
 
   // Suspends a thread on the caller's initiative — no event marks it — and hands back a halt
   // over its topmost frame, so a client-driven pause offers the same view of the stopped thread
