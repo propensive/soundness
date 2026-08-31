@@ -37,6 +37,8 @@ import scala.language.dynamics
 
 import anticipation.*
 import contextual.*
+import rudiments.each
+import rudiments.all
 import contingency.*
 import fulminate.*
 import gesticulate.*
@@ -103,7 +105,7 @@ object Css:
     def block(body: List[Css.Node], indent: Int): Unit =
       put(if formatter.spaces then t" {" else t"{")
 
-      body.stdlib.foreach: child =>
+      body.each: child =>
         newline(indent + 1)
         emitNode(child, indent + 1)
 
@@ -129,7 +131,7 @@ object Css:
 
     var first = true
 
-    css.rules.stdlib.foreach: child =>
+    css.rules.each: child =>
       if first then first = false else newline(0)
       emitNode(child, 0)
 

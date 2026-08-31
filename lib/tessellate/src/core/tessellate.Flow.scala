@@ -213,7 +213,7 @@ object Flow:
           recur(cluster + 1, lineStart, lastSpace, acc)
 
     if width < 1 then Sequence.from(Vector(content))
-    else Sequence.from(recur(0, 0, 0, Nil).stdlib.reverse.toVector)
+    else recur(0, 0, 0, Nil).reverse.to[Sequence]
 
   // Truncate content wider than `width` cells, marking the cut with `ellipsis`; content that
   // already fits is returned unchanged. Truncation is by cluster, so a wide character never
@@ -274,7 +274,7 @@ object Flow:
       else recur(cluster + 1, lineStart, acc)
 
     if width < 1 || clusters == 0 then Sequence.from(Vector(content))
-    else Sequence.from(recur(0, 0, Nil).stdlib.reverse.toVector)
+    else recur(0, 0, Nil).reverse.to[Sequence]
 
   // The narrowest width into which `content` can wrap without overflow: the display width of
   // its widest space-delimited word (hard breaks also delimit).

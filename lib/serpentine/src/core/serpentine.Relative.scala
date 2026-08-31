@@ -111,7 +111,7 @@ object Relative:
   given inspectable: [relative <: Relative] => relative is Inspectable = relative =>
     if relative.descent.nil then
       if relative.ascent == 0 then t"." else List.fill(relative.ascent)(t"..").join(t"/")
-    else relative.descent.stdlib.reverse.join(t"../"*relative.ascent, t"/", t"")
+    else relative.descent.reverse.join(t"../"*relative.ascent, t"/", t"")
 
   // The explicit type ascription after this method is used to force silent failure of this `given`
   // definition, so that contextual search can continue normally if it fails. This would not be the

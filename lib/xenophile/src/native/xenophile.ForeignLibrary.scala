@@ -72,7 +72,7 @@ object ForeignLibrary:
       case Foreign.Type.Named(t"void") => FunctionDescriptor.ofVoid().nn
       case result                      => FunctionDescriptor.of(layout(result)).nn
 
-    signature.parameters.or(Nil).stdlib.foldLeft(base): (acc, parameter) =>
+    signature.parameters.or(Nil).fold(base): (acc, parameter) =>
       acc.appendArgumentLayouts(layout(parameter)).nn
 
   // Loads the first of `paths` that resolves as a symbol lookup bound to `arena`,

@@ -66,7 +66,7 @@ object Creation:
         safely(current.parent).let { parent => (parent :: ancestors(parent)): List[Path on filesystem] }
         . or(Nil)
 
-      ancestors(path).stdlib.reverse.each: ancestor =>
+      ancestors(path).reverse.each: ancestor =>
         if !backend.exists(ancestor, true) then backend.createDirectory(ancestor)
 
   private[galilei] def replace[filesystem: Filesystem]

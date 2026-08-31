@@ -33,6 +33,7 @@
 package virility
 
 import anticipation.*
+import denominative.nil
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -119,7 +120,7 @@ object Roff:
       case Tagged(tag, body) =>
         val label = line(tag.map(_.serialize).join)
 
-        if body.stdlib.isEmpty then List(t".TP", label)
+        if body.nil then List(t".TP", label)
         else List(t".TP", label, line(body.map(_.serialize).join))
 
       case Indented(blocks) => t".RS" :: (blocks.flatMap(_.serialize) + List(t".RE"))

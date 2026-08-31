@@ -94,7 +94,7 @@ object Enclave:
       block(using tool).also:
         sh"$path '{admin}' kill".exec[Exit]()
 
-        completionScripts.trim.lines.stdlib.map(_.as[Path on Linux]).foreach: (item: Path on Linux) =>
+        completionScripts.trim.lines.map(_.as[Path on Linux]).foreach: (item: Path on Linux) =>
           safely(item.delete())
 
 

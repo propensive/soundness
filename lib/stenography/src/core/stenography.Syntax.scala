@@ -742,9 +742,9 @@ enum Syntax:
           left.text+elements.map(_.text).stdlib.mkString("[", ", ", "]").tt
 
     case Structural(base, members, defs) =>
-      val members2 = members.stdlib.map: (name, syntax) => s"type $name = ${syntax.text}".tt
-      val defs2 = defs.stdlib.map: (name, syntax) => s"def $name${syntax.text}".tt
-      s"${base.text} { ${(members2 ++ defs2).mkString("; ")} }".tt
+      val members2 = members.remap: (name, syntax) => s"type $name = ${syntax.text}".tt
+      val defs2 = defs.remap: (name, syntax) => s"def $name${syntax.text}".tt
+      s"${base.text} { ${(members2.stdlib ++ defs2.stdlib).mkString("; ")} }".tt
 
     case Infix(left: Syntax, middle, right: Syntax) =>
       val left2 = if left.precedence < precedence then Sequence('(', List(left)) else left

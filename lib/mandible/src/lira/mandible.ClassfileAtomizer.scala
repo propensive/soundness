@@ -114,7 +114,7 @@ object ClassfileAtomizer:
 
   private def texts(out: java.io.ByteArrayOutputStream, values: List[Text]): Unit =
     uvarint(out, values.stdlib.length.toLong)
-    values.stdlib.foreach { value => utf8(out, value) }
+    values.each(utf8(out, _))
 
   private def hash(encode: java.io.ByteArrayOutputStream => Unit): Data =
     val out = java.io.ByteArrayOutputStream()
@@ -141,13 +141,13 @@ object ClassfileAtomizer:
     val seen = scala.collection.mutable.LinkedHashSet[Text]()
     val result = scala.collection.mutable.ListBuffer[(ClassSurface.Member, Boolean)]()
 
-    surface.members.stdlib.foreach: member =>
+    surface.members.each: member =>
       if member.visible && declarable(member) && seen.add(member.selector)
       then result += ((member, true))
 
-    closure.stdlib.foreach: name =>
+    closure.each: name =>
       index(name).let: parent =>
-        parent.members.stdlib.foreach: member =>
+        parent.members.each: member =>
           // A static member of an *interface* is not inherited by implementors (JLS 8.4.8), so it
           // presents only on the interface that declares it.
           val inherited = inheritable(member) && !(parent.interface && member.static)
@@ -241,7 +241,7 @@ object ClassfileAtomizer:
     val atoms = scala.collection.mutable.ListBuffer[Atom]()
     val unresolved = scala.collection.mutable.LinkedHashSet[Text]()
 
-    index.own.stdlib.foreach: name =>
+    index.own.each: name =>
       index(name).let: surface =>
         // Synthetic classes — lambda holders, `package-info`, anonymous helpers — are not
         // resolvable by name from any consumer's source, so they carry no interface of their own.
@@ -252,7 +252,7 @@ object ClassfileAtomizer:
           val members = presented(surface, index)
           atoms += classAtom(surface, members, fold)
 
-          members.stdlib.foreach: (member, _) =>
+          members.each: (member, _) =>
             atoms += memberAtom(surface.name, member, fold)
 
     Outcome(atoms.toList.to(List), unresolved.toList.to(List))

@@ -146,7 +146,7 @@ object Patch:
       case _ =>
         state  // unrecognized header outside a hunk (e.g. `index ...`)
 
-    val finalState = body.stdlib.foldLeft(initial)(step).closeHunk()
+    val finalState = body.fold(initial)(step).closeHunk()
 
     FileDiff
       ( finalState.oldPath,

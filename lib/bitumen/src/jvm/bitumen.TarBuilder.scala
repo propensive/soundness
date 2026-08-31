@@ -183,28 +183,28 @@ object TarBuilder:
       ( block: ((TarBuilder & Granting[Grant.Read & Grant.Write])^) ?=> result )
     :   result =
 
-      val format = flags.stdlib.collectFirst { case format: LongNameFormat => format }
-        . getOrElse(LongNameFormat.Pax)
+      val format = flags.reap { case format: LongNameFormat => format }
+        . or(LongNameFormat.Pax)
 
-      val compression = flags.stdlib.collectFirst { case flag: Tar.Flag => flag }
-      val createFlags = flags.stdlib.collect { case flag: CreateFlag => flag }
+      val compression = flags.reap { case flag: Tar.Flag => flag }
+      val createFlags = flags.sweep { case flag: CreateFlag => flag }
 
       compression match
-        case Some(tarFlag) =>
+        case tarFlag: Tar.Flag =>
           // A compressed target cannot be backpatched through the compressor:
           // entries accumulate and serialize at scope close, as before.
           val builder = new TarBuilder(Unset, format) with Granting[Grant.Read & Grant.Write] {}
           val outcome = block(using builder)
           val tarfile = builder.tarfile(format)
 
-          commit(value.generic, createFlags.to(List), tarFlag match
+          commit(value.generic, createFlags, tarFlag match
             case Tar.Flag.Gzip    => tarfile.gzip
             case Tar.Flag.Zlib    => tarfile.zlib
             case Tar.Flag.Deflate => tarfile.deflate)
 
           outcome
 
-        case None =>
+        case Unset =>
           // Streaming mode: the temporary sibling opens up front and entries
           // write through as they are inserted, headers backpatched; the
           // target still appears atomically, or not at all.

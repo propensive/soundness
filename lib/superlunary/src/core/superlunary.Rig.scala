@@ -42,6 +42,7 @@ import scala.quoted.*
 import ambience.*
 import anthology.*
 import anticipation.*
+import rudiments.defines
 import contingency.*
 import digression.*
 import distillate.*
@@ -138,7 +139,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
     val key: (Codepoint, Text) = (codepoint, fingerprint)
 
     val (target, function): (Target, juf.Function[Form, Form]) =
-      if cache.stdlib.contains(key) then
+      if cache.defines(key) then
         given staging.Compiler = compiler2
 
         // This is necessary to allocate references as a side effect

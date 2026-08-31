@@ -2964,7 +2964,7 @@ extends Dynamic, Topical, Original derives CanEqual:
             rightMap = rightMap.define(rightAst.objectKey(i), rightAst.objectValue(i))
             i += 1
 
-          leftMap.stdlib.size == rightMap.stdlib.size && leftMap.stdlib.forall: (key, leftValue) =>
+          leftMap.stdlib.size == rightMap.stdlib.size && leftMap.all: (key, leftValue) =>
             rightMap(key).lay(false)(recur(leftValue, _))
 
       def recur(left: Json.Ast, right: Json.Ast): Boolean = right.asMatchable match

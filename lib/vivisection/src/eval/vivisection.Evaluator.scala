@@ -45,6 +45,7 @@ import hellenism.*
 import parasite.*
 import proscenium.*
 import spectacular.*
+import rudiments.{prim, seek}
 import vacuous.*
 
 object Evaluator:
@@ -71,14 +72,14 @@ object Evaluator:
     private lazy val defineClass: MethodId =
       val signature = t"(Ljava/lang/String;[BII)Ljava/lang/Class;"
 
-      val found = connection.methods(classLoaderClass).stdlib.find: method =>
+      val found = connection.methods(classLoaderClass).seek: method =>
         method.name == t"defineClass" && method.signature == signature
 
-      found.map(_.method).getOrElse(Jdwp.Ref.empty)
+      found.let(_.method).or(Jdwp.Ref.empty)
 
     private def loaded(signature: Text): ReferenceTypeId =
-      connection.allClasses().stdlib.find(_.signature == signature).map(_.cls)
-        .getOrElse(Jdwp.Ref.empty)
+      connection.allClasses().seek(_.signature == signature).let(_.cls)
+        .or(Jdwp.Ref.empty)
 
     // Defines one classfile in the debuggee and returns the reference type of the loaded class,
     // recovered from the `java.lang.Class` object `defineClass` hands back (which is why no lookup
@@ -140,13 +141,9 @@ extends caps.ExclusiveCapability:
   // assignability, and returns a primitive as a primitive, which the slot or field write
   // requires.
   def assign(binding: Text, expression: Text): Unit =
-    variables().stdlib.find(_.name == binding) match
-      case scala.Some(variable) =>
-        val kind: Text = variable.static.or(variable.erased)
-        halt.assign(variable, execute(t"($expression)", kind))
-
-      case _ =>
-        ()
+    variables().seek(_.name == binding).let: variable =>
+      val kind: Text = variable.static.or(variable.erased)
+      halt.assign(variable, execute(t"($expression)", kind))
 
   // The synthetic source `execute` compiles, staged but not compiled: the frame's visible locals
   // at their recovered static types, wrapped around `body` as the `run()` body at `resultType`,
@@ -216,25 +213,20 @@ extends caps.ExclusiveCapability:
         if path.encode.s.endsWith(".class") then injector.define(classNameOf(path.encode), bytecode)
 
       val cls = prepared(qualified, loader)
-      val constructor = connection.methods(cls).stdlib.find(_.name == t"<init>").map(_.method)
-      val run = connection.methods(cls).stdlib.find(_.name == t"run").map(_.method)
+      val constructor = connection.methods(cls).seek(_.name == t"<init>").let(_.method)
+      val run = connection.methods(cls).seek(_.name == t"run").let(_.method)
       val arguments = List(locals.map { (_, _, value) => value }*)
 
-      constructor match
-        case scala.Some(ctor) => run match
-          case scala.Some(runMethod) =>
-            connection.newInstance(cls, thread, ctor, arguments).result match
-              case Jdwp.Value.Reference(_, id) =>
-                connection.invokeMethod(id, thread, cls, runMethod, List()).result
+      constructor.let: ctor =>
+        run.let: runMethod =>
+          connection.newInstance(cls, thread, ctor, arguments).result match
+            case Jdwp.Value.Reference(_, id) =>
+              connection.invokeMethod(id, thread, cls, runMethod, List()).result
 
-              case _ =>
-                Jdwp.Value.Void
+            case _ =>
+              Jdwp.Value.Void
 
-          case _ =>
-            Jdwp.Value.Void
-
-        case _ =>
-          Jdwp.Value.Void
+      . or(Jdwp.Value.Void)
 
   // The frame's visible variables, each enriched with its declared static type where one can be
   // recovered from TASTy — the `stenography` rendering the user sees as `Variable.static`. A
@@ -266,14 +258,14 @@ extends caps.ExclusiveCapability:
       case other                          => other.inspect
 
   private def loadedType(signature: Text): ReferenceTypeId =
-    connection.allClasses().stdlib.find(_.signature == signature).map(_.cls)
-      .getOrElse(Jdwp.Ref.empty)
+    connection.allClasses().seek(_.signature == signature).let(_.cls)
+      .or(Jdwp.Ref.empty)
 
   private def methodId(cls: ReferenceTypeId, name: Text, signature: Text): MethodId =
-    val found = connection.methods(cls).stdlib.find: info =>
+    val found = connection.methods(cls).seek: info =>
       info.name == name && info.signature == signature
 
-    found.map(_.method).getOrElse(Jdwp.Ref.empty)
+    found.let(_.method).or(Jdwp.Ref.empty)
 
   // Prepares the freshly-defined entry class and returns its reference type, by forcing linkage
   // through `Class.forName(name, initialize = true, loader)` and reflecting the resulting `Class`
@@ -314,7 +306,7 @@ extends caps.ExclusiveCapability:
 
   // The name of the method at a location, read back from its class's method table.
   private def methodName(cls: ReferenceTypeId, method: MethodId): Text =
-    connection.methods(cls).stdlib.find(_.method == method).map(_.name).getOrElse(t"")
+    connection.methods(cls).seek(_.method == method).let(_.name).or(t"")
 
   // The synthetic compilation unit: a class whose constructor parameters mirror the frame's
   // locals (each already typed at its declared or erased type) and whose `run` evaluates the

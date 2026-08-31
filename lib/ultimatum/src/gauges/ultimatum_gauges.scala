@@ -34,6 +34,7 @@ package ultimatum
 
 import anticipation.*
 import escapade.*
+import rudiments.prim
 import gossamer.*
 import parasite.*
 import symbolism.*
@@ -82,7 +83,7 @@ def gaugeLine[status: Gaugeable as design]
   ( status: status, width: Int, tick: Tick = Tick.zero )
 :   Teletype =
 
-  design.rows(status, tick, width).stdlib.headOption.getOrElse(Teletype(t" "*width.max(0)))
+  design.rows(status, tick, width).prim.or(Teletype(t" "*width.max(0)))
 
 // Show a gauge at the cursor for the duration of `block`, then erase it. The animation runs in one
 // background task that redraws in place at the design's own period; a design with no period is

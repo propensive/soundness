@@ -43,6 +43,7 @@ import scala.collection.concurrent as scc
 
 import anticipation.*
 import coaxial.*
+import rudiments.each
 import contingency.*
 import fulminate.*
 import gossamer.*
@@ -740,7 +741,7 @@ object Jdwp:
 
       // A single writer drains outgoing packets so writes never interleave.
       val writer: Task[Unit] = async:
-        connection.outgoing.lazyList.stdlib.foreach: packet => duplex.send(Stream(packet))
+        connection.outgoing.lazyList.each: packet => duplex.send(Stream(packet))
 
       // The reader owns the read side: it is minted and consumed here, which also keeps the caller
       // thread off the channel's first (blocking) refill before the writer has started.
@@ -888,7 +889,7 @@ object Jdwp:
 
           outcome.let(identity)
 
-      composite.events.stdlib.foreach:
+      composite.events.each:
         case Event.Breakpoint(request, thread, location) =>
           run(request, EventKind.Breakpoint, thread, location)
 
@@ -1142,7 +1143,7 @@ object Jdwp:
 
       val reader = request(3, 3): writer =>
         writer.referenceTypeId(cls).threadId(thread).methodId(method).int(args.stdlib.length)
-        args.stdlib.foreach(writer.value)
+        args.each(writer.value)
         writer.int(1)
 
       Invocation(reader.value(), reader.value())
@@ -1154,7 +1155,7 @@ object Jdwp:
 
       val reader = request(3, 4): writer =>
         writer.referenceTypeId(cls).threadId(thread).methodId(constructor).int(args.stdlib.length)
-        args.stdlib.foreach(writer.value)
+        args.each(writer.value)
         writer.int(1)
 
       Invocation(reader.value(), reader.value())
@@ -1217,7 +1218,7 @@ object Jdwp:
 
       val reader = request(9, 2): writer =>
         writer.objectId(obj).int(fields.stdlib.length)
-        fields.stdlib.foreach(writer.fieldId)
+        fields.each(writer.fieldId)
 
       list(reader.int()): () => reader.value()
 
@@ -1228,7 +1229,7 @@ object Jdwp:
 
       command(9, 3): writer =>
         writer.objectId(obj).int(assignments.stdlib.length)
-        assignments.stdlib.foreach: (field, value) => writer.fieldId(field).untaggedValue(value)
+        assignments.each: (field, value) => writer.fieldId(field).untaggedValue(value)
 
     // Invokes an instance method on a suspended thread and reads back its return value and any
     // exception. `INVOKE_SINGLE_THREADED` (0x01) keeps every other thread suspended for the
@@ -1246,7 +1247,7 @@ object Jdwp:
       val reader = request(9, 6): writer =>
         writer.objectId(obj).threadId(thread).referenceTypeId(cls).methodId(method)
         writer.int(args.stdlib.length)
-        args.stdlib.foreach(writer.value)
+        args.each(writer.value)
         writer.int(1)
 
       Invocation(reader.value(), reader.value())
@@ -1304,7 +1305,7 @@ object Jdwp:
 
       command(13, 3): writer =>
         writer.objectId(array).int(first).int(values.stdlib.length)
-        values.stdlib.foreach(writer.untaggedValue)
+        values.each(writer.untaggedValue)
 
     // EventRequest (command set 15). `set` returns the request id used to `clear` it later.
     def eventRequestSet(kind: EventKind, policy: SuspendPolicy, modifiers: List[Modifier])
@@ -1313,7 +1314,7 @@ object Jdwp:
 
       request(15, 1): writer =>
         writer.byte(kind.id.toByte).byte(policy.id).int(modifiers.stdlib.length)
-        modifiers.stdlib.foreach(writer.modifier)
+        modifiers.each(writer.modifier)
 
       . int()
 
@@ -1331,7 +1332,7 @@ object Jdwp:
 
       val reader = request(16, 1): writer =>
         writer.threadId(thread).frameId(frame).int(slots.stdlib.length)
-        slots.stdlib.foreach: (slot, tag) => writer.int(slot).byte(tag.id.toByte)
+        slots.each: (slot, tag) => writer.int(slot).byte(tag.id.toByte)
 
       list(reader.int()): () => reader.value()
 
@@ -1341,7 +1342,7 @@ object Jdwp:
 
       command(16, 2): writer =>
         writer.threadId(thread).frameId(frame).int(assignments.stdlib.length)
-        assignments.stdlib.foreach: (slot, value) => writer.int(slot).value(value)
+        assignments.each: (slot, value) => writer.int(slot).value(value)
 
     // The frame's `this`, as a tagged reference; a static or native frame answers the null object
     // (identifier zero).

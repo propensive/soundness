@@ -40,6 +40,8 @@ import anticipation.*
 import aperture.*
 import contingency.*
 import prepositional.*
+import rudiments.reap
+import vacuous.or
 import quantitative.*
 import turbulence.*
 
@@ -130,9 +132,9 @@ object Pcm:
       ( block: ((PcmInput[layout] & Granting[grants])^) ?=> result )
     :   result =
 
-      val rate = flags.stdlib.collectFirst { case PcmFlag.Rate(hertz) => hertz }.getOrElse(44100)
-      val bits = flags.stdlib.collectFirst { case PcmFlag.Bits(bits) => bits }.getOrElse(16)
-      val chunk = flags.stdlib.collectFirst { case PcmFlag.Chunk(bytes) => bytes }.getOrElse(65536)
+      val rate = flags.reap { case PcmFlag.Rate(hertz) => hertz }.or(44100)
+      val bits = flags.reap { case PcmFlag.Bits(bits) => bits }.or(16)
+      val chunk = flags.reap { case PcmFlag.Chunk(bytes) => bytes }.or(65536)
 
       val bytesPerFrame = channelLayout.channels*(bits/8)
 
@@ -179,7 +181,7 @@ object Pcm:
       ( block: ((PcmOutput & Granting[grants])^) ?=> result )
     :   result =
 
-      val chunk = flags.stdlib.collectFirst { case PcmFlag.Chunk(bytes) => bytes }.getOrElse(65536)
+      val chunk = flags.reap { case PcmFlag.Chunk(bytes) => bytes }.or(65536)
       block(using new PcmOutput(value.mixerInfo, value.name, chunk) with Granting[grants] {})
 
   given feedOpenable: [layout: ChannelLayout]

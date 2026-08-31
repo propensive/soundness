@@ -83,7 +83,7 @@ extends Openable:
         try value.nioPath.toRealPath().nn.toString.tt
         catch case _: Exception => value.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt
 
-    val awaiting = flags.stdlib.contains(OpenFlag.Await)
+    val awaiting = flags.has(OpenFlag.Await)
 
     if locking then
       if awaiting then AccessRegister.acquireAwait(real, mode.atoms)

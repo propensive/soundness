@@ -39,6 +39,7 @@ import scala.collection.immutable.SortedSet
 import scala.jdk.CollectionConverters.*
 
 import anticipation.*
+import denominative.nil
 import contingency.*
 import gossamer.*
 import reliquary.*
@@ -78,7 +79,7 @@ object UsedSets:
     val found = scala.collection.mutable.SortedSet[String]()
     val models = scala.collection.mutable.ListBuffer[jlc.ClassModel]()
 
-    content.stdlib.foreach: (path, data) =>
+    content.each: (path, data) =>
       if path.text.s.endsWith(".class") || path.text.s.endsWith(".sig") then
         val model = jlc.ClassFile.of().nn.parse(Array.unsafeJvm(data)).nn
         models += model
@@ -124,7 +125,7 @@ object UsedSets:
     val matched = scala.collection.mutable.ListBuffer[Data]()
     val unmatched = scala.collection.mutable.ListBuffer[Text]()
 
-    references.stdlib.foreach: key =>
+    references.each: key =>
       byKey.get(key) match
         case scala.Some(hash) => matched += hash
         case _                => unmatched += key
@@ -145,7 +146,7 @@ object UsedSets:
       remaining = unmatched
       (module, matched)
 
-    val used = parts.filter { part => !part(1).stdlib.isEmpty }
+    val used = parts.filter { part => !part(1).nil }
     (used.to(List), remaining)
 
   // The Uses metadata blob for one module's use of one contract (§13.4, §14): the resolved

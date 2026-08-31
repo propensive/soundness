@@ -34,6 +34,8 @@ package coaxial
 
 import scala.caps
 
+import denominative.nil
+
 import java.net as jn
 import java.util as ju
 import javax.net.ssl as jns
@@ -73,11 +75,11 @@ object SecureEndpoint:
 
       // Offer the ALPN protocols (in preference order) so the peer can select the
       // application protocol during the handshake; the choice is read back below.
-      if !tls.protocols.stdlib.isEmpty
+      if !tls.protocols.nil
       then params.setApplicationProtocols(tls.protocols.stdlib.map(_.s).toArray)
 
       // Restrict the TLS protocol versions when the configuration asks for it.
-      if !tls.versions.stdlib.isEmpty then params.setProtocols(tls.versions.stdlib.map(_.s).toArray)
+      if !tls.versions.nil then params.setProtocols(tls.versions.stdlib.map(_.s).toArray)
 
       socket.setSSLParameters(params)
 

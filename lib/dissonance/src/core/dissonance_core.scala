@@ -82,7 +82,7 @@ def evolve[element: ClassTag]
 
           edits match
             case Nil => atoms match
-              case Nil           => finish().stdlib.reverse.to(List)
+              case Nil           => finish().reverse
               case atom :: atoms => merge(atoms, Nil, done, atom :: skips, inserts)
 
             case edit :: edits => atoms match

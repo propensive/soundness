@@ -72,7 +72,7 @@ object AccessRegister:
     synchronized:
       val real2 = normalize(real)
 
-      val conflict = registrations.stdlib.exists: registration =>
+      val conflict = registrations.exists: registration =>
         overlapping(real2, registration.real)
           && rangesOverlap(range, registration.range)
           && (atoms.has(Exclusive) || registration.atoms.has(Exclusive))

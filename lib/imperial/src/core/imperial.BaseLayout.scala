@@ -54,7 +54,7 @@ object BaseLayout:
       if !home && path.nil then t"/"
       else
         val slash = if path.nil then t"" else t"/"
-        t"${if home then homeDir else t""}$slash${path.stdlib.reverse.join(t"/")}"
+        t"${if home then homeDir else t""}$slash${path.reverse.join(t"/")}"
 
 // `caps.Pure`: a layout is pure path data (`part`, `readOnly`, `Dir`); the marker also keeps the
 // `Home.type`/`Base.type` members of nested layouts' `Topic` tuples pure, without which the

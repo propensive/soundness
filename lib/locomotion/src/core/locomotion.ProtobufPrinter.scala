@@ -35,6 +35,7 @@ package locomotion
 import scala.caps
 
 import anticipation.*
+import rudiments.each
 import zephyrine.*
 
 // Writes Protocol Buffers wire bytes into a `Producer[Data]`. Varints are LEB128; fixed32/fixed64
@@ -79,7 +80,7 @@ class ProtobufPrinter(out: (Producer.Bytes)^) extends caps.ExclusiveCapability, 
 
   update def field(number: Int, value: Protobuf): Unit = value match
     case Protobuf.Absent           => ()
-    case Protobuf.Repeated(values) => values.stdlib.foreach(field(number, _))
+    case Protobuf.Repeated(values) => values.each(field(number, _))
 
     case Protobuf.Wire(wireType, bytes) =>
       tag(number, wireType)

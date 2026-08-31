@@ -79,7 +79,7 @@ object internal:
       case (result, (insertion, part)) =>
         '{$result+$insertion+$part}
 
-    val types = parts.stdlib.map(StringConstant(_)).map(ConstantType(_).asType).reverse
+    val types = parts.map(StringConstant(_)).map(ConstantType(_).asType).reverse
 
     if human then '{Human($result.tt)} else '{Agent($result.tt)}
 

@@ -37,6 +37,7 @@ import scala.caps
 import ambience.{System, WorkingDirectory}
 import anthology.*
 import anticipation.*
+import rudiments.each
 import coaxial.*
 import contingency.*
 import fulminate.*
@@ -87,7 +88,7 @@ object Dap:
     val outgoing: Relay[Json] = Relay()
 
     val writer: Task[Unit] = async:
-      outgoing.lazyList.stdlib.foreach: json =>
+      outgoing.lazyList.each: json =>
         val body: Text = json.encode
         observer(body)
         stdio.write(DapTransport.frame(body))

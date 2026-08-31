@@ -168,7 +168,7 @@ object JavaStdlibCrypto extends Crypto:
     decode(privateKey) match
       case Asn1.Sequence(List(_, algorithm, Asn1.OctetString(inner))) =>
         val bits = decode(inner) match
-          case Asn1.Sequence(elements) => elements.glean:
+          case Asn1.Sequence(elements) => elements.reap:
             case Asn1.Tagged(1, true, bits: Asn1.BitString) => bits
 
           case _ => Unset
@@ -255,7 +255,7 @@ object JavaStdlibCrypto extends Crypto:
   private def mlDsaExtract(privateKey: Data): Data =
     decode(privateKey) match
       case Asn1.Sequence(_ :: algorithm :: _ :: rest) =>
-        val bits = rest.glean:
+        val bits = rest.reap:
           case Asn1.Tagged(1, _, bits: Asn1.BitString) => bits
 
         bits.lay(panic(m"the ML-DSA private key carried no public key")): bits =>

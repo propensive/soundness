@@ -56,21 +56,21 @@ given tastySymbolTeletypeable: (palette: TastyPalette) => Tasty.Symbol is Telety
     import tableStyles.defaultTableStyle
 
     val flags =
-      symbol.flags.stdlib.map: (flag, on) =>
+      symbol.flags.map: (flag, on) =>
         if on then e"${Bg(palette.flagOff)}(${Fg(palette.black)}(·${flag}·))"
         else e"${Fg(palette.flagOff)}($flag)"
 
       . join(e" ")
 
     val properties =
-      symbol.properties.stdlib.map: (property, on) =>
+      symbol.properties.map: (property, on) =>
         if on then e"${Bg(palette.propertyOn)}(${Fg(palette.black)}(·${property}·))"
         else e"${palette.propertyOff}($property)"
 
       . join(e" ")
 
     val details =
-      symbol.details.stdlib.map: detail =>
+      symbol.details.map: detail =>
         detail.absolve match
           case (key, value: Text) =>
             key -> e"${Fg(palette.outline)}($value)"
@@ -78,15 +78,13 @@ given tastySymbolTeletypeable: (palette: TastyPalette) => Tasty.Symbol is Telety
           case (key, items: List[Text] @unchecked) =>
             key -> e"${Fg(palette.outline)}(${items.join(t", ")})"
 
-      . to(List)
-
     val name = (t"Name", e"$Bold(${symbol.prefix}${Fg(palette.foreground)}(${symbol.name}))")
 
     Scaffold[(Text, Teletype)]
       ( Column(e"$Bold(Property)", textAlign = TextAlignment.Right)(_(0)),
         Column(e"$Bold(Value)", sizing = columnar.ParagraphOrBreak)(_(1)) )
 
-    . tabulate((name :: (t"Flags", flags) :: (t"Properties", properties) :: details.stdlib).to(List))
+    . tabulate(name :: (t"Flags", flags) :: (t"Properties", properties) :: details)
     . grid(120)
     . render
     . join(e"\n")
@@ -116,7 +114,7 @@ private def expandTastyTree(tree: Tasty.Tree)(using palette: TastyPalette)
           node.shortCode,
           node.source.teletype )
 
-  . stdlib.to(List)
+  . to[List]
 
 given tastyTreeTeletypeable: (palette: TastyPalette) => Tasty.Tree is Teletypeable =
   tastyTree =>
@@ -125,9 +123,9 @@ given tastyTreeTeletypeable: (palette: TastyPalette) => Tasty.Tree is Teletypeab
     val expansions = expandTastyTree(tastyTree)
 
     val indents =
-      expansions.stdlib.filter(!_.source.nil).map(_.source.plain.keep(_ == ' ').length)
+      expansions.filter(!_.source.nil).map(_.source.plain.keep(_ == ' ').length)
 
-    val crop = indents.min
+    val crop = indents.least.or(0)
 
     Scaffold[TastyTreeExpansion]
       ( Column(e"TASTy"): node =>

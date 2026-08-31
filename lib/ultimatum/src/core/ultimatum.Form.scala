@@ -145,12 +145,12 @@ class Form
     val panes = Sequence.from(pane.leaves.stdlib)
 
     val stays = focused.lay(false): widget =>
-      panes.stdlib.exists:
+      panes.exists:
         case Pane.Widget(_, fixture) => fixture eq widget
         case _                       => false
 
     if !stays then
-      focused = panes.stdlib.collectFirst { case Pane.Widget(_, focus: Focus) => focus }.optional
+      focused = panes.reap { case Pane.Widget(_, focus: Focus) => focus }
 
     panes
 

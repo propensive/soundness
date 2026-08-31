@@ -35,6 +35,7 @@ package sibylline
 import scala.caps
 
 import anticipation.*
+import denominative.nil
 import contingency.*
 import distillate.*
 import fulminate.*
@@ -404,9 +405,9 @@ class Anthropic private
         system         = turn.system,
         temperature    = turn.settings.temperature,
         top_p          = turn.settings.topP,
-        stop_sequences = if stops.stdlib.isEmpty then Unset else stops,
+        stop_sequences = if stops.nil then Unset else stops,
         stream         = if streaming then true else Unset,
-        tools          = if turn.tools.stdlib.isEmpty then Unset else tools,
+        tools          = if turn.tools.nil then Unset else tools,
         tool_choice    = turn.settings.toolChoice.let(Anthropic.choice(_)) )
 
     . in[Json]

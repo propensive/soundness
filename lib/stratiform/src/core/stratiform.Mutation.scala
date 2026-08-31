@@ -35,6 +35,7 @@ package stratiform
 import murmuration.*
 
 import anticipation.*
+import rudiments.each
 import contingency.*
 import gossamer.*
 import vacuous.*
@@ -1039,7 +1040,7 @@ object Mutation:
       if value.s.isEmpty then Tel.Compound(kw, Array.empty, Unset, Array.empty)
       else Tel.Compound(kw, Array(chooseAtomForm(value, sigil)), Unset, Array.empty)
 
-    members.stdlib.foreach:
+    members.each:
       case Member.Flag(kw) =>
         if inRun then inlineTexts += kw
         else children += Tel.Compound(kw, Array.empty, Unset, Array.empty)

@@ -32,6 +32,7 @@
 package stratiform
 
 import anticipation.*
+import rudiments.prim
 import contingency.*
 import distillate.*
 import gossamer.*
@@ -177,14 +178,14 @@ object SchemaResolver:
           case signature: Data =>
             delegate.bySignature(signature, pragma.reference).let: body =>
               val resolved = accept(body.data.read[Tel], Step.Lira)
-              stores.stdlib.headOption.foreach(_.cache(resolved.signature, body.data))
+              stores.prim.let(_.cache(resolved.signature, body.data))
               result = resolved
 
           case _ => pragma.reference match
             case reference: Tel.Pragma.Reference =>
               delegate.bySelector(reference).let: body =>
                 val resolved = accept(body.data.read[Tel], Step.Lira)
-                stores.stdlib.headOption.foreach(_.cache(resolved.signature, body.data))
+                stores.prim.let(_.cache(resolved.signature, body.data))
                 result = resolved
 
             case _ => ()

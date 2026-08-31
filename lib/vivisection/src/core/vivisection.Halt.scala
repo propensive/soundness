@@ -41,6 +41,7 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import proscenium.*
+import rudiments.{prim, seek}
 import vacuous.*
 
 object Halt:
@@ -138,8 +139,8 @@ extends caps.ExclusiveCapability:
   // the class's method and line tables; line 0 where no line information exists.
   def describe(location: Jdwp.Location): (Text, Int) =
     val cls = Variable.demangle(connection.signature(location.cls))
-    val method = connection.methods(location.cls).stdlib.find(_.method == location.method)
-    val name = method.map { info => t"$cls.${info.name}" }.getOrElse(cls)
+    val method = connection.methods(location.cls).seek(_.method == location.method)
+    val name = method.let { info => t"$cls.${info.name}" }.or(cls)
 
     val line = safely(connection.lineTable(location.cls, location.method)) match
       case table: Jdwp.LineTable =>
@@ -161,14 +162,13 @@ extends caps.ExclusiveCapability:
 
       def declaring(cls0: ReferenceTypeId): Optional[FieldId] =
         if cls0.empty then Unset else
-          connection.fields(cls0).stdlib.find(_.name == t"detailMessage") match
-            case scala.Some(info) => info.field
-            case scala.None       => declaring(connection.superclass(cls0))
+          connection.fields(cls0).seek(_.name == t"detailMessage").let(_.field).or:
+            declaring(connection.superclass(cls0))
 
       val message: Optional[Text] = declaring(cls).lay(Unset):
         fieldId =>
-          connection.fieldValues(exception, List(fieldId)).stdlib.headOption match
-            case scala.Some(Jdwp.Value.Reference(Jdwp.Tag.StringTag, id)) if !id.empty =>
+          connection.fieldValues(exception, List(fieldId)).prim match
+            case Jdwp.Value.Reference(Jdwp.Tag.StringTag, id) if !id.empty =>
               connection.stringValue(Jdwp.Ref(id.long))
 
             case _ =>
@@ -188,9 +188,7 @@ extends caps.ExclusiveCapability:
   // The frame where the thread stopped — the innermost, and the default subject of variable
   // recovery and evaluation.
   private[vivisection] def topFrame: Optional[(FrameId, Jdwp.Location)] =
-    connection.frames(thread, 0, 1).stdlib.headOption match
-      case scala.Some(frame) => frame
-      case _                 => Unset
+    connection.frames(thread, 0, 1).prim
 
   // The logical variables visible at the top frame — where the thread stopped.
   def variables(): List[Variable] =
@@ -303,19 +301,12 @@ extends caps.ExclusiveCapability:
         val signature = connection.signature(cls)
 
         if signature.s.startsWith("Lscala/runtime/") && signature.s.endsWith("Ref;") then
-          val elem = connection.fields(cls).stdlib.find(_.name == t"elem")
+          val elem = connection.fields(cls).seek(_.name == t"elem")
 
-          elem match
-            case scala.Some(field) =>
-              connection.fieldValues(id, List(field.field)).stdlib.headOption match
-                case scala.Some(value0) =>
-                  (value0, Variable.Provenance.Cell(id, field.field, provenance), true)
-
-                case _ =>
-                  (value, provenance, false)
-
-            case _ =>
-              (value, provenance, false)
+          elem.let: field =>
+            connection.fieldValues(id, List(field.field)).prim.let: value0 =>
+              (value0, Variable.Provenance.Cell(id, field.field, provenance), true)
+          . or((value, provenance, false))
 
         else
           (value, provenance, false)

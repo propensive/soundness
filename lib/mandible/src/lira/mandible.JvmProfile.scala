@@ -33,6 +33,7 @@
 package mandible
 
 import anticipation.*
+import denominative.nil
 import contingency.*
 import gossamer.*
 import reliquary.*
@@ -83,7 +84,7 @@ object JvmProfile extends EcosystemProfile:
           ClassfileAtomizer.atomize
             (surfaces.to(Map), section.classpath, ClassfileAtomizer.Fold.Linkage)
 
-        outcome.unresolved.stdlib.headOption.foreach: name =>
+        outcome.unresolved.prim.let: name =>
           abort(Discipline.Error(id, Discipline.Error.Reason.Unresolved(name)))
 
         (outcome.atoms.stdlib.map { atom => atom.key -> atom }.toMap).to(Map)
@@ -98,7 +99,7 @@ object JvmProfile extends EcosystemProfile:
     def violate(detail: Text): Unit =
       violations += EcosystemProfile.Violation(Discipline.Guarantee.Linkage, detail)
 
-    before.stdlib.foreach: (key, atom) =>
+    before.each: (key, atom) =>
       after.stdlib.get(key) match
         // D.2, predicates 1, 2 and 4 at once. A key is `owner#name:descriptor`, so a member that
         // disappears, changes descriptor, or moves to a type that no longer presents it all show
@@ -120,7 +121,7 @@ object JvmProfile extends EcosystemProfile:
     // consumer's compiler can read — a release that records no toolchain at all makes the claim
     // uncheckable rather than false, and is reported as such.
     next.manifest.let: manifest =>
-      if manifest.toolchain.stdlib.isEmpty
+      if manifest.toolchain.nil
       then violate(t"the release records no toolchain, so TASTy readability cannot be checked")
 
     violations.toList.to(List)
@@ -165,6 +166,6 @@ object JvmProfile extends EcosystemProfile:
   // buildpath-decidable is that every release states what produced it.
   override def coherence(releases: List[Lira.Manifest]): List[Text] =
 
-      releases.stdlib.filter(_.toolchain.stdlib.isEmpty).map: manifest =>
+      releases.stdlib.filter(_.toolchain.nil).map: manifest =>
         t"${manifest.module} records no toolchain, so TASTy readability cannot be checked"
       . to(List)

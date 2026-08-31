@@ -990,7 +990,7 @@ object Lsp:
       // `let`/`or`: extension resolution inside a lambda typed under the enclosing call's live
       // type variables crashes the compiler (the `wildApprox` assertion; scala/scala3#24824).
       def edit(version: Int, changes: List[TextDocumentContentChangeEvent]): Unit =
-        changes.stdlib.foreach: change =>
+        changes.each: change =>
           change.range match
             case range: Range =>
               val string = text.s
@@ -2311,10 +2311,10 @@ object Lsp:
       if registered == null then Unset else true
 
     private def triggers(list: List[Text]): Optional[List[Text]] =
-      if list.stdlib.isEmpty then Unset else list
+      if list.nil then Unset else list
 
     private def commandOptions: Optional[ExecuteCommandOptions] =
-      if commandNames0.stdlib.isEmpty then Unset else ExecuteCommandOptions(commandNames0)
+      if commandNames0.nil then Unset else ExecuteCommandOptions(commandNames0)
 
     private def adjusted(derived: ServerCapabilities): ServerCapabilities =
       adjust0.lay(derived)(_(derived))

@@ -35,6 +35,7 @@ package exoskeleton
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
+import denominative.nil
 import escapade.*
 import escritoire.*
 import gossamer.*
@@ -108,7 +109,7 @@ object Help:
           paramItems(sub.parameters.stdlib, depth + 1) :::
           commandRows(sub.subcommands.stdlib, depth + 1)
 
-      if sub.parameters.stdlib.isEmpty && sub.subcommands.stdlib.isEmpty then block
+      if sub.parameters.nil && sub.subcommands.nil then block
       else (Row.Blank :: block) :+ Row.Blank
 
   // Collapse runs of consecutive spacers and strip them from either end of a section.
@@ -191,7 +192,7 @@ case class Help
         val common: scala.List[Help.Param] =
           if members.length < 2 then scala.List()
           else members.head.parameters.stdlib.filter: param =>
-            members.forall(_.parameters.stdlib.contains(param))
+            members.forall(_.parameters.has(param))
 
         val factored: scala.List[Help] = members.map: member =>
           member.copy(parameters = member.parameters.filter(!common.contains(_)))
@@ -221,7 +222,7 @@ case class Help
     // is the exception: it carries ancestor flags marked global alongside its own local flags,
     // and then the distinction is worth a split — globals precede the subcommand on the command
     // line, locals follow it.
-    val leaf: Boolean = subcommands.stdlib.isEmpty
+    val leaf: Boolean = subcommands.nil
     val split: Boolean = !leaf || (!globalParams.isEmpty && !localParams.isEmpty)
 
     val standard: scala.List[(scala.List[Teletype], scala.List[Help.Row])] =

@@ -40,8 +40,8 @@ import vacuous.*
 
 class LazyEnvironment(variables: List[Text]) extends Environment:
   private lazy val map: Map[Text, Text] =
-    variables.stdlib.map(_.cut(t"=", 2)).collect:
+    variables.map(_.cut(t"=", 2)).sweep:
       case List(key, value) => (key, value)
-    . to(Map)
+    . to[Map]
 
   def variable(key: Text): Optional[Text] = map.stdlib.get(key).getOrElse(Unset)

@@ -95,8 +95,8 @@ enum Sparkline:
       gauging: Gauging )
   :   List[Teletype] =
 
-    val lower = floor.or(samples.stdlib.minOption.getOrElse(0.0))
-    val upper = ceiling.or(samples.stdlib.maxOption.getOrElse(1.0))
+    val lower = floor.or(samples.least.or(0.0))
+    val upper = ceiling.or(samples.most.or(1.0))
     val span = upper - lower
 
     val normalized =

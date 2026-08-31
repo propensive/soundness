@@ -47,7 +47,7 @@ export
       before, upto, from, after, keep, skip, snip, tail, Appendable, Prependable, `:+`, `+:`,
       indexed, least, most, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
-      mean2, unique, seek, glean, where,
+      mean2, unique, seek, reap, where,
       Populated, head, last, lead, reduce, populatedEquality }
 
 // The `Deindex` extension group (`apply`, `at`, `defines`, `confine`, `prim`, `sec`, `ter`) is

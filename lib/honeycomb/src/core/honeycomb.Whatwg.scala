@@ -397,7 +397,7 @@ class Whatwg() extends Dom:
     def recur(parent: Tag): Boolean =
       parent.admissible.has(child.label) || insertable(parent).exists(recur(_))
 
-    insertable(parent).stdlib.find(recur(_)).optional
+    insertable(parent).seek(recur(_))
 
   // Elements
 

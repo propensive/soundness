@@ -39,6 +39,8 @@ import scala.quoted.*
 
 import anticipation.*
 import contextual.*
+import rudiments.each
+import rudiments.all
 import contingency.*
 import denominative.*
 import fulminate.*
@@ -227,7 +229,7 @@ object internal:
     // or at-rule are an inline style set (`Css.Style`); anything with a rule or at-rule
     // is a stylesheet (`Css`). The `transparent inline` interpolator returns whichever.
     val result: Expr[Css | Css.Style] =
-      if css.rules.stdlib.nonEmpty && css.rules.stdlib.forall(isDeclaration)
+      if css.rules.stdlib.nonEmpty && css.rules.all(isDeclaration)
       then '{Css.Style.of(List.from(${Expr.ofList(css.rules.stdlib.map(stylePair))}))}
       else '{Css(${listExpr(css.rules)})}
 

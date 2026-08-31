@@ -35,6 +35,7 @@ package degustation
 import scala.quoted.Quotes
 
 import anticipation.*
+import murmuration.map
 
 // The atomization rules of `tasty/1`, applied over the compiler's reflection of unpickled
 // TASTy. The folding principle (LIRA §10.3) governs every decision here: declarations whose
@@ -664,9 +665,8 @@ object Atomizer:
 
     atoms.values.toList.map: atom =>
       val classified =
-        atom.references.stdlib.map:
+        atom.references.map:
           case ScalaReference.Own(key) if !keys.contains(key.s) => ScalaReference.Foreign(key)
           case reference                                        => reference
-        . to(List)
 
       atom.copy(references = classified)

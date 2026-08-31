@@ -119,7 +119,7 @@ object KotlinFacade:
   private def denull(km: Foreign.Type): (Foreign.Type, Boolean) = km match
     case Foreign.Type.Union(members) =>
       members.stdlib.filter(_ != Foreign.Type.Named(t"null")) match
-        case List(inner) => (inner, members.stdlib.contains(Foreign.Type.Named(t"null")))
+        case List(inner) => (inner, members.has(Foreign.Type.Named(t"null")))
         case _           => (km, false)
 
     case _ =>
@@ -167,7 +167,7 @@ object KotlinFacade:
       name.s.startsWith("#") || Set(
           t"kotlin.Int", t"kotlin.Long", t"kotlin.Short", t"kotlin.Byte", t"kotlin.Boolean",
           t"kotlin.Double", t"kotlin.Float", t"kotlin.Char", t"kotlin.Unit", t"kotlin.Any",
-          t"kotlin.Nothing").stdlib.contains(name)
+          t"kotlin.Nothing").has(name)
 
     val underlying = solid(call.tpe)
 
@@ -338,7 +338,7 @@ object KotlinFacade:
 
         val abstractMethods = symbol.methodMembers.filter: method =>
           val deferred = method.flags.is(Flags.Deferred) && !method.flags.is(Flags.Synthetic)
-          deferred && !objectMethods.stdlib.contains(method.name)
+          deferred && !objectMethods.has(method.name)
 
         abstractMethods match
           case List(method) => (method, method.paramSymss.flatten.length)
@@ -1181,7 +1181,7 @@ object KotlinFacade:
       provided(index).let { argument => adapted(argument, parameter).asExpr }.or(zero(parameter))
 
     // Bit `i` set means parameter `i` takes its default.
-    val mask: Int = types.indices.filter(!provided.stdlib.contains(_)).foldLeft(0): (acc, index) =>
+    val mask: Int = types.indices.filter(!provided.defines(_)).foldLeft(0): (acc, index) =>
       acc | (1 << index)
 
     val ownerClass = Literal(ClassOfConstant(repr.dealias match
@@ -1318,7 +1318,7 @@ object KotlinFacade:
             acc
 
           case (t"", term) :: rest =>
-            val index = (0 until member.arity).find(!acc.stdlib.contains(_)).getOrElse:
+            val index = (0 until member.arity).find(!acc.defines(_)).getOrElse:
               halt(m"xenophile: too many arguments for $className.$field")
 
             assign(rest, next, acc.define(index, term))
@@ -1335,7 +1335,7 @@ object KotlinFacade:
     // All-or-nothing: `entire` is present exactly when every position was provided.
     (0 until member.arity).map(provided(_)).entire.lay:
       val absent =
-        ((0 until member.arity).filter(!provided.stdlib.contains(_)).toList).to(proscenium.List)
+        ((0 until member.arity).filter(!provided.defines(_)).toList).to(proscenium.List)
 
       val undefaulted = absent.filter: index =>
         !member.defaults.stdlib.lift(index).getOrElse(false)
@@ -1359,7 +1359,7 @@ object KotlinFacade:
 
     val entries = KotlinDialect.enumEntries(className)
 
-    if !entries.nil && !entries.stdlib.contains(entryName) then
+    if !entries.nil && !entries.has(entryName) then
       val listed = entries.join(t", ")
       halt(m"xenophile: $className has no entry $entryName; its entries are: $listed")
 

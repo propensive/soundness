@@ -531,10 +531,10 @@ object Http2:
           if !ack then
             // Adopt the peer's advertised initial per-stream send window and
             // maximum frame size, which bound our request-body DATA frames.
-            settings.stdlib.find(_.id == SettingId.InitialWindowSize.id).foreach: setting =>
+            settings.seek(_.id == SettingId.InitialWindowSize.id).let: setting =>
               conn.peerInitialWindow.set(setting.value.toInt)
 
-            settings.stdlib.find(_.id == SettingId.MaxFrameSize.id).foreach: setting =>
+            settings.seek(_.id == SettingId.MaxFrameSize.id).let: setting =>
               conn.peerMaxFrame.set(setting.value.toInt)
 
             conn.send(Frame.Settings(Nil, ack = true))
@@ -923,10 +923,10 @@ object Http2:
             // Adopt the peer's advertised initial per-stream send window; applies
             // to streams opened after this point (existing streams are not
             // retroactively adjusted — a deliberate simplification).
-            settings.stdlib.find(_.id == SettingId.InitialWindowSize.id).foreach: setting =>
+            settings.seek(_.id == SettingId.InitialWindowSize.id).let: setting =>
               conn.peerInitialWindow.set(setting.value.toInt)
 
-            settings.stdlib.find(_.id == SettingId.MaxFrameSize.id).foreach: setting =>
+            settings.seek(_.id == SettingId.MaxFrameSize.id).let: setting =>
               conn.peerMaxFrame.set(setting.value.toInt)
 
             conn.send(Frame.Settings(Nil, ack = true))

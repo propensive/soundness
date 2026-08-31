@@ -214,7 +214,7 @@ package filesystemBackends:
                 entry.lay({ done = true })(pair => names = pair(1) :: names)
 
               streamHandle.dispose()
-              names.stdlib.reverse.to(Chain)
+              names.reverse.to[Chain]
             finally listing.dispose()
           finally descriptor.dispose()
 
@@ -387,7 +387,7 @@ package filesystemBackends:
                 catch case error: Wasm.Error => ()
 
                 streamHandle.dispose()
-                summon[Data is Aggregable by Data].accept(zephyrine.Stream(chunks.stdlib.reverse.iterator))
+                summon[Data is Aggregable by Data].accept(zephyrine.Stream(chunks.reverse.stdlib.iterator))
 
             lambda(view)
           finally opened.dispose()
@@ -457,7 +457,7 @@ package filesystemBackends:
                 catch case error: Wasm.Error => ()
 
                 streamHandle.dispose()
-                summon[Data is Aggregable by Data].accept(zephyrine.Stream(chunks.stdlib.reverse.iterator))
+                summon[Data is Aggregable by Data].accept(zephyrine.Stream(chunks.reverse.stdlib.iterator))
 
               def writeTo(writeOffset: Long, data: Data): Int =
                 if writeOffset >= extent then 0 else
@@ -529,7 +529,7 @@ package filesystemBackends:
               catch case error: Wasm.Error => ()
 
               streamHandle.dispose()
-              chunks.stdlib.reverse.to(Chain)
+              chunks.reverse.to[Chain]
 
             def write(data: Chain[Data]): Unit =
               val streamHandle =

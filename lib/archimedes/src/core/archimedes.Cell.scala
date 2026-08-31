@@ -172,7 +172,7 @@ object Cell:
   private def scriptTexts(nodes: List[Mathml]): Optional[Text] =
     // `Optional` is a union, so a `let` inside a `let` flattens: one absent child
     // makes the whole concatenation absent.
-    nodes.stdlib.foldLeft(t"": Optional[Text]): (text, node) =>
+    nodes.fold(t"": Optional[Text]): (text, node) =>
       text.let: prefix =>
         scriptText(node).let(part => t"$prefix$part")
 

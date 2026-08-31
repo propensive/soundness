@@ -97,7 +97,7 @@ object CtSym:
     val grouped = scala.collection.mutable.LinkedHashMap
         [String, scala.collection.mutable.ListBuffer[(TreePath, Data)]]()
 
-    surface(path, release).stdlib.foreach: (tree, data) =>
+    surface(path, release).each: (tree, data) =>
       val name = tree.text.s
       val slash = name.indexOf('/')
 

@@ -65,14 +65,14 @@ object Searchpaths:
     ( using backend: FilesystemBackend on target )
   :   Optional[Path on target] =
 
-    stems.stdlib.map(resolve(_, path)).find(galilei.existent(_)()).optional
+    stems.map(resolve(_, path)).seek(galilei.existent(_)())
 
   def locationsResolved[target <: Platform: Filesystem]
     ( stems: List[Path on target], path: Path on ? )
     ( using backend: FilesystemBackend on target )
   :   List[Path on target] =
 
-    stems.stdlib.map(resolve(_, path)).filter(galilei.existent(_)()).to(List)
+    stems.map(resolve(_, path)).filter(galilei.existent(_)())
 
   // The merged listing's names: the union of children across all stems, deduplicated, with
   // earlier stems shadowing later ones — insertion order preserves precedence.
@@ -85,10 +85,10 @@ object Searchpaths:
 
     val names = scala.collection.mutable.LinkedHashSet[Text]()
 
-    stems.stdlib.foreach: stem =>
+    stems.each: stem =>
       val resolved = resolve(stem, path)
 
-      if galilei.existent(resolved)() then resolved.children.stdlib.foreach: child =>
+      if galilei.existent(resolved)() then resolved.children.each: child =>
         names.add(child.name)
 
     scala.List.from(names).to(List)

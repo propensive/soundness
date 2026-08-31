@@ -38,6 +38,7 @@ import scala.collection.immutable.Map
 
 
 import anticipation.*
+import denominative.nil
 import contingency.*
 import gossamer.*
 import rudiments.*
@@ -115,7 +116,7 @@ object WitDialect extends Dialect:
             resource,
             fn.static || fn.constructor )
 
-      interface.items.stdlib.foreach:
+      interface.items.each:
         case Wit.Item.Function(fn) =>
           functions(fn.name) = signature(fn, Unset)
 
@@ -152,7 +153,7 @@ object WitDialect extends Dialect:
           types = types.updated(name, declaration(name, module))
 
         case Wit.Item.Resource(name, methods) =>
-          if methods.stdlib.isEmpty then types = types.updated(name, declaration(name, module))
+          if methods.nil then types = types.updated(name, declaration(name, module))
           else
             val members = methods.stdlib.map: method =>
               method.name -> signature(method, name)

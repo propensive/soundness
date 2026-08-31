@@ -184,7 +184,7 @@ extension [self](self: self)(using traversable: self is Traversable)
   // counterpart of `collectFirst`, and the single-result sibling of `sweep`. A distinct name
   // rather than a `seek` overload, because a case-literal closure matches both the predicate
   // and the partial-function shapes, making every call site ambiguous.
-  def glean[element2](lambda: PartialFunction[traversable.Operand, element2]): Optional[element2] =
+  def reap[element2](lambda: PartialFunction[traversable.Operand, element2]): Optional[element2] =
     traversable.traverse(self).collectFirst(lambda) match
       case Some(element) => element
       case None          => Unset

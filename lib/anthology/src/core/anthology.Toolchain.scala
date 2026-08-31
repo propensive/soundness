@@ -40,6 +40,10 @@ import scala.util.control as suc
 
 import ambience.*
 import anticipation.*
+import denominative.nil
+import murmuration.{exists, fold, map}
+import rudiments.each
+import rudiments.reverse
 import contingency.*
 import digression.*
 import fulminate.*
@@ -170,8 +174,8 @@ case class Toolchain private (edges: List[Edge]):
 
     val route = path(source, target)
 
-    settings.stdlib.foreach: setting =>
-      if !route.stdlib.map(_.target).exists(setting.appliesTo(_))
+    settings.each: setting =>
+      if !route.map(_.target).exists(setting.appliesTo(_))
       then abort(Link.Error(Link.Error.Reason.InapplicableSetting))
 
     Log.info(LinkEvent.Start)
@@ -180,7 +184,7 @@ case class Toolchain private (edges: List[Edge]):
       val tool: edge.tool.type = edge.tool
 
       val configured: tool.Settings =
-        settings.stdlib.foldLeft(tool.initial): (settings0, setting) =>
+        settings.fold(tool.initial): (settings0, setting) =>
           if setting.appliesTo(edge.target) then
             try setting.edit(edge.target, settings0).asInstanceOf[tool.Settings]
             catch case suc.NonFatal(error) =>
@@ -192,7 +196,7 @@ case class Toolchain private (edges: List[Edge]):
 
     def walk(remaining: List[Edge], current: Deliverable): Deliverable = remaining match
       case edge :: rest =>
-        if rest.stdlib.isEmpty then step(edge, current, out)
+        if rest.nil then step(edge, current, out)
         else walk(rest, step(edge, current, unsafely(out / edge.target.id)))
 
       case _ =>

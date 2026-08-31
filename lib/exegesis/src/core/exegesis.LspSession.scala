@@ -548,9 +548,7 @@ extends Lsp, caps.ExclusiveCapability:
     ambient1(Nil)(handlers.workspaceSymbols0)(query0)
 
   private def seek(commands: List[(Text, AnyRef)], command: Text): AnyRef | Null =
-    commands.stdlib.find(_._1 == command) match
-      case Some((_, slot)) => slot
-      case _               => null
+    commands.seek(_._1 == command).let(_(1)).or(null)
 
   def `workspace/executeCommand`(command: Text, arguments: Optional[List[Json]]): Optional[Json] =
     val arguments0: Optional[List[Json]] aka "arguments" = arguments.aka["arguments"]

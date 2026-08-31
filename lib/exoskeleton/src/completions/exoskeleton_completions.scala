@@ -195,7 +195,7 @@ def helpTree
             operands.get(flag).optional,
             required.has(flag) )
 
-      val known = flags.stdlib.foldLeft(inherited)(_ :+ _)
+      val known = flags.fold(inherited)(_ :+ _)
 
       val children =
         suggestions.stdlib.distinctBy(_.core).to(List).bind: suggestion =>
@@ -299,7 +299,7 @@ package executives:
 
             val position = if shell == Shell.Bash then Unset else position0
             val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
-            val equalses = rest.stdlib.take(focus0).count(_ == t"=")
+            val equalses = rest.keep(focus0).count(_ == t"=")
             val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
 
             Completion

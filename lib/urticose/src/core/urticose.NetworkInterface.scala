@@ -163,6 +163,6 @@ case class NetworkInterface
     virtual:      Boolean ):
 
   def ipv4: List[Ipv4] =
-    (addresses.stdlib.map(_.address).collect { case ip: (Ipv4 @unchecked) => ip }).to(List)
+    addresses.map(_.address).sweep { case ip: (Ipv4 @unchecked) => ip }
   def ipv6: List[Ipv6] =
-    (addresses.stdlib.map(_.address).collect { case ip: Ipv6 => ip }).to(List)
+    addresses.map(_.address).sweep { case ip: Ipv6 => ip }

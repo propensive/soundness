@@ -320,9 +320,7 @@ object XPath extends Format:
       case Truth(value)   => if value then t"true" else t"false"
       case Numeric(value) => XPath.renderNumber(value)
 
-      case NodeSet(loci) => loci.stdlib.headOption match
-        case Some(locus) => locus.stringValue
-        case None        => t""
+      case NodeSet(loci) => loci.prim.let(_.stringValue).or(t"")
 
   // The `number()` conversion of a string (§4.4): optional whitespace, an
   // optional minus sign, then the Number production — no exponents, no other

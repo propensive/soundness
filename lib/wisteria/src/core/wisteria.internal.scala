@@ -659,7 +659,7 @@ object internal:
         val dealiased = tpe.dealias
 
         symbolByKey.stdlib.get(dealiased.show).orElse:
-          bindings.stdlib.collectFirst { case (_, tpe0, symbol) if tpe0 =:= dealiased => symbol }
+          bindings.reap { case (_, tpe0, symbol) if tpe0 =:= dealiased => symbol }.option
 
       def elementInstance(tpe: TypeRepr): Term = siblingSymbol(tpe) match
         case Some(symbol) => Ref(symbol)
