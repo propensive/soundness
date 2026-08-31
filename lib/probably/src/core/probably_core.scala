@@ -117,9 +117,6 @@ def suite[report](name: Name[Probing], description: Message)
   runner.suite(Testable(description, suite, name), block)
 
 
-extension [value](inline value: value)(using inline test: Harness)
-  inline def debug: value = ${probably.internal.debug('value, 'test)}
-
 package harnesses:
   given threadLocal: Harness:
     private val delegate: Option[Harness] =

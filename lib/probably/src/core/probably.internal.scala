@@ -225,19 +225,3 @@ object internal:
 
         if selected then inc.include(runner.report, test.id, coordinates, verdict)
         result(run)
-
-
-  def debug[test: Type](expr: Expr[test], test: Expr[Harness]): Macro[test] =
-    import quotes.reflect.*
-
-    val exprName: Text = expr.asTerm.pos match
-      case position: dtdu.SourcePosition =>
-        position.lineContent.show.segment(position.startColumn.z thru position.endColumn.u)
-
-      case _ =>
-        t"<unknown>"
-
-    val decomposable: Expr[test is Decomposable] =
-      Expr.summon[test is Decomposable].get
-
-    '{$test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $decomposable)}
