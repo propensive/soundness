@@ -3310,7 +3310,7 @@ object vivisection extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The Debug Adapter Protocol transport: Content-Length-framed JSON over stdio, adapting a
   // debug session to the requests and events a DAP frontend (such as VS Code) speaks.
-  object dap extends Component(eval, jacinta.core, obligatory.core):
+  object dap extends Component(eval, harlequin.core, jacinta.core, obligatory.core):
     override def scalaJs = false // serves a JVM debug session
     override def scalaNative = false
     override def scalacOptions = Task:

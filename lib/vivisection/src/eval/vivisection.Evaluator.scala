@@ -148,39 +148,59 @@ extends caps.ExclusiveCapability:
       case _ =>
         ()
 
+  // The synthetic source `execute` compiles, staged but not compiled: the frame's visible locals
+  // at their recovered static types, wrapped around `body` as the `run()` body at `resultType`,
+  // plus the pieces the compile-inject-invoke tail needs — the class's simple name, its package,
+  // and the locals with their live values (the constructor arguments).
+  private def stage(frame: FrameId, location: Jdwp.Location, body: Text, resultType: Text)
+  :   (Text, Text, Text, sci.List[(Text, Text, Jdwp.Value)]) =
+
+    val table = connection.variableTable(location.cls, location.method)
+
+    // The locals live at the stop, in declaration order: name, Scala type, and current value.
+    val locals: sci.List[(Text, Text, Jdwp.Value)] =
+      table.lay(sci.List[(Text, Text, Jdwp.Value)]()): table =>
+        val live = table.slots.stdlib.filter: slot =>
+          val index = location.index
+          slot.name != t"this" && slot.index <= index && index < slot.index + slot.length
+
+        val requests = live.map: slot => (slot.slot, Variable.tag(slot.signature))
+        val values = connection.slotValues(thread, frame, List(requests*)).stdlib
+        live.zip(values).map: (slot, value) => (slot.name, slot.signature, value)
+
+    val className = t"vivisection$$eval$$${Evaluator.counter.getAndIncrement()}"
+    val ownerSignature = connection.signature(location.cls)
+    val pkg = packageOf(ownerSignature)
+
+    // Prefer each binding's declared static type (opaque and generic types recovered from TASTy)
+    // over its erased runtime type, so `.inspect` selects the instance the programmer's own code
+    // would. Only a method's value parameters are resolved this way for now; other locals keep
+    // the erased type.
+    val owner = Variable.demangle(ownerSignature)
+    val method = methodName(location.cls, location.method)
+    val statics = purview.parameters(owner, method)
+
+    val typed = locals.map: (name, signature, _) =>
+      (name, statics.get(name).getOrElse(Variable.demangle(signature)))
+
+    (render(className, pkg, typed, resultType, body), className, pkg, locals)
+
+  // The synthetic source a completion host should typecheck, and the offset at which the console
+  // fragment begins within it: the same class `execute` compiles, with the fragment as the `run`
+  // body at `scala.Any`. No compiler runs here — the host highlights the source at a caret past
+  // the returned offset with a typechecking `Highlight` over the debuggee's classpath, then
+  // rebases the resulting replacement span by the same offset. Completion on a local therefore
+  // resolves against its declared type, extension methods and givens included.
+  def completion(fragment: Text): Optional[(Text, Int)] =
+    halt.topFrame.let: (frame, location) =>
+      val (source, _, _, _) = stage(frame, location, fragment, t"scala.Any")
+      (source, source.length - 1 - fragment.length)
+
   // Compiles a synthetic class whose `run(): resultType = body` closes over the frame's locals,
   // injects it, and invokes it, returning the invoke's raw result.
   private def execute(body: Text, resultType: Text): Jdwp.Value =
     halt.topFrame.lay(Jdwp.Value.Void): (frame, location) =>
-      val table = connection.variableTable(location.cls, location.method)
-
-      // The locals live at the stop, in declaration order: name, Scala type, and current value.
-      val locals: sci.List[(Text, Text, Jdwp.Value)] =
-        table.lay(sci.List[(Text, Text, Jdwp.Value)]()): table =>
-          val live = table.slots.stdlib.filter: slot =>
-            val index = location.index
-            slot.name != t"this" && slot.index <= index && index < slot.index + slot.length
-
-          val requests = live.map: slot => (slot.slot, Variable.tag(slot.signature))
-          val values = connection.slotValues(thread, frame, List(requests*)).stdlib
-          live.zip(values).map: (slot, value) => (slot.name, slot.signature, value)
-
-      val className = t"vivisection$$eval$$${Evaluator.counter.getAndIncrement()}"
-      val ownerSignature = connection.signature(location.cls)
-      val pkg = packageOf(ownerSignature)
-
-      // Prefer each binding's declared static type (opaque and generic types recovered from TASTy)
-      // over its erased runtime type, so `.inspect` selects the instance the programmer's own code
-      // would. Only a method's value parameters are resolved this way for now; other locals keep
-      // the erased type.
-      val owner = Variable.demangle(ownerSignature)
-      val method = methodName(location.cls, location.method)
-      val statics = purview.parameters(owner, method)
-
-      val typed = locals.map: (name, signature, _) =>
-        (name, statics.get(name).getOrElse(Variable.demangle(signature)))
-
-      val source = render(className, pkg, typed, resultType, body)
+      val (source, className, pkg, locals) = stage(frame, location, body, resultType)
 
       val process = session.compile(Map(t"$className.scala" -> source))
       process.complete()

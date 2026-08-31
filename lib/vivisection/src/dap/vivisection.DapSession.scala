@@ -53,6 +53,9 @@ import fulminate.*
 import gigantism.*
 import gossamer.*
 import guillotine.*
+// `harlequin` is imported selectively: only the completion pipeline is wanted, not its `Token`
+// and `Span` vocabulary.
+import harlequin.{Highlight, Scala}
 import hellenism.*
 import jacinta.*
 import parasite.*
@@ -574,6 +577,24 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
             respond(request, Dap.EvaluateBody(rendered).in[Json])
 
+      case t"completions" =>
+        val arguments = json.arguments.as[Dap.CompletionsArguments]
+
+        withFrame(request, arguments.frameId): (thread, halt) =>
+          withClasspath(request): classpath =>
+            val cursor = (arguments.column - 1).max(0).min(arguments.text.length)
+
+            // Staging is pure: the evaluator only wraps the console fragment in the synthetic
+            // class `evaluate` would compile, so the frame's locals are in scope at their
+            // recovered static types; the typecheck happens in this JVM, not the debuggee.
+            val staged: Optional[(Text, Int)] =
+              halt.evaluator(classpath): eval ?=> eval.completion(arguments.text)
+
+            staged.let: (source, offset) =>
+              val targets = complete(classpath, source, offset, cursor)
+              respond(request, Dap.CompletionsBody(targets).in[Json])
+            . or(fail(request, t"the frame does not support completion"))
+
       case t"setExpression" =>
         val arguments = json.arguments.as[Dap.SetExpressionArguments]
 
@@ -676,6 +697,37 @@ private[vivisection] class DapSession(emit: Json => Unit)
     classpath0 match
       case classpath: LocalClasspath => body(classpath)
       case _                         => fail(request, t"no classpath was given at launch")
+
+  // Typechecks the staged source with an interactive compiler session over the debuggee's
+  // classpath and rebases the resulting replacement span from source coordinates back to the
+  // console fragment's, 1-based per the request's `column`. A fresh session per request; reuse
+  // across keystrokes is noted future work.
+  private def complete(classpath: LocalClasspath, source: Text, offset: Int, cursor: Int)
+  :   List[Dap.CompletionItem] =
+
+    given LocalClasspath = classpath
+    given Scalac[3.9, ?] = Scalac[3.9](List(Scalac.Option[3.9](t"-experimental")))
+    given Highlight = harlequin.highlighting.typecheckedScala
+
+    Scala.highlight(source, caret = (offset + cursor).z).completions.lay(List()): completions =>
+      val start: Optional[Int] =
+        completions.replace.offset.let(_.n0 - offset).let: start =>
+          if start < 0 then Unset else start + 1
+
+      val length: Optional[Int] = start.let: _ => completions.replace.length
+
+      completions.items.map: item =>
+        Dap.CompletionItem(item.name, kindName(item.kind), start, length)
+
+  private def kindName(kind: prophesy.Completion.Kind): Text =
+    import prophesy.Completion.Kind
+
+    kind match
+      case Kind.Method | Kind.Extension => t"method"
+      case Kind.Type                    => t"class"
+      case Kind.Module | Kind.Package   => t"module"
+      case Kind.Keyword                 => t"keyword"
+      case Kind.Term | Kind.Given       => t"variable"
 
   // Parses a plain DAP `setVariable` value at the variable's erased type: the primitives, plus
   // a fresh remote string. Anything richer belongs to `setExpression`.

@@ -1050,6 +1050,62 @@ object Tests extends Suite(m"Vivisection tests"):
 
     . assert(_ == t"43")
 
+    // Completions over the wire, typechecked against the stopped frame: a bare prefix resolves
+    // the frame's locals; a member selection resolves the local's declared type's members; and a
+    // fresh binding position offers nothing (the name is the programmer's to invent).
+    test(m"a DAP client completes console input against a stopped frame"):
+      import dynamicJsonAccess.enabled
+      val classpathText = System.properties.java.`class`.path()
+
+      supervise:
+        dapScenario: client ?=>
+          client.request(t"initialize")
+          client.awaitResponse(t"initialize")
+
+          val launchArgs =
+            Json.make(mainClass = t"vivisection.Menagerie".in[Json], classpath = classpathText.in[Json])
+
+          client.request(t"launch", launchArgs)
+          client.awaitResponse(t"launch")
+
+          val source = Json.make(path = t"vivisection.Menagerie.scala".in[Json])
+          val points = List(Json.make(line = 57.in[Json]))
+          val setArgs = Json.make(source = source, breakpoints = j"[$points*]")
+
+          client.request(t"setBreakpoints", setArgs)
+          client.awaitResponse(t"setBreakpoints")
+          client.request(t"configurationDone")
+          client.awaitResponse(t"configurationDone")
+
+          val stopped = client.awaitEvent(t"stopped")
+          val thread = stopped.body.threadId.as[Int]
+
+          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse(t"stackTrace")
+          val frame = trace.body.stackFrames(0).id.as[Int]
+
+          def labels(text: Text, column: Int): scala.List[Text] =
+            val arguments =
+              Json.make
+                ( text = text.in[Json], column = column.in[Json], frameId = frame.in[Json] )
+
+            client.request(t"completions", arguments)
+            val completed = client.awaitResponse(t"completions")
+            completed.body.targets.as[List[Json]].stdlib.map(_.label.as[Text])
+
+          val prefixed = labels(t"in", 3)
+          val members = labels(t"text.le", 8)
+          val bindings = labels(t"val ", 5)
+
+          client.request(t"disconnect")
+          client.awaitResponse(t"disconnect")
+
+          ( prefixed.contains(t"int") && prefixed.contains(t"ints"),
+            members.contains(t"length"),
+            bindings.isEmpty )
+
+    . assert(_ == (true, true, true))
+
     // The transport itself, over real pipes: `initialize` and `disconnect` without ever opening
     // a debuggee, so this exercises the framing and the server's teardown-on-EOF in isolation.
     test(m"a DAP server initializes and disconnects over stdio"):
