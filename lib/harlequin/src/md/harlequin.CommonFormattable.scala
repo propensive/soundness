@@ -37,6 +37,9 @@ import contingency.*
 import gossamer.*
 import harlequin.*
 import honeycomb.*
+// By name because `harlequin.Fragment` (fragment analysis) makes the bare name ambiguous; the
+// HTML fragment is meant here.
+import honeycomb.Fragment
 import nomenclature.*
 import prepositional.*
 import punctuation.*
