@@ -32,5 +32,4 @@
                                                                                                   */
 package soundness
 
-export hyperbole.{Introspect, semantics, syntax, TastyPalette,
-    tastySymbolTeletypeable, tastyTreeTeletypeable}
+export hyperbole.Tasty

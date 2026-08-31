@@ -2304,7 +2304,18 @@ object hieroglyph extends Library:
       settings.sep(super.scalacOptions())
 
 object hyperbole extends Library:
-  object core extends Component(harlequin.core, escapade.core, escritoire.core,
+  // The TASTy data model and its byte-level reader — no compiler `Context`, no classpath, no
+  // filesystem: `Tasty.parse` takes raw bytes, so a debugger can feed it TASTy fetched over a
+  // wire. The compiler dependency (the unpickler's classes) is compile-only; the caller's
+  // runtime classpath supplies the compiler it drives, as for `anthology`.
+  object tasty extends Component(digression.core, gossamer.core, rudiments.core):
+    override def scalaJs = false // drives the JVM compiler's TASTy unpickler
+    override def scalaNative = false
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object core extends Component(tasty, harlequin.core, escapade.core, escritoire.core,
       dendrology.tree):
     override def scalaJs = false // depends on JVM-only `harlequin.core`
     override def scalacOptions = Task:
@@ -3289,7 +3300,8 @@ object vivisection extends Library:
   // Expression evaluation: `anthology` compiles a synthetic class against the debuggee's
   // classpath and the Evaluator injects and runs it over JDWP. Kept out of `core` so the
   // compiler dependency does not reach a caller who only inspects variables.
-  object eval extends Component(core, anthology.`scala`, hellenism.jvm, stenography.core):
+  object eval extends Component(core, anthology.`scala`, hellenism.jvm, stenography.core,
+      hyperbole.tasty):
     override def scalaJs = false // hosts the Scala compiler and debugs JVMs
     override def scalaNative = false
     // `Purview` reads static types out of the compiler's own symbol loader.
