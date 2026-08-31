@@ -88,7 +88,7 @@ extends Cli, Stdio:
       case _ =>
         Nil
 
-    recur(matchedArguments.distinct.sort(_.position), 0)
+    recur(matchedArguments.distinct.order(_.position), 0)
 
   private lazy val parameters: interpreter.Topic = interpreter.interpret(arguments)
 

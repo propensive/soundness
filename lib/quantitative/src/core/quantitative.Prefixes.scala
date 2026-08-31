@@ -35,7 +35,7 @@ package quantitative
 import scala.math
 
 import prepositional.*
-import rudiments.{sort, seek}
+import rudiments.{order, seek}
 import vacuous.or
 
 object Prefixes:
@@ -47,7 +47,7 @@ class Prefixes(val prefixes: List[MetricPrefix], val minimum: Double) extends Pl
   def select(value: Double): MetricPrefix =
     if value == 0.0 then NoPrefix else
       val abs = math.abs(value)
-      val candidates = (NoPrefix :: prefixes).sort(-_.exponent)
+      val candidates = (NoPrefix :: prefixes).order(-_.exponent)
 
       candidates.seek: prefix =>
         abs/math.pow(prefix.base.toDouble, prefix.exponent.toDouble) >= minimum

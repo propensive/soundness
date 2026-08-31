@@ -219,7 +219,7 @@ def helpTree
         ( command,
           description,
           parameters,
-          children.sort(_.command),
+          children.order(_.command),
           group,
           statuses,
           variables )

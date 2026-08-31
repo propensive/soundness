@@ -78,7 +78,7 @@ object Honeycomb:
       val html: Html =
         Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
-      val holes2 = holes.stdlib.toList.to(proscenium.List).sort(_(0)).map(_(1))
+      val holes2 = holes.stdlib.toList.to(proscenium.List).order(_(0)).map(_(1))
       val iterator = holes2.stdlib.iterator
       var index: Int = -1
 
@@ -286,7 +286,7 @@ object Honeycomb:
         Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
       val iterator: Iterator[Expr[Any]] =
-        holes.stdlib.toList.to(proscenium.List).sort(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
+        holes.stdlib.toList.to(proscenium.List).order(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
           expr.absolve match
             case '{$expr: value} => hole match
               case Hole.Attribute(tag, attribute) =>

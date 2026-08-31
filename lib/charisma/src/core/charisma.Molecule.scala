@@ -49,7 +49,7 @@ object Molecule:
   given showable: Molecule is Showable = molecule =>
     val orderedElements =
       if !molecule.elements.defines(PeriodicTable.C)
-      then molecule.elements.stdlib.toList.to(List).sort(_(0).symbol)
+      then molecule.elements.stdlib.toList.to(List).order(_(0).symbol)
       else
         val carbon = PeriodicTable.C -> molecule.elements.stdlib(PeriodicTable.C)
 
@@ -61,7 +61,7 @@ object Molecule:
 
         val rest =
           (molecule.elements.stdlib - PeriodicTable.C - PeriodicTable.H)
-          . to(List).sort(_(0).symbol)
+          . to(List).order(_(0).symbol)
 
         carbon :: hydrogen + rest
 

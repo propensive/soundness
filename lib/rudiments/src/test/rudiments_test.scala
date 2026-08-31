@@ -442,12 +442,12 @@ object Tests extends Suite(m"Rudiments Tests"):
     suite(m"Ordered reshaping tests"):
       test(m"Map sorts into a Ledger iterating in sorted order"):
         val m: Map[Text, Int] = Map(t"b" -> 2, t"c" -> 3, t"a" -> 1)
-        m.sort { (key, value) => key }.to[List]
+        m.order { (key, value) => key }.to[List]
       . assert(_ == List(t"a" -> 1, t"b" -> 2, t"c" -> 3))
 
       test(m"Map sort result is a Ledger"):
         val m: Map[Text, Int] = Map(t"b" -> 2, t"a" -> 1)
-        val sorted: Ledger[Text, Int] = m.sort { (key, value) => key }
+        val sorted: Ledger[Text, Int] = m.order { (key, value) => key }
         sorted.to[List]
       . assert(_ == List(t"a" -> 1, t"b" -> 2))
 
@@ -459,7 +459,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"Ledger sorts into a Ledger"):
         val ledger: Ledger[Text, Int] = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
-        val sorted: Ledger[Text, Int] = ledger.sort { (key, value) => value }
+        val sorted: Ledger[Text, Int] = ledger.order { (key, value) => value }
         sorted.to[List]
       . assert(_ == List(t"a" -> 1, t"b" -> 2, t"c" -> 3))
 

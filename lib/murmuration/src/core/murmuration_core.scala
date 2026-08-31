@@ -170,8 +170,11 @@ extension [self](self: self)(using traversable: self is Traversable)
       . to(Map)
 
   // `Stable` receivers only: sorting an unordered shape (`Set`, `Map`) is honestly unavailable
-  // rather than silently order-dropping.
-  def sort[key, result](lambda: traversable.Operand => key)
+  // rather than silently order-dropping. `order` sorts by a projection of each element; `sort`
+  // (below) sorts by the elements' own order. A comparator overload (the stdlib's `sortWith`)
+  // cannot join this name: a two-parameter lambda would resolve to it by arity, breaking
+  // parameter untupling on pair-`Operand` receivers (`map.order { (key, value) => key }`).
+  def order[key, result](lambda: traversable.Operand => key)
     ( using ordering:   Ordering[key],
             reshapable: self is Reshapable.Stable by traversable.Operand to result )
   :   result =
@@ -193,7 +196,17 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( reshapable.reshape(traversable.traverse(self).takeWhile(predicate)),
       reshapable.reshape(traversable.traverse(self).dropWhile(predicate)) )
 
-  // Sorting by the elements' own order, the no-key sibling of `sort(lambda)` below.
+  // Every element satisfying `predicate`, and every element that does not; each side is rebuilt
+  // in the source's own shape. Unlike `span`, membership ignores position, so unordered shapes
+  // (`Set`, `Map`) partition meaningfully; hence not `Stable`.
+  def partition[result](predicate: traversable.Operand => Boolean)
+    ( using reshapable: self is Reshapable by traversable.Operand to result )
+  :   (result, result) =
+
+    ( reshapable.reshape(traversable.traverse(self).filter(predicate)),
+      reshapable.reshape(traversable.traverse(self).filterNot(predicate)) )
+
+  // Sorting by the elements' own order, the no-key sibling of `order(lambda)` above.
   def sort[result]
     ( using ordering:   Ordering[traversable.Operand],
             reshapable: self is Reshapable.Stable by traversable.Operand to result )
@@ -202,8 +215,10 @@ extension [self](self: self)(using traversable: self is Traversable)
     reshapable.reshape(traversable.traverse(self).toList.sorted.iterator)
 
   // Filter and map in one pass, keeping only the elements the partial function is defined at
-  // (the stdlib's `collect`). Not `Stable`: gathering from a `Set` or `Map` is meaningful.
-  def sweep[element2, result](lambda: PartialFunction[traversable.Operand, element2])
+  // (the stdlib's `collect`). Not `Stable`: gathering from a `Set` or `Map` is meaningful. The
+  // partial function is capability-annotated so that lambdas capturing a `Tactic` (or any other
+  // capability) are accepted; `sweep` applies it eagerly and retains nothing.
+  def sweep[element2, result](lambda: PartialFunction[traversable.Operand, element2]^)
     ( using reshapable: self is Reshapable by element2 to result )
   :   result =
 

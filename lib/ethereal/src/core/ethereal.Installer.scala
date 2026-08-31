@@ -100,7 +100,7 @@ object Installer:
               % / "bin",
               % / "bin" )
 
-        paths.filter(_.existent()).filter(_.writable()).sort: directory =>
+        paths.filter(_.existent()).filter(_.writable()).order: directory =>
           preferences.stdlib.indexOf(directory) match
             case -1    => Int.MaxValue
             case index => index
