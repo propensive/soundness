@@ -841,7 +841,8 @@ object soundness extends Toolchain:
 
   object tool extends Bundle(anthology.core, degustation.core,
     degustation.lira, mandible.lira, xenophile.lira, harlequin.core, hellenism.core,
-    hyperbole.core, octogenarian.core, reliquary.core, reliquary.derive, revolution.core,
+    hyperbole.tasty, hyperbole.core, octogenarian.core, reliquary.core, reliquary.derive,
+    revolution.core,
     anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
     anthology.lira,
