@@ -33,6 +33,8 @@
 package harlequin
 
 import anticipation.*
+import denominative.nil
+import denominative.dysasymptotics.linearSize
 import gossamer.*
 import proscenium.*
 import rudiments.*
@@ -113,8 +115,7 @@ object Fragment:
       val before: Text = code.keep(start)
       val sig = tokens(before)
 
-      if sig.stdlib.isEmpty then (Unset, prefix) else
-        val last = sig.stdlib.last
+      sig.last.lay((Unset, prefix)): last =>
         val text = last.text
         val closeBracket = text == t")" || text == t"]" || text == t"}"
 
@@ -129,7 +130,7 @@ object Fragment:
           val base: Text = code.keep(end).skip(baseStart)
 
           val preceding: Text =
-            tokens(code.keep(baseStart)).stdlib.lastOption.map(_.text).getOrElse(t"")
+            tokens(code.keep(baseStart)).last.let(_.text).or(t"")
 
           if infixExcluded.has(preceding) then (Unset, prefix) else (t"$base.", prefix)
 
