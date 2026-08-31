@@ -30,13 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vivisection
 
-// `Variable` is intentionally not re-exported: `ambience` already publishes a `Variable` (an
-// environment variable) into `soundness`, and a debugger variable is reached as
-// `vivisection.Variable`.
-export vivisection.{Jdwp, Debugger, Debuggee, Debug, Halt, Breakpoint, SourceBreakpoint,
-    debug}
-
-export vivisection.{ObjectId, ThreadId, ThreadGroupId, StringId, ClassLoaderId, ReferenceTypeId,
-    MethodId, FieldId, FrameId}
+// A debuggee for stepping tests: a marker line, then a line whose whole computation is an
+// inlined call, then a plain line — so a logical step over the middle line must skip the
+// inlined body, while a step into it must stop inside `Doubling.double`.
+object Paced:
+  def main(args: Array[String]): Unit =
+    System.out.nn.println("start")
+    val result = Doubling.double(7)
+    System.out.nn.println(result)

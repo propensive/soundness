@@ -36,6 +36,10 @@ import scala.language.dynamics
 
 import soundness.*
 
+// The `soundness` wildcard publishes `honeycomb.Fragment`, which outranks this package's own
+// `Fragment` from another file; the by-name import restores it.
+import harlequin.Fragment
+
 import ambience.systems.javaSystem
 import denominative.dysasymptotics.linearSize
 
@@ -212,6 +216,57 @@ object Tests extends Suite(m"Harlequin Tests"):
 
       Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
     .assert(!_.has(t"diet"))
+
+    // Fragment analysis is pure text+lexer work — no compiler givens — so a completion host
+    // can split its input before deciding whether to invoke the typechecker at all.
+    suite(m"Fragment analysis"):
+      test(m"a bare identifier has no member base"):
+        Fragment.memberBase(t"leng", 4)
+      . assert(_ == (Unset, t"leng"))
+
+      test(m"a member selection splits at the dot"):
+        Fragment.memberBase(t"text.le", 7)
+      . assert(_ == (t"text.", t"le"))
+
+      test(m"a chained call keeps the whole receiver"):
+        Fragment.memberBase(t"foo.bar(baz).qu", 15)
+      . assert(_ == (t"foo.bar(baz).", t"qu"))
+
+      test(m"the partial ends at the cursor, not the end of input"):
+        Fragment.memberBase(t"text.length", 7)
+      . assert(_ == (t"text.", t"le"))
+
+      test(m"a value followed by space is an infix receiver"):
+        Fragment.infixBase(t"xs ma", 5)
+      . assert(_ == (t"xs.", t"ma"))
+
+      test(m"a bracketed receiver is scanned as a balanced group"):
+        Fragment.infixBase(t"foo(bar, baz) ma", 16)
+      . assert(_ == (t"foo(bar, baz).", t"ma"))
+
+      test(m"a keyword before the space is not a receiver"):
+        Fragment.infixBase(t"if co", 5)
+      . assert(_ == (Unset, t"co"))
+
+      test(m"a soft keyword before the space is not a receiver"):
+        Fragment.infixBase(t"inline de", 9)
+      . assert(_ == (Unset, t"de"))
+
+      test(m"a binding name after val is not a receiver"):
+        Fragment.infixBase(t"val xs ma", 9)
+      . assert(_ == (Unset, t"ma"))
+
+      test(m"an operator before the space is not a receiver"):
+        Fragment.infixBase(t"x + le", 6)
+      . assert(_ == (Unset, t"le"))
+
+      test(m"an expression start scans back over selections and brackets"):
+        Fragment.expressionStart(t"foo(bar).baz")
+      . assert(_ == 0)
+
+      test(m"an expression start stops at an operator"):
+        Fragment.expressionStart(t"a + foo.bar")
+      . assert(_ == 4)
 
     // Keyword completions come from prophesy's curated pattern tree over the reversed lexeme
     // context at the caret; tokenized depth suffices, so no compiler givens are needed.

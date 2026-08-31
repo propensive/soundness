@@ -184,6 +184,8 @@ object Dap:
       supportsSetExpression:            Boolean = true,
       supportsExceptionInfoRequest:     Boolean = true,
       supportsRestartFrame:             Boolean = true,
+      supportsCompletionsRequest:       Boolean = true,
+      completionTriggerCharacters:      List[Text] = List(t"."),
       exceptionBreakpointFilters:       List[ExceptionFilter] = Dap.exceptionFilters )
 
   object LaunchArguments:
@@ -312,6 +314,17 @@ object Dap:
   case class EvaluateArguments
     ( expression: Text, frameId: Optional[Int] = Unset, context: Optional[Text] = Unset )
 
+  object CompletionsArguments:
+    given decodable: CompletionsArguments is Json.Decodable =
+      import strategies.throwUnsafely
+      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+
+  // `column` is a 1-based character position within `text`, per the specification's default
+  // units; `line` is accepted but unused, since this adapter completes single-line console
+  // input.
+  case class CompletionsArguments
+    ( text: Text, column: Int, frameId: Optional[Int] = Unset, line: Optional[Int] = Unset )
+
   object SetExpressionArguments:
     given decodable: SetExpressionArguments is Json.Decodable =
       import strategies.throwUnsafely
@@ -412,6 +425,25 @@ object Dap:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
   case class EvaluateBody(result: Text, variablesReference: Int = 0)
+
+  object CompletionItem:
+    given encodable: CompletionItem is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
+  // `start` and `length` delimit the region of the request's `text` the completion replaces, in
+  // the same 1-based units as the request's `column`; when omitted, the client inserts `label`
+  // at the requested column.
+  case class CompletionItem
+    ( label:  Text,
+      `type`: Optional[Text] = Unset,
+      start:  Optional[Int]  = Unset,
+      length: Optional[Int]  = Unset )
+
+  object CompletionsBody:
+    given encodable: CompletionsBody is Json.Encodable =
+      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+
+  case class CompletionsBody(targets: List[CompletionItem])
 
   object ExceptionInfoBody:
     given encodable: ExceptionInfoBody is Json.Encodable =

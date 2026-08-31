@@ -44,3 +44,10 @@ type ReferenceTypeId = Jdwp.Ref[Jdwp.Ref.Type]
 type MethodId        = Jdwp.Ref[Jdwp.Ref.Method]
 type FieldId         = Jdwp.Ref[Jdwp.Ref.Field]
 type FrameId         = Jdwp.Ref[Jdwp.Ref.Frame]
+
+// The ambient debug session, summoned from context: a session block can read
+// `debuggee.session: debug.breakpoint(…)` without naming the lent capability, in the manner of
+// `parasite.monitor` and exegesis's `document`. (No matching accessor exists for `Halt`: its
+// natural name is taken by `fulminate.halt`, so handlers keep naming their parameter —
+// conventionally `stop`.)
+transparent inline def debug(using debug: Debug^): debug.type = debug

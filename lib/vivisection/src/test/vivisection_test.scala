@@ -86,7 +86,7 @@ object Tests extends Suite(m"Vivisection tests"):
     val command: Command = sh"java -classpath $classpathText $fixtureClass"
     val debuggee: Debuggee = Debuggee(command, freePort())
 
-    debuggee.session: debug ?=>
+    debuggee.session:
       // The breakpoint is set by source position while the VM stands suspended at startup, before
       // any fixture class is loaded; deferred binding resolves it as each matching class is
       // prepared — deterministically, since the loading thread stands suspended while the
@@ -241,7 +241,7 @@ object Tests extends Suite(m"Vivisection tests"):
     val command: Command = sh"java -classpath $classpathText $fixtureClass"
     val debuggee: Debuggee = Debuggee(command, freePort())
 
-    debuggee.session: debug ?=>
+    debuggee.session:
       debug.exceptions(uncaught, caught, within = t"vivisection.*"): stop ?=>
         outcome.offer(handler(using stop))
         stop.remain()
@@ -1050,6 +1050,62 @@ object Tests extends Suite(m"Vivisection tests"):
 
     . assert(_ == t"43")
 
+    // Completions over the wire, typechecked against the stopped frame: a bare prefix resolves
+    // the frame's locals; a member selection resolves the local's declared type's members; and a
+    // fresh binding position offers nothing (the name is the programmer's to invent).
+    test(m"a DAP client completes console input against a stopped frame"):
+      import dynamicJsonAccess.enabled
+      val classpathText = System.properties.java.`class`.path()
+
+      supervise:
+        dapScenario: client ?=>
+          client.request(t"initialize")
+          client.awaitResponse(t"initialize")
+
+          val launchArgs =
+            Json.make(mainClass = t"vivisection.Menagerie".in[Json], classpath = classpathText.in[Json])
+
+          client.request(t"launch", launchArgs)
+          client.awaitResponse(t"launch")
+
+          val source = Json.make(path = t"vivisection.Menagerie.scala".in[Json])
+          val points = List(Json.make(line = 57.in[Json]))
+          val setArgs = Json.make(source = source, breakpoints = j"[$points*]")
+
+          client.request(t"setBreakpoints", setArgs)
+          client.awaitResponse(t"setBreakpoints")
+          client.request(t"configurationDone")
+          client.awaitResponse(t"configurationDone")
+
+          val stopped = client.awaitEvent(t"stopped")
+          val thread = stopped.body.threadId.as[Int]
+
+          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse(t"stackTrace")
+          val frame = trace.body.stackFrames(0).id.as[Int]
+
+          def labels(text: Text, column: Int): scala.List[Text] =
+            val arguments =
+              Json.make
+                ( text = text.in[Json], column = column.in[Json], frameId = frame.in[Json] )
+
+            client.request(t"completions", arguments)
+            val completed = client.awaitResponse(t"completions")
+            completed.body.targets.as[List[Json]].stdlib.map(_.label.as[Text])
+
+          val prefixed = labels(t"in", 3)
+          val members = labels(t"text.le", 8)
+          val bindings = labels(t"val ", 5)
+
+          client.request(t"disconnect")
+          client.awaitResponse(t"disconnect")
+
+          ( prefixed.contains(t"int") && prefixed.contains(t"ints"),
+            members.contains(t"length"),
+            bindings.isEmpty )
+
+    . assert(_ == (true, true, true))
+
     // The transport itself, over real pipes: `initialize` and `disconnect` without ever opening
     // a debuggee, so this exercises the framing and the server's teardown-on-EOF in isolation.
     test(m"a DAP server initializes and disconnects over stdio"):
@@ -1110,6 +1166,93 @@ object Tests extends Suite(m"Vivisection tests"):
 
     . assert(_ == true)
 
+    // Stepping over advances the *real* source line: the first step arrives at the inline-call
+    // line (whose first code is the inlined body, honestly shown as an inline position), and
+    // the second passes over the whole line — body, call and assignment — to the plain line
+    // beyond, never resting mid-body.
+    test(m"stepping over an inline call skips its body"):
+      supervise:
+        val classpathText = System.properties.java.`class`.path()
+        val command: Command = sh"java -classpath $classpathText vivisection.Paced"
+        val debuggee: Debuggee = Debuggee(command, freePort())
+
+        debuggee.session:
+          val stopped = Promise[ThreadId]()
+          val first = Promise[scala.List[(Optional[Text], Int, Boolean)]]()
+          val second = Promise[scala.List[(Optional[Text], Int, Boolean)]]()
+
+          debug.breakpoint(t"vivisection.Paced.scala", Ordinal.uniary(40)): stop ?=>
+            stopped.offer(stop.thread)
+            stop.remain()
+
+          debug.resume()
+          val thread = stopped.await()
+
+          debug.step(thread, Jdwp.StepDepth.Over): step ?=>
+            first.offer:
+              step.positions(step.location).stdlib.map: p => (p.source, p.line, p.inlined)
+            step.remain()
+
+          debug.resume()
+          val landing1 = first.await()
+
+          debug.step(thread, Jdwp.StepDepth.Over): step ?=>
+            second.offer:
+              step.positions(step.location).stdlib.map: p => (p.source, p.line, p.inlined)
+            step.remain()
+
+          debug.resume()
+
+          // Line 42's own first code is inlined too (`.nn` from proscenium), so the second
+          // landing is asserted by its real frame: the step passed over the whole of line 41.
+          (landing1, second.await().lastOption)
+
+    . assert(_ ==
+        ( scala.List((t"vivisection.Doubling.scala", 40, true),
+              (t"vivisection.Paced.scala", 41, false)),
+          scala.Some((t"vivisection.Paced.scala", 42, false)) ))
+
+    // Stepping *into* advances the logical (innermost) line: having arrived at the inline
+    // call's first body line, a step in moves to the body's next line — line by line within
+    // the inlined code, as if it were an ordinary method.
+    test(m"stepping into an inline body moves through it line by line"):
+      supervise:
+        val classpathText = System.properties.java.`class`.path()
+        val command: Command = sh"java -classpath $classpathText vivisection.Paced"
+        val debuggee: Debuggee = Debuggee(command, freePort())
+
+        debuggee.session:
+          val stopped = Promise[ThreadId]()
+          val arrival = Promise[Unit]()
+          val landing = Promise[scala.List[(Optional[Text], Int, Boolean)]]()
+
+          debug.breakpoint(t"vivisection.Paced.scala", Ordinal.uniary(40)): stop ?=>
+            stopped.offer(stop.thread)
+            stop.remain()
+
+          debug.resume()
+          val thread = stopped.await()
+
+          // Arrive at the inline call's first body line (see the step-over test above).
+          debug.step(thread, Jdwp.StepDepth.Over): step ?=>
+            arrival.offer(())
+            step.remain()
+
+          debug.resume()
+          arrival.await()
+
+          debug.step(thread, Jdwp.StepDepth.Into): step ?=>
+            landing.offer:
+              step.positions(step.location).stdlib.map: p => (p.source, p.line, p.inlined)
+            step.remain()
+
+          debug.resume()
+          landing.await()
+
+    . assert(_ == scala.List(
+          (t"vivisection.Doubling.scala", 41, true),
+          (t"vivisection.Paced.scala", 41, false)))
+
     // The SMAP path end to end: a breakpoint on the body of an inline method — in a file whose
     // class never loads at runtime — binds at the inlined copy inside the caller's class, and
     // the stop expands into its logical positions: the inline origin first, then the physical
@@ -1165,10 +1308,11 @@ object Tests extends Suite(m"Vivisection tests"):
           client.awaitResponse(t"disconnect")
 
           ( inline.presentationHint.as[Text], inline.source.name.as[Text], inline.line.as[Int],
-            real.source.name.as[Text], real.line.as[Int], scopes.success.as[Boolean] )
+            real.source.name.as[Text], real.line.as[Int], scopes.success.as[Boolean],
+            inline.name.as[Text].starts(t"vivisection.Doubling.double") )
 
     . assert(_ == (t"subtle", t"vivisection.Doubling.scala", 40,
-          t"vivisection.Inlined.scala", 40, true))
+          t"vivisection.Inlined.scala", 40, true, true))
 
     test(m"a DAP request envelope decodes its routing fields"):
       import strategies.throwUnsafely
@@ -1230,7 +1374,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val command: Command = sh"java -classpath $classpathText vivisection.Recount"
         val debuggee: Debuggee = Debuggee(command, freePort())
 
-        debuggee.session: debug ?=>
+        debuggee.session:
           debug.resume()
 
           debug.console.let: console =>
@@ -1296,7 +1440,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val command: Command = sh"java -classpath $classpathText vivisection.Ledger"
         val debuggee: Debuggee = Debuggee(command, freePort())
 
-        debuggee.session: debug ?=>
+        debuggee.session:
           // The watch needs `Account` loaded, so a deferred function breakpoint holds the VM at
           // the first `deposit`; the watch is then installed from this thread and the entry
           // breakpoint cleared before resuming.
@@ -1334,7 +1478,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val command: Command = sh"java -classpath $classpathText vivisection.Recount"
         val debuggee: Debuggee = Debuggee(command, freePort())
 
-        debuggee.session: debug ?=>
+        debuggee.session:
           debug.breakpoint(t"vivisection.Recount$$", t"tally"): stop ?=>
             outcome.offer(true)
             stop.remain()
@@ -1354,7 +1498,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val command: Command = sh"java -classpath $classpathText vivisection.Recount"
         val debuggee: Debuggee = Debuggee(command, freePort())
 
-        debuggee.session: debug ?=>
+        debuggee.session:
           debug.breakpoint(t"vivisection.Recount.scala", Ordinal.uniary(43)): stop ?=>
             if hits.incrementAndGet() == 1
             then stop.frames().stdlib.headOption.foreach { (frame, _) => stop.pop(frame) }

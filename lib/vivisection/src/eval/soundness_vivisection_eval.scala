@@ -33,5 +33,6 @@
 package soundness
 
 export vivisection.Evaluator
+export vivisection.Namer
 export vivisection.Purview
 export vivisection.evaluator

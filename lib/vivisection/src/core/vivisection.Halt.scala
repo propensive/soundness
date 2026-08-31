@@ -85,7 +85,8 @@ object Halt:
       source:  Optional[Text],
       path:    Optional[Text],
       line:    Int,
-      inlined: Boolean )
+      inlined: Boolean,
+      cls:     Optional[Text] = Unset )
 
 // The capability lent to an event handler while its thread stands suspended: a view over the
 // stopped thread's frames and their logical variables. Sealed (`ExclusiveCapability`), so it
@@ -125,9 +126,10 @@ extends caps.ExclusiveCapability:
       expansion =>
         val inlined = expansion.inlined.stdlib.map: origin =>
           // The `ScalaClass` stratum records binary-ish names with `$u002E` escapes; failing
-          // that, the origin's file names the frame.
-          val cls = origin.cls.lay(origin.file) { cls => cls.s.replace("$u002E", ".").nn.tt }
-          Halt.Position(cls, origin.file, origin.path, origin.line, true)
+          // that, the origin's file names the frame. The raw name rides along, for a caller
+          // holding the classpath to resolve the definition through TASTy.
+          val cls = origin.cls.lay(origin.file): cls => cls.s.replace("$u002E", ".").nn.tt
+          Halt.Position(cls, origin.file, origin.path, origin.line, true, origin.cls)
 
         val real = Halt.Position(name, source, path, expansion.line.or(line), false)
         List((inlined :+ real)*)
