@@ -33,6 +33,7 @@
 package nomenclature
 
 import anticipation.*
+import murmuration.{map, filter}
 import contingency.*
 import gossamer.*
 import hieroglyph.*
@@ -52,7 +53,7 @@ object Vocabulary:
     new Vocabulary(load(adjectives), load(animals)).asInstanceOf[Vocabulary over transport]
 
   private def load[source: Streamable by Data over Credit](resource: source): List[Text] =
-    resource.read[Text].cut(t"\n").stdlib.map(_.trim).filter(_ != t"").to(List)
+    resource.read[Text].cut(t"\n").map(_.trim).filter(_ != t"")
 
 class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   type Transport

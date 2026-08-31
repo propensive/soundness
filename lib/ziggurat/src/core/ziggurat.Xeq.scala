@@ -73,7 +73,7 @@ object Xeq:
     val prefix: Text =
       template.cut(t"@@BAT@@").join(bat).cut(t"@@PS1@@").join(ps1).cut(t"@@SH@@").join(sh)
 
-    val encoded = payloads.stdlib.map: payload =>
+    val encoded = payloads.map: payload =>
       val raw: Data =
         if !payload.gzip then payload.bytes
         else Chain(payload.bytes).compress[Gzip].read[Data]

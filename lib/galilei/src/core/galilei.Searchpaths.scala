@@ -72,7 +72,7 @@ object Searchpaths:
     ( using backend: FilesystemBackend on target )
   :   List[Path on target] =
 
-    stems.stdlib.map(resolve(_, path)).filter(galilei.existent(_)()).to(List)
+    stems.map(resolve(_, path)).filter(galilei.existent(_)())
 
   // The merged listing's names: the union of children across all stems, deduplicated, with
   // earlier stems shadowing later ones — insertion order preserves precedence.

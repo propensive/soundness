@@ -33,6 +33,7 @@
 package graffiti
 
 import anticipation.*
+import murmuration.map
 import cataclysm.*
 import honeycomb.*
 import honeycomb.doms.html.whatwg.*
@@ -65,7 +66,7 @@ trait Dashboard extends Archetype, Mainstay, Masthead:
 
   // The masthead shows the brand; the main content is the grid of cards.
   override def masthead: Html of (? <: Flow) = Strong(brand)
-  def content: Html of (? <: Flow) = Div(`class` = Dashboard.gridClass)(cards.stdlib.map(card)*)
+  def content: Html of (? <: Flow) = Div(`class` = Dashboard.gridClass)(cards.map(card)*)
 
   // This view's own rules; override to restyle the grid or the cards.
   protected def dashboardStyles: Css =

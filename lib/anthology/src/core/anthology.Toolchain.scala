@@ -41,7 +41,7 @@ import scala.util.control as suc
 import ambience.*
 import anticipation.*
 import denominative.nil
-import murmuration.fold
+import murmuration.{exists, fold, map}
 import rudiments.each
 import rudiments.reverse
 import contingency.*
@@ -175,7 +175,7 @@ case class Toolchain private (edges: List[Edge]):
     val route = path(source, target)
 
     settings.each: setting =>
-      if !route.stdlib.map(_.target).exists(setting.appliesTo(_))
+      if !route.map(_.target).exists(setting.appliesTo(_))
       then abort(Link.Error(Link.Error.Reason.InapplicableSetting))
 
     Log.info(LinkEvent.Start)

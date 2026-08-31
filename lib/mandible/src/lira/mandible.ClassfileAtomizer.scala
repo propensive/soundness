@@ -114,7 +114,7 @@ object ClassfileAtomizer:
 
   private def texts(out: java.io.ByteArrayOutputStream, values: List[Text]): Unit =
     uvarint(out, values.stdlib.length.toLong)
-    values.each(utf8(out, _)
+    values.each(utf8(out, _))
 
   private def hash(encode: java.io.ByteArrayOutputStream => Unit): Data =
     val out = java.io.ByteArrayOutputStream()
