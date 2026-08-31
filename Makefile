@@ -29,9 +29,13 @@ keywords:
 check-givens:
 	python3 etc/check-given-uniqueness.py
 
+check-stdlib:
+	./etc/check-stdlib-count.sh
+
 build:
 	./mill groupCheck.validate
 	python3 etc/check-given-uniqueness.py
+	./etc/check-stdlib-count.sh
 	./mill soundness.all
 	./mill benches.compile
 
