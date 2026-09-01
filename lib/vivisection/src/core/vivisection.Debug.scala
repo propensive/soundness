@@ -166,9 +166,9 @@ extends caps.ExclusiveCapability:
       case expansion: digression.Smap.Expansion =>
         val callSite: Optional[(Text, Int)] = expansion.line.let: line => (source, line)
 
-        expansion.inlined.stdlib.headOption match
-          case scala.Some(origin) => ((origin.file, origin.line), callSite)
-          case _                  => ((source, expansion.line.or(line)), Unset)
+        expansion.inlined.prim match
+          case origin: digression.Smap.Origin => ((origin.file, origin.line), callSite)
+          case _                              => ((source, expansion.line.or(line)), Unset)
 
       case _ =>
         ((source, line), Unset)
@@ -187,9 +187,9 @@ extends caps.ExclusiveCapability:
     // The thread stands suspended at request time, so its top frame gives the starting
     // logical reading.
     val start: Optional[((Text, Int), Optional[(Text, Int)])] =
-      connection.frames(thread, 0, 1).stdlib.headOption match
-        case scala.Some((_, location)) => logical(location)
-        case _                         => Unset
+      connection.frames(thread, 0, 1).prim match
+        case (_, location: Jdwp.Location) => logical(location)
+        case _                            => Unset
 
     stepUntil(thread, depth, start, 0)(handler)
 

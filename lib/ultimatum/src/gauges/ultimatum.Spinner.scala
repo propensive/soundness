@@ -33,8 +33,10 @@
 package ultimatum
 
 import anticipation.*
+import denominative.z
 import escapade.*
 import gossamer.*
+import rudiments.at
 import symbolism.*
 import vacuous.*
 
@@ -108,7 +110,7 @@ case class Spinner
         val count = spinner.frames.stdlib.length
 
         val index = tick.index.abs
-        val glyph = if count == 0 then t" " else spinner.frames.stdlib(index%count)
+        val glyph = if count == 0 then t" " else spinner.frames.at((index%count).z).or(t" ")
 
         val padding = width - spinner.columns
         val body = gauging.tint(gauging.palette.fill)(Teletype(glyph))

@@ -44,4 +44,4 @@ class LazyEnvironment(variables: List[Text]) extends Environment:
       case List(key, value) => (key, value)
     . to[Map]
 
-  def variable(key: Text): Optional[Text] = map.stdlib.get(key).getOrElse(Unset)
+  def variable(key: Text): Optional[Text] = map.at(key)

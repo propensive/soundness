@@ -112,7 +112,7 @@ object Media:
       val xs: List[Text] = string.cut(t"+")
 
       xs.absolve match
-        case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.stdlib.tail.to(List)))
+        case (h: Text) :: rest => (parseSubtype(h), parseSuffixes(rest))
 
     def parseBasic(string: Text): (Group, Subtype, List[Suffix]) = string.cut(t"/") match
       case List(group, subtype) => parseGroup(group) *: parseInit(subtype)
@@ -144,9 +144,9 @@ object Media:
     val xs: List[Text] = string.cut(t";").map(_.trim)
 
     xs.absolve match
-      case (h: Text) :: _ =>
+      case (h: Text) :: rest =>
         val basic = parseBasic(h)
-        MediaType(basic(0), basic(1), basic(2), parseParams(xs.stdlib.tail.to(List)))
+        MediaType(basic(0), basic(1), basic(2), parseParams(rest))
 
   final private val specials: Set[Char] =
     Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')

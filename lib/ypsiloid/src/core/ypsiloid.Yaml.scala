@@ -1156,37 +1156,38 @@ object Yaml extends Yaml2, Dynamic:
     else
       // `YamlPath.path.descent` is stored leaf-first (Serpentine's `/`
       // prepends), so iterate it in reverse to walk root-to-leaf.
-      val seg = segments.stdlib(segments.size - 1 - i).s
+      segments.at((segments.size - 1 - i).z).let: segment =>
+        val seg = segment.s
 
-      if ast.isObject then
-        val k = ast.objectIndexOf(seg)
+        if ast.isObject then
+          val k = ast.objectIndexOf(seg)
 
-        if k < 0 then Unset
+          if k < 0 then Unset
+          else
+            val entryOff = data.readUnchecked(offset + 5 + k)
+            val isLast = i == segments.size - 1
+
+            if isLast && keyMode then
+              Yaml.Ast.Position
+                ( line   = data.readUnchecked(offset + entryOff),
+                  column = data.readUnchecked(offset + entryOff + 1),
+                  length = data.readUnchecked(offset + entryOff + 2) )
+            else
+              walkIndex
+                ( ast.objectValue(k), data, offset + entryOff + 3, segments, i + 1, keyMode )
+        else if ast.isArray then
+          try
+            val k = Integer.parseInt(seg)
+
+            if k < 0 || k >= ast.arrayLength then Unset
+            else
+              val childOff = data.readUnchecked(offset + 5 + k)
+
+              walkIndex
+                ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )
+          catch case _: NumberFormatException => Unset
         else
-          val entryOff = data.readUnchecked(offset + 5 + k)
-          val isLast = i == segments.size - 1
-
-          if isLast && keyMode then
-            Yaml.Ast.Position
-              ( line   = data.readUnchecked(offset + entryOff),
-                column = data.readUnchecked(offset + entryOff + 1),
-                length = data.readUnchecked(offset + entryOff + 2) )
-          else
-            walkIndex
-              ( ast.objectValue(k), data, offset + entryOff + 3, segments, i + 1, keyMode )
-      else if ast.isArray then
-        try
-          val k = Integer.parseInt(seg)
-
-          if k < 0 || k >= ast.arrayLength then Unset
-          else
-            val childOff = data.readUnchecked(offset + 5 + k)
-
-            walkIndex
-              ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )
-        catch case _: NumberFormatException => Unset
-      else
-        Unset
+          Unset
 
   inline given interpolator: Yaml is Interpolable:
     type Result = Yaml
@@ -1534,13 +1535,13 @@ object Yaml extends Yaml2, Dynamic:
   given mapEncodable: [key: Encodable in Text, element]
   =>  ( encodable: (element is Encodable in Yaml)^ )
   =>  ((Map[key, element] is Encodable in Yaml)^{encodable, caps.any}) = map =>
-    val keys: List[key] = List.from(map.stdlib.keys)
-    val arr = Array.allocate[Any](keys.size*2)
+    val entries: List[(key, element)] = List.from(map.stdlib)
+    val arr = Array.allocate[Any](entries.size*2)
     var i = 0
 
-    keys.each: k =>
+    entries.each: (k, v) =>
       arr(i*2) = Yaml.Ast.Str(k.encode).asInstanceOf[Any]
-      arr(i*2 + 1) = encodable.encode(map.stdlib(k)).root.asInstanceOf[Any]
+      arr(i*2 + 1) = encodable.encode(v).root.asInstanceOf[Any]
       i += 1
 
     Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(arr)))

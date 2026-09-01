@@ -229,7 +229,9 @@ object Apoplexy:
 
     . to[Set]
 
-    if wires.size == 1 then wires.stdlib.head else Wire.Json
+    wires.to[List] match
+      case List(wire) => wire
+      case _          => Wire.Json
 
   private def transportRepr(using quotes: Quotes)(wire: Wire): quotes.reflect.TypeRepr =
     import quotes.reflect.*
@@ -418,7 +420,7 @@ object Apoplexy:
       members(t"Locus").lay(halt(m"apoplexy: the resource has no `Locus` path"))(stringOf(_))
 
     val doc = spec(source)
-    val base = if doc.servers.nil then t"" else doc.servers.stdlib.head.url
+    val base = doc.servers.prim.lay(t"")(_.url)
     val baseExpr = Expr(base.s)
     val wire = uniformWire(doc)
 

@@ -146,7 +146,9 @@ object Packager:
 
         config.delivery match
           case Packaging.Delivery.Native =>
-            binary(config.targets.stdlib.head, config.output)
+            binary
+              ( config.targets.prim.lest(Packager.Error(m"no target was given")),
+                config.output )
             config.output
 
           case Packaging.Delivery.EmbedAll =>

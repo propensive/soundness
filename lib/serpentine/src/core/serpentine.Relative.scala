@@ -151,8 +151,13 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
   private inline def check[topic, filesystem](path: List[Text]): Unit =
     inline !![topic] match
       case _: (head *: tail) =>
-        infer[head is Admissible on filesystem].check(path.stdlib.head)
-        check[tail, filesystem](path.stdlib.tail.to(List)).unit
+        path match
+          case first :: rest =>
+            infer[head is Admissible on filesystem].check(first)
+            check[tail, filesystem](rest).unit
+
+          case _ =>
+            ()
 
       case EmptyTuple =>
         ()
@@ -172,12 +177,17 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
   inline def unqualified: Relative of Topic under Limit = this
 
   transparent inline def parent = inline !![Topic] match
-    case head *: tail => Relative[Plane, tail.type, Limit](ascent, descent.stdlib.tail*)
+    case head *: tail =>
+      descent match
+        case _ :: rest => Relative[Plane, tail.type, Limit](ascent, rest*)
+        case _         => Relative[Plane, tail.type, Limit](ascent)
+
     case EmptyTuple   => Relative[Plane, Zero, S[Limit]](ascent)
 
     case _ =>
-      if descent.nil then Relative[Plane, Topic, S[Limit]](ascent + 1)
-      else Relative[Plane, Topic, Limit](ascent, descent.stdlib.tail*)
+      descent match
+        case _ :: rest => Relative[Plane, Topic, Limit](ascent, rest*)
+        case _         => Relative[Plane, Topic, S[Limit]](ascent + 1)
 
   transparent inline def / (child: Any): Relative of (child.type *: Topic) under Limit =
     summonFrom:

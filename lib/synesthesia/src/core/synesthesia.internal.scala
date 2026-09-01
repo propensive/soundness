@@ -75,9 +75,11 @@ object internal:
               halt:
                 m"could not find a contextual `${TypeRepr.of[argument].show} is Showable` instance"
 
-    val result = insertions.zip(parts.stdlib.tail.map(Expr(_))).foldLeft(Expr(parts.stdlib.head)):
-      case (result, (insertion, part)) =>
-        '{$result+$insertion+$part}
+    val result = parts.absolve match
+      case head :: tail =>
+        insertions.zip(tail.stdlib.map(Expr(_))).foldLeft(Expr(head)):
+          case (result, (insertion, part)) =>
+            '{$result+$insertion+$part}
 
     val types = parts.map(StringConstant(_)).map(ConstantType(_).asType).reverse
 
@@ -220,8 +222,7 @@ object internal:
                                     given param is Decodable in Text = $decodable
                                     val key = ${Expr(param.name)}.tt
 
-                                    if input.defines(key) then input.stdlib(key).as[param]
-                                    else
+                                    input.at(key).let(_.as[param]).or:
                                       provide[Tactic[Mcp.Error]]:
                                         abort(Mcp.Error(Mcp.Error.Reason.MissingParameter))
                                   }

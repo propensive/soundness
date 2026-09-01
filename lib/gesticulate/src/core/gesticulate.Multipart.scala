@@ -136,7 +136,7 @@ object Multipart:
 
     def parsePart(headers: Map[Text, Text], stream: Chain[Data])
     :   Part =
-      headers.stdlib.get(t"Content-Disposition").optional.let: disposition =>
+      headers.at(t"Content-Disposition").let: disposition =>
         val parts = disposition.cut(t";").map(_.trim)
 
         val params: Map[Text, Text] =
@@ -163,8 +163,8 @@ object Multipart:
           case _ =>
             abort(Multipart.Error(Multipart.Error.Reason.BadDisposition))
 
-        val filename = params.stdlib.get(t"filename").optional
-        val name = params.stdlib.get(t"name").optional
+        val filename = params.at(t"filename")
+        val name = params.at(t"name")
 
         Part(dispositionValue, headers, name, filename, stream)
 

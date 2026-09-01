@@ -389,11 +389,15 @@ extension (stream: Chain[Data])
 
       if diff > 0 then diff
       else if current.nil then 0
-      else
-        focus = current.stdlib.head
-        current = current.stdlib.tail.to(Chain)
-        offset = 0
-        available()
+      else current match
+        case first #:: rest =>
+          focus = first
+          current = rest
+          offset = 0
+          available()
+
+        case _ =>
+          0
 
     override def close(): Unit = ()
 

@@ -150,6 +150,6 @@ object ociEdges:
         if !file.getName.nn.endsWith(".wit") then search(index + 1) else
           val text = String(jnf.Files.readAllBytes(file.toPath.nn).nn, "UTF-8").tt
 
-          WitDialect.worlds(text).stdlib.get(world.world).optional.or(search(index + 1))
+          WitDialect.worlds(text).at(world.world).or(search(index + 1))
 
     search(0).lay((Nil, Nil)): found => (found.imports, found.exports)

@@ -138,7 +138,7 @@ object Vernacular:
       t"$count ${if count == 1 then word(unit)(0) else word(unit)(1)}"
 
     def everyDuration(span: Timespan): Text =
-      val first = Vernacular.components(span).stdlib.headOption.map(_(1)).getOrElse(TimeUnit.Days)
+      val first = Vernacular.components(span).prim.let(_(1)).or(TimeUnit.Days)
       t"${article(first)} ${conjoin(durations(span))}"
 
     def everyUnit(interval: Int, unit: TimeUnit): Text =
@@ -270,9 +270,9 @@ trait Vernacular:
   final def relativeTimespan(span: Timespan): Text = Vernacular.components(span) match
     case Nil => justNow
 
-    case parts =>
+    case parts@(head :: _) =>
       val body = conjoin(parts.map(quantity))
-      if parts.stdlib.head(0) < 0 then past(body) else future(body)
+      if head(0) < 0 then past(body) else future(body)
 
   final def recurrence(period: Timespan, repetitions: Optional[Int], start: Text): Text =
     t"${everyDuration(period)}${repetitions.lay(t"")(times)} ${from(start)}"

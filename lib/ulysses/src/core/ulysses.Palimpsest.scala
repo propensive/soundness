@@ -57,7 +57,7 @@ object Palimpsest:
     var i = 0
 
     while i < n do
-      val hash = hashes.stdlib(i)
+      val hash = hashes.at(i.z).or(panic(m"the hash index is within the sequence's size"))
       val o    = cadence.offset(i)
       var j    = 0
 

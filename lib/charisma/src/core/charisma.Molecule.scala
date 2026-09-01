@@ -47,17 +47,18 @@ object Molecule:
   def apply(): Molecule = Molecule(Map(), 0)
 
   given showable: Molecule is Showable = molecule =>
-    val orderedElements =
-      if !molecule.elements.defines(PeriodicTable.C)
-      then molecule.elements.stdlib.toList.to(List).order(_(0).symbol)
-      else
-        val carbon = PeriodicTable.C -> molecule.elements.stdlib(PeriodicTable.C)
+    val orderedElements = molecule.elements.at(PeriodicTable.C) match
+      case Unset =>
+        molecule.elements.stdlib.toList.to(List).order(_(0).symbol)
+
+      case carbonCount: Int =>
+        val carbon = PeriodicTable.C -> carbonCount
 
         // Ascribed: the branded literal constructor narrows the `else` branch to
         // `... & Populated`, and the branch lub would otherwise be a union.
         val hydrogen: List[(Chemical.Element, Int)] =
-          if !molecule.elements.defines(PeriodicTable.H) then Nil else
-            List(PeriodicTable.H -> molecule.elements.stdlib(PeriodicTable.H))
+          molecule.elements.at(PeriodicTable.H).lay(Nil): hydrogenCount =>
+            List(PeriodicTable.H -> hydrogenCount)
 
         val rest =
           (molecule.elements.stdlib - PeriodicTable.C - PeriodicTable.H)

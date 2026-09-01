@@ -38,6 +38,7 @@ package escritoire
 import scala.compiletime
 
 import anticipation.*
+import rudiments.at
 import gossamer.*
 import prepositional.*
 import spectacular.*
@@ -69,7 +70,7 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
         [field] => tabulable =>
           tabulable.table().columns.map: element =>
             element.contramap(dereference).retitle:
-              labels.stdlib.get(label).getOrElse(label.uncamel.join(t" ").capitalize)
+              labels.at(label).or(label.uncamel.join(t" ").capitalize)
 
   given int: Int is Tabulable[Text] = () =>
     Scaffold[Int, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))

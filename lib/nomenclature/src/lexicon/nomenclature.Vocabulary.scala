@@ -35,6 +35,8 @@ package nomenclature
 import anticipation.*
 import murmuration.{map, filter}
 import contingency.*
+import rudiments.at
+import vacuous.or
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
@@ -74,10 +76,10 @@ class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   def number(moniker: Text)(using Tactic[Moniker.Error]): Int =
     moniker.cut(t"-") match
       case List(adjective, animal) =>
-        val first = adjectiveIndex.stdlib.get(adjective).getOrElse:
+        val first = adjectiveIndex.at(adjective).or:
           abort(Moniker.Error(Moniker.Error.Reason.UnknownWord(adjective)))
 
-        val second = animalIndex.stdlib.get(animal).getOrElse:
+        val second = animalIndex.at(animal).or:
           abort(Moniker.Error(Moniker.Error.Reason.UnknownWord(animal)))
 
         first*animalCount + second

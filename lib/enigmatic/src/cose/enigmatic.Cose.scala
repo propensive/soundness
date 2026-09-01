@@ -353,7 +353,9 @@ class Cose
 
     val envelope = cborTag match
       case Cose.Tag.Sign1 | Cose.Tag.Mac0 =>
-        val auth = recipients.stdlib.head.authentication
+        // Sign1/Mac0 messages carry exactly one recipient by construction; the empty
+        // fallback is unreachable.
+        val auth = recipients.prim.let(_.authentication).or(Array.empty[Byte])
         Cbor.Ast.array(Array[Any](protectedHeader, unprotectedAst, payload, auth))
 
       case _ =>

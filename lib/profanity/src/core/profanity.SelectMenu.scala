@@ -37,6 +37,7 @@ import clavichord.Keypress
 import contingency.*
 import fulminate.*
 import gossamer.*
+import rudiments.prim
 import vacuous.*
 
 case class SelectMenu[item](options: List[item], current: item)
@@ -49,7 +50,7 @@ extends Question[item]:
         case Up   => copy(current = options.stdlib(0 max options.stdlib.indexOf(current) - 1))
         case Down =>
           copy(current = options.stdlib(options.stdlib.size - 1 min options.stdlib.indexOf(current) + 1))
-        case Home => copy(current = options.stdlib.head)
+        case Home => copy(current = options.prim.or(current))
         case End  => copy(current = options.stdlib.last)
         case _    => this
 

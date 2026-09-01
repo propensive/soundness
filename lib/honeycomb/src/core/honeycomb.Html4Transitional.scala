@@ -521,7 +521,7 @@ class Html4Transitional() extends Dom:
       . fold(proscenium.Map[Text, Attribute]()): (map, next) =>
         val coerced = next.asInstanceOf[Attribute]
         val merged =
-          map.stdlib.get(coerced.label).optional.let(_.merge(coerced).asInstanceOf[Attribute]).or(coerced)
+          map.at(coerced.label).let(_.merge(coerced).asInstanceOf[Attribute]).or(coerced)
         map.define(coerced.label, merged)
 
       . to[List]

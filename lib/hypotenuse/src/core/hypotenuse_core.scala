@@ -44,6 +44,7 @@ import scala.annotation.*
 import anticipation.*
 import contingency.*
 import denominative.*
+import fulminate.{m, panic}
 import prepositional.*
 import rudiments.*
 import symbolism.*
@@ -186,16 +187,20 @@ extension [value](iterable: Iterable[value])
             addable:       value is Addable by divisible.Result )
   :   Optional[addable.Result] =
 
-    def recur(n: Int, items: List[value]): value =
-      val pivot = items.stdlib.head
-      var left: List[value] = Nil
-      var right: List[value] = Nil
+    def recur(n: Int, items: List[value]): value = items match
+      case pivot :: rest =>
+        var left: List[value] = Nil
+        var right: List[value] = Nil
 
-      items.stdlib.tail.each: item => if item < pivot then left ::= item else right ::= item
+        rest.each: item => if item < pivot then left ::= item else right ::= item
 
-      if left.size == n then pivot
-      else if left.size < n then recur(n - left.size - 1, right)
-      else recur(n, left)
+        if left.size == n then pivot
+        else if left.size < n then recur(n - left.size - 1, right)
+        else recur(n, left)
+
+      case _ =>
+        // Unreachable: `recur` is only ever applied to a list longer than `n >= 0`.
+        panic(m"median of an empty list")
 
     val size = iterable.size
 
