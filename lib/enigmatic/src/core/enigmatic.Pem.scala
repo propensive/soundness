@@ -238,7 +238,7 @@ object Pem:
       case Proprietary(label) => label
       case other              => other.toString.tt.uncamel.map(_.upper).join(t" ")
 
-    def unapply(text: Text): Some[Pem.Label] = Some(index.stdlib.get(text).getOrElse(Proprietary(text)))
+    def unapply(text: Text): Some[Pem.Label] = Some(index.at(text).or(Proprietary(text)))
 
   enum Label:
     case Certificate, CertificateRequest, NewCertificateRequest, PrivateKey, RsaPrivateKey,

@@ -505,7 +505,10 @@ object internal:
     val text = Text(context.valueOrAbort.parts.head)
 
     abortive:
-      if text.cut(t"/").stdlib.head.contains(t".") then
+      val dotted = text.cut(t"/").absolve match
+        case head :: _ => head.contains(t".")
+
+      if dotted then
         val subnet = Ipv4Subnet.parse(text)
         '{Ipv4Subnet(Ipv4(${Expr(subnet.ipv4.int)}), ${Expr(subnet.size)})}
 

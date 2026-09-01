@@ -300,9 +300,14 @@ object LineSeparation:
               unsafely(target.raw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
 
             while count < targetSpace && !tail.nil do
-              slots(targetOffset + count) = tail.stdlib.head.asInstanceOf[AnyRef]
-              tail = tail.stdlib.tail.to(List)
-              count += 1
+              tail match
+                case first :: rest =>
+                  slots(targetOffset + count) = first.asInstanceOf[AnyRef]
+                  tail = rest
+                  count += 1
+
+                case _ =>
+                  ()
 
             count
 
@@ -532,9 +537,14 @@ object LineSeparation:
           unsafely(target.raw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
 
         while count < targetSpace && !tail.nil do
-          slots(targetOffset + count) = tail.stdlib.head.asInstanceOf[AnyRef]
-          tail = tail.stdlib.tail.to(List)
-          count += 1
+          tail match
+            case first :: rest =>
+              slots(targetOffset + count) = first.asInstanceOf[AnyRef]
+              tail = rest
+              count += 1
+
+            case _ =>
+              ()
 
         count
 

@@ -244,8 +244,13 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       case _: Zero => ()
 
       case _: (head *: tail) =>
-        infer[head is Admissible on filesystem].check(path.stdlib.head)
-        check[tail, filesystem](path.stdlib.tail.to(List))
+        path match
+          case first :: rest =>
+            infer[head is Admissible on filesystem].check(first)
+            check[tail, filesystem](rest)
+
+          case _ =>
+            ()
 
       case _ =>
         path.each: element => infer[Text is Admissible on filesystem].check(element)
@@ -300,10 +305,13 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     def recur(left: List[Text], right: List[Text], size: Int, count: Int)
     :   Path on Plane =
 
-      if left.nil then Path(root, left0.skip(size - count))
-      else if left.stdlib.head == right.stdlib.head
-      then recur(left.stdlib.tail.to(List), right.stdlib.tail.to(List), size + 1, count + 1)
-      else recur(left.stdlib.tail.to(List), right.stdlib.tail.to(List), size + 1, 0)
+      (left, right) match
+        case (leftHead :: leftTail, rightHead :: rightTail) =>
+          if leftHead == rightHead then recur(leftTail, rightTail, size + 1, count + 1)
+          else recur(leftTail, rightTail, size + 1, 0)
+
+        case _ =>
+          Path(root, left0.skip(size - count))
 
 
     recur(left0, right0, 0, 0)

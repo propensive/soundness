@@ -76,7 +76,7 @@ private[facsimile] object ContentTokens:
 
     . or(abort(Pdf.Error(Pdf.Error.Reason.MalformedOperator(t"BI"))))
 
-    val length = entries.stdlib.get(t"L").getOrElse(entries.stdlib.get(t"Length").getOrElse(Unset))
+    val length = entries.at(t"L").or(entries.at(t"Length"))
     . let(_.long).let(_.toInt)
     val data = lexer.imageData(length)
 

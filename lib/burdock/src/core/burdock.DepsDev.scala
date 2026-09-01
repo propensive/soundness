@@ -73,9 +73,10 @@ object DepsDev:
       . or(abort(Unresolved()))
 
     // `name` is `group:artifact`; the Maven Central path uses `/` for the group.
-    val parts: List[Text] = key.name.cut(t":")
-    val group: Text = parts.stdlib.head.cut(t".").join(t"/")
-    val artifact: Text = parts.stdlib.last
+    val (group, artifact): (Text, Text) = key.name.cut(t":") match
+      case List(name)            => (name.cut(t".").join(t"/"), name)
+      case List(group, artifact) => (group.cut(t".").join(t"/"), artifact)
+      case _                     => abort(Unresolved())
     val version: Text = key.version
     val jar: Text = t"$artifact-$version.jar"
 

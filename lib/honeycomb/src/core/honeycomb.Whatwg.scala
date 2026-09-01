@@ -690,7 +690,7 @@ class Whatwg() extends Dom:
     val list: List[(Text, Attribute)] =
       Whatwg.membersOfType[honeycomb.Attribute]
       . fold(proscenium.Map[Text, Attribute]()): (map, next) =>
-          map.define(next.label, map.stdlib.get(next.label).optional.let(_.merge(next)).or(next))
+          map.define(next.label, map.at(next.label).let(_.merge(next)).or(next))
 
       . to[List]
 

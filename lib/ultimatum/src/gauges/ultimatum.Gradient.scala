@@ -32,8 +32,11 @@
                                                                                                   */
 package ultimatum
 
+import denominative.z
 import iridescence.*
 import prepositional.*
+import rudiments.{at, prim}
+import vacuous.{let, or}
 
 object Gradient:
   def apply(stops: (Color in Srgb)*): Gradient = Gradient(Sequence(stops*))
@@ -48,12 +51,12 @@ case class Gradient(stops: Sequence[Color in Srgb]):
   def apply(position: Double): Color in Srgb =
     val count = stops.stdlib.length
 
-    if count == 0 then Srgb(0.0, 0.0, 0.0) else if count == 1 then stops.stdlib.head else
+    if count <= 1 then stops.prim.or(Srgb(0.0, 0.0, 0.0)) else
       val scaled = position.max(0.0).min(1.0)*(count - 1)
       val index = scaled.toInt.min(count - 2)
       val balance = scaled - index
-      val left = stops.stdlib(index).to[Srgb]
-      val right = stops.stdlib(index + 1).to[Srgb]
+      val left = stops.at(index.z).let(_.to[Srgb]).or(Srgb(0.0, 0.0, 0.0))
+      val right = stops.at((index + 1).z).let(_.to[Srgb]).or(Srgb(0.0, 0.0, 0.0))
 
       def channel(from: Double, to: Double): Double = from*(1 - balance) + to*balance
 

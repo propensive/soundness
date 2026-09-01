@@ -176,7 +176,7 @@ object Image:
     // (for layers: compressed) chunks — undecoded and unverified.
     private def body(digest: Text)(using Tactic[Oci.Error]): Tar.Body =
       if !digest.s.startsWith("sha256:")
-      then abort(Oci.Error(Oci.Error.Reason.UnsupportedDigest(digest.cut(t":").stdlib.head)))
+      then abort(Oci.Error(Oci.Error.Reason.UnsupportedDigest(digest.cut(t":").prim.or(t""))))
 
       val name = t"blobs/sha256/${digest.s.stripPrefix("sha256:").tt}"
 

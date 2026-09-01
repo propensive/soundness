@@ -78,10 +78,14 @@ object Aggregable:
         var index = Prim
 
         while !source.nil do
-          val bytes = source.stdlib.head
-          array.place(bytes, index)
-          index += bytes.length
-          source = source.stdlib.tail.to(Chain)
+          source match
+            case bytes #:: rest =>
+              array.place(bytes, index)
+              index += bytes.length
+              source = rest
+
+            case _ =>
+              ()
 
   given bytesText: (decoder: CharDecoder) => ((Text is Aggregable by Data)) =
     bytesData.map(decoder.decoded)
@@ -102,8 +106,13 @@ object Aggregable:
       val builder = new StringBuilder()
 
       while !source.nil do
-        builder.append(source.stdlib.head.s)
-        source = source.stdlib.tail.to(Chain)
+        source match
+          case first #:: rest =>
+            builder.append(first.s)
+            source = rest
+
+          case _ =>
+            ()
 
       builder.toString.tt
 

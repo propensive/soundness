@@ -140,18 +140,29 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
                 bottom = vertical(descenders, style.innerLines),
                 left   = horizontal.or(BoxLine.Blank) )
 
-    val topLine =
-      if style.topLine.absent then Chain() else
-        Chain(rule(sections.stdlib.head.widths, above = false, below = true))
+    sections match
+      case first :: _ =>
+        val topLine =
+          if style.topLine.absent then Chain() else
+            Chain(rule(first.widths, above = false, below = true))
 
-    val midRule = rule(sections.stdlib.head.widths, above = true, below = true)
+        val midRule = rule(first.widths, above = true, below = true)
 
-    val bottomLine =
-      if style.bottomLine.absent then Chain() else
-        Chain(rule(sections.stdlib.head.widths, above = true, below = false))
+        val bottomLine =
+          if style.bottomLine.absent then Chain() else
+            Chain(rule(first.widths, above = true, below = false))
 
-    val body =
-      sections.stdlib.to(Chain).bind: section =>
-        (midRule #:: recur(section.widths, section.rows)): Chain[text]
+        val body =
+          sections.stdlib.to(Chain).bind: section =>
+            (midRule #:: recur(section.widths, section.rows)): Chain[text]
 
-    Chain.from(topLine.stdlib #::: body.stdlib.tail #::: bottomLine.stdlib)
+        // Every section's block starts with a `midRule`; the first one is dropped because the
+        // grid's top edge is `topLine`'s responsibility.
+        val trunk = body match
+          case _ #:: rest => rest
+          case _          => Chain()
+
+        topLine #::: trunk #::: bottomLine
+
+      case _ =>
+        Chain()

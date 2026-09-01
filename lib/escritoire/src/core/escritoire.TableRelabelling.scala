@@ -33,10 +33,11 @@
 package escritoire
 
 import anticipation.*
+import rudiments.at
 import vacuous.*
 
 trait TableRelabelling[+target]:
   def relabelling(): Map[Text, Text]
   private lazy val labels: Map[Text, Text] = relabelling()
   def apply(label: Text): Optional[Text] =
-    labels.stdlib.get(label).getOrElse(Unset)
+    labels.at(label)

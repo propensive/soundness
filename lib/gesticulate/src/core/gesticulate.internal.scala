@@ -64,7 +64,7 @@ object internal:
         scala.io.Source.fromInputStream(stream)
         . getLines()
         . map(Text(_))
-        . map(_.cut(t"\t").stdlib.head.lower)
+        . map(_.cut(t"\t").prim.or(t"").lower)
         . to(Set)
 
   private val validGroups: Set[Text] =
@@ -109,7 +109,8 @@ object internal:
         m"$char is not a valid character in a media-type subtype"
 
       case None =>
-        val main: Text = segments.stdlib.head
+        val main: Text = segments.absolve match
+          case segment :: _ => segment
         val isStandard =
           !main.starts(t"vnd.") && !main.starts(t"prs.") &&
             !main.starts(t"x.") && !main.starts(t"x-")
@@ -135,7 +136,8 @@ object internal:
     val parts = recur[parts](Nil)
     if parts.size != 1 then halt(m"a media type literal cannot have substitutions")
 
-    val raw: String = parts.stdlib.head
+    val raw: String = parts.absolve match
+      case part :: _ => part
 
     internal.validateLiteral(raw.tt).let(halt(_))
 

@@ -193,9 +193,7 @@ object SourceCode:
         scanner.nextToken()
         val end = scanner.lastOffset max start
 
-        val meta: Optional[Token.Meta] = metaMap.stdlib.get((start, end)) match
-          case Some(syntax) => Token.Meta(syntax)
-          case None         => Unset
+        val meta: Optional[Token.Meta] = metaMap.at((start, end)).let(Token.Meta(_))
 
         val annotation: Optional[TokenTag] = trees(start, end)
         val tokenAccent: Accent = annotation.lay(accent(token))(_.accent)

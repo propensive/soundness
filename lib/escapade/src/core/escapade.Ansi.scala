@@ -184,20 +184,28 @@ object Ansi extends Ansi2:
       stack = Frame.Escape(bracket, off) :: stack
       addInsertion(plain.length, t"\e"+on)
 
-    def popFrame(): Unit =
-      stack.stdlib.head match
-        case _: Frame.Style =>
-          stack = stack.stdlib.tail.to(List)
-          currentStyle = styleStack.stdlib.head
-          styleStack = styleStack.stdlib.tail.to(List)
+    def popFrame(): Unit = stack match
+      case (_: Frame.Style) :: tail =>
+        stack = tail
 
-        case _: Frame.Link =>
-          stack = stack.stdlib.tail.to(List)
-          linkArmed = true
+        styleStack match
+          case style :: styleTail =>
+            currentStyle = style
+            styleStack = styleTail
 
-        case escape: Frame.Escape =>
-          stack = stack.stdlib.tail.to(List)
-          addInsertion(plain.length, t"\e"+escape.off)
+          case Nil =>
+            ()
+
+      case (_: Frame.Link) :: tail =>
+        stack = tail
+        linkArmed = true
+
+      case (escape: Frame.Escape) :: tail =>
+        stack = tail
+        addInsertion(plain.length, t"\e"+escape.off)
+
+      case Nil =>
+        ()
 
     def applyOnce(transform: Transform): Unit =
       currentStyle = transform(currentStyle)

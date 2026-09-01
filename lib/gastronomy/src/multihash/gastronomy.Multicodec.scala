@@ -33,6 +33,7 @@
 package gastronomy
 
 import anticipation.*
+import rudiments.at
 import corpuscular.*
 import gossamer.*
 import prepositional.*
@@ -77,7 +78,7 @@ object Multicodec:
     Map(0x11 -> t"sha1", 0x12 -> t"sha2-256", 0x13 -> t"sha2-512", 0x20 -> t"sha2-384",
         0x1013 -> t"sha2-224", 0x1e -> t"blake3", 0xd5 -> t"md5", 0x00 -> t"identity")
 
-  def name(code: Int): Optional[Text] = names.stdlib.get(code).getOrElse(Unset)
+  def name(code: Int): Optional[Text] = names.at(code)
 
   def apply[algorithm <: Algorithm](code0: Int, name0: Text): algorithm is Multicodec =
     new Multicodec:

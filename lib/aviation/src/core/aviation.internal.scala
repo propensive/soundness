@@ -174,11 +174,9 @@ object internal:
       case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
       case _               => strings
 
-    val parts = recur[parts](Nil)
-
-    if parts.stdlib.length != 1 then halt(m"a timezone literal cannot have substitutions")
-
-    val name: String = parts.stdlib.head
+    val name: String = recur[parts](Nil) match
+      case List(part) => part
+      case _          => halt(m"a timezone literal cannot have substitutions")
 
     try jt.ZoneId.of(name).nn
     catch case _: jt.zone.ZoneRulesException =>
@@ -360,11 +358,11 @@ object internal:
       case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
       case _               => strings
 
-    val parts = recur[parts](Nil)
+    val part: String = recur[parts](Nil) match
+      case List(part) => part
+      case _          => halt(m"a timestamp literal cannot contain substitutions")
 
-    if parts.stdlib.length != 1 then halt(m"a timestamp literal cannot contain substitutions")
-
-    parseTimestamp(parts.stdlib.head) match
+    parseTimestamp(part) match
       case Left(error) =>
         halt(error)
 
@@ -404,11 +402,11 @@ object internal:
       case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
       case _               => strings
 
-    val parts = recur[parts](Nil)
+    val part: String = recur[parts](Nil) match
+      case List(part) => part
+      case _          => halt(m"a duration literal cannot contain substitutions")
 
-    if parts.stdlib.length != 1 then halt(m"a duration literal cannot contain substitutions")
-
-    parseDuration(parts.stdlib.head) match
+    parseDuration(part) match
       case Left(error) =>
         halt(error)
 
@@ -431,7 +429,9 @@ object internal:
 
     val parts = recur[parts](Nil)
 
-    if parts.stdlib.length != 1 then halt(m"a recurrence literal cannot contain substitutions")
+    val literal: String = parts match
+      case List(part) => part
+      case _          => halt(m"a recurrence literal cannot contain substitutions")
 
     // The three `/`-separated segments have known extents within the (single-part) literal, so
     // although the segment parsers report no offsets of their own, a failing segment can be
@@ -440,7 +440,7 @@ object internal:
       Interpolation.sourcePosition
         (parts, Interpolation.decodeOrigins[origins], 1, offset, length.max(1))
 
-    parts.stdlib.head.tt.cut(t"/").map(_.s) match
+    literal.tt.cut(t"/").map(_.s) match
       case List(repeats, start, period) =>
         val startOffset = repeats.length + 1
         val periodOffset = startOffset + start.length + 1
