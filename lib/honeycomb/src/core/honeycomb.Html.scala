@@ -172,11 +172,12 @@ object Html extends Tag.Container
       type Operand = Text
 
       def aggregate(input: Chain[Text]): Html of content =
-        val root = Tag.root(content.reify.stdlib.map(_.tt).to(Set))
+        val root = Tag.root(content.reify.map(_.tt).to[Set])
+        // `.stdlib.iterator`: the parser's cursor reads a stdlib `Iterator`.
         HtmlParser.fromIterator(input.stdlib.iterator, permissive = false).parseHtml(root).of[content]
 
       override def accept(stream: (Stream[Text] over Credit)^): Html of content =
-        val root = Tag.root(content.reify.stdlib.map(_.tt).to(Set))
+        val root = Tag.root(content.reify.map(_.tt).to[Set])
         HtmlParser.fromStream(stream, permissive = false).parseHtml(root).of[content]
 
   given strictAggregable2: (dom: Dom, tactic: Tactic[Parse.Error])
@@ -187,6 +188,7 @@ object Html extends Tag.Container
       type Operand = Text
 
       def aggregate(input: Chain[Text]): Html =
+        // `.stdlib.iterator`: the parser's cursor reads a stdlib `Iterator`.
         HtmlParser.fromIterator(input.stdlib.iterator, permissive = false)
         . parseHtml(dom.generic, doctypes = false)
 
@@ -229,14 +231,15 @@ object Html extends Tag.Container
 
       def aggregate(input: Chain[Text]): Html of content =
         given Tactic[Parse.Error] = lenientTactic
-        val root = Tag.root(content.reify.stdlib.map(_.tt).to(Set))
+        val root = Tag.root(content.reify.map(_.tt).to[Set])
 
         lenient(Fragment().of[content]):
+          // `.stdlib.iterator`: the parser's cursor reads a stdlib `Iterator`.
           HtmlParser.fromIterator(input.stdlib.iterator, permissive = true).parseHtml(root).of[content]
 
       override def accept(stream: (Stream[Text] over Credit)^): Html of content =
         given Tactic[Parse.Error] = lenientTactic
-        val root = Tag.root(content.reify.stdlib.map(_.tt).to(Set))
+        val root = Tag.root(content.reify.map(_.tt).to[Set])
 
         lenient(Fragment().of[content]):
           HtmlParser.fromStream(stream, permissive = true).parseHtml(root).of[content]
@@ -252,6 +255,7 @@ object Html extends Tag.Container
         given Tactic[Parse.Error] = lenientTactic
 
         lenient(Fragment()):
+          // `.stdlib.iterator`: the parser's cursor reads a stdlib `Iterator`.
           HtmlParser.fromIterator(input.stdlib.iterator, permissive = true)
           . parseHtml(dom.generic, doctypes = false)
 
@@ -1527,8 +1531,8 @@ object Html extends Tag.Container
       def read(parent: Tag, admissible: Set[Text], map: Attributes, count: Int): Node =
 
         def admit(child: Text): Boolean =
-          parent.foreign || parent.admissible.stdlib(child)
-          || parent.transparent && admissible.stdlib(child)
+          parent.foreign || parent.admissible.has(child)
+          || parent.transparent && admissible.has(child)
 
         lay(finish(parent, map, count)):
           case '\u0000' =>

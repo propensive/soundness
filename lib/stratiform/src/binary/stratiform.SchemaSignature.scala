@@ -34,11 +34,12 @@ package stratiform
 
 import scala.language.unsafeNulls
 import murmuration.*
-import rudiments.seek
+import rudiments.{seek, to}
 
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import gastronomy.*
 import ulysses.*
 import vacuous.*
@@ -173,14 +174,14 @@ object SchemaSignature:
   def encode(hashes: List[Data]): Data raises Bintel.Error =
     if hashes.nil then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
-    val it = hashes.stdlib.iterator
-    var bad = false
+    // `Data` is a *frozen* byte array (`Array[Byte]^{}`), and a generic combinator's
+    // predicate parameter cannot carry that freeze — `hashes.all(…)` fails capture
+    // checking — so the size scan runs over the stdlib view. `forall` short-circuits
+    // at the first mis-sized hash, as the iterator loop it replaces did.
+    if !hashes.stdlib.forall(_.length == cadence.hashSize)
+    then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
-    while it.hasNext && !bad do if it.next().length != cadence.hashSize then bad = true
-
-    if bad then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
-
-    Palimpsest(Sequence.from(hashes.stdlib)).data
+    Palimpsest(hashes.to[Sequence]).data
 
   // The number of component hashes a palimpsest signature encodes,
   // recovered from its trailing cadence byte (§4.2 of the palimpsest
@@ -209,6 +210,8 @@ object SchemaSignature:
   def decode(signature: Data, library: List[Data]): List[Data] raises Bintel.Error =
     val n = componentCount(signature)
 
+    // `Bibliography.apply` takes an `Iterable[Data]`; the frozen element type does
+    // not survive `to[Array]`'s capture set, so the stdlib view crosses the boundary.
     given Bibliography = Bibliography(library.stdlib)
 
     Palimpsest(signature, n).resolve.or(abort(Bintel.Error(Bintel.Error.Reason.BadSignature)))
@@ -220,11 +223,10 @@ object SchemaSignature:
   def decodeHinted(signature: Data, base: Data, layers: List[(Text, Data)], selection: List[Text])
   :   Optional[List[Data]] =
 
-    val hinted = layers.stdlib.filter { (name, _) => selection.has(name) }.map(_(1))
-    val full = layers.stdlib.map(_(1))
+    val hinted: List[Data] = layers.filter { (name, _) => selection.has(name) }.map(_(1))
+    val full: List[Data] = layers.map(_(1))
 
-    safely(decode(signature, base :: hinted.to(List)))
-    . or(safely(decode(signature, base :: full.to(List))))
+    safely(decode(signature, base :: hinted)).or(safely(decode(signature, base :: full)))
 
   private def same(a: Data, b: Data): Boolean =
     a.length == b.length && {
@@ -253,30 +255,38 @@ object SchemaSignature:
 
     val (base, layerHashes) = componentHashes(doc, axiom)
     val names = schema.layers.readable.toList.map(_.name)
+
+    // Frozen `Data` elements do not survive the generic `zip`/`to[Map]` pair (the
+    // rebuilt element type loses its `^{}`), so the name-to-hash index is built on
+    // the stdlib view.
     val byName = names.zip(layerHashes.stdlib).toMap
 
-    val chosen = selection.stdlib.map: name =>
+    val chosen: List[Data] = selection.map: name =>
       byName.getOrElse(name, abort(Tels.Resolution.Error(Reason.UnknownLayer(name))))
 
-    val expectedCount = 1 + chosen.length
+    // The selection is a linked list, so counting it is a walk; `linearSize` says so.
+    val expectedCount = 1 + chosen.size
     val foundCount = componentCount(signature)
 
     if foundCount != expectedCount
     then abort(Tels.Resolution.Error(Reason.ComponentCount(expectedCount, foundCount)))
 
-    val expected = encode(base :: chosen.to(List))
+    val expected = encode(base :: chosen)
 
     if !same(expected, signature) then
       // Decompose the claimed signature over the schema's full
       // component library to name the diverging component.
       val reason = safely(decode(signature, base :: layerHashes)) match
         case decoded: List[Data] =>
+          // Frozen `Data` elements lose their `^{}` when they pass through a generic
+          // combinator's lambda parameter, so the component comparison stays on
+          // indexed stdlib views, where the element type is preserved verbatim.
           val components = decoded.stdlib
 
           if components.isEmpty || !same(components.head, base) then Reason.BaseMismatch
           else
             val tail = components.tail.toIndexedSeq
-            val wanted = chosen.toIndexedSeq
+            val wanted = chosen.stdlib.toIndexedSeq
             val names = selection.stdlib.toIndexedSeq
             var idx = 0
             var layerReason: Optional[Tels.Resolution.Error.Reason] = Unset

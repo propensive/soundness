@@ -167,11 +167,12 @@ object internal:
     // Rebuild a selector containing substitutions: split its rendered text at each
     // sentinel and interleave the (name-typed) holes between the literal segments.
     def assembleSelector(text: Text): Expr[SelectorList] =
-      val segments = text.cut(placeholder)
-      var acc: Expr[String] = Expr(segments.stdlib.head.s)
+      // A single documented stdlib view: this macro walks the segments with the stdlib `head`
+      // and `tail`, total here because `cut` always yields at least one segment.
+      val segments = text.cut(placeholder).stdlib
+      var acc: Expr[String] = Expr(segments.head.s)
 
-      for segment <- segments.stdlib.tail do
-        acc = '{$acc + ${selectorFragment()}.s + ${Expr(segment.s)}}
+      for segment <- segments.tail do acc = '{$acc + ${selectorFragment()}.s + ${Expr(segment.s)}}
 
       '{SelectorList.read($acc.tt)}
 
@@ -189,6 +190,7 @@ object internal:
         lift(value)
 
     def listExpr(nodes: List[Css.Node]): Expr[List[Css.Node]] =
+      // `.stdlib`: `Expr.ofList` takes the stdlib `List` the quotes API uses.
       '{List.from(${Expr.ofList(nodes.stdlib.map(nodeExpr))})}
 
     def nodeExpr(node: Css.Node): Expr[Css.Node] = node match
@@ -229,7 +231,8 @@ object internal:
     // or at-rule are an inline style set (`Css.Style`); anything with a rule or at-rule
     // is a stylesheet (`Css`). The `transparent inline` interpolator returns whichever.
     val result: Expr[Css | Css.Style] =
-      if css.rules.stdlib.nonEmpty && css.rules.all(isDeclaration)
+      // `.stdlib`: as above, `Expr.ofList` takes the stdlib `List`.
+      if !css.rules.nil && css.rules.all(isDeclaration)
       then '{Css.Style.of(List.from(${Expr.ofList(css.rules.stdlib.map(stylePair))}))}
       else '{Css(${listExpr(css.rules)})}
 

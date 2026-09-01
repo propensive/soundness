@@ -119,7 +119,7 @@ object Tels2:
           Array.empty )
 
     case Morphology.Obj(fields, required) =>
-      val members = fields.stdlib.map: (label, fieldShape) =>
+      val members: List[Tels.Member] = fields.map: (label, fieldShape) =>
         val repeatable = fieldShape match
           case Morphology.Arr(_) => Polarity.Loose
           case _                 => Polarity.Implicit
@@ -133,7 +133,7 @@ object Tels2:
         Tels.Field
           ( polarity, repeatable, Tel.camelToKebab(label.s), reify(fieldShape), Unset )
 
-      Tels.Struct(Array.from(members), Array.empty)
+      Tels.Struct(members.to[Array], Array.empty)
 
 // Schema derivation for TEL: scalars map to `Tels.Scalar`, products to a
 // `Tels.Struct` of `Field`s, collections to a `Struct` with a repeatable `item`
@@ -214,7 +214,7 @@ trait Tels2:
   // sum's schema is a `Reference`, so its document root is a struct with a single
   // select member referencing the registered `SelectDefinition`.
   def tels[value](name: Text)(using schematic: value is TelSchematic over Tels.Type): Tels =
-    val selects: Array[Tels.SelectDefinition]^{} = Array.from(schematic.selectDefinitions.stdlib)
+    val selects: Array[Tels.SelectDefinition]^{} = schematic.selectDefinitions.to[Array]
 
     schematic.schema().absolve match
       case struct: Tels.Struct =>

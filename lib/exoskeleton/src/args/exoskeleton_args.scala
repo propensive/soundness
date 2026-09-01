@@ -133,10 +133,10 @@ package interpreters:
         val focus2 = current.let: current =>
           val focusCursor: Ordinal = current.cursor.or(current.value.length).z
 
-          (parameters2.stdlib.keySet ++ parameters2.stdlib.values.flatMap(_.stdlib)).find: argument =>
-            current.position == argument.position && argument.contains(focusCursor)
+          val candidates: Set[Argument] = parameters2.keys + parameters2.values.flat.to[Set]
 
-          . optional
+          candidates.seek: argument =>
+            current.position == argument.position && argument.contains(focusCursor)
 
         commandline.copy(parameters = parameters2, focus = focus2)
 

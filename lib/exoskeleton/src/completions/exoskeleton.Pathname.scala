@@ -85,22 +85,25 @@ object Pathname:
       Suggestion(core, Unset, incomplete = path.ends(t"/"), prefix = prefix, operand = true)
 
     safely:
+      // `children` is a lazy `Chain`; each branch forces it once into a `List` before filtering.
       if operand == t"." then
+        val children0: List[Path on Local] = workingDirectory.children.to[List]
+
         suggest(t"../") ::
-          workingDirectory.children.stdlib.toList.filter(_.name.starts(t".")).map: path =>
+          children0.filter(_.name.starts(t".")).map: path =>
             val directory = safely(path.entry() == galilei.Directory).or(false)
             suggest(if directory then path.name+t"/" else path.name)
-        . to(List)
 
       else if operand == t".." then
+        val children0: List[Path on Local] = workingDirectory.children.to[List]
+
         suggest(t"../") ::
-          workingDirectory.children.stdlib.toList.filter(_.name.starts(t"..")).map: path =>
+          children0.filter(_.name.starts(t"..")).map: path =>
             val directory = safely(path.entry() == galilei.Directory).or(false)
             suggest(if directory then path.name+t"/" else path.name)
-        . to(List)
 
       else if operand.nil then
-        val children0 = workingDirectory.children.stdlib.toList
+        val children0: List[Path on Local] = workingDirectory.children.to[List]
         val showAll = tab > Prim
         val children =
           if !showAll then children0.filter(!_.name.starts(t".")) else children0
@@ -108,7 +111,6 @@ object Pathname:
         children.map: path =>
           val directory = safely(path.entry() == galilei.Directory).or(false)
           suggest(if directory then path.name+t"/" else path.name)
-        . to(List)
 
       else
         val tilde = home.present && (operand == t"~" || operand.starts(t"~/"))
@@ -121,7 +123,7 @@ object Pathname:
           workingDirectory.resolve(expand(operand))
         val showAll = tab > Prim || prototype.name.starts(t".")
         val base: Optional[Path on Local] = if directory then prototype else prototype.parent
-        val children0 = base.let(base => base.children.stdlib.toList.to(List)).or(List[Path on Local]())
+        val children0 = base.let(base => base.children.to[List]).or(List[Path on Local]())
 
         val children =
           if directory then children0

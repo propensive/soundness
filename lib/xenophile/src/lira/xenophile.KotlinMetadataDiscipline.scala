@@ -73,9 +73,9 @@ object KotlinMetadataDiscipline extends Discipline:
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
   :   Atomization raises Discipline.Error =
 
-    val classes: SList[(Text, Data)] = content.stdlib.map: (path, data) =>
+    val classes: List[(Text, Data)] = content.map: (path, data) =>
       val binary = Text(path.text.s.stripSuffix(".class").nn.replace("/", ".").nn)
       (binary, data)
 
     Atomization.of(id,
-        KotlinMetadataAtomizer.atomize(classes, context.classpath.stdlib))
+        KotlinMetadataAtomizer.atomize(classes, context.classpath))

@@ -61,15 +61,15 @@ object WebIdlDiscipline extends Discipline:
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
   :   Atomization raises Discipline.Error =
 
-    val definitions = content.stdlib.flatMap: (path, data) =>
+    val definitions: List[WebIdl.Definition] = content.bind: (path, data) =>
       val source = Text(String(Array.unsafeJvm(data), "UTF-8"))
 
       mitigate:
         case WebIdl.Error(reason) =>
           Discipline.Error(id, Discipline.Error.Reason.Malformed(t"${path.text}: $reason"))
 
-      . protect(WebIdl.Parser.parse(source).stdlib)
+      . protect(WebIdl.Parser.parse(source))
 
     // Partial/mixin resolution spans the whole claimed set: a partial in one file completes an
     // interface in another, exactly as the platform's own IDL is distributed.
-    Atomization.of(id, WebIdlAtomizer.atomize(definitions.to(List)))
+    Atomization.of(id, WebIdlAtomizer.atomize(definitions))

@@ -142,7 +142,7 @@ class Form
   // exists, else fall back to the first focusable.
   private def rederive(): Sequence[Pane] =
     bind(pane)
-    val panes = Sequence.from(pane.leaves.stdlib)
+    val panes = pane.leaves.to[Sequence]
 
     val stays = focused.lay(false): widget =>
       panes.exists:
@@ -169,6 +169,7 @@ class Form
   // to the root width.
   private def liveFrame(previous: Form.Layout, stale: Boolean): Frame =
     val widths: Iterator[Int] =
+      // `.stdlib.iterator`: the widths are threaded as a stdlib `Iterator`, as described above.
       if stale then Iterator.empty else previous.entries.stdlib.iterator.map(_.rect.width)
 
     def nextWidth(): Int = if widths.hasNext then widths.next() else root.width
@@ -212,18 +213,16 @@ class Form
     val rects = frame.arrange(Rect(0, 0, root.width, height)).cells
 
     Form.Layout:
+      panes.zip(rects).map: (leaf, rect) =>
+        val fixture: Optional[Fixture] = leaf match
+          case Pane.Widget(_, fixture) => fixture
+          case _                       => Unset
 
-        Sequence.from:
-          panes.stdlib.zip(rects.stdlib).map: (leaf, rect) =>
-            val fixture: Optional[Fixture] = leaf match
-              case Pane.Widget(_, fixture) => fixture
-              case _                       => Unset
+        val focus: Optional[Focus] = leaf match
+          case Pane.Widget(_, focus: Focus) => focus
+          case _                            => Unset
 
-            val focus: Optional[Focus] = leaf match
-              case Pane.Widget(_, focus: Focus) => focus
-              case _                            => Unset
-
-            Form.Entry(leaf, rect, fixture, focus)
+        Form.Entry(leaf, rect, fixture, focus)
   // Paint one leaf of a solved layout. The index is confined to `layout.entries`, so
   // callers prove it in bounds (via `iterate`, `confine` or `focusables`) before it
   // crosses this boundary; both accesses below are then total.

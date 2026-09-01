@@ -119,14 +119,14 @@ object UsedSets:
   // Splits reference keys against a contract's atom listing: the value hashes of the matched
   // keys — the used-set — and the keys the listing does not carry.
   def resolve(references: List[Text], listing: Atomization): (List[Data], List[Text]) =
-    val byKey: scala.collection.immutable.Map[Text, Data] =
-      listing.atoms.stdlib.map { atom => atom.key -> atom.valueHash }.toMap
-
+    val byKey: Map[Text, Data] = listing.atoms.map { atom => atom.key -> atom.valueHash }.to[Map]
     val matched = scala.collection.mutable.ListBuffer[Data]()
     val unmatched = scala.collection.mutable.ListBuffer[Text]()
 
     references.each: key =>
-      byKey.get(key) match
+      // `.stdlib.get`: the native `at` yields `Optional[Data]`, and binding the `Data` member of
+      // that union freshens the frozen array's capability past what `matched` will admit.
+      byKey.stdlib.get(key) match
         case scala.Some(hash) => matched += hash
         case _                => unmatched += key
 
@@ -141,13 +141,14 @@ object UsedSets:
 
     var remaining = references
 
-    val parts = contracts.stdlib.map: (module, listing) =>
+    val parts: List[(Text, List[Data])] = contracts.map: (module, listing) =>
       val (matched, unmatched) = resolve(remaining, listing)
       remaining = unmatched
       (module, matched)
 
-    val used = parts.filter { part => !part(1).nil }
-    (used.to(List), remaining)
+    val used: List[(Text, List[Data])] = parts.filter: part => !part(1).nil
+
+    (used, remaining)
 
   // The Uses metadata blob for one module's use of one contract (§13.4, §14): the resolved
   // used-set, encoded for a `requires` or `dependency` record's `uses` field, with the

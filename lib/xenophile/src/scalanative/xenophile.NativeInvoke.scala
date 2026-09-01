@@ -43,6 +43,11 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
+// The declared arity is compared against the argument count, so `List#size` is genuinely
+// required; the list is a single prototype's parameters.
+import denominative.dysasymptotics.linearSize
+import denominative.size
+
 // The terminal materializer for the native (C) ecosystem when the *target platform is Scala
 // Native*, and the counterpart of `ForeignLibrary` (which lowers the same navigation to a JVM
 // Panama downcall). It turns a fully-applied `Foreign` navigation into a real Scala Native call:
@@ -90,9 +95,9 @@ object NativeInvoke extends Materializer:
     val prototype = members(function).or:
       halt(m"xenophile: the foreign type $owner has no member $function")
 
-    val parameterTypes = prototype.parameters.or(proscenium.Nil).stdlib
+    val parameterTypes: proscenium.List[Foreign.Type] = prototype.parameters.or(proscenium.Nil)
 
-    if argumentTerms.length != parameterTypes.length then
+    if argumentTerms.length != parameterTypes.size then
       halt(m"xenophile: wrong number of arguments for $owner.$function")
 
     // Each C type maps to the Scala type of identical ABI: a primitive (`int`→`Int`; Scala Native's
@@ -124,7 +129,9 @@ object NativeInvoke extends Materializer:
       case _ =>
         halt(m"xenophile: $owner.$function uses a struct type, unsupported on native")
 
-    val paramInfo = parameterTypes.map(cType)
+    // A stdlib view: the pairs carry `quotes.reflect.TypeRepr^` capabilities, which capture
+    // checking will not let flow into the opaque collections' traversal evidence.
+    val paramInfo = parameterTypes.stdlib.map(cType)
     val (resultCtype, resultKind) = cType(prototype.result)
     val hasStringArg = paramInfo.exists(_._2 == Kind.Str)
     val arity = paramInfo.length
@@ -141,6 +148,7 @@ object NativeInvoke extends Materializer:
 
     // `CFuncPtr<arity>[param…, result]`.
     val cfuncPtrN = Symbol.requiredClass(s"scala.scalanative.unsafe.CFuncPtr$arity")
+    // `TypeRepr.appliedTo` takes a stdlib `List`: the quotes API is the boundary.
     val funcType = cfuncPtrN.typeRef.appliedTo(paramInfo.map(_._1) :+ resultCtype)
 
     // `new CQuote(StringContext("function")).c()` — the interned C string of the symbol name. The

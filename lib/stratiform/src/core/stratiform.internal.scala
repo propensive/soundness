@@ -271,6 +271,9 @@ object internal:
             case _ =>
               '{Unset}
 
+          // `Expr.ofList` is a quotes-reflection API and takes the stdlib list, so the
+          // layer names cross to the stdlib view here and back to `proscenium.List`
+          // inside the quote.
           val layersExpr: Expr[proscenium.List[Text]] =
             '{(${Expr.ofList(p.layers.stdlib.map { layer => '{${Expr(layer.s)}.tt} })}).to(proscenium.List)}
 

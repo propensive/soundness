@@ -33,8 +33,11 @@
 package vivisection
 
 import anticipation.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import gossamer.*
 import proscenium.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -75,13 +78,15 @@ object Variable:
         text.inspect
 
       case Arr(id, component, length, prefix) =>
-        val items = prefix.stdlib.zipWithIndex.map: (element, index) =>
-          val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
-          subscript+render(element).s
+        // `indexed` numbers from `Prim`, so the subscript reads the zero-based `n0`.
+        val items: List[Text] = prefix.indexed.map: (element, index) =>
+          val subscript = index.n0.toString.map { digit => (digit + 8272).toChar }.mkString
+          (subscript+render(element).s).tt
 
-        val ellipsis = if length > prefix.stdlib.length then "…" else ""
+        // The prefix is bounded by `Halt.prefixLength`, so counting it is a handful of cells.
+        val ellipsis = if length > prefix.size then t"…" else t""
 
-        items.mkString("⦋"+letter(component), "∣", ellipsis+"⦌＠"+id.long).tt
+        items.join(t"⦋${letter(component).tt}", t"∣", t"$ellipsis⦌＠${id.long}")
 
       case Obj(id, cls) =>
         val simple = cls.s.substring(cls.s.lastIndexOf('.') + 1).nn

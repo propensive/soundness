@@ -104,7 +104,7 @@ object Html4Transitional:
   def attribute[self <: Label: ValueOf, plane <: Label: Reifiable to List[String], topic]()
   :   self is Attribute on plane of topic in Html4Transitional =
 
-    new Attribute(valueOf[self].tt, plane.reify.stdlib.map(_.tt).to(Set), false)
+    new Attribute(valueOf[self].tt, plane.reify.map(_.tt).to[Set], false)
     . asInstanceOf[self is Attribute on plane of topic in Html4Transitional]
 
 
@@ -350,7 +350,11 @@ class Html4Transitional() extends Dom:
   type Metadata = "title" | "base" | "script" | "style" | "meta" | "link" | "object"
 
   def insertable(tag: Tag): Set[Tag] =
-    (tag.admissible.stdlib.map(elements(_)).compact).to(Set).filter(_.insertable)
+    val tags: Set[Tag] = tag.admissible.bind: label =>
+      val element: Optional[Tag] = elements(label)
+      element.lay(Nil: List[Tag])(List(_))
+
+    tags.filter(_.insertable)
 
   def infer(parent: Tag, child: Tag): Optional[Tag] =
     def recur(parent: Tag): Boolean =
@@ -506,7 +510,7 @@ class Html4Transitional() extends Dom:
   val Var = Tag.container["var", Inline, Html4Transitional]()
 
   val elements: Dictionary[Tag] =
-    Dictionary(this.membersOfType[Tag].map { tag => tag.label -> tag }.stdlib*)
+    Dictionary(this.membersOfType[Tag].map { tag => tag.label -> tag }*)
 
   val entities: Dictionary[Text] =
     val list = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n")

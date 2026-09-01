@@ -57,6 +57,7 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import stenography.*
+import symbolism.*
 import vacuous.*
 import zephyrine.*
 
@@ -195,6 +196,7 @@ object internal:
             iterator.next() match
               case Html.Hole.Node(label) =>
                 val tpe = whatwg.elements(label).lay(TypeRepr.of[Node]): tag =>
+                  // `.stdlib`: this macro works in the stdlib `List` the quotes API uses.
                   intersect(tag.admissible.stdlib.map(_.s).toList).asType.absolve match
                     case '[type children <: Label; children] => TypeRepr.of[Node of children]
 
@@ -228,6 +230,7 @@ object internal:
             iterator.next() match
               case Html.Hole.Element(label) =>
                 val tpe = whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
+                  // `.stdlib`: this macro works in the stdlib `List` the quotes API uses.
                   intersect(tag.admissible.stdlib.map(_.s).toList).asType.absolve match
                     case '[type children <: Label; children] => TypeRepr.of[Element of children]
 
@@ -516,6 +519,7 @@ object internal:
           else List('{Doctype(${Expr(text)})})
 
         case Comment(text) =>
+          // `.stdlib`: `recur` below walks the stdlib `List` the quotes API uses.
           val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
@@ -532,6 +536,7 @@ object internal:
           List(iterator.next().asExprOf[Node])
 
         case TextNode(text) =>
+          // `.stdlib`: `recur` below walks the stdlib `List` the quotes API uses.
           val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
@@ -627,7 +632,11 @@ object internal:
 
                 . or(halt(m"unexpected type"))
 
-    val attrsExpr = '{Attributes.from(($presets.stdlib ++ ${Expr.ofList(attributes)}.compact.toMap).to(Map))}
+    // The presets are widened to the attribute map's value type so that the concatenation's
+    // two operands agree; it is right-biased, so a supplied attribute overrides a preset.
+    val presets2 = '{$presets: Map[Text, Optional[Text]]}
+    val supplied = '{${Expr.ofList(attributes)}.compact.to(Map)}
+    val attrsExpr = '{Attributes.from($presets2 + $supplied)}
     '{$tag.node($attrsExpr)}.asExprOf[result]
 
   // Represented as the stdlib's immutable array, not the frozen `Array[String | Null]^{}`:
@@ -682,7 +691,10 @@ object internal:
         Array.freeze(buffer).readable
 
     def from(map: Map[Text, Optional[Text]]): Attributes =
+      // A single documented stdlib view: `Attributes` defines its own `nil`, `size` and
+      // `foreach` extensions, which shadow the generic ones for every receiver in this scope.
       val entries = map.stdlib
+
       if entries.isEmpty then empty else
         val n = entries.size
         val buffer = Array.allocate[String | Null](n*2)
@@ -960,6 +972,7 @@ object internal:
             Array.freeze(tu).readable
 
       def `++`(other: Map[Text, Optional[Text]]): Attributes =
+        // `.stdlib`: as in `from` above, `Attributes` shadows the generic `nil`.
         if other.stdlib.isEmpty then attrs else attrs ++ Attributes.from(other)
 
       // Structural equality: same key/value pairs in the same order. Provided

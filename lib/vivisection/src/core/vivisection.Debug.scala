@@ -33,16 +33,20 @@
 package vivisection
 
 import scala.caps
-import scala.collection.immutable as sci
 
 import anticipation.*
 import contingency.*
 import denominative.*
+
+// The last line-table entry covering a location is genuinely needed, and the table is already
+// traversed once to filter it.
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import gossamer.*
 import parasite.*
 import proscenium.*
 import rudiments.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -157,7 +161,7 @@ extends caps.ExclusiveCapability:
 
     val line = safely(connection.lineTable(location.cls, location.method)) match
       case table: Jdwp.LineTable =>
-        table.lines.stdlib.filter(_.index <= location.index).lastOption.map(_.line).getOrElse(0)
+        table.lines.filter(_.index <= location.index).last.let(_.line).or(0)
 
       case _ =>
         0
@@ -361,21 +365,21 @@ extends caps.ExclusiveCapability:
           case _            => bound(location)
 
     def entries(tag: Jdwp.TypeTag, cls: ReferenceTypeId)(using Tactic[Debugger.Error])
-    :   sci.List[Jdwp.Location] =
+    :   List[Jdwp.Location] =
 
-      connection.methods(cls).stdlib.filter(_.name == method).flatMap: info =>
+      connection.methods(cls).filter(_.name == method).flatMap: info =>
         safely(connection.lineTable(cls, info.method)) match
           case table: Jdwp.LineTable if table.start >= 0 =>
-            sci.List(Jdwp.Location(tag, cls, info.method, table.start))
+            List(Jdwp.Location(tag, cls, info.method, table.start))
 
           case _ =>
-            sci.List()
+            List()
 
     // Laundered for the same reason as the source-position form above.
     val prepareHandler: Jdwp.Event.ClassPrepared => Unit =
       caps.unsafe.unsafeAssumePure: event =>
         val outcome: Optional[Unit] = safely[Debugger.Error]:
-          entries(event.tag, event.cls).foreach(bind(_))
+          entries(event.tag, event.cls).each(bind(_))
 
         outcome.let(identity)
 
@@ -383,8 +387,7 @@ extends caps.ExclusiveCapability:
 
     val signature = t"L${className.s.replace('.', '/').nn};"
 
-    connection.classesBySignature(signature).each: info =>
-      entries(info.tag, info.cls).foreach(bind(_))
+    connection.classesBySignature(signature).each: info => entries(info.tag, info.cls).each(bind(_))
 
     handle
 
@@ -487,10 +490,10 @@ extends caps.ExclusiveCapability:
       case -1    => source.s
       case index => source.s.substring(0, index).nn
 
-    val (likely, rest) = connection.allClasses().stdlib.partition(_.signature.s.contains(base))
+    val (likely, rest) = connection.allClasses().partition(_.signature.s.contains(base))
 
-    def resolve(info: Jdwp.ClassInfo): sci.List[Jdwp.Location] =
-      locateIn(info.tag, info.cls, source, line).stdlib
+    def resolve(info: Jdwp.ClassInfo): List[Jdwp.Location] =
+      locateIn(info.tag, info.cls, source, line)
 
     // The backstop sweep costs a round trip per class, so it skips array types and the platform's
     // own classes — a fresh VM already has a couple of thousand loaded, none of which can be the
@@ -504,8 +507,7 @@ extends caps.ExclusiveCapability:
         !signature.startsWith("Lsun/") && !signature.startsWith("Lcom/sun/")
 
     val found = likely.flatMap(resolve(_))
-    val results = if found.isEmpty then rest.filter(sweepable).flatMap(resolve(_)) else found
-    List(results*)
+    if found.nil then rest.filter(sweepable).flatMap(resolve(_)) else found
 
   // Resolves a source position within one specific reference type — every method of `cls` compiled
   // from `source` whose line table covers `line`. Unlike `locate`, it never enumerates all loaded
@@ -518,36 +520,43 @@ extends caps.ExclusiveCapability:
 
     val sourced = safely(connection.sourceFile(cls)).let(_ == source).or(false)
 
+    // Only the first line-table entry at the requested line binds, so the search is `seek` rather
+    // than a filter which is then truncated.
     val exact =
-      if !sourced then sci.List[Jdwp.Location]() else
-        connection.methods(cls).stdlib.flatMap: method =>
-          safely(connection.lineTable(cls, method.method)) match
-            case table: Jdwp.LineTable =>
-              table.lines.stdlib.filter(_.line == line.n1).take(1).map: entry =>
-                Jdwp.Location(tag, cls, method.method, entry.index)
+      if !sourced then List[Jdwp.Location]() else
+        connection.methods(cls).flatMap: method =>
+          val entry: Optional[Jdwp.LineEntry] =
+            safely(connection.lineTable(cls, method.method)) match
+              case table: Jdwp.LineTable => table.lines.seek(_.line == line.n1)
+              case _                     => Unset
 
-            case _ =>
-              sci.List()
+          entry.lay(List[Jdwp.Location]()): entry =>
+            List(Jdwp.Location(tag, cls, method.method, entry.index))
 
     // The SMAP pass, unguarded by the class's own source file: its SMAP's file table decides
     // whether the requested position was inlined into this class, and `sites` answers the
     // generated-line ranges standing for it — one binding per site, at the first line-table
     // entry each range covers.
-    val ranges = connection.smap(cls).lay(sci.List[(Int, Int)]())(_.sites(source, line.n1).stdlib)
+    val ranges = connection.smap(cls).lay(List[(Int, Int)]())(_.sites(source, line.n1))
 
     val inlined =
-      if ranges.isEmpty then sci.List[Jdwp.Location]() else
-        connection.methods(cls).stdlib.flatMap: method =>
+      if ranges.nil then List[Jdwp.Location]() else
+        connection.methods(cls).flatMap: method =>
           safely(connection.lineTable(cls, method.method)) match
             case table: Jdwp.LineTable =>
               ranges.flatMap: (start, end) =>
-                val within = table.lines.seek: entry =>
+                val within: Optional[Jdwp.LineEntry] = table.lines.seek: entry =>
                   entry.line >= start && entry.line < end
 
-                within.let { entry => Jdwp.Location(tag, cls, method.method, entry.index) }.option.toList
+                within.lay(List[Jdwp.Location]()): entry =>
+                  List(Jdwp.Location(tag, cls, method.method, entry.index))
 
             case _ =>
-              sci.List()
+              List()
 
-    val results = (exact ++ inlined).distinctBy: location => (location.method.long, location.index)
-    List(results*)
+    // Two methods can bind the same position (an exact hit and an inlined copy), so a location is
+    // identified by its method and bytecode index. `.stdlib`: the native collections have no
+    // `distinctBy`, and de-duplication is by this key, not by the locations' own equality.
+    def key(location: Jdwp.Location): (Long, Long) = (location.method.long, location.index)
+
+    (exact + inlined).stdlib.distinctBy(key(_)).to(List)

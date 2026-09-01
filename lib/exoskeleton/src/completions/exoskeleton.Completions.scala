@@ -152,13 +152,11 @@ object Completions:
               val dirNamesCmd = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'"
               val dirNames = dirNamesCmd.exec[Text]().cut(t",")
 
-              val dirs =
-                dirNames.stdlib.filter(_.trim != t"").map: dir =>
-                  safely(dir.as[Path on Linux])
+              val dirs: List[Path on Linux] =
+                dirNames.filter(_.trim != t"").bind: dir =>
+                  safely(dir.as[Path on Linux]).lay(Nil: List[Path on Linux])(List(_))
 
-                . compact
-
-              install(Shell.Zsh, command, Name[Linux](t"_$command"), dirs.to(List))
+              install(Shell.Zsh, command, Name[Linux](t"_$command"), dirs)
 
           val bash: Installation.InstallResult =
             if sh"sh -c 'command -v bash'".exec[Exit]() != Exit.Ok
@@ -169,6 +167,9 @@ object Completions:
                   command,
                   Name[Linux](command),
                   List
+                    // `.stdlib.last`: the native `last` is `Optional`, and the installer wants
+                    // the last data directory outright — an empty `dataDirs` is a hard error
+                    // here, as it always was.
                     ( Xdg.dataDirs[Path on Linux].stdlib.last/"bash-completion"/"completions",
                       Xdg.dataHome[Path on Linux]/"bash-completion"/"completions" ) )
 
@@ -181,6 +182,7 @@ object Completions:
                   command,
                   Name[Linux](t"$command.fish"),
                   List
+                    // `.stdlib.last`, as for bash above.
                     ( Xdg.dataDirs[Path on Linux].stdlib.last/"fish"/"vendor_completions.d",
                       Xdg.configHome[Path on Linux]/"fish"/"completions" ) )
 

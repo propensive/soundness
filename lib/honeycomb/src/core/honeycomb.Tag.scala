@@ -91,7 +91,7 @@ object Tag:
       boundary:   Boolean                   = false )
   :   Container of label over children in dom =
 
-    val admissible: Set[Text] = children.reify.pipe(x => x.stdlib.map(_.tt).to(Set))
+    val admissible: Set[Text] = children.reify.pipe(x => x.map(_.tt).to[Set])
 
     Container
       ( valueOf[label].tt, autoclose, mode, presets, admissible, insertable, false, boundary )
@@ -105,7 +105,7 @@ object Tag:
     ( presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false )
   :   Transparent of label over children in dom =
 
-    val admissible: Set[Text] = children.reify.pipe(x => x.stdlib.map(_.tt).to(Set))
+    val admissible: Set[Text] = children.reify.pipe(x => x.map(_.tt).to[Set])
 
     transparent(valueOf[label].tt, admissible, presets, boundary = boundary)
     . of[label]

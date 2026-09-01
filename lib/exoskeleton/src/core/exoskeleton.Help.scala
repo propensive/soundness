@@ -76,48 +76,63 @@ object Help:
   // or to any subcommand follow it. Each part appears only if such flags actually exist, and
   // when only a single flag is possible, it is named outright rather than called `options`.
   // Shared by the `teletype` renderer and the manpage renderer, so their synopses agree.
-  private[exoskeleton] def summarize(params: scala.List[Param], plural: Text): Text =
-    if params.isEmpty then t""
-    else if params.length == 1 then
-      val param = params.head
+  private[exoskeleton] def summarize(params: List[Param], plural: Text): Text =
+    params match
+      case Nil => t""
 
-      val core: Text = param.operand.absolve match
-        case Unset         => param.name
-        case operand: Text => t"${param.name} <$operand>"
+      case param :: Nil =>
+        val core: Text = param.operand.absolve match
+          case Unset         => param.name
+          case operand: Text => t"${param.name} <$operand>"
 
-      if param.repeatable then t" [$core]..." else t" [$core]"
-    else
-      t" [$plural]"
+        if param.repeatable then t" [$core]..." else t" [$core]"
 
-  private[exoskeleton] def descendants(node: Help): scala.List[Param] =
-    node.parameters.stdlib ::: node.subcommands.stdlib.flatMap(descendants)
+      case _ =>
+        t" [$plural]"
 
-  private def paramItems(params: scala.List[Param], depth: Int): scala.List[Row] =
+  private[exoskeleton] def descendants(node: Help): List[Param] =
+    node.parameters + node.subcommands.flatMap(descendants)
+
+  private def paramItems(params: List[Param], depth: Int): List[Row] =
     params.map: param =>
+      // The `Optional` field is read through a typed local, never directly inside the lambda:
+      // the direct form trips dotc's positionless `wildApprox` assertion (scala/scala3#24824).
+      val explanation: Optional[Text | Teletype] = param.description
+
       val description: Optional[Text | Teletype] =
-        if !param.required then param.description else param.description.absolve match
+        if !param.required then explanation else explanation.absolve match
           case Unset              => t"(required)"
           case text: Text         => t"$text (required)"
           case teletype: Teletype => e"$teletype (required)"
 
       Row.Item(depth, label(param), false, description)
 
-  private def commandRows(children: scala.List[Help], depth: Int): scala.List[Row] =
+  private def commandRows(children: List[Help], depth: Int): List[Row] =
     children.flatMap: sub =>
+      // As in `paramItems`, bound before it is read (`wildApprox`).
+      val description: Optional[Text | Teletype] = sub.description
+
       val block =
-        Row.Item(depth, sub.command, true, sub.description) ::
-          paramItems(sub.parameters.stdlib, depth + 1) :::
-          commandRows(sub.subcommands.stdlib, depth + 1)
+        Row.Item(depth, sub.command, true, description) ::
+          (paramItems(sub.parameters, depth + 1) + commandRows(sub.subcommands, depth + 1))
 
       if sub.parameters.nil && sub.subcommands.nil then block
-      else (Row.Blank :: block) :+ Row.Blank
+      else (Row.Blank :: block) + List(Row.Blank)
 
   // Collapse runs of consecutive spacers and strip them from either end of a section.
-  private def compact(rows: scala.List[Row]): scala.List[Row] =
-    val trimmed = rows.dropWhile(_ == Row.Blank).reverse.dropWhile(_ == Row.Blank).reverse
+  private def compact(rows: List[Row]): List[Row] =
+    val trimmed = rows.span(_ == Row.Blank)._2.reverse.span(_ == Row.Blank)._2.reverse
 
-    trimmed.foldRight(scala.List[Row]()): (row, done) =>
-      if row == Row.Blank && !done.isEmpty && done.head == Row.Blank then done else row :: done
+    // Folded from the left onto a reversed accumulator, so the run-collapsing test looks at the
+    // spacer already kept rather than the one still to come; either direction leaves exactly one
+    // spacer per run, in the same place.
+    val collapsed: List[Row] =
+      trimmed.fold(Nil: List[Row]): (done, row) =>
+        done match
+          case Row.Blank :: _ if row == Row.Blank => done
+          case _                                  => row :: done
+
+    collapsed.reverse
 
   // Render the tree to a `Teletype`, then borrow escapade's `Teletype is Printable` so that a
   // `Help` value can be passed straight to `Out.println` and print nicely on the terminal,
@@ -170,52 +185,76 @@ case class Help
     if prefix == Nil then this else recur(this, prefix, command, Nil)
 
   def teletype(width: Int = Int.MaxValue)(using Hyphenation): Teletype =
-    val globalParams: scala.List[Help.Param] = parameters.stdlib.filter(_.global)
-    val localParams: scala.List[Help.Param] = parameters.stdlib.filter(!_.global)
-    val ungrouped: scala.List[Help] = subcommands.stdlib.filter(_.group == Unset)
-    val groupList: scala.List[CommandGroup] = subcommands.stdlib.flatMap(_.group.option).distinct
+    // Each `Optional` field is bound to a typed local before it is read inside a lambda; the
+    // direct form trips dotc's positionless `wildApprox` assertion (scala/scala3#24824).
+    val globalParams: List[Help.Param] = parameters.filter(_.global)
+    val localParams: List[Help.Param] = parameters.filter(!_.global)
+
+    val ungrouped: List[Help] = subcommands.filter: sub =>
+      val group: Optional[CommandGroup] = sub.group
+      group == Unset
+
+    val groupList: List[CommandGroup] =
+      subcommands.bind: sub =>
+        val group: Optional[CommandGroup] = sub.group
+        group.lay(Nil: List[CommandGroup])(List(_))
+
+      . distinct
 
     // Wrap prose into `available` columns using escritoire's borderless paragraph layout, which
     // breaks at spaces and admissible hyphenation points. Below 20 columns, overrun instead.
-    def wrap(teletype: Teletype, available: Int): scala.List[Teletype] =
-      columnar.Paragraph.fit(Array(teletype), available.max(20), TextAlignment.Left)
-      . stdlib.toList
+    def wrap(teletype: Teletype, available: Int): List[Teletype] =
+      columnar.Paragraph.fit(Array(teletype), available.max(20), TextAlignment.Left).to[List]
 
     // Each section is a heading (one or more unaligned lines) plus its rows, which all
-    // participate in the global description-column alignment.
-    val groupSections: scala.List[(scala.List[Teletype], scala.List[Help.Row])] =
-      groupList.map: group =>
-        val members = subcommands.stdlib.filter(_.group == group)
+    // participate in the global description-column alignment. A named method rather than a
+    // lambda: `t"…"`/`e"…"` expansions inside a lambda passed to a collection combinator run
+    // their implicit searches while the combinator's element type variable is still
+    // uninstantiated, which trips dotc's `wildApprox` assertion (scala/scala3#24824).
+    def groupSection(group: CommandGroup): (List[Teletype], List[Help.Row]) =
+      val members = subcommands.filter: sub =>
+        val group2: Optional[CommandGroup] = sub.group
+        group2 == group
 
-        // A flag borne identically by every member of the group is factored out of the
-        // individual subcommands and listed once, as common to the whole group.
-        val common: scala.List[Help.Param] =
-          if members.length < 2 then scala.List()
-          else members.head.parameters.stdlib.filter: param =>
-            members.forall(_.parameters.has(param))
+      // A flag borne identically by every member of the group is factored out of the
+      // individual subcommands and listed once, as common to the whole group. Matched on
+      // shape rather than counted, so no linear length is needed for the "fewer than two"
+      // test.
+      val common: List[Help.Param] = members match
+        case first :: _ :: _ => first.parameters.filter: param =>
+          members.all(_.parameters.has(param))
 
-        val factored: scala.List[Help] = members.map: member =>
-          member.copy(parameters = member.parameters.filter(!common.contains(_)))
+        case _ => Nil
 
-        val commonRows: scala.List[Help.Row] =
-          if common.isEmpty then scala.List()
-          else
-            Help.Row.Blank :: Help.Row.Label(1, t"Common options:") :: Help.paramItems(common, 2)
+      val factored: List[Help] = members.map: member =>
+        member.copy(parameters = member.parameters.filter(!common.has(_)))
 
-        val title: Text = t"${group.name}:"
+      val commonRows: List[Help.Row] =
+        if common.nil then Nil
+        else
+          Help.Row.Blank :: Help.Row.Label(1, t"Common options:") :: Help.paramItems(common, 2)
 
-        val explanation: scala.List[Teletype] = group.description.absolve match
-          case Unset              => scala.List()
-          case text: Text         => wrap(e"$text", width - 2)
-          case teletype: Teletype => wrap(teletype, width - 2)
+      val title: Text = t"${group.name}:"
 
-        val indented: scala.List[Teletype] = explanation.map: line => e"  $line"
+      // As above: bound before it is read (`wildApprox`).
+      val description: Optional[Text | Teletype] = group.description
 
-        val heading: scala.List[Teletype] =
-          if indented.isEmpty then scala.List(e"$Bold($title)")
-          else e"$Bold($title)" :: indented ::: scala.List(e"")
+      val explanation: List[Teletype] = description.absolve match
+        case Unset              => Nil
+        case text: Text         => wrap(e"$text", width - 2)
+        case teletype: Teletype => wrap(teletype, width - 2)
 
-        (heading, Help.compact(Help.commandRows(factored, 1) ::: commonRows))
+      // Again a named method rather than a lambda, for the `wildApprox` reason above.
+      def indent(line: Teletype): Teletype = e"  $line"
+
+      val indented: List[Teletype] = explanation.map(indent)
+
+      val heading: List[Teletype] =
+        if indented.nil then List(e"$Bold($title)") else e"$Bold($title)" :: (indented + List(e""))
+
+      (heading, Help.compact(Help.commandRows(factored, 1) + commonRows))
+
+    val groupSections: List[(List[Teletype], List[Help.Row])] = groupList.map(groupSection)
 
     // A tool without subcommands never reaches dispatch, so all of its flags count as "global";
     // presenting them as anything other than plain options would be noise. A *local* leaf view
@@ -223,42 +262,53 @@ case class Help
     // and then the distinction is worth a split — globals precede the subcommand on the command
     // line, locals follow it.
     val leaf: Boolean = subcommands.nil
-    val split: Boolean = !leaf || (!globalParams.isEmpty && !localParams.isEmpty)
+    val split: Boolean = !leaf || (!globalParams.nil && !localParams.nil)
 
-    val standard: scala.List[(scala.List[Teletype], scala.List[Help.Row])] =
+    val standard: List[(List[Teletype], List[Help.Row])] =
       if leaf && split then
-        scala.List
-          ( (scala.List(e"$Bold(Global options:)"),
+        List
+          ( (List(e"$Bold(Global options:)"),
              Help.compact(Help.paramItems(globalParams, 1))),
-            (scala.List(e"$Bold(Options:)"),
+            (List(e"$Bold(Options:)"),
              Help.compact(Help.paramItems(localParams, 1))) )
       else if leaf then
-        scala.List
-          ( (scala.List(e"$Bold(Options:)"),
-             Help.compact(Help.paramItems(parameters.stdlib, 1))) )
+        List
+          ( (List(e"$Bold(Options:)"),
+             Help.compact(Help.paramItems(parameters, 1))) )
       else
-        scala.List
-          ( (scala.List(e"$Bold(Global options:)"),
+        List
+          ( (List(e"$Bold(Global options:)"),
              Help.compact(Help.paramItems(globalParams, 1))),
-            (scala.List(e"$Bold(Options:)"),
+            (List(e"$Bold(Options:)"),
              Help.compact(Help.paramItems(localParams, 1))),
-            (scala.List(e"$Bold(Commands:)"),
+            (List(e"$Bold(Commands:)"),
              Help.compact(Help.commandRows(ungrouped, 1))) )
 
     // Every status reachable anywhere in the tree, deduplicated by code and ordered by it. A
     // status is recorded against the node whose dispatch branch can return it, but an exit code
     // means the same thing wherever it comes from, so the reader wants the whole table in one
     // place rather than scattered through the command listing.
-    def reachableStatuses(help: Help): scala.List[Status] =
-      help.statuses.stdlib.toList ::: help.subcommands.stdlib.toList.flatMap(reachableStatuses)
+    def reachableStatuses(help: Help): List[Status] =
+      help.statuses + help.subcommands.flatMap(reachableStatuses)
 
-    val statusRows: scala.List[Help.Row] =
-      reachableStatuses(this).distinctBy(_.code).sortBy(_.code).map: status =>
-        Help.Row.Item(1, t"${status.code}", false, status.description)
+    // Ordering first and then dropping later repeats of a code keeps, for each code, the first
+    // status in tree order — the same choice a deduplication before a stable sort would make.
+    // The fold accumulates in reverse, hence the `reverse` afterwards.
+    val distinctStatuses: List[Status] =
+      reachableStatuses(this).order(_.code).fold(Nil: List[Status]): (seen, status) =>
+        if seen.exists(_.code == status.code) then seen else status :: seen
 
-    val sections: scala.List[(scala.List[Teletype], scala.List[Help.Row])] =
-      standard.filter(!_._2.isEmpty) ::: groupSections
-      ::: scala.List((scala.List(e"$Bold(Exit statuses:)"), statusRows)).filter(!_._2.isEmpty)
+    // Named, not a lambda, for the `wildApprox` reason noted against `groupSection` above.
+    def statusRow(status: Status): Help.Row =
+      Help.Row.Item(1, t"${status.code}", false, status.description)
+
+    val statusRows: List[Help.Row] = distinctStatuses.reverse.map(statusRow)
+
+    val statusSection: List[(List[Teletype], List[Help.Row])] =
+      if statusRows.nil then Nil else List((List(e"$Bold(Exit statuses:)"), statusRows))
+
+    val sections: List[(List[Teletype], List[Help.Row])] =
+      standard.filter(!_._2.nil) + groupSections + statusSection
 
     // The column at which every description starts: two spaces after the widest label.
     val column: Int =
@@ -266,14 +316,14 @@ case class Help
         case Help.Row.Item(depth, label, _, _) => depth*2 + label.length
         case _                                 => 0
 
-      . maxOption.getOrElse(0) + 2
+      . most.or(0) + 2
 
-    def render(row: Help.Row): scala.List[Teletype] = row match
-      case Help.Row.Blank => scala.List(e"")
+    def render(row: Help.Row): List[Teletype] = row match
+      case Help.Row.Blank => List(e"")
 
       case Help.Row.Label(depth, text) =>
         val indent: Text = t"  "*depth
-        scala.List(e"$indent$Bold($text)")
+        List(e"$indent$Bold($text)")
 
       case Help.Row.Item(depth, label, bold, description) =>
         val indent: Text = t"  "*depth
@@ -285,39 +335,44 @@ case class Help
 
         explanation.absolve match
           case Unset =>
-            scala.List(if bold then e"$indent$Bold($label)" else e"$indent$label")
+            List(if bold then e"$indent$Bold($label)" else e"$indent$label")
 
           case explanation: Teletype =>
             val fitted: Text = label.fit(column - 2 - indent.length)
             val padded: Teletype = if bold then e"$indent$Bold($fitted)" else e"$indent$fitted"
             val margin: Text = t" "*column
-            val lines = wrap(explanation, width - column)
 
-            if lines.isEmpty then scala.List(padded)
-            else e"$padded  ${lines.head}" :: lines.tail.map: line => e"$margin$line"
+            // A named method, not a lambda, for the `wildApprox` reason noted against
+            // `groupSection` above.
+            def continue(line: Teletype): Teletype = e"$margin$line"
+
+            // Deconstructed rather than length-checked, so the head and tail are total.
+            wrap(explanation, width - column) match
+              case first :: rest => e"$padded  $first" :: rest.map(continue)
+              case _             => List(padded)
 
     val usage: Teletype =
       if leaf && split then
         val globals: Text = Help.summarize(globalParams, t"global options")
         e"$Bold(Usage:) $command$globals${Help.summarize(localParams, t"options")}"
       else if leaf then
-        e"$Bold(Usage:) $command${Help.summarize(parameters.stdlib, t"options")}"
+        e"$Bold(Usage:) $command${Help.summarize(parameters, t"options")}"
       else
         val globals: Text = Help.summarize(globalParams, t"global options")
 
-        val posterior =
-          (localParams ::: subcommands.stdlib.flatMap(Help.descendants)).distinct
+        val posterior: List[Help.Param] =
+          (localParams + subcommands.flatMap(Help.descendants)).distinct
 
         val locals: Text = Help.summarize(posterior, t"options")
 
         e"$Bold(Usage:) $command$globals <command>$locals"
 
-    val header: scala.List[Teletype] = description.absolve match
-      case Unset              => scala.List(usage)
+    val header: List[Teletype] = description.absolve match
+      case Unset              => List(usage)
       case text: Text         => usage :: e"" :: wrap(e"$text", width)
       case teletype: Teletype => usage :: e"" :: wrap(teletype, width)
 
-    val body: scala.List[Teletype] =
-      header ::: sections.flatMap: (heading, rows) => e"" :: (heading ::: rows.flatMap(render))
+    val body: List[Teletype] =
+      header + sections.flatMap: (heading, rows) => e"" :: (heading + rows.flatMap(render))
 
-    body.to(List).join(e"\n")
+    body.join(e"\n")

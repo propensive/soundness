@@ -78,7 +78,7 @@ object DtsDiscipline extends Discipline:
 
     val atoms = scala.collection.mutable.ListBuffer[Atom]()
 
-    content.stdlib.foreach: (path, data) =>
+    content.each: (path, data) =>
       val source = Text(String(Array.unsafeJvm(data), "UTF-8"))
 
       val declarations =
@@ -90,7 +90,7 @@ object DtsDiscipline extends Discipline:
 
       // A declaration a consumer of the module cannot name is not part of its contract. In a
       // module that is the unexported declarations; in a global script there are none.
-      declarations.stdlib.filter(_.exported).foreach: declaration =>
-        atoms ++= DtsAtomizer.atomize(declaration).stdlib
+      declarations.filter(_.exported).each: declaration =>
+        DtsAtomizer.atomize(declaration).each: atom => atoms += atom
 
     Atomization.of(id, atoms.toList.to(List))

@@ -40,6 +40,7 @@ import gossamer.*
 import gossamer.collationOrdering
 import gossamer.collations.codepoints
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 // The *declaration* surface of a classfile, as distinct from the bytecode surface `Classfile`
@@ -96,44 +97,41 @@ object ClassSurface:
   private def text(entry: jlc.constantpool.Utf8Entry): Text = entry.stringValue.nn.tt
 
   private def signatureOf(attributes: List[jlc.Attribute[?]]): Optional[Text] =
-    attributes.stdlib.collectFirst:
+    attributes.reap:
       case attribute: jlca.SignatureAttribute => attribute.signature.nn.stringValue.nn.tt
-
-    . getOrElse(Unset)
 
   // The constant's *class* is folded alongside its value: `1` as an `Integer` and `"1"` as a
   // `String` are different contracts, and their `toString` forms are not.
   private def constantOf(attributes: List[jlc.Attribute[?]]): Optional[Text] =
-    attributes.stdlib.collectFirst:
+    attributes.reap:
       case attribute: jlca.ConstantValueAttribute =>
         val value = attribute.constant.nn.constantValue.nn
         t"${value.getClass.nn.getName.nn.tt}:${value.toString.nn.tt}"
-
-    . getOrElse(Unset)
 
   // A nested class's own `access_flags` record the *outer* view — a `protected` member class has
   // neither `ACC_PUBLIC` nor `ACC_PROTECTED` there — while its real accessibility lives in the
   // `InnerClasses` entry describing itself. Reading it back is what stops a protected nested
   // class from being silently treated as package-private and dropped from the interface.
   private def innerFlagsOf(attributes: List[jlc.Attribute[?]], name: Text): Optional[Int] =
-    attributes.stdlib.collectFirst:
+    attributes.reap:
       case attribute: jlca.InnerClassesAttribute => attribute
 
-    . flatMap: attribute =>
-        attribute.classes.nn.to[List].stdlib.find: info =>
-          info.innerClass.nn.asInternalName.nn.tt == name
-
-        . map(_.flagsMask)
-
-    . getOrElse(Unset)
+    . let: attribute =>
+        attribute.classes.nn.to[List].seek(_.innerClass.nn.asInternalName.nn.tt == name)
+        . let(_.flagsMask)
 
   private def exceptionsOf(attributes: List[jlc.Attribute[?]]): List[Text] =
-    attributes.stdlib.collectFirst:
+    attributes.reap:
       case attribute: jlca.ExceptionsAttribute =>
         // Sorted: the `Exceptions` attribute's order is source order, which is not contractual.
-        List.from(attribute.exceptions.nn.to[List].stdlib.map(_.asInternalName.nn.tt).sorted)
+        // The `.nn` result is bound first: passed inline to `to`, its null-elision proxy leaks
+        // into the inferred receiver type and fails to conform.
+        val entries = attribute.exceptions.nn
+        val names: List[Text] = entries.to[List].map(_.asInternalName.nn.tt)
 
-    . getOrElse(Nil)
+        names.sort[List[Text]]
+
+    . or(Nil)
 
   def apply(data: scala.IArray[Byte]): ClassSurface =
     val model = jlc.ClassFile.of().nn.parse(data.asInstanceOf[scala.Array[Byte]]).nn
@@ -164,8 +162,7 @@ object ClassSurface:
 
     // Members are sorted by selector: `java.lang.classfile` yields them in file order, and file
     // order is an artifact of the compilation run, not of the interface (§11.2 requirement 3).
-    val members =
-      ((fields.stdlib ++ methods.stdlib).sortBy { member => member.selector.s }).to(List)
+    val members: List[Member] = (fields + methods).order(_.selector.s)
 
     val name = model.thisClass.nn.asInternalName.nn.tt
     val attributes = model.attributes.nn.to[List]
@@ -174,7 +171,7 @@ object ClassSurface:
       ( name,
         model.flags.nn.flagsMask,
         Optional(model.superclass.nn.orElse(null)).let(_.asInternalName.nn.tt),
-        List.from(model.interfaces.nn.to[List].stdlib.map(_.asInternalName.nn.tt).sorted),
+        model.interfaces.nn.to[List].map(_.asInternalName.nn.tt).sort[List[Text]],
         signatureOf(attributes),
         members,
         innerFlagsOf(attributes, name) )
@@ -206,4 +203,4 @@ case class ClassSurface
   def supertypes: List[Text] = superclass.lay(interfaces)(_ :: interfaces)
 
   def member(selector: Text): Optional[ClassSurface.Member] =
-    members.stdlib.find { member => member.selector == selector }.getOrElse(Unset)
+    members.seek(_.selector == selector)

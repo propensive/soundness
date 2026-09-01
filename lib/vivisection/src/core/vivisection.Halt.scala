@@ -35,13 +35,19 @@ package vivisection
 import java.util.concurrent.atomic as juca
 
 import scala.caps
-import scala.collection.immutable as sci
 
 import anticipation.*
 import contingency.*
+import denominative.*
+
+// A line table's last covering entry, and the depth of the `$outer` chain walked below, are
+// genuinely counted; both lists are short, and the line table is already traversed once to filter
+// it.
+import denominative.dysasymptotics.linearSize
 import gossamer.*
 import proscenium.*
-import rudiments.{prim, seek}
+import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object Halt:
@@ -125,7 +131,7 @@ extends caps.ExclusiveCapability:
 
     smap.let(_.expand(line)).lay(List(Halt.Position(name, source, path, line, false))):
       expansion =>
-        val inlined = expansion.inlined.stdlib.map: origin =>
+        val inlined = expansion.inlined.map: origin =>
           // The `ScalaClass` stratum records binary-ish names with `$u002E` escapes; failing
           // that, the origin's file names the frame. The raw name rides along, for a caller
           // holding the classpath to resolve the definition through TASTy.
@@ -133,7 +139,7 @@ extends caps.ExclusiveCapability:
           Halt.Position(cls, origin.file, origin.path, origin.line, true, origin.cls)
 
         val real = Halt.Position(name, source, path, expansion.line.or(line), false)
-        List((inlined :+ real)*)
+        inlined + List(real)
 
   // A human-readable position for a frame — `pkg.Cls.method` and its source line, resolved from
   // the class's method and line tables; line 0 where no line information exists.
@@ -144,7 +150,7 @@ extends caps.ExclusiveCapability:
 
     val line = safely(connection.lineTable(location.cls, location.method)) match
       case table: Jdwp.LineTable =>
-        table.lines.stdlib.filter(_.index <= location.index).lastOption.map(_.line).getOrElse(0)
+        table.lines.filter(_.index <= location.index).last.let(_.line).or(0)
 
       case _ =>
         0
@@ -201,20 +207,22 @@ extends caps.ExclusiveCapability:
   def variables(frame: FrameId, location0: Jdwp.Location): List[Variable] =
     val table = connection.variableTable(location0.cls, location0.method)
 
-    val locals = table.lay(sci.List[Variable]()): table =>
-      val live = table.slots.stdlib.filter: slot =>
+    val locals = table.lay(List[Variable]()): table =>
+      val live = table.slots.filter: slot =>
         val index = location0.index
         slot.name != t"this" && slot.index <= index && index < slot.index + slot.length
 
-      val requests = live.map: slot => (slot.slot, Variable.tag(slot.signature))
-      val values = connection.slotValues(thread, frame, List(requests*)).stdlib
+      val requests: List[(Int, Jdwp.Tag)] =
+        live.map: slot => (slot.slot, Variable.tag(slot.signature))
+
+      val values = connection.slotValues(thread, frame, requests)
 
       live.zip(values).map: (slot, value) =>
         variable(slot.name, slot.signature, value, Variable.Provenance.Local(slot.slot))
 
-    val captures = thisObject(frame).lay(sci.List[Variable]())(capturesOf(_, sci.List()))
+    val captures = thisObject(frame).lay(List[Variable]())(capturesOf(_, List()))
 
-    List((locals ++ captures)*)
+    locals + captures
 
   // Expands a snapshot into its next level: an object's instance fields, or an array's elements.
   def children(snapshot0: Variable.Snapshot): List[Variable] =
@@ -222,25 +230,22 @@ extends caps.ExclusiveCapability:
       case Variable.Snapshot.Obj(id, cls) =>
         val (_, cls0) = connection.referenceType(id)
         val fields = instanceFields(cls0)
-        val values = connection.fieldValues(id, List(fields.map(_.field)*)).stdlib
+        val values = connection.fieldValues(id, fields.map(_.field))
 
-        val children = fields.zip(values).map: (field, value) =>
+        fields.zip(values).map: (field, value) =>
           variable(field.name, field.signature, value,
               Variable.Provenance.Field(cls, id, field.field))
-
-        List(children*)
 
       case Variable.Snapshot.Arr(id, component, length, _) =>
         val limit = if length < Halt.expansionLength then length else Halt.expansionLength
 
         val values =
-          if limit == 0 then sci.List[Jdwp.Value]() else connection.arrayValues(id, 0, limit).stdlib
+          if limit == 0 then List[Jdwp.Value]() else connection.arrayValues(id, 0, limit)
 
-        val children = values.zipWithIndex.map: (value, index) =>
-          Variable(index.toString.tt, Unset, Variable.tagName(component), snapshot(value),
-              Variable.Provenance.Element(id, index), true, Variable.State.Forced)
-
-        List(children*)
+        // `indexed` numbers from `Prim`, so the element's own index is the zero-based `n0`.
+        values.indexed.map: (value, index) =>
+          Variable(index.n0.toString.tt, Unset, Variable.tagName(component), snapshot(value),
+              Variable.Provenance.Element(id, index.n0), true, Variable.State.Forced)
 
       case _ =>
         List()
@@ -277,8 +282,8 @@ extends caps.ExclusiveCapability:
       case Variable.Provenance.Cell(cell, elem, _) =>
         connection.setFieldValues(cell, List((elem, value)))
 
-  private def instanceFields(cls: ReferenceTypeId): sci.List[Jdwp.FieldInfo] =
-    connection.fields(cls).stdlib.filter: field => (field.modifiers & 0x8) == 0
+  private def instanceFields(cls: ReferenceTypeId): List[Jdwp.FieldInfo] =
+    connection.fields(cls).filter: field => (field.modifiers & 0x8) == 0
 
   // Builds one logical variable from its storage form: unboxes a ref cell, then snapshots.
   private def variable
@@ -331,10 +336,10 @@ extends caps.ExclusiveCapability:
             val count = if length < Halt.prefixLength then length else Halt.prefixLength
 
             val prefix =
-              if count == 0 then sci.List[Variable.Snapshot]()
-              else connection.arrayValues(id, 0, count).stdlib.map(snapshot(_))
+              if count == 0 then List[Variable.Snapshot]()
+              else connection.arrayValues(id, 0, count).map(snapshot(_))
 
-            Variable.Snapshot.Arr(id, component, length, List(prefix*))
+            Variable.Snapshot.Arr(id, component, length, prefix)
 
           case _ =>
             val (_, cls) = connection.referenceType(id)
@@ -347,25 +352,30 @@ extends caps.ExclusiveCapability:
   // `$outer` chain is walked so an enclosing scope's captures surface too, and ordinary member
   // fields appear against their owner. A lazy val's backing field is read but *never* forced: a
   // null cell means it is unevaluated, and stays that way.
-  private def capturesOf(obj: ObjectId, path: sci.List[Text]): sci.List[Variable] =
-    if path.length > 8 then sci.List() else
+  private def capturesOf(obj: ObjectId, path: List[Text]): List[Variable] =
+    if path.size > 8 then List() else
       val (_, cls) = connection.referenceType(obj)
       val owner = Variable.demangle(connection.signature(cls))
       val fields = instanceFields(cls)
-      val values = connection.fieldValues(obj, List(fields.map(_.field)*)).stdlib
+      val values = connection.fieldValues(obj, fields.map(_.field))
 
       fields.zip(values).flatMap: (field, value) =>
         val name = Variable.fieldName(field.name)
 
+        // Each recovered name is bound to a typed local before it is read: an `Optional` read
+        // directly inside a collection lambda trips the compiler's `wildApprox` assertion.
+        val lazily: Optional[Text] = Variable.lazyField(name)
+        val capture: Optional[Text] = Variable.captured(name)
+
         if name == t"$$outer" then value match
           case Jdwp.Value.Reference(_, outer) if !outer.empty =>
-            capturesOf(outer, path :+ name)
+            capturesOf(outer, path + List(name))
 
           case _ =>
-            sci.List()
+            List()
 
-        else if Variable.lazyField(name).present then
-          val base = Variable.lazyField(name).or(name)
+        else if lazily.present then
+          val base = lazily.or(name)
 
           val unforced = value match
             case Jdwp.Value.Reference(_, id) => id.empty
@@ -374,16 +384,15 @@ extends caps.ExclusiveCapability:
           val state = if unforced then Variable.State.Unforced else Variable.State.Forced
           val snap = if unforced then Unset else snapshot(value)
 
-          sci.List(Variable(base, Unset, Variable.demangle(field.signature), snap,
+          List(Variable(base, Unset, Variable.demangle(field.signature), snap,
               Variable.Provenance.Field(owner, obj, field.field), false, state))
 
-        else if Variable.captured(name).present then
-          val base = Variable.captured(name).or(name)
-          val trail = List((path :+ name)*)
+        else if capture.present then
+          val base = capture.or(name)
 
-          sci.List(variable(base, field.signature, value,
-              Variable.Provenance.Captured(trail, obj, field.field)))
+          List(variable(base, field.signature, value,
+              Variable.Provenance.Captured(path + List(name), obj, field.field)))
 
         else
-          sci.List(variable(name, field.signature, value,
+          List(variable(name, field.signature, value,
               Variable.Provenance.Field(owner, obj, field.field)))

@@ -39,7 +39,9 @@ import escapade.*
 import gossamer.*
 import gossamer.collationOrdering
 import gossamer.collations.codepoints
+import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 import virility.*
 
@@ -57,132 +59,175 @@ extension (help: Help)
       case teletype: Teletype => teletype.plain
 
     val leaf: Boolean = help.subcommands.nil
-    val globalParams: scala.List[Help.Param] = help.parameters.stdlib.filter(_.global)
-    val localParams: scala.List[Help.Param] = help.parameters.stdlib.filter(!_.global)
-    val ungrouped: scala.List[Help] = help.subcommands.stdlib.filter(_.group == Unset)
+    val globalParams: List[Help.Param] = help.parameters.filter(_.global)
+    val localParams: List[Help.Param] = help.parameters.filter(!_.global)
 
-    val groupList: scala.List[CommandGroup] =
-      help.subcommands.stdlib.flatMap(_.group.option).distinct
+    // Each `Optional` field is read through a typed local rather than directly inside the
+    // lambda: the direct form trips dotc's positionless `wildApprox` assertion
+    // (scala/scala3#24824).
+    val ungrouped: List[Help] = help.subcommands.filter: sub =>
+      val group: Optional[CommandGroup] = sub.group
+      group == Unset
+
+    val groupList: List[CommandGroup] =
+      help.subcommands.bind: sub =>
+        val group: Optional[CommandGroup] = sub.group
+        group.lay(Nil: List[CommandGroup])(List(_))
+
+      . distinct
 
     def prose(value: Optional[Text | Teletype]): List[Inline] =
       value.let { value => List(Inline.Plain(plain(value))) }.or(Nil)
 
-    def section(title: Text, blocks: scala.List[Block]): scala.List[Block] =
-      if blocks.isEmpty then scala.List() else scala.List(Block.Section(title, blocks.to(List)))
+    def paragraph(value: Text | Teletype): List[Block] = List(Block.Paragraph(prose(value)))
+
+    def section(title: Text, blocks: List[Block]): List[Block] =
+      if blocks.nil then Nil else List(Block.Section(title, blocks))
 
     val name: Text =
       manual.synopsisName.or(help.description.let(plain(_))).lay(help.command): synopsis =>
         t"${help.command} - $synopsis"
 
     val synopsis: Text =
-      if leaf then Help.summarize(help.parameters.stdlib, t"options")
+      if leaf then Help.summarize(help.parameters, t"options")
       else
         val globals: Text = Help.summarize(globalParams, t"global options")
 
-        val posterior =
-          (localParams ::: help.subcommands.stdlib.flatMap(Help.descendants)).distinct
+        val posterior: List[Help.Param] =
+          (localParams + help.subcommands.flatMap(Help.descendants)).distinct
 
         t"$globals <command>${Help.summarize(posterior, t"options")}"
 
-    val descriptionBlocks: scala.List[Block] =
-      scala.List(help.description, manual.prose).flatMap(_.option).map: value =>
-        Block.Paragraph(prose(value))
+    // The tree's description and the manual's prose, each a paragraph when present. Written as
+    // two `lay`s rather than a traversal of a list of `Optional`s: that form leaves the element
+    // type variable uninstantiated while the reshaping instance is searched for, which trips
+    // dotc's positionless `wildApprox` assertion (scala/scala3#24824).
+    val descriptionBlocks: List[Block] =
+      val description: Optional[Text | Teletype] = help.description
+      val summary: Optional[Text] = manual.prose
 
-    def optionBlocks(params: scala.List[Help.Param]): scala.List[Block] =
+      description.lay(Nil: List[Block])(paragraph) + summary.lay(Nil: List[Block])(paragraph)
+
+    def optionBlocks(params: List[Help.Param]): List[Block] =
       params.map: param =>
-        Block.Tagged(List(Inline.bold(Help.label(param))), prose(param.description))
+        // As above: bound before it is read (`wildApprox`).
+        val description: Optional[Text | Teletype] = param.description
+        Block.Tagged(List(Inline.bold(Help.label(param))), prose(description))
 
     // Each subcommand is a tagged entry; its own (non-global) flags and nested subcommands
     // are indented beneath it, mirroring the depth-based layout of `Help.teletype`.
-    def commandBlocks(subcommands: scala.List[Help]): scala.List[Block] =
+    def commandBlocks(subcommands: List[Help]): List[Block] =
       subcommands.flatMap: sub =>
-        val nested: scala.List[Block] =
-          optionBlocks(sub.parameters.stdlib.filter(!_.global)) :::
-            commandBlocks(sub.subcommands.stdlib)
+        val nested: List[Block] =
+          optionBlocks(sub.parameters.filter(!_.global)) + commandBlocks(sub.subcommands)
 
-        val entry = Block.Tagged(List(Inline.bold(sub.command)), prose(sub.description))
+        // As above: bound before it is read (`wildApprox`).
+        val description: Optional[Text | Teletype] = sub.description
+        val entry = Block.Tagged(List(Inline.bold(sub.command)), prose(description))
 
-        if nested.isEmpty then scala.List(entry)
-        else scala.List(entry, Block.Indented(nested.to(List)))
+        if nested.nil then List(entry) else List(entry, Block.Indented(nested))
 
-    val commandSections: scala.List[Block] =
-      if leaf then scala.List()
+    val commandSections: List[Block] =
+      if leaf then Nil
       else
-        val grouped: scala.List[Block] =
+        val grouped: List[Block] =
           groupList.map: group =>
-            val explanation: scala.List[Block] =
-              group.description.option.map { value => Block.Paragraph(prose(value)) }.toList
+            // As above: bound before it is read (`wildApprox`).
+            val description: Optional[Text | Teletype] = group.description
+            val explanation: List[Block] = description.lay(Nil: List[Block])(paragraph)
 
-            val members = help.subcommands.stdlib.filter(_.group == group)
-            Block.Subsection(group.name, (explanation ::: commandBlocks(members)).to(List))
+            val members = help.subcommands.filter: sub =>
+              val group2: Optional[CommandGroup] = sub.group
+              group2 == group
 
-        section(t"COMMANDS", commandBlocks(ungrouped) ::: grouped)
+            Block.Subsection(group.name, explanation + commandBlocks(members))
 
-    val exampleBlocks: scala.List[Block] =
-      manual.examples.stdlib.flatMap: example =>
-        val caption: scala.List[Block] =
-          example.caption.option.map { value => Block.Paragraph(prose(value)) }.toList
+        section(t"COMMANDS", commandBlocks(ungrouped) + grouped)
 
-        caption ::: scala.List(Block.Example(List(example.command)))
+    val exampleBlocks: List[Block] =
+      manual.examples.flatMap: example =>
+        // As above: bound before it is read (`wildApprox`).
+        val explanation: Optional[Text] = example.caption
+        val caption: List[Block] = explanation.lay(Nil: List[Block])(paragraph)
+
+        caption + List(Block.Example(List(example.command)))
 
     // Statuses and environment variables are documented once for the whole tool, so they are
-    // gathered from every command in the tree rather than just its root.
-    def gather[element](node: Help)(select: Help => List[element]): scala.List[element] =
-      select(node).stdlib ::: node.subcommands.stdlib.flatMap(gather(_)(select))
+    // gathered from every command in the tree rather than just its root. Folded rather than
+    // `flatMap`ped: `fold` pins the element type from `initial`, whereas `flatMap` would search
+    // for its reshaping instance while the recursive call's element type was still
+    // uninstantiated, tripping dotc's `wildApprox` assertion (scala/scala3#24824).
+    def gather[element](node: Help)(select: Help => List[element]): List[element] =
+      node.subcommands.fold(select(node)): (gathered, sub) => gathered + gather(sub)(select)
 
     // A status discovered from an `execute` block and one declared in the `Manual` may describe
     // the same code; the hand-written description wins.
-    val exitStatusBlocks: scala.List[Block] =
-      val declared: scala.collection.Map[Int, Text] =
-        manual.exitStatuses.stdlib.map { status => status.code -> status.description }.toMap
+    val exitStatusBlocks: List[Block] =
+      val declared: Map[Int, Text] =
+        manual.exitStatuses.map({ status => status.code -> status.description }).to[Map]
 
-      val detected: scala.List[(Int, Text)] =
-        gather(help)(_.statuses).map { status => status.code -> status.description }
+      val detected: List[(Int, Text)] =
+        gather(help)(_.statuses).map: status => status.code -> status.description
 
-      (detected ::: declared.toList)
-      . map { (code, description) => code -> declared.getOrElse(code, description) }
-      . distinctBy(_._1)
-      . sortBy(_._1)
-      . map: (code, description) =>
-          Block.Tagged(List(Inline.bold(code.show)), prose(description))
+      // A named method, not a lambda: the `show` expansion inside a lambda passed to a
+      // collection combinator would run its implicit search while the combinator's element
+      // type variable is still uninstantiated (`wildApprox`).
+      def statusBlock(code: Int, description: Text): Block =
+        Block.Tagged(List(Inline.bold(code.show)), prose(description))
 
-    val environmentBlocks: scala.List[Block] =
-      val described: scala.collection.Map[Text, Text] =
-        manual.environment.stdlib.map { variable => variable.name -> variable.description }.toMap
+      val combined: List[(Int, Text)] = detected + declared.to[List]
 
-      (gather(help)(_.variables) ::: described.keys.toList).distinct.sorted.map: name =>
-        Block.Tagged(List(Inline.bold(name)), prose(described.get(name).optional))
+      val resolved: List[(Int, Text)] =
+        combined.map: (code, description) => code -> declared.at(code).or(description)
 
-    val fileBlocks: scala.List[Block] =
-      manual.files.stdlib.map: file =>
+      // Ordering before dropping later repeats of a code keeps, for each code, the first entry
+      // in the concatenated order — the same choice a deduplication before a stable sort makes.
+      // The fold accumulates in reverse, hence the `reverse` afterwards.
+      val deduplicated: List[(Int, Text)] =
+        resolved.order(_._1).fold(Nil: List[(Int, Text)]): (seen, entry) =>
+          if seen.exists(_._1 == entry._1) then seen else entry :: seen
+
+      deduplicated.reverse.map: (code, description) => statusBlock(code, description)
+
+    val environmentBlocks: List[Block] =
+      val described: Map[Text, Text] =
+        manual.environment.map({ variable => variable.name -> variable.description }).to[Map]
+
+      val names: List[Text] =
+        (gather(help)(_.variables) + described.keys.to[List]).distinct.sort
+
+      names.map: name => Block.Tagged(List(Inline.bold(name)), prose(described.at(name)))
+
+    val fileBlocks: List[Block] =
+      manual.files.map: file =>
         Block.Tagged(List(Inline.italic(file.path)), prose(file.description))
 
-    val authorBlocks: scala.List[Block] =
-      manual.authors.stdlib.map: author => Block.Paragraph(List(Inline.Plain(author)))
+    val authorBlocks: List[Block] =
+      manual.authors.map: author => Block.Paragraph(List(Inline.Plain(author)))
 
-    val bugsBlocks: scala.List[Block] =
-      manual.bugs.option.map { bugs => Block.Paragraph(prose(bugs)) }.toList
+    val bugsBlocks: List[Block] =
+      val bugs: Optional[Text] = manual.bugs
+      bugs.lay(Nil: List[Block])(paragraph)
 
-    val seeAlsoBlocks: scala.List[Block] =
-      val references: scala.List[Inline] =
-        manual.seeAlso.stdlib.zipWithIndex.flatMap: (reference, index) =>
-          val separator: scala.List[Inline] =
-            if index == 0 then scala.List() else scala.List(Inline.Plain(t", "))
+    val seeAlsoBlocks: List[Block] =
+      // Named methods, not lambdas, for the `wildApprox` reason noted above.
+      def cite(reference: Manual.Reference, first: Boolean): List[Inline] =
+        val separator: List[Inline] = if first then Nil else List(Inline.Plain(t", "))
+        separator + List(Inline.bold(reference.name), Inline.Plain(t"(${reference.section})"))
 
-          separator :::
-            scala.List(Inline.bold(reference.name), Inline.Plain(t"(${reference.section})"))
+      // Deconstructed rather than indexed, so only the first reference goes unseparated.
+      val references: List[Inline] = manual.seeAlso match
+        case first :: rest => cite(first, true) + rest.flatMap(cite(_, false))
+        case _             => Nil
 
-      val homepage: scala.List[Block] =
-        manual.homepage.option.map: url =>
-          Block.Paragraph(List(Inline.Plain(t"Homepage: ${url.show}")))
+      val homepage: List[Block] =
+        manual.homepage.lay(Nil: List[Block]): url =>
+          List(Block.Paragraph(List(Inline.Plain(t"Homepage: ${url.show}"))))
 
-        . toList
+      val referenceBlocks: List[Block] =
+        if references.nil then Nil else List(Block.Paragraph(references))
 
-      val referenceBlocks: scala.List[Block] =
-        if references.isEmpty then scala.List()
-        else scala.List(Block.Paragraph(references.to(List)))
-
-      referenceBlocks ::: homepage
+      referenceBlocks + homepage
 
     val nameSection =
       Block.Section(t"NAME", List(Block.Paragraph(List(Inline.Plain(name)))))
@@ -192,15 +237,15 @@ extension (help: Help)
         ( t"SYNOPSIS",
           List(Block.Paragraph(List(Inline.bold(help.command), Inline.Plain(synopsis)))) )
 
-    val optionSections: scala.List[Block] =
-      if leaf then section(t"OPTIONS", optionBlocks(help.parameters.stdlib))
+    val optionSections: List[Block] =
+      if leaf then section(t"OPTIONS", optionBlocks(help.parameters))
       else
-        section(t"GLOBAL OPTIONS", optionBlocks(globalParams)) :::
+        section(t"GLOBAL OPTIONS", optionBlocks(globalParams)) +
           section(t"OPTIONS", optionBlocks(localParams))
 
-    val blocks: scala.List[Block] =
-      scala.List
-        ( scala.List(nameSection, synopsisSection),
+    val blocks: List[Block] =
+      List
+        ( List(nameSection, synopsisSection),
           section(t"DESCRIPTION", descriptionBlocks),
           optionSections,
           commandSections,
@@ -212,7 +257,7 @@ extension (help: Help)
           section(t"BUGS", bugsBlocks),
           section(t"SEE ALSO", seeAlsoBlocks) )
 
-      . flatten
+      . flat
 
     Roff
       ( help.command,
@@ -220,4 +265,4 @@ extension (help: Help)
         manual.date.let(_.show),
         manual.version.let { version => t"${help.command} ${version.show}" },
         manual.section.title,
-        blocks.to(List) )
+        blocks )

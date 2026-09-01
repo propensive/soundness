@@ -39,6 +39,7 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
+import rudiments.{filter, prim, sec}
 import vacuous.*
 
 // The terminal materializer for the Kotlin ecosystem: turns a fully-applied `Foreign`
@@ -85,16 +86,19 @@ object KotlinInvoke extends Materializer:
         case "C" => argument <:< TypeRepr.of[Char]
         case _   => !(argument <:< TypeRepr.of[AnyVal])
 
-    val members = KotlinDialect.members(owner, function).stdlib.filter: member =>
-      val shapes = argumentValues.map(_.tpe.widen).zip(descriptorParameters(member.descriptor))
-      member.arity == argumentTerms.length && shapes.forall(satisfies)
+    val members: proscenium.List[KotlinDialect.JvmMember] =
+      KotlinDialect.members(owner, function).filter: member =>
+        val shapes = argumentValues.map(_.tpe.widen).zip(descriptorParameters(member.descriptor))
+        member.arity == argumentTerms.length && shapes.forall(satisfies)
 
-    val member = members match
-      case List(member) => member
-      case Nil          => halt(m"xenophile: $owner has no $function matching these arguments")
-
-      case _ =>
-        halt(m"xenophile: $owner.$function is overloaded; overloads are not yet supported")
+    // `prim`/`sec` replace the `List(one)`/`Nil`/`_` match: the stdlib `List` extractor is the
+    // one in scope here (this file works with `quotes.reflect` trees).
+    val member =
+      members.prim.lay(halt(m"xenophile: $owner has no $function matching these arguments")):
+        first =>
+          if members.sec.present
+          then halt(m"xenophile: $owner.$function is overloaded; overloads are not yet supported")
+          else first
 
     if !member.static
     then halt(m"xenophile: $owner.$function is an instance member, which is not yet supported")

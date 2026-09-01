@@ -36,6 +36,8 @@ import java.net as jn
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
+import symbolism.*
 import vacuous.*
 
 // Resolves a JVM internal class name to its declaration surface, over content held in memory
@@ -50,6 +52,8 @@ object ClasspathIndex:
   private def url(entry: Text): jn.URL = java.io.File(entry.s).toURI.nn.toURL.nn
 
   def apply(local: Map[Text, ClassSurface], classpath: List[Text]): ClasspathIndex =
+    // `.stdlib`: `URLClassLoader`'s constructor takes a Java array, and `scala.Array.from` is
+    // the boundary that builds one.
     val urls: scala.Array[jn.URL | Null] =
       scala.Array.from(classpath.stdlib.map(url(_)))
 
@@ -66,13 +70,15 @@ class ClasspathIndex private (local: Map[Text, ClassSurface], classloader: jn.UR
   // The classes carried by the release itself, which are the ones that get atomized. Held
   // separately from the cache so `local` is never shadowed by a same-named class that happens to
   // be earlier on the dependency classpath.
-  def own: List[Text] = local.stdlib.keys.toList.sortBy(_.s).to(List)
+  def own: List[Text] = local.keys.to[List].order(_.s)
 
   def apply(name: Text): Optional[ClassSurface] =
     cache.getOrElseUpdate(name, resolve(name))
 
-  private def resolve(name: Text): Optional[ClassSurface] =
-    local.stdlib.get(name).map(Optional(_)).getOrElse:
+  private def resolve(name: Text): Optional[ClassSurface] = local.at(name) match
+    case surface: ClassSurface => surface
+
+    case _ =>
       Optional(classloader.getResourceAsStream(t"$name.class".s)).let: stream =>
         // Same erasure: the bytes are read and never retained, so no freezing capability is
         // needed to hand them to the parser.
@@ -94,7 +100,7 @@ class ClasspathIndex private (local: Map[Text, ClassSurface], classloader: jn.UR
         if seen.contains(next) || missing.contains(next) then recur(rest) else apply(next) match
           case surface: ClassSurface =>
             seen += next
-            recur((rest.stdlib ++ surface.supertypes.stdlib).to(List))
+            recur(rest + surface.supertypes)
 
           case _ =>
             missing += next

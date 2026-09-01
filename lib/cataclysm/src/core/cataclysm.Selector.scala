@@ -60,12 +60,16 @@ object Selector:
       case Combinator.Descendant => t""
       case other                 => t"${other.show} "
 
-    val rest = selector.rest.stdlib.map: (combinator, compound) =>
-      combinator match
-        case Combinator.Descendant => t" ${compound.show}"
-        case other                 => t" ${other.show} ${compound.show}"
+    // `step` is a named method rather than a lambda: an interpolation inside a lambda passed to
+    // a collection combinator runs its implicit search while the combinator's element type is
+    // still uninstantiated, tripping dotc's `wildApprox` assertion (scala/scala3#24824).
+    def step(combinator: Combinator, compound: Compound): Text = combinator match
+      case Combinator.Descendant => t" ${compound.show}"
+      case other                 => t" ${other.show} ${compound.show}"
 
-    t"$lead${selector.head.show}${rest.to(List).join}"
+    val rest = selector.rest.map: (combinator, compound) => step(combinator, compound)
+
+    t"$lead${selector.head.show}${rest.join}"
 
 // A complex selector: a head compound followed by combinator/compound steps.
 // `lead` is set only for a relative selector (e.g. the `>` in `:has(> img)`).

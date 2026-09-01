@@ -62,7 +62,8 @@ object Flag:
   // aliases, in the same form, and whether it is repeatable or secret. The description is the
   // help text, so it is shown as an inspected `Text`.
   given inspectable: [flag <: Flag] => flag is Inspectable = flag =>
-    val aliases = flag.aliases.stdlib.map(serialize(_).s).mkString("[", ", ", "]").tt
+    val names: List[Text] = flag.aliases.map(serialize(_))
+    val aliases: Text = t"[${names.join(t", ")}]"
     val description = flag.description.lay(t"○")(_.inspect)
 
     val fields =

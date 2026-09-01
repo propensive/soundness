@@ -32,17 +32,18 @@
                                                                                                   */
 package xenophile
 
-// The dialect works with ordinary Scala collections internally; the single `parse` boundary
-// re-wraps as the opaque `Map` (erasure-identical cast).
-import scala.collection.immutable.Map
-
-
 import anticipation.*
-import denominative.nil
 import contingency.*
 import gossamer.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
+
+// A WIT `enum`'s and `flags`' case counts select the discriminant width, and `result` is padded
+// to exactly two arms, so `List#size` and count-based `keep` are genuinely required; both act on
+// declaration-sized lists.
+import denominative.dysasymptotics.linearSize
+import denominative.{nil, size}
 
 // The WIT grammar for foreign navigation: a *projection* of `Wit.Parser`'s declaration model
 // onto the flat form the wasm backend marshals against — one reader per language, two views,
@@ -64,14 +65,12 @@ object WitDialect extends Dialect:
   // from the world it was linked against without disassembling the component itself.
   case class World(name: Text, imports: List[Text], exports: List[Text])
 
-  def parse(source: Text): proscenium.Map[Text, proscenium.Map[Text, Prototype]] =
-    parse0(source).asInstanceOf[proscenium.Map[Text, proscenium.Map[Text, Prototype]]]
+  def parse(source: Text): Map[Text, Map[Text, Prototype]] = parse0(source)
 
   // Every `world` declared in a source, by name. A bare interface name (`import
   // monotonic-clock;`, naming an interface in the same package) is qualified with the package
   // id, so every id in the result is a full Component Model id.
-  def worlds(source: Text): proscenium.Map[Text, World] =
-    worlds0(source).asInstanceOf[proscenium.Map[Text, World]]
+  def worlds(source: Text): Map[Text, World] = worlds0(source)
 
   private def packageOf(document: Wit.Document): Optional[Text] =
     document.packageName.let: name =>
@@ -80,38 +79,41 @@ object WitDialect extends Dialect:
   private def worlds0(source: Text): Map[Text, World] =
     import strategies.throwUnsafely
 
-    Wit.Parser.parse(source).stdlib.flatMap: document =>
+    Wit.Parser.parse(source).bind: document =>
       val pkg = packageOf(document)
 
       def qualify(id: Text): Text =
         if id.s.contains(":") then id else moduleId(pkg, id).or(id)
 
-      document.worlds.stdlib.map: world =>
+      document.worlds.map: world =>
         world.name ->
           World(world.name, world.imports.map(qualify(_)), world.exports.map(qualify(_)))
 
-    . toMap
+    . to[Map]
 
   private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
     import strategies.throwUnsafely
-    val documents = Wit.Parser.parse(source).stdlib
+    val documents: List[Wit.Document] = Wit.Parser.parse(source)
 
     var types = Map[Text, Map[Text, Prototype]]()
     var typedefs = Map[Text, Foreign.Type]()
 
     for
       document  <- documents
-      interface <- document.interfaces.stdlib
+      interface <- document.interfaces
     do
       val pkg = packageOf(document)
       val module = moduleId(pkg, interface.name)
       val functions = scala.collection.mutable.LinkedHashMap[Text, Prototype]()
 
       def signature(fn: Wit.Function, resource: Optional[Text]): Prototype =
+        // The `Optional` result is bound to a typed local before it is read (`wildApprox`).
+        val result0: Optional[Foreign.Type] = fn.result
+
         Prototype
-          ( (fn.parameters.stdlib.map { (_, typed) => project(typed) }).to(List),
+          ( fn.parameters.map { (_, typed) => project(typed) },
             if fn.constructor then Foreign.Type.Named(resource.or(t""))
-            else fn.result.let(project(_)).or(Foreign.Type.Named(t"unit")),
+            else result0.let(project(_)).or(Foreign.Type.Named(t"unit")),
             module,
             resource,
             fn.static || fn.constructor )
@@ -121,44 +123,42 @@ object WitDialect extends Dialect:
           functions(fn.name) = signature(fn, Unset)
 
         case Wit.Item.Record(name, fields) =>
-          val members = fields.stdlib.map: (field, typed) =>
-            field -> Prototype(Unset, project(typed))
+          val members = fields.map: (field, typed) => field -> Prototype(Unset, project(typed))
 
-          types = types.updated(name, members.toMap)
+          types = types.define(name, members.to[Map])
 
         // An `enum` collapses to the unsigned discriminant that holds its cases, and `flags`
         // to the bit-vector that holds its members, so the FFM layouts stay correct.
         case Wit.Item.Enumeration(name, cases) =>
-          val count = cases.stdlib.length
+          val count = cases.size
           val topic = if count <= 256 then t"u8" else if count <= 65536 then t"u16" else t"u32"
-          typedefs = typedefs.updated(name, Foreign.Type.Named(topic))
+          typedefs = typedefs.define(name, Foreign.Type.Named(topic))
 
         case Wit.Item.Flags(name, names) =>
-          val count = names.stdlib.length
+          val count = names.size
 
           val topic =
             if count <= 8 then t"b8" else if count <= 16 then t"b16"
             else if count <= 32 then t"b32" else t"b64"
 
-          typedefs = typedefs.updated(name, Foreign.Type.Named(topic))
+          typedefs = typedefs.define(name, Foreign.Type.Named(topic))
 
         case Wit.Item.Alias(name, target) =>
-          typedefs = typedefs.updated(name, project(target))
+          typedefs = typedefs.define(name, project(target))
 
         // A variant (or a bodyless resource) has no navigable members, but must still record
         // which module defines it, so functions in *other* interfaces that mention it (e.g. in
         // a `result` error arm) resolve its facade class: a single unnameable member carries
         // the module.
         case Wit.Item.Variant(name, _) =>
-          types = types.updated(name, declaration(name, module))
+          types = types.define(name, declaration(name, module))
 
         case Wit.Item.Resource(name, methods) =>
-          if methods.nil then types = types.updated(name, declaration(name, module))
+          if methods.nil then types = types.define(name, declaration(name, module))
           else
-            val members = methods.stdlib.map: method =>
-              method.name -> signature(method, name)
+            val members = methods.map: method => method.name -> signature(method, name)
 
-            types = types.updated(name, members.toMap)
+            types = types.define(name, members.to[Map])
 
         case Wit.Item.Use(_, _) => ()
 
@@ -166,8 +166,9 @@ object WitDialect extends Dialect:
       // (e.g. the `network` resource in `interface network`) has already recorded its module
       // under this key, which a plain overwrite with the interface's (possibly empty)
       // functions would discard.
-      val merged = types.get(interface.name).optional.lay(functions.toMap)(_ ++ functions.toMap)
-      types = types.updated(interface.name, merged)
+      val declared: Map[Text, Prototype] = functions.to(Map)
+      val merged = types.at(interface.name).lay(declared)(_ + declared)
+      types = types.define(interface.name, merged)
 
     resolve(types, typedefs)
 
@@ -175,22 +176,27 @@ object WitDialect extends Dialect:
   // union `T | none` (an `Optional`), and a `result` always carries exactly two arms.
   private def project(typed: Foreign.Type): Foreign.Type = typed match
     case Foreign.Type.Named(name) =>
-      if name == t"result" then padded(scala.Nil) else typed
+      if name == t"result" then padded(Nil) else typed
 
     case applied: Foreign.Type.Applied =>
-      val arguments = applied.arguments.stdlib.map(project(_))
+      val arguments: List[Foreign.Type] = applied.arguments.map(project(_))
 
-      if applied.constructor == t"option" && arguments.length == 1
-      then Foreign.Type.Union(List(arguments.head, Foreign.Type.Named(t"none")))
+      // `option<T>` takes exactly one argument; the sole argument is bound to a typed local
+      // before it is read (`wildApprox`), and anything else falls through unchanged, as before.
+      val single: Optional[Foreign.Type] = if arguments.size == 1 then arguments.prim else Unset
+
+      if applied.constructor == t"option"
+      then single.lay(Foreign.Type.Applied(applied.constructor, arguments)): inner =>
+        Foreign.Type.Union(List(inner, Foreign.Type.Named(t"none")))
       else if applied.constructor == t"result" then padded(arguments)
-      else Foreign.Type.Applied(applied.constructor, arguments.to(List))
+      else Foreign.Type.Applied(applied.constructor, arguments)
 
     case Foreign.Type.Union(members) =>
       Foreign.Type.Union(members.map(project(_)))
 
-  private def padded(args: scala.List[Foreign.Type]): Foreign.Type =
+  private def padded(args: List[Foreign.Type]): Foreign.Type =
     val unit = Foreign.Type.Named(t"_")
-    Foreign.Type.Applied(t"result", ((args ++ scala.List(unit, unit)).take(2)).to(List))
+    Foreign.Type.Applied(t"result", (args + List(unit, unit)).keep(2))
 
   // The pseudo-member recording, for a memberless type declaration, the module that defines it.
   private def declaration(name: Text, module: Optional[Text]): Map[Text, Prototype] =
@@ -203,7 +209,7 @@ object WitDialect extends Dialect:
 
     def expand(foreign: Foreign.Type): Foreign.Type = foreign match
       case Foreign.Type.Named(name) =>
-        typedefs.get(name).optional.lay(foreign)(expand)
+        typedefs.at(name).lay(foreign)(expand)
 
       case Foreign.Type.Union(members) =>
         Foreign.Type.Union(members.map(expand))
@@ -219,8 +225,8 @@ object WitDialect extends Dialect:
           sig.resource,
           sig.static )
 
-    definitions.map: (name, members) =>
-      (name, members.map { (member, sig) => (member, signature(sig)) })
+    // `Map#map` maps values with the keys preserved.
+    definitions.map: members => members.map(signature(_))
 
   // Builds the Component Model module id for an interface from the enclosing package id:
   // package `wasi:random@0.2.0` and interface `random` give `wasi:random/random@0.2.0` — the

@@ -321,10 +321,15 @@ object Xenophile:
         ConstantType(StringConstant(name.s))
 
       case Foreign.Type.Union(members) =>
-        members.map(reprOf).stdlib.reduce: (a, b) =>
-          a.asType.absolve match
-            case '[x] => b.asType.absolve match
-              case '[y] => TypeRepr.of[x | y]
+        val reprs: List[TypeRepr] = members.map(reprOf)
+
+        // `reduce` is total only on a `Populated` receiver; a parsed union always has members,
+        // so the empty branch is unreachable.
+        reprs.occupied.lay(TypeRepr.of[Nothing]): nonEmpty =>
+          nonEmpty.reduce: (a, b) =>
+            a.asType.absolve match
+              case '[x] => b.asType.absolve match
+                case '[y] => TypeRepr.of[x | y]
 
       case Foreign.Type.Applied(constructor, arguments) =>
         val ctor = ConstantType(StringConstant(constructor.s))
@@ -335,7 +340,8 @@ object Xenophile:
             single
 
           case reprs =>
-            reprs.stdlib.foldRight(TypeRepr.of[EmptyTuple]): (head, tail) =>
+            // A right fold, as a left fold over the reversed list: `fold` is left-associative.
+            reprs.reverse.fold(TypeRepr.of[EmptyTuple]): (tail, head) =>
               head.asType.absolve match
                 case '[head] => tail.asType.absolve match
                   case '[type tail <: Tuple; tail] => TypeRepr.of[head *: tail]
@@ -517,6 +523,7 @@ object Xenophile:
     val member = Expr(fieldName.s)
     val owner = Expr(topic.s)
     val target = '{Foreign.Expression.Select($self.expr, $member.tt, $owner.tt)}
+    // `Expr.ofList` takes a stdlib `Seq`: the quotes API is the boundary.
     val tree = '{Foreign.Expression.Apply($target, ${Expr.ofList(argTrees.stdlib)})}
 
     foreignType(signature.result, originRepr, locusRepr).asType.absolve match

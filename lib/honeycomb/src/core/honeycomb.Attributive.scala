@@ -36,6 +36,7 @@ import anticipation.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -58,7 +59,7 @@ object Attributive:
   given domId: (Name[DomId] is Attributive to Whatwg.Id) = _ -> _
   given cssClass: (Name[CssClass] is Attributive to Whatwg.CssClassList) = _ -> _
   given classList: ClassList is Attributive to Whatwg.CssClassList =
-    _ -> _.classes.stdlib.join(t" ")
+    _ -> _.classes.to[List].join(t" ")
 
   given url: [url: Abstractable across Urls to Text] => url is Attributive to Whatwg.Url =
     (key, value) => (key, value.generic)

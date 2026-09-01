@@ -149,7 +149,7 @@ object Whatwg:
   def attribute[self  <: Label: ValueOf, plane <: Label: Reifiable to List[String], topic]()
   :   self is Attribute on plane of topic in Whatwg =
 
-    new Attribute(valueOf[self].tt, plane.reify.pipe(x => x.stdlib.map(_.tt).to(Set)), false)
+    new Attribute(valueOf[self].tt, plane.reify.pipe(x => x.map(_.tt).to[Set]), false)
     . asInstanceOf[self is Attribute on plane of topic in Whatwg]
 
 
@@ -391,7 +391,11 @@ class Whatwg() extends Dom:
   type Heading = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "hgroup"
 
   def insertable(tag: Tag): Set[Tag] =
-    (tag.admissible.stdlib.map(elements(_)).compact).to(Set).filter(_.insertable)
+    val tags: Set[Tag] = tag.admissible.bind: label =>
+      val element: Optional[Tag] = elements(label)
+      element.lay(Nil: List[Tag])(List(_))
+
+    tags.filter(_.insertable)
 
   def infer(parent: Tag, child: Tag): Optional[Tag] =
     def recur(parent: Tag): Boolean =
@@ -673,7 +677,7 @@ class Whatwg() extends Dom:
   val Wbr = Tag.void["wbr", Whatwg]()
 
   val elements: Dictionary[Tag] =
-    Dictionary(this.membersOfType[Tag].map { tag => tag.label -> tag }.stdlib*)
+    Dictionary(this.membersOfType[Tag].map { tag => tag.label -> tag }*)
 
   val entities: Dictionary[Text] =
     val html4 = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n")
@@ -684,7 +688,7 @@ class Whatwg() extends Dom:
     . map(_.cut(t"\t")).sweep:
         case List(key, value) => (key, value)
 
-    Dictionary((html4 + extra).stdlib*)
+    Dictionary((html4 + extra)*)
 
   val attributes: Dictionary[Attribute] =
     val list: List[(Text, Attribute)] =

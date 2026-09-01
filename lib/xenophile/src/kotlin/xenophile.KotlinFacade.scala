@@ -46,6 +46,11 @@ import rudiments.*
 import vacuous.*
 import symbolism.*
 
+// Kotlin metadata declares a member's parameters and default flags as short, declaration-sized
+// lists, read positionally against the arity the metadata itself supplies, so `size`, `skip` and
+// indexed access on `List` are acknowledged as linear here.
+import denominative.dysasymptotics.{linearAccess, linearSize}
+
 // The macro engine behind `Facade`: resolves member accesses against `KotlinDialect`'s
 // metadata, and materializes each access immediately as a direct JVM call on the unwrapped
 // underlying value. Generic precision comes free of charge from the compiler: the receiver is
@@ -72,9 +77,11 @@ object KotlinFacade:
   // diagnostics that quote the API as its author declared it.
   private[xenophile] def kotlinType(tpe: Foreign.Type): Text = tpe match
     case Foreign.Type.Union(members) =>
+      // `filter` stays on the `stdlib` view because the `List(…)` extractor in scope here is
+      // the stdlib's (this file builds `quotes.reflect` trees).
       members.stdlib.filter(_ != Foreign.Type.Named(t"null")) match
-        case List(inner) if members.stdlib.length == 2 => t"${kotlinType(inner)}?"
-        case _ => members.stdlib.map(kotlinType).join(t" | ")
+        case List(inner) if members.size == 2 => t"${kotlinType(inner)}?"
+        case _ => members.map(kotlinType).join(t" | ")
 
     case Foreign.Type.Named(name) =>
       simple(name)
@@ -90,14 +97,14 @@ object KotlinFacade:
       t"fun $name(${parameters.map(kotlinType).join(t", ")}): ${kotlinType(prototype.result)}"
 
   // Near misses among the type's members, rendered in Kotlin syntax, for `did you mean`.
-  private def similar(className: Text, name: Text): List[Text] =
-    KotlinDialect.resolve(className).lay(Nil): members =>
-      members.stdlib.toList.filter: (memberName, _) =>
+  private def similar(className: Text, name: Text): proscenium.List[Text] =
+    KotlinDialect.resolve(className).lay(proscenium.Nil): members =>
+      members.to[proscenium.List].filter: (memberName, _) =>
         val left = memberName.s.toLowerCase.nn
         val right = name.s.toLowerCase.nn
         left.startsWith(right.take(3)) || right.startsWith(left.take(3))
 
-      . sortBy(_(0).s).take(4).map(rendered)
+      . order(_(0).s).keep(4).map(rendered)
 
   // Kotlin value classes mangle their members' JVM names (`-impl` hashes); such members are
   // not yet callable, and say so rather than failing obscurely downstream.
@@ -107,17 +114,17 @@ object KotlinFacade:
       halt(m"xenophile: $jvmName of $className involves an unsupported Kotlin value class")
 
   private def missing(using Quotes)(className: Text, name: Text): Nothing =
-    similar(className, name) match
-      case Nil =>
-        halt(m"xenophile: $className has no member $name")
+    val candidates = similar(className, name)
 
-      case candidates =>
-        val listed = candidates.join(t"; ")
-        halt(m"xenophile: $className has no member $name; did you mean: $listed")
+    if candidates.nil then halt(m"xenophile: $className has no member $name")
+    else
+      val listed = candidates.join(t"; ")
+      halt(m"xenophile: $className has no member $name; did you mean: $listed")
 
   // Whether the Kotlin-level result type is nullable, and its non-null form.
   private def denull(km: Foreign.Type): (Foreign.Type, Boolean) = km match
     case Foreign.Type.Union(members) =>
+      // As `kotlinType` above: the `List(…)` extractor in scope is the stdlib's.
       members.stdlib.filter(_ != Foreign.Type.Named(t"null")) match
         case List(inner) => (inner, members.has(Foreign.Type.Named(t"null")))
         case _           => (km, false)
@@ -794,6 +801,8 @@ object KotlinFacade:
     val capital = capitalize(field)
 
     def getter(name: Text): Optional[Expr[Any]] =
+      // A stdlib view: the result is matched with `member :: _` below, and `::` in scope here is
+      // the stdlib's (this file builds `quotes.reflect` trees).
       val members = KotlinDialect.members(className, name).stdlib.filter: member =>
         !member.property && member.arity == 0
 
@@ -820,6 +829,7 @@ object KotlinFacade:
     val className = classNameOf(repr)
     val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
 
+    // A stdlib view: matched with `Nil`/`member :: _`, whose extractors in scope are the stdlib's.
     KotlinDialect.members(className, field).stdlib.filter(_.property) match
       case Nil =>
         beanGetter(self, repr, className, classSymbol, field).or(missing(className, field))
@@ -917,8 +927,9 @@ object KotlinFacade:
     // With no member of this arity, a member whose omitted trailing parameters all declare
     // defaults is called through its synthetic `$default` bridge instead.
     if candidates.nil then
+      // As above: matched with `member :: _`/`Nil` below.
       val defaulted = KotlinDialect.members(className, field).stdlib.filter: member =>
-        val trailing = member.defaults.stdlib.drop(args.length).forall(identity)
+        val trailing = member.defaults.skip(args.length).all(identity)
         !member.property && member.arity > args.length && trailing
 
       defaulted match
@@ -1008,6 +1019,8 @@ object KotlinFacade:
 
     // Each metadata candidate scans the same-named JVM methods, so a symbol satisfiable
     // through more than one candidate would repeat; overload identity is the symbol.
+    // A stdlib view for `distinctBy`, which the opaque collections withhold (their `distinct`
+    // has no key projection), and because the result is matched with `List(one)`/`one :: _`.
     val distinct = resolved.stdlib.distinctBy(_(0))
 
     // Exact conformance outranks adaptation, so `Text` never makes two `String`-flavoured
@@ -1302,14 +1315,13 @@ object KotlinFacade:
     val prototype = KotlinDialect.memberPrototype(className, field).or:
       missing(className, field)
 
-    val candidates = KotlinDialect.members(className, field).stdlib.filter: member =>
-      !member.property && member.parameters.stdlib.nonEmpty
+    val candidates = KotlinDialect.members(className, field).filter: member =>
+      !member.property && !member.parameters.nil
 
-    val member = candidates match
-      case member :: _ => member
-      case Nil         => halt(m"xenophile: $className.$field takes no named arguments")
+    val member = candidates.prim.or(halt(m"xenophile: $className.$field takes no named arguments"))
 
-    val positions: Map[Text, Int] = member.parameters.stdlib.zipWithIndex.toMap.to(Map)
+    val positions: Map[Text, Int] =
+      member.parameters.indexed.map { (name, ordinal) => (name, ordinal.n0) }.to[Map]
 
     val provided: Map[Int, Term] =
       def assign(pairs: List[(Text, Term)], next: Int, acc: Map[Int, Term]): Map[Int, Term] =
@@ -1338,15 +1350,25 @@ object KotlinFacade:
         ((0 until member.arity).filter(!provided.defines(_)).toList).to(proscenium.List)
 
       val undefaulted = absent.filter: index =>
-        !member.defaults.stdlib.lift(index).getOrElse(false)
+        // The `Optional` flag is bound to a typed local before it is read (`wildApprox`).
+        val declared: Optional[Boolean] = member.defaults.at(index.z)
+        !declared.or(false)
 
       if !undefaulted.nil then
-        val names = undefaulted.map { index => member.parameters.stdlib(index) }.join(t", ")
+        val names = undefaulted.map: index =>
+          // Likewise; the candidate filter above admits only Kotlin members, whose `parameters`
+          // has `arity` entries, so every index below `arity` is present.
+          val parameter: Optional[Text] = member.parameters.at(index.z)
+          parameter.or(t"")
+
+        . join(t", ")
         halt(m"xenophile: $className.$field requires arguments for: $names")
 
       bridgeCall(self, repr, className, member, provided, prototype)
 
     . apply: ordered =>
+        // `invocation` takes the argument terms as a stdlib `List`: it slices and zips them
+        // against `quotes.reflect` parameter lists, which are stdlib lists themselves.
         invocation(self, repr, className, field, ordered.stdlib, prototype)
 
   // The facade of an `enum class` entry, a static field of the enum's own type.

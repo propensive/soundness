@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 // The `Dialect` adapter over `Typescript.Parser`: it projects the parsed declarations onto the
@@ -68,33 +69,33 @@ object TypescriptDialect extends Dialect:
     // Inherited members are resolved against the declarations of this same file. A base named by
     // a declaration this file does not carry contributes nothing — the file is the whole world
     // the macro has — but it never removes what is declared here.
-    def members(key: Text, seen: scala.collection.immutable.Set[Text])
-    :   scala.collection.immutable.Map[Text, Prototype] =
-
-      if seen.contains(key) then scala.collection.immutable.Map() else
+    def members(key: Text, seen: Set[Text]): Map[Text, Prototype] =
+      if seen.has(key) then Map() else
         byName.get(key) match
-          case scala.None => scala.collection.immutable.Map()
+          case scala.None => Map()
 
           case scala.Some(declaration) =>
-            val bases = declaration match
-              case Typescript.Declaration.Interface(_, _, _, extending, _, _) => extending.stdlib
+            val bases: List[Typescript.Type] = declaration match
+              case Typescript.Declaration.Interface(_, _, _, extending, _, _) => extending
 
               case Typescript.Declaration.Class(_, _, _, extending, implements, _, _, _) =>
-                extending.option.toList ++ implements.stdlib
+                // The `Optional` base class is bound to a typed local before it is read
+                // (`wildApprox`).
+                val base: Optional[Typescript.Type] = extending
+                base.lay(implements) { value => List(value) + implements }
 
-              case _ => scala.Nil
+              case _ => Nil
 
-            val inherited = bases.foldLeft(scala.collection.immutable.Map[Text, Prototype]()):
-              (accumulated, base) =>
-                base match
-                  case Typescript.Type.Named(name, _) => accumulated ++ members(name, seen + key)
-                  case _                             => accumulated
+            val inherited = bases.fold(Map[Text, Prototype]()): (accumulated, base) =>
+              base match
+                case Typescript.Type.Named(name, _) => accumulated + members(name, seen :+ key)
+                case _                              => accumulated
 
             declaration.declaredMembers.fold(inherited): (accumulated, member) =>
               prototype(member).lay(accumulated): value =>
-                accumulated.updated(member.name, value)
+                accumulated.define(member.name, value)
 
-    (byName.keys.toList.map { key => key -> members(key, scala.collection.immutable.Set()).to(Map) }.toMap).to(Map)
+    byName.keys.to(List).map { key => key -> members(key, Set()) }.to[Map]
 
   // Index, call and construct signatures have no name a `Foreign` member selection could use,
   // and a private member is not the consumer's to call.

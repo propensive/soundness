@@ -39,6 +39,7 @@ import anticipation.*
 import contextual.*
 import rudiments.each
 import rudiments.all
+import rudiments.map
 import contingency.*
 import fulminate.*
 import gesticulate.*
@@ -51,6 +52,7 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import iridescence.*
 import quantitative.*
 
@@ -65,6 +67,7 @@ object Css:
       case error: Css.Error => accrual + error
 
     . protect:
+        // `.stdlib.iterator`: the parser reads a stdlib `Iterator`.
         CssParser.parse(source.stdlib.iterator)
 
   // Controls how a `Css` tree is serialized. `newlines` puts each rule and declaration on its own
@@ -153,8 +156,7 @@ object Css:
   // Stylesheets concatenate their rule lists, so `css"a { … }" + css"b { … }"` is one
   // stylesheet of both rules.
   given addable: Css is Addable by Css to Css =
-    Addable: (left, right) =>
-      Css((left.rules.stdlib ++ right.rules.stdlib).to(List))
+    Addable: (left, right) => Css(left.rules + right.rules)
 
   // Serve a stylesheet as an HTTP `text/css` response body (paired with the
   // `Streamable` instance above).
@@ -179,11 +181,15 @@ object Css:
     // Inline-style sets concatenate their property lists, so two `Css.Style`s (or two
     // bare `css"…"`s) join into one.
     given addable: Style is Addable by Style to Style =
-      Addable: (left, right) =>
-        Style.of((left.properties.stdlib ++ right.properties.stdlib).to(List))
+      Addable: (left, right) => Style.of(left.properties + right.properties)
 
   class Style private (val properties: List[(Text, Text)]):
-    def text: Text = (properties.stdlib.map { (name, value) => t"$name: $value" }).to(List).join(t"; ")
+    // `declaration` is a named method rather than a lambda: an interpolation inside a lambda
+    // passed to a collection combinator runs its implicit search while the combinator's element
+    // type is still uninstantiated, tripping dotc's `wildApprox` assertion (scala/scala3#24824).
+    def text: Text =
+      def declaration(name: Text, value: Text): Text = t"$name: $value"
+      properties.map { (name, value) => declaration(name, value) }.join(t"; ")
 
   // A typed CSS value tagged with its value-definition-syntax type (e.g.
   // `Css.Value of "length"`). Native types convert in via `Css.Convertible`; the
@@ -263,9 +269,11 @@ object Css:
   // The aggregate of every `Css.Error` accumulated while reading a stylesheet.
   // `read[Css]` collects all errors rather than stopping at the first, raising
   // this once at the end (or returning the `Css` if there were none).
+  // Counting the errors is O(n) on a `List` (hence `linearSize`, imported above), and is only
+  // paid when this aggregate error's message is built.
   case class Errors(errors: List[Css.Error])(using Diagnostics)
-  extends fulminate.Error(m"the CSS contained ${errors.stdlib.length} errors"):
-    def + (error: Css.Error): Css.Errors = Css.Errors((errors.stdlib :+ error).to(List))
+  extends fulminate.Error(m"the CSS contained ${errors.size} errors"):
+    def + (error: Css.Error): Css.Errors = Css.Errors(errors + List(error))
 
   // CssConvertible → Css.Convertible
   // Records that a native Scala type renders to a CSS value of the value-definition

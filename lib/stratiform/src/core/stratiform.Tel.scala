@@ -398,12 +398,12 @@ object Tel extends Tel2:
             Tel.make(Tel.Compound(t"", Array(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
 
           def gathered(elements: List[Any]): value =
-            val compounds = Array.from:
-              elements.stdlib.map: element =>
+            val gathering: List[Tel.Compound] =
+              elements.map: element =>
                 element.asInstanceOf[Tel].subtree.absolve match
                   case compound: Tel.Compound => compound
 
-            decodable.decoded(Tel.make(gatheredDocument(compounds)))
+            decodable.decoded(Tel.make(gatheredDocument(gathering.to[Array])))
       else
         new Tel.Parsable:
           type Self = value
@@ -750,15 +750,12 @@ object Tel extends Tel2:
       var index = 0
 
       while index < profiles.length do
-        val texts = assigned.readable(index).stdlib
-        val slot = new scala.Array[Text](texts.length)
-        var occurrence = 0
-        var rest = texts
+        // The slot's atoms are a linked list, so `size` is a walk; `linearSize`
+        // acknowledges it (the array has to be sized before it can be filled).
+        val atomList = assigned.readable(index)
+        val slot = new scala.Array[Text](atomList.size)
 
-        while rest.nonEmpty do
-          slot(occurrence) = Positional.text(rest.head)
-          occurrence += 1
-          rest = rest.tail
+        atomList.each { atom => slot(ordinal.n0) = Positional.text(atom) }
 
         result(index) = slot
         index += 1
@@ -887,30 +884,34 @@ object Tel extends Tel2:
             var slot = 0
 
             while slot < assigned.length do
-              val slotAtoms = assigned.readUnchecked(slot).stdlib
+              // The head pattern both guards the block and names the atom the
+              // non-repeatable branch parses.
+              assigned.readUnchecked(slot) match
+                case slotAtoms @ (firstAtom :: _) =>
+                  val parsing = unwrap(entries.readUnchecked(slot)(1))
 
-              if slotAtoms.nonEmpty then
-                val parsing = unwrap(entries.readUnchecked(slot)(1))
+                  inline def positioned[result](inline block: => result): result =
+                    focusing(foci, reader, Text(keys.readUnchecked(slot)))(block)
 
-                inline def positioned[result](inline block: => result): result =
-                  focusing(foci, reader, Text(keys.readUnchecked(slot)))(block)
+                  parsing match
+                    case gathering: Gathering if parsing.repeatable =>
+                      val buffer = scala.collection.mutable.ListBuffer.empty[Any]
 
-                parsing match
-                  case gathering: Gathering if parsing.repeatable =>
-                    val buffer = scala.collection.mutable.ListBuffer.empty[Any]
+                      slotAtoms.each: atom =>
+                        buffer += positioned(gathering.parseAtomElement(Positional.text(atom)))
 
-                    slotAtoms.foreach: atom =>
-                      buffer += positioned(gathering.parseAtomElement(Positional.text(atom)))
+                      values(slot) = buffer
 
-                    values(slot) = buffer
+                    case _ =>
+                      atomFilled(slot) = true
 
-                  case _ =>
-                    atomFilled(slot) = true
+                      values(slot) =
+                        if parsing.nature == Tel.Nature.Flag
+                        then positioned(parsing.parseFlag())
+                        else positioned(parsing.parseAtom(Positional.text(firstAtom)))
 
-                    values(slot) =
-                      if parsing.nature == Tel.Nature.Flag
-                      then positioned(parsing.parseFlag())
-                      else positioned(parsing.parseAtom(Positional.text(slotAtoms.head)))
+                // An empty slot took no atoms.
+                case _ => ()
 
               slot += 1
 
@@ -1438,8 +1439,8 @@ object Tel extends Tel2:
         }):
           // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it and
           // emit no element, so remaining siblings are still validated.
-          km.stdlib.get(compound.keyword) match
-            case Some(entry) =>
+          km.at(compound.keyword) match
+            case entry: KeywordEntry =>
               // §20.2 step 4c: all children of one member must form a single
               // contiguous run; variants of one SelectRef share an ordinal and
               // so interleave freely. Returning to an earlier member's run is
@@ -1455,7 +1456,7 @@ object Tel extends Tel2:
 
               results += assignCompound(compound, entry, schema, depth)
 
-            case None => recoverNode(Reason.UnknownKeyword)(())
+            case _ => recoverNode(Reason.UnknownKeyword)(())
 
         i += 1
 
@@ -2237,11 +2238,11 @@ object Tel extends Tel2:
 
       def locate(value: Tel, path: Telp): Optional[Tel.Error.Position] =
         value.positionIndex.let: index =>
-          walkIndex(value.subtree, index.ints, 0, Sequence.from(path.components.stdlib), 0, false)
+          walkIndex(value.subtree, index.ints, 0, path.components.to[Sequence], 0, false)
 
       def locateKey(value: Tel, path: Telp): Optional[Tel.Error.Position] =
         value.positionIndex.let: index =>
-          walkIndex(value.subtree, index.ints, 0, Sequence.from(path.components.stdlib), 0, true)
+          walkIndex(value.subtree, index.ints, 0, path.components.to[Sequence], 0, true)
 
   // Walk the packed `PositionIndex` alongside the AST, following `segments`
   // (a root-first keyword path) from the descriptor at `offset`.
@@ -2373,6 +2374,11 @@ object Tel extends Tel2:
     // A single in-memory block — the common case — is returned as-is
     // rather than copied into a fresh array (jacinta's single-chunk fast
     // path; the copy dominated the entry cost of fast direct reads).
+    //
+    // `Chain` is the lazy shape: the native surface deliberately withholds
+    // `prim`/`sec`/`size` on it (`size` forces the whole chain, and is gated
+    // behind `UnboundedSize` for that reason), so the one-chunk test and the
+    // walk go through the stdlib view, which forces exactly one cell at a time.
     if !source.nil && source.stdlib.tail.isEmpty then source.stdlib.head else
       var acc    = scala.IArray.empty[Byte]
       var stream = source.stdlib
@@ -4164,14 +4170,22 @@ object Tel extends Tel2:
     private update def parsePragmaContent(content: String, line: Int)
     :   (Tactic[Tel.Error]^) ?->{this} Tel.Pragma =
 
-      val (parts, offsets) = splitPragmaPhrases(content)
+      val (phraseList, offsetList) = splitPragmaPhrases(content)
+
+      // The classification scan below walks the phrases and their offsets together, by
+      // position, inside the loop that also drives the stage machine, and re-reads the
+      // head phrase for the §19.5 check. A single stdlib view of each list keeps those
+      // reads O(1) — indexing the linked form at every step would be quadratic — and
+      // keeps the head read's out-of-range behaviour exactly as the spec text assumes.
+      val parts = phraseList.stdlib
+      val offsets = offsetList.stdlib
 
       // §19.5 RestartFromPragma: a non-`tel` head is recorded but parsing continues.
-      if parts.stdlib.head != "tel"
-      then recoverAt(Reason.PragmaNotFirst, line, offsets.stdlib.head + 1, parts.stdlib.head.length)(())
+      if parts.head != "tel"
+      then recoverAt(Reason.PragmaNotFirst, line, offsets.head + 1, parts.head.length)(())
 
       val version =
-        if parts.size >= 2 then parseVersion(parts.stdlib(1), line, offsets.stdlib(1) + 1) else (1, 0)
+        if parts.size >= 2 then parseVersion(parts(1), line, offsets(1) + 1) else (1, 0)
 
       // §8: phrases after the version are classified by form — layer
       // selection, schema reference, schema signature, sigil — then
@@ -4199,8 +4213,8 @@ object Tel extends Tel2:
       var index = 2
 
       while index < parts.size do
-        val s = parts.stdlib(index)
-        val column = offsets.stdlib(index) + 1
+        val s = parts(index)
+        val column = offsets(index) + 1
         val isFinal = index == parts.size - 1
 
         if s.startsWith("+") then

@@ -68,6 +68,8 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
   val out: Path on Linux = unsafely(temporaryDirectory/uuid)
   val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
 
+  // `.stdlib`: `staging.Compiler.Settings.make` is the Scala 3 staging API, and takes the
+  // compiler's own `Option`/`List` of `String`.
   val settings: staging.Compiler.Settings =
     staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.stdlib.map(_.s))
 

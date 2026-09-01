@@ -37,21 +37,25 @@ import beneficence.*
 import contingency.*
 import nomenclature.*
 import prepositional.*
+import rudiments.*
 import symbolism.*
 import typonym.*
 
 object ClassList:
   def apply[name <: Label: Reifiable to List[String]](): ClassList of name =
-    val classes = (name.reify.stdlib.map { label => unsafely(Name[CssClass](label.tt)) }).to(Set)
+    // A named method rather than a lambda: `Name`'s construction runs an implicit search, and
+    // doing that inside a lambda passed to a collection combinator, while the combinator's
+    // element type is still uninstantiated, trips dotc's `wildApprox` assertion.
+    def cssClass(label: String): Name[CssClass] = unsafely(Name[CssClass](label.tt))
+
+    val classes = name.reify.map(cssClass).to[Set]
     new ClassList(classes) { type Topic = name }
 
   given addable: ClassList is Addable by ClassList to ClassList =
-    Addable: (classes, additions) =>
-      ClassList((classes.classes.stdlib ++ additions.classes.stdlib).to(Set))
+    Addable: (classes, additions) => ClassList(classes.classes + additions.classes)
 
   given subtractable: ClassList is Subtractable by ClassList to ClassList =
-    Subtractable: (classes, subtractions) =>
-      ClassList((classes.classes.stdlib -- subtractions.classes.stdlib).to(Set))
+    Subtractable: (classes, subtractions) => ClassList(classes.classes.except(subtractions.classes))
 
   given empty: ClassList(Set()):
     type Topic = "apply"

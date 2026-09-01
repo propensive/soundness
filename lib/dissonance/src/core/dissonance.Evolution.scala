@@ -42,4 +42,4 @@ object Evolution:
 
 case class Evolution[element](sequence: List[Evolution.Atom[element]]):
   def apply(version: Ordinal): List[element] =
-    (sequence.stdlib.filter(_.has(version)).map(_.value)).to(List)
+    sequence.filter(_.has(version)).map(_.value)

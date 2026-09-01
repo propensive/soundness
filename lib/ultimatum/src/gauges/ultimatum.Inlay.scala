@@ -68,6 +68,7 @@ class Inlay[status: Gaugeable as design]
   // Draw one frame over the last one. Each row is erased to the end of the line as it is written,
   // so a frame that is shorter than its predecessor leaves no residue.
   private def paint(): Unit =
+    // `.stdlib`: a single documented view, indexed and counted by the paint loop below.
     val rows = design.rows(reading(), tick, columns).stdlib
     rewind()
     var index = 0

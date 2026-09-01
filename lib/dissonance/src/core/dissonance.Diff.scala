@@ -169,12 +169,16 @@ case class Diff[element](edits: Edit[element]*):
   :   Chain[element] =
 
     def recur(todo: List[Edit[element]], sequence: List[element]): Chain[element] = todo match
-      case Nil                   => sequence.stdlib.to(Chain)
+      case Nil                   => sequence.to[Chain]
       case Ins(_, value) :: tail => value #:: recur(tail, sequence)
-      case Del(_, _) :: tail     => recur(tail, sequence.stdlib.tail.to(List))
 
-      case Par(_, _, value) :: tail =>
-        value.let(update(_, sequence.stdlib.head)).or(sequence.stdlib.head) #:: recur(tail, sequence.stdlib.tail.to(List))
+      case Del(_, _) :: tail => sequence match
+        case _ :: rest => recur(tail, rest)
+        case _         => panic(m"the diff deletes beyond the end of the sequence")
+
+      case Par(_, _, value) :: tail => sequence match
+        case head :: rest => value.let(update(_, head)).or(head) #:: recur(tail, rest)
+        case _            => panic(m"the diff retains beyond the end of the sequence")
 
     recur(edits.to(List), sequence)
 
@@ -196,20 +200,28 @@ case class Diff[element](edits: Edit[element]*):
           // This `Diff` may have been parsed, in which case its deletions carry no values; an
           // absent value simply never compares similar, honestly degrading that pairing to a
           // plain deletion and insertion instead of vouching for a value that is not there.
-          val delsSeq = Sequence.from(dels.stdlib.map(_.value))
-          val inssSeq = Sequence.from(inss.stdlib.map { ins => ins.value: Optional[element] })
+          // Both runs are read positionally at indices the inner `diff` reports, so a single
+          // stdlib view of each is bound rather than a bounds proof threaded through every read.
+          val delsRun = dels.stdlib
+          val inssRun = inss.stdlib
+
+          val delsSeq = Sequence.from(delsRun.map(_.value))
+          val inssSeq = Sequence.from(inssRun.map { ins => ins.value: Optional[element] })
 
           val similar2: (Optional[element], Optional[element]) ->{similar} Boolean =
             (left, right) => left.lay(false) { l => right.lay(false) { r => similar(l, r) } }
 
-          val subs = dissonance.diff(delsSeq, inssSeq, similar2).edits.toList.map:
-            case Del(index, _) => Del(dels.stdlib(index).left, dels.stdlib(index).value)
-            case Ins(index, _) => Ins(inss.stdlib(index).right, inss.stdlib(index).value)
+          val subs = dissonance.diff(delsSeq, inssSeq, similar2).edits.to(List).map:
+            case Del(index, _) => Del(delsRun(index).left, delsRun(index).value)
+            case Ins(index, _) => Ins(inssRun(index).right, inssRun(index).value)
 
             case Par(left, right, _) =>
-              Sub(dels.stdlib(left).left, inss.stdlib(right).right, dels.stdlib(left).value, inss.stdlib(right).value)
+              val del = delsRun(left)
+              val ins = inssRun(right)
 
-          (subs.to(List): List[Change[element]])
+              Sub(del.left, ins.right, del.value, ins.value)
+
+          (subs: List[Change[element]])
 
     RDiff(changes*)
 

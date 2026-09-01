@@ -40,8 +40,9 @@ import prepositional.*
 import vacuous.*
 import murmuration.exists
 import rudiments.each
-import rudiments.{`:+`, prim, seek}
-import denominative.dysasymptotics.linearSize
+import rudiments.{`:+`, at, prim, seek}
+import denominative.dysasymptotics.{linearAccess, linearSize}
+import denominative.{size, z}
 
 // TELP, the TEL Path companion specification: a schema-aware textual path
 // over the semantic model. The first character of a path selects its
@@ -285,9 +286,16 @@ case class Telp(components: List[Text]) derives CanEqual:
         // first occurrence with that key value, code point for code point.
         if Telp.allDigits(component) then
           val index = component.s.toLong
-          if index >= pendingOccurrences.stdlib.length
+
+          // Occurrence lists are linked, so both the bounds test and the positional
+          // read are linear walks; `linearSize`/`linearAccess` acknowledge that. The
+          // bounds test also makes the narrowing to `Int` below exact.
+          if index >= pendingOccurrences.size
           then abort(Telp.Error(Telp.Error.Reason.IndexOutOfRange, i))
-          current = pendingOccurrences.stdlib(index.toInt)
+
+          current =
+            pendingOccurrences.at(index.toInt.z)
+            . or(abort(Telp.Error(Telp.Error.Reason.IndexOutOfRange, i)))
         else
           if !Telp.structKeyed(slotType, schema)
           then abort(Telp.Error(Telp.Error.Reason.TypeNotKeyed, i))

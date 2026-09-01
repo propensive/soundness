@@ -39,6 +39,7 @@ import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 import Typescript.Error.Reason
@@ -425,6 +426,8 @@ object Typescript:
     // single-token-lookahead, and threading an index through forty mutually recursive functions
     // obscures the grammar without making it any more correct.
     private class Cursor(tokens: List[Token]):
+      // A stdlib `Vector` because the cursor is a plain `Int` (see below): this is O(1)
+      // `Int`-indexed random access, which the opaque collections deliberately withhold.
       private val items: scala.collection.immutable.Vector[Token] = tokens.stdlib.toVector
 
       // The cursor is a plain `Int` into an immutable vector, so it captures nothing; the
@@ -567,7 +570,7 @@ object Typescript:
           expect(t"{")
           // The namespace's own visibility becomes its contents': an unexported namespace exports
           // nothing, however its members are written.
-          block((scope.stdlib :+ name).to(List), module, into, ambient = visible)
+          block(scope + List(name), module, into, ambient = visible)
           expect(t"}")
         else if at(t"interface") then into += interfaceDeclaration(scope, visible)
         else if at(t"class") || at(t"abstract") then into += classDeclaration(scope, visible)
@@ -695,7 +698,7 @@ object Typescript:
           merged.get(selector) match
             case scala.Some(existing) =>
               val signatures: List[Typescript.Type] =
-                (existing.signatures.stdlib ++ member.signatures.stdlib).to(List)
+                existing.signatures + member.signatures
 
               merged.put(selector, existing.copy(signatures = signatures))
 

@@ -34,6 +34,7 @@ package ultimatum
 
 import anticipation.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import gossamer.*
 import profanity.*
 import rudiments.*
@@ -105,4 +106,5 @@ class MenuField[item: Showable](initial: SelectMenu[item]) extends Focus:
 
   def handle(event: Terminal.Event): Unit = menu = menu.apply(event)
 
-  def measure(width: Int): (Int, Int) = (0, menu.options.stdlib.length)
+  // Counting the options is O(n) on a `List` (hence `linearSize`), and is paid once per measure.
+  def measure(width: Int): (Int, Int) = (0, menu.options.size)

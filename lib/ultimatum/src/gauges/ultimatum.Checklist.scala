@@ -36,7 +36,8 @@ import anticipation.*
 import escapade.*
 import gossamer.*
 import hieroglyph.*
-import rudiments.{seek, count}
+import denominative.{nil, size, Ordinal}
+import rudiments.{indexed, map, occupied, reduce, seek, count, to}
 import symbolism.*
 import tessellate.*
 import vacuous.*
@@ -64,7 +65,7 @@ enum Checklist:
     override def minWidth(status: Sequence[Step]): Int = 3
 
     override def height(status: Sequence[Step], width: Int): Int = Checklist.this match
-      case Rows => status.stdlib.length.max(1)
+      case Rows => status.size.max(1)
       case _    => 1
 
     def rows(status: Sequence[Step], tick: Tick, width: Int): List[Teletype] =
@@ -74,7 +75,7 @@ enum Checklist:
     // Derived here rather than carried by a wrapper type: a run of steps is just a `Sequence`.
     val current: Optional[Step] = steps.seek(_.standing == Standing.Running)
     val started = steps.count(_.standing != Standing.Pending)
-    val count = steps.stdlib.length
+    val count = steps.size
 
     val palette = gauging.palette
     val plain = !gauging.permits(Gaugeable.Glyphs.Unicode)
@@ -104,7 +105,11 @@ enum Checklist:
       case Rows =>
         // One row per step: the canonical multi-row widget, and the one that makes the layout grow
         // as steps are appended.
-        val lines = steps.stdlib.map: step =>
+        // Named methods rather than lambdas throughout this block: an interpolation inside a
+        // lambda passed to a collection combinator runs its implicit search while the
+        // combinator's element type is still uninstantiated, tripping dotc's `wildApprox`
+        // assertion (scala/scala3#24824).
+        def line(step: Step): Teletype =
           val glyph = gauging.tint(palette.colorOf(step.standing))(Teletype(marker(step.standing)))
           val faded = step.standing == Standing.Succeeded || step.standing == Standing.Skipped
           val color = if faded then palette.muted else palette.caption
@@ -112,7 +117,9 @@ enum Checklist:
 
           pad(e"$glyph $name")
 
-        if lines.isEmpty then List(pad(e"")) else lines.toList.to(List)
+        val lines = steps.map(line)
+
+        if lines.nil then List(pad(e"")) else lines.to[List]
 
       case Numbered =>
         val name = current.lay(t"")(_.name)
@@ -128,38 +135,43 @@ enum Checklist:
         // A compact chain: one bead per step, joined by a rule. Fixed at `2n - 1` cells.
         val link = if plain then t"-" else t"━"
 
-        val beads = steps.stdlib.zipWithIndex.map: (step, index) =>
+        // Named, as above (`wildApprox`).
+        def bead(step: Step, ordinal: Ordinal): Teletype =
           val glyph = step.standing match
             case Standing.Pending => if plain then t"o" else t"○"
             case Standing.Running => if plain then t"*" else t"◐"
             case _                => if plain then t"@" else t"●"
 
           val bead = gauging.tint(palette.colorOf(step.standing))(Teletype(glyph))
-          if index == 0 then bead else e"${gauging.tint(palette.track)(Teletype(link))}$bead"
 
-        if beads.isEmpty then List(pad(e"")) else
-          List(pad(beads.reduceLeft { (left, right) => e"$left$right" }))
+          if ordinal.n0 == 0 then bead else e"${gauging.tint(palette.track)(Teletype(link))}$bead"
+
+        def merge(left: Teletype, right: Teletype): Teletype = e"$left$right"
+
+        val beads = steps.indexed.map: (step, ordinal) => bead(step, ordinal)
+
+        beads.occupied.lay(List(pad(e""))): beads => List(pad(beads.reduce(merge)))
 
       case Breadcrumb =>
         val separator = if plain then t">" else t"›"
 
-        val crumbs = steps.stdlib.map: step =>
+        val crumbs = steps.map: step =>
           val faded = step.standing == Standing.Pending
           val color = if faded then palette.track else palette.colorOf(step.standing)
           gauging.tint(color)(Teletype(step.name))
 
-        if crumbs.isEmpty then List(pad(e"")) else
-          val joined = crumbs.reduceLeft: (left, right) =>
-            e"$left ${gauging.tint(palette.muted)(Teletype(separator))} $right"
+        // Named, as above (`wildApprox`).
+        def join(left: Teletype, right: Teletype): Teletype =
+          e"$left ${gauging.tint(palette.muted)(Teletype(separator))} $right"
 
-          List(pad(joined))
+        crumbs.occupied.lay(List(pad(e""))): crumbs => List(pad(crumbs.reduce(join)))
 
       case Ribbon =>
         // Powerline: `escapade.Ribbon` already draws the separators and picks a legible foreground
         // per segment, so this is only a matter of choosing the backgrounds.
-        val names = steps.stdlib.map: step => Teletype(step.name)
+        val names = steps.map: step => Teletype(step.name)
 
-        if names.isEmpty then List(pad(e"")) else
+        if names.nil then List(pad(e"")) else
           // Qualified: this enum's own `Ribbon` case shadows the one from escapade.
-          val colors = palette.steps(names.length).stdlib.map(Bg(_))
+          val colors = palette.steps(names.size).map(Bg(_))
           List(pad(escapade.Ribbon(colors*).fill(names*)))

@@ -38,6 +38,7 @@ import contingency.*
 import gossamer.*
 import hellenism.*
 import jacinta.*
+import rudiments.*
 import turbulence.*
 import vacuous.*
 
@@ -60,14 +61,11 @@ object PropertyDef:
     val entries = cp"/cataclysm/properties.json".read[Json].as[Map[Text, Entry]]
 
 
-     entries.stdlib.toList.map: (name, entry) =>
-       PropertyDef(name, entry.syntax)
-     . to(List)
+     entries.to[List].map: (name, entry) => PropertyDef(name, entry.syntax)
 
   // The same properties keyed by name in a `Dictionary` for fast lookup.
   lazy val all: Dictionary[PropertyDef] =
-    val pairs = list.stdlib.map: property =>
-      (property.name, property)
+    val pairs = list.map: property => (property.name, property)
 
     Dictionary(pairs*)
 
