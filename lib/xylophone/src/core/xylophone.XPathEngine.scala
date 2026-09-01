@@ -33,14 +33,22 @@
 package xylophone
 
 
-import scala.collection.immutable as sci
+import scala.annotation.tailrec
+import scala.math.Ordering
+
 import scala.collection.mutable as scm
 
 import anticipation.*
 import contingency.*
 import gossamer.*
 import vacuous.*
+import denominative.{nil, size}
+
+// Index paths are tree-depth-short, so the linear `last` and `lead` they need are
+// acknowledged rather than avoided.
+import denominative.dysasymptotics.linearSize
 import rudiments.*
+import symbolism.*
 
 private[xylophone] object XPathEngine:
   import XPath.{Axis, Error, Expression, Locus, NodeTest, Origin, Step, Value}
@@ -104,7 +112,7 @@ private[xylophone] object XPathEngine:
       case Expression.Union(left, right) =>
         (evaluate(left, context), evaluate(right, context)) match
           case (Value.NodeSet(left), Value.NodeSet(right)) =>
-            Value.NodeSet(sortDedup(left.stdlib ++ right.stdlib).to(List))
+            Value.NodeSet(sortDedup(left + right))
 
           case _ =>
             abort(Error(Reason.NotNodeSet))
@@ -123,10 +131,10 @@ private[xylophone] object XPathEngine:
             abort(Error(Reason.UnknownFunction(XPath.qualify(prefix, name))))
 
           case _ =>
-            call(name, arguments.stdlib.map(evaluate(_, context)), context)
+            call(name, arguments.map(evaluate(_, context)), context)
 
       case Expression.Route(origin, steps) =>
-        Value.NodeSet(route(origin, steps.stdlib, context).to(List))
+        Value.NodeSet(route(origin, steps, context))
 
       case Expression.Substitution(_) =>
         abort(Error(Reason.Unresolved))
@@ -136,23 +144,23 @@ private[xylophone] object XPathEngine:
   // plain comparisons promote to boolean, then number, then string.
   private def equalTest(left: Value, right: Value, equal: Boolean): Boolean = (left, right) match
     case (Value.NodeSet(left), Value.NodeSet(right)) =>
-      val rights = right.stdlib.map(_.stringValue.s)
-      left.stdlib.exists { locus =>
+      val rights = right.map(_.stringValue.s)
+      left.exists { locus =>
         val value = locus.stringValue.s
         rights.exists { other => (value == other) == equal }
       }
 
-    case (Value.NodeSet(loci), other) => nodeSetTest(loci.stdlib, other, equal)
-    case (other, Value.NodeSet(loci)) => nodeSetTest(loci.stdlib, other, equal)
+    case (Value.NodeSet(loci), other) => nodeSetTest(loci, other, equal)
+    case (other, Value.NodeSet(loci)) => nodeSetTest(loci, other, equal)
 
     case (left, right) => (left, right) match
       case (Value.Truth(_), _) | (_, Value.Truth(_))     => (left.truth == right.truth) == equal
       case (Value.Numeric(_), _) | (_, Value.Numeric(_)) => (left.number == right.number) == equal
       case _                                             => (left.text.s == right.text.s) == equal
 
-  private def nodeSetTest(loci: sci.List[Locus], other: Value, equal: Boolean): Boolean =
+  private def nodeSetTest(loci: List[Locus], other: Value, equal: Boolean): Boolean =
     other match
-      case Value.Truth(value) => (loci.nonEmpty == value) == equal
+      case Value.Truth(value) => (!loci.nil == value) == equal
 
       case Value.Numeric(value) =>
         loci.exists { locus => (XPath.parseNumber(locus.stringValue) == value) == equal }
@@ -170,15 +178,15 @@ private[xylophone] object XPathEngine:
 
     (left, right) match
       case (Value.NodeSet(left), Value.NodeSet(right)) =>
-        left.stdlib.exists { a => right.stdlib.exists { b => test(numberOf(a), numberOf(b)) } }
+        left.exists { a => right.exists { b => test(numberOf(a), numberOf(b)) } }
 
       case (Value.NodeSet(loci), other) =>
         val number = other.number
-        loci.stdlib.exists { locus => test(numberOf(locus), number) }
+        loci.exists { locus => test(numberOf(locus), number) }
 
       case (other, Value.NodeSet(loci)) =>
         val number = other.number
-        loci.stdlib.exists { locus => test(number, numberOf(locus)) }
+        loci.exists { locus => test(number, numberOf(locus)) }
 
       case (left, right) =>
         test(left.number, right.number)
@@ -191,37 +199,35 @@ private[xylophone] object XPathEngine:
     case _          => -1
 
   private def compareLoci(a: Locus, b: Locus): Int =
-    var pa = a.path.stdlib
-    var pb = b.path.stdlib
+    @tailrec
+    def recur(left: List[Int], right: List[Int]): Int = (left, right) match
+      case (x :: xs, y :: ys) => if x != y then x - y else recur(xs, ys)
+      case (_ :: _, Nil)      => 1
+      case (Nil, _ :: _)      => -1
+      case _                  => attributeIndexOf(a) - attributeIndexOf(b)
 
-    while pa.nonEmpty && pb.nonEmpty do
-      val difference = pa.head - pb.head
-      if difference != 0 then return difference
-      pa = pa.tail
-      pb = pb.tail
+    recur(a.path, b.path)
 
-    if pa.nonEmpty then 1
-    else if pb.nonEmpty then -1
-    else attributeIndexOf(a) - attributeIndexOf(b)
+  // Document order is a total order on loci, so it is expressed as an `Ordering`
+  // and the sort is the native one.
+  private given locusOrder: Ordering[Locus] = Ordering.fromLessThan(compareLoci(_, _) < 0)
 
-  private def sortDedup(loci: sci.List[Locus]): sci.List[Locus] =
-    val sorted = loci.sortWith { (a, b) => compareLoci(a, b) < 0 }
+  private def sortDedup(loci: List[Locus]): List[Locus] =
     val buffer = scm.ListBuffer[Locus]()
 
-    sorted.foreach: locus =>
+    loci.sort.each: locus =>
       if buffer.isEmpty || compareLoci(buffer.last, locus) != 0 then buffer += locus
 
-    buffer.toList
+    buffer.to(List)
 
   private def treeNode(node: Node): Boolean = node match
     case _: Header | _: Doctype => false
     case _                      => true
 
-  private def appendIndex(path: List[Int], index: Int): List[Int] =
-    (path.stdlib :+ index).to(List)
+  private def appendIndex(path: List[Int], index: Int): List[Int] = path + List(index)
 
-  private def childLoci(locus: Locus): sci.List[Locus] =
-    if attributeIndexOf(locus) >= 0 then sci.Nil else locus.subject match
+  private def childLoci(locus: Locus): List[Locus] =
+    if attributeIndexOf(locus) >= 0 then Nil else locus.subject match
       case element: Element =>
         val children = element.children
         val buffer = scm.ListBuffer[Locus]()
@@ -233,24 +239,24 @@ private[xylophone] object XPathEngine:
             buffer += Locus(locus.document, appendIndex(locus.path, i), child, Unset)
           i += 1
 
-        buffer.toList
+        buffer.to(List)
 
       case _: Node =>
-        sci.Nil
+        Nil
 
       case _ => locus.document match
         case Fragment(nodes*) =>
           nodes.zipWithIndex.collect:
             case (node, index) if treeNode(node) =>
               Locus(locus.document, appendIndex(locus.path, index), node, Unset)
-          . to(sci.List)
+          . to(List)
 
         case node: Node =>
           if treeNode(node)
-          then sci.List(Locus(locus.document, appendIndex(locus.path, 0), node, Unset))
-          else sci.Nil
+          then List(Locus(locus.document, appendIndex(locus.path, 0), node, Unset))
+          else Nil
 
-  private def descendantLoci(locus: Locus): sci.List[Locus] =
+  private def descendantLoci(locus: Locus): List[Locus] =
     childLoci(locus).flatMap { child => child :: descendantLoci(child) }
 
   private def nodeAt(locus: Locus, index: Int): Node = locus.subject match
@@ -260,57 +266,59 @@ private[xylophone] object XPathEngine:
       case Fragment(nodes*) => nodes(index)
       case node: Node       => node
 
-  private def resolve(document: Xml, path: sci.List[Int]): Locus =
-    path.foldLeft(Locus.root(document)): (locus, index) =>
+  private def resolve(document: Xml, path: List[Int]): Locus =
+    path.fold(Locus.root(document)): (locus, index) =>
       Locus(document, appendIndex(locus.path, index), nodeAt(locus, index), Unset)
 
-  private def parentLocus(locus: Locus): sci.List[Locus] =
+  private def parentLocus(locus: Locus): List[Locus] =
     if attributeIndexOf(locus) >= 0
-    then sci.List(Locus(locus.document, locus.path, locus.subject, Unset))
+    then List(Locus(locus.document, locus.path, locus.subject, Unset))
     else
-      val path = locus.path.stdlib
-      if path.isEmpty then sci.Nil else sci.List(resolve(locus.document, path.init))
+      locus.path.occupied.lay(Nil): path =>
+        List(resolve(locus.document, path.lead))
 
   // Nearest-first, as a reverse axis requires for proximity positions.
-  private def ancestorLoci(locus: Locus): sci.List[Locus] = parentLocus(locus).headOption match
-    case Some(parent) => parent :: ancestorLoci(parent)
-    case None         => sci.Nil
+  private def ancestorLoci(locus: Locus): List[Locus] = parentLocus(locus) match
+    case parent :: _ => parent :: ancestorLoci(parent)
+    case _           => Nil
 
-  private def siblingLoci(locus: Locus, following: Boolean): sci.List[Locus] =
-    if attributeIndexOf(locus) >= 0 || locus.path.stdlib.isEmpty then sci.Nil else
-      val mine = locus.path.stdlib.last
+  private def siblingLoci(locus: Locus, following: Boolean): List[Locus] =
+    if attributeIndexOf(locus) >= 0 then Nil else locus.path.last.lay(Nil): mine =>
+      parentLocus(locus).prim.lay(Nil): parent =>
+        // Every child's path ends in its own index, so `last` is present; the
+        // absent case cannot arise and excludes the candidate.
+        val all = childLoci(parent)
+        if following then all.filter(_.path.last.let(_ > mine).or(false))
+        else all.filter(_.path.last.let(_ < mine).or(false)).reverse
 
-      parentLocus(locus).headOption match
-        case Some(parent) =>
-          val all = childLoci(parent)
-          if following then all.filter(_.path.stdlib.last > mine)
-          else all.filter(_.path.stdlib.last < mine).reverse
+  // A strict prefix: `prefix` matches a leading run of `path` and is shorter,
+  // so a locus is never its own ancestor. Recursive rather than length-based,
+  // since both are `List`s and neither length is needed in full.
+  @tailrec
+  private def isPrefix(prefix: List[Int], path: List[Int]): Boolean = (prefix, path) match
+    case (Nil, _ :: _)      => true
+    case (x :: xs, y :: ys) => x == y && isPrefix(xs, ys)
+    case _                  => false
 
-        case None =>
-          sci.Nil
-
-  private def isPrefix(prefix: sci.List[Int], path: sci.List[Int]): Boolean =
-    prefix.length < path.length && path.take(prefix.length) == prefix
-
-  private def followingLoci(locus: Locus): sci.List[Locus] =
+  private def followingLoci(locus: Locus): List[Locus] =
     val root = Locus.root(locus.document)
 
     descendantLoci(root).filter: candidate =>
       compareLoci(locus, candidate) < 0
-      && !isPrefix(locus.path.stdlib, candidate.path.stdlib)
+      && !isPrefix(locus.path, candidate.path)
 
   // Nearest-first (reverse document order), as a reverse axis requires.
-  private def precedingLoci(locus: Locus): sci.List[Locus] =
+  private def precedingLoci(locus: Locus): List[Locus] =
     val root = Locus.root(locus.document)
 
     descendantLoci(root).filter: candidate =>
       compareLoci(candidate, locus) < 0
-      && !isPrefix(candidate.path.stdlib, locus.path.stdlib)
+      && !isPrefix(candidate.path, locus.path)
 
     . reverse
 
-  private def attributeLoci(locus: Locus): sci.List[Locus] =
-    if attributeIndexOf(locus) >= 0 then sci.Nil else locus.subject match
+  private def attributeLoci(locus: Locus): List[Locus] =
+    if attributeIndexOf(locus) >= 0 then Nil else locus.subject match
       case element: Element =>
         val buffer = scm.ListBuffer[Locus]()
         var i = 0
@@ -319,19 +327,19 @@ private[xylophone] object XPathEngine:
           buffer += Locus(locus.document, locus.path, element, i)
           i += 1
 
-        buffer.toList
+        buffer.to(List)
 
       case _ =>
-        sci.Nil
+        Nil
 
   private def axisLoci(axis: Axis, locus: Locus)(using Tactic[Error])
-  :   sci.List[Locus] =
+  :   List[Locus] =
 
     axis match
       case Axis.Child            => childLoci(locus)
       case Axis.Descendant       => descendantLoci(locus)
       case Axis.DescendantOrSelf => locus :: descendantLoci(locus)
-      case Axis.Self             => sci.List(locus)
+      case Axis.Self             => List(locus)
       case Axis.Parent           => parentLocus(locus)
       case Axis.Ancestor         => ancestorLoci(locus)
       case Axis.AncestorOrSelf   => locus :: ancestorLoci(locus)
@@ -408,50 +416,51 @@ private[xylophone] object XPathEngine:
   // `position()` is the proximity position (§2.4): a numeric result keeps
   // the candidate at that position; anything else coerces to boolean.
   private def filterPredicates
-    ( candidates: sci.List[Locus],
-      predicates: sci.List[Expression],
+    ( candidates: List[Locus],
+      predicates: List[Expression],
       variables:  Map[Text, Value] )
     ( using Tactic[Error] )
-  :   sci.List[Locus] =
+  :   List[Locus] =
 
-    predicates.foldLeft(candidates): (current, predicate) =>
-      val size = current.length
+    predicates.fold(candidates): (current, predicate) =>
+      // `last()` reports the candidate count, so the size is needed in full.
+      val size = current.size
 
-      current.zipWithIndex.filter: (locus, index) =>
-        evaluate(predicate, Context(locus, index + 1, size, variables)) match
-          case Value.Numeric(value) => value == index + 1
+      current.indexed.filter: (locus, ordinal) =>
+        evaluate(predicate, Context(locus, ordinal.n1, size, variables)) match
+          case Value.Numeric(value) => value == ordinal.n1
           case value                => value.truth
 
       . map(_(0))
 
   private def evaluateStep
-    ( step: Step, inputs: sci.List[Locus], variables: Map[Text, Value] )
+    ( step: Step, inputs: List[Locus], variables: Map[Text, Value] )
     ( using Tactic[Error] )
-  :   sci.List[Locus] =
+  :   List[Locus] =
 
     val collected = inputs.flatMap: input =>
       val candidates = axisLoci(step.axis, input).filter(testLocus(step.test, step.axis, _))
-      filterPredicates(candidates, step.predicates.stdlib, variables)
+      filterPredicates(candidates, step.predicates, variables)
 
     sortDedup(collected)
 
-  private def route(origin: Origin, steps: sci.List[Step], context: Context)
+  private def route(origin: Origin, steps: List[Step], context: Context)
     ( using Tactic[Error] )
-  :   sci.List[Locus] =
+  :   List[Locus] =
 
-    val start: sci.List[Locus] = origin match
-      case Origin.Root => sci.List(Locus.root(context.locus.document))
-      case Origin.Here => sci.List(context.locus)
+    val start: List[Locus] = origin match
+      case Origin.Root => List(Locus.root(context.locus.document))
+      case Origin.Here => List(context.locus)
 
       case Origin.Filter(expression, predicates) =>
         evaluate(expression, context) match
           case Value.NodeSet(loci) =>
-            filterPredicates(sortDedup(loci.stdlib), predicates.stdlib, context.variables)
+            filterPredicates(sortDedup(loci), predicates, context.variables)
 
           case _ =>
             abort(Error(Reason.NotNodeSet))
 
-    steps.foldLeft(start) { (loci, step) => evaluateStep(step, loci, context.variables) }
+    steps.fold(start) { (loci, step) => evaluateStep(step, loci, context.variables) }
 
   // The name of a node, as `name()` reports it: an element's label, an
   // attribute's key, a processing instruction's target; empty otherwise.
@@ -472,20 +481,25 @@ private[xylophone] object XPathEngine:
   // The core function library (§4). Zero-argument forms of `string`,
   // `number`, `string-length`, `normalize-space`, `name` and friends default
   // to the context node.
-  private def call(name: Text, arguments: sci.List[Value], context: Context)
+  private def call(name: Text, arguments: List[Value], context: Context)
     ( using Tactic[Error] )
   :   Value =
 
     def arity(minimum: Int, maximum: Int): Unit =
-      if arguments.length < minimum || arguments.length > maximum
+      if arguments.size < minimum || arguments.size > maximum
       then abort(Error(Reason.BadArity(name)))
 
-    def nodeSetArgument(value: Value): sci.List[Locus] = value match
-      case Value.NodeSet(loci) => sortDedup(loci.stdlib)
+    // Every positional read below is preceded by the `arity` check its function
+    // requires, so one stdlib view serves them all rather than threading a
+    // presence proof through each of XPath's twenty-odd core functions.
+    val args = arguments.stdlib
+
+    def nodeSetArgument(value: Value): List[Locus] = value match
+      case Value.NodeSet(loci) => sortDedup(loci)
       case _                   => abort(Error(Reason.NotNodeSet))
 
     def defaulted: Value =
-      if arguments.isEmpty then Value.NodeSet(List(context.locus)) else arguments.head
+      arguments.prim.lay(Value.NodeSet(List(context.locus)))(identity(_))
 
     name.s match
       case "last" =>
@@ -498,7 +512,7 @@ private[xylophone] object XPathEngine:
 
       case "count" =>
         arity(1, 1)
-        Value.Numeric(nodeSetArgument(arguments.head).length)
+        Value.Numeric(nodeSetArgument(args.head).size)
 
       case "id" =>
         abort(Error(Reason.Unsupported(t"the id() function")))
@@ -508,12 +522,9 @@ private[xylophone] object XPathEngine:
 
         if name.s == "namespace-uri" then Value.Textual(t"") else
           val loci =
-            if arguments.isEmpty then sci.List(context.locus)
-            else nodeSetArgument(arguments.head)
+            if arguments.nil then List(context.locus) else nodeSetArgument(args.head)
 
-          val qualified = loci.headOption match
-            case Some(locus) => nodeNameOf(locus)
-            case None        => t""
+          val qualified = loci.prim.let(nodeNameOf(_)).or(t"")
 
           if name.s == "name" then Value.Textual(qualified) else
             val colon = qualified.s.indexOf(':')
@@ -525,39 +536,39 @@ private[xylophone] object XPathEngine:
         Value.Textual(defaulted.text)
 
       case "concat" =>
-        if arguments.length < 2 then abort(Error(Reason.BadArity(name)))
+        if args.length < 2 then abort(Error(Reason.BadArity(name)))
         val builder = StringBuilder()
-        arguments.foreach { argument => builder.append(argument.text.s) }
+        arguments.each { argument => builder.append(argument.text.s) }
         Value.Textual(builder.toString.nn.tt)
 
       case "starts-with" =>
         arity(2, 2)
-        Value.Truth(arguments(0).text.s.startsWith(arguments(1).text.s))
+        Value.Truth(args(0).text.s.startsWith(args(1).text.s))
 
       case "contains" =>
         arity(2, 2)
-        Value.Truth(arguments(0).text.s.contains(arguments(1).text.s))
+        Value.Truth(args(0).text.s.contains(args(1).text.s))
 
       case "substring-before" =>
         arity(2, 2)
-        val whole = arguments(0).text.s
-        val index = whole.indexOf(arguments(1).text.s)
+        val whole = args(0).text.s
+        val index = whole.indexOf(args(1).text.s)
         Value.Textual(if index < 0 then t"" else whole.substring(0, index).nn.tt)
 
       case "substring-after" =>
         arity(2, 2)
-        val whole = arguments(0).text.s
-        val part = arguments(1).text.s
+        val whole = args(0).text.s
+        val part = args(1).text.s
         val index = whole.indexOf(part)
         Value.Textual(if index < 0 then t"" else whole.substring(index + part.length).nn.tt)
 
       case "substring" =>
         arity(2, 3)
-        val whole = arguments(0).text.s
-        val start = xpathRound(arguments(1).number)
+        val whole = args(0).text.s
+        val start = xpathRound(args(1).number)
 
         val limit =
-          if arguments.length == 3 then start + xpathRound(arguments(2).number)
+          if args.length == 3 then start + xpathRound(args(2).number)
           else Double.PositiveInfinity
 
         val builder = StringBuilder()
@@ -596,9 +607,9 @@ private[xylophone] object XPathEngine:
 
       case "translate" =>
         arity(3, 3)
-        val whole = arguments(0).text.s
-        val from = arguments(1).text.s
-        val to = arguments(2).text.s
+        val whole = args(0).text.s
+        val from = args(1).text.s
+        val to = args(2).text.s
         val builder = StringBuilder()
         var index = 0
 
@@ -615,11 +626,11 @@ private[xylophone] object XPathEngine:
 
       case "boolean" =>
         arity(1, 1)
-        Value.Truth(arguments.head.truth)
+        Value.Truth(args.head.truth)
 
       case "not" =>
         arity(1, 1)
-        Value.Truth(!arguments.head.truth)
+        Value.Truth(!args.head.truth)
 
       case "true" =>
         arity(0, 0)
@@ -631,25 +642,23 @@ private[xylophone] object XPathEngine:
 
       case "lang" =>
         arity(1, 1)
-        val wanted = arguments.head.text.s.toLowerCase.nn
+        val wanted = args.head.text.s.toLowerCase.nn
 
         val declared = (context.locus :: ancestorLoci(context.locus)).flatMap: locus =>
           locus.subject match
             case element: Element if attributeIndexOf(locus) < 0 =>
               element.attributes.fetch(t"xml:lang") match
-                case value: Text => sci.List(value.s.toLowerCase.nn)
-                case _           => sci.Nil
+                case value: Text => List(value.s.toLowerCase.nn)
+                case _           => Nil
 
             case _ =>
-              sci.Nil
+              Nil
 
         Value.Truth:
-          declared.headOption match
-            case Some(language) =>
-              language == wanted || language.startsWith(wanted + "-")
+          declared.prim.let: language =>
+            language == wanted || language.startsWith(wanted + "-")
 
-            case None =>
-              false
+          . or(false)
 
       case "number" =>
         arity(0, 1)
@@ -659,22 +668,22 @@ private[xylophone] object XPathEngine:
         arity(1, 1)
         var total = 0.0
 
-        nodeSetArgument(arguments.head).foreach: locus =>
+        nodeSetArgument(args.head).foreach: locus =>
           total += XPath.parseNumber(locus.stringValue)
 
         Value.Numeric(total)
 
       case "floor" =>
         arity(1, 1)
-        Value.Numeric(Math.floor(arguments.head.number))
+        Value.Numeric(Math.floor(args.head.number))
 
       case "ceiling" =>
         arity(1, 1)
-        Value.Numeric(Math.ceil(arguments.head.number))
+        Value.Numeric(Math.ceil(args.head.number))
 
       case "round" =>
         arity(1, 1)
-        Value.Numeric(xpathRound(arguments.head.number))
+        Value.Numeric(xpathRound(args.head.number))
 
       case _ =>
         abort(Error(Reason.UnknownFunction(name)))

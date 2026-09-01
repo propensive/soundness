@@ -47,6 +47,7 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 import Mathml.*
@@ -134,7 +135,7 @@ object Ergo:
     '⚙' -> Directive.Param(t"actiontype"))
 
   private def directive(char: Char): Optional[Directive] =
-    directives.stdlib.collectFirst { case (glyph, entry) if glyph == char => entry }.optional
+    directives.reap { case (glyph, entry) if glyph == char => entry }
 
   def parse(input: Text)(using Tactic[Ergo.Error]): Math =
     Parser(input.s, Iterator.empty).parseTop()
@@ -179,9 +180,9 @@ object Ergo:
   // Joins a juxtaposed run, inserting a space only where two tokens would
   // otherwise merge (letter+letter into one `<mi>`, or digit+digit into one `<mn>`).
   private def sequence(nodes: List[Mathml])(using Tactic[Ergo.Error]): Text =
-    val parts = nodes.stdlib.map(emit(_, false)).filter(!_.s.isEmpty)
+    val parts: List[Text] = nodes.map(emit(_, false)).filter(!_.s.isEmpty)
 
-    parts.foldLeft(t""): (acc, next) =>
+    parts.fold[Text](t""): (acc: Text, next: Text) =>
       if acc.s.isEmpty then next
       else if merges(acc.s.charAt(acc.s.length - 1), next.s.charAt(0)) then t"$acc $next"
       else t"$acc$next"
@@ -195,7 +196,7 @@ object Ergo:
   private def finish(core: Text, attributes: List[(Text, Text)], asOperand: Boolean, safe: Boolean)
   :   Text =
 
-    if attributes.stdlib.nonEmpty then t"${group(core)}${directivesFor(attributes)}"
+    if !attributes.nil then t"${group(core)}${directivesFor(attributes)}"
     else if asOperand && !safe then group(core)
     else core
 
@@ -252,7 +253,7 @@ object Ergo:
       case _: Mo => true
       case _     => false
 
-    if accent then (attributes.stdlib.filter { pair => pair != (name, t"true") }).to(List) else attributes
+    if accent then attributes.filter { pair => pair != (name, t"true") } else attributes
 
   private def serializeTable(table: Mtable)(using Tactic[Ergo.Error]): Text =
     val rows: List[List[Text]] =
@@ -260,10 +261,12 @@ object Ergo:
         case Mtr(cells, _) => cells.map(cellText)
 
     if rows.size == 1 then
-      val row = rows.stdlib.head.join
+      // The guard makes the row present; the default is unreachable.
+      val row = rows.prim.lay(t"")(_.join)
       t"${RowVec.toString.tt}($row)"
     else if rows.all(_.size == 1) then
-      val column = rows.map(_.stdlib.head).join
+      // Likewise, each row is known to hold exactly one cell.
+      val column = rows.map(_.prim.or(t"")).join
       t"${ColVec.toString.tt}($column)"
     else
       val body = rows.map { cells => group(cells.join) }.join
@@ -274,20 +277,18 @@ object Ergo:
     case other            => group(emit(other, false))
 
   private def directivesFor(attributes: List[(Text, Text)]): Text =
-    (attributes.stdlib.map { case (name, value) => directiveText(name, value) }
-    . collect { case text: Text => text }).to(List).join
+    attributes.map { case (name, value) => directiveText(name, value) }
+    . sweep { case text: Text => text }.join
 
   // Prefers a `Fixed` glyph matching both attribute and value (enums/booleans);
   // otherwise a `Param` glyph for the attribute, with the value in brackets.
   private def directiveText(name: Text, value: Text): Optional[Text] =
-    val matched = directives.stdlib.collectFirst:
+    directives.reap:
       case (glyph, Directive.Fixed(n, v)) if n == name && v == value =>
         glyph.toString.tt
 
       case (glyph, Directive.Param(n)) if n == name =>
         t"${glyph.toString.tt}($value)"
-
-    matched.optional
 
   private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[Ergo.Error]):
     @scala.caps.unsafe.untrackedCaptures
@@ -394,7 +395,7 @@ object Ergo:
           val below = u.or(base)
           val above = o.or(base)
           Munderover(base, below, above,
-            (accent(below, t"accentunder").stdlib ++ accent(above, t"accent").stdlib).to(List))
+            accent(below, t"accentunder") + accent(above, t"accent"))
 
       (sub, sup) match
         case (Unset, Unset) => limited
@@ -441,21 +442,21 @@ object Ergo:
       applyAttributes(unit, attributes.to(List))
 
     private def applyAttributes(node: Mathml, extra: List[(Text, Text)]): Mathml =
-      if extra.stdlib.isEmpty then node else node match
-        case n: Mi         => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
-        case n: Mn         => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
-        case n: Mo         => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
-        case n: Mrow       => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
-        case n: Mfrac      => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
-        case n: Msqrt      => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
-        case n: Mroot      => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
-        case n: Msub       => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
-        case n: Msup       => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
-        case n: Msubsup    => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
-        case n: Munder     => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
-        case n: Mover      => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
-        case n: Munderover => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
-        case n: Mtable     => n.copy(attributes = (n.attributes.stdlib ++ extra.stdlib).to(List))
+      if extra.nil then node else node match
+        case n: Mi         => n.copy(attributes = n.attributes + extra)
+        case n: Mn         => n.copy(attributes = n.attributes + extra)
+        case n: Mo         => n.copy(attributes = n.attributes + extra)
+        case n: Mrow       => n.copy(attributes = n.attributes + extra)
+        case n: Mfrac      => n.copy(attributes = n.attributes + extra)
+        case n: Msqrt      => n.copy(attributes = n.attributes + extra)
+        case n: Mroot      => n.copy(attributes = n.attributes + extra)
+        case n: Msub       => n.copy(attributes = n.attributes + extra)
+        case n: Msup       => n.copy(attributes = n.attributes + extra)
+        case n: Msubsup    => n.copy(attributes = n.attributes + extra)
+        case n: Munder     => n.copy(attributes = n.attributes + extra)
+        case n: Mover      => n.copy(attributes = n.attributes + extra)
+        case n: Munderover => n.copy(attributes = n.attributes + extra)
+        case n: Mtable     => n.copy(attributes = n.attributes + extra)
         case other         => Mrow(List(other), extra)
 
     private def parseUnit(): Mathml =
@@ -508,7 +509,7 @@ object Ergo:
 
     private def parseVector(row: Boolean): Mathml =
       val introducer = advance()
-      val tds = parseBody(introducer).stdlib.map(Mtd(_))
+      val tds = parseBody(introducer).map(Mtd(_))
       if row then Mtable(Mtr(tds*)) else Mtable(tds.map(Mtr(_))*)
 
     private def parseMatrix(): Mathml =
