@@ -39,12 +39,11 @@ object Surface:
     case Nil => done.reverse
 
     case head :: tail =>
-      val tail2 = tail.stdlib
-      val todo2 = tail2.takeWhile(head.contains(_))
+      // `span` is the native pairing of `takeWhile` with its remainder, so neither the count
+      // nor a second traversal is needed.
+      val split: (List[Juncture], List[Juncture]) = tail.span(head.contains(_))
 
-      collapse
-        ( tail2.drop(todo2.length).to(List),
-          Surface(head, collapse(todo2.to(List), Nil)) :: done )
+      collapse(split(1), Surface(head, collapse(split(0), Nil)) :: done)
 
 case class Surface(juncture: Juncture, children: List[Surface]):
   def covered(hits: Set[Int]): Boolean =

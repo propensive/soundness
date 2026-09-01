@@ -40,14 +40,18 @@ object Atomization:
   // Establishes atomization invariants: atoms sorted by ascending value hash (the order of every
   // atom listing, §10.4) and keys unique within the discipline.
   def of(discipline: Text, atoms: List[Atom]): Atomization raises Discipline.Error =
-    val sorted = atoms.stdlib.sortWith: (a, b) => Blob.compare(a.valueHash, b.valueHash) < 0
+    // A named `Ordering` replaces the stdlib's comparator-taking `sortWith`.
+    given Ordering[Atom] = Ordering.fromLessThan: (left, right) =>
+      Blob.compare(left.valueHash, right.valueHash) < 0
+
+    val sorted: List[Atom] = atoms.sort
     val seen = scala.collection.mutable.HashSet[Text]()
 
-    sorted.foreach: atom =>
+    sorted.each: atom =>
       if !seen.add(atom.key)
       then abort(Discipline.Error(discipline, Discipline.Error.Reason.Duplicate(atom.key)))
 
-    Atomization(discipline, sorted.to(List))
+    Atomization(discipline, sorted)
 
 // One discipline's atomization of one body of content: the atom set, sorted by ascending value
 // hash. Union across disciplines is well-defined because value hashes are domain-separated by

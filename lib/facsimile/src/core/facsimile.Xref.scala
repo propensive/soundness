@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
@@ -80,12 +81,11 @@ private[facsimile] object Xref:
           val (hybridEntries, _) = stream(source, hybrid)
 
 
-          Map.from:
-            hybridEntries.stdlib ++ classicEntries.stdlib.filter: (number, entry) =>
-              entry != Entry.Free || !hybridEntries.defines(number)
+          hybridEntries + classicEntries.filter: (number, entry) =>
+            entry != Entry.Free || !hybridEntries.defines(number)
 
-      val mergedEntries = (sectionEntries.stdlib ++ entries.stdlib).to(Map)
-      val mergedTrailer = (sectionTrailer.stdlib ++ trailer.stdlib).to(Map)
+      val mergedEntries = sectionEntries + entries
+      val mergedTrailer = sectionTrailer + trailer
 
       sectionTrailer(t"Prev").let(_.long)
       . lay(Xref(mergedEntries, mergedTrailer, head, streamed(source, head))): previous =>
@@ -137,7 +137,7 @@ private[facsimile] object Xref:
     // unless a direct copy of that member was already recovered (a later direct object wins).
     val direct = entries
 
-    direct.stdlib.each: (container, entry) =>
+    direct.each: (container, entry) =>
       entry match
         case Entry.Direct(offset, _) =>
           safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
@@ -205,21 +205,19 @@ private[facsimile] object Xref:
   // synthesized around the catalog found among the recovered objects.
   private def recoverTrailer(source: ByteSource, entries: Map[Int, Entry]): Map[Text, Cos] =
     lastTrailer(source).or:
-      entries.stdlib.view.flatMap: (number, entry) =>
-        entry match
-          case Entry.Direct(offset, generation) =>
-            safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
-              content.dictionary.let(_(t"Type")).let(_.name) match
-                case t"Catalog" => Some(number -> generation)
-                case _          => None
+      // Whether the recovered object at `offset` parses as the document catalog; any failure
+      // simply means "not the catalog", as before.
+      def catalog(offset: Long): Boolean =
+        safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
+          content.dictionary.let(_(t"Type")).let(_.name) == t"Catalog"
 
-            . or(None)
+        . or(false)
 
-          case _ =>
-            None
+      entries.reap:
+        case (number, Entry.Direct(offset, generation)) if catalog(offset) => (number, generation)
 
-      . headOption.map: (number, generation) => Map(t"Root" -> Cos.Ref(number, generation))
-      . getOrElse(Map())
+      . lay(Map[Text, Cos]()): (number, generation) =>
+          Map(t"Root" -> Cos.Ref(number, generation))
 
   // The last `trailer` dictionary in the file, if any (classic-xref files have one even when
   // their cross-reference table is corrupt).
@@ -343,7 +341,13 @@ private[facsimile] object Xref:
           . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"W"))))
           . map(_.long.or(abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"W", t"an integer")))).toInt)
 
-        if widths.size != 3 then abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
+        // Destructured once, rather than indexed three times per row: `/W` is defined to hold
+        // exactly three widths, so the pattern is both the arity check and the accessor.
+        val (width0, width1, width2) = widths match
+          case List(field0, field1, field2) => (field0, field1, field2)
+
+          case _ =>
+            abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
         val size = dictionary(t"Size").let(_.long)
           . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"Size"))))
@@ -365,9 +369,9 @@ private[facsimile] object Xref:
             then abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
             // A zero-width first field defaults to type 1; other absent fields default to 0.
-            val kind = if widths.stdlib(0) == 0 then 1L else field(data, position, widths.stdlib(0))
-            val second = field(data, position + widths.stdlib(0), widths.stdlib(1))
-            val third = field(data, position + widths.stdlib(0) + widths.stdlib(1), widths.stdlib(2))
+            val kind = if width0 == 0 then 1L else field(data, position, width0)
+            val second = field(data, position + width0, width1)
+            val third = field(data, position + width0 + width1, width2)
             position += rowLength
 
             val entry = kind match

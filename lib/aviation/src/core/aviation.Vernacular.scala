@@ -203,12 +203,13 @@ object Vernacular:
       case TimeUnit.Minutes => (t"minuto", t"minutos")
       case TimeUnit.Seconds => (t"segundo", t"segundos")
 
-    private val ordinalWords: List[Text] =
-      List(t"primer", t"segundo", t"tercer", t"cuarto", t"quinto", t"sexto", t"séptimo", t"octavo",
-          t"noveno", t"décimo")
+    // A `Sequence`, not a `List`: the only use is positional, and `Sequence` indexes in O(1)
+    // with no dysasymptotic acknowledgement.
+    private val ordinalWords: Sequence[Text] =
+      Sequence(t"primer", t"segundo", t"tercer", t"cuarto", t"quinto", t"sexto", t"séptimo",
+          t"octavo", t"noveno", t"décimo")
 
-    private def ordinal(n: Int): Text =
-      if n >= 1 && n <= ordinalWords.stdlib.length then ordinalWords.stdlib(n - 1) else t"$n.º"
+    private def ordinal(n: Int): Text = ordinalWords.at((n - 1).z).or(t"$n.º")
 
     private def monthDay(n: Int): Text = if n == -1 then t"último día" else t"día $n"
 
@@ -259,7 +260,17 @@ trait Vernacular:
   protected final def conjoin(items: List[Text]): Text = items match
     case Nil        => t""
     case List(item) => item
-    case other      => t"${other.stdlib.init.to(List).join(t", ")} $conjunction ${other.stdlib.last}"
+
+    case other =>
+      // `lead`/`last` on a `List` walk the spine, so the cost is acknowledged; the lists here are
+      // the handful of clauses in one recurrence description.
+      import dysasymptotics.linearSize
+      other.occupied.lay(t""): populated =>
+        // Bound as typed locals: `last` is `transparent inline`, and letting it narrow inside the
+        // `t"…"` macro leaves the summoned `Terminable` uninstantiated.
+        val front: List[Text] = populated.lead
+        val end: Text = populated.last
+        t"${front.join(t", ")} $conjunction $end"
 
   protected final def quantity(pair: (Long, TimeUnit)): Text = units(pair(0).abs, pair(1))
   protected final def durations(span: Timespan): List[Text] = Vernacular.components(span).map(quantity)

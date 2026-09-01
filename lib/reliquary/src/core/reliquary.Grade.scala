@@ -33,15 +33,18 @@
 package reliquary
 
 import anticipation.*
+import rudiments.*
 
 object Grade:
-  private def entries(atomizations: List[Atomization])
-  :   scala.collection.immutable.Set[(Text, Atom.Class, Text)] =
+  // Each intermediate is annotated so one combinator's inferred result type is pinned before the
+  // next one's implicit search runs over it; an uninstantiated shape there trips `wildApprox`.
+  private def entries(atomizations: List[Atomization]): Set[(Text, Atom.Class, Text)] =
+    val atoms: List[Atom] = atomizations.flatMap(_.atoms)
 
-    atomizations.stdlib.flatMap(_.atoms.stdlib).map: atom =>
+    val triples: List[(Text, Atom.Class, Text)] = atoms.map: atom =>
       (atom.key, atom.atomClass, Lira.Hash.text(atom.valueHash))
 
-    . toSet
+    triples.to[Set]
 
   // §12.3: the grade of a successor release relative to its predecessor. `Patch` is API
   // identity; `Minor` is pure rigid extension plus replaceable churn (every replaceable key of
@@ -53,13 +56,19 @@ object Grade:
 
     if before == after then Patch
     else
-      val rigidKept = before.filter(_(1) == Atom.Class.Rigid).subsetOf:
-        after.filter(_(1) == Atom.Class.Rigid)
+      // `subsetOf` has no native counterpart; `all` over the superset's `has` is the same test.
+      type Entry = (Text, Atom.Class, Text)
+      val rigidBefore: Set[Entry] = before.filter(_(1) == Atom.Class.Rigid)
+      val rigidAfter: Set[Entry] = after.filter(_(1) == Atom.Class.Rigid)
+      val rigidKept = rigidBefore.all: entry => rigidAfter.has(entry)
 
-      val keysBefore = before.filter(_(1) == Atom.Class.Replaceable).map(_(0))
-      val keysAfter = after.filter(_(1) == Atom.Class.Replaceable).map(_(0))
+      val replaceableBefore: Set[Entry] = before.filter(_(1) == Atom.Class.Replaceable)
+      val replaceableAfter: Set[Entry] = after.filter(_(1) == Atom.Class.Replaceable)
+      val keysBefore: Set[Text] = replaceableBefore.map(_(0))
+      val keysAfter: Set[Text] = replaceableAfter.map(_(0))
+      val keysKept = keysBefore.all: key => keysAfter.has(key)
 
-      if rigidKept && keysBefore.subsetOf(keysAfter) then Minor else Major
+      if rigidKept && keysKept then Minor else Major
 
 enum Grade:
   case Patch, Minor, Major

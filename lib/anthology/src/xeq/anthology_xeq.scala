@@ -130,7 +130,7 @@ object xeqEdges:
       val targets: List[Text] =
         if !settings.targets.nil then settings.targets else runners.absolve match
           case Packaging.RunnerSource.Remote(_, hashes) =>
-            List(hashes.stdlib.keys.toSeq.sortBy(_.s)*)
+            hashes.keys.to[List].order(_.s)
 
           case Packaging.RunnerSource.Local(_) =>
             abort(Link.Error(Link.Error.Reason.MissingSetting(t"targets")))

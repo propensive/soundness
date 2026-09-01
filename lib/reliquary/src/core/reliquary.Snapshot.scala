@@ -33,6 +33,7 @@
 package reliquary
 
 import anticipation.*
+import rudiments.*
 
 // A release's API identity (§12.1): the hash of its sorted atom set. The atom set is the union
 // of every `api` record's atoms — well-defined across disciplines because atom value hashes are
@@ -41,10 +42,13 @@ import anticipation.*
 object Snapshot:
 
   def apply(atomizations: List[Atomization]): Data =
-    val hashes = atomizations.stdlib.flatMap(_.atoms.stdlib).map(_.valueHash)
+    // The intermediate is annotated so `flatMap`'s inferred result type is pinned before `map`'s
+    // implicit search runs over it; an uninstantiated shape there trips `wildApprox`.
+    val atoms: List[Atom] = atomizations.flatMap(_.atoms)
+    val hashes: List[Data] = atoms.map(_.valueHash)
 
     val distinct = scala.collection.mutable.LinkedHashMap[Text, Data]()
-    hashes.foreach: hash => distinct.getOrElseUpdate(Lira.Hash.text(hash), hash)
+    hashes.each: hash => distinct.getOrElseUpdate(Lira.Hash.text(hash), hash)
 
     val sorted = distinct.values.toList.sortWith: (a, b) => Blob.compare(a, b) < 0
     val buffer = Array.allocate[Byte](sorted.size * Lira.Hash.size)

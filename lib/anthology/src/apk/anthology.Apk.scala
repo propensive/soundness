@@ -121,12 +121,11 @@ object Apk extends Format.Application:
 
       // Each requested runtime permission is a `<uses-permission android:name="…"/>` element.
       val permissionElements: List[Axml.Element] =
-        permissions.stdlib.map: permission =>
+        permissions.map: permission =>
           Axml.Element
             ( t"uses-permission",
               List(android(t"name", nameAttr, Axml.Value.Str(permission))),
               Nil )
-        . to(List)
 
       val launcher =
         Axml.Element

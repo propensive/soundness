@@ -39,6 +39,7 @@ import contingency.*
 import prepositional.*
 import serpentine.*
 import rudiments.*
+import symbolism.*
 
 import Io.Error.{Operation, Reason}
 
@@ -66,12 +67,12 @@ extends Openable:
     // participate in the same intra-JVM arbitration as directory scopes — and asks the
     // backend for an OS advisory lock (`OpenFlag.Lock`) to cover the cross-process case
     // (issue #566).
-    val modeFlags =
-      (if mode.atoms.has(Read) then List(OpenFlag.Read).stdlib else Nil.stdlib) ++
-        (if mode.atoms.has(Write) then List(OpenFlag.Write).stdlib else Nil.stdlib) ++
-        (if mode.atoms.has(Exclusive) then List(OpenFlag.Lock).stdlib
-         else if mode.atoms.has(Shared) then List(OpenFlag.LockShared).stdlib
-         else Nil.stdlib)
+    val modeFlags: List[OpenFlag] =
+      (if mode.atoms.has(Read) then List(OpenFlag.Read) else Nil) +
+        (if mode.atoms.has(Write) then List(OpenFlag.Write) else Nil) +
+        (if mode.atoms.has(Exclusive) then List(OpenFlag.Lock)
+         else if mode.atoms.has(Shared) then List(OpenFlag.LockShared)
+         else Nil)
 
     val locking = mode.atoms.has(Exclusive) || mode.atoms.has(Shared)
 
@@ -91,7 +92,7 @@ extends Openable:
       then abort(Io.Error(value, Operation.Open, Reason.Busy))
 
     try
-      backend.open(value, (modeFlags ++ flags.stdlib).to(List)): handle =>
+      backend.open(value, modeFlags + flags): handle =>
         // `Granting` is a phantom marker, so the cast only refines the static type with the
         // grants that `modeFlags` has just made true operationally.
         block(using handle.asInstanceOf[Handle & Granting[grants]])

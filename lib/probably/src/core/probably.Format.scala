@@ -33,11 +33,14 @@
 package probably
 
 import anticipation.*
+import denominative.dysasymptotics.linearAccess
+import denominative.z
 import gossamer.*
 import hieroglyph.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
+import vacuous.or
 
 // Numeric formatting shared by both report renderers: one implementation decides digits
 // and units; the renderers decide only colour and styling.
@@ -74,8 +77,10 @@ private[probably] object Format:
   // shows at least the thinnest bar.
   def bar(samples: Long, max: Long): Text =
     val eighths = (if max == 0L then 0L else samples*320L/max).max(if samples > 0L then 1L else 0L)
-    val partial = List(t"", t"▏", t"▎", t"▍", t"▌", t"▋", t"▊", t"▉")
-    t"█"*(eighths/8L).toInt + partial.stdlib((eighths%8L).toInt)
+    val partial: List[Text] = List(t"", t"▏", t"▎", t"▍", t"▌", t"▋", t"▊", t"▉")
+    // Read positionally (hence the `linearAccess` import above); the table is eight elements
+    // long and the index is already reduced modulo its length, so the fallback is unreachable.
+    t"█"*(eighths/8L).toInt + partial.at((eighths%8L).toInt.z).or(t"")
 
   val sparkBlocks: List[Text] = List(t"▁", t"▂", t"▃", t"▄", t"▅", t"▆", t"▇", t"█")
 

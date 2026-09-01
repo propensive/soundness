@@ -35,6 +35,7 @@ package reliquary
 import anticipation.*
 import anticipation.*
 import contingency.*
+import denominative.nil
 import gossamer.*
 import rudiments.*
 import vacuous.*
@@ -60,7 +61,7 @@ object EcosystemProfile:
       manifest: Optional[Lira.Manifest] = Unset ):
 
     def section(realm: Text): Optional[Section] =
-      sections.stdlib.find { section => section.realm == realm }.getOrElse(Unset)
+      sections.seek: section => section.realm == realm
 
   // A predicate failure, at the guarantee level it breaks. A profile reports what it found; the
   // audit below decides whether the release accounted for it.
@@ -75,7 +76,7 @@ object EcosystemProfile:
     def all: List[EcosystemProfile] = profiles
 
     def apply(id: Text): Optional[EcosystemProfile] =
-      profiles.stdlib.find { profile => profile.id == id }.getOrElse(Unset)
+      profiles.seek: profile => profile.id == id
 
   // L128 and L130, the two rules that make a `profile` record a claim rather than decoration.
   //
@@ -101,30 +102,42 @@ object EcosystemProfile:
     val unchecked = scala.collection.mutable.ListBuffer[Text]()
     val advisories = scala.collection.mutable.ListBuffer[Text]()
 
-    declared.stdlib.foreach: record =>
+    // The separators are bound outside the `each` lambda below: a `t"…"` interpolation evaluated
+    // inside a combinator lambda trips the compiler's `wildApprox` assertion.
+    val semicolons = t"; "
+    val commas = t", "
+
+    declared.each: record =>
       registry(record.id) match
         case profile: EcosystemProfile =>
-          val recorded = record.breaks.stdlib.map(guarantee(_)).toSet
-          val violations = profile.check(previous, next).stdlib
+          val recorded = record.breaks.map(guarantee(_)).to[Set]
+          val violations = profile.check(previous, next)
 
           // Every offense is gathered before either abort, so the error a publisher sees names
           // the whole finding for its rule, not merely the first violation encountered.
-          val uncertified = violations.filter: violation =>
-            !profile.certifies.stdlib.contains(violation.level)
+          // Every intermediate below is annotated so one combinator's inferred result type is
+          // pinned before the next one's implicit search runs; an uninstantiated shape there
+          // trips the compiler's `wildApprox` assertion.
+          val uncertified: List[Violation] =
+            violations.filter: violation => !profile.certifies.has(violation.level)
 
-          if !uncertified.isEmpty
+          if !uncertified.nil
           then
-            val details = Text(uncertified.map(_.detail.s).mkString("; "))
+            val details = uncertified.map(_.detail).join(semicolons)
             abort(Lira.Error(Reason.ProfileViolated(record.id, details)))
 
-          val unrecorded = violations.map(_.level).distinct.filter: level =>
-            !recorded.contains(level)
+          val broken: List[Discipline.Guarantee] = violations.map(_.level)
+          val distinctLevels: List[Discipline.Guarantee] = broken.distinct
 
-          if !unrecorded.isEmpty
+          val unrecorded: List[Discipline.Guarantee] =
+            distinctLevels.filter: level => !recorded.has(level)
+
+          if !unrecorded.nil
           then
-            val levels = Text(unrecorded.map(keyword(_).s).mkString(", "))
+            val levels = unrecorded.map(keyword(_)).join(commas)
             abort(Lira.Error(Reason.UnrecordedBreak(record.id, levels)))
 
+          // `advisories` is a mutable stdlib `ListBuffer`, whose `++=` takes an `IterableOnce`.
           advisories ++= profile.advisories(previous, next).stdlib
 
         case _ => unchecked += record.id

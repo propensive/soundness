@@ -74,8 +74,8 @@ private[facsimile] object CosWriter:
       case Cos.Sequence(elements) =>
         builder += '['.toByte
 
-        elements.stdlib.zipWithIndex.each: (element, index) =>
-          if index > 0 then builder += ' '.toByte
+        elements.each: element =>
+          if ordinal.n0 > 0 then builder += ' '.toByte
           append(builder, element)
 
         builder += ']'.toByte
@@ -92,7 +92,7 @@ private[facsimile] object CosWriter:
 
     bytes(builder, "<<")
 
-    entries.stdlib.each: (key, value) =>
+    entries.each: (key, value) =>
       builder += ' '.toByte
       name(builder, key)
       builder += ' '.toByte

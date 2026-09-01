@@ -117,6 +117,7 @@ object internal:
   private def armsFor(using Quotes)(arms: List[quotes.reflect.CaseDef], fallthrough: quotes.reflect.CaseDef)
   :   scala.collection.immutable.List[quotes.reflect.CaseDef] =
 
+    // `quotes.reflect`'s `Match` takes a stdlib list of `CaseDef`s.
     arms.stdlib :+ fallthrough
 
   private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
@@ -350,6 +351,7 @@ object internal:
       case Varargs(insertions) => insertions
 
     val (parts2, spreads) = preprocess(parts)
+    // The parts are `String`s, so `join` (which is `Text`-only) does not apply.
     val source: String = parts2.stdlib.mkString(MarkerString)
     val data: Array[Byte]^{} = Array.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[Array[Byte]^{}]
 
@@ -492,6 +494,7 @@ object internal:
           case '{$value: tpe} => Type.of[tpe] match
             case '[Map[Text, Json]] =>
               ' {
+                  // Staged code: the spliced expression must produce a stdlib `Iterable`.
                   $value.asInstanceOf[Map[Text, Json]].stdlib.iterator.map: (key, json) =>
                     (key.s, json.root)
 
@@ -543,6 +546,7 @@ object internal:
                 '{Iterable($v)}
 
         ' {
+            // `Expr.ofList` takes a stdlib list.
             val all = ${Expr.ofList(pieces.stdlib)}
             . foldLeft(scala.collection.immutable.List.empty[Json.Ast])(_ ++ _)
             Json.Ast.arr(Array.from(all).asInstanceOf[Array[Any]^{}])
@@ -658,6 +662,7 @@ object internal:
 
     abortive:
       val (parts2, spreads) = preprocess(parts)
+      // The parts are `String`s, so `join` (which is `Text`-only) does not apply.
       val source: String = parts2.stdlib.mkString(MarkerString)
       val data: Array[Byte]^{} = Array.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[Array[Byte]^{}]
       val ast: Json.Ast = Json.Ast.parse(data, true)
@@ -1016,6 +1021,7 @@ object internal:
               '{$result.asInstanceOf[Option[result]]}
 
         case _ =>
+          // `AppliedType` and `TupleClass` are `quotes.reflect` APIs over stdlib lists.
           AppliedType(defn.TupleClass(types.stdlib.length).info.typeSymbol.typeRef, types.stdlib.reverse)
           . asType
           . absolve match
@@ -1161,6 +1167,8 @@ object internal:
 
       val cursor = Symbol.newVal(owner, "index", TypeRepr.of[Int], Flags.Mutable, Symbol.noSymbol)
 
+      // `slots`, `seens` and `packedNames` are read positionally by an index the generated
+      // code carries; `quotes.reflect` symbols have no total `Optional` fallback.
       val slotDefs = List.range(0, arity).map: index =>
         ValDef(slots.stdlib(index), Some(zero(fieldTypes(index))))
 
@@ -1189,6 +1197,7 @@ object internal:
 
             '{ Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($raw) }.asTerm
 
+        // `slots`/`seens` are read positionally; see `slotDefs` above.
         val rhs =
           Block
             ( scala.collection.immutable.List
@@ -1224,6 +1233,7 @@ object internal:
 
           def chain(index: Int): Term =
             if index == arity then '{ Json.KeyTable.Unknown }.asTerm
+            // Positional read; see `slotDefs` above.
             else packedNames.stdlib(index) match
               case None => chain(index + 1)
 
@@ -1288,6 +1298,7 @@ object internal:
                 else Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($onAbsent)
               }.asTerm
 
+            // `slots`/`seens` are read positionally; see `slotDefs` above.
             If
               ( '{ !${Ref(seens.stdlib(index)).asExprOf[Boolean]} }.asTerm,
                 Assign(Ref(slots.stdlib(index)), resolve),
@@ -1296,6 +1307,7 @@ object internal:
       val construct: Term =
         val typeArguments = tpe match
           case AppliedType(_, arguments) => arguments
+          // `AppliedType`'s arguments are a stdlib list.
           case _                         => Nil.stdlib
 
         val newTerm = Select(New(Inferred(tpe)), ctor)
@@ -1304,6 +1316,7 @@ object internal:
           if typeArguments.isEmpty then newTerm
           else TypeApply(newTerm, typeArguments.map { argument => Inferred(argument) })
 
+        // `Apply` takes a stdlib list of argument terms.
         Apply(applied, slots.stdlib.map { slot => Ref(slot) })
 
       Block
@@ -1339,6 +1352,7 @@ object internal:
 
         val table: Json.KeyTable = Json.KeyTable(keys)
         lazy val instances: Array[Json.Field | Null]^{} =
+          // `Varargs` takes a stdlib `Seq`.
           Array[Json.Field | Null](${Varargs[Json.Field | Null](instanceExprs.stdlib)}*)
         lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs[Any](fallbackExprs.stdlib)}*)
 
@@ -1450,6 +1464,7 @@ object internal:
           Json.Parsable.wireKeys(Array[String](${Varargs[String](nameExprs)}*), $renames)
 
         lazy val variants: Array[Json.Field]^{} =
+          // `Varargs` takes a stdlib `Seq`.
           Array[Json.Field](${Varargs[Json.Field](variantExprs.stdlib)}*)
 
         new Json.Parsable:

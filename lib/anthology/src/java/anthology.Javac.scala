@@ -48,6 +48,7 @@ import gossamer.*
 import hellenism.*
 import parasite.*
 import prepositional.*
+import rudiments.{map, to}
 import vacuous.*
 
 object Javac:
@@ -97,7 +98,9 @@ case class Javac(options: List[Javac.Option]):
                 span )
 
     val options = List(t"-classpath", classpath(), t"-d", out.generic)
-    val javaSources = sources.stdlib.map(JavaSource(_, _)).asJava
+    // `.stdlib`: `javac`'s `getTask` takes a `java.lang.Iterable`, which `asJava` needs a stdlib
+    // collection to build.
+    val javaSources = sources.to[List].map(JavaSource(_, _)).stdlib.asJava
     Log.info(CompileEvent.Running(List(t"javac", options.join(t" "))))
 
     async:
@@ -105,8 +108,9 @@ case class Javac(options: List[Javac.Option]):
         val success: Boolean =
           process.put(CompileProgress(0.1, t"javac"))
 
+          // `.stdlib`: as above — `asJava` needs a stdlib collection for `getTask`'s Java API.
           Javac.compiler()
-          . getTask(null, null, diagnostics, options.stdlib.map(_.s).asJava, null, javaSources)
+          . getTask(null, null, diagnostics, options.map(_.s).stdlib.asJava, null, javaSources)
           . nn.call().nn.booleanValue()
 
         if success then process.put(CompileProgress(1.0, t"javac"))

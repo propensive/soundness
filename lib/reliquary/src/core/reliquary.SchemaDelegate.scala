@@ -33,10 +33,16 @@ package reliquary
 
 import anticipation.*
 import contingency.*
+import denominative.nil
 import distillate.*
 import enigmatic.Signing
 import gossamer.*
+// By-name rather than `rudiments.*`: this file indexes a frozen `Data` array by `Int`
+// (`bytesEqual` below), which the wildcard's `Deindex` extension makes unresolvable.
+import revolution.Semver
+import rudiments.{distinct, filter, has, map, seek}
 import stratiform.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -77,46 +83,58 @@ extends Tels.Resolution.Delegate:
   def bySelector(reference: Tel.Pragma.Reference): Optional[Body] raises ResolutionError =
     val candidates = releasesOf(t"${reference.domain}/${reference.name}")
 
-    val matching = reference.selector match
+    val matching: List[Lira] = reference.selector match
       case Tel.Pragma.Reference.Selector.Version(major, minor, patch) =>
         candidates.filter: lira =>
-          lira.manifest.version.let: version =>
+          // The `Optional` field is bound to a typed local as the lambda's first statement:
+          // reading it directly inside a combinator lambda trips the `wildApprox` assertion.
+          val declared: Optional[Semver] = lira.manifest.version
+
+          declared.let: version =>
             version.major == major && version.minor == minor && version.patch == patch
+
           . or(false)
 
       case Tel.Pragma.Reference.Selector.Tag(name) =>
-        candidates.filter(_.manifest.tag.stdlib.contains(name))
+        candidates.filter(_.manifest.tag.has(name))
 
       // A bare reference is local-only by design and never reaches the
       // delegate; answering nothing keeps that invariant even if called.
       case _ =>
-        scala.Nil
+        Nil
 
-    if matching.isEmpty then Unset
-    else if matching.sizeIs == 1 then Body(schemaBody(matching.head))
-    else
-      // A version names exactly one published release and tags are
-      // signed, unique and immutable within a module (L117, L142), so
-      // two matches mean the store's content cannot be trusted.
-      abort(ResolutionError(Reason.Unverified(
-        t"more than one release matches the selector ${reference.text}")))
+    matching match
+      case Nil            => Unset
+      case release :: Nil => Body(schemaBody(release))
+
+      case _ =>
+        // A version names exactly one published release and tags are
+        // signed, unique and immutable within a module (L117, L142), so
+        // two matches mean the store's content cannot be trusted.
+        abort(ResolutionError(Reason.Unverified(
+          t"more than one release matches the selector ${reference.text}")))
 
   def bySignature(signature: Data, reference: Optional[Tel.Pragma.Reference])
   :   Optional[Body] raises ResolutionError =
 
-    val modules: scala.List[Text] = reference match
+    val modules: List[Text] = reference match
       case reference: Tel.Pragma.Reference =>
-        scala.List(t"${reference.domain}/${reference.name}")
+        List(t"${reference.domain}/${reference.name}")
 
       case _ =>
-        (local.modules.stdlib ++ network.let(_.modules.stdlib).or(scala.Nil)).distinct
+        // Annotated so `+`'s result type is pinned before `distinct`'s implicit search runs.
+        val known: List[Text] = local.modules + network.let(_.modules).or(List())
+        known.distinct
 
     var found: Optional[Data] = Unset
     var candidates = 0
-    val moduleIterator = modules.iterator
+
+    // The two loops below stop at the first hit, which needs a stepwise `Iterator`; the native
+    // `List` has no cursor of its own, so the traversal crosses through `stdlib` here.
+    val moduleIterator = modules.stdlib.iterator
 
     while moduleIterator.hasNext && found.absent do
-      val releaseIterator = releasesOf(moduleIterator.next()).iterator
+      val releaseIterator = releasesOf(moduleIterator.next()).stdlib.iterator
 
       while releaseIterator.hasNext && found.absent do
         // Skip releases without a tels payload or failing verification
@@ -152,8 +170,8 @@ extends Tels.Resolution.Delegate:
       bytesEqual(SchemaSignature.encode(decoded), signature)
     . or(false)
 
-  private def releasesOf(module: Text): scala.List[Lira] =
-    local(module).stdlib ++ network.let(_(module).stdlib).or(scala.Nil)
+  private def releasesOf(module: Text): List[Lira] =
+    local(module) + network.let(_(module)).or(List())
 
   // Verify the release's manifest signature — mandatory, and vacuous
   // verification is not enough: an unsigned manifest is an unpublished
@@ -162,7 +180,7 @@ extends Tels.Resolution.Delegate:
   private def schemaBody(lira: Lira): Data raises ResolutionError =
     import fulminate.errorDiagnostics.emptyDiagnostics
 
-    if lira.manifest.signature.stdlib.isEmpty
+    if lira.manifest.signature.nil
     then abort(ResolutionError(Reason.Unverified(
       t"the release manifest of ${lira.manifest.module} carries no signature")))
 
@@ -175,13 +193,12 @@ extends Tels.Resolution.Delegate:
           val report = Verification.install(lira)
           val path = TreePath(SchemaDelegate.schemaPath)
 
-          val entry = report.materialized.stdlib
-            . flatMap { pair => pair(1).get(path).option }
-            . headOption
+          val found: List[Optional[TreeEntry]] = report.materialized.map(_(1).get(path))
+          val entry: Optional[TreeEntry] = found.seek(_.present)
 
           entry match
-            case Some(entry) => report.blobstore.resolve(entry.blob)
-            case None => abort(ResolutionError(Reason.NotSchema(
+            case entry: TreeEntry => report.blobstore.resolve(entry.blob)
+            case _ => abort(ResolutionError(Reason.NotSchema(
               t"the release ${lira.manifest.module} has no ${SchemaDelegate.schemaPath} payload")))
 
     mitigate:

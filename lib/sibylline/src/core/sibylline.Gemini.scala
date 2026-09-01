@@ -47,6 +47,7 @@ import obligatory.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import telekinesis.*, postables.jsonPostable
 import urticose.*
 import vacuous.*
@@ -258,7 +259,7 @@ object Gemini:
     given jsonTactic: (Tactic[Json.Error]^) = summon[Tactic[Llm.Error]].contramap: _ =>
       Llm.Error(Llm.Error.Reason.Malformed, t"a stream frame had an unexpected shape")
 
-    val json: Json = Llm.parsed(sse.data.stdlib.join(t"\n"))
+    val json: Json = Llm.parsed(sse.data.join(t"\n"))
 
     val started: List[Llm.Event] =
       if progress.begun then List() else
@@ -276,7 +277,7 @@ object Gemini:
         val opened: List[Llm.Event] =
           if progress.open(0) then List(Llm.Event.Opened(0, Llm.Content.Textual(t""))) else List()
 
-        (opened.stdlib :+ Llm.Event.Delta(0, Llm.Event.Increment.Textual(fragment))).to(List)
+        opened + List(Llm.Event.Delta(0, Llm.Event.Increment.Textual(fragment)))
 
       . or:
           safely(part.functionCall).let: call =>
@@ -291,7 +292,7 @@ object Gemini:
 
           . or(List())
 
-    (started.stdlib ++ blocks.stdlib).to(List)
+    started + blocks
 
   // The Google error envelope, `{"error": {"code": …, "message": …, "status": …}}`.
   private[sibylline] def failure(status: Http.Status, json: Optional[Json])(using Diagnostics)
@@ -396,6 +397,8 @@ extends Llm.Dialect, caps.ExclusiveCapability:
     val progress = Llm.Progress()
 
     // A sentinel closes out the message after the last frame: this wire has no terminal event.
+    // `.stdlib.iterator`: this method's contract is a stdlib `Iterator`, which the native `List`
+    // has no accessor for — the boundary is the return type, not the interior.
     (Llm.frames(response) ++ Iterator(Llm.Terminal)).flatMap: frame =>
       if frame == Llm.Terminal then progress.finish().stdlib.iterator
       else Gemini.events(progress, Gemini.frame(frame)).stdlib.iterator

@@ -135,6 +135,8 @@ object Recurrence:
 
     sequence =>
       val all = Chain.iterate(sequence.start)(addable.add(_, sequence.period))
+      // `.stdlib`: `all` is an infinite lazy `Chain`, on which the native surface withholds
+      // `keep`; only `LazyList#take` truncates it without forcing.
       sequence.repetitions.lay(all) { n => all.stdlib.take(n).to(Chain) }
 
   // RecurrenceError → Recurrence.Error

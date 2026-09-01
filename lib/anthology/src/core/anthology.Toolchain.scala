@@ -56,6 +56,7 @@ object Toolchain:
   // Assembles a toolchain from any number of edge groups, as the providers supply them:
   // `Toolchain(jarEdges(), dexEdges(), apkEdges())`.
   def apply(edges: List[Edge]*): Toolchain raises Link.Error =
+    // `.stdlib`: the file-level opt-out above — Kahn's algorithm below is stdlib queue-and-map code.
     val all = edges.toList.flatMap(_.stdlib)
 
     all.groupBy { edge => (edge.source, edge.target) }.foreach: (pair, group) =>
@@ -119,6 +120,7 @@ case class Toolchain private (edges: List[Edge]):
   // format in a separate step.
   def path(source: Format, target: Format): List[Edge] raises Link.Error =
     if source == target then Nil else
+      // `.stdlib`: the file-level opt-out above — the BFS below is stdlib queue-and-map code.
       val adjacency = edges.stdlib.groupBy(_.source)
 
       // Level-synchronous breadth-first search, counting shortest routes (capped at two) to

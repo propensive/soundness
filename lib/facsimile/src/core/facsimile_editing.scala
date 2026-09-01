@@ -41,7 +41,9 @@ import phoenicia.*
 import quantitative.*
 import rudiments.*
 import vacuous.*
-import denominative.dysasymptotics.linearSize
+// `linearAccess`: linking outline siblings reads the neighbouring `refs` by position, exactly
+// as the stdlib-indexed form it replaces did.
+import denominative.dysasymptotics.{linearAccess, linearSize}
 
 // The low-level write surface. These operations are extension methods on the write-granted
 // handle — `(Pdf & Granting[Grant.Write])^`, as galilei gates its `write` — so they exist
@@ -289,7 +291,6 @@ private def buildOutline
     var total = items.size
 
     items.zip(refs).indexed.each: (pair, ordinal) =>
-      val index = ordinal.n0
       val (bookmark, ref) = pair
       val (childFirst, childLast, childCount) = buildOutline(pdf, bookmark.children, ref)
       total += childCount
@@ -297,8 +298,11 @@ private def buildOutline
       var dict: Map[Text, Cos] =
         Map(t"Title" -> Cos.Chars(Cos.encodeText(bookmark.title)), t"Parent" -> parent)
 
-      if index > 0 then dict = dict.define(t"Prev", refs.stdlib(index - 1))
-      if index < refs.size - 1 then dict = dict.define(t"Next", refs.stdlib(index + 1))
+      // `at` is total: a sibling off either end of the list is simply `Unset`, so no bounds
+      // guard is needed. (`(ordinal.n0 - 1).z` rather than `previous`, which clamps at `Prim`.)
+      refs.at((ordinal.n0 - 1).z).let: previous => dict = dict.define(t"Prev", previous)
+
+      refs.at(ordinal.next).let: following => dict = dict.define(t"Next", following)
 
       childFirst.let: first => dict = dict.define(t"First", first)
 

@@ -91,6 +91,8 @@ extends Findable:
   def redraw(size: Int): Unit = if !silent && reporter.live(report) then
     if size > 0 then Out.print(e"\e[${size}A\r\e[2K")
 
+    // Left on `stdlib`: with a native `each`, the `e"…"` interpolation in the lambda body below
+    // crashes the compiler's `wildApprox` assertion.
     active.stdlib.reverse.foreach: test =>
       val indent: Text = " ".repeat(test.depth*2).nn.tt
       Out.println(e"> ${WebColors.CadetBlue}(${test.id})$indent${test.name}\e[K")

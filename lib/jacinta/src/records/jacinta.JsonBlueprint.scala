@@ -357,21 +357,21 @@ object JsonBlueprint:
       format:     Optional[Text],
       pattern:    Optional[Text] ):
 
-    def requiredFields: Set[Text] = required.or(Nil).stdlib.to(Set)
+    def requiredFields: Set[Text] = required.or(Nil).to[Set]
 
+    // `remap` is the entry-wise map: a `Map`'s own `map` maps values, and the key is needed to
+    // decide whether the field is required.
     def arrayFields =
-      items.let(x => (x.stdlib.map: (key, value) =>
-        key -> value.as[Property].field(requiredFields.has(key))).to(Map))
+      val fields: Optional[Map[Text, Member]] = items.let: entries =>
+        entries.remap: (key, value) => key -> value.as[Property].field(requiredFields.has(key))
 
-      . or:
-          panic(m"Some items were missing")
+      fields.or(panic(m"Some items were missing"))
 
     def objectFields =
-      properties.let(x => (x.stdlib.map: (key, value) =>
-        key -> value.as[Property].field(requiredFields.has(key))).to(Map))
+      val fields: Optional[Map[Text, Member]] = properties.let: entries =>
+        entries.remap: (key, value) => key -> value.as[Property].field(requiredFields.has(key))
 
-      . or:
-          panic(m"Some properties were missing")
+      fields.or(panic(m"Some properties were missing"))
 
     def field(required: Boolean): Member = `type` match
       case "array"  => Member.Record(if required then "array" else "array?", arrayFields)
@@ -400,11 +400,10 @@ object JsonBlueprint:
       properties: Map[Text, JsonBlueprint.Property],
       required:   Optional[List[Text]] ):
 
-    lazy val requiredFields: Set[Text] = required.or(Nil).stdlib.to(Set)
+    lazy val requiredFields: Set[Text] = required.or(Nil).to[Set]
 
     def fields: Map[Text, Member] =
-      properties.stdlib.map: (key, value) => key -> value.field(requiredFields.has(key))
-      . to(Map)
+      properties.remap: (key, value) => key -> value.field(requiredFields.has(key))
 
   // JsonBlueprintError → JsonBlueprint.Error
   object Error:

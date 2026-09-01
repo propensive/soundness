@@ -36,7 +36,9 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import gossamer.*
+import denominative.nil
 import hieroglyph.*
+import rudiments.*
 import stratiform.*
 import turbulence.*
 
@@ -49,16 +51,22 @@ import Lira.Error.Reason
 object UsesBlob:
 
   def encode(module: Text, atoms: List[Data]): Data =
-    val sorted = atoms.stdlib
-      . map: hash => Lira.Hash.text(hash)
-      . distinct
-      . map: text => (text, Base256.decode(text))
-      . sortWith: (a, b) => Blob.compare(a(1), b(1)) < 0
+    // A named `Ordering` replaces the stdlib's comparator-taking `sortWith`.
+    given Ordering[(Text, Data)] = Ordering.fromLessThan: (left, right) =>
+      Blob.compare(left(1), right(1)) < 0
 
-    val rows = sorted.map: pair => s"atom ${pair(0)}"
+    // The row text is built by a named `def` rather than inline in the `map` lambda: a `t"…"`
+    // interpolation as a combinator lambda's direct body trips the `wildApprox` assertion.
+    def row(pair: (Text, Data)): Text = t"atom ${pair(0)}"
+
+    val hashes: List[Text] = atoms.map { hash => Lira.Hash.text(hash) }.distinct
+    val decoded: List[(Text, Data)] = hashes.map: text => (text, Base256.decode(text))
+    val sorted: List[(Text, Data)] = decoded.sort
+
+    val rows: List[Text] = sorted.map(row)
     val header = s"tel 1.0 ${Lira.Schemas.usesSignature}\n\nmodule $module"
-    val body = rows.mkString("\n")
-    val text = Text(if rows.isEmpty then s"$header\n" else s"$header\n\n$body\n")
+    val body = rows.join(t"\n")
+    val text = Text(if rows.nil then s"$header\n" else s"$header\n\n$body\n")
     charEncoders.utf8Encoder.encoded(text)
 
   def decode(data: Data): (Text, List[Data]) raises Lira.Error =
@@ -114,14 +122,14 @@ object UsesBlob:
     val byHash = scala.collection.mutable.HashMap[Text, (Text, Atom)]()
     val byKey = scala.collection.mutable.HashMap[(Text, Text), Atom]()
 
-    dependencies.stdlib.foreach: pair =>
-      pair(1).atoms.stdlib.foreach: atom =>
+    dependencies.each: pair =>
+      pair(1).atoms.each: atom =>
         byHash(Lira.Hash.text(atom.valueHash)) = (pair(0), atom)
         byKey((pair(0), atom.key)) = atom
 
     val used = scala.collection.mutable.LinkedHashMap[Text, Data]()
     val queue = scala.collection.mutable.ArrayDeque[Data]()
-    direct.stdlib.foreach: hash => queue.append(hash)
+    direct.each: hash => queue.append(hash)
 
     while queue.nonEmpty do
       val hash = queue.removeHead()
@@ -132,13 +140,14 @@ object UsesBlob:
 
         byHash.get(text) match
           case scala.Some((module, atom)) =>
-            atom.references.stdlib.foreach:
-              case Atom.Reference.Own(key) =>
-                byKey.get((module, key)).foreach: target => queue.append(target.valueHash)
+            atom.references.each: reference =>
+              reference match
+                case Atom.Reference.Own(key) =>
+                  byKey.get((module, key)).foreach: target => queue.append(target.valueHash)
 
-              case Atom.Reference.Foreign(key) =>
-                dependencies.stdlib.foreach: other =>
-                  byKey.get((other(0), key)).foreach: t => queue.append(t.valueHash)
+                case Atom.Reference.Foreign(key) =>
+                  dependencies.each: other =>
+                    byKey.get((other(0), key)).foreach: t => queue.append(t.valueHash)
 
           case scala.None => ()
 
@@ -147,12 +156,12 @@ object UsesBlob:
   // §13.4 spanning: a module compiled against one release is also valid against any release
   // whose atom set includes everything the module uses.
   def spanning(used: List[Data], candidate: List[Atom]): Boolean =
-    val available = candidate.stdlib.map { atom => Lira.Hash.text(atom.valueHash) }.toSet
-    used.stdlib.forall: hash => available.contains(Lira.Hash.text(hash))
+    val available = candidate.map { atom => Lira.Hash.text(atom.valueHash) }.to[Set]
+    used.all: hash => available.has(Lira.Hash.text(hash))
 
   // §13.4 staleness: after a minor upgrade, the modules that should be recompiled are exactly
   // those whose used-set intersects the replaced atoms of the traversed deltas. Advisory only —
   // linkage is guaranteed by the algebra.
   def staleness(used: List[Data], replaced: List[Replacement]): Boolean =
-    val old = replaced.stdlib.map { replacement => Lira.Hash.text(replacement.old) }.toSet
-    used.stdlib.exists: hash => old.contains(Lira.Hash.text(hash))
+    val old = replaced.map { replacement => Lira.Hash.text(replacement.old) }.to[Set]
+    used.exists: hash => old.has(Lira.Hash.text(hash))

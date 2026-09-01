@@ -65,12 +65,16 @@ object Derivative:
   def jar(tree: Lira.Tree, store: Blobstore): Data raises Lira.Error =
     given Zip.Compression = Zip.Compression.Stored
 
-    val entries = tree.entries.stdlib.map: entry =>
+    // Hoisted out of the `map` lambda below: a `t"…"` interpolation evaluated inside a
+    // combinator lambda trips the compiler's `wildApprox` assertion.
+    val notZipPath = t"the path is not a zip path"
+
+    val entries: List[Zip.Entry] = tree.entries.map: entry =>
       val ref =
         import errorDiagnostics.emptyDiagnostics
 
         mitigate:
-          case _: Path.Error => Lira.Error(Reason.InvalidTree(t"the path is not a zip path"))
+          case _: Path.Error => Lira.Error(Reason.InvalidTree(notZipPath))
 
         . protect(entry.path.text.as[Path on Zip])
 
@@ -78,7 +82,7 @@ object Derivative:
 
     val out = java.io.ByteArrayOutputStream()
 
-    Zipfile(entries.to(List), Unset, Unset).serialize.drain: region =>
+    Zipfile(entries, Unset, Unset).serialize.drain: region =>
       range =>
         val interval: Interval = range
         out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
@@ -93,8 +97,12 @@ object Derivative:
   // materialized tree. Sections of unknown universes are never materialized (§9.4), so a
   // declared derivative there stays unchecked here, exactly as the rest of the section does.
   def verify(manifest: Lira.Manifest, report: Verification.Report): Unit raises Lira.Error =
-    manifest.section.stdlib.foreach: section =>
-      section.derivative.let: declared =>
+    manifest.section.each: section =>
+      // The `Optional` field is bound to a typed local as the lambda's first statement: reading
+      // it directly inside a combinator lambda trips the `wildApprox` assertion.
+      val derivative: Optional[Data] = section.derivative
+
+      derivative.let: declared =>
         report.tree(section.realm, section.integration).let: tree =>
           if Blob.compare(hash(tree, report.blobstore), declared) != 0
           then abort(Lira.Error(Reason.BadDerivative(section.realm)))

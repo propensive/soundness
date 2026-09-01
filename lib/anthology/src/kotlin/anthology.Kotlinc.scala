@@ -88,13 +88,13 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
     // The name each source was given, keyed by the canonical path it was written to, so that a
     // diagnostic reads as if the compiler had seen the name rather than the scratch file.
     val names: Map[Text, Text] =
-      sources.stdlib.map: (name, code) =>
+      sources.to[List].map: (name, code) =>
         val file = scratch.resolve(name.s).nn
         jnf.Files.createDirectories(file.getParent.nn)
         jnf.Files.writeString(file, code.s)
 
         (file.toRealPath().nn.toString.tt, name)
-      . to(Map)
+      . to[Map]
 
     val collector = new MessageCollector:
       def clear(): Unit = ()
@@ -148,7 +148,8 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
         jnf.Files.createDirectories(jnf.Paths.get(out.generic.s))
         val compiler = K2JVMCompiler()
         val parsed = compiler.createArguments().nn
-        compiler.parseArguments(arguments.stdlib.map(_.s).toArray, parsed)
+        // `.stdlib`: `parseArguments` takes a Java `Array[String]`.
+        compiler.parseArguments(arguments.map(_.s).stdlib.toArray, parsed)
         val exit = compiler.exec(collector, Services.EMPTY.nn, parsed).nn
         val success = exit == ExitCode.OK
 

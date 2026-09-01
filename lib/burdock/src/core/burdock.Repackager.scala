@@ -121,8 +121,10 @@ object Repackager:
       progress: Progress = (_, _) => () )
   :   (List[Requirement], List[Zip.Entry]) raises RepackageError =
 
-    val requirements = scala.collection.immutable.List.newBuilder[Requirement]
-    val inlined = scala.collection.immutable.List.newBuilder[Zip.Entry]
+    // Accumulated as per-hash groups, prepended (so newest first) and flattened in source order
+    // once at the end; a stdlib `Builder` would need a `.stdlib` bridge for every `++=`.
+    var requirementGroups: List[List[Requirement]] = Nil
+    var inlinedGroups: List[List[Zip.Entry]] = Nil
     val total: Int = hashes.size
     var completed: Int = 0
 
@@ -137,8 +139,8 @@ object Repackager:
 
     // Resolve deps.dev in parallel: each lookup is an independent HTTP round-trip, so the serial
     // cost is `total × latency`. Fan out over virtual threads, bounded to `parallelism` in flight;
-    // await each group in order on this thread (keeping the builders single-threaded) and advance
-    // the progress bar once per group, so terminal writes never race across worker threads.
+    // await each group in order on this thread (keeping the accumulators single-threaded) and
+    // advance the progress bar once per group, so terminal writes never race across worker threads.
     mitigate:
       case Async.Error(_) =>
         RepackageError(m"a concurrency error occurred while resolving dependencies")
@@ -153,13 +155,13 @@ object Repackager:
               val (reqs, entries) =
                 result.lest(RepackageError(m"dependency $hash is neither published nor cached"))
 
-              requirements ++= reqs.stdlib
-              inlined ++= entries.stdlib
+              requirementGroups = reqs :: requirementGroups
+              inlinedGroups = entries :: inlinedGroups
 
             completed += group.size
             progress(completed, total)
 
-    (requirements.result().to(List), inlined.result().to(List))
+    (requirementGroups.reverse.flat, inlinedGroups.reverse.flat)
 
 
   // Rewrites `inputJar` into `outputJar`: keeps the application's own classes,
@@ -230,11 +232,10 @@ object Repackager:
         val publishedEntries: List[Zip.Entry] = requirements.bind: requirement =>
           cached(requirement.digest).or(Nil)
 
-        val stripped: scala.collection.immutable.Set[Text] =
-          publishedEntries.stdlib.map(_.ref.show).toSet
+        val stripped: Set[Text] = publishedEntries.map(_.ref.show).to[Set]
 
         val keptEntries: List[Zip.Entry] = ownEntries.filter: entry =>
-          !stripped.contains(entry.ref.show)
+          !stripped.has(entry.ref.show)
 
         import manifestAttributes.*
 
@@ -257,9 +258,12 @@ object Repackager:
         // bundled or inlined copy (an unpublished `burdock` dependency's cached JAR also
         // carries `burdock/Bootstrap.class`), and a bundled class over an inlined cache copy.
         // Without this, `Zipfile.write` rejects the duplicate entry.
+        // `.stdlib.distinctBy`: `distinctBy` has no native equivalent, and the alternatives
+        // (sort-then-fold) would not preserve the first-occurrence order this relies on.
         val entries: List[Zip.Entry] =
-          ((bootstrap :: keptEntries.stdlib ++ inlined.stdlib).distinctBy(_.ref.show)).to(List)
+          ((bootstrap :: keptEntries + inlined).stdlib.distinctBy(_.ref.show)).to(List)
 
+        // `.stdlib`: `Zipfile.write` takes a stdlib `Iterable` — a genuine API boundary.
         Zipfile.write(outputJar)((manifestEntry :: entries).stdlib)
 
         // The output also carries the manifest entry, hence `entries.length + 1`.

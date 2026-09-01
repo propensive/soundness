@@ -177,10 +177,12 @@ object sjsEdges:
       val cache = StandardImpl.irFileCache().newCache
 
       val (containers, _) =
+        // `.stdlib`: the Scala.js linker API takes stdlib `Seq`s.
         Await.result(PathIRContainer.fromClasspath(entries.stdlib), 300.seconds)
 
       val irFiles = Await.result(cache.cached(containers), 300.seconds)
       val output = PathOutputDirectory(outPath)
+      // `.stdlib`: as above — `Linker#link` takes a stdlib `Seq` of initializers.
       Await.result(linker.link(irFiles, initializers.stdlib, output, logger), 1800.seconds)
       artifact(out)
 

@@ -137,7 +137,12 @@ class Page private[facsimile]
     streams.map(pdf.payload(_)) match
       case List()       => Array.empty[Byte]
       case List(single) => single
-      case many         => Array.unsafeFrozen(many.stdlib.map(_.readable).reduce(_ ++ scala.IArray(0x0a.toByte) ++ _).toArray)
+
+      case many =>
+        // `occupied` restores the non-emptiness proof `reduce` needs; the pattern above has
+        // already established that this branch holds two or more payloads.
+        many.map(_.readable).occupied.lay(Array.empty[Byte]): payloads =>
+          Array.unsafeFrozen(payloads.reduce(_ ++ scala.IArray(0x0a.toByte) ++ _).toArray)
 
   def operators(using Tactic[Pdf.Error]): List[Pdf.Operator] =
     ContentTokens.read(content).map(Pdf.Operator.read(_))

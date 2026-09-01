@@ -37,6 +37,8 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearAccess
+import denominative.dysasymptotics.linearSize
 import digression.*
 import distillate.*
 import escapade.*
@@ -77,9 +79,13 @@ private[probably] object TerseRenderer:
   private def time(n: Long): Teletype = figure(Format.scaled(n), Format.timeUnits)
   private def memory(n: Long): Teletype = figure(Format.scaled(n), Format.memoryUnits)
 
+  // The unit tables and each table row below are read positionally (hence the `linearAccess`
+  // import), and `keep(3)` over a stack trace measures the list (hence `linearSize`); every one
+  // of those lists is a handful of elements, and the stdlib `List` this replaces indexed at
+  // exactly the same cost.
   private def figure(figure: Format.Figure, units: List[Text]): Teletype =
     if figure.unit >= 3 then figure.whole.teletype
-    else e"${figure.whole}.${figure.fraction} ${units.stdlib(figure.unit)}"
+    else e"${figure.whole}.${figure.fraction} ${units.at(figure.unit.z).or(t"")}"
 
   private def datum(value: Datum): Teletype = value match
     case Datum.Blank                => e""
@@ -115,49 +121,79 @@ private[probably] object TerseRenderer:
     case Block.Table(title, tableColumns, rows) =>
       title.let: id => Out.println(t"${id.id}  ${id.name.text}")
 
-      val tableColumns2 = tableColumns.indexed.map: (column, index) =>
+      val numbered: List[(Doc.Column, Ordinal)] = tableColumns.indexed
+
+      val tableColumns2 = numbered.map: (column, index) =>
         val align = if column.numeric then TextAlignment.Right else TextAlignment.Left
-        escritoire.Column[List[Datum], Teletype, Teletype](column.title.teletype, align)(row => datum(row.stdlib(index.n0)))
+
+        escritoire.Column[List[Datum], Teletype, Teletype](column.title.teletype, align):
+          row => datum(row.at(index).or(Datum.Blank))
 
       Scaffold[List[Datum]](tableColumns2*)
       . tabulate(rows).grid(columns).render.each(Out.println(_))
 
     case Block.Sparkline(steps, sequence) =>
-      val labelWidth = sequence.stdlib.map(_.label.length).max
-      val stepWidth = steps.stdlib.map(_.show.length).max + 2
-      Out.println(t"  ${t"N".pad(labelWidth)}${steps.stdlib.map(_.show.pad(stepWidth, Rtl)).join}")
+      val labelWidths: List[Int] = sequence.map(_.label.length)
+      val stepWidths: List[Int] = steps.map(_.show.length)
+      val labelWidth = labelWidths.most.or(0)
+      val stepWidth = stepWidths.most.or(0) + 2
 
+      // Hoisted out of the lambdas below: a `t"…"` interpolation evaluated inside a combinator
+      // lambda trips the compiler's `wildApprox` assertion.
+      val blank = t"·".pad(stepWidth, Rtl)
+      def block(level: Int): Text = Format.sparkBlocks.at((level - 1).z).or(t"").pad(stepWidth, Rtl)
+      def heading(step: Long): Text = step.show.pad(stepWidth, Rtl)
+      def sustained(pair: (Long, Long)): Text = t"  sustained ${pair(0)} @ ${pair(1)} op/s"
+
+      def line(label: Text, cells: Text, summary: Text): Text =
+        t"  ${label.pad(labelWidth)}$cells$summary"
+
+      val nothing = t""
+      val headings: List[Text] = steps.map(heading)
+      Out.println(t"  ${t"N".pad(labelWidth)}${headings.join}")
+
+      // Left on `stdlib`: with a native `each`, the nested `map` over the sparkline's
+      // `Optional` cells inside this lambda crashes the compiler's `wildApprox` assertion.
       sequence.stdlib.foreach: spark =>
         val cells: Text =
-          spark.cells.stdlib.map: cell =>
-            cell.lay(t"·".pad(stepWidth, Rtl)): (level, _) =>
-              Format.sparkBlocks.stdlib(level - 1).pad(stepWidth, Rtl)
+          spark.cells.map: cell =>
+            // The `Optional` element is bound to a typed local first, for the same reason.
+            val value: Optional[(Int, Boolean)] = cell
+            value.lay(blank): (level, _) => block(level)
 
           . join
 
-        val summary: Text = spark.sustained.lay(t""): (n, throughput) =>
-          t"  sustained $n @ $throughput op/s"
-
-        Out.println(t"  ${spark.label.pad(labelWidth)}$cells$summary")
+        val summary: Text = spark.sustained.lay(nothing)(sustained(_))
+        Out.println(line(spark.label, cells, summary))
 
       Out.println(t"")
 
     case Block.Histogram(title, total, frames) =>
       title.let: id => Out.println(t"${id.id}  ${id.name.text}")
 
-      val max = frames.stdlib.map(_.samples).maxOption.getOrElse(0L)
+      val samples: List[Long] = frames.map(_.samples)
+      val max = samples.most.or(0L)
 
       def name(frame: Hotspots.Frame): Text =
         val method = StackTrace.Method(frame.className, frame.method)
         val cls = if method.cls.starts(t"Ξ") then method.cls.skip(1) else method.cls
         t"${method.prefix}.$cls#${frame.method}"
 
-      val width = frames.stdlib.map(name(_).length).maxOption.getOrElse(0)
+      val widths: List[Int] = frames.map(name(_).length)
+      val width = widths.most.or(0)
 
       frames.each: frame =>
         val percent = Format.percent(Format.basisPoints(frame.samples.toDouble, total.toDouble))
         val bar = Format.bar(frame.samples, max)
         Out.println(t"  ${name(frame).pad(width, Rtl)} ${percent.pad(6, Rtl)}% $bar")
+
+  // Hoisted out of the `each` lambda in `renderFailures`: a `t"…"` interpolation evaluated
+  // inside a combinator lambda trips the compiler's `wildApprox` assertion.
+  private def failureHeading(row: SummaryRow): Text =
+    val location = t"${row.id.codepoint.source}:${row.id.codepoint.line}"
+    t"${row.id.id}  ${row.id.name.text} @ $location"
+
+  private def capture(expr: Text, value: Text): Text = t"  $expr = ${Format.abbreviate(value)}"
 
   private def formatFrame(frame: StackTrace.Frame): Text =
     val ln = frame.line.let(_.toString.tt).or(t"?")
@@ -167,7 +203,8 @@ private[probably] object TerseRenderer:
     val failureStatuses: Set[Status] =
       Set(Status.Fail, Status.Throws, Status.CheckThrows, Status.Mixed)
 
-    val failures = document.results.filter: row => failureStatuses.has(row.status)
+    val failures: List[SummaryRow] =
+      document.results.filter: row => failureStatuses.has(row.status)
 
     if !failures.nil then
       Out.println(t"")
@@ -187,24 +224,25 @@ private[probably] object TerseRenderer:
 
       val details: Map[Test.Id, List[Verdict.Detail]] = document.failures.to[Map]
 
-      failures.stdlib.foreach: row =>
-        val location = t"${row.id.codepoint.source}:${row.id.codepoint.line}"
-        Out.println(t"${row.id.id}  ${row.id.name.text} @ $location")
+      failures.each: row =>
+        Out.println(failureHeading(row))
 
+        // Left on `stdlib`: this is a second traversal inside a lambda that already runs one,
+        // and its body interpolates; a native `each` here trips `wildApprox`.
         details(row.id).or(Nil).stdlib.foreach: detail =>
           detail match
             case Verdict.Detail.Throws(err) =>
               Out.println:
                 t"  threw ${err.component}.${err.className}: ${Format.abbreviate(err.message.text)}"
 
-              err.crop(t"probably.Runner", t"run()").frames.stdlib.take(3).foreach: frame =>
+              err.crop(t"probably.Runner", t"run()").frames.keep(3).each: frame =>
                 Out.println(formatFrame(frame))
 
             case Verdict.Detail.CheckThrows(err) =>
               val message = Format.abbreviate(err.message.text)
               Out.println(t"  check threw ${err.component}.${err.className}: $message")
 
-              err.crop(t"probably.Verdict#", t"apply()").frames.stdlib.take(3).foreach: frame =>
+              err.crop(t"probably.Verdict#", t"apply()").frames.keep(3).each: frame =>
                 Out.println(formatFrame(frame))
 
             case Verdict.Detail.Compare(expected, observed, _) =>
@@ -215,8 +253,7 @@ private[probably] object TerseRenderer:
               Out.println(t"  ${Format.abbreviate(text)}")
 
             case Verdict.Detail.Captures(captures) =>
-              captures.stdlib.foreach: (expr, value) =>
-                Out.println(t"  $expr = ${Format.abbreviate(value)}")
+              captures.each: (expr, value) => Out.println(capture(expr, value))
 
         Out.println(t"")
 
@@ -229,4 +266,4 @@ private[probably] object TerseRenderer:
       if active.nil then Out.println(t"FATAL: $errorClass: $msg")
       else Out.println(t"FATAL in $activeNames: $errorClass: $msg")
 
-      StackTrace(error).frames.stdlib.take(3).foreach: frame => Out.println(formatFrame(frame))
+      StackTrace(error).frames.keep(3).each: frame => Out.println(formatFrame(frame))

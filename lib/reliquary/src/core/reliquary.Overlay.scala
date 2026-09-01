@@ -34,6 +34,7 @@ package reliquary
 
 import contingency.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 import Lira.Error.Reason
@@ -62,12 +63,14 @@ object Overlay:
         if Blob.compare(existing.blob, entry.blob) == 0
         then abort(Lira.Error(Reason.OverlayNotMinimal(entry.path.text)))
 
-    val deleted = delete.map(_.text).stdlib.toSet
+    val deleted = delete.map(_.text).to[Set]
 
-    val kept = root.entries.filter: entry =>
-      !deleted.contains(entry.path.text) && overlay.get(entry.path).absent
+    // `kept` is annotated so `filter`'s inferred result type is pinned before `+`'s implicit
+    // search runs over it; an uninstantiated shape there trips `wildApprox`.
+    val kept: List[TreeEntry] = root.entries.filter: entry =>
+      !deleted.has(entry.path.text) && overlay.get(entry.path).absent
 
-    Lira.Tree.of((kept.stdlib ++ overlay.entries.stdlib).to(List))
+    Lira.Tree.of(kept + overlay.entries)
 
   // The producer inverse: the minimal `(tree, delete)` pair such that
   // `materialize(root, delete, tree) == target`.

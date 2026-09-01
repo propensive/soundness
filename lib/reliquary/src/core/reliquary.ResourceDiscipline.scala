@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 import Lira.Manifest.{Resource, ResourceMode}
@@ -63,7 +64,10 @@ case class ResourceDiscipline(resources: List[Resource]) extends Discipline:
     Set(Discipline.Guarantee.Linkage, Discipline.Guarantee.Recompilation)
 
   private def named(mode: ResourceMode): List[TreePath] =
-    resources.stdlib.filter(_.mode == mode).map(_.path).to(List)
+    // The intermediate is annotated so `filter`'s inferred result type is pinned before `map`'s
+    // implicit search runs over it; an uninstantiated shape there trips `wildApprox`.
+    val matching: List[Resource] = resources.filter(_.mode == mode)
+    matching.map(_.path)
 
   def exports: List[TreePath] = named(ResourceMode.Export)
   def tracked: List[TreePath] = named(ResourceMode.Track)
@@ -73,29 +77,27 @@ case class ResourceDiscipline(resources: List[Resource]) extends Discipline:
   // directory itself is not an item, and a scanned directory may be empty in any or all
   // universes.
   def underScan(path: TreePath): Boolean =
-    scanned.stdlib.exists: directory => path.text.s.startsWith(directory.text.s + "/")
+    scanned.exists: directory => path.text.s.startsWith(directory.text.s + "/")
 
   def claims(path: TreePath, data: Data): Boolean =
-    exports.stdlib.exists(_.text == path.text)
-    || tracked.stdlib.exists(_.text == path.text)
-    || underScan(path)
+    exports.exists(_.text == path.text) || tracked.exists(_.text == path.text) || underScan(path)
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
   :   Atomization raises Discipline.Error =
 
-    val atoms = content.stdlib.flatMap: (path, data) =>
-      if exports.stdlib.exists(_.text == path.text) then
+    val atoms: List[Atom] = content.flatMap: (path, data) =>
+      if exports.exists(_.text == path.text) then
         // The value hashes the path alone, so the atom asserts presence and not content: bytes
         // may differ per universe while L108 still requires the name in every one of them.
-        scala.List(Atom(path.text, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), path.bytes)))
-      else if tracked.stdlib.exists(_.text == path.text) then
+        List(Atom(path.text, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), path.bytes)))
+      else if tracked.exists(_.text == path.text) then
         // Content-hashed and replaceable: an edit is replaceable churn, a minor event that marks
         // consumers whose used-sets contain the atom as stale (§13.4). Resources create no
         // linkage, so replaceability soundness is trivial and the reference list is empty.
-        scala.List(Atom(path.text, Atom.Class.Replaceable, Lira.Hash(Lira.Hash.Domain.Atom(id), data)))
-      else scala.List()  // claimed by a scan: atomless
+        List(Atom(path.text, Atom.Class.Replaceable, Lira.Hash(Lira.Hash.Domain.Atom(id), data)))
+      else List[Atom]()  // claimed by a scan: atomless
 
-    Atomization.of(id, atoms.to(List))
+    Atomization.of(id, atoms)
 
 object ResourceDiscipline:
   // L124: declarations must be well-formed — no path declared twice, and no `export` or `track`
@@ -103,12 +105,20 @@ object ResourceDiscipline:
   // construction.
   def check(resources: List[Resource]): Unit raises Lira.Error =
     val discipline = ResourceDiscipline(resources)
-    val paths = resources.stdlib.map(_.path.text)
+    val paths: List[Text] = resources.map(_.path.text)
+    val grouped: Map[Text, List[Text]] = paths.group(identity)
 
-    paths.groupBy(identity).foreach: (path, group) =>
-      if group.size > 1
-      then abort(Lira.Error(Lira.Error.Reason.BadResource(t"$path is declared twice")))
+    // Both messages are hoisted out of the `each` lambdas below: a `t"…"` interpolation as the
+    // direct body of a combinator lambda trips the compiler's `wildApprox` assertion.
+    def duplicated(path: Text): Text = t"$path is declared twice"
+    def scanned(path: TreePath): Text = t"${path.text} lies under a scan"
 
-    (discipline.exports.stdlib ++ discipline.tracked.stdlib).foreach: path =>
+    grouped.each: (path, group) =>
+      // Matched rather than counted, so no `size` (and hence no linear-cost import) is needed.
+      group match
+        case _ :: _ :: _ => abort(Lira.Error(Lira.Error.Reason.BadResource(duplicated(path))))
+        case _           => ()
+
+    (discipline.exports + discipline.tracked).each: path =>
       if discipline.underScan(path)
-      then abort(Lira.Error(Lira.Error.Reason.BadResource(t"${path.text} lies under a scan")))
+      then abort(Lira.Error(Lira.Error.Reason.BadResource(scanned(path))))

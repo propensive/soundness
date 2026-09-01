@@ -36,7 +36,7 @@ import scala.caps
 
 import java.io as ji
 
-import murmuration.has
+import murmuration.{has, filter, map, foreach}
 import java.nio.channels as jnc
 import java.nio.file as jnf
 import java.nio.file.attribute as jnfa
@@ -416,7 +416,7 @@ package filesystemBackends:
         ( using Tactic[Io.Error] )
       :   result =
 
-        val options: scala.collection.immutable.List[jnf.OpenOption] = flags.stdlib.filter: flag =>
+        val options: List[jnf.OpenOption] = flags.filter: flag =>
           flag != OpenFlag.Lock && flag != OpenFlag.LockShared && flag != OpenFlag.Await
         . map:
           case OpenFlag.Read      => jnf.StandardOpenOption.READ
@@ -430,10 +430,10 @@ package filesystemBackends:
           case OpenFlag.NoFollow  => jnf.LinkOption.NOFOLLOW_LINKS
 
         // `READ` and `APPEND` cannot be combined on a `FileChannel`.
-        val appending = options.contains(jnf.StandardOpenOption.APPEND)
+        val appending = options.has(jnf.StandardOpenOption.APPEND)
 
         val options2 =
-          if appending && options.contains(jnf.StandardOpenOption.READ)
+          if appending && options.has(jnf.StandardOpenOption.READ)
           then options.filter(_ != jnf.StandardOpenOption.READ)
           else options
 
@@ -453,7 +453,7 @@ package filesystemBackends:
           val lock =
             if flags.has(OpenFlag.Lock) || flags.has(OpenFlag.LockShared)
             then
-              val writable = options2.contains(jnf.StandardOpenOption.WRITE) || appending
+              val writable = options2.has(jnf.StandardOpenOption.WRITE) || appending
               val shared = flags.has(OpenFlag.LockShared) || !writable
 
               val await = flags.has(OpenFlag.Await)
@@ -484,6 +484,7 @@ package filesystemBackends:
              scala.caps.unsafe.unsafeAssumeSeparate:
               Handle
                 ( () => unsafely(zephyrine.toProgression(Streamable.channel.stream(channel))),
+                  // `.stdlib.iterator`: `zephyrine.Stream` takes a stdlib `Iterator`.
                   data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data.stdlib.iterator))) )
                 ( () => unsafely(caps.unsafe.unsafeAssumePure(Streamable.channel.stream(channel))),
                   () => unsafely(caps.unsafe.unsafeAssumePure(Sink.channel.intake(channel))) )

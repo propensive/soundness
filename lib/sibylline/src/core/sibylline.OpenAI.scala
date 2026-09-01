@@ -47,6 +47,7 @@ import obligatory.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import telekinesis.*, postables.jsonPostable
 import urticose.*
 import vacuous.*
@@ -221,8 +222,8 @@ object OpenAI:
 
       val parts: List[Json] = message.content.bind(part(_).let(List(_)).or(List()))
 
-      val plain: Optional[Json] = message.content.stdlib match
-        case scala.List(Llm.Content.Textual(text)) => text.in[Json]
+      val plain: Optional[Json] = message.content match
+        case List(Llm.Content.Textual(text)) => text.in[Json]
 
         case _ =>
           if parts.nil then Unset else parts.in[Json]
@@ -231,7 +232,7 @@ object OpenAI:
         case content: Json => List(Json.make(role = t"user".in[Json], content = content))
         case _             => List()
 
-      (results.stdlib ++ turn.stdlib).to(List)
+      results + turn
 
   private[sibylline] def tool(tool: Llm.Tool): Json =
     Json.make
@@ -266,7 +267,7 @@ object OpenAI:
         ( text(call.id), text(call.function.name), Llm.parsed(text(call.function.arguments)) )
 
     Llm.Reply
-      ( Llm.Message(Llm.Role.Assistant, (texts.stdlib ++ calls.stdlib).to(List)),
+      ( Llm.Message(Llm.Role.Assistant, texts + calls),
         safely(text(json.choices(0).finish_reason)).let(stop(_)).or(Llm.Stop.Ended),
         usage(json.usage).or(Llm.Usage(0, 0)),
         safely(text(json.model)),
@@ -302,7 +303,7 @@ object OpenAI:
           val opened: List[Llm.Event] =
             if progress.open(0) then List(Llm.Event.Opened(0, Llm.Content.Textual(t""))) else List()
 
-          (opened.stdlib :+ Llm.Event.Delta(0, Llm.Event.Increment.Textual(content))).to(List)
+          opened + List(Llm.Event.Delta(0, Llm.Event.Increment.Textual(content)))
 
       . or(List())
 
@@ -328,11 +329,11 @@ object OpenAI:
 
             . or(List())
 
-          (opened.stdlib ++ fragment.stdlib).to(List)
+          opened + fragment
 
       . or(List())
 
-      (started.stdlib ++ texts.stdlib ++ calls.stdlib).to(List)
+      started + texts + calls
 
   // The OpenAI error envelope, `{"error": {"message": …, "type": …, "code": …}}`, mapped
   // through the status first: the codes vary by deployment, the statuses do not.
@@ -412,7 +413,7 @@ class OpenAI private
 
     . or(List())
 
-    val messages = (system.stdlib ++ turn.history.bind(OpenAI.messages(_)).stdlib).to(List)
+    val messages = system + turn.history.bind(OpenAI.messages(_))
     val tools = turn.tools.map(OpenAI.tool(_))
     val stops = turn.settings.stopSequences
 
@@ -472,6 +473,8 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     // The frames are followed by one sentinel, on whose arrival the translation closes out
     // the message — chunk streams end at `[DONE]` with no closing events of their own.
+    // `.stdlib.iterator`: this method's contract is a stdlib `Iterator`, which the native `List`
+    // has no accessor for — the boundary is the return type, not the interior.
     (Llm.frames(response) ++ Iterator(Llm.Terminal)).flatMap: frame =>
       if frame == Llm.Terminal then progress.finish().stdlib.iterator
       else OpenAI.events(progress, OpenAI.frame(frame)).stdlib.iterator
@@ -524,7 +527,7 @@ private[sibylline] object ResponsesDialect:
                 role    = t"assistant".in[Json],
                 content = (List(part): List[Json]).in[Json] )
 
-      (turn.stdlib ++ calls.stdlib).to(List)
+      turn + calls
 
     case Llm.Role.User =>
       val results: List[Json] = message.content.bind:
@@ -562,7 +565,7 @@ private[sibylline] object ResponsesDialect:
                 role    = t"user".in[Json],
                 content = parts.in[Json] )
 
-      (results.stdlib ++ turn.stdlib).to(List)
+      results + turn
 
   private def tool(tool: Llm.Tool): Json =
     Json.make
@@ -752,7 +755,8 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     val progress = Llm.Progress()
 
-    // As in `ChatDialect.stream`: a sentinel closes out the message after the last frame.
+    // As in `ChatDialect.stream`: a sentinel closes out the message after the last frame, and
+    // `.stdlib.iterator` bridges to the stdlib `Iterator` this method's contract returns.
     (Llm.frames(response) ++ Iterator(Llm.Terminal)).flatMap: frame =>
       if frame == Llm.Terminal then progress.finish().stdlib.iterator
       else ResponsesDialect.events(progress, OpenAI.frame(frame)).stdlib.iterator

@@ -55,16 +55,22 @@ object Hpack:
   private[telekinesis] def encodeEntries(headers: List[Entry], table: Table): Data =
     val buf: ByteBuf^ = ByteBuf()
 
-    // A while-loop rather than `each`: the closure may not capture the exclusive buffer.
-    var rest = headers.stdlib
+    // A while-loop rather than `each` (or a local recursion): neither a closure nor a local
+    // def may capture the exclusive buffer. The cons extractor walks the list in O(1) per
+    // step, where `tail` through `Segmentable` would be O(n).
+    var rest: List[Entry] = headers
+    var continue: Boolean = true
 
-    while !rest.isEmpty do
-      val header = rest.head
-      writeInteger(buf, 0x40, 6, 0)
-      writeString(buf, header.name)
-      writeString(buf, header.value)
-      table.add(header)
-      rest = rest.tail
+    while continue do rest match
+      case Nil =>
+        continue = false
+
+      case header :: tail =>
+        writeInteger(buf, 0x40, 6, 0)
+        writeString(buf, header.name)
+        writeString(buf, header.value)
+        table.add(header)
+        rest = tail
 
     buf.data
 

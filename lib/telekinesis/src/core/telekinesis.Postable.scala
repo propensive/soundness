@@ -83,12 +83,16 @@ object Postable:
   given text: (encoder: CharEncoder) => Text is Postable =
     Postable(media"text/plain", value => Stream(value.in[Data]))
 
+  // `.stdlib.iterator`: `Stream` is built from a stdlib `Iterator`; a `Chain` has no direct
+  // `Stream` factory.
   given textStream: (encoder: CharEncoder) => Chain[Text] is Postable =
     Postable(media"application/octet-stream", lazyList => Stream(lazyList.map(_.in[Data]).stdlib.iterator))
 
   given unit: Unit is Postable = Postable(media"text/plain", _ => Iterator.empty[Data].stream)
   given data: Data is Postable = Postable[Data](media"application/octet-stream", _.stream)
 
+  // `.stdlib.iterator`: `Stream` is built from a stdlib `Iterator`; a `Chain` has no direct
+  // `Stream` factory.
   given byteStream: Chain[Data] is Postable =
     Postable(media"application/octet-stream", lazyList => lazyList.stdlib.iterator.stream)
 

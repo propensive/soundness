@@ -43,18 +43,15 @@ import Lira.Error.Reason
 // L104); unreferenced blobs are permitted, so `unreferenced` supports the advisory diagnostic
 // rather than an error.
 class Blobstore(val blobs: List[Blob]):
-  private lazy val index: scala.collection.immutable.Map[Text, Blob] =
-    scala.collection.immutable.Map.from:
-      blobs.stdlib.map: blob => (Lira.Hash.text(blob.hash), blob)
+  private lazy val index: Map[Text, Blob] =
+    blobs.map { blob => (Lira.Hash.text(blob.hash), blob) }.to[Map]
 
-  def contains(hash: Data): Boolean = index.contains(Lira.Hash.text(hash))
+  def contains(hash: Data): Boolean = index.defines(Lira.Hash.text(hash))
 
   def resolve(hash: Data): Data raises Lira.Error =
-    index.get(Lira.Hash.text(hash)) match
-      case Some(blob) => blob.data
-      case None       => abort(Lira.Error(Reason.MissingBlob(Lira.Hash.text(hash))))
+    index.at(Lira.Hash.text(hash)) match
+      case blob: Blob => blob.data
+      case _          => abort(Lira.Error(Reason.MissingBlob(Lira.Hash.text(hash))))
 
   def unreferenced(referenced: Set[Text]): List[Text] =
-    val known = referenced.stdlib
-
-    blobs.map { blob => Lira.Hash.text(blob.hash) }.filter: hash => !known.contains(hash)
+    blobs.map { blob => Lira.Hash.text(blob.hash) }.filter: hash => !referenced.has(hash)

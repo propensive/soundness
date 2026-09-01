@@ -35,8 +35,10 @@ package reliquary
 import anticipation.*
 import contingency.*
 import fulminate.*
+import denominative.nil
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object Discipline:
@@ -61,7 +63,7 @@ object Discipline:
 
     def covers(realm: Text): Boolean = this match
       case Universal     => true
-      case Realms(names) => names.stdlib.contains(realm)
+      case Realms(names) => names.has(realm)
 
   // Whether an atom's key names the type that *declares* a member, or every type that *presents*
   // it after inheritance (§11.2, requirement 4). Declaration keying is sound exactly where every
@@ -87,25 +89,27 @@ object Discipline:
     def declared: List[Discipline] = disciplines
 
     def all: List[Discipline] =
-      (disciplines.stdlib :+ ResourceDiscipline(resources) :+ OpaqueDiscipline).to(List)
+      disciplines + List(ResourceDiscipline(resources), OpaqueDiscipline)
 
     def atomize(content: List[(TreePath, Data)], context: Context)
     :   List[Atomization] raises Discipline.Error =
 
-      var remaining = content.stdlib
+      var remaining: List[(TreePath, Data)] = content
 
-      val results = all.stdlib.map: discipline =>
-        val (claimed, rest) =
-          if !discipline.domain.covers(context.realm) then (scala.Nil, remaining)
+      // Each intermediate is annotated so one combinator's inferred result type is pinned before
+      // the next one's implicit search runs over it; an uninstantiated shape trips `wildApprox`.
+      val results: List[(Discipline, List[(TreePath, Data)])] = all.map: discipline =>
+        val split: (List[(TreePath, Data)], List[(TreePath, Data)]) =
+          if !discipline.domain.covers(context.realm) then (List[(TreePath, Data)](), remaining)
           else remaining.partition: (path, data) => discipline.claims(path, data)
 
-        remaining = rest
-        (discipline, claimed)
+        remaining = split(1)
+        (discipline, split(0))
 
+      val claiming: List[(Discipline, List[(TreePath, Data)])] =
+        results.filter: (_, claimed) => !claimed.nil
 
-      List.from:
-        results.filter { (_, claimed) => !claimed.isEmpty }.map: (discipline, claimed) =>
-          discipline.atomize(claimed.to(List), context)
+      claiming.map: (discipline, claimed) => discipline.atomize(claimed, context)
 
   // DisciplineError → Discipline.Error
   object Error:

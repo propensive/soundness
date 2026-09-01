@@ -177,8 +177,10 @@ object Scalac:
 
       context.setSetting(context.settings.outputDir, output)
 
+      // `.stdlib`: `run.compileSources` takes a stdlib `List`.
       val sourceFiles: scala.collection.immutable.List[dtdu.SourceFile] =
-        sources.stdlib.toList.map: (name, content) => dtdu.SourceFile.virtual(name.s, content.s)
+        sources.to[List].map { (name, content) => dtdu.SourceFile.virtual(name.s, content.s) }
+        . stdlib
 
       try
         given dtdc.Contexts.Context = context
@@ -259,9 +261,10 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
       . setCompilerCallback(new dtdi.CompilerCallback {})
       . setProgressCallback(progressCallback(scalacProcess))
 
+    // `.stdlib`: `run.compileSources` takes a stdlib `List`.
     val sourceFiles: scala.collection.immutable.List[dtdu.SourceFile] =
-      sources.stdlib.toList.map: (name, content) =>
-        dtdu.SourceFile.virtual(name.s, content.s)
+      sources.to[List].map { (name, content) => dtdu.SourceFile.virtual(name.s, content.s) }
+      . stdlib
 
     scalacProcess.put:
       // The run compiles under this process's own compiler and reporter; no aliased

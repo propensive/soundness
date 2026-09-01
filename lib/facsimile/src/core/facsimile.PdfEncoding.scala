@@ -200,7 +200,7 @@ private[facsimile] object PdfEncoding:
     var i = 0
 
     while i < text.s.length do
-      bytes(i) = winAnsiCodes.stdlib.get(text.s.charAt(i)).getOrElse('?'.toInt).toByte
+      bytes(i) = winAnsiCodes.at(text.s.charAt(i)).or('?'.toInt).toByte
       i += 1
 
     Array.freeze(bytes)

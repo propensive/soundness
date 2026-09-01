@@ -244,6 +244,7 @@ trait Json2 extends Json3:
         type Operand = Data
 
         def aggregate(bytes: Chain[Data]): value in Json =
+          // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
           Json.readJson(bytes.stdlib.iterator).as[value].asInstanceOf[value in Json]
 
         override def accept(stream: (Stream[Data] over Credit)^): value in Json =
@@ -436,8 +437,7 @@ trait Json2 extends Json3:
               // `@name[Json]` / bare `@name` variant renames: map the serialized
               // discriminator back to the variant name before delegating.
               val variantNames: Map[Text, Text] =
-                variantRelabelling[derivation, Json].stdlib.map: (variant, wire) => wire -> variant
-                . to(Map)
+                variantRelabelling[derivation, Json].remap: (variant, wire) => wire -> variant
 
               discriminable.discriminate(json).lay:
                 focus(prior.or(Json.Focus(JsonPointer()))):
@@ -500,9 +500,7 @@ trait Json2 extends Json3:
         // here rather than on every `parse` call, whose profile it dominated
         // (map building plus generic-equality lookups, per occurrence).
         val variantNames: Map[Text, Text] =
-          variantRelabelling[derivation, Json].stdlib.map: (variant, wire) =>
-            wire -> variant
-          . to(Map)
+          variantRelabelling[derivation, Json].remap: (variant, wire) => wire -> variant
 
         infer[derivation is Discriminable in Json] match
           case fielded: Json.DiscriminantField[?] =>
@@ -1311,6 +1309,7 @@ object Json extends Json2, Dynamic:
           type Self = Json.Ast
           type Operand = Data
 
+          // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
           def aggregate(source: Chain[Data]): Json.Ast = Json.Ast.parse(source.stdlib.iterator)
           override def accept(stream: (Stream[Data] over Credit)^): Json.Ast =
             // See `readJson`: the non-consume `accept` signature crosses to the
@@ -2306,6 +2305,7 @@ object Json extends Json2, Dynamic:
 
       Json.Encodable(shape):
         values =>
+          // `Array.from` takes an `IterableOnce`, so the mapping stays on the stdlib view.
           val roots = Array.from(values.stdlib.map(encodable.encoded(_).root))
           Json.ast(Json.Ast.arr(roots.asInstanceOf[Array[Any]^{}]))
 
@@ -2320,6 +2320,7 @@ object Json extends Json2, Dynamic:
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
       Json.Encodable(shape):
+        // `Array.from` takes an `IterableOnce`, so the mapping stays on the stdlib view.
         values => Json.ast(Json.Ast.arr(Array.from(values.stdlib.map(encodable.encoded(_).root)).asInstanceOf[Array[Any]^{}]))
 
 
@@ -2334,6 +2335,7 @@ object Json extends Json2, Dynamic:
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
       Json.Encodable(shape):
+        // `Array.from` takes an `IterableOnce`, so the mapping stays on the stdlib view.
         values => Json.ast(Json.Ast.arr(Array.from(values.stdlib.map(encodable.encoded(_).root)).asInstanceOf[Array[Any]^{}]))
 
   given array: [collection <: Iterable, element]
@@ -2440,6 +2442,7 @@ object Json extends Json2, Dynamic:
 
     Json.Encodable(shape): map =>
       val keys: List[key] = map.keys.to[List]
+      // `Array.from` takes an `IterableOnce`, so the mappings stay on the stdlib view.
       val values = Array.from(keys.stdlib.map(map(_).encode.root))
       val keysArr = Array.from(keys.stdlib.map(_.encode.s))
       Json.ast(Json.Ast.obj(keysArr.asInstanceOf[Array[String]^{}], values.asInstanceOf[Array[Any]^{}]))
@@ -2459,6 +2462,7 @@ object Json extends Json2, Dynamic:
         type Self = Json
         type Operand = Data
 
+        // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
         def aggregate(bytes: Chain[Data]): Json = readJson(bytes.stdlib.iterator)
         override def accept(stream: (Stream[Data] over Credit)^): Json = readJson(stream)
 
@@ -2480,6 +2484,8 @@ object Json extends Json2, Dynamic:
         def aggregate(bytes: Chain[Data]): value in Json =
           // A single in-memory block — the common case — skips the iterator
           // plumbing entirely.
+          // The single-block fast path peeks at the `Chain`'s head and tail, and the general
+          // path hands the parser an `Iterator`; neither has a native counterpart.
           if !bytes.nil && bytes.stdlib.tail.isEmpty
           then parseDirect(bytes.stdlib.head, parsable).asInstanceOf[value in Json]
           else parseDirect(bytes.stdlib.iterator, parsable).asInstanceOf[value in Json]
@@ -2964,7 +2970,7 @@ extends Dynamic, Topical, Original derives CanEqual:
             rightMap = rightMap.define(rightAst.objectKey(i), rightAst.objectValue(i))
             i += 1
 
-          leftMap.stdlib.size == rightMap.stdlib.size && leftMap.all: (key, leftValue) =>
+          leftMap.size == rightMap.size && leftMap.all: (key, leftValue) =>
             rightMap(key).lay(false)(recur(leftValue, _))
 
       def recur(left: Json.Ast, right: Json.Ast): Boolean = right.asMatchable match

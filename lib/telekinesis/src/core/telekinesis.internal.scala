@@ -114,7 +114,8 @@ object internal:
         unnamed[valueType](value, tail)
 
       case Seq() =>
-        (method, status, Expr.ofList(done.stdlib.reverse))
+        // `.stdlib`: `Expr.ofList` takes the stdlib `List` the quotes API uses.
+        (method, status, Expr.ofList(done.reverse.stdlib))
 
 
   def submit[target: Type, payload: Type]

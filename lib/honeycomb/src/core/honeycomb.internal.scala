@@ -691,7 +691,7 @@ object internal:
         Array.freeze(buffer).readable
 
     def from(map: Map[Text, Optional[Text]]): Attributes =
-      // A single documented stdlib view: `Attributes` defines its own `nil`, `size` and
+      // `.stdlib`: a single documented view — `Attributes` defines its own `nil`, `size` and
       // `foreach` extensions, which shadow the generic ones for every receiver in this scope.
       val entries = map.stdlib
 

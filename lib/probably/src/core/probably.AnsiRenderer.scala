@@ -38,6 +38,7 @@ import anticipation.*
 import contingency.*
 import dendrology.*
 import denominative.*
+import denominative.dysasymptotics.linearAccess
 import digression.*
 // The stack-trace renderers live in `digression.ansi`, not in `StackTrace`'s companion, so they
 // are not in implicit scope; without this import `.teletype` on a stack trace falls back to
@@ -93,6 +94,9 @@ private[probably] object AnsiRenderer:
   private def memory(n: Long)(using palette: TestPalette): Teletype =
     figure(Format.scaled(n), Format.memoryUnits)
 
+  // The unit tables and each table row below are read positionally (hence the `linearAccess`
+  // import); both lists are a handful of elements, and the stdlib `List` this replaces indexed
+  // at exactly the same cost.
   private def figure(figure: Format.Figure, units: List[Text])(using palette: TestPalette)
   :   Teletype =
 
@@ -102,7 +106,7 @@ private[probably] object AnsiRenderer:
         case 1 => palette.warm
         case _ => palette.hot
 
-      val unit = units.stdlib(figure.unit)
+      val unit = units.at(figure.unit.z).or(t"")
       e"${Fg(palette.foreground)}(${figure.whole}.${figure.fraction}) ${Fg(color)}($unit)"
 
   private def datum(value: Datum)(using palette: TestPalette): Teletype = value match
@@ -257,7 +261,8 @@ private[probably] object AnsiRenderer:
 
       // Printed with index loops rather than `grouped(_).each`/`map` closures: a lambda whose
       // parameter is a `List` and whose body uses the `Stdio` capability leaks the list's reach
-      // capability into the surrounding `(using Stdio)` scope under capture checking.
+      // capability into the surrounding `(using Stdio)` scope under capture checking. The
+      // `IndexedSeq` those loops slice is a stdlib shape, so the mapping stays on `stdlib`.
       val cells: scala.collection.immutable.IndexedSeq[Teletype] =
         allStatuses.stdlib.map: status =>
           (e"  ${status.symbol} ${status.describe}": Teletype).pad(20)
@@ -312,24 +317,36 @@ private[probably] object AnsiRenderer:
         title.let: id =>
           Out.println(e"$Bold(${Fg(palette.informative)}(${id.id})) $Bold(${id.name})")
 
-        val tableColumns2 = tableColumns.indexed.map: (column, index) =>
+        val numbered: List[(Doc.Column, Ordinal)] = tableColumns.indexed
+
+        val tableColumns2 = numbered.map: (column, index) =>
           val align = if column.numeric then TextAlignment.Right else TextAlignment.Left
-            escritoire.Column[List[Datum], Teletype, Teletype](e"$Bold(${column.title})", align)(row => datum(row.stdlib(index.n0)))
+
+          escritoire.Column[List[Datum], Teletype, Teletype](e"$Bold(${column.title})", align):
+            row => datum(row.at(index).or(Datum.Blank))
 
         Scaffold[List[Datum]](tableColumns2*)
         . tabulate(rows).grid(columns).render.each(Out.println(_))
 
       case Block.Sparkline(steps, sequence) =>
-        val labelWidth = sequence.stdlib.map(_.label.length).max
-        val stepWidth = steps.stdlib.map(_.show.length).max + 2
+        val labelWidths: List[Int] = sequence.map(_.label.length)
+        val stepWidths: List[Int] = steps.map(_.show.length)
+        val labelWidth = labelWidths.most.or(0)
+        val stepWidth = stepWidths.most.or(0) + 2
+
+        // Hoisted out of the lambda: a `t"…"` interpolation evaluated inside a combinator lambda
+        // trips the compiler's `wildApprox` assertion.
+        def heading(step: Long): Text = step.show.pad(stepWidth, Rtl)
 
         Out.println:
-          val headings = steps.stdlib.map(_.show.pad(stepWidth, Rtl)).join
+          val headings = steps.map(heading).join
           e"  ${Fg(palette.subdued)}(${t"N".pad(labelWidth)}$headings)"
 
         sequence.indexed.each: (spark, index) =>
           val color = accent(index.n0)
 
+          // Left on `stdlib`: with a native `map`, this nested traversal over the sparkline's
+          // `Optional` cells inside an `each` lambda crashes `wildApprox`.
           val cells: Teletype =
             spark.cells.stdlib.map: cell =>
               val absent = e"${Fg(palette.subdued)}(${t"·".pad(stepWidth, Rtl)})"
@@ -352,7 +369,8 @@ private[probably] object AnsiRenderer:
       case Block.Histogram(title, total, frames) =>
         title.let: id => Out.println(e"$Bold(${Fg(palette.foreground)}(${id.name}))")
 
-        val max = frames.stdlib.map(_.samples).maxOption.getOrElse(0L)
+        val samples: List[Long] = frames.map(_.samples)
+        val max = samples.most.or(0L)
         val stackPalette = summon[StackTracePalette]
 
         // The digression convention: packages in first-appearance order take the accent
@@ -368,17 +386,20 @@ private[probably] object AnsiRenderer:
 
         // The method column is leftmost and right-aligned against the bars, so the names
         // read into their histogram rows; the plain width is measured before styling.
-        val width: Int =
+        val widths: List[Int] =
           frames.map: frame =>
             val method = StackTrace.Method(frame.className, frame.method)
             val cls = if method.cls.starts(t"Ξ") then method.cls.skip(1) else method.cls
             method.prefix.length + 1 + cls.length + 1 + frame.method.length
 
-          . stdlib.maxOption.getOrElse(0)
+        val width: Int = widths.most.or(0)
 
+        // Left on `stdlib`: with a native `each`, the `e"…"` interpolations in this lambda's
+        // body crash the compiler's `wildApprox` assertion.
         frames.stdlib.foreach: frame =>
           val method = StackTrace.Method(frame.className, frame.method)
-          val color = packages.stdlib(method.prefix)
+          // `packages` is built from these very frames, so the fallback is unreachable.
+          val color = packages.at(method.prefix).or(accent(0))
           val percent = Format.percent(Format.basisPoints(frame.samples.toDouble, total.toDouble))
           val obj = method.cls.starts(t"Ξ")
           val cls = if obj then method.cls.skip(1) else method.cls
@@ -565,16 +586,17 @@ private[probably] object AnsiRenderer:
 
     def render(junctures: List[Surface]): List[(Surface, Teletype)] =
       val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
+      // `nodes` and `render` are `Chain`s, which have no `Reshapable.Stable` for `zip`.
       (diagram.nodes.stdlib.zip(diagram.render(describe).stdlib).toList).to(List)
 
     val allHits = coverage.hits + coverage.oldHits
 
-    val junctures2 =
-
-        coverage.structure.stdlib.values.toList.flatMap(_.stdlib)
-        . filter(!_.covered(allHits))
-        . map(_.copy(children = Nil))
-        . to(List)
+    // Each intermediate is annotated so one combinator's inferred result type is pinned before
+    // the next one's implicit search runs over it; an uninstantiated shape trips `wildApprox`.
+    val grouped: List[List[Surface]] = coverage.structure.values
+    val surfaces: List[Surface] = grouped.flat
+    val uncovered: List[Surface] = surfaces.filter(!_.covered(allHits))
+    val junctures2: List[Surface] = uncovered.map(_.copy(children = Nil))
 
     Scaffold[(Surface, Teletype)]
       ( escritoire.Column(e""): row =>

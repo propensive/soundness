@@ -39,7 +39,7 @@ import chiaroscuro.*
 import distillate.*
 import vacuous.*
 import denominative.*
-import denominative.dysasymptotics.linearSize
+import rudiments.each
 
 // A test spread over the domain of one axis: its body runs once per axis value, and each
 // verdict is recorded at that value’s coordinate of a single named test. A partial body
@@ -101,12 +101,8 @@ object Spread:
     // Definedness may not depend on the harness, so gaps are probed with a fresh one; the
     // real harness reaches each cell’s body through `Runner.run`, exactly as for `Test`.
     val probe: value ~> result = action(Harness())
-    val values = axis.values
-    var index = 0
 
-    while index < values.size do
-      val value = values.stdlib(index)
-
+    axis.values.each: value =>
       if probe.isDefinedAt(value) then
         val coordinates = List(axis.coordinate(value))
         val test = Test[result](id, action(_)(value))
@@ -123,8 +119,6 @@ object Spread:
             aspirational,
             coordinates,
             true )
-
-      index += 1
 
 // A test spread over the domains of two axes: one cell per combination the body defines,
 // rendered as a grid with gaps at undefined combinations.
@@ -187,17 +181,9 @@ object Spread2:
   :   Unit =
 
     val probe: ((left, right)) ~> result = action(Harness())
-    val lefts = first.values
-    val rights = second.values
-    var leftIndex = 0
 
-    while leftIndex < lefts.size do
-      val left = lefts.stdlib(leftIndex)
-      var rightIndex = 0
-
-      while rightIndex < rights.size do
-        val right = rights.stdlib(rightIndex)
-
+    first.values.each: left =>
+      second.values.each: right =>
         if probe.isDefinedAt((left, right)) then
           val coordinates = List(first.coordinate(left), second.coordinate(right))
           val test = Test[result](id, action(_)((left, right)))
@@ -214,7 +200,3 @@ object Spread2:
               aspirational,
               coordinates,
               true )
-
-        rightIndex += 1
-
-      leftIndex += 1
