@@ -295,16 +295,21 @@ object Http2:
 
       case Frame.Settings(settings, _) =>
         frameBuilder: buf =>
-          // A while-loop rather than `each`: the closure may not capture the
-          // exclusive buffer.
-          var rest = settings.stdlib
+          // A while-loop rather than `each` (or a local recursion): neither a closure nor
+          // a local def may capture the exclusive buffer. The cons extractor walks the
+          // list in O(1) per step, where `tail` through `Segmentable` would be O(n).
+          var rest: List[Setting] = settings
+          var continue: Boolean = true
 
-          while !rest.isEmpty do
-            val setting = rest.head
-            buf.add(((setting.id >>> 8) & 0xff).toByte)
-            buf.add((setting.id & 0xff).toByte)
-            writeUint32(buf, setting.value)
-            rest = rest.tail
+          while continue do rest match
+            case Nil =>
+              continue = false
+
+            case setting :: tail =>
+              buf.add(((setting.id >>> 8) & 0xff).toByte)
+              buf.add((setting.id & 0xff).toByte)
+              writeUint32(buf, setting.value)
+              rest = tail
 
       case Frame.GoAway(lastStreamId, errorCode, debug) =>
         frameBuilder: buf =>

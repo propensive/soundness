@@ -301,7 +301,9 @@ object internal:
       val hourValue = hour.nn.toInt
       val minuteValue = minute.nn.toInt
       val secondValue = second.nn.toInt
-      val monthValue = monthNames.stdlib.indexOf(month.nn) + 1
+      val monthName = month.nn
+      // As with `indexOf`, an unrecognised name yields `0`, which `jdnOf` rejects.
+      val monthValue = monthNames.where(_ == monthName).let(_.n0 + 1).or(0)
 
       val parsed = jdnOf(calendars.gregorianCalendar, year.nn.toInt, monthValue, day.nn.toInt)
 
@@ -555,9 +557,8 @@ object internal:
 
     // The zero-based ordinal of a `Month` enum-case reference (e.g. `Mar`).
     def monthOrdinal(term: Term): Optional[Int] =
-      monthNames.stdlib.indexOf(strip(term).symbol.name) match
-        case -1      => Unset
-        case ordinal => ordinal
+      val name = strip(term).symbol.name
+      monthNames.where(_ == name).let(_.n0)
 
     // The calendar contextually in scope, if any. Used at runtime for the deferred check, and at
     // compile time when we recognise it as one whose validation we can run here.

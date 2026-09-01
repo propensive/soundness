@@ -104,10 +104,23 @@ private[facsimile] object Filter:
         abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"DecodeParms", t"a dictionary or array")))
 
 
-    List.from:
-      names.stdlib.zipWithIndex.map: (name, index) =>
-        val id = Id.parse(name).or(abort(Pdf.Error(Pdf.Error.Reason.UnknownFilter(name))))
-        (id, if index < parameters.stdlib.length then parameters.stdlib(index) else Map())
+    // Walked in step rather than indexed: positional access on a `List` is O(n), and
+    // `/DecodeParms` is permitted to be shorter than `/Filter` (a missing entry is empty).
+    def recur(names: List[Text], parameters: List[Map[Text, Cos]])
+    :   List[(Id, Map[Text, Cos])] =
+
+      names match
+        case Nil =>
+          Nil
+
+        case name :: moreNames =>
+          val id = Id.parse(name).or(abort(Pdf.Error(Pdf.Error.Reason.UnknownFilter(name))))
+
+          parameters match
+            case parms :: moreParms => (id, parms) :: recur(moreNames, moreParms)
+            case Nil                => (id, Map()) :: recur(moreNames, Nil)
+
+    recur(names, parameters)
 
   // A streaming plan is plain data — closures at most — because ducts, being scoped
   // capabilities, may only be minted at the `via` call site (a lambda cannot return a fresh
@@ -123,8 +136,8 @@ private[facsimile] object Filter:
   // input and decode on flush, which is immaterial at their typical sizes.
   def steps(chain: List[(Id, Map[Text, Cos])])(using tactic: Tactic[Pdf.Error])
   :   List[Step^{tactic}] =
-    // The steps capture `tactic`, and capture-carrying elements do not flow through the
-    // opaque `List` combinators (boxing), so the interior stays stdlib inside one `List.of`.
+    // `.stdlib`: the steps capture `tactic`, and capture-carrying elements do not flow through
+    // the opaque `List` combinators (boxing), so the interior stays stdlib as far as `.to(List)`.
 
       chain.stdlib.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
         val predicted = parms(t"Predictor").let(_.long).or(1L) > 1
@@ -167,7 +180,7 @@ private[facsimile] object Filter:
     case _            => data
 
   private def lzw(data: Data, parms: Map[Text, Cos])(using Tactic[Pdf.Error]): Data =
-    try Array.unsafeFrozen(Lzw.decompress(Chain(data), earlyChange(parms)).stdlib.flatMap(_.readable).toArray)
+    try Lzw.decompress(Chain(data), earlyChange(parms)).flat.to[Array]
     catch case _: IllegalStateException =>
       abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"LZWDecode")))
 

@@ -51,6 +51,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import urticose.*
 import vacuous.*
@@ -182,7 +183,7 @@ object Http:
     private lazy val all: Map[Int, Status] =
       Array.unsafeFrozen(values).readable.bi.map(_.code -> _).to(Map)
 
-    def unapply(code: Int): Option[Status] = all.stdlib.get(code)
+    def unapply(code: Int): Option[Status] = all.at(code).option
 
     given communicable: Status is Communicable = status => m"${status.code} (${status.description})"
 
@@ -499,6 +500,7 @@ object Http:
       Head(method, version, host, target, headers)
 
     def parse(stream: Chain[Data])(using Tactic[Http.Request.Error]): Request^ =
+      // `.stdlib.iterator`: `Cursor`'s chunk-iterator factory takes a stdlib `Iterator`.
       val cursor = Cursor[Data](stream.filter(!_.nil).stdlib.iterator)
       val head = parseHead(cursor)
 
@@ -508,6 +510,8 @@ object Http:
           head.host,
           head.target,
           head.headers,
+          // `.stdlib.iterator`: `Stream` is built from a stdlib `Iterator`; a `Chain` has no
+          // direct `Stream` factory.
           () => cursor.remainder.stdlib.iterator.stream )
 
     // The endpoint form: the request parses straight off the connection's pull
@@ -718,9 +722,9 @@ object Http:
     lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 
     lazy val textCookies: Map[Text, Text] =
-      headers.cookie.stdlib.flatMap: (cookie: List[Cookie.Value]) =>
-        cookie.stdlib.map { value => value.name -> value.value }
-      . to(Map)
+      headers.cookie.bind: (cookie: List[Cookie.Value]) =>
+        cookie.map { value => value.name -> value.value }
+      . to[Map]
 
   // The swappable transport that physically sends a single request and returns
   // its response. The URL is fully resolved (passed as `Text`) so non-JVM
@@ -766,14 +770,14 @@ object Http:
         // malformed. Only singleton fields are overridden, though — a repeatable field such as
         // `Set-Cookie` keeps both, since repeating it is how more than one value is expressed.
         // Comparison is case-insensitive, as field names are.
-        val derived = response.textHeaders.stdlib.filterNot: header =>
-          !Header.repeatable(header.key)
-          && headers.exists(_.key.lower == header.key.lower)
+        val derived = response.textHeaders.filter: header =>
+          Header.repeatable(header.key)
+          || !headers.exists(_.key.lower == header.key.lower)
 
         Response
           ( 1.1,
             status0.or(response.status),
-            (headers.stdlib ++ derived).to(List),
+            headers + derived,
             // `serve` returns a pure `Response`, so its body is pure; the seal only
             // discharges the field's capture-polymorphic declared type.
             caps.unsafe.unsafeAssumePure(response.body) )
@@ -837,7 +841,7 @@ object Http:
             else (Nil, false)
 
       val headers: List[Header] =
-        if !upgrade then (response.textHeaders.stdlib ++ extraHeaders.stdlib).to(List) else
+        if !upgrade then response.textHeaders + extraHeaders else
           response.textHeaders.filter: header =>
             val key = header.key.lower
             key != t"transfer-encoding" && key != t"content-length"
@@ -914,6 +918,7 @@ object Http:
     def parse(stream: Chain[Data], bodiless: Boolean = false)
     :   Response raises Http.Response.Error =
 
+      // `.stdlib.iterator`: `Cursor`'s chunk-iterator factory takes a stdlib `Iterator`.
       parseCursor(Cursor[Data](stream.filter(!_.nil).stdlib.iterator), bodiless)
 
     // The endpoint form: the response is parsed straight off the connection's pull

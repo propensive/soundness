@@ -38,7 +38,9 @@ import enigmatic.Signing
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import rudiments.*
 import stratiform.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -62,7 +64,7 @@ object ManifestSigning:
       def matches(key: Data): Boolean =
         Blob.compare(fingerprint, ManifestSigning.fingerprint(key)) == 0
 
-      keys.stdlib.find(matches).getOrElse(Unset)
+      keys.seek(matches)
 
   def fingerprint(publicKey: Data): Data = Lira.Hash(Lira.Hash.Domain.Key, publicKey)
 
@@ -100,7 +102,7 @@ object ManifestSigning:
 
     val value = Base256.encode(scheme.sign(input(manifest), privateKey))
     val record = Lira.Manifest.Signature(signer, algorithm, fingerprint(publicKey), value)
-    manifest.copy(signature = (manifest.signature.stdlib :+ record).to(List))
+    manifest.copy(signature = manifest.signature + List(record))
 
   // Verification step 7 (§16): every signature present must verify; a signature whose algorithm
   // the verifier does not implement is rejected, never ignored (§15.1).
@@ -109,7 +111,7 @@ object ManifestSigning:
 
     val message = input(manifest)
 
-    manifest.signature.stdlib.foreach: record =>
+    manifest.signature.each: record =>
       val signing = scheme(record.algorithm) match
         case signing: Signing => signing
         case _                => abort(Lira.Error(Reason.UnknownAlgorithm(record.algorithm)))

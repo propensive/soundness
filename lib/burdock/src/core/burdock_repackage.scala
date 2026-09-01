@@ -68,6 +68,11 @@ import termcaps.environmentTermcap
 
 import filesystemBackends.virtualMachineFilesystem
 
+// `linearSize`: the externalized-dependency count is reported once, at the end of a repackage
+// that has already walked every entry in the JAR.
+import denominative.size
+import denominative.dysasymptotics.linearSize
+
 // The repackager's command-line logic, launched by the `soundness.repackage` entry point.
 // It takes no arguments — it self-locates the application JAR it is running from and
 // rewrites it in place (see `Repackager.repackage`).
@@ -159,7 +164,7 @@ def repackage(): Unit = application(scala.collection.immutable.Nil):
       Out.println(m"  input entries:          ${summary.inputEntries}")
       Out.println(m"  directory entries skipped: ${summary.directoriesSkipped}")
       Out.println(m"  application classes kept:  ${summary.ownKept}")
-      Out.println(m"  dependencies externalized: ${summary.externalized.stdlib.length}")
+      Out.println(m"  dependencies externalized: ${summary.externalized.size}")
 
       summary.externalized.each: requirement => Out.println(m"    - ${requirement.text}")
 

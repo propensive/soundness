@@ -102,8 +102,7 @@ private[probably] object Documenting:
     line match
       case ReportLine.Suite(suite, tests) =>
         val rest: List[SummaryRow] =
-          tests.list.order(_(0).timestamp).flatMap: (_, line) =>
-            summaries(line, measurements).stdlib
+          tests.list.order(_(0).timestamp).flatMap: (_, line) => summaries(line, measurements)
 
         if suite.absent || rest.nil && !measurements then rest
         else SummaryRow(Status.Suite, suite.option.get.id, 0, 0L, 0L, 0L) :: rest
@@ -114,7 +113,11 @@ private[probably] object Documenting:
         case Entry.Kind.Profile => measured(Status.Profile, entry, measurements)
 
         case Entry.Kind.Check =>
-          val verdicts = entry.cells.stdlib.flatMap(_(1).runs.stdlib).flatMap(_.verdict.option)
+          val runs: List[Run] = entry.cells.flatMap(_(1).runs)
+
+          // The remaining `stdlib` step flattens a list of `Optional` verdicts, which has no
+          // native counterpart, and hands the stdlib `sum`/`min`/`max` below their receiver.
+          val verdicts = runs.stdlib.flatMap(_.verdict.option)
 
           if verdicts.isEmpty then Nil else
             val durations = verdicts.map(_.duration)
@@ -141,6 +144,7 @@ private[probably] object Documenting:
     else Status.Mixed
 
   private def cellStatus(cell: Tally): Status =
+    // Flattening a list of `Optional` verdicts has no native counterpart.
     verdictStatus(cell.runs.stdlib.flatMap(_.verdict.option).to(List))
 
   // Measurement entries group by their immediate suite, one `Group` per suite and kind, in
@@ -245,22 +249,28 @@ private[probably] object Documenting:
     val axial = entries.filter(!_.axes.nil)
 
     val sized = entries.exists: entry =>
-      entry.cells.stdlib.flatMap(_(1).runs.stdlib).exists: run0 =>
+      val runs: List[Run] = entry.cells.flatMap(_(1).runs)
+
+      runs.exists: run0 =>
         run0.payload.option.exists:
           case Run.Payload.Sizing(_, _) => true
           case _                        => false
 
     val table =
       if plain.nil then Nil else
-        val rows =
-          plain.stdlib.flatMap: entry =>
-            entry.cells.stdlib.take(1).flatMap: (_, cell) =>
-              run(cell).option.map: run0 =>
-                val lead = List(Datum.Hash(entry.id.id), Datum.Title(entry.id.name, 0))
-                (metric(run0, Metric.Throughput).or(0.0), lead + benchMetricCells(run0, sized))
+        // `Option` is not `Traversable`, so the run is bound to a typed local and consumed by
+        // `lay`; only the closing `sortBy` still needs a stdlib receiver.
+        val ranked: List[(Double, List[Datum])] = plain.flatMap: entry =>
+          val first: Optional[Tally] = entry.cells.prim.let(_(1))
 
-          . sortBy(-_(0)).map(x => (x(1)): List[Datum])
-          . to(List)
+          first.lay(List[(Double, List[Datum])]()): cell =>
+            val measured: Optional[Run] = run(cell)
+
+            measured.lay(List[(Double, List[Datum])]()): run0 =>
+              val lead = List(Datum.Hash(entry.id.id), Datum.Title(entry.id.name, 0))
+              List((metric(run0, Metric.Throughput).or(0.0), lead + benchMetricCells(run0, sized)))
+
+        val rows = ranked.stdlib.sortBy(-_(0)).map { x => (x(1)): List[Datum] }.to(List)
 
         List(Block.Table
           ( Unset,
@@ -312,15 +322,20 @@ private[probably] object Documenting:
       val comparisonColumns: List[Column] = anchored.lay(Nil): (anchor, _) =>
         List(Column(t"×${anchor.value.text}", numeric = true))
 
-      val rows =
-        entry.values(axis).stdlib.flatMap: value =>
-          cells(List(value)).option.flatMap: cell =>
-            run(cell).option.map: run0 =>
-              val comparison: List[Datum] = anchored.lay(Nil): (anchor, anchorRun) =>
-                List(relative(anchor, anchorRun, run0))
+      // `Option` is not `Traversable`, so the two `Optional` stages are independent `lay`s
+      // rather than a `flatMap` chain; the `Optional`s are bound to typed locals first, which
+      // is also what keeps the `wildApprox` assertion from firing inside the lambda.
+      val rows: List[List[Datum]] = entry.values(axis).flatMap: value =>
+        val cell: Optional[Tally] = cells(List(value))
 
-              (Datum.Str(value.text) :: benchMetricCells(run0, sized) + comparison): List[Datum]
-        . to(List)
+        cell.lay(List[List[Datum]]()): cell =>
+          val measured: Optional[Run] = run(cell)
+
+          measured.lay(List[List[Datum]]()): run0 =>
+            val comparison: List[Datum] = anchored.lay(Nil): (anchor, anchorRun) =>
+              List(relative(anchor, anchorRun, run0))
+
+            List((Datum.Str(value.text) :: benchMetricCells(run0, sized) + comparison): List[Datum])
 
       List(Block.Table
         ( entry.id,
@@ -345,15 +360,18 @@ private[probably] object Documenting:
     case axis :: Nil =>
       val cells = entry.cells.to[Map]
 
-      val rows =
-        entry.values(axis).stdlib.flatMap: value =>
-          cells(List(value)).option.map: cell =>
-            val durations = cell.runs.stdlib.flatMap(_.verdict.option).map(_.duration)
-            val avg = if durations.isEmpty then 0L else durations.sum/durations.length
-            val time = if avg == 0L then Datum.Blank else Datum.Time(avg)
+      // `Option` is not `Traversable`, so the `Optional` cell is bound to a typed local and
+      // consumed by `lay` rather than by a `flatMap` chain.
+      val rows: List[List[Datum]] = entry.values(axis).flatMap: value =>
+        val cell: Optional[Tally] = cells(List(value))
 
-            List(Datum.Str(value.text), Datum.Mark(cellStatus(cell)), time)
-        . to(List)
+        cell.lay(List[List[Datum]]()): cell =>
+          // Flattening a list of `Optional` verdicts has no native counterpart.
+          val durations = cell.runs.stdlib.flatMap(_.verdict.option).map(_.duration)
+          val avg = if durations.isEmpty then 0L else durations.sum/durations.length
+          val time = if avg == 0L then Datum.Blank else Datum.Time(avg)
+
+          List(List(Datum.Str(value.text), Datum.Mark(cellStatus(cell)), time): List[Datum])
 
       Block.Table
         ( entry.id,
@@ -416,12 +434,14 @@ private[probably] object Documenting:
   // when there is one — finding it is the search's entire purpose — and otherwise the step
   // at which throughput peaked.
   private def peak(curve: Map[Long, Run]): Optional[(Long, Run)] =
-    val points = curve.stdlib.toList
+    val points: List[(Long, Run)] = curve.to[List]
 
-    points.find(_(1).sustained).orElse:
-      points.maxByOption { point => metric(point(1), Metric.Throughput).or(0.0) }
+    // A named `Ordering` replaces the stdlib's `maxByOption`, and `or` its `orElse`; both are
+    // by-name, so the peak is still only computed when no step was sustained.
+    given Ordering[(Long, Run)] =
+      Ordering.by: point => metric(point(1), Metric.Throughput).or(0.0)
 
-    . optional
+    points.seek(_(1).sustained).or(points.most)
 
   private def throughput(run0: Run): Double = metric(run0, Metric.Throughput).or(0.0)
 
@@ -434,6 +454,8 @@ private[probably] object Documenting:
     val curves: List[(Entry, Map[Long, Run])] = entries.map: entry =>
       val index = entry.axes.where(_.label == t"N")
 
+      // Left on `stdlib`: the body chains two `Option` stages (which are not `Traversable`)
+      // and reads the address positionally, and `points.toMap` below wants a stdlib receiver.
       val points = entry.cells.stdlib.flatMap: (address, cell) =>
         run(cell).option.flatMap: run0 =>
           index.lay(None): ordinal =>
@@ -442,7 +464,8 @@ private[probably] object Documenting:
       entry -> points.toMap.to(Map)
 
     val steps: List[Long] =
-      val all = curves.stdlib.flatMap(_(1).stdlib.keys)
+      // The stdlib view carries the `groupBy`/`sorted` pipeline below.
+      val all = curves.flatMap(_(1).keys).stdlib
 
       val shared =
         if curves.size < 2 then all.distinct
@@ -452,9 +475,9 @@ private[probably] object Documenting:
 
     val sparkline =
       if steps.size < 2 then Nil else
-        val peakRate =
-          curves.stdlib.flatMap(_(1).stdlib.values).map(throughput(_).toLong)
-          . maxOption.getOrElse(0L).max(1L)
+        val runs: List[Run] = curves.flatMap(_(1).values)
+        val rates: List[Long] = runs.map(throughput(_).toLong)
+        val peakRate = rates.most.or(0L).max(1L)
 
         val sequence = curves.map: (entry, curve) =>
           val sustained: Optional[(Long, Long)] =
@@ -493,13 +516,15 @@ private[probably] object Documenting:
     // separate entry — so the implementations being compared are exactly the group's
     // entries, and the winner is the entry whose best throughput is highest. Each is shown
     // as a fraction of that throughput, which makes the winner's own ratio 1, rendered as ★.
-    val peaks: List[(Entry, Long, Run)] =
-      curves.stdlib.flatMap: (entry, curve) =>
-        peak(curve).option.map { (n, run0) => (entry, n, run0) }
-      . to(List)
+    val peaks: List[(Entry, Long, Run)] = curves.flatMap: (entry, curve) =>
+      // The `Optional` is bound to a typed local and consumed by `lay`: `Option` is not
+      // `Traversable`, and reading it directly in the lambda trips `wildApprox`.
+      val best: Optional[(Long, Run)] = peak(curve)
 
-    val best: Double =
-      peaks.stdlib.map { point => throughput(point(2)) }.maxOption.getOrElse(0.0)
+      best.lay(List[(Entry, Long, Run)]()): (n, run0) => List((entry, n, run0))
+
+    val rates: List[Double] = peaks.map: point => throughput(point(2))
+    val best: Double = rates.most.or(0.0)
 
     // A single implementation has nothing to be ranked against, and a group which measured
     // no throughput at all cannot be ranked at all.
@@ -564,8 +589,9 @@ private[probably] object Documenting:
 
     val columns = leadColumns + latencyColumns + sloColumns + tailColumns
 
-    val rows =
-      curves.stdlib.flatMap: (entry, curve) =>
+    val rows: List[List[Datum]] =
+      curves.flatMap: (entry, curve) =>
+        // `sortBy` on a map's entries has no native counterpart (a `Map` is not `Stable`).
         curve.stdlib.toList.sortBy(_(0)).map: (n, run0) =>
             val latencyCells =
               if latencies then
@@ -593,7 +619,6 @@ private[probably] object Documenting:
                   Datum.Time(metric(run0, Metric.GcTime).or(0.0).toLong) )
 
             lead + latencyCells + sloCells(run0) + tail
-      . to(List)
 
     (sparkline + summary, List(Block.Table(Unset, columns, rows)))
 

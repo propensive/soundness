@@ -44,7 +44,7 @@ import spectacular.*
 import vacuous.*
 import denominative.*
 import symbolism.*
-import denominative.dysasymptotics.linearSize
+import denominative.dysasymptotics.{linearSize, linearAccess}
 
 // One `BYDAY` entry: a weekday, optionally with an ordinal — `3MO` (3rd Monday), `-1FR` (last
 // Friday), or a bare `TU` (every Tuesday in the period). The ordinal is meaningful only under
@@ -81,6 +81,9 @@ object Rrule:
   :   Chain[point] =
 
     val capped = until.lay(stream): limit =>
+      // `.stdlib`: the generated stream is a lazy, possibly infinite `Chain`, on which the native
+      // surface deliberately withholds `keep`/`skip`; `LazyList`'s lazy `takeWhile`/`take` bound
+      // it without forcing.
       (stream.stdlib.takeWhile(!order.gt(_, limit))).to(Chain)
 
     count.lay(capped) { n => capped.stdlib.take(n).to(Chain) }
@@ -89,9 +92,13 @@ object Rrule:
   // The rule is serialised on its own (the `DTSTART`/`start` is separate in iCalendar), e.g.
   // `FREQ=MONTHLY;INTERVAL=2;BYDAY=3MO;COUNT=10`. `parse` reattaches a supplied `start`.
 
-  private val weekdayCodes: List[Text] = List(t"MO", t"TU", t"WE", t"TH", t"FR", t"SA", t"SU")
+  // A `Sequence`, not a `List`: `code` reads it positionally, which `Sequence` does in O(1) and
+  // without a dysasymptotic acknowledgement; `weekdayOf` searches the same value for the inverse.
+  private val weekdayCodes: Sequence[Text] =
+    Sequence(t"MO", t"TU", t"WE", t"TH", t"FR", t"SA", t"SU")
 
-  private def code(weekday: Weekday): Text = weekdayCodes.stdlib(weekday.ordinal)
+  // The fallback is unreachable: `Weekday` has exactly the seven ordinals indexed here.
+  private def code(weekday: Weekday): Text = weekdayCodes.at(weekday.ordinal.z).or(t"MO")
 
   private def renderDay(entry: WeekdayOrdinal): Text =
     entry.ordinal.lay(code(entry.weekday)): ordinal => t"$ordinal${code(entry.weekday)}"
@@ -153,12 +160,11 @@ object Rrule:
   def parse[point: Decodable in Text](text: Text, start: point)(using Tactic[Rrule.Error])
   :   Rrule[point] =
 
-    val fields: Map[Text, Text] =
-      text.cut(t";").stdlib.flatMap: pair =>
-        pair.cut(t"=") match
-          case List(key, value) => Some(key.upper -> value)
-          case _                => None
-      . to(Map)
+    val pairs: List[(Text, Text)] =
+      text.cut(t";").map(_.cut(t"=")).sweep:
+        case List(key, value) => key.upper -> value
+
+    val fields: Map[Text, Text] = pairs.to[Map]
 
     def field(key: Text): Optional[Text] = fields(key)
 
@@ -248,7 +254,9 @@ object Rrule:
         Chain.iterate(start)(addSeconds(_, step)).filter(subDayMatch(_, rule))
 
       case _ =>
-        (dates(start.date, rule).bind(expandTimes(_, start, rule).stdlib)
+        // `.stdlib`: `dates` is a lazy, possibly infinite `Chain`, on which the native surface
+        // deliberately withholds `skip`.
+        (dates(start.date, rule).bind(expandTimes(_, start, rule))
         . stdlib.dropWhile(_ < start)).to(Chain)
 
   // Expand a date into the times-of-day the rule selects (the `byHour`/`byMinute`/`bySecond` cross
@@ -320,15 +328,15 @@ object Rrule:
             else if !rule.byWeekNo.nil then weekNoDates(year, start, rule)
             else yearMonths(year, start, rule).bind(expandMonth(year, _, start, rule))
 
-          setPos(candidates.distinct.order(_.jdn), rule.bySetPos).stdlib
+          setPos(candidates.distinct.order(_.jdn), rule.bySetPos)
 
       case Frequency.Monthly =>
         months(start, rule.interval).bind: (year, month) =>
-          setPos(expandMonth(year, month, start, rule), rule.bySetPos).stdlib
+          setPos(expandMonth(year, month, start, rule), rule.bySetPos)
 
       case Frequency.Weekly =>
         weeks(start, rule).bind: weekStart =>
-          setPos(expandWeek(weekStart, start, rule), rule.bySetPos).stdlib
+          setPos(expandWeek(weekStart, start, rule), rule.bySetPos)
 
       case Frequency.Daily =>
         Chain.iterate(start)(_.addDays(rule.interval)).filter(dailyMatch(_, rule))
@@ -336,6 +344,8 @@ object Rrule:
       case _ =>
         Chain.empty // sub-day frequencies not yet expanded
 
+    // `.stdlib`: `raw` is a lazy, possibly infinite `Chain`, on which the native surface
+    // deliberately withholds `skip`.
     raw.stdlib.dropWhile(_.jdn < start.jdn).to(Chain)
 
   // The months to expand within a `Yearly` period: the listed `byMonth`s, or every month if a
@@ -416,6 +426,8 @@ object Rrule:
 
     list(date(year, month, 1)).bind: first =>
       val offset = (weekday.ordinal - first.weekday.ordinal + 7)%7
+      // `.stdlib`: an infinite lazy `Chain`, on which the native surface deliberately withholds
+      // `keep`; only `LazyList`'s lazy `takeWhile` bounds it without forcing.
       Chain.iterate(first.addDays(offset))(_.addDays(7))
         .stdlib.takeWhile(monthOf(_) == month).to(List)
 
@@ -425,7 +437,9 @@ object Rrule:
 
     val all = weekdaysOfMonth(year, month, weekday)
     val index = if ordinal > 0 then ordinal - 1 else all.size + ordinal
-    if index >= 0 && index < all.size then all.stdlib(index) else Unset
+    // `at` bounds-checks and yields `Unset` outside the range, negative `index` included; its
+    // walk is the `linearAccess` cost acknowledged at the import, over at most five candidates.
+    all.at(index.z)
 
   // `BYSETPOS`: from each period's expanded set, keep the listed positions (1-based; negatives from
   // the end).
@@ -435,7 +449,8 @@ object Rrule:
 
       val chosen = positions.bind: (position: Int) =>
         val index = if position > 0 then position - 1 else count + position
-        if index >= 0 && index < count then List(candidates.stdlib(index)) else Nil
+        // `at` bounds-checks, so `list` turns an out-of-range position into no dates at all.
+        list(candidates.at(index.z))
 
       chosen.distinct.order(_.jdn)
 

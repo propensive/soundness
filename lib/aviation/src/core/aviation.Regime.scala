@@ -37,6 +37,7 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 import denominative.dysasymptotics.linearSize
 
@@ -59,7 +60,7 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
   // one and the first day of the next share a Julian day number (Julian 1582-10-04 and Gregorian
   // 1582-10-15 are the same day), so that shared day is valid under both — the bound is inclusive.
   private val bounded: List[(Segment, Int)] =
-    (segments.stdlib.zip(segments.stdlib.drop(1).map(_.from.jdn) :+ Int.MaxValue)).to(List)
+    segments.zip(segments.skip(1).map(_.from.jdn) + List(Int.MaxValue))
 
   // The calendar governing a Julian day number: the latest segment to have taken effect by then.
   private def at(date: Date): RomanCalendar =
@@ -83,7 +84,8 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
 
   // The calendar governing a year, sampled at its midpoint (never inside a historical cutover gap).
   private def governing(year: Year): RomanCalendar =
-    locate(year, Jun, Day(15)).let(at).or(segments.stdlib.last.calendar)
+    locate(year, Jun, Day(15)).let(at).or:
+      segments.last.lay(panic(m"an empty regime has no calendar"))(_.calendar)
 
   override def annual(date: Date): Year = at(date).annual(date)
   override def mensual(date: Date): Month = at(date).mensual(date)

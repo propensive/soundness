@@ -138,6 +138,8 @@ extension [plane <: Searchpath](path: Path on plane)
     ( using filesystem: stems.Target is Filesystem )
   :   Path on stems.Target =
 
+    // `.stdlib.head`: the `Stems` contract requires a head stem, but `stems` carries no
+    // `Populated` proof, so the total read is unavailable natively.
     Searchpaths.resolve[stems.Target](stems.stems.stdlib.head, path)
 
 // A `Relative` or literal path written against `Linux` conventions may be reinterpreted on a

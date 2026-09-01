@@ -73,18 +73,28 @@ object Destination:
           case Cos.Integral(index) => index.toInt.z
           case _                   => Unset
 
-        def dimension(index: Int): Optional[Double] =
-          if index < rest.stdlib.length then pdf.resolved(rest.stdlib(index)).double else Unset
+        // `rest`'s first three elements, bound once by pattern rather than indexed: positional
+        // access on a `List` is O(n), and a short array simply leaves a dimension `Unset`.
+        val arguments: (Optional[Cos], Optional[Cos], Optional[Cos]) = rest match
+          case one :: two :: three :: _ => (one, two, three)
+          case one :: two :: _          => (one, two, Unset)
+          case one :: _                 => (one, Unset, Unset)
+          case _                        => (Unset, Unset, Unset)
+
+        val (arg0, arg1, arg2) = arguments
+
+        def dimension(argument: Optional[Cos]): Optional[Double] =
+          argument.let(pdf.resolved(_).double)
 
         page.let: page =>
           kind.s match
-            case "XYZ"   => Xyz(page, dimension(0), dimension(1), dimension(2))
+            case "XYZ"   => Xyz(page, dimension(arg0), dimension(arg1), dimension(arg2))
             case "Fit"   => Fit(page)
-            case "FitH"  => FitWidth(page, dimension(0))
-            case "FitV"  => FitHeight(page, dimension(0))
+            case "FitH"  => FitWidth(page, dimension(arg0))
+            case "FitV"  => FitHeight(page, dimension(arg0))
             case "FitB"  => FitBox(page)
-            case "FitBH" => FitBoxWidth(page, dimension(0))
-            case "FitBV" => FitBoxHeight(page, dimension(0))
+            case "FitBH" => FitBoxWidth(page, dimension(arg0))
+            case "FitBV" => FitBoxHeight(page, dimension(arg0))
 
             case "FitR" =>
               Pdf.Rect.read(Cos.Sequence(rest), 1.0).let(FitRect(page, _))

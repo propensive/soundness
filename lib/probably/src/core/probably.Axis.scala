@@ -40,6 +40,7 @@ import anticipation.*
 import distillate.*
 import gossamer.*
 import prepositional.*
+import rudiments.{prim, reverse}
 import spectacular.*
 
 import decimalizers.fourDecimalPlaces
@@ -99,7 +100,11 @@ object Axis:
     ( companion: { def values: scala.Array[enumeration] } )
   :   Axis[enumeration] =
 
-    val label = evidence.name.cut(t" ").stdlib.head.cut(t".").stdlib.last.lower
+    // `reverse.prim` rather than `last`, which would need a linear-size acknowledgment for what
+    // is a two- or three-element split.
+    val words: List[Text] = evidence.name.cut(t" ")
+    val parts: List[Text] = words.prim.or(t"").cut(t".")
+    val label = parts.reverse.prim.or(t"").lower
     new Axis(label, evidence.values.readable.toList.to(List))
 
   def apply(label: Text)(range: scala.Range): Axis[Int] = new Axis(label, range.to(List))

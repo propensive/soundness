@@ -36,7 +36,7 @@ package jacinta
 import scala.annotation.*
 
 import anticipation.*
-import murmuration.exists
+import murmuration.{exists, foreach}
 import contingency.*
 import prepositional.*
 import telekinesis.*
@@ -106,7 +106,7 @@ private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises Json.Error =
         if !ast.isObject then mismatch(Json.Primitive.Object) else
           val absent = Json.Ast(Unset)
 
-          for (key, property) <- obj.properties.stdlib do
+          for (key, property) <- obj.properties do
             val index = ast.objectIndexOf(key.s)
             conform(property, if index < 0 then absent else ast.objectValue(index))
 

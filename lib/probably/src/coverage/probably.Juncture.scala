@@ -35,6 +35,7 @@ package probably
 import anticipation.*
 import digression.*
 import gossamer.*
+import rudiments.*
 
 object Juncture:
   given ordering: Ordering[Juncture] = Ordering.by[Juncture, Int](_.start).orElseBy(-_.end)
@@ -59,8 +60,14 @@ case class Juncture
       methodName == right.methodName
 
   def shortCode: Text =
-    val lines = code.stdlib.flatMap(_.cut(t"\\n").stdlib)
-    if lines.length > 1 then t"${lines.head}..." else lines.head
+    // Matched rather than measured, so no linear-size acknowledgment is needed; the empty case
+    // is unreachable, since a juncture always carries at least one line of code.
+    val lines: List[Text] = code.flatMap(_.cut(t"\\n"))
+
+    lines match
+      case first :: _ :: _ => t"$first..."
+      case first :: _      => first
+      case _               => t""
 
   def method: StackTrace.Method =
     StackTrace.Method

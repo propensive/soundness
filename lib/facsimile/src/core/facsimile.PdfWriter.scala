@@ -41,6 +41,7 @@ import contingency.*
 import gossamer.*
 import hieroglyph.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
@@ -148,7 +149,10 @@ private[facsimile] object PdfWriter:
     val carried = List(t"Root", t"Info", t"Encrypt", t"ID").bind: key =>
       pdf.trailer(key).let(value => List(key -> value)).or(Nil)
 
-    val entries: List[(Text, Cos)] = ((carried.stdlib.toMap ++ pdf.trailerOverrides).toList).to(List)
+    // Through a `Map` so a write-scope override replaces the carried-forward entry of the same
+    // key rather than joining it.
+    val entries: List[(Text, Cos)] =
+      (carried + List.from(pdf.trailerOverrides)).to[Map].to[List]
 
     // A file whose newest cross-reference section is a stream takes a stream for its update too.
     // The two forms cannot be chained through `/Prev`, which is defined to address a section of
@@ -289,10 +293,10 @@ private[facsimile] object PdfWriter:
         Cos.Sequence(elements.map(encryptStrings(_, guard, number, generation)))
 
       case Cos.Dictionary(entries) =>
-        Cos.Dictionary((entries.stdlib.view.mapValues(encryptStrings(_, guard, number, generation)).toMap).to(Map))
+        Cos.Dictionary(entries.map(encryptStrings(_, guard, number, generation)))
 
       case Cos.Body(entries, start) =>
-        Cos.Body((entries.stdlib.view.mapValues(encryptStrings(_, guard, number, generation)).toMap).to(Map), start)
+        Cos.Body(entries.map(encryptStrings(_, guard, number, generation)), start)
 
       case other =>
         other

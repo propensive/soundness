@@ -57,13 +57,16 @@ object Coverage:
       // type, which capture checking refuses; consume the array where it is produced
       // and let only the immutable list escape.
       val listed = dirFile.listFiles
-      val otherFiles =
-        if listed == null then Nil.stdlib else listed.nn.iterator.map(_.nn).toList
 
-      val measurementFiles = otherFiles.filter(_.getName.nn.startsWith("scoverage.measurements"))
+      val otherFiles: List[File] =
+        if listed == null then Nil else List.from(listed.nn.iterator.map(_.nn))
 
-      val allHits: Set[Int] = (measurementFiles.iterator.flatMap(measurements(_).stdlib)).to(Set)
-      val oldHits: Set[Int] = (allHits.stdlib -- hits.stdlib).to(Set)
+      val measurementFiles: List[File] =
+        otherFiles.filter(_.getName.nn.startsWith("scoverage.measurements"))
+
+      val allIds: List[Int] = measurementFiles.flatMap(measurements(_))
+      val allHits: Set[Int] = allIds.to[Set]
+      val oldHits: Set[Int] = allHits.except(hits)
 
       Coverage(dir, spec(dir), oldHits, hits)
 
@@ -81,6 +84,8 @@ object Coverage:
             As.Int(start) #:: As.Int(end) #:: As.Int(lineNo) #:: symbolName #:: treeName #::
             As.Boolean(branch) #:: _ #:: As.Boolean(ignored) #:: tail ) =>
 
+          // `Chain` is lazy and has no `Reshapable.Stable`, so its take/drop split has no
+          // native counterpart; the laziness is what keeps this parse streaming.
           val juncture = Juncture(id, path, className, methodName, start, end, lineNo + 1,
               symbolName, treeName, branch, ignored, (tail.stdlib.takeWhile(!_.starts(t"\f"))).to(List))
 
@@ -89,6 +94,7 @@ object Coverage:
         case _ =>
           junctures.reverse
 
+    // `Chain`'s lazy `dropWhile`, and `Array.from`, which takes an `IterableOnce`.
     Array.from(recur((lines.stdlib.dropWhile(_.starts(t"#"))).to(Chain)).stdlib)
 
   private def measurements(file: File): Set[Int] =

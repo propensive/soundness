@@ -69,7 +69,9 @@ object Materializer:
 
     // §13.5: one artifact set *per universe of the target*. A release serving a joined universe
     // (named by a `serves` record, §13.2) belongs to that universe's derivation, not this one.
-    val serving = liras.stdlib.filter: lira =>
+    // Annotated so `filter`'s inferred result type is pinned before `map`'s implicit search
+    // runs over it; an uninstantiated shape there trips `wildApprox`.
+    val serving: List[Lira] = liras.filter: lira =>
       path.serving(universe, lira.manifest.module) == universe
 
     val jars = serving.map: lira =>

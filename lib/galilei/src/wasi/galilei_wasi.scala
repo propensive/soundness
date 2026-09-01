@@ -122,23 +122,26 @@ package filesystemBackends:
         def covers(preopen: Text): Boolean =
           target == preopen || preopen == t"/" || target.starts(t"$preopen/")
 
-        val covering = preopens.stdlib.filter: entry =>
+        val covering = preopens.filter: entry =>
           covers(entry(1))
 
-        if covering.isEmpty then
+        // Named, not anonymous, so `most` orders the covering preopens by prefix length.
+        given longestPrefix: Ordering[(Wasm.Handle of "descriptor", Text)] =
+          Ordering.by { entry => entry(1).s.length }
+
+        // `most` is `Unset` exactly when nothing covers the path.
+        val (descriptor, prefix) = covering.most.or:
           preopens.each(_(0).dispose())
           abort(Io.Error(path, operation, Reason.PermissionDenied))
-        else
-          val (descriptor, prefix) = covering.maxBy(_(1).s.length)
 
-          preopens.each: entry => if entry(0) != descriptor then entry(0).dispose()
+        preopens.each: entry => if entry(0) != descriptor then entry(0).dispose()
 
-          val remainder =
-            if target == prefix then t"."
-            else if prefix == t"/" then target.keep(target.length - 1, Rtl)
-            else target.keep(target.length - prefix.length - 1, Rtl)
+        val remainder =
+          if target == prefix then t"."
+          else if prefix == t"/" then target.keep(target.length - 1, Rtl)
+          else target.keep(target.length - prefix.length - 1, Rtl)
 
-          (descriptor, remainder)
+        (descriptor, remainder)
 
       private def follow(dereference: Boolean): U32 = U32(if dereference then 1.bits else 0.bits)
 
@@ -387,6 +390,7 @@ package filesystemBackends:
                 catch case error: Wasm.Error => ()
 
                 streamHandle.dispose()
+                // `.stdlib.iterator`: `zephyrine.Stream` takes a stdlib `Iterator`.
                 summon[Data is Aggregable by Data].accept(zephyrine.Stream(chunks.reverse.stdlib.iterator))
 
             lambda(view)
@@ -457,6 +461,7 @@ package filesystemBackends:
                 catch case error: Wasm.Error => ()
 
                 streamHandle.dispose()
+                // `.stdlib.iterator`: `zephyrine.Stream` takes a stdlib `Iterator`.
                 summon[Data is Aggregable by Data].accept(zephyrine.Stream(chunks.reverse.stdlib.iterator))
 
               def writeTo(writeOffset: Long, data: Data): Int =
@@ -549,6 +554,7 @@ package filesystemBackends:
             // expands at under capture checking.
             val handle =
               Handle(() => read(), write(_))
+                  // `.stdlib.iterator`: `zephyrine.Stream` takes a stdlib `Iterator`.
                 ( () => zephyrine.Stream(read().stdlib.iterator),
                   () => turbulence.Sink.buffered((), (_, stream) => write(stream)) )
 

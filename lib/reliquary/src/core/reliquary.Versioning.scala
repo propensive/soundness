@@ -37,6 +37,7 @@ import gossamer.*
 import contingency.*
 import denominative.*
 import revolution.*
+import symbolism.*
 import vacuous.*
 
 import Lira.Error.Reason
@@ -66,7 +67,7 @@ object Versioning:
 
     grade match
       case Grade.Patch => lineage
-      case Grade.Minor => (lineage.stdlib :+ snapshot).to(List)
+      case Grade.Minor => lineage + List(snapshot)
 
       case Grade.Major =>
         if !forceMajor then abort(Lira.Error(Reason.UngradedSuccessor(t"the release")))
@@ -75,16 +76,16 @@ object Versioning:
   // The §12.4 comparison, as warn-only advisories: a declared version that is not numeric, or
   // that is not the projection of the grade from the previous published version.
   def advisories(declared: Semver, previous: Optional[Semver], grade: Grade): List[Lira.Advisory] =
-    val numericAdvisory =
-      if numeric(declared) then scala.Nil else scala.List(Lira.Advisory.NotNumeric(declared))
+    val numericAdvisory: List[Lira.Advisory] =
+      if numeric(declared) then Nil else List(Lira.Advisory.NotNumeric(declared))
 
-    val projection = previous match
+    val projection: List[Lira.Advisory] = previous match
       case previous: Semver =>
         val expectation = expected(previous, grade)
 
-        if declared == expectation then scala.Nil
-        else scala.List(Lira.Advisory.VersionMismatch(declared, expectation))
+        if declared == expectation then Nil
+        else List(Lira.Advisory.VersionMismatch(declared, expectation))
 
-      case _ => scala.Nil
+      case _ => Nil
 
-    (numericAdvisory ++ projection).to(List)
+    numericAdvisory + projection

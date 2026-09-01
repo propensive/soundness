@@ -161,8 +161,8 @@ extension [plane: Filesystem](path: Path on plane)
     def directory(candidate: Path on plane): Boolean =
       safely(candidate.entry() == Directory).or(false)
 
-    def recur(dirs: scala.List[Path on plane], todo: scala.List[scala.List[Token]])
-    :   scala.List[Path on plane] =
+    def recur(dirs: List[Path on plane], todo: scala.List[scala.List[Token]])
+    :   List[Path on plane] =
 
       todo match
         case scala.Nil => dirs
@@ -171,19 +171,18 @@ extension [plane: Filesystem](path: Path on plane)
           if segment == scala.List(Token.Globstar) then
             // `**` matches zero or more directories: the rest of the pattern is expanded both
             // here and, with the `**` retained, in every subdirectory.
-            val deeper = dirs.flatMap: dir =>
-              recur(dir.children.stdlib.toList.filter(directory), todo)
+            val deeper = dirs.bind { dir => recur(dir.children.to[List].filter(directory), todo) }
 
-            recur(dirs, rest) ++ deeper
+            recur(dirs, rest) + deeper
           else
             val matcher = Glob(segment*)
 
-            val matched = dirs.flatMap: dir =>
-              dir.children.stdlib.toList.filter { child => matcher.matches(child.name) }
+            val matched = dirs.bind: dir =>
+              dir.children.to[List].filter { child => matcher.matches(child.name) }
 
             recur(if rest.isEmpty then matched else matched.filter(directory), rest)
 
-    recur(scala.List(path), segments(pattern.tokens.toList)).distinct.to(List)
+    recur(List(path), segments(pattern.tokens.toList)).distinct
 
 
   // Named `filesize` (not `size`): a same-named export beside the collections' `size` at the
@@ -192,8 +191,8 @@ extension [plane: Filesystem](path: Path on plane)
     import filesystemOptions.dereferenceSymlinks.disabled
     given TraversalOrder = TraversalOrder.PreOrder
 
-    descendants.stdlib.fuse(summon[FilesystemBackend on plane].stat(path, false).size.b):
-      state + next.filesize()
+    descendants.fold(summon[FilesystemBackend on plane].stat(path, false).size.b):
+      (state, next) => state + next.filesize()
 
   def delete()(using deleteRecursively: DeleteRecursively on plane)
     ( using backend: FilesystemBackend on plane )

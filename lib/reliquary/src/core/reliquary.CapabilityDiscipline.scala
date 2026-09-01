@@ -76,10 +76,10 @@ object CapabilityDiscipline extends Discipline:
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
   :   Atomization raises Discipline.Error =
 
-    val atoms = content.stdlib.flatMap: (path, data) => rows(data)
-    Atomization.of(id, atoms.to(List))
+    val atoms: List[Atom] = content.flatMap: (path, data) => rows(data)
+    Atomization.of(id, atoms)
 
-  private def rows(data: Data): scala.List[Atom] raises Discipline.Error =
+  private def rows(data: Data): List[Atom] raises Discipline.Error =
     val document =
       import errorDiagnostics.emptyDiagnostics
 
@@ -113,7 +113,7 @@ object CapabilityDiscipline extends Discipline:
       if left(0).s == right(0).s then abort(malformed(t"the capability ${left(0)} is duplicated"))
       if left(0).s > right(0).s then abort(malformed(t"capability rows are not sorted by name"))
 
-    entries.toList.map: (name, predicate) =>
+    val listing = entries.toList.map: (name, predicate) =>
       val out = java.io.ByteArrayOutputStream()
       out.write(name.s.getBytes("UTF-8").nn)
       out.write(0)
@@ -126,3 +126,7 @@ object CapabilityDiscipline extends Discipline:
 
       val encoding = Array.unsafeFrozen(out.toByteArray.nn)
       Atom(name, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), encoding))
+
+    // `entries` is the stdlib `Vector` the TEL reader hands back; the listing crosses to the
+    // native `List` here, at the boundary.
+    listing.to(List)

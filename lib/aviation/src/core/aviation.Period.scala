@@ -58,7 +58,7 @@ object Period:
           val next = current + length
 
           if !order.gt(next, current) || order.gt(next, period.finish)
-          then ((if partial then Period(current, period.finish) :: acc.stdlib else acc.stdlib).reverse).to(List)
+          then (if partial then Period(current, period.finish) :: acc else acc).reverse
           else recur(next, Period(current, next) :: acc)
 
       recur(period.start, Nil)

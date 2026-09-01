@@ -50,6 +50,7 @@ import gossamer.*
 import hellenism.*
 import parasite.*
 import prepositional.*
+import rudiments.bind
 import serpentine.*
 import vacuous.*
 
@@ -119,12 +120,13 @@ object dexEdges:
       out:       Path on Linux )
   :   Path on Linux logs LinkEvent raises Link.Error =
 
-    val roots: sci.List[jnf.Path] =
-      jnf.Paths.get(directory.encode.s).nn ::
-        classpath.entries.stdlib.flatMap:
-          case Classpath.Entry.Directory(directory) => sci.List(jnf.Paths.get(directory.s).nn)
-          case Classpath.Entry.Jar(jar)             => sci.List(jnf.Paths.get(jar.s).nn)
-          case _                                   => sci.Nil
+    val classpathRoots: List[jnf.Path] = classpath.entries.bind:
+      case Classpath.Entry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
+      case Classpath.Entry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
+      case _                                    => Nil
+
+    // `.stdlib`: everything below is stdlib list plumbing feeding D8 through `asJava`.
+    val roots: sci.List[jnf.Path] = jnf.Paths.get(directory.encode.s).nn :: classpathRoots.stdlib
 
     val (archives, directories) = roots.partition(jnf.Files.isRegularFile(_))
 

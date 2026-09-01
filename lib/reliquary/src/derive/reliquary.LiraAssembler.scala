@@ -34,10 +34,12 @@ package reliquary
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gossamer.*
 import revolution.Semver
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 import Lira.Error.Reason
@@ -80,10 +82,14 @@ object LiraAssembler:
       sign:        Lira.Manifest => Lira.Manifest  = identity(_) )
   :   Data raises Lira.Error raises Discipline.Error =
 
-    val inputs = sections.stdlib
+    // Every message below is bound outside the combinator lambdas that use it: a `t"…"`
+    // interpolation evaluated inside such a lambda trips the compiler's `wildApprox` assertion.
+    val noSections = t"a release needs at least one section"
+    def divergence(realm: Text, key: Text): Text = t"$realm differs at $key"
 
-    if inputs.isEmpty
-    then abort(Lira.Error(Reason.InvalidManifest(t"a release needs at least one section")))
+    // `occupied` records the non-emptiness in the type, so `inputs.head` below is total.
+    val inputs: List[SectionInput] & Populated =
+      sections.occupied.or(abort(Lira.Error(Reason.InvalidManifest(noSections))))
 
     def treeOf(input: SectionInput): Lira.Tree =
       Lira.Tree.of:
@@ -99,18 +105,17 @@ object LiraAssembler:
 
     val registry = Discipline.Registry(disciplines.declared, resource)
 
-    val atomized = inputs.map: input =>
+    val atomized: List[(Text, List[Atomization])] = inputs.map: input =>
       val context = Discipline.Context(input.realm, input.integration, classpath(input))
       (input.realm, registry.atomize(input.content, context))
 
     // The same per-section view a discipline is given, for the profile predicates below. Built
     // here so that a profile checking structural invariants over a universe's content (§11.6,
     // clause 2) sees exactly what the disciplines saw, including the integration's classpath.
-    val profileSections =
+    val profileSections: List[EcosystemProfile.Section] =
       inputs.map: input =>
         EcosystemProfile.Section
           (input.realm, input.content, input.integration, classpath(input))
-      . to(List)
 
     // L125: an `export` or `track` declaration must be effective — a declared path that resolves
     // to no item in any section, or that some other discipline claims, is an assembly-time
@@ -118,16 +123,15 @@ object LiraAssembler:
     // discipline already carries, is never what the author meant.
     val resourceDiscipline = ResourceDiscipline(resource)
 
-    (resourceDiscipline.exports.stdlib ++ resourceDiscipline.tracked.stdlib).foreach: path =>
-      val present = inputs.exists: input =>
-        input.content.stdlib.exists: pair => pair(0).text == path.text
+    (resourceDiscipline.exports + resourceDiscipline.tracked).each: path =>
+      val present = inputs.exists: input => input.content.exists(_(0).text == path.text)
 
       if !present
       then abort(Lira.Error(Reason.IneffectiveResource(path.text)))
 
-      val claimedByOther = disciplines.declared.stdlib.exists: discipline =>
+      val claimedByOther = disciplines.declared.exists: discipline =>
         inputs.exists: input =>
-          input.content.stdlib.exists: pair =>
+          input.content.exists: pair =>
             pair(0).text == path.text && discipline.claims(pair(0), pair(1))
 
       if claimedByOther
@@ -137,53 +141,67 @@ object LiraAssembler:
     // atomization of nothing is not a claim about anything. The rule quantifies over the
     // *declared* disciplines: `resource/1` and `opaque/1` are the registry's own and universal,
     // so the question never arises for them.
-    val universes = inputs.map(_.realm).toSet
+    val realms: List[Text] = inputs.map(_.realm)
+    val universes: Set[Text] = realms.to[Set]
 
-    registry.declared.stdlib.foreach: discipline =>
+    registry.declared.each: discipline =>
       if !universes.exists(discipline.domain.covers)
       then abort(Lira.Error(Reason.InapplicableDiscipline(discipline.id)))
 
-    def summary(atomizations: List[Atomization])
-    :   scala.collection.immutable.Set[(Text, Text, Atom.Class, Text)] =
+    type Entry = (Text, Text, Atom.Class, Text)
 
-      atomizations.stdlib.flatMap: atomization =>
-        atomization.atoms.stdlib.map: atom =>
+    // Each intermediate is annotated so one combinator's inferred result type is pinned before
+    // the next one's implicit search runs over it; an uninstantiated shape trips `wildApprox`.
+    def summary(atomizations: List[Atomization]): Set[Entry] =
+      val entries: List[Entry] = atomizations.flatMap: atomization =>
+        val rows: List[Entry] = atomization.atoms.map: atom =>
           (atomization.discipline, atom.key, atom.atomClass, Lira.Hash.text(atom.valueHash))
 
-      . toSet
+        rows
 
-    val rootAtoms = atomized.head(1)
+      entries.to[Set]
+
+    // `inputs` is `Populated`, so `atomized` is non-empty too; `prim` discharges that in the one
+    // place the proof cannot travel through `map`, and the default is unreachable.
+    val rootAtoms: List[Atomization] = atomized.prim.lay(List())(_(1))
     val rootSummary = summary(rootAtoms)
 
-    atomized.drop(1).foreach: pair =>
-      val difference = summary(pair(1)).diff(rootSummary) ++ rootSummary.diff(summary(pair(1)))
+    val numberedAtomizations: List[((Text, List[Atomization]), Ordinal)] = atomized.indexed
 
-      difference.headOption match
-        case scala.Some(sample) =>
-          abort(Lira.Error(Reason.ApiDivergence(t"${pair(0)} differs at ${sample(1)}")))
+    numberedAtomizations.each: (pair, ordinal) =>
+      // Ordinal 0 is the root, which is the baseline rather than a comparand.
+      if ordinal.n0 > 0 then
+        val entries: Set[Entry] = summary(pair(1))
+        val difference: Set[Entry] = entries.except(rootSummary) + rootSummary.except(entries)
 
-        case scala.None => ()
+        // A `Set` has no positional `prim`, so the sample is drawn from a list view of it.
+        val samples: List[Entry] = difference.to[List]
+
+        samples.prim.lay(()): sample =>
+          abort(Lira.Error(Reason.ApiDivergence(divergence(pair(0), sample(1)))))
 
     // Blobs: every content item, every tree, every metadata blob — deduplicated by the stream.
-    val contentBlobs = inputs.flatMap: input => input.content.stdlib.map(_(1))
+    val contentBlobs: List[Data] = inputs.flatMap: input =>
+      val datas: List[Data] = input.content.map(_(1))
+      datas
 
     val store = Blobstore:
-      (contentBlobs.map { data => Blob(Lira.Hash(Lira.Hash.Domain.Blob, data), data) }).to(List)
+      contentBlobs.map: data => Blob(Lira.Hash(Lira.Hash.Domain.Blob, data), data)
 
-    val atomsBlobs = rootAtoms.stdlib.map: atomization => AtomsBlob.encode(atomization)
+    val atomsBlobs: List[Data] = rootAtoms.map: atomization => AtomsBlob.encode(atomization)
+    val listings: List[(Atomization, Data)] = rootAtoms.zip(atomsBlobs)
 
-    val api =
-      rootAtoms.stdlib.zip(atomsBlobs).map: pair =>
-        Lira.Manifest.Api(pair(0).discipline, Lira.Hash(Lira.Hash.Domain.Blob, pair(1)))
-      . to(List)
+    val api: List[Lira.Manifest.Api] = listings.map: pair =>
+      Lira.Manifest.Api(pair(0).discipline, Lira.Hash(Lira.Hash.Domain.Blob, pair(1)))
 
     val rootTree = treeOf(inputs.head)
+    val numberedInputs: List[(SectionInput, Ordinal)] = inputs.indexed
 
-    val builtSections = inputs.zipWithIndex.map: (input, index) =>
+    val builtSections: List[(Section, Data)] = numberedInputs.map: (input, ordinal) =>
       val target = treeOf(input)
 
       val (tree, delete) =
-        if index == 0 then (target, List[TreePath]()) else Overlay.diff(rootTree, target)
+        if ordinal.n0 == 0 then (target, List[TreePath]()) else Overlay.diff(rootTree, target)
 
       val section =
         Section
@@ -198,7 +216,7 @@ object LiraAssembler:
 
     val deltaBlob = delta.let(_.encode)
     val snapshot = Snapshot(rootAtoms)
-    val fullLineage = if lineage.stdlib.isEmpty then List(snapshot) else lineage
+    val fullLineage = if lineage.nil then List(snapshot) else lineage
     Lineage.check(fullLineage, snapshot)
 
     val manifest =
@@ -215,7 +233,7 @@ object LiraAssembler:
           integration = integration,
           dependency  = dependency,
           delta       = deltaBlob.let { data => Lira.Hash(Lira.Hash.Domain.Blob, data) },
-          section     = (builtSections.map(_(0))).to(List),
+          section     = builtSections.map(_(0)),
           payload     = Lira.Manifest.Payload(t"brotli", 0L, Lira.Hash(Lira.Hash.Domain.Blob,
               Array.freeze(Array.allocate[Byte](0)))) )
 
@@ -228,7 +246,7 @@ object LiraAssembler:
     // declared profile it cannot check is refused outright — an unverifiable claim is worse
     // than an absent one (§16). This holds with or without a predecessor: implementability is
     // not a property of the step.
-    profile.stdlib.foreach: record =>
+    profile.each: record =>
       if profiles(record.id).absent
       then abort(Lira.Error(Reason.UnimplementedClaim(record.id)))
 
@@ -240,8 +258,10 @@ object LiraAssembler:
     predecessor.let: previous =>
       val evidence = EcosystemProfile.Evidence(profileSections, manifest)
       val audit = EcosystemProfile.audit(profiles, profile, previous, evidence)
-      audit.advisories.stdlib.foreach(report(_))
+      audit.advisories.each(report(_))
 
-    val blobs = contentBlobs ++ builtSections.map(_(1)) ++ atomsBlobs ++ deltaBlob.option.toList
+    val sectionBlobs: List[Data] = builtSections.map(_(1))
+    val deltaBlobs: List[Data] = deltaBlob.let { data => List(data) }.or(List())
+    val blobs: List[Data] = contentBlobs + sectionBlobs + atomsBlobs + deltaBlobs
 
-    Lira.assemble(sign(manifest), blobs.to(List))
+    Lira.assemble(sign(manifest), blobs)

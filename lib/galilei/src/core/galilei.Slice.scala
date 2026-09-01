@@ -39,6 +39,7 @@ import contingency.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import serpentine.*
 import vacuous.*
 
@@ -94,16 +95,16 @@ object Slice:
       ( block: ((Window & Granting[grants])^) ?=> result )
     :   result =
 
-      val lockFlags =
+      val lockFlags: List[OpenFlag] =
         if mode.atoms.has(Exclusive) then List(OpenFlag.Lock)
         else if mode.atoms.has(Shared) then List(OpenFlag.LockShared)
         else List()
 
-      val modeFlags =
-        (if mode.atoms.has(Read) then List(OpenFlag.Read).stdlib else Nil.stdlib) ++
-          (if mode.atoms.has(Write) then List(OpenFlag.Write).stdlib else Nil.stdlib)
+      val modeFlags: List[OpenFlag] =
+        (if mode.atoms.has(Read) then List(OpenFlag.Read) else Nil) +
+          (if mode.atoms.has(Write) then List(OpenFlag.Write) else Nil)
 
-      val locking = !lockFlags.stdlib.isEmpty
+      val locking = !lockFlags.nil
       val range: (Long, Long) = (value.offset, value.extent)
 
       // As in `FileOpenable`: the register works on real paths.
@@ -122,7 +123,7 @@ object Slice:
 
       try
         backend.slice(value.path, value.offset, value.extent,
-            (modeFlags ++ lockFlags.stdlib ++ flags.stdlib).to(List)): window =>
+            modeFlags + lockFlags + flags): window =>
           // Mixed in rather than cast: `Window & Granting` is a trait intersection, whose
           // erased cast is to `Granting`, which the backend's window does not implement.
           val granted = new Window with Granting[grants]:

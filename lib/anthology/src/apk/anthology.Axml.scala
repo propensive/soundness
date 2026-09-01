@@ -118,13 +118,17 @@ object Axml:
     val resourceMap: scm.LinkedHashMap[Text, Int] = scm.LinkedHashMap()
 
     def collectResources(element: Element): Unit =
-      element.attributes.stdlib.foreach: attribute =>
-        attribute.resourceId.let: id =>
+      element.attributes.each: attribute =>
+        // Bound as a typed local: reading an `Optional` field directly inside a combinator
+        // lambda leaves the lambda's parameter type uninstantiated at the `let` expansion.
+        val resourceId: Optional[Int] = attribute.resourceId
+
+        resourceId.let: id =>
           if !resourceMap.contains(attribute.name) then
             resourceMap(attribute.name) = id
             strings.intern(attribute.name)
 
-      element.children.stdlib.foreach(collectResources(_))
+      element.children.each(collectResources(_))
 
     collectResources(root)
 
@@ -136,11 +140,11 @@ object Axml:
     def collectStrings(element: Element): Unit =
       strings.intern(element.name)
 
-      element.attributes.stdlib.foreach: attribute =>
+      element.attributes.each: attribute =>
         strings.intern(attribute.name)
         attribute.value.only { case Value.Str(text) => strings.intern(text) }
 
-      element.children.stdlib.foreach(collectStrings(_))
+      element.children.each(collectStrings(_))
 
     collectStrings(root)
 
@@ -196,8 +200,11 @@ object Axml:
       out.u16(0)                           // class attribute index (none)
       out.u16(0)                           // style attribute index (none)
 
-      element.attributes.stdlib.foreach: attribute =>
-        out.u32(attribute.namespace.let(strings.intern(_)).or(noRef.toInt).toLong)
+      element.attributes.each: attribute =>
+        // Bound as a typed local, as in `collectResources`: an `Optional` field read inside a
+        // combinator lambda leaves the lambda's parameter type uninstantiated.
+        val namespace: Optional[Text] = attribute.namespace
+        out.u32(namespace.let(strings.intern(_)).or(noRef.toInt).toLong)
         out.u32(strings.intern(attribute.name))
 
         attribute.value match
@@ -240,7 +247,7 @@ object Axml:
     // known before the offset table is written.
     val data = new Accumulator()
 
-    val offsets = entries.stdlib.map: entry =>
+    val offsets = entries.map: entry =>
       val offset = data.position
       val chars = entry.s
       data.u16(chars.length)

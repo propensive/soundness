@@ -34,6 +34,7 @@ package aviation
 
 import rudiments.*
 import denominative.*
+import symbolism.*
 import vacuous.*
 
 // An iCalendar recurrence set: the union of one or more recurrences' occurrence streams (`include`,
@@ -46,9 +47,9 @@ object RecurrenceSet:
   =>  ( RecurrenceSet[point] is Recurrent { type Topic = point } ) =
 
     set =>
-      val excluded = set.exdates.stdlib.toSet
-      val streams = (set.include.stdlib :+ set.rdates.stdlib.sorted.to(Chain)).to(List)
-      dedup(streams.occupied.lay(Chain.empty[point])(_.reduce(merge))).filter(!excluded.contains(_))
+      val excluded: Set[point] = set.exdates.to[Set]
+      val streams: List[Chain[point]] = set.include + List(set.rdates.sort.to[Chain])
+      dedup(streams.occupied.lay(Chain.empty[point])(_.reduce(merge))).filter(!excluded.has(_))
 
   // Lazily merge two ascending streams into one ascending stream (emit the lesser head first).
   // The `#::` matches prove non-emptiness structurally and force nothing beyond the two heads;
@@ -72,6 +73,8 @@ object RecurrenceSet:
   // Drop duplicates from an ascending stream (equal values are adjacent).
   private def dedup[point](stream: Chain[point])(using order: Ordering[point]): Chain[point] =
     stream match
+      // `.stdlib`: `Chain` is lazy by design, so the native surface withholds `skip`; `dropWhile`
+      // on the underlying `LazyList` is what keeps this dedup non-forcing.
       case first #:: rest => first #:: dedup((rest.stdlib.dropWhile(order.equiv(_, first))).to(Chain))
       case _              => Chain.empty
 

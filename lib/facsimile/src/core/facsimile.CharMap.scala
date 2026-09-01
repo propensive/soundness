@@ -95,8 +95,8 @@ private[facsimile] object CharMap:
                   code(high).let: end =>
                     if end - start >= 0 && end - start <= 65535 then destination match
                       case Cos.Sequence(elements) =>
-                        elements.stdlib.zipWithIndex.each: (element, index) =>
-                          target(element).let { text => entries += (start + index) -> text }
+                        elements.each: element =>
+                          target(element).let { text => entries += (start + ordinal.n0) -> text }
 
                       case single =>
                         target(single).let: base =>

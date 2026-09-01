@@ -36,7 +36,9 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import gossamer.*
+import denominative.nil
 import hieroglyph.*
+import rudiments.*
 import stratiform.*
 import turbulence.*
 
@@ -48,12 +50,15 @@ import Lira.Error.Reason
 object AtomsBlob:
 
   def encode(atomization: Atomization): Data =
-    val rows = atomization.atoms.stdlib.map: atom =>
-      s"atom ${atom.atomClass.keyword}  ${Lira.Hash.text(atom.valueHash)}  ${atom.key}"
+    // The row text is built by a named `def` rather than inline in the `map` lambda: a `t"…"`
+    // interpolation as a combinator lambda's direct body trips the `wildApprox` assertion.
+    def row(atom: Atom): Text =
+      t"atom ${atom.atomClass.keyword}  ${Lira.Hash.text(atom.valueHash)}  ${atom.key}"
 
-    val body = rows.mkString("\n")
+    val rows: List[Text] = atomization.atoms.map(row)
+    val body = rows.join(t"\n")
     val header = s"tel 1.0 ${Lira.Schemas.atomsSignature}\n\ndiscipline ${atomization.discipline}"
-    val text = Text(if rows.isEmpty then s"$header\n" else s"$header\n\n$body\n")
+    val text = Text(if rows.nil then s"$header\n" else s"$header\n\n$body\n")
     charEncoders.utf8Encoder.encoded(text)
 
   def decode(data: Data): Atomization raises Lira.Error =

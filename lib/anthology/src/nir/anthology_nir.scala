@@ -146,6 +146,7 @@ object nativeEdges:
           Config.empty
           . withBaseDir(outPath.toAbsolutePath.nn)
           . withMainClass(Some(main.s))
+          // `.stdlib`: Scala Native's `Config.withClassPath` takes a stdlib `Seq`.
           . withClassPath(entries.stdlib)
           . withModuleName("main")
           . withCompilerConfig(settings)

@@ -40,6 +40,7 @@ import distillate.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
@@ -65,7 +66,7 @@ object PseudoHeaders:
 
     val regular = request.textHeaders.map: header => Hpack.Entry(header.key.lower, header.value)
 
-    (pseudo.stdlib ++ regular.stdlib).to(List)
+    pseudo + regular
 
   // Reconstruct an `Http.Response` from a decoded HEADERS block and the body stream.
   // `:status` selects the `Http.Status`; other fields become response headers.
@@ -84,6 +85,8 @@ object PseudoHeaders:
     val status: Http.Status =
       Http.Status.unapply(code).optional.lest(Http2.Error(Reason.Protocol(t"missing :status")))
 
+    // `.stdlib.iterator`: `Stream` is built from a stdlib `Iterator`; a `Chain` has no direct
+    // `Stream` factory.
     status(headers.to(List), Http.Body.Flowing(() => zephyrine.Stream(body.stdlib.iterator)))
 
   // Reconstruct an `Http.Request` from a decoded request HEADERS block and the
@@ -134,4 +137,4 @@ object PseudoHeaders:
     . filter: entry =>
         !forbidden.has(entry.name)
 
-    (Hpack.Entry(t":status", response.status.code.show) :: regular.stdlib).to(List)
+    Hpack.Entry(t":status", response.status.code.show) :: regular

@@ -47,7 +47,7 @@ import prepositional.*
 import serpentine.*
 import turbulence.*
 import zeppelin.*
-import rudiments.`:+`
+import rudiments.{`:+`, filter, map}
 import denominative.dysasymptotics.linearSize
 
 object apkOptions:
@@ -120,7 +120,7 @@ object apkEdges:
     try
       jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
 
-      val dexEntries = unsafely(Zipfile.read(dexArchive).entries).stdlib.filter: entry =>
+      val dexEntries = unsafely(Zipfile.read(dexArchive).entries).filter: entry =>
         entry.ref.encode.ends(t".dex")
 
       // The binary manifest, built from the configuration and the launcher activity.
@@ -149,7 +149,8 @@ object apkEdges:
         Zip.Entry(entry.ref, unsafely(entry.read[Data])).aligned(4)
 
       val unsignedPath = out / "unsigned.apk"
-      unsafely(Zipfile.write(unsignedPath)(manifestEntry :: dexZipEntries))
+      // `.stdlib`: `Zipfile.write` takes a stdlib `Iterable`.
+      unsafely(Zipfile.write(unsignedPath)((manifestEntry :: dexZipEntries).stdlib))
       val unsigned = jnf.Files.readAllBytes(jnf.Paths.get(unsignedPath.encode.s)).nn
 
       val signed =

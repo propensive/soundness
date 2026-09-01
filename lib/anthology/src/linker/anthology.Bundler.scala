@@ -92,26 +92,28 @@ object Bundler:
           classpath.entries.bind:
           case Classpath.Entry.Directory(directory) =>
             val root = directory.as[Path on Linux]
-            root.descendants.stdlib.filter: entry => !omissions.has(entry.name)
-            . map: file =>
-              if file.entry() == Directory then Unset else
-                val ref = %.on[Zip] + root.toward(file).on[Zip]
-                Zip.Entry(ref, file.read[Data])
 
-            . compact
+            root.descendants.filter { entry => !omissions.has(entry.name) }.bind: file =>
+              if file.entry() == Directory then Nil else
+                val ref = %.on[Zip] + root.toward(file).on[Zip]
+                List(Zip.Entry(ref, file.read[Data]))
+
+            . to[List]
 
           case Classpath.Entry.Jar(jar) =>
             val jarfile = workingDirectory[Path on Linux].resolve(jar)
 
             // Re-emit each entry verbatim: it already carries its compressed bytes, so no
             // decompression or recompression is needed.
-            Zipfile.read(jarfile).entries.stdlib.filter: entry =>
+            Zipfile.read(jarfile).entries.filter: entry =>
               val name: Text = entry.ref.encode
               !entry.directory && name != t"META-INF/MANIFEST.MF"
 
           case _ =>
-            Nil.stdlib
+            Nil
 
+      // `.stdlib`: `distinctBy` has no native counterpart, and `Zipfile.write` takes a stdlib
+      // `Iterable` anyway.
       entries.stdlib.distinctBy(_.ref)
 
     jarfile

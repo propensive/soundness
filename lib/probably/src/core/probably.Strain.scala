@@ -36,6 +36,7 @@ package probably
 import anticipation.*
 import rudiments.*
 import gossamer.*
+import symbolism.*
 import vacuous.*
 import denominative.dysasymptotics.linearSize
 
@@ -48,16 +49,19 @@ object Strain:
         strain:      Strain )
     :   Report =
 
-      val latencies: List[(Metric, Double)] =
+      val quantiles: List[(Metric, Optional[Long])] =
         List
           ( Metric.P50  -> strain.p50,
             Metric.P90  -> strain.p90,
             Metric.P99  -> strain.p99,
             Metric.P999 -> strain.p999 )
 
-        . stdlib.flatMap: (key, value) =>
-            value.option.map(key -> _.toDouble)
-        . to(List)
+      val latencies: List[(Metric, Double)] = quantiles.flatMap: pair =>
+        // The `Optional` is bound to a typed local as the lambda's first statement: reading it
+        // directly inside a combinator lambda trips the compiler's `wildApprox` assertion.
+        val value: Optional[Long] = pair(1)
+
+        value.lay(List[(Metric, Double)]()): nanos => List(pair(0) -> nanos.toDouble)
 
       val slo: List[(Metric, Double)] =
         strain.compliance.option.map(Metric.Compliance -> _).to(List)
@@ -72,7 +76,9 @@ object Strain:
             Metric.GcCount    -> strain.gcCount.toDouble,
             Metric.GcTime     -> strain.gcTime.toDouble*1000000.0 )
 
-      val metrics = (counters.stdlib ++ latencies.stdlib ++ slo.stdlib).to(Ledger)
+      // `Ledger` has no native `Convertible`, so the stdlib `Factory` conversion is the only
+      // route from a sequence of pairs into one.
+      val metrics = (counters + latencies + slo).stdlib.to(Ledger)
 
       // Concurrency is a coordinate, not a metric: every strain lands on the emergent `N`
       // axis, so a sweep's steps accumulate as cells of one entry. If the producer already

@@ -77,7 +77,9 @@ object Test:
   object Id:
     given ordering: Ordering[Test.Id] =
       math.Ordering.Implicits.seqOrdering[scala.collection.immutable.List, Text]
-      . on(_.ids.stdlib.reverse)
+      // `seqOrdering` is a stdlib `Ordering` combinator: it is specialized to `sci.List`, so the
+      // key it compares has to be handed over as one.
+      . on(_.ids.reverse.stdlib)
 
   case class Id
     ( name:      Message,
