@@ -60,15 +60,15 @@ private[probably] object Documenting:
     // the results table renders, which excludes them (see `summaries`).
     val counted = summaries(report.lines, measurements = true)
     val results = summaries(report.lines, measurements = false)
-    val counts = counted.stdlib.groupBy(_.status).view.mapValues(_.size).toMap - Status.Suite
+    val counts = counted.group(_.status).map(_.size).omit(Status.Suite)
 
     val passed: Int =
       List(Status.Pass, Status.Bench, Status.Stress, Status.Profile)
-      . stdlib.map(counts.getOrElse(_, 0)).sum
+      . map(counts.at(_).or(0)).total
 
-    val aspirePassed: Int = counts.getOrElse(Status.AspirePass, 0)
-    val aspireFailed: Int = counts.getOrElse(Status.AspireFail, 0)
-    val total: Int = counts.values.sum
+    val aspirePassed: Int = counts.at(Status.AspirePass).or(0)
+    val aspireFailed: Int = counts.at(Status.AspireFail).or(0)
+    val total: Int = counts.values.total
     val failed: Int = total - passed - aspirePassed - aspireFailed
 
     val groups =
@@ -102,9 +102,8 @@ private[probably] object Documenting:
     line match
       case ReportLine.Suite(suite, tests) =>
         val rest: List[SummaryRow] =
-          tests.list.stdlib.sortBy(_(0).timestamp).flatMap: (_, line) =>
+          tests.list.order(_(0).timestamp).flatMap: (_, line) =>
             summaries(line, measurements).stdlib
-          . to(List)
 
         if suite.absent || rest.nil && !measurements then rest
         else SummaryRow(Status.Suite, suite.option.get.id, 0, 0L, 0L, 0L) :: rest
@@ -147,7 +146,7 @@ private[probably] object Documenting:
   // Measurement entries group by their immediate suite, one `Group` per suite and kind, in
   // declaration order; nested suites follow their parents.
   private def suiteGroups(line: ReportLine.Suite, kind: Entry.Kind): List[Group] =
-    val children = (line.tests.list.stdlib.sortBy(_(0).timestamp)).to(List)
+    val children = line.tests.list.order(_(0).timestamp)
 
     val entries = children.flatMap: (_, child) =>
       child.absolve match
@@ -446,7 +445,7 @@ private[probably] object Documenting:
       val all = curves.stdlib.flatMap(_(1).stdlib.keys)
 
       val shared =
-        if curves.stdlib.length < 2 then all.distinct
+        if curves.size < 2 then all.distinct
         else all.groupBy(identity).filter(_(1).length > 1).keys.toList
 
       ((if shared.length > 1 then shared else all.distinct).sorted).to(List)
@@ -504,7 +503,7 @@ private[probably] object Documenting:
 
     // A single implementation has nothing to be ranked against, and a group which measured
     // no throughput at all cannot be ranked at all.
-    val ranked = peaks.stdlib.length > 1 && best > 0.0
+    val ranked = peaks.size > 1 && best > 0.0
 
     val summary =
       if peaks.nil then Nil else
@@ -520,7 +519,7 @@ private[probably] object Documenting:
           + sloColumns
 
         val summaryRows =
-          peaks.stdlib.sortBy { point => -throughput(point(2)) }.map: point =>
+          peaks.order { point => -throughput(point(2)) }.map: point =>
             val (entry, n, run0) = point
 
             val lead =
@@ -535,7 +534,6 @@ private[probably] object Documenting:
             val latency: List[Datum] = if latencies then List(optionalTime(run0, Metric.P99)) else Nil
 
             (lead + ratio + alloc + latency + sloCells(run0)): List[Datum]
-          . to(List)
 
         List(Block.Table(Unset, summaryColumns, summaryRows))
 

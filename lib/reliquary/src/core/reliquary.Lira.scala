@@ -35,13 +35,16 @@ package reliquary
 import Lira.Error.Reason
 import anticipation.*
 import contingency.*
+import denominative.nil
 import fulminate.*
 import gastronomy.*
 import gossamer.*
 import hieroglyph.*
 import pneumatic.*
 import revolution.*
+import rudiments.{at, each, exists, filter, flatMap, has, map, prim, sort, to}
 import stratiform.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -163,39 +166,46 @@ object Lira:
   // LiraDelta → Lira.Delta
   object Delta:
 
+    // The canonical row orders of §12.3, as named `Ordering`s: `Blob.compare` is the bytewise
+    // order on hashes, and nothing in implicit scope orders `Data` or `Replacement` otherwise.
+    private given hashOrder: Ordering[Data] =
+      Ordering.fromLessThan: (left, right) => Blob.compare(left, right) < 0
+
+    private given replacementOrder: Ordering[Replacement] =
+      Ordering.fromLessThan: (left, right) => Blob.compare(left.old, right.old) < 0
+
     // The atom-level change record of one lineage step (§12.3): the atoms added, and the
     // replaceable atoms replaced. Deltas make staleness computable (§13.4) and allow a verifier
     // holding consecutive releases to check a lineage step exactly.
     def compute(previous: List[Atomization], next: List[Atomization]): Lira.Delta =
-      def flat(atomizations: List[Atomization]): scala.List[Atom] =
-        atomizations.stdlib.flatMap(_.atoms.stdlib)
+      def flat(atomizations: List[Atomization]): List[Atom] = atomizations.flatMap(_.atoms)
 
       val before = flat(previous)
       val after = flat(next)
-      val beforeHashes = before.map { atom => Lira.Hash.text(atom.valueHash) }.toSet
+      val beforeHashes = before.map { atom => Lira.Hash.text(atom.valueHash) }.to[Set]
 
       val added = after
-        . filter: atom => !beforeHashes.contains(Lira.Hash.text(atom.valueHash))
+        . filter: atom => !beforeHashes.has(Lira.Hash.text(atom.valueHash))
         . map(_.valueHash)
-        . sortWith: (a, b) => Blob.compare(a, b) < 0
+        . sort
 
       val beforeReplaceable = before.filter(_.atomClass == Atom.Class.Replaceable)
 
-      val afterReplaceable = scala.collection.immutable.Map.from:
+      val afterReplaceable =
         after.filter(_.atomClass == Atom.Class.Replaceable).map: atom => (atom.key, atom)
+        . to[Map]
 
       val replaced = beforeReplaceable
         . flatMap: atom =>
-            afterReplaceable.get(atom.key) match
-              case scala.Some(successor)
-                if Blob.compare(successor.valueHash, atom.valueHash) != 0 =>
-                scala.List(Replacement(atom.valueHash, successor.valueHash))
+            afterReplaceable.at(atom.key) match
+              case successor: Atom if Blob.compare(successor.valueHash, atom.valueHash) != 0 =>
+                List(Replacement(atom.valueHash, successor.valueHash))
 
-              case _ => scala.Nil
+              case _ => Nil
 
-        . sortWith: (a, b) => Blob.compare(a.old, b.old) < 0
+        . sort
 
-      Lira.Delta(added.to(List), replaced.to(List))
+      Lira.Delta(added, replaced)
 
     def decode(data: Data): Lira.Delta raises Lira.Error =
       import Tels.Decoder.validate
@@ -251,15 +261,15 @@ object Lira:
     // Canonical serialization: `add` rows in ascending hash order, then `replace` rows in
     // ascending old-hash order, under the pinned `lira-delta` schema signature.
     def encode: Data =
-      val addRows = add.stdlib.map: hash => s"add ${Lira.Hash.text(hash)}"
+      val addRows = add.map: hash => Text(s"add ${Lira.Hash.text(hash)}")
 
-      val replaceRows = replace.stdlib.map: replacement =>
-        s"replace ${Lira.Hash.text(replacement.old)}  ${Lira.Hash.text(replacement.next)}"
+      val replaceRows = replace.map: replacement =>
+        Text(s"replace ${Lira.Hash.text(replacement.old)}  ${Lira.Hash.text(replacement.next)}")
 
-      val rows = addRows ++ replaceRows
+      val rows = addRows + replaceRows
       val header = s"tel 1.0 ${Lira.Schemas.deltaSignature}"
-      val body = rows.mkString("\n")
-      val text = Text(if rows.isEmpty then s"$header\n" else s"$header\n\n$body\n")
+      val body = rows.join(t"\n")
+      val text = Text(if rows.nil then s"$header\n" else s"$header\n\n$body\n")
       charEncoders.utf8Encoder.encoded(text)
 
   // LiraError → Lira.Error
@@ -479,11 +489,10 @@ object Lira:
       // "every value of that axis", which is how a dependency common to all of them is declared
       // once and unscoped.
       def applies(universe: Text, integration: Optional[Text]): Boolean =
-        val universeApplies = this.universe.stdlib.isEmpty || this.universe.stdlib.contains(universe)
+        val universeApplies = this.universe.nil || this.universe.has(universe)
 
         val integrationApplies =
-          this.integration.stdlib.isEmpty
-          || integration.let { id => this.integration.stdlib.contains(id) }.or(false)
+          this.integration.nil || integration.let { id => this.integration.has(id) }.or(false)
 
         universeApplies && integrationApplies
 
@@ -719,13 +728,13 @@ object Lira:
       signature:   List[Lira.Manifest.Signature]    = List() ):
 
     // The root section is the first (§9.1); overlays materialize against it.
-    def root: Optional[Section] = if section.stdlib.isEmpty then Unset else section.stdlib.head
+    def root: Optional[Section] = section.prim
 
     def development: Boolean = version.absent
 
     // A release carrying a `host` section is a host contract (§9.4, hosts.md §4) — recognizable
     // from its manifest alone, which is what makes L137 checkable at resolution time.
-    def hostContract: Boolean = section.stdlib.exists(_.realm == t"host")
+    def hostContract: Boolean = section.exists(_.realm == t"host")
 
     // The canonical text of the whole file's manifest part: directive, pragma, one blank line,
     // then the compounds in schema order, LF-terminated. Deterministic; `Lira.read` accepts any
@@ -738,82 +747,96 @@ object Lira:
       lines += s"module $module"
 
       version.let: v => lines += s"version ${v.major}.${v.minor}.${v.patch}"
-      tag.stdlib.foreach: name => lines += s"tag $name"
-      lineage.stdlib.foreach: hash => lines += s"lineage ${Lira.Hash.text(hash)}"
+      tag.each: name => lines += s"tag $name"
+      lineage.each: hash => lines += s"lineage ${Lira.Hash.text(hash)}"
 
-      toolchain.stdlib.foreach: tool =>
+      toolchain.each: tool =>
         lines += "toolchain"
         lines += s"  name ${tool.name}"
         lines += s"  version ${tool.version}"
-        tool.flag.stdlib.foreach: flag => lines += s"  flag $flag"
+        tool.flag.each: flag => lines += s"  flag $flag"
 
-      owns.stdlib.foreach: space => lines += s"owns $space"
+      owns.each: space => lines += s"owns $space"
 
-      resource.stdlib.foreach: resource =>
+      resource.each: resource =>
         lines += s"resource ${resource.mode.keyword}"
         lines += s"  path ${resource.path.text}"
 
-      api.stdlib.foreach: api =>
+      api.each: api =>
         lines += "api"
         lines += s"  discipline ${api.discipline}"
         lines += s"  atoms ${Lira.Hash.text(api.atoms)}"
 
-      profile.stdlib.foreach: profile =>
+      profile.each: profile =>
         lines += "profile"
         lines += s"  id ${profile.id}"
-        profile.breaks.stdlib.foreach: level => lines += s"  breaks ${level.keyword}"
+        profile.breaks.each: level => lines += s"  breaks ${level.keyword}"
 
-      integration.stdlib.foreach: integration =>
+      integration.each: integration =>
+        // The `Optional` fields are bound to typed locals before they are read: reading such a
+        // union inside a lambda whose caller still has live type variables crashes the
+        // compiler's implicit-scope collection.
+        val rank: Optional[Long] = integration.rank
+        val label: Optional[Text] = integration.label
+
         lines += "integration"
         lines += s"  id ${integration.id}"
-        integration.rank.let: rank => lines += s"  rank $rank"
+        rank.let: rank => lines += s"  rank $rank"
         // Two spaces, not one: the hard-space run makes the whole remainder of the line one atom
         // (TEL §10.3), which is what lets a label contain spaces.
-        integration.label.let: label => lines += s"  label  $label"
+        label.let: label => lines += s"  label  $label"
 
-      dependency.stdlib.foreach: dependency =>
+      dependency.each: dependency =>
+        val version: Optional[Semver] = dependency.version
+        val build: Optional[Data] = dependency.build
+        val serves: Optional[Text] = dependency.serves
+        val uses: Optional[Data] = dependency.uses
+
         lines += "dependency"
         lines += s"  module ${dependency.module}"
         lines += s"  api ${Lira.Hash.text(dependency.api)}"
 
-        dependency.version.let: version =>
+        version.let: version =>
           lines += s"  version ${version.major}.${version.minor}.${version.patch}"
 
-        dependency.build.let: build => lines += s"  build ${Lira.Hash.text(build)}"
-        dependency.universe.stdlib.foreach: universe => lines += s"  universe $universe"
-        dependency.serves.let: serves => lines += s"  serves $serves"
-
-        dependency.integration.stdlib.foreach: integration =>
-          lines += s"  integration $integration"
-
-        dependency.uses.let: uses => lines += s"  uses ${Lira.Hash.text(uses)}"
-        dependency.spans.stdlib.foreach: spans => lines += s"  spans ${Lira.Hash.text(spans)}"
+        build.let: build => lines += s"  build ${Lira.Hash.text(build)}"
+        dependency.universe.each: universe => lines += s"  universe $universe"
+        serves.let: serves => lines += s"  serves $serves"
+        dependency.integration.each: integration => lines += s"  integration $integration"
+        uses.let: uses => lines += s"  uses ${Lira.Hash.text(uses)}"
+        dependency.spans.each: spans => lines += s"  spans ${Lira.Hash.text(spans)}"
 
       delta.let: delta => lines += s"delta ${Lira.Hash.text(delta)}"
 
-      section.stdlib.foreach: section =>
-        lines += s"section ${section.realm}"
-        section.integration.let: id => lines += s"  integration $id"
-        lines += s"  tree ${Lira.Hash.text(section.tree)}"
-        section.delete.stdlib.foreach: path => lines += s"  delete ${path.text}"
-        section.derivative.let: hash => lines += s"  derivative ${Lira.Hash.text(hash)}"
+      section.each: section =>
+        val integration: Optional[Text] = section.integration
+        val derivative: Optional[Data] = section.derivative
 
-        section.requires.stdlib.foreach: requirement =>
+        lines += s"section ${section.realm}"
+        integration.let: id => lines += s"  integration $id"
+        lines += s"  tree ${Lira.Hash.text(section.tree)}"
+        section.delete.each: path => lines += s"  delete ${path.text}"
+        derivative.let: hash => lines += s"  derivative ${Lira.Hash.text(hash)}"
+
+        section.requires.each: requirement =>
+          val version: Optional[Semver] = requirement.version
+          val uses: Optional[Data] = requirement.uses
+
           lines += "  requires"
           lines += s"    module ${requirement.module}"
           lines += s"    api ${Lira.Hash.text(requirement.api)}"
 
-          requirement.version.let: version =>
+          version.let: version =>
             lines += s"    version ${version.major}.${version.minor}.${version.patch}"
 
-          requirement.uses.let: uses => lines += s"    uses ${Lira.Hash.text(uses)}"
+          uses.let: uses => lines += s"    uses ${Lira.Hash.text(uses)}"
 
       lines += "payload"
       lines += s"  compression ${payload.compression}"
       lines += s"  length ${payload.length}"
       lines += s"  hash ${Lira.Hash.text(payload.hash)}"
 
-      signature.stdlib.foreach: signature =>
+      signature.each: signature =>
         lines += "signature"
         lines += s"  signer ${signature.signer}"
         lines += s"  algorithm ${signature.algorithm}"
@@ -1142,17 +1165,32 @@ object Lira:
   object Tree:
     val empty: Lira.Tree = Lira.Tree(List())
 
+    // The §9.2 row order, as a named `Ordering`: `TreePath.compare` is the bytewise UTF-8 order
+    // on paths, and nothing in implicit scope orders `TreeEntry` otherwise.
+    private given entryOrder: Ordering[TreeEntry] =
+      Ordering.fromLessThan: (left, right) => TreePath.compare(left.path, right.path) < 0
+
     // Establishes the §9.2 invariants: rows sorted in ascending bytewise UTF-8 path order, paths
     // unique. Accepts entries in any order; sorting here is what makes tree serialization a pure
     // function of the mapping.
     def of(entries: List[TreeEntry]): Lira.Tree raises Lira.Error =
-      val sorted = entries.stdlib.sortWith: (a, b) => TreePath.compare(a.path, b.path) < 0
+      val sorted = entries.sort
 
-      sorted.zip(sorted.drop(1)).foreach: (a, b) =>
-        if a.path == b.path
-        then abort(Lira.Error(Reason.InvalidTree(t"the path ${a.path.text} appears twice")))
+      // Adjacent rows are compared by walking the sorted suffixes, which is what the
+      // `zip(drop(1))` pairing expressed before.
+      def unique(rows: List[TreeEntry]): Unit = rows match
+        case a :: rest =>
+          rest.prim.let: b =>
+            if a.path == b.path
+            then abort(Lira.Error(Reason.InvalidTree(t"the path ${a.path.text} appears twice")))
 
-      Lira.Tree(sorted.to(List))
+          unique(rest)
+
+        case _ => ()
+
+      unique(sorted)
+
+      Lira.Tree(sorted)
 
     // Parses and checks a Tree metadata blob: a TEL document under the `lira-tree` schema, whose
     // pragma carries that schema's signature.
@@ -1212,20 +1250,20 @@ object Lira:
 
   // A section's mapping from paths to blobs (§9.2), with rows in ascending bytewise path order.
   case class Tree private(entries: List[TreeEntry]):
-    lazy val index: scala.collection.immutable.Map[Text, TreeEntry] =
-      scala.collection.immutable.Map.from:
-        entries.stdlib.map: entry => (entry.path.text, entry)
+    lazy val index: Map[Text, TreeEntry] =
+      entries.map: entry => (entry.path.text, entry)
+      . to[Map]
 
-    def get(path: TreePath): Optional[TreeEntry] = index.get(path.text).getOrElse(Unset)
+    def get(path: TreePath): Optional[TreeEntry] = index.at(path.text)
 
     // The canonical serialization: the pragma line carrying the `lira-tree` schema signature, one
     // `entry` row per mapping in tree order, hard-space separated, LF line endings. Deterministic
     // by construction, so a tree blob's hash is a pure function of the mapping.
     def encode: Data =
-      val rows = entries.stdlib.map: entry =>
-        s"entry ${entry.path.text}  ${Lira.Hash.text(entry.blob)}"
+      val rows = entries.map: entry =>
+        Text(s"entry ${entry.path.text}  ${Lira.Hash.text(entry.blob)}")
 
-      val body = rows.mkString("\n")
+      val body = rows.join(t"\n")
       val text = Text(s"tel 1.0 ${Lira.Schemas.treeSignature}\n\n$body\n")
       charEncoders.utf8Encoder.encoded(text)
 

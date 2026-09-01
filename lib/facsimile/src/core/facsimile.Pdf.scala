@@ -55,6 +55,7 @@ import pneumatic.*
 import prepositional.*
 import quantitative.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 import zephyrine.*
 import denominative.dysasymptotics.linearSize
@@ -263,7 +264,7 @@ object Pdf:
 
         val widths: Array[Double]^{} =
           pdf.resolved(entries(t"Widths").or(Cos.Nil)).elements.lay(Array.empty[Double]):
-            elements => Array.from(elements.stdlib.map(pdf.resolved(_).double.or(0.0)))
+            elements => elements.map(pdf.resolved(_).double.or(0.0)).to[Array]
 
         val embedded: Optional[Sfnt] =
           val program = descriptor(t"FontFile2").or:
@@ -378,8 +379,8 @@ object Pdf:
 
         def recur(elements: List[Cos]): Unit = elements match
           case Cos.Integral(start) :: Cos.Sequence(widths) :: rest =>
-            widths.stdlib.zipWithIndex.each: (width, index) =>
-              pdf.resolved(width).double.let(builder += (start.toInt + index) -> _)
+            widths.each: width =>
+              pdf.resolved(width).double.let(builder += (start.toInt + ordinal.n0) -> _)
 
             recur(rest)
 
@@ -615,37 +616,40 @@ object Pdf:
 
       def numbers(count: Int): List[Double] =
         val values = operands.bind(_.double.lay(List())(List(_)))
-        if values.stdlib.length != count || operands.stdlib.length != count then malformed else values
+        if values.size != count || operands.size != count then malformed else values
 
-      def name(index: Int): Text =
-        if index < operands.stdlib.length then operands.stdlib(index).name.or(malformed) else malformed
+      // The sole operand of a one-number operator; `numbers` has already checked the arity, so
+      // the head is present and the fallback is unreachable.
+      def number: Double = numbers(1).prim.or(malformed)
 
-      def chars(index: Int): Data =
-        if index < operands.stdlib.length then operands.stdlib(index).chars.or(malformed) else malformed
+      // No operator reads beyond the second operand position, so the first two accessors serve
+      // in place of general indexing into a linked list.
+      def name: Text = operands.prim.lay(malformed)(_.name.or(malformed))
+
+      def chars: Data = operands.prim.lay(malformed)(_.chars.or(malformed))
 
       def matrix: Matrix = numbers(6) match
         case List(a, b, c, d, e, f) => Matrix(a, b, c, d, e, f)
         case _                      => malformed
 
       def int(limit: Int): Int =
-        val value = numbers(1).stdlib(0).toInt
+        val value = number.toInt
         if value < 0 || value >= limit then malformed else value
 
-      def pair(index: Int): Optional[Cos] =
-        if operands.stdlib.length > index then operands.stdlib(index) else Unset
+      def pair: Optional[Cos] = operands.sec
 
       operator.s match
         // Graphics state (ISO 32000-2 §8.4.4)
         case "q"  => Save
         case "Q"  => Restore
         case "cm" => Concat(matrix)
-        case "w"  => SetLineWidth(numbers(1).stdlib(0))
+        case "w"  => SetLineWidth(number)
         case "J"  => SetLineCap(LineCap.fromOrdinal(int(LineCap.values.length)))
         case "j"  => SetLineJoin(LineJoin.fromOrdinal(int(LineJoin.values.length)))
-        case "M"  => SetMiterLimit(numbers(1).stdlib(0))
-        case "ri" => SetIntent(name(0))
-        case "i"  => SetFlatness(numbers(1).stdlib(0))
-        case "gs" => SetParameters(name(0))
+        case "M"  => SetMiterLimit(number)
+        case "ri" => SetIntent(name)
+        case "i"  => SetFlatness(number)
+        case "gs" => SetParameters(name)
 
         case "d" => operands match
           case List(Cos.Sequence(elements), phase) =>
@@ -705,14 +709,14 @@ object Pdf:
           case _            => malformed
         case "Tm" => SetTextMatrix(matrix)
         case "T*" => NextLine
-        case "Tc" => SetCharSpacing(numbers(1).stdlib(0))
-        case "Tw" => SetWordSpacing(numbers(1).stdlib(0))
-        case "Tz" => SetScaling(numbers(1).stdlib(0))
-        case "TL" => SetLeading(numbers(1).stdlib(0))
+        case "Tc" => SetCharSpacing(number)
+        case "Tw" => SetWordSpacing(number)
+        case "Tz" => SetScaling(number)
+        case "TL" => SetLeading(number)
         case "Tr" => SetRenderMode(TextRenderMode.fromOrdinal(int(TextRenderMode.values.length)))
-        case "Ts" => SetRise(numbers(1).stdlib(0))
-        case "Tj" => ShowText(chars(0))
-        case "'"  => NextLineShow(chars(0))
+        case "Ts" => SetRise(number)
+        case "Tj" => ShowText(chars)
+        case "'"  => NextLineShow(chars)
 
         case "Tf" => operands match
           case List(Cos.Name(font), size) => SetFont(font, size.double.or(malformed))
@@ -734,10 +738,10 @@ object Pdf:
             malformed
 
         // Colour (§8.6.8)
-        case "CS" => StrokeSpace(name(0))
-        case "cs" => FillSpace(name(0))
-        case "G"  => StrokeGray(numbers(1).stdlib(0))
-        case "g"  => FillGray(numbers(1).stdlib(0))
+        case "CS" => StrokeSpace(name)
+        case "cs" => FillSpace(name)
+        case "G"  => StrokeGray(number)
+        case "g"  => FillGray(number)
 
         case "RG" => numbers(3) match
           case List(red, green, blue) => StrokeRgb(Srgb(red, green, blue))
@@ -764,18 +768,18 @@ object Pdf:
           FillColor(values, pattern)
 
         // XObjects, inline images and shading (§8.8–8.10)
-        case "Do" => Draw(name(0))
-        case "sh" => Shade(name(0))
+        case "Do" => Draw(name)
+        case "sh" => Shade(name)
 
         case "BI" => operands match
           case List(Cos.Dictionary(entries), Cos.Chars(data))  => InlineImage(entries, data)
           case _                                               => malformed
 
         // Marked content (§14.6) and compatibility (§7.8.2)
-        case "MP"  => MarkPoint(name(0), Unset)
-        case "DP"  => MarkPoint(name(0), pair(1))
-        case "BMC" => BeginMarked(name(0), Unset)
-        case "BDC" => BeginMarked(name(0), pair(1))
+        case "MP"  => MarkPoint(name, Unset)
+        case "DP"  => MarkPoint(name, pair)
+        case "BMC" => BeginMarked(name, Unset)
+        case "BDC" => BeginMarked(name, pair)
         case "EMC" => EndMarked
         case "BX"  => BeginCompatibility
         case "EX"  => EndCompatibility
@@ -889,15 +893,18 @@ object Pdf:
     ( using Tactic[Error] )
     :   Optional[Rect] =
 
+      // The four-element pattern is the arity check: anything else has no `/Rect` reading.
       pdf.resolved(cos).elements.let: elements =>
-        if elements.size != 4 then Unset else
-          val values = elements.map(pdf.resolved(_).double.or(0.0)*scale)
+        elements.map(pdf.resolved(_).double.or(0.0)*scale) match
+          case List(x0, y0, x1, y1) =>
+            Rect
+              ( Quantity[Points[1]](x0.min(x1)),
+                Quantity[Points[1]](y0.min(y1)),
+                Quantity[Points[1]](x0.max(x1)),
+                Quantity[Points[1]](y0.max(y1)) )
 
-          Rect
-            ( Quantity[Points[1]](values.stdlib(0).min(values.stdlib(2))),
-              Quantity[Points[1]](values.stdlib(1).min(values.stdlib(3))),
-              Quantity[Points[1]](values.stdlib(0).max(values.stdlib(2))),
-              Quantity[Points[1]](values.stdlib(1).max(values.stdlib(3))) )
+          case _ =>
+            Unset
 
   // A rectangle in default user space, held as typesafe lengths: one PDF point is exactly
   // 1/72 inch, which is `quantitative`'s `Points` unit.
@@ -1085,17 +1092,18 @@ extends caps.ExclusiveCapability:
       entry(0).lay(Sequence()): number =>
         Sequence(number -> index)
 
-    . pipe { sequence => sequence.stdlib.to(Map) }
+    . to[Map]
 
   // Named destinations from both homes: the old-style `/Dests` dictionary and the
   // `/Names /Dests` name tree, still as raw COS values.
   private[facsimile] def rawDestinations(using Tactic[Pdf.Error]): Map[Text, Cos] =
     val old = resolved(catalog(t"Dests").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
 
-    val tree = resolved(catalog(t"Names").or(Cos.Nil))(t"Dests")
-      . let(Trees.names(_)(using this).stdlib.pipe(_.to(Map))).or(Map[Text, Cos]())
+    val tree: Map[Text, Cos] =
+      resolved(catalog(t"Names").or(Cos.Nil))(t"Dests")
+      . let(Trees.names(_)(using this).to[Map]).or(Map[Text, Cos]())
 
-    (old.stdlib ++ (tree: Map[Text, Cos]).stdlib).to(Map)
+    old + tree
 
   def destinations(using Tactic[Pdf.Error]): Map[Text, Destination] =
     val pages = pageNumbers
@@ -1296,11 +1304,10 @@ extends caps.ExclusiveCapability:
         Cos.Sequence(elements.map(decryptStrings(_, number, generation, guard)))
 
       case Cos.Dictionary(entries) =>
-        Cos.Dictionary((entries.stdlib.view.mapValues(decryptStrings(_, number, generation, guard)).toMap).to(Map))
+        Cos.Dictionary(entries.map(decryptStrings(_, number, generation, guard)))
 
       case Cos.Body(entries, start) =>
-        val decrypted = (entries.stdlib.view.mapValues(decryptStrings(_, number, generation, guard)).toMap).to(Map)
-        Cos.Body(decrypted, start)
+        Cos.Body(entries.map(decryptStrings(_, number, generation, guard)), start)
 
       case other =>
         other
@@ -1339,7 +1346,7 @@ extends caps.ExclusiveCapability:
         // Both branches build the pipeline over this document's own single-owner data.
         scala.caps.unsafe.unsafeAssumeSeparate:
           decrypted.lay(pipeline(steps, Stream(ranges(start, end)))): data =>
-            pipeline(steps, Stream(List(data).stdlib.iterator))
+            pipeline(steps, Stream(Iterator(data)))
 
   // Interprets a streaming plan, minting each duct at its `via` call site.
   private def pipeline[plan^]
@@ -1468,7 +1475,7 @@ extends caps.ExclusiveCapability:
   // dictionary: sufficient for `/Filter` and `/DecodeParms` shapes.
   private def deepResolved(value: Cos)(using Tactic[Pdf.Error]): Cos = resolved(value) match
     case Cos.Sequence(elements)  => Cos.Sequence(elements.map(resolved(_)))
-    case Cos.Dictionary(entries) => Cos.Dictionary((entries.stdlib.view.mapValues(resolved(_)).toMap).to(Map))
+    case Cos.Dictionary(entries) => Cos.Dictionary(entries.map(resolved(_)))
     case other                   => other
 
   private def containerStream(container: Int)(using Tactic[Pdf.Error]): ObjectStream =

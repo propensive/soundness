@@ -70,7 +70,7 @@ private[probably] object TerseRenderer:
       val aspires = t"${totals.aspirePassed} aspire-passed, ${totals.aspireFailed} aspire-failed"
       Out.println(t"$summary$aspires, ${totals.total} total")
 
-    document.groups.stdlib.foreach(renderGroup(_, columns, document.verbosity.verbose))
+    document.groups.each(renderGroup(_, columns, document.verbosity.verbose))
     renderFailures(document, columns)
     renderFatal(document)
 
@@ -108,8 +108,8 @@ private[probably] object TerseRenderer:
     Out.println(t"")
     val suiteName = group.suite.let(_.name.text).or(t"")
     if suiteName.length > 0 then Out.println(suiteName)
-    group.blocks.stdlib.foreach(renderBlock(_, columns))
-    if verbose then group.detail.stdlib.foreach(renderBlock(_, columns))
+    group.blocks.each(renderBlock(_, columns))
+    if verbose then group.detail.each(renderBlock(_, columns))
 
   private def renderBlock(block: Block, columns: Int)(using Stdio): Unit = block match
     case Block.Table(title, tableColumns, rows) =>
@@ -154,7 +154,7 @@ private[probably] object TerseRenderer:
 
       val width = frames.stdlib.map(name(_).length).maxOption.getOrElse(0)
 
-      frames.stdlib.foreach: frame =>
+      frames.each: frame =>
         val percent = Format.percent(Format.basisPoints(frame.samples.toDouble, total.toDouble))
         val bar = Format.bar(frame.samples, max)
         Out.println(t"  ${name(frame).pad(width, Rtl)} ${percent.pad(6, Rtl)}% $bar")
