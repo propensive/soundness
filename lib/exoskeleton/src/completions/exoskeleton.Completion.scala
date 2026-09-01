@@ -232,7 +232,8 @@ extends Cli:
 
             (List(mainLine): List[Command]) + duplicateLine
 
-        (title.stdlib ++ itemLines.stdlib).to(List).map(_.arguments.join(t"\u0000"))
+        val lines: List[Command] = title + itemLines
+        lines.map(_.arguments.join(t"\u0000"))
 
       case Shell.Bash =>
         items.filter(!_.hidden).bind: suggestion =>
@@ -252,18 +253,21 @@ extends Cli:
         items.bind:
           case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _, _, _, _) =>
             if hidden then Nil else
-              val mainLines = (suggestion.text :: aliases.stdlib).map: text =>
-                description.absolve match
-                  case Unset                 => t"$text"
-                  case description: Text     => t"$text\t$description"
-                  case description: Teletype => t"$text\t${description.plain}"
+              // Named methods, not lambdas: an interpolation inside a lambda passed to a
+              // collection combinator runs its implicit search while the combinator's element
+              // type is still uninstantiated, tripping dotc's `wildApprox` assertion
+              // (scala/scala3#24824).
+              def line(text: Text): Text = description.absolve match
+                case Unset                 => t"$text"
+                case description: Text     => t"$text\t$description"
+                case description: Teletype => t"$text\t${description.plain}"
 
-              if !incomplete || !sole || suggestion.text.ends(t"/") then mainLines.to(List)
-              else
+              def spaced(text: Text): Text = t"$text "
 
-                List.from:
-                  mainLines ++ (suggestion.text :: aliases.stdlib).map: text =>
-                    t"$text "
+              val mainLines: List[Text] = (suggestion.text :: aliases).map(line)
+
+              if !incomplete || !sole || suggestion.text.ends(t"/") then mainLines
+              else mainLines + (suggestion.text :: aliases).map(spaced)
 
       case Shell.Powershell =>
         // PowerShell inserts a `CompletionResult` verbatim, so a trailing-space twin is
@@ -271,10 +275,10 @@ extends Cli:
         items.bind:
           case suggestion@Suggestion(core, description, hidden, _, aliases, _, _, _, _, _, _) =>
             if hidden then Nil else
+              // Named, not a lambda, for the `wildApprox` reason noted above.
+              def line(text: Text): Text = description.absolve match
+                case Unset                 => t"$text"
+                case description: Text     => t"$text\t$description"
+                case description: Teletype => t"$text\t${description.plain}"
 
-                (suggestion.text :: aliases.stdlib).map: text =>
-                  description.absolve match
-                    case Unset                 => t"$text"
-                    case description: Text     => t"$text\t$description"
-                    case description: Teletype => t"$text\t${description.plain}"
-                . to(List)
+              (suggestion.text :: aliases).map(line)

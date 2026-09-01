@@ -122,7 +122,11 @@ extends Console, caps.ExclusiveCapability, WorkingDirectory.Provider, Environmen
     ( handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse] )
   :   Unit =
 
-    signalHandlers.updateAndGet(list => (handler :: list.nn.stdlib).to(List))
+    signalHandlers.updateAndGet: list =>
+      // The `nn` result is bound with its declared type so that `::` sees a plain `List`, not
+      // the intersection with the nullable reference's type.
+      val handlers: List[PartialFunction[UnixSignal | WindowsSignal, SignalResponse]] = list.nn
+      handler :: handlers
 
 
   def dispatchSignal(signal: UnixSignal | WindowsSignal): SignalResponse =

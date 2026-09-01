@@ -275,7 +275,7 @@ trait Tel2 extends Tel3:
       ( ctx:        (Tel.Decodable { type Self = field })^,
         telVal:     Tel,
         keyword:    Text,
-        positional: scala.collection.immutable.List[Tel.Atom],
+        positional: List[Tel.Atom],
         fallback:   Optional[field] )
       ( using tactic: Tactic[Tel.Error] )
     :   field =
@@ -288,14 +288,14 @@ trait Tel2 extends Tel3:
       // compound) — reads one match.
       if ctx.repeatable then
         val compounds =
-          if positional.isEmpty
+          if positional.nil
           then telVal.childCompounds.filter(_.keyword == keyword)
           else
             val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
 
             // A flag's atom is its keyword, meaning presence: it
             // becomes a bare compound, not an atom-bearing one.
-            positional.foreach: atom =>
+            positional.each: atom =>
               buffer +=
                 ( if ctx.nature == Tel.Nature.Flag
                   then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
@@ -314,22 +314,26 @@ trait Tel2 extends Tel3:
       else
         val match0 = telVal.field(keyword)
 
-        if positional.isEmpty then
-          match0.lay(fallback.or(ctx.absent()))(ctx.decoded(_))
-        else
-          // §20.2 step 5c: an inline atom plus a same-keyword
-          // child fills a non-repeatable member twice (E308).
-          // The atom wins — atoms precede children.
-          if match0.present
-          then raise(Tel.Error(Tel.Error.Reason.NonRepeatableTooMany))
+        // The head pattern both distinguishes the no-atom case and names the atom
+        // the compound is built around.
+        positional match
+          case Nil =>
+            match0.lay(fallback.or(ctx.absent()))(ctx.decoded(_))
 
-          ctx.decoded:
-            Tel.make:
-              // A flag's atom is its keyword, meaning presence:
-              // it becomes a bare compound.
-              if ctx.nature == Tel.Nature.Flag
-              then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
-              else Tel.Compound(keyword, Array(positional.head), Unset, Array.empty)
+          case firstAtom :: _ =>
+            // §20.2 step 5c: an inline atom plus a same-keyword
+            // child fills a non-repeatable member twice (E308).
+            // The atom wins — atoms precede children.
+            if match0.present
+            then raise(Tel.Error(Tel.Error.Reason.NonRepeatableTooMany))
+
+            ctx.decoded:
+              Tel.make:
+                // A flag's atom is its keyword, meaning presence:
+                // it becomes a bare compound.
+                if ctx.nature == Tel.Nature.Flag
+                then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
+                else Tel.Compound(keyword, Array(firstAtom), Unset, Array.empty)
 
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Tel.Decodable =
@@ -399,9 +403,8 @@ trait Tel2 extends Tel3:
                   ctx =>
                     val keyword: Text = renames(label).or(Tel.camelToKebab(label.s))
 
-                    val positional: scala.collection.immutable.List[Tel.Atom] =
-                      if assigned.length == 0 then scala.collection.immutable.Nil
-                      else assigned.readable(index).stdlib
+                    val positional: List[Tel.Atom] =
+                      if assigned.length == 0 then Nil else assigned.readable(index)
 
                     if !active then
                       Venture:
@@ -440,8 +443,8 @@ trait Tel2 extends Tel3:
       // lookups, per occurrence) — jacinta's map hoist.
       val labels: Map[Text, Text] =
 
-          variantLabels.stdlib.map: label => Tel.camelToKebab(label.s) -> label
-          . to(Map)
+          variantLabels.map: label => Tel.camelToKebab(label.s) -> label
+          . to[Map]
 
       Tel.Decodable(() => Morphology.Any):
         telVal =>
@@ -756,10 +759,10 @@ trait Tel2 extends Tel3:
       def shape(): Morphology = Morphology.Arr(encodable.shape())
       override def nature: Tel.Nature = encodable.nature
       override def optional: Boolean = true
-      def encoded(values: list[element]): Tel = collectionDocument(values.stdlib)(using encodable)
+      def encoded(values: list[element]): Tel = collectionDocument(values)(using encodable)
 
       override def constructed(values: list[element]): Tel =
-        constructedDocument(values.stdlib)(using encodable)
+        constructedDocument(values)(using encodable)
 
   given setEncodable: [set <: Set, element] => (encodable: -> (element is Tel.Encodable))
   =>  set[element] is Tel.Encodable =
@@ -768,10 +771,10 @@ trait Tel2 extends Tel3:
       def shape(): Morphology = Morphology.Arr(encodable.shape())
       override def nature: Tel.Nature = encodable.nature
       override def optional: Boolean = true
-      def encoded(values: set[element]): Tel = collectionDocument(values.stdlib)(using encodable)
+      def encoded(values: set[element]): Tel = collectionDocument(values)(using encodable)
 
       override def constructed(values: set[element]): Tel =
-        constructedDocument(values.stdlib)(using encodable)
+        constructedDocument(values)(using encodable)
 
   given seriesEncodable: [sequence <: Sequence, element] => (encodable: -> (element is Tel.Encodable))
   =>  sequence[element] is Tel.Encodable =
@@ -782,10 +785,10 @@ trait Tel2 extends Tel3:
       override def optional: Boolean = true
 
       def encoded(values: sequence[element]): Tel =
-        collectionDocument(values.stdlib)(using encodable)
+        collectionDocument(values)(using encodable)
 
       override def constructed(values: sequence[element]): Tel =
-        constructedDocument(values.stdlib)(using encodable)
+        constructedDocument(values)(using encodable)
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
@@ -895,13 +898,12 @@ trait Tel2 extends Tel3:
   given mapEncodable: [key: Tel.Encodable, value: Tel.Encodable]
   =>  Map[key, value] is Tel.Encodable =
     Tel.Encodable(() => Morphology.Dict(key.shape(), value.shape())): map =>
-      val entries = Array.from:
-        map.stdlib.map: (k, v) =>
-          val keyChild   = reKey(key.encoded(k), t"key")
-          val valueChild = reKey(value.encoded(v), t"value")
-          reKey(Tel.compound(t"", Array.empty, Array(keyChild, valueChild)), t"entries")
+      val entryList: List[Tel.Compound] = map.remap: (k, v) =>
+        val keyChild   = reKey(key.encoded(k), t"key")
+        val valueChild = reKey(value.encoded(v), t"value")
+        reKey(Tel.compound(t"", Array.empty, Array(keyChild, valueChild)), t"entries")
 
-      Tel.compound(t"", Array.empty, entries)
+      Tel.compound(t"", Array.empty, entryList.to[Array])
 
   given mapDecodable: [key, value]
   =>  ( keyCodec:   key is Tel.Decodable,

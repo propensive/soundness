@@ -32,16 +32,19 @@
                                                                                                   */
 package xenophile
 
-import scala.collection.immutable.List as SList
-import scala.collection.immutable.Map as SMap
-
 import anticipation.*
 import contingency.*
 import fulminate.*
 import gossamer.*
 import reliquary.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
+
+// The canonical encoding writes an explicit element count before every folded sequence
+// (`webidl.md` §7), so `List#size` is genuinely required here; the lists are declaration-sized.
+import denominative.dysasymptotics.linearSize
+import denominative.{nil, size}
 
 // The atomization rules of `webidl/1` (`webidl.md`).
 //
@@ -94,6 +97,9 @@ object WebIdlAtomizer:
       case Foreign.Type.Union(members) =>
         tag(out, '|')
 
+        // The encoded members stay in a `stdlib` view: an opaque `List` of `scala.Vector[Int]`
+        // fails capture checking here, because the vector's `prefix1` array carries a root
+        // capability that cannot flow into the traversal evidence's empty capture set.
         val encodings = members.stdlib.map: member =>
           val buffer = java.io.ByteArrayOutputStream()
           encode(buffer, member)
@@ -109,8 +115,8 @@ object WebIdlAtomizer:
       case Foreign.Type.Applied(constructor, arguments) =>
         tag(out, 'A')
         utf8(out, constructor)
-        uvarint(out, arguments.stdlib.length.toLong)
-        arguments.stdlib.foreach { argument => encode(out, argument) }
+        uvarint(out, arguments.size.toLong)
+        arguments.each: argument => encode(out, argument)
 
   private def compare(left: scala.Vector[Int], right: scala.Vector[Int]): Int =
     val shared = left.length.min(right.length)
@@ -126,9 +132,9 @@ object WebIdlAtomizer:
   // Argument *names* are not folded — WebIDL calls are positional — while optionality,
   // variadicity and a default's existence decide which calls are legal, so all three are.
   private def arguments(out: java.io.ByteArrayOutputStream, list: List[WebIdl.Argument]): Unit =
-    uvarint(out, list.stdlib.length.toLong)
+    uvarint(out, list.size.toLong)
 
-    list.stdlib.foreach: argument =>
+    list.each: argument =>
       flag(out, argument.optional)
       flag(out, argument.variadic)
       flag(out, argument.default)
@@ -157,70 +163,74 @@ object WebIdlAtomizer:
   // before atomization, exactly as the platform presents them. The merge is a set union keyed
   // by member selector, independent of definition order across files.
   private def resolved(definitions: List[WebIdl.Definition])
-  :   SList[WebIdl.Definition] raises Discipline.Error =
+  :   List[WebIdl.Definition] raises Discipline.Error =
 
     import WebIdl.Definition.*
 
-    val all = definitions.stdlib
+    // `group` rebuilds each group in the source's own shape, and `Map#map` maps values with the
+    // keys preserved, so these are the `groupBy`/`mapValues` pair in one step each.
+    val mixinMembers: Map[Text, List[WebIdl.Member]] =
+      definitions.sweep { case interface: Interface if interface.mixin => interface }
+      . group(_.name)
+      . map { group => group.bind(_.members) }
 
-    val mixinMembers: SMap[Text, SList[WebIdl.Member]] =
-      all.collect { case interface: Interface if interface.mixin => interface }
-      . groupBy(_.name)
-      . map { (name, group) => name -> group.flatMap(_.members.stdlib) }
-      . toMap
+    val includes: Map[Text, List[Text]] =
+      definitions.sweep { case Includes(target, mixin) => (target, mixin) }
+      . group(_(0))
+      . map { group => group.map(_(1)) }
 
-    val includes: SMap[Text, SList[Text]] =
-      all.collect { case Includes(target, mixin) => (target, mixin) }
-      . groupBy(_(0))
-      . map { (target, group) => target -> group.map(_(1)) }
-      . toMap
+    def mixedIn(name: Text): List[WebIdl.Member] =
+      val included: List[Text] = includes.at(name).or(Nil)
 
-    def mixedIn(name: Text): SList[WebIdl.Member] =
-      includes.getOrElse(name, SList()).flatMap: mixin =>
-        mixinMembers.getOrElse(mixin,
-            abort(malformed(t"the mixin $mixin is included but never defined")))
+      included.bind: mixin0 =>
+        // Both the element and the `Optional` lookup are bound to typed locals before they are
+        // read: `bind` types its lambda parameter as the traversal's (still-uninstantiated)
+        // `Operand`, which trips the compiler's `wildApprox` assertion inside the `t"…"` macro.
+        val mixin: Text = mixin0
+        val members: Optional[List[WebIdl.Member]] = mixinMembers.at(mixin)
+        members.or(abort(malformed(t"the mixin $mixin is included but never defined")))
 
     val names = scala.collection.mutable.HashSet[Text]()
 
-    val complete = all.flatMap:
-      case interface: Interface if interface.mixin || interface.partial => SList()
-      case Includes(_, _)                                              => SList()
-      case Dictionary(_, _, _, true)                                   => SList()
-      case Namespace(_, _, _, true)                                    => SList()
+    val complete: List[WebIdl.Definition] = definitions.bind:
+      case interface: Interface if interface.mixin || interface.partial => Nil
+      case Includes(_, _)                                              => Nil
+      case Dictionary(_, _, _, true)                                   => Nil
+      case Namespace(_, _, _, true)                                    => Nil
 
       case interface: Interface =>
-        val partials = all.collect:
+        val partials: List[Interface] = definitions.sweep:
           case partial: Interface if partial.partial && partial.name == interface.name => partial
 
-        val members = interface.members.stdlib
-          ++ partials.flatMap(_.members.stdlib)
-          ++ mixedIn(interface.name)
+        val members =
+          interface.members + partials.bind(_.members) + mixedIn(interface.name)
 
-        val intrinsics = interface.intrinsics.stdlib ++ partials.flatMap(_.intrinsics.stdlib)
+        val intrinsics = interface.intrinsics + partials.bind(_.intrinsics)
 
-        SList(interface.copy(members = members.to(List),
-            intrinsics = intrinsics.to(List), partial = false))
+        List(interface.copy(members = members, intrinsics = intrinsics, partial = false))
 
       case dictionary: Dictionary =>
-        val partials = all.collect:
+        val partials: List[Dictionary] = definitions.sweep:
           case partial: Dictionary if partial.partial && partial.name == dictionary.name =>
             partial
 
-        val fields = dictionary.fields.stdlib ++ partials.flatMap(_.fields.stdlib)
-        SList(dictionary.copy(fields = fields.to(List), partial = false))
+        val fields = dictionary.fields + partials.bind(_.fields)
+        List(dictionary.copy(fields = fields, partial = false))
 
       case namespace: Namespace =>
-        val partials = all.collect:
+        val partials: List[Namespace] = definitions.sweep:
           case partial: Namespace if partial.partial && partial.name == namespace.name => partial
 
-        val members = namespace.members.stdlib ++ partials.flatMap(_.members.stdlib)
-        SList(namespace.copy(members = members.to(List), partial = false))
+        val members = namespace.members + partials.bind(_.members)
+        List(namespace.copy(members = members, partial = false))
 
-      case other => SList(other)
+      case other => List(other)
 
-    complete.foreach: definition =>
-      if !names.add(definition.named)
-      then abort(malformed(t"the definition ${definition.named} appears twice"))
+    complete.each: definition0 =>
+      // The element is bound to a typed local before it is read (`wildApprox`; see `mixedIn`).
+      val definition: WebIdl.Definition = definition0
+      val named: Text = definition.named
+      if !names.add(named) then abort(malformed(t"the definition $named appears twice"))
 
     complete
 
@@ -230,19 +240,22 @@ object WebIdlAtomizer:
   // any are declared (`webidl.md` §5) — `Window` and `WorkerGlobalScope` genuinely offer
   // different surfaces.
   private def keyOf(name: Text, exposed: List[Text]): Text =
-    if exposed.stdlib.isEmpty then name
-    else Text(s"$name[${exposed.stdlib.map(_.s).sorted.mkString(",")}]")
+    if exposed.nil then name else
+      // Ordered by the underlying `String`, as before: this is a canonical key, not a display
+      // order, so it must not depend on a locale's collation.
+      val scopes: Text = exposed.order(_.s).join(t",")
+      t"$name[$scopes]"
 
   def atomize(definitions: List[WebIdl.Definition]): List[Atom] raises Discipline.Error =
     import WebIdl.Definition.*
 
     val atoms = scala.collection.mutable.ListBuffer[Atom]()
 
-    resolved(definitions).foreach:
+    resolved(definitions).each:
       case Interface(name, parent, exposed, members, intrinsics, _, _, callback) =>
         val key = keyOf(name, exposed)
 
-        members.stdlib.foreach: member =>
+        members.each: member =>
           atoms += Atom(t"$key#${member.selector}", Atom.Class.Rigid,
               hash(encodeMember(_, key, member)))
 
@@ -255,18 +268,18 @@ object WebIdlAtomizer:
           utf8(out, parent.or(t""))
           flag(out, callback)
 
-          val ordered = intrinsics.stdlib.sortBy(_(0).s)
-          uvarint(out, ordered.length.toLong)
+          val ordered: List[(Text, List[Foreign.Type])] = intrinsics.order(_(0).s)
+          uvarint(out, ordered.size.toLong)
 
-          ordered.foreach: (keyword, args) =>
+          ordered.each: (keyword, args) =>
             utf8(out, keyword)
-            uvarint(out, args.stdlib.length.toLong)
-            args.stdlib.foreach { arg => encode(out, arg) })
+            uvarint(out, args.size.toLong)
+            args.each { arg => encode(out, arg) })
 
       case Dictionary(name, parent, fields, _) =>
-        val required = fields.stdlib.filter(_.required).sortBy(_.name.s)
+        val required: List[WebIdl.Field] = fields.filter(_.required).order(_.name.s)
 
-        fields.stdlib.filter(!_.required).foreach: field =>
+        fields.filter(!_.required).each: field =>
           atoms += Atom(t"$name#${field.name}", Atom.Class.Rigid, hash: out =>
             tag(out, 'F')
             utf8(out, name)
@@ -278,9 +291,9 @@ object WebIdlAtomizer:
           tag(out, 'D')
           utf8(out, name)
           utf8(out, parent.or(t""))
-          uvarint(out, required.length.toLong)
+          uvarint(out, required.size.toLong)
 
-          required.foreach: field =>
+          required.each: field =>
             utf8(out, field.name)
             flag(out, field.default)
             encode(out, field.typed))
@@ -288,7 +301,7 @@ object WebIdlAtomizer:
       case Namespace(name, exposed, members, _) =>
         val key = keyOf(name, exposed)
 
-        members.stdlib.foreach: member =>
+        members.each: member =>
           atoms += Atom(t"$key#${member.selector}", Atom.Class.Rigid,
               hash(encodeMember(_, key, member)))
 
@@ -297,7 +310,7 @@ object WebIdlAtomizer:
           utf8(out, key))
 
       case Enumeration(name, values) =>
-        values.stdlib.foreach: value =>
+        values.each: value =>
           atoms += Atom(t"$name#$value", Atom.Class.Rigid, hash: out =>
             tag(out, 'V')
             utf8(out, name)

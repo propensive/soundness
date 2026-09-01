@@ -77,6 +77,7 @@ object Tmux:
       case Number.Error(_, _, _) => Tmux.Error(Tmux.Error.Reason.SessionDied)
 
     . protect:
+        // `.stdlib`: `Array.from` takes a stdlib `IterableOnce`.
         val content = Array.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]().stdlib)
         val cx = sh"tmux display-message -pt ${tmux.id} '#{cursor_x}'".exec[Text]()
         val cy = sh"tmux display-message -pt ${tmux.id} '#{cursor_y}'".exec[Text]()
@@ -112,17 +113,19 @@ object Tmux:
         while Tmux.screenshot().screen.filter(_ == t">").readable.length == 0 && count < 333 do
           delay(0.03*Second)
           count += 1
-        screenshot().screen.to[List].stdlib
-          .filter(!_.starts(t">"))
-          .map(_.trim)
-          .filter(_.length > 0)
-          .flatMap: line =>
-            line.cut(t"@@").stdlib match
-              case List(name, desc) => List(t"$name  ($desc)")
-              case List(name)       => List(name)
-              case _                => Nil
+        // A named method, not a lambda: interpolating inside a lambda passed to a collection
+        // combinator runs the interpolator's implicit search while the combinator's element type
+        // is still uninstantiated, tripping dotc's `wildApprox` assertion (scala/scala3#24824).
+        def described(line: Text): List[Text] = line.cut(t"@@") match
+          case name :: desc :: Nil => List(t"$name  ($desc)")
+          case name :: Nil         => List(name)
+          case _                   => Nil
 
-          .join(t"  ")
+        val lines: List[Text] = screenshot().screen.to[List]
+        val shown: List[Text] = lines.filter(!_.starts(t">"))
+        val trimmed: List[Text] = shown.map(_.trim).filter(_.length > 0)
+
+        trimmed.bind(described).join(t"  ")
 
       case _ =>
         enter(tool.command)

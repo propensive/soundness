@@ -56,7 +56,7 @@ def evolve[element: ClassTag]
 
       case left :: right :: more =>
         val changes: List[Change[element]] =
-          val diff0 = diff(Sequence.from(left.stdlib), Sequence.from(right.stdlib))
+          val diff0 = diff(left.to[Sequence], right.to[Sequence])
           similar.lay(diff0.edits)(diff0.rdiff(_).changes).to(List)
 
 
@@ -69,16 +69,17 @@ def evolve[element: ClassTag]
         :   List[Atom[element]] =
 
           def finish(): List[Atom[element]] =
-            val left = Array.from(skips.stdlib)
-            val right = Array.from(inserts.stdlib)
+            val left = skips.to[Array]
+            val right = inserts.to[Array]
 
-            val updates =
-              diff(Sequence.from(left.readable), Sequence.from(right.readable), _.value == _.value).edits.toList.map:
-                case Ins(_, value)    => value
-                case Del(index, _)    => left.readable(index)
-                case Par(index, _, _) => left.readable(index).add(iteration)
+            val updates: List[Atom[element]] =
+              diff(Sequence.from(left.readable), Sequence.from(right.readable), _.value == _.value)
+              . edits.to(List).map:
+                  case Ins(_, value)    => value
+                  case Del(index, _)    => left.readable(index)
+                  case Par(index, _, _) => left.readable(index).add(iteration)
 
-            (updates ::: done.stdlib).to(List)
+            updates + done
 
           edits match
             case Nil => atoms match
@@ -116,11 +117,9 @@ def evolve[element: ClassTag]
             Evolution(merge(evolution.sequence, changes)) )
 
 
-  if versions.nil then Evolution(Nil)
-  else
-    recur
-      ( Sec, versions,
-        Evolution((versions.stdlib.head.stdlib.map(Atom(_, Set(Prim)))).to(List)) )
+  versions match
+    case Nil          => Evolution(Nil)
+    case first :: _   => recur(Sec, versions, Evolution(first.map(Atom(_, Set(Prim)))))
 
 def diff[element]
   ( leftSeries:  Sequence[element],
@@ -128,6 +127,9 @@ def diff[element]
     compare:     (element, element) => Boolean = { (a: element, b: element) => a == b } )
 :   Diff[element] & Retained =
 
+  // The Myers walk reads both sequences positionally, thousands of times, at indices its own
+  // invariants already keep in range; a single stdlib view of each is bound here rather than
+  // threading a bounds proof through every read.
   val left = leftSeries.stdlib
   val right = rightSeries.stdlib
 
@@ -148,47 +150,55 @@ def diff[element]
   def trace(deletes: Int, inserts: Int, focus: List[Int], rows: List[Array[Int]^{}])
   :   Diff[element] & Retained =
 
-    val delPos = if deletes == 0 then 0 else count(rows.stdlib.head.readable(deletes - 1) + 1, inserts - deletes)
-    val insPos = if inserts == 0 then 0 else count(rows.stdlib.head.readable(deletes), inserts - deletes)
+    // The row stack is popped and indexed by the walk's own invariants, so one stdlib view
+    // serves every read; it is lazy because an empty stack is legal on the first step.
+    lazy val row = rows.stdlib.head
+
+    val delPos = if deletes == 0 then 0 else count(row.readable(deletes - 1) + 1, inserts - deletes)
+    val insPos = if inserts == 0 then 0 else count(row.readable(deletes), inserts - deletes)
     val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
 
     if best == left.length && (best - deletes + inserts) == right.length
     then Diff(backtrack(left.length - 1, deletes, rows, Nil)*).retained
     else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: focus, rows)
-    else trace(0, deletes + 1, Nil, Array.from(focus.stdlib.reverse :+ best) :: rows)
+    else trace(0, deletes + 1, Nil, (focus.reverse + List(best)).to[Array] :: rows)
 
   @tailrec
   def backtrack(position: Int, deletes: Int, rows: List[Array[Int]^{}], edits: Edits): Edits =
     val rightPosition = position + rows.size - deletes*2
-    lazy val ins = rows.stdlib.head.readable(deletes) - 1
-    lazy val del = rows.stdlib.head.readable(deletes - 1)
+
+    // As in `trace`, one lazy stdlib view of the row stack serves the head reads and the pop,
+    // both of which the walk's invariants keep legal.
+    lazy val rowStack = rows.stdlib
+    lazy val ins = rowStack.head.readable(deletes) - 1
+    lazy val del = rowStack.head.readable(deletes - 1)
 
     if position == -1 && rightPosition == -1 then edits else if rows.nil
     then
       backtrack
         ( position - 1, deletes, rows,
-          (Par(position, rightPosition, left(position)).retained :: edits.stdlib).to(List) )
+          Par(position, rightPosition, left(position)).retained :: edits )
 
     else if deletes < rows.size && (deletes == 0 || ins >= del)
     then
       if position == ins
       then
         backtrack
-          ( position, deletes, rows.stdlib.tail.to(List),
-            (Ins(rightPosition, right(rightPosition)).retained :: edits.stdlib).to(List) )
+          ( position, deletes, rowStack.tail.to(List),
+            Ins(rightPosition, right(rightPosition)).retained :: edits )
       else
         backtrack
           ( position - 1, deletes, rows,
-          (Par(position, rightPosition, left(position)).retained :: edits.stdlib).to(List) )
+            Par(position, rightPosition, left(position)).retained :: edits )
     else
       if position == del
       then
         backtrack
-          ( del - 1, deletes - 1, rows.stdlib.tail.to(List),
-            (Del(position, left(position)).retained :: edits.stdlib).to(List) )
+          ( del - 1, deletes - 1, rowStack.tail.to(List),
+            Del(position, left(position)).retained :: edits )
       else
         backtrack
           ( position - 1, deletes, rows,
-          (Par(position, rightPosition, left(position)).retained :: edits.stdlib).to(List) )
+            Par(position, rightPosition, left(position)).retained :: edits )
 
   trace(0, 0, Nil, Nil)

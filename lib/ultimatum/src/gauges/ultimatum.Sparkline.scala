@@ -51,7 +51,7 @@ object Sparkline:
   // narrower than its series must drop information; taking the maximum keeps the peaks, whereas
   // truncating would silently show only the oldest samples and misrepresent the shape.
   def decimate(samples: Sequence[Fraction], width: Int): Sequence[Fraction] =
-    val count = samples.stdlib.length
+    val count = samples.size
 
     if count <= width || width <= 0 then samples else
 
@@ -59,7 +59,8 @@ object Sparkline:
           (0 until width).map: cell =>
             val from = cell*count/width
             val to = (((cell + 1)*count/width).max(from + 1)).min(count)
-            Fraction(samples.stdlib.slice(from, to).map(_.value).max)
+            // The excerpt always spans at least one sample, so the fallback is unreachable.
+            Fraction(samples.excerpt(from, to).map(_.value).most.or(0.0))
 // How a run of samples is drawn. `Blocks` gives eight levels in one row; `Tall` stacks two rows for
 // sixteen; `Dots` and `Ascii` trade resolution for a narrower character repertoire.
 enum Sparkline:
@@ -81,7 +82,7 @@ enum Sparkline:
     new Gaugeable:
       type Self = Sequence[Double]
       override def minWidth(status: Sequence[Double]): Int = 1
-      override def columns(status: Sequence[Double]): Int = status.stdlib.length.max(1)
+      override def columns(status: Sequence[Double]): Int = status.size.max(1)
       override def height(status: Sequence[Double], width: Int): Int = rowCount
 
       def rows(status: Sequence[Double], tick: Tick, width: Int): List[Teletype] =
@@ -100,9 +101,8 @@ enum Sparkline:
     val span = upper - lower
 
     val normalized =
-      Sequence.from:
-        samples.stdlib.map: sample =>
-          if span <= 0 then Fraction(0.0) else Fraction((sample - lower)/span)
+      samples.map: sample => if span <= 0 then Fraction(0.0) else Fraction((sample - lower)/span)
+
     val values = Sparkline.decimate(normalized, width)
     val ascii = !gauging.permits(Gaugeable.Glyphs.Unicode)
 
@@ -118,9 +118,14 @@ enum Sparkline:
       val glyph = ramp.at(index.z).let(_.show).or(t" ")
       gauging.tint(gauging.palette.lengthwise(fraction.value))(Teletype(glyph))
 
+    // `merge` is a named method rather than a lambda: an interpolation inside a lambda passed to
+    // a collection combinator runs its implicit search while the combinator's element type is
+    // still uninstantiated, tripping dotc's `wildApprox` assertion (scala/scala3#24824).
+    def merge(left: Teletype, right: Teletype): Teletype = e"$left$right"
+
     def row(pick: Fraction -> Fraction): Teletype =
-      val drawn = values.stdlib.map: value => cell(pick(value), ramp)
-      val body = if drawn.isEmpty then e"" else drawn.reduceLeft: (l, r) => e"$l$r"
+      val drawn = values.map: value => cell(pick(value), ramp)
+      val body: Teletype = drawn.occupied.lay(e"")(_.reduce(merge))
       val used = gauging.cells(body.plain)
       if used >= width then body else e"$body${t" "*(width - used)}"
 

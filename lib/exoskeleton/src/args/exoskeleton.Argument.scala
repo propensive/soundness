@@ -123,8 +123,8 @@ case class Argument
   :   Optional[operand] =
 
     val mapping: Map[Text, operand] =
-      options.stdlib.map: option => (operand.suggest(option).text, option)
-      . to(Map)
+      options.map: option => (operand.suggest(option).text, option)
+      . to[Map]
 
     // Marked as operand values, not subcommands: they are candidates *for* this argument, so the
     // help tree must not descend into them (see `Suggestion.operand`).

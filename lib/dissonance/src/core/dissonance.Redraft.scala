@@ -77,6 +77,7 @@ object Redraft:
       else if s.startsWith("\\") then Directive.Keep(s.substring(1).nn.tt)
       else Directive.Keep(line)
 
+    // `Redraft` is a varargs case class, so its constructor takes a stdlib `Seq`.
     Redraft(directives.stdlib*)
 
   private def render1(directive: Directive): Text = directive match
@@ -96,9 +97,14 @@ object Redraft:
 
     val n = original.size
 
+    // Every read below is guarded by an explicit `< n` (or `>= 0`) test in the loop that makes
+    // it, so a single stdlib view of the original serves them all rather than a bounds proof
+    // threaded through each one.
+    val lines = original.stdlib
+
     def seek(from: Int, text: Text): Int =
       var j = from
-      while j < n && !compare(original.stdlib(j), text) do j += 1
+      while j < n && !compare(lines(j), text) do j += 1
       if j < n then j else -1
 
     var cursor = 0
@@ -113,7 +119,7 @@ object Redraft:
       var k = cursor
 
       while k < target do
-        edits = Par(k, right, original.stdlib(k)).retained :: edits
+        edits = Par(k, right, lines(k)).retained :: edits
         right += 1
         k += 1
 
@@ -121,14 +127,14 @@ object Redraft:
 
     def keep(index: Int, text: Text, line: Int): Unit =
       keepUpTo(index)
-      edits = Par(index, right, original.stdlib(index)).retained :: edits
+      edits = Par(index, right, lines(index)).retained :: edits
       matchers = Matcher(text, index, line) :: matchers
       right += 1
       cursor = index + 1
 
     def cut(index: Int, text: Text, line: Int): Unit =
       keepUpTo(index)
-      edits = Del(index, original.stdlib(index)).retained :: edits
+      edits = Del(index, lines(index)).retained :: edits
       matchers = Matcher(text, index, line) :: matchers
       cursor = index + 1
 
@@ -181,7 +187,7 @@ object Redraft:
 
         case matcher :: rest =>
           var j = limit
-          while j >= 0 && !compare(original.stdlib(j), matcher.text) do j -= 1
+          while j >= 0 && !compare(lines(j), matcher.text) do j -= 1
           if j < 0 then Unset else alignRight(rest, j - 1, j :: acc)
 
     alignRight(ordered.reverse, n - 1, Nil).let: rightmost =>
@@ -201,7 +207,7 @@ object Redraft:
         case Par(_, _, _) | Del(_, _) => List(edit.kept)
         case Ins(_, _)                => List[Text]()
 
-    . pipe(list => Sequence.from(list.stdlib))
+    . to[Sequence]
 
     val full: List[Directive] = edits.bind: edit =>
       edit match
@@ -213,9 +219,9 @@ object Redraft:
     def deambiguate(directives: List[Directive]): List[Directive] =
       val ambiguous =
 
-          analyze(directives, original, _ == _)(1).stdlib.collect:
+          analyze(directives, original, _ == _)(1).sweep:
             case Anomaly(line, _, Reason.Ambiguous) => line
-          . to(Set)
+          . to[Set]
 
       if ambiguous.nil then directives
       else deambiguate:
@@ -234,10 +240,11 @@ object Redraft:
       case Context.Fixed(k) => Redraft(trim(resolved, k)*)
 
       case Context.Minimal =>
-        Redraft(minimize(resolved, original, List.from(diff.patch(original.to[List]).stdlib))*)
+        Redraft(minimize(resolved, original, diff.patch(original.to[List]).to[List])*)
 
   private def trim(directives: List[Directive], k: Int): List[Directive] =
-    val keep = directives.stdlib.map { case Directive.Keep(_) => false; case _ => true }.to(scala.Array)
+    val flags = directives.map { case Directive.Keep(_) => false; case _ => true }
+    val keep = flags.to[Array].readable
     val n = keep.length
 
     def near(index: Int): Boolean =
@@ -253,7 +260,9 @@ object Redraft:
     ( directives: List[Directive], original: Sequence[Text], target: List[Text] )
   :   List[Directive] =
 
-    val array = directives.stdlib.to(scala.Array)
+    // The greedy minimization walks the directives by position, repeatedly, so they are
+    // materialized once into an indexable array; every index below comes from `array.indices`.
+    val array = directives.to[Array].readable
     val dropped = scala.collection.mutable.Set[Int]()
 
     def remaining: List[Directive] =
@@ -261,7 +270,7 @@ object Redraft:
 
     def valid(candidate: List[Directive]): Boolean =
       val (edits, anomalies) = analyze(candidate, original, _ == _)
-      anomalies.nil && List.from(Diff(edits*).patch(original.to[List]).stdlib) == target
+      anomalies.nil && Diff(edits*).patch(original.to[List]).to[List] == target
 
     val changes = array.indices.filter(!array(_).isInstanceOf[Directive.Keep])
 

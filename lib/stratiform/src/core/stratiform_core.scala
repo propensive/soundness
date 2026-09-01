@@ -61,37 +61,41 @@ private[stratiform] def emptyDocument: Tel =
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
       Array(Tel.Block(Array.empty, Unset, Array.empty, 0))))
 
-// Encodes a collection by flattening each element's compound(s) into one document's children.
-private[stratiform] def collectionDocument[value]
-    (values: Iterable[value])(using encodable: value is Encodable in Tel)
+// Encodes a collection by flattening each element's compound(s) into one document's children. The
+// source is any `Traversable`, so the `List`/`Set`/`Sequence` encodables pass their native
+// collections straight through; only the `Array` result at the end is stdlib-shaped.
+private[stratiform] def collectionDocument[collection, value](values: collection)
+  ( using encodable: value is Encodable in Tel )
+  ( using traversable: collection is Traversable by value )
 :   Tel =
 
-  val compounds: Array[Tel.Compound]^{} =
-    Array.from:
-      values.flatMap: element =>
-        encodable.encoded(element).subtree match
-          case compound: Tel.Compound => List(compound).stdlib
+  val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
 
-          case document: Tel.Document =>
-            document.children.bind(_.compounds).readable.toSeq
+  values.each: element =>
+    encodable.encoded(element).subtree match
+      case compound: Tel.Compound => buffer += compound
+      case document: Tel.Document => document.children.each(buffer ++= _.compounds.readable)
+
+  val compounds: Array[Tel.Compound]^{} = Array.from(buffer)
 
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
       Array(Tel.Block(Array.empty, Unset, compounds, 0))))
 
 // As `collectionDocument`, but embedding each element in its §22.2 canonical child form
 // (`constructed`), so nested records keep their inline runs under `Tel.canonical`.
-private[stratiform] def constructedDocument[value]
-    (values: Iterable[value])(using encodable: value is Tel.Encodable)
+private[stratiform] def constructedDocument[collection, value](values: collection)
+  ( using encodable: value is Tel.Encodable )
+  ( using traversable: collection is Traversable by value )
 :   Tel =
 
-  val compounds: Array[Tel.Compound]^{} =
-    Array.from:
-      values.flatMap: element =>
-        encodable.constructed(element).subtree match
-          case compound: Tel.Compound => List(compound).stdlib
+  val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
 
-          case document: Tel.Document =>
-            document.children.bind(_.compounds).readable.toSeq
+  values.each: element =>
+    encodable.constructed(element).subtree match
+      case compound: Tel.Compound => buffer += compound
+      case document: Tel.Document => document.children.each(buffer ++= _.compounds.readable)
+
+  val compounds: Array[Tel.Compound]^{} = Array.from(buffer)
 
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
       Array(Tel.Block(Array.empty, Unset, compounds, 0))))

@@ -48,6 +48,10 @@ import aperture.*
 import coaxial.{session as _, *}
 import contingency.*
 import denominative.*
+
+// A stack trace's frame count is part of the protocol's response, so counting the trace is
+// unavoidable; a stack is short and has just been built by traversing it.
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gigantism.*
@@ -138,16 +142,16 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
   // Breakpoint registrations, for the protocol's replace semantics: a `setBreakpoints` for a
   // source replaces every breakpoint previously set in it.
-  private val bySource: scc.TrieMap[Text, scala.List[DapSession.SourceSlot]] = scc.TrieMap()
+  private val bySource: scc.TrieMap[Text, List[DapSession.SourceSlot]] = scc.TrieMap()
 
   @caps.unsafe.untrackedCaptures
-  private var exceptionRequests: scala.List[DapSession.RequestSlot] = scala.List()
+  private var exceptionRequests: List[DapSession.RequestSlot] = List()
 
   @caps.unsafe.untrackedCaptures
-  private var functionRequests: scala.List[DapSession.SourceSlot] = scala.List()
+  private var functionRequests: List[DapSession.SourceSlot] = List()
 
   @caps.unsafe.untrackedCaptures
-  private var watchRequests: scala.List[DapSession.RequestSlot] = scala.List()
+  private var watchRequests: List[DapSession.RequestSlot] = List()
 
   private def nextSeq(): Int = outgoing.incrementAndGet()
 
@@ -230,11 +234,11 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
   // The shared stop path: retain the halt against its thread, hold the suspension, and report
   // the stop. Runs on the backend dispatcher.
-  private def onStop(reason: Text, hits: scala.List[Int], all: Boolean)(using halt: Halt^): Unit =
+  private def onStop(reason: Text, hits: List[Int], all: Boolean)(using halt: Halt^): Unit =
     val id = threadHandle(halt.thread)
     stops(id) = DapSession.HaltSlot(caps.unsafe.unsafeAssumePure(halt))
     halt.remain()
-    send(t"stopped", Dap.StoppedBody(reason, id, all, List(hits*)).in[Json])
+    send(t"stopped", Dap.StoppedBody(reason, id, all, hits).in[Json])
 
   // Clears every per-stop registry; handles minted before a resume are invalid after it.
   private def clearStops(): Unit =
@@ -317,9 +321,9 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
         withDebug(request): debug =>
           val adapter = self
-          bySource.remove(source).foreach(_.foreach { slot => safely(slot.handle.clear()) })
+          bySource.remove(source).foreach(_.each { slot => safely(slot.handle.clear()) })
 
-          val created = arguments.breakpoints.stdlib.map: spec =>
+          val created: List[(DapSession.SourceSlot, Int)] = arguments.breakpoints.map: spec =>
             val id = counter.incrementAndGet()
 
             // Laundered: the callback captures this adapter, which the breakpoint's
@@ -330,59 +334,59 @@ private[vivisection] class DapSession(emit: Json => Unit)
                     Dap.Breakpoint(true, id, spec.line)).in[Json])
 
             val handle = debug.breakpoint(source, Ordinal.uniary(spec.line), verified):
-              stop ?=> adapter.onStop(t"breakpoint", scala.List(id), true)(using stop)
+              stop ?=> adapter.onStop(t"breakpoint", List(id), true)(using stop)
 
             (DapSession.SourceSlot(caps.unsafe.unsafeAssumePure(handle), id), spec.line)
 
-          bySource(source) = created.map(_(0))
+          bySource(source) = created.map: (slot, _) => slot
 
           val breakpoints = created.map: (slot, line) =>
             Dap.Breakpoint(slot.handle.bound, slot.id, line)
 
-          respond(request, Dap.BreakpointsBody(List(breakpoints*)).in[Json])
+          respond(request, Dap.BreakpointsBody(breakpoints).in[Json])
 
       case t"setExceptionBreakpoints" =>
         val arguments = json.arguments.as[Dap.SetExceptionBreakpointsArguments]
 
         withDebug(request): debug =>
           val adapter = self
-          exceptionRequests.foreach: slot => safely(slot.handle.clear())
+          exceptionRequests.each: slot => safely(slot.handle.clear())
 
           val uncaught = arguments.filters.has(t"uncaught")
           val caught = arguments.filters.has(t"caught")
 
           exceptionRequests =
-            if !uncaught && !caught then scala.List() else
+            if !uncaught && !caught then List() else
               val handle = debug.exceptions(uncaught, caught):
-                stop ?=> adapter.onStop(t"exception", scala.List(), true)(using stop)
+                stop ?=> adapter.onStop(t"exception", List(), true)(using stop)
 
-              scala.List(DapSession.RequestSlot(caps.unsafe.unsafeAssumePure(handle)))
+              List(DapSession.RequestSlot(caps.unsafe.unsafeAssumePure(handle)))
 
-          val breakpoints = arguments.filters.stdlib.map { _ => Dap.Breakpoint(true) }
-          respond(request, Dap.BreakpointsBody(List(breakpoints*)).in[Json])
+          val breakpoints = arguments.filters.map: _ => Dap.Breakpoint(true)
+          respond(request, Dap.BreakpointsBody(breakpoints).in[Json])
 
       case t"setFunctionBreakpoints" =>
         val arguments = json.arguments.as[Dap.SetFunctionBreakpointsArguments]
 
         withDebug(request): debug =>
           val adapter = self
-          functionRequests.foreach: slot => safely(slot.handle.clear())
+          functionRequests.each: slot => safely(slot.handle.clear())
 
-          val created = arguments.breakpoints.stdlib.map: spec =>
+          val created: List[DapSession.SourceSlot] = arguments.breakpoints.map: spec =>
             val id = counter.incrementAndGet()
             val dot = spec.name.s.lastIndexOf('.')
             val cls = if dot < 0 then spec.name else spec.name.s.substring(0, dot).nn.tt
             val method = if dot < 0 then t"" else spec.name.s.substring(dot + 1).nn.tt
 
             val handle = debug.breakpoint(cls, method):
-              stop ?=> adapter.onStop(t"function breakpoint", scala.List(id), true)(using stop)
+              stop ?=> adapter.onStop(t"function breakpoint", List(id), true)(using stop)
 
             DapSession.SourceSlot(caps.unsafe.unsafeAssumePure(handle), id)
 
           functionRequests = created
 
           val breakpoints = created.map: slot => Dap.Breakpoint(slot.handle.bound, slot.id)
-          respond(request, Dap.BreakpointsBody(List(breakpoints*)).in[Json])
+          respond(request, Dap.BreakpointsBody(breakpoints).in[Json])
 
       case t"dataBreakpointInfo" =>
         val arguments = json.arguments.as[Dap.DataBreakpointInfoArguments]
@@ -413,31 +417,31 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
         withDebug(request): debug =>
           val adapter = self
-          watchRequests.foreach: slot => safely(slot.handle.clear())
+          watchRequests.each: slot => safely(slot.handle.clear())
 
-          val created = arguments.breakpoints.stdlib.flatMap: spec =>
+          // A spec whose `dataId` is not `class:field`, or whose watch the VM refuses, simply
+          // contributes no slot.
+          val created: List[DapSession.RequestSlot] = arguments.breakpoints.flatMap: spec =>
             val colon = spec.dataId.s.lastIndexOf(':')
 
-            if colon < 0 then scala.None else
+            if colon < 0 then List() else
               val cls = spec.dataId.s.substring(0, colon).nn.tt
               val field = spec.dataId.s.substring(colon + 1).nn.tt
 
               val handle = debug.watch(cls, field):
-                stop ?=> adapter.onStop(t"data breakpoint", scala.List(), true)(using stop)
+                stop ?=> adapter.onStop(t"data breakpoint", List(), true)(using stop)
 
               handle match
                 case watch: Breakpoint =>
-                  scala.Some(DapSession.RequestSlot(caps.unsafe.unsafeAssumePure(watch)))
+                  List(DapSession.RequestSlot(caps.unsafe.unsafeAssumePure(watch)))
 
                 case _ =>
-                  scala.None
+                  List()
 
           watchRequests = created
 
-          val breakpoints = arguments.breakpoints.stdlib.map: spec =>
-            Dap.Breakpoint(created.nonEmpty)
-
-          respond(request, Dap.BreakpointsBody(List(breakpoints*)).in[Json])
+          val breakpoints = arguments.breakpoints.map: spec => Dap.Breakpoint(!created.nil)
+          respond(request, Dap.BreakpointsBody(breakpoints).in[Json])
 
       case t"configurationDone" =>
         withDebug(request): debug =>
@@ -446,10 +450,10 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
       case t"threads" =>
         withDebug(request): debug =>
-          val all = debug.threads().stdlib.map: thread =>
+          val all = debug.threads().map: thread =>
             Dap.ThreadInfo(threadHandle(thread), safely(debug.name(thread)).or(t"?"))
 
-          respond(request, Dap.ThreadsBody(List(all*)).in[Json])
+          respond(request, Dap.ThreadsBody(all).in[Json])
 
       case t"stackTrace" =>
         val arguments = json.arguments.as[Dap.StackTraceArguments]
@@ -460,25 +464,34 @@ private[vivisection] class DapSession(emit: Json => Unit)
           // line. Every logical frame shares the physical frame's registry entry, so scopes,
           // variables, evaluation and restart against an inline frame resolve to the enclosing
           // physical frame.
-          val trace = halt.frames().stdlib.flatMap: (frame, location) =>
-            halt.positions(location).stdlib.map: position =>
+          //
+          // The session's namer, and each position's `Optional` fields, are bound to typed locals
+          // before they are read: an `Optional` read directly inside a collection lambda trips
+          // the compiler's `wildApprox` assertion.
+          val namer: Optional[Namer] = namer0
+
+          val trace: List[Dap.StackFrame] = halt.frames().flatMap: (frame, location) =>
+            halt.positions(location).map: position =>
+              val file: Optional[Text] = position.source
+              val path: Optional[Text] = position.path
+              val cls: Optional[Text] = position.cls
               val id = counter.incrementAndGet()
               frames(id) = (arguments.threadId, frame, location)
-              val source = position.source.let(Dap.Source(_, position.path))
+              val source = file.let(Dap.Source(_, path))
               val hint: Optional[Text] = if position.inlined then t"subtle" else Unset
 
               // An inline frame is named for the definition the programmer wrote, when the
               // launch classpath's TASTy can resolve it; the class-based name is the fallback.
               val name =
                 if !position.inlined then position.name else
-                  val defined = namer0.let: namer =>
-                    position.cls.let: cls => position.path.let(namer.define(cls, _, position.line))
+                  val defined = namer.let: namer =>
+                    cls.let: cls => path.let(namer.define(cls, _, position.line))
 
                   defined.or(position.name)
 
               Dap.StackFrame(id, name, position.line, 0, source, hint)
 
-          respond(request, Dap.StackTraceBody(List(trace*), trace.length).in[Json])
+          respond(request, Dap.StackTraceBody(trace, trace.size).in[Json])
 
       case t"scopes" =>
         val arguments = json.arguments.as[Dap.FrameArguments]
@@ -498,13 +511,13 @@ private[vivisection] class DapSession(emit: Json => Unit)
         nodes.get(arguments.variablesReference) match
           case scala.Some(DapSession.Node.Locals(thread, frame, location)) =>
             withStop(request, thread): halt =>
-              val all = halt.variables(frame, location).stdlib.map(variableInfo(thread, _))
-              respond(request, Dap.VariablesBody(List(all*)).in[Json])
+              val all = halt.variables(frame, location).map(variableInfo(thread, _))
+              respond(request, Dap.VariablesBody(all).in[Json])
 
           case scala.Some(DapSession.Node.Structure(thread, snapshot)) =>
             withStop(request, thread): halt =>
-              val all = halt.children(snapshot).stdlib.map(variableInfo(thread, _))
-              respond(request, Dap.VariablesBody(List(all*)).in[Json])
+              val all = halt.children(snapshot).map(variableInfo(thread, _))
+              respond(request, Dap.VariablesBody(all).in[Json])
 
           case _ =>
             fail(request, t"unknown variables reference")
@@ -645,7 +658,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
       threads.get(arguments.threadId) match
         case scala.Some(thread) =>
           debug.step(thread, depth):
-            stop ?=> adapter.onStop(t"step", scala.List(), false)(using stop)
+            stop ?=> adapter.onStop(t"step", List(), false)(using stop)
 
           clearStops()
           debug.resume()

@@ -100,52 +100,50 @@ object CHeader:
   // function-pointer typedefs and opaque tags are outside the marshalling vocabulary and are not
   // navigable.
   object Dialect extends xenophile.Dialect:
-    // The dialect works with ordinary Scala collections internally; the single `parse`
-    // boundary re-wraps as the opaque `Map` (erasure-identical cast).
-    import scala.collection.immutable.Map
-
     import anticipation.*
     import contingency.*
     import gossamer.*
     import rudiments.*
+    import symbolism.*
     import vacuous.*
+
+    import denominative.nil
 
     val library: Text = t"library"
 
-    def parse(source: Text): proscenium.Map[Text, proscenium.Map[Text, Prototype]] =
-      parse0(source).asInstanceOf[proscenium.Map[Text, proscenium.Map[Text, Prototype]]]
+    def parse(source: Text): Map[Text, Map[Text, Prototype]] = parse0(source)
 
     private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
       import strategies.throwUnsafely
-      val declarations = Parser.parse(source).stdlib
+      val declarations: List[Declaration] = Parser.parse(source)
 
       val typedefs: Map[Text, Foreign.Type] =
-        declarations.collect:
+        declarations.sweep:
           case Declaration.Enumeration(name, _) => name -> Foreign.Type.Named(t"int")
 
           case Declaration.Alias(name, target) if !functionPointer(target) =>
             name -> project(target)
 
-        . toMap
+        . to[Map]
 
       val structs: Map[Text, Map[Text, Prototype]] =
-        declarations.collect:
+        declarations.sweep:
           case Declaration.Structure(name, _, fields, false) =>
-            val members = fields.stdlib.filter { (_, typed) => !array(typed) }.map:
+            val members = fields.filter { (_, typed) => !array(typed) }.map:
               (field, typed) => field -> Prototype(Unset, project(typed))
 
-            name -> members.toMap
+            name -> members.to[Map]
 
-        . toMap
+        . to[Map]
 
       val functions: Map[Text, Prototype] =
-        declarations.collect:
+        declarations.sweep:
           case Declaration.Function(name, result, parameters, _) =>
-            name -> Prototype((parameters.stdlib.map(project(_))).to(List), project(result))
+            name -> Prototype(parameters.map(project(_)), project(result))
 
-        . toMap
+        . to[Map]
 
-      val all = if functions.isEmpty then structs else structs.updated(library, functions)
+      val all = if functions.nil then structs else structs.define(library, functions)
       resolve(all, typedefs)
 
     private def functionPointer(typed: Foreign.Type): Boolean = typed match
@@ -170,7 +168,11 @@ object CHeader:
 
           if base == t"char" && count == 1 then Foreign.Type.Named(t"string")
           else Foreign.Type.Applied(t"ptr", List(Foreign.Type.Named(canonical(base))))
-        else if applied.constructor == t"const" then project(applied.arguments.stdlib.head)
+        else if applied.constructor == t"const" then
+          // A `const` wrapper always carries its one operand; the `Optional` head is bound to a
+          // typed local before it is read (`wildApprox`).
+          val inner: Optional[Foreign.Type] = applied.arguments.prim
+          inner.lay(typed)(project(_))
         else Foreign.Type.Applied(applied.constructor, applied.arguments.map(project(_)))
 
       case other => other
@@ -180,9 +182,13 @@ object CHeader:
       case Foreign.Type.Named(name) => (name, 0)
 
       case applied: Foreign.Type.Applied =>
-        if applied.constructor == t"const" then unwrap(applied.arguments.stdlib.head)
-        else if applied.constructor == t"ptr" then
-          val (base, inner) = unwrap(applied.arguments.stdlib.head)
+        // `const` and `ptr` always carry their one operand; the `Optional` head is bound to a
+        // typed local before it is read (`wildApprox`).
+        val operand: Optional[Foreign.Type] = applied.arguments.prim
+
+        if applied.constructor == t"const" then operand.lay((t"*", 0))(unwrap(_))
+        else if applied.constructor == t"ptr" then operand.lay((t"*", 0)): argument =>
+          val (base, inner) = unwrap(argument)
           (base, inner + 1)
         else (t"*", 0)
 
@@ -207,7 +213,7 @@ object CHeader:
 
       def expand(foreign: Foreign.Type): Foreign.Type = foreign match
         case Foreign.Type.Named(name) =>
-          typedefs.get(name).optional.lay(foreign)(expand)
+          typedefs.at(name).lay(foreign)(expand)
 
         case Foreign.Type.Union(members) =>
           Foreign.Type.Union(members.map(expand))
@@ -218,8 +224,8 @@ object CHeader:
       def signature(sig: Prototype): Prototype =
         Prototype(sig.parameters.let(_.map(expand)), expand(sig.result))
 
-      definitions.map: (name, members) =>
-        (name, members.map { (member, sig) => (member, signature(sig)) })
+      // `Map#map` maps values with the keys preserved.
+      definitions.map: members => members.map(signature(_))
 
   // CHeaderParser → CHeader.Parser
   // A declaration parser for C headers, retaining what `cheader/1` atomizes: prototypes with
@@ -502,7 +508,7 @@ object CHeader:
             // A function-pointer typedef: `typedef ret (*name)(params);`.
             case "(" :: "*" :: name :: ")" :: more =>
               val (params, variadic, after) = parameters(more)
-              val fn = Foreign.Type.Applied(t"fn", (typed :: params.stdlib).to(List))
+              val fn = Foreign.Type.Applied(t"fn", typed :: params)
 
               after match
                 case ";" :: rest2 =>

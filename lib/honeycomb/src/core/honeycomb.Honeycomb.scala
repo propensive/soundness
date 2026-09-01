@@ -53,6 +53,7 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import stenography.*
+import symbolism.*
 import vacuous.*
 
 object Honeycomb:
@@ -78,7 +79,8 @@ object Honeycomb:
       val html: Html =
         Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
-      val holes2 = holes.stdlib.toList.to(proscenium.List).order(_(0)).map(_(1))
+      val holes2 = holes.to[proscenium.List].order(_(0)).map(_(1))
+      // `.stdlib.iterator`: the macro walks the holes with a stdlib `Iterator`.
       val iterator = holes2.stdlib.iterator
       var index: Int = -1
 
@@ -185,6 +187,7 @@ object Honeycomb:
             iterator.next() match
               case Html.Hole.Node(label) =>
                 val nodeType = whatwg.elements(label).lay(TypeRepr.of[Node]): tag =>
+                  // `.stdlib`: this macro works in the stdlib `List` the quotes API uses.
                   intersect(tag.admissible.stdlib.map(_.s).to(List)).asType.absolve match
                     case '[type children <: Label; children] => TypeRepr.of[Node of children]
 
@@ -218,6 +221,7 @@ object Honeycomb:
             iterator.next() match
               case Html.Hole.Element(label) =>
                 val elementType = whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
+                  // `.stdlib`: this macro works in the stdlib `List` the quotes API uses.
                   intersect(tag.admissible.stdlib.map(_.s).to(List)).asType.absolve match
                     case '[type children <: Label; children] => TypeRepr.of[Element of children]
 
@@ -286,7 +290,7 @@ object Honeycomb:
         Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
       val iterator: Iterator[Expr[Any]] =
-        holes.stdlib.toList.to(proscenium.List).order(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
+        holes.to[proscenium.List].order(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
           expr.absolve match
             case '{$expr: value} => hole match
               case Hole.Attribute(tag, attribute) =>
@@ -401,6 +405,7 @@ object Honeycomb:
           else List('{Doctype(${Expr(text)})})
 
         case Comment(text) =>
+          // `.stdlib`: `recur` below walks the stdlib `List` the quotes API uses.
           val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
@@ -417,6 +422,7 @@ object Honeycomb:
           List(iterator.next().asExprOf[Node])
 
         case TextNode(text) =>
+          // `.stdlib`: `recur` below walks the stdlib `List` the quotes API uses.
           val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
@@ -509,5 +515,9 @@ object Honeycomb:
 
                 . or(halt(m"unexpected type"))
 
-    val attrsExpr = '{Attributes.from(($presets.stdlib ++ (${Expr.ofList(attributes)}.compact).to(Map).stdlib).to(Map))}
+    // The presets are widened to the attribute map's value type so that the concatenation's
+    // two operands agree; it is right-biased, so a supplied attribute overrides a preset.
+    val presets2 = '{$presets: Map[Text, Optional[Text]]}
+    val supplied = '{(${Expr.ofList(attributes)}.compact).to(Map)}
+    val attrsExpr = '{Attributes.from($presets2 + $supplied)}
     '{$tag.node($attrsExpr)}.asExprOf[result]

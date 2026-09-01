@@ -76,21 +76,23 @@ object HostContracts:
     var lineage: List[Data] = List()
     var version: Semver = Semver(0, 1, 0)
 
-    var todo = releases.stdlib
-
-    while todo.nonEmpty do
-      val release = todo.head
-      todo = todo.tail
+    releases.each: release =>
       val atomizations = registry.atomize(release.content, context)
       val snapshot = Snapshot(atomizations)
 
-      previous.let: before =>
+      // Bound before the lambda reads it: an `Optional`-typed capture read inside a combinator's
+      // lambda is the `wildApprox` crash's trigger.
+      val before0: Optional[List[Atomization]] = previous
+
+      before0.let: before =>
         Grade.between(before, atomizations) match
           case Grade.Patch =>
             version = Semver(version.major, version.minor, version.patch + 1)
 
           case Grade.Minor =>
             version = Semver(version.major, version.minor + 1, 0)
+            // `.stdlib`: the `Concatenable` result freshens the frozen array behind `Data`,
+            // and `lineage`'s declared `List[Data]` cannot admit the new capability.
             lineage = (lineage.stdlib :+ snapshot).to(List)
 
           case Grade.Major =>

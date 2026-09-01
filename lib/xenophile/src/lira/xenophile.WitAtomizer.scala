@@ -32,15 +32,19 @@
                                                                                                   */
 package xenophile
 
-import scala.collection.immutable.Map as SMap
-
 import anticipation.*
 import contingency.*
 import fulminate.*
 import gossamer.*
 import reliquary.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
+
+// The canonical encoding writes an explicit element count before every folded sequence
+// (`wit.md` §6), so `List#size` is genuinely required here; the lists are declaration-sized.
+import denominative.dysasymptotics.linearSize
+import denominative.size
 
 // The atomization rules of `wit/1` (`wit.md`).
 //
@@ -100,24 +104,24 @@ object WitAtomizer:
   private def encode
     ( out:   java.io.ByteArrayOutputStream,
       typed: Foreign.Type,
-      scope: SMap[Text, Text] )
+      scope: Map[Text, Text] )
   :   Unit raises Discipline.Error =
 
     typed match
       case Foreign.Type.Named(name) =>
         tag(out, 'N')
 
-        if primitives.stdlib.contains(name) then utf8(out, name)
-        else utf8(out, scope.getOrElse(name, abort(unresolved(name))))
+        if primitives.has(name) then utf8(out, name)
+        else utf8(out, scope.at(name).or(abort(unresolved(name))))
 
       case Foreign.Type.Applied(constructor, arguments) =>
-        if !constructors.stdlib.contains(constructor)
+        if !constructors.has(constructor)
         then abort(malformed(t"$constructor is not a type constructor"))
 
         tag(out, 'A')
         utf8(out, constructor)
-        uvarint(out, arguments.stdlib.length.toLong)
-        arguments.stdlib.foreach { argument => encode(out, argument, scope) }
+        uvarint(out, arguments.size.toLong)
+        arguments.each: argument => encode(out, argument, scope)
 
       case Foreign.Type.Union(_) =>
         abort(malformed(t"a union type is not WIT"))
@@ -126,7 +130,7 @@ object WitAtomizer:
     ( container: Text,
       resource:  Optional[Text],
       fn:        Wit.Function,
-      scope:     SMap[Text, Text] )
+      scope:     Map[Text, Text] )
   :   Atom raises Discipline.Error =
 
     val key = resource.let { res => t"$container#$res.${fn.name}" }.or(t"$container#${fn.name}")
@@ -138,49 +142,54 @@ object WitAtomizer:
       utf8(out, fn.name)
       flag(out, fn.static)
       flag(out, fn.constructor)
-      uvarint(out, fn.parameters.stdlib.length.toLong)
+      uvarint(out, fn.parameters.size.toLong)
 
       // WIT calls are by named parameter, so names fold beside types (`wit.md` §6).
-      fn.parameters.stdlib.foreach: (name, typed) =>
+      fn.parameters.each: (name, typed) =>
         utf8(out, name)
         encode(out, typed, scope)
 
-      fn.result.lay(tag(out, '0')) { typed => tag(out, '1'); encode(out, typed, scope) })
+      // The `Optional` result is bound to a typed local before it is read (`wildApprox`).
+      val result: Optional[Foreign.Type] = fn.result
+      result.lay(tag(out, '0')) { typed => tag(out, '1'); encode(out, typed, scope) })
 
   // --- atomization ----------------------------------------------------------------------------
 
   def atomize(documents: List[Wit.Document]): List[Atom] raises Discipline.Error =
     val atoms = scala.collection.mutable.ListBuffer[Atom]()
 
-    documents.stdlib.foreach: document =>
-      val pkg = document.packageName.or(abort(malformed(t"a document declares no package")))
-      val suffix = document.version.let { version => t"@$version" }.or(t"")
+    documents.each: document =>
+      // Both `Optional` fields are bound to typed locals before they are read (`wildApprox`).
+      val packageName: Optional[Text] = document.packageName
+      val version: Optional[Text] = document.version
+      val pkg = packageName.or(abort(malformed(t"a document declares no package")))
+      val suffix = version.let { version => t"@$version" }.or(t"")
 
       def qualify(interface: Text): Text =
         if interface.s.contains(":") then interface else t"$pkg/$interface$suffix"
 
-      document.interfaces.stdlib.foreach: interface =>
+      document.interfaces.each: interface =>
         val ifaceId = t"$pkg/${interface.name}$suffix"
 
         // The qualification scope: local item names under this interface's id, `use`-imported
         // names under the id they came from. `use` clauses are otherwise transparent
         // (`wit.md` §6) — a re-export or rename carries no semantic content.
-        val scope: SMap[Text, Text] =
-          val local = interface.items.stdlib.collect:
+        val scope: Map[Text, Text] =
+          val local: List[(Text, Text)] = interface.items.sweep:
             case item if !item.isInstanceOf[Wit.Item.Use] => item.named -> t"$ifaceId#${item.named}"
 
-          val imported = interface.items.stdlib.collect:
+          val imported: List[(Text, Text)] = interface.items.bind:
             case Wit.Item.Use(from, names) =>
-              names.stdlib.map: (original, alias) =>
-                alias -> t"${qualify(from)}#$original"
+              names.map: (original, alias) => alias -> t"${qualify(from)}#$original"
 
-          . flatten
+            case _ =>
+              Nil
 
-          (local ++ imported).toMap
+          (local + imported).to[Map]
 
         val typeKeys = scala.collection.mutable.ListBuffer[Text]()
 
-        interface.items.stdlib.foreach:
+        interface.items.each:
           case Wit.Item.Use(_, _) => ()
 
           case Wit.Item.Function(fn) =>
@@ -201,9 +210,9 @@ object WitAtomizer:
             atoms += Atom(t"$ifaceId#$name", Atom.Class.Rigid, hash: out =>
               tag(out, 'r')
               utf8(out, t"$ifaceId#$name")
-              uvarint(out, fields.stdlib.length.toLong)
+              uvarint(out, fields.size.toLong)
 
-              fields.stdlib.foreach: (field, typed) =>
+              fields.each: (field, typed) =>
                 utf8(out, field)
                 encode(out, typed, scope))
 
@@ -213,9 +222,12 @@ object WitAtomizer:
             atoms += Atom(t"$ifaceId#$name", Atom.Class.Rigid, hash: out =>
               tag(out, 'v')
               utf8(out, t"$ifaceId#$name")
-              uvarint(out, cases.stdlib.length.toLong)
+              uvarint(out, cases.size.toLong)
 
-              cases.stdlib.foreach: (label, payload) =>
+              cases.each: (label, payload0) =>
+                // The `Optional` payload is bound to a typed local before it is read
+                // (`wildApprox`).
+                val payload: Optional[Foreign.Type] = payload0
                 utf8(out, label)
                 payload.lay(tag(out, '0')) { typed => tag(out, '1'); encode(out, typed, scope) })
 
@@ -225,8 +237,8 @@ object WitAtomizer:
             atoms += Atom(t"$ifaceId#$name", Atom.Class.Rigid, hash: out =>
               tag(out, 'e')
               utf8(out, t"$ifaceId#$name")
-              uvarint(out, cases.stdlib.length.toLong)
-              cases.stdlib.foreach { label => utf8(out, label) })
+              uvarint(out, cases.size.toLong)
+              cases.each { label => utf8(out, label) })
 
           case Wit.Item.Flags(name, names) =>
             typeKeys += t"$ifaceId#$name"
@@ -234,8 +246,8 @@ object WitAtomizer:
             atoms += Atom(t"$ifaceId#$name", Atom.Class.Rigid, hash: out =>
               tag(out, 'g')
               utf8(out, t"$ifaceId#$name")
-              uvarint(out, names.stdlib.length.toLong)
-              names.stdlib.foreach { label => utf8(out, label) })
+              uvarint(out, names.size.toLong)
+              names.each { label => utf8(out, label) })
 
           case Wit.Item.Resource(name, methods) =>
             typeKeys += t"$ifaceId#$name"
@@ -244,55 +256,59 @@ object WitAtomizer:
               tag(out, 'R')
               utf8(out, t"$ifaceId#$name"))
 
-            methods.stdlib.foreach: method =>
-              atoms += function(ifaceId, name, method, scope)
+            methods.each: method => atoms += function(ifaceId, name, method, scope)
 
         // The interface's own atom folds the sorted key list of its *type* declarations, not
         // its functions: adding a function is additive (`wit.md` §6).
         atoms += Atom(ifaceId, Atom.Class.Rigid, hash: out =>
           tag(out, 'I')
           utf8(out, ifaceId)
-          val sorted = typeKeys.toList.sortBy(_.s)
-          uvarint(out, sorted.length.toLong)
-          sorted.foreach { key => utf8(out, key) })
+          val sorted: List[Text] = typeKeys.to(List).order(_.s)
+          uvarint(out, sorted.size.toLong)
+          sorted.each { key => utf8(out, key) })
 
-      document.worlds.stdlib.foreach: world =>
+      document.worlds.each: world =>
         val worldId = t"$pkg/${world.name}$suffix"
-        val imports = world.imports.stdlib.map(qualify(_))
+        val imports: List[Text] = world.imports.map(qualify(_))
 
         // Inline items follow the same polarity as referenced ones: an inline function import
         // is a capability the host supplies (standalone, its signature folded into the value),
         // and an inline export joins the folded obligation list by its bare name.
-        val exports =
-          (world.exports.stdlib.map(qualify(_))
-            ++ world.inlineExports.stdlib.map { (name, _) => name })
-          . sortBy(_.s)
+        val exports: List[Text] =
+          (world.exports.map(qualify(_)) + world.inlineExports.map { (name, _) => name })
+          . order(_.s)
 
-        imports.foreach: imported =>
+        imports.each: imported =>
           atoms += Atom(t"$worldId#import $imported", Atom.Class.Rigid, hash: out =>
             tag(out, 'i')
             utf8(out, worldId)
             utf8(out, imported))
 
-        world.inlineImports.stdlib.foreach: (name, function) =>
+        world.inlineImports.each: (name, function0) =>
+          // The `Optional` inline function is bound to a typed local before it is read
+          // (`wildApprox`).
+          val function: Optional[Wit.Function] = function0
+
           atoms += Atom(t"$worldId#import $name", Atom.Class.Rigid, hash: out =>
             tag(out, 'i')
             utf8(out, worldId)
             utf8(out, name)
 
             function.let: fn =>
-              uvarint(out, fn.parameters.stdlib.length.toLong)
+              uvarint(out, fn.parameters.size.toLong)
 
-              fn.parameters.stdlib.foreach: (parameter, typed) =>
+              fn.parameters.each: (parameter, typed) =>
                 utf8(out, parameter)
-                encode(out, typed, SMap())
+                encode(out, typed, Map())
 
-              fn.result.lay(tag(out, '0')) { typed => tag(out, '1'); encode(out, typed, SMap()) })
+              // Likewise for the function's `Optional` result.
+              val result: Optional[Foreign.Type] = fn.result
+              result.lay(tag(out, '0')) { typed => tag(out, '1'); encode(out, typed, Map()) })
 
         atoms += Atom(worldId, Atom.Class.Rigid, hash: out =>
           tag(out, 'W')
           utf8(out, worldId)
-          uvarint(out, exports.length.toLong)
-          exports.foreach { exported => utf8(out, exported) })
+          uvarint(out, exports.size.toLong)
+          exports.each { exported => utf8(out, exported) })
 
     atoms.toList.to(List)

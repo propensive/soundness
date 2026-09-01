@@ -40,6 +40,7 @@ import fulminate.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -53,15 +54,21 @@ extension (inline context: StringContext)
 // nested rules and the selector-list arguments of `:is()`/`:not()`/`:nth-…(of)`.
 extension (css: Css)
   def classes: Set[Name[CssClass]] =
-    (simples(css.rules).stdlib.collect { case Simple.Class(name) => name }).to(Set)
+    val names: List[Name[CssClass]] = simples(css.rules).sweep:
+      case Simple.Class(name) => name
+
+    names.to[Set]
 
   def ids: Set[Name[DomId]] =
-    (simples(css.rules).stdlib.collect { case Simple.Id(name) => name }).to(Set)
+    val names: List[Name[DomId]] = simples(css.rules).sweep:
+      case Simple.Id(name) => name
+
+    names.to[Set]
 
 private def simples(nodes: List[Css.Node]): List[Simple] =
   nodes.bind:
     case Css.Node.Rule(selector, body) =>
-      (listSimples(selector).stdlib ++ simples(body).stdlib).to(List)
+      listSimples(selector) + simples(body)
     case Css.Node.At(_, _, body)       => body.lay(Nil)(simples)
     case Css.Node.Declaration(_, _)    => Nil
 

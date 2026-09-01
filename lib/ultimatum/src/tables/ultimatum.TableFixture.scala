@@ -36,11 +36,14 @@ import scala.caps
 
 import anticipation.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import escapade.*
 import escritoire.*
 import hieroglyph.*
 import polysyllabic.*
 import profanity.*
+import rudiments.*
+import vacuous.*
 
 object TableFixture:
   // The supplier genuinely captures the caller's data source and escapes into the long-lived
@@ -69,7 +72,7 @@ extends Fixture:
   private var measuredWidth: Int = -1
 
   @scala.caps.unsafe.untrackedCaptures
-  private var lines: scala.List[Teletype] = scala.Nil
+  private var lines: List[Teletype] = Nil
 
   def refresh(): Unit = wakeForm()
 
@@ -79,20 +82,21 @@ extends Fixture:
     wakeForm = caps.unsafe.unsafeAssumePure(wake)
 
   // A fixture cannot raise, so an unsatisfiable width renders overflowing rather than failing.
-  private def layout(width: Int): scala.List[Teletype] =
+  private def layout(width: Int): List[Teletype] =
     given Attenuation = escritoire.columnAttenuation.ignoreAttenuation
-    content().grid(width).render.stdlib.to(scala.List)
+    content().grid(width).render.to[List]
 
+  // Counting the rendered rows is O(n) on a `List` (hence `linearSize`), and is paid once here.
   def measure(width: Int): (Int, Int) =
     lines = layout(width)
     measuredWidth = width
-    val widest = lines.map(_.plain.metrics).maxOption.getOrElse(0)
-    (widest, lines.length)
+    val widest = lines.map(_.plain.metrics).most.or(0)
+    (widest, lines.size)
 
   def render(canvas: Board^, focused: Boolean): Unit =
     val rows = if canvas.width == measuredWidth then lines else layout(canvas.width)
 
-    rows.zipWithIndex.foreach: (line, row) =>
-      if row < canvas.height then
-        canvas.move(Prim, row.z)
+    rows.each: line =>
+      if ordinal.n0 < canvas.height then
+        canvas.move(Prim, ordinal.n0.z)
         canvas.put(line)

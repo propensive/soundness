@@ -55,8 +55,12 @@ object Facade extends prophesy.Completable:
 
       className.map: className =>
         KotlinDialect.resolve(className).lay(List[prophesy.Completion]()): members =>
-          (members.stdlib.toList.sortBy(_(0).s)).to(List).map: (name, prototype) =>
-            val kind = prototype.parameters.lay(prophesy.Completion.Kind.Term): _ =>
+          members.to[List].order(_(0).s).map: (name, prototype) =>
+            // The `Optional` parameter list is bound to a typed local before it is read
+            // (`wildApprox`).
+            val declared: Optional[List[Foreign.Type]] = prototype.parameters
+
+            val kind = declared.lay(prophesy.Completion.Kind.Term): _ =>
               prophesy.Completion.Kind.Method
 
             val signature = KotlinFacade.rendered(name, prototype)

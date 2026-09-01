@@ -1308,7 +1308,10 @@ object Bytecode:
 
     // The stack simulation stays a stdlib-list interior behind the opaque
     // `transform` bridge: chained cons expressions (`a :: b :: a :: rest`)
-    // mis-type against the opaque alias under an expected type.
+    // mis-type against the opaque alias under an expected type, and `Dup`'s
+    // `stack.head` is partial — the native `head` wants a `Populated` proof
+    // the simulation cannot produce, and totalizing it would quietly change
+    // what an under-full stack does.
     private def transform0(stack: scala.collection.immutable.List[Frame])
     :   scala.collection.immutable.List[Frame] =
       import scala.collection.immutable.{Nil, ::}
@@ -1481,7 +1484,7 @@ case class Bytecode
     val instructions2 = instructions.map: (instruction: Bytecode.Instruction) =>
       instruction.copy(line = instruction.line.let(_ + codepoint.line - 1))
 
-    copy(sourceFile = codepoint.source.cut(t"/").stdlib.last, instructions = instructions2)
+    copy(sourceFile = codepoint.source.cut(t"/").last, instructions = instructions2)
 
   def linearize
     ( resolver:        (Text, Text, Text) => Optional[Bytecode],
@@ -1499,26 +1502,30 @@ case class Bytecode
 
       // The budget counter is this walk's own local; no aliased writer.
       scala.caps.unsafe.unsafeAssumeSeparate:
-       bc.instructions.stdlib.iterator.takeWhile(_ => budget > 0).each: instr =>
-        budget -= 1
+        bc.instructions.each: instr =>
+          // The body itself spends the budget, so the bound is retested per element rather
+          // than bounding the traversal: `keep` fixes its boundary in a pass that completes
+          // before any of the body — and hence before any spending — has run.
+          if budget > 0 then
+            budget -= 1
 
-        val target: Optional[(Text, Text, Text)] = instr.opcode match
-          case Invokestatic(o, n, d)                                          => (o, n, d)
-          case Invokevirtual(o, n, d)    if callsite.has(instr.offset)   => (o, n, d)
-          case Invokeinterface(o, n, d, _) if callsite.has(instr.offset) => (o, n, d)
-          case _                                                              => Unset
+            val target: Optional[(Text, Text, Text)] = instr.opcode match
+              case Invokestatic(o, n, d)                                     => (o, n, d)
+              case Invokevirtual(o, n, d) if callsite.has(instr.offset)      => (o, n, d)
+              case Invokeinterface(o, n, d, _) if callsite.has(instr.offset) => (o, n, d)
+              case _                                                         => Unset
 
-        target.let: (owner, name, descriptor) =>
-          if depth >= maxDepth then results += Bytecode.Linearized(depth, source, instr)
-          else resolver(owner, name, descriptor) match
-            case bytecode: Bytecode =>
-              results += Bytecode.Linearized(depth, source, instr)
-              expand(bytecode, depth + 1, t"$owner.$name")
+            target.let: (owner, name, descriptor) =>
+              if depth >= maxDepth then results += Bytecode.Linearized(depth, source, instr)
+              else resolver(owner, name, descriptor) match
+                case bytecode: Bytecode =>
+                  results += Bytecode.Linearized(depth, source, instr)
+                  expand(bytecode, depth + 1, t"$owner.$name")
 
-            case _ =>
-              results += Bytecode.Linearized(depth, source, instr)
+                case _ =>
+                  results += Bytecode.Linearized(depth, source, instr)
 
-        . or(results += Bytecode.Linearized(depth, source, instr))
+            . or(results += Bytecode.Linearized(depth, source, instr))
 
     expand(this, 0, t"")
     results.toList.to(List)
@@ -1527,7 +1534,7 @@ case class Bytecode
 
   private def effectivelyStaticCalls0: Set[Int] =
     import Bytecode.Opcode.*
-    val byOffset = instructions.stdlib.iterator.map{ i => i.offset -> i }.toMap
+    val byOffset: Map[Int, Bytecode.Instruction] = instructions.map { i => i.offset -> i }.to[Map]
 
     val priorStacks: Map[Int, List[Bytecode.Frame]] =
       var prev: Optional[List[Bytecode.Frame]] = Nil
@@ -1539,19 +1546,20 @@ case class Bytecode
 
       builder.result().to(Map)
 
-    instructions.stdlib.iterator.flatMap: instr =>
+    val receivers: List[Optional[Int]] = instructions.map: instr =>
       val (owner, descriptor) = instr.opcode match
-        case Invokevirtual(owner, _, descriptor)        => (owner, descriptor)
-        case Invokeinterface(owner, _, descriptor, _)   => (owner, descriptor)
-        case _                                          => (t"", t"")
+        case Invokevirtual(owner, _, descriptor)      => (owner, descriptor)
+        case Invokeinterface(owner, _, descriptor, _) => (owner, descriptor)
+        case _                                        => (t"", t"")
 
-      if owner == t"" then None
-      else priorStacks.stdlib.get(instr.offset).flatMap: pre =>
+      if owner == t"" then Unset
+      else priorStacks.at(instr.offset).let: pre =>
         val argCount = Bytecode.Descriptor.parse(descriptor).args.size
 
-        if pre.size <= argCount then None
-        else pre.stdlib.drop(argCount).head match
-          case Bytecode.Frame.L(name) if name == owner => Some(instr.offset)
-          case _                                       => None
+        // The size check discharges the positional read below.
+        if pre.size <= argCount then Unset
+        else pre.skip(argCount).prim match
+          case Bytecode.Frame.L(name) if name == owner => instr.offset
+          case _                                       => Unset
 
-    . toSet.pipe(_.to(Set))
+    receivers.sweep { case offset: Int => offset }.to[Set]

@@ -48,8 +48,10 @@ import dotty.tools.dotc.reporting.Reporter
 import dotty.tools.dotc.util.SourceFile
 
 import anticipation.*
+import gossamer.*
 import hellenism.*
 import proscenium.*
+import rudiments.*
 import stenography.*
 
 // Recovers the *static* Scala types of a frame's bindings from the debuggee's compiled program,
@@ -63,13 +65,12 @@ class Purview(classpath: LocalClasspath):
   // `delicious.Reifier` and `anthology.ScalacDriver`: `Driver.setup` loads the classpath's symbol
   // table, `NoReporter` silences diagnostics, and an empty virtual source primes a run.
   private lazy val context: Contexts.Context =
-    val paths: sci.List[Text] =
-      classpath.entries.stdlib.flatMap:
-        case Classpath.Entry.Directory(directory) => sci.List(directory)
-        case Classpath.Entry.Jar(jar)             => sci.List(jar)
-        case _                                    => sci.Nil
+    val paths: List[Text] =
+      classpath.entries.sweep:
+        case Classpath.Entry.Directory(directory) => directory
+        case Classpath.Entry.Jar(jar)             => jar
 
-    val entries: Text = paths.map(_.s).mkString(java.io.File.pathSeparator.nn).tt
+    val entries: Text = paths.join(java.io.File.pathSeparator.nn.tt)
 
     object driver extends dtd.Driver:
       def context: Contexts.Context =
@@ -85,6 +86,8 @@ class Purview(classpath: LocalClasspath):
 
     val base = driver.context.fresh.setReporter(Reporter.NoReporter)
     val run = dtd.Compiler().newRun(using base)
+    // `.stdlib`: `Compiler.Run#compileSources` is a `dotty.tools.dotc` API, which takes the
+    // compiler's own `sci.List`.
     run.compileSources(List(SourceFile.virtual("<purview>", "")).stdlib)
 
     // Quote unpickling — which `stenography`'s `TypeRepr.of` comparisons trigger — expects the
@@ -140,21 +143,21 @@ class Purview(classpath: LocalClasspath):
   // printed form. Consumed by the evaluator to type the synthetic class's parameters, so it must
   // be valid, resolvable Scala. Degrades to an empty map on any failure: a debugger reads types
   // opportunistically and must never fail the frame.
-  def parameters(className: Text, methodName: Text): sci.Map[Text, Text] =
+  def parameters(className: Text, methodName: Text): Map[Text, Text] =
     try
       given Contexts.Context = context
 
       val entries =
         for (name, tpe) <- bindings(className, methodName) yield (name, normalise(tpe.show.tt))
 
-      entries.toMap
+      entries.to(Map)
 
-    catch case scala.util.control.NonFatal(_) => sci.Map()
+    catch case scala.util.control.NonFatal(_) => Map()
 
   // The human-facing rendering of each value parameter's declared type, through `stenography` —
   // capture-set-aware and source-accurate — keyed by name. This is what a debugger surfaces to the
   // user as `Variable.static`. Degrades to an empty map on any failure.
-  def rendered(className: Text, methodName: Text): sci.Map[Text, Text] =
+  def rendered(className: Text, methodName: Text): Map[Text, Text] =
     try
       given Contexts.Context = context
       val quotes = scala.quoted.runtime.impl.QuotesImpl()
@@ -164,6 +167,6 @@ class Purview(classpath: LocalClasspath):
           val repr = tpe.asInstanceOf[quotes.reflect.TypeRepr]
           (name, normalise(Syntax(using quotes)(repr).qualified))
 
-      entries.toMap
+      entries.to(Map)
 
-    catch case scala.util.control.NonFatal(_) => sci.Map()
+    catch case scala.util.control.NonFatal(_) => Map()

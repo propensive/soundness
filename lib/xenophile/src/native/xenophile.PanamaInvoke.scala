@@ -43,6 +43,11 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
+// The declared arity is compared against the argument count, so `List#size` is genuinely
+// required; the list is a single prototype's parameters.
+import denominative.dysasymptotics.linearSize
+import denominative.size
+
 // The terminal materializer for the native (C) ecosystem when the *target platform is the JVM*:
 // the typed, macro counterpart of driving `ForeignLibrary` by hand, and the JVM analogue of
 // `NativeInvoke`. It turns a fully-applied `Foreign` navigation into a Panama downcall: the
@@ -74,9 +79,9 @@ object PanamaInvoke extends Materializer:
     val prototype = members(function).or:
       halt(m"xenophile: the foreign type $owner has no member $function")
 
-    val parameterTypes = prototype.parameters.let(_.stdlib).or(Nil)
+    val parameterTypes: proscenium.List[Foreign.Type] = prototype.parameters.or(proscenium.Nil)
 
-    if argumentTerms.length != parameterTypes.length then
+    if argumentTerms.length != parameterTypes.size then
       halt(m"xenophile: wrong number of arguments for $owner.$function")
 
     // The FFM layout of each C type, spliced directly (this module compiles on the JVM, so the
@@ -99,7 +104,7 @@ object PanamaInvoke extends Materializer:
       case result                      => '{FunctionDescriptor.of(${layoutFor(result)}).nn}
 
     val descriptor: Expr[FunctionDescriptor] =
-      parameterTypes.foldLeft(base): (acc, tpe) =>
+      parameterTypes.fold(base): (acc, tpe) =>
         '{$acc.appendArgumentLayouts(${layoutFor(tpe)}).nn}
 
     def isString(tpe: Foreign.Type): Boolean = tpe match
@@ -112,7 +117,8 @@ object PanamaInvoke extends Materializer:
     // is copied into `arena` (absent unless some parameter needs it); any other pointer travels
     // as a zero-length segment of its raw address.
     def marshalled(arena: Optional[Expr[Arena]]): List[Expr[AnyRef]] =
-      argumentTerms.to(List).zip(parameterTypes).map: (term, paramType) =>
+      // `Expr.ofList` (at the call site) takes a stdlib `Seq`: the quotes API is the boundary.
+      argumentTerms.to(proscenium.List).zip(parameterTypes).stdlib.map: (term, paramType) =>
         val value = Xenophile.convertedValue(term).asExpr
 
         paramType match

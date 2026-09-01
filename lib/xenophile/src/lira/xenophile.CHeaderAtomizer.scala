@@ -40,6 +40,11 @@ import reliquary.*
 import rudiments.*
 import vacuous.*
 
+// The canonical encoding writes an explicit element count before every folded sequence
+// (`cheader.md` §6), so `List#size` is genuinely required here; the lists are declaration-sized.
+import denominative.dysasymptotics.linearSize
+import denominative.size
+
 // The atomization rules of `cheader/1` (`cheader.md`): one rigid atom per declaration, keyed by
 // bare name — C has one flat namespace — with functions standalone and structs, unions, enums
 // and typedefs folding their contents.
@@ -79,21 +84,21 @@ object CHeaderAtomizer:
       case Foreign.Type.Applied(constructor, arguments) =>
         tag(out, 'A')
         utf8(out, constructor)
-        uvarint(out, arguments.stdlib.length.toLong)
-        arguments.stdlib.foreach { argument => encode(out, argument) }
+        uvarint(out, arguments.size.toLong)
+        arguments.each: argument => encode(out, argument)
 
       case Foreign.Type.Union(_) => () // not producible by `CHeader.Parser`
 
   def atomize(declarations: List[CHeader.Declaration]): List[Atom] =
 
-      declarations.stdlib.map:
+      declarations.map:
         case CHeader.Declaration.Function(name, result, parameters, variadic) =>
           Atom(name, Atom.Class.Rigid, hash: out =>
             tag(out, 'f')
             utf8(out, name)
             flag(out, variadic)
-            uvarint(out, parameters.stdlib.length.toLong)
-            parameters.stdlib.foreach { parameter => encode(out, parameter) }
+            uvarint(out, parameters.size.toLong)
+            parameters.each: parameter => encode(out, parameter)
             encode(out, result))
 
         case CHeader.Declaration.Alias(name, target) =>
@@ -109,9 +114,9 @@ object CHeaderAtomizer:
             tag(out, if union then 'u' else 's')
             utf8(out, name)
             flag(out, opaque)
-            uvarint(out, fields.stdlib.length.toLong)
+            uvarint(out, fields.size.toLong)
 
-            fields.stdlib.foreach: (field, typed) =>
+            fields.each: (field, typed) =>
               utf8(out, field)
               encode(out, typed))
 
@@ -119,9 +124,8 @@ object CHeaderAtomizer:
           Atom(name, Atom.Class.Rigid, hash: out =>
             tag(out, 'e')
             utf8(out, name)
-            uvarint(out, cases.stdlib.length.toLong)
+            uvarint(out, cases.size.toLong)
 
-            cases.stdlib.foreach: (label, value) =>
+            cases.each: (label, value) =>
               utf8(out, label)
               utf8(out, Text(value.toString)))
-      . to(List)

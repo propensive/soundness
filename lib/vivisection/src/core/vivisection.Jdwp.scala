@@ -43,6 +43,13 @@ import scala.collection.concurrent as scc
 
 import anticipation.*
 import coaxial.*
+
+// Selective, as `rudiments.each` is: JDWP marshalling indexes frozen byte arrays by `Int`, which a
+// wildcard import would capture. Every JDWP command writing a list prefixes it with the list's
+// length, so `size` — and its linear-cost acknowledgment — is unavoidable here; the lists are the
+// caller's argument lists, of a handful of elements.
+import denominative.dysasymptotics.linearSize
+import denominative.size
 import rudiments.each
 import contingency.*
 import fulminate.*
@@ -750,7 +757,10 @@ object Jdwp:
         val accumulator = ji.ByteArrayOutputStream()
         var handshaken = false
 
-        source.toProgression.stdlib.iterator.foreach: chunk =>
+        // `chunks` is the kernel's own chunk-at-a-time terminal: one materialized chunk per
+        // refill, closing the endpoint at exhaustion — the same traversal the memoizing `Chain`
+        // bridge gave, without retaining every chunk read.
+        source.chunks.each: chunk =>
           accumulator.write(Array.unsafeJvm(chunk))
           val bytes = accumulator.toByteArray.nn
           var offset = 0
@@ -1142,7 +1152,7 @@ object Jdwp:
     :   Invocation =
 
       val reader = request(3, 3): writer =>
-        writer.referenceTypeId(cls).threadId(thread).methodId(method).int(args.stdlib.length)
+        writer.referenceTypeId(cls).threadId(thread).methodId(method).int(args.size)
         args.each(writer.value)
         writer.int(1)
 
@@ -1154,7 +1164,7 @@ object Jdwp:
     :   Invocation =
 
       val reader = request(3, 4): writer =>
-        writer.referenceTypeId(cls).threadId(thread).methodId(constructor).int(args.stdlib.length)
+        writer.referenceTypeId(cls).threadId(thread).methodId(constructor).int(args.size)
         args.each(writer.value)
         writer.int(1)
 
@@ -1217,7 +1227,7 @@ object Jdwp:
     :   List[Value] =
 
       val reader = request(9, 2): writer =>
-        writer.objectId(obj).int(fields.stdlib.length)
+        writer.objectId(obj).int(fields.size)
         fields.each(writer.fieldId)
 
       list(reader.int()): () => reader.value()
@@ -1228,7 +1238,7 @@ object Jdwp:
     :   Unit =
 
       command(9, 3): writer =>
-        writer.objectId(obj).int(assignments.stdlib.length)
+        writer.objectId(obj).int(assignments.size)
         assignments.each: (field, value) => writer.fieldId(field).untaggedValue(value)
 
     // Invokes an instance method on a suspended thread and reads back its return value and any
@@ -1246,7 +1256,7 @@ object Jdwp:
 
       val reader = request(9, 6): writer =>
         writer.objectId(obj).threadId(thread).referenceTypeId(cls).methodId(method)
-        writer.int(args.stdlib.length)
+        writer.int(args.size)
         args.each(writer.value)
         writer.int(1)
 
@@ -1304,7 +1314,7 @@ object Jdwp:
     :   Unit =
 
       command(13, 3): writer =>
-        writer.objectId(array).int(first).int(values.stdlib.length)
+        writer.objectId(array).int(first).int(values.size)
         values.each(writer.untaggedValue)
 
     // EventRequest (command set 15). `set` returns the request id used to `clear` it later.
@@ -1313,7 +1323,7 @@ object Jdwp:
     :   Int =
 
       request(15, 1): writer =>
-        writer.byte(kind.id.toByte).byte(policy.id).int(modifiers.stdlib.length)
+        writer.byte(kind.id.toByte).byte(policy.id).int(modifiers.size)
         modifiers.each(writer.modifier)
 
       . int()
@@ -1331,7 +1341,7 @@ object Jdwp:
     :   List[Value] =
 
       val reader = request(16, 1): writer =>
-        writer.threadId(thread).frameId(frame).int(slots.stdlib.length)
+        writer.threadId(thread).frameId(frame).int(slots.size)
         slots.each: (slot, tag) => writer.int(slot).byte(tag.id.toByte)
 
       list(reader.int()): () => reader.value()
@@ -1341,7 +1351,7 @@ object Jdwp:
     :   Unit =
 
       command(16, 2): writer =>
-        writer.threadId(thread).frameId(frame).int(assignments.stdlib.length)
+        writer.threadId(thread).frameId(frame).int(assignments.size)
         assignments.each: (slot, value) => writer.int(slot).value(value)
 
     // The frame's `this`, as a tagged reference; a static or native frame answers the null object

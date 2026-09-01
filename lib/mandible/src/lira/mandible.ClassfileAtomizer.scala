@@ -35,10 +35,13 @@ package mandible
 import java.lang.classfile as jlc
 
 import anticipation.*
+import denominative.size
 import gossamer.*
 import reliquary.*
 import rudiments.*
 import vacuous.*
+
+import denominative.dysasymptotics.linearSize
 
 // The atomization rules of `classfile/1`, over the declaration surface `ClassSurface` reads.
 // Shared, deliberately, by two consumers with opposite relationships to the snapshot: the
@@ -112,8 +115,10 @@ object ClassfileAtomizer:
         tag(out, '1')
         utf8(out, text)
 
+  // The count is a length prefix, so it must precede the elements; the extra walk it costs is
+  // the same order as the write that follows it.
   private def texts(out: java.io.ByteArrayOutputStream, values: List[Text]): Unit =
-    uvarint(out, values.stdlib.length.toLong)
+    uvarint(out, values.size.toLong)
     values.each(utf8(out, _))
 
   private def hash(encode: java.io.ByteArrayOutputStream => Unit): Data =
@@ -211,13 +216,13 @@ object ClassfileAtomizer:
     // The fold is the sorted *key* list (`classfile.md` §9 rule 6) — the presenting owner is
     // this class for every member of its presented set, so each key is the class's name with
     // the member's selector appended.
-    val abstracts =
-      if surface.isFinal then Nil else
-        members.stdlib.collect:
+    val abstracts: List[Text] =
+      if surface.isFinal then Nil
+      else
+        val keys: List[Text] = members.sweep:
           case (member, _) if member.abstrakt => t"${surface.name}${member.selector}"
 
-        . sortBy(_.s)
-        . to(List)
+        keys.order(_.s)
 
     val encoding = hash: out =>
       tag(out, 'K')
@@ -247,7 +252,7 @@ object ClassfileAtomizer:
         // resolvable by name from any consumer's source, so they carry no interface of their own.
         if surface.visible && !surface.synthetic then
           val (_, missing) = index.closure(name)
-          unresolved ++= missing.stdlib
+          missing.each(unresolved += _)
 
           val members = presented(surface, index)
           atoms += classAtom(surface, members, fold)

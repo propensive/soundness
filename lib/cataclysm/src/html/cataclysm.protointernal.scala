@@ -96,7 +96,7 @@ private[cataclysm] object protointernal:
       halt(m"cataclysm: could not parse the stylesheet at $path")
 
     // Upcast the typed names to `Text` for comparison against the requested name.
-    (css.classes.stdlib.map(identity[Text]).to(Set), css.ids.stdlib.map(identity[Text]).to(Set))
+    (css.classes.map(identity[Text]), css.ids.map(identity[Text]))
 
   // Decide whether `name` is a class or an id in the in-scope stylesheet, or halt.
   def attributeFor[name <: Label: Type]: Macro[Text] =

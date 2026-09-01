@@ -131,6 +131,7 @@ def helpTree
   def probe(prefix: List[Text]): Probe =
     val focus = prefix.size
     val textArguments = prefix :+ t""
+    // `.stdlib`: `Cli.arguments` takes a stdlib `Iterable`.
     val synthesized = Cli.arguments(textArguments.stdlib, focus, Unset, Prim)
 
     // A recording view of the environment: every variable the application reads while its
@@ -197,8 +198,14 @@ def helpTree
 
       val known = flags.fold(inherited)(_ :+ _)
 
+      // Deduplicated by `core` — the native `distinct` compares whole elements — keeping the
+      // first occurrence of each; the fold accumulates in reverse, hence the `reverse`.
+      val distinctSuggestions: List[Suggestion] =
+        suggestions.fold(Nil: List[Suggestion]): (seen, suggestion) =>
+          if seen.exists(_.core == suggestion.core) then seen else suggestion :: seen
+
       val children =
-        suggestions.stdlib.distinctBy(_.core).to(List).bind: suggestion =>
+        distinctSuggestions.reverse.bind: suggestion =>
           val childPrefix = prefix :+ suggestion.core
 
           // An operand *value* (a filename, a `select` option) is offered at the cursor exactly
@@ -251,15 +258,22 @@ package executives:
 
           val parts0 = rawLine.cut(t" ")
           val parts = if cursor > rawLine.length then parts0 :+ t"" else parts0
+          // A single documented stdlib view: locating the cursor's word needs a running scan
+          // and then several already-guarded positional reads over its result.
           val wordStarts = parts.stdlib.scanLeft(0){ (pos, w) => pos + w.length + 1 }.init
           val wordIdx = wordStarts.lastIndexWhere(_ <= cursor).max(0)
           val posInWord = cursor - wordStarts(wordIdx)
           val focus = (wordIdx - 1).max(0)
-          val restParts = if parts.size > 1 then parts.stdlib.tail.to(List) else List(t"")
+
+          // Deconstructed rather than counted: a tail exists exactly when two elements do.
+          val restParts = parts match
+            case _ :: (rest @ (_ :: _)) => rest
+            case _                      => List(t"")
           val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, cursor))
 
           Completion
             ( Cli.arguments(arguments, focus, posInWord, tab),
+              // `.stdlib`: `Cli.arguments` takes a stdlib `Iterable`.
               Cli.arguments(restParts.stdlib, focus, posInWord, tab),
               environment,
               workingDirectory,
@@ -304,6 +318,7 @@ package executives:
 
             Completion
               ( Cli.arguments(arguments, focus2, position, tab),
+                // `.stdlib`: `Cli.arguments` takes a stdlib `Iterable`.
                 Cli.arguments(rest2.stdlib, focus2, position, tab),
                 environment,
                 workingDirectory,

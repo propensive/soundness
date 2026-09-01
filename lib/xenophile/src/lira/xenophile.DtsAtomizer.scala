@@ -36,7 +36,13 @@ import anticipation.*
 import gossamer.*
 import reliquary.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
+
+// The canonical encoding writes an explicit element count before every folded sequence, so
+// `List#size` is genuinely required here; the lists are declaration-sized.
+import denominative.dysasymptotics.linearSize
+import denominative.{Ordinal, size}
 
 // The atomization rules of `dts/1`.
 //
@@ -89,16 +95,16 @@ object DtsAtomizer:
   private def encode
     ( out:     java.io.ByteArrayOutputStream,
       typed:   Typescript.Type,
-      binders: scala.List[scala.List[Text]] )
+      binders: List[List[Text]] )
   :   Unit =
 
     def index(name: Text): Optional[(Int, Int)] =
-      val depths = binders.reverse.zipWithIndex
-
-      depths.collectFirst:
-        case (names, depth) if names.contains(name) => (depth, names.indexOf(name))
-
-      . getOrElse(Unset)
+      binders.reverse.indexed.reap:
+        case (names, depth) if names.has(name) =>
+          // The `Optional` position is bound to a typed local before it is read (`wildApprox`);
+          // the guard above makes it always present.
+          val offset: Optional[Ordinal] = names.where(_ == name)
+          offset.let { ordinal => (depth.n0, ordinal.n0) }
 
     typed match
       case Typescript.Type.Named(name, arguments) =>
@@ -112,8 +118,8 @@ object DtsAtomizer:
             tag(out, 'N')
             utf8(out, name)
 
-        uvarint(out, arguments.stdlib.length.toLong)
-        arguments.stdlib.foreach { argument => encode(out, argument, binders) }
+        uvarint(out, arguments.size.toLong)
+        arguments.each: argument => encode(out, argument, binders)
 
       case Typescript.Type.Literal(value, kind) =>
         tag(out, 'L')
@@ -136,8 +142,8 @@ object DtsAtomizer:
         // A tuple's element order is its meaning; its element *labels* are documentation and
         // never distinguish two types, so they are not folded.
         tag(out, 'T')
-        uvarint(out, members.stdlib.length.toLong)
-        members.stdlib.foreach { member => encode(out, member, binders) }
+        uvarint(out, members.size.toLong)
+        members.each: member => encode(out, member, binders)
 
       case Typescript.Type.Array(element) =>
         tag(out, 'A')
@@ -145,9 +151,9 @@ object DtsAtomizer:
 
       case Typescript.Type.Object(members) =>
         tag(out, 'O')
-        val ordered = members.stdlib.sortBy { member => member.selector.s }
-        uvarint(out, ordered.length.toLong)
-        ordered.foreach { member => encodeMember(out, member, binders) }
+        val ordered: List[Typescript.Member] = members.order(_.selector.s)
+        uvarint(out, ordered.size.toLong)
+        ordered.each: member => encodeMember(out, member, binders)
 
       case Typescript.Type.Keyof(target) =>
         tag(out, 'K')
@@ -170,37 +176,45 @@ object DtsAtomizer:
 
       case Typescript.Type.Function(parameters, result, typed, construct) =>
         tag(out, if construct then 'C' else 'F')
-        val names = typed.stdlib.map(_.name)
-        val inner = binders :+ names
+        val names: List[Text] = typed.map(_.name)
+        val inner = binders + List(names)
 
-        uvarint(out, typed.stdlib.length.toLong)
+        uvarint(out, typed.size.toLong)
 
-        typed.stdlib.foreach: parameter =>
+        typed.each: parameter =>
           // A bound and a default are contract: a caller may rely on the default, and a bound
-          // decides which arguments are legal.
-          parameter.bound.lay(tag(out, '0')) { bound => tag(out, '1'); encode(out, bound, inner) }
+          // decides which arguments are legal. Each `Optional` field is bound to a typed local
+          // before it is read (`wildApprox`).
+          val bound0: Optional[Typescript.Type] = parameter.bound
+          val default0: Optional[Typescript.Type] = parameter.default
+          bound0.lay(tag(out, '0')) { bound => tag(out, '1'); encode(out, bound, inner) }
 
-          parameter.default.lay(tag(out, '0')): default =>
+          default0.lay(tag(out, '0')): default =>
             tag(out, '1')
             encode(out, default, inner)
 
-        uvarint(out, parameters.stdlib.length.toLong)
+        uvarint(out, parameters.size.toLong)
 
-        parameters.stdlib.foreach: parameter =>
+        parameters.each: parameter =>
           // Parameter *names* are not folded — TypeScript call sites are positional — but
           // optionality and rest-ness decide which calls are legal, so both are.
+          // The `Optional` type is bound to a typed local before it is read (`wildApprox`).
+          val typed0: Optional[Typescript.Type] = parameter.typed
           flag(out, parameter.optional)
           flag(out, parameter.rest)
-          parameter.typed.lay(tag(out, '0')) { value => tag(out, '1'); encode(out, value, inner) }
+          typed0.lay(tag(out, '0')) { value => tag(out, '1'); encode(out, value, inner) }
 
         encode(out, result, inner)
 
   private def sorted
     ( out:     java.io.ByteArrayOutputStream,
       members: List[Typescript.Type],
-      binders: scala.List[scala.List[Text]] )
+      binders: List[List[Text]] )
   :   Unit =
 
+    // The encoded members stay in a `stdlib` view: an opaque `List` of `scala.Vector[Int]`
+    // fails capture checking here, because the vector's `prefix1` array carries a root
+    // capability that cannot flow into the traversal evidence's empty capture set.
     val encodings = members.stdlib.map: member =>
       val buffer = java.io.ByteArrayOutputStream()
       encode(buffer, member, binders)
@@ -233,7 +247,7 @@ object DtsAtomizer:
   private def encodeMember
     ( out:     java.io.ByteArrayOutputStream,
       member:  Typescript.Member,
-      binders: scala.List[scala.List[Text]] )
+      binders: List[List[Text]] )
   :   Unit =
 
     utf8(out, member.selector)
@@ -246,29 +260,35 @@ object DtsAtomizer:
 
     // Overload signatures keep declaration order: TypeScript resolves a call against them in
     // order, so reordering them changes which one a given call selects.
-    uvarint(out, member.signatures.stdlib.length.toLong)
-    member.signatures.stdlib.foreach { signature => encode(out, signature, binders) }
+    uvarint(out, member.signatures.size.toLong)
+    member.signatures.each: signature => encode(out, signature, binders)
 
   // --- atoms -----------------------------------------------------------------------------------
 
-  private def binderNames(typed: List[Typescript.Type.Parameter]): scala.List[Text] =
-    typed.stdlib.map(_.name)
+  private def binderNames(typed: List[Typescript.Type.Parameter]): List[Text] =
+    typed.map(_.name)
 
   def atomize(declaration: Typescript.Declaration): List[Atom] =
     val key = declaration.key
     val atoms = scala.collection.mutable.ListBuffer[Atom]()
 
-    val members = declaration.declaredMembers.stdlib.filter(_.visible)
-    val binders = scala.List(binderNames(typeParameters(declaration)))
+    val members: List[Typescript.Member] = declaration.declaredMembers.filter(_.visible)
+    val binders: List[List[Text]] = List(binderNames(typeParameters(declaration)))
 
     // Members are atoms of their own, so adding one is a minor for a consumer who only calls it.
-    members.foreach: member =>
+    members.each: member0 =>
+      // The element is bound to a typed local before its members are read: `each` types its
+      // lambda parameter as the traversal's (still-uninstantiated) `Operand`, which trips the
+      // compiler's `wildApprox` assertion inside the `t"…"` macro below.
+      val member: Typescript.Member = member0
+
       val encoding = hash: out =>
         tag(out, 'M')
         utf8(out, key)
         encodeMember(out, member, binders)
 
-      atoms += Atom(t"$key#${member.selector}", Atom.Class.Rigid, encoding)
+      val selector: Text = member.selector
+      atoms += Atom(t"$key#$selector", Atom.Class.Rigid, encoding)
 
     val encoding = hash: out =>
       declaration match
@@ -278,8 +298,8 @@ object DtsAtomizer:
           parameters(out, typed, binders)
           // Heritage keeps declaration order, which decides how conflicting inherited members
           // resolve.
-          uvarint(out, extending.stdlib.length.toLong)
-          extending.stdlib.foreach { base => encode(out, base, binders) }
+          uvarint(out, extending.size.toLong)
+          extending.each: base => encode(out, base, binders)
 
         case Typescript.Declaration.Class(_, _, typed, extending, implements, _, isAbstract, _) =>
           tag(out, 'C')
@@ -287,8 +307,8 @@ object DtsAtomizer:
           parameters(out, typed, binders)
           flag(out, isAbstract)
           extending.lay(tag(out, '0')) { base => tag(out, '1'); encode(out, base, binders) }
-          uvarint(out, implements.stdlib.length.toLong)
-          implements.stdlib.foreach { base => encode(out, base, binders) }
+          uvarint(out, implements.size.toLong)
+          implements.each: base => encode(out, base, binders)
 
         case Typescript.Declaration.Alias(_, _, typed, target, _) =>
           tag(out, 'A')
@@ -303,17 +323,19 @@ object DtsAtomizer:
           // a materially stronger commitment than an ordinary enum's; the flag folds so that a
           // change of kind is never invisible.
           flag(out, constant)
-          uvarint(out, members.stdlib.length.toLong)
+          uvarint(out, members.size.toLong)
 
-          members.stdlib.foreach: (name, value) =>
+          members.each: (name, value0) =>
+            // The `Optional` value is bound to a typed local before it is read (`wildApprox`).
+            val value: Optional[Text] = value0
             utf8(out, name)
             value.lay(tag(out, '0')) { text => tag(out, '1'); utf8(out, text) }
 
         case Typescript.Declaration.Function(_, _, signatures, _) =>
           tag(out, 'F')
           utf8(out, key)
-          uvarint(out, signatures.stdlib.length.toLong)
-          signatures.stdlib.foreach { signature => encode(out, signature, binders) }
+          uvarint(out, signatures.size.toLong)
+          signatures.each: signature => encode(out, signature, binders)
 
         case Typescript.Declaration.Variable(_, _, typed, constant, _) =>
           tag(out, 'V')
@@ -324,9 +346,9 @@ object DtsAtomizer:
       // The sorted member-key list, folded into the declaration's own atom. This is what makes
       // adding a member a *major* for implementors while it remains a minor for callers — the
       // one place where a single change is honestly two different events.
-      val keys = members.map(_.selector).sortBy(_.s)
-      uvarint(out, keys.length.toLong)
-      keys.foreach { selector => utf8(out, selector) }
+      val keys: List[Text] = members.map(_.selector).order(_.s)
+      uvarint(out, keys.size.toLong)
+      keys.each: selector => utf8(out, selector)
 
     atoms += Atom(key, Atom.Class.Rigid, encoding)
 
@@ -335,14 +357,17 @@ object DtsAtomizer:
   private def parameters
     ( out:     java.io.ByteArrayOutputStream,
       typed:   List[Typescript.Type.Parameter],
-      binders: scala.List[scala.List[Text]] )
+      binders: List[List[Text]] )
   :   Unit =
 
-    uvarint(out, typed.stdlib.length.toLong)
+    uvarint(out, typed.size.toLong)
 
-    typed.stdlib.foreach: parameter =>
-      parameter.bound.lay(tag(out, '0')) { bound => tag(out, '1'); encode(out, bound, binders) }
-      parameter.default.lay(tag(out, '0')) { value => tag(out, '1'); encode(out, value, binders) }
+    typed.each: parameter =>
+      // Each `Optional` field is bound to a typed local before it is read (`wildApprox`).
+      val bound0: Optional[Typescript.Type] = parameter.bound
+      val default0: Optional[Typescript.Type] = parameter.default
+      bound0.lay(tag(out, '0')) { bound => tag(out, '1'); encode(out, bound, binders) }
+      default0.lay(tag(out, '0')) { value => tag(out, '1'); encode(out, value, binders) }
 
   private def typeParameters(declaration: Typescript.Declaration): List[Typescript.Type.Parameter] =
     declaration match

@@ -88,12 +88,19 @@ object Foreign extends prophesy.Completable:
           (topicRepr.dealias, locusRepr.dealias) match
             case (ConstantType(StringConstant(topic)), ConstantType(StringConstant(locus))) =>
               Xenophile.definitions(originRepr, locus.tt)(topic.tt).lay(Nil): prototypes =>
-                (prototypes.stdlib.toList.sortBy(_(0).s)).to(List).map: (name, prototype) =>
-                  val kind = prototype.parameters.lay(prophesy.Completion.Kind.Term): _ =>
+                prototypes.to[List].order(_(0).s).map: (name, prototype) =>
+                  // The `Optional` parameter list is bound to a typed local before it is read
+                  // (`wildApprox`).
+                  val declared: Optional[List[Foreign.Type]] = prototype.parameters
+
+                  val kind = declared.lay(prophesy.Completion.Kind.Term): _ =>
                     prophesy.Completion.Kind.Method
 
-                  val signature = prototype.parameters.lay(prototype.result.text): parameters =>
-                    t"(${parameters.map(_.text).join(t", ")}): ${prototype.result.text}"
+                  val result: Text = prototype.result.text
+
+                  val signature = declared.lay(result): parameters =>
+                    val rendered: Text = parameters.map(_.text).join(t", ")
+                    t"($rendered): $result"
 
                   prophesy.Completion(name, kind, Syntax.Symbolic(signature))
 

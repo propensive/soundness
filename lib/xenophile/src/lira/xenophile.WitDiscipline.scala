@@ -58,13 +58,13 @@ object WitDiscipline extends Discipline:
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
   :   Atomization raises Discipline.Error =
 
-    val documents = content.stdlib.flatMap: (path, data) =>
+    val documents: List[Wit.Document] = content.bind: (path, data) =>
       val source = Text(String(Array.unsafeJvm(data), "UTF-8"))
 
       mitigate:
         case Wit.Error(reason) =>
           Discipline.Error(id, Discipline.Error.Reason.Malformed(t"${path.text}: $reason"))
 
-      . protect(Wit.Parser.parse(source).stdlib)
+      . protect(Wit.Parser.parse(source))
 
-    Atomization.of(id, WitAtomizer.atomize(documents.to(List)))
+    Atomization.of(id, WitAtomizer.atomize(documents))

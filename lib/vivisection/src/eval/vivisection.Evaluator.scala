@@ -35,7 +35,6 @@ package vivisection
 import java.util.concurrent.atomic as juca
 
 import scala.caps
-import scala.collection.immutable as sci
 
 import anthology.*
 import anticipation.*
@@ -44,8 +43,8 @@ import gossamer.*
 import hellenism.*
 import parasite.*
 import proscenium.*
+import rudiments.*
 import spectacular.*
-import rudiments.{prim, seek}
 import vacuous.*
 
 object Evaluator:
@@ -150,19 +149,21 @@ extends caps.ExclusiveCapability:
   // plus the pieces the compile-inject-invoke tail needs — the class's simple name, its package,
   // and the locals with their live values (the constructor arguments).
   private def stage(frame: FrameId, location: Jdwp.Location, body: Text, resultType: Text)
-  :   (Text, Text, Text, sci.List[(Text, Text, Jdwp.Value)]) =
+  :   (Text, Text, Text, List[(Text, Text, Jdwp.Value)]) =
 
     val table = connection.variableTable(location.cls, location.method)
 
     // The locals live at the stop, in declaration order: name, Scala type, and current value.
-    val locals: sci.List[(Text, Text, Jdwp.Value)] =
-      table.lay(sci.List[(Text, Text, Jdwp.Value)]()): table =>
-        val live = table.slots.stdlib.filter: slot =>
+    val locals: List[(Text, Text, Jdwp.Value)] =
+      table.lay(List[(Text, Text, Jdwp.Value)]()): table =>
+        val live = table.slots.filter: slot =>
           val index = location.index
           slot.name != t"this" && slot.index <= index && index < slot.index + slot.length
 
-        val requests = live.map: slot => (slot.slot, Variable.tag(slot.signature))
-        val values = connection.slotValues(thread, frame, List(requests*)).stdlib
+        val requests: List[(Int, Jdwp.Tag)] =
+          live.map: slot => (slot.slot, Variable.tag(slot.signature))
+
+        val values = connection.slotValues(thread, frame, requests)
         live.zip(values).map: (slot, value) => (slot.name, slot.signature, value)
 
     val className = t"vivisection$$eval$$${Evaluator.counter.getAndIncrement()}"
@@ -177,8 +178,11 @@ extends caps.ExclusiveCapability:
     val method = methodName(location.cls, location.method)
     val statics = purview.parameters(owner, method)
 
-    val typed = locals.map: (name, signature, _) =>
-      (name, statics.get(name).getOrElse(Variable.demangle(signature)))
+    val typed: List[(Text, Text)] = locals.map: (name, signature, _) =>
+      // The recovered type is bound to a typed local before it is read: an `Optional` read
+      // directly inside a collection lambda trips the compiler's `wildApprox` assertion.
+      val static: Optional[Text] = statics.at(name)
+      (name, static.or(Variable.demangle(signature)))
 
     (render(className, pkg, typed, resultType, body), className, pkg, locals)
 
@@ -209,13 +213,17 @@ extends caps.ExclusiveCapability:
       // Define every classfile. `defineClass` loads without linking, so the entry class is then
       // forced through `Class.forName(name, true, loader)` to prepare it, after which its methods
       // can be read.
+      //
+      // `.stdlib`: traversing the native `Map` widens each `Data` value to a read-only
+      // `Array[Byte]^{value.rd}`, which the injector's `Data` parameter (a pure `Array[Byte]^{}`)
+      // will not accept; the stdlib view hands the values over unwidened.
       process.classfiles.stdlib.foreach: (path, bytecode) =>
         if path.encode.s.endsWith(".class") then injector.define(classNameOf(path.encode), bytecode)
 
       val cls = prepared(qualified, loader)
       val constructor = connection.methods(cls).seek(_.name == t"<init>").let(_.method)
       val run = connection.methods(cls).seek(_.name == t"run").let(_.method)
-      val arguments = List(locals.map { (_, _, value) => value }*)
+      val arguments: List[Jdwp.Value] = locals.map: (_, _, value) => value
 
       constructor.let: ctor =>
         run.let: runMethod =>
@@ -239,12 +247,11 @@ extends caps.ExclusiveCapability:
       val owner = Variable.demangle(connection.signature(location.cls))
       val statics = purview.rendered(owner, methodName(location.cls, location.method))
 
-      val enriched = bindings.stdlib.map: variable =>
-        statics.get(variable.name) match
-          case scala.Some(static) => variable.copy(static = static)
-          case _                  => variable
-
-      List(enriched*)
+      bindings.map: variable =>
+        // The recovered type is bound to a typed local before it is read: an `Optional` read
+        // directly inside a collection lambda trips the compiler's `wildApprox` assertion.
+        val static: Optional[Text] = statics.at(variable.name)
+        static.lay(variable): static => variable.copy(static = static)
 
   // Renders a visible binding through its `Inspectable` instance, resolved and invoked in the
   // debuggee. Because the synthetic class types the binding at its declared type, the summon is a
@@ -313,10 +320,10 @@ extends caps.ExclusiveCapability:
   // given body at the given result type — `String.valueOf` text for a plain evaluation, or a
   // variable's own type for an assignment.
   private def render
-    ( name: Text, pkg: Text, params: sci.List[(Text, Text)], resultType: Text, body: Text )
+    ( name: Text, pkg: Text, params: List[(Text, Text)], resultType: Text, body: Text )
   :   Text =
 
-    val parameters = params.map { (field, kind) => s"${field.s}: ${kind.s}" }.mkString(", ")
+    val parameters = params.map { (field, kind) => t"$field: $kind" }.join(t", ").s
 
     // `spectacular` is imported so `.inspect` resolves for the rendering path; an evaluation which
     // does not use it simply leaves the import unused.

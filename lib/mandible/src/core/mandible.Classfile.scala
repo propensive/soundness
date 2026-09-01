@@ -70,21 +70,17 @@ object Classfile:
 // field would make `Classfile` itself a capability. Conversion happens in the companion.
 class Classfile(data: scala.IArray[Byte]):
   val sourceFile: Optional[Text] =
-    model.attributes.nn.to[List].stdlib.collect:
+    model.attributes.nn.to[List].reap:
       case attribute: jlca.SourceFileAttribute =>
         attribute.sourceFile().nn.stringValue.nn.tt
-
-    . headOption.getOrElse(Unset)
 
   // The JSR-45 `SourceDebugExtension`, whose body is the text of an SMAP mapping the synthetic
   // line numbers the classfile records back to the source positions they stand for. The body is
   // modified UTF-8, which for the ASCII an SMAP contains is plain UTF-8.
   val sourceDebugExtension: Optional[Text] =
-    model.attributes.nn.to[List].stdlib.collect:
+    model.attributes.nn.to[List].reap:
       case attribute: jlca.SourceDebugExtensionAttribute =>
         String(attribute.contents.nn, StandardCharsets.UTF_8).tt
-
-    . headOption.getOrElse(Unset)
 
   class Method(model: jlc.MethodModel):
     def name: Text = model.methodName.nn.toString.tt
@@ -114,8 +110,8 @@ class Classfile(data: scala.IArray[Byte]):
 
         attr.fold(Map.empty[jlc.Label, List[Bytecode.Frame]]): smt =>
           smt.entries.nn.to[List].map: entry =>
-            val frames =
-              List.from(entry.stack.nn.to[List].stdlib.map(Bytecode.Frame.fromVerificationType).reverse)
+            val frames: List[Bytecode.Frame] =
+              entry.stack.nn.to[List].map(Bytecode.Frame.fromVerificationType).reverse
 
             entry.target.nn -> frames
 
@@ -152,8 +148,11 @@ class Classfile(data: scala.IArray[Byte]):
                 recur(todo, line, done, stack, count)
 
               case other: jlci.LabelTarget =>
-                val resetStack: Optional[List[Bytecode.Frame]] =
-                  stackMaps.stdlib.get(other.label.nn).fold(stack)(identity)
+                // Bound first: passed inline to `at`, the `.nn` null-elision proxy leaks into
+                // the inferred index type and fails to conform.
+                val label = other.label.nn
+
+                val resetStack: Optional[List[Bytecode.Frame]] = stackMaps.at(label).or(stack)
 
                 recur(todo, line, done, resetStack, count)
 

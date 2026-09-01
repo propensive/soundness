@@ -33,6 +33,7 @@
 package ultimatum
 
 import anticipation.*
+import denominative.size
 import denominative.z
 import escapade.*
 import gossamer.*
@@ -107,7 +108,7 @@ case class Spinner
       val chosen = fit(width, gauging)
 
       val frame = chosen.lay(Teletype(t" "*width.max(0))): spinner =>
-        val count = spinner.frames.stdlib.length
+        val count = spinner.frames.size
 
         val index = tick.index.abs
         val glyph = if count == 0 then t" " else spinner.frames.at((index%count).z).or(t" ")

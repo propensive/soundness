@@ -32,6 +32,7 @@
                                                                                                   */
 package ultimatum
 
+import denominative.size
 import denominative.z
 import iridescence.*
 import prepositional.*
@@ -49,7 +50,7 @@ object Gradient:
 // is local for now so that adding it does not touch a module everything else depends on.
 case class Gradient(stops: Sequence[Color in Srgb]):
   def apply(position: Double): Color in Srgb =
-    val count = stops.stdlib.length
+    val count = stops.size
 
     if count <= 1 then stops.prim.or(Srgb(0.0, 0.0, 0.0)) else
       val scaled = position.max(0.0).min(1.0)*(count - 1)

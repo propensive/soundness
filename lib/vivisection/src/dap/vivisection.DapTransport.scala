@@ -61,7 +61,9 @@ private[vivisection] object DapTransport:
 
     import strategies.throwUnsafely
 
-    source.toProgression.stdlib.iterator.frames[ContentLength].each: frame =>
+    // `chunks` is the kernel's chunk-at-a-time terminal, and already the `Iterator` `frames`
+    // deframes over — the traversal the memoizing `Chain` bridge gave, retaining nothing.
+    source.chunks.frames[ContentLength].each: frame =>
       val message: Text = frame.utf8
       observer(message)
       receive(message)

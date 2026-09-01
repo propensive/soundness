@@ -128,7 +128,7 @@ object WebIdl:
     // selectors), `new(…)` for constructors, and the special-operation keyword in brackets for
     // anonymous getters, setters and deleters.
     def selector: Text =
-      def signature: Text = Text(arguments.stdlib.map(_.typed.text.s).mkString(","))
+      def signature: Text = arguments.map(_.typed.text).join(t",")
 
       kind match
         case Member.Kind.Attribute | Member.Kind.Constant => name

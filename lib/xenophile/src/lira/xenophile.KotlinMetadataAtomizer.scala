@@ -333,12 +333,15 @@ object KotlinMetadataAtomizer:
 
   // Atomizes the metadata-carrying classes among `content`, resolving supertypes through the
   // release's own classes first and the classpath second.
-  def atomize(content: SList[(Text, Data)], classpath: SList[Text])
+  def atomize(content: List[(Text, Data)], classpath: List[Text])
   :   List[Atom] raises Discipline.Error =
 
-    val own: SMap[String, Data] = content.map { (name, data) => (name.s, data) }.toMap
+    // This is the JVM class-loading boundary: the lookup map is read from inside a
+    // `java.net.URLClassLoader` subclass and the URLs become a `java.net.URL[]`, so both are
+    // built in stdlib shapes here.
+    val own: SMap[String, Data] = content.stdlib.map { (name, data) => (name.s, data) }.toMap
 
-    val urls = classpath.map { entry => java.io.File(entry.s).toURI.nn.toURL.nn }
+    val urls = classpath.stdlib.map { entry => java.io.File(entry.s).toURI.nn.toURL.nn }
 
     val loader: ClassLoader =
       new java.net.URLClassLoader(urls.toArray, getClass.getClassLoader):
@@ -387,7 +390,7 @@ object KotlinMetadataAtomizer:
 
     val atoms = scala.collection.mutable.ListBuffer[Atom]()
 
-    content.foreach: (binary, data) =>
+    content.each: (binary, data) =>
       load(binary.s).let: cls =>
         Optional(cls.getAnnotation(classOf[kotlin.Metadata])).let: annotation =>
           val metadata =

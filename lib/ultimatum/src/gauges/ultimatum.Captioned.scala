@@ -34,6 +34,7 @@ package ultimatum
 
 import anticipation.*
 import escapade.*
+import rudiments.{indexed, map}
 import vacuous.*
 
 object Captioned:
@@ -62,10 +63,9 @@ object Captioned:
         val drawn = design.rows(status.status, tick, gaugeWidth)
 
         // Only the first row carries the caption; a multi-row design keeps its shape below it.
-        val captioned = drawn.stdlib.zipWithIndex.map: (row, index) =>
-          if index > 0 then row else layout.compose(row, gaugeWidth, status.caption, width, gauging)
-
-        captioned.toList.to(List)
+        drawn.indexed.map: (row, ordinal) =>
+          if ordinal.n0 > 0 then row
+          else layout.compose(row, gaugeWidth, status.caption, width, gauging)
 
 // Any status with a label beside it: `⠹ resolving dependencies`, `████░░ copying`. Generic over
 // what it labels, so one design serves every status type — and its given derives from the

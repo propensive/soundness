@@ -78,14 +78,14 @@ object ClassfileDiscipline extends Discipline:
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
   :   Atomization raises Discipline.Error =
 
-    val classes = content.stdlib.map: (path, data) =>
+    val classes: Map[Text, ClassSurface] = content.map: (path, data) =>
       // Same erasure; the parser reads the bytes and retains nothing of them.
       val surface = ClassSurface(data.asInstanceOf[scala.IArray[Byte]])
       surface.name -> surface
 
-    . to(scala.collection.immutable.Map)
+    . to[Map]
 
-    val outcome = ClassfileAtomizer.atomize(classes.to(Map), context.classpath)
+    val outcome = ClassfileAtomizer.atomize(classes, context.classpath)
 
     // An unresolvable supertype is fatal, never skipped: its member set is unknown, so the
     // presented set of everything below it is understated, and an understated interface is a

@@ -138,6 +138,9 @@ object WasmInvoke extends Materializer:
 
     // The element WIT types of a `tuple<…>` parameter (a WIT record, whose ABI it shares, may be
     // declared as its structural tuple), or `Unset` for any other parameter shape.
+    // A stdlib `List`, because the caller discriminates the result with the type pattern
+    // `case elements: List[Foreign.Type]`: the opaque `List` erases to the same class, so a type
+    // test could not tell it from `Unset`'s alternative.
     def parameterTuple(parameter: Foreign.Type): Optional[List[Foreign.Type]] = parameter match
       case Foreign.Type.Applied(constructor, elements) if constructor.s == "tuple" => elements.stdlib
       case _                                                                       => Unset
@@ -197,6 +200,7 @@ object WasmInvoke extends Materializer:
               '{  val outcome = $call
                   if !${isOk('outcome)} then ${raiseError('outcome)}  }
             else
+              // A positional read at the arity `result<…>` fixes.
               val (_, payloadDecode) = decodeFor(arguments.stdlib.head, scala)
 
               call =>
@@ -377,26 +381,31 @@ object WasmInvoke extends Materializer:
       case Foreign.Type.Union(proscenium.List(inner, Foreign.Type.Named(none))) if none.s == "none" =>
         Apply(marker("witOption"), List(descriptor(inner)))
 
-      case Foreign.Type.Applied(constructor, arguments) => constructor.s match
-        case "list" =>
-          Apply(marker("witList"), List(descriptor(arguments.stdlib.head)))
+      case Foreign.Type.Applied(constructor, arguments) =>
+        // One documented stdlib view for the whole group: every read below is positional at an
+        // arity the WIT type constructor fixes, and `Repeated` takes a stdlib `List` regardless.
+        val args = arguments.stdlib
 
-        case "option" =>
-          Apply(marker("witOption"), List(descriptor(arguments.stdlib.head)))
+        constructor.s match
+          case "list" =>
+            Apply(marker("witList"), List(descriptor(args.head)))
 
-        case "tuple" =>
-          val elements = Repeated(arguments.stdlib.map(descriptor), TypeTree.of[Any])
-          Apply(marker("witTuple"), List(Typed(elements, Inferred(repeatedAny))))
+          case "option" =>
+            Apply(marker("witOption"), List(descriptor(args.head)))
 
-        case "result" =>
-          def arm(tpe: Foreign.Type): Term = tpe match
-            case Foreign.Type.Named(name) if name.s == "_" => marker("witUnit")
-            case other                                     => descriptor(other)
+          case "tuple" =>
+            val elements = Repeated(args.map(descriptor), TypeTree.of[Any])
+            Apply(marker("witTuple"), List(Typed(elements, Inferred(repeatedAny))))
 
-          Apply(marker("witResult"), List(arm(arguments.stdlib.head), arm(arguments.stdlib(1))))
+          case "result" =>
+            def arm(tpe: Foreign.Type): Term = tpe match
+              case Foreign.Type.Named(name) if name.s == "_" => marker("witUnit")
+              case other                                     => descriptor(other)
 
-        case other =>
-          halt(m"xenophile: the WIT type constructor $other cannot cross a WIT boundary yet")
+            Apply(marker("witResult"), List(arm(args.head), arm(args(1))))
+
+          case other =>
+            halt(m"xenophile: the WIT type constructor $other cannot cross a WIT boundary yet")
 
       case other =>
         halt(m"xenophile: the WIT type ${other.text} cannot cross a WIT boundary yet")
@@ -434,6 +443,8 @@ object WasmInvoke extends Materializer:
     // IR-level type the argument is lowered as, and the structured descriptor the exact WIT type
     // (which `classOf` alone erases, e.g. `option<string>`'s payload). An `Optional[T]` argument
     // (WIT `option<T>`) crosses as a `java.util.Optional` of `T`'s carrier.
+    // A stdlib view: the list is zipped against `argumentTerms` in the same shape below, and
+    // fed to `quotes.reflect` tree constructors.
     val parameterTypes = prototype.parameters.let(_.stdlib).or(Nil)
 
     val arity = parameterTypes.length

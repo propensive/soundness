@@ -257,8 +257,9 @@ object KotlinDialect extends Dialect:
       else if cls.isArray then s"[${encode(cls.getComponentType.nn)}"
       else s"L${cls.getName.nn.replace('.', '/')};"
 
-    val parameters = listOf(method.getParameterTypes).map(encode)
-    t"(${parameters.stdlib.mkString})${encode(method.getReturnType.nn)}"
+    val parameters: List[Text] = listOf(method.getParameterTypes).map(encode)
+    val encoded: Text = parameters.join
+    t"($encoded)${encode(method.getReturnType.nn)}"
 
   // Java types read through the same Kotlin-named model, so the rest of the machinery (`Text`
   // for strings, primitives, facade wrapping) applies uniformly.
@@ -292,7 +293,10 @@ object KotlinDialect extends Dialect:
 
           val defaults = parameters.map(Attributes.getDeclaresDefaultValue(_))
           val names = parameters.map(_.getName.nn.tt)
-          val vararg = parameters.stdlib.lastOption.exists(_.getVarargElementType != null)
+          // The `Optional` final parameter is bound to a typed local before it is read
+          // (`wildApprox`).
+          val trailing: Optional[KmValueParameter] = parameters.last
+          val vararg = trailing.let(_.getVarargElementType != null).or(false)
 
           List:
             Entry
@@ -355,7 +359,10 @@ object KotlinDialect extends Dialect:
 
         val defaults = parameters.map(Attributes.getDeclaresDefaultValue(_))
         val names = parameters.map(_.getName.nn.tt)
-        val vararg = parameters.stdlib.lastOption.exists(_.getVarargElementType != null)
+        // The `Optional` final parameter is bound to a typed local before it is read
+        // (`wildApprox`).
+        val trailing: Optional[KmValueParameter] = parameters.last
+        val vararg = trailing.let(_.getVarargElementType != null).or(false)
 
         List:
           Entry
@@ -375,11 +382,15 @@ object KotlinDialect extends Dialect:
       enumeration: List[Text] )
   :   Resolution =
 
+    // First declaration wins per name, as `groupBy(_.name).mapValues(_.head)` did: a fold keeps
+    // that without needing a non-emptiness proof for each group's head.
     val prototypes: Map[Text, Prototype] =
-      entries.stdlib.groupBy(_.name).view.mapValues(_.head.prototype).toMap.to(Map)
+      entries.fold(Map[Text, Prototype]()): (accumulated, entry) =>
+        if accumulated.defines(entry.name) then accumulated
+        else accumulated.define(entry.name, entry.prototype)
 
-    val jvmMembers: Map[Text, List[JvmMember]] =
-      (entries.stdlib.groupBy(_.name).view.mapValues(x => x.map(_.member).to(List)).toMap).to(Map)
+    // `Map#map` maps values with the keys preserved.
+    val jvmMembers: Map[Text, List[JvmMember]] = entries.group(_.name).map(_.map(_.member))
 
     Resolution(prototypes, jvmMembers, setters, identifiers, companion, enumeration)
 

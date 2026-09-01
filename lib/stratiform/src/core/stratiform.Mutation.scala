@@ -36,6 +36,7 @@ import murmuration.*
 
 import anticipation.*
 import rudiments.each
+import rudiments.{all, prim, sec}
 import contingency.*
 import gossamer.*
 import vacuous.*
@@ -182,12 +183,7 @@ object Mutation:
 
   def apply(tel: Tel, ops: List[Op]): Tel raises Mutation.Error =
     var current = tel
-    val ops2 = ops.stdlib
-    var i = 0
-
-    while i < ops2.length do
-      current = apply(current, ops2(i))
-      i += 1
+    ops.each { op => current = apply(current, op) }
 
     current
 
@@ -1053,18 +1049,25 @@ object Mutation:
         inRun = false
 
       case Member.Value(kw, occurrences) =>
-        val os = occurrences.stdlib
+        // `prim`/`sec` stand in for the two length tests without walking the list:
+        // exactly one occurrence is a present `prim` with an absent `sec`, and more
+        // than one is a present `sec`.
+        val first: Optional[Text] = occurrences.prim
+        val second: Optional[Text] = occurrences.sec
 
-        if inRun && os.length == 1 && os.head.s.nonEmpty && inlineSafe(os.head, sigil)
-        then inlineTexts += os.head
-        else if inRun && os.length > 1
-          && os.forall { o => o.s.nonEmpty && inlineSafe(o, sigil) }
+        // Local `def`s, so each scan still happens only on the branch that needs it.
+        def soleInlineable = first.let { o => o.s.nonEmpty && inlineSafe(o, sigil) }.or(false)
+        def allInlineable = occurrences.all { o => o.s.nonEmpty && inlineSafe(o, sigil) }
+
+        if inRun && second.absent && soleInlineable
+        then first.let { o => inlineTexts += o }
+        else if inRun && second.present && allInlineable
         then
-          os.foreach { o => inlineTexts += o }
+          occurrences.each { o => inlineTexts += o }
           inRun = false
         else
           inRun = false
-          os.foreach { o => children += scalarChild(kw, o) }
+          occurrences.each { o => children += scalarChild(kw, o) }
 
     var hard = false
 

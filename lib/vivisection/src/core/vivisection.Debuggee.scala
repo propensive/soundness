@@ -103,13 +103,15 @@ object Debuggee:
       // readiness probe, since a chatty debuggee can fill the OS pipe buffer (and then block)
       // long before its agent port answers. Each drain closes its window at the pipe's end, and
       // the exit watcher settles the exit promise; all three end naturally when the process
-      // dies, whether by running to completion or by the `abort` below.
+      // dies, whether by running to completion or by the `abort` below. `chunks` is the stream
+      // kernel's own terminal — one materialized chunk per refill, closing the pipe at its end —
+      // so a long-running debuggee's output is relayed and released, never accumulated.
       val outDrain: Task[Unit] = async:
-        safely(job.stdout().toProgression.stdlib.iterator.foreach(console.out.put(_)))
+        safely(job.stdout().chunks.each { chunk => console.out.put(chunk) })
         console.out.stop()
 
       val errDrain: Task[Unit] = async:
-        safely(job.stderr().toProgression.stdlib.iterator.foreach(console.err.put(_)))
+        safely(job.stderr().chunks.each { chunk => console.err.put(chunk) })
         console.err.stop()
 
       val exitWatch: Task[Unit] = async(console.exited.offer(job.exitStatus()))

@@ -63,17 +63,19 @@ object SyntaxMatcher:
 
   private case class Entry(syntax: Text)
 
-  private lazy val rawComposites: Map[Text, Text] =
+  private lazy val rawComposites: proscenium.Map[Text, Text] =
     import contingency.strategies.throwUnsafely
 
     val entries = cp"/cataclysm/syntaxes.json".read[Json].as[proscenium.Map[Text, Entry]]
-    entries.stdlib.view.mapValues(_.syntax).toMap
+
+    // `Map`'s `map` transforms the values, keeping the keys.
+    entries.map(_.syntax)
 
   private val cache: scala.collection.mutable.HashMap[Text, Optional[Css.Syntax]] =
     scala.collection.mutable.HashMap()
 
   private def composite(name: Text): Optional[Css.Syntax] =
-    cache.getOrElseUpdate(name, rawComposites.get(name).map(parsed).getOrElse(Unset))
+    cache.getOrElseUpdate(name, rawComposites.at(name).let(parsed))
 
   private def parsed(raw: Text): Optional[Css.Syntax] = safely(SyntaxParser.parse(raw))
 
@@ -173,9 +175,13 @@ object SyntaxMatcher:
     private def pickEach(terms: List[Css.Syntax], tokens: List[ValueToken])
     :   List[(List[Css.Syntax], List[ValueToken])] =
 
-      List.range(0, terms.stdlib.length).bind: index =>
-        consume(terms.stdlib(index), tokens).map: rem =>
-          ((terms.stdlib.patch(index, List[Css.Syntax]().stdlib, 1)).to(List), rem)
+      // A single documented stdlib view: picking each term in turn needs the list's length,
+      // indexed access, and a positional removal, none of which the native `List` offers.
+      val terms0 = terms.stdlib
+
+      List.range(0, terms0.length).bind: index =>
+        consume(terms0(index), tokens).map: rem =>
+          (terms0.patch(index, Nil.stdlib, 1).to(List), rem)
 
     private def allOf(terms: List[Css.Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
       if terms.nil then List(tokens)

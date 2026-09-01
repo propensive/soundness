@@ -32,7 +32,7 @@
 package stratiform
 
 import anticipation.*
-import rudiments.prim
+import rudiments.{each, map, prim}
 import contingency.*
 import distillate.*
 import gossamer.*
@@ -98,9 +98,18 @@ object SchemaResolver:
       val components = SchemaSignature.componentHashes(tel, axiom)
       val chosen = Tels.Layers.select(schema, selection)
       val names = schema.layers.readable.toList.map(_.name)
+
+      // Frozen `Data` elements do not survive the generic `zip`/`to[Map]` pair (the
+      // rebuilt element type loses its `^{}`), so the name-to-hash index is built on
+      // the stdlib view.
       val byName = names.zip(components(1).stdlib).toMap
-      val chosenHashes = selection.stdlib.map(byName(_))
-      val identity = SchemaSignature.encode(components(0) :: chosenHashes.to(List))
+
+      // `Tels.Layers.select` above has already aborted on any name the schema does
+      // not declare, so the lookup cannot miss; the `abort` restates that reason.
+      val chosenHashes: List[Data] = selection.map: name =>
+        byName.getOrElse(name, abort(ResolutionError(Reason.UnknownLayer(name))))
+
+      val identity = SchemaSignature.encode(components(0) :: chosenHashes)
 
       Resolved(composed, tel, identity, step)
 
@@ -135,27 +144,29 @@ object SchemaResolver:
     // library of schema documents in hand, with the layer selections as
     // decomposition hints. Every hit is re-verified through `accept`.
     if result.absent then claimed.let: signature =>
-      val storeIterator = stores.stdlib.iterator
-
-      while storeIterator.hasNext && result.absent do
-        storeIterator.next()(signature).let: body =>
-          result = accept(body.read[Tel], Step.Cache)
+      // Every store and library candidate is consulted only while nothing has
+      // resolved, so the traversal has exactly the effects the short-circuiting
+      // iterator had — later elements are visited, but never touched.
+      stores.each: store =>
+        if result.absent
+        then store(signature).let { body => result = accept(body.read[Tel], Step.Cache) }
 
       // Library documents are schema documents the caller already has
       // in hand, and must be valid schemas; a malformed one aborts
       // resolution rather than being skipped silently.
-      val libraryIterator = library.stdlib.iterator
+      library.each: candidate =>
+        if result.absent then
+          val schema = Tels.Reconstructor.fromTel(candidate)
+          val components = SchemaSignature.componentHashes(candidate, axiom)
 
-      while libraryIterator.hasNext && result.absent do
-        val candidate = libraryIterator.next()
-        val schema = Tels.Reconstructor.fromTel(candidate)
-        val components = SchemaSignature.componentHashes(candidate, axiom)
-        val named = schema.layers.readable.toList.map(_.name).zip(components(1).stdlib)
+          // As above: the frozen hashes are paired on the stdlib view.
+          val named =
+            schema.layers.readable.toList.map(_.name).zip(components(1).stdlib).to(List)
 
-        val decomposed =
-          SchemaSignature.decodeHinted(signature, components(0), named.to(List), selection)
+          val decomposed =
+            SchemaSignature.decodeHinted(signature, components(0), named, selection)
 
-        if decomposed.present then result = accept(candidate, Step.Library)
+          if decomposed.present then result = accept(candidate, Step.Library)
 
     // Steps 2–3, bare reference (no selector, no signature): the local
     // schema cache only — the developer's working copy. Never the
@@ -163,10 +174,8 @@ object SchemaResolver:
     val bare = pragma.reference.let(_.selector.absent).or(false) && claimed.absent
 
     if result.absent && bare then pragma.reference.let: reference =>
-      val storeIterator = stores.stdlib.iterator
-
-      while storeIterator.hasNext && result.absent do
-        storeIterator.next().reference(reference.domain, reference.name).let: body =>
+      stores.each: store =>
+        if result.absent then store.reference(reference.domain, reference.name).let: body =>
           result = accept(body.read[Tel], Step.Cache)
 
     // Step 4: LIRA resolution by identifier form, through the delegate.

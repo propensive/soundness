@@ -70,24 +70,24 @@ object JvmProfile extends EcosystemProfile:
   :   Map[Text, Atom] raises Discipline.Error =
 
     evidence.section(universe).lay(Map.empty[Text, Atom]): section =>
-      val classes = section.content.stdlib.filter { pair => pair(0).text.s.endsWith(".class") }
+      val classes: List[(TreePath, Data)] =
+        section.content.filter: pair => pair(0).text.s.endsWith(".class")
 
-      if classes.isEmpty then Map.empty else
-        val surfaces = classes.map: (path, data) =>
+      if classes.nil then Map.empty else
+        val surfaces: Map[Text, ClassSurface] = classes.map: (path, data) =>
           // Same erasure; the parser reads the bytes and retains nothing of them.
           val surface = ClassSurface(data.asInstanceOf[scala.IArray[Byte]])
           surface.name -> surface
 
-        . to(scala.collection.immutable.Map)
+        . to[Map]
 
         val outcome =
-          ClassfileAtomizer.atomize
-            (surfaces.to(Map), section.classpath, ClassfileAtomizer.Fold.Linkage)
+          ClassfileAtomizer.atomize(surfaces, section.classpath, ClassfileAtomizer.Fold.Linkage)
 
         outcome.unresolved.prim.let: name =>
           abort(Discipline.Error(id, Discipline.Error.Reason.Unresolved(name)))
 
-        (outcome.atoms.stdlib.map { atom => atom.key -> atom }.toMap).to(Map)
+        outcome.atoms.map { atom => atom.key -> atom }.to[Map]
 
   def check(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
   :   List[EcosystemProfile.Violation] raises Discipline.Error =
@@ -100,14 +100,8 @@ object JvmProfile extends EcosystemProfile:
       violations += EcosystemProfile.Violation(Discipline.Guarantee.Linkage, detail)
 
     before.each: (key, atom) =>
-      after.stdlib.get(key) match
-        // D.2, predicates 1, 2 and 4 at once. A key is `owner#name:descriptor`, so a member that
-        // disappears, changes descriptor, or moves to a type that no longer presents it all show
-        // up here as a missing key — including the bridges and mixin forwarders a compiled
-        // consumer may have bound to, which is why the atomizer keeps them.
-        case scala.None => violate(t"$key is no longer presented")
-
-        case scala.Some(replacement) =>
+      after.at(key) match
+        case replacement: Atom =>
           // A rigid atom whose value moved is a member whose flags, descriptor, generic signature
           // or throws clause changed under a name consumers still resolve. Narrowing
           // accessibility is the case that matters most (D.2, predicate 4), and it lands here
@@ -115,6 +109,12 @@ object JvmProfile extends EcosystemProfile:
           if atom.atomClass == Atom.Class.Rigid
           && Lira.Hash.text(atom.valueHash) != Lira.Hash.text(replacement.valueHash)
           then violate(t"$key no longer has the shape compiled consumers resolved")
+
+        // D.2, predicates 1, 2 and 4 at once. A key is `owner#name:descriptor`, so a member that
+        // disappears, changes descriptor, or moves to a type that no longer presents it all show
+        // up here as a missing key — including the bridges and mixin forwarders a compiled
+        // consumer may have bound to, which is why the atomizer keeps them.
+        case _ => violate(t"$key is no longer presented")
 
     // D.2, predicate 5: the ecosystem's toolchain predicate (§13.3). TASTy readability is
     // versioned and not universally backward-compatible, so a release must carry TASTy the
@@ -138,14 +138,13 @@ object JvmProfile extends EcosystemProfile:
     val before = surface(previous)
     val after = surface(next)
 
-    val changed = before.stdlib.collect:
+    val changed: List[Optional[Text]] = before.sweep:
       case (key, atom) if atom.atomClass == Atom.Class.Replaceable =>
-        after.stdlib.get(key).filter: replacement =>
-          Lira.Hash.text(replacement.valueHash) != Lira.Hash.text(atom.valueHash)
+        after.at(key).let: replacement =>
+          if Lira.Hash.text(replacement.valueHash) != Lira.Hash.text(atom.valueHash) then key
+          else Unset
 
-        . map { _ => key }
-
-    changed.flatten.toList.sortBy(_.s).to(List)
+    changed.sweep { case key: Text => key }.order(_.s)
 
   // §7's SHOULD: changed constants are surfaced through the audit's advisory channel, so a
   // publisher sees them without any bespoke call.
@@ -153,10 +152,13 @@ object JvmProfile extends EcosystemProfile:
     ( previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence )
   :   List[Text] raises Discipline.Error =
 
+    // The interpolation is a named `def`, not the lambda's body: expanded inside the lambda,
+    // the `t` macro's `Showable` search runs while the rebuilt shape is still an uninstantiated
+    // type variable, which is the `wildApprox` crash.
+    def advice(key: Text): Text =
+      t"the constant $key changed value; consumers that inlined it are stale until recompiled"
 
-      constants(previous, next).stdlib.map: key =>
-        t"the constant $key changed value; consumers that inlined it are stale until recompiled"
-      . to(List)
+    constants(previous, next).map(advice(_))
 
   // §6's toolchain predicate, at the scope where it is stated: every release on a buildpath
   // must carry metadata a consuming compiler can read, and a release recording no toolchain at
@@ -166,6 +168,11 @@ object JvmProfile extends EcosystemProfile:
   // buildpath-decidable is that every release states what produced it.
   override def coherence(releases: List[Lira.Manifest]): List[Text] =
 
-      releases.stdlib.filter(_.toolchain.nil).map: manifest =>
-        t"${manifest.module} records no toolchain, so TASTy readability cannot be checked"
-      . to(List)
+    // A named `def` for the same reason as `advisories` above: the `t` macro cannot expand
+    // inside a lambda whose rebuilt shape is still an uninstantiated type variable.
+    def unstated(manifest: Lira.Manifest): Text =
+      t"${manifest.module} records no toolchain, so TASTy readability cannot be checked"
+
+    val undeclared: List[Lira.Manifest] = releases.filter(_.toolchain.nil)
+
+    undeclared.map(unstated(_))
