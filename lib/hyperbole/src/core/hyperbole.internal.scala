@@ -68,6 +68,7 @@ object internal:
                 ${Expr(name)},
                 ${Expr(expr)},
                 ${Expr(source)},
+                // `.stdlib`: `Expr.ofList` takes a stdlib `List` of `Expr`s.
                 List.from(${Expr.ofList(nodes2.stdlib)}),
                 $param2.asInstanceOf[Optional[Text]],
                 ${Expr(term)},
@@ -102,16 +103,16 @@ object internal:
 
     extension (tastyTree: Tasty.Tree)
       def children(nodes2: Tree*): Tasty.Tree =
-        tastyTree.copy(nodes = (tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expand(' ', _))).to(List))
+        tastyTree.copy(nodes = tastyTree.nodes + nodes2.toList.map(TreeBuilder.expand(' ', _)).to(List))
 
       def typeChildren(nodes2: TypeRepr*): Tasty.Tree =
-        tastyTree.copy(nodes = (tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expandType(_))).to(List))
+        tastyTree.copy(nodes = tastyTree.nodes + nodes2.toList.map(TreeBuilder.expandType(_)).to(List))
 
       def typed(nodes2: Tree*): Tasty.Tree =
-        tastyTree.copy(nodes = (tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expand('t', _))).to(List))
+        tastyTree.copy(nodes = tastyTree.nodes + nodes2.toList.map(TreeBuilder.expand('t', _)).to(List))
 
       def add(tag: Char, nodes2: Tree*): Tasty.Tree =
-        tastyTree.copy(nodes = (tastyTree.nodes.stdlib ::: nodes2.toList.map(TreeBuilder.expand(tag, _))).to(List))
+        tastyTree.copy(nodes = tastyTree.nodes + nodes2.toList.map(TreeBuilder.expand(tag, _)).to(List))
 
     object TreeBuilder:
       def apply
@@ -673,6 +674,7 @@ object internal:
     Tasty.Symbol(prefix, symbol.name, flags, properties, details)
 
   def serialize(symbol: Tasty.Symbol): Macro[Tasty.Symbol] =
+    // `.stdlib` throughout: `Expr.ofList` (below) takes a stdlib `List` of `Expr`s.
     val flags = symbol.flags.stdlib.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}
     val properties = symbol.properties.stdlib.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}
 
@@ -682,6 +684,7 @@ object internal:
           case (key, text: Text) => '{(${Expr(key)}, ${Expr(text)})}
 
           case (key, list: List[Text] @unchecked) =>
+            // `.stdlib`: as above, for `Expr.ofList`.
             '{(${Expr(key)}, List.from(${Expr.ofList((list: List[Text]).stdlib.map(Expr(_)))}))}
 
     ' {

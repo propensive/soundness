@@ -40,6 +40,7 @@ import dotty.tools.tasty.{TastyBuffer, TastyFormat, TastyReader}
 import anticipation.*
 import digression.*
 import gossamer.*
+import rudiments.at
 import vacuous.*
 
 import StackTrace.Frame.Kind
@@ -154,7 +155,7 @@ private[hyperbole] object stacksInternal:
       def record(address: Int, tag: Int, name: Text, owners: List[Text], extension: Boolean)
       :   Unit =
 
-        positions.spans.stdlib.get(address).foreach: (start, end) =>
+        positions.spans.at(address).lay(()): (start, end) =>
           val kind = tag match
             case TYPEDEF                   => Kind.Class
             case VALDEF                    => Kind.Value

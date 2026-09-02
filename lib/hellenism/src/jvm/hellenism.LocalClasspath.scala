@@ -65,14 +65,17 @@ object LocalClasspath:
   =>  LocalClasspath is Decodable in Text =
 
     classpath =>
-      val entries =
-        classpath.cut(System.properties.path.separator()).stdlib
+      val entries: List[Classpath.Entry.Directory | Classpath.Entry.Jar] =
+        classpath.cut(System.properties.path.separator())
         . map[Classpath.Entry.Directory | Classpath.Entry.Jar]: path =>
           if path.ends(t"/") then Classpath.Entry.Directory(path)
           else if path.ends(t".jar") then Classpath.Entry.Jar(path)
           else Classpath.Entry.Directory(path)
 
-      new LocalClasspath(entries.to(List), entries.to(Set))
+      // `Set` is invariant, so the elements are widened before the conversion.
+      val widened: List[Classpath.Entry] = entries
+
+      new LocalClasspath(entries, widened.to[Set])
 
 
   def apply
@@ -103,7 +106,10 @@ object LocalClasspath:
           case _         => Classpath.Entry.Jar(path.encode)
 
         if classpath.entrySet.has(entry) then classpath
-        else new LocalClasspath(entry :: classpath.entries, (classpath.entrySet.stdlib + entry).to(Set))
+        else
+          // `Set` is invariant, so the singleton is built at the wider element type.
+          new LocalClasspath
+            ( entry :: classpath.entries, classpath.entrySet + Set[Classpath.Entry](entry) )
 
 class LocalClasspath private
   ( val entries

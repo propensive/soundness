@@ -70,7 +70,7 @@ object Decomposable extends Decomposable2:
   =>  collection is Decomposable =
 
     caps.unsafe.unsafeAssumePure: list =>
-        Decomposition.Sequence(t"List", list.stdlib.map(decomposable.decomposition(_)), list)
+        Decomposition.Sequence(t"List", list.map(decomposable.decomposition(_)), list)
 
 
   given sequence: [element, collection <: Sequence[element]]
@@ -78,7 +78,8 @@ object Decomposable extends Decomposable2:
   =>  collection is Decomposable =
 
     caps.unsafe.unsafeAssumePure: sequence =>
-        Decomposition.Sequence(t"Sequence", sequence.stdlib.map(decomposable.decomposition(_)), sequence)
+        val values: Sequence[Decomposition] = sequence.map(decomposable.decomposition(_))
+        Decomposition.Sequence(t"Sequence", values.to[List], sequence)
 
   given iarray: [element]
   =>  ( decomposable: => element is Decomposable )
@@ -87,7 +88,7 @@ object Decomposable extends Decomposable2:
     caps.unsafe.unsafeAssumePure: iarray =>
         Decomposition.Sequence
           ( t"Array",
-            iarray.readable.toSeq.map(decomposable.decomposition(_)),
+            iarray.readable.toSeq.map(decomposable.decomposition(_)).to(List),
             iarray )
 
 trait Decomposable extends Typeclass:

@@ -106,10 +106,12 @@ object Classpath extends Root(t""):
   def servicesFor[service](classpath: Classpath, cls: Class[service]): Set[service] =
     val parent = Optional(cls.getClassLoader).or(ClassLoader.getSystemClassLoader.nn)
 
-    val urls: scala.Array[jn.URL | Null] =
-      scala.Array.from(classpath.entries.stdlib.flatMap:
-        case Classpath.Entry.JavaRuntime => Nil.stdlib
-        case other                      => List(other.javaUrl).stdlib)
+    val entryUrls: List[jn.URL] = classpath.entries.flatMap:
+      case Classpath.Entry.JavaRuntime => Nil
+      case other                       => List(other.javaUrl)
+
+    // `scala.Array.from` demands an `IterableOnce`, which the opaque `List` is not.
+    val urls: scala.Array[jn.URL | Null] = scala.Array.from(entryUrls.stdlib)
 
     val loader = jn.URLClassLoader(urls, parent)
     val seen = scala.collection.mutable.Set.empty[Class[?]]
@@ -195,18 +197,25 @@ object Classpath extends Root(t""):
 
 trait Classpath:
   def entries: List[Classpath.Entry]
-  private def array: scala.Array[jn.URL | Null] = scala.Array.from(entries.stdlib.map(_.javaUrl))
+
+  private def array: scala.Array[jn.URL | Null] =
+    val urls: List[jn.URL] = entries.map(_.javaUrl)
+
+    // `scala.Array.from` demands an `IterableOnce`, which the opaque `List` is not.
+    scala.Array.from(urls.stdlib)
 
   def classloader(parent: Classloader = classloaders.platformClassloader): Classloader =
     new Classloader(Classpath.delegatingClassloader(array, parent.java))
 
   def classloader: Classloader =
-    val urls = entries.stdlib.flatMap:
-      case Classpath.Entry.JavaRuntime => Nil.stdlib
-      case other                      => List(other.javaUrl).stdlib
+    val urls: List[jn.URL] = entries.flatMap:
+      case Classpath.Entry.JavaRuntime => Nil
+      case other                       => List(other.javaUrl)
 
+    // `scala.Array.from` demands an `IterableOnce`, which the opaque `List` is not.
     new Classloader
-      ( new jn.URLClassLoader(scala.Array.from(urls), ClassLoader.getPlatformClassLoader().nn) )
+      ( new jn.URLClassLoader
+          ( scala.Array.from(urls.stdlib), ClassLoader.getPlatformClassLoader().nn ) )
 
   inline def services[service]: Set[service] =
     Classpath.servicesFor[service](this, reflectClass[service])

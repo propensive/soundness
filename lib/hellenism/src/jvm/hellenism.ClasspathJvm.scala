@@ -71,4 +71,4 @@ extension (classpath: Classpath.type)
             case jar: Classpath.Entry.Jar                  => jar
             case runtime: Classpath.Entry.JavaRuntime.type => runtime
 
-      LocalClasspath(items.stdlib*)
+      LocalClasspath(items*)

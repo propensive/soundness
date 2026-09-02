@@ -107,8 +107,15 @@ private def expandTastyTree(tree: Tasty.Tree)(using palette: TastyPalette)
       val text = e"$color(${node.name})"
       val tag2: Text = if node.tag == ' ' then "▪".tt else "⟨"+node.tag+"⟩"
 
+      // The root tile is dropped: it prefixes the tree's own line, which is drawn separately.
+      val rest: List[TreeTile] = tiles match
+        case _ :: rest => rest
+        case _         => Nil
+
+      val prefix: Text = rest.map(treeStyles.defaultTreeStyle.text(_)).join
+
       TastyTreeExpansion
-        ( e"${(tiles.stdlib.drop(1).map(treeStyles.defaultTreeStyle.text(_))).to(List).join}$tag2 $text",
+        ( e"$prefix$tag2 $text",
           node.typeName,
           node.param,
           node.shortCode,

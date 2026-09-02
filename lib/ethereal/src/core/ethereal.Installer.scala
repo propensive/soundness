@@ -35,6 +35,7 @@ package ethereal
 import ambience.*
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import eucalyptus.*
 import aperture.*
@@ -101,9 +102,8 @@ object Installer:
               % / "bin" )
 
         paths.filter(_.existent()).filter(_.writable()).order: directory =>
-          preferences.stdlib.indexOf(directory) match
-            case -1    => Int.MaxValue
-            case index => index
+          val index: Optional[Ordinal] = preferences.where(_ == directory)
+          index.lay(Int.MaxValue)(_.n0)
 
 
   def install(force: Boolean = false, target: Optional[Path on Linux] = Unset)
@@ -158,11 +158,11 @@ object Installer:
             // inner open's evidence would mint fresh roots that cannot unify with the
             // outer handle's; see `Assembler.assemble`). The read is strict, so nothing
             // reads the closed handle.
-            val chunks = service.executable.open[File]():
-              source ?=> source.reader().stdlib.to(List)
+            val chunks: List[Data] = service.executable.open[File]():
+              source ?=> source.reader().to[List]
 
             tempFile.open[File](Write, OpenFlag.Create): target ?=>
-              val stream = chunks.stdlib.to(Chain)
+              val stream: Chain[Data] = chunks.to[Chain]
 
               if prefixSize > 0.b
               then target.write(stream.take(prefixSize) #::: stream.drop(fileSize - jarSize))

@@ -40,7 +40,9 @@ import anticipation.*
 import fulminate.*
 import gigantism.*
 import prepositional.*
+import rudiments.fold
 import spectacular.*
+import symbolism.*
 
 object internal:
   def query(values: Expr[Seq[(Label, Any)]]): Macro[Query] =
@@ -84,7 +86,13 @@ object internal:
           recur(tail, parameters :: done)
 
         case _ =>
-          '{Query((${Expr.ofList(done.stdlib.reverse)}.flatMap(_.stdlib)).to(List))}
+          // `done` accumulates by prepending, so folding it left-to-right and concatenating
+          // each group in front of the accumulator restores the parameters' source order.
+          val combined: Expr[List[(Text, Text)]] =
+            done.fold('{List.empty[(Text, Text)]}): (accumulator, group) =>
+              '{$group + $accumulator}
+
+          '{Query($combined)}
 
     values.absolve match
       case Varargs(exprs) => recur(exprs.to(List))

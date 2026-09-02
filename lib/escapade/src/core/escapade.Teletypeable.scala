@@ -81,8 +81,10 @@ object Teletypeable extends Teletypeable2:
     Teletype.styled(decimalizer.decimalize(double))(_.copy(fg = Chroma(0xffd600)))
 
   given throwable: Throwable is Teletypeable = throwable =>
-    Teletype.styled[String]
-      (throwable.getClass.getName.nn.show.cut(t".").stdlib.last.s)(_.copy(fg = Chroma(0xdc133b)))
+    // The simple name: the trailing run of characters after the last `.` in the binary name.
+    val name: Text = throwable.getClass.getName.nn.show.keep(_ != '.', Bidi.Rtl)
+
+    Teletype.styled[String](name.s)(_.copy(fg = Chroma(0xdc133b)))
 
 trait Teletypeable extends Typeclass.Pure:
   def teletype(value: Self): Teletype

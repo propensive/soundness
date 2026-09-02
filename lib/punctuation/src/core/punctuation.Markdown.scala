@@ -71,6 +71,8 @@ object Markdown:
       type Self = Markdown of Layout
       type Operand = Text
 
+      // `.stdlib.iterator`: the parser consumes a lazy `Iterator`, and there is no native
+      // way to obtain one from a `Chain` without forcing it.
       def aggregate(stream: Chain[Text]): Markdown of Layout = Parser.parse(stream.stdlib.iterator)
 
       override def accept(stream: (zephyrine.Stream[Text] over zephyrine.Credit)^)
@@ -148,17 +150,21 @@ object Markdown:
   // form, with the line it came from, since a `Markdown` value is normally being looked at to
   // check what the parser made of the input. One instance serves both `Markdown of Layout` and
   // `Markdown of Prose`, which are refinements of the same trait.
+  // Hoisted out of the `map` lambda below: a `t"…"` interpolation as a combinator lambda's
+  // direct body trips the compiler's `wildApprox` assertion.
+  private def inspectLinkRef(linkRef: LinkRef): Text =
+    val title = linkRef.title.lay(t"○")(_.inspect)
+    t"LinkRef(${linkRef.label.inspect} ╱ $title ╱ ${linkRef.destination.inspect})"
+
   given inspectable: [markdown <: Markdown] => markdown is Inspectable = markdown =>
-    val linkRefs = markdown.linkRefs.stdlib.map: linkRef =>
-      val title = linkRef.title.lay(t"○")(_.inspect)
-      t"LinkRef(${linkRef.label.inspect} ╱ $title ╱ ${linkRef.destination.inspect})".s
+    val entries:  List[Text] = markdown.linkRefs.map(inspectLinkRef(_))
+    val linkRefs: Text       = entries.join(t"[", t", ", t"]")
 
-    . mkString("[", ", ", "]")
-
-    t"Markdown(linkRefs:${linkRefs.tt} ╱ children:${inspectNodes(markdown.children)})"
+    t"Markdown(linkRefs:$linkRefs ╱ children:${inspectNodes(markdown.children)})"
 
   private def inspectNodes[node <: Markdown.Node](nodes: List[node]): Text =
-    nodes.stdlib.map(inspectNode(_).s).mkString("[", ", ", "]").tt
+    val entries: List[Text] = nodes.map(inspectNode(_))
+    entries.join(t"[", t", ", t"]")
 
   private def inspectNode(node: Markdown.Node): Text = node match
     case Prose.Textual(text)    => t"Textual(${text.inspect})"

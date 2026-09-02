@@ -46,6 +46,10 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
+// The comparison list is rendered whole (and batched into rows), so counting its entries
+// is a linear walk of a list that is about to be walked anyway.
+import denominative.dysasymptotics.linearSize
+
 // These were members of `Juxtaposition`'s companion object, where the enum's cases were in
 // scope unqualified; out here they must be imported.
 import Juxtaposition.*
@@ -80,7 +84,7 @@ package teletypeables:
         case Juxtaposition.Collation(name, comparison, _, _) =>
           import tableStyles.defaultTableStyle
           val columns = 110
-          val length = comparison.stdlib.length
+          val length = comparison.size
           val topRule = e"\n$subdued(────┬${(t"─"*(length.min(columns)))}┬────)\n"
           val midRule = e"$subdued(────┼${(t"─"*(length.min(columns)))}┼────)\n"
           val bottomRule = e"$subdued(────┴${(t"─"*(length%columns))}┴────)\n"
@@ -94,9 +98,21 @@ package teletypeables:
             var bottomSum = 0
             def pad(value: Text): Char = value(Prim).let(Unicode.visible).or(' ')
 
-            comparison.stdlib.grouped(columns).zipWithIndex.map: (comparison2, index) =>
-              val first = index == 0
-              val last = index == comparison.stdlib.length/columns
+            def leftTotal(row: List[(Text, Juxtaposition)]): Int =
+              val widths: List[Int] = row.map(_(1).leftWidth)
+              widths.total
+
+            def rightTotal(row: List[(Text, Juxtaposition)]): Int =
+              val widths: List[Int] = row.map(_(1).rightWidth)
+              widths.total
+
+            val rows: List[List[(Text, Juxtaposition)]] = comparison.batched(columns)
+            val lastRow: Int = length/columns
+            val indexedRows: List[(List[(Text, Juxtaposition)], Ordinal)] = rows.indexed
+
+            indexedRows.map: (comparison2, ordinal) =>
+              val first = ordinal.n0 == 0
+              val last = ordinal.n0 == lastRow
 
               val observed = comparison2.map:
                 case (_, Same(char))            => e"$informative(${pad(char)})"
@@ -114,8 +130,8 @@ package teletypeables:
 
               val margin1 = topSum.show.superscripts.pad(4, Rtl, ' ')
               val margin2 = bottomSum.show.subscripts.pad(4, Rtl, ' ')
-              topSum += comparison2.sumBy(_(1).leftWidth)
-              bottomSum += comparison2.sumBy(_(1).rightWidth)
+              topSum += leftTotal(comparison2)
+              bottomSum += rightTotal(comparison2)
               val margin3 = topSum.show.superscripts.pad(4, Ltr, ' ')
               val margin4 = bottomSum.show.subscripts.pad(4, Ltr, ' ')
 
@@ -130,7 +146,7 @@ package teletypeables:
               e"$line1\n$line2\n"
 
             // The mapped lines only read the two summary buffers; laundered pure.
-            . to(Iterable).asInstanceOf[Iterable[Teletype]]
+            . asInstanceOf[List[Teletype]]
             . join(topRule, midRule, penultimateRule, bottomRule)
 
           else
@@ -192,7 +208,7 @@ package teletypeables:
                   Column(e"Details")(_.memo.teletype) )
 
             table
-            . tabulate(TreeDiagram.by(children(_))(comparison*).render(line).stdlib.to(List))
+            . tabulate(TreeDiagram.by(children(_))(comparison*).render(line).to[List])
             . grid(200)
             . render
             . join(e"\n")

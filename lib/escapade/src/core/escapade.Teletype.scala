@@ -235,7 +235,7 @@ object Teletype:
         styles += text.styleAt(i)
         i += 1
 
-      text.hyperlinks.stdlib.each: (k, v) => hyperlinks(k + offset) = v
+      text.hyperlinks.each: (k, v) => hyperlinks(k + offset) = v
       text.insertions.each: (k, v) => insertions(k + offset) = v
 
       offset += text.plain.length
@@ -394,8 +394,8 @@ case class Teletype
       val combinedPlain = plain+that.plain
 
       val shiftedLinks = if that.hyperlinks.nil then hyperlinks else
-        val moved = that.hyperlinks.stdlib.map { (k, v) => (k + aN) -> v }
-        (hyperlinks.stdlib ++ moved).to(Map)
+        val moved: Map[Int, Text] = that.hyperlinks.remap { (k, v) => (k + aN) -> v }
+        hyperlinks + moved
 
       val shiftedInsertions = if that.insertions.isEmpty then insertions else
         insertions ++ that.insertions.map: (k, v) => (k + aN) -> v
@@ -456,7 +456,7 @@ case class Teletype
       if keepLength <= 0 then Teletype.empty
       else if n <= 0 then this
       else
-        val newHyperlinks = (hyperlinks.stdlib.collect { case (k, v) if k >= n => (k - n) -> v }).to(Map)
+        val newHyperlinks = hyperlinks.sweep { case (k, v) if k >= n => (k - n) -> v }
 
         val newInsertions =
           insertions.collect { case (k, v) if k >= n => (k - n) -> v }.to(TreeMap)
@@ -503,7 +503,7 @@ case class Teletype
       if n <= 0 then Teletype.empty
       else if n >= plain.length then this
       else
-        val newHyperlinks = (hyperlinks.stdlib.filter { (k, _) => k < n }).to(Map)
+        val newHyperlinks = hyperlinks.filter(_(0) < n)
         val newInsertions = insertions.rangeUntil(n)
 
         if isDense then
@@ -566,7 +566,7 @@ case class Teletype
         if s != prev then StyleWord.emitDiff(buffer, prev, s, depth)
 
         if (s & StyleWord.HyperlinkChange) != 0 then
-          hyperlinks.stdlib.get(from) match
+          hyperlinks.at(from).option match
             case Some(url) => buffer.add(t"\e]8;;$url\e\\")
             case None      => buffer.add(t"\e]8;;\e\\")
 
@@ -599,7 +599,7 @@ case class Teletype
       if tail != prev then StyleWord.emitDiff(buffer, prev, tail, depth)
 
       if (tail & StyleWord.HyperlinkChange) != 0 then
-        hyperlinks.stdlib.get(n) match
+        hyperlinks.at(n).option match
           case Some(url) => buffer.add(t"\e]8;;$url\e\\")
           case None      => buffer.add(t"\e]8;;\e\\")
 

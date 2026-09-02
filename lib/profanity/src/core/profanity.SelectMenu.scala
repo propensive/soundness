@@ -35,10 +35,15 @@ package profanity
 import anticipation.*
 import clavichord.Keypress
 import contingency.*
+import denominative.*
 import fulminate.*
 import gossamer.*
-import rudiments.prim
+import rudiments.{at, last, prim, where}
 import vacuous.*
+
+// A menu's options are a short, hand-written list, so a linear scan for the current option
+// and linear indexing into the list are proportionate.
+import denominative.dysasymptotics.{linearAccess, linearSize}
 
 case class SelectMenu[item](options: List[item], current: item)
 extends Question[item]:
@@ -47,11 +52,16 @@ extends Question[item]:
   def apply(keypress: Terminal.Event): SelectMenu[item] =
     try
       keypress match
-        case Up   => copy(current = options.stdlib(0 max options.stdlib.indexOf(current) - 1))
+        case Up =>
+          val index: Int = options.where(_ == current).let(_.n0).or(-1)
+          copy(current = options.at((0 max index - 1).z).or(current))
+
         case Down =>
-          copy(current = options.stdlib(options.stdlib.size - 1 min options.stdlib.indexOf(current) + 1))
+          val index: Int = options.where(_ == current).let(_.n0).or(-1)
+          copy(current = options.at((options.size - 1 min index + 1).z).or(current))
+
         case Home => copy(current = options.prim.or(current))
-        case End  => copy(current = options.stdlib.last)
+        case End  => copy(current = options.last.or(current))
         case _    => this
 
     catch case e: Range.Error => this

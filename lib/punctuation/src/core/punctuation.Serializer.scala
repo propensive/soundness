@@ -347,7 +347,7 @@ private[punctuation] object Serializer:
     case Layout.CodeBlock(_, info, code) =>
       val fence = codeBlockFence(code)
       writer.raw(fence)
-      if !info.nil then writer.raw(info.stdlib.map(_.s).mkString(" ").tt)
+      if !info.nil then writer.raw(info.join(t" "))
       writer.newline()
       writer.raw(code)
       if !code.ends(t"\n") then writer.newline()

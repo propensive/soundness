@@ -72,10 +72,13 @@ object Keyboard:
   // keypress. The codepoint is a Unicode value, with the C0 codes 13/9/27/127 for
   // Enter/Tab/Escape/Backspace; the modifier field is `1 + bitmask`.
   def csiu(params: List[Char]): clavichord.Keypress =
-    val fields: List[Text] = params.map(_.show).join.cut(t";")
+    val text:   Text           = params.map(_.show).join
+    // A `Sequence` rather than a `List`: the fields are only ever read by position.
+    val fields: Sequence[Text] = text.cut(t";").to[Sequence]
 
     def number(index: Int, default: Int): Int =
-      safely(Integer.parseInt(fields.stdlib(index).cut(t":").stdlib.head.s)).or(default)
+      val field: Optional[Text] = fields.at(index.z).let(_.cut(t":")).let(_.prim)
+      safely(Integer.parseInt(field.or(t"").s)).or(default)
 
     val bitmask: Int = (number(1, 1) - 1).max(0)
 
@@ -174,18 +177,21 @@ object Keyboard:
                 Keyboard.modified(modifiers, Keyboard.navigation(code)) #:: process(rest)
 
               case '2' #:: '0' #:: '0' #:: '~' #:: tail =>
-                val size = tail.stdlib.indexOfSlice(List('\u001b', '[', '2', '0', '1', '~').stdlib)
-                val content = tail.stdlib.take(size).to(Chain).map(_.show).join
-                Terminal.Info.Paste(content) #:: process(tail.stdlib.drop(size + 6).to(Chain))
+                // A single documented view: a bracketed paste ends at a six-character
+                // terminator, and locating a subsequence (`indexOfSlice`) has no native form.
+                val chars = tail.stdlib
+                val size = chars.indexOfSlice(List('\u001b', '[', '2', '0', '1', '~').stdlib)
+                val content = chars.take(size).to(Chain).map(_.show).join
+                Terminal.Info.Paste(content) #:: process(chars.drop(size + 6).to(Chain))
 
               case other =>
-                val sequence = other.stdlib.takeWhile(!_.isLetter).to(Chain)
+                val (sequence, remainder) = other.span(!_.isLetter)
 
-                other.stdlib.drop(sequence.stdlib.length).to(Chain) match
+                remainder match
                   // CSI-u (kitty keyboard protocol): a key codepoint with optional
                   // sub-keys and modifiers, terminated by `u`.
                   case 'u' #:: tail =>
-                    Keyboard.csiu(sequence.stdlib.to(List)) #:: process(tail)
+                    Keyboard.csiu(sequence.to[List]) #:: process(tail)
 
                   case 'R' #:: tail =>
                     // A cursor-position report. The plain form (`\e[<row>;<col>R`) is
@@ -230,8 +236,13 @@ object Keyboard:
                     Chain()
 
             case ']' #:: '1' #:: '1' #:: ';' #:: 'r' #:: 'g' #:: 'b' #:: ':' #:: rest =>
-              val content = rest.stdlib.takeWhile(_ != '\u001b').mkString.tt
-              val continuation = rest.stdlib.drop(content.length + 2).to(Chain)
+              val split: (Chain[Char], Chain[Char]) = rest.span(_ != '\u001b')
+              val content: Text = split._1.map(_.show).join
+
+              // Skip the two-character string terminator that follows the colour.
+              val continuation: Chain[Char] = split._2 match
+                case _ #:: _ #:: tail => tail
+                case _                => Chain()
 
               content.cut(t"/") match
                 case List(red, green, blue) =>

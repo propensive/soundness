@@ -105,7 +105,7 @@ object Tasty:
     // pickled with an empty extent at whatever position was to hand, and so cannot be innermost
     // anything; they sort last, to be reached only when a frame really is one of them.
     def covering(line: Int): List[Definition] =
+      val covered: List[Definition] = definitions.filter(_.covers(line))
 
-        definitions.stdlib.filter(_.covers(line)).sortBy: definition =>
-          (if definition.span == 0 then 1 else 0, definition.span)
-        . to(List)
+      covered.order: definition =>
+        (if definition.span == 0 then 1 else 0, definition.span)

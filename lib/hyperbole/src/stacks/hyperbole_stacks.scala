@@ -34,6 +34,7 @@ package hyperbole
 
 import digression.*
 import hellenism.*
+import rudiments.map
 import vacuous.*
 
 package stackResolutions:
@@ -53,7 +54,7 @@ extension (stackTrace: StackTrace)
         ( stackTrace.component,
           stackTrace.className,
           stackTrace.message,
-          stackTrace.frames.stdlib.map(resolver.resolve).to(List),
+          stackTrace.frames.map(resolver.resolve),
           stackTrace.cause.let(recur) )
 
     recur(stackTrace)

@@ -49,7 +49,7 @@ import denominative.*
 import gossamer.*
 import hellenism.*
 import rudiments.*
-import denominative.dysasymptotics.linearSize
+import denominative.dysasymptotics.{linearSize, unboundedSize}
 import stenography.*
 import vacuous.*
 import symbolism.*
@@ -109,10 +109,13 @@ object SourceCode:
           val prefixLength = prefix.lay(0)(_.length)
           val replace = Span.offset((caret.n0 - prefixLength).z, prefixLength)
 
+          val wordList: List[Text] = words.to[List]
+          val sorted:   List[Text] = wordList.order(_.s)
+
           val items =
-            words.stdlib.toList.sortBy(_.s).map: word =>
-              Completion(word, Completion.Kind.Keyword, Syntax.Symbolic(word))
-            . to(List)
+            sorted.map: word =>
+              val syntax = Syntax.Symbolic(word)
+              Completion(word, Completion.Kind.Keyword, syntax)
 
           val binding =
             found.expectation == prophesy.KeywordPattern.Expectation.TermBinding ||
@@ -176,6 +179,9 @@ object SourceCode:
       case _ =>
         Chain()
 
+    // The `lead` calls below drop each line's trailing `Newline` token. They are gated on
+    // `unboundedSize` because the receiver is a `Chain`, but each such chain holds a single
+    // source line, so the traversal is bounded.
     def stream(lastEnd: Int = 0): Chain[Token] = scanner.token match
       case Tokens.EOF => untab(text.segment(lastEnd.z till text.limit)).filter(_.length > 0)
 
@@ -185,10 +191,10 @@ object SourceCode:
         val unparsed: Chain[Token] =
           if lastEnd == start then Chain() else
             text.segment(lastEnd.z thru start.u)
-            . cut(t"\n").stdlib
-            . to(Chain)
+            . cut(t"\n")
+            . to[Chain]
             . flatMap(untab(_).filter(_.length > 0))
-            . pipe { chain => chain.stdlib.init.to(Chain) }
+            . pipe { chain => chain.occupied.lay(chain)(_.lead) }
 
         scanner.nextToken()
         val end = scanner.lastOffset max start
@@ -201,10 +207,10 @@ object SourceCode:
 
         val content: Chain[Token] =
           if start == end then Chain() else
-            text.segment(start.z thru end.u).cut(t"\n").stdlib.to(Chain).flatMap: line =>
+            text.segment(start.z thru end.u).cut(t"\n").to[Chain].flatMap: line =>
               Chain(Token(line, tokenAccent, meta, role = role), Token.Newline)
 
-            . pipe { chain => chain.stdlib.init.to(Chain) }
+            . pipe { chain => chain.occupied.lay(chain)(_.lead) }
 
         unparsed #::: content #::: stream(end)
 
@@ -242,16 +248,20 @@ object SourceCode:
       case head :: tail =>
         coalesce(tail, head :: done)
 
-    val tokens: List[Token] = coalesce((soften(stream()).stdlib).to(List))
+    val tokens: List[Token] = coalesce(soften(stream()).to[List])
 
     // Give each token a `Line`-mode `Span` with its 0-based line and column,
     // accumulating token widths along each assembled line.
     val positioned = lines(tokens).reverse.indexed.map: (tokens, index) =>
-      tokens.stdlib.zip(tokens.stdlib.scanLeft(0)(_ + _.length)).map: (token, column) =>
-        token.copy(span = Span.line(index, column.z, token.length))
+      val columns: List[Int]           = tokens.trace(0)(_ + _.length)
+      val paired:  List[(Token, Int)]  = tokens.zip(columns)
+
+      paired.map: (token, column) =>
+        val span = Span.line(index, column.z, token.length)
+        token.copy(span = span)
 
     SourceCode
-      ( language, 1, Array(positioned.map(_.to(List))*), diagnostics = diagnostics,
+      ( language, 1, Array(positioned*), diagnostics = diagnostics,
         completions = completions )
 
   // The accent (colour category) and role (binding vs usage) resolved for a token span
@@ -488,6 +498,7 @@ object SourceCode:
 
     try
       val settings = ("-classpath" :: cp.s :: scalac.commandLineArguments.map(_.s)).map(_.nn)
+      // `.stdlib`: the presentation compiler's own API takes a `scala.List[String]`.
       val driver = Shim.interactiveDriver(settings.stdlib)
       // The driver resolves the URI as a path, so it must use the `file` scheme, though no
       // file exists there: the source text is supplied directly.
@@ -567,6 +578,7 @@ object SourceCode:
 
       val (run, _, _) =
         frontend(truncated, scalac, cp): context =>
+          // `.stdlib`: dotc's `setSetting` takes a `scala.List[String]`.
           context.setSetting(context.settings.YstopAfter, List("typer").stdlib)
 
       val unit = run.units.head

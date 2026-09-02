@@ -36,6 +36,7 @@ import scala.collection.immutable.VectorMap
 
 import anticipation.*
 import cataclysm.Css
+import denominative.*
 import geodesy.*
 import gossamer.*
 import rudiments.*
@@ -104,7 +105,7 @@ extends Figure:
     attrs += t"width" -> width.show
     attrs += t"height" -> height.show
 
-    if transforms.stdlib.nonEmpty
+    if !transforms.nil
     then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
     Element(t"rect", Attributes.from(attrs.result().to(Map)), Array())
@@ -124,7 +125,7 @@ extends Figure:
     attrs += t"d" -> d
     id.let: svgId => attrs += t"id" -> svgId.text
 
-    if transforms.stdlib.nonEmpty
+    if !transforms.nil
     then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
     style.let: css => attrs += t"style" -> css.text
@@ -181,7 +182,7 @@ extends Figure:
       attrs += t"rx" -> xRadius.show
       attrs += t"ry" -> yRadius.show
 
-    if transforms.stdlib.nonEmpty
+    if !transforms.nil
     then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
     Element(if circle then t"circle" else t"ellipse", Attributes.from(attrs.result().to(Map)), Array())

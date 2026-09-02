@@ -141,8 +141,11 @@ object OpensslCrypto extends Crypto:
     ( context: Address, transformation: Text, key: Data, iv: Optional[Data], encrypting: Boolean )
   :   Unit =
 
-    val parts = transformation.cut(t"/").stdlib
-    val cipher0 = cipher(opensslCipher(parts(0), parts(1), key.length))
+    // Every transformation reaching here has the three-part JCE form, `algorithm/mode/padding`.
+    val (algorithm, mode, padding) = transformation.cut(t"/").absolve match
+      case algorithm :: mode :: padding :: _ => (algorithm, mode, padding)
+
+    val cipher0 = cipher(opensslCipher(algorithm, mode, key.length))
     val keyBuffer = ForeignBuffer(key)
     val ivBuffer = iv.let(ForeignBuffer(_))
     val ivPointer = ivBuffer.lay(Address.Null)(_.pointer)
@@ -157,7 +160,7 @@ object OpensslCrypto extends Crypto:
         . EVP_DecryptInit_ex(context, cipher0, Address.Null, keyBuffer.pointer, ivPointer)
         . call[Int]()
 
-      if parts(2) == t"NoPadding" then
+      if padding == t"NoPadding" then
         Foreign["library", Native].EVP_CIPHER_CTX_set_padding(context, 0).call[Int]()
 
     finally
@@ -234,8 +237,7 @@ object OpensslCrypto extends Crypto:
 
       val context = newContext()
       initialise(context, transformation, key, iv, encrypting)
-      val parts = transformation.cut(t"/").stdlib
-      val block = if parts(0) == t"AES" then 16 else 8
+      val block = if transformation.cut(t"/").prim == t"AES" then 16 else 8
 
       new Cipher.Session:
         def update(chunk: Data): Data = OpensslCrypto.update(context, chunk, block, encrypting)
@@ -253,8 +255,8 @@ object OpensslCrypto extends Crypto:
 
     try
       initialise(context, transformation, key, iv, encrypting)
-      val parts = transformation.cut(t"/").stdlib
-      val block = if parts(0) == t"AES" then 16 else 8
+      val block = if transformation.cut(t"/").prim == t"AES" then 16 else 8
+
       Array.frozen
        ( update(context, data, block, encrypting).readable
          ++ finish(context, block, encrypting).readable )

@@ -533,6 +533,8 @@ case class Zipfile
 
     // Each entry's payload stream is opened only when the serialization reaches
     // it, and drained in bounded chunks.
+    // The archive is serialized through stdlib `Iterator`s, which the opaque `List` cannot
+    // yield; each of the four `stdlib` bridges below is that crossing.
     val local: Iterator[Data] =
       records.stdlib.iterator.flatMap: (entry, _, header, _) =>
         Iterator(header) ++ entry.storedBytes().chunks

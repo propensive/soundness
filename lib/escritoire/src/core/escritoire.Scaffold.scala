@@ -38,9 +38,13 @@ package escritoire
 // still `fresh.rd`. A capture-checking question, not a drain one.
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+
+// The row count is a plain linear count of a `List`, made once per table.
+import denominative.dysasymptotics.linearSize
 
 object Scaffold:
   @targetName("make")
@@ -60,19 +64,20 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
     val titles: List[Array[Array[text]^{}]^{}] =
       List:
         Array.from[Array[text]^{}]:
-          columns0.map { column => Array.from(column.title.cut(t"\n").stdlib) }
+          columns0.map { column => column.title.cut(t"\n").to[Array] }
 
     def tabulate(data: List[row]): Tabulation[text] { type Row = row } = new Tabulation[text]:
       type Row = row
 
       val columns: Array[Column[Row, text]]^{} = scaffold.columns
       val titles: List[Array[Array[text]^{}]^{}] = scaffold.titles
-      val dataLength: Int = data.stdlib.length
+      // A single linear count of the rows, made once when the table is built.
+      val dataLength: Int = data.size
 
       val rows: List[Array[Array[text]^{}]^{}] =
         data.map: row =>
           columns.map[Array[text]^{}]: column =>
-            Array.from(column.get(row).lines.stdlib)
+            column.get(row).lines.to[Array]
 
       // Evaluated HERE, the last point at which the row value exists; carried as plain
       // lists (no `ClassTag` exists for an `Optional` of a function).

@@ -359,9 +359,11 @@ class Cose
         Cbor.Ast.array(Array[Any](protectedHeader, unprotectedAst, payload, auth))
 
       case _ =>
-        val recipAst: Array[Any]^{} = Array.from(recipients.stdlib.map: r =>
+        val recipList: List[Any] = recipients.map[Any]: r =>
           Cbor.Ast.array(Array[Any](r.protectedHeader, Cose.unsealOrEmpty(r.unprotectedHeader),
-            r.authentication)))
+            r.authentication))
+
+        val recipAst: Array[Any]^{} = recipList.to[Array]
 
         Cbor.Ast.array(Array[Any](protectedHeader, unprotectedAst, payload,
           Cbor.Ast.array(recipAst)))

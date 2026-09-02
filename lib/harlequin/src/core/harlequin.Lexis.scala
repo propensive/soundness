@@ -106,7 +106,7 @@ object Lexis:
 
     code.lines.foreach: line =>
       if line.exists(_.accent != Accent.Unparsed) then
-        val indent = line.stdlib.head.pipe: token =>
+        val indent = line.prim.lay(0): token =>
           if token.accent == Accent.Unparsed then token.length else 0
 
         if previous.lay(false)(indent <= _) then builder += Lexeme.Break
