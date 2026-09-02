@@ -62,7 +62,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                       mtime = 0.bits.u32 )
 
     suite(m"USTAR header writing"):
-      val blocks = Tarfile(List(helloFile)).source[Data].toProgression.stdlib.toList
+      val blocks = Tarfile(List(helloFile)).source[Data].chain.stdlib.toList
       val header = blocks.head
 
       test(m"USTAR magic at offset 257"):
@@ -90,7 +90,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == 2048)
 
     suite(m"Multi-entry archive"):
-      val blocks = Tarfile(List(helloFile, emptyDir)).source[Data].toProgression.stdlib.toList
+      val blocks = Tarfile(List(helloFile, emptyDir)).source[Data].chain.stdlib.toList
 
       test(m"file + directory + two trailing zero blocks = 5 blocks"):
         blocks.size
@@ -113,7 +113,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                         group = UnixGroup(0),
                         mtime = 0.bits.u32,
                         data  = Tar.Body() )
-      val blocks = Tarfile(List(longFile)).source[Data].toProgression.stdlib.toList
+      val blocks = Tarfile(List(longFile)).source[Data].chain.stdlib.toList
 
       test(m"long name: 5 blocks (PAX header/data, regular, 2 zero)"):
         blocks.size
@@ -152,7 +152,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            group  = UnixGroup(0),
                            mtime  = 0.bits.u32,
                            target = longTarget )
-      val blocks = Tarfile(List(longSymlink)).source[Data].toProgression.stdlib.toList
+      val blocks = Tarfile(List(longSymlink)).source[Data].chain.stdlib.toList
 
       test(m"long linkpath: 5 blocks (PAX header/data, symlink, 2 zero)"):
         blocks.size
@@ -212,7 +212,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == 200000)
 
     suite(m"Reader: round-trip a single file"):
-      val bytes = Tarfile(List(helloFile)).source[Data].toProgression
+      val bytes = Tarfile(List(helloFile)).source[Data].chain
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
 
       test(m"reader produces one entry"):
@@ -234,7 +234,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == "hello")
 
     suite(m"Reader: round-trip multiple entries"):
-      val bytes = Tarfile(List(helloFile, emptyDir)).source[Data].toProgression
+      val bytes = Tarfile(List(helloFile, emptyDir)).source[Data].chain
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
 
       test(m"two entries"):
@@ -265,7 +265,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                         mtime = 0.bits.u32,
                         data  = Tar.Body() )
 
-      val bytes = Tarfile(List(longFile)).source[Data].toProgression
+      val bytes = Tarfile(List(longFile)).source[Data].chain
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
 
       test(m"reader produces one entry (PAX consumed silently)"):
@@ -286,7 +286,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            mtime  = 0.bits.u32,
                            target = longTarget )
 
-      val bytes = Tarfile(List(longSymlink)).source[Data].toProgression
+      val bytes = Tarfile(List(longSymlink)).source[Data].chain
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
 
       test(m"single Symlink entry emitted"):
@@ -308,7 +308,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                           mtime = 12345.bits.u32,
                           data  = Tar.Body(t"#!/bin/sh\n".in[Data]) )
 
-      val bytes = Tarfile(List(executable)).source[Data].toProgression
+      val bytes = Tarfile(List(executable)).source[Data].chain
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
 
       test(m"mode bits round-trip"):
@@ -339,7 +339,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       import errorDiagnostics.emptyDiagnostics
 
       test(m"bad checksum is detected"):
-        val good: List[Data] = Tarfile(List(helloFile)).source[Data].toProgression.stdlib.toList.asInstanceOf[List[Data]]
+        val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.stdlib.toList.asInstanceOf[List[Data]]
         val corrupted: List[Data] = Array.frozen(good.stdlib.head.readable.updated(0, ('Z'.toByte: Byte))) :: good.stdlib.tail.to(proscenium.List)
         capture[Tar.Error](Tarfile.read(corrupted.stdlib.iterator.stream).toList).reason
       . assert: r =>
@@ -359,14 +359,14 @@ object Tests extends Suite(m"Bitumen Tests"):
       test(m"a bad checksum accrues exactly one error, with no parse cascade"):
         // A corrupt block cannot be trusted for anything, so nothing in it is parsed: no
         // BadName/BadOctal cascade follows the checksum failure.
-        val good: List[Data] = Tarfile(List(helloFile)).source[Data].toProgression.stdlib.toList.asInstanceOf[List[Data]]
+        val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.stdlib.toList.asInstanceOf[List[Data]]
         val corrupted: List[Data] = Array.frozen(good.stdlib.head.readable.updated(0, ('Z'.toByte: Byte))) :: good.stdlib.tail.to(proscenium.List)
         collectTar { Tarfile.read(corrupted.stdlib.iterator.stream).toList; () }.reasons
       . assert: reasons =>
           reasons.size == 1 && reasons.prim.lay(false)(_.isInstanceOf[Tar.Error.Reason.BadChecksum])
 
       test(m"an unknown type flag degrades to a file, never a directory"):
-        val good: List[Data] = Tarfile(List(helloFile)).source[Data].toProgression.stdlib.toList.asInstanceOf[List[Data]]
+        val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.stdlib.toList.asInstanceOf[List[Data]]
         // Patch the type flag to an unrecognised value and restamp the checksum
         // (bytes 148-156 count as spaces; "%06o\0 " format).
         val flagged = good.stdlib.head.readable.updated(156, 'q'.toByte)
@@ -415,7 +415,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                     mtime = 0.bits.u32,
                     data  = Tar.Body() )
 
-      val blocks = Tarfile(List(file)).source[Data].toProgression.stdlib.toList
+      val blocks = Tarfile(List(file)).source[Data].chain.stdlib.toList
 
       test(m"long uname triggers a PAX header (extra block emitted)"):
         blocks.size
@@ -454,7 +454,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                         data  = Tar.Body() )
 
       val tar = Tarfile(List(longFile), LongNameFormat.Gnu)
-      val blocks = tar.source[Data].toProgression.stdlib.toList
+      val blocks = tar.source[Data].chain.stdlib.toList
 
       test(m"first block has 'L' type flag at offset 156"):
         blocks(0).readable(156).toChar
@@ -487,7 +487,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            target = longTarget )
 
       val tar = Tarfile(List(longSymlink), LongNameFormat.Gnu)
-      val blocks = tar.source[Data].toProgression.stdlib.toList
+      val blocks = tar.source[Data].chain.stdlib.toList
 
       test(m"first block has 'K' type flag"):
         blocks(0).readable(156).toChar
@@ -513,7 +513,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                                t"mtime"   -> t"1234567890.987654321",
                                t"comment" -> t"a test file" ) )
 
-      val bytes = Tarfile(List(file)).source[Data].toProgression
+      val bytes = Tarfile(List(file)).source[Data].chain
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
 
       test(m"atime round-trips"):
@@ -701,8 +701,8 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"gzipped stream is shorter than uncompressed (for small archive)"):
-        val raw = tar.source[Data].toProgression.stdlib.map(_.readable.length).sum
-        val compressed = tar.gzip.toProgression.stdlib.map(_.readable.length).sum
+        val raw = tar.source[Data].chain.stdlib.map(_.readable.length).sum
+        val compressed = tar.gzip.chain.stdlib.map(_.readable.length).sum
         compressed < raw
       . assert(_ == true)
 
@@ -839,7 +839,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                                          SparseSegment(5000L, 200L) ),
                            data     = Tar.Body(Array.fill[Byte](300)('X'.toByte)) )
 
-      val bytes = Tarfile(List(sparseEntry)).source[Data].toProgression
+      val bytes = Tarfile(List(sparseEntry)).source[Data].chain
       val blocks = bytes.stdlib.toList
 
       test(m"header type flag is 'S'"):
@@ -901,7 +901,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            segments = manySegments.to(proscenium.List),
                            data     = Tar.Body(Array.fill[Byte](500)('X'.toByte)) )
 
-      val bytes = Tarfile(List(sparseEntry)).source[Data].toProgression
+      val bytes = Tarfile(List(sparseEntry)).source[Data].chain
       val blocks = bytes.stdlib.toList
 
       test(m"header isExtended byte is 1"):

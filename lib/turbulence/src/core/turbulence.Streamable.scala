@@ -63,13 +63,11 @@ object Streamable:
   =>  Text is Streamable by Data over Credit =
     value => Stream(value).via(encoder).asInstanceOf[(Stream[Data] over Credit)^]
 
-  // Legacy views: a lazy list of chunks is a source, though its production is
-  // beyond demand control; demand bounds only the exposure of each chunk.
-  given lazyListData: Chain[Data] is Streamable by Data over Credit = value =>
-    Stream(value.stdlib.iterator)
+  // A lazy chain of chunks is a source, though its production is beyond
+  // demand control; demand bounds only the exposure of each chunk.
+  given chainData: Chain[Data] is Streamable by Data over Credit = Stream(_)
 
-  given lazyListText: Chain[Text] is Streamable by Text over Credit = value =>
-    Stream(value.stdlib.iterator)
+  given chainText: Chain[Text] is Streamable by Text over Credit = Stream(_)
 
   // The HTTP-body interchange protocol is itself a pull source, so a
   // request or response body can be `read` directly.

@@ -80,7 +80,7 @@ object Reshapable extends Reshapable.Fallback:
   =>  IndexedSeq[element] is Reshapable.Stable by element2 to IndexedSeq[element2] =
     IndexedSeq.from(_)
 
-  given lazyList: [element, element2]
+  given chain: [element, element2]
   =>  Chain[element] is Reshapable.Stable by element2 to Chain[element2] =
     Chain.from(_)
 

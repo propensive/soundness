@@ -85,9 +85,7 @@ object PseudoHeaders:
     val status: Http.Status =
       Http.Status.unapply(code).optional.lest(Http2.Error(Reason.Protocol(t"missing :status")))
 
-    // `.stdlib.iterator`: `Stream` is built from a stdlib `Iterator`; a `Chain` has no direct
-    // `Stream` factory.
-    status(headers.to(List), Http.Body.Flowing(() => zephyrine.Stream(body.stdlib.iterator)))
+    status(headers.to(List), Http.Body.Flowing(() => zephyrine.Stream(body)))
 
   // Reconstruct an `Http.Request` from a decoded request HEADERS block and the
   // body spring: `:method`/`:path` select the method and target, `:authority`

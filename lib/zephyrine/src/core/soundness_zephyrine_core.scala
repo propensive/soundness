@@ -41,7 +41,7 @@ export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum,
     Format, Formatting, Intake, Lineation, Parse, PositionTracking, Producer, Positionable,
     Records, records, Regulation, Spring, Stream, Substrate, chunks,
     discard, drain, gather, locate,
-    locateKey, memoize, pump, stream, streamOf, toProgression, truncate,
+    locateKey, memoize, pump, stream, streamOf, chain, truncate,
     viaDuct, acceptingDuct}
 
 // Hand-written forwarders: the synthesized export forwarders for these dependent-typed

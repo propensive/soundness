@@ -61,7 +61,7 @@ object Traversable extends Traversable2:
     _.stdlib.iterator
 
   // Opaque `Chain` likewise; `.stdlib.iterator` is lazy (pulls elements on demand).
-  given lazyList: [element, lazyList <: Chain[element]] => lazyList is Traversable by element =
+  given chain: [element, chain <: Chain[element]] => chain is Traversable by element =
     _.stdlib.iterator
 
   // Opaque `Sequence` likewise; subtype-parametric for `Sequence[e] & Populated` receivers.

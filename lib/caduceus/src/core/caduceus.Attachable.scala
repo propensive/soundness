@@ -41,7 +41,7 @@ import zephyrine.*
 object Attachable:
   given generic: [entity: {Nominable, Media, Streamable by Data over Credit}]
   =>  entity is Attachable =
-    value => Asset(entity.name(value), entity.mediaType(value), value.source[Data].toProgression)
+    value => Asset(entity.name(value), entity.mediaType(value), value.source[Data].chain)
 
   given asset: Asset is Attachable = identity(_)
 

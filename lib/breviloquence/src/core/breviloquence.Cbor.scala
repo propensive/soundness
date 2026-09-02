@@ -813,18 +813,30 @@ object Cbor extends Cbor2, Dynamic:
   given listEncodable: [list <: List, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
   =>  ((list[element] is Encodable in Cbor)^{encodable}) =
-    values => ast(Ast.array(Array.from(values.stdlib.map(encodable.encoded(_).root))))
+    values =>
+      val roots: Array[Any]^{} =
+        values.map { value => encodable.encoded(value).root: Any }.to[Array]
+
+      ast(Ast.array(roots))
 
   given setEncodable: [set <: Set, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
   =>  ((set[element] is Encodable in Cbor)^{encodable}) =
-    values => ast(Ast.array(Array.from(values.stdlib.map(encodable.encoded(_).root))))
+    values =>
+      val roots: Array[Any]^{} =
+        values.map { value => encodable.encoded(value).root: Any }.to[Array]
+
+      ast(Ast.array(roots))
 
 
   given seriesEncodable: [sequence <: Sequence, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
   =>  ((sequence[element] is Encodable in Cbor)^{encodable}) =
-    values => ast(Ast.array(Array.from(values.stdlib.map(encodable.encoded(_).root))))
+    values =>
+      val roots: Array[Any]^{} =
+        values.map { value => encodable.encoded(value).root: Any }.to[Array]
+
+      ast(Ast.array(roots))
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory: sc.Factory[element, collection[element]], tactic:  Tactic[Cbor.Error] )
@@ -900,8 +912,9 @@ object Cbor extends Cbor2, Dynamic:
 
     map =>
       val keys: List[key] = map.keys.to[List]
-      val values = Array.from[Any](keys.stdlib.map(map(_).encode.root))
-      ast(Ast.map(Array.from(keys.stdlib.map{ k => k.encode.s }), values))
+      val values: Array[Any]^{} = keys.map { key => map(key).encode.root: Any }.to[Array]
+      val names: Array[Any]^{} = keys.map { key => key.encode.s: Any }.to[Array]
+      ast(Ast.map(names, values))
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Cbor)*): Cbor =
     val keys: Array[Any]^{} = Array.from(elements.map(_(0): Any))

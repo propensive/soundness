@@ -390,8 +390,8 @@ package filesystemBackends:
                 catch case error: Wasm.Error => ()
 
                 streamHandle.dispose()
-                // `.stdlib.iterator`: `zephyrine.Stream` takes a stdlib `Iterator`.
-                summon[Data is Aggregable by Data].accept(zephyrine.Stream(chunks.reverse.stdlib.iterator))
+                summon[Data is Aggregable by Data]
+                . accept(zephyrine.Stream(chunks.reverse.to[Chain]))
 
             lambda(view)
           finally opened.dispose()
@@ -461,8 +461,8 @@ package filesystemBackends:
                 catch case error: Wasm.Error => ()
 
                 streamHandle.dispose()
-                // `.stdlib.iterator`: `zephyrine.Stream` takes a stdlib `Iterator`.
-                summon[Data is Aggregable by Data].accept(zephyrine.Stream(chunks.reverse.stdlib.iterator))
+                summon[Data is Aggregable by Data]
+                . accept(zephyrine.Stream(chunks.reverse.to[Chain]))
 
               def writeTo(writeOffset: Long, data: Data): Int =
                 if writeOffset >= extent then 0 else
@@ -554,8 +554,7 @@ package filesystemBackends:
             // expands at under capture checking.
             val handle =
               Handle(() => read(), write(_))
-                  // `.stdlib.iterator`: `zephyrine.Stream` takes a stdlib `Iterator`.
-                ( () => zephyrine.Stream(read().stdlib.iterator),
+                ( () => zephyrine.Stream(read()),
                   () => turbulence.Sink.buffered((), (_, stream) => write(stream)) )
 
             try lambda(handle) finally opened.dispose()

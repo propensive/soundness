@@ -173,7 +173,7 @@ object Regex:
                 values
 
           val values = recur(regex.captureGroups, regex.captureIndices, Nil)
-          Some(Array.frozen(scala.IArray.from(values.stdlib.reverse)))
+          Some(values.reverse.to[Array])
 
         . or(None)
 

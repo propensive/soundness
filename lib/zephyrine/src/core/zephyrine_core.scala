@@ -276,7 +276,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
   // close over, and the ownership discipline is suspended beyond this point —
   // implicit memoization retains every forced chunk. Prefer the kernel
   // terminals above; never introduce new bridges elsewhere.
-  def toProgression(using buffering: Buffering): Chain[medium] =
+  def chain(using buffering: Buffering): Chain[medium] =
     val block = buffering.transfer(stream.addressable.substrate)
 
     given stream.addressable.type = stream.addressable

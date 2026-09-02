@@ -62,7 +62,7 @@ object Terminable:
 
   // Forcing a lazy structure to its end diverges on an infinite one: unbounded, not merely
   // linear — the same gate `Chain.size` demands.
-  given lazyList: [element, chain <: Chain[element]] => (complexity: Dysasymptotic.UnboundedSize)
+  given chain: [element, chain <: Chain[element]] => (complexity: Dysasymptotic.UnboundedSize)
   =>  chain is Terminable by element =
     _.stdlib.last
 
@@ -94,7 +94,7 @@ object Truncable:
   =>  array is Truncable to (Array[element]^{}) =
     value => Array.frozen(value.readable.init)
 
-  given lazyList: [element, chain <: Chain[element]] => (complexity: Dysasymptotic.UnboundedSize)
+  given chain: [element, chain <: Chain[element]] => (complexity: Dysasymptotic.UnboundedSize)
   =>  chain is Truncable to Chain[element] =
     value => value.stdlib.init.to(Chain)
 

@@ -748,7 +748,7 @@ object Jdwp:
 
       // A single writer drains outgoing packets so writes never interleave.
       val writer: Task[Unit] = async:
-        connection.outgoing.lazyList.each: packet => duplex.send(Stream(packet))
+        connection.outgoing.chain.each: packet => duplex.send(Stream(packet))
 
       // The reader owns the read side: it is minted and consumed here, which also keeps the caller
       // thread off the channel's first (blocking) refill before the writer has started.

@@ -46,6 +46,15 @@ import Css.Node
 // single space, then the result is trimmed. Nested rules are supported: a rule
 // body is itself a list of nodes.
 private[cataclysm] object CssParser:
+  // Native `Chain` sibling of the `Iterator` overload: same cursor
+  // construction, no stdlib hop. No default for `validating`: only one
+  // overloaded alternative may define default arguments.
+  def parse(input: Chain[Text], validating: Boolean)(using Tactic[Css.Error]): Css =
+    import zephyrine.lineation.linefeedChars
+
+    Parser(Cursor[Text](input), validating).document()
+
+  // The legacy interoperation shape: a stdlib `Iterator` of chunks.
   def parse(input: Iterator[Text], validating: Boolean = true)(using Tactic[Css.Error]): Css =
     import zephyrine.lineation.linefeedChars
 

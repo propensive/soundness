@@ -76,7 +76,7 @@ object Pem:
 
         def aggregate(stream: Chain[Text]): value in Pem =
           // `Cursor` is built from a stdlib `Iterator`, which the opaque `Chain` cannot yield.
-          decode(parse(Cursor(stream.stdlib.iterator)))
+          decode(parse(Cursor(stream)))
 
         override def accept(stream: (Stream[Text] over Credit)^): value in Pem =
           // See `aggregable` below.
@@ -178,7 +178,7 @@ object Pem:
         type Operand = Text
 
         // `Cursor` is built from a stdlib `Iterator`, which the opaque `Chain` cannot yield.
-        def aggregate(stream: Chain[Text]): Pem = parse(Cursor(stream.stdlib.iterator))
+        def aggregate(stream: Chain[Text]): Pem = parse(Cursor(stream))
 
         override def accept(stream: (Stream[Text] over Credit)^): Pem =
           // The non-consume `accept` crosses to the consuming factory as a
@@ -194,7 +194,7 @@ object Pem:
         type Operand = Text
 
         // `Cursor` is built from a stdlib `Iterator`, which the opaque `Chain` cannot yield.
-        def aggregate(stream: Chain[Text]): Chain[Pem] = parseAll(Cursor(stream.stdlib.iterator))
+        def aggregate(stream: Chain[Text]): Chain[Pem] = parseAll(Cursor(stream))
 
         override def accept(stream: (Stream[Text] over Credit)^): Chain[Pem] =
           // See `aggregable` above.
@@ -213,8 +213,7 @@ object Pem:
       if index >= pem.data.length then Chain(t"-----END ${pem.label}-----\n")
       else t"${pem.data.segment((index).z till (index + 48).z).serialize[Base64]}\n" #:: groups(index + 48)
 
-    // `Stream` is built from a stdlib `Iterator`, which the opaque `Chain` cannot yield.
-    Stream((t"-----BEGIN ${pem.label}-----\n" #:: Chain.defer(groups(0))).stdlib.iterator)
+    Stream(t"-----BEGIN ${pem.label}-----\n" #:: Chain.defer(groups(0)))
 
   // PemError → Pem.Error
   object Error:

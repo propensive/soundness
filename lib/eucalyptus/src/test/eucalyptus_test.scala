@@ -52,7 +52,7 @@ object Tests extends Suite(m"Eucalyptus tests"):
 
   object Capture:
     given writable: Capture is Writable by Text = (capture, stream) =>
-      zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+      zephyrine.chain(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
       . each(capture.queue.put)
 
   // A `Writable` that `raise`s a `Truncation.Error` for each line, to exercise the typed `handle` path.
@@ -62,7 +62,7 @@ object Tests extends Suite(m"Eucalyptus tests"):
     given writable: (streamCut: Emit[Truncation.Error])
     =>  ((Failing is Writable by Text)^{streamCut}) =
       (failing, stream) =>
-        zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+        zephyrine.chain(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
         . each(_ => raise(Truncation.Error(0.b)))
 
   // An event enum whose cases carry *different* categories. Because the marker traits are

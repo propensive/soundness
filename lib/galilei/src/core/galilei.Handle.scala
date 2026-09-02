@@ -85,9 +85,7 @@ object Handle:
 // I/O reads and writes directly through the streaming kernel's buffers.
 class Handle
   ( val reader: () => Chain[Data], val writer: Chain[Data] => Unit )
-  // `.stdlib.iterator`: `reader()` yields a lazy `Chain`, and `Stream` takes a stdlib
-  // `Iterator` — a genuine boundary into the streaming kernel.
-  ( val source: Spring[Data]^ = () => Stream(reader().stdlib.iterator),
+  ( val source: Spring[Data]^ = () => Stream(reader()),
     val intake: () => Intake[Data] over Credit =
       () => Sink.buffered((), (_, stream) => writer(stream)) )
 extends caps.ExclusiveCapability

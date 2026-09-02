@@ -206,6 +206,35 @@ object Cursor:
     cursor
 
 
+  // Adapts a lazy `Chain` of chunks to the loader API: the native sibling of the
+  // Iterator factory below. Each load forces at most one cell; the mutable cursor
+  // over the chain is confined to the sealed loader.
+  def apply[data](chain: Chain[data])
+    ( using addressable0: data is Addressable,
+            lineation0:   Lineation by addressable0.Operand )
+  :   Cursor[data, {}]^ =
+
+    var remaining: Chain[data] = chain
+
+    val load: () => Optional[data] = () => remaining match
+      case chunk #:: tail =>
+        remaining = tail
+        chunk
+
+      case _ =>
+        Unset
+
+    val cursor: Cursor[data, {}]^ =
+      new Cursor[data, {}]
+        ( caps.unsafe.unsafeAssumePure(load),
+          Unset,
+          DefaultCapacity,
+          addressable0,
+          lineation0,
+          Unset )
+
+    cursor
+
   // Backwards-compatible factory that adapts an Iterator to the loader API.
   // Lets the existing test suite cross-compile against Cursor.
   // The loader is SEALED (`unsafeAssumePure`, the CC-rollout fallback idiom): a loader

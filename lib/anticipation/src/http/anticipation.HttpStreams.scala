@@ -58,6 +58,20 @@ object HttpStreams:
     def apply(chunks: Iterator[Array[Byte]^{}]): Body = limit =>
       if chunks.hasNext then chunks.next() else null
 
+    // A chunked body from a lazy chain of chunks, forced one cell per call;
+    // as above, `limit` cannot bound the chunks' own sizes.
+    def apply(chain: Chain[Array[Byte]^{}]): Body = new Body:
+      @scala.caps.unsafe.untrackedCaptures
+      private var remaining: Chain[Array[Byte]^{}] = chain
+
+      def next(limit: Int): Array[Byte]^{} | Null = remaining match
+        case chunk #:: tail =>
+          remaining = tail
+          chunk
+
+        case _ =>
+          null
+
   trait Body:
     def next(limit: Int): Array[Byte]^{} | Null
 

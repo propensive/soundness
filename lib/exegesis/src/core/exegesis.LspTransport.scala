@@ -65,7 +65,7 @@ private[exegesis] object LspTransport:
 
     import strategies.throwUnsafely
 
-    source.toProgression.stdlib.iterator.frames[ContentLength].each: frame =>
+    source.chunks.frames[ContentLength].each: frame =>
       val message: Text = frame.utf8
       observer.received(message)
       receive(message)

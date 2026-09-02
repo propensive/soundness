@@ -173,8 +173,7 @@ object Html extends Tag.Container
 
       def aggregate(input: Chain[Text]): Html of content =
         val root = Tag.root(content.reify.map(_.tt).to[Set])
-        // `.stdlib.iterator`: the parser's cursor reads a stdlib `Iterator`.
-        HtmlParser.fromIterator(input.stdlib.iterator, permissive = false).parseHtml(root).of[content]
+        HtmlParser.fromChain(input, permissive = false).parseHtml(root).of[content]
 
       override def accept(stream: (Stream[Text] over Credit)^): Html of content =
         val root = Tag.root(content.reify.map(_.tt).to[Set])
@@ -188,8 +187,7 @@ object Html extends Tag.Container
       type Operand = Text
 
       def aggregate(input: Chain[Text]): Html =
-        // `.stdlib.iterator`: the parser's cursor reads a stdlib `Iterator`.
-        HtmlParser.fromIterator(input.stdlib.iterator, permissive = false)
+        HtmlParser.fromChain(input, permissive = false)
         . parseHtml(dom.generic, doctypes = false)
 
       override def accept(stream: (Stream[Text] over Credit)^): Html =
@@ -234,8 +232,7 @@ object Html extends Tag.Container
         val root = Tag.root(content.reify.map(_.tt).to[Set])
 
         lenient(Fragment().of[content]):
-          // `.stdlib.iterator`: the parser's cursor reads a stdlib `Iterator`.
-          HtmlParser.fromIterator(input.stdlib.iterator, permissive = true).parseHtml(root).of[content]
+          HtmlParser.fromChain(input, permissive = true).parseHtml(root).of[content]
 
       override def accept(stream: (Stream[Text] over Credit)^): Html of content =
         given Tactic[Parse.Error] = lenientTactic
@@ -255,8 +252,7 @@ object Html extends Tag.Container
         given Tactic[Parse.Error] = lenientTactic
 
         lenient(Fragment()):
-          // `.stdlib.iterator`: the parser's cursor reads a stdlib `Iterator`.
-          HtmlParser.fromIterator(input.stdlib.iterator, permissive = true)
+          HtmlParser.fromChain(input, permissive = true)
           . parseHtml(dom.generic, doctypes = false)
 
       override def accept(stream: (Stream[Text] over Credit)^): Html =
@@ -751,6 +747,12 @@ object Html extends Tag.Container
     def fromText(text: Text, permissive: Boolean = false)(using Dom): HtmlParser^ =
       new HtmlParser(Cursor[Text](text), permissive)
 
+    // Native `Chain` sibling of `fromIterator`: same cursor construction, no
+    // stdlib hop.
+    def fromChain(input: Chain[Text], permissive: Boolean = false)(using Dom): HtmlParser^ =
+      new HtmlParser(Cursor[Text](input), permissive)
+
+    // The legacy interoperation shape: a stdlib `Iterator` of chunks.
     def fromIterator(input: Iterator[Text], permissive: Boolean = false)(using Dom): HtmlParser^ =
       new HtmlParser(Cursor[Text](input), permissive)
 

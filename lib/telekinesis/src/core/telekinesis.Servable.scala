@@ -57,9 +57,7 @@ object Servable:
     def serve(content: Content): Http.Response =
       val headers = List(Http.Header(t"content-type", content.media.show))
 
-      // `.stdlib.iterator`: `Stream` is built from a stdlib `Iterator`; a `Chain` has no direct
-      // `Stream` factory.
-      Http.Ok(headers, Http.Body.Flowing(() => content.stream.stdlib.iterator.stream))
+      Http.Ok(headers, Http.Body.Flowing(() => Stream(content.stream)))
 
   given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  response is Servable =

@@ -72,12 +72,12 @@ class Relay[record]():
   // successor to `Spool.stream`, laundering the endpoint into a pure Chain,
   // and the audited bridge until every consumer takes a windowed `stream`.
   @scala.annotation.nowarn("msg=match may not be exhaustive")
-  def lazyList: Chain[record] =
+  def chain: Chain[record] =
     def pull(): Chain[record] = queue.take().nn match
       case Relay.Termination => Chain()
       case value             => value.asInstanceOf[record] #:: pull()
 
-    (Chain().stdlib.lazyAppendedAll(pull().stdlib)).to(Chain)
+    Chain.defer(pull())
 
   // The pull endpoint over this relay's records: single-owner, drained by one
   // thread; create it once. Records arriving after `stop` are not delivered.

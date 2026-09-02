@@ -483,9 +483,8 @@ package filesystemBackends:
              // The channel is this handle's single owner (see the comment above).
              scala.caps.unsafe.unsafeAssumeSeparate:
               Handle
-                ( () => unsafely(zephyrine.toProgression(Streamable.channel.stream(channel))),
-                  // `.stdlib.iterator`: `zephyrine.Stream` takes a stdlib `Iterator`.
-                  data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data.stdlib.iterator))) )
+                ( () => unsafely(zephyrine.chain(Streamable.channel.stream(channel))),
+                  data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data))) )
                 ( () => unsafely(caps.unsafe.unsafeAssumePure(Streamable.channel.stream(channel))),
                   () => unsafely(caps.unsafe.unsafeAssumePure(Sink.channel.intake(channel))) )
           finally lock.foreach: held =>

@@ -218,7 +218,7 @@ object Tests extends Suite(m"Vivisection tests"):
 
       val reader = async:
         import strategies.throwUnsafely
-        safely(clientIn.source[Data].toProgression.stdlib.iterator.frames[ContentLength].each:
+        safely(clientIn.source[Data].chain.stdlib.iterator.frames[ContentLength].each:
           frame => client.enqueue(frame.read[Json]))
         ()
 
@@ -476,7 +476,7 @@ object Tests extends Suite(m"Vivisection tests"):
         // A scripted fake VM: echo the handshake, answer IDSizes, then answer Version. Chunk
         // boundaries survive `Duplex.pair`, so each command arrives as its own chunk.
         val vm = async:
-          val incoming = vmSide.source.toProgression.stdlib.iterator
+          val incoming = vmSide.source.chain.stdlib.iterator
           vmSide.send(Stream(incoming.next()))
 
           val idSizes = Jdwp.Packet.decode(incoming.next())
@@ -501,7 +501,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val (vmSide, clientSide) = Duplex.pair()
 
         val vm = async:
-          val incoming = vmSide.source.toProgression.stdlib.iterator
+          val incoming = vmSide.source.chain.stdlib.iterator
           vmSide.send(Stream(incoming.next()))
 
           val idSizes = Jdwp.Packet.decode(incoming.next())
@@ -527,7 +527,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val (vmSide, clientSide) = Duplex.pair()
 
         val vm = async:
-          val incoming = vmSide.source.toProgression.stdlib.iterator
+          val incoming = vmSide.source.chain.stdlib.iterator
           vmSide.send(Stream(incoming.next()))
 
           val idSizes = Jdwp.Packet.decode(incoming.next())
@@ -567,7 +567,7 @@ object Tests extends Suite(m"Vivisection tests"):
         // suspended VM emits no events until resumed) and making handler registration deterministic
         // — the client has installed the handler before it resumes.
         val vm = async:
-          val incoming = vmSide.source.toProgression.stdlib.iterator
+          val incoming = vmSide.source.chain.stdlib.iterator
           vmSide.send(Stream(incoming.next()))
 
           val idSizes = Jdwp.Packet.decode(incoming.next())
@@ -610,7 +610,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val resumed = Promise[(Int, Int)]()
 
         val vm = async:
-          val incoming = vmSide.source.toProgression.stdlib.iterator
+          val incoming = vmSide.source.chain.stdlib.iterator
           vmSide.send(Stream(incoming.next()))
 
           val idSizes = Jdwp.Packet.decode(incoming.next())

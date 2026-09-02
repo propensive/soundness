@@ -500,8 +500,7 @@ object Http:
       Head(method, version, host, target, headers)
 
     def parse(stream: Chain[Data])(using Tactic[Http.Request.Error]): Request^ =
-      // `.stdlib.iterator`: `Cursor`'s chunk-iterator factory takes a stdlib `Iterator`.
-      val cursor = Cursor[Data](stream.filter(!_.nil).stdlib.iterator)
+      val cursor = Cursor[Data](stream.filter(!_.nil))
       val head = parseHead(cursor)
 
       Request
@@ -510,9 +509,7 @@ object Http:
           head.host,
           head.target,
           head.headers,
-          // `.stdlib.iterator`: `Stream` is built from a stdlib `Iterator`; a `Chain` has no
-          // direct `Stream` factory.
-          () => cursor.remainder.stdlib.iterator.stream )
+          () => Stream(cursor.remainder) )
 
     // The endpoint form: the request parses straight off the connection's pull
     // endpoint. The body spring lends the cursor's remainder as a SINGLE-OWNER
@@ -918,8 +915,7 @@ object Http:
     def parse(stream: Chain[Data], bodiless: Boolean = false)
     :   Response raises Http.Response.Error =
 
-      // `.stdlib.iterator`: `Cursor`'s chunk-iterator factory takes a stdlib `Iterator`.
-      parseCursor(Cursor[Data](stream.filter(!_.nil).stdlib.iterator), bodiless)
+      parseCursor(Cursor[Data](stream.filter(!_.nil)), bodiless)
 
     // The endpoint form: the response is parsed straight off the connection's pull
     // endpoint, with no lazy-list view. The tactic is a plain using-parameter: a

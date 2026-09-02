@@ -35,7 +35,7 @@ package nomenclature
 import anticipation.*
 import murmuration.{map, filter}
 import contingency.*
-import rudiments.at
+import rudiments.{at, to}
 import vacuous.or
 import gossamer.*
 import hieroglyph.*
@@ -60,8 +60,8 @@ object Vocabulary:
 class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   type Transport
 
-  private val adjectiveArray: Array[Text]^{} = Array.from(adjectives.stdlib)
-  private val animalArray:    Array[Text]^{} = Array.from(animals.stdlib)
+  private val adjectiveArray: Array[Text]^{} = adjectives.to[Array]
+  private val animalArray:    Array[Text]^{} = animals.to[Array]
   private val animalCount:    Int          = animals.size
   private val adjectiveIndex: Map[Text, Int] = adjectives.stdlib.zipWithIndex.to(Map)
   private val animalIndex:    Map[Text, Int] = animals.stdlib.zipWithIndex.to(Map)

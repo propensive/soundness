@@ -373,6 +373,7 @@ object Honeycomb:
                       body
                     """
 
+        // `.stdlib.iterator`: the macro walks the holes with a stdlib `Iterator`.
         . stdlib.iterator
 
       def serialize(html: Html): Seq[Expr[Node]] = html match
