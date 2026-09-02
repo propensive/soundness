@@ -34,6 +34,8 @@ package diuretic
 
 import anticipation.*
 
+// The `Long` is a count of *milliseconds since the epoch*, matching the generic representation
+// of `Instants`. Note the asymmetry with `JavaLongDuration`, whose `Long` is nanoseconds.
 object JavaLongInstant extends Abstractable, Instantiable:
   type Self = Long
   type Result = Long
