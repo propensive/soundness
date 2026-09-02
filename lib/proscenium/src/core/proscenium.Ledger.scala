@@ -68,4 +68,34 @@ object Ledger:
   extension [key, value](ledger: Ledger[key, value])
     inline def stdlib: sci.VectorMap[key, value] = ledger.asInstanceOf[sci.VectorMap[key, value]]
 
+  // The primitive operations, for the typeclass instances defined in the libraries above;
+  // see `List` and `Map` for the rationale.
+  def size[key, value](ledger: Ledger[key, value]): Int = ledger.size
+  def nil[key, value](ledger: Ledger[key, value]): Boolean = ledger.isEmpty
+  def defines[key, value](ledger: Ledger[key, value], index: key): Boolean = ledger.contains(index)
+  def at[key, value](ledger: Ledger[key, value], index: key): value = ledger(index)
+  def read[key, value](ledger: Ledger[key, value], index: key): Option[value] = ledger.get(index)
+
+  def define[key, value](ledger: Ledger[key, value], index: key, value0: value)
+  :   Ledger[key, value] =
+    ledger.updated(index, value0)
+
+  def omit[key, value](ledger: Ledger[key, value], index: key): Ledger[key, value] =
+    ledger.removed(index)
+
+  def keys[key, value](ledger: Ledger[key, value]): List[key] = List.of(ledger.keys.toList)
+  def values[key, value](ledger: Ledger[key, value]): List[value] = List.of(ledger.values.toList)
+
+  def concat[key, value](left: Ledger[key, value], right: Ledger[key, value])
+  :   Ledger[key, value] =
+    left ++ right
+
+  // `map` transforms the *values*, preserving entry order, so it builds through
+  // `VectorMap.from` rather than a view's unordered `toMap`.
+  def map[key, value, value2](ledger: Ledger[key, value], lambda: value => value2)
+  :   Ledger[key, value2] =
+    sci.VectorMap.from(ledger.iterator.map { (key, value0) => key -> lambda(value0) })
+
+  def iterator[key, value](ledger: Ledger[key, value]): Iterator[(key, value)] = ledger.iterator
+
 opaque type Ledger[key, +value] = sci.VectorMap[key, value]

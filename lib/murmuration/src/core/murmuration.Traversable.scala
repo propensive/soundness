@@ -32,7 +32,6 @@
                                                                                                   */
 package murmuration
 
-import anticipation.*
 import prepositional.*
 
 // A type that can be traversed as a sequence of its elements (its `Operand`, bound
@@ -52,32 +51,28 @@ object Traversable extends Traversable2:
 
   // `Text` (opaque over `String`) is not an `Iterable`, so it needs its own instance;
   // placing it here (the typeclass companion) keeps it in implicit scope for
-  // `Text is Traversable` without an explicit `import`, unlike a top-level given. `Self` is
-  // subtype-parametric so intersections like `Text & Populated` (from `occupied`) also match.
-  given text: [text <: Text] => text is Traversable by Char = _.s.iterator
-
   // Opaque `List` likewise; subtype-parametric for `List[e] & Populated` receivers.
   given list: [element, list <: List[element]] => list is Traversable by element =
-    _.stdlib.iterator
+    List.iterator(_)
 
-  // Opaque `Chain` likewise; `.stdlib.iterator` is lazy (pulls elements on demand).
+  // Opaque `Chain` likewise; its `iterator` is lazy (pulls elements on demand).
   given chain: [element, chain <: Chain[element]] => chain is Traversable by element =
-    _.stdlib.iterator
+    Chain.iterator(_)
 
   // Opaque `Sequence` likewise; subtype-parametric for `Sequence[e] & Populated` receivers.
   given sequence: [element, sequence <: Sequence[element]] => sequence is Traversable by element =
-    _.stdlib.iterator
+    Sequence.iterator(_)
 
   // Opaque `Set` likewise.
   given set: [element, set <: Set[element]] => set is Traversable by element =
-    _.stdlib.iterator
+    Set.iterator(_)
 
   // Opaque `Map` traverses as its pairs.
   given map: [key, value] => Map[key, value] is Traversable by (key, value) =
-    _.stdlib.iterator
+    Map.iterator(_)
 
   given ledger: [key, value] => Ledger[key, value] is Traversable by (key, value) =
-    _.stdlib.iterator
+    Ledger.iterator(_)
 
   // The frozen array, and any other readable reference: reading through a shared reference
   // is sound under separation checking (live writers are excluded wherever readers alias),

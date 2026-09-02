@@ -111,17 +111,16 @@ object Unicode:
       case hex :: name :: _ if !name.nn.startsWith("<") =>
         val hexInt = Integer.parseInt(hex, 16)
 
-        if hexInt < 65536 then List((name.nn.tt, hexInt.toChar)).stdlib
-        else List((name.nn.tt, new String(Character.toChars(hexInt)).tt)).stdlib
+        if hexInt < 65536 then Iterator((name.nn.tt, hexInt.toChar))
+        else Iterator((name.nn.tt, new String(Character.toChars(hexInt)).tt))
 
       case _ =>
-        Nil.stdlib
+        Iterator.empty
     . to(Map)
 
   lazy val unicodeNames: Map[Char | Text, Text] =
-    unicodeData.stdlib.map: (key, value) =>
+    unicodeData.remap: (key, value) =>
       value -> key.s.split(" ").nn.iterator.map(_.nn.toLowerCase.nn.capitalize).mkString(" ").tt
-    . to(Map)
 
   lazy val eastAsianWidths: TreeMap[CharRange, EaWidth] =
     extension (map: TreeMap[CharRange, EaWidth])

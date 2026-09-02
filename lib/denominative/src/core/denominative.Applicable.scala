@@ -71,9 +71,9 @@ object Applicable:
     type Result = element
 
     def contains(sequence: Self, index: Ordinal): Boolean =
-      index.n0 >= 0 && index.n0 < sequence.stdlib.length
+      index.n0 >= 0 && index.n0 < Sequence.size(sequence)
 
-    def access(sequence: Self, index: Ordinal): Result = sequence.stdlib(index.n0)
+    def access(sequence: Self, index: Ordinal): Result = Sequence.at(sequence, index.n0)
 
   // Opaque `List`: positional access is O(n), so the instance is gated behind `Dysasymptotic.LinearAccess`.
   given list: [element, list <: List[element]] => (complexity: Dysasymptotic.LinearAccess)
@@ -83,9 +83,9 @@ object Applicable:
     type Result = element
 
     def contains(list: Self, index: Ordinal): Boolean =
-      index.n0 >= 0 && index.n0 < list.stdlib.length
+      index.n0 >= 0 && index.n0 < List.size(list)
 
-    def access(list: Self, index: Ordinal): Result = list.stdlib(index.n0)
+    def access(list: Self, index: Ordinal): Result = List.at(list, index.n0)
 
   given text: [element] => Text is Applicable:
     type Self = Text
@@ -100,16 +100,16 @@ object Applicable:
     type Operand = key
     type Result = value
 
-    def contains(value: Self, index: key): Boolean = value.stdlib.contains(index)
-    def access(value: Self, index: key): value = value.stdlib(index)
+    def contains(value: Self, index: key): Boolean = Map.defines(value, index)
+    def access(value: Self, index: key): value = Map.at(value, index)
 
   given ledger: [key, value] => Ledger[key, value] is Applicable:
     type Self = Ledger[key, value]
     type Operand = key
     type Result = value
 
-    def contains(value: Self, index: key): Boolean = value.stdlib.contains(index)
-    def access(value: Self, index: key): value = value.stdlib(index)
+    def contains(value: Self, index: key): Boolean = Ledger.defines(value, index)
+    def access(value: Self, index: key): value = Ledger.at(value, index)
 
   given hashMap: [key, value] => scm.HashMap[key, value] is Applicable:
     type Self = scm.HashMap[key, value]

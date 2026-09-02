@@ -49,19 +49,16 @@ object Permutation:
     Permutation(Factoradic(i))
 
   def apply(sequence: Sequence[Int]): Permutation raises Permutation.Error =
-    val elements = sequence.stdlib
-    val array: scala.Array[Int]^ = new scala.Array(elements.length)
+    val length = sequence.size
+    val array: scala.Array[Int]^ = new scala.Array(length)
     val seen: BitSet = BitSet()
     var index = 0
 
-    while index < elements.length do
-      val element = elements(index)
+    sequence.each: element =>
       array(index) = element - seen.count(_ < element)
 
-      if element >= elements.length || element < 0
-      then
-        raise
-          ( Permutation.Error(Permutation.Error.Reason.InvalidIndex(element, elements.length - 1)) )
+      if element >= length || element < 0
+      then raise(Permutation.Error(Permutation.Error.Reason.InvalidIndex(element, length - 1)))
 
       if seen.has(element)
       then raise(Permutation.Error(Permutation.Error.Reason.DuplicateIndex(element, index)))
@@ -123,12 +120,15 @@ case class Permutation(factoradic: Factoradic):
 
       lehmer match
         case head :: tail =>
-          if current == head
-          then recur(tail, prefix, list.stdlib.tail.to(List), current, list.stdlib.head :: result)
-          else
-            if current < head
-            then recur(lehmer, list.stdlib.head :: prefix, list.stdlib.tail.to(List), current + 1, result)
-            else recur(lehmer, prefix.stdlib.tail.to(List), prefix.stdlib.head :: list, current - 1, result)
+          if current == head then list match
+            case first :: rest => recur(tail, prefix, rest, current, first :: result)
+            case Nil           => result.reverse
+          else if current < head then list match
+            case first :: rest => recur(lehmer, first :: prefix, rest, current + 1, result)
+            case Nil           => result.reverse
+          else prefix match
+            case first :: rest => recur(lehmer, rest, first :: list, current - 1, result)
+            case Nil           => result.reverse
 
         case Nil =>
           result.reverse

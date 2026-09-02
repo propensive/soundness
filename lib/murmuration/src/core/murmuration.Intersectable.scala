@@ -46,8 +46,8 @@ object Intersectable:
       type Self = Set[element]
       type Operand = Set[element]
 
-      def intersect(left: Self, right: Operand): Self = left.stdlib.intersect(right.stdlib).to(Set)
-      def except(left: Self, right: Operand): Self = left.stdlib.diff(right.stdlib).to(Set)
+      def intersect(left: Self, right: Operand): Self = Set.intersect(left, right)
+      def except(left: Self, right: Operand): Self = Set.except(left, right)
 
 trait Intersectable extends Typeclass.Pure, Operable:
   def intersect(left: Self, right: Operand): Self

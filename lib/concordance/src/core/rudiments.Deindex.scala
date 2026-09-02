@@ -145,12 +145,12 @@ extension [element](sequence: List[element])
   // `prim`/`sec`/`ter` get these ungated `List` special cases because their walk is bounded (at
   // most three cells), so they are not dysasymptotic; positional access at an arbitrary ordinal
   // goes through the `Dysasymptotic.LinearAccess`-gated `Applicable` route.
-  def prim: Optional[element] = if sequence.stdlib.isEmpty then Unset else sequence.stdlib.head
+  def prim: Optional[element] = if List.nil(sequence) then Unset else List.head(sequence)
 
   def sec: Optional[element] =
-    val rest = sequence.stdlib.drop(1)
-    if rest.isEmpty then Unset else rest.head
+    val rest = List.drop(sequence, 1)
+    if List.nil(rest) then Unset else List.head(rest)
 
   def ter: Optional[element] =
-    val rest = sequence.stdlib.drop(2)
-    if rest.isEmpty then Unset else rest.head
+    val rest = List.drop(sequence, 2)
+    if List.nil(rest) then Unset else List.head(rest)

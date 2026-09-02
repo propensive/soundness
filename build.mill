@@ -1235,7 +1235,7 @@ object anticipation extends Library:
   object generic extends Component(prepositional.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object text extends Component(symbolism.core):
+  object text extends Component(symbolism.core, murmuration.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object opaque extends Component(text):
@@ -1567,7 +1567,7 @@ object concordance extends Library:
       settings.sep(super.scalacOptions())
 
 object contextual extends Library:
-  object core extends Component(gigantism.core, prepositional.core):
+  object core extends Component(gigantism.core, prepositional.core, murmuration.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2029,7 +2029,7 @@ object frontier extends Library:
 
 object fulminate extends Library:
   object core extends Component(anticipation.text, anticipation.log, proscenium.core,
-      gigantism.core):
+      gigantism.core, murmuration.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2837,7 +2837,7 @@ object revolution extends Library:
       settings.sep(super.scalacOptions())
 
 object murmuration extends Library:
-  object core extends Component(proscenium.core, prepositional.core, anticipation.text):
+  object core extends Component(proscenium.core, prepositional.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -3176,7 +3176,8 @@ object turbulence extends Library:
       super.scalacOptions().filterNot(Set("-Yexplicit-nulls", "-Yno-flexible-types"))
 
 object typonym extends Library:
-  object core extends Component(proscenium.core, gigantism.core, prepositional.core):
+  object core extends Component(proscenium.core, gigantism.core, prepositional.core,
+      murmuration.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):

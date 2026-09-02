@@ -30,33 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package contingency
+package anticipation
 
-import scala.language.experimental.pureFunctions
 
-import scala.annotation.*
-
-import anticipation.*
-import fulminate.*
-import rudiments.*
-import vacuous.*
-
-object Errors:
-  private def format(errors: List[(Text, Error)]): Message =
-    // An `Iterator`-level `mkString`: `join` lives in `gossamer`, above this module.
-    val joined =
-      List.iterator(errors.reverse.map { (focus, error) => s"${error.message.text} at $focus" })
-      . mkString("; ")
-      . tt
-
-    m"${List.size(errors)} accrued errors: $joined"
-
-case class Errors(errors: (Text, Error)*)(using Diagnostics)
-extends Error(218, 0)(Errors.format(errors.to(List))):
-  private lazy val errorMap: Map[Text, Error] = errors.to(Map)
-
-  @targetName("add")
-  infix def + (focus: Text, error: Error): Errors = Errors((focus, error) +: errors*)
-
-  def apply(focus: Text): Optional[Error] =
-    errorMap.at(focus)
+// The `Text` fast path of murmuration's generic `subsumes`: substring containment through
+// `String.indexOf`, with no traversal and no interim collections — this sits on hot
+// per-record validation paths. The generic collection form is deliberately NOT re-exported
+// by `rudiments` or the `soundness` umbrella (same-named extensions from different modules
+// shadow rather than overload there); it remains importable as `murmuration.subsumes`.
+extension (text: Text)
+  def subsumes(subsequence: Text): Boolean = text.s.contains(subsequence.s)

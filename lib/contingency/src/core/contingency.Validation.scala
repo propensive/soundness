@@ -46,14 +46,14 @@ import errorDiagnostics.stackTracesDiagnostics
 object Validation:
   def text(messages: List[(Pointer, Message)] = Nil): Message =
     val joined: Message =
-      messages.stdlib.map:
+      messages.map:
         case (Pointer.Self, message) => message
         case (pointer, message)      => m"$message at $pointer"
 
       . reverse
       . fuse(m"")(state+next)
 
-    messages.stdlib.size match
+    List.size(messages) match
       case 0 => m"no messages"
       case 1 => m"one message: $joined"
       case 2 => m"two messages: $joined"
@@ -70,5 +70,5 @@ extends Error(59, 0)(Validation.text(messages)):
     Validation((pointer, message) :: messages)
 
   def apply(pointer: Pointer): Optional[Message] =
-    map.stdlib.get(pointer).optional
+    map.at(pointer)
   def text: Message = Validation.text(messages)

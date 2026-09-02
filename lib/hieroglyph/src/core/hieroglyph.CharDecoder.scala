@@ -79,8 +79,12 @@ class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) ex
     def recur(todo: Chain[Data], offset: Int = 0, total: Int = 0): Chain[Text] =
       val count = in.remaining
 
+      // `Chain`'s companion primitives: this loop runs once per buffer-load on the decoding
+      // hot path, where the typeclass route is overkill.
       if !todo.nil then
-        in.put(Array.unsafeJvm(todo.stdlib.head), offset, in.remaining.min(todo.stdlib.head.length - offset))
+        val head = Chain.head(todo)
+        in.put(Array.unsafeJvm(head), offset, in.remaining.min(head.length - offset))
+
       in.flip()
 
       def decode(): jnc.CoderResult =
@@ -98,8 +102,8 @@ class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) ex
 
       def continue =
         if todo.nil && !status.isOverflow then Chain()
-        else if !todo.nil && count >= todo.stdlib.head.length - offset
-        then recur(todo.stdlib.tail.to(Chain), 0, total + todo.stdlib.head.length - offset)
+        else if !todo.nil && count >= Chain.head(todo).length - offset
+        then recur(Chain.tail(todo), 0, total + Chain.head(todo).length - offset)
         else recur(todo, offset + count, total + count)
 
       if text.nil then continue else text #:: continue

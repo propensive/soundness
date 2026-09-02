@@ -36,6 +36,7 @@ import scala.annotation.*
 
 import contingency.*
 import denominative.*
+import rudiments.*
 import denominative.dysasymptotics.linearSize
 
 object Factoradic:
@@ -48,7 +49,9 @@ object Factoradic:
           if head >= base
           then raise(Permutation.Error(Permutation.Error.Reason.BaseRange(head, base)))
 
-          recur(tail, bases.stdlib.tail.to(List), result + bases.stdlib.head*head, base - 1)
+          bases match
+            case factor :: factors => recur(tail, factors, result + factor*head, base - 1)
+            case Nil               => result
 
     val length = sequence.size
     Factoradic(recur(sequence, Factorial.sequence(length), 0, length))
@@ -58,7 +61,7 @@ case class Factoradic(number: BigInt):
     @tailrec
     def recur(current: BigInt, sequence: List[BigInt], result: List[Int]): List[Int] =
       sequence match
-        case Nil => result.stdlib.reverse.to(List)
+        case Nil => result.reverse
 
         case head :: tail =>
           val next = (current/head).toInt

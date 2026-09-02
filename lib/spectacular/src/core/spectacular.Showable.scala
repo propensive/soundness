@@ -44,6 +44,16 @@ import rudiments.*
 import vacuous.*
 
 object Showable:
+  // The delimited rendering of any `Traversable`'s elements. `join` lives in `gossamer`,
+  // above this module, so the joining happens at the `Iterator` level — the `Traversable`
+  // bridge working as designed.
+  private[spectacular] def enclose[values]
+    ( values: values, left: String, separator: String, right: String )
+    ( using traversable: values is Traversable )
+  :   Text =
+
+    traversable.traverse(values).mkString(left, separator, right).tt
+
   given showable: [value: Textualizable] => value is Showable = value.textual(_)
   given text: [text <: Text] => text is Showable = identity(_)
   given string: String is Showable = _.tt
@@ -60,13 +70,13 @@ object Showable:
   given enumeration: [enumeration <: reflect.Enum] => enumeration is Showable = _.toString.tt
 
   given set: [element: Showable] => Set[element] is Showable =
-    _.map(_.show).stdlib.mkString("{", ", ", "}").tt
+    set => enclose(set.map(_.show), "{", ", ", "}")
 
   given list: [element: Showable] => List[element] is Showable =
-    _.map(_.show).stdlib.mkString("[", ", ", "]").tt
+    list => enclose(list.map(_.show), "[", ", ", "]")
 
   given sequence: [element: Showable] => Sequence[element] is Showable =
-    _.map(_.show).stdlib.mkString("[ ", " ", " ]").tt
+    sequence => enclose(sequence.map(_.show), "[ ", " ", " ]")
 
   given none: None.type is Showable = none => "none".tt
 

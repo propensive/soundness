@@ -65,4 +65,30 @@ object Map:
   extension [key, value](map: Map[key, value])
     inline def stdlib: sci.Map[key, value] = map.asInstanceOf[sci.Map[key, value]]
 
+  // The primitive operations, for the typeclass instances defined in the libraries above;
+  // see `List` for the rationale. Within this file the opaque alias is transparent. `read`
+  // mirrors the stdlib's `Option`-returning `get`: the ergonomic `Optional` form is layered
+  // above, in `vacuous`-aware libraries.
+  def size[key, value](map: Map[key, value]): Int = map.size
+  def nil[key, value](map: Map[key, value]): Boolean = map.isEmpty
+  def defines[key, value](map: Map[key, value], index: key): Boolean = map.contains(index)
+  def at[key, value](map: Map[key, value], index: key): value = map(index)
+  def read[key, value](map: Map[key, value], index: key): Option[value] = map.get(index)
+
+  def define[key, value](map: Map[key, value], index: key, value0: value): Map[key, value] =
+    map.updated(index, value0)
+
+  def omit[key, value](map: Map[key, value], index: key): Map[key, value] = map.removed(index)
+  def keys[key, value](map: Map[key, value]): Set[key] = Set.of(map.keySet)
+  def values[key, value](map: Map[key, value]): List[value] = List.of(map.values.toList)
+
+  def concat[key, value](left: Map[key, value], right: Map[key, value]): Map[key, value] =
+    left ++ right
+
+  // `map` transforms the *values*, keys structural — the shape `Mappable` gives a `Map`.
+  def map[key, value, value2](map: Map[key, value], lambda: value => value2): Map[key, value2] =
+    map.view.mapValues(lambda).toMap
+
+  def iterator[key, value](map: Map[key, value]): Iterator[(key, value)] = map.iterator
+
 opaque type Map[key, +value] = sci.Map[key, value]

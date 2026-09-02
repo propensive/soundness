@@ -99,6 +99,32 @@ object Chain:
   extension [element](chain: Chain[element])
     inline def stdlib: sci.LazyList[element] = chain.asInstanceOf[sci.LazyList[element]]
 
+  // The primitive operations, for the typeclass instances defined in the libraries above;
+  // see `List` for the rationale. `size`, `last` and `lead` force the whole chain — their
+  // gating (`Dysasymptotic.UnboundedSize`) lives with the instances that expose them.
+  def size[element](chain: Chain[element]): Int = chain.length
+  def nil[element](chain: Chain[element]): Boolean = chain.isEmpty
+  def head[element](chain: Chain[element]): element = chain.head
+  def tail[element](chain: Chain[element]): Chain[element] = chain.tail
+  def last[element](chain: Chain[element]): element = chain.last
+  def lead[element](chain: Chain[element]): Chain[element] = chain.init
+
+  // `append`, `prepend`, `concat` and `map` are all lazy: nothing beyond what the underlying
+  // `LazyList` operation itself demands is forced.
+  def append[element](chain: Chain[element], value: element): Chain[element] =
+    chain.appended(value)
+
+  def prepend[element](chain: Chain[element], value: element): Chain[element] =
+    sci.LazyList.cons(value, chain)
+
+  def concat[element](left: Chain[element], right: Chain[element]): Chain[element] =
+    left.lazyAppendedAll(right)
+
+  def map[element, element2](chain: Chain[element], lambda: element => element2): Chain[element2] =
+    chain.map(lambda)
+
+  def iterator[element](chain: Chain[element]): Iterator[element] = chain.iterator
+
 // The lazy cons constructor. As with `List`'s `::`, right-associative extensions read in usage
 // order, so the receiver is the HEAD; it rides on a given (a top-level name would clash with the
 // extractor object). The head is by-value (call sites hoist it), but the TAIL is by-name so the

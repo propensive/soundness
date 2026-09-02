@@ -54,11 +54,11 @@ object Segmentable:
   // soundness rule as `Truncable`'s `Result`.
   given sequence: [element, sequence <: Sequence[element]]
   =>  (sequence is Segmentable { type Segment = Sequence[element] }) =
-    (sequence, interval) => Sequence.from(sequence.stdlib.slice(interval.start.n0, interval.limit.n0))
+    (sequence, interval) => Sequence.slice(sequence, interval.start.n0, interval.limit.n0)
 
   given list: [element, list <: List[element]]
   =>  (list is Segmentable { type Segment = List[element] }) =
-    (list, interval) => list.stdlib.slice(interval.start.n0, interval.limit.n0).to(List)
+    (list, interval) => List.slice(list, interval.start.n0, interval.limit.n0)
 
   given text: (Text is Segmentable { type Segment = Text }) = (text, interval) =>
     val min = interval.start.n0.max(0)

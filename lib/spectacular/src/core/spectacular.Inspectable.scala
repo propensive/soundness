@@ -321,7 +321,7 @@ object Inspectable extends Inspectable2:
   // through to another candidate — a subtype bound here turns a silent miss into a hard error.
   given set: [element] => (inspectable: => element is Inspectable) => Set[element] is Inspectable =
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
-    _.map(insp().text(_)).stdlib.mkString("{", ", ", "}").tt
+    set => Showable.enclose(set.map(insp().text(_)), "{", ", ", "}")
 
   given map: [key, value]
   =>  ( inspectableKey: => key is Inspectable, inspectableValue: => value is Inspectable )
@@ -351,10 +351,9 @@ object Inspectable extends Inspectable2:
       caps.unsafe.unsafeAssumePure(() => inspectableValue)
 
     ledger =>
-      ledger.stdlib.map: (key, value) =>
-        inspKey().text(key).s+" → "+inspValue().text(value).s
-
-      . mkString("⟦", ", ", "⟧").tt
+      Showable.enclose
+        ( ledger.remap { (key, value) => inspKey().text(key).s+" → "+inspValue().text(value).s },
+          "⟦", ", ", "⟧" )
 
   // `Self` is subtype-parametric so branded literals (`Sequence(1, 2, 3)`, typed
   // `Sequence[Int] & Populated`) match; rendering produces no collection, so no proof leaks.
@@ -363,13 +362,13 @@ object Inspectable extends Inspectable2:
   =>  sequence is Inspectable =
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
-    _.map(insp().text(_)).stdlib.mkString("⟨ ", " ", " ⟩").tt
+    sequence => Showable.enclose(sequence.map(insp().text(_)), "⟨ ", " ", " ⟩")
 
   given list: [element] => (inspectable: => element is Inspectable)
   =>  List[element] is Inspectable =
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
-    _.map(insp().text(_)).stdlib.mkString("[", ", ", "]").tt
+    list => Showable.enclose(list.map(insp().text(_)), "[", ", ", "]")
 
   given array: [element] => (inspectable: => element is Inspectable)
   =>  scala.Array[element] is Inspectable =

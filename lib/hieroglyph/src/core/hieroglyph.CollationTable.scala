@@ -40,6 +40,7 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import fulminate.*
+import rudiments.*
 import vacuous.*
 
 // The Unicode Collation Algorithm (UTS #10), version 16.0.0, over the Default Unicode
@@ -522,7 +523,7 @@ class CollationTable private[hieroglyph]
 
     val counters = scm.HashMap[(sci.Vector[Int], Int), Int]()
 
-    rules.stdlib.foreach: rule =>
+    rules.each: rule =>
       val baseKey = Normalization.decompose(rule.base).readable.toVector
       val targetKey = Normalization.decompose(rule.target).readable.toVector
 

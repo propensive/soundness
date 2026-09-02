@@ -32,10 +32,6 @@
                                                                                                   */
 package murmuration
 
-import scala.caps
-
-import scala.collection.immutable as sci
-
 import prepositional.*
 
 // The shape-preserving `map`, pulled out of `Traversable` so a `Map`'s `map` maps its *values*
@@ -60,7 +56,7 @@ object Mappable extends Mappable.Fallback:
       type Operand = element
       type Result[element2] = List[element2]
       def map[element2](self: container, lambda: element => element2): List[element2] =
-        self.stdlib.map(lambda).to(List)
+        List.map(self, lambda)
 
   given set: [element, container <: Set[element]]
   =>  (container is Mappable { type Operand = element; type Result[element2] = Set[element2] }) =
@@ -69,9 +65,9 @@ object Mappable extends Mappable.Fallback:
       type Operand = element
       type Result[element2] = Set[element2]
       def map[element2](self: container, lambda: element => element2): Set[element2] =
-        // `Set.from`, not a conversion: the conversion route lets the (vacuous, strict-map)
-        // `lambda` capture contaminate the result, where `from`'s signature is pure.
-        Set.from(self.stdlib.map(lambda))
+        // The primitive, not a conversion: the conversion route lets the (vacuous, strict-map)
+        // `lambda` capture contaminate the result, where the primitive's result type is pure.
+        Set.map(self, lambda)
 
   given sequence: [element, container <: Sequence[element]]
   =>  (container is Mappable { type Operand = element; type Result[element2] = Sequence[element2] }) =
@@ -80,7 +76,7 @@ object Mappable extends Mappable.Fallback:
       type Operand = element
       type Result[element2] = Sequence[element2]
       def map[element2](self: container, lambda: element => element2): Sequence[element2] =
-        Sequence.from(self.stdlib.map(lambda))
+        Sequence.map(self, lambda)
 
   given chain: [element, container <: Chain[element]]
   =>  (container is Mappable
@@ -90,7 +86,7 @@ object Mappable extends Mappable.Fallback:
       type Operand = element
       type Result[element2] = Chain[element2]
       def map[element2](self: container, lambda: element => element2): Chain[element2] =
-        self.stdlib.map(lambda).to(Chain)
+        Chain.map(self, lambda)
 
   // A `Map` maps its *values*, preserving keys: `Operand` is the value type; `Result` re-
   // parameterizes the value, with `key` fixed by the receiver.
@@ -101,10 +97,10 @@ object Mappable extends Mappable.Fallback:
       type Operand = value
       type Result[value2] = Map[key, value2]
       def map[value2](self: container, lambda: value => value2): Map[key, value2] =
-        self.stdlib.view.mapValues(lambda).toMap.to(Map)
+        Map.map(self, lambda)
 
-  // Mapping over values must preserve entry order, so this builds through `VectorMap.from`
-  // rather than a view's unordered `toMap`.
+  // Mapping over values must preserve entry order; the primitive builds through
+  // `VectorMap.from` rather than a view's unordered `toMap`.
   given ledger: [key, value, container <: Ledger[key, value]]
   =>  (container is Mappable { type Operand = value; type Result[value2] = Ledger[key, value2] }) =
     new Mappable:
@@ -112,11 +108,7 @@ object Mappable extends Mappable.Fallback:
       type Operand = value
       type Result[value2] = Ledger[key, value2]
       def map[value2](self: container, lambda: value => value2): Ledger[key, value2] =
-
-          // `.stdlib.iterator`: `VectorMap.from` consumes a stdlib `IterableOnce`.
-          scala.collection.immutable.VectorMap.from:
-            self.stdlib.iterator.map { (key, value) => key -> lambda(value) }
-          . to(Ledger)
+        Ledger.map(self, lambda)
 
   trait Fallback:
     // Any raw `Iterable` (stdlib collections, ranges, …) maps to a `List`, as the old umbrella `map`

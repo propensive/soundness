@@ -32,7 +32,6 @@
                                                                                                   */
 package murmuration
 
-import anticipation.*
 import prepositional.*
 
 // Order-reversal, unified across shapes so a single `reverse` extension serves both collections
@@ -48,23 +47,14 @@ object Reversible:
     new Reversible:
       type Self = container
       type Result = List[element]
-      def reverse(self: container): List[element] = self.stdlib.reverse.to(List)
+      def reverse(self: container): List[element] = List.invert(self)
 
   given sequence: [element, container <: Sequence[element]]
   =>  (container is Reversible { type Result = Sequence[element] }) =
     new Reversible:
       type Self = container
       type Result = Sequence[element]
-      def reverse(self: container): Sequence[element] = Sequence.from(self.stdlib.reverse)
-
-  // `Text`'s companion (in `anticipation`) cannot host this — it sits below both `Reversible` and
-  // `Textual` — but `Reversible`'s own companion is in implicit scope for `Text is Reversible`, and
-  // `anticipation` exposes the `.s` bridge. `StringBuilder#reverse` is surrogate-pair-aware.
-  given text: [text <: Text] => (text is Reversible { type Result = Text }) =
-    new Reversible:
-      type Self = text
-      type Result = Text
-      def reverse(value: text): Text = StringBuilder(value.s).reverse.nn.toString.nn.tt
+      def reverse(self: container): Sequence[element] = Sequence.invert(self)
 
 extension [self, result](value: self)(using reversible: self is Reversible { type Result = result })
   def reverse: result = reversible.reverse(value)

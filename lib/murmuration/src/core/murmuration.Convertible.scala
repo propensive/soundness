@@ -36,7 +36,6 @@ import scala.collection.immutable.IndexedSeq
 
 import scala.reflect.ClassTag
 
-import anticipation.*
 import prepositional.*
 
 // Conversion to a *requested shape*: `Form` names the target — a proper type (`Text`) or an
@@ -76,10 +75,6 @@ object Convertible:
   =>  (tag: ClassTag[traversable.Operand])
   =>  self is Convertible in Array to (Array[traversable.Operand]^{}) =
     self => Array.unsafeFrozen(traversable.traverse(self).toArray(using tag))
-
-  given text: [self] => (traversable: self is Traversable by Char)
-  =>  self is Convertible in Text to Text =
-    self => Text(traversable.traverse(self).mkString)
 
 trait Convertible extends Typeclass.Pure, Resultant:
   type Form <: AnyKind

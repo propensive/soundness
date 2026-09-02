@@ -46,7 +46,7 @@ object CharEncoder:
   def system: CharEncoder = unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get
 
   def unapply(name: Text): Option[CharEncoder] =
-    Encoding.codecs.stdlib.get(name.s.toLowerCase.nn.tt).map(CharEncoder(_))
+    Encoding.codecs.at(name.s.toLowerCase.nn.tt).let(CharEncoder(_)).option
 
   // CharEncodeError → CharEncoder.Error
   case class Error(char: Char, encoding: Encoding)(using Diagnostics)
@@ -81,7 +81,11 @@ extends Encodable, Findable:
     def recur(todo: Chain[Text], offset: Int = 0): Chain[Data] =
       val count = in.remaining
 
-      if !todo.nil then in.put(todo.stdlib.head.s, offset, offset + count.min(todo.stdlib.head.s.length - offset))
+      // `Chain`'s companion primitives: this loop runs once per buffer-load on the encoding
+      // hot path, where the typeclass route is overkill.
+      if !todo.nil then
+        val head = Chain.head(todo).s
+        in.put(head, offset, offset + count.min(head.length - offset))
 
       in.flip()
       val status = encoder.encode(in, out, todo.nil).nn
@@ -99,7 +103,8 @@ extends Encodable, Findable:
 
       def continue =
         if todo.nil && !status.isOverflow then Chain()
-        else if !todo.nil && count >= todo.stdlib.head.s.length - offset then recur(todo.stdlib.tail.to(Chain), 0)
+        else if !todo.nil && count >= Chain.head(todo).s.length - offset
+        then recur(Chain.tail(todo), 0)
         else recur(todo, offset + count)
 
       if data.length == 0 then continue else data #:: continue

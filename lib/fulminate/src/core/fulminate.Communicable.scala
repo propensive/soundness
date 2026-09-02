@@ -58,9 +58,10 @@ object Communicable:
 
   given listMessage: List[Message] is Communicable =
     messages =>
-      // `.stdlib` rather than `+`: fulminate sits below symbolism, where `Concatenable` lives.
-      val bullets = List.fill(messages.stdlib.size)("\n - ".tt)
-      Message((bullets.stdlib ::: List("".tt).stdlib).to(List), messages)
+      // The `List.concat` primitive rather than symbolism's `+`: plain list plumbing needs no
+      // typeclass here.
+      val bullets = List.fill(List.size(messages))("\n - ".tt)
+      Message(List.concat(bullets, List("".tt)), messages)
 
 // A `Communicable` is a `Transcribable to Message`: converting a value to a `Message` is exactly
 // how a loggable event is transcribed onto the common carrier. This lets `Loggable.fanOut` resolve

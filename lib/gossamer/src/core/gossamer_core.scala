@@ -137,21 +137,22 @@ extension [textual](text: textual)
 
     cuttable.cut(text, delimiter, limit)
 
-extension [textual: Textual { type Result = Char } as instance](words: Iterable[textual])
-  def pascal: textual = words.map(_.lower.capitalize).join
-  def camel: textual = pascal.uncapitalize
+// One `Traversable`-driven block serves every receiver: the native shapes (`List`, `Chain`,
+// `Sequence`, …) through their own instances, and external `Iterable`s through the blanket
+// `Traversable.iterable` given. A separate `Iterable[textual]` block cannot coexist with this
+// one: for an `Iterable` receiver both would apply (via that same blanket given), and overload
+// resolution reports an ambiguity rather than preferring the more specific receiver. The
+// `Textual` instance is a trailing `using` clause, not a context bound: a context bound on
+// `textual` is committed before `traversable` has pinned `textual`, mis-selecting a given.
+extension [self, textual](words: self)
+  (using traversable: self is Traversable by textual)
+  (using instance: textual is Textual { type Result = Char })
+  def pascal: textual = traversable.traverse(words).map(_.lower.capitalize).to(Iterable).join
+  def camel: textual = words.pascal.uncapitalize
   def snake: textual = words.join(instance.apply("_".tt))
   def kebab: textual = words.join(instance.apply("-".tt))
   def dotted: textual = words.join(instance.apply(".".tt))
   def spaced: textual = words.join(instance.apply(" ".tt))
-
-extension [textual: Textual { type Result = Char }](words: List[textual])
-  def pascal: textual = words.stdlib.pascal
-  def camel: textual = words.stdlib.camel
-  def snake: textual = words.stdlib.snake
-  def kebab: textual = words.stdlib.kebab
-  def dotted: textual = words.stdlib.dotted
-  def spaced: textual = words.stdlib.spaced
 
 // The ordinal-bounded `before`/`upto`/`from`/`after` now live in `rudiments`, alongside the
 // other generic positional operations over `Segmentable` and `Countable`.
@@ -198,15 +199,17 @@ extension [textual: Textual as instance](text: textual)
 
   // FIXME
   def justify(width: Int): textual =
-    val words = text.words.stdlib
+    val words = text.words
     val extra = width - text.length
 
     def recur(word: Ordinal, spaces: Int, result: textual): textual =
       if word == Prim then result else
         val gap = ((spaces.toDouble/word.n0) + 0.5).toInt
-        recur(word - 1, spaces - gap, result+instance.apply(t" "*(gap + 1))+words(words.length - word.n0))
 
-    recur(Prim, extra, words(0))
+        recur(word - 1, spaces - gap,
+              result+instance.apply(t" "*(gap + 1))+List.at(words, List.size(words) - word.n0))
+
+    recur(Prim, extra, List.at(words, 0))
 
   def slices(size: Int): List[textual] =
     val length = text.length
@@ -541,66 +544,41 @@ extension (text: Text)
 
 extension (iarray: Array[Char]^{}) def text: Text = String(Array.unsafeJvm(iarray)).tt
 
-extension [textual: {Joinable, Textual}](values: Iterable[textual])
-  def join: textual = textual.join(values)
+// One `Joinable.Source`-driven block serves every receiver: the native shapes (`List`,
+// `Chain`, `Sequence`, `Set`, …) and external `Iterable`s through `Traversable`, and
+// `scala.IArray` through its own instance. A single generic block is load-bearing: a
+// competing receiver-specific block of the same name would make every receiver ambiguous,
+// because overload specificity cannot compare extension alternatives whose clause shapes
+// differ. Joining forces the whole stream, which is the caller's intent here, and a `Set`'s
+// join order is its iteration order, which the caller accepts by joining. The lower-bounded
+// `textual >: element` recovers the widening the old covariant `List[textual]` receiver
+// performed (joining a `List[Name[CssClass]]` as `Text`), and the elementwise evidence stays
+// on the *extension* clause so its search pins `textual` from the element alone, before a call
+// site's expected type can over-widen it (`join` in `Optional[Text]` position must not infer
+// `textual := Unset | Text`). It follows `source` as a `using` clause, not a context bound: a
+// context bound is committed before `source` has pinned the element, mis-selecting a given.
+extension [self, element, textual >: element](values: self)
+  (using source: self is Joinable.Source by element)
+  (using joinable: textual is Joinable, textual0: textual is Textual)
+  def join: textual = joinable.join(source.traverse(values).to(Iterable))
 
   def join(separator: textual): textual =
-    textual.join(values.flatMap(Iterable(separator, _)).drop(1))
+    joinable.join(source.traverse(values).flatMap(Iterable(separator, _)).drop(1).to(Iterable))
 
   def join(left: textual, separator: textual, right: textual): textual =
-    Iterable(left, join(separator), right).join
-
-  def join(separator: textual, penultimate: textual): textual = values.size match
-    case 0 => Iterable().join
-    case 1 => values.head
-    case _ => Iterable(values.init.join(separator), penultimate, values.last).join
-
-  def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
-    Iterable(left, join(separator, penultimate), right).join
-
-extension [textual: {Joinable, Textual}](values: List[textual])
-  def join: textual = values.stdlib.join
-  def join(separator: textual): textual = values.stdlib.join(separator)
-
-  def join(left: textual, separator: textual, right: textual): textual =
-    values.stdlib.join(left, separator, right)
+    joinable.join(Iterable(left, values.join(separator), right))
 
   def join(separator: textual, penultimate: textual): textual =
-    values.stdlib.join(separator, penultimate)
+    val elements = source.traverse(values).to(Iterable)
+
+    elements.size match
+      case 0 => joinable.join(Iterable())
+      case 1 => elements.head
+      case _ =>
+        joinable.join(Iterable(elements.init.join(separator), penultimate, elements.last))
 
   def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
-    values.stdlib.join(left, separator, penultimate, right)
-
-// Opaque `Chain` is not an `Iterable`, so it needs its own `join` block bridging via
-// `stdlib` (joining forces the whole stream, which is the caller's intent here).
-extension [textual: {Joinable, Textual}](values: Chain[textual])
-  def join: textual = values.stdlib.join
-  def join(separator: textual): textual = values.stdlib.join(separator)
-
-  def join(left: textual, separator: textual, right: textual): textual =
-    values.stdlib.join(left, separator, right)
-
-  def join(separator: textual, penultimate: textual): textual =
-    values.stdlib.join(separator, penultimate)
-
-  def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
-    values.stdlib.join(left, separator, penultimate, right)
-
-// Opaque `Sequence` and `Set` are likewise not `Iterable`, so each needs its own bridging
-// block; a `Set`'s join order is its iteration order, which the caller accepts by joining.
-extension [textual: {Joinable, Textual}](values: Sequence[textual])
-  def join: textual = values.stdlib.join
-  def join(separator: textual): textual = values.stdlib.join(separator)
-
-  def join(left: textual, separator: textual, right: textual): textual =
-    values.stdlib.join(left, separator, right)
-
-extension [textual: {Joinable, Textual}](values: Set[textual])
-  def join: textual = values.stdlib.join
-  def join(separator: textual): textual = values.stdlib.join(separator)
-
-  def join(left: textual, separator: textual, right: textual): textual =
-    values.stdlib.join(left, separator, right)
+    joinable.join(Iterable(left, values.join(separator, penultimate), right))
 
 extension (builder: StringBuilder)
   def add(text: Text): Unit = builder.append(text.s)
