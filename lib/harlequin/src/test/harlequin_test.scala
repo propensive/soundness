@@ -217,6 +217,37 @@ object Tests extends Suite(m"Harlequin Tests"):
       Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
     .assert(!_.has(t"diet"))
 
+    // Elaborations record what the typer added at a call site — inferred type arguments and
+    // synthesized `using` arguments — on the callee's token, and never anything written.
+    suite(m"Elaborations"):
+      def elaborationsOf(source: Text, word: Text): scala.List[prophesy.Elaboration] =
+        given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+        given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+        import highlighting.typecheckedScala
+
+        Scala.highlight(source).lines.to[List].stdlib.flatMap(_.stdlib)
+        . filter(_.text == word)
+        . flatMap(_.meta.let(_.elaboration).option)
+
+      val snippet =
+        t"def pick[element](x: element)(using Ordering[element]): element = x\nval chosen = pick(9)"
+
+      test(m"an inferred type argument is recorded on the callee token"):
+        elaborationsOf(snippet, t"pick").flatMap(_.typeArguments.stdlib).map(_.qualified)
+      . assert(_.exists(_.subsumes(t"Int")))
+
+      test(m"a synthesized using argument names the resolved given"):
+        elaborationsOf(snippet, t"pick").flatMap(_.givenArguments.stdlib).map(_.name)
+      . assert(_.exists(_.subsumes(t"Ordering")))
+
+      test(m"explicit arguments are never recorded"):
+        val explicit =
+          t"def pick[element](x: element)(using Ordering[element]): element = x\n"
+          + t"val chosen = pick[Int](9)(using Ordering.Int)"
+
+        elaborationsOf(explicit, t"pick")
+      . assert(_.isEmpty)
+
     // Fragment analysis is pure text+lexer work — no compiler givens — so a completion host
     // can split its input before deciding whether to invoke the typechecker at all.
     suite(m"Fragment analysis"):

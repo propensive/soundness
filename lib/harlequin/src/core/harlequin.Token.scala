@@ -58,7 +58,9 @@ object Token:
 
     t"Token($fields ╱ span:${token.span.inspect} ╱ role:$role)"
 
-  case class Meta(tpe: Syntax)
+  // `elaboration` is present on a callee token whose call the typer elaborated beyond its
+  // source text: inferred type arguments or synthesized `using` arguments.
+  case class Meta(tpe: Syntax, elaboration: Optional[prophesy.Elaboration] = Unset)
 
 // `span` locates the token in its `SourceCode`: a `Line`-mode `Span` carrying the
 // token's 0-based line and column and its length. It is `Span.empty` until the
