@@ -88,9 +88,19 @@ object unsupervised extends caps.ExclusiveCapability:
   given orphanMonitor: Monitor = Root(PlatformSupervisor)
 
 package retryTenacities:
-  given exponentialForeverTenacity: Tenacity = Tenacity.exponential(10L, 1.2)
-  given exponentialFiveTimesTenacity: Tenacity = Tenacity.exponential(10L, 1.2).limit(5)
-  given exponentialTenTimesTenacity: Tenacity = Tenacity.exponential(10L, 1.2).limit(10)
+  // This file reads a bare `Long` duration as nanoseconds (see the import of
+  // `nanosecondsAbstractable` above), which is the unit `Tenacity#delay` yields; the exponential
+  // backoffs are stated in milliseconds, so they are scaled here rather than written raw.
+  private val millisecond: Long = 1_000_000L
+
+  given exponentialForeverTenacity: Tenacity = Tenacity.exponential(10L*millisecond, 1.2)
+
+  given exponentialFiveTimesTenacity: Tenacity =
+    Tenacity.exponential(10L*millisecond, 1.2).limit(5)
+
+  given exponentialTenTimesTenacity: Tenacity =
+    Tenacity.exponential(10L*millisecond, 1.2).limit(10)
+
   given fixedNoDelayForeverTenacity: Tenacity = Tenacity.fixed(0L)
   given fixedNoDelayFiveTimesTenacity: Tenacity = Tenacity.fixed(0L).limit(5)
   given fixedNoDelayTenTimesTenacity: Tenacity = Tenacity.fixed(0L).limit(10)
