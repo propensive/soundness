@@ -186,6 +186,7 @@ object Dap:
       supportsExceptionInfoRequest:     Boolean = true,
       supportsRestartFrame:             Boolean = true,
       supportsCompletionsRequest:       Boolean = true,
+      supportsEvaluateForHovers:        Boolean = true,
       completionTriggerCharacters:      List[Text] = List(t"."),
       exceptionBreakpointFilters:       List[ExceptionFilter] = Dap.exceptionFilters )
 

@@ -1106,6 +1106,66 @@ object Tests extends Suite(m"Vivisection tests"):
 
     . assert(_ == (true, true, true))
 
+    // Hover elaboration and value/type inspection, none of which runs debuggee code: a hover on
+    // a call name shows what the typer inferred (`combine[Int](…)(using intSemigroup)`), a hover
+    // on a local shows its value and static type, and a hover on an arbitrary expression is
+    // refused rather than executed — while the console still evaluates that same expression.
+    test(m"a DAP client hovers without executing debuggee code"):
+      import dynamicJsonAccess.enabled
+      val classpathText = System.properties.java.`class`.path()
+
+      supervise:
+        dapScenario: client ?=>
+          client.request(t"initialize")
+          client.awaitResponse(t"initialize")
+
+          val launchArgs =
+            Json.make(mainClass = t"vivisection.Elaborated".in[Json], classpath = classpathText.in[Json])
+
+          client.request(t"launch", launchArgs)
+          client.awaitResponse(t"launch")
+
+          val source = Json.make(path = t"vivisection.Elaborated.scala".in[Json])
+          val points = List(Json.make(line = 56.in[Json]))
+          val setArgs = Json.make(source = source, breakpoints = j"[$points*]")
+
+          client.request(t"setBreakpoints", setArgs)
+          client.awaitResponse(t"setBreakpoints")
+          client.request(t"configurationDone")
+          client.awaitResponse(t"configurationDone")
+
+          val stopped = client.awaitEvent(t"stopped")
+          val thread = stopped.body.threadId.as[Int]
+
+          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse(t"stackTrace")
+          val frame = trace.body.stackFrames(0).id.as[Int]
+
+          def evaluate(expression: Text, context: Optional[Text]): Json =
+            val base =
+              Json.make(expression = expression.in[Json], frameId = frame.in[Json])
+
+            val arguments = context.lay(base): ctx =>
+              base.updateDynamic("context")(ctx.in[Json])
+
+            client.request(t"evaluate", arguments)
+            client.awaitResponse(t"evaluate")
+
+          val callHover = evaluate(t"combine", t"hover").body.result.as[Text]
+          val localHover = evaluate(t"total", t"hover").body.result.as[Text]
+          val exprHover = evaluate(t"total + 1", t"hover").success.as[Boolean]
+          val consoleEval = evaluate(t"total + 1", Unset).body.result.as[Text]
+
+          client.request(t"disconnect")
+          client.awaitResponse(t"disconnect")
+
+          ( callHover.contains(t"[scala.Int]") && callHover.contains(t"intSemigroup"),
+            localHover.contains(t"7") && localHover.contains(t"scala.Int"),
+            exprHover,
+            consoleEval )
+
+    . assert(_ == (true, true, false, t"8"))
+
     // The transport itself, over real pipes: `initialize` and `disconnect` without ever opening
     // a debuggee, so this exercises the framing and the server's teardown-on-EOF in isolation.
     test(m"a DAP server initializes and disconnects over stdio"):

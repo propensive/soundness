@@ -30,51 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package harlequin
+package vivisection
 
-import anticipation.*
-import denominative.*
-import gossamer.*
-import rudiments.*
-import spectacular.*
-import stenography.*
-import vacuous.*
+// A debuggee for hover tests: `combine(3, 4)` is written with no type argument and no `using`
+// clause, but the typer elaborates it to `combine[Int](3, 4)(using intSemigroup)`. The call
+// sits inside a regular class method (as `Menagerie` does), so the frame's class resolves the
+// same way; the suite breaks at the `println`, where the call above it is live in the method's
+// retained tree, so the elaboration is recoverable from the debuggee's own TASTy.
+object Elaborated:
+  trait Semigroup[value]:
+    def append(left: value, right: value): value
 
-object Token:
-  val Newline: Token = Token("\n", Accent.Unparsed)
-  given showable: Token is Showable = _.text
+  given intSemigroup: Semigroup[Int] = new Semigroup[Int]:
+    def append(left: Int, right: Int): Int = left + right
 
-  // The `Showable` above is the token's text alone, which is what a rendered source listing
-  // needs, but it hides the accent, span and role — the state a reader of highlighted source
-  // is usually checking. Inspection shows each field, in product form. A `Meta` wraps a
-  // `Syntax`, whose textual form needs an `Imports` context which inspection cannot supply, so
-  // a present `Meta` is shown as `｢Meta｣`, without its type.
-  given inspectable: [token <: Token] => token is Inspectable = token =>
-    val meta = if token.meta.present then t"｢Meta｣" else t"○"
-    val role = token.role.lay(t"○"): role => t"｢${role.inspect}｣"
+  def combine[value](left: value, right: value)(using semigroup: Semigroup[value]): value =
+    semigroup.append(left, right)
 
-    val fields =
-      t"text:${token.text.inspect} ╱ accent:${token.accent.inspect} ╱ meta:$meta"
+  def main(args: Array[String]): Unit =
+    Runner().run()
 
-    t"Token($fields ╱ span:${token.span.inspect} ╱ role:$role)"
-
-  // `elaboration` is present on a callee token whose call the typer elaborated beyond its
-  // source text: inferred type arguments or synthesized `using` arguments.
-  case class Meta(tpe: Syntax, elaboration: Optional[prophesy.Elaboration] = Unset)
-
-// `span` locates the token in its `SourceCode`: a `Line`-mode `Span` carrying the
-// token's 0-based line and column and its length. It is `Span.empty` until the
-// token is placed into a `SourceCode`'s line grid. `role` distinguishes a binding from a
-// usage for term (`Term`) and type (`Typal`) tokens, and is `Unset` for all others.
-case class Token
-  ( text:   Text,
-    accent: Accent,
-    meta:   Optional[Token.Meta] = Unset,
-    span:   Span                 = Span.empty,
-    role:   Optional[Role]       = Unset ):
-
-  def length: Int = text.length
-
-  def snip(point: Int): (Token, Token) =
-    ( Token(text.keep(point), accent, meta, span, role),
-      Token(text.skip(point), accent, meta, span, role) )
+  class Runner():
+    def run(): Unit =
+      val total = combine(3, 4)
+      System.out.nn.println(total)

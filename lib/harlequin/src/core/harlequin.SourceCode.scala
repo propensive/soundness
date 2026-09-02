@@ -79,7 +79,11 @@ object SourceCode:
     // — when a caret is given — compute completions. Types are always read from the
     // typer-stopped run, so they stay source-level.
     val resolved
-    :   Optional[(Map[(Int, Int), Syntax], List[Diagnostic], Optional[Completions])] =
+    :   Optional
+          [ ( Map[(Int, Int), Syntax],
+              Map[(Int, Int), prophesy.Elaboration],
+              List[Diagnostic],
+              Optional[Completions] ) ] =
 
       if highlighting.depth == Depth.Tokenized then Unset else
         (highlighting.scalac, highlighting.classpath) match
@@ -91,8 +95,9 @@ object SourceCode:
             Unset
 
     val metaMap: Map[(Int, Int), Syntax] = resolved.lay(Map())(_(0))
-    val diagnostics: List[Diagnostic] = resolved.lay(Nil)(_(1))
-    val resolvedCompletions: Optional[Completions] = resolved.lay(Unset)(_(2))
+    val elaborations: Map[(Int, Int), prophesy.Elaboration] = resolved.lay(Map())(_(1))
+    val diagnostics: List[Diagnostic] = resolved.lay(Nil)(_(2))
+    val resolvedCompletions: Optional[Completions] = resolved.lay(Unset)(_(3))
 
     // Keyword completions come from the curated pattern tree over the reversed lexeme
     // context at the caret — no compiler run, so they are offered in every depth, including
@@ -199,7 +204,9 @@ object SourceCode:
         scanner.nextToken()
         val end = scanner.lastOffset max start
 
-        val meta: Optional[Token.Meta] = metaMap.at((start, end)).let(Token.Meta(_))
+        val meta: Optional[Token.Meta] =
+          metaMap.at((start, end)).let: syntax =>
+            Token.Meta(syntax, elaborations.at((start, end)))
 
         val annotation: Optional[TokenTag] = trees(start, end)
         val tokenAccent: Accent = annotation.lay(accent(token))(_.accent)
@@ -395,7 +402,10 @@ object SourceCode:
       classpath: LocalClasspath,
       full:      Boolean,
       caret:     Optional[Ordinal] )
-  :   (Map[(Int, Int), Syntax], List[Diagnostic], Optional[Completions]) =
+  :   ( Map[(Int, Int), Syntax],
+        Map[(Int, Int), prophesy.Elaboration],
+        List[Diagnostic],
+        Optional[Completions] ) =
 
     val cp = classpathText(classpath)
 
@@ -406,6 +416,7 @@ object SourceCode:
         context.setSetting(context.settings.YstopAfter, scala.collection.immutable.List("typer"))
 
     val metaMap = collectTypes(typerRun)
+    val elaborations = collectElaborations(typerRun)
 
     val completions = caret.let: caret =>
       // The interactive driver is the primary completion source: unlike the batch typer run,
@@ -427,7 +438,7 @@ object SourceCode:
 
         ._3
 
-    (metaMap, diagnostics, completions)
+    (metaMap, elaborations, diagnostics, completions)
 
   private def frontend
     ( text: Text, scalac: Scalac[?, ?], cp: Text )
@@ -696,6 +707,26 @@ object SourceCode:
       traverser.traverse(unit.tpdTree)
 
     types.to(Map)
+
+  // The call sites the typer elaborated beyond their source text, keyed — like
+  // `collectTypes` — by the callee token's offsets, so each attaches to the token the user
+  // hovers. The dotc tree crosses into the reflection API by the same cast `syntaxOf` uses
+  // for types.
+  private def collectElaborations(run: Run): Map[(Int, Int), prophesy.Elaboration] =
+    given context: Contexts.Context =
+      dotty.tools.dotc.quoted.QuotesCache.init(run.runContext.fresh)
+
+    given quotes: scala.quoted.Quotes = scala.quoted.runtime.impl.QuotesImpl()(using context)
+
+    val found: scm.HashMap[(Int, Int), prophesy.Elaboration] = scm.HashMap()
+
+    run.units.each: unit =>
+      val root = unit.tpdTree.asInstanceOf[quotes.reflect.Tree]
+
+      prophesy.Elaboration.scan(root).each: elaboration =>
+        found((elaboration.start, elaboration.end)) = elaboration
+
+    found.to(Map)
 
 case class SourceCode
   ( language:    ProgrammingLanguage,
