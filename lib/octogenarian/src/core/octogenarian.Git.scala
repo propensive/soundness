@@ -83,7 +83,7 @@ object Git:
     // `delineate` splits on `\n`, `\r\n` and `\r`, so git's carriage-return
     // progress updates each become their own line — subsuming the old manual
     // `cut(r"[\n\r]")`. The stderr line iterator is laundered pure (exactly as
-    // the old `toProgression` bridge did) so the progress iterator is a plain,
+    // the old `chain` bridge did) so the progress iterator is a plain,
     // single-owner value the fetching `Job` carries alongside its result.
     val stages = safely[Truncation.Error]:
       val lines = caps.unsafe.unsafeAssumePure(process.stderr().delineate.records)

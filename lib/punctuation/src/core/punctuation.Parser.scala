@@ -49,5 +49,11 @@ object Parser:
   def parse(consume stream: (Stream[Text] over Credit)^)(using Buffering): Markdown of Layout =
     BlockParser().parse(Cursor(stream))
 
+  // Native `Chain` sibling of the `Iterator` overload: same cursor
+  // construction, no stdlib hop.
+  def parse(chain: Chain[Text]): Markdown of Layout =
+    BlockParser().parse(Cursor(chain))
+
+  // The legacy interoperation shape: a stdlib `Iterator` of chunks.
   def parse(iterator: Iterator[Text]^): Markdown of Layout =
     BlockParser().parse(Cursor(iterator))

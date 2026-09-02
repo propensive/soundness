@@ -98,6 +98,60 @@ object Stream:
             limit0 += remaining.min(granted)
             limit0 - start0
 
+  // Adapts a lazy `Chain` of chunks into a stream: the native interoperation
+  // shape. Construction forces nothing; each refill forces at most one cell,
+  // so demand drives production exactly as far as the chain's own laziness
+  // allows. The chain is pure, so the stream captures only its fresh state.
+  def apply[medium](chain: Chain[medium])(using addressable0: medium is Addressable)
+  :   (Stream[medium] over Credit)^{caps.any} =
+
+    new Stream[medium]:
+      type Transport = Credit
+
+      private var remaining: Chain[medium] = chain
+
+      // Untracked, cast-erased: reached only through this endpoint.
+      @caps.unsafe.untrackedCaptures
+      private var storage: addressable0.Storage =
+        addressable0.allocate(0).asInstanceOf[addressable0.Storage]
+      private var start0: Int = 0
+      private var limit0: Int = 0
+      private var size: Int = 0
+
+      protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
+      def start: Int = start0
+      def limit: Int = limit0
+      update def skip(count: Int): Unit = start0 += count
+
+      update def refill(demand: Credit): Optional[Int] =
+        if limit0 > start0 then limit0 - start0 else
+          val granted = summon[Credit is Regulation].grant(demand)
+
+          if granted == 0 then 0
+          else if limit0 < size then
+            limit0 += (size - limit0).min(granted)
+            limit0 - start0
+          else
+            def advance(): Optional[Int] = remaining match
+              case chunk #:: tail =>
+                remaining = tail
+                size = addressable0.length(chunk)
+
+                if size == 0 then advance() else
+                  if addressable0.storageSize(storage) < size then
+                    storage = addressable0.allocate(size).asInstanceOf[addressable0.Storage]
+
+                  addressable0.copyChunk
+                    (chunk, 0, storage.asInstanceOf[addressable0.Storage^], 0, size)
+                  start0 = 0
+                  limit0 = size.min(granted)
+                  limit0
+
+              case _ =>
+                Unset
+
+            advance()
+
   // Adapts a chunk iterator (the legacy interoperation shape) into a stream.
   // Demand bounds only how much of each chunk is exposed per refill, not the
   // iterator's own production, which is outside this stream's control. The

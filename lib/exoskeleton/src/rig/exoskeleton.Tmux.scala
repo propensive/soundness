@@ -77,8 +77,7 @@ object Tmux:
       case Number.Error(_, _, _) => Tmux.Error(Tmux.Error.Reason.SessionDied)
 
     . protect:
-        // `.stdlib`: `Array.from` takes a stdlib `IterableOnce`.
-        val content = Array.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]().stdlib)
+        val content = sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]().to[Array]
         val cx = sh"tmux display-message -pt ${tmux.id} '#{cursor_x}'".exec[Text]()
         val cy = sh"tmux display-message -pt ${tmux.id} '#{cursor_y}'".exec[Text]()
         val x = cx.trim.as[Int].z

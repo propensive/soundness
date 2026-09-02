@@ -88,7 +88,7 @@ object Dap:
     val outgoing: Relay[Json] = Relay()
 
     val writer: Task[Unit] = async:
-      outgoing.lazyList.each: json =>
+      outgoing.chain.each: json =>
         val body: Text = json.encode
         observer(body)
         stdio.write(DapTransport.frame(body))

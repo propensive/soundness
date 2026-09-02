@@ -141,11 +141,11 @@ object Tests extends Suite(m"Turbulence tests"):
 
     suite(m"Reading tests"):
       test(m"Bridge Text source to Chain"):
-        qbf.source[Text].toProgression.join
+        qbf.source[Text].chain.join
       . assert(_ == qbf)
 
       test(m"Bridge Data source to Chain"):
-        Array.frozen(qbf.source[Data].toProgression.stdlib.map(_.readable).reduce(_ ++ _)).to[List]
+        Array.frozen(qbf.source[Data].chain.stdlib.map(_.readable).reduce(_ ++ _)).to[List]
       . assert(_ == qbfData.to[List])
 
       test(m"Read Text as Text"):
@@ -220,12 +220,12 @@ object Tests extends Suite(m"Turbulence tests"):
 
       object GeneralStore:
         given GeneralStore is Writable by Data = (store, stream) =>
-          zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]).each: data =>
+          zephyrine.chain(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]).each: data =>
             data.each: byte =>
               store.arrayBuffer.append(byte)
 
         given GeneralStore is Writable by Text = (store, stream) =>
-          zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]).each: text =>
+          zephyrine.chain(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]).each: text =>
             text.in[Data].each: byte =>
               store.arrayBuffer.append(byte)
 
@@ -235,7 +235,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       object ByteStore:
         given ByteStore is Writable by Data = (store, stream) =>
-          zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]).each: data =>
+          zephyrine.chain(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]).each: data =>
             data.each: byte =>
               store.arrayBuffer.append(byte)
 
@@ -246,7 +246,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       object TextStore:
         given TextStore is Writable by Text = (store, stream) =>
-          zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]).each: text =>
+          zephyrine.chain(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]).each: text =>
             store.text = store.text + text
 
       test(m"Write Text to some reference with Text and Data instances"):

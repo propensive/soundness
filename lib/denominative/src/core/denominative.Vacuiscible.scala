@@ -52,8 +52,8 @@ object Vacuiscible:
     def nil(self: List[element]): Boolean = self.stdlib.isEmpty
 
   // `Chain`'s emptiness is O(1) — it forces only the first node — so, like `List`, it gets an
-  // ungated instance here rather than reaching the `Dysasymptotic.UnboundedSize`-gated `Countable.lazyList`.
-  given lazyList: [element] => Chain[element] is Vacuiscible:
+  // ungated instance here rather than reaching the `Dysasymptotic.UnboundedSize`-gated `Countable.chain`.
+  given chain: [element] => Chain[element] is Vacuiscible:
     def nil(self: Chain[element]): Boolean = self.stdlib.isEmpty
 
 trait Vacuiscible extends Typeclass.Pure:

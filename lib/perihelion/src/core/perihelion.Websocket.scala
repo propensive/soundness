@@ -299,7 +299,7 @@ object Websocket:
         Reader(() => inbound.asInstanceOf[(Stream[Data] over Credit)^], channel)
         . messages.map(_.bytes)
 
-      Stream(stream.stdlib.iterator)
+      Stream(stream)
 
     // Sends one message as one complete frame, masked at the `Channel` boundary.
     def send(consume message: (Stream[Data] over Credit)^): Unit =

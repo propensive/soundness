@@ -138,12 +138,12 @@ object Jur:
             scanner.nextStart = matcher.start + 1
             scanner.matchEnd = matcher.end
             val groups = recur(regex.captureGroups, Nil, 0).reverse
-            Some(Array.frozen(scala.IArray.from(groups.stdlib)))
+            Some(groups.to[Array])
 
         case _ =>
           if !matcher.matches then None else
             val groups = recur(regex.captureGroups, Nil, 0).reverse
-            Some(Array.frozen(scala.IArray.from(groups.stdlib)))
+            Some(groups.to[Array])
 
 // The phantom marker for the `java.util.regex` backend (or, on JS and Native, the platform's
 // emulation of it): the default `Form` of every `Regex`.

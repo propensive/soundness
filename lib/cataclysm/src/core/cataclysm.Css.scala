@@ -67,8 +67,7 @@ object Css:
       case error: Css.Error => accrual + error
 
     . protect:
-        // `.stdlib.iterator`: the parser reads a stdlib `Iterator`.
-        CssParser.parse(source.stdlib.iterator)
+        CssParser.parse(source, validating = true)
 
   // Controls how a `Css` tree is serialized. `newlines` puts each rule and declaration on its own
   // indented line; `spaces` adds the cosmetic spaces (after `:` and before `{`). Bundled as

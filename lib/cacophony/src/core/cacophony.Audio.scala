@@ -115,19 +115,19 @@ object Audio:
 
   given streamable: [form: Audible]
   =>  (Audio in form) is Streamable by Data over Credit =
-    audio => zephyrine.Stream(writeAudio(audio, form.name).stdlib.iterator)
+    audio => zephyrine.Stream(writeAudio(audio, form.name))
 
   given streamableAcross: [form: Audible, layout]
   =>  (Audio in form across layout) is Streamable by Data over Credit =
 
-    audio => zephyrine.Stream(writeAudio(audio, form.name).stdlib.iterator)
+    audio => zephyrine.Stream(writeAudio(audio, form.name))
 
   given abstractable: [format: Audible] => (Audio in format) is Abstractable:
     type Domain = HttpStreams
     type Result = HttpStreams.Content
 
     def genericize(audio: Audio in format): HttpStreams.Content =
-      (format.mediaType.basic, HttpStreams.Body(audio.source[Data].toProgression.stdlib.iterator))
+      (format.mediaType.basic, HttpStreams.Body(audio.source[Data].chain))
 
   given aggregable: [format: Audible as audible] => (tactic: Tactic[Audio.Error])
   =>  (((Audio in format) is Aggregable by Data)^{tactic}) =

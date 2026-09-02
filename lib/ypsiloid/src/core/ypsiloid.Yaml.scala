@@ -1737,7 +1737,7 @@ object Yaml extends Yaml2, Dynamic:
       type Self = Yaml
       type Operand = Data
 
-      def aggregate(stream: Chain[Data]): Yaml = fromStream(Stream(stream.stdlib.iterator))
+      def aggregate(stream: Chain[Data]): Yaml = fromStream(Stream(stream))
 
       override def accept(stream: (Stream[Data] over Credit)^): Yaml =
         // See `aggregable` above.

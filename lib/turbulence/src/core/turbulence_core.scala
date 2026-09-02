@@ -159,7 +159,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
   // View a pull endpoint as a `java.io.InputStream` for handing to JDK APIs:
   // each `read` pulls through the window (one block of credit at a time) and
   // never materializes a chunk; `close` closes the endpoint. The kernel-native
-  // replacement for `lazyList.inputStream`.
+  // replacement for `chain.inputStream`.
   def inputStream(using buffering: Buffering): ji.InputStream^ =
     val block = buffering.capacity(Substrate.Bytes)
 

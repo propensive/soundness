@@ -42,8 +42,8 @@ import scala.collection.immutable as sci
 object Chain:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing lambdas
   // crashes the capture checker's boxer (boxDeeply assertion), and streaming code is cc-heavy.
-  private[proscenium] def of[element](lazyList: sci.LazyList[element]): Chain[element] =
-    lazyList.asInstanceOf[Chain[element]]
+  private[proscenium] def of[element](chain: sci.LazyList[element]): Chain[element] =
+    chain.asInstanceOf[Chain[element]]
 
   // Deliberately NOT the branded literal constructor `List` and `Sequence` have: `Chain` is the
   // streaming collection, and the `transparent inline` expansion at capture-checked call sites
@@ -82,7 +82,7 @@ object Chain:
   def defer[element](chain: => Chain[element]): Chain[element] =
     Chain.empty[element].lazyAppendedAll(chain)
 
-  def unapplySeq[element](lazyList: Chain[element]): Option[Seq[element]] = Some(lazyList.stdlib)
+  def unapplySeq[element](chain: Chain[element]): Option[Seq[element]] = Some(chain.stdlib)
 
   // `.to[Chain]` support (see `List`): the conversion is on `Chain.type` only, so it cannot
   // expose members of `Chain` values.
@@ -96,8 +96,8 @@ object Chain:
         def newBuilder: scala.collection.mutable.Builder[element, Chain[element]] =
           sci.LazyList.newBuilder[element].mapResult(of(_))
 
-  extension [element](lazyList: Chain[element])
-    inline def stdlib: sci.LazyList[element] = lazyList.asInstanceOf[sci.LazyList[element]]
+  extension [element](chain: Chain[element])
+    inline def stdlib: sci.LazyList[element] = chain.asInstanceOf[sci.LazyList[element]]
 
 // The lazy cons constructor. As with `List`'s `::`, right-associative extensions read in usage
 // order, so the receiver is the HEAD; it rides on a given (a top-level name would clash with the
@@ -125,12 +125,12 @@ extension [element](prefix: Chain[element])
 // `isEmpty`/`_1` force only the first node; `_2` returns the tail via `sci.LazyList#tail`, which
 // does not force the tail's elements.
 object `#::`:
-  final class ConsView[element](lazyList: sci.LazyList[element]):
-    def isEmpty: Boolean = lazyList.isEmpty
+  final class ConsView[element](chain: sci.LazyList[element]):
+    def isEmpty: Boolean = chain.isEmpty
     def get: this.type = this
-    def _1: element = lazyList.head
-    def _2: Chain[element] = Chain.of(lazyList.tail)
+    def _1: element = chain.head
+    def _2: Chain[element] = Chain.of(chain.tail)
 
-  def unapply[element](lazyList: Chain[element]): ConsView[element] = ConsView(lazyList.stdlib)
+  def unapply[element](chain: Chain[element]): ConsView[element] = ConsView(chain.stdlib)
 
 opaque type Chain[+element] = sci.LazyList[element]

@@ -62,7 +62,7 @@ package dsvRedesignations:
 extension [encodable: Encodable in Dsv](value: encodable) def dsv: Dsv = encodable.encode(value)
 
 extension [encodable: Encodable in Dsv](value: List[encodable])
-  def dsv: Sheet = Sheet(Array.from(value.stdlib.map(encodable.encode(_))))
+  def dsv: Sheet = Sheet(value.map(encodable.encode(_)).to[Array])
 
 extension (consume stream: (Stream[Text] over Credit)^)
   // The rows of a character stream of DSV data, as a single-consumer

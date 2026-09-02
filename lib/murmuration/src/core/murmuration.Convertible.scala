@@ -61,7 +61,7 @@ object Convertible:
   =>  self is Convertible in IndexedSeq to IndexedSeq[traversable.Operand] =
     self => IndexedSeq.from(traversable.traverse(self))
 
-  given lazyList: [self] => (traversable: self is Traversable)
+  given chain: [self] => (traversable: self is Traversable)
   =>  self is Convertible in Chain to Chain[traversable.Operand] =
     self => traversable.traverse(self).to(Chain)
 

@@ -61,8 +61,8 @@ object Debug:
 
     val exited: Promise[Exit] = Promise()
 
-    def stdout: Chain[Data] = out.lazyList
-    def stderr: Chain[Data] = err.lazyList
+    def stdout: Chain[Data] = out.chain
+    def stderr: Chain[Data] = err.chain
 
   object Event:
     given communicable: Event is Communicable =
@@ -115,7 +115,7 @@ extends caps.ExclusiveCapability:
   // registered handler claimed. This is the primitive; a caller drains it and reacts, or awaits
   // a particular event, and owns any resumption its suspend policy calls for. Reading it
   // consumes the events as they arrive.
-  def events: Chain[Jdwp.Event.Composite] = connection.unclaimed.lazyList
+  def events: Chain[Jdwp.Event.Composite] = connection.unclaimed.chain
 
   // Sets a breakpoint at a resolved location, returning the request id used to `clear` it. The VM
   // reports each hit as a `Breakpoint` event on `events`, suspending per the given policy.

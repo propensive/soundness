@@ -44,7 +44,7 @@ object Transmissible:
   given bytes: Data is Transmissible = _.stream
 
   given stream: [stream <: Chain[Data]] => stream is Transmissible = value =>
-    value.stdlib.iterator.stream
+    Stream(value)
 
   given text: [text <: Text] => CharEncoder => text is Transmissible =
     text => summon[CharEncoder].encoded(text).stream

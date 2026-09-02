@@ -76,7 +76,7 @@ object Sheet:
         val stream: (Stream[Data] over Credit)^ =
           dsv.source[Text].via(summon[CharEncoder]).asInstanceOf[(Stream[Data] over Credit)^]
 
-        (mediaType, HttpStreams.Body(stream.toProgression.stdlib.iterator))
+        (mediaType, HttpStreams.Body(stream.chain))
 
   given tabular: Sheet is Tabular[Text]:
     type Element = Dsv
@@ -105,7 +105,7 @@ object Sheet:
         type Self = Sheet
         type Operand = Text
 
-        def aggregate(text: Chain[Text]): Sheet = sheet(parseRows(Stream(text.stdlib.iterator)))
+        def aggregate(text: Chain[Text]): Sheet = sheet(parseRows(Stream(text)))
         override def accept(stream: (Stream[Text] over Credit)^): Sheet =
           // The non-consume `accept` crosses to the consuming parser as a
           // neutral reference; each accept delivers a single-use stream.

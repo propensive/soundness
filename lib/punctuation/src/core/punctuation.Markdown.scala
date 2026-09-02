@@ -71,9 +71,7 @@ object Markdown:
       type Self = Markdown of Layout
       type Operand = Text
 
-      // `.stdlib.iterator`: the parser consumes a lazy `Iterator`, and there is no native
-      // way to obtain one from a `Chain` without forcing it.
-      def aggregate(stream: Chain[Text]): Markdown of Layout = Parser.parse(stream.stdlib.iterator)
+      def aggregate(stream: Chain[Text]): Markdown of Layout = Parser.parse(stream)
 
       override def accept(stream: (zephyrine.Stream[Text] over zephyrine.Credit)^)
       :   Markdown of Layout =

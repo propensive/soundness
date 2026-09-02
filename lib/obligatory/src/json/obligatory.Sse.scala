@@ -57,7 +57,7 @@ object Sse:
     import charEncoders.utf8Encoder
 
     Servable[Chain[Sse]](_ => media"text/event-stream"): stream =>
-      Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.in[Data]).stdlib.iterator))
+      Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.in[Data])))
 
   given framable: Text is Framable by Sse = input =>
     // The frame reader owns its cursor exclusively for the whole parse.

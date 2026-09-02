@@ -1536,11 +1536,11 @@ object Xml extends Tag.Container
   =>  (tactic: Tactic[Parse.Error])
   =>  (((Xml of content) is Aggregable by Text)^{tactic}) =
 
-    input => XmlParser.fromIterator(input.stdlib.iterator).parseXml(headers0 = false).of[content]
+    input => XmlParser.fromChain(input).parseXml(headers0 = false).of[content]
 
   given aggregable2: (schema: XmlSchema) => (tactic: Tactic[Parse.Error])
   =>  ((Xml is Aggregable by Text)^{tactic}) =
-    input => XmlParser.fromIterator(input.stdlib.iterator).parseXml(headers0 = false)
+    input => XmlParser.fromChain(input).parseXml(headers0 = false)
 
   // HTTP content-type integration. `Abstractable across HttpStreams` makes an
   // `Xml` value usable as an HTTP request/response body (telekinesis derives
@@ -1575,7 +1575,7 @@ object Xml extends Tag.Container
   =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
   =>  ( ((value in Xml) is Aggregable by Text)^{parsable, tactic, xmlTactic} ) =
 
-    input => parseDirect(input.stdlib.iterator, parsable).asInstanceOf[value in Xml]
+    input => parseDirect(input, parsable).asInstanceOf[value in Xml]
 
   // Whole-`Text` direct read: when the entire content is already in hand,
   // parse it in place rather than wrapping it in a one-element stream —
@@ -1606,6 +1606,16 @@ object Xml extends Tag.Container
   // value should be — also lands on `absent()`, where the AST path may
   // instead report a `Parse.Error`; the divergence is confined to inputs
   // that fail on both paths.)
+  private def parseDirect[value](input: Chain[Text], parsable: (value is Xml.Parsable)^)
+    ( using schema:    XmlSchema,
+            tactic:    Tactic[Parse.Error],
+            xmlTactic: Tactic[Xml.Error],
+            foci:      Foci[Xml.Focus] )
+  :   value =
+
+    parseWith(XmlParser.fromChain(input), parsable)
+
+  // The legacy interoperation shape: a stdlib `Iterator` of chunks.
   private def parseDirect[value](input: Iterator[Text], parsable: (value is Xml.Parsable)^)
     ( using schema:    XmlSchema,
             tactic:    Tactic[Parse.Error],
@@ -1658,15 +1668,14 @@ object Xml extends Tag.Container
   // is built from the root element alone).
   given loadable: (schema: XmlSchema) => (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ((Xml is Loadable by Text)^{tactic}) = stream =>
-    // The chunk iterator view of the pull endpoint (the audited bridge; the
-    // DOM loader's parser is iterator-fed).
+    // The chunk chain view of the pull endpoint (the audited bridge; the
+    // DOM loader's parser is chain-fed).
     val chunks =
-      zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
-      . stdlib.iterator
+      zephyrine.chain(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
 
     val parser = tracking match
-      case PositionTracking.On  => XmlParser.fromIteratorTracked(chunks)
-      case PositionTracking.Off => XmlParser.fromIterator(chunks)
+      case PositionTracking.On  => XmlParser.fromChainTracked(chunks)
+      case PositionTracking.Off => XmlParser.fromChain(chunks)
 
     val parsed = parser.parseXml(headers0 = true)
 
@@ -2226,6 +2235,12 @@ object Xml extends Tag.Container
     def fromText(text: Text)(using XmlSchema): XmlParser =
       new XmlParser(Cursor[Text](text), tracking = false)
 
+    // Native `Chain` sibling of `fromIterator`: same cursor construction, no
+    // stdlib hop.
+    def fromChain(input: Chain[Text])(using XmlSchema): XmlParser =
+      new XmlParser(Cursor[Text](input), tracking = false)
+
+    // The legacy interoperation shape: a stdlib `Iterator` of chunks.
     def fromIterator(input: Iterator[Text])(using XmlSchema): XmlParser =
       new XmlParser(Cursor[Text](input), tracking = false)
 
@@ -2239,6 +2254,12 @@ object Xml extends Tag.Container
       import zephyrine.lineation.linefeedChars
       new XmlParser(Cursor[Text](text), tracking = true)
 
+    // Native `Chain` sibling of `fromIteratorTracked`.
+    def fromChainTracked(input: Chain[Text])(using XmlSchema): XmlParser =
+      import zephyrine.lineation.linefeedChars
+      new XmlParser(Cursor[Text](input), tracking = true)
+
+    // The legacy interoperation shape: a stdlib `Iterator` of chunks.
     def fromIteratorTracked(input: Iterator[Text])(using XmlSchema): XmlParser =
       import zephyrine.lineation.linefeedChars
       new XmlParser(Cursor[Text](input), tracking = true)

@@ -290,6 +290,7 @@ object internal:
           case '{$value: tpe} => Type.of[tpe] match
             case '[Map[Text, Yaml]] =>
               ' {
+                  // Staged code: the spliced expression must produce a stdlib `Iterable`.
                   $value.asInstanceOf[Map[Text, Yaml]].stdlib.iterator.map: (key, yaml) =>
                     (key.s, Yaml.unseal(yaml))
 

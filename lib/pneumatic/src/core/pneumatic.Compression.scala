@@ -44,10 +44,10 @@ trait Compression:
   // format's duct, and materialize one output chunk per refill — no staging
   // buffer, and byte-for-byte agreement with the stream and whole-value forms.
   def compress(stream: Chain[Data]): Chain[Data] =
-    Stream(stream.stdlib.iterator).viaDuct(compressor()).toProgression
+    Stream(stream).viaDuct(compressor()).chain
 
   def decompress(stream: Chain[Data]): Chain[Data] =
-    Stream(stream.stdlib.iterator).viaDuct(decompressor()).toProgression
+    Stream(stream).viaDuct(decompressor()).chain
 
   // Streaming stages for the same transformations, applied with
   // `stream.compress[Gzip]`/`stream.decompress[Gzip]` on a pull endpoint.

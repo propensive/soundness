@@ -677,7 +677,7 @@ object Mcp:
 
     // Sse values are records, so the interface streams on the boxed medium.
     given streamable: Interface is Streamable by Array[Sse] over zephyrine.Credit =
-      interface => zephyrine.Stream(interface.stream.stdlib.iterator.map(Array(_)))
+      interface => zephyrine.Stream(interface.stream.map(Array(_)))
 
 
     inline def apply(sessionId: Text, server: Mcp.Server from Mcp.Client)

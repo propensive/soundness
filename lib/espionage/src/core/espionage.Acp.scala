@@ -1224,7 +1224,7 @@ object Acp:
 
       import strategies.throwUnsafely
 
-      source.toProgression.stdlib.iterator.frames[Linefeed].each: frame =>
+      source.chunks.frames[Linefeed].each: frame =>
         val message: Text = frame.utf8
 
         if message.length > 0 && message != t"\r" then
@@ -1286,6 +1286,7 @@ object Acp:
       // A single writer, so writes never interleave. The encoding is compact — the framing
       // forbids embedded newlines. The observer sees the encoded body, not the terminator.
       val writer: Task[Unit] = async:
+        // `.stdlib.iterator`: drained element by element, without memoizing the live chain.
         connection.outgoing.stdlib.iterator.each: json =>
           val body: Text = json.encode
           observer.sent(body)

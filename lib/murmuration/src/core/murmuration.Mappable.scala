@@ -113,6 +113,7 @@ object Mappable extends Mappable.Fallback:
       type Result[value2] = Ledger[key, value2]
       def map[value2](self: container, lambda: value => value2): Ledger[key, value2] =
 
+          // `.stdlib.iterator`: `VectorMap.from` consumes a stdlib `IterableOnce`.
           scala.collection.immutable.VectorMap.from:
             self.stdlib.iterator.map { (key, value) => key -> lambda(value) }
           . to(Ledger)

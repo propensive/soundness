@@ -462,9 +462,8 @@ package filesystemBackends:
           try
             lambda:
               Handle
-                ( () => unsafely(zephyrine.toProgression(Streamable.channel.stream(channel))),
-                  // `.stdlib.iterator`: `zephyrine.Stream` takes a stdlib `Iterator`.
-                  data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data.stdlib.iterator))) )
+                ( () => unsafely(zephyrine.chain(Streamable.channel.stream(channel))),
+                  data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data))) )
                 ( () => unsafely(Streamable.channel.stream(channel)),
                   () => unsafely(Sink.channel.intake(channel)) )
           finally lock.foreach: held =>

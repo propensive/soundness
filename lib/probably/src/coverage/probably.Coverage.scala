@@ -94,8 +94,8 @@ object Coverage:
         case _ =>
           junctures.reverse
 
-    // `Chain`'s lazy `dropWhile`, and `Array.from`, which takes an `IterableOnce`.
-    Array.from(recur((lines.stdlib.dropWhile(_.starts(t"#"))).to(Chain)).stdlib)
+    // `Chain`'s lazy `dropWhile` runs on the stdlib view.
+    recur((lines.stdlib.dropWhile(_.starts(t"#"))).to(Chain)).to[Array]
 
   private def measurements(file: File): Set[Int] =
     val ids = BitSet()

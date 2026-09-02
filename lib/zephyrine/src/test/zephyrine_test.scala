@@ -1037,32 +1037,32 @@ object Tests extends Suite(m"Zephyrine tests"):
               sum
         . assert(_ == bytes.to[List].map(_ & 0xff).total.toLong)
 
-        test(m"toProgression yields the stream's chunks in order"):
-          Stream(Iterator(Array[Byte](1, 2, 3), Array[Byte](4, 5))).toProgression.stdlib.to(List)
+        test(m"chain yields the stream's chunks in order"):
+          Stream(Iterator(Array[Byte](1, 2, 3), Array[Byte](4, 5))).chain.stdlib.to(List)
           . map(_.to[List])
         . assert(_ == List(List(1, 2, 3).map(_.toByte), List(4, 5).map(_.toByte)))
 
-        test(m"toProgression of an empty stream is empty"):
-          Iterator.empty[Data].stream.toProgression.stdlib.to(List)
+        test(m"chain of an empty stream is empty"):
+          Iterator.empty[Data].stream.chain.stdlib.to(List)
         . assert(_ == List())
 
-        test(m"toProgression construction pulls nothing"):
+        test(m"chain construction pulls nothing"):
           var pulled: Int = 0
           val chunks = Iterator(Array[Byte](1.toByte), Array[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
-          val list = chunks.stream.toProgression
+          val list = chunks.stream.chain
           scala.caps.unsafe.unsafeAssumeSeparate(pulled)
         . assert(_ == 0)
 
-        test(m"toProgression pulls chunks only as cells are forced"):
+        test(m"chain pulls chunks only as cells are forced"):
           var pulled: Int = 0
           val chunks = Iterator(Array[Byte](1.toByte), Array[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
-          val list = chunks.stream.toProgression
+          val list = chunks.stream.chain
           list.stdlib.head
           scala.caps.unsafe.unsafeAssumeSeparate(pulled)
         . assert(_ == 1)
 
-        test(m"toProgression reassembles a transformed pipeline"):
-          val text = Stream(Iterator(Array[Byte](104, 105))).via(summon[CharDecoder]).toProgression
+        test(m"chain reassembles a transformed pipeline"):
+          val text = Stream(Iterator(Array[Byte](104, 105))).via(summon[CharDecoder]).chain
           text.stdlib.to(List).map(_.s).mkString
         . assert(_ == "hi")
 

@@ -63,7 +63,7 @@ class TarEntryWriter private[bitumen] (put0: Data => Unit) extends caps.Exclusiv
   def write[data: Streamable by Data over Credit as streamable](data: data)(using Buffering)
   :   Unit =
 
-    zephyrine.toProgression(streamable.stream(data)).foreach(put0(_))
+    zephyrine.chain(streamable.stream(data)).foreach(put0(_))
 
 // The authoring handle provided by `path.create[Tar](flags*)`. TAR permits duplicate names
 // (later entries supersede on extraction), so nothing is checked at insert.
