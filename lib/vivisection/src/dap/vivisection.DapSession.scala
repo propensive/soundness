@@ -578,15 +578,50 @@ private[vivisection] class DapSession(emit: Json => Unit)
       case t"evaluate" =>
         val arguments = json.arguments.as[Dap.EvaluateArguments]
 
-        withFrame(request, arguments.frameId): (thread, halt) =>
-          withClasspath(request): classpath =>
-            val result = halt.evaluator(classpath): eval ?=> eval(arguments.expression)
+        // A hover must never run debuggee code (it fires on mere cursor movement), so it serves
+        // only side-effect-free answers: the value and static type of a visible local, and the
+        // elaboration of a call named in the stopped method. Anything else returns no hover.
+        // Every other context (`repl`, `watch`, absent) evaluates as before.
+        if arguments.context == t"hover" then
+          withFrame(request, arguments.frameId): (thread, halt) =>
+            withClasspath(request): classpath =>
+              // The evaluator block returns only pure data — the local's rendering and the raw
+              // elaborations — so nothing capturing the session escapes it; the one-line
+              // rendering happens outside.
+              val (local, calls) =
+                halt.evaluator(classpath): eval ?=>
+                  val rendered: Optional[Text] =
+                    eval.variables().seek(_.name == arguments.expression).let: variable =>
+                      val value = variable.value.lay(t"")(_.inspect)
+                      t"$value: ${variable.static.or(variable.erased)}"
 
-            val rendered = result match
-              case Variable.Snapshot.Str(_, text) => text
-              case other                          => other.inspect
+                  val found = eval.elaborations().filter(_.method == arguments.expression)
 
-            respond(request, Dap.EvaluateBody(rendered).in[Json])
+                  (rendered, found)
+
+              val callText: Optional[Text] = calls match
+                case Nil   => Unset
+                case found => found.map(renderElaboration).join(t"\n")
+
+              val answer: Optional[Text] = (local, callText) match
+                case (l: Text, c: Text) => t"$l\n$c"
+                case (l: Text, _)       => l
+                case (_, c: Text)       => c
+                case _                  => Unset
+
+              answer match
+                case text: Text => respond(request, Dap.EvaluateBody(text).in[Json])
+                case _          => fail(request, t"no hover information is available")
+        else
+          withFrame(request, arguments.frameId): (thread, halt) =>
+            withClasspath(request): classpath =>
+              val result = halt.evaluator(classpath): eval ?=> eval(arguments.expression)
+
+              val rendered = result match
+                case Variable.Snapshot.Str(_, text) => text
+                case other                          => other.inspect
+
+              respond(request, Dap.EvaluateBody(rendered).in[Json])
 
       case t"completions" =>
         val arguments = json.arguments.as[Dap.CompletionsArguments]
@@ -729,6 +764,21 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
       completions.items.map: item =>
         Dap.CompletionItem(item.name, kindName(item.kind), start, length)
+
+  // A one-line rendering of an elaborated call: the callee, its inferred type arguments in
+  // brackets, the written value arguments elided as `…`, and each synthesized `using` argument
+  // named by the given it resolved to. Only the inferred pieces are real; the `(…)` is a
+  // placeholder standing in for whatever the programmer wrote.
+  private def renderElaboration(elaboration: prophesy.Elaboration): Text =
+    val types = elaboration.typeArguments match
+      case Nil  => t""
+      case args => t"[${args.map(_.qualified).join(t", ")}]"
+
+    val givens = elaboration.givenArguments match
+      case Nil  => t""
+      case args => t"(using ${args.map(_.name).join(t", ")})"
+
+    t"${elaboration.method}$types(…)$givens"
 
   private def kindName(kind: prophesy.Completion.Kind): Text =
     import prophesy.Completion.Kind
