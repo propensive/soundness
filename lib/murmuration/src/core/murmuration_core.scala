@@ -33,6 +33,7 @@
 package murmuration
 
 import scala.collection.immutable as sci
+import scala.collection.mutable as scm
 import scala.math.Ordering
 
 import anticipation.*
@@ -186,6 +187,17 @@ extension [self](self: self)(using traversable: self is Traversable)
   :   result =
 
     reshapable.reshape(traversable.traverse(self).distinct)
+
+  // The first element for each value of `lambda`, in first-occurrence order (the stdlib's
+  // `distinctBy`). Which occurrence survives is positional, so — like `distinct` — this is
+  // honestly unavailable on unordered shapes. Not `Iterator#distinctBy`, whose parameter
+  // capture checking requires to be pure; a seen-set filter accepts any lambda `filter` would.
+  def deduplicate[key, result](lambda: traversable.Operand => key)
+    ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )
+  :   result =
+
+    val seen = scm.HashSet[key]()
+    reshapable.reshape(traversable.traverse(self).filter { element => seen.add(lambda(element)) })
 
   // The longest leading run satisfying `predicate`, and the remainder; each side is traversed
   // independently, since a single `Iterator` cannot be consumed twice.

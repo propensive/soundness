@@ -39,6 +39,7 @@ import denominative.nil
 import escapade.*
 import escritoire.*
 import gossamer.*
+import hypotenuse.maximum
 import hieroglyph.*, textMetrics.uniformMetric
 import polysyllabic.*
 import symbolism.*
@@ -316,7 +317,7 @@ case class Help
         case Help.Row.Item(depth, label, _, _) => depth*2 + label.length
         case _                                 => 0
 
-      . most.or(0) + 2
+      . maximum.or(0) + 2
 
     def render(row: Help.Row): List[Teletype] = row match
       case Help.Row.Blank => List(e"")

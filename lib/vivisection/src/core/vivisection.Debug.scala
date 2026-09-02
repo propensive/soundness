@@ -555,8 +555,10 @@ extends caps.ExclusiveCapability:
               List()
 
     // Two methods can bind the same position (an exact hit and an inlined copy), so a location is
-    // identified by its method and bytecode index. `.stdlib`: the native collections have no
-    // `distinctBy`, and de-duplication is by this key, not by the locations' own equality.
+    // identified by its method and bytecode index: de-duplication is by this key, not by the
+    // locations' own equality. The concatenation is bound first so `deduplicate`'s implicit
+    // search never runs against an uninstantiated result variable (the wildApprox hazard).
     def key(location: Jdwp.Location): (Long, Long) = (location.method.long, location.index)
 
-    (exact + inlined).stdlib.distinctBy(key(_)).to(List)
+    val all: List[Jdwp.Location] = exact + inlined
+    all.deduplicate(key(_))

@@ -258,10 +258,10 @@ object Repackager:
         // bundled or inlined copy (an unpublished `burdock` dependency's cached JAR also
         // carries `burdock/Bootstrap.class`), and a bundled class over an inlined cache copy.
         // Without this, `Zipfile.write` rejects the duplicate entry.
-        // `.stdlib.distinctBy`: `distinctBy` has no native equivalent, and the alternatives
-        // (sort-then-fold) would not preserve the first-occurrence order this relies on.
-        val entries: List[Zip.Entry] =
-          ((bootstrap :: keptEntries + inlined).stdlib.distinctBy(_.ref.show)).to(List)
+        // The concatenation is bound first so `deduplicate`'s implicit search never runs
+        // against an uninstantiated result variable (the wildApprox hazard).
+        val combined: List[Zip.Entry] = bootstrap :: keptEntries + inlined
+        val entries: List[Zip.Entry] = combined.deduplicate(_.ref.show)
 
         // `.stdlib`: `Zipfile.write` takes a stdlib `Iterable` — a genuine API boundary.
         Zipfile.write(outputJar)((manifestEntry :: entries).stdlib)

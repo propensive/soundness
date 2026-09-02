@@ -204,19 +204,10 @@ extension [self](self: self)(using traversable: self is Traversable)
     reshapable.reshape:
       traversable.traverse(self).zipWithIndex.map { (element, index) => (element, index.z) }
 
-  // The smallest and greatest elements, `Unset` when empty: the total counterparts of
-  // `min`/`max` (and of `minOption`/`maxOption`, without the `Option` allocation).
-  def least(using ordering: math.Ordering[traversable.Operand])
-  :   Optional[traversable.Operand] =
-
-    val iterator = traversable.traverse(self)
-    if iterator.isEmpty then Unset else iterator.min
-
-  def most(using ordering: math.Ordering[traversable.Operand])
-  :   Optional[traversable.Operand] =
-
-    val iterator = traversable.traverse(self)
-    if iterator.isEmpty then Unset else iterator.max
+  // The extremum operations (`minimum`/`maximum`, the total counterparts of `min`/`max`) live
+  // in hypotenuse, driven by `Commensurable` rather than `Ordering` — `Commensurable.orderable`
+  // derives from any `Ordering`, so a second `Ordering`-based pair here would be ambiguous with
+  // them wherever both libraries are in scope.
 
   transparent inline def each(lambda: Ordinal aka "ordinal" ?=> traversable.Operand => Unit)
   :   Unit =

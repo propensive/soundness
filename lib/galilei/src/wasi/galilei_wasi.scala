@@ -130,7 +130,7 @@ package filesystemBackends:
           Ordering.by { entry => entry(1).s.length }
 
         // `most` is `Unset` exactly when nothing covers the path.
-        val (descriptor, prefix) = covering.most.or:
+        val (descriptor, prefix) = covering.maximum.or:
           preopens.each(_(0).dispose())
           abort(Io.Error(path, operation, Reason.PermissionDenied))
 

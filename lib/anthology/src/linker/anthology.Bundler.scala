@@ -112,8 +112,7 @@ object Bundler:
           case _ =>
             Nil
 
-      // `.stdlib`: `distinctBy` has no native counterpart, and `Zipfile.write` takes a stdlib
-      // `Iterable` anyway.
-      entries.stdlib.distinctBy(_.ref)
+      // `.stdlib`: `Zipfile.write` takes a stdlib `Iterable` — a genuine API boundary.
+      entries.deduplicate(_.ref).stdlib
 
     jarfile

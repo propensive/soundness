@@ -38,6 +38,7 @@ import denominative.*
 import escapade.*
 import escritoire.*, columnAttenuation.ignoreAttenuation
 import gossamer.*
+import hypotenuse.{maximum, minimum}
 import hieroglyph.*, textMetrics.uniformMetric
 import iridescence.*
 import rudiments.*
@@ -132,7 +133,7 @@ given tastyTreeTeletypeable: (palette: TastyPalette) => Tasty.Tree is Teletypeab
     val indents =
       expansions.filter(!_.source.nil).map(_.source.plain.keep(_ == ' ').length)
 
-    val crop = indents.least.or(0)
+    val crop = indents.minimum.or(0)
 
     Scaffold[TastyTreeExpansion]
       ( Column(e"TASTy"): node =>
