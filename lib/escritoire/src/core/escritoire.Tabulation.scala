@@ -43,10 +43,12 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import rudiments.*
+import symbolism.*
 import tessellate.*
 import vacuous.*
 import denominative.*
-import denominative.dysasymptotics.linearSize
+// Per-row decorations are a short `List` read by column position.
+import denominative.dysasymptotics.linearAccess
 
 object Tabulation:
   given printable: [text]
@@ -78,8 +80,11 @@ abstract class Tabulation[text: ClassTag]():
     // Every logical line each column will display, across both titles and data.
     val columnLines: IndexedSeq[Array[text]^{}] =
       columns.readable.indices.map: index =>
-        Array.from:
-          titles.stdlib.flatMap(_.readable(index).readable) ++ rows.stdlib.flatMap(_.readable(index).readable)
+        val titleLines: List[text] = titles.bind(_.readable(index))
+        val rowLines:   List[text] = rows.bind(_.readable(index))
+        val lines:      List[text] = titleLines + rowLines
+
+        lines.to[Array]
 
     val flexes: IndexedSeq[Flex] =
       columns.readable.indices.map: index =>
@@ -105,7 +110,7 @@ abstract class Tabulation[text: ClassTag]():
 
     val survivors: IndexedSeq[(Int, Int)] =
       visible.indices.flatMap: position =>
-        solved.stdlib(position).let { cellWidth => (visible(position), cellWidth) }.option
+        solved.at(position.z).let { cellWidth => (visible(position), cellWidth) }.option
 
     val totalWidth = survivors.map(_(1)).sum + style.cost(survivors.size)
 
@@ -116,19 +121,20 @@ abstract class Tabulation[text: ClassTag]():
         decorations2: List[List[Optional[text -> text]]] )
     :   Chain[TableRow[text]] =
 
+      // No native iterator: the decorations are consumed one row at a time alongside `data`,
+      // which is shorter or longer at will, so this is a `zipAll`, not a `zip`.
       val decorationIterator = decorations2.stdlib.iterator
 
-      Chain.from(data.stdlib).map: cells =>
-        val rowDecorations: scala.List[Optional[text -> text]] =
-          if decorationIterator.hasNext then decorationIterator.next().stdlib else scala.Nil
+      data.to[Chain].map: cells =>
+        val rowDecorations: List[Optional[text -> text]] =
+          if decorationIterator.hasNext then decorationIterator.next() else Nil
 
         val tableCells = Array.from:
           survivors.map: (index, cellWidth) =>
             val column = columns.readUnchecked(index)
             val lines = column.sizing.fit[text](cells.readable(index), cellWidth, column.textAlign)
 
-            val decoration: Optional[text -> text] =
-              if index < rowDecorations.length then rowDecorations(index) else Unset
+            val decoration: Optional[text -> text] = rowDecorations.at(index.z)
 
             TableCell
               ( cellWidth, 1, lines, lines.size, column.textAlign, column.verticalAlign,

@@ -45,4 +45,6 @@ case class TableCell[text]
     verticalAlign: VerticalAlignment = VerticalAlignment.Top,
     decorate:      Optional[text -> text] = Unset ):
 
+  // A bounds-checked positional read whose result type is total: the caller has already
+  // tested `line` against `minHeight`, and there is no `text` value to fall back on.
   def apply(line: Int): text = lines.stdlib(line)

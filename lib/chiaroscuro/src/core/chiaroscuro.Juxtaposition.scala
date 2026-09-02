@@ -52,11 +52,17 @@ enum Juxtaposition:
     case Collation(_, _, _, _)              => false
 
   def leftWidth: Int = this match
-    case Same(value)                    => value.length
-    case Different(left, _, _)          => left.length
-    case Collation(_, comparison, _, _) => comparison.stdlib.sumBy(_(1).leftWidth)
+    case Same(value)            => value.length
+    case Different(left, _, _)  => left.length
+
+    case Collation(_, comparison, _, _) =>
+      val widths: List[Int] = comparison.map(_(1).leftWidth)
+      widths.total
 
   def rightWidth: Int = this match
-    case Same(value)                    => value.length
-    case Different(_, right, _)         => right.length
-    case Collation(_, comparison, _, _) => comparison.stdlib.sumBy(_(1).rightWidth)
+    case Same(value)            => value.length
+    case Different(_, right, _) => right.length
+
+    case Collation(_, comparison, _, _) =>
+      val widths: List[Int] = comparison.map(_(1).rightWidth)
+      widths.total

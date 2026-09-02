@@ -33,6 +33,7 @@
 package hallucination
 
 import contingency.*
+import rudiments.foreach
 import vacuous.*
 
 import scala.caps
@@ -128,7 +129,7 @@ private[hallucination] object WebpLossless:
       var currentWidth = transformedWidth
       var image = buffer
 
-      for index <- order.stdlib do
+      for index <- order do
         val transform = transforms(index)
 
         transform.kind match

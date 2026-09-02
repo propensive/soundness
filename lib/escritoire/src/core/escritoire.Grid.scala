@@ -153,7 +153,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
             Chain(rule(first.widths, above = true, below = false))
 
         val body =
-          sections.stdlib.to(Chain).bind: section =>
+          sections.to[Chain].bind: section =>
             (midRule #:: recur(section.widths, section.rows)): Chain[text]
 
         // Every section's block starts with a `midRule`; the first one is dropped because the

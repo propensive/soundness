@@ -49,12 +49,12 @@ object Pax:
     val total: Int = computeLength(payloadLen)
     (total.toString+" "+key.s+"="+value.s+"\n").tt.in[Data]
 
-  def records(pairs: Iterable[(Text, Text)]): Data =
+  def records(pairs: List[(Text, Text)]): Data =
     // Accumulate on the `IArray` side: a `Concatenable` result is fresh, and a fresh capture
-    // cannot instantiate `foldLeft`'s accumulator type.
-    Array.frozen:
-      pairs.foldLeft(scala.IArray.empty[Byte]): (acc, pair) =>
-        acc ++ record(pair(0), pair(1)).readable
+    // cannot instantiate the fold's accumulator type.
+    val empty = scala.IArray.empty[Byte]
+
+    Array.frozen(pairs.fold(empty) { (bytes, pair) => bytes ++ record(pair(0), pair(1)).readable })
 
   def parse(data: Data): Map[Text, Text] raises Tar.Error =
     val builder = scala.collection.immutable.Map.newBuilder[Text, Text]

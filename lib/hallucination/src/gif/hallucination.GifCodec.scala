@@ -138,17 +138,13 @@ private[hallucination] object GifCodec:
             val rowMap: Array[Int]^{} = Array.scribe[Int](frameHeight): scribe =>
               _ =>
                 if interlaced then
-                  var passes = List((0, 8), (4, 8), (2, 4), (1, 2)).stdlib
-
-                  while passes.nonEmpty do
-                    val (start, step) = passes.head
+                  for (start, step) <- List((0, 8), (4, 8), (2, 4), (1, 2)) do
                     var y = start
 
                     while y < frameHeight do
                       scribe.append(y)
                       y += step
 
-                    passes = passes.tail
                 else
                   var y = 0
 

@@ -35,7 +35,9 @@ package punctuation
 import anticipation.*
 import hellenism.*, classloaders.threadContextClassloader
 import hieroglyph.*, charDecoders.utf8Decoder, textSanitizers.skipSanitizer
+import rudiments.at
 import turbulence.*
+import vacuous.*
 
 // HTML5 named character references, loaded once from the entity TSV resources
 // shipped by Honeycomb (`entities-html4.tsv` for the legacy HTML4 set and
@@ -70,5 +72,5 @@ private[punctuation] object HtmlEntities:
       i += 1
 
   // Returns the decoded text for a named entity (without `&` or `;`), or
-  // `null` if no such entity exists.
-  def lookup(name: String): String | Null = table.stdlib.getOrElse(name, null)
+  // `Unset` if no such entity exists.
+  def lookup(name: String): Optional[String] = table.at(name)

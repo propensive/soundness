@@ -70,11 +70,12 @@ object Jar:
             case head :: tail if line.startsWith(" ") => (head + line.drop(1)) :: tail
             case _                                    => line :: acc
 
-        rejoined.reverse.bind: line =>
+        val attributes: List[(Text, Text)] = rejoined.reverse.bind: line =>
           line.indexOf(": ") match
             case -1    => Nil
             case index => List((line.take(index).tt, line.drop(index + 2).tt))
-        . pipe(l => l.stdlib.to(Map))
+
+        attributes.to[Map]
 
       . or(Map())
 

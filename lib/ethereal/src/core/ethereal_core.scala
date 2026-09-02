@@ -47,6 +47,7 @@ import anticipation.*
 import aperture.*
 import coaxial.*
 import contingency.*
+import denominative.dysasymptotics.linearSize
 import digression.*
 import distillate.*
 import escapade.*
@@ -399,8 +400,14 @@ def cli[bus <: Matchable](using executive: Executive)
         val script: Text = line()
         val pwd: Text = line()
         val count: Int = line().as[Int]
-        val textArguments: List[Text] = chunk().cut(t"\u0000").stdlib.take(count).to(List)
-        val environment: List[Text] = chunk().cut(t"\u0000").stdlib.init.to(List)
+        // The `Init` message carries an explicit argument count, so `keep` needs the linear
+        // `Countable`; the list counted is one command line's worth of arguments.
+        val textArguments: List[Text] = chunk().cut(t"\u0000").keep(count)
+
+        val environmentFields: Optional[List[Text] & Populated] =
+          chunk().cut(t"\u0000").occupied
+
+        val environment: List[Text] = environmentFields.lay(Nil)(_.lead)
 
         DaemonEvent.Init(pid, login, pwd, script, stdin, textArguments, environment)
 
@@ -567,6 +574,7 @@ def cli[bus <: Matchable](using executive: Executive)
         Log.fine(DaemonLogEvent.NewCli)
 
         try
+          // `Executive#invocation` takes a stdlib `Iterable`, which the opaque `List` is not.
           val cli: executive.Interface =
             scala.caps.unsafe.unsafeAssumeSeparate:
              executive.invocation
@@ -600,6 +608,7 @@ def cli[bus <: Matchable](using executive: Executive)
           connection.close()
           Log.info(DaemonLogEvent.CloseConnection(pid))
 
+  // `application` takes a stdlib `Iterable` of arguments, which the opaque `Nil` is not.
   application(using executives.directExecutive(using backstops.silentBackstop))(Nil.stdlib):
     import environments.javaEnvironment
     import termcaps.environmentTermcap
@@ -680,6 +689,7 @@ def cli[bus <: Matchable](using executive: Executive)
                 scriptPath.let(List(socketFile, buildFile, pidFile, _))
                 . or(List(socketFile, buildFile, pidFile))
 
+              // `Watch.allOpenable` is bound to `Iterable`, which the opaque `List` is not.
               watched.stdlib
               . open[Watch](): watcher ?=>
                 watcher.stream.each:

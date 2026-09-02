@@ -195,10 +195,10 @@ object Tarfile:
 
                 header.typeFlag.toInt & 0xff match
                   case 'x' =>
-                    paxOverlay = (paxOverlay.stdlib ++ Pax.parse(takeData(cursor, size)).stdlib).to(Map)
+                    paxOverlay = paxOverlay + Pax.parse(takeData(cursor, size))
 
                   case 'g' =>
-                    globalOverlay = (globalOverlay.stdlib ++ Pax.parse(takeData(cursor, size)).stdlib).to(Map)
+                    globalOverlay = globalOverlay + Pax.parse(takeData(cursor, size))
 
                   case 'L' =>
                     longName = TarHeader.decodeNulText(takeData(cursor, size))
@@ -221,9 +221,10 @@ object Tarfile:
 
                     val allSegments = (inlineSegments + extSegments).filter(_.length > 0)
 
-                    val extras: Map[Text, Text] =
-                      (globalOverlay.stdlib ++ paxOverlay.stdlib).to(Map).filter: (k, _) =>
-                        !structuralPaxKeys.has(k)
+                    val overlay: Map[Text, Text] = globalOverlay + paxOverlay
+
+                    val extras: Map[Text, Text] = overlay.filter: (k, _) =>
+                      !structuralPaxKeys.has(k)
 
                     lookahead =
                       Tar.Entry.Sparse
@@ -234,9 +235,10 @@ object Tarfile:
                     val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
                     val path = decodePath(nameText)
 
-                    val extras: Map[Text, Text] =
-                      (globalOverlay.stdlib ++ paxOverlay.stdlib).to(Map).filter: (k, _) =>
-                        !structuralPaxKeys.has(k)
+                    val overlay: Map[Text, Text] = globalOverlay + paxOverlay
+
+                    val extras: Map[Text, Text] = overlay.filter: (k, _) =>
+                      !structuralPaxKeys.has(k)
 
                     // The body pulls off the shared cursor; advancing to the
                     // next entry drains whatever of it remains unread.
@@ -255,9 +257,10 @@ object Tarfile:
                     val linkText = resolveLink(header, paxOverlay, globalOverlay, longLink)
                     val path = decodePath(nameText)
 
-                    val extras: Map[Text, Text] =
-                      (globalOverlay.stdlib ++ paxOverlay.stdlib).to(Map).filter: (k, _) =>
-                        !structuralPaxKeys.has(k)
+                    val overlay: Map[Text, Text] = globalOverlay + paxOverlay
+
+                    val extras: Map[Text, Text] = overlay.filter: (k, _) =>
+                      !structuralPaxKeys.has(k)
 
                     // Drained here, not in `buildEntry` (a `consume`d cursor cannot cross that
                     // call): zero bytes for the known dataless kinds, and an unknown kind's
@@ -448,8 +451,7 @@ object Tarfile:
         case LongNameFormat.Gnu => key != t"path" && key != t"linkpath"
 
     val paxPart: Iterator[Data] =
-      if records.nil then Iterator.empty
-      else Tar.Entry.Pax(Pax.records(records.stdlib)).serialize
+      if records.nil then Iterator.empty else Tar.Entry.Pax(Pax.records(records)).serialize
 
     longNamePart ++ paxPart
 
@@ -502,6 +504,7 @@ case class Tarfile
   // The raw 512-byte blocks of the archive, including the two trailing zero blocks.
   // Reach this externally through the `Streamable` given, i.e. `tarfile.source[Data]`.
   private[bitumen] def blocks: Iterator[Data] =
+    // The blocks are emitted through a stdlib `Iterator`, which the opaque `List` cannot yield.
     entries.stdlib.iterator.flatMap(emitEntry) ++ Iterator(Tarfile.zeroBlock, Tarfile.zeroBlock)
 
   // Compressed views of the archive's TAR stream.

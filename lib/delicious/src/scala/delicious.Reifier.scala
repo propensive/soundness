@@ -60,7 +60,10 @@ object Reifier:
    *  so a sentinel can only appear as a complete type, never in constructor or
    *  prefix position. */
   def substitute(syntax: Syntax, placeholders: List[Placeholder]): Syntax =
-    val byId: Map[Int, Placeholder] = (placeholders.stdlib.map { placeholder => placeholder.id -> placeholder }.toMap).to(Map)
+    val pairs: List[(Int, Placeholder)] =
+      placeholders.map { placeholder => placeholder.id -> placeholder }
+
+    val byId: Map[Int, Placeholder] = pairs.to[Map]
 
     def replace(text: Text): Optional[Syntax] =
       if text.s.length >= 2 && text.s.startsWith("\"") && text.s.endsWith("\"") then
@@ -126,6 +129,7 @@ class Reifier(classpath: LocalClasspath):
 
     val base = driver.context.fresh.setReporter(Reporter.NoReporter)
     val run = dtd.Compiler().newRun(using base)
+    // `.stdlib`: `compileSources` is the compiler's own API, taking a stdlib `List`.
     run.compileSources(List(SourceFile.virtual("<delicious>", "")).stdlib)
 
     // Quote unpickling (which stenography's `TypeRepr.of` comparisons trigger)

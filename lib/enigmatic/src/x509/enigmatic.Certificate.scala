@@ -151,7 +151,8 @@ object Certificate:
           period,
           name,
           publicKey,
-          Asn1.Tagged(3, true, Asn1.Sequence(extensions.stdlib.compact.to(List))) )
+          Asn1.Tagged
+            ( 3, true, Asn1.Sequence(extensions.sweep { case extension: Asn1 => extension }) ) )
 
     val tbs: Asn1 = Asn1.Sequence(fields)
 

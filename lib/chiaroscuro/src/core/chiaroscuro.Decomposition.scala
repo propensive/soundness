@@ -42,6 +42,11 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
+// A decomposition is rendered whole, so counting a sequence's elements (for the `[..n..]`
+// summary and for the last-element test while indenting) is a linear walk of a list that is
+// about to be walked anyway.
+import denominative.dysasymptotics.linearSize
+
 object Decomposition:
   def apply(optional: Optional[Decomposition]): Decomposition = optional.or:
     Decomposition.Primitive(t"Unset", t"Unset", Unset)
@@ -55,10 +60,14 @@ object Decomposition:
 enum Decomposition:
   case Primitive(typeName: Text, value: Text, ref: Any)
   case Product(name: Text, values: Map[Text, Decomposition], ref: Any)
-  case Sequence(name: Text, values: Iterable[Decomposition], ref: Any)
+  case Sequence(name: Text, values: List[Decomposition], ref: Any)
   case Sum(name: Text, value: Decomposition, ref: Any)
 
   def ref: Any
+
+  // Hoisted out of the `remap` lambda below: a `t"…"` interpolation as a combinator lambda's
+  // direct body trips the `wildApprox` crash.
+  private def field(key: Text, value: Decomposition): Text = t"$key: ${value.text}"
 
   def text2: Text = this match
     case Primitive(_, text, _)  => text
@@ -66,7 +75,8 @@ enum Decomposition:
     case Sequence(_, values, _) => values.map(_.text).join(t"[", t", ", t"]")
 
     case Product(name, values, _) =>
-      t"$name(${values.stdlib.map { (key, value) => t"$key: ${value.text}" }.join(t", ")}"
+      val fields: List[Text] = values.remap { (key, value) => field(key, value) }
+      t"$name(${fields.join(t", ")}"
 
   def short: Text = this match
     case Primitive(_, text, _)  => text
@@ -116,7 +126,7 @@ enum Decomposition:
         val last = values.size
         append(t"\n"+(space*indent))
 
-        values.stdlib.each: (key, value) =>
+        values.each: (key, value) =>
           append(t"$space$key:")
           value.multiline(indent + 2, true)
 

@@ -171,7 +171,8 @@ object Asn1:
     case Asn1.Set(elements) =>
       // DER orders the members of a `SET` by their encodings, shorter-first when one is a prefix
       // of the other (X.690 §11.6, treating the shorter as zero-padded).
-      val rendered = elements.map(render(_)).stdlib.sortWith(precedes(_, _))
+      given derOrdering: Ordering[Data] = Ordering.fromLessThan(precedes(_, _))
+      val rendered: List[Data] = elements.map(render(_)).sort
 
       Producer.collect[Data](): out =>
         rendered.foreach: element =>

@@ -161,7 +161,7 @@ object Ansi extends Ansi2:
       if triggerLink then linkArmed = false
 
       if !text.hyperlinks.nil then
-        text.hyperlinks.stdlib.each: (k, v) => hyperlinks(n + k) = v
+        text.hyperlinks.each: (k, v) => hyperlinks(n + k) = v
 
       if text.insertions.nonEmpty then text.insertions.each: (k, v) => insertions(n + k) = v
 

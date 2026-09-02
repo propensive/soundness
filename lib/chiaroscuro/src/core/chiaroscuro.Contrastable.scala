@@ -97,8 +97,10 @@ object Contrastable:
     given set: [element: Showable] => Set[element] is Contrastable.Foundation =
       (left, right) =>
         if left == right then Juxtaposition.Same(left.show) else
-          val leftOnly: Set[Text] = ((left.stdlib -- right.stdlib).map(_.show)).to(Set)
-          val rightOnly: Set[Text] = ((right.stdlib -- left.stdlib).map(_.show)).to(Set)
+          val leftExtra: Set[element] = left.except(right)
+          val rightExtra: Set[element] = right.except(left)
+          val leftOnly: Set[Text] = leftExtra.map(_.show)
+          val rightOnly: Set[Text] = rightExtra.map(_.show)
 
           def describe(set: Set[Text]): Text =
             ( if set.size > 5 then set.to[List].keep(4) :+ t"…${(set.size - 4).show.subscripts}"
@@ -164,7 +166,7 @@ object Contrastable:
         Juxtaposition.Different(left, right)
 
       case (Decomposition.Sequence(name, left, _), Decomposition.Sequence(rightName, right, _)) =>
-        comparison(typeName, Array.from(left), Array.from(right), name, rightName)
+        comparison(typeName, left.to[Array], right.to[Array], name, rightName)
 
       case (Decomposition.Product(leftName, left, _), Decomposition.Product(rightName, right, _)) =>
         val name = if leftName == rightName then leftName else t"$leftName/$rightName"

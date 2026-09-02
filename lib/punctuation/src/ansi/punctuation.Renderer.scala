@@ -66,8 +66,11 @@ object Renderer:
             palette: MarkdownPalette )
   :   Teletype =
 
-    val blocks = markdown.children.stdlib.map(layoutLines(_, width)).filter(_.stdlib.nonEmpty)
-    (blocks.map(joinLines(_))).to(List).join(e"\n\n")
+    val rendered: List[List[Teletype]] = markdown.children.map(layoutLines(_, width))
+    val blocks:   List[List[Teletype]] = rendered.filter(!_.nil)
+    val joined:   List[Teletype]       = blocks.map(joinLines(_))
+
+    joined.join(e"\n\n")
 
   // -- inline ---------------------------------------------------------------
 
@@ -145,11 +148,11 @@ object Renderer:
       level match
         case 1 =>
           val rule = e"${Fg(palette.heading)}(${t"━"*width})"
-          (wrapped.stdlib :+ rule).to(List)
+          wrapped + List(rule)
 
         case 2 =>
           val rule = e"${Fg(palette.heading)}(${t"─"*width})"
-          (wrapped.stdlib :+ rule).to(List)
+          wrapped + List(rule)
 
         case _ =>
           val prefix = e"${Fg(palette.subdued)}(${t"#"*level} )"
@@ -203,8 +206,10 @@ object Renderer:
       val text: Teletype = e"${Fg(palette.subdued)}($html)"
 
       text.cut(t"\n") match
-        case Nil            => Nil
-        case lines @ _ :: _ => if lines.stdlib.last.plain.length == 0 then lines.skip(1, Bidi.Rtl) else lines
+        case Nil => Nil
+
+        case lines @ _ :: _ =>
+          if lines.last.lay(false)(_.plain.length == 0) then lines.skip(1, Bidi.Rtl) else lines
 
   private def bullet(palette: MarkdownPalette): Teletype =
     e"${Fg(palette.subdued)}(•)"
@@ -272,6 +277,6 @@ object Renderer:
     ( using hyphenation: Hyphenation )
   :   List[Teletype] =
 
-    val lines = Flow.wrap(content, width, hyphen = Hyphen).stdlib
+    val lines: Sequence[Teletype] = Flow.wrap(content, width, hyphen = Hyphen)
 
-    if lines.isEmpty then List(Teletype.empty) else lines.to(scala.List).to(List)
+    if lines.nil then List(Teletype.empty) else lines.to[List]

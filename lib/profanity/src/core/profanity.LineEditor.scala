@@ -42,7 +42,6 @@ import hieroglyph.*, textMetrics.wideCharacterWidthMetric
 import rudiments.*
 import spectacular.*
 import vacuous.*
-import denominative.dysasymptotics.linearSize
 
 object LineEditor:
   // Whether the editor is a single line (Enter submits) or accepts multiple lines.
@@ -121,17 +120,22 @@ extends Question[Text]:
     case LineEditor.Mode.Multiline(_) => true
     case _                            => false
 
-  // The logical lines, their start offsets, and the index of the cursor's line.
-  private def layout: (List[Text], List[Int], Int) =
-    val lines  = value.cut(t"\n")
-    val starts = (lines.stdlib.scanLeft(0)(_ + _.length + 1).init).to(List)
-    (lines, starts, starts.stdlib.lastIndexWhere(_ <= position).max(0))
+  // The logical lines, their start offsets, and the index of the cursor's line. Both are
+  // `Sequence`s rather than `List`s because every use of them is a positional read.
+  private def layout: (Sequence[Text], Sequence[Int], Int) =
+    val lines:   Sequence[Text] = value.cut(t"\n").to[Sequence]
+    val offsets: Sequence[Int]  = lines.trace(0)(_ + _.length + 1)
+    val starts:  Sequence[Int]  = offsets.occupied.lay(offsets)(_.lead)
+
+    // `starts` ascends strictly, so the index of the last start at or before `position` is
+    // the number of starts at or before it, less one.
+    (lines, starts, (starts.count(_ <= position) - 1).max(0))
 
   private def moveVertically(rows: Int): LineEditor =
     val (lines, starts, current) = layout
-    val column = position - starts.stdlib(current)
+    val column = position - starts.at(current.z).or(0)
     val target = (current + rows).max(0).min(lines.size - 1)
-    copy(position0 = starts.stdlib(target) + column.min(lines.stdlib(target).length))
+    copy(position0 = starts.at(target.z).or(0) + column.min(lines.at(target.z).or(t"").length))
 
   def apply(keypress: Terminal.Event): LineEditor =
     try
@@ -146,11 +150,11 @@ extends Question[Text]:
 
         case Home if multiline =>
           val (_, starts, current) = layout
-          copy(position0 = starts.stdlib(current))
+          copy(position0 = starts.at(current.z).or(0))
 
         case End if multiline =>
           val (lines, starts, current) = layout
-          copy(position0 = starts.stdlib(current) + lines.stdlib(current).length)
+          copy(position0 = starts.at(current.z).or(0) + lines.at(current.z).or(t"").length)
 
         case Home  => copy(position0 = 0)
         case End   => copy(position0 = value.length)

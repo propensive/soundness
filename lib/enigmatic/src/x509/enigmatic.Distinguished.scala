@@ -71,7 +71,7 @@ object Distinguished:
           name.commonName.let(attribute(CommonName, _)),
           name.email.let(attribute(Email, _, ia5 = true)) )
 
-    Asn1.Sequence(attributes.stdlib.compact.to(List))
+    Asn1.Sequence(attributes.sweep { case attribute: Asn1 => attribute })
 
   // `countryName` is a `PrintableString` by definition, and `emailAddress` an `IA5String`;
   // everything else is a `UTF8String`, which is what every modern profile prefers.

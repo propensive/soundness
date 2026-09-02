@@ -64,7 +64,9 @@ object Descriptor:
           entries[tail]
 
 case class Descriptor(entries: List[Descriptor.Entry]):
-  val totalBits: Int = entries.stdlib.sumBy(_.depth)
+  val totalBits: Int =
+    val depths: List[Int] = entries.map(_.depth)
+    depths.total
 
   // The width of the storage primitive for one pixel, mirroring `Channel.Storage`.
   def storageBits: Int =

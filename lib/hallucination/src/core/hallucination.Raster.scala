@@ -152,6 +152,8 @@ object Raster:
     type Result = HttpStreams.Content
 
     def genericize(image: Raster in format): HttpStreams.Content =
+      // `.stdlib`: `HttpStreams.Body` takes a stdlib `Iterator`, which the opaque `Chain`
+      // has no member to yield.
       (format.mediaType.basic, HttpStreams.Body(image.source[Data].toProgression.stdlib.iterator))
 
   given graphical: Raster is Graphical:

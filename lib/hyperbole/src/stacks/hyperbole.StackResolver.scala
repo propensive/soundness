@@ -52,6 +52,7 @@ import vacuous.*
 import StackTrace.Frame.Kind
 import charDecoders.utf8Decoder
 import textSanitizers.skipSanitizer
+import denominative.z
 import denominative.dysasymptotics.linearSize
 
 object StackResolver:
@@ -101,7 +102,7 @@ object StackResolver:
 // table for the source file, so the line the frame already carries is enough to find it.
 class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
   private val tastyFiles: mutable.HashMap[Text, Optional[Tasty.File]] = mutable.HashMap()
-  private val sourceFiles: mutable.HashMap[Text, Optional[List[Text]]] = mutable.HashMap()
+  private val sourceFiles: mutable.HashMap[Text, Optional[Sequence[Text]]] = mutable.HashMap()
   private val smaps: mutable.HashMap[Text, Optional[Smap]] = mutable.HashMap()
 
   def resolve(frame0: StackTrace.Frame): StackTrace.Frame =
@@ -197,10 +198,15 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
         case index  => load(name.substring(0, index).nn)
 
   private def sourceLine(path: Text, line: Int): Optional[Text] =
-    lines(path).let(_.stdlib.lift(line - 1).optional.let(_.trim))
+    val content: Optional[Sequence[Text]] = lines(path)
+    content.let(_.at((line - 1).z).let(_.trim))
 
   // The path TASTy records is the path the file was compiled from, which need not exist where the
   // code now runs; when it does not, the frame simply keeps everything but its line of source.
-  private def lines(path: Text): Optional[List[Text]] =
+  // A `Sequence`, not a `List`: the only thing a cached source file is ever asked for is one
+  // line by number, which is O(1) here and would be a linear walk on a list.
+  private def lines(path: Text): Optional[Sequence[Text]] =
     sourceFiles.synchronized:
-      sourceFiles.getOrElseUpdate(path, safely(path.as[Path on Linux].read[Text].cut(t"\n")))
+      sourceFiles.getOrElseUpdate
+       ( path,
+         safely(path.as[Path on Linux].read[Text].cut(t"\n").to[Sequence]) )

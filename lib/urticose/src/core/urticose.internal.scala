@@ -79,16 +79,22 @@ object internal:
     val lines: Iterator[List[Text]] =
       scala.io.Source.fromInputStream(stream).getLines().map(_.tt).map(_.cut(t","))
 
-    Map.from:
-      lines.flatMap: list =>
-        val fields = list.stdlib
-
+    // Each CSV row is `name,port,protocol,…`; rows which are too short, name a transport other
+    // than TCP or UDP, or carry an unparseable port number, contribute nothing.
+    def entries(row: List[Text]): List[((Boolean, Text), Int)] = row match
+      case name :: port :: protocol :: _ =>
         safely:
-          if fields(2) == t"tcp" then List((true, fields(0)) -> fields(1).as[Int]).stdlib
-          else if fields(2) == t"udp" then List((false, fields(0)) -> fields(1).as[Int]).stdlib
-          else Nil.stdlib
+          if protocol == t"tcp" then List((true, name) -> port.as[Int])
+          else if protocol == t"udp" then List((false, name) -> port.as[Int])
+          else Nil
 
-        . or(Nil.stdlib)
+        . or(Nil)
+
+      case _ =>
+        Nil
+
+    // `Iterator#flatMap` demands an `IterableOnce`, which the opaque `List` is not.
+    Map.from(lines.flatMap(entries(_).stdlib))
 
   object Opaques:
     opaque type Ipv4 <: Matchable = Int
@@ -128,9 +134,9 @@ object internal:
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
 
       def parse(text: Text): Ipv4 raises IpAddress.Error =
-        val bytes = text.cut(t".").stdlib
+        val bytes: List[Text] = text.cut(t".")
 
-        if bytes.length == 4 then
+        if bytes.size == 4 then
           mitigate:
             case error@Number.Error(text, _, _) =>
               given diagnostics: Diagnostics = error.diagnostics
@@ -138,14 +144,16 @@ object internal:
 
           . protect:
               bytes.map(Decodable.int.decoded(_)).pipe: bytes =>
-                for byte <- bytes do
-                  if !(0 <= byte <= 255)
-                  then abort(IpAddress.Error(Ipv4ByteOutOfRange(byte)))
+                bytes.each: byte =>
+                  if !(0 <= byte <= 255) then abort(IpAddress.Error(Ipv4ByteOutOfRange(byte)))
 
-                Ipv4(bytes(0).toByte, bytes(1).toByte, bytes(2).toByte, bytes(3).toByte)
+                // The length was checked above, so exactly four groups are present.
+                bytes.absolve match
+                  case byte0 :: byte1 :: byte2 :: byte3 :: _ =>
+                    Ipv4(byte0.toByte, byte1.toByte, byte2.toByte, byte3.toByte)
 
         else
-          abort(IpAddress.Error(Ipv4WrongNumberOfGroups(bytes.length)))
+          abort(IpAddress.Error(Ipv4WrongNumberOfGroups(bytes.size)))
 
     object MacAddress:
       import MacAddress.Error.Reason.*
@@ -163,10 +171,10 @@ object internal:
       def apply(value: Long): MacAddress = value
 
       def parse(text: Text): MacAddress raises MacAddress.Error =
-        val groups = text.cut(t"-")
+        val groups: List[Text] = text.cut(t"-")
+        val count = groups.size
 
-        if groups.stdlib.length != 6
-        then raise(MacAddress.Error(WrongGroupCount(groups.stdlib.length)))
+        if count != 6 then raise(MacAddress.Error(WrongGroupCount(count)))
 
         @tailrec
         def recur(todo: List[Text], index: Int = 0, acc: Long = 0L): Long = todo match
@@ -321,7 +329,7 @@ object internal:
           Ipv4.parse(address).subnet(subnetPrefix(prefixText, 32)(Ipv4SubnetPrefixOutOfRange(_)))
 
         case other =>
-          abort(IpAddress.Error(SubnetWrongFormat(other.stdlib.length)))
+          abort(IpAddress.Error(SubnetWrongFormat(other.size)))
 
   case class Ipv4Subnet(ipv4: Ipv4, size: Int)
 
@@ -353,6 +361,7 @@ object internal:
         values.map(_.hex).join(t":")
 
       val groups = unpack(ip.highBits) + unpack(ip.lowBits)
+      // `longestTrain` is defined on `Iterable`, which the opaque `List` is not.
       val (middleIndex, middleLength) = groups.stdlib.longestTrain(_ == 0)
 
       if middleLength < 2 then hex(groups)
@@ -442,7 +451,7 @@ object internal:
           Ipv6.parse(address).subnet(subnetPrefix(prefixText, 128)(Ipv6SubnetPrefixOutOfRange(_)))
 
         case other =>
-          abort(IpAddress.Error(SubnetWrongFormat(other.stdlib.length)))
+          abort(IpAddress.Error(SubnetWrongFormat(other.size)))
 
   case class Ipv6Subnet(ipv6: Ipv6, size: Int)
 

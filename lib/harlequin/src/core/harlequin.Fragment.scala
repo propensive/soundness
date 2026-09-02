@@ -96,10 +96,13 @@ object Fragment:
   private def tokens(text: Text): List[Token] =
     val source = Scala.highlight(text)(using highlighting.tokenizedScala)
 
-    val all = scala.List.from(source.lines.readable).flatMap(_.stdlib).filter: token =>
+    def significant(token: Token): Boolean =
       token.accent != Accent.Unparsed && token.text.s.trim.nn != ""
 
-    List(all*)
+    val lines: List[List[Token]] = source.lines.to[List]
+    val all:   List[Token]       = lines.flat
+
+    all.filter(significant(_))
 
   // The infix-completion receiver: when the cursor sits at `<value-expr> <space> <partial>` — a
   // value followed by whitespace, not a member selection — the value expression with a

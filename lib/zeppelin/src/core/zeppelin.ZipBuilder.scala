@@ -47,6 +47,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import hieroglyph.*, charEncoders.utf8Encoder
+import symbolism.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
@@ -67,7 +68,7 @@ extends caps.ExclusiveCapability:
     if names.has(entry.ref.encode)
     then abort(Zip.Error(Zip.Error.Reason.DuplicateEntry(entry.ref)))
 
-    names = (names.stdlib + entry.ref.encode).to(Set)
+    names = names + Set(entry.ref.encode)
     stack ::= entry
 
   def insert[content: Streamable by Data over Credit](ref: Path on Zip, content: content)

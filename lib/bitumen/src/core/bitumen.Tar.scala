@@ -348,6 +348,7 @@ object Tar:
 
     def serialize: Iterator[Data] = this match
       case sparse: Sparse if sparse.segments.size > 4 =>
+        // `Iterator#++` demands an `IterableOnce`, which the opaque `List` is not.
         Iterator(header) ++ Entry.sparseExtensionBlocks(sparse.segments.skip(4)).stdlib ++ dataBlocks
 
       case _ =>
@@ -444,6 +445,7 @@ object Tar:
   // it retains: a body's memoized chunks are reclaimed with its entry.
   class Body private (initial: List[Data], pull: () -> Optional[Data]):
     private val memo: scala.collection.mutable.ArrayBuffer[Data] =
+      // `ArrayBuffer.from` demands an `IterableOnce`, which the opaque `List` is not.
       scala.collection.mutable.ArrayBuffer.from(initial.stdlib)
 
     @scala.caps.unsafe.untrackedCaptures

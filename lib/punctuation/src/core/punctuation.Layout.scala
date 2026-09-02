@@ -34,6 +34,7 @@ package punctuation
 
 import anticipation.*
 import denominative.*
+import rudiments.bind
 import vacuous.*
 
 enum Layout extends Markdown.Node:
@@ -57,6 +58,6 @@ enum Layout extends Markdown.Node:
 
   def children: List[Prose] = this match
     case Paragraph(_, children*)  => children.toList.to(List)
-    case BlockQuote(_, children*) => children.toList.flatMap(_.children.stdlib).to(List)
+    case BlockQuote(_, children*) => children.toList.to(List).bind(_.children)
     case Heading(_, _, children*) => children.toList.to(List)
     case _                        => Nil

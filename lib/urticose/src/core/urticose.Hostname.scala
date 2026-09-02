@@ -36,7 +36,7 @@ import scala.quoted.*
 
 import anticipation.*
 import contingency.*
-import denominative.*
+import denominative.*, dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -77,7 +77,8 @@ object Hostname:
 
       case _ =>
         val label = builder()
-        if label.nil then raise(Hostname.Error(text, EmptyDnsLabel(dnsLabels.stdlib.length)))
+        // The linear `size` is paid only on this error path, never while parsing a valid name.
+        if label.nil then raise(Hostname.Error(text, EmptyDnsLabel(dnsLabels.size)))
         if label.length > 63 then raise(Hostname.Error(text, LongDnsLabel(label)))
         if label.starts(t"-") then raise(Hostname.Error(text, InitialDash(label)))
         val dnsLabels2 = DnsLabel(label) :: dnsLabels

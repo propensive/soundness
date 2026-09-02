@@ -99,8 +99,8 @@ private[punctuation] object InlineSupport:
       if i == nameStart then return Unset
       if i >= end || s.charAt(i) != ';' then return Unset
       val name = s.substring(nameStart, i).nn
-      val decoded = HtmlEntities.lookup(name)
-      if decoded == null then Unset else EntityMatch(decoded, i + 1)
+      val decoded: Optional[String] = HtmlEntities.lookup(name)
+      decoded.let(EntityMatch(_, i + 1))
 
   // Try to parse a code span starting at the run of backticks at position
   // `start`. Returns the content text and index past the closing run.
