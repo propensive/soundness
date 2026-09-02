@@ -39,6 +39,8 @@ import scala.compiletime.summonInline
 import anticipation.*
 import denominative.*
 import prepositional.*
+import symbolism.*
+import vacuous.*
 
 extension [entity](entity: entity)
   def membersOfType[value](using deref: entity is Dereferenceable to value): List[value] =
@@ -53,7 +55,7 @@ inline def fieldAnnotations[self, annotation <: StaticAnnotation]
 :   Map[Text, Set[annotation]] =
 
   summonInline[self is Annotated by annotation] match
-    case annotated: Annotated.Fields => (annotated.fields.stdlib.filter(!_(1).nil)).to(Map)
+    case annotated: Annotated.Fields => annotated.fields.filter(!_(1).nil)
     case _                           => Map()
 
 // The serialization renames for `format`: a map from each `@name`-annotated
@@ -62,13 +64,17 @@ inline def fieldAnnotations[self, annotation <: StaticAnnotation]
 // are absent (callers fall back to the field's own name). Used by each format's
 // derivation to honour `@name[Xml](t"…")` / `@name(t"…")` in encode and decode.
 inline def relabelling[self, format]: Map[Text, Text] =
+  // The `lay` default is unreachable — `fieldAnnotations` keeps only non-nil sets — but it
+  // coincides with the callers' documented fallback: the field's own name.
   val general:  Map[Text, Text] =
-    fieldAnnotations[self, name[Any]].remap { (field, set) => field -> set.stdlib.head.name }
+    fieldAnnotations[self, name[Any]].remap: (field, set) =>
+      field -> set.occupied.lay(field)(_.head.name)
 
   val specific: Map[Text, Text] =
-    fieldAnnotations[self, name[format]].remap { (field, set) => field -> set.stdlib.head.name }
+    fieldAnnotations[self, name[format]].remap: (field, set) =>
+      field -> set.occupied.lay(field)(_.head.name)
 
-  (general.stdlib ++ specific.stdlib).to(Map)
+  general + specific
 
 // Like `fieldAnnotations`, but reads the `annotation`-typed annotations on the
 // subtypes (enum cases / sealed variants) of `self`, keyed by variant name,
@@ -77,17 +83,20 @@ inline def subtypeAnnotations[self, annotation <: StaticAnnotation]
 :   Map[Text, Set[annotation]] =
 
   summonInline[Annotated by annotation under self] match
-    case annotated: Annotated.Subtypes => (annotated.subtypes.stdlib.filter(!_(1).nil)).to(Map)
+    case annotated: Annotated.Subtypes => annotated.subtypes.filter(!_(1).nil)
     case _                             => Map()
 
 // The serialization renames for the variants of a sum type `self`: exactly like
 // `relabelling` but for `@name`-annotated enum cases / sealed variants. Maps each
 // renamed variant's name to its serialized discriminator.
 inline def variantRelabelling[self, format]: Map[Text, Text] =
+  // As in `relabelling`, the `lay` default is unreachable but semantically apt.
   val general:  Map[Text, Text] =
-    subtypeAnnotations[self, name[Any]].remap { (variant, set) => variant -> set.stdlib.head.name }
+    subtypeAnnotations[self, name[Any]].remap: (variant, set) =>
+      variant -> set.occupied.lay(variant)(_.head.name)
 
   val specific: Map[Text, Text] =
-    subtypeAnnotations[self, name[format]].remap { (variant, set) => variant -> set.stdlib.head.name }
+    subtypeAnnotations[self, name[format]].remap: (variant, set) =>
+      variant -> set.occupied.lay(variant)(_.head.name)
 
-  (general.stdlib ++ specific.stdlib).to(Map)
+  general + specific

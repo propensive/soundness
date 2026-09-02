@@ -35,6 +35,7 @@ package digression
 import scala.collection.immutable as sci
 
 import anticipation.*
+import denominative.*
 import rudiments.*
 import vacuous.*
 
@@ -56,14 +57,15 @@ object Smap:
     // The (file id, input line) an output line maps to, from the first entry which covers it.
     def apply(line: Int): Optional[(Int, Int)] =
       @tailrec
-      def recur(todo: sci.List[Entry]): Optional[(Int, Int)] =
-        if todo.isEmpty then Unset
-        else
-          todo.head(line) match
-            case input: Int => (todo.head.fileId, input)
-            case _          => recur(todo.tail)
+      def recur(todo: List[Entry]): Optional[(Int, Int)] =
+        todo match
+          case head :: tail => head(line) match
+            case input: Int => (head.fileId, input)
+            case _          => recur(tail)
 
-      recur(entries.stdlib)
+          case _ => Unset
+
+      recur(entries)
 
     // The source position an output line maps to, when the file table knows the entry's file.
     def origin(line: Int): Optional[(File, Int)] =
@@ -206,19 +208,16 @@ case class Smap(generated: Text, default: Text, strata: Map[Text, Smap.Stratum])
   // `expand` asks what a generated line stands for; `sites` asks where a source line went.
   def sites(file: Text, line: Int): List[(Int, Int)] =
     stratum.lay(List()): stratum =>
-      val ids =
-        stratum.files.stdlib.collect { case (id, entry) if entry.name == file => id }.toSet
+      val ids = stratum.files.sweep { case (id, entry) if entry.name == file => id }.to[Set]
 
-      val ranges = stratum.entries.stdlib.flatMap: entry =>
+      stratum.entries.bind: entry =>
         val identity = generatedId.lay(false)(_ == entry.fileId)
         val covers = line >= entry.inputLine && line < entry.inputLine + entry.repeat
         val sound = entry.increment >= 1 && entry.repeat >= 1
 
-        if !sound || identity || !ids.contains(entry.fileId) || !covers then sci.List() else
+        if !sound || identity || !ids.has(entry.fileId) || !covers then List() else
           val start = entry.outputLine + (line - entry.inputLine)*entry.increment
-          sci.List((start, start + entry.increment))
-
-      List(ranges*)
+          List((start, start + entry.increment))
 
   // Expands a synthetic line into the inline origins it stands for, innermost first, and the
   // real call-site line the chain leads back to. A real line—or a line in a classfile whose SMAP
@@ -226,8 +225,8 @@ case class Smap(generated: Text, default: Text, strata: Map[Text, Smap.Stratum])
   def expand(line: Int): Optional[Smap.Expansion] =
     if real(line) then Unset else
       @tailrec
-      def recur(line: Int, seen: Set[Int], origins: sci.List[Smap.Origin]): Smap.Expansion =
-        if real(line) then Smap.Expansion(origins.reverse.to(List), line)
+      def recur(line: Int, seen: Set[Int], origins: List[Smap.Origin]): Smap.Expansion =
+        if real(line) then Smap.Expansion(origins.reverse, line)
         else
           val origins2 = stratum.let(_.origin(line)).lay(origins):
             case (file, input) =>
@@ -238,8 +237,8 @@ case class Smap(generated: Text, default: Text, strata: Map[Text, Smap.Stratum])
             case (_, next: Int) if !seen.has(next) => recur(next, seen :+ next, origins2)
 
             case _ =>
-              Smap.Expansion(origins2.reverse.to(List), Unset)
+              Smap.Expansion(origins2.reverse, Unset)
 
-      recur(line, Set(line), sci.List()) match
-        case expansion if expansion.inlined.stdlib.isEmpty => Unset
-        case expansion                                     => expansion
+      recur(line, Set(line), List()) match
+        case expansion if expansion.inlined.nil => Unset
+        case expansion                          => expansion

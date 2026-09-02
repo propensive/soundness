@@ -37,6 +37,7 @@ import scala.collection.concurrent.TrieMap
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import rudiments.*
 import vacuous.*
@@ -375,8 +376,8 @@ object Motif:
         val from = index + (if negated then 3 else 2)
         val name = input.substring(from, close).nn
 
-        Ranges.posix.stdlib.get(name) match
-          case scala.Some(ranges) =>
+        Ranges.posix.at(name) match
+          case ranges: Ranges =>
             index = close + 2
             if negated then ranges.negate() else ranges
 
@@ -609,7 +610,7 @@ case class Motif(pattern: Text, node: Node, captures: Int, program: Program):
   // L(⋂`those`) ⊆ L(`this`). Since RE2 has no intersection operator, this is the only way to
   // ask the containment question about a set of expressions applied in conjunction.
   def subsumes(those: List[Motif]): Boolean raises Motif.Error =
-    Subsumption.subsumes(program, those.stdlib.map(_.program).to(List))
+    Subsumption.subsumes(program, those.map(_.program))
 
   def intersects(that: Motif): Boolean raises Motif.Error =
     Subsumption.intersects(program, that.program)
@@ -618,7 +619,7 @@ case class Motif(pattern: Text, node: Node, captures: Int, program: Program):
   // the input does not match. A group which participated in no iteration of the match is
   // `Unset` within the list.
   def groups[input: Symbolizer](input: input): Optional[List[Optional[Interval]]] =
-    spans(input).let: all => all.stdlib.tail.to(List)
+    spans(input).let: all => all.skip(1)
 
   // The winning thread's raw capture-slot array: the bounds of group `n` at indices `2n` and
   // `2n + 1` (the whole match at 0 and 1), with `-1` for a slot no thread reached. This exists

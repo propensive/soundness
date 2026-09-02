@@ -67,27 +67,29 @@ object Message:
 case class Message(texts: List[Text], messages: List[Message] = Nil):
   @targetName("append")
   infix def + (right: Message): Message =
+    val bridged = List.last(texts) + List.head(right.texts)
+
     Message
-      ( ( texts.stdlib.init
-          ++ ((texts.stdlib.last + right.texts.stdlib.head) :: right.texts.stdlib.tail) )
-        . to(List),
+      ( List.concat(List.lead(texts), bridged :: List.tail(right.texts)),
         messages + right.messages )
 
   def segments: List[Text | Message] =
     def recur(parts: List[Text], messages: List[Message]): List[Text | Message] = parts match
-      case head :: tail => (messages.stdlib.head :: head :: recur(tail, messages.stdlib.tail.to(List)).stdlib).to(List)
+      case head :: tail => List.head(messages) :: head :: recur(tail, List.tail(messages))
       case Nil          => Nil
 
-    (texts.stdlib.head :: recur(texts.stdlib.tail.to(List), messages).stdlib).to(List)
+    List.head(texts) :: recur(List.tail(texts), messages)
 
   def fold[render](initial: render)(append: (render, Text, Int) => render): render =
     def recur(done: render, textTodo: List[Text], messagesTodo: List[Message], level: Int): render =
       messagesTodo match
-        case Nil => append(done, textTodo.stdlib.head, level)
+        case Nil => append(done, List.head(textTodo), level)
 
         case sub :: messages =>
-          val prefix = recur(append(done, textTodo.stdlib.head, level), sub.texts, sub.messages, level + 1)
-          recur(prefix, textTodo.stdlib.tail.to(List), messages, level)
+          val prefix =
+            recur(append(done, List.head(textTodo), level), sub.texts, sub.messages, level + 1)
+
+          recur(prefix, List.tail(textTodo), messages, level)
 
     recur(initial, texts, messages, 0)
 

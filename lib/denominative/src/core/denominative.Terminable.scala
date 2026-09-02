@@ -45,7 +45,7 @@ import prepositional.*
 object Terminable:
   // O(1): the underlying `Vector` is indexed.
   given sequence: [element, seq <: Sequence[element]] => seq is Terminable by element =
-    _.stdlib.last
+    Sequence.last(_)
 
   // O(1): the last slot is read directly.
   given frozenArray: [element] => (Array[element]^{}) is Terminable by element =
@@ -58,13 +58,13 @@ object Terminable:
   // Walking to the end of a strict linked structure is O(n).
   given list: [element, list <: List[element]] => (complexity: Dysasymptotic.LinearSize)
   =>  list is Terminable by element =
-    _.stdlib.last
+    List.last(_)
 
   // Forcing a lazy structure to its end diverges on an infinite one: unbounded, not merely
   // linear — the same gate `Chain.size` demands.
   given chain: [element, chain <: Chain[element]] => (complexity: Dysasymptotic.UnboundedSize)
   =>  chain is Terminable by element =
-    _.stdlib.last
+    Chain.last(_)
 
 trait Terminable extends Typeclass.Pure, Operable:
   def last(value: Self): Operand
@@ -75,7 +75,7 @@ trait Terminable extends Typeclass.Pure, Operable:
 object Truncable:
   // O(1) amortised: `Vector` drops from either end cheaply.
   given sequence: [element, seq <: Sequence[element]] => seq is Truncable to Sequence[element] =
-    value => Sequence.from(value.stdlib.init)
+    Sequence.lead(_)
 
   given text: [text <: Text] => text is Truncable to Text =
     text => text.s.substring(0, text.s.length - 1).nn.tt
@@ -86,7 +86,7 @@ object Truncable:
   // Dropping the last element copies the whole spine.
   given list: [element, list <: List[element]] => (complexity: Dysasymptotic.LinearSize)
   =>  list is Truncable to List[element] =
-    value => value.stdlib.init.to(List)
+    List.lead(_)
 
   // The rebuilt array is fresh, so freezing it is discharged by construction.
   given frozenArray: [element: scala.reflect.ClassTag, array <: (Array[element]^{})]
@@ -96,7 +96,7 @@ object Truncable:
 
   given chain: [element, chain <: Chain[element]] => (complexity: Dysasymptotic.UnboundedSize)
   =>  chain is Truncable to Chain[element] =
-    value => value.stdlib.init.to(Chain)
+    Chain.lead(_)
 
 trait Truncable extends Typeclass.Pure, Resultant:
   def lead(value: Self): Result

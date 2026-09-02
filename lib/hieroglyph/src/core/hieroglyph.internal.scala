@@ -72,8 +72,8 @@ object internal:
 
         val name = context.parts.head.toLowerCase.nn
 
-        if encoding.charset.canEncode then '{Encoding.codecs.stdlib(${Expr(name)}.tt)}
-        else '{Encoding.decodeOnly.stdlib(${Expr(name)}.tt)}
+        if encoding.charset.canEncode then '{Encoding.codec(${Expr(name)}.tt)}
+        else '{Encoding.decodeOnlyCodec(${Expr(name)}.tt)}
 
   def char(contextExpr: Expr[StringContext]): Macro[Char | Text] =
     val name: Text = contextExpr.valueOrAbort.parts.head.toUpperCase.nn.tt

@@ -35,6 +35,7 @@ package typonym
 import scala.quoted.*
 
 import gigantism.*
+import murmuration.*
 
 object internal:
   private def untuple[tuple <: Tuple: Type](using Quotes): List[quotes.reflect.TypeRepr] =
@@ -61,29 +62,36 @@ object internal:
 
     Type.of[phantom] match
       case '[type list <: Tuple; TypeList[list]] =>
-        val elements = untuple[list].stdlib.map(_.asType).map:
-          _.absolve match
-            case '[element] => reify[element]
+        // Hoisted from the `map` below: a quoted pattern match inside a combinator lambda in a
+        // macro risks the `wildApprox` crash.
+        def reifyElement(repr: TypeRepr): Expr[Any] = repr.asType.absolve match
+          case '[element] => reify[element]
 
-        '{List.from(${Expr.ofList(elements)})}
+        val elements: List[Expr[Any]] = untuple[list].map(reifyElement)
+
+        // The `.stdlib` bridge feeds `Expr.ofList`, whose parameter is a stdlib `Seq`.
+        '{List.from(${Expr.ofList(elements.stdlib)})}
 
       case '[type map <: Tuple; TypeMap[map]] =>
         val entries =
           val pairs: List[TypeRepr] = untuple[map]
 
-          val keyValues = pairs.stdlib.map(_.asType).map:
-            _.absolve match
-              case '[(key, value)] => '{(${reify[key]}, ${reify[value]})}: Expr[(Any, Any)]
+          // Hoisted for the same `wildApprox` reason as `reifyElement` above.
+          def reifyPair(repr: TypeRepr): Expr[(Any, Any)] = repr.asType.absolve match
+            case '[(key, value)] => '{(${reify[key]}, ${reify[value]})}
 
-          '{List.from(${Expr.ofList(keyValues)})}
+          val keyValues: List[Expr[(Any, Any)]] = pairs.map(reifyPair)
 
-        '{($entries.stdlib).to(Map)}
+          '{List.from(${Expr.ofList(keyValues.stdlib)})}
+
+        '{Map.from(List.iterator($entries))}
 
       case '[type set; TypeSet[set]] =>
         def recur(repr: TypeRepr): List[Expr[set]] = repr.dealias match
-          case OrType(left, right) => (recur(left).stdlib ::: recur(right).stdlib).to(List)
+          case OrType(left, right) => List.concat(recur(left), recur(right))
           case other               => List(constant(other).asExprOf[set])
 
+        // The `.stdlib` bridge feeds `Varargs`, whose parameter is a stdlib `Seq`.
         '{List[set](${Varargs(recur(TypeRepr.of[set]).stdlib)}*)}
 
       case other => constant(TypeRepr.of[phantom])
@@ -98,10 +106,14 @@ object internal:
       case boolean: Boolean => ConstantType(BooleanConstant(boolean))
 
       case list: List[?] =>
-        val tuple = list.stdlib.map(reflect).reverse.foldLeft(TypeRepr.of[Zero]): (tuple, next) =>
-          tuple.asType.absolve match
-            case '[type tuple <: Tuple; tuple] => next.asType.absolve match
-              case '[next] => TypeRepr.of[next *: tuple]
+        // Hoisted from the `fold` below: quoted pattern matches inside a combinator lambda in a
+        // macro risk the `wildApprox` crash.
+        def cons(tuple: TypeRepr, next: TypeRepr): TypeRepr = tuple.asType.absolve match
+          case '[type tuple <: Tuple; tuple] => next.asType.absolve match
+            case '[next] => TypeRepr.of[next *: tuple]
+
+        val reflected: List[TypeRepr] = List.from(List.iterator(list).map(reflect))
+        val tuple = List.invert(reflected).fold(TypeRepr.of[Zero])(cons)
 
         tuple.asType.absolve match
           case '[type tuple <: Tuple; tuple] => TypeRepr.of[TypeList[tuple]]

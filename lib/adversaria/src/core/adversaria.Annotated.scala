@@ -78,7 +78,8 @@ object Annotated:
     type Unique = true
     type Topic = topic
     type Target = target
-    def field: Text = fields.keys.stdlib.head
+    // Exactly one key, by construction; the primitive keeps the impossible empty case loud.
+    def field: Text = Set.iterator(fields.keys).next()
     override def apply(): Set[operand] = fields(field).or(Set())
 
   trait Subtypes extends Annotated:

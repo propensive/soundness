@@ -49,12 +49,12 @@ object Vacuiscible:
   // the `Dysasymptotic.LinearSize`-gated `Countable.list` through the `countable` bridge; being more
   // specific, it wins whenever both are in scope.
   given list: [element] => List[element] is Vacuiscible:
-    def nil(self: List[element]): Boolean = self.stdlib.isEmpty
+    def nil(self: List[element]): Boolean = List.nil(self)
 
   // `Chain`'s emptiness is O(1) — it forces only the first node — so, like `List`, it gets an
   // ungated instance here rather than reaching the `Dysasymptotic.UnboundedSize`-gated `Countable.chain`.
   given chain: [element] => Chain[element] is Vacuiscible:
-    def nil(self: Chain[element]): Boolean = self.stdlib.isEmpty
+    def nil(self: Chain[element]): Boolean = Chain.nil(self)
 
 trait Vacuiscible extends Typeclass.Pure:
   def nil(self: Self): Boolean

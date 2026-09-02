@@ -62,4 +62,4 @@ trait Dereferenceable extends Typeclass, Resultant:
     lens(name).let(_.modify(entity)(lambda))
 
   def members(entity: Self): Map[Text, Result] =
-    (names(entity).stdlib.map { member => member -> select(entity, member) }.toMap).to(Map)
+    names(entity).remap { member => member -> select(entity, member) }.to[Map]

@@ -65,4 +65,22 @@ object Set:
   extension [element](set: Set[element])
     inline def stdlib: sci.Set[element] = set.asInstanceOf[sci.Set[element]]
 
+  // The primitive operations, for the typeclass instances defined in the libraries above;
+  // see `List` for the rationale. Within this file the opaque alias is transparent.
+  def size[element](set: Set[element]): Int = set.size
+  def nil[element](set: Set[element]): Boolean = set.isEmpty
+  def has[element](set: Set[element], value: element): Boolean = set.contains(value)
+  def insert[element](set: Set[element], value: element): Set[element] = set.incl(value)
+  def concat[element](left: Set[element], right: Set[element]): Set[element] = left ++ right
+
+  def intersect[element](left: Set[element], right: Set[element]): Set[element] =
+    left.intersect(right)
+
+  def except[element](left: Set[element], right: Set[element]): Set[element] = left.diff(right)
+
+  def map[element, element2](set: Set[element], lambda: element => element2): Set[element2] =
+    set.map(lambda)
+
+  def iterator[element](set: Set[element]): Iterator[element] = set.iterator
+
 opaque type Set[element] = sci.Set[element]

@@ -32,6 +32,7 @@
                                                                                                   */
 package praxinoscope
 
+import rudiments.*
 import vacuous.*
 
 object Ranges:
@@ -109,8 +110,8 @@ object Ranges:
 
   private def compute(name: String): Optional[Ranges] =
     if name == "Any" then anySymbol
-    else if categories.stdlib.contains(name) then where(symbol => categoryName(symbol) == name)
-    else if categoryGroups.stdlib.contains(name)
+    else if categories.has(name) then where(symbol => categoryName(symbol) == name)
+    else if categoryGroups.has(name)
     then where(symbol => categoryName(symbol).startsWith(name))
     else
       try

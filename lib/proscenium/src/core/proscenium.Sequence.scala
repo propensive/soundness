@@ -109,6 +109,46 @@ object Sequence:
   extension [element](sequence: Sequence[element])
     inline def stdlib: sci.Vector[element] = sequence.asInstanceOf[sci.Vector[element]]
 
+  // The primitive operations, for the typeclass instances defined in the libraries above;
+  // see `List` for the rationale. Within this file the opaque alias is transparent.
+  def size[element](sequence: Sequence[element]): Int = sequence.length
+  def nil[element](sequence: Sequence[element]): Boolean = sequence.isEmpty
+  def head[element](sequence: Sequence[element]): element = sequence.head
+  def tail[element](sequence: Sequence[element]): Sequence[element] = sequence.tail
+  def last[element](sequence: Sequence[element]): element = sequence.last
+  def lead[element](sequence: Sequence[element]): Sequence[element] = sequence.init
+  def at[element](sequence: Sequence[element], index: Int): element = sequence(index)
+
+  def define[element](sequence: Sequence[element], index: Int, value: element)
+  :   Sequence[element] =
+    sequence.updated(index, value)
+
+  def has[element](sequence: Sequence[element], value: element): Boolean =
+    sequence.contains(value)
+
+  def drop[element](sequence: Sequence[element], count: Int): Sequence[element] =
+    sequence.drop(count)
+
+  def append[element](sequence: Sequence[element], value: element): Sequence[element] =
+    sequence.appended(value)
+
+  def prepend[element](sequence: Sequence[element], value: element): Sequence[element] =
+    sequence.prepended(value)
+
+  def concat[element](left: Sequence[element], right: Sequence[element]): Sequence[element] =
+    left ++ right
+
+  def invert[element](sequence: Sequence[element]): Sequence[element] = sequence.reverse
+
+  def map[element, element2](sequence: Sequence[element], lambda: element => element2)
+  :   Sequence[element2] =
+    sequence.map(lambda)
+
+  def slice[element](sequence: Sequence[element], from: Int, until: Int): Sequence[element] =
+    sequence.slice(from, until)
+
+  def iterator[element](sequence: Sequence[element]): Iterator[element] = sequence.iterator
+
   // Subtype-parametric so branded sequences splat too.
   given sequenceIsSpreadable: [element, sequence <: Sequence[element]]
   =>  (Spreadable[sequence] { type Out = sci.Vector[element] }) =

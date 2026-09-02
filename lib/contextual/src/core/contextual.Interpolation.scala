@@ -37,6 +37,7 @@ import scala.language.dynamics
 import scala.quoted.*
 
 import gigantism.*
+import murmuration.*
 import prepositional.*
 
 object Interpolation:
@@ -93,8 +94,8 @@ object Interpolation:
       case Repeated(elems, _)          => elems.foldLeft(acc): (a, e) => collectLiterals(e, a)
       case _                           => acc
 
-    val collected = collectLiterals(context.asTerm, Nil).stdlib.reverse.to(List)
-    if collected.stdlib.length == count then collected else List.fill(count)((0, 0))
+    val collected = collectLiterals(context.asTerm, Nil).reverse
+    if List.size(collected) == count then collected else List.fill(count)((0, 0))
 
   // Decode a type-level `Transport` tuple of string-literal types back into the parts. The
   // tuple is built innermost-first by `transportType`, so it holds the parts in reverse;
@@ -158,8 +159,8 @@ object Interpolation:
       case Some(content: String) => content
       case _                     => null
 
-    val partVector = parts.stdlib.toVector
-    val originVector = origins.stdlib.toVector
+    val partVector = List.iterator(parts).toVector
+    val originVector = List.iterator(origins).toVector
 
     var acc = 0
     var i = 0
@@ -186,7 +187,7 @@ object Interpolation:
     import quotes.reflect.*
 
     val parts: List[String] = context.valueOrAbort.parts.to(List)
-    val partOrigins: List[(Int, Int)] = literalOrigins(context, parts.stdlib.length)
+    val partOrigins: List[(Int, Int)] = literalOrigins(context, List.size(parts))
 
     // The tuple terminator must be `scala.EmptyTuple.type` itself. Bare `EmptyTuple.type` would
     // name the `proscenium` prelude's *export forwarder*, which is a (nullary) method, not the

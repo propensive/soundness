@@ -32,7 +32,6 @@
                                                                                                   */
 package murmuration
 
-import anticipation.*
 import prepositional.*
 
 // A type whose values can be tested for membership of a value (the queried type
@@ -64,22 +63,21 @@ object Inclusive extends Inclusive.Fallback:
 
   // Opaque `Sequence` is no longer an `Iterable` subtype, so it needs its own instance.
   given sequence: [element, sequence <: Sequence[element]] => sequence is Inclusive by element =
-    (sequence, value) => sequence.stdlib.exists(_ == value)
+    (sequence, value) => Sequence.has(sequence, value)
 
   // Opaque `Set` likewise.
   given set: [element, set <: Set[element]] => set is Inclusive by element =
-    (set, value) => set.stdlib.contains(value)
+    (set, value) => Set.has(set, value)
 
   // Opaque `List` likewise (membership is a single linear pass, so ungated).
   given list: [element, list <: List[element]] => list is Inclusive by element =
-    (list, value) => list.stdlib.contains(value)
+    (list, value) => List.has(list, value)
 
   given array: [element <: Matchable] => scala.Array[element] is Inclusive by element =
     (array, value) => array.exists(_ == value)
 
   // `Text` (opaque over `String`) is not an `Iterable`, so it needs its own
   // instance for `text.has(char)`; substring containment is `subsumes` instead.
-  given text: Text is Inclusive by Char = (text, char) => text.s.indexOf(char.toInt) >= 0
 
 trait Inclusive extends Typeclass.Pure, Operable:
   def has(self: Self, value: Operand): Boolean

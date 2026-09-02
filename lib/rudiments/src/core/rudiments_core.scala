@@ -222,6 +222,19 @@ extension [self](self: self)(using traversable: self is Traversable)
   inline def all(predicate: traversable.Operand => Boolean): Boolean =
     traversable.traverse(self).forall(predicate)
 
+  // The `Traversable` sibling of the `Iterable` `fuse` below, so the opaque collections fold
+  // through the same name.
+  inline def fuse[state](base: state)
+    ( lambda: (state aka "state", traversable.Operand aka "next") ?=> state )
+  :   state =
+
+    val iterator: Iterator[traversable.Operand] = traversable.traverse(self)
+    var state: state = base
+
+    while iterator.hasNext do state = lambda(using state.aka["state"], iterator.next().aka["next"])
+
+    state
+
   // The `Traversable` siblings of the `Iterable` `total`/`product` below, so the opaque
   // collections sum and multiply through the same names. Explicit return types (#1410).
   transparent inline def total
@@ -498,53 +511,50 @@ extension [element](array: scala.Array[element])
 
 extension [key, value](map: Map[key, value])
   def upsert(key: key, optional: Optional[value] => value): Map[key, value] =
-
-      map.stdlib.updated(key, optional(if map.defines(key) then map.stdlib(key) else Unset))
-      . to(Map)
+    map.define(key, optional(map.at(key)))
 
   def collate(right: Map[key, value])(merge: (value, value) => value): Map[key, value] =
-
-      right.fold(map.stdlib): (state, next) =>
-        state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1))))
-      . to(Map)
+    right.fold(map): (state, next) =>
+      state.define(next(0), state.at(next(0)).lay(next(1))(merge(_, next(1))))
 
 extension [key, value](map: scm.Map[key, value])
   inline def establish(key: key)(evaluate: => value): value = map.getOrElseUpdate(key, evaluate)
 
 extension [key, value](map: Map[key, List[value]])
   def plus(key: key, value: value): Map[key, List[value]] =
-    val values = (value :: map.stdlib.get(key).fold(sci.List[value]())(_.stdlib)).to(List)
-    map.stdlib.updated(key, values).to(Map)
+    map.define(key, value :: map.at(key).or(Nil))
 
 extension [value](list: List[value])
-  def unwind(tail: List[value]): List[value] = (tail.stdlib.reverse_:::(list.stdlib)).to(List)
+  def unwind(tail: List[value]): List[value] = list.reverse + tail
 
 extension [element](sequence: List[element])
-  def unique: Optional[element] =
-    if sequence.stdlib.length == 1 then sequence.stdlib.head else Unset
+  def unique: Optional[element] = sequence match
+    case element :: Nil => element
+    case _              => Unset
 
   def runs: List[List[element]] = runsBy(identity)
 
   def runsBy(lambda: element => Any): List[List[element]] =
-    val stdlib = sequence.stdlib
-
     @tailrec
     def recur
       ( current: Any,
-        todo:    sci.List[element],
-        run:     sci.List[element],
-        done:    sci.List[sci.List[element]] )
-    :   sci.List[sci.List[element]] =
+        todo:    List[element],
+        run:     List[element],
+        done:    List[List[element]] )
+    :   List[List[element]] =
 
-      if todo.isEmpty then (run.reverse :: done).reverse
-      else
-        val focus = lambda(todo.head)
+      todo match
+        case Nil => (run.reverse :: done).reverse
 
-        if current == focus then recur(current, todo.tail, todo.head :: run, done)
-        else recur(focus, todo.tail, sci.List(todo.head), run.reverse :: done)
+        case head :: tail =>
+          val focus = lambda(head)
 
-    if stdlib.isEmpty then Nil
-    else (recur(lambda(stdlib.head), stdlib.tail, sci.List(stdlib.head), sci.Nil).map(_.to(List))).to(List)
+          if current == focus then recur(current, tail, head :: run, done)
+          else recur(focus, tail, List(head), run.reverse :: done)
+
+    sequence match
+      case Nil          => Nil
+      case head :: tail => recur(lambda(head), tail, List(head), Nil)
 
 extension (bytes: Data)
   def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(Array.unsafeJvm(bytes))

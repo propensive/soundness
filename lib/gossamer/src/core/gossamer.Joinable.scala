@@ -47,5 +47,24 @@ object Joinable:
 
   given message: Message is Joinable = _.fuse(m"")(state+next)
 
+  // The receiver-side typeclass for `join`: anything `Traversable` (the native shapes and
+  // external `Iterable`s), plus `scala.IArray` (the frozen array's `readable` view), which is
+  // neither `Iterable` nor `Traversable`. One typeclass rather than per-receiver extension
+  // blocks: overload specificity cannot compare same-name extension alternatives whose clause
+  // shapes differ, so a second `join` block would make every receiver ambiguous.
+  object Source:
+    given traversable: [self, element] => (traversable: self is Traversable by element)
+    =>  self is Source by element =
+      traversable.traverse(_)
+
+    given iarray: [element] => scala.IArray[element] is Source by element =
+      values =>
+        scala.collection.immutable.ArraySeq
+        . unsafeWrapArray(values.asInstanceOf[scala.Array[element]])
+        . iterator
+
+  trait Source extends Typeclass.Pure, Operable:
+    def traverse(self: Self): Iterator[Operand]
+
 trait Joinable extends Typeclass.Pure, Operable:
   def join(elements: Iterable[Self]): Self

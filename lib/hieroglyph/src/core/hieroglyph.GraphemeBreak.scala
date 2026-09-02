@@ -42,6 +42,7 @@ import scala.collection.mutable.ArrayBuilder
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import kaleidoscope.*
 import rudiments.*
@@ -134,19 +135,15 @@ object GraphemeBreak:
   private case class Tables(starts: Array[Int]^{}, ends: Array[Int]^{}, props: Array[Byte]^{})
 
   private def buildTables(entries: List[Entry]): Tables =
-    val sorted = entries.stdlib.sortBy(_.start).toArray
-    val count = sorted.length
+    val count = entries.size
     val starts = Array.allocate[Int](count)
     val ends = Array.allocate[Int](count)
     val props = Array.allocate[Byte](count)
 
-    var index = 0
-
-    while index < count do
-      starts(index) = sorted(index).start
-      ends(index) = sorted(index).end
-      props(index) = sorted(index).prop.toByte
-      index += 1
+    entries.order(_.start).each: entry =>
+      starts(ordinal.n0) = entry.start
+      ends(ordinal.n0) = entry.end
+      props(ordinal.n0) = entry.prop.toByte
 
     Tables(Array.freeze(starts), Array.freeze(ends), Array.freeze(props))
 

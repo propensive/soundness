@@ -49,7 +49,9 @@ object Factorial:
 
   def sequence(n: Int): List[BigInt] =
     @tailrec
-    def recur(i: Int, result: List[BigInt]): List[BigInt] =
-      if i == n then result else recur(i + 1, result.stdlib.head*i :: result)
+    def recur(i: Int, head: BigInt, result: List[BigInt]): List[BigInt] =
+      if i == n then result else
+        val next = head*i
+        recur(i + 1, next, next :: result)
 
-    recur(1, List(1))
+    recur(1, 1, List(1))

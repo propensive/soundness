@@ -128,6 +128,34 @@ object List:
   extension [element](list: List[element])
     inline def stdlib: sci.List[element] = list.asInstanceOf[sci.List[element]]
 
+  // The primitive operations, for the typeclass instances defined in the libraries above
+  // (murmuration, denominative, concordance, symbolism). Within this file the opaque alias
+  // is transparent, so these bodies touch the underlying list with no cast and no bridge,
+  // and the instances built on them need none either. Deliberately plain methods, not
+  // extensions: the ergonomic, cost-honest surface remains the typeclass-driven one, and
+  // nothing here is intended for use at ordinary call sites. Not `inline` (see above).
+  def size[element](list: List[element]): Int = list.length
+  def nil[element](list: List[element]): Boolean = list.isEmpty
+  def head[element](list: List[element]): element = list.head
+  def tail[element](list: List[element]): List[element] = list.tail
+  def last[element](list: List[element]): element = list.last
+  def lead[element](list: List[element]): List[element] = list.init
+  def at[element](list: List[element], index: Int): element = list(index)
+  def define[element](list: List[element], index: Int, value: element): List[element] =
+    list.updated(index, value)
+  def has[element](list: List[element], value: element): Boolean = list.contains(value)
+  def drop[element](list: List[element], count: Int): List[element] = list.drop(count)
+  def append[element](list: List[element], value: element): List[element] = list.appended(value)
+  def prepend[element](list: List[element], value: element): List[element] = list.::(value)
+  def concat[element](left: List[element], right: List[element]): List[element] = left ++ right
+  def invert[element](list: List[element]): List[element] = list.reverse
+
+  def map[element, element2](list: List[element], lambda: element => element2): List[element2] =
+    list.map(lambda)
+  def slice[element](list: List[element], from: Int, until: Int): List[element] =
+    list.slice(from, until)
+  def iterator[element](list: List[element]): Iterator[element] = list.iterator
+
 val Nil: List[Nothing] = List.of(sci.Nil)
 
 // The cons constructor. The extension is *declared* in usage order — the receiver is the

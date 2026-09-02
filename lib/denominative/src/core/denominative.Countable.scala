@@ -66,21 +66,22 @@ object Countable:
   // `nil`/`occupied` come from the ungated `Vacuiscible.list` instead.
   given list: [element, list <: List[element]] => (complexity: Dysasymptotic.LinearSize)
   =>  list is Countable:
-    def size(self: list): Int = self.stdlib.length
-    override def nil(self: list): Boolean = self.stdlib.isEmpty
+    def size(self: list): Int = List.size(self)
+    override def nil(self: list): Boolean = List.nil(self)
 
   given iterable: [element] => Iterable[element] is Countable:
     def size(self: Iterable[element]): Int = self.size
     override def nil(self: Iterable[element]): Boolean = self.isEmpty
 
-  // Opaque `Map` is no longer an `Iterable` subtype, so its instance bridges via `stdlib`.
+  // Opaque `Map` is no longer an `Iterable` subtype, so its instance uses the companion
+  // primitives.
   given map: [key, element] => Map[key, element] is Countable:
-    def size(self: Map[key, element]): Int = self.stdlib.size
-    override def nil(self: Map[key, element]): Boolean = self.stdlib.isEmpty
+    def size(self: Map[key, element]): Int = Map.size(self)
+    override def nil(self: Map[key, element]): Boolean = Map.nil(self)
 
   given ledger: [key, element] => Ledger[key, element] is Countable:
-    def size(self: Ledger[key, element]): Int = self.stdlib.size
-    override def nil(self: Ledger[key, element]): Boolean = self.stdlib.isEmpty
+    def size(self: Ledger[key, element]): Int = Ledger.size(self)
+    override def nil(self: Ledger[key, element]): Boolean = Ledger.nil(self)
 
   given trieMap: [key, element] => TrieMap[key, element] is Countable:
     def size(self: TrieMap[key, element]): Int = self.size
@@ -94,17 +95,18 @@ object Countable:
   // `Countable` instance is gated behind `Dysasymptotic.UnboundedSize`; the O(1) `nil` comes from the
   // ungated `Vacuiscible.chain` instead.
   given chain: [element] => (complexity: Dysasymptotic.UnboundedSize) => Chain[element] is Countable:
-    def size(self: Chain[element]): Int = self.stdlib.length
-    override def nil(self: Chain[element]): Boolean = self.stdlib.isEmpty
+    def size(self: Chain[element]): Int = Chain.size(self)
+    override def nil(self: Chain[element]): Boolean = Chain.nil(self)
 
   given stringBuilder: StringBuilder is Countable:
     def size(self: StringBuilder): Int = self.length
     override def nil(self: StringBuilder): Boolean = self.isEmpty
 
-  // Opaque `Set` is no longer an `Iterable` subtype, so its instance bridges via `stdlib`.
+  // Opaque `Set` is no longer an `Iterable` subtype, so its instance uses the companion
+  // primitives.
   given set: [element] => Set[element] is Countable:
-    def size(self: Set[element]): Int = self.stdlib.size
-    override def nil(self: Set[element]): Boolean = self.stdlib.isEmpty
+    def size(self: Set[element]): Int = Set.size(self)
+    override def nil(self: Set[element]): Boolean = Set.nil(self)
 
   given indexedSeq: [element] => IndexedSeq[element] is Countable:
     def size(self: IndexedSeq[element]): Int = self.length
@@ -112,8 +114,8 @@ object Countable:
 
   // Opaque `Sequence` is no longer an `IndexedSeq` subtype, so it needs its own instance.
   given sequence: [element, sequence <: Sequence[element]] => sequence is Countable:
-    def size(self: sequence): Int = self.stdlib.length
-    override def nil(self: sequence): Boolean = self.stdlib.isEmpty
+    def size(self: sequence): Int = Sequence.size(self)
+    override def nil(self: sequence): Boolean = Sequence.nil(self)
 
   given text: Text is Countable:
     def size(self: Text): Int = self.s.length

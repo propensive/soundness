@@ -34,6 +34,7 @@ package digression
 
 import anticipation.*
 import fulminate.*
+import hypotenuse.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -118,9 +119,9 @@ object StackTrace:
   // In `StackTrace`'s own companion rather than `Showable`'s, so that `spectacular` need not
   // depend on `digression`; being companion-to-companion, the implicit scope is unchanged.
   given showable: StackTrace is Showable = stack =>
-    val methodWidth = stack.frames.map(_.displayMethod.s.length).stdlib.maxOption.getOrElse(0)
-    val classWidth = stack.frames.map(_.displayClass.s.length).stdlib.maxOption.getOrElse(0)
-    val fileWidth = stack.frames.map(_.file.s.length).stdlib.maxOption.getOrElse(0)
+    val methodWidth = stack.frames.map(_.displayMethod.s.length).maximum.or(0)
+    val classWidth = stack.frames.map(_.displayClass.s.length).maximum.or(0)
+    val fileWidth = stack.frames.map(_.file.s.length).maximum.or(0)
     val fullClass = s"${stack.component}.${stack.className}".tt
     val init = s"$fullClass: ${stack.message}".tt
 
@@ -306,9 +307,15 @@ object StackTrace:
                   index2 += 1
                   current = char(index2)
 
+                // Companion primitives and an `Iterator`-level `mkString`: `join` lives in
+                // `gossamer`, above this module.
+                val head = List.head(arguments)
+
+                val types = List.iterator(List.tail(arguments)).mkString("Σ((", ", ", ")")
+
                 val name2 =
-                  if arguments.size == 2 then "Σ("+arguments.stdlib.last+" -> "+arguments.stdlib.head+")"
-                  else arguments.stdlib.tail.mkString("Σ((", ", ", ")")+" -> "+arguments.stdlib.head+")"
+                  if arguments.size == 2 then "Σ("+List.last(arguments)+" -> "+head+")"
+                  else types+" -> "+head+")"
 
                 val mc = name.substring(index, index + 3).nn
                 token(index, mc, name2)
@@ -361,13 +368,19 @@ object StackTrace:
           Text:
             val types2 = types.drop(index + 3).iterator.to(List).map(primitive)
 
-            if types2.size <= 2 then types2.stdlib.mkString("(", " => ", ")")
-            else types2.stdlib.init.mkString("((", ", ", s") => ${types2.stdlib.last})")
+            if types2.size <= 2 then List.iterator(types2).mkString("(", " => ", ")")
+            else
+              List.iterator(List.lead(types2))
+              . mkString("((", ", ", s") => ${List.last(types2)})")
 
     else if rewritten.s.startsWith("scala.runtime.function.JProcedure")
     then
       val n = try rewritten.s.drop(33).toInt catch case error: Exception => 0
-      "("+(if n < 2 then s"Any" else List.fill(n)("Any").stdlib.mkString("(", ", ", ")"))+" => Unit)"
+
+      val args =
+        if n < 2 then s"Any" else List.iterator(List.fill(n)("Any")).mkString("(", ", ", ")")
+
+      "("+args+" => Unit)"
 
     else if rewritten.s.endsWith("#") then
       val pivot = rewritten.s.lastIndexOf(".")
@@ -403,7 +416,7 @@ object StackTrace:
     val fullClassName: Text = rewrite(exception.getClass.nn.getName.nn)
     val fullClass: List[Text] =
       (fullClassName.s.split("\\.").nn.iterator.map { part => Text(part.nn) }).to(List)
-    val className: Text = fullClass.stdlib.last
+    val className: Text = List.last(fullClass)
 
     val component: Text =
       val length = fullClassName.s.length - className.s.length - 1
@@ -416,14 +429,14 @@ object StackTrace:
     StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).optional)
 
   given communicable: StackTrace is Communicable = stack =>
-    val methodWidth = stack.frames.map(_.displayMethod.s.length).stdlib.maxOption.getOrElse(0)
-    val classWidth = stack.frames.map(_.displayClass.s.length).stdlib.maxOption.getOrElse(0)
-    val fileWidth = stack.frames.map(_.file.s.length).stdlib.maxOption.getOrElse(0)
+    val methodWidth = stack.frames.map(_.displayMethod.s.length).maximum.or(0)
+    val classWidth = stack.frames.map(_.displayClass.s.length).maximum.or(0)
+    val fileWidth = stack.frames.map(_.file.s.length).maximum.or(0)
     val fullClass = s"${stack.component}.${stack.className}".tt
     val init = s"$fullClass: ${stack.message}".tt
     val nbsp = "\u00a0".tt
 
-    val root = stack.frames.stdlib.fuse(init):
+    val root = stack.frames.fuse(init):
       val obj = next.method.className.s.endsWith("#")
       val drop = if next.source.absent && obj then 1 else 0
       val file = (nbsp*(fileWidth - next.file.s.length))+next.file

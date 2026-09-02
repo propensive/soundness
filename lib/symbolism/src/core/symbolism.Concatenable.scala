@@ -47,27 +47,27 @@ object Concatenable:
   // prove the result non-empty; asserting that stays out of scope.)
   given list: [element, list <: List[element], operand <: List[element]]
   =>  list is Concatenable by operand to List[element] =
-    (left, right) => (left.stdlib ::: right.stdlib).to(List)
+    (left, right) => List.concat(left, right)
 
   given sequence: [element, sequence <: Sequence[element], operand <: Sequence[element]]
   =>  sequence is Concatenable by operand to Sequence[element] =
-    (left, right) => Sequence.from(left.stdlib ++ right.stdlib)
+    (left, right) => Sequence.concat(left, right)
 
   // Lazily: neither side is forced by the concatenation itself.
   given chain: [element] => Chain[element] is Concatenable by Chain[element] to Chain[element] =
-    (left, right) => left.stdlib.lazyAppendedAll(right.stdlib).to(Chain)
+    (left, right) => Chain.concat(left, right)
 
   given set: [element] => Set[element] is Concatenable by Set[element] to Set[element] =
-    (left, right) => (left.stdlib ++ right.stdlib).to(Set)
+    (left, right) => Set.concat(left, right)
 
   // Right-biased, matching the stdlib's `concat`: keys in the right operand win. This is the
   // same ruling as `Set`, where union is concatenation.
   given map: [key, value] => Map[key, value] is Concatenable by Map[key, value] to Map[key, value] =
-    (left, right) => left.stdlib.concat(right.stdlib).to(Map)
+    (left, right) => Map.concat(left, right)
 
   given ledger: [key, value]
   =>  Ledger[key, value] is Concatenable by Ledger[key, value] to Ledger[key, value] =
-    (left, right) => left.stdlib.concat(right.stdlib).to(Ledger)
+    (left, right) => Ledger.concat(left, right)
 
   given frozenArray: [element: ClassTag]
   =>  (Array[element]^{}) is Concatenable by (Array[element]^{}) to (Array[element]^{}) =

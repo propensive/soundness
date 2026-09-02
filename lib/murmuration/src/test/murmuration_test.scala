@@ -35,6 +35,8 @@ package murmuration
 
 import soundness.*
 
+import murmuration.subsumes
+
 // By name, so that `Map` is Proscenium's and not the stdlib's: through `soundness.*` a stdlib
 // `Map` matches `Mappable.Fallback.iterable`, whose operand is the `(key, value)` pair, and
 // `map` would silently map entries instead of values.

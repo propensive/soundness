@@ -38,6 +38,8 @@ import scala.jdk.CollectionConverters.SetHasAsScala
 
 import anticipation.*
 import fulminate.*
+import rudiments.*
+import vacuous.*
 
 object Encoding:
   given textualizable: Encoding is Textualizable = _.name
@@ -48,20 +50,29 @@ object Encoding:
 
   private[hieroglyph] val codecs: Map[Text, Encoding { type CanEncode = true }] =
 
-      allCharsets.stdlib.filter(_.canEncode).flatMap: charset =>
+      allCharsets.filter(_.canEncode).bind: charset =>
         (charset.aliases.nn.asScala.toSet + charset.displayName.nn).map: name =>
           name.toLowerCase.nn.tt -> Encoding(name.tt, true)
-      . to(Map)
+      . to[Map]
 
   private[hieroglyph] val decodeOnly: Map[Text, Encoding { type CanEncode = false }] =
 
-      allCharsets.stdlib.filter(!_.canEncode).flatMap: charset =>
+      allCharsets.filter(!_.canEncode).bind: charset =>
         (charset.aliases.nn.asScala.toSet + charset.displayName.nn).map: name =>
           name.toLowerCase.nn.tt -> Encoding(name.tt, false)
-      . to(Map)
+      . to[Map]
+
+  // For the `enc""` macro's expansion, where the name was already verified against the same
+  // table at compile time, making the lookup infallible.
+  private[hieroglyph] def codec(name: Text): Encoding { type CanEncode = true } =
+    codecs.at(name).or(panic(m"the encoding $name was verified at expansion time"))
+
+  private[hieroglyph] def decodeOnlyCodec(name: Text): Encoding { type CanEncode = false } =
+    decodeOnly.at(name).or(panic(m"the encoding $name was verified at expansion time"))
 
   def unapply(name: Text): Option[Encoding] =
-    codecs.stdlib.get(name.s.toLowerCase.nn.tt).orElse(decodeOnly.stdlib.get(name.s.toLowerCase.nn.tt))
+    val key = name.s.toLowerCase.nn.tt
+    codecs.at(key).option.orElse(decodeOnly.at(key).option)
 
   def apply(name: Text, canEncode: Boolean): Encoding { type CanEncode = canEncode.type } =
     new Encoding(name) { type CanEncode = canEncode.type }

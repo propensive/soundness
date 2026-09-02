@@ -118,15 +118,15 @@ extension [element](sequence: proscenium.List[element])
   // rationale); duplicated because `rudiments.prim` (etc.) resolves to the `Applicable`-bound
   // overload when referenced qualified.
   def prim: vacuous.Optional[element] =
-    if sequence.stdlib.isEmpty then vacuous.Unset else sequence.stdlib.head
+    if proscenium.List.nil(sequence) then vacuous.Unset else proscenium.List.head(sequence)
 
   def sec: vacuous.Optional[element] =
-    val rest = sequence.stdlib.drop(1)
-    if rest.isEmpty then vacuous.Unset else rest.head
+    val rest = proscenium.List.drop(sequence, 1)
+    if proscenium.List.nil(rest) then vacuous.Unset else proscenium.List.head(rest)
 
   def ter: vacuous.Optional[element] =
-    val rest = sequence.stdlib.drop(2)
-    if rest.isEmpty then vacuous.Unset else rest.head
+    val rest = proscenium.List.drop(sequence, 2)
+    if proscenium.List.nil(rest) then vacuous.Unset else proscenium.List.head(rest)
 
 extension [self](inline value: self)
   (using applicable: denominative.Applicable { type Self = self; type Operand = denominative.Ordinal })

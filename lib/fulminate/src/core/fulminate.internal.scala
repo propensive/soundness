@@ -39,6 +39,7 @@ import scala.quoted.*
 
 import anticipation.*
 import gigantism.*
+import murmuration.*
 
 object internal:
   opaque type Diagnostics = Boolean
@@ -99,19 +100,25 @@ object internal:
 
       loop(0, "")
 
-    val groups: List[String] = parts.stdlib.mkString("\u0000").split("`", -1).nn.map(_.nn).iterator.to(List)
+    val groups: List[String] =
+      List.iterator(parts).mkString("\u0000").split("`", -1).nn.map(_.nn).iterator.to(List)
 
-    if groups.stdlib.size%2 == 0
+    if List.size(groups)%2 == 0
     then report.errorAndAbort("the m\"\" interpolator has an unmatched backtick")
 
+    // Hoisted from the `map` below: a quote (with its implicit `ToExpr` search) inside a
+    // combinator lambda in a macro risks the `wildApprox` crash.
+    def liftText(text: String): Expr[Text] = '{${Expr(text)}.tt}
+
     def toMessage(items: List[String | Expr[Message]]): Expr[Message] =
-      val texts: List[String] = (items.stdlib.collect { case text: String => text }).to(List)
-      val msgs:  List[Expr[Message]] = (items.stdlib.collect { case expr: Expr[Message] @unchecked => expr }).to(List)
+      val texts: List[String] = items.sweep { case text: String => text }
+      val msgs:  List[Expr[Message]] = items.sweep { case expr: Expr[Message] @unchecked => expr }
       // `List.from` inside the quote, not a conversion: the Factory route mints a fresh
       // capture in the *generated* code, which `Message`'s pure fields then reject at every
-      // `m""` call site.
+      // `m""` call site. The `.stdlib` bridges feed `Expr.ofList`, whose parameter is a
+      // stdlib `Seq`.
       val textsExpr: Expr[List[Text]] =
-        '{List.from(${Expr.ofList(texts.stdlib.map { text => '{${Expr(text)}.tt} })})}
+        '{List.from(${Expr.ofList(texts.map(liftText).stdlib)})}
 
       '{Message($textsExpr, List.from(${Expr.ofList(msgs.stdlib)}))}
 
@@ -121,25 +128,36 @@ object internal:
 
       val segments = group.split("\u0000", -1).nn.map(_.nn).iterator.to(List)
 
+      val count = List.size(segments)
+
+      // Hoisted for the same `wildApprox` reason as `liftText` above.
+      def substitution(index: Int): Expr[Message] = '{List.at($subListRef, ${Expr(index)})}
+
+      val indexed: List[(String, Int)] = segments.zip(List.range(0, count))
+
       val items: List[String | Expr[Message]] =
-        segments.stdlib.zipWithIndex.flatMap: (segment, index) =>
+        indexed.flatMap: (segment, index) =>
           val text = decode(segment)
 
-          if index < segments.stdlib.size - 1
-          then List(text, '{$subListRef.stdlib(${Expr(startIndex + index)})}).stdlib
-          else List(text).stdlib
-        . to(List)
+          val batch: List[String | Expr[Message]] =
+            if index < count - 1 then List(text, substitution(startIndex + index)) else List(text)
 
-      (items, startIndex + segments.stdlib.size - 1)
+          batch
+
+      (items, startIndex + count - 1)
 
 
     def assemble(subListRef: Expr[List[Message]]): Expr[Message] =
-      val (items, _) = groups.stdlib.zipWithIndex.foldLeft((List[String | Expr[Message]](), 0)):
+      val indexed: List[(String, Int)] = groups.zip(List.range(0, List.size(groups)))
+
+      val (items, _) = indexed.fold((List[String | Expr[Message]](), 0)):
         case ((accumulator, index), (group, i)) =>
           val (groups, nextIndex) = sequence(group, index, subListRef)
-          val addition = if i % 2 == 0 then groups else List(toMessage(groups))
 
-          ((accumulator.stdlib ::: addition.stdlib).to(List), nextIndex)
+          val addition: List[String | Expr[Message]] =
+            if i % 2 == 0 then groups else List(toMessage(groups))
+
+          (List.concat(accumulator, addition), nextIndex)
 
       toMessage(items)
 
