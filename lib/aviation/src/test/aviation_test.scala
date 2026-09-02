@@ -37,7 +37,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import abstractables.instantAbstractable
+import abstractables.epochMillisecondsAbstractable
 import chronometries.unix
 import denominative.dysasymptotics.linearSize
 

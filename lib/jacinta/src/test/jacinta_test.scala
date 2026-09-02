@@ -1363,7 +1363,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       import decodables.durationJsonDecodable
       import aviation.*
       import chronometries.unix
-      import abstractables.instantAbstractable
+      import abstractables.epochMillisecondsAbstractable
 
       test(m"Encode an Instant as a Long"):
         Instant(1700000000000L).in[Json].show

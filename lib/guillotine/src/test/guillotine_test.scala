@@ -35,7 +35,7 @@ package guillotine
 import soundness.*
 
 import workingDirectories.defaultWorkingDirectory
-import abstractables.durationAbstractable
+import abstractables.millisecondsAbstractable
 import strategies.throwUnsafely
 import errorDiagnostics.emptyDiagnostics
 
@@ -429,14 +429,14 @@ object Tests extends Suite(m"Guillotine tests"):
 
       test(m"await with timeout fires Async.Error"):
         val proc = sh"sleep 1".fork[Unit]()
-        val outcome = capture[Async.Error](proc.await(50_000_000L))
+        val outcome = capture[Async.Error](proc.await(50L))
         proc.kill()
         outcome
       . assert(_.reason == Async.Error.Reason.Timeout)
 
       test(m"await with sufficient duration returns"):
         val proc = sh"sleep 0.05".fork[Unit]()
-        proc.await(2_000_000_000L)
+        proc.await(2000L)
       . assert(_ == ())
 
     suite(m"Stdin and stderr"):

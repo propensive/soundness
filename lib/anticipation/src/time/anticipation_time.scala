@@ -34,10 +34,20 @@ package anticipation
 
 import prepositional.*
 
+// The generic representation of a `Durations` value is a count of *nanoseconds*; of an `Instants`
+// value, a count of *milliseconds since the epoch*. A bare `Long` therefore cannot say which unit
+// it is in, so there is no unit-agnostic given here: each name below states its own unit, and a
+// file chooses exactly one duration given (they share a type, so importing two is ambiguous).
 package abstractables:
-  given durationAbstractable: Long is Abstractable across Durations to Long = identity(_)
-  given instantAbstractable: Long is Abstractable across Instants to Long = identity(_)
+  given nanosecondsAbstractable: Long is Abstractable across Durations to Long = identity(_)
+  given microsecondsAbstractable: Long is Abstractable across Durations to Long = _*1000L
+  given millisecondsAbstractable: Long is Abstractable across Durations to Long = _*1_000_000L
+
+  given epochMillisecondsAbstractable: Long is Abstractable across Instants to Long = identity(_)
 
 package instantiables:
-  given durationInstantiable: Long is Instantiable across Durations from Long = identity(_)
-  given instantInstantiable: Long is Instantiable across Instants from Long = identity(_)
+  given nanosecondsInstantiable: Long is Instantiable across Durations from Long = identity(_)
+  given microsecondsInstantiable: Long is Instantiable across Durations from Long = _/1000L
+  given millisecondsInstantiable: Long is Instantiable across Durations from Long = _/1_000_000L
+
+  given epochMillisecondsInstantiable: Long is Instantiable across Instants from Long = identity(_)

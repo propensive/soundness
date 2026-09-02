@@ -45,7 +45,7 @@ import nomenclature.*
 import prepositional.*
 
 import Async.nominative
-import abstractables.instantAbstractable
+import abstractables.epochMillisecondsAbstractable
 
 object Timeout:
   def apply[duration: Abstractable across Durations to Long](timeout0: duration)(action: => Unit)

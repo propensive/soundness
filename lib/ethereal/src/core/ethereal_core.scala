@@ -318,7 +318,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
       if recorded == null then true else
         safely:
-          import anticipation.instantiables.instantInstantiable
+          import anticipation.instantiables.epochMillisecondsInstantiable
           val size = script.filesize().long
           val mtime = script.modified[Long]()
 
@@ -655,7 +655,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
           scriptPath.let: script =>
             safely:
-              import anticipation.instantiables.instantInstantiable
+              import anticipation.instantiables.epochMillisecondsInstantiable
               hashScript(script).let: hash =>
                 scriptIdentity.set(ScriptIdentity(script.filesize().long, script.modified[Long](), hash))
 

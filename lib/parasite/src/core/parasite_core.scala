@@ -49,8 +49,8 @@ import prepositional.*
 import symbolism.*
 import vacuous.*
 
-import abstractables.durationAbstractable
-import abstractables.instantAbstractable
+import abstractables.epochMillisecondsAbstractable
+import abstractables.nanosecondsAbstractable
 
 package threading:
   given platformThreading: Threading = () => PlatformSupervisor

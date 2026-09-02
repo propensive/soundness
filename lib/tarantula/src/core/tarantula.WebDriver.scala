@@ -36,7 +36,7 @@ import scala.caps
 
 import adversaria.name
 import ambience.*
-import anticipation.*, abstractables.durationAbstractable
+import anticipation.*, abstractables.millisecondsAbstractable
 import aperture.session
 import clavichord.Keypress
 import contingency.*
@@ -133,7 +133,7 @@ object WebDriver:
     // The interval between readiness probes, and the number of them. A driver binds its port in
     // well under a second; five seconds is generous enough that a loaded machine does not fail
     // spuriously, and short enough that a missing binary is reported promptly.
-    private val interval: Long = 50L*1000L*1000L
+    private val interval: Long = 50L // milliseconds
     private val attempts: Int = 100
 
     // Free functions of the companion, for the same reason as `Session.malformed`: a

@@ -37,7 +37,7 @@ import java.net as jn
 import scala.caps
 
 import ambience.*
-import anticipation.*, abstractables.durationAbstractable
+import anticipation.*, abstractables.millisecondsAbstractable
 import coaxial.*
 import contingency.*
 import fulminate.*
@@ -56,7 +56,7 @@ import zephyrine.*
 // … }` forks the process with the agent listening, waits for it to bind its port, attaches, and
 // lends a `Debug`; the debuggee is killed when the block ends.
 object Debuggee:
-  private val interval: Long = 50L*1000L*1000L
+  private val interval: Long = 50L // milliseconds
   private val attempts: Int = 200
 
   // A plain-socket readiness probe. With `server=y` the agent binds before `main` runs, so a
