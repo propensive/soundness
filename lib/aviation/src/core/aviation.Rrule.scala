@@ -81,12 +81,9 @@ object Rrule:
   :   Chain[point] =
 
     val capped = until.lay(stream): limit =>
-      // `.stdlib`: the generated stream is a lazy, possibly infinite `Chain`, on which the native
-      // surface deliberately withholds `keep`/`skip`; `LazyList`'s lazy `takeWhile`/`take` bound
-      // it without forcing.
-      (stream.stdlib.takeWhile(!order.gt(_, limit))).to(Chain)
+      stream.keep(!order.gt(_, limit))
 
-    count.lay(capped) { n => capped.stdlib.take(n).to(Chain) }
+    count.lay(capped) { n => capped.keep(n) }
 
   // ── RFC 5545 text form ───────────────────────────────────────────────────────────────────────
   // The rule is serialised on its own (the `DTSTART`/`start` is separate in iCalendar), e.g.
@@ -254,10 +251,7 @@ object Rrule:
         Chain.iterate(start)(addSeconds(_, step)).filter(subDayMatch(_, rule))
 
       case _ =>
-        // `.stdlib`: `dates` is a lazy, possibly infinite `Chain`, on which the native surface
-        // deliberately withholds `skip`.
-        (dates(start.date, rule).bind(expandTimes(_, start, rule))
-        . stdlib.dropWhile(_ < start)).to(Chain)
+        dates(start.date, rule).bind(expandTimes(_, start, rule)).skip(_ < start)
 
   // Expand a date into the times-of-day the rule selects (the `byHour`/`byMinute`/`bySecond` cross
   // product, each defaulting to the start's component).
@@ -344,9 +338,7 @@ object Rrule:
       case _ =>
         Chain.empty // sub-day frequencies not yet expanded
 
-    // `.stdlib`: `raw` is a lazy, possibly infinite `Chain`, on which the native surface
-    // deliberately withholds `skip`.
-    raw.stdlib.dropWhile(_.jdn < start.jdn).to(Chain)
+    raw.skip(_.jdn < start.jdn)
 
   // The months to expand within a `Yearly` period: the listed `byMonth`s, or every month if a
   // day-level rule is present, or else the start's own month.
@@ -426,10 +418,7 @@ object Rrule:
 
     list(date(year, month, 1)).bind: first =>
       val offset = (weekday.ordinal - first.weekday.ordinal + 7)%7
-      // `.stdlib`: an infinite lazy `Chain`, on which the native surface deliberately withholds
-      // `keep`; only `LazyList`'s lazy `takeWhile` bounds it without forcing.
-      Chain.iterate(first.addDays(offset))(_.addDays(7))
-        .stdlib.takeWhile(monthOf(_) == month).to(List)
+      Chain.iterate(first.addDays(offset))(_.addDays(7)).keep(monthOf(_) == month).to[List]
 
   // The `ordinal`-th `weekday` of the month (positive from the start, negative from the end).
   private def nthWeekday(year: Int, month: Int, weekday: Weekday, ordinal: Int)(using RomanCalendar)

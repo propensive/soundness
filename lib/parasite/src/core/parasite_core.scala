@@ -189,7 +189,11 @@ extension [result](stream: Chain[result])
   :   (Tactic[Async.Error]^) ?->{monitor, probate} Chain[result] =
     // The task is created and awaited under the same monitor; there is no aliased writer.
     if scala.caps.unsafe.unsafeAssumeSeparate(async(stream.nil).await())
-    then Chain() else stream.stdlib.head #:: stream.stdlib.tail.to(Chain).concurrent
+    then Chain() else stream match
+      // The `nil` check above already forced the first cell (inside a task, since forcing may
+      // block on a live source), so this match forces nothing further.
+      case head #:: tail => head #:: tail.concurrent
+      case _             => Chain()
 
 
 def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)

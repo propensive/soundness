@@ -2373,21 +2373,23 @@ object Tel extends Tel2:
 
     // A single in-memory block — the common case — is returned as-is
     // rather than copied into a fresh array (jacinta's single-chunk fast
-    // path; the copy dominated the entry cost of fast direct reads).
-    //
-    // `Chain` is the lazy shape: the native surface deliberately withholds
-    // `prim`/`sec`/`size` on it (`size` forces the whole chain, and is gated
-    // behind `UnboundedSize` for that reason), so the one-chunk test and the
-    // walk go through the stdlib view, which forces exactly one cell at a time.
-    if !source.nil && source.stdlib.tail.isEmpty then source.stdlib.head else
-      var acc    = scala.IArray.empty[Byte]
-      var stream = source.stdlib
+    // path; the copy dominated the entry cost of fast direct reads). The
+    // match forces at most two cells: `#::` is the non-forcing extractor,
+    // and `rest.nil` forces only the second node.
+    source match
+      case data #:: rest if rest.nil => data
+      case _ =>
+        var acc    = scala.IArray.empty[Byte]
+        // `.stdlib`: the walk consumes the chain cell-by-cell; the stdlib
+        // view's `head`/`tail` force exactly one cell at a time, which the
+        // native surface deliberately withholds on the lazy shape.
+        var stream = source.stdlib
 
-      while !stream.isEmpty do
-        acc = acc ++ stream.head.readable
-        stream = stream.tail
+        while !stream.isEmpty do
+          acc = acc ++ stream.head.readable
+          stream = stream.tail
 
-      Array.frozen(acc)
+        Array.frozen(acc)
 
   // `bytes.read[Tel]` for any Chain[Data] source: concatenates the
   // chunks and parses the result. The metadata (interpreter directive,
