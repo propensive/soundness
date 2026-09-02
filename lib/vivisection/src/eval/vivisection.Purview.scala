@@ -84,7 +84,12 @@ class Purview(classpath: LocalClasspath):
         val array = args.toArray(new scala.Array[String | Null](0)).nn
         setup(array.asInstanceOf[scala.Array[String]], initCtx.fresh).map(_(1)).get
 
-    val base = driver.context.fresh.setReporter(Reporter.NoReporter)
+    // `ReadPositions` makes the unpickler read the TASTy Positions section, so unpickled trees
+    // carry their source spans — which is how `elaborations` tells inferred arguments from
+    // written ones. It must be present before the first class loads: completers snapshot the
+    // context's mode at symbol-creation time and replay it when the tree is later forced.
+    val base =
+      driver.context.fresh.addMode(dtd.core.Mode.ReadPositions).setReporter(Reporter.NoReporter)
     val run = dtd.Compiler().newRun(using base)
     // `.stdlib`: `Compiler.Run#compileSources` is a `dotty.tools.dotc` API, which takes the
     // compiler's own `sci.List`.
@@ -153,6 +158,28 @@ class Purview(classpath: LocalClasspath):
       entries.to(Map)
 
     catch case scala.util.control.NonFatal(_) => Map()
+
+  // The call sites in the method's body which the typer elaborated beyond their source text:
+  // inferred type arguments and synthesized `using` arguments, read from the same unpickled
+  // tree `bindings` walks — so what is reported is what the running bytecode was actually
+  // compiled from, not a re-typing of the source. Offsets are into the method's source file.
+  // Degrades to an empty list on any failure.
+  def elaborations(className: Text, methodName: Text): List[prophesy.Elaboration] =
+    try
+      given Contexts.Context = context
+      val quotes = scala.quoted.runtime.impl.QuotesImpl()
+
+      val cls = Symbols.requiredClass(className.s)
+      val method = cls.requiredMethod(methodName.s)
+
+      method.defTree match
+        case defDef: tpd.DefDef =>
+          prophesy.Elaboration.scan(using quotes)(defDef.asInstanceOf[quotes.reflect.Tree])
+
+        case _ =>
+          List()
+
+    catch case scala.util.control.NonFatal(_) => List()
 
   // The human-facing rendering of each value parameter's declared type, through `stenography` —
   // capture-set-aware and source-accurate — keyed by name. This is what a debugger surfaces to the

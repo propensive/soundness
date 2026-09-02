@@ -236,6 +236,14 @@ extends caps.ExclusiveCapability:
 
       . or(Jdwp.Value.Void)
 
+  // The elaborated call sites of the frame's method — the pieces the compiler inserted at each
+  // call, inferred type arguments and synthesized `using` arguments — read from the debuggee's
+  // own TASTy, so they reflect what actually runs. A hover surface's raw material.
+  def elaborations(): List[prophesy.Elaboration] =
+    halt.topFrame.lay(List()): (_, location) =>
+      val owner = Variable.demangle(connection.signature(location.cls))
+      purview.elaborations(owner, methodName(location.cls, location.method))
+
   // The frame's visible variables, each enriched with its declared static type where one can be
   // recovered from TASTy — the `stenography` rendering the user sees as `Variable.static`. A
   // binding whose static type could not be recovered (a non-parameter local, for now) keeps

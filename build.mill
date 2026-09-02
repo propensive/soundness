@@ -3301,7 +3301,8 @@ object vivisection extends Library:
   // Expression evaluation: `anthology` compiles a synthetic class against the debuggee's
   // classpath and the Evaluator injects and runs it over JDWP. Kept out of `core` so the
   // compiler dependency does not reach a caller who only inspects variables.
-  object eval extends Component(core, anthology.`scala`, hellenism.jvm, stenography.core,
+  object eval extends Component(core, anthology.`scala`, hellenism.jvm, prophesy.core,
+      stenography.core,
       hyperbole.tasty):
     override def scalaJs = false // hosts the Scala compiler and debugs JVMs
     override def scalaNative = false
