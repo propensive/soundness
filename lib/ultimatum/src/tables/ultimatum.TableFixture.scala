@@ -38,6 +38,7 @@ import anticipation.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
 import escapade.*
+import hypotenuse.{maximum, minimum}
 import escritoire.*
 import hieroglyph.*
 import polysyllabic.*
@@ -90,7 +91,7 @@ extends Fixture:
   def measure(width: Int): (Int, Int) =
     lines = layout(width)
     measuredWidth = width
-    val widest = lines.map(_.plain.metrics).most.or(0)
+    val widest = lines.map(_.plain.metrics).maximum.or(0)
     (widest, lines.size)
 
   def render(canvas: Board^, focused: Boolean): Unit =

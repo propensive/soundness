@@ -1019,9 +1019,9 @@ object KotlinFacade:
 
     // Each metadata candidate scans the same-named JVM methods, so a symbol satisfiable
     // through more than one candidate would repeat; overload identity is the symbol.
-    // A stdlib view for `distinctBy`, which the opaque collections withhold (their `distinct`
-    // has no key projection), and because the result is matched with `List(one)`/`one :: _`.
-    val distinct = resolved.stdlib.distinctBy(_(0))
+    // A stdlib view, because the result is matched with `List(one)`/`one :: _` against the
+    // compiler's own `List` this file imports.
+    val distinct = resolved.deduplicate(_(0)).stdlib
 
     // Exact conformance outranks adaptation, so `Text` never makes two `String`-flavoured
     // overloads ambiguous when one matches the arguments as given.

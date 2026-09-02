@@ -36,5 +36,5 @@ package rudiments
 // them so `import rudiments.*` keeps exposing the whole surface unchanged.
 export murmuration.{Traversable, Reshapable, Mappable, Reversible, Inclusive, Convertible, reverse,
     has, map, remap, subsumes, bind, flatMap, filter, withFilter, foreach, exists, fold, flat, trace, excerpt, group,
-    sort, order, distinct, zip, batched, span, partition, sweep, Keyed, keys, values, count, Intersectable,
+    sort, order, distinct, deduplicate, zip, batched, span, partition, sweep, Keyed, keys, values, count, Intersectable,
     intersect, except}

@@ -243,6 +243,17 @@ object Tests extends Suite(m"Murmuration tests"):
         List(1, 2, 1, 3, 2).distinct
       . assert(_ == List(1, 2, 3))
 
+      test(m"deduplicate keeps the first element for each key"):
+        List(10, 43, 22, 71, 52).deduplicate(_%10)
+      . assert(_ == List(10, 43, 22, 71))
+
+      // Like `distinct`, which occurrence survives is positional, so unordered shapes
+      // cannot deduplicate.
+      test(m"a set cannot be deduplicated"):
+        demilitarize:
+          Set(1, 2, 3).deduplicate(_%2)
+      . assert(_.nonEmpty)
+
       // `sort` demands `Reshapable.Stable`, so an unordered shape cannot be sorted: the
       // alternative would be to sort and then silently drop the order again.
       test(m"a set cannot be sorted"):

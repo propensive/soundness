@@ -45,6 +45,7 @@ import escapade.*
 import escritoire.*, columnAttenuation.ignoreAttenuation
 import fulminate.*
 import gossamer.*
+import hypotenuse.{maximum, minimum}
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -135,8 +136,8 @@ private[probably] object TerseRenderer:
     case Block.Sparkline(steps, sequence) =>
       val labelWidths: List[Int] = sequence.map(_.label.length)
       val stepWidths: List[Int] = steps.map(_.show.length)
-      val labelWidth = labelWidths.most.or(0)
-      val stepWidth = stepWidths.most.or(0) + 2
+      val labelWidth = labelWidths.maximum.or(0)
+      val stepWidth = stepWidths.maximum.or(0) + 2
 
       // Hoisted out of the lambdas below: a `t"…"` interpolation evaluated inside a combinator
       // lambda trips the compiler's `wildApprox` assertion.
@@ -172,7 +173,7 @@ private[probably] object TerseRenderer:
       title.let: id => Out.println(t"${id.id}  ${id.name.text}")
 
       val samples: List[Long] = frames.map(_.samples)
-      val max = samples.most.or(0L)
+      val max = samples.maximum.or(0L)
 
       def name(frame: Hotspots.Frame): Text =
         val method = StackTrace.Method(frame.className, frame.method)
@@ -180,7 +181,7 @@ private[probably] object TerseRenderer:
         t"${method.prefix}.$cls#${frame.method}"
 
       val widths: List[Int] = frames.map(name(_).length)
-      val width = widths.most.or(0)
+      val width = widths.maximum.or(0)
 
       frames.each: frame =>
         val percent = Format.percent(Format.basisPoints(frame.samples.toDouble, total.toDouble))

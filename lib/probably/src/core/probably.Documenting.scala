@@ -37,6 +37,7 @@ import scala.math
 
 import anticipation.*
 import gossamer.*
+import hypotenuse.{maximum, minimum}
 import rudiments.*
 import vacuous.*
 import denominative.*
@@ -441,7 +442,7 @@ private[probably] object Documenting:
     given Ordering[(Long, Run)] =
       Ordering.by: point => metric(point(1), Metric.Throughput).or(0.0)
 
-    points.seek(_(1).sustained).or(points.most)
+    points.seek(_(1).sustained).or(points.maximum)
 
   private def throughput(run0: Run): Double = metric(run0, Metric.Throughput).or(0.0)
 
@@ -477,7 +478,7 @@ private[probably] object Documenting:
       if steps.size < 2 then Nil else
         val runs: List[Run] = curves.flatMap(_(1).values)
         val rates: List[Long] = runs.map(throughput(_).toLong)
-        val peakRate = rates.most.or(0L).max(1L)
+        val peakRate = rates.maximum.or(0L).max(1L)
 
         val sequence = curves.map: (entry, curve) =>
           val sustained: Optional[(Long, Long)] =
@@ -524,7 +525,7 @@ private[probably] object Documenting:
       best.lay(List[(Entry, Long, Run)]()): (n, run0) => List((entry, n, run0))
 
     val rates: List[Double] = peaks.map: point => throughput(point(2))
-    val best: Double = rates.most.or(0.0)
+    val best: Double = rates.maximum.or(0.0)
 
     // A single implementation has nothing to be ranked against, and a group which measured
     // no throughput at all cannot be ranked at all.

@@ -287,7 +287,9 @@ package lineSeparation:
     case _: String => adaptiveLinefeedLineSeparation
 
 extension [element](stream: Chain[element])
-  def deduplicate: Chain[element] =
+  // Collapses each run of consecutive equal elements to one, lazily; distinct from
+  // `deduplicate`, which is the key-projected, whole-collection `distinctBy`.
+  def condense: Chain[element] =
     def recur(last: element, stream: Chain[element]): Chain[element] =
       stream.flow(Chain()):
         if last == next then recur(last, more) else next #:: recur(next, more)

@@ -36,6 +36,7 @@ import anticipation.*
 import denominative.*
 import escapade.*
 import gossamer.*
+import hypotenuse.{maximum, minimum}
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -60,7 +61,7 @@ object Sparkline:
             val from = cell*count/width
             val to = (((cell + 1)*count/width).max(from + 1)).min(count)
             // The excerpt always spans at least one sample, so the fallback is unreachable.
-            Fraction(samples.excerpt(from, to).map(_.value).most.or(0.0))
+            Fraction(samples.excerpt(from, to).map(_.value).maximum.or(0.0))
 // How a run of samples is drawn. `Blocks` gives eight levels in one row; `Tall` stacks two rows for
 // sixteen; `Dots` and `Ascii` trade resolution for a narrower character repertoire.
 enum Sparkline:
@@ -96,8 +97,8 @@ enum Sparkline:
       gauging: Gauging )
   :   List[Teletype] =
 
-    val lower = floor.or(samples.least.or(0.0))
-    val upper = ceiling.or(samples.most.or(1.0))
+    val lower = floor.or(samples.minimum.or(0.0))
+    val upper = ceiling.or(samples.maximum.or(1.0))
     val span = upper - lower
 
     val normalized =

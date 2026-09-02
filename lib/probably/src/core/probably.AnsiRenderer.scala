@@ -49,6 +49,7 @@ import escapade.*
 import escritoire.*, columnAttenuation.ignoreAttenuation
 import fulminate.*
 import gossamer.*
+import hypotenuse.{maximum, minimum}
 import iridescence.*
 import prepositional.*
 import rudiments.*
@@ -331,8 +332,8 @@ private[probably] object AnsiRenderer:
       case Block.Sparkline(steps, sequence) =>
         val labelWidths: List[Int] = sequence.map(_.label.length)
         val stepWidths: List[Int] = steps.map(_.show.length)
-        val labelWidth = labelWidths.most.or(0)
-        val stepWidth = stepWidths.most.or(0) + 2
+        val labelWidth = labelWidths.maximum.or(0)
+        val stepWidth = stepWidths.maximum.or(0) + 2
 
         // Hoisted out of the lambda: a `t"…"` interpolation evaluated inside a combinator lambda
         // trips the compiler's `wildApprox` assertion.
@@ -370,7 +371,7 @@ private[probably] object AnsiRenderer:
         title.let: id => Out.println(e"$Bold(${Fg(palette.foreground)}(${id.name}))")
 
         val samples: List[Long] = frames.map(_.samples)
-        val max = samples.most.or(0L)
+        val max = samples.maximum.or(0L)
         val stackPalette = summon[StackTracePalette]
 
         // The digression convention: packages in first-appearance order take the accent
@@ -392,7 +393,7 @@ private[probably] object AnsiRenderer:
             val cls = if method.cls.starts(t"Ξ") then method.cls.skip(1) else method.cls
             method.prefix.length + 1 + cls.length + 1 + frame.method.length
 
-        val width: Int = widths.most.or(0)
+        val width: Int = widths.maximum.or(0)
 
         // Left on `stdlib`: with a native `each`, the `e"…"` interpolations in this lambda's
         // body crash the compiler's `wildApprox` assertion.
