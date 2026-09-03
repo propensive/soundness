@@ -340,7 +340,7 @@ object internal extends protointernal:
       InspectableQuantity[units](_.express)
 
     def expressUnits(units: Map[Text, Int]): Text =
-      units.stdlib.toList.map: (unit, power) =>
+      units.remap: (unit, power) =>
         if power == 1 then unit else
           val exponent: Text =
             power.show.tr:

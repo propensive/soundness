@@ -102,8 +102,8 @@ object Math:
       full.show
 
   given renderable: (Math is Renderable { type Form = "math" }) = math =>
-    val pairs = math.attributePairs.stdlib.map { case (key, value) => (key, value: Optional[Text]) }
-    val children = math.contents.stdlib.map(_.html)
+    val pairs = math.attributePairs.map { case (key, value) => (key, value: Optional[Text]) }
+    val children = math.contents.map(_.html)
     honeycomb.doms.html.whatwg.Math.node(honeycomb.Attributes(pairs*))(children*)
 
   def apply(children: Mathml*): Math = Math(children.to(List))
@@ -182,7 +182,7 @@ object Math:
   given vector: [element: Encodable in Math, size <: Int]
   =>  Vector[element, size] is Encodable in Math =
     vector =>
-      Math(fenced(Mtable(vector.list.stdlib.map { element => Mtr(Mtd(element.mathml)) }*), t"(", t")"))
+      Math(fenced(Mtable(vector.list.map { element => Mtr(Mtd(element.mathml)) }*), t"(", t")"))
 
   given matrix: [element: Encodable in Math, height <: Int, width <: Int]
   =>  Matrix[element, height, width] is Encodable in Math =
@@ -194,7 +194,7 @@ object Math:
 
   private def quantityMathml(value: Double, units: Map[Text, Int]): Mathml =
     val unitNodes: List[Mathml] =
-      units.stdlib.toList.sortBy(_._1.s).to(List).map: (symbol, power) =>
+      units.order(_(0).s).remap: (symbol, power) =>
         if power == 1 then Mi(symbol) else Msup(Mi(symbol), Mn(power.toString.tt))
 
     product(Mn(value.toString.tt) :: unitNodes)

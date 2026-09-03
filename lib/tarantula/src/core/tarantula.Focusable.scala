@@ -66,7 +66,7 @@ object Focusable:
   // Polymorphic for the same reason as `tag`: `ClassList["checkbox"]()` has the refined type
   // `ClassList of "checkbox"`, which an instance fixed at `ClassList` cannot match.
   given cssClass: [classes <: ClassList] => classes is Focusable =
-    Focusable(t"css selector", _.classes.stdlib.join(t".", t".", t""))
+    Focusable(t"css selector", _.classes.join(t".", t".", t""))
 
 trait Focusable extends Typeclass:
   def strategy: Text

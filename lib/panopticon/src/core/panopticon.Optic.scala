@@ -70,7 +70,7 @@ object Optic:
 
     Optic[Prim.type, List[element], element]: (origin, lambda) =>
       origin match
-        case head :: tail => (lambda(head) :: tail.stdlib).to(List)
+        case head :: tail => lambda(head) :: tail
         case Nil          => Nil
 
 // `Optic` extends `Findable` (not the pure `Typeclass`): an optic that wraps a fallible transform

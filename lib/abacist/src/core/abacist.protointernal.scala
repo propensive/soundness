@@ -156,8 +156,8 @@ object protointernal extends anteprotointernal:
     inline def distributiveQuanta[base <: AnyUnit, quanta <: Quanta[base]]
     :   quanta is Distributive by Long =
 
-      distributive[quanta](_.components.stdlib.map(_(1)).to(List)): (value, parts) =>
-        parts.zip(value.components.stdlib.map(_(0))).map: (number, units) =>
+      distributive[quanta](_.components.values): (value, parts) =>
+        parts.zip(value.components.keys).map: (number, units) =>
           t"$number $units"
 
         . join(t", ")

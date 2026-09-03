@@ -189,7 +189,7 @@ object Apoplexy:
 
     val params =
       doc.paths(path).lay(List[OpenApi.Parameter]()): item =>
-        item.operations.stdlib.values.flatMap(_.parameters.stdlib).to(List)
+        item.operations.values.flatMap(_.parameters)
 
     params.seek { p => p.name == parameter && p.`in` == OpenApi.Parameter.In.Path }
     . lay(TypeRepr.of[Text]): param =>

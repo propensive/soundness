@@ -590,8 +590,7 @@ object Xml extends Tag.Container
       val labels: List[Text] = variantLabels
 
       val variantNames: Map[Text, Text] =
-        variantRelabelling[derivation, Xml].stdlib.map: (variant, wire) => wire -> variant
-        . to(Map)
+        variantRelabelling[derivation, Xml].remap: (variant, wire) => wire -> variant
 
       xml =>
         provide[Foci[Xml.Focus]]:

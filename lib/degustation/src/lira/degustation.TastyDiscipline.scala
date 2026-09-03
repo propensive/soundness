@@ -34,6 +34,7 @@ package degustation
 
 import anticipation.*
 import contingency.*
+import denominative.nil
 import fulminate.*
 import gossamer.*
 import reliquary.*
@@ -72,9 +73,9 @@ object TastyDiscipline extends Discipline:
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
   :   Atomization raises Discipline.Error =
 
-    val tasty = content.stdlib.filter: pair => pair(0).text.s.endsWith(".tasty")
+    val tasty = content.filter: pair => pair(0).text.s.endsWith(".tasty")
 
-    if tasty.isEmpty then Atomization.of(id, List()) else
+    if tasty.nil then Atomization.of(id, List()) else
       // The compiler's unpickler reads files, so the claimed `.tasty` content is written to a
       // throwaway directory for the duration of the inspection.
       val directory = java.nio.file.Files.createTempDirectory("degustation").nn
@@ -91,7 +92,7 @@ object TastyDiscipline extends Discipline:
             case Inspection.Error(reason) =>
               Discipline.Error(id, Discipline.Error.Reason.Malformed(t"$reason"))
 
-          . protect(Inspection.atomize(files.to(List), context.classpath))
+          . protect(Inspection.atomize(files, context.classpath))
 
         val atoms = scalaAtoms.map: atom =>
           val references = atom.references.map:

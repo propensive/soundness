@@ -271,7 +271,7 @@ private[probably] object Documenting:
               val lead = List(Datum.Hash(entry.id.id), Datum.Title(entry.id.name, 0))
               List((metric(run0, Metric.Throughput).or(0.0), lead + benchMetricCells(run0, sized)))
 
-        val rows = ranked.stdlib.sortBy(-_(0)).map { x => (x(1)): List[Datum] }.to(List)
+        val rows = ranked.order(-_(0)).map { x => (x(1)): List[Datum] }
 
         List(Block.Table
           ( Unset,

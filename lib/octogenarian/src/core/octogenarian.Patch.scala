@@ -59,7 +59,7 @@ object Patch:
   // Flattens every hunk's edits into a single Dissonance Diff[Text]. Assembled exclusively from
   // `Retained` edits, so the `Diff` carries the proof.
   def asDiff(file: FileDiff): Diff[Text] & Retained =
-    Diff(file.hunks.stdlib.flatMap(_.edits.stdlib)*).retained
+    Diff(file.hunks.bind(_.edits).stdlib*).retained
 
   private def parseHunkRange(text: Text): (Int, Int) = text.cut(t",") match
     case List(start)        => (start.s.toInt, 1)

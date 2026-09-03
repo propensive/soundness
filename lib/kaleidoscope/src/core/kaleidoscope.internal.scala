@@ -49,6 +49,8 @@ import prepositional.*
 import vacuous.*
 
 import denominative.dysasymptotics.linearSize
+import murmuration.map
+import rudiments.total
 
 object internal:
   transparent inline def expandRegexJvm(inline context: StringContext): Any =
@@ -94,7 +96,7 @@ object internal:
     // substitutions, since a substitution binds the capture group that immediately follows it.
     // An index at end-of-input (an unclosed group, say) is clamped onto the last character.
     def fail(error: Regex.Error): Nothing =
-      val length = parts.stdlib.map(_.length).sum
+      val length = parts.map(_.length).total
       val offset = error.index.min(length - 1).max(0)
       halt(error.labelled, Interpolation.sourcePosition(parts, origins, 0, offset))
 
@@ -104,7 +106,7 @@ object internal:
       given HaltTactic[Regex.Error, Regex] = new HaltTactic[Regex.Error, Regex]:
         override def abort(error: Diagnostics ?=> Regex.Error): Nothing = fail(error)
 
-      Regex.parse((parts.stdlib.map(Text(_))).to(List))
+      Regex.parse(parts.map(Text(_)))
 
     val types = regex.captureGroups.stdlib.map: group =>
       group.quantifier match

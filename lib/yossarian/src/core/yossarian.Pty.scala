@@ -495,10 +495,10 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
 
     def parsePair(text: Text, default: Int): (Int, Int) =
       if text.nil then (default, default) else
-        val parts = text.cut(t";").stdlib
-        val first = if parts.length >= 1 then parseInt(parts(0), default) else default
-        val second = if parts.length >= 2 then parseInt(parts(1), default) else default
-        (first, second)
+        text.cut(t";") match
+          case first :: second :: _ => (parseInt(first, default), parseInt(second, default))
+          case first :: _           => (parseInt(first, default), default)
+          case _                    => (default, default)
 
     def privateMode(params: Text, char: Char): Unit = (params, char) match
       case (t"?25",   'h') => dectcem(true)

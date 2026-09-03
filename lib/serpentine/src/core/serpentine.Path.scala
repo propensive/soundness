@@ -364,4 +364,4 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     type Topic2 = Tuple.Concat[relative.Topic, Base]
 
     Path[Plane, Limit, Topic2]
-      ( root, (relative.descent.stdlib ++ descent.drop(relative.ascent)).to(List) )
+      ( root, relative.descent + descent.drop(relative.ascent).to(List) )

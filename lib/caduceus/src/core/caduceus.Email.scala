@@ -34,6 +34,8 @@ package caduceus
 
 import anticipation.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
+import rudiments.:+
 import gesticulate.*
 import turbulence.*
 import vacuous.*
@@ -85,4 +87,4 @@ case class Email(headers: Map[Text, Text], message: Email.Message) extends Docum
   def attachments: List[Asset] = message.attachments
 
   def attach[attachable: Attachable](attachment: attachable): Email =
-    copy(message = message.copy(attachments = (attachments.stdlib :+ attachable.attachment(attachment)).to(List)))
+    copy(message = message.copy(attachments = attachments :+ attachable.attachment(attachment)))

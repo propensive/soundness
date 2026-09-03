@@ -307,7 +307,7 @@ object XPath extends Format:
       case Truth(value)   => value
       case Numeric(value) => value == value && value != 0.0
       case Textual(value) => value.s.length > 0
-      case NodeSet(loci)  => loci.stdlib.nonEmpty
+      case NodeSet(loci)  => !loci.nil
 
     def number: Double = this match
       case Numeric(value) => value
@@ -559,14 +559,14 @@ derives CanEqual:
 
       if stdlibSteps.isEmpty then origin match
         case XPath.Origin.Filter(filtered, predicates) =>
-          val amended = XPath.Origin.Filter(filtered, (predicates.stdlib :+ predicate).to(List))
+          val amended = XPath.Origin.Filter(filtered, predicates :+ predicate)
           XPath(XPath.Expression.Route(amended, Nil))
 
         case _ =>
           XPath(XPath.Expression.Route(XPath.Origin.Filter(expression, List(predicate)), Nil))
       else
         val lastStep = stdlibSteps.last
-        val amended = lastStep.copy(predicates = (lastStep.predicates.stdlib :+ predicate).to(List))
+        val amended = lastStep.copy(predicates = lastStep.predicates :+ predicate)
         XPath(XPath.Expression.Route(origin, (stdlibSteps.init :+ amended).to(List)))
 
     case other =>

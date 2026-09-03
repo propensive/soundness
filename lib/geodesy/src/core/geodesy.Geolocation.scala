@@ -88,7 +88,7 @@ object Geolocation:
                   case params =>
                     (Unset, params)
 
-                Geolocation(location, altitude, crs, uncertainty, params.stdlib.to(Map))
+                Geolocation(location, altitude, crs, uncertainty, params.to[Map])
 
               case other =>
                 raise(Geolocation.Error(ExpectedSemicolon))

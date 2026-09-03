@@ -80,14 +80,14 @@ object Digestible extends Derivable[Digestible]:
   =>  set[value] is Digestible =
 
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
-    (digestion, set) => set.stdlib.each(dig().digest(digestion, _))
+    (digestion, set) => set.each(dig().digest(digestion, _))
 
 
   given sequence: [sequence <: Sequence, value] => (digestible: => value is Digestible)
   =>  sequence[value] is Digestible =
 
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
-    (digestion, sequence) => sequence.stdlib.each(dig().digest(digestion, _))
+    (digestion, sequence) => sequence.each(dig().digest(digestion, _))
 
 
   given iarray: [value] => (digestible: => value is Digestible) => (Array[value]^{}) is Digestible =
@@ -104,7 +104,7 @@ object Digestible extends Derivable[Digestible]:
       caps.unsafe.unsafeAssumePure(() => valueDigestible)
 
     (digestion, map) =>
-      map.stdlib.each: (key, value) =>
+      map.each: (key, value) =>
         digKey().digest(digestion, key)
         digValue().digest(digestion, value)
 

@@ -32,6 +32,7 @@
                                                                                                   */
 package tessellate
 
+import denominative.size
 import vacuous.*
 
 object Flex:
@@ -52,7 +53,7 @@ object Flex:
   // and redistributing) until a fixed point, then hand the still-free tracks their weighted
   // shares with largest-remainder (Hamilton) rounding so the sizes sum to exactly the pool.
   def solve(tracks: Sequence[Flex], available: Int, gap: Int = 0): Sequence[Optional[Int]] =
-    val n = tracks.stdlib.length
+    val n = tracks.size
 
     // The working state, hoisted once into index-aligned local arrays so every read in the
     // fixed-point loops below is total `Array` indexing (`i` ranges over `0 until n`).

@@ -308,7 +308,9 @@ extension [element](stream: Chain[element])
       case _             => termination
 
 
-  def strict: Chain[element] = stream.stdlib.length yet stream
+  def strict: Chain[element] =
+    import denominative.dysasymptotics.unboundedSize
+    stream.size yet stream
 
 extension (stream: Chain[Data])
   def drop(bytes: Bytes): Chain[Data] =

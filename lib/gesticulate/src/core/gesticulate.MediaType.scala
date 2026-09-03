@@ -44,6 +44,7 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.+
 import vacuous.*
 import fulminate.*
 
@@ -121,4 +122,4 @@ extends Dynamic:
   def at(name: Text): Optional[Text] = parameters.seek(_(0) == name).let(_(1))
 
   def applyDynamicNamed(apply: "apply")(kvs: (String, Text)*): MediaType =
-    copy(parameters = (parameters.stdlib ::: kvs.toList.map(_.show -> _)).to(List))
+    copy(parameters = parameters + List.from(kvs).map(_.show -> _))

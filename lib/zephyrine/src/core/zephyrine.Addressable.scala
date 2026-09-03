@@ -52,7 +52,7 @@ object Addressable:
     type Target = ji.ByteArrayOutputStream
     type Storage = scala.Array[Byte]
 
-    val empty: Data = Array.from(Nil.stdlib)
+    val empty: Data = Array.empty[Byte]
 
     inline def substrate: Substrate = Substrate.Bytes
     inline def blank(size: Int): ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(size)

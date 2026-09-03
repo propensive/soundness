@@ -162,8 +162,8 @@ object TlsAcceptance:
         val store = js.KeyStore.getInstance(js.KeyStore.getDefaultType.nn).nn
         store.load(null, null)
 
-        anchors.stdlib.zipWithIndex.each: (anchor, index) =>
-          store.setCertificateEntry(s"anchor-$index", anchor)
+        anchors.indexed.each: (anchor, index) =>
+          store.setCertificateEntry(s"anchor-${index.n0}", anchor)
 
         store
 

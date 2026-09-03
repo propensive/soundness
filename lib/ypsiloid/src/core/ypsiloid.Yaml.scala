@@ -1535,7 +1535,7 @@ object Yaml extends Yaml2, Dynamic:
   given mapEncodable: [key: Encodable in Text, element]
   =>  ( encodable: (element is Encodable in Yaml)^ )
   =>  ((Map[key, element] is Encodable in Yaml)^{encodable, caps.any}) = map =>
-    val entries: List[(key, element)] = List.from(map.stdlib)
+    val entries: List[(key, element)] = map.to[List]
     val arr = Array.allocate[Any](entries.size*2)
     var i = 0
 

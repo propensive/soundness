@@ -42,6 +42,7 @@ import vacuous.*
 import contingency.*
 import gossamer.*
 import hypotenuse.*
+import symbolism.`+`
 import zephyrine.*
 
 // An `Alphabet` is the stage descriptor for streaming serialization in both
@@ -319,12 +320,12 @@ case class Alphabet[encoding <: Serialization]
     else abort(Serialization.Error(position, char))
 
   lazy val inverse: Map[Char, Int] =
-    (tolerance.stdlib ++ chars.chars.readable.zipWithIndex.toMap).to(Map)
+    tolerance + Map.from(chars.chars.readable.zipWithIndex)
 
   // Dense decode table, indexed directly by character code (-1 = invalid), so the
   // per-character hot path avoids boxed `Map` lookups.
   lazy val inversions: Array[Int]^{} =
-    val max = inverse.stdlib.keysIterator.max
+    val max = inverse.keys.maximum.or(' ')
 
     Array.tabulate(max + 1): index =>
       inverse(index.toChar).or(-1)

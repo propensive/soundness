@@ -66,7 +66,7 @@ object Process:
     builder.result().to(List)
 
   def all: List[Process] = processes(allHandles)
-  def roots: List[Process] = processes(allHandles.stdlib.filter(!_.parent.nn.isPresent).to(List))
+  def roots: List[Process] = processes(allHandles.filter(!_.parent.nn.isPresent))
   def apply(): Process = new Process(ProcessHandle.current.nn)
 
   // ProcessInput → Process.Input

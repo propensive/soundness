@@ -33,6 +33,7 @@
 package ziggurat
 
 import anticipation.*
+import denominative.dysasymptotics.linearSize
 import rudiments.*
 import aperture.*
 import contingency.*
@@ -167,7 +168,7 @@ object Xeq:
     val outputPath: Path on Linux = output.as[Path on Linux]
     val staging: Path on Linux = stagingDir.as[Path on Linux]
 
-    val children: List[Path on Linux] = staging.children.stdlib.to(List)
+    val children: List[Path on Linux] = staging.children.to[List]
 
     val runnerPayloads: List[Payload] =
       children
@@ -194,7 +195,7 @@ object Xeq:
       else
         Unset
 
-    write(outputPath, installer((runnerPayloads.stdlib ++ dataPayload.option).to(List)))
+    write(outputPath, installer(dataPayload.lay(runnerPayloads)(runnerPayloads :+ _)))
 
   private def downloaderMain(output: Text, url: Text, hash: Text): Unit = unsafely:
     write(output.as[Path on Linux], downloader(url, hash))
@@ -212,9 +213,9 @@ object Xeq:
         manifest.as[Path on Linux].read[Text].cut(t"\n").map(_.trim)
         . filter(_ != t"")
         . map: line =>
-            val fields = line.cut(t"\t").stdlib
-            val label: Text = fields.head
-            val hash: Text = fields.last
+            val fields = line.cut(t"\t")
+            val label: Text = fields.prim.or(t"")
+            val hash: Text = fields.reverse.prim.or(t"")
 
             val name: Text =
               if label.starts(t"windows") then t"runner-$label.exe" else t"runner-$label"

@@ -33,12 +33,14 @@
 package dendrology
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import hieroglyph.*
 import polysyllabic.*
 import rudiments.*
 import spectacular.*
 import tessellate.*
+import denominative.dysasymptotics.linearSize
 
 import TreeTile.*
 
@@ -47,19 +49,18 @@ object TreeDiagram:
     by[node](node.children(_))(roots*)
 
   given printable: [node: Showable] => (style: TreeStyle[Text]) => TreeDiagram[node] is Printable =
-    (diagram, termcap) =>
-      (diagram.render[Text] { node => t"▪ $node" }).stdlib.join(t"\n")
+    (diagram, termcap) => (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
   def by[node](getChildren: node => List[node])(roots: node*): TreeDiagram[node] =
     def recur(level: List[TreeTile], input: List[node]): Chain[(List[TreeTile], node)] =
-      val last = input.stdlib.size - 1
+      val last = input.size - 1
 
-      input.stdlib.zipWithIndex.to(Chain).flatMap: (item, index) =>
+      input.indexed.to[Chain].flatMap: (item, index) =>
         val tiles: List[TreeTile] =
-          ((if index == last then Last else Branch) :: level).reverse
+          ((if index.n0 == last then Last else Branch) :: level).reverse
 
         ((tiles, item) #::
-          recur((if index == last then Space else Extender) :: level, getChildren(item)))
+          recur((if index.n0 == last then Space else Extender) :: level, getChildren(item)))
         : Chain[(List[TreeTile], node)]
 
     new TreeDiagram(recur(Nil, roots.to(List)))
@@ -76,7 +77,7 @@ case class TreeDiagram[node](lines: Chain[(List[TreeTile], node)]):
     ( using Text is Measurable, Hyphenation )
   :   Chain[line] =
 
-    lines.stdlib.to(Chain).flatMap: (tiles, node) =>
+    lines.flatMap: (tiles, node) =>
       val content = line(node)
       val textual = summon[line is Textual]
 
@@ -87,13 +88,12 @@ case class TreeDiagram[node](lines: Chain[(List[TreeTile], node)]):
       val prefix = style.serialize(tiles, textual(t"")).plain.metrics
       val followOnPrefix = style.followOn(tiles, textual(t"")).plain.metrics
 
-      val rows: scala.List[line] =
-        Flow.wrap(content, (width - prefix.max(followOnPrefix)).max(1)).stdlib.to(scala.List)
+      Flow.wrap(content, (width - prefix.max(followOnPrefix)).max(1)).to[List].absolve match
+        case Nil => Chain(style.serialize(tiles, content))
 
-      if rows.isEmpty then Chain(style.serialize(tiles, content))
-      else
-        val continuations = rows.tail.map: row => style.followOn(tiles, row)
-        (style.serialize(tiles, rows.head) :: continuations).to(Chain)
+        case row :: rest =>
+          val continuations = rest.map: row => style.followOn(tiles, row)
+          (style.serialize(tiles, row) :: continuations).to[Chain]
 
   def map[row](line: List[TreeTile] => node => row): Chain[row] = lines.map(line(_)(_))
   def nodes: Chain[node] = lines.map(_(1))

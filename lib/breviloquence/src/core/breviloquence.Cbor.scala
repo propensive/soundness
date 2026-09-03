@@ -227,8 +227,8 @@ trait Cbor2:
 
             // `@name[Cbor]` / bare `@name` variant renames: map the serialized
             // discriminator back to the variant name before delegating.
-            val variantNames: Map[Text, Text] = Map.from:
-              variantRelabelling[derivation, Cbor].stdlib.map: (variant, wire) => wire -> variant
+            val variantNames: Map[Text, Text] =
+              variantRelabelling[derivation, Cbor].remap: (variant, wire) => wire -> variant
 
             discriminable.discriminate(cbor).lay:
               // Under an accruing scope, a missing discriminator records ONE error and skips

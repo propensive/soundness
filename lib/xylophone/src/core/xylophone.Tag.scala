@@ -36,6 +36,7 @@ import scala.language.dynamics
 
 import anticipation.*
 import prepositional.*
+import rudiments.{map, to}
 import typonym.*
 
 @unexported
@@ -57,7 +58,7 @@ object Tag:
     ( presets: Attributes = Attributes.empty )
   :   Container of label over children in schema =
 
-    val admissible: Set[Text] = children.reification().stdlib.map(_.tt).to(Set)
+    val admissible: Set[Text] = children.reification().map(_.tt).to[Set]
 
     Container(valueOf[label].tt, presets, admissible)
     . of[label]

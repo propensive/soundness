@@ -38,6 +38,7 @@ import escapade.*
 import fulminate.*
 import gossamer.*
 import iridescence.*
+import murmuration.{bind, map}
 import prepositional.*
 import spectacular.*
 import symbolism.*
@@ -57,18 +58,17 @@ package logFormats:
   given ansiStandardLogFormat: (palette: LogPalette) => Message is Inscribable in Teletype =
     (event, level, timestamp) =>
       try
-        val lines = event.teletype.cut(t"\n").stdlib.flatMap(_.slices(76).stdlib)
+        event.teletype.cut(t"\n").bind(_.slices(76)) match
+          case Nil => e""
+          case head :: tail =>
+            val date = dateFormat.format(timestamp).nn.tt
+            val color = palette.subdued
+            val first = e"$color($date) $level > $head"
 
-        if lines.isEmpty then e"" else
-          val date = dateFormat.format(timestamp).nn.tt
-          val color = palette.subdued
-          val head = lines.head
-          val first = e"$color($date) $level > $head"
+            (first :: tail.map(indent+_)).join(e"\n").render:
+              termcapDefinitions.xterm256Termcap
 
-          (first :: lines.tail.map(indent+_)).join(e"\n").render:
-            termcapDefinitions.xterm256Termcap
-
-          (first :: lines.tail.map(indent+_)).join(e"\n")
+            (first :: tail.map(indent+_)).join(e"\n")
       catch case error: Throwable => e"${error.stackTrace.show}"
 
 type LogPalette = Palette:

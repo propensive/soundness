@@ -147,6 +147,6 @@ case class GarbageCollection
     collector: GarbageCollection.Collector,
     cause:     GarbageCollection.Cause,
     bytes:     Map[Text, (before: Bytes, after: Bytes)] ):
-  def before: Bytes = bytes.stdlib.toList.map(_._2.before).total
-  def after: Bytes = bytes.stdlib.toList.map(_._2.after).total
+  def before: Bytes = bytes.values.fold(Bytes(0L))(_ + _.before)
+  def after: Bytes = bytes.values.fold(Bytes(0L))(_ + _.after)
   def reduction: Bytes = before - after

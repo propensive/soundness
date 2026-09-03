@@ -54,16 +54,18 @@ object Lexicon:
     def search(query: Text, radius: Int): Set[element] = lexicon.lay(Set())(_.search(query, radius))
 
   def apply(terms: List[Text])(using Proximity { type Triangulable = true } by Int): Lexicon[Text] =
-    apply(terms.stdlib.bi.to(Map))
+    apply(terms.remap { term => term -> term }.to[Map])
 
 
   def apply[element](terms: Map[Text, element])(using Proximity { type Triangulable = true } by Int)
   :   Lexicon[element] =
 
-    if terms.nil then apply() else
-      val entries = terms.stdlib
-      Node(entries.head(0), entries.head(1)).tap: tree =>
-        entries.drop(1).each(tree(_) = _)
+    terms.to[List] match
+      case (key, value) :: entries =>
+        Node(key, value).tap: tree =>
+          entries.each(tree(_) = _)
+
+      case _ => apply()
 
 
   class Node[element](term: Text, value: element)(using Proximity by Int) extends Lexicon[element]:

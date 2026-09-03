@@ -86,7 +86,7 @@ object internal:
       catch case error: Ergo.Error =>
         // The parser's offset refers to the parts joined with a one-character hole sentinel
         // per substitution; clamp end-of-input errors onto the last character.
-        val joinedLength = parts.stdlib.map(_.length).sum + atoms.stdlib.length
+        val joinedLength = parts.map(_.length).total + atoms.stdlib.length
         val offset = error.offset.min(joinedLength - 1).max(0)
 
         halt

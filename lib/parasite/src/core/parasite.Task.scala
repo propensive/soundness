@@ -44,6 +44,7 @@ import digression.*
 import mercator.*
 import nomenclature.*
 import prepositional.*
+import rudiments.map
 import vacuous.*
 
 object Task:
@@ -109,7 +110,7 @@ object Task:
   extension [result](tasks: List[Task[result]])
     // Part of the pure façade (see `monad` above): the fresh handle is sealed once here.
     def sequence(using Monitor^, Probate^): Task[List[result]] emits Async.Error =
-      caps.unsafe.unsafeAssumePure(async((tasks.stdlib.map(_.join())).to(List)))
+      caps.unsafe.unsafeAssumePure(async(tasks.map(_.join())))
 
   extension [result](tasks: Iterable[Task[result]])
     def race()(using monitor: Monitor^, probate: Probate^)
