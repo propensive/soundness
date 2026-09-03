@@ -574,11 +574,10 @@ def cli[bus <: Matchable](using executive: Executive)
         Log.fine(DaemonLogEvent.NewCli)
 
         try
-          // `Executive#invocation` takes a stdlib `Iterable`, which the opaque `List` is not.
           val cli: executive.Interface =
             scala.caps.unsafe.unsafeAssumeSeparate:
              executive.invocation
-               ( textArguments.stdlib,
+               ( textArguments,
                  environment,
                  () => directory,
                  stdio,
@@ -609,7 +608,7 @@ def cli[bus <: Matchable](using executive: Executive)
           Log.info(DaemonLogEvent.CloseConnection(pid))
 
   // `application` takes a stdlib `Iterable` of arguments, which the opaque `Nil` is not.
-  application(using executives.directExecutive(using backstops.silentBackstop))(Nil.stdlib):
+  application(using executives.directExecutive(using backstops.silentBackstop))(Nil):
     import environments.javaEnvironment
     import termcaps.environmentTermcap
     import stdios.virtualMachineStdio

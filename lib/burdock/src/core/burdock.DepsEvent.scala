@@ -39,7 +39,11 @@ object DepsEvent:
   given communicable: DepsEvent is Communicable =
     case Querying(hash)      => m"querying deps.dev for the artifact with hash $hash"
     case Resolved(hash, url) => m"resolved hash $hash to $url"
+    case Indexing(repository) => m"listing the GitHub releases of $repository"
+    case Indexed(repository, assets) => m"indexed $assets release assets of $repository"
 
 enum DepsEvent:
   case Querying(hash: Text) extends DepsEvent, Log.Network, Log.Dependency
   case Resolved(hash: Text, url: Text) extends DepsEvent, Log.Dependency
+  case Indexing(repository: Text) extends DepsEvent, Log.Network, Log.Dependency
+  case Indexed(repository: Text, assets: Int) extends DepsEvent, Log.Dependency

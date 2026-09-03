@@ -42,4 +42,4 @@ abstract class Application:
   import ambience.systems.javaSystem
 
   def invoke(using Cli): Exit
-  def main(textArguments: Array[Text]^{}): Unit = application(textArguments.readable)(invoke)
+  def main(textArguments: Array[Text]^{}): Unit = application(List.from(textArguments.readable))(invoke)

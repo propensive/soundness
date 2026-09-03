@@ -44,7 +44,7 @@ trait Executive extends Findable:
   type Interface <: Cli
 
   def invocation
-    ( fullArguments:    Iterable[Text],
+    ( fullArguments:    List[Text],
       environment:      Environment,
       workingDirectory: WorkingDirectory,
       stdio:            Stdio,
