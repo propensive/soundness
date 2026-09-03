@@ -240,7 +240,7 @@ package executives:
 
 
     def invocation
-      ( arguments:        Iterable[Text],
+      ( arguments:        List[Text],
         environment:      Environment,
         workingDirectory: WorkingDirectory,
         stdio:            Stdio,
@@ -249,7 +249,7 @@ package executives:
       ( using interpreter: Interpreter )
     :   Cli =
 
-      arguments.toList.to(List) match
+      arguments match
         case
           t"{completions}" :: t"powershell" :: As.Int(cursor) :: _ :: tty ::
             t"--" ::
@@ -269,10 +269,10 @@ package executives:
           val restParts = parts match
             case _ :: (rest @ (_ :: _)) => rest
             case _                      => List(t"")
-          val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, cursor))
+          val tab = Completions.tab(tty, Completions.Tab(arguments, focus, cursor))
 
           Completion
-            ( Cli.arguments(List.from(arguments), focus, posInWord, tab),
+            ( Cli.arguments(arguments, focus, posInWord, tab),
               Cli.arguments(restParts, focus, posInWord, tab),
               environment,
               workingDirectory,
@@ -311,12 +311,12 @@ package executives:
             val focus = focus1 - (if shell == Shell.Zsh then 2 else 1)
 
             val position = if shell == Shell.Bash then Unset else position0
-            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
+            val tab = Completions.tab(tty, Completions.Tab(arguments, focus, position0))
             val equalses = rest.keep(focus0).count(_ == t"=")
             val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
 
             Completion
-              ( Cli.arguments(List.from(arguments), focus2, position, tab),
+              ( Cli.arguments(arguments, focus2, position, tab),
                 Cli.arguments(rest2, focus2, position, tab),
                 environment,
                 workingDirectory,
@@ -353,7 +353,7 @@ package executives:
               Exit.Fail(1)
 
           Invocation
-            ( Cli.arguments(List.from(arguments)),
+            ( Cli.arguments(arguments),
               environment,
               workingDirectory,
               stdio,
@@ -362,7 +362,7 @@ package executives:
 
         case other =>
           Invocation
-            ( Cli.arguments(List.from(arguments)),
+            ( Cli.arguments(arguments),
               environment,
               workingDirectory,
               stdio,

@@ -79,7 +79,7 @@ import denominative.dysasymptotics.linearSize
 // It self-locates the application JAR it is running from and rewrites it in place (see
 // `Repackager.repackage`). Its only arguments are hints: `--github owner/repo` (repeatable,
 // or comma-separated) names repositories whose release assets are a download source.
-def repackage(arguments: List[Text]): Unit = application(arguments.stdlib):
+def repackage(arguments: List[Text]): Unit = application(arguments):
   recover:
     case error: Error =>
       Err.println(error.message)

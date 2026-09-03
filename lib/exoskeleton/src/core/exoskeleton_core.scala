@@ -103,7 +103,7 @@ package executives:
 
 
     def invocation
-      ( arguments:        Iterable[Text],
+      ( arguments:        List[Text],
         environment:      Environment,
         workingDirectory: WorkingDirectory,
         stdio:            Stdio,
@@ -113,11 +113,11 @@ package executives:
     :   Invocation =
 
       Invocation
-        ( Cli.arguments(List.from(arguments), Unset, Unset, Unset),
+        ( Cli.arguments(arguments, Unset, Unset, Unset),
           environments.javaEnvironment,
           workingDirectories.javaWorkingDirectory,
           stdio,
-          arguments.size == 0 || arguments.head != t"{admin}",
+          arguments.prim.let(_ != t"{admin}").or(true),
           login )
 
 
@@ -132,7 +132,7 @@ inline def trap(handler: PartialFunction[UnixSignal | WindowsSignal, SignalRespo
   cli.trap(handler)
 
 def application(using executive: Executive, interpreter: Interpreter, system: System)
-  ( arguments: Iterable[Text], signals: List[UnixSignal] = Nil )
+  ( arguments: List[Text], signals: List[UnixSignal] = Nil )
   ( block: Cli ?=> executive.Return )
 :   Unit =
 
