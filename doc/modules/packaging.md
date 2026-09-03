@@ -88,6 +88,19 @@ JAR carries a small bootstrap that, on first run, downloads each requirement, ve
 caches it, and launches — so the artifact that users download is the application, and the
 dependencies arrive once, verified, from where they already live.
 
+Hashes are resolved against Maven Central through deps.dev. There is no such global index for
+GitHub releases, but a repository's releases can be listed one at a time, so the repackager
+accepts hints naming repositories whose release assets are also a download source:
+
+```sh
+java -cp app.jar soundness.repackage --github propensive/soundness --github other/library
+```
+
+Hinted repositories are consulted before deps.dev, so a hint takes precedence over the global
+index. Only `.jar` assets that GitHub reports a SHA-256 digest for can be matched (assets
+uploaded before GitHub computed digests are not). A `GITHUB_TOKEN` in the environment is sent
+with the API requests, which lifts the unauthenticated rate limit.
+
 ### Shading
 
 A library that bundles its dependencies can relocate them at *compile* time, with a compiler

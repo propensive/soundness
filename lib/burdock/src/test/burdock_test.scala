@@ -148,6 +148,73 @@ object Tests extends Suite(m"Burdock Tests"):
         List(0.0, 0.1, 0.333, 0.5, 0.9, 1.0).all(ProgressBar.render(_).plain.length == 40)
       .assert(_ == true)
 
+    suite(m"GitHub release index"):
+      val hex: Text = t"A"*64
+      val lower: Text = t"a"*64
+      val other: Text = t"b"*64
+      val jarUrl: Text = t"https://github.com/o/r/releases/download/v1/lib-1.jar"
+      val oldUrl: Text = t"https://github.com/o/r/releases/download/v0/lib-1.jar"
+      val mavenUrl = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
+
+      def asset(name: Text, url: Text, digest: Optional[Text]): GitHub.Asset =
+        GitHub.Asset(name, url, digest)
+
+      test(m"a .jar asset with a sha256 digest is indexed by lowercase hex"):
+        val release = GitHub.Release(List(asset(t"lib-1.jar", jarUrl, t"sha256:$hex")))
+        GitHub.indexReleases(List(release))(lower).let(_.show)
+      .assert(_ == jarUrl)
+
+      test(m"an asset without a digest is skipped"):
+        val release = GitHub.Release(List(asset(t"lib-1.jar", jarUrl, Unset)))
+        GitHub.indexReleases(List(release)).size
+      .assert(_ == 0)
+
+      test(m"an asset with a non-sha256 digest is skipped"):
+        val release = GitHub.Release(List(asset(t"lib-1.jar", jarUrl, t"md5:$hex")))
+        GitHub.indexReleases(List(release)).size
+      .assert(_ == 0)
+
+      test(m"an asset that is not a .jar is skipped"):
+        val release = GitHub.Release(List(asset(t"lib-1.tar.gz", jarUrl, t"sha256:$hex")))
+        GitHub.indexReleases(List(release)).size
+      .assert(_ == 0)
+
+      test(m"the same hash in two releases keeps the first (newest) release's URL"):
+        val newest = GitHub.Release(List(asset(t"lib-1.jar", jarUrl, t"sha256:$hex")))
+        val oldest = GitHub.Release(List(asset(t"lib-1.jar", oldUrl, t"sha256:$hex")))
+        GitHub.indexReleases(List(newest, oldest))(lower).let(_.show)
+      .assert(_ == jarUrl)
+
+      test(m"owner/repo parses into its two parts"):
+        GitHub.Repository.parse(t"propensive/soundness")
+      .assert(_ == GitHub.Repository(t"propensive", t"soundness"))
+
+      test(m"malformed repository coordinates are rejected"):
+        List(t"owner", t"owner/", t"/repo", t"a/b/c").all: text =>
+          capture[Repackager.UserError](GitHub.Repository.parse(text)) match
+            case Repackager.UserError(_) => true
+      .assert(_ == true)
+
+      test(m"the releases JSON decodes, renaming browser_download_url and reading null digests"):
+        val json: Text =
+          t"""[{"tag_name": "v1", "assets": [
+                {"name": "lib-1.jar", "browser_download_url": "$jarUrl",
+                 "digest": "sha256:$hex", "size": 12},
+                {"name": "lib-1.pom", "browser_download_url": "$oldUrl", "digest": null}]}]"""
+
+        json.read[Json].as[List[GitHub.Release]]
+      .assert(_ == List(GitHub.Release(List(asset(t"lib-1.jar", jarUrl, t"sha256:$hex"),
+                                            asset(t"lib-1.pom", oldUrl, Unset)))))
+
+      test(m"a hinted repository takes precedence over deps.dev"):
+        val index: Map[Text, HttpUrl] = Map(lower -> jarUrl.as[HttpUrl])
+        val depsDev: Repackager.Resolver =
+          hash => if hash == lower || hash == other then mavenUrl else Unset
+
+        val resolve: Repackager.Resolver = hash => index(hash).or(depsDev(hash))
+        (resolve(lower).let(_.show), resolve(other).let(_.show))
+      .assert(_ == (jarUrl, mavenUrl.show))
+
     suite(m"Repackager (end-to-end)"):
       val tmp: Path on Linux = temporaryDirectory[Path on Linux]
       val inputJar: Path on Linux = tmp/t"burdock-in-${Uuid().show}.jar"

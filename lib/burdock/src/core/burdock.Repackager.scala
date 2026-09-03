@@ -93,7 +93,8 @@ object Repackager:
       stripped:           Int,
       outputEntries:      Int )
 
-  // Resolves a dependency hash to its public URL (deps.dev), or `Unset`.
+  // Resolves a dependency hash to its public URL (a hinted GitHub repository's release assets,
+  // or deps.dev), or `Unset`.
   type Resolver = Text => Optional[HttpUrl]
 
   // Reports per-dependency progress as `(completed, total)`, called once after each dependency is
@@ -106,12 +107,12 @@ object Repackager:
   // dependency's entry names (to strip them) does not read the cached JAR's contents.
   type CacheReader = Text => Optional[List[Zip.Entry]]
 
-  // How many deps.dev lookups to run concurrently (see `partition`). Each is an independent HTTP
+  // How many resolver lookups to run concurrently (see `partition`). Each is an independent HTTP
   // round-trip, so serial resolution costs `dependencies × latency`; a bounded fan-out cuts that
   // to roughly `ceil(dependencies / parallelism) × latency` while staying polite to the API.
   private val parallelism: Int = 16
 
-  // Partitions the dependency hashes; `resolve` (deps.dev) and `cached` (cache lookup) are injected
+  // Partitions the dependency hashes; `resolve` (the download sources) and `cached` (cache lookup) are injected
   // so the logic is testable without the network or the filesystem. A published dependency becomes
   // a `Requirement` (externalized, fetched at runtime); otherwise it contributes its cached entries
   // to inline. The cached `Zip.Entry` values are carried through verbatim (still compressed) rather
@@ -137,7 +138,7 @@ object Repackager:
         case url: HttpUrl => (List(Requirement(url, hash)), Nil)
         case Unset        => cached(hash).let: entries => (Nil, entries)
 
-    // Resolve deps.dev in parallel: each lookup is an independent HTTP round-trip, so the serial
+    // Resolve in parallel: each lookup is (at most) an independent HTTP round-trip, so the serial
     // cost is `total × latency`. Fan out over virtual threads, bounded to `parallelism` in flight;
     // await each group in order on this thread (keeping the accumulators single-threaded) and
     // advance the progress bar once per group, so terminal writes never race across worker threads.
