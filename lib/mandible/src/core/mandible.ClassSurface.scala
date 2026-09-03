@@ -37,11 +37,12 @@ import java.lang.classfile.attribute as jlca
 
 import anticipation.*
 import gossamer.*
-import gossamer.collationOrdering
+import gossamer.collationComparable
 import gossamer.collations.codepoints
 import rudiments.*
 import symbolism.*
 import vacuous.*
+import rudiments.sortingAlgorithms.timsort
 
 // The *declaration* surface of a classfile, as distinct from the bytecode surface `Classfile`
 // exposes. Everything a compiled consumer can bind to at link time is here — names, descriptors,

@@ -580,22 +580,22 @@ extension (inline context: StringContext)
 extension [sequence](sequence: sequence)(using recurrent: sequence is Recurrent)
   def occurrences: Chain[recurrent.Topic] = recurrent.occurrences(sequence)
 
-  def until(limit: recurrent.Topic)(using order: Ordering[recurrent.Topic])
+  def until(limit: recurrent.Topic)(using order: recurrent.Topic is Comparable)
   :   Chain[recurrent.Topic] =
 
-    recurrent.occurrences(sequence).keep(order.lt(_, limit))
+    recurrent.occurrences(sequence).keep(order.less(_, limit))
 
-  def within(window: Period[recurrent.Topic])(using order: Ordering[recurrent.Topic])
+  def within(window: Period[recurrent.Topic])(using order: recurrent.Topic is Comparable)
   :   Chain[recurrent.Topic] =
 
       recurrent.occurrences(sequence)
-      . skip(order.lt(_, window.start))
-      . keep(order.lt(_, window.finish))
+      . skip(order.less(_, window.start))
+      . keep(order.less(_, window.finish))
 
-  def following(after: recurrent.Topic)(using order: Ordering[recurrent.Topic])
+  def following(after: recurrent.Topic)(using order: recurrent.Topic is Comparable)
   :   Optional[recurrent.Topic] =
 
-    recurrent.occurrences(sequence).skip(order.lteq(_, after)).prim
+    recurrent.occurrences(sequence).skip(order.atMost(_, after)).prim
 
 export Weekday.{Mon, Tue, Wed, Thu, Fri, Sat, Sun}
 

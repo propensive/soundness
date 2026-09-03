@@ -42,6 +42,7 @@ import rudiments.*
 import vacuous.*
 
 import denominative.dysasymptotics.linearSize
+import rudiments.sortingAlgorithms.timsort
 
 // The atomization rules of `classfile/1`, over the declaration surface `ClassSurface` reads.
 // Shared, deliberately, by two consumers with opposite relationships to the snapshot: the

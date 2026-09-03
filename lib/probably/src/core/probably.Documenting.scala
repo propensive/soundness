@@ -43,6 +43,7 @@ import vacuous.*
 import denominative.*
 import symbolism.*
 import denominative.dysasymptotics.linearSize
+import rudiments.sortingAlgorithms.timsort
 
 // The single structural pass over a report: builds the renderer-agnostic `Doc.Document`
 // consumed by both output modes. All decisions about WHAT appears in a report are made
@@ -437,10 +438,11 @@ private[probably] object Documenting:
   private def peak(curve: Map[Long, Run]): Optional[(Long, Run)] =
     val points: List[(Long, Run)] = curve.to[List]
 
-    // A named `Ordering` replaces the stdlib's `maxByOption`, and `or` its `orElse`; both are
+    // A named `Comparable` replaces the stdlib's `maxByOption`, and `or` its `orElse`; both are
     // by-name, so the peak is still only computed when no step was sustained.
-    given Ordering[(Long, Run)] =
-      Ordering.by: point => metric(point(1), Metric.Throughput).or(0.0)
+    given (Long, Run) is Comparable =
+      Comparable.double.on: point =>
+        metric(point(1), Metric.Throughput).or(0.0)
 
     points.seek(_(1).sustained).or(points.maximum)
 

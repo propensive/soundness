@@ -112,7 +112,7 @@ object Semver:
         case _ =>
           abort(Semver.Error(text, Semver.Error.Reason.BadFormat))
 
-  given ordering: Ordering[Semver] = Ordering.fromLessThan: (left, right) =>
+  given comparable: Semver is Comparable = Comparable.less: (left, right) =>
     def compare(left0: List[Long | Text], right0: List[Long | Text]): Boolean =
       val left = left0.stdlib
       val right = right0.stdlib

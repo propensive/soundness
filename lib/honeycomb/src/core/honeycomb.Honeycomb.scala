@@ -55,6 +55,7 @@ import spectacular.*
 import stenography.*
 import symbolism.*
 import vacuous.*
+import rudiments.sortingAlgorithms.timsort
 
 object Honeycomb:
   def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Extrapolation[Html]] =

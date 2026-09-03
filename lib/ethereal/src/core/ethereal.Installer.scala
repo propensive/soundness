@@ -61,6 +61,7 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
 
 import filesystemBackends.virtualMachineFilesystem
+import rudiments.sortingAlgorithms.timsort
 
 object Installer:
   object Result:

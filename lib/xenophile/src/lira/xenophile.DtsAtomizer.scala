@@ -43,6 +43,7 @@ import vacuous.*
 // `List#size` is genuinely required here; the lists are declaration-sized.
 import denominative.dysasymptotics.linearSize
 import denominative.{Ordinal, size}
+import rudiments.sortingAlgorithms.timsort
 
 // The atomization rules of `dts/1`.
 //

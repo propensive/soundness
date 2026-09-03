@@ -267,3 +267,74 @@ object Tests extends Suite(m"Symbolism Tests"):
           case numerator /: denominator => t"matched"
           case _                        => t"unmatched"
       . assert(_ == t"unmatched")
+
+    suite(m"Comparable tests"):
+      test(m"Compare two Ints"):
+        Comparable.int.compare(2, 3)
+      . assert(_ == Comparison.Less)
+
+      test(m"Compare two Chars"):
+        Comparable.char.compare('z', 'a')
+      . assert(_ == Comparison.More)
+
+      test(m"Equal values compare the same"):
+        Comparable.long.compare(7L, 7L)
+      . assert(_ == Comparison.Same)
+
+      test(m"NaN sorts after every other Double"):
+        Comparable.double.compare(Double.NaN, Double.MaxValue)
+      . assert(_ == Comparison.More)
+
+      test(m"Negative zero precedes positive zero"):
+        Comparable.double.compare(-0.0, 0.0)
+      . assert(_ == Comparison.Less)
+
+      test(m"Derived predicates agree with the comparison"):
+        val comparable = Comparable.int
+        ( comparable.less(1, 2), comparable.atMost(2, 2), comparable.greater(1, 2),
+          comparable.atLeast(2, 2), comparable.same(2, 2) )
+      . assert(_ == (true, true, false, true, true))
+
+      test(m"Minimum and maximum of two values"):
+        (Comparable.int.min(3, 5), Comparable.int.max(3, 5))
+      . assert(_ == (3, 5))
+
+      test(m"Compare by a projection"):
+        Comparable.int.on[Vector2](_.x).compare(Vector2(1, 9), Vector2(2, 0))
+      . assert(_ == Comparison.Less)
+
+      test(m"Build a comparison from a less-than predicate"):
+        val comparable = Comparable.less[Vector2]((left, right) => left.y < right.y)
+        (comparable.compare(Vector2(0, 1), Vector2(9, 2)), comparable.compare(Vector2(0, 5),
+            Vector2(9, 5)))
+      . assert(_ == (Comparison.Less, Comparison.Same))
+
+      test(m"Lists compare lexicographically"):
+        summon[List[Int] is Comparable].compare(List(1, 2, 4), List(1, 3, 0))
+      . assert(_ == Comparison.Less)
+
+      test(m"A prefix precedes the list extending it"):
+        summon[List[Int] is Comparable].compare(List(1, 2), List(1, 2, 0))
+      . assert(_ == Comparison.Less)
+
+      test(m"Two empty lists compare the same"):
+        summon[List[Int] is Comparable].compare(List(), List())
+      . assert(_ == Comparison.Same)
+
+      test(m"Pairs compare on the first element, then the second"):
+        summon[(Int, Int) is Comparable].compare((1, 5), (1, 4))
+      . assert(_ == Comparison.More)
+
+      test(m"A stdlib Ordering confers a Comparable"):
+        given ordering: scala.math.Ordering[Vector2] = scala.math.Ordering.by(_.y)
+        summon[Vector2 is Comparable].compare(Vector2(9, 1), Vector2(0, 2))
+      . assert(_ == Comparison.Less)
+
+      test(m"A native instance outranks the Ordering bridge"):
+        given ordering: scala.math.Ordering[Int] = scala.math.Ordering.Int.reverse
+        summon[Int is Comparable].compare(1, 2)
+      . assert(_ == Comparison.Less)
+
+      test(m"An Ordering derived from a Comparable agrees with it"):
+        Comparable.int.ordering.compare(3, 9).sign
+      . assert(_ == -1)

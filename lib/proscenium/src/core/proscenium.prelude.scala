@@ -66,8 +66,11 @@ export scala.{EmptyTuple, NonEmptyTuple, Tuple, Tuple1, Tuple2, *:}
 export scala.{CanEqual, Conversion, Dynamic, Function, PartialFunction, Product, Selectable,
     StringContext}
 
-// Numeric abstractions (aliases in the `scala` package object).
-export scala.{BigDecimal, BigInt, Fractional, Integral, Numeric, Ordered, Ordering}
+// Numeric abstractions (aliases in the `scala` package object). `Ordering` and `Ordered` are
+// deliberately absent: `symbolism.Comparable` is how comparison is expressed, and the few places
+// that still hand an `Ordering` to a stdlib API (a `TreeMap`'s keys, say) announce it with an
+// explicit `import scala.math.Ordering`, as the interop seams do elsewhere.
+export scala.{BigDecimal, BigInt, Fractional, Integral, Numeric}
 
 // Annotations defined directly in the `scala` package.
 export scala.{deprecated, unchecked, volatile, transient, native, main}

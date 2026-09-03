@@ -255,3 +255,50 @@ object Tests extends Suite(m"Proscenium Tests"):
         Sequence.empty[Int].size
       . assert(_ == 0)
 
+
+    suite(m"Comparison"):
+      test(m"a negative sign is a Less comparison"):
+        Comparison(-42)
+      . assert(_ == Comparison.Less)
+
+      test(m"a positive sign is a More comparison"):
+        Comparison(42)
+      . assert(_ == Comparison.More)
+
+      test(m"a zero sign is a Same comparison"):
+        Comparison(0)
+      . assert(_ == Comparison.Same)
+
+      test(m"a Less comparison answers only to less"):
+        (Comparison.Less.less, Comparison.Less.same, Comparison.Less.more)
+      . assert(_ == (true, false, false))
+
+      test(m"a Same comparison answers only to same"):
+        (Comparison.Same.less, Comparison.Same.same, Comparison.Same.more)
+      . assert(_ == (false, true, false))
+
+      test(m"a More comparison answers only to more"):
+        (Comparison.More.less, Comparison.More.same, Comparison.More.more)
+      . assert(_ == (false, false, true))
+
+      test(m"flipping exchanges Less and More"):
+        (Comparison.Less.flip, Comparison.Same.flip, Comparison.More.flip)
+      . assert(_ == (Comparison.More, Comparison.Same, Comparison.Less))
+
+      test(m"the signs of the three comparisons"):
+        (Comparison.Less.sign, Comparison.Same.sign, Comparison.More.sign)
+      . assert(_ == (-1, 0, 1))
+
+      test(m"a decisive comparison ignores what follows it"):
+        Comparison.More.also(Comparison.Less)
+      . assert(_ == Comparison.More)
+
+      test(m"a Same comparison defers to what follows it"):
+        Comparison.Same.also(Comparison.Less)
+      . assert(_ == Comparison.Less)
+
+      test(m"the second comparison of a decisive chain is never evaluated"):
+        var evaluated = false
+        Comparison.Less.also { evaluated = true; Comparison.More }
+        evaluated
+      . assert(_ == false)

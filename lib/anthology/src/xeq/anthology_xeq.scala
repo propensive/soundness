@@ -48,6 +48,7 @@ import vacuous.*
 import ziggurat.*
 
 import errorDiagnostics.emptyDiagnostics
+import rudiments.sortingAlgorithms.timsort
 
 object xeqOptions:
   private def xeq(edit: XeqConfiguration => XeqConfiguration): Toolchain.Setting =

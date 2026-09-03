@@ -39,6 +39,7 @@ import gossamer.*
 import reliquary.*
 import rudiments.*
 import vacuous.*
+import rudiments.sortingAlgorithms.timsort
 
 // The `jvm/1` ecosystem profile (LIRA Appendix D): the JVM's linkage predicates, checked against
 // the predecessor release and reported *separately* from the grade.

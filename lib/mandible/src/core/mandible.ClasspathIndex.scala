@@ -39,6 +39,7 @@ import gossamer.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
+import rudiments.sortingAlgorithms.timsort
 
 // Resolves a JVM internal class name to its declaration surface, over content held in memory
 // plus a classpath of textual entries. Membership keying (LIRA §11.2 requirement 4) has to walk

@@ -30,19 +30,39 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package gossamer
+package proscenium
 
-import anticipation.*
-import beneficence.*
+// The result of a total three-way comparison, and the currency of `symbolism.Comparable`. An
+// enumeration rather than an opaque `Int`: the three cases are singletons, so it allocates no
+// more than a sign would, while remaining pattern-matchable and keeping its query operations as
+// *members* — an extension method named `also` or `more` would contend with the universal ones
+// exported into the umbrella by rudiments and turbulence.
+enum Comparison:
+  case Less, Same, More
 
-object Collation:
-  def apply(table: hieroglyph.CollationTable): Collation = new Collation:
-    def compare(left: Text, right: Text): Comparison = Comparison(table.compare(left, right))
-    def key(text: Text): Array[Int]^{} = table.key(text)
+  def less: Boolean = this == Less
+  def same: Boolean = this == Same
+  def more: Boolean = this == More
 
-// A collation: a total ordering of `Text` values. There is deliberately no ambient default
-// (issue #575): a sort order is a policy, chosen either by importing a given from the
-// `collations` package, or — with cosmopolite — derived from a contextual `Locale`.
-trait Collation extends Findable:
-  def compare(left: Text, right: Text): Comparison
-  def key(text: Text): Array[Int]^{}
+  // The comparison of the same two values in the opposite order.
+  def flip: Comparison = this match
+    case Less => More
+    case Same => Same
+    case More => Less
+
+  // The sign convention of `java.util.Comparator` and `scala.math.Ordering`, for the seams
+  // where a JDK or stdlib API must be handed a comparison.
+  def sign: Int = this match
+    case Less => -1
+    case Same => 0
+    case More => 1
+
+  // Lexicographic composition: this comparison, unless it is `Same`, in which case `that`. The
+  // second comparison is by-name, so a chain of `also`s stops at the first decisive result.
+  infix def also(that: => Comparison): Comparison = if this == Same then that else this
+
+object Comparison:
+  // Interop in the other direction: the sign of a `compareTo`/`Comparator` result. Magnitudes
+  // are collapsed to the three cases, so every `Comparison` is canonical.
+  def apply(sign: Int): Comparison =
+    if sign < 0 then Less else if sign > 0 then More else Same

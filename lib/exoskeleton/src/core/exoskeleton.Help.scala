@@ -45,6 +45,7 @@ import polysyllabic.*
 import symbolism.*
 import rudiments.*
 import vacuous.*
+import rudiments.sortingAlgorithms.timsort
 
 object Help:
   case class Param

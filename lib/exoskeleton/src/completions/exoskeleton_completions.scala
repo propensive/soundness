@@ -43,7 +43,7 @@ import escapade.*
 import eucalyptus.*
 import fulminate.*
 import gossamer.*
-import gossamer.collationOrdering
+import gossamer.collationComparable
 import gossamer.collations.codepoints
 import guillotine.*
 import prepositional.*
@@ -52,6 +52,7 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 import denominative.dysasymptotics.linearSize
+import rudiments.sortingAlgorithms.timsort
 
 // The block returns any `Termination` — a `Status` object, an `Exit`, or a union of them —
 // and its `result` type, kept precise (rather than widened by lubbing to `Status`) by the

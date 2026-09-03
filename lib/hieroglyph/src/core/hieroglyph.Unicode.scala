@@ -36,6 +36,8 @@ import java.io as ji
 
 import scala.collection.immutable.TreeMap
 
+import scala.math.Ordering
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -123,6 +125,10 @@ object Unicode:
       value -> key.s.split(" ").nn.iterator.map(_.nn.toLowerCase.nn.capitalize).mkString(" ").tt
 
   lazy val eastAsianWidths: TreeMap[CharRange, EaWidth] =
+    // A `TreeMap` orders its keys with a stdlib `Ordering`, so the `Comparable` is adapted here
+    // rather than being one; the two agree by construction.
+    given ordering: Ordering[CharRange] = CharRange.comparable.ordering
+
     extension (map: TreeMap[CharRange, EaWidth])
       def append(range: CharRange, width: EaWidth): TreeMap[CharRange, EaWidth] =
         if map.isEmpty then map.updated(range, width)

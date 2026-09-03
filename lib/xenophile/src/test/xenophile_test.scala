@@ -35,8 +35,9 @@ package xenophile
 import scala.caps
 
 import soundness.*
-import soundness.collationOrdering
+import soundness.collationComparable
 import soundness.collations.codepoints
+import soundness.sortingAlgorithms.timsort
 
 import ambience.systems.javaSystem
 
@@ -619,7 +620,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"every world in a source is read"):
         val wit = t"package test:demo@1.0.0; world a { export x:y/z@1.0.0; } world b { import p:q/r@1.0.0; }"
-        WitDialect.worlds(wit).stdlib.keySet.toList.sorted
+        WitDialect.worlds(wit).stdlib.keySet.to(proscenium.List).sort
       . assert(_ == List(t"a", t"b"))
 
     suite(m"WebIDL (synthetic sample)"):

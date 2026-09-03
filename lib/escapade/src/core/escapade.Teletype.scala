@@ -39,7 +39,7 @@ import scala.util.*
 import anticipation.*
 import denominative.*
 import gossamer.*
-import gossamer.collationOrdering
+import gossamer.collationComparable
 import gossamer.collations.codepoints
 import hieroglyph.*
 import mercator.*
@@ -144,7 +144,8 @@ object Teletype:
 
     recur(text, limit, Nil)
 
-  given ordering: Ordering[Teletype] = Ordering.by(_.plain)
+  given comparable: Collation => Teletype is Comparable =
+    summon[Text is Comparable].on(_.plain)
 
   // Build a Teletype from text with no styling. Always sparse (1 run).
   def apply(text: Text): Teletype =

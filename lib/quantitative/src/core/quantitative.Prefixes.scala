@@ -37,6 +37,7 @@ import scala.math
 import prepositional.*
 import rudiments.{order, seek}
 import vacuous.or
+import rudiments.sortingAlgorithms.timsort
 
 object Prefixes:
   def apply[units](prefixes: List[MetricPrefix], minimum: Double = 1.0): Prefixes on units =

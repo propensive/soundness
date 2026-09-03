@@ -37,7 +37,7 @@ import denominative.nil
 import aviation.*, dateFormats.iso8601DateFormat
 import escapade.*
 import gossamer.*
-import gossamer.collationOrdering
+import gossamer.collationComparable
 import gossamer.collations.codepoints
 import rudiments.*
 import spectacular.*
@@ -46,6 +46,7 @@ import vacuous.*
 import virility.*
 
 import Roff.{Block, Inline}
+import rudiments.sortingAlgorithms.timsort
 
 // Renders a discovered `Help` tree, plus the static `Manual` metadata, as a manpage. The
 // structure (commands, flags, operands, groups) comes entirely from the `Help` tree — the

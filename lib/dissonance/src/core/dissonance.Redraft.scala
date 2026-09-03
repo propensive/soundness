@@ -41,6 +41,7 @@ import vacuous.*
 
 import Redraft.Error.Reason
 import denominative.dysasymptotics.linearSize
+import rudiments.sortingAlgorithms.timsort
 
 object Redraft:
 

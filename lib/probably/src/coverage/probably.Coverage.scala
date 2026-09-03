@@ -43,6 +43,7 @@ import distillate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import rudiments.sortingAlgorithms.timsort
 
 object Coverage:
   def apply(): Option[Coverage] = currentDir.map: dir =>

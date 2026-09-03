@@ -35,6 +35,7 @@ package aviation
 import soundness.*
 
 
+import soundness.sortingAlgorithms.timsort
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import abstractables.epochMillisecondsAbstractable
@@ -2629,7 +2630,7 @@ object Tests extends Suite(m"Aviation Tests"):
         val a = Timestamp(2020-Jan-1, Clockface(0, 0, 0))
         val b = Timestamp(2020-Jan-1, Clockface(12, 0, 0))
         val c = Timestamp(2021-Jan-1, Clockface(0, 0, 0))
-        List(c, a, b).sorted == List(a, b, c)
+        proscenium.Sequence(c, a, b).sort == proscenium.Sequence(a, b, c)
       . assert(_ == true)
 
       test(m"A Timestamp compares with < to a later Timestamp"):
@@ -2640,7 +2641,7 @@ object Tests extends Suite(m"Aviation Tests"):
         val tz = tz"Europe/London"
         val earlier = Moment(2024-Oct-27, Clockface(1, 30, 0), tz, Occurrence.First)
         val later = Moment(2024-Oct-27, Clockface(1, 30, 0), tz, Occurrence.Second)
-        List(later, earlier).sorted == List(earlier, later)
+        proscenium.Sequence(later, earlier).sort == proscenium.Sequence(earlier, later)
       . assert(_ == true)
 
       test(m"A Timespan encodes as an ISO-8601 duration"):

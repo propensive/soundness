@@ -40,6 +40,7 @@ import prepositional.*
 import rudiments.*
 import stenography.*
 import vacuous.*
+import rudiments.sortingAlgorithms.timsort
 
 object Foreign extends prophesy.Completable:
   // A foreign expression: a reference to a named foreign value, a member selection (recording the

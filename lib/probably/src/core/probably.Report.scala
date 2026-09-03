@@ -38,11 +38,14 @@ import scala.collection.mutable as scm
 import ambience.*
 import anticipation.*
 import digression.*
+import scala.math.Ordering
+
 import escapade.*
 import iridescence.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
+import symbolism.*
 
 object Report:
   given verdict: Inclusion[Report, Verdict]:
@@ -220,6 +223,10 @@ final class Report(using environment: Environment)(using palette: TestPalette):
   private var pass: Boolean = false
 
   private[probably] val lines: ReportLine.Suite = ReportLine.Suite(Unset)
+
+  // A `TreeMap` orders its keys with a stdlib `Ordering`, so `Test.Id`'s `Comparable` is
+  // adapted here rather than being one.
+  private given ordering: Ordering[Test.Id] = Test.Id.comparable.ordering
 
   private[probably] val details: scm.SortedMap[Test.Id, scm.ArrayBuffer[Verdict.Detail]] =
     scm.TreeMap[Test.Id, scm.ArrayBuffer[Verdict.Detail]]()

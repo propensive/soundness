@@ -66,7 +66,7 @@ object internal:
   object Bytes:
     def apply(long: Long): Bytes = long
 
-    given ordering: Ordering[Bytes] = Ordering.Long.on(_.long)
+    given comparable: Bytes is Comparable = Comparable.long
 
     given zeroic: Bytes is Zeroic:
       inline def zero: Bytes = 0L

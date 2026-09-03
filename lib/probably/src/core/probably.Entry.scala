@@ -39,6 +39,7 @@ import anticipation.*
 import rudiments.*
 import vacuous.*
 import denominative.dysasymptotics.linearSize
+import rudiments.sortingAlgorithms.timsort
 
 object Entry:
   enum Kind:

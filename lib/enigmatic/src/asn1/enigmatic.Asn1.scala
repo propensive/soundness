@@ -49,6 +49,8 @@ import zephyrine.*
 
 import Asn1.Error.Reason
 import fulminate.*
+import symbolism.*
+import rudiments.sortingAlgorithms.timsort
 
 // An ASN.1 value, in the subset of the universal types that PKIX uses, plus two escape hatches for
 // everything else.
@@ -171,7 +173,7 @@ object Asn1:
     case Asn1.Set(elements) =>
       // DER orders the members of a `SET` by their encodings, shorter-first when one is a prefix
       // of the other (X.690 §11.6, treating the shorter as zero-padded).
-      given derOrdering: Ordering[Data] = Ordering.fromLessThan(precedes(_, _))
+      given derComparable: Data is Comparable = Comparable.less(precedes(_, _))
       val rendered: List[Data] = elements.map(render(_)).sort
 
       Producer.collect[Data](): out =>

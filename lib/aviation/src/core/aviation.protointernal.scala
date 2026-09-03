@@ -120,8 +120,8 @@ object protointernal:
 
         if left.long == right.long then !strict else (left.long < right.long) ^ greaterThan
 
-    given ordering: [transport] => Ordering[Instant over transport] =
-      Ordering.Long.asInstanceOf[Ordering[Instant over transport]]
+    given comparable: [transport] => (Instant over transport) is Comparable =
+      Comparable.long.asInstanceOf[(Instant over transport) is Comparable]
 
     // Arithmetic converts a `Duration` (seconds) to the timeline's own ticks via its `Resolution`,
     // so it works whatever the resolution (milliseconds for `Unix`/`Tai`, nanoseconds for

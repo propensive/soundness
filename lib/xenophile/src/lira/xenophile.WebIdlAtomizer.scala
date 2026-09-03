@@ -45,6 +45,7 @@ import vacuous.*
 // (`webidl.md` §7), so `List#size` is genuinely required here; the lists are declaration-sized.
 import denominative.dysasymptotics.linearSize
 import denominative.{nil, size}
+import rudiments.sortingAlgorithms.timsort
 
 // The atomization rules of `webidl/1` (`webidl.md`).
 //

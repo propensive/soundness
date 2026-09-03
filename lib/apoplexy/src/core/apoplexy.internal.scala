@@ -56,6 +56,7 @@ import xylophone.*
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely
 import denominative.dysasymptotics.linearSize
+import rudiments.sortingAlgorithms.timsort
 
 object Apoplexy:
   // --- compile-time spec access -------------------------------------------

@@ -43,6 +43,7 @@ import soundness.*
 
 import textMetrics.uniformMetric
 import caseSensitivity.caseSensitive
+import soundness.sortingAlgorithms.timsort
 import denominative.dysasymptotics.linearSize
 
 case class Person(name: Text, age: Int)
@@ -1358,16 +1359,28 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == List("é"))
 
     suite(m"Collation"):
+      // The reason is `NotAMember` rather than `MissingImplicitArgument` because `sort` is an
+      // extension method: an extension whose implicit arguments cannot all be found is not
+      // applicable, and the compiler reports that as the name being absent from the receiver,
+      // with the given it could not construct named further down the message. (`least` and the
+      // comparison operators, which predate this, report the same way.) The guarantee is in the
+      // message rather than the code, so the test asserts on both.
       test(m"Text is not sortable without a collation in scope"):
         demilitarize:
-          List(t"b", t"a").sorted
+          proscenium.List(t"b", t"a").sort
         . filter(_.error).map(_.reason)
-      . assert(_ == List(CompileError.Reason.MissingImplicitArgument))
+      . assert(_ == List(CompileError.Reason.NotAMember))
+
+      test(m"the unsortable text names the missing comparison"):
+        demilitarize:
+          proscenium.List(t"b", t"a").sort
+        . map(_.message)
+      . assert(_.exists(_.contains("is symbolism.Comparable")))
 
       test(m"dictionary order ranks accents before case: cafe < café < caff"):
         import collations.unicode
-        List(t"caff", t"café", t"cafe").sorted
-      . assert(_ == List(t"cafe", t"café", t"caff"))
+        proscenium.List(t"caff", t"café", t"cafe").sort
+      . assert(_ == proscenium.List(t"cafe", t"café", t"caff"))
 
       test(m"comparison operators work once a collation is chosen"):
         import collations.unicode
@@ -1376,17 +1389,17 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       test(m"codepoint order sorts supplementary characters after the BMP"):
         import collations.codepoints
-        List(t"𝓐", t"�").sorted
-      . assert(_ == List(t"�", t"𝓐"))
+        proscenium.List(t"𝓐", t"�").sort
+      . assert(_ == proscenium.List(t"�", t"𝓐"))
 
       test(m"codepoint and dictionary orders differ on case"):
-        val upper = List(t"a", t"B")
+        val upper = proscenium.List(t"a", t"B")
         import collations.unicode
-        val dictionary = upper.sorted
+        val dictionary = upper.sort
 
         val codepoint =
           import collations.codepoints
-          upper.sorted
+          upper.sort
 
         (dictionary, codepoint)
-      . assert(_ == (List(t"a", t"B"), List(t"B", t"a")))
+      . assert(_ == (proscenium.List(t"a", t"B"), proscenium.List(t"B", t"a")))

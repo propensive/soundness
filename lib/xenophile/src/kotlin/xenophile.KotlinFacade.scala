@@ -50,6 +50,7 @@ import symbolism.*
 // lists, read positionally against the arity the metadata itself supplies, so `size`, `skip` and
 // indexed access on `List` are acknowledged as linear here.
 import denominative.dysasymptotics.{linearAccess, linearSize}
+import rudiments.sortingAlgorithms.timsort
 
 // The macro engine behind `Facade`: resolves member accesses against `KotlinDialect`'s
 // metadata, and materializes each access immediately as a direct JVM call on the unwrapped

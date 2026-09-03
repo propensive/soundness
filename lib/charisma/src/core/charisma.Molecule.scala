@@ -34,7 +34,7 @@ package charisma
 
 import anticipation.*
 import gossamer.*
-import gossamer.collationOrdering
+import gossamer.collationComparable
 import gossamer.collations.codepoints
 import hieroglyph.*
 import hypotenuse.*
@@ -42,6 +42,7 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
+import rudiments.sortingAlgorithms.timsort
 
 object Molecule:
   def apply(): Molecule = Molecule(Map(), 0)

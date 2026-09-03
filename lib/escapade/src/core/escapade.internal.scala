@@ -177,7 +177,7 @@ object internal:
   object CharSpan:
     def apply(start: Int, end: Int): CharSpan = (start.toLong << 32) + (Int.MaxValue - end)
 
-    given ordering: Ordering[CharSpan] = Ordering.Long.on[CharSpan](identity(_))
+    given comparable: CharSpan is Comparable = Comparable.long.on(identity(_))
 
     val Nowhere: CharSpan = CharSpan(Int.MaxValue, Int.MaxValue)
 

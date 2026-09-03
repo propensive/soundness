@@ -40,8 +40,8 @@ import vacuous.*
 object Period:
   // Membership is half-open: a point is in the period when `start <= point < finish` (so `finish`
   // belongs to the next period, not this one). Use it as `period.has(point)`.
-  given inclusive: [point] => (order: Ordering[point]) => (Period[point] is Inclusive by point) =
-    (period, point) => order.lteq(period.start, point) && order.lt(point, period.finish)
+  given inclusive: [point] => (order: point is Comparable) => (Period[point] is Inclusive by point) =
+    (period, point) => order.atMost(period.start, point) && order.less(point, period.finish)
 
   // Split a period into consecutive `length`-long segments. The step is whatever the point can be
   // advanced by — a `Duration` or `Timespan` for an `Instant over X`, a `Timespan` for a
@@ -49,15 +49,15 @@ object Period:
   // doesn't divide the period exactly, `partial` decides whether the short final segment is kept.
   extension [point](period: Period[point])
     def segments[step](length: step, partial: Boolean = true)
-      ( using addable: point is Addable by step to point, order: Ordering[point] )
+      ( using addable: point is Addable by step to point, order: point is Comparable )
     :   List[Period[point]] =
 
       @scala.annotation.tailrec
       def recur(current: point, acc: List[Period[point]]): List[Period[point]] =
-        if !order.gt(period.finish, current) then acc.reverse else
+        if !order.greater(period.finish, current) then acc.reverse else
           val next = current + length
 
-          if !order.gt(next, current) || order.gt(next, period.finish)
+          if !order.greater(next, current) || order.greater(next, period.finish)
           then (if partial then Period(current, period.finish) :: acc else acc).reverse
           else recur(next, Period(current, next) :: acc)
 
@@ -66,29 +66,30 @@ object Period:
     // Iterate the points of the period at `step` intervals: `start`, `start + step`, … while still
     // before `finish` (half-open, so `finish` itself is excluded). Lazy, so `.take(n)` is cheap.
     def by[step](step: step)
-      ( using addable: point is Addable by step to point, order: Ordering[point] )
+      ( using addable: point is Addable by step to point, order: point is Comparable )
     :   Chain[point] =
 
       def recur(current: point): Chain[point] =
-        if !order.lt(current, period.finish) then Chain.empty else
+        if !order.less(current, period.finish) then Chain.empty else
           val next = current + step
-          if !order.gt(next, current) then Chain(current) else current #:: recur(next)
+          if !order.greater(next, current) then Chain(current) else current #:: recur(next)
 
       recur(period.start)
 
 // A range between two points of the same type — an `Instant over X`, a `Timestamp`, or a `Moment`.
 // `duration` is the points' difference, whose type follows the point: a `Duration` for an
-// `Instant over X` (in that timeline's seconds), a `Timespan` for a `Timestamp`/`Moment`. (Ordering
-// uses the non-inline `Ordering`, since the point is abstract here.)
+// `Instant over X` (in that timeline's seconds), a `Timespan` for a `Timestamp`/`Moment`. Ordering
+// uses the runtime `Comparable`, not hypotenuse's inline operators, since the point is abstract
+// here.
 case class Period[point](start: point, finish: point):
   def duration(using subtractable: point is Subtractable by point): subtractable.Result =
     subtractable.subtract(finish, start)
 
-  def intersect(period: Period[point])(using order: Ordering[point]): Optional[Period[point]] =
+  def intersect(period: Period[point])(using order: point is Comparable): Optional[Period[point]] =
     val start2 = order.max(period.start, start)
     val finish2 = order.min(period.finish, finish)
-    if order.gteq(start2, finish2) then Unset else Period(start2, finish2)
+    if order.atLeast(start2, finish2) then Unset else Period(start2, finish2)
 
-  def union(period: Period[point])(using order: Ordering[point]): Set[Period[point]] =
+  def union(period: Period[point])(using order: point is Comparable): Set[Period[point]] =
     if intersect(period).absent then Set(this, period)
     else Set(Period(order.min(start, period.start), order.max(finish, period.finish)))

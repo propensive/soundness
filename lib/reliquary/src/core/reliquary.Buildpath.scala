@@ -42,6 +42,7 @@ import vacuous.*
 
 import Lira.Error.Reason
 import denominative.dysasymptotics.linearSize
+import rudiments.sortingAlgorithms.timsort
 
 object Buildpath:
 
@@ -130,10 +131,13 @@ case class Buildpath(releases: List[Lira.Manifest]):
   // Named rather than written as an inline sort key: reading the `Optional` rank's default
   // inside a lambda still under its caller's live type variables crashes implicit-scope
   // collection, and an `Ordering` value is typed once, outside any such lambda.
-  private given integrationOrder: Ordering[Lira.Manifest.Integration] =
-    Ordering.by[Lira.Manifest.Integration, (Long, String)]: integration =>
-      val rank: Long = integration.rank.or(Long.MaxValue)
-      (rank, integration.id.s)
+  private given integrationOrder: Lira.Manifest.Integration is Comparable =
+    (left, right) =>
+      val leftRank: Long = left.rank.or(Long.MaxValue)
+      val rightRank: Long = right.rank.or(Long.MaxValue)
+
+      Comparable.long.compare(leftRank, rightRank)
+      . also(Comparison(left.id.s.compareTo(right.id.s)))
 
   def candidates(manifest: Lira.Manifest): List[Optional[Text]] =
     if manifest.integration.nil then List(Unset) else

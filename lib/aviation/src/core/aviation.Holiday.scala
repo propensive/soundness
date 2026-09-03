@@ -34,8 +34,9 @@ package aviation
 
 import anticipation.*
 import vacuous.*
+import symbolism.*
 
 object Holiday:
-  given ordering: Ordering[Holiday] = summon[Ordering[Date]].on(_.date)
+  given comparable: Holiday is Comparable = summon[Date is Comparable].on(_.date)
 
 case class Holiday(date: Date, name: Optional[Text])

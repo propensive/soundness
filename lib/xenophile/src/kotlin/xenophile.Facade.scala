@@ -40,6 +40,7 @@ import prepositional.*
 import rudiments.*
 import stenography.*
 import vacuous.*
+import rudiments.sortingAlgorithms.timsort
 
 object Facade extends prophesy.Completable:
 

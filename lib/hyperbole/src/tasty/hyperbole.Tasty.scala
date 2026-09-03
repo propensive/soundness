@@ -39,6 +39,7 @@ import rudiments.*
 import vacuous.*
 
 import StackTrace.Frame.Kind
+import rudiments.sortingAlgorithms.timsort
 
 // The TASTy data model: what a `.tasty` file says about the definitions it holds. Reading a
 // file into this model needs the compiler's unpickler classes at runtime — supplied by the
