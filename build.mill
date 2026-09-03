@@ -92,6 +92,27 @@ object settings:
   // Nearest published base version (no RC4 Native artifacts yet); TASTy-identical to RC4.
   val scalaNativeScalaVersion = "3.9.0-RC3"
   val scalaOptions = Seq(
+    // The fork's opt-in behaviours, enabled by name (`-Z<name>`; a bare `-Z` lists
+    // them). Soundness relies on every capture-checking repair the fork carries, on
+    // spreadable varargs (proscenium's `multiSpreads` splices), on given-prefix
+    // sealing (top-level givens over opaque types), on diagnostic givens, and on
+    // JSR-45 source maps (formerly `-Xjsr45`; hyperbole's stack-trace resolver).
+    // `-Zliterate-literals` is this branch's trial: literals re-type through the
+    // ambient `anticipation.literacy` instance, and it is inert in modules whose
+    // `-Yimports` omits the literacy import. `-Zsemantic-diagnostics` is not global:
+    // anthology passes it per-invocation when a tool wants markup diagnostics.
+    "-Zalias-captures",
+    "-Zdiagnostic-givens",
+    "-Zgiven-prefixes",
+    "-Zinline-source-maps",
+    "-Zliterate-literals",
+    "-Zopaque-mutability",
+    "-Zpure-iarrays",
+    "-Zretains-bounds",
+    "-Zretains-skolems",
+    "-Zspreadable-varargs",
+    "-Zunboxed-pure-types",
+    "-Zunion-captures",
     "-experimental",
     "-new-syntax",
     "-feature",
@@ -127,9 +148,6 @@ object settings:
     "-Wconf:src=.*synesthesia.McpServer.*&msg=match may not be exhaustive:s",
     // "-Wsafe-init",
     "-Xmax-inlines", "32",
-    // Emit JSR-45 SMAPs (SourceDebugExtension) mapping inlined code back to its source, so
-    // hyperbole's stack-trace resolver can expand and name each frame's inline chain.
-    "-Xjsr45",
     //"-Ycc-new",
     "-Yno-flexible-types",
     "-Yexplicit-nulls",
@@ -243,8 +261,16 @@ object toolchain extends Module:
     // Scala.js runtime jars — which the fork builds against a custom (non-Central) Scala.js and
     // ships under their own `-<jsVersion>` filenames — keep the Scala.js coordinate `js`.
     val artifacts = Seq(
-      (sl, "scala-library", "scala-library.jar", v, Seq()),
-      (sl, "scala3-library_3", "scala3-library.jar", v, Seq((sl, "scala-library", v))),
+      // The fork's standard-library additions (`scala.Literate`, `scala.Spreadable`),
+      // shipped as a supplementary jar so `scala-library` stays byte-identical to
+      // upstream's build. Declared as a dependency of the unified `scala-library` —
+      // the artifact every module actually resolves — so the whole build carries it
+      // without per-module wiring; its own deps stay empty to avoid a cycle.
+      (sl, "proscala-library_3", "proscala-library.jar", v, Seq()),
+      (sl, "scala-library", "scala-library.jar", v, Seq(
+        (sl, "proscala-library_3", v))),
+      (sl, "scala3-library_3", "scala3-library.jar", v, Seq(
+        (sl, "scala-library", v))),
       (sl, "scala3-interfaces", "scala3-interfaces.jar", v, Seq()),
       (sl, "tasty-core_3", "tasty-core.jar", v, Seq((sl, "scala-library", v))),
       (sl, "scala3-compiler_3", "scala3-compiler.jar", v, Seq(
@@ -283,8 +309,10 @@ object toolchain extends Module:
         (sjs, "scalajs-javalib", js))),
       (sjs, "scalajs-scalalib_2.13", "scalajs-scalalib_2.13.jar", v, Seq(
         (sjs, "scalajs-javalib", js))),
+      (sl, "proscala-library_sjs1_3", "proscala-library_sjs1.jar", v, Seq()),
       (sl, "scala3-library_sjs1_3", "scala3-library_sjs1.jar", v, Seq(
         (sl, "scala-library", v),
+        (sl, "proscala-library_sjs1_3", v),
         (sjs, "scalajs-library_2.13", js),
         (sjs, "scalajs-scalalib_2.13", v))))
 

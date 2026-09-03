@@ -53,7 +53,7 @@ object scalacOptions:
 
   val experimental = Scalac.Option[3.4 | 3.5 | 3.6 | 3.7 | 3.8](t"-experimental")
 
-  val semanticDiagnostics = Scalac.Option[3.9](t"-Xsemantic-diagnostics")
+  val semanticDiagnostics = Scalac.Option[3.9](t"-Zsemantic-diagnostics")
 
   object warnings:
     val feature = Scalac.Option[Scalac.Versions](t"-feature")
