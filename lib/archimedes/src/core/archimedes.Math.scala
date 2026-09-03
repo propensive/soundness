@@ -51,6 +51,7 @@ import turbulence.*
 import vacuous.*
 import contextual.*
 import xylophone.*
+import rudiments.sortingAlgorithms.timsort
 import symbolism.*
 import zephyrine.Parse
 

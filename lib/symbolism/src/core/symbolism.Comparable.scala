@@ -78,8 +78,8 @@ object Comparable extends Comparable2:
   given list: [element] => (element is Comparable) => List[element] is Comparable =
     (left, right) =>
       val comparable = summon[element is Comparable]
-      val lefts = left.stdlib.iterator
-      val rights = right.stdlib.iterator
+      val lefts = List.iterator(left)
+      val rights = List.iterator(right)
       var result = Comparison.Same
 
       while result.same && lefts.hasNext && rights.hasNext
