@@ -142,6 +142,7 @@ extends Rig:
     val sweep0: Optional[Int] = sweep
     val limit: Int = sweep0.or(if searching then 1024 else start)
     val sweeping: Boolean = sweep0.present || searching
+    val scaledTarget: Long = Bench.scaled(target.generic, runner.scale)
 
     // The threshold's histogram bucket index, computed with the same log-linear formula the
     // workers use; operations in buckets strictly below it completed within the threshold
@@ -159,7 +160,9 @@ extends Rig:
     val complianceBp: Long = compliance0.lay(-1L)(_*100L)
 
     val body: (References over Transport) ?=> Quotes ?=> Expr[List[Long]] =
-      val target2: Expr[Long] = Expr(target.generic)
+      // Scaled by the run's duration multiplier; the `threshold` below deliberately is
+      // not, being a latency criterion rather than a length of time to run for.
+      val target2: Expr[Long] = Expr(scaledTarget)
       ' {
           // Blackhole sink, exactly as in `Bench`: each body result is written here via
           // lazySet so that the JIT cannot prove the body's value is unused and elide it. The
@@ -433,7 +436,15 @@ extends Rig:
     // accumulate as cells of one entry rather than as separately-named tests.
     val testId = Test.Id(name, suite, codepoint)
 
-    if !runner.skip(testId, Entry.Kind.Stress, Nil) then
+    // The expected measuring time: one window per concurrency step, so a plain stress is a
+    // single (scaled) target and a sweep or capacity search is bounded by a doubling ascent
+    // plus a binary search plus the sustained-confirmation windows — roughly logarithmic in
+    // `limit`. A budgeting estimate, not a promise.
+    val steps: Long =
+      if sweeping then 2L*(64 - java.lang.Long.numberOfLeadingZeros(limit.max(1).toLong)) + 6L
+      else 1L
+
+    if !runner.skip(testId, Entry.Kind.Stress, Nil, scaledTarget*steps) then
       dispatch(body).stdlib.grouped(14).toList.foreach: step =>
         val n = step(0).toInt
         val compliance2: Optional[Double] = if step(12) < 0L then Unset else step(12)/10000.0

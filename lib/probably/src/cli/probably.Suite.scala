@@ -197,7 +197,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
       try
         runner.suite(testableView, run())
 
-        runner.listed.each: (id, kind) =>
+        runner.listed.each: (id, kind, _) =>
           val path =
             def names(id: Test.Id): List[Text] =
               id.suite.let { suite => names(suite.id) }.or(Nil) :+ id.moniker.or(id.name.text)
@@ -243,8 +243,8 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
       try
         runner.suite(testableView, run())
 
-        runner.listed.each: (id, kind) =>
-          sink(TestEvent.TestScheduled(TestEvent.Ref.of(id), TestEvent.kindName(kind)))
+        runner.listed.each: (id, kind, expected) =>
+          sink(TestEvent.TestScheduled(TestEvent.Ref.of(id), TestEvent.kindName(kind), expected))
 
         0
       catch case error: Throwable => 2

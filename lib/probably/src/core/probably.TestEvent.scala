@@ -193,8 +193,11 @@ object TestEvent:
 
 enum TestEvent:
   // The SCHEDULE: one per test a `--list` selection admits, before anything runs, so a
-  // consumer can pre-render every expected row and fill it in as results arrive.
-  case TestScheduled(test: TestEvent.Ref, kind: Text)
+  // consumer can pre-render every expected row and fill it in as results arrive. For the
+  // timed kinds, `expected` estimates (from declared metadata, in nanoseconds, under any
+  // `--scale` in force) how long the test will spend measuring, so a host can budget a
+  // whole run before staging anything; plain checks carry no estimate.
+  case TestScheduled(test: TestEvent.Ref, kind: Text, expected: Optional[Long])
 
   case SuiteStarted(suite: TestEvent.Ref, timestamp: Long)
   case SuiteEnded(suite: TestEvent.Ref, timestamp: Long)

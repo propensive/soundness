@@ -52,3 +52,20 @@ object Tests extends Suite(m"Probably Tests"):
     test(m"biaxial spread with a gap").over(Axis(t"x")(1, 2, 3), Axis(t"y")(10, 20)):
       case (x, y) if x + y != 23 => x*y
     . assert((x, y, result) => result == x*y)
+
+    test(m"a run's duration multiplier defaults to 1"):
+      Selection.all.scale
+    . assert(_ == 1.0)
+
+    test(m"--scale sets the duration multiplier"):
+      Selection.parse(List(t"--scale=2.5")).scale
+    . assert(_ == 2.5)
+
+    test(m"--scale is not mistaken for a name term"):
+      Selection.parse(List(t"--scale=2")).terms
+    . assert(_ == Nil)
+
+    test(m"a non-positive or unparseable scale leaves the default"):
+      List(t"--scale=0", t"--scale=-1", t"--scale=soon").map(term => Selection.parse(List(term)).scale)
+    . assert(_ == List(1.0, 1.0, 1.0))
+

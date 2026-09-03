@@ -126,6 +126,19 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
 object Bench:
   // The staged measurement harness, shared by every cell of every plan: warmup, doubling
   // calibration, median-rate count selection, then `iterations` timed batches.
+  // A declared target duration under the run's multiplier, floored at a microsecond so that
+  // an absurdly small factor still leaves something measurable rather than a zero-length
+  // batch (which would divide by zero in `measured`).
+  private[sedentary] def scaled(target: Long, scale: Double): Long =
+    if scale == 1.0 then target else ((target*scale).toLong).max(1000L)
+
+  // The expected measuring time of one cell, from its declared metadata: `warmups` then
+  // `iterations` batches, each of `target/iterations`. The calibration phase (doubling until
+  // one batch fits) and the ten untimed warmup runs are not counted — they are body-dependent
+  // and usually small. An estimate for budgeting, not a promise.
+  private[sedentary] def expected(target: Long, iterations: Int, warmups: Int): Long =
+    target*(iterations + warmups).toLong/iterations.max(1).toLong
+
   private[sedentary] def measured
     ( iterations: Int, warmups: Int, target: Long )
     ( body0: (References over Json) ?=> Quotes ?=> Expr[Any] )
@@ -257,9 +270,12 @@ object Bench:
     :   Unit raises Compiler.Error raises Rig.Error =
 
       val testId = Test.Id(name, suite, codepoint)
+      val target2: Long = Bench.scaled(target, runner.scale)
 
-      if !runner.skip(testId, Entry.Kind.Bench, Nil) then
-        val results0 = bench.dispatch(Bench.measured(iterations, warmups, target)(body0))
+      val expected: Optional[Long] = Bench.expected(target2, iterations, warmups)
+
+      if !runner.skip(testId, Entry.Kind.Bench, Nil, expected) then
+        val results0 = bench.dispatch(Bench.measured(iterations, warmups, target2)(body0))
 
         inclusion.include
           ( runner.report,
@@ -280,6 +296,7 @@ object Bench:
     :   Unit raises Compiler.Error raises Rig.Error =
 
       val testId = Test.Id(name, suite, codepoint)
+      val target2: Long = Bench.scaled(target, runner.scale)
       val values = axis.values
 
       // Definedness may not depend on the staging context, so gaps are probed under a
@@ -297,9 +314,12 @@ object Bench:
         val coordinates = List(axis.coordinate(value))
 
         // An unselected cell is skipped BEFORE staging: it costs no compilation and no JVM.
-        if probe.isDefinedAt(value) && !runner.skip(testId, Entry.Kind.Bench, coordinates) then
+        if probe.isDefinedAt(value)
+            && !runner.skip(testId, Entry.Kind.Bench, coordinates,
+                            Bench.expected(target2, iterations, warmups))
+        then
           val results0 =
-            bench.dispatch(Bench.measured(iterations, warmups, target)(body(value)))
+            bench.dispatch(Bench.measured(iterations, warmups, target2)(body(value)))
 
           inclusion.include
             ( runner.report,
@@ -339,6 +359,7 @@ object Bench:
     :   Unit raises Compiler.Error raises Rig.Error =
 
       val testId = Test.Id(name, suite, codepoint)
+      val target2: Long = Bench.scaled(target, runner.scale)
       val lefts = first.values
       val rights = second.values
 
@@ -358,10 +379,12 @@ object Bench:
 
           val coordinates = List(first.coordinate(left), second.coordinate(right))
 
-          if probe.isDefinedAt((left, right)) && !runner.skip(testId, Entry.Kind.Bench, coordinates)
+          if probe.isDefinedAt((left, right))
+              && !runner.skip(testId, Entry.Kind.Bench, coordinates,
+                              Bench.expected(target2, iterations, warmups))
           then
             val results0 =
-              bench.dispatch(Bench.measured(iterations, warmups, target)(body((left, right))))
+              bench.dispatch(Bench.measured(iterations, warmups, target2)(body((left, right))))
 
             inclusion.include
               ( runner.report,

@@ -56,7 +56,7 @@ object Selection:
 
     def axis: Text
 
-  val all: Selection = Selection(Nil, Nil, Nil, false)
+  val all: Selection = Selection(Nil, Nil, Nil, false, 1.0)
 
   private def hex(text: Text): Boolean =
     text.length == 6 && text.s.forall: char => char.isDigit || (char >= 'a' && char <= 'f')
@@ -74,6 +74,13 @@ object Selection:
   def parse(arguments: List[Text]): Selection =
     arguments.fold(all): (selection, argument) =>
       if argument == t"--list" then selection.copy(listOnly = true)
+      // `--scale=<factor>` is not a selection at all — it changes how long the tests it
+      // admits are given to run — but it arrives on the same command line, and a host like
+      // fume has no other channel to a suite. A non-positive or unparseable factor is
+      // ignored rather than fatal: a mistyped duration should not lose a run's results.
+      else if argument.starts(t"--scale=") then
+        number(argument.skip(8)).lay(selection): factor =>
+          if factor > 0.0 then selection.copy(scale = factor) else selection
       else if argument.starts(t"kind:") then
         val kinds = argument.skip(5) match
           case t"test"    => List(Entry.Kind.Check)
@@ -119,7 +126,13 @@ case class Selection
   ( terms:       List[Selection.Term],
     kinds:       List[Entry.Kind],
     constraints: List[Selection.Constraint],
-    listOnly:    Boolean ):
+    listOnly:    Boolean,
+    // The multiplier applied to every declared target DURATION — `Bench`'s, `Stress`'s and
+    // `Profile`'s — so that a whole run can be made proportionally longer (a careful
+    // overnight pass) or shorter (a quick check) without editing the suite. Geometric, and
+    // 1.0 by default: 2.0 runs each measurement twice as long, 0.25 a quarter as long.
+    // Latency thresholds are NOT scaled: they are pass/fail criteria, not durations.
+    scale:       Double ):
 
   def trivial: Boolean = terms.nil && kinds.nil && constraints.nil
 
