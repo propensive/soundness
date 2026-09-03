@@ -130,6 +130,13 @@ class LarcenyTransformer() extends PluginPhase:
     val yimports = ctx.settings.Yimports.value
     val noPredef = ctx.settings.YnoPredef.value
 
+    // The fork's opt-in behaviours (`-Z<name>`) are part of the language environment too:
+    // a patch that is off in the sub-compilation but on in the parent makes the two
+    // disagree, and a capture-checking repair the parent relies on (skolems in `@retains`
+    // sets, say) is a crash rather than a diagnostic when it is missing.
+    val zflags = config.Proscala.features.filter(config.Proscala.enabled(_)).map: feature =>
+      s"-Z${feature.name}"
+
     // Warnings used to be invisible to `demilitarize` in all but one case. The sub-compilation
     // starts from `initCtx.fresh` -- a compiler-default context, not the parent's -- so none of
     // the parent's warning flags applied, and every flag-gated warning (deprecation and unused
@@ -194,7 +201,8 @@ class LarcenyTransformer() extends PluginPhase:
 
     val errors: List[CompileError] =
       Subcompiler.compile
-        ( language, classpath, source, regions, plugins, ccNew, yimports, noPredef, warnings )
+        ( language, classpath, source, regions, plugins, ccNew, yimports, noPredef, warnings,
+          zflags )
 
     object transformer extends UntypedTreeMap:
       override def transform(tree: Tree)(using Context): Tree = tree match

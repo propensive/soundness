@@ -138,7 +138,8 @@ object Subcompiler:
   // production code would see — except for larceny, whose recursion would
   // re-fire on any `demilitarize(...)` calls in the sub-source. `ccNew`
   // propagates the parent's `-Ycc-new`, which selects the capture-checking
-  // scheme but is not part of the `-language` settings.
+  // scheme but is not part of the `-language` settings. `zflags` carries the parent's
+  // enabled `-Z<name>` behaviours, which are likewise outside `-language`.
   def compile
     ( language:  List[Settings.Setting.ChoiceWithHelp[String]],
       classpath: String,
@@ -148,7 +149,8 @@ object Subcompiler:
       ccNew:     Boolean = false,
       yimports:  List[String] = Nil,
       noPredef:  Boolean = false,
-      warnings:  List[String] = Nil )
+      warnings:  List[String] = Nil,
+      zflags:    List[String] = Nil )
   :   List[CompileError] =
 
     object driver extends Driver:
@@ -164,7 +166,8 @@ object Subcompiler:
         val pluginOptions = plugins.map: plugin => s"-Xplugin:$plugin"
 
         val args =
-          scala.Array[String]("") ++ ccOptions ++ importOptions ++ warnings ++ pluginOptions
+          scala.Array[String]("") ++ ccOptions ++ importOptions ++ zflags ++ warnings
+            ++ pluginOptions
 
         setup(args, context2).map(_(1)).get
 
