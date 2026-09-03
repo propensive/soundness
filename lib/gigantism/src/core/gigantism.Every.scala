@@ -89,4 +89,7 @@ object Every:
 
     '{Every[value](${Expr.ofList(collect(Nil, Nil))})}
 
+// `values` is deliberately the STDLIB list: `Every` collects arbitrary given instances,
+// including capability-carrying ones (a `LogSink^{cap}`, say), and the native `List`'s
+// elements are classified `Unscoped` — a capability element is outside its contract.
 case class Every[+value](values: List[value])

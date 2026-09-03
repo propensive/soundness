@@ -78,7 +78,9 @@ object internal:
 
       case _ => Nil
 
-    val imports: sci.Set[Designator] = metaprogramming.imports.map(_.term).map(Syntax.term(_)).toSet
+    // `.stdlib`: this file's import-graph bookkeeping is stdlib throughout (`sci.Set`/`sci.Map`).
+    val imports: sci.Set[Designator] =
+      metaprogramming.imports.stdlib.map(_.term).map(Syntax.term(_)).toSet
 
     // Drill into every scope whose members are reachable unqualified from here — each wildcard
     // import that's in scope (including the REPL-accumulated ones across earlier lines,
@@ -96,7 +98,7 @@ object internal:
       case quotes: runtime.impl.QuotesImpl =>
         given context: core.Contexts.Context = quotes.ctx
 
-        val imported = metaprogramming.imports.filter(_.wildcard).map: imp =>
+        val imported = metaprogramming.imports.stdlib.filter(_.wildcard).map: imp =>
           imp.term.asInstanceOf[core.Types.Type].termSymbol(using context)
 
         // This unit's own package, so that a module's aliases apply within the module which

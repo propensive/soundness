@@ -65,7 +65,7 @@ object internal:
     val parts = recur[parts](Nil)
 
     val insertionExprs: List[Expr[Any]] = insertions.absolve match
-      case Varargs(exprs) => exprs.to(List)
+      case Lifts.Varargs(exprs) => exprs
 
     val atoms: List[Expr[Mathml]] = insertionExprs.map: insertion =>
       insertion.absolve match
@@ -94,6 +94,10 @@ object internal:
             Interpolation.sourcePosition
               (parts, Interpolation.decodeOrigins[origins], 1, offset) )
 
-    val partExprs: Expr[Seq[Text]] = Expr.ofSeq(parts.stdlib.map { part => '{${Expr(part)}.tt} })
+    // Hoisted from the `map` below: a quote inside a combinator lambda in a macro risks the
+    // `wildApprox` crash.
+    def liftText(part: String): Expr[Text] = '{${Expr(part)}.tt}
 
-    '{Ergo.unsafeInterpolate($partExprs, ${Expr.ofSeq(atoms.stdlib)})}
+    val partExprs: Expr[Seq[Text]] = Lifts.varargs(parts.map(liftText))
+
+    '{Ergo.unsafeInterpolate($partExprs, ${Lifts.varargs(atoms)})}

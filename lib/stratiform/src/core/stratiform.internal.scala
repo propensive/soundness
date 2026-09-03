@@ -271,11 +271,12 @@ object internal:
             case _ =>
               '{Unset}
 
-          // `Expr.ofList` is a quotes-reflection API and takes the stdlib list, so the
-          // layer names cross to the stdlib view here and back to `proscenium.List`
-          // inside the quote.
+          // Hoisted from the `map` below: a quote inside a combinator lambda in a macro
+          // risks the `wildApprox` crash.
+          def liftText(s: String): Expr[Text] = '{${Expr(s)}.tt}
+
           val layersExpr: Expr[proscenium.List[Text]] =
-            '{(${Expr.ofList(p.layers.stdlib.map { layer => '{${Expr(layer.s)}.tt} })}).to(proscenium.List)}
+            Lifts.list(p.layers.map { layer => liftText(layer.s) })
 
           val signatureExpr: Expr[Optional[Text]] = p.signature match
             case text: Text => '{${Expr(text.s)}.tt: Optional[Text]}

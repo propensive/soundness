@@ -109,6 +109,24 @@ object Sequence:
   extension [element](sequence: Sequence[element])
     inline def stdlib: sci.Vector[element] = sequence.asInstanceOf[sci.Vector[element]]
 
+  // Lifting and unlifting for macros; see `List`'s companion for the full rationale
+  // (public `from` splice, backticked pattern types, unlift limited to produced shapes).
+  given toExpr: [element: {scala.quoted.Type, scala.quoted.ToExpr}]
+  =>  scala.quoted.ToExpr[Sequence[element]]:
+    def apply(sequence: Sequence[element])(using scala.quoted.Quotes)
+    :   scala.quoted.Expr[Sequence[element]] =
+      '{Sequence.from(${scala.quoted.Expr.ofList(sequence.toList.map(scala.quoted.Expr(_)))})}
+
+  given fromExpr: [element: {scala.quoted.Type, scala.quoted.FromExpr}]
+  =>  scala.quoted.FromExpr[Sequence[element]]:
+    def unapply(expr: scala.quoted.Expr[Sequence[element]])(using scala.quoted.Quotes)
+    :   Option[Sequence[element]] =
+      expr match
+        case '{Sequence.from($elements: sci.List[`element`])} =>
+          scala.quoted.FromExpr.ListFromExpr[element].unapply(elements).map(Sequence.from(_))
+
+        case _ => None
+
   // The primitive operations, for the typeclass instances defined in the libraries above;
   // see `List` for the rationale. Within this file the opaque alias is transparent.
   def size[element](sequence: Sequence[element]): Int = sequence.length

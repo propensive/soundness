@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export gigantism.{Every, every, Macro, Metaprogramming, metaprogramming}
+export gigantism.{Every, every, Lifts, Macro, Metaprogramming, metaprogramming}

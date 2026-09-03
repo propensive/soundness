@@ -128,6 +128,31 @@ object List:
   extension [element](list: List[element])
     inline def stdlib: sci.List[element] = list.asInstanceOf[sci.List[element]]
 
+  // Lifting and unlifting for macros: a native `List` of liftable elements is itself
+  // liftable, so macro code writes `Expr(list)` with no stdlib bridge. The lifted tree calls
+  // `from` — public, so the splice is accessible at every expansion site — over the stdlib
+  // `Expr.ofList`, which is transparent here. The unlift recognises exactly the shapes this
+  // file produces (`from` of an unliftable stdlib list, `empty`, and `Nil`), which covers
+  // round-tripping lifted values; arbitrary list-yielding trees are not constant-foldable.
+  given toExpr: [element: {scala.quoted.Type, scala.quoted.ToExpr}]
+  =>  scala.quoted.ToExpr[List[element]]:
+    def apply(list: List[element])(using scala.quoted.Quotes): scala.quoted.Expr[List[element]] =
+      '{List.from(${scala.quoted.Expr.ofList(list.map(scala.quoted.Expr(_)))})}
+
+  given fromExpr: [element: {scala.quoted.Type, scala.quoted.FromExpr}]
+  =>  scala.quoted.FromExpr[List[element]]:
+    def unapply(expr: scala.quoted.Expr[List[element]])(using scala.quoted.Quotes)
+    :   Option[List[element]] =
+      expr match
+        // Backticked type references: a lower-case type name in a quoted pattern would bind a
+        // fresh type variable rather than refer to `element`.
+        case '{List.from($elements: sci.List[`element`])} =>
+          scala.quoted.FromExpr.ListFromExpr[element].unapply(elements).map(of(_))
+
+        case '{List.empty[`element`]} => Some(List.empty[element])
+        case '{Nil}                   => Some(List.empty[element])
+        case _                        => None
+
   // The primitive operations, for the typeclass instances defined in the libraries above
   // (murmuration, denominative, concordance, symbolism). Within this file the opaque alias
   // is transparent, so these bodies touch the underlying list with no cast and no bridge,

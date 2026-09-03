@@ -56,7 +56,7 @@ object internal:
       status: Optional[Expr[Http.Status]] = Unset,
       done:   List[Expr[Http.Header]]     = Nil )
     ( using Quotes )
-  :   (Optional[Expr[Http.Method]], Optional[Expr[Http.Status]], Expr[Seq[Http.Header]]) =
+  :   (Optional[Expr[Http.Method]], Optional[Expr[Http.Status]], Expr[List[Http.Header]]) =
 
     import quotes.reflect.*
 
@@ -114,8 +114,7 @@ object internal:
         unnamed[valueType](value, tail)
 
       case Seq() =>
-        // `.stdlib`: `Expr.ofList` takes the stdlib `List` the quotes API uses.
-        (method, status, Expr.ofList(done.reverse.stdlib))
+        (method, status, Lifts.list(done.reverse))
 
 
   def submit[target: Type, payload: Type]
@@ -161,7 +160,7 @@ object internal:
                   1.1,
                   host,
                   path,
-                  contentType :: $headers.to(List),
+                  contentType :: $headers,
                   () => postable0.stream($payload) )
 
             $client.request(request, $submit.target)
@@ -194,7 +193,7 @@ object internal:
 
             val request =
               Http.Request
-                ( $method, 1.1, $fetch.host, path, $headers.to(List), () => Http.emptyBody() )
+                ( $method, 1.1, $fetch.host, path, $headers, () => Http.emptyBody() )
 
             $client.request(request, $fetch.target)
           }
@@ -202,7 +201,7 @@ object internal:
 
   def response(headers: Expr[Seq[Any]]): Macro[Http.Response.Protoresponse | Http.Response] =
     headers.absolve.match
-      case Varargs(exprs) => exprs.toList.to(List).only:
+      case Lifts.Varargs(exprs) => exprs.only:
         case '{$value: valueType} :: Nil =>
           Expr.summon[(? >: valueType) is Servable].map: servable => '{$servable.serve($value)}
           . optional
@@ -216,4 +215,4 @@ object internal:
               case Unset                   => '{Unset}
               case expr: Expr[Http.Status] => expr
 
-            '{Http.Response.Protoresponse($status2, ($headers2.toList).to(List))}
+            '{Http.Response.Protoresponse($status2, $headers2)}

@@ -74,7 +74,11 @@ object internal:
       case Some((_, keys)) => keys.to[List]
       case None            => Nil
 
-    '{List.from(${Expr.ofList(paths.stdlib.map { k => '{${Expr(k)}.tt} })})}
+    // Hoisted from the `map` below: a quote inside a combinator lambda in a macro risks the
+    // `wildApprox` crash.
+    def liftText(path: String): Expr[Text] = '{${Expr(path)}.tt}
+
+    Lifts.list(paths.map(liftText))
 
   // The override set for `root` and the typeclass `typeclassConstructor`: a reference to the
   // in-scope `root is Specific over typeclass` given and the dotted paths it overrides — or `None`

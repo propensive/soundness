@@ -62,9 +62,11 @@ object internal:
     import quotes.reflect.*
 
     val parts: List[String] = context.valueOrAbort.parts.to(List)
-    val arguments = arguments0.absolve match case Varargs(arguments) => arguments
+    val arguments = arguments0.absolve match case Lifts.Varargs(arguments) => arguments
 
-    val insertions = arguments.map: value =>
+    // Hoisted from the `map` below: a quote (with its implicit summons) inside a combinator
+    // lambda in a macro risks the `wildApprox` crash.
+    def encode(value: Expr[Any]): Expr[Text] =
       value.absolve match
         case '{$argument: argument} =>
           Expr.summon[argument is Showable] match
@@ -75,11 +77,19 @@ object internal:
               halt:
                 m"could not find a contextual `${TypeRepr.of[argument].show} is Showable` instance"
 
+    val insertions = arguments.map(encode)
+
+    def concatenate(insertions: List[Expr[Text]], parts: List[String], done: Expr[String])
+    :   Expr[String] =
+      insertions match
+        case Nil => done
+
+        case insertion :: insertions2 => parts.absolve match
+          case part :: parts2 =>
+            concatenate(insertions2, parts2, '{$done+$insertion+${Expr(part)}})
+
     val result = parts.absolve match
-      case head :: tail =>
-        insertions.zip(tail.stdlib.map(Expr(_))).foldLeft(Expr(head)):
-          case (result, (insertion, part)) =>
-            '{$result+$insertion+$part}
+      case head :: tail => concatenate(insertions, tail, Expr(head))
 
     val types = parts.map(StringConstant(_)).map(ConstantType(_).asType).reverse
 

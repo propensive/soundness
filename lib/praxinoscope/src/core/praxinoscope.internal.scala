@@ -36,30 +36,31 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.quoted.*
 
 import anticipation.*
+import gigantism.Lifts
 import vacuous.*
 
 import Motif.Node
 
 object internal:
   private def integers(values: scala.IArray[Int])(using Quotes): Expr[scala.IArray[Int]] =
-    var exprs: scala.List[Expr[Int]] = scala.Nil
+    var exprs: List[Expr[Int]] = Nil
     var index = values.length - 1
 
     while index >= 0 do
       exprs = Expr(values(index)) :: exprs
       index -= 1
 
-    '{scala.IArray(${Varargs(exprs)}*)}
+    '{scala.IArray(${Lifts.varargs(exprs)}*)}
 
   private def booleans(values: scala.IArray[Boolean])(using Quotes): Expr[scala.IArray[Boolean]] =
-    var exprs: scala.List[Expr[Boolean]] = scala.Nil
+    var exprs: List[Expr[Boolean]] = Nil
     var index = values.length - 1
 
     while index >= 0 do
       exprs = Expr(values(index)) :: exprs
       index -= 1
 
-    '{scala.IArray(${Varargs(exprs)}*)}
+    '{scala.IArray(${Lifts.varargs(exprs)}*)}
 
   given anchor: ToExpr[Node.Anchor]:
     def apply(anchor: Node.Anchor)(using Quotes): Expr[Node.Anchor] = anchor match
@@ -85,7 +86,7 @@ object internal:
 
   given program: ToExpr[Program]:
     def apply(program: Program)(using Quotes): Expr[Program] =
-      var exprs: scala.List[Expr[Program.Op]] = scala.Nil
+      var exprs: List[Expr[Program.Op]] = Nil
       var index = program.ops.length - 1
 
       while index >= 0 do
@@ -94,7 +95,7 @@ object internal:
 
       ' {
           Program
-            ( scala.IArray(${Varargs(exprs)}*),
+            ( scala.IArray(${Lifts.varargs(exprs)}*),
               ${Expr(program.slots)},
               ${Expr(program.captures)} )
         }
