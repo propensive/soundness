@@ -132,6 +132,13 @@ object Bench:
   private[sedentary] def scaled(target: Long, scale: Double): Long =
     if scale == 1.0 then target else ((target*scale).toLong).max(1000L)
 
+  // The expected measuring time of one cell, from its declared metadata: `warmups` then
+  // `iterations` batches, each of `target/iterations`. The calibration phase (doubling until
+  // one batch fits) and the ten untimed warmup runs are not counted — they are body-dependent
+  // and usually small. An estimate for budgeting, not a promise.
+  private[sedentary] def expected(target: Long, iterations: Int, warmups: Int): Long =
+    target*(iterations + warmups).toLong/iterations.max(1).toLong
+
   private[sedentary] def measured
     ( iterations: Int, warmups: Int, target: Long )
     ( body0: (References over Json) ?=> Quotes ?=> Expr[Any] )
@@ -265,7 +272,9 @@ object Bench:
       val testId = Test.Id(name, suite, codepoint)
       val target2: Long = Bench.scaled(target, runner.scale)
 
-      if !runner.skip(testId, Entry.Kind.Bench, Nil) then
+      val expected: Optional[Long] = Bench.expected(target2, iterations, warmups)
+
+      if !runner.skip(testId, Entry.Kind.Bench, Nil, expected) then
         val results0 = bench.dispatch(Bench.measured(iterations, warmups, target2)(body0))
 
         inclusion.include
@@ -305,7 +314,10 @@ object Bench:
         val coordinates = List(axis.coordinate(value))
 
         // An unselected cell is skipped BEFORE staging: it costs no compilation and no JVM.
-        if probe.isDefinedAt(value) && !runner.skip(testId, Entry.Kind.Bench, coordinates) then
+        if probe.isDefinedAt(value)
+            && !runner.skip(testId, Entry.Kind.Bench, coordinates,
+                            Bench.expected(target2, iterations, warmups))
+        then
           val results0 =
             bench.dispatch(Bench.measured(iterations, warmups, target2)(body(value)))
 
@@ -367,7 +379,9 @@ object Bench:
 
           val coordinates = List(first.coordinate(left), second.coordinate(right))
 
-          if probe.isDefinedAt((left, right)) && !runner.skip(testId, Entry.Kind.Bench, coordinates)
+          if probe.isDefinedAt((left, right))
+              && !runner.skip(testId, Entry.Kind.Bench, coordinates,
+                              Bench.expected(target2, iterations, warmups))
           then
             val results0 =
               bench.dispatch(Bench.measured(iterations, warmups, target2)(body((left, right))))

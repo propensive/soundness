@@ -174,7 +174,8 @@ extends Rig:
               (count.toString + "\t" + key).tt
         }
 
-    if !runner.skip(testId, Entry.Kind.Profile, Nil) then
+    // A profile records for its (scaled) target duration, so the declared time is the estimate.
+    if !runner.skip(testId, Entry.Kind.Profile, Nil, Bench.scaled(target.generic, runner.scale)) then
       val results = dispatch(body)
 
       val hotspots =

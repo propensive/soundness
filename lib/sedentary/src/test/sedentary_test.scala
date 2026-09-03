@@ -65,6 +65,12 @@ object Tests extends Suite(m"Sedentary Tests"):
       Bench.scaled(1000L, 0.000001)
     . assert(_ == 1000L)
 
+    // The schedule's budgeting estimate: warmups and iterations each cost one batch of
+    // `target/iterations`, so the default (warmups == iterations) expects double the target.
+    test(m"a cell's expected time counts warmup and measured batches"):
+      List(Bench.expected(1_000_000L, 5, 5), Bench.expected(1_000_000L, 2, 1))
+    . assert(_ == List(2_000_000L, 1_500_000L))
+
     // Two implementations on one axis: distinct staged trees, so each compiles once, and
     // the anchor produces a comparison column against `Formula`.
     bench(m"sum of the first thousand integers")
