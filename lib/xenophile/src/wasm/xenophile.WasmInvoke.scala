@@ -222,7 +222,7 @@ object WasmInvoke extends Materializer:
           // rep/DECISIONS.md).
           val derivedBuffer = List.newBuilder[(TypeRepr, Expr[Any] -> Expr[Any])]
 
-          // `.stdlib.iterator`: a stepwise cursor for the imperative loop below.
+          // The stdlib view provides a stepwise cursor for the imperative loop below.
           val pairs = elements.zip(fields).stdlib.iterator
           while pairs.hasNext do
             val (element, field) = pairs.next()

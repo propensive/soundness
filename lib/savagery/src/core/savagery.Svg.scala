@@ -507,7 +507,6 @@ extends Documentary:
 
     val defsElement: List[Xml] =
       if defs.nil then Nil
-      // `.stdlib`: xylophone's `nodes` is an extension on a stdlib `Seq[Xml]`.
       else List(Element(t"defs", Attributes.empty, defs.map(_.xml).nodes))
 
     val figureNodes: List[Xml] =
@@ -516,9 +515,7 @@ extends Documentary:
         val groupAttrs =
           Ledger(t"transform" -> transforms.map(_.encode).join(t" "))
 
-        // `.stdlib`: as above, `nodes` is a stdlib-`Seq` extension.
         List(Element(t"g", Attributes.from(groupAttrs.to[Map]), figures.map(_.xml).nodes))
 
-    // `.stdlib`: as above, `nodes` is a stdlib-`Seq` extension.
     val children: Array[Node]^{} = (defsElement + figureNodes).nodes
     Element(t"svg", Attributes.from(attrs.to[Map]), children)

@@ -124,7 +124,7 @@ object UsedSets:
     val unmatched = scala.collection.mutable.ListBuffer[Text]()
 
     references.each: key =>
-      // `.stdlib.get`: the native `at` yields `Optional[Data]`, and binding the `Data` member of
+      // stdlib bridge: the native `at` yields `Optional[Data]`, and binding the `Data` member of
       // that union freshens the frozen array's capability past what `matched` will admit.
       byKey.stdlib.get(key) match
         case scala.Some(hash) => matched += hash

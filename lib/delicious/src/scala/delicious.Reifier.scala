@@ -129,7 +129,7 @@ class Reifier(classpath: LocalClasspath):
 
     val base = driver.context.fresh.setReporter(Reporter.NoReporter)
     val run = dtd.Compiler().newRun(using base)
-    // `.stdlib`: `compileSources` is the compiler's own API, taking a stdlib `List`.
+    // stdlib bridge: `compileSources` is the compiler's own API, taking a stdlib `List`.
     run.compileSources(List(SourceFile.virtual("<delicious>", "")).stdlib)
 
     // Quote unpickling (which stenography's `TypeRepr.of` comparisons trigger)

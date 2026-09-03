@@ -142,7 +142,7 @@ object Markup:
           // separation checker cannot prove them distinct. Finish with `top`,
           // then reach the parent through `rest.stdlib.head`, so only one frame is
           // ever live. Were the two to alias, the old shape mutated a frame
-          // while reading it. The `.stdlib` bridges here (and the `stack.stdlib.head`
+          // while reading it. The stdlib bridges here (and the `stack.stdlib.head`
           // reads above and below) are forced: the stack's element type is a capability
           // (`Frame^`), which the generic `Countable`/`Terminable` instances cannot
           // accept — "capability cannot flow into capture set {}".
@@ -166,7 +166,7 @@ object Markup:
     while !stack.stdlib.tail.isEmpty do
       stack match
         // As above: one frame live at a time, parent reached via `rest.stdlib.head`,
-        // and `.stdlib` throughout because `Frame^` is a capability element type.
+        // and the stdlib bridge throughout because `Frame^` is a capability element type.
         case top :: rest if !rest.stdlib.isEmpty =>
           top.flush()
           // `toList` copies into a fresh immutable list sharing nothing with the

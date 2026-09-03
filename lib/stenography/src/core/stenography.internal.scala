@@ -78,7 +78,8 @@ object internal:
 
       case _ => Nil
 
-    // `.stdlib`: this file's import-graph bookkeeping is stdlib throughout (`sci.Set`/`sci.Map`).
+    // Deliberate stdlib opt-out: this file's import-graph bookkeeping is stdlib throughout
+    // (`sci.Set`/`sci.Map`).
     val imports: sci.Set[Designator] =
       metaprogramming.imports.stdlib.map(_.term).map(Syntax.term(_)).toSet
 

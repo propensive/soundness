@@ -66,7 +66,7 @@ object Flex:
     val pinned = scala.Array.fill[Optional[Int]](n)(Unset)
 
     var index = 0
-    // `.stdlib.iterator`: a stepwise cursor for the imperative loop below.
+    // The stdlib view provides a stepwise cursor for the imperative loop below.
     val trackCells = tracks.stdlib.iterator
 
     while index < n && trackCells.hasNext do

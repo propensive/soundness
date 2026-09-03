@@ -473,7 +473,7 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     // The frames are followed by one sentinel, on whose arrival the translation closes out
     // the message — chunk streams end at `[DONE]` with no closing events of their own.
-    // `.stdlib.iterator`: this method's contract is a stdlib `Iterator`, which the native `List`
+    // stdlib bridge: this method's contract is a stdlib `Iterator`, which the native `List`
     // has no accessor for — the boundary is the return type, not the interior.
     (Llm.frames(response) ++ Iterator(Llm.Terminal)).flatMap: frame =>
       if frame == Llm.Terminal then progress.finish().stdlib.iterator
@@ -756,7 +756,7 @@ extends Llm.Dialect, caps.ExclusiveCapability:
     val progress = Llm.Progress()
 
     // As in `ChatDialect.stream`: a sentinel closes out the message after the last frame, and
-    // `.stdlib.iterator` bridges to the stdlib `Iterator` this method's contract returns.
+    // the stdlib bridge yields the stdlib `Iterator` this method's contract returns.
     (Llm.frames(response) ++ Iterator(Llm.Terminal)).flatMap: frame =>
       if frame == Llm.Terminal then progress.finish().stdlib.iterator
       else ResponsesDialect.events(progress, OpenAI.frame(frame)).stdlib.iterator

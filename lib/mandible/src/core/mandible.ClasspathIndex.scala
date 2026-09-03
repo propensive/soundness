@@ -52,7 +52,7 @@ object ClasspathIndex:
   private def url(entry: Text): jn.URL = java.io.File(entry.s).toURI.nn.toURL.nn
 
   def apply(local: Map[Text, ClassSurface], classpath: List[Text]): ClasspathIndex =
-    // `.stdlib`: `URLClassLoader`'s constructor takes a Java array, and `scala.Array.from` is
+    // stdlib bridge: `URLClassLoader`'s constructor takes a Java array, and `scala.Array.from` is
     // the boundary that builds one.
     val urls: scala.Array[jn.URL | Null] =
       scala.Array.from(classpath.stdlib.map(url(_)))

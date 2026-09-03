@@ -240,8 +240,8 @@ object internal:
     val literalParts: List[String] = context.value.get.parts.to(List)
     val origins = contextual.Interpolation.literalOrigins(context, literalParts.length)
 
-    // `.stdlib`: this file works in `sci.List` (imported above), so the opaque `origins` list
-    // bridges at this boundary.
+    // Deliberate stdlib opt-out: this file works in `sci.List` (imported above), so the opaque
+    // `origins` list bridges at this boundary.
     val staticParts: List[Expr[Ascii]] = literalParts.zip(origins.stdlib).map: (part, origin) =>
       val bytes: Array[Expr[Byte]]^{} = part.tt.chars.indexed.remap: (char, ordinal) =>
         if char >= 128 then

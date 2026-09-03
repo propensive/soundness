@@ -122,7 +122,7 @@ object Repackager:
   :   (List[Requirement], List[Zip.Entry]) raises RepackageError =
 
     // Accumulated as per-hash groups, prepended (so newest first) and flattened in source order
-    // once at the end; a stdlib `Builder` would need a `.stdlib` bridge for every `++=`.
+    // once at the end; a stdlib `Builder` would need a stdlib bridge for every `++=`.
     var requirementGroups: List[List[Requirement]] = Nil
     var inlinedGroups: List[List[Zip.Entry]] = Nil
     val total: Int = hashes.size

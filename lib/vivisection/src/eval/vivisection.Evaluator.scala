@@ -214,9 +214,9 @@ extends caps.ExclusiveCapability:
       // forced through `Class.forName(name, true, loader)` to prepare it, after which its methods
       // can be read.
       //
-      // `.stdlib`: traversing the native `Map` widens each `Data` value to a read-only
-      // `Array[Byte]^{value.rd}`, which the injector's `Data` parameter (a pure `Array[Byte]^{}`)
-      // will not accept; the stdlib view hands the values over unwidened.
+      // The stdlib view hands the values over unwidened: traversing the native `Map` widens
+      // each `Data` value to a read-only `Array[Byte]^{value.rd}`, which the injector's `Data`
+      // parameter (a pure `Array[Byte]^{}`) will not accept.
       process.classfiles.stdlib.foreach: (path, bytecode) =>
         if path.encode.s.endsWith(".class") then injector.define(classNameOf(path.encode), bytecode)
 

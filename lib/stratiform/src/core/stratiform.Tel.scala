@@ -2380,9 +2380,9 @@ object Tel extends Tel2:
       case data #:: rest if rest.nil => data
       case _ =>
         var acc    = scala.IArray.empty[Byte]
-        // `.stdlib`: the walk consumes the chain cell-by-cell; the stdlib
-        // view's `head`/`tail` force exactly one cell at a time, which the
-        // native surface deliberately withholds on the lazy shape.
+        // The stdlib view walks the chain cell-by-cell; its `head`/`tail`
+        // force exactly one cell at a time, which the native surface
+        // deliberately withholds on the lazy shape.
         var stream = source.stdlib
 
         while !stream.isEmpty do

@@ -135,7 +135,7 @@ enum Frame:
         own
 
       case Split(_, Arrangement.Grid(columns, gap), children) =>
-        // `.stdlib.toVector`: the grid solvers below index and slice a stdlib `Vector`.
+        // The stdlib view gives the grid solvers below a stdlib `Vector` to index and slice.
         val childLimits = children.map(_.measure(arrangement)).stdlib.toVector
 
         arrangement match
@@ -157,8 +157,8 @@ enum Frame:
       // Column widths are negotiated across every row with the shared solver (each column's
       // fold of its members' limits, weighted by its members' largest fraction); rows are
       // content-sized and stacked, clamped to the grid's rectangle.
-      // `.stdlib.toVector`: a single documented view, indexed and sliced throughout the grid
-      // arrangement below.
+      // The stdlib view is taken once, indexed and sliced throughout the grid arrangement
+      // below.
       val childList = children.stdlib.toVector
       val widthLimits = childList.map(_.measure(Arrangement.Strip))
       val cols = columns.max(1).min(childList.length.max(1))
@@ -169,7 +169,7 @@ enum Frame:
         val weight = members.map(childList(_).sizing.fraction).maxOption.getOrElse(1.0)
         Flex(Metrics(limits.min), weight, limits.max)
 
-      // `.stdlib`: the solved widths are scanned and indexed as a stdlib `Vector`.
+      // The stdlib view of the solved widths is scanned and indexed as a `Vector`.
       val colWidths = Flex.solve(Sequence.from(tracks), rect.width, gap).stdlib.map(_.or(0))
       val xs = colWidths.scanLeft(rect.left)((x, width) => x + width + gap)
       val rowHeights = Frame.gridRows(childList.map(_.measure(Arrangement.Stack)), cols)
@@ -197,7 +197,7 @@ enum Frame:
           val limits = child.measure(arrangement)
           Flex(Metrics(limits.min), child.sizing.fraction, limits.max)
 
-      // `.stdlib`: as above, the solved sizes are scanned and zipped as a stdlib `Vector`.
+      // The stdlib view of the solved sizes, as above, is scanned and zipped as a `Vector`.
       val sizes = Flex.solve(tracks.to[Sequence], available).stdlib.map(_.or(0))
 
       val start = arrangement match
@@ -208,7 +208,7 @@ enum Frame:
 
       // Zip each child directly with its solved size and offset (`scanLeft` yields n + 1
       // offsets; the zip truncates to the n children), so no re-indexing is needed.
-      // `.stdlib`: `lazyZip` is a stdlib-only three-way zip.
+      // stdlib bridge: `lazyZip` is a stdlib-only three-way zip.
       val placements = children.stdlib.lazyZip(sizes).lazyZip(offsets).map:
         (child, size, offset) =>
           val childRect = arrangement match

@@ -70,7 +70,7 @@ object internal:
   private def writeResource(outputDir: jnf.Path, hashes: List[String]): Unit =
     val metaInf: jnf.Path = outputDir.resolve("META-INF").nn
     jnf.Files.createDirectories(metaInf)
-    // `.stdlib.mkString`: this compile-time file deliberately imports nothing from the soundness
+    // Deliberate stdlib opt-out: this compile-time file imports nothing from the soundness
     // runtime (only `java.*` and the prelude), and the elements are `String`, which the native
     // `join` — defined for `Text` only — could not take anyway.
     val content: String = hashes.stdlib.mkString("\n")

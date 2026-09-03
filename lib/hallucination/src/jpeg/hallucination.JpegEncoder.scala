@@ -291,9 +291,10 @@ private[hallucination] object JpegEncoder:
     val writer = JpegBitWriter(out)
     var prevDc = 0
 
-    // `.stdlib` (here and in `optimizeTables`): a `List` of mutable `scala.Array`s has a
-    // capability element type, which the generic `Traversable` instance behind `each`/
-    // `foreach` cannot accept ("capability `blocks*.rd` cannot flow into capture set {}").
+    // Deliberate stdlib opt-out (here and in `optimizeTables`): a `List` of mutable
+    // `scala.Array`s has a capability element type, which the generic `Traversable` instance
+    // behind `each`/`foreach` cannot accept ("capability `blocks*.rd` cannot flow into capture
+    // set {}").
     var rest = blocks.stdlib
 
     while rest.nonEmpty do

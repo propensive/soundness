@@ -43,12 +43,12 @@ type Macro[result] = Quotes ?=> Expr[result]
 // `Exprs`: the wildcard `scala.quoted.*` import would shadow an `Exprs` here at use sites.)
 object Lifts:
   def list[element: Type](elements: List[Expr[element]])(using Quotes): Expr[List[element]] =
-    // `.stdlib`: `Expr.ofList` takes a stdlib `Seq`; this is the confined hop.
+    // stdlib bridge: `Expr.ofList` takes a stdlib `Seq`; this is the confined hop.
     '{List.from(${Expr.ofList(elements.stdlib)})}
 
   def varargs[element: Type](elements: List[Expr[element]])(using Quotes)
   :   Expr[scala.Seq[element]] =
-    // `.stdlib`: `Varargs` takes a stdlib `Seq`; this is the confined hop.
+    // stdlib bridge: `Varargs` takes a stdlib `Seq`; this is the confined hop.
     scala.quoted.Varargs(elements.stdlib)
 
   object Varargs:

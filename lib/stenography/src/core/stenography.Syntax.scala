@@ -542,7 +542,7 @@ object Syntax:
             arguments0(0).absolve match
               case AppliedType(_, names) => apply(arguments0(1)).absolve match
                 case Sequence(_, elements) =>
-                  // `.stdlib`: `names` is the compiler's own stdlib `List` of type arguments.
+                  // stdlib bridge: `names` is the compiler's own stdlib `List` of type arguments.
                   val named = names.zip(elements.stdlib).map:
                     _.absolve match
                       case (ConstantType(StringConstant(name)), element) =>

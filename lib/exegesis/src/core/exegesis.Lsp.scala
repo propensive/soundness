@@ -1680,7 +1680,7 @@ object Lsp:
     // The writer drains the channel and frames each message onto stdout. The observer sees the
     // encoded body, not the framing, so both directions read alike in a log.
     val writer: Task[Unit] = async:
-      // `.stdlib.iterator`: drained element by element, without memoizing the live chain.
+      // The stdlib view is drained element by element, without memoizing the live chain.
       session.outgoing.stdlib.iterator.each: json =>
         val body: Text = json.encode
         observer.sent(body)
