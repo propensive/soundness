@@ -1490,28 +1490,29 @@ object Xml extends Tag.Container
 
   def header: Header = Header("1.0", Unset, Unset)
 
-  extension (xml: Seq[Xml])
+  extension (xml: List[Xml])
     def nodes: Array[Node]^{} =
       var count = 0
 
-      for item <- xml do item match
-        case fragment: Fragment => count += fragment.nodes.length
-        case _                  => count += 1
+      xml.each: item =>
+        item match
+          case fragment: Fragment => count += fragment.nodes.length
+          case _                  => count += 1
 
       val array = Array.allocate[Node](count)
 
       var index = 0
 
-      for item <- xml do item match
-        case Fragment(nodes*) =>
-          for node <- nodes do
-          array(index) = node
+      xml.each: item =>
+        item match
+          case Fragment(nodes*) =>
+            for node <- nodes do
+              array(index) = node
+              index += 1
 
-          index += 1
-
-        case node: Node =>
-          array(index) = node
-          index += 1
+          case node: Node =>
+            array(index) = node
+            index += 1
 
       Array.freeze(array)
 
@@ -1914,7 +1915,7 @@ object Xml extends Tag.Container
   trait Vacuiscible:
     node: Element =>
       def apply(children: Optional[Xml of (? <: node.Transport)]*): Element of node.Topic =
-        new Element(node.label, node.attributes, children.compact.nodes):
+        new Element(node.label, node.attributes, List.from(children.compact).nodes):
           type Topic = node.Topic
 
   import Issue.*
@@ -4071,13 +4072,13 @@ object Xml extends Tag.Container
     def select(xpath: XPath)(using Tactic[XPath.Error]): Fragment =
       XPathEngine.evaluate(xml, xpath.expression, Map()) match
         case XPath.Value.NodeSet(loci) =>
-          val nodes = loci.stdlib.flatMap: locus =>
+          val nodes = loci.bind: locus =>
             locus.attributeIndex match
-              case _: Int => scala.collection.immutable.Nil
+              case _: Int => Nil
 
               case _ => locus.subject match
-                case node: Node => scala.collection.immutable.List(node)
-                case _          => scala.collection.immutable.Nil
+                case node: Node => List(node)
+                case _          => Nil
 
           new Fragment(nodes*)
 
@@ -4428,7 +4429,7 @@ extends Node, Topical, Transportive:
 object Fragment:
   @targetName("make")
   def apply[topic <: Label](nodes: Xml of (? <: topic)*): Fragment of topic =
-    new Fragment(nodes.nodes*).of[topic]
+    new Fragment(List.from(nodes).nodes*).of[topic]
 
 case class Fragment(nodes: Node*) extends Xml:
   override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode

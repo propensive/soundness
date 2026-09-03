@@ -112,7 +112,6 @@ object Bundler:
           case _ =>
             Nil
 
-      // `.stdlib`: `Zipfile.write` takes a stdlib `Iterable` — a genuine API boundary.
-      entries.deduplicate(_.ref).stdlib
+      entries.deduplicate(_.ref)
 
     jarfile

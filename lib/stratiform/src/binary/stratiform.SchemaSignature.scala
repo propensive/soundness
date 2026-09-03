@@ -210,9 +210,7 @@ object SchemaSignature:
   def decode(signature: Data, library: List[Data]): List[Data] raises Bintel.Error =
     val n = componentCount(signature)
 
-    // `Bibliography.apply` takes an `Iterable[Data]`; the frozen element type does
-    // not survive `to[Array]`'s capture set, so the stdlib view crosses the boundary.
-    given Bibliography = Bibliography(library.stdlib)
+    given Bibliography = Bibliography(library)
 
     Palimpsest(signature, n).resolve.or(abort(Bintel.Error(Bintel.Error.Reason.BadSignature)))
 

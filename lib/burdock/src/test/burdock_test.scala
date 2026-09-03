@@ -159,7 +159,7 @@ object Tests extends Suite(m"Burdock Tests"):
         ( Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
           #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"aaa\nbbb".in[Data])
           #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".in[Data])
-          #:: Chain() ).stdlib
+          #:: Chain() ).to[List]
 
       val resolve: Repackager.Resolver =
         h => if h == t"aaa" then url"https://repo1.maven.org/maven2/g/a/1/a-1.jar" else Unset
@@ -215,7 +215,7 @@ object Tests extends Suite(m"Burdock Tests"):
           #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"".in[Data])
           #:: Zip.Entry(t"com/example".as[Path on Zip], t"".in[Data]).asDirectory
           #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".in[Data])
-          #:: Chain() ).stdlib
+          #:: Chain() ).to[List]
 
       val resolve: Repackager.Resolver = _ => Unset
       val cached: Repackager.CacheReader = _ => Unset
@@ -261,7 +261,7 @@ object Tests extends Suite(m"Burdock Tests"):
           #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".in[Data])
           #:: Zip.Entry(t"burdock/Bootstrap.class".as[Path on Zip], t"stale-bootstrap".in[Data])
           #:: Zip.Entry(t"dep/Lib.class".as[Path on Zip], t"bundled-lib".in[Data])
-          #:: Chain() ).stdlib
+          #:: Chain() ).to[List]
 
       val resolve: Repackager.Resolver = _ => Unset
 
@@ -306,7 +306,7 @@ object Tests extends Suite(m"Burdock Tests"):
           #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".in[Data])
           #:: Zip.Entry(t"published/Lib.class".as[Path on Zip], t"published-bytes".in[Data])
           #:: Zip.Entry(t"unpublished/Lib.class".as[Path on Zip], t"unpublished-bytes".in[Data])
-          #:: Chain() ).stdlib
+          #:: Chain() ).to[List]
 
       val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
       val resolve: Repackager.Resolver = h => if h == t"pub" then published else Unset
@@ -371,7 +371,7 @@ object Tests extends Suite(m"Burdock Tests"):
           #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"".in[Data])
           #:: storedEntry
           #:: deflateEntry
-          #:: Chain() ).stdlib
+          #:: Chain() ).to[List]
 
       Repackager.repackage(inputJar, outputJar, _ => Unset, _ => Unset, t"bootstrap".in[Data])
 

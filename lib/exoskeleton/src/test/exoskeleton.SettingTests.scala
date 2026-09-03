@@ -52,7 +52,7 @@ object SettingTests extends Suite(m"Setting tests"):
 
   def invocation(arguments: Text*)(using environment: Environment): Invocation =
     Invocation
-      ( Cli.arguments(arguments),
+      ( Cli.arguments(List.from(arguments)),
         environment,
         summon[WorkingDirectory],
         stdios.muteStdio,

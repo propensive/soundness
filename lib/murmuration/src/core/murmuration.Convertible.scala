@@ -68,6 +68,17 @@ object Convertible:
   =>  self is Convertible in Map to Map[key, value] =
     self => traversable.traverse(self).to(Map)
 
+  // The Java boundary: `xs.to[java.util.List]` builds the platform collection directly from
+  // the traversal, so native collections cross into Java APIs with no stdlib bridge at the
+  // call site. The result is a fresh, mutable `ArrayList` — the natural currency of Java
+  // APIs — which the receiving API owns outright.
+  given javaList: [self] => (traversable: self is Traversable)
+  =>  self is Convertible in java.util.List to java.util.List[traversable.Operand] =
+    self =>
+      val list = java.util.ArrayList[traversable.Operand]()
+      traversable.traverse(self).foreach(list.add(_))
+      list
+
   // `xs.to[Array]` yields the frozen form, `Array[element]^{}`: the built array is fresh,
   // so no writer survives its construction.
   given frozenArray: [self]

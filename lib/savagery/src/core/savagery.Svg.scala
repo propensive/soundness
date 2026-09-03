@@ -482,7 +482,7 @@ object Svg:
 
   case class LinearGradient[color](id: Id, stops: Stop[color]*) extends Def:
     def xml: Xml =
-      Element(t"linearGradient", Attributes(t"id" -> Id.text(id)), stops.map(_.xml).toSeq.nodes)
+      Element(t"linearGradient", Attributes(t"id" -> Id.text(id)), List.from(stops.map(_.xml)).nodes)
 
 case class Svg
   ( width:      Float,
@@ -508,7 +508,7 @@ extends Documentary:
     val defsElement: List[Xml] =
       if defs.nil then Nil
       // `.stdlib`: xylophone's `nodes` is an extension on a stdlib `Seq[Xml]`.
-      else List(Element(t"defs", Attributes.empty, defs.map(_.xml).stdlib.nodes))
+      else List(Element(t"defs", Attributes.empty, defs.map(_.xml).nodes))
 
     val figureNodes: List[Xml] =
       if transforms.nil then figures.map(_.xml)
@@ -517,8 +517,8 @@ extends Documentary:
           Ledger(t"transform" -> transforms.map(_.encode).join(t" "))
 
         // `.stdlib`: as above, `nodes` is a stdlib-`Seq` extension.
-        List(Element(t"g", Attributes.from(groupAttrs.to[Map]), figures.map(_.xml).stdlib.nodes))
+        List(Element(t"g", Attributes.from(groupAttrs.to[Map]), figures.map(_.xml).nodes))
 
     // `.stdlib`: as above, `nodes` is a stdlib-`Seq` extension.
-    val children: Array[Node]^{} = (defsElement + figureNodes).stdlib.nodes
+    val children: Array[Node]^{} = (defsElement + figureNodes).nodes
     Element(t"svg", Attributes.from(attrs.to[Map]), children)

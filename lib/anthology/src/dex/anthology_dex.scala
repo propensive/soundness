@@ -34,7 +34,6 @@ package anthology
 
 import java.nio.file as jnf
 
-import scala.collection.immutable as sci
 import scala.jdk.CollectionConverters.*
 import scala.util.control as suc
 
@@ -50,7 +49,9 @@ import gossamer.*
 import hellenism.*
 import parasite.*
 import prepositional.*
-import rudiments.bind
+import rudiments.{bind, partition, to}
+import murmuration.map
+import symbolism.`+`
 import serpentine.*
 import vacuous.*
 
@@ -125,18 +126,19 @@ object dexEdges:
       case Classpath.Entry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
       case _                                    => Nil
 
-    // `.stdlib`: everything below is stdlib list plumbing feeding D8 through `asJava`.
-    val roots: sci.List[jnf.Path] = jnf.Paths.get(directory.encode.s).nn :: classpathRoots.stdlib
+    val roots: List[jnf.Path] = jnf.Paths.get(directory.encode.s).nn :: classpathRoots
 
     val (archives, directories) = roots.partition(jnf.Files.isRegularFile(_))
 
     // D8 accepts archives wholesale but not directories, whose classfiles are enumerated
     // individually; `module-info` classfiles are not program code and are excluded.
-    val classfiles: sci.List[jnf.Path] = directories.flatMap: directory =>
+    val classfiles: List[jnf.Path] = directories.bind: directory =>
       val walk = jnf.Files.walk(directory).nn
 
-      try walk.iterator.nn.asScala.toList.filter: path =>
-        path.toString.endsWith(".class") && !path.toString.endsWith("module-info.class")
+      try
+        List.from:
+          walk.iterator.nn.asScala.filter: path =>
+            path.toString.endsWith(".class") && !path.toString.endsWith("module-info.class")
       finally walk.close()
 
     object handler extends DiagnosticsHandler:
@@ -154,7 +156,7 @@ object dexEdges:
       jnf.Files.createDirectories(outPath)
 
       val builder = D8Command.builder(handler).nn
-      builder.addProgramFiles((archives ++ classfiles).asJava)
+      builder.addProgramFiles((archives + classfiles).to[java.util.List])
       builder.setMinApiLevel(form.minApi)
       builder.setMode(form.mode)
       builder.setOutput(outPath.resolve("main.dex.jar").nn, OutputMode.DexIndexed)

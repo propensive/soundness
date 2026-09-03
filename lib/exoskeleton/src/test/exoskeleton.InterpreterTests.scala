@@ -46,7 +46,7 @@ object InterpreterTests extends Suite(m"Commandline interpreter tests"):
   // `CanEqual` against a plain list): `absent` for an unspecified flag, otherwise the
   // operands space-joined in brackets, so a present flag with no operands reads `[]`.
   private def reading(interpreter: Interpreter, flag: Flag, arguments: Text*): Text =
-    val topic = interpreter.interpret(Cli.arguments(arguments))
+    val topic = interpreter.interpret(Cli.arguments(List.from(arguments)))
     interpreter.locate(topic, flag).lay(t"absent"): operands =>
       t"[${operands.map(_()).join(t" ")}]"
 
@@ -103,7 +103,7 @@ object InterpreterTests extends Suite(m"Commandline interpreter tests"):
       // does not expose (`locate` seeks the first match); the given's `Topic` is known to
       // be `Commandline` by construction.
       test(m"`-vvv` records one occurrence of `-v` per character"):
-        clustering.interpret(Cli.arguments(scala.List(t"-vvv"))).asInstanceOf[Commandline]
+        clustering.interpret(Cli.arguments(List(t"-vvv"))).asInstanceOf[Commandline]
         . parameters.to[List].bind:
             (key, _) => if Flag('v', repeatable = true).matches(key) then List(key()) else Nil
       . assert(_ == List(t"-v", t"-v", t"-v"))

@@ -76,7 +76,7 @@ object Tests extends Suite(m"Ulysses tests"):
     val numbers2 = (1 to 20).map(_.toString.tt.digest[Blake3].data)
 
     test(m"Encode a Palimpsest under the default Cadence"):
-      given bibliography: Bibliography = Bibliography(numbers)
+      given bibliography: Bibliography = Bibliography(proscenium.List.from(numbers))
       Palimpsest(Sequence.from((1 to 3).map(numbers(_)))).resolve
 
     . assert(_ == (1 to 3).map(numbers(_)))
@@ -85,7 +85,7 @@ object Tests extends Suite(m"Ulysses tests"):
 
     test(m"Round-trip a Palimpsest under an overridden Cadence"):
       given cadence: Cadence = Cadence(initial = 4, regular = 2, hashSize = 32)
-      given bibliography: Bibliography = Bibliography(letters)
+      given bibliography: Bibliography = Bibliography(proscenium.List.from(letters))
       Palimpsest(Sequence.from(letters.toSeq)).resolve
 
     . assert(_ == letters)

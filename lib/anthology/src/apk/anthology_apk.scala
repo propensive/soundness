@@ -149,8 +149,7 @@ object apkEdges:
         Zip.Entry(entry.ref, unsafely(entry.read[Data])).aligned(4)
 
       val unsignedPath = out / "unsigned.apk"
-      // `.stdlib`: `Zipfile.write` takes a stdlib `Iterable`.
-      unsafely(Zipfile.write(unsignedPath)((manifestEntry :: dexZipEntries).stdlib))
+      unsafely(Zipfile.write(unsignedPath)(manifestEntry :: dexZipEntries))
       val unsigned = jnf.Files.readAllBytes(jnf.Paths.get(unsignedPath.encode.s)).nn
 
       val signed =
