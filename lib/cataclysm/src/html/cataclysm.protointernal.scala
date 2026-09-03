@@ -117,14 +117,14 @@ private[cataclysm] object protointernal:
 
     val (classes, ids) = references(stylesPath)
 
-    val attribute: String =
+    val attribute =
       if classes.has(target) && ids.has(target)
       then halt(m"cataclysm: $target is both a class and an id in the stylesheet; rename one")
       else if classes.has(target) then "class"
       else if ids.has(target) then "id"
       else halt(m"cataclysm: $target is not a class or id in the stylesheet")
 
-    '{Text(${Expr(attribute)})}
+    '{${Expr(attribute)}.tt}
 
   // Lift a `cp"…"` resource's `Locus` path into a `Styles` marker carrying it.
   def styles(resource: Expr[Resource]): Macro[Styles] =
