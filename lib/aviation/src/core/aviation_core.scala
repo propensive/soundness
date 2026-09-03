@@ -583,27 +583,19 @@ extension [sequence](sequence: sequence)(using recurrent: sequence is Recurrent)
   def until(limit: recurrent.Topic)(using order: Ordering[recurrent.Topic])
   :   Chain[recurrent.Topic] =
 
-    // `.stdlib`: the occurrence stream is a lazy — possibly infinite — `Chain`, whose native
-    // surface deliberately withholds `keep`/`skip`; only `LazyList`'s lazy `takeWhile` bounds it
-    // without forcing.
-    (recurrent.occurrences(sequence).stdlib.takeWhile(order.lt(_, limit))).to(Chain)
+    recurrent.occurrences(sequence).keep(order.lt(_, limit))
 
   def within(window: Period[recurrent.Topic])(using order: Ordering[recurrent.Topic])
   :   Chain[recurrent.Topic] =
 
-      // `.stdlib`: same lazy `Chain` bounding as `until`, above.
-      recurrent.occurrences(sequence).stdlib
-      . dropWhile(order.lt(_, window.start))
-      . takeWhile(order.lt(_, window.finish))
-      . to(Chain)
+      recurrent.occurrences(sequence)
+      . skip(order.lt(_, window.start))
+      . keep(order.lt(_, window.finish))
 
   def following(after: recurrent.Topic)(using order: Ordering[recurrent.Topic])
   :   Optional[recurrent.Topic] =
 
-    // `.stdlib`: lazy `dropWhile` over a possibly-infinite `Chain`, which the native surface
-    // withholds along with `prim`.
-    recurrent.occurrences(sequence).stdlib.dropWhile(order.lteq(_, after)).headOption
-    . getOrElse(Unset)
+    recurrent.occurrences(sequence).skip(order.lteq(_, after)).prim
 
 export Weekday.{Mon, Tue, Wed, Thu, Fri, Sat, Sun}
 

@@ -44,7 +44,7 @@ export
       longestTrain,
       Loop, loop, matchable, mean, mib, mutable, Mutex, next, ordinal, pipe, place, plus,
       prior, probe, product, Fixpoint, reflectClass, repeat, runs, runsBy, segment, Segmentable,
-      before, upto, from, after, keep, skip, snip, tail, Appendable, Prependable, `:+`, `+:`,
+      before, upto, from, after, snip, tail, Appendable, Prependable, `:+`, `+:`,
       indexed, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
       mean2, unique, seek, reap, where,
@@ -127,6 +127,43 @@ extension [element](sequence: proscenium.List[element])
   def ter: vacuous.Optional[element] =
     val rest = proscenium.List.drop(sequence, 2)
     if proscenium.List.nil(rest) then vacuous.Unset else proscenium.List.head(rest)
+
+extension [element](chain: proscenium.Chain[element])
+  // Mirrors the ungated `Chain` special case in `rudiments.Deindex` (same rationale).
+  def prim: vacuous.Optional[element] =
+    if proscenium.Chain.nil(chain) then vacuous.Unset else proscenium.Chain.head(chain)
+
+// `keep` and `skip` are re-declared rather than exported (unlike their siblings above, in the
+// export clause): `Chain`'s lazy forms live in its companion — implicit scope — and a call on a
+// `Chain` receiver only reaches them when the lexical candidate's failed `Segmentable` summon
+// DISCARDS the candidate, which the originals' trailing `using` clause does but a synthesized
+// export forwarder does not. Each delegates to the `rudiments` original.
+extension [value](value: value)
+  ( using segmentable: value is rudiments.Segmentable,
+          countable:   value is denominative.Countable )
+
+  def keep(count: Int, bidi: anticipation.Bidi = anticipation.Bidi.Ltr): segmentable.Segment =
+    rudiments.keep(value)(count, bidi)
+
+  def skip(count: Int, bidi: anticipation.Bidi = anticipation.Bidi.Ltr): segmentable.Segment =
+    rudiments.skip(value)(count, bidi)
+
+extension [value](value: value)
+  ( using traversable: value is murmuration.Traversable,
+          segmentable: value is rudiments.Segmentable,
+          countable:   value is denominative.Countable )
+
+  def keep(predicate: traversable.Operand => Boolean): segmentable.Segment =
+    rudiments.keep(value)(predicate)
+
+  def keep(predicate: traversable.Operand => Boolean, bidi: anticipation.Bidi): segmentable.Segment =
+    rudiments.keep(value)(predicate, bidi)
+
+  def skip(predicate: traversable.Operand => Boolean): segmentable.Segment =
+    rudiments.skip(value)(predicate)
+
+  def skip(predicate: traversable.Operand => Boolean, bidi: anticipation.Bidi): segmentable.Segment =
+    rudiments.skip(value)(predicate, bidi)
 
 extension [self](inline value: self)
   (using applicable: denominative.Applicable { type Self = self; type Operand = denominative.Ordinal })

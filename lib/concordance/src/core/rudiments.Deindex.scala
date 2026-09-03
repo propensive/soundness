@@ -154,3 +154,11 @@ extension [element](sequence: List[element])
   def ter: Optional[element] =
     val rest = List.drop(sequence, 2)
     if List.nil(rest) then Unset else List.head(rest)
+
+extension [element](chain: Chain[element])
+  // `Chain` gets an ungated `prim` for the same reason as `List` above (and the same
+  // non-`inline` rationale): the walk is bounded at one cell, so it is not dysasymptotic, and
+  // on the lazy shape it forces only the first node. `sec`/`ter` are deliberately absent —
+  // positional access into a lazy stream beyond its head is a consumption pattern, better
+  // served by a `#::` match.
+  def prim: Optional[element] = if Chain.nil(chain) then Unset else Chain.head(chain)

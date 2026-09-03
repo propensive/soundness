@@ -668,6 +668,15 @@ extension [value](value: value)
 
     result
 
+// The lazy shape's `keep` and `skip`: `Chain` deliberately has NO `Segmentable` instance —
+// segmentation counts and rebuilds, which would force an unbounded chain — so it cannot use the
+// generic forms above. These overloads sit in the same scope as the generic forms, so overload
+// resolution prefers them for `Chain` receivers by specificity, and they stay lazy throughout
+// (see the primitives in `Chain`'s companion). No `Bidi` parameter: a right-to-left segment of a
+// lazy stream has no non-forcing meaning. Do NOT give `Chain` a `Segmentable` instance in
+// future: it would make the generic forms applicable to `Chain` receivers too, creating an
+// ambiguity with these overloads — and a forcing `segment` besides.
+
 extension (bs: Int)
   def b: Bytes = Bytes(bs)
   def kib: Bytes = Bytes(bs*1024L)

@@ -154,6 +154,45 @@ object Tests extends Suite(m"Rudiments Tests"):
         xs.last
       . assert(_ == 3)
 
+    suite(m"Lazy Chain segment tests"):
+      test(m"keep bounds an infinite chain"):
+        Chain.iterate(1)(_ + 1).keep(3).to[List]
+      . assert(_ == List(1, 2, 3))
+
+      test(m"keep by predicate bounds an infinite chain"):
+        Chain.iterate(1)(_ + 1).keep(_ < 4).to[List]
+      . assert(_ == List(1, 2, 3))
+
+      test(m"skip advances into an infinite chain"):
+        Chain.iterate(1)(_ + 1).skip(2).keep(2).to[List]
+      . assert(_ == List(3, 4))
+
+      test(m"skip by predicate advances into an infinite chain"):
+        Chain.iterate(1)(_ + 1).skip(_ < 3).keep(2).to[List]
+      . assert(_ == List(3, 4))
+
+      test(m"keep beyond the end clips"):
+        Chain(1, 2).keep(5).to[List]
+      . assert(_ == List(1, 2))
+
+      test(m"skip beyond the end is empty"):
+        Chain(1, 2).skip(5).to[List]
+      . assert(_ == List())
+
+      test(m"keep forces only the elements demanded"):
+        var forced = 0
+        Chain.continually { forced += 1; forced }.keep(3).to[List]
+        forced
+      . assert(_ == 3)
+
+      test(m"prim reads the head of an infinite chain"):
+        Chain.iterate(1)(_ + 1).prim
+      . assert(_ == 1)
+
+      test(m"prim of an empty chain is Unset"):
+        Chain[Int]().prim
+      . assert(_ == Unset)
+
     suite(m"Size and count tests"):
       test(m"Set size is ungated"):
         val xs: Set[Int] = Set(1, 2, 3)

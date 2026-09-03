@@ -73,9 +73,7 @@ object RecurrenceSet:
   // Drop duplicates from an ascending stream (equal values are adjacent).
   private def dedup[point](stream: Chain[point])(using order: Ordering[point]): Chain[point] =
     stream match
-      // `.stdlib`: `Chain` is lazy by design, so the native surface withholds `skip`; `dropWhile`
-      // on the underlying `LazyList` is what keeps this dedup non-forcing.
-      case first #:: rest => first #:: dedup((rest.stdlib.dropWhile(order.equiv(_, first))).to(Chain))
+      case first #:: rest => first #:: dedup(rest.skip(order.equiv(_, first)))
       case _              => Chain.empty
 
 case class RecurrenceSet[point]

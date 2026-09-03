@@ -125,6 +125,7 @@ object Chain:
 
   def iterator[element](chain: Chain[element]): Iterator[element] = chain.iterator
 
+
 // The lazy cons constructor. As with `List`'s `::`, right-associative extensions read in usage
 // order, so the receiver is the HEAD; it rides on a given (a top-level name would clash with the
 // extractor object). The head is by-value (call sites hoist it), but the TAIL is by-name so the
@@ -138,6 +139,34 @@ given lazyCons: Object with
   extension [element](head: element)
     infix def #:: (tail: => Chain[element]): Chain[element] =
       Chain.of(sci.LazyList.cons(head, tail.asInstanceOf[sci.LazyList[element]]))
+
+// The lazy segments: `take`/`drop`/`takeWhile`/`dropWhile` underneath, all non-forcing (they
+// evaluate elements only as the result is demanded), so all safe on unbounded chains, unlike the
+// `Segmentable`-driven `keep`/`skip` on the strict shapes (which count and rebuild). The count
+// forms are total: out-of-range counts clip. No `Bidi` parameter: a right-to-left segment of a
+// lazy stream has no non-forcing meaning.
+//
+// Like `::` and `#::`, these ride on a given (visible everywhere via `-Yimports`), and for the
+// same reason as `#::`'s extractor they cannot be `rudiments`-scope overloads of the generic
+// `Segmentable`-driven forms: a lambda argument's parameter type is unknown until an overload is
+// chosen, which defeats the specificity comparison and reports an ambiguity. As given-hosted
+// extensions they are consulted only after the generic lexical candidates fail — which, for a
+// `Chain` receiver, they always do (no `Segmentable` instance). For the same reason, do NOT give
+// `Chain` a `Segmentable` instance in future: beyond `segment` forcing an unbounded chain, it
+// would stop the generic forms failing on `Chain` receivers, shadowing these entirely. The
+// receiver is subtype-parametric (like the collection givens) so the umbrella's re-exported
+// alias matches too.
+given chainSegments: Object with
+  extension [element, chain <: Chain[element]](chain: chain)
+    def keep(count: Int): Chain[element] = Chain.of(chain.asInstanceOf[sci.LazyList[element]].take(count))
+
+    def keep(predicate: element => Boolean): Chain[element] =
+      Chain.of(chain.asInstanceOf[sci.LazyList[element]].takeWhile(predicate))
+
+    def skip(count: Int): Chain[element] = Chain.of(chain.asInstanceOf[sci.LazyList[element]].drop(count))
+
+    def skip(predicate: element => Boolean): Chain[element] =
+      Chain.of(chain.asInstanceOf[sci.LazyList[element]].dropWhile(predicate))
 
 // The lazy concatenation operator. Like `#::`, the receiver is the left operand (usage order)
 // and the suffix is by-name, so `prefix #::: suffix` does not force `suffix`.
