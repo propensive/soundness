@@ -69,8 +69,7 @@ object internal:
 
         val elements: List[Expr[Any]] = untuple[list].map(reifyElement)
 
-        // The `.stdlib` bridge feeds `Expr.ofList`, whose parameter is a stdlib `Seq`.
-        '{List.from(${Expr.ofList(elements.stdlib)})}
+        Lifts.list(elements)
 
       case '[type map <: Tuple; TypeMap[map]] =>
         val entries =
@@ -82,7 +81,7 @@ object internal:
 
           val keyValues: List[Expr[(Any, Any)]] = pairs.map(reifyPair)
 
-          '{List.from(${Expr.ofList(keyValues.stdlib)})}
+          Lifts.list(keyValues)
 
         '{Map.from(List.iterator($entries))}
 
@@ -91,8 +90,7 @@ object internal:
           case OrType(left, right) => List.concat(recur(left), recur(right))
           case other               => List(constant(other).asExprOf[set])
 
-        // The `.stdlib` bridge feeds `Varargs`, whose parameter is a stdlib `Seq`.
-        '{List[set](${Varargs(recur(TypeRepr.of[set]).stdlib)}*)}
+        '{List[set](${Lifts.varargs(recur(TypeRepr.of[set]))}*)}
 
       case other => constant(TypeRepr.of[phantom])
 

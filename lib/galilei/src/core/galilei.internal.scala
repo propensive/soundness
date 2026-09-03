@@ -51,12 +51,16 @@ object internal:
   def path(context: Expr[StringContext]): Macro[Path] =
     val name: String = context.valueOrAbort.parts.head
 
+    // Lifted as `String`s, reconstructing the `Text`s at runtime (`.tt`): `ToExpr[Text]` would
+    // lift a reach capability into the generated code.
+    def liftText(text: Text): Expr[Text] = '{${Expr(text.s)}.tt}
+
     safely(name.tt.as[Path on Posix]).let: path =>
-      '{Path[Posix, %.type, Tuple](${Expr(path.root)}, List.from(${Expr.ofList(path.descent.map(Expr(_)))}))}
+      '{Path[Posix, %.type, Tuple](${Expr(path.root)}, ${Lifts.list(List.from(path.descent.map(liftText)))})}
 
     . or:
         safely(name.tt.as[Path on Windows]).let: path =>
-          val varargs = Expr.ofList(path.descent.map(Expr(_)))
-          '{Path[Windows, Drive, Tuple](${Expr(path.root)}, ($varargs).to(List))}
+          val descent = Lifts.list(List.from(path.descent.map(liftText)))
+          '{Path[Windows, Drive, Tuple](${Expr(path.root)}, $descent)}
 
         . or(halt(66, m"The path ${name} is not a valid Windows or POSIX path"))

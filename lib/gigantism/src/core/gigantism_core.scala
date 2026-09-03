@@ -32,10 +32,29 @@
                                                                                                   */
 package gigantism
 
-import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 type Macro[result] = Quotes ?=> Expr[result]
+
+// The native-typed counterparts of `Expr.ofList` and `Varargs`: macro code holding a native
+// `List` of already-lifted expressions builds the lifted native list (or a varargs splice)
+// directly, with the stdlib hop confined here. `Lifts.Varargs` is the extractor counterpart,
+// yielding a varargs argument's element expressions as a native `List`. (Named `Lifts`, not
+// `Exprs`: the wildcard `scala.quoted.*` import would shadow an `Exprs` here at use sites.)
+object Lifts:
+  def list[element: Type](elements: List[Expr[element]])(using Quotes): Expr[List[element]] =
+    // `.stdlib`: `Expr.ofList` takes a stdlib `Seq`; this is the confined hop.
+    '{List.from(${Expr.ofList(elements.stdlib)})}
+
+  def varargs[element: Type](elements: List[Expr[element]])(using Quotes)
+  :   Expr[scala.Seq[element]] =
+    // `.stdlib`: `Varargs` takes a stdlib `Seq`; this is the confined hop.
+    scala.quoted.Varargs(elements.stdlib)
+
+  object Varargs:
+    def unapply[element](expr: Expr[scala.Seq[element]])(using Quotes)
+    :   Option[List[Expr[element]]] =
+      scala.quoted.Varargs.unapply(expr).map(List.from(_))
 
 inline def every[value]: Every[value] = ${Every.summonAll[value]}
 

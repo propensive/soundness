@@ -113,14 +113,12 @@ object internal:
     def toMessage(items: List[String | Expr[Message]]): Expr[Message] =
       val texts: List[String] = items.sweep { case text: String => text }
       val msgs:  List[Expr[Message]] = items.sweep { case expr: Expr[Message] @unchecked => expr }
-      // `List.from` inside the quote, not a conversion: the Factory route mints a fresh
-      // capture in the *generated* code, which `Message`'s pure fields then reject at every
-      // `m""` call site. The `.stdlib` bridges feed `Expr.ofList`, whose parameter is a
-      // stdlib `Seq`.
-      val textsExpr: Expr[List[Text]] =
-        '{List.from(${Expr.ofList(texts.map(liftText).stdlib)})}
+      // `Lifts.list` splices `List.from` inside the quote, not a conversion: the Factory
+      // route mints a fresh capture in the *generated* code, which `Message`'s pure fields
+      // then reject at every `m""` call site.
+      val textsExpr: Expr[List[Text]] = Lifts.list(texts.map(liftText))
 
-      '{Message($textsExpr, List.from(${Expr.ofList(msgs.stdlib)}))}
+      '{Message($textsExpr, ${Lifts.list(msgs)})}
 
 
     def sequence(group: String, startIndex: Int, subListRef: Expr[List[Message]])

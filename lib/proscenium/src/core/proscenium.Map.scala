@@ -65,6 +65,26 @@ object Map:
   extension [key, value](map: Map[key, value])
     inline def stdlib: sci.Map[key, value] = map.asInstanceOf[sci.Map[key, value]]
 
+  // Lifting and unlifting for macros; see `List`'s companion for the full rationale
+  // (public `from` splice, backticked pattern types, unlift limited to produced shapes).
+  given toExpr: [key: {scala.quoted.Type, scala.quoted.ToExpr},
+                 value: {scala.quoted.Type, scala.quoted.ToExpr}]
+  =>  scala.quoted.ToExpr[Map[key, value]]:
+    def apply(map: Map[key, value])(using scala.quoted.Quotes)
+    :   scala.quoted.Expr[Map[key, value]] =
+      '{Map.from(${scala.quoted.Expr.ofList(map.toList.map(scala.quoted.Expr(_)))})}
+
+  given fromExpr: [key: {scala.quoted.Type, scala.quoted.FromExpr},
+                   value: {scala.quoted.Type, scala.quoted.FromExpr}]
+  =>  scala.quoted.FromExpr[Map[key, value]]:
+    def unapply(expr: scala.quoted.Expr[Map[key, value]])(using scala.quoted.Quotes)
+    :   Option[Map[key, value]] =
+      expr match
+        case '{Map.from($pairs: sci.List[(`key`, `value`)])} =>
+          scala.quoted.FromExpr.ListFromExpr[(key, value)].unapply(pairs).map(Map.from(_))
+
+        case _ => None
+
   // The primitive operations, for the typeclass instances defined in the libraries above;
   // see `List` for the rationale. Within this file the opaque alias is transparent. `read`
   // mirrors the stdlib's `Option`-returning `get`: the ergonomic `Optional` form is layered

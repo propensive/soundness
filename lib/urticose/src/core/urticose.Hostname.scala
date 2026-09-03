@@ -39,6 +39,7 @@ import contingency.*
 import denominative.*, dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
+import gigantism.Lifts
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
@@ -59,8 +60,11 @@ object Hostname:
 
   given toExpr: ToExpr[Hostname]:
     def apply(hostname: Hostname)(using Quotes): Expr[Hostname] =
-      val labels = Varargs:
-        hostname.dnsLabels.map: label => '{DnsLabel(${Expr(label.text)})}
+      // Hoisted from the `map` below: a quote (with its implicit `ToExpr` search) inside a
+      // combinator lambda in a macro risks the `wildApprox` crash.
+      def liftLabel(label: DnsLabel): Expr[DnsLabel] = '{DnsLabel(${Expr(label.text.s)}.tt)}
+
+      val labels = Lifts.varargs(List.from(hostname.dnsLabels).map(liftLabel))
 
       '{Hostname($labels*)}
 

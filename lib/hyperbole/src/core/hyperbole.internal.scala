@@ -68,8 +68,7 @@ object internal:
                 ${Expr(name)},
                 ${Expr(expr)},
                 ${Expr(source)},
-                // `.stdlib`: `Expr.ofList` takes a stdlib `List` of `Expr`s.
-                List.from(${Expr.ofList(nodes2.stdlib)}),
+                ${Lifts.list(nodes2)},
                 $param2.asInstanceOf[Optional[Text]],
                 ${Expr(term)},
                 ${Expr(definitional)} )
@@ -674,24 +673,31 @@ object internal:
     Tasty.Symbol(prefix, symbol.name, flags, properties, details)
 
   def serialize(symbol: Tasty.Symbol): Macro[Tasty.Symbol] =
-    // `.stdlib` throughout: `Expr.ofList` (below) takes a stdlib `List` of `Expr`s.
-    val flags = symbol.flags.stdlib.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}
-    val properties = symbol.properties.stdlib.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}
+    // Lifted as a `String`, reconstructing the `Text` at runtime (`.tt`): `ToExpr[Text]` would
+    // lift a reach capability into the generated code.
+    def liftText(text: Text): Expr[Text] = '{${Expr(text.s)}.tt}
 
-    val details =
-      symbol.details.stdlib.map: pair =>
-        pair.absolve match
-          case (key, text: Text) => '{(${Expr(key)}, ${Expr(text)})}
+    // Named defs, not combinator-lambda bodies: an inline lambda whose body is a quote literal
+    // crashes wildApprox.
+    def liftFlag(pair: (Text, Boolean)): Expr[(Text, Boolean)] =
+      '{(${liftText(pair(0))}, ${Expr(pair(1))})}
 
-          case (key, list: List[Text] @unchecked) =>
-            // `.stdlib`: as above, for `Expr.ofList`.
-            '{(${Expr(key)}, List.from(${Expr.ofList((list: List[Text]).stdlib.map(Expr(_)))}))}
+    def liftDetail(pair: (Text, List[Text] | Text)): Expr[(Text, List[Text] | Text)] =
+      pair.absolve match
+        case (key, text: Text) => '{(${liftText(key)}, ${liftText(text)})}
+
+        case (key, list: List[Text] @unchecked) =>
+          '{(${liftText(key)}, ${Lifts.list((list: List[Text]).map(liftText))})}
+
+    val flags = symbol.flags.map(liftFlag)
+    val properties = symbol.properties.map(liftFlag)
+    val details = symbol.details.map(liftDetail)
 
     ' {
         Tasty.Symbol
           ( ${Expr(symbol.prefix)},
             ${Expr(symbol.name)},
-            List.from(${Expr.ofList(flags)}),
-            List.from(${Expr.ofList(properties)}),
-            List.from(${Expr.ofList(details)}) )
+            ${Lifts.list(flags)},
+            ${Lifts.list(properties)},
+            ${Lifts.list(details)} )
       }

@@ -480,12 +480,12 @@ object internal:
       '{Step(${liftAxis(step.axis)}, ${liftTest(step.test)}, ${liftExpressions(step.predicates)})}
 
     def liftSteps(steps: proscenium.List[Step]): Expr[proscenium.List[Step]] =
-      '{proscenium.List(${Varargs(steps.stdlib.map(liftStep))}*)}
+      Lifts.list(steps.map(liftStep))
 
     def liftExpressions(expressions: proscenium.List[Expression])
     :   Expr[proscenium.List[Expression]] =
 
-      '{proscenium.List(${Varargs(expressions.stdlib.map(liftExpression))}*)}
+      Lifts.list(expressions.map(liftExpression))
 
     def liftOrigin(origin: Origin): Expr[Origin] = origin match
       case Origin.Root => '{Origin.Root}

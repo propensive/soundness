@@ -509,7 +509,7 @@ object Xenophile:
       halt(m"xenophile: $fieldName is not a method of $topic")
 
     val args = arguments match
-      case Varargs(exprs) => exprs.to(List)
+      case Lifts.Varargs(exprs) => exprs
 
       case _ =>
         halt(m"xenophile: the arguments to $fieldName must be passed directly")

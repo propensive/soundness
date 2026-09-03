@@ -65,6 +65,23 @@ object Set:
   extension [element](set: Set[element])
     inline def stdlib: sci.Set[element] = set.asInstanceOf[sci.Set[element]]
 
+  // Lifting and unlifting for macros; see `List`'s companion for the full rationale
+  // (public `from` splice, backticked pattern types, unlift limited to produced shapes).
+  given toExpr: [element: {scala.quoted.Type, scala.quoted.ToExpr}]
+  =>  scala.quoted.ToExpr[Set[element]]:
+    def apply(set: Set[element])(using scala.quoted.Quotes): scala.quoted.Expr[Set[element]] =
+      '{Set.from(${scala.quoted.Expr.ofList(set.toList.map(scala.quoted.Expr(_)))})}
+
+  given fromExpr: [element: {scala.quoted.Type, scala.quoted.FromExpr}]
+  =>  scala.quoted.FromExpr[Set[element]]:
+    def unapply(expr: scala.quoted.Expr[Set[element]])(using scala.quoted.Quotes)
+    :   Option[Set[element]] =
+      expr match
+        case '{Set.from($elements: sci.List[`element`])} =>
+          scala.quoted.FromExpr.ListFromExpr[element].unapply(elements).map(Set.from(_))
+
+        case _ => None
+
   // The primitive operations, for the typeclass instances defined in the libraries above;
   // see `List` for the rationale. Within this file the opaque alias is transparent.
   def size[element](set: Set[element]): Int = set.size

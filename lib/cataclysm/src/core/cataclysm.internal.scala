@@ -39,6 +39,8 @@ import scala.quoted.*
 
 import anticipation.*
 import contextual.*
+import gigantism.Lifts
+import murmuration.map
 import rudiments.each
 import rudiments.all
 import contingency.*
@@ -190,8 +192,7 @@ object internal:
         lift(value)
 
     def listExpr(nodes: List[Css.Node]): Expr[List[Css.Node]] =
-      // `.stdlib`: `Expr.ofList` takes the stdlib `List` the quotes API uses.
-      '{List.from(${Expr.ofList(nodes.stdlib.map(nodeExpr))})}
+      Lifts.list(nodes.map(nodeExpr))
 
     def nodeExpr(node: Css.Node): Expr[Css.Node] = node match
       case Css.Node.Rule(selector, body) =>
@@ -231,9 +232,8 @@ object internal:
     // or at-rule are an inline style set (`Css.Style`); anything with a rule or at-rule
     // is a stylesheet (`Css`). The `transparent inline` interpolator returns whichever.
     val result: Expr[Css | Css.Style] =
-      // `.stdlib`: as above, `Expr.ofList` takes the stdlib `List`.
       if !css.rules.nil && css.rules.all(isDeclaration)
-      then '{Css.Style.of(List.from(${Expr.ofList(css.rules.stdlib.map(stylePair))}))}
+      then '{Css.Style.of(${Lifts.list(css.rules.map(stylePair))})}
       else '{Css(${listExpr(css.rules)})}
 
     if holeIndex != insertions.length

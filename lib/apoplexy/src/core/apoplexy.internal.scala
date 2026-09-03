@@ -292,7 +292,7 @@ object Apoplexy:
       if !named.exists(_(0) == param.name)
       then halt(m"apoplexy: required query parameter ${param.name} is missing")
 
-    val queryExpr = Expr.ofList(queryEntries.stdlib)
+    val queryExpr = Lifts.list(queryEntries)
 
     val status =
       operation.responses.keys.filter(_.starts(t"2")).to[List].order(_.s).prim.or(t"200")
@@ -365,7 +365,7 @@ object Apoplexy:
               $self.request.copy
                 ( method = $mExpr,
                   path   = $locusExpr.tt,
-                  query  = ($queryExpr).to(List),
+                  query  = $queryExpr,
                   body   = $bodyExpr )
 
             Api.Response.make(request).asInstanceOf[result]
@@ -398,10 +398,14 @@ object Apoplexy:
   private def pairs(using quotes: Quotes)(args: Expr[Seq[(String, Any)]])
   :   List[(Text, Expr[Any])] =
 
+    // Hoisted from the `map` below: quote patterns inside a combinator lambda in a macro risk
+    // the `wildApprox` crash.
+    def pair(expr: Expr[(String, Any)]): (Text, Expr[Any]) = expr match
+      case '{($key: String, $value)} => (key.valueOrAbort.tt, value)
+      case _                         => halt(m"apoplexy: arguments must be passed directly")
+
     args match
-      case Varargs(exprs) => exprs.to(List).map:
-        case '{($key: String, $value)} => (key.valueOrAbort.tt, value)
-        case _                         => halt(m"apoplexy: arguments must be passed directly")
+      case Lifts.Varargs(exprs) => exprs.map(pair)
 
       case _ =>
         halt(m"apoplexy: arguments must be passed directly")
@@ -462,8 +466,8 @@ object Apoplexy:
     val doc = spec(source)
 
     val positional = args match
-      case Varargs(exprs) => exprs.to(List)
-      case _              => halt(m"apoplexy: arguments must be passed directly")
+      case Lifts.Varargs(exprs) => exprs
+      case _                    => halt(m"apoplexy: arguments must be passed directly")
 
     verbs(name) match
       case method: Http.Method if defines(doc, locus, method) =>

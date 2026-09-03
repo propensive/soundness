@@ -68,6 +68,26 @@ object Ledger:
   extension [key, value](ledger: Ledger[key, value])
     inline def stdlib: sci.VectorMap[key, value] = ledger.asInstanceOf[sci.VectorMap[key, value]]
 
+  // Lifting and unlifting for macros; see `List`'s companion for the full rationale
+  // (public `from` splice, backticked pattern types, unlift limited to produced shapes).
+  given toExpr: [key: {scala.quoted.Type, scala.quoted.ToExpr},
+                 value: {scala.quoted.Type, scala.quoted.ToExpr}]
+  =>  scala.quoted.ToExpr[Ledger[key, value]]:
+    def apply(ledger: Ledger[key, value])(using scala.quoted.Quotes)
+    :   scala.quoted.Expr[Ledger[key, value]] =
+      '{Ledger.from(${scala.quoted.Expr.ofList(ledger.toList.map(scala.quoted.Expr(_)))})}
+
+  given fromExpr: [key: {scala.quoted.Type, scala.quoted.FromExpr},
+                   value: {scala.quoted.Type, scala.quoted.FromExpr}]
+  =>  scala.quoted.FromExpr[Ledger[key, value]]:
+    def unapply(expr: scala.quoted.Expr[Ledger[key, value]])(using scala.quoted.Quotes)
+    :   Option[Ledger[key, value]] =
+      expr match
+        case '{Ledger.from($pairs: sci.List[(`key`, `value`)])} =>
+          scala.quoted.FromExpr.ListFromExpr[(key, value)].unapply(pairs).map(Ledger.from(_))
+
+        case _ => None
+
   // The primitive operations, for the typeclass instances defined in the libraries above;
   // see `List` and `Map` for the rationale.
   def size[key, value](ledger: Ledger[key, value]): Int = ledger.size

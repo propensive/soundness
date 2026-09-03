@@ -99,6 +99,16 @@ object Chain:
   extension [element](chain: Chain[element])
     inline def stdlib: sci.LazyList[element] = chain.asInstanceOf[sci.LazyList[element]]
 
+  // Lifting for macros; see `List`'s companion for the general rationale. Lifting FORCES the
+  // whole chain (a constant tree cannot be lazy), so this serves only finite chains that a
+  // macro has already materialised; there is deliberately no `FromExpr`, whose eager unlift
+  // would misrepresent the lazy shape.
+  given toExpr: [element: {scala.quoted.Type, scala.quoted.ToExpr}]
+  =>  scala.quoted.ToExpr[Chain[element]]:
+    def apply(chain: Chain[element])(using scala.quoted.Quotes)
+    :   scala.quoted.Expr[Chain[element]] =
+      '{Chain.from(${scala.quoted.Expr.ofList(chain.toList.map(scala.quoted.Expr(_)))})}
+
   // The primitive operations, for the typeclass instances defined in the libraries above;
   // see `List` for the rationale. `size`, `last` and `lead` force the whole chain — their
   // gating (`Dysasymptotic.UnboundedSize`) lives with the instances that expose them.
