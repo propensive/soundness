@@ -50,6 +50,21 @@ object Tests extends Suite(m"Sedentary Tests"):
   def run(): Unit =
     val bench = Bench()
 
+    // The run-length multiplier a host passes as `--scale=<factor>`, applied to a declared
+    // target. Checked directly rather than through a measurement: what a scaled benchmark
+    // does is take proportionally longer, which is not a thing a test can assert cheaply.
+    test(m"a duration multiplier scales the declared target"):
+      List(Bench.scaled(2_000_000_000L, 0.5), Bench.scaled(2_000_000_000L, 4.0))
+    . assert(_ == List(1_000_000_000L, 8_000_000_000L))
+
+    test(m"an unscaled target is left exactly as declared"):
+      Bench.scaled(50_000_000L, 1.0)
+    . assert(_ == 50_000_000L)
+
+    test(m"a scaled target never falls below a microsecond"):
+      Bench.scaled(1000L, 0.000001)
+    . assert(_ == 1000L)
+
     // Two implementations on one axis: distinct staged trees, so each compiles once, and
     // the anchor produces a comparison column against `Formula`.
     bench(m"sum of the first thousand integers")

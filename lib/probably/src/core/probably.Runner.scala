@@ -66,6 +66,11 @@ extends Findable:
 
   def skip(id: Test.Id): Boolean = skip(id, Entry.Kind.Check, Nil)
 
+  // The selection's duration multiplier, which the timed kinds apply to their declared
+  // targets. It lives on the runner because that is what sedentary already has in hand at
+  // the point where a measurement's length is decided.
+  def scale: Double = selection.scale
+
   // Whether a test (or one cell of an axial test) is excluded by the selection. In listing
   // mode every test is skipped, and those the selection admits are noted for enumeration.
   def skip(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean =

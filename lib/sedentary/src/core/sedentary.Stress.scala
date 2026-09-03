@@ -159,7 +159,9 @@ extends Rig:
     val complianceBp: Long = compliance0.lay(-1L)(_*100L)
 
     val body: (References over Transport) ?=> Quotes ?=> Expr[List[Long]] =
-      val target2: Expr[Long] = Expr(target.generic)
+      // Scaled by the run's duration multiplier; the `threshold` below deliberately is
+      // not, being a latency criterion rather than a length of time to run for.
+      val target2: Expr[Long] = Expr(Bench.scaled(target.generic, runner.scale))
       ' {
           // Blackhole sink, exactly as in `Bench`: each body result is written here via
           // lazySet so that the JIT cannot prove the body's value is unused and elide it. The
