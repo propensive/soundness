@@ -71,7 +71,7 @@ case class Truetype(data: Data) extends Sfnt:
   // glyphs keep empty outlines, so character mappings, metrics and glyph references remain
   // valid. Every other table is carried over unchanged.
   def subset(chars: Set[Char]): Truetype raises Font.Error =
-    val retained = glyphClosure((chars.stdlib.map(glyph(_).id) + 0).to(Set))
+    val retained = glyphClosure(chars.map(glyph(_).id) :+ 0)
     val glyphs = glyf
     val count = maxp.glyphCount
 
@@ -137,7 +137,7 @@ case class Truetype(data: Data) extends Sfnt:
 
       case head :: tail =>
         val fresh = table(head).components.filter(!seen.has(_))
-        expand((fresh.stdlib ++ tail.stdlib).to(List), (seen.stdlib ++ fresh.stdlib).to(Set))
+        expand(fresh + tail, seen + fresh.to[Set])
 
     expand(glyphIds.to[List], glyphIds)
 

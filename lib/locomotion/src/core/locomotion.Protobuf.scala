@@ -286,7 +286,7 @@ object Protobuf extends Protobuf2:
 
         if !fields.defines(number) then origin else
           val bytes = printed: printer =>
-            fields.stdlib.each: (key, values) =>
+            fields.each: (key, values) =>
               val value = Protobuf.Repeated(values)
               printer.field(key, if key == number then lambda(value) else value)
 
@@ -554,7 +554,7 @@ object Protobuf extends Protobuf2:
         val value = valueDecodable.decoded(Repeated(fields(2).or(Nil)))
         (key, value)
 
-      entries.stdlib.to(Map)
+      entries.to[Map]
 
   object EncodableDerivation extends Derivable[Encodable in Protobuf]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -667,7 +667,7 @@ enum Protobuf:
 
   // The most recent single wire value (protobuf's last-one-wins rule for scalars).
   def single: Protobuf = this match
-    case Repeated(values) => values.occupied.let(_.stdlib.last).or(Protobuf.Absent)
+    case Repeated(values) => values.occupied.let(_.last).or(Protobuf.Absent)
     case other            => other
 
   // Every wire value recorded for this field — used to decode `repeated` fields.

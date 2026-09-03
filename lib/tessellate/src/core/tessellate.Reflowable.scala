@@ -33,10 +33,12 @@
 package tessellate
 
 import anticipation.*
+import denominative.size
 import gossamer.*
 import hieroglyph.*
 import polysyllabic.*
 import prepositional.*
+import rudiments.{indexed, map, to}
 
 object Reflowable:
   given textual: [textual: Textual { type Result = Char }]
@@ -53,11 +55,11 @@ object Reflowable:
       :   Sequence[Line] =
 
         val lines = Flow.wrap(content, width)
-        val count = lines.stdlib.length
+        val count = lines.size
 
-        Sequence.from:
-          lines.stdlib.zipWithIndex.map: (line, index) =>
-            alignment.pad(line, width, index == count - 1)
+        lines.indexed.map: (line, index) =>
+          alignment.pad(line, width, index.n0 == count - 1)
+        . to[Sequence]
 // Content that negotiates with a rectangular layout: it reports the intrinsic widths it wants
 // (`metrics`), how tall it runs at a candidate width (`height`), and finally arranges itself
 // into lines of exactly the settled width (`flow`). `Line` is the rendered line type — for
@@ -68,7 +70,7 @@ trait Reflowable extends Typeclass:
   def metrics(content: Self)(using Text is Measurable): Metrics
 
   def height(content: Self, width: Int)(using Text is Measurable, Hyphenation): Int =
-    flow(content, width, Alignment.Left).stdlib.length
+    flow(content, width, Alignment.Left).size
 
   def flow(content: Self, width: Int, alignment: Alignment)
     ( using Text is Measurable, Hyphenation )

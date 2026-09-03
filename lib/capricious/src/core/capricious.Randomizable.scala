@@ -38,6 +38,7 @@ import scala.language.experimental.genericNumberLiterals
 
 import hypotenuse.*
 import prepositional.*
+import rudiments.to
 import wisteria.*
 
 object Randomizable extends Derivation[[derivation] =>> derivation is Randomizable]:
@@ -67,7 +68,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
     caps.unsafe.unsafeAssumePure:
       random =>
         given random0: (Random^{random}) = random
-        (List.fill(size.generate(random))(randomizable.randomize(random)).stdlib).to(Set)
+        List.fill(size.generate(random))(randomizable.randomize(random)).to[Set]
 
   given iarray: [element] => (randomizable: => element is Randomizable) => (tag: ClassTag[element])
   =>  ( size: Random.Size )

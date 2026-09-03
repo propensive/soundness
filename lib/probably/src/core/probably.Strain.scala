@@ -76,9 +76,7 @@ object Strain:
             Metric.GcCount    -> strain.gcCount.toDouble,
             Metric.GcTime     -> strain.gcTime.toDouble*1000000.0 )
 
-      // `Ledger` has no native `Convertible`, so the stdlib `Factory` conversion is the only
-      // route from a sequence of pairs into one.
-      val metrics = (counters + latencies + slo).stdlib.to(Ledger)
+      val metrics = (counters + latencies + slo).to[Ledger]
 
       // Concurrency is a coordinate, not a metric: every strain lands on the emergent `N`
       // axis, so a sweep's steps accumulate as cells of one entry. If the producer already

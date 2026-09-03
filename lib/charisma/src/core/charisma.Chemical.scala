@@ -92,7 +92,7 @@ object Chemical:
     def formula: Formula = this
 
     def atoms: Map[Element, Int] =
-      molecules.stdlib.fuse(Molecule()):
+      molecules.fuse(Molecule()):
         val (molecule, count) = next
         state*(molecule**count)
 

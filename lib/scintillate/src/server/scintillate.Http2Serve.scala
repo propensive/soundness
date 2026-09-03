@@ -102,30 +102,30 @@ object Http2Serve:
                 response.textHeaders
                   . filter(_.key.lower == t"trailer")
                   . flatMap(_.value.cut(t",").map(_.trim.lower))
-                  . stdlib.toSet
+                  . to[Set]
 
               val (trailerEntries, headEntries) =
-                PseudoHeaders.entries(response).stdlib.partition: entry =>
+                PseudoHeaders.entries(response).partition: entry =>
                   trailerNames.has(entry.name)
 
-              val trailing: Boolean = !trailerEntries.isEmpty
+              val trailing: Boolean = !trailerEntries.nil
 
               def sendTrailers(): Unit =
-                if trailing then connection0.sendTrailers(streamId, trailerEntries.to(List))
+                if trailing then connection0.sendTrailers(streamId, trailerEntries)
 
               response.body match
                 case Http.Body.Empty =>
-                  connection0.sendHeaders(streamId, headEntries.to(List), endStream = !trailing)
+                  connection0.sendHeaders(streamId, headEntries, endStream = !trailing)
                   sendTrailers()
 
                 case Http.Body.Fixed(data) =>
                   val headEnd = data.nil && !trailing
-                  connection0.sendHeaders(streamId, headEntries.to(List), endStream = headEnd)
+                  connection0.sendHeaders(streamId, headEntries, endStream = headEnd)
                   if !data.nil then connection0.sendData(streamId, data, endStream = !trailing)
                   sendTrailers()
 
                 case Http.Body.Flowing(source) =>
-                  connection0.sendHeaders(streamId, headEntries.to(List), endStream = false)
+                  connection0.sendHeaders(streamId, headEntries, endStream = false)
 
                   source().drain: region =>
                     range =>

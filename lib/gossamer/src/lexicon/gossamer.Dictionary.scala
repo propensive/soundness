@@ -427,7 +427,7 @@ final class Dictionary[+value]
     this + (key -> value)
 
   def + [value2 >: value: ClassTag](entry: (Text, value2)): Dictionary[value2] =
-    this ++ List(entry).stdlib
+    this ++ Iterable(entry)
 
   def ++ [value2 >: value: ClassTag](extras: Iterable[(Text, value2)]): Dictionary[value2] =
     val combined = entries.asInstanceOf[Iterable[(Text, value2)]] ++ extras

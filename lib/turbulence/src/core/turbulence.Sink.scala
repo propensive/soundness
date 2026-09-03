@@ -202,7 +202,7 @@ object Sink:
 
       update def finish(): Unit =
         drain()
-        write(target, chunks.reverse.stdlib.to(Chain))
+        write(target, chunks.reverse.to[Chain])
 
       private update def drain(): Unit =
         if mark0 > 0 then

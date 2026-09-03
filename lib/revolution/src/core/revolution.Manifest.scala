@@ -56,7 +56,7 @@ object Manifest:
       (java.getMainAttributes.nn: _root_.java.util.Map[Object, Object]).to[List].map: (key, value) =>
         (key.toString.tt, value.toString.tt)
 
-      . pipe(l => Map.from(l.stdlib))
+      . to[Map]
 
   given streamable: Manifest is Streamable by Data over Credit = manifest =>
     zephyrine.Stream(manifest.serialize)
@@ -98,7 +98,7 @@ case class Manifest(entries: Map[Text, Text]):
   def serialize: Data =
     val manifest = juj.Manifest()
 
-    entries.stdlib.each: (key, value) =>
+    entries.each: (key, value) =>
       manifest.getMainAttributes.nn.putValue(key.s, value.s)
 
     val out = ji.ByteArrayOutputStream()

@@ -89,7 +89,7 @@ object Cell:
   // on, and which `render` shows only implicitly) are written first, then each line as a text
   // literal, so that trailing padding spaces are visible.
   given inspectable: [cell <: Cell] => cell is Inspectable = cell =>
-    val lines = cell.lines.stdlib.map(_.text.inspect).mkString(" ").tt
+    val lines = cell.lines.map(_.text.inspect).join(t" ")
     t"Cell(${cell.width}×${cell.height}@${cell.baseline} $lines)"
 
   val empty: Cell = Cell(Sequence(Writing.empty), 0, 0)
@@ -118,7 +118,7 @@ object Cell:
         . map { cell => cell.lines.stdlib.map(_.text) }
         . reduceLeft { (left, right) => left.zip(right).map { (l, r) => t"$l$r" } }
 
-      Cell(Sequence.from(rows.map(Writing(_))), cells.stdlib.map(_.width).reduceLeft(_ + _), ascent)
+      Cell(Sequence.from(rows.map(Writing(_))), cells.map(_.width).total, ascent)
 
   def fraction(numerator: Cell, denominator: Cell): Cell =
     val width = max(numerator.width, denominator.width) + 2
@@ -435,7 +435,7 @@ object Cell:
 
     val height = ascent + descent + 1
 
-    val cells = nodes.stdlib.map: node =>
+    val cells: List[Cell] = nodes.map: node =>
       stretchyChar(node).lay(of(node)): char =>
         // A one-line subject keeps the plain glyph; taller subjects grow the art.
         if bigOperators.contains(char) then
@@ -446,7 +446,7 @@ object Cell:
         else
           bracket(char, height, ascent, opening(char))
 
-    beside(cells.to(List))
+    beside(cells)
 
   def of(node: Mathml): Cell = node match
     case Mo(value, _)              => line(operator(value))
@@ -472,7 +472,7 @@ object Cell:
 
 case class Cell(lines: Sequence[Writing], width: Int, baseline: Int):
   def height: Int = lines.size
-  def render: Text = lines.stdlib.map(_.text).join(t"\n")
+  def render: Text = lines.map(_.text).join(t"\n")
 
   // Pad each line on the left and right with spaces, widening the block.
   def hpad(left: Int, right: Int): Cell =

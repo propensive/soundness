@@ -35,7 +35,7 @@ package nomenclature
 import anticipation.*
 import murmuration.{map, filter}
 import contingency.*
-import rudiments.{at, to}
+import rudiments.{at, to, indexed}
 import vacuous.or
 import gossamer.*
 import hieroglyph.*
@@ -63,8 +63,12 @@ class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   private val adjectiveArray: Array[Text]^{} = adjectives.to[Array]
   private val animalArray:    Array[Text]^{} = animals.to[Array]
   private val animalCount:    Int          = animals.size
-  private val adjectiveIndex: Map[Text, Int] = adjectives.stdlib.zipWithIndex.to(Map)
-  private val animalIndex:    Map[Text, Int] = animals.stdlib.zipWithIndex.to(Map)
+
+  private val adjectiveIndex: Map[Text, Int] =
+    adjectives.indexed.map { (word, ordinal) => (word, ordinal.n0) }.to[Map]
+
+  private val animalIndex: Map[Text, Int] =
+    animals.indexed.map { (word, ordinal) => (word, ordinal.n0) }.to[Map]
 
   def size: Int = adjectiveArray.length*animalCount
 

@@ -39,6 +39,7 @@ import anticipation.*
 import gossamer.*
 import gossamer.Textual.concatenable
 import hieroglyph.*
+import rudiments.{map, zip, indexed, fold}
 import symbolism.*
 import vacuous.*
 
@@ -71,9 +72,9 @@ extends LaneDagStyle[line]:
       label:  Optional[line] )
   :   line =
 
-    val parts = tiles.stdlib.zip(widths.stdlib).zipWithIndex.map:
+    val parts = tiles.zip(widths).indexed.map:
       case ((Node, w), i) =>
-        val g = glyphs.getOrElse(i, line(node))
+        val g = glyphs.getOrElse(i.n0, line(node))
         val gw = width(g)
         if gw >= w then g else g+line(Text(" ".repeat(w - gw).nn))
 

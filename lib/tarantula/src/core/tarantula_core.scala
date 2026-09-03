@@ -33,6 +33,7 @@
 package tarantula
 
 import anticipation.*
+import rudiments.bind
 import vacuous.*
 
 // The session in scope, for code that reads better as `browser.title()` than `session.title()`.
@@ -104,4 +105,4 @@ extension (elements: List[WebDriver.Element])
   infix def / [focus: Focusable](value: focus)(using session: WebDriver.Session^)
   :   List[WebDriver.Element] =
 
-    (elements.stdlib.flatMap(session.elements(_, value).stdlib)).to(List)
+    elements.bind(session.elements(_, value))

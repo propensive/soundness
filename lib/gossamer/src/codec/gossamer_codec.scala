@@ -51,13 +51,13 @@ given textDecodable: (decoder: CharDecoder) => Text is Decodable in Data = decod
 
 package enumIdentification:
   given kebabCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
-    Identifiable(_.uncamel.stdlib.kebab, _.unkebab.stdlib.pascal)
+    Identifiable(_.uncamel.kebab, _.unkebab.pascal)
 
   given snakeCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
-    Identifiable(_.uncamel.stdlib.snake, _.unsnake.stdlib.pascal)
+    Identifiable(_.uncamel.snake, _.unsnake.pascal)
 
   given pascalCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
     Identifiable(identity(_), identity(_))
 
   given camelCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
-    Identifiable(_.uncamel.stdlib.camel, _.unsnake.stdlib.pascal)
+    Identifiable(_.uncamel.camel, _.unsnake.pascal)

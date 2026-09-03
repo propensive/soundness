@@ -68,6 +68,10 @@ object Convertible:
   =>  self is Convertible in Map to Map[key, value] =
     self => traversable.traverse(self).to(Map)
 
+  given ledger: [self, key, value] => (traversable: self is Traversable by (key, value))
+  =>  self is Convertible in Ledger to Ledger[key, value] =
+    self => Ledger.from(traversable.traverse(self))
+
   // The Java boundary: `xs.to[java.util.List]` builds the platform collection directly from
   // the traversal, so native collections cross into Java APIs with no stdlib bridge at the
   // call site. The result is a fresh, mutable `ArrayList` — the natural currency of Java

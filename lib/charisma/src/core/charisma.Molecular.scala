@@ -42,9 +42,8 @@ trait Molecular extends Formulable:
   @targetName("with")
   infix def * (moleculable: Molecular): Molecule =
     val elements2 =
-      moleculable.molecule.elements.stdlib.fuse(molecule.elements.stdlib):
-        state.updated(next(0), molecule.elements(next(0)).or(0) + next(1))
-      . to(Map)
+      moleculable.molecule.elements.fuse(molecule.elements):
+        state.define(next(0), molecule.elements(next(0)).or(0) + next(1))
 
     Molecule(elements2, molecule.charge + moleculable.molecule.charge)
 
@@ -54,7 +53,7 @@ trait Molecular extends Formulable:
   @targetName("times2")
   infix def ** (multiplier: Int): Molecule =
     Molecule
-      ( molecule.elements.stdlib.view.mapValues(_*multiplier).toMap.to(Map),
+      ( molecule.elements.map(_*multiplier),
         molecule.charge*multiplier,
         Unset )
 

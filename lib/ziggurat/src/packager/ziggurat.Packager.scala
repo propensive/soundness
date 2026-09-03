@@ -34,6 +34,8 @@ package ziggurat
 
 import ambience.*
 import anticipation.*
+import denominative.dysasymptotics.linearSize
+import denominative.size
 import aperture.*
 import contingency.*
 import distillate.*
@@ -81,8 +83,8 @@ object Packager:
         abort(Packager.Error(m"Burdock remote dependencies are not yet supported (Stage C)"))
 
     config.delivery match
-      case Packaging.Delivery.Native if config.targets.stdlib.length != 1 =>
-        val length: Int = config.targets.stdlib.length
+      case Packaging.Delivery.Native if config.targets.size != 1 =>
+        val length: Int = config.targets.size
 
         abort:
           Packager.Error(m"Native delivery requires exactly one target, but $length were given")
@@ -161,7 +163,7 @@ object Packager:
               Payload(label, patched, gzip = !label.starts(t"windows"))
 
             val data: Payload = Payload(DataName, appJar.read[Data], gzip = false)
-            write(config.output, Xeq.installer((stubs.stdlib :+ data).to(List)))
+            write(config.output, Xeq.installer(stubs :+ data))
             config.output
 
           case Packaging.Delivery.Download =>

@@ -40,6 +40,7 @@ import dendrology.*
 import denominative.*
 import denominative.dysasymptotics.linearAccess
 import digression.*
+import murmuration.zip
 // The stack-trace renderers live in `digression.ansi`, not in `StackTrace`'s companion, so they
 // are not in implicit scope; without this import `.teletype` on a stack trace falls back to
 // escapade's generic `Showable` renderer.
@@ -587,8 +588,7 @@ private[probably] object AnsiRenderer:
 
     def render(junctures: List[Surface]): List[(Surface, Teletype)] =
       val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
-      // `nodes` and `render` are `Chain`s, which have no `Reshapable.Stable` for `zip`.
-      (diagram.nodes.stdlib.zip(diagram.render(describe).stdlib).toList).to(List)
+      diagram.nodes.zip(diagram.render(describe)).to[List]
 
     val allHits = coverage.hits + coverage.oldHits
 

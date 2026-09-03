@@ -46,6 +46,7 @@ import pneumatic.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.`+`
 import telekinesis.*
 import turbulence.*
 import urticose.*
@@ -147,7 +148,7 @@ object Grpc:
     private def httpRequest(method: Grpc.Method, metadata: Grpc.Metadata, message: Data)
     :   Http.Request =
 
-      val metadataHeaders = (defaults.entries.stdlib ++ metadata.entries.stdlib).map: (key, value) =>
+      val metadataHeaders = (defaults.entries + metadata.entries).map: (key, value) =>
         Http.Header(key, value)
 
       val headers =
@@ -156,7 +157,7 @@ object Grpc:
           metadataHeaders
 
       val body: Spring[Data] = () => Stream(Framing.encode(message))
-      Http.Request(Http.Post, 2.0, host, method.path, headers.to(List), body)
+      Http.Request(Http.Post, 2.0, host, method.path, headers, body)
 
     // gRPC requires HTTP status 200; anything else is a transport-level failure.
     private def expectOk(response: Http.Response): Unit raises Error =
@@ -174,9 +175,9 @@ object Grpc:
       ( using Monitor^, Tactic[Error], Tactic[Async.Error] )
     :   Unit =
 
-      val fields = stream.trailers.await().stdlib ++ stream.headers.await().stdlib
-      val codeText = fields.find(_.name == t"grpc-status").optional.let(_.value)
-      val message = fields.find(_.name == t"grpc-message").optional.let(_.value).or(t"")
+      val fields = stream.trailers.await() + stream.headers.await()
+      val codeText = fields.seek(_.name == t"grpc-status").let(_.value)
+      val message = fields.seek(_.name == t"grpc-message").let(_.value).or(t"")
 
       val code =
         codeText.lay(Grpc.Status.Unknown.code): text =>

@@ -85,7 +85,7 @@ extends Watcher:
 
     val base = directory.toString.show
 
-    current.stdlib.each: (name, entry) =>
+    current.each: (name, entry) =>
       previous(name) match
         case last: Entry =>
           if !entry.directory && last != entry then spool.put(Watch.Event.Modify(base, name))
@@ -94,13 +94,13 @@ extends Watcher:
           if entry.directory then spool.put(Watch.Event.NewDirectory(base, name))
           else spool.put(Watch.Event.NewFile(base, name))
 
-    previous.stdlib.each: (name, _) =>
+    previous.each: (name, _) =>
       if !current.defines(name) then spool.put(Watch.Event.Delete(base, name))
 
   def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[Watch.Event])
   :   Watcher.Registration raises Watch.Error =
 
-    directories.stdlib.each: (directory, _) =>
+    directories.each: (directory, _) =>
       val file = directory.toFile.nn
 
       if !file.exists then abort(Watch.Error(Watch.Error.Reason.Nonexistent))
@@ -108,8 +108,7 @@ extends Watcher:
 
     val snapshots: scm.HashMap[jnf.Path, Map[Text, Entry]] = scm.HashMap()
 
-    directories.stdlib.each: (directory, filter) =>
-      snapshots(directory) = scan(directory, filter)
+    directories.each: (directory, filter) => snapshots(directory) = scan(directory, filter)
 
     // Sealed per the pure-façade convention (D6), like `NativeWatcher`: the handle is held
     // only to keep the supervised poll task alive for the registration's lifetime.
@@ -120,7 +119,7 @@ extends Watcher:
             while true do
               snooze(interval)
 
-              directories.stdlib.each: (directory, filter) =>
+              directories.each: (directory, filter) =>
                 val current = scan(directory, filter)
                 diff(directory, snapshots.at(directory).or(Map()), current, spool)
                 snapshots(directory) = current

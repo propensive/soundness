@@ -49,7 +49,7 @@ object Molecule:
   given showable: Molecule is Showable = molecule =>
     val orderedElements = molecule.elements.at(PeriodicTable.C) match
       case Unset =>
-        molecule.elements.stdlib.toList.to(List).order(_(0).symbol)
+        molecule.elements.to[List].order(_(0).symbol)
 
       case carbonCount: Int =>
         val carbon = PeriodicTable.C -> carbonCount
@@ -61,8 +61,8 @@ object Molecule:
             List(PeriodicTable.H -> hydrogenCount)
 
         val rest =
-          (molecule.elements.stdlib - PeriodicTable.C - PeriodicTable.H)
-          . to(List).order(_(0).symbol)
+          molecule.elements.omit(PeriodicTable.C).omit(PeriodicTable.H)
+          . to[List].order(_(0).symbol)
 
         carbon :: hydrogen + rest
 

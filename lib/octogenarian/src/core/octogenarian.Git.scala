@@ -464,8 +464,8 @@ object Git:
       if segment.contains(t"@{") then fail(Git.RefError.Reason.ReservedSequence)
       if segment.contains(t"..") then fail(Git.RefError.Reason.DoubleDot)
 
-      for ch <- List('*', '[', '\\', ' ', '^', '~', ':', '?', '/').stdlib
-      do if segment.contains(ch) then fail(Git.RefError.Reason.InvalidCharacter)
+      List('*', '[', '\\', ' ', '^', '~', ':', '?', '/').each: ch =>
+        if segment.contains(ch) then fail(Git.RefError.Reason.InvalidCharacter)
 
     // The default `text is Admissible on filesystem` from Serpentine already
     // satisfies the typeclass slot for any plane; the marker here is for the
@@ -603,12 +603,12 @@ object Git:
       val grouped = lines.collect:
         case r"$name(\S+)\t$url(\S+) \($kind(fetch|push)\)" => (name, url, kind)
 
-      val remotes = grouped.to(List).stdlib.groupBy(_._1).toList.map: (name, rows) =>
-        val fetch = rows.collectFirst { case (_, url, t"fetch") => url }.getOrElse(t"")
-        val push  = rows.collectFirst { case (_, url, t"push")  => url }
-        Remote(name, fetch, push.getOrElse(Unset))
+      val remotes = grouped.to(List).group(_._1).to[List].map: (name, rows) =>
+        val fetch = rows.reap { case (_, url, t"fetch") => url }.or(t"")
+        val push  = rows.reap { case (_, url, t"push")  => url }
+        Remote(name, fetch, push)
 
-      remotes.to(List)
+      remotes
 
 
     def addRemote(name: Text, url: Text)
