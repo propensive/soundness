@@ -44,7 +44,7 @@ extension (string: String) def tt: Text = Text(string)
 // completes.
 extension (text: Text)
   @scala.annotation.targetName("ttIdentity")
-  inline def tt: Text = text
+  def tt: Text = text
 
 // The compiler's Literate hook: with this given in scope, a string literal
 // whose expected type does not require a String is re-typed as
