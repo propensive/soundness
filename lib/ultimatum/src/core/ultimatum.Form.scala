@@ -169,7 +169,7 @@ class Form
   // to the root width.
   private def liveFrame(previous: Form.Layout, stale: Boolean): Frame =
     val widths: Iterator[Int] =
-      // `.stdlib.iterator`: the widths are threaded as a stdlib `Iterator`, as described above.
+      // The stdlib view threads the widths as a stdlib `Iterator`, as described above.
       if stale then Iterator.empty else previous.entries.stdlib.iterator.map(_.rect.width)
 
     def nextWidth(): Int = if widths.hasNext then widths.next() else root.width

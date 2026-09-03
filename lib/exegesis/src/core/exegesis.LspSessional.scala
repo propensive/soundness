@@ -118,7 +118,7 @@ object LspSessional:
     // A single writer, so writes never interleave. The observer sees the encoded body, not the
     // framing, matching `listen`.
     val writer: Task[Unit] = async:
-      // `.stdlib.iterator`: drained element by element, without memoizing the live chain.
+      // The stdlib view is drained element by element, without memoizing the live chain.
       connection.outgoing.stdlib.iterator.each: json =>
         val body: Text = json.encode
         observer.sent(body)

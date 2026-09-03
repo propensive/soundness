@@ -160,9 +160,9 @@ object internal:
           val bottom = t"⎝ ${items.last.pad(width, Rtl)} ⎠"
           val middle = items.tail.init.map: item => t"⎜ ${item.pad(width, Rtl)} ⎟"
 
-          // `items` came from `.stdlib`, so this chain is stdlib throughout. An unqualified
-          // `Nil` is proscenium's opaque empty list, which makes `:::` resolve to the opaque
-          // extension and reject the stdlib `middle`.
+          // `items` came over the stdlib bridge, so this chain is stdlib throughout. An
+          // unqualified `Nil` is proscenium's opaque empty list, which makes `:::` resolve to
+          // the opaque extension and reject the stdlib `middle`.
           (top :: middle ::: bottom :: scala.Nil).join(t"\n")
 
   extension [left](left: Vector[left, 3])

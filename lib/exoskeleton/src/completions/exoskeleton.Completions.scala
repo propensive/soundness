@@ -167,7 +167,7 @@ object Completions:
                   command,
                   Name[Linux](command),
                   List
-                    // `.stdlib.last`: the native `last` is `Optional`, and the installer wants
+                    // stdlib bridge: the native `last` is `Optional`, and the installer wants
                     // the last data directory outright — an empty `dataDirs` is a hard error
                     // here, as it always was.
                     ( Xdg.dataDirs[Path on Linux].stdlib.last/"bash-completion"/"completions",
@@ -182,7 +182,7 @@ object Completions:
                   command,
                   Name[Linux](t"$command.fish"),
                   List
-                    // `.stdlib.last`, as for bash above.
+                    // stdlib bridge, as for bash above.
                     ( Xdg.dataDirs[Path on Linux].stdlib.last/"fish"/"vendor_completions.d",
                       Xdg.configHome[Path on Linux]/"fish"/"completions" ) )
 

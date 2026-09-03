@@ -58,8 +58,6 @@ object Resolvable:
         def deref(value: result): operand =
           dereference.select(value, annotated.asInstanceOf[Annotated.Field].field)
 
-        // `store` is by-name, and `.stdlib` is an erasure-identical cast: applied directly it
-        // casts the unforced thunk, so bind it first.
         val entries: Set[result] = store
 
         entries.seek(deref(_) == reference).or:

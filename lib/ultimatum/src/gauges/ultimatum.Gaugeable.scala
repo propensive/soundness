@@ -114,7 +114,7 @@ object Gaugeable:
 
       if width >= design.minWidth(status) then
         var row = 0
-        // `.stdlib.iterator`: the paint loop pulls rows one at a time from a stdlib `Iterator`.
+        // The stdlib view lets the paint loop pull rows one at a time from a stdlib `Iterator`.
         val lines = design.rows(status, tick, width).stdlib.iterator
 
         while lines.hasNext && row < canvas.height do

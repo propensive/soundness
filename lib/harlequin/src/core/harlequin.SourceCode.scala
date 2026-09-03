@@ -509,7 +509,7 @@ object SourceCode:
 
     try
       val settings = ("-classpath" :: cp.s :: scalac.commandLineArguments.map(_.s)).map(_.nn)
-      // `.stdlib`: the presentation compiler's own API takes a `scala.List[String]`.
+      // stdlib bridge: the presentation compiler's own API takes a `scala.List[String]`.
       val driver = Shim.interactiveDriver(settings.stdlib)
       // The driver resolves the URI as a path, so it must use the `file` scheme, though no
       // file exists there: the source text is supplied directly.
@@ -589,7 +589,7 @@ object SourceCode:
 
       val (run, _, _) =
         frontend(truncated, scalac, cp): context =>
-          // `.stdlib`: dotc's `setSetting` takes a `scala.List[String]`.
+          // stdlib bridge: dotc's `setSetting` takes a `scala.List[String]`.
           context.setSetting(context.settings.YstopAfter, List("typer").stdlib)
 
       val unit = run.units.head

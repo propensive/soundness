@@ -8,8 +8,13 @@ cd "$(dirname "$0")/.."
 
 baseline=$(cat etc/stdlib-count-baseline)
 
-count=$(grep -ro '\.stdlib\b' lib/*/src --include='*.scala' \
-  | grep -v '/src/test/' | grep -v '/src/bench/' | wc -l | tr -d ' ')
+# Comments are stripped before counting, so only code uses count: a justification
+# comment mentioning the bridge must not inflate the number it justifies. (The
+# stripping is line-based; a `//` inside a string literal would truncate that
+# line, which is harmless here since no counted use follows one.)
+count=$(find lib/*/src -name '*.scala' \
+  | grep -v '/src/test/' | grep -v '/src/bench/' \
+  | xargs sed 's@//.*@@' | grep -o '\.stdlib\b' | wc -l | tr -d ' ')
 
 if [ "$count" -gt "$baseline" ]
 then

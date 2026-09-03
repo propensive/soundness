@@ -80,7 +80,7 @@ object Honeycomb:
         Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
       val holes2 = holes.to[proscenium.List].order(_(0)).map(_(1))
-      // `.stdlib.iterator`: the macro walks the holes with a stdlib `Iterator`.
+      // Deliberate stdlib opt-out: the macro walks the holes with a stdlib `Iterator`.
       val iterator = holes2.stdlib.iterator
       var index: Int = -1
 
@@ -187,7 +187,7 @@ object Honeycomb:
             iterator.next() match
               case Html.Hole.Node(label) =>
                 val nodeType = whatwg.elements(label).lay(TypeRepr.of[Node]): tag =>
-                  // `.stdlib`: this macro works in the stdlib `List` the quotes API uses.
+                  // Deliberate stdlib opt-out: the macro works in the quotes API's stdlib `List`.
                   intersect(tag.admissible.stdlib.map(_.s).to(List)).asType.absolve match
                     case '[type children <: Label; children] => TypeRepr.of[Node of children]
 
@@ -221,7 +221,7 @@ object Honeycomb:
             iterator.next() match
               case Html.Hole.Element(label) =>
                 val elementType = whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
-                  // `.stdlib`: this macro works in the stdlib `List` the quotes API uses.
+                  // Deliberate stdlib opt-out: the macro works in the quotes API's stdlib `List`.
                   intersect(tag.admissible.stdlib.map(_.s).to(List)).asType.absolve match
                     case '[type children <: Label; children] => TypeRepr.of[Element of children]
 
@@ -373,7 +373,7 @@ object Honeycomb:
                       body
                     """
 
-        // `.stdlib.iterator`: the macro walks the holes with a stdlib `Iterator`.
+        // Deliberate stdlib opt-out: the macro walks the holes with a stdlib `Iterator`.
         . stdlib.iterator
 
       def serialize(html: Html): Seq[Expr[Node]] = html match
@@ -406,7 +406,7 @@ object Honeycomb:
           else List('{Doctype(${Expr(text)})})
 
         case Comment(text) =>
-          // `.stdlib`: `recur` below walks the stdlib `List` the quotes API uses.
+          // Deliberate stdlib opt-out: `recur` below walks the stdlib `List` the quotes API uses.
           val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
@@ -423,7 +423,7 @@ object Honeycomb:
           List(iterator.next().asExprOf[Node])
 
         case TextNode(text) =>
-          // `.stdlib`: `recur` below walks the stdlib `List` the quotes API uses.
+          // Deliberate stdlib opt-out: `recur` below walks the stdlib `List` the quotes API uses.
           val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match

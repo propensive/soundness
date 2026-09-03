@@ -99,7 +99,7 @@ object internal:
     // is itself a separator, not a body character.
     val segments: List[Text] = subtype.cut(t"+")
 
-    // `.stdlib.iterator`: a lazy scan that stops at the first offending character.
+    // The stdlib view gives a lazy scan that stops at the first offending character.
     val badChar: Option[Char] = segments.stdlib.iterator.flatMap: seg =>
       seg.chars.seek { c => c.isWhitespace || c.isControl || specials.has(c) }.option
 

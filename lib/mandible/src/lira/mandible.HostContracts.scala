@@ -91,7 +91,7 @@ object HostContracts:
 
           case Grade.Minor =>
             version = Semver(version.major, version.minor + 1, 0)
-            // `.stdlib`: the `Concatenable` result freshens the frozen array behind `Data`,
+            // stdlib bridge: the `Concatenable` result freshens the frozen array behind `Data`,
             // and `lineage`'s declared `List[Data]` cannot admit the new capability.
             lineage = (lineage.stdlib :+ snapshot).to(List)
 

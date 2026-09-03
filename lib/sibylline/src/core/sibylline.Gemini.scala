@@ -397,7 +397,7 @@ extends Llm.Dialect, caps.ExclusiveCapability:
     val progress = Llm.Progress()
 
     // A sentinel closes out the message after the last frame: this wire has no terminal event.
-    // `.stdlib.iterator`: this method's contract is a stdlib `Iterator`, which the native `List`
+    // stdlib bridge: this method's contract is a stdlib `Iterator`, which the native `List`
     // has no accessor for — the boundary is the return type, not the interior.
     (Llm.frames(response) ++ Iterator(Llm.Terminal)).flatMap: frame =>
       if frame == Llm.Terminal then progress.finish().stdlib.iterator

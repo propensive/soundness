@@ -494,6 +494,6 @@ extends Llm.Dialect, caps.ExclusiveCapability:
         Llm.fetch(Anthropic.failure(_, _)):
           target.submit(endpoint, target.payload(turn, streaming = true))
 
-    // `.stdlib.iterator`: this method's contract is a stdlib `Iterator`, which the native `List`
+    // stdlib bridge: this method's contract is a stdlib `Iterator`, which the native `List`
     // has no accessor for — the boundary is the return type, not the interior.
     Llm.frames(response).flatMap: frame => Anthropic.events(Anthropic.frame(frame)).stdlib.iterator

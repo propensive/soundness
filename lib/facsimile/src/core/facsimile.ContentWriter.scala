@@ -131,8 +131,8 @@ private[facsimile] object ContentWriter:
       case ShowTexts(elements) =>
         out(t"[")
 
-        // `.stdlib.foreach` and a `Double`-first match: the frozen-array union member takes a
-        // reach capture under pattern binding that `each`'s `Traversable` rejects.
+        // stdlib bridge (`foreach`) and a `Double`-first match: the frozen-array union member
+        // takes a reach capture under pattern binding that `each`'s `Traversable` rejects.
         elements.stdlib.foreach: element =>
           (element.asInstanceOf[Matchable]: @unchecked) match
             case gap: Double => out(t"${num(gap)}")

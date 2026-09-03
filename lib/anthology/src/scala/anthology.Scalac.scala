@@ -177,7 +177,7 @@ object Scalac:
 
       context.setSetting(context.settings.outputDir, output)
 
-      // `.stdlib`: `run.compileSources` takes a stdlib `List`.
+      // stdlib bridge: `run.compileSources` takes a stdlib `List`.
       val sourceFiles: scala.collection.immutable.List[dtdu.SourceFile] =
         sources.to[List].map { (name, content) => dtdu.SourceFile.virtual(name.s, content.s) }
         . stdlib
@@ -261,7 +261,7 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
       . setCompilerCallback(new dtdi.CompilerCallback {})
       . setProgressCallback(progressCallback(scalacProcess))
 
-    // `.stdlib`: `run.compileSources` takes a stdlib `List`.
+    // stdlib bridge: `run.compileSources` takes a stdlib `List`.
     val sourceFiles: scala.collection.immutable.List[dtdu.SourceFile] =
       sources.to[List].map { (name, content) => dtdu.SourceFile.virtual(name.s, content.s) }
       . stdlib

@@ -91,7 +91,7 @@ class Purview(classpath: LocalClasspath):
     val base =
       driver.context.fresh.addMode(dtd.core.Mode.ReadPositions).setReporter(Reporter.NoReporter)
     val run = dtd.Compiler().newRun(using base)
-    // `.stdlib`: `Compiler.Run#compileSources` is a `dotty.tools.dotc` API, which takes the
+    // stdlib bridge: `Compiler.Run#compileSources` is a `dotty.tools.dotc` API, which takes the
     // compiler's own `sci.List`.
     run.compileSources(List(SourceFile.virtual("<purview>", "")).stdlib)
 

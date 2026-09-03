@@ -70,8 +70,8 @@ object Facet:
 
         . getOrElse(kept)
 
-    // `.stdlib.toList`: `shed` drops one facet at a time by position, which needs the stdlib
-    // `indexWhere`/`patch` pair.
+    // The stdlib view feeds `shed`, which drops one facet at a time by position and needs the
+    // stdlib `indexWhere`/`patch` pair.
     val kept = shed(facets.stdlib.toList)
 
     if kept.isEmpty || extent(kept) > width then Teletype(t" "*width.max(0)) else
