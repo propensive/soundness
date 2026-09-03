@@ -53,7 +53,7 @@ import vacuous.*
 import zephyrine.*
 
 import LineSeparation.*
-import abstractables.instantAbstractable
+import abstractables.epochMillisecondsAbstractable
 import probates.awaitProbate
 
 inline def more[value](using value: value aka "more"): value =

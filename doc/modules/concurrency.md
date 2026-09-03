@@ -163,6 +163,26 @@ time in the morning whatever time it began, but one can still be woken in the ni
 *hibernates* until a particular time in the spring and cannot easily be roused. And a train's
 *delay* is quoted as a duration, but once it has one, nothing cancels it.
 
+#### Units
+
+All four take a *typed* duration or instant — `0.2*Second`, `10*Minute`, an `aviation.Instant` —
+and a typed value cannot be misread. A bare `Long` can, so no given interprets one until a unit
+is chosen by name:
+
+```scala
+import abstractables.millisecondsAbstractable
+snooze(200L)  // 200 milliseconds
+```
+
+The alternatives are `nanosecondsAbstractable` and `microsecondsAbstractable`; the three share a
+type, so exactly one may be imported into a file. Instants have a single reading,
+`epochMillisecondsAbstractable`, which takes a `Long` as milliseconds since the epoch. (The
+`instantiables` package mirrors all four for the opposite direction.)
+
+The distinction matters because the underlying representation of a duration is *nanoseconds* —
+an unqualified `snooze(200L)` under the nanosecond given returns almost immediately, and a loop
+around it is a busy-loop with nothing at the call site to say so.
+
 ### Retrying
 
 Work that fails for a transient reason should be tried again, and the *schedule* on which it is

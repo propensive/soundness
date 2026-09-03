@@ -543,7 +543,7 @@ object Tests extends Suite(m"Galilei tests"):
       . assert(_ == t"cdef")
 
     suite(m"Storage filesystem axis"):
-      import anticipation.instantiables.instantInstantiable
+      import anticipation.instantiables.epochMillisecondsInstantiable
       val root: Path on Linux = unsafely((% / "tmp").on[Linux])
 
       test(m"At most one storage filesystem extractor matches a path"):
