@@ -50,6 +50,7 @@ import soundness.{call, dispose}
 import xenophile.*
 
 import Io.Error.{Operation, Reason}
+import symbolism.*
 
 // The WIT definitions the navigation below is typechecked against, and which the `call`
 // materializer consults (at its downstream expansion site) for module ids, resource methods and
@@ -126,8 +127,8 @@ package filesystemBackends:
           covers(entry(1))
 
         // Named, not anonymous, so `most` orders the covering preopens by prefix length.
-        given longestPrefix: Ordering[(Wasm.Handle of "descriptor", Text)] =
-          Ordering.by { entry => entry(1).s.length }
+        given longestPrefix: (Wasm.Handle of "descriptor", Text) is Comparable =
+          Comparable.int.on { entry => entry(1).s.length }
 
         // `most` is `Unset` exactly when nothing covers the path.
         val (descriptor, prefix) = covering.maximum.or:

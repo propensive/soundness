@@ -45,7 +45,7 @@ export
       Loop, loop, matchable, mean, mib, mutable, Mutex, next, ordinal, pipe, place, plus,
       prior, probe, product, Fixpoint, reflectClass, repeat, runs, runsBy, segment, Segmentable,
       before, upto, from, after, snip, tail, Appendable, Prependable, `:+`, `+:`,
-      indexed, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
+      indexed, sort, order, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
       mean2, unique, seek, reap, where,
       Populated, head, last, lead, reduce, populatedEquality }

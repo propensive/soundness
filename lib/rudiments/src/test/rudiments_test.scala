@@ -33,9 +33,10 @@
 package rudiments
 
 import soundness.*
-import soundness.collationOrdering
+import soundness.collationComparable
 import soundness.collations.codepoints
 import denominative.dysasymptotics.linearSize
+import soundness.sortingAlgorithms.timsort
 
 case class Person(name: Text, age: Int)
 

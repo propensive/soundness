@@ -231,7 +231,7 @@ object timestampInternal:
 
         if left == right then !strict else (left < right)^greaterThan
 
-    given dateOrdering: Ordering[Date] = Ordering.Long.asInstanceOf[Ordering[Date]]
+    given dateComparable: Date is Comparable = Comparable.long.asInstanceOf[Date is Comparable]
 
     // `Orderable`'s `Self` is invariant, so `Date` (above) and `Timestamp` each need their own
     // instance even though the comparison is identical.
@@ -245,8 +245,8 @@ object timestampInternal:
 
         if left == right then !strict else (left < right)^greaterThan
 
-    given timestampOrdering: Ordering[Timestamp] =
-      Ordering.Long.asInstanceOf[Ordering[Timestamp]]
+    given timestampComparable: Timestamp is Comparable =
+      Comparable.long.asInstanceOf[Timestamp is Comparable]
 
     given dateWorkingDays: Holidays => (hebdomad: Hebdomad) => Date is Addable:
       type Operand = WorkingDays

@@ -2843,6 +2843,7 @@ object murmuration extends Library:
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
+  object bench extends Benchmarks(core, quantitative.units)
 
 object rudiments extends Library:
   object core extends Component(

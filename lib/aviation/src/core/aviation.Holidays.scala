@@ -34,11 +34,18 @@ package aviation
 
 import scala.collection.immutable.SortedMap
 
+import scala.math.Ordering
+
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object Holidays:
   def apply(holidays: Iterable[Holiday]): Holidays = new Holidays:
+    // A `SortedMap` orders its keys with a stdlib `Ordering`, so the `Comparable` for `Date` is
+    // adapted here rather than being one.
+    private given ordering: Ordering[Date] = summon[Date is Comparable].ordering
+
     private val store: SortedMap[Date, Holiday] = holidays.bi.map(_.date -> _).to(SortedMap)
 
     def holiday(date: Date): Optional[Holiday] = if store.defines(date) then store(date) else Unset

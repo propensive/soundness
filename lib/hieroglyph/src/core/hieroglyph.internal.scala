@@ -37,6 +37,7 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 import gigantism.*
+import symbolism.*
 
 object internal:
   opaque type CharRange = Long
@@ -48,7 +49,9 @@ object internal:
 
     given textualizable: CharRange is Textualizable = range => "${range.from}..${range.to}".tt
 
-  given ordering: Ordering[CharRange] = Ordering.Long
+    // In the companion, so it resolves through implicit scope with no import: the ranges are
+    // ordered as the `Long`s they are, which is by their first codepoint.
+    given comparable: CharRange is Comparable = Comparable.long
 
   extension (range: CharRange)
     def from: Int = (range >> 32).toInt

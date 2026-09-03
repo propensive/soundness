@@ -40,13 +40,14 @@ import digression.*
 import distillate.*
 import fulminate.*
 import gossamer.*
-import gossamer.collationOrdering
+import gossamer.collationComparable
 import gossamer.collations.codepoints
 import hieroglyph.*
 import hypotenuse.*
 import nomenclature.*
 import rudiments.*
 import vacuous.*
+import symbolism.*
 
 object Test:
   // The `Test` may capture (its block can close over a capability); the methods accept a capturing
@@ -75,11 +76,9 @@ object Test:
 
   // TestId → Test.Id
   object Id:
-    given ordering: Ordering[Test.Id] =
-      math.Ordering.Implicits.seqOrdering[scala.collection.immutable.List, Text]
-      // `seqOrdering` is a stdlib `Ordering` combinator: it is specialized to `sci.List`, so the
-      // key it compares has to be handed over as one.
-      . on(_.ids.reverse.stdlib)
+    // Lexicographic on the path from the root, which is `ids` reversed.
+    given comparable: Test.Id is Comparable =
+      summon[List[Text] is Comparable].on(_.ids.reverse)
 
   case class Id
     ( name:      Message,

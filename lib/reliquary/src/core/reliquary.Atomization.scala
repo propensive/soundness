@@ -35,14 +35,16 @@ package reliquary
 import anticipation.*
 import contingency.*
 import rudiments.*
+import rudiments.sortingAlgorithms.timsort
+import symbolism.*
 
 object Atomization:
   // Establishes atomization invariants: atoms sorted by ascending value hash (the order of every
   // atom listing, §10.4) and keys unique within the discipline.
   def of(discipline: Text, atoms: List[Atom]): Atomization raises Discipline.Error =
-    // A named `Ordering` replaces the stdlib's comparator-taking `sortWith`.
-    given Ordering[Atom] = Ordering.fromLessThan: (left, right) =>
-      Blob.compare(left.valueHash, right.valueHash) < 0
+    // A named `Comparable` replaces the stdlib's comparator-taking `sortWith`.
+    given Atom is Comparable = (left, right) =>
+      Comparison(Blob.compare(left.valueHash, right.valueHash))
 
     val sorted: List[Atom] = atoms.sort
     val seen = scala.collection.mutable.HashSet[Text]()

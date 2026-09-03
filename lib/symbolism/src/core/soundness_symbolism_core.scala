@@ -34,6 +34,6 @@ package soundness
 
 export
   symbolism
-  . { +, -, /, /:, `*`, `unary_-`, Addable, AddOp, cbrt, Concatenable, Divisible, DivOp,
-      Multiplicable, MulOp, Negatable, Quotient, Rootable, sqrt, Subtractable, SubOp, Unital, zero,
-      Zeroic }
+  . { +, -, /, /:, `*`, `unary_-`, Addable, AddOp, cbrt, Comparable, Concatenable, Divisible,
+      DivOp, Multiplicable, MulOp, Negatable, Quotient, Rootable, sqrt, Subtractable, SubOp,
+      Unital, zero, Zeroic }

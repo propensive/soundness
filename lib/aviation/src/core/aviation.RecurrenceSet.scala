@@ -36,6 +36,7 @@ import rudiments.*
 import denominative.*
 import symbolism.*
 import vacuous.*
+import rudiments.sortingAlgorithms.timsort
 
 // An iCalendar recurrence set: the union of one or more recurrences' occurrence streams (`include`,
 // e.g. each `rrule.occurrences`) plus explicit extra dates (`rdates`, RFC 5545 `RDATE`), minus
@@ -43,7 +44,7 @@ import vacuous.*
 // ascending, de-duplicated stream with the exclusions removed — so it composes uniformly with any
 // other `Recurrent`.
 object RecurrenceSet:
-  given recurrent: [point] => Ordering[point]
+  given recurrent: [point] => point is Comparable
   =>  ( RecurrenceSet[point] is Recurrent { type Topic = point } ) =
 
     set =>
@@ -54,14 +55,14 @@ object RecurrenceSet:
   // Lazily merge two ascending streams into one ascending stream (emit the lesser head first).
   // The `#::` matches prove non-emptiness structurally and force nothing beyond the two heads;
   // the n-way merge is a `reduce` of this over the (proven non-empty) list of streams.
-  private def merge[point](left: Chain[point], right: Chain[point])(using order: Ordering[point])
+  private def merge[point](left: Chain[point], right: Chain[point])(using order: point is Comparable)
   :   Chain[point] =
 
     left match
       case leftHead #:: leftTail =>
         right match
           case rightHead #:: rightTail =>
-            if order.lteq(leftHead, rightHead) then leftHead #:: merge(leftTail, right)
+            if order.atMost(leftHead, rightHead) then leftHead #:: merge(leftTail, right)
             else rightHead #:: merge(left, rightTail)
 
           case _ =>
@@ -71,9 +72,9 @@ object RecurrenceSet:
         right
 
   // Drop duplicates from an ascending stream (equal values are adjacent).
-  private def dedup[point](stream: Chain[point])(using order: Ordering[point]): Chain[point] =
+  private def dedup[point](stream: Chain[point])(using order: point is Comparable): Chain[point] =
     stream match
-      case first #:: rest => first #:: dedup(rest.skip(order.equiv(_, first)))
+      case first #:: rest => first #:: dedup(rest.skip(order.same(_, first)))
       case _              => Chain.empty
 
 case class RecurrenceSet[point]

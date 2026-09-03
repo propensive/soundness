@@ -205,9 +205,9 @@ extension [self](self: self)(using traversable: self is Traversable)
       traversable.traverse(self).zipWithIndex.map { (element, index) => (element, index.z) }
 
   // The extremum operations (`minimum`/`maximum`, the total counterparts of `min`/`max`) live
-  // in hypotenuse, driven by `Commensurable` rather than `Ordering` — `Commensurable.orderable`
-  // derives from any `Ordering`, so a second `Ordering`-based pair here would be ambiguous with
-  // them wherever both libraries are in scope.
+  // in hypotenuse, driven by `Commensurable` rather than `Comparable` — `Commensurable.orderable`
+  // derives from any `Comparable`, so a second `Comparable`-based pair here would be ambiguous
+  // with them wherever both libraries are in scope.
 
   transparent inline def each(lambda: Ordinal aka "ordinal" ?=> traversable.Operand => Unit)
   :   Unit =

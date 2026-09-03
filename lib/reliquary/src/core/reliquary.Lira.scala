@@ -49,6 +49,7 @@ import turbulence.*
 import vacuous.*
 
 import zephyrine.*
+import rudiments.sortingAlgorithms.timsort
 
 object Lira:
   // The interpreter directive's payload, as the parser stores it (without the `#!`). The full
@@ -166,13 +167,13 @@ object Lira:
   // LiraDelta → Lira.Delta
   object Delta:
 
-    // The canonical row orders of §12.3, as named `Ordering`s: `Blob.compare` is the bytewise
+    // The canonical row orders of §12.3, as named `Comparable`s: `Blob.compare` is the bytewise
     // order on hashes, and nothing in implicit scope orders `Data` or `Replacement` otherwise.
-    private given hashOrder: Ordering[Data] =
-      Ordering.fromLessThan: (left, right) => Blob.compare(left, right) < 0
+    private given hashOrder: Data is Comparable =
+      (left, right) => Comparison(Blob.compare(left, right))
 
-    private given replacementOrder: Ordering[Replacement] =
-      Ordering.fromLessThan: (left, right) => Blob.compare(left.old, right.old) < 0
+    private given replacementOrder: Replacement is Comparable =
+      (left, right) => Comparison(Blob.compare(left.old, right.old))
 
     // The atom-level change record of one lineage step (§12.3): the atoms added, and the
     // replaceable atoms replaced. Deltas make staleness computable (§13.4) and allow a verifier
@@ -1165,10 +1166,10 @@ object Lira:
   object Tree:
     val empty: Lira.Tree = Lira.Tree(List())
 
-    // The §9.2 row order, as a named `Ordering`: `TreePath.compare` is the bytewise UTF-8 order
-    // on paths, and nothing in implicit scope orders `TreeEntry` otherwise.
-    private given entryOrder: Ordering[TreeEntry] =
-      Ordering.fromLessThan: (left, right) => TreePath.compare(left.path, right.path) < 0
+    // The §9.2 row order, as a named `Comparable`: `TreePath.compare` is the bytewise UTF-8
+    // order on paths, and nothing in implicit scope orders `TreeEntry` otherwise.
+    private given entryOrder: TreeEntry is Comparable =
+      (left, right) => Comparison(TreePath.compare(left.path, right.path))
 
     // Establishes the §9.2 invariants: rows sorted in ascending bytewise UTF-8 path order, paths
     // unique. Accepts entries in any order; sorting here is what makes tree serialization a pure

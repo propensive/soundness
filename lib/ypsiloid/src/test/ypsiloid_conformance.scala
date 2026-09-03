@@ -58,6 +58,7 @@ import gossamer.t
 import hieroglyph.charEncoders
 import jacinta.Json
 import rudiments.*
+import rudiments.sortingAlgorithms.timsort
 import turbulence.read
 
 import strategies.throwUnsafely

@@ -49,6 +49,7 @@ import denominative.{nil, size}
 import denominative.dysasymptotics.linearSize
 import rudiments.*
 import symbolism.*
+import rudiments.sortingAlgorithms.timsort
 
 private[xylophone] object XPathEngine:
   import XPath.{Axis, Error, Expression, Locus, NodeTest, Origin, Step, Value}
@@ -208,9 +209,10 @@ private[xylophone] object XPathEngine:
 
     recur(a.path, b.path)
 
-  // Document order is a total order on loci, so it is expressed as an `Ordering`
+  // Document order is a total order on loci, so it is expressed as a `Comparable`
   // and the sort is the native one.
-  private given locusOrder: Ordering[Locus] = Ordering.fromLessThan(compareLoci(_, _) < 0)
+  private given locusOrder: Locus is Comparable =
+    (left, right) => Comparison(compareLoci(left, right))
 
   private def sortDedup(loci: List[Locus]): List[Locus] =
     val buffer = scm.ListBuffer[Locus]()

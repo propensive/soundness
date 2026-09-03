@@ -58,6 +58,7 @@ import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.overwritePreexisting.enabled
 import textSanitizers.skipSanitizer
+import rudiments.sortingAlgorithms.timsort
 
 object Xeq:
   private val ChunkSize: Int = 8000

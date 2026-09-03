@@ -37,6 +37,7 @@ import anticipation.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
+import rudiments.sortingAlgorithms.timsort
 
 case class Invocation
   ( arguments:        List[Argument],

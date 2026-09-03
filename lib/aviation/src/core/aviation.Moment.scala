@@ -53,7 +53,8 @@ object Moment:
   given orderable: (RomanCalendar, GapPolicy) => Moment is Orderable =
     summon[(Instant over Unix) is Orderable].contramap(_.instant)
 
-  given ordering: (RomanCalendar, GapPolicy) => Ordering[Moment] = Ordering.by(_.instant.long)
+  given comparable: (RomanCalendar, GapPolicy) => Moment is Comparable =
+    Comparable.long.on(_.instant.long)
 
   // The physical time between two moments — the difference of their grounded instants, in seconds —
   // so it honours DST and (under a counting interpretation) leap seconds.

@@ -36,9 +36,13 @@ import anticipation.*
 import digression.*
 import gossamer.*
 import rudiments.*
+import symbolism.*
 
 object Juncture:
-  given ordering: Ordering[Juncture] = Ordering.by[Juncture, Int](_.start).orElseBy(-_.end)
+  // Ordered by where each juncture starts, the wider of two starting together first.
+  given comparable: Juncture is Comparable = (left, right) =>
+    Comparable.int.compare(left.start, right.start)
+    . also(Comparable.int.compare(right.end, left.end))
 
 case class Juncture
   ( id:         Int,

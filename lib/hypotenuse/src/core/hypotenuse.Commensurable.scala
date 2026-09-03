@@ -37,6 +37,7 @@ import scala.annotation.*
 import denominative.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 
 object Commensurable:
   inline given numeric: [operand <: Long | Int | Double | Char | Byte | Short | Float]
@@ -76,7 +77,10 @@ object Commensurable:
       inline if greater then inline if strict then left.gt(right) else left.ge(right)
       else inline if strict then left.lt(right) else left.le(right)
 
-  given orderable: [value: Ordering] => value is Orderable:
+  // Every runtime comparison confers the compile-time comparison operators. Types whose order
+  // is still expressed as a stdlib `Ordering` reach this through `Comparable`'s own low-priority
+  // bridge, so this single instance covers both.
+  given orderable: [value: Comparable] => value is Orderable:
     inline def compare
       ( inline left:    value,
         inline right:   value,
@@ -84,11 +88,11 @@ object Commensurable:
         inline greater: Boolean )
     :   Boolean =
 
-      val n = value.compare(left, right)
+      val comparison = value.compare(left, right)
 
       inline if greater
-      then inline if strict then n > 0 else n >= 0
-      else inline if strict then n < 0 else n <= 0
+      then inline if strict then comparison.more else !comparison.less
+      else inline if strict then comparison.less else !comparison.more
 
 
 trait Commensurable extends Typeclass.Pure, Contrastive:

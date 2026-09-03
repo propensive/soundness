@@ -34,6 +34,10 @@ package hallucination
 
 import scala.collection.mutable as scm
 
+// A stdlib `PriorityQueue` orders its elements with a stdlib `Ordering`, so this is one of the
+// few places that still names it rather than using `symbolism.Comparable`.
+import scala.math.Ordering
+
 // Builds and writes length-limited canonical Huffman codes in the VP8L format, ported from
 // image-rs/image-webp (`src/lossless/encoder/huffman.rs`, MIT/Apache-2.0). `lengths` and `codes`
 // are filled in for each symbol; the tree is written in the format the decoder expects.

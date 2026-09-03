@@ -45,6 +45,7 @@ import vacuous.*
 // (`wit.md` §6), so `List#size` is genuinely required here; the lists are declaration-sized.
 import denominative.dysasymptotics.linearSize
 import denominative.size
+import rudiments.sortingAlgorithms.timsort
 
 // The atomization rules of `wit/1` (`wit.md`).
 //

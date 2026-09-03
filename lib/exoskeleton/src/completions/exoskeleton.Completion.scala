@@ -39,7 +39,7 @@ import anticipation.*
 import denominative.*
 import escapade.*
 import gossamer.*
-import gossamer.collationOrdering
+import gossamer.collationComparable
 import gossamer.collations.codepoints
 import guillotine.*
 import hieroglyph.*, textMetrics.uniformMetric
@@ -49,6 +49,7 @@ import symbolism.*
 import turbulence.*
 import rudiments.*
 import vacuous.*
+import rudiments.sortingAlgorithms.timsort
 
 case class Completion
   ( fullArguments:    List[Argument],

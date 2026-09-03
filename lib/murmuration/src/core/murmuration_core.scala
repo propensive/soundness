@@ -34,7 +34,6 @@ package murmuration
 
 import scala.collection.immutable as sci
 import scala.collection.mutable as scm
-import scala.math.Ordering
 
 import prepositional.*
 
@@ -169,18 +168,6 @@ extension [self](self: self)(using traversable: self is Traversable)
         (key, reshapable.reshape(elements.iterator))
       . to(Map)
 
-  // `Stable` receivers only: sorting an unordered shape (`Set`, `Map`) is honestly unavailable
-  // rather than silently order-dropping. `order` sorts by a projection of each element; `sort`
-  // (below) sorts by the elements' own order. A comparator overload (the stdlib's `sortWith`)
-  // cannot join this name: a two-parameter lambda would resolve to it by arity, breaking
-  // parameter untupling on pair-`Operand` receivers (`map.order { (key, value) => key }`).
-  def order[key, result](lambda: traversable.Operand => key)
-    ( using ordering:   Ordering[key],
-            reshapable: self is Reshapable.Stable by traversable.Operand to result )
-  :   result =
-
-    reshapable.reshape(traversable.traverse(self).toList.sortBy(lambda).iterator)
-
   def distinct[result]
     ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )
   :   result =
@@ -217,14 +204,6 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( reshapable.reshape(traversable.traverse(self).filter(predicate)),
       reshapable.reshape(traversable.traverse(self).filterNot(predicate)) )
 
-  // Sorting by the elements' own order, the no-key sibling of `order(lambda)` above.
-  def sort[result]
-    ( using ordering:   Ordering[traversable.Operand],
-            reshapable: self is Reshapable.Stable by traversable.Operand to result )
-  :   result =
-
-    reshapable.reshape(traversable.traverse(self).toList.sorted.iterator)
-
   // Filter and map in one pass, keeping only the elements the partial function is defined at
   // (the stdlib's `collect`). Not `Stable`: gathering from a `Set` or `Map` is meaningful. The
   // partial function is capability-annotated so that lambdas capturing a `Tactic` (or any other
@@ -246,3 +225,13 @@ extension [self](self: self)(using traversable: self is Traversable)
       . toList
       . to(List)
 
+// The choice of sorting algorithm, imported by name to make it. Only one may be in scope: two
+// would make every `sorted` and `order` ambiguous, which is the intended way of saying that a
+// program sorts with one algorithm unless it says otherwise at the call site.
+package sortingAlgorithms:
+  given timsort: SortAlgorithm = SortAlgorithm.timsorted(_, _)
+  given powersort: SortAlgorithm = SortAlgorithm.powersorted(_, _)
+  given quicksort: SortAlgorithm = SortAlgorithm.quicksorted(_, _)
+  given heapsort: SortAlgorithm = SortAlgorithm.heapsorted(_, _)
+  given bubbleSort: SortAlgorithm = SortAlgorithm.bubbleSorted(_, _)
+  given insertionSort: SortAlgorithm = SortAlgorithm.insertionSorted(_, _)

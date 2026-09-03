@@ -45,6 +45,7 @@ import vacuous.*
 import denominative.*
 import symbolism.*
 import denominative.dysasymptotics.{linearSize, linearAccess}
+import rudiments.sortingAlgorithms.timsort
 
 // One `BYDAY` entry: a weekday, optionally with an ordinal — `3MO` (3rd Monday), `-1FR` (last
 // Friday), or a bare `TU` (every Tuesday in the period). The ordinal is meaningful only under
@@ -60,15 +61,15 @@ case class WeekdayOrdinal(weekday: Weekday, ordinal: Optional[Int] = Unset)
 // `Rrule[Date]` yields dates, a `Rrule[Timestamp]` yields zoneless date-times (expanded by
 // `byHour`/…), and a `Rrule[Moment]` grounds each in the start's timezone.
 object Rrule:
-  given dateRecurrent: (RomanCalendar, Ordering[Date])
+  given dateRecurrent: (RomanCalendar, Date is Comparable)
   =>  ( Rrule[Date] is Recurrent { type Topic = Date } ) =
     rule => bounded(dates(rule.start, rule), rule.until, rule.count)
 
-  given timestampRecurrent: (RomanCalendar, Ordering[Timestamp])
+  given timestampRecurrent: (RomanCalendar, Timestamp is Comparable)
   =>  ( Rrule[Timestamp] is Recurrent { type Topic = Timestamp } ) =
     rule => bounded(civil(rule.start, rule), rule.until, rule.count)
 
-  given momentRecurrent: (RomanCalendar, Ordering[Moment])
+  given momentRecurrent: (RomanCalendar, Moment is Comparable)
   =>  ( Rrule[Moment] is Recurrent { type Topic = Moment } ) =
     rule =>
       val zone = rule.start.timezone
@@ -77,11 +78,11 @@ object Rrule:
 
   // Apply COUNT (take) and UNTIL (inclusive upper bound) to a generated, ascending stream.
   private def bounded[point](stream: Chain[point], until: Optional[point], count: Optional[Int])
-    ( using order: Ordering[point] )
+    ( using order: point is Comparable )
   :   Chain[point] =
 
     val capped = until.lay(stream): limit =>
-      stream.keep(!order.gt(_, limit))
+      stream.keep(!order.greater(_, limit))
 
     count.lay(capped) { n => capped.keep(n) }
 

@@ -34,6 +34,10 @@ package mercator
 
 import scala.collection.immutable.Vector
 
+// Named explicitly now that `Ordering` has left the prelude; the test needs it only as a
+// companion object with no candidate `apply` methods.
+import scala.math.Ordering
+
 import soundness.*
 
 import scala.util.{Try, Success}

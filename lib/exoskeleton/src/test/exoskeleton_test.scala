@@ -33,8 +33,9 @@
 package exoskeleton
 
 import soundness.*
-import soundness.collationOrdering
+import soundness.collationComparable
 import soundness.collations.codepoints
+import soundness.sortingAlgorithms.timsort
 
 import classloaders.systemClassloader
 import environments.javaEnvironment
@@ -788,7 +789,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
       test(m"A local view keeps the subcommand's own flags local"):
         HelpApp.tree.local(List(t"useradd"))
-         .let(_.parameters.filter(!_.global).map(_.name).order(identity)).or(Nil)
+         .let(_.parameters.filter(!_.global).map(_.name).sort).or(Nil)
       .assert(_ == List(t"--force", t"--groups", t"--home"))
 
       test(m"A nested local view joins the full command path"):
@@ -1231,7 +1232,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         given WorkingDirectory = () => fixture.encode
 
         test(m"An empty operand lists the working directory's visible entries"):
-          Pathname.complete(t"", Prim).map(_.core).order(identity)
+          Pathname.complete(t"", Prim).map(_.core).sort
         .assert(_ == List(t"one.txt", t"src/", t"two.txt"))
 
         test(m"A partial name narrows the candidates"):

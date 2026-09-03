@@ -53,6 +53,7 @@ import denominative.dysasymptotics.{linearSize, unboundedSize}
 import stenography.*
 import vacuous.*
 import symbolism.*
+import rudiments.sortingAlgorithms.timsort
 
 object SourceCode:
   private def accent(token: Int): Accent =

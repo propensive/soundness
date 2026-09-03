@@ -33,26 +33,27 @@
 package cosmopolite
 
 import soundness.*
-import soundness.collationOrdering
+import soundness.collationComparable
 import soundness.localeCollation
+import soundness.sortingAlgorithms.timsort
 
 object Tests extends Suite(m"Cosmopolite tests"):
   def run(): Unit =
     suite(m"Language sort orders"):
       test(m"English uses dictionary order: cafe < café < caff"):
         given Locale[en] = Locale(en)
-        List(t"caff", t"café", t"cafe").sorted
-      . assert(_ == List(t"cafe", t"café", t"caff"))
+        proscenium.List(t"caff", t"café", t"cafe").sort
+      . assert(_ == proscenium.List(t"cafe", t"café", t"caff"))
 
       test(m"Polish ó sorts as a letter between o and p"):
         given Locale[pl] = Locale(pl)
-        List(t"pod", t"ó", t"oz").sorted
-      . assert(_ == List(t"oz", t"ó", t"pod"))
+        proscenium.List(t"pod", t"ó", t"oz").sort
+      . assert(_ == proscenium.List(t"oz", t"ó", t"pod"))
 
       test(m"Polish ż chains after ź after z"):
         given Locale[pl] = Locale(pl)
-        List(t"ż", t"z", t"ź").sorted
-      . assert(_ == List(t"z", t"ź", t"ż"))
+        proscenium.List(t"ż", t"z", t"ź").sort
+      . assert(_ == proscenium.List(t"z", t"ź", t"ż"))
 
       test(m"Polish uppercase is a tertiary difference: ó < Ó"):
         given Locale[pl] = Locale(pl)
@@ -61,13 +62,13 @@ object Tests extends Suite(m"Cosmopolite tests"):
 
       test(m"Spanish ñ sorts as a letter between n and o"):
         given Locale[es] = Locale(es)
-        List(t"año", t"anzuelo", t"ano").sorted
-      . assert(_ == List(t"ano", t"anzuelo", t"año"))
+        proscenium.List(t"año", t"anzuelo", t"ano").sort
+      . assert(_ == proscenium.List(t"ano", t"anzuelo", t"año"))
 
       test(m"English keeps ñ with n: año < anzuelo"):
         given Locale[en] = Locale(en)
-        List(t"año", t"anzuelo", t"ano").sorted
-      . assert(_ == List(t"ano", t"año", t"anzuelo"))
+        proscenium.List(t"año", t"anzuelo", t"ano").sort
+      . assert(_ == proscenium.List(t"ano", t"año", t"anzuelo"))
 
       test(m"German umlauts differ at the secondary level"):
         given Locale[de] = Locale(de)
@@ -78,12 +79,14 @@ object Tests extends Suite(m"Cosmopolite tests"):
       // and côte under traditional (now Canadian) French would need backward secondaries.
       test(m"French uses forward secondary accents: coté < côte"):
         given Locale[fr] = Locale(fr)
-        List(t"côté", t"coté", t"côte", t"cote").sorted
-      . assert(_ == List(t"cote", t"coté", t"côte", t"côté"))
+        proscenium.List(t"côté", t"coté", t"côte", t"cote").sort
+      . assert(_ == proscenium.List(t"cote", t"coté", t"côte", t"côté"))
 
     suite(m"Locale integration"):
       test(m"a via-typed value sees its language's collation"):
-        def first: Text via pl = List(t"ó", t"oz").sorted.head
+        // `minimum` rather than sorting and taking the first: the smallest element is what the
+        // test is after, and it needs no algorithm — nor a proof that the list is non-empty.
+        def first: Text via pl = proscenium.List(t"ó", t"oz").minimum.or(t"")
         given Locale[pl] = Locale(pl)
         first
       . assert(_ == t"oz")

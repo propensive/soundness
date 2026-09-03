@@ -47,6 +47,7 @@ import fulminate.*
 import kaleidoscope.*
 import rudiments.*
 import vacuous.*
+import rudiments.sortingAlgorithms.timsort
 
 object GraphemeBreak:
   enum Property:

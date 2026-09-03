@@ -44,6 +44,7 @@ import fulminate.{Diagnostics, Hazard}
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import symbolism.*
 
 object Cursor:
   opaque type Mark = Long
@@ -76,13 +77,13 @@ object Cursor:
 
     inline def apply(absolute: Long): Mark = absolute
 
-    given ordered: Ordering[Mark] = Ordering.Long
+    given comparable: Mark is Comparable = Comparable.long
 
   object Offset:
     inline def apply(line: Ordinal, column: Ordinal): Offset =
       (line.n0.toLong << 32) | (column.n0.toLong & 0xffffffffL)
 
-    given ordered: Ordering[Offset] = Ordering.Long
+    given comparable: Offset is Comparable = Comparable.long
 
   extension (mark: Mark)
     inline def absolute: Long = mark

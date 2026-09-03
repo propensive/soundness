@@ -43,6 +43,8 @@ import stratiform.*
 import turbulence.*
 
 import Lira.Error.Reason
+import rudiments.sortingAlgorithms.timsort
+import symbolism.*
 
 // The Uses metadata blob (§13.4): the set of one dependency's atom value hashes that a module
 // actually depends on, computed as the module's own direct references transitively closed over
@@ -51,9 +53,9 @@ import Lira.Error.Reason
 object UsesBlob:
 
   def encode(module: Text, atoms: List[Data]): Data =
-    // A named `Ordering` replaces the stdlib's comparator-taking `sortWith`.
-    given Ordering[(Text, Data)] = Ordering.fromLessThan: (left, right) =>
-      Blob.compare(left(1), right(1)) < 0
+    // A named `Comparable` replaces the stdlib's comparator-taking `sortWith`.
+    given (Text, Data) is Comparable = (left, right) =>
+      Comparison(Blob.compare(left(1), right(1)))
 
     // The row text is built by a named `def` rather than inline in the `map` lambda: a `t"…"`
     // interpolation as a combinator lambda's direct body trips the `wildApprox` assertion.

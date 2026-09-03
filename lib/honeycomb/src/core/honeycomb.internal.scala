@@ -88,7 +88,7 @@ object internal:
       val html: Html =
         Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
-      val holes2 = holes.to(List).sortBy(_(0)).map(_(1))
+      val holes2 = holes.to(List).sortBy(_(0).n0).map(_(1))
       val iterator = holes2.iterator
       var index: Int = -1
 
@@ -385,7 +385,7 @@ object internal:
     abortive:
 
       val iterator: Iterator[Expr[Any]] =
-        holes.to(List).sortBy(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
+        holes.to(List).sortBy(_(0).n0).map(_(1)).zip(insertions).map: (hole, expr) =>
           expr.absolve match
             case '{$expr: value} => hole match
               case Hole.Attribute(tag, attribute) =>
