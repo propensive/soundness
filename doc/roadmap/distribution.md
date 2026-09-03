@@ -13,8 +13,9 @@ exists; what makes that tenable is that every breaking change ships with instruc
 enough for an agent to execute against a downstream codebase. Beyond it lies distribution
 itself: LIRA — one file per library release carrying every compiled representation, with a TEL
 manifest, API-derived versioning and verifiable signatures — is specified but unimplemented,
-and replaces Maven Central. The gate requires attested LIRA publishing to be live; switching
-Maven Central publishing off lies just beyond it.
+and replaces Maven Central. Maven Central publishing has already been switched off: each tagged
+version is published as a GitHub release whose assets are the individual component jars, an
+interim channel until LIRA is live. The gate requires attested LIRA publishing to be live.
 
 ## dist-1: releases are changelogged
 
