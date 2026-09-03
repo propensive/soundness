@@ -53,7 +53,7 @@ object scalacOptions:
 
   val experimental = Scalac.Option[3.4 | 3.5 | 3.6 | 3.7 | 3.8](t"-experimental")
 
-  val semanticDiagnostics = Scalac.Option[3.9](t"-Xsemantic-diagnostics")
+  val semanticDiagnostics = Scalac.Option[3.9](t"-Zsemantic-diagnostics")
 
   object warnings:
     val feature = Scalac.Option[Scalac.Versions](t"-feature")
@@ -138,7 +138,7 @@ private[anthology] def notice(diagnostic: Diagnostic): Notice =
   val file: Text = diagnostic.position.map(_.nn.source.nn.name.nn.tt).nn.orElse(t"unknown").nn
   val message: Text = diagnostic.message.tt
 
-  // Under `-Xsemantic-diagnostics`, the raw message carries in-band semantic
+  // Under `-Zsemantic-diagnostics`, the raw message carries in-band semantic
   // markers (stripped from the `message` accessor above); preserve it so
   // consumers can interpret them, e.g. with the `delicious` module.
   val markup: Optional[Text] =

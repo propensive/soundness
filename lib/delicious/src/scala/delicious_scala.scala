@@ -40,7 +40,7 @@ import vacuous.*
 
 extension (notice: anthology.Notice)
   /** The message's semantic structure, when it was compiled under
-   *  `-Xsemantic-diagnostics`. */
+   *  `-Zsemantic-diagnostics`. */
   def semantic: Optional[SemanticMessage] = notice.markup.let(SemanticMessage.parse(_))
 
 extension (message: SemanticMessage)
