@@ -64,14 +64,14 @@ object Zipfile:
   given streamable: Zipfile is Streamable by Data over Credit = zipfile => zipfile.serialize
 
   def write[path: Abstractable across Paths to Text]
-    (path: path, prefix: Optional[Data] = Unset)(entries: Iterable[Zip.Entry])
+    (path: path, prefix: Optional[Data] = Unset)(entries: List[Zip.Entry])
   :   Unit logs Zip.Event raises Zip.Error =
 
     checkDuplicates(entries)
     val out = ji.FileOutputStream(ji.File(path.generic.s))
 
     try
-      Zipfile(entries.to(List), Unset, prefix).serialize.drain: region =>
+      Zipfile(entries, Unset, prefix).serialize.drain: region =>
         range =>
           val interval: Interval = range
           out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
@@ -125,10 +125,10 @@ object Zipfile:
             while buffer.hasRemaining do channel.write(buffer, eocdOffset - 12 + buffer.position)
           finally channel.close()
 
-  private def checkDuplicates(entries: Iterable[Zip.Entry]): Unit raises Zip.Error =
+  private def checkDuplicates(entries: List[Zip.Entry]): Unit raises Zip.Error =
     val seen = scala.collection.mutable.HashSet[Text]()
 
-    entries.foreach: entry =>
+    entries.each: entry =>
       if !seen.add(entry.ref.encode) then raise(Zip.Error(Zip.Error.Reason.DuplicateEntry(entry.ref)))
 
   // Sources implement zephyrine's shared `Expanse`, the random-access view of the bytes

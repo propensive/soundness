@@ -878,7 +878,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             ((0 until entries).map: index =>
               Zip.Entry(unsafely(t"e$index".as[Path on Zip]), Array.empty[Byte])).to(List)
 
-          Zipfile.write(jar)(contents.stdlib)
+          Zipfile.write(jar)(contents)
 
           Assembler.assemble
             (stub, jar, output, t"macos-arm64", 1L, 21, 24, false, publicKey)

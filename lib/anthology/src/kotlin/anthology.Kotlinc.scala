@@ -148,7 +148,8 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
         jnf.Files.createDirectories(jnf.Paths.get(out.generic.s))
         val compiler = K2JVMCompiler()
         val parsed = compiler.createArguments().nn
-        // `.stdlib`: `parseArguments` takes a Java `Array[String]`.
+        // `.stdlib`: `parseArguments` takes a Java array of *nullable* `String`, and no
+        // `ClassTag` witnesses a union element, so the native `to[Array]` cannot build it.
         compiler.parseArguments(arguments.map(_.s).stdlib.toArray, parsed)
         val exit = compiler.exec(collector, Services.EMPTY.nn, parsed).nn
         val success = exit == ExitCode.OK

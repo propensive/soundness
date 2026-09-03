@@ -40,6 +40,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import gossamer.*
 import parasite.*
 import profanity.*
@@ -66,16 +67,21 @@ object Cli:
 
 
   def arguments
-    ( textArguments: Iterable[Text],
+    ( textArguments: List[Text],
       focus:         Optional[Int]     = Unset,
       position:      Optional[Int]     = Unset,
       tab:           Optional[Ordinal] = Unset )
   :   List[Argument] =
 
+    val target = focus.let(_ + 1).or(0)
 
-      textArguments.toList.padTo(focus.let(_ + 1).or(0), t"").zipWithIndex.map: (text, index) =>
-        Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
-      . to(List)
+    val padded =
+      if textArguments.size >= target then textArguments
+      else textArguments + List.fill(target - textArguments.size)(t"")
+
+    padded.indexed.map: (text, ordinal) =>
+      val index = ordinal.n0
+      Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
 
 
 // A `Cli` is a *capability*: it carries the live stdio, signal-dispatch and completion state of

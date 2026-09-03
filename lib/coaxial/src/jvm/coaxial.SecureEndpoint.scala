@@ -75,6 +75,8 @@ object SecureEndpoint:
 
       // Offer the ALPN protocols (in preference order) so the peer can select the
       // application protocol during the handshake; the choice is read back below.
+      // `.stdlib`: the SSL parameter setters take Java arrays of *nullable* `String`, and no
+      // `ClassTag` witnesses a union element, so the native `to[Array]` cannot build them.
       if !tls.protocols.nil
       then params.setApplicationProtocols(tls.protocols.stdlib.map(_.s).toArray)
 

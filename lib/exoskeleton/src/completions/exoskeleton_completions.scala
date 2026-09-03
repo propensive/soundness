@@ -131,8 +131,7 @@ def helpTree
   def probe(prefix: List[Text]): Probe =
     val focus = prefix.size
     val textArguments = prefix :+ t""
-    // `.stdlib`: `Cli.arguments` takes a stdlib `Iterable`.
-    val synthesized = Cli.arguments(textArguments.stdlib, focus, Unset, Prim)
+    val synthesized = Cli.arguments(textArguments, focus, Unset, Prim)
 
     // A recording view of the environment: every variable the application reads while its
     // structure is being probed is noted, so that the variables it consults can be documented
@@ -272,9 +271,8 @@ package executives:
           val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, cursor))
 
           Completion
-            ( Cli.arguments(arguments, focus, posInWord, tab),
-              // `.stdlib`: `Cli.arguments` takes a stdlib `Iterable`.
-              Cli.arguments(restParts.stdlib, focus, posInWord, tab),
+            ( Cli.arguments(List.from(arguments), focus, posInWord, tab),
+              Cli.arguments(restParts, focus, posInWord, tab),
               environment,
               workingDirectory,
               Shell.Powershell,
@@ -317,9 +315,8 @@ package executives:
             val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
 
             Completion
-              ( Cli.arguments(arguments, focus2, position, tab),
-                // `.stdlib`: `Cli.arguments` takes a stdlib `Iterable`.
-                Cli.arguments(rest2.stdlib, focus2, position, tab),
+              ( Cli.arguments(List.from(arguments), focus2, position, tab),
+                Cli.arguments(rest2, focus2, position, tab),
                 environment,
                 workingDirectory,
                 shell,
@@ -355,7 +352,7 @@ package executives:
               Exit.Fail(1)
 
           Invocation
-            ( Cli.arguments(arguments),
+            ( Cli.arguments(List.from(arguments)),
               environment,
               workingDirectory,
               stdio,
@@ -364,7 +361,7 @@ package executives:
 
         case other =>
           Invocation
-            ( Cli.arguments(arguments),
+            ( Cli.arguments(List.from(arguments)),
               environment,
               workingDirectory,
               stdio,

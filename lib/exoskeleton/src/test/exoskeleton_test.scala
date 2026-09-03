@@ -630,7 +630,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         def invoke(textArguments: Text*): Invocation =
           val invocation =
             Invocation
-              (Cli.arguments(textArguments),
+              (Cli.arguments(List.from(textArguments)),
                summon[Environment],
                summon[WorkingDirectory],
                summon[Stdio],
@@ -1033,7 +1033,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         def invoke(app: Cli ?=> Execution)(textArguments: Text*): (Exit, Invocation) =
           val invocation =
             Invocation
-              (Cli.arguments(textArguments),
+              (Cli.arguments(List.from(textArguments)),
                summon[Environment],
                summon[WorkingDirectory],
                summon[Stdio],

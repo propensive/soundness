@@ -36,9 +36,11 @@ import anticipation.*
 import beneficence.*
 
 object Bibliography:
-  def apply(data: Iterable[Data]): Bibliography =
-    // Explicit element type: inference freshens the frozen inner arrays to `any.rd`.
-    new Bibliography(Array.from[Data](data))
+  def apply(data: List[Data]): Bibliography =
+    // Explicit element type: inference freshens the frozen inner arrays to `any.rd`. The
+    // stdlib view feeds `Array.from`'s `IterableOnce` directly: the frozen element type does
+    // not survive `to[Array]`'s capture set, so the generic conversion cannot serve here.
+    new Bibliography(Array.from[Data](data.stdlib))
 
 case class Bibliography(hashes: Array[Data]^{}) extends Findable:
   // Return every library hash whose leading bytes equal `prefix`. The

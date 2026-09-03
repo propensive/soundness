@@ -531,7 +531,7 @@ trait Mathml:
     val children: List[Xml] = text.lay(contents.map(_.xml)): value =>
       List(TextNode(value))
 
-    Element(label, Attributes(attributes*), children.stdlib.nodes)
+    Element(label, Attributes(attributes*), children.nodes)
 
   def html: Html of "#foreign" =
     val children: List[Html of "#foreign"] =

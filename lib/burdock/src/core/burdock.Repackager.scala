@@ -263,8 +263,7 @@ object Repackager:
         val combined: List[Zip.Entry] = bootstrap :: keptEntries + inlined
         val entries: List[Zip.Entry] = combined.deduplicate(_.ref.show)
 
-        // `.stdlib`: `Zipfile.write` takes a stdlib `Iterable` — a genuine API boundary.
-        Zipfile.write(outputJar)((manifestEntry :: entries).stdlib)
+        Zipfile.write(outputJar)(manifestEntry :: entries)
 
         // The output also carries the manifest entry, hence `entries.length + 1`.
         Summary

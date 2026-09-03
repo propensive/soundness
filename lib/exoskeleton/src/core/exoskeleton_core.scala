@@ -113,7 +113,7 @@ package executives:
     :   Invocation =
 
       Invocation
-        ( Cli.arguments(arguments, Unset, Unset, Unset),
+        ( Cli.arguments(List.from(arguments), Unset, Unset, Unset),
           environments.javaEnvironment,
           workingDirectories.javaWorkingDirectory,
           stdio,
