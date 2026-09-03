@@ -1,5 +1,5 @@
 publishLocal:
-	./mill "$$(./etc/ci/publish-selector.sh publishLocal)"
+	./mill "$$(./mill show release.selector | tr -d '"').publishLocal"
 
 test:
 	./mill test.assembly

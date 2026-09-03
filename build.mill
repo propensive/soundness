@@ -624,17 +624,16 @@ trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
 
 // ------------------------ BUNDLES ------------------------
 
-// Maven Central caps the number of files, the total size and the frequency of deployments, and
-// publishing every component across three platforms (~480 artifacts, ~10 000 files once poms,
-// sources, javadoc, signatures and checksums are counted) is far over those caps. The BUNDLE is
-// therefore the unit of publication: each bundle packages the classfiles and resources of the
-// components listed in it into a single fat jar, and its POM depends on the other bundles that own
-// the rest of its dependency closure. Components remain ordinary `PublishModule`s in the build —
-// `mill rudiments.core.publishLocal` still works for debugging — but the release selector,
-// `publishableModules`, names only the bundles, the standalone compiler plugins, and the universal
-// `soundness` artifact.
+// A BUNDLE packages the classfiles and resources of the components listed in it into a single fat
+// jar, and its POM depends on the other bundles that own the rest of its dependency closure. The
+// bundles were the unit of publication while Soundness released to Maven Central (whose caps on
+// file count, size and deployment frequency ruled out publishing every component across three
+// platforms); releases now go to GitHub Releases, one asset per component jar (see `release`
+// below), and the bundles remain as the coarse-grained fat jars — `soundness-cli.jar` and so on
+// — that tools and documentation put on a classpath. Components remain ordinary `PublishModule`s
+// in the build, so `mill rudiments.core.publishLocal` still works for debugging.
 //
-// Two invariants make this sound, both enforced by `groupCheck.validate`:
+// Two invariants keep the bundles sound, both enforced by `groupCheck.validate`:
 //
 //   1. every published component belongs to exactly ONE bundle. In none, and its classfiles ship
 //      nowhere; in two, and a user who has both bundles has the classes twice on the classpath.
@@ -718,8 +717,7 @@ trait Bundle(components: Bundled*) extends BaseScalaModule, SonatypeCentralPubli
 
   // The Scala.js and Scala Native crosses of the bundle: the same construction one platform down,
   // over the platform-capable subset of the contents (a capable component's whole closure is
-  // capable, so the subset is closed). A bundle with no capable component publishes no cross:
-  // `publishableModules` names a cross only when its contents are non-empty.
+  // capable, so the subset is closed). A bundle with no capable component has an empty cross.
   def jsContents: Seq[ScalaJSModule & PublishModule] = jsDeps(components)
   def nativeContents: Seq[ScalaModule & PublishModule] = nativeDeps(components)
 
@@ -3612,20 +3610,52 @@ def bundleClosure(roots: Seq[Bundled]): Seq[Bundle] =
         + "checks this)"))
   . distinct.sortBy(_.moduleSegments.render)
 
-// The release selector: exactly the modules `etc/ci/release.sh` publishes. The bundles (with the
-// `js`/`native` cross of each bundle that has platform-capable contents — a bundle with none, like
-// `tool`, would otherwise publish an empty cross), the standalone compiler plugins, and the
-// universal `soundness` artifact. NOT the ~230 components: their classfiles ship inside the
-// bundles, and their coordinates no longer exist on Maven Central.
-def publishableModules: T[Seq[String]] = Task:
-  val bundles = leafBundles.flatMap: bundle =>
-    val path = bundle.moduleSegments.render
+// ------------------------ RELEASE ------------------------
 
-    Seq(path) ++ Option.when(bundle.jsContents.nonEmpty)(s"$path.js")
-      ++ Option.when(bundle.nativeContents.nonEmpty)(s"$path.native")
+// Everything a release publishes: every component of every library (which includes the three
+// compiler plugins), plus the `js` and `native` cross of each platform-capable component. Each is
+// released as its own jar. Not the bundles or the universal artifact (whose contents are these
+// same jars), and not the test, benchmark or `Internal` modules, which are never released.
+val releasableModules: Seq[PublishModule] =
+  allLibraries.flatMap(_.moduleDirectChildren).flatMap:
+    case component: Component =>
+      Seq[PublishModule](component)
+        ++ Option.when(component.scalaJs)(component.js)
+        ++ Option.when(component.scalaNative)(component.native)
 
-  (bundles ++ standalonePlugins.map(_.moduleSegments.render)
-    :+ soundness.universal.moduleSegments.render).sorted
+    case component: BareComponent =>
+      Seq[PublishModule](component)
+        ++ Option.when(component.scalaJs)(component.js)
+        ++ Option.when(component.scalaNative)(component.native)
+
+    case _ => Nil
+
+// The release pipeline's view of the build, driven by `etc/ci/release.sh`. Releases go to GitHub
+// Releases rather than Maven Central: a tagged version becomes one release whose assets are the
+// jars of `releasableModules`, each named `<artifactId>-<version>.jar` — no bundles, no source or
+// javadoc jars, and no checksum files (GitHub records a SHA-256 digest per asset, which is what
+// downstream tools such as burdock match against).
+object release extends Module:
+  // The module paths of everything released, for `publishLocal` and for the release script's
+  // reporting.
+  def modules: T[Seq[String]] = Task(releasableModules.map(_.moduleSegments.render).sorted)
+
+  // A mill selector over `modules`, e.g. `{a.core,a.core.js,b.core}`, so that one invocation can
+  // run a task on every released module: `./mill "$(./mill show release.selector).publishLocal"`.
+  def selector: T[String] = Task(modules().mkString("{", ",", "}"))
+
+  // Builds every released jar and copies it into one directory under its release asset name.
+  // The version is `publishVersion`, which the release script pins with
+  // `SOUNDNESS_RELEASE_VERSION` so every asset carries exactly the tagged version.
+  def stage: T[Seq[PathRef]] = Task:
+    val jars: Seq[(PathRef, String, String)] =
+      Task.traverse(releasableModules)(module =>
+        Task.Anon((module.jar(), module.artifactId(), module.publishVersion())))()
+
+    jars.map: (jar, artifactId, version) =>
+      val target = Task.dest / s"$artifactId-$version.jar"
+      os.copy(jar.path, target)
+      PathRef(target)
 
 // A tiny Scala.js app whose `fastLinkJS` actually LINKS a representative slice of
 // the JS-capable modules, so the linker reports any reachable reference to a
