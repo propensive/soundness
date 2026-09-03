@@ -97,14 +97,15 @@ object settings:
     // spreadable varargs (proscenium's `multiSpreads` splices), on given-prefix
     // sealing (top-level givens over opaque types), on diagnostic givens, and on
     // JSR-45 source maps (formerly `-Xjsr45`; hyperbole's stack-trace resolver).
-    // Not enabled: `-Zliterate-literals` (the literal-conversion trial, which needs
-    // `scala.Literate` instances that main does not define) and
-    // `-Zsemantic-diagnostics` (anthology passes it per-invocation when a tool wants
-    // markup diagnostics).
+    // `-Zliterate-literals` is the literal-conversion trial: literals re-type through
+    // the ambient `anticipation.literacy` instance, and it is inert in modules whose
+    // `-Yimports` omits the literacy import. Not enabled: `-Zsemantic-diagnostics`
+    // (anthology passes it per-invocation when a tool wants markup diagnostics).
     "-Zalias-captures",
     "-Zdiagnostic-givens",
     "-Zgiven-prefixes",
     "-Zinline-source-maps",
+    "-Zliterate-literals",
     "-Zopaque-mutability",
     "-Zpure-iarrays",
     "-Zretains-bounds",
