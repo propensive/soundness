@@ -685,7 +685,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             cli:
               arguments match
                 case Argument("version") :: Nil =>
-                  execute(Out.print(t"v2") yet Exit.Ok)
+                  execute(Out.print(t"v2 (upgraded build)") yet Exit.Ok)
 
                 case _ =>
                   execute(Exit.Fail(1))
@@ -695,6 +695,14 @@ object Tests extends Suite(m"Ethereal Tests"):
 
       val toolV2 = launcherV2.path
 
+      // The v2 output is deliberately longer than v1's: the launcher decides whether a
+      // running daemon is stale by comparing its own file size against the size the
+      // daemon recorded, and only falls back to asking the daemon to re-hash *its own*
+      // launcher when the sizes match. Two launchers built at different paths with
+      // identical sizes therefore look like a mere mtime change to the v1 daemon, which
+      // finds its own file unchanged and stays. In practice an upgrade replaces the
+      // launcher in place, so that path is sound; the test just has to make the jars
+      // differ by more than a byte of deflate output.
       // A daemon's first invocation can momentarily return no output while it
       // cold-starts — or while the old daemon is being swapped out — under load, so
       // retry the `version` call until it serves the expected build (or a deadline
@@ -717,11 +725,11 @@ object Tests extends Suite(m"Ethereal Tests"):
         .assert(_ == t"v1")
 
         test(m"v2 launcher replaces v1 daemon and returns v2 output"):
-          serves(toolV2, t"v2")
-        .assert(_ == t"v2")
+          serves(toolV2, t"v2 (upgraded build)")
+        .assert(_ == t"v2 (upgraded build)")
 
         test(m"v1 daemon is no longer running after upgrade"):
-          serves(toolV2, t"v2") == t"v2"
+          serves(toolV2, t"v2 (upgraded build)") == t"v2 (upgraded build)"
         .assert(_ == true)
 
       safely(sh"$toolV2 '{admin}' kill".exec[Exit]())
