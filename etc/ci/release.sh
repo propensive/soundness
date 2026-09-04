@@ -8,7 +8,8 @@
 # ruled out publishing every component): the tagged version becomes one release whose assets are
 # the jars of every component and every platform cross — `release.stage` in build.mill — each
 # named `<artifactId>-<version>.jar`. No bundles, source or javadoc jars, or checksum files are
-# published; GitHub records a SHA-256 digest per asset.
+# published; GitHub records a SHA-256 digest per asset, and each jar embeds its own POM and
+# ivy.xml, from which `etc/ci/sync-releases.sh` rebuilds a resolvable local repository.
 #
 # Usage: ./etc/ci/release.sh X.Y.Z   (or `make release VERSION=X.Y.Z`)
 #
@@ -130,8 +131,10 @@ notes="Soundness $VERSION.
 
 Every component of every library is attached as its own jar, \`<artifactId>-$VERSION.jar\`, \
 alongside the Scala.js (\`_sjs1_3\`) and Scala Native (\`_native0.5_3\`) cross-builds of the \
-platform-capable components. The build and test run behind this release are attested by the \
-signed note on \`refs/notes/ci-attestation\` for commit $HEAD_SHA."
+platform-capable components. Each jar embeds its POM and ivy.xml under \`META-INF/maven/\`; \
+\`make sync-releases VERSION=$VERSION\` installs the set into a local ivy repository for Mill to \
+resolve by version. The build and test run behind this release are attested by the signed note \
+on \`refs/notes/ci-attestation\` for commit $HEAD_SHA."
 
 if ! gh release create "$VERSION" --repo "$REPO" --draft --target "$HEAD_SHA" \
        --title "Soundness $VERSION" --notes "$notes" >/dev/null; then

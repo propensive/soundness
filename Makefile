@@ -62,6 +62,9 @@ release:
 	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=X.Y.Z" >&2; exit 1; fi
 	./etc/ci/release.sh "$(VERSION)"
 
+sync-releases:
+	./etc/ci/sync-releases.sh $(VERSION)
+
 xeq-build:
 	@if [ -z "$(RUNNERS_VERSION)" ]; then echo "Usage: make xeq-build RUNNERS_VERSION=X" >&2; exit 1; fi
 	./etc/ci/xeq-build.sh "$(RUNNERS_VERSION)"

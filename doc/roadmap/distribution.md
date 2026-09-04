@@ -15,7 +15,10 @@ itself: LIRA — one file per library release carrying every compiled representa
 manifest, API-derived versioning and verifiable signatures — is specified but unimplemented,
 and replaces Maven Central. Maven Central publishing has already been switched off: each tagged
 version is published as a GitHub release whose assets are the individual component jars, an
-interim channel until LIRA is live. The gate requires attested LIRA publishing to be live.
+interim channel until LIRA is live. Each released jar embeds its POM and ivy.xml, and
+`make sync-releases` installs a release into `~/.ivy2/local`, from which Mill resolves the
+components by version with no repository configuration. The gate requires attested LIRA
+publishing to be live.
 
 ## dist-1: releases are changelogged
 
