@@ -126,6 +126,37 @@ object Xeq:
     builder.add(t"#>\n")
     builder.text.in[Data](using charEncoders.utf8Encoder)
 
+  // The polyglot per-platform dispatcher: the smallest possible cross-platform artefact.
+  // NOTHING is embedded except an `assets:` table of `label=url|hash` rows in which each URL
+  // is a COMPLETE per-platform executable (not a bare stub, and no JAR rides along). At run
+  // time the script detects its platform, downloads that one executable, verifies its
+  // SHA-256, replaces itself with it, and re-invokes with the original arguments — so the
+  // second invocation, and every one after it, is the real binary. On POSIX systems the
+  // replacement is in place (a file's name does not govern how it executes); on Windows —
+  // where a `.bat` or `.ps1` cannot become a binary under its own name — the executable is
+  // written beside the script as `<name>.exe`, the script deletes itself, and `PATHEXT`
+  // ordering resolves subsequent invocations to the `.exe`. `entries` are
+  // `(label, executable-url, executable-sha256)`.
+  def dispatcher(entries: List[(Text, Text, Text)]): Data =
+    val template = cp"/ziggurat/xeq.tmpl".read[Text]
+    val bat      = cp"/ziggurat/xeq-dispatcher.bat".read[Text]
+    val ps1      = cp"/ziggurat/xeq-dispatcher.ps1".read[Text]
+    val sh       = cp"/ziggurat/xeq-dispatcher.sh".read[Text]
+
+    val prefix: Text =
+      template.cut(t"@@BAT@@").join(bat).cut(t"@@PS1@@").join(ps1).cut(t"@@SH@@").join(sh)
+
+    val rows: List[Text] = entries.map: (label, url, hash) => t"$label=$url|$hash"
+
+    val builder = StringBuilder()
+    builder.add(prefix)
+    if !prefix.ends(t"\n") then builder.add('\n')
+    builder.add(t"assets:")
+    builder.add(rows.join(t","))
+    builder.add('\n')
+    builder.add(t"#>\n")
+    builder.text.in[Data](using charEncoders.utf8Encoder)
+
   // The polyglot online launcher. Unlike `installer` (which embeds every bare stub), this
   // embeds only the application JAR — once, as the `data` payload, exactly as `installer`
   // does — plus an `assets:` table of `label=url|hash`. At runtime the launcher downloads
@@ -226,10 +257,25 @@ object Xeq:
       write(outputPath, onlineLauncher(jarData, entries))
 
 
+  // Builds a dispatcher from a manifest of `label<TAB>url<TAB>sha256` rows, one per
+  // platform, naming the finished executables wherever they are published.
+  private def dispatcherMain(output: Text, manifest: Text): Unit = unsafely:
+    val entries: List[(Text, Text, Text)] =
+      manifest.as[Path on Linux].read[Text].cut(t"\n").map(_.trim)
+      . filter(_ != t"")
+      . map: line =>
+          val fields = line.cut(t"\t")
+          (fields.prim.or(t""), fields.stdlib.lift(1).getOrElse(t""), fields.reverse.prim.or(t""))
+
+    write(output.as[Path on Linux], dispatcher(entries))
+
   def main(args: scala.Array[String]): Unit =
     args.iterator.toList.to(List) match
       case "installer" :: output :: staging :: Nil =>
         installerMain(output.tt, staging.tt)
+
+      case "dispatcher" :: output :: manifest :: Nil =>
+        dispatcherMain(output.tt, manifest.tt)
 
       case "downloader" :: output :: url :: hash :: Nil =>
         downloaderMain(output.tt, url.tt, hash.tt)
@@ -239,6 +285,7 @@ object Xeq:
 
       case _ =>
         System.err.nn.println("usage: ziggurat.Xeq installer <output-file> <staging-dir>")
+        System.err.nn.println("       ziggurat.Xeq dispatcher <output-file> <manifest.tsv>")
         System.err.nn.println("       ziggurat.Xeq downloader <output-file> <url> <sha256>")
 
         System.err.nn.println(
