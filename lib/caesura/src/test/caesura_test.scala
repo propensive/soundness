@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import caesura.optics.{cellLens, rowEach, rowFilter, rowOptical}
+import caesura.optics.{dsvCellLens, dsvRowEachOptical, dsvRowFilterOptical, dsvRowOptical}
 
 given decimalizer: Decimalizer = Decimalizer(1)
 
