@@ -93,6 +93,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Open as **ready for review** (not draft). Enable auto-merge so the PR merges as soon as the `Build` check passes.
 - Immediately before opening the PR, make sure the branch is based upon the current `origin/main`, and rebase if necessary.
 - When several PRs are in flight, stack them: base each new PR branch on the previous open PR's branch and merge bottom-up, so each is attested once. `AGENTS.md` explains why and the rules.
+- Every PR that changes what a consumer of a Soundness library could observe (renames, moves, signatures, removals, behaviour) adds an entry to `doc/migration/pending.md`, written for an LLM to apply. `AGENTS.md` specifies the format; `doc/migration.md` explains the scheme.
 - Title is a clear one-line description of the work.
 - Body follows `.github/pull_request_template.md`: a single summary paragraph, a blank line, then Markdown release notes for users (with code examples if useful).
 - Whenever a new commit is added to a PR, re-read the PR description and update it if it no longer accurately describes the full set of commits. Each new commit also requires a fresh `make attest && make push` before the `Build` check can pass.
