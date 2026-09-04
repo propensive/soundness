@@ -105,6 +105,20 @@ for module in $probes; do
 done
 
 # Build every released jar into one directory, named as its release asset.
+# Build the JVM surface first, then the Scala.js surface, before staging — the shape attest
+# verifies. `release.stage` alone starts the JVM, Scala.js and Native compilers of the root
+# module (`proscenium.core`) simultaneously on a cold daemon JVM, and those three instances race
+# on dotty's JVM-global jar-lookup cache: one of them can see a partial view of the standard
+# library and fail capture checking (`any.rd cannot be tracked since its capture set is empty`
+# in `proscenium.Array`) although the very same module compiles cleanly a moment later. The
+# aggregates compile the root alone before anything runs concurrently, so the caches are warm by
+# the time the platform crosses compile side by side.
+if ! ./mill soundness.all.compile; then
+  fail "building the JVM surface failed"
+fi
+if ! ./mill soundness.js.compile; then
+  fail "building the Scala.js surface failed"
+fi
 if ! ./mill release.stage; then
   fail "building the release jars failed"
 fi
