@@ -3662,7 +3662,35 @@ val releasableModules: Seq[PublishModule] =
 // jars of `releasableModules`, each named `<artifactId>-<version>.jar` — no bundles, no source or
 // javadoc jars, and no checksum files (GitHub records a SHA-256 digest per asset, which is what
 // downstream tools such as burdock match against).
+//
+// Each released jar is self-describing: it carries its own POM and ivy.xml under
+// `META-INF/maven/<group>/<artifactId>/`, the Maven convention for an embedded descriptor. That
+// is what lets `etc/ci/sync-releases.sh` reconstruct a resolvable local repository from the jars
+// alone, with no separate metadata assets.
 object release extends Module:
+  // Copies `source` to `target`, appending the descriptor entries. Written with `java.util.zip`
+  // rather than re-created from the classfiles so that every existing entry is carried over
+  // byte-for-byte.
+  private def withDescriptors(source: os.Path, target: os.Path, entries: Seq[(String, os.Path)])
+  :   Unit =
+    val input = new java.util.zip.ZipFile(source.toIO)
+    val output = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(target.toIO))
+    try
+      val existing = input.entries()
+      while existing.hasMoreElements do
+        val entry = existing.nextElement()
+        output.putNextEntry(new java.util.zip.ZipEntry(entry.getName))
+        if !entry.isDirectory then input.getInputStream(entry).transferTo(output)
+        output.closeEntry()
+
+      for (name, file) <- entries do
+        output.putNextEntry(new java.util.zip.ZipEntry(name))
+        output.write(os.read.bytes(file))
+        output.closeEntry()
+    finally
+      output.close()
+      input.close()
+
   // The module paths of everything released, for `publishLocal` and for the release script's
   // reporting.
   def modules: T[Seq[String]] = Task(releasableModules.map(_.moduleSegments.render).sorted)
@@ -3671,17 +3699,20 @@ object release extends Module:
   // run a task on every released module: `./mill "$(./mill show release.selector).publishLocal"`.
   def selector: T[String] = Task(modules().mkString("{", ",", "}"))
 
-  // Builds every released jar and copies it into one directory under its release asset name.
-  // The version is `publishVersion`, which the release script pins with
-  // `SOUNDNESS_RELEASE_VERSION` so every asset carries exactly the tagged version.
+  // Builds every released jar and copies it into one directory under its release asset name,
+  // with its POM and ivy.xml embedded. The version is `publishVersion`, which the release script
+  // pins with `SOUNDNESS_RELEASE_VERSION` so every asset carries exactly the tagged version.
   def stage: T[Seq[PathRef]] = Task:
-    val jars: Seq[(PathRef, String, String)] =
+    val jars: Seq[(PathRef, String, String, String, PathRef, PathRef)] =
       Task.traverse(releasableModules)(module =>
-        Task.Anon((module.jar(), module.artifactId(), module.publishVersion())))()
+        Task.Anon((module.jar(), module.pomSettings().organization, module.artifactId(),
+                   module.publishVersion(), module.pom(), module.ivy())))()
 
-    jars.map: (jar, artifactId, version) =>
+    jars.map: (jar, group, artifactId, version, pom, ivy) =>
       val target = Task.dest / s"$artifactId-$version.jar"
-      os.copy(jar.path, target)
+      val prefix = s"META-INF/maven/$group/$artifactId"
+      val descriptors = Seq(s"$prefix/pom.xml" -> pom.path, s"$prefix/ivy.xml" -> ivy.path)
+      withDescriptors(jar.path, target, descriptors)
       PathRef(target)
 
 // A tiny Scala.js app whose `fastLinkJS` actually LINKS a representative slice of

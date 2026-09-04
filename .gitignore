@@ -10,3 +10,4 @@ dist
 tests/JSONTestSuite
 lib/ethereal/target
 rep/_probe
+__pycache__/
