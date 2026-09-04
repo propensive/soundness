@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 #
 # Run a full, from-scratch build and the test suite locally. On success, sign
-# an attestation over the CI input digest and attach it as a git note on HEAD.
+# an attestation over the CI input digest and attach it as a git note keyed by
+# the *filtered tree* of HEAD (the commit's tree minus every .dockerignore-
+# excluded path; see etc/ci/compute-filtered-tree.sh).
+#
+# Keying by the filtered tree rather than the commit means the attestation
+# depends only on the relevant content: a squash, rebase or amend that leaves
+# the input set unchanged still finds it. (A squash of a branch that is behind
+# `main` produces a tree nobody has built, so that will NOT verify — rebase
+# before merging.)
 #
 # The build runs in a throwaway git worktree checked out at HEAD, so it always
 # starts from a clean build cache (no reused `out/`) and compiles exactly the
@@ -15,7 +23,7 @@
 #                     inputs are unchanged from an existing attestation)
 #
 # Exit codes:
-#   0  attestation written to refs/notes/ci-attestation for HEAD
+#   0  attestation written to refs/notes/ci-attestation for HEAD's filtered tree
 #   1  tests failed, prerequisites missing, or signing error
 #
 # After success, run `make push` (or `git push && git push origin
@@ -55,26 +63,26 @@ if ! grep -q "^$SIGNER " .ci/allowed_signers 2>/dev/null; then
 fi
 
 DIGEST=$(etc/ci/compute-input-digest.sh)
+TREE=$(etc/ci/compute-filtered-tree.sh)
 echo "input digest: $DIGEST" >&2
+echo "input tree:   $TREE" >&2
 echo "commit:       $HEAD_SHA" >&2
 echo "signer:       $SIGNER" >&2
 
-# Fast path 1: HEAD already has a valid attestation for this digest.
-if git notes --ref="$NOTES_REF" show HEAD >/dev/null 2>&1; then
-  EXISTING_DIGEST=$(git notes --ref="$NOTES_REF" show HEAD \
-    | python3 -c 'import json,sys; print(json.load(sys.stdin)["statement"]["subject"][0]["digest"]["sha256"])' \
-    2>/dev/null || true)
-  if [[ "$EXISTING_DIGEST" == "$DIGEST" ]]; then
-    if etc/ci/verify-attest.sh >/dev/null 2>&1; then
-      echo "HEAD already has a valid attestation for this input digest." >&2
-      exit 0
-    fi
-  fi
+# Fast path: the filtered tree already carries a valid attestation. Because the
+# note is keyed by content, this covers HEAD itself, any rewrite of HEAD, and
+# any ancestor that differed only outside the input set (docs, .github, …).
+if git notes --ref="$NOTES_REF" show "$TREE" >/dev/null 2>&1 \
+   && etc/ci/verify-attest.sh >/dev/null 2>&1; then
+  echo "Filtered tree $TREE already has a valid attestation." >&2
+  exit 0
 fi
 
-# Fast path 2: a recent ancestor has an attestation with the same digest
-# (i.e. only docs/CI-metadata changed). Re-use the existing signed note.
-for ancestor in $(git log --format='%H' -n 50 HEAD --skip=1 2>/dev/null); do
+# Transition path: attestations made before notes were keyed by tree are
+# attached to commits. If HEAD or a recent ancestor has one for this exact
+# digest, copy it onto the tree so it is found by content from now on. Delete
+# this block once no commit-keyed notes remain in use.
+for ancestor in $(git log --format='%H' -n 51 HEAD 2>/dev/null); do
   if ! git notes --ref="$NOTES_REF" show "$ancestor" >/dev/null 2>&1; then
     continue
   fi
@@ -83,9 +91,12 @@ for ancestor in $(git log --format='%H' -n 50 HEAD --skip=1 2>/dev/null); do
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["statement"]["subject"][0]["digest"]["sha256"])' \
     2>/dev/null || true)
   if [[ "$AD" == "$DIGEST" ]]; then
-    echo "$NOTE" | git notes --ref="$NOTES_REF" add -f -F - HEAD
-    echo "Re-used attestation from $ancestor (input digest unchanged)." >&2
-    exit 0
+    echo "$NOTE" | git notes --ref="$NOTES_REF" add -f -F - "$TREE"
+    if etc/ci/verify-attest.sh >/dev/null 2>&1; then
+      echo "Re-used commit-keyed attestation from $ancestor (input digest unchanged); now keyed by tree $TREE." >&2
+      exit 0
+    fi
+    git notes --ref="$NOTES_REF" remove "$TREE" >/dev/null 2>&1 || true
   fi
 done
 
@@ -163,14 +174,16 @@ trap 'rm -rf "$TMP"' EXIT
 STMT="$TMP/statement.json"
 ENV_FILE="$TMP/envelope.json"
 
-python3 - "$DIGEST" "$SIGNER" "$HEAD_SHA" > "$STMT" <<'PY'
+python3 - "$DIGEST" "$TREE" "$SIGNER" "$HEAD_SHA" > "$STMT" <<'PY'
 import datetime, json, sys
-digest, signer, commit = sys.argv[1], sys.argv[2], sys.argv[3]
+digest, tree, signer, commit = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 mill_version = open(".mill-version").read().strip()
 now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 statement = {
     "_type": "https://in-toto.io/Statement/v1",
-    "subject": [{"name": "soundness-ci-inputs", "digest": {"sha256": digest}}],
+    # `sha256` is the manifest digest of the input set; `gitTree` is the SHA of
+    # the filtered git tree holding the same content (the note's key).
+    "subject": [{"name": "soundness-ci-inputs", "digest": {"sha256": digest, "gitTree": tree}}],
     "predicateType": "https://soundness.dev/local-ci/v1",
     "predicate": {
         "commands": [
@@ -209,8 +222,8 @@ envelope = {"statement": statement, "signature": signature}
 print(json.dumps(envelope, indent=2, sort_keys=True, ensure_ascii=False))
 PY
 
-git notes --ref="$NOTES_REF" add -f -F "$ENV_FILE" HEAD
+git notes --ref="$NOTES_REF" add -f -F "$ENV_FILE" "$TREE"
 
 echo >&2
-echo "Attestation written to $NOTES_REF for $HEAD_SHA." >&2
+echo "Attestation written to $NOTES_REF for filtered tree $TREE (HEAD $HEAD_SHA)." >&2
 echo "Run \`make push\` to publish commits and the attestation note." >&2
