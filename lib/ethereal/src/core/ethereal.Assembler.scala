@@ -54,11 +54,11 @@ import zeppelin.*
 
 import errorDiagnostics.emptyDiagnostics
 
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.overwritePreexisting
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 // Produces a self-contained per-platform executable by patching a bare ethereal
 // runner binary's ETHRCFG block (build id, Java version policy, ML-DSA-44 public
@@ -195,8 +195,8 @@ object Assembler:
 
     if !isWindows then temporary.executable() = true
 
-    import filesystemOptions.moveAtomically.enabled
-    import filesystemOptions.deleteRecursively.disabled
+    import filesystemOptions.moveAtomically
+    import filesystemOptions.deleteOnlyEmpty
     temporary.moveTo(output)
     ()
 

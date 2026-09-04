@@ -484,7 +484,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // With `bottomDocked`, a resize never switches to top-anchoring: the block stays
       // docked and its rows are cleared at the bottom (row 3), not the top-left corner.
       test(m"bottomDocked keeps the block docked across a resize"):
-        import inlineAnchoring.bottomDocked
+        import inlineAnchoring.bottomDockedAnchoring
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
@@ -498,7 +498,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // With `topAnchored`, the very first frame is pinned to rows 1..h (no bottom dock,
       // no scroll into scrollback).
       test(m"topAnchored pins the first frame to the top rows"):
-        import inlineAnchoring.topAnchored
+        import inlineAnchoring.topAnchoring
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
@@ -508,7 +508,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       // With `fullscreen`, the first present enters the alternate screen buffer.
       test(m"fullscreen enters the alternate screen on the first present"):
-        import inlineAnchoring.fullscreen
+        import inlineAnchoring.fullscreenAnchoring
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
@@ -518,7 +518,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       // ...and leaves it again on finish, restoring the pre-session screen.
       test(m"fullscreen leaves the alternate screen on finish"):
-        import inlineAnchoring.fullscreen
+        import inlineAnchoring.fullscreenAnchoring
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
@@ -531,7 +531,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // With `keepTop`, a shrink holds the top row and clears below (row 4), rather than
       // re-docking down and clearing the row it vacated above.
       test(m"keepTop clears below the block on a shrink, holding the top"):
-        import inlineShrink.keepTop
+        import inlineShrink.keepTopShrink
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
@@ -544,7 +544,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // With `clampToScreen`, a growing block grows upward in place; it never scrolls the
       // screen into scrollback (no `\e[9999B`).
       test(m"clampToScreen grows without scrolling into scrollback"):
-        import inlineGrowth.clampToScreen
+        import inlineGrowth.clampedGrowth
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)

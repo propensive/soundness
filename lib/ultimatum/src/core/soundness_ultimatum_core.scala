@@ -42,10 +42,10 @@ export
 package inlineAnchoring:
   export
     ultimatum.inlineAnchoring
-    . { bottomDocked, topAnchored, topAfterResize, fullscreen, inline }
+    . { bottomDockedAnchoring, topAnchoring, topAfterResizeAnchoring, fullscreenAnchoring, flowAnchoring }
 
 package inlineGrowth:
-  export ultimatum.inlineGrowth.{scrollIntoScrollback, clampToScreen}
+  export ultimatum.inlineGrowth.{scrollbackGrowth, clampedGrowth}
 
 package inlineShrink:
-  export ultimatum.inlineShrink.{redockBottom, keepTop}
+  export ultimatum.inlineShrink.{redockBottomShrink, keepTopShrink}

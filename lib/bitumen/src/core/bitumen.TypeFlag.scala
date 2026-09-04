@@ -34,7 +34,7 @@ package bitumen
 
 
 import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric
-import hypotenuse.*, arithmeticOptions.overflow.unchecked
+import hypotenuse.*, arithmeticOptions.uncheckedOverflow
 
 enum TypeFlag:
   case File

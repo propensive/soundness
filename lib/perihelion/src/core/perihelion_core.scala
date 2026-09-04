@@ -38,7 +38,7 @@ import java.security.SecureRandom
 
 import anticipation.*
 import coaxial.*
-import coaxial.socketBackends.virtualMachineSockets
+import coaxial.socketBackends.javaBaseSockets
 import contingency.*
 import fulminate.Hazard
 import distillate.*
@@ -58,8 +58,8 @@ import urticose.*
 import vacuous.*
 
 import alphabets.base64Standard
-import crypto.permitDeprecatedCrypto
-import providers.javaStdlibProvider
+import cryptoPermits.permitDeprecatedCrypto
+import providers.javaBaseProvider
 
 // `true` exactly when the message type is the raw `Message`. A match type reduces
 // by subtyping — `Message` matches the first case, any other (e.g. `Ping over Json`)

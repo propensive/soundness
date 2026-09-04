@@ -30,66 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package jacinta
 
-
-import anticipation.*
-import contextual.*
-import contingency.*
-import fulminate.*
-import nomenclature.*
-import prepositional.*
 import rudiments.*
-import symbolism.*
-import turbulence.*
-import vacuous.*
 
-// The `css"…"` typed CSS interpolator, wired through `contextual` like xylophone's
-// `x"…"` and honeycomb's `h"…"`. The transparent result is a `Css` (stylesheet) or a
-// `Css.Style` (inline style set), decided by the content (see `internal.expand`).
-extension (inline context: StringContext)
-  transparent inline def css: Interpolation = interpolation[Css | Css.Style](context)
-
-// The class and id names referenced anywhere in a stylesheet, including inside
-// nested rules and the selector-list arguments of `:is()`/`:not()`/`:nth-…(of)`.
-extension (css: Css)
-  def classes: Set[Name[CssClass]] =
-    val names: List[Name[CssClass]] = simples(css.rules).sweep:
-      case Simple.Class(name) => name
-
-    names.to[Set]
-
-  def ids: Set[Name[DomId]] =
-    val names: List[Name[DomId]] = simples(css.rules).sweep:
-      case Simple.Id(name) => name
-
-    names.to[Set]
-
-private def simples(nodes: List[Css.Node]): List[Simple] =
-  nodes.bind:
-    case Css.Node.Rule(selector, body) =>
-      listSimples(selector) + simples(body)
-    case Css.Node.At(_, _, body)       => body.lay(Nil)(simples)
-    case Css.Node.Declaration(_, _)    => Nil
-
-private def listSimples(list: SelectorList): List[Simple] =
-  list.selectors.bind: selector =>
-    ((selector.head :: selector.rest.map(_(1))): List[Compound]).bind(compoundSimples)
-
-private def compoundSimples(compound: Compound): List[Simple] =
-  compound.parts.bind:
-    case simple@ Simple.PseudoClass(_, argument)   =>
-      (simple :: argumentSimples(argument)): List[Simple]
-    case simple@ Simple.PseudoElement(_, argument) =>
-      (simple :: argumentSimples(argument)): List[Simple]
-    case simple                                    => List(simple)
-
-private def argumentSimples(argument: Optional[PseudoArgument]): List[Simple] =
-  argument.lay(Nil):
-    case PseudoArgument.Selectors(list) => listSimples(list)
-    case PseudoArgument.Nth(_, _, of)   => of.lay(Nil)(listSimples)
-    case PseudoArgument.Raw(_)          => Nil
-
-package formatting:
-  given indentedCssFormatting: Css.Formatting = Css.Formatting(newlines = true, spaces = true)
-  given compactCssFormatting: Css.Formatting = Css.Formatting(newlines = false, spaces = false)
+package dynamicAccess:
+  inline given dynamicJson: DynamicJsonEnabler = !!

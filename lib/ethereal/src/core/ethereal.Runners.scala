@@ -45,8 +45,8 @@ import urticose.*
 import vacuous.*
 
 import errorDiagnostics.emptyDiagnostics
-import gastronomy.*, providers.javaStdlibProvider
-import httpBackends.virtualMachineHttp
+import gastronomy.*, providers.javaBaseProvider
+import httpBackends.javaNetHttp
 import internetAccess.online
 import monotonous.*, alphabets.hexLowerCase
 

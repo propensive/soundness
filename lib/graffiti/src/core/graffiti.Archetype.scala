@@ -36,7 +36,7 @@ import scala.caps
 
 import anticipation.*
 import cataclysm.*
-import cataclysm.formatting.standardCssFormatting
+import cataclysm.formatting.indentedCssFormatting
 import gesticulate.*
 import gossamer.*
 import honeycomb.*

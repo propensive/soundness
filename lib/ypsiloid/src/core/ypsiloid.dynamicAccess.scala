@@ -30,9 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package breviloquence
+package ypsiloid
 
 import rudiments.*
 
-object dynamicCborAccess:
-  inline given enabled: DynamicCborEnabler = !!
+package dynamicAccess:
+  inline given dynamicYaml: DynamicYamlEnabler = !!

@@ -251,7 +251,7 @@ object Acp:
   case class ToolCallLocation(path: Text, line: Optional[Int] = Unset)
 
   object ToolCallContent:
-    import dynamicJsonAccess.enabled
+    import dynamicAccess.dynamicJson
 
     private val typeTag = Json.discriminatedUnion[ToolCallContent](t"type")
 
@@ -397,7 +397,7 @@ object Acp:
   // Session updates
 
   object SessionUpdate:
-    import dynamicJsonAccess.enabled
+    import dynamicAccess.dynamicJson
 
     private val typeTag = Json.discriminatedUnion[SessionUpdate](t"sessionUpdate")
 
@@ -534,7 +534,7 @@ object Acp:
   case class PermissionOption(optionId: Text, name: Text, kind: PermissionOptionKind)
 
   object RequestPermissionOutcome:
-    import dynamicJsonAccess.enabled
+    import dynamicAccess.dynamicJson
 
     private val typeTag = Json.discriminatedUnion[RequestPermissionOutcome](t"outcome")
 

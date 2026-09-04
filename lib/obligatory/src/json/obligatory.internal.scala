@@ -79,7 +79,7 @@ object internal:
 
     ' {
         json =>
-          import dynamicJsonAccess.enabled
+          import dynamicAccess.dynamicJson
           given Tactic[Json.Error] = strategies.throwUnsafely
 
           (safely(json.method.as[Text]): @scala.unchecked) match

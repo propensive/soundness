@@ -9,7 +9,7 @@ import dsvFormats.csvWithHeaderFormat
 import enumIdentification.kebabCaseIdentifiable
 import environments.daemonClientEnvironment
 import errorDiagnostics.stackTracesDiagnostics
-import executives.completions
+import executives.completionsExecutive
 import homeDirectories.system
 import logging.silentLogging
 import codicils.cancel
@@ -21,7 +21,7 @@ import textSanitizers.skipSanitizer
 import threading.platformThreading
 import unhandledErrors.stackTrace
 import workingDirectories.daemonClientWorkingDirectory
-import httpServers.stdlibPublicHttpServer
+import httpServers.jdkHttpserverPublic
 import timeFormats.railwayTimeFormat
 
 erased given Naptan is Nominative under MustMatch["(|HUB[A-Z0-9]{3}|9[14]0[A-Z]+)"] = !!
@@ -59,7 +59,7 @@ extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name ma
       case error: Error => name
 
     . within:
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val json = Json.parse(url"https://api.tfl.gov.uk/StopPoint/$name".fetch())
 
         json.children.as[List[Json]]
@@ -151,9 +151,9 @@ object Data:
         cache.establish:
           import filesystemOptions.readAccess.enabled
           import filesystemOptions.writeAccess.disabled
-          import filesystemOptions.dereferenceSymlinks.enabled
+          import filesystemOptions.dereferenceSymlinks
           import filesystemOptions.createNonexistent.enabled
-          import filesystemOptions.createNonexistentParents.enabled
+          import filesystemOptions.createNonexistentParents
           val file: Path on Linux = Xdg.cacheHome[Path on Linux]/"tube.csv"
 
           val csv = if file.exists() then file.open(_.stream[Bytes].strict) else

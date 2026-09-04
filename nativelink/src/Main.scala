@@ -64,7 +64,7 @@ object Main:
 
     // galilei: a real filesystem round-trip driven straight through the native `FilesystemBackend`
     // (Scala Native javalib) — create a directory, observe it, delete it, observe it gone.
-    import galilei.filesystemBackends.native
+    import galilei.filesystemBackends.scalaNativeFilesystem
     val fs = summon[FilesystemBackend on Linux]
     val dir: Path on Linux = unsafely((% / "var" / "tmp" / "soundness-native-fs").on[Linux])
     if fs.exists(dir, false) then unsafely(fs.delete(dir))
@@ -90,12 +90,12 @@ object Main:
     // `System.getenv` — SN-supported, so it works on native with no separate backend (the same is
     // true of turbulence's stdio and capricious's randomness: their core givens use SN-supported
     // `System.*`/`java.util.Random` APIs).
-    import environments.javaEnvironment
+    import environments.javaBaseEnvironment
     out.println("ambience HOME = "+summon[Environment].variable(t"HOME").or(t"?").s)
 
     // coaxial: a UDP loopback round-trip straight through the native `Socket.Backend` — bind a
     // datagram socket, dispatch a payload to it, receive it back.
-    import coaxial.socketBackends.native
+    import coaxial.socketBackends.scalaNativeSockets
     val sb = summon[Socket.Backend]
     val udpPort = Port.unsafe[Udp](55555)
     val server = sb.listenUdp(udpPort, Unset, Nil)

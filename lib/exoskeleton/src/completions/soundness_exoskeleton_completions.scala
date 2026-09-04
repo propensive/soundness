@@ -36,4 +36,4 @@ export exoskeleton.{CliEvent, Completion, Completions, execute, Execution, expla
     pathnameDiscoverable}
 
 package executives:
-  export exoskeleton.executives.completions
+  export exoskeleton.executives.completionsExecutive

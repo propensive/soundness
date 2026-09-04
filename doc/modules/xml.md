@@ -174,7 +174,7 @@ With dynamic access enabled, a child element is reached as though it were a memb
 chain; an index picks among repeated elements:
 
 ```scala
-import dynamicXmlAccess.enabled
+import dynamicAccess.dynamicXml
 
 val data = t"<a><b><c>42</c></b></a>".read[Xml]
 data.b().c().as[Int]   // 42
@@ -190,7 +190,7 @@ as `Each` to touch every matching element at once. Because XML values are immuta
 returns a new document:
 
 ```scala
-import dynamicXmlAccess.enabled
+import dynamicAccess.dynamicXml
 
 val document = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]
 document.lens(_.x = x"<x>9</x>").show   // the first <x> replaced

@@ -60,4 +60,4 @@ package caseSensitivity:
   export gossamer.caseSensitivity.{caseInsensitive, caseSensitive, smartCase}
 
 package collations:
-  export gossamer.collations.{codepoints, unicode}
+  export gossamer.collations.{codepointCollation, unicodeCollation}

@@ -50,7 +50,7 @@ import vacuous.*
 import zephyrine.*
 
 import errorDiagnostics.stackTracesDiagnostics
-import httpBackends.virtualMachineHttp
+import httpBackends.javaNetHttp
 import queryParameters.arbitraryQueryParameter
 
 object Issuer:
@@ -137,7 +137,7 @@ class Issuer
 
                   . lest(OAuth.Error(OAuth.Error.Reason.Unauthorized))
 
-              import dynamicJsonAccess.enabled
+              import dynamicAccess.dynamicJson
 
               // The field decodings share only the resolution-scoped tactic; no aliased
               // writer.

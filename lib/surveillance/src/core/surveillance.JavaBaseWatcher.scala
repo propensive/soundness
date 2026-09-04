@@ -53,7 +53,7 @@ import vacuous.*
 // .WatchService`). A single service and a single polling thread are shared across every
 // registration; keys are reference-counted so the service is closed only once nothing is being
 // watched.
-object NativeWatcher extends Watcher:
+object JavaBaseWatcher extends Watcher:
   private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
     import probates.awaitProbate
 
@@ -132,8 +132,8 @@ object NativeWatcher extends Watcher:
     Registration(pathWatches)
 
   private class PathWatch
-    ( private[NativeWatcher] val key:    jnf.WatchKey,
-      private[NativeWatcher] val base:   jnf.Path,
+    ( private[JavaBaseWatcher] val key:    jnf.WatchKey,
+      private[JavaBaseWatcher] val base:   jnf.Path,
                              val spool:  Relay[Watch.Event],
                              val filter: Text -> Boolean ):
 

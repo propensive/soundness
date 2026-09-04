@@ -188,7 +188,7 @@ extension [plane: Filesystem](path: Path on plane)
   // Named `filesize` (not `size`): a same-named export beside the collections' `size` at the
   // `soundness` umbrella makes extension resolution commit to the wrong candidate.
   def filesize()(using plane is Explorable, FilesystemBackend on plane): Bytes raises Io.Error =
-    import filesystemOptions.dereferenceSymlinks.disabled
+    import filesystemOptions.preserveSymlinks
     given TraversalOrder = TraversalOrder.PreOrder
 
     descendants.fold(summon[FilesystemBackend on plane].stat(path, false).size.b):
@@ -280,7 +280,7 @@ extension [plane: Filesystem](path: Path on plane)
   :   Path on plane raises Io.Error =
 
     given CreateNonexistentParents on plane =
-      filesystemOptions.createNonexistentParents.enabled[plane]
+      filesystemOptions.createNonexistentParents[plane]
 
     val file2: Path on plane = unsafely(destination.child(path.descent.head))
     copyTo(file2)
@@ -314,7 +314,7 @@ extension [plane: Filesystem](path: Path on plane)
     ( using FilesystemBackend on plane )
   :   Path on plane raises Io.Error =
 
-    import filesystemOptions.createNonexistentParents.enabled
+    import filesystemOptions.createNonexistentParents
     moveTo(unsafely(destination.child(path.descent.head)))
 
 
@@ -344,7 +344,7 @@ extension [plane: Filesystem](path: Path on plane)
     ( using FilesystemBackend on plane )
   :   Path on plane raises Io.Error =
 
-    import filesystemOptions.createNonexistentParents.enabled
+    import filesystemOptions.createNonexistentParents
     symlinkTo(unsafely(destination.child(path.descent.head)))
 
 
@@ -395,95 +395,89 @@ extension [plane <: Posix: Filesystem](path: Path on plane)
     backend.hardLinkCount(path, dereferenceSymlinks.dereference)
 
 package filesystemOptions:
-  object dereferenceSymlinks:
-    given enabled: DereferenceSymlinks:
-      def dereference = true
+  given dereferenceSymlinks: DereferenceSymlinks:
+    def dereference = true
 
-    given disabled: DereferenceSymlinks:
-      def dereference = false
+  given preserveSymlinks: DereferenceSymlinks:
+    def dereference = false
 
-  object moveAtomically:
-    given enabled: MoveAtomically:
-      def atomic = true
+  given moveAtomically: MoveAtomically:
+    def atomic = true
 
-    given disabled: MoveAtomically:
-      def atomic = false
+  given moveNonAtomically: MoveAtomically:
+    def atomic = false
 
-  object copyAttributes:
-    given enabled: CopyAttributes:
-      def attributes = true
+  given copyAttributes: CopyAttributes:
+    def attributes = true
 
-    given disabled: CopyAttributes:
-      def attributes = false
+  given discardAttributes: CopyAttributes:
+    def attributes = false
 
-  object deleteRecursively:
-    given enabled: [plane: Filesystem]
-    =>  ( explorable: plane is Explorable, backend: FilesystemBackend on plane )
-    =>  DeleteRecursively on plane:
+  given deleteRecursively: [plane: Filesystem]
+  =>  ( explorable: plane is Explorable, backend: FilesystemBackend on plane )
+  =>  DeleteRecursively on plane:
 
-      type Plane = plane
+    type Plane = plane
 
-      def recur(path: Path on plane): Unit raises Io.Error =
-        path.children.each(recur(_))
-        backend.delete(path)
+    def recur(path: Path on plane): Unit raises Io.Error =
+      path.children.each(recur(_))
+      backend.delete(path)
 
-      def conditionally[result](path: Path on Plane)(operation: => result)
-      :   (Tactic[Io.Error]^) ?->{operation} result =
-        path.children.each(recur(_)) yet operation
+    def conditionally[result](path: Path on Plane)(operation: => result)
+    :   (Tactic[Io.Error]^) ?->{operation} result =
+      path.children.each(recur(_)) yet operation
 
-    given disabled: [plane: {Filesystem, Explorable}] => DeleteRecursively on plane:
+  given deleteOnlyEmpty: [plane: {Filesystem, Explorable}] => DeleteRecursively on plane:
 
-      type Plane = plane
+    type Plane = plane
 
-      def conditionally[result](path: Path on Plane)(operation: => result)
-      :   (Tactic[Io.Error]^) ?->{operation} result =
-        if !path.children.nil
-        then abort(Io.Error(path, Io.Error.Operation.Delete, Reason.DirectoryNotEmpty))
-        else operation
+    def conditionally[result](path: Path on Plane)(operation: => result)
+    :   (Tactic[Io.Error]^) ?->{operation} result =
+      if !path.children.nil
+      then abort(Io.Error(path, Io.Error.Operation.Delete, Reason.DirectoryNotEmpty))
+      else operation
 
-  object overwritePreexisting:
-    given enabled: [plane: Filesystem]
-    =>  ( deleteRecursively: DeleteRecursively on plane )
-    =>  OverwritePreexisting on plane:
+  given overwritePreexisting: [plane: Filesystem]
+  =>  ( deleteRecursively: DeleteRecursively on plane )
+  =>  OverwritePreexisting on plane:
 
-      type Plane = plane
+    type Plane = plane
 
-      def apply[result](path: Path on Plane)(operation: => result)
-      :   (Tactic[Io.Error]^) ?->{operation} result =
-        deleteRecursively.conditionally(path)(operation)
+    def apply[result](path: Path on Plane)(operation: => result)
+    :   (Tactic[Io.Error]^) ?->{operation} result =
+      deleteRecursively.conditionally(path)(operation)
 
-    // The backend raises `AlreadyExists` itself when the operation collides with an existing
-    // entry, so nothing needs intercepting here.
-    given disabled: [plane: Filesystem] => OverwritePreexisting on plane:
+  // The backend raises `AlreadyExists` itself when the operation collides with an existing
+  // entry, so nothing needs intercepting here.
+  given failOnPreexisting: [plane: Filesystem] => OverwritePreexisting on plane:
 
-      type Plane = plane
+    type Plane = plane
 
-      def apply[result](path: Path on Plane)(operation: => result)
-      :   (Tactic[Io.Error]^) ?->{operation} result =
-        operation
+    def apply[result](path: Path on Plane)(operation: => result)
+    :   (Tactic[Io.Error]^) ?->{operation} result =
+      operation
 
-  object createNonexistentParents:
-    given enabled: [plane: Filesystem]
-    =>  ( backend: FilesystemBackend on plane )
-    =>  CreateNonexistentParents on plane:
+  given createNonexistentParents: [plane: Filesystem]
+  =>  ( backend: FilesystemBackend on plane )
+  =>  CreateNonexistentParents on plane:
 
-      def apply[result](path: Path on plane)(operation: => result)
-      :   (Tactic[Io.Error]^) ?->{operation} result =
-        def ensure(directory: Path on plane): Unit =
-          if !backend.exists(directory, true) then
-            safely(directory.parent).let(ensure(_))
-            backend.createDirectory(directory)
+    def apply[result](path: Path on plane)(operation: => result)
+    :   (Tactic[Io.Error]^) ?->{operation} result =
+      def ensure(directory: Path on plane): Unit =
+        if !backend.exists(directory, true) then
+          safely(directory.parent).let(ensure(_))
+          backend.createDirectory(directory)
 
-        safely(path.parent).let(ensure(_))
-        operation
+      safely(path.parent).let(ensure(_))
+      operation
 
-    given disabled: [plane: Filesystem] => CreateNonexistentParents on plane:
+  given requireParents: [plane: Filesystem] => CreateNonexistentParents on plane:
 
-      type Plane = plane
+    type Plane = plane
 
-      def apply[result](path: Path on plane)(block: => result)
-      :   (Tactic[Io.Error]^) ?->{block} result =
-        block
+    def apply[result](path: Path on plane)(block: => result)
+    :   (Tactic[Io.Error]^) ?->{block} result =
+      block
 
 
 // Extended attributes, gated by the storage-filesystem axis (issue #567): available only on a

@@ -49,14 +49,11 @@ package logFormats:
     case Level.Warn => t"WARN"
     case Level.Fail => t"FAIL"
 
-  given standardLogFormat: [event: Communicable] => event is Inscribable in Text =
+  given timestampedLogFormat: [event: Communicable] => event is Inscribable in Text =
     (event, level, timestamp) =>
       t"${dateFormat.format(timestamp).nn} [$level] ${event.communicate}\n"
 
   given untimestampedLogFormat: [event: Communicable] => event is Inscribable in Text =
-    (event, level, timestamp) => t"[$level] ${event.communicate}\n"
-
-  given lightweightLogFormat: [event: Communicable] => event is Inscribable in Text =
     (event, level, timestamp) => t"[$level] ${event.communicate}\n"
 
 val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)

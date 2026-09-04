@@ -36,13 +36,13 @@ import soundness.*
 
 import backstops.stackTraceBackstop
 import errorDiagnostics.stackTracesDiagnostics
-import executives.completions
+import executives.completionsExecutive
 import interpreters.posixInterpreter
 import logging.silentLogging
 import probates.awaitProbate
 import strategies.throwUnsafely
 import threading.virtualThreading
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
 // An example proxy: it launches the language server named by its own arguments, forwards
 // everything an editor sends it, and amends two of the answers on the way back — every hover is

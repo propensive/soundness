@@ -21,7 +21,7 @@ Everything comes from the `soundness` package:
 
 ```scala
 import soundness.*
-import treeStyles.defaultTreeStyle
+import treeStyles.squareTreeStyle
 ```
 
 ### Trees
@@ -51,7 +51,7 @@ grid of connecting tiles; `LaneDagDiagram` is the lane form — nodes as bullets
 edges flowing between them — the shape version-control history is drawn in:
 
 ```scala
-import laneDagStyles.defaultLaneDagStyle
+import laneDagStyles.boxDrawingLaneDagStyle
 import strategies.throwUnsafely
 
 val history = Dag(t"C" -> Set(t"B"), t"B" -> Set(t"A"), t"A" -> Set())

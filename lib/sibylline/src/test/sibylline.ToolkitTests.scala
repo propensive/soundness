@@ -34,7 +34,7 @@ package sibylline
 
 import soundness.*
 
-import dynamicJsonAccess.enabled
+import dynamicAccess.dynamicJson
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 

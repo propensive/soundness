@@ -50,13 +50,13 @@ import turbulence.*
 import vacuous.*
 import zeppelin.*
 
-import filesystemBackends.virtualMachineFilesystem
-import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemBackends.javaBaseFilesystem
+import filesystemOptions.dereferenceSymlinks
 import filesystemTraversal.preOrderTraversal
 import logging.silentLogging
 import manifestAttributes.*
-import systems.javaSystem
-import workingDirectories.javaWorkingDirectory
+import systems.javaBaseSystem
+import workingDirectories.javaBaseWorkingDirectory
 
 object Bundler:
   // The classpath of the running application, as introspected from the thread-context

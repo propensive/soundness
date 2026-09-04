@@ -48,7 +48,7 @@ case class Person(name: Text, address: Address)
 
 object Tests extends Suite(m"Telekinesis tests"):
   def run(): Unit =
-    import httpBackends.virtualMachineHttp
+    import httpBackends.javaNetHttp
     import internetAccess.online
 
     suite(m"Response construction tests"):
@@ -599,9 +599,9 @@ object Tests extends Suite(m"Telekinesis tests"):
       server.start()
       val port: Int = server.getAddress.nn.getPort
 
-      import socketBackends.virtualMachineSockets
+      import socketBackends.javaBaseSockets
 
-      val backend: Http.Backend = httpBackends.nativeHttp
+      val backend: Http.Backend = httpBackends.soundnessHttp
 
       def fetchNative(target: Text, method: Http.Method = Http.Get, body: Text = t"")
       :   Http.Response =
@@ -712,9 +712,9 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       given Tls = Tls(clientContext, verify = false)
 
-      import socketBackends.virtualMachineSockets
+      import socketBackends.javaBaseSockets
 
-      val backend: Http.Backend = httpBackends.nativeHttp
+      val backend: Http.Backend = httpBackends.soundnessHttp
 
       test(m"An ALPN-less server falls back to HTTP/1.1 over TLS"):
         val server = csnh.HttpsServer.create(InetSocketAddress("127.0.0.1", 0), 0).nn
@@ -941,13 +941,13 @@ object Tests extends Suite(m"Telekinesis tests"):
       . assert(identity)
 
       test(m"relaxed acceptance disables endpoint identification"):
-        import crypto.permitUntrustedCertificates
+        import cryptoPermits.permitUntrustedCertificates
         val (_, parameters) = TlsAcceptance().permitHostnameMismatch.materialize()
         parameters.getEndpointIdentificationAlgorithm == null
       . assert(identity)
 
       test(m"an expired-tolerant acceptance materializes a custom context"):
-        import crypto.permitUntrustedCertificates
+        import cryptoPermits.permitUntrustedCertificates
         val (context, _) = TlsAcceptance().permitExpired.materialize()
         context != javax.net.ssl.SSLContext.getDefault
       . assert(identity)
@@ -965,12 +965,12 @@ object Tests extends Suite(m"Telekinesis tests"):
       . assert(_ == (true, List(t"h2"), List(t"TLSv1.3"), true))
 
       test(m"a relaxed acceptance bridges with verification off"):
-        import crypto.permitUntrustedCertificates
+        import cryptoPermits.permitUntrustedCertificates
         TlsAcceptance().permitHostnameMismatch.tls().verify
       . assert(_ == false)
 
     suite(m"Certificate validation with relaxed acceptance"):
-      import crypto.permitUntrustedCertificates, crypto.permitUncheckedRevocation
+      import cryptoPermits.permitUntrustedCertificates, cryptoPermits.permitUncheckedRevocation
 
       test(m"expired certificate accepted under permitExpired"):
         given TlsAcceptance = TlsAcceptance().permitExpired

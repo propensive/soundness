@@ -24,7 +24,7 @@ package, with a courier and a sender in scope:
 
 ```scala
 import soundness.*
-import couriers.resend
+import couriers.resendCourier
 
 given Sender = Sender(email"noreply@example.com")
 given Resend.ApiKey = Resend.ApiKey(apiKeyText)

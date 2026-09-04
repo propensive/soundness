@@ -34,4 +34,4 @@ package soundness
 
 
 package writables:
-  export escapade.writables.{err, out}
+  export escapade.writables.{errTeletypeWritable, outTeletypeWritable}

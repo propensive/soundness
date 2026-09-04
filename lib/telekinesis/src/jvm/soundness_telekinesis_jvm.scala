@@ -36,4 +36,4 @@ export telekinesis.{requestTransmissible, domainSocketFetchable, domainSocketHtt
     httpUrlSessional}
 
 package httpBackends:
-  export telekinesis.httpBackends.{nativeHttp, virtualMachineHttp}
+  export telekinesis.httpBackends.{soundnessHttp, javaNetHttp}

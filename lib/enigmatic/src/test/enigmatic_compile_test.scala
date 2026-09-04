@@ -35,10 +35,10 @@ package enigmatic
 import soundness.*
 
 import charEncoders.utf8Encoder
-import blockCipherMode.cbc, blockCipherPadding.pkcs7
-import providers.javaStdlibProvider
-import crypto.permitUnauthenticatedCrypto   // AES-CBC is unauthenticated
-import cloaks.cloakHeap
+import blockCipherModes.cbc, blockCipherPaddings.pkcs7
+import providers.javaBaseProvider
+import cryptoPermits.permitUnauthenticatedCrypto   // AES-CBC is unauthenticated
+import cloaks.heapCloak
 
 // Compile-time regressions for the cipher API. (Capture-checking confinement of
 // the lent `Encryptor`/`Decryptor` capability is enforced and regression-tested
@@ -64,9 +64,9 @@ object CompileChecks:
   //
   //   val noTactic = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
 
-  // Permission regression: only `crypto.permitUnauthenticatedCrypto` is imported
+  // Permission regression: only `cryptoPermits.permitUnauthenticatedCrypto` is imported
   // here, so AES (above) compiles, but reaching a "disallowed" algorithm without
-  // `crypto.permitDisallowedCrypto` does not — encrypting with DES fails with the
+  // `cryptoPermits.permitDisallowedCrypto` does not — encrypting with DES fails with the
   // `Permit` "no given instance" diagnostic (verified manually — uncomment). Note
   // that key generation is *not* gated; only the encryption operation is.
   //

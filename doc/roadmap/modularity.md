@@ -458,7 +458,7 @@ Horizon: mid — after mod-4, so nothing moves twice.
   ports), pneumatic's `Crc64` in the XZ layer, hallucination's one-shot `Crc32`, and zeppelin's
   `crc32` — but **two of them should not be deduplicated at all**: zeppelin's delegates to
   `java.util.zip.CRC32`, and gastronomy's `Digestion` CRC-32 likewise goes through
-  `JavaStdlibHashing`. Both are JVM intrinsics; replacing them with a table-driven Scala loop
+  `JavaBaseHashing`. Both are JVM intrinsics; replacing them with a table-driven Scala loop
   would be a performance regression for no benefit. The same is true of pneumatic on the JVM,
   whose `FlateBackend` uses `JavaCrc32`; its pure `Crc32` is the JS/native path only.
 
@@ -723,7 +723,7 @@ stack from the compiler stack entirely.
 
 - **obligatory.json** drops scintillate.server, hyperbole.core and revolution.core — all
   three dead. obligatory.json is a JSON-RPC peer plus SSE codec: it never serves HTTP
-  (its `Servable` is telekinesis's, reached via jacinta.http; `httpBackends.virtualMachineHttp`
+  (its `Servable` is telekinesis's, reached via jacinta.http; `httpBackends.javaNetHttp`
   comes from telekinesis.jvm via jacinta.schema), never introspects TASTy, and never touches
   a manifest. The hyperbole edge is what put the whole harlequin/anthology stack under
   exegesis; deleting it collapses the measured deepest path. (eucalyptus.core is genuinely

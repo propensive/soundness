@@ -30,13 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package soundness
 
-import anticipation.*
-import prepositional.*
-
-// Importing `jsonConversion.encodable` brings a scoped `Conversion` into lexical scope that lets
-// any `Encodable in Json` value be supplied directly at `into[Json]` positions — in particular,
-// panopticon lens assignments such as `json.lens(_.name = "x")` — without an explicit `.json`.
-object jsonConversion:
-  given encodable: [entity: Encodable in Json] => Conversion[entity, Json] = _.encode
+package socketBackends:
+  export coaxial.socketBackends.scalaNativeSockets

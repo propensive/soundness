@@ -56,7 +56,7 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-import httpBackends.virtualMachineHttp
+import httpBackends.javaNetHttp
 
 object JsonRpc:
   // Requests in flight, by correlation id. Concurrent and self-evicting: the requesting thread
@@ -139,7 +139,7 @@ object JsonRpc:
   // Routes a response back to the caller awaiting it. A conformant peer answers with exactly one
   // of `result` and `error`, and the distinction matters: the second is a fault, not a value.
   def answer(json: Json): Unit =
-    import dynamicJsonAccess.enabled
+    import dynamicAccess.dynamicJson
     import strategies.throwUnsafely
 
     // `try`/`catch` rather than `safely`: a decodable cannot thread the boundary tactic under

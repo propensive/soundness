@@ -38,9 +38,9 @@ import strategies.throwUnsafely
 import charDecoders.utf8Decoder, charEncoders.utf8Encoder, textSanitizers.skipSanitizer
 import gossamer.textDecodable
 import errorDiagnostics.stackTracesDiagnostics
-import providers.javaStdlibProvider
-import crypto.permitDisallowedCrypto   // the suite deliberately exercises weak crypto
-import cloaks.cloakHeap
+import providers.javaBaseProvider
+import cryptoPermits.permitDisallowedCrypto   // the suite deliberately exercises weak crypto
+import cloaks.heapCloak
 import dysasymptotics.linearSize
 
 import alphabets.hexUpperCase
@@ -177,7 +177,7 @@ object Tests extends Suite(m"Enigmatic tests"):
     . assert(_ == t"Hello world")
 
     test(m"AES roundtrip"):
-      import blockCipherMode.cbc, blockCipherPadding.pkcs7
+      import blockCipherModes.cbc, blockCipherPaddings.pkcs7
       val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
@@ -202,21 +202,21 @@ object Tests extends Suite(m"Enigmatic tests"):
     . assert(_ == t"Hello world")
 
     test(m"AES/CBC with padding inferred as PKCS7 from import"):
-      import blockCipherPadding.pkcs7
+      import blockCipherPaddings.pkcs7
       val key = SymmetricKey.generate[Aes[256] over Cbc]()
       key.uncloak:
         t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
     . assert(_ == t"Hello world")
 
     test(m"AES with mode and padding inferred as CBC/PKCS7 from imports"):
-      import blockCipherMode.cbc, blockCipherPadding.pkcs7
+      import blockCipherModes.cbc, blockCipherPaddings.pkcs7
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
     . assert(_ == t"Hello world")
 
     test(m"stream-encrypted data decrypts through the whole-value path"):
-      import blockCipherMode.cbc, blockCipherPadding.pkcs7
+      import blockCipherModes.cbc, blockCipherPaddings.pkcs7
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
@@ -225,7 +225,7 @@ object Tests extends Suite(m"Enigmatic tests"):
     . assert(_ == t"Hello world")
 
     test(m"whole-value-encrypted data decrypts through a stream"):
-      import blockCipherMode.cbc, blockCipherPadding.pkcs7
+      import blockCipherModes.cbc, blockCipherPaddings.pkcs7
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
@@ -233,7 +233,7 @@ object Tests extends Suite(m"Enigmatic tests"):
     . assert(_ == t"Hello world".in[Data].to[List])
 
     test(m"one-byte-chunk streams roundtrip through stream encrypt and decrypt"):
-      import blockCipherMode.cbc, blockCipherPadding.pkcs7
+      import blockCipherModes.cbc, blockCipherPaddings.pkcs7
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
@@ -251,7 +251,7 @@ object Tests extends Suite(m"Enigmatic tests"):
     . assert(_ == t"Hello world".in[Data].to[List])
 
     test(m"legacy Chain encryption survives one-byte chunks"):
-      import blockCipherMode.cbc, blockCipherPadding.pkcs7
+      import blockCipherModes.cbc, blockCipherPaddings.pkcs7
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
@@ -296,12 +296,12 @@ object Tests extends Suite(m"Enigmatic tests"):
       // the provider seam (and its random source) is injectable.
       given Crypto:
         def random: Crypto.Random = size => Array.fill[Byte](size)(0.toByte)
-        def aes: Crypto.SymmetricCipher = JavaStdlibCrypto.aes
-        def rsa: Crypto.PublicKeyCipher = JavaStdlibCrypto.rsa
-        def hmac(algorithm: Text): Crypto.Mac = JavaStdlibCrypto.hmac(algorithm)
+        def aes: Crypto.SymmetricCipher = JavaBaseCrypto.aes
+        def rsa: Crypto.PublicKeyCipher = JavaBaseCrypto.rsa
+        def hmac(algorithm: Text): Crypto.Mac = JavaBaseCrypto.hmac(algorithm)
 
         def rsaSignature(digest: Text): Crypto.SignatureScheme =
-          JavaStdlibCrypto.rsaSignature(digest)
+          JavaBaseCrypto.rsaSignature(digest)
 
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
@@ -485,7 +485,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       . assert(!_)
 
     suite(m"OpenSSL provider (libcrypto via xenophile FFM)"):
-      // A local `given Crypto` outranks the file-level `javaStdlibCrypto` import,
+      // A local `given Crypto` outranks the file-level `javaBaseCrypto` import,
       // so each block unambiguously selects its provider; cross-validating the two
       // proves the OpenSSL path agrees with the JDK on the wire.
       val key32: Data = t"a-32-byte-key-for-aes-256-cbc!!!".in[Data]
@@ -582,7 +582,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       . assert(_ == Unset)
 
       test(m"A keystore opens with a password held by the veiled-heap cloak"):
-        import soundness.cloaks.cloakVeiledHeap
+        import soundness.cloaks.veiledHeapCloak
         guarded.open[Keystore](Password(t"sesame")):
           keystore.aliases
       . assert(_ == Nil)
@@ -598,37 +598,37 @@ object Tests extends Suite(m"Enigmatic tests"):
       // Each strategy is imported through the `soundness` bundle, exercising the re-export
       // of the (inline, capability-yielding) givens as well as the strategies themselves.
       test(m"AES round-trips through the heap cloak"):
-        import soundness.cloaks.cloakHeap
+        import soundness.cloaks.heapCloak
         roundtrip()
       . assert(_ == t"Hello world")
 
       test(m"AES round-trips through the off-heap cloak"):
-        import soundness.cloaks.cloakOffHeap
+        import soundness.cloaks.offHeapCloak
         roundtrip()
       . assert(_ == t"Hello world")
 
       test(m"AES round-trips through the veiled-heap cloak"):
-        import soundness.cloaks.cloakVeiledHeap
+        import soundness.cloaks.veiledHeapCloak
         roundtrip()
       . assert(_ == t"Hello world")
 
       test(m"AES round-trips through the veiled-off-heap cloak"):
-        import soundness.cloaks.cloakVeiledOffHeap
+        import soundness.cloaks.veiledOffHeapCloak
         roundtrip()
       . assert(_ == t"Hello world")
 
       test(m"a password round-trips through the off-heap cloak"):
-        import soundness.cloaks.cloakOffHeap
+        import soundness.cloaks.offHeapCloak
         passwordTrip()
       . assert(_ == t"hunter2")
 
       test(m"a password round-trips through the veiled-heap cloak"):
-        import soundness.cloaks.cloakVeiledHeap
+        import soundness.cloaks.veiledHeapCloak
         passwordTrip()
       . assert(_ == t"hunter2")
 
       test(m"a password round-trips through the veiled-off-heap cloak"):
-        import soundness.cloaks.cloakVeiledOffHeap
+        import soundness.cloaks.veiledOffHeapCloak
         passwordTrip()
       . assert(_ == t"hunter2")
 
@@ -639,14 +639,14 @@ object Tests extends Suite(m"Enigmatic tests"):
       . assert(_ == (true, t"hunter2"))
 
       test(m"DSA signing works through an off-heap cloak"):
-        import soundness.cloaks.cloakOffHeap
+        import soundness.cloaks.offHeapCloak
         val key = PrivateKey.generate[Dsa[1024]]()
         val signature = key.sign(t"attested")
         key.public.verify(t"attested", signature)
       . assert(_ == true)
 
       test(m"a symmetric key's material survives multiple uncloaks intact"):
-        import soundness.cloaks.cloakVeiledOffHeap
+        import soundness.cloaks.veiledOffHeapCloak
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         val first = key.data(Divulgence)
         val second = key.data(Divulgence)
@@ -797,7 +797,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       import java.io as ji
       import java.security as js, js.cert as jsc
 
-      import chronometries.unix
+      import chronometries.unixChronometry
 
       val subject = Distinguished
                      ( commonName = t"asn1.example.com",

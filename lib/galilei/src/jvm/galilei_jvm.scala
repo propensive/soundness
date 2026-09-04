@@ -51,7 +51,7 @@ import vacuous.*
 import Io.Error.{Operation, Reason}
 
 package filesystemBackends:
-  given virtualMachineFilesystem: [plane: Filesystem] => FilesystemBackend on plane =
+  given javaBaseFilesystem: [plane: Filesystem] => FilesystemBackend on plane =
     new FilesystemBackend:
       type Plane = plane
 

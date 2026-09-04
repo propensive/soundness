@@ -42,8 +42,8 @@ import rudiments.*
 import spectacular.*
 import turbulence.*
 
-import environments.javaEnvironment
-import stdios.virtualMachineStdio
+import environments.javaBaseEnvironment
+import stdios.fileDescriptorStdio
 import termcaps.environmentTermcap
 
 given decimalizer: Decimalizer = Decimalizer(3)
@@ -119,7 +119,7 @@ def run(): Unit =
     Out.println(pinkFloyd.table)
 
   // for style <- List
-  //               (tableStyles.defaultTableStyle,
+  //               (tableStyles.thickTableStyle,
   //                tableStyles.thinRoundedTableStyle,
   //                tableStyles.horizontalTableStyle,
   //                tableStyles.midOnlyTableStyle,

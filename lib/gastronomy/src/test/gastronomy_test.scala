@@ -34,8 +34,8 @@ package gastronomy
 
 import soundness.*
 
-import providers.javaStdlibProvider, providers.soundnessProvider
-import crypto.permitDisallowedCrypto   // the suite exercises MD5 and SHA-1
+import providers.javaBaseProvider, providers.soundnessProvider
+import cryptoPermits.permitDisallowedCrypto   // the suite exercises MD5 and SHA-1
 
 import alphabets.hexUpperCase
 
@@ -246,20 +246,20 @@ object Tests extends Suite(m"Gastronomy tests"):
       . assert(_ == whole(SoundnessHashing.adler32.digestion()))
 
       test(m"windowed JDK Adler-32 matches whole-value append"):
-        windowed(JavaStdlibHashing.adler32.digestion())
-      . assert(_ == whole(JavaStdlibHashing.adler32.digestion()))
+        windowed(JavaBaseHashing.adler32.digestion())
+      . assert(_ == whole(JavaBaseHashing.adler32.digestion()))
 
       test(m"windowed BLAKE3 matches whole-value append"):
         windowed(Blake3.digestion())
       . assert(_ == whole(Blake3.digestion()))
 
       test(m"windowed JDK SHA-256 matches whole-value append"):
-        windowed(JavaStdlibHashing.sha2(256).digestion())
-      . assert(_ == whole(JavaStdlibHashing.sha2(256).digestion()))
+        windowed(JavaBaseHashing.sha2(256).digestion())
+      . assert(_ == whole(JavaBaseHashing.sha2(256).digestion()))
 
       test(m"windowed JDK CRC-32 matches whole-value append"):
-        windowed(JavaStdlibHashing.crc32.digestion())
-      . assert(_ == whole(JavaStdlibHashing.crc32.digestion()))
+        windowed(JavaBaseHashing.crc32.digestion())
+      . assert(_ == whole(JavaBaseHashing.crc32.digestion()))
 
       val chunked: Chain[Data] = payload.readable.grouped(7777).map(Array.frozen(_)).to(Chain)
 
@@ -276,17 +276,17 @@ object Tests extends Suite(m"Gastronomy tests"):
     // the same single import. `123456789` has the published CRC-32 check value 0xcbf43926.
     // Each digest additionally concedes that a checksum is not a hash.
     suite(m"Checksums through the digest API"):
-      import crypto.permitNonCryptographicHashes
+      import cryptoPermits.permitNonCryptographicHashes
 
       test(m"CRC-32 of the standard check vector, via the JDK provider"):
-        import providers.javaStdlibProvider
+        import providers.javaBaseProvider
         t"123456789".digest[Crc32].serialize[Hex].lower
       . assert(_ == t"cbf43926")
 
       test(m"CRC-32 agrees between the JDK and Soundness providers"):
         val jdk =
           locally:
-            import providers.javaStdlibProvider
+            import providers.javaBaseProvider
             t"123456789".digest[Crc32].serialize[Hex]
 
         val pure =
@@ -300,7 +300,7 @@ object Tests extends Suite(m"Gastronomy tests"):
       test(m"Adler-32 agrees between the JDK and Soundness providers"):
         val jdk =
           locally:
-            import providers.javaStdlibProvider
+            import providers.javaBaseProvider
             t"123456789".digest[Adler32].serialize[Hex]
 
         val pure =
@@ -321,14 +321,14 @@ object Tests extends Suite(m"Gastronomy tests"):
     suite(m"The non-cryptographic concession"):
       test(m"digesting with a checksum needs the permit"):
         demilitarize:
-          import providers.javaStdlibProvider
+          import providers.javaBaseProvider
           t"123456789".digest[Crc32]
         . map(_.message)
       . assert(_.nonEmpty)
 
       test(m"digesting with SHA-2 needs no permit"):
         demilitarize:
-          import providers.javaStdlibProvider
+          import providers.javaBaseProvider
           t"123456789".digest[Sha2[256]]
       . assert(_ == Nil)
 
@@ -336,7 +336,7 @@ object Tests extends Suite(m"Gastronomy tests"):
     // vectors (multiformats/multihash `tests/values/test_cases.csv`): the input bytes are hashed,
     // enveloped, and the result compared to the multihash the vector gives.
     suite(m"Multihash"):
-      import providers.javaStdlibProvider
+      import providers.javaBaseProvider
       import strategies.throwUnsafely
       import errorDiagnostics.stackTracesDiagnostics
 

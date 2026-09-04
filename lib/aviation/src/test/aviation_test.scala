@@ -39,7 +39,7 @@ import soundness.sortingAlgorithms.timsort
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import abstractables.epochMillisecondsAbstractable
-import chronometries.unix
+import chronometries.unixChronometry
 import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Aviation Tests"):
@@ -2251,7 +2251,7 @@ object Tests extends Suite(m"Aviation Tests"):
       given Locale[fr] = Locale(fr)
       import monthFormats.frenchMonths
       import weekdays.frenchWeekdays
-      import timespanFormats.frenchRelative
+      import timespanFormats.frenchRelativeTimespan
 
       test(m"The 3rd Monday of each month, in French"):
         Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
@@ -2275,7 +2275,7 @@ object Tests extends Suite(m"Aviation Tests"):
       given Locale[de] = Locale(de)
       import monthFormats.germanMonths
       import weekdays.germanWeekdays
-      import timespanFormats.germanRelative
+      import timespanFormats.germanRelativeTimespan
 
       test(m"The 3rd Monday of each month, in German"):
         Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
@@ -2294,7 +2294,7 @@ object Tests extends Suite(m"Aviation Tests"):
       given Locale[es] = Locale(es)
       import monthFormats.spanishMonths
       import weekdays.spanishWeekdays
-      import timespanFormats.spanishRelative
+      import timespanFormats.spanishRelativeTimespan
 
       test(m"The 3rd Monday of each month, in Spanish"):
         Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
@@ -2345,13 +2345,13 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == Moment(2017-Jan-1, Clockface(1, 0, 0), tz"UTC").instant)
 
       test(m"Exact addition counts a crossed leap second"):
-        import leapModes.exact
+        import leapModes.exactLeapMode
         val start = Moment(2016-Dec-31, Clockface(23, 0, 0), tz"UTC")
         (start + 2*Hour).instant
       . assert(_ == Moment(2017-Jan-1, Clockface(0, 59, 59), tz"UTC").instant)
 
       test(m"Exact and lenient agree when no leap second is crossed"):
-        import leapModes.exact
+        import leapModes.exactLeapMode
         val start = Moment(2024-Jun-1, Clockface(12, 0, 0), tz"UTC")
         (start + 2*Hour).instant
       . assert(_ == Moment(2024-Jun-1, Clockface(14, 0, 0), tz"UTC").instant)
@@ -2409,7 +2409,7 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"Timestamp.instant honours a non-default GapPolicy"):
         import instantDecodables.iso8601InstantDecodable
-        import gapPolicies.pushBackward
+        import gapPolicies.pushBackwardGapPolicy
         given Timezone = tz"Europe/London"
         val grounded = Timestamp(2024-Mar-31, Clockface(1, 30, 0)).instant
         grounded == t"2024-03-31T00:30:00Z".as[Instant over Unix]
@@ -2456,13 +2456,13 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"Spring-forward gap can push backward"):
         import instantDecodables.iso8601InstantDecodable
-        import gapPolicies.pushBackward
+        import gapPolicies.pushBackwardGapPolicy
         val grounded = Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant
         grounded == t"2024-03-31T00:30:00Z".as[Instant over Unix]
       . assert(_ == true)
 
       test(m"Spring-forward gap can be rejected"):
-        import gapPolicies.rejectGap
+        import gapPolicies.rejectGapPolicy
         capture(Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant)
       . assert(_ == Moment.Error(_.Gap))
 
@@ -2689,7 +2689,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_.nonEmpty)
 
     suite(m"Relative timespan formatting"):
-      import timespanFormats.englishRelative
+      import timespanFormats.englishRelativeTimespan
       given Locale[en] = Locale(en)
 
       test(m"A future single component reads as \"in …\""):

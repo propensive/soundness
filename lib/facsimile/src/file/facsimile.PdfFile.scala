@@ -50,15 +50,15 @@ import turbulence.*
 import vacuous.*
 
 import fulminate.errorDiagnostics.stackTracesDiagnostics
-import filesystemBackends.virtualMachineFilesystem
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.moveAtomically.enabled
-import filesystemOptions.overwritePreexisting.enabled
+import filesystemBackends.javaBaseFilesystem
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.moveAtomically
+import filesystemOptions.overwritePreexisting
 import logging.silentLogging
-import systems.javaSystem
-import workingDirectories.javaWorkingDirectory
+import systems.javaBaseSystem
+import workingDirectories.javaBaseWorkingDirectory
 
 object PdfFile:
   def apply[path: Abstractable across Paths to Text](path: path): PdfFile =

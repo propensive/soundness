@@ -45,7 +45,7 @@ import vacuous.*
 import wisteria.*
 import zephyrine.*
 
-import httpBackends.virtualMachineHttp
+import httpBackends.javaNetHttp
 import Json.Error.Reason
 
 package jsonPointerRegistries:
@@ -74,7 +74,7 @@ extension (json: Json)
   // current position within the schema (initially the root, `topic`) and `Origin`
   // records the root schema itself, so that the `Dynamic` navigation macros can
   // resolve fields and array indices against `topic` at compile time — with no
-  // `dynamicJsonAccess.enabled` import required.
+  // `dynamicAccess.dynamicJson` import required.
   //
   // The conformance check walks `schematic.schema(): JsonSchema` against the
   // value, raising `Json.Error` on the first structural mismatch (wrong type, or a

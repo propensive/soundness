@@ -95,7 +95,7 @@ object Regex:
         val compiled = motif(regex)
 
         // Restarting from `end + 1` (not `end`) after a non-overlapping match reproduces the
-        // `Jur` engine's behaviour exactly, including its skipping of immediately-adjacent
+        // `JavaBaseRegex` engine's behaviour exactly, including its skipping of immediately-adjacent
         // matches. Positions advance over the raw slot bounds, since an empty match's
         // `Interval` does not record where it occurred.
         def recur(from: Int): Chain[Interval] =
@@ -125,7 +125,7 @@ object Regex:
             case _ =>
               ()
 
-          // The praxinoscope analogue of the `Jur` engine's sub-scan: a repeating group's span
+          // The praxinoscope analogue of the `JavaBaseRegex` engine's sub-scan: a repeating group's span
           // covers all its iterations, so the group's body is matched repeatedly over the span
           // to recover each iteration.
           def rescan(body: Text, region: Text): List[Text] =
@@ -178,8 +178,8 @@ object Regex:
         . or(None)
 
   // A matching backend, selected by the `Form` refinement of the `Regex` it operates on:
-  // `Regex in Jur` dispatches to `java.util.regex` and `Regex in Re2` to praxinoscope. The
-  // `Jur` instance lives in `Jur`'s companion; `Re2`'s companion is below this library, so its
+  // `Regex in JavaBaseRegex` dispatches to `java.util.regex` and `Regex in Re2` to praxinoscope. The
+  // `JavaBaseRegex` instance lives in `JavaBaseRegex`'s companion; `Re2`'s companion is below this library, so its
   // instance lives in this trait's companion instead (issue #1632).
   trait Engine:
     type Self
@@ -261,9 +261,9 @@ object Regex:
     given tactic: (ThrowTactic[Hazard, Any]^) = strategies.throwUnsafely
     parse(parts.map(_.tt))
 
-  def apply(text: Text): Regex in Jur raises Regex.Error = parse(List(text))
+  def apply(text: Text): Regex in JavaBaseRegex raises Regex.Error = parse(List(text))
 
-  def parse(parts: List[Text]): Regex in Jur raises Regex.Error =
+  def parse(parts: List[Text]): Regex in JavaBaseRegex raises Regex.Error =
     def validStart(part: Text): Boolean =
       val str = part.s
       str.startsWith("(") || str.startsWith("[") || str.startsWith(".") ||
@@ -441,7 +441,7 @@ object Regex:
 
     check(mainGroup.groups, true)
 
-    Regex(text, mainGroup.groups).to[Jur]
+    Regex(text, mainGroup.groups).to[JavaBaseRegex]
 
 
   def makePattern

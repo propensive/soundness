@@ -35,4 +35,4 @@ package soundness
 export turbulence.{Err, In, Out, Stdio}
 
 package stdios:
-  export turbulence.stdios.{muteStdio, systemStdio, virtualMachineStdio}
+  export turbulence.stdios.{muteStdio, javaLangSystemStdio, fileDescriptorStdio}

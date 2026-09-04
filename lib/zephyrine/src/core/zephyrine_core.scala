@@ -66,7 +66,7 @@ extension [value](value: value)(using positionable: value is Positionable)
     positionable.locateKey(value, path)
 
 package lineation:
-  inline given linefeedChars: Lineation:
+  inline given linefeedChar: Lineation:
     type Operand = Char
 
     inline def active: Boolean = true

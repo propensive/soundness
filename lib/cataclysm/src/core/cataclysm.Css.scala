@@ -71,7 +71,7 @@ object Css:
 
   // Controls how a `Css` tree is serialized. `newlines` puts each rule and declaration on its own
   // indented line; `spaces` adds the cosmetic spaces (after `:` and before `{`). Bundled as
-  // `formatting.standardCssFormatting` and `formatting.compactCssFormatting`.
+  // `formatting.indentedCssFormatting` and `formatting.compactCssFormatting`.
   object Formatting:
     def apply(newlines: Boolean, spaces: Boolean): Formatting = Basic(newlines, spaces)
     private case class Basic(newlines: Boolean, spaces: Boolean) extends Formatting

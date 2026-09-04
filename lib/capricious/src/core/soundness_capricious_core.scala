@@ -44,7 +44,10 @@ package randomization:
   package sizes:
     export
       capricious.randomization.sizes
-      . { uniformUpto10, uniformUpto100, uniformUpto1000, uniformUpto10000, uniformUpto100000 }
+      . { uniformSizeUpto10, uniformSizeUpto100, uniformSizeUpto1000, uniformSizeUpto10000, uniformSizeUpto100000 }
+
+  package text:
+    export capricious.randomization.text.naughtyStringsText
 
 package randomDistributions:
   export

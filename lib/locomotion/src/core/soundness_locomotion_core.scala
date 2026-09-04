@@ -32,5 +32,8 @@
                                                                                                   */
 package soundness
 
-export locomotion.{Protobuf, Protobuf2, protobufConversion, Packable, WireType,
+export locomotion.{Protobuf, Protobuf2, Packable, WireType,
     field}
+
+package conversions:
+  export locomotion.conversions.encodableToProtobuf

@@ -43,7 +43,7 @@ import zephyrine.*
 // Teletype values are records, so their streams travel on the boxed medium
 // (windows of `Array[Teletype]^{}`); each record prints as it arrives.
 package writables:
-  given out: Stdio => Out.type is Writable by (Array[Teletype]^{}) = new Writable:
+  given outTeletypeWritable: Stdio => Out.type is Writable by (Array[Teletype]^{}) = new Writable:
     type Self = Out.type
     type Operand = Array[Teletype]^{}
 
@@ -51,7 +51,7 @@ package writables:
       stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
       . records.each(Out.print(_))
 
-  given err: Stdio => Err.type is Writable by (Array[Teletype]^{}) = new Writable:
+  given errTeletypeWritable: Stdio => Err.type is Writable by (Array[Teletype]^{}) = new Writable:
     type Self = Err.type
     type Operand = Array[Teletype]^{}
 

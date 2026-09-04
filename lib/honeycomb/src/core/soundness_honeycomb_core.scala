@@ -44,10 +44,13 @@ package doms.html:
   export honeycomb.doms.html.html4Transitional
 
 package formatting:
-  export honeycomb.formatting.{indentedHtmlFormatting, flatHtmlFormatting}
+  export honeycomb.formatting.{indentedHtmlFormatting, compactHtmlFormatting}
 
 package attributives:
   export honeycomb.attributives.textAttributive
 
 package stylesheets:
   export honeycomb.stylesheets.uncheckedClasses
+
+package recoveries:
+  export honeycomb.recoveries.permissiveRecovery

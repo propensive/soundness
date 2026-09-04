@@ -125,17 +125,17 @@ object settings:
     // compilation), so it is silenced narrowly by `origin` (the imported symbol's path).
     "-Wconf:origin=.*unsafeExceptions.canThrowAny:s",
     "-Wconf:origin=.*strategies.throwUnsafely:s",
-    "-Wconf:origin=.*hashProviders.soundnessHashing:s",
-    "-Wconf:origin=.*charEncoders.ascii:s",
-    "-Wconf:origin=.*textMetrics.uniform:s",
-    "-Wconf:origin=.*arithmeticOptions.overflow.unchecked:s",
-    "-Wconf:origin=.*errorDiagnostics.empty:s",
-    "-Wconf:origin=.*logging.silent:s",
+    "-Wconf:origin=.*providers.soundnessProvider:s",
+    "-Wconf:origin=.*charEncoders.asciiEncoder:s",
+    "-Wconf:origin=.*textMetrics.uniformMetric:s",
+    "-Wconf:origin=.*arithmeticOptions.uncheckedOverflow:s",
+    "-Wconf:origin=.*errorDiagnostics.emptyDiagnostics:s",
+    "-Wconf:origin=.*logging.silentLogging:s",
     "-Wconf:origin=.*pathOnLinux:s",
-    "-Wconf:origin=.*systems.java:s",
-    "-Wconf:origin=.*overwritePreexisting.enabled:s",
-    "-Wconf:origin=.*dynamicJsonAccess.enabled:s",
-    "-Wconf:origin=.*dynamicTelAccess.enabled:s",
+    "-Wconf:origin=.*systems.javaBaseSystem:s",
+    "-Wconf:origin=.*filesystemOptions.overwritePreexisting:s",
+    "-Wconf:origin=.*dynamicAccess.dynamicJson:s",
+    "-Wconf:origin=.*dynamicAccess.dynamicTel:s",
     "-Wconf:origin=.*queryParameters.arbitraryQueryParameter:s",
     "-Wconf:origin=.*CssClass.nominative:s",
     "-Wconf:origin=.*Async.nominative:s",
@@ -1544,13 +1544,13 @@ object chiaroscuro extends Library:
 object coaxial extends Library:
   object core extends Component(anticipation.path, urticose.core, turbulence.core,
     aperture.core):
-    // The native `SocketBackend` (`socketBackends.native`) is folded into the native cross via
+    // The native `SocketBackend` (`socketBackends.scalaNativeSockets`) is folded into the native cross via
     // `nativeSources` (as galilei's filesystem backend is): TCP and UDP over Scala Native's
     // `java.net` sockets, with Unix-domain sockets and TLS unsupported for now.
     override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  // The `java.net`/`java.nio.channels` `SocketBackend` (`socketBackends.virtualMachine`), split out
+  // The `java.net`/`java.nio.channels` `SocketBackend` (`socketBackends.javaBaseSockets`), split out
   // of `core` so the platform-neutral socket API can cross-compile; other platforms (e.g. WASI)
   // supply their own backend.
   object jvm extends Component(core, gastronomy.core):
@@ -1763,7 +1763,7 @@ object enigmatic extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The platform split mirrors gastronomy's: the cipher/key/PEM model is platform-neutral, while
-  // the `JavaStdlibCrypto` provider and PKCS#12 keystores compile against `javax.crypto`/
+  // the `JavaBaseCrypto` provider and PKCS#12 keystores compile against `javax.crypto`/
   // `java.security` on the JVM (`core-jvm`) and against panicking stubs on native (`core-native`,
   // where the OpenSSL provider is the real implementation).
   object core extends Component(anticipation.path, aperture.core, gastronomy.core, asn1):
@@ -2071,13 +2071,13 @@ object fulminate extends Library:
 object galilei extends Library:
   object core extends Component(aperture.core, serpentine.core, ambience.core, turbulence.core,
       kaleidoscope.core):
-    // The native `FilesystemBackend` (`filesystemBackends.native`) is folded into the native cross
+    // The native `FilesystemBackend` (`filesystemBackends.scalaNativeFilesystem`) is folded into the native cross
     // via `nativeSources` — native has a single OS filesystem, so (unlike the JVM/WASI backends,
     // which are separate modules) it need not be an opt-in dependency.
     override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  // The `java.nio` `FilesystemBackend` (`filesystemBackends.virtualMachine`), split out of `core`
+  // The `java.nio` `FilesystemBackend` (`filesystemBackends.javaBaseFilesystem`), split out of `core`
   // so the platform-neutral filesystem API can cross-compile; other platforms (e.g. WASI) supply
   // their own backend.
   object jvm extends Component(core, guillotine.core):
@@ -2097,7 +2097,7 @@ object galilei extends Library:
 
 object gastronomy extends Library:
   // Hashing works on every platform: the pure-Scala MD5/SHA/CRC-32 implementations (and BLAKE3)
-  // are shared, while the `JavaStdlibHashing` provider is compiled against `java.security` on the
+  // are shared, while the `JavaBaseHashing` provider is compiled against `java.security` on the
   // JVM (`core-jvm`, native `MessageDigest`) and against the pure implementations elsewhere
   // (`core-native`), selected by the `jsSources` platform split.
   // `corpuscular.core` supplies `Algorithm` and `Digestion` (the marker and the incremental
@@ -3137,7 +3137,7 @@ object telekinesis extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // JVM-only transports split out of `core` so the platform-agnostic HTTP model and client can
-  // cross-compile to Scala.js: the `java.net.http` `Http.Backend` (`httpBackends.virtualMachine`)
+  // cross-compile to Scala.js: the `java.net.http` `Http.Backend` (`httpBackends.javaNetHttp`)
   // and the `coaxial` domain-socket client.
   object jvm extends Component(core, http2, coaxial.jvm):
     override def scalaJs = false

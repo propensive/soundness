@@ -37,4 +37,4 @@ package soundness
 export enigmatic.{keystore, Keystore}
 
 package cloaks:
-  export enigmatic.cloaks.{cloakHeap, cloakOffHeap, cloakVeiledHeap, cloakVeiledOffHeap}
+  export enigmatic.cloaks.{heapCloak, offHeapCloak, veiledHeapCloak, veiledOffHeapCloak}

@@ -36,7 +36,7 @@ package bitumen
 import anticipation.*
 import gossamer.*
 import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric
-import hypotenuse.*, arithmeticOptions.overflow.unchecked
+import hypotenuse.*, arithmeticOptions.uncheckedOverflow
 import vacuous.*
 
 case class UnixGroup(value: Int, name: Optional[Text] = Unset):

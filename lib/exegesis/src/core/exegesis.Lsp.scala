@@ -1514,7 +1514,7 @@ object Lsp:
 
   // The `params` of a message, or the whole message if it has none.
   private[exegesis] def params(json: Json): Json =
-    import dynamicJsonAccess.enabled
+    import dynamicAccess.dynamicJson
     try json.params catch case _: Exception => json
 
   private[exegesis] def requestId(json: Json): Optional[Json] =
@@ -1995,7 +1995,7 @@ object Lsp:
         scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspResolve](server))
 
     def apply(server: Lsp): Json => Optional[Json] =
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       import strategies.throwUnsafely
 
       // Each expansion is bound to a bare local, and the routing is an if-chain over locals
@@ -2513,7 +2513,7 @@ object Lsp:
     // The `result` member of a response, rewritten in place. A response carrying an `error` is left
     // alone: a fault is not a payload, and a rewriter typed for the payload could not read it.
     private def rewriteResult(json: Json, rewrite: Json => Json): Json =
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       import strategies.throwUnsafely
 
       try
@@ -2524,7 +2524,7 @@ object Lsp:
 
     // The `params` of a notification or of a request the server made of its client, rewritten.
     private def rewriteParams(json: Json, rewrite: Json => Json): Json =
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       import strategies.throwUnsafely
 
       try

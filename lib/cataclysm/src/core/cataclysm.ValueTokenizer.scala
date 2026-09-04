@@ -43,7 +43,7 @@ import zephyrine.*
 // only for an unterminated string.
 private[cataclysm] object ValueTokenizer:
   def tokens(text: Text)(using Tactic[Css.Error]): List[ValueToken] =
-    import zephyrine.lineation.linefeedChars
+    import zephyrine.lineation.linefeedChar
 
     Tokenizer(Cursor[Text](text)).all()
 

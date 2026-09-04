@@ -65,13 +65,13 @@ package monthEnds:
   export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
 
 package gapPolicies:
-  export aviation.gapPolicies.{pushBackward, rejectGap}
+  export aviation.gapPolicies.{pushBackwardGapPolicy, rejectGapPolicy}
 
 package leapModes:
-  export aviation.leapModes.exact
+  export aviation.leapModes.exactLeapMode
 
 package chronometries:
-  export aviation.chronometries.{unix, atomic}
+  export aviation.chronometries.{unixChronometry, taiChronometry}
 
 package dateFormats:
   export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
@@ -110,10 +110,14 @@ package timeFormats:
         ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
 
 package timespanFormats:
-  export aviation.timespanFormats.{englishRelative, frenchRelative, germanRelative, spanishRelative}
+  export aviation.timespanFormats.{englishRelativeTimespan, frenchRelativeTimespan, germanRelativeTimespan, spanishRelativeTimespan}
 
 package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
+  export aviation.timeFormats.hours.{twelveHourClock, twelveHourSecondsClock, twentyFourHourClock,
+      twentyFourHourSecondsClock}
+
+package timeSpecificities:
+  export aviation.timeFormats.specificity.{minutesSpecificity, secondsSpecificity}
 
 package meridiems:
   export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
@@ -131,3 +135,10 @@ package hebdomads:
 
 package instantDecodables:
   export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+
+package interfaces:
+  package instants:
+    export anticipation.interfaces.instants.aviationInstant
+
+  package durations:
+    export anticipation.interfaces.durations.aviationDuration

@@ -34,7 +34,7 @@ package bitumen
 
 
 import soundness.*
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 import java.nio.file as jnf
 
@@ -541,14 +541,14 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == t"a test file")
 
     suite(m"External tar reads archives produced by Bitumen"):
-      import systems.javaSystem
+      import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
-      import workingDirectories.defaultWorkingDirectory
+      import workingDirectories.javaBaseWorkingDirectory
       import logging.silentLogging
-      import filesystemOptions.dereferenceSymlinks.enabled
-      import filesystemOptions.overwritePreexisting.enabled
-      import filesystemOptions.createNonexistentParents.enabled
-      import filesystemOptions.deleteRecursively.enabled
+      import filesystemOptions.dereferenceSymlinks
+      import filesystemOptions.overwritePreexisting
+      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.deleteRecursively
 
       val workDir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
       workDir.create[Directory]()
@@ -621,13 +621,13 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == List(t"link"))
 
     suite(m"Filesystem integration: Tarfile.from / extractTo"):
-      import systems.javaSystem
+      import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
       import filesystemTraversal.preOrderTraversal
-      import filesystemOptions.dereferenceSymlinks.disabled
-      import filesystemOptions.overwritePreexisting.enabled
-      import filesystemOptions.createNonexistentParents.enabled
-      import filesystemOptions.deleteRecursively.enabled
+      import filesystemOptions.preserveSymlinks
+      import filesystemOptions.overwritePreexisting
+      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.deleteRecursively
 
       def freshDir(): Path on Linux =
         val d = temporaryDirectory[Path on Linux] / Uuid().show
@@ -707,11 +707,11 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == true)
 
     suite(m"Scoped opening"):
-      import systems.javaSystem
+      import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
-      import filesystemOptions.createNonexistentParents.enabled
-      import filesystemOptions.overwritePreexisting.enabled
-      import filesystemOptions.deleteRecursively.enabled
+      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.overwritePreexisting
+      import filesystemOptions.deleteRecursively
 
       val tar = Tarfile(List(helloFile, emptyDir))
 
@@ -742,11 +742,11 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == Tar.Error.Reason.WriteUnsupported)
 
     suite(m"Creating archives"):
-      import systems.javaSystem
+      import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
-      import filesystemOptions.createNonexistentParents.enabled
-      import filesystemOptions.overwritePreexisting.enabled
-      import filesystemOptions.deleteRecursively.enabled
+      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.overwritePreexisting
+      import filesystemOptions.deleteRecursively
 
       val createDir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
       createDir.create[Directory]()

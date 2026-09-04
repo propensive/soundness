@@ -42,7 +42,7 @@ import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8Encoder
-import jacinta.*, formatting.compactJsonFormatting, dynamicJsonAccess.enabled
+import jacinta.*, formatting.compactJsonFormatting, dynamicAccess.dynamicJson
 import monotonous.*, alphabets.base64Standard
 import obligatory.*
 import prepositional.*

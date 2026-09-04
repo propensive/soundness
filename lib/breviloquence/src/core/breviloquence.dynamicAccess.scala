@@ -30,9 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package breviloquence
 
 import rudiments.*
 
-object dynamicJsonAccess:
-  inline given enabled: DynamicJsonEnabler = !!
+package dynamicAccess:
+  inline given dynamicCbor: DynamicCborEnabler = !!

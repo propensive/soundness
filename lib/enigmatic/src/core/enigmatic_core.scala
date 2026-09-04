@@ -55,7 +55,7 @@ package signatureDigests:
   given sha384Signature: Signature.Digest = Signature.Digest(t"SHA384")
   given sha512Signature: Signature.Digest = Signature.Digest(t"SHA512")
 
-package blockCipherMode:
+package blockCipherModes:
   export Cbc.mode as cbc
   export Ctr.mode as ctr
   export Cfb.mode as cfb
@@ -64,7 +64,7 @@ package blockCipherMode:
   // an erased `Permit[Concession.Ecb]`), and re-exporting such a given trips a
   // compiler assertion. ECB is summoned from its own companion; use `over Ecb`.
 
-package blockCipherPadding:
+package blockCipherPaddings:
   export Pkcs7.padding as pkcs7
   export Iso10126.padding as iso10126
   // `NoPadding` is not re-exported for import-based inference: its `given` takes a
@@ -75,17 +75,17 @@ package blockCipherPadding:
 // `InitializationVector.random` / `.fixed(…)` / `.zero` — so there is no
 // `initializationVector` given namespace.
 
-// The JDK crypto provider is derived from the shared `Provider.JavaStdlib` marker
-// in `Crypto`'s companion, so `import providers.javaStdlibProvider` (from
+// The JDK crypto provider is derived from the shared `Provider.JavaBase` marker
+// in `Crypto`'s companion, so `import providers.javaBaseProvider` (from
 // gastronomy) enables both hashing and cryptography. OpenSSL (crypto-only) is
 // selected directly via `import providers.opensslProvider` in the openssl module.
 
-// The `Permit`/`Concession` machinery and the `crypto.permit…Crypto` aggregates
+// The `Permit`/`Concession` machinery and the `cryptoPermits.permit…Crypto` aggregates
 // live in gastronomy (shared with hashing); the cipher concessions they cover are
 // mapped from cipher types by `Weakness`/`Authentication` in `enigmatic.Weakness`.
 
 // The cipher-side concession match types. The shared `Concession` markers, `Permit`
-// and the `crypto.permit…Crypto` aggregates live in gastronomy; these map a cipher
+// and the `cryptoPermits.permit…Crypto` aggregates live in gastronomy; these map a cipher
 // type to its concession.
 
 // The algorithm/key-length concession of a cipher type, extracted by matching the

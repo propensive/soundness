@@ -73,9 +73,9 @@ object Html extends Tag.Container
     foreign     = false,
     boundary    = true ), Format:
   // Controls how an `Html` document is serialized by `emit`. `indented` lays whitespace-mode
-  // elements out one per indented line (the default); `flatHtmlFormatting` keeps it on one line.
+  // elements out one per indented line (the default); `compactHtmlFormatting` keeps it on one line.
   // (`.show` of a bare node is always compact.) Bundled as `formatting.indentedHtmlFormatting`
-  // and `formatting.flatHtmlFormatting`.
+  // and `formatting.compactHtmlFormatting`.
   object Formatting:
     def apply(indented: Boolean): Formatting = Basic(indented)
     private case class Basic(indented: Boolean) extends Formatting
@@ -584,7 +584,7 @@ object Html extends Tag.Container
   // `Iterator[Text]` (pulls chunks via the loader). Slicing is uniform
   // (one buffer; one `arraycopy`) so there's no separate same-block fast
   // path versus cross-block grab path. Line/column tracking is delegated
-  // to Cursor via `linefeedChars` lineation, so `computePosition` is
+  // to Cursor via `linefeedChar` lineation, so `computePosition` is
   // O(1) — the per-byte tracking cost is small and avoids re-walking the
   // source on each error (which used to be O(n)).
 

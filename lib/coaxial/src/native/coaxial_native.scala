@@ -73,7 +73,7 @@ private enum ClientExchange:
 private case class UdpCourier(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
 package socketBackends:
-  given native: Socket.Backend = new Socket.Backend:
+  given scalaNativeSockets: Socket.Backend = new Socket.Backend:
     type ServerSocket = ServerBinding
     type DatagramSocket = jn.DatagramSocket
     type Exchange = ClientExchange

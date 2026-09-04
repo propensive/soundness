@@ -44,7 +44,7 @@ transparent inline def watch(using handle: Watch.Handle^): handle.type = handle
 export Watch.Event.{NewFile, NewDirectory, Modify, Delete}
 
 package watchers:
-  given nativeWatcher: Watcher = NativeWatcher
+  given javaBaseWatcher: Watcher = JavaBaseWatcher
 
   def polling[duration: Abstractable across Durations to Long](interval: duration): Watcher =
     PollingWatcher(interval)

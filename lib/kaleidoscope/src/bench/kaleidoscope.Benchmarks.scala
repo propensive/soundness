@@ -34,7 +34,7 @@ package kaleidoscope
 
 import scala.quoted.*
 
-import ambience.*, environments.javaEnvironment, systems.javaSystem
+import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import fulminate.*

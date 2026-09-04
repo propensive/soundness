@@ -35,11 +35,11 @@ package stratiform
 import rudiments.*
 
 // Phantom-typed gate for `tel.selectDynamic("…")` and friends. Importing
-// `dynamicTelAccess.enabled` brings the given into scope and unlocks the
+// `dynamicAccess.dynamicTel` brings the given into scope and unlocks the
 // dynamic syntax; without that import the dynamic methods are
 // inaccessible, mirroring jacinta's DynamicJsonEnabler pattern.
 
 sealed trait DynamicTelEnabler
 
-object dynamicTelAccess:
-  inline given enabled: DynamicTelEnabler = !!
+package dynamicAccess:
+  inline given dynamicTel: DynamicTelEnabler = !!

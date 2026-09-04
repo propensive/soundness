@@ -35,4 +35,4 @@ package soundness
 export harlequin.{CommonFormattable}
 
 package formattables:
-  export punctuation.formattables.{java, scala}
+  export punctuation.formattables.{javaFormattable, scalaFormattable}

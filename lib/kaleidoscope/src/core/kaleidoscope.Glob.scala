@@ -109,7 +109,7 @@ case class Glob(tokens: Glob.Token*):
   // mechanism as the `r"…"` and `g"…"` interpolators. The engines cache compilation by
   // rendered pattern, so matching many candidates against one `Glob` compiles it only once.
   def matches[form](text: Text)
-    ( using backend: RegexBackend[form] = regexBackends.jur )
+    ( using backend: RegexBackend[form] = regexBackends.javaBaseRegex )
     ( using engine:  form is Regex.Engine )
   :   Boolean =
 

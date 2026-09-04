@@ -45,7 +45,7 @@ import prepositional.*
 import serpentine.*
 
 import classloaders.systemClassloader
-import systems.javaSystem
+import systems.javaBaseSystem
 
 object Jvm extends Rig:
   type Result[output] = output

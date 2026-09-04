@@ -257,7 +257,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       . assert(_ == Person(t"Alice", 30))
 
     suite(m"Optics"):
-      import protobufConversion.encodable
+      import conversions.encodableToProtobuf
       // Protobuf is number-keyed: the `Ordinal` selects a field by number (Prim =
       // field 1). Wrapper encodes `point` at field 1 and `label` at field 2.
       def wrapper: Protobuf = Wrapper(Point(3, 4), t"origin").in[Protobuf]

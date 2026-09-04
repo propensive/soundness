@@ -38,7 +38,7 @@ import java.util as ju
 // Where secret material — passwords, private and symmetric keys — is stored. A `Cloak` must
 // be in scope to construct any secret value, and the secret captures the cloak that stores
 // it, so a secret can never outlive its storage. There is deliberately no default given:
-// end-users import a cloak by name (e.g. `import enigmatic.cloaks.cloakHeap`) so the storage
+// end-users import a cloak by name (e.g. `import enigmatic.cloaks.heapCloak`) so the storage
 // decision is always explicit in user code.
 //
 // No cloak offers complete protection: a debugger or same-process attacker sees everything,
@@ -58,7 +58,7 @@ trait Cloak:
 // Cleartext on the heap, as a private byte array. The weakest strategy — the material is
 // visible in a heap dump for the secret's lifetime — but portable and pure: heap-cloaked
 // secrets have empty capture sets, so they can be stored and returned without tracking.
-// Selected as `cloaks.cloakHeap`.
+// Selected as `cloaks.heapCloak`.
 private[enigmatic] object HeapCloak extends Cloak:
   def cloak(bytes: scala.Array[Byte]): Secret =
     val copy = bytes.clone

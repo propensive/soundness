@@ -110,7 +110,7 @@ extends Watcher:
 
     directories.each: (directory, filter) => snapshots(directory) = scan(directory, filter)
 
-    // Sealed per the pure-façade convention (D6), like `NativeWatcher`: the handle is held
+    // Sealed per the pure-façade convention (D6), like `JavaBaseWatcher`: the handle is held
     // only to keep the supervised poll task alive for the registration's lifetime.
     val async: Optional[Task[Unit]] = safely:
       supervise:

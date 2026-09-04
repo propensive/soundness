@@ -34,7 +34,7 @@ package exoskeleton
 
 import scala.collection.mutable as scm
 
-import ambience.*, environments.javaEnvironment, systems.javaSystem
+import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import anticipation.*
 import aperture.*
 import contingency.*
@@ -58,7 +58,7 @@ import vacuous.*
 import charDecoders.utf8Decoder
 import textSanitizers.skipSanitizer
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 object Completions:
   case class Tab(arguments: List[Text], focus: Int, cursor: Int, count: Int = 0):

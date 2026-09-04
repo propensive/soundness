@@ -55,7 +55,7 @@ package logFormats:
 
   private val indent = e" "*46
 
-  given ansiStandardLogFormat: (palette: LogPalette) => Message is Inscribable in Teletype =
+  given ansiTimestampedLogFormat: (palette: LogPalette) => Message is Inscribable in Teletype =
     (event, level, timestamp) =>
       try
         event.teletype.cut(t"\n").bind(_.slices(76)) match

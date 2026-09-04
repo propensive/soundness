@@ -40,7 +40,7 @@ import fulminate.*
 // A pluggable cryptographic provider: it supplies the raw algorithmic
 // implementations (the JDK's JCE, BouncyCastle, OpenSSL, …) that the typed
 // enigmatic API delegates to. Pick one with an explicit import, e.g.
-// `import providers.javaStdlibProvider`.
+// `import providers.javaBaseProvider`.
 //
 // Every provider must implement the mandatory baseline below — the modern,
 // universally-supported primitives. Legacy or provider-specific algorithms (DES,
@@ -89,10 +89,10 @@ object Crypto:
     def bytes(size: Int): Data
 
   // The JDK provider supplies cryptography whenever it has been selected with
-  // `import providers.javaStdlibProvider`. The marker lives in gastronomy, so the
+  // `import providers.javaBaseProvider`. The marker lives in gastronomy, so the
   // single provider import enables both hashing (in gastronomy) and cryptography.
-  given javaStdlibCrypto(using gastronomy.Provider.JavaStdlib.type): JavaStdlibCrypto.type =
-    JavaStdlibCrypto
+  given javaBaseCrypto(using gastronomy.Provider.JavaBase.type): JavaBaseCrypto.type =
+    JavaBaseCrypto
 
   // CryptoError → Crypto.Error
   object Error:

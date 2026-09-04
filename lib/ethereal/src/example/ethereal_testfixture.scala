@@ -42,9 +42,9 @@ import backstops.silentBackstop
 import charDecoders.utf8Decoder
 import classloaders.threadContextClassloader
 import environments.daemonClientEnvironment
-import executives.completions
+import executives.completionsExecutive
 import interpreters.posixInterpreter
-import systems.javaSystem
+import systems.javaBaseSystem
 import textSanitizers.strictSanitizer
 import threading.platformThreading
 import workingDirectories.systemWorkingDirectory

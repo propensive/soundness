@@ -41,7 +41,7 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import gossamer.collationComparable
-import gossamer.collations.codepoints
+import gossamer.collations.codepointCollation
 import hieroglyph.*
 import hypotenuse.*
 import nomenclature.*

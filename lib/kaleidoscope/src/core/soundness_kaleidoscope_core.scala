@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export kaleidoscope.{g, Glob, Jur, r, Regex, RegexBackend, Scanner}
+export kaleidoscope.{g, Glob, JavaBaseRegex, r, Regex, RegexBackend, Scanner}
 
 package regexBackends:
-  export kaleidoscope.regexBackends.{jur, re2}
+  export kaleidoscope.regexBackends.{javaBaseRegex, re2}

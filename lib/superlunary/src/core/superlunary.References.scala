@@ -52,7 +52,7 @@ object References:
   // inside a hot loop — a benchmark body, for instance — would deserialize the transported
   // value on every iteration. The extracted instance is consequently SHARED between
   // evaluations, which is the intuitive semantics of splicing a value. The memoization is
-  // generated inline by `embeddings.automatic` rather than through a helper method: the
+  // generated inline by `embeddings.automaticEmbedding` rather than through a helper method: the
   // extraction is an inline call with deferred given summons, which must stay in statement
   // position in the staged program, not under a closure.
   class Boxed(val value: Any)

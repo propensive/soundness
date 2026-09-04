@@ -887,7 +887,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ => true)
 
     suite(m"Dynamic access"):
-      import dynamicYamlAccess.enabled
+      import dynamicAccess.dynamicYaml
 
       test(m"Read a field via selectDynamic"):
         val y = t"{name: Alice, age: 30}".read[Yaml]
@@ -1080,7 +1080,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == List("~"))
 
     suite(m"Lens"):
-      import dynamicYamlAccess.enabled, yamlConversion.encodable
+      import dynamicAccess.dynamicYaml, conversions.encodableToYaml
 
       val org = Yaml.ast(NamedOuter(t"a", Inner(7)).in[Yaml].root)
 

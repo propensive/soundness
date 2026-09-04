@@ -98,12 +98,12 @@ session: the next fetch drains what remains of the previous body to reach the re
 
 ### Choosing a transport
 
-The transport is a given. `httpBackends.virtualMachineHttp` uses the JVM's own `java.net.http`;
-`httpBackends.native` speaks Soundness's wire codecs directly over a socket, with no
+The transport is a given. `httpBackends.javaNetHttp` uses the JVM's own `java.net.http`;
+`httpBackends.soundnessHttp` speaks Soundness's wire codecs directly over a socket, with no
 `java.net.http` involved:
 
 ```scala
-import httpBackends.native
+import httpBackends.soundnessHttp
 ```
 
 The native backend pools kept-alive HTTP/1.1 connections per origin, and negotiates by ALPN over

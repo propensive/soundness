@@ -44,14 +44,14 @@ import turbulence.*
 import zephyrine.*
 
 // Capability providers. Pick one (or more) with an explicit import, e.g.
-// `import providers.javaStdlibProvider` for the JDK (which enables both hashing
+// `import providers.javaBaseProvider` for the JDK (which enables both hashing
 // and, in enigmatic, cryptography) and `import providers.soundnessProvider` for
 // BLAKE3 hashing. The JDK provider is a marker that the `Hashing` and `Crypto`
 // companions derive their implementations from; single-capability providers
 // supply their capability object's singleton type directly, so the
 // structurally-typed algorithms it offers stay visible to the per-algorithm givens.
 package providers:
-  given javaStdlibProvider: Provider.JavaStdlib.type = Provider.JavaStdlib
+  given javaBaseProvider: Provider.JavaBase.type = Provider.JavaBase
   given soundnessProvider: SoundnessHashing.type = SoundnessHashing
 
 // Opt-in permits for sub-optimal cryptography, named after NIST SP 800-131A's
@@ -59,7 +59,7 @@ package providers:
 // covering both hashes (here) and ciphers (added downstream by enigmatic). The
 // levels nest by inclusion: `permitDisallowedCrypto` contains every other permit,
 // and since `Permit <: ProcessingPermit` it also covers "legacy use".
-package crypto:
+package cryptoPermits:
   // Unauthenticated (non-AEAD) encryption — every block-cipher mode (enigmatic).
   erased given permitUnauthenticatedCrypto: Permit[Concession.Unauthenticated] =
     caps.unsafe.unsafeErasedValue

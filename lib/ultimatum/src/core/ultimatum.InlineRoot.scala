@@ -101,7 +101,7 @@ extends GridSurface(widthFn(), 0):
   private var topAnchored: Boolean = anchoring match
     case InlineAnchoring.TopAnchored | InlineAnchoring.Fullscreen      => true
     case InlineAnchoring.BottomDocked | InlineAnchoring.TopAfterResize => false
-    case InlineAnchoring.Inline                                        => false
+    case InlineAnchoring.Flow                                        => false
 
   @scala.caps.unsafe.untrackedCaptures
   private var started: Boolean = false
@@ -225,7 +225,7 @@ extends GridSurface(widthFn(), 0):
     Out.print(frame.toString.tt)
 
   def flush(): Unit =
-    if anchoring == InlineAnchoring.Inline then flushInline() else flushDocked()
+    if anchoring == InlineAnchoring.Flow then flushInline() else flushDocked()
 
   private def flushDocked(): Unit =
     val rows    = heightFn()
@@ -498,7 +498,7 @@ extends GridSurface(widthFn(), 0):
     // `Inline` drops the cursor onto a fresh line right below the block, RELATIVELY (from
     // the caret down to the block's last row, then a newline that scrolls if at the foot),
     // so the following output — and the next inline block — continues immediately after it.
-    if anchoring == InlineAnchoring.Inline then
+    if anchoring == InlineAnchoring.Flow then
       val down = presentedRows - 1 - flowCursorRow
       if down > 0 then Out.print(csi.cud(down))
       Out.print(t"\r\n")

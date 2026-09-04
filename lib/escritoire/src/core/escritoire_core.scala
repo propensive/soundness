@@ -70,7 +70,7 @@ package tableStyles:
   import tessellate.BoxLine.*
   import tessellate.LineCharset.{Default, Rounded}
 
-  given defaultTableStyle: TableStyle = TableStyle(1, Thick, Thick, Thin, Thick, Thin, Default)
+  given thickTableStyle: TableStyle = TableStyle(1, Thick, Thick, Thin, Thick, Thin, Default)
   given thinRoundedTableStyle: TableStyle = TableStyle(1, Thin, Thin, Thin, Thin, Thin, Rounded)
   given horizontalTableStyle: TableStyle = TableStyle(1, Thin, Thin, Thin, Blank, Blank, Default)
   given midOnlyTableStyle: TableStyle = TableStyle(1, Blank, Blank, Thin, Blank, Blank, Default)

@@ -44,7 +44,7 @@ object Frontend:
   // The companion default, outranked by a `frontends` given imported by name.
   given default: Frontend = Frontend.ThreadPerConnection
 
-// The choice package: `import frontends.reactive` selects the reactor.
+// The choice package: `import frontends.reactiveFrontend` selects the reactor.
 package frontends:
-  given threadPerConnection: Frontend = Frontend.ThreadPerConnection
-  given reactive: Frontend = Frontend.Reactive
+  given threadPerConnectionFrontend: Frontend = Frontend.ThreadPerConnection
+  given reactiveFrontend: Frontend = Frontend.Reactive

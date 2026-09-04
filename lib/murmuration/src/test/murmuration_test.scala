@@ -603,7 +603,7 @@ object Tests extends Suite(m"Murmuration tests"):
       test(m"a reference array sorts in place"):
         import sortingAlgorithms.quicksort
         import soundness.collationComparable
-        import collations.codepoints
+        import collations.codepointCollation
         val array = mutableCopy(List(t"c", t"a", t"b"))
         array.sort()
         List.from(array.readable)

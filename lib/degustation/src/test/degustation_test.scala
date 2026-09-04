@@ -43,7 +43,7 @@ import alphabets.hexLowerCase
 import logging.silentLogging
 import probates.cancelProbate
 import strategies.throwUnsafely
-import systems.javaSystem
+import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 import threading.platformThreading
 

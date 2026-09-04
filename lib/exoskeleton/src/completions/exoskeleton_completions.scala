@@ -44,7 +44,7 @@ import eucalyptus.*
 import fulminate.*
 import gossamer.*
 import gossamer.collationComparable
-import gossamer.collations.codepoints
+import gossamer.collations.codepointCollation
 import guillotine.*
 import prepositional.*
 import rudiments.*
@@ -234,7 +234,7 @@ def helpTree
   build(Nil, command, Unset, Unset, Set(), Set())
 
 package executives:
-  given completions: (backstop: Backstop) => Executive:
+  given completionsExecutive: (backstop: Backstop) => Executive:
     type Interface = Cli
     type Return = Execution
 

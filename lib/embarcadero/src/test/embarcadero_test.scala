@@ -34,7 +34,7 @@ package embarcadero
 
 import soundness.*
 
-import providers.javaStdlibProvider
+import providers.javaBaseProvider
 import alphabets.hexLowerCase
 import charEncoders.utf8Encoder
 import formatting.compactJsonFormatting
@@ -726,7 +726,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       // millis; Aviation's own `Instant` abstractable/instantiable instances are found
       // via its companion, so `embarcadero` needs no dependency on Aviation.
       import abstractables.epochMillisecondsAbstractable
-      import chronometries.unix
+      import chronometries.unixChronometry
       val moment = Instant(1_700_000_001_000L)
 
       test(m"a Container timestamp round-trips and converts to an Aviation Instant"):

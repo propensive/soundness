@@ -28,7 +28,7 @@ own faithful context. Everything comes from the `soundness` package, alongside t
 
 ```scala
 import soundness.*
-import executives.completions
+import executives.completionsExecutive
 import interpreters.posixInterpreter
 import backstops.stackTraceBackstop
 import threading.virtualThreading

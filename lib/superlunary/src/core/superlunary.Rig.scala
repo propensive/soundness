@@ -54,7 +54,7 @@ import serpentine.*
 import spectacular.*
 
 import interfaces.paths.pathOnLinux
-import systems.javaSystem
+import systems.javaBaseSystem
 
 object Rig:
   // RemoteError → Rig.Error

@@ -37,10 +37,10 @@ import java.lang as jl
 import soundness.*
 
 import classloaders.systemClassloader
-import environments.javaEnvironment
-import systems.javaSystem
+import environments.javaBaseEnvironment
+import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 import logging.silentLogging
 import threading.platformThreading
 
@@ -58,7 +58,7 @@ object Tests extends Suite(m"Profanity Tests"):
     supervise:
       val launcher = Enclave(t"profanity-fixture").dispatch:
         ' {
-            import executives.completions
+            import executives.completionsExecutive
             import interpreters.posixInterpreter
             import probates.cancelProbate
 

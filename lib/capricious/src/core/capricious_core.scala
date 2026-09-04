@@ -46,18 +46,18 @@ import hypotenuse.*
 
 package randomization:
   package text:
-    given bigListOfNaughtyStrings: Text is Randomizable:
+    given naughtyStringsText: Text is Randomizable:
       val resource = getClass.getResourceAsStream("/capricious/blns.txt").nn
       val blns = Array.from(scala.io.Source.fromInputStream(resource).getLines().map(_.tt))
 
       def randomize(random: Random) = blns.readable(random.long().toInt.abs%blns.length)
 
   package sizes:
-    given uniformUpto10: Random.Size = _.long().toInt.abs%10
-    given uniformUpto100: Random.Size = _.long().toInt.abs%100
-    given uniformUpto1000: Random.Size = _.long().toInt.abs%1000
-    given uniformUpto10000: Random.Size = _.long().toInt.abs%10000
-    given uniformUpto100000: Random.Size = _.long().toInt.abs%100000
+    given uniformSizeUpto10: Random.Size = _.long().toInt.abs%10
+    given uniformSizeUpto100: Random.Size = _.long().toInt.abs%100
+    given uniformSizeUpto1000: Random.Size = _.long().toInt.abs%1000
+    given uniformSizeUpto10000: Random.Size = _.long().toInt.abs%10000
+    given uniformSizeUpto100000: Random.Size = _.long().toInt.abs%100000
 
   given unseededRandomization: Randomization = () => su.Random(java.util.Random())
   given secureUnseededRandomization: Randomization = () => su.Random(js.SecureRandom())

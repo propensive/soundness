@@ -74,7 +74,7 @@ private enum ClientExchange:
 private case class UdpCourier(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
 package socketBackends:
-  given virtualMachineSockets: Socket.Backend = new Socket.Backend:
+  given javaBaseSockets: Socket.Backend = new Socket.Backend:
     type ServerSocket = ServerBinding
     type DatagramSocket = jn.DatagramSocket
     type Exchange = ClientExchange

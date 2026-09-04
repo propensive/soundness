@@ -58,9 +58,9 @@ out. Everything comes from the `soundness` package:
 ```scala
 import scala.quoted.*
 import soundness.*
-import embeddings.automatic
+import embeddings.automaticEmbedding
 import strategies.throwUnsafely
-import systems.javaSystem
+import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 ```
 

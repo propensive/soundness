@@ -53,15 +53,15 @@ import zephyrine.*
 
 import alphabets.base64Standard
 import charEncoders.utf8Encoder
-import environments.javaEnvironment
+import environments.javaBaseEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import formatting.compactJsonFormatting
-import httpBackends.virtualMachineHttp
-import stdios.virtualMachineStdio
+import httpBackends.javaNetHttp
+import stdios.fileDescriptorStdio
 import termcaps.environmentTermcap
 
 package couriers:
-  given resend
+  given resendCourier
   :   ( courierTactic: Tactic[Courier.Error], online: Online, loggable: Http.Event is Loggable,
         client: Http.Client )
   =>  ( apiKey: Resend.ApiKey )

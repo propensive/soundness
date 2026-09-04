@@ -35,7 +35,7 @@ package profanity
 import soundness.*
 
 import classloaders.systemClassloader
-import environments.javaEnvironment
+import environments.javaBaseEnvironment
 import logging.silentLogging
 import strategies.throwUnsafely
 import threading.platformThreading

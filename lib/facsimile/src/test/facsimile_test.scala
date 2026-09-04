@@ -47,7 +47,7 @@ import facsimile.Filter
 import charEncoders.utf8Encoder
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
-import cloaks.cloakHeap
+import cloaks.heapCloak
 
 import _root_.java.io as ji
 import _root_.java.nio.file as jnf

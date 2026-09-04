@@ -72,7 +72,7 @@ checking on every build.
 
 Being honest about this matters more than the claim itself.
 
-**Checked arithmetic costs what it checks.** Importing `arithmeticOptions.overflow.checked`
+**Checked arithmetic costs what it checks.** Importing `arithmeticOptions.checkedOverflow`
 adds a real test to every addition. The default is unchecked, so the cost is paid only
 where it is asked for — but where it is asked for, it is paid.
 

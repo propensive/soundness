@@ -39,7 +39,7 @@ format and the concurrency context a logger writes under:
 
 ```scala
 import soundness.*
-import logFormats.standardLogFormat
+import logFormats.timestampedLogFormat
 import probates.cancelProbate
 import threading.virtualThreading
 ```
@@ -62,7 +62,7 @@ HTTP events and nothing else, so the events of one library can be routed or sile
 independently of the rest.
 
 `Logger` runs its writes on a background thread, so it needs the ambient concurrency
-context that `supervise` provides. The format in scope — here `standardLogFormat`,
+context that `supervise` provides. The format in scope — here `timestampedLogFormat`,
 which prefixes each line with a timestamp and level — decides how an event renders to
 text; `untimestampedLogFormat` omits the timestamp.
 

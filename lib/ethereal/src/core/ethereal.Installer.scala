@@ -55,12 +55,12 @@ import turbulence.*
 import vacuous.*
 import zeppelin.*
 
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.overwritePreexisting
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 import rudiments.sortingAlgorithms.timsort
 
 object Installer:
@@ -114,8 +114,8 @@ object Installer:
     ( using Tactic[Install.Error], (DaemonLogEvent is Loggable)^ )
   :   Result =
 
-    import workingDirectories.javaWorkingDirectory
-    import systems.javaSystem
+    import workingDirectories.javaBaseWorkingDirectory
+    import systems.javaBaseSystem
 
     mitigate:
       case Path.Error(_, _)      => Install.Error(Install.Error.Reason.Environment)
@@ -177,7 +177,7 @@ object Installer:
 
             tempFile.executable() = true
 
-            import filesystemOptions.moveAtomically.enabled
+            import filesystemOptions.moveAtomically
             tempFile.moveTo(file)
             Result.Installed(command, file.encode)
 

@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-// `Concession`, `Permit`, `ProcessingPermit` and the `crypto.permit…Crypto`
+// `Concession`, `Permit`, `ProcessingPermit` and the `cryptoPermits.permit…Crypto`
 // aggregates are re-exported by gastronomy (where they now live).
 export
   enigmatic
@@ -40,7 +40,7 @@ export
       Cleartext, cleartext, Cloak, Crypto, Ctr, decrypt, Decryptor,
       Des, Divulgence,
       Dsa, Ecb, Ecdsa, encrypt, Encryptor, Encryption,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto,
+      Hmac, hmac, InitializationVector, Iso10126, JavaBaseCrypto,
       MlDsa, NoPadding, Ofb, Pem, Password,
       Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
       Symmetric, SymmetricKey, TripleDes, uncloak }
@@ -48,8 +48,8 @@ export
 package signatureDigests:
   export enigmatic.signatureDigests.{sha256Signature, sha384Signature, sha512Signature}
 
-package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
+package blockCipherModes:
+  export enigmatic.blockCipherModes.{cbc, cfb, ctr, ofb}
 
-package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
+package blockCipherPaddings:
+  export enigmatic.blockCipherPaddings.{iso10126, pkcs7}

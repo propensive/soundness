@@ -32,7 +32,7 @@ import soundness.*
 import executives.directExecutive
 import interpreters.posixInterpreter
 import backstops.genericErrorMessageBackstop
-import systems.javaSystem
+import systems.javaBaseSystem
 ```
 
 ### An entry point
@@ -188,7 +188,7 @@ the shell's name, and hand them to the application in completions mode.
 Turning completions on replaces the default executive with the completions executive:
 
 ```scala
-import executives.completions
+import executives.completionsExecutive
 ```
 
 Under this executive the body returns an `Execution`, and the only way to build one is an

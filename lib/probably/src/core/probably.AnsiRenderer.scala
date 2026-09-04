@@ -60,7 +60,7 @@ import turbulence.*
 import vacuous.*
 
 import Format.measurable
-import tableStyles.defaultTableStyle
+import tableStyles.thickTableStyle
 
 // `Juxtaposition`'s renderer lives in `chiaroscuro.render`, not in the enum's companion, so it
 // is not in implicit scope. Without this import `cmp.teletype` below silently resolves to
@@ -580,7 +580,7 @@ private[probably] object AnsiRenderer:
 
     val maxHits = data.map(_.branches).maxOption
 
-    import treeStyles.defaultTreeStyle
+    import treeStyles.squareTreeStyle
 
     def describe(surface: Surface): Teletype =
       if surface.juncture.treeName == t"DefDef" then e"• ${surface.juncture.method.teletype}"

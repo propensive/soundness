@@ -53,8 +53,8 @@ import dateFormats.iso8601DateFormat       // how dates are shown
 import affirmations.yesNoAffirmation       // how a boolean is shown
 import threading.virtualThreading          // what a task runs on
 import probates.cancelProbate              // what happens to unfinished tasks
-import httpBackends.native                 // which HTTP transport is used
-import filesystemBackends.virtualMachineFilesystem   // which filesystem implementation
+import httpBackends.soundnessHttp              // which HTTP transport is used
+import filesystemBackends.javaBaseFilesystem   // which filesystem implementation
 import calendars.gregorianCalendar         // which calendar a date literal means
 ```
 
@@ -64,7 +64,7 @@ applies to all of them.
 ## Naming makes the choice legible
 
 A given is named for what it *selects*, not for its type, because the import line is what
-a reader sees. `import strategies.accrue` says something about the code below it;
+a reader sees. `import strategies.throwUnsafely` says something about the code below it;
 `import strategies.given` would not.
 
 This is why the convention matters more here than elsewhere: a contextual value is

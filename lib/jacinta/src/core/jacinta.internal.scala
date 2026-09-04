@@ -181,7 +181,7 @@ object internal:
     def plain: Expr[Json] =
       if Expr.summon[DynamicJsonEnabler].nil then halt:
         m"""
-          dynamic field access on an unverified `Json` requires `import dynamicJsonAccess.enabled`
+          dynamic field access on an unverified `Json` requires `import dynamicAccess.dynamicJson`
           (or verify the value against a schema first)
         """
 
@@ -241,7 +241,7 @@ object internal:
     def plain: Expr[Json] =
       if Expr.summon[DynamicJsonEnabler].nil then halt:
         m"""
-          dynamic field access on an unverified `Json` requires `import dynamicJsonAccess.enabled`
+          dynamic field access on an unverified `Json` requires `import dynamicAccess.dynamicJson`
           (or verify the value against a schema first)
         """
 

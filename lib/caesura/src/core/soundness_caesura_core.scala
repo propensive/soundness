@@ -34,7 +34,7 @@ package soundness
 
 export
   caesura
-  . { CellRef, Dsv, dsv, dynamicDsvAccess, DynamicDsvEnabler,
+  . { CellRef, Dsv, dsv, DynamicDsvEnabler,
       rows, rowsOf, Sheet, Spannable }
 
 package dsvFormats:
@@ -48,4 +48,7 @@ package dsvRedesignations:
         lowerWordsRedesignation, unchangedRedesignation }
 
 package optics:
-  export caesura.optics.{cellLens, rowEach, rowFilter, rowOptical}
+  export caesura.optics.{dsvCellLens, dsvRowEachOptical, dsvRowFilterOptical, dsvRowOptical}
+
+package dynamicAccess:
+  export caesura.dynamicAccess.dynamicDsv

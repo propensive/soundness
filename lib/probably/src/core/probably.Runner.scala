@@ -35,7 +35,7 @@ package probably
 import java.lang as jl
 
 
-import ambience.{System as _, *}, environments.javaEnvironment
+import ambience.{System as _, *}, environments.javaBaseEnvironment
 import anticipation.*
 import escapade.*
 import gossamer.*
@@ -44,7 +44,7 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 
-import stdios.virtualMachineStdio
+import stdios.fileDescriptorStdio
 import termcaps.environmentTermcap
 import beneficence.*
 import denominative.*

@@ -35,13 +35,13 @@ package surveillance
 import soundness.*
 
 import errorDiagnostics.emptyDiagnostics
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.overwritePreexisting.disabled
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.failOnPreexisting
 import strategies.throwUnsafely
-import systems.javaSystem
+import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 object Tests extends Suite(m"Surveillance tests"):
   def run(): Unit =

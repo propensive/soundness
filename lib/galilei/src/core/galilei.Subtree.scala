@@ -133,5 +133,5 @@ object Subtree:
     ( using filesystem: under is Filesystem )
     ( using backend: FilesystemBackend on under, tactic: Tactic[Io.Error] )
   :   Unit =
-    import filesystemOptions.deleteRecursively.disabled
+    import filesystemOptions.deleteOnlyEmpty
     path.delete()

@@ -30,13 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package stratiform
+package locomotion
 
 import anticipation.*
 import prepositional.*
 
-// Importing `telConversion.encodable` brings a scoped `Conversion` into lexical scope that lets
-// any `Encodable in Tel` value be supplied directly at lens-assignment positions, such as
-// `tel.lens(_.field = value)`, without an explicit `.tel`.
-object telConversion:
-  given encodable: [entity: Encodable in Tel] => Conversion[entity, Tel] = _.encode
+// Importing `conversions.encodableToProtobuf` brings a scoped `Conversion` into lexical scope that
+// lets any `Encodable in Protobuf` value be supplied directly at lens-assignment positions, such
+// as `protobuf.lens(_.field = value)`, without an explicit `.protobuf`.
+package conversions:
+  given encodableToProtobuf: [entity: Encodable in Protobuf] => Conversion[entity, Protobuf] = _.encode

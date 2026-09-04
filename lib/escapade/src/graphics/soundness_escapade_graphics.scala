@@ -33,4 +33,4 @@
 package soundness
 
 package teletypeables:
-  export escapade.teletypeables.{graphical}
+  export escapade.teletypeables.{graphicalTeletype}

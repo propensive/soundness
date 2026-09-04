@@ -56,14 +56,14 @@ checked given changes the result type of `+`, `-` and `*` to one that can raise
 `OverflowError`, so an overflow becomes a handled failure rather than a silent wrap:
 
 ```scala
-import arithmeticOptions.overflow.checked
+import arithmeticOptions.checkedOverflow
 import strategies.throwUnsafely
 
 val big: S32 = 2000000000
 big + big   // raises OverflowError rather than wrapping negative
 ```
 
-Division by zero is checked the same way, by importing `arithmeticOptions.division.checked`,
+Division by zero is checked the same way, by importing `arithmeticOptions.checkedDivision`,
 after which `/` may raise a `DivisionError`. Where the check is not imported, the operations
 keep their bare machine behaviour and cost nothing.
 

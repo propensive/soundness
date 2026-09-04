@@ -43,4 +43,7 @@ export
       max, maximize, maximum, median, Decimal, Q32, Q64, Rational }
 
 package arithmeticOptions:
-  export hypotenuse.arithmeticOptions.{division, overflow, rationalDivision}
+  export
+    hypotenuse.arithmeticOptions
+    . { checkedDivision, checkedOverflow, q32RationalDivision, q64RationalDivision, uncheckedDivision,
+        uncheckedOverflow }

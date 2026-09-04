@@ -37,7 +37,7 @@ import soundness.*
 import backstops.silentBackstop
 import bars.smoothBar
 import counters.paddedCounter
-import executives.completions
+import executives.completionsExecutive
 import gaugeGlyphs.unicodeGlyphs
 import interpreters.posixInterpreter
 import palettes.emberGaugePalette

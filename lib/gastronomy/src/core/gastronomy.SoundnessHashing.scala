@@ -37,8 +37,8 @@ import corpuscular.*
 // A complete pure-Scala hashing provider: BLAKE3 (which the JDK does not implement) plus MD5,
 // SHA-1 and the SHA-2 family (implemented in `PureHashes`), plus the corpuscular checksums, so
 // hashing is available on
-// every platform. On the JVM the JDK-backed `JavaStdlibHashing` remains the default, delegating
-// to native `MessageDigest`; off the JVM (`JavaStdlibHashing`'s native variant) it forwards here.
+// every platform. On the JVM the JDK-backed `JavaBaseHashing` remains the default, delegating
+// to native `MessageDigest`; off the JVM (`JavaBaseHashing`'s native variant) it forwards here.
 // Select it explicitly with `import providers.soundnessProvider`.
 object SoundnessHashing extends Hashing:
   def blake3: Hashing.Function = new Hashing.Function:

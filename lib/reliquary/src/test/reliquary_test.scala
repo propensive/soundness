@@ -1062,7 +1062,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
     suite(m"Manifest signing"):
       import enigmatic.{MlDsa, Signing}
-      import gastronomy.providers.javaStdlibProvider
+      import gastronomy.providers.javaBaseProvider
 
       val mlDsa65: MlDsa[65] = summon[MlDsa[65]]
       val privateKey = mlDsa65.genKey()
@@ -1149,7 +1149,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
     suite(m"TEL schema resolution (LIRA-backed)"):
       import enigmatic.{MlDsa, Signing}
-      import gastronomy.providers.javaStdlibProvider
+      import gastronomy.providers.javaBaseProvider
 
       val mlDsa65: MlDsa[65] = summon[MlDsa[65]]
       val privateKey = mlDsa65.genKey()

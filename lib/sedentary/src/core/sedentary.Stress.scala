@@ -56,9 +56,9 @@ import serpentine.*
 import superlunary.*
 import vacuous.*
 
-import systems.javaSystem
+import systems.javaBaseSystem
 import threading.platformThreading
-import workingDirectories.javaWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
 // A stress test: the memory/scaling counterpart of `Bench`. Where `Bench` times one operation
 // repeated serially on the calling thread, `Stress` runs the body concurrently on `concurrency`

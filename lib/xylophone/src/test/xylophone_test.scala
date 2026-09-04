@@ -1236,43 +1236,43 @@ object Tests extends Suite(m"Xylophone tests"):
 
     suite(m"Dynamic access"):
       test(m"Dynamic dereference selects a child element's text"):
-        import dynamicXmlAccess.enabled
+        import dynamicAccess.dynamicXml
         t"<root><foo>bar</foo></root>".read[Xml].foo().as[Text]
       . assert(_ == t"bar")
 
       test(m"Chained dynamic dereference navigates nested elements"):
-        import dynamicXmlAccess.enabled
+        import dynamicAccess.dynamicXml
         t"<a><b><c>42</c></b></a>".read[Xml].b().c().as[Int]
       . assert(_ == 42)
 
       test(m"Dynamic dereference flattens non-unique tags into a Fragment"):
-        import dynamicXmlAccess.enabled
+        import dynamicAccess.dynamicXml
         t"<r><x>1</x><x>2</x></r>".read[Xml].x.nodes.length
       . assert(_ == 2)
 
       test(m"Empty-parens dereference is the same as `(Prim)`"):
-        import dynamicXmlAccess.enabled
+        import dynamicAccess.dynamicXml
         val xml = t"<r><x>1</x><x>2</x></r>".read[Xml]
         xml.x() == xml.x(Prim)
       . assert(_ == true)
 
       test(m"An ordinal selects the nth matching element"):
-        import dynamicXmlAccess.enabled
+        import dynamicAccess.dynamicXml
         t"<r><x>1</x><x>2</x></r>".read[Xml].x(Sec).as[Int]
       . assert(_ == 2)
 
       test(m"Dynamic dereference flattens across multiple parents"):
-        import dynamicXmlAccess.enabled
+        import dynamicAccess.dynamicXml
         t"<r><a><b>1</b><b>2</b></a><a><b>3</b></a></r>".read[Xml].a.b.nodes.length
       . assert(_ == 3)
 
       test(m"A missing tag yields an empty Fragment"):
-        import dynamicXmlAccess.enabled
+        import dynamicAccess.dynamicXml
         t"<r><x>1</x></r>".read[Xml].nope.nodes.isEmpty
       . assert(_ == true)
 
       test(m"An out-of-range ordinal yields an empty Fragment"):
-        import dynamicXmlAccess.enabled
+        import dynamicAccess.dynamicXml
         t"<r><x>1</x></r>".read[Xml].x(Sec).nodes.isEmpty
       . assert(_ == true)
 
@@ -1283,7 +1283,7 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(identity)
 
     suite(m"Optics"):
-      import dynamicXmlAccess.enabled
+      import dynamicAccess.dynamicXml
       def doc: Xml = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]
 
       test(m"lens replaces the first matching child element"):

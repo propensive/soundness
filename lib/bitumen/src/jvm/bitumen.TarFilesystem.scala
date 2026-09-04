@@ -41,14 +41,14 @@ import distillate.*
 import fulminate.*
 import galilei.*
 import hieroglyph.*, charEncoders.asciiEncoder
-import hypotenuse.*, arithmeticOptions.overflow.unchecked
+import hypotenuse.*, arithmeticOptions.uncheckedOverflow
 import prepositional.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
 import vacuous.*
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 private[bitumen] object TarFilesystem:
   def entryFor[plane <: Posix: Filesystem]

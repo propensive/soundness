@@ -48,7 +48,7 @@ import gossamer.*
 import guillotine.*
 import hieroglyph.*, charEncoders.utf8Encoder, charDecoders.utf8Decoder,
     textSanitizers.strictSanitizer
-import jacinta.*, formatting.compactJsonFormatting, dynamicJsonAccess.enabled
+import jacinta.*, formatting.compactJsonFormatting, dynamicAccess.dynamicJson
 import monotonous.*, alphabets.base64Standard
 import parasite.*
 import prepositional.*

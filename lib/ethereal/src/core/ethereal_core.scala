@@ -42,7 +42,7 @@ import java.util.concurrent.atomic as juca
 
 import scala.collection.concurrent as scc
 
-import ambience.*, systems.javaSystem
+import ambience.*, systems.javaBaseSystem
 import anticipation.*
 import aperture.*
 import coaxial.*
@@ -73,11 +73,11 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
+import filesystemOptions.dereferenceSymlinks
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus]^{service} =
   service
@@ -91,9 +91,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
   import strategies.throwUnsafely
   import workingDirectories.systemWorkingDirectory
-  import environments.javaEnvironment
+  import environments.javaBaseEnvironment
   import termcaps.environmentTermcap
-  import stdios.virtualMachineStdio
+  import stdios.fileDescriptorStdio
 
   val name: Text =
     recover:
@@ -193,7 +193,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     Exit.Fail(1).terminate()
 
                 . protect:
-                    import filesystemOptions.overwritePreexisting.disabled
+                    import filesystemOptions.failOnPreexisting
                     Out.println(e"Downloading $runnerName from runners-${Runners.version}")
                     val bytes: Data = Runners.download(platformLabel)
                     if !cacheDir.existent() then cacheDir.create[Directory](CreateFlag.Parents)
@@ -295,7 +295,7 @@ def cli[bus <: Matchable](using executive: Executive)
   case class ScriptIdentity(size: Long, mtime: Long, hash: Text)
 
   def hashScript(script: Path on Local): Optional[Text] = safely:
-    import gastronomy.*, providers.javaStdlibProvider
+    import gastronomy.*, providers.javaBaseProvider
     import monotonous.*, alphabets.hexLowerCase
     script.open[File](Read)(file.checksum[Sha2[256]].serialize[Hex])
 
@@ -609,16 +609,16 @@ def cli[bus <: Matchable](using executive: Executive)
 
   // `application` takes a stdlib `Iterable` of arguments, which the opaque `Nil` is not.
   application(using executives.directExecutive(using backstops.silentBackstop))(Nil):
-    import environments.javaEnvironment
+    import environments.javaBaseEnvironment
     import termcaps.environmentTermcap
-    import stdios.virtualMachineStdio
+    import stdios.fileDescriptorStdio
     import probates.awaitProbate
 
     Os.intercept[Shutdown]:
       wipeState()
 
     supervise:
-      import logFormats.standardLogFormat
+      import logFormats.timestampedLogFormat
       given syslog: Logger[DaemonLogEvent, Message] = Logger(Syslog(t"ethereal"))
 
       safely(socketFile.wipe())

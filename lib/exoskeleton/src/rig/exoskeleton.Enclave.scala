@@ -56,14 +56,14 @@ import superlunary.*
 import symbolism.*
 import vacuous.*
 
-import filesystemOptions.deleteRecursively.disabled
+import filesystemOptions.deleteOnlyEmpty
 import logging.silentLogging
 import probates.cancelProbate
-import systems.javaSystem
+import systems.javaBaseSystem
 import threading.platformThreading
-import workingDirectories.javaWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 object Enclave:
   // A `Tool` is a *capability*: it references a live installed daemon process whose lifetime

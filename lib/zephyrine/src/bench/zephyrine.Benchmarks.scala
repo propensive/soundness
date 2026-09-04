@@ -34,7 +34,7 @@ package zephyrine
 
 import scala.quoted.*
 
-import ambience.*, environments.javaEnvironment, systems.javaSystem
+import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import fulminate.*
@@ -116,7 +116,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
     n
 
   def cursorNextWithLinefeeds(text: Text): Int =
-    import zephyrine.lineation.linefeedChars
+    import zephyrine.lineation.linefeedChar
     val c = Cursor(Iterator(text))
     var n = 0
     while c.next() do n += 1

@@ -40,14 +40,14 @@ import anticipation.*
 package stdios:
   given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
 
-  given systemStdio: (termcap: Termcap) => Stdio =
+  given javaLangSystemStdio: (termcap: Termcap) => Stdio =
     Stdio
       ( jl.System.out.nn,
         jl.System.err.nn,
         jl.System.in.nn,
         termcap )
 
-  given virtualMachineStdio: (termcap: Termcap) => Stdio =
+  given fileDescriptorStdio: (termcap: Termcap) => Stdio =
     Stdio
       ( ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out)),
         ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err)),

@@ -35,7 +35,7 @@ package caesura
 import scala.language.unsafeNulls
 import scala.quoted.*
 
-import ambience.*, environments.javaEnvironment, systems.javaSystem
+import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import fulminate.*
@@ -46,7 +46,7 @@ import proscenium.*
 import rudiments.*
 import quantitative.*
 import sedentary.*
-import superlunary.embeddings.automatic
+import superlunary.embeddings.automaticEmbedding
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*

@@ -40,7 +40,7 @@ import denominative.*
 import escapade.*
 import gossamer.*
 import gossamer.collationComparable
-import gossamer.collations.codepoints
+import gossamer.collations.codepointCollation
 import guillotine.*
 import hieroglyph.*, textMetrics.uniformMetric
 import hypotenuse.*

@@ -346,7 +346,7 @@ extends RequestServable:
   // A per-request server: handle every request (HTTP/1.1) or stream (HTTP/2)
   // with `handler`. The degenerate session with no per-connection setup. The
   // `Frontend` given selects the engine: the reactive selector loop for cleartext
-  // servers (`import frontends.reactive`), or a virtual-thread daemon per
+  // servers (`import frontends.reactiveFrontend`), or a virtual-thread daemon per
   // connection. A TLS server always takes the daemon path (`SSLSocket` cannot ride
   // a selector), as does `handleSession` (per-connection state is a per-thread
   // affair). Sessions and TLS aside, the two engines serve identical handlers.

@@ -88,7 +88,7 @@ is field 1, `Sec` field 2, and so on. A lens reaches through nested messages and
 without disturbing the rest:
 
 ```scala
-import protobufConversion.encodable
+import conversions.encodableToProtobuf
 
 wrapper.lens(_(Prim) = Point(7, 8).in[Protobuf]).as[Wrapper]
 ```

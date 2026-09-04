@@ -367,7 +367,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Person(t"Alice", 30))
 
     suite(m"Optics"):
-      import dynamicCborAccess.enabled, cborConversion.encodable
+      import dynamicAccess.dynamicCbor, conversions.encodableToCbor
 
       val team = Team(Person(t"John", 40), 3).in[Cbor]
       val list = Wrapper(List(1, 2, 3), t"hi").in[Cbor]
@@ -425,7 +425,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == (0L, 28))
 
     suite(m"Dynamic access"):
-      import dynamicCborAccess.enabled
+      import dynamicAccess.dynamicCbor
 
       test(m"selectDynamic reads a map field by name"):
         Person(t"Ada", 36).in[Cbor].selectDynamic("name").as[Text]

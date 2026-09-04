@@ -35,7 +35,7 @@ package sibylline
 import soundness.*
 
 import charEncoders.utf8Encoder
-import dynamicJsonAccess.enabled
+import dynamicAccess.dynamicJson
 import errorDiagnostics.stackTracesDiagnostics
 import internetAccess.online
 import logging.silentLogging

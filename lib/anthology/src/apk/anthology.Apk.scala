@@ -44,7 +44,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-import gastronomy.providers.javaStdlibProvider
+import gastronomy.providers.javaBaseProvider
 import denominative.*
 import symbolism.*
 import denominative.dysasymptotics.linearSize

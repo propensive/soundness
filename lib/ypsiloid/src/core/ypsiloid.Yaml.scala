@@ -6085,7 +6085,7 @@ extends Dynamic derives CanEqual:
 
   // Dynamic field access — `yaml.foo` desugars to `selectDynamic("foo")`.
   // Gated on an erased `DynamicYamlEnabler` so the feature is opt-in via
-  // `import dynamicYamlAccess.enabled`.
+  // `import dynamicAccess.dynamicYaml`.
   def selectDynamic(field: String)(using erased dynamicYamlEnabler: DynamicYamlEnabler): Yaml = apply(field.tt)
 
   def applyDynamic(field: String)(index: Int)(using erased dynamicYamlEnabler: DynamicYamlEnabler)

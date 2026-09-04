@@ -30,13 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ypsiloid
+package soundness
 
-import anticipation.*
-import prepositional.*
-
-// Importing `yamlConversion.encodable` brings a scoped `Conversion` into lexical scope that lets
-// any `Encodable in Yaml` value be supplied directly at lens-assignment positions, such as
-// `yaml.lens(_.field = value)`, without an explicit `.yaml`.
-object yamlConversion:
-  given encodable: [entity: Encodable in Yaml] => Conversion[entity, Yaml] = _.encode
+package filesystemBackends:
+  export galilei.filesystemBackends.scalaNativeFilesystem

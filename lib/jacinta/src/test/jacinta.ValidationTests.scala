@@ -244,7 +244,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
       . assert(_ == 1)
 
     suite(m"Ventures and guards over Json decoding"):
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       test(m"Failed sibling reads both accrue; dependent steps are skipped"):
         var consistencyRan = false
         var constructed = false

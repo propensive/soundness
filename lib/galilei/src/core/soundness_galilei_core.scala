@@ -58,8 +58,9 @@ package interfaces.paths:
 package filesystemOptions:
   export
     galilei.filesystemOptions
-    . { copyAttributes, createNonexistentParents, deleteRecursively,
-        dereferenceSymlinks, moveAtomically, overwritePreexisting }
+    . { copyAttributes, createNonexistentParents, deleteOnlyEmpty, deleteRecursively,
+        dereferenceSymlinks, discardAttributes, failOnPreexisting, moveAtomically, moveNonAtomically,
+        overwritePreexisting, preserveSymlinks, requireParents }
 
 package filesystemTraversal:
   export galilei.filesystemTraversal.{postOrderTraversal, preOrderTraversal}

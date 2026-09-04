@@ -114,7 +114,7 @@ extension [value](value: value)
 // A proof-carrying value compares as its unproven self: without this, strict equality rejects
 // comparing a `value & Populated` with a plain `value` (no `CanEqual` between them).
 given populatedEquality: [value] => CanEqual[value & Populated, value] = CanEqual.derived
-given populatedEquality2: [value] => CanEqual[value, value & Populated] = CanEqual.derived
+given populatedEqualityReversed: [value] => CanEqual[value, value & Populated] = CanEqual.derived
 
 extension [input, result](inline lambda: (=> input) => result)
   inline def upon(inline value: => input): result = lambda(value)

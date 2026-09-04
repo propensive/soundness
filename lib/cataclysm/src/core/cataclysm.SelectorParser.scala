@@ -46,7 +46,7 @@ import zephyrine.*
 // and any other function keeps its argument as raw text.
 private[cataclysm] object SelectorParser:
   def parse(text: Text)(using Tactic[Css.Error]): SelectorList =
-    import zephyrine.lineation.linefeedChars
+    import zephyrine.lineation.linefeedChar
 
     Parser(Cursor[Text](text)).document()
 

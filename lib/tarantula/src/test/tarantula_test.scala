@@ -38,21 +38,21 @@ import soundness.*
 
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
-import dynamicJsonAccess.enabled
+import dynamicAccess.dynamicJson
 import errorDiagnostics.stackTracesDiagnostics
 import formatting.compactJsonFormatting
 import internetAccess.online
 import logging.silentLogging
-import environments.javaEnvironment
+import environments.javaBaseEnvironment
 import probates.awaitProbate
-import stdios.virtualMachineStdio
-import systems.javaSystem
+import stdios.fileDescriptorStdio
+import systems.javaBaseSystem
 import termcaps.environmentTermcap
 import strategies.throwUnsafely
 import textSanitizers.skipSanitizer
 import threading.virtualThreading
 import webserverErrorPages.minimalErrorPage
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
 object FakeDriver:
   // One request as the driver saw it. The body is `Unset` for a request that had none, so that a
@@ -492,7 +492,7 @@ object Tests extends Suite(m"Tarantula tests"):
 
       // The real transport, only for this block: everything above deliberately runs against a
       // fake backend, and summoning both at once would be ambiguous.
-      import httpBackends.virtualMachineHttp
+      import httpBackends.javaNetHttp
 
       supervise:
         val port = freePort()

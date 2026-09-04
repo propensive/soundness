@@ -44,7 +44,7 @@ import zephyrine.*
 // (`?`, `*`, `+`, `{m,n}`, `#`, `!`) which bind to the preceding term.
 private[cataclysm] object SyntaxParser:
   def parse(text: Text)(using Tactic[Css.Error]): Css.Syntax =
-    import zephyrine.lineation.linefeedChars
+    import zephyrine.lineation.linefeedChar
 
     Parser(Cursor[Text](text)).document()
 

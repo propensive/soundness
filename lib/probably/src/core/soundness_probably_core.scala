@@ -41,7 +41,10 @@ export
       Trial, Value, Verdict }
 
 package harnesses:
-  export probably.harnesses.threadLocal
+  export probably.harnesses.threadLocalHarness
 
 package autopsies:
-  export probably.autopsies.{contrastExpectations, none}
+  export probably.autopsies.{contrastAutopsy, noAutopsy}
+
+package decimalizers:
+  export probably.decimalizers.fourDecimalPlaces

@@ -44,12 +44,12 @@ export
 package colorimetry:
   export
     iridescence.colorimetry
-    . { adobeRgb, coolFluorescent, coolWhiteFluorescent, d50Simulator, d65Simulator, daylight,
-        daylightFluorescentF1, daylightFluorescentF5, daylightFluorescentF7, equalEnergy,
-        iccProfilePcs, incandescentTungsten, liteWhiteFluorescent, midMorningDaylight,
-        northSkyDaylight, oldDaylight, oldDirectSunlightAtNoon, philipsTl83, philipsTl84,
-        philipsTl85, srgb, sylvaniaF40, ultralume30, ultralume40, ultralume50, warmWhiteFluorescent,
-        whiteFluorescent }
+    . { adobeRgbColorimetry, coolFluorescentColorimetry, coolWhiteFluorescentColorimetry, d50SimulatorColorimetry, d65SimulatorColorimetry, daylightColorimetry,
+        daylightFluorescentF1Colorimetry, daylightFluorescentF5Colorimetry, daylightFluorescentF7Colorimetry, equalEnergyColorimetry,
+        iccProfilePcsColorimetry, incandescentTungstenColorimetry, liteWhiteFluorescentColorimetry, midMorningDaylightColorimetry,
+        northSkyDaylightColorimetry, oldDaylightColorimetry, oldDirectSunlightAtNoonColorimetry, philipsTl83Colorimetry, philipsTl84Colorimetry,
+        philipsTl85Colorimetry, srgbColorimetry, sylvaniaF40Colorimetry, ultralume30Colorimetry, ultralume40Colorimetry, ultralume50Colorimetry, warmWhiteFluorescentColorimetry,
+        whiteFluorescentColorimetry }
 
 package luminosity:
   export iridescence.luminosity.{darkBrightness, lightBrightness}
@@ -57,8 +57,8 @@ package luminosity:
 package mixing:
   export
     iridescence.mixing
-    . { colorBurn, colorDodge, darken, difference, exclusion, hardLight, lighten, linearBurn,
-        linearDodge, multiply, overlay, proportional, screen, softLight }
+    . { colorBurnMixing, colorDodgeMixing, darkenMixing, differenceMixing, exclusionMixing, hardLightMixing, lightenMixing, linearBurnMixing,
+        linearDodgeMixing, multiplyMixing, overlayMixing, proportionalMixing, screenMixing, softLightMixing }
 
 package themes:
   export iridescence.themes.solarizedTheme

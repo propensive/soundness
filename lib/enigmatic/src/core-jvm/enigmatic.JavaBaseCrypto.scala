@@ -49,7 +49,7 @@ import denominative.dysasymptotics.linearSize
 // `java.security`). This is the single home of all `javax.crypto.*` and
 // `java.security.*` usage in enigmatic; every other module reaches these
 // algorithms only through the `Crypto` contract.
-object JavaStdlibCrypto extends Crypto:
+object JavaBaseCrypto extends Crypto:
   def random: Crypto.Random = new Crypto.Random:
     def bytes(size: Int): Data =
       val output = Array.allocate[Byte](size)
@@ -113,7 +113,7 @@ object JavaStdlibCrypto extends Crypto:
 
         generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
 
-      def privateToPublic(privateKey: Data): Data = JavaStdlibCrypto.rsa.privateToPublic(privateKey)
+      def privateToPublic(privateKey: Data): Data = JavaBaseCrypto.rsa.privateToPublic(privateKey)
 
   // ECDSA over a NIST prime curve. The curve is chosen by key size, since `KeyPairGenerator` needs
   // a curve name rather than a bit count for EC; P-521 really is 521 bits, not 512.

@@ -2566,7 +2566,7 @@ object Json extends Json2, Dynamic:
     private[jacinta] def field: Text = label
     protected def key: String = label.s
 
-    import dynamicJsonAccess.enabled
+    import dynamicAccess.dynamicJson
 
     def rewrite(kind: Text, json: Json): Json = unsafely(json.updateDynamic(key)(kind))
     // Reads the discriminator through direct AST access rather than a `Decodable` summon:

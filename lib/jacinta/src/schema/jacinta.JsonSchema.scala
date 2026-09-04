@@ -312,7 +312,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     type Form = Json
     type Self = JsonSchema
 
-    import dynamicJsonAccess.enabled
+    import dynamicAccess.dynamicJson
 
     def rewrite(kind: Text, json: Json): Json = unsafely(json.updateDynamic("type")(kind.lower))
     def variant(json: Json): Json = unsafely(json.updateDynamic("type")(Unset))

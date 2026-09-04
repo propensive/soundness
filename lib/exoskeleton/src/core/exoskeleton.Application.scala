@@ -39,7 +39,7 @@ abstract class Application:
   import executives.directExecutive
   import backstops.genericErrorMessageBackstop
   import interpreters.posixInterpreter
-  import ambience.systems.javaSystem
+  import ambience.systems.javaBaseSystem
 
   def invoke(using Cli): Exit
   def main(textArguments: Array[Text]^{}): Unit = application(List.from(textArguments.readable))(invoke)

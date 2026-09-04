@@ -142,7 +142,7 @@ object internal:
 
         Some(Motif.parse(regex.plainPattern))
 
-    val formType: TypeRepr = if re2Backend then TypeRepr.of[Re2] else TypeRepr.of[Jur]
+    val formType: TypeRepr = if re2Backend then TypeRepr.of[Re2] else TypeRepr.of[JavaBaseRegex]
 
     import praxinoscope.internal.motif
 

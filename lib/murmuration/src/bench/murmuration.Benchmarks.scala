@@ -37,7 +37,7 @@ import java.util as ju
 import scala.collection.mutable as scm
 import scala.quoted.*
 
-import ambience.*, environments.javaEnvironment, systems.javaSystem
+import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import fulminate.*
@@ -49,7 +49,7 @@ import proscenium.*
 import quantitative.*
 import rudiments.*
 import sedentary.*
-import superlunary.embeddings.automatic
+import superlunary.embeddings.automaticEmbedding
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import vacuous.*

@@ -324,7 +324,7 @@ object Tests extends Suite(m"Obligatory Tests"):
       . assert(_ == t"pong")
 
     suite(m"JSON-RPC error responses"):
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       import Json.jsonEncodableInText
 
       test(m"a failure carries the fault in the error member"):

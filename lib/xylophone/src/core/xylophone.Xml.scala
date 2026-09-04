@@ -2251,17 +2251,17 @@ object Xml extends Tag.Container
     // reconciliation happens only at element / attribute capture points
     // and before any refill in `moreSlow`.
     def fromTextTracked(text: Text)(using XmlSchema): XmlParser =
-      import zephyrine.lineation.linefeedChars
+      import zephyrine.lineation.linefeedChar
       new XmlParser(Cursor[Text](text), tracking = true)
 
     // Native `Chain` sibling of `fromIteratorTracked`.
     def fromChainTracked(input: Chain[Text])(using XmlSchema): XmlParser =
-      import zephyrine.lineation.linefeedChars
+      import zephyrine.lineation.linefeedChar
       new XmlParser(Cursor[Text](input), tracking = true)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
     def fromIteratorTracked(input: Iterator[Text])(using XmlSchema): XmlParser =
-      import zephyrine.lineation.linefeedChars
+      import zephyrine.lineation.linefeedChar
       new XmlParser(Cursor[Text](input), tracking = true)
 
   private[xylophone] final class XmlParser
@@ -4306,7 +4306,7 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   // are not unique, so a dereference yields a `Fragment` of zero or more
   // matches). `xml.foo(ordinal)` picks a single one; the ordinal defaults to
   // `Prim`, so `xml.foo()` is the first match. Both are gated by an imported
-  // `DynamicXmlEnabler` (see `dynamicXmlAccess.enabled`).
+  // `DynamicXmlEnabler` (see `dynamicAccess.dynamicXml`).
 
   private def selfNodes: Array[Node]^{} = this match
     case Fragment(nodes*) => Array.from(nodes)

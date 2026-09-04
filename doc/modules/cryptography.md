@@ -30,14 +30,14 @@ a provider in scope:
 ```scala
 import soundness.*
 import strategies.throwUnsafely
-import providers.javaStdlibProvider
-import cloaks.cloakHeap
+import providers.javaBaseProvider
+import cloaks.heapCloak
 ```
 
 There is deliberately no default `Cloak`: constructing any secret value — a password, a
 symmetric key, a private key — needs one in scope, so the storage decision is always written
-down. `cloakHeap` keeps the material in a private byte array; `cloakOffHeap` moves it out of
-the Java heap, so it does not appear in a heap dump; `cloakVeiledHeap` and `cloakVeiledOffHeap`
+down. `heapCloak` keeps the material in a private byte array; `offHeapCloak` moves it out of
+the Java heap, so it does not appear in a heap dump; `veiledHeapCloak` and `veiledOffHeapCloak`
 additionally keep it encrypted under an ephemeral key between uses. No cloak defends against a
 debugger in the same process; what the stronger ones shrink is the window during which
 cleartext is reachable from a heap dump or core file.
@@ -49,8 +49,8 @@ padding, all in the type — and encryption happens inside the key's `uncloak` b
 [initialization vector](https://en.wikipedia.org/wiki/Initialization_vector) supplied explicitly:
 
 ```scala
-import blockCipherMode.cbc
-import blockCipherPadding.pkcs7
+import blockCipherModes.cbc
+import blockCipherPaddings.pkcs7
 
 val key = SymmetricKey.generate[Aes[256]]()
 

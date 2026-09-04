@@ -41,13 +41,13 @@ import scala.annotation.implicitNotFound
 // `ProcessingPermit` allows *processing already-protected* data (decrypt/verify),
 // while `Permit` (a subtype) additionally allows *applying new protection*
 // (encrypt/sign/hash). Both are erased — purely compile-time gates with no runtime
-// cost. Bring them into scope with a `crypto.permit…Crypto` import. Defined here in
+// cost. Bring them into scope with a `cryptoPermits.permit…Crypto` import. Defined here in
 // gastronomy so both gastronomy (weak hashes) and enigmatic (weak ciphers) share
 // one permit vocabulary.
 
 @implicitNotFound("this operation uses an algorithm whose status is \"legacy use\" or worse; "+
-    "import a permit (e.g. `crypto.permitLegacyCrypto` to process existing data, or "+
-    "`crypto.permitDisallowedCrypto`) to allow it")
+    "import a permit (e.g. `cryptoPermits.permitLegacyCrypto` to process existing data, or "+
+    "`cryptoPermits.permitDisallowedCrypto`) to allow it")
 object ProcessingPermit:
   erased given acceptable: ProcessingPermit[Concession.Acceptable] = caps.unsafe.unsafeErasedValue
 
@@ -55,9 +55,9 @@ trait ProcessingPermit[concession]
 
 @implicitNotFound("this operation uses a sub-optimal algorithm, key length or mode — or a "+
     "checksum in place of a hash; import the matching permit "+
-    "(`crypto.permitNonCryptographicHashes` for CRC-32/CRC-64/Adler-32, or "+
-    "`crypto.permitUnauthenticatedCrypto`, `crypto.permitDeprecatedCrypto` or "+
-    "`crypto.permitDisallowedCrypto`) to allow it")
+    "(`cryptoPermits.permitNonCryptographicHashes` for CRC-32/CRC-64/Adler-32, or "+
+    "`cryptoPermits.permitUnauthenticatedCrypto`, `cryptoPermits.permitDeprecatedCrypto` or "+
+    "`cryptoPermits.permitDisallowedCrypto`) to allow it")
 object Permit:
   // `Acceptable` crypto needs no permission, so this permit is always available.
   erased given acceptable: Permit[Concession.Acceptable] = caps.unsafe.unsafeErasedValue

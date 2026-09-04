@@ -62,7 +62,7 @@ extension [formulaic: {Formulaic, Encodable in Query}](value: formulaic)
 
 
 package formulations:
-  given defaultFormulation: Formulation:
+  given postFormulation: Formulation:
     def form(content: List[Html of Flow], submit: Optional[Text]): Html of Flow =
       Form
         ( action = t".", method = t"post" )

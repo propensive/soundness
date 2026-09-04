@@ -46,7 +46,7 @@ import logging.silentLogging
 import probates.awaitProbate
 import strategies.throwUnsafely
 import threading.virtualThreading
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
 // Kept as a top-level object (its own class) rather than nested in `Tests` so the LSP codecs the
 // dispatcher inlines do not add to the `Tests` class, which would otherwise exceed the JVM
@@ -213,7 +213,7 @@ object ProxyFixture:
   // Decoded in a `try` rather than with `safely`, here and below: a decodable cannot thread the
   // boundary tactic under separation checking.
   def commandName(message: Json): Text =
-    import dynamicJsonAccess.enabled
+    import dynamicAccess.dynamicJson
     try Lsp.params(message).command.as[Text] catch case _: Exception => t""
 
   def connect[result](using listener: Lsp.Listener^)
@@ -456,7 +456,7 @@ object Tests extends Suite(m"Exegesis Tests"):
       . assert(_ == t"resolved")
 
     suite(m"Error responses"):
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
 
       test(m"a handler fault becomes an error response with its wire code and the request id"):
         val request: Json =

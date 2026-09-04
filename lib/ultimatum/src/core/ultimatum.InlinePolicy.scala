@@ -40,17 +40,17 @@ enum InlineAnchoring:
   case TopAnchored     // pinned to rows 1..height from the first frame
   case TopAfterResize  // bottom-docked, then top-anchored after the first resize
   case Fullscreen      // take over the alternate screen buffer, top-anchored
-  case Inline          // render relative to the cursor, flowing with prior output
+  case Flow            // render relative to the cursor, flowing with prior output
 
 object InlineAnchoring:
   given default: InlineAnchoring = TopAfterResize
 
 package inlineAnchoring:
-  given bottomDocked: InlineAnchoring = InlineAnchoring.BottomDocked
-  given topAnchored: InlineAnchoring = InlineAnchoring.TopAnchored
-  given topAfterResize: InlineAnchoring = InlineAnchoring.TopAfterResize
-  given fullscreen: InlineAnchoring = InlineAnchoring.Fullscreen
-  given inline: InlineAnchoring = InlineAnchoring.Inline
+  given bottomDockedAnchoring: InlineAnchoring = InlineAnchoring.BottomDocked
+  given topAnchoring: InlineAnchoring = InlineAnchoring.TopAnchored
+  given topAfterResizeAnchoring: InlineAnchoring = InlineAnchoring.TopAfterResize
+  given fullscreenAnchoring: InlineAnchoring = InlineAnchoring.Fullscreen
+  given flowAnchoring: InlineAnchoring = InlineAnchoring.Flow
 
 // What happens when a frame is taller than the last while bottom-docked. The
 // default (`ScrollIntoScrollback`) preserves the historic behaviour.
@@ -62,8 +62,8 @@ object InlineGrowth:
   given default: InlineGrowth = ScrollIntoScrollback
 
 package inlineGrowth:
-  given scrollIntoScrollback: InlineGrowth = InlineGrowth.ScrollIntoScrollback
-  given clampToScreen: InlineGrowth = InlineGrowth.ClampToScreen
+  given scrollbackGrowth: InlineGrowth = InlineGrowth.ScrollIntoScrollback
+  given clampedGrowth: InlineGrowth = InlineGrowth.ClampToScreen
 
 // What happens when a frame is shorter than the last. The default
 // (`RedockBottom`) preserves the historic behaviour.
@@ -75,5 +75,5 @@ object InlineShrink:
   given default: InlineShrink = RedockBottom
 
 package inlineShrink:
-  given redockBottom: InlineShrink = InlineShrink.RedockBottom
-  given keepTop: InlineShrink = InlineShrink.KeepTop
+  given redockBottomShrink: InlineShrink = InlineShrink.RedockBottom
+  given keepTopShrink: InlineShrink = InlineShrink.KeepTop

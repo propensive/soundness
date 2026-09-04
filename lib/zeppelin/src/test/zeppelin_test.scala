@@ -36,20 +36,20 @@ import soundness.*
 
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.overwritePreexisting
 import logging.silentLogging
 import strategies.throwUnsafely
-import systems.javaSystem
+import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 import textSanitizers.skipSanitizer
 
 import _root_.java.io as ji
 import _root_.java.util.zip as juz
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Zeppelin tests"):

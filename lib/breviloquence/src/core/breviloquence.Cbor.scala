@@ -929,7 +929,7 @@ object Cbor extends Cbor2, Dynamic:
     type Form = Cbor
     type Self = derivation
 
-    import dynamicCborAccess.enabled
+    import dynamicAccess.dynamicCbor
 
     def rewrite(kind: Text, cbor: Cbor): Cbor = unsafely(cbor.updateDynamic(key.s)(kind))
     def discriminate(cbor: Cbor): Optional[Text] =

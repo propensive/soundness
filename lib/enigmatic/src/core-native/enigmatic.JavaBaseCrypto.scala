@@ -35,11 +35,11 @@ package enigmatic
 import anticipation.*
 import fulminate.*
 
-// The Scala Native twin of the JVM `JavaStdlibCrypto` provider. `javax.crypto` does not exist on
+// The Scala Native twin of the JVM `JavaBaseCrypto` provider. `javax.crypto` does not exist on
 // Scala Native, so every operation panics: the object exists only so the platform-neutral
-// `Crypto.javaStdlibCrypto` given (and code mentioning the provider, like `OpensslCrypto.rsa`'s
+// `Crypto.javaBaseCrypto` given (and code mentioning the provider, like `OpensslCrypto.rsa`'s
 // delegation) compiles unchanged — selecting it *and using it* on native is the error.
-object JavaStdlibCrypto extends Crypto:
+object JavaBaseCrypto extends Crypto:
   private def unavailable: Nothing =
     panic(m"the Java standard library's cryptography is unavailable on Scala Native")
 

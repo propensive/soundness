@@ -35,7 +35,6 @@ package ambience
 import scala.language.experimental.pureFunctions
 
 import java.lang as jl
-import java.nio.file as jnf
 
 import anticipation.*
 import contingency.*
@@ -49,7 +48,7 @@ package systems:
   given emptySystem: System:
     def apply(name: Text): Unset.type = Unset
 
-  given javaSystem: System:
+  given javaBaseSystem: System:
     def apply(name: Text): Optional[Text] = Optional(jl.System.getProperty(name.s)).let(_.tt)
 
 package workingDirectories:
@@ -57,23 +56,20 @@ package workingDirectories:
   given systemWorkingDirectory: (properties: System) => WorkingDirectory =
     () => properties(t"user.dir").or(panic(m"the property `user.dir` should be present"))
 
-  // The JDK's working directory: `systemWorkingDirectory` specialised to the JVM
+  // The `java.base` working directory: `systemWorkingDirectory` specialised to the JVM
   // `System`, equivalent to reading `user.dir` directly.
-  given javaWorkingDirectory: WorkingDirectory =
-    systemWorkingDirectory(using ambience.systems.javaSystem)
-
-  given defaultWorkingDirectory: WorkingDirectory =
-    () => jnf.Paths.get("").nn.toAbsolutePath.toString
+  given javaBaseWorkingDirectory: WorkingDirectory =
+    systemWorkingDirectory(using ambience.systems.javaBaseSystem)
 
 package environments:
   given emptyEnvironment: Environment:
     def variable(name: Text): Unset.type = Unset
 
-  given javaEnvironment: Environment:
+  given javaBaseEnvironment: Environment:
     def variable(name: Text): Optional[Text] = Optional(jl.System.getenv(name.s)).let(_.tt)
 
 package temporaryDirectories:
-  given javaTemporaryDirectory: TemporaryDirectory = () =>
+  given javaBaseTemporaryDirectory: TemporaryDirectory = () =>
     Optional(jl.System.getProperty("java.io.tmpdir")).let(_.tt).or:
       panic(m"the `java.io.tmpdir` system property is not set")
 

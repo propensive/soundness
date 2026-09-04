@@ -32,7 +32,7 @@
                                                                                                   */
 package exoskeleton
 
-import ambience.*, environments.javaEnvironment, systems.javaSystem
+import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import anticipation.*
 import aperture.*
 import contingency.*
@@ -47,7 +47,7 @@ import turbulence.*
 import vacuous.*
 import virility.*
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 // Installs a rendered manpage into the XDG man hierarchy, mirroring how `Completions.install`
 // places shell-completion scripts. `$XDG_DATA_HOME/man` is on the default manpath of modern

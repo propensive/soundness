@@ -41,19 +41,19 @@ import interfaces.paths.pathOnLinux
 import strategies.throwUnsafely
 import logging.silentLogging
 import charEncoders.utf8Encoder
-import environments.javaEnvironment
-import gitCommands.environmentDefaultGitCommand
-import systems.javaSystem
-import workingDirectories.javaWorkingDirectory
+import environments.javaBaseEnvironment
+import gitCommands.searchpathGitCommand
+import systems.javaBaseSystem
+import workingDirectories.javaBaseWorkingDirectory
 import internetAccess.online
 import errorDiagnostics.stackTracesDiagnostics
 
 import scala.compiletime.*
 
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.createNonexistentParents
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 import denominative.dysasymptotics.linearSize
 
 object ParserTests extends Suite(m"Jacinta JSON parser tests"):

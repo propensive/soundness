@@ -31,10 +31,10 @@ operations need brought into scope:
 ```scala
 import soundness.*
 import strategies.throwUnsafely
-import systems.javaSystem
+import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
-import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.deleteRecursively.enabled
+import filesystemOptions.overwritePreexisting
+import filesystemOptions.deleteRecursively
 ```
 
 ### Files and directories
@@ -266,7 +266,7 @@ unavailable, `watchers.polling` checks at an interval instead.
 Nothing above names a platform API. The primitive operations a filesystem must offer — stat,
 open, read, write, list, link, delete — are gathered into a `FilesystemBackend` for a plane,
 and everything else is defined in terms of them. The `java.nio` implementation is
-`filesystemBackends.virtualMachineFilesystem`, and a WASI implementation over `wasi:filesystem` is
+`filesystemBackends.javaBaseFilesystem`, and a WASI implementation over `wasi:filesystem` is
 supplied by `galilei.wasi`, so the same code reads and writes files on the JVM and inside a
 WebAssembly component. An operation a backend cannot support raises an `Io.Error` whose reason
 is `Unsupported`, rather than approximating it. Narrowing the platform's surface to a seam
