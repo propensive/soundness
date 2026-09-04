@@ -8,10 +8,11 @@ release onwards every release ships a machine-oriented record of what changed.
 
 - `doc/migration/pending.md` accumulates the changes since the last release. Every PR that
   makes a material change to the public API or observable behaviour adds an entry to it.
-- When a release is cut, `pending.md` is renamed to `doc/migration/<version>.md`
-  (for example `doc/migration/0.65.0.md` for Soundness 0.65.0) and a fresh, empty
-  `pending.md` is started. Released files are not edited afterwards except to correct
-  mistakes.
+- Before a release is cut, `pending.md` is renamed to `doc/migration/<version>.md`
+  (for example `doc/migration/0.65.0.md` for Soundness 0.65.0). The release script refuses
+  to tag while `pending.md` still exists, so the rename cannot be skipped. The first change
+  after the release starts a new `pending.md`. Released files are not edited afterwards
+  except to correct mistakes.
 - The result is one file per release, each describing exactly the changes between the
   previous release and that one.
 
