@@ -40,7 +40,7 @@ import soundness.*
 // `Fragment` from another file; the by-name import restores it.
 import harlequin.Fragment
 
-import ambience.systems.javaSystem
+import ambience.systems.javaBaseSystem
 import denominative.dysasymptotics.linearSize
 
 // A `Dynamic` type with a `Completable` companion, exercising the dynamic-completions route: its

@@ -557,7 +557,7 @@ them about not breaking something while moving something else.
   away, as `Not found: type rpc` inside a macro in a different component, and survives
   incremental rebuilds until `mill clean`. `obligatory`'s `@rpc` annotation hit this; moving
   it into `object annotations` and exporting it frees the name. Nested lowercase objects are
-  safe — hypotenuse's `arithmeticOptions.division` does not block `Division`.
+  safe — hypotenuse's `arithmeticOptions.checkedDivision` does not block `Division`.
 - **An inner wildcard import shadows the outer ones.** Gathering files into one object means
   merging their imports, and a nested object that re-imports only its *distinctive* imports
   loses the rest: `object Dialect` with `import proscenium.compat.*` inside it stopped seeing

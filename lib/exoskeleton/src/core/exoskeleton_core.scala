@@ -57,7 +57,7 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 
-import environments.javaEnvironment
+import environments.javaBaseEnvironment
 import termcaps.environmentTermcap
 
 package backstops:
@@ -114,8 +114,8 @@ package executives:
 
       Invocation
         ( Cli.arguments(arguments, Unset, Unset, Unset),
-          environments.javaEnvironment,
-          workingDirectories.javaWorkingDirectory,
+          environments.javaBaseEnvironment,
+          workingDirectories.javaBaseWorkingDirectory,
           stdio,
           arguments.prim.let(_ != t"{admin}").or(true),
           login )
@@ -148,9 +148,9 @@ def application(using executive: Executive, interpreter: Interpreter, system: Sy
   val cli =
     executive.invocation
       ( arguments,
-        environments.javaEnvironment,
-        workingDirectories.javaWorkingDirectory,
-        stdios.virtualMachineStdio,
+        environments.javaBaseEnvironment,
+        workingDirectories.javaBaseWorkingDirectory,
+        stdios.fileDescriptorStdio,
         entrypoint,
         Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset) )
 

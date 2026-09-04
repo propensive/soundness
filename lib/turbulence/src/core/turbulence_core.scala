@@ -280,7 +280,7 @@ package lineSeparation:
   given adaptiveLinefeedLineSeparation
   :   LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Nl, Action.Nl, Action.Nl)
 
-  given virtualMachineLineSeparation: LineSeparation = jl.System.lineSeparator.nn match
+  given javaBaseLineSeparation: LineSeparation = jl.System.lineSeparator.nn match
     case "\r\n"    => carriageReturnLinefeedLineSeparation
     case "\r"      => carriageReturnLineSeparation
     case "\n"      => linefeedLineSeparation

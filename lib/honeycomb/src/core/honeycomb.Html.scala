@@ -584,7 +584,7 @@ object Html extends Tag.Container
   // `Iterator[Text]` (pulls chunks via the loader). Slicing is uniform
   // (one buffer; one `arraycopy`) so there's no separate same-block fast
   // path versus cross-block grab path. Line/column tracking is delegated
-  // to Cursor via `linefeedChars` lineation, so `computePosition` is
+  // to Cursor via `linefeedChar` lineation, so `computePosition` is
   // O(1) — the per-byte tracking cost is small and avoids re-walking the
   // source on each error (which used to be O(n)).
 

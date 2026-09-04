@@ -41,7 +41,7 @@ package iridescence
 //
 // There is deliberately no default instance in this companion. A mode reachable through the
 // implicit scope would be found whenever the imported one did not apply — mixing CIELAB under
-// `import mixing.multiply` would quietly fall back to a proportional mix rather than being
+// `import mixing.multiplyMixing` would quietly fall back to a proportional mix rather than being
 // rejected — so the mode is always named by an import from `mixing`.
 trait Mixing:
   type Self <: Color

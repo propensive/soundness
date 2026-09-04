@@ -42,7 +42,7 @@ import java.util.concurrent.atomic as juca
 
 import scala.collection.concurrent as scc
 
-import ambience.*, systems.javaSystem
+import ambience.*, systems.javaBaseSystem
 import anticipation.*
 import aperture.*
 import coaxial.*
@@ -91,9 +91,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
   import strategies.throwUnsafely
   import workingDirectories.systemWorkingDirectory
-  import environments.javaEnvironment
+  import environments.javaBaseEnvironment
   import termcaps.environmentTermcap
-  import stdios.virtualMachineStdio
+  import stdios.fileDescriptorStdio
 
   val name: Text =
     recover:
@@ -609,9 +609,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
   // `application` takes a stdlib `Iterable` of arguments, which the opaque `Nil` is not.
   application(using executives.directExecutive(using backstops.silentBackstop))(Nil):
-    import environments.javaEnvironment
+    import environments.javaBaseEnvironment
     import termcaps.environmentTermcap
-    import stdios.virtualMachineStdio
+    import stdios.fileDescriptorStdio
     import probates.awaitProbate
 
     Os.intercept[Shutdown]:

@@ -797,7 +797,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       import java.io as ji
       import java.security as js, js.cert as jsc
 
-      import chronometries.unix
+      import chronometries.unixChronometry
 
       val subject = Distinguished
                      ( commonName = t"asn1.example.com",

@@ -57,8 +57,8 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.moveAtomically.enabled
 import filesystemOptions.overwritePreexisting.enabled
 import logging.silentLogging
-import systems.javaSystem
-import workingDirectories.javaWorkingDirectory
+import systems.javaBaseSystem
+import workingDirectories.javaBaseWorkingDirectory
 
 object PdfFile:
   def apply[path: Abstractable across Paths to Text](path: path): PdfFile =

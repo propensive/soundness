@@ -40,10 +40,10 @@ import java.util.zip as juz
 import soundness.*
 
 import classloaders.systemClassloader
-import environments.javaEnvironment
-import systems.javaSystem
+import environments.javaBaseEnvironment
+import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 import logging.silentLogging
 import threading.platformThreading
 
@@ -79,7 +79,7 @@ object Tests extends Suite(m"Ethereal Tests"):
         ' {
             import executives.completions
             import interpreters.posixInterpreter
-            import systems.javaSystem
+            import systems.javaBaseSystem
 
             cli:
               arguments match

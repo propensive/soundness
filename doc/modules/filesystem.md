@@ -31,7 +31,7 @@ operations need brought into scope:
 ```scala
 import soundness.*
 import strategies.throwUnsafely
-import systems.javaSystem
+import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.deleteRecursively.enabled

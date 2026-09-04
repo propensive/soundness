@@ -41,9 +41,9 @@ import soundness.*
 // brought in via `soundness.*`.
 import octogenarian.{content, namespace, target}
 
-import systems.javaSystem
+import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 import logging.silentLogging
 import internetAccess.online
 

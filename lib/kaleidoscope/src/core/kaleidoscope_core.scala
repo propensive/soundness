@@ -50,5 +50,5 @@ extension (inline context: StringContext)
 sealed trait RegexBackend[form]
 
 package regexBackends:
-  given jur: RegexBackend[Jur] = new RegexBackend[Jur] {}
+  given javaBaseRegex: RegexBackend[JavaBaseRegex] = new RegexBackend[JavaBaseRegex] {}
   given re2: RegexBackend[Re2] = new RegexBackend[Re2] {}

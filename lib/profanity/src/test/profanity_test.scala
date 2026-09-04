@@ -37,10 +37,10 @@ import java.lang as jl
 import soundness.*
 
 import classloaders.systemClassloader
-import environments.javaEnvironment
-import systems.javaSystem
+import environments.javaBaseEnvironment
+import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 import logging.silentLogging
 import threading.platformThreading
 

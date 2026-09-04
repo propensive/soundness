@@ -1378,27 +1378,27 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_.exists(_.contains("is symbolism.Comparable")))
 
       test(m"dictionary order ranks accents before case: cafe < café < caff"):
-        import collations.unicode
+        import collations.unicodeCollation
         proscenium.List(t"caff", t"café", t"cafe").sort
       . assert(_ == proscenium.List(t"cafe", t"café", t"caff"))
 
       test(m"comparison operators work once a collation is chosen"):
-        import collations.unicode
+        import collations.unicodeCollation
         t"apple" < t"banana"
       . assert(_ == true)
 
       test(m"codepoint order sorts supplementary characters after the BMP"):
-        import collations.codepoints
+        import collations.codepointCollation
         proscenium.List(t"𝓐", t"�").sort
       . assert(_ == proscenium.List(t"�", t"𝓐"))
 
       test(m"codepoint and dictionary orders differ on case"):
         val upper = proscenium.List(t"a", t"B")
-        import collations.unicode
+        import collations.unicodeCollation
         val dictionary = upper.sort
 
         val codepoint =
-          import collations.codepoints
+          import collations.codepointCollation
           upper.sort
 
         (dictionary, codepoint)

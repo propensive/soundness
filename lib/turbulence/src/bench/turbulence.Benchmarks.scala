@@ -34,7 +34,7 @@ package turbulence
 
 import scala.collection.immutable.IndexedSeq
 
-import ambience.*, environments.javaEnvironment, systems.javaSystem
+import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import enigmatic.*, blockCipherMode.cbc, blockCipherPadding.pkcs7
 import gastronomy.providers.javaStdlibProvider, gastronomy.crypto.permitUnauthenticatedCrypto
 import parasite.*, threading.virtualThreading, probates.panicProbate

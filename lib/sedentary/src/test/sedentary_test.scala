@@ -35,10 +35,10 @@ package sedentary
 import soundness.*
 
 import classloaders.threadContextClassloader
-import environments.javaEnvironment
+import environments.javaBaseEnvironment
 import strategies.throwUnsafely
 import superlunary.embeddings.automatic
-import systems.javaSystem
+import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 
 given BenchmarkDevice = LocalhostDevice

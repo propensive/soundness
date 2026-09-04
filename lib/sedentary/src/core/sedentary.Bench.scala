@@ -60,9 +60,9 @@ import superlunary.*
 import symbolism.*
 import vacuous.*
 
-import systems.javaSystem
+import systems.javaBaseSystem
 import threading.platformThreading
-import workingDirectories.javaWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 import denominative.*
 import denominative.dysasymptotics.linearSize
 

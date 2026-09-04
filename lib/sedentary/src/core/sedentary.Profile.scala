@@ -56,9 +56,9 @@ import serpentine.*
 import superlunary.*
 import vacuous.*
 
-import systems.javaSystem
+import systems.javaBaseSystem
 import threading.platformThreading
-import workingDirectories.javaWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
 // A profile test: where `Bench` measures how fast a fragment runs and `Stress` how it
 // scales, `Profile` measures where its time goes. The body is run repeatedly on a single

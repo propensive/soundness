@@ -60,12 +60,12 @@ import zeppelin.*
 
 import Repackager.UserError
 import backstops.stackTraceBackstop
-import environments.javaEnvironment
+import environments.javaBaseEnvironment
 import executives.directExecutive
 import filesystemOptions.dereferenceSymlinks.enabled
 import interpreters.posixInterpreter
-import stdios.virtualMachineStdio
-import systems.javaSystem
+import stdios.fileDescriptorStdio
+import systems.javaBaseSystem
 import termcaps.environmentTermcap
 
 import filesystemBackends.virtualMachineFilesystem

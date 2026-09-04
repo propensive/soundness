@@ -128,7 +128,7 @@ object settings:
     "-Wconf:origin=.*hashProviders.soundnessHashing:s",
     "-Wconf:origin=.*charEncoders.ascii:s",
     "-Wconf:origin=.*textMetrics.uniform:s",
-    "-Wconf:origin=.*arithmeticOptions.overflow.unchecked:s",
+    "-Wconf:origin=.*arithmeticOptions.uncheckedOverflow:s",
     "-Wconf:origin=.*errorDiagnostics.empty:s",
     "-Wconf:origin=.*logging.silent:s",
     "-Wconf:origin=.*pathOnLinux:s",

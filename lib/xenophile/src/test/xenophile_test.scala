@@ -36,10 +36,10 @@ import scala.caps
 
 import soundness.*
 import soundness.collationComparable
-import soundness.collations.codepoints
+import soundness.collations.codepointCollation
 import soundness.sortingAlgorithms.timsort
 
-import ambience.systems.javaSystem
+import ambience.systems.javaBaseSystem
 
 type TsInterface = Interface in Typescript at "/xenophile/definitions.ts"
 given tsInterface: TsInterface = Interface[Typescript](cp"/xenophile/definitions.ts")

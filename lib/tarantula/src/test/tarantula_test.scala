@@ -43,16 +43,16 @@ import errorDiagnostics.stackTracesDiagnostics
 import formatting.compactJsonFormatting
 import internetAccess.online
 import logging.silentLogging
-import environments.javaEnvironment
+import environments.javaBaseEnvironment
 import probates.awaitProbate
-import stdios.virtualMachineStdio
-import systems.javaSystem
+import stdios.fileDescriptorStdio
+import systems.javaBaseSystem
 import termcaps.environmentTermcap
 import strategies.throwUnsafely
 import textSanitizers.skipSanitizer
 import threading.virtualThreading
 import webserverErrorPages.minimalErrorPage
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
 object FakeDriver:
   // One request as the driver saw it. The body is `Unset` for a request that had none, so that a

@@ -43,9 +43,9 @@ import logging.silentLogging
 import probates.awaitProbate
 import socketBackends.virtualMachineSockets
 import strategies.throwUnsafely
-import systems.javaSystem
+import systems.javaBaseSystem
 import threading.virtualThreading
-import workingDirectories.javaWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
 // A runnable Debug Adapter Protocol server over stdio: point a DAP frontend (VS Code with a
 // generic DAP launch configuration, say) at this executable and it drives a vivisection debug

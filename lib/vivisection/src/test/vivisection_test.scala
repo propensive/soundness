@@ -42,9 +42,9 @@ import probates.awaitProbate
 import logging.silentLogging
 import strategies.throwUnsafely
 import internetAccess.online
-import workingDirectories.javaWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 import socketBackends.virtualMachineSockets
-import systems.javaSystem
+import systems.javaBaseSystem
 
 case class Attach(duplex: Duplex)
 

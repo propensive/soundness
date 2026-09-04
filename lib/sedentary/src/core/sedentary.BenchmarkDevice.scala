@@ -48,7 +48,7 @@ import urticose.*
 import vacuous.*
 
 import logging.silentLogging
-import workingDirectories.javaWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 import beneficence.*
 
 trait BenchmarkDevice extends Findable:

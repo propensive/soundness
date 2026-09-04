@@ -90,7 +90,7 @@ object Main:
     // `System.getenv` — SN-supported, so it works on native with no separate backend (the same is
     // true of turbulence's stdio and capricious's randomness: their core givens use SN-supported
     // `System.*`/`java.util.Random` APIs).
-    import environments.javaEnvironment
+    import environments.javaBaseEnvironment
     out.println("ambience HOME = "+summon[Environment].variable(t"HOME").or(t"?").s)
 
     // coaxial: a UDP loopback round-trip straight through the native `Socket.Backend` — bind a

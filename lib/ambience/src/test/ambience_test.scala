@@ -191,7 +191,7 @@ object Tests extends Suite(m"Ambience Tests"):
       . assert(_ == Unset)
 
       test(m"The Java system reads a real property"):
-        systems.javaSystem(t"java.version") == Unset
+        systems.javaBaseSystem(t"java.version") == Unset
       . assert(_ == false)
 
     suite(m"Configurator tests"):
@@ -303,7 +303,7 @@ object Tests extends Suite(m"Ambience Tests"):
       . assert(_ == t"/tmp/work")
 
       test(m"The default working directory is absolute"):
-        workingDirectories.defaultWorkingDirectory.directory().starts(t"/")
+        workingDirectories.javaBaseWorkingDirectory.directory().starts(t"/")
       . assert(_ == true)
 
     suite(m"Error message tests"):

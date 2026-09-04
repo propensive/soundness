@@ -46,4 +46,4 @@ package lineSeparation:
     . { adaptiveLinefeedLineSeparation, carriageReturnLineSeparation,
         carriageReturnLinefeedLineSeparation, linefeedLineSeparation,
         strictCarriageReturnLineSeparation, strictLinefeedsLineSeparation,
-        virtualMachineLineSeparation }
+        javaBaseLineSeparation }

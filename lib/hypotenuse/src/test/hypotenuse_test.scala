@@ -161,7 +161,7 @@ object Tests extends Suite(m"Hypotenuse tests"):
       . assert(_ == t"177777")
 
     suite(m"Signed overflow detection"):
-      import arithmeticOptions.overflow.checked
+      import arithmeticOptions.checkedOverflow
       val co = summon[CheckOverflow]
 
       test(m"S64.MinValue + S64(-1) overflows"):
@@ -831,7 +831,7 @@ object Tests extends Suite(m"Hypotenuse tests"):
       . assert(_.lay(false)(_ == Q64(2, 3)))
 
       test(m"std resolves with the rationalDivision import"):
-        import arithmeticOptions.rationalDivision.q64
+        import arithmeticOptions.q64RationalDivision
         List(Q64(1), Q64(2), Q64(3)).std
       . assert(_.lay(false) { value => math.abs(value.double - math.sqrt(2.0/3.0)) < 1e-12 })
 

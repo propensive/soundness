@@ -34,7 +34,7 @@ package galilei
 
 import soundness.*
 import soundness.collationComparable
-import soundness.collations.codepoints
+import soundness.collations.codepointCollation
 import soundness.sortingAlgorithms.timsort
 
 import filesystemBackends.virtualMachineFilesystem
@@ -827,7 +827,7 @@ object Tests extends Suite(m"Galilei tests"):
       . assert(_ == unsafely(stemA / "themes" / "new.css"))
 
       test(m"the Xdg constructor reads the variables in spec order"):
-        import systems.javaSystem
+        import systems.javaBaseSystem
         given Environment = name =>
           if name == t"XDG_DATA_HOME" then stemA.encode
           else if name == t"XDG_DATA_DIRS" then stemB.encode

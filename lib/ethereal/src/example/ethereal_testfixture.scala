@@ -44,7 +44,7 @@ import classloaders.threadContextClassloader
 import environments.daemonClientEnvironment
 import executives.completions
 import interpreters.posixInterpreter
-import systems.javaSystem
+import systems.javaBaseSystem
 import textSanitizers.strictSanitizer
 import threading.platformThreading
 import workingDirectories.systemWorkingDirectory

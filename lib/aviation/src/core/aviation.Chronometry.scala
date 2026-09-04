@@ -45,7 +45,7 @@ import prepositional.*
 // a later extension, where the conversion's working unit becomes part of the chronometry.)
 object Chronometry:
   // The default chronometry for instants that don't state one — selected by importing one of the
-  // `chronometries.*` givens (e.g. `import chronometries.unix`). It names the marker type so a
+  // `chronometries.*` givens (e.g. `import chronometries.unixChronometry`). It names the marker type so a
   // constructed `Instant` takes that chronometry at the type level.
   trait Ambient:
     type Transport

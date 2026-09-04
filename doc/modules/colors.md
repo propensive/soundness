@@ -37,7 +37,7 @@ the `soundness` package, with a color profile chosen in scope:
 ```scala
 import soundness.*
 
-given Colorimetry = colorimetry.daylight
+given Colorimetry = colorimetry.daylightColorimetry
 ```
 
 ### Color spaces
@@ -99,7 +99,7 @@ parts of it going into the mixture and add them up, the way a painter measures p
 onto a palette. A mixing mode is chosen by importing one:
 
 ```scala
-import mixing.proportional
+import mixing.proportionalMixing
 
 5*WebColors.Red + 3*WebColors.Yellow   // Srgb(1, 0.375, 0) — an orange
 ```
@@ -129,7 +129,7 @@ blend modes of Photoshop and GIMP — `multiply`, `screen`, `overlay`, `hardLigh
 `linearDodge` and `linearBurn` — and each is imported the same way:
 
 ```scala
-import mixing.multiply
+import mixing.multiplyMixing
 
 1*WebColors.Yellow + 1*WebColors.Cyan   // Srgb(0.5, 1, 0) — a green, as paint mixes
 ```
@@ -200,12 +200,12 @@ output once converted.
 ### Color profiles
 
 A `Colorimetry` describes the illuminant and observer that a profile-dependent conversion
-assumes. `colorimetry.daylight` suits most screen work; others model incandescent,
+assumes. `colorimetry.daylightColorimetry` suits most screen work; others model incandescent,
 fluorescent and standard-illuminant conditions. The profile is a given, so every
 conversion within its scope uses it, and none has to name it:
 
 ```scala
-given Colorimetry = colorimetry.incandescentTungsten
+given Colorimetry = colorimetry.incandescentTungstenColorimetry
 
 WebColors.Ivory.to[Cielab]   // computed for tungsten light
 ```

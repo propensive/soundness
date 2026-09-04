@@ -55,8 +55,8 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemTraversal.preOrderTraversal
 import logging.silentLogging
 import manifestAttributes.*
-import systems.javaSystem
-import workingDirectories.javaWorkingDirectory
+import systems.javaBaseSystem
+import workingDirectories.javaBaseWorkingDirectory
 
 object Bundler:
   // The classpath of the running application, as introspected from the thread-context

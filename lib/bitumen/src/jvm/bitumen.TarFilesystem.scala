@@ -41,7 +41,7 @@ import distillate.*
 import fulminate.*
 import galilei.*
 import hieroglyph.*, charEncoders.asciiEncoder
-import hypotenuse.*, arithmeticOptions.overflow.unchecked
+import hypotenuse.*, arithmeticOptions.uncheckedOverflow
 import prepositional.*
 import rudiments.*
 import serpentine.*

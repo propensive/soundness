@@ -44,7 +44,7 @@ import eucalyptus.*
 import fulminate.*
 import gossamer.*
 import gossamer.collationComparable
-import gossamer.collations.codepoints
+import gossamer.collations.codepointCollation
 import guillotine.*
 import prepositional.*
 import rudiments.*

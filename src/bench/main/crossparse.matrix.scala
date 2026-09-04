@@ -32,7 +32,7 @@
                                                                                                   */
 package crossparse
 
-import ambience.*, systems.javaSystem
+import ambience.*, systems.javaBaseSystem
 import anticipation.*
 import breviloquence.*
 import contingency.*, strategies.throwUnsafely

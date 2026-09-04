@@ -7,11 +7,11 @@ import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
 import classloaders.scalaClassloader
 import probates.cancelProbate
-import environments.javaEnvironment
+import environments.javaBaseEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import httpServers.stdlibPublicHttpServer
 import logging.silentLogging
-import stdios.virtualMachineStdio
+import stdios.fileDescriptorStdio
 import stylesheets.uncheckedClasses
 import supervisors.globalSupervisor
 import termcaps.environmentTermcap

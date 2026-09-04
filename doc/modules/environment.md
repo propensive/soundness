@@ -30,8 +30,8 @@ supplied:
 
 ```scala
 import soundness.*
-import environments.javaEnvironment
-import systems.javaSystem
+import environments.javaBaseEnvironment
+import systems.javaBaseSystem
 import strategies.throwUnsafely
 ```
 
@@ -73,7 +73,7 @@ An undefined property raises a `PropertyError`, handled like any other.
 ### The working directory
 
 The directory a program was launched in is a `WorkingDirectory` capability, requested where it
-is needed rather than read from a global. With `workingDirectories.javaWorkingDirectory` in
+is needed rather than read from a global. With `workingDirectories.javaBaseWorkingDirectory` in
 scope, a method that resolves a relative path against the working directory declares that need
 in its signature.
 

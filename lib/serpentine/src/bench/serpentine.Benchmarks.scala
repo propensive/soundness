@@ -34,7 +34,7 @@ package serpentine
 
 import scala.quoted.*
 
-import ambience.*, environments.javaEnvironment, systems.javaSystem
+import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import hellenism.*, classloaders.threadContextClassloader

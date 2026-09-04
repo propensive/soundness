@@ -541,9 +541,9 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == t"a test file")
 
     suite(m"External tar reads archives produced by Bitumen"):
-      import systems.javaSystem
+      import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
-      import workingDirectories.defaultWorkingDirectory
+      import workingDirectories.javaBaseWorkingDirectory
       import logging.silentLogging
       import filesystemOptions.dereferenceSymlinks.enabled
       import filesystemOptions.overwritePreexisting.enabled
@@ -621,7 +621,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == List(t"link"))
 
     suite(m"Filesystem integration: Tarfile.from / extractTo"):
-      import systems.javaSystem
+      import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
       import filesystemTraversal.preOrderTraversal
       import filesystemOptions.dereferenceSymlinks.disabled
@@ -707,7 +707,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == true)
 
     suite(m"Scoped opening"):
-      import systems.javaSystem
+      import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
       import filesystemOptions.createNonexistentParents.enabled
       import filesystemOptions.overwritePreexisting.enabled
@@ -742,7 +742,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == Tar.Error.Reason.WriteUnsupported)
 
     suite(m"Creating archives"):
-      import systems.javaSystem
+      import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
       import filesystemOptions.createNonexistentParents.enabled
       import filesystemOptions.overwritePreexisting.enabled

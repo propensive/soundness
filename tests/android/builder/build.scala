@@ -34,14 +34,14 @@ package androidsample
 
 import soundness.*
 
-import ambience.systems.javaSystem
+import ambience.systems.javaBaseSystem
 import logging.silentLogging
-import stdios.virtualMachineStdio
+import stdios.fileDescriptorStdio
 import termcapDefinitions.basicTermcap
 import probates.cancelProbate
 import strategies.throwUnsafely
 import threading.platformThreading
-import workingDirectories.javaWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
 import java.nio.file.{Files, Paths}
 

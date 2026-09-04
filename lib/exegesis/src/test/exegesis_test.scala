@@ -46,7 +46,7 @@ import logging.silentLogging
 import probates.awaitProbate
 import strategies.throwUnsafely
 import threading.virtualThreading
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
 // Kept as a top-level object (its own class) rather than nested in `Tests` so the LSP codecs the
 // dispatcher inlines do not add to the `Tests` class, which would otherwise exceed the JVM

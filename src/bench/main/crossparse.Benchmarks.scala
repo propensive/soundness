@@ -34,7 +34,7 @@ package crossparse
 
 import scala.sys
 
-import ambience.*, environments.javaEnvironment, systems.javaSystem
+import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import anticipation.*
 import breviloquence.*
 import contingency.*, strategies.throwUnsafely

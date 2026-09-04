@@ -37,7 +37,7 @@ package aviation
 // and a leap second crossed in between is invisible. `Exact` adds the same duration as real SI
 // seconds (routing through the TAI timeline), so crossing an inserted leap second shifts the
 // wall-clock result back by that second. The two agree except across one of the ~27 historical leap
-// instants. Import `leapModes.exact` to switch from `Lenient`.
+// instants. Import `leapModes.exactLeapMode` to switch from `Lenient`.
 object LeapMode:
   given lenient: LeapMode = LeapMode.Lenient
 

@@ -44,7 +44,7 @@ import vacuous.*
 
 object Syslog:
   given writable: Monitor => Syslog is Writable by Text = (syslog, stream) =>
-    import workingDirectories.javaWorkingDirectory
+    import workingDirectories.javaBaseWorkingDirectory
     // The system charset, as the pre-migration `sysData` encoding used.
     given hieroglyph.CharEncoder = hieroglyph.CharEncoder.system
 

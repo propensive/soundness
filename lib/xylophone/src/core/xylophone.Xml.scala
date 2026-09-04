@@ -2251,17 +2251,17 @@ object Xml extends Tag.Container
     // reconciliation happens only at element / attribute capture points
     // and before any refill in `moreSlow`.
     def fromTextTracked(text: Text)(using XmlSchema): XmlParser =
-      import zephyrine.lineation.linefeedChars
+      import zephyrine.lineation.linefeedChar
       new XmlParser(Cursor[Text](text), tracking = true)
 
     // Native `Chain` sibling of `fromIteratorTracked`.
     def fromChainTracked(input: Chain[Text])(using XmlSchema): XmlParser =
-      import zephyrine.lineation.linefeedChars
+      import zephyrine.lineation.linefeedChar
       new XmlParser(Cursor[Text](input), tracking = true)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
     def fromIteratorTracked(input: Iterator[Text])(using XmlSchema): XmlParser =
-      import zephyrine.lineation.linefeedChars
+      import zephyrine.lineation.linefeedChar
       new XmlParser(Cursor[Text](input), tracking = true)
 
   private[xylophone] final class XmlParser

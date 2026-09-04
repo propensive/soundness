@@ -41,10 +41,10 @@ import interfaces.paths.pathOnLinux
 import strategies.throwUnsafely
 import logging.silentLogging
 import charEncoders.utf8Encoder
-import environments.javaEnvironment
+import environments.javaBaseEnvironment
 import gitCommands.environmentDefaultGitCommand
-import systems.javaSystem
-import workingDirectories.javaWorkingDirectory
+import systems.javaBaseSystem
+import workingDirectories.javaBaseWorkingDirectory
 import internetAccess.online
 import errorDiagnostics.stackTracesDiagnostics
 

@@ -43,10 +43,10 @@ import galilei.Linux.pathOnLinux
 import logging.silentLogging
 import probates.cancelProbate
 import strategies.throwUnsafely
-import systems.javaSystem
+import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 import threading.platformThreading
-import workingDirectories.javaWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
 private type JnfPath = java.nio.file.Path
 

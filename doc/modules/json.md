@@ -577,7 +577,7 @@ types of its date-and-time library. An `Instant` and a `Duration` travel as a wh
 number of milliseconds:
 
 ```scala
-import chronometries.unix
+import chronometries.unixChronometry
 
 Instant(1700000000000L).in[Json].show                       // t"1700000000000"
 t"5000".read[Json].as[Duration].value                   // 5.0

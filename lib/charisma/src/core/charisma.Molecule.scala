@@ -35,7 +35,7 @@ package charisma
 import anticipation.*
 import gossamer.*
 import gossamer.collationComparable
-import gossamer.collations.codepoints
+import gossamer.collations.codepointCollation
 import hieroglyph.*
 import hypotenuse.*
 import rudiments.*

@@ -359,7 +359,7 @@ type. The `Unix` timeline — POSIX time — counts milliseconds from the
 [Unix epoch](https://en.wikipedia.org/wiki/Unix_time):
 
 ```scala
-import chronometries.unix
+import chronometries.unixChronometry
 
 val epoch = Instant(0L)   // 1970-01-01T00:00:00Z
 ```
@@ -449,7 +449,7 @@ spring.instant   // pushed forward to 01:30 UTC by default
 ```
 
 ```scala
-import gapPolicies.rejectGap
+import gapPolicies.rejectGapPolicy
 Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant
 // raises a TimeError: the local time never happens
 ```
@@ -698,7 +698,7 @@ A timespan describes itself relative to now, reading forward or backward dependi
 on its sign:
 
 ```scala
-import timespanFormats.englishRelative
+import timespanFormats.englishRelativeTimespan
 given Locale[en] = Locale(en)
 
 Timespan(minutes = 18).show    // "in 18 minutes"
@@ -799,7 +799,7 @@ adding two hours across the leap second at the end of 2016 lands one second shor
 of the lenient answer:
 
 ```scala
-import leapModes.exact
+import leapModes.exactLeapMode
 val start = Moment(2016-Dec-31, Clockface(23, 0, 0), tz"UTC")
 (start + 2*Hour).instant
 // 2017-01-01T00:59:59Z — one second behind the lenient result

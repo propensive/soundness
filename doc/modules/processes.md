@@ -25,7 +25,7 @@ strategy in scope:
 
 ```scala
 import soundness.*
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 import logging.silentLogging
 import strategies.throwUnsafely
 ```

@@ -44,7 +44,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import probates.awaitProbate
 import strategies.throwUnsafely
 import threading.virtualThreading
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
 // Kept as a top-level object (its own class) rather than nested in `Tests` so the ACP codecs the
 // dispatchers inline do not add to the `Tests` class, which would otherwise exceed the JVM

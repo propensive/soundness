@@ -34,7 +34,7 @@ package rudiments
 
 import soundness.*
 import soundness.collationComparable
-import soundness.collations.codepoints
+import soundness.collations.codepointCollation
 import denominative.dysasymptotics.linearSize
 import soundness.sortingAlgorithms.timsort
 

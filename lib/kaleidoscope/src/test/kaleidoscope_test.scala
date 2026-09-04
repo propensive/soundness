@@ -225,49 +225,49 @@ object Tests extends Suite(m"Kaleidoscope tests"):
 
       suite(m"Scanner patterns"):
         test(m"Simple capture"):
-          Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)")), t"foobar")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)")), t"foobar")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(t"bar")))
 
         test(m"Two captures"):
-          Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)", t"(baz)")), t"foobarbaz")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)", t"(baz)")), t"foobarbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(t"bar", t"baz")))
 
         test(m"Two captures, one repeating"):
-          Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)", t"(baz)*")), t"foobarbazbaz")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)", t"(baz)*")), t"foobarbazbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(t"bar", List(t"baz", t"baz"))))
 
         test(m"Two captures, both repeating"):
-          Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar){4}", t"(baz)*")), t"foobarbarbarbarbazbaz")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(bar){4}", t"(baz)*")), t"foobarbarbarbarbazbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(List(t"bar", t"bar", t"bar", t"bar"), List(t"baz", t"baz"))))
 
         test(m"Two captures, one optional and absent, one repeating"):
-          Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)+", t"(baz)?")), t"foobarbar")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)+", t"(baz)?")), t"foobarbar")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(List(t"bar", t"bar"), Unset)))
 
         test(m"Two captures, one optional and present, one repeating"):
-          Jur.engine.matchGroups(Regex.parse(List(t"foo", t"(b.r)+", t"(baz)?")), t"fooberbirbaz")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(b.r)+", t"(baz)?")), t"fooberbirbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
         . assert(_ == Some(List(List(t"ber", t"bir"), t"baz")))
 
         test(m"Nested captures, one optional and present, one repeating"):
-          Jur.engine.matchGroups(Regex.parse(List(t"f(oo", t"(b.r)+", t"(baz)?)")), t"fooberbirbaz")
+          JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"f(oo", t"(b.r)+", t"(baz)?)")), t"fooberbirbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.readable.toList.to(proscenium.List) } // explicit: inference boxes the element captures
 
@@ -732,7 +732,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         ( t"", t"a", t"b", t"ab", t"abc", t"aab", t"aaab", t"abab", t"abababc", t"aabb",
           t"x42y", t"xyz", t"aaaa", t"abcd", t"abd", t"acd" )
 
-      test(m"Jur and Re2 engines agree on matches, seek and search"):
+      test(m"JavaBaseRegex and Re2 engines agree on matches, seek and search"):
         var failures: List[Text] = Nil
 
         patterns.each: pattern =>
@@ -751,7 +751,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
 
       . assert(_ == Nil)
 
-      test(m"Jur and Re2 engines agree on capture groups"):
+      test(m"JavaBaseRegex and Re2 engines agree on capture groups"):
         var failures: List[Text] = Nil
 
         def strip(result: Option[Array[List[Text | Char] | Optional[Text | Char]]^{}])
@@ -763,7 +763,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
           val regex = Regex.parse(List(pattern))
 
           inputs.each: input =>
-            val jvmResult = strip(Jur.engine.matchGroups(regex, input)(using Scanner(Unset)))
+            val jvmResult = strip(JavaBaseRegex.engine.matchGroups(regex, input)(using Scanner(Unset)))
 
             val re2Result =
               strip(Regex.Engine.re2.matchGroups(regex, input)(using Scanner(Unset)))

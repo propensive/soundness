@@ -40,7 +40,7 @@ object en extends Language(t"en"):
   type Code = en
 
   given collatable: en is Collatable:
-    def collation: Collation = collations.unicode
+    def collation: Collation = collations.unicodeCollation
 
 trait en
 
@@ -82,7 +82,7 @@ object fr extends Language(t"fr"):
   // CLDR root French is untailored (backward secondary accents are a Canadian French
   // convention, not used by `fr` since CLDR 1.9).
   given collatable: fr is Collatable:
-    def collation: Collation = collations.unicode
+    def collation: Collation = collations.unicodeCollation
 
 trait fr
 
@@ -92,7 +92,7 @@ object de extends Language(t"de"):
   // CLDR standard German is untailored (umlauts differ at the secondary level, which is
   // already the root table's behaviour; DIN phonebook order is a different collation type).
   given collatable: de is Collatable:
-    def collation: Collation = collations.unicode
+    def collation: Collation = collations.unicodeCollation
 
 trait de
 

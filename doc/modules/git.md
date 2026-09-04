@@ -27,7 +27,7 @@ capabilities the operations need in scope:
 ```scala
 import soundness.*
 import gitCommands.environmentDefaultGitCommand
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 import internetAccess.online
 import logging.silentLogging
 import strategies.throwUnsafely

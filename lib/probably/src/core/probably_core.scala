@@ -118,7 +118,7 @@ def suite[report](name: Name[Probing], description: Message)
 
 
 package harnesses:
-  given threadLocal: Harness:
+  given threadLocalHarness: Harness:
     private val delegate: Option[Harness] =
       Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
 
@@ -126,8 +126,8 @@ package harnesses:
       delegate.map(_.capture[value](name, value)).getOrElse(value)
 
 package autopsies:
-  given contrastExpectations: Autopsy:
+  given contrastAutopsy: Autopsy:
     type Analyse = true
 
-  given none: Autopsy:
+  given noAutopsy: Autopsy:
     type Analyse = false

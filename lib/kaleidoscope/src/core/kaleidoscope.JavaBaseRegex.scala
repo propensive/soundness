@@ -41,11 +41,11 @@ import denominative.*
 import rudiments.*
 import vacuous.*
 
-object Jur:
-  // In the subject type's companion (issue #1632), so `Regex in Jur` operations resolve with no
+object JavaBaseRegex:
+  // In the subject type's companion (issue #1632), so `Regex in JavaBaseRegex` operations resolve with no
   // import. The bodies previously lived as methods on `Regex` itself; they move here so that a
   // `Regex in Re2` cannot silently fall back to `java.util.regex`.
-  given engine: Jur is Regex.Engine:
+  given engine: JavaBaseRegex is Regex.Engine:
     def matches(regex: Regex, text: Text)(using scanner: Scanner): Boolean =
       scanner.nextStart match
         case index: Int =>
@@ -147,4 +147,4 @@ object Jur:
 
 // The phantom marker for the `java.util.regex` backend (or, on JS and Native, the platform's
 // emulation of it): the default `Form` of every `Regex`.
-sealed trait Jur
+sealed trait JavaBaseRegex

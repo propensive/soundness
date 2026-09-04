@@ -69,3 +69,6 @@ extension [out, transport](consume intake: (Intake[out] over transport)^)
 
 package parsing:
   export zephyrine.parsing.trackPositions
+
+package lineation:
+  export zephyrine.lineation.{carriageReturnByte, carriageReturnChar, linefeedByte, linefeedChar}

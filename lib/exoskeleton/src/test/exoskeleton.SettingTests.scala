@@ -35,7 +35,7 @@ package exoskeleton
 import soundness.*
 
 import strategies.throwUnsafely
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
 object SettingTests extends Suite(m"Setting tests"):
   import interpreters.posixInterpreter

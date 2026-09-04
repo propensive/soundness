@@ -35,7 +35,7 @@ package probably
 
 import java.lang as jl
 
-import ambience.*, environments.javaEnvironment
+import ambience.*, environments.javaBaseEnvironment
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -59,8 +59,8 @@ import themes.solarizedTheme
 import denominative.dysasymptotics.linearSize
 
 abstract class Suite(suiteName: Message) extends Testable(suiteName):
-  // The CURRENT `System.out`/`err`/`in` (`systemStdio`), read afresh at each use, rather than
-  // the process's file descriptors (`virtualMachineStdio`): an in-process host invoking the
+  // The CURRENT `System.out`/`err`/`in` (`javaLangSystemStdio`), read afresh at each use, rather than
+  // the process's file descriptors (`fileDescriptorStdio`): an in-process host invoking the
   // suite through `invoke` redirects `System.out` to its own stream for the duration, and the
   // FD-backed streams would bypass that redirection entirely (the report would go to the host
   // process's terminal, not the host's client). In a conventional `java -cp … <Suite>` run the
@@ -70,7 +70,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
   // expression which touches a suite object's statics initializes the whole suite there. In
   // that case the FD-backed streams are the only ones left to fall back to.
   def suiteIo: Stdio =
-    safely(stdios.systemStdio).or(stdios.virtualMachineStdio)
+    safely(stdios.javaLangSystemStdio).or(stdios.fileDescriptorStdio)
 
   private def makeRunner(selection: Selection): Runner[Report] = makeRunner(selection, Unset)
 

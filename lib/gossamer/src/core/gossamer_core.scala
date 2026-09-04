@@ -606,7 +606,7 @@ given collationComparable: (collation: Collation) => Text is Comparable =
 package collations:
   // Dictionary order: the root table of the Unicode Collation Algorithm (UTS #10),
   // non-ignorable, with three levels. Language-specific orderings tailor this table.
-  given unicode: Collation:
+  given unicodeCollation: Collation:
     def compare(left: Text, right: Text): Comparison =
       Comparison(hieroglyph.CollationTable.root.compare(left, right))
 
@@ -615,7 +615,7 @@ package collations:
   // Raw codepoint order: deterministic and table-free, for machine-facing sorting such as
   // stable file listings. Not `String` order, which compares UTF-16 code units and so places
   // supplementary characters before U+E000..U+FFFF.
-  given codepoints: Collation:
+  given codepointCollation: Collation:
     def compare(left: Text, right: Text): Comparison =
       val leftString = left.s
       val rightString = right.s

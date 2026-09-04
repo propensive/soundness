@@ -399,13 +399,13 @@ package timeFormats:
 // A human-readable, relative rendering of a `Timespan`, in place of the default ISO-8601 duration:
 // "in 18 minutes", "8 minutes ago", "just now", and their French/German/Spanish equivalents. Only
 // the non-zero components are shown (coarsest first); the sign chooses the future/past form. Import
-// the variant for the language(s) you want (e.g. `timespanFormats.frenchRelative`); the in-scope
+// the variant for the language(s) you want (e.g. `timespanFormats.frenchRelativeTimespan`); the in-scope
 // `Locale` selects which applies.
 package timespanFormats:
-  given englishRelative: Locale[en] => Timespan is Showable = Vernacular.english.relativeTimespan(_)
-  given frenchRelative: Locale[fr] => Timespan is Showable = Vernacular.french.relativeTimespan(_)
-  given germanRelative: Locale[de] => Timespan is Showable = Vernacular.german.relativeTimespan(_)
-  given spanishRelative: Locale[es] => Timespan is Showable = Vernacular.spanish.relativeTimespan(_)
+  given englishRelativeTimespan: Locale[en] => Timespan is Showable = Vernacular.english.relativeTimespan(_)
+  given frenchRelativeTimespan: Locale[fr] => Timespan is Showable = Vernacular.french.relativeTimespan(_)
+  given germanRelativeTimespan: Locale[de] => Timespan is Showable = Vernacular.german.relativeTimespan(_)
+  given spanishRelativeTimespan: Locale[es] => Timespan is Showable = Vernacular.spanish.relativeTimespan(_)
 
 package calendars:
   given julianCalendar: RomanCalendar(t"Julian"):
@@ -461,12 +461,12 @@ package calendars:
 // The default interpretation of an `Instant`'s `Long` (used by `Instant(…)`, decoding, etc.).
 // Import one of these to choose the timeline bare instants count on; convert with `.over[…]`.
 package chronometries:
-  given unix: (Chronometry.Ambient { type Transport = Unix }) =
+  given unixChronometry: (Chronometry.Ambient { type Transport = Unix }) =
     new Chronometry.Ambient:
       type Transport = Unix
       def chronometry: Unix is Chronometry = Chronometry.unix
 
-  given atomic: (Chronometry.Ambient { type Transport = Tai }) =
+  given taiChronometry: (Chronometry.Ambient { type Transport = Tai }) =
     new Chronometry.Ambient:
       type Transport = Tai
       def chronometry: Tai is Chronometry = Chronometry.tai
@@ -475,16 +475,16 @@ package chronometries:
 // exist. The ambient default is `GapPolicy.pushForward` (matching `java.time`); import one of these
 // to push the other way or to reject the gap.
 package gapPolicies:
-  given pushBackward: GapPolicy = (_, backward) => backward
+  given pushBackwardGapPolicy: GapPolicy = (_, backward) => backward
 
-  given rejectGap: Tactic[Moment.Error] => GapPolicy =
+  given rejectGapPolicy: Tactic[Moment.Error] => GapPolicy =
     (_, _) => abort(Moment.Error(_.Gap))
 
 // Switch sub-day `Moment` arithmetic to count leap seconds (the default `LeapMode.Lenient` works on
-// the leap-free POSIX line). Import `leapModes.exact` so adding a duration that crosses an inserted
+// the leap-free POSIX line). Import `leapModes.exactLeapMode` so adding a duration that crosses an inserted
 // leap second advances by that many real SI seconds.
 package leapModes:
-  given exact: LeapMode = LeapMode.Exact
+  given exactLeapMode: LeapMode = LeapMode.Exact
 
 // Month-end overflow policies for adding months/years to a date (e.g. Jan 31 + 1 month). No default
 // is provided, so such arithmetic requires one of these to be imported.

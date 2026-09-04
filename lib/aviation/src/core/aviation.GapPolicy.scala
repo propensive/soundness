@@ -40,8 +40,8 @@ import prepositional.*
 // by keeping the pre-transition offset on the same wall-clock, which lands just after the gap) or
 // held in the old offset (`backward`, just before the gap), or rejected. The policy is supplied
 // contextually; unlike `Disambiguation` there is a default (`pushForward`, matching `java.time`),
-// so grounding stays total and non-breaking. Import `gapPolicies.pushBackward` /
-// `gapPolicies.rejectGap` to override it.
+// so grounding stays total and non-breaking. Import `gapPolicies.pushBackwardGapPolicy` /
+// `gapPolicies.rejectGapPolicy` to override it.
 //
 // `resolve` receives the two candidate instants and returns one (or aborts). The rejecting policy
 // captures a `Tactic[Moment.Error]` when constructed, so it doesn't widen grounding's effect type.

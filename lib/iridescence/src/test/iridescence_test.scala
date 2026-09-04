@@ -36,7 +36,7 @@ import scala.compiletime
 
 import soundness.*
 
-given Colorimetry = colorimetry.daylight
+given Colorimetry = colorimetry.daylightColorimetry
 
 object Tests extends Suite(m"Iridescence tests"):
   def run(): Unit =
@@ -201,7 +201,7 @@ object Tests extends Suite(m"Iridescence tests"):
       . assert(_ == Srgb(0.5, 0.5, 0.5))
 
     suite(m"Proportional mixing"):
-      import mixing.proportional
+      import mixing.proportionalMixing
 
       given Srgb is Checkable against Srgb = (left, right) =>
         left.red === (right.red +/- 1e-9)
@@ -269,63 +269,63 @@ object Tests extends Suite(m"Iridescence tests"):
         && left.blue === (right.blue +/- 1e-9)
 
       test(m"multiply darkens toward the product of the channels"):
-        import mixing.multiply
+        import mixing.multiplyMixing
         (1*Srgb(1.0, 0.5, 0.5) + 1*Srgb(0.5, 0.5, 1.0)).to[Srgb]
       . assert(_ === Srgb(0.75, 0.375, 0.5))
 
       test(m"screen lightens toward white"):
-        import mixing.screen
+        import mixing.screenMixing
         (1*Srgb(0.5, 0.5, 0.5) + 1*Srgb(0.5, 0.5, 0.5)).to[Srgb]
       . assert(_ === Srgb(0.625, 0.625, 0.625))
 
       test(m"darken pulls each channel toward the lower of the two"):
-        import mixing.darken
+        import mixing.darkenMixing
         (1*Srgb(0.2, 0.8, 0.5) + 1*Srgb(0.6, 0.4, 0.5)).to[Srgb]
       . assert(_ === Srgb(0.2, 0.6, 0.5))
 
       test(m"lighten pulls each channel toward the higher of the two"):
-        import mixing.lighten
+        import mixing.lightenMixing
         (1*Srgb(0.2, 0.8, 0.5) + 1*Srgb(0.6, 0.4, 0.5)).to[Srgb]
       . assert(_ === Srgb(0.4, 0.8, 0.5))
 
       test(m"difference pulls each channel toward the gap between them"):
-        import mixing.difference
+        import mixing.differenceMixing
         (1*Srgb(0.2, 0.8, 0.5) + 1*Srgb(0.6, 0.4, 0.5)).to[Srgb]
       . assert(_ === Srgb(0.3, 0.6, 0.25))
 
       test(m"a mode acts in proportion to the added daub's share"):
-        import mixing.multiply
+        import mixing.multiplyMixing
         (3*Srgb(1.0, 1.0, 1.0) + 1*Srgb(0.0, 0.0, 0.0)).to[Srgb]
       . assert(_ === Srgb(0.75, 0.75, 0.75))
 
       test(m"a smaller share of the same daub moves the backdrop less"):
-        import mixing.multiply
+        import mixing.multiplyMixing
         (9*Srgb(1.0, 1.0, 1.0) + 1*Srgb(0.0, 0.0, 0.0)).to[Srgb]
       . assert(_ === Srgb(0.9, 0.9, 0.9))
 
       test(m"a mode other than proportional is not commutative"):
-        import mixing.difference
+        import mixing.differenceMixing
         (3*Srgb(0.8, 0.8, 0.8) + 1*Srgb(0.2, 0.2, 0.2)).to[Srgb]
       . assert(_ === Srgb(0.75, 0.75, 0.75))
 
       test(m"the same two daubs in the other order give a different color"):
-        import mixing.difference
+        import mixing.differenceMixing
         (1*Srgb(0.2, 0.2, 0.2) + 3*Srgb(0.8, 0.8, 0.8)).to[Srgb]
       . assert(_ === Srgb(0.5, 0.5, 0.5))
 
       test(m"yellow and cyan multiply to a green, as paint mixes"):
-        import mixing.multiply
+        import mixing.multiplyMixing
         (1*WebColors.Yellow + 1*WebColors.Cyan).to[Srgb]
       . assert(_ === Srgb(0.5, 1, 0))
 
       test(m"a daub of no parts takes no part in the mix"):
-        import mixing.multiply
+        import mixing.multiplyMixing
         (0*Srgb(1.0, 0.0, 0.0) + 1*Srgb(0.0, 0.0, 1.0)).to[Srgb]
       . assert(_ === Srgb(0.0, 0.0, 1.0))
 
       test(m"a channel mode is rejected in a space with unbounded coordinates"):
         demilitarize:
-          import mixing.multiply
+          import mixing.multiplyMixing
           1*Cielab(0, 0, 0) + 1*Cielab(40, 20, 10)
         . map(_.message)
       . assert(!_.isEmpty)

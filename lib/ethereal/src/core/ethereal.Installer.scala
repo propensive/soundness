@@ -114,8 +114,8 @@ object Installer:
     ( using Tactic[Install.Error], (DaemonLogEvent is Loggable)^ )
   :   Result =
 
-    import workingDirectories.javaWorkingDirectory
-    import systems.javaSystem
+    import workingDirectories.javaBaseWorkingDirectory
+    import systems.javaBaseSystem
 
     mitigate:
       case Path.Error(_, _)      => Install.Error(Install.Error.Reason.Environment)

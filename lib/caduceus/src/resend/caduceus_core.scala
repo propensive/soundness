@@ -53,11 +53,11 @@ import zephyrine.*
 
 import alphabets.base64Standard
 import charEncoders.utf8Encoder
-import environments.javaEnvironment
+import environments.javaBaseEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import formatting.compactJsonFormatting
 import httpBackends.virtualMachineHttp
-import stdios.virtualMachineStdio
+import stdios.fileDescriptorStdio
 import termcaps.environmentTermcap
 
 package couriers:

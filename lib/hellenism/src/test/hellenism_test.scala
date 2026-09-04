@@ -69,7 +69,7 @@ object Tests extends Suite(m"Hellenism Tests"):
     . assert(_ == List(t"hellenism: the path foobar is not a valid classpath path"))
 
     test(m"load services from META-INF/services"):
-      import systems.javaSystem
+      import systems.javaBaseSystem
       val classpath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       classpath.services[TestService].stdlib.map(_.name).to(Set)
     . assert(_ == Set(t"A", t"B"))

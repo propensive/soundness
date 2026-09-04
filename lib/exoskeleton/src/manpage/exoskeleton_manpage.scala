@@ -38,7 +38,7 @@ import aviation.*, dateFormats.iso8601DateFormat
 import escapade.*
 import gossamer.*
 import gossamer.collationComparable
-import gossamer.collations.codepoints
+import gossamer.collations.codepointCollation
 import rudiments.*
 import spectacular.*
 import symbolism.*

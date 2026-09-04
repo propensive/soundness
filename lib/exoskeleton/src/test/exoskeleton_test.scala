@@ -34,14 +34,14 @@ package exoskeleton
 
 import soundness.*
 import soundness.collationComparable
-import soundness.collations.codepoints
+import soundness.collations.codepointCollation
 import soundness.sortingAlgorithms.timsort
 
 import classloaders.systemClassloader
-import environments.javaEnvironment
-import systems.javaSystem
+import environments.javaBaseEnvironment
+import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
-import workingDirectories.defaultWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 import logging.silentLogging
 import threading.platformThreading
 
@@ -137,7 +137,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                   execute(Exit.Ok)
 
                 case Files() :: rest =>
-                  import systems.javaSystem
+                  import systems.javaBaseSystem
                   given WorkingDirectory = summon[Cli].workingDirectory
 
                   rest match

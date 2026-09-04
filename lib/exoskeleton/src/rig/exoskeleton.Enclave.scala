@@ -59,9 +59,9 @@ import vacuous.*
 import filesystemOptions.deleteRecursively.disabled
 import logging.silentLogging
 import probates.cancelProbate
-import systems.javaSystem
+import systems.javaBaseSystem
 import threading.platformThreading
-import workingDirectories.javaWorkingDirectory
+import workingDirectories.javaBaseWorkingDirectory
 
 import filesystemBackends.virtualMachineFilesystem
 
