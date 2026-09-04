@@ -18,8 +18,8 @@ import termcaps.environmentTermcap
 import threading.platformThreading
 import webserverErrorPages.stackTracesErrorPage
 
-import doms.html.whatwg
-import doms.html.whatwg.{Em as WhatwgEm, Map as _, *}
+import htmlDoms.whatwg
+import htmlDoms.whatwg.{Em as WhatwgEm, Map as _, *}
 
 private val MetaCharset = Tag.void["meta", honeycomb.Whatwg]()
 
@@ -36,7 +36,7 @@ def page(content: Html of Flow*): Document[Html] =
      (Main(content*),
       Footer(P(t"© Copyright 2025 Jon Pretty"))))
 
-  Document(html, doms.html.whatwg)
+  Document(html, htmlDoms.whatwg)
 
 @main
 def server(): Unit =
