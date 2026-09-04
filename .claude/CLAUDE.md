@@ -67,6 +67,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   givens, as `soundness_scintillate_server.scala` does); and a lexically-scoped given
   (imported or same-package toplevel) outranks any companion given, which is what makes the
   choice-package pattern override defaults.
+- How an importable given is *named* (family as role, choice-then-role, uniqueness with the
+  package removed, provenance words such as `javaBase…`/`wasi…`/`scalaNative…`/`soundness…`)
+  is `doc/standards/given-naming.md`.
 
 ## Workflow
 
