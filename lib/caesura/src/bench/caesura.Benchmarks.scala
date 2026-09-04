@@ -46,7 +46,7 @@ import proscenium.*
 import rudiments.*
 import quantitative.*
 import sedentary.*
-import superlunary.embeddings.automatic
+import superlunary.embeddings.automaticEmbedding
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*

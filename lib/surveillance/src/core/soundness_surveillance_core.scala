@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export surveillance.{NativeWatcher, PollingWatcher, Watch, watch, Watcher}
+export surveillance.{JavaBaseWatcher, PollingWatcher, Watch, watch, Watcher}
 
 package watchers:
-  export surveillance.watchers.{nativeWatcher, polling}
+  export surveillance.watchers.{javaBaseWatcher, polling}

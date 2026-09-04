@@ -38,4 +38,4 @@ export
       Formulation, RadioGroup, Widget }
 
 package formulations:
-  export legerdemain.formulations.defaultFormulation
+  export legerdemain.formulations.postFormulation

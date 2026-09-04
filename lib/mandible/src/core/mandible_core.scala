@@ -53,10 +53,10 @@ import turbulence.*
 import vacuous.*
 
 import errorDiagnostics.stackTracesDiagnostics
-import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.dereferenceSymlinks
 import interfaces.paths.pathOnLinux
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 
 def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using TemporaryDirectory)

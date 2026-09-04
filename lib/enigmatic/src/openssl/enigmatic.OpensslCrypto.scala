@@ -102,12 +102,12 @@ object OpensslCrypto extends Crypto:
   // RSA is not yet implemented natively (it needs EVP_PKEY DER parsing and keygen); delegate to
   // the JDK provider so this remains a complete `Crypto` (on Scala Native, where that provider
   // is a panicking stub, `rsa` is simply unavailable).
-  def rsa: Crypto.PublicKeyCipher = JavaStdlibCrypto.rsa
+  def rsa: Crypto.PublicKeyCipher = JavaBaseCrypto.rsa
 
   def rsaSignature(digest: Text): Crypto.SignatureScheme =
-    JavaStdlibCrypto.rsaSignature(digest)
+    JavaBaseCrypto.rsaSignature(digest)
 
-  def ecdsa(digest: Text): Crypto.SignatureScheme = JavaStdlibCrypto.ecdsa(digest)
+  def ecdsa(digest: Text): Crypto.SignatureScheme = JavaBaseCrypto.ecdsa(digest)
 
   private def digest(algorithm: Text): Address = algorithm match
     case t"HmacSHA256" => Foreign["library", Native].EVP_sha256().call[Address]()

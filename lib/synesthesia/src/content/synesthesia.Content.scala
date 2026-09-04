@@ -149,7 +149,7 @@ object Content:
     case User, Assistant
 
   object ContentBlock:
-    import dynamicJsonAccess.enabled
+    import dynamicAccess.dynamicJson
 
     private val typeTag = Json.discriminatedUnion[ContentBlock](t"type")
 

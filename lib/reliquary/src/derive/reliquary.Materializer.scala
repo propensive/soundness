@@ -47,8 +47,8 @@ import turbulence.*
 
 import Lira.Error.Reason
 import alphabets.hexLowerCase
-import filesystemBackends.virtualMachineFilesystem
-import filesystemOptions.overwritePreexisting.enabled
+import filesystemBackends.javaBaseFilesystem
+import filesystemOptions.overwritePreexisting
 
 // Derivation of conventional artifacts (§13.5): from a valid buildpath and a chosen universe,
 // each release's section is materialized and serialized as its canonical derivative JAR into a

@@ -36,7 +36,7 @@ package soundness
 // reach xylophone's via `xylophone.Attributive` etc.
 export
   xylophone
-  . { Xml, Xml2, Xml3, XmlSchema, DynamicXmlEnabler, dynamicXmlAccess, x, xp,
+  . { Xml, Xml2, Xml3, XmlSchema, DynamicXmlEnabler, x, xp,
       XPath }
 
 package formatting:
@@ -44,3 +44,6 @@ package formatting:
 
 package optics:
   export xylophone.optics.{xmlEachOptical, xmlLens, xmlOrdinalOptical}
+
+package dynamicAccess:
+  export xylophone.dynamicAccess.dynamicXml

@@ -135,3 +135,10 @@ package hebdomads:
 
 package instantDecodables:
   export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+
+package interfaces:
+  package instants:
+    export anticipation.interfaces.instants.aviationInstant
+
+  package durations:
+    export anticipation.interfaces.durations.aviationDuration

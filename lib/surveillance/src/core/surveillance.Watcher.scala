@@ -39,12 +39,12 @@ import contingency.*
 import turbulence.*
 
 // A `Watcher` is the backend that detects filesystem changes. The default (selected without any
-// import) is `NativeWatcher`, which delegates to the operating system's filewatching service. The
+// import) is `JavaBaseWatcher`, which delegates to the operating system's filewatching service. The
 // `watchers.polling` backend instead snapshots directories on a fixed interval, for filesystems or
 // platforms where native filewatching is unavailable or unreliable.
 
 object Watcher:
-  given default: Watcher = NativeWatcher
+  given default: Watcher = JavaBaseWatcher
 
   // A handle to a single backend registration; cancelling it stops delivery of further events for
   // the directories registered in the corresponding `watch` call.

@@ -70,7 +70,7 @@ be confused: the difference is written at the import.
 
 ### Collections and custom types
 
-A random collection needs a size, chosen as a `RandomSize` given — `randomization.sizes.uniformUpto100`
+A random collection needs a size, chosen as a `RandomSize` given — `randomization.sizes.uniformSizeUpto100`
 bounds it at a hundred elements. A type whose values need more care than field-by-field generation
 defines its own instance, or maps an existing one:
 

@@ -34,7 +34,7 @@ package soundness
 
 export
   jacinta
-  . { dynamicJsonAccess, DynamicJsonEnabler, j, jp, Json, Json2, jsonConversion, JsonPointer,
+  . { DynamicJsonEnabler, j, jp, Json, Json2, JsonPointer,
       NumberMode }
 
 package formatting:
@@ -48,3 +48,9 @@ package discriminables:
   export jacinta.discriminables.jsonByKindDiscriminable
   export jacinta.discriminables.jsonWrapperDiscriminable
   export jacinta.discriminables.jsonEnvelopeDiscriminable
+
+package dynamicAccess:
+  export jacinta.dynamicAccess.dynamicJson
+
+package conversions:
+  export jacinta.conversions.encodableToJson

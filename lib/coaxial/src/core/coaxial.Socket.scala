@@ -52,7 +52,7 @@ object Socket:
   // The pluggable low-level socket backend: the complete set of platform-specific operations that
   // coaxial's `Bindable`/`Connectable`/`Serviceable`/`Routable` typeclasses are defined in terms
   // of, expressed without reference to any platform API. `coaxial.jvm` provides the
-  // `java.nio.channels`/`java.net` implementation (`socketBackends.virtualMachineSockets`); other
+  // `java.nio.channels`/`java.net` implementation (`socketBackends.javaBaseSockets`); other
   // platforms (e.g. WASI's `wasi:sockets`) supply their own.
   //
   // The seam is structured by the four *roles* coaxial's typeclasses play, because each has its

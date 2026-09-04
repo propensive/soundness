@@ -1419,7 +1419,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Tel.Error.Reason.DuplicateLayerName)
 
     suite(m"Dynamic access"):
-      import dynamicTelAccess.enabled
+      import dynamicAccess.dynamicTel
 
       test(m"select-dynamic on encoded case class"):
         val doc = Tests.Person(t"Alice", 30).encode
@@ -1976,7 +1976,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       def doc(source: String): Tel = source.tt.read[Tel]
 
       test(m"editing through the lens preserves surrounding formatting"):
-        import dynamicTelAccess.enabled
+        import dynamicAccess.dynamicTel
         val original = doc("# header\nname Alice\nemail a@example.com\n")
         val lens = summon["email" is Lens from Tel onto Tel]
         val updated = lens.modify(original)(_ => Tel.scalar(t"b@example.com"))
@@ -1997,7 +1997,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == t"name Bob\nemail b@example.com\n")
 
     suite(m"Tel.modify and Lens given"):
-      import dynamicTelAccess.enabled
+      import dynamicAccess.dynamicTel
       def doc(source: String): Tel = source.tt.read[Tel]
 
       test(m"modify replaces an existing field's compound"):
@@ -2026,7 +2026,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == t"Carol")
 
     suite(m"Optics: positional child traversal"):
-      import dynamicTelAccess.enabled
+      import dynamicAccess.dynamicTel
       def doc(source: String): Tel = source.tt.read[Tel]
       def contacts: Tel = doc("contacts\n  contact alice\n  contact bob\n")
 
@@ -2195,8 +2195,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       import galilei.*
       import serpentine.*
       import inimitable.*
-      import galilei.filesystemBackends.virtualMachineFilesystem
-      import galilei.filesystemOptions.deleteRecursively.enabled
+      import galilei.filesystemBackends.javaBaseFilesystem
+      import galilei.filesystemOptions.deleteRecursively
 
       test(m"A file path opened Read & Write writes the mutation back"):
         val name: Text = Uuid().show

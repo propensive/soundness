@@ -33,7 +33,7 @@
 package enigmatic
 
 import anticipation.*
-import gastronomy.*, providers.javaStdlibProvider
+import gastronomy.*, providers.javaBaseProvider
 import gossamer.*
 import monotonous.*
 import prepositional.*

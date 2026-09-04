@@ -44,12 +44,12 @@ export
       WebserverErrorPage }
 
 package frontends:
-  export scintillate.frontends.{threadPerConnection, reactive}
+  export scintillate.frontends.{threadPerConnectionFrontend, reactiveFrontend}
 
 package httpServers:
   // Hand-written forwarders rather than an `export`: synthesized export forwarders lose the
   // givens' capture-annotated refinement types (the zephyrine through/accepting finding).
-  given stdlibHttpd: [port <: (80 | 443 | 8080 | 8000)]
+  given jdkHttpserver: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic:  contingency.Tactic[scintillate.Httpd.Error],
         monitor: parasite.Monitor,
         probate: parasite.Probate )
@@ -59,18 +59,38 @@ package httpServers:
     // One erasing cast at the forwarding boundary (the wisteria `fieldInstance` pattern):
     // resolution finds the annotated instance, but its capture roots do not re-root through
     // a second given; the declared result type above restores the honest captures.
-    scintillate.httpServers.stdlibHttpd[port]
+    scintillate.httpServers.jdkHttpserver[port]
     . asInstanceOf[scintillate.httpServers.HttpdFor[port]]
 
-  given stdlibPublicHttpd: [port <: (80 | 443 | 8080 | 8000)]
+  given jdkHttpserverPublic: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic:  contingency.Tactic[scintillate.Httpd.Error],
         monitor: parasite.Monitor,
         probate: parasite.Probate )
   =>  ( loggable:  scintillate.Httpd.Event is anticipation.Loggable,
         errorPage: scintillate.WebserverErrorPage )
   =>  ((scintillate.httpServers.HttpdFor[port])^{tactic, monitor, caps.any}) =
-    scintillate.httpServers.stdlibPublicHttpd[port]
+    scintillate.httpServers.jdkHttpserverPublic[port]
+    . asInstanceOf[scintillate.httpServers.HttpdFor[port]]
+
+  given soundnessHttpd: [port <: (80 | 443 | 8080 | 8000)]
+  =>  ( tactic:  contingency.Tactic[scintillate.Httpd.Error],
+        monitor: parasite.Monitor,
+        probate: parasite.Probate )
+  =>  ( loggable:  scintillate.Httpd.Event is anticipation.Loggable,
+        errorPage: scintillate.WebserverErrorPage )
+  =>  ((scintillate.httpServers.HttpdFor[port])^{tactic, monitor, caps.any}) =
+    scintillate.httpServers.soundnessHttpd[port]
+    . asInstanceOf[scintillate.httpServers.HttpdFor[port]]
+
+  given soundnessHttpdPublic: [port <: (80 | 443 | 8080 | 8000)]
+  =>  ( tactic:  contingency.Tactic[scintillate.Httpd.Error],
+        monitor: parasite.Monitor,
+        probate: parasite.Probate )
+  =>  ( loggable:  scintillate.Httpd.Event is anticipation.Loggable,
+        errorPage: scintillate.WebserverErrorPage )
+  =>  ((scintillate.httpServers.HttpdFor[port])^{tactic, monitor, caps.any}) =
+    scintillate.httpServers.soundnessHttpdPublic[port]
     . asInstanceOf[scintillate.httpServers.HttpdFor[port]]
 
 package webserverErrorPages:
-  export scintillate.webserverErrorPages.{minimalErrorPage, stackTracesErrorPage, standardErrorPage}
+  export scintillate.webserverErrorPages.{minimalErrorPage, stackTracesErrorPage, styledErrorPage}

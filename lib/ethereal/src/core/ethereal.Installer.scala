@@ -55,12 +55,12 @@ import turbulence.*
 import vacuous.*
 import zeppelin.*
 
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.overwritePreexisting
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 import rudiments.sortingAlgorithms.timsort
 
 object Installer:
@@ -177,7 +177,7 @@ object Installer:
 
             tempFile.executable() = true
 
-            import filesystemOptions.moveAtomically.enabled
+            import filesystemOptions.moveAtomically
             tempFile.moveTo(file)
             Result.Installed(command, file.encode)
 

@@ -113,7 +113,7 @@ object Tests extends Suite(m"Escritoire tests"):
             t"╰───────┴─────╯" )
 
     test(m"Render a simple table with the default thick border style"):
-      import tableStyles.defaultTableStyle
+      import tableStyles.thickTableStyle
       import columnAttenuation.ignoreAttenuation
       render(scaffold, people, 40)
     . assert:

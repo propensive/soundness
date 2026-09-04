@@ -225,7 +225,7 @@ object Tests extends Suite(m"Scintillate tests"):
         . assert(_.s.split("200 OK").nn.length == 65)
 
         test(m"SocketServer.handle serves through the reactor when selected"):
-          import frontends.reactive
+          import frontends.reactiveFrontend
           val port = freePort()
 
           supervise:

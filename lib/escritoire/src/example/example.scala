@@ -119,7 +119,7 @@ def run(): Unit =
     Out.println(pinkFloyd.table)
 
   // for style <- List
-  //               (tableStyles.defaultTableStyle,
+  //               (tableStyles.thickTableStyle,
   //                tableStyles.thinRoundedTableStyle,
   //                tableStyles.horizontalTableStyle,
   //                tableStyles.midOnlyTableStyle,

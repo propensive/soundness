@@ -50,8 +50,8 @@ import turbulence.*
 import vacuous.*
 import zeppelin.*
 
-import filesystemBackends.virtualMachineFilesystem
-import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemBackends.javaBaseFilesystem
+import filesystemOptions.dereferenceSymlinks
 import filesystemTraversal.preOrderTraversal
 import logging.silentLogging
 import manifestAttributes.*

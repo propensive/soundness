@@ -150,7 +150,7 @@ With dynamic access enabled, fields read as members and updates produce new docu
 reaching many elements at once:
 
 ```scala
-import dynamicYamlAccess.enabled
+import dynamicAccess.dynamicYaml
 
 val doc = t"{name: Alice, age: 30}".read[Yaml]
 doc.name.as[Text]      // t"Alice"

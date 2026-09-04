@@ -30,19 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package gastronomy
+package breviloquence
 
-// Off the JVM (Scala.js and WASI) there is no `java.security.MessageDigest`, so the
-// "JavaStdlib" provider forwards to the pure-Scala implementations in `SoundnessHashing`. This
-// keeps `import providers.javaStdlibProvider` working identically on every platform — code that
-// selects it gets native hashing on the JVM and the pure port elsewhere, with no source change.
-object JavaStdlibHashing extends Hashing:
-  def md5:  Hashing.Function = SoundnessHashing.md5
-  def sha1: Hashing.Function = SoundnessHashing.sha1
-  def sha2(bits: Int): Hashing.Function = SoundnessHashing.sha2(bits)
-  def crc32: Hashing.Function = SoundnessHashing.crc32
+import anticipation.*
+import prepositional.*
 
-  // The checksums forward too, so `.digest[Crc32]`/`.digest[Adler32]` resolve under this
-  // provider on every platform. CRC-64 is deliberately absent here as it is on the JVM: no
-  // `java.util.zip` equivalent exists, so it is reached through the Soundness provider only.
-  def adler32: Hashing.Function = SoundnessHashing.adler32
+// Importing `conversions.encodableToCbor` brings a scoped `Conversion` into lexical scope that lets
+// any `Encodable in Cbor` value be supplied directly at lens-assignment positions, such as
+// `cbor.lens(_.field = value)`, without an explicit `.cbor`.
+package conversions:
+  given encodableToCbor: [entity: Encodable in Cbor] => Conversion[entity, Cbor] = _.encode

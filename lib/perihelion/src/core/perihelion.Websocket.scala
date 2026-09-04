@@ -54,8 +54,8 @@ import zephyrine.*
 import Control.*
 import alphabets.base64Standard
 import charEncoders.utf8Encoder
-import crypto.permitDeprecatedCrypto
-import providers.javaStdlibProvider
+import cryptoPermits.permitDeprecatedCrypto
+import providers.javaBaseProvider
 
 object Message:
   // A formal `Message is Ingressive`, so the raw `Message` type satisfies the

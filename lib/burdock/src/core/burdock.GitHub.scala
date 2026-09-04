@@ -53,7 +53,7 @@ import Repackager.UserError
 import denominative.nil
 import denominative.size
 import errorDiagnostics.emptyDiagnostics
-import httpBackends.virtualMachineHttp
+import httpBackends.javaNetHttp
 import internetAccess.online
 
 // Resolves dependency content hashes against the release assets of GitHub repositories the

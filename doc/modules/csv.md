@@ -182,7 +182,7 @@ With dynamic access enabled, a cell of a header-bearing row reads as a named mem
 the type asked for:
 
 ```scala
-import dynamicDsvAccess.enabled
+import dynamicAccess.dynamicDsv
 
 val row = t"greeting,number\nhello,23".read[Sheet].rows.head
 row.number[Int]   // 23

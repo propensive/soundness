@@ -78,7 +78,7 @@ The dynamic formats define the same optics over their own structures, so a parse
 with the identical syntax — one skill, both worlds:
 
 ```scala
-import dynamicJsonAccess.enabled, jsonConversion.encodable
+import dynamicAccess.dynamicJson, conversions.encodableToJson
 
 json.lens(_.leader.age = 41)
 json.lens(_.leader.roles(Each).name = t"member")

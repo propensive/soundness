@@ -30,9 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package breviloquence
+package jacinta
 
-import rudiments.*
+import anticipation.*
+import prepositional.*
 
-object dynamicCborAccess:
-  inline given enabled: DynamicCborEnabler = !!
+// Importing `conversions.encodableToJson` brings a scoped `Conversion` into lexical scope that lets
+// any `Encodable in Json` value be supplied directly at `into[Json]` positions — in particular,
+// panopticon lens assignments such as `json.lens(_.name = "x")` — without an explicit `.json`.
+package conversions:
+  given encodableToJson: [entity: Encodable in Json] => Conversion[entity, Json] = _.encode

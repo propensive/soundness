@@ -50,7 +50,7 @@ import dateFormats.iso8601DateFormat
 import probates.cancelProbate
 ```
 
-Someone encountering `import strategies.accrue` in unfamiliar code learns something about
+Someone encountering `import strategies.throwUnsafely` in unfamiliar code learns something about
 that code from the import line alone.
 
 ## Type parameters as words

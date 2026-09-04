@@ -269,7 +269,7 @@ field reads as though it were a member, and a nonexistent one is discovered at r
 where it is written.
 
 ```scala
-import dynamicJsonAccess.enabled
+import dynamicAccess.dynamicJson
 
 val person = t"""{"name": "Bob"}""".read[Json]
 person.name.as[Text]   // t"Bob"
@@ -289,7 +289,7 @@ immutable, so an update returns a copy. Assigning a value adds or replaces a fie
 and assigning `Unset` removes one:
 
 ```scala
-import dynamicJsonAccess.enabled
+import dynamicAccess.dynamicJson
 
 val base = t"""{"x": 1}""".read[Json]
 (base.y = 2).show        // t"""{"x":1,"y":2}"""
@@ -300,7 +300,7 @@ Deeper updates are written with a lens, which reaches through several levels and
 carry optics such as `Each` or `Filter` to touch many elements at once:
 
 ```scala
-import dynamicJsonAccess.enabled, jsonConversion.encodable
+import dynamicAccess.dynamicJson, conversions.encodableToJson
 
 case class Role(name: Text)
 case class Entity(name: Text, age: Int, roles: List[Role])

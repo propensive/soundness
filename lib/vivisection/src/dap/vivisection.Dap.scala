@@ -60,7 +60,7 @@ import vacuous.*
 // wire. Field names mirror the specification's exactly, including its `camelCase` and the
 // reserved-word `type`.
 object Dap:
-  import dynamicJsonAccess.enabled
+  import dynamicAccess.dynamicJson
 
   // Serves the protocol over the ambient standard streams until the input is exhausted — the
   // canonical stdio transport a frontend launches. All outgoing traffic flows through a single

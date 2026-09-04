@@ -49,9 +49,9 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-import enigmatic.cloaks.cloakHeap
-import gastronomy.crypto.permitDisallowedCrypto
-import gastronomy.providers.javaStdlibProvider
+import enigmatic.cloaks.heapCloak
+import gastronomy.cryptoPermits.permitDisallowedCrypto
+import gastronomy.providers.javaBaseProvider
 
 // The standard security handler (ISO 32000-2 §7.6.4), revisions 2–6. The file key is derived
 // from the user password and the `/Encrypt` dictionary and validated against `/U` at open;

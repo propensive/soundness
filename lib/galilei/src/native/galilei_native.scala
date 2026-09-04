@@ -52,7 +52,7 @@ import vacuous.*
 import Io.Error.{Operation, Reason}
 
 package filesystemBackends:
-  given native: [plane: Filesystem] => FilesystemBackend on plane =
+  given scalaNativeFilesystem: [plane: Filesystem] => FilesystemBackend on plane =
     new FilesystemBackend:
       type Plane = plane
 

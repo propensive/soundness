@@ -38,7 +38,7 @@ import soundness.*
 
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
-import dynamicJsonAccess.enabled
+import dynamicAccess.dynamicJson
 import errorDiagnostics.stackTracesDiagnostics
 import formatting.compactJsonFormatting
 import internetAccess.online
@@ -492,7 +492,7 @@ object Tests extends Suite(m"Tarantula tests"):
 
       // The real transport, only for this block: everything above deliberately runs against a
       // fake backend, and summoning both at once would be ambiguous.
-      import httpBackends.virtualMachineHttp
+      import httpBackends.javaNetHttp
 
       supervise:
         val port = freePort()

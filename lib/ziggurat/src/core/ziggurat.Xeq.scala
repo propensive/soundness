@@ -52,11 +52,11 @@ import vacuous.*
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
 import classloaders.threadContextClassloader
-import filesystemBackends.virtualMachineFilesystem
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.enabled
-import filesystemOptions.overwritePreexisting.enabled
+import filesystemBackends.javaBaseFilesystem
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
+import filesystemOptions.overwritePreexisting
 import textSanitizers.skipSanitizer
 import rudiments.sortingAlgorithms.timsort
 

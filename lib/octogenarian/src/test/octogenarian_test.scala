@@ -51,14 +51,14 @@ import strategies.throwUnsafely
 import charEncoders.utf8Encoder
 import errorDiagnostics.stackTracesDiagnostics
 
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.enabled
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.overwritePreexisting
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
 
-import gitCommands.environmentDefaultGitCommand
+import gitCommands.searchpathGitCommand
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Octogenarian Tests"):

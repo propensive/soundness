@@ -36,12 +36,12 @@ import soundness.*
 
 import backstops.stackTraceBackstop
 import errorDiagnostics.stackTracesDiagnostics
-import executives.completions
+import executives.completionsExecutive
 import internetAccess.online
 import interpreters.posixInterpreter
 import logging.silentLogging
 import probates.awaitProbate
-import socketBackends.virtualMachineSockets
+import socketBackends.javaBaseSockets
 import strategies.throwUnsafely
 import systems.javaBaseSystem
 import threading.virtualThreading

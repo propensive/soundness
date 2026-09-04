@@ -41,8 +41,8 @@ import phoenicia.*
 import rudiments.*
 import vacuous.*
 
-import gastronomy.crypto.permitDisallowedCrypto
-import gastronomy.providers.javaStdlibProvider
+import gastronomy.cryptoPermits.permitDisallowedCrypto
+import gastronomy.providers.javaBaseProvider
 
 // Embeds a TrueType (or OpenType) font program as a simple, single-byte PDF font with WinAnsi
 // encoding: the program becomes a `FontFile2` stream, referenced by a `FontDescriptor` built

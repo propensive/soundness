@@ -35,4 +35,4 @@ package soundness
 export caduceus.{Resend}
 
 package couriers:
-  export caduceus.couriers.resend
+  export caduceus.couriers.resendCourier

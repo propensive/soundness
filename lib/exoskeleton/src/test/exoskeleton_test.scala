@@ -50,7 +50,7 @@ import backstops.silentBackstop
 
 import Shell.*
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 // Statuses must be declared at the top level: capture checking rejects
 // `value.type <: value.type | other.type` for singletons of method-local definitions
@@ -68,7 +68,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
       val foo: Text = "hello"
       Enclave(t"abcd").dispatch:
         ' {
-            import executives.completions
+            import executives.completionsExecutive
             import interpreters.posixInterpreter
 
             val Alpha = Subcommand("alpha", e"a command to run")
@@ -857,7 +857,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
       // `-c` to offer.
       Enclave(t"clstr").dispatch:
         ' {
-            import executives.completions
+            import executives.completionsExecutive
             import interpreters.posixClusteringInterpreter
 
             cli:

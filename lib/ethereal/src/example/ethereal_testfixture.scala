@@ -42,7 +42,7 @@ import backstops.silentBackstop
 import charDecoders.utf8Decoder
 import classloaders.threadContextClassloader
 import environments.daemonClientEnvironment
-import executives.completions
+import executives.completionsExecutive
 import interpreters.posixInterpreter
 import systems.javaBaseSystem
 import textSanitizers.strictSanitizer

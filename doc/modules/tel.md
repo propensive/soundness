@@ -89,7 +89,7 @@ doc.verify[Assignment].office.city.as[Text]   // t"Town"
 ```
 
 Unverified dynamic access — reaching into a document whose shape is only informally known — is
-available too, enabled by `import dynamicTelAccess.enabled`, keeping the checked and unchecked
+available too, enabled by `import dynamicAccess.dynamicTel`, keeping the checked and unchecked
 styles visibly distinct. A keyword may legitimately repeat, which a single-valued accessor cannot
 express, so `fields` returns every matching child in document order:
 
@@ -106,7 +106,7 @@ change one value and write the file back without reformatting everything a perso
 `modify` replaces a field's compound, or appends it where the field is absent:
 
 ```scala
-import dynamicTelAccess.enabled
+import dynamicAccess.dynamicTel
 
 document.modify("name", Tel.scalar(t"Bob"))
 ```

@@ -727,7 +727,7 @@ object Http:
   // its response. The URL is fully resolved (passed as `Text`) so non-JVM
   // backends can parse it themselves; redirects are handled by `Http.Client`, not
   // the backend. Backends are platform-specific, so each is summoned by an
-  // explicit import: `httpBackends.virtualMachineHttp` (`java.net.http`, in
+  // explicit import: `httpBackends.javaNetHttp` (`java.net.http`, in
   // `telekinesis.jvm`) on the JVM; other platforms or implementations (e.g.
   // HTTP/2) supply their own given.
   trait Backend:

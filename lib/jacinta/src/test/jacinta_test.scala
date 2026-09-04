@@ -342,7 +342,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == None)
 
       test(m"Access an absent Optional dynamically"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         t"""{"y": 1}""".read[Json].missing.as[Optional[Int]]
       . assert(_ == Unset)
 
@@ -408,14 +408,14 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == newBand)
 
       test(m"Update a JSON object dynamically"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val john = t"""{"name": "John", "age": 40}""".as[Json]
         val john2 = john.age = 41
         john2.as[Person]
       . assert(_ == Person("John", 41))
 
       test(m"Update a JSON array dynamically"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val array = t"""[1, 2, 3]""".as[Json]
         val array2 = array(1) = 5
         array2.as[List[Int]]
@@ -424,19 +424,19 @@ object Tests extends Suite(m"Jacinta Tests"):
       val org = Org("The Beatles", Entity("John", 40, List(Role("Leader")))).in[Json]
 
       test(m"Lens update on JSON"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val org2 = org.lens(_.leader.age = 41.in[Json])
         org2.as[Org]
       . assert(_ == Org("The Beatles", Entity("John", 41, List(Role("Leader")))))
 
       test(m"Lens update with optic on JSON"):
-        import dynamicJsonAccess.enabled, jsonConversion.encodable
+        import dynamicAccess.dynamicJson, conversions.encodableToJson
         val org2 = org.lens(_.leader.roles(Prim) = Role("-"))
         org2.as[Org]
       . assert(_ == Org("The Beatles", Entity("John", 40, List(Role("-")))))
 
       test(m"Deeper lens update with optic on JSON"):
-        import dynamicJsonAccess.enabled, jsonConversion.encodable
+        import dynamicAccess.dynamicJson, conversions.encodableToJson
         val org2 = org.lens(_.leader.roles(Prim).name = "-")
         org2.as[Org]
       . assert(_ == Org("The Beatles", Entity("John", 40, List(Role("-")))))
@@ -444,28 +444,28 @@ object Tests extends Suite(m"Jacinta Tests"):
       val band = Org("Q", Entity("John", 40, List(Role("a"), Role("b"), Role("c")))).in[Json]
 
       test(m"Lens reads a field by name"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         summon["name" is Lens from Json onto Json](org).as[String]
       . assert(_ == "The Beatles")
 
       test(m"Lens.modify transforms a field through a function"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val lens = summon["name" is Lens from Json onto Json]
         lens.modify(org)(json => (json.as[String]+"!").in[Json]).as[Org]
       . assert(_ == Org("The Beatles!", Entity("John", 40, List(Role("Leader")))))
 
       test(m"Each optic updates every array element"):
-        import dynamicJsonAccess.enabled, jsonConversion.encodable
+        import dynamicAccess.dynamicJson, conversions.encodableToJson
         band.lens(_.leader.roles(Each).name = "x").as[Org]
       . assert(_ == Org("Q", Entity("John", 40, List(Role("x"), Role("x"), Role("x")))))
 
       test(m"Filter optic updates only matching elements"):
-        import dynamicJsonAccess.enabled, jsonConversion.encodable
+        import dynamicAccess.dynamicJson, conversions.encodableToJson
         band.lens(_.leader.roles(Filter[Json](_.name.as[String] == "b")).name = "x").as[Org]
       . assert(_ == Org("Q", Entity("John", 40, List(Role("a"), Role("x"), Role("c")))))
 
       test(m"Setting an absent field inserts it"):
-        import dynamicJsonAccess.enabled, jsonConversion.encodable
+        import dynamicAccess.dynamicJson, conversions.encodableToJson
         org.lens(_.extra = 9).selectDynamic("extra").as[Int]
       . assert(_ == 9)
 
@@ -569,62 +569,62 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == 3)
 
       test(m"Dynamic field access"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val person = t"""{"name": "Bob"}""".read[Json]
         person.name.as[Text]
       . assert(_ == t"Bob")
 
       test(m"Dynamic indexed access of array field"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val data = t"""{"nums": [4, 5, 6]}""".read[Json]
         data.nums(1).as[Int]
       . assert(_ == 5)
 
     suite(m"Json updates"):
       test(m"Add a field to an object via updateDynamic"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val base = t"""{"x": 1}""".read[Json]
         val updated = base.y = 2
         updated.show
       . assert(_ == t"""{"x":1,"y":2}""")
 
       test(m"Replace a field via updateDynamic"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val base = t"""{"x": 1, "y": 2}""".read[Json]
         val updated = base.x = 9
         updated.show
       . assert(_ == t"""{"x":9,"y":2}""")
 
       test(m"Update an array element"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val arr = t"""[1, 2, 3]""".read[Json]
         val updated = arr(1) = 9
         updated.show
       . assert(_ == t"[1,9,3]")
 
       test(m"Set a field to a string"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val base = t"""{"x": 1}""".read[Json]
         val updated = base.greeting = t"hi"
         updated.show
       . assert(_ == t"""{"x":1,"greeting":"hi"}""")
 
       test(m"Delete a field by assigning Unset"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val base = t"""{"x": 1, "y": 2}""".read[Json]
         val updated = base.x = Unset
         updated.show
       . assert(_ == t"""{"y":2}""")
 
       test(m"Delete a field whose value is a nested object"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val base = t"""{"x": {"k":1}, "y": 2}""".read[Json]
         val updated = base.x = Unset
         updated.show
       . assert(_ == t"""{"y":2}""")
 
       test(m"Deleting a missing field is a no-op"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val base = t"""{"x": 1}""".read[Json]
         val updated = base.missing = Unset
         updated.show
@@ -852,7 +852,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       test(m"Read a Json value through the direct path"):
         t"""{"a": 1}""".read[Json in Json].as[Json]
       . assert: json =>
-          import dynamicJsonAccess.enabled
+          import dynamicAccess.dynamicJson
           unsafely(json.a.as[Int]) == 1
 
       test(m"A hand-written Parsable reads an object without an AST"):

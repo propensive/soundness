@@ -84,25 +84,25 @@ package httpServers:
         type Response = Http.Response
         type Server = Service }
 
-  given stdlibHttpd: [port <: (80 | 443 | 8080 | 8000)]
+  given jdkHttpserver: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic: Tactic[Httpd.Error], monitor: Monitor, probate: Probate )
   =>  ( loggable: Httpd.Event is Loggable, errorPage: WebserverErrorPage )
   =>  ((HttpdFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](false, true)
 
-  given stdlibPublicHttpd: [port <: (80 | 443 | 8080 | 8000)]
+  given jdkHttpserverPublic: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic: Tactic[Httpd.Error], monitor: Monitor, probate: Probate )
   =>  ( loggable: Httpd.Event is Loggable, errorPage: WebserverErrorPage )
   =>  ((HttpdFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](false, false)
 
-  given nativeHttpServer: [port <: (80 | 443 | 8080 | 8000)]
+  given soundnessHttpd: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic: Tactic[Httpd.Error], monitor: Monitor, probate: Probate )
   =>  ( loggable: Httpd.Event is Loggable, errorPage: WebserverErrorPage )
   =>  ((HttpdFor[port])^{tactic, monitor, caps.any}) =
     HttpProtocolic[port](true, true)
 
-  given nativePublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
+  given soundnessHttpdPublic: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic: Tactic[Httpd.Error], monitor: Monitor, probate: Probate )
   =>  ( loggable: Httpd.Event is Loggable, errorPage: WebserverErrorPage )
   =>  ((HttpdFor[port])^{tactic, monitor, caps.any}) =
@@ -139,7 +139,7 @@ package webserverErrorPages:
   private def prefix(using Classloader): Data = cp"/scintillate/error.pre.html".read[Data]
   private def postfix(using Classloader): Data = cp"/scintillate/error.post.html".read[Data]
 
-  given standardErrorPage: Classloader => WebserverErrorPage = (throwable, request) =>
+  given styledErrorPage: Classloader => WebserverErrorPage = (throwable, request) =>
     // Direct `Content`, not `.ascribe`: the inline re-elaboration freshens the chunk type.
     Http.Response(Unfulfilled(Content(media"text/html", Chain[Data](prefix, postfix))))
 

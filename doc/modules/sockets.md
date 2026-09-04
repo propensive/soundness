@@ -107,7 +107,7 @@ one socket. Offering nothing preserves the plain-TLS handshake that `wss` peers 
 Nothing above names a platform API. The primitive operations each role needs — bind and accept,
 connect and converse, receive and reply, dispatch a datagram — are gathered into a
 `SocketBackend`, and the loops that compose them stay platform-neutral. The
-`java.nio.channels` implementation is `socketBackends.virtualMachineSockets`, and backends over
+`java.nio.channels` implementation is `socketBackends.javaBaseSockets`, and backends over
 `wasi:sockets` and over Scala Native's sockets supply the same operations, so the same protocol
 code runs on the JVM, inside a WebAssembly component, and in a native binary. An operation a
 backend cannot support — Unix-domain sockets or TLS on WASI — raises the appropriate error rather

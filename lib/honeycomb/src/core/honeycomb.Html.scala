@@ -73,9 +73,9 @@ object Html extends Tag.Container
     foreign     = false,
     boundary    = true ), Format:
   // Controls how an `Html` document is serialized by `emit`. `indented` lays whitespace-mode
-  // elements out one per indented line (the default); `flatHtmlFormatting` keeps it on one line.
+  // elements out one per indented line (the default); `compactHtmlFormatting` keeps it on one line.
   // (`.show` of a bare node is always compact.) Bundled as `formatting.indentedHtmlFormatting`
-  // and `formatting.flatHtmlFormatting`.
+  // and `formatting.compactHtmlFormatting`.
   object Formatting:
     def apply(indented: Boolean): Formatting = Basic(indented)
     private case class Basic(indented: Boolean) extends Formatting

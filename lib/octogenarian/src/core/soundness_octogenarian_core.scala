@@ -38,4 +38,4 @@ export
       ReflogEntry, Refspec, Remote, ResetMode, SshUrl, Worktree, target, namespace, content }
 
 package gitCommands:
-  export octogenarian.gitCommands.environmentDefaultGitCommand
+  export octogenarian.gitCommands.searchpathGitCommand

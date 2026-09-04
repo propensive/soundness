@@ -58,7 +58,7 @@ object Tests extends Suite(m"Profanity Tests"):
     supervise:
       val launcher = Enclave(t"profanity-fixture").dispatch:
         ' {
-            import executives.completions
+            import executives.completionsExecutive
             import interpreters.posixInterpreter
             import probates.cancelProbate
 

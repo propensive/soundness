@@ -36,7 +36,7 @@ import soundness.*
 
 import backstops.stackTraceBackstop
 import errorDiagnostics.stackTracesDiagnostics
-import executives.completions
+import executives.completionsExecutive
 import interpreters.posixInterpreter
 import logging.silentLogging
 import probates.awaitProbate

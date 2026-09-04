@@ -119,7 +119,7 @@ object TestClient:
 // is made only after `session/cancel` arrives, exercising the mandatory `cancelled` answer.
 object AgentFixture:
   import Acp.*
-  import dynamicJsonAccess.enabled
+  import dynamicAccess.dynamicJson
 
   // What the fake agent observed, for the assertions.
   val received: scm.ArrayBuffer[Text] = scm.ArrayBuffer()
@@ -336,13 +336,13 @@ object Tests extends Suite(m"Espionage Tests"):
 
     suite(m"Permission outcome codecs"):
       test(m"a selection encodes with its discriminator"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         val json = Selected(t"allow").asInstanceOf[RequestPermissionOutcome].in[Json]
         (json.outcome.as[Text], json.optionId.as[Text])
       . assert(_ == (t"selected", t"allow"))
 
       test(m"a cancellation encodes with its discriminator"):
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         Cancelled.asInstanceOf[RequestPermissionOutcome].in[Json].outcome.as[Text]
       . assert(_ == t"cancelled")
 
@@ -416,7 +416,7 @@ object Tests extends Suite(m"Espionage Tests"):
               "sessionId":"s1","toolCall":{"toolCallId":"c1"},
               "options":[{"optionId":"go","name":"Go","kind":"allow_once"}]}}"""
 
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         TestClient.roundtrip(message.as[Json]).let(_.result.outcome.optionId.as[Text])
       . assert(_ == t"go")
 
@@ -426,7 +426,7 @@ object Tests extends Suite(m"Espionage Tests"):
               "sessionId":"s1","toolCall":{"toolCallId":"c1"},
               "options":[{"optionId":"no","name":"No","kind":"reject_once"}]}}"""
 
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         TestClient.roundtrip(message.as[Json]).let(_.result.outcome.outcome.as[Text])
       . assert(_ == t"cancelled")
 
@@ -438,7 +438,7 @@ object Tests extends Suite(m"Espionage Tests"):
               "sessionId":"s2","toolCall":{"toolCallId":"c1"},
               "options":[{"optionId":"go","name":"Go","kind":"allow_once"}]}}"""
 
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         TestClient.roundtrip(message.as[Json]).let(_.result.outcome.outcome.as[Text])
       . assert(_ == t"cancelled")
 
@@ -456,7 +456,7 @@ object Tests extends Suite(m"Espionage Tests"):
           t"""{"jsonrpc":"2.0","id":13,"method":"fs/write_text_file","params":{
               "sessionId":"s1","path":"/tmp/a.txt","content":"x"}}"""
 
-        import dynamicJsonAccess.enabled
+        import dynamicAccess.dynamicJson
         TestClient.roundtrip(message.as[Json]).let(_.error.code.as[Int])
       . assert(_ == -32601)
 

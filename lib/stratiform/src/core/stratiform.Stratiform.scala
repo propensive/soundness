@@ -112,7 +112,7 @@ object Stratiform:
       then
         halt:
           m"""
-            dynamic field access on an unverified `Tel` requires `import dynamicTelAccess.enabled`
+            dynamic field access on an unverified `Tel` requires `import dynamicAccess.dynamicTel`
             (or verify the value against a schema first)
           """
 
@@ -145,7 +145,7 @@ object Stratiform:
     def plain: Expr[Tel] =
       if Expr.summon[DynamicTelEnabler].nil then halt:
         m"""
-          dynamic field access on an unverified `Tel` requires `import dynamicTelAccess.enabled`
+          dynamic field access on an unverified `Tel` requires `import dynamicAccess.dynamicTel`
           (or verify the value against a schema first)
         """
 

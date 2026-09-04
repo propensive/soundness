@@ -43,7 +43,7 @@ import logging.silentLogging
 import strategies.throwUnsafely
 import internetAccess.online
 import workingDirectories.javaBaseWorkingDirectory
-import socketBackends.virtualMachineSockets
+import socketBackends.javaBaseSockets
 import systems.javaBaseSystem
 
 case class Attach(duplex: Duplex)
@@ -110,7 +110,7 @@ object Tests extends Suite(m"Vivisection tests"):
   // exercises the whole adapter (the request mapping, the live debuggee, breakpoints, inspection)
   // without the stdio transport, whose framing is covered by the round-trip codec test.
   class DapClient(handle: Json => Unit):
-    import dynamicJsonAccess.enabled
+    import dynamicAccess.dynamicJson
 
     private val seq = java.util.concurrent.atomic.AtomicInteger(0)
     private val inbox = java.util.concurrent.LinkedBlockingQueue[Json]()
@@ -166,7 +166,7 @@ object Tests extends Suite(m"Vivisection tests"):
   // both the server (on stdin EOF) and the reader (on its input closing) end naturally and the
   // supervision scope awaits them — nothing is force-cancelled.
   class DapStdioClient(toServer: java.io.OutputStream):
-    import dynamicJsonAccess.enabled
+    import dynamicAccess.dynamicJson
 
     private val seq = java.util.concurrent.atomic.AtomicInteger(0)
     private val inbox = java.util.concurrent.LinkedBlockingQueue[Json]()
@@ -957,7 +957,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // load, launch, the stop, and inspection of a local rendered through its `Inspectable`
     // instance — asserting the protocol traffic a frontend would see.
     test(m"a DAP client launches, stops at a breakpoint and inspects a local"):
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       val classpathText = System.properties.java.`class`.path()
 
       supervise:
@@ -1009,7 +1009,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // Evaluation and assignment over the wire: evaluate an expression against a stopped frame,
     // then set a variable and read it back.
     test(m"a DAP client evaluates and assigns over a stopped frame"):
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       val classpathText = System.properties.java.`class`.path()
 
       supervise:
@@ -1054,7 +1054,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // the frame's locals; a member selection resolves the local's declared type's members; and a
     // fresh binding position offers nothing (the name is the programmer's to invent).
     test(m"a DAP client completes console input against a stopped frame"):
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       val classpathText = System.properties.java.`class`.path()
 
       supervise:
@@ -1111,7 +1111,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // on a local shows its value and static type, and a hover on an arbitrary expression is
     // refused rather than executed — while the console still evaluates that same expression.
     test(m"a DAP client hovers without executing debuggee code"):
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       val classpathText = System.properties.java.`class`.path()
 
       supervise:
@@ -1169,7 +1169,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // The transport itself, over real pipes: `initialize` and `disconnect` without ever opening
     // a debuggee, so this exercises the framing and the server's teardown-on-EOF in isolation.
     test(m"a DAP server initializes and disconnects over stdio"):
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
 
       supervise:
         dapStdioScenario: client =>
@@ -1185,7 +1185,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // disconnect — all `Content-Length`-framed JSON over pipes, proving the transport and its
     // teardown carry a live debug session end to end, not just the adapter in isolation.
     test(m"a DAP server drives a live debuggee over stdio"):
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       val classpathText = System.properties.java.`class`.path()
 
       supervise:
@@ -1332,7 +1332,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // origin and the real frame at its call site, each with its source; scopes against the
     // inline frame resolve to the enclosing physical frame.
     test(m"DAP expands an inline stop into subtle and real frames"):
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       val classpathText = System.properties.java.`class`.path()
 
       supervise:
@@ -1387,7 +1387,7 @@ object Tests extends Suite(m"Vivisection tests"):
 
     test(m"a DAP response carries its type, correlation and body"):
       import strategies.throwUnsafely
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       val request = Dap.Envelope(seq = 3, command = t"threads")
       val body = Dap.ThreadsBody(List(Dap.ThreadInfo(1, t"main"))).in[Json]
       val response = Dap.response(7, request, body)
@@ -1398,7 +1398,7 @@ object Tests extends Suite(m"Vivisection tests"):
 
     test(m"a DAP failure response reports its message"):
       import strategies.throwUnsafely
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       val request = Dap.Envelope(seq = 9, command = t"nonesuch")
       val failure = Dap.failure(2, request, t"unrecognized command")
       (failure.success.as[Boolean], failure.message.as[Text])
@@ -1412,7 +1412,7 @@ object Tests extends Suite(m"Vivisection tests"):
 
     test(m"a DAP event names itself and carries its body"):
       import strategies.throwUnsafely
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       val event = Dap.event(4, t"stopped", Dap.StoppedBody(t"breakpoint", threadId = 1).in[Json])
       (event.`type`.as[Text], event.event.as[Text], event.body.reason.as[Text])
     . assert(_ == (t"event", t"stopped", t"breakpoint"))

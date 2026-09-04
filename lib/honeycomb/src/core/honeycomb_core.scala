@@ -59,7 +59,7 @@ package doms.html:
 
 package formatting:
   given indentedHtmlFormatting: Html.Formatting = Html.Formatting(indented = true)
-  given flatHtmlFormatting: Html.Formatting = Html.Formatting(indented = false)
+  given compactHtmlFormatting: Html.Formatting = Html.Formatting(indented = false)
 
 package stylesheets:
   given uncheckedClasses: [classname <: Label: ValueOf] => NotGiven[classname =:= "apply"]

@@ -42,7 +42,7 @@ package columnAttenuation:
   export escritoire.columnAttenuation.{failAttenuation, ignoreAttenuation}
 
 package tableStyles:
-  export escritoire.tableStyles.{defaultTableStyle, horizontalTableStyle, midOnlyTableStyle,
+  export escritoire.tableStyles.{thickTableStyle, horizontalTableStyle, midOnlyTableStyle,
       minimalTableStyle, thinRoundedTableStyle, verticalTableStyle}
 
 package columnar:

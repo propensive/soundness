@@ -4306,7 +4306,7 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   // are not unique, so a dereference yields a `Fragment` of zero or more
   // matches). `xml.foo(ordinal)` picks a single one; the ordinal defaults to
   // `Prim`, so `xml.foo()` is the first match. Both are gated by an imported
-  // `DynamicXmlEnabler` (see `dynamicXmlAccess.enabled`).
+  // `DynamicXmlEnabler` (see `dynamicAccess.dynamicXml`).
 
   private def selfNodes: Array[Node]^{} = this match
     case Fragment(nodes*) => Array.from(nodes)

@@ -234,7 +234,7 @@ def helpTree
   build(Nil, command, Unset, Unset, Set(), Set())
 
 package executives:
-  given completions: (backstop: Backstop) => Executive:
+  given completionsExecutive: (backstop: Backstop) => Executive:
     type Interface = Cli
     type Return = Execution
 

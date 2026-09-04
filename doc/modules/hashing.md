@@ -32,7 +32,7 @@ hashing provider and an alphabet in scope:
 
 ```scala
 import soundness.*
-import providers.javaStdlibProvider
+import providers.javaBaseProvider
 import alphabets.hexLowerCase
 ```
 
@@ -45,7 +45,7 @@ t"Hello world".digest[Sha2[256]].serialize[Hex]
 // the 64-character hexadecimal SHA-256 digest
 ```
 
-The provider in scope supplies the algorithms — `javaStdlibProvider` for the SHA and MD5 family and
+The provider in scope supplies the algorithms — `javaBaseProvider` for the SHA and MD5 family and
 CRC-32, and `soundnessProvider` for the pure-Scala BLAKE3.
 
 The algorithm need not be named where the expected type already says it. A digest carries its
@@ -62,7 +62,7 @@ That is the pattern throughout: digests, HMACs, keys and signatures are all byte
 the algorithm that produced them, so a value from one algorithm cannot be passed where another is
 expected, and the algorithm rarely has to be written twice.
 
-`javaStdlibProvider` names the JDK's `MessageDigest` where there is one. Off the JVM there is
+`javaBaseProvider` names the JDK's `MessageDigest` where there is one. Off the JVM there is
 not, so the same import selects pure-Scala implementations of MD5, SHA-1, SHA-2 and CRC-32,
 validated byte for byte against the JDK's. Code that hashes therefore reads the same, and
 produces the same digests, on the JVM, in a browser and inside a WebAssembly component.
@@ -122,7 +122,7 @@ MD5 and SHA-1 are broken for security purposes, and remain only for compatibilit
 one requires a permission in scope, so the choice is visible and deliberate:
 
 ```scala
-import crypto.permitDisallowedCrypto
+import cryptoPermits.permitDisallowedCrypto
 
 t"Hello world".digest[Md5].serialize[Hex]
 ```

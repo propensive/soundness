@@ -45,8 +45,8 @@ import prepositional.*
 import interfaces.paths.pathOnLinux
 import systems.javaBaseSystem
 
-object embeddings:
-  inline given automatic: [value]
+package embeddings:
+  inline given automaticEmbedding: [value]
   =>  ( refs: References )
   =>  ( stageable: Stageable over refs.Transport )
   =>  Quotes

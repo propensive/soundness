@@ -45,10 +45,10 @@ import serpentine.*
 import symbolism.*
 import vacuous.*
 
-import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.dereferenceSymlinks
 import interfaces.paths.pathOnLocal
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 object Pathname:
   // The property is read straight off the `System` capability rather than through

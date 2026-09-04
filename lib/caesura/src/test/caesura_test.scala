@@ -193,7 +193,7 @@ object Tests extends Suite(m"Caesura tests"):
 
 
     suite(m"Dynamic JSON access"):
-      import dynamicDsvAccess.enabled
+      import dynamicAccess.dynamicDsv
 
       test(m"Access field by name"):
         import dsvFormats.tsvWithHeaderFormat
@@ -311,7 +311,7 @@ object Tests extends Suite(m"Caesura tests"):
 
     suite(m"Optics"):
       import dsvFormats.csvWithHeaderFormat
-      import dynamicDsvAccess.enabled
+      import dynamicAccess.dynamicDsv
       def sheet: Sheet = t"name,age\nAlice,30\nBob,25".read[Sheet]
 
       test(m"cell lens reads a cell by column name"):

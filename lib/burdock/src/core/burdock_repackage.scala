@@ -62,13 +62,13 @@ import Repackager.UserError
 import backstops.stackTraceBackstop
 import environments.javaBaseEnvironment
 import executives.directExecutive
-import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.dereferenceSymlinks
 import interpreters.posixInterpreter
 import stdios.fileDescriptorStdio
 import systems.javaBaseSystem
 import termcaps.environmentTermcap
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 // `linearSize`: the externalized-dependency count is reported once, at the end of a repackage
 // that has already walked every entry in the JAR.
@@ -168,10 +168,10 @@ def repackage(arguments: List[Text]): Unit = application(arguments):
         Out.print(csi.dectcem(true))
         Out.println()
 
-      import filesystemOptions.overwritePreexisting.enabled
-      import filesystemOptions.deleteRecursively.disabled
-      import filesystemOptions.moveAtomically.enabled
-      import filesystemOptions.createNonexistentParents.disabled
+      import filesystemOptions.overwritePreexisting
+      import filesystemOptions.deleteOnlyEmpty
+      import filesystemOptions.moveAtomically
+      import filesystemOptions.requireParents
 
       tmpFile.moveTo(inputJar)
 

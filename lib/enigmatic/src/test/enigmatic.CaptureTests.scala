@@ -43,9 +43,9 @@ import soundness.*
 import strategies.throwUnsafely
 import charDecoders.utf8Decoder, charEncoders.utf8Encoder, textSanitizers.skipSanitizer
 import gossamer.textDecodable
-import providers.javaStdlibProvider
-import crypto.permitDisallowedCrypto   // RSA-1024 below is weak; AES-CBC is unauthenticated
-import cloaks.cloakHeap
+import providers.javaBaseProvider
+import cryptoPermits.permitDisallowedCrypto   // RSA-1024 below is weak; AES-CBC is unauthenticated
+import cloaks.heapCloak
 
 // `uncloak` lends a key to its block as an `Encryptor`/`Decryptor` capability, and
 // capture checking confines the capability to that block: these tests demonstrate
@@ -136,7 +136,7 @@ object CaptureTests extends Suite(m"Capability confinement tests"):
     . assert(_ == t"Password(•••)")
 
     test(m"an off-heap-cloaked key round-trips under capture checking"):
-      import cloaks.cloakOffHeap
+      import cloaks.offHeapCloak
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
         t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
@@ -144,7 +144,7 @@ object CaptureTests extends Suite(m"Capability confinement tests"):
 
     test(m"an off-heap-cloaked key cannot be ascribed a pure type"):
       demilitarize:
-        import cloaks.cloakOffHeap
+        import cloaks.offHeapCloak
         val key: SymmetricKey[Aes[256] over Cbc against Pkcs7] =
           SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
     . assert(_.nonEmpty)

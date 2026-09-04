@@ -82,7 +82,7 @@ package teletypeables:
 
       value match
         case Juxtaposition.Collation(name, comparison, _, _) =>
-          import tableStyles.defaultTableStyle
+          import tableStyles.thickTableStyle
           val columns = 110
           val length = comparison.size
           val topRule = e"\n$subdued(────┬${(t"─"*(length.min(columns)))}┬────)\n"
@@ -160,7 +160,7 @@ package teletypeables:
             case class Row(treeLine: Text, left: Teletype, right: Teletype, memo: Teletype)
 
             given treeStyle: (Text is Textual) => TreeStyle[Row] = (tiles, row) =>
-              row.copy(treeLine = tiles.map(treeStyles.defaultTreeStyle.text(_)).join+row.treeLine)
+              row.copy(treeLine = tiles.map(treeStyles.squareTreeStyle.text(_)).join+row.treeLine)
 
             def line(data: (Text, Juxtaposition)): Row =
               def line(bullet: Text): Text = t"$bullet ${data(0)}"

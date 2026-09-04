@@ -49,7 +49,7 @@ import quantitative.*
 import rudiments.*
 import sedentary.*
 import spectacular.*
-import superlunary.embeddings.automatic
+import superlunary.embeddings.automaticEmbedding
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*

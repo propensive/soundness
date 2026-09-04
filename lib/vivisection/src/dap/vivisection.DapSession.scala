@@ -104,7 +104,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
           note:       Diagnostics ):
 
   import strategies.throwUnsafely
-  import dynamicJsonAccess.enabled
+  import dynamicAccess.dynamicJson
 
   // This adapter juggles capabilities whose lifetimes its own state machine encloses. Its
   // callbacks — breakpoint handlers, bind notifications, session tasks — refer to it through

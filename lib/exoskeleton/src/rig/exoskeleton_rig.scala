@@ -37,7 +37,7 @@ import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 import interfaces.paths.pathOnLinux
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 extension (shell: Shell)
   // Explicit `using` evidence instead of `raises`/`logs` sugar: a context-function result
@@ -131,8 +131,8 @@ extension (shell: Shell)
                  |}
                  |""".stripMargin
 
-            import filesystemOptions.createNonexistentParents.disabled
-            import filesystemOptions.dereferenceSymlinks.enabled
+            import filesystemOptions.requireParents
+            import filesystemOptions.dereferenceSymlinks
             import charEncoders.utf8Encoder
 
             val tmpDir: Path on Linux = temporaryDirectory[Path on Linux]
@@ -272,7 +272,7 @@ extension (shell: Shell)
         sh"tmux kill-session -t ${tmux.id}".exec[Exit]()
 
         psFile.let: file =>
-          import filesystemOptions.deleteRecursively.disabled
+          import filesystemOptions.deleteOnlyEmpty
           safely(file.delete())
 
         result

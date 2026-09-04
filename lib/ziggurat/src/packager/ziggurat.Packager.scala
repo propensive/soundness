@@ -53,16 +53,16 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import errorDiagnostics.emptyDiagnostics
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.enabled
-import filesystemOptions.overwritePreexisting.enabled
-import gastronomy.*, providers.javaStdlibProvider
-import httpBackends.virtualMachineHttp
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
+import filesystemOptions.overwritePreexisting
+import gastronomy.*, providers.javaBaseProvider
+import httpBackends.javaNetHttp
 import internetAccess.online
 import monotonous.*, alphabets.hexLowerCase
 
-import filesystemBackends.virtualMachineFilesystem
-import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemBackends.javaBaseFilesystem
+import filesystemOptions.dereferenceSymlinks
 
 // Turns a `Packaging` configuration into a distributable. Each per-platform binary is the
 // application JAR appended to a bare reusable runner stub, obtained from `RunnerSource` —

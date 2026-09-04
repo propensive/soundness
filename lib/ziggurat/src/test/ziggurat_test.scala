@@ -44,16 +44,16 @@ import termcaps.environmentTermcap
 
 import strategies.throwUnsafely
 import charEncoders.utf8Encoder
-import providers.javaStdlibProvider
+import providers.javaBaseProvider
 import alphabets.hexLowerCase
 import errorDiagnostics.stackTracesDiagnostics
 
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.enabled
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.overwritePreexisting
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Ziggurat tests"):

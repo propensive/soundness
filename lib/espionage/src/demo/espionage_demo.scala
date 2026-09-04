@@ -35,7 +35,7 @@ package espionage
 import soundness.*
 
 import backstops.stackTraceBackstop
-import executives.completions
+import executives.completionsExecutive
 import interpreters.posixInterpreter
 import probates.awaitProbate
 import errorDiagnostics.stackTracesDiagnostics

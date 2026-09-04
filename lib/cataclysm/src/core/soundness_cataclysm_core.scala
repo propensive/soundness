@@ -41,4 +41,4 @@ export cataclysm.{Css, SelectorList, Selector, Compound,
     ids}
 
 package formatting:
-  export cataclysm.formatting.{standardCssFormatting, compactCssFormatting}
+  export cataclysm.formatting.{indentedCssFormatting, compactCssFormatting}

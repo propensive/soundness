@@ -32,11 +32,7 @@
                                                                                                   */
 package breviloquence
 
-import anticipation.*
-import prepositional.*
+import rudiments.*
 
-// Importing `cborConversion.encodable` brings a scoped `Conversion` into lexical scope that lets
-// any `Encodable in Cbor` value be supplied directly at lens-assignment positions, such as
-// `cbor.lens(_.field = value)`, without an explicit `.cbor`.
-object cborConversion:
-  given encodable: [entity: Encodable in Cbor] => Conversion[entity, Cbor] = _.encode
+package dynamicAccess:
+  inline given dynamicCbor: DynamicCborEnabler = !!

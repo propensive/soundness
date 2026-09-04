@@ -34,7 +34,7 @@ package soundness
 
 export
   ypsiloid
-  . { Yaml, yamlConversion, DynamicYamlEnabler, dynamicYamlAccess,
+  . { Yaml, DynamicYamlEnabler,
       y, yp, YamlPath }
 
 package formatting:
@@ -42,3 +42,9 @@ package formatting:
 
 package discriminables:
   export ypsiloid.discriminables.{yamlByTypeDiscriminable, yamlByKindDiscriminable}
+
+package dynamicAccess:
+  export ypsiloid.dynamicAccess.dynamicYaml
+
+package conversions:
+  export ypsiloid.conversions.encodableToYaml

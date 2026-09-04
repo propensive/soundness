@@ -388,7 +388,7 @@ now exhausted. Six new rules, and one revert overturned.
   missing *extension methods* long before they show up as missing types, so diff the two
   import lists rather than adding only what the type errors demand.
 - **Never re-sort a receiving file's imports.** `obligatory.JsonRpc.scala` ends with
-  `import httpBackends.virtualMachineHttp`, a choice import that must follow `telekinesis.*`;
+  `import httpBackends.javaNetHttp`, a choice import that must follow `telekinesis.*`;
   alphabetising the block moved it above and it stopped resolving. Insert new imports into
   the alphabetical run and leave the trailing choice imports alone. Relatedly, scope a
   donor's `scala.collection.immutable.{::, Nil}` imports to the member that needs them — at

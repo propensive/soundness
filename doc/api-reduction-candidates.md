@@ -183,8 +183,8 @@ scintillate depends on — rather than a listener that could not bind. It is
 `Httpd.Error`, beside the `Httpd.Event` that both server backends already share. `HttpServer`
 itself has since become `Httpd` — a single word for the same thing, which also takes it out of
 the R2 exclusion table, since there is no longer a compound name to justify. Its family went
-with it: `HttpServerFor`, `stdlibHttpServer` and `stdlibPublicHttpServer` are `HttpdFor`,
-`stdlibHttpd` and `stdlibPublicHttpd`.
+with it: `HttpServerFor`, `stdlibHttpServer` and `jdkHttpserverPublic` are `HttpdFor`,
+`jdkHttpserver` and `jdkHttpserverPublic`.
 
 `BoundsError` was **deleted** rather than renamed. It duplicated
 `JsonBlueprint.Error`'s `IntOutOfRange` reason — the same failure, the same three fields,
@@ -290,7 +290,7 @@ ultimatum's is the likelier one to rename.
 | `Http*` | anticipation, honeycomb, urticose | 4 | `HttpEquiv`, `HttpRequests`, `HttpStreams`, `HttpUrl` |
 | `Image*` | embarcadero | 2 | `ImageOpenable`, `ImageRecord` |
 | `Inline*` | profanity, ultimatum | 5 | `InlineAnchoring`, `InlineBoard`, `InlineGrowth`, `InlineRoot`, `InlineShrink` |
-| `Java*` | anthology, diuretic, enigmatic, gastronomy, scintillate | 11 | `JavaIoFile`, `JavaLongDuration`, `JavaLongInstant`, `JavaNetUrl`, `JavaNioPath`, `JavaServlet`, `JavaStdlibCrypto`, `JavaStdlibHashing`, `JavaTimeInstant`, `JavaUtilDate`, `JavaVersion` |
+| `Java*` | anthology, diuretic, enigmatic, gastronomy, scintillate | 11 | `JavaIoFile`, `JavaLongDuration`, `JavaLongInstant`, `JavaNetUrl`, `JavaNioPath`, `JavaServlet`, `JavaBaseCrypto`, `JavaBaseHashing`, `JavaTimeInstant`, `JavaUtilDate`, `JavaVersion` |
 | `Json*` | jacinta, obligatory | 4 | `JsonBlueprint`, `JsonPointer`, `JsonRpc`, `JsonSchema` |
 | `Kotlin*` | xenophile | 5 | `KotlinDialect`, `KotlinFacade`, `KotlinInvoke`, `KotlinMetadataAtomizer`, `KotlinMetadataDiscipline` |
 | `Lane*` | dendrology | 2 | `LaneDagDiagram`, `LaneDagStyle` |
@@ -301,7 +301,7 @@ ultimatum's is the likelier one to rename.
 | `List*` | embarcadero, proscenium | 9 | `ListContainersRequest`, `ListContainersResponse`, `ListHasAsScala`, `ListImagesRequest`, `ListImagesResponse`, `ListNamespacesRequest`, `ListNamespacesResponse`, `ListTasksRequest`, `ListTasksResponse` |
 | `Local*` | hellenism, urticose | 2 | `LocalClasspath`, `LocalPart` |
 | `Log*` | anticipation, eucalyptus | 2 | `LogPalette`, `LogSink` |
-| `Native*` | surveillance, xenophile | 2 | `NativeInvoke`, `NativeWatcher` |
+| `Native*` | surveillance, xenophile | 2 | `NativeInvoke`, `JavaBaseWatcher` |
 | `Network*` | sedentary, urticose | 3 | `NetworkDevice`, `NetworkDeviceSessional`, `NetworkInterface` |
 | `Oci*` | anthology | 2 | `OciConfiguration`, `OciImage` |
 | `Open*` | apoplexy, galilei | 2 | `OpenApi`, `OpenFlag` |

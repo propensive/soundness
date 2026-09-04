@@ -625,7 +625,7 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == t"a{color:red;}")
 
       test(m"standard serialization indents declarations"):
-        import formatting.standardCssFormatting
+        import formatting.indentedCssFormatting
         t"a { color: red }".read[Css].show
       . assert(_ == t"a {\n  color: red;\n}\n")
 

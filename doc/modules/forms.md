@@ -23,7 +23,7 @@ a message pointing at the email field. Everything comes from the `soundness` pac
 
 ```scala
 import soundness.*
-import formulations.defaultFormulation
+import formulations.postFormulation
 ```
 
 ### Rendering a form
@@ -65,5 +65,5 @@ so a handler deals in values, not requests.
 ### Customising appearance
 
 How a form and its rows render is a `Formulation` — the frame around the widgets, the placement of
-labels and error messages. `defaultFormulation` gives a plain, unstyled rendering; an application
+labels and error messages. `postFormulation` gives a plain, unstyled rendering; an application
 supplies its own to match its design, without touching how fields are derived.

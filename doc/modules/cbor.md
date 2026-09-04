@@ -100,7 +100,7 @@ With dynamic access enabled, a map's fields read as members, an array indexes, a
 including removal, by assigning `Unset` — produce new values:
 
 ```scala
-import dynamicCborAccess.enabled
+import dynamicAccess.dynamicCbor
 
 val person = Person(t"Ada", 36).in[Cbor]
 person.name.as[Text]                 // t"Ada"

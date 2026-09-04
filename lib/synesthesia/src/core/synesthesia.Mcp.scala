@@ -382,7 +382,7 @@ object Mcp:
   case class Argument(name: Text, value: Text)
 
   object Reference:
-    import dynamicJsonAccess.enabled
+    import dynamicAccess.dynamicJson
 
     private val typeTag = Json.discriminatedUnion[Reference](t"type")
 
@@ -465,7 +465,7 @@ object Mcp:
     TextContent | ImageContent | AudioContent | ToolUseContent | ToolResultContent
 
   object ToolUseContent:
-    import dynamicJsonAccess.enabled
+    import dynamicAccess.dynamicJson
 
     private val typeTag = Json.discriminatedUnion[SamplingMessageContentBlock](t"type")
 

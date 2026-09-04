@@ -34,7 +34,7 @@ package embarcadero
 
 import soundness.*
 
-import providers.javaStdlibProvider
+import providers.javaBaseProvider
 import alphabets.hexLowerCase
 import charEncoders.utf8Encoder
 import formatting.compactJsonFormatting

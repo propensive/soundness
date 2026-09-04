@@ -37,14 +37,14 @@ import gossamer.*
 import hieroglyph.*
 
 package dagStyles:
-  given defaultDagStyle: [text: Textual] => TextualDagStyle[text] =
+  given boxDrawingDagStyle: [text: Textual] => TextualDagStyle[text] =
     TextualDagStyle("  ".tt, "└─".tt, "│ ".tt, "├─".tt, "──".tt, "┴─".tt, "│─".tt, "┼─".tt)
 
   given asciiDagStyle: [text: Textual] => TextualDagStyle[text] =
     TextualDagStyle("  ".tt, "+-".tt, "| ".tt, "+-".tt, "--".tt, "+-".tt, "|-".tt, "+-".tt)
 
 package laneDagStyles:
-  given defaultLaneDagStyle: [text: Textual] => (Text is Measurable)
+  given boxDrawingLaneDagStyle: [text: Textual] => (Text is Measurable)
   =>  TextualLaneDagStyle[text] =
     TextualLaneDagStyle
       ( "  ".tt, "│ ".tt, "──".tt, "╰─".tt, "╯ ".tt, "╭─".tt, "╮ ".tt,

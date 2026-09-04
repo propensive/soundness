@@ -37,7 +37,7 @@ import soundness.*
 import classloaders.threadContextClassloader
 import environments.javaBaseEnvironment
 import strategies.throwUnsafely
-import superlunary.embeddings.automatic
+import superlunary.embeddings.automaticEmbedding
 import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 

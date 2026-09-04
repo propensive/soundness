@@ -27,7 +27,7 @@ the `soundness` package, with a formatting choice in scope for rendering:
 ```scala
 import soundness.*
 import strategies.throwUnsafely
-import formatting.standardCssFormatting
+import formatting.indentedCssFormatting
 ```
 
 ### Writing CSS

@@ -40,4 +40,4 @@ package gastronomy
 // have no marker: their `providers` given supplies the capability directly.
 object Provider:
   // The JDK provider: `MessageDigest`/`CRC32` hashing and JCE cryptography.
-  object JavaStdlib
+  object JavaBase

@@ -80,18 +80,18 @@ object Tests extends Suite(m"Dendrology tests"):
   )
 
   def run(): Unit =
-    import dagStyles.defaultDagStyle
+    import dagStyles.boxDrawingDagStyle
     DagDiagram(types).render { node => t"▪ $node" }
 
     test(m"Tree flow: node content wraps into follow-on rows"):
-      import treeStyles.defaultTreeStyle
+      import treeStyles.squareTreeStyle
       TreeDiagram.by[Tree](_.children)
         ( Tree(t"the quick brown fox"), Tree(t"leaf") )
       . flow(11)(_.value).stdlib.to(List)
     . assert(_ == List(t"├─the quick", t"│ brown fox", t"└─leaf"))
 
     test(m"Tree flow: follow-on rows under a last child use space, not an extender"):
-      import treeStyles.defaultTreeStyle
+      import treeStyles.squareTreeStyle
       TreeDiagram.by[Tree](_.children)
         ( Tree(t"parent", List(Tree(t"the quick brown fox"))) )
       . flow(13)(_.value).stdlib.to(List)
@@ -109,7 +109,7 @@ object Tests extends Suite(m"Dendrology tests"):
     . assert(_ == List(t"└parent", t"  └ab abcdef", t"    ghi", t"    jklmno"))
 
     test(m"Lane DAG: a wide glyph's column measures display cells, not chars"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       import hieroglyph.textMetrics.wideCharacterWidthMetric
       val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"))
       val glyph = (n: Text) => if n == t"A" then t"日" else t"● "
@@ -117,14 +117,14 @@ object Tests extends Suite(m"Dendrology tests"):
     . assert(_ == List(t"日 A", t"│ ", t"●  B"))
 
     test(m"Lane DAG: linear chain"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"), t"C" -> Set(t"B"))
       LaneDagDiagram(dag).render(node => t" $node").join(t"\n")
 
     . assert(_ == t"●  A\n│ \n●  B\n│ \n●  C")
 
     test(m"Lane DAG: diamond"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       val dag = Dag
         ( t"A" -> Set(),
           t"B" -> Set(t"A"),
@@ -135,7 +135,7 @@ object Tests extends Suite(m"Dendrology tests"):
     . assert(_ == 7)
 
     test(m"Lane DAG: diamond layout shapes"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       val dag = Dag
         ( t"A" -> Set(),
           t"B" -> Set(t"A"),
@@ -151,14 +151,14 @@ object Tests extends Suite(m"Dendrology tests"):
     . assert(_ == (true, true, false, false))
 
     test(m"Lane DAG: single node"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       val dag = Dag(t"A" -> Set())
       LaneDagDiagram(dag).render(node => t" $node").join(t"\n")
 
     . assert(_ == t"●  A")
 
     test(m"Lane DAG: high fan-out"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       val dag = Dag
         ( t"root" -> Set(),
           t"a"    -> Set(t"root"),
@@ -170,7 +170,7 @@ object Tests extends Suite(m"Dendrology tests"):
     . assert(_ == 9)
 
     test(m"Lane DAG: high fan-in"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       val dag = Dag
         ( t"a"    -> Set(),
           t"b"    -> Set(),
@@ -182,14 +182,14 @@ object Tests extends Suite(m"Dendrology tests"):
     . assert(_ == 9)
 
     test(m"Lane DAG: linear chain detail"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"), t"C" -> Set(t"B"))
       LaneDagDiagram(dag).render(node => t" $node")
 
     . assert(_ == List(t"●  A", t"│ ", t"●  B", t"│ ", t"●  C"))
 
     test(m"Lane DAG: crossing renders as horizontal not junction"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       val dag = Dag
         ( t"A" -> Set(),
           t"B" -> Set(t"A"),
@@ -200,7 +200,7 @@ object Tests extends Suite(m"Dendrology tests"):
     . assert(_ == 7)
 
     test(m"Lane DAG: per-vertex glyph"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"))
       val glyph = (n: Text) => if n == t"A" then t"★ " else t"● "
       LaneDagDiagram(dag).render(glyph, n => t" $n")
@@ -208,7 +208,7 @@ object Tests extends Suite(m"Dendrology tests"):
     . assert(_ == List(t"★  A", t"│ ", t"●  B"))
 
     test(m"Lane DAG: compact preserves single-vertical row"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       // A→B is a direct edge: connector has exactly one Vertical, must stay.
       val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"))
       LaneDagDiagram(dag).compact.render(n => t" $n").size
@@ -216,7 +216,7 @@ object Tests extends Suite(m"Dendrology tests"):
     . assert(_ == 3)
 
     test(m"Lane DAG: compact removes multi-vertical pass-through row"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       // A→D is long, B and C are between. After A's row a connector row of
       // pure pass-throughs (multi-vertical) appears; compact should drop it.
       val dag = Dag
@@ -253,7 +253,7 @@ object Tests extends Suite(m"Dendrology tests"):
     . assert(_ == (3, 1, 2, 1))
 
     test(m"Layered DAG: per-vertex glyph"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"))
       val glyph = (n: Text) => if n == t"A" then t"★ " else t"● "
       LayeredDagDiagram(dag).render(glyph)
@@ -261,7 +261,7 @@ object Tests extends Suite(m"Dendrology tests"):
     . assert(_ == List(t"★ ", t"│ ", t"● "))
 
     test(m"Layered DAG: variable column widths"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       // The B node has a wide glyph; column 0 should expand to fit it.
       val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"))
       val glyph = (n: Text) => if n == t"B" then t"[long]" else t"●     "
@@ -270,7 +270,7 @@ object Tests extends Suite(m"Dendrology tests"):
     . assert(_ == List(t"●     ", t"│     ", t"[long]"))
 
     test(m"Lane DAG: variable column widths in connectors"):
-      import laneDagStyles.defaultLaneDagStyle
+      import laneDagStyles.boxDrawingLaneDagStyle
       val dag = Dag
         ( t"A" -> Set(),
           t"B" -> Set(t"A"),

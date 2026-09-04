@@ -24,7 +24,7 @@ policy in scope:
 
 ```scala
 import soundness.*
-import tableStyles.defaultTableStyle
+import tableStyles.thickTableStyle
 import textMetrics.uniformMetric
 import columnAttenuation.ignoreAttenuation
 import hyphenations.englishHyphenation

@@ -44,7 +44,7 @@ import serpentine.*
 import spectacular.*
 import symbolism.*
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 object LocalClasspath:
   given encodable: System => LocalClasspath is Encodable in Text = _()

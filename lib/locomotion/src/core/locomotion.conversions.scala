@@ -30,13 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package locomotion
 
 import anticipation.*
 import prepositional.*
 
-// Importing `jsonConversion.encodable` brings a scoped `Conversion` into lexical scope that lets
-// any `Encodable in Json` value be supplied directly at `into[Json]` positions — in particular,
-// panopticon lens assignments such as `json.lens(_.name = "x")` — without an explicit `.json`.
-object jsonConversion:
-  given encodable: [entity: Encodable in Json] => Conversion[entity, Json] = _.encode
+// Importing `conversions.encodableToProtobuf` brings a scoped `Conversion` into lexical scope that
+// lets any `Encodable in Protobuf` value be supplied directly at lens-assignment positions, such
+// as `protobuf.lens(_.field = value)`, without an explicit `.protobuf`.
+package conversions:
+  given encodableToProtobuf: [entity: Encodable in Protobuf] => Conversion[entity, Protobuf] = _.encode

@@ -50,4 +50,4 @@ object JavaIoFile extends Abstractable, Instantiable:
 
 // `java.io.File` can stand in for a soundness path abstraction (moved here from `anticipation.path`
 // to keep that module Scala.js-portable).
-inline given javaIoFile: ji.File is Representative of Paths = caps.unsafe.unsafeErasedValue
+inline given javaIoFileRepresentative: ji.File is Representative of Paths = caps.unsafe.unsafeErasedValue

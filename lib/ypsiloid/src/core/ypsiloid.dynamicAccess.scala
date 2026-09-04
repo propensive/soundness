@@ -30,13 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package stratiform
+package ypsiloid
 
-import anticipation.*
-import prepositional.*
+import rudiments.*
 
-// Importing `telConversion.encodable` brings a scoped `Conversion` into lexical scope that lets
-// any `Encodable in Tel` value be supplied directly at lens-assignment positions, such as
-// `tel.lens(_.field = value)`, without an explicit `.tel`.
-object telConversion:
-  given encodable: [entity: Encodable in Tel] => Conversion[entity, Tel] = _.encode
+package dynamicAccess:
+  inline given dynamicYaml: DynamicYamlEnabler = !!

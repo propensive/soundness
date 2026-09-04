@@ -47,12 +47,12 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.disabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteOnlyEmpty
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.overwritePreexisting
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 // Apply an upgrade to the running ethereal application. The given `source`
 // must yield the bytes of a complete signed runner+JAR binary — exactly

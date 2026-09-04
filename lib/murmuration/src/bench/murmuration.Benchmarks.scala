@@ -49,7 +49,7 @@ import proscenium.*
 import quantitative.*
 import rudiments.*
 import sedentary.*
-import superlunary.embeddings.automatic
+import superlunary.embeddings.automaticEmbedding
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import vacuous.*

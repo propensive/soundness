@@ -58,7 +58,7 @@ import vacuous.*
 import charDecoders.utf8Decoder
 import textSanitizers.skipSanitizer
 
-import filesystemBackends.virtualMachineFilesystem
+import filesystemBackends.javaBaseFilesystem
 
 object Completions:
   case class Tab(arguments: List[Text], focus: Int, cursor: Int, count: Int = 0):

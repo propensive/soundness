@@ -30,13 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package locomotion
+package caesura
 
-import anticipation.*
-import prepositional.*
+import rudiments.*
 
-// Importing `protobufConversion.encodable` brings a scoped `Conversion` into lexical scope that
-// lets any `Encodable in Protobuf` value be supplied directly at lens-assignment positions, such
-// as `protobuf.lens(_.field = value)`, without an explicit `.protobuf`.
-object protobufConversion:
-  given encodable: [entity: Encodable in Protobuf] => Conversion[entity, Protobuf] = _.encode
+package dynamicAccess:
+  inline given dynamicDsv: DynamicDsvEnabler = !!

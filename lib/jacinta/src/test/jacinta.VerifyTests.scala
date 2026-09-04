@@ -38,7 +38,7 @@ import soundness.*
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely
 
-// NB: `dynamicJsonAccess.enabled` is deliberately *not* imported here — verified
+// NB: `dynamicAccess.dynamicJson` is deliberately *not* imported here — verified
 // `Json of T` navigation must work without it.
 
 case class Employee(name: Text, age: Int, email: Text) derives CanEqual
@@ -188,4 +188,4 @@ object VerifyTests extends Suite(m"Jacinta verify tests"):
         demilitarize:
           t"""{"name": "Alice"}""".read[Json].name
         . head.message
-      . assert(_.contains("dynamicJsonAccess.enabled"))
+      . assert(_.contains("dynamicAccess.dynamicJson"))

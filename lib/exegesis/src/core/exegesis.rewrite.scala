@@ -132,7 +132,7 @@ object rewrite:
   :   Unit =
 
     proxy.notices(t"textDocument/publishDiagnostics") = Lsp.Registry.Slot[Json => Json]: params =>
-      import dynamicJsonAccess.enabled
+      import dynamicAccess.dynamicJson
       import strategies.throwUnsafely
 
       Map

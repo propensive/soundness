@@ -45,7 +45,7 @@ import vacuous.*
 import strategies.throwUnsafely
 import Tel.given
 
-// NB: `dynamicTelAccess.enabled` is deliberately *not* imported here — verified
+// NB: `dynamicAccess.dynamicTel` is deliberately *not* imported here — verified
 // `Tel of T` navigation must work without it.
 
 case class Worker(name: Text, age: Int) derives CanEqual
@@ -207,4 +207,4 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
         demilitarize:
           Worker(t"Alice", 30).encode.name
         . head.message
-      . assert(_.contains("dynamicTelAccess.enabled"))
+      . assert(_.contains("dynamicAccess.dynamicTel"))

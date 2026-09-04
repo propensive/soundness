@@ -39,7 +39,7 @@ import java.security as js
 import java.util as ju
 import javax.crypto as jc, jc.spec as jcs
 
-// The available cloaks, selected by named import (e.g. `import enigmatic.cloaks.cloakOffHeap`).
+// The available cloaks, selected by named import (e.g. `import enigmatic.cloaks.offHeapCloak`).
 // All but `heap` keep secret material out of (or encrypted on) the Java heap, so that a
 // heap dump or core file taken while a secret is at rest reveals nothing directly. Off-heap
 // segments are allocated from `java.lang.foreign` arenas, zeroed and released by
@@ -48,7 +48,7 @@ import javax.crypto as jc, jc.spec as jcs
 // these can protect against.
 package cloaks:
   // Cleartext on the heap: portable and pure, so heap-cloaked secrets are untracked.
-  given cloakHeap: Cloak = HeapCloak
+  given heapCloak: Cloak = HeapCloak
 
   // The three JVM strategies are capabilities, and a capability cannot sit in a top-level
   // given field, so their givens are `transparent inline`: each summon site instantiates a
@@ -56,16 +56,16 @@ package cloaks:
   // key — captured by the secrets built with it.
 
   // Cleartext in off-heap memory: nothing at rest on the heap at all.
-  transparent inline given cloakOffHeap: (OffHeapCloak^) = OffHeapCloak()
+  transparent inline given offHeapCloak: (OffHeapCloak^) = OffHeapCloak()
 
   // Ciphertext on the heap, encrypted with an ephemeral key held in off-heap memory: at
   // rest, the heap holds only ciphertext, and the key needed to read it is off-heap.
-  transparent inline given cloakVeiledHeap: (VeiledHeapCloak^) = VeiledHeapCloak()
+  transparent inline given veiledHeapCloak: (VeiledHeapCloak^) = VeiledHeapCloak()
 
   // Ciphertext in off-heap memory, encrypted with an ephemeral key held on the heap: the
   // mirror image, for when bulk secret material should stay out of the heap but a 32-byte
   // heap-resident key is acceptable.
-  transparent inline given cloakVeiledOffHeap: (VeiledOffHeapCloak^) = VeiledOffHeapCloak()
+  transparent inline given veiledOffHeapCloak: (VeiledOffHeapCloak^) = VeiledOffHeapCloak()
 
 // Copies `bytes` into fresh off-heap memory in `arena`, zeroing the input.
 private def offload(bytes: scala.Array[Byte], arena: jlf.Arena): jlf.MemorySegment =

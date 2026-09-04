@@ -54,7 +54,7 @@ import digression.StackTrace
 // elsewhere.
 given tastySymbolTeletypeable: (palette: TastyPalette) => Tasty.Symbol is Teletypeable =
   symbol =>
-    import tableStyles.defaultTableStyle
+    import tableStyles.thickTableStyle
 
     val flags =
       symbol.flags.map: (flag, on) =>
@@ -113,7 +113,7 @@ private def expandTastyTree(tree: Tasty.Tree)(using palette: TastyPalette)
         case _ :: rest => rest
         case _         => Nil
 
-      val prefix: Text = rest.map(treeStyles.defaultTreeStyle.text(_)).join
+      val prefix: Text = rest.map(treeStyles.squareTreeStyle.text(_)).join
 
       TastyTreeExpansion
         ( e"$prefix$tag2 $text",
