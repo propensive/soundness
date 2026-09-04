@@ -40,7 +40,7 @@ import cataclysm.formatting.indentedCssFormatting
 import gesticulate.*
 import gossamer.*
 import honeycomb.*
-import honeycomb.doms.html.whatwg.*
+import honeycomb.htmlDoms.whatwg.*
 import parasite.*
 import prepositional.*
 import spectacular.show
@@ -106,4 +106,4 @@ trait Archetype:
 
   // The page as a `Document[Html]` with a leading doctype — the form that is served over HTTP.
   final def document: Document[Html] =
-    Document[Html](Fragment(Html.doctype, html), doms.html.whatwg)
+    Document[Html](Fragment(Html.doctype, html), htmlDoms.whatwg)

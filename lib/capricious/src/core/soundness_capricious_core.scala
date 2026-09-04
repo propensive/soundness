@@ -41,13 +41,13 @@ package randomization:
   export capricious.randomization.{secureSeededRandomization, secureUnseededRandomization,
       seededRandomization, stronglySecureRandomization, unseededRandomization}
 
-  package sizes:
-    export
-      capricious.randomization.sizes
-      . { uniformSizeUpto10, uniformSizeUpto100, uniformSizeUpto1000, uniformSizeUpto10000, uniformSizeUpto100000 }
+package randomSizes:
+  export
+    capricious.randomSizes
+    . { uniformSizeUpto10, uniformSizeUpto100, uniformSizeUpto1000, uniformSizeUpto10000, uniformSizeUpto100000 }
 
-  package text:
-    export capricious.randomization.text.naughtyStringsText
+package randomTexts:
+  export capricious.randomTexts.naughtyStringsText
 
 package randomDistributions:
   export

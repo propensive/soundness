@@ -38,7 +38,7 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import doms.html.whatwg, whatwg.*
+import htmlDoms.whatwg, whatwg.*
 import beneficence.*
 
 trait Formulation extends Findable:

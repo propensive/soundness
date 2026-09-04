@@ -37,15 +37,14 @@ export
   . { JavaIoFile, JavaLongDuration, JavaLongInstant, JavaNetUrl, JavaNioPath, JavaTimeInstant,
       JavaUtilDate }
 
-package interfaces:
-  package instants:
-    export anticipation.interfaces.instants.{javaLongInstant, javaTimeInstant, javaUtilDate}
+package instantInterfaces:
+  export anticipation.instantInterfaces.{javaLongInstant, javaTimeInstant, javaUtilDate}
 
-  package durations:
-    export anticipation.interfaces.durations.javaLongDuration
+package durationInterfaces:
+  export anticipation.durationInterfaces.javaLongDuration
 
-  package paths:
-    export anticipation.interfaces.paths.{javaIoFile, javaNioPath}
+package pathInterfaces:
+  export anticipation.pathInterfaces.{javaIoFile, javaNioPath}
 
-  package urls:
-    export anticipation.interfaces.urls.javaNetUrl
+package urlInterfaces:
+  export anticipation.urlInterfaces.javaNetUrl

@@ -40,7 +40,7 @@ import prepositional.*
 import vacuous.*
 
 import attributives.textAttributive
-import doms.html.whatwg, whatwg.*
+import htmlDoms.whatwg, whatwg.*
 
 object RadioGroup:
   given renderable: RadioGroup is Renderable in Phrasing = group =>

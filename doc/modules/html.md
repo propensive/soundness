@@ -37,7 +37,7 @@ specification and the tag vocabulary it defines:
 
 ```scala
 import soundness.*
-import doms.html.whatwg.*
+import htmlDoms.whatwg.*
 ```
 
 An HTML value has the general type `Html`. Its nodes are `Element`s, `Comment`s,

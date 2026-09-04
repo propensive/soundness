@@ -40,7 +40,7 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-import doms.html.whatwg, whatwg.*
+import htmlDoms.whatwg, whatwg.*
 
 package formattables:
   given scalaFormattable: ("scala" is CommonFormattable) = new CommonFormattable:

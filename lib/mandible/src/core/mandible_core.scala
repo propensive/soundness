@@ -54,7 +54,7 @@ import vacuous.*
 
 import errorDiagnostics.stackTracesDiagnostics
 import filesystemOptions.dereferenceSymlinks
-import interfaces.paths.pathOnLinux
+import pathInterfaces.pathOnLinux
 
 import filesystemBackends.javaBaseFilesystem
 

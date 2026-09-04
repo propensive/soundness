@@ -39,7 +39,7 @@ import prepositional.*
 import vacuous.*
 
 import attributives.textAttributive
-import doms.html.whatwg, whatwg.*
+import htmlDoms.whatwg, whatwg.*
 
 object Field:
   given renderable: Field is Renderable in Phrasing = field =>

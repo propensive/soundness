@@ -58,7 +58,7 @@ package calendars:
       buddhistCalendar, minguoCalendar, ordinalCalendar, papalCutover, britishCutover}
 
 package nonexistentLeapDays:
-  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
+  export aviation.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
       roundUpLeapDay}
 
 package monthEnds:
@@ -77,29 +77,29 @@ package dateFormats:
   export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
       southEastAsiaDateFormat, unitedKingdomDateFormat}
 
-package endianness:
-  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
+package dateEndianness:
+  export aviation.dateEndianness.{bigEndian, littleEndian, middleEndian}
 
 package dateNumerics:
-  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
+  export aviation.dateNumerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
 
 package dateSeparators:
-  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
+  export aviation.dateSeparators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
       spaceDateSeparator}
 
 package yearFormats:
-  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
+  export aviation.yearFormats.{fullYears, twoDigitsYears}
 
 package weekdays:
   export
-    aviation.dateFormats.weekdays
+    aviation.weekdays
     . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
         shortestUnambiguousWeekdays, twoLetterWeekdays, frenchWeekdays, germanWeekdays,
         spanishWeekdays }
 
 package monthFormats:
   export
-    aviation.dateFormats.months
+    aviation.monthFormats
     . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
         twoDigitMonths, frenchMonths, germanMonths, spanishMonths }
 
@@ -113,21 +113,21 @@ package timespanFormats:
   export aviation.timespanFormats.{englishRelativeTimespan, frenchRelativeTimespan, germanRelativeTimespan, spanishRelativeTimespan}
 
 package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twelveHourSecondsClock, twentyFourHourClock,
+  export aviation.hourFormats.{twelveHourClock, twelveHourSecondsClock, twentyFourHourClock,
       twentyFourHourSecondsClock}
 
 package timeSpecificities:
-  export aviation.timeFormats.specificity.{minutesSpecificity, secondsSpecificity}
+  export aviation.timeSpecificities.{minutesSpecificity, secondsSpecificity}
 
-package meridiems:
-  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
+package timeMeridiems:
+  export aviation.timeMeridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
       upperPunctuatedMeridiem}
 
 package timeNumerics:
-  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
+  export aviation.timeNumerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
 
 package timeSeparators:
-  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
+  export aviation.timeSeparators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
       noneTimeSeparator}
 
 package hebdomads:
@@ -136,9 +136,8 @@ package hebdomads:
 package instantDecodables:
   export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
 
-package interfaces:
-  package instants:
-    export anticipation.interfaces.instants.aviationInstant
+package instantInterfaces:
+  export anticipation.instantInterfaces.aviationInstant
 
-  package durations:
-    export anticipation.interfaces.durations.aviationDuration
+package durationInterfaces:
+  export anticipation.durationInterfaces.aviationDuration

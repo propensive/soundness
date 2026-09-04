@@ -39,9 +39,9 @@ export
       Kind, Method, Node, Preload, Rel, Renderable, Rev, Sandbox, Shape, ClassList, Tag, Target,
       TextNode, Unattributive, Whatwg, Wrap }
 
-package doms.html:
-  export honeycomb.doms.html.whatwg
-  export honeycomb.doms.html.html4Transitional
+package htmlDoms:
+  export honeycomb.htmlDoms.whatwg
+  export honeycomb.htmlDoms.html4Transitional
 
 package formatting:
   export honeycomb.formatting.{indentedHtmlFormatting, compactHtmlFormatting}

@@ -748,7 +748,7 @@ rather than choosing from a fixed menu, lets unusual conventions be expressed
 without a bespoke formatter:
 
 ```scala
-import endianness.bigEndian
+import dateEndianness.bigEndian
 import dateNumerics.variableWidthDateNumerics
 import dateSeparators.hyphenDateSeparator
 import yearFormats.fullYears

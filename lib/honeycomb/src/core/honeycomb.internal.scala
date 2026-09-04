@@ -67,7 +67,7 @@ object internal:
   :   Macro[Extrapolation[Html]] =
 
     import quotes.reflect.*
-    import doms.html.whatwg
+    import htmlDoms.whatwg
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
       case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
@@ -282,7 +282,7 @@ object internal:
   :   Macro[Html] =
 
     import quotes.reflect.*
-    import doms.html.whatwg
+    import htmlDoms.whatwg
     import Html.Hole
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match

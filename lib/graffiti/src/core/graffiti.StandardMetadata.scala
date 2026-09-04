@@ -34,7 +34,7 @@ package graffiti
 
 import anticipation.*
 import honeycomb.*
-import honeycomb.doms.html.whatwg.*
+import honeycomb.htmlDoms.whatwg.*
 import prepositional.*
 
 // Aggregates the metadata most pages want: a responsive viewport and a description (from the trait

@@ -34,7 +34,7 @@ package honeycomb
 
 import anticipation.*
 import digression.*
-import doms.html.whatwg.*
+import htmlDoms.whatwg.*
 import fulminate.*
 import gossamer.*
 import prepositional.*

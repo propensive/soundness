@@ -34,7 +34,7 @@ package graffiti
 
 import anticipation.*
 import honeycomb.*
-import honeycomb.doms.html.whatwg.*
+import honeycomb.htmlDoms.whatwg.*
 import prepositional.*
 
 // Adds a `<meta name="author">`, from the trait parameter.
