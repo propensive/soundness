@@ -113,7 +113,9 @@ A representative entry:
    `doc/migration/**` is outside the CI input set, so adding or amending an entry does not
    invalidate the PR's attestation.
 3. On release, the release PR renames `doc/migration/pending.md` to
-   `doc/migration/<version>.md` (`git mv`) and creates a fresh `pending.md` containing only its
-   header. The release process is not complete until this has merged.
+   `doc/migration/<version>.md` (`git mv`) and does **not** create a new `pending.md`.
+   `etc/ci/release.sh` refuses to tag while `pending.md` exists or `<version>.md` is missing,
+   so this PR must merge before the release is cut. The first PR after the release creates a
+   fresh `pending.md` with a header naming the version it follows.
 4. Reviewing a PR includes checking that `pending.md` covers every observable change the diff
    makes.
