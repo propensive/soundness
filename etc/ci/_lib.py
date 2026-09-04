@@ -246,6 +246,44 @@ def compute_input_digest(commit: str = "HEAD") -> str:
     return h.hexdigest()
 
 
+def compute_filtered_tree(commit: str = "HEAD") -> str:
+    """Return the SHA of a git *tree object* holding exactly the CI input set at
+    `commit`: the commit's tree with every `.dockerignore`-excluded path removed.
+
+    This is the key attestation notes are attached to. Unlike the commit SHA it
+    depends only on the relevant content, so an attestation made on a branch
+    is still found after the commit is squashed, rebased or amended, provided
+    the input set is unchanged. Unlike the manifest digest above it is a real
+    git object, so `git notes` can annotate it directly.
+
+    Algorithm (all git plumbing, against a throwaway index so the caller's real
+    index is never touched):
+      1. `git read-tree <commit>` into the temporary index.
+      2. `git update-index --force-remove` every tracked path that
+         `.dockerignore` (read from `<commit>`) excludes.
+      3. `git write-tree` → the filtered tree SHA. The object is written to the
+         object database; that is intentional, since the note will point at it.
+    """
+    import os
+    import tempfile
+
+    root = _repo_root()
+    patterns = _load_dockerignore(root, commit)
+    excluded = [path for _, path in _ls_tree(commit) if is_excluded(path, patterns)]
+
+    with tempfile.TemporaryDirectory() as tmp:
+        env = dict(os.environ, GIT_INDEX_FILE=os.path.join(tmp, "index"))
+        subprocess.check_call(["git", "read-tree", commit], env=env)
+        if excluded:
+            subprocess.run(
+                ["git", "update-index", "--force-remove", "-z", "--stdin"],
+                input=b"".join(p.encode("utf-8") + b"\0" for p in excluded),
+                env=env,
+                check=True,
+            )
+        return subprocess.check_output(["git", "write-tree"], env=env).decode().strip()
+
+
 def canonical_json(obj) -> bytes:
     """Stable JSON encoding for signing/verification.
 
@@ -260,12 +298,16 @@ def canonical_json(obj) -> bytes:
 
 def _cli() -> int:
     if len(sys.argv) < 2:
-        print("usage: _lib.py {input-digest|canonicalize}", file=sys.stderr)
+        print("usage: _lib.py {input-digest|filtered-tree|list-inputs|canonicalize}", file=sys.stderr)
         return 2
     cmd = sys.argv[1]
     if cmd == "input-digest":
         commit = sys.argv[2] if len(sys.argv) > 2 else "HEAD"
         print(compute_input_digest(commit))
+        return 0
+    if cmd == "filtered-tree":
+        commit = sys.argv[2] if len(sys.argv) > 2 else "HEAD"
+        print(compute_filtered_tree(commit))
         return 0
     if cmd == "canonicalize":
         obj = json.load(sys.stdin)

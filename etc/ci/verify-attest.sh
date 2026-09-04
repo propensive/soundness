@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 #
-# Verify the local-CI attestation note attached to HEAD (or a given commit).
+# Verify the local-CI attestation for HEAD (or a given commit).
 # Used by `make verify-attest` locally AND by GitHub Actions.
+#
+# The note is looked up by the commit's *filtered tree* (its tree minus every
+# .dockerignore-excluded path — see etc/ci/compute-filtered-tree.sh), so an
+# attestation survives squash/rebase/amend as long as the input set is the
+# same. Notes attached directly to the commit (the pre-tree-keyed scheme) are
+# still accepted as a fallback.
 #
 # Exit codes:
 #   0  attestation present, signature valid, input digest matches
@@ -21,8 +27,14 @@ if [[ ! -f "$ALLOWED" ]]; then
   exit 1
 fi
 
-if ! git notes --ref="$NOTES_REF" show "$COMMIT_SHA" >/dev/null 2>&1; then
-  echo "verify-attest: no attestation note for $COMMIT_SHA on $NOTES_REF" >&2
+TREE=$(etc/ci/compute-filtered-tree.sh "$COMMIT_SHA")
+
+if git notes --ref="$NOTES_REF" show "$TREE" >/dev/null 2>&1; then
+  NOTE_KEY="$TREE"
+elif git notes --ref="$NOTES_REF" show "$COMMIT_SHA" >/dev/null 2>&1; then
+  NOTE_KEY="$COMMIT_SHA"
+else
+  echo "verify-attest: no attestation note on $NOTES_REF for filtered tree $TREE (or commit $COMMIT_SHA)" >&2
   echo "  (did you forget to push notes with \`make push\`, or run \`make attest\`?)" >&2
   exit 1
 fi
@@ -33,11 +45,12 @@ ENV_FILE="$TMP/envelope.json"
 STMT="$TMP/statement.canonical"
 SIG="$TMP/signature.pem"
 
-git notes --ref="$NOTES_REF" show "$COMMIT_SHA" > "$ENV_FILE"
+git notes --ref="$NOTES_REF" show "$NOTE_KEY" > "$ENV_FILE"
 
 # Split the envelope into a canonical statement (for verification),
-# the detached signature, the signer principal, and the claimed digest.
-read -r SIGNER CLAIMED_DIGEST < <(python3 - "$ENV_FILE" "$STMT" "$SIG" <<'PY'
+# the detached signature, the signer principal, the claimed digest and the
+# claimed filtered tree ("-" for envelopes written before trees were recorded).
+read -r SIGNER CLAIMED_DIGEST CLAIMED_TREE < <(python3 - "$ENV_FILE" "$STMT" "$SIG" <<'PY'
 import json, sys
 env_path, stmt_path, sig_path = sys.argv[1], sys.argv[2], sys.argv[3]
 with open(env_path) as f:
@@ -50,7 +63,8 @@ with open(stmt_path, "wb") as out:
     ).encode("utf-8"))
 with open(sig_path, "w") as out:
     out.write(signature)
-print(statement["predicate"]["ranBy"], statement["subject"][0]["digest"]["sha256"])
+digest = statement["subject"][0]["digest"]
+print(statement["predicate"]["ranBy"], digest["sha256"], digest.get("gitTree", "-"))
 PY
 )
 
@@ -73,4 +87,12 @@ if [[ "$ACTUAL_DIGEST" != "$CLAIMED_DIGEST" ]]; then
   exit 1
 fi
 
-echo "verify-attest: OK (commit=$COMMIT_SHA signer=$SIGNER digest=$ACTUAL_DIGEST)" >&2
+# Envelopes that record the filtered tree must name the one we recomputed.
+if [[ "$CLAIMED_TREE" != "-" && "$CLAIMED_TREE" != "$TREE" ]]; then
+  echo "verify-attest: filtered tree MISMATCH" >&2
+  echo "  claimed: $CLAIMED_TREE" >&2
+  echo "  actual:  $TREE" >&2
+  exit 1
+fi
+
+echo "verify-attest: OK (commit=$COMMIT_SHA tree=$TREE signer=$SIGNER digest=$ACTUAL_DIGEST)" >&2
