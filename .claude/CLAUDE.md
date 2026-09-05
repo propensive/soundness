@@ -40,7 +40,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   tutorial or an API a tutorial documents. flame is built against the latest *release*, so a
   failure that names something renamed since (listed in `doc/migration/pending.md`) is reported
   as TOLERATED, not STALE. The conventions the checker relies on — the `// does not compile`
-  marker and `doc/fixtures/<tutorial>.scala` preambles — are in `doc/standards/style.md`.
+  marker, `<!-- doccheck: skip -->` before a fence that cannot run in a REPL, the
+  `<!-- doccheck: language … -->` request, and `doc/fixtures/<tutorial>.scala` preambles — are
+  in `doc/standards/style.md`. From a shell without `flame` on the path, set
+  `FLAME=/path/to/flame`; a full run takes a couple of hours (hung fences cost two minutes
+  each), so run it in the background and read the summary from stderr. `HTTP 500` means flame
+  itself crashed on the fence.
 - `python3 etc/check-doc-coverage.py` (run by `make build`) maps every library to the tutorials
   that mention a name only it exports; a new library needs a tutorial, a section in an existing
   one, or an entry in the script's `INTERNAL` or `COVERED_BY` tables.

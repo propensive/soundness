@@ -100,3 +100,8 @@ one tutorial. Two conventions make that possible:
   form one continuous session. Where a tutorial needs a value it cannot sensibly construct
   in prose — a path that must exist, a running service — put the binding in
   `doc/fixtures/<tutorial>.scala`, which the checker evaluates before the first fence.
+- A fence that cannot run in a REPL session — one that opens a browser, binds a socket, reads a
+  terminal, dispatches a JVM, or is a macro sketch — is preceded by the line
+  `<!-- doccheck: skip -->`. It is still read by the name check, so it keeps every name it uses
+  defined. A tutorial whose samples need a language feature the session lacks asks for it with
+  `<!-- doccheck: language captureChecking -->` anywhere in the document.
