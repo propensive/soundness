@@ -52,6 +52,11 @@ for the text/byte boundary:
 import soundness.*
 import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder
+import strategies.throwUnsafely
+import pathInterfaces.pathOnLinux
+import filesystemOptions.overwritePreexisting
+import filesystemOptions.createNonexistentParents
+import stdios.javaLangSystemStdio
 ```
 
 ### Reading a source
@@ -74,7 +79,10 @@ process's output — so reading a URL as text and reading a file as bytes are th
 `writeTo` sends a value to a destination that knows how to consume it. The source may be text,
 bytes, or a stream of either, and the destination's `Writable` instance receives it:
 
+<!-- doccheck: skip -->
 ```scala
+val destination = t"/tmp/streams-tutorial.txt".decode[Path on Linux]
+
 source.writeTo(destination)
 ```
 
@@ -84,12 +92,12 @@ A type becomes a source by describing how it turns into a stream, and a sink by 
 it consumes one. Each is a single-method typeclass:
 
 ```scala
-case class Record(fields: List[Text])
+case class Row(name: Text, count: Int)
 
-given Record is Streamable by Text = record => Stream(record.fields.join(t","))
+given Row is Streamable by Text over Credit = row => Stream(t"${row.name},${row.count}")
 ```
 
-With that instance in scope a `Record` can be `read`, `writeTo` a destination, or `stream`ed,
+With that instance in scope a `Row` can be `read`, `writeTo` a destination, or `stream`ed,
 without any further definitions.
 
 ### Streaming a value
@@ -99,7 +107,7 @@ instance, naming the element type:
 
 ```scala
 val bytes = t"The quick brown fox".in[Data].stream   // Stream[Data]
-val text = document.source[Text]                     // Stream[Text]
+val text = Row(t"apples", 3).source[Text]            // Stream[Text]
 ```
 
 ### Composing a pipeline
@@ -109,6 +117,7 @@ side, and the whole chain runs on the consumer's thread as nested refills — no
 queues, no intermediate collections. Each stage takes what the last one produced, which is
 [composability](../philosophy/composability.md) in its most literal form:
 
+<!-- doccheck: skip -->
 ```scala
 file.stream.via(decompressor).via(decoder)
 ```
@@ -119,9 +128,10 @@ present themselves as stages.
 
 A pipeline ends in a *terminal* operation, which drains the endpoint and closes it:
 
+<!-- doccheck: skip -->
 ```scala
-stream.memoize                          // drain into one immutable value
-stream.sweep((storage, start, n) => …)  // drain, seeing each raw window
+stream.memoize                                   // drain into one immutable value
+stream.sweep((storage, start, n) => count += n)  // drain, seeing each raw window
 ```
 
 `sweep` — and `gather`, its accumulating counterpart — expose the raw window rather than boxed
@@ -133,6 +143,7 @@ and `drop`.
 Where a pipeline ends in a *push* chain rather than a value, `pump` is the single point at which
 data crosses from the pull side to the push side:
 
+<!-- doccheck: skip -->
 ```scala
 stream.pump(intake)
 ```
@@ -193,13 +204,18 @@ draw on concurrency, so they run inside a supervised scope:
 
 ```scala
 import threading.platformThreading
+import probates.cancelProbate
 
-supervise(Confluence(first, second, third))
+val first = Stream(t"one")
+val second = Stream(t"two")
+val third = Stream(t"three")
+
+supervise(Confluence(first, second, third).memoize)
 ```
 
 `Divergence` is the opposite: one source is delivered to several subscribers, each chunk
 materialized once and shared immutably between them. A full subscriber queue parks the pump, so
-the slowest subscriber gates the source — the correct behaviour for replication.
+the slowest subscriber gates the source — the correct behavior for replication.
 
 ### Tuning backpressure
 
@@ -239,5 +255,4 @@ a whole value; see [compression](compression.md) for the formats available:
 
 ```scala
 Data(1, 2, 3, 5, 8).compress[Gzip].decompress[Gzip]   // the original bytes
-file.stream.decompress[Gzip].read[Text]
 ```
