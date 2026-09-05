@@ -38,8 +38,6 @@ import scala.caps
 
 import java.io as ji
 import java.lang as jl
-import java.util.concurrent.atomic as juca
-
 import scala.collection.concurrent as scc
 
 import ambience.*, systems.javaBaseSystem
@@ -304,19 +302,22 @@ def cli[bus <: Matchable](using executive: Executive)
   // run once the jar has been clobbered underneath the JVM. In-memory only: the
   // launcher compares mtimes against the build FILE, but the authoritative record
   // is here, because rewriting the build file would trip the pid-watcher.
-  val scriptIdentity: juca.AtomicReference[ScriptIdentity | Null] =
-    juca.AtomicReference(null)
+  val scriptIdentity: Atomic[Optional[ScriptIdentity]] = Atomic(Unset)
+
+  // `verifyScript` hashes under this rather than under the cell it reads, which is what
+  // `scriptIdentity.synchronized` used to do. An opaque type does not expose `synchronized` —
+  // its public face is its declared bound, not `AnyRef` — and locking on the cell was in any
+  // case locking on the thing being read rather than on the operation being made exclusive.
+  val hashing: Mutex = Mutex()
 
   // True if the launcher's content is unchanged. mtime is the cheap gate: after a
   // metadata-only `touch`, the content is hashed once and the remembered mtime is
   // updated, so every later verification is a single `stat` again. Synchronized so
   // that concurrent clients cause at most one hash. Doubt — an unreadable or
   // deleted launcher — resolves to stale.
-  def verifyScript(): Boolean = scriptIdentity.synchronized:
+  def verifyScript(): Boolean = hashing:
     scriptPath.lay(true): script =>
-      val recorded = scriptIdentity.get()
-
-      if recorded == null then true else
+      scriptIdentity().lay(true): recorded =>
         safely:
           import anticipation.instantiables.epochMillisecondsInstantiable
           val size = script.filesize().long
@@ -326,7 +327,7 @@ def cli[bus <: Matchable](using executive: Executive)
           else if mtime == recorded.mtime then true
           else hashScript(script).lay(false): hash =>
             if hash == recorded.hash then
-              scriptIdentity.set(recorded.copy(mtime = mtime))
+              scriptIdentity() = recorded.copy(mtime = mtime)
               true
             else false
 
@@ -485,17 +486,13 @@ def cli[bus <: Matchable](using executive: Executive)
         val monitor0: Monitor^{} = caps.unsafe.unsafeAssumePure(summon[Monitor])
 
         val lazyStderr: ji.OutputStream = new ji.OutputStream():
-          private val stderrOut: juca.AtomicReference[ji.OutputStream | Null] =
-            juca.AtomicReference(null)
+          private val stderrOut: Atomic[Optional[ji.OutputStream]] = Atomic(Unset)
 
-          private def connected(): ji.OutputStream =
-            val s = stderrOut.get()
+          private def connected(): ji.OutputStream = stderrOut().or:
+            val stream = clientState.stderr.await()(using monitor0)
+            stderrOut() = stream
 
-            if s != null then s
-            else
-              val newS = clientState.stderr.await()(using monitor0)
-              stderrOut.set(newS)
-              newS
+            stream
 
           def write(i: Int): Unit = connected().write(i)
           override def write(bytes: scala.Array[Byte] | Null): Unit = connected().write(bytes)
@@ -503,9 +500,8 @@ def cli[bus <: Matchable](using executive: Executive)
           override def write(bytes: scala.Array[Byte] | Null, offset: Int, length: Int): Unit =
             connected().write(bytes, offset, length)
 
-          override def close(): Unit =
-            val s = stderrOut.get()
-            if s != null then safely(s.close())
+          override def close(): Unit = stderrOut().let: stream =>
+            safely(stream.close())
 
         given environment: Environment = LazyEnvironment(env)
 
@@ -656,7 +652,8 @@ def cli[bus <: Matchable](using executive: Executive)
             safely:
               import anticipation.instantiables.epochMillisecondsInstantiable
               hashScript(script).let: hash =>
-                scriptIdentity.set(ScriptIdentity(script.filesize().long, script.modified[Long](), hash))
+                scriptIdentity() =
+                  ScriptIdentity(script.filesize().long, script.modified[Long](), hash)
 
           // Record the launcher this daemon was started from as
           // `<buildId> <size> <mtimeMillis>`, so that the launcher's staleness
@@ -668,9 +665,8 @@ def cli[bus <: Matchable](using executive: Executive)
           // repeating it. Without a launcher (plain `java -jar`) there is nothing
           // to compare, so only the build id is written.
           val buildLine: Text =
-            val recorded = scriptIdentity.get()
-            if recorded == null then t"$buildId"
-            else t"$buildId ${recorded.size} ${recorded.mtime}"
+            scriptIdentity().lay(t"$buildId"): recorded =>
+              t"$buildId ${recorded.size} ${recorded.mtime}"
 
           buildFile.open[File](Write, OpenFlag.Create)(file.write(buildLine))
           val pidValue = Process().pid.value.show

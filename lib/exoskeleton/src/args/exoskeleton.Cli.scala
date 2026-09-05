@@ -34,8 +34,6 @@ package exoskeleton
 
 import scala.caps
 
-import java.util.concurrent.atomic as juca
-
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -120,19 +118,18 @@ extends Console, caps.ExclusiveCapability, WorkingDirectory.Provider, Environmen
   def matched(argument: Argument): Unit = ()
   def matches: List[Text] = Nil
 
+  // `Atomic.Ref`, not `Atomic[…]`: the match type does not reduce over an opaque type such as
+  // `proscenium.List`, because its final arm needs the scrutinee proved distinct from `Int`,
+  // `Long` and `Boolean`, and an opaque type's representation is not visible here to prove it.
   private val signalHandlers:
-  juca.AtomicReference[List[PartialFunction[UnixSignal | WindowsSignal, SignalResponse]]] =
-    juca.AtomicReference(Nil)
+  Atomic.Ref[List[PartialFunction[UnixSignal | WindowsSignal, SignalResponse]]] =
+    Atomic.Ref(Nil)
 
   override def trap
     ( handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse] )
   :   Unit =
 
-    signalHandlers.updateAndGet: list =>
-      // The `nn` result is bound with its declared type so that `::` sees a plain `List`, not
-      // the intersection with the nullable reference's type.
-      val handlers: List[PartialFunction[UnixSignal | WindowsSignal, SignalResponse]] = list.nn
-      handler :: handlers
+    signalHandlers.since(handler :: _)
 
 
   def dispatchSignal(signal: UnixSignal | WindowsSignal): SignalResponse =
@@ -149,7 +146,7 @@ extends Console, caps.ExclusiveCapability, WorkingDirectory.Provider, Environmen
             case decided              => decided
           else loop(rest)
 
-    loop(signalHandlers.get.nn)
+    loop(signalHandlers())
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   :   Optional[operand]

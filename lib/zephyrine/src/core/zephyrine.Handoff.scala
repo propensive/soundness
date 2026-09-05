@@ -37,6 +37,8 @@ import scala.caps
 import java.util.concurrent.atomic as juca
 import java.util.concurrent.locks.LockSupport
 
+import rudiments.*
+
 // A bounded single-producer/single-consumer hand-off ring: the exchange
 // mechanism behind `Conduit` and the fan-out subscriber queues. Exactly one
 // thread may call the producer operations (`offer`, `finish`) and exactly one
@@ -56,9 +58,16 @@ import java.util.concurrent.locks.LockSupport
 final class Handoff(depth: Int) extends caps.SharedCapability:
   private val capacity: Int = Integer.highestOneBit((depth.max(2)*2) - 1)
   private val mask: Int = capacity - 1
+  // Raw, where `head` and `tail` are `Atomic[Long]`. `Atomic.Refs` reads a slot as `Optional`,
+  // which is right — a fresh slot is genuinely empty — but `drain` hands slots straight into a
+  // caller-owned `scala.Array[AnyRef | Null]`, and `Optional` does not assign into that without
+  // a cast. Migrating the slot type therefore changes `drain`'s signature and ripples into
+  // `Conduit`'s adoption buffer, in the one path this module is benchmarked on. It is a
+  // worthwhile change; it is not a mechanical one, and it does not belong in the commit that
+  // introduces the wrapper.
   private val slots: juca.AtomicReferenceArray[AnyRef] = juca.AtomicReferenceArray(capacity)
-  private val head: juca.AtomicLong = juca.AtomicLong(0)
-  private val tail: juca.AtomicLong = juca.AtomicLong(0)
+  private val head: Atomic[Long] = Atomic(0L)
+  private val tail: Atomic[Long] = Atomic(0L)
 
   @caps.unsafe.untrackedCaptures @volatile private var producer: Thread | Null = null
   @caps.unsafe.untrackedCaptures @volatile private var consumer: Thread | Null = null
@@ -76,7 +85,7 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
 
   // Approximate occupancy, for advisory demand calculations; never used for
   // synchronization.
-  def size: Int = (tail.get - head.get).toInt.max(0)
+  def size: Int = (tail() - head()).toInt.max(0)
   def free: Int = capacity - size
 
   // Producer side: block (spin, then park) until a slot frees, unless the
@@ -85,13 +94,13 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
     // Interruption-as-cancellation surfaces exactly as a blocking queue's
     // would; the exception is unchecked for callers, as from Java.
     import unsafeExceptions.canThrowAny
-    val position = tail.get
+    val position = tail()
     var spun: Int = 0
 
     while !closed do
-      if position - head.get < capacity then
+      if position - head() < capacity then
         slots.lazySet((position & mask).toInt, item)
-        tail.set(position + 1)
+        tail() = position + 1
 
         // Deliberately unparked on EVERY item, not only on the empty→non-empty
         // transition. The narrower wake is sound — a parked consumer must have
@@ -112,7 +121,7 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
         Thread.onSpinWait()
       else
         producer = Thread.currentThread.nn
-        if position - head.get == capacity && !closed then LockSupport.park()
+        if position - head() == capacity && !closed then LockSupport.park()
         producer = null
 
         // Interruption is cancellation: `park` returns immediately on an
@@ -136,11 +145,11 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
   def drain(into: scala.Array[AnyRef | Null]): Int =
     // See `offer` for the interruption contract.
     import unsafeExceptions.canThrowAny
-    val position = head.get
+    val position = head()
     var spun: Int = 0
 
     while true do
-      val limit = tail.get
+      val limit = tail()
 
       if position < limit then
         val count = (limit - position).toInt.min(into.length)
@@ -155,7 +164,7 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
           slots.lazySet(index, null)
           moved += 1
 
-        head.set(position + count)
+        head() = position + count
         val waiting = producer
         if waiting != null then LockSupport.unpark(waiting)
         return count
@@ -165,7 +174,7 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
         Thread.onSpinWait()
       else
         consumer = Thread.currentThread.nn
-        if position == tail.get && !done then LockSupport.park()
+        if position == tail() && !done then LockSupport.park()
         consumer = null
 
         // Interruption is cancellation: see `offer`.
@@ -178,15 +187,15 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
   def take(): AnyRef | Null =
     // See `offer` for the interruption contract.
     import unsafeExceptions.canThrowAny
-    val position = head.get
+    val position = head()
     var spun: Int = 0
 
     while true do
-      if position < tail.get then
+      if position < tail() then
         val index = (position & mask).toInt
         val item = slots.get(index)
         slots.lazySet(index, null)
-        head.set(position + 1)
+        head() = position + 1
         val waiting = producer
         if waiting != null then LockSupport.unpark(waiting)
         return item
@@ -196,7 +205,7 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
         Thread.onSpinWait()
       else
         consumer = Thread.currentThread.nn
-        if position == tail.get && !done then LockSupport.park()
+        if position == tail() && !done then LockSupport.park()
         consumer = null
 
         // Interruption is cancellation: see `offer`.
@@ -214,13 +223,13 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
 
   // A non-blocking take, for draining on close.
   private def take0(): AnyRef | Null =
-    val position = head.get
+    val position = head()
 
-    if position < tail.get then
+    if position < tail() then
       val index = (position & mask).toInt
       val item = slots.get(index)
       slots.lazySet(index, null)
-      head.set(position + 1)
+      head() = position + 1
       val waiting = producer
       if waiting != null then LockSupport.unpark(waiting)
       item

@@ -37,8 +37,6 @@ import scala.caps
 import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 
-import java.util.concurrent.atomic as juca
-
 import rudiments.*
 
 object Fault:
@@ -46,12 +44,12 @@ object Fault:
   // them and never lets them escape, so they are laundered to pure `Fault -> Unit` for storage
   // rather than making the registry (and everything that touches it) capture-tracked.
   private object Handler extends Thread.UncaughtExceptionHandler:
-    val tasks: juca.AtomicReference[scala.collection.immutable.Set[Fault -> Unit]] =
-      juca.AtomicReference(scala.collection.immutable.Set())
+    val tasks: Atomic[scala.collection.immutable.Set[Fault -> Unit]] =
+      Atomic(scala.collection.immutable.Set())
 
     def uncaughtException(thread: Thread | Null, throwable: Throwable | Null): Unit =
       val fault: Fault = Fault(thread.nn, Error(throwable.nn))
-      tasks.get().nn.each(_(fault))
+      tasks().each(_(fault))
 
   private lazy val handler: Handler.type =
     Thread.setDefaultUncaughtExceptionHandler(Handler) yet Handler
@@ -61,8 +59,8 @@ object Fault:
 
     def register(value: Os.type, action: Fault => Unit): () => Unit =
       val handle: Fault -> Unit = caps.unsafe.unsafeAssumePure(action(_))
-      handler.tasks.updateAndGet(_.nn + handle)
+      handler.tasks.since(_ + handle)
 
-      () => handler.tasks.updateAndGet(_.nn - handle)
+      () => handler.tasks.since(_ - handle)
 
 case class Fault(thread: Thread, error: Error)
