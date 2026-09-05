@@ -24,11 +24,15 @@ shape mismatch becomes an exception — or worse, silent nonsense — long after
 Soundness puts the dimensions in the types. A `Vector[Int, 3]` and a `Vector[Int, 2]` are different
 types; a `Matrix[…, 2, 3]` multiplies a `Matrix[…, 3, 2]` and nothing else; and the element type is
 generic over anything with the right arithmetic, which is how units flow through. Everything comes
-from the `soundness` package:
+from the `soundness` package, and arithmetic between plain numbers and these types relies on the
+compiler's `into` conversions, so that language feature is enabled too:
 
 ```scala
 import soundness.*
+import scala.language.experimental.into
 ```
+
+Dimensions in the types of vectors and matrices make a mismatched multiplication a compile error — [impossible states](../philosophy/impossible-states.md) for linear algebra.
 
 ### Complex numbers
 
@@ -45,14 +49,17 @@ The components may be any type with the arithmetic the operation needs — inclu
 complex impedance keeps its units:
 
 ```scala
-Complex(1.0*Metre/Second, 9.0*Metre/Second).show   // t"(1.00 + 9.00ℐ) m·s¯¹"
+val real = 1.0*Metre/Second
+val imaginary = 9.0*Metre/Second
+
+Complex(real, imaginary).show   // t"(1.00 + 9.00ℐ) m·s¯¹"
 ```
 
 A complex number can equally be written by adding to a multiple of the imaginary unit, or given in
 polar form as a modulus and an `Angle`:
 
 ```scala
-0.8 + 1.8*i                       // Complex(0.8, 1.8)
+Complex(0.8, 0.0) + i*1.8            // Complex(0.8, 1.8)
 Complex(12*Kilo(Gram), 0.3845.rad)   // from modulus and argument
 ```
 
@@ -148,9 +155,10 @@ a typed error:
 ```scala
 import strategies.throwUnsafely
 
-val shuffle = Permutation(Series(3, 1, 4, 2, 0, 5))
-shuffle(List(t"zero", t"one", t"two", t"three", t"four", t"five"))
-// List(t"three", t"one", t"four", t"two", t"zero", t"five")
+val shuffle = Permutation(Sequence(3, 1, 4, 2, 0, 5))
+val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
+
+shuffle(items)   // List(t"three", t"one", t"four", t"two", t"zero", t"five")
 
 shuffle.inverse(shuffle(items)) == items   // always true
 ```
@@ -165,7 +173,7 @@ Since the number *is* the permutation, it can be given directly, and both repres
 read back:
 
 ```scala
-Permutation(Factoradic(45)) == Permutation(Series(1, 4, 2, 3, 0))   // true
+Permutation(Factoradic(45)) == Permutation(Sequence(1, 4, 2, 3, 0))   // true
 
 shuffle.lehmer      // the Lehmer code, as a List[Int]
 shuffle.expansion   // the reordered indexes
