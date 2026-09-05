@@ -15,6 +15,8 @@ Randomness hides assumptions. `math.random()` answers only one narrow question �
 depended on chance cannot be replayed; and whether the generator is predictable, which is harmless
 in a simulation and fatal in a token generator, is nowhere visible in the code.
 
+A random source as a capability rather than a global is [declarative context](../philosophy/declarative-context.md): reproducibility follows from the scope, not from discipline.
+
 Soundness separates the concerns and names each one. Where randomness is used is delimited by a
 block; which generator supplies it — seeded for reproducibility, secure for secrets — is an import;
 what distribution shapes a number is a given; and any type reachable from these gains a random
@@ -75,8 +77,10 @@ bounds it at a hundred elements. A type whose values need more care than field-b
 defines its own instance, or maps an existing one:
 
 ```scala
+import randomDistributions.uniformUnitIntervalDistribution
+
 case class Latitude(degrees: Double)
-given Latitude is Randomizable = summon[Double is Randomizable].map(d => Latitude(d % 90))
+given Latitude is Randomizable = summon[Double is Randomizable].map(d => Latitude(d*180 - 90))
 ```
 
 Where field-by-field generation *is* right, an instance derives from the type, so a case class of
@@ -91,6 +95,8 @@ failing run and supplying it again reproduces exactly the same values — includ
 generated collections, which are drawn from the same generator:
 
 ```scala
+import randomSizes.uniformSizeUpto100
+
 Seed(42L).stochastic:
   arbitrary[List[Int]]()
 ```
@@ -110,7 +116,7 @@ A `Random` in scope also shuffles a sequence and answers a fair coin-toss, the s
 that otherwise get hand-rolled badly:
 
 ```scala
-stochastic:
+stochastic: (random: Random) ?=>
   random.shuffle(List(1, 2, 3, 4, 5))
   toss()   // true or false, evenly
 ```
