@@ -64,29 +64,27 @@ object DtsAtomizer:
 
   // --- canonical binary encoding ---------------------------------------------------------------
 
-  private def uvarint(out: java.io.ByteArrayOutputStream, value0: Long): Unit =
+  private def uvarint(out: Scribe[Byte], value0: Long): Unit =
     var value = value0
 
     while value >= 0x80L do
-      out.write(((value & 0x7f) | 0x80).toInt)
+      out.append(((value & 0x7f) | 0x80).toByte)
       value >>>= 7
 
-    out.write(value.toInt)
+    out.append(value.toByte)
 
-  private def utf8(out: java.io.ByteArrayOutputStream, text: Text): Unit =
-    val bytes = text.s.getBytes("UTF-8").nn
+  private def utf8(out: Scribe[Byte], text: Text): Unit =
+    val bytes = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
     uvarint(out, bytes.length.toLong)
-    out.write(bytes)
+    out.append(bytes)
 
-  private def tag(out: java.io.ByteArrayOutputStream, char: Char): Unit = out.write(char.toInt)
+  private def tag(out: Scribe[Byte], char: Char): Unit = out.append(char.toByte)
 
-  private def flag(out: java.io.ByteArrayOutputStream, value: Boolean): Unit =
-    out.write(if value then 1 else 0)
+  private def flag(out: Scribe[Byte], value: Boolean): Unit =
+    if value then out.append(1) else out.append(0)
 
-  private def hash(encode: java.io.ByteArrayOutputStream => Unit): Data =
-    val out = java.io.ByteArrayOutputStream()
-    encode(out)
-    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.unsafeFrozen(out.toByteArray.nn))
+  private def hash(encode: Scribe[Byte] => Unit): Data =
+    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.collect[Byte]()(encode))
 
   // --- types -----------------------------------------------------------------------------------
 
@@ -94,7 +92,7 @@ object DtsAtomizer:
   // renaming `T` to `U` throughout a declaration changes nothing a consumer can observe, and
   // must therefore change no atom. `binders` holds the enclosing binder scopes, innermost last.
   private def encode
-    ( out:     java.io.ByteArrayOutputStream,
+    ( out:     Scribe[Byte],
       typed:   Typescript.Type,
       binders: List[List[Text]] )
   :   Unit =
@@ -208,7 +206,7 @@ object DtsAtomizer:
         encode(out, result, inner)
 
   private def sorted
-    ( out:     java.io.ByteArrayOutputStream,
+    ( out:     Scribe[Byte],
       members: List[Typescript.Type],
       binders: List[List[Text]] )
   :   Unit =
@@ -217,11 +215,11 @@ object DtsAtomizer:
     // fails capture checking here, because the vector's `prefix1` array carries a root
     // capability that cannot flow into the traversal evidence's empty capture set.
     val encodings = members.stdlib.map: member =>
-      val buffer = java.io.ByteArrayOutputStream()
-      encode(buffer, member, binders)
+      val buffer = Array.collect[Byte](): buffer =>
+        encode(buffer, member, binders)
       // An immutable view: the sort's comparator would otherwise capture the mutable arrays
       // exclusively, which capture checking rejects.
-      val bytes: scala.Array[Byte] = buffer.toByteArray().nn
+      val bytes: scala.Array[Byte] = Array.unsafeJvm(buffer)
       // An immutable, unsigned view: the comparator would otherwise capture the mutable arrays
       // exclusively, which capture checking rejects, and signed bytes would sort wrongly.
       scala.Vector.tabulate(bytes.length) { index => bytes(index) & 0xff }
@@ -230,7 +228,7 @@ object DtsAtomizer:
 
     encodings.sortWith { (left, right) => compare(left, right) < 0 }.foreach: encoding =>
       uvarint(out, encoding.length.toLong)
-      encoding.foreach { byte => out.write(byte) }
+      encoding.foreach { byte => out.append(byte.toByte) }
 
   // Sorting by encoded bytes, rather than by rendered text, keeps the order a property of the
   // structure: two types that encode identically must sort adjacently whatever they were called.
@@ -246,7 +244,7 @@ object DtsAtomizer:
     if result != 0 then result else left.length - right.length
 
   private def encodeMember
-    ( out:     java.io.ByteArrayOutputStream,
+    ( out:     Scribe[Byte],
       member:  Typescript.Member,
       binders: List[List[Text]] )
   :   Unit =
@@ -356,7 +354,7 @@ object DtsAtomizer:
     atoms.toList.to(List)
 
   private def parameters
-    ( out:     java.io.ByteArrayOutputStream,
+    ( out:     Scribe[Byte],
       typed:   List[Typescript.Type.Parameter],
       binders: List[List[Text]] )
   :   Unit =

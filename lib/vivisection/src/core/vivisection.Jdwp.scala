@@ -435,6 +435,9 @@ object Jdwp:
   // Marshals a JDWP packet payload. Fluent: each write returns the writer. `data` snapshots the
   // accumulated bytes.
   class Writer(sizes: IdSizes):
+    // Field-held, like the reader's accumulator below and `turbulence.LineSeparation`'s partial
+    // line: `Array.collect` lends a scribe and freezes it when the lender returns, which is what
+    // makes the freeze sound, so a buffer that outlives a single expression cannot use it.
     private val out = ji.ByteArrayOutputStream()
 
     def byte(value: Byte): Writer = { out.write(value.toInt & 0xff); this }
@@ -753,6 +756,8 @@ object Jdwp:
       // thread off the channel's first (blocking) refill before the writer has started.
       val reader: Task[Unit] = async:
         val source = duplex.source
+        // Reset and refilled with the leftover of each partial packet, so field-held; see
+        // `Writer` above.
         val accumulator = ji.ByteArrayOutputStream()
         var handshaken = false
 
