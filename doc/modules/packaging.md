@@ -18,6 +18,8 @@ itself — and what it should weigh is its own code, not megabytes of dependenci
 on a public repository. And when the tool is a library, its bundled dependencies must not fight
 the host application's: the oldest deployment problem on the JVM.
 
+A distributable described as a value in the build is [direct style](../philosophy/direct-style.md) applied to packaging.
+
 Everything comes from the `soundness` package:
 
 ```scala
@@ -32,7 +34,12 @@ produces a polyglot installer script carrying every platform's launcher and the 
 choosing the right one where it runs; *download* keeps the script small, fetching the platform's
 launcher on demand and verifying it by [hash](hashing.md):
 
+<!-- doccheck: skip -->
 ```scala
+val jarPath = t"/tmp/mytool.jar".decode[Path on Linux]
+val outputPath = t"/tmp/mytool".decode[Path on Linux]
+val runnerSource = Packaging.RunnerSource.Remote(Runners.baseUrl, Runners.hashes)
+
 val packaging = Packaging
   ( name         = t"mytool",
     targets      = List(t"linux-amd64", t"darwin-arm64"),
@@ -54,6 +61,7 @@ compiled and bundled in one path rather than packaged as a separate step afterwa
 bundle runs from `Jar` rather than from a universe, and the delivery mode is part of the node's
 identity, since each is a different distributable:
 
+<!-- doccheck: skip -->
 ```scala
 Toolchain(jarEdges(), xeqEdges()).produce
   ( Deliverable.Emission(out, classpath),
@@ -120,6 +128,7 @@ separate one. Classfiles dex to Dalvik bytecode as a `Dex` archive, and `Apk` go
 further: the dexed code, a binary `AndroidManifest.xml`, zip-aligned and signed, ready to install.
 Asking for the `Apk` runs both tools, since that is the path between the two formats:
 
+<!-- doccheck: skip -->
 ```scala
 Toolchain(dexEdges(), apkEdges()).produce
   ( Deliverable.Emission(output, classpath),
