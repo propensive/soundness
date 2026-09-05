@@ -25,7 +25,10 @@ session is a scoped block that restores the terminal however it exits. Everythin
 
 ```scala
 import soundness.*
+import stdios.javaLangSystemStdio
 ```
+
+A raw-mode session as a scoped block that restores the terminal however it exits is [delimited scopes](../philosophy/delimited-scopes.md) applied to the terminal.
 
 ### Styled text
 
@@ -55,13 +58,13 @@ which is what makes that work — and it means a substitution can depend on what
 type becomes usable as one by giving it a `Stylize` instance:
 
 ```scala
-case class Fade(amount: Double)
+case object Toggle
 
-given Stylize[Fade] = fade => Stylize(style => style.copy(fg = style.fg.hsv.shade(fade.amount).srgb))
+given Stylize[Toggle.type] = _ => Stylize(style => style.copy(bold = !style.bold))
 ```
 
-`Fade(0.5)` then darkens whatever the text's color happens to be, leaving its hue alone, rather
-than replacing it with a fixed color.
+`$Toggle(…)` then emboldens plain text and unemboldens bold text, deciding from the style it
+finds rather than imposing a fixed one.
 
 A `Teletype` behaves as [text](text.md) — it cuts, joins and pads, styles preserved — and renders
 per terminal: full 24-bit color on a capable terminal, the nearest palette color on an older one,
@@ -72,7 +75,12 @@ and plain text when output is not a terminal at all, so logs never fill with esc
 `interactive` opens a raw-mode session, within which the terminal's events — keypresses, window
 resizes, focus changes, pastes — arrive as typed values:
 
+<!-- doccheck: skip -->
 ```scala
+def handle(char: Char): Unit = ()
+def finish(): Unit = ()
+def resize(rows: Int, cols: Int): Unit = ()
+
 interactive: terminal ?=>
   terminal.eventIterator().each:
     case Keypress.CharKey(char)  => handle(char)
@@ -82,7 +90,7 @@ interactive: terminal ?=>
 ```
 
 The decoding covers modifier combinations, function keys, the kitty keyboard protocol and
-bracketed paste, so `Ctrl(Alt(Left))` is a value to match, not a byte sequence to recognise.
+bracketed paste, so `Ctrl(Alt(Left))` is a value to match, not a byte sequence to recognize.
 
 A `Keypress` is an ordinary `CharKey`, a `FunctionKey`, one of the named editing keys — `Tab`,
 `Enter`, `Backspace`, `Delete`, `Escape`, `Insert`, `Home`, `End`, `PageUp`, `PageDown` and the
@@ -91,7 +99,7 @@ held with it, nesting outwards:
 
 ```scala
 Keypress.Ctrl('A')
-Keypress.Ctrl(Keypress.Shift(Keypress.Enter))
+Keypress.Shift(Keypress.Enter)
 ```
 
 The wrappers accept only what can meaningfully be modified, so `Shift(CharKey('a'))` does not
@@ -112,6 +120,7 @@ A line of input, with cursor movement and editing keys handled, is a `LineEditor
 options is a `SelectMenu`. Each is a pure state machine — an event in, a new state out — asked for
 its result in one call:
 
+<!-- doccheck: skip -->
 ```scala
 interactive: terminal ?=>
   LineEditor().ask: text =>
@@ -125,9 +134,11 @@ interactive widgets, `strip` and `stack` to arrange them in columns and rows, an
 them. `form` runs the arrangement — full-screen on the alternate buffer, or *inline*, as a live
 block at the cursor that leaves scrollback intact:
 
+<!-- doccheck: skip -->
 ```scala
 interactive: terminal ?=>
-  val sidebar = border(BorderStyle.rounded)(menu(pages, pages.head, maxWidth = 20))
+  val pages = List(t"Home", t"Settings", t"About")
+  val sidebar = border(BorderStyle.rounded)(menu(pages, pages.prim.or(t""), maxWidth = 20))
   val body = border(BorderStyle.heavy)(editor(LineEditor()))
 
   form(Occupancy.Inline)(strip(sidebar, body))
