@@ -1641,7 +1641,7 @@ object Json extends Json2, Dynamic:
       if (n & 1) == 1 then elements
       else
         val padded = Array.allocate[Any](n + 1)
-        padded.copyFrom(elements, 0, 0, n)
+        padded.place(elements, 0, 0, n)
         padded(n) = arrayPad
         Array.freeze(padded)
 
@@ -2826,14 +2826,14 @@ extends Dynamic, Topical, Original derives CanEqual:
     root.objectIndexOf(field) match
       case -1 =>
         val out = Array.allocate[Any](len + 2)
-        out.copyFrom(arr, 0, 0, len)
+        out.place(arr, 0, 0, len)
         out(len) = field
         out(len + 1) = value.root
         Json.ast(Json.Ast(Array.freeze(out)))
 
       case index =>
         val out = Array.allocate[Any](len)
-        out.copyFrom(arr, 0, 0, len)
+        out.place(arr, 0, 0, len)
         out(index*2 + 1) = value.root
         Json.ast(Json.Ast(Array.freeze(out)))
 
@@ -2847,8 +2847,8 @@ extends Dynamic, Topical, Original derives CanEqual:
 
       case index =>
         val out = Array.allocate[Any](len - 2)
-        out.copyFrom(arr, 0, 0, index*2)
-        out.copyFrom(arr, index*2 + 2, index*2, len - index*2 - 2)
+        out.place(arr, 0, 0, index*2)
+        out.place(arr, index*2 + 2, index*2, len - index*2 - 2)
         Json.ast(Json.Ast(Array.freeze(out)))
 
   def apply(field: Text): Json raises Json.Error =

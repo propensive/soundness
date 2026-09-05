@@ -405,7 +405,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         // The tampered copy is built in an exclusive buffer and frozen once, so corrupting a
         // byte asserts nothing.
         val buffer = Array.allocate[Byte](source.length)
-        buffer.copyFrom(source, 0, 0, source.length)
+        buffer.place(source)
         buffer(36) = (source.readable(36) ^ 0x55).toByte
         val corrupted: Data = Array.freeze(buffer)
         try corrupted.decompress[Xz].to[List] != original.to[List]

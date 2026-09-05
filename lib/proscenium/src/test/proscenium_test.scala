@@ -165,9 +165,9 @@ object Tests extends Suite(m"Proscenium Tests"):
         Array(1, 2, 3).map(_.toString).readable.toList
       . assert(_ == scala.List("1", "2", "3"))
 
-      test(m"copyFrom transfers a window"):
+      test(m"place transfers a window"):
         val buffer = Array.allocate[Int](4)
-        buffer.copyFrom(Array(1, 2, 3, 4), 1, 0, 2)
+        buffer.place(Array(1, 2, 3, 4), 1, 0, 2)
         buffer.readable.toList
       . assert(_ == scala.List(2, 3, 0, 0))
 

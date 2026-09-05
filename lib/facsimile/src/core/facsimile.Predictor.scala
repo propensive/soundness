@@ -57,7 +57,7 @@ private[facsimile] object Predictor:
       // The row decorrelation is undone in place, so the working copy is built exclusively
       // and frozen once at the end rather than thawed out of `data`.
       val out = Array.allocate[Byte](data.length)
-      out.copyFrom(data, 0, 0, data.length)
+      out.place(data)
       var row = 0
 
       while row*rowLength < data.length do

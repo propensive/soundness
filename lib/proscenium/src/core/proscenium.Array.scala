@@ -150,9 +150,22 @@ object Array:
         buffer(index) = value
         index += 1
 
-    // One `copyFrom` for every readable source: frozen (`^{}`) and shared references both
-    // subsume into `^{caps.any.rd}`.
-    def copyFrom
+    // Copying a source INTO this array, which is what `place` means throughout the collection
+    // (`rudiments.place`, `concordance.Scribe.place`); `snapshot` is its counterpart, copying
+    // out into a fresh array. One overload set for every readable source: frozen (`^{}`) and
+    // shared references both subsume into `^{caps.any.rd}`.
+    //
+    // Indexed by `Int` rather than by `Ordinal`, unlike most of the collection: `denominative`
+    // sits above `proscenium`, so an ordinal cannot be named here. `Array`'s own `apply`,
+    // `update` and `readUnchecked` are `Int`-indexed for the same reason, and the ordinal-taking
+    // façade lives in `rudiments`.
+    def place(source: Array[element]^{caps.any.rd}): Unit =
+      place(source, 0, 0, source.length)
+
+    def place(source: Array[element]^{caps.any.rd}, at: Int): Unit =
+      place(source, 0, at, source.length)
+
+    def place
       ( source: Array[element]^{caps.any.rd},
         sourceStart: Int,
         targetStart: Int,

@@ -801,7 +801,7 @@ object Yaml extends Yaml2, Dynamic:
       if (n & 1) == 1 then items.asInstanceOf[Yaml.Ast]
       else
         val padded = Array.allocate[Any](n + 1)
-        padded.copyFrom(items.asInstanceOf[Array[Any]^{}], 0, 0, n)
+        padded.place(items.asInstanceOf[Array[Any]^{}], 0, 0, n)
         padded(n) = arrayPad
         Array.freeze(padded).asInstanceOf[Yaml.Ast]
 
@@ -829,7 +829,7 @@ object Yaml extends Yaml2, Dynamic:
       if (n & 1) == 1 then items.asInstanceOf[Yaml.Ast]
       else
         val padded = Array.allocate[Any](n + 1)
-        padded.copyFrom(items, 0, 0, n)
+        padded.place(items, 0, 0, n)
         padded(n) = arrayPad
         Array.freeze(padded).asInstanceOf[Yaml.Ast]
 
@@ -911,7 +911,7 @@ object Yaml extends Yaml2, Dynamic:
 
           if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq arrayPad) then
             val out = Array.allocate[Any](n - 1)
-            out.copyFrom(xs.asInstanceOf[Array[Any]^{}], 0, 0, n - 1)
+            out.place(xs.asInstanceOf[Array[Any]^{}], 0, 0, n - 1)
             Some(Array.freeze(out).asInstanceOf[Array[Yaml.Ast]^{}])
           else
             Some(xs.asInstanceOf[Array[Yaml.Ast]^{}])
@@ -1595,12 +1595,12 @@ object Yaml extends Yaml2, Dynamic:
             val out =
               if existing >= 0 then
                 val arr = Array.allocate[Any](xs.length)
-                arr.copyFrom(xs.asInstanceOf[Array[Any]^{}], 0, 0, xs.length)
+                arr.place(xs.asInstanceOf[Array[Any]^{}], 0, 0, xs.length)
                 arr(existing + 1) = Yaml.Ast.Str(kind).asInstanceOf[Any]
                 Array.freeze(arr)
               else
                 val arr = Array.allocate[Any](xs.length + 2)
-                arr.copyFrom(xs.asInstanceOf[Array[Any]^{}], 0, 0, xs.length)
+                arr.place(xs.asInstanceOf[Array[Any]^{}], 0, 0, xs.length)
                 arr(xs.length)     = Yaml.Ast.Str(label).asInstanceOf[Any]
                 arr(xs.length + 1) = Yaml.Ast.Str(kind).asInstanceOf[Any]
                 Array.freeze(arr)
@@ -1630,9 +1630,9 @@ object Yaml extends Yaml2, Dynamic:
             if existing < 0 then yaml
             else
               val arr = Array.allocate[Any](xs.length - 2)
-              arr.copyFrom(xs.asInstanceOf[Array[Any]^{}], 0, 0, existing)
+              arr.place(xs.asInstanceOf[Array[Any]^{}], 0, 0, existing)
 
-              arr.copyFrom
+              arr.place
                 ( xs.asInstanceOf[Array[Any]^{}],
                   existing + 2,
                   existing,
@@ -6140,14 +6140,14 @@ extends Dynamic derives CanEqual:
       root.objectIndexOf(field) match
         case -1 =>
           val out = Array.allocate[Any](len + 2)
-          out.copyFrom(arr, 0, 0, len)
+          out.place(arr, 0, 0, len)
           out(len)     = field
           out(len + 1) = value.root.asInstanceOf[Any]
           Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(out)))
 
         case index =>
           val out = Array.allocate[Any](len)
-          out.copyFrom(arr, 0, 0, len)
+          out.place(arr, 0, 0, len)
           out(index*2 + 1) = value.root.asInstanceOf[Any]
           Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(out)))
 
@@ -6164,8 +6164,8 @@ extends Dynamic derives CanEqual:
 
         case index =>
           val out = Array.allocate[Any](len - 2)
-          out.copyFrom(arr, 0, 0, index*2)
-          out.copyFrom(arr, index*2 + 2, index*2, len - index*2 - 2)
+          out.place(arr, 0, 0, index*2)
+          out.place(arr, index*2 + 2, index*2, len - index*2 - 2)
           Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(out)))
 
   override def hashCode: Int = Yaml.Ast.deepHash(root)

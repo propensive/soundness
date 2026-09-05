@@ -99,7 +99,7 @@ private[polysyllabic] object TexPatterns:
       i += 1
 
     val exact = Array.allocate[Int](count)
-    exact.copyFrom(breaks, 0, 0, count)
+    exact.place(breaks, 0, 0, count)
     (letters.toString.tt, Array.freeze(exact))
 
   // Strip `%`-to-end-of-line comments from a TeX file. Backslash-escaped

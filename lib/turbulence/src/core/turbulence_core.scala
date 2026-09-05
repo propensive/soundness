@@ -349,15 +349,15 @@ extension (stream: Chain[Data])
           val free = destSize - destPos
 
           if ready < free then
-            dest.copyFrom(source, sourcePos, destPos, ready)
+            dest.place(source, sourcePos, destPos, ready)
             recur(more, 0, dest, destSize, destPos + ready)
           else if free < ready then
-            dest.copyFrom(source, sourcePos, destPos, free)
+            dest.place(source, sourcePos, destPos, free)
             val chunk = Array.freeze(dest)
             val size = newSize()
             chunk.asInstanceOf[Data] #:: recur(stream, sourcePos + free, newArray(size), size, 0)
           else // free == ready
-            dest.copyFrom(source, sourcePos, destPos, free)
+            dest.place(source, sourcePos, destPos, free)
             val chunk = Array.freeze(dest)
             val size = newSize()
             chunk.asInstanceOf[Data] #:: recur(more, 0, newArray(size), size, 0)
@@ -366,7 +366,7 @@ extension (stream: Chain[Data])
           if destPos == 0 then Chain()
           else
             val out = Array.allocate[Byte](destPos)
-            out.copyFrom(Array.freeze(dest), 0, 0, destPos)
+            out.place(Array.freeze(dest), 0, 0, destPos)
             Chain(Array.freeze(out).asInstanceOf[Data])
 
     val size = newSize()

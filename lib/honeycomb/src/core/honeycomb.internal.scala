@@ -878,8 +878,8 @@ object internal:
 
         if idx < 0 then attrs else
           val nu = Array.allocate[String | Null](n - 2)
-          if idx > 0 then nu.copyFrom(Array.frozen(attrs), 0, 0, idx)
-          if idx < n - 2 then nu.copyFrom(Array.frozen(attrs), idx + 2, idx, n - 2 - idx)
+          if idx > 0 then nu.place(Array.frozen(attrs), 0, 0, idx)
+          if idx < n - 2 then nu.place(Array.frozen(attrs), idx + 2, idx, n - 2 - idx)
           Array.freeze(nu).readable
 
       inline def `-`(key: Text): Attributes = removed(key)
@@ -907,12 +907,12 @@ object internal:
 
         if idx >= 0 then
           val nu = Array.allocate[String | Null](n)
-          nu.copyFrom(Array.frozen(attrs), 0, 0, n)
+          nu.place(Array.frozen(attrs), 0, 0, n)
           nu(idx + 1) = value.lay(null: String | Null)(_.s)
           Array.freeze(nu).readable
         else
           val nu = Array.allocate[String | Null](n + 2)
-          nu.copyFrom(Array.frozen(attrs), 0, 0, n)
+          nu.place(Array.frozen(attrs), 0, 0, n)
           nu(n) = keyStr
           nu(n + 1) = value.lay(null: String | Null)(_.s)
           Array.freeze(nu).readable
@@ -968,7 +968,7 @@ object internal:
 
           if written == total then frozen.readable else
             val tu = Array.allocate[String | Null](written)
-            tu.copyFrom(frozen, 0, 0, written)
+            tu.place(frozen, 0, 0, written)
             Array.freeze(tu).readable
 
       def `++`(other: Map[Text, Optional[Text]]): Attributes =

@@ -199,6 +199,16 @@ not yet been recorded here.
 - `rudiments.test` now depends on `mandible.core`, which asserts the bytecode `Atomic`'s
   operations compile to. No effect on `rudiments` itself. (#1960)
 
+## proscenium
+
+- `proscenium.Array#copyFrom(source, sourceStart, targetStart, count)` renamed to `place`, with
+  two further overloads: `place(source)` copies the whole source to the start, and
+  `place(source, at)` copies it to `at`. Behaviour unchanged. The name matches
+  `rudiments.place` and `concordance.Scribe#place`, which already meant copying a source into
+  the receiver; `snapshot` remains its counterpart, copying out into a fresh array. Indices stay
+  `Int` rather than `Ordinal`, as `Array`'s `apply`/`update`/`readUnchecked` do, because
+  `denominative` sits above `proscenium`. (#1960)
+
 ## frontier
 
 - `frontier.context.explainMissingContext` and `soundness.explainMissingContext` no longer

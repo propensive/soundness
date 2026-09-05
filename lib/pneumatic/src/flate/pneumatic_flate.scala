@@ -52,7 +52,7 @@ private def concatenate(stream: Chain[Data]): Data =
   var offset = 0
 
   chunks.each: chunk =>
-    result.copyFrom(chunk, 0, offset, chunk.length)
+    result.place(chunk, 0, offset, chunk.length)
     offset += chunk.length
 
   Array.freeze(result)
