@@ -14,6 +14,8 @@ with a wrong digit, or a value that is not a UUID at all, is indistinguishable f
 until something parses it and fails. Nothing marks, in the type, that a particular string is a
 well-formed identifier.
 
+A UUID that cannot be constructed malformed is [safety by construction](../philosophy/safety-by-construction.md) in its simplest form.
+
 A `Uuid` is a value that is known to be well-formed. A literal is validated as the code compiles,
 runtime parsing reports a typed `Uuid.Error` rather than returning a broken value, and the
 identifier's 128 bits are available directly for the occasional need to inspect or combine them.
