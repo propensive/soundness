@@ -29,6 +29,8 @@ import soundness.*
 import hyphenations.englishHyphenation
 ```
 
+Breaking text at the right points is a pure function of the language's patterns, and stays one — an instance of [immutability](../philosophy/immutability.md) in a domain that tempts stateful iteration.
+
 ### Hyphenating
 
 `hyphenate` inserts a hyphen character at each permissible break. The default is the Unicode
@@ -53,8 +55,8 @@ t"hyphenation".hyphenate(hyphen = '-', leftMin = 4)   // t"hyphen-ation"
 through as segments of their own:
 
 ```scala
-t"the algorithm".syllables.to(Seq)
-// Seq(t"the", t" ", t"al", t"go", t"rithm")
+t"the algorithm".syllables.to(List)
+// List(t"the", t" ", t"al", t"go", t"rithm")
 ```
 
 ### Break points
@@ -112,5 +114,5 @@ reassembling the segments reproduces the original text exactly.
 
 A language for which no pattern set has been loaded hyphenates nothing rather than guessing:
 `hyphenate` returns the text unchanged, and `breakPoints` is empty. A line-wrapping algorithm
-therefore degrades to breaking at spaces, which is the correct behaviour, rather than inventing
+therefore degrades to breaking at spaces, which is the correct behavior, rather than inventing
 breaks in a language whose rules it does not know.
