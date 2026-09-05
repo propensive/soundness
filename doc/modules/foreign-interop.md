@@ -22,6 +22,8 @@ Scala is a string, a C function a hand-declared binding, and the authoritative d
 `.d.ts`, the header, the IDL — sit unread while the programmer transcribes them, imperfectly, by
 hand. The mistakes are exactly the ones the foreign compiler would have caught.
 
+Checking a foreign call against the foreign world's own definitions as the code compiles is [safety by construction](../philosophy/safety-by-construction.md) across a language boundary.
+
 Soundness reads the declarations instead. The definition file is parsed at compiletime, each
 navigation step is resolved against it, and a member that does not exist, or an argument of the
 wrong foreign type, is a Scala compile error. Everything comes from the `soundness` package:
@@ -32,9 +34,11 @@ import soundness.*
 
 ### Loading an interface
 
-An `Interface` binds an ecosystem to a definition file on the classpath. Each supported grammar —
-TypeScript declarations, C headers, WebIDL, WIT — is a `Dialect` the ecosystem names:
+An `Interface` binds an ecosystem to a definition file on the classpath, read as the code
+compiles, so the file must be on the compiler's classpath. Each supported grammar — TypeScript
+declarations, C headers, WebIDL, WIT — is a `Dialect` the ecosystem names:
 
+<!-- doccheck: skip -->
 ```scala
 given (Interface in Typescript at "/definitions.ts") =
   Interface[Typescript](cp"/definitions.ts")
@@ -46,6 +50,7 @@ A `Foreign` value stands for a value of a foreign type, and its members navigate
 foreign declarations were Scala. Each step's type comes from the declarations, so the refinement
 tracks exactly what the foreign type system says:
 
+<!-- doccheck: skip -->
 ```scala
 val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
 
@@ -66,8 +71,9 @@ A JVM library written in Kotlin sits on the same classpath, so its declarations 
 file: they are in the classfiles, in the `@Metadata` a Kotlin compiler writes. Those declarations
 are read at compiletime, and a *facade* wraps a live value so that its members are reached as
 though they were Scala's — each access materializing as a direct, statically-typed JVM call, with
-no reflection and no wrapper object:
+no reflection and no wrapper object. With the Kotlin standard library on the classpath:
 
+<!-- doccheck: skip -->
 ```scala
 val pair = make[kotlin.Pair[Text, Text]](t"a", t"b")
 val first: Text = pair.first
@@ -78,7 +84,7 @@ regex.matches(t"123")                          // true
 
 `make` constructs a value, `companion` reaches a companion object's members, and `singleton`
 reaches an object's. Types substitute through, so `pair.first` is a `Text` and not an `Any`, and
-`Text` passes wherever a `CharSequence` is expected. Kotlin's nullability is honoured: a nullable
+`Text` passes wherever a `CharSequence` is expected. Kotlin's nullability is honored: a nullable
 result is an `Optional`, absent where Kotlin would return null.
 
 Properties read as members and `var` properties accept assignment, through the getters and
@@ -86,6 +92,7 @@ setters Kotlin generated; assigning to a `val` does not compile. A Kotlin functi
 takes an ordinary Scala lambda, whose own parameter is a facade over the Kotlin type, so the
 value inside it navigates too:
 
+<!-- doccheck: skip -->
 ```scala
 regex.replace(t"a1b2", (m: Facade over kotlin.text.MatchResult) => t"<${m.value}>")
 // t"a<1>b<2>"
@@ -101,3 +108,22 @@ performs nothing itself. What runs the expression is the ecosystem's business: t
 ecosystem renders it to JavaScript for an event handler, and a WebAssembly ecosystem lowers WIT
 calls to imports. The checking is the point: by the time an expression leaves Scala, every step of
 it has been verified against the foreign world's own definitions.
+
+### Java's own types
+
+The JVM's standard library has types for the things Soundness has its own types for — paths,
+URLs, instants, durations — and code that meets both worlds needs to cross between them without
+copying values by hand. Rather than converting, each Java type is made a *representation* of the
+Soundness concept: `java.io.File` stands as a path, `java.net.URL` as a URL, and
+`java.time.Instant`, `java.util.Date` or a bare `Long` of milliseconds as an instant, so any
+operation that asks for its result "as a path" or "as an instant" can produce the Java type
+directly. Which representation is meant is a choice, made by import:
+
+```scala
+import instantInterfaces.javaTimeInstant
+import durationInterfaces.javaLongDuration
+```
+
+With those in scope, a [time](time.md) read from a file or a clock arrives as a
+`java.time.Instant`, and a duration as a `Long` of milliseconds, ready to hand to a Java API
+that expects them, while the rest of the program keeps Soundness's own types.
