@@ -21,14 +21,17 @@ caesura: csv tsv dsv spreadsheet sheet delimited-values
 camouflage: cache lru-cache memoization
 capricious: random rng probability gaussian gamma distribution sampling seed
 cardinality: refinement-types numeric-range bounded-numbers ranges
-clavichord: keyboard keypress keys modifiers input
 cataclysm: css stylesheet selectors keyframes media-queries fonts typesafe-css
 charisma: chemistry periodic-table chemical-equation molecule chemical-formula
 chiaroscuro: diff comparison contrast similarity test-assertions decomposition
+clavichord: keyboard keypress keys modifiers input
 coaxial: socket tcp udp networking domain-socket bindable connection
+concordance: collections concatenation appendable prependable joining
 contextual: string-interpolation interpolator typesafe-interpolation custom-interpolators
 contingency: error-handling exceptions tactics recovery validation effects
+corpuscular: checksum crc32 crc64 adler32 non-cryptographic-hash integrity
 cosmopolite: i18n internationalization locale language polyglot l10n
+degustation: tasty api-surface api-atoms inspection library-identity
 delicious: semantic-diagnostics compiler-errors explanations diagnostics
 dendrology: tree-diagram dag-diagram ascii-tree visualization tree-rendering
 denominative: ordinal indexing zero-based one-based interval
@@ -40,6 +43,7 @@ embarcadero: docker container container-runtime
 enigmatic: cryptography aes rsa hmac encryption signing pem public-key
 escapade: ansi-escape terminal-styling colors text-style hyperlink ribbon teletype
 escritoire: table tabulation grid box-drawing terminal-tables column-alignment
+espionage: acp agent-client-protocol coding-agent ide-integration json-rpc
 ethereal: daemon ipc background-process service-installer client-server
 eucalyptus: logging logs realm logger structured-logging
 exegesis: lsp language-server-protocol ide-integration
@@ -76,6 +80,7 @@ mercator: functor monad applicative typeclass functional-programming
 metamorphose: permutations combinatorics factoradic lehmer
 monotonous: base64 base32 hex binary-encoding base-encoding serialization
 mosquito: matrix linear-algebra math vector
+murmuration: collections typeclasses traversable foldable mappable filterable
 nomenclature: name-validation type-level constraints refinement-types string-literal-types
 obligatory: rpc json-rpc sse server-sent-events framing length-prefix protocol
 octogenarian: git version-control git-repository commit ssh-url
@@ -89,6 +94,7 @@ pneumatic: compression deflate gzip zlib brotli xz lzma2 lzw
 polaris: binary-serialization buffer pack unpack byte-buffer
 polysyllabic: hyphenation liang-algorithm line-breaking typesetting
 polyvinyl: structural-types records anonymous-records type-providers
+praxinoscope: regex re2 automaton linear-time regex-engine redos
 prepositional: typeclass type-infrastructure refinement-types abstract-types
 prescience: staging macro-typeclass code-generation expansion-time
 probably: testing test-runner property-testing benchmark assertions
@@ -98,6 +104,7 @@ proscenium: re-exports stdlib utilities boilerplate-reduction
 punctuation: markdown commonmark prose text-formatting
 quantitative: units quantities dimensional-analysis si-units measurements physics
 querencia: dom browser typed-dom web-ui client-side
+reliquary: lira library-archive release publication api-identity versioning
 revolution: jar-manifest semver versioning
 rudiments: utilities core-library bijection loops indexable
 savagery: svg vector-graphics 2d-graphics path shapes
@@ -114,6 +121,7 @@ symbolism: operators arithmetic typeclass operator-overloading algebra
 synesthesia: mcp model-context-protocol llm ai-protocol
 tarantula: webdriver browser-automation chrome firefox safari edge selenium headless
 telekinesis: http http-client cookies authentication rest-client web-requests
+tessellate: layout box-drawing reflow alignment flex text-layout
 turbulence: streams io stdio streaming reactive line-separation
 typonym: type-level type-list type-map heterogeneous reflection
 ultimatum: terminal-layout panes progress-bar spinner gauge sparkline tui
@@ -123,6 +131,8 @@ urticose: hostname email-address ip-address mac-address port network-identifiers
 vacuous: optional null-safety option maybe nullable
 vexillology: bit-flags flags enumeration bitfield
 vicarious: catalog proxy type-indexed records
+virility: roff manpage man-page troff documentation cli-help
+vivisection: debugging jdi breakpoints stepping dap debug-adapter variables
 wisteria: derivation product-types sum-types case-class typeclass-derivation magnolia
 xenophile: ffi foreign-interop wit webidl typescript kotlin wasm native
 xylophone: xml xml-schema typesafe-xml dynamic-xml
