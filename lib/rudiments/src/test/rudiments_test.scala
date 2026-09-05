@@ -1709,3 +1709,154 @@ object Tests extends Suite(m"Rudiments Tests"):
       test(m"a long array reports its size"):
         Atomic.Longs(3).size
       . assert(_ == 3)
+
+    // `doc/philosophy/zero-cost.md` says the claim is tested rather than asserted, and this is
+    // that test for `Atomic`. Each probe below is read back out of the classfile and checked for
+    // the JDK instruction it should have become — so a dropped `inline`, a transition shape that
+    // stops being recognised, or a release store quietly promoted to a volatile one all fail
+    // here rather than silently costing something at every call site.
+    suite(m"Atomic bytecode shape"):
+      import classloaders.threadContextClassloader
+
+      def methodBytecode(method: Text)(using Classloader): Optional[Bytecode] =
+        Classfile[AtomicProbes.type]
+        . let(_.methods.seek(_.name == method))
+        . let(_.bytecode)
+
+      // The JDK atomic method a probe compiled down to, if it reached exactly one.
+      def atomicCalls(bytecode: Bytecode): Set[Text] =
+        bytecode.instructions.stdlib.collect:
+          case instruction => instruction.opcode
+        . collect:
+            case Bytecode.Opcode.Invokevirtual(owner, name, _)
+            if owner.s.startsWith("java.util.concurrent.atomic") =>
+              name
+        . to(Set)
+
+      def calls(method: Text, expected: Text)(using Classloader): Boolean =
+        methodBytecode(method).lay(false)(atomicCalls(_).has(expected))
+
+      // Any surviving dispatch to the wrapper's own vocabulary would mean an extension had not
+      // inlined, and every operation would pay a call it should not.
+      def callsWrapper(bytecode: Bytecode): Boolean =
+        val names = Set(t"ere", t"since", t"revise", t"publish", t"swap", t"replace", t"update")
+
+        bytecode.instructions.stdlib.exists: instruction =>
+          instruction.opcode match
+            case Bytecode.Opcode.Invokevirtual(_, name, _)      => names.has(name)
+            case Bytecode.Opcode.Invokeinterface(_, name, _, _) => names.has(name)
+            case _                                              => false
+
+      def hasBoxing(bytecode: Bytecode): Boolean =
+        bytecode.instructions.stdlib.exists: instruction =>
+          instruction.opcode match
+            case Bytecode.Opcode.Invokestatic(owner, method, _) =>
+              owner.s.contains("BoxesRunTime") && method.s.contains("box")
+
+            case _ =>
+              false
+
+      // A closure allocated per retry is exactly what the four hand-hoisted `UnaryOperator`
+      // values in `parasite.Promise` existed to avoid; the transition must beta-reduce instead.
+      def allocatesClosure(bytecode: Bytecode): Boolean =
+        bytecode.instructions.stdlib.exists: instruction =>
+          instruction.opcode match
+            case Bytecode.Opcode.Invokeinterface(owner, t"apply", _, _) =>
+              owner.s.startsWith("scala.Function")
+
+            case _ =>
+              false
+
+      test(m"since(_ + 1) becomes incrementAndGet"):
+        calls(t"intSince", t"incrementAndGet")
+      . assert(_ == true)
+
+      test(m"ere(_ + 1) becomes getAndIncrement"):
+        calls(t"intEre", t"getAndIncrement")
+      . assert(_ == true)
+
+      test(m"since(_ + n) becomes addAndGet"):
+        calls(t"intAdd", t"addAndGet")
+      . assert(_ == true)
+
+      test(m"ere(_ + n) becomes getAndAdd"):
+        calls(t"intClaim", t"getAndAdd")
+      . assert(_ == true)
+
+      test(m"since(_ - 1) becomes decrementAndGet"):
+        calls(t"intDecrement", t"decrementAndGet")
+      . assert(_ == true)
+
+      test(m"ere(value) becomes getAndSet"):
+        calls(t"intSet", t"getAndSet")
+      . assert(_ == true)
+
+      test(m"a long transition reaches AtomicLong's intrinsic"):
+        calls(t"longSince", t"incrementAndGet")
+      . assert(_ == true)
+
+      test(m"raising a flag becomes getAndSet"):
+        calls(t"boolRaise", t"getAndSet")
+      . assert(_ == true)
+
+      test(m"a read becomes get"):
+        calls(t"intRead", t"get")
+      . assert(_ == true)
+
+      // The release store must stay a release store: promoting it to `set` would silently
+      // strengthen the ordering that zephyrine's single-producer rings depend on.
+      test(m"publish on an int array becomes lazySet, not set"):
+        calls(t"intsPublish", t"lazySet")
+      . assert(_ == true)
+
+      test(m"publish on an int array does not become set"):
+        calls(t"intsPublish", t"set")
+      . assert(_ == false)
+
+      test(m"publish on a long array becomes lazySet"):
+        calls(t"longsPublish", t"lazySet")
+      . assert(_ == true)
+
+      test(m"an intrinsic transition leaves no dispatch to the wrapper"):
+        methodBytecode(t"intSince").lay(true)(callsWrapper)
+      . assert(_ == false)
+
+      test(m"a general transition leaves no dispatch to the wrapper"):
+        methodBytecode(t"intGeneral").lay(true)(callsWrapper)
+      . assert(_ == false)
+
+      test(m"a general transition compiles to a compare-and-set loop"):
+        calls(t"intGeneral", t"compareAndSet")
+      . assert(_ == true)
+
+      test(m"a general transition allocates no closure"):
+        methodBytecode(t"intGeneral").lay(true)(allocatesClosure)
+      . assert(_ == false)
+
+      test(m"an unboxed transition does not box"):
+        methodBytecode(t"intGeneral").lay(true)(hasBoxing)
+      . assert(_ == false)
+
+      test(m"a reference read does not call nnFail"):
+        methodBytecode(t"refRead").lay(true): bytecode =>
+          bytecode.instructions.stdlib.exists: instruction =>
+            instruction.opcode match
+              case Bytecode.Opcode.Invokestatic(_, t"nnFail", _) => true
+              case _                                             => false
+
+      . assert(_ == false)
+
+object AtomicProbes:
+  def intSince(a: Atomic[Int]): Int = a.since(_ + 1)
+  def intEre(a: Atomic[Int]): Int = a.ere(_ + 1)
+  def intAdd(a: Atomic[Int], n: Int): Int = a.since(_ + n)
+  def intClaim(a: Atomic[Int], n: Int): Int = a.ere(_ + n)
+  def intDecrement(a: Atomic[Int]): Int = a.since(_ - 1)
+  def intSet(a: Atomic[Int]): Int = a.ere(5)
+  def intRead(a: Atomic[Int]): Int = a()
+  def intGeneral(a: Atomic[Int]): Int = a.since(_*3)
+  def longSince(a: Atomic[Long]): Long = a.since(_ + 1L)
+  def boolRaise(a: Atomic[Boolean]): Boolean = a.ere(true)
+  def refRead(a: Atomic[Text]): Text = a()
+  def intsPublish(a: Atomic.Ints, index: Ordinal, value: Int): Unit = a.publish(index, value)
+  def longsPublish(a: Atomic.Longs, index: Ordinal, value: Long): Unit = a.publish(index, value)

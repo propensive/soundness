@@ -51,8 +51,8 @@ sub-structure between two values would be a bug.
 
 ## Where mutation survives, and why
 
-Immutability is a property of values, not a prohibition on the machine. Three places in
-Soundness are deliberately mutable, and each is confined:
+Immutability is a property of values, not a prohibition on the machine. Four places in
+Soundness are deliberately mutable. Three of them are confined:
 
 A **builder** mutates a buffer it exclusively owns and yields an immutable value at the
 end. Nothing observes the intermediate states, so nothing depends on them.
@@ -72,6 +72,27 @@ must outlive it.
 
 The pattern is the same in all three: mutation is a local implementation technique with
 a proof of confinement, never a property of a value that others can see.
+
+An **atomic cell** is the exception, and it is worth naming as one rather than hiding.
+An `Atomic[Int]` or `Atomic.Ref[State]` is deliberately *not* confined: its whole purpose
+is that two threads see one location, so no aliasing analysis can help and none is
+attempted. What replaces confinement is a different guarantee. The location is a single
+machine word, and every operation on it is indivisible, so there is no intermediate state
+for another thread to observe. The type does not promise that the mutation is invisible;
+it promises that it cannot be caught half-done.
+
+That is why the operations are named for which value they hand back. `count.ere(_ + 1)`
+yields the value it displaced and `count.since(_ + 1)` the value it installed, so a caller
+can tell whether it, and not somebody else, made the transition — the question that only
+arises once mutation is shared, and the one a `var` cannot answer:
+
+```scala
+if !closed.ere(true) then shutdown()    // true only for the call that closed it
+```
+
+Shared cells are a low-level tool, and the collection uses them where concurrency is the
+subject: supervising tasks, accumulating errors across a scope, and the hand-off rings
+beneath the streaming kernel. They are not how a value is modelled.
 
 ## What it costs
 

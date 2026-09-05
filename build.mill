@@ -2881,7 +2881,7 @@ object rudiments extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
-  object test extends Tests(core, abacist.core, quantitative.units):
+  object test extends Tests(core, abacist.core, quantitative.units, mandible.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
