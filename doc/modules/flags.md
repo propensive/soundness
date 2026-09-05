@@ -15,6 +15,8 @@ worth keeping — a `Set[Color]` costs an allocation and pointers for what one w
 the untyped access is not: nothing stops testing a bit that means something else, or a bit that
 means nothing.
 
+A flag whose type says what it means cannot be passed where another is expected, which is [impossible states](../philosophy/impossible-states.md) for switches.
+
 `Flags` keeps the word and types the bits by an enumeration. Each case owns a bit position by its
 ordinal; testing and setting use the case itself; and the whole value converts to an ordinary `Set`
 when set-like operations are wanted. Everything comes from the `soundness` package:
