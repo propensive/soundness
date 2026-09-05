@@ -293,7 +293,7 @@ not yet been recorded here.
   `javaUtilDate`, `aviationInstant`), `interfaces.durations` → `durationInterfaces`
   (`javaLongDuration`, `aviationDuration`), `interfaces.urls` → `urlInterfaces` (`javaNetUrl`).
   The `anticipation.interfaces` package no longer exists. `textPath` is now also re-exported as
-  `soundness.pathInterfaces.textPath`. (#PR)
+  `soundness.pathInterfaces.textPath`. (#1943)
 
 ## aviation
 
@@ -307,15 +307,15 @@ not yet been recorded here.
   `timeFormats.separators` → `timeSeparators`, `calendars.nonexistentLeapDays` →
   `nonexistentLeapDays`. Members are unchanged. In the umbrella, `soundness.endianness` is
   renamed to `soundness.dateEndianness` and `soundness.meridiems` to `soundness.timeMeridiems`.
-  (#PR)
+  (#1943)
 
 ## capricious
 
 - `capricious.randomization.sizes` renamed to `capricious.randomSizes` and
   `capricious.randomization.text` renamed to `capricious.randomTexts`, both now top-level
-  packages (members unchanged); the umbrella paths change accordingly. (#PR)
+  packages (members unchanged); the umbrella paths change accordingly. (#1943)
 
 ## honeycomb
 
 - `honeycomb.doms.html` (`whatwg`, `html4Transitional`) renamed to `honeycomb.htmlDoms`; the
-  `doms` package no longer exists. (#PR)
+  `doms` package no longer exists. (#1943)
