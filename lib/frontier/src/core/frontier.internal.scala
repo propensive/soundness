@@ -51,8 +51,7 @@ object internal:
   // typer, so a non-transparent `explanation` would leave the macro splice
   // unexpanded while `explainMissingContext` is tried as a candidate — the
   // search would spuriously succeed and the abort would fire only at the
-  // `inlining` phase. Transparency also lets Case B1's precise type reach the
-  // call site.
+  // `inlining` phase.
   transparent inline def explanation[target]: target = ${explain[target]}
 
   private object SafeInlined:
@@ -534,11 +533,21 @@ object internal:
       report.errorAndAbort(Diagnostic.render(buildDiagnostic(missing)).s)
 
     seek(TypeRepr.of[target], Nil, 1).absolve match
-      case Found(_, expr) =>
-        // Return the resolved term at its own (precise) static type, not
-        // widened to `target`; `transparent` then surfaces the precise type to
-        // the call site.
-        expr.asInstanceOf[Expr[target]]
+      case Found(name, _) =>
+        // The search resolves without the catch-all, so the catch-all must fail
+        // rather than return the found term: the inliner instantiated every open
+        // type variable of the searched type (to `Any`, via `flipBottom`) before
+        // this macro ran, and a successful candidate would commit those
+        // instantiations to the caller — which mis-inferred `join`'s `element`
+        // as `Any` (#1942). Failing discards the candidate's typer state, and the
+        // compiler then finds the same instance itself, in the implicit scope,
+        // with inference intact. The catch-all thus never contributes a term; it
+        // is purely diagnostic. This message can surface only if the overall
+        // search fails for a reason the re-search did not see.
+        val found = Diagnostic.Found(name, Unset, proscenium.Nil)
+        val tree = Diagnostic.Resolving(name, Unset, proscenium.List(found))
+        val headline = t"contextual value resolves without the catch-all"
+        report.errorAndAbort(Diagnostic.render(tree, headline).s)
 
       case m: Missing =>
         emit(m)
