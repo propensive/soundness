@@ -1257,3 +1257,171 @@ object Tests extends Suite(m"Rudiments Tests"):
         val map = Map(1 -> "one".tt)
         map.confine(9).let(map(_))
       . assert(_ == Unset)
+
+    suite(m"Atomic tests"):
+      test(m"a count reads back its initial value"):
+        Atomic.Count(7)()
+      . assert(_ == 7)
+
+      test(m"a count is stored through assignment syntax"):
+        val count = Atomic.Count(0)
+        count() = 12
+        count()
+      . assert(_ == 12)
+
+      test(m"swapping a count yields the displaced value"):
+        val count = Atomic.Count(3)
+        count.swap(9)
+      . assert(_ == 3)
+
+      test(m"a swapped count holds the new value"):
+        val count = Atomic.Count(3)
+        count.swap(9)
+        count()
+      . assert(_ == 9)
+
+      test(m"replace succeeds when the expected value matches"):
+        val count = Atomic.Count(1)
+        count.replace(1, 2)
+      . assert(_ == true)
+
+      test(m"replace fails when the expected value differs"):
+        val count = Atomic.Count(1)
+        count.replace(5, 2)
+      . assert(_ == false)
+
+      test(m"a failed replace leaves the count untouched"):
+        val count = Atomic.Count(1)
+        count.replace(5, 2)
+        count()
+      . assert(_ == 1)
+
+      test(m"a published count is readable"):
+        val count = Atomic.Count(0)
+        count.publish(4)
+        count()
+      . assert(_ == 4)
+
+      test(m"a tally reads back its initial value"):
+        Atomic.Tally(9000000000L)()
+      . assert(_ == 9000000000L)
+
+      test(m"a flag defaults to false"):
+        Atomic.Flag()()
+      . assert(_ == false)
+
+      test(m"a flag is stored through assignment syntax"):
+        val flag = Atomic.Flag()
+        flag() = true
+        flag()
+      . assert(_ == true)
+
+      test(m"swapping a flag reports whether it was already raised"):
+        val flag = Atomic.Flag()
+        flag.swap(true)
+      . assert(_ == false)
+
+      test(m"a cell reads back its initial value"):
+        Atomic.Cell(t"alpha")()
+      . assert(_ == t"alpha")
+
+      test(m"a cell is stored through assignment syntax"):
+        val cell = Atomic.Cell(t"alpha")
+        cell() = t"beta"
+        cell()
+      . assert(_ == t"beta")
+
+      // The `.nn` this replaces would THROW here rather than yielding `Unset`, since `Unset` is
+      // `null` at runtime. This test is the guarantee that a vacant cell reads as absent.
+      test(m"a vacant cell reads as Unset"):
+        Atomic.Cell.vacant[Text]()
+      . assert(_ == Unset)
+
+      test(m"a vacant cell holds a value once filled"):
+        val cell = Atomic.Cell.vacant[Text]
+        cell() = t"filled"
+        cell()
+      . assert(_ == t"filled")
+
+      test(m"an emptied cell reads as Unset again"):
+        val cell = Atomic.Cell.vacant[Text]
+        cell() = t"filled"
+        cell() = Unset
+        cell()
+      . assert(_ == Unset)
+
+      test(m"cells read as Unset before they are written"):
+        Atomic.Cells[Text](4)(Prim)
+      . assert(_ == Unset)
+
+      test(m"a cell slot is stored through assignment syntax"):
+        val cells = Atomic.Cells[Text](4)
+        cells(Prim) = t"first"
+        cells(Prim)
+      . assert(_ == t"first")
+
+      test(m"cell slots are independent"):
+        val cells = Atomic.Cells[Text](4)
+        cells(Prim) = t"first"
+        cells(Sec)
+      . assert(_ == Unset)
+
+      test(m"a published cell slot is readable"):
+        val cells = Atomic.Cells[Text](4)
+        cells.publish(Sec, t"second")
+        cells(Sec)
+      . assert(_ == t"second")
+
+      test(m"cells report their size"):
+        Atomic.Cells[Text](6).size
+      . assert(_ == 6)
+
+    suite(m"Atomic match-type resolution"):
+      // Each of these is a *typed* declaration: it compiles only if `Atomic[x]` reduced to the
+      // intended concrete type, since the extensions differ per type and the ascription is
+      // checked. The assertions confirm the value behaves as that type at runtime too.
+      test(m"Atomic[Int] is a count"):
+        val count: Atomic[Int] = Atomic(41)
+        count() = count() + 1
+        count()
+      . assert(_ == 42)
+
+      test(m"Atomic[Long] is a tally"):
+        val tally: Atomic[Long] = Atomic(9000000000L)
+        tally()
+      . assert(_ == 9000000000L)
+
+      test(m"Atomic[Boolean] is a flag"):
+        val flag: Atomic[Boolean] = Atomic(false)
+        flag.swap(true)
+      . assert(_ == false)
+
+      test(m"Atomic of a reference type is a cell"):
+        val cell: Atomic[Person] = Atomic(Person(t"Ada", 36))
+        cell().name
+      . assert(_ == t"Ada")
+
+      // The risky reduction: `Optional[Text]` is the union `Unset | Text`, and the match type
+      // must rule out the `Int`/`Long`/`Boolean` arms against a union scrutinee to reach `Cell`.
+      test(m"Atomic of an Optional reduces to a cell"):
+        val cell: Atomic[Optional[Text]] = Atomic(Unset)
+        cell() = t"present"
+        cell()
+      . assert(_ == t"present")
+
+      test(m"an Optional-typed atomic reads as Unset when vacant"):
+        val cell: Atomic[Optional[Text]] = Atomic(Unset)
+        cell()
+      . assert(_ == Unset)
+
+      // Confirms the primitive `apply` overload wins over the generic one: were the generic
+      // chosen, this would be a `Cell[Int]` and `Atomic.Count`'s extension would not apply.
+      test(m"Atomic(0) selects the unboxed count, not a boxed cell"):
+        val count: Atomic.Count = Atomic(0)
+        count.swap(5)
+      . assert(_ == 0)
+
+      test(m"Atomic(true) selects the unboxed flag"):
+        val flag: Atomic.Flag = Atomic(true)
+        flag()
+      . assert(_ == true)
