@@ -19,8 +19,10 @@ uploads — parse into their typed parts.
 Media types look like free text and are not: the grammar distinguishes registered types from
 vendor trees, suffixes carry meaning (`svg+xml` *is* XML), and parameters like `charset` change
 interpretation. Because they are usually handled as strings, a typo produces a syntactically
-plausible type that no consumer recognises — and since receivers tend to fall back rather than
-fail, the mistake shows up as subtly wrong behaviour far away.
+plausible type that no consumer recognizes — and since receivers tend to fall back rather than
+fail, the mistake shows up as subtly wrong behavior far away.
+
+Checking a media type as the code compiles is [safety by construction](../philosophy/safety-by-construction.md) applied to a string that is otherwise trusted.
 
 Soundness parses them fully, validates literals against the registry itself, and types the value.
 Everything comes from the `soundness` package:
@@ -28,6 +30,7 @@ Everything comes from the `soundness` package:
 ```scala
 import soundness.*
 import strategies.throwUnsafely
+import charEncoders.utf8Encoder
 ```
 
 ### Writing a media type
@@ -80,6 +83,8 @@ anyone re-stating what it is: text is `text/plain`, and anything with a filename
 extension. `ascribe` pairs any byte source with an explicit media type where none is intrinsic:
 
 ```scala
+val data = t"raw bytes".in[Data]
+
 data.ascribe(media"application/octet-stream")   // a Content: bytes plus their type
 ```
 
@@ -93,6 +98,13 @@ with its disposition, name, optional filename, headers and body stream — parse
 a large upload streams rather than accumulating:
 
 ```scala
-val upload = Multipart.parse(stream)
-upload.at(t"avatar").let(_.filename)   // the uploaded file's name, if present
+val body =
+  t"--xyz\r\n" +
+  t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
+  t"\r\n" +
+  t"pixels\r\n" +
+  t"--xyz--\r\n"
+
+val upload = Multipart.parse(Chain(body.in[Data]))
+upload.at(t"avatar").let(_.filename)   // t"me.png"
 ```
