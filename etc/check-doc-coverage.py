@@ -24,6 +24,7 @@ Focus Client Server Session Request Response Message Header Body Content Source 
 
 # Libraries that are infrastructure for other libraries, not something a reader uses directly.
 INTERNAL = {
+    'rudiments',      # foundation utilities used by every tutorial; nothing to teach on their own
     'anticipation', 'prepositional', 'proscenium', 'murmuration', 'corpuscular', 'tessellate',
     'beneficence', 'umbrageous', 'prescience', 'frontier', 'symbolism', 'denominative',
     'concordance', 'delicious', 'prophesy', 'stenography', 'wisteria', 'polaris',
@@ -40,6 +41,11 @@ COVERED_BY = {
     'digression': ['stack-traces.md'],
     'sibylline': ['llm.md'],
     'murmuration': ['collections.md'],
+    'praxinoscope': ['patterns.md'],     # selected as `regexBackends.re2`, a kaleidoscope name
+    'cardinality': ['numbers.md'],       # bounded numbers are written with the `~` type operator
+    'chiaroscuro': ['testing.md'],       # the contrast rendering behind a failed assertion
+    'diuretic': ['foreign-interop.md'],  # adapters for java.io.File, java.net.URL and the time types
+    'perihelion': ['http-server.md'],    # websockets, reached through the HTTP server and client
 }
 
 def exported_names():

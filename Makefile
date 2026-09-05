@@ -35,6 +35,7 @@ check-stdlib:
 build:
 	./mill groupCheck.validate
 	python3 etc/check-given-uniqueness.py
+	python3 etc/check-doc-coverage.py
 	./etc/check-stdlib-count.sh
 	./mill soundness.all
 	./mill benches.compile

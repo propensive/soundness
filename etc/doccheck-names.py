@@ -128,7 +128,10 @@ def main():
                     if member != '*' and member not in members:
                         print(f'{doc}:{number}: import names no known given or member: {member}')
                         problems += 1
-                for name in CAPITALISED.findall(code):
+                for match in CAPITALISED.finditer(code):
+                    name = match.group(1)
+                    # A capitalised named argument (`ContainerConfig(Cmd = …)`) is a field, not a type.
+                    if re.match(r'\s*=(?!=)', code[match.end():]): continue
                     if name.isupper() or name in IGNORED or name in declared_in_doc or name in declared_in_source or name in exported:
                         continue
                     if name in seen:
