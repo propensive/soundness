@@ -17,6 +17,8 @@ zeros are illegal, what a prerelease identifier may contain — and the preceden
 the subtle ones: numeric identifiers compare numerically, `1.0.0-alpha` precedes `1.0.0`, and build
 metadata never affects ordering. Rules that precise belong in a type.
 
+A version that cannot be constructed invalid, and compares as the specification says, is [safety by construction](../philosophy/safety-by-construction.md).
+
 Everything comes from the `soundness` package:
 
 ```scala
