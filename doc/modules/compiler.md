@@ -29,6 +29,8 @@ import soundness.*
 import strategies.throwUnsafely
 ```
 
+A compilation described as a value and run by a toolchain is [direct style](../philosophy/direct-style.md): the build is code, checked like any other.
+
 ### Configuring a compiler
 
 A `Scalac` is parameterized by its language version and carries its options — each a typed value,
