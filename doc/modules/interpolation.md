@@ -59,8 +59,8 @@ idea — text becomes one argument, a list becomes several, and any type with th
 splices safely:
 
 ```scala
-given Insertion[Parameters, Text] = value => Parameters(value)
-given Insertion[Parameters, List[Text]] = xs => Parameters(xs*)
+given Insertion[Sh.Parameters, Text] = value => Sh.Parameters(value)
+given Insertion[Sh.Parameters, List[Text]] = xs => Sh.Parameters(xs*)
 ```
 
 Because insertion is a typeclass, a new type becomes substitutable by declaring one instance,
@@ -78,8 +78,12 @@ label, so the parser can proceed as though the hole contained a representative t
 substituted type — `"0"` for a number, `""""` for a string:
 
 ```scala
-given Substitution[SqlInput, Int, "0"] = IntInput(_)
-given Substitution[SqlInput, Text, "\"\""] = StrInput(_)
+enum SqlInput:
+  case IntInput(value: Int)
+  case StrInput(value: Text)
+
+given Substitution[SqlInput, Int, "0"] = SqlInput.IntInput(_)
+given Substitution[SqlInput, Text, "\"\""] = SqlInput.StrInput(_)
 ```
 
 The interpolator's compiletime interpretation of the literal can then depend on what was inserted,
@@ -105,8 +109,10 @@ plus separate runtime parser can make.
 `parts` is a tuple of the literal fragments as singleton string types, so the interpolator sees
 the text of each; `origins` carries where each fragment began in the source file, so an error
 reported against a character within a fragment resolves to that character's position in the file
-rather than to the start of the expression:
+rather than to the start of the expression. The media-type interpolator's instance, in outline,
+hands both to a macro:
 
+<!-- doccheck: skip -->
 ```scala
 inline given interpolable: MediaType is Interpolable:
   transparent inline def interpolate[parts <: Tuple, origins <: Tuple](inline insertions: Any*)
@@ -138,4 +144,4 @@ compiles, and the interpolator's machinery buys nothing over the runtime parser 
 
 The convention throughout is therefore to offer both — `url"…"` for a literal and `as[Url]` for
 text obtained at runtime — with the same code behind each, so a program can move a value from one
-to the other without a change in behaviour.
+to the other without a change in behavior.
