@@ -29,6 +29,8 @@ import soundness.*
 import strategies.throwUnsafely
 import threading.platformThreading
 import probates.awaitProbate
+import logging.silentLogging
+import charDecoders.utf8Decoder
 ```
 
 ### Serving
@@ -36,14 +38,16 @@ import probates.awaitProbate
 `listen` binds a socket and runs a handler for each arrival — a connection for TCP and domain
 sockets, a packet for UDP — each on its own daemon. The returned service stops the listener:
 
+<!-- doccheck: skip -->
 ```scala
+def response(request: Stream[Data]): Stream[Data] = request
+
 supervise:
   val port = Port[Tcp]()   // an unused ephemeral port
 
-  val server = port.listen[Data]: connection =>
-    response(connection.stream())
-
-  server.stop()
+  port.listen[Data](connection => response(connection.stream())):
+    // the server runs for the duration of this block
+    ()
 ```
 
 The endpoint decides the shape of the handler, on both sides. A stateful endpoint hands the
@@ -54,9 +58,11 @@ datagram without the handler having to state which it is dealing with.
 A UDP handler receives a `Packet` — the datagram with its sender — and answers with a reply or
 silence:
 
+<!-- doccheck: skip -->
 ```scala
-udpPort.listen[Data]: packet =>
-  UdpResponse.Reply(acknowledge(packet.data))
+supervise:
+  Port[Udp]().listen[Data](packet => UdpResponse.Reply(packet.data)):
+    ()
 ```
 
 ### Clients
@@ -64,6 +70,7 @@ udpPort.listen[Data]: packet =>
 A request–response client sends a message and reads the reply stream with `transmit`; a message is
 anything *transmissible* — bytes, text, or any value that encodes to text:
 
+<!-- doccheck: skip -->
 ```scala
 val reply = DomainSocket(t"/run/service.sock").transmit(t"request")
 ```
@@ -73,10 +80,11 @@ state, reply, or conclude — so a client-side protocol is a state machine rathe
 reads and writes. `duplex` opens a persistent bidirectional connection, sending and receiving
 independently, which is the transport beneath [HTTP/2](http-server.md):
 
+<!-- doccheck: skip -->
 ```scala
-socket.duplex: duplex =>
-  duplex.send(Stream(request))
-  duplex.stream.head
+DomainSocket(t"/run/service.sock").duplex: duplex =>
+  duplex.send(Stream(t"request".in[Data]))
+  duplex.stream.prim
 ```
 
 ### Sessions
@@ -86,7 +94,10 @@ it to the block, and closes it when the block ends. The result type is quantifie
 block, so a value still borrowing the live connection cannot escape it, while a memoized value
 can:
 
+<!-- doccheck: skip -->
 ```scala
+val endpoint = Endpoint(ip"127.0.0.1", Port[Tcp](8080))
+
 endpoint.session: connection ?=>
   converse(connection)
 ```
@@ -154,8 +165,9 @@ be checked later.
 `Control` saying what happens next. `Continue` carries the new state — or none, leaving it
 unchanged — and `Terminate` ends the conversation:
 
+<!-- doccheck: skip -->
 ```scala
-socket.exchange(initial):
+endpoint.exchange(initial):
   case (state, message) =>
     if done(message) then Terminate else Continue(next(state, message))
 ```
