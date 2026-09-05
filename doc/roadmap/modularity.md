@@ -324,8 +324,10 @@ Horizon: near–mid
     modules on its classpath. parasite's closure is 37. Moving `Mutex` there would take the
     standard-streams module from 16 modules to at least 37, undoing most of what splitting it
     off achieved.
-  - **`Counter` to parasite** — free, since nothing outside rudiments uses it, and pointless on
-    its own.
+  - **`Counter` to parasite** — **resolved by deletion.** It had no users at all, inside
+    rudiments or out: the only other `Counter` in the tree is `ultimatum.Reckoning.Counter`, an
+    unrelated nested enum. `rudiments.Atomic` supersedes what it did (`Atomic[Int]` with
+    `ere(_ + 1)` is `getAndIncrement`), so it was removed rather than re-homed.
 
   So rudiments holds these utilities precisely *because* they are used from below the topics
   they belong to. Re-homing them by subject means first moving their low-level consumers, which
