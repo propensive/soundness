@@ -6,7 +6,8 @@ A command-line application is an entry point that hands the program its argument
 interpretation of those arguments as subcommands, flags and operands, and tab
 completions for every shell. The unusual part is that the completions are derived from
 the same code that runs the command, so they cannot drift away from what the program
-actually does.
+actually does — and neither can the help text, the manpage, or the list of exit statuses,
+all of which are read off the program rather than written beside it.
 
 ### On the command line
 
@@ -23,26 +24,33 @@ a mode that produces suggestions instead of effects, so a flag that the program 
 for becomes a flag the program can suggest, and the completions agree with the program
 by construction.
 
+Every parameter and its parsing is declared in the type of the command, which is the [declarative context](../philosophy/declarative-context.md) style applied to the command line.
+
 The sections below start with a minimal entry point and build up through subcommands and
-flags to completions. Everything comes from the `soundness` package, together with a
-choice of argument interpreter and a few contextual values the entry point needs:
+flags to completions, help and manpages. Everything comes from the `soundness` package,
+together with a choice of argument interpreter and a few contextual values the entry point
+needs:
 
 ```scala
 import soundness.*
+
+import backstops.genericErrorMessageBackstop
 import executives.directExecutive
 import interpreters.posixInterpreter
-import backstops.genericErrorMessageBackstop
 import systems.javaBaseSystem
+import strategies.throwUnsafely
 ```
 
 ### An entry point
 
-The `application` method wraps a `@main` method, giving its body the program's context
-and expecting an `Exit` status in return:
+The `application` method wraps a program's entry point, giving its body the program's context
+and expecting an `Exit` status in return. It takes the arguments as a list of text, which is
+what an `Application` — an abstract class whose `main` method converts the JVM's arguments and
+whose `invoke` method is the body — hands it, so a complete program is one object extending
+`Application`; the examples here spell the call out:
 
 ```scala
-@main
-def mytool(args: IArray[Text]): Unit = application(args):
+def mytool(args: List[Text]): Unit = application(args):
   Out.println(t"Hello, world!")
   Exit.Ok
 ```
@@ -51,7 +59,7 @@ Packaged as an executable JAR whose `Main-Class` is `mytool`, this runs from the
 `Exit.Ok` reports success; `Exit.Fail(1)` — or any positive code — reports failure, and
 the status must be returned, not left implicit.
 
-An application can equally be written as a class extending `Application`, which supplies
+An application can equally be written as an object extending `Application`, which supplies
 the `main` method and asks only for an `invoke`:
 
 ```scala
@@ -67,7 +75,7 @@ Within the body, `arguments` is the list of arguments the program was given, eac
 `Argument`. Applying an argument yields its `Text`:
 
 ```scala
-application(args):
+def echo(args: List[Text]): Unit = application(args):
   arguments.each: argument =>
     Out.println(argument())
   Exit.Ok
@@ -82,8 +90,10 @@ It is worth separating two words that are often used interchangeably. *Arguments
 sequence of textual values the shell hands over; *parameters* are what they mean once
 interpreted. The arguments of `grep -rA4 pattern` are `-rA4` and `pattern`; its parameters are
 "search recursively", "show four lines of trailing context" and "search for `pattern`". The
-interpreter in scope — `posixInterpreter`, `posixClusteringInterpreter`, `simpleInterpreter` —
-is what turns the first into the second, which is why it is chosen by import rather than fixed.
+interpreter in scope is what turns the first into the second, which is why it is chosen by
+import rather than fixed: `posixInterpreter` reads `--long` and `-s` flags, and
+`posixClusteringInterpreter` additionally reads `-rA4` as `-r -A 4`, with a cluster's last
+letter taking the value; `simpleInterpreter` treats every argument as an operand.
 
 ### Subcommands
 
@@ -95,17 +105,23 @@ ordinary pattern:
 val Build = Subcommand(t"build", e"compile the project")
 val Test = Subcommand(t"test", e"run the tests")
 
-application(args):
+def tool1(args: List[Text]): Unit = application(args):
   arguments match
-    case Build() :: _ => Out.println(t"building…");  Exit.Ok
-    case Test() :: _  => Out.println(t"testing…");   Exit.Ok
+    case Build() :: _ => Out.println(t"building");  Exit.Ok
+    case Test() :: _  => Out.println(t"testing");   Exit.Ok
     case _            => Out.println(t"unknown command"); Exit.Fail(1)
 ```
 
 The description is written with the `e"…"` interpolator, which carries ANSI styling for
 shells that show it; a plain `Text` description works too. Subcommands nest: matching a
 subcommand and then matching again on the remaining arguments gives a tree of commands,
-each with its own flags.
+each with its own flags. A subcommand may be `hidden = true`, keeping it out of help and
+completions, and subcommands are gathered under headings in help with a `CommandGroup`:
+
+```scala
+val admin = CommandGroup(t"Admin commands", t"Commands for user administration.")
+val UserAdd = Subcommand(t"useradd", e"add a user account", group = admin)
+```
 
 ### Flags
 
@@ -115,10 +131,15 @@ flag's type is whatever the value should decode to — any type that can be read
 works without further ceremony:
 
 ```scala
-case Build() :: _ =>
-  val jobs: Optional[Int] = Flag[Int](t"jobs", aliases = List('j'))()
-  Out.println(t"building with ${jobs.or(1)} jobs")
-  Exit.Ok
+def tool2(args: List[Text]): Unit = application(args):
+  arguments match
+    case Build() :: _ =>
+      val jobs: Optional[Int] = Flag[Int](t"jobs", aliases = List('j'))()
+      Out.println(t"building with ${jobs.or(1)} jobs")
+      Exit.Ok
+
+    case _ =>
+      Exit.Fail(1)
 ```
 
 `aliases` gives short forms, so `--jobs 4`, `-j 4`, and `--jobs=4` are read alike.
@@ -141,23 +162,27 @@ derives its own name for it by convention. Declaring an application's identity a
 given Configurator.Prefix = Configurator.Prefix(t"myapp")
 
 val LogLevel = Setting[Text](t"logLevel", description = t"logging verbosity")
+val Home = Setting[Text](t"home", variable = t"MYAPP_HOME")
 ```
 
 Reading `LogLevel()` inside the CLI block consults, in order: the `--log-level`
 command-line flag, the `myapp.log.level` system property, and the `MYAPP_LOG_LEVEL`
 environment variable, returning `Optional` so a default is given the usual way,
-`LogLevel().or(t"info")`. Reading a setting registers its flag for tab completion, exactly
-as reading the flag directly would.
+`LogLevel().or(t"info")`. A setting whose environment variable does not follow the
+convention names it with `variable`, consulted between the flag and the cascade. Reading a
+setting registers its flag for tab completion, exactly as reading the flag directly would.
 
 Each source is a `Configurator` — a single abstract method from a setting's canonical
 name to an optional textual value — and the cascade is just composition with `++`, where
-the left side takes priority. Soundness does not prescribe a configuration-file format,
-but any source can join the cascade as a one-line lambda; defining a `Configurator` given
-replaces the standard cascade (the command-line flag always takes priority):
+the left side takes priority. No configuration-file format is prescribed, but any source can
+join the cascade as a one-line lambda; defining a `Configurator` given replaces the standard
+cascade (the command-line flag always takes priority):
 
 ```scala
-given Configurator = Configurator.properties ++ Configurator.environment
-  ++ { name => safely(config(name)) }
+def fromFile(name: Text): Optional[Text] = Unset   // consult a configuration file
+
+given (Environment, System) => Configurator =
+  Configurator.properties ++ Configurator.environment ++ { name => fromFile(name) }
 ```
 
 ### Exit status and errors
@@ -165,9 +190,21 @@ given Configurator = Configurator.properties ++ Configurator.environment
 The body returns an `Exit`: `Exit.Ok`, or `Exit.Fail(code)` for a failure. An error that
 escapes the body is caught by the *backstop* in scope, which turns it into an exit
 status rather than a stack trace — `genericErrorMessageBackstop` prints a short message
-and exits non-zero, while `stackTraceBackstop` prints the full trace, and
-`silentBackstop` prints nothing. Choosing a backstop is a matter of which one is
-imported.
+and exits non-zero, `exceptionMessageBackstop` prints the exception's own message,
+`stackTraceBackstop` prints the full trace, and `silentBackstop` prints nothing. Choosing
+a backstop is a matter of which one is imported.
+
+An exit code on its own says little to the user, so a failure that the program anticipates is
+better declared as a `Status`, an object carrying both the code and a description:
+
+```scala
+object CannotConnect extends Status(1, t"the server could not be reached")
+object BadConfig extends Status(2, t"the configuration file was invalid")
+```
+
+A `Status` is returned wherever an `Exit` is. Under the completions executive, below, the
+statuses a command can return are discovered from its code, and appear in its help and
+manpage without being listed anywhere else.
 
 ### Tab completions
 
@@ -175,7 +212,7 @@ Tab completion is one of the most useful things a command-line program offers: i
 discover features, preview the flags and values that are available, and avoid typing mistakes
 outright. It is also, conventionally, maintained separately from the program itself — a
 different script per shell, often written by different people, each approximating the command's
-behaviour by hardcoding its subcommands and flags, and sometimes going further to keep mutually
+behavior by hardcoding its subcommands and flags, and sometimes going further to keep mutually
 exclusive flags consistent with each other. The shells do not even agree on what a completion
 is: Bash offers the completion text alone, while Zsh and Fish can show a description beside it.
 The work is admirable and it is impossible to keep correct.
@@ -185,7 +222,9 @@ the arguments produces the completions, so they agree by construction. The per-s
 shrink to nothing of consequence — capture the incomplete command line, the cursor position and
 the shell's name, and hand them to the application in completions mode.
 
-Turning completions on replaces the default executive with the completions executive:
+Turning completions on replaces the default executive with the completions executive, imported
+where the entry point is defined so that it, rather than the direct executive, is the one in
+scope for that program:
 
 ```scala
 import executives.completionsExecutive
@@ -198,17 +237,18 @@ invocation. So the prelude does the argument handling, and the side effects live
 `execute`:
 
 ```scala
-@main
-def mytool(args: IArray[Text]): Unit = application(args):
-  arguments match
-    case Build() :: _ =>
-      val jobs = Flag[Int](t"jobs", aliases = List('j'))()
-      execute:
-        Out.println(t"building with ${jobs.or(1)} jobs")
-        Exit.Ok
+def mytool2(args: List[Text]): Unit =
+  import executives.completionsExecutive
+  application(args):
+    arguments match
+      case Build() :: _ =>
+        val jobs = Flag[Int](t"jobs", aliases = List('j'))()
+        execute:
+          Out.println(t"building with ${jobs().or(1)} jobs")
+          Exit.Ok
 
-    case _ =>
-      execute(Exit.Fail(1))
+      case _ =>
+        execute(Exit.Fail(1))
 ```
 
 Because matching `Build` and declaring the `--jobs` flag happen in the prelude, they run
@@ -220,16 +260,26 @@ disagree. The completions executive also withholds standard output from the prel
 since there is nowhere to send it while completing; `Out.println` is available only
 inside `execute`.
 
-The consequences run deeper than "a flag that is read is a flag that is offered", because the
-reading may be conditional — and then so is the offering, on *precisely the same condition*.
-Consider a command with a `-v` flag that turns on output, and a `--verbosity` flag meaningful
-only alongside it:
+A flag read in the prelude yields a `Prospective` handle rather than the value itself: its
+`present` and `absent` may be consulted at once — to decide what else to offer — but applying
+it to get the value is possible only inside `execute`. The consequences run deeper than "a
+flag that is read is a flag that is offered", because the reading may be conditional — and then
+so is the offering, on *precisely the same condition*. Consider a command with a `-v` flag that
+turns on output, and a `--verbosity` flag meaningful only alongside it:
 
 ```scala
-val verbose = Flag[Text](t"verbose", aliases = List('v'))()
+enum Verbosity:
+  case Quiet, Normal, Loud
 
-val verbosity: Optional[Verbosity] =
-  if verbose.present then Flag[Verbosity](t"verbosity")() else Unset
+def tool3(args: List[Text]): Unit =
+  import executives.completionsExecutive
+  application(args):
+    val verbose = Switch(t"verbose", aliases = List('v'))()
+    val verbosity = if verbose.present then Flag[Verbosity](t"verbosity")() else Unset
+
+    execute:
+      Out.println(t"verbosity: ${verbosity.let(_()).or(Verbosity.Normal)}")
+      Exit.Ok
 ```
 
 Pressing `tab` after a bare `-` runs this prelude. `-v` is checked for, and so becomes a
@@ -239,19 +289,44 @@ branch checking for `--verbosity` runs too, so `--verbosity` becomes a candidate
 anywhere; the conditional structure of the code is the conditional structure of the completions,
 however complex it becomes.
 
+### Required and validated flags
+
+A flag that must be present is declared with `require()` instead of `()`, and one whose value
+must also decode correctly with `validate()`. In the prelude each yields a `Requisite` handle
+whose value is unconditionally available inside `execute`, because a missing or malformed
+requisite stops the block from running at all. Every such flag is checked before the block
+starts, so the user learns of all of them at once, with exit status 2 by the usage-error
+convention, rather than one per run:
+
+```scala
+def tool4(args: List[Text]): Unit =
+  import executives.completionsExecutive
+  application(args):
+    val home = Flag[Text](t"home", description = t"the home directory").require()
+    val jobs = Flag[Int](t"jobs", description = t"parallel jobs").validate()
+
+    execute:
+      Out.println(t"building ${home()} with ${jobs()} jobs")
+      Exit.Ok
+```
+
+Inside `execute`, the same calls yield the value directly, raising `MissingFlagError` or
+`InvalidFlagError` immediately for the backstop to report. A required flag is also marked as
+required in the help text.
+
 ### The executive, and effectful methods
 
 The *executive* is what determines the return type of an entry point's body and the contextual
 values available inside it. `directExecutive` expects an `Exit` and supplies `Stdio`;
-`completions` expects an `Execution` and withholds `Stdio` until `execute`. Choosing one by
-import is what lets the entry-point API stay uniform while imposing genuinely different
+`completionsExecutive` expects an `Execution` and withholds `Stdio` until `execute`. Choosing
+one by import is what lets the entry-point API stay uniform while imposing genuinely different
 requirements on the code inside it.
 
 An `execute` block also supplies an erased `Effectful`. Nothing consumes it internally; its
 purpose is that a user-defined method may *demand* it:
 
 ```scala
-def deleteEverything()(using Effectful): Unit = …
+def deleteEverything()(using Effectful): Unit = ()
 ```
 
 Since an `Effectful` can be obtained only inside an `execute` block, such a method cannot be
@@ -270,16 +345,48 @@ suggest values with a `Discoverable` instance, and how to read a chosen value wi
 case class Mode(name: Text)
 
 given Mode is Discoverable = _ => List(t"debug", t"release").map(Suggestion(_))
-given Mode is Interpretable =
-  case argument :: Nil => Mode(argument())
-  case _               => Mode(t"debug")
 
-val mode = Flag[Mode](t"mode", description = t"build mode")()
+given Mode is Interpretable = new Interpretable:
+  type Self = Mode
+  def interpret(arguments: List[Argument]): Optional[Mode] = arguments match
+    case argument :: _ => Mode(argument())
+    case _             => Unset
+
+def tool5(args: List[Text]): Unit =
+  import executives.completionsExecutive
+  application(args):
+    val mode = Flag[Mode](t"mode", description = t"build mode")()
+    execute(Exit.Ok)
 ```
 
 With these in scope, `mytool build --mode ` offers `debug` and `release`. A `Suggestion`
 may carry a description, shown by shells that support it, and may be marked `incomplete`
-to complete a value one segment at a time, as for a file path.
+to complete a value one segment at a time, as for a file path. A flag whose type is `Pathname`
+completes filesystem paths this way out of the box, expanding a leading `~` as the shell would.
+
+### Help and manpages
+
+Because the prelude describes the whole interface — subcommands, flags, their descriptions,
+which flags are required, and which statuses each command can return — help needs no
+separate source. The completions executive rebuilds the interface as a `Help` tree by
+re-running the prelude with synthesized argument prefixes, and renders it in an aligned,
+man-page-style layout; the same tree renders as a
+[manpage](https://en.wikipedia.org/wiki/Man_page) in roff, with `roff`, which `Manpages.install`
+writes into place.
+
+Everything discovered is documented: a `Status` returned from an `execute` block appears
+under *Exit status*, and an environment variable read in the prelude appears under
+*Environment*. Descriptions that discovery cannot supply — what an environment variable
+means, an example invocation — are added through a `Manual`:
+
+```scala
+val manual = Manual
+  ( environment  = List(Manual.EnvironmentVariable(t"MYAPP_HOME", t"the home directory")),
+    examples     = List(Manual.Example(t"build with four jobs", t"mytool build --jobs 4")) )
+```
+
+Within a command, `explain` attaches a paragraph of local help to the current subcommand
+section, so a deep subcommand documents itself where it is defined.
 
 ### Installing completions
 
@@ -298,7 +405,7 @@ new subcommands and flags need no change to any script.
 ### Fast startup
 
 A command invoked for completion must start quickly, or the shell feels sluggish.
-Running the application as a daemon removes the JVM's startup cost from every
+Running the application as a [daemon](daemons.md) removes the JVM's startup cost from every
 invocation: the program stays resident and each command, including each completion
 request, is dispatched to the running process. The same body that `application` runs is
 run by `daemon`, so an application gains fast startup by changing how it is launched, not
