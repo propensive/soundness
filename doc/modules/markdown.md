@@ -20,6 +20,8 @@ it are not interchangeable: a heading may contain a link, but a link may not con
 representation that treats every node alike lets such nonsense be built, and pushes the check to
 whatever consumes the tree.
 
+A document parsed to a typed tree, rather than rendered straight to HTML, is what makes it [composable](../philosophy/composability.md) with the rest of a program.
+
 Soundness keeps the levels apart in the types. The block structure is the `Layout` enumeration and the
 inline structure the `Prose` enumeration, and a document's type records which it holds. Parsing
 produces a complete CommonMark tree, and rendering it to HTML yields exactly the content model each
@@ -43,8 +45,10 @@ rather than holding the source. Only the tree, and each paragraph's deferred raw
 retained, so a long document is parsed without ever being materialized:
 
 ```scala
-val streamed = Parser.parse(source)
-readme.read[Markdown of Layout]
+val readme = t"# Readme\n\nThe first paragraph.\n\nThe second."
+
+Parser.parse(readme.stream).children.size   // 3
+readme.read[Markdown of Layout].children.size
 ```
 
 The whole CommonMark conformance suite passes through the streaming entry, one character per
@@ -67,9 +71,10 @@ The document's `children` are `Layout` nodes, and each carries its inline conten
 document can be inspected or transformed by matching on the tree:
 
 ```scala
-document.children.head match
+document.children.prim match
   case Layout.Heading(_, level, Prose.Textual(text)) => (level, text)
   case _                                             => (0, t"")
+// (1, t"Title")
 ```
 
 `Layout` covers headings, paragraphs, block quotes, ordered and bullet lists, code blocks and
