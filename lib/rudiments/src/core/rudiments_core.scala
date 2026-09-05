@@ -53,6 +53,7 @@ import symbolism.*
 import vacuous.*
 
 export rudiments.internal.{Bytes, Digit}
+export rudiments.atomicInternal.Atomic
 
 // The SAM trait names the knot's true aliasing: the recursion passed as `recur` captures the
 // recurrence itself (`->{this}`), and the result arrow declares its dependency on `recur`
