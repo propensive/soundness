@@ -28,27 +28,44 @@ byte for byte, and a value compressed one way decompresses the other. Everything
 
 ```scala
 import soundness.*
+
+import charDecoders.utf8Decoder
+import charEncoders.utf8Encoder
+import strategies.throwUnsafely
 ```
+
+A compression scheme is a stage in a pipeline rather than a wrapper around a stream, which is [composability](../philosophy/composability.md) in its most literal form.
 
 ### Compressing a value
 
 A block of bytes compresses and decompresses by naming the format:
 
 ```scala
-val payload = t"the quick brown fox".in[Data]
+val payload = t"the quick brown fox jumps over the lazy dog".in[Data]
 
 val compressed = payload.compress[Gzip]
-compressed.decompress[Gzip]   // the original bytes
+compressed.decompress[Gzip].utf8   // t"the quick brown fox jumps over the lazy dog"
 ```
 
 ### Compressing a stream
 
 The same names attach to a stream, where they become pipeline stages: the data is transformed as
-it flows, and nothing larger than the pipeline's buffers is held:
+it flows, and nothing larger than the pipeline's buffers is held. Writing a compressed
+[file](filesystem.md) and reading it back is the compressor and decompressor placed on either
+side of the disk:
 
 ```scala
-file.stream.compress[Gzip].writeTo(destination)
-archive.stream.decompress[Gzip].read[Text]
+import filesystemOptions.createNonexistentParents
+import pathInterfaces.pathOnLinux
+import temporaryDirectories.javaBaseTemporaryDirectory
+
+val archive = temporaryDirectory[Path on Linux] / "compression" / "fox.txt.gz"
+
+archive.create[File](): handle ?=>
+  handle.write(payload.stream.compress[Gzip])
+
+archive.open[File]()(file.stream.decompress[Gzip].read[Text])
+// t"the quick brown fox jumps over the lazy dog"
 ```
 
 Whole-value and streaming forms interoperate freely: a value compressed as a whole decompresses
@@ -60,6 +77,11 @@ through a stream, and a stream's output decompresses as a value.
 header, timestamp and CRC that `.gz` files carry. These are the formats of HTTP content
 encoding, ZIP entries and PNG chunks, and they are the fastest of the set.
 
+```scala
+payload.compress[Zlib].decompress[Zlib] == payload      // true
+payload.compress[Deflate].decompress[Deflate] == payload
+```
+
 `Brotli` compresses smaller than DEFLATE at comparable speed, and is the modern web's content
 encoding. Both directions need the whole value before producing output — the decoder because
 backward references may reach across the entire window, the encoder because it chooses its
@@ -68,14 +90,18 @@ framing from the total length — so a Brotli stage buffers where a DEFLATE stag
 `Xz` is the high-ratio codec: LZMA2 inside the `.xz` container, with a CRC-64 check, matching
 what the `xz` command-line tool produces. `Lzma2` is the same codec without the container
 framing, standing to `Xz` as `Deflate` stands to `Gzip`. Both default to preset 6; presets 0 to
-3 favour speed and 4 to 9 favour ratio, and an explicit preset is selected with
-`Xz.compress(stream, preset)` or `Xz.compressor(preset)`.
+3 favor speed and 4 to 9 favor ratio, and an explicit preset is selected with
+`Xz.compress(stream, preset)` or `Xz.compressor(preset)`:
+
+```scala
+payload.compress[Xz].decompress[Xz] == payload   // true
+```
 
 `Lzw` is the compression of TIFF and PDF streams. The JDK offers no implementation of it at all,
-so this one is written from the specification. Its `earlyChange` parameter — both sides widening their
-codes one table entry sooner — is on by default, which is what TIFF, PDF and every known encoder
-produce; the parameterized `Lzw.compressor` and `Lzw.decompressor` serve formats that state it
-explicitly.
+so this one is written from the specification. Its `earlyChange` parameter — both sides widening
+their codes one table entry sooner — is on by default, which is what TIFF, PDF and every known
+encoder produce; the parameterized `Lzw.compressor` and `Lzw.decompressor` serve formats that
+state it explicitly.
 
 ### Where compression appears
 
