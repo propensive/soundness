@@ -15,6 +15,8 @@ files, a generator emits source code, and the build keeps the two in step. That 
 cross-language schemas, but for a Scala program talking to a Scala program — or one that simply
 must speak an existing proto3 protocol — it is machinery without benefit.
 
+Field numbers and types living in the case class, and the encoder derived from them, keep the wire format and the code in agreement — [correctness](../philosophy/correctness.md) with one definition.
+
 Soundness derives the wire format from the case class itself. Field numbers, the one thing proto3
 needs that Scala does not, come from an annotation; everything else — varints, zig-zag encoding,
 length-delimited messages, packed repeated fields — follows from the field types, and the encoding
@@ -38,8 +40,11 @@ Encoding produces the message value and then its bytes; decoding reads bytes bac
 ```scala
 val bytes = Person(t"Alice", 30).in[Protobuf].encode   // the wire bytes
 
-Stream(bytes).read[Person in Protobuf]             // Person(t"Alice", 30)
+Chain(bytes).read[Person in Protobuf]                  // Person(t"Alice", 30)
 ```
+
+Decoding may also stop at the generic message, to be inspected or converted later: `read[Protobuf]`
+gives a `Protobuf` value, and `as[Person]` converts it.
 
 Fields left unannotated number themselves in declaration order, and the numbers may be sparse —
 `@field(3)` and `@field(7)` with nothing between — as protocol evolution requires.
@@ -47,7 +52,7 @@ Fields left unannotated number themselves in declaration order, and the numbers 
 ### Field types
 
 The Scala type decides the proto3 encoding. The sized [numeric types](numbers.md) map onto proto3's
-integer flavours precisely — an unsigned `U32` is a `uint32` varint, a signed `S32` uses zig-zag
+integer flavors precisely — an unsigned `U32` is a `uint32` varint, a signed `S32` uses zig-zag
 `sint32`, a `B32` is a `fixed32` — text is length-delimited, an `Optional` field may be absent, a
 `List` of numbers packs, and a `Map` becomes the standard repeated key–value entries:
 
@@ -64,7 +69,7 @@ A nested case class is a nested message, and an enumeration or sealed hierarchy 
 ### Presence, repetition and maps
 
 Proto3's treatment of absence is a well-known source of confusion, and the type says which
-behaviour applies. An `Optional` field has explicit presence: unset, it writes nothing, and reads
+behavior applies. An `Optional` field has explicit presence: unset, it writes nothing, and reads
 back as `Unset` — distinct from a field that is present and zero.
 
 A `List` field is repeated, and keeps its order and its default elements: a list of `0, 1, 2`
@@ -90,7 +95,12 @@ without disturbing the rest:
 ```scala
 import conversions.encodableToProtobuf
 
-wrapper.lens(_(Prim) = Point(7, 8).in[Protobuf]).as[Wrapper]
+case class Point(@field(1) x: Int, @field(2) y: Int)
+case class Wrapper(@field(1) point: Point, @field(2) label: Text)
+
+val wrapper: Protobuf = Wrapper(Point(3, 4), t"origin").in[Protobuf]
+
+wrapper.lens(_(Prim) = Point(7, 8)).as[Wrapper]   // Wrapper(Point(7, 8), t"origin")
 ```
 
 This is what to use where a message must be relayed with one field altered and everything else —
