@@ -23,6 +23,8 @@ The Java API for this returns a `null` when a resource is absent, hands back a r
 None of it is typed, and a missing resource is discovered only when the `null` is
 dereferenced.
 
+Classpath entries and classloaders as typed values, rather than strings and globals, are [honest signatures](../philosophy/honest-signatures.md) for a part of the JVM that usually has none.
+
 Soundness treats a classpath resource as a path like any other, read with the same
 polymorphic `read`, and treats a classpath as an immutable value whose entries can be
 listed. A classloader is chosen explicitly, as a contextual value, rather than reached for
@@ -32,6 +34,7 @@ implicitly. Everything comes from the `soundness` package, with a classloader in
 import soundness.*
 import classloaders.threadContextClassloader
 import strategies.throwUnsafely
+import systems.javaBaseSystem
 ```
 
 ### Reading a resource
@@ -60,8 +63,9 @@ so a program can check for an optional resource rather than handle a failure.
 A resource reference names a path, not a thing: two classloaders may resolve the same path to
 different resources, or one to nothing at all, which is why the choice cannot be implicit in the
 reference and has to come from the context in which it is read. Which classloader resolves a
-resource is decided by the `given Classloader` in scope, chosen by import. The thread's context classloader suits most applications; the system, platform
-and Scala classloaders are the other standard choices:
+resource is decided by the `given Classloader` in scope, chosen by import. The thread's context
+classloader suits most applications; the system, platform and Scala classloaders are the other
+standard choices:
 
 ```scala
 import classloaders.systemClassloader
@@ -70,21 +74,22 @@ import classloaders.systemClassloader
 ### Inspecting the classpath
 
 A `LocalClasspath` is the classpath as a list of entries. The running program's classpath is
-the value of the `java.class.path` property, which decodes to one:
+the value of the `java.class.path` property, which decodes to one — reading the property needs
+the `System` in scope, imported above:
 
 ```scala
 val classpath = System.properties.java.`class`.path().as[LocalClasspath]
 ```
 
-Its `entries` are typed: a `ClasspathEntry` is a `Directory`, a `Jar`, a `Url`, or the
-`JavaRuntime` that supplies the JDK's own classes:
+Its `entries` are typed: a `Classpath.Entry` is a `Directory`, a `Jar`, a `Url`, or the
+`JavaRuntime` that supplies the JDK's own classes — and a *local* classpath's entries are
+statically known to exclude URLs, so a match over them need not handle that case:
 
 ```scala
-classpath.entries.each:
-  case ClasspathEntry.Directory(path) => Out.println(t"directory $path")
-  case ClasspathEntry.Jar(path)       => Out.println(t"archive $path")
-  case ClasspathEntry.Url(url)        => Out.println(t"url $url")
-  case ClasspathEntry.JavaRuntime     => Out.println(t"the Java runtime")
+classpath.entries.map:
+  case Classpath.Entry.Directory(path) => t"directory $path"
+  case Classpath.Entry.Jar(path)       => t"archive $path"
+  case Classpath.Entry.JavaRuntime     => t"the Java runtime"
 ```
 
 ### Loading services
@@ -94,7 +99,7 @@ mechanism finds the implementations of an interface declared on the classpath. `
 returns them, typed to the service:
 
 ```scala
-classpath.services[TestService].map(_.name)
+classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme)   // Set("file", "jar", …)
 ```
 
 ### Running under a classloader
@@ -104,6 +109,9 @@ classloader, restoring the previous one afterward. This scopes a change of class
 exactly the code that needs it — loading a plugin, say — rather than leaving it set:
 
 ```scala
-classloader.use:
-  // code here resolves classes against `classloader`
+classloaders.systemClassloader.use:
+  Classloader[Option[Int]]   // resolved against the system classloader
 ```
+
+`Classloader[T]` finds the classloader that loaded a type, which is how a plugin's own
+classloader is reached from one of its classes.
