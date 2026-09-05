@@ -21,6 +21,8 @@ graph libraries carry the weight of arbitrary graphs — cycles included — and
 rather than values; more often, projects hand-roll a topological sort over a `Map` and inherit its
 edge cases.
 
+A graph that cannot be constructed with a cycle is an [impossible state](../philosophy/impossible-states.md) ruled out at the point of construction.
+
 A `Dag` is a value: immutable, transformable, and specific to the acyclic case, so a cycle is a
 typed error rather than an infinite loop. Everything comes from the `soundness` package:
 
@@ -35,11 +37,15 @@ A `Dag` is built from edges, from nodes with their dependency sets, or by explor
 node through a dependency function:
 
 ```scala
-val dag = Dag(8 -> 4, 8 -> 6, 6 -> 3, 6 -> 2, 4 -> 2)
+val dag = Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2), 3 -> Set(), 2 -> Set())
 
 12.explore(n => (1 until n).filter(n % _ == 0).to(Set))
 // the divisibility graph beneath 12
 ```
+
+The first form names every node with its dependencies; `Dag(8 -> 4, 8 -> 6, 6 -> 3)` builds a
+graph from edges alone, and `Dag(Set(2, 3, 4, 6, 8))(dependencies)` from a set of nodes and a
+function giving each one's dependencies.
 
 ### Ordering and reachability
 
@@ -47,14 +53,14 @@ val dag = Dag(8 -> 4, 8 -> 6, 6 -> 3, 6 -> 2, 4 -> 2)
 node after its dependencies — and reachability queries slice the graph around a node:
 
 ```scala
-dag.sorted             // dependencies before dependents
-dag.reachable(8)       // everything 8 depends on, transitively
+dag.sorted             // List(2, 3, 4, 6, 8): dependencies before dependents
+dag.reachable(8)       // Set(2, 3, 4, 6): everything 8 depends on, transitively
 dag.descendants(8)     // the sub-graph beneath 8
 dag.invert             // the graph with every edge reversed
 ```
 
 `ancestors` is the counterpart of `descendants`, giving what depends on a node rather than what it
-depends on, and `lineage` gives both together — the node's whole causal neighbourhood, which is
+depends on, and `lineage` gives both together — the node's whole causal neighborhood, which is
 what "why is this here, and what breaks if I remove it" asks for.
 
 `sources` gives the nodes with no dependencies, which is where a build or an installation starts,
@@ -70,7 +76,7 @@ A traversal computes a value for every node from the values of the nodes it depe
 order that guarantees the dependencies are computed first:
 
 ```scala
-dag.traversal[Int]((childValues, node) => childValues.sum + 1)
+dag.traversal[Int]((childValues, node) => childValues.sum + 1)   // one more than the sum beneath
 ```
 
 This is the shape of most real work over a dependency graph — computing a build order's costs,
