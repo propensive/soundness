@@ -9,7 +9,7 @@ the HTML specification as the code compiles, so a `<br>` given children, or a `<
 given a `src` attribute, is a compile error rather than malformed output.
 
 The same representation reads HTML back from text, files, or a URL, matches it with
-patterns, and serialises it — directly or as a stream. Above the level of individual
+patterns, and serializes it — directly or as a stream. Above the level of individual
 tags, whole pages can be assembled from reusable parts: a masthead, a hero, a set of
 panels, each contributing its own markup, styles, and document metadata.
 
@@ -27,7 +27,7 @@ Soundness encodes the specification in the types, so an invalid document becomes
 afterwards. Each tag is a value whose type knows its name, what it may contain, and what
 attributes it admits, and the rules of the specification are enforced where the markup is
 written. The vocabulary, the
-containment rules, and the parsing and emitting behaviour all come from a contextual
+containment rules, and the parsing and emitting behavior all come from a contextual
 description of the specification — currently the
 [WHATWG HTML Living Standard](https://html.spec.whatwg.org/), what most people mean by
 "HTML" today — which other specifications could replace.
@@ -38,6 +38,8 @@ specification and the tag vocabulary it defines:
 ```scala
 import soundness.*
 import htmlDoms.whatwg.*
+import strategies.throwUnsafely
+import attributives.textAttributive
 ```
 
 An HTML value has the general type `Html`. Its nodes are `Element`s, `Comment`s,
@@ -53,7 +55,7 @@ adds children:
 
 ```scala
 Br                                  // <br>
-Img(src = "image.jpg")              // <img src="image.jpg">
+Img(src = t"image.jpg")             // <img src="image.jpg">
 Div(Hr, P("Hello world"))           // <div><hr><p>Hello world</p></div>
 Textarea(name = "details", rows = 5)("Details go here")
 // <textarea name="details" rows="5">Details go here</textarea>
@@ -99,7 +101,7 @@ each is checked in its position:
 
 ```scala
 val content = t"important"
-val location = t"dog.jpg"
+val location = url"https://example.com/dog.jpg"
 
 h"<p>$content</p>"          // a body-content substitution
 h"<img src=$location>"      // an attribute-value substitution
@@ -107,7 +109,8 @@ h"<!--$content-->"          // a comment substitution
 ```
 
 Body content must be HTML acceptable as a child of the enclosing element; an
-attribute value must suit the attribute; a comment must be showable.
+attribute value must suit the attribute — `src` takes a URL, so a `Text` in its place would be
+rejected — and a comment must be showable.
 
 ### Attributes
 
@@ -123,23 +126,22 @@ Img(width = pixels)   // <img width="64">
 ```
 
 The set of types accepted out of the box is still incomplete. Until it is filled, the
-simplest course is to make `Text` acceptable for every attribute with one import:
-
-```scala
-import attributives.textAttributive
-```
+simplest course is to make `Text` acceptable for every attribute with one import —
+`attributives.textAttributive`, already in scope above, which is what lets `src = "image.jpg"`
+stand where a URL is expected.
 
 The `class` attribute is awkward, because `class` is a Scala keyword. Rather than
 write it in backticks, name the class as a method on the tag:
 
 ```scala
-given (Stylesheet of "info") = Stylesheet()
+import stylesheets.uncheckedClasses
+
 P.info("body text")   // <p class="info">body text</p>
 ```
 
-The contextual `Stylesheet` value is what makes the class name legitimate, so a
-mistyped class is caught. Where that check is not wanted, freeform class names are
-enabled with `import stylesheets.uncheckedClasses`.
+`uncheckedClasses` permits any class name. Binding a [stylesheet](css.md) instead makes the
+names it defines the only legitimate ones, so a mistyped class is caught as the code compiles,
+and a name the stylesheet declares as an id renders as one.
 
 ### Fragments
 
@@ -158,7 +160,7 @@ list items declares itself to produce `"li"` content:
 
 ```scala
 given (List[Text] is Renderable in "li") =
-  list => Fragment(list.map(Li(_))*)
+  list => Fragment(list.map(Li(_)).nodes*)
 ```
 
 With that in scope a `List[Text]` can be rendered directly, placed inside a `<ul>`, or
@@ -178,7 +180,7 @@ marks which end — and an attribute is added, or replaced, by assignment:
 
 ```scala
 val image = h"""<img src="puppy.jpg">"""
-val described = image.alt = "An image of a young dog"
+val described = image.alt = t"An image of a young dog"
 // <img src="puppy.jpg" alt="An image of a young dog">
 ```
 
@@ -191,7 +193,7 @@ resource — with `read` or `load`. `load` reads a whole document, returning a
 `Document[Html]` with a `Doctype` header and a root `<html>` node:
 
 ```scala
-val document = url"https://example.com/index.html".load[Html]
+val document = t"<html><head><title>Hello</title></head><body><p>Hello</p></body></html>".load[Html]
 ```
 
 `read` is for fragments. Called as `read[Html]`, it accepts anything from a single
@@ -238,10 +240,13 @@ real HTML against the DOM structure rather than the source text — so a pattern
 with closing tags matches input written without them:
 
 ```scala
+val html = h"<li>two</li>"
+
 html match
   case h"<li>one</li>" => 1
   case h"<li>two</li>" => 2
   case _               => Unset
+// 2
 ```
 
 Holes bind the pieces a pattern captures. Because an `<li>` may hold text or elements,
@@ -290,8 +295,10 @@ which compose in the order the traits are mixed:
 
 ```scala
 case class HomePage(content: Html of Flow)
-extends Archetype, Masthead, Hero, StandardMetadata:
-  def pageTitle = t"Welcome"
+extends Archetype, Masthead, Hero(t"Welcome"), StandardMetadata(t"A home page"):
+  override def pageTitle = t"Welcome"
+
+HomePage(P("Hello world")).document
 ```
 
 The assembled value renders to a `Document[Html]` with a leading doctype and an inline
