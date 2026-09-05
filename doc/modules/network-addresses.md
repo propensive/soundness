@@ -18,6 +18,8 @@ between them exist only in the programmer's head, and a value that is not really
 travels through the program until something tries to use it and fails — a validation done late, if at
 all, and far from where the bad value entered.
 
+An address that cannot be constructed invalid is [safety by construction](../philosophy/safety-by-construction.md) in its simplest form.
+
 Soundness gives each identifier its own type, and validates it at the earliest possible moment: a
 literal as it compiles, and text on the instant it is decoded. A `Hostname`, an `EmailAddress`, a
 `Port` are known to be well-formed, and their parts are typed too — a URL's port is a number, its host
