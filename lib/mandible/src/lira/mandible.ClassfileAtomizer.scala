@@ -94,23 +94,23 @@ object ClassfileAtomizer:
   // The same tag-length-value scheme `tasty/1` uses (`tasty.md` §7): unsigned LEB128 lengths,
   // length-prefixed UTF-8 strings, single-character constructor tags.
 
-  private def uvarint(out: java.io.ByteArrayOutputStream, value0: Long): Unit =
+  private def uvarint(out: Scribe[Byte], value0: Long): Unit =
     var value = value0
 
     while value >= 0x80L do
-      out.write(((value & 0x7f) | 0x80).toInt)
+      out.append(((value & 0x7f) | 0x80).toByte)
       value >>>= 7
 
-    out.write(value.toInt)
+    out.append(value.toByte)
 
-  private def utf8(out: java.io.ByteArrayOutputStream, text: Text): Unit =
-    val bytes = text.s.getBytes("UTF-8").nn
+  private def utf8(out: Scribe[Byte], text: Text): Unit =
+    val bytes = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
     uvarint(out, bytes.length.toLong)
-    out.write(bytes)
+    out.append(bytes)
 
-  private def tag(out: java.io.ByteArrayOutputStream, char: Char): Unit = out.write(char.toInt)
+  private def tag(out: Scribe[Byte], char: Char): Unit = out.append(char.toByte)
 
-  private def optional(out: java.io.ByteArrayOutputStream, value: Optional[Text]): Unit =
+  private def optional(out: Scribe[Byte], value: Optional[Text]): Unit =
     value.lay(tag(out, '0')):
       text =>
         tag(out, '1')
@@ -118,14 +118,12 @@ object ClassfileAtomizer:
 
   // The count is a length prefix, so it must precede the elements; the extra walk it costs is
   // the same order as the write that follows it.
-  private def texts(out: java.io.ByteArrayOutputStream, values: List[Text]): Unit =
+  private def texts(out: Scribe[Byte], values: List[Text]): Unit =
     uvarint(out, values.size.toLong)
     values.each(utf8(out, _))
 
-  private def hash(encode: java.io.ByteArrayOutputStream => Unit): Data =
-    val out = java.io.ByteArrayOutputStream()
-    encode(out)
-    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.unsafeFrozen(out.toByteArray.nn))
+  private def hash(encode: Scribe[Byte] => Unit): Data =
+    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.collect[Byte]()(encode))
 
   // --- the presented member set -----------------------------------------------------------------
 

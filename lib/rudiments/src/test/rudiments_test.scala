@@ -1846,6 +1846,54 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       . assert(_ == false)
 
+    suite(m"Array.collect tests"):
+      test(m"an unsized scribe yields only what was written"):
+        Array.collect[Int](): scribe =>
+          scribe.append(1)
+          scribe.append(2)
+          scribe.append(3)
+
+        . length
+      . assert(_ == 3)
+
+      // The point of the type: appending past the hint grows rather than clamping, which is
+      // what `Array.scribe`'s fixed lender does and why `ByteArrayOutputStream` was reached for.
+      test(m"an unsized scribe grows past its hint"):
+        Array.collect[Int](2): scribe =>
+          var i = 0
+
+          while i < 100 do
+            scribe.append(i)
+            i += 1
+
+        . length
+      . assert(_ == 100)
+
+      test(m"a grown scribe keeps every element in order"):
+        val grown = Array.collect[Int](2): scribe =>
+          var i = 0
+
+          while i < 100 do
+            scribe.append(i*2)
+            i += 1
+
+        grown.at(Ordinal.zerary(99))
+      . assert(_ == 198)
+
+      test(m"an unsized scribe with no writes is empty"):
+        Array.collect[Int]()(scribe => ()).length
+      . assert(_ == 0)
+
+      // The fixed lender must be unaffected: it still returns an array of exactly the size
+      // asked for, and its append still clamps rather than growing.
+      test(m"the sized lender still returns exactly its size"):
+        Array.scribe[Int](5): scribe =>
+          extent => scribe.append(1)
+
+        . length
+      . assert(_ == 5)
+
+
 object AtomicProbes:
   def intSince(a: Atomic[Int]): Int = a.since(_ + 1)
   def intEre(a: Atomic[Int]): Int = a.ere(_ + 1)

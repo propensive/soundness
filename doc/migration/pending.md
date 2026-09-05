@@ -209,6 +209,17 @@ not yet been recorded here.
   `Int` rather than `Ordinal`, as `Array`'s `apply`/`update`/`readUnchecked` do, because
   `denominative` sits above `proscenium`. (#1960)
 
+## concordance
+
+- `rudiments.Scribe` can now grow. `Array.collect[element](hint)(lambda)` lends an unsized
+  scribe which extends as it is written and yields exactly what was written, where
+  `Array.scribe[element](size)(lambda)` continues to lend a fixed-size scribe, to return an array
+  of exactly `size`, and to clamp rather than grow. Existing `Array.scribe` behaviour is
+  unchanged. (#1960)
+- `rudiments.Scribe#append` gains two bulk overloads at the cursor: `append(source)` and
+  `append(source, from, count)`, both taking `Array[element]^{}`. `place` still requires an
+  `Ordinal in scribe.type` and so remains available only to a sized scribe. (#1960)
+
 ## frontier
 
 - `frontier.context.explainMissingContext` and `soundness.explainMissingContext` no longer
