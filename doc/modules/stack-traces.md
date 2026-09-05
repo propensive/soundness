@@ -17,6 +17,8 @@ compiler's, not the programmer's. For error *values* — the kind [Soundness err
 are — the trace should be a value too: comparable, transformable, renderable where and how the
 program chooses.
 
+A trace as an immutable value that can be trimmed, resolved and rendered follows [immutability](../philosophy/immutability.md) into diagnostics.
+
 `StackTrace` is that value. Everything comes from the `soundness` package:
 
 ```scala
@@ -29,10 +31,11 @@ Any `Throwable` converts to a `StackTrace` — its class, its message, its frame
 another `StackTrace`:
 
 ```scala
+val exception = Exception("boom")
 val trace = exception.stackTrace
 
-trace.frames.head.method   // the topmost method, demangled
-trace.cause                // an Optional[StackTrace]
+trace.frames.prim.let(_.method)   // the topmost method, demangled
+trace.cause                       // an Optional[StackTrace]
 ```
 
 `crop` and `drop` trim frames — the machinery below a test framework's entry point, say — so a
@@ -52,7 +55,7 @@ Whether Soundness's own errors capture traces at all is the `Diagnostics` choice
 
 Demangling can only tidy a compiled name up. `$anonfun$3` becomes `λ₃`, which says a lambda ran
 but not *which* lambda — and the names that most need explaining are exactly the ones the compiler
-mints after its output is pickled: anonymous functions, initialisers, bridges, specialisations. No
+mints after its output is pickled: anonymous functions, initializers, bridges, specializations. No
 amount of rewriting recovers them, because the information is not in the name.
 
 Position does what name cannot. The compiler records the extent of every definition, so the line a
@@ -69,20 +72,24 @@ definition's own source name, and what kind of definition it is. `displayClass` 
 where they are not, so a renderer needs no branch of its own:
 
 ```scala
-frame.displayClass    // the enclosing definitions, in source terms
-frame.displayMethod   // the definition's own name
-frame.source.let(_.kind)
+trace.frames.prim.let: frame =>
+  frame.displayClass         // the enclosing definitions, in source terms
+  frame.displayMethod        // the definition's own name
+  frame.source.let(_.kind)   // Kind.Method, Kind.Lambda, Kind.Constructor, …
 ```
 
 The `Kind` distinguishes a method from a lambda, a value, a constructor, an extension or a default
 argument — and, separately, marks the kinds that are pure plumbing: bridges, forwarders,
-initialisers and specialisations, which `plumbing` reports so that a renderer can dim or drop
+initializers and specializations, which `plumbing` reports so that a renderer can dim or drop
 them.
 
 Resolution costs one file read per top-level class named in the trace, so it is opt-in rather than
-automatic. A trace already in hand is resolved explicitly instead of by import:
+automatic. A trace already in hand is resolved explicitly instead of by import, through whichever
+[classloader](classpath.md) can find the compiled classes:
 
 ```scala
+import classloaders.threadContextClassloader
+
 trace.resolved
 ```
 
@@ -97,8 +104,10 @@ A `Codepoint` is the source file and line of a call site, captured automatically
 asks for one as a given:
 
 ```scala
-def note(message: Text)(using codepoint: Codepoint): Unit =
-  record(t"${codepoint.text}: $message")   // e.g. app.scala:42
+def note(message: Text)(using codepoint: Codepoint): Text =
+  t"${codepoint.text}: $message"   // e.g. app.scala:42: message
+
+note(t"checkpoint")
 ```
 
 This is how Soundness's logs, tests and caches know where they were called from, without any caller
