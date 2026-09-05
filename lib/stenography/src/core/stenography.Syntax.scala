@@ -465,7 +465,6 @@ object Syntax:
         case termRef@TermRef(prefix, name) =>
           apply(prefix) match
             case value@Value(designator) =>
-              if repr.toString.contains("inline") then System.out.nn.println(name)
               if isPackage(name) then value else Value(Designator.Term(designator, name))
 
             case simple@Simple(designator) =>
