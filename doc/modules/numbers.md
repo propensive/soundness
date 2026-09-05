@@ -31,7 +31,8 @@ numeric type is expected:
 
 ```scala
 import soundness.*
-import language.experimental.genericNumberLiterals
+import scala.language.experimental.genericNumberLiterals
+import scala.language.experimental.into
 ```
 
 ### Numeric types
@@ -41,8 +42,9 @@ methods:
 
 ```scala
 val count: U64 = 123
-val small: U8 = count.u8     // narrower, explicit
+val small: U8 = 200
 val signed: S32 = 42
+val widened: S32 = small.s32   // wider, and so always safe
 ```
 
 The name carries the meaning: `U*` is unsigned, `S*` is two's-complement signed, `F*` is
@@ -65,7 +67,7 @@ big + big   // raises Arithmetic.Error rather than wrapping negative
 
 Division by zero is checked the same way, by importing `arithmeticOptions.checkedDivision`,
 after which `/` may raise a `Arithmetic.Error`. Where the check is not imported, the operations
-keep their bare machine behaviour and cost nothing.
+keep their bare machine behavior and cost nothing.
 
 The two checks are independent, so a program that must not wrap but is content to trust its
 divisors imports only the first. Both are `inline`, and the unchecked forms compile to the same
@@ -176,7 +178,7 @@ Division cannot always be exact, so it says what it wants: a scale and a roundin
 rather than assumed.
 
 ```scala
-left.divide(right, scale = 10, Decimal.Rounding.HalfEven)
+Decimal(1, 0).divide(Decimal(3, 0), scale = 10, Decimal.Rounding.HalfEven)   // 0.3333333333
 ```
 
 The implementation is pure Scala rather than a wrapper over the JVM's `BigDecimal`, so decimals
