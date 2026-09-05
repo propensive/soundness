@@ -32,8 +32,6 @@
                                                                                                   */
 package vivisection
 
-import java.util.concurrent.atomic as juca
-
 import scala.caps
 
 import anthology.*
@@ -50,7 +48,7 @@ import vacuous.*
 object Evaluator:
   // Names each synthetic evaluation class distinctly, so a session never redefines a top-level
   // name (which `anthology`'s retained symbol table forbids).
-  private val counter: juca.AtomicInteger = juca.AtomicInteger(0)
+  private val counter: Atomic[Int] = Atomic(0)
 
   // Injects compiled classfiles into a running debuggee. JDWP has no define-class command, so the
   // bytes are shipped as a `byte[]` allocated and filled over the wire, then handed to the target
@@ -166,7 +164,7 @@ extends caps.ExclusiveCapability:
         val values = connection.slotValues(thread, frame, requests)
         live.zip(values).map: (slot, value) => (slot.name, slot.signature, value)
 
-    val className = t"vivisection$$eval$$${Evaluator.counter.getAndIncrement()}"
+    val className = t"vivisection$$eval$$${Evaluator.counter.ere(_ + 1)}"
     val ownerSignature = connection.signature(location.cls)
     val pkg = packageOf(ownerSignature)
 

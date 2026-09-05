@@ -33,8 +33,6 @@
 package vivisection
 
 import java.lang as jl
-import java.util.concurrent.atomic as juca
-
 import scala.caps
 import scala.collection.concurrent as scc
 
@@ -112,8 +110,8 @@ private[vivisection] class DapSession(emit: Json => Unit)
   // session (see `Connection.Slot` for the underlying pattern).
   private val self: DapSession = caps.unsafe.unsafeAssumePure(this)
 
-  private val outgoing: juca.AtomicInteger = juca.AtomicInteger(0)
-  private val counter: juca.AtomicInteger = juca.AtomicInteger(0)
+  private val outgoing: Atomic[Int] = Atomic(0)
+  private val counter: Atomic[Int] = Atomic(0)
 
   // The open session, laundered into a field: the session task below holds its loan open until
   // `disconnect`, so the field never outlives it.
@@ -153,7 +151,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
   @caps.unsafe.untrackedCaptures
   private var watchRequests: List[DapSession.RequestSlot] = List()
 
-  private def nextSeq(): Int = outgoing.incrementAndGet()
+  private def nextSeq(): Int = outgoing.since(_ + 1)
 
   // Tears down any open session — called when the transport loop ends, so a client that drops
   // the connection without a `disconnect` request still releases the debuggee and unwinds the
@@ -178,7 +176,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
         id
 
       case scala.None =>
-        val id = counter.incrementAndGet()
+        val id = counter.since(_ + 1)
 
         threadIds.putIfAbsent(thread.long, id) match
           case scala.Some(existing) =>
@@ -324,7 +322,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
           bySource.remove(source).foreach(_.each { slot => safely(slot.handle.clear()) })
 
           val created: List[(DapSession.SourceSlot, Int)] = arguments.breakpoints.map: spec =>
-            val id = counter.incrementAndGet()
+            val id = counter.since(_ + 1)
 
             // Laundered: the callback captures this adapter, which the breakpoint's
             // registries cannot name, but it dies with the session.
@@ -373,7 +371,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
           functionRequests.each: slot => safely(slot.handle.clear())
 
           val created: List[DapSession.SourceSlot] = arguments.breakpoints.map: spec =>
-            val id = counter.incrementAndGet()
+            val id = counter.since(_ + 1)
             val dot = spec.name.s.lastIndexOf('.')
             val cls = if dot < 0 then spec.name else spec.name.s.substring(0, dot).nn.tt
             val method = if dot < 0 then t"" else spec.name.s.substring(dot + 1).nn.tt
@@ -475,7 +473,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
               val file: Optional[Text] = position.source
               val path: Optional[Text] = position.path
               val cls: Optional[Text] = position.cls
-              val id = counter.incrementAndGet()
+              val id = counter.since(_ + 1)
               frames(id) = (arguments.threadId, frame, location)
               val source = file.let(Dap.Source(_, path))
               val hint: Optional[Text] = if position.inlined then t"subtle" else Unset
@@ -498,7 +496,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
         frames.get(arguments.frameId) match
           case scala.Some((thread, frame, location)) =>
-            val ref = counter.incrementAndGet()
+            val ref = counter.since(_ + 1)
             nodes(ref) = DapSession.Node.Locals(thread, frame, location)
             respond(request, Dap.ScopesBody(List(Dap.Scope(t"Locals", ref))).in[Json])
 
@@ -705,7 +703,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
   private def variableInfo(thread: Int, variable: Variable): Dap.VariableInfo =
     val ref = variable.value match
       case snapshot @ (Variable.Snapshot.Obj(_, _) | Variable.Snapshot.Arr(_, _, _, _)) =>
-        val id = counter.incrementAndGet()
+        val id = counter.since(_ + 1)
         nodes(id) = DapSession.Node.Structure(thread, snapshot)
         id
 

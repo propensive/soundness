@@ -42,145 +42,176 @@ import vacuous.*
 // performs it. Every operation is `inline` and every type erases to the Java class it wraps, so
 // the bytecode is what the raw Java call would have produced.
 //
-// Nested inside two objects, never declared at package level: a top-level opaque type is lifted
+// Each is named for what it holds — `Atomic.Int`, `Atomic.Bool`, `Atomic.Ref` — rather than for
+// a role. An earlier arrangement called them `Count`, `Tally` and `Flag`, which read well but
+// asserted a distinction that does not exist: nothing in `Count` says thirty-two bits and
+// nothing in `Tally` says sixty-four, so the one thing a reader needs from the name was the one
+// thing it withheld.
+//
+// `Int` and `Long` shadow the primitives within this object, which is why it says `scala.Int`
+// wherever the primitive is meant. The shadowing does not reach a normal user, who writes
+// `Atomic.Int`; it would reach anyone writing `import Atomic.*`, so do not.
+//
+// Nested inside an object, never declared at package level: a top-level opaque type is lifted
 // into a synthesized `$package` wrapper, which the compiler warns about and whose abstraction
-// leaks (see `ultimatum.internal`). Nesting under `Atomic` is also what frees the names —
-// `Counter`, `Tally`, `Cell` and `Flag` are each taken at the top level of the `soundness`
-// namespace — while `Atomic.Count` and `Atomic.Flag` read as the English they are.
+// leaks (see `ultimatum.internal`).
 //
-// The extensions sit beside the opaque types rather than inside each companion, following
-// `hypotenuse.internal`: an opaque type's prefix is an anchor of its implicit scope, so
-// `object Atomic` is searched for a member of an `Atomic.Count` with no import. Unlike
-// hypotenuse, no `@targetName` is needed: the five types erase to five *different* Java
-// classes, where `U32` and `S32` both erase to `Int`.
-//
-// `Atomic[value]` is a match type over the five concrete types, not a representation: the
-// distinction is what makes it work. A match type AS the representation cannot reduce for an
-// abstract type parameter, and `contingency.Accrual.AccrueTactic` holds a cell over an abstract
-// `accrual` — so the operations would have nothing to dispatch on. Layered *over* concrete types
-// it is pure spelling: `Atomic[Int]` reduces to `Atomic.Count` and picks up `Count`'s own
-// extensions, while an abstract context writes `Atomic.Cell[accrual]` and loses nothing.
-//
-// Its value is that it makes the unboxed spelling the obvious one. `Atomic.Cell[Int]` is legal
-// and boxes every write; `Atomic[Int]` is what a reader reaches for, and is an `AtomicInteger`.
-//
-// `Byte`, `Short`, `Char`, `Float` and `Double` fall to `Cell` and therefore box: the JDK has no
-// unboxed atomic for them. `Double` could be packed into an `AtomicLong` through
-// `doubleToRawLongBits` if a call site ever needs it; none does.
+// Not wrapped, and deliberately: `LongAdder` and the accumulators, whose `sum` is not
+// linearizable and which therefore cannot answer `ere`/`since`; `AtomicMarkableReference` and
+// `AtomicStampedReference`, which carry a second field and so do not fit this shape; and the
+// three `*FieldUpdater`s, which are a reflective pre-`VarHandle` workaround with no opaque-type
+// analogue. None is used anywhere in the collection.
 object Atomic:
-  opaque type Count        = juca.AtomicInteger
-  opaque type Tally        = juca.AtomicLong
-  opaque type Flag         = juca.AtomicBoolean
-  opaque type Cell[value]  = juca.AtomicReference[value]
-  opaque type Cells[value] = juca.AtomicReferenceArray[Optional[value]]
+  opaque type Int          = juca.AtomicInteger
+  opaque type Long         = juca.AtomicLong
+  opaque type Bool         = juca.AtomicBoolean
+  opaque type Ref[value]   = juca.AtomicReference[value]
+  opaque type Ints         = juca.AtomicIntegerArray
+  opaque type Longs        = juca.AtomicLongArray
+  opaque type Refs[value]  = juca.AtomicReferenceArray[Optional[value]]
 
   // Mirrors the match type's arms, so `Atomic(0)` is an `Atomic[Int]` and needs no type
   // ascription. Note that the ARGUMENT drives the choice, not an explicit type argument:
-  // `Atomic[Int](0)` applies the generic arm and yields `Cell[Int]`, which is boxed and does
-  // not conform to `Atomic[Int]`. It is a type error rather than a silent boxing, but write
+  // `Atomic[Int](0)` applies the generic arm and yields `Ref[Int]`, which is boxed and does not
+  // conform to `Atomic[Int]`. It is a type error rather than a silent boxing, but write
   // `Atomic(0)`.
-  def apply(initial: Int): Count = juca.AtomicInteger(initial)
-  def apply(initial: Long): Tally = juca.AtomicLong(initial)
-  def apply(initial: Boolean): Flag = juca.AtomicBoolean(initial)
-  def apply[value](initial: value): Cell[value] = juca.AtomicReference(initial)
+  def apply(initial: scala.Int): Int = juca.AtomicInteger(initial)
+  def apply(initial: scala.Long): Long = juca.AtomicLong(initial)
+  def apply(initial: Boolean): Bool = juca.AtomicBoolean(initial)
+  def apply[value](initial: value): Ref[value] = juca.AtomicReference(initial)
 
-  object Count:
-    def apply(initial: Int = 0): Count = juca.AtomicInteger(initial)
+  object Int:
+    def apply(initial: scala.Int = 0): Int = juca.AtomicInteger(initial)
 
-    // The transition operations live in each companion rather than beside the opaque types,
-    // and that placement is load-bearing rather than cosmetic. A macro expanded from a DIRECT
-    // member of the object which declares the opaque types makes every incremental rebuild
-    // that touches `atomicMacros` fail with "Cyclic reference involving val <import>" — and
-    // stay failing until a clean. Expanded one level in, from the companion, it does not.
-    // `hypotenuse.internal` is arranged the same way, with its macro calls inside `object
-    // U32` rather than beside `opaque type U32`, and does not have the defect.
-    //
-    // The companion is in the opaque type's implicit scope, so the extensions resolve exactly
-    // as they would have.
-    extension (count: Count)
-      // The value this call displaced, and the value it installed. The transition is written
-      // as a lambda literal whose shape is recognised at compiletime: `_ + 1` becomes
+    // Every extension lives in a companion rather than beside the opaque types, and for the
+    // transition operations that placement is load-bearing rather than cosmetic. A macro
+    // expanded from a DIRECT member of the object which declares the opaque types makes every
+    // incremental rebuild that touches `atomicMacros` fail with "Cyclic reference involving val
+    // <import>" — and stay failing until a clean. Expanded one level in, from the companion, it
+    // does not. `hypotenuse.internal` is arranged the same way, with its macro calls inside
+    // `object U32` rather than beside `opaque type U32`, and does not have the defect. The rest
+    // follow for uniformity; a companion is in its type's implicit scope either way, so
+    // resolution is unaffected.
+    extension (int: Int)
+      inline def apply(): scala.Int = int.get()
+      inline def update(value: scala.Int): Unit = int.set(value)
+
+      // An ordered (release) store: cheaper than `update`, and ordered before every subsequent
+      // store, which is what makes a single-producer ring's slot write safe to be seen only
+      // through the index published after it. Not a substitute for `update` where the store
+      // itself is the publication point. zephyrine's own word for this is "publish".
+      inline def publish(value: scala.Int): Unit = int.lazySet(value)
+
+      inline def swap(value: scala.Int): scala.Int = int.getAndSet(value)
+
+      inline def replace(expected: scala.Int, updated: scala.Int): Boolean =
+        int.compareAndSet(expected, updated)
+
+      // The value this call displaced, and the value it installed. The transition is written as
+      // a lambda literal whose shape is recognised at compiletime: `_ + 1` becomes
       // `getAndIncrement`/`incrementAndGet`, `_ + n` becomes `getAndAdd`/`addAndGet`, a
       // constant becomes `getAndSet`, and anything else becomes a compare-and-set retry loop
       // with the transition beta-reduced into it. Nothing is allocated either way.
-      inline def ere(inline transition: Int => Int): Int =
-        ${atomicMacros.count('count, 'transition, true)}
+      inline def ere(inline transition: scala.Int => scala.Int): scala.Int =
+        ${atomicMacros.int('int, 'transition, true)}
 
-      inline def since(inline transition: Int => Int): Int =
-        ${atomicMacros.count('count, 'transition, false)}
+      inline def since(inline transition: scala.Int => scala.Int): scala.Int =
+        ${atomicMacros.int('int, 'transition, false)}
 
-      // Setting is a transition with nothing to read, so it needs no lambda: `count.ere(5)`
-      // rather than `count.ere(_ => 5)`. There is deliberately no `since` counterpart — it
-      // would return its own argument. Setting without wanting the old value is `count() = 5`.
-      inline def ere(inline supplied: Int): Int = count.getAndSet(supplied)
+      // Setting is a transition with nothing to read, so it needs no lambda: `int.ere(5)` rather
+      // than `int.ere(_ => 5)`. There is deliberately no `since` counterpart — it would return
+      // its own argument. Setting without wanting the old value is `int() = 5`.
+      inline def ere(inline supplied: scala.Int): scala.Int = int.getAndSet(supplied)
 
-  object Tally:
-    def apply(initial: Long = 0L): Tally = juca.AtomicLong(initial)
+  object Long:
+    def apply(initial: scala.Long = 0L): Long = juca.AtomicLong(initial)
 
-    // In the companion for the reason given on `Count`'s: a macro expanded from a direct member
-    // of the object declaring the opaque types poisons incremental rebuilds.
-    extension (tally: Tally)
-      inline def ere(inline transition: Long => Long): Long =
-        ${atomicMacros.tally('tally, 'transition, true)}
+    extension (long: Long)
+      inline def apply(): scala.Long = long.get()
+      inline def update(value: scala.Long): Unit = long.set(value)
+      inline def publish(value: scala.Long): Unit = long.lazySet(value)
+      inline def swap(value: scala.Long): scala.Long = long.getAndSet(value)
 
-      inline def since(inline transition: Long => Long): Long =
-        ${atomicMacros.tally('tally, 'transition, false)}
+      inline def replace(expected: scala.Long, updated: scala.Long): Boolean =
+        long.compareAndSet(expected, updated)
 
-      inline def ere(inline supplied: Long): Long = tally.getAndSet(supplied)
+      inline def ere(inline transition: scala.Long => scala.Long): scala.Long =
+        ${atomicMacros.long('long, 'transition, true)}
 
-  object Flag:
-    def apply(initial: Boolean = false): Flag = juca.AtomicBoolean(initial)
+      inline def since(inline transition: scala.Long => scala.Long): scala.Long =
+        ${atomicMacros.long('long, 'transition, false)}
 
-    // `flag.ere(_ => true)` returning `false` is "I won the race to close", which is what every
-    // one-shot flag in the collection is really asking; no `raise`/`lower` pair is needed on
-    // top of it.
-    extension (flag: Flag)
+      inline def ere(inline supplied: scala.Long): scala.Long = long.getAndSet(supplied)
+
+  object Bool:
+    def apply(initial: Boolean = false): Bool = juca.AtomicBoolean(initial)
+
+    extension (bool: Bool)
+      inline def apply(): Boolean = bool.get()
+      inline def update(state: Boolean): Unit = bool.set(state)
+      inline def publish(state: Boolean): Unit = bool.lazySet(state)
+      inline def swap(state: Boolean): Boolean = bool.getAndSet(state)
+
+      inline def replace(expected: Boolean, updated: Boolean): Boolean =
+        bool.compareAndSet(expected, updated)
+
       inline def ere(inline transition: Boolean => Boolean): Boolean =
-        ${atomicMacros.flag('flag, 'transition, true)}
+        ${atomicMacros.bool('bool, 'transition, true)}
 
       inline def since(inline transition: Boolean => Boolean): Boolean =
-        ${atomicMacros.flag('flag, 'transition, false)}
+        ${atomicMacros.bool('bool, 'transition, false)}
 
-      // `flag.ere(true)` returning `false` is the one-shot idiom at its shortest: "I am the
-      // call that closed it".
-      inline def ere(inline supplied: Boolean): Boolean = flag.getAndSet(supplied)
+      // `bool.ere(true)` returning `false` is the one-shot idiom at its shortest: "I am the call
+      // that closed it".
+      inline def ere(inline supplied: Boolean): Boolean = bool.getAndSet(supplied)
 
-  object Cell:
-    def apply[value](initial: value): Cell[value] = juca.AtomicReference(initial)
+  object Ref:
+    def apply[value](initial: value): Ref[value] = juca.AtomicReference(initial)
 
-    // An initially-absent cell. `Cell(Unset)` would infer `Cell[Unset]`, and spelling
-    // `Cell[Optional[Monitor]](Unset)` at each site reads worse than naming the state.
-    def vacant[value]: Cell[Optional[value]] = juca.AtomicReference(Unset)
+    // An initially-absent cell. `Ref(Unset)` would infer `Ref[Unset]`, and spelling
+    // `Ref[Optional[Monitor]](Unset)` at each site reads worse than naming the state.
+    def vacant[value]: Ref[Optional[value]] = juca.AtomicReference(Unset)
 
-    extension [value](cell: Cell[value])
+    // A volatile read, written `ref()`. `asInstanceOf`, not `.nn`: `.nn` emits a null test and a
+    // call to `Scala3RunTime.nnFail`, and — decisively — it THROWS on a cell holding `Unset`,
+    // because `Unset` is `null` at runtime. `Ref[Optional[x]]().nn` is a latent NPE; this is
+    // not. For an abstract `value` the cast erases to nothing at all.
+    extension [value](ref: Ref[value])
+      inline def apply(): value = ref.get().asInstanceOf[value]
+      inline def update(value: value): Unit = ref.set(value)
+      inline def publish(value: value): Unit = ref.lazySet(value)
+      inline def swap(value: value): value = ref.getAndSet(value).asInstanceOf[value]
+
+      inline def replace(expected: value, updated: value): Boolean =
+        ref.compareAndSet(expected, updated)
+
       inline def ere(inline transition: value => value): value =
-        ${atomicMacros.cell('cell, 'transition, true)}
+        ${atomicMacros.ref('ref, 'transition, true)}
 
       inline def since(inline transition: value => value): value =
-        ${atomicMacros.cell('cell, 'transition, false)}
+        ${atomicMacros.ref('ref, 'transition, false)}
 
       // The value overload, as on the other cells — with one measured limitation. Where `value`
-      // is ITSELF a function type, this overload is unreachable: `ere` commits to the
-      // transition overload and reports `Required: (Int => Int) => Int => Int`, for a lambda
-      // and for a named function value alike. That is a loud failure rather than a quiet
-      // mis-selection, and the spelling to use is `cell() = supplied`.
+      // is ITSELF a function type, this overload is unreachable: `ere` commits to the transition
+      // overload and reports `Required: (Int => Int) => Int => Int`, for a lambda and for a named
+      // function value alike. That is a loud failure rather than a quiet mis-selection, and the
+      // spelling to use is `ref() = supplied`.
       //
-      // `Cell[Any]` is the one quiet case: a lambda literal satisfies both overloads and is
-      // read as a transition — the likelier intent, but chosen without a diagnostic, so store
-      // a lambda into such a cell with `cell() = lambda`.
+      // `Ref[Any]` is the one quiet case: a lambda literal satisfies both overloads and is read
+      // as a transition — the likelier intent, but chosen without a diagnostic, so store a
+      // lambda into such a cell with `ref() = lambda`.
       inline def ere(inline supplied: value): value =
-        cell.getAndSet(supplied).asInstanceOf[value]
+        ref.getAndSet(supplied).asInstanceOf[value]
 
       // The escape hatch, for a transition whose shape cannot be inspected because it is a
-      // function VALUE rather than a literal — `contingency.Accrual` transitions with
-      // `combine`, a constructor parameter. `inline`, so the lambda still beta-reduces and
-      // nothing is allocated; what is lost is the shape check, and the obligation that check
-      // would have discharged is stated here instead: `transition` MAY BE RE-RUN under
-      // contention, so it must be pure. `revise` yields the value it installed, as `since`
-      // does; no call site in the collection needs the displaced value from a transition whose
-      // shape cannot be read.
+      // function VALUE rather than a literal — `contingency.Accrual` transitions with `combine`,
+      // a constructor parameter. `inline`, so the lambda still beta-reduces and nothing is
+      // allocated; what is lost is the shape check, and the obligation that check would have
+      // discharged is stated here instead: `transition` MAY BE RE-RUN under contention, so it
+      // must be pure. `revise` yields the value it installed, as `since` does; no call site in
+      // the collection needs the displaced value from a transition whose shape cannot be read.
       inline def revise(inline transition: value => value): value =
-        val box: juca.AtomicReference[value] = cell
+        val box: juca.AtomicReference[value] = ref
         var current: value = box.get().asInstanceOf[value]
         var settled: Boolean = false
 
@@ -195,85 +226,79 @@ object Atomic:
 
         current
 
-  object Cells:
-    def apply[value](size: Int): Cells[value] = juca.AtomicReferenceArray(size)
+  // The arrays are indexed by `Ordinal`, not `Int`: a bare `Int` index is precisely the
+  // unchecked scalar `denominative` exists to abolish, and it costs nothing — `Ordinal` is an
+  // opaque `Int` and `n0` is the identity, so a masked ring index compiles to the `iand` alone.
+  // The ordinal is unbranded deliberately: a masked index is in range by construction of the
+  // mask, so there is nothing for branding to prove and its range check would not be free.
+  //
+  // No `ere`/`since` on any of the three. A per-slot transition would need the ordinal threaded
+  // through the macro, and no call site in the collection does compare-and-set on a slot —
+  // zephyrine's rings publish and read, and nothing else uses an atomic array at all.
+  object Ints:
+    def apply(size: scala.Int): Ints = juca.AtomicIntegerArray(size)
 
     // In this companion rather than `Countable`'s: denominative sits below rudiments, so it
     // cannot see this type. Companion-to-companion placement resolves identically.
-    given countable: [value] => Cells[value] is Countable = _.length()
+    given countable: Ints is Countable = _.length()
 
-  // A volatile read, written `cell()`. `asInstanceOf`, not `.nn`: `.nn` emits a null test and
-  // a call to `Scala3RunTime.nnFail`, and — decisively — it THROWS on a cell holding `Unset`,
-  // because `Unset` is `null` at runtime. `Cell[Optional[x]]().nn` is a latent NPE; this is
-  // not. For an abstract `value` the cast erases to nothing at all.
-  extension [value](cell: Cell[value])
-    inline def apply(): value = cell.get().asInstanceOf[value]
+    // A slot reads as `scala.Int`, not `Optional[scala.Int]`: a freshly-allocated primitive
+    // array is all zeros, and zero is a value rather than an absence. `Refs` differs precisely
+    // because its fresh slots are null, which is an absence.
+    extension (ints: Ints)
+      inline def apply(ordinal: Ordinal): scala.Int = ints.get(ordinal.n0)
+      inline def update(ordinal: Ordinal, value: scala.Int): Unit = ints.set(ordinal.n0, value)
 
-    // A volatile store, written `cell() = value`.
-    inline def update(value: value): Unit = cell.set(value)
+      inline def publish(ordinal: Ordinal, value: scala.Int): Unit =
+        ints.lazySet(ordinal.n0, value)
 
-    // An ordered (release) store: cheaper than `update`, and ordered before every subsequent
-    // store, which is what makes a single-producer ring's slot write safe to be seen only
-    // through the index published after it. Not a substitute for `update` where the store
-    // itself is the publication point. zephyrine's own word for this is "publish".
-    inline def publish(value: value): Unit = cell.lazySet(value)
+      inline def swap(ordinal: Ordinal, value: scala.Int): scala.Int =
+        ints.getAndSet(ordinal.n0, value)
 
-    inline def swap(value: value): value = cell.getAndSet(value).asInstanceOf[value]
+      inline def replace(ordinal: Ordinal, expected: scala.Int, updated: scala.Int): Boolean =
+        ints.compareAndSet(ordinal.n0, expected, updated)
 
-    inline def replace(expected: value, updated: value): Boolean =
-      cell.compareAndSet(expected, updated)
+  object Longs:
+    def apply(size: scala.Int): Longs = juca.AtomicLongArray(size)
 
-  extension (count: Count)
-    inline def apply(): Int = count.get()
-    inline def update(value: Int): Unit = count.set(value)
-    inline def publish(value: Int): Unit = count.lazySet(value)
-    inline def swap(value: Int): Int = count.getAndSet(value)
+    given countable: Longs is Countable = _.length()
 
-    inline def replace(expected: Int, updated: Int): Boolean =
-      count.compareAndSet(expected, updated)
+    extension (longs: Longs)
+      inline def apply(ordinal: Ordinal): scala.Long = longs.get(ordinal.n0)
+      inline def update(ordinal: Ordinal, value: scala.Long): Unit = longs.set(ordinal.n0, value)
 
+      inline def publish(ordinal: Ordinal, value: scala.Long): Unit =
+        longs.lazySet(ordinal.n0, value)
 
-  extension (tally: Tally)
-    inline def apply(): Long = tally.get()
-    inline def update(value: Long): Unit = tally.set(value)
-    inline def publish(value: Long): Unit = tally.lazySet(value)
-    inline def swap(value: Long): Long = tally.getAndSet(value)
+      inline def swap(ordinal: Ordinal, value: scala.Long): scala.Long =
+        longs.getAndSet(ordinal.n0, value)
 
-    inline def replace(expected: Long, updated: Long): Boolean =
-      tally.compareAndSet(expected, updated)
+      inline def replace(ordinal: Ordinal, expected: scala.Long, updated: scala.Long): Boolean =
+        longs.compareAndSet(ordinal.n0, expected, updated)
 
-  extension (flag: Flag)
-    inline def apply(): Boolean = flag.get()
-    inline def update(state: Boolean): Unit = flag.set(state)
-    inline def publish(state: Boolean): Unit = flag.lazySet(state)
-    inline def swap(state: Boolean): Boolean = flag.getAndSet(state)
+  object Refs:
+    def apply[value](size: scala.Int): Refs[value] = juca.AtomicReferenceArray(size)
 
-    inline def replace(expected: Boolean, updated: Boolean): Boolean =
-      flag.compareAndSet(expected, updated)
+    given countable: [value] => Refs[value] is Countable = _.length()
 
-  // `Optional`, not `value`: a freshly-allocated array is all-null, so a slot read is
-  // genuinely partial. That is the honest difference from `Cell`, which is constructed with an
-  // initial value and whose reads are therefore total.
-  //
-  // Indexed by `Ordinal`, not `Int`: a bare `Int` index is precisely the unchecked scalar
-  // `denominative` exists to abolish, and it costs nothing — `Ordinal` is an opaque `Int` and
-  // `n0` is the identity, so a masked ring index compiles to the `iand` alone. The ordinal is
-  // unbranded deliberately: a masked index is in range by construction of the mask, so there
-  // is nothing for branding to prove and its range check would not be free.
-  extension [value](cells: Cells[value])
-    inline def apply(ordinal: Ordinal): Optional[value] =
-      cells.get(ordinal.n0).asInstanceOf[Optional[value]]
+    // `Optional`, not `value`: a freshly-allocated reference array is all-null, so a slot read
+    // is genuinely partial. That is the honest difference from `Ref`, which is constructed with
+    // an initial value and whose reads are therefore total, and from `Ints`, whose fresh slots
+    // hold a real zero.
+    extension [value](refs: Refs[value])
+      inline def apply(ordinal: Ordinal): Optional[value] =
+        refs.get(ordinal.n0).asInstanceOf[Optional[value]]
 
-    inline def update(ordinal: Ordinal, value: Optional[value]): Unit =
-      cells.set(ordinal.n0, value)
+      inline def update(ordinal: Ordinal, value: Optional[value]): Unit =
+        refs.set(ordinal.n0, value)
 
-    inline def publish(ordinal: Ordinal, value: Optional[value]): Unit =
-      cells.lazySet(ordinal.n0, value)
+      inline def publish(ordinal: Ordinal, value: Optional[value]): Unit =
+        refs.lazySet(ordinal.n0, value)
 
-    inline def swap(ordinal: Ordinal, value: Optional[value]): Optional[value] =
-      cells.getAndSet(ordinal.n0, value).asInstanceOf[Optional[value]]
+      inline def swap(ordinal: Ordinal, value: Optional[value]): Optional[value] =
+        refs.getAndSet(ordinal.n0, value).asInstanceOf[Optional[value]]
 
-    inline def replace(ordinal: Ordinal, expected: Optional[value], updated: Optional[value])
-    :   Boolean =
+      inline def replace(ordinal: Ordinal, expected: Optional[value], updated: Optional[value])
+      :   Boolean =
 
-      cells.compareAndSet(ordinal.n0, expected, updated)
+        refs.compareAndSet(ordinal.n0, expected, updated)

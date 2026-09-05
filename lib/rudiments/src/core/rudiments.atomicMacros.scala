@@ -131,10 +131,18 @@ object atomicMacros:
           case _: Ident   => true
           case _: Literal => true
 
+          // `this`, so that a field of the enclosing object may be read — `this.threshold` in
+          // `telekinesis.Http2.replenish` is the witness.
+          case _: This => true
+
           case Select(receiver, _) => accepts(receiver, roots)
 
           case If(cond, yes, no) =>
             accepts(cond, roots) && accepts(yes, roots) && accepts(no, roots)
+
+          // A bare type application, with no argument list of its own: `asInstanceOf[t]`, and
+          // any other polymorphic method referenced without being applied.
+          case TypeApply(inner, _) => accepts(inner, roots)
 
           // Destructuring the transitioned value makes what the patterns bind derived from it,
           // so `case Incomplete(waiting) => Incomplete(waiting + strand)` may call a method on
@@ -243,7 +251,7 @@ object atomicMacros:
             recognised and it need never be allocated
           """
 
-  def count
+  def int
      ( atomic:     Expr[juca.AtomicInteger],
        transition: Expr[Int => Int],
        prior:      Boolean )
@@ -297,7 +305,7 @@ object atomicMacros:
             answer
           }
 
-  def tally
+  def long
      ( atomic:     Expr[juca.AtomicLong],
        transition: Expr[Long => Long],
        prior:      Boolean )
@@ -351,7 +359,7 @@ object atomicMacros:
 
   // A flag has no arithmetic, so only the identity and constant shapes have an intrinsic; `!_`
   // and anything else become the retry loop.
-  def flag
+  def bool
      ( atomic:     Expr[juca.AtomicBoolean],
        transition: Expr[Boolean => Boolean],
        prior:      Boolean )
@@ -392,7 +400,7 @@ object atomicMacros:
   // A reference cell declines by REFERENCE identity (`eq`), not `==`: a transition returning an
   // equal-but-distinct value is a genuine write, and a value type may define `==` expensively or
   // inconsistently. `Cell` is the one place where the two differ.
-  def cell[value: Type]
+  def ref[value: Type]
      ( atomic:     Expr[juca.AtomicReference[value]],
        transition: Expr[value => value],
        prior:      Boolean )

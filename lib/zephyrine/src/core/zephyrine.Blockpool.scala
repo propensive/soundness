@@ -33,7 +33,8 @@
 package zephyrine
 
 import java.util.concurrent as juc
-import java.util.concurrent.atomic as juca
+
+import rudiments.*
 
 // A process-wide, bounded pool of spent transfer blocks, shared across conduits: the
 // second-level cache behind each `Conduit`'s per-instance `Freelist`. The freelist
@@ -63,7 +64,7 @@ object Blockpool:
 
   private final class Pool(size: Int):
     val queue: juc.ConcurrentLinkedQueue[AnyRef] = juc.ConcurrentLinkedQueue()
-    val count: juca.AtomicInteger = juca.AtomicInteger(0)
+    val count: Atomic[Int] = Atomic(0)
     val limit: Int = bound(size)
 
   private final case class Key(cls: Class[?], size: Int)
@@ -87,8 +88,8 @@ object Blockpool:
     // The count is raised before the block is enqueued (and lowered again if that
     // overshot the bound), so it is always an upper estimate of the queue's length and
     // the bound is strict.
-    if pool0.count.incrementAndGet() <= pool0.limit then pool0.queue.offer(block)
-    else pool0.count.decrementAndGet()
+    if pool0.count.since(_ + 1) <= pool0.limit then pool0.queue.offer(block)
+    else pool0.count.since(_ - 1)
 
   // A pooled block of exactly this class and physical size, or `null`, in which case
   // the caller allocates afresh.
@@ -97,5 +98,5 @@ object Blockpool:
 
     if pool0 == null then null else
       val block = pool0.queue.poll()
-      if block != null then pool0.count.decrementAndGet()
+      if block != null then pool0.count.since(_ - 1)
       block

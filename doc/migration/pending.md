@@ -149,209 +149,50 @@ not yet been recorded here.
 
 ## rudiments
 
-- Top-level `rudiments.populatedEquality2` renamed to `populatedEqualityReversed`. (#1939)
-
-## zephyrine
-
-- `zephyrine.lineation.linefeedChars` renamed to `linefeedChar`. The `lineation` family
-  (`linefeedChar`, `carriageReturnChar`, `linefeedByte`, `carriageReturnByte`) is now re-exported
-  as `soundness.lineation`. (#1939)
-
-## hypotenuse
-
-- The nested objects under `hypotenuse.arithmeticOptions` are flattened into givens of the same
-  types: `division.checked` → `checkedDivision`, `division.unchecked` → `uncheckedDivision`,
-  `overflow.checked` → `checkedOverflow`, `overflow.unchecked` → `uncheckedOverflow`,
-  `rationalDivision.q64` → `q64RationalDivision`, `rationalDivision.q32` → `q32RationalDivision`.
-  The objects no longer exist. (#1939)
-
-## honeycomb
-
-- `honeycomb.formatting.flatHtmlFormatting` renamed to `compactHtmlFormatting`. (#1939)
-- `honeycomb.recoveries.permissiveRecovery` is now re-exported as `soundness.recoveries`. (#1939)
-
-## cataclysm
-
-- `cataclysm.formatting.standardCssFormatting` renamed to `indentedCssFormatting`. (#1939)
-
-## dendrology
-
-- `dendrology.treeStyles.defaultTreeStyle` renamed to `squareTreeStyle`;
-  `dagStyles.defaultDagStyle` renamed to `boxDrawingDagStyle`; `laneDagStyles.defaultLaneDagStyle`
-  renamed to `boxDrawingLaneDagStyle`. (#1939)
-
-## escritoire
-
-- `escritoire.tableStyles.defaultTableStyle` renamed to `thickTableStyle`. (#1939)
-
-## eucalyptus
-
-- `eucalyptus.logFormats.standardLogFormat` renamed to `timestampedLogFormat`;
-  `logFormats.ansiStandardLogFormat` renamed to `ansiTimestampedLogFormat`. (#1939)
-- `eucalyptus.logFormats.lightweightLogFormat` removed; it was identical to
-  `untimestampedLogFormat`. (#1939)
-
-## legerdemain
-
-- `legerdemain.formulations.defaultFormulation` renamed to `postFormulation`. (#1939)
-
-## octogenarian
-
-- `octogenarian.gitCommands.environmentDefaultGitCommand` renamed to `searchpathGitCommand`. (#1939)
-
-## caesura
-
-- `caesura.optics.{cellLens, rowOptical, rowEach, rowFilter}` renamed to `{dsvCellLens,
-  dsvRowOptical, dsvRowEachOptical, dsvRowFilterOptical}`. (#1939)
-- `caesura.dynamicDsvAccess.enabled` (object member) replaced by
-  `caesura.dynamicAccess.dynamicDsv` (choice package); the object `dynamicDsvAccess` no longer
-  exists. (#1939)
-
-## capricious
-
-- `capricious.randomSizes.{uniformUpto10, uniformUpto100, uniformUpto1000,
-  uniformUpto10000, uniformUpto100000}` renamed to `{uniformSizeUpto10, uniformSizeUpto100,
-  uniformSizeUpto1000, uniformSizeUpto10000, uniformSizeUpto100000}`. (#1939)
-- `capricious.randomTexts.bigListOfNaughtyStrings` renamed to `naughtyStringsText`, and
-  now re-exported as `soundness.randomTexts.naughtyStringsText`. (#1939)
-
-## exoskeleton
-
-- `exoskeleton.executives.completions` renamed to `completionsExecutive`. (#1939)
-
-## caduceus
-
-- `caduceus.couriers.resend` renamed to `resendCourier`. (#1939)
-
-## ultimatum
-
-- `ultimatum.inlineAnchoring.{bottomDocked, topAnchored, topAfterResize, fullscreen, inline}`
-  renamed to `{bottomDockedAnchoring, topAnchoring, topAfterResizeAnchoring, fullscreenAnchoring,
-  flowAnchoring}`; enum case `ultimatum.InlineAnchoring.Inline` renamed to `Flow`. (#1939)
-- `ultimatum.inlineGrowth.{scrollIntoScrollback, clampToScreen}` renamed to `{scrollbackGrowth,
-  clampedGrowth}`. (#1939)
-- `ultimatum.inlineShrink.{redockBottom, keepTop}` renamed to `{redockBottomShrink,
-  keepTopShrink}`. (#1939)
-
-## jacinta
-
-- `jacinta.dynamicJsonAccess.enabled` (object member) replaced by `jacinta.dynamicAccess.dynamicJson`
-  (choice package); the object `dynamicJsonAccess` no longer exists. (#1939)
-- `jacinta.jsonConversion.encodable` (object member) replaced by
-  `jacinta.conversions.encodableToJson` (choice package); the object `jsonConversion` no longer
-  exists. (#1939)
-
-## xylophone
-
-- `xylophone.dynamicXmlAccess.enabled` replaced by `xylophone.dynamicAccess.dynamicXml`; the
-  object `dynamicXmlAccess` no longer exists. (#1939)
-
-## ypsiloid
-
-- `ypsiloid.dynamicYamlAccess.enabled` replaced by `ypsiloid.dynamicAccess.dynamicYaml`; the
-  object `dynamicYamlAccess` no longer exists. (#1939)
-- `ypsiloid.yamlConversion.encodable` replaced by `ypsiloid.conversions.encodableToYaml`; the
-  object `yamlConversion` no longer exists. (#1939)
-
-## stratiform
-
-- `stratiform.dynamicTelAccess.enabled` replaced by `stratiform.dynamicAccess.dynamicTel`; the
-  object `dynamicTelAccess` no longer exists. (#1939)
-- `stratiform.telConversion.encodable` replaced by `stratiform.conversions.encodableToTel`; the
-  object `telConversion` no longer exists. (#1939)
-
-## breviloquence
-
-- `breviloquence.dynamicCborAccess.enabled` replaced by `breviloquence.dynamicAccess.dynamicCbor`;
-  the object `dynamicCborAccess` no longer exists. (#1939)
-- `breviloquence.cborConversion.encodable` replaced by `breviloquence.conversions.encodableToCbor`;
-  the object `cborConversion` no longer exists. (#1939)
-
-## locomotion
-
-- `locomotion.protobufConversion.encodable` replaced by
-  `locomotion.conversions.encodableToProtobuf`; the object `protobufConversion` no longer
-  exists. (#1939)
-
-## superlunary
-
-- `superlunary.embeddings.automatic` (object member) replaced by
-  `superlunary.embeddings.automaticEmbedding` (choice package); `embeddings` is no longer an
-  object. (#1939)
-
-## escapade
-
-- `escapade.writables.{out, err}` renamed to `{outTeletypeWritable, errTeletypeWritable}`. (#1939)
-- `escapade.teletypeables.graphical` renamed to `graphicalTeletype`. (#1939)
-
-## anticipation
-
-- The nested interface-selector families are flattened to one level: `interfaces.paths` →
-  `pathInterfaces` (members `pathOnLinux`, `pathOnWindows`, `pathOnMacOs`, `pathOnLocal`,
-  `pathOnPosix` from galilei, `textPath` from serpentine, `javaNioPath`, `javaIoFile` from
-  diuretic), `interfaces.instants` → `instantInterfaces` (`javaTimeInstant`, `javaLongInstant`,
-  `javaUtilDate`, `aviationInstant`), `interfaces.durations` → `durationInterfaces`
-  (`javaLongDuration`, `aviationDuration`), `interfaces.urls` → `urlInterfaces` (`javaNetUrl`).
-  The `anticipation.interfaces` package no longer exists. `textPath` is now also re-exported as
-  `soundness.pathInterfaces.textPath`. (#1943)
-
-## aviation
-
-- The nested families under `aviation.dateFormats`, `aviation.timeFormats` and
-  `aviation.calendars` are now top-level packages of `aviation`, named as the umbrella already
-  named them: `dateFormats.endianness` → `dateEndianness`, `dateFormats.numerics` →
-  `dateNumerics`, `dateFormats.separators` → `dateSeparators`, `dateFormats.years` →
-  `yearFormats`, `dateFormats.weekdays` → `weekdays`, `dateFormats.months` → `monthFormats`,
-  `timeFormats.meridiems` → `timeMeridiems`, `timeFormats.hours` → `hourFormats`,
-  `timeFormats.specificity` → `timeSpecificities`, `timeFormats.numerics` → `timeNumerics`,
-  `timeFormats.separators` → `timeSeparators`, `calendars.nonexistentLeapDays` →
-  `nonexistentLeapDays`. Members are unchanged. In the umbrella, `soundness.endianness` is
-  renamed to `soundness.dateEndianness` and `soundness.meridiems` to `soundness.timeMeridiems`.
-  (#1943)
-
-## capricious
-
-- `capricious.randomization.sizes` renamed to `capricious.randomSizes` and
-  `capricious.randomization.text` renamed to `capricious.randomTexts`, both now top-level
-  packages (members unchanged); the umbrella paths change accordingly. (#1943)
-
-## honeycomb
-
-- `honeycomb.doms.html` (`whatwg`, `html4Transitional`) renamed to `honeycomb.htmlDoms`; the
-  `doms` package no longer exists. (#1943)
-
-## rudiments
-
 - New `rudiments.Atomic`, exported as `soundness.Atomic`: opaque, zero-cost wrappers over
-  `java.util.concurrent.atomic`. `Atomic.Count` wraps `AtomicInteger`, `Atomic.Tally` wraps
-  `AtomicLong`, `Atomic.Flag` wraps `AtomicBoolean`, `Atomic.Cell[value]` wraps
-  `AtomicReference[value]`, and `Atomic.Cells[value]` wraps
-  `AtomicReferenceArray[vacuous.Optional[value]]`. A match type `Atomic[value]` reduces to
-  `Atomic.Count` for `Int`, `Atomic.Tally` for `Long`, `Atomic.Flag` for `Boolean`, and
-  `Atomic.Cell[value]` otherwise; it does not reduce for an abstract type parameter, where the
-  concrete type must be named. Every operation is `inline` and compiles to the same bytecode as
-  the `java.util.concurrent.atomic` call it replaces. (#NNNN)
+  `java.util.concurrent.atomic`, each named for the type it holds. `Atomic.Int` wraps
+  `AtomicInteger`, `Atomic.Long` wraps `AtomicLong`, `Atomic.Bool` wraps `AtomicBoolean`,
+  `Atomic.Ref[value]` wraps `AtomicReference[value]`, `Atomic.Ints` wraps `AtomicIntegerArray`,
+  `Atomic.Longs` wraps `AtomicLongArray`, and `Atomic.Refs[value]` wraps
+  `AtomicReferenceArray[vacuous.Optional[value]]`. `LongAdder`, `DoubleAdder`, `LongAccumulator`,
+  `DoubleAccumulator`, `AtomicMarkableReference`, `AtomicStampedReference` and the three
+  `*FieldUpdater` classes are not wrapped. `Atomic.Int` and `Atomic.Long` shadow `scala.Int` and
+  `scala.Long` under `import Atomic.*`, which is not an intended usage. (#NNNN)
+- A match type `Atomic[value]` reduces to `Atomic.Int` for `Int`, `Atomic.Long` for `Long`,
+  `Atomic.Bool` for `Boolean`, and `Atomic.Ref[value]` otherwise. It does not reduce for an
+  abstract type parameter, nor for an opaque type whose representation is not visible at the use
+  site — `Atomic[Text]`, `Atomic[Optional[Text]]` and `Atomic[SomeClass]` reduce, but
+  `Atomic[List[x]]` does not, because the prelude's `List` is opaque. In those cases the concrete
+  type is named: `Atomic.Ref[List[x]]`. `Atomic(0)`, `Atomic(0L)`,
+  `Atomic(false)` and `Atomic(reference)` construct the corresponding cell; an explicit type
+  argument (`Atomic[Int](0)`) applies the generic arm and does not conform. Every operation is
+  `inline` and compiles to the same bytecode as the `java.util.concurrent.atomic` call it
+  replaces. (#NNNN)
 - Reads are `atomic()` (`get`), stores are `atomic() = value` (`set`) and `atomic.publish(value)`
   (`lazySet`); `atomic.swap(value)` is `getAndSet` and `atomic.replace(expected, updated)` is
-  `compareAndSet`. `Atomic.Cell#apply()` returns `value` rather than `value | Null`, so no call
-  site needs `.nn`; a cell declared `Atomic.Cell[Optional[x]]` reads as `Unset` when absent,
-  where `.nn` on the underlying `AtomicReference` would have thrown. `Atomic.Cells#apply` takes a
-  `denominative.Ordinal` and returns `vacuous.Optional[value]`. (#NNNN)
+  `compareAndSet`. `Atomic.Ref#apply()` returns `value` rather than `value | Null`, so no call
+  site needs `.nn`; a cell declared `Atomic.Ref[Optional[x]]` reads as `Unset` when absent, where
+  `.nn` on the underlying `AtomicReference` would have thrown. The three array types are indexed
+  by `denominative.Ordinal`; `Atomic.Refs#apply` returns `vacuous.Optional[value]` because a fresh
+  reference array is null-filled, while `Atomic.Ints#apply` and `Atomic.Longs#apply` return the
+  primitive, because a fresh primitive array holds zeros. (#NNNN)
 - Transitions are `atomic.ere(transition)`, yielding the value the transition displaced, and
   `atomic.since(transition)`, yielding the value it installed — replacing `getAndUpdate` and
-  `updateAndGet` respectively. The transition must be written as a lambda literal: its shape is
-  read at compiletime and replaced by the corresponding JDK intrinsic where one exists
-  (`_ + 1` becomes `getAndIncrement`/`incrementAndGet`, `_ + n` becomes `getAndAdd`/`addAndGet`,
-  `_ - 1` becomes `getAndDecrement`/`decrementAndGet`, a constant becomes `getAndSet`, and the
-  identity becomes `get`), and otherwise by a compare-and-set retry loop with the transition
-  beta-reduced into it. No `java.util.function.UnaryOperator` and no closure is allocated in
-  either case. A transition may be re-run under contention and so must be pure; a transition
-  which applies a function value obtained from outside is rejected at compiletime. (#NNNN)
-- `ere` is overloaded to take a value directly, so `flag.ere(true)` is `getAndSet(true)` without
-  a lambda. There is no `since` counterpart, which would return its own argument. The value
-  overload is unreachable on an `Atomic.Cell[value]` whose `value` is a function type, where
-  `ere` resolves to the transition overload and fails to compile; use `cell() = supplied`. (#NNNN)
-- `Atomic.Cell#revise(transition)` takes a function value rather than a literal, for a transition
+  `updateAndGet` respectively. They are defined on `Atomic.Int`, `Atomic.Long`, `Atomic.Bool` and
+  `Atomic.Ref`, and not on the array types. The transition must be written as a lambda literal:
+  its shape is read at compiletime and replaced by the corresponding JDK intrinsic where one
+  exists (`_ + 1` becomes `getAndIncrement`/`incrementAndGet`, `_ + n` becomes
+  `getAndAdd`/`addAndGet`, `_ - 1` becomes `getAndDecrement`/`decrementAndGet`, a constant becomes
+  `getAndSet`, and the identity becomes `get`), and otherwise by a compare-and-set retry loop with
+  the transition beta-reduced into it. No `java.util.function.UnaryOperator` and no closure is
+  allocated in either case. A transition may be re-run under contention and so must be pure; a
+  transition which applies a function value obtained from outside is rejected at compiletime.
+  (#NNNN)
+- `ere` is overloaded to take a value directly, so `bool.ere(true)` is `getAndSet(true)` without a
+  lambda. There is no `since` counterpart, which would return its own argument. The value overload
+  is unreachable on an `Atomic.Ref[value]` whose `value` is a function type, where `ere` resolves
+  to the transition overload and fails to compile; use `ref() = supplied`. (#NNNN)
+- `Atomic.Ref#revise(transition)` takes a function value rather than a literal, for a transition
   whose shape cannot be read, and yields the value it installed. It is `inline`, so no closure is
   allocated, but the purity obligation is unchecked: the transition may be re-run under
   contention. (#NNNN)

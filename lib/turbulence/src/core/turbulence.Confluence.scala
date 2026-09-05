@@ -35,8 +35,6 @@ package turbulence
 import scala.caps
 
 import java.util.concurrent as juc
-import java.util.concurrent.atomic as juca
-
 import anticipation.*
 import fulminate.*
 import parasite.*
@@ -73,10 +71,10 @@ object Confluence:
     val queue: juc.ArrayBlockingQueue[AnyRef] =
       juc.ArrayBlockingQueue(buffering.depth.max(sources.length))
 
-    val remaining: juca.AtomicInteger = juca.AtomicInteger(sources.length)
+    val remaining: Atomic[Int] = Atomic(sources.length)
     @volatile var error: Throwable | Null = null
 
-    def finish(): Unit = if remaining.decrementAndGet == 0 then queue.put(End)
+    def finish(): Unit = if remaining.since(_ - 1) == 0 then queue.put(End)
 
     // Indexed iteration: capture sets do not ride standard-collection elements, so each
     // source is re-asserted exclusive at its fiber rim — one consuming fiber per source

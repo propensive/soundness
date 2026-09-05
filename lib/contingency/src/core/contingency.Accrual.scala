@@ -34,11 +34,8 @@ package contingency
 
 import scala.language.experimental.pureFunctions
 
-import java.util.concurrent.atomic as juca
-
-import scala.language.unsafeNulls
-
 import fulminate.*
+import rudiments.*
 
 // Captures an `accrue` handler together with its initial accrual and combining function. Unlike
 // `recover`/`mitigate`, the block may raise *several* covered errors; each is folded into the
@@ -52,10 +49,18 @@ object Accrual:
     ( using val diagnostics: Diagnostics )
   extends Tactic[error]:
 
-    private val ref: juca.AtomicReference[accrual] = juca.AtomicReference(initial)
+    // `Atomic.Ref[accrual]`, not `Atomic[accrual]`: the match type cannot reduce for an
+    // abstract type parameter, so the concrete cell is named here.
+    private val accrued: Atomic.Ref[accrual] = Atomic.Ref(initial)
 
+    // The error is forced ONCE, outside the retry. `revise` may re-run its transition under
+    // contention, and `error` is a by-name which constructs an `Exception` — capturing
+    // diagnostics and, under some strategies, a stack trace. Only `combine`, which `Accrual`'s
+    // contract already requires to be pure, is re-run. `revise` rather than `since` because
+    // `combine` is a constructor parameter: a function value, whose shape cannot be read.
     def record(error: Diagnostics ?=> error): Unit =
-      ref.updateAndGet: curr => combine(curr.nn, error(using diagnostics))
+      val raised: Exception = error(using diagnostics)
+      accrued.revise(combine(_, raised))
 
     def abort(error: Diagnostics ?=> error): Nothing =
       import scala.unsafeExceptions.canThrowAny
@@ -72,8 +77,8 @@ object Accrual:
 
     override def tainted: Boolean = changed
 
-    def accumulated: accrual = ref.get().nn
-    def changed: Boolean = ref.get().nn != initial
+    def accumulated: accrual = accrued()
+    def changed: Boolean = accumulated != initial
 
   extension [accrual <: Hazard, lambda[_]](inline accrual: Accrual[accrual, lambda])
     inline def protect[result](inline body: lambda[result])

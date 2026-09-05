@@ -71,6 +71,13 @@ sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
   // `Worker`, with the `^` dropped at the `addWorker`/`remove` boundary. This is the single capture
   // escape in the supervision core; sound here because the registry is private bookkeeping that
   // never leaks a worker's captures outward, and a worker's lifetime is bounded by this very scope.
+  // The one cell in the collection still held as a raw `AtomicReference`. Its element type
+  // carries capabilities (`Worker^{}`), and routing it through `Atomic`'s transition — whose
+  // retry loop binds the current value to a local — skolemises those capabilities, so the
+  // transition's parameter no longer conforms: "capability `any` cannot flow into capture set
+  // {any}". That is the same compiler divergence the casts below already work around, one level
+  // deeper, and it is not something the wrapper can launder. Everything else in parasite is
+  // migrated; this waits on capture checking, not on this API.
   protected[parasite] val workersRef
   :   juca.AtomicReference[scala.collection.immutable.Set[Worker^{}]] =
     juca.AtomicReference[scala.collection.immutable.Set[Worker^{}]](
@@ -248,8 +255,7 @@ private object Preload:
 
 abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) extends Monitor:
   self: Worker^ =>
-  private val state: juca.AtomicReference[Fulfillment[Result]] =
-    juca.AtomicReference[Fulfillment[Result]](Preload.initial)
+  private val state: Atomic[Fulfillment[Result]] = Atomic(Preload.initial)
 
   @scala.caps.unsafe.untrackedCaptures
   private var relents: Int = 1
@@ -281,7 +287,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
     relents += 1
     if supervisor.interrupted() then throw new InterruptedException()
 
-    state.get().nn match
+    state() match
       case Initializing    => ()
       case Active(_)       => ()
       case Completed(_, _) => panic(m"should not be relenting after completion")
@@ -290,9 +296,9 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
       case Cancelled       => throw new InterruptedException()
 
   override def snooze[generic: Abstractable across Durations to Long](duration: generic): Unit =
-    if supervisor.interrupted() || state.get() == Cancelled then throw new InterruptedException()
+    if supervisor.interrupted() || state() == Cancelled then throw new InterruptedException()
     supervisor.sleep(duration.generic)
-    if supervisor.interrupted() || state.get() == Cancelled then throw new InterruptedException()
+    if supervisor.interrupted() || state() == Cancelled then throw new InterruptedException()
 
 
   def map[result2](lambda: Result => result2)(using monitor: Monitor^, probate: Probate^)
@@ -307,30 +313,32 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
     async(lambda(join()).join())
 
 
-  // An explicit CAS loop rather than `updateAndGet`, whose update function may be re-run under
-  // contention: the cancellation effects must fire exactly once, and only *after* the `Cancelled`
-  // state is visible, so that a joiner woken by `promise.cancel()` cannot observe a stale
-  // `Active` state. The final `strand.join()` happens whenever the state is `Cancelled`, even if
-  // another cancellation won the race.
-  @tailrec
+  // `ere` yields the state THIS call displaced, which is what makes the cancellation effects
+  // fire exactly once and only after `Cancelled` is visible — so a joiner woken by
+  // `promise.cancel()` cannot observe a stale `Active`. A caller that loses the race, or arrives
+  // late, displaces `Cancelled` and joins; a settled worker returns its argument by reference, so
+  // the transition declines and no compare-and-set is issued. This replaces a hand-rolled
+  // `@tailrec` retry, which existed because `updateAndGet` returns the NEW state and so cannot
+  // say who won.
   final def cancel(): Unit =
-    val current = state.get().nn
+    val displaced = state.ere:
+      case Initializing | Active(_) => Cancelled
+      case settled                  => settled
 
-    current match
+    displaced match
       case Initializing | Active(_) =>
-        if !state.compareAndSet(current, Cancelled) then cancel() else
-          promise.cancel()
-          strand.interrupt()
-          strand.join()
+        promise.cancel()
+        strand.interrupt()
+        strand.join()
 
       case Cancelled => strand.join()
       case _         => ()
 
   def result()(using cancel: Tactic[Async.Error]^): Result =
-    state.get() match
+    state() match
       case Delivered(_, result) => result // Repeated joins skip the CAS and allocation below.
       case _ =>
-        state.updateAndGet:
+        state.since:
           case null                        => abort(Async.Error(Reason.Incomplete))
           case Initializing                => abort(Async.Error(Reason.Incomplete))
           case Active(_)                   => abort(Async.Error(Reason.Incomplete))
@@ -385,10 +393,10 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
 
 
   private def fulfilment[error <: Hazard]()(using Tactic[error | Async.Error]^): Result =
-    state.get() match
+    state() match
       case Delivered(_, result) => result // Repeated joins skip the CAS and allocation below.
       case _ =>
-        state.updateAndGet:
+        state.since:
           case Completed(duration, result) => Delivered(duration, result)
           case state@Delivered(_, _)       => state
           case other                       => other
@@ -403,7 +411,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
           case _                           => abort(Async.Error(Reason.Incomplete))
 
   private lazy val strand: Strand = parent.supervisor.fork(() => stack):
-    val started: Boolean = state.updateAndGet:
+    val started: Boolean = state.since:
       case Initializing => Active(jl.System.currentTimeMillis)
       case other        => other
     match
@@ -418,7 +426,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
 
     try
       if started then evaluate(this).tap: result =>
-        state.updateAndGet:
+        state.since:
           case Active(startTime) => Completed(jl.System.currentTimeMillis - startTime, result)
           case other             => other
 
@@ -426,7 +434,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
       case error: InterruptedException =>
         supervisor.interrupted()
 
-        state.updateAndGet:
+        state.since:
           case Initializing | Active(_) | Cancelled => Cancelled
           case state                                => state
 
@@ -436,7 +444,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
 
       case error: Throwable =>
         failure = error
-        state.set(Failed(error))
+        state() = Failed(error)
 
     finally
       // Nothing in the shutdown path may leave the promise unsettled: a joiner parked on an
@@ -466,12 +474,12 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
           original
 
       try
-        try probate.cleanup(this) catch case error: Throwable => state.set(Failed(error))
+        try probate.cleanup(this) catch case error: Throwable => state() = Failed(error)
 
         // The last five cases cover a body which failed without the failure ever reaching the
         // state: no joiner can then be shown it, so escalating is the only way it is not dropped in
         // silence, and that holds whether the worker is a daemon or not.
-        escalation = state.get().nn match
+        escalation = state() match
           case Failed(error: Error) => if daemon then remedy(error) else Unset
           case Failed(error)        => if daemon then error else Unset
           case Initializing         => failure
@@ -493,7 +501,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
         // must be terminal before the promise wakes any joiner. If even that fails, cancelling is
         // the last resort: a joiner woken with an `Async.Error` beats a joiner never woken at all.
         try
-          state.updateAndGet:
+          state.since:
             case null | Initializing | Active(_) => Cancelled
             case state                           => state
 

@@ -32,12 +32,11 @@
                                                                                                   */
 package vivisection
 
-import java.util.concurrent.atomic as juca
-
 import scala.collection.concurrent as scc
 
 import contingency.*
 import proscenium.*
+import rudiments.*
 import vacuous.*
 
 // A revocable handle on a source-position breakpoint: the executable locations it has bound to so
@@ -49,7 +48,7 @@ class SourceBreakpoint private[vivisection] (debug: Debug, prepare: Int):
   // read, bound from the registration pass, or cleared. `record` settles each race by handing
   // back any request its caller must revoke — a duplicate binding, or one that lost against
   // `clear()`.
-  private val closed: juca.AtomicBoolean = juca.AtomicBoolean(false)
+  private val closed: Atomic[Boolean] = Atomic(false)
   private val bindings: scc.TrieMap[Jdwp.Location, Int] = scc.TrieMap()
 
   // The locations this breakpoint has bound to so far; empty while every matching class remains
@@ -61,12 +60,12 @@ class SourceBreakpoint private[vivisection] (debug: Debug, prepare: Int):
   // Whether a binding at this location would currently be admitted — the cheap pre-check which
   // spares installing a breakpoint destined for revocation.
   private[vivisection] def admits(location: Jdwp.Location): Boolean =
-    !closed.get && !bindings.contains(location)
+    !closed() && !bindings.contains(location)
 
   private[vivisection] def record(location: Jdwp.Location, request: Int): Optional[Int] =
-    if closed.get then request
+    if closed() then request
     else if bindings.putIfAbsent(location, request) != scala.None then request
-    else if closed.get then
+    else if closed() then
       // `clear` may have run between the write and this check; whichever of the two removes the
       // entry owns its revocation.
       bindings.remove(location) match
@@ -76,7 +75,7 @@ class SourceBreakpoint private[vivisection] (debug: Debug, prepare: Int):
       Unset
 
   def clear()(using Tactic[Debugger.Error]): Unit =
-    closed.set(true)
+    closed() = true
     debug.removePrepare(prepare)
 
     bindings.keySet.toList.foreach: location =>

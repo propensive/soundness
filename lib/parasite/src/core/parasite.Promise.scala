@@ -35,8 +35,6 @@ package parasite
 import scala.language.experimental.pureFunctions
 
 import java.lang as jl
-import java.util.concurrent.atomic as juca
-import java.util.function as juf
 
 import anticipation.*
 import contingency.*
@@ -58,20 +56,20 @@ object Promise:
 final class Promise[value]():
   import Promise.State, State.{Incomplete, Complete, Cancelled}
 
-  private val state: juca.AtomicReference[State[value]] =
-    juca.AtomicReference(Incomplete(scala.collection.immutable.Set()))
+  private val state: Atomic[State[value]] =
+    Atomic(Incomplete(scala.collection.immutable.Set()))
 
-  def cancelled: Boolean = state.get() == Cancelled
+  def cancelled: Boolean = state() == Cancelled
 
-  def apply(): Optional[value] = state.get() match
+  def apply(): Optional[value] = state() match
     case Complete(value) => value
     case _               => Unset
 
-  def ready: Boolean = state.get() match
+  def ready: Boolean = state() match
     case Incomplete(_) => false
     case _             => true
 
-  def complete: Boolean = state.get() match
+  def complete: Boolean = state() match
     case Complete(_) => true
     case _           => false
 
@@ -81,49 +79,55 @@ final class Promise[value]():
   :   (Task[value] emits Async.Error)^{monitor, probate} =
     async(await())
 
-  // The transition is pure — `getAndUpdate` may re-run it under contention — so the waiters are
-  // unparked exactly once afterwards, from the returned previous state. No wakeup can be lost:
-  // once `Complete` is installed, `enqueue` adds no further waiters.
-  private def completeIncomplete(supplied: value)(current: State[value] | Null): State[value] =
-    current.nn match
-      case Incomplete(_) => Complete(supplied)
-      case current       => current
-
+  // `ere` may re-run the transition under contention, so `supplied` — a by-name — is forced
+  // ONCE here rather than inside it. `ere` yields the state THIS call displaced, so the waiters
+  // are unparked exactly once, from that state. No wakeup can be lost: once `Complete` is
+  // installed, the enqueue transition adds no further waiters. The settled case returns its
+  // argument by reference, so a settled promise takes no compare-and-set at all.
   def fulfill(supplied: => value): (Tactic[Async.Error]^) ?->{supplied} Unit =
-    state.getAndUpdate(completeIncomplete(supplied)).nn match
+    val installed: value = supplied
+
+    val displaced = state.ere:
+      case Incomplete(_) => Complete(installed)
+      case settled       => settled
+
+    displaced match
       case Cancelled           => raise(Async.Error(Async.Error.Reason.Cancelled))
       case Complete(_)         => raise(Async.Error(Async.Error.Reason.AlreadyComplete))
       case Incomplete(waiting) => waiting.each(_.unpark())
 
   def offer(supplied: => value): Unit =
-    state.getAndUpdate(completeIncomplete(supplied)).nn match
+    val installed: value = supplied
+
+    val displaced = state.ere:
+      case Incomplete(_) => Complete(installed)
+      case settled       => settled
+
+    displaced match
       case Incomplete(waiting) => waiting.each(_.unpark())
       case _                   => ()
-
-  private def enqueue(strand: Strand)(current: State[value] | Null): State[value] =
-    current.nn match
-      case Incomplete(waiting) => Incomplete(waiting + strand)
-      case Complete(value)     => Complete(value)
-      case _                   => Cancelled
 
   def await()(using monitor: Monitor^): (Tactic[Async.Error]^) ?->{monitor} value =
     if monitor.supervisor.interrupted() then throw new InterruptedException()
 
     // A settled promise needs no CAS and no waiter-set allocation — the common case when joining
-    // an already-finished task. The enqueue operator is allocated once per call, outside the
-    // park loop.
-    state.get().nn match
+    // an already-finished task. Nothing is hoisted out of the park loop any more: `ere` takes an
+    // inline transition, so the lambda beta-reduces and no operator is allocated per iteration.
+    state() match
       case Complete(value) => value
       case Cancelled       => abort(Async.Error(Async.Error.Reason.Cancelled))
       case Incomplete(_)   =>
         val strand0: Strand = monitor.supervisor.strand()
-        val enqueue0: juf.UnaryOperator[State[value]] = enqueue(strand0)(_)
 
         @tailrec
         def recur(): value =
           if monitor.supervisor.interrupted() then throw new InterruptedException()
 
-          state.getAndUpdate(enqueue0).nn match
+          val displaced = state.ere:
+            case Incomplete(waiting) => Incomplete(waiting + strand0)
+            case settled             => settled
+
+          displaced match
             case Incomplete(_)   => monitor.supervisor.park(this) yet recur()
             case Complete(value) => value
             case Cancelled       => abort(Async.Error(Async.Error.Reason.Cancelled))
@@ -135,13 +139,16 @@ final class Promise[value]():
 
     if !ready then
       val strand0: Strand = monitor.supervisor.strand()
-      val enqueue0: juf.UnaryOperator[State[value]] = enqueue(strand0)(_)
 
       @tailrec
       def recur(): Unit =
         if monitor.supervisor.interrupted() then throw new InterruptedException()
 
-        state.getAndUpdate(enqueue0) match
+        val displaced = state.ere:
+          case Incomplete(waiting) => Incomplete(waiting + strand0)
+          case settled             => settled
+
+        displaced match
           case Incomplete(_) =>
             monitor.supervisor.park(this)
             recur()
@@ -151,13 +158,14 @@ final class Promise[value]():
 
       recur()
 
-  private def cancelIncomplete(current: State[value] | Null): State[value] = current match
-    case Incomplete(_) => Cancelled
-    case current       => current.nn
+  def cancel(): Unit =
+    val displaced = state.ere:
+      case Incomplete(_) => Cancelled
+      case settled       => settled
 
-  def cancel(): Unit = state.getAndUpdate(cancelIncomplete) match
-    case Incomplete(waiting) => waiting.each(_.unpark())
-    case _                   => ()
+    displaced match
+      case Incomplete(waiting) => waiting.each(_.unpark())
+      case _                   => ()
 
 
   def await[generic: Abstractable across Durations to Long](duration: generic)
@@ -166,28 +174,32 @@ final class Promise[value]():
 
     if monitor.supervisor.interrupted() then throw new InterruptedException()
 
-    state.get().nn match
+    state() match
       case Complete(value) => value
       case Cancelled       => abort(Async.Error(Async.Error.Reason.Cancelled))
       case Incomplete(_)   =>
         val deadline = jl.System.nanoTime() + duration.generic
         val strand0: Strand = monitor.supervisor.strand()
-        val enqueue0: juf.UnaryOperator[State[value]] = enqueue(strand0)(_)
 
         @tailrec
         def recur(): value =
           if monitor.supervisor.interrupted() then throw new InterruptedException()
           else if deadline < jl.System.nanoTime then abort(Async.Error(Async.Error.Reason.Timeout))
-          else state.getAndUpdate(enqueue0).nn match
-            case Incomplete(_) =>
-              monitor.supervisor.park(this, deadline)
-              recur()
+          else
+            val displaced = state.ere:
+              case Incomplete(waiting) => Incomplete(waiting + strand0)
+              case settled             => settled
 
-            case Complete(value) =>
-              value
+            displaced match
+              case Incomplete(_) =>
+                monitor.supervisor.park(this, deadline)
+                recur()
 
-            case Cancelled =>
-              abort(Async.Error(Async.Error.Reason.Cancelled))
+              case Complete(value) =>
+                value
+
+              case Cancelled =>
+                abort(Async.Error(Async.Error.Reason.Cancelled))
 
         recur()
 
@@ -201,21 +213,25 @@ final class Promise[value]():
     if !ready then
       val deadline = jl.System.nanoTime() + duration.generic
       val strand0: Strand = monitor.supervisor.strand()
-      val enqueue0: juf.UnaryOperator[State[value]] = enqueue(strand0)(_)
 
       @tailrec
       def recur(): Unit =
         if monitor.supervisor.interrupted() then throw new InterruptedException()
         else if deadline > jl.System.nanoTime
-        then state.getAndUpdate(enqueue0).nn match
-          case Incomplete(_) =>
-            monitor.supervisor.park(this, deadline)
-            recur()
+        then
+          val displaced = state.ere:
+            case Incomplete(waiting) => Incomplete(waiting + strand0)
+            case settled             => settled
 
-          case Cancelled =>
-            ()
+          displaced match
+            case Incomplete(_) =>
+              monitor.supervisor.park(this, deadline)
+              recur()
 
-          case Complete(_) =>
-            ()
+            case Cancelled =>
+              ()
+
+            case Complete(_) =>
+              ()
 
       recur()

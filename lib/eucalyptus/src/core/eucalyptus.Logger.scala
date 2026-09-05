@@ -100,7 +100,7 @@ object Logger:
             probate:   Probate )
   :   Relay[format] =
 
-    val stopped: juc.atomic.AtomicBoolean = juc.atomic.AtomicBoolean(false)
+    val stopped: Atomic[Boolean] = Atomic(false)
 
     // The daemon body must stay capture-free (hygienic, see above); the writer's lifetime is
     // the global spool registry's, so it is laundered pure for use inside the daemon.
@@ -109,12 +109,12 @@ object Logger:
 
     Relay[format]().tap: spool =>
       daemon:
-        while !stopped.get() do
+        while !stopped() do
           try writable0.write(destination, spool.stream(using addressable0))
           catch case _: Truncation.Error => ()
 
       Os.intercept[Shutdown]:
-        stopped.set(true)
+        stopped() = true
         spool.stop()
 
 class Logger[-eventType, loggingType] private
