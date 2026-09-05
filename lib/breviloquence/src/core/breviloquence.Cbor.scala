@@ -1073,53 +1073,52 @@ object Cbor extends Cbor2, Dynamic:
 
     // Reads an indefinite-length byte string by concatenating its definite-
     // length chunks (each prefixed with major type 2) until a Break stop code.
-    // Uses `ByteArrayOutputStream` so chunk bytes flow through bulk `write`
-    // (≈ `System.arraycopy`) without per-byte boxing into `java.lang.Byte`.
+    // Chunk bytes flow through `Scribe`'s bulk `append` (one `System.arraycopy` per chunk)
+    // rather than a byte at a time, which is why the JDK buffer was reached for here.
     private def readIndefiniteByteString(): Array[Byte]^{} raises Cbor.Error =
-      val buffer = new java.io.ByteArrayOutputStream
-      var done = false
+      Array.collect[Byte](): buffer =>
+        var done = false
 
-      while !done do
-        expect(1)
-        val head = data(offset) & 0xFF
+        while !done do
+          expect(1)
+          val head = data(offset) & 0xFF
 
-        if head == Break then
-          offset += 1
-          done = true
-        else
-          val major = head >>> 5
-          val info = head & 0x1F
-          if major != 2 then abort(Cbor.Error(Reason.Reserved(offset.toLong, head)))
-          val chunkOffset = offset.toLong
-          offset += 1
-          val length = boundedLength(readLength(info, chunkOffset), chunkOffset)
-          buffer.write(data, offset, length)
-          offset += length
-
-      buffer.toByteArray.nn.asInstanceOf[Array[Byte]^{}]
+          if head == Break then
+            offset += 1
+            done = true
+          else
+            val major = head >>> 5
+            val info = head & 0x1F
+            if major != 2 then abort(Cbor.Error(Reason.Reserved(offset.toLong, head)))
+            val chunkOffset = offset.toLong
+            offset += 1
+            val length = boundedLength(readLength(info, chunkOffset), chunkOffset)
+            buffer.append(Array.unsafeFrozen(data), offset, length)
+            offset += length
 
     private def readIndefiniteTextString(): String raises Cbor.Error =
-      val buffer = new java.io.ByteArrayOutputStream
-      var done = false
+      val collected = Array.collect[Byte](): buffer =>
+        var done = false
 
-      while !done do
-        expect(1)
-        val head = data(offset) & 0xFF
+        while !done do
+          expect(1)
+          val head = data(offset) & 0xFF
 
-        if head == Break then
-          offset += 1
-          done = true
-        else
-          val major = head >>> 5
-          val info = head & 0x1F
-          if major != 3 then abort(Cbor.Error(Reason.Reserved(offset.toLong, head)))
-          val chunkOffset = offset.toLong
-          offset += 1
-          val length = boundedLength(readLength(info, chunkOffset), chunkOffset)
-          buffer.write(data, offset, length)
-          offset += length
+          if head == Break then
+            offset += 1
+            done = true
+          else
+            val major = head >>> 5
+            val info = head & 0x1F
+            if major != 3 then abort(Cbor.Error(Reason.Reserved(offset.toLong, head)))
+            val chunkOffset = offset.toLong
+            offset += 1
+            val length = boundedLength(readLength(info, chunkOffset), chunkOffset)
+            buffer.append(Array.unsafeFrozen(data), offset, length)
+            offset += length
 
-      val bytes = buffer.toByteArray.nn
+      val bytes = Array.unsafeJvm(collected)
+
       decodeUtf8(bytes, 0, bytes.length, 0L)
 
     private inline def decodeUtf8

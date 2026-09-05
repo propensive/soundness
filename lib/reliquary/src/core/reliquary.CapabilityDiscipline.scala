@@ -114,17 +114,13 @@ object CapabilityDiscipline extends Discipline:
       if left(0).s > right(0).s then abort(malformed(t"capability rows are not sorted by name"))
 
     val listing = entries.toList.map: (name, predicate) =>
-      val out = java.io.ByteArrayOutputStream()
-      out.write(name.s.getBytes("UTF-8").nn)
-      out.write(0)
+      val encoding = Array.collect[Byte](): out =>
+        out.append(Array.unsafeFrozen(name.s.getBytes("UTF-8").nn))
+        out.append(0)
 
-      predicate.let: text =>
-        out.write(1)
-        out.write(text.s.getBytes("UTF-8").nn)
-
-      . or(out.write(0))
-
-      val encoding = Array.unsafeFrozen(out.toByteArray.nn)
+        predicate.lay(out.append(0)): text =>
+          out.append(1)
+          out.append(Array.unsafeFrozen(text.s.getBytes("UTF-8").nn))
       Atom(name, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), encoding))
 
     // `entries` is the stdlib `Vector` the TEL reader hands back; the listing crosses to the

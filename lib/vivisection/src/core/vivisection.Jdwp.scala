@@ -48,7 +48,7 @@ import coaxial.*
 // caller's argument lists, of a handful of elements.
 import denominative.dysasymptotics.linearSize
 import denominative.size
-import rudiments.{Atomic, each}
+import rudiments.{Atomic, collect, each}
 import contingency.*
 import fulminate.*
 import gossamer.*
@@ -333,24 +333,25 @@ object Jdwp:
 
   private[vivisection] def encodeModifiedUtf8(text: Text): scala.Array[Byte] =
     val string = text.s
-    val buffer = ji.ByteArrayOutputStream()
-    var index = 0
 
-    while index < string.length do
-      val char = string.charAt(index).toInt
+    val encoded = Array.collect[Byte](string.length): buffer =>
+      var index = 0
 
-      if char >= 0x01 && char <= 0x7f then buffer.write(char)
-      else if char <= 0x7ff then
-        buffer.write(0xc0 | (char >> 6))
-        buffer.write(0x80 | (char & 0x3f))
-      else
-        buffer.write(0xe0 | (char >> 12))
-        buffer.write(0x80 | ((char >> 6) & 0x3f))
-        buffer.write(0x80 | (char & 0x3f))
+      while index < string.length do
+        val char = string.charAt(index).toInt
 
-      index += 1
+        if char >= 0x01 && char <= 0x7f then buffer.append(char.toByte)
+        else if char <= 0x7ff then
+          buffer.append((0xc0 | (char >> 6)).toByte)
+          buffer.append((0x80 | (char & 0x3f)).toByte)
+        else
+          buffer.append((0xe0 | (char >> 12)).toByte)
+          buffer.append((0x80 | ((char >> 6) & 0x3f)).toByte)
+          buffer.append((0x80 | (char & 0x3f)).toByte)
 
-    buffer.toByteArray.nn
+        index += 1
+
+    Array.unsafeJvm(encoded)
 
   // Decodes a JDWP packet payload. Big-endian throughout; identifier reads consult the negotiated
   // `sizes`. Stateful and single-threaded — one reader decodes one reply or one event, in order.

@@ -80,15 +80,15 @@ object Derivative:
 
       Zip.Entry(ref, store.resolve(entry.blob))
 
-    val out = java.io.ByteArrayOutputStream()
+    Array.collect[Byte](): out =>
+      Zipfile(entries, Unset, Unset).serialize.drain: region =>
+        range =>
+          val interval: Interval = range
 
-    Zipfile(entries, Unset, Unset).serialize.drain: region =>
-      range =>
-        val interval: Interval = range
-        out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
-            interval.size)
-
-    Array.unsafeFrozen(out.toByteArray.nn)
+          out.append
+           ( Array.unsafeFrozen(unsafely(region.raw.asInstanceOf[scala.Array[Byte]])),
+             interval.start.n0,
+             interval.size )
 
   def hash(tree: Lira.Tree, store: Blobstore): Data raises Lira.Error =
     Lira.Hash(Lira.Hash.Domain.Derivative, jar(tree, store))
