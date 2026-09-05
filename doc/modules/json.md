@@ -30,15 +30,18 @@ of a verified document can be read with the compiler rejecting any path the sche
 does not allow. The sections below start with parsing and the everyday conversions,
 then build toward schemas, validation, and the integrations with other types.
 
+A JSON value is immutable and every operation on it returns a new one, in keeping with [immutability](../philosophy/immutability.md).
+
 These examples assume a few imports — the package, an error strategy, a text
 encoding, and a choice of output formatting:
 
 ```scala
 import soundness.*
 
-import strategies.throwUnsafely
 import charEncoders.utf8Encoder
+import errorDiagnostics.stackTracesDiagnostics
 import formatting.compactJsonFormatting
+import strategies.throwUnsafely
 ```
 
 ### Parsing
@@ -102,9 +105,11 @@ fields are taken from the token stream as they arrive, so no `Json` tree is ever
 saved is the whole intermediate structure — allocation, boxing, and a second traversal:
 
 ```scala
-object Person:
-  given parsable: Person is Json.Parsable = Json.Parsable.derived
+given Person is Json.Parsable = Json.Parsable.derived
 ```
+
+The instance belongs in the type's companion object in ordinary code, where it is found without
+an import.
 
 The tree route remains for documents whose shape is not known in advance, or where the tree is
 itself the point.
@@ -346,10 +351,20 @@ two places yields four errors, pointed at `#/person/age`, `#/person/email` and s
 tree's faults in one pass, each locatable, rather than the first fault and nothing else:
 
 ```scala
+case class Address(street: Text, postcode: Text)
+case class Contact(person: Person, address: Address)
+
+case class Issues(items: List[(Text, Json.Error)] = Nil)(using Diagnostics)
+extends Error(m"${items.size} problems"):
+  def +(pointer: Text, error: Json.Error): Issues = Issues(items :+ (pointer, error))
+
+val damaged = t"""{"person": {"name": 1}, "address": {"street": 2}}""".read[Json]
+
 Validate[Issues, [r] =>> r raises Json.Error, Json.Focus]
   ( Issues(),
     { case error: Json.Error => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
-. protect(document.as[Contact])
+. protect(damaged.as[Contact])
+. items.map(_(0))   // List(t"#/person/name", t"#/person/age", t"#/address/street", t"#/address/postcode")
 ```
 
 Missing and wrong-typed fields accrue together, and a field that is absent contributes exactly
@@ -507,8 +522,15 @@ alice.verify[Employee].name.deeper     // does not compile: a scalar has no fiel
 Navigation runs to any depth, through nested objects and into arrays, with each step checked:
 
 ```scala
-posting.verify[Posting].workplace.city.as[Text]
-squad.verify[Squad].members(1).name.as[Text]
+case class Workplace(city: Text)
+case class Posting(title: Text, workplace: Workplace)
+case class Squad(members: List[Person])
+
+val posting = t"""{"title": "Engineer", "workplace": {"city": "Tallinn"}}""".read[Json]
+val squad = t"""{"members": [{"name": "Ada", "age": 36}, {"name": "Bob", "age": 41}]}""".read[Json]
+
+posting.verify[Posting].workplace.city.as[Text]   // t"Tallinn"
+squad.verify[Squad].members(1).name.as[Text]      // t"Bob"
 ```
 
 Verified navigation needs no `dynamicJsonAccess` import — the schema, not a blanket enabler, is
@@ -526,13 +548,16 @@ awkward field calls for. A `Specific` names the path instead, so an override app
 spine and nowhere else:
 
 ```scala
+case class Staffer(name: Text, age: Int)
+case class Firm(boss: Staffer, deputy: Staffer)
+
 val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
 
 given (Firm is Specific over Json.Encodable) =
   specifically:
     case root.deputy.name() => shout
 
-Firm(Worker(t"ann", 30), Worker(t"bob", 40)).in[Json].show
+Firm(Staffer(t"ann", 30), Staffer(t"bob", 40)).in[Json].show
 // t"""{"boss":{"name":"ann","age":30},"deputy":{"name":"BOB","age":40}}"""
 ```
 
@@ -542,11 +567,14 @@ elements — the way to change how the members of one list are written without c
 everywhere:
 
 ```scala
+val nameOnly: Person is Json.Encodable =
+  Json.Encodable(() => Morphology.Str): person => Json(person.name)
+
 given (Crew is Specific over Json.Encodable) =
   specifically:
-    case root.members() =>
-      given Worker is Json.Encodable = nameOnly
-      summon[List[Worker] is Json.Encodable]
+    case root.rowers() =>
+      given Person is Json.Encodable = nameOnly
+      summon[List[Person] is Json.Encodable]
 ```
 
 ### Typed records from a schema
@@ -559,10 +587,26 @@ schema declares — a string as `Text`, a number as `Double`, a `format: "email"
 as an `EmailAddress`, a `pattern` field as a `Regex` — and a field the schema does not
 describe is a compile error:
 
+<!-- doccheck: skip -->
 ```scala
+object Catalogue extends JsonBlueprint(t"""{
+  "type": "object",
+  "required": ["name", "children"],
+  "properties": {
+    "name": { "type": "string" },
+    "email": { "type": "string", "format": "email" },
+    "children": {
+      "type": "array",
+      "items": { "weight": { "type": "number", "minimum": 0 } }
+    }
+  }
+}""".read[Json].as[JsonBlueprint.Doc])
+
+val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
+
 val record = Catalogue.record(input)
-record.name                  // a Text,   per the schema
-record.children.head.weight  // a Double, per the schema
+record.name                       // t"Bicycle", a Text per the schema
+record.children.prim.let(_.weight)   // 9.5, a Double per the schema
 ```
 
 Constraints in the schema are enforced as the values are read: a value failing a
