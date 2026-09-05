@@ -25,6 +25,8 @@ from the `soundness` package:
 import soundness.*
 ```
 
+A highlighted token that knows its type is [composability](../philosophy/composability.md) between the compiler and the renderer.
+
 ### Highlighting
 
 `Scala.highlight` tokenizes source into lines of accented tokens — keywords, identifiers, numbers,
@@ -51,9 +53,10 @@ With a compiler and classpath in scope, `typecheckedScala` runs the frontend, an
 carries the type the compiler gave it — the difference between coloring `xs` as an identifier and
 knowing it is a `List[Int]`:
 
+<!-- doccheck: skip -->
 ```scala
-given Scalac[3.8] = Scalac[3.8](Nil)
-given LocalClasspath = classpath
+given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+given LocalClasspath = LocalClasspath()
 import highlighting.typecheckedScala
 
 val typed = Scala.highlight(t"val xs = List(1, 2, 3)")

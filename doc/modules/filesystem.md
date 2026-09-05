@@ -2,16 +2,17 @@
 
 ### About
 
-Soundness reads and writes files on disk through the typed [paths](paths.md) it already knows
-how to describe. A `Path on Linux` gains the operations that touch the disk — opening it to read
-or write, creating it as a file or a directory, listing its children, copying, moving and
-deleting — each declaring the errors it may raise and logging what it does. How an operation
-behaves in the awkward cases, such as whether a copy overwrites an existing file or a delete
-recurses into a directory, is decided by policy values chosen in scope.
+Files on disk are read and written through the typed [paths](paths.md) that already describe
+them. A `Path on Linux` gains the operations that touch the disk — opening it to read or write,
+creating it as a file or a directory, listing its children, copying, moving and deleting — each
+declaring the errors it may raise and logging what it does. How an operation behaves in the
+awkward cases, such as whether a copy overwrites an existing file or a delete recurses into a
+directory, is decided by policy values chosen in scope.
 
 Beyond individual files, the standard directory locations of a system — the home directory, the
-cache, `/usr/share` — are named values, and a directory can be watched for changes, yielding a
-stream of the files created, modified and deleted beneath it.
+cache, `/usr/share` — are named values; a directory can be watched for changes, yielding a
+stream of the files created, modified and deleted beneath it; and a file can be locked,
+memory-mapped, tagged with extended attributes, or searched for along a path of directories.
 
 ### On the filesystem
 
@@ -30,11 +31,16 @@ operations need brought into scope:
 
 ```scala
 import soundness.*
+
+import charDecoders.utf8Decoder
+import charEncoders.utf8Encoder
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
+import filesystemOptions.overwritePreexisting
+import pathInterfaces.pathOnLinux
 import strategies.throwUnsafely
 import systems.javaBaseSystem
-import temporaryDirectories.systemTemporaryDirectory
-import filesystemOptions.overwritePreexisting
-import filesystemOptions.deleteRecursively
+import temporaryDirectories.javaBaseTemporaryDirectory
 ```
 
 ### Files and directories
@@ -43,10 +49,10 @@ A path names a location; whether it is a file or a directory is a matter of what
 there. A temporary directory and a fresh name give a path to work with:
 
 ```scala
-val directory = temporaryDirectory[Path on Local]/Uuid().show
+val directory = temporaryDirectory[Path on Linux] / "filesystem" / Uuid().show
 directory.create[Directory]()
 
-val file = directory/t"notes.txt"
+val file = directory / "notes.txt"
 file.create[File]()
 ```
 
@@ -56,11 +62,11 @@ anything by default: creating over something that exists, or under a parent that
 it for the whole file:
 
 ```scala
-target.create[File](CreateFlag.Replace)
-target.create[Directory](CreateFlag.Parents)
+file.create[File](CreateFlag.Replace)
+(directory / "deep" / "nested").create[Directory](CreateFlag.Parents)
 ```
 
-`Fifo` and `Socket` are entries too, created the same way.
+`Fifo` and `Sock` are entries too, created the same way.
 
 ### Reading and writing
 
@@ -68,24 +74,22 @@ A file is read and written by *opening* it. `open` names the form to open the pa
 mode to open it in, and runs a block with a handle for its capability. The handle exists only
 for the duration of the block, so the descriptor cannot outlive the scope that owns it — the
 shape described under [delimited scopes](../philosophy/delimited-scopes.md), and enforced by
-[capture checking](../philosophy/capture-checking.md):
+[capture checking](../philosophy/capture-checking.md). Inside the block, `file` is the open
+handle:
 
 ```scala
-import charEncoders.utf8Encoder
-import charDecoders.utf8Decoder
-
 file.open[File](Write, OpenFlag.Create): handle ?=>
-  handle.write(LazyList(t"Hello, world".in[Data]))
+  handle.write(Chain(t"Hello, world".in[Data]))
 
-val text = file.open[File]()(file.stream.read[Data]).utf8
+file.open[File]()(file.read[Text])   // t"Hello, world"
 ```
 
 Where a whole small file is wanted, and the ceremony of a scope buys nothing, `read` and `write`
 act directly on the path:
 
 ```scala
-path.write(t"Hello world")
-path.read[Text]
+file.write(t"Hello world")
+file.read[Text]   // t"Hello world"
 ```
 
 The mode is not merely a runtime flag: it is carried in the handle's type as a set of *grants*.
@@ -100,11 +104,11 @@ path obtained from one open directory cannot be written under another:
 
 ```scala
 directory.open[Directory](Read & Write): dir ?=>
-  (dir/"greeting.txt").overwrite(t"Hello directory")
-  dir.base.entries.to(List).map(_.name)
+  (dir / "greeting.txt").overwrite(t"Hello directory")
+  dir.base.entries.map(_.name)   // List(t"notes.txt", t"greeting.txt", …)
 ```
 
-### Exclusive access
+### Exclusive and shared access
 
 `Exclusive` is a third grant, alongside `Read` and `Write`, and it means what it says: no other
 scope in the program may hold an overlapping path open while it lasts. Overlap is by containment,
@@ -112,7 +116,7 @@ not by equality — a directory and something beneath it overlap; two siblings d
 
 ```scala
 directory.open[Directory](Read & Exclusive): dir ?=>
-  // nothing else in this program may open `directory` or anything under it
+  ()   // nothing else in this program may open `directory` or anything under it
 ```
 
 Two ordinary reads may coexist. An exclusive open conflicts with an overlapping open in either
@@ -121,7 +125,10 @@ direction — whether the exclusive scope is the outer or the inner one — and 
 as corruption later. The claim is released when the scope ends, however it ends.
 
 For a *file* rather than a directory, `Exclusive` additionally takes an operating-system lock, so
-exclusivity holds against other processes and not merely within this one.
+exclusivity holds against other processes and not merely within this one. `Shared` is the
+reader's counterpart: any number of shared holders may coexist, and an exclusive open waits for
+them, or fails at once if the lock is requested without blocking. A lock may also cover a byte
+range rather than the whole file, for the record-oriented layouts databases use.
 
 ### Creating as a scope
 
@@ -131,18 +138,20 @@ written within the scope is committed when the block completes, and a scope that
 nothing behind:
 
 ```scala
-target.create[File](): handle ?=>
-  handle.write(LazyList(t"payload".in[Data]))
+val target = directory / "payload.bin"
 
-target.create[Directory](): dir ?=>
-  (dir/"inner.txt").overwrite(t"hello")
+target.create[File](): handle ?=>
+  handle.write(Chain(t"payload".in[Data]))
+
+(directory / "inner").create[Directory](): dir ?=>
+  (dir / "inner.txt").overwrite(t"hello")
 ```
 
 A *scratch* directory is created and removed by its scope, whether the scope succeeds or fails:
 
 ```scala
-base.open[Scratch](Read & Write): scratch ?=>
-  (scratch/"file.txt").overwrite(t"data")
+directory.open[Scratch](Read & Write): scratch ?=>
+  (scratch / "file.txt").overwrite(t"data")
 ```
 
 ### The opening pattern, generally
@@ -157,18 +166,18 @@ rather than being implied by the target: the same path opens as a `File`, as a `
 different handle with a different repertoire. The form may be omitted where a target has only one
 instance; where it has several, the ambiguity is reported with the alternatives listed.
 
-Three things follow uniformly. The *mode* — `Read`, `Write`, `Exclusive` and their combinations —
-is carried in the handle's type, so the grants requested are the operations permitted. Flags after
-the mode belong to the instance, so they are specific to the kind of thing being opened, and
-irrelevant flags do not typecheck. And the handle is a capability confined to the block, so
-neither it nor anything derived from it can escape.
+Three things follow uniformly. The *mode* — `Read`, `Write`, `Exclusive`, `Shared` and their
+combinations — is carried in the handle's type, so the grants requested are the operations
+permitted. Flags after the mode belong to the instance, so they are specific to the kind of thing
+being opened, and irrelevant flags do not typecheck. And the handle is a capability confined to
+the block, so neither it nor anything derived from it can escape.
 
 `create` is the same pattern for something that does not yet exist, and `session` for a target
 whose access is a conversation with something running — a [browser](web-automation.md), a
 [debuggee](debugging.md) — rather than a handle over stored bytes. In each case the scope is the
 lifetime, and the end of the block is the end of the access.
 
-### Memory-mapped access
+### Positional access
 
 A file opened as `Ram` is memory-mapped, and serves positional reads and writes without
 streaming through it. The `Write` grant is required to write, as everywhere else:
@@ -181,26 +190,31 @@ file.open[Ram](Read & Write): ram ?=>
   ram(3L) = t"XYZ".in[Data]
 ```
 
+A `Slice` is a window onto part of a file — an offset and an extent — opened for reading or
+writing like a file of its own, so a region of a large file streams in or out without the rest
+being touched, and a write cannot stray outside its window.
+
 ### Copying, moving and deleting
 
 A path copies, moves, symlinks or deletes with operations that name the destination or act in
-place. Each consults the policy in scope for the awkward cases, and each may raise an `Io.Error`:
+place. Each consults the policy in scope for the awkward cases, and each may raise an `Io.Error`.
 
 Those policies are not defaults that can be left alone. Moving a file onto a path where something
 already exists either destroys that thing or refuses to; neither answer is right in general, and
-choosing one silently would make the wrong programs compile. So `moveTo` requires
-`overwritePreexisting` to be either `enabled` or `disabled` in scope, and calling it with neither
-is a compile error. The point is not only to be unpresumptuous but to be instructive: a reader who
-had not realised the question needed answering is told that it does.
+choosing one silently would make the wrong programs compile. So `moveTo` requires either
+`overwritePreexisting` or `failOnPreexisting` in scope, and calling it with neither is a compile
+error. The point is not only to be unpresumptuous but to be instructive: a reader who had not
+realized the question needed answering is told that it does.
 
-The choice also changes what must be handled. With `disabled` in scope a collision is a failure to
-deal with; with `enabled` it cannot arise, and the obligation goes away with it. Being contextual
-values, the policies can be imported for a file or narrowed to a single block.
+The choice also changes what must be handled. With `failOnPreexisting` in scope a collision is a
+failure to deal with; with `overwritePreexisting` it cannot arise, and the obligation goes away
+with it. Being contextual values, the policies can be imported for a file or narrowed to a single
+block.
 
 ```scala
-file.copyTo(directory/t"backup.txt")
-file.moveTo(directory/t"renamed.txt")
-file.delete()
+file.copyTo(directory / "backup.txt")
+file.moveTo(directory / "renamed.txt")
+(directory / "backup.txt").delete()
 ```
 
 `copyInto` and `moveInto` place a path *inside* a destination directory, keeping its name;
@@ -213,10 +227,33 @@ A directory's immediate children stream from `children`, and its whole subtree f
 `descendants`. A path reports whether it exists, its size, and what kind of entry it is:
 
 ```scala
-directory.children       // Stream[Path on Local]
-file.existent()          // true
-file.size()              // the size in bytes
+directory.children.map(_.name)        // the entries' names
+(directory / "renamed.txt").existent()   // true
+(directory / "renamed.txt").filesize()   // the size in bytes
 ```
+
+A `glob` selects children by pattern, with `*` matching within a name and a whole-segment `**`
+spanning directories:
+
+```scala
+directory.glob(glob"*.txt").map(_.name)   // List(t"renamed.txt", …)
+```
+
+### Extended attributes and volumes
+
+The filesystem a path sits on is a typed fact about it: `Ext4`, `Btrfs`, `Apfs`, `Ntfs` and
+`Dos` are the *axes* a path can be matched against, and a filesystem that supports extended
+attributes lets a path carry named metadata beyond its contents:
+
+```scala
+file match
+  case Apfs(path) => path.attribute(t"origin", t"soundness".in[Data]) yet path.attributes()
+  case Ext4(path) => path.attribute(t"origin", t"soundness".in[Data]) yet path.attributes()
+  case _          => Nil
+```
+
+On btrfs, `subvolume` reports the subvolume a path belongs to, and `subvolumeRoot` whether it
+is the top of one.
 
 ### Standard directories
 
@@ -225,10 +262,10 @@ home directory and the paths beneath it, and the system directories under the ro
 navigating and applying:
 
 ```scala
-Home()             // the user's home directory
-Home.Cache()       // ~/.cache
-Home.Local.Bin()   // ~/.local/bin
-Base.Usr.Share()   // /usr/share
+Home[Path on Linux]()             // the user's home directory
+Home.Cache[Path on Linux]()       // ~/.cache
+Home.Local.Bin[Path on Linux]()   // ~/.local/bin
+Base.Usr.Share[Path on Linux]()   // /usr/share
 ```
 
 Each object is named for the directory it stands for, capitalized, with any leading `.` dropped —
@@ -236,23 +273,44 @@ Each object is named for the directory it stands for, capitalized, with any lead
 is `Base.Var.Lib`. Writing a standard location this way rather than as text means a
 mistyped directory is a compile error.
 
-The resolution honours the environment where the [specification](environment.md) says it should:
+The resolution honors the environment where the [specification](environment.md) says it should:
 `Home.Config` is normally `$HOME/.config`, but resolves to `$XDG_CONFIG_HOME` where the user has
 set it. Applying a layout constructs a value of whichever directory type is asked for, so the same
 names serve a `Path on Linux` and any other representation.
 
-### Watching for changes
+### Search paths
 
-A directory is watched by opening it as `Watch`, which yields a stream of `WatchEvent`s — a
-file created, modified or deleted. The registration lasts exactly as long as the block:
+Many files are looked up not at one location but along a list of them — an icon in whichever of
+the XDG data directories holds it, a configuration file in the first of several places. A
+`Searchpaths.Stems` instance names the directories to try, in order, and a relative path on
+the corresponding plane resolves with `search` to the first stem holding it, or `Unset`:
 
 ```scala
-directory.open[Watch](): watcher ?=>
-  watcher.stream.each:
-    case WatchEvent.NewFile(dir, file) => Out.println(t"created $file")
-    case WatchEvent.Modify(dir, file)  => Out.println(t"modified $file")
-    case WatchEvent.Delete(dir, file)  => Out.println(t"deleted $file")
-    case _                             => ()
+given Searchpaths.Stems on Xdg.Data onto Linux = new Searchpaths.Stems:
+  type Plane = Xdg.Data
+  type Target = Linux
+  val stems: List[Path on Linux] = List(directory, directory / "inner")
+
+(% / "inner.txt").on[Xdg.Data].search()   // the copy under `inner`
+```
+
+`dataSearch` and `configSearch` supply the XDG data and configuration search paths from the
+environment, so a program's resources are found wherever the user's system keeps them.
+
+### Watching for changes
+
+A directory is watched by opening it as `Watch`, which yields a stream of `Watch.Event`s — a
+file created, modified or deleted, a directory created. The registration lasts exactly as long
+as the block:
+
+```scala
+def observe(): Unit =
+  directory.open[Watch](): watcher ?=>
+    watcher.stream.each:
+      case Watch.Event.NewFile(dir, file) => Out.println(t"created $file")
+      case Watch.Event.Modify(dir, file)  => Out.println(t"modified $file")
+      case Watch.Event.Delete(dir, file)  => Out.println(t"deleted $file")
+      case _                              => ()
 ```
 
 Several paths are watched together by opening a list of them, which yields one event stream
@@ -267,7 +325,7 @@ Nothing above names a platform API. The primitive operations a filesystem must o
 open, read, write, list, link, delete — are gathered into a `FilesystemBackend` for a plane,
 and everything else is defined in terms of them. The `java.nio` implementation is
 `filesystemBackends.javaBaseFilesystem`, and a WASI implementation over `wasi:filesystem` is
-supplied by `galilei.wasi`, so the same code reads and writes files on the JVM and inside a
-WebAssembly component. An operation a backend cannot support raises an `Io.Error` whose reason
+supplied for WebAssembly components, so the same code reads and writes files on the JVM and
+inside a component. An operation a backend cannot support raises an `Io.Error` whose reason
 is `Unsupported`, rather than approximating it. Narrowing the platform's surface to a seam
 this small is [decoupling](../philosophy/decoupling.md) applied within a module.

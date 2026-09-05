@@ -30,10 +30,14 @@ text, and text `is Extractable to Int` reads _toward_ an integer.
 The everyday surface is small — the `as` method and the `As` extractor — and
 the sections below start there before turning to the typeclasses underneath and
 how to write instances for your own types. Everything comes from the `soundness`
-package:
+package. Decoding can fail — the text might not be a number — so it needs an
+error-handling strategy in scope; the `throwUnsafely` strategy raises an exception
+when a decode fails:
 
 ```scala
 import soundness.*
+import strategies.throwUnsafely
+import errorDiagnostics.stackTracesDiagnostics
 ```
 
 ### Decoding a value
@@ -42,27 +46,17 @@ The `as` method reads a typed value out of text. The target type is supplied
 explicitly, and a matching `Decodable` instance does the work:
 
 ```scala
-t"123".as[Int]   // 123
+t"123".as[Int]            // 123
+safely(t"hello".as[Int])  // Unset: the decoding raised a Number.Error
 ```
 
-Decoding can fail — the text might not be a number — so it needs an error-handling
-strategy in scope. The `throwUnsafely` strategy raises an exception when a decode
-fails:
-
-```scala
-import strategies.throwUnsafely
-
-t"123".as[Int]    // 123
-t"hello".as[Int]  // raises a NumberError
-```
-
-A `NumberError` reports both the offending text and why it failed: text that is
+A `Number.Error` reports both the offending text and why it failed: text that is
 not a number at all is _unparseable_, while a number outside the target type's
 range is _out of range_. Decoding to a `Byte` distinguishes the two:
 
 ```scala
-t"300".as[Byte]   // raises a NumberError: 300 is out of range for a Byte
-t"abc".as[Byte]   // raises a NumberError: abc is unparseable
+capture[Number.Error](t"300".as[Byte]).reason   // Number.Error.Reason.OutOfRange
+capture[Number.Error](t"abc".as[Byte]).reason   // Number.Error.Reason.Unparseable
 ```
 
 Instances come built in for the primitive number types, for `Char`, and for types
@@ -184,7 +178,7 @@ t"North" match
 Some types accept an empty input and some do not, and a form or a configuration
 often needs to know which before it asks for a value. A `Requirable` instance
 answers that: a type is _required_ when an empty input cannot produce one. The
-judgement follows from the type's decoder, so no separate declaration is needed —
+judgment follows from the type's decoder, so no separate declaration is needed —
 the decoder is simply run against the empty text, and whether it succeeds is the
 answer:
 
@@ -204,9 +198,6 @@ ordinal — each returning `Optional` rather than raising, since neither a name 
 an index is guaranteed to correspond to a case:
 
 ```scala
-enum Direction:
-  case North, South, East, West
-
 val enumerable = summon[Direction is Enumerable]
 
 enumerable.values             // every case, in order
@@ -228,8 +219,13 @@ header written `Content-Type` and read `contentType`. An `Identifiable` states
 both directions of such a mapping as a pair of text functions:
 
 ```scala
-val snakeCase = Identifiable[Column](encoder, decoder)
+case class Column()
+
+val snakeCase = Identifiable[Column](_.uncamel.snake, _.cut(t"_").camel)
 ```
+
+The two functions convert a name into the convention and back, using the
+[text](text.md) operations that split a name into words and join them again.
 
 Because it is a `Typeclass.Pure`, the compiler knows the conversion captures
 nothing, so it may be shared freely and applied wherever the naming convention
@@ -242,18 +238,20 @@ instance is writing the single conversion function; the framework supplies the
 `as` method, the `As` extractor and the rest.
 
 A `Decodable` instance maps an input to a value, mapping each recognized form to
-its result:
+its result. For a compass heading read from a single letter:
 
 ```scala
-enum Direction:
-  case North, South, East, West
+enum Heading:
+  case N, S, E, W
 
-object Direction:
-  given (Direction is Decodable in Text) =
-    case t"N" => North
-    case t"S" => South
-    case t"E" => East
-    case t"W" => West
+object Heading:
+  given (Heading is Decodable in Text) =
+    case t"north" => N
+    case t"south" => S
+    case t"east"  => E
+    case t"west"  => W
+
+t"north".as[Heading]   // Heading.N
 ```
 
 An `Extractable` instance returns an `Optional` result — `Unset` for the inputs it

@@ -21,6 +21,8 @@ likely to be separated by tabs or semicolons. Code that splits on commas handles
 and the mapping from columns to a program's own types is usually written out by hand and kept in
 step by discipline.
 
+Rows decode to case classes through the same derivation as every other format, so the shape of the data is checked once, as [correctness](../philosophy/correctness.md) prefers.
+
 Soundness derives that mapping from the case class the data should become. Parsing respects
 quoting and escaping; the format — delimiter, quote character, whether a header is present — is an
 explicit value rather than a guess; and decoding a row to a type, or a type to a row, is a single
@@ -39,7 +41,7 @@ Text reads as a `Sheet`, whose `rows` are `Dsv` values — one per line, split i
 to the format:
 
 ```scala
-t"hello,world".read[Sheet].rows.head   // Dsv(t"hello", t"world")
+t"hello,world".read[Sheet].rows(Prim)   // Dsv(t"hello", t"world")
 ```
 
 A `Sheet` is materialized: its rows are an array, replayable, indexable and cheap to compare. A
@@ -48,7 +50,8 @@ the rows one at a time, parsed by the same reader, so a quoted cell spanning chu
 boundaries is handled exactly as it is in a materialized sheet:
 
 ```scala
-source.rows.map(_[Text](t"name").or(t"?")).to(List)
+t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to(List)
+// List(t"name", t"alpha", t"beta")
 ```
 
 ### Decoding to a case class
@@ -57,17 +60,17 @@ A row decodes into a case class with `as`, taking the cells in order; a nested c
 consumes as many columns as it has fields:
 
 ```scala
-case class Name(first: Text, last: Text)
-case class Person(id: Int, name: Name, age: Int)
+case class FullName(first: Text, last: Text)
+case class Person(id: Int, name: FullName, age: Int)
 
-t"1,Ada,Lovelace,36".read[Sheet].rows.head.as[Person]
-// Person(1, Name(t"Ada", t"Lovelace"), 36)
+t"1,Ada,Lovelace,36".read[Sheet].rows(Prim).let(_.as[Person])
+// Person(1, FullName(t"Ada", t"Lovelace"), 36)
 ```
 
 Reading straight to a type combines the two steps, decoding a single record from text:
 
 ```scala
-t"hello,world".read[Name in Dsv]   // Name(t"hello", t"world")
+t"hello,world".read[FullName in Dsv]   // FullName(t"hello", t"world")
 ```
 
 ### Headers
@@ -76,9 +79,9 @@ When the data begins with a header row, the header-bearing format matches each c
 field of the same name, so the order of the columns need not match the order of the fields:
 
 ```scala
-import dsvFormats.csvWithHeaderFormat
-
-t"last,first\nLovelace,Ada".read[Name in Dsv]   // Name(t"Ada", t"Lovelace")
+locally:
+  import dsvFormats.csvWithHeaderFormat
+  t"last,first\nLovelace,Ada".read[FullName in Dsv]   // FullName(t"Ada", t"Lovelace")
 ```
 
 ### Encoding
@@ -87,8 +90,8 @@ A case class encodes to a row with `dsv`, and a sequence of them to a `Sheet`; r
 result with `show` produces the delimited text:
 
 ```scala
-Name(t"Ada", t"Lovelace").dsv          // Dsv(t"Ada", t"Lovelace")
-Seq(Name(t"Ada", t"Lovelace")).dsv.show   // t"Ada,Lovelace"
+FullName(t"Ada", t"Lovelace").dsv               // Dsv(t"Ada", t"Lovelace")
+List(FullName(t"Ada", t"Lovelace")).dsv.show    // t"Ada,Lovelace"
 ```
 
 ### Formats
@@ -97,9 +100,9 @@ The format in scope decides the delimiter and quoting. `csvFormat` and `tsvForma
 choices, each with a header-bearing variant, and `ssvFormat` separates on spaces:
 
 ```scala
-import dsvFormats.tsvFormat
-
-Seq(Name(t"Ada", t"Lovelace")).dsv.show   // t"Ada\tLovelace"
+locally:
+  import dsvFormats.tsvFormat
+  List(FullName(t"Ada", t"Lovelace")).dsv.show   // t"Ada\tLovelace"
 ```
 
 A cell is quoted only when it contains the delimiter, a quote, or a line break, and a quote
@@ -114,11 +117,7 @@ consumes, so a decoder knows where one field ends and the next begins even when 
 nested:
 
 ```scala
-case class Name(first: Text, last: Text)
-case class Person(id: Int, name: Name, age: Int)
-
-Spannable.derived[Person].spans().to(List)   // List(1, 2, 1)
-Spannable.derived[Person].spans().sum        // 4 columns in total
+Spannable.derived[Person].spans()   // Array(1, 2, 1): four columns in total
 ```
 
 Positional decoding is inherently brittle, and worth being clear-eyed about: adding a field to a
@@ -160,8 +159,7 @@ place in the parser's row buffer, with no row value built at all:
 ```scala
 case class Stat(name: Text, count: Int, note: Optional[Text])
 
-object Stat:
-  given parsable: Stat is Dsv.Parsable = Dsv.Parsable.derived
+given Stat is Dsv.Parsable = Dsv.Parsable.derived
 
 t"z,9,note".read[Stat in Dsv]           // Stat(t"z", 9, t"note")
 t"a,1\nb,2".read[List[Stat] in Dsv]     // both records
@@ -170,7 +168,7 @@ t"a,1\nb,2".read[List[Stat] in Dsv]     // both records
 A stream yields records the same way, through `rowsOf`:
 
 ```scala
-source.rowsOf[Stat].map(_.count).to(List)
+t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to(List)   // List(1, 2)
 ```
 
 Fields are matched by header name where the format has a header and positionally where it does
@@ -184,7 +182,7 @@ the type asked for:
 ```scala
 import dynamicAccess.dynamicDsv
 
-val row = t"greeting,number\nhello,23".read[Sheet].rows.head
+val row = t"greeting,number\nhello,23".read[Sheet].rows(Prim)
 row.number[Int]   // 23
 ```
 
@@ -193,4 +191,25 @@ row.number[Int]   // 23
 A spreadsheet exported from elsewhere is rarely wrong in only one place, and a decoder that stops
 at the first bad cell makes fixing it a series of guesses. Under an accruing strategy, every cell
 that fails is reported — missing cells and unparseable ones together — each identified by its
-column, so one pass over a file yields the whole list of what to correct.
+column, so one pass over a file yields the whole list of what to correct. The accumulation is a
+value of the caller's choosing, here an [error](errors.md) collecting each fault with the column
+it was found in, and `Validate` says how each fault joins it, focused on the `CellRef` the
+decoder was reading:
+
+```scala
+import errorDiagnostics.stackTracesDiagnostics
+
+case class Issues(items: List[(Text, Dsv.Error)] = Nil)(using Diagnostics)
+extends Error(m"${items.size} decoding issues"):
+  def +(column: Text, error: Dsv.Error): Issues = Issues(items :+ (column, error))
+
+case class Measurement(name: Text, age: Int, height: Int)
+
+val damaged = t"name,age,height\nAlice,thirty,tall".read[Sheet].rows(Prim)
+
+Validate[Issues, [r] =>> r raises Dsv.Error, CellRef]
+  ( Issues(),
+    { case error: Dsv.Error => accrual + (prior.let(_.column).or(t"#"), error) } )
+. protect(damaged.as[Measurement])
+. items.map(_(0))   // List(t"age", t"height")
+```

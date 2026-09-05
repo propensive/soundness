@@ -23,6 +23,7 @@ first-class test subjects. Everything comes from the `soundness` package:
 
 ```scala
 import soundness.*
+import strategies.throwUnsafely
 ```
 
 ### Suites and tests
@@ -46,8 +47,10 @@ recorded distinctly, neither failing the build nor forgotten.
 Approximate comparison is built in for the numeric cases where exact equality is wrong:
 
 ```scala
+val results = List(0.01, -0.02, 0.015)
+
 test(m"the mean converges"):
-  results.mean.vouch
+  results.total/results.size
 . assert(_ === 0.0 +/- 0.02)
 ```
 
@@ -73,6 +76,9 @@ test(m"double every value").over(Axis(t"n")(1, 2, 3, 4)): n =>
 An enumeration's companion is an axis in its own right, needing no list of values:
 
 ```scala
+enum Codec:
+  case Binary, Textual, Compressed
+
 test(m"enum companions form axes").over(Codec): codec =>
   codec.ordinal
 . assert((codec, ordinal) => ordinal >= 0 && ordinal < 3)
@@ -112,6 +118,8 @@ down to the field that changed, rather than as two unrelated entries the reader 
 compile errors as values:
 
 ```scala
+import classloaders.threadContextClassloader
+
 test(m"a malformed version literal is rejected"):
   demilitarize:
     v"1.2"
@@ -146,10 +154,11 @@ set, so every kind renders the same way and charts the same way.
 A `Bench` measures speed. Its body is a quoted expression, [staged](staging.md) and dispatched in
 its own JVM, so the measurement is not distorted by the rest of the suite:
 
+<!-- doccheck: skip -->
 ```scala
 val bench = Bench()
 
-bench(m"decode directly")(target = 1*Second, operationSize = size):
+bench(m"decode directly")(target = 1*Second, operationSize = 1000):
   '{ Benchmarks.decodeUsersDirect() }
 ```
 
@@ -158,22 +167,24 @@ live set retained under sustained concurrency. It runs for a wall-clock target a
 concurrency, and may be given a constrained heap or a CPU limit, so a design can be shown to hold
 up where it matters:
 
+<!-- doccheck: skip -->
 ```scala
 val stress = Stress()
 val constrained = Stress(heap = t"128m")
 
 stress(m"cross-thread hand-off")(target = 2*Second, concurrency = 16):
-  '{ … }
+  '{ Benchmarks.handOff() }
 ```
 
 A `Profile` answers where the time went, rendering a histogram of the hottest methods by self
-time from JFR execution samples, coloured by package:
+time from JFR execution samples, colored by package:
 
+<!-- doccheck: skip -->
 ```scala
 val profile = Profile()
 
 profile(m"pipeline hotspots")(target = 5*Second):
-  '{ … }
+  '{ Benchmarks.pipeline() }
 ```
 
 Benchmarks spread over axes as tests do, staging one program per distinct implementation and

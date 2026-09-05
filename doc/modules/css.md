@@ -30,6 +30,8 @@ import strategies.throwUnsafely
 import formatting.indentedCssFormatting
 ```
 
+Properties checked as the code compiles are [safety by construction](../philosophy/safety-by-construction.md) applied to a language usually validated in a browser.
+
 ### Writing CSS
 
 The `css"…"` interpolator writes a stylesheet, checked as the code compiles, and substitutes typed
@@ -61,7 +63,7 @@ is a length and cannot be confused with a number or an angle:
 90.0*Deg
 ```
 
-The physical units CSS shares with the real world — centimetres, points, seconds — are the same
+The physical units CSS shares with the real world — centimeters, points, seconds — are the same
 quantities used everywhere else in Soundness.
 
 ### Parsing
@@ -70,13 +72,15 @@ CSS text parses with `read`, validating every declaration and accumulating *all*
 rather than stopping at the first — the shape a linter or a build step needs:
 
 ```scala
+import errorDiagnostics.stackTracesDiagnostics
+
 t"a { color: red }".read[Css]
 
-capture[CssErrors](t"a { colour: red }".read[Css]).errors.head.reason
-// CssError.Reason.UnknownProperty(t"colour")
+capture[Css.Errors](t"a { colour: red }".read[Css]).errors(0).reason
+// Css.Error.Reason.UnknownProperty(t"colour")
 ```
 
-Each `CssError` carries its line, column and reason — an unknown property, a bad value, a malformed
+Each `Css.Error` carries its line, column and reason — an unknown property, a bad value, a malformed
 selector — so a stylesheet's faults are reported precisely.
 
 ### Rendering
@@ -131,12 +135,12 @@ Parsing checks property names against the known set, so a misspelling is an erro
 declaration that silently does nothing:
 
 ```scala
-capture[CssErrors](t"a { colour: red }".read[Css]).errors.head.reason
-// CssError.Reason.UnknownProperty(t"colour")
+capture[Css.Errors](t"a { colour: red; width: wide }".read[Css]).errors.map(_.reason)
+// List(Css.Error.Reason.UnknownProperty(t"colour"), Css.Error.Reason.BadValue(…))
 ```
 
 Errors accumulate: a rule with several bad declarations reports all of them, so a stylesheet is
-corrected in one pass. The error type is plural — `CssErrors` — because reporting one fault at a
+corrected in one pass. The error type is plural — `Css.Errors` — because reporting one fault at a
 time from a document that has several is the wrong shape for the job.
 
 ### Checking class names against a stylesheet
@@ -148,6 +152,11 @@ stylesheet declares — so a misspelled class name in a template is a compile er
 attribute is used without saying which:
 
 ```scala
+import classloaders.threadContextClassloader
+
 given (Styles at "/site.css") = Styles(cp"/site.css")
 import cssBindings.checkedBinding
 ```
+
+The resource is read as the code compiles, so the stylesheet must be on the compiler's
+classpath, and the binding's type names the resource it was read from.

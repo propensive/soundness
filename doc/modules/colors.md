@@ -40,6 +40,8 @@ import soundness.*
 given Colorimetry = colorimetry.daylightColorimetry
 ```
 
+A color's space living in its type is a small instance of [impossible states](../philosophy/impossible-states.md): mixing two spaces without converting cannot be written.
+
 ### Color spaces
 
 Each model is a type whose fields are its coordinates, given as fractions between 0
@@ -115,7 +117,7 @@ mixture.to[Hsl].hue.degrees   // 22.5
 ```
 
 Parts are proportions, so `5*Red + 3*Yellow` and `50*Red + 30*Yellow` are the same color,
-and a third daub is weighted against the total so far rather than against its neighbour:
+and a third daub is weighted against the total so far rather than against its neighbor:
 
 ```scala
 1*WebColors.Red + 1*WebColors.Lime + 1*WebColors.Blue   // an even third of each
@@ -123,10 +125,11 @@ and a third daub is weighted against the total so far rather than against its ne
 
 ### Mixing modes
 
-`proportional` averages the colors, which is what `mix` does. The other modes are the
-blend modes of Photoshop and GIMP — `multiply`, `screen`, `overlay`, `hardLight`,
-`softLight`, `darken`, `lighten`, `colorDodge`, `colorBurn`, `difference`, `exclusion`,
-`linearDodge` and `linearBurn` — and each is imported the same way:
+`proportionalMixing` averages the colors, which is what `mix` does. The other modes are the
+blend modes of Photoshop and GIMP — `multiplyMixing`, `screenMixing`, `overlayMixing`,
+`hardLightMixing`, `softLightMixing`, `darkenMixing`, `lightenMixing`, `colorDodgeMixing`,
+`colorBurnMixing`, `differenceMixing`, `exclusionMixing`, `linearDodgeMixing` and
+`linearBurnMixing` — and each is imported the same way from the `mixing` package:
 
 ```scala
 import mixing.multiplyMixing
@@ -136,11 +139,11 @@ import mixing.multiplyMixing
 
 A daub's share of the total parts acts as its opacity: the mode is applied at full
 strength and the result mixed back in that proportion, exactly as a layer's opacity
-slider works. Only `proportional` is therefore commutative — under any other mode
+slider works. Only proportional mixing is therefore commutative — under any other mode
 `5*Red + 3*Yellow` differs from `3*Yellow + 5*Red`, just as reordering two layers does.
 
-Every mode but `proportional` reads coordinates as fractions of full intensity, so they
-are offered only for sRGB, CMY and CMYK. Asking for `multiply` in CIELAB, where lightness
+Every mode but the proportional one reads coordinates as fractions of full intensity, so they
+are offered only for sRGB, CMY and CMYK. Asking for `multiplyMixing` in CIELAB, where lightness
 runs to 100, will not compile rather than quietly meaning something else.
 
 ### Adjusting
@@ -210,20 +213,41 @@ given Colorimetry = colorimetry.incandescentTungstenColorimetry
 WebColors.Ivory.to[Cielab]   // computed for tungsten light
 ```
 
+### Themes and palettes
+
+A `Theme` names a coordinated set of colors — a background, a foreground, a list of accents,
+and whether it is a light or a dark theme — and a `Palette` selects from one by role, offering
+`subdue` and `accent` to push a color toward the background or away from it. The Solarized
+theme is built in and chosen by import:
+
+```scala
+import themes.solarizedTheme
+
+Solarized.blue                 // Srgb(0.149, 0.545, 0.824)
+summon[Theme].luminosity       // Brightness.Dark
+```
+
+`luminosity.darkBrightness` and `luminosity.lightBrightness` select the variant of a theme
+that offers both, so terminal output styled through a palette adapts to the terminal's
+background.
+
 ### Pixel layouts
 
-A colour on screen is not usually a triple of doubles but a packed integer, and how it is packed
+A color on screen is not usually a triple of doubles but a packed integer, and how it is packed
 varies: eight bits per channel with or without alpha, five-six-five for a 16-bit display, ten bits
-per channel for high dynamic range, a single channel for greyscale. A *layout* states that packing
+per channel for high dynamic range, a single channel for grayscale. A *layout* states that packing
 as a tuple of channel types, most significant first, and the compiler works out the rest:
 
 ```scala
 type Rgb565 = (Red[5], Green[6], Blue[5])
 
-compiletime.constValue[Channel.TotalBits[Rgb]]      // 24
-summon[Channel.Storage[Rgb565] =:= Short]           // the narrowest type that fits
-summon[Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
+compiletime.constValue[iridescence.Channel.TotalBits[Rgb]]      // 24
+summon[iridescence.Channel.Storage[Rgb565] =:= Short]           // the narrowest type that fits
+summon[iridescence.Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
 ```
+
+`Channel` is reached through its library package here because the umbrella already exports a
+`Channel` of its own, the WebSocket channel.
 
 Each channel's shift and mask follow from its position in the tuple, computed as the code
 compiles, so reading a channel from a packed pixel is a single shift-and-mask instruction with no
@@ -232,4 +256,4 @@ to and from `Chroma`, `Srgb` and `Cmyk` exactly where its layout supports it —
 alpha channel has no alpha to read.
 
 This is what [images](images.md) use to give a raster typed pixel access, and it is where a
-colour computed in one of the perceptual spaces above ends up when it reaches a screen.
+color computed in one of the perceptual spaces above ends up when it reaches a screen.

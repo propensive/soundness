@@ -20,6 +20,8 @@ all three at once — indentation-structured for people, schema-typed for machin
 presentation-preserving, so a program that modifies a configuration file does not destroy its
 comments and formatting.
 
+Typing a document against its schema at compiletime is [safety by construction](../philosophy/safety-by-construction.md) applied to configuration.
+
 A TEL document is a tree of *compounds*: a keyword, its space-separated atoms, and indented
 children. The schema layer assigns each compound a type, and Soundness carries that typing through
 to Scala. Everything comes from the `soundness` package:
@@ -27,6 +29,7 @@ to Scala. Everything comes from the `soundness` package:
 ```scala
 import soundness.*
 import strategies.throwUnsafely
+import charEncoders.utf8Encoder
 ```
 
 ### The language
@@ -53,8 +56,8 @@ t"name Alice\nage 30\n".read[Tel].as[Person]   // Person(t"Alice", 30)
 t"name Alice\nage 30\n".read[Person in Tel]    // the same, in one step
 ```
 
-Encoding runs the other way: `tel` produces a `Tel` from a value, a compound per field, ready to
-render or to embed in a larger document.
+Encoding runs the other way: `in[Tel]` produces a `Tel` from a value, a compound per field, ready
+to render or to embed in a larger document.
 
 A literal document is written with the `tel"…"` interpolator, parsed as the code compiles, with
 each substitution encoded through its own static type. A malformed literal is a compile error
@@ -83,7 +86,7 @@ a compile error:
 case class Office(name: Text, city: Text)
 case class Assignment(worker: Person, office: Office)
 
-val doc = Assignment(Person(t"Bob", 2), Office(t"Main", t"Town")).encode
+val doc = Assignment(Person(t"Bob", 2), Office(t"Main", t"Town")).in[Tel]
 
 doc.verify[Assignment].office.city.as[Text]   // t"Town"
 ```
@@ -94,8 +97,8 @@ styles visibly distinct. A keyword may legitimately repeat, which a single-value
 express, so `fields` returns every matching child in document order:
 
 ```scala
-t"item 1\nitem 2\nitem 3\n".read[Tel].fields(t"item").map(_.primaryAtom).toList
-// List(t"1", t"2", t"3")
+t"item 1\nitem 2\nitem 3\n".read[Tel].fields(t"item").map(_.primaryAtom)
+// Array(t"1", t"2", t"3")
 ```
 
 ### Editing without destroying the file
@@ -104,6 +107,10 @@ The reason a TEL document keeps its comments, blank lines and layout is so that 
 change one value and write the file back without reformatting everything a person wrote.
 
 `modify` replaces a field's compound, or appends it where the field is absent:
+
+```scala
+val document = t"name Alice\nage 30\n".read[Tel]
+```
 
 ```scala
 import dynamicAccess.dynamicTel
@@ -117,8 +124,7 @@ remark to a compound, inserting or removing a child:
 
 ```scala
 val pointer = Tel.Pointer.of(t"name")
-Mutation(document, Mutation.Op.UpdateAtom(pointer, 0, t"Bob")).document.vouch.show
-// t"name Bob\n"
+Mutation(document, List(Mutation.Op.UpdateAtom(pointer, 0, t"Bob"))).show   // t"name Bob\n"
 ```
 
 The result is a document, not a string, so a sequence of edits composes and the file is rendered
@@ -180,19 +186,30 @@ at once requires.
 A single source may hold several documents in sequence, and reads as a list of them:
 
 ```scala
+val source = t"name Alice\n"
+
 source.read[List[Tel]]
 ```
 
 ### Typed records from a schema
 
-Where the schema is authoritative and no Scala type mirrors it, a `TelBlueprint` reads it at
-compiletime and produces typed records from matching documents. Each field reads at the type the
-schema declares, an optional field is absent where the document omits it, and a *flag* field —
-a keyword with no value — reads as a boolean, `true` where present and `false` where not:
+Where the schema is authoritative, a `TelBlueprint` — an object declared in a file of its own,
+holding the schema and the one-line `record` macro — reads it at compiletime and produces typed
+records from matching documents. Each field reads at the type the schema declares, an optional
+field is absent where the document omits it, and a *flag* field — a keyword with no value —
+reads as a boolean, `true` where present and `false` where not:
 
+<!-- doccheck: skip -->
+```scala
+object ContactRecords extends TelBlueprint(Tels.tels[Person](t"person")):
+  transparent inline def record(tel: Tel): Record = ${build('tel)}
+```
+
+<!-- doccheck: skip -->
 ```scala
 val record = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
 record.name       // t"Alice", per the schema
+record.age        // 30
 ```
 
 A field the schema does not describe is a compile error, so the shape of the data is taken from
@@ -212,7 +229,10 @@ A *self-contained* BinTEL frame carries its schema with it, so a document can tr
 that has never seen its schema and still decode:
 
 ```scala
-Bintel.selfContained(document, schemaDocument)
+val greeting = t"name Alice\n".read[Tel]
+val greetingSchema = t"name greeting\n\ndocument\n  field name Identifier\n".read[Tel]
+
+Bintel.selfContained(greeting, greetingSchema)
 ```
 
 The alternative is to send the data alone and identify the schema by its *signature* — a short

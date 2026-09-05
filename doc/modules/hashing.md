@@ -22,6 +22,8 @@ byte array. The algorithm is unchecked, so a typo is a runtime failure; the inpu
 to bytes by hand before hashing; the output must be rendered to text by hand after; and nothing
 discourages reaching for a broken algorithm.
 
+Naming the algorithm as a type rather than a string is [safety by construction](../philosophy/safety-by-construction.md): a digest of one algorithm cannot be confused with another's.
+
 Soundness fixes each of these. The algorithm is a type, checked at the call site. Any value with a
 `Digestible` instance is hashed directly, and case classes and collections derive theirs, so the
 value's own structure is what gets hashed. The result renders through the base encodings. And a weak
@@ -32,8 +34,11 @@ hashing provider and an alphabet in scope:
 
 ```scala
 import soundness.*
-import providers.javaBaseProvider
+
 import alphabets.hexLowerCase
+import charEncoders.utf8Encoder
+import providers.javaBaseProvider
+import strategies.throwUnsafely
 ```
 
 ### Hashing a value
@@ -42,7 +47,7 @@ import alphabets.hexLowerCase
 
 ```scala
 t"Hello world".digest[Sha2[256]].serialize[Hex]
-// the 64-character hexadecimal SHA-256 digest
+// t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c"
 ```
 
 The provider in scope supplies the algorithms — `javaBaseProvider` for the SHA and MD5 family and
@@ -53,8 +58,9 @@ algorithm in its type — `Digest in Sha2[256]` — so a field declared that way
 computes without the call restating it:
 
 ```scala
-case class Block(digest: Digest in Sha2[256], payload: Json)
+case class Block(digest: Digest in Sha2[256], payload: Text)
 
+val payload = t"""{"amount": 100}"""
 Block(payload.digest, payload)
 ```
 
@@ -88,7 +94,9 @@ sizes the chunks happen to arrive in — including chunks of one byte, and windo
 way into a buffer:
 
 ```scala
-file.stream.digest[Sha2[256]].serialize[Hex]
+val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
+chunks.checksum[Sha2[256]].serialize[Hex]
+// t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c", as for the whole text
 ```
 
 This is what makes a digest computable over a [stream](streams.md) with bounded memory, and it is
@@ -116,6 +124,22 @@ import alphabets.base64Standard
 t"Hello world".digest[Sha2[256]].serialize[Base64]
 ```
 
+### Self-describing digests
+
+A digest's bytes say nothing about the algorithm that produced them, so a digest stored or sent
+alone can be checked only by something that already knows how it was made. A
+[Multihash](https://multiformats.io/multihash/) prefixes the digest with a code for its algorithm
+and its length, so it describes itself, which is what content-addressed storage and the
+distributed protocols built on it exchange:
+
+```scala
+Multihash(t"Hello world".digest[Sha2[256]]).serialize
+// 0x12, 0x20, then the thirty-two bytes of the SHA-256 digest
+```
+
+The algorithm code comes from the digest's type, so a multihash cannot claim an algorithm other
+than the one that computed it.
+
 ### Weak algorithms
 
 MD5 and SHA-1 are broken for security purposes, and remain only for compatibility. Digesting with
@@ -124,17 +148,24 @@ one requires a permission in scope, so the choice is visible and deliberate:
 ```scala
 import cryptoPermits.permitDisallowedCrypto
 
-t"Hello world".digest[Md5].serialize[Hex]
+t"Hello world".digest[Md5].serialize[Hex]   // t"3e25960a79dbc69b674cd4ec67a72c62"
 ```
 
 Without such an import, `digest[Md5]` and `digest[Sha1]` do not compile; the strong algorithms need
 no permission.
 
-### Checksums of streams
+### Checksums
 
-A source of bytes — a file, a download — is checksummed without holding it all in memory, by
-digesting its stream as it flows:
+`Crc32`, `Crc64` and `Adler32` are not hashes but checksums: they detect accidental corruption
+and defend against nothing, so they sit behind a permit of their own, which concedes only that no
+adversary is in the threat model:
 
 ```scala
-val fingerprint = source.checksum[Sha2[256]]
+import cryptoPermits.permitNonCryptographicHashes
+
+t"123456789".digest[Crc32].serialize[Hex]   // t"cbf43926"
 ```
+
+A source of bytes — a file, a download — is checksummed without holding it all in memory, by
+digesting its stream as it flows, exactly as `checksum` did above, and a digest of any algorithm
+is a value: comparable, showable, and usable as a key.

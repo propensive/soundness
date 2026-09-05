@@ -30,6 +30,7 @@ literal, at runtime by validated decoding. This is the mechanism beneath the ele
 
 ```scala
 import soundness.*
+import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 ```
 
@@ -61,13 +62,13 @@ val bad: Name[Tag] = n"0hello"   // does not compile: must not start with 0
 
 ### Validating at runtime
 
-Text from outside becomes a name through the same rules, raising a `NameError` that names the
+Text from outside becomes a name through the same rules, raising a `Name.Error` that names the
 rule violated:
 
 ```scala
 Name[Tag](t"release")   // a Name[Tag]
 
-capture[NameError](Name[Tag](t"0hello")).message.show
+capture[Name.Error](Name[Tag](t"0hello")).message.show
 // t"the name 0hello is not valid because it must not start with 0"
 ```
 
@@ -83,7 +84,7 @@ that is the whole rule:
 ```scala
 Name[CssClass](t"main-nav")   // a valid CSS identifier
 
-capture[NameError](Name[DomId](t"a b")).message.show
+capture[Name.Error](Name[DomId](t"a b")).message.show
 // t"the name a b is not valid because it must be a valid DOM id"
 ```
 

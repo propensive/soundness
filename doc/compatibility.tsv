@@ -39,14 +39,17 @@ caesura	yes	yes	yes	js
 camouflage	yes	yes	yes	js	
 capricious	yes	yes	yes	wasi	backends: core+wasi
 cardinality	yes	yes	yes	js	
-clavichord	yes	yes	yes	js	
 cataclysm	yes	yes	no	js	
 charisma	yes	yes	yes	js	
 chiaroscuro	yes	yes	yes	js	
+clavichord	yes	yes	yes	js	
 coaxial	yes	core	core	wasi	backends: core+jvm+wasi; JVM-only submodule(s): jvm
+concordance	yes	yes	yes	js	
 contextual	yes	yes	yes	js	
 contingency	yes	yes	yes	js	
+corpuscular	yes	yes	yes	js	
 cosmopolite	yes	yes	yes	js	
+degustation	yes	no	no	no	wraps the Scala compiler's TASTy unpickler
 delicious	yes	yes	yes	js	JVM-only submodule(s): ansi, scala
 dendrology	yes	yes	yes	js	
 denominative	yes	yes	yes	js	
@@ -58,6 +61,7 @@ embarcadero	yes	core	core	core	backends: oci+oci-jvm; JVM-only submodule(s): con
 enigmatic	yes	no	yes	no	`javax.crypto` has no JS analogue; the Native build uses the OpenSSL provider; `asn1` cross-compiles everywhere
 escapade	yes	yes	yes	js	
 escritoire	yes	yes	yes	js	
+espionage	yes	no	no	no	transitively JVM-only through `obligatory.json`
 ethereal	yes	no	no	no	transitively JVM-only (networking/crypto/fs/process)
 eucalyptus	yes	yes	yes	js	JVM-only submodule(s): syslog
 exegesis	yes	no	no	no	LSP server; depends on JVM-only `ethereal`/`exoskeleton`
@@ -94,6 +98,7 @@ mercator	yes	yes	yes	js
 metamorphose	yes	yes	yes	js	
 monotonous	yes	yes	yes	js	
 mosquito	yes	yes	yes	js	
+murmuration	yes	yes	yes	js	
 nomenclature	yes	yes	yes	js	
 obligatory	yes	yes	yes	js	JVM-only submodule(s): grpc, json
 octogenarian	yes	no	no	no	transitively JVM-only (networking/crypto/fs/process)
@@ -107,6 +112,7 @@ pneumatic	yes	yes	yes	js	backends: flate-jvm+flate-native
 polaris	yes	yes	yes	js	
 polysyllabic	yes	yes	yes	js	
 polyvinyl	yes	yes	yes	js	
+praxinoscope	yes	yes	yes	js	
 prepositional	yes	yes	yes	js	
 prescience	yes	no	no	no	expansion-time instance evaluation via the macro classloader
 probably	yes	yes	yes	js	backends: coverage-jvm+coverage-native
@@ -116,6 +122,7 @@ proscenium	yes	yes	yes	js
 punctuation	yes	yes	no	js	JVM-only submodule(s): ansi
 quantitative	yes	yes	yes	js	
 querencia	yes	yes	no	js	
+reliquary	yes	no	no	no	`stratiform.binary` is transitively JVM-only
 revolution	yes	no	no	no	JAR manifests (`java.util.jar`)
 rudiments	yes	yes	yes	js	
 savagery	yes	yes	no	js	
@@ -132,6 +139,7 @@ symbolism	yes	yes	yes	js
 synesthesia	yes	no	no	no	transitively JVM-only (networking/crypto/fs/process)
 tarantula	yes	no	no	no	browser automation; depends on JVM-only `guillotine`/`telekinesis.jvm`
 telekinesis	yes	core	no	wasi	backends: core+jvm+wasi; JVM-only submodule(s): jvm
+tessellate	yes	yes	yes	js	
 turbulence	yes	yes	yes	wasi	backends: core+wasi
 typonym	yes	yes	yes	js	
 ultimatum	yes	yes	yes	js	
@@ -141,6 +149,8 @@ urticose	yes	yes	yes	js
 vacuous	yes	yes	yes	js	
 vexillology	yes	yes	yes	js	
 vicarious	yes	yes	yes	js	
+virility	yes	yes	yes	js	
+vivisection	yes	no	no	no	JDI debugger over `coaxial.jvm`
 wisteria	yes	yes	yes	js	
 xenophile	yes	yes	yes	wasi	backends: core+wasm; JVM-only submodule(s): cffi, kotlin, native, scalanative
 xylophone	yes	yes	yes	js	JVM-only submodule(s): staged

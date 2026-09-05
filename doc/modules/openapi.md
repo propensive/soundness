@@ -11,10 +11,12 @@ does not compile.
 
 ### On API specifications
 
-An OpenAPI document is a machine-readable contract, and the usual way to honour it is code
+An OpenAPI document is a machine-readable contract, and the usual way to honor it is code
 generation: a build step emits a client, which is compiled, versioned and kept in sync by
 tooling. The contract is enforced, but at the price of generated sources and a build pipeline —
 and when the generator is skipped, calls are made against remembered URLs and hoped-for schemas.
+
+A specification derived from the types that serve it cannot fall out of date, which is [correctness](../philosophy/correctness.md) by construction rather than by review.
 
 Soundness reads the specification during compilation instead. There is no generated code to
 maintain; the client *is* the specification, interpreted by the compiler, and a drift between
@@ -28,9 +30,10 @@ import internetAccess.online
 
 ### A typed client
 
-`Api` reads a specification from the classpath — JSON or YAML — and the resulting value navigates
-by path:
+`Api` reads a specification from the classpath — JSON or YAML — as the code compiles, and the
+resulting value navigates by path:
 
+<!-- doccheck: skip -->
 ```scala
 val api = Api(cp"/apis/petstore.json")
 
@@ -48,6 +51,7 @@ An endpoint is invoked with its method, query parameters as named arguments, and
 a value; `call` executes the request and decodes the response as the type asked for — which must
 conform to the response schema the specification declares:
 
+<!-- doccheck: skip -->
 ```scala
 case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
 
@@ -58,7 +62,7 @@ api.sessions(token).delete.call[Unit]()  // 204, no body
 ```
 
 Asking for a type the response schema does not support is a compile error; a response outside the
-success range raises an `ApiError` carrying the status.
+success range raises an `Api.Error` carrying the status.
 
 ### Wire formats
 
@@ -72,4 +76,4 @@ than remembered.
 The specification itself is also a value: `OpenApi` decodes an OpenAPI 3.x document from JSON or
 YAML into typed parts — info, servers, paths, operations, parameters, component schemas — for
 tooling that inspects APIs rather than calling them. A document of an unsupported version, or one
-that will not parse, raises an `OpenApiError` naming the fault.
+that will not parse, raises an `OpenApi.Error` naming the fault.

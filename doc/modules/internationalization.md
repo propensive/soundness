@@ -19,6 +19,8 @@ looked up by name at runtime. Nothing connects the keys in the code to the keys 
 a missing translation, a misspelled key, or a language file that lags behind the others all
 surface as runtime fallbacks — usually in front of the one user who chose that language.
 
+A locale as a type parameter, rather than a runtime string, means a missing translation is a compile error: [safety by construction](../philosophy/safety-by-construction.md).
+
 Soundness puts the translations in the code and the language set in the type. Each language is a
 value that lifts a translation into a single-language `Polyglot`, alternatives combine with `|`,
 and the combined type is the intersection of the languages provided. Code that requires a
@@ -60,7 +62,7 @@ it does not carry is a compile error.
 
 The user's language usually arrives at runtime — from an HTTP header, an environment variable, a
 setting. A language code decodes to a `Locale`, falling back to English for a code that is not
-recognised:
+recognized:
 
 ```scala
 val locale = t"fr".as[Locale[en & pl & fr & de & es]]

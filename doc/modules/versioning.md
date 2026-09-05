@@ -17,6 +17,8 @@ zeros are illegal, what a prerelease identifier may contain — and the preceden
 the subtle ones: numeric identifiers compare numerically, `1.0.0-alpha` precedes `1.0.0`, and build
 metadata never affects ordering. Rules that precise belong in a type.
 
+A version that cannot be constructed invalid, and compares as the specification says, is [safety by construction](../philosophy/safety-by-construction.md).
+
 Everything comes from the `soundness` package:
 
 ```scala
@@ -27,7 +29,7 @@ import strategies.throwUnsafely
 ### Versions
 
 The `v"…"` interpolator writes a version, checked as the code compiles; text parses to the same
-type, raising a `SemverError` for a malformed version:
+type, raising a `Semver.Error` for a malformed version:
 
 ```scala
 val version = v"1.4.2"
@@ -56,7 +58,7 @@ attributes are named values, and reading one gives its proper type:
 import manifestAttributes.*
 
 val manifest = Manifest
-  ( ManifestVersion(),
+  ( ManifestVersion(()),
     MainClass(fqcn"com.example.Main"),
     CreatedBy(t"Soundness") )
 

@@ -23,6 +23,8 @@ of its bytes. The format is exact: a layer has one digest for its uncompressed t
 another for its compressed blob, and a manifest ties them together by those digests. Get a
 digest wrong and the image is silently invalid.
 
+Building an image as a value, rather than by running a tool, is [direct style](../philosophy/direct-style.md): the steps are ordinary code, checked as it compiles.
+
 Running such an image is the job of a daemon, and containerd — the runtime beneath Docker
 and Kubernetes — is driven over a gRPC protocol on a local socket. Soundness represents the
 image format as values whose digests it computes, and the daemon's protocol as methods that
@@ -31,10 +33,11 @@ tar layers; both halves come from the `soundness` package:
 
 ```scala
 import soundness.*
-import providers.javaBaseProvider
+
 import alphabets.hexLowerCase
 import charEncoders.utf8Encoder
 import formatting.compactJsonFormatting
+import providers.javaBaseProvider
 import strategies.throwUnsafely
 ```
 
@@ -51,7 +54,7 @@ def entry(name: Text, content: Text): Tar.Entry =
      user  = UnixUser(0),
      group = UnixGroup(0),
      mtime = 0.bits.u32,
-     data  = TarBody(content.in[Data]) )
+     data  = Tar.Body(content.in[Data]) )
 
 val layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
 ```
@@ -91,6 +94,8 @@ not the distribution format but what the configuration says the artifact *is*.
 [Wasm OCI Artifact](https://tag-runtime.cncf.io/wgs/wasm/deliverables/wasm-oci-artifact/):
 
 ```scala
+val component: Data = hex"0061736d01000000"   // a compiled component's bytes
+
 val artifact =
   Image.wasm
    ( component,
@@ -116,12 +121,20 @@ but read from the WIT world the component was linked against, which is the autho
 statement of the same contract:
 
 ```scala
-val world: WitDialect.World = WitDialect.worlds(source).stdlib(t"http")
+val wit = t"""package example:service;
+
+world http {
+  import wasi:io/streams@0.2.0;
+  export wasi:http/incoming-handler@0.2.0;
+}"""
+
+val world: WitDialect.World = WitDialect.worlds(wit)(t"http")
 Image.wasm(component, exports = world.exports, imports = world.imports)
 ```
 
-Anthology does exactly this on its edge producing an `OciImage`, so a compilation can go from
-source to a distributable artifact along one path, with nothing stating the contract twice.
+The [compiler](compiler.md) does exactly this on its edge producing an OCI image, so a
+compilation can go from source to a distributable artifact along one path, with nothing stating
+the contract twice.
 
 ### Reading an image
 
@@ -129,16 +142,18 @@ An existing OCI archive — a file or a block of bytes — is read by *opening* 
 its contents available for the duration of a scope and no longer:
 
 ```scala
+val archive: Data = image.archive.source[Data].memoize
+
 archive.open[Image](): handle ?=>
-  handle.index                                    // the top-level index
-  handle.manifest                                 // the manifest it names
-  handle.imageConfig                              // the image configuration
-  handle.verified(handle.manifest.layers.head)    // a layer, digest-checked
+  handle.index                                        // the top-level index
+  handle.manifest                                     // the manifest it names
+  handle.imageConfig                                  // the image configuration
+  handle.verified(handle.manifest.layers.prim.vouch)  // a layer, digest-checked
 ```
 
 Reaching a layer three ways makes the cost explicit: `compressed` yields the stored bytes
 untouched, `layer` decompresses them as a stream, and `verified` decompresses and checks the
-content against the digest the manifest declares, raising an `OciError` if they disagree.
+content against the digest the manifest declares, raising an `Oci.Error` if they disagree.
 
 A reader that does not already know which kind of artifact it has opened asks for `config`,
 which dispatches on the config descriptor's media type — so telling a component from a
@@ -148,7 +163,7 @@ filesystem is a question the archive answers, not one the caller has to have kno
 archive.open[Image](): handle ?=>
   handle.config match
     case config: WasmConfig  => config.component  // a component: run it in a Wasm engine
-    case config: ImageConfig => config.rootfs     // a filesystem: unpack and run it
+    case config: Image.Config => config.rootfs     // a filesystem: unpack and run it
 ```
 
 ### Connecting to a daemon
@@ -158,15 +173,14 @@ bound to a namespace. Because the connection holds background work, it lives ins
 supervised scope:
 
 ```scala
-supervise:
-  val client = Containerd(endpoint, namespace = t"default")
+def report(endpoint: Grpc.Channel^): Unit = supervise:
+  val client = Containerd(endpoint, t"default")
   client.version()
 ```
 
-Here `endpoint` is an HTTP/2 endpoint over containerd's Unix socket, established through
-Soundness's [HTTP](http-server.md) and socket support. Every call to the daemon may fail —
-the socket, the protocol, or the request itself — so the calls draw on the error strategy
-in scope.
+Here `endpoint` is a [gRPC](rpc.md) channel over containerd's Unix socket, established through
+Soundness's HTTP/2 and [socket](sockets.md) support. Every call to the daemon may fail — the
+socket, the protocol, or the request itself — so the calls draw on the error strategy in scope.
 
 ### Containers, images and namespaces
 
@@ -174,12 +188,13 @@ The client lists and inspects what the daemon holds, and creates and deletes it.
 result is a typed record:
 
 ```scala
-val containers = client.containers()
-val one = client.container(t"web")
-(one.id, one.image, one.labels)
+def inspect(client: Containerd): Unit =
+  val containers = client.containers()
+  val one = client.container(t"web")
+  (one.id, one.image, one.labels)
 
-client.images()      // the images known to the daemon
-client.namespaces()  // the namespaces on the daemon
+  client.images()      // the images known to the daemon
+  client.namespaces()  // the namespaces on the daemon
 ```
 
 `createContainer`, `deleteContainer`, `createNamespace` and their counterparts make the
@@ -191,12 +206,13 @@ A container is a definition; a *task* is a running instance of one. A task is cr
 container with the root filesystem to mount, then started, waited on, and killed:
 
 ```scala
-val rootfs = List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
+def run(client: Containerd): Unit =
+  val rootfs = List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
 
-client.createTask(t"web", rootfs)
-val pid = client.startTask(t"web")
-client.waitTask(t"web")
-client.killTask(t"web", signal = 15)
+  client.createTask(t"web", rootfs)
+  val pid = client.startTask(t"web")
+  client.waitTask(t"web")
+  client.killTask(t"web", signal = 15)
 ```
 
 `client.task(t"web")` returns the task's current `Workload`, whose `state` reports whether

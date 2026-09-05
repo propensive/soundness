@@ -21,6 +21,8 @@ nothing in the code records which encoding was assumed. Meanwhile "one character
 idea: a flag emoji is two code points, an accented letter may be one or two, and a wide ideograph
 occupies two terminal columns — details that matter the moment text is measured or split.
 
+Naming the encoding as a given, rather than defaulting silently, is [declarative context](../philosophy/declarative-context.md) at the byte/text boundary.
+
 Soundness separates the choices. The encoding is a given, named at the use site; the treatment of
 undecodable bytes is another given, the *sanitizer*, so tolerating, substituting or rejecting bad
 input is a decision the code states; and width is measured through a metric chosen for the
@@ -56,11 +58,12 @@ enc"ABCDEF"   // does not compile: no such encoding
 ### Bad input
 
 A decoder consults the `TextSanitizer` in scope when it meets bytes that are not valid in its
-encoding. The strict sanitizer raises a `CharDecodeError` naming the position of the fault; the
+encoding. The strict sanitizer raises a `CharDecoder.Error` naming the position of the fault; the
 skip sanitizer drops the bad bytes; and the substitute sanitizer replaces them with `?`:
 
 ```scala
 import strategies.throwUnsafely
+import errorDiagnostics.stackTracesDiagnostics
 
 val badUtf8 = Data(45, -62, 49, 48)   // a truncated two-byte sequence
 
@@ -74,24 +77,32 @@ locally:
 
 locally:
   import textSanitizers.strictSanitizer
-  capture[CharDecodeError](charDecoders.utf8Decoder.decoded(badUtf8))
-  // CharDecodeError(1, enc"UTF-8")
+  capture[CharDecoder.Error](charDecoders.utf8Decoder.decoded(badUtf8))
+  // CharDecoder.Error(1, enc"UTF-8")
 ```
 
-Which behaviour is right depends on the data: strictness for input that should be trusted
+Which behavior is right depends on the data: strictness for input that should be trusted
 absolutely, tolerance for text recovered from a lossy source. The choice is visible at the
 import.
 
 A fourth choice keeps both: `accrueSanitizer` carries on decoding, as the skipping one does, but
 records each fault so that the whole of a damaged input is recovered *and* every bad sequence is
-reported, each with the position at which it occurred:
+reported, each with the position at which it occurred. The faults accrue into a value of the
+caller's choosing — here, an [error](errors.md) that collects positions and faults — through
+`validate`, whose first block says how each fault joins the accumulation and whose `protect`
+block does the decoding:
 
 ```scala
+case class DecodeIssues(items: List[(Int, CharDecoder.Error)] = Nil)(using Diagnostics)
+extends Error(m"${items.size} decoding issues"):
+  def +(position: Int, error: CharDecoder.Error): DecodeIssues =
+    DecodeIssues(items :+ (position, error))
+
 validate[CharDecoder.Focus](DecodeIssues()):
-  case error: CharDecodeError => accrual + (prior.let(_.position).or(0), error)
+  case error: CharDecoder.Error => accrual + (prior.let(_.position).or(0), error)
 . protect:
     import textSanitizers.accrueSanitizer
-    charDecoders.utf8Decoder.decoded(data)
+    charDecoders.utf8Decoder.decoded(badUtf8)   // t"-10", and one recorded issue at position 1
 ```
 
 This is what a tool importing a file of uncertain provenance wants: the text, plus a list of
@@ -143,7 +154,7 @@ printable — and reports its Unicode name; superscript and subscript forms are 
 Unicode defines them:
 
 ```scala
-'é'.description     // its Unicode character name
+'é'.description     // t"Latin Small Letter E With Acute", an Optional
 '\t'.control        // true
 '2'.superscript     // '²'
 ```
@@ -155,7 +166,7 @@ a combining accent. `GraphemeBreak.boundaries` finds the positions where one use
 character ends and the next begins, following the Unicode segmentation rules:
 
 ```scala
-GraphemeBreak.boundaries(t"🇬🇧🇫🇷")   // two graphemes, four code points
+GraphemeBreak.boundaries(t"🇬🇧🇫🇷")   // Array(0, 4, 8): two graphemes, four code points
 ```
 
 Code that truncates or reverses text at grapheme boundaries, rather than at arbitrary code

@@ -21,6 +21,8 @@ bit positions and remembers only the bits — a few bits per element regardless 
 size — but tuning one means choosing a bit-array size and a number of hash functions, a formula
 most code copies from a textbook, sometimes wrongly.
 
+The filter's error rate is fixed by its construction rather than checked at each use, which is [safety by construction](../philosophy/safety-by-construction.md).
+
 Soundness asks instead for the intent — expected size and target error rate — and computes the
 parameters. The error rate is a [bounded number](numbers.md), so a rate outside `[0, 1]` does not
 compile. Everything comes from the `soundness` package, with a hash provider in scope:
@@ -74,7 +76,7 @@ intended, not a guarantee that holds however it is filled.
 
 The hash algorithm is part of the filter's type, and the bit positions are derived from a single
 digest, extended by rehashing where more bits are needed than one digest provides. That means the
-algorithm in scope decides the filter's behaviour, and two filters over the same elements agree
+algorithm in scope decides the filter's behavior, and two filters over the same elements agree
 only if they agree on the algorithm.
 
 Because elements enter through the ordinary [hashing](hashing.md) machinery, a case class is

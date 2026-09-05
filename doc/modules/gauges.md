@@ -7,7 +7,7 @@ still alive, how fast bytes are moving, which step of a pipeline is running. Sou
 these as *gauges* — spinners, progress bars, meters, sparklines, counters and step indicators —
 either embedded in a terminal layout or drawn on their own at the cursor.
 
-A gauge is chosen by the *type* of the thing it displays. What it looks like, what colours it uses
+A gauge is chosen by the *type* of the thing it displays. What it looks like, what colors it uses
 and which characters it may draw with are three separate decisions, each made by one import, and
 none of them disturbs the other two.
 
@@ -18,13 +18,21 @@ decides what fits. The two are kept consistent by hand, and the result is a bar 
 eighty columns and corrupt at thirty — a row that overruns, a label that pushes the bar off the
 edge, or a percentage that disagrees with the bar beside it.
 
+A gauge design chosen by import, independent of the status it draws, is [decoupling](../philosophy/decoupling.md) between meaning and rendering.
+
 Separating the two removes the duplication. A design says how to draw a status at whatever width it
 is given, and how narrow it can usefully go; the layout says how much room there is. Neither needs
 to know what the other decided. A bar handed six cells re-quantizes to six; handed three it becomes
-a percentage; handed one it becomes a single shade. Everything comes from the `soundness` package:
+a percentage; handed one it becomes a single shade. Everything comes from the `soundness` package,
+with a text metric in scope, since a gauge is laid out by the width of what it draws, a palette
+(without one, an adaptive palette is chosen from what the terminal reports, which needs the
+terminal's capabilities in scope), and standard output for the examples that print:
 
 ```scala
 import soundness.*
+import textMetrics.uniformMetric
+import palettes.solarizedDarkGaugePalette
+import stdios.javaLangSystemStdio
 ```
 
 ### Statuses
@@ -91,8 +99,10 @@ Importing a design by name replaces it, and nothing else changes:
 
 ```scala
 import bars.arrowheadBar
-import spinners.moonPhaseSpinner
 ```
+
+A spinner and a bar are two designs for the same status, so only one of them can be imported at
+a time; `spinners.moonPhaseSpinner` in place of the bar above would animate moon phases instead.
 
 The families are `spinners`, `bars`, `meters`, `sparklines`, `counters`, `standings`,
 `processions` and `timers`. There are around forty spinners, from single-cell braille and block
@@ -101,9 +111,9 @@ default through segmented pips and gradient fills to `[###---]`; six meters (bat
 needle, bullet, column and ASCII); four sparklines; nine counters; five status markers; and five
 step indicators.
 
-### Colours and glyphs
+### Colors and glyphs
 
-Colour is an independent axis. A `GaugePalette` names its colours by *role* — `fill`, `track`,
+Color is an independent axis. A `GaugePalette` names its colors by *role* — `fill`, `track`,
 `leadingEdge`, `caption`, `muted`, `success`, `warning`, `danger` — so one design renders under any
 palette:
 
@@ -112,10 +122,10 @@ import palettes.solarizedDarkGaugePalette
 ```
 
 Ten palettes ship, including a hue-free `monochromeGaugePalette` and an `ansiSixteenGaugePalette`
-whose colours are the canonical values a sixteen-colour terminal actually has. With no import, an
+whose colors are the canonical values a sixteen-color terminal actually has. With no import, an
 adaptive palette picks by what the terminal reports.
 
-The character repertoire is a third axis, and degrades the whole catalogue at once:
+The character repertoire is a third axis, and degrades the whole catalog at once:
 
 ```scala
 import gaugeGlyphs.asciiGlyphs
@@ -123,7 +133,7 @@ import gaugeGlyphs.asciiGlyphs
 
 Every design has an ASCII rendering, and every design that prefers exotic glyphs declares what to
 fall back to — so emoji designs become their BMP siblings where the terminal cannot show them, and
-under `asciiGlyphs` everything emits seven-bit output. No design carries its meaning in colour
+under `asciiGlyphs` everything emits seven-bit output. No design carries its meaning in color
 alone, so a gauge written to a file or read by someone who cannot distinguish red from green still
 says what it means.
 
@@ -132,16 +142,19 @@ says what it means.
 `gauge` builds a pane, taking a `Reading` — a mutable cell holding the current status. Assigning to
 the cell publishes the value and repaints, so a gauge driven from a background task updates itself:
 
+<!-- doccheck: skip -->
 ```scala
 val progress = Reading(Fraction(0.0))
+val work = List(1, 2, 3, 4, 5)
 
-async:
-  work.each: item =>
-    process(item)
-    progress() = Fraction.of(done, total)
+supervise:
+  async:
+    work.each: item =>
+      snooze(0.5*Second)
+      progress() = Fraction.of(item, work.size)
 
-interactive: terminal ?=>
-  form(Occupancy.Inline)(stack(gauge(progress)))
+  interactive: terminal ?=>
+    conduct(Occupancy.Inline)(stack(gauge(progress)))
 ```
 
 A gauge reports its design's intrinsic size on every solve, so it takes part in the layout rather
@@ -149,25 +162,27 @@ than assuming a width: an elastic design fills what it is given, an inelastic on
 status glyph) is held to its own width, and a multi-row design like a checklist grows the layout to
 its step count. A gauge accepts no input, so Tab skips over it.
 
-A design that animates declares how often it wants redrawing; the form takes the shortest period
-over the gauges on screen and runs one timer for all of them, and none at all when nothing is
-animating.
+A design that animates declares how often it wants redrawing; the conducted layout takes the
+shortest period over the gauges on screen and runs one timer for all of them, and none at all
+when nothing is animating.
 
 ### Standalone
 
 Outside a layout, `whilst` shows a gauge at the cursor for the duration of a block and erases it
 afterwards:
 
+<!-- doccheck: skip -->
 ```scala
 whilst(Reading(Fraction.indeterminate)):
-  slowThing()
+  snooze(2.0*Second)
 ```
 
 `gaugeLine` renders a single frame for a caller doing its own drawing — the shape to use when the
 redrawing is already handled:
 
 ```scala
-Out.print(e"\r${gaugeLine(Fraction.of(done, total), 40)} $done/$total${csi.el()}")
+def frame(done: Int, total: Int)(using Stdio): Unit =
+  Out.print(e"\r${gaugeLine(Fraction.of(done, total), 40)} $done/$total${csi.el()}")
 ```
 
 ### Degradation
@@ -196,20 +211,23 @@ while looking like the whole series, which is worse than showing less.
 uses, so it is not a style choice and needs no import:
 
 ```scala
-gauge(Reading(Captioned(Fraction.indeterminate, t"resolving dependencies")))
+val captioned = gauge(Reading(Captioned(Fraction.indeterminate, t"resolving dependencies")))
 ```
 
 A `Sequence[Step]` renders as a checklist, a breadcrumb, a chain of beads, a numbered position or a
 powerline ribbon:
 
+<!-- doccheck: skip -->
 ```scala
-val steps =
+import processions.checklistProcession
+
+val steps: Sequence[Step] =
   Sequence
     ( Step(t"resolve", Standing.Succeeded),
       Step(t"compile", Standing.Running),
       Step(t"publish", Standing.Pending) )
 
-gauge(Reading(steps))   // with `import processions.checklistProcession`
+val checklist = gauge(Reading(steps))
 ```
 
 drawing, at three rows:

@@ -3,7 +3,7 @@
 ### About
 
 Angles, positions on the Earth, and the compass are typed values. An `Angle` is a genuine angular
-quantity — constructed in degrees or radians, added and scaled modularly, normalised to a principal
+quantity — constructed in degrees or radians, added and scaled modularly, normalized to a principal
 value — rather than a bare number whose unit is a matter of memory. A `Location` is a latitude and
 longitude packed into a single value, from which bearings, angular distances and
 [geohashes](https://en.wikipedia.org/wiki/Geohash) are computed, and a bearing renders as a compass
@@ -16,12 +16,16 @@ degrees and another as radians, with nothing in the type to arbitrate. Angles al
 10° — and code that forgets the modulus accumulates rotations that compare unequal when they should
 not. Positions inherit both problems twice over, once per coordinate.
 
+Angles and locations as dimensioned values, rather than bare doubles, are [impossible states](../philosophy/impossible-states.md) ruled out: a latitude cannot be added to a distance.
+
 Soundness makes the angle a type of its own, constructed through its unit and closed under modular
 arithmetic, so a bare number never stands for an angle and wrapping is built into the operations.
-Everything comes from the `soundness` package:
+Everything comes from the `soundness` package; an angle's textual form, degrees with a `°`, is
+a named given imported alongside:
 
 ```scala
 import soundness.*
+import soundness.angleShowable
 ```
 
 ### Angles
@@ -72,6 +76,8 @@ angular distance between two points along the great circle; and the geohash of t
 chosen precision:
 
 ```scala
+import compassBearings.eightPointCompassBearing
+
 val here = Location(51.5.deg, 0.1.deg)
 val there = Location(48.9.deg, 2.4.deg)
 

@@ -18,31 +18,41 @@ means assembling command strings, and a mistyped subcommand or a malformed ref i
 the output is text in a format that must be parsed by hand; and nothing distinguishes a branch name
 from a tag name from a commit hash until Git rejects one.
 
+Repository operations that report their failures in their types, and cannot be run without the capabilities they need, are [honest signatures](../philosophy/honest-signatures.md) for version control.
+
 Soundness wraps the command line in a typed API. Each operation is a method that names its
-requirements and the errors it can raise; a `GitBranch`, `GitTag` and `GitHash` are separate types,
+requirements and the errors it can raise; a `Git.Branch`, `Git.Tag` and `Git.Hash` are separate types,
 so one cannot be passed where another is meant; and the output of `log`, `status` or `diff` is parsed
 into values. Everything comes from the `soundness` package, with the `git` command located and the
 capabilities the operations need in scope:
 
 ```scala
 import soundness.*
+
+import charEncoders.utf8Encoder
+import filesystemOptions.createNonexistentParents
 import gitCommands.searchpathGitCommand
-import workingDirectories.javaBaseWorkingDirectory
 import internetAccess.online
 import logging.silentLogging
+import pathInterfaces.pathOnLinux
 import strategies.throwUnsafely
+import temporaryDirectories.javaBaseTemporaryDirectory
+import workingDirectories.javaBaseWorkingDirectory
+
+val directory = temporaryDirectory[Path on Linux] / "git" / Uuid().show
+directory.create[Directory]()
 ```
 
 ### Opening or creating a repository
 
-An existing repository opens with `GitRepo.at`, and a new one is created with `Git.init`, which
+An existing repository opens with `Git.Repo.at`, and a new one is created with `Git.init`, which
 returns a `Worktree` — a repository together with a working tree:
 
 ```scala
-val worktree = Git.init(directory, initialBranch = GitBranch(t"main"))
+val worktree = Git.init(directory, initialBranch = Git.Branch(t"main"))
 ```
 
-`Git.initBare` creates a bare repository, one with no working tree, returning a `GitRepo`.
+`Git.initBare` creates a bare repository, one with no working tree, returning a `Git.Repo`.
 
 ### Making a commit
 
@@ -50,9 +60,11 @@ Staging and committing are methods on the worktree; the resulting commit's hash 
 resolving `HEAD`:
 
 ```scala
-worktree.add(worktree.path/t"notes.txt")
+(worktree.path / "notes.txt").write(t"Remember the milk")
+worktree.add(worktree.path / "notes.txt")
 worktree.commit(t"Add notes")
-val hash = worktree.repo.revParse(Refspec.head())
+
+val hash = worktree.repo.revParse(Refspec.head())   // the new commit's Git.Hash
 ```
 
 ### Inspecting history
@@ -61,8 +73,7 @@ val hash = worktree.repo.revParse(Refspec.head())
 message:
 
 ```scala
-worktree.repo.log().map(_.message.head).to(List)
-// List(t"Add notes", …)
+worktree.repo.log().map(_.message.prim).to(List)   // List(t"Add notes")
 ```
 
 ### Branches and tags
@@ -71,9 +82,8 @@ Branches and tags are created, listed and switched between with typed references
 reference to merge and a fast-forward policy:
 
 ```scala
-worktree.makeBranch(GitBranch(t"feature"))
-worktree.checkout(GitBranch(t"main"))
-worktree.merge(GitBranch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
+worktree.makeBranch(Git.Branch(t"feature"))
+worktree.checkout(Git.Branch(t"main"))
 ```
 
 ### Cloning, pulling and pushing
@@ -83,13 +93,13 @@ capability and runs asynchronously, returning a process whose progress can be ob
 result is taken with `complete`:
 
 ```scala
-val cloned = Git.clone(source, target).complete()
-cloned.repo.log().to(List)
+val cloned = Git.clone(worktree.path, directory / "clone").complete()
+cloned.repo.log().to(List).size   // 1
 ```
 
 ### References
 
-A `GitBranch`, `GitTag` and `GitHash` name the three kinds of reference, and a `Refspec` is any of
+A `Git.Branch`, `Git.Tag` and `Git.Hash` name the three kinds of reference, and a `Refspec` is any of
 them or a relative expression such as `Refspec.head()` for `HEAD`. Because each is its own type, an
 operation that expects a branch will not accept a tag, and a hash carries the guarantee that it is a
 well-formed forty-character identifier.
@@ -105,9 +115,11 @@ carries the paths on both sides, the kind of change — added, modified, deleted
 and its hunks, each hunk a list of edits:
 
 ```scala
+(worktree.path / "notes.txt").write(t"Remember the milk and the eggs")
+
 val files = worktree.diff().to(List)
-files.head.changeKind      // ChangeKind.Modified
-files.head.hunks.flatMap(_.edits)
+files.prim.let(_.changeKind)                 // ChangeKind.Modified
+files.prim.let(_.hunks.flatMap(_.edits))     // the edits, hunk by hunk
 ```
 
 The same parser reads a patch from anywhere — a file, an email, a code-review comment — so a tool
@@ -120,8 +132,8 @@ similarity indices, binary files, mode changes, and files with no trailing newli
 created is stated rather than inherited from configuration:
 
 ```scala
-worktree.merge(GitBranch(t"feature"), ff = FastForward.Only)
-worktree.merge(GitBranch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
+worktree.merge(Git.Branch(t"feature"), ff = FastForward.Only)
+worktree.merge(Git.Branch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
 ```
 
 `cherryPick` and `revert` apply and undo a single commit's changes. A conflict is a typed failure

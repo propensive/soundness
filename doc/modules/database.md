@@ -25,6 +25,8 @@ import soundness.*
 import strategies.throwUnsafely
 ```
 
+A query built from typed fragments cannot be assembled into something the database will reject: [safety by construction](../philosophy/safety-by-construction.md) applied to SQL.
+
 ### Declaring a database
 
 The relations form the database's type — `A -< B` reads "an `A` may have `B`s":
@@ -69,7 +71,7 @@ box.assign(shelf)        // does not compile: no Box -< Shelf relation
 The last line is the point: the schema is not documentation but a type, and an operation outside it
 never runs because it never compiles.
 
-`ref` finds the reference for a value already stored, raising a `DataError` where it is not —
+`ref` finds the reference for a value already stored, raising a `Database.Error` where it is not —
 which is how a value arriving from elsewhere is matched to what the database already holds,
 rather than stored a second time.
 

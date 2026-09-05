@@ -21,11 +21,16 @@ Writing them by hand is boilerplate that drifts; writing a macro per typeclass i
 libraries do not have. What is wanted is a statement of the two general rules — products combine,
 coproducts choose — from which every concrete instance follows.
 
+Derivation is what makes [small APIs](../philosophy/small-apis.md) possible: a typeclass needs two rules, not an instance per type.
+
 Soundness's engine — the successor to Magnolia — provides exactly that, as ordinary inheritance
-rather than macro-writing. Everything comes from the `soundness` package:
+rather than macro-writing. Everything comes from the `soundness` package, with the complexity
+import that permits indexing the arrays of fields a derivation produces:
 
 ```scala
 import soundness.*
+import dysasymptotics.linearAccess
+import strategies.throwUnsafely
 ```
 
 ### Products, sums and typeclasses
@@ -59,11 +64,11 @@ instances are handed to it, and it may be contravariant. (Nothing is used up; th
 which way the value travels.)
 
 ```scala
-trait Show[value]:                     // consumer
-  def show(value: value): Text
+trait Presenting[value]:                 // consumer
+  def present(value: value): Text
 
-trait Default[+value]:                 // producer
-  def apply(): value
+trait Producing[+value]:                 // producer
+  def produce(): value
 ```
 
 The distinction matters because the two derive differently: a consumer folds over the fields of a
@@ -73,7 +78,7 @@ value it was given, while a producer has no value to fold over and must build on
 
 A typeclass gains derivation by extending `Derivation` (or `ProductDerivation` where only case
 classes make sense) and implementing `conjunction` for products and `disjunction` for coproducts.
-A Show-like typeclass, in full:
+A Show-like typeclass, in full, with the extension method that makes it convenient to call:
 
 ```scala
 trait Presentation[value]:
@@ -87,12 +92,15 @@ object Presentation extends Derivation[Presentation]:
     value =>
       fields(value):
         [field] => field => t"$label=${contextual.present(field)}"
-      . mkString(s"${typeName[derivation]}(", ", ", ")").tt
+      . join(t"${typeName[derivation]}(", t", ", t")")
 
   inline def disjunction[derivation: SumReflection]: Presentation[derivation] =
     value =>
       variant(value):
         [variant <: derivation] => variant => contextual.present(variant)
+
+extension [value](value: value)
+  def present(using presentation: Presentation[value]): Text = presentation.present(value)
 ```
 
 `fields` folds over a product's fields, giving each one its `label`, its position, and the
@@ -133,11 +141,28 @@ Nested structures derive recursively: a case class of case classes needs nothing
 Inside `conjunction`, each field carries more than its value. `label` is the field's name as
 written, `index` its position, `typeName` the enclosing type's name, and `contextual` the instance
 of the typeclass being derived for that field's type. A derivation can therefore produce something
-that mentions the structure, not only something that folds over it:
+that mentions the structure, not only something that folds over it — here, the labels of a
+product's fields, with no value in hand, through `contexts`. Since derivation composes the
+instances of a product's fields, every field type needs one, even where — as for the labels of a
+`Text` or an `Int`, which have none — it is trivial:
 
 ```scala
-Labels.derived[Person].labels    // List(t"name", t"age", t"male")
-Labels.derived[Empty].labels     // Nil
+trait Labels[value]:
+  def labels: List[Text]
+
+object Labels extends ProductDerivation[Labels]:
+  given Labels[Text] = new Labels[Text] { def labels: List[Text] = Nil }
+  given Labels[Int] = new Labels[Int] { def labels: List[Text] = Nil }
+
+  inline def conjunction[derivation <: Product: ProductReflection]: Labels[derivation] =
+    val fieldLabels = contexts[derivation]() { [field] => context => label }
+    new Labels[derivation]:
+      def labels: List[Text] = fieldLabels.to[List]
+
+case class Empty()
+
+Labels.derived[Person].labels    // List(t"name", t"age")
+Labels.derived[Empty].labels     // List()
 ```
 
 An empty product is a product with no fields, and a single-field product is not special-cased —
@@ -151,24 +176,42 @@ case rather than at the sum, and the case's own label is available for a discrim
 A producer has no instance to fold over, so instead of `fields` it uses `build`, which constructs
 a new instance of the product. Its lambda receives the typeclass instance for each field — the
 only thing capable of making a value of a type the body cannot see — and returns that field's
-value:
+value. A parser of comma-separated fields, in full:
 
 ```scala
-inline def conjunction[derivation <: Product: ProductReflection]: Readable[derivation] = text =>
-  build[derivation]:
-    [field] => readable => readable.read(column(index))
+trait Parsing[value]:
+  def parse(text: Text): value
+
+object Parsing extends ProductDerivation[Parsing]:
+  given Parsing[Text] = identity(_)
+  given Parsing[Int] = _.s.toInt
+
+  inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+    text =>
+      val columns = text.cut(t",")
+      build[derivation]:
+        [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
+
+t"Ada,36".read[Person]   // does not compile: Parsing is the typeclass, not Readable
+Parsing.derived[Person].parse(t"Ada,36")   // Person(t"Ada", 36)
 ```
 
 The sum counterpart is `delegate`, which takes the label of the variant to build and dispatches to
 that variant's instance. Unlike `variant`, which can read the answer off a value it was given,
-`delegate` is told which variant to produce, so the label usually comes out of the input:
+`delegate` is told which variant to produce, so the label usually comes out of the input — here,
+a `Date:` or `DateTime:` prefix — and a label naming no variant raises a `Variant.Error`:
 
 ```scala
-inline def disjunction[derivation: SumReflection]: Readable[derivation] = text =>
-  text.cut(t":") match
-    case List(prefix, rest) =>
-      delegate[derivation](prefix):
-        [variant <: derivation] => context => context.read(rest)
+object ParsingSums extends Derivation[Parsing]:
+  inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+    Parsing.conjunction[derivation]
+
+  inline def disjunction[derivation: SumReflection]: Parsing[derivation] =
+    text =>
+      text.cut(t":") match
+        case List(prefix, rest) =>
+          delegate[derivation](prefix):
+            [variant <: derivation] => parsing => parsing.parse(rest)
 ```
 
 Where the produced value is wrapped in a type constructor — a parser returning an `Optional`, a
@@ -177,33 +220,42 @@ for that constructor, and threads the fields through it.
 
 ### Typeclasses over two values
 
-Some typeclasses take two values of the same type: `Eq` is the obvious one. Folding over the
-fields of the left value is easy, but the right value's corresponding field is the problem. Doing
-it by hand would mean building parallel arrays of left fields, right fields and instances, and the
-moment those values are separated from the lambda that typed them, their types erase and only
-casts put them back together.
+Some typeclasses take two values of the same type: an equivalence is the obvious one. Folding over
+the fields of the left value is easy, but the right value's corresponding field is the problem.
+Doing it by hand would mean building parallel arrays of left fields, right fields and instances,
+and the moment those values are separated from the lambda that typed them, their types erase and
+only casts put them back together.
 
-`complement` avoids that. Inside the fold for one value, it retrieves the corresponding field of
-*another* value of the same type, typed identically — so it is compatible with the same
-`contextual` instance:
-
-```scala
-inline def conjunction[derivation <: Product: ProductReflection]: Eq[derivation] =
-  (left, right) =>
-    fields(left):
-      [field] => leftField => contextual.equal(leftField, complement(right))
-    . all { equal => equal }
-```
-
-For sums it works the same way but returns an `Optional`, since the two values need not be the
-same variant — and if they are not, there is no meaningfully-typed value to return:
+`dereference` and `complement` avoid that. Inside `contexts`, `dereference` is a function from
+the product to the current field, typed with that field's type, so the same field can be pulled
+out of *both* values and handed to the one `contextual` instance. For sums, `complement` does
+the corresponding job inside `variant`, retrieving the other value narrowed to the same case; it
+returns an `Optional`, since the two values need not be the same variant — and if they are not,
+there is no meaningfully-typed value to return:
 
 ```scala
-inline def disjunction[derivation: SumReflection]: Eq[derivation] =
-  (left, right) =>
-    variant(left):
-      [variant <: derivation] => leftValue =>
-        complement(right).lay(false)(contextual.equal(leftValue, _))
+trait Equivalence[value]:
+  def equal(left: value, right: value): Boolean
+
+object Equivalence extends Derivation[Equivalence]:
+  given Equivalence[Int] = _ == _
+  given Equivalence[Text] = _.lower == _.lower
+
+  inline def conjunction[derivation <: Product: ProductReflection]: Equivalence[derivation] =
+    (left, right) =>
+      contexts[derivation]():
+        [field] => equivalence =>
+          val extract: derivation => field = dereference
+          equivalence.equal(extract(left), extract(right))
+      . all { boolean => boolean }
+
+  inline def disjunction[derivation: SumReflection]: Equivalence[derivation] =
+    (left, right) =>
+      variant(left):
+        [variant <: derivation] => leftValue =>
+          complement(right).lay(false)(contextual.equal(leftValue, _))
+
+Equivalence.derived[Person].equal(Person(t"Ada", 36), Person(t"ADA", 36))   // true
 ```
 
 Different variants compare unequal; the same variant compares through the instance both share.
@@ -216,15 +268,25 @@ case, so a derivation can restrict itself to such enumerations and reject the re
 of its own:
 
 ```scala
-inline def disjunction[derivation: SumReflection]: Show[derivation] = value =>
-  inline if choice[derivation] then
-    variant(value):
-      [variant <: derivation] => arm => t"${typeName[derivation]}.${contextual.show(arm)}"
-  else compiletime.error("cannot derive Show for this ADT")
+trait Naming[value]:
+  def name(value: value): Text
+
+object Naming extends Derivation[Naming]:
+  inline def conjunction[derivation <: Product: ProductReflection]: Naming[derivation] =
+    value => typeName[derivation]
+
+  inline def disjunction[derivation: SumReflection]: Naming[derivation] = value =>
+    inline if choice[derivation] then
+      variant(value):
+        [variant <: derivation] => arm => t"${typeName[derivation]}.${contextual.name(arm)}"
+    else scala.compiletime.error("cannot derive Naming for a sum whose variants carry data")
+
+Naming.derived[Month].name(Month.Mar)   // t"Month.Mar"
 ```
 
 The `inline if` matters: it forces `choice` to be evaluated as the code compiles, so the
-`compiletime.error` branch is either eliminated or reached, and reaching it fails the build.
+`scala.compiletime.error` branch is either eliminated or reached, and reaching it fails the
+build.
 
 For such an enumeration, `singleton` turns a label back into the value it names, `variantLabels`
 lists the labels, and `choices` folds over every variant without needing a value to dispatch on —
@@ -236,11 +298,21 @@ A case class may give its fields default values, and a decoder usually wants the
 from the input should take the default the author wrote rather than fail. Within the lambdas of
 `fields`, `contexts` and `build`, a contextual `Default[Optional[field]]` is available, and
 calling `default` yields an `Optional[field]` — the declared default, or `Unset` where the field
-has none:
+has none. A parser that tolerates missing trailing columns:
 
 ```scala
-[field] => readable =>
-  if index < columns.length then readable.read(columns(index)) else default.or(abort(Missing()))
+object LenientParsing extends ProductDerivation[Parsing]:
+  inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+    text =>
+      val columns = text.cut(t",")
+      build[derivation]:
+        [field] => parsing =>
+          columns(Ordinal.zerary(index)).let(parsing.parse(_))
+          . or(default.or(panic(m"no column and no default for $label")))
+
+case class Settings(name: Text, retries: Int = 3)
+
+LenientParsing.derived[Settings].parse(t"primary")   // Settings(t"primary", 3)
 ```
 
 ### Deriving beyond codecs
@@ -251,6 +323,8 @@ product field by field:
 
 ```scala
 import arithmetic.addable
+
+case class Pair(label: Text, count: Int)
 
 Pair(t"foo", 10) + Pair(t"bar", 15)   // Pair(t"foobar", 25)
 ```
@@ -282,6 +356,8 @@ have to summon itself part-way through. Defining the instance on the type's comp
 enum Tree derives Presentation:
   case Leaf
   case Branch(left: Tree, value: Int, right: Tree)
+
+Tree.Branch(Tree.Leaf, 1, Tree.Leaf).present   // t"Branch(left=Leaf, value=1, right=Leaf)"
 ```
 
 ### Choosing between candidate instances
@@ -293,24 +369,36 @@ tends to resolve one ambiguity by creating another elsewhere.
 
 The reliable fix is to make the choice explicit rather than to rank it. Turn the competing
 `given`s into ordinary methods and write a single `derived` that selects among them in order with
-`summonFrom`:
+`scala.compiletime.summonFrom`:
 
 ```scala
-object Debug:
-  inline given derived[value]: Debug[value] = value =>
-    compiletime.summonFrom:
-      case encoder: Encoder[value] => encoder.encode(value)
-      case given Show[value]       => value.show
-      case _                       => value.toString.tt
+trait Rendering[value]:
+  def render(value: value): Text
+
+object Rendering:
+  inline given derived[Value]: Rendering[Value] = item =>
+    scala.compiletime.summonFrom:
+      case presentation: Presentation[Value] => presentation.present(item)
+      case given (Value is Showable)         => item.show
+      case _                                 => item.toString.tt
+
+extension [value](value: value)
+  def render(using rendering: Rendering[value]): Text = rendering.render(value)
+
+Person(t"Ada", 36).render   // through Presentation, which Person derives
+3.14.render                 // through Showable, which Double has
 ```
 
-Read plainly: use an `Encoder` if one exists; otherwise a `Show`, brought into scope for the
-right-hand side; otherwise fall back. The order in the source *is* the priority, which is why this
-is easier to reason about than a lattice of implicit scopes.
+Read plainly: use a `Presentation` if one exists; otherwise a `Showable`, brought into scope for
+the right-hand side; otherwise fall back. The order in the source *is* the priority, which is why
+this is easier to reason about than a lattice of implicit scopes. (The type parameter is
+capitalized here for a reason: in a `summonFrom` pattern a lowercase type name would be read as a
+fresh pattern variable rather than as the given's own parameter.)
 
 The same technique gives derivation without exposing it: define `conjunction` and `disjunction` on
 an ordinary object rather than the companion, and call `derived` on it explicitly wherever an
-instance is wanted. Nothing then reaches implicit search unless it is asked for.
+instance is wanted — as `ParsingSums` and `LenientParsing` did above. Nothing then reaches implicit
+search unless it is asked for.
 
 ### Per-field instances
 
@@ -318,7 +406,10 @@ Occasionally one field of one type needs a different instance from the default �
 for one column, an override for one path. `specifically` builds such an override map by naming the
 paths, checked against the type's actual structure:
 
+<!-- doccheck: skip -->
 ```scala
+case class Org(cto: Person, ceo: Person)
+
 val custom: Org is Specific over (Codec in Json) =
   specifically:
     case root.cto.name() => nameCodec

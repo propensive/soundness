@@ -22,7 +22,10 @@ little languages are rendered by the types that understand them. Everything come
 
 ```scala
 import soundness.*
+import strategies.throwUnsafely
 ```
+
+Figures as typed values, with coordinates that are quantities, follow [impossible states](../philosophy/impossible-states.md): a malformed drawing cannot be written.
 
 ### Shapes
 
@@ -89,12 +92,12 @@ Rectangle((0, 0), 10, 5).translate(+(3, 4))
 
 ### Identifiers
 
-A figure or definition may carry an `SvgId`, which is what a gradient reference, an animation
+A figure or definition may carry an `Svg.Id`, which is what a gradient reference, an animation
 target or a `<use>` element needs to name it. The identifier is a distinct type rather than text,
 so a reference to a definition that does not exist is not silently rendered:
 
 ```scala
-Outline(id = SvgId(t"plus")).moveTo((0, 0)).closed
+Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed
 ```
 
 ### Gradients and color
@@ -104,7 +107,7 @@ A linear gradient is a definition with typed stops, each an offset in `[0, 1]` �
 [color](colors.md):
 
 ```scala
-LinearGradient(SvgId(t"fade"), Stop(0.0, WebColors.Red), Stop(1.0, WebColors.Blue))
+Svg.LinearGradient(Svg.Id(t"fade"), Stop(0.0, WebColors.Red), Stop(1.0, WebColors.Blue))
 ```
 
 ### Documents
@@ -118,13 +121,17 @@ Document(drawing, enc"UTF-8").show   // <?xml version="1.0" …?><svg …>
 ```
 
 Parsing runs the other way, reading SVG text back into typed figures and definitions, so a drawing
-produced elsewhere can be inspected, measured or altered rather than merely embedded:
+produced elsewhere can be inspected, measured or altered rather than merely embedded. The
+[XML](xml.md) parser beneath it takes a schema, and SVG's own vocabulary is validated by the
+figure types, so the free-form schema is the one to use:
 
 ```scala
+given XmlSchema = XmlSchema.Freeform
+
 val svg = t"""<svg width="50" height="50"><rect x="0" y="0" width="10" height="10"/></svg>"""
         . read[Svg]
 
-(svg.width, svg.height, svg.figures.length)   // (50.0f, 50.0f, 1)
+(svg.width, svg.height, svg.figures.size)   // (50.0f, 50.0f, 1)
 ```
 
 Because an `Svg` is an [XML](xml.md) value underneath, a drawing embeds directly into an

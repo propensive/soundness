@@ -33,6 +33,8 @@ the `soundness` package:
 import soundness.*
 ```
 
+A pattern checked as the code compiles, with its groups typed, is [safety by construction](../philosophy/safety-by-construction.md) for regular expressions.
+
 ### Matching
 
 The `r"…"` interpolator writes a regular expression, and in a `match` it behaves as
@@ -161,6 +163,7 @@ A pattern can also bind on the left of a definition, where it stands for an
 extraction that the code asserts will succeed. This pulls several captures out of
 one expression at once:
 
+<!-- doccheck: skip -->
 ```scala
 val r"$prefix([a-z0-9._%+-]+)@$domain([a-z0-9.-]+)\.$tld([a-z]{2,6})" =
   t"test@example.com": @unchecked
@@ -201,8 +204,10 @@ APIs leave to documentation and hope. Substitution in [text](text.md) is overloa
 that basis:
 
 ```scala
-text.sub(r"\s+", t" ")    // collapse runs of whitespace
-text.sub(t"\s+", t" ")    // replace the four literal characters
+val spaced = t"too   many    spaces"
+
+spaced.sub(r"\s+", t" ")     // collapse runs of whitespace
+spaced.sub(t"\\s+", t" ")    // replace the three literal characters, of which there are none
 ```
 
 Because a glob compiles to a regular expression, a `g"…"` is a `Regex` too, and usable anywhere
@@ -217,21 +222,40 @@ message that points at the offending character. An unbalanced bracket is caught
 before the program runs:
 
 ```scala
-t"" match
-  case r"hello(world" =>   // does not compile: the group is never closed
+t"" match { case r"hello(world" => () }   // does not compile: the group is never closed
 ```
 
 So is an interpolated variable that does not stand in front of a group to capture:
 
 ```scala
-t"" match
-  case r"hello${space}world" =>   // does not compile: nothing for `space` to bind
+val space = t" "
+t"" match { case r"hello${space}world" => () }   // does not compile: nothing for `space` to bind
 ```
 
 The same scanner is available at runtime for patterns built from dynamic text,
-where it reports a `RegexError` naming the position and the reason — a bad
+where it reports a `Regex.Error` naming the position and the reason — a bad
 repetition such as `{2,1}`, an unclosed group, or a capture inside a repeating
 group, which cannot bind a fixed set of variables and so is forbidden.
+
+### Choosing an engine
+
+The default engine is the JVM's own, whose backtracking accepts every construct of its syntax
+but can take exponential time on a pathological pattern and input — the
+[catastrophic backtracking](https://en.wikipedia.org/wiki/ReDoS) that turns a regular expression
+applied to untrusted input into a denial of service. `re2` is a pure-Scala automaton engine that
+guarantees linear time in the length of the input, at the cost of the constructs an automaton
+cannot express — backreferences and lookaround. The engine is a given, so a program chooses it
+with an import and the patterns are unchanged:
+
+```scala
+import regexBackends.re2
+
+t"hello world" match
+  case r"hello $name(.*)" => name   // t"world", in time linear in the input
+```
+
+A pattern using a construct the engine does not support is rejected as the code compiles, where
+the pattern is a literal, rather than at the first match.
 
 ### Globs
 

@@ -6,7 +6,7 @@ A value sometimes has to leave the world where its class is known — crossing i
 classloader, another process, or a staging boundary — and arrive intact. The `Pojo` representation
 carries any Scala value using only the types every JVM context shares: boxed primitives, strings,
 and arrays of objects. A case class or enumeration converts to a `Pojo` and back with derived
-codecs, so the value survives the crossing without its class travelling with it.
+codecs, so the value survives the crossing without its class traveling with it.
 
 ### On classloader-neutral data
 
@@ -16,8 +16,10 @@ receiving side cannot cast it back: the "same" class from another loader is a di
 Full serialization solves this with heavy machinery; passing strings solves it by giving up
 structure.
 
+Working on the generic representation of a value, without losing its structure, is what lets one codec serve every format — [composability](../philosophy/composability.md) between formats.
+
 A `Pojo` keeps the structure and drops the class. A product becomes an array of its fields, a
-variant a labelled pair, a primitive its boxed self — all types defined by the JDK itself, equally
+variant a labeled pair, a primitive its boxed self — all types defined by the JDK itself, equally
 meaningful on both sides of any boundary. This is the transport beneath [staged](staging.md)
 remote execution. Everything comes from the `soundness` package:
 
@@ -50,13 +52,16 @@ declaration order, an enumeration case is a pair of its name and its payload, an
 their boxed forms:
 
 ```scala
+enum Light:
+  case Red, Amber, Green
+
 Person(t"John", 30).pojo    // Array("John", 30)
-(Color.Green: Color).pojo   // Array("Green", Array())
+(Light.Green: Light).pojo   // Array("Green", Array())
 ```
 
 Because both sides derive the codec from the same type definition, the encoding needs no schema on
 the wire — but it also means both sides must agree on that definition, and a mismatch surfaces as
-a typed `PojoError` when decoding, not as silent corruption.
+a typed `Pojo.Error` when decoding, not as silent corruption.
 
 `Pojo` is an opaque type over the JDK types it permits, so a `Pojo` cannot be confused with an
 arbitrary `Object`, and the only way to produce one is through an encoder. Decoding is fallible

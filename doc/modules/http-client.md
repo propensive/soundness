@@ -19,18 +19,25 @@ bytes, and hands back a response whose status must be checked by hand and whose 
 by hand. The URL might be malformed, a header name might be misspelled, the body's media type might
 not match its bytes, and none of this is caught until the request runs — if then.
 
+A request that must state its failure modes, and a response decoded to a type, follow [error handling](../philosophy/error-handling.md) as it applies everywhere else.
+
 Soundness types each part. The URL is validated where it is written; a header argument is checked
 against the header it sets, so `accept` takes a media type and not any string; the body carries its
 media type with it; and the response reads into a chosen type. A non-success status and a
 connection failure are distinct typed errors. That a request touches the network is itself visible,
-as the `Online` capability it demands. Everything comes from the `soundness` package:
+as the `Online` capability it demands. Everything comes from the `soundness` package, with a
+transport chosen by import — the JVM's own `java.net.http` here, and the alternatives below:
 
 ```scala
 import soundness.*
+
+import charEncoders.utf8Encoder
+import charDecoders.utf8Decoder
+import errorDiagnostics.stackTracesDiagnostics
+import httpBackends.javaNetHttp
 import internetAccess.online
 import logging.silentLogging
 import strategies.throwUnsafely
-import charEncoders.utf8Encoder
 ```
 
 ### A GET request
@@ -81,9 +88,11 @@ A single request opens a connection and closes it. Where several requests go to 
 a *session* opens one connection and lends it to a scope, so the requests within share it:
 
 ```scala
+val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+
 url"https://example.com".session: session ?=>
-  session.fetch(request)
-  session.fetch(request)
+  session.fetch(request).status
+  session.fetch(request).status
 ```
 
 The protocol is fixed for the session's lifetime. For `https`, ALPN chooses it during the TLS
@@ -103,7 +112,9 @@ The transport is a given. `httpBackends.javaNetHttp` uses the JVM's own `java.ne
 `java.net.http` involved:
 
 ```scala
-import httpBackends.soundnessHttp
+locally:
+  import httpBackends.soundnessHttp
+  url"https://example.com/".fetch().status   // Http.Ok
 ```
 
 The native backend pools kept-alive HTTP/1.1 connections per origin, and negotiates by ALPN over
@@ -114,7 +125,7 @@ retry on a fresh connection. Other platforms supply their own backends the same 
 ### Redirects
 
 Redirects are followed by default, up to a limit. Importing a stricter policy stops them, after
-which a redirect response is delivered as an `HttpError` carrying the redirect status:
+which a redirect response is delivered as an `Http.Error` carrying the redirect status:
 
 ```scala
 import httpRedirections.doNotFollowRedirects
@@ -122,18 +133,18 @@ import httpRedirections.doNotFollowRedirects
 
 ### Errors
 
-A response outside the success range raises an `HttpError`, which carries the status and headers so
+A response outside the success range raises an `Http.Error`, which carries the status and headers so
 the caller can react to what went wrong:
 
 ```scala
-capture[HttpError](url"https://example.com/missing".fetch().receive[Text]).status   // Http.NotFound
+capture[Http.Error](url"https://example.com/missing".fetch().receive[Text]).status   // Http.NotFound
 ```
 
 A request that cannot connect at all — an unresolvable host, a refused connection, a TLS failure —
-raises a `ConnectError` naming the reason:
+raises a `Connect.Error` naming the reason:
 
 ```scala
-capture[ConnectError](url"http://no-such-host.invalid/".fetch()).reason   // ConnectError.Reason.Dns
+capture[Connect.Error](url"http://no-such-host.invalid/".fetch()).reason
 ```
 
 A TLS failure is distinguished from a network one, and its own reason says at which stage it

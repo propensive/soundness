@@ -3,7 +3,7 @@
 ### About
 
 A JVM command-line tool pays the JVM's startup cost — and loses the just-in-time compiler's
-accumulated optimisation — on every invocation, which makes even a fast program feel slow at the
+accumulated optimization — on every invocation, which makes even a fast program feel slow at the
 shell. Soundness removes that cost by making the application resident: the first invocation starts
 a daemon, and every later one is dispatched to the running process by a small native launcher,
 with its arguments, environment, working directory, standard streams and signals all forwarded
@@ -22,15 +22,18 @@ environment and working directory, its own stdin and exit code, Ctrl-C reaching 
 invocation and not the daemon. And the daemon must manage itself: starting on demand, shutting
 down when idle, surviving upgrades.
 
+A daemon that serves each invocation against that invocation's own environment is [declarative context](../philosophy/declarative-context.md) taken seriously: nothing about the caller is global.
+
 Soundness handles those details in a per-platform native launcher and a protocol over a Unix
 domain socket, so the Scala application simply runs — many invocations concurrently, each with its
 own faithful context. Everything comes from the `soundness` package, alongside the CLI machinery:
 
 ```scala
 import soundness.*
+
+import backstops.stackTraceBackstop
 import executives.completionsExecutive
 import interpreters.posixInterpreter
-import backstops.stackTraceBackstop
 import threading.virtualThreading
 ```
 
@@ -47,6 +50,10 @@ def mytool(): Unit = cli:
     Exit.Ok
 ```
 
+`cli` takes no arguments: the launcher forwards them, with the environment, working directory
+and standard streams of the invoking shell, and the body sees them through the same `arguments`,
+`Out` and `Exit` as an ordinary application.
+
 The first run starts the daemon; later runs connect to it and return at native-tool speed. Tab
 completions gain the most: each completion request is an invocation, and a resident process
 answers in milliseconds.
@@ -62,10 +69,13 @@ An invocation traps the signals it cares about, and the response reaches the cod
 invocation, not the shared process:
 
 ```scala
-execute:
-  trap:
-    case signal: UnixSignal => SignalResponse.Accept
-  longRunningWork()
+def longRunningWork(): Exit = Exit.Ok
+
+def watch(): Unit = cli:
+  execute:
+    trap:
+      case signal: UnixSignal => SignalResponse.Accept
+    longRunningWork()
 ```
 
 The daemon retires itself after six idle hours, when its state files are removed, or on demand —
@@ -80,10 +90,13 @@ inside the line. `cooked` asks the launcher for canonical mode for the duration 
 raw mode is restored afterwards:
 
 ```scala
-execute:
-  service.cooked:
-    Out.println(t"Name?")
-    In.read[Text]
+def ask(): Unit = cli:
+  execute:
+    val name = service.cooked:
+      Out.println(t"Name?")
+      In.read[Text]
+    Out.println(t"Hello, $name")
+    Exit.Ok
 ```
 
 Echo and line editing then come from the terminal driver itself. A launcher with no such channel
@@ -93,11 +106,19 @@ Echo and line editing then come from the terminal driver itself. A launcher with
 
 Concurrent invocations of one daemon share a typed *bus*: an invocation broadcasts a message and
 others observe the stream, which is how "the running watch command notices that another invocation
-just changed the configuration" is expressed:
+just changed the configuration" is expressed. The message type is the type argument to `cli`, so
+every invocation of the daemon agrees on what can be sent:
 
 ```scala
-service.broadcast(ConfigChanged)
-service.bus   // a Stream of messages from other invocations
+enum Message:
+  case ConfigChanged
+
+def configure(): Unit = cli[Message]:
+  execute:
+    service.broadcast(Message.ConfigChanged)
+    service.bus.each:
+      case Message.ConfigChanged => Out.println(t"another invocation changed the configuration")
+    Exit.Ok
 ```
 
 ### Packaging
@@ -150,10 +171,16 @@ ethereal-sign sign --key release-keys/myapp.seed --in dist/myapp --out dist/myap
 ```
 
 That output is simultaneously a valid executable and a valid upgrade candidate. The application
-applies one by pointing `Upgrade` at any source of bytes:
+applies one by pointing `Upgrade` at any source of bytes — a URL, a file, a response body — and
+`Upgrade` does not return, because on success the running process is replaced:
 
 ```scala
-Upgrade(url"https://releases.example.com/myapp.signed")
+import environments.javaBaseEnvironment
+import systems.javaBaseSystem
+import errorDiagnostics.stackTracesDiagnostics
+import internetAccess.online
+
+def upgrade(): Nothing = Upgrade(url"https://releases.example.com/myapp.signed")
 ```
 
 The bytes are written aside, a fresh launcher starts and the old process exits; the new launcher

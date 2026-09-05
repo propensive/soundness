@@ -59,8 +59,10 @@ optionality is flat, `let` serves where both `map` and `flatMap` would be needed
 `Option` — a function that itself returns an `Optional` does not add a layer:
 
 ```scala
+def initial(text: Text): Optional[Char] = text.chars.prim
+
 name.let(_.upper)                 // Optional[Text], upper-cased when present
-name.let(_.take(1)).let(initial)  // chains without nesting
+name.let(_.keep(1)).let(initial)  // chains without nesting
 ```
 
 `lay` handles both cases at once, giving a fallback for absence and a function for presence,
@@ -76,19 +78,22 @@ name.lay(0)(_.length)   // the length when present, 0 when absent
 that fails a predicate:
 
 ```scala
-if name.present then greet(name.vouch)
+name.present               // true
 name.mask(_.length > 64)   // Unset if unreasonably long, else unchanged
 ```
 
 ### Requiring a value
 
-Where a value is known to be present, `vouch` asserts it, panicking if the assertion is
-wrong. `presume` instead falls back to the type's default — an empty text, a zero, an empty
+Where a value is known to be present, `assume` asserts it, throwing an `Optional.Error` if the
+assertion is wrong — and, since that is an unchecked assertion, it requires the capability to
+throw. `presume` instead falls back to the type's default — an empty text, a zero, an empty
 list — for types that declare one:
 
 ```scala
-name.vouch       // the Text, or a panic if it was Unset
-nickname.presume // t"" — the default Text
+import scala.unsafeExceptions.canThrowAny
+
+name.assume        // t"Alice"
+nickname.presume   // t"": the default Text
 ```
 
 ### Absence from collections
@@ -97,7 +102,7 @@ A collection of optional values compacts to the values that are present, droppin
 `Unset`:
 
 ```scala
-List(t"a", Unset, t"c").compact   // List(t"a", t"c")
+List[Optional[Text]](t"a", Unset, t"c").compact   // List(t"a", t"c")
 ```
 
 ### Building an optional
@@ -107,9 +112,13 @@ Any value becomes optional by a condition. `unless` discards it when a predicate
 function is defined:
 
 ```scala
-count.unless(_ == 0)            // Unset when count is zero
-input.puncture(t"")            // Unset for the empty string
-value.only { case n if n > 0 => n*n }
+val count = 0
+val input = t""
+val value = 7
+
+count.unless(_ == 0)                     // Unset: count is zero
+input.puncture(t"")                      // Unset: the empty string
+value.only { case n if n > 0 => n*n }    // 49
 ```
 
 ### Working with `Option`
@@ -157,9 +166,11 @@ to. Instances exist for the types with an obvious zero — empty text, zero, an 
 and a type declares its own by defining one:
 
 ```scala
-given Default[Volume] = Volume(0)
+case class Volume(level: Int)
+given Default[Volume] = () => Volume(0)
 
-setting.presume   // Volume(0) where the setting is unset
+val setting: Optional[Volume] = Unset
+setting.presume   // Volume(0), since the setting is unset
 ```
 
 A `Default` is a by-name thunk rather than a value, so a default that is expensive to compute is

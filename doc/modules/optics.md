@@ -47,8 +47,8 @@ Several updates apply together, and updates sharing a prefix rebuild the shared 
 
 ```scala
 company.lens
-  ( _.ceo.roles = Nil,
-    _.ceo.name = t"Bill" )
+  ( _.ceo.name = t"Bill",
+    _.name = t"Acme Ltd" )
 ```
 
 ### Reaching into collections
@@ -79,9 +79,12 @@ with the identical syntax — one skill, both worlds:
 
 ```scala
 import dynamicAccess.dynamicJson, conversions.encodableToJson
+import formatting.compactJsonFormatting
 
-json.lens(_.leader.age = 41)
-json.lens(_.leader.roles(Each).name = t"member")
+val json = company.in[Json]
+
+json.lens(_.ceo.name = t"Bill").show
+json.lens(_.ceo.roles(Each).name = t"member").show
 ```
 
 ### Lenses as values
@@ -90,8 +93,8 @@ Underneath the syntax, a lens is an ordinary value — a getter and setter pair 
 summoned, passed around and composed, for the cases where the access itself is the abstraction:
 
 ```scala
-val nameLens = summon["name" is Lens from Json onto Json]
-nameLens.modify(document)(transform)
+val nameLens = summon["name" is Lens from Person]
+nameLens.modify(company.ceo)(_.upper)   // Person(t"JOHN", …)
 ```
 
 Two lenses `compose` into one, so a path can be assembled from parts held separately — a lens onto
@@ -105,11 +108,16 @@ The same path syntax that writes an update can name a position without going the
 maps paths to values, which is how a derived typeclass is overridden at one field rather than for
 a whole type:
 
+<!-- doccheck: skip -->
 ```scala
-val orgSpecific: Org is Specific over (Codec in Json) =
+case class Org(ceo: Person, cto: Person)
+
+val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+
+val orgSpecific: Org is Specific over Json.Encodable =
   specifically:
-    case root.cto.name() => nameCodec
-    case root.ceo.age()  => ageCodec
+    case root.cto.name() => shout
+    case root.ceo.name() => shout
 ```
 
 The paths are checked against the type's structure as the code compiles, so a misspelled field or
@@ -117,8 +125,9 @@ a path that does not exist is a compile error, and each value must have the righ
 field it names. The result is an ordinary map keyed by the path, which a derivation consults as it
 visits each field:
 
+<!-- doccheck: skip -->
 ```scala
-orgSpecific.instances.keySet   // Set("cto.name", "ceo.age")
+orgSpecific.instances.keys   // Set("cto.name", "ceo.name")
 ```
 
 This is what the [JSON](json.md) per-field encoder override is built on, and the mechanism is not

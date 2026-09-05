@@ -27,12 +27,37 @@ lazily, decoded through its filter chain, rather than materialized on arrival. W
 is damaged past the point its cross-reference table can be trusted, it can be recovered by
 scanning the file for objects directly.
 
-Everything comes from the `soundness` package:
+Reading a document lazily through a scope that owns the file is the shape described under [delimited scopes](../philosophy/delimited-scopes.md).
+
+Everything comes from the `soundness` package, with a text encoding for the content that will
+be written:
 
 ```scala
 import soundness.*
 import strategies.throwUnsafely
+import charEncoders.utf8Encoder
 ```
+
+### Creating a document
+
+A document is created at a path, and written within the scope of the block: a fresh document has
+a catalog and an empty page tree, and `appendPage` adds a page with the media box it should have.
+Boxes are [quantities](quantities.md) in points, not bare numbers, so an A4 page is 595 by 842
+points:
+
+```scala
+val a4 = Pdf.Rect
+  ( Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+    Quantity[Points[1]](595.0), Quantity[Points[1]](842.0) )
+
+val path = t"/tmp/tutorial.pdf"
+
+path.create[Pdf](CreateFlag.Replace): doc ?=>
+  doc.appendPage(a4)
+```
+
+The file is written whole to a temporary sibling and moved onto the target atomically, so a
+failure part way through leaves nothing behind.
 
 ### Opening a document
 
@@ -40,8 +65,8 @@ A document is opened from a path or from bytes, and read within the scope of the
 `pdf` accessor reaches the contextual document:
 
 ```scala
-PdfFile(path).open[Pdf]():
-  pdf.version.major
+PdfFile(path).open():
+  pdf.version.major   // 1
 ```
 
 Opening for writing takes the `Read & Write` mode, and yields the document as a handle whose
@@ -49,33 +74,34 @@ editing operations are reachable only with the `Write` grant:
 
 ```scala
 PdfFile(path).open(Read & Write): doc ?=>
-  doc.setRotation(doc.pages(0), Page.Rotation.Quarter)
+  doc.setRotation(doc.page(Prim), Page.Rotation.Quarter)
 ```
 
 An encrypted document is opened by supplying its password, which is checked as the document is
 opened rather than when a string is first decrypted:
 
+<!-- doccheck: skip -->
 ```scala
 PdfFile(path).open(Password(t"open sesame")):
   pdf.info.title
 ```
 
 The standard security handler is supported through RC4 and AES-256; a public-key handler raises
-a `PdfError` naming the encryption it cannot use.
+a `Pdf.Error` naming the encryption it cannot use.
 
 ### Pages
 
-The page tree flattens into a sequence, with each page's geometry resolved against the
-inheritance the format allows — a media box declared on the tree root applies to every page
-beneath it, a crop box defaults to the media box, and a trim box to the crop box. Boxes are
-[quantities](quantities.md) in points, not bare numbers:
+The page tree flattens into a sequence, indexed by [ordinal](numbers.md) — `Prim` is the first
+page — with each page's geometry resolved against the inheritance the format allows: a media box
+declared on the tree root applies to every page beneath it, a crop box defaults to the media box,
+and a trim box to the crop box:
 
 ```scala
 PdfFile(path).open():
-  pdf.pages.length
-  pdf.pages(0).mediaBox.width       // Quantity[Points[1]]
-  pdf.pages(0).rotation             // Page.Rotation.Quarter
-  pdf.pages(1).width                // axes exchanged, if quarter-turned
+  pdf.pageCount                     // 1
+  pdf.page(Prim).mediaBox.width     // 595 points, as a Quantity[Points[1]]
+  pdf.page(Prim).rotation           // Page.Rotation.Quarter, after the edit above
+  pdf.page(Prim).width              // 842 points: the axes exchange when quarter-turned
 ```
 
 A page's `width` and `height` account for its rotation, and a `/UserUnit` scales the boxes, so
@@ -89,25 +115,25 @@ adjacent shows run together:
 
 ```scala
 PdfFile(path).open():
-  pdf.pages(0).text
+  pdf.page(Prim).text
 ```
 
 Positioned runs are available too, for a reader that needs coordinates rather than a paragraph.
 
 ### Metadata, navigation and attachments
 
-The document information dictionary reads as a `PdfInfo`, with its dates parsed from PDF's `D:`
+The document information dictionary reads as a `Pdf.Info`, with its dates parsed from PDF's `D:`
 format — including its offset, where one is given — and a malformed date reported as absent
 rather than as an error. Named destinations resolve through either the modern name tree or the
 old `/Dests` dictionary, and bookmarks form a tree of `Bookmark` values:
 
 ```scala
 PdfFile(path).open():
-  pdf.info.title
-  pdf.destinations.at(t"intro")
-  pdf.bookmarks
-  pdf.attachments.head.filename
-  pdf.pages(0).annotations
+  pdf.info.title                            // Optional[Text]
+  pdf.destinations.at(t"intro")             // Optional[Destination]
+  pdf.bookmarks                             // List[Bookmark]
+  pdf.attachments.prim.let(_.filename)      // the first attachment's name, if any
+  pdf.page(Prim).annotations                // List[Annotation]
 ```
 
 An annotation is a typed case — `Annotation.Link` with its rectangle and URI, `Annotation.Note`
@@ -123,13 +149,13 @@ document.
 ```scala
 PdfFile(path).open(Read & Write): doc ?=>
   val operators = List
-    ( PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12),
-      PdfOperator.Offset(72, 720), PdfOperator.ShowText(winAnsi(t"Written")),
-      PdfOperator.EndText )
+    ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12),
+      Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(winAnsi(t"Written")),
+      Pdf.Operator.EndText )
 
-  doc.setContents(doc.pages(0), operators)
-  doc.setInfo(PdfInfo(t"A Title", t"An Author", Unset, Unset, Unset, Unset, Unset, Unset))
-  doc.addLink(doc.pages(0), rect, uri = t"https://soundness.dev/")
+  doc.setContents(doc.page(Prim), operators)
+  doc.setInfo(Pdf.Info(t"A Title", t"An Author", Unset, Unset, Unset, Unset, Unset, Unset))
+  doc.addLink(doc.page(Prim), a4, uri = t"https://soundness.dev/")
 ```
 
 `appendPage` and `removePage` change the page tree, `setBox` and `setRotation` change a page's
@@ -137,14 +163,15 @@ geometry, and `setBookmarks` and `setAnnotations` replace those structures whole
 operations that need a new object use `allocate` and `newStream`, which take the next free
 object number.
 
-A [TrueType font](fonts.md) is embedded with `embedFont`, which writes the program as a
-`FontFile2` and builds the simple WinAnsi font dictionary around it; `addResource` names it on a
-page so content can select it:
+A [TrueType font](fonts.md) — any `Sfnt`, loaded here from a classpath resource — is embedded
+with `embedFont`, which writes the program as a `FontFile2` and builds the simple WinAnsi font
+dictionary around it; `addResource` names it on a page so content can select it:
 
+<!-- doccheck: skip -->
 ```scala
 PdfFile(path).open(Read & Write): doc ?=>
-  val font = doc.embedFont(Ttf(fontProgram), t"MyFont")
-  doc.addResource(doc.pages(0), t"Font", t"F1", font)
+  val font = doc.embedFont(Sfnt(cp"/fonts/text.ttf"), t"MyFont")
+  doc.addResource(doc.page(Prim), t"Font", t"F1", font)
 ```
 
 ### Stream payloads
@@ -157,8 +184,8 @@ and TIFF predictors that often follow them. The payload arrives as a
 ```scala
 PdfFile(path).open():
   pdf(2, 0) match
-    case body: Cos.Body => pdf.spring(body)()
-    case _              => Stream()
+    case body: Cos.Body => pdf.spring(body)().read[Data].length
+    case _              => 0
 ```
 
 ### Recovering a damaged document

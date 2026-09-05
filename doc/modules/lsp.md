@@ -9,7 +9,7 @@ underneath — JSON-RPC messages, their length-prefixed framing, the bookkeeping
 documents, and the capabilities announced to the editor — is handled, so the code that
 remains is the language logic.
 
-The protocol's vocabulary is modelled as ordinary types. A `Position` is a line and a
+The protocol's vocabulary is modeled as ordinary types. A `Position` is a line and a
 character, a `Range` is two positions, a `Diagnostic` is a range with a severity and a
 message; a hover response, a completion list, a set of document symbols each have their
 type. A handler receives these as typed values and returns them as typed values, never as
@@ -20,9 +20,11 @@ hand-assembled JSON.
 An editor that understands LSP can use any language's server, and a language that provides
 a server works in any such editor. That leverage is why the protocol exists, and it is
 also why the protocol is large: dozens of request and notification types, each with its
-own JSON shape, exchanged over a framed stream. Implementing it by hand means marshalling
+own JSON shape, exchanged over a framed stream. Implementing it by hand means marshaling
 JSON and tracking document versions, work that has nothing to do with the language being
 served.
+
+Declaring a server's methods as typed handlers, with the protocol's messages as values, keeps the implementation [honest](../philosophy/honest-signatures.md) about what it supports.
 
 Soundness does that work once. Each message type is a Scala type with a derived JSON codec,
 each request is dispatched to the matching registered handler, and the open documents are
@@ -30,13 +32,20 @@ tracked — with incremental edits applied — for the server. What is left to w
 part that is specific to a language: what a hover shows, what completions to offer, which
 diagnostics to report. Everything comes from the `soundness` package, and the LSP
 vocabulary itself — handler registration, the ambient document, the protocol types — from
-`Lsp`, imported inside the server's own object:
+`Lsp`, imported inside the server's own object, where it takes precedence over any name the
+umbrella exports:
 
 ```scala
 import soundness.*
 
-object DemoServer:
-  import Lsp.*
+import backstops.stackTraceBackstop
+import executives.completionsExecutive
+import interpreters.posixInterpreter
+import probates.awaitProbate
+import stdios.javaLangSystemStdio
+import errorDiagnostics.stackTracesDiagnostics
+import strategies.throwUnsafely
+import threading.virtualThreading
 ```
 
 ### Defining a server
@@ -51,20 +60,43 @@ Inside a handler, the current document is ambient: `document` is a live view of 
 document the request concerns, with its text, line access, position/offset conversion and
 the word under a position; `workspace` reaches the other open documents and what the
 editor reported at initialization; and request payloads such as `position` are ambient
-too, so no URIs or parameters are threaded by hand.
+too, so no URIs or parameters are threaded by hand. A whole server, with its `main` in the
+resident-daemon idiom described below:
 
 ```scala
-Lsp.listen(t"Demo", t"0.1.0"):
-  hover:
-    document.word(position).let: word =>
-      Hover(MarkupContent(value = t"**$word**"))
+object DemoServer:
+  import Lsp.*
 
-  complete():
-    CompletionList
-      ( items = List
-          ( CompletionItem(label = t"alpha", kind = CompletionItemKind.Keyword),
-            CompletionItem(label = t"beta",  kind = CompletionItemKind.Keyword) ) )
+  def main(args: Array[Text]): Unit = cli:
+    execute:
+      supervise:
+        Lsp.listen(t"Demo", t"0.1.0"):
+          hover:
+            document.word(position).let: word =>
+              Hover(MarkupContent(value = t"**$word**"))
+
+          complete():
+            CompletionList
+              ( items = List
+                  ( CompletionItem(label = t"alpha", kind = CompletionItemKind.Keyword),
+                    CompletionItem(label = t"beta",  kind = CompletionItemKind.Keyword) ) )
+
+          opened:
+            client.publishDiagnostics
+              ( document.uri,
+                List
+                  ( Diagnostic
+                      ( range    = document.fullRange,
+                        severity = DiagnosticSeverity.Warning,
+                        message  = t"a diagnostic for the whole document" ) ) )
+
+          command(t"demo.run"):
+            raise(Lsp.Error(Lsp.Error.Reason.RequestFailed, t"nothing to run"))
+            Unset
+      Exit.Ok
 ```
+
+The fragments that follow each belong inside such a `listen` block.
 
 Registrations exist for the full protocol surface: definitions, references, document
 symbols, formatting, renaming, code actions, signature help, folding, semantic tokens,
@@ -77,8 +109,10 @@ The server tracks each open document as the editor reports it, applying incremen
 changes at the protocol's UTF-16 offsets. The lifecycle can be observed by registering
 `opened`, `changed`, `saved` and `closed` handlers, each of which sees the document's
 current state. From any handler, `client` is the channel back to the editor, which is how
-a server pushes diagnostics — errors and warnings — rather than waiting to be asked:
+a server pushes diagnostics — errors and warnings — rather than waiting to be asked, as the
+`opened` registration above does:
 
+<!-- doccheck: skip -->
 ```scala
   opened:
     client.publishDiagnostics
@@ -101,13 +135,12 @@ message as the JSON body it was carried as — inbound before it is parsed, so a
 that fails to decode is observed too, and outbound before it is framed:
 
 ```scala
-  val observer = new Lsp.Observer:
-    def received(message: Text): Unit = log.put(t"recv $message")
-    def sent(message: Text): Unit = log.put(t"send $message")
-
-  Lsp.listen(t"Demo", t"0.1.0", observer):
-    ...
+val observer = new Lsp.Observer:
+  def received(message: Text): Unit = Err.println(t"recv $message")
+  def sent(message: Text): Unit = Err.println(t"send $message")
 ```
+
+Passing it as `Lsp.listen(t"Demo", t"0.1.0", observer)` traces the exchange on standard error.
 
 What the observer does with a message is the server's own concern: a debugging aid that
 streams it to a second process, a trace file, or nothing at all. Omitting the parameter
@@ -115,13 +148,8 @@ observes nothing.
 
 ### Reporting errors
 
-A handler that cannot answer raises a typed fault, and continues:
-
-```scala
-  command(t"demo.run"):
-    raise(LspError(LspError.Reason.RequestFailed, t"nothing to run"))
-    Unset
-```
+A handler that cannot answer raises a typed fault, and continues, as the `demo.run` command
+above does with `Lsp.Error(Lsp.Error.Reason.RequestFailed, t"nothing to run")`.
 
 A raised fault pre-empts the handler's result: for a request it becomes a JSON-RPC error
 response with the reason's wire code and the request's own id; for a notification, which
@@ -137,16 +165,17 @@ channel, lends a connection for the duration of a block, and disposes of both af
 connection cannot escape the block, so it can never outlive the server that answers it.
 
 ```scala
-Lsp.Server(sh"rust-analyzer").session: server ?=>
-  server.initialize(root = t"file:///project")
-  server.initialized()
-  server.open(t"file:///project/src/main.rs", t"rust", source)
-  server.hover(t"file:///project/src/main.rs", Position(10, 4))
+def query(source: Text): Optional[Lsp.Hover] = supervise:
+  Lsp.Server(sh"rust-analyzer").session: server ?=>
+    server.initialize(root = t"file:///project")
+    server.initialized()
+    server.open(t"file:///project/src/main.rs", t"rust", source)
+    server.hover(t"file:///project/src/main.rs", Lsp.Position(10, 4))
 ```
 
 Requests return the same types a server's handlers return — `Optional[Hover]`,
 `CompletionList`, `List[Location]` — and notifications (`open`, `edit`, `save`, `close`)
-return nothing. An error response from the server is raised as an `LspError` carrying the
+return nothing. An error response from the server is raised as an `Lsp.Error` carrying the
 reason its wire code names, rather than being awaited forever. Requests are answered on a
 task of their own, so several may be in flight at once, and may come back in any order.
 
@@ -156,9 +185,9 @@ it acts on. A listener is supplied contextually:
 
 ```scala
 given diagnostics: Lsp.Listener = new Lsp.Listener:
-  override def diagnostics(uri: Text, version: Optional[Int], reports: List[Diagnostic])
+  override def diagnostics(uri: Text, version: Optional[Int], reports: List[Lsp.Diagnostic])
   :   Unit =
-    reports.each { report => Out.println(t"$uri: ${report.message}") }
+    reports.each { report => Err.println(t"$uri: ${report.message}") }
 ```
 
 ### Proxying a server
@@ -169,13 +198,20 @@ amending what it chooses to. `Lsp.proxy` runs that exchange, and the block regis
 amendments:
 
 ```scala
-Lsp.proxy(Lsp.Server(sh"rust-analyzer")):
-  rewrite.capabilities(_.copy(hoverProvider = true))
+object DemoProxy:
+  import Lsp.*
 
-  rewrite.hover: hover =>
-    hover.copy(contents = MarkupContent(value = t"_(proxied)_ ${hover.contents.value}"))
+  def main(args: Array[Text]): Unit = cli:
+    execute:
+      supervise:
+        Lsp.proxy(Lsp.Server(sh"rust-analyzer")):
+          rewrite.capabilities(_.copy(hoverProvider = true))
 
-  rewrite.diagnostics(_.filter(_.severity != DiagnosticSeverity.Hint))
+          rewrite.hover: hover =>
+            hover.copy(contents = MarkupContent(value = t"_(proxied)_ ${hover.contents.value}"))
+
+          rewrite.diagnostics(_.filter(_.severity != DiagnosticSeverity.Hint))
+      Exit.Ok
 ```
 
 Everything not registered is forwarded byte for byte: methods this library does not model,
@@ -189,6 +225,7 @@ method name and a `Json => Json` for anything without a combinator of its own. F
 messages there are two more hooks — `rewrite.outbound` and `rewrite.inbound` — each
 returning what should become of the message:
 
+<!-- doccheck: skip -->
 ```scala
 rewrite.outbound: (method, message) =>
   if method == t"textDocument/inlineValue" then Transit.Drop else Transit.Forward
@@ -203,6 +240,7 @@ scope as `upstream` throughout the registration block, so a hook may ask a quest
 own — typically for the project state only the server knows — and `rewrite.connected` runs
 once, on a task of its own, as soon as that session is open:
 
+<!-- doccheck: skip -->
 ```scala
 Lsp.proxy(Lsp.Server(sh"jdtls")):
   val classpath: Promise[Json] = Promise()
@@ -227,18 +265,8 @@ the editor waits with it. `rewrite.connected` has a task of its own and may awai
 ### Running the server
 
 `Lsp.listen` serves standard input until it is exhausted, so a server object supplies a
-small `main` in the resident-daemon idiom:
-
-```scala
-  def main(args: Array[Text]): Unit = cli:
-    execute:
-      supervise:
-        Lsp.listen(t"Demo", t"0.1.0"):
-          ...
-      Exit.Ok
-```
-
-An editor configured to launch the object as its language server exchanges JSON-RPC with
+small `main` in the resident-daemon idiom, as `DemoServer` above does: the `cli` entry point,
+an `execute` block, and `supervise` for the tasks the server runs. An editor configured to launch the object as its language server exchanges JSON-RPC with
 it over the pipe, and each request arrives at the matching handler.
 
 ### Fast startup

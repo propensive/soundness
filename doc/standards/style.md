@@ -87,3 +87,21 @@ Samples should be complete — including imports where necessary, though wildcar
 are fine — and should follow on from one another: a term with a given name means the
 same thing throughout a document, and a single identifier is never assigned more than
 once.
+
+Every sample is checked mechanically. `make doccheck` evaluates each ` ```scala ` fence of a
+tutorial, in order, through the flame REPL (`etc/doccheck.py`), and checks the names the
+samples use against the source (`etc/doccheck-names.py`); `make doccheck DOC=json` checks
+one tutorial. Two conventions make that possible:
+
+- A line that is meant not to compile carries a trailing `// does not compile` comment (with
+  an optional explanation after a colon). The checker submits it on its own and reports it if
+  it compiles after all.
+- A sample must introduce every name it uses, in a fence of the same tutorial, so the fences
+  form one continuous session. Where a tutorial needs a value it cannot sensibly construct
+  in prose — a path that must exist, a running service — put the binding in
+  `doc/fixtures/<tutorial>.scala`, which the checker evaluates before the first fence.
+- A fence that cannot run in a REPL session — one that opens a browser, binds a socket, reads a
+  terminal, dispatches a JVM, or is a macro sketch — is preceded by the line
+  `<!-- doccheck: skip -->`. It is still read by the name check, so it keeps every name it uses
+  defined. A tutorial whose samples need a language feature the session lacks asks for it with
+  `<!-- doccheck: language captureChecking -->` anywhere in the document.

@@ -3,7 +3,7 @@
 ### About
 
 An HTML form is a user interface to a data type, and Soundness generates one from the type
-itself. A case class produces a form — a labelled input per field, the widget chosen by the
+itself. A case class produces a form — a labeled input per field, the widget chosen by the
 field's type — and a submission decodes back into the case class, with validation failures
 attached to the fields that caused them. Nested case classes become nested fieldsets, so the form
 mirrors the data's structure.
@@ -15,6 +15,8 @@ and validation of what comes back. The two halves are kept consistent by hand, a
 the data — a new field, a renamed one, a stricter type — must be made in both, or the form drifts
 from the data it claims to collect.
 
+Deriving a form and its decoder from one type keeps them in agreement, which is [correctness](../philosophy/correctness.md) through a single source of truth.
+
 Deriving both halves from one type removes the duplication. The type says what fields exist and
 what each accepts; the widgets follow from the field types — a `Boolean` is a checkbox, an
 enumeration a selection, text a field; and decoding a submission applies the same validated types
@@ -24,6 +26,7 @@ a message pointing at the email field. Everything comes from the `soundness` pac
 ```scala
 import soundness.*
 import formulations.postFormulation
+import strategies.throwUnsafely
 ```
 
 ### Rendering a form
@@ -48,7 +51,9 @@ as `leader.name`. It decodes to the type with `as`, and a failure carries a poin
 fault:
 
 ```scala
-query.as[Organization]   // an Organization, or typed errors per field
+val query = t"leader.name=Ada&leader.email=ada%40example.com&name=Acme".as[Query]
+
+query.as[Organization]   // Organization(Person(t"Ada", email"ada@example.com"), t"Acme")
 ```
 
 Because the fields decode through the same types used everywhere — an `EmailAddress` must parse, a
@@ -57,12 +62,12 @@ doing its usual work at the boundary.
 
 ### The form cycle
 
-A form is a loop: render, submit, re-render with errors, until the value is complete. The
-[HTTP server](http-server.md) integration runs that loop with `orchestrate`, delivering a complete
-typed value when validation passes and the re-rendered form, faults attached, when it does not —
-so a handler deals in values, not requests.
+A form is a loop: render, submit, re-render with errors, until the value is complete. `elicit`
+takes the submitted `Query` and the validation state, so the re-rendered form shows what was
+entered with the faults attached to their fields; a [server](http-server.md) handler runs the
+loop by decoding on success and re-rendering on failure, and so deals in values, not requests.
 
-### Customising appearance
+### Customizing appearance
 
 How a form and its rows render is a `Formulation` — the frame around the widgets, the placement of
 labels and error messages. `postFormulation` gives a plain, unstyled rendering; an application

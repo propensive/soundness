@@ -5,7 +5,7 @@
 Driving a browser and scripting a page are two sides of web automation, and Soundness covers both.
 A browser is driven from Scala through the [WebDriver](https://www.w3.org/TR/webdriver2/) protocol:
 Chrome or Firefox is launched, a session opened, pages navigated, and elements found, clicked and
-typed into — the machinery of end-to-end testing. And browser-side behaviour is written as *typed*
+typed into — the machinery of end-to-end testing. And browser-side behavior is written as *typed*
 JavaScript: DOM expressions checked against the browser's own
 [WebIDL](https://en.wikipedia.org/wiki/Web_IDL) interface definitions as the code compiles,
 rendered to JavaScript for a page's event handlers.
@@ -13,9 +13,11 @@ rendered to JavaScript for a page's event handlers.
 ### On automating the web
 
 Browser automation scripts are stringly typed twice over: elements are located by selector strings,
-and injected behaviour is JavaScript in string literals, unchecked until the browser runs it. A
+and injected behavior is JavaScript in string literals, unchecked until the browser runs it. A
 misspelled DOM method — `getElementByld` — is exactly the kind of mistake a compiler exists to
 catch, and exactly the kind these strings hide.
+
+A session confined to its block, and typed page scripts checked against the DOM's own definitions, follow [delimited scopes](../philosophy/delimited-scopes.md) and [safety by construction](../philosophy/safety-by-construction.md).
 
 Soundness types both layers: element location goes through the same typed selectors and validated
 identifiers used by [CSS](css.md) and [HTML](html.md), and DOM scripting is checked against the
@@ -31,6 +33,7 @@ import soundness.*
 A browser session launches the driver, opens a session, and closes both when the block ends —
 whether it returns or throws. Within it, the session navigates and queries:
 
+<!-- doccheck: skip -->
 ```scala
 WebDriver.Chrome.headless.session:
   browser.navigateTo(url"https://example.com/")
@@ -52,15 +55,19 @@ Elements are located by typed criteria — a CSS selector list, a validated DOM 
 an HTML tag — with `/` returning every match and `element` exactly one. Elements found within
 elements descend the tree:
 
+<!-- doccheck: skip -->
 ```scala
-val heading = browser.element(H1)                    // by tag
-val items = browser / SelectorList.read(t"nav li")   // by CSS selector
+WebDriver.Chrome.headless.session:
+  val heading = browser.element(H1)                    // by tag
+  val items = browser / SelectorList.read(t"nav li")   // by CSS selector
+  val field = browser.element(Name[DomId](t"query"))   // by id
+  val button = browser.element(Button)
 
-heading.click()
-heading.innerText()                        // the rendered text
-field.value(t"search terms")               // type into an input
-field.property(t"value")                   // the live DOM property, not the markup
-button.screenshot()                        // a Raster in Png of the element
+  heading.click()
+  heading.innerText()                        // the rendered text
+  field.value(t"search terms")               // type into an input
+  field.property(t"value")                   // the live DOM property, not the markup
+  button.screenshot()                        // a Raster in Png of the element
 ```
 
 Anything a locator cannot express is reached with `execute`, which runs JavaScript in the page
@@ -73,6 +80,7 @@ error code the driver reported, its message and the browser-side stack trace.
 Most of what makes browser automation flaky is timing, and the protocol helps with only part of
 it. WebDriver's *implicit* timeout covers find commands, and is set once for the session:
 
+<!-- doccheck: skip -->
 ```scala
 browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L))
 ```
@@ -81,6 +89,7 @@ Nothing else has a server-side notion of waiting. For a button that becomes enab
 whose text changes, `awaitElement`, `awaitElements` and `awaitUntil` poll under the retry policy
 in scope:
 
+<!-- doccheck: skip -->
 ```scala
 import retryTenacities.exponentialTenTimesTenacity
 
@@ -90,19 +99,21 @@ browser.awaitUntil(browser.title() == t"Done")
 
 The policy is a `Tenacity` — the same [retry schedules](concurrency.md#retrying) used elsewhere —
 so the interval and the number of attempts belong to the caller,
-and exhausting them raises a `RetryError`. These poll the plural endpoint, which reports absence
+and exhausting them raises a `Tenacity.Error`. These poll the plural endpoint, which reports absence
 as an empty list rather than as an error, and that is deliberate: a session's error strategy is
 fixed when it opens, so a failure raised inside the polled block could not be caught here to drive
 the next attempt.
 
 ### Typed page scripting
 
-Behaviour attached to a page — an `onclick`, an `onchange` — is written as a typed DOM expression
+Behavior attached to a page — an `onclick`, an `onchange` — is written as a typed DOM expression
 rather than a JavaScript string. The `document` and `window` values navigate the DOM's real
 interfaces, checked against WebIDL, and render to JavaScript where an [HTML](html.md) attribute
 expects a script:
 
 ```scala
+import htmlDoms.whatwg.*
+
 Button(onclick = document.getElementById(t"foo").focus())
 // renders onclick="document.getElementById('foo').focus()"
 ```

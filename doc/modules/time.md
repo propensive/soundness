@@ -54,10 +54,12 @@ import soundness.*
 
 Operations that can fail — parsing text, constructing a date from runtime
 integers — need an error-handling strategy in scope. The `throwUnsafely` strategy
-raises an exception on failure:
+raises an exception on failure. Reading the current time needs a *chronometry* — a
+source of instants — and the Unix clock is the ordinary choice:
 
 ```scala
 import strategies.throwUnsafely
+import chronometries.unixChronometry
 ```
 
 ### Dates
@@ -313,14 +315,16 @@ code must supply. Clamping lands on the last valid day; overflowing spills into 
 next month:
 
 ```scala
-import monthEnds.clampMonthEnd
-2024-Jan-31 + 1*Month   // 2024-Feb-29
-2024-Feb-29 + 1*Year    // 2025-Feb-28
+locally:
+  import monthEnds.clampMonthEnd
+  2024-Jan-31 + 1*Month   // 2024-Feb-29
+  2024-Feb-29 + 1*Year    // 2025-Feb-28
 ```
 
 ```scala
-import monthEnds.overflowMonthEnd
-2024-Jan-31 + 1*Month   // 2024-Mar-2
+locally:
+  import monthEnds.overflowMonthEnd
+  2024-Jan-31 + 1*Month   // 2024-Mar-2
 ```
 
 Subtracting one date from another counts the days between them:
@@ -359,7 +363,6 @@ type. The `Unix` timeline — POSIX time — counts milliseconds from the
 [Unix epoch](https://en.wikipedia.org/wiki/Unix_time):
 
 ```scala
-import chronometries.unixChronometry
 
 val epoch = Instant(0L)   // 1970-01-01T00:00:00Z
 ```
@@ -399,8 +402,8 @@ demanded:
 ```scala
 import calendars.gregorianCalendar
 
-(Instant(0L) ~ Instant(3_600_000L)).segments(15*Minute).length   // 4
-Period(2024-Jan-1, 2030-Jan-1).by(1*Day).take(3).to(List)
+(Instant(0L) ~ Instant(3_600_000L)).segments(15*Minute).size   // 4
+Period(2024-Jan-1, 2030-Jan-1).by(1*Day).keep(3)
 // List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3)
 ```
 
@@ -451,7 +454,7 @@ spring.instant   // pushed forward to 01:30 UTC by default
 ```scala
 import gapPolicies.rejectGapPolicy
 Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant
-// raises a TimeError: the local time never happens
+// raises a Moment.Error: the local time never happens
 ```
 
 When the clocks fall back, an hour repeats, and a reading in the overlap names two
@@ -475,10 +478,12 @@ newer than the platform's own can be loaded, which matters when a government cha
 short notice:
 
 ```scala
+val lines = Chain(t"Zone\tAmerica/Nowhere\t-5:00\t-\tEST")
+
 Tzdb.parse(t"northamerica", lines)
 ```
 
-A file that does not exist, or a line the format does not permit, raises a `TzdbError` naming the
+A file that does not exist, or a line the format does not permit, raises a `Tzdb.Error` naming the
 fault rather than silently producing a zone with the wrong rules.
 
 ### Calendars
@@ -549,19 +554,19 @@ sequence:
 ```scala
 import calendars.gregorianCalendar
 
-Recurrence(2024-Jan-1, 1*Day, 3).occurrences.to(List)
-// List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3)
+Recurrence(2024-Jan-1, 1*Day, 3).occurrences
+// Chain(2024-Jan-1, 2024-Jan-2, 2024-Jan-3)
 ```
 
 A recurrence with no repetition count runs forever, so it is consumed with a
 bound — every occurrence up to a date, or those falling within a window:
 
 ```scala
-Recurrence(2024-Jan-1, 1*Week).until(2024-Jan-22).to(List)
-// List(2024-Jan-1, 2024-Jan-8, 2024-Jan-15)
+Recurrence(2024-Jan-1, 1*Week).until(2024-Jan-22)
+// Chain(2024-Jan-1, 2024-Jan-8, 2024-Jan-15)
 
-Recurrence(2024-Jan-1, 1*Week).within(Period(2024-Jan-5, 2024-Jan-20)).to(List)
-// List(2024-Jan-8, 2024-Jan-15)
+Recurrence(2024-Jan-1, 1*Week).within(Period(2024-Jan-5, 2024-Jan-20))
+// Chain(2024-Jan-8, 2024-Jan-15)
 ```
 
 A recurrence encodes to and decodes from its ISO 8601 form, and the `rec`
@@ -569,8 +574,8 @@ interpolator writes one as a checked literal:
 
 ```scala
 Recurrence(2024-Jan-1, 1*Day, 5).encode   // R5/2024-01-01/P1D
-rec"R3/2024-01-01/P1M".occurrences.to(List)
-// List(2024-Jan-1, 2024-Feb-1, 2024-Mar-1)
+rec"R3/2024-01-01/P1M".occurrences
+// Chain(2024-Jan-1, 2024-Feb-1, 2024-Mar-1)
 ```
 
 ### Recurrence rules
@@ -587,8 +592,8 @@ The simplest rule repeats at its frequency, taking the date from its start:
 ```scala
 import calendars.gregorianCalendar
 
-Rrule(2024-Jan-15, Frequency.Monthly, count = 4).occurrences.to(List)
-// List(2024-Jan-15, 2024-Feb-15, 2024-Mar-15, 2024-Apr-15)
+Rrule(2024-Jan-15, Frequency.Monthly, count = 4).occurrences
+// Chain(2024-Jan-15, 2024-Feb-15, 2024-Mar-15, 2024-Apr-15)
 ```
 
 The `byDay` field selects weekdays, optionally by ordinal. The third Monday of a
@@ -597,12 +602,12 @@ month is `WeekdayOrdinal(Mon, 3)`; the last Friday counts back from the end with
 
 ```scala
 Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3)), count = 2)
-    .occurrences.to(List)
-// List(2024-Jan-15, 2024-Feb-19)
+    .occurrences
+// Chain(2024-Jan-15, 2024-Feb-19)
 
 Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Fri, -1)), count = 2)
-    .occurrences.to(List)
-// List(2024-Jan-26, 2024-Feb-23)
+    .occurrences
+// Chain(2024-Jan-26, 2024-Feb-23)
 ```
 
 Fields combine. The fourth Thursday of November is a yearly rule narrowed to one
@@ -610,20 +615,20 @@ month and one weekday:
 
 ```scala
 Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
-    byDay = List(WeekdayOrdinal(Thu, 4)), count = 2).occurrences.to(List)
-// List(2024-Nov-28, 2025-Nov-27)
+    byDay = List(WeekdayOrdinal(Thu, 4)), count = 2).occurrences
+// Chain(2024-Nov-28, 2025-Nov-27)
 ```
 
 A frequency can carry an interval — every second week, every third day — and a rule
 can run weekly across several weekdays:
 
 ```scala
-Rrule(2024-Jan-1, Frequency.Weekly, interval = 2, count = 3).occurrences.to(List)
-// List(2024-Jan-1, 2024-Jan-15, 2024-Jan-29)
+Rrule(2024-Jan-1, Frequency.Weekly, interval = 2, count = 3).occurrences
+// Chain(2024-Jan-1, 2024-Jan-15, 2024-Jan-29)
 
 Rrule(2024-Jan-1, Frequency.Weekly, byDay = List(WeekdayOrdinal(Mon),
-    WeekdayOrdinal(Wed), WeekdayOrdinal(Fri)), count = 4).occurrences.to(List)
-// List(2024-Jan-1, 2024-Jan-3, 2024-Jan-5, 2024-Jan-8)
+    WeekdayOrdinal(Wed), WeekdayOrdinal(Fri)), count = 4).occurrences
+// Chain(2024-Jan-1, 2024-Jan-3, 2024-Jan-5, 2024-Jan-8)
 ```
 
 The `bySetPos` field picks from each period's expansion by position, which
@@ -633,8 +638,8 @@ candidates:
 ```scala
 Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon),
     WeekdayOrdinal(Tue), WeekdayOrdinal(Wed), WeekdayOrdinal(Thu),
-    WeekdayOrdinal(Fri)), bySetPos = List(-1), count = 2).occurrences.to(List)
-// List(2024-Jan-31, 2024-Feb-29)
+    WeekdayOrdinal(Fri)), bySetPos = List(-1), count = 2).occurrences
+// Chain(2024-Jan-31, 2024-Feb-29)
 ```
 
 Frequencies below a day apply to timestamps, where `byHour` and `byMinute` expand
@@ -642,7 +647,7 @@ within each day:
 
 ```scala
 Rrule(Timestamp(2024-Jan-1, Clockface(0, 0, 0)), Frequency.Daily,
-    byHour = List(9, 17), count = 3).occurrences.to(List)
+    byHour = List(9, 17), count = 3).occurrences
 // the 9th and 17th hours of each day
 ```
 
@@ -653,8 +658,8 @@ Rrule(2024-Jan-1, Frequency.Monthly, interval = 2, count = 10,
     byDay = List(WeekdayOrdinal(Mon, 3))).encode
 // FREQ=MONTHLY;INTERVAL=2;COUNT=10;BYDAY=3MO
 
-Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences.take(2).to(List)
-// List(2024-Jan-26, 2024-Feb-23)
+val lastFridays: Chain[Date] = Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences
+lastFridays.keep(2)   // Chain(2024-Jan-26, 2024-Feb-23)
 ```
 
 Several rules and individual dates combine into a `RecurrenceSet`, which merges its
@@ -663,8 +668,8 @@ sources into one ascending stream, adds explicit dates, and removes exceptions:
 ```scala
 val weekly = Rrule(2024-Jan-1, Frequency.Weekly, count = 4)
 RecurrenceSet(include = List(weekly.occurrences), rdates = List(2024-Jan-10),
-    exdates = List(2024-Jan-15)).occurrences.to(List)
-// List(2024-Jan-1, 2024-Jan-8, 2024-Jan-10, 2024-Jan-22)
+    exdates = List(2024-Jan-15)).occurrences
+// Chain(2024-Jan-1, 2024-Jan-8, 2024-Jan-10, 2024-Jan-22)
 ```
 
 ### Describing recurrences

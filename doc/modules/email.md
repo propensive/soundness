@@ -24,11 +24,16 @@ package, with a courier and a sender in scope:
 
 ```scala
 import soundness.*
+
 import couriers.resendCourier
+import internetAccess.online
+import strategies.throwUnsafely
 
 given Sender = Sender(email"noreply@example.com")
-given Resend.ApiKey = Resend.ApiKey(apiKeyText)
+given Resend.ApiKey = Resend.ApiKey(t"re_123456789")
 ```
+
+A message assembled from typed parts, with its addresses validated as the code compiles, is [safety by construction](../philosophy/safety-by-construction.md) for mail.
 
 ### Sending
 
@@ -37,29 +42,37 @@ Anything *sendable* — text, an [HTML](html.md) document, or a fully-composed `
 one address or a list:
 
 ```scala
-t"Your order has shipped.".send
-  ( subject = t"Shipping confirmation",
-    to      = email"customer@example.com" )
+def notify(): Resend.Receipt =
+  t"Your order has shipped.".send
+    ( subject = t"Shipping confirmation",
+      to      = email"customer@example.com" )
 ```
 
 An HTML document sends as an HTML message the same way, and failure to deliver raises a
-`CourierError` naming the sender, recipient and subject at fault.
+`Courier.Error` naming the sender, recipient and subject at fault.
 
 ### Composing
 
 A richer message is built as an `Email`: a body of text, HTML, or both — the both-form delivering
 `multipart/alternative`, so capable clients show the HTML and others the text — with attachments
-added by `attach`:
+added by `attach`. An `Asset` is a named, typed source of bytes, its filename and
+[media type](media-types.md) carried with it:
 
 ```scala
-val message = Email(Email.Message(Email.Content(Email.Body(textVersion, htmlVersion))))
+val textVersion = t"Sales rose 4% in August."
+val htmlVersion = t"<p>Sales rose <b>4%</b> in August.</p>"
+val report = Asset(t"report.csv", media"text/csv", Chain(t"month,sales\nAugust,104".in[Data]))
+
+val message = Email(Map(), Email.Message(Email.Content(Email.Body(textVersion, htmlVersion))))
   . attach(report)
 
-message.send(subject = t"Monthly report", to = recipients)
+def distribute(recipients: List[EmailAddress]): Resend.Receipt =
+  message.send(subject = t"Monthly report", to = recipients)
 ```
 
-Anything *attachable* — a named, typed source of bytes — attaches directly, its filename and
-[media type](media-types.md) carried with it.
+Plain text is itself sendable, so `Email(t"hello")` is the one-line form, and an email reports
+its `text`, `html`, `attachments` and `inlines` back, so a composed message can be inspected
+before it goes.
 
 ### Couriers
 

@@ -20,6 +20,8 @@ should be a number arrives as text; and nothing records that a piece of code dep
 particular variable being set. The dependence is invisible, and the parsing is left to each
 caller to get right.
 
+Taking the environment as a capability rather than a global is what [honest signatures](../philosophy/honest-signatures.md) require: a method's dependence on its surroundings is visible in its type.
+
 Soundness turns each source into a capability. An `Environment`, a `System`, a
 `WorkingDirectory` are contextual values a method requires when it reads from them, so the
 dependence is in the type; and each read decodes to the expected type, failing loudly when a
@@ -30,9 +32,10 @@ supplied:
 
 ```scala
 import soundness.*
+
 import environments.javaBaseEnvironment
-import systems.javaBaseSystem
 import strategies.throwUnsafely
+import systems.javaBaseSystem
 ```
 
 ### Environment variables
@@ -42,11 +45,11 @@ conventional upper-snake-case form — `Environment.editor` reads `EDITOR`. The 
 type the variable is known to hold, decoded from its text:
 
 ```scala
-Environment.editor    // Text — the value of EDITOR
+Environment.home      // Text — the value of HOME
 Environment.columns   // Int  — COLUMNS, decoded to a number
 ```
 
-A variable that is not set raises an `EnvironmentError`, which the strategy in scope turns into
+A variable that is not set raises an `Environment.Error`, which the strategy in scope turns into
 an exception, an absent value, or a handled failure as the caller chooses.
 
 ### System properties
@@ -68,7 +71,7 @@ System.properties.os.name()        // Text
 System.properties.file.separator() // Char
 ```
 
-An undefined property raises a `PropertyError`, handled like any other.
+An undefined property raises a `Property.Error`, handled like any other.
 
 ### The working directory
 
@@ -79,11 +82,14 @@ in its signature.
 
 ### Overriding for a block
 
-Because the environment is a capability, a block can be run against a modified one. `variables`
-supplies overrides for the code it encloses, leaving the surrounding environment untouched:
+Because the environment is a capability, a block can be run against a different one. An
+`Environment` is a single function from a variable's name to its optional value, so one built
+for a test — or one layering overrides on the real environment — is a few lines, and a given in
+a narrower scope takes precedence:
 
 ```scala
-variables(EDITOR = t"vim"):
+locally:
+  given Environment = name => if name == t"EDITOR" then t"vim" else Unset
   Environment.editor   // t"vim" within this block
 ```
 
@@ -100,11 +106,13 @@ is what lets each invocation be served against the environment it actually came 
 ### Standard directories
 
 The [XDG base directory specification](https://specifications.freedesktop.org/basedir-spec/latest/)
-says where a program's data, configuration, cache and state belong, honouring the user's
+says where a program's data, configuration, cache and state belong, honoring the user's
 environment where it is set and falling back to the specification's defaults where it is not.
 `Xdg` gives each of them, and the search paths for data and configuration:
 
 ```scala
+import pathInterfaces.pathOnLinux
+
 Xdg.configHome[Path on Linux]   // ~/.config, or $XDG_CONFIG_HOME
 Xdg.cacheHome[Path on Linux]
 Xdg.dataDirs[Path on Linux]     // the search path, in order
@@ -123,6 +131,6 @@ reporting into a typed value — `X86(64)`, `Arm(64)`, `Ppc(64, littleEndian = t
 so code that must choose a native library or a code path by architecture matches on a value
 rather than on a string whose spelling varies by platform.
 
-`termcaps.environmentTermcap` reports what the terminal can do, deciding colour depth from
+`termcaps.environmentTermcap` reports what the terminal can do, deciding color depth from
 `COLORTERM` where it is set and from `tput` otherwise, which is how styled output degrades
 correctly on a terminal that cannot show it.

@@ -33,6 +33,8 @@ import soundness.*
 import textMetrics.uniformMetric
 ```
 
+Text operations that require a collation, an encoding or a metric to be named are [declarative context](../philosophy/declarative-context.md): nothing about text is assumed.
+
 ### Writing text
 
 The `t"…"` interpolator builds a `Text`, substituting any value that can be shown. The
@@ -107,6 +109,22 @@ Character-level filters keep or drop by a predicate:
 t"HELLOworld".keep(_.isUpper)   // t"HELLO"
 ```
 
+### Sorting and comparing text
+
+Text has no natural order: whether `café` sorts before or after `caff` depends on the collation,
+and a program that sorts text without saying which is making a choice it does not know it is
+making. So sorting text, or comparing it with `<`, needs a *collation* in scope, and without one
+the sort does not compile. `unicodeCollation` applies the Unicode Collation Algorithm — dictionary
+order, ranking accents before case — and `codepointCollation` orders by code point, which is fast
+and stable but places supplementary characters after the whole basic plane:
+
+```scala
+import collations.unicodeCollation
+
+List(t"caff", t"café", t"cafe").sort   // List(t"cafe", t"café", t"caff")
+t"apple" < t"banana"                    // true
+```
+
 ### Case conventions
 
 Text splits into words and rejoins in a naming convention. `uncamel` breaks a camel-case or
@@ -124,8 +142,8 @@ truncating if need be. Each measures width through the `Text is Measurable` give
 here `uniformMetric`, which counts every character as one column:
 
 ```scala
-t"123".pad(5, Rtl)         // t"  123"
-t"123".fit(5, Rtl, '.')    // t"..123"
+t"123".pad(5, Bidi.Rtl)         // t"  123"
+t"123".fit(5, Bidi.Rtl, '.')    // t"..123"
 ```
 
 ### Searching
@@ -136,7 +154,7 @@ the last returning an `Optional` position rather than a sentinel:
 ```scala
 t"hello world".contains(t"ello")   // true
 t"hello world".offsetOf(t"o")      // an Optional position, present here
-t"banana".count(t"a")              // 3
+t"banana".count(_ == 'a')          // 3
 ```
 
 ### Bytes
@@ -168,10 +186,11 @@ needs it to be fast. A `Lexicon` is a
 inequality the distance metric obeys to prune most of the vocabulary without measuring it:
 
 ```scala
+val words = List(t"book", t"boot", t"cook", t"look", t"bake")
 val lexicon = Lexicon(words)
 
-lexicon.search("book", 0)   // exact matches only
-lexicon.search("booq", 1)   // everything within one edit
+lexicon.search(t"book", 0)   // exact matches only
+lexicon.search(t"booq", 1)   // everything within one edit
 ```
 
 A search at distance zero is an exact lookup; widening the radius admits progressively more
@@ -192,14 +211,14 @@ dictionary.size          // 2
 
 ### Graphemes and width
 
-A character is not a unit of text a person would recognise. `é` may be one code point or two, and
+A character is not a unit of text a person would recognize. `é` may be one code point or two, and
 a family emoji is several joined together, so counting `Char`s answers the wrong question.
 `Writing` gives a text's *grapheme clusters* — what a reader would call characters — and the
 boundaries between them:
 
 ```scala
-Writing(t"abc").graphemeCount   // 3
-Writing(t"").boundaries.toList  // List(0)
+Writing(t"abc").graphemeCount      // 3
+Writing(t"").boundaries.length     // 1: the single boundary at position 0
 ```
 
 Nor is a grapheme one column wide on a terminal. Under a metric in scope, `metrics` gives the
@@ -221,7 +240,7 @@ Turning a number into text involves a choice — how many digits are worth showi
 every `show` of a floating-point number consults:
 
 ```scala
-Decimalizer(3).decimalize(-math.Pi)   // t"-3.14"
+Decimalizer(3).decimalize(-3.14159)   // t"-3.14"
 ```
 
 The same value therefore renders consistently everywhere in a program, and changing the precision

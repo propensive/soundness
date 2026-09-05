@@ -27,12 +27,15 @@ one expression. Scala's staging machinery already knows how to compile a quoted 
 runtime and how to splice values into it; what it fixes is *where* the result runs. Compiling both
 sides *together*, and delimiting them with quotes and splices, puts the contract back under the
 compiler's control: remote code is written beside the local code that calls it, checked with it,
-marshalled for it, and maintained in lockstep with it.
+marshaled for it, and maintained in lockstep with it.
+
+Code that is checked here and run elsewhere is [safety by construction](../philosophy/safety-by-construction.md) extended across a process boundary.
 
 ### Quotes, splices and phases
 
 The syntax is Scala's own, and it is worth restating what it means. In a macro:
 
+<!-- doccheck: skip -->
 ```scala
 def say(user: String)(using Quotes): Expr[Unit] =
   val name: Expr[String] = Expr(user)
@@ -52,7 +55,7 @@ another file is that quotes and splices nest and interleave at expression granul
 compiler checks consistency *across* the phases.
 
 Soundness makes the "where" a value: a `Rig` says how code is deployed and invoked, and `dispatch`
-does the rest — compilation, caching per call site, marshalling of captured values in and results
+does the rest — compilation, caching per call site, marshaling of captured values in and results
 out. Everything comes from the `soundness` package:
 
 ```scala
@@ -102,6 +105,7 @@ Two rigs come provided. `Jvm` compiles the block and runs it in a fresh JVM subp
 isolation, at process-startup cost — while `Isolation` runs it in the same process under an
 isolated classloader, cheap and contained:
 
+<!-- doccheck: skip -->
 ```scala
 Isolation.dispatch:
   '{ t"computed in an isolated classloader" }
@@ -163,10 +167,10 @@ That distinction is load-bearing. One call site inside an inline method may expa
 tree at each use, and keying on the call site alone would silently re-run the first expansion for
 every subsequent one. Keying on the tree means several distinct expansions from one site each
 compile once, while calls that differ only in the data they transport share a single compilation —
-which is the behaviour that makes dispatching from a generic or inline context safe.
+which is the behavior that makes dispatching from a generic or inline context safe.
 
 A spliced value is evaluated once per dispatch, not once per occurrence: `${job.name}` used twice
-in a block refers to the same marshalled value rather than evaluating `job.name` twice.
+in a block refers to the same marshaled value rather than evaluating `job.name` twice.
 
 ### Errors across the boundary
 

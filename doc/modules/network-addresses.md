@@ -18,6 +18,8 @@ between them exist only in the programmer's head, and a value that is not really
 travels through the program until something tries to use it and fails — a validation done late, if at
 all, and far from where the bad value entered.
 
+An address that cannot be constructed invalid is [safety by construction](../philosophy/safety-by-construction.md) in its simplest form.
+
 Soundness gives each identifier its own type, and validates it at the earliest possible moment: a
 literal as it compiles, and text on the instant it is decoded. A `Hostname`, an `EmailAddress`, a
 `Port` are known to be well-formed, and their parts are typed too — a URL's port is a number, its host
@@ -142,6 +144,6 @@ mac"01-23-45-ab-cd-ef"
 ### Parsing at runtime
 
 Every identifier that has a literal form also decodes from text with `as`, naming the target type.
-A value that does not conform raises a typed error — an `HostnameError`, an `IpAddressError`, an
-`EmailAddressError` — that names precisely what was wrong, so a program validating user input can
+A value that does not conform raises a typed error — an `Hostname.Error`, an `IpAddress.Error`, an
+`EmailAddress.Error` — that names precisely what was wrong, so a program validating user input can
 report the fault rather than merely rejecting the value.

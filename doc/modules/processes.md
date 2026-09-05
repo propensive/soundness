@@ -16,6 +16,8 @@ interpolated value can smuggle in extra arguments or a shell metacharacter; buil
 be safe and the convenience is gone. Either way the output comes back as a raw stream to be decoded,
 buffered and closed by hand, and the exit status is an integer to remember to check.
 
+A process whose result type and failure modes are in its signature is an [honest signature](../philosophy/honest-signatures.md) for something usually driven by side effect.
+
 Soundness parses the command structure at compiletime, so quoting is understood before the program
 runs, and each substituted value is escaped for its exact position — a value spliced where a single
 argument is expected stays one argument, however it is spelled. The output is interpreted by the
@@ -25,14 +27,16 @@ strategy in scope:
 
 ```scala
 import soundness.*
-import workingDirectories.javaBaseWorkingDirectory
+
+import errorDiagnostics.stackTracesDiagnostics
 import logging.silentLogging
 import strategies.throwUnsafely
+import workingDirectories.javaBaseWorkingDirectory
 ```
 
 ### Defining a command
 
-`sh"…"` builds a `Command`, splitting on whitespace and honouring quotes as a shell would:
+`sh"…"` builds a `Command`, splitting on whitespace and honoring quotes as a shell would:
 
 ```scala
 sh"ls -la"   // Command(t"ls", t"-la")
@@ -127,8 +131,11 @@ its `pid`, and the process object itself — for the occasions where a signal mu
 process tree inspected:
 
 ```scala
-job.pid          // Pid(…), rendered as ↯1234
-job.process      // the underlying OS process
+val sleeper = sh"sleep 30".fork[Unit]()
+
+sleeper.pid          // Pid(…), rendered as ↯1234
+sleeper.process      // the underlying OS process
+sleeper.kill()
 ```
 
 A `Pid` is a distinct type rather than a number, so it cannot be confused with an exit code or a
@@ -137,11 +144,11 @@ file descriptor, and it renders and parses in its own form.
 ### Failure
 
 A command that cannot be run at all — a missing binary, a directory that is not executable —
-raises an `ExecError` carrying the command that failed, so the error names what was attempted
+raises an `Exec.Error` carrying the command that failed, so the error names what was attempted
 rather than reporting an operating-system errno:
 
 ```scala
-capture[ExecError](sh"no-such-binary".exec[Text]()).command.arguments.head
+capture[Exec.Error](sh"no-such-binary".exec[Text]()).command.arguments.prim
 // t"no-such-binary"
 ```
 

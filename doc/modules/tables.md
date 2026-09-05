@@ -17,6 +17,8 @@ others, prose columns can wrap where identifiers cannot, and below some width a 
 dropped than mangled — and that negotiation is exactly what a layout engine can do and a format
 string cannot.
 
+Separating a table's scaffold from its data and its width is [decoupling](../philosophy/decoupling.md), and what lets one definition render at any width.
+
 Soundness computes the layout per rendering: each column declares how it may shrink, and the
 engine distributes the available width, wrapping with [hyphenation](hyphenation.md) where wrapping
 is allowed. Everything comes from the `soundness` package, with a style, a metric, and an overflow
@@ -28,6 +30,8 @@ import tableStyles.thickTableStyle
 import textMetrics.uniformMetric
 import columnAttenuation.ignoreAttenuation
 import hyphenations.englishHyphenation
+import stdios.javaLangSystemStdio
+import strategies.throwUnsafely
 ```
 
 ### A table from a case class
@@ -36,8 +40,15 @@ A sequence of case classes tabulates directly, a column per field, titled from t
 `grid` lays it out at a width and produces the lines:
 
 ```scala
-case class Library(id: Text, name: Text, linesOfCode: Int, year: Int, description: Text)
+case class Codebase(id: Text, name: Text, linesOfCode: Int, year: Int, description: Text)
 
+val libraries = List
+  ( Codebase(t"gossamer", t"Gossamer", 4200, 2019, t"Statically-checked text operations"),
+    Codebase(t"jacinta", t"Jacinta", 3800, 2020, t"JSON parsing and serialization"),
+    Codebase(t"escritoire", t"Escritoire", 1900, 2018, t"Tabular layout for the terminal") )
+```
+
+```scala
 libraries.tabulation.grid(80).render.each(Out.println(_))
 ```
 
@@ -49,7 +60,7 @@ Three types are at work, and knowing which is which explains where each decision
 no data. A `Tabulation` is data arranged by a scaffold: an array of textual values, one per row
 and column, no longer referring to the row type at all. A `Grid` is a tabulation fitted to a
 particular width, which is the point at which a column may shrink or vanish. `tabulation` above
-derived a scaffold for `Library` and applied it in one step; the sections below take the stages
+derived a scaffold for `Codebase` and applied it in one step; the sections below take the stages
 separately, which is what gives control over both the layout and the width.
 
 ### Explicit columns
@@ -59,7 +70,7 @@ wraps; a `Collapsible` column vanishes when the layout falls below its threshold
 `Shortened` column truncates with an ellipsis:
 
 ```scala
-val table = Scaffold[Library]
+val table = Scaffold[Codebase]
   ( Column(t"Name")(_.name),
     Column(t"Identifier", sizing = columnar.Collapsible(0.9))(_.id),
     Column(t"LoC", sizing = columnar.Collapsible(0.3))(_.linesOfCode),
@@ -75,8 +86,8 @@ return a mixture of `Text` and `Int` without a type annotation between them. Tha
 the *title* fixes the textual type: a `Textual` instance is resolved for the title's type, that
 instance names the typeclass — usually `Show` — that converts other values into it, and each
 lambda's result type is shown through it. The table's own cell type is then the least upper bound
-of its columns'. So `table` above is a `Scaffold[Library, Text]`, and writing the titles as
-`e"Name"` instead of `t"Name"` would have made it a `Scaffold[Library, Teletype]`, with colour and
+of its columns'. So `table` above is a `Scaffold[Codebase, Text]`, and writing the titles as
+`e"Name"` instead of `t"Name"` would have made it a `Scaffold[Codebase, Teletype]`, with color and
 style available in every cell.
 
 The `Collapsible` thresholds are meaningful only relative to each other. They are compared against
@@ -184,7 +195,7 @@ raises the slack on the remaining columns, without reintroducing the ones alread
 them spread into what is left. Experimentally this produces markedly better results than stopping
 at the first fit.
 
-The search rests on one requirement, which any custom `Columnar` must honour: a column must
+The search rests on one requirement, which any custom `Columnar` must honor: a column must
 respond *monotonically* to slack. Decreasing the slack may leave a column the same width, but it
 must never make it wider. `Paragraph`, `Collapsible`, `Fixed` and `Shortened` are simply the
 strategies provided; the concept is open, and a sizing strategy that responds to slack in some
@@ -265,7 +276,7 @@ And `minimalTableStyle` leaves a single rule beneath the titles and nothing else
 `midOnlyTableStyle` is the same, but reserves blank lines above and below where the outer rules
 would be, so the table keeps its vertical spacing without drawing them. Styled
 [terminal text](terminal.md) works as cell content in every style, so a table of
-highlighted or coloured values lays out by its visible width, not the length of its escape codes.
+highlighted or colored values lays out by its visible width, not the length of its escape codes.
 
 ### Alignment
 
@@ -286,7 +297,7 @@ A derived table titles its columns from the field names, capitalized — `linesO
 so the Scala field keeps its name and the table gets its own:
 
 ```scala
-given TableRelabelling[Library]:
+given TableRelabelling[Codebase]:
   def relabelling() = Map(t"linesOfCode" -> t"LoC")
 ```
 
@@ -300,8 +311,8 @@ one type useless for another. `contramap` adapts it, so a column defined once �
 alignment, sizing and title — serves every type that can produce the value it displays:
 
 ```scala
-val nameColumn = Column[Text](t"Name")(identity)
-val libraryName = nameColumn.contramap[Library](_.name)
+val nameColumn = Column[Text, Text, Text](t"Name")(identity)
+val codebaseName = nameColumn.contramap[Codebase](_.name)
 ```
 
 ### Tabulating something that is not a case class
@@ -314,25 +325,25 @@ columns are computed.
 ### When the table does not fit
 
 Below some width, no arrangement of columns is satisfactory, and what should happen then is a
-policy rather than a fixed behaviour. The `columnAttenuation` given decides: `ignoreAttenuation`
+policy rather than a fixed behavior. The `columnAttenuation` given decides: `ignoreAttenuation`
 renders anyway, at whatever quality the width allows, while `failAttenuation` raises a
-`TableError` rather than producing something misleading.
+`Table.Error` rather than producing something misleading.
 
 The limit is not abstract. In the table above, the *Description* column can never be narrower
 than the longest single word it contains — `Statically-checked` — so below about 36 characters no
 slack will make it fit, however much the rest collapses.
 
-`TableError` is a checked error like any other, carrying the minimum width the table needed and
+`Table.Error` is a checked error like any other, carrying the minimum width the table needed and
 the width it was given, so a handler can say something useful rather than merely failing:
 
 ```scala
 import columnAttenuation.failAttenuation
 
 recover:
-  case TableError(minimum, available) =>
+  case Table.Error(minimum, available) =>
     Out.println(t"The table needs a width of at least $minimum to be shown.")
 . protect:
-    Out.println(table.grid(width))
+    Out.println(table.tabulate(libraries).grid(30))
 ```
 
 A report written to a file, where nobody will see that the columns were mangled, wants the

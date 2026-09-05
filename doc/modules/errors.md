@@ -37,6 +37,15 @@ import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 ```
 
+The examples that follow revolve around one fallible operation — connecting to a port, which
+fails when the port is taken — standing in for any operation that can fail:
+
+```scala
+case class Connection(port: Int)
+
+def available(port: Int): Boolean = port > 1024
+```
+
 ### Defining an error
 
 An error is a case class extending `Error`, with a message written using the `m"…"`
@@ -73,7 +82,7 @@ a method, `raise` reports an error, and `abort` reports one and stops:
 
 ```scala
 def connect(port: Int): Connection raises PortError =
-  if available(port) then open(port) else abort(PortError(port))
+  if available(port) then Connection(port) else abort(PortError(port))
 ```
 
 The requirement propagates. A method that calls `connect` must itself either declare `raises
@@ -96,15 +105,17 @@ At the point a fallible operation is used, a *strategy* in scope decides what a 
 ```scala
 import strategies.throwUnsafely
 
-connect(8080)   // returns a Connection, or throws PortError
+connect(8080)   // Connection(8080)
 ```
+
+With that strategy, `connect(80)` throws a `PortError` as an ordinary exception.
 
 `safely` runs a block and turns any failure into an absent result, so a failure becomes `Unset`
 rather than an exception; `unsafely` asserts that no failure will occur; and `capture` returns
 the error itself, for testing that the right failure is produced:
 
 ```scala
-safely(connect(8080))          // Optional[Connection] — Unset on failure
+safely(connect(80))                    // Unset
 capture[PortError](connect(80)).port   // 80
 ```
 
@@ -118,7 +129,11 @@ Two further declarations widen the choice beyond a scope. An error marked `Unche
 thrown without being handled — it is a marker typeclass with no members, so the given can be
 `erased`:
 
+<!-- doccheck: skip -->
 ```scala
+case class AsciiError(char: Char)(using Diagnostics)
+extends Error(m"the character $char is not ASCII")
+
 erased given AsciiError is Unchecked
 ```
 
@@ -126,9 +141,10 @@ An error declared `Fatal` ends the process, and says with what status. This suit
 initialization, where there is no meaningful way to continue:
 
 ```scala
-given InitError is Fatal = error =>
-  Log.info(m"error during initialization: $error")
-  Exit(127)
+case class InitError(reason: Text)(using Diagnostics)
+extends Error(m"initialization failed: $reason")
+
+given InitError is Fatal = error => Exit.Fail(127)
 ```
 
 ### Recovering
@@ -138,14 +154,30 @@ given InitError is Fatal = error =>
 
 ```scala
 recover:
-  case PortError(port) => fallbackConnection
+  case PortError(port) => Connection(8080)
 . protect:
-    connect(8080)
+    connect(80)
+// Connection(8080)
 ```
 
-`mitigate` instead replaces one error with another, translating a low-level failure into the
-error a caller expects before it propagates. Both compose: a `mitigate` inside a `recover`
-turns one error into another and then handles it.
+A handler matching a union of error types registers for each member, so one `recover` can
+answer several kinds of failure. `mitigate` instead replaces one error with another, translating
+a low-level failure into the error a caller expects before it propagates. Both compose: a
+`mitigate` inside a `recover` turns one error into another and then handles it:
+
+<!-- doccheck: skip -->
+```scala
+case class ServiceError(detail: Text)(using Diagnostics)
+extends Error(m"the service could not start: $detail")
+
+def start(port: Int): Connection raises ServiceError =
+  mitigate:
+    case PortError(port) => ServiceError(t"port $port unavailable")
+  . protect:
+      connect(port)
+
+capture[ServiceError](start(80)).detail   // t"port 80 unavailable"
+```
 
 ### Accumulating failures
 
@@ -154,16 +186,31 @@ document — should gather every failure and report them together. `raise` (unli
 records an error and continues, and `accrue` folds the recorded errors into one:
 
 ```scala
-accrue(Invalid(Nil)) { (all, error) => all.add(error) }:
-  case error => ()
-. protect:
-    validateName(form)
-    validateEmail(form)
-    validateAge(form)
+case class Invalid(problems: List[Text])(using Diagnostics)
+extends Error(m"${problems.size} problems")
+
+case class Form(name: Text, email: Text, age: Int)
+
+def validateName(form: Form): Unit raises PortError =
+  if form.name == t"" then raise(PortError(1))
+
+def validateAge(form: Form): Unit raises PortError =
+  if form.age < 0 then raise(PortError(2))
+
+val form = Form(t"", t"nobody", -1)
+
+capture[Invalid]:
+  accrue(Invalid(Nil)) { (all, error) => Invalid(all.problems :+ error.message.text) }
+    { case error: PortError => () }
+  . protect:
+      validateName(form)
+      validateAge(form)
+. problems.size   // 2
 ```
 
 Each field is checked even if an earlier one failed, and the accumulated `Invalid` carries all
-the problems at once.
+the problems at once. The first block folds each raised error into the accumulation; the second
+says which errors the accrual handles.
 
 The difference between the two is in their return types. `abort` returns `Nothing`: there is no
 value to give back, so it leaves. `raise` returns a value — an *ersatz* value, a stand-in — so
@@ -189,14 +236,19 @@ the block recorded nothing, or the `Failed` marker if it did. An `abort` inside 
 scope — so sibling ventures each contribute their full error set independently:
 
 ```scala
-def decodePerson(json: Json): Person raises Json.Error =
-  val name: Venture[Text] = venture(json.name.as[Text])
-  val role: Venture[Role] = venture(json.role.as[Role])
+import dynamicAccess.dynamicJson
 
-  venture(checkConsistency(name(), role()))
+case class Person(name: Text, age: Int)
+
+def decodePerson(json: Json): Person raises Json.Error =
+  val name = venture(json.name.as[Text])
+  val age = venture(json.age.as[Int])
+
+  venture:
+    if name().length > age() then abort(Json.Error(Json.Error.Reason.Absent))
 
   guard:
-    Person(name(), role())
+    Person(name(), age())
 ```
 
 Forcing a venture with `name()` requires a *skip-scope* in context — an enclosing `venture` or
@@ -238,7 +290,7 @@ asserting on a failure needs. A block that succeeds is itself an error — an `E
 since the test was checking the wrong thing:
 
 ```scala
-capture[PortError](connect(80)).port
+capture[PortError](connect(80)).port   // 80
 ```
 
 `attempt` makes no such demand, returning an `Attempt` that is either a success carrying the value
@@ -249,24 +301,6 @@ attempt[PortError](connect(80))   // Attempt.Success(…) or Attempt.Failure(…
 ```
 
 `amalgamate` combines several fallible computations, gathering their errors into one.
-
-### Deferring a fallible computation
-
-A fallible computation cannot be stored as an ordinary value, because its ability to fail is part
-of its type and needs a tactic to discharge. `defer` holds the unapplied body, and applying it
-runs it against whatever tactic is in scope *then*:
-
-```scala
-val held = defer(riskyOperation())
-
-recover:
-  case error => fallback
-. protect:
-    held()
-```
-
-Each application re-evaluates the body, so a deferred computation is a recipe rather than a cached
-result — which is what makes it usable under a different strategy each time.
 
 ### Translating and escalating
 
@@ -289,5 +323,16 @@ which is cheaper where an error is expected and handled rather than investigated
 That choice is available because none of this is built on throwing. `abort` and `raise` use
 Scala's `boundary` and `break`, so leaving a computation with an error does not construct a stack
 trace unless one was asked for, and an error is no more expensive to build than any other
-immutable value. Failure being a normal part of a program's behaviour rather than an exceptional
+immutable value. Failure being a normal part of a program's behavior rather than an exceptional
 one, it should not cost more than the code that succeeds.
+
+### When a contextual value is missing
+
+Much of the above relies on a given being in scope, and the compiler's ordinary report of a
+missing one — "No given instance of type … was found" — says only that the search failed, not
+where. With `import soundness.*` a diagnostic hook is in scope that explains the failure instead:
+the message names the value being resolved, the candidate instances that were considered, and for
+each the nested requirement that could not be met, as a tree. A decoder that fails to derive
+because one field's type has no instance is therefore reported at that field, and a strategy
+missing from a fallible call is named as the strategy, with the choice packages that supply one.
+The hook does nothing when resolution succeeds, so it costs nothing in a compiling program.
