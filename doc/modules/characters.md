@@ -56,7 +56,7 @@ enc"ABCDEF"   // does not compile: no such encoding
 ### Bad input
 
 A decoder consults the `TextSanitizer` in scope when it meets bytes that are not valid in its
-encoding. The strict sanitizer raises a `CharDecodeError` naming the position of the fault; the
+encoding. The strict sanitizer raises a `CharDecoder.Error` naming the position of the fault; the
 skip sanitizer drops the bad bytes; and the substitute sanitizer replaces them with `?`:
 
 ```scala
@@ -74,8 +74,8 @@ locally:
 
 locally:
   import textSanitizers.strictSanitizer
-  capture[CharDecodeError](charDecoders.utf8Decoder.decoded(badUtf8))
-  // CharDecodeError(1, enc"UTF-8")
+  capture[CharDecoder.Error](charDecoders.utf8Decoder.decoded(badUtf8))
+  // CharDecoder.Error(1, enc"UTF-8")
 ```
 
 Which behaviour is right depends on the data: strictness for input that should be trusted
@@ -88,7 +88,7 @@ reported, each with the position at which it occurred:
 
 ```scala
 validate[CharDecoder.Focus](DecodeIssues()):
-  case error: CharDecodeError => accrual + (prior.let(_.position).or(0), error)
+  case error: CharDecoder.Error => accrual + (prior.let(_.position).or(0), error)
 . protect:
     import textSanitizers.accrueSanitizer
     charDecoders.utf8Decoder.decoded(data)

@@ -72,7 +72,7 @@ key.uncloak:
   t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize.decrypt.as[Text]
 ```
 
-Decrypting with the wrong key raises a `CryptoError` naming the failure. AES's mode and padding
+Decrypting with the wrong key raises a `Crypto.Error` naming the failure. AES's mode and padding
 may also be fixed in the key's type — `Aes[256] over Cbc against Pkcs7` — and a pairing the
 specification forbids does not compile.
 
@@ -131,7 +131,7 @@ PEM parses incrementally, so a source holding many blocks — a certificate chai
 keys — yields them one at a time, lazily, rather than as one parsed document:
 
 ```scala
-chainText.read[LazyList[Pem]].map(_.label).to(List)
+chainText.read[Chain[Pem]].map(_.label).to(List)
 ```
 
 Text that is not part of a block — the `subject=…` lines OpenSSL writes between certificates —
@@ -153,7 +153,7 @@ bytes.as[Asn1]                   // the same value again
 
 DER is canonical, so a document has exactly one valid encoding, and the codec enforces that in
 both directions: an overlong length, a non-minimal integer, an unsorted `SET`, an indefinite
-length, or trailing bytes all raise an `Asn1Error` whose reason names the fault and the byte
+length, or trailing bytes all raise an `Asn1.Error` whose reason names the fault and the byte
 offset at which it was found.
 
 Decoding is total. A tag this layer does not model — `T61String`, `BMPString`, `ENUMERATED`, an

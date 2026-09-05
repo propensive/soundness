@@ -85,7 +85,7 @@ val script = Tar.Entry.File
     user  = UnixUser(1000, t"alice"),
     group = UnixGroup(1000, t"alice"),
     mtime = timestamp,
-    data  = TarBody(scriptText.in[Data]) )
+    data  = Tar.Body(scriptText.in[Data]) )
 ```
 
 A `Tarfile` of entries streams as tar blocks, or as the compressed forms the format usually
@@ -113,7 +113,7 @@ advances, but the sequence itself is not replayable. Opening the archive as `Tar
 underlying source in the same way as a ZIP archive, and takes the compression as a flag:
 
 ```scala
-archive.open[Tar](TarFlag.Gzip): tar ?=>
+archive.open[Tar](Tar.Flag.Gzip): tar ?=>
   tar.entries.map(_.entryName).to(List)
 ```
 

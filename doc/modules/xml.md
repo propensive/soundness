@@ -22,7 +22,7 @@ compounded by an interface that checks nothing.
 Soundness derives the conversion between XML and a Scala type from the type itself — a case class
 becomes an element with a child per field, an enumeration becomes an element named for its case — so
 there is nothing to keep in step by hand. Navigation is checked, literals are checked as they are
-written, and a failed conversion is a typed `XmlError`. Everything comes from the `soundness`
+written, and a failed conversion is a typed `Xml.Error`. Everything comes from the `soundness`
 package, with a schema and an error strategy in scope:
 
 ```scala
@@ -90,7 +90,7 @@ signature, or where a downstream consumer matches on the prefix.
 ### Reading values
 
 An `Xml` value converts to a Scala type with `as`. Content that cannot be read as the target type
-raises an `XmlError`:
+raises an `Xml.Error`:
 
 ```scala
 x"<message>42</message>".as[Int]   // 42
@@ -136,7 +136,7 @@ enum Light:
 ```
 
 A sum type decodes by its element label, so the element's name selects the variant; a label
-naming no variant raises an `XmlError` rather than falling through to a default.
+naming no variant raises an `Xml.Error` rather than falling through to a default.
 
 ### What decoding tolerates
 

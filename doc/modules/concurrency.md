@@ -199,7 +199,7 @@ The provided schedules cover the usual choices — `exponentialForeverTenacity`,
 `exponentialFiveTimesTenacity` and `exponentialTenTimesTenacity` back off geometrically, while
 the `fixedNoDelay` variants retry immediately, forever or a bounded number of times — and
 `Tenacity.exponential` and `Tenacity.fixed`, with `limit`, build others. Running out of attempts
-raises a `RetryError` naming how many were made.
+raises a `Tenacity.Error` naming how many were made.
 
 Within the block, `surrender()` gives up immediately without consuming further attempts, and
 `persevere()` asks for another, so a body can distinguish a failure worth retrying from one that

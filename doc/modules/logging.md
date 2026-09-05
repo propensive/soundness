@@ -57,7 +57,7 @@ supervise:
   // logging within here is written to standard output
 ```
 
-Narrowing the first parameter filters by kind: a `Logger[HttpEvent, Message]` receives
+Narrowing the first parameter filters by kind: a `Logger[Http.Event, Message]` receives
 HTTP events and nothing else, so the events of one library can be routed or silenced
 independently of the rest.
 
@@ -104,15 +104,15 @@ A level reflects frequency and severity together:
 A method opts into logging by naming its event type in its return type with `logs`:
 
 ```scala
-def fetch(url: HttpUrl): HttpResponse logs HttpEvent = ...
+def fetch(url: HttpUrl): Http.Response logs Http.Event = ...
 ```
 
 The requirement propagates: a method that calls `fetch` must itself admit
-`HttpEvent`, either by declaring it or by having a logger for it in scope. A method
+`Http.Event`, either by declaring it or by having a logger for it in scope. A method
 that logs more than one kind of event chains the declarations:
 
 ```scala
-def stop(server: Server): Unit logs HttpEvent logs ExecEvent = ...
+def stop(server: Server): Unit logs Http.Event logs Exec.Event = ...
 ```
 
 ### Event types
@@ -123,13 +123,13 @@ message. Keeping the values typed — rather than pre-formatting them — lets e
 render them its own way:
 
 ```scala
-object ExecEvent:
-  given (ExecEvent is Communicable) =
+object Exec.Event:
+  given (Exec.Event is Communicable) =
     case ProcessStart(command)   => m"starting process $command"
     case AbortProcess(pid)       => m"the process with PID $pid was aborted"
     case KillProcess(pid)        => m"killed process with PID $pid"
 
-enum ExecEvent:
+enum Exec.Event:
   case ProcessStart(command: Command)
   case AbortProcess(pid: Pid)
   case KillProcess(pid: Pid)
@@ -138,7 +138,7 @@ enum ExecEvent:
 The event is then logged by value, at the point the side effect happens:
 
 ```scala
-Log.info(ExecEvent.ProcessStart(command))
+Log.info(Exec.Event.ProcessStart(command))
 ```
 
 A module that builds on another's work reuses its events rather than duplicating
@@ -146,7 +146,7 @@ them. Transcribing one event into a case of another threads the wrapped event th
 unchanged — so a module that shells out reuses the process events of the shell:
 
 ```scala
-given (GitEvent transcribes ExecEvent) = GitEvent.Exec(_)
+given (Git.Event transcribes Exec.Event) = Git.Event.Exec(_)
 ```
 
 ### Cost when disabled
@@ -186,8 +186,8 @@ A single block can be logged with everything suppressed, regardless of the logge
 scope, with `mute`:
 
 ```scala
-mute[ExecEvent]:
-  // ExecEvent logging is suppressed here
+mute[Exec.Event]:
+  // Exec.Event logging is suppressed here
 ```
 
 Importing `logging.silentLogging` suppresses all logging for a whole file, which is

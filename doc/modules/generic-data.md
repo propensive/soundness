@@ -56,7 +56,7 @@ Person(t"John", 30).pojo    // Array("John", 30)
 
 Because both sides derive the codec from the same type definition, the encoding needs no schema on
 the wire — but it also means both sides must agree on that definition, and a mismatch surfaces as
-a typed `PojoError` when decoding, not as silent corruption.
+a typed `Pojo.Error` when decoding, not as silent corruption.
 
 `Pojo` is an opaque type over the JDK types it permits, so a `Pojo` cannot be confused with an
 arbitrary `Object`, and the only way to produce one is through an encoder. Decoding is fallible

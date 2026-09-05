@@ -65,6 +65,6 @@ does not send its user back through the consent screen.
 The `Authorization` in scope carries the access token and granted scopes, and supplies the
 standard `Authorization: Bearer …` header to outgoing [HTTP](http-client.md) requests, so calling
 the provider's API on the user's behalf is an ordinary fetch with the authorization applied.
-Asking an authorization for a scope it does not hold raises an `OAuthError`, whose reasons also
+Asking an authorization for a scope it does not hold raises an `OAuth.Error`, whose reasons also
 cover the flow's other failures — a denied consent, an unexpected status from the provider, a
 response that would not parse — each named for diagnosis.

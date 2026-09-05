@@ -122,6 +122,6 @@ case class Unnumbered(value: Int, other: Int)   // fields 1 and 2
 
 ### Errors
 
-A malformed message raises a `ProtobufError` naming the problem and the byte offset — truncated
+A malformed message raises a `Protobuf.Error` naming the problem and the byte offset — truncated
 input, a malformed varint, an unexpected wire type, a missing required field — so wire-level faults
 are debugged from the error rather than a hex dump.

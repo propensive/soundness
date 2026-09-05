@@ -59,29 +59,29 @@ echo.call(Ping(t"hello"))   // a JSON-RPC request over HTTP
 
 ### gRPC
 
-The same trait shape serves gRPC. A `GrpcChannel` opens over an [HTTP/2](http-server.md)
+The same trait shape serves gRPC. A `Grpc.Channel` opens over an [HTTP/2](http-server.md)
 connection, and `Grpc.remote` derives the stub — a method returning a value makes a unary call,
 one returning a `Stream` a server-streaming call — with payloads as Protocol Buffers messages:
 
 ```scala
 supervise:
-  val channel = GrpcChannel(endpoint)
+  val channel = Grpc.Channel(endpoint)
   val echo = Grpc.remote[Echo](channel, t"echo.Echo")
 
   echo.call(Ping(t"ping"))   // a unary gRPC call
 ```
 
-A non-OK response raises a `GrpcError` carrying the canonical status code — `NotFound`,
+A non-OK response raises a `Grpc.Error` carrying the canonical status code — `NotFound`,
 `Unauthenticated` and the rest — as a typed value.
 
 ### Server-sent events
 
 An `Sse` value is one event of an SSE stream, with its event name, data lines, id and retry
-interval; a stream of them serves as `text/event-stream`, and an `SseSource` buffers events with
+interval; a stream of them serves as `text/event-stream`, and an `Sse.Source` buffers events with
 replay from a client's last-seen id — the reconnection behaviour the protocol calls for:
 
 ```scala
-val source = SseSource(capacity = 128)
+val source = Sse.Source(capacity = 128)
 source.put(update)
 source.stream(start = lastEventId)
 ```
@@ -96,7 +96,7 @@ stream.iterator.frames[LengthPrefix]     // length-prefixed messages
 input.iterator.frames[ContentLength]     // header-framed messages, byte-counted
 lines.iterator.frames[CrLf]              // CRLF-separated lines
 lines.iterator.frames[Linefeed]          // or bare linefeeds, or CR alone
-framed.iterator.frames[GrpcFraming]      // gRPC's flag byte and 4-byte length
+framed.iterator.frames[Grpc.Framing]      // gRPC's flag byte and 4-byte length
 ```
 
 Framing is independent of how the bytes arrive. A message split across three chunks, two messages
@@ -104,11 +104,11 @@ in one chunk, and a final message with no terminator are all handled, because th
 own position rather than assuming chunk boundaries mean anything:
 
 ```scala
-LazyList(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].to(List)
+Chain(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].to(List)
 // List("one", "two", "three")
 ```
 
-A truncated or malformed frame raises a `FrameError` naming what was wrong, so a protocol failure
+A truncated or malformed frame raises a `Framing.Error` naming what was wrong, so a protocol failure
 is a diagnosis rather than a hang.
 
 ### Verifying a wire format
@@ -120,7 +120,7 @@ round-tripped. A gRPC message's framing is one flag byte and a four-byte length,
 is checked to produce exactly that:
 
 ```scala
-GrpcFraming.encode(payload)   // 00 00 00 00 05, then the payload
+Grpc.Framing.encode(payload)   // 00 00 00 00 05, then the payload
 ```
 
 HPACK's header compression is verified against every example in

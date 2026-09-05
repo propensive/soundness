@@ -119,7 +119,7 @@ A handler that cannot answer raises a typed fault, and continues:
 
 ```scala
   command(t"demo.run"):
-    raise(LspError(LspError.Reason.RequestFailed, t"nothing to run"))
+    raise(Lsp.Error(Lsp.Error.Reason.RequestFailed, t"nothing to run"))
     Unset
 ```
 
@@ -146,7 +146,7 @@ Lsp.Server(sh"rust-analyzer").session: server ?=>
 
 Requests return the same types a server's handlers return — `Optional[Hover]`,
 `CompletionList`, `List[Location]` — and notifications (`open`, `edit`, `save`, `close`)
-return nothing. An error response from the server is raised as an `LspError` carrying the
+return nothing. An error response from the server is raised as an `Lsp.Error` carrying the
 reason its wire code names, rather than being awaited forever. Requests are answered on a
 task of their own, so several may be in flight at once, and may come back in any order.
 

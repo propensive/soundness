@@ -75,7 +75,7 @@ import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder
 
 file.open[File](Write, OpenFlag.Create): handle ?=>
-  handle.write(LazyList(t"Hello, world".in[Data]))
+  handle.write(Chain(t"Hello, world".in[Data]))
 
 val text = file.open[File]()(file.stream.read[Data]).utf8
 ```
@@ -132,7 +132,7 @@ nothing behind:
 
 ```scala
 target.create[File](): handle ?=>
-  handle.write(LazyList(t"payload".in[Data]))
+  handle.write(Chain(t"payload".in[Data]))
 
 target.create[Directory](): dir ?=>
   (dir/"inner.txt").overwrite(t"hello")

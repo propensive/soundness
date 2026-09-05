@@ -19,7 +19,7 @@ the output is text in a format that must be parsed by hand; and nothing distingu
 from a tag name from a commit hash until Git rejects one.
 
 Soundness wraps the command line in a typed API. Each operation is a method that names its
-requirements and the errors it can raise; a `GitBranch`, `GitTag` and `GitHash` are separate types,
+requirements and the errors it can raise; a `Git.Branch`, `Git.Tag` and `GitHash` are separate types,
 so one cannot be passed where another is meant; and the output of `log`, `status` or `diff` is parsed
 into values. Everything comes from the `soundness` package, with the `git` command located and the
 capabilities the operations need in scope:
@@ -35,14 +35,14 @@ import strategies.throwUnsafely
 
 ### Opening or creating a repository
 
-An existing repository opens with `GitRepo.at`, and a new one is created with `Git.init`, which
+An existing repository opens with `Git.Repo.at`, and a new one is created with `Git.init`, which
 returns a `Worktree` — a repository together with a working tree:
 
 ```scala
-val worktree = Git.init(directory, initialBranch = GitBranch(t"main"))
+val worktree = Git.init(directory, initialBranch = Git.Branch(t"main"))
 ```
 
-`Git.initBare` creates a bare repository, one with no working tree, returning a `GitRepo`.
+`Git.initBare` creates a bare repository, one with no working tree, returning a `Git.Repo`.
 
 ### Making a commit
 
@@ -71,9 +71,9 @@ Branches and tags are created, listed and switched between with typed references
 reference to merge and a fast-forward policy:
 
 ```scala
-worktree.makeBranch(GitBranch(t"feature"))
-worktree.checkout(GitBranch(t"main"))
-worktree.merge(GitBranch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
+worktree.makeBranch(Git.Branch(t"feature"))
+worktree.checkout(Git.Branch(t"main"))
+worktree.merge(Git.Branch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
 ```
 
 ### Cloning, pulling and pushing
@@ -89,7 +89,7 @@ cloned.repo.log().to(List)
 
 ### References
 
-A `GitBranch`, `GitTag` and `GitHash` name the three kinds of reference, and a `Refspec` is any of
+A `Git.Branch`, `Git.Tag` and `GitHash` name the three kinds of reference, and a `Refspec` is any of
 them or a relative expression such as `Refspec.head()` for `HEAD`. Because each is its own type, an
 operation that expects a branch will not accept a tag, and a hash carries the guarantee that it is a
 well-formed forty-character identifier.
@@ -120,8 +120,8 @@ similarity indices, binary files, mode changes, and files with no trailing newli
 created is stated rather than inherited from configuration:
 
 ```scala
-worktree.merge(GitBranch(t"feature"), ff = FastForward.Only)
-worktree.merge(GitBranch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
+worktree.merge(Git.Branch(t"feature"), ff = FastForward.Only)
+worktree.merge(Git.Branch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
 ```
 
 `cherryPick` and `revert` apply and undo a single commit's changes. A conflict is a typed failure

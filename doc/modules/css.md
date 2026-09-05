@@ -72,11 +72,11 @@ rather than stopping at the first — the shape a linter or a build step needs:
 ```scala
 t"a { color: red }".read[Css]
 
-capture[CssErrors](t"a { colour: red }".read[Css]).errors.head.reason
-// CssError.Reason.UnknownProperty(t"colour")
+capture[Css.Errors](t"a { colour: red }".read[Css]).errors.head.reason
+// Css.Error.Reason.UnknownProperty(t"colour")
 ```
 
-Each `CssError` carries its line, column and reason — an unknown property, a bad value, a malformed
+Each `Css.Error` carries its line, column and reason — an unknown property, a bad value, a malformed
 selector — so a stylesheet's faults are reported precisely.
 
 ### Rendering
@@ -131,12 +131,12 @@ Parsing checks property names against the known set, so a misspelling is an erro
 declaration that silently does nothing:
 
 ```scala
-capture[CssErrors](t"a { colour: red }".read[Css]).errors.head.reason
-// CssError.Reason.UnknownProperty(t"colour")
+capture[Css.Errors](t"a { colour: red }".read[Css]).errors.head.reason
+// Css.Error.Reason.UnknownProperty(t"colour")
 ```
 
 Errors accumulate: a rule with several bad declarations reports all of them, so a stylesheet is
-corrected in one pass. The error type is plural — `CssErrors` — because reporting one fault at a
+corrected in one pass. The error type is plural — `Css.Errors` — because reporting one fault at a
 time from a document that has several is the wrong shape for the job.
 
 ### Checking class names against a stylesheet

@@ -229,7 +229,7 @@ t"" match
 ```
 
 The same scanner is available at runtime for patterns built from dynamic text,
-where it reports a `RegexError` naming the position and the reason — a bad
+where it reports a `Regex.Error` naming the position and the reason — a bad
 repetition such as `{2,1}`, an unclosed group, or a capture inside a repeating
 group, which cannot bind a fixed set of variables and so is forbidden.
 

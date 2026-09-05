@@ -126,5 +126,5 @@ in a grid of connecting tiles, which is what a small graph with complicated edge
 suits a long graph with few concurrent branches. `LayeredDagDiagram` arranges nodes into levels
 by depth, which suits showing what depends on what rather than what happened in what order.
 
-All three take a `Dag`, and all three raise a `DagError` where the graph is not acyclic — a cycle
+All three take a `Dag`, and all three raise a `Dag.Error` where the graph is not acyclic — a cycle
 has no drawing, so it is reported rather than approximated.

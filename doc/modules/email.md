@@ -43,7 +43,7 @@ t"Your order has shipped.".send
 ```
 
 An HTML document sends as an HTML message the same way, and failure to deliver raises a
-`CourierError` naming the sender, recipient and subject at fault.
+`Courier.Error` naming the sender, recipient and subject at fault.
 
 ### Composing
 

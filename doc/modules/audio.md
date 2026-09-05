@@ -98,7 +98,7 @@ recording.stop()
 
 `feed.supports[Stereo](44100.0*Hertz, 16)` asks whether a feed can honour a configuration
 before recording begins. Recording from a feed that is unavailable or misconfigured raises
-a `FeedError`. On macOS the JVM must have been granted microphone permission, or no feeds
+a `Feed.Error`. On macOS the JVM must have been granted microphone permission, or no feeds
 are available.
 
 ### Playback
@@ -115,7 +115,7 @@ playback.await()
 ```
 
 Playing to an outlet that is unavailable or cannot accept the audio's configuration raises
-an `OutletError`.
+an `Outlet.Error`.
 
 ### Scoped lines
 

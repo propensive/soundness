@@ -114,7 +114,7 @@ retry on a fresh connection. Other platforms supply their own backends the same 
 ### Redirects
 
 Redirects are followed by default, up to a limit. Importing a stricter policy stops them, after
-which a redirect response is delivered as an `HttpError` carrying the redirect status:
+which a redirect response is delivered as an `Http.Error` carrying the redirect status:
 
 ```scala
 import httpRedirections.doNotFollowRedirects
@@ -122,11 +122,11 @@ import httpRedirections.doNotFollowRedirects
 
 ### Errors
 
-A response outside the success range raises an `HttpError`, which carries the status and headers so
+A response outside the success range raises an `Http.Error`, which carries the status and headers so
 the caller can react to what went wrong:
 
 ```scala
-capture[HttpError](url"https://example.com/missing".fetch().receive[Text]).status   // Http.NotFound
+capture[Http.Error](url"https://example.com/missing".fetch().receive[Text]).status   // Http.NotFound
 ```
 
 A request that cannot connect at all — an unresolvable host, a refused connection, a TLS failure —

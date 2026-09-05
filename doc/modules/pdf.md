@@ -61,7 +61,7 @@ PdfFile(path).open(Password(t"open sesame")):
 ```
 
 The standard security handler is supported through RC4 and AES-256; a public-key handler raises
-a `PdfError` naming the encryption it cannot use.
+a `Pdf.Error` naming the encryption it cannot use.
 
 ### Pages
 
@@ -96,7 +96,7 @@ Positioned runs are available too, for a reader that needs coordinates rather th
 
 ### Metadata, navigation and attachments
 
-The document information dictionary reads as a `PdfInfo`, with its dates parsed from PDF's `D:`
+The document information dictionary reads as a `Pdf.Info`, with its dates parsed from PDF's `D:`
 format — including its offset, where one is given — and a malformed date reported as absent
 rather than as an error. Named destinations resolve through either the modern name tree or the
 old `/Dests` dictionary, and bookmarks form a tree of `Bookmark` values:
@@ -123,12 +123,12 @@ document.
 ```scala
 PdfFile(path).open(Read & Write): doc ?=>
   val operators = List
-    ( PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12),
-      PdfOperator.Offset(72, 720), PdfOperator.ShowText(winAnsi(t"Written")),
-      PdfOperator.EndText )
+    ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12),
+      Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(winAnsi(t"Written")),
+      Pdf.Operator.EndText )
 
   doc.setContents(doc.pages(0), operators)
-  doc.setInfo(PdfInfo(t"A Title", t"An Author", Unset, Unset, Unset, Unset, Unset, Unset))
+  doc.setInfo(Pdf.Info(t"A Title", t"An Author", Unset, Unset, Unset, Unset, Unset, Unset))
   doc.addLink(doc.pages(0), rect, uri = t"https://soundness.dev/")
 ```
 

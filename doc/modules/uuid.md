@@ -15,7 +15,7 @@ until something parses it and fails. Nothing marks, in the type, that a particul
 well-formed identifier.
 
 A `Uuid` is a value that is known to be well-formed. A literal is validated as the code compiles,
-runtime parsing reports a typed `UuidError` rather than returning a broken value, and the
+runtime parsing reports a typed `Uuid.Error` rather than returning a broken value, and the
 identifier's 128 bits are available directly for the occasional need to inspect or combine them.
 Everything comes from the `soundness` package:
 
@@ -42,14 +42,14 @@ uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"
 
 ### Parsing
 
-Text parsed at runtime may not be a UUID, so `Uuid.parse` reports a `UuidError` on failure,
+Text parsed at runtime may not be a UUID, so `Uuid.parse` reports a `Uuid.Error` on failure,
 handled by the strategy in scope; `Uuid.extract` instead yields an `Optional`, and the same
 extractor serves in a pattern:
 
 ```scala
 import strategies.throwUnsafely
 
-Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c")   // a Uuid, or raises UuidError
+Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c")   // a Uuid, or raises Uuid.Error
 
 t"not-a-uuid" match
   case Uuid(id) => id      // a well-formed identifier

@@ -42,10 +42,10 @@ image.height
 image.landscape   // true when wider than tall
 ```
 
-Bytes that are not the named format raise a `RasterError` naming the format that failed:
+Bytes that are not the named format raise a `Raster.Error` naming the format that failed:
 
 ```scala
-capture[RasterError](data.read[Raster in Jpeg])   // when data is a PNG
+capture[Raster.Error](data.read[Raster in Jpeg])   // when data is a PNG
 ```
 
 ### Pixels

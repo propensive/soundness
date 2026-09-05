@@ -32,7 +32,7 @@ A server extends `McpServer`, names itself, and defines its capabilities as anno
 
 ```scala
 object AssistantTools extends McpServer():
-  class Session() extends McpSession
+  class Session() extends Mcp.Session
   def initialize(): Session = Session()
 
   def name: Text = t"assistant-tools"
@@ -50,13 +50,13 @@ signature; `@about` supplies the description the model reads when deciding to ca
 
 ### Talking back to the client
 
-A tool that takes a `using McpClient` can speak to the client while it runs: `log` streams progress
+A tool that takes a `using Mcp.Client` can speak to the client while it runs: `log` streams progress
 notifications, and `elicit` asks the user for structured input mid-call, its form described by a
 derived schema:
 
 ```scala
 @tool
-def deploy(target: Text)(using client: McpClient): Text =
+def deploy(target: Text)(using client: Mcp.Client): Text =
   client.log(t"Preparing deployment to $target")
   case class Confirmation(proceed: Boolean)
   client.elicit[Confirmation](t"Deploy to production?")

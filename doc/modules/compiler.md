@@ -131,7 +131,7 @@ through, and a setting that configures nothing on the path is rejected before an
 
 Edges whose tools have prerequisites come from providers that demand evidence of them, so an edge
 whose tooling is absent cannot be built: `sjsEdges.wasi()` needs a probed `WasiToolchain` and a
-`WitWorld`, and `nativeEdges()` probes for `clang`.
+`Wasi.World`, and `nativeEdges()` probes for `clang`.
 
 Formats are values, and their identity is value equality, so wherever a parameter changes what a
 user receives, it is a constructor parameter and each parameterization is a distinct node: the
@@ -206,12 +206,12 @@ A WASI component — a `Wasi(Wasi.Version.Wasip2)`, a component-model `.wasm` wh
 exports are described by WIT — has two prerequisites beyond the linker, both demanded by the edge
 provider, so an edge without them cannot be constructed: a `WasiToolchain`, evidence that the
 native tools the link shells out to (`wasm-tools` and the scala-wasm fork of `wit-bindgen`) are
-present, obtainable only through the probing constructor `WasiToolchain()`; and a `WitWorld`,
+present, obtainable only through the probing constructor `WasiToolchain()`; and a `Wasi.World`,
 naming the directory of WIT packages and the world to link against:
 
 ```scala
 given WasiToolchain = WasiToolchain()
-given WitWorld = WitWorld(witDirectory, t"my-world")
+given Wasi.World = Wasi.World(witDirectory, t"my-world")
 
 val toolchain = Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())
 toolchain.produce(emission, Universe.Sjsir, OciImage, destination)
@@ -229,7 +229,7 @@ require no native tooling at all — the linker is an ordinary JVM library.
 ### Native binaries
 
 The native edges shell out to `clang` and `clang++`, so `nativeEdges` probes for them once and
-raises `ToolchainError` if either is missing. It takes the triples to target, defaulting to the
+raises `Toolchain.Error` if either is missing. It takes the triples to target, defaulting to the
 build host's own:
 
 ```scala

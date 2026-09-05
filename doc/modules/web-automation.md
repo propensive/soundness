@@ -90,7 +90,7 @@ browser.awaitUntil(browser.title() == t"Done")
 
 The policy is a `Tenacity` — the same [retry schedules](concurrency.md#retrying) used elsewhere —
 so the interval and the number of attempts belong to the caller,
-and exhausting them raises a `RetryError`. These poll the plural endpoint, which reports absence
+and exhausting them raises a `Tenacity.Error`. These poll the plural endpoint, which reports absence
 as an empty list rather than as an error, and that is deliberate: a session's error strategy is
 fixed when it opens, so a failure raised inside the polled block could not be caught here to drive
 the next attempt.

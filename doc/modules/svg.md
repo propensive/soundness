@@ -89,12 +89,12 @@ Rectangle((0, 0), 10, 5).translate(+(3, 4))
 
 ### Identifiers
 
-A figure or definition may carry an `SvgId`, which is what a gradient reference, an animation
+A figure or definition may carry an `Svg.Id`, which is what a gradient reference, an animation
 target or a `<use>` element needs to name it. The identifier is a distinct type rather than text,
 so a reference to a definition that does not exist is not silently rendered:
 
 ```scala
-Outline(id = SvgId(t"plus")).moveTo((0, 0)).closed
+Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed
 ```
 
 ### Gradients and color
@@ -104,7 +104,7 @@ A linear gradient is a definition with typed stops, each an offset in `[0, 1]` â
 [color](colors.md):
 
 ```scala
-LinearGradient(SvgId(t"fade"), Stop(0.0, WebColors.Red), Stop(1.0, WebColors.Blue))
+LinearGradient(Svg.Id(t"fade"), Stop(0.0, WebColors.Red), Stop(1.0, WebColors.Blue))
 ```
 
 ### Documents

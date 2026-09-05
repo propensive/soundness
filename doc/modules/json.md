@@ -21,7 +21,7 @@ that remembers what it is. Converting a `Json` to a Scala value, or a Scala valu
 `Json`, is done by an encoder or decoder that the compiler derives from the type's
 own shape — a case class becomes an object, an enumeration becomes a tagged union —
 so there is nothing to write and nothing to keep in step by hand. When a conversion
-cannot be made, it raises a `JsonError` that names the reason and, where it can, the
+cannot be made, it raises a `Json.Error` that names the reason and, where it can, the
 position in the source.
 
 The same derivation produces a schema, and from a schema two further guarantees
@@ -190,7 +190,7 @@ given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"valu
 Each works both through the tree and through [direct parsing](#case-classes-and-enumerations),
 and direct parsing does not require the tag to come first: a document whose `type` field trails
 its `value` reads just as one whose tag leads. A wrapper object with more than one key is not a
-valid variant, and raises `JsonError.Reason.Absent` rather than guessing which key was meant.
+valid variant, and raises `Json.Error.Reason.Absent` rather than guessing which key was meant.
 
 Anything more exotic is a `Discriminable` written by hand — three methods saying how to attach a
 tag, how to read one, and how to reach the variant — and codecs derived from it work unchanged.
@@ -323,16 +323,16 @@ List(1, 2, 3).in[Json].show   // pretty-printed across several lines
 
 ### Errors
 
-A conversion that cannot be made raises a `JsonError` whose reason says what went
+A conversion that cannot be made raises a `Json.Error` whose reason says what went
 wrong: a value of the wrong type, a required field that is absent, or a number
 outside the target's range. The reason can be inspected:
 
 ```scala
-capture[JsonError](t""""abc"""".read[Json].as[Int]).reason
-// JsonError.Reason.NotType(JsonPrimitive.String, JsonPrimitive.Number)
+capture[Json.Error](t""""abc"""".read[Json].as[Int]).reason
+// Json.Error.Reason.NotType(Json.Primitive.String, Json.Primitive.Number)
 
-capture[JsonError](t"""{}""".read[Json].as[Person]).reason
-// JsonError.Reason.Absent
+capture[Json.Error](t"""{}""".read[Json].as[Person]).reason
+// Json.Error.Reason.Absent
 ```
 
 When decoding runs under an accruing error strategy, the errors are collected rather
@@ -346,9 +346,9 @@ two places yields four errors, pointed at `#/person/age`, `#/person/email` and s
 tree's faults in one pass, each locatable, rather than the first fault and nothing else:
 
 ```scala
-Validate[Issues, [r] =>> r raises JsonError, Json.Focus]
+Validate[Issues, [r] =>> r raises Json.Error, Json.Focus]
   ( Issues(),
-    { case error: JsonError => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
+    { case error: Json.Error => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
 . protect(document.as[Contact])
 ```
 
@@ -370,7 +370,7 @@ predicates for each kind and a `primitive` naming it:
 
 ```scala
 Json.unseal(t"42".read[Json]).isLong          // true
-Json.unseal(t""""x"""".read[Json]).primitive  // JsonPrimitive.String
+Json.unseal(t""""x"""".read[Json]).primitive  // Json.Primitive.String
 ```
 
 The predicates are finer than the primitives: `isLong` and `isDouble` distinguish the two
@@ -474,7 +474,7 @@ and string formats such as `date-time` and `email` are represented by
 
 A document is checked against the shape a type expects with `verify`. On success it
 returns the same document, now carrying that type, ready to decode or to navigate; on
-failure it raises a `JsonError`:
+failure it raises a `Json.Error`:
 
 ```scala
 case class Employee(name: Text, age: Int, email: Text)
@@ -566,7 +566,7 @@ record.children.head.weight  // a Double, per the schema
 ```
 
 Constraints in the schema are enforced as the values are read: a value failing a
-`pattern` raises a `JsonBlueprintError`, and a number outside a declared `minimum` and
+`pattern` raises a `JsonBlueprint.Error`, and a number outside a declared `minimum` and
 `maximum` raises a bounds error. The shape of the data is taken from the schema and
 checked by the compiler, without a Scala type mirroring it.
 

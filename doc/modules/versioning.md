@@ -27,7 +27,7 @@ import strategies.throwUnsafely
 ### Versions
 
 The `v"…"` interpolator writes a version, checked as the code compiles; text parses to the same
-type, raising a `SemverError` for a malformed version:
+type, raising a `Semver.Error` for a malformed version:
 
 ```scala
 val version = v"1.4.2"
@@ -56,7 +56,7 @@ attributes are named values, and reading one gives its proper type:
 import manifestAttributes.*
 
 val manifest = Manifest
-  ( ManifestVersion(),
+  ( ManifestVersion(()),
     MainClass(fqcn"com.example.Main"),
     CreatedBy(t"Soundness") )
 

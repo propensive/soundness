@@ -451,7 +451,7 @@ spring.instant   // pushed forward to 01:30 UTC by default
 ```scala
 import gapPolicies.rejectGapPolicy
 Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant
-// raises a TimeError: the local time never happens
+// raises a Moment.Error: the local time never happens
 ```
 
 When the clocks fall back, an hour repeats, and a reading in the overlap names two
@@ -478,7 +478,7 @@ short notice:
 Tzdb.parse(t"northamerica", lines)
 ```
 
-A file that does not exist, or a line the format does not permit, raises a `TzdbError` naming the
+A file that does not exist, or a line the format does not permit, raises a `Tzdb.Error` naming the
 fault rather than silently producing a zone with the wrong rules.
 
 ### Calendars

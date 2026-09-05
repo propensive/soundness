@@ -102,10 +102,10 @@ A *redraft* is the forgiving form. It states only the lines to remove and the li
 unchanged lines omitted entirely, and finds where they belong:
 
 ```scala
-Redraft.parse(LazyList(t"- line2", t"+ new line 2a")).patch(source)
+Redraft.parse(Chain(t"- line2", t"+ new line 2a")).patch(source)
 // the second line replaced
 
-Redraft.parse(LazyList(t"+ line0")).patch(source)
+Redraft.parse(Chain(t"+ line0")).patch(source)
 // inserted before the first line
 ```
 

@@ -120,7 +120,7 @@ Cbor.make(name = t"Anna".in[Cbor], age = 30.in[Cbor])
 
 ### Errors
 
-A malformed document or a failed conversion raises a `CborError` whose reason is specific —
+A malformed document or a failed conversion raises a `Cbor.Error` whose reason is specific —
 truncated input, an integer overflow, a wrong type, an absent field — so a protocol failure is
 diagnosed from the error rather than from a hex dump.
 
@@ -130,9 +130,9 @@ followed, trailing bytes name where the surplus begins, and a reserved head byte
 offset and its value.
 
 ```scala
-capture[CborError](Cbor.Ast.parse(data)).reason match
-  case CborError.Reason.Truncated(offset) => offset
-  case CborError.Reason.Trailing(offset)  => offset
+capture[Cbor.Error](Cbor.Ast.parse(data)).reason match
+  case Cbor.Error.Reason.Truncated(offset) => offset
+  case Cbor.Error.Reason.Trailing(offset)  => offset
   case _                                  => -1L
 ```
 

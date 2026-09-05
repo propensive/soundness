@@ -142,6 +142,6 @@ mac"01-23-45-ab-cd-ef"
 ### Parsing at runtime
 
 Every identifier that has a literal form also decodes from text with `as`, naming the target type.
-A value that does not conform raises a typed error — an `HostnameError`, an `IpAddressError`, an
-`EmailAddressError` — that names precisely what was wrong, so a program validating user input can
+A value that does not conform raises a typed error — an `Hostname.Error`, an `IpAddress.Error`, an
+`EmailAddress.Error` — that names precisely what was wrong, so a program validating user input can
 report the fault rather than merely rejecting the value.

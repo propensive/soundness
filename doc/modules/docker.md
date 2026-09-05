@@ -51,7 +51,7 @@ def entry(name: Text, content: Text): Tar.Entry =
      user  = UnixUser(0),
      group = UnixGroup(0),
      mtime = 0.bits.u32,
-     data  = TarBody(content.in[Data]) )
+     data  = Tar.Body(content.in[Data]) )
 
 val layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
 ```
@@ -138,7 +138,7 @@ archive.open[Image](): handle ?=>
 
 Reaching a layer three ways makes the cost explicit: `compressed` yields the stored bytes
 untouched, `layer` decompresses them as a stream, and `verified` decompresses and checks the
-content against the digest the manifest declares, raising an `OciError` if they disagree.
+content against the digest the manifest declares, raising an `Oci.Error` if they disagree.
 
 A reader that does not already know which kind of artifact it has opened asks for `config`,
 which dispatches on the config descriptor's media type — so telling a component from a
@@ -148,7 +148,7 @@ filesystem is a question the archive answers, not one the caller has to have kno
 archive.open[Image](): handle ?=>
   handle.config match
     case config: WasmConfig  => config.component  // a component: run it in a Wasm engine
-    case config: ImageConfig => config.rootfs     // a filesystem: unpack and run it
+    case config: Image.Config => config.rootfs     // a filesystem: unpack and run it
 ```
 
 ### Connecting to a daemon

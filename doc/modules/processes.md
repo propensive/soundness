@@ -137,11 +137,11 @@ file descriptor, and it renders and parses in its own form.
 ### Failure
 
 A command that cannot be run at all — a missing binary, a directory that is not executable —
-raises an `ExecError` carrying the command that failed, so the error names what was attempted
+raises an `Exec.Error` carrying the command that failed, so the error names what was attempted
 rather than reporting an operating-system errno:
 
 ```scala
-capture[ExecError](sh"no-such-binary".exec[Text]()).command.arguments.head
+capture[Exec.Error](sh"no-such-binary".exec[Text]()).command.arguments.head
 // t"no-such-binary"
 ```
 

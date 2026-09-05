@@ -53,16 +53,16 @@ fails:
 import strategies.throwUnsafely
 
 t"123".as[Int]    // 123
-t"hello".as[Int]  // raises a NumberError
+t"hello".as[Int]  // raises a Number.Error
 ```
 
-A `NumberError` reports both the offending text and why it failed: text that is
+A `Number.Error` reports both the offending text and why it failed: text that is
 not a number at all is _unparseable_, while a number outside the target type's
 range is _out of range_. Decoding to a `Byte` distinguishes the two:
 
 ```scala
-t"300".as[Byte]   // raises a NumberError: 300 is out of range for a Byte
-t"abc".as[Byte]   // raises a NumberError: abc is unparseable
+t"300".as[Byte]   // raises a Number.Error: 300 is out of range for a Byte
+t"abc".as[Byte]   // raises a Number.Error: abc is unparseable
 ```
 
 Instances come built in for the primitive number types, for `Char`, and for types

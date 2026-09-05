@@ -61,7 +61,7 @@ what "why is this here, and what breaks if I remove it" asks for.
 and `subgraph` restricts the graph to a chosen set of nodes.
 
 Everything that could encounter a cycle says so: `sorted`, `reachable`, `descendants` and their
-kin raise a `DagError`, since a cyclic graph has no topological order and no finite reachable set.
+kin raise a `Dag.Error`, since a cyclic graph has no topological order and no finite reachable set.
 `hasCycle` asks the question directly, for code that would rather check than handle.
 
 ### Folding over a graph

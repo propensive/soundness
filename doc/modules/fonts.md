@@ -31,7 +31,7 @@ same reader serves OpenType fonts, which share the table structure:
 val font = Ttf(cp"/fonts/text.ttf")
 ```
 
-A file that is not a font, or lacks a table an operation needs, raises a `FontError` naming the
+A file that is not a font, or lacks a table an operation needs, raises a `Font.Error` naming the
 problem.
 
 ### Measuring text

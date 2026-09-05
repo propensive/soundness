@@ -51,7 +51,7 @@ bytes.serialize[Base64]   // t"SGVsbG8="
 ### Deserializing
 
 `deserialize` reads text back to bytes in the same encoding. A character outside the alphabet
-raises a `SerializationError`, so deserializing needs an error strategy in scope:
+raises a `Serialization.Error`, so deserializing needs an error strategy in scope:
 
 ```scala
 import strategies.throwUnsafely

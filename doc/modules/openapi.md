@@ -58,7 +58,7 @@ api.sessions(token).delete.call[Unit]()  // 204, no body
 ```
 
 Asking for a type the response schema does not support is a compile error; a response outside the
-success range raises an `ApiError` carrying the status.
+success range raises an `Api.Error` carrying the status.
 
 ### Wire formats
 
@@ -72,4 +72,4 @@ than remembered.
 The specification itself is also a value: `OpenApi` decodes an OpenAPI 3.x document from JSON or
 YAML into typed parts — info, servers, paths, operations, parameters, component schemas — for
 tooling that inspects APIs rather than calling them. A document of an unsupported version, or one
-that will not parse, raises an `OpenApiError` naming the fault.
+that will not parse, raises an `OpenApi.Error` naming the fault.

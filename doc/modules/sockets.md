@@ -106,7 +106,7 @@ one socket. Offering nothing preserves the plain-TLS handshake that `wss` peers 
 
 Nothing above names a platform API. The primitive operations each role needs — bind and accept,
 connect and converse, receive and reply, dispatch a datagram — are gathered into a
-`SocketBackend`, and the loops that compose them stay platform-neutral. The
+`Socket.Backend`, and the loops that compose them stay platform-neutral. The
 `java.nio.channels` implementation is `socketBackends.javaBaseSockets`, and backends over
 `wasi:sockets` and over Scala Native's sockets supply the same operations, so the same protocol
 code runs on the JVM, inside a WebAssembly component, and in a native binary. An operation a
@@ -165,6 +165,6 @@ happens to be in a sequence of interleaved reads and writes.
 
 ### Errors
 
-Binding can fail — the port in use, permission denied — as a `BindError`, and an established
-connection can fail during accept, transmission or close as a `ConnectionError`, each naming its
+Binding can fail — the port in use, permission denied — as a `Bind.Error`, and an established
+connection can fail during accept, transmission or close as a `Socket.Error`, each naming its
 reason.

@@ -70,7 +70,7 @@ check needs no network and no service. A newer or site-specific list placed earl
 classpath supersedes it — the file is a newline-delimited list of media types with suffixes but
 without parameters.
 
-Text that is not a media type raises a `MediaTypeError` naming the reason — a missing slash, an
+Text that is not a media type raises a `MediaType.Error` naming the reason — a missing slash, an
 invalid character, an unknown suffix.
 
 ### Types that know their media type

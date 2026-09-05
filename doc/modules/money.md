@@ -137,7 +137,7 @@ isin"GB00BH4HKS3"           // does not compile: wrong length
 Luhn.check(17893729974L)    // true
 ```
 
-An `IsinError` says which rule was broken — the length, the country prefix, the permitted
+An `Isin.Error` says which rule was broken — the length, the country prefix, the permitted
 characters, or the Luhn check on the final digit — so a rejected identifier can be reported
 precisely rather than as "invalid".
 

@@ -46,7 +46,7 @@ Environment.editor    // Text — the value of EDITOR
 Environment.columns   // Int  — COLUMNS, decoded to a number
 ```
 
-A variable that is not set raises an `EnvironmentError`, which the strategy in scope turns into
+A variable that is not set raises an `Environment.Error`, which the strategy in scope turns into
 an exception, an absent value, or a handled failure as the caller chooses.
 
 ### System properties
@@ -68,7 +68,7 @@ System.properties.os.name()        // Text
 System.properties.file.separator() // Char
 ```
 
-An undefined property raises a `PropertyError`, handled like any other.
+An undefined property raises a `Property.Error`, handled like any other.
 
 ### The working directory
 

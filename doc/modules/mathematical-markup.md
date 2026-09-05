@@ -38,7 +38,7 @@ Math(Msup(Mi(t"x"), Mn(t"2"))).xml.show
 MathML text reads back with `read[Math]`, and a document round-trips unchanged — attributes the
 model does not interpret are preserved rather than dropped. A root element that is not `<math>`
 raises a `Mathml.Error` naming what was found instead. `html` embeds an expression as a foreign
-element in an HTML tree, and `MathmlReader.read` extracts it again.
+element in an HTML tree, and `Mathml.Reader.read` extracts it again.
 
 A `Math` also has a `display` — block or inline — which decides whether the browser sets it as a
 displayed equation or within running text.
