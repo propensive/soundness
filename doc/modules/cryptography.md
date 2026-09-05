@@ -29,9 +29,13 @@ a provider in scope:
 
 ```scala
 import soundness.*
-import strategies.throwUnsafely
-import providers.javaBaseProvider
+
+import charEncoders.utf8Encoder
+import charDecoders.utf8Decoder
 import cloaks.heapCloak
+import errorDiagnostics.stackTracesDiagnostics
+import providers.javaBaseProvider
+import strategies.throwUnsafely
 ```
 
 There is deliberately no default `Cloak`: constructing any secret value — a password, a
@@ -90,8 +94,7 @@ password.show                                  // t"Password(•••)"
 
 ### Public-key encryption and signing
 
-An RSA key pair encrypts toward the public key and decrypts with the private; a DSA pair signs
-with the private key and verifies with the public:
+An RSA key pair encrypts toward the public key and decrypts with the private:
 
 ```scala
 val privateKey = PrivateKey.generate[Rsa[2048]]()
@@ -99,39 +102,56 @@ val privateKey = PrivateKey.generate[Rsa[2048]]()
 val message = privateKey.public.uncloak:
   t"secret".encrypt(InitializationVector.random)
 
-privateKey.uncloak(message.decrypt.as[Text])
+privateKey.uncloak(message.decrypt.as[Text])   // t"secret"
+```
 
-val signer = PrivateKey.generate[Dsa[2048]]()
+Signing runs the other way: the private key signs, and anyone holding the public key verifies.
+RSA, DSA, ECDSA and ML-DSA — the lattice-based scheme standardized as FIPS 204, for a
+post-quantum signature — all sign the same way; the digest an RSA or ECDSA signature is computed
+over is chosen from the `signatureDigests` package:
+
+```scala
+import signatureDigests.sha256Signature
+
+val document = t"an important document"
+
+val signer = PrivateKey.generate[Ecdsa[256]]()
 val signature = signer.sign(document)
-signer.public.verify(document, signature)   // true
+
+signer.public.verify(document, signature)             // true
+signer.public.verify(t"a forged document", signature) // false
 ```
 
 ### HMAC
 
-A message authenticates with `hmac`, over any of the [hash](hashing.md) algorithms, rendered
-through the usual [base encodings](base-encoding.md):
+A message authenticates with `hmac` under a shared secret, over any of the [hash](hashing.md)
+algorithms, rendered through the usual [base encodings](base-encoding.md):
 
 ```scala
-message.hmac[Sha2[256]](secretKey).serialize[Hex]
+val secret = t"shared secret".in[Data]
+document.hmac[Sha2[256]](secret).serialize[Hex]
 ```
 
 ### PEM
 
 Keys travel in [PEM](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail) form. A public key
 exports freely; exporting a *private* key demands the `Divulgence` marker — one more place where
-handling secret material is deliberate:
+handling secret material is deliberate. A `Pem` value carries its label and its bytes, and
+serializes to the familiar armored text:
 
 ```scala
-privateKey.public.pem.serialize
+val pemText = privateKey.public.pem.serialize   // t"-----BEGIN PUBLIC KEY-----…"
 privateKey.pem(Divulgence)
-pemText.read[Pem]
+
+pemText.read[Pem].label   // Pem.Label.PublicKey
 ```
 
 PEM parses incrementally, so a source holding many blocks — a certificate chain, a bundle of
 keys — yields them one at a time, lazily, rather than as one parsed document:
 
 ```scala
-chainText.read[Chain[Pem]].map(_.label).to(List)
+val chainText = t"$pemText\n$pemText"
+chainText.read[Chain[Pem]].map(_.label).to[List]   // two public-key labels
 ```
 
 Text that is not part of a block — the `subject=…` lines OpenSSL writes between certificates —
@@ -162,26 +182,55 @@ decoding and re-encoding reproduce the original bytes exactly. That property is 
 a signature over a certificate's `TBSCertificate` depends on: a structure can be taken apart,
 inspected, and put back together without disturbing the bytes the signature covers.
 
+### Certificates
+
+An [X.509](https://en.wikipedia.org/wiki/X.509) certificate binds a public key to a
+*distinguished name* for a period of validity, signed by its issuer. A self-signed certificate —
+the kind a development server or a private certificate authority needs — is generated from a
+subject, a private key, a validity [period](time.md) and a serial number, with the
+`dNSName` alternatives a TLS client will check:
+
+```scala
+import chronometries.unixChronometry
+
+val subject = Distinguished(commonName = t"example.com", organization = t"Example", country = t"GB")
+val validity = Instant(1_700_000_000_000L) ~ Instant(1_900_000_000_000L)
+
+val certificate =
+  Certificate.selfSigned(subject, privateKey, validity, BigInt(1), alternatives = List(t"example.com"))
+
+certificate.pem.serialize   // t"-----BEGIN CERTIFICATE-----…"
+```
+
+A certificate is an `Asn1` value underneath, so its fields are readable through the same
+structure, and `authority = true` marks it as one that may sign others.
+
 ### Keystores
 
 A [PKCS#12](https://en.wikipedia.org/wiki/PKCS_12) keystore is opened for the duration of a
 scope, with the password given as a flag — an opaque `Password`, so its cleartext is reached only
 through the scoped `Cleartext` capability, and the character array the platform needs is zeroed
-once the store is loaded:
+once the store is loaded. Inside the scope, `keystore` is the open store:
 
 ```scala
-path.open[Keystore](Password(t"sesame")):
-  keystore.aliases
-  keystore.certificate(t"server")
+import pathInterfaces.pathOnLinux
+import temporaryDirectories.javaBaseTemporaryDirectory
+
+val storePath = temporaryDirectory[Path on Linux] / "cryptography" / "store.p12"
+
+def readAliases(): List[Text] =
+  storePath.open[Keystore](Password(t"sesame")):
+    keystore.certificate(t"server")   // Unset, unless the store holds that alias
+    keystore.aliases
 ```
 
 A missing alias is `Unset`. A wrong password and a corrupt store are deliberately
-indistinguishable — both are `Unreadable` — since telling them apart would say which of the two
-went wrong to someone guessing.
+indistinguishable — both are `Unreadable` in the `Keystore.Error` — since telling them apart
+would say which of the two went wrong to someone guessing.
 
 ### Weak algorithms
 
 Encrypting with DES, RC2, 1024-bit RSA, ECB mode or any unauthenticated block cipher requires a
-permission from the `crypto` package in scope — the same [permit machinery](hashing.md) that gates
-MD5 and SHA-1 — so accepting legacy cryptography is an explicit, auditable decision rather than a
-default.
+permission from the `cryptoPermits` package in scope — the same [permit machinery](hashing.md)
+that gates MD5 and SHA-1 — so accepting legacy cryptography is an explicit, auditable decision
+rather than a default.
