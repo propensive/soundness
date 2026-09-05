@@ -48,7 +48,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import doms.html.whatwg, whatwg.*
+import htmlDoms.whatwg, whatwg.*
 
 trait CommonFormattable extends Formattable:
   given lineClass: (Attribution of "line" | "amok") = Attribution.classes()

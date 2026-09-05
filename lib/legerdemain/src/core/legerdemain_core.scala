@@ -41,7 +41,7 @@ import prepositional.*
 import vacuous.*
 
 import attributives.textAttributive
-import doms.html.whatwg, whatwg.*
+import htmlDoms.whatwg, whatwg.*
 
 def elicit[value: Formulaic]
   ( query: Optional[Query] = Unset, validation: Validation, submit: Optional[Text] )

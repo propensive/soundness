@@ -36,7 +36,7 @@ import anticipation.*
 import cataclysm.*
 import gossamer.*
 import honeycomb.*
-import honeycomb.doms.html.whatwg.*
+import honeycomb.htmlDoms.whatwg.*
 import nomenclature.*
 import nomenclature.CssClass.nominative
 import prepositional.*

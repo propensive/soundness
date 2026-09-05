@@ -105,7 +105,7 @@ object Math:
   given renderable: (Math is Renderable { type Form = "math" }) = math =>
     val pairs = math.attributePairs.map { case (key, value) => (key, value: Optional[Text]) }
     val children = math.contents.map(_.html)
-    honeycomb.doms.html.whatwg.Math.node(honeycomb.Attributes(pairs*))(children*)
+    honeycomb.htmlDoms.whatwg.Math.node(honeycomb.Attributes(pairs*))(children*)
 
   def apply(children: Mathml*): Math = Math(children.to(List))
 

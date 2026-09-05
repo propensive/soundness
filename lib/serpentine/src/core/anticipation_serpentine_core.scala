@@ -35,6 +35,6 @@ package anticipation
 import prepositional.*
 import rudiments.*
 
-package interfaces.paths:
+package pathInterfaces:
   // Platform path `Representative`s (`pathOnLinux`, …) live with the OS platform types in galilei.
   inline given textPath: Text is Representative of Paths = !!

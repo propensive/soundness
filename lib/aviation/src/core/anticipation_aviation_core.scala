@@ -36,12 +36,12 @@ import aviation.*
 import prepositional.*
 import quantitative.*
 
-package interfaces.instants:
+package instantInterfaces:
   given aviationInstant: [transport]
   =>  (Instant over transport) is Abstractable & Instantiable across Instants to Long from Long =
     Instant.generic[transport]
 
-package interfaces.durations:
+package durationInterfaces:
   given aviationDuration: [units <: Measure: Normalizable to Seconds[1]]
   =>  Quantity[units] is Abstractable & Instantiable across Durations to Long from Long =
 

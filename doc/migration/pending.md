@@ -97,7 +97,7 @@ not yet been recorded here.
 
 - Top-level `diuretic.javaNioFilePath` renamed to `javaNioPathRepresentative` and top-level
   `diuretic.javaIoFile` renamed to `javaIoFileRepresentative` (the `Representative of Paths`
-  markers; `anticipation.interfaces.paths.{javaNioPath, javaIoFile}` are unchanged). (#1939)
+  markers; `anticipation.pathInterfaces.{javaNioPath, javaIoFile}` are unchanged). (#1939)
 
 ## harlequin
 
@@ -116,8 +116,8 @@ not yet been recorded here.
   spanishRelativeTimespan}`. (#1939)
 - Newly re-exported into `soundness`: `hourFormats.{twelveHourSecondsClock,
   twentyFourHourSecondsClock}`, new family `timeSpecificities.{minutesSpecificity,
-  secondsSpecificity}` (library package `aviation.timeFormats.specificity`), and
-  `interfaces.instants.aviationInstant` / `interfaces.durations.aviationDuration`. (#1939)
+  secondsSpecificity}` (library package `aviation.timeSpecificities`), and
+  `instantInterfaces.aviationInstant` / `durationInterfaces.aviationDuration`. (#1939)
 
 ## probably
 
@@ -209,11 +209,11 @@ not yet been recorded here.
 
 ## capricious
 
-- `capricious.randomization.sizes.{uniformUpto10, uniformUpto100, uniformUpto1000,
+- `capricious.randomSizes.{uniformUpto10, uniformUpto100, uniformUpto1000,
   uniformUpto10000, uniformUpto100000}` renamed to `{uniformSizeUpto10, uniformSizeUpto100,
   uniformSizeUpto1000, uniformSizeUpto10000, uniformSizeUpto100000}`. (#1939)
-- `capricious.randomization.text.bigListOfNaughtyStrings` renamed to `naughtyStringsText`, and
-  now re-exported as `soundness.randomization.text.naughtyStringsText`. (#1939)
+- `capricious.randomTexts.bigListOfNaughtyStrings` renamed to `naughtyStringsText`, and
+  now re-exported as `soundness.randomTexts.naughtyStringsText`. (#1939)
 
 ## exoskeleton
 
@@ -283,3 +283,39 @@ not yet been recorded here.
 
 - `escapade.writables.{out, err}` renamed to `{outTeletypeWritable, errTeletypeWritable}`. (#1939)
 - `escapade.teletypeables.graphical` renamed to `graphicalTeletype`. (#1939)
+
+## anticipation
+
+- The nested interface-selector families are flattened to one level: `interfaces.paths` →
+  `pathInterfaces` (members `pathOnLinux`, `pathOnWindows`, `pathOnMacOs`, `pathOnLocal`,
+  `pathOnPosix` from galilei, `textPath` from serpentine, `javaNioPath`, `javaIoFile` from
+  diuretic), `interfaces.instants` → `instantInterfaces` (`javaTimeInstant`, `javaLongInstant`,
+  `javaUtilDate`, `aviationInstant`), `interfaces.durations` → `durationInterfaces`
+  (`javaLongDuration`, `aviationDuration`), `interfaces.urls` → `urlInterfaces` (`javaNetUrl`).
+  The `anticipation.interfaces` package no longer exists. `textPath` is now also re-exported as
+  `soundness.pathInterfaces.textPath`. (#1943)
+
+## aviation
+
+- The nested families under `aviation.dateFormats`, `aviation.timeFormats` and
+  `aviation.calendars` are now top-level packages of `aviation`, named as the umbrella already
+  named them: `dateFormats.endianness` → `dateEndianness`, `dateFormats.numerics` →
+  `dateNumerics`, `dateFormats.separators` → `dateSeparators`, `dateFormats.years` →
+  `yearFormats`, `dateFormats.weekdays` → `weekdays`, `dateFormats.months` → `monthFormats`,
+  `timeFormats.meridiems` → `timeMeridiems`, `timeFormats.hours` → `hourFormats`,
+  `timeFormats.specificity` → `timeSpecificities`, `timeFormats.numerics` → `timeNumerics`,
+  `timeFormats.separators` → `timeSeparators`, `calendars.nonexistentLeapDays` →
+  `nonexistentLeapDays`. Members are unchanged. In the umbrella, `soundness.endianness` is
+  renamed to `soundness.dateEndianness` and `soundness.meridiems` to `soundness.timeMeridiems`.
+  (#1943)
+
+## capricious
+
+- `capricious.randomization.sizes` renamed to `capricious.randomSizes` and
+  `capricious.randomization.text` renamed to `capricious.randomTexts`, both now top-level
+  packages (members unchanged); the umbrella paths change accordingly. (#1943)
+
+## honeycomb
+
+- `honeycomb.doms.html` (`whatwg`, `html4Transitional`) renamed to `honeycomb.htmlDoms`; the
+  `doms` package no longer exists. (#1943)

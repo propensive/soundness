@@ -46,7 +46,7 @@ import symbolism.*
 import vacuous.*
 
 import filesystemOptions.dereferenceSymlinks
-import interfaces.paths.pathOnLocal
+import pathInterfaces.pathOnLocal
 
 import filesystemBackends.javaBaseFilesystem
 

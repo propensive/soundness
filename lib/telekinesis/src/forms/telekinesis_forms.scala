@@ -46,7 +46,7 @@ import gossamer.*
 import prepositional.*
 import vacuous.*
 
-import doms.html.whatwg, whatwg.*
+import htmlDoms.whatwg, whatwg.*
 
 // An `Orchestrate` is a capability: it retains the caller's `process`/`render` function, which
 // may itself capture capabilities — a value constructed from capabilities is a capability

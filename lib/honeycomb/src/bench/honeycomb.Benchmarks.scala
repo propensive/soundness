@@ -37,7 +37,7 @@ import scala.quoted.*
 import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
-import doms.html.whatwg
+import htmlDoms.whatwg
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader

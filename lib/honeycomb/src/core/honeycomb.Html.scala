@@ -303,7 +303,7 @@ object Html extends Tag.Container
   // instance above uses the document's own DOM and indents.
   given showable: [html <: Html] => html is Showable = node =>
     Producer.collect[Text](): producer =>
-      writeHtml(producer, doms.html.whatwg, node, 0, false, Mode.Whitespace)
+      writeHtml(producer, htmlDoms.whatwg, node, 0, false, Mode.Whitespace)
 
   // `Element`, `Fragment`, `TextNode`, `Comment` and `Doctype` are all covered here, in the
   // companion of the trait they share, exactly as `showable` above covers them: the bound admits
@@ -313,7 +313,7 @@ object Html extends Tag.Container
   // holding the same markup and from xylophone's `xml"…"`, following ypsiloid's `yaml"…"`.
   given inspectable: [html <: Html] => html is Inspectable = node =>
     val markup: Text = Producer.collect[Text](): producer =>
-      writeHtml(producer, doms.html.whatwg, node, 0, false, Mode.Whitespace)
+      writeHtml(producer, htmlDoms.whatwg, node, 0, false, Mode.Whitespace)
 
     val builder: StringBuilder = new StringBuilder()
     markup.each { char => builder.append(Inspectable.escape(char).s) }

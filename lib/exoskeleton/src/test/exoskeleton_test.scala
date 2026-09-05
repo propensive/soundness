@@ -454,7 +454,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             .assert(_ == Exit.Ok)
 
           suite(m"Pathname completions"):
-            import interfaces.paths.pathOnLinux
+            import pathInterfaces.pathOnLinux
 
             val tool = summon[Enclave.Tool].path
 
@@ -1212,7 +1212,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         .assert(_ == t"raised")
 
       suite(m"Pathname operand completion"):
-        import interfaces.paths.pathOnLinux
+        import pathInterfaces.pathOnLinux
         import interpreters.posixInterpreter
         import stdios.muteStdio
 

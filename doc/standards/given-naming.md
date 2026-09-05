@@ -31,9 +31,11 @@ not `blockCipherMode`. Family names are global — same-named blocks from differ
 libraries merge in the `soundness` umbrella — so a family must mean one role
 everywhere.
 
-A library may nest families for its own organisation (aviation keeps `dateFormats.months`),
-but the flat name in its `soundness_*` export file (`monthFormats`) is the canonical one,
-and documentation cites that.
+Families are never nested. A library declares each family as one top-level `package
+<family>:` block, and the umbrella mirrors it under the same name, so
+`import aviation.monthFormats.englishMonths` and `import soundness.monthFormats.englishMonths`
+are the same path. A family that would naturally sit inside another takes its parent's word
+as a prefix instead (`dateSeparators`, `timeSeparators`, `randomSizes`, `pathInterfaces`).
 
 ### 2. The name is the choice, then the role
 
@@ -131,7 +133,7 @@ These pass rule 2 because the choice already names the role, and are listed so t
 nobody re-litigates them: `sortingAlgorithms.*`, `alphabets.*`,
 `blockCipherModes.{cbc, ctr, cfb, ofb}`, `blockCipherPaddings.{pkcs7, iso10126}`,
 `regexBackends.re2`, `internetAccess.{online, offline}`, `endianness.*`,
-`doms.html.{whatwg, html4Transitional}`, `currencies.Usd…` (ISO codes, used as terms),
+`htmlDoms.{whatwg, html4Transitional}`, `currencies.Usd…` (ISO codes, used as terms),
 `strategies.*`, `calendars.*`, `highlighting.*`, `caseSensitivity.*`,
 `dysasymptotics.*`, and `context.explainMissingContext`.
 

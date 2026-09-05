@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 
-import doms.html.whatwg
+import htmlDoms.whatwg
 import classloaders.systemClassloader
 import denominative.dysasymptotics.linearSize
 

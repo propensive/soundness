@@ -98,303 +98,303 @@ package dateFormats:
   private given calendar: RomanCalendar = calendars.gregorianCalendar
 
   given europeanDateFormat: Date is Showable =
-    import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.dotDateSeparator
-    import years.fullYears
+    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.dotDateSeparator
+    import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
   given americanDateFormat: Date is Showable =
-    import endianness.middleEndian, numerics.fixedWidthDateNumerics, separators.slashDateSeparator
-    import years.fullYears
+    import dateEndianness.middleEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.slashDateSeparator
+    import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
   given unitedKingdomDateFormat: Date is Showable =
-    import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.slashDateSeparator
-    import years.fullYears
+    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.slashDateSeparator
+    import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
   given southEastAsiaDateFormat: Date is Showable =
-    import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.hyphenDateSeparator
-    import years.fullYears
+    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.hyphenDateSeparator
+    import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
   given iso8601DateFormat: Date is Showable =
-    import endianness.bigEndian, numerics.fixedWidthDateNumerics, separators.hyphenDateSeparator
-    import years.fullYears
+    import dateEndianness.bigEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.hyphenDateSeparator
+    import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
-  package endianness:
-    given bigEndian: Endianness = Endianness.BigEndian
-    given littleEndian: Endianness = Endianness.LittleEndian
-    given middleEndian: Endianness = Endianness.MiddleEndian
+package dateEndianness:
+  given bigEndian: Endianness = Endianness.BigEndian
+  given littleEndian: Endianness = Endianness.LittleEndian
+  given middleEndian: Endianness = Endianness.MiddleEndian
 
-  package numerics:
-    given fixedWidthDateNumerics: Date.Numerics = Date.Numerics.FixedWidth
-    given variableWidthDateNumerics: Date.Numerics = Date.Numerics.VariableWidth
+package dateNumerics:
+  given fixedWidthDateNumerics: Date.Numerics = Date.Numerics.FixedWidth
+  given variableWidthDateNumerics: Date.Numerics = Date.Numerics.VariableWidth
 
-  package separators:
-    given slashDateSeparator: Date.Separation = () => t"/"
-    given hyphenDateSeparator: Date.Separation = () => t"-"
-    given dotDateSeparator: Date.Separation = () => t"."
-    given spaceDateSeparator: Date.Separation = () => t" "
+package dateSeparators:
+  given slashDateSeparator: Date.Separation = () => t"/"
+  given hyphenDateSeparator: Date.Separation = () => t"-"
+  given dotDateSeparator: Date.Separation = () => t"."
+  given spaceDateSeparator: Date.Separation = () => t" "
 
-  package years:
-    given twoDigitsYears: Years = Years.TwoDigitYear
-    given fullYears: Years = Years.FullYear
+package yearFormats:
+  given twoDigitsYears: Years = Years.TwoDigitYear
+  given fullYears: Years = Years.FullYear
 
-  package weekdays:
-    given englishWeekdays: Weekdays =
-      case Weekday.Mon => t"Monday"
-      case Weekday.Tue => t"Tuesday"
-      case Weekday.Wed => t"Wednesday"
-      case Weekday.Thu => t"Thursday"
-      case Weekday.Fri => t"Friday"
-      case Weekday.Sat => t"Saturday"
-      case Weekday.Sun => t"Sunday"
+package weekdays:
+  given englishWeekdays: Weekdays =
+    case Weekday.Mon => t"Monday"
+    case Weekday.Tue => t"Tuesday"
+    case Weekday.Wed => t"Wednesday"
+    case Weekday.Thu => t"Thursday"
+    case Weekday.Fri => t"Friday"
+    case Weekday.Sat => t"Saturday"
+    case Weekday.Sun => t"Sunday"
 
-    given englishShortWeekdays: Weekdays =
-      case Weekday.Mon => t"Mon"
-      case Weekday.Tue => t"Tue"
-      case Weekday.Wed => t"Wed"
-      case Weekday.Thu => t"Thu"
-      case Weekday.Fri => t"Fri"
-      case Weekday.Sat => t"Sat"
-      case Weekday.Sun => t"Sun"
+  given englishShortWeekdays: Weekdays =
+    case Weekday.Mon => t"Mon"
+    case Weekday.Tue => t"Tue"
+    case Weekday.Wed => t"Wed"
+    case Weekday.Thu => t"Thu"
+    case Weekday.Fri => t"Fri"
+    case Weekday.Sat => t"Sat"
+    case Weekday.Sun => t"Sun"
 
-    given oneLetterAmbiguousWeekdays: Weekdays =
-      case Weekday.Mon => t"M"
-      case Weekday.Tue => t"T"
-      case Weekday.Wed => t"W"
-      case Weekday.Thu => t"T"
-      case Weekday.Fri => t"F"
-      case Weekday.Sat => t"S"
-      case Weekday.Sun => t"S"
+  given oneLetterAmbiguousWeekdays: Weekdays =
+    case Weekday.Mon => t"M"
+    case Weekday.Tue => t"T"
+    case Weekday.Wed => t"W"
+    case Weekday.Thu => t"T"
+    case Weekday.Fri => t"F"
+    case Weekday.Sat => t"S"
+    case Weekday.Sun => t"S"
 
-    given shortestUnambiguousWeekdays: Weekdays =
-      case Weekday.Mon => t"M"
-      case Weekday.Tue => t"Tu"
-      case Weekday.Wed => t"W"
-      case Weekday.Thu => t"Th"
-      case Weekday.Fri => t"F"
-      case Weekday.Sat => t"Sa"
-      case Weekday.Sun => t"Su"
+  given shortestUnambiguousWeekdays: Weekdays =
+    case Weekday.Mon => t"M"
+    case Weekday.Tue => t"Tu"
+    case Weekday.Wed => t"W"
+    case Weekday.Thu => t"Th"
+    case Weekday.Fri => t"F"
+    case Weekday.Sat => t"Sa"
+    case Weekday.Sun => t"Su"
 
-    given twoLetterWeekdays: Weekdays =
-      case Weekday.Mon => t"Mo"
-      case Weekday.Tue => t"Tu"
-      case Weekday.Wed => t"We"
-      case Weekday.Thu => t"Th"
-      case Weekday.Fri => t"Fr"
-      case Weekday.Sat => t"Sa"
-      case Weekday.Sun => t"Su"
+  given twoLetterWeekdays: Weekdays =
+    case Weekday.Mon => t"Mo"
+    case Weekday.Tue => t"Tu"
+    case Weekday.Wed => t"We"
+    case Weekday.Thu => t"Th"
+    case Weekday.Fri => t"Fr"
+    case Weekday.Sat => t"Sa"
+    case Weekday.Sun => t"Su"
 
-    given frenchWeekdays: Weekdays =
-      case Weekday.Mon => t"lundi"
-      case Weekday.Tue => t"mardi"
-      case Weekday.Wed => t"mercredi"
-      case Weekday.Thu => t"jeudi"
-      case Weekday.Fri => t"vendredi"
-      case Weekday.Sat => t"samedi"
-      case Weekday.Sun => t"dimanche"
+  given frenchWeekdays: Weekdays =
+    case Weekday.Mon => t"lundi"
+    case Weekday.Tue => t"mardi"
+    case Weekday.Wed => t"mercredi"
+    case Weekday.Thu => t"jeudi"
+    case Weekday.Fri => t"vendredi"
+    case Weekday.Sat => t"samedi"
+    case Weekday.Sun => t"dimanche"
 
-    given germanWeekdays: Weekdays =
-      case Weekday.Mon => t"Montag"
-      case Weekday.Tue => t"Dienstag"
-      case Weekday.Wed => t"Mittwoch"
-      case Weekday.Thu => t"Donnerstag"
-      case Weekday.Fri => t"Freitag"
-      case Weekday.Sat => t"Samstag"
-      case Weekday.Sun => t"Sonntag"
+  given germanWeekdays: Weekdays =
+    case Weekday.Mon => t"Montag"
+    case Weekday.Tue => t"Dienstag"
+    case Weekday.Wed => t"Mittwoch"
+    case Weekday.Thu => t"Donnerstag"
+    case Weekday.Fri => t"Freitag"
+    case Weekday.Sat => t"Samstag"
+    case Weekday.Sun => t"Sonntag"
 
-    given spanishWeekdays: Weekdays =
-      case Weekday.Mon => t"lunes"
-      case Weekday.Tue => t"martes"
-      case Weekday.Wed => t"miércoles"
-      case Weekday.Thu => t"jueves"
-      case Weekday.Fri => t"viernes"
-      case Weekday.Sat => t"sábado"
-      case Weekday.Sun => t"domingo"
+  given spanishWeekdays: Weekdays =
+    case Weekday.Mon => t"lunes"
+    case Weekday.Tue => t"martes"
+    case Weekday.Wed => t"miércoles"
+    case Weekday.Thu => t"jueves"
+    case Weekday.Fri => t"viernes"
+    case Weekday.Sat => t"sábado"
+    case Weekday.Sun => t"domingo"
 
-  package months:
-    given englishMonths: Months =
-      case Jan => t"January"
-      case Feb => t"February"
-      case Mar => t"March"
-      case Apr => t"April"
-      case May => t"May"
-      case Jun => t"June"
-      case Jul => t"July"
-      case Aug => t"August"
-      case Sep => t"September"
-      case Oct => t"October"
-      case Nov => t"November"
-      case Dec => t"December"
+package monthFormats:
+  given englishMonths: Months =
+    case Jan => t"January"
+    case Feb => t"February"
+    case Mar => t"March"
+    case Apr => t"April"
+    case May => t"May"
+    case Jun => t"June"
+    case Jul => t"July"
+    case Aug => t"August"
+    case Sep => t"September"
+    case Oct => t"October"
+    case Nov => t"November"
+    case Dec => t"December"
 
-    given englishShortMonths: Months =
-      case Jan => t"Jan"
-      case Feb => t"Feb"
-      case Mar => t"Mar"
-      case Apr => t"Apr"
-      case May => t"May"
-      case Jun => t"Jun"
-      case Jul => t"Jul"
-      case Aug => t"Aug"
-      case Sep => t"Sep"
-      case Oct => t"Oct"
-      case Nov => t"Nov"
-      case Dec => t"Dec"
+  given englishShortMonths: Months =
+    case Jan => t"Jan"
+    case Feb => t"Feb"
+    case Mar => t"Mar"
+    case Apr => t"Apr"
+    case May => t"May"
+    case Jun => t"Jun"
+    case Jul => t"Jul"
+    case Aug => t"Aug"
+    case Sep => t"Sep"
+    case Oct => t"Oct"
+    case Nov => t"Nov"
+    case Dec => t"Dec"
 
-    given frenchMonths: Months =
-      case Jan => t"janvier"
-      case Feb => t"février"
-      case Mar => t"mars"
-      case Apr => t"avril"
-      case May => t"mai"
-      case Jun => t"juin"
-      case Jul => t"juillet"
-      case Aug => t"août"
-      case Sep => t"septembre"
-      case Oct => t"octobre"
-      case Nov => t"novembre"
-      case Dec => t"décembre"
+  given frenchMonths: Months =
+    case Jan => t"janvier"
+    case Feb => t"février"
+    case Mar => t"mars"
+    case Apr => t"avril"
+    case May => t"mai"
+    case Jun => t"juin"
+    case Jul => t"juillet"
+    case Aug => t"août"
+    case Sep => t"septembre"
+    case Oct => t"octobre"
+    case Nov => t"novembre"
+    case Dec => t"décembre"
 
-    given germanMonths: Months =
-      case Jan => t"Januar"
-      case Feb => t"Februar"
-      case Mar => t"März"
-      case Apr => t"April"
-      case May => t"Mai"
-      case Jun => t"Juni"
-      case Jul => t"Juli"
-      case Aug => t"August"
-      case Sep => t"September"
-      case Oct => t"Oktober"
-      case Nov => t"November"
-      case Dec => t"Dezember"
+  given germanMonths: Months =
+    case Jan => t"Januar"
+    case Feb => t"Februar"
+    case Mar => t"März"
+    case Apr => t"April"
+    case May => t"Mai"
+    case Jun => t"Juni"
+    case Jul => t"Juli"
+    case Aug => t"August"
+    case Sep => t"September"
+    case Oct => t"Oktober"
+    case Nov => t"November"
+    case Dec => t"Dezember"
 
-    given spanishMonths: Months =
-      case Jan => t"enero"
-      case Feb => t"febrero"
-      case Mar => t"marzo"
-      case Apr => t"abril"
-      case May => t"mayo"
-      case Jun => t"junio"
-      case Jul => t"julio"
-      case Aug => t"agosto"
-      case Sep => t"septiembre"
-      case Oct => t"octubre"
-      case Nov => t"noviembre"
-      case Dec => t"diciembre"
+  given spanishMonths: Months =
+    case Jan => t"enero"
+    case Feb => t"febrero"
+    case Mar => t"marzo"
+    case Apr => t"abril"
+    case May => t"mayo"
+    case Jun => t"junio"
+    case Jul => t"julio"
+    case Aug => t"agosto"
+    case Sep => t"septiembre"
+    case Oct => t"octubre"
+    case Nov => t"noviembre"
+    case Dec => t"diciembre"
 
-    given oneLetterAmbiguousMonths: Months =
-      case Jan => t"J"
-      case Feb => t"F"
-      case Mar => t"M"
-      case Apr => t"A"
-      case May => t"M"
-      case Jun => t"J"
-      case Jul => t"J"
-      case Aug => t"A"
-      case Sep => t"S"
-      case Oct => t"O"
-      case Nov => t"N"
-      case Dec => t"D"
+  given oneLetterAmbiguousMonths: Months =
+    case Jan => t"J"
+    case Feb => t"F"
+    case Mar => t"M"
+    case Apr => t"A"
+    case May => t"M"
+    case Jun => t"J"
+    case Jul => t"J"
+    case Aug => t"A"
+    case Sep => t"S"
+    case Oct => t"O"
+    case Nov => t"N"
+    case Dec => t"D"
 
-    given numericMonths: Months = _.numerical.show
+  given numericMonths: Months = _.numerical.show
 
-    given twoDigitMonths: Months = month =>
-      import textMetrics.uniformMetric
-      month.numerical.show.pad(2, Rtl, '0')
+  given twoDigitMonths: Months = month =>
+    import textMetrics.uniformMetric
+    month.numerical.show.pad(2, Rtl, '0')
 
 package timeFormats:
   given militaryTimeFormat: Clockface is Showable =
-    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.noneTimeSeparator
-    import specificity.minutesSpecificity
+    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics, timeSeparators.noneTimeSeparator
+    import timeSpecificities.minutesSpecificity
     Clockface.showable.text(_)
 
   given civilianTimeFormat: Clockface is Showable =
-    import hours.twelveHourClock, meridiems.upperMeridiem, numerics.fixedWidthTimeNumerics
-    import separators.colonTimeSeparator
-    import specificity.minutesSpecificity
+    import hourFormats.twelveHourClock, timeMeridiems.upperMeridiem, timeNumerics.fixedWidthTimeNumerics
+    import timeSeparators.colonTimeSeparator
+    import timeSpecificities.minutesSpecificity
 
     Clockface.showable.text(_)
 
   given associatedPressTimeFormat: Clockface is Showable =
-    import hours.twelveHourClock, meridiems.lowerPunctuatedMeridiem
-    import numerics.variableWidthTimeNumerics, separators.colonTimeSeparator
-    import specificity.minutesSpecificity
+    import hourFormats.twelveHourClock, timeMeridiems.lowerPunctuatedMeridiem
+    import timeNumerics.variableWidthTimeNumerics, timeSeparators.colonTimeSeparator
+    import timeSpecificities.minutesSpecificity
     Clockface.showable.text(_)
 
   given frenchTimeFormat: Clockface is Showable =
-    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics
-    import separators.frenchTimeSeparator, specificity.minutesSpecificity
+    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics
+    import timeSeparators.frenchTimeSeparator, timeSpecificities.minutesSpecificity
     Clockface.showable.text(_)
 
   given iso8601TimeFormat: Clockface is Showable =
-    import hours.twentyFourHourSecondsClock, numerics.fixedWidthTimeNumerics
-    import separators.colonTimeSeparator, specificity.secondsSpecificity
+    import hourFormats.twentyFourHourSecondsClock, timeNumerics.fixedWidthTimeNumerics
+    import timeSeparators.colonTimeSeparator, timeSpecificities.secondsSpecificity
     Clockface.showable.text(_)
 
   given ledgerTimeFormat: Clockface is Showable =
-    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.dotTimeSeparator
-    import specificity.minutesSpecificity
+    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics, timeSeparators.dotTimeSeparator
+    import timeSpecificities.minutesSpecificity
     Clockface.showable.text(_)
 
   given railwayTimeFormat: Clockface is Showable =
-    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.colonTimeSeparator
-    import specificity.minutesSpecificity
+    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics, timeSeparators.colonTimeSeparator
+    import timeSpecificities.minutesSpecificity
     Clockface.showable.text(_)
 
-  package meridiems:
-    given upperMeridiem: Meridiem is Showable =
-      case Meridiem.Am => t"AM"
-      case Meridiem.Pm => t"PM"
+package timeMeridiems:
+  given upperMeridiem: Meridiem is Showable =
+    case Meridiem.Am => t"AM"
+    case Meridiem.Pm => t"PM"
 
-    given lowerMeridiem: Meridiem is Showable =
-      case Meridiem.Am => t"am"
-      case Meridiem.Pm => t"pm"
+  given lowerMeridiem: Meridiem is Showable =
+    case Meridiem.Am => t"am"
+    case Meridiem.Pm => t"pm"
 
-    given upperPunctuatedMeridiem: Meridiem is Showable =
-      case Meridiem.Am => t"A.M."
-      case Meridiem.Pm => t"P.M."
+  given upperPunctuatedMeridiem: Meridiem is Showable =
+    case Meridiem.Am => t"A.M."
+    case Meridiem.Pm => t"P.M."
 
-    given lowerPunctuatedMeridiem: Meridiem is Showable =
-      case Meridiem.Am => t"a.m."
-      case Meridiem.Pm => t"p.m."
+  given lowerPunctuatedMeridiem: Meridiem is Showable =
+    case Meridiem.Am => t"a.m."
+    case Meridiem.Pm => t"p.m."
 
-  package hours:
-    given twelveHourClock: (Meridiem is Showable) => Clockface.Format:
-      def postfix(meridiem: Meridiem): Text = t" ${meridiem}"
-      def halfDay: Boolean = true
-      def seconds: Boolean = false
+package hourFormats:
+  given twelveHourClock: (Meridiem is Showable) => Clockface.Format:
+    def postfix(meridiem: Meridiem): Text = t" ${meridiem}"
+    def halfDay: Boolean = true
+    def seconds: Boolean = false
 
-    given twelveHourSecondsClock: (Meridiem is Showable) => Clockface.Format:
-      def postfix(meridiem: Meridiem): Text = t" ${meridiem}"
-      def halfDay: Boolean = true
-      def seconds: Boolean = false
+  given twelveHourSecondsClock: (Meridiem is Showable) => Clockface.Format:
+    def postfix(meridiem: Meridiem): Text = t" ${meridiem}"
+    def halfDay: Boolean = true
+    def seconds: Boolean = false
 
-    given twentyFourHourClock: Clockface.Format:
-      def postfix(meridiem: Meridiem): Text = t""
-      def halfDay: Boolean = false
-      def seconds: Boolean = false
+  given twentyFourHourClock: Clockface.Format:
+    def postfix(meridiem: Meridiem): Text = t""
+    def halfDay: Boolean = false
+    def seconds: Boolean = false
 
-    given twentyFourHourSecondsClock: Clockface.Format:
-      def postfix(meridiem: Meridiem): Text = t""
-      def halfDay: Boolean = false
-      def seconds: Boolean = true
+  given twentyFourHourSecondsClock: Clockface.Format:
+    def postfix(meridiem: Meridiem): Text = t""
+    def halfDay: Boolean = false
+    def seconds: Boolean = true
 
-  package specificity:
-    given minutesSpecificity: Clockface.Specificity = Clockface.Specificity.Minutes
-    given secondsSpecificity: Clockface.Specificity = Clockface.Specificity.Seconds
+package timeSpecificities:
+  given minutesSpecificity: Clockface.Specificity = Clockface.Specificity.Minutes
+  given secondsSpecificity: Clockface.Specificity = Clockface.Specificity.Seconds
 
-  package numerics:
-    given fixedWidthTimeNumerics: Clockface.Numerics = Clockface.Numerics.FixedWidth
-    given variableWidthTimeNumerics: Clockface.Numerics = Clockface.Numerics.VariableWidth
+package timeNumerics:
+  given fixedWidthTimeNumerics: Clockface.Numerics = Clockface.Numerics.FixedWidth
+  given variableWidthTimeNumerics: Clockface.Numerics = Clockface.Numerics.VariableWidth
 
-  package separators:
-    given dotTimeSeparator: Clockface.Separation = () => t"."
-    given colonTimeSeparator: Clockface.Separation = () => t":"
-    given noneTimeSeparator: Clockface.Separation = () => t""
-    given frenchTimeSeparator: Clockface.Separation = () => t"h"
+package timeSeparators:
+  given dotTimeSeparator: Clockface.Separation = () => t"."
+  given colonTimeSeparator: Clockface.Separation = () => t":"
+  given noneTimeSeparator: Clockface.Separation = () => t""
+  given frenchTimeSeparator: Clockface.Separation = () => t"h"
 
 // A human-readable, relative rendering of a `Timespan`, in place of the default ISO-8601 duration:
 // "in 18 minutes", "8 minutes ago", "just now", and their French/German/Spanish equivalents. Only
@@ -445,18 +445,18 @@ package calendars:
         Regime.Segment(Date.julianDay(Int.MinValue), julianCalendar),
         Regime.Segment(Date.julianDay(2361222), gregorianCalendar) )
 
-  package nonexistentLeapDays:
-    given roundUpLeapDay: Anniversary.NonexistentLeapDay = year =>
-      import calendars.gregorianCalendar
-      unsafely(Date(year, Mar, Day(1)))
+package nonexistentLeapDays:
+  given roundUpLeapDay: Anniversary.NonexistentLeapDay = year =>
+    import calendars.gregorianCalendar
+    unsafely(Date(year, Mar, Day(1)))
 
-    given roundDownLeapDay: Anniversary.NonexistentLeapDay = year =>
-      import calendars.gregorianCalendar
-      unsafely(Date(year, Feb, Day(28)))
+  given roundDownLeapDay: Anniversary.NonexistentLeapDay = year =>
+    import calendars.gregorianCalendar
+    unsafely(Date(year, Feb, Day(28)))
 
-    given raiseErrorsLeapDay: Tactic[Moment.Error] => Anniversary.NonexistentLeapDay = year =>
-      import calendars.gregorianCalendar
-      unsafely(Date(year, Feb, Day(29)))
+  given raiseErrorsLeapDay: Tactic[Moment.Error] => Anniversary.NonexistentLeapDay = year =>
+    import calendars.gregorianCalendar
+    unsafely(Date(year, Feb, Day(29)))
 
 // The default interpretation of an `Instant`'s `Long` (used by `Instant(…)`, decoding, etc.).
 // Import one of these to choose the timeline bare instants count on; convert with `.over[…]`.

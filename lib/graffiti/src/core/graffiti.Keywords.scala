@@ -35,7 +35,7 @@ package graffiti
 import anticipation.*
 import gossamer.*
 import honeycomb.*
-import honeycomb.doms.html.whatwg.*
+import honeycomb.htmlDoms.whatwg.*
 import prepositional.*
 
 // Adds a `<meta name="keywords">`, from the comma-joined trait parameters.

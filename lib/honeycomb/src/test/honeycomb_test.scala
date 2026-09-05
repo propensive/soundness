@@ -43,7 +43,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
     // A missing `Inspectable` is never a compile error, so coverage is held in place by
     // asserting on the renderings: `fallbacks` returns those which used a marked fallback.
     suite(m"Native-rendering coverage"):
-      import doms.html.whatwg
+      import htmlDoms.whatwg
       import whatwg.*
 
       test(m"an element inspects as escaped, single-line HTML source"):
@@ -69,7 +69,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
     . assert(_ == t"<!--hello world-->")
 
     suite(m"HTML parsing tests"):
-      import doms.html.whatwg
+      import htmlDoms.whatwg
       import whatwg.*
 
       test(m"simple empty tag"):
@@ -317,13 +317,13 @@ object Tests extends Suite(m"Honeycombd Tests"):
       test(m"Parse Document without doctype"):
         t"""<title>Heading</title>
             <p>body""".load[Html]
-      . assert(_ == Document(example, doms.html.whatwg))
+      . assert(_ == Document(example, htmlDoms.whatwg))
 
       test(m"Parse Document with doctype"):
         t"""<!doctype html>
             <title>Heading</title>
             <p>body""".load[Html]
-      . assert(_ == Document(example, doms.html.whatwg))
+      . assert(_ == Document(example, htmlDoms.whatwg))
 
       test(m"Parse RCDATA with an entity"):
         t"""<title>Push &amp; Pull</title>""".read[Html of Metadata]
@@ -422,13 +422,13 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"DOCTYPE case insensitivity"):
           val parsed = t"<!DocTyPe html>\n<title>x</title>\n<p>y".load[Html]
           val expected = Html(Head(Title("x")), Body(P("y")))
-          parsed == Document(expected, doms.html.whatwg)
+          parsed == Document(expected, htmlDoms.whatwg)
         . assert(_ == true)
 
         test(m"DOCTYPE with extra whitespace"):
           val parsed = t"<!doctype   html  >\n<title>x</title>\n<p>y".load[Html]
           val expected = Html(Head(Title("x")), Body(P("y")))
-          parsed == Document(expected, doms.html.whatwg)
+          parsed == Document(expected, htmlDoms.whatwg)
         . assert(_ == true)
 
         test(m"position reporting on later line"):
@@ -1127,7 +1127,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
 object Html4Tests extends Suite(m"HTML4 parsing tests"):
   def run(): Unit =
-      import doms.html.html4Transitional
+      import htmlDoms.html4Transitional
       import html4Transitional.*
 
       test(m"simple empty tag"):
@@ -1314,7 +1314,7 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
         val parsed = t"""<title>Heading</title>
             <p>body""".load[Html]
         val example = Html(Head(Title("Heading")), Body(P("body")))
-        parsed == Document(example, doms.html.html4Transitional)
+        parsed == Document(example, htmlDoms.html4Transitional)
       . assert(_ == true)
 
       test(m"Parse Document with HTML4 doctype"):
@@ -1322,7 +1322,7 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
             <title>Heading</title>
             <p>body""".load[Html]
         val example = Html(Head(Title("Heading")), Body(P("body")))
-        parsed == Document(example, doms.html.html4Transitional)
+        parsed == Document(example, htmlDoms.html4Transitional)
       . assert(_ == true)
 
       test(m"Parse RCDATA with an entity"):

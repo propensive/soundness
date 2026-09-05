@@ -42,7 +42,7 @@ import prepositional.*
 import vacuous.*
 import wisteria.*
 
-import doms.html.whatwg, whatwg.*
+import htmlDoms.whatwg, whatwg.*
 
 object Formulaic extends ProductDerivable[Formulaic]:
   given elicitable: [value]

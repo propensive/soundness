@@ -40,7 +40,7 @@ import prepositional.*
 import vacuous.*
 
 import attributives.textAttributive
-import doms.html.whatwg, whatwg.*
+import htmlDoms.whatwg, whatwg.*
 
 object Checkbox:
   given renderable: Checkbox is Renderable in Phrasing = checkbox =>
