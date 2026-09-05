@@ -1425,3 +1425,233 @@ object Tests extends Suite(m"Rudiments Tests"):
         val flag: Atomic.Flag = Atomic(true)
         flag()
       . assert(_ == true)
+
+    suite(m"Atomic transitions"):
+      test(m"since yields the value installed"):
+        val count = Atomic.Count(7)
+        count.since(_ + 1)
+      . assert(_ == 8)
+
+      test(m"ere yields the value displaced"):
+        val count = Atomic.Count(7)
+        count.ere(_ + 1)
+      . assert(_ == 7)
+
+      test(m"a transition is applied to the cell"):
+        val count = Atomic.Count(7)
+        count.ere(_ + 1)
+        count()
+      . assert(_ == 8)
+
+      test(m"since adds a non-literal step"):
+        val count = Atomic.Count(10)
+        val step = 5
+        count.since(_ + step)
+      . assert(_ == 15)
+
+      test(m"ere claims a strided value"):
+        val count = Atomic.Count(100)
+        count.ere(_ + 2)
+      . assert(_ == 100)
+
+      test(m"a strided claim advances the count"):
+        val count = Atomic.Count(100)
+        count.ere(_ + 2)
+        count()
+      . assert(_ == 102)
+
+      test(m"subtraction decrements"):
+        val count = Atomic.Count(7)
+        count.since(_ - 1)
+      . assert(_ == 6)
+
+      test(m"subtraction of a step"):
+        val count = Atomic.Count(20)
+        count.since(_ - 6)
+      . assert(_ == 14)
+
+      test(m"a constant transition installs it"):
+        val count = Atomic.Count(3)
+        count.since(_ => 99)
+      . assert(_ == 99)
+
+      test(m"a constant transition displaces the old value"):
+        val count = Atomic.Count(3)
+        count.ere(_ => 99)
+      . assert(_ == 3)
+
+      test(m"the identity transition reads"):
+        val count = Atomic.Count(42)
+        count.since(x => x)
+      . assert(_ == 42)
+
+      // No intrinsic exists for multiplication, so this goes through the retry loop; the answer
+      // must still obey the ere/since contract.
+      test(m"a general transition installs its result"):
+        val count = Atomic.Count(6)
+        count.since(_*3)
+      . assert(_ == 18)
+
+      test(m"a general transition displaces the old value"):
+        val count = Atomic.Count(6)
+        count.ere(_*3)
+      . assert(_ == 6)
+
+      test(m"a general transition is written through"):
+        val count = Atomic.Count(6)
+        count.ere(_*3)
+        count()
+      . assert(_ == 18)
+
+      // A transition that declines by returning its argument must write nothing and report the
+      // unchanged value, whichever end is asked for.
+      test(m"a declining transition reports the unchanged value"):
+        val count = Atomic.Count(5)
+        count.since(current => if current > 100 then 0 else current)
+      . assert(_ == 5)
+
+      test(m"a declining transition leaves the count alone"):
+        val count = Atomic.Count(5)
+        count.ere(current => if current > 100 then 0 else current)
+        count()
+      . assert(_ == 5)
+
+    suite(m"Atomic transitions on the other cells"):
+      test(m"a tally increments"):
+        val tally = Atomic.Tally(9000000000L)
+        tally.since(_ + 1L)
+      . assert(_ == 9000000001L)
+
+      test(m"a tally claims a strided value"):
+        val tally = Atomic.Tally(100L)
+        tally.ere(_ + 8L)
+      . assert(_ == 100L)
+
+      test(m"a strided tally claim advances it"):
+        val tally = Atomic.Tally(100L)
+        tally.ere(_ + 8L)
+        tally()
+      . assert(_ == 108L)
+
+      test(m"a general tally transition works"):
+        val tally = Atomic.Tally(6L)
+        tally.since(_*3L)
+      . assert(_ == 18L)
+
+      // The one-shot idiom: `false` means this call is the one that raised the flag.
+      test(m"raising an unset flag reports that this call won"):
+        val flag = Atomic.Flag()
+        flag.ere(_ => true)
+      . assert(_ == false)
+
+      test(m"raising an already-raised flag reports that it lost"):
+        val flag = Atomic.Flag(true)
+        flag.ere(_ => true)
+      . assert(_ == true)
+
+      test(m"raising a flag sets it"):
+        val flag = Atomic.Flag()
+        flag.ere(_ => true)
+        flag()
+      . assert(_ == true)
+
+      test(m"a flag negates through the retry loop"):
+        val flag = Atomic.Flag(false)
+        flag.since(x => !x)
+      . assert(_ == true)
+
+      test(m"a cell transition installs the new value"):
+        val cell = Atomic.Cell(t"alpha")
+        cell.since(_ => t"beta")
+      . assert(_ == t"beta")
+
+      test(m"a cell transition displaces the old value"):
+        val cell = Atomic.Cell(t"alpha")
+        cell.ere(_ => t"beta")
+      . assert(_ == t"alpha")
+
+      test(m"a cell transition may call a method on the value"):
+        val cell = Atomic.Cell(t"ALPHA")
+        cell.since(_.lower)
+      . assert(_ == t"alpha")
+
+      test(m"a cell transition may construct from the value"):
+        val cell = Atomic.Cell(Person(t"Ada", 36))
+        cell.since(p => Person(p.name, p.age + 1)).age
+      . assert(_ == 37)
+
+      // The pattern-bound `n` is derived from the transitioned value, so calling a method on it
+      // is admitted where applying a free function to the value would not be.
+      test(m"a cell transition may match and rebuild"):
+        val cell = Atomic.Cell[Optional[Int]](Unset)
+        cell.since:
+          case Unset  => 1
+          case n: Int => n + 1
+      . assert(_ == 1)
+
+      test(m"a matched cell transition rebuilds from a present value"):
+        val cell = Atomic.Cell[Optional[Int]](7)
+        cell.since:
+          case Unset  => 1
+          case n: Int => n + 1
+      . assert(_ == 8)
+
+      test(m"revise applies an uninspectable transition"):
+        val cell = Atomic.Cell(10)
+        val combine: Int => Int = _*4
+        cell.revise(combine)
+      . assert(_ == 40)
+
+      test(m"revise writes its result through"):
+        val cell = Atomic.Cell(10)
+        val combine: Int => Int = _*4
+        cell.revise(combine)
+        cell()
+      . assert(_ == 40)
+
+    suite(m"Atomic value-setting overload"):
+      test(m"setting a count displaces the old value"):
+        val count = Atomic.Count(3)
+        count.ere(9)
+      . assert(_ == 3)
+
+      test(m"setting a count installs the new value"):
+        val count = Atomic.Count(3)
+        count.ere(9)
+        count()
+      . assert(_ == 9)
+
+      test(m"setting a tally displaces the old value"):
+        val tally = Atomic.Tally(3L)
+        tally.ere(9L)
+      . assert(_ == 3L)
+
+      // The one-shot idiom at its shortest.
+      test(m"raising an unset flag reports that this call won it"):
+        val flag = Atomic.Flag()
+        flag.ere(true)
+      . assert(_ == false)
+
+      test(m"raising an already-raised flag reports that it lost"):
+        val flag = Atomic.Flag(true)
+        flag.ere(true)
+      . assert(_ == true)
+
+      test(m"setting a cell displaces the old value"):
+        val cell = Atomic.Cell(t"alpha")
+        cell.ere(t"beta")
+      . assert(_ == t"alpha")
+
+      test(m"the transition overload still resolves alongside it"):
+        val count = Atomic.Count(3)
+        count.ere(_ + 1)
+      . assert(_ == 3)
+
+      // A function-typed cell cannot use the value overload at all — `ere` commits to the
+      // transition overload — so assignment is the spelling, and it works.
+      test(m"a function-typed cell is set by assignment"):
+        val cell = Atomic.Cell[Int => Int](_ + 1)
+        val replacement: Int => Int = _*2
+        cell() = replacement
+        cell()(10)
+      . assert(_ == 20)
