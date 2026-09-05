@@ -30,6 +30,7 @@ literal, at runtime by validated decoding. This is the mechanism beneath the ele
 
 ```scala
 import soundness.*
+import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 ```
 
