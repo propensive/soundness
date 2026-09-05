@@ -16,6 +16,8 @@ formula runs to several lines that no one can read as mathematics. The alternati
 different way: TeX is compact and expressive but needs a large renderer and produces something the
 browser cannot introspect, and an image loses the content entirely.
 
+Markup built from typed values rather than strings is [safety by construction](../philosophy/safety-by-construction.md) for a notation that is easy to get subtly wrong.
+
 Ergo takes the middle path. It is a compact linear notation, one glyph per structural role, which
 parses to MathML and serializes back — so the source stays readable, the output is a real
 document tree, and the round trip is exact. Everything comes from the `soundness` package:
@@ -31,6 +33,10 @@ an operator, `Mrow` for a group, and `Msup`, `Msub`, `Mfrac`, `Msqrt` and the re
 structures. `Math` is the root, and `xml` renders it:
 
 ```scala
+import Mathml.*
+import errorDiagnostics.stackTracesDiagnostics
+import strategies.throwUnsafely
+
 Math(Msup(Mi(t"x"), Mn(t"2"))).xml.show
 // <math xmlns="http://www.w3.org/1998/Math/MathML"><msup><mi>x</mi><mn>2</mn></msup></math>
 ```
@@ -96,22 +102,22 @@ both `largeop` and `stretchy` on the `=`.
 
 Enumerated and boolean attributes have one bare glyph per value and take no parameter — a boolean
 is `⇿` for true and `↮` for false. Because they never take a group, `=◆(a)` is `=` with
-`largeop="true"`, *times* `(a)`. Open-valued attributes — lengths, colours, integers — take their
+`largeop="true"`, *times* `(a)`. Open-valued attributes — lengths, colors, integers — take their
 value in the active grouping bracket, read verbatim: under `(` grouping, `x●(red)` sets
 `mathcolor="red"`.
 
-Grouping decides what a directive applies to: `(x↗2)●(red)` colours the whole superscript, while
-`x↗2●(red)` colours only the `2`.
+Grouping decides what a directive applies to: `(x↗2)●(red)` colors the whole superscript, while
+`x↗2●(red)` colors only the `2`.
 
 | Glyphs | Attribute | Meaning |
 |---|---|---|
 | `⧆` / `⧄` | `displaystyle` | display style, or inline/text style |
 | `⌄[±n]` | `scriptlevel` | relative script size; `+n` shrinks |
 | `◻` / `▭` | `display` | block or inline, on the root |
-| `●[colour]` | `mathcolor` | foreground colour |
-| `▨[colour]` | `mathbackground` | background colour |
+| `●[colour]` | `mathcolor` | foreground color |
+| `▨[colour]` | `mathbackground` | background color |
 | `⟑[length]` | `mathsize` | font size |
-| `⦱` | `mathvariant` | upright, cancelling automatic italicisation |
+| `⦱` | `mathvariant` | upright, canceling automatic italicisation |
 | `⊩` / `⫣` | `dir` | left-to-right or right-to-left |
 | `⊰` / `⊹` / `⊱` | `form` | prefix, infix or postfix operator |
 | `∥` / `∤` | `fence` | mark as a fence |
