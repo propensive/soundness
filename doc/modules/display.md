@@ -20,6 +20,8 @@ when debugging, and nothing stops it being called on a value with no sensible te
 The familiar `Show` typeclass fixes the trustworthiness but still collapses the two
 audiences into one.
 
+Separating what a value is from how it is displayed, through typeclasses chosen by import, is [decoupling](../philosophy/decoupling.md) at the smallest scale.
+
 Two typeclasses keep them apart. `Showable` is deliberately demanding — its absence is the
 signal that a value is not meant for display — while `Inspectable` is deliberately total, so
 debugging output is never blocked. Everything comes from the `soundness` package:
@@ -62,7 +64,9 @@ unambiguous:
 
 ```scala
 case class Person(name: Text, age: Int)
+```
 
+```scala
 Person(t"Simon", 72).inspect      // t"Person(name:t\"Simon\" ╱ age:72)"
 List(t"one", t"two").inspect      // t"""[t"one", t"two"]"""
 (5: Optional[Int]).inspect        // t"｢5｣"
@@ -96,8 +100,14 @@ Enumerations and sealed hierarchies derive too, and a case object renders as its
 than with empty parentheses, since it has no fields to show:
 
 ```scala
-(Dog(t"Rex"): Animal).inspect   // t"""Dog(name:t"Rex")"""
-(Cat: Animal).inspect           // t"Cat"
+enum Animal:
+  case Dog(name: Text)
+  case Cat
+```
+
+```scala
+(Animal.Dog(t"Rex"): Animal).inspect   // t"""Dog(name:t"Rex")"""
+(Animal.Cat: Animal).inspect           // t"Cat"
 ```
 
 ### The fallback chain
