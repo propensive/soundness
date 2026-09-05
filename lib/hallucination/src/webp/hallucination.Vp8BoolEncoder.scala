@@ -44,6 +44,12 @@ import scala.caps
 // The VP8 boolean entropy encoder (RFC 6386 §7), ported from image-rs/image-webp
 // (`src/lossy/arithmetic_encoder.rs`, MIT/Apache-2.0) — the inverse of `Vp8Bool`.
 private[hallucination] final class Vp8BoolEncoder extends caps.Mutable:
+  // Field-held, and more strongly so than the other cases: `Vp8Encoder` keeps two of these in
+  // `var` fields, writing to separate buffers which are combined afterwards, so the buffer
+  // outlives any single expression. `Array.collect` lends a scribe and freezes it when the
+  // lender returns, and that confinement is what makes the freeze sound, so this cannot use it
+  // without either exposing growable construction outside a lender — which would give the
+  // soundness argument away — or restructuring the codec.
   private val out = ji.ByteArrayOutputStream()
 
   private val buffer: scala.collection.mutable.ArrayBuffer[Int] =

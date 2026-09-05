@@ -73,6 +73,8 @@ private[hallucination] object ImageIo:
       argb(index) = opacity << 24 | raster.descriptor.chroma(word).underlying
 
     image.setRGB(0, 0, raster.width, raster.height, argb, 0, raster.width)
+    // A genuine `OutputStream` sink: `ImageIO.write` writes INTO the stream it is given, as
+    // `java.util.jar.Manifest.write` does. `Scribe` cannot stand in for either.
     val out = ji2.ByteArrayOutputStream()
     ji.ImageIO.write(image, format.name.s, out)
 

@@ -42,6 +42,12 @@ import scala.caps
 // (`src/lossless/encoder/mod.rs`, MIT/Apache-2.0). Bits accumulate least-significant first into a
 // 64-bit buffer, flushed eight bytes at a time.
 private[hallucination] final class WebpBitWriter extends caps.Mutable:
+  // Field-held, and more strongly so than the other cases: `Vp8Encoder` keeps two of these in
+  // `var` fields, writing to separate buffers which are combined afterwards, so the buffer
+  // outlives any single expression. `Array.collect` lends a scribe and freezes it when the
+  // lender returns, and that confinement is what makes the freeze sound, so this cannot use it
+  // without either exposing growable construction outside a lender — which would give the
+  // soundness argument away — or restructuring the codec.
   private val out = ji.ByteArrayOutputStream()
   private var buffer: Long = 0L
   private var count: Int = 0
