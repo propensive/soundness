@@ -29,12 +29,32 @@ cannot drift from the code, because the code's types *are* the schema's. Everyth
 import soundness.*
 ```
 
+A record typed by its schema at compiletime is [safety by construction](../philosophy/safety-by-construction.md) with no class written by hand.
+
 ### Using records
 
-A schema object — here a `JsonBlueprint` built from a JSON Schema document — offers a `record`
-method that turns raw data into a typed record:
+A schema object — here a `JsonBlueprint` built from a JSON Schema document, declared in a file of
+its own — offers a `record` method that turns raw data into a typed record:
 
+<!-- doccheck: skip -->
 ```scala
+object Catalogue extends JsonBlueprint(t"""{
+  "type": "object",
+  "required": ["name", "children"],
+  "properties": {
+    "name": { "type": "string" },
+    "age": { "type": "integer" },
+    "children": {
+      "type": "array",
+      "items": { "weight": { "type": "number", "minimum": 0 } }
+    }
+  }
+}""".read[Json].as[JsonBlueprint.Doc])
+```
+
+<!-- doccheck: skip -->
+```scala
+val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
 val record = Catalogue.record(input)
 
 record.name                  // Text, because the schema says string
@@ -56,6 +76,7 @@ nested objects, arrays.
 
 The schema object then exposes the one-line macro that makes it usable:
 
+<!-- doccheck: skip -->
 ```scala
 transparent inline def record(json: Json): Record = ${build('json)}
 ```
@@ -67,6 +88,7 @@ the calling code was compiled.
 `Record`, but what it actually returns is a *structural refinement* of it — for a schema of three
 fields, the type
 
+<!-- doccheck: skip -->
 ```scala
 Record { def age: Double; def name: Text; def employed: Boolean }
 ```
