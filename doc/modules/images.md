@@ -27,25 +27,32 @@ from the `soundness` package:
 
 ```scala
 import soundness.*
+import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 ```
 
+A raster whose format and color model are in its type follows [safety by construction](../philosophy/safety-by-construction.md): a conversion that cannot be done cannot be written.
+
 ### Reading
 
-A source of bytes reads as a raster of a named format:
+A source of bytes reads as a raster of a named format. These bytes are a complete PNG — a
+two-by-one image whose left pixel is red and right pixel blue — small enough to write down:
 
 ```scala
+val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+                 0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+
 val image = data.read[Raster in Png]
 
-image.width       // in pixels
-image.height
-image.landscape   // true when wider than tall
+image.width       // 2
+image.height      // 1
+image.landscape   // true
 ```
 
 Bytes that are not the named format raise a `Raster.Error` naming the format that failed:
 
 ```scala
-capture[Raster.Error](data.read[Raster in Jpeg])   // when data is a PNG
+capture[Raster.Error](data.read[Raster in Jpeg])   // the data is a PNG, not a JPEG
 ```
 
 ### Pixels
@@ -54,7 +61,8 @@ Applying an image to coordinates reads a pixel as a `Chroma` — a color with by
 connects the image to all the [color](colors.md) machinery:
 
 ```scala
-image(0, 0).red   // the red channel of the top-left pixel
+image(0, 0).red   // 255: the red channel of the left pixel
+image(1, 0).blue  // 255
 ```
 
 An image is also *built* from a pixel function, which is how test images and generated graphics
