@@ -12,7 +12,7 @@ the scroll region — as an immutable value that a test can inspect cell by cell
 A terminal application's output is not text but a program in the terminal's control language:
 cursor moves, style changes, screen clears interleaved with characters. Asserting on that byte
 stream directly is brittle — many sequences produce the same screen — and asserting on nothing
-leaves the interactive behaviour untested. What a test wants to check is the *effect*: what the
+leaves the interactive behavior untested. What a test wants to check is the *effect*: what the
 screen shows, where the cursor is, what color a cell became.
 
 A `Pty` computes that effect, implementing the VT100 and xterm control sequences — cursor
@@ -24,6 +24,8 @@ wide characters occupying two cells and grapheme clusters kept whole. Everything
 import soundness.*
 import strategies.throwUnsafely
 ```
+
+A screen as an immutable value that each escape sequence transforms is [immutability](../philosophy/immutability.md) applied to something usually mutated in place.
 
 ### Feeding a terminal
 
@@ -79,8 +81,8 @@ carriage return, line feed, backspace and tabs advancing to the next eight-colum
 positioning, erasing and scrolling sequences behave as a terminal's do: `ED 2` clears the screen,
 `EL 2` clears the line, and the cursor save and restore pair works as `DECSC` and `DECRC`.
 
-Styling comes through `SGR`: the attribute flags, the sixteen palette colours with their bright
-variants as distinct entries, the 256-colour palette, and 24-bit colour. Resetting with `SGR 0`
+Styling comes through `SGR`: the attribute flags, the sixteen palette colors with their bright
+variants as distinct entries, the 256-color palette, and 24-bit color. Resetting with `SGR 0`
 affects the cells written afterwards, not those already on screen, exactly as a terminal does.
 
 DEC private modes are honoured where they change what a test would observe — `?25` hiding and
