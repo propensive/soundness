@@ -196,3 +196,12 @@ not yet been recorded here.
   whose shape cannot be read, and yields the value it installed. It is `inline`, so no closure is
   allocated, but the purity obligation is unchecked: the transition may be re-run under
   contention. (#NNNN)
+
+## frontier
+
+- `frontier.context.explainMissingContext` and `soundness.explainMissingContext` no longer
+  succeed as an implicit candidate when the search resolves without them; the candidate now
+  always fails (its diagnostic is used only if the whole search fails), leaving the compiler to
+  select the instance itself. Effect: an implicit search made while type parameters are still
+  undetermined (e.g. `join`'s `element`/`textual`) is no longer resolved with those parameters
+  instantiated to `Any`. Inferred types of code that already compiled are unchanged. (#1944)
