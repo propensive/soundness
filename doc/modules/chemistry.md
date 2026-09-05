@@ -3,7 +3,7 @@
 ### About
 
 The [periodic table](https://en.wikipedia.org/wiki/Periodic_table), chemical formulas, and chemical
-equations are modelled as values. All 118 elements are available by symbol; elements combine into
+equations are modeled as values. All 118 elements are available by symbol; elements combine into
 molecules and molecules into formulas with ordinary operators; and an equation joins two formulas
 with a typed reaction arrow, and can say whether it balances.
 
@@ -14,6 +14,8 @@ charge, a formula is a sum of molecules with coefficients, and an equation asser
 directed, reversible, or in equilibrium — between two formulas. Written as strings, none of that
 structure is available: `2H₂ + O₂` is just characters, and whether an equation balances is not a
 question a string can answer.
+
+Elements and formulas as typed values, with dimensioned masses, follow the same reasoning as [expressive errors](../philosophy/expressive-errors.md): a mistake should be a type error, not a wrong number.
 
 Soundness builds the structure from typed parts, so formulas are assembled by operators rather than
 parsed from text, rendered with correct subscripts and superscripts, and interrogated — an
@@ -29,7 +31,7 @@ Every element is a value on `PeriodicTable`, carrying its atomic number, symbol 
 are also reachable by number or symbol at runtime:
 
 ```scala
-import PeriodicTable.{H, O, C}
+import PeriodicTable.{H, O, C, Na, Cl, Fe}
 
 H.number             // 1
 PeriodicTable(6)     // carbon, as an Optional
