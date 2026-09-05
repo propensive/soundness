@@ -29,6 +29,8 @@ import soundness.*
 import strategies.throwUnsafely
 ```
 
+Decoding straight to a typed value, through the same derivation as every other format, is [correctness](../philosophy/correctness.md) with one definition of the data.
+
 ### Parsing and decoding
 
 Text reads as a `Yaml` value, and decodes to a Scala type with `as`; reading straight to a type
@@ -91,11 +93,13 @@ Aliases resolve as the document is read, whatever the anchored node was — a sc
 sequence or mapping, or a whole block:
 
 ```scala
+case class Inner(n: Int)
+
 t"a: &x 1\nb: *x".read[Yaml].as[Map[Text, Int]]
 // Map(t"a" -> 1, t"b" -> 1)
 
 t"defaults: &d\n  n: 7\nuse: *d".read[Yaml].as[Map[Text, Inner]]
-// both keys hold the same mapping
+// Map(t"defaults" -> Inner(7), t"use" -> Inner(7)): both keys hold the same mapping
 ```
 
 This is what makes YAML configuration files terse, and what makes a naive parser get them wrong.
