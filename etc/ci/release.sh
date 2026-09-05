@@ -62,6 +62,19 @@ if gh release view "$VERSION" --repo "$REPO" >/dev/null 2>&1; then
   echo "release: a release named $VERSION already exists on $REPO" >&2; exit 1
 fi
 
+# The migration notes must already be finalised for this version (see AGENTS.md): the release
+# PR renames doc/migration/pending.md to doc/migration/<version>.md, and the first change after
+# the release starts a new pending.md. A surviving pending.md means that PR has not merged, so
+# the tag would point at a commit whose migration notes are still unreleased.
+if [[ -e doc/migration/pending.md ]]; then
+  echo "release: doc/migration/pending.md still exists; rename it to doc/migration/$VERSION.md and merge that first" >&2
+  exit 1
+fi
+if [[ ! -f "doc/migration/$VERSION.md" ]]; then
+  echo "release: doc/migration/$VERSION.md is missing; the migration notes for $VERSION must be committed before tagging" >&2
+  exit 1
+fi
+
 ./etc/ci/verify-attest.sh "$HEAD_SHA"
 ./mill groupCheck.validate
 
