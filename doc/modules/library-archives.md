@@ -31,6 +31,8 @@ container, so there is nothing for a naming convention to get wrong. Everything 
 import soundness.*
 ```
 
+An identity computed from the API itself, rather than declared, is [correctness](../philosophy/correctness.md) applied to versioning.
+
 ### Atoms and API identity
 
 The unit of API identity is an *atom*: one externally-visible feature of a library, reduced by a
@@ -42,6 +44,10 @@ classes:
   changed. Breaking one breaks a compiled consumer.
 - A **replaceable** atom may be replaced — same key, new value — within a minor release. A
   consumer compiled against the old value is behaviourally stale but not broken.
+
+The atoms are computed from the compiled library itself, not declared: the TASTy files of a
+release are unpickled against their dependency classpath and every externally-visible feature is
+reduced to its atom, so the API identity is what the compiler sees and nothing else.
 
 A release's *snapshot* is the hash of its complete, sorted atom set: its API identity as a single
 value. Because atom hashes are domain-separated by discipline, the snapshot is well-defined even
@@ -106,7 +112,7 @@ derivative that varied with the tool that built it could not be identified by ha
 A discipline is the language-specific half: it reads a compiled artifact and emits its atoms.
 `OpaqueDiscipline` treats content as an opaque blob with no API surface, which is right for
 resources; `ResourceDiscipline` and `CapabilityDiscipline` handle the other content the format
-recognises; and a language canonicalizer — TASTy, for Scala — plugs in through the same interface.
+recognizes; and a language canonicalizer — TASTy, for Scala — plugs in through the same interface.
 The core deals only in atoms, so it needs to know nothing about any language.
 
 One consequence shapes the interface: a replaceable atom's content may refer to something in
