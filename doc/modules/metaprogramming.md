@@ -17,6 +17,8 @@ Scala 3's macros are principled and under-tooled. A macro author stares at expan
 innocent question — "what givens of this type are in scope?" — because implicit search answers with
 one, or ambiguity. These gaps are generic; every macro project refills them.
 
+Macros that check as the code compiles are how much of [safety by construction](../philosophy/safety-by-construction.md) is achieved elsewhere in Soundness.
+
 Soundness fills them once. Everything comes from the `soundness` package:
 
 ```scala
@@ -34,7 +36,7 @@ trait Plugin
 given alpha: Plugin = new Plugin {}
 given beta: Plugin = new Plugin {}
 
-every[Plugin].values.length   // 2
+every[Plugin].values.size   // 2
 ```
 
 This inverts the usual configuration flow: instead of one value naming all the options, each option
@@ -83,8 +85,10 @@ container written without any of this in mind participates anyway.
 Two operations follow immediately, and are the reason it is worth having:
 
 ```scala
-List(Some(1), Some(2), Some(3)).sequence      // Some(List(1, 2, 3))
-List(t"1", t"2", t"x").traverse(parseNumber)  // the failure, not a list of failures
+def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
+
+List[Option[Int]](Some(1), Some(2), Some(3)).sequence   // Some(List(1, 2, 3))
+List(t"1", t"2", t"x").traverse(parseNumber)  // None: the failure, not a list of failures
 ```
 
 `sequence` turns a collection of containers inside out, and `traverse` maps a fallible function
@@ -123,7 +127,7 @@ code, which makes them useful for answering questions about the language itself.
 `1 + x` for a `val x = 5` shows the `Apply` of a `Select` over a `Literal` and an `Ident`; doing
 the same for a `val y: 5 = 5` shows a single `Literal`, because the singleton type let the
 compiler fold the addition away. Inside a macro, where a `Quotes` is available, the `syntax` and
-`semantics` extension methods do the same for an `Expr` or a `Symbol`, and the result is coloured
+`semantics` extension methods do the same for an `Expr` or a `Symbol`, and the result is colored
 through a `TastyPalette` so it reads at a terminal.
 
 A macro that must fail does so with `halt`, which takes a `Message` — so a macro's compile errors
@@ -139,8 +143,10 @@ instructions, each instruction with its operand-stack state reconstructed, and a
 can be compiled and disassembled in one step:
 
 ```scala
-Classfile[SomeType].let(_.methods.find(_.name == t"run")).let(_.bytecode)
-// the JVM instructions, with stack states, ready to render
+import classloaders.threadContextClassloader
+
+Classfile[Exit].let(_.methods.map(_.name))   // the methods of the compiled class
+// each method's `bytecode` is the JVM instructions, with stack states, ready to render
 ```
 
 This is the foundation for performance work that must verify, rather than assume, what the
