@@ -54,6 +54,34 @@ import vacuous.*
 
 export rudiments.internal.{Bytes, Digit}
 
+// `Atomic[value]` is a match type over the concrete atomic types, not a representation: the
+// distinction is what makes it work. A match type AS the representation cannot reduce for an
+// abstract type parameter, and `contingency.Accrual.AccrueTactic` holds a cell over an abstract
+// `accrual` — so the operations would have nothing to dispatch on. Layered *over* concrete types
+// it is pure spelling: `Atomic[Int]` reduces to `Atomic.Int` and picks up that type's own
+// extensions, while an abstract context writes `Atomic.Ref[accrual]` and loses nothing.
+//
+// It does not reduce for every type. The final arm needs the scrutinee proved distinct from
+// `Int`, `Long` and `Boolean`, and that proof is not always available: `Atomic[Text]`,
+// `Atomic[Optional[Text]]` and `Atomic[SomeClass]` all reduce, but `Atomic[List[x]]` does not,
+// because the prelude's `List` is an opaque type whose representation is not visible here. A
+// cell over a prelude collection is therefore spelled `Atomic.Ref[List[x]]`, as
+// `exoskeleton.Cli` does. The same applies to an abstract type parameter, as in
+// `contingency.Accrual`.
+//
+// Its value is that it makes the unboxed spelling the obvious one. `Atomic.Ref[Int]` is legal
+// and boxes every write; `Atomic[Int]` is what a reader reaches for, and is an `AtomicInteger`.
+//
+// Declared here rather than beside `object Atomic`: a top-level type alias and an object of the
+// same name in ONE file are made companions inside that file's synthesized `$package` wrapper,
+// which buries the object at `rudiments$u002EAtomic$package$Atomic$`. Kept apart, the object is
+// a plain package member, so reaching it is a `getstatic` rather than an accessor call.
+type Atomic[value] = value match
+  case Int     => Atomic.Int
+  case Long    => Atomic.Long
+  case Boolean => Atomic.Bool
+  case _       => Atomic.Ref[value]
+
 // The SAM trait names the knot's true aliasing: the recursion passed as `recur` captures the
 // recurrence itself (`->{this}`), and the result arrow declares its dependency on `recur`
 // rather than claiming purity (#1412). A context-function formal cannot express this (it

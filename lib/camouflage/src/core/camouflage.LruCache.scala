@@ -32,15 +32,13 @@
                                                                                                   */
 package camouflage
 
-import java.util.concurrent.atomic as juca
-
 import scala.collection.mutable as scm
 
 import rudiments.*
 import vacuous.*
 
 class LruCache[key, value](maxSize: Int):
-  private val counter: juca.AtomicInteger = juca.AtomicInteger(0)
+  private val counter: Atomic[Int] = Atomic(0)
   private val values: scm.HashMap[Int, value] = scm.HashMap()
   private val ids: scm.HashMap[key, Int] = scm.HashMap()
   private val keys: scm.TreeMap[Int, key] = scm.TreeMap()
@@ -68,7 +66,7 @@ class LruCache[key, value](maxSize: Int):
       keys -= id
 
   def apply(key: key)(value: => value): value =
-    val newId = counter.getAndIncrement()
+    val newId = counter.ere(_ + 1)
 
     ids.getOrElse(key, Unset).let: oldId => values(oldId).tap(touch(oldId, newId, key, _))
     . or:

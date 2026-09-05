@@ -32,8 +32,6 @@
                                                                                                   */
 package vivisection
 
-import java.util.concurrent.atomic as juca
-
 import scala.caps
 
 import anticipation.*
@@ -60,10 +58,10 @@ object Halt:
   // suspended. Shared by every handler run for one composite, because JDWP suspends once per
   // composite and the dispatcher settles that suspension exactly once.
   private[vivisection] class Retention():
-    private val flag: juca.AtomicBoolean = juca.AtomicBoolean(false)
+    private val flag: Atomic[Boolean] = Atomic(false)
 
-    private[vivisection] def set(): Unit = flag.set(true)
-    private[vivisection] def retained: Boolean = flag.get()
+    private[vivisection] def set(): Unit = flag() = true
+    private[vivisection] def retained: Boolean = flag()
 
   // Why the thread stopped: the event which minted this halt. `Stopped` covers breakpoints, steps
   // and method entry and exit, where the handler already knows which request it registered; the

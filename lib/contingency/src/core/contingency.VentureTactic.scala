@@ -34,9 +34,8 @@ package contingency
 
 import scala.language.experimental.pureFunctions
 
-import java.util.concurrent.atomic as juca
-
 import fulminate.*
+import rudiments.*
 
 // The tactic interposed by `venture(…)` between its block and the ambient tactic. `record`
 // forwards to the ambient tactic — errors accrue exactly as they would outside the venture, and
@@ -53,23 +52,25 @@ extends Tactic[error], Guard:
 
   // An atomic box rather than a `var`, like `AccrueTactic`'s accumulator: a `var` would classify
   // the tactic as `Stateful`, imposing update-method discipline on the whole `Tactic` interface.
-  private val count: juca.AtomicInteger = juca.AtomicInteger(0)
+  // `Atomic.Int` is an opaque type over `AtomicInteger` and, like the raw class, carries no
+  // capture-checking classification, so it keeps that property.
+  private val count: Atomic[Int] = Atomic(0)
 
   def diagnostics: Diagnostics = outer.diagnostics
 
   // Whether errors were recorded during THIS venture's evaluation — the condition under which the
   // completed block's value is discarded as `Failed`. Distinct from `tainted`, which also reflects
   // the ambient scope: an earlier venture's failure must not fail this one.
-  def failed: Boolean = count.get() > 0
+  def failed: Boolean = count() > 0
 
   override def tainted: Boolean = failed || outer.tainted
 
   def record(error: Diagnostics ?=> error): Unit =
-    count.incrementAndGet()
+    count.since(_ + 1)
     outer.record(error)
 
   def abort(error: Diagnostics ?=> error): Nothing =
-    count.incrementAndGet()
+    count.since(_ + 1)
     outer.record(error)
     boundary.break(Venture.failed)
 

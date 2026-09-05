@@ -151,6 +151,12 @@ object Bench:
         // the JIT cannot prove the body's value is unused and elide it. The
         // never-true read at the end forces the AtomicReference to escape,
         // preventing escape-analysis from scalarising the writes away.
+        //
+        // Deliberately NOT `Atomic`, and deliberately fully qualified: this sits inside a macro
+        // quote, so the spelling must need no import at the expansion site — and sedentary is
+        // the harness every benchmark expands through. The escape behaviour described above is
+        // load-bearing, and an `inline` wrapper is a new variable in that argument. The
+        // measuring instrument does not move with the thing measured.
         val sink = new java.util.concurrent.atomic.AtomicReference[Any](null)
 
         var count: Long = 1L

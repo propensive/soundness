@@ -435,7 +435,7 @@ final class Reactor
 
   // An untracked JDK atomic rather than a `var` needing a `Stateful` classification:
   // the flag is read by every lane thread and written once by `stop()`.
-  private val running: juc.atomic.AtomicBoolean = juc.atomic.AtomicBoolean(true)
+  private val running: Atomic[Boolean] = Atomic(true)
 
   private val listener: jnc.ServerSocketChannel =
     val channel = jnc.ServerSocketChannel.open().nn
@@ -455,7 +455,7 @@ final class Reactor
       // Daemon: the reactor must never pin a JVM whose main thread has ended (the
       // zio-http Netty wedge, avoided); `stop()` still joins for orderly shutdown.
       Thread.ofPlatform.nn.daemon(true).nn.name(s"scintillate-lane-$index").nn.start: () =>
-        while running.get do lane.iterate(this)
+        while running() do lane.iterate(this)
       . nn
 
   // The boss thread: a blocking accept loop distributing connections round-robin. A
@@ -464,7 +464,7 @@ final class Reactor
     Thread.ofPlatform.nn.daemon(true).nn.name("scintillate-accept").nn.start: () =>
       var next = 0
 
-      while running.get do
+      while running() do
         try
           val channel = listener.accept().nn
           fleet(next).adopt(channel)
@@ -473,7 +473,7 @@ final class Reactor
     . nn
 
   def stop(): Unit =
-    running.set(false)
+    running() = false
     try listener.close() catch case _: java.io.IOException => ()
 
     var index = 0

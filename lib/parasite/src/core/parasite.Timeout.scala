@@ -38,11 +38,10 @@ import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 
 import java.lang as jl
-import java.util.concurrent.atomic as juca
-
 import anticipation.*
 import nomenclature.*
 import prepositional.*
+import rudiments.*
 
 import Async.nominative
 import abstractables.epochMillisecondsAbstractable
@@ -57,12 +56,12 @@ object Timeout:
     // The timeout's own watchdog task is supervised bookkeeping recreated on each `reset`; its
     // handle is held only to cancel it, never returned, so it is laundered to pure to avoid
     // threading a per-call `fresh` result through the stored `makeProcess` factory.
-    def process(expiry: juca.AtomicLong): Task[Unit] = caps.unsafe.unsafeAssumePure:
+    def process(expiry: Atomic[Long]): Task[Unit] = caps.unsafe.unsafeAssumePure:
       task(n"timeout"):
-        while jl.System.currentTimeMillis < expiry.get()
-        do sleep(expiry.get())
+        while jl.System.currentTimeMillis < expiry()
+        do sleep(expiry())
 
-        expiry.set(Long.MinValue)
+        expiry() = Long.MinValue
         action
 
     // As for `Task.apply`: the declared result tracks the retained capabilities; the
@@ -70,19 +69,19 @@ object Timeout:
     caps.unsafe.unsafeAssumePure(new Timeout(timeout, process))
 
 
-class Timeout private(duration: Long, makeProcess: juca.AtomicLong => Task[Unit])
+class Timeout private(duration: Long, makeProcess: Atomic[Long] => Task[Unit])
 extends caps.ExclusiveCapability:
-  private val expiry: juca.AtomicLong = juca.AtomicLong(jl.System.currentTimeMillis + duration)
+  private val expiry: Atomic[Long] = Atomic(jl.System.currentTimeMillis + duration)
 
   @scala.caps.unsafe.untrackedCaptures
   private var process: Task[Unit] = makeProcess(expiry)
 
-  def alive: Boolean = expiry.get() != Long.MinValue
+  def alive: Boolean = expiry() != Long.MinValue
 
   def nudge(): Unit =
-    if expiry.get() != Long.MinValue then expiry.set(jl.System.currentTimeMillis + duration)
+    if expiry() != Long.MinValue then expiry() = jl.System.currentTimeMillis + duration
 
-  def reset(): Unit = if expiry.get() == Long.MinValue then
-    expiry.set(jl.System.currentTimeMillis + duration)
+  def reset(): Unit = if expiry() == Long.MinValue then
+    expiry() = jl.System.currentTimeMillis + duration
     process.cancel()
     process = makeProcess(expiry)

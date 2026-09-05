@@ -36,6 +36,8 @@ import scala.caps
 
 import java.util.concurrent.atomic as juca
 
+import rudiments.*
+
 // A bounded single-producer/single-consumer pool of spent blocks, the return
 // path that lets a `Conduit`'s reader hand a drained block back to its writer
 // for reuse instead of dropping it to the collector while the writer mints a
@@ -56,13 +58,15 @@ import java.util.concurrent.atomic as juca
 final class Freelist(slots0: Int) extends caps.SharedCapability:
   private val capacity: Int = Integer.highestOneBit((slots0.max(1)*2) - 1)
   private val mask: Int = capacity - 1
+  // Raw, for the reason given on `Handoff.slots`: `poll` returns `AnyRef | Null` to its caller,
+  // and turning that into `Optional` is a signature change through a benchmarked path.
   private val slots: juca.AtomicReferenceArray[AnyRef] = juca.AtomicReferenceArray(capacity)
 
   // `tail` is written only by the producer (reader), `head` only by the
   // consumer (writer); each publishes its index with a volatile write the other
   // reads to bound occupancy, exactly as `Handoff`.
-  private val head: juca.AtomicLong = juca.AtomicLong(0)
-  private val tail: juca.AtomicLong = juca.AtomicLong(0)
+  private val head: Atomic[Long] = Atomic(0L)
+  private val tail: Atomic[Long] = Atomic(0L)
 
   // Producer side (the reader thread): cache a spent block, returning whether it was
   // accepted; a full pool declines, and the caller either drops the block to the
@@ -70,11 +74,11 @@ final class Freelist(slots0: Int) extends caps.SharedCapability:
   // has fully drained and will never touch again — its contents are irrelevant, since
   // the writer overwrites before publishing.
   def offer(item: AnyRef): Boolean =
-    val position = tail.get
+    val position = tail()
 
-    if position - head.get < capacity then
+    if position - head() < capacity then
       slots.lazySet((position & mask).toInt, item)
-      tail.set(position + 1)
+      tail() = position + 1
       true
     else
       false
@@ -82,13 +86,13 @@ final class Freelist(slots0: Int) extends caps.SharedCapability:
   // Consumer side (the writer thread): take a cached block to reuse, or `null`
   // if the pool is empty, in which case the writer allocates a fresh block.
   def poll(): AnyRef | Null =
-    val position = head.get
+    val position = head()
 
-    if position < tail.get then
+    if position < tail() then
       val index = (position & mask).toInt
       val item = slots.get(index)
       slots.lazySet(index, null)
-      head.set(position + 1)
+      head() = position + 1
       item
     else
       null

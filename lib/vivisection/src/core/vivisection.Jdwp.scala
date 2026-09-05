@@ -36,8 +36,6 @@ import java.io as ji
 import java.lang as jl
 import java.nio.charset as jnc
 import java.util.concurrent as juc
-import java.util.concurrent.atomic as juca
-
 import scala.caps
 import scala.collection.concurrent as scc
 
@@ -50,7 +48,7 @@ import coaxial.*
 // caller's argument lists, of a handful of elements.
 import denominative.dysasymptotics.linearSize
 import denominative.size
-import rudiments.each
+import rudiments.{Atomic, each}
 import contingency.*
 import fulminate.*
 import gossamer.*
@@ -808,7 +806,7 @@ object Jdwp:
 
   class Connection private[vivisection] (monitor: Monitor, note: Diagnostics)
   extends caps.ExclusiveCapability:
-    private val counter: juca.AtomicInteger = juca.AtomicInteger(0)
+    private val counter: Atomic[Int] = Atomic(0)
     private val pending: scc.TrieMap[Int, Promise[Connection.Reply]] = scc.TrieMap()
     private[vivisection] val outgoing: Relay[Data] = Relay()
 
@@ -819,8 +817,8 @@ object Jdwp:
     private val composites: juc.LinkedBlockingQueue[Event.Composite | Connection.Terminate.type] =
       juc.LinkedBlockingQueue()
 
-    private val dispatcher0: juca.AtomicReference[Thread | Null] = juca.AtomicReference(null)
-    private val closed0: juca.AtomicBoolean = juca.AtomicBoolean(false)
+    private val dispatcher0: Atomic[Optional[Thread]] = Atomic(Unset)
+    private val closed0: Atomic[Boolean] = Atomic(false)
 
     // Registered breakpoint handlers, keyed by (event kind, request id), and the composites no
     // handler claimed. A handler captures session capabilities, which the map cannot carry, so it
@@ -855,10 +853,10 @@ object Jdwp:
     // or the terminate sentinel was lost to a racing nested pump, so the pump's exit must not
     // *depend* on either arriving — the sentinel only makes it prompt.
     private[vivisection] def pump(): Unit =
-      dispatcher0.set(Thread.currentThread)
+      dispatcher0() = Thread.currentThread.nn
 
       def recur(): Unit =
-        if !closed0.get then
+        if !closed0() then
           composites.poll(100, juc.TimeUnit.MILLISECONDS) match
             case composite: Event.Composite =>
               process(composite)
@@ -962,7 +960,7 @@ object Jdwp:
     // in-flight failures come first, so a nested pump blocked on a reply observes its promise
     // settled before (or without) meeting the sentinel.
     private[vivisection] def disconnect(): Unit =
-      closed0.set(true)
+      closed0() = true
       pending.values.foreach(_.offer(Connection.Reply.Failed(-1)))
       pending.clear()
       composites.put(Connection.Terminate)
@@ -971,7 +969,7 @@ object Jdwp:
     // Most commands go through `request`, which raises the VM's error code; the few that read a
     // particular error code as data (absent debug information) call this directly.
     private def submit(set: Int, command: Int)(write: Writer => Unit): Connection.Reply =
-      val id = counter.getAndIncrement()
+      val id = counter.ere(_ + 1)
       val writer = Writer(sizes0)
       write(writer)
       val promise = Promise[Connection.Reply]()
@@ -984,12 +982,10 @@ object Jdwp:
       // the dispatcher can settle that suspension, so blocking here without pumping would
       // deadlock the invoke against its own event. Any composite processed here runs its
       // handlers nested within the current one, exactly as the top-level pump would.
-      val nested = dispatcher0.get match
-        case null   => false
-        case thread => thread eq Thread.currentThread.nn
+      val nested = dispatcher0().lay(false)(_ eq Thread.currentThread.nn)
 
       if nested then
-        while !promise.ready && !closed0.get do
+        while !promise.ready && !closed0() do
           composites.poll(10, juc.TimeUnit.MILLISECONDS) match
             case composite: Event.Composite => process(composite)
             case Connection.Terminate       => composites.put(Connection.Terminate)

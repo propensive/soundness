@@ -51,7 +51,6 @@ import vacuous.*
 import Http2.Error.Reason
 import anticipation.*
 import denominative.*
-import java.util.concurrent.atomic as juca
 import scala.collection.concurrent as scc
 import hieroglyph.*, charEncoders.asciiEncoder
 import proscenium.*
@@ -537,10 +536,10 @@ object Http2:
             // Adopt the peer's advertised initial per-stream send window and
             // maximum frame size, which bound our request-body DATA frames.
             settings.seek(_.id == SettingId.InitialWindowSize.id).let: setting =>
-              conn.peerInitialWindow.set(setting.value.toInt)
+              conn.peerInitialWindow() = setting.value.toInt
 
             settings.seek(_.id == SettingId.MaxFrameSize.id).let: setting =>
-              conn.peerMaxFrame.set(setting.value.toInt)
+              conn.peerMaxFrame() = setting.value.toInt
 
             conn.send(Frame.Settings(Nil, ack = true))
             conn.started.offer(())
@@ -612,14 +611,14 @@ object Http2:
     import Http2.Connection.*
 
     private val streams: scc.TrieMap[Int, Http2.Stream] = scc.TrieMap()
-    private val nextId: juca.AtomicInteger = juca.AtomicInteger(1)
+    private val nextId: Atomic[Int] = Atomic(1)
     private val outbound: Relay[Frame] = Relay()
     private val started: Promise[Unit] = Promise()
 
     // Consumed-but-unreplenished inbound bytes at connection level, and the
     // batching threshold: one WINDOW_UPDATE per half-window consumed, not one
     // per DATA frame.
-    private val connPending: juca.AtomicInteger = juca.AtomicInteger(0)
+    private val connPending: Atomic[Int] = Atomic(0)
     private val threshold: Int = (window/2).max(1)
 
     // Send-side flow control (RFC 7540 §6.9), as the server role: the
@@ -628,11 +627,11 @@ object Http2:
     private[telekinesis] val connWindow: FlowWindow = FlowWindow(defaultWindow)
     private[telekinesis] val streamWindows: scc.TrieMap[Int, FlowWindow] = scc.TrieMap()
 
-    private[telekinesis] val peerInitialWindow: juca.AtomicInteger =
-      juca.AtomicInteger(defaultWindow)
+    private[telekinesis] val peerInitialWindow: Atomic[Int] =
+      Atomic(defaultWindow)
 
-    private[telekinesis] val peerMaxFrame: juca.AtomicInteger =
-      juca.AtomicInteger(defaultMaxFrame)
+    private[telekinesis] val peerMaxFrame: Atomic[Int] =
+      Atomic(defaultMaxFrame)
 
     private def send(frame: Frame): Unit = outbound.put(frame)
 
@@ -640,23 +639,20 @@ object Http2:
     // each drained record's bytes, which accumulate per stream and per
     // connection until the threshold releases them as WINDOW_UPDATEs.
     private[telekinesis] def consumed(stream: Http2.Stream, count: Int): Unit =
-      stream.unreplenished.addAndGet(count)
-      connPending.addAndGet(count)
+      stream.unreplenished.since(_ + count)
+      connPending.since(_ + count)
       replenish(stream.unreplenished, stream.id)
       replenish(connPending, 0)
 
     // CAS-drain: emit one WINDOW_UPDATE for everything pending once the
     // threshold is crossed; concurrent consumers of different streams race
     // safely on the connection counter.
-    private def replenish(pending: juca.AtomicInteger, id: Int): Unit =
-      var continue = true
-
-      while continue do
-        val value = pending.get
-        if value < threshold then continue = false
-        else if pending.compareAndSet(value, 0) then
-          send(Frame.WindowUpdate(id, value))
-          continue = false
+    private def replenish(pending: Atomic[Int], id: Int): Unit =
+      // The transition declines below the threshold, so no compare-and-set is issued at all in
+      // the common case; above it, exactly one caller displaces the pending count and sends.
+      val drained = pending.ere: value =>
+        if value < threshold then value else 0
+      if drained >= threshold then send(Frame.WindowUpdate(id, drained))
 
     // Tear the connection down after an unrecoverable reader/writer failure: unblock a
     // pending handshake, end every open stream so awaiters of its headers/body/trailers
@@ -727,7 +723,7 @@ object Http2:
     // Open a new client stream, send its header block (and optional body), and return
     // the stream handle whose promises/spool the reader will populate.
     def request(headerBlock: List[Hpack.Entry], body: Optional[Bytes]): Http2.Stream =
-      val id = nextId.getAndAdd(2)
+      val id = nextId.ere(_ + 2)
 
       // The consumption callback reaches only JMM-safe state (atomic counters
       // and the thread-safe outbound relay), so it is laundered pure at this
@@ -743,10 +739,10 @@ object Http2:
       // limit, so a large upload parks this (requesting) fiber at window
       // exhaustion until the peer's WINDOW_UPDATEs grant more.
       body.let: payload =>
-        val streamWindow = streamWindows.getOrElseUpdate(id, FlowWindow(peerInitialWindow.get))
+        val streamWindow = streamWindows.getOrElseUpdate(id, FlowWindow(peerInitialWindow()))
 
         sendFlowControlled
-          (id, payload, endStream = true, connWindow, streamWindow, peerMaxFrame.get, send)
+          (id, payload, endStream = true, connWindow, streamWindow, peerMaxFrame(), send)
 
       stream
 
@@ -845,7 +841,7 @@ object Http2:
 
     // Consumed-but-unreplenished inbound bytes, drained by the connection's
     // batched replenishment.
-    private[telekinesis] val unreplenished: juca.AtomicInteger = juca.AtomicInteger(0)
+    private[telekinesis] val unreplenished: Atomic[Int] = Atomic(0)
 
     val body: Stream.Body = Stream.Body(count => onConsume(this, count))
 
@@ -929,10 +925,10 @@ object Http2:
             // to streams opened after this point (existing streams are not
             // retroactively adjusted — a deliberate simplification).
             settings.seek(_.id == SettingId.InitialWindowSize.id).let: setting =>
-              conn.peerInitialWindow.set(setting.value.toInt)
+              conn.peerInitialWindow() = setting.value.toInt
 
             settings.seek(_.id == SettingId.MaxFrameSize.id).let: setting =>
-              conn.peerMaxFrame.set(setting.value.toInt)
+              conn.peerMaxFrame() = setting.value.toInt
 
             conn.send(Frame.Settings(Nil, ack = true))
             conn.started.offer(())
@@ -1029,10 +1025,10 @@ object Http2:
     // advertised size (updated by the peer's SETTINGS).
     private[telekinesis] val connWindow: FlowWindow = FlowWindow(defaultWindow)
     private[telekinesis] val streamWindows: scc.TrieMap[Int, FlowWindow] = scc.TrieMap()
-    private[telekinesis] val peerInitialWindow: juca.AtomicInteger = juca.AtomicInteger(defaultWindow)
+    private[telekinesis] val peerInitialWindow: Atomic[Int] = Atomic(defaultWindow)
 
-    private[telekinesis] val peerMaxFrame: juca.AtomicInteger =
-      juca.AtomicInteger(Connection.defaultMaxFrame)
+    private[telekinesis] val peerMaxFrame: Atomic[Int] =
+      Atomic(Connection.defaultMaxFrame)
 
     // Streams opened by the client, in arrival order; the serve loop takes each
     // and runs its handler. Stopped when the connection ends.
@@ -1041,26 +1037,23 @@ object Http2:
     // Receive-side replenishment state, as `Connection`'s: consumed bytes
     // accumulate per stream and per connection, released as batched
     // WINDOW_UPDATEs at the half-window threshold.
-    private val connPending: juca.AtomicInteger = juca.AtomicInteger(0)
+    private val connPending: Atomic[Int] = Atomic(0)
     private val threshold: Int = (window/2).max(1)
 
     private[telekinesis] def send(frame: Frame): Unit = outbound.put(frame)
 
     private[telekinesis] def consumed(stream: Http2.Stream, count: Int): Unit =
-      stream.unreplenished.addAndGet(count)
-      connPending.addAndGet(count)
+      stream.unreplenished.since(_ + count)
+      connPending.since(_ + count)
       replenish(stream.unreplenished, stream.id)
       replenish(connPending, 0)
 
-    private def replenish(pending: juca.AtomicInteger, id: Int): Unit =
-      var continue = true
-
-      while continue do
-        val value = pending.get
-        if value < threshold then continue = false
-        else if pending.compareAndSet(value, 0) then
-          send(Frame.WindowUpdate(id, value))
-          continue = false
+    private def replenish(pending: Atomic[Int], id: Int): Unit =
+      // The transition declines below the threshold, so no compare-and-set is issued at all in
+      // the common case; above it, exactly one caller displaces the pending count and sends.
+      val drained = pending.ere: value =>
+        if value < threshold then value else 0
+      if drained >= threshold then send(Frame.WindowUpdate(id, drained))
 
     // Tear the connection down after an unrecoverable reader/writer failure or a
     // bad preface: unblock a pending handshake, end every open stream, and stop
@@ -1144,9 +1137,9 @@ object Http2:
     // windows and frame-size limit; see `sendFlowControlled`. Blocks the
     // calling (per-stream) fiber at window exhaustion.
     def sendData(streamId: Int, payload: Bytes, endStream: Boolean): Unit =
-      val streamWindow = streamWindows.getOrElseUpdate(streamId, FlowWindow(peerInitialWindow.get))
+      val streamWindow = streamWindows.getOrElseUpdate(streamId, FlowWindow(peerInitialWindow()))
       sendFlowControlled
-        (streamId, payload, endStream, connWindow, streamWindow, peerMaxFrame.get, send)
+        (streamId, payload, endStream, connWindow, streamWindow, peerMaxFrame(), send)
 
     // Send a trailing HEADERS block (always end-stream) on `streamId` — the
     // response trailers, e.g. gRPC's `grpc-status`. A response with trailers must
