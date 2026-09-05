@@ -53,7 +53,26 @@ import symbolism.*
 import vacuous.*
 
 export rudiments.internal.{Bytes, Digit}
-export rudiments.atomicInternal.Atomic
+
+// `Atomic[value]` is a match type over the concrete atomic types, not a representation: the
+// distinction is what makes it work. A match type AS the representation cannot reduce for an
+// abstract type parameter, and `contingency.Accrual.AccrueTactic` holds a cell over an abstract
+// `accrual` — so the operations would have nothing to dispatch on. Layered *over* concrete types
+// it is pure spelling: `Atomic[Int]` reduces to `Atomic.Count` and picks up `Count`'s own
+// extensions, while an abstract context writes `Atomic.Cell[accrual]` and loses nothing.
+//
+// Its value is that it makes the unboxed spelling the obvious one. `Atomic.Cell[Int]` is legal
+// and boxes every write; `Atomic[Int]` is what a reader reaches for, and is an `AtomicInteger`.
+//
+// Declared here rather than beside `object Atomic`: a top-level type alias and an object of the
+// same name in ONE file are made companions inside that file's synthesized `$package` wrapper,
+// which buries the object at `rudiments$u002EAtomic$package$Atomic$`. Kept apart, the object is
+// a plain package member, so reaching it is a `getstatic` rather than an accessor call.
+type Atomic[value] = value match
+  case Int     => Atomic.Count
+  case Long    => Atomic.Tally
+  case Boolean => Atomic.Flag
+  case _       => Atomic.Cell[value]
 
 // The SAM trait names the knot's true aliasing: the recursion passed as `recur` captures the
 // recurrence itself (`->{this}`), and the result arrow declares its dependency on `recur`

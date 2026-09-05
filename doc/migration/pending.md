@@ -319,3 +319,39 @@ not yet been recorded here.
 
 - `honeycomb.doms.html` (`whatwg`, `html4Transitional`) renamed to `honeycomb.htmlDoms`; the
   `doms` package no longer exists. (#1943)
+
+## rudiments
+
+- New `rudiments.Atomic`, exported as `soundness.Atomic`: opaque, zero-cost wrappers over
+  `java.util.concurrent.atomic`. `Atomic.Count` wraps `AtomicInteger`, `Atomic.Tally` wraps
+  `AtomicLong`, `Atomic.Flag` wraps `AtomicBoolean`, `Atomic.Cell[value]` wraps
+  `AtomicReference[value]`, and `Atomic.Cells[value]` wraps
+  `AtomicReferenceArray[vacuous.Optional[value]]`. A match type `Atomic[value]` reduces to
+  `Atomic.Count` for `Int`, `Atomic.Tally` for `Long`, `Atomic.Flag` for `Boolean`, and
+  `Atomic.Cell[value]` otherwise; it does not reduce for an abstract type parameter, where the
+  concrete type must be named. Every operation is `inline` and compiles to the same bytecode as
+  the `java.util.concurrent.atomic` call it replaces. (#NNNN)
+- Reads are `atomic()` (`get`), stores are `atomic() = value` (`set`) and `atomic.publish(value)`
+  (`lazySet`); `atomic.swap(value)` is `getAndSet` and `atomic.replace(expected, updated)` is
+  `compareAndSet`. `Atomic.Cell#apply()` returns `value` rather than `value | Null`, so no call
+  site needs `.nn`; a cell declared `Atomic.Cell[Optional[x]]` reads as `Unset` when absent,
+  where `.nn` on the underlying `AtomicReference` would have thrown. `Atomic.Cells#apply` takes a
+  `denominative.Ordinal` and returns `vacuous.Optional[value]`. (#NNNN)
+- Transitions are `atomic.ere(transition)`, yielding the value the transition displaced, and
+  `atomic.since(transition)`, yielding the value it installed — replacing `getAndUpdate` and
+  `updateAndGet` respectively. The transition must be written as a lambda literal: its shape is
+  read at compiletime and replaced by the corresponding JDK intrinsic where one exists
+  (`_ + 1` becomes `getAndIncrement`/`incrementAndGet`, `_ + n` becomes `getAndAdd`/`addAndGet`,
+  `_ - 1` becomes `getAndDecrement`/`decrementAndGet`, a constant becomes `getAndSet`, and the
+  identity becomes `get`), and otherwise by a compare-and-set retry loop with the transition
+  beta-reduced into it. No `java.util.function.UnaryOperator` and no closure is allocated in
+  either case. A transition may be re-run under contention and so must be pure; a transition
+  which applies a function value obtained from outside is rejected at compiletime. (#NNNN)
+- `ere` is overloaded to take a value directly, so `flag.ere(true)` is `getAndSet(true)` without
+  a lambda. There is no `since` counterpart, which would return its own argument. The value
+  overload is unreachable on an `Atomic.Cell[value]` whose `value` is a function type, where
+  `ere` resolves to the transition overload and fails to compile; use `cell() = supplied`. (#NNNN)
+- `Atomic.Cell#revise(transition)` takes a function value rather than a literal, for a transition
+  whose shape cannot be read, and yields the value it installed. It is `inline`, so no closure is
+  allocated, but the purity obligation is unchecked: the transition may be re-run under
+  contention. (#NNNN)
