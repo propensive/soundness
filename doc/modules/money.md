@@ -29,6 +29,7 @@ by name:
 
 ```scala
 import soundness.*
+import scala.language.experimental.into
 import currencies.{Eur, Gbp}
 import currencyStyles.localCurrencyStyle
 ```
