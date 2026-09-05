@@ -34,7 +34,7 @@ package graffiti
 
 import anticipation.*
 import honeycomb.*
-import honeycomb.doms.html.whatwg.*
+import honeycomb.htmlDoms.whatwg.*
 import prepositional.*
 
 // Adds a `<link rel="icon">` favicon to the head, from the trait parameter (a URL or path).

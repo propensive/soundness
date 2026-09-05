@@ -154,7 +154,7 @@ extension (xdg: Xdg.type)
   def dataSearch()(using Environment, System)
   :   Searchpaths.Stems { type Plane = Xdg.Data; type Target = Linux } =
 
-    import interfaces.paths.pathOnLinux
+    import pathInterfaces.pathOnLinux
 
     new Searchpaths.Stems:
       type Plane = Xdg.Data
@@ -168,7 +168,7 @@ extension (xdg: Xdg.type)
   def configSearch()(using Environment, System)
   :   Searchpaths.Stems { type Plane = Xdg.Config; type Target = Linux } =
 
-    import interfaces.paths.pathOnLinux
+    import pathInterfaces.pathOnLinux
 
     new Searchpaths.Stems:
       type Plane = Xdg.Config

@@ -37,7 +37,7 @@ import scala.math
 import soundness.*
 
 
-import interfaces.paths.pathOnLinux
+import pathInterfaces.pathOnLinux
 import strategies.throwUnsafely
 import logging.silentLogging
 import charEncoders.utf8Encoder

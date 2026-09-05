@@ -36,3 +36,6 @@ export
   serpentine
   . { %, ?, ^, Admissible, Ascent, Case, Compliant, Filesystem, Navigable, Path, Radical,
       Relative, Root, Submissible }
+
+package pathInterfaces:
+  export anticipation.pathInterfaces.textPath

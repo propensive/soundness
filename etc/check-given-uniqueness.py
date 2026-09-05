@@ -100,7 +100,7 @@ if exp_dups:
         for path in sorted(exp_dups[leaf]):
             print(f'  {leaf}  <-  {path}')
 
-# A nested library family (`dateFormats.months`) may be mirrored under a flat umbrella name
+# A nested library family (`monthFormats`) may be mirrored under a flat umbrella name
 # (`monthFormats`); accept any family whose leaf givens are all exported somewhere.
 unmirrored = []
 for fam, paths in sorted(families.items()):
@@ -118,4 +118,4 @@ if unmirrored:
 
 if failed:
     sys.exit(1)
-print('All family-given names are globally unique and every family is mirrored.')
+print('All family-given names are globally unique, no family is nested, and every family is mirrored.')

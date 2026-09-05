@@ -43,7 +43,7 @@ import spectacular.{Inspectable, Showable, inspect}
 import vacuous.*
 
 import attributives.textAttributive
-import doms.html.whatwg, whatwg.*
+import htmlDoms.whatwg, whatwg.*
 
 object Markdown:
   // Controls how a `Markdown` document is serialized. `width` is the column at which paragraph text
@@ -218,10 +218,10 @@ object Markdown:
       Fragment(markdown.children.map(phrasing(_))*)
 
   given layout: Every[Formattable] => (Markdown of Layout) is Renderable:
-    type Form = doms.html.whatwg.Flow
+    type Form = htmlDoms.whatwg.Flow
 
     def render(markdown: Markdown of Layout): Html of whatwg.Flow =
-      import doms.html.whatwg.*
+      import htmlDoms.whatwg.*
 
       def tightItem(node: Layout): Html of Flow = node match
         case Layout.Paragraph(_, content*) => Fragment(content.map(phrasing(_))*)

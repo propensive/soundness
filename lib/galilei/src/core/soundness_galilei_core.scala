@@ -50,9 +50,9 @@ export
       TraversalOrder,
       UnixEntry, Volume, volume, Windows, WindowsEntry, wipe, writable, write }
 
-package interfaces.paths:
+package pathInterfaces:
   export
-    anticipation.interfaces.paths
+    anticipation.pathInterfaces
     . { pathOnLinux, pathOnLocal, pathOnMacOs, pathOnPosix, pathOnWindows }
 
 package filesystemOptions:

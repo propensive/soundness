@@ -124,7 +124,7 @@ object Tests extends Suite(m"Tarantula tests"):
     // The tag vocabulary the `Focusable` instance for `Tag` locates by. Scoped to `run`, since
     // `whatwg.*` also defines an `WebDriver.Element`, which the package's own would otherwise have to
     // out-rank at every use.
-    import doms.html.whatwg
+    import htmlDoms.whatwg
     import whatwg.*
 
     suite(m"Session lifecycle"):

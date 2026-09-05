@@ -53,7 +53,7 @@ package attributives:
 extension (inline context: StringContext)
   transparent inline def h: Interpolation = interpolation[Html](context)
 
-package doms.html:
+package htmlDoms:
   given whatwg: Whatwg = Whatwg()
   given html4Transitional: Html4Transitional = Html4Transitional()
 

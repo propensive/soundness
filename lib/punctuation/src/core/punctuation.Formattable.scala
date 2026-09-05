@@ -37,7 +37,7 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import doms.html.whatwg, whatwg.*
+import htmlDoms.whatwg, whatwg.*
 
 trait Formattable:
   type Self

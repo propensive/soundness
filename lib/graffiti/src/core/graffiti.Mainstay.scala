@@ -33,7 +33,7 @@
 package graffiti
 
 import honeycomb.*
-import honeycomb.doms.html.whatwg.*
+import honeycomb.htmlDoms.whatwg.*
 import nomenclature.*
 import nomenclature.CssClass.nominative
 import prepositional.*

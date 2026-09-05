@@ -35,7 +35,7 @@ package graffiti
 import anticipation.*
 import gossamer.*
 import honeycomb.*
-import honeycomb.doms.html.whatwg.*
+import honeycomb.htmlDoms.whatwg.*
 import prepositional.*
 
 // Adds a responsive `<meta name="viewport">`. Override `viewport` to change the directive.

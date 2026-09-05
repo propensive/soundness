@@ -156,6 +156,65 @@ object Tests extends Suite(m"Ziggurat tests"):
         script.utf8.contains(t"index:data=1")
       .assert(_ == true)
 
+    def stageDispatcher(entries: List[(Text, Text, Text)]): Path on Linux =
+      val dir = tempDir()
+      val script = dir / t"dispatch"
+      script.create[File]()
+      script.open[File](Write): handle ?=>
+        handle.write(Chain(Xeq.dispatcher(entries)))
+      script.executable() = true
+      script
+
+    suite(m"dispatcher()"):
+      val entries: proscenium.List[(Text, Text, Text)] =
+        labels.map(fileEntry(tempDir(), _, t"#!/bin/sh\n"))
+      val script: Data = Xeq.dispatcher(entries)
+
+      test(m"output starts with bash shebang"):
+        script.utf8.starts(t"#!/usr/bin/env bash")
+      .assert(_ == true)
+
+      test(m"assets line contains every label"):
+        val text = script.utf8
+        labels.all { label => text.contains(t"$label=") }
+      .assert(_ == true)
+
+      test(m"embeds no payload at all"):
+        script.utf8.contains(t"index:")
+      .assert(_ == false)
+
+      // The downloaded "executable" reports its arguments, so this exercises the whole
+      // contract at once: platform selection, download, verification, self-replacement and
+      // re-invocation with the original arguments.
+      test(m"downloads, verifies, replaces itself and re-invokes with arguments"):
+        val dir = tempDir()
+        val entries: proscenium.List[(Text, Text, Text)] = proscenium.List.from:
+          labels.stdlib.map: (label: Text) =>
+            fileEntry(dir, label, t"#!/bin/sh\necho \"ran $label $$@\"\nexit 0\n")
+        val dispatch = stageDispatcher(entries)
+        sh"$dispatch --flag operand".exec[Text]().trim
+      .assert(_ == t"ran $hostLabel --flag operand")
+
+      test(m"after the first run, the script has become the executable"):
+        val dir = tempDir()
+        val entries: proscenium.List[(Text, Text, Text)] = proscenium.List.from:
+          labels.stdlib.map: (label: Text) =>
+            fileEntry(dir, label, t"#!/bin/sh\necho again\n")
+        val dispatch = stageDispatcher(entries)
+        sh"$dispatch".exec[Text]()
+        sh"$dispatch".exec[Text]().trim
+      .assert(_ == t"again")
+
+      test(m"rejects an executable whose hash does not match"):
+        val dir = tempDir()
+        val badHash = t"0"*64
+        val entries: proscenium.List[(Text, Text, Text)] = proscenium.List.from:
+          labels.stdlib.map: (label: Text) =>
+            fileEntry(dir, label, t"#!/bin/sh\necho oops\n", badHash)
+        val dispatch = stageDispatcher(entries)
+        sh"$dispatch".exec[Exit]()
+      .assert(_ != Exit.Ok)
+
     suite(m"native macOS download"):
       // The "stub" served here exits before the appended JAR bytes are reached, so the
       // launcher's download → verify → append-embedded-JAR → exec path runs end-to-end.

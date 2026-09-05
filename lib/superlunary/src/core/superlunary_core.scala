@@ -42,7 +42,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import prepositional.*
-import interfaces.paths.pathOnLinux
+import pathInterfaces.pathOnLinux
 import systems.javaBaseSystem
 
 package embeddings:

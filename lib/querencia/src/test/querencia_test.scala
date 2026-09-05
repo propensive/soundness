@@ -34,7 +34,7 @@ package querencia
 
 import soundness.*
 
-import doms.html.html4Transitional
+import htmlDoms.html4Transitional
 import html4Transitional.*
 
 // Querencia navigates the DOM (described by WebIDL) at compile time, builds a `Foreign.Expression`,

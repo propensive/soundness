@@ -53,7 +53,7 @@ import prepositional.*
 import serpentine.*
 import spectacular.*
 
-import interfaces.paths.pathOnLinux
+import pathInterfaces.pathOnLinux
 import systems.javaBaseSystem
 
 object Rig:

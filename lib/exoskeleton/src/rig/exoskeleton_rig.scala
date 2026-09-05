@@ -35,7 +35,7 @@ package exoskeleton
 import soundness.*
 
 import errorDiagnostics.stackTracesDiagnostics
-import interfaces.paths.pathOnLinux
+import pathInterfaces.pathOnLinux
 
 import filesystemBackends.javaBaseFilesystem
 

@@ -959,13 +959,13 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == (Mar, 14))
 
       test(m"Anniversary Showable, big-endian dot separator"):
-        import endianness.bigEndian, dateSeparators.dotDateSeparator
+        import dateEndianness.bigEndian, dateSeparators.dotDateSeparator
         import monthFormats.englishShortMonths
         (Mar - 14).show
       . assert(_ == t"Mar.14")
 
       test(m"Anniversary Showable, little-endian dot separator"):
-        import endianness.littleEndian, dateSeparators.dotDateSeparator
+        import dateEndianness.littleEndian, dateSeparators.dotDateSeparator
         import monthFormats.englishShortMonths
         (Mar - 14).show
       . assert(_ == t"14.Mar")
@@ -992,13 +992,13 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == (2025, Mar))
 
       test(m"Monthstamp Showable, big-endian dot separator"):
-        import endianness.bigEndian, dateSeparators.dotDateSeparator, yearFormats.fullYears
+        import dateEndianness.bigEndian, dateSeparators.dotDateSeparator, yearFormats.fullYears
         import monthFormats.englishShortMonths
         (2024 - Mar).show
       . assert(_ == t"Mar.2024")
 
       test(m"Monthstamp Showable, little-endian"):
-        import endianness.littleEndian, dateSeparators.dotDateSeparator, yearFormats.fullYears
+        import dateEndianness.littleEndian, dateSeparators.dotDateSeparator, yearFormats.fullYears
         import monthFormats.englishShortMonths
         (2024 - Mar).show
       . assert(_ == t"2024.Mar")
@@ -1124,7 +1124,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == t"2025-04-07")
 
       test(m"two-digit year variant"):
-        import endianness.bigEndian
+        import dateEndianness.bigEndian
         import dateNumerics.fixedWidthDateNumerics
         import dateSeparators.hyphenDateSeparator
         import yearFormats.twoDigitsYears
@@ -1132,7 +1132,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == t"25-04-07")
 
       test(m"variable width single-digit month"):
-        import endianness.bigEndian
+        import dateEndianness.bigEndian
         import dateNumerics.variableWidthDateNumerics
         import dateSeparators.hyphenDateSeparator
         import yearFormats.fullYears
@@ -1276,27 +1276,27 @@ object Tests extends Suite(m"Aviation Tests"):
     suite(m"Meridiem formatters"):
 
       test(m"upper Am"):
-        meridiems.upperMeridiem.text(Meridiem.Am)
+        timeMeridiems.upperMeridiem.text(Meridiem.Am)
       . assert(_ == t"AM")
 
       test(m"upper Pm"):
-        meridiems.upperMeridiem.text(Meridiem.Pm)
+        timeMeridiems.upperMeridiem.text(Meridiem.Pm)
       . assert(_ == t"PM")
 
       test(m"lower Am"):
-        meridiems.lowerMeridiem.text(Meridiem.Am)
+        timeMeridiems.lowerMeridiem.text(Meridiem.Am)
       . assert(_ == t"am")
 
       test(m"lower Pm"):
-        meridiems.lowerMeridiem.text(Meridiem.Pm)
+        timeMeridiems.lowerMeridiem.text(Meridiem.Pm)
       . assert(_ == t"pm")
 
       test(m"upperPunctuated Am"):
-        meridiems.upperPunctuatedMeridiem.text(Meridiem.Am)
+        timeMeridiems.upperPunctuatedMeridiem.text(Meridiem.Am)
       . assert(_ == t"A.M.")
 
       test(m"lowerPunctuated Pm"):
-        meridiems.lowerPunctuatedMeridiem.text(Meridiem.Pm)
+        timeMeridiems.lowerPunctuatedMeridiem.text(Meridiem.Pm)
       . assert(_ == t"p.m.")
 
     suite(m"Date arithmetic edge cases"):

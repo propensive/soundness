@@ -776,7 +776,7 @@ object Tests extends Suite(m"Galilei tests"):
     suite(m"Searchpaths"):
       import filesystemOptions.createNonexistentParents
       import filesystemOptions.overwritePreexisting
-      import interfaces.paths.pathOnLinux
+      import pathInterfaces.pathOnLinux
 
       val spLeafA: Text = t"sp-a-${Uuid().show}"
       val spLeafB: Text = t"sp-b-${Uuid().show}"

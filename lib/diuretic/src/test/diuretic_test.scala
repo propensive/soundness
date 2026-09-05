@@ -154,17 +154,17 @@ object Tests extends Suite(m"Diuretic Tests"):
 
     suite(m"Interface given tests"):
       test(m"A java.time.Instant interface is available"):
-        import interfaces.instants.javaTimeInstant
+        import instantInterfaces.javaTimeInstant
         summon[JavaTimeInstant.type]
       . assert(_ == JavaTimeInstant)
 
       test(m"A java.nio.file.Path interface is available"):
-        import interfaces.paths.javaNioPath
+        import pathInterfaces.javaNioPath
         summon[JavaNioPath.type]
       . assert(_ == JavaNioPath)
 
       test(m"A java.net.URL interface is available"):
-        import interfaces.urls.javaNetUrl
+        import urlInterfaces.javaNetUrl
         summon[JavaNetUrl.type]
       . assert(_ == JavaNetUrl)
 

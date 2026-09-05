@@ -37,7 +37,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 
-package interfaces.paths:
+package pathInterfaces:
   inline given pathOnLinux: (Path on Linux) is Representative of Paths = !!
   inline given pathOnWindows: (Path on Windows) is Representative of Paths = !!
   inline given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!

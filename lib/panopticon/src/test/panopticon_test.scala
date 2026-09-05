@@ -243,7 +243,7 @@ object Tests extends Suite(m"Panopticon tests"):
       user.lens(_.roles(Filter[Text](_ == t"cfo")).name = "X")
     . assert(_ == User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("X", 2), t"cio" -> Role("CIO", 3))))
 
-    import doms.html.whatwg.*
+    import htmlDoms.whatwg.*
 
     test(m"adjust an HTML value"):
       val table: Html = Table(Tbody(

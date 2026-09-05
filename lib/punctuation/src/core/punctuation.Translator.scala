@@ -35,7 +35,7 @@ package punctuation
 import honeycomb.*
 import prepositional.*
 
-import doms.html.whatwg, whatwg.*
+import htmlDoms.whatwg, whatwg.*
 
 trait Translator:
   def translate(nodes: List[Markdown]): List[Html of Flow]

@@ -72,7 +72,7 @@ object TestMcpServer extends Mcp.Server():
   @about("Displays the app user interface")
   @title("User interface")
   def content: Document[Html] =
-    import doms.html.whatwg
-    import doms.html.whatwg.*
+    import htmlDoms.whatwg
+    import htmlDoms.whatwg.*
     val html = Html(Head(Title("MCP App")), Body(H1("Hello world")))
-    Document(html, doms.html.whatwg)
+    Document(html, htmlDoms.whatwg)
