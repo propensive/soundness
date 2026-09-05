@@ -33,6 +33,8 @@ import soundness.*
 import charEncoders.utf8Encoder
 ```
 
+Naming the alphabet as a type parameter, rather than passing a flag, is the [declarative context](../philosophy/declarative-context.md) style used throughout.
+
 ### Serializing bytes
 
 `serialize` renders bytes as text in a named encoding, drawing the character set from the alphabet
@@ -71,8 +73,14 @@ bytes.serialize[Base64]   // URL-safe characters
 ```
 
 A *strict* alphabet accepts only its own characters when decoding, while a tolerant one also accepts
-recognised equivalents — upper- and lower-case hexadecimal, say — so the strictness of a decode is a
-choice between imports.
+recognized equivalents — upper- and lower-case hexadecimal, say — so the strictness of a decode is a
+choice between imports: `hexLowerCase` reads either case, `hexStrictLowerCase` only its own.
+
+The full set is in the `alphabets` package. For Base64 it holds the standard, unpadded, URL-safe,
+XML, IMAP, YUI, Radix-64, bcrypt, SASL and uuencoding variants; for Base32 the upper- and lower-case
+forms (strict and tolerant), the extended-hex forms, z-base-32 (padded and unpadded), Geohash,
+word-safe and Crockford; for hexadecimal the upper- and lower-case forms and the "bioctal" one; and
+one each for octal, quaternary (including the DNA nucleotide alphabet, `ATCG`) and binary.
 
 ### Other bases
 
@@ -88,11 +96,11 @@ bytes.serialize[Hex]   // t"48656c6c6f"
 ### Encoding a stream
 
 An alphabet is also a [stream](streams.md) stage, so bytes are encoded as they flow rather than
-gathered first — which is what a base-encoded body written to a socket, or a large file armoured
+gathered first — which is what a base-encoded body written to a socket, or a large file armored
 for transport, requires:
 
 ```scala
-payload.stream.via(summon[Alphabet[Hex]])
+bytes.stream.via(summon[Alphabet[Hex]])
 ```
 
 The streaming and whole-value forms agree byte for byte, including at the boundaries where a
