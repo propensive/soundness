@@ -32,6 +32,8 @@ import strategies.throwUnsafely
 given XmlSchema = XmlSchema.Freeform
 ```
 
+An XML value that is immutable, with every edit returning a new value, follows [immutability](../philosophy/immutability.md).
+
 ### Parsing
 
 Text becomes an `Xml` value with `read`, and `load` reads a whole document, keeping its `<?xml?>`
@@ -46,6 +48,8 @@ with its `Header` — the version, and the encoding and standalone declarations 
 given — so a document round-trips with its declaration intact rather than losing it on the way in:
 
 ```scala
+import threading.platformThreading
+
 supervise:
   t"""<?xml version="1.0"?><root>content</root>""".load[Xml]
 // Document(elem(t"root", TextNode(t"content")), Header(t"1.0", Unset, Unset))
@@ -112,11 +116,11 @@ t"<Worker><name>Alice</name><age>30</age></Worker>".read[Worker in Xml]
 // Worker(t"Alice", 30)
 ```
 
-A field marked `@attribute` becomes an attribute rather than a child element, and round-trips as
+A field marked `@Xml.attribute` becomes an attribute rather than a child element, and round-trips as
 one:
 
 ```scala
-case class Book(title: Text, @attribute isbn: Text)
+case class Book(title: Text, @Xml.attribute isbn: Text)
 
 Book(t"Dune", t"0441013597").in[Xml]
 // x"""<Book isbn="0441013597"><title>Dune</title></Book>"""
@@ -128,8 +132,8 @@ element of an enumeration's *variant* too, so a `Light.Stop` may travel as `<red
 
 ```scala
 enum Light:
-  case @name[Xml](t"red") Stop(seconds: Int)
-  case @name(t"green") Go(seconds: Int)
+  @name[Xml](t"red") case Stop(seconds: Int)
+  @name(t"green") case Go(seconds: Int)
   case Wait(seconds: Int)
 
 (Light.Stop(30): Light).in[Xml]   // x"<red><seconds>30</seconds></red>"
@@ -223,6 +227,27 @@ xp"/root/child".encode         // t"/root[1]/child[1]"
 Paths are what positions and accrued errors are reported against, so an error from decoding a
 large document names the element that caused it.
 
+### Querying with XPath
+
+The same interpolator writes a full [XPath 1.0](https://www.w3.org/TR/xpath-10/) expression, and
+a document answers it. `select` returns the matching nodes as a fragment, `selectText` the text
+of the first match, and `evaluate` the value of any expression — a number, a boolean, a string or
+a node set — as an `XPath.Value`. Axes, predicates on attributes and text, and the core function
+library are all supported, which is what a browser-automation locator or a configuration lookup
+needs:
+
+```scala
+val page = t"""<app><div id="main"><button data-test="submit">Submit</button>
+                 <ul><li>one</li><li>two</li><li>three</li></ul></div></app>""".read[Xml]
+
+page.selectText(xp"//button[text()='Submit']/@data-test")   // t"submit"
+page.selectText(xp"/app/div[1]/ul/li[2]")                    // t"two"
+page.evaluate(xp"count(//li)")                               // XPath.Value.Numeric(3)
+```
+
+An expression the engine does not support, or a variable it was not given, raises an
+`XPath.Error` saying so.
+
 ### Positions and errors
 
 A malformed document raises a `ParseError` whose position is not merely a line number but a range:
@@ -235,6 +260,7 @@ Positions of *well-formed* content are recorded on request, in the same way as f
 ```scala
 import parsing.trackPositions
 
+val source = t"<root><child/></root>"
 val tracked = source.load[Xml]
 ```
 
