@@ -12,7 +12,7 @@ design constraint rather than an optimization; see [zero cost](../philosophy/zer
 ### On quantities
 
 A bare number carries no units: the figure `5` says nothing about whether it counts
-metres, feet, seconds or kilograms. Code that loses track of the answer has caused
+meters, feet, seconds or kilograms. Code that loses track of the answer has caused
 real disasters, the
 [loss of a Mars orbiter](https://en.wikipedia.org/wiki/Mars_Climate_Orbiter#Cause_of_failure)
 among them, when one component worked in newtons and another in pound-force. The
@@ -29,10 +29,15 @@ this survives to runtime: a `Quantity` is an opaque `Double`, and its operations
 inline away, so the safety is paid for entirely at compiletime.
 
 Units, prefixes and the quantity operations all come from the `soundness`
-package:
+package. Arithmetic between a plain number and a quantity relies on the compiler's
+`into` conversions, so that language feature is enabled too, and a `Decimalizer`
+in scope fixes how many significant figures a quantity shows with:
 
 ```scala
 import soundness.*
+import scala.language.experimental.into
+
+given Decimalizer = Decimalizer(3)
 ```
 
 ### Quantities and units
@@ -71,10 +76,7 @@ Adding quantities whose dimensions disagree is a compile error, and the message
 names the mismatch in plain words rather than in terms of types:
 
 ```scala
-Metre + 2*Second
-// does not compile:
-// the left operand represents distance, but the right operand represents time;
-// these are incompatible physical quantities
+Metre + 2*Second   // does not compile: the left operand represents distance, but the right operand represents time; these are incompatible physical quantities
 ```
 
 The check is by dimension, not merely by unit, so a length cannot be added to an
@@ -115,9 +117,13 @@ target unit family:
 (3*Metre).convert[Feet]    // 9.8425… feet
 ```
 
-`normalize` does the same, written with the fully-powered unit type:
+`normalize` does the same, written with the fully-powered unit type. An hour is not
+one of the predefined unit values, but a unit is only a quantity of one, so it is a
+one-line definition:
 
 ```scala
+val Hour: Quantity[Hours[1]] = Quantity(1.0)
+
 (2*Hour).normalize[Seconds[1]]   // 7200 seconds
 (1*Inch).normalize[Metres[1]]    // 0.0254 metres
 ```
@@ -190,7 +196,7 @@ does not compile — which is exactly the gap `===` fills.
 
 The named SI units — `Newton`, `Joule`, `Watt`, `Pascal`, `Volt` and many more —
 are defined in terms of the base units, so they interoperate with them. A force in
-newtons and a length in metres multiply to an energy that displays in joules.
+newtons and a length in meters multiply to an energy that displays in joules.
 Every quantity can also name its own dimension, worked out from its units:
 
 ```scala
@@ -219,11 +225,11 @@ Seven base dimensions are defined, each with its units type and the value naming
 | `Heat`              | `Kelvins`   | `Kelvin`  |
 
 The named derived units are defined in terms of those, so each carries its full dimensions rather
-than being a distinct kind of thing: `Hertz` (one per second), `Newton` (metre-kilogram per second
-squared), `Pascal` (newton per square metre), `Joule` (newton-metre), `Watt` (joule per second),
+than being a distinct kind of thing: `Hertz` (one per second), `Newton` (meter-kilogram per second
+squared), `Pascal` (newton per square meter), `Joule` (newton-meter), `Watt` (joule per second),
 `Coulomb` (second-ampere), `Volt` (watt per ampere), `Farad` (coulomb per volt), `Ohm` (volt per
-ampere), `Siemens` (ampere per volt), `Weber` (volt-second), `Tesla` (weber per square metre),
-`Henry` (weber per ampere), `Lux` (candela per square metre), `Becquerel` (one per second), `Gray`
+ampere), `Siemens` (ampere per volt), `Weber` (volt-second), `Tesla` (weber per square meter),
+`Henry` (weber per ampere), `Lux` (candela per square meter), `Becquerel` (one per second), `Gray`
 and `Sievert` (joule per kilogram), and `Katal` (mole per second). The CGS and imperial systems are
 provided alongside them — `Dyne`, `Erg`, `Gauss`, `Poise`, `Foot`, `Furlong`, `Stone` and the rest.
 
@@ -406,7 +412,7 @@ like any other:
 import temperatureScales.celsiusScale
 (zero[Temperature] + 300*Kelvin).show   // t"26.9 °C"
 
-(Fahrenheit(100) - zero[Temperature]).to[Rankines].show   // t"560 °R"
+(Fahrenheit(100) - zero[Temperature]).convert[Rankines].show   // t"560 °R"
 ```
 
 Reading the same temperature on a different scale is a matter of importing a
@@ -425,9 +431,9 @@ a list of seconds is in seconds squared, and the standard deviation back in
 seconds:
 
 ```scala
-List(1*Second, 2*Second, 3*Second).total        // 6 seconds
-List(1*Second, 2*Second, 3*Second).mean.vouch    // 2 seconds
-List(1*Second, 2*Second, 3*Second).std.vouch     // √(2/3) seconds
+List(1*Second, 2*Second, 3*Second).total   // 6 seconds
+List(1*Second, 2*Second, 3*Second).mean    // 2 seconds, or Unset for an empty list
+List(1*Second, 2*Second, 3*Second).std     // √(2/3) seconds, likewise Optional
 ```
 
 ### Quantifying your own types
@@ -480,7 +486,7 @@ distance. Passing an argument in the wrong units, or returning the wrong dimensi
 is a compile error rather than a number that is quietly wrong.
 
 The same calculation can be written once for any consistent choice of units, rather
-than fixed to metres and seconds. A `transparent inline def` resolves its units at
+than fixed to meters and seconds. A `transparent inline def` resolves its units at
 each call, so its parameters can be left abstract; the relationships the formula
 relies on are then stated as the constraints that a velocity times a time and an
 acceleration times a time squared can each be formed, and that the two results can
