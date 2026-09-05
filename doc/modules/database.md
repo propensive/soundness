@@ -25,6 +25,8 @@ import soundness.*
 import strategies.throwUnsafely
 ```
 
+A query built from typed fragments cannot be assembled into something the database will reject: [safety by construction](../philosophy/safety-by-construction.md) applied to SQL.
+
 ### Declaring a database
 
 The relations form the database's type — `A -< B` reads "an `A` may have `B`s":
