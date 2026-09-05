@@ -21,6 +21,8 @@ exchange of code for tokens, expiry tracking, and the refresh exchange when an a
 out. Implemented ad hoc, the steps scatter across handlers, and the question "is this request
 authorized for what it is about to do?" is answered by convention.
 
+Each step of the flow as a typed value, with the wrong sequence unrepresentable, is [impossible states](../philosophy/impossible-states.md) applied to a protocol.
+
 Soundness structures the flow around the handler that needs it. The provider is an `Issuer` value;
 sessions carry the per-user state; and scope requirements are types, checked where the protected
 code is written. Everything comes from the `soundness` package:
@@ -39,8 +41,8 @@ val issuer = Issuer
   ( init     = url"https://provider.example/oauth/authorize",
     exchange = url"https://provider.example/oauth/token",
     redirect = url"https://app.example/callback",
-    client   = clientId,
-    secret   = clientSecret )
+    client   = t"my-app",
+    secret   = t"s3cr3t" )
 ```
 
 ### Protecting a handler
@@ -51,8 +53,9 @@ redirected to the provider; one with it runs the block, the `Authorization` in s
 
 ```scala
 val readUser = Scope(t"read:user")
+val profilePage = t"<h1>Your profile</h1>"
 
-issuer.oauth:
+def profile()(using Http.Request): Http.Response = issuer.oauth:
   issuer.require(readUser):
     Http.Response(Http.Ok)(profilePage)
 ```
