@@ -319,3 +319,12 @@ not yet been recorded here.
 
 - `honeycomb.doms.html` (`whatwg`, `html4Transitional`) renamed to `honeycomb.htmlDoms`; the
   `doms` package no longer exists. (#1943)
+
+## frontier
+
+- `frontier.context.explainMissingContext` and `soundness.explainMissingContext` no longer
+  succeed as an implicit candidate when the search resolves without them; the candidate now
+  always fails (its diagnostic is used only if the whole search fails), leaving the compiler to
+  select the instance itself. Effect: an implicit search made while type parameters are still
+  undetermined (e.g. `join`'s `element`/`textual`) is no longer resolved with those parameters
+  instantiated to `Any`. Inferred types of code that already compiled are unchanged. (#1944)

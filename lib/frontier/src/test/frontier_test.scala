@@ -201,6 +201,68 @@ object Tests extends Suite(m"Frontier Tests"):
       . filter(_.error).map(_.message)
     . assert(_ == Nil)
 
+    // The catch-all must never *succeed* as a candidate: the inliner instantiates
+    // the open type variables of a tentative search (to `Any`) before the macro
+    // runs, and a successful candidate would commit them. Frontier aborts even
+    // when the search resolves without it, leaving inference of e.g. `join`'s
+    // `element` to the compiler (#1942).
+
+    test(m"a bare join over mapped elements compiles under import soundness.*"):
+      demilitarize:
+        import soundness.*
+        val y = List(t"a", t"b").map(_.upper).join
+      . filter(_.error).map(_.message)
+    . assert(_ == Nil)
+
+    test(m"a bare join compiles with the frontier.context catch-all in scope"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        val y = List(t"a", t"b").map(_.upper).join
+      . filter(_.error).map(_.message)
+    . assert(_ == Nil)
+
+    test(m"join with a separator compiles with the catch-all in scope"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        val y = List(t"a", t"b").join(t", ")
+      . filter(_.error).map(_.message)
+    . assert(_ == Nil)
+
+    test(m"a stdlib List joins with the catch-all in scope"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        val y = scala.collection.immutable.List(t"a", t"b").map(_.upper).join
+      . filter(_.error).map(_.message)
+    . assert(_ == Nil)
+
+    test(m"the catch-all does not change join's inferred type"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        val y = List(t"a", t"b").join
+        val z: Text = y
+      . filter(_.error).map(_.message)
+    . assert(_ == Nil)
+
+    test(m"a later using clause still pins a type parameter left open earlier"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        trait Pin[self] { type Operand }
+        type PinBy[self, element] = Pin[self] { type Operand = element }
+        object Pin:
+          given any: [self, element] => PinBy[self, element] =
+            new Pin[self] { type Operand = element }
+        trait Only[t]
+        object Only:
+          given int: Only[Int] = new Only[Int] {}
+        extension [self, element, wide >: element](value: self)
+          (using pin: PinBy[self, element])
+          (using only: Only[wide])
+          def pinned: wide = ???
+        val n = 1.pinned
+        val m: Int = n
+      . filter(_.error).map(_.message)
+    . assert(_ == Nil)
+
     // `read` now resolves an ordinary `Readable` instance, so a missing
     // decoder is an ordinary failed implicit search that Frontier explains —
     // listing the `Readable` pipelines and what each still requires.
