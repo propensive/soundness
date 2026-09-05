@@ -18,6 +18,8 @@ descriptions. Writing that self-description by hand duplicates the code it descr
 drift; the schema says one thing, the implementation another, and the model's tool calls fail in
 ways it cannot see.
 
+Tools declared as typed methods, with their schemas derived, are [correctness](../philosophy/correctness.md) by construction: the schema cannot disagree with the code.
+
 Deriving the description from the implementation removes the gap. The method *is* the tool: its
 name, its parameter types, its result type generate the listing, and dispatch goes straight to it.
 Everything comes from the `soundness` package:
@@ -28,12 +30,16 @@ import soundness.*
 
 ### A server
 
-A server extends `McpServer`, names itself, and defines its capabilities as annotated methods:
+A server extends `Mcp.Server`, names itself, and defines its capabilities as annotated methods.
+Each connected client gets a `Session`, created by `initialize`, in which the server may keep
+per-client state:
 
 ```scala
-object AssistantTools extends McpServer():
+val colors = Map(t"sky" -> t"blue", t"grass" -> t"green")
+
+object AssistantTools extends Mcp.Server():
   class Session() extends Mcp.Session
-  def initialize(): Session = Session()
+  def initialize(): Session = new Session()
 
   def name: Text = t"assistant-tools"
   def description: Text = t"Utilities for the assistant"
@@ -42,7 +48,7 @@ object AssistantTools extends McpServer():
 
   @tool
   @about("Look up the color of a named thing")
-  def color(name: Text): Text = lookup(name)
+  def color(name: Text): Text = colors.at(name).or(t"unknown")
 ```
 
 The tool's input schema — a `name` of type string — and its result schema are derived from the
@@ -55,12 +61,20 @@ notifications, and `elicit` asks the user for structured input mid-call, its for
 derived schema:
 
 ```scala
-@tool
-def deploy(target: Text)(using client: Mcp.Client): Text =
-  client.log(t"Preparing deployment to $target")
-  case class Confirmation(proceed: Boolean)
-  client.elicit[Confirmation](t"Deploy to production?")
-  finishDeployment(target)
+object Deployer extends Mcp.Server():
+  class Session() extends Mcp.Session
+  def initialize(): Session = new Session()
+  def name: Text = t"deployer"
+  def description: Text = t"Deploys the application"
+  def version: Semver = v"1.0.0"
+  def prompts: List[Mcp.Prompt] = Nil
+
+  @tool
+  def deploy(target: Text)(using client: Mcp.Client): Text =
+    client.log(t"Preparing deployment to $target")
+    case class Confirmation(proceed: Boolean)
+    client.elicit[Confirmation](t"Deploy to production?")
+    t"deployed to $target"
 ```
 
 ### Resources and prompts
@@ -70,13 +84,21 @@ def deploy(target: Text)(using client: Mcp.Client): Text =
 and `agent` interpolators:
 
 ```scala
-@resource("docs://readme")
-@about("The project readme")
-def readme: Text = readmeText
+object Documentation extends Mcp.Server():
+  class Session() extends Mcp.Session
+  def initialize(): Session = new Session()
+  def name: Text = t"documentation"
+  def description: Text = t"The project's documentation"
+  def version: Semver = v"1.0.0"
+  def prompts: List[Mcp.Prompt] = Nil
 
-@prompt
-def review(topic: Text): List[Discourse] =
-  List(human"Please review the $topic and summarize any problems.")
+  @resource("docs://readme")
+  @about("The project readme")
+  def readme: Text = t"# Readme\n\nStart with `make build`."
+
+  @prompt
+  def review(topic: Text): List[Discourse] =
+    List(human"Please review the $topic and summarize any problems.")
 ```
 
 ### Serving
@@ -86,10 +108,11 @@ GET, sessions tracked by header — and mounts inside an ordinary [HTTP server](
 handler:
 
 ```scala
-SocketServer(8080).handle:
-  request.path match
-    case % /: t"mcp" => AssistantTools.serve
-    case _           => Http.Response(Http.NotFound)(t"Not found")
+def serve(): Unit = supervise:
+  SocketServer(8080).handle:
+    request.path match
+      case % /: t"mcp" => AssistantTools.serve
+      case _           => Http.Response(Http.NotFound)(t"Not found")
 ```
 
 A client configured with that endpoint discovers the tools, resources and prompts, and everything
