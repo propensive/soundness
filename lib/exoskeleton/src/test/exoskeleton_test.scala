@@ -37,7 +37,9 @@ import soundness.collationComparable
 import soundness.collations.codepointCollation
 import soundness.sortingAlgorithms.timsort
 
-import classloaders.systemClassloader
+// The suite's own classloader for the `Enclave` rig: under fume the suite lives in an
+// isolating classloader, and the system loader knows only fume.
+given testClassloader: Classloader = Classloader[Tests.type]
 import environments.javaBaseEnvironment
 import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory

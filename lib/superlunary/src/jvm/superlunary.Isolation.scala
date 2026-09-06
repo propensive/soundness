@@ -42,9 +42,11 @@ import prepositional.*
 import serpentine.*
 import vacuous.*
 
-import classloaders.systemClassloader
+// The rig's own classloader rather than the system classloader: they coincide in a plain
+// `java -cp` process, but under a test-running host such as fume the rig (with the code it
+// stages) lives in an isolating `URLClassLoader`, and the system loader knows only the host.
 
-object Isolation extends Rig:
+object Isolation extends Rig(using Classloader[Isolation.type]):
   type Result[output] = output
   type Form = scala.Array[Pojo]
   type Target = Classloader

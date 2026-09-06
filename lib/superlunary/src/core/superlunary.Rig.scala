@@ -91,8 +91,10 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
   protected val classloader = classloader0
 
   def classpath(out: Path on Linux): LocalClasspath =
-    val entries =
-      Classpath.Directory(out) :: LocalClasspath.of(classloaders.threadContextClassloader).entries
+    // The rig's own classloader, not the thread's context loader: under a test-running host
+    // such as fume, the suite's classes live in an isolating `URLClassLoader`, and a pooled
+    // thread's context loader may be the host's own.
+    val entries = Classpath.Directory(out) :: LocalClasspath.of(Classloader[Rig]).entries
 
     LocalClasspath(entries*)
 

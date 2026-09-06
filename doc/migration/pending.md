@@ -357,7 +357,6 @@ not yet been recorded here.
 - `ethereal.core` now depends on `stratiform.binary` (and so on `stratiform.core`,
   `stratiform.base256` and `ulysses.core`).
 
-
 ## probably (fume takes over running and reporting)
 
 - `probably.Suite#main(arguments: Array[Text]): Unit` removed. A `Suite` is no longer a main
@@ -424,3 +423,11 @@ not yet been recorded here.
   read the property: under a test-running host such as fume the property names the host's jars.
   `anthology.Bundler.applicationClasspath` and `superlunary.Rig#classpath` now go through it
   (same result as before). (#TBD)
+
+## superlunary
+
+- `superlunary.Jvm` and `superlunary.Isolation` now pass `Rig` the classloader that loaded them
+  (`Classloader[Jvm.type]` / `Classloader[Isolation.type]`) instead of
+  `hellenism.classloaders.systemClassloader`, and `superlunary.Rig#classpath` derives its entries
+  from `Classloader[Rig]` rather than the thread-context classloader. Identical in a plain
+  `java -cp` process; differs only when the rig is loaded by a non-system classloader. (#TBD)
