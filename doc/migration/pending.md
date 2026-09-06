@@ -513,3 +513,27 @@ not yet been recorded here.
   the path of a file the bootstrap keeps updated with one line, `<completed> <total> <bytes>`,
   while fetching, and deletes when done. Ethereal's launcher sets it; a plain `java -jar` run
   writes nothing. (#1938)
+## probably (allocation per operation)
+
+- `probably.TestEvent.BenchmarkRecorded` gains a field `allocation: Optional[Long]` (bytes
+  allocated per operation over the timed batches; `Unset` when the producer did not measure it)
+  between `operationRate` and `timestamp`. Its arity is now 14. The BinTEL schema fingerprint
+  `probably.Streamer.fingerprint` changes accordingly, so a host built against an earlier
+  `probably` reports the suite as incompatible: fume must be rebuilt against this version.
+- `probably.Benchmark` gains a trailing parameter `allocation: Optional[Long] = Unset`, and
+  `Benchmark.inclusion` records `Metric.Allocation` (bytes per operation) in the `Run` metrics
+  when it is present.
+
+## sedentary
+
+- `sedentary.Bench` constructor changed from `Bench()(using Classloader, Environment)(using BenchmarkDevice)`
+  to `Bench(heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset)(using Classloader, Environment)(using BenchmarkDevice)`,
+  with the same meaning as `Stress`'s parameters: the measurement JVM's fixed heap (`-Xms`/`-Xmx`,
+  default `1g`), its processor count, and its collector (`-XX:+Use<gc>GC`, default `Serial`).
+  `Bench()` is unchanged in behaviour.
+- `sedentary.Bench` now measures the bytes allocated across a cell's timed batches (via
+  `com.sun.management.ThreadMXBean#getTotalThreadAllocatedBytes`, so worker and virtual-thread
+  allocation is included) and reports it as `allocation` on `probably.Benchmark` and
+  `TestEvent.BenchmarkRecorded`. The harness's own boxing of each body result into its sink
+  (one box per operation for a primitive result) is included, not subtracted. The staged
+  measurement list returned by a cell has one more trailing element.

@@ -35,6 +35,8 @@ package probably
 import scala.math
 
 import anticipation.*
+import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object Benchmark:
@@ -46,8 +48,8 @@ object Benchmark:
         benchmark:   Benchmark )
     :   Report =
 
-      val metrics =
-        Ledger
+      val timings: List[(Metric, Double)] =
+        List
           ( Metric.Iterations -> benchmark.iterations.toDouble,
             Metric.Mean       -> benchmark.mean,
             Metric.Least      -> benchmark.min,
@@ -57,6 +59,14 @@ object Benchmark:
             Metric.Confidence -> (if benchmark.mean == 0.0 then 0.0
                                   else benchmark.confidenceInterval/benchmark.mean),
             Metric.Throughput -> benchmark.throughput.toDouble )
+
+      // The `Optional` is bound to a typed local before the combinator, as in `Strain`.
+      val allocation: Optional[Long] = benchmark.allocation
+
+      val memory: List[(Metric, Double)] =
+        allocation.lay(List[(Metric, Double)]()): bytes => List(Metric.Allocation -> bytes.toDouble)
+
+      val metrics = (timings + memory).to[Ledger]
 
       val payload: Optional[Run.Payload] =
         if benchmark.operationSize.absent && benchmark.operationRate.absent then Unset
@@ -78,6 +88,7 @@ object Benchmark:
             benchmark.confidence,
             benchmark.operationSize,
             benchmark.operationRate,
+            benchmark.allocation,
             java.lang.System.currentTimeMillis )
 
       report.record
@@ -99,7 +110,8 @@ case class Benchmark
     sd:             Double,
     confidence:     Benchmark.Percentiles,
     operationSize:  Optional[Text] = Unset,
-    operationRate:  Optional[Text] = Unset ):
+    operationRate:  Optional[Text] = Unset,
+    allocation:     Optional[Long] = Unset ):
 
   // One-sided quantiles of Student's t-distribution, used for CI half-widths
   // computed from `runs` independent measurement-run means with df = runs - 1.
