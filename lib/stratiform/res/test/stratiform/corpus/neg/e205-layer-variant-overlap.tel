@@ -1,13 +1,15 @@
-tel 1.0 specification.tel/tels
+tel 1.0 specification.tel/tels:2.0.0
 
-name e208-test
+name e205-test
+
+select Status
+  variant name Flag
+  variant other Flag
 
 document
-  field name string
+  field name String
 
 layer
   name extension
   overlay
-    select
-      variant name flag
-      variant other flag
+    select Status

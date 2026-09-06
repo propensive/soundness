@@ -9,8 +9,8 @@ Document {
                 Tabulation {
                     marker_offsets: [
                         0,
-                        6,
-                        14,
+                        8,
+                        16,
                     ],
                     headings: [
                         "ID",
@@ -25,7 +25,7 @@ Document {
                     atoms: [
                         Inline {
                             text: "30",
-                            preceding_spaces: 1,
+                            preceding_spaces: 3,
                         },
                         Inline {
                             text: "hello",
@@ -40,7 +40,7 @@ Document {
                     atoms: [
                         Inline {
                             text: "25",
-                            preceding_spaces: 3,
+                            preceding_spaces: 5,
                         },
                         Inline {
                             text: "world",

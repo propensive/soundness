@@ -125,48 +125,68 @@ object Base256:
 
     Text(sb.toString)
 
-  // Permissive decode (§9). Every input character is mapped to
-  // `codepoint(c) mod 256`. Characters outside the alphabet are not
-  // rejected; their residue is taken as-is.
+  // Permissive decode (§9). Every input character — a code point, so a
+  // supplementary character is one character and yields one byte — is
+  // mapped to `codepoint(c) mod 256`. Characters outside the alphabet are
+  // not rejected; their residue is taken as-is.
   def decode(text: Text): Data =
     val s = text.s
-    val out = new scala.Array[Byte](s.length)
+    val out = new scala.Array[Byte](s.codePointCount(0, s.length))
     var i = 0
+    var n = 0
 
     while i < s.length do
-      out(i) = (s.charAt(i).toInt % 256).toByte
-      i += 1
+      val c = s.codePointAt(i)
+      out(n) = (c % 256).toByte
+      n += 1
+      i += Character.charCount(c)
 
     out.asInstanceOf[Array[Byte]^{}]
 
-  // Strict decode (§9). Verifies every input character is a member of
-  // the alphabet; raises a `Base256.Error` listing the first offending
-  // character's position and code point. Successful decoding behaves
-  // identically to `decode`.
+  // Strict decode (§9). Verifies every input character is a member of the
+  // alphabet; raises a `Base256.Error` naming every offending character by
+  // its zero-based code-point index (not a byte or UTF-16 offset) and its
+  // code point, so that an editor can locate each one. Successful decoding
+  // behaves identically to `decode`.
   def decodeStrict(text: Text): Data raises Base256.Error =
     val s = text.s
-    val out = new scala.Array[Byte](s.length)
+    val out = new scala.Array[Byte](s.codePointCount(0, s.length))
+    var offenders = scala.collection.immutable.List.empty[Base256.Offender]
     var i = 0
+    var n = 0
 
     while i < s.length do
-      val c = s.charAt(i)
-      if !membership.readable(c.toInt) then abort(Base256.Error(Base256.Error.Reason.NotInAlphabet(i, c)))
-      out(i) = (c.toInt % 256).toByte
-      i += 1
+      val c = s.codePointAt(i)
+      if c > 0xffff || !membership.readable(c) then offenders = Base256.Offender(n, c) :: offenders
+      out(n) = (c % 256).toByte
+      n += 1
+      i += Character.charCount(c)
+
+    if !offenders.isEmpty
+    then abort(Base256.Error(Base256.Error.Reason.NotInAlphabet(offenders.reverse)))
 
     out.asInstanceOf[Array[Byte]^{}]
+
+  // A character outside the alphabet: its zero-based code-point index in
+  // the input, and its code point.
+  case class Offender(position: Int, codepoint: Int):
+    def render: Text =
+      val cp = String.format("U+%04X", Integer.valueOf(codepoint)).nn
+      Text(s"`${new String(Character.toChars(codepoint))}` ($cp) at position $position")
 
   // Base256Error → Base256.Error
   object Error:
 
     object Reason:
       given communicable: Reason is Communicable =
-        case NotInAlphabet(position, character) =>
-          val cp = String.format("U+%04X", Integer.valueOf(character.toInt)).nn
-          m"the character `$character` ($cp) at position $position is not in the BASE-256 alphabet"
+        case NotInAlphabet(offenders) =>
+          val listed = Text(offenders.map(_.render.s).mkString(", "))
+          m"the characters $listed are not in the BASE-256 alphabet"
 
     enum Reason(val number: Int) extends Clarification:
-      case NotInAlphabet(position: Int, character: Char) extends Reason(1)
+      // §9: every offending character is reported, not only the first.
+      case NotInAlphabet(offenders: scala.collection.immutable.List[Base256.Offender])
+      extends Reason(1)
 
   case class Error(reason: Base256.Error.Reason)(using Diagnostics)
   extends fulminate.Error(607, reason.number)(m"the BASE-256 string is invalid because $reason")

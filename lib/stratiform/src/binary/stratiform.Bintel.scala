@@ -47,7 +47,9 @@ import vacuous.*
 
 object Bintel:
 
-  // §6 magic number: the 4 bytes that prefix every BinTEL document.
+  // §6.1 magic number: the 4 bytes that prefix every external-schema
+  // BinTEL document, followed by the document length (§6, a varint
+  // counting every byte after it) that makes the document self-framing.
   // When viewed as BASE-256 text these are the four Greek letters
   // `β τ ε λ` — visually evocative of "binary TEL".
   val magic: Data =
@@ -61,13 +63,24 @@ object Bintel:
     scala.Array[Byte](0xb2.toByte, 0xc4.toByte, 0xb5.toByte, 0xbc.toByte)
       .asInstanceOf[Array[Byte]^{}]
 
-  // The result of unframing a complete §6 file: the carried schema
-  // signature bytes and the document-root body bytes.
-  case class Framed(signature: Data, body: Data)
+  // The result of unframing one §6 document: the carried schema signature
+  // bytes, the document-root body bytes, and the offset at which the
+  // document's continuation (§6.3) begins.
+  case class Framed(signature: Data, body: Data, continuation: Int)
 
-  // A fully decoded BinTEL document: the carried schema signature
-  // bytes and the recovered semantic-model `Tel.Element` root.
-  case class Document(signature: Data, root: Tel.Element)
+  // A fully decoded BinTEL document: the carried schema signature bytes,
+  // the recovered semantic-model `Tel.Element` root, and the offset at
+  // which the document's continuation (§6.3) begins — one past its last
+  // byte, as fixed by the declared document length. Bytes from there are
+  // the caller's to interpret: a further document, content in another
+  // format, or nothing at all.
+  case class Document(signature: Data, root: Tel.Element, continuation: Int)
+
+  // §11: the decoder's nesting-depth limit, matching the type-assignment
+  // limit of TEL §20.2 so that every document a conforming parser accepts
+  // is also decodable. Exceeding it is a resource error of the decoder's
+  // configuration, not a B-code of the document.
+  private val nestingLimit = 256
 
   // Encode a `Tel.Element` tree to its BinTEL body bytes. The element is
   // expected to be the document root (a Node with `keywordIndex = Unset`
@@ -120,82 +133,243 @@ object Bintel:
 
       Cadence.unpack(xor.toByte).let(_.hashCount(total - 1)).present
 
-  // §6 framing. Wrap a body byte sequence with the magic number, the
+  // §6.1 framing. Wrap a body byte sequence with the magic number, the
+  // document length (a varint counting every byte that follows it), the
   // signature length (varint), and the signature bytes. The signature
   // length MUST be a valid palimpsest length under some `(H, k_i, k_r)`,
-  // recovered from the trailing cadence byte (§8.2 of bintel.md, §4.2
+  // recovered from the trailing cadence byte (§8.2 of bintel.md, §5.2
   // of palimpsest.md); otherwise raises `BadSignatureLength`.
   def frame(body: Data, signature: Data): Data raises Bintel.Error =
     if !validSignatureLength(signature)
     then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
-    Array.collect[Byte](magic.length + 10 + signature.length + body.length): out =>
+    Array.collect[Byte](magic.length + 20 + signature.length + body.length): out =>
       out.append(magic)
-      writeVarint(out, signature.length.toLong)
+      val sigLen = Varint.encode(signature.length.toLong)
+      writeVarint(out, (sigLen.length + signature.length + body.length).toLong)
+      out.append(sigLen)
       out.append(signature)
       out.append(body)
 
-  // §6 unframing. Parse a complete BinTEL byte sequence into its
-  // signature bytes and body bytes. Validates the magic number (B01),
-  // the signature length pattern (B03), and leaves trailing-byte (B08)
-  // detection to the caller (typically `Bintel.decode` over the body).
-  def unframe(data: Data): Framed raises Bintel.Error =
-    if data.length < magic.length then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
+  private def matchesMagic(data: Data, offset: Int, expected: Data): Boolean =
+    data.length - offset >= expected.length && {
+      var i  = 0
+      var ok = true
 
-    var i = 0
+      while ok && i < expected.length do
+        if data.readable(offset + i) != expected.readable(i) then ok = false
+        i += 1
 
-    while i < magic.length do
-      if data.readable(i) != magic.readable(i) then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
-      i += 1
+      ok
+    }
 
-    val sigLenDecoded =
-      import errorDiagnostics.emptyDiagnostics
+  // A varint read from `data` at `at` and confined to `[at, end)`: B02 for
+  // any §4 failure, including a varint with no bytes available or one
+  // that runs past `end` (§10's precedence: truncation inside a varint
+  // is B02, not B09).
+  private def varintAt(data: Data, at: Int, end: Int): Varint.Decoded raises Bintel.Error =
+    import errorDiagnostics.emptyDiagnostics
 
+    if at >= end then abort(Bintel.Error(Bintel.Error.Reason.VarintError))
+
+    val decoded =
       mitigate:
         case _: Varint.Error => Bintel.Error(Bintel.Error.Reason.VarintError)
 
-      . protect(Varint.decode(data, magic.length))
+      . protect(Varint.decode(data, at))
 
-    val sigLength = sigLenDecoded.value.toInt
+    if decoded.next > end then abort(Bintel.Error(Bintel.Error.Reason.VarintError))
+    decoded
 
-    val sigStart = sigLenDecoded.next
-    val sigEnd   = sigStart + sigLength
+  // §6.1/§6.2 fields 1 and 2: the magic number, which selects the mode,
+  // and the declared document length. Returns whether the document is
+  // self-contained, the offset of its first byte after the length field,
+  // and the offset of its continuation. The declared length is checked
+  // against the bytes remaining before it is acted on (§11: B09 when it
+  // overruns), and never sizes a buffer.
+  private def readHeader(data: Data, offset: Int): (Boolean, Int, Int) raises Bintel.Error =
+    if offset < 0 || data.length - offset < magic.length
+    then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
 
-    if sigEnd > data.length then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
+    val selfContained =
+      if matchesMagic(data, offset, magic) then false
+      else if matchesMagic(data, offset, magicSelfContained) then true
+      else abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
 
-    val sigBytes = new scala.Array[Byte](sigLength)
-    System.arraycopy(data.asInstanceOf[scala.Array[Byte]], sigStart, sigBytes, 0, sigLength)
-    val bodyBytes = new scala.Array[Byte](data.length - sigEnd)
-    System.arraycopy(data.asInstanceOf[scala.Array[Byte]], sigEnd, bodyBytes, 0, bodyBytes.length)
+    val declared  = varintAt(data, offset + magic.length, data.length)
+    val bodyStart = declared.next
 
-    val sig = sigBytes.asInstanceOf[Array[Byte]^{}]
+    if declared.value > (data.length - bodyStart).toLong
+    then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
 
-    if !validSignatureLength(sig) then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
+    (selfContained, bodyStart, bodyStart + declared.value.toInt)
 
-    Framed(sig, bodyBytes.asInstanceOf[Array[Byte]^{}])
+  // §6.1 field 3 / §6.2 field 3: the signature length and bytes, read
+  // within `[offset, end)`. B03 if the length is not a valid palimpsest
+  // length; B09 if the bytes are truncated.
+  private def readSignature(data: Data, offset: Int, end: Int): (Data, Int) raises Bintel.Error =
+    val sigLen   = varintAt(data, offset, end)
+    val sigStart = sigLen.next
 
-  // §6 + §7.8 — decode a complete BinTEL document (magic + signature
-  // + body) into a `Document` carrying the signature bytes and the
-  // semantic-model `Tel.Element` tree under `schema`. This layer does
-  // not verify the signature against the schema (§8.2 palimpsest
-  // decoding is a follow-up).
+    if sigLen.value > (end - sigStart).toLong
+    then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
+
+    val sigEnd    = sigStart + sigLen.value.toInt
+    val signature = data.segment(sigStart.z till sigEnd.z)
+
+    if !validSignatureLength(signature)
+    then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
+
+    (signature, sigEnd)
+
+  // §6.1 unframing. Parse the external-schema document beginning at
+  // `offset` into its signature bytes and body bytes without decoding the
+  // body. Validates the magic number (B01) and the signature length
+  // pattern (B03). The body's structural extent is not checked against
+  // the declared length here (that is B16, raised by the decoders), and
+  // the continuation is returned rather than judged (§6.3).
+  def unframe(data: Data): Framed raises Bintel.Error = unframe(data, 0)
+
+  def unframe(data: Data, offset: Int): Framed raises Bintel.Error =
+    val (selfContained, bodyStart, end) = readHeader(data, offset)
+    if selfContained then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
+    val (signature, sigEnd) = readSignature(data, bodyStart, end)
+    Framed(signature, data.segment(sigEnd.z till end.z), end)
+
+  // §6.3 framing without decoding: read the magic number and the declared
+  // document length of the document beginning at `offset`, in either mode,
+  // and return the offset at which its continuation begins. Resolves no
+  // schema and allocates nothing proportional to the document, so a reader
+  // may count, skip, split or forward the documents of a stream at
+  // constant cost each.
+  def documentExtent(data: Data): Int raises Bintel.Error = documentExtent(data, 0)
+
+  def documentExtent(data: Data, offset: Int): Int raises Bintel.Error =
+    readHeader(data, offset)(2)
+
+  // §6.1 + §7.8 — single-document decoding (§6.3): decode the external-
+  // schema document beginning at `offset` under `schema`, returning the
+  // signature, the semantic-model root and the continuation offset. Bytes
+  // beyond the document are neither decoded nor validated, and need not
+  // be BinTEL. This layer does not verify the signature against the
+  // schema; `SchemaResolver` does.
   def decodeDocument(data: Data, schema: Tels): Document raises Bintel.Error =
-    val framed = unframe(data)
-    Document(framed.signature, decode(framed.body, schema))
+    decodeFramed(data, 0, schema, Unset, false)
 
-  // Codec-aware §6 decoding; see `decode` for the B13/B14/B15 rules.
+  def decodeDocument(data: Data, schema: Tels, offset: Int): Document raises Bintel.Error =
+    decodeFramed(data, offset, schema, Unset, false)
+
+  // Codec-aware single-document decoding; see `decode` for the B13/B14/B15
+  // rules.
   def decodeDocument
     ( data: Data, schema: Tels, codecs: Tel.Codec.Bindings,
       checkCanonical: Boolean = false )
   :   Document raises Bintel.Error =
 
-    val framed = unframe(data)
-    Document(framed.signature, decode(framed.body, schema, codecs, checkCanonical))
+    decodeFramed(data, 0, schema, Tel.Codec.Resolver(codecs), checkCanonical)
 
-  // §6.2 self-contained framing: magic_BC, signature (length varint +
-  // bytes), embedded schema body (length varint + bytes), document root.
-  // The signature length MUST be a valid palimpsest length; otherwise
-  // raises `BadSignatureLength`.
+  def decodeDocument
+    ( data: Data, schema: Tels, codecs: Tel.Codec.Bindings, checkCanonical: Boolean,
+      offset: Int )
+  :   Document raises Bintel.Error =
+
+    decodeFramed(data, offset, schema, Tel.Codec.Resolver(codecs), checkCanonical)
+
+  // §6.3 whole-document reading: `data` is exactly one external-schema
+  // document and nothing else, so a non-empty continuation is B08. That
+  // is a property of this reader's contract, not of the bytes, which are
+  // a well-formed stream to `decodeStream`.
+  def decodeWholeDocument(data: Data, schema: Tels): Document raises Bintel.Error =
+    whole(data, decodeDocument(data, schema))
+
+  def decodeWholeDocument
+    ( data: Data, schema: Tels, codecs: Tel.Codec.Bindings,
+      checkCanonical: Boolean = false )
+  :   Document raises Bintel.Error =
+
+    whole(data, decodeDocument(data, schema, codecs, checkCanonical))
+
+  private def whole(data: Data, document: Document): Document raises Bintel.Error =
+    if document.continuation != data.length
+    then abort(Bintel.Error(Bintel.Error.Reason.TrailingBytes))
+
+    document
+
+  // §6.3 stream decoding: the documents of `data` in order, by recursion
+  // on the continuation. Every document is independent: an external-
+  // schema document is decoded under `schema` and a self-contained one
+  // under its embedded schema, so the modes may be interleaved freely. A
+  // continuation beginning with neither magic number is B01 at that
+  // position, and decoding stops at the first error. A reader consuming an
+  // untrusted stream should bound the count and bytes it accepts (§11); a
+  // stream whose external-schema documents are typed by several schemas
+  // is driven by the caller with `documentExtent` and `unframe`, choosing
+  // a schema per signature.
+  def decodeStream(data: Data, schema: Tels): List[Document] raises Bintel.Error =
+    decodeStreamAll(data, schema, Unset, false)
+
+  def decodeStream
+    ( data: Data, schema: Tels, codecs: Tel.Codec.Bindings,
+      checkCanonical: Boolean = false )
+  :   List[Document] raises Bintel.Error =
+
+    decodeStreamAll(data, schema, Tel.Codec.Resolver(codecs), checkCanonical)
+
+  private def decodeStreamAll
+    ( data: Data, schema: Tels, codecs: Optional[Tel.Codec.Resolver],
+      checkCanonical: Boolean )
+  :   List[Document] raises Bintel.Error =
+
+    val buffer = scala.collection.mutable.ListBuffer.empty[Document]
+    var offset = 0
+
+    while offset < data.length do
+      val document =
+        if matchesMagic(data, offset, magicSelfContained)
+        then decodeSelfContainedAll(data, offset, codecs, checkCanonical)
+        else decodeFramed(data, offset, schema, codecs, checkCanonical)
+
+      buffer += document
+      offset = document.continuation
+
+    buffer.to(List)
+
+  private def decodeFramed
+    ( data: Data, offset: Int, schema: Tels, codecs: Optional[Tel.Codec.Resolver],
+      checkCanonical: Boolean )
+  :   Document raises Bintel.Error =
+
+    val (selfContained, bodyStart, end) = readHeader(data, offset)
+
+    // This entry point handles external-schema mode only; a self-contained
+    // document is decoded by `decodeDocumentSelfContained`, or dispatched
+    // to it by `decodeStream`.
+    if selfContained then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
+
+    val (signature, sigEnd) = readSignature(data, bodyStart, end)
+    val body = data.segment(sigEnd.z till end.z)
+    Document(signature, decodeExtent(body, schema, codecs, checkCanonical), end)
+
+  // §6.1 field 2 / §6.2 field 2: decode a document root whose extent the
+  // declared length fixed, and require the structural extent to agree
+  // (B16). The declared length is what lets a reader delimit a document
+  // without a schema; the agreement check is what stops a forged length
+  // concealing bytes inside a document or exposing bytes of the next.
+  private def decodeExtent
+    ( body: Data, schema: Tels, codecs: Optional[Tel.Codec.Resolver], checkCanonical: Boolean )
+  :   Tel.Element raises Bintel.Error =
+
+    val (root, consumed) = decodeBody(body, schema, codecs, checkCanonical)
+
+    if consumed != body.length
+    then abort(Bintel.Error(Bintel.Error.Reason.DeclaredLengthMismatch))
+
+    root
+
+  // §6.2 self-contained framing: magic_BC, document length, signature
+  // (length varint + bytes), embedded schema body (length varint + bytes),
+  // document root. The signature length MUST be a valid palimpsest length;
+  // otherwise raises `BadSignatureLength`.
   def frameSelfContained(signature: Data, schemaBody: Data, body: Data)
   :   Data raises Bintel.Error =
 
@@ -203,13 +377,21 @@ object Bintel:
     then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
     val hint =
-      magicSelfContained.length + 20 + signature.length + schemaBody.length + body.length
+      magicSelfContained.length + 30 + signature.length + schemaBody.length + body.length
 
     Array.collect[Byte](hint): out =>
+      val sigLen = Varint.encode(signature.length.toLong)
+      val schLen = Varint.encode(schemaBody.length.toLong)
       out.append(magicSelfContained)
-      writeVarint(out, signature.length.toLong)
+
+      writeVarint
+        ( out,
+          (sigLen.length + signature.length + schLen.length + schemaBody.length + body.length)
+          . toLong )
+
+      out.append(sigLen)
       out.append(signature)
-      writeVarint(out, schemaBody.length.toLong)
+      out.append(schLen)
       out.append(schemaBody)
       out.append(body)
 
@@ -227,14 +409,20 @@ object Bintel:
     val schemaBody = schemaDoc.bintel(axiom)
     frameSelfContained(signature, schemaBody, tel.bintel(schema))
 
-  // §6.2 decoder. Decode a complete self-contained BinTEL document. The
-  // embedded schema body is decoded under the tels axiom and used to
-  // reconstruct the composed schema (B12 on any failure); its signature is
-  // recomputed and verified byte-for-byte against the carried signature
-  // (B11 on mismatch) before the document root is decoded under the
-  // reconstructed schema.
+  // §6.2 decoder — single-document decoding (§6.3) of the self-contained
+  // document beginning at `offset`. The embedded schema body is decoded
+  // under the tels axiom and used to reconstruct the composed schema (B12
+  // on any failure); its signature is recomputed and verified byte-for-
+  // byte against the carried signature (B11 on mismatch) before the
+  // document root is decoded under the reconstructed schema. Verification
+  // proves only that the body is internally consistent with its
+  // signature: a receiver requiring a *trusted* schema must compare the
+  // signature against those it knows (§11).
   def decodeDocumentSelfContained(data: Data): Document raises Bintel.Error =
-    decodeSelfContainedAll(data, Unset, false)
+    decodeSelfContainedAll(data, 0, Unset, false)
+
+  def decodeDocumentSelfContained(data: Data, offset: Int): Document raises Bintel.Error =
+    decodeSelfContainedAll(data, offset, Unset, false)
 
   // Codec-aware §6.2 decoding: the binding applies only to the *outer*
   // document root. The embedded schema body is governed by `tels`, which
@@ -243,43 +431,45 @@ object Bintel:
     ( data: Data, codecs: Tel.Codec.Bindings, checkCanonical: Boolean = false )
   :   Document raises Bintel.Error =
 
-    decodeSelfContainedAll(data, Tel.Codec.Resolver(codecs), checkCanonical)
+    decodeSelfContainedAll(data, 0, Tel.Codec.Resolver(codecs), checkCanonical)
+
+  def decodeDocumentSelfContained
+    ( data: Data, codecs: Tel.Codec.Bindings, checkCanonical: Boolean, offset: Int )
+  :   Document raises Bintel.Error =
+
+    decodeSelfContainedAll(data, offset, Tel.Codec.Resolver(codecs), checkCanonical)
+
+  // §6.3 whole-document reading of a self-contained document: B08 on a
+  // non-empty continuation.
+  def decodeWholeDocumentSelfContained(data: Data): Document raises Bintel.Error =
+    whole(data, decodeDocumentSelfContained(data))
+
+  def decodeWholeDocumentSelfContained
+    ( data: Data, codecs: Tel.Codec.Bindings, checkCanonical: Boolean = false )
+  :   Document raises Bintel.Error =
+
+    whole(data, decodeDocumentSelfContained(data, codecs, checkCanonical))
 
   private def decodeSelfContainedAll
-    ( data: Data, codecs: Optional[Tel.Codec.Resolver], checkCanonical: Boolean )
+    ( data: Data, offset: Int, codecs: Optional[Tel.Codec.Resolver], checkCanonical: Boolean )
   :   Document raises Bintel.Error =
 
     import errorDiagnostics.emptyDiagnostics
 
-    if data.length < magicSelfContained.length then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
+    val (selfContained, bodyStart, end) = readHeader(data, offset)
+    if !selfContained then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
 
-    var i = 0
+    val (signature, sigEnd) = readSignature(data, bodyStart, end)
 
-    while i < magicSelfContained.length do
-      if data.readable(i) != magicSelfContained.readable(i) then abort(Bintel.Error(Bintel.Error.Reason.BadMagic))
-      i += 1
+    val schLen   = varintAt(data, sigEnd, end)
+    val schStart = schLen.next
 
-    def varint(at: Int) =
-      mitigate:
-        case _: Varint.Error => Bintel.Error(Bintel.Error.Reason.VarintError)
+    if schLen.value > (end - schStart).toLong
+    then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
 
-      . protect(Varint.decode(data, at))
-
-    val sigLenD   = varint(magicSelfContained.length)
-    val sigStart  = sigLenD.next
-    val sigEnd    = sigStart + sigLenD.value.toInt
-    if sigEnd > data.length then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
-    val signature = data.segment((sigStart).z till (sigEnd).z)
-
-    if !validSignatureLength(signature)
-    then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
-
-    val schLenD   = varint(sigEnd)
-    val schStart  = schLenD.next
-    val schEnd    = schStart + schLenD.value.toInt
-    if schEnd > data.length then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
-    val schemaBody = data.segment((schStart).z till (schEnd).z)
-    val docBody    = data.segment((schEnd).z till (data.length).z)
+    val schEnd     = schStart + schLen.value.toInt
+    val schemaBody = data.segment(schStart.z till schEnd.z)
+    val docBody    = data.segment(schEnd.z till end.z)
 
     val axiom = Tels.Axiom.tels
 
@@ -299,7 +489,7 @@ object Bintel:
     if !bytesEqual(recomputed, signature)
     then abort(Bintel.Error(Bintel.Error.Reason.EmbeddedSignatureMismatch))
 
-    Document(signature, decodeAll(docBody, composed, codecs, checkCanonical))
+    Document(signature, decodeExtent(docBody, composed, codecs, checkCanonical), end)
 
   private def bytesEqual(a: Data, b: Data): Boolean =
     a.length == b.length && {
@@ -344,40 +534,63 @@ object Bintel:
 
     decodeAll(data, schema, Tel.Codec.Resolver(codecs), checkCanonical)
 
+  // The whole-body reader: the body is exactly one document root, so
+  // bytes remaining after it are B08.
   private def decodeAll
     ( data: Data, schema: Tels, codecs: Optional[Tel.Codec.Resolver],
       checkCanonical: Boolean )
   :   Tel.Element raises Bintel.Error =
 
+    val (root, consumed) = decodeBody(data, schema, codecs, checkCanonical)
+    if consumed != data.length then abort(Bintel.Error(Bintel.Error.Reason.TrailingBytes))
+    root
+
+  // §7.8 over body bytes: the document root and the number of bytes its
+  // structure consumed.
+  private def decodeBody
+    ( data: Data, schema: Tels, codecs: Optional[Tel.Codec.Resolver],
+      checkCanonical: Boolean )
+  :   (Tel.Element, Int) raises Bintel.Error =
+
     val cursor = Cursor(data, 0)
 
     val root =
       decodeStructBody(cursor, schema.document, schema, keywordIndex = Unset, codecs,
-        checkCanonical)
+        checkCanonical, depth = 0)
 
-    if cursor.offset != data.length then abort(Bintel.Error(Bintel.Error.Reason.TrailingBytes))
-    root
+    (root, cursor.offset)
 
   private def decodeStructBody
     ( cursor: Cursor, struct: Tels.Struct, schema: Tels,
       keywordIndex: Optional[Int], codecs: Optional[Tel.Codec.Resolver],
-      checkCanonical: Boolean )
+      checkCanonical: Boolean, depth: Int )
   :   Tel.Element raises Bintel.Error =
+
+    // §11 resource limits: every count in the stream is adversarial, so
+    // the decoder fails rather than exhausting the stack or the heap.
+    if depth > nestingLimit then abort(Bintel.Error(Bintel.Error.Reason.NestingLimitExceeded))
 
     val flat = flattenKeywords(struct, schema)
     val childCount = readVarint(cursor)
-    val children = new scala.Array[Tel.Element](childCount.toInt)
-    var i = 0
 
-    while i < childCount.toInt do
-      children(i) = decodeElement(cursor, flat, schema, codecs, checkCanonical)
+    // Each child consumes at least one byte (its keyword index), so a count
+    // exceeding the bytes remaining is unsatisfiable and is rejected before
+    // anything is allocated; storage grows only as children are read.
+    if childCount > (cursor.data.length - cursor.offset).toLong
+    then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
+
+    val children = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+    var i = 0L
+
+    while i < childCount do
+      children += decodeElement(cursor, flat, schema, codecs, checkCanonical, depth)
       i += 1
 
-    Tel.Element.Node(keywordIndex, struct, children.asInstanceOf[Array[Tel.Element]^{}])
+    Tel.Element.Node(keywordIndex, struct, Array.from(children))
 
   private def decodeElement
     ( cursor: Cursor, flat: Array[(Text, Tels.Type)]^{}, schema: Tels,
-      codecs: Optional[Tel.Codec.Resolver], checkCanonical: Boolean )
+      codecs: Optional[Tel.Codec.Resolver], checkCanonical: Boolean, depth: Int )
   :   Tel.Element raises Bintel.Error =
 
     val kidx = readVarint(cursor)
@@ -387,7 +600,8 @@ object Bintel:
 
     resolved match
       case s: Tels.Struct =>
-        decodeStructBody(cursor, s, schema, keywordIndex = kidx.toInt, codecs, checkCanonical)
+        decodeStructBody(cursor, s, schema, keywordIndex = kidx.toInt, codecs, checkCanonical,
+          depth + 1)
 
       case s: Tels.Scalar =>
         // The value's byte length is read before any codec is consulted,
@@ -442,10 +656,10 @@ object Bintel:
       case _: Tels.Reference =>
         abort(Bintel.Error(Bintel.Error.Reason.ReferenceUnresolved))
 
+  // §10: a varint that is truncated — including one with no bytes
+  // available at all — wider than 64 bits, or overlong is B02.
   private def readVarint(cursor: Cursor): Long raises Bintel.Error =
     import errorDiagnostics.emptyDiagnostics
-
-    if cursor.offset >= cursor.data.length then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
 
     mitigate:
       case _: Varint.Error => Bintel.Error(Bintel.Error.Reason.VarintError)
@@ -458,9 +672,25 @@ object Bintel:
   // Flatten a Struct's members into a parallel keyword/type sequence
   // per §5. Fields contribute one entry; SelectRefs contribute one
   // entry per variant in the referenced SelectDefinition. Excludes
-  // contribute none.
+  // contribute none. A SelectRef naming no SelectDefinition — because
+  // the name is unbound, or bound to a record or scalar — is B10 (§10):
+  // silently contributing no slots would shift every later keyword index
+  // and decode the document against the wrong members.
   private def flattenKeywords(struct: Tels.Struct, schema: Tels)
+  :   Array[(Text, Tels.Type)]^{} raises Bintel.Error =
+
+    flatten(struct, schema, strict = true)
+
+  // The same flattening for trees `decode` produced, whose SelectRefs it
+  // has already resolved; skips the unresolvable ones instead of raising.
+  private def flattenKeywordsLenient(struct: Tels.Struct, schema: Tels)
   :   Array[(Text, Tels.Type)]^{} =
+
+    import errorDiagnostics.emptyDiagnostics
+    unsafely(flatten(struct, schema, strict = false))
+
+  private def flatten(struct: Tels.Struct, schema: Tels, strict: Boolean)
+  :   Array[(Text, Tels.Type)]^{} raises Bintel.Error =
 
     val buf = scala.collection.mutable.ArrayBuffer.empty[(Text, Tels.Type)]
     var i = 0
@@ -471,13 +701,17 @@ object Bintel:
           buf += ((f.keyword, f.fieldType))
 
         case s: Tels.SelectRef =>
-          schema.selects.seek(_.name == s.reference).let: selectDef =>
-            var v = 0
+          schema.selects.seek(_.name == s.reference) match
+            case selectDef: Tels.SelectDefinition =>
+              var v = 0
 
-            while v < selectDef.variants.length do
-              val variant = selectDef.variants.readable(v)
-              buf += ((variant.keyword, variant.variantType))
-              v += 1
+              while v < selectDef.variants.length do
+                val variant = selectDef.variants.readable(v)
+                buf += ((variant.keyword, variant.variantType))
+                v += 1
+
+            case _ =>
+              if strict then abort(Bintel.Error(Bintel.Error.Reason.ReferenceUnresolved))
 
         case _: Tels.Exclude =>
           ()
@@ -492,7 +726,7 @@ object Bintel:
   // re-decoded to a typed value through `Tel.Decodable`.
   private def present(element: Tel.Element, schema: Tels): Tel = element match
     case Tel.Element.Node(_, struct: Tels.Struct, children) =>
-      val flat = flattenKeywords(struct, schema)
+      val flat = flattenKeywordsLenient(struct, schema)
       val blk = blocks(children.remap(presentCompound(_, flat, schema)))
 
       Tel.make(Tel.Compound("", Array.empty, Unset, blk))
@@ -510,7 +744,7 @@ object Bintel:
 
       case Tel.Element.Node(kidx, struct: Tels.Struct, children) =>
         val keyword   = kidx.let(flat.readable(_)._1).or(Text(""))
-        val childFlat = flattenKeywords(struct, schema)
+        val childFlat = flattenKeywordsLenient(struct, schema)
 
         Tel.Compound
           ( keyword,
@@ -722,7 +956,7 @@ object Bintel:
   // because type assignment inserts them first, and the stable sort keeps
   // that order within a member.
   private def canonicalOrder(children: Array[Tel.Element]^{}, parent: Tels.Struct, schema: Tels)
-  :   Array[Tel.Element]^{} =
+  :   Array[Tel.Element]^{} raises Bintel.Error =
 
     if children.length <= 1 then children
     else
@@ -752,8 +986,10 @@ object Bintel:
   // its member begins. A `Field` occupies one slot (mapping to itself); a
   // `SelectRef` occupies one slot per variant of the referenced Select,
   // all mapping to the SelectRef's starting flat index; an `Exclude`
-  // occupies none.
-  private def memberBaseByFlatIndex(parent: Tels.Struct, schema: Tels): Array[Int]^{} =
+  // occupies none. An unresolvable SelectRef is B10, as in `flattenKeywords`.
+  private def memberBaseByFlatIndex(parent: Tels.Struct, schema: Tels)
+  :   Array[Int]^{} raises Bintel.Error =
+
     val bases = scala.collection.mutable.ArrayBuffer.empty[Int]
     var flat = 0
     var i = 0
@@ -765,7 +1001,8 @@ object Bintel:
           flat += 1
 
         case s: Tels.SelectRef =>
-          val width = schema.selects.seek(_.name == s.reference).lay(0)(_.variants.length)
+          val width = schema.selects.seek(_.name == s.reference).let(_.variants.length).or:
+            abort(Bintel.Error(Bintel.Error.Reason.ReferenceUnresolved))
 
           var j = 0
           while j < width do { bases += flat; j += 1 }
@@ -790,10 +1027,18 @@ object Bintel:
         case BadKeywordIndex     => m"a keyword index exceeds the parent's flat-keyword count"
         case ValueTruncated      => m"a Scalar value's byte length extends beyond end of input"
         case BadUtf8             => m"a Scalar value's bytes are not valid UTF-8"
-        case TrailingBytes       => m"the document root completed with input bytes remaining"
+        case TrailingBytes       => m"a whole-document reader found bytes after the document"
         case UnexpectedEoi       => m"the decoder requested bytes beyond end of input"
-        case ReferenceUnresolved => m"a Reference type in the schema does not resolve"
-        case Varint.Error         => m"a variable-length integer in the stream is invalid"
+
+        case ReferenceUnresolved =>
+          m"a Reference or SelectRef in the schema does not resolve to a definition of its kind"
+
+        case DeclaredLengthMismatch =>
+          m"the declared document length disagrees with the structural extent of the document"
+
+        case NestingLimitExceeded =>
+          m"the document nests Structs more deeply than the decoder's limit"
+        case VarintError         => m"a variable-length integer in the stream is invalid"
 
         case BadMagic =>
           m"""
@@ -838,6 +1083,11 @@ object Bintel:
       case CodecUnresolved           extends Reason(13)
       case CodecDecodeFailed         extends Reason(14)
       case CodecNoncanonical         extends Reason(15)
+      case DeclaredLengthMismatch    extends Reason(16)
+      // Not a B-code: §11 places the decoder's resource limits outside the
+      // B01–B16 taxonomy, since a decoder with a larger limit would accept
+      // the same bytes.
+      case NestingLimitExceeded      extends Reason(17)
 
   case class Error(reason: Bintel.Error.Reason)(using Diagnostics)
   extends fulminate.Error(609, reason.number)(m"the BinTEL stream is invalid because $reason")

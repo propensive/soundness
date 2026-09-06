@@ -184,7 +184,7 @@ object SchemaSignature:
     Palimpsest(hashes.to[Sequence]).data
 
   // The number of component hashes a palimpsest signature encodes,
-  // recovered from its trailing cadence byte (§4.2 of the palimpsest
+  // recovered from its trailing cadence byte (§5.2 of the palimpsest
   // spec). A byte length inconsistent with any valid cadence raises
   // `BadSignatureLength`.
   def componentCount(signature: Data): Int raises Bintel.Error =

@@ -32,4 +32,4 @@ Document {
     ],
 }
 errors:
-  E105 [0,36): Invalid sigil character
+  E105 [0,28): Invalid sigil character

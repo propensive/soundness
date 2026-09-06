@@ -44,7 +44,7 @@ object Bibliography:
 
 case class Bibliography(hashes: Array[Data]^{}) extends Findable:
   // Return every library hash whose leading bytes equal `prefix`. The
-  // palimpsest §4 decoder calls this with `k_i`-byte prefixes at step 0
+  // palimpsest §5 decoder calls this with `k_i`-byte prefixes at step 0
   // and `k_r`-byte prefixes thereafter. A linear scan is adequate for the
   // small libraries we currently use; a prefix-indexed structure is the
   // obvious next step if profiling shows it.

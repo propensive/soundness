@@ -249,5 +249,8 @@ document.valueHash(schema)   // deterministic; unchanged by presentation
 ```
 
 Numbers in BinTEL are varint-encoded and values are typed by the schema rather than tagged in the
-stream, which is where the compactness comes from; the format's framing carries a length so that
-several documents may share one stream.
+stream, which is where the compactness comes from. Every framed document also declares its own
+length immediately after the magic number, so a reader can delimit, skip or forward documents
+without holding their schema, and several documents may share one stream: `Bintel.decodeStream`
+yields them in order, `Bintel.decodeDocument` reads one and reports where its continuation begins,
+and `Bintel.decodeWholeDocument` insists that nothing follows.

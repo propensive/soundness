@@ -40,7 +40,13 @@ import vacuous.*
 import denominative.dysasymptotics.linearSize
 
 object Palimpsest:
-  // §3 encoding. Build a body of length `cadence.bodyLength(n)`, XOR each
+  // §10: a decoder accepting palimpsests from an untrusted source MUST
+  // bound the work of the backtracking search and treat exhaustion as a
+  // decoding failure. The bound counts candidate trials, so it is
+  // deterministic across invocations.
+  val searchLimit: Int = 100_000
+
+  // §4 encoding. Build a body of length `cadence.bodyLength(n)`, XOR each
   // hash in at offset `cadence.offset(i)`, then append the trailing byte
   // adjusted so the XOR-fold of every output byte equals the cadence byte.
   def apply(hashes: Sequence[Data])(using cadence: Cadence): Palimpsest =
@@ -81,15 +87,20 @@ object Palimpsest:
     Palimpsest(Array.freeze(out), n)
 
 case class Palimpsest(data: Data, length: Int):
-  // §4 decoding. Recover the cadence byte from the XOR-fold, derive `n`
+  // §5 decoding. Recover the cadence byte from the XOR-fold, derive `n`
   // from the body length, then run the recursive backtracking search:
   // at each step lookup candidate hashes by their first `k_i` (i = 0) or
   // `k_r` (i ≥ 1) bytes, XOR the candidate out, recurse, undo on failure.
   // Returns `Unset` if the cadence byte names a reserved hash-size index,
   // if the byte length is inconsistent with the cadence, if `n` disagrees
-  // with the stored length, or if no library candidate combination zeroes
-  // out the body.
+  // with the stored length, if no library candidate combination zeroes
+  // out the body, or if the search exhausts `limit` candidate trials
+  // (§10; `Palimpsest.searchLimit` by default).
   def resolve(using bibliography: Bibliography): Optional[List[Data]] =
+    resolve(Palimpsest.searchLimit)
+
+  def resolve(limit: Int)(using bibliography: Bibliography): Optional[List[Data]] =
+    var remaining = limit
     val total = data.length
 
     if total < 2 then Unset else
@@ -138,7 +149,8 @@ case class Palimpsest(data: Data, length: Int):
 
                 var found: Optional[List[Data]] = Unset
 
-                while found.absent && candidates.hasNext do
+                while found.absent && remaining > 0 && candidates.hasNext do
+                  remaining -= 1
                   val hash = candidates.next()
                   xor_(body, hash, o)
                   val sub = recur(body, item + 1, hash :: matched)

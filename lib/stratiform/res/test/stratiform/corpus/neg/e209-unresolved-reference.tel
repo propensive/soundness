@@ -1,6 +1,6 @@
-tel 1.0 specification.tel/tels
+tel 1.0 specification.tel/tels:2.0.0
 
-name e212-test
+name e209-test
 
 document
-  field foo does-not-exist
+  field foo DoesNotExist

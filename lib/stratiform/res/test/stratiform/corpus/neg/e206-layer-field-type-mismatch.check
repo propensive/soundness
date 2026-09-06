@@ -7,7 +7,7 @@ Document {
                 0,
             ),
             reference: Some(
-                "specification.tel/tels",
+                "specification.tel/tels:2.0.0",
             ),
             layers: [],
             signature: None,

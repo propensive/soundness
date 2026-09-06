@@ -300,7 +300,7 @@ object internal:
 
       val childrenExpr = emitBlocks(document.children)
 
-      '{Tel.make(Tel.Document($directiveExpr, $pragmaExpr, $lineEndingsExpr, $childrenExpr))}
+      '{Tel.make(Tel.Document($directiveExpr, $pragmaExpr, $lineEndingsExpr, 0, $childrenExpr))}
 
   // The extractor counterpart to `interpolator`. Parses the pattern at
   // compile time and produces a function that matches a runtime Tel

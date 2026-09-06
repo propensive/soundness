@@ -37,13 +37,17 @@ import rudiments.*
 import vacuous.*
 
 object Cadence:
-  // §2.1 hash-size table — `s` indexes byte lengths.
+  // §3.1 hash-size table — `s` indexes byte lengths.
   val hashSizes: Array[Int]^{} = Array(8, 10, 12, 16, 20, 24, 28, 32, 48, 64)
 
   // Default user choice: 96-bit hash, 4-byte initial cadence, 1-byte regular cadence.
+  // §10: hash sizes of 8, 10 and 12 bytes leave a realistic chance that two
+  // distinct hashes share a prefix, so this default suits a small closed
+  // library only; where decoding ambiguity has security consequences, or
+  // the library is open, choose `hashSize = 32` (as BinTEL pins).
   given default: Cadence = Cadence(initial = 4, regular = 1, hashSize = 12)
 
-  // Build a `Cadence` from the trailing cadence byte (§4.2 parameter recovery).
+  // Build a `Cadence` from the trailing cadence byte (§5.2 parameter recovery).
   // Returns `Unset` if the byte names a reserved hash-size index (`s ∈ {10..15}`).
   def unpack(byte: Byte): Optional[Cadence] =
     val b = byte & 0xff
@@ -63,7 +67,7 @@ case class Cadence(initial: Int, regular: Int, hashSize: Int):
       panic(m"hash size $hashSize is not one of ${Cadence.hashSizes.readable.toList.toString}")
     . apply(_.n0)
 
-  // Packed cadence byte per §2.1: bits 4-7 = s, bits 2-3 = k_i - k_r, bits 0-1 = k_r - 1.
+  // Packed cadence byte per §3.1: bits 4-7 = s, bits 2-3 = k_i - k_r, bits 0-1 = k_r - 1.
   val byte: Byte =
     ((hashSizeIndex << 4) | ((initial - regular) << 2) | (regular - 1)).toByte
 

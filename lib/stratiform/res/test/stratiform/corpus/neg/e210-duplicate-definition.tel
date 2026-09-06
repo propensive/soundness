@@ -1,12 +1,12 @@
-tel 1.0 specification.tel/tels
+tel 1.0 specification.tel/tels:2.0.0
 
-name e213-test
+name e210-test
 
-record dup-name
-  field x string
+record DupName
+  field x String
 
-record dup-name
-  field y string
+record DupName
+  field y String
 
 document
-  field foo dup-name
+  field foo DupName

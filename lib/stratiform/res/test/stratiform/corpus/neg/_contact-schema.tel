@@ -1,4 +1,4 @@
-tel 1.0 specification.tel/tels
+tel 1.0 specification.tel/tels:2.0.0
 
 # A minimal contact schema, used as the schema for sibling
 # contact-document-* tests in this directory. Only the bits needed for

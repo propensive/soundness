@@ -309,7 +309,7 @@ trait Tel2 extends Tel3:
         ctx.decoded:
           Tel.make
             ( Tel.Document
-              ( Unset, Unset, Tel.LineEndings.Lf,
+              ( Unset, Unset, Tel.LineEndings.Lf, 0,
                Array(Tel.Block(Array.empty, Unset, compounds, 0)) ) )
       else
         val match0 = telVal.field(keyword)
@@ -599,7 +599,7 @@ trait Tel2 extends Tel3:
           val compound =
             Mutation.construct(t"", (Mutation.Member.Break :: membersOf(value)).to(List), '#')
 
-          Tel.make(Tel.Document(Unset, Unset, Tel.LineEndings.Lf, compound.children))
+          Tel.make(Tel.Document(Unset, Unset, Tel.LineEndings.Lf, 0, compound.children))
 
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Encodable =
       // A sum encodes as a document whose single child compound is the chosen variant,

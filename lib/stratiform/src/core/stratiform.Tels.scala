@@ -536,7 +536,7 @@ object Tels extends Tels2:
       val mergedRecords = mergeRecordList(base.records, layer.records, base.scalars, base.selects)
       val mergedScalars = mergeScalarList(base.scalars, layer.scalars, mergedRecords, base.selects)
       val mergedSelects = mergeSelectList(base.selects, layer.selects, mergedRecords, mergedScalars)
-      val mergedDocument = mergeStruct(base.document, layer.overlay)
+      val mergedDocument = mergeStruct(base.document, layer.overlay, mergedSelects)
 
       base.copy
         ( document = mergedDocument,
@@ -559,13 +559,40 @@ object Tels extends Tels2:
     private enum PolarityAxis:
       case Required, Repeatable
 
-    private def mergeStruct(base: Struct, layer: Struct): Struct raises Tel.Error =
+    private def mergeStruct(base: Struct, layer: Struct, selects: Array[SelectDefinition]^{})
+    :   Struct raises Tel.Error =
+
       val members = scala.collection.mutable.ArrayBuffer.from(base.members.readable)
 
-      val keywordToIndex = scala.collection.mutable.HashMap.from(
-        members.zipWithIndex.collect:
-          case (f: Field, idx)     => f.keyword -> idx
-          case (s: SelectRef, idx) => s.reference -> idx)
+      // §20.1/§20.3: a Struct's keyword space is its Fields' keywords together
+      // with the variant keywords its SelectRefs contribute, so a layer member
+      // is matched against both. A SelectRef restated by name is found through
+      // `referenceToIndex`.
+      val keywordToIndex   = scala.collection.mutable.HashMap.empty[Text, Int]
+      val referenceToIndex = scala.collection.mutable.HashMap.empty[Text, Int]
+
+      def variantKeywords(reference: Text): scala.collection.immutable.List[Text] =
+        selects.seek(_.name == reference).lay(scala.collection.immutable.Nil): definition =>
+          var keywords = scala.collection.immutable.List.empty[Text]
+          var v = definition.variants.length - 1
+
+          while v >= 0 do
+            keywords = definition.variants.readable(v).keyword :: keywords
+            v -= 1
+
+          keywords
+
+      def register(index: Int, member: Member): Unit = member match
+        case f: Field => keywordToIndex(f.keyword) = index
+
+        case s: SelectRef =>
+          referenceToIndex(s.reference) = index
+          variantKeywords(s.reference).foreach { keyword => keywordToIndex(keyword) = index }
+
+        case _: Exclude => ()
+
+      var k = 0
+      while k < members.length do { register(k, members(k)); k += 1 }
 
       var i = 0
 
@@ -582,7 +609,7 @@ object Tels extends Tels2:
                     // anything else is E206.
                     val mergedType = (existing.fieldType, f.fieldType) match
                       case (baseType: Struct, layerType: Struct) =>
-                        mergeStruct(baseType, layerType)
+                        mergeStruct(baseType, layerType, selects)
 
                       case (baseType, layerType) =>
                         if Reconstructor.typeEq(baseType, layerType) then baseType
@@ -604,14 +631,17 @@ object Tels extends Tels2:
                          // as key; nothing can clear it.
                          key         = existing.key || f.key )
 
-                  case _ => abort(Tel.Error(Reason.LayerFieldTypeMismatch))
+                  // §20.3 MergeStruct: the keyword matches a variant keyword
+                  // contributed by an existing SelectRef — a collision (E205),
+                  // not a type mismatch.
+                  case _ => abort(Tel.Error(Reason.LayerKeywordCollision))
 
               case None =>
-                keywordToIndex(f.keyword) = members.length
+                register(members.length, f)
                 members += f
 
           case s: SelectRef =>
-            keywordToIndex.get(s.reference) match
+            referenceToIndex.get(s.reference) match
               case Some(idx) =>
                 members(idx) match
                   case existing: SelectRef if existing.reference == s.reference =>
@@ -626,7 +656,13 @@ object Tels extends Tels2:
                   case _ => abort(Tel.Error(Reason.LayerKeywordCollision))
 
               case None =>
-                keywordToIndex(s.reference) = members.length
+                // §20.1: the SelectRef brings its variant keywords into the
+                // Struct's keyword space; one already present is E205.
+                variantKeywords(s.reference).foreach: keyword =>
+                  if keywordToIndex.contains(keyword)
+                  then abort(Tel.Error(Reason.LayerKeywordCollision))
+
+                register(members.length, s)
                 members += s
 
           case _: Exclude => abort(Tel.Error(Reason.ExcludeOutsideSelect))
@@ -651,7 +687,7 @@ object Tels extends Tels2:
         val existing = out.indexWhere(_.name == newDef.name)
 
         if existing >= 0 then
-          out(existing) = mergeRecord(out(existing), newDef)
+          out(existing) = mergeRecord(out(existing), newDef, selects)
         else
           if scalars.exists(_.name == newDef.name) || selects.exists(_.name == newDef.name)
           then abort(Tel.Error(Reason.DuplicateDefinition))
@@ -662,12 +698,13 @@ object Tels extends Tels2:
 
       Array.from(out)
 
-    private def mergeRecord(base: RecordDefinition, layer: RecordDefinition)
+    private def mergeRecord
+      ( base: RecordDefinition, layer: RecordDefinition, selects: Array[SelectDefinition]^{} )
     :   RecordDefinition raises Tel.Error =
 
       val baseStruct  = Struct(base.members, base.validators)
       val layerStruct = Struct(layer.members, layer.validators)
-      val merged      = mergeStruct(baseStruct, layerStruct)
+      val merged      = mergeStruct(baseStruct, layerStruct, selects)
 
       RecordDefinition(base.name, merged.members, merged.validators,
           layer.description.or(base.description))
@@ -859,6 +896,23 @@ object Tels extends Tels2:
       schema.sigil.let: sigil =>
         if !sigilValid(sigil) then abort(Tel.Error(Reason.BadSchemaSigil))
 
+      // E210: definition names are unique across a schema's records,
+      // scalars and selects, in the base and within each layer (a layer's
+      // same-name definition *refines* the base's, which composition
+      // handles, so names are checked per declaration site).
+      def checkNames
+        ( records: Array[RecordDefinition]^{}, scalars: Array[ScalarDefinition]^{},
+          selects: Array[SelectDefinition]^{} )
+      :   Unit raises Tel.Error =
+
+        val names = scala.collection.mutable.HashSet.empty[Text]
+        records.each { r => if !names.add(r.name) then abort(Tel.Error(Reason.DuplicateDefinition)) }
+        scalars.each { s => if !names.add(s.name) then abort(Tel.Error(Reason.DuplicateDefinition)) }
+        selects.each { s => if !names.add(s.name) then abort(Tel.Error(Reason.DuplicateDefinition)) }
+
+      checkNames(schema.records, schema.scalars, schema.selects)
+      schema.layers.each { layer => checkNames(layer.records, layer.scalars, layer.selects) }
+
       // Base-side select constraints, checked before composition: a
       // *declared* SelectDefinition must have at least one variant
       // (E202) and no excludes (E216 — exclude is layer-only). Neither
@@ -868,6 +922,15 @@ object Tels extends Tels2:
       schema.selects.each: select =>
         if select.variants.nil then abort(Tel.Error(Reason.EmptySelectVariants))
         if !select.excludes.nil then abort(Tel.Error(Reason.ExcludeOutsideSelect))
+
+      // §20.1: E202 is a check on the declaration wherever it appears, so a
+      // layer's select declared with neither variants nor excludes is E202
+      // too. A layer select carrying only excludes is a refinement of the
+      // base's (§20.3), not an empty declaration.
+      schema.layers.each: layer =>
+        layer.selects.each: select =>
+          if select.variants.nil && select.excludes.nil
+          then abort(Tel.Error(Reason.EmptySelectVariants))
 
       // §21.8: every declared pattern, base-side or layer-side, must be valid
       // RE2 (E222). Checking here — before `Layers.compose` runs — is what

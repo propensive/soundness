@@ -1,9 +1,6 @@
-tel 1.0 specification.tel/tels
+tel 1.0 specification.tel/tels:2.0.0
 
-name e204-test
+name e203-test
 
 document
-  field foo optional
-    scalar
-      validate string
-      default default-val
+  field foo String optional fallback

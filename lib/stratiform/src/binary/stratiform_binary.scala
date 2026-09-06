@@ -83,7 +83,7 @@ extension (tel: Tel)
     tel.bintel(schema).digest[Blake3]
 
   // Encode this document as a complete §6 BinTEL byte sequence —
-  // magic + signature length + signature + body. The signature length
+  // magic + document length + signature length + signature + body. The signature length
   // must be a valid palimpsest length under some `(H, k_i, k_r)`;
   // otherwise raises `Bintel.Error(BadSignatureLength)`.
   // Declared with explicit tactics rather than stacked `raises`: under capture checking

@@ -1,7 +1,7 @@
-tel 1.0 specification.tel/tels
+tel 1.0 specification.tel/tels:2.0.0
 
-name flag-test
+name e311-test
 
 document
-  field foo
-    flag unexpected-content
+  field foo String
+    optional unexpected-content

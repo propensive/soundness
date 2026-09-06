@@ -85,10 +85,9 @@ object CorpusLoader:
   // filename code (the specific scenario the fixture demonstrates) or
   // any code from the `.check` file's `errors:` section (the reference
   // parser's report). Both are valid — fixtures sometimes describe a
-  // condition the reference parser reports under a more general code
-  // (e.g. e112-child-of-comment → E111), and conversely the reference
-  // sometimes reports a more general code where a more specific one is
-  // equally valid.
+  // condition the reference parser reports under a more general code,
+  // and conversely the reference sometimes reports a more general code
+  // where a more specific one is equally valid.
   def expectedCodes(testcase: Case): List[Int] =
     val fromCheck = CheckFormat.parse(testcase.check).errors.map(_.code)
     val fromName = expectedCode(testcase.stem).lay(List.empty[Int])(List(_))

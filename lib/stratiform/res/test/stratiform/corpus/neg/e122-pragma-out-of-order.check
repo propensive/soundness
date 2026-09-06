@@ -6,14 +6,11 @@ Document {
                 1,
                 0,
             ),
-            reference: Some(
-                "propensive.dev/build",
+            reference: None,
+            layers: [],
+            signature: Some(
+                "deadbeefcafebabe0123456789abcdeff",
             ),
-            layers: [
-                "publishing",
-                "maven",
-            ],
-            signature: None,
             sigil: None,
         },
     ),
@@ -34,3 +31,5 @@ Document {
         },
     ],
 }
+errors:
+  E122 [0,60): Pragma phrases violate the positional order or multiplicity

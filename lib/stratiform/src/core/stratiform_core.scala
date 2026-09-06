@@ -58,7 +58,7 @@ extension (inline context: StringContext)
 // body (the same shape an empty collection produces), so the product encoder omits the field and
 // both the text and binary formats decode it back to `Unset` via the field's `absent()` path.
 private[stratiform] def emptyDocument: Tel =
-  Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
+  Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf, 0,
       Array(Tel.Block(Array.empty, Unset, Array.empty, 0))))
 
 // Encodes a collection by flattening each element's compound(s) into one document's children. The
@@ -78,7 +78,7 @@ private[stratiform] def collectionDocument[collection, value](values: collection
 
   val compounds: Array[Tel.Compound]^{} = Array.from(buffer)
 
-  Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
+  Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf, 0,
       Array(Tel.Block(Array.empty, Unset, compounds, 0))))
 
 // As `collectionDocument`, but embedding each element in its §22.2 canonical child form
@@ -97,7 +97,7 @@ private[stratiform] def constructedDocument[collection, value](values: collectio
 
   val compounds: Array[Tel.Compound]^{} = Array.from(buffer)
 
-  Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
+  Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf, 0,
       Array(Tel.Block(Array.empty, Unset, compounds, 0))))
 
 // Re-keys a replacement compound to the original child's keyword (so a positional optic update

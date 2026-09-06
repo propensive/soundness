@@ -57,13 +57,25 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
       then Tel.Codec.Encoded.Invalid(t"not a canonical decimal integer")
       else Tel.Codec.Encoded.Bytes(Varint.encode(s.toLong))
 
+    // Deliberately lenient, like the reference's toy codec: an overlong
+    // varint is accepted (so that B15 has something to catch), unlike the
+    // §4 structural varints, which `Varint.decode` rejects as B02.
     def decode(bytes: Data): Tel.Codec.Decoded =
-      try
-        val decoded = Varint.decode(bytes, 0)
-        if decoded.next != bytes.length
-        then Tel.Codec.Decoded.Failure(t"trailing bytes after varint")
-        else Tel.Codec.Decoded.Value(decoded.value.toString.tt)
-      catch case _: Exception => Tel.Codec.Decoded.Failure(t"malformed varint")
+      var value = 0L
+      var shift = 0
+      var i = 0
+      var done = false
+
+      while !done && i < bytes.length && shift < 64 do
+        val b = bytes.readable(i) & 0xff
+        value |= (b & 0x7fL) << shift
+        shift += 7
+        i += 1
+        if (b & 0x80) == 0 then done = true
+
+      if !done then Tel.Codec.Decoded.Failure(t"malformed varint")
+      else if i != bytes.length then Tel.Codec.Decoded.Failure(t"trailing bytes after varint")
+      else Tel.Codec.Decoded.Value(value.toString.tt)
 
   val bindings: Tel.Codec.Bindings = name =>
     if name == t"decimal-varint" then DecimalVarint else Unset
