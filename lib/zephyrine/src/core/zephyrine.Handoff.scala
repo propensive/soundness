@@ -168,7 +168,13 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
         val waiting = producer
         if waiting != null then LockSupport.unpark(waiting)
         return count
-      else if done then return 0
+      // `finish` is published AFTER the final `offer`'s `tail` write, so a `done` observed
+      // here may postdate a `tail` read that missed that last item: re-read `tail` before
+      // concluding the ring is drained, and move the item on the next pass if it is there.
+      // Without the re-read, a consumer racing the producer's last `offer`/`finish` pair
+      // dropped the final item (found by the parasite queue benchmarks: one loss in ~10⁵).
+      else if done then
+        if position == tail() then return 0
       else if spun < spins then
         spun += 1
         Thread.onSpinWait()
@@ -199,7 +205,9 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
         val waiting = producer
         if waiting != null then LockSupport.unpark(waiting)
         return item
-      else if done then return null
+      // See `drain`: re-read `tail` after observing `done`.
+      else if done then
+        if position == tail() then return null
       else if spun < spins then
         spun += 1
         Thread.onSpinWait()

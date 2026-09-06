@@ -537,3 +537,12 @@ not yet been recorded here.
   `TestEvent.BenchmarkRecorded`. The harness's own boxing of each body result into its sink
   (one box per operation for a primitive result) is included, not subtracted. The staged
   measurement list returned by a cell has one more trailing element.
+
+## zephyrine
+
+- `zephyrine.Handoff#take()` and `Handoff#drain(into)` no longer report the ring drained (`null` /
+  `0`) when the producer's `finish()` was observed between the consumer's read of the tail index
+  and its check of the finished flag: the tail is re-read after `done` is seen, so the final item
+  offered before `finish()` is always delivered. Previously a consumer racing the producer's last
+  `offer`/`finish` pair could lose that item (about one hand-off in 10⁵ with both sides on virtual
+  threads). Behaviour in every other interleaving is unchanged.
