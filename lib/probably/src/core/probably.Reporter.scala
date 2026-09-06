@@ -32,19 +32,17 @@
                                                                                                   */
 package probably
 
-import ambience.*
 import beneficence.*
-import turbulence.*
 
 object Reporter:
-  given report: (Stdio, Environment, TestPalette) => Reporter[Report]:
+  given report: Reporter[Report]:
     def report(): Report = Report()
     def declare(report: Report, suite: Testable): Unit = report.declare(suite)
 
     def fail(report: Report, error: Throwable, active: Set[Test.Id]): Unit =
       report.fail(error, active)
 
-    def complete(report: Report): Unit = report.complete(Coverage())
+    def complete(report: Report): Unit = report.complete()
 
 trait Reporter[report] extends Findable:
   def report(): report
@@ -53,9 +51,7 @@ trait Reporter[report] extends Findable:
   def complete(report: report): Unit
 
   // Execution brackets, called by `Runner` as a test (or nested suite, when `suite`) begins
-  // and ends; and `live`, gating `Runner`'s in-place ANSI progress. All defaulted, so existing
-  // reporters are unaffected; an event-emitting reporter overrides them to produce progress
-  // events and to suppress the runner's own drawing.
+  // and ends. Defaulted to nothing; an event-emitting reporter overrides them to produce
+  // progress events.
   def started(report: report, id: Test.Id, suite: Boolean): Unit = ()
   def ended(report: report, id: Test.Id, suite: Boolean): Unit = ()
-  def live(report: report): Boolean = true

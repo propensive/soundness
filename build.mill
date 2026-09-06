@@ -614,7 +614,6 @@ trait Internal(dependencies: JavaModule*) extends BaseScalaModule:
 trait Tests(dependencies: JavaModule*) extends BaseScalaModule:
   def enabled: Boolean = true
   def moduleId: String = moduleDir.last
-  def finalMainClass = (moduleDir / ".." / "..").last + ".Tests"
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   // `larceny.plugin` supplies the `demilitarize`/`CompileError` symbols that test sources import
@@ -633,7 +632,6 @@ trait Tests(dependencies: JavaModule*) extends BaseScalaModule:
       :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
 trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
   def moduleId: String = moduleDir.last
-  def finalMainClass = (moduleDir / ".." / "..").last + ".Benchmarks"
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   // `probably.events` rides along for the same reason it does in `Tests`: a host process (fume)
@@ -644,8 +642,8 @@ trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
   def consoleScalacOptions = scalacOptions()
 
   // The beneficence plugin writes the `META-INF/services/probably.Suite` index, which is the
-  // ONLY way fume discovers suites: without it a benchmark assembly is runnable by main class
-  // but invisible to `fume run`/`fume list`.
+  // ONLY way fume discovers suites: without it a benchmark assembly is invisible to
+  // `fume run`/`fume list`, and there is no main class to fall back on.
   override def scalacOptions = Task:
     super.scalacOptions() :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
 
@@ -860,9 +858,8 @@ object soundness extends Toolchain:
 
   object test extends Bundle(capricious.core, sedentary.core, tarantula.core,
     tarantula.image,
-    superlunary.core, yossarian.core, probably.core, probably.cli, probably.events, superlunary.jvm, mandible.core,
-    probably.coverage):
-    def summary = "Testing: suites, assertions, coverage, generators and browser automation"
+    superlunary.core, yossarian.core, probably.core, probably.cli, probably.events, superlunary.jvm, mandible.core):
+    def summary = "Testing: suites, assertions, generators and browser automation"
 
   object tool extends Bundle(anthology.core, degustation.core,
     degustation.lira, mandible.lira, xenophile.lira, harlequin.core, hellenism.core,
@@ -968,13 +965,14 @@ object soundness extends Toolchain:
         (_: Map[coursier.core.Module, String], _: coursier.core.DependencyManagement.Map)
           => dependencies
 
-object test extends Toolchain:
-  def scalaVersion = settings.scalaVersion
-  def scalacOptions = settings.scalaOptions
+// The umbrella test assembly: every enabled `<lib>.test` module in one jar, which is what
+// `.fume/config.tel` names. It has no sources and no main class of its own: fume discovers the
+// suites from the jar's `META-INF/services/probably.Suite` index, so `BaseScalaModule` (for its
+// `mergeRules`, which concatenate the per-module index fragments) is essential — as a plain
+// `Toolchain` module the assembly kept only the first module's fragment.
+object test extends BaseScalaModule:
   def moduleDeps: Seq[JavaModule] =
     allLibraries.flatMap(_.moduleDirectChildren).collect { case t: Tests if t.enabled => t }
-  def sources = Task.Sources(moduleDir / ".." / "src" / "test")
-  override def finalMainClass: Task.Simple[String] = "soundness.Tests"
 
 // The cross-module benchmark corpus (formerly the `crossparse` library): a single set of domain
 // types decoded through every soundness format and against third-party rivals. Not a published
@@ -2768,9 +2766,8 @@ object proscenium extends Library:
       settings.sep(super.scalacOptions())
 
 object probably extends Library:
-  object core extends Component(anticipation.check, chiaroscuro.core, chiaroscuro.render,
-      ambience.core, digression.ansi, escapade.io, kaleidoscope.core, nomenclature.core,
-      coverage):
+  object core extends Component(anticipation.check, chiaroscuro.core, digression.core,
+      kaleidoscope.core, nomenclature.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
@@ -2790,13 +2787,6 @@ object probably extends Library:
     // trait, which exercises them, compiles without `sep`).
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  // The scoverage `Invoker`'s initializer needs `SecureRandom` (absent on Scala Native), so
-  // the measurement-file lookup is split by platform (`coverage-jvm`/`coverage-native`).
-  object coverage extends Component(distillate.core, digression.core, dendrology.tree):
-    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "coverage-jvm")
-    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "coverage-native")
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(cli):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
@@ -3818,7 +3808,31 @@ object nativelink extends Module:
         :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
     def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "lib" / crossValue / "src" / "test")
     def compileMvnDeps = nativeToolchain.runtimeDeps
-    override def mainClass = Some(crossValue + ".Tests")
+
+    // A `Suite` has no `main`: fume drives suites through `Suite#invoke` and renders their
+    // event stream, but fume runs JVM classpaths only, so the native binary needs an entry
+    // point of its own. This one invokes the suite with the command-line selection terms,
+    // discards the events, and exits with the suite's status (0 passed, 1 failures, 2 threw)
+    // — which is all `testSuites` checks.
+    def generatedSources = Task:
+      val source = Task.dest / "nativemain" / "NativeMain.scala"
+      os.write.over(
+        source,
+        s"""package nativemain
+           |
+           |import anticipation.*
+           |
+           |object NativeMain:
+           |  def main(arguments: Array[String]): Unit =
+           |    val terms: String = arguments.mkString("\\n")
+           |    val status: Int = ${crossValue}.Tests.invoke(terms.tt, { (event: probably.TestEvent) => () })
+           |    java.lang.System.exit(status)
+           |""".stripMargin,
+        createFolders = true)
+
+      Seq(PathRef(Task.dest))
+
+    override def mainClass = Some("nativemain.NativeMain")
     override def moduleDeps = nativeDeps(testModule.moduleDeps)
 
     def binary: T[PathRef] = Task:
@@ -3834,7 +3848,7 @@ object nativelink extends Module:
         linker.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
 
       os.proc("java", "-cp", driverClasspath, "nativelink.link", Task.dest.toString,
-        crossValue + ".Tests", classpath.map(_.toString).mkString(java.io.File.pathSeparator))
+        "nativemain.NativeMain", classpath.map(_.toString).mkString(java.io.File.pathSeparator))
       . call(stdout = os.Inherit, stderr = os.Inherit)
 
       PathRef(Task.dest / "soundness-native")

@@ -59,8 +59,8 @@ object GaugePalette:
 // design renders under any palette and one palette serves every design.
 // A real trait, not a structural refinement of `Palette`: structural member selection goes through
 // `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does not support —
-// whereas these are ordinary virtual calls. `chiaroscuro.JuxtapositionPalette` and
-// `probably.TestPalette` are declared this way for the same reason.
+// whereas these are ordinary virtual calls. `chiaroscuro.JuxtapositionPalette` is declared this
+// way for the same reason.
 // Extending `Palette` brings `background`, `foreground`, `subdue`, `accent` and the pairwise `mix`
 // with it, which is how most palettes below derive their track from their fill.
 trait GaugePalette extends Palette:

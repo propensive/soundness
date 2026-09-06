@@ -58,10 +58,6 @@ import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Ziggurat tests"):
   def run(): Unit =
-    if Ci() then Out.println(t"Running in CI; skipping Ziggurat tests")
-    else runTests()
-
-  def runTests(): Unit =
     val tempDirs = scala.collection.mutable.ListBuffer.empty[Path on Linux]
 
     def tempDir(): Path on Linux =
