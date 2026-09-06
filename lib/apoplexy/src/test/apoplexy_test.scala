@@ -197,4 +197,3 @@ components:
         """{"openapi": "2.0", "info": {"title": "x", "version": "1"}}""".tt.read[OpenApi]
     .assert(_.reason == OpenApi.Error.Reason.UnsupportedVersion(t"2.0"))
 
-    ApiTests()

@@ -1123,7 +1123,6 @@ object Tests extends Suite(m"Honeycombd Tests"):
             case List(Html.Issue.DuplicateAttribute(name)) => name == t"alt"
             case _                                         => false
 
-    Html4Tests()
 
 object Html4Tests extends Suite(m"HTML4 parsing tests"):
   def run(): Unit =

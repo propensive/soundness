@@ -652,4 +652,3 @@ object Tests extends Suite(m"Contingency"):
         err.message.text
       . assert(_ == t"error a: 99")
 
-    CompositionTests()

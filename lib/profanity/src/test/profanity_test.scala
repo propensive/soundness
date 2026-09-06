@@ -53,8 +53,6 @@ import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Profanity Tests"):
   def run(): Unit =
-    CaptureTests()
-
     supervise:
       val launcher = Enclave(t"profanity-fixture").dispatch:
         ' {

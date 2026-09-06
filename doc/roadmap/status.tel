@@ -277,7 +277,7 @@ item
   track tooling
   horizon near-mid
   status open
-  baseline  fume does not exist; 3 suites disabled: cosmopolite, legerdemain, orthodoxy (2026-08-01)
+  baseline  fume runs the suite in CI; 1 suite disabled: orthodoxy (2026-09-06)
   criterion  fume runs the full suite in CI; grep -c 'enabled = false' build.mill == 0
 
 item

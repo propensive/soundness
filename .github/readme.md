@@ -71,7 +71,7 @@ New versions of Soundness are usually released weekly.
 Soundness is currently built using [Mill](https://mill-build.org/), with
 [GNU Make](https://www.gnu.org/software/make/) providing some convenient shortcuts.
 
-- `make test` will compile everything and run the full test suite
+- `make test` will compile everything and run the full test suite with [fume](https://github.com/propensive/fume)
 - `make test.<module>` will compile and run the tests for the module _`<module>`_
 - `make dev` will compile all source files continuously, watching for changes
 - `make publishLocal` will publish a version of Soundness locally

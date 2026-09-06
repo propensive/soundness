@@ -113,8 +113,10 @@ done
 # when the command finishes. That keeps this attest fully self-contained: it
 # never starts or stops a shared mill daemon, so concurrent attests (or an
 # interactive `mill -w`) on the same machine can't interfere with each other,
-# and the compile JVM releases its heap before the test JVM starts — no
-# `mill shutdown` needed.
+# and the compile JVM releases its heap before the tests start — no
+# `mill shutdown` needed. The tests themselves run inside the `fume` daemon
+# (`make ci` is `fume run`, over the umbrella assembly named in `.fume/config.tel`);
+# fume sees that its output is not a terminal and prints a plain report.
 #
 # `-j $JOBS` caps how many modules compile concurrently. Each parallel module is
 # a separate Scala compiler holding live state, so this bounds peak heap. On a
@@ -147,7 +149,7 @@ if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.js.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.native.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false test.assembly \
-      && CLAUDECODE=1 make ci \
+      && make ci \
       && CLAUDECODE=1 make wasm-e2e
   ) 2>&1 | tee "$LOG"
   rc=${PIPESTATUS[0]}

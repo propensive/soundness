@@ -627,4 +627,3 @@ object Tests extends Suite(m"Exegesis Tests"):
 
       . assert(_ == List("upstream"))
 
-    CaptureTests()

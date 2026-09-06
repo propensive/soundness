@@ -1,0 +1,6 @@
+tel 1.0
+
+# The umbrella test assembly (`./mill test.assembly`): every enabled `<lib>.test` module, whose
+# suites fume discovers from the jar's META-INF/services/probably.Suite index. Relative entries
+# resolve against the invocation directory, so run fume from the repository root (`make test`).
+classpath out/test/assembly.dest/out.jar

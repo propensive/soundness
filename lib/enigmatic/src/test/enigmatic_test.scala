@@ -1151,4 +1151,3 @@ object Tests extends Suite(m"Enigmatic tests"):
         PrivateKey.generate[Rsa[2048]]().inspect
       . assert(_ == t"PrivateKey(\u2022\u2022\u2022)")
 
-    CaptureTests()

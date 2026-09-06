@@ -1711,7 +1711,3 @@ object Tests extends Suite(m"Jacinta Tests"):
         Crew(Worker(t"al", 30), List(Worker(t"bo", 40), Worker(t"cy", 50))).in[Json].show
       . assert(_ == t"""{"lead":{"name":"al","age":30},"members":["bo","cy"]}""")
 
-    ValidationTests()
-    PositionTests()
-    VerifyTests()
-    ParserTests()
