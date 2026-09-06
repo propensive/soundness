@@ -84,7 +84,7 @@ kinds, none of which is a simple rename.
 | calendar vocabulary (aviation)            | `CopticCalendar`, `HebrewMonth`, `LeapMode`                                                                                               | established domain terms                                                                                           |
 | foreign interop (diuretic)                | `JavaIoFile`, `JavaNioPath`, `JavaUtilDate`                                                                                               | deliberately name the foreign type                                                                                 |
 | platform interfaces                       | `Wasi*Api`                                                                                                                                | one per library, loaded as a unit                                                                                  |
-| render palettes                           | `MarkdownPalette`, `StackTracePalette`, `TestPalette`                                                                                     | cross-component by design                                                                                          |
+| render palettes                           | `MarkdownPalette`, `StackTracePalette`                                                                                                     | cross-component by design                                                                                          |
 | specification concepts (R2)               | `JsonPointer`, `YamlPath`, `TelPath`, `JsonSchema`, `XmlSchema`, `MediaType`, `SymmetricKey`, `BlockCipher`, `CompileError` | the compound names a thing with its own specification — the test is whether it would appear as a heading in a spec |
 | ~~reflectively loaded~~ (disproved) | `TypescriptDialect`, `WebIdlDialect`, `WitDialect`                                                                                        | **no longer excluded.** `CHeaderDialect` became `CHeader.Dialect` in the seventh pass; the loader derived the class name from `fullName`, which is dotted between owners — see "No longer blocked" |
 | component-blocked (R6)                    | `TarOpenable`, `PdfFile`, `ImageRecord`, `HmacCipher`, `JsonSchema`, `JsonBlueprint`, `LiraBundle`, `KotlinMetadataAtomizer`              | outer companion is in another component                                                                            |
@@ -371,7 +371,7 @@ ultimatum's is the likelier one to rename.
 `DivOp`, `DnsLabel`, `DockerEvent`, `DomainSocket`, `EcosystemProfile`, `EditorField`,
 `EitherTactic`, `EmailAddress`, `EncodableManifest`, `EntryPoint`, `EnumerationHasAsScala`,
 `EucalyptusGcp`, `FastForward`, `FlowExtent`, `FluidOunce`, `FoldableRectoPanel`, `GapPolicy`,
-`GarbageCollection`, `GaugePalette`, `GenericHtmlAttribute`, `GithubActions`, `GivensPhase`,
+`GarbageCollection`, `GaugePalette`, `GenericHtmlAttribute`, `GivensPhase`,
 `GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`,
 `InitializationVector`, `IntercardinalWind`, `InterfaceAddress`, `IpAddress`, `Ipv4Subnet`,
 `Ipv6Subnet`, `IteratorHasAsScala`, `JarBuilder`, `JsigDiscipline`, `JsInvoke`,
@@ -392,7 +392,7 @@ ultimatum's is the likelier one to rename.
 `SocketServer`, `SolarDay`, `SoundnessHashing`, `SourceCode`, `SparseSegment`, `SshUrl`,
 `StandardMetadata`, `StaticAnnotation`, `StreamOutputStream`, `StringId`, `SubOp`, `SymmetricKey`,
 `SyntaxMatcher`, `TeletypeFormattable`, `TemperatureScale`, `TemporaryDirectory`, `TerminalBoard`,
-`TestPalette`, `ThemeColor`, `ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`,
+`ThemeColor`, `ThrowTactic`, `TlsAcceptance`, `TopMenu`, `TransferEncoding`,
 `TraversalOrder`, `TrieMap`, `TripleDes`, `TypescriptDialect`, `UdpResponse`,
 `UncheckedError`, `UniformDistribution`, `UnitsNames`, `UnusedFeature`,
 `UrlPalette`, `UsedSets`, `UsesBlob`, `ValueToken`, `VentureTactic`, `VersionResponse`,

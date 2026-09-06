@@ -194,19 +194,23 @@ test, rather than as a family of differently-named tests.
 
 ### Running and selecting
 
-A `Suite` is a main class: run directly, it executes its tests with live progress on a terminal
-and plain output on CI, reports each failure with its contrast, and exits nonzero if any test
-failed — all a build needs to gate on.
+A `Suite` is not a main class. The beneficence compiler plugin records every `Suite` object in
+the `META-INF/services/probably.Suite` index of the jar it compiles, and the
+[fume](https://github.com/propensive/fume) runner discovers suites from that index on a built
+classpath, runs each one in-process, and renders the stream of `TestEvent`s a suite emits: live
+progress on a terminal, plain output on CI, each failure with its contrast, and a nonzero exit if
+any test failed — all a build needs to gate on. A project names its classpath once in
+`.fume/config.tel`, so a bare `fume run` runs everything.
 
-A suite executable also accepts selection terms, so a subset can be run without editing the code.
-Hashes, monikers and name globs identify tests and union with each other; `kind:` filters and
-axis constraints intersect with that union:
+fume also accepts selection terms, so a subset can be run without editing the code. Hashes,
+monikers and name globs identify tests and union with each other; the `--test`, `--bench`,
+`--stress` and `--profile` switches and axis constraints intersect with that union:
 
 ```sh
-mysuite square 'parser*'      # by moniker, then by name glob
-mysuite kind:bench            # only the benchmarks
-mysuite parser=jacinta 'N<32' # only cells matching these axis constraints
-mysuite --list                # enumerate what matches, and run nothing
+fume run square 'parser*'         # by moniker, then by name glob
+fume run --bench                  # only the benchmarks
+fume run parser=jacinta 'N<32'    # only cells matching these axis constraints
+fume list                         # enumerate what matches, and run nothing
 ```
 
 Unselected assertions never execute, and unselected benchmark cells are skipped, so a selection

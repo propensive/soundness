@@ -35,9 +35,9 @@ package soundness
 export
   probably
   . { Anchor, Arithmetic, Autopsy, Axable, Axis, Baseline, Benchmark, Cadential,
-      Ci, Geometric, GithubActions, Harness, Hotspots, Inclusion,
+      Geometric, Harness, Hotspots, Inclusion,
       Max, Mean, Metric, Min, nominative, Probing, Report, Reporter, Run, Runner, Spread,
-      Spread2, Strain, suite, Tally, Temporal, Test, test, Testable, TestPalette,
+      Spread2, Strain, suite, Tally, Temporal, Test, test, Testable,
       Trial, Value, Verdict }
 
 package harnesses:

@@ -665,7 +665,7 @@ object Tests extends Suite(m"Anthology Tests"):
       catch case _: ClassNotFoundException => false
 
     if !compiler then Unset else
-      java.lang.System.getProperty("java.class.path").nn.tt
+      LocalClasspath.of(Classloader[Tests.type])()
       . cut(java.io.File.pathSeparator.nn.tt)
       . filter(_.contains(t"kotlin-stdlib"))
       . prim

@@ -326,7 +326,7 @@ object Tests extends Suite(m"Delicious Tests"):
     // re-exports `stenography.Syntax` — the same shape as `jacinta.Json` in a REPL session.
     val ownClasspath: LocalClasspath =
       val entries: List[Classpath.Entry.Directory | Classpath.Entry.Jar] =
-        java.lang.System.getProperty("java.class.path").nn.tt
+        LocalClasspath.of(Classloader[Tests.type])()
         . cut(java.io.File.pathSeparator.nn.tt)
         . filter(_ != t"")
         . map: entry =>

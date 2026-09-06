@@ -405,7 +405,6 @@ object Tests extends Suite(m"Caesura tests"):
         summon[Dsv.Redesignation].transform(t"targetPerson")
       . assert(_ == t"target person")
 
-    AccrualTests()
 
 case class Foo(one: Text, two: Text)
 case class DirectFoo(one: Text, two: Text)

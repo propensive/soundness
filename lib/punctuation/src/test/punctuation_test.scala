@@ -37,8 +37,11 @@ import soundness.*
 import strategies.throwUnsafely
 
 import htmlDoms.whatwg
-import classloaders.systemClassloader
 import denominative.dysasymptotics.linearSize
+
+// The suite's own classloader: under fume the suite (and its `mdspec.json` resource) lives in
+// an isolating classloader, not the system one.
+given testClassloader: Classloader = Classloader[Tests.type]
 
 object Tests extends Suite(m"Punctuation tests"):
   def run(): Unit =

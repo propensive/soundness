@@ -1,26 +1,26 @@
 publishLocal:
 	./mill "$$(./mill show release.selector | tr -d '"').publishLocal"
 
+# Tests and benchmarks are run by `fume` (https://github.com/propensive/fume), which discovers
+# every suite in a built assembly from its META-INF/services/probably.Suite index. The classpath
+# for `make test`/`make ci` comes from `.fume/config.tel`; `$(TESTS)` are fume selection terms
+# (test ids, name globs, axis constraints such as `N<=64`).
 test:
 	./mill test.assembly
-	java -Xss2m -Xmx4g -cp out/test/assembly.dest/out.jar soundness.Tests $(TESTS)
+	fume run $(TESTS)
 
 test.%:
 	./mill clean $*.test
 	./mill $*.test.assembly
-	java -Xss2m -Xmx4g -cp out/$*/test/assembly.dest/out.jar $*.Tests $(TESTS)
-
-failing:
-	./mill test.assembly
-	java -Xss2m -Xmx4g -cp out/test/assembly.dest/out.jar soundness.FailingTests
+	fume run -c out/$*/test/assembly.dest/out.jar $(TESTS)
 
 bench:
 	./mill bench.assembly
-	java -Xss2m -Xmx4g -cp out/bench/assembly.dest/out.jar crossparse.Benchmarks $(TESTS)
+	fume run --bench -c out/bench/assembly.dest/out.jar $(TESTS)
 
 bench.%:
 	./mill $*.bench.assembly
-	java -Xss2m -Xmx4g -cp out/$*/bench/assembly.dest/out.jar $*.Benchmarks $(TESTS)
+	fume run --bench -c out/$*/bench/assembly.dest/out.jar $(TESTS)
 
 keywords:
 	./mill keywords.assembly
@@ -44,7 +44,7 @@ dev:
 	./mill -w soundness.all
 
 ci:
-	./etc/ci/run-tests.sh
+	fume run
 
 wasm-e2e:
 	./etc/ci/wasm-e2e.sh

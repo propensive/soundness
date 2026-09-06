@@ -32,20 +32,10 @@
                                                                                                   */
 package probably
 
-import java.lang as jl
-
-
-import ambience.{System as _, *}, environments.javaBaseEnvironment
 import anticipation.*
-import escapade.*
-import gossamer.*
-import iridescence.*
 import rudiments.*
-import turbulence.*
 import vacuous.*
 
-import stdios.fileDescriptorStdio
-import termcaps.environmentTermcap
 import beneficence.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
@@ -62,7 +52,6 @@ extends Findable:
   private var listed0: List[(Test.Id, Entry.Kind, Optional[Long])] = Nil
   @scala.caps.unsafe.untrackedCaptures
   private var admitted0: Int = 0
-  private val silent: Boolean = Ci.claudeCode || Ci()
 
   def skip(id: Test.Id): Boolean = skip(id, Entry.Kind.Check, Nil)
 
@@ -120,22 +109,8 @@ extends Findable:
   def maybeRun[result](test: Test[result]^): Optional[Trial[result]] =
     if skip(test.id) then Unset else run[result](test)
 
-  def redraw(size: Int): Unit = if !silent && reporter.live(report) then
-    if size > 0 then Out.print(e"\e[${size}A\r\e[2K")
-
-    // Left on `stdlib`: with a native `each`, the `e"…"` interpolation in the lambda body below
-    // crashes the compiler's `wildApprox` assertion.
-    active.stdlib.reverse.foreach: test =>
-      val indent: Text = " ".repeat(test.depth*2).nn.tt
-      Out.println(e"> ${WebColors.CadetBlue}(${test.id})$indent${test.name}\e[K")
-
-    Out.print(e"\e[J")
-
   def run[result](test: Test[result]^): Trial[result] =
-    mutex:
-      val size = active.size
-      active ::= test.id
-      redraw(size)
+    mutex { active ::= test.id }
 
     reporter.started(report, test.id, false)
 
@@ -149,10 +124,7 @@ extends Findable:
       val ns: Long = System.nanoTime - ns0
 
       Trial.Returns(result, ns, context.captured.toMap.to(Map)).also:
-        mutex:
-          val size = active.size
-          active = active.filter(_ != test.id)
-          redraw(size)
+        mutex { active = active.filter(_ != test.id) }
 
         reporter.ended(report, test.id, false)
 
@@ -164,10 +136,7 @@ extends Findable:
         throw error
 
       Trial.Throws(lazyException, ns, context.captured.toMap.to(Map)).also:
-        mutex:
-          val size = active.size
-          active = active.filter(_ != test.id)
-          redraw(size)
+        mutex { active = active.filter(_ != test.id) }
 
         reporter.ended(report, test.id, false)
 
@@ -177,19 +146,13 @@ extends Findable:
   // Suites are always entered, whatever the selection: their bodies are cheap, and pruning
   // by name would defeat hash- and moniker-based selection of the tests within them.
   def suite(suite: Testable, block: Testable ?=> Unit): Unit =
-    mutex:
-      val size = active.size
-      active ::= suite.id
-      redraw(size)
+    mutex { active ::= suite.id }
 
     reporter.declare(report, suite)
     reporter.started(report, suite.id, true)
     block(using suite)
 
-    mutex:
-      val size = active.size
-      active = active.filter(_ != suite.id)
-      redraw(size)
+    mutex { active = active.filter(_ != suite.id) }
 
     reporter.ended(report, suite.id, true)
 
@@ -197,6 +160,4 @@ extends Findable:
     reporter.fail(report, error, active.to[Set])
     reporter.complete(report)
 
-  def complete(): Unit =
-    redraw(0)
-    reporter.complete(report)
+  def complete(): Unit = reporter.complete(report)

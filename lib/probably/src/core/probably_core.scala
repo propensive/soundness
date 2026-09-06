@@ -38,7 +38,6 @@ import digression.*
 import fulminate.*
 import gossamer.*
 import hypotenuse.*
-import iridescence.*
 import nomenclature.*
 import prepositional.*
 import symbolism.*
@@ -55,33 +54,6 @@ export Baseline.Mode.{Arithmetic, Geometric}
 // Exported at package level so that `n"…"` moniker literals work wherever probably is
 // imported, without a separate `import Probing.nominative` in every suite.
 export Probing.nominative
-
-  // A real trait, not a structural refinement of `Palette`: structural member selection goes
-  // through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does not
-  // support — whereas these are ordinary virtual calls.
-
-
-trait TestPalette extends JuxtapositionPalette:
-  type Form = Srgb
-  def warning: Color in Srgb
-  def critical: Color in Srgb
-  def benchmark: Color in Srgb
-  def mixed: Color in Srgb
-  def informative: Color in Srgb
-  def cold: Color in Srgb
-  def warm: Color in Srgb
-  def hot: Color in Srgb
-  def accented: Color in Srgb
-  def highlight: Color in Srgb
-  def detail: Color in Srgb
-  def pass: Color in Srgb
-  def fail: Color in Srgb
-  def aspirePass: Color in Srgb
-  def aspireFail: Color in Srgb
-  def subdued: Color in Srgb
-  def unaccented: Color in Srgb
-  def positive: Color in Srgb
-  def negative: Color in Srgb
 
 // The checking vocabulary now lives in `anticipation.check`, so that modules which only need to
 // compare values (notably `quantitative`) do not depend on the test framework. It is re-exported

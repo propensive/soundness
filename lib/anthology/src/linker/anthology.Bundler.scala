@@ -59,18 +59,13 @@ import systems.javaBaseSystem
 import workingDirectories.javaBaseWorkingDirectory
 
 object Bundler:
-  // The classpath of the running application, as introspected from the thread-context
-  // classloader (or the `java.class.path` system property as a fallback). A staging rig pairs
-  // this with its compiled output as an `Emission` and packages it into a self-contained JAR
-  // through the `Jar` edge, so the JAR carries the rig's own executor and dependencies.
-  def applicationClasspath: LocalClasspath =
-    val entries = classloaders.threadContextClassloader.classpath.match
-      case classpath: LocalClasspath => classpath.entries
-
-      case _ =>
-        unsafely(System.properties.java.`class`.path().as[LocalClasspath]).entries
-
-    LocalClasspath(entries*)
+  // The classpath of the running application, as introspected from the classloader that
+  // loaded this class (or the `java.class.path` system property as a fallback) — its own
+  // loader rather than the thread's context loader, which a pooled thread may have inherited
+  // from whatever ran first. A staging rig pairs this with its compiled output as an
+  // `Emission` and packages it into a self-contained JAR through the `Jar` edge, so the JAR
+  // carries the rig's own executor and dependencies.
+  def applicationClasspath: LocalClasspath = LocalClasspath.of(Classloader[Bundler.type])
 
 
   private[anthology] def assemble

@@ -32,18 +32,14 @@
                                                                                                   */
 package probably
 
+import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 
-
-import ambience.*
 import anticipation.*
 import digression.*
 import scala.math.Ordering
 
-import escapade.*
-import iridescence.*
 import rudiments.*
-import turbulence.*
 import vacuous.*
 import symbolism.*
 
@@ -143,38 +139,6 @@ object Report:
 
       report.addDetail(testId, detail)
 
-  enum Status:
-    case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, Stress, Profile, AspirePass,
-      AspireFail
-
-    private val nbsp = '\u00a0'
-
-    def symbol(using palette: TestPalette): Teletype = this match
-      case Pass        => e"${Bg(palette.pass)}($Bold(${Fg(palette.black)}( ✓ )))"
-      case Fail        => e"${Bg(palette.fail)}($Bold(${Fg(palette.black)}( ✗ )))"
-      case Throws      => e"${Bg(palette.warning)}($Bold(${Fg(palette.black)}( ! )))"
-      case CheckThrows => e"${Bg(palette.critical)}($Bold(${Fg(palette.black)}( ‼ )))"
-      case Mixed       => e"${Bg(palette.mixed)}($Bold(${Fg(palette.black)}( ? )))"
-      case Suite       => e"   "
-      case Bench       => e"${Bg(palette.benchmark)}($Bold(${Fg(palette.black)}($nbsp*$nbsp)))"
-      case Stress      => e"${Bg(palette.benchmark)}($Bold(${Fg(palette.black)}($nbsp≈$nbsp)))"
-      case Profile     => e"${Bg(palette.benchmark)}($Bold(${Fg(palette.black)}($nbsp%$nbsp)))"
-      case AspirePass  => e"${Bg(palette.aspirePass)}($Bold(${Fg(palette.black)}( ↑ )))"
-      case AspireFail  => e"${Bg(palette.aspireFail)}($Bold(${Fg(palette.black)}( ↓ )))"
-
-    def describe: Teletype = this match
-      case Pass        => e"Pass"
-      case Fail        => e"Fail"
-      case Throws      => e"Throws exception"
-      case CheckThrows => e"Exception in check"
-      case Mixed       => e"Mixed"
-      case Suite       => e"Suite"
-      case Bench       => e"Benchmark"
-      case Stress      => e"Stress"
-      case Profile     => e"Profile"
-      case AspirePass  => e"Aspire passed"
-      case AspireFail  => e"Aspire failed"
-
 // The insertion-ordered, mutex-guarded map of report lines within one suite node.
 class TestsMap():
   private val mutex: Mutex = Mutex()
@@ -195,14 +159,15 @@ class TestsMap():
 
 // The report's intermediate representation: a tree of suites (namespacing only), whose
 // leaves are uniform `Entry` values — one per named test, of any kind, holding that test's
-// axes and cells. All rendering is performed by `Documenting` and the two renderers.
+// axes and cells. Rendering is the consumer's business: everything recorded here also leaves as
+// a `TestEvent` through the installed sink.
 enum ReportLine:
   case Suite(suite: Optional[Testable], tests: TestsMap = TestsMap())
   case Item(entry: Entry)
 
 // `final` so the capture checker infers a precise self-type rather than the universal capture an
 // extensible class would get.
-final class Report(using environment: Environment)(using palette: TestPalette):
+final class Report():
   // Event emission: when a sink has been installed (`stream`), every recorded datum also
   // leaves as a `TestEvent`, and `complete` emits `RunCompleted` INSTEAD of rendering — the
   // consumer owns presentation. With no sink (the default), behavior is exactly as before.
@@ -213,7 +178,6 @@ final class Report(using environment: Environment)(using palette: TestPalette):
   private var sink: Optional[TestEvent -> Unit] = Unset
 
   private[probably] def stream(sink1: TestEvent -> Unit): Unit = sink = sink1
-  private[probably] def streaming: Boolean = sink != Unset
 
   private[probably] def emit(event: => TestEvent): Unit = sink.let(_(event))
 
@@ -291,10 +255,35 @@ final class Report(using environment: Environment)(using palette: TestPalette):
       case ReportLine.Item(entry) => entry.anchor = anchor
       case _: ReportLine.Suite    => ()
 
-  def complete(coverage: Option[Coverage])(using Stdio): Unit =
-    val document = Documenting.document(this)
-    pass = document.totals.failed == 0 && failure0.absent && document.totals.total > 0
+  // Every entry beneath a suite node, in report order. Plain stdlib collections throughout
+  // this settlement: lambdas over the opaque collections' higher-kinded methods are where the
+  // compiler's `wildApprox` assertion trips (see `Documenting` before its removal).
+  private def entries(line: ReportLine): sci.List[Entry] = line match
+    case ReportLine.Suite(_, tests) => tests.list.stdlib.flatMap { pair => entries(pair(1)) }
+    case ReportLine.Item(entry)     => sci.List(entry)
 
-    if streaming then emit(TestEvent.RunCompleted(passed, java.lang.System.currentTimeMillis))
-    else if Ci.claudeCode then TerseRenderer.render(document)
-    else AnsiRenderer.render(document, coverage)(using summon[Stdio], environment, palette)
+  private def verdicts(entry: Entry): sci.List[Verdict] =
+    entry.cells.stdlib.flatMap { cell => cell(1).runs.stdlib }.flatMap { run => run.verdict.option }
+
+  // A check counts only once it has a verdict; a measurement (a benchmark, stress test or
+  // profile) counts, and passes, by having run at all. A check passes when its verdicts, over
+  // all its cells, are uniformly `Pass`, uniformly `AspirePass` or uniformly `AspireFail`: a
+  // failure, an exception, or a mixture of outcomes fails it.
+  private def counted(entry: Entry): Boolean =
+    entry.kind != Entry.Kind.Check || verdicts(entry).nonEmpty
+
+  private def failing(entry: Entry): Boolean =
+    entry.kind == Entry.Kind.Check && {
+      val all = verdicts(entry)
+      val passes = all.forall { case Verdict.Pass(_) => true; case _ => false }
+      val aspirePasses = all.forall { case Verdict.AspirePass(_) => true; case _ => false }
+      val aspireFails = all.forall { case Verdict.AspireFail(_) => true; case _ => false }
+      !(passes || aspirePasses || aspireFails)
+    }
+
+  // Settles the run: `passed` is decided here, and `RunCompleted` leaves through the sink (a
+  // no-op without one). A run in which nothing was counted has not passed.
+  def complete(): Unit =
+    val all = entries(lines).filter(counted)
+    pass = failure0.absent && all.nonEmpty && !all.exists(failing)
+    emit(TestEvent.RunCompleted(passed, java.lang.System.currentTimeMillis))

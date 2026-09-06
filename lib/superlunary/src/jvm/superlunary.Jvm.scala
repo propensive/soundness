@@ -44,10 +44,12 @@ import jacinta.*
 import prepositional.*
 import serpentine.*
 
-import classloaders.systemClassloader
 import systems.javaBaseSystem
 
-object Jvm extends Rig:
+// The rig's own classloader rather than the system classloader: they coincide in a plain
+// `java -cp` process, but under a test-running host such as fume the rig (with the code it
+// stages) lives in an isolating `URLClassLoader`, and the system loader knows only the host.
+object Jvm extends Rig(using Classloader[Jvm.type]):
   type Result[output] = output
   type Form = Text
   type Target = LocalClasspath

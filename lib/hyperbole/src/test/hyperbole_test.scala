@@ -40,8 +40,6 @@ import scala.Predef.println
 
 object Tests extends Suite(m"Hyperbole Tests"):
   def run(): Unit =
-    StackTests()
-
     test(m"Produce hello-world tree"):
       Introspect.syntax(true):
         println("hello world")

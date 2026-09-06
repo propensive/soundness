@@ -1311,8 +1311,3 @@ object Tests extends Suite(m"Xylophone tests"):
         doc.lens(_(Sen) = x"<x>9</x>").show
       . assert(_ == t"<doc><x>1</x><x>2</x><x>3</x></doc>")
 
-    PositionTests()
-    DecoderTests()
-    XPathTests()
-    EncoderTests()
-    DirectParsingTests()

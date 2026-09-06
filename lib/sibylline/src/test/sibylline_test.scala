@@ -243,9 +243,3 @@ object Tests extends Suite(m"Sibylline tests"):
         capture[Llm.Error](handle.stream(t"go").reply()).reason
       . assert(_ == Llm.Error.Reason.Interrupted)
 
-    AnthropicTests()
-    OpenAITests()
-    ResponsesTests()
-    GeminiTests()
-    ToolkitTests()
-    CaptureTests()

@@ -70,7 +70,7 @@ object Tests extends Suite(m"Hellenism Tests"):
 
     test(m"load services from META-INF/services"):
       import systems.javaBaseSystem
-      val classpath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      val classpath = LocalClasspath.of(Classloader[Tests.type])
       classpath.services[TestService].stdlib.map(_.name).to(Set)
     . assert(_ == Set(t"A", t"B"))
 

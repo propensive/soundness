@@ -10,7 +10,7 @@ programmatically.
 
 The pieces are in different states, and the roadmap is honest about which. exegesis and
 synesthesia are working modules in this repository. flame exists as a separate, active project
-pinned to an older Soundness. fume is scoped but unwritten: a front-end and runner over the
+pinned to an older Soundness. fume runs this repository's suites: a front-end and runner over the
 probably framework, which remains the library. fury and fluence do not exist as code. TEL — the
 configuration language the whole toolchain standardises on — is specified and implemented, with
 stratiform as its reference implementation. The bootstrap test for the entire track is fury
@@ -34,8 +34,9 @@ Baseline: fume does not exist; 3 test suites are disabled (measured 2026-08-01)
 
 fume is the testing tool over the probably framework: multiple report formats, live updates in
 the terminal, and results recorded as git notes alongside the existing attestation notes. Its
-first milestone is running this repository's own suites — all of them, including the three
-currently disabled.
+first milestone — running this repository's own suites in CI — is reached: `make ci` is
+`fume run` over the umbrella assembly named in `.fume/config.tel`, and probably no longer
+renders reports of its own. What remains is the disabled suites.
 
 Done when: fume runs the full Soundness suite in CI and
 
@@ -132,8 +133,8 @@ Soundness terms — passes against a running Soundness application in CI.
 Horizon: mid
 Needs: tool-2
 
-probably already measures coverage; fume makes it a tracked property rather than a one-off
-report: unit-test coverage recorded for every commit, stored in git notes alongside the test
+probably's own scoverage reader went with its report renderer when fume took over reporting;
+coverage returns as a fume concern, a tracked property rather than a one-off report: unit-test coverage recorded for every commit, stored in git notes alongside the test
 reports, so the trend is queryable and a regression is visible at review time.
 
 Done when: every CI run records coverage in a git note, and a single command reports the

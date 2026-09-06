@@ -3326,18 +3326,6 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[Bintel.Error](Bintel.decodeDocumentSelfContained(bytes)).reason
       . assert(_ == Bintel.Error.Reason.EmbeddedSchemaUndecodable)
 
-    RecordsTests()
-    VerifyTests()
-    ResolutionTests()
-    AccrualTests()
-    SchemaCorpusTests()
-    SchemaValidityTests()
-    KeyTests()
-    TelpTests()
-    CodecTests()
-    PositionalTests()
-    PositionTests()
-    EquivalenceTests()
 
     suite(m"BinTEL direct parsing (BintelInlinable)"):
       given (Tests.Person is Bintel.Parsable) = BintelInlinable.parsable[Tests.Person]
