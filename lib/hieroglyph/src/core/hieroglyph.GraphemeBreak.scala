@@ -286,5 +286,5 @@ object GraphemeBreak:
       // conversion.
       val frozen = Array.freeze(breaks)
       val result = Array.allocate[Int](size)
-      result.copyFrom(frozen, 0, 0, size)
+      result.place(frozen, 0, 0, size)
       Array.freeze(result)

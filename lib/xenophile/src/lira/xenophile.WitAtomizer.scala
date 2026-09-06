@@ -68,29 +68,27 @@ object WitAtomizer:
 
   // --- canonical binary encoding -------------------------------------------------------------
 
-  private def uvarint(out: java.io.ByteArrayOutputStream, value0: Long): Unit =
+  private def uvarint(out: Scribe[Byte], value0: Long): Unit =
     var value = value0
 
     while value >= 0x80L do
-      out.write(((value & 0x7f) | 0x80).toInt)
+      out.append(((value & 0x7f) | 0x80).toByte)
       value >>>= 7
 
-    out.write(value.toInt)
+    out.append(value.toByte)
 
-  private def utf8(out: java.io.ByteArrayOutputStream, text: Text): Unit =
-    val bytes = text.s.getBytes("UTF-8").nn
+  private def utf8(out: Scribe[Byte], text: Text): Unit =
+    val bytes = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
     uvarint(out, bytes.length.toLong)
-    out.write(bytes)
+    out.append(bytes)
 
-  private def tag(out: java.io.ByteArrayOutputStream, char: Char): Unit = out.write(char.toInt)
+  private def tag(out: Scribe[Byte], char: Char): Unit = out.append(char.toByte)
 
-  private def flag(out: java.io.ByteArrayOutputStream, value: Boolean): Unit =
-    out.write(if value then 1 else 0)
+  private def flag(out: Scribe[Byte], value: Boolean): Unit =
+    if value then out.append(1) else out.append(0)
 
-  private def hash(encode: java.io.ByteArrayOutputStream => Unit): Data =
-    val out = java.io.ByteArrayOutputStream()
-    encode(out)
-    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.unsafeFrozen(out.toByteArray.nn))
+  private def hash(encode: Scribe[Byte] => Unit): Data =
+    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.collect[Byte]()(encode))
 
   private val primitives: Set[Text] =
     Set(t"bool", t"u8", t"u16", t"u32", t"u64", t"s8", t"s16", t"s32", t"s64", t"f32", t"f64",
@@ -103,7 +101,7 @@ object WitAtomizer:
   // declaring interface's id, `use`-imported names under the interface they came from. A name
   // that resolves to neither is a hard error, never a guess.
   private def encode
-    ( out:   java.io.ByteArrayOutputStream,
+    ( out:   Scribe[Byte],
       typed: Foreign.Type,
       scope: Map[Text, Text] )
   :   Unit raises Discipline.Error =

@@ -273,10 +273,14 @@ object Zip:
     deflater.setInput(Array.unsafeJvm(data))
     deflater.finish()
     val buffer = new scala.Array[Byte](8192)
-    val out = ji.ByteArrayOutputStream()
-    while !deflater.finished() do out.write(buffer, 0, deflater.deflate(buffer))
+
+    val deflated = Array.collect[Byte](): out =>
+      while !deflater.finished()
+      do out.append(Array.unsafeFrozen(buffer), 0, deflater.deflate(buffer))
+
     deflater.end()
-    Array.unsafeFrozen(out.toByteArray.nn)
+
+    deflated
 
   // ZipError -> Zip.Error
   object Error:

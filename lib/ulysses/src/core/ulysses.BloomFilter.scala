@@ -73,7 +73,7 @@ case class BloomFilter[element: Digestible, algorithm <: Algorithm]
 
         while rest.nonEmpty do
           val chunk = rest.head
-          whole.copyFrom(chunk, 0, offset, chunk.length)
+          whole.place(chunk, 0, offset, chunk.length)
           offset += chunk.length
           rest = rest.tail
 

@@ -101,6 +101,9 @@ case class Manifest(entries: Map[Text, Text]):
     entries.each: (key, value) =>
       manifest.getMainAttributes.nn.putValue(key.s, value.s)
 
+    // A genuine `OutputStream` sink, not a buffer: `java.util.jar.Manifest.write` writes INTO
+    // the stream it is given, so `Scribe` cannot stand in for it. One of the two places where
+    // `ByteArrayOutputStream` was doing what its name says.
     val out = ji.ByteArrayOutputStream()
     manifest.write(out)
     Array.unsafeFrozen(out.toByteArray().nn)

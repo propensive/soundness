@@ -64,32 +64,30 @@ object WebIdlAtomizer:
 
   // --- canonical binary encoding -------------------------------------------------------------
 
-  private def uvarint(out: java.io.ByteArrayOutputStream, value0: Long): Unit =
+  private def uvarint(out: Scribe[Byte], value0: Long): Unit =
     var value = value0
 
     while value >= 0x80L do
-      out.write(((value & 0x7f) | 0x80).toInt)
+      out.append(((value & 0x7f) | 0x80).toByte)
       value >>>= 7
 
-    out.write(value.toInt)
+    out.append(value.toByte)
 
-  private def utf8(out: java.io.ByteArrayOutputStream, text: Text): Unit =
-    val bytes = text.s.getBytes("UTF-8").nn
+  private def utf8(out: Scribe[Byte], text: Text): Unit =
+    val bytes = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
     uvarint(out, bytes.length.toLong)
-    out.write(bytes)
+    out.append(bytes)
 
-  private def tag(out: java.io.ByteArrayOutputStream, char: Char): Unit = out.write(char.toInt)
+  private def tag(out: Scribe[Byte], char: Char): Unit = out.append(char.toByte)
 
-  private def flag(out: java.io.ByteArrayOutputStream, value: Boolean): Unit =
-    out.write(if value then 1 else 0)
+  private def flag(out: Scribe[Byte], value: Boolean): Unit =
+    if value then out.append(1) else out.append(0)
 
-  private def hash(encode: java.io.ByteArrayOutputStream => Unit): Data =
-    val out = java.io.ByteArrayOutputStream()
-    encode(out)
-    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.unsafeFrozen(out.toByteArray.nn))
+  private def hash(encode: Scribe[Byte] => Unit): Data =
+    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.collect[Byte]()(encode))
 
   // Union members sort by their encoded bytes (`webidl.md` §7): `(A or B)` is `(B or A)`.
-  private def encode(out: java.io.ByteArrayOutputStream, typed: Foreign.Type): Unit =
+  private def encode(out: Scribe[Byte], typed: Foreign.Type): Unit =
     typed match
       case Foreign.Type.Named(name) =>
         tag(out, 'N')
@@ -102,16 +100,17 @@ object WebIdlAtomizer:
         // fails capture checking here, because the vector's `prefix1` array carries a root
         // capability that cannot flow into the traversal evidence's empty capture set.
         val encodings = members.stdlib.map: member =>
-          val buffer = java.io.ByteArrayOutputStream()
-          encode(buffer, member)
-          val bytes: scala.Array[Byte] = buffer.toByteArray().nn
+          val collected = Array.collect[Byte](): buffer =>
+            encode(buffer, member)
+
+          val bytes: scala.Array[Byte] = Array.unsafeJvm(collected)
           scala.Vector.tabulate(bytes.length) { index => bytes(index) & 0xff }
 
         uvarint(out, encodings.length.toLong)
 
         encodings.sortWith { (left, right) => compare(left, right) < 0 }.foreach: encoding =>
           uvarint(out, encoding.length.toLong)
-          encoding.foreach { byte => out.write(byte) }
+          encoding.foreach { byte => out.append(byte.toByte) }
 
       case Foreign.Type.Applied(constructor, arguments) =>
         tag(out, 'A')
@@ -132,7 +131,7 @@ object WebIdlAtomizer:
 
   // Argument *names* are not folded — WebIDL calls are positional — while optionality,
   // variadicity and a default's existence decide which calls are legal, so all three are.
-  private def arguments(out: java.io.ByteArrayOutputStream, list: List[WebIdl.Argument]): Unit =
+  private def arguments(out: Scribe[Byte], list: List[WebIdl.Argument]): Unit =
     uvarint(out, list.size.toLong)
 
     list.each: argument =>
@@ -142,7 +141,7 @@ object WebIdlAtomizer:
       encode(out, argument.typed)
 
   private def encodeMember
-    ( out: java.io.ByteArrayOutputStream, container: Text, member: WebIdl.Member )
+    ( out: Scribe[Byte], container: Text, member: WebIdl.Member )
   :   Unit =
 
     // The container's key folds into the value, not merely the atom's key: the snapshot hashes

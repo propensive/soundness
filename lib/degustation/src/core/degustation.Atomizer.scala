@@ -36,6 +36,7 @@ import scala.quoted.Quotes
 
 import anticipation.*
 import murmuration.map
+import rudiments.{Scribe, collect}
 
 // The atomization rules of `tasty/1`, applied over the compiler's reflection of unpickled
 // TASTy. The folding principle (LIRA §10.3) governs every decision here: declarations whose
@@ -61,21 +62,21 @@ object Atomizer:
 
     // --- canonical binary encoding -----------------------------------------------------------
 
-    def uvarint(out: java.io.ByteArrayOutputStream, value0: Long): Unit =
+    def uvarint(out: Scribe[Byte], value0: Long): Unit =
       var value = value0
 
       while value >= 0x80L do
-        out.write(((value & 0x7f) | 0x80).toInt)
+        out.append(((value & 0x7f) | 0x80).toByte)
         value >>>= 7
 
-      out.write(value.toInt)
+      out.append(value.toByte)
 
-    def utf8(out: java.io.ByteArrayOutputStream, text: String): Unit =
-      val bytes = text.getBytes("UTF-8").nn
+    def utf8(out: Scribe[Byte], text: String): Unit =
+      val bytes = Array.unsafeFrozen(text.getBytes("UTF-8").nn)
       uvarint(out, bytes.length.toLong)
-      out.write(bytes)
+      out.append(bytes)
 
-    def tag(out: java.io.ByteArrayOutputStream, char: Char): Unit = out.write(char.toInt)
+    def tag(out: Scribe[Byte], char: Char): Unit = out.append(char.toByte)
 
     // The subset of modifier flags that consumers can depend on, in a fixed bit order. The
     // `exported` flag is deliberately absent (`tasty.md` §9): an `export` forwarder atomizes
@@ -96,7 +97,7 @@ object Atomizer:
     // Structural type encoding. `binders` tracks enclosing lambda-like binders outermost-last,
     // so parameter references encode as (de Bruijn depth, index) and binder names vanish.
     def encodeType
-      ( out: java.io.ByteArrayOutputStream, tpe: TypeRepr, binders: scala.List[Any] )
+      ( out: Scribe[Byte], tpe: TypeRepr, binders: scala.List[Any] )
     :   Unit =
 
       tpe match
@@ -273,12 +274,11 @@ object Atomizer:
     def record
       ( key:         String,
         replaceable: Boolean,
-        encoding:    java.io.ByteArrayOutputStream,
+        data:        Data,
         references:  scala.List[String] = scala.Nil )
     :   Unit =
 
       if atoms.contains(key) then throw Unencodable(s"duplicate key $key")
-      val data = Array.unsafeFrozen(encoding.toByteArray.nn)
 
       val listed =
         references.map: reference => ScalaReference.Own(Text(reference))
@@ -289,20 +289,21 @@ object Atomizer:
     // --- members ------------------------------------------------------------------------------
 
     def termAtom(ownerKey: String, symbol: Symbol): Unit =
-      val out = java.io.ByteArrayOutputStream()
-      tag(out, if symbol.isDefDef then 'd' else 'v')
-      uvarint(out, flagBits(symbol))
+      val encoded = Array.collect[Byte](): out =>
+        tag(out, if symbol.isDefDef then 'd' else 'v')
+        uvarint(out, flagBits(symbol))
 
-      // Parameter names are not part of the key, but they are named-argument surface, so they
-      // fold into the value; `HASDEFAULT` existence travels through the flag bits of the
-      // default getters, which are ordinary (synthetic) members.
-      symbol.paramSymss.foreach: clause =>
-        uvarint(out, clause.length.toLong)
-        clause.foreach: param => utf8(out, param.name)
+        // Parameter names are not part of the key, but they are named-argument surface, so they
+        // fold into the value; `HASDEFAULT` existence travels through the flag bits of the
+        // default getters, which are ordinary (synthetic) members.
+        symbol.paramSymss.foreach: clause =>
+          uvarint(out, clause.length.toLong)
+          clause.foreach: param => utf8(out, param.name)
 
-      encodeType(out, symbol.info, scala.Nil)
-      annotations(out, symbol)
-      record(keyOf(ownerKey, symbol), replaceable = false, out)
+        encodeType(out, symbol.info, scala.Nil)
+        annotations(out, symbol)
+
+      record(keyOf(ownerKey, symbol), replaceable = false, encoded)
 
       if symbol.flags.is(Flags.Inline) || symbol.flags.is(Flags.Macro) then inlineAtom(ownerKey,
           symbol)
@@ -313,250 +314,255 @@ object Atomizer:
       // canonical encoding of the body tree — local names alpha-normalized, every outward
       // reference fully qualified — and whose reference list names everything the body splices
       // into consumers, for used-set closure (LIRA §13.4).
-      val out = java.io.ByteArrayOutputStream()
-      tag(out, 'i')
-
-      val locals = scala.collection.mutable.HashMap[Symbol, Int]()
+      // Declared outside the lender: the reference set is read by the `record` call below, and
+      // the lender's lambda scope ends before it.
       val references = scala.collection.mutable.TreeSet[String]()
 
-      def local(member: Symbol): Boolean =
-        var current = member
-        var found = false
+      val encoded = Array.collect[Byte](): out =>
+        tag(out, 'i')
 
-        while !found && !current.isNoSymbol do
-          if current == symbol then found = true
-          current = if current.isNoSymbol then current else current.owner
+        val locals = scala.collection.mutable.HashMap[Symbol, Int]()
 
-        found
+        def local(member: Symbol): Boolean =
+          var current = member
+          var found = false
 
-      def reference(member: Symbol): Unit =
-        if !member.isNoSymbol && !member.isPackageDef && !member.owner.isNoSymbol
-        then
-          if member.isClassDef || member.isTypeDef then references += member.fullName else
-            references += keyOf(ownerKeyOf(member.owner), member)
+          while !found && !current.isNoSymbol do
+            if current == symbol then found = true
+            current = if current.isNoSymbol then current else current.owner
 
-            // Closure through nested inlining: using an inline member copies its body too.
-            if member.flags.is(Flags.Inline) || member.flags.is(Flags.Macro)
-            then references += keyOf(ownerKeyOf(member.owner), member) + "[inline]"
+          found
 
-      def name(member: Symbol): Unit =
-        if local(member) then
-          tag(out, 'l')
-          uvarint(out, locals.getOrElseUpdate(member, locals.size).toLong)
-        else
-          tag(out, 'g')
-          utf8(out, member.fullName + signatureText(member))
-          reference(member)
+        def reference(member: Symbol): Unit =
+          if !member.isNoSymbol && !member.isPackageDef && !member.owner.isNoSymbol
+          then
+            if member.isClassDef || member.isTypeDef then references += member.fullName else
+              references += keyOf(ownerKeyOf(member.owner), member)
 
-      def term(tree: Tree): Unit = tree match
-        case Inlined(_, bindings, body) =>
-          tag(out, 'I')
-          uvarint(out, bindings.length.toLong)
-          bindings.foreach(term)
-          term(body)
+              // Closure through nested inlining: using an inline member copies its body too.
+              if member.flags.is(Flags.Inline) || member.flags.is(Flags.Macro)
+              then references += keyOf(ownerKeyOf(member.owner), member) + "[inline]"
 
-        case Ident(_) =>
-          tag(out, 'x')
-          name(tree.symbol)
+        def name(member: Symbol): Unit =
+          if local(member) then
+            tag(out, 'l')
+            uvarint(out, locals.getOrElseUpdate(member, locals.size).toLong)
+          else
+            tag(out, 'g')
+            utf8(out, member.fullName + signatureText(member))
+            reference(member)
 
-        case Select(qualifier, _) =>
-          tag(out, '.')
-          term(qualifier)
-          name(tree.symbol)
+        def term(tree: Tree): Unit = tree match
+          case Inlined(_, bindings, body) =>
+            tag(out, 'I')
+            uvarint(out, bindings.length.toLong)
+            bindings.foreach(term)
+            term(body)
 
-        case Literal(constant) =>
-          tag(out, 'k')
-          utf8(out, constant.getClass.getName.nn + ":" + constant.show)
+          case Ident(_) =>
+            tag(out, 'x')
+            name(tree.symbol)
 
-        case This(_) =>
-          tag(out, 'z')
-          utf8(out, tree.symbol.fullName)
+          case Select(qualifier, _) =>
+            tag(out, '.')
+            term(qualifier)
+            name(tree.symbol)
 
-        case New(tpt) =>
-          tag(out, 'n')
-          encodeType(out, tpt.tpe, scala.Nil)
+          case Literal(constant) =>
+            tag(out, 'k')
+            utf8(out, constant.getClass.getName.nn + ":" + constant.show)
 
-        case Apply(fun, arguments) =>
-          tag(out, 'a')
-          term(fun)
-          uvarint(out, arguments.length.toLong)
-          arguments.foreach(term)
+          case This(_) =>
+            tag(out, 'z')
+            utf8(out, tree.symbol.fullName)
 
-        case TypeApply(fun, arguments) =>
-          tag(out, 'y')
-          term(fun)
-          uvarint(out, arguments.length.toLong)
-          arguments.foreach: argument => encodeType(out, argument.tpe, scala.Nil)
+          case New(tpt) =>
+            tag(out, 'n')
+            encodeType(out, tpt.tpe, scala.Nil)
 
-        case Typed(expression, tpt) =>
-          tag(out, ':')
-          term(expression)
-          encodeType(out, tpt.tpe, scala.Nil)
+          case Apply(fun, arguments) =>
+            tag(out, 'a')
+            term(fun)
+            uvarint(out, arguments.length.toLong)
+            arguments.foreach(term)
 
-        case Block(statements, expression) =>
-          tag(out, '{')
+          case TypeApply(fun, arguments) =>
+            tag(out, 'y')
+            term(fun)
+            uvarint(out, arguments.length.toLong)
+            arguments.foreach: argument => encodeType(out, argument.tpe, scala.Nil)
 
-          // Imports and exports among a body's statements are purely lexical: every
-          // reference this encoding emits is already fully-qualified, so they carry no
-          // semantic content and fold into nothing, like positions.
-          val retained = statements.filter:
-            case _: Import => false
-            case _: Export => false
-            case _         => true
+          case Typed(expression, tpt) =>
+            tag(out, ':')
+            term(expression)
+            encodeType(out, tpt.tpe, scala.Nil)
 
-          uvarint(out, retained.length.toLong)
-          retained.foreach(term)
-          term(expression)
+          case Block(statements, expression) =>
+            tag(out, '{')
 
-        case If(condition, positive, negative) =>
-          tag(out, '?')
-          term(condition)
-          term(positive)
-          term(negative)
+            // Imports and exports among a body's statements are purely lexical: every
+            // reference this encoding emits is already fully-qualified, so they carry no
+            // semantic content and fold into nothing, like positions.
+            val retained = statements.filter:
+              case _: Import => false
+              case _: Export => false
+              case _         => true
 
-        case matched @ Match(scrutinee, cases) =>
-          tag(out, if matched.isInline then 'M' else 'm')
-          term(scrutinee)
-          uvarint(out, cases.length.toLong)
-          cases.foreach(term)
+            uvarint(out, retained.length.toLong)
+            retained.foreach(term)
+            term(expression)
 
-        case SummonFrom(cases) =>
-          tag(out, 'f')
-          uvarint(out, cases.length.toLong)
-          cases.foreach(term)
+          case If(condition, positive, negative) =>
+            tag(out, '?')
+            term(condition)
+            term(positive)
+            term(negative)
 
-        case CaseDef(pattern, guard, rhs) =>
-          tag(out, 'e')
-          term(pattern)
+          case matched @ Match(scrutinee, cases) =>
+            tag(out, if matched.isInline then 'M' else 'm')
+            term(scrutinee)
+            uvarint(out, cases.length.toLong)
+            cases.foreach(term)
 
-          guard match
-            case scala.Some(condition) => term(condition)
-            case scala.None            => tag(out, '0')
+          case SummonFrom(cases) =>
+            tag(out, 'f')
+            uvarint(out, cases.length.toLong)
+            cases.foreach(term)
 
-          term(rhs)
+          case CaseDef(pattern, guard, rhs) =>
+            tag(out, 'e')
+            term(pattern)
 
-        case Bind(_, pattern) =>
-          tag(out, 'b')
-          uvarint(out, locals.getOrElseUpdate(tree.symbol, locals.size).toLong)
-          term(pattern)
+            guard match
+              case scala.Some(condition) => term(condition)
+              case scala.None            => tag(out, '0')
 
-        case Unapply(fun, implicits, patterns) =>
-          tag(out, 'u')
-          term(fun)
-          uvarint(out, implicits.length.toLong)
-          implicits.foreach(term)
-          uvarint(out, patterns.length.toLong)
-          patterns.foreach(term)
+            term(rhs)
 
-        case Alternatives(patterns) =>
-          tag(out, '/')
-          uvarint(out, patterns.length.toLong)
-          patterns.foreach(term)
+          case Bind(_, pattern) =>
+            tag(out, 'b')
+            uvarint(out, locals.getOrElseUpdate(tree.symbol, locals.size).toLong)
+            term(pattern)
 
-        case Wildcard() =>
-          tag(out, '_')
+          case Unapply(fun, implicits, patterns) =>
+            tag(out, 'u')
+            term(fun)
+            uvarint(out, implicits.length.toLong)
+            implicits.foreach(term)
+            uvarint(out, patterns.length.toLong)
+            patterns.foreach(term)
 
-        case TypedOrTest(inner, tpt) =>
-          tag(out, 'o')
-          term(inner)
-          encodeType(out, tpt.tpe, scala.Nil)
+          case Alternatives(patterns) =>
+            tag(out, '/')
+            uvarint(out, patterns.length.toLong)
+            patterns.foreach(term)
 
-        case While(condition, body) =>
-          tag(out, 'w')
-          term(condition)
-          term(body)
+          case Wildcard() =>
+            tag(out, '_')
 
-        case Assign(lhs, rhs) =>
-          tag(out, '=')
-          term(lhs)
-          term(rhs)
+          case TypedOrTest(inner, tpt) =>
+            tag(out, 'o')
+            term(inner)
+            encodeType(out, tpt.tpe, scala.Nil)
 
-        case Return(expression, _) =>
-          tag(out, 'j')
-          term(expression)
+          case While(condition, body) =>
+            tag(out, 'w')
+            term(condition)
+            term(body)
 
-        case Try(expression, cases, finalizer) =>
-          tag(out, 'q')
-          term(expression)
-          uvarint(out, cases.length.toLong)
-          cases.foreach(term)
+          case Assign(lhs, rhs) =>
+            tag(out, '=')
+            term(lhs)
+            term(rhs)
 
-          finalizer match
-            case scala.Some(effect) => term(effect)
-            case scala.None         => tag(out, '0')
+          case Return(expression, _) =>
+            tag(out, 'j')
+            term(expression)
 
-        case Repeated(elements, tpt) =>
-          tag(out, '*')
-          uvarint(out, elements.length.toLong)
-          elements.foreach(term)
-          encodeType(out, tpt.tpe, scala.Nil)
+          case Try(expression, cases, finalizer) =>
+            tag(out, 'q')
+            term(expression)
+            uvarint(out, cases.length.toLong)
+            cases.foreach(term)
 
-        case Closure(target, _) =>
-          tag(out, '\\')
-          term(target)
+            finalizer match
+              case scala.Some(effect) => term(effect)
+              case scala.None         => tag(out, '0')
 
-        case NamedArg(argName, argument) =>
-          tag(out, '$')
-          utf8(out, argName)
-          term(argument)
+          case Repeated(elements, tpt) =>
+            tag(out, '*')
+            uvarint(out, elements.length.toLong)
+            elements.foreach(term)
+            encodeType(out, tpt.tpe, scala.Nil)
 
-        case valDef: ValDef =>
-          tag(out, 'V')
-          uvarint(out, locals.getOrElseUpdate(valDef.symbol, locals.size).toLong)
-          encodeType(out, valDef.tpt.tpe, scala.Nil)
+          case Closure(target, _) =>
+            tag(out, '\\')
+            term(target)
 
-          valDef.rhs match
-            case scala.Some(rhs) => term(rhs)
-            case scala.None      => tag(out, '0')
+          case NamedArg(argName, argument) =>
+            tag(out, '$')
+            utf8(out, argName)
+            term(argument)
 
-        case defDef: DefDef =>
-          tag(out, 'D')
-          uvarint(out, locals.getOrElseUpdate(defDef.symbol, locals.size).toLong)
+          case valDef: ValDef =>
+            tag(out, 'V')
+            uvarint(out, locals.getOrElseUpdate(valDef.symbol, locals.size).toLong)
+            encodeType(out, valDef.tpt.tpe, scala.Nil)
 
-          defDef.termParamss.foreach: clause =>
-            clause.params.foreach: param =>
-              uvarint(out, locals.getOrElseUpdate(param.symbol, locals.size).toLong)
+            valDef.rhs match
+              case scala.Some(rhs) => term(rhs)
+              case scala.None      => tag(out, '0')
 
-          encodeType(out, defDef.returnTpt.tpe, scala.Nil)
+          case defDef: DefDef =>
+            tag(out, 'D')
+            uvarint(out, locals.getOrElseUpdate(defDef.symbol, locals.size).toLong)
 
-          defDef.rhs match
-            case scala.Some(rhs) => term(rhs)
-            case scala.None      => tag(out, '0')
+            defDef.termParamss.foreach: clause =>
+              clause.params.foreach: param =>
+                uvarint(out, locals.getOrElseUpdate(param.symbol, locals.size).toLong)
 
-        case tpt: TypeTree =>
-          tag(out, 'T')
-          encodeType(out, tpt.tpe, scala.Nil)
+            encodeType(out, defDef.returnTpt.tpe, scala.Nil)
 
-        case _ =>
-          throw Unencodable(s"term ${tree.getClass.getName}")
+            defDef.rhs match
+              case scala.Some(rhs) => term(rhs)
+              case scala.None      => tag(out, '0')
 
-      symbol.tree match
-        case defDef: DefDef =>
-          defDef.termParamss.foreach: clause =>
-            clause.params.foreach: param =>
-              uvarint(out, locals.getOrElseUpdate(param.symbol, locals.size).toLong)
+          case tpt: TypeTree =>
+            tag(out, 'T')
+            encodeType(out, tpt.tpe, scala.Nil)
 
-          defDef.rhs match
+          case _ =>
+            throw Unencodable(s"term ${tree.getClass.getName}")
+
+        symbol.tree match
+          case defDef: DefDef =>
+            defDef.termParamss.foreach: clause =>
+              clause.params.foreach: param =>
+                uvarint(out, locals.getOrElseUpdate(param.symbol, locals.size).toLong)
+
+            defDef.rhs match
+              case scala.Some(body) => term(body)
+              case scala.None       => tag(out, '0')
+
+          case valDef: ValDef => valDef.rhs match
             case scala.Some(body) => term(body)
             case scala.None       => tag(out, '0')
 
-        case valDef: ValDef => valDef.rhs match
-          case scala.Some(body) => term(body)
-          case scala.None       => tag(out, '0')
+          case _ => tag(out, '0')
 
-        case _ => tag(out, '0')
 
-      record(keyOf(ownerKey, symbol) + "[inline]", replaceable = true, out, references.toList)
+      record(keyOf(ownerKey, symbol) + "[inline]", replaceable = true, encoded, references.toList)
 
     def typeMemberAtom(ownerKey: String, symbol: Symbol): Unit =
-      val out = java.io.ByteArrayOutputStream()
-      tag(out, 't')
-      uvarint(out, flagBits(symbol))
-      encodeType(out, symbol.info, scala.Nil)
-      annotations(out, symbol)
-      record(s"$ownerKey.${symbol.name}", replaceable = false, out)
+      val encoded = Array.collect[Byte](): out =>
+        tag(out, 't')
+        uvarint(out, flagBits(symbol))
+        encodeType(out, symbol.info, scala.Nil)
+        annotations(out, symbol)
 
-    def annotations(out: java.io.ByteArrayOutputStream, symbol: Symbol): Unit =
+      record(s"$ownerKey.${symbol.name}", replaceable = false, encoded)
+
+    def annotations(out: Scribe[Byte], symbol: Symbol): Unit =
       val names = symbol.annotations
         . map(_.tpe.typeSymbol.fullName)
         . filter: name => !denylisted(name)
@@ -581,74 +587,75 @@ object Atomizer:
             else if member.isDefDef || member.isValDef then termAtom(ownerKey, member)
 
     def templateAtom(symbol: Symbol): Unit =
-      val out = java.io.ByteArrayOutputStream()
-      tag(out, 'c')
-      uvarint(out, flagBits(symbol))
+      val encoded = Array.collect[Byte](): out =>
+        tag(out, 'c')
+        uvarint(out, flagBits(symbol))
 
-      // Type parameters: positional, variance and bounds folded; names alpha-normalized away.
-      val typeParams = symbol.typeMembers.filter(_.isTypeParam)
-      uvarint(out, typeParams.length.toLong)
+        // Type parameters: positional, variance and bounds folded; names alpha-normalized away.
+        val typeParams = symbol.typeMembers.filter(_.isTypeParam)
+        uvarint(out, typeParams.length.toLong)
 
-      typeParams.foreach: param =>
-        val variance =
-          if param.flags.is(Flags.Covariant) then 1L
-          else if param.flags.is(Flags.Contravariant) then 2L else 0L
+        typeParams.foreach: param =>
+          val variance =
+            if param.flags.is(Flags.Covariant) then 1L
+            else if param.flags.is(Flags.Contravariant) then 2L else 0L
 
-        uvarint(out, variance)
-        encodeType(out, param.info, scala.Nil)
+          uvarint(out, variance)
+          encodeType(out, param.info, scala.Nil)
 
-      // Parents, in linearization-relevant declaration order.
-      val parents = symbol.typeRef.baseClasses match
-        case _ =>
-          symbol.tree match
-            case classDef: ClassDef =>
-              classDef.parents.map:
-                case tpt: TypeTree => tpt.tpe
-                case parent        => parent.asInstanceOf[Term].tpe
+        // Parents, in linearization-relevant declaration order.
+        val parents = symbol.typeRef.baseClasses match
+          case _ =>
+            symbol.tree match
+              case classDef: ClassDef =>
+                classDef.parents.map:
+                  case tpt: TypeTree => tpt.tpe
+                  case parent        => parent.asInstanceOf[Term].tpe
 
-            case _ => scala.Nil
+              case _ => scala.Nil
 
-      uvarint(out, parents.length.toLong)
-      parents.foreach: parent => encodeType(out, parent, scala.Nil)
+        uvarint(out, parents.length.toLong)
+        parents.foreach: parent => encodeType(out, parent, scala.Nil)
 
-      // The self type, when declared.
-      symbol.tree match
-        case classDef: ClassDef => classDef.self match
-          case scala.Some(self) =>
-            tag(out, 's')
-            encodeType(out, self.tpt.tpe, scala.Nil)
+        // The self type, when declared.
+        symbol.tree match
+          case classDef: ClassDef => classDef.self match
+            case scala.Some(self) =>
+              tag(out, 's')
+              encodeType(out, self.tpt.tpe, scala.Nil)
 
-          case scala.None => tag(out, '-')
+            case scala.None => tag(out, '-')
 
-        case _ => tag(out, '-')
+          case _ => tag(out, '-')
 
-      // Abstract members fold into an *open* template (adding one breaks external subclasses);
-      // on sealed or final templates they are pure additions and do not fold.
-      val open =
-        !symbol.flags.is(Flags.Final) && !symbol.flags.is(Flags.Sealed) &&
-          !symbol.flags.is(Flags.Module)
+        // Abstract members fold into an *open* template (adding one breaks external subclasses);
+        // on sealed or final templates they are pure additions and do not fold.
+        val open =
+          !symbol.flags.is(Flags.Final) && !symbol.flags.is(Flags.Sealed) &&
+            !symbol.flags.is(Flags.Module)
 
-      if open then
-        val deferred = symbol.declarations
-          . filter: member => member.flags.is(Flags.Deferred) && !excluded(member)
-          . map: member => keyOf(symbol.fullName, member)
-          . sorted
+        if open then
+          val deferred = symbol.declarations
+            . filter: member => member.flags.is(Flags.Deferred) && !excluded(member)
+            . map: member => keyOf(symbol.fullName, member)
+            . sorted
 
-        uvarint(out, deferred.length.toLong)
-        deferred.foreach: key => utf8(out, key)
-      else
-        uvarint(out, 0L)
+          uvarint(out, deferred.length.toLong)
+          deferred.foreach: key => utf8(out, key)
+        else
+          uvarint(out, 0L)
 
-      // The sealed/enum child list folds in declaration order: ordinals are behavior.
-      if symbol.flags.is(Flags.Sealed) || symbol.flags.is(Flags.Enum) then
-        val children = symbol.children.map(_.fullName)
-        uvarint(out, children.length.toLong)
-        children.foreach: child => utf8(out, child)
-      else
-        uvarint(out, 0L)
+        // The sealed/enum child list folds in declaration order: ordinals are behavior.
+        if symbol.flags.is(Flags.Sealed) || symbol.flags.is(Flags.Enum) then
+          val children = symbol.children.map(_.fullName)
+          uvarint(out, children.length.toLong)
+          children.foreach: child => utf8(out, child)
+        else
+          uvarint(out, 0L)
 
-      annotations(out, symbol)
-      record(symbol.fullName, replaceable = false, out)
+        annotations(out, symbol)
+
+      record(symbol.fullName, replaceable = false, encoded)
 
     // --- roots --------------------------------------------------------------------------------
 

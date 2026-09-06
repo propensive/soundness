@@ -485,7 +485,7 @@ package proximities:
           dist(j) = (old.readable(j - 1) + c).min(old.readable(j) + 1).min(dist.readable(j - 1) + 1)
           j += 1
 
-        old.copyFrom(dist, 0, 0, n + 1)
+        old.place(dist, 0, 0, n + 1)
         i += 1
 
       if m == 0 then n else dist.readable(n)

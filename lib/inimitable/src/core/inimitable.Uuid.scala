@@ -86,8 +86,8 @@ case class Uuid(msb: Long, lsb: Long):
     val high = msb.bytestream
     val low = lsb.bytestream
     val buffer = Array.allocate[Byte](high.length + low.length)
-    buffer.copyFrom(high, 0, 0, high.length)
-    buffer.copyFrom(low, 0, high.length, low.length)
+    buffer.place(high)
+    buffer.place(low, 0, high.length, low.length)
     Array.freeze(buffer)
 
   @targetName("invert")

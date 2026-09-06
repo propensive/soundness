@@ -344,6 +344,10 @@ object LineSeparation:
       // The incomplete current line's bytes, carried across steps: the
       // counterpart of the char duct's `StringBuilder`, and free of its coder
       // trap, since bytes carry no encoding state to inflate.
+      // Not a `Scribe`: this is a long-lived field which is reset and reused across steps, and
+      // decoded through `toString(charset)`. `Array.collect` lends a scribe and freezes it when
+      // the lender returns — that confinement is exactly what makes the freeze sound — so a
+      // resettable buffer held as a field is a different shape, not a missing method.
       private val partial: ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(64)
 
       // A separator's first byte at a window boundary (10 or 13; 0 = none).

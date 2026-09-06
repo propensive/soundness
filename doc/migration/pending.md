@@ -157,7 +157,7 @@ not yet been recorded here.
   `AtomicReferenceArray[vacuous.Optional[value]]`. `LongAdder`, `DoubleAdder`, `LongAccumulator`,
   `DoubleAccumulator`, `AtomicMarkableReference`, `AtomicStampedReference` and the three
   `*FieldUpdater` classes are not wrapped. `Atomic.Int` and `Atomic.Long` shadow `scala.Int` and
-  `scala.Long` under `import Atomic.*`, which is not an intended usage. (#NNNN)
+  `scala.Long` under `import Atomic.*`, which is not an intended usage. (#1957)
 - A match type `Atomic[value]` reduces to `Atomic.Int` for `Int`, `Atomic.Long` for `Long`,
   `Atomic.Bool` for `Boolean`, and `Atomic.Ref[value]` otherwise. It does not reduce for an
   abstract type parameter, nor for an opaque type whose representation is not visible at the use
@@ -167,7 +167,7 @@ not yet been recorded here.
   `Atomic(false)` and `Atomic(reference)` construct the corresponding cell; an explicit type
   argument (`Atomic[Int](0)`) applies the generic arm and does not conform. Every operation is
   `inline` and compiles to the same bytecode as the `java.util.concurrent.atomic` call it
-  replaces. (#NNNN)
+  replaces. (#1957)
 - Reads are `atomic()` (`get`), stores are `atomic() = value` (`set`) and `atomic.publish(value)`
   (`lazySet`); `atomic.swap(value)` is `getAndSet` and `atomic.replace(expected, updated)` is
   `compareAndSet`. `Atomic.Ref#apply()` returns `value` rather than `value | Null`, so no call
@@ -175,7 +175,7 @@ not yet been recorded here.
   `.nn` on the underlying `AtomicReference` would have thrown. The three array types are indexed
   by `denominative.Ordinal`; `Atomic.Refs#apply` returns `vacuous.Optional[value]` because a fresh
   reference array is null-filled, while `Atomic.Ints#apply` and `Atomic.Longs#apply` return the
-  primitive, because a fresh primitive array holds zeros. (#NNNN)
+  primitive, because a fresh primitive array holds zeros. (#1957)
 - Transitions are `atomic.ere(transition)`, yielding the value the transition displaced, and
   `atomic.since(transition)`, yielding the value it installed — replacing `getAndUpdate` and
   `updateAndGet` respectively. They are defined on `Atomic.Int`, `Atomic.Long`, `Atomic.Bool` and
@@ -187,15 +187,38 @@ not yet been recorded here.
   the transition beta-reduced into it. No `java.util.function.UnaryOperator` and no closure is
   allocated in either case. A transition may be re-run under contention and so must be pure; a
   transition which applies a function value obtained from outside is rejected at compiletime.
-  (#NNNN)
+  (#1957)
 - `ere` is overloaded to take a value directly, so `bool.ere(true)` is `getAndSet(true)` without a
   lambda. There is no `since` counterpart, which would return its own argument. The value overload
   is unreachable on an `Atomic.Ref[value]` whose `value` is a function type, where `ere` resolves
-  to the transition overload and fails to compile; use `ref() = supplied`. (#NNNN)
+  to the transition overload and fails to compile; use `ref() = supplied`. (#1957)
 - `Atomic.Ref#revise(transition)` takes a function value rather than a literal, for a transition
   whose shape cannot be read, and yields the value it installed. It is `inline`, so no closure is
   allocated, but the purity obligation is unchecked: the transition may be re-run under
-  contention. (#NNNN)
+  contention. (#1957)
+- `rudiments.test` now depends on `mandible.core`, which asserts the bytecode `Atomic`'s
+  operations compile to. No effect on `rudiments` itself. (#1960)
+
+## proscenium
+
+- `proscenium.Array#copyFrom(source, sourceStart, targetStart, count)` renamed to `place`, with
+  two further overloads: `place(source)` copies the whole source to the start, and
+  `place(source, at)` copies it to `at`. Behaviour unchanged. The name matches
+  `rudiments.place` and `concordance.Scribe#place`, which already meant copying a source into
+  the receiver; `snapshot` remains its counterpart, copying out into a fresh array. Indices stay
+  `Int` rather than `Ordinal`, as `Array`'s `apply`/`update`/`readUnchecked` do, because
+  `denominative` sits above `proscenium`. (#1960)
+
+## concordance
+
+- `rudiments.Scribe` can now grow. `Array.collect[element](hint)(lambda)` lends an unsized
+  scribe which extends as it is written and yields exactly what was written, where
+  `Array.scribe[element](size)(lambda)` continues to lend a fixed-size scribe, to return an array
+  of exactly `size`, and to clamp rather than grow. Existing `Array.scribe` behaviour is
+  unchanged. (#1960)
+- `rudiments.Scribe#append` gains two bulk overloads at the cursor: `append(source)` and
+  `append(source, from, count)`, both taking `Array[element]^{}`. `place` still requires an
+  `Ordinal in scribe.type` and so remains available only to a sized scribe. (#1960)
 
 ## frontier
 

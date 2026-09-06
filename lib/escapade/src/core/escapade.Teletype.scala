@@ -375,9 +375,9 @@ case class Teletype
           // Add a new run starting at plain.length, with style = tail
           val newBoundaries = Array.allocate[Int](k + 1)
           val newStyles = Array.allocate[Long](k + 2)
-          newBoundaries.copyFrom(boundaries, 0, 0, k)
+          newBoundaries.place(boundaries, 0, 0, k)
           newBoundaries(k) = plain.length
-          newStyles.copyFrom(styles, 0, 0, k)
+          newStyles.place(styles, 0, 0, k)
           newStyles(k) = tail
           newStyles(k + 1) = tail
 
@@ -405,8 +405,8 @@ case class Teletype
         // Both dense — direct array copy
         val newLength = aN + that.plain.length + 1
         val arr = Array.allocate[Long](newLength)
-        arr.copyFrom(styles, 0, 0, aN)
-        arr.copyFrom(that.styles, 0, aN, that.styles.length)
+        arr.place(styles, 0, 0, aN)
+        arr.place(that.styles, 0, aN, that.styles.length)
 
         Teletype
           ( combinedPlain,
@@ -427,8 +427,8 @@ case class Teletype
         val newBoundariesArr = Array.allocate[Int](newK)
         val newStylesArr = Array.allocate[Long](newK + 1)
         // Copy A's runs
-        newBoundariesArr.copyFrom(aBoundaries, 0, 0, aK)
-        newStylesArr.copyFrom(aStyles, 0, 0, aK)
+        newBoundariesArr.place(aBoundaries, 0, 0, aK)
+        newStylesArr.place(aStyles, 0, 0, aK)
         // Copy B's runs (shifted by aN), optionally skipping the first if merging
         var bi = if merge then 1 else 0
         var ni = aK

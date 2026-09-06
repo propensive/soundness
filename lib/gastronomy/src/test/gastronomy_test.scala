@@ -198,7 +198,7 @@ object Tests extends Suite(m"Gastronomy tests"):
       // nonzero base offset, so block-boundary carry and offset arithmetic are exercised.
       def windowed(digestion: Digestion^): Text =
         val buffer = Array.allocate[Byte](payload.length + 13)
-        buffer.copyFrom(payload, 0, 13, payload.length)
+        buffer.place(payload, 0, 13, payload.length)
         val array = Array.freeze(buffer)
         var offset = 13
         var step = 1

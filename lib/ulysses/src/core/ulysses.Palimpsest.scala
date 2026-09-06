@@ -75,7 +75,7 @@ object Palimpsest:
       k += 1
 
     val out = Array.allocate[Byte](bodyLen + 1)
-    out.copyFrom(body, 0, 0, bodyLen)
+    out.place(body, 0, 0, bodyLen)
     out(bodyLen) = (xor ^ (cadence.byte & 0xff)).toByte
 
     Palimpsest(Array.freeze(out), n)

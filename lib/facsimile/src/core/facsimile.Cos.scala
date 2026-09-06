@@ -67,7 +67,7 @@ object Cos:
       val bytes = Array.allocate[Byte](body.length + 2)
       bytes(0) = 0xfe.toByte
       bytes(1) = 0xff.toByte
-      bytes.copyFrom(body, 0, 2, body.length)
+      bytes.place(body, 0, 2, body.length)
       Array.freeze(bytes)
 
   // A text string (ISO 32000-2 §7.9.2.2): UTF-16BE or UTF-8 by byte-order mark, otherwise

@@ -212,7 +212,7 @@ object decimalInternal:
         val result = Array.allocate[Int](count + 2)
         result(0) = signum
         result(1) = scale
-        result.copyFrom(magnitude, 0, 2, count)
+        result.place(magnitude, 0, 2, count)
         Array.freeze(result).readable
 
     // In-place small division, returning the remainder; `divisor` is at most 10⁹.
@@ -541,7 +541,7 @@ object decimalInternal:
     def negation(value: Decimal): Decimal =
       if value(0) == 0 then value else
         val result = Array.allocate[Int](value.length)
-        result.copyFrom(Array.frozen(value), 0, 0, value.length)
+        result.place(Array.frozen(value), 0, 0, value.length)
         result(0) = -value(0)
         Array.freeze(result).readable
 

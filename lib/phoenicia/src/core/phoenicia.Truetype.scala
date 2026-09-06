@@ -93,7 +93,7 @@ case class Truetype(data: Data) extends Sfnt:
     var written = 0
 
     parts.result().each: part =>
-      newGlyf.copyFrom(part, 0, written, part.length)
+      newGlyf.place(part, 0, written, part.length)
       written += part.length
 
     // The rebuilt loca always uses the long format, so head's format field must agree.
@@ -108,7 +108,7 @@ case class Truetype(data: Data) extends Sfnt:
     val headRef = tables(Sfnt.Table.Ttf.Head).lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Head)))
     val headData = data.segment((headRef.offset).z till (headRef.offset + headRef.length).z)
     val newHead = Array.allocate[Byte](headData.length)
-    newHead.copyFrom(headData, 0, 0, headData.length)
+    newHead.place(headData)
     (8 to 11).each { index => newHead(index) = 0 } // adjustment is recomputed on assembly
     newHead(50) = 0
     newHead(51) = 1

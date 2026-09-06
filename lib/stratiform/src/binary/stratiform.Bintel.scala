@@ -32,7 +32,6 @@
                                                                                                   */
 package stratiform
 
-import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 
 import scala.language.unsafeNulls
@@ -102,9 +101,8 @@ object Bintel:
     ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
   :   Data =
 
-    val out = new ByteArrayOutputStream
-    encodeRoot(out, element, schema, codecs)
-    out.toByteArray.asInstanceOf[Array[Byte]^{}]
+    Array.collect[Byte](): out =>
+      encodeRoot(out, element, schema, codecs)
 
   // Is `signature` a syntactically-valid palimpsest? Recovers the cadence
   // byte from the XOR-fold of every byte and checks the byte length is
@@ -131,20 +129,11 @@ object Bintel:
     if !validSignatureLength(signature)
     then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
-    val out = new ByteArrayOutputStream(magic.length + 10 + signature.length + body.length)
-    out.write(magic.asInstanceOf[scala.Array[Byte]])
-    val sigLen = new ByteArrayOutputStream(10)
-    var n = signature.length.toLong
-
-    while n >= 0x80L do
-      sigLen.write(((n & 0x7fL) | 0x80L).toInt)
-      n >>>= 7
-
-    sigLen.write(n.toInt)
-    out.write(sigLen.toByteArray)
-    out.write(signature.asInstanceOf[scala.Array[Byte]])
-    out.write(body.asInstanceOf[scala.Array[Byte]])
-    out.toByteArray.asInstanceOf[Array[Byte]^{}]
+    Array.collect[Byte](magic.length + 10 + signature.length + body.length): out =>
+      out.append(magic)
+      writeVarint(out, signature.length.toLong)
+      out.append(signature)
+      out.append(body)
 
   // §6 unframing. Parse a complete BinTEL byte sequence into its
   // signature bytes and body bytes. Validates the magic number (B01),
@@ -213,16 +202,16 @@ object Bintel:
     if !validSignatureLength(signature)
     then abort(Bintel.Error(Bintel.Error.Reason.BadSignatureLength))
 
-    val out = new ByteArrayOutputStream(
-        magicSelfContained.length + 20 + signature.length + schemaBody.length + body.length)
+    val hint =
+      magicSelfContained.length + 20 + signature.length + schemaBody.length + body.length
 
-    out.write(magicSelfContained.asInstanceOf[scala.Array[Byte]])
-    writeVarint(out, signature.length.toLong)
-    out.write(signature.asInstanceOf[scala.Array[Byte]])
-    writeVarint(out, schemaBody.length.toLong)
-    out.write(schemaBody.asInstanceOf[scala.Array[Byte]])
-    out.write(body.asInstanceOf[scala.Array[Byte]])
-    out.toByteArray.asInstanceOf[Array[Byte]^{}]
+    Array.collect[Byte](hint): out =>
+      out.append(magicSelfContained)
+      writeVarint(out, signature.length.toLong)
+      out.append(signature)
+      writeVarint(out, schemaBody.length.toLong)
+      out.append(schemaBody)
+      out.append(body)
 
   // §6.2 self-contained encoding of the TEL document `tel`, whose schema is given
   // as the TEL document `schemaDoc` (parseable under the tels axiom). The
@@ -621,7 +610,7 @@ object Bintel:
   private final class Cursor(val data: Data, @scala.caps.unsafe.untrackedCaptures var offset: Int)
 
   private def encodeRoot
-    ( out: ByteArrayOutputStream, element: Tel.Element, schema: Tels,
+    ( out: Scribe[Byte], element: Tel.Element, schema: Tels,
       codecs: Optional[Tel.Codec.Resolver] )
     ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
   :   Unit =
@@ -646,7 +635,7 @@ object Bintel:
         encodeElement(out, element, schema, codecs)
 
   private def encodeElement
-    ( out: ByteArrayOutputStream, element: Tel.Element, schema: Tels,
+    ( out: Scribe[Byte], element: Tel.Element, schema: Tels,
       codecs: Optional[Tel.Codec.Resolver] )
     ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
   :   Unit =
@@ -656,7 +645,7 @@ object Bintel:
       case value: Tel.Element.Value => encodeValue(out, value, codecs)
 
   private def encodeNode
-    ( out: ByteArrayOutputStream, node: Tel.Element.Node, schema: Tels,
+    ( out: Scribe[Byte], node: Tel.Element.Node, schema: Tels,
       codecs: Optional[Tel.Codec.Resolver] )
     ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
   :   Unit =
@@ -688,7 +677,7 @@ object Bintel:
   // scalar, the bound codec's bytes for an encoded one. The framing —
   // keyword index, byte length, bytes — is identical in both forms.
   private def encodeValue
-    ( out: ByteArrayOutputStream, value: Tel.Element.Value,
+    ( out: Scribe[Byte], value: Tel.Element.Value,
       codecs: Optional[Tel.Codec.Resolver] )
     ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
   :   Unit =
@@ -710,16 +699,16 @@ object Bintel:
     . or(value.text.s.getBytes(StandardCharsets.UTF_8).nn)
 
     writeVarint(out, bytes.length.toLong)
-    out.write(bytes)
+    out.append(Array.unsafeFrozen(bytes))
 
-  private def writeVarint(out: ByteArrayOutputStream, value: Long): Unit =
+  private def writeVarint(out: Scribe[Byte], value: Long): Unit =
     var n = value
 
     while n >= 0x80L do
-      out.write(((n & 0x7fL) | 0x80L).toInt)
+      out.append(((n & 0x7fL) | 0x80L).toByte)
       n >>>= 7
 
-    out.write(n.toInt)
+    out.append(n.toByte)
 
   // §7.2 canonical child order: emit elements member by member, in member
   // declaration order, preserving source order within a single member.

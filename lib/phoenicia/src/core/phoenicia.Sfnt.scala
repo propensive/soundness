@@ -172,7 +172,7 @@ object Sfnt:
 
       (0 until 4).each: position => buffer(directory + position) = tagBytes(position)
 
-      buffer.copyFrom(table, 0, offset, table.length)
+      buffer.place(table, 0, offset, table.length)
       putU32(directory + 4, checksum(offset, table.length))
       putU32(directory + 8, offset.toLong)
       putU32(directory + 12, table.length.toLong)

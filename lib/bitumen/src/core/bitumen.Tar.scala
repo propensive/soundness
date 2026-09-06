@@ -148,7 +148,7 @@ object Tar:
 
           while position < 512 && replenish() do
             val count = (chunk.length - offset).min(512 - position)
-            block.copyFrom(chunk, offset, position, count)
+            block.place(chunk, offset, position, count)
             offset += count
             position += count
 
@@ -496,7 +496,7 @@ object Tar:
         var offset = 0
 
         memo.each: chunk =>
-          whole.copyFrom(chunk, 0, offset, chunk.length)
+          whole.place(chunk, 0, offset, chunk.length)
           offset += chunk.length
 
         Array.freeze(whole)
