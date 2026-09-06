@@ -56,7 +56,7 @@ object Selection:
 
     def axis: Text
 
-  val all: Selection = Selection(Nil, Nil, Nil, false, 1.0)
+  val all: Selection = Selection(Nil, Nil, Nil, Nil, Nil, false, 1.0)
 
   private def hex(text: Text): Boolean =
     text.length == 6 && text.s.forall: char => char.isDigit || (char >= 'a' && char <= 'f')
@@ -69,11 +69,15 @@ object Selection:
     if text.s.matches("-?[0-9]+(\\.[0-9]+)?") then text.s.toDouble else Unset
 
   // Parses command-line selection terms. Identity terms (hashes, monikers, name globs) are
-  // unioned; `kind:` terms and axis constraints (`parser=jacinta`, `N<32`, `N=4..64`)
-  // intersect with that union. Unrecognized terms are treated as name globs.
+  // unioned; `kind:` terms, `tag:` terms and axis constraints (`parser=jacinta`, `N<32`,
+  // `N=4..64`, `N=4..`, `N=..64`) intersect with that union; and `not:<term>` terms are
+  // subtracted last, each removing whatever its term would admit. Unrecognized terms are
+  // treated as name globs.
   def parse(arguments: List[Text]): Selection =
     arguments.fold(all): (selection, argument) =>
-      if argument == t"--list" then selection.copy(listOnly = true)
+      // An empty argument selects nothing and is not a term (so a bare `not:` is ignored).
+      if argument == t"" then selection
+      else if argument == t"--list" then selection.copy(listOnly = true)
       // `--scale=<factor>` is not a selection at all — it changes how long the tests it
       // admits are given to run — but it arrives on the same command line, and a host like
       // fume has no other channel to a suite. A non-positive or unparseable factor is
@@ -90,6 +94,20 @@ object Selection:
           case _          => Nil
 
         selection.copy(kinds = selection.kinds + kinds)
+      // `tag:a,b` admits a test carrying ANY of the listed tags; a second `tag:` term
+      // intersects with the first, so `tag:slow tag:network` means slow AND network.
+      else if argument.starts(t"tag:") then
+        val tags: Set[Text] = argument.skip(4).cut(t",").filter(_ != t"").to[Set]
+        if tags.nil then selection else selection.copy(tags = selection.tags :+ tags)
+      // `not:<term>` subtracts: the inner term is parsed as a selection of its own, and any
+      // cell it would admit is excluded. Each `not:` is independent (they union), so
+      // `not:tag:slow not:kind:bench` excludes every slow test AND every benchmark. An inner
+      // term that selects nothing in particular (`not:` alone, or `not:--list`) is ignored,
+      // as excluding everything could never be what was meant.
+      else if argument.starts(t"not:") then
+        val exclusion = parse(List(argument.skip(4)))
+        if exclusion.trivial then selection
+        else selection.copy(exclusions = selection.exclusions :+ exclusion)
       else constraint(argument).lay(selection.copy(terms = selection.terms :+ term(argument))):
         constraint => selection.copy(constraints = selection.constraints :+ constraint)
 
@@ -112,10 +130,15 @@ object Selection:
         split(t"=").let: (axis, value) =>
           if value.contains(t"..") then
             val index = value.s.indexOf("..")
-            val least = number(value.keep(index))
-            val most = number(value.skip(index + 2))
+            val least: Text = value.keep(index)
+            val most: Text = value.skip(index + 2)
 
-            least.let { least => most.let(Constraint.Interval(axis, least, _)) }
+            // A range may be open at either end: `N=4..` means at least 4 and `N=..64` at
+            // most 64 (both inclusive), spellings which need no shell quoting, unlike `>=`.
+            if least == t"" && most == t"" then Unset
+            else if least == t"" then number(most).let(Constraint.Most(axis, _, true))
+            else if most == t"" then number(least).let(Constraint.Least(axis, _, true))
+            else number(least).let { least => number(most).let(Constraint.Interval(axis, least, _)) }
           else Constraint.Membership(axis, value.cut(t",").to[Set])
 
 
@@ -126,6 +149,10 @@ case class Selection
   ( terms:       List[Selection.Term],
     kinds:       List[Entry.Kind],
     constraints: List[Selection.Constraint],
+    // Each element is one `tag:` term — a set of alternatives — and the elements intersect.
+    tags:        List[Set[Text]],
+    // The `not:` terms, each a one-term selection, subtracted after admission.
+    exclusions:  List[Selection],
     listOnly:    Boolean,
     // The multiplier applied to every declared target DURATION — `Bench`'s, `Stress`'s and
     // `Profile`'s — so that a whole run can be made proportionally longer (a careful
@@ -134,12 +161,30 @@ case class Selection
     // Latency thresholds are NOT scaled: they are pass/fail criteria, not durations.
     scale:       Double ):
 
-  def trivial: Boolean = terms.nil && kinds.nil && constraints.nil
+  def trivial: Boolean =
+    terms.nil && kinds.nil && constraints.nil && tags.nil && exclusions.nil
 
-  def admits(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean =
-    admitted(kind) && admitted(id) && admitted(coordinates)
+  def admits
+    ( id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)], tags: List[Tag] )
+  :   Boolean =
+
+    admitted(kind) && admitted(id) && admitted(coordinates, false) && admitted(tags)
+    && !exclusions.exists(_.excludes(id, kind, coordinates, tags))
+
+  // Whether this selection, as a `not:` term, removes the cell. Identical to admission but
+  // for one thing: a constraint on an axis the cell does not have matches NOTHING here,
+  // where for admission it admits everything — `not:N=4` must not remove tests without an
+  // `N` axis, just as `N=4` must not exclude them.
+  private def excludes
+    ( id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)], tags: List[Tag] )
+  :   Boolean =
+
+    admitted(kind) && admitted(id) && admitted(coordinates, true) && admitted(tags)
 
   private def admitted(kind: Entry.Kind): Boolean = kinds.nil || kinds.has(kind)
+
+  private def admitted(tags: List[Tag]): Boolean =
+    this.tags.all { alternatives => tags.exists { tag => alternatives.has(tag.text) } }
 
   private def ancestry(id: Test.Id): List[Test.Id] =
     id :: id.suite.let { suite => ancestry(suite.id) }.or(Nil)
@@ -167,9 +212,11 @@ case class Selection
         || glob.matches(path)
         || glob.matches(monikerPath)
 
-  private def admitted(coordinates: List[(Axis.Spec, Value)]): Boolean =
+  // `strict`: whether a constraint on an axis absent from the coordinates fails (for an
+  // exclusion) rather than passes (for an admission).
+  private def admitted(coordinates: List[(Axis.Spec, Value)], strict: Boolean): Boolean =
     constraints.all: constraint =>
-      coordinates.seek(_(0).label == constraint.axis).lay(true): pair =>
+      coordinates.seek(_(0).label == constraint.axis).lay(!strict): pair =>
         val value = pair(1)
 
         constraint match

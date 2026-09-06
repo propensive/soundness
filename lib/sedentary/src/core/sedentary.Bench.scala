@@ -72,11 +72,12 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
   type Target = Path on Linux
   type Transport = Json
 
-  // Captures the benchmark's name and settings; the returned plan is applied to a quoted
-  // body directly (a single measurement) or spread `over` one or two axes, one measurement
-  // per defined combination. `baseline` names one axis value as the comparison anchor.
+  // Captures the benchmark's name, tags and settings; the returned plan is applied to a
+  // quoted body directly (a single measurement) or spread `over` one or two axes, one
+  // measurement per defined combination. `baseline` names one axis value as the comparison
+  // anchor. The tags label the benchmark for selection (`tag:slow`) and exclusion.
   def apply[duration: Abstractable across Durations to Long]
-    ( name: Message )
+    ( name: Message, tags: Tag* )
     ( target:        duration,
       operationSize: Optional[OperationSize]         = Unset,
       iterations:    Optional[Int]                   = Unset,
@@ -94,6 +95,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
     Bench.Plan
       ( this,
         name,
+        tags.to(List),
         target.generic,
         operationSize,
         iterations2,
@@ -257,6 +259,7 @@ object Bench:
   case class Plan
     ( bench:         Bench,
       name:          Message,
+      tags:          List[Tag],
       target:        Long,
       operationSize: Optional[OperationSize],
       iterations:    Int,
@@ -275,7 +278,7 @@ object Bench:
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
 
-      val testId = Test.Id(name, suite, codepoint)
+      val testId = Test.Id(name, suite, codepoint, Unset, tags)
       val target2: Long = Bench.scaled(target, runner.scale)
 
       val expected: Optional[Long] = Bench.expected(target2, iterations, warmups)
@@ -301,7 +304,7 @@ object Bench:
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
 
-      val testId = Test.Id(name, suite, codepoint)
+      val testId = Test.Id(name, suite, codepoint, Unset, tags)
       val target2: Long = Bench.scaled(target, runner.scale)
       val values = axis.values
 
@@ -364,7 +367,7 @@ object Bench:
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
 
-      val testId = Test.Id(name, suite, codepoint)
+      val testId = Test.Id(name, suite, codepoint, Unset, tags)
       val target2: Long = Bench.scaled(target, runner.scale)
       val lefts = first.values
       val rights = second.values

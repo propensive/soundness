@@ -84,7 +84,10 @@ object Test:
     ( name:      Message,
       suite:     Optional[Testable],
       codepoint: Codepoint,
-      moniker:   Optional[Name[Probing]] = Unset ):
+      moniker:   Optional[Name[Probing]] = Unset,
+      // The declaration's tags, in declaration order; a selection admits and excludes by
+      // them, and a listing reports them.
+      tags:      List[Tag] = Nil ):
     val timestamp: Long = System.currentTimeMillis
 
     import textMetrics.uniformMetric

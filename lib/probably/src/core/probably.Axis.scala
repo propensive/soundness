@@ -89,6 +89,17 @@ object Axis:
   // domain.
   case class Spec(label: Text, domain: Domain, emergent: Boolean = false)
 
+  // What a listing knows of one axis of a test before anything runs: its spec, the distinct
+  // values of the cells the selection admits in first-appearance order (none for an
+  // emergent axis, whose values the run produces), and — for an emergent axis whose
+  // producer declares them — the bounds its values will lie within, such as a stress
+  // sweep's starting and maximum concurrency. A host completes axis constraints from these.
+  case class Schedule
+    ( spec:   Spec,
+      values: List[Value],
+      least:  Optional[Double] = Unset,
+      most:   Optional[Double] = Unset )
+
   def apply[value: Axable](label: Text)(values: value*): Axis[value] =
     new Axis(label, values.to(List))
 
