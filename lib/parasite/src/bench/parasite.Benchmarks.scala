@@ -80,6 +80,49 @@ import probates.panicProbate
 //     JMH ran three forks of five). Runner overhead is reported and never subtracted.
 //   * Allocation per operation is `getTotalThreadAllocatedBytes` over the timed batches, which
 //     includes every fiber's and worker's allocation, plus the harness's one box per result.
+//
+// Results, 2026-09-07, Mac16,11 (12 cores, 24 GB), JDK 25.0.2, Scala 3.9.0-p16; mean time per
+// operation (one operation = the whole construction), Soundness / cats-effect / Kyo. The blog's
+// machine was a 16-core Mac15,9 on JDK 25.0.3, so absolute numbers differ; the CE:Kyo ratios
+// (last column, this run → blog) reproduce closely, as do the rivals' bytes per operation
+// (e.g. permit 1.95 MB / 329 kB against the blog's 1,945,464 / 329,642).
+//
+//   Runner overhead                      0.031 µs    8.10 µs    7.40 µs   Kyo 1.09× → 1.20×
+//   Deep bind, depth 1000                0.044 µs    19.8 µs    20.2 µs   CE 1.02× → Kyo 1.01×
+//   Deep bind, depth 10000               0.044 µs     119 µs     137 µs   CE 1.15× → 1.14×
+//   Left bind, depth 1000                0.044 µs    24.6 µs    3.26 ms   CE 132× → 107×
+//   Left bind, depth 10000               0.044 µs     160 µs     340 ms   CE 2125× → 1895×
+//   Map chain, depth 1000                0.043 µs    18.5 µs    20.9 µs   CE 1.13× → 1.06×
+//   Map chain, depth 10000               0.043 µs     104 µs     134 µs   CE 1.29× → 1.20×
+//   CAS reference updates ×1000          1.84 µs     22.7 µs    25.2 µs   CE 1.11× → 1.00×
+//   Complete then read promise ×1000     5.44 µs     65.6 µs    70.1 µs   CE 1.07× → 1.10×
+//   Queue, 1 producer / 1 consumer       56.7 µs      110 µs    77.7 µs   Kyo 1.42× → 1.45×
+//   Uncontended permit ×1000             4.87 µs      340 µs    60.1 µs   Kyo 5.67× → 5.02×
+//   Sequential spawn/join ×1000          6.96 ms      456 µs     155 µs   Kyo 2.93× → 2.75×
+//   Bounded workers, work 0              0.193 ms    0.273 ms   0.199 ms  Kyo 1.37× → 1.13×
+//   Bounded workers, work 64             0.232 ms    0.336 ms   0.593 ms  CE 1.76× → 2.22×
+//   Collect successes, work 0            4.69 ms     1.02 ms    0.96 ms   Kyo 1.06× → CE 1.08×
+//   Collect successes, work 64           4.53 ms     0.99 ms    1.36 ms   CE 1.38× → 1.41×
+//   Sequential chunks, work 0            6.72 µs      528 µs     755 µs   fs2 1.43× → 1.24×
+//   Sequential chunks, work 64           0.626 ms    1.17 ms    1.63 ms   fs2 1.40× → 1.18×
+//   Parallel chunks, work 0              3.52 ms     1.51 ms    0.81 ms   Kyo 1.86× → 1.93×
+//   Parallel chunks, work 64             3.88 ms     1.84 ms    1.70 ms   Kyo 1.08× → 1.11×
+//   Queue-backed chunks, work 0          18.0 µs      571 µs     143 µs   Kyo 3.99× → 3.70×
+//   Queue-backed chunks, work 64         0.748 ms    1.25 ms    0.80 ms   Kyo 1.57× → 1.75×
+//
+// The Soundness column splits cleanly by whether the construction spawns tasks: every row that
+// does not (direct-style chains, `Atomic`, `Promise`, `Mutex`, `Handoff` hand-off, the sequential
+// and queue-backed streams) is between 1.4× and three orders of magnitude ahead, whereas the
+// rows dominated by spawning — one `async` per element or per batch — lose: a spawn/join costs
+// about 7 µs here (a virtual thread plus a `Worker`'s bookkeeping) against Kyo's 0.15 µs and
+// cats-effect's 0.46 µs. Where the spawned tasks do real work (bounded workers) that overhead is
+// amortised and Soundness leads again. Allocation tells the same story: 32 B for a thousand
+// `Atomic` updates or `Mutex` sections, 15 kB for a thousand queued ints, 0.95 MB for a thousand
+// spawns.
+//
+// Running the queue rows at ~10⁵ repetitions also exposed a real race in `Handoff`: a consumer
+// observing `finish()` between its read of the tail index and its check of the finished flag
+// dropped the final item. `take`/`drain` now re-read the tail after seeing `done`.
 object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs Kyo"):
   given decimalizer: Decimalizer     = Decimalizer(2)
   given device:      BenchmarkDevice = LocalhostDevice
