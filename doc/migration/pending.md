@@ -364,55 +364,55 @@ not yet been recorded here.
   `probably.Streamer.stream(suite: Text, arguments: Text, output: java.io.OutputStream): Int`
   (module `probably.events`) or `probably.Suite#invoke(arguments: Text, sink: TestEvent -> Unit): Int`.
   Build scripts that ran `java -cp … <package>.Tests …` must run the `fume` tool over the built
-  classpath instead (`fume run -c <jar>`, or `fume run` with a `.fume/config.tel` naming it). (#TBD)
+  classpath instead (`fume run -c <jar>`, or `fume run` with a `.fume/config.tel` naming it). (#1963)
 - `probably.Suite#invoke(arguments: Array[Text]): Int`, `probably.Suite#invoke(arguments: Text): Int`
   and `probably.Suite#invoke(arguments: List[Text]): Int` removed; they rendered a report to the
   suite's stdio, which no longer exists. `invoke(arguments: Text, sink: TestEvent -> Unit): Int`
-  remains as the only entry point. (#TBD)
+  remains as the only entry point. (#1963)
 - `probably.Suite#invoke(arguments: Text, sink: TestEvent -> Unit): Int` no longer returns 3
   (environment error during reporting); results are 0 (passed), 1 (failures) or 2 (the suite
-  threw). (#TBD)
-- `probably.Suite#suiteIo: turbulence.Stdio` removed. (#TBD)
+  threw). (#1963)
+- `probably.Suite#suiteIo: turbulence.Stdio` removed. (#1963)
 - `probably.Report` constructor changed from `Report()(using ambience.Environment)(using probably.TestPalette)`
-  to `Report()`; no givens are required. (#TBD)
+  to `Report()`; no givens are required. (#1963)
 - `probably.Report#complete(coverage: Option[probably.Coverage])(using turbulence.Stdio): Unit`
   changed to `complete(): Unit`. It renders nothing; it settles `passed` and emits
-  `TestEvent.RunCompleted` to the installed sink (a no-op without one). (#TBD)
+  `TestEvent.RunCompleted` to the installed sink (a no-op without one). (#1963)
 - `probably.Report.Status` (enum `Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, Stress,
   Profile, AspirePass, AspireFail`, with `symbol(using TestPalette): Teletype` and
   `describe: Teletype`) removed. `TestEvent.Outcome#outcome: Text` carries the per-verdict
-  vocabulary on the event stream. (#TBD)
+  vocabulary on the event stream. (#1963)
 - `probably.Reporter.report` given changed from
   `(turbulence.Stdio, ambience.Environment, probably.TestPalette) => Reporter[Report]` to
-  `Reporter[Report]`. (#TBD)
-- `probably.Reporter[report]#live(report: report): Boolean` removed. (#TBD)
+  `Reporter[Report]`. (#1963)
+- `probably.Reporter[report]#live(report: report): Boolean` removed. (#1963)
 - `probably.Runner[report]#redraw(size: Int): Unit` removed; `Runner` no longer writes progress
-  to stdout under any condition. (#TBD)
+  to stdout under any condition. (#1963)
 - `probably.TestPalette` (trait extending `chiaroscuro.JuxtapositionPalette`; members `warning,
   critical, benchmark, mixed, informative, cold, warm, hot, accented, highlight, detail, pass,
   fail, aspirePass, aspireFail, subdued, unaccented, positive, negative: Color in Srgb`) removed,
-  together with `soundness.TestPalette`. (#TBD)
+  together with `soundness.TestPalette`. (#1963)
 - `probably.Ci` (object; members `apply(), githubActions, gitlabCi, circleCi, travisCi, jenkins,
   azurePipelines, teamCity, bitbucketPipelines, buildkite, appVeyor, drone, semaphore, buddy,
-  claudeCode: Boolean`) removed, together with `soundness.Ci`. No replacement. (#TBD)
+  claudeCode: Boolean`) removed, together with `soundness.Ci`. No replacement. (#1963)
 - `probably.GithubActions` (object; members `workspaceRelative(path: Text): Text`,
   `error/warning/notice(message: Text, file: Optional[Text], line: Optional[Int], title: Optional[Text])(using Stdio): Unit`,
   `debug(message: Text)(using Stdio): Unit`, `group(title: Text)(using Stdio): Unit`,
   `endGroup()(using Stdio): Unit`, `grouped[result](title: Text)(block: => result)(using Stdio): result`)
   removed, together with `soundness.GithubActions`. No replacement: a host renders annotations
-  from the `TestEvent` stream. (#TBD)
+  from the `TestEvent` stream. (#1963)
 - `probably.AnsiRenderer` and `probably.TerseRenderer` removed; `probably` no longer renders
   reports. `probably.Documenting`, `probably.Doc` and `probably.Format` (all `private[probably]`)
   removed. The `CLAUDECODE` and `COLUMNS` environment variables and the `-Dscalac.coverage`
-  system property no longer affect a suite. (#TBD)
+  system property no longer affect a suite. (#1963)
 - Module `probably.coverage` (artifact `probably-coverage`) removed, with `probably.Coverage`
   (object and `case class Coverage(path: Text, spec: Array[Juncture], oldHits: Set[Int], hits: Set[Int])`),
   `probably.Juncture`, `probably.Surface` and the `soundness.{Coverage, Juncture, Surface}`
-  exports. The `soundness-test` bundle no longer contains it. No replacement. (#TBD)
+  exports. The `soundness-test` bundle no longer contains it. No replacement. (#1963)
 - `probably.core` no longer depends on `chiaroscuro.render`, `ambience.core`, `digression.ansi`
   or `escapade.io` (and so, transitively, on `escritoire.core`, `dendrology.tree`,
   `iridescence.core` or `turbulence.core`); it depends on `digression.core` directly. A
-  downstream module that obtained any of those through `probably` must declare them. (#TBD)
+  downstream module that obtained any of those through `probably` must declare them. (#1963)
 
 ## hellenism
 
@@ -422,7 +422,7 @@ not yet been recorded here.
   this, with the classloader of one of its own classes (`Classloader[MyObject.type]`), rather than
   read the property: under a test-running host such as fume the property names the host's jars.
   `anthology.Bundler.applicationClasspath` and `superlunary.Rig#classpath` now go through it
-  (same result as before). (#TBD)
+  (same result as before). (#1963)
 
 ## superlunary
 
@@ -430,4 +430,4 @@ not yet been recorded here.
   (`Classloader[Jvm.type]` / `Classloader[Isolation.type]`) instead of
   `hellenism.classloaders.systemClassloader`, and `superlunary.Rig#classpath` derives its entries
   from `Classloader[Rig]` rather than the thread-context classloader. Identical in a plain
-  `java -cp` process; differs only when the rig is loaded by a non-system classloader. (#TBD)
+  `java -cp` process; differs only when the rig is loaded by a non-system classloader. (#1963)
