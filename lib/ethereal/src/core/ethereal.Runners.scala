@@ -57,7 +57,7 @@ import monotonous.*, alphabets.hexLowerCase
 // coordinates and per-platform SHA-256 hashes are hard-coded below. Bumping to a newly
 // published release is a one-line change to `version` plus a refresh of `hashes`.
 object Runners:
-  val version: Text = t"0.3"
+  val version: Text = t"0.4"
 
   val baseUrl: Text =
     t"https://github.com/propensive/soundness/releases/download/runners-$version"
@@ -66,11 +66,11 @@ object Runners:
   // `etc/runners/$version.tsv`.
   val hashes: Map[Text, Text] =
     Map
-      ( t"linux-arm64" -> t"ad8d1aa58d95cd87d6759cac2dddb5320aab23c225fd6c07d193c6964b7ba45d",
-       t"linux-x64" -> t"0c49fc5aba44eb46658f09602e23515c7056c2212b63806cb487639087bfc9bf",
-       t"macos-arm64" -> t"6bd94bff80766d9d540ca2580dcdfa920a36741f8c42b601cb2ca6681226fd86",
-       t"macos-x64" -> t"17d36718a9d90509ab8e33c219b45d479c8f3c3d14ee54b4f333eb1f150d8a23",
-       t"windows-x64" -> t"6afae357ac27b892db45d60f61711e1727af03602351c40534561f51ecd00d7e" )
+      ( t"linux-arm64" -> t"8dff1e5194e8cb7c63165d96f8c63e06d732f613b9528eccfc235c2d2ad8a4c5",
+       t"linux-x64" -> t"a7445a8c6e4d9224937d9d987d71cbe561d99df03f4c86a730b79effb8919883",
+       t"macos-arm64" -> t"39bd437e704c730a99877c6c732e08f8dc3720121638bae5f2dd40177b071acc",
+       t"macos-x64" -> t"7ed428384e8e88b253166d46e5709c5a6e4e5631484424def016a030dd634c13",
+       t"windows-x64" -> t"9f424370513d9e2f91a62207cb9e1f214831a3ec787cdd7fe130c881874ba4a1" )
 
   // The published filename for a platform's bare runner stub (Windows stubs carry `.exe`).
   def runnerName(label: Text): Text =

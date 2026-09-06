@@ -335,3 +335,25 @@ not yet been recorded here.
 - `Palimpsest.resolve` now bounds its backtracking search to `Palimpsest.searchLimit` (100,000)
   candidate trials and returns `Unset` on exhaustion; a new overload `resolve(limit: Int)(using
   Bibliography)` takes an explicit bound. (#1961)
+
+## ethereal
+
+- The launcher-to-daemon protocol is now BinTEL documents of the `ethereal-launcher` TEL
+  schema (`ethereal.Launcher.schemaText`), replacing the line-oriented `i`/`e`/`m`/`s`/`x`/`v`
+  messages and single-byte replies. A daemon built from this version only accepts launchers
+  built from the Rust runner source at this version: rebuild runner stubs (`make
+  runners-build`) or use a published `runners-<version>` release at or after the one carrying
+  this protocol. Applications packaged with older stubs must be repackaged.
+- `ethereal.DaemonEvent` removed. The daemon dispatches on `ethereal.Launcher.Message`
+  (`Init`, `Stderr`, `Control`, `Signal`, `Exit`, `Verify`, `SignalAck`, `Verdict`, `Mode`,
+  `ExitStatus`); `Launcher.encode`, `Launcher.decode` and `Launcher.readDocument` are the
+  codec. `ethereal.Tty#byte` removed: a terminal-mode change is a `Launcher.Message.Mode`
+  document on the control channel.
+- `ethereal.Runners.version` is `0.4` (the first runner release speaking the BinTEL protocol),
+  with `etc/runners/0.4.tsv` recording the stub hashes; `-Dbuild.executable` packaging without
+  a local `dist/runners` downloads from the `runners-0.4` GitHub release.
+- `ethereal.DaemonLogEvent` gained `ProtocolMismatch` (a document of another schema's
+  signature).
+- `ethereal.core` now depends on `stratiform.binary` (and so on `stratiform.core`,
+  `stratiform.base256` and `ulysses.core`).
+

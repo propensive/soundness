@@ -49,6 +49,7 @@ object DaemonLogEvent:
     case Failure                   => m"the connection handler failed"
     case NewCli                    => m"instantiating a new CLI"
     case UnrecognizedMessage       => m"received an unrecognized message"
+    case ProtocolMismatch          => m"received a document of another launcher protocol schema"
 
     case ReceivedSignal(signal) => signal match
       case unix: UnixSignal       => m"received signal $unix"
@@ -68,6 +69,7 @@ enum DaemonLogEvent:
   case Failure extends DaemonLogEvent, Log.Runtime
   case NewCli extends DaemonLogEvent, Log.Process
   case UnrecognizedMessage extends DaemonLogEvent, Log.Protocol
+  case ProtocolMismatch extends DaemonLogEvent, Log.Protocol
   case ReceivedSignal(signal: UnixSignal | WindowsSignal) extends DaemonLogEvent, Log.Process
   case ExitStatusRequest(pid: Pid) extends DaemonLogEvent, Log.Process
   case CloseConnection(pid: Pid) extends DaemonLogEvent, Log.Network

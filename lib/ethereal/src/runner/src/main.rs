@@ -6,6 +6,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+mod bintel;
 mod config;
 mod state;
 mod java;
@@ -247,14 +248,13 @@ fn spawn_forwarder(
 // the backstop for whatever mode we were left in.
 fn spawn_control(mut reader: UnixStream, saved: tty::TtyState) -> std::thread::JoinHandle<()> {
     std::thread::spawn(move || {
-        let mut byte = [0u8; 1];
         loop {
-            match reader.read(&mut byte) {
-                Ok(0) | Err(_) => break,
-                Ok(_) => match byte[0] {
-                    b'c' => tty::set_cooked_mode(&saved),
-                    b'r' => tty::set_raw_mode(),
-                    _    => debug!("main: unrecognised control byte {}", byte[0]),
+            match bintel::read_document(&mut reader) {
+                Err(_) => break,
+                Ok(document) => match bintel::parse_reply(&document) {
+                    Some(bintel::Reply::Mode { canonical: true })  => tty::set_cooked_mode(&saved),
+                    Some(bintel::Reply::Mode { canonical: false }) => tty::set_raw_mode(),
+                    other => debug!("main: unrecognised control document {:?}", other),
                 },
             }
         }

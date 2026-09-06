@@ -1870,7 +1870,7 @@ object espionage extends Library:
       settings.maxInlines(settings.sep(super.scalacOptions()), "48")
 
 object ethereal extends Library:
-  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.jvm, quantitative.units, telekinesis.jvm, urticose.url, gastronomy.core, zeppelin.core):
+  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.jvm, quantitative.units, telekinesis.jvm, urticose.url, gastronomy.core, zeppelin.core, stratiform.binary):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
