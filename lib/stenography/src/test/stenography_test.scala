@@ -165,6 +165,14 @@ object Tests extends Suite(m"Stenography Tests"):
       Syntax.name[turbulence.Streamable]
     . assert(_ == t"turbulence.Streamable")
 
+    test(m"An exported type renders by its leaf name under the exporting import"):
+      stenographyProbe.Probe.exportedName
+    . assert(_ == t"Syntax")
+
+    test(m"An exported type's companion renders by its leaf name too"):
+      stenographyProbe.Probe.companionName
+    . assert(_ == t"Syntax.type")
+
     test(m"Show typeclass type"):
       Syntax.name[Addable by Int to Double]
     . assert(_ == t"Addable by Int to Double")

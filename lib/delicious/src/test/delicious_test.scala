@@ -34,6 +34,7 @@ package delicious
 
 import java.nio.file.{Files, Paths}
 
+import scala.collection.immutable as sci
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 import soundness.*
@@ -319,6 +320,47 @@ object Tests extends Suite(m"Delicious Tests"):
               // came through stenography; `Bad.Local` proves placeholder substitution.
               rendered.subsumes(t"java.lang.String") && rendered.subsumes(t"Bad.Local")
             }
+
+    // The running JVM's own classpath carries stenography's classes together with its
+    // `soundness` export file, so under `import soundness.*` the alias `soundness.Syntax`
+    // re-exports `stenography.Syntax` — the same shape as `jacinta.Json` in a REPL session.
+    val ownClasspath: LocalClasspath =
+      val entries: List[Classpath.Entry.Directory | Classpath.Entry.Jar] =
+        java.lang.System.getProperty("java.class.path").nn.tt
+        . cut(java.io.File.pathSeparator.nn.tt)
+        . filter(_ != t"")
+        . map: entry =>
+            if entry.ends(t".jar") then Classpath.Entry.Jar(entry) else Classpath.Entry.Directory(entry)
+
+      LocalClasspath(entries*)
+
+    val ownReifier = Reifier(ownClasspath)
+    val soundnessScope: sci.Set[Designator] = sci.Set(Designator(t"soundness"))
+    val syntaxType: Designator = Designator(t"stenography#Syntax")
+
+    test(m"A wildcard-imported prelude's export makes its target direct"):
+      ownReifier.imports(soundnessScope, sci.Set()).hasDirect(syntaxType)
+    . assert(_ == true)
+
+    test(m"A prelude's export makes the target's companion direct too"):
+      ownReifier.imports(soundnessScope, sci.Set()).hasDirect(Designator(t"stenography.Syntax"))
+    . assert(_ == true)
+
+    test(m"An exported type renders by its leaf name under the exporting import"):
+      Syntax.Simple(syntaxType).text(using ownReifier.imports(soundnessScope, sci.Set()))
+    . assert(_ == t"Syntax")
+
+    test(m"Without export resolution the same type stays qualified"):
+      Syntax.Simple(syntaxType).text(using Imports(soundnessScope, sci.Set()))
+    . assert(_ == t"stenography.Syntax")
+
+    test(m"A scope which declares no exports adds nothing"):
+      ownReifier.imports(sci.Set(Designator(t"stenography")), sci.Set()).direct
+    . assert(_ == sci.Set())
+
+    test(m"An unresolvable scope adds nothing and does not throw"):
+      ownReifier.imports(sci.Set(Designator(t"no.such.scope")), sci.Set()).direct
+    . assert(_ == sci.Set())
 
   def proscalaLibrary(): Optional[java.nio.file.Path] =
     val home = java.lang.System.getProperty("user.home").nn

@@ -86,7 +86,8 @@ object internal:
     // Drill into every scope whose members are reachable unqualified from here — each wildcard
     // import that's in scope (including the REPL-accumulated ones across earlier lines,
     // captured by `metaprogramming.imports`) and this unit's own package — and harvest two
-    // things from a single pass over its declarations.
+    // things from a single pass over its declarations. (`Imports.exports` is the same harvest
+    // of the first, for a scope named from outside any macro.)
     //
     // The `direct` set holds type aliases carrying the `Exported` flag. Those aliases' *target*
     // types are reachable via just their leaf in the current scope, so we render them that way.
@@ -128,7 +129,7 @@ object internal:
   // Everything worth knowing about one scope whose members are reachable unqualified: the
   // targets of its `Exported` aliases, and the infix type aliases it declares which refine a
   // single type member.
-  private def scopeInfo(using Quotes, dotty.tools.dotc.core.Contexts.Context)
+  private[stenography] def scopeInfo(using Quotes, dotty.tools.dotc.core.Contexts.Context)
     ( rootSym: dotty.tools.dotc.core.Symbols.Symbol )
   :   (List[Designator], List[(String, Text)]) =
 

@@ -46,6 +46,8 @@ import dotty.tools.io.VirtualFile
 
 import java.util as ju
 
+import scala.collection.immutable as sci
+
 import anticipation.*
 import gossamer.*
 import hellenism.*
@@ -136,6 +138,14 @@ class Reifier(classpath: LocalClasspath):
     // expects the quote-cache context property that macro-expansion contexts
     // carry; a standalone context must install it explicitly.
     QuotesCache.init(run.runContext.fresh)
+
+  /** An `Imports` for rendering against this reifier's classpath: `direct` is extended by the
+   *  targets of every `export` alias declared in each of `designators`, so a type reached
+   *  through a wildcard-imported prelude (`jacinta.Json` under `import soundness.*`) renders
+   *  by its leaf name, as the user would write it. */
+  def imports(designators: sci.Set[Designator], direct: sci.Set[Designator]): Imports =
+    given Contexts.Context = runContext
+    Imports.resolve(designators, direct)
 
   /** The stenography rendering of a type marker's TASTy payload, or `Unset`
    *  if there is no payload or it cannot be unpickled: a diagnostic must never

@@ -205,3 +205,18 @@ not yet been recorded here.
   select the instance itself. Effect: an implicit search made while type parameters are still
   undetermined (e.g. `join`'s `element`/`textual`) is no longer resolved with those parameters
   instantiated to `Any`. Inferred types of code that already compiled are unchanged. (#1944)
+
+## stenography
+
+- `stenography.Imports` gains `Imports.exports(scope: Designator)(using
+  dotty.tools.dotc.core.Contexts.Context): Set[Designator]`, the targets (type and companion) of
+  the `export` aliases declared in `scope`, and `Imports.resolve(designators: Set[Designator],
+  direct: Set[Designator])(using Context): Imports`, which is `Imports(designators, direct)` with
+  `direct` extended by `exports` of each of `designators`. `delicious.Reifier` gains
+  `imports(designators: Set[Designator], direct: Set[Designator]): Imports`, `Imports.resolve`
+  under the reifier's own context. Code which builds an `Imports` by hand from a set of wildcard
+  imports for `Syntax#text` or `Designator#text` (a REPL abbreviating types against its session's
+  imports) should build it through `Reifier#imports` or `Imports.resolve` instead: only then does
+  a type reached through an `export` in a wildcard-imported scope (`jacinta.Json` under `import
+  soundness.*`) render by its leaf name (`Json`) rather than qualified (`jacinta.Json`). The
+  macro path (`Syntax.name`, `Syntax.designator`) already did this and is unchanged. (#1959)
