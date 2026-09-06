@@ -18,16 +18,10 @@ Document {
                     remark: None,
                     children: [],
                 },
-                Compound {
-                    keyword: "second",
-                    atoms: [],
-                    remark: None,
-                    children: [],
-                },
             ],
             trailing_blank_lines: 1,
         },
     ],
 }
 errors:
-  E111 [31,37): Over-indentation
+  E114 [31,40): Literal atom already present on this compound

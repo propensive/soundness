@@ -1,12 +1,12 @@
-tel 1.0 specification.tel/tels
+tel 1.0 specification.tel/tels:2.0.0
 
 name example
 
 record first-type
-  field x string
+  field x String
 
 document
-  field name string
+  field name String
 
 record second-type
-  field y string
+  field y String

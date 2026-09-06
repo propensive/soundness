@@ -40,7 +40,7 @@ import vacuous.*
 // document structure is fully count-driven and self-delimiting, so the
 // parser is a bare offset over the input. Each method mirrors one step of
 // `Bintel.decode`'s recursive descent — the varint reads carry the same
-// `Varint.Error`/`UnexpectedEoi` mapping, and scalar payloads the same
+// B02 rules (truncation, width, minimality), and scalar payloads the same
 // truncation check — so failures agree with the AST decoder exactly.
 //
 // The class is public — generated parsers, spliced into user modules, bind
@@ -57,9 +57,10 @@ final class BintelParser private[stratiform]
   @scala.caps.unsafe.untrackedCaptures
   private[stratiform] var offset: Int = 0
 
+  // §4 and §10: a varint that is truncated (including one with no bytes
+  // available at all), wider than 64 bits, or overlong is B02.
   def directVarint()(using Tactic[Bintel.Error]): Long =
-    if offset >= data.length then abort(Bintel.Error(Bintel.Error.Reason.UnexpectedEoi))
-
+    val start = offset
     var result = 0L
     var shift = 0
     var continue = true
@@ -74,7 +75,12 @@ final class BintelParser private[stratiform]
       offset += 1
       result |= (byte.toLong & 0x7f) << shift
       shift += 7
-      if (byte & 0x80) == 0 then continue = false
+
+      if (byte & 0x80) == 0 then
+        if offset > start + 1 && (byte & 0x7f) == 0
+        then abort(Bintel.Error(Bintel.Error.Reason.VarintError))
+
+        continue = false
 
     result
 

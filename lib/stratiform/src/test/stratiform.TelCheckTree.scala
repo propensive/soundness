@@ -58,9 +58,8 @@ object TelCheckTree:
            t"children"              -> ofArray(document.children)(ofBlock) ) )
 
   // The reference is projected as its canonical flat rendering
-  // (`domain/name[:selector]`). This shape is locally defined until the
-  // Rust reference implementation adopts the LIRA-based pragma grammar
-  // (see the corpus DIVERGENCES note).
+  // (`domain/name[:selector]`), the shape the Rust reference
+  // implementation's dumps use since it adopted the LIRA pragma grammar.
   private def ofPragma(p: Tel.Pragma): CheckTree =
     val (major, minor) = p.version
     CheckTree.Struct

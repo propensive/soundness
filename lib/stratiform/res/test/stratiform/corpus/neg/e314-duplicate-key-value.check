@@ -7,7 +7,7 @@ Document {
                 0,
             ),
             reference: Some(
-                "tel-lang.org/schema/keyed-schema",
+                "tel-lang.org/keyed-schema",
             ),
             layers: [],
             signature: None,

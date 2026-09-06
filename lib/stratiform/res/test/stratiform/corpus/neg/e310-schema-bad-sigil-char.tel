@@ -1,7 +1,7 @@
-tel 1.0 specification.tel/tels
+tel 1.0 specification.tel/tels:2.0.0
 
 name e210-test
 sigil A
 
 document
-  field foo string
+  field foo String

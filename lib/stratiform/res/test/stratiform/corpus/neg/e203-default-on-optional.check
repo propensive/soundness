@@ -7,7 +7,7 @@ Document {
                 0,
             ),
             reference: Some(
-                "specification.tel/tels",
+                "specification.tel/tels:2.0.0",
             ),
             layers: [],
             signature: None,
@@ -24,7 +24,7 @@ Document {
                     keyword: "name",
                     atoms: [
                         Inline {
-                            text: "e204-test",
+                            text: "e203-test",
                             preceding_spaces: 1,
                         },
                     ],
@@ -55,59 +55,23 @@ Document {
                                             preceding_spaces: 1,
                                         },
                                         Inline {
+                                            text: "String",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
                                             text: "optional",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "fallback",
                                             preceding_spaces: 1,
                                         },
                                     ],
                                     remark: None,
-                                    children: [
-                                        Block {
-                                            comments: [],
-                                            tabulation: None,
-                                            compounds: [
-                                                Compound {
-                                                    keyword: "scalar",
-                                                    atoms: [],
-                                                    remark: None,
-                                                    children: [
-                                                        Block {
-                                                            comments: [],
-                                                            tabulation: None,
-                                                            compounds: [
-                                                                Compound {
-                                                                    keyword: "validate",
-                                                                    atoms: [
-                                                                        Inline {
-                                                                            text: "string",
-                                                                            preceding_spaces: 1,
-                                                                        },
-                                                                    ],
-                                                                    remark: None,
-                                                                    children: [],
-                                                                },
-                                                                Compound {
-                                                                    keyword: "default",
-                                                                    atoms: [
-                                                                        Inline {
-                                                                            text: "default-val",
-                                                                            preceding_spaces: 1,
-                                                                        },
-                                                                    ],
-                                                                    remark: None,
-                                                                    children: [],
-                                                                },
-                                                            ],
-                                                            trailing_blank_lines: 1,
-                                                        },
-                                                    ],
-                                                },
-                                            ],
-                                            trailing_blank_lines: 0,
-                                        },
-                                    ],
+                                    children: [],
                                 },
                             ],
-                            trailing_blank_lines: 0,
+                            trailing_blank_lines: 1,
                         },
                     ],
                 },
@@ -117,5 +81,4 @@ Document {
     ],
 }
 errors:
-  E310 [0,8): Scalar value failed validation: `type` failed validation: TypeName must start with an uppercase ASCII letter
-  E306 [0,0): Compound keyword is not recognized for its parent type: unrecognized keyword `scalar` in `field`
+  E203 [0,0): Scalar has non-null default but member is not required: Field `foo` has default `fallback` but is not required

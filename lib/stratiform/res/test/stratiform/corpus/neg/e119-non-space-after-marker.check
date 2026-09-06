@@ -32,3 +32,4 @@ Document {
 errors:
   E119 [0,2): Malformed tabulation heading: non-space after marker
   E119 [4,6): Malformed tabulation heading: non-space after marker
+  E118 [9,10): Column value exceeds maximum width

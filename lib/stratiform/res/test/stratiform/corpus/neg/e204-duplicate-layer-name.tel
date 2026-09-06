@@ -1,16 +1,16 @@
-tel 1.0 specification.tel/tels
+tel 1.0 specification.tel/tels:2.0.0
 
-name e207-test
+name e204-test
 
 document
-  field foo string
+  field foo String
 
 layer
   name same-name
   overlay
-    field a string
+    field a String
 
 layer
   name same-name
   overlay
-    field b string
+    field b String

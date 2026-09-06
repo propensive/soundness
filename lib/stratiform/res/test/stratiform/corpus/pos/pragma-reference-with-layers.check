@@ -7,9 +7,12 @@ Document {
                 0,
             ),
             reference: Some(
-                "example.com/schema",
+                "example.com/build",
             ),
-            layers: [],
+            layers: [
+                "publishing",
+                "maven",
+            ],
             signature: None,
             sigil: None,
         },
@@ -31,5 +34,3 @@ Document {
         },
     ],
 }
-errors:
-  E122 [0,28): Misplaced pragma phrase

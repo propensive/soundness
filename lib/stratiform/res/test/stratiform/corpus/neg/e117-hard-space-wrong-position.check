@@ -36,3 +36,4 @@ Document {
 }
 errors:
   E117 [16,18): Hard space does not end at a column boundary
+  E118 [20,22): Column value exceeds maximum width

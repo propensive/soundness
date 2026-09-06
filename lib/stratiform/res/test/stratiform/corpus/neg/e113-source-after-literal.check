@@ -19,9 +19,9 @@ Document {
                     children: [],
                 },
             ],
-            trailing_blank_lines: 1,
+            trailing_blank_lines: 0,
         },
     ],
 }
 errors:
-  E111 [41,45): Over-indentation
+  E113 [41,59): Source atom already present on this compound

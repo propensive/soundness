@@ -7,7 +7,7 @@ Document {
                 0,
             ),
             reference: Some(
-                "specification.tel/tels",
+                "specification.tel/tels:2.0.0",
             ),
             layers: [],
             signature: None,
@@ -24,7 +24,7 @@ Document {
                     keyword: "name",
                     atoms: [
                         Inline {
-                            text: "e207-test",
+                            text: "e204-test",
                             preceding_spaces: 1,
                         },
                     ],
@@ -55,7 +55,7 @@ Document {
                                             preceding_spaces: 1,
                                         },
                                         Inline {
-                                            text: "string",
+                                            text: "String",
                                             preceding_spaces: 1,
                                         },
                                     ],
@@ -111,7 +111,7 @@ Document {
                                                             preceding_spaces: 1,
                                                         },
                                                         Inline {
-                                                            text: "string",
+                                                            text: "String",
                                                             preceding_spaces: 1,
                                                         },
                                                     ],
@@ -172,7 +172,7 @@ Document {
                                                             preceding_spaces: 1,
                                                         },
                                                         Inline {
-                                                            text: "string",
+                                                            text: "String",
                                                             preceding_spaces: 1,
                                                         },
                                                     ],
@@ -195,6 +195,4 @@ Document {
     ],
 }
 errors:
-  E310 [0,6): Scalar value failed validation: `type` failed validation: TypeName must start with an uppercase ASCII letter
-  E310 [0,6): Scalar value failed validation: `type` failed validation: TypeName must start with an uppercase ASCII letter
-  E310 [0,6): Scalar value failed validation: `type` failed validation: TypeName must start with an uppercase ASCII letter
+  E204 [0,0): Two or more Layers share the same name: duplicate Layer name `same-name`

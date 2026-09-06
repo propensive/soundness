@@ -2,6 +2,8 @@ _coded
 _keyed-schema
 attached-comment-to-compound
 attached-comment-to-tabulation
+blank-before-deeper-comment
+blank-before-first-child
 blank-lines-between-peers
 blank-lines-no-structural-effect
 blank-lines-only
@@ -70,12 +72,12 @@ pragma-layers-with-signature
 pragma-only-document
 pragma-pinned-tels
 pragma-reference-bare
-pragma-reference-layers
 pragma-reference-tag
 pragma-reference-version
-pragma-reference-with-signature
+pragma-reference-with-layers
 pragma-schema-bare-signature
 pragma-schema-base256-signature
+pragma-schema-reference-with-signature
 pragma-sigil-only
 pragma-version-high-numbers
 pragma-version-only

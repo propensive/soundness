@@ -7,7 +7,7 @@ Document {
                 0,
             ),
             reference: Some(
-                "specification.tel/tels",
+                "specification.tel/tels:2.0.0",
             ),
             layers: [],
             signature: None,
@@ -24,7 +24,7 @@ Document {
                     keyword: "name",
                     atoms: [
                         Inline {
-                            text: "e213-test",
+                            text: "e210-test",
                             preceding_spaces: 1,
                         },
                     ],
@@ -42,7 +42,7 @@ Document {
                     keyword: "record",
                     atoms: [
                         Inline {
-                            text: "dup-name",
+                            text: "DupName",
                             preceding_spaces: 1,
                         },
                     ],
@@ -60,7 +60,7 @@ Document {
                                             preceding_spaces: 1,
                                         },
                                         Inline {
-                                            text: "string",
+                                            text: "String",
                                             preceding_spaces: 1,
                                         },
                                     ],
@@ -83,7 +83,7 @@ Document {
                     keyword: "record",
                     atoms: [
                         Inline {
-                            text: "dup-name",
+                            text: "DupName",
                             preceding_spaces: 1,
                         },
                     ],
@@ -101,7 +101,7 @@ Document {
                                             preceding_spaces: 1,
                                         },
                                         Inline {
-                                            text: "string",
+                                            text: "String",
                                             preceding_spaces: 1,
                                         },
                                     ],
@@ -137,7 +137,7 @@ Document {
                                             preceding_spaces: 1,
                                         },
                                         Inline {
-                                            text: "dup-name",
+                                            text: "DupName",
                                             preceding_spaces: 1,
                                         },
                                     ],
@@ -155,8 +155,4 @@ Document {
     ],
 }
 errors:
-  E310 [0,8): Scalar value failed validation: `name` failed validation: TypeName must start with an uppercase ASCII letter
-  E310 [0,6): Scalar value failed validation: `type` failed validation: TypeName must start with an uppercase ASCII letter
-  E310 [0,8): Scalar value failed validation: `name` failed validation: TypeName must start with an uppercase ASCII letter
-  E310 [0,6): Scalar value failed validation: `type` failed validation: TypeName must start with an uppercase ASCII letter
-  E310 [0,8): Scalar value failed validation: `type` failed validation: TypeName must start with an uppercase ASCII letter
+  E210 [0,0): Two or more Definitions share the same name: duplicate definition name `DupName` in base schema

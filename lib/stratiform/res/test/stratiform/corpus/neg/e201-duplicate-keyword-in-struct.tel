@@ -1,7 +1,7 @@
-tel 1.0 specification.tel/tels
+tel 1.0 specification.tel/tels:2.0.0
 
-name e202-test
+name e201-test
 
 document
-  field foo string
-  field foo string
+  field foo String
+  field foo String

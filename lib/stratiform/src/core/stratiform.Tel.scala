@@ -481,7 +481,7 @@ object Tel extends Tel2:
     // decoder: one block containing the gathered compounds.
     private[stratiform] def gatheredDocument(compounds: Array[Tel.Compound]^{}): Tel.Document =
       Tel.Document
-        ( Unset, Unset, Tel.LineEndings.Lf,
+        ( Unset, Unset, Tel.LineEndings.Lf, 0,
           Array(Tel.Block(Array.empty[Tel.Comment], Unset, compounds, 0)) )
 
     // Shared collection implementation, used by the nominal `Tel.Parsable`
@@ -1608,6 +1608,37 @@ object Tel extends Tel2:
         flatStart += width
         memberIdx += 1
 
+      // §18.3: `Node.children` is in member order — every element filling
+      // members[0], then every element filling members[1], and so on —
+      // with atom-derived elements first (the atom pass inserted them
+      // first) and compound-derived elements in source order within a
+      // member. A stable sort by the flat index at which each element's
+      // member begins does exactly that: the variant-fills of one
+      // SelectRef share a base, so they keep their source order relative
+      // to each other, and default-supplied values fall into place beside
+      // their member. This is also BinTEL's canonical order (bintel.md
+      // §7.2), which is what makes decoding an encoding return an
+      // identical tree (P2, §22.4).
+      val memberBases =
+        val bases = scala.collection.mutable.ArrayBuffer.empty[Int]
+        var flat = 0
+        var m = 0
+
+        while m < parent.members.length do
+          val width = flatWidth(parent.members.readUnchecked(m))
+          var j = 0
+          while j < width do { bases += flat; j += 1 }
+          flat += width
+          m += 1
+
+        bases
+
+      def memberBase(element: Tel.Element): Int =
+        val idx = indexOf(element)
+        if idx >= 0 && idx < memberBases.length then memberBases(idx) else idx
+
+      // `sortInPlaceBy` is stable, so equal keys keep their insertion order.
+      results.sortInPlaceBy(memberBase)
       Array.from(results)
 
     private def assignCompound
@@ -1977,11 +2008,22 @@ object Tel extends Tel2:
   sealed trait Subtree:
     def children: Array[Block]^{}
 
+  // §17 `Document`. `margin` is the document margin (§7), which
+  // reserialization re-emits on every line and which §15 needs to
+  // reconstruct a literal atom's delimiter lines. `continuation` is the
+  // §6.1 continuation: the 1-indexed source line on which the content
+  // after this document's separator begins, when a separator ended it, or
+  // Unset when the document ended at end of input (or was not parsed).
+  // Both parsing modes expose it, as §6.1 requires: single-document
+  // parsing reports where the unparsed remainder starts, and streaming
+  // parsing reports where each next document was taken from.
   case class Document
     ( interpreterDirective: Optional[Text],
       pragma:               Optional[Pragma],
       lineEndings:          LineEndings,
-      children:             Array[Block]^{} )
+      margin:               Int,
+      children:             Array[Block]^{},
+      continuation:         Optional[Int] = Unset )
   extends Subtree
 
   case class Block
@@ -2780,7 +2822,7 @@ object Tel extends Tel2:
   given showable: Tel is Showable = tel =>
     val document = tel.subtree match
       case document: Document => document
-      case other              => Document(Unset, Unset, LineEndings.Lf, other.children)
+      case other              => Document(Unset, Unset, LineEndings.Lf, 0, other.children)
 
     document.show
 
@@ -3895,7 +3937,11 @@ object Tel extends Tel2:
         recoverAt(Reason.OverIndentation, head.startLine, 1, head.leadingSpaces.max(1)):
           while !head.eof && !head.separator do skipRestOfLine()
 
-      Tel.Document(directive, pragma, lineEndings, children)
+      // §6.1: the continuation begins on the line after the separator the
+      // head is parked on; at EOF there is none.
+      val continuation: Optional[Int] = if head.separator then head.startLine + 1 else Unset
+
+      Tel.Document(directive, pragma, lineEndings, margin, children, continuation)
 
     // Skip the remainder of the head's line (scanning past any refills) and
     // park the head on the next line. Only used by parseOneDocument's
@@ -4214,6 +4260,23 @@ object Tel extends Tel2:
 
       var index = 2
 
+      // §19.3: a formless phrase (E121) and an order or multiplicity
+      // violation (E122) are each reported once per pragma, however many
+      // phrases offend — as the reference does — though at the first
+      // offending phrase rather than over the whole line.
+      var badReported       = false
+      var misplacedReported = false
+
+      def bad(column: Int, length: Int): Unit =
+        if !badReported then
+          badReported = true
+          recoverAt(Reason.BadPragmaPhrase, line, column, length)(())
+
+      def misplaced(column: Int, length: Int): Unit =
+        if !misplacedReported then
+          misplacedReported = true
+          recoverAt(Reason.MisplacedPragmaPhrase, line, column, length)(())
+
       while index < parts.size do
         val s = parts(index)
         val column = offsets(index) + 1
@@ -4223,9 +4286,9 @@ object Tel extends Tel2:
           // Layer selection: `+` followed by a declared layer's
           // kebab-case name. A bare `+` matches no form (E121).
           if !kebab(s.substring(1).nn)
-          then recoverAt(Reason.BadPragmaPhrase, line, column, s.length)(())
+          then bad(column, s.length)
           else if stage > 2
-          then recoverAt(Reason.MisplacedPragmaPhrase, line, column, s.length)(())
+          then misplaced(column, s.length)
           else
             if layerBuffer.isEmpty then
               firstLayerColumn = column
@@ -4241,13 +4304,13 @@ object Tel extends Tel2:
           Tel.Pragma.Reference.parse(Text(s)) match
             case parsed: Tel.Pragma.Reference =>
               if stage >= 1
-              then recoverAt(Reason.MisplacedPragmaPhrase, line, column, s.length)(())
+              then misplaced(column, s.length)
               else
                 reference = parsed
                 stage = 1
 
             case _ =>
-              recoverAt(Reason.BadPragmaPhrase, line, column, s.length)(())
+              bad(column, s.length)
 
         else if (s.length == 33 || s.length >= 37 && (s.length - 37) % 2 == 0)
                 && s.forall(Base256.valid(_)) then
@@ -4255,7 +4318,7 @@ object Tel extends Tel2:
           // component (33 characters) or `37 + 2·(n − 2)` for n ≥ 2.
           // Decodability is checked at resolution, not at parse time.
           if stage >= 3
-          then recoverAt(Reason.MisplacedPragmaPhrase, line, column, s.length)(())
+          then misplaced(column, s.length)
           else
             signatureText = Text(s)
             stage = 3
@@ -4266,18 +4329,17 @@ object Tel extends Tel2:
           // eight parenthetical symbols. (`+` never reaches here: it is
           // classified as a layer selection above.)
           // §19.5 UseDefaultSigil: an invalid sigil is dropped, keeping the default.
-          if c.isLetterOrDigit || "()[]{}<>".indexOf(c.toInt) >= 0 then
-            if isFinal
-            then recoverAt(Reason.BadSigil, line, column, 1)(())
-            else recoverAt(Reason.BadPragmaPhrase, line, column, 1)(())
-          else if !isFinal
-          then recoverAt(Reason.MisplacedPragmaPhrase, line, column, 1)(())
+          // The sigil form is a *final* single character; a non-final one
+          // matches no form (E121), whatever the character.
+          if !isFinal then bad(column, 1)
+          else if c.isLetterOrDigit || "()[]{}<>".indexOf(c.toInt) >= 0
+          then recoverAt(Reason.BadSigil, line, column, 1)(())
           else
             sigil = c.toByte
             pragmaSigil = c
             stage = 4
 
-        else recoverAt(Reason.BadPragmaPhrase, line, column, s.length)(())
+        else bad(column, s.length)
 
         index += 1
 
@@ -4572,6 +4634,10 @@ object Tel extends Tel2:
         // at this level — the level that owns it.) Without the claim, the blank
         // head's sentinel indent would decline every loop and silently end the
         // document with the remainder unparsed and unvalidated (issue #1834).
+        // The blank-only block is what lets a blank line that *opens* a child
+        // block (§9, §13) round-trip byte-for-byte; the reference parser's
+        // presentation model has no place for it and drops the line (see the
+        // corpus DIVERGENCES note).
         if head.blank && !head.eof then
           val blanks = claimLeadingBlanksFor(expected)
           if blanks > 0 then
@@ -4597,8 +4663,12 @@ object Tel extends Tel2:
               else
                 val last = scratchBlocks(lastIx)
 
+                // §13: relations are computed against the previous *compound*
+                // line, which comments are not, so a line under a comments-
+                // only block is plain over-indentation (E111); E112 is
+                // reserved for a line indented below a tabulated row.
                 if last.tabulation.present && last.compounds.nil then Reason.RowWrongIndent
-                else if last.tabulation.present || last.compounds.nil then Reason.ChildOfNonCompound
+                else if last.tabulation.present then Reason.ChildOfNonCompound
                 else Reason.OverIndentation
 
             recoverAt(reason, line, 1, indent.max(1))(())
@@ -4671,7 +4741,16 @@ object Tel extends Tel2:
       var keepLoop = true
       while keepLoop && !head.eof && !head.separator && !head.blank && head.indentLevels == indent
       do
-        if isCommentBody() || isTabulationBody() then keepLoop = false
+        if tabulationHeader != null && isCommentBody() then
+          // §16.2: a comment cannot appear inside a tabulated block (E109),
+          // since the blank line it would need would end the block. §19.5
+          // AttachComment: it joins this block's comments and the rows go on.
+          recoverAt(Reason.CommentNotPreceded, head.startLine, head.leadingSpaces + 1, 1)(())
+          pushComment(Tel.Comment(parseCommentLine()))
+          prevLineWasBoundary = true
+          hasConsumedNonBlankLine = true
+          fillHead()
+        else if isCommentBody() || isTabulationBody() then keepLoop = false
         else
           val compoundLeadingSpaces = head.leadingSpaces
           val compoundLine = head.startLine
@@ -5000,6 +5079,9 @@ object Tel extends Tel2:
             // column) or content (malformed).
             advance(); lineCol += 1  // first space
             advance(); lineCol += 1  // second space
+            // §16.1: the hard-space run before the next marker may be any
+            // length, so an empty heading may be followed by many spaces.
+            while more && peek == SP do { advance(); lineCol += 1 }
             if more && peek == sigil then
               // Empty heading; new marker.
               markers += lineCol
@@ -5076,6 +5158,7 @@ object Tel extends Tel2:
         var columnIdx = 0
         var phraseStart = rowLeadingSpaces
         var stopped = false
+        var flaggedBoundary = 0
 
         while !stopped && more && peek != LF && peek != CR do
           val b = peek
@@ -5126,6 +5209,23 @@ object Tel extends Tel2:
                 columnIdx = foundIdx
                 phraseStart = col
           else
+            // §16.2 column presence: a non-space at M_k − 2 or M_k − 1 means
+            // the preceding value — or, for k = 1, the keyword-and-pre-column-
+            // atom portion — has overflowed into column k's separator (E118).
+            // Reported once per boundary, as the two separator positions. A
+            // remark never reaches here: its introducing hard space consumed
+            // the rest of the row above.
+            var k = flaggedBoundary + 1
+
+            while k < markers.length do
+              val marker = markers.readUnchecked(k)
+
+              if col == marker - 2 || col == marker - 1 then
+                recoverAt(Reason.ColumnValueTooWide, lineNumber, marker - 2 + 1, 2)(())
+                flaggedBoundary = k
+
+              k += 1
+
             advance()
             col += 1
 
@@ -5290,10 +5390,15 @@ object Tel extends Tel2:
           scanUntil2(LF, CR, Parser.LfRepl, Parser.CrRepl)
           pos == bufEnd && more
         do ()
-        val d = sliceText(delimMk)
+        val raw = sliceText(delimMk)
+        // §15: the closing line is the *normalised* opening line — trailing
+        // spaces have already been removed from the delimiter — so a
+        // closing line MUST NOT reproduce them.
+        var end = raw.length
+        while end > 0 && raw.charAt(end - 1) == ' ' do end -= 1
         // The opening line is now consumed up to but not including the LF.
         consumeLineEnding()
-        d
+        raw.substring(0, end)
 
       val closingLine = (" "*literalIndent)+delimiter
       sb.setLength(0)
@@ -5837,7 +5942,7 @@ object Tel extends Tel2:
     // the shape of the preceding block determines whether the line is a
     // misplaced row, a child of a non-compound, or plain over-indentation.
     private update def directOverIndentReason: Reason = directGroup match
-      case DirectComments         => Reason.ChildOfNonCompound
+      case DirectComments         => Reason.OverIndentation
       case DirectTabulationHeader => Reason.RowWrongIndent
       case DirectTabulationRows   => Reason.ChildOfNonCompound
       case _                      => Reason.OverIndentation
@@ -6423,7 +6528,7 @@ object Tel extends Tel2:
     // Materialize everything that remains as a document-rooted `Tel` — the
     // AST bridge for a whole-input read of a `Decodable`-only type.
     private[stratiform] update def directDocument()(using Tactic[Tel.Error]): Tel =
-      Tel.make(Tel.Document(Unset, Unset, lineEndings, parseChildren(-1)))
+      Tel.make(Tel.Document(Unset, Unset, lineEndings, margin, parseChildren(-1)))
 
     // Peek whether the current entry has substance — an atom of any
     // presentation form (§14/§15 append source/literal atoms to the atom
@@ -6577,7 +6682,7 @@ object Tel extends Tel2:
           m"the line is indented more than one level deeper than the previous compound"
 
         case ChildOfNonCompound =>
-          m"the line is a child of a comment, tabulation, or tabulated row"
+          m"the line is indented as a child of a tabulated row"
 
         case DuplicateSource =>
           m"the compound already has a source or literal atom"
@@ -6595,7 +6700,7 @@ object Tel extends Tel2:
           m"a hard space or consecutive-space run does not end at a column boundary"
 
         case ColumnValueTooWide =>
-          m"the column value exceeds the maximum width for its column"
+          m"the column value or keyword portion overflows into the next column's separator"
 
         case BadTabulationHeading =>
           m"the tabulation line heading is malformed"

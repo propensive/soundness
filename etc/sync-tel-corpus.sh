@@ -16,6 +16,8 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 TEL_REF="${TEL_REF:-main}"
+# Where to clone from; a local clone works too (TEL_REPO=file:///path/to/tel).
+TEL_REPO="${TEL_REPO:-https://github.com/propensive/tel.git}"
 # NOTE: the resource path deliberately avoids `stratiform/tel/` because
 # Mill puts test resources on the compiler classpath, and a directory at
 # `stratiform/tel/` is interpreted as a package, shadowing the `tel"…"`
@@ -24,25 +26,56 @@ TARGET="lib/stratiform/res/test/stratiform/corpus"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
-git clone --depth 1 --branch "$TEL_REF" --quiet \
-  https://github.com/propensive/tel.git "$WORK/tel"
+git clone --depth 1 --branch "$TEL_REF" --quiet "$TEL_REPO" "$WORK/tel"
 
 mkdir -p "$TARGET/pos" "$TARGET/neg" "$TARGET/stream"
 
-# Copy positive corpus
-rm -f "$TARGET/pos"/*.tel "$TARGET/pos"/*.check 2>/dev/null || true
-cp "$WORK/tel/ref/tel/test/pos/"*.tel    "$TARGET/pos/"
-cp "$WORK/tel/ref/tel/test/pos/"*.check  "$TARGET/pos/"
+# Fixtures maintained locally that upstream does not carry (see
+# DIVERGENCES.md). A sync never deletes them; everything else in a category
+# is replaced by upstream's copy, so a fixture upstream renames or removes
+# disappears here too. `tels.tel` and `tels.bintel.hex` are maintained by
+# hand and are not touched.
+LOCAL_ONLY=(
+  pos/pragma-full-form
+  pos/pragma-layers-with-signature
+  pos/pragma-pinned-tels
+  pos/pragma-reference-bare
+  pos/pragma-reference-tag
+  pos/pragma-reference-version
+  neg/e121-plus-alone
+  neg/e121-reference-bad-grammar
+  neg/e121-reference-leading-zero-version
+  neg/e122-layer-after-signature
+  neg/e122-layers-unaccompanied
+  neg/e122-pragma-extra-atoms
+  neg/e121-sigil-not-final
+  neg/e310-schema-plus-sigil
+)
 
-# Copy negative corpus
-rm -f "$TARGET/neg"/*.tel "$TARGET/neg"/*.check 2>/dev/null || true
-cp "$WORK/tel/ref/tel/test/neg/"*.tel    "$TARGET/neg/"
-cp "$WORK/tel/ref/tel/test/neg/"*.check  "$TARGET/neg/"
+is_local_only() {
+  local stem="$1"
+  local keep
+  for keep in "${LOCAL_ONLY[@]}"; do
+    [[ "$keep" == "$stem" ]] && return 0
+  done
+  return 1
+}
 
-# Copy multi-document stream corpus (§6.1)
-rm -f "$TARGET/stream"/*.tel "$TARGET/stream"/*.check 2>/dev/null || true
-cp "$WORK/tel/ref/tel/test/stream/"*.tel    "$TARGET/stream/"
-cp "$WORK/tel/ref/tel/test/stream/"*.check  "$TARGET/stream/"
+sync_category() {
+  local category="$1"
+  local f stem
+  for f in "$TARGET/$category"/*.tel "$TARGET/$category"/*.check; do
+    [[ -e "$f" ]] || continue
+    stem="$category/$(basename "${f%.*}")"
+    is_local_only "$stem" || rm -f "$f"
+  done
+  cp "$WORK/tel/ref/tel/test/$category/"*.tel   "$TARGET/$category/"
+  cp "$WORK/tel/ref/tel/test/$category/"*.check "$TARGET/$category/"
+}
+
+sync_category pos     # positive corpus
+sync_category neg     # negative corpus
+sync_category stream  # multi-document stream corpus (§6.1)
 
 # Record the upstream commit hash for traceability.
 cd "$WORK/tel"

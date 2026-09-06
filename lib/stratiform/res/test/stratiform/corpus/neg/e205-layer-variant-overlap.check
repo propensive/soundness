@@ -7,7 +7,7 @@ Document {
                 0,
             ),
             reference: Some(
-                "specification.tel/tels",
+                "specification.tel/tels:2.0.0",
             ),
             layers: [],
             signature: None,
@@ -24,12 +24,68 @@ Document {
                     keyword: "name",
                     atoms: [
                         Inline {
-                            text: "e208-test",
+                            text: "e205-test",
                             preceding_spaces: 1,
                         },
                     ],
                     remark: None,
                     children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "select",
+                    atoms: [
+                        Inline {
+                            text: "Status",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [
+                        Block {
+                            comments: [],
+                            tabulation: None,
+                            compounds: [
+                                Compound {
+                                    keyword: "variant",
+                                    atoms: [
+                                        Inline {
+                                            text: "name",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Flag",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                                Compound {
+                                    keyword: "variant",
+                                    atoms: [
+                                        Inline {
+                                            text: "other",
+                                            preceding_spaces: 1,
+                                        },
+                                        Inline {
+                                            text: "Flag",
+                                            preceding_spaces: 1,
+                                        },
+                                    ],
+                                    remark: None,
+                                    children: [],
+                                },
+                            ],
+                            trailing_blank_lines: 0,
+                        },
+                    ],
                 },
             ],
             trailing_blank_lines: 1,
@@ -55,7 +111,7 @@ Document {
                                             preceding_spaces: 1,
                                         },
                                         Inline {
-                                            text: "string",
+                                            text: "String",
                                             preceding_spaces: 1,
                                         },
                                     ],
@@ -105,50 +161,17 @@ Document {
                                             compounds: [
                                                 Compound {
                                                     keyword: "select",
-                                                    atoms: [],
-                                                    remark: None,
-                                                    children: [
-                                                        Block {
-                                                            comments: [],
-                                                            tabulation: None,
-                                                            compounds: [
-                                                                Compound {
-                                                                    keyword: "variant",
-                                                                    atoms: [
-                                                                        Inline {
-                                                                            text: "name",
-                                                                            preceding_spaces: 1,
-                                                                        },
-                                                                        Inline {
-                                                                            text: "flag",
-                                                                            preceding_spaces: 1,
-                                                                        },
-                                                                    ],
-                                                                    remark: None,
-                                                                    children: [],
-                                                                },
-                                                                Compound {
-                                                                    keyword: "variant",
-                                                                    atoms: [
-                                                                        Inline {
-                                                                            text: "other",
-                                                                            preceding_spaces: 1,
-                                                                        },
-                                                                        Inline {
-                                                                            text: "flag",
-                                                                            preceding_spaces: 1,
-                                                                        },
-                                                                    ],
-                                                                    remark: None,
-                                                                    children: [],
-                                                                },
-                                                            ],
-                                                            trailing_blank_lines: 1,
+                                                    atoms: [
+                                                        Inline {
+                                                            text: "Status",
+                                                            preceding_spaces: 1,
                                                         },
                                                     ],
+                                                    remark: None,
+                                                    children: [],
                                                 },
                                             ],
-                                            trailing_blank_lines: 0,
+                                            trailing_blank_lines: 1,
                                         },
                                     ],
                                 },
@@ -163,7 +186,4 @@ Document {
     ],
 }
 errors:
-  E310 [0,6): Scalar value failed validation: `type` failed validation: TypeName must start with an uppercase ASCII letter
-  E306 [0,0): Compound keyword is not recognized for its parent type: unrecognized keyword `variant` in `select`
-  E306 [0,0): Compound keyword is not recognized for its parent type: unrecognized keyword `variant` in `select`
-  E307 [0,0): Required member absent and no default available: required member `reference` is absent and has no default
+  E205 [0,0): Layer Select variant keyword overlaps existing keyword in base Struct: layer `extension` adds select `Status` to overlay, but its variant keyword(s) name are already present in the merged struct

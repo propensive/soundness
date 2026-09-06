@@ -40,7 +40,13 @@ import fulminate.*
 
 // §4 of the BinTEL spec: variable-length unsigned integer encoding.
 // Seven payload bits per byte; bit 7 set marks a continuation byte;
-// bytes are emitted least-significant-first.
+// bytes are emitted least-significant-first. Two properties are
+// normative so that validity is a property of the bytes, not of the
+// reader: the representable range is `[0, 2^64 − 1]` (an integer wider
+// than that is B02), and the encoding is minimal (an overlong encoding
+// such as `80 00` for zero is B02), so every integer has exactly one
+// encoding — which is what makes §7's byte-determinism and the §3 value
+// hash well-defined.
 
 object Varint:
 
@@ -68,11 +74,10 @@ object Varint:
     out.asInstanceOf[Array[Byte]^{}]
 
   // Decode a varint from `data` starting at `offset`. Returns the decoded
-  // value and the next read position. Raises `Base256.Error.Reason` is not
-  // applicable here — the equivalent failure for varint truncation /
-  // overflow lives in the BinTEL-level error type which this module does
-  // not yet introduce; we use a single dedicated exception for the
-  // foundational codec and let callers wrap it.
+  // value and the next read position. The failure kinds are the three
+  // ways a byte sequence can fail §4 — truncation, width and minimality —
+  // all of which the BinTEL layer reports as B02; callers wrap the
+  // `Varint.Error` accordingly.
   def decode(data: Data, offset: Int): Decoded raises Varint.Error =
     var shift = 0
     var acc = 0L
@@ -87,7 +92,15 @@ object Varint:
 
       acc |= (b & 0x7fL) << shift
       i += 1
-      if (b & 0x80) == 0 then return Decoded(acc, i)
+
+      if (b & 0x80) == 0 then
+        // §4 minimality: a terminating byte after the first that carries
+        // no payload bits is an overlong encoding.
+        if i > offset + 1 && (b & 0x7f) == 0
+        then abort(Varint.Error(Varint.Error.Reason.Overlong))
+
+        return Decoded(acc, i)
+
       shift += 7
 
     Decoded(0L, offset)
@@ -99,10 +112,12 @@ object Varint:
       given communicable: Reason is Communicable =
         case Truncated => m"the varint is truncated — a continuation byte was expected"
         case Overflow  => m"the varint encodes a value that does not fit in 64 bits"
+        case Overlong  => m"the varint is not minimal — its last byte carries no payload bits"
 
     enum Reason(val number: Int) extends Clarification:
       case Truncated extends Reason(1)
       case Overflow  extends Reason(2)
+      case Overlong  extends Reason(3)
 
   case class Error(reason: Varint.Error.Reason)(using Diagnostics)
   extends fulminate.Error(608, reason.number)(m"the varint is invalid because $reason")

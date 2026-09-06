@@ -8,9 +8,7 @@ Document {
             ),
             reference: None,
             layers: [],
-            signature: Some(
-                "#",
-            ),
+            signature: None,
             sigil: None,
         },
     ),
@@ -32,8 +30,4 @@ Document {
     ],
 }
 errors:
-  E122 [0,26): Misplaced pragma phrase
-  E121 [0,26): Pragma phrase matches no form
-  E121 [0,26): Pragma phrase matches no form
-  E121 [0,26): Pragma phrase matches no form
-  E121 [0,26): Pragma phrase matches no form
+  E121 [0,26): Pragma phrase matches no pragma form

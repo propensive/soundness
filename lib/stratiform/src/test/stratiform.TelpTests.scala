@@ -281,7 +281,18 @@ object TelpTests extends Suite(m"Stratiform TELP tests"):
         capture[Telp.Error](Telp.parse(t"/contact/zed").resolve(root)).index
       . assert(_ == 1)
 
+      // §11: an all-digit component is always an index, so a key that
+      // looks like one is shadowed and `/contact/007` is index 7.
+      test(m"an all-digit component is an index even when a key would match"):
+        failure(t"/contact/007")
+      . assert(_ == Telp.Error.Reason.IndexOutOfRange)
+
     suite(m"Delimiter switch (§10)"):
+      // §3: `+` is a delimiter although it is not sigil-valid.
+      test(m"plus is a delimiter"):
+        Telp.parse(t"+contact+bea") == Telp.parse(t"/contact/bea")
+      . assert(_ == true)
+
       test(m"a key containing the conventional delimiters uses another"):
         val doc = Text("""|tel 1.0
                       |

@@ -160,12 +160,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
   // Keep this list small: every entry weakens the no-silent-truncation
   // guarantee below for that fixture.
   private val strictExemptions: List[Text] = List
-    ( t"e106-less-than-margin",       // reference double-reports one defect at one span
-      t"e107-odd-indentation",        // reference double-reports one defect at one span
-      t"e112-child-of-comment",       // we report the specific E112; reference generalizes to E111
-      t"e113-source-after-literal",   // we report the specific E113; reference generalizes to E111
-      t"e114-duplicate-literal",      // we report E114+E115; reference generalizes to one E111
-      t"e119-non-space-after-marker" ) // we report per heading; reference reports per marker
+    ( t"e119-non-space-after-marker" ) // we report per heading; reference reports per marker
 
   // A document schema with two required scalar fields and no defaults: a document
   // omitting both yields two `RequiredMemberAbsent` violations.
