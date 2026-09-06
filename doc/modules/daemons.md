@@ -26,7 +26,13 @@ A daemon that serves each invocation against that invocation's own environment i
 
 Soundness handles those details in a per-platform native launcher and a protocol over a Unix
 domain socket, so the Scala application simply runs — many invocations concurrently, each with its
-own faithful context. Everything comes from the `soundness` package, alongside the CLI machinery:
+own faithful context. The protocol is a TEL schema, `ethereal-launcher` (its text is
+`Launcher.schemaText`): every connection the launcher opens begins with one BinTEL document of
+that schema — an invocation with its arguments and environment, a signal, an exit-status
+request — and the daemon answers in kind, so both sides check the schema's signature before
+reading a field, and a launcher and daemon built against different contracts refuse each other
+rather than misread each other. Everything comes from the `soundness` package, alongside the CLI
+machinery:
 
 ```scala
 import soundness.*

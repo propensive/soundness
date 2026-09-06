@@ -38,8 +38,3 @@ package ethereal
 // driver then provides echo and line editing itself.
 enum Tty:
   case Raw, Canonical
-
-  // The single byte the daemon writes to the launcher's control channel.
-  def byte: Int = this match
-    case Raw       => 'r'
-    case Canonical => 'c'

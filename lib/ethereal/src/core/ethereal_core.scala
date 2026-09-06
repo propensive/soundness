@@ -347,80 +347,28 @@ def cli[bus <: Matchable](using executive: Executive)
     val rawOut: ji.OutputStream = connection.writer
     val in: ji.BufferedInputStream = ji.BufferedInputStream(rawIn, 16384)
 
-    def line(): Text =
-      val sb = jl.StringBuilder()
-      var b = in.read()
+    // Every connection opens with one BinTEL document of the launcher schema
+    // (`Launcher.schemaText`); the bytes that follow it belong to the message.
+    val document: Optional[Data] = Launcher.readDocument(in)
+    val message: Optional[Launcher.Message] = document.let(Launcher.decode(_))
 
-      while b != '\n' && b != -1 do
-        sb.append(b.toChar)
-        b = in.read()
-
-      sb.toString.tt
-
-    def chunk(): Text =
-      var buffer: Text = line()
-      var current: Text = t""
-
-      while
-        current = line()
-        current != t"##"
-      do buffer += t"\n$current"
-
-      buffer
-
-    val message: Optional[DaemonEvent] = line() match
-      case t"e" =>
-        val pid: Pid = line().as[Pid]
-        DaemonEvent.Stderr(pid)
-
-      case t"m" =>
-        val pid: Pid = line().as[Pid]
-        DaemonEvent.Control(pid)
-
-      case t"s" =>
-        val pid: Pid = line().as[Pid]
-        val name: Text = line()
-
-        val signal: UnixSignal | WindowsSignal =
-          safely(name.as[UnixSignal]).or(name.as[WindowsSignal])
-
-        DaemonEvent.Trap(pid, signal)
-
-      case t"x" =>
-        DaemonEvent.Exit(line().as[Pid])
-
-      case t"v" =>
-        DaemonEvent.Verify
-
-      case t"i" =>
-        val stdin: Stdin = if line() == t"p" then Stdin.Pipe else Stdin.Terminal
-        val pid: Pid = Pid(line().as[Int])
-        val userId: Int = line().as[Int]
-        val username: Text = line()
-        val login = Login(username, userId)
-        val script: Text = line()
-        val pwd: Text = line()
-        val count: Int = line().as[Int]
-        // The `Init` message carries an explicit argument count, so `keep` needs the linear
-        // `Countable`; the list counted is one command line's worth of arguments.
-        val textArguments: List[Text] = chunk().cut(t"\u0000").keep(count)
-
-        val environmentFields: Optional[List[Text] & Populated] =
-          chunk().cut(t"\u0000").occupied
-
-        val environment: List[Text] = environmentFields.lay(Nil)(_.lead)
-
-        DaemonEvent.Init(pid, login, pwd, script, stdin, textArguments, environment)
-
-      case _ =>
-        Unset
+    def reply(message: Launcher.Message): Unit =
+      safely(rawOut.write(Array.unsafeJvm(Launcher.encode(message))))
+      safely(rawOut.flush())
 
     (message: @unchecked) match
       case Unset =>
-        Log.warn(DaemonLogEvent.UnrecognizedMessage)
+        // A document that framed but carried another schema's signature is a launcher
+        // built against a different contract; anything else is not BinTEL at all.
+        if document.present then Log.warn(DaemonLogEvent.ProtocolMismatch)
+        else Log.warn(DaemonLogEvent.UnrecognizedMessage)
         connection.close()
 
-      case DaemonEvent.Trap(pid, signal) =>
+      case Launcher.Message.Signal(pid0, name) =>
+        val pid = Pid(pid0)
+        val signal: UnixSignal | WindowsSignal =
+          safely(name.as[UnixSignal]).or(name.as[WindowsSignal])
+
         Log.info(DaemonLogEvent.ReceivedSignal(signal))
 
         val response: SignalResponse =
@@ -430,52 +378,59 @@ def cli[bus <: Matchable](using executive: Executive)
 
           . or(SignalResponse.Reject)
 
-        val ackByte: Byte = if response == SignalResponse.Accept then 'a' else 'r'
-        safely(rawOut.write(scala.Array[Byte](ackByte, '\n'.toByte)))
-        safely(rawOut.flush())
+        reply(Launcher.Message.SignalAck(response == SignalResponse.Accept))
         connection.close()
 
       // The launcher asks whether this daemon's launcher file still has the content
       // it was started from — sent when the file's mtime disagrees with the build
-      // file. The verdict is a single byte: `f` (fresh: a metadata-only change,
-      // remembered so the hash is not repeated) or `s` (stale: reply, then take the
-      // termination path; the launcher awaits this daemon's death and starts a
-      // fresh one).
-      case DaemonEvent.Verify =>
+      // file. The verdict is a document: fresh (a metadata-only change, remembered so
+      // the hash is not repeated) or stale (reply, then take the termination path; the
+      // launcher awaits this daemon's death and starts a fresh one).
+      case Launcher.Message.Verify =>
         val fresh = verifyScript()
-        val verdict: Byte = if fresh then 'f' else 's'
-        safely(rawOut.write(scala.Array[Byte](verdict, '\n'.toByte)))
-        safely(rawOut.flush())
+        reply(Launcher.Message.Verdict(fresh))
         connection.close()
 
         if !fresh then
           Log.warn(DaemonLogEvent.Termination)
           termination
 
-      case DaemonEvent.Exit(pid) =>
+      case Launcher.Message.Exit(pid0) =>
+        val pid = Pid(pid0)
         Log.fine(DaemonLogEvent.ExitStatusRequest(pid))
         val exitStatus: Exit = client(pid).exitPromise.await()
 
-        rawOut.write(Array.unsafeJvm(exitStatus().show.in[Data]))
+        reply(Launcher.Message.ExitStatus(exitStatus()))
         connection.close()
         clients.remove(pid)
         if terminatePid() == pid then termination
 
-      case DaemonEvent.Stderr(pid) =>
+      case Launcher.Message.Stderr(pid0) =>
+        val pid = Pid(pid0)
         Log.fine(DaemonLogEvent.StderrRequest(pid))
         val stderrClient = client(pid)
         stderrClient.stderr.offer(rawOut)
         safely(stderrClient.exitPromise.await())
         safely(connection.close())
 
-      case DaemonEvent.Control(pid) =>
+      case Launcher.Message.Control(pid0) =>
+        val pid = Pid(pid0)
         Log.fine(DaemonLogEvent.ControlRequest(pid))
         val controlClient = client(pid)
         controlClient.control.offer(rawOut)
         safely(controlClient.exitPromise.await())
         safely(connection.close())
 
-      case DaemonEvent.Init(pid, login, directory, script, shellInput, textArguments, env) =>
+      case _: (Launcher.Message.SignalAck | Launcher.Message.Verdict | Launcher.Message.Mode
+               | Launcher.Message.ExitStatus) =>
+        // Replies travel from the daemon to the launcher, never the other way.
+        Log.warn(DaemonLogEvent.UnrecognizedMessage)
+        connection.close()
+
+      case Launcher.Message.Init(pid0, uid, username, script, directory, tty, textArguments, env) =>
+        val pid = Pid(pid0)
+        val login = Login(username, uid)
+        val shellInput: Stdin = if tty then Stdin.Terminal else Stdin.Pipe
         Log.fine(DaemonLogEvent.Init(pid))
         val clientState = client(pid)
         clientState.socket.fulfill(connection)
@@ -536,7 +491,7 @@ def cli[bus <: Matchable](using executive: Executive)
         // and the command runs with the raw mode it would have had anyway.
         def setMode(mode: Tty): Unit =
           safely(clientState.control.await(0.1*Second)(using monitor = monitor0)).let: out =>
-            out.write(mode.byte)
+            out.write(Array.unsafeJvm(Launcher.encode(Launcher.Message.Mode(mode == Tty.Canonical))))
             out.flush()
 
         def deliver(sourcePid: Pid, message: bus): Unit =

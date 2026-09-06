@@ -865,6 +865,81 @@ object Tests extends Suite(m"Ethereal Tests"):
       // ETHRCFG marker, as ziggurat's tests use; nothing here executes it. The `macos` label is
       // deliberate: it makes `assemble` codesign the stub, which grows it, so the prefix the JAR
       // sits behind is longer than the patched bytes — the delta must be measured from the file.
+      suite(m"Launcher protocol"):
+        // The wire contract shared with the Rust runner: `bintel.rs` pins the same
+        // signature and frames, so the two implementations cannot drift apart silently.
+        val signatureHex =
+          t"4701ec19cd0fd3ecfc0e1b8a6525b4edc3a3b1deda370f681986db9aa39c1da692"
+
+        def hex(data: Data): Text = Text(data.readable.map(b => f"${b & 0xff}%02x").mkString)
+
+        test(m"the schema signature is pinned"):
+          hex(Launcher.signature)
+        .assert(_ == signatureHex)
+
+        test(m"an exit request frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.Exit(42)))
+        .assert(_ == t"b2c4b5bb2921${signatureHex}01040100023432")
+
+        test(m"a verify request is a variant with no fields"):
+          hex(Launcher.encode(Launcher.Message.Verify))
+        .assert(_ == t"b2c4b5bb2521${signatureHex}010500")
+
+        test(m"a mode document carries the canonical flag"):
+          hex(Launcher.encode(Launcher.Message.Mode(true)))
+        .assert(_ == t"b2c4b5bb2621${signatureHex}01080100")
+
+        val init =
+          Launcher.Message.Init
+            ( 7, 501, t"jon", t"/usr/bin/x", t"/tmp", true, List(t"a", t"b c"), List(t"K=V") )
+
+        test(m"an init message frames as the pinned bytes"):
+          hex(Launcher.encode(init))
+        .assert(_ == t"b2c4b5bb5221${signatureHex}010009000137010335303102036a6f6e030a2f7573722f62696e2f7804042f746d7005060161060362206307034b3d56")
+
+        test(m"every message round-trips"):
+          val messages: List[Launcher.Message] =
+            List
+              ( init,
+                Launcher.Message.Stderr(7),
+                Launcher.Message.Control(7),
+                Launcher.Message.Signal(7, t"INT"),
+                Launcher.Message.Exit(7),
+                Launcher.Message.Verify,
+                Launcher.Message.SignalAck(true),
+                Launcher.Message.SignalAck(false),
+                Launcher.Message.Verdict(true),
+                Launcher.Message.Mode(false),
+                Launcher.Message.ExitStatus(3) )
+
+          messages.map { message => Launcher.decode(Launcher.encode(message)) }
+        .assert(_ == List
+          ( init,
+            Launcher.Message.Stderr(7),
+            Launcher.Message.Control(7),
+            Launcher.Message.Signal(7, t"INT"),
+            Launcher.Message.Exit(7),
+            Launcher.Message.Verify,
+            Launcher.Message.SignalAck(true),
+            Launcher.Message.SignalAck(false),
+            Launcher.Message.Verdict(true),
+            Launcher.Message.Mode(false),
+            Launcher.Message.ExitStatus(3) ))
+
+        test(m"a document of another schema is rejected"):
+          val bytes = Launcher.encode(Launcher.Message.Exit(7)).readable.toList.toArray
+          bytes(6) = (bytes(6) ^ 0x01).toByte
+          Launcher.decode(bytes.asInstanceOf[Array[Byte]]).absent
+        .assert(_ == true)
+
+        test(m"readDocument takes exactly one document from a stream"):
+          val document = Launcher.encode(Launcher.Message.Exit(7))
+          val stream = document.readable.toList ++ scala.List[Byte](1, 2, 3)
+          val in = ji.ByteArrayInputStream(stream.toArray)
+          val read = Launcher.readDocument(in)
+          (read.let(hex(_)), in.available())
+        .assert(_ == (hex(Launcher.encode(Launcher.Message.Exit(7))), 3))
+
       suite(m"Assembling a launcher around a ZIP64 JAR"):
         val assemblyDir: Path on Linux = temporaryDirectory[Path on Linux]/Uuid().show
         sh"mkdir -p $assemblyDir".exec[Unit]()
