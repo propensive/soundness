@@ -68,9 +68,9 @@ object Runners:
     Map
       ( t"linux-arm64" -> t"8dff1e5194e8cb7c63165d96f8c63e06d732f613b9528eccfc235c2d2ad8a4c5",
        t"linux-x64" -> t"a7445a8c6e4d9224937d9d987d71cbe561d99df03f4c86a730b79effb8919883",
-       t"macos-arm64" -> t"39bd437e704c730a99877c6c732e08f8dc3720121638bae5f2dd40177b071acc",
-       t"macos-x64" -> t"7ed428384e8e88b253166d46e5709c5a6e4e5631484424def016a030dd634c13",
-       t"windows-x64" -> t"9f424370513d9e2f91a62207cb9e1f214831a3ec787cdd7fe130c881874ba4a1" )
+       t"macos-arm64" -> t"4750a689aafb14a56c292257cea1bc766f12980a7b0554b910f0888f8070d1a5",
+       t"macos-x64" -> t"56443745b2ff1a315ed71af87e262f221648c75cbf7d8fd25902ca7acc525c2a",
+       t"windows-x64" -> t"1915af2bef017e2534f56349f96e4865b6ec731a7493b0966b19e6b8a71cd9b7" )
 
   // The published filename for a platform's bare runner stub (Windows stubs carry `.exe`).
   def runnerName(label: Text): Text =

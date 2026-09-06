@@ -343,17 +343,20 @@ not yet been recorded here.
   messages and single-byte replies. A daemon built from this version only accepts launchers
   built from the Rust runner source at this version: rebuild runner stubs (`make
   runners-build`) or use a published `runners-<version>` release at or after the one carrying
-  this protocol. Applications packaged with older stubs must be repackaged.
+  this protocol. Applications packaged with older stubs must be repackaged. (#1962)
+
 - `ethereal.DaemonEvent` removed. The daemon dispatches on `ethereal.Launcher.Message`
   (`Init`, `Stderr`, `Control`, `Signal`, `Exit`, `Verify`, `SignalAck`, `Verdict`, `Mode`,
   `ExitStatus`); `Launcher.encode`, `Launcher.decode` and `Launcher.readDocument` are the
   codec. `ethereal.Tty#byte` removed: a terminal-mode change is a `Launcher.Message.Mode`
-  document on the control channel.
+  document on the control channel. (#1962)
+
 - `ethereal.Runners.version` is `0.4` (the first runner release speaking the BinTEL protocol),
   with `etc/runners/0.4.tsv` recording the stub hashes; `-Dbuild.executable` packaging without
-  a local `dist/runners` downloads from the `runners-0.4` GitHub release.
-- `ethereal.DaemonLogEvent` gained `ProtocolMismatch` (a document of another schema's
-  signature).
-- `ethereal.core` now depends on `stratiform.binary` (and so on `stratiform.core`,
-  `stratiform.base256` and `ulysses.core`).
+  a local `dist/runners` downloads from the `runners-0.4` GitHub release. (#1962)
 
+- `ethereal.DaemonLogEvent` gained `ProtocolMismatch` (a document of another schema's
+  signature). (#1962)
+
+- `ethereal.core` now depends on `stratiform.binary` (and so on `stratiform.core`,
+  `stratiform.base256` and `ulysses.core`). (#1962)
