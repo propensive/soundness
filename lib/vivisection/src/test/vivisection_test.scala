@@ -63,8 +63,9 @@ object Tests extends Suite(m"Vivisection tests"):
     val socket = java.net.ServerSocket(0)
     try socket.getLocalPort finally socket.close()
 
-  // The debuggee's classpath (this JVM's), for launching it and for opening evaluations against.
-  def fixtureClasspath: LocalClasspath = System.properties.java.`class`.path().as[LocalClasspath]
+  // The debuggee's classpath — the one this suite's classes were loaded from, which under a
+  // test-running host is not the JVM's — for launching it and for opening evaluations against.
+  def fixtureClasspath: LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
 
   // Launches a fixture under the JDWP agent, breaks once at `source`:`line`, runs `handler` there
   // and returns its result — the shared shape behind every live case. Call it inside a `supervise`
@@ -81,7 +82,7 @@ object Tests extends Suite(m"Vivisection tests"):
     ( using Monitor^{capture} )
   :   result =
 
-    val classpathText = System.properties.java.`class`.path()
+    val classpathText = fixtureClasspath()
     val outcome = Promise[result]()
     val command: Command = sh"java -classpath $classpathText $fixtureClass"
     val debuggee: Debuggee = Debuggee(command, freePort())
@@ -236,7 +237,7 @@ object Tests extends Suite(m"Vivisection tests"):
     ( using Monitor^{capture} )
   :   result =
 
-    val classpathText = System.properties.java.`class`.path()
+    val classpathText = fixtureClasspath()
     val outcome = Promise[result]()
     val command: Command = sh"java -classpath $classpathText $fixtureClass"
     val debuggee: Debuggee = Debuggee(command, freePort())
@@ -958,7 +959,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // instance — asserting the protocol traffic a frontend would see.
     test(m"a DAP client launches, stops at a breakpoint and inspects a local"):
       import dynamicAccess.dynamicJson
-      val classpathText = System.properties.java.`class`.path()
+      val classpathText = fixtureClasspath()
 
       supervise:
         dapScenario: client ?=>
@@ -1010,7 +1011,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // then set a variable and read it back.
     test(m"a DAP client evaluates and assigns over a stopped frame"):
       import dynamicAccess.dynamicJson
-      val classpathText = System.properties.java.`class`.path()
+      val classpathText = fixtureClasspath()
 
       supervise:
         dapScenario: client ?=>
@@ -1055,7 +1056,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // fresh binding position offers nothing (the name is the programmer's to invent).
     test(m"a DAP client completes console input against a stopped frame"):
       import dynamicAccess.dynamicJson
-      val classpathText = System.properties.java.`class`.path()
+      val classpathText = fixtureClasspath()
 
       supervise:
         dapScenario: client ?=>
@@ -1112,7 +1113,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // refused rather than executed — while the console still evaluates that same expression.
     test(m"a DAP client hovers without executing debuggee code"):
       import dynamicAccess.dynamicJson
-      val classpathText = System.properties.java.`class`.path()
+      val classpathText = fixtureClasspath()
 
       supervise:
         dapScenario: client ?=>
@@ -1186,7 +1187,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // teardown carry a live debug session end to end, not just the adapter in isolation.
     test(m"a DAP server drives a live debuggee over stdio"):
       import dynamicAccess.dynamicJson
-      val classpathText = System.properties.java.`class`.path()
+      val classpathText = fixtureClasspath()
 
       supervise:
         dapStdioScenario: client =>
@@ -1232,7 +1233,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // beyond, never resting mid-body.
     test(m"stepping over an inline call skips its body"):
       supervise:
-        val classpathText = System.properties.java.`class`.path()
+        val classpathText = fixtureClasspath()
         val command: Command = sh"java -classpath $classpathText vivisection.Paced"
         val debuggee: Debuggee = Debuggee(command, freePort())
 
@@ -1277,7 +1278,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // the inlined code, as if it were an ordinary method.
     test(m"stepping into an inline body moves through it line by line"):
       supervise:
-        val classpathText = System.properties.java.`class`.path()
+        val classpathText = fixtureClasspath()
         val command: Command = sh"java -classpath $classpathText vivisection.Paced"
         val debuggee: Debuggee = Debuggee(command, freePort())
 
@@ -1333,7 +1334,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // inline frame resolve to the enclosing physical frame.
     test(m"DAP expands an inline stop into subtle and real frames"):
       import dynamicAccess.dynamicJson
-      val classpathText = System.properties.java.`class`.path()
+      val classpathText = fixtureClasspath()
 
       supervise:
         dapScenario: client ?=>
@@ -1430,7 +1431,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // can never block against a full pipe, and a frontend can relay its output.
     test(m"a launch session captures the debuggee's output and exit status"):
       supervise:
-        val classpathText = System.properties.java.`class`.path()
+        val classpathText = fixtureClasspath()
         val command: Command = sh"java -classpath $classpathText vivisection.Recount"
         val debuggee: Debuggee = Debuggee(command, freePort())
 
@@ -1495,7 +1496,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // write resumes automatically and the `100` write is the one observed.
     test(m"a watchpoint reports a field write with its incoming value"):
       supervise:
-        val classpathText = System.properties.java.`class`.path()
+        val classpathText = fixtureClasspath()
         val outcome = Promise[Jdwp.Value]()
         val command: Command = sh"java -classpath $classpathText vivisection.Ledger"
         val debuggee: Debuggee = Debuggee(command, freePort())
@@ -1533,7 +1534,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // the method's entry.
     test(m"a function breakpoint set before class load stops at method entry"):
       supervise:
-        val classpathText = System.properties.java.`class`.path()
+        val classpathText = fixtureClasspath()
         val outcome = Promise[Boolean]()
         val command: Command = sh"java -classpath $classpathText vivisection.Recount"
         val debuggee: Debuggee = Debuggee(command, freePort())
@@ -1552,7 +1553,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // `main`, so a second hit at the same line is proof of the restart.
     test(m"popping the stopped frame re-executes the call on resume"):
       supervise:
-        val classpathText = System.properties.java.`class`.path()
+        val classpathText = fixtureClasspath()
         val outcome = Promise[Int]()
         val hits = java.util.concurrent.atomic.AtomicInteger(0)
         val command: Command = sh"java -classpath $classpathText vivisection.Recount"

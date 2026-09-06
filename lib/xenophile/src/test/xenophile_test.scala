@@ -770,7 +770,7 @@ object Tests extends Suite(m"Xenophile tests"):
     // above are importable by name.
     suite(m"Dynamic completions"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
       def completionsAt(source: Text): List[prophesy.Completion] =

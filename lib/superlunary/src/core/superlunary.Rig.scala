@@ -91,11 +91,8 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
   protected val classloader = classloader0
 
   def classpath(out: Path on Linux): LocalClasspath =
-    val entries = Classpath.Directory(out) :: (classloaders.threadContextClassloader.classpath.match
-      case classpath: LocalClasspath => classpath.entries
-
-      case _ =>
-        unsafely(System.properties.java.`class`.path().as[LocalClasspath]).entries)
+    val entries =
+      Classpath.Directory(out) :: LocalClasspath.of(classloaders.threadContextClassloader).entries
 
     LocalClasspath(entries*)
 

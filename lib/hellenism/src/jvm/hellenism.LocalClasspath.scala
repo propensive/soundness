@@ -78,6 +78,14 @@ object LocalClasspath:
       new LocalClasspath(entries, widened.to[Set])
 
 
+  // The classpath a classloader loads from, when it is a `URLClassLoader` over local entries —
+  // as it is under a host such as fume, which isolates each test suite in one — and otherwise
+  // the `java.class.path` property. This, not the property alone, is what a process launched
+  // to run the same code must be given: under a host, the property names the host's own jars.
+  def of(classloader: Classloader)(using System): LocalClasspath = classloader.classpath match
+    case classpath: LocalClasspath => classpath
+    case _                         => unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+
   def apply
     ( entries: (Classpath.Entry.Directory | Classpath.Entry.Jar | Classpath.Entry.JavaRuntime.type)* )
   :   LocalClasspath =

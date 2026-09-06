@@ -64,13 +64,7 @@ object Bundler:
   // this with its compiled output as an `Emission` and packages it into a self-contained JAR
   // through the `Jar` edge, so the JAR carries the rig's own executor and dependencies.
   def applicationClasspath: LocalClasspath =
-    val entries = classloaders.threadContextClassloader.classpath.match
-      case classpath: LocalClasspath => classpath.entries
-
-      case _ =>
-        unsafely(System.properties.java.`class`.path().as[LocalClasspath]).entries
-
-    LocalClasspath(entries*)
+    LocalClasspath.of(classloaders.threadContextClassloader)
 
 
   private[anthology] def assemble

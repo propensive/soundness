@@ -137,7 +137,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     test(m"typechecked highlighting resolves the type of a val"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
       typeOf(Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib).to(List), t"xs").or(t"")
@@ -145,7 +145,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     test(m"typechecked highlighting reports diagnostics for ill-typed code"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
       Scala.highlight(t"val n: Int = \"oops\"").diagnostics.size
@@ -153,7 +153,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     test(m"no completions are computed without a caret"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
       Scala.highlight(snippet).completions
@@ -161,7 +161,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     test(m"a bare type position completes in-scope types"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
       val source = t"val x: Li"
@@ -170,7 +170,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     test(m"a type application completes in-scope types"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
       val source = t"val x = collection.mutable.Map[Li"
@@ -179,7 +179,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     test(m"a bare term position completes in-scope names"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
       val source = t"val x = Li"
@@ -188,7 +188,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     test(m"completions at a member selection include the type's methods"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
       val source = t"val xs = List(1, 2, 3)\nval y = xs.m"
@@ -197,7 +197,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     test(m"a Dynamic receiver completes through its Completable companion"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
       val source =
@@ -208,7 +208,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     test(m"dynamic completions are filtered by the partial member name"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
       val source =
@@ -222,7 +222,7 @@ object Tests extends Suite(m"Harlequin Tests"):
     suite(m"Elaborations"):
       def elaborationsOf(source: Text, word: Text): scala.List[prophesy.Elaboration] =
         given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
-        given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+        given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
         import highlighting.typecheckedScala
 
         Scala.highlight(source).lines.to[List].stdlib.flatMap(_.stdlib)

@@ -414,3 +414,13 @@ not yet been recorded here.
   or `escapade.io` (and so, transitively, on `escritoire.core`, `dendrology.tree`,
   `iridescence.core` or `turbulence.core`); it depends on `digression.core` directly. A
   downstream module that obtained any of those through `probably` must declare them. (#TBD)
+
+## hellenism
+
+- New: `hellenism.LocalClasspath.of(classloader: Classloader)(using ambience.System): LocalClasspath`
+  — the classpath a `URLClassLoader` loads from, or else the `java.class.path` property. Code that
+  launches a JVM to run its own classes (`sh"java -classpath …"`) should derive the classpath from
+  this, with the classloader of one of its own classes (`Classloader[MyObject.type]`), rather than
+  read the property: under a test-running host such as fume the property names the host's jars.
+  `anthology.Bundler.applicationClasspath` and `superlunary.Rig#classpath` now go through it
+  (same result as before). (#TBD)
