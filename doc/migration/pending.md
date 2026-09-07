@@ -131,21 +131,21 @@ not yet been recorded here.
   `probably.nominative`. `Tag.conversion: Conversion[Name[Tagging], Tag]` lets an `n"…"` literal
   stand as a `Tag`. `Tag` itself is not re-exported by `soundness` (`soundness.Tag` remains
   `honeycomb.Tag`); name it as `probably.Tag`. `Tagging` is re-exported. Neither `nominative` given is brought into scope by `import probably.*` or
-  `import soundness.*`; a suite using `n"…"` literals must import them by name.
+  `import soundness.*`; a suite using `n"…"` literals must import them by name. (#1966)
 - `probably.Test.Id` gained a fifth field `tags: List[Tag] = Nil` after `moniker`; case-class
-  equality, `unapply` and `copy` include it.
+  equality, `unapply` and `copy` include it. (#1966)
 - `probably.test(name: Message)(using Testable, Codepoint): Test.Id` is now
   `test(name: Message, tags: Tag*)(using Testable, Codepoint): Test.Id`, and
   `test(name: Name[Probing], description: Message)(using Testable, Codepoint): Test.Id` is now
   `test(name: Name[Probing], description: Message, tags: Tag*)(using Testable, Codepoint): Test.Id`.
-  Calls without tags are unchanged; a `test(name)(body)` application still resolves.
+  Calls without tags are unchanged; a `test(name)(body)` application still resolves. (#1966)
 - `probably.Selection` gained fields, in order after `constraints`: `tags: List[Set[Text]]`,
   `exclusions: List[Selection]`. The full constructor is now
   `Selection(terms, kinds, constraints, tags, exclusions, listOnly, scale)`; positional
   construction and `unapply` must change. `Selection.trivial` is true only when `tags` and
-  `exclusions` are also empty.
+  `exclusions` are also empty. (#1966)
 - `probably.Selection#admits(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean`
-  is now `admits(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)], tags: List[Tag]): Boolean`.
+  is now `admits(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)], tags: List[Tag]): Boolean`. (#1966)
 - `probably.Selection.parse` now recognises four more term forms: `tag:<t1>,<t2>` (admits a test
   carrying any listed tag; repeated `tag:` terms intersect), `not:<term>` (parsed as a one-term
   `Selection` appended to `exclusions`; a cell any exclusion would admit is rejected, where a
@@ -153,35 +153,35 @@ not yet been recorded here.
   (parsed as `Constraint.Least(axis, lo, inclusive = true)`) and `<axis>=..<hi>` (parsed as
   `Constraint.Most(axis, hi, inclusive = true)`); an empty argument is ignored. Previously
   `tag:x` and `not:x` parsed as name globs, `N=4..` as `Membership(N, {"4.."})`, and `""` as
-  a glob.
+  a glob. (#1966)
 - `probably.Runner#listed: List[(Test.Id, Entry.Kind, Optional[Long])]` is now
   `listed: List[Runner.Scheduled]`, where new
   `Runner.Scheduled(id: Test.Id, kind: Entry.Kind, expected: Optional[Long], axes: List[Axis.Schedule])`
-  has `def tags: List[Tag] = id.tags`.
+  has `def tags: List[Tag] = id.tags`. (#1966)
 - New `probably.Axis.Schedule(spec: Axis.Spec, values: List[Value], least: Optional[Double] = Unset, most: Optional[Double] = Unset)`
   and new `probably.Runner#declare(id: Test.Id, kind: Entry.Kind, axis: Axis.Spec, least: Optional[Double], most: Optional[Double]): Unit`
-  (a listing-mode announcement of an emergent axis's bounds; a no-op otherwise).
+  (a listing-mode announcement of an emergent axis's bounds; a no-op otherwise). (#1966)
 - `probably.TestEvent.TestScheduled(test: Ref, kind: Text, expected: Optional[Long])` is now
   `TestScheduled(test: Ref, kind: Text, expected: Optional[Long], tags: List[Text], axes: List[TestEvent.AxisSchedule])`,
   with new `TestEvent.AxisSchedule(axis: Text, domain: Text, emergent: Boolean, values: List[Text], least: Optional[Double], most: Optional[Double])`
   and `AxisSchedule.of(schedule: Axis.Schedule): AxisSchedule`. The derived BinTEL schema of
   `TestEvent`, and so `probably.Streamer.fingerprint`, changes: a consumer built against the
-  previous layout reports the stream incompatible.
+  previous layout reports the stream incompatible. (#1966)
 
 ## sedentary
 
 - `sedentary.Bench#apply(name: Message)(target, operationSize, iterations, warmups, confidence, baseline, comparison): Bench.Plan`
   is now `apply(name: Message, tags: Tag*)(…same second list…): Bench.Plan`, and
   `sedentary.Bench.Plan` gained a third field `tags: List[Tag]` between `name` and `target`
-  (positional construction and `unapply` must change).
+  (positional construction and `unapply` must change). (#1966)
 - `sedentary.Stress#apply(name: Message)(target, concurrency, sweep, threshold, compliance)(body)`
   is now `apply(name: Message, tags: Tag*)(…)(body)`, and
   `sedentary.Profile#apply(name: Message)(target, frames)(body)` is now
   `apply(name: Message, tags: Tag*)(target, frames)(body)`. Each threads the tags into the
-  `Test.Id` it builds.
+  `Test.Id` it builds. (#1966)
 - `sedentary.Stress#apply` now calls `Runner#declare` with an emergent integral `N` axis bounded
   by `concurrency` (default 1) and the sweep limit before calling `Runner#skip`, so a `--list`
-  of a stress test reports an `N` axis with bounds.
+  of a stress test reports an `N` axis with bounds. (#1966)
 
 ## iridescence
 
