@@ -69,7 +69,7 @@ object StackTrace:
     case class Source
       ( path: Text, owner: Text, name: Text, kind: Kind, code: Optional[Text] = Unset ):
 
-      def definition: Text = if owner.s.isEmpty then name else (owner.s+"."+name.s).tt
+      def definition: Text = if owner.s.isEmpty then name else (owner.s+(".": String)+name.s).tt
 
     // Where a frame's code was written, when the classfile's SMAP (the JSR-45
     // `SourceDebugExtension` attribute) records that it was inlined from another source file: one
@@ -129,12 +129,12 @@ object StackTrace:
       case (msg, frame) =>
         val obj = frame.method.className.s.endsWith("#")
         val drop = if frame.source.absent && obj then 1 else 0
-        val file = " ".repeat(fileWidth - frame.file.s.length).nn+frame.file
+        val file = (" ": String).repeat(fileWidth - frame.file.s.length).nn+frame.file
         val dot = if frame.source.present || obj then ".".tt else "#".tt
         val className = frame.displayClass.s.dropRight(drop)
-        val classPad = " ".repeat(classWidth - className.length).nn.tt
+        val classPad = (" ": String).repeat(classWidth - className.length).nn.tt
         val method = frame.displayMethod
-        val methodPad = " ".repeat(methodWidth - method.s.length).nn.tt
+        val methodPad = (" ": String).repeat(methodWidth - method.s.length).nn.tt
         val line = frame.line.let(_.show).or("?".tt)
         val code = frame.source.let(_.code).lay("".tt)(code => s"\n       $code".tt)
 
@@ -211,7 +211,7 @@ object StackTrace:
       else char(index) match
         case '<' =>
           if
-            (0 until 6).all: offset => char(index + offset) == "<init>".charAt(offset)
+            (0 until 6).all: offset => char(index + offset) == ("<init>": String).charAt(offset)
           then
             buffer.append("ⲛ")
             recur(index + 6)
@@ -221,7 +221,7 @@ object StackTrace:
 
         case 'i' =>
           if
-            (0 until 8).all: offset => char(index + offset) == "initial$".charAt(offset)
+            (0 until 8).all: offset => char(index + offset) == ("initial$": String).charAt(offset)
           then
             buffer.append("ι")
             recur(index + 8)
@@ -231,7 +231,7 @@ object StackTrace:
 
         case 'l' =>
           if
-            (0 until 7).all: offset => char(index + offset) == "lzyINIT".charAt(offset)
+            (0 until 7).all: offset => char(index + offset) == ("lzyINIT": String).charAt(offset)
           then
             buffer.append("ℓ")
             recur(index + 7, true)
@@ -241,7 +241,7 @@ object StackTrace:
 
         case 's' =>
           if
-            (0 until 6).all: offset => char(index + offset) == "super$".charAt(offset)
+            (0 until 6).all: offset => char(index + offset) == ("super$": String).charAt(offset)
           then
             buffer.append("↑")
             recur(index + 6)
@@ -393,7 +393,7 @@ object StackTrace:
         val head = rewritten.s.substring(0, pivot).nn
         val tail = rewritten.s.substring(pivot + 1).nn.dropRight(1)
 
-        (head+"."+sub+tail).tt
+        (head+(".": String)+sub+tail).tt
     else
       rewritten
 

@@ -106,7 +106,7 @@ private def expandTastyTree(tree: Tasty.Tree)(using palette: TastyPalette)
         case (false, false) => palette.typeReference
 
       val text = e"$color(${node.name})"
-      val tag2: Text = if node.tag == ' ' then "▪".tt else "⟨"+node.tag+"⟩"
+      val tag2: Text = if node.tag == ' ' then "▪".tt else ("⟨": String)+node.tag+"⟩"
 
       // The root tile is dropped: it prefixes the tree's own line, which is drawn separately.
       val rest: List[TreeTile] = tiles match
