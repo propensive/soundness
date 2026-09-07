@@ -42,6 +42,10 @@ import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
 import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
+import workingDirectories.javaBaseWorkingDirectory
+import logging.silentLogging
+import threading.platformThreading
+import probates.awaitProbate
 
 object Tests extends Suite(m"Burdock Tests"):
   def run(): Unit =
@@ -468,3 +472,171 @@ object Tests extends Suite(m"Burdock Tests"):
       test(m"the decompressed Deflate payload is preserved"):
         entry(outputJar, t"pkg/Deflated.class").read[Data].utf8
       .assert(_ == t"a"*2000)
+
+    // The bootstrap itself, run as a real JVM against a loopback server: the JAR under test
+    // carries `burdock.Bootstrap`, a `Burdock-Main` probe class, and two requirements whose
+    // "jars" are arbitrary bytes (they are never class-loaded; only their hashes matter).
+    suite(m"Bootstrap (end-to-end)"):
+      import java.net.InetSocketAddress
+      import java.nio.file as jnf
+      import java.security as js
+      import java.util as ju
+      import java.util.jar as juj
+      import java.io as ji
+      import com.sun.net.httpserver as csnh
+
+      val javaBinary: Text = t"${_root_.java.lang.System.getProperty("java.home").nn}/bin/java"
+      val root: Path on Linux = temporaryDirectory[Path on Linux]/t"burdock-boot-${Uuid().show}"
+      jnf.Files.createDirectories(jnf.Paths.get(root.show.s))
+
+      def data(bytes: scala.Array[Byte]): Data = Data.fill(bytes.length)(bytes(_))
+
+      def resource(name: String): scala.Array[Byte] =
+        getClass.nn.getResourceAsStream(name).nn.readAllBytes().nn
+
+      def sha256(bytes: scala.Array[Byte]): Text =
+        ju.HexFormat.of().nn.formatHex(js.MessageDigest.getInstance("SHA-256").nn.digest(bytes).nn).nn.tt
+
+      def exists(path: Text): Boolean = jnf.Files.exists(jnf.Paths.get(path.s))
+
+      def leftovers(cache: Text): Int =
+        val dir = jnf.Paths.get(cache.s, "burdock")
+        if !jnf.Files.isDirectory(dir) then 0
+        else jnf.Files.list(dir).nn.filter(_.nn.getFileName.nn.toString.nn.endsWith(".tmp")).nn.count().toInt
+
+      // Requests are served on a pool (the default executor is one dispatcher thread, which would
+      // serialize them and hide the bootstrap's parallelism), each after a configurable delay,
+      // while counting the peak number in flight.
+      val server = csnh.HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).nn
+      server.setExecutor(juc.Executors.newCachedThreadPool())
+      val inFlight = juca.AtomicInteger()
+      val peak = juca.AtomicInteger()
+      val requests = juca.AtomicInteger()
+      val delayOne = juca.AtomicLong(300)
+      val delayTwo = juca.AtomicLong(300)
+
+      def serve(name: String, bytes: scala.Array[Byte], delay: juca.AtomicLong): Unit =
+        server.createContext("/"+name, { exchange =>
+          requests.incrementAndGet()
+          peak.accumulateAndGet(inFlight.incrementAndGet(), (a, b) => Math.max(a, b))
+          try
+            Thread.sleep(delay.get())
+            exchange.nn.sendResponseHeaders(200, bytes.length)
+            exchange.nn.getResponseBody.nn.write(bytes)
+            exchange.nn.close()
+          finally inFlight.decrementAndGet() })
+
+      val one: scala.Array[Byte] = "dependency one".getBytes("UTF-8").nn
+      val two: scala.Array[Byte] = "dependency two".getBytes("UTF-8").nn
+      serve("one.jar", one, delayOne)
+      serve("two.jar", two, delayTwo)
+      server.start()
+      val port: Int = server.getAddress.nn.getPort
+      val hashOne: Text = sha256(one)
+      val hashTwo: Text = sha256(two)
+
+      val requirements: Text =
+        t"$hashOne:http://127.0.0.1:$port/one.jar $hashTwo:http://127.0.0.1:$port/two.jar"
+
+      def appJar(name: Text, require: Text): Path on Linux =
+        val manifest = juj.Manifest()
+        val attributes = manifest.getMainAttributes.nn
+        attributes.put(juj.Attributes.Name.MANIFEST_VERSION, "1.0")
+        attributes.putValue("Main-Class", "burdock.Bootstrap")
+        attributes.putValue("Burdock-Main", "burdock.Probe")
+        attributes.putValue("Burdock-Verbosity", "error")
+        attributes.putValue("Burdock-Require", require.s)
+        val out = ji.ByteArrayOutputStream()
+        manifest.write(out)
+        val jar: Path on Linux = root/name
+
+        Zipfile.write(jar):
+          ( Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], data(out.toByteArray.nn))
+            #:: Zip.Entry(t"burdock/Bootstrap.class".as[Path on Zip], data(resource("/burdock/Bootstrap.class")))
+            #:: Zip.Entry(t"burdock/Probe.class".as[Path on Zip], data(resource("/burdock/Probe.class")))
+            #:: Chain() ).to[List]
+
+        jar
+
+      val jar: Path on Linux = appJar(t"app.jar", requirements)
+      val cache: Text = t"${root.show}/cache"
+      val progress: Text = t"${root.show}/progress"
+
+      def launch(jar: Path on Linux, cache: Text): Text =
+        sh"env XDG_CACHE_HOME=$cache $javaBinary -Dburdock.progress=$progress -jar $jar".exec[Text]().trim
+
+      def status(jar: Path on Linux, cache: Text): Exit =
+        sh"env XDG_CACHE_HOME=$cache $javaBinary -Dburdock.progress=$progress -jar $jar".exec[Exit]()
+
+      val coldOutput: Text = launch(jar, cache)
+      val coldRequests: Int = requests.get()
+
+      test(m"the application's main class runs after a cold fetch"):
+        coldOutput
+      .assert(_ == t"probe")
+
+      test(m"both requirements are fetched once"):
+        coldRequests
+      .assert(_ == 2)
+
+      test(m"the requirements are cached under XDG_CACHE_HOME"):
+        (exists(t"$cache/burdock/$hashOne.jar"), exists(t"$cache/burdock/$hashTwo.jar"))
+      .assert(_ == (true, true))
+
+      test(m"the downloads overlap"):
+        peak.get()
+      .assert(_ >= 2)
+
+      test(m"no temporary file is left in the cache"):
+        leftovers(cache)
+      .assert(_ == 0)
+
+      test(m"the progress file is removed once fetching completes"):
+        exists(progress)
+      .assert(_ == false)
+
+      val warmOutput: Text = launch(jar, cache)
+
+      test(m"a warm cache makes no requests"):
+        (warmOutput, requests.get() - coldRequests)
+      .assert(_ == (t"probe", 0))
+
+      jnf.Files.write(jnf.Paths.get(t"$cache/burdock/$hashOne.jar".s), "corrupted".getBytes("UTF-8").nn)
+
+      test(m"a corrupted cached requirement is rejected with status 1"):
+        status(jar, cache)
+      .assert(_ == Exit.Fail(1))
+
+      test(m"a malformed requirement exits with status 2"):
+        status(appJar(t"malformed.jar", t"not-a-requirement"), cache)
+      .assert(_ == Exit.Fail(2))
+
+      // With the server slowed down, the progress file can be watched from outside while the
+      // bootstrap runs, which is exactly what Ethereal's launcher does. The two downloads are
+      // staggered so that the position after the first completes persists long enough to be seen.
+      val slowCache: Text = t"${root.show}/slow-cache"
+      delayOne.set(500)
+      delayTwo.set(2500)
+
+      val observed: List[Text] =
+        supervise:
+          val task = async(status(jar, slowCache))
+          var seen: List[Text] = Nil
+          while !task.ready do
+            if exists(progress) then
+              val line: Text = jnf.Files.readString(jnf.Paths.get(progress.s)).nn.tt.trim
+              if line != t"" && !seen.has(line) then seen = line :: seen
+            snooze(0.05*Second)
+          seen.reverse
+
+      test(m"the progress file reports the requirements before any download completes"):
+        observed match
+          case first :: _ => first
+          case _          => t""
+      .assert(_ == t"0 2 0")
+
+      test(m"the progress file reports the first requirement's completion"):
+        observed.exists(_.starts(t"1 2 "))
+      .assert(_ == true)
+
+      server.stop(0)

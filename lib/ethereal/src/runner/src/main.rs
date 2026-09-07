@@ -11,6 +11,7 @@ mod config;
 mod state;
 mod java;
 mod launch;
+mod progress;
 mod protocol;
 mod signals;
 mod tty;
@@ -71,6 +72,7 @@ fn main() {
     let pid_file    = base_dir.join("pid");
     let socket_file = base_dir.join("socket");
     let fail_file   = base_dir.join("fail");
+    let progress_file = base_dir.join("progress");
     debug!("main: base_dir={}", base_dir.display());
 
     // Non-interactive invocations (completions, admin) must not touch the TTY,
@@ -91,18 +93,26 @@ fn main() {
                 debug!("main: acquired lock, launching daemon");
                 launch::launch(
                     &script, &name, &base_dir,
-                    &build_file, &pid_file, &socket_file, &fail_file,
+                    &build_file, &pid_file, &socket_file, &fail_file, &progress_file,
                     &build_config, download,
                 );
                 debug!("main: launch::launch returned");
             }
             None => {
+                // Wait by the same rule as the launcher doing the spawning: a cold
+                // Burdock cache being fetched by that daemon is progress here too.
                 debug!("main: another launcher holds the lock; awaiting socket");
-                if !state::await_socket(&socket_file, 40) {
+                let (outcome, shown) =
+                    launch::await_startup(&socket_file, &fail_file, &progress_file, &name, None);
+                if shown && matches!(outcome, launch::Outcome::Bound) { xeq::done(&name, "Started"); }
+                if !matches!(outcome, launch::Outcome::Bound) {
                     debug!("main: socket did not appear");
                     state::abort(&fail_file);
-                    let reason = "another launcher held the startup lock but bound no socket";
-                    state::report_failure(&base_dir, &name, reason);
+                    let reason = match outcome {
+                        launch::Outcome::Idle(Some(_)) => launch::idle_reason(&outcome),
+                        _ => "another launcher held the startup lock but bound no socket".to_string(),
+                    };
+                    state::report_failure(&base_dir, &name, &reason);
                     state::backout(&fail_file, &pid_file, &name);
                     std::process::exit(1);
                 }

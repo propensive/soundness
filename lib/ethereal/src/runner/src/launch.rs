@@ -1,12 +1,25 @@
 use std::path::Path;
-use std::process::{Command, Stdio};
-use std::time::Duration;
+use std::process::{Child, Command, Stdio};
+use std::time::{Duration, Instant};
 
 use crate::config::BuildConfig;
+use crate::progress::{self, Progress, Watch};
 
 const STARTUP_POLL: Duration = Duration::from_millis(50);
-const STARTUP_MAX_ATTEMPTS: u32 = 200;
+// How long the daemon may go without any sign of progress before it is presumed hung. A
+// Burdock-repackaged application reports its dependency downloads through the `progress` file
+// (see `progress.rs`), and every change to that file restarts this window, so a cold cache on a
+// slow link is not a hang (#1938). Without a progress file the window is simply the old fixed
+// deadline measured from the spawn.
+const STARTUP_IDLE_LIMIT: Duration = Duration::from_secs(10);
 const BUILD_FILE_GRACE_ATTEMPTS: u32 = 20;
+
+pub enum Outcome {
+    Bound,
+    Failed,
+    Exited,
+    Idle(Option<Progress>),
+}
 
 pub fn launch(
     script: &Path,
@@ -16,6 +29,7 @@ pub fn launch(
     pid_file: &Path,
     socket_file: &Path,
     fail_file: &Path,
+    progress_file: &Path,
     config: &BuildConfig,
     download: bool,
 ) {
@@ -36,7 +50,7 @@ pub fn launch(
     let executable = std::env::current_exe().unwrap_or_else(|_| script.to_path_buf());
     let mut command = Command::new(&executable);
     command.arg(crate::WRAP_SENTINEL).arg(&java);
-    for argument in build_java_arguments(script, name, config) { command.arg(argument); }
+    for argument in build_java_arguments(script, name, progress_file, config) { command.arg(argument); }
     // Capture the JVM invocation time as late as possible — after the slow
     // argument-building work (zsh probe, $fpath capture) — so `uptime` in the
     // daemon measures from the moment java is actually spawned, not from when
@@ -61,6 +75,9 @@ pub fn launch(
     // Mark them non-inheritable just before the spawn; the launcher continues
     // to use them normally afterwards.
     mark_stdio_non_inheritable();
+    // A progress file left by a bootstrap that died mid-download would otherwise
+    // count as this daemon's first sign of life.
+    let _ = std::fs::remove_file(progress_file);
     crate::debug!("launch: spawning daemon: {} (wrapper)", executable.display());
 
     let mut child = match command.spawn() {
@@ -76,43 +93,33 @@ pub fn launch(
 
     let _ = std::fs::write(pid_file, format!("{}\n", child.id()));
 
-    let mut attempts = 0;
-    let start = std::time::Instant::now();
-    let mut shown = false;
-    while !crate::state::socket_ready(socket_file)
-        && !fail_file.exists()
-        && attempts < STARTUP_MAX_ATTEMPTS
-    {
-        // If the daemon process exits before its socket appears, it failed during
-        // startup. Stop immediately and signal failure rather than polling out the
-        // full window — or, worse, falling through to connect to a socket that will
-        // never accept (which can block forever).
-        if matches!(child.try_wait(), Ok(Some(_))) && !crate::state::socket_ready(socket_file) {
+    let start = Instant::now();
+    let (outcome, shown) = await_startup(socket_file, fail_file, progress_file, name, Some(&mut child));
+    let _ = std::fs::remove_file(progress_file);
+    crate::debug!("launch: post-poll socket_ready={} fail_exists={}",
+        crate::state::socket_ready(socket_file), fail_file.exists());
+
+    match outcome {
+        Outcome::Bound => (),
+
+        // The daemon process exited before its socket appeared: it failed during startup.
+        Outcome::Exited => {
             crate::debug!("launch: daemon exited during startup, aborting");
             crate::state::abort(fail_file);
             crate::state::report_failure(base_dir, name, "it exited during startup");
             crate::state::backout(fail_file, pid_file, name);
             std::process::exit(1);
         }
-        if !shown && start.elapsed() >= Duration::from_secs(2) {
-            crate::xeq::step(name, "Starting…");
-            shown = true;
-        }
-        std::thread::sleep(STARTUP_POLL);
-        attempts += 1;
-    }
-    crate::debug!("launch: post-poll attempts={} socket_ready={} fail_exists={}",
-        attempts, crate::state::socket_ready(socket_file), fail_file.exists());
 
-    if !crate::state::socket_ready(socket_file) {
-        crate::debug!("launch: socket never appeared, aborting");
-        crate::state::abort(fail_file);
-        let seconds = STARTUP_POLL.as_millis()*u128::from(STARTUP_MAX_ATTEMPTS)/1000;
-        let reason = format!("it did not bind its socket within {seconds}s");
-        crate::state::report_failure(base_dir, name, &reason);
-        crate::state::backout(fail_file, pid_file, name);
-        std::process::exit(1);
+        Outcome::Failed | Outcome::Idle(_) => {
+            crate::debug!("launch: socket never appeared, aborting");
+            crate::state::abort(fail_file);
+            crate::state::report_failure(base_dir, name, &idle_reason(&outcome));
+            crate::state::backout(fail_file, pid_file, name);
+            std::process::exit(1);
+        }
     }
+
     if shown {
         let secs = start.elapsed().as_secs_f64();
         crate::xeq::done(name, &format!("Started in {secs:.1}s"));
@@ -128,7 +135,66 @@ pub fn launch(
     crate::debug!("launch: returning");
 }
 
-fn build_java_arguments(script: &Path, name: &str, config: &BuildConfig) -> Vec<String> {
+// Waits for the daemon to bind its socket, restarting the idle window on every change to the
+// progress file and echoing the bootstrap's position to the terminal. `child` is the daemon
+// process when this launcher spawned it (its exit is then detected immediately rather than at
+// the deadline); a launcher waiting on another launcher's daemon passes `None`. Returns the
+// outcome and whether a status line was shown (so the caller can close it).
+pub fn await_startup(
+    socket_file: &Path,
+    fail_file: &Path,
+    progress_file: &Path,
+    name: &str,
+    mut child: Option<&mut Child>,
+) -> (Outcome, bool) {
+    let start = Instant::now();
+    let mut watch = Watch::new(start);
+    let mut shown = false;
+
+    loop {
+        if crate::state::socket_ready(socket_file) { return (Outcome::Bound, shown); }
+        if fail_file.exists() { return (Outcome::Failed, shown); }
+
+        // If the daemon process exits before its socket appears, stop immediately rather
+        // than polling out the full window — or, worse, falling through to connect to a
+        // socket that will never accept (which can block forever).
+        if let Some(child) = child.as_deref_mut() {
+            if matches!(child.try_wait(), Ok(Some(_))) && !crate::state::socket_ready(socket_file) {
+                return (Outcome::Exited, shown);
+            }
+        }
+
+        let now = Instant::now();
+        let current = progress::read(progress_file);
+
+        if watch.observe(current, now) {
+            if let Some(progress) = current {
+                crate::xeq::step(name, &progress::message(&progress));
+                shown = true;
+            }
+        }
+
+        if watch.expired(now, STARTUP_IDLE_LIMIT) {
+            return (Outcome::Idle(watch.current()), shown);
+        }
+
+        if !shown && start.elapsed() >= Duration::from_secs(2) {
+            crate::xeq::step(name, "Starting…");
+            shown = true;
+        }
+
+        std::thread::sleep(STARTUP_POLL);
+    }
+}
+
+pub fn idle_reason(outcome: &Outcome) -> String {
+    match outcome {
+        Outcome::Idle(Some(progress)) => progress::reason(progress, STARTUP_IDLE_LIMIT),
+        _ => format!("it did not bind its socket within {}s", STARTUP_IDLE_LIMIT.as_secs()),
+    }
+}
+
+fn build_java_arguments(script: &Path, name: &str, progress_file: &Path, config: &BuildConfig) -> Vec<String> {
     let jar_size = std::fs::metadata(script).map(|metadata| metadata.len()).unwrap_or(0);
     let user_name = std::env::var("USER").or_else(|_| std::env::var("USERNAME")).unwrap_or_default();
     let uid: u32 = {
@@ -158,6 +224,8 @@ fn build_java_arguments(script: &Path, name: &str, config: &BuildConfig) -> Vec<
         format!("-Dethereal.jarSize={}", jar_size),
         format!("-Dethereal.command={}", command_path),
         format!("-Dethereal.fpath={}", fpath.trim_end()),
+        // Where a Burdock bootstrap reports its dependency downloads; see `progress.rs`.
+        format!("-Dburdock.progress={}", progress_file.display()),
     ]
 }
 

@@ -1,6 +1,6 @@
-SOURCES := $(wildcard src/java/**/*.java)
+SOURCES := $(wildcard src/boot/**/*.java)
 
 compile: $(SOURCES)
-	javac -d res -Xlint:deprecation src/java/burdock/*.java
+	javac -d res -Xlint:deprecation src/boot/burdock/*.java
 
 .PHONY: compile

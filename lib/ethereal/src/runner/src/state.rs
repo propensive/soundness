@@ -83,10 +83,6 @@ pub fn await_file(path: &Path, max_attempts: u32) -> bool {
     poll_until(path, max_attempts, file_has_content)
 }
 
-pub fn await_socket(path: &Path, max_attempts: u32) -> bool {
-    poll_until(path, max_attempts, socket_ready)
-}
-
 pub fn abort(fail_file: &Path) {
     let _ = File::create(fail_file);
 }
