@@ -219,14 +219,26 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
 
   // Drain the stream into a single immutable value: the explicit, bounded replacement
   // for a Chain's implicit memoization. The result is frozen and freely shareable.
+  //
+  // Each region is copied once, at its exact size, as it passes, and the pieces are joined
+  // once at the end (`Addressable#assemble`): two copies of the output in all, and one when the
+  // stream delivered it in a single region. The growing builder this replaces cost about three
+  // — its doublings sum to twice the output before `build` copies it out — which for a 4 MB
+  // result was 12 MB allocated against the 0.1 MB of the pipeline feeding it.
   def memoize(using buffering: Buffering): medium =
     given stream.addressable.type = stream.addressable
-    val target = stream.addressable.blank(buffering.capacity(stream.addressable.substrate))
+    val pieces = scala.collection.mutable.ArrayBuffer[medium]()
+    var total: Int = 0
 
     drain: region =>
-      range => region.cloneTo(range)(target)
+      range =>
+        pieces += region.materialize(range)
+        total += (range: Interval).size
 
-    stream.addressable.build(target)
+    pieces.length match
+      case 0 => stream.addressable.empty
+      case 1 => pieces(0)
+      case _ => stream.addressable.assemble(pieces.toSeq, total)
 
   // Drain the stream, threading an accumulator through each region: `sweep`'s
   // accumulating counterpart, the terminal end of a pull chain. The operation

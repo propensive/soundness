@@ -37,6 +37,7 @@ import scala.caps
 import java.io as ji
 import java.lang as jl
 
+import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 import scala.reflect.ClassTag
 
@@ -100,6 +101,17 @@ object Addressable:
 
     inline def materialize(storage: scala.Array[Byte], off: Int, len: Int): Data =
       Array.unsafeFrozen(java.util.Arrays.copyOfRange(storage, off, off + len).nn)
+
+    // The pieces are copied once, straight into the array that becomes the value.
+    override def assemble(pieces: sci.Seq[Data], total: Int): Data =
+      val array = new scala.Array[Byte](total)
+      var offset: Int = 0
+
+      pieces.foreach: piece =>
+        System.arraycopy(Array.unsafeJvm(piece), 0, array, offset, piece.length)
+        offset += piece.length
+
+      Array.unsafeFrozen(array)
 
     override inline def backing(value: Data): Optional[scala.Array[Byte]] =
       value.asInstanceOf[scala.Array[Byte]]
@@ -422,6 +434,13 @@ object Addressable:
     inline def materialize(storage: scala.Array[Char], off: Int, len: Int): Text =
       String(storage, off, len).tt
 
+    // `String.join` sizes its result exactly and copies each piece once; a `StringBuilder`
+    // would copy twice (into itself, then out of `toString`), and a `char[]` likewise.
+    override def assemble(pieces: sci.Seq[Text], total: Int): Text =
+      val list = java.util.ArrayList[CharSequence]()
+      pieces.foreach { piece => list.add(piece.s) }
+      String.join("", list).nn.tt
+
     inline def cloneStorage
       (storage: scala.Array[Char], off: Int, len: Int)(target: jl.StringBuilder)
     :   Unit =
@@ -476,6 +495,23 @@ trait Addressable extends Typeclass.Pure, Operable, Targetable:
 
   def materialize(storage: Storage^{caps.any.rd}, off: Int, len: Int): Self
   def cloneStorage(storage: Storage^{caps.any.rd}, off: Int, len: Int)(target: Target): Unit
+
+  // Joins exact-size pieces, in order, into one value of their total length: the terminal of
+  // `memoize`, which prefers this to a growing builder because a builder's doublings sum to
+  // twice the output before `build` copies it out a third time. This default assembles through
+  // fresh storage and `materialize`, copying the pieces twice over; a medium whose value can be
+  // built from its storage in a single copy overrides it.
+  def assemble(pieces: sci.Seq[Self], total: Int): Self =
+    val storage: Storage^ = allocate(total)
+    var offset: Int = 0
+
+    pieces.foreach: piece =>
+      val size = length(piece)
+      copyChunk(piece, 0, storage, offset, size)
+      offset += size
+
+    // Read back through the read-only view once every write is done (cf. `Region`'s casts).
+    materialize(storage.asInstanceOf[Storage], 0, total)
 
   // The value's backing storage, when the medium is immutable and its erased
   // representation *is* its `Storage` type, so a whole chunk can be exposed as

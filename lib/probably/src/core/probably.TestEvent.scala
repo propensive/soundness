@@ -267,6 +267,8 @@ enum TestEvent:
       confidence:    Int,
       operationSize: Optional[Text],
       operationRate: Optional[Text],
+      // Bytes allocated per operation across the timed batches, when the harness measured it.
+      allocation:    Optional[Long],
       timestamp:     Long )
 
   case StrainRecorded

@@ -43,7 +43,6 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.emptyDiagnostics
 
-import threading.virtualThreading
 import probates.cancelProbate
 import Async.nominative
 
@@ -52,7 +51,193 @@ case class BarError(label: Text)(using Diagnostics) extends Error(m"bar failed: 
 
 object Tests extends Suite(m"Parasite tests"):
 
+  // Every behavioural suite runs twice: under the thread-per-task supervisor and under the
+  // pooling one, since the pool must be indistinguishable from a thread per task in every
+  // respect but cost. The pool-specific suites cover what only a pool can get wrong.
   def run(): Unit =
+    suite(m"Virtual threads"):
+      exercise()(using threading.virtualThreading)
+
+    suite(m"Pooled supervisor"):
+      exercise()(using threading.pooledThreading)
+      pooled()(using threading.pooledThreading)
+
+  def pooled()(using Threading, Testable): Unit =
+    supervise:
+      suite(m"Carrier reuse"):
+        test(m"Sequential tasks share a small number of carriers"):
+          val threads = juc.ConcurrentHashMap.newKeySet[Thread]().nn
+          var i = 0
+          while i < 2000 do
+            async(threads.add(Thread.currentThread.nn)).await()
+            i += 1
+          threads.size
+        . assert(_ <= 4)
+
+        test(m"A burst of blocked tasks all complete"):
+          import probates.awaitProbate
+          val gate = Promise[Unit]()
+          val started = juc.CountDownLatch(500)
+          val tasks = (1 to 500).map: i =>
+            async:
+              started.countDown()
+              gate.await()
+              i
+          started.await()
+          gate.fulfill(())
+          tasks.map(_.await()).sum
+        . assert(_ == (1 to 500).sum)
+
+      suite(m"No starvation"):
+        test(m"Deeply nested awaits complete however many carriers are blocked"):
+          def nest(depth: Int): Int = if depth == 0 then 1 else async(nest(depth - 1) + 1).await()
+          nest(300)
+        . assert(_ == 301)
+
+        test(m"Tasks blocked outside park do not stall the pool"):
+          val latch = juc.CountDownLatch(1)
+          val blocked = (1 to 100).map: i =>
+            async:
+              latch.await()
+              i
+          val meanwhile = async(7).await()
+          latch.countDown()
+          meanwhile + blocked.map(_.await()).sum
+        . assert(_ == 7 + (1 to 100).sum)
+
+        test(m"Tasks sleeping on the JDK clock do not stall the pool"):
+          val sleepers = (1 to 50).map: i =>
+            async:
+              Thread.sleep(20)
+              i
+          val meanwhile = async(7).await()
+          meanwhile + sleepers.map(_.await()).sum
+        . assert(_ == 7 + (1 to 50).sum)
+
+      suite(m"Interrupt hygiene"):
+        test(m"A cancelled task's interrupt does not reach the next task on its carrier"):
+          var leaked = 0
+          var round = 0
+          while round < 500 do
+            val gate = Promise[Unit]()
+            val victim = async:
+              gate.await()
+            victim.cancel()
+            safely(victim.await())
+            // The next task very likely lands on the carrier the victim just released.
+            if async(Thread.currentThread.nn.isInterrupted).await() then leaked += 1
+            round += 1
+          leaked
+        . assert(_ == 0)
+
+        test(m"Cancelling a task racing its own completion leaves no stale interrupt"):
+          var leaked = 0
+          var round = 0
+          while round < 2000 do
+            val victim = async(round)
+            victim.cancel()
+            safely(victim.await())
+            if async(Thread.currentThread.nn.isInterrupted).await() then leaked += 1
+            round += 1
+          leaked
+        . assert(_ == 0)
+
+        test(m"A task cancelled before it mounts still settles"):
+          var settled = 0
+          var round = 0
+          while round < 500 do
+            val task = async(round)
+            task.cancel()
+            safely(task.await()).let(_ => ())
+            if task.ready then settled += 1
+            round += 1
+          settled
+        . assert(_ == 500)
+
+        test(m"Cancelling one of two tasks leaves the other running"):
+          val gate = Promise[Unit]()
+          val survivorStarted = Promise[Unit]()
+          val victim = async(gate.await())
+          val survivor = async:
+            survivorStarted.fulfill(())
+            gate.await()
+            42
+          survivorStarted.await()
+          victim.cancel()
+          safely(victim.await())
+          gate.fulfill(())
+          survivor.await()
+        . assert(_ == 42)
+
+      suite(m"Self-cancellation"):
+        test(m"A task cancelling itself releases its carrier"):
+          // Tasks from earlier suites may still be sleeping on carriers, so the invariant is
+          // that this test leaves no more carriers active than it found.
+          val before = PooledSupervisor.active
+          var round = 0
+          while round < 100 do
+            val task: Task[Int] = async:
+              monitor.cancel()
+              42
+            safely(task.await())
+            round += 1
+
+          // Every carrier returns to the idle list once its task has finished; a task stuck in
+          // its own cancellation would hold one for ever.
+          var waited = 0
+          while PooledSupervisor.active > before && waited < 100 do
+            Thread.sleep(10)
+            waited += 1
+          PooledSupervisor.active <= before
+        . assert(_ == true)
+
+        test(m"A task cancelled from outside and inside at once settles and releases"):
+          val before = PooledSupervisor.active
+          var round = 0
+          while round < 100 do
+            val task: Task[Int] = async:
+              monitor.cancel()
+              42
+            task.cancel()
+            safely(task.await())
+            round += 1
+          var waited = 0
+          while PooledSupervisor.active > before && waited < 100 do
+            Thread.sleep(10)
+            waited += 1
+          PooledSupervisor.active <= before
+        . assert(_ == true)
+
+      suite(m"Waking"):
+        test(m"A pooled task wakes a joiner on a platform thread"):
+          val result = juca.AtomicInteger(0)
+          val gate = Promise[Unit]()
+          val task = async:
+            gate.await()
+            5
+          val scope: Monitor = monitor
+          val runnable: Runnable = () => result.set(task.await()(using scope))
+          val joiner = Thread(runnable)
+          joiner.start()
+          Thread.sleep(20)
+          gate.fulfill(())
+          joiner.join()
+          result.get()
+        . assert(_ == 5)
+
+        test(m"Promise waiters on carriers are woken exactly as on threads"):
+          val promise = Promise[Int]()
+          val started = juc.CountDownLatch(50)
+          val tasks = (1 to 50).map: _ =>
+            async:
+              started.countDown()
+              promise.await()
+          started.await()
+          promise.fulfill(9)
+          tasks.map(_.await()).sum
+        . assert(_ == 450)
+
+  def exercise()(using Threading, Testable): Unit =
     supervise:
 
       suite(m"Promise basic state"):
@@ -622,6 +807,46 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"Concurrent on empty stream is empty"):
           Chain[Int]().concurrent.stdlib.to(List)
         . assert(_ == List())
+
+      suite(m"Bounded concurrency"):
+        test(m"Results come back in job order"):
+          concurrently(100, 4)(i => i*i).toList
+        . assert(_ == scala.List.tabulate(100)(i => i*i))
+
+        test(m"No more than `parallelism` jobs run at once"):
+          val running = juca.AtomicInteger(0)
+          val peak = juca.AtomicInteger(0)
+
+          concurrently(64, 3): i =>
+            val now = running.incrementAndGet()
+            peak.accumulateAndGet(now, (a, b) => Math.max(a, b))
+            Thread.sleep(2)
+            running.decrementAndGet()
+            i
+
+          peak.get()
+        . assert(_ == 3)
+
+        test(m"Every job runs exactly once"):
+          val counts = juca.AtomicIntegerArray(200)
+          concurrently(200, 8) { i => counts.incrementAndGet(i) }
+          (0 until 200).forall(counts.get(_) == 1)
+        . assert(_ == true)
+
+        test(m"Zero jobs yields an empty result and starts nothing"):
+          concurrently(0, 8)(i => i).length
+        . assert(_ == 0)
+
+        test(m"Fewer jobs than workers starts only as many tasks as jobs"):
+          concurrently(2, 8)(i => i + 1).toList
+        . assert(_ == scala.List(1, 2))
+
+        test(m"A failing job surfaces its exception at the join"):
+          try
+            concurrently(10, 2) { i => if i == 5 then throw RuntimeException("job 5") else i }
+            "no failure"
+          catch case error: RuntimeException => error.getMessage
+        . assert(_ == "job 5")
 
       suite(m"High contention"):
         test(m"Many concurrent fulfill attempts result in one success"):
@@ -1241,7 +1466,8 @@ object Tests extends Suite(m"Parasite tests"):
             captured.set(monitor.stack)
           task.await()
           val current: Optional[Text] = captured.get().nn
-          current.lay(false)(_.contains(t"virtual"))
+          val expected: Text = summon[Threading].supervisor().name
+          current.lay(false)(_.contains(expected))
         . assert(_ == true)
 
         test(m"Nested workers' stack reflects nesting"):

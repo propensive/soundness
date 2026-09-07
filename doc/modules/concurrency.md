@@ -105,6 +105,22 @@ supervise:
 results says nothing about the order in which they finished. `race` returns the first to finish
 and the rest are canceled, since their results were not wanted.
 
+### Bounded parallelism
+
+A task is a thread, and starting one costs a few microseconds, so a thousand cheap jobs should
+not become a thousand tasks. `concurrently` runs numbered jobs across a fixed number of tasks,
+each taking the next job from a shared counter, and returns the results in job order once every
+task has finished:
+
+```scala
+supervise:
+  concurrently(1000, 8)(i => i*i)   // the squares of 0 to 999, in order, from eight tasks
+```
+
+The spawn cost is paid eight times rather than a thousand, and no job runs before an earlier one
+has been claimed, so the load balances itself: a slow job simply holds its task while the others
+continue through the rest. A job's exception fails the task it ran on and is rethrown at the join.
+
 ### Naming tasks
 
 `task` is `async` with a name, checked as the code compiles against the rules for a task name — no
@@ -278,6 +294,15 @@ threads at all, `javascriptThreading` schedules tasks on the event loop, and the
 *probate*, decides what a scope does with a child that has not finished when the scope ends —
 `cancelProbate` cancels it, `awaitProbate` waits for it — so the policy for tidying up concurrent work
 is explicit rather than assumed.
+
+`pooledThreading` runs tasks on a pool of reusable carrier threads — virtual threads on the JVM,
+platform threads on Scala Native — handing each new task to an idle carrier where one is waiting
+and starting another only where none is. A hand-off costs a few hundred nanoseconds where a thread
+start and join cost a few microseconds, so it suits fine-grained fan-out: a task per element, or a
+spawn and join inside a loop. A task that blocks keeps its carrier and the pool grows, so it can
+never starve, and cancellation is delivered to the task rather than to the carrier. The price is
+that a task no longer has a thread of its own: thread-locals persist across the tasks a carrier
+runs, and a thread dump shows carriers where the monitor tree shows tasks.
 
 An `await` may also be given a duration, after which it raises `Async.Error` rather than waiting
 on, so a task that has taken too long is abandoned at a point the code chooses:

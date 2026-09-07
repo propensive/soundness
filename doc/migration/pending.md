@@ -513,3 +513,60 @@ not yet been recorded here.
   the path of a file the bootstrap keeps updated with one line, `<completed> <total> <bytes>`,
   while fetching, and deletes when done. Ethereal's launcher sets it; a plain `java -jar` run
   writes nothing. (#1938)
+## probably (allocation per operation)
+
+- `probably.TestEvent.BenchmarkRecorded` gains a field `allocation: Optional[Long]` (bytes
+  allocated per operation over the timed batches; `Unset` when the producer did not measure it)
+  between `operationRate` and `timestamp`. Its arity is now 14. The BinTEL schema fingerprint
+  `probably.Streamer.fingerprint` changes accordingly, so a host built against an earlier
+  `probably` reports the suite as incompatible: fume must be rebuilt against this version. (#1969)
+- `probably.Benchmark` gains a trailing parameter `allocation: Optional[Long] = Unset`, and
+  `Benchmark.inclusion` records `Metric.Allocation` (bytes per operation) in the `Run` metrics
+  when it is present. (#1969)
+
+## sedentary
+
+- `sedentary.Bench` constructor changed from `Bench()(using Classloader, Environment)(using BenchmarkDevice)`
+  to `Bench(heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset)(using Classloader, Environment)(using BenchmarkDevice)`,
+  with the same meaning as `Stress`'s parameters: the measurement JVM's fixed heap (`-Xms`/`-Xmx`,
+  default `1g`), its processor count, and its collector (`-XX:+Use<gc>GC`, default `Serial`).
+  `Bench()` is unchanged in behaviour. (#1969)
+- `sedentary.Bench` now measures the bytes allocated across a cell's timed batches (via
+  `com.sun.management.ThreadMXBean#getTotalThreadAllocatedBytes`, so worker and virtual-thread
+  allocation is included) and reports it as `allocation` on `probably.Benchmark` and
+  `TestEvent.BenchmarkRecorded`. The harness's own boxing of each body result into its sink
+  (one box per operation for a primitive result) is included, not subtracted. The staged
+  measurement list returned by a cell has one more trailing element. (#1969)
+
+## zephyrine
+
+- New: `zephyrine.Addressable#assemble(pieces: scala.collection.immutable.Seq[Self], total: Int): Self`,
+  joining exact-size pieces into one value of length `total`. The trait supplies a default
+  through `allocate`/`copyChunk`/`materialize`; the `Data` and `Text` instances override it to
+  copy the pieces once. A custom `Addressable` needs no change. (#1969)
+- `zephyrine.Stream#memoize` now copies each region once at its exact size and joins the pieces
+  with `assemble` (returning a single region's copy directly), instead of appending to a growing
+  builder: for a 4 MB result, about 8 MB allocated rather than 12 MB. The value returned is
+  unchanged. (#1969)
+- `zephyrine.Handoff#take()` and `Handoff#drain(into)` no longer report the ring drained (`null` /
+  `0`) when the producer's `finish()` was observed between the consumer's read of the tail index
+  and its check of the finished flag: the tail is re-read after `done` is seen, so the final item
+  offered before `finish()` is always delivered. Previously a consumer racing the producer's last
+  `offer`/`finish` pair could lose that item (about one hand-off in 10⁵ with both sides on virtual
+  threads). Behaviour in every other interleaving is unchanged. (#1969)
+
+## parasite
+
+- New: `parasite.concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int => result)(using Monitor^, Probate^, Codepoint): IArray[result] raises Async.Error`
+  (also exported as `soundness.concurrently`): runs `job(0)` to `job(count - 1)` across at most
+  `parallelism` tasks pulling indices from a shared counter, and returns the results in index
+  order once all have joined. Prefer it over one `async` per element for a batch of cheap jobs:
+  a task is a virtual thread, so the spawn cost is paid `parallelism` times instead of `count`.
+  A job's exception fails its task and is rethrown at the join. (#1969)
+- New: `parasite.PoolingSupervisor` (abstract; `protected def spawn(runnable: Runnable): Thread`,
+  `protected def idleLimit: Int = 256`), a `ThreadSupervisor` that runs tasks on reusable carrier
+  threads, and `parasite.PooledSupervisor`, its instance over virtual threads on the JVM and
+  platform threads on Scala Native, selected by the new `parasite.threading.pooledThreading`
+  given (all three re-exported from `soundness`). Under it a task's `Thread.currentThread` is a
+  carrier reused across tasks, so thread-locals and thread names are not per-task; cancellation,
+  probates, `Promise` waiting and every other observable behaviour match `virtualThreading`. (#1969)

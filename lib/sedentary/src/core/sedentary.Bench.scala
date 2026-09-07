@@ -66,7 +66,15 @@ import workingDirectories.javaBaseWorkingDirectory
 import denominative.*
 import denominative.dysasymptotics.linearSize
 
-case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice) extends Rig:
+// `heap`, `cpus` and `gc` size and pin the measurement JVM exactly as for `Stress` (see the
+// notes on `BenchmarkDevice#invoke`): the defaults are a fixed 1 GB heap and the Serial collector,
+// which suit single-threaded microbenchmarks; a body that runs a fiber runtime or many virtual
+// threads should ask for `gc = t"G1"` and a heap sized to what the rival's own harness used.
+case class Bench
+  ( heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset )
+  ( using Classloader, Environment )
+  ( using device: BenchmarkDevice )
+extends Rig:
   type Result[output] = output
   type Form = Text
   type Target = Path on Linux
@@ -123,7 +131,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
   protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux]): output =
-    stage.remote: input => unsafely(device.invoke(stage.target, input))
+    stage.remote: input => unsafely(device.invoke(stage.target, input, heap, cpus, gc))
 
 object Bench:
   // The staged measurement harness, shared by every cell of every plan: warmup, doubling
@@ -186,7 +194,10 @@ object Bench:
 
         var rate: Double = d.toDouble/count
         count = math.max(1L, (${Expr(batch)}/rate).toLong)
-        val result = new scala.Array[Long](${Expr(iterations)} + 1)
+
+        // `count`, then `iterations` batch timings, then the bytes allocated across the timed
+        // batches (see below).
+        val result = new scala.Array[Long](${Expr(iterations)} + 2)
 
         // Warmup / calibration: run `warmups` full-count batches, adjusting
         // count run-by-run so it converges on the batch target, then pick the
@@ -209,6 +220,19 @@ object Bench:
 
         result(0) = count
 
+        // Allocation over the timed batches, from `getTotalThreadAllocatedBytes` (JDK 21+, as
+        // `Stress` uses it): it accumulates over terminated threads too, and a virtual thread's
+        // allocation is attributed to its carrier, so a body which forks its own workers or
+        // fibers is still fully accounted. The harness's own contribution is the boxing of each
+        // body result into the sink (a primitive result costs one box per operation); it is
+        // deliberately not subtracted, so the figure is a measurement and not an estimate.
+        val threadMx =
+          java.lang.management.ManagementFactory.getThreadMXBean.nn
+          . asInstanceOf[com.sun.management.ThreadMXBean]
+
+        jl.System.gc()
+        val allocated0 = threadMx.getTotalThreadAllocatedBytes
+
         var m = 1
         while m <= ${Expr(iterations)} do
           // Trigger a young-gen collection between runs so a GC pause is less
@@ -221,6 +245,8 @@ object Bench:
           val t1 = jl.System.nanoTime - t0
           result(m) = t1
           m += 1
+
+        result(${Expr(iterations)} + 1) = threadMx.getTotalThreadAllocatedBytes - allocated0
 
         if jl.System.nanoTime < 0L then jl.System.err.nn.println(sink.get)
 
@@ -236,9 +262,12 @@ object Bench:
   :   Benchmark =
 
     val sample: Long = results0.stdlib(0)
-    val results = results0.stdlib.drop(1)
+    val results = results0.stdlib.drop(1).take(runs)
+    val allocated: Long = results0.stdlib(runs + 1)
     val total = results.sum
     val count = sample*runs
+    // Bytes per operation, rounded to the nearest byte; a body allocating nothing reports 0.
+    val allocation: Long = math.round(allocated.toDouble/count.toDouble)
     val sampleMean0 = results.map(_.toDouble/sample).mean
     val sampleMean = sampleMean0.or(0.0)
     val sum = results.map(_.toDouble/sample - sampleMean).bi.map(_*_).sum
@@ -254,7 +283,7 @@ object Bench:
 
     Benchmark
       ( total, count, runs, total.toDouble/count, min, max, sd, confidence,
-        operationSizeText, operationRateText )
+        operationSizeText, operationRateText, allocation )
 
   case class Plan
     ( bench:         Bench,
