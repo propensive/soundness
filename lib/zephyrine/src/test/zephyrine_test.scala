@@ -987,6 +987,20 @@ object Tests extends Suite(m"Zephyrine tests"):
           small.stream.viaDuct(Doubler()).memoize.to[List]
         . assert(_ == (small.to[List]: List[Byte]).flatMap { byte => proscenium.List(byte, byte) })
 
+        test(m"memoize of a single-region stream returns that region's copy"):
+          Stream(Iterator(Array[Byte](7, 8, 9))).memoize.to[List]
+        . assert(_ == List(7.toByte, 8.toByte, 9.toByte))
+
+        test(m"memoize assembles many regions in order at their total length"):
+          val pieces = Iterator.tabulate(50) { i => Array.fill[Byte](1000 + i)(i.toByte) }
+          val value = Stream(pieces).memoize
+          (value.length, value.readUnchecked(0), value.readUnchecked(value.length - 1))
+        . assert(_ == (50*1000 + 49*50/2, 0.toByte, 49.toByte))
+
+        test(m"memoize of a boxed stream assembles through the default path"):
+          Stream(Iterator(Array[Text](t"a", t"b"), Array[Text](t"c"))).memoize.to[List]
+        . assert(_ == List(t"a", t"b", t"c"))
+
         test(m"memoize drains a text stream into a single text value"):
           Stream(Iterator(t"ab", t"cd", t"e")).memoize.s
         . assert(_ == "abcde")

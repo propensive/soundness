@@ -540,6 +540,14 @@ not yet been recorded here.
 
 ## zephyrine
 
+- New: `zephyrine.Addressable#assemble(pieces: scala.collection.immutable.Seq[Self], total: Int): Self`,
+  joining exact-size pieces into one value of length `total`. The trait supplies a default
+  through `allocate`/`copyChunk`/`materialize`; the `Data` and `Text` instances override it to
+  copy the pieces once. A custom `Addressable` needs no change.
+- `zephyrine.Stream#memoize` now copies each region once at its exact size and joins the pieces
+  with `assemble` (returning a single region's copy directly), instead of appending to a growing
+  builder: for a 4 MB result, about 8 MB allocated rather than 12 MB. The value returned is
+  unchanged.
 - `zephyrine.Handoff#take()` and `Handoff#drain(into)` no longer report the ring drained (`null` /
   `0`) when the producer's `finish()` was observed between the consumer's read of the tail index
   and its check of the finished flag: the tail is re-read after `done` is seen, so the final item
