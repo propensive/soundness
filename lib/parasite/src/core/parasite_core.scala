@@ -58,6 +58,9 @@ package threading:
   given platformThreading: Threading = () => PlatformSupervisor
   given virtualThreading: Threading = () => VirtualSupervisor
   given adaptiveThreading: Threading = () => AdaptiveSupervisor
+  // Tasks on reusable carrier threads (see `PoolingSupervisor`): for fine-grained fan-out,
+  // where a thread start per task would dominate.
+  given pooledThreading: Threading = () => PooledSupervisor
 
   // The model for Scala.js (issue #1450): tasks run eagerly at `fork`, so structured
   // gather-style concurrency works on the event loop, with the limitations documented on

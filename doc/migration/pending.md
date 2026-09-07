@@ -555,3 +555,10 @@ not yet been recorded here.
   order once all have joined. Prefer it over one `async` per element for a batch of cheap jobs:
   a task is a virtual thread, so the spawn cost is paid `parallelism` times instead of `count`.
   A job's exception fails its task and is rethrown at the join.
+- New: `parasite.PoolingSupervisor` (abstract; `protected def spawn(runnable: Runnable): Thread`,
+  `protected def idleLimit: Int = 256`), a `ThreadSupervisor` that runs tasks on reusable carrier
+  threads, and `parasite.PooledSupervisor`, its instance over virtual threads on the JVM and
+  platform threads on Scala Native, selected by the new `parasite.threading.pooledThreading`
+  given (all three re-exported from `soundness`). Under it a task's `Thread.currentThread` is a
+  carrier reused across tasks, so thread-locals and thread names are not per-task; cancellation,
+  probates, `Promise` waiting and every other observable behaviour match `virtualThreading`.

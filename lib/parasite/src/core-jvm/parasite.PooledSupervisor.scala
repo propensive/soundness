@@ -32,36 +32,13 @@
                                                                                                   */
 package parasite
 
-import anticipation.*
 import nomenclature.*
-import vacuous.*
 
 import Async.nominative
 
-// The Scala Native twins of the JVM virtual-thread supervisors. Scala Native has no Loom, so
-// both fork platform threads — keeping `supervisors.virtual`/`supervisors.adaptive` (and the
-// `Threading` givens) source-compatible: `adaptive` degrades exactly as it does on a pre-Loom
-// JVM, and `virtual` is a request for cheap concurrency, honoured with the cheapest available.
-
-object VirtualSupervisor extends ThreadSupervisor:
-  def name: Name[Async] = n"virtual"
-
-  def fork(name: () => Optional[Text])(block: => Unit): Strand =
-    PlatformSupervisor.fork(name)(block)
-
-object AdaptiveSupervisor extends ThreadSupervisor:
-  def name: Name[Async] = n"adaptive"
-
-  def fork(name: () => Optional[Text])(block: => Unit): Strand =
-    PlatformSupervisor.fork(name)(block)
-
-// The pooling supervisor over platform threads: with no Loom, reusing a thread across tasks
-// is the only way a task can cost less than a thread start, so this is where the pool matters
-// most. A task which blocks holds a platform thread until it continues.
+// The JVM pooling supervisor: its carriers are virtual threads, so a task which blocks its
+// carrier costs nothing more than a parked virtual thread, and a burst of blocked tasks grows
+// the pool without occupying platform threads.
 object PooledSupervisor extends PoolingSupervisor:
   def name: Name[Async] = n"pooled"
-
-  protected def spawn(runnable: Runnable): Thread =
-    val thread = new Thread(runnable)
-    thread.start()
-    thread
+  protected def spawn(runnable: Runnable): Thread = Thread.ofVirtual().nn.start(runnable).nn

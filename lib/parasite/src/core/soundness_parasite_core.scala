@@ -37,14 +37,14 @@ export
   . { AdaptiveSupervisor, async, Async, cancel, Probate, Daemon, daemon, delay,
       Destruction, Fault, Fulfillment, hibernate, Hook, intercept,
       Interceptable, JavascriptSupervisor, Monitor, monitor, Observation, Os, Perseverance,
-      PlatformSupervisor, Promise,
+      PlatformSupervisor, PooledSupervisor, PoolingSupervisor, Promise,
       relent, retry, Shutdown, sleep, snooze, Strand, supervise, Supervisor, Task, task,
       Tenacity, Threading, Timeout, Transgression, contain, Containment, VirtualSupervisor, Worker,
       AsyncTactic, Remedy, concurrent, concurrently }
 
 package threading:
   export parasite.threading.{adaptiveThreading, javascriptThreading, platformThreading,
-      virtualThreading}
+      pooledThreading, virtualThreading}
 
 package probates:
   export parasite.probates.{awaitProbate, cancelProbate, failProbate, panicProbate}

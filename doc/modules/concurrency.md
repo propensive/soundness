@@ -295,6 +295,15 @@ threads at all, `javascriptThreading` schedules tasks on the event loop, and the
 `cancelProbate` cancels it, `awaitProbate` waits for it — so the policy for tidying up concurrent work
 is explicit rather than assumed.
 
+`pooledThreading` runs tasks on a pool of reusable carrier threads — virtual threads on the JVM,
+platform threads on Scala Native — handing each new task to an idle carrier where one is waiting
+and starting another only where none is. A hand-off costs a few hundred nanoseconds where a thread
+start and join cost a few microseconds, so it suits fine-grained fan-out: a task per element, or a
+spawn and join inside a loop. A task that blocks keeps its carrier and the pool grows, so it can
+never starve, and cancellation is delivered to the task rather than to the carrier. The price is
+that a task no longer has a thread of its own: thread-locals persist across the tasks a carrier
+runs, and a thread dump shows carriers where the monitor tree shows tasks.
+
 An `await` may also be given a duration, after which it raises `Async.Error` rather than waiting
 on, so a task that has taken too long is abandoned at a point the code chooses:
 
