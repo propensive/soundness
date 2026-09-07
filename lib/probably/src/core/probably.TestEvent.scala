@@ -185,6 +185,33 @@ object TestEvent:
       metrics.to[List].map: (entry: (Metric, Double)) =>
         MetricValue(entry(0).toString.tt, entry(1))
 
+  // One axis of a scheduled test: the `Axis.Spec` fields, the labels of the values of the
+  // admitted cells (`Value#text`, in first-appearance order; none for an emergent axis) and,
+  // for an emergent axis with declared bounds, the least and greatest values the run will
+  // produce.
+  case class AxisSchedule
+    ( axis:     Text,
+      domain:   Text,
+      emergent: Boolean,
+      values:   List[Text],
+      least:    Optional[Double],
+      most:     Optional[Double] )
+
+  object AxisSchedule:
+    def of(schedule: Axis.Schedule): AxisSchedule =
+      val domain = schedule.spec.domain match
+        case Axis.Domain.Discrete => t"discrete"
+        case Axis.Domain.Integral => t"integral"
+        case Axis.Domain.Decimal  => t"decimal"
+
+      AxisSchedule
+        ( schedule.spec.label,
+          domain,
+          schedule.spec.emergent,
+          schedule.values.map(_.text),
+          schedule.least,
+          schedule.most )
+
   def kindName(kind: Entry.Kind): Text = kind match
     case Entry.Kind.Check   => t"check"
     case Entry.Kind.Bench   => t"bench"
@@ -196,8 +223,15 @@ enum TestEvent:
   // consumer can pre-render every expected row and fill it in as results arrive. For the
   // timed kinds, `expected` estimates (from declared metadata, in nanoseconds, under any
   // `--scale` in force) how long the test will spend measuring, so a host can budget a
-  // whole run before staging anything; plain checks carry no estimate.
-  case TestScheduled(test: TestEvent.Ref, kind: Text, expected: Optional[Long])
+  // whole run before staging anything; plain checks carry no estimate. `tags` are the
+  // test's declared tags and `axes` its axes with the values (or bounds) of the admitted
+  // cells, from which a host can complete `tag:` terms and axis constraints.
+  case TestScheduled
+    ( test:     TestEvent.Ref,
+      kind:     Text,
+      expected: Optional[Long],
+      tags:     List[Text],
+      axes:     List[TestEvent.AxisSchedule] )
 
   case SuiteStarted(suite: TestEvent.Ref, timestamp: Long)
   case SuiteEnded(suite: TestEvent.Ref, timestamp: Long)

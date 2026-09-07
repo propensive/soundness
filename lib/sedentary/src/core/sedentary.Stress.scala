@@ -108,7 +108,7 @@ extends Rig:
 
 
   inline def apply[duration: Abstractable across Durations to Long, report]
-    ( name: Message )
+    ( name: Message, tags: Tag* )
     ( target:      duration,
       concurrency: Optional[Int]      = Unset,
       sweep:       Optional[Int]      = Unset,
@@ -434,7 +434,17 @@ extends Rig:
     // Every step lands under the SAME test id: the probed concurrency is a coordinate on
     // the test's emergent `N` axis (supplied by `Strain`'s inclusion), so a sweep's steps
     // accumulate as cells of one entry rather than as separately-named tests.
-    val testId = Test.Id(name, suite, codepoint)
+    val testId = Test.Id(name, suite, codepoint, Unset, tags.to(List))
+
+    // For a listing: the emergent `N` axis, bounded by the starting and maximum worker
+    // counts, so a host can offer `N=<lo>..<hi>` constraints before any cell exists. (The
+    // same spec `Strain`'s inclusion attaches to each measurement.)
+    runner.declare
+      ( testId,
+        Entry.Kind.Stress,
+        Axis.Spec(t"N", Axis.Domain.Integral, emergent = true),
+        start.toDouble,
+        limit.toDouble )
 
     // The expected measuring time: one window per concurrency step, so a plain stress is a
     // single (scaled) target and a sweep or capacity search is bounded by a doubling ascent

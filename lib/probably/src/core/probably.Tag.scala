@@ -33,81 +33,35 @@
 package probably
 
 import anticipation.*
-import chiaroscuro.*
-import digression.*
-import fulminate.*
 import gossamer.*
-import hypotenuse.*
 import nomenclature.*
 import prepositional.*
-import symbolism.*
-import vacuous.*
+import rudiments.*
+import spectacular.*
 
-// The default four-decimal-place rendering for numeric comparisons, imported
-// decisively rather than silently supplied by `import probably.*`.
-package decimalizers:
-  given fourDecimalPlaces: Decimalizer = Decimalizer(4)
+// The naming plane for tags: `Name[Tagging]`. A tag is constrained to identifier characters
+// and `-`, so it can be typed unquoted on a command line (`tag:slow`, `not:tag:network`)
+// and completed by a shell without escaping.
+object Tagging:
+  inline given nominative: Tagging is Nominative under MustMatch["[A-Za-z_][A-Za-z0-9_-]*"] = !!
 
-export Baseline.Compare.{Min, Mean, Max}
-export Baseline.Metric.{Cadential, Temporal}
-export Baseline.Mode.{Arithmetic, Geometric}
+sealed trait Tagging
 
-// Exported at package level so that `n"…"` moniker and tag literals work wherever probably is
-// imported, without a separate `import Probing.nominative` in every suite. Both planes are in
-// scope together, so a literal valid in both (`n"slow"`) infers to their intersection and is
-// usable as either; one with a `-` (`n"no-network"`) is a tag alone.
-export Probing.nominative
-export Tagging.{nominative as taggingNominative}
+object Tag:
+  given showable: Tag is Showable = _.text
+  given inspectable: Tag is Inspectable = tag => t"Tag(${tag.text})"
 
-// The checking vocabulary now lives in `anticipation.check`, so that modules which only need to
-// compare values (notably `quantitative`) do not depend on the test framework. It is re-exported
-// here so that `import probably.*` still provides it.
-export anticipation.{!==, +/-, ===, Checkable, Tolerance, ±}
+  // A validated name IS a tag wherever a tag is expected: `test(m"…", n"slow")` reads as it
+  // should, with the literal checked at compile time against the `Tagging` rule. (With
+  // `Probing`'s plane also in scope, a literal that is a valid Java identifier infers to the
+  // intersection of the two planes, which is a `Name[Tagging]` by covariance.)
+  given conversion: Conversion[Name[Tagging], Tag] = Tag(_)
 
-
-// Declares a test by its description, optionally with tags (`test(m"…", n"slow", n"network")`)
-// by which a selection can admit or exclude it.
-def test[report](name: Message, tags: Tag*)(using suite: Testable, codepoint: Codepoint)
-:   Test.Id =
-
-  Test.Id(name, suite, codepoint, Unset, tags.to(List))
-
-// Declares a test with a stable moniker (a compile-time-checked Java identifier) alongside
-// its description. The moniker addresses the test in selections and charts, independently
-// of edits to the description.
-def test[report](name: Name[Probing], description: Message, tags: Tag*)
-  ( using suite: Testable, codepoint: Codepoint )
-:   Test.Id =
-
-  Test.Id(description, suite, codepoint, name, tags.to(List))
-
-
-def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
-  ( block: Testable ?=> Unit )
-:   Unit =
-
-  runner.suite(Testable(name, suite), block)
-
-
-def suite[report](name: Name[Probing], description: Message)
-  ( using suite: Testable, runner: Runner[report] )
-  ( block: Testable ?=> Unit )
-:   Unit =
-
-  runner.suite(Testable(description, suite, name), block)
-
-
-package harnesses:
-  given threadLocalHarness: Harness:
-    private val delegate: Option[Harness] =
-      Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
-
-    override def capture[value: Decomposable](name: Text, value: value): value =
-      delegate.map(_.capture[value](name, value)).getOrElse(value)
-
-package autopsies:
-  given contrastAutopsy: Autopsy:
-    type Analyse = true
-
-  given noAutopsy: Autopsy:
-    type Analyse = false
+// A label on a test, benchmark, stress test or profile, orthogonal to its name, moniker and
+// kind: `slow`, `network`, `nightly`. A selection admits by tag (`tag:slow,network`: any of)
+// and excludes by tag (`not:tag:slow`), and a host can enumerate the tags a classpath carries.
+// Its own type rather than a bare `Text`, so a declaration cannot mistake a description for a
+// tag, and validated at compile time through nomenclature, like a moniker. An `into` type, so
+// a `Name[Tagging]` literal is accepted directly (via `Tag.conversion`).
+into case class Tag(name: Name[Tagging]):
+  def text: Text = name

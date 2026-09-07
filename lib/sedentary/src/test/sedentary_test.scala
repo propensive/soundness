@@ -34,21 +34,69 @@ package sedentary
 
 import soundness.*
 
+// A wildcard import brings no givens: the `n"…"` literal's plane inference needs the
+// moniker and tag planes' `Nominative`s in lexical scope, by name.
+import soundness.{nominative, taggingNominative}
+
 import classloaders.threadContextClassloader
 import environments.javaBaseEnvironment
 import strategies.throwUnsafely
 import superlunary.embeddings.automaticEmbedding
 import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
+import threading.platformThreading
 
 given BenchmarkDevice = LocalhostDevice
 
 enum Summation:
   case Loop, Formula
 
+// A runner in LISTING mode: `skip` records rather than runs, so no measurement JVM is ever
+// staged, and nothing is reported.
+def listing(): Runner[Unit] =
+  given reporter: Reporter[Unit] = new Reporter[Unit]:
+    def report(): Unit = ()
+    def fail(report: Unit, error: Throwable, active: Set[Test.Id]): Unit = ()
+    def declare(report: Unit, suite: Testable): Unit = ()
+    def complete(report: Unit): Unit = ()
+
+  Runner(probably.Selection.parse(List(t"--list")))
+
 object Tests extends Suite(m"Sedentary Tests"):
   def run(): Unit =
     val bench = Bench()
+
+    test(m"a listing reports a biaxial benchmark's tags and axis values"):
+      given runner: Runner[Unit] = listing()
+      given benchmarks: Inclusion[Unit, Benchmark] = (_, _, _, _) => ()
+      given anchors: Inclusion[Unit, Anchor] = (_, _, _, _) => ()
+
+      bench(m"grid", n"slow")(target = 50*Milli(Second))
+      . over(Axis(t"x")(1, 2), Axis(t"y")(10, 20)):
+          case (x, y) => '{$x + $y}
+
+      runner.listed.map: row =>
+        ( row.kind,
+          row.tags.map(_.text),
+          row.axes.map { axis => (axis.spec.label, axis.values.map(_.text)) } )
+    . assert:
+        _ == List
+          ( ( probably.Entry.Kind.Bench,
+              List(t"slow"),
+              List((t"x", List(t"1", t"2")), (t"y", List(t"10", t"20"))) ) )
+
+    test(m"a listing reports a stress sweep's emergent axis with its bounds"):
+      given runner: Runner[Unit] = listing()
+      given strains: Inclusion[Unit, Strain] = (_, _, _, _) => ()
+
+      Stress()(m"sweep", n"heavy")(target = 50*Milli(Second), concurrency = 2, sweep = 16):
+        '{1 + 1}
+
+      runner.listed.map: row =>
+        ( row.kind,
+          row.tags.map(_.text),
+          row.axes.map { axis => (axis.spec.label, axis.spec.emergent, axis.least, axis.most) } )
+    . assert(_ == List((probably.Entry.Kind.Stress, List(t"heavy"), List((t"N", true, 2.0, 16.0)))))
 
     // The run-length multiplier a host passes as `--scale=<factor>`, applied to a declared
     // target. Checked directly rather than through a measurement: what a scaled benchmark

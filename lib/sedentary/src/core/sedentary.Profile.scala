@@ -84,7 +84,7 @@ extends Rig:
 
 
   inline def apply[duration: Abstractable across Durations to Long, report]
-    ( name: Message )
+    ( name: Message, tags: Tag* )
     ( target: duration, frames: Optional[Int] = Unset )
     ( body0: (References over Transport) ?=> Quotes ?=> Expr[Any] )
     ( using System, TemporaryDirectory, Stageable over Transport in Form )
@@ -94,7 +94,7 @@ extends Rig:
             codepoint: Codepoint )
   :   Unit raises Compiler.Error raises Rig.Error =
 
-    val testId = Test.Id(name, suite, codepoint)
+    val testId = Test.Id(name, suite, codepoint, Unset, tags.to(List))
     val frames0: Optional[Int] = frames
     val frames2: Int = frames0.or(25)
 

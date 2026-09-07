@@ -118,8 +118,14 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
       try
         runner.suite(testableView, run())
 
-        runner.listed.each: (id, kind, expected) =>
-          sink(TestEvent.TestScheduled(TestEvent.Ref.of(id), TestEvent.kindName(kind), expected))
+        runner.listed.each: scheduled =>
+          sink:
+            TestEvent.TestScheduled
+              ( TestEvent.Ref.of(scheduled.id),
+                TestEvent.kindName(scheduled.kind),
+                scheduled.expected,
+                scheduled.tags.map(_.text),
+                scheduled.axes.map(TestEvent.AxisSchedule.of(_)) )
 
         0
       catch case error: Throwable => 2
