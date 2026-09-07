@@ -414,6 +414,15 @@ not yet been recorded here.
   signature).
 - `ethereal.core` now depends on `stratiform.binary` (and so on `stratiform.core`,
   `stratiform.base256` and `ulysses.core`).
+- The launcher's startup deadline is now an *idle* limit: the daemon must bind its socket
+  within 10 s of the last change to the `progress` file in its state directory, rather than
+  within 10 s of being spawned. The launcher passes `-Dburdock.progress=<state dir>/progress`
+  to the JVM; a Burdock bootstrap fetching a cold cache writes its position there, the
+  launcher shows `Fetching dependencies n/N (size)…` while it waits, and the failure report
+  names the download in flight (`it was still fetching dependency 35 of 128 … after 10s
+  without progress`). A second launcher waiting on another launcher's startup follows the
+  same rule (previously a fixed 4 s). This is a change to the Rust runner: rebuild stubs
+  (`make runners-build`) or use a `runners-<version>` release carrying it. (#1938)
 
 ## probably (fume takes over running and reporting)
 
@@ -489,3 +498,18 @@ not yet been recorded here.
   `hellenism.classloaders.systemClassloader`, and `superlunary.Rig#classpath` derives its entries
   from `Classloader[Rig]` rather than the thread-context classloader. Identical in a plain
   `java -cp` process; differs only when the rig is loaded by a non-system classloader. (#1963)
+
+## burdock
+
+- `burdock.Bootstrap` (the runtime class a repackaged JAR starts with) downloads its
+  `Burdock-Require` dependencies concurrently (up to eight at a time) instead of one after
+  another, applies connect/read timeouts to each download, and cleans up its temporary file
+  on failure; classpath order is unchanged. A malformed `Burdock-Require` item exits with
+  status 2 and a message instead of a stack trace. (#1938)
+- `burdock.Bootstrap` now honours `XDG_CACHE_HOME`: the cache is `$XDG_CACHE_HOME/burdock`
+  when the variable is set and non-empty, else `~/.cache/burdock`. Previously a set variable
+  made it use a `burdock` directory relative to the working directory. (#1938)
+- `burdock.Bootstrap` reads the optional `burdock.progress` system property: when set, it is
+  the path of a file the bootstrap keeps updated with one line, `<completed> <total> <bytes>`,
+  while fetching, and deletes when done. Ethereal's launcher sets it; a plain `java -jar` run
+  writes nothing. (#1938)

@@ -92,9 +92,12 @@ def mytool(): Unit = externalize:
 
 Repackaging then splits the JAR: dependencies whose hashes resolve to published artifacts are
 replaced by URL-and-hash references, and only unpublished code stays inlined. The resulting thin
-JAR carries a small bootstrap that, on first run, downloads each requirement, verifies its hash,
-caches it, and launches — so the artifact that users download is the application, and the
-dependencies arrive once, verified, from where they already live.
+JAR carries a small bootstrap that, on first run, downloads the requirements (several at a
+time), verifies each hash, caches it in `~/.cache/burdock` (or under `$XDG_CACHE_HOME`), and
+launches — so the artifact that users download is the application, and the dependencies arrive
+once, verified, from where they already live. When the application is an Ethereal daemon, the
+bootstrap reports its progress to the launcher, which shows it and waits for as long as the
+downloads keep advancing.
 
 Hashes are resolved against Maven Central through deps.dev. There is no such global index for
 GitHub releases, but a repository's releases can be listed one at a time, so the repackager

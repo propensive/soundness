@@ -1018,3 +1018,88 @@ object Tests extends Suite(m"Ethereal Tests"):
         . assert(_ == Exit.Ok)
 
       sh"rm -rf $brokenStateDir".exec[Unit]()
+
+      // A daemon that stands in for a Burdock bootstrap on a cold cache: before binding its
+      // socket it keeps the launcher's progress file advancing for longer than the launcher's
+      // 10s idle limit, so it may only start if that limit is measured from the last change
+      // to the file (#1938). The stalled control binds just as late but reports nothing, and
+      // must still be abandoned.
+      val progressStateDir: Path on Local =
+        Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"prgrs"
+
+      val stalledStateDir: Path on Local =
+        Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"stald"
+
+      val progressExe: Path on Linux = Enclave("prgrs").dispatch:
+        ' {
+            import executives.completionsExecutive
+            import interpreters.posixInterpreter
+
+            val progress: String | Null = jl.System.getProperty("burdock.progress")
+
+            if jl.System.getProperty("ethereal.name") != null && progress != null then
+              val path = _root_.java.nio.file.Paths.get(progress).nn
+              val deadline = jl.System.currentTimeMillis + 13000
+              var bytes: Long = 0
+
+              while jl.System.currentTimeMillis < deadline do
+                bytes += 4096
+                _root_.java.nio.file.Files.writeString(path, "0 1 "+bytes+"\n")
+                jl.Thread.sleep(500)
+
+              _root_.java.nio.file.Files.deleteIfExists(path)
+
+            cli:
+              arguments match
+                case _ => execute(Out.print(if progress == null then t"" else progress.tt) yet Exit.Ok)
+
+            t"finished"
+          }
+      . path
+
+      val stalledExe: Path on Linux = Enclave("stald").dispatch:
+        ' {
+            import executives.completionsExecutive
+            import interpreters.posixInterpreter
+
+            if jl.System.getProperty("ethereal.name") != null then jl.Thread.sleep(13000)
+
+            cli:
+              arguments match
+                case _ => execute(Out.print(t"stalled") yet Exit.Ok)
+
+            t"finished"
+          }
+      . path
+
+      // Staging a launcher runs it once, so each test below first kills whatever that left
+      // behind and wipes its state: the cold start under test must be the test's own.
+      def coldStart(name: Text, stateDir: Path on Local): Unit =
+        safely(sh"pkill $name".exec[Exit]())
+        snooze(0.3*Second)
+        sh"rm -rf $stateDir".exec[Unit]()
+
+      suite(m"Startup progress"):
+        test(m"a daemon reporting progress may take longer than the idle limit to bind"):
+          coldStart(t"prgrs", progressStateDir)
+          sh"$progressExe hello".exec[Text]()
+        . assert(_ == t"$progressStateDir/progress")
+
+        test(m"the progress file is gone once the daemon has started"):
+          sh"test -e $progressStateDir/progress".exec[Exit]()
+        . assert(_ != Exit.Ok)
+
+        test(m"a daemon binding late without reporting progress is abandoned"):
+          coldStart(t"stald", stalledStateDir)
+          safely(sh"$stalledExe hello".exec[Exit]()).or(Exit.Fail(1))
+        . assert(_ != Exit.Ok)
+
+        test(m"the abandoned daemon leaves a fail file"):
+          sh"test -f $stalledStateDir/fail".exec[Exit]()
+        . assert(_ == Exit.Ok)
+
+      safely(sh"$progressExe '{admin}' kill".exec[Exit]())
+      snooze(0.2*Second)
+      safely(sh"pkill prgrs".exec[Exit]())
+      safely(sh"pkill stald".exec[Exit]())
+      sh"rm -rf $progressStateDir $stalledStateDir".exec[Unit]()
