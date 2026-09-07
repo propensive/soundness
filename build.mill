@@ -1671,7 +1671,7 @@ object delicious extends Library:
     override def scalaJs = false // wraps the Scala compiler (dotty)
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium,anticipation.literacy"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
   object `scala` extends Component(core, compiler, stenography.core, anthology.core):
     override def scalaJs = false // wraps the Scala compiler (dotty)
@@ -2867,7 +2867,7 @@ object revolution extends Library:
 object murmuration extends Library:
   object core extends Component(proscenium.core, prepositional.core):
     override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium,anticipation.literacy"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
