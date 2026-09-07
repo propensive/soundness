@@ -52,7 +52,6 @@ import temporaryDirectories.systemTemporaryDirectory
 import vacuous.*
 import zephyrine.*
 
-import threading.virtualThreading
 import probates.panicProbate
 
 // The effect-runtime comparison from github.com/stasimus/scala-effect-bench (the blog post
@@ -82,45 +81,51 @@ import probates.panicProbate
 //     includes every fiber's and worker's allocation, plus the harness's one box per result.
 //
 // Results, 2026-09-07, Mac16,11 (12 cores, 24 GB), JDK 25.0.2, Scala 3.9.0-p16; mean time per
-// operation (one operation = the whole construction), Soundness / cats-effect / Kyo. The blog's
-// machine was a 16-core Mac15,9 on JDK 25.0.3, so absolute numbers differ; the CE:Kyo ratios
-// (last column, this run → blog) reproduce closely, as do the rivals' bytes per operation
-// (e.g. permit 1.95 MB / 329 kB against the blog's 1,945,464 / 329,642).
+// operation (one operation = the whole construction). Columns: Soundness on virtual threads,
+// Soundness on the pooled supervisor (`pooledThreading`, only where a construction spawns
+// tasks), cats-effect, Kyo. The blog's machine was a 16-core Mac15,9 on JDK 25.0.3, so absolute
+// numbers differ; the CE:Kyo ratios (last column, this run → blog) reproduce closely, as do the
+// rivals' bytes per operation (e.g. permit 1.95 MB / 329 kB against the blog's
+// 1,945,464 / 329,642).
 //
-//   Runner overhead                      7.70 µs     8.13 µs    7.39 µs   Kyo 1.10× → 1.20×
-//   Deep bind, depth 1000                0.044 µs    20.9 µs    21.5 µs   CE 1.03× → Kyo 1.01×
-//   Deep bind, depth 10000               0.043 µs     117 µs     137 µs   CE 1.17× → 1.14×
-//   Left bind, depth 1000                0.043 µs    26.5 µs    3.35 ms   CE 126× → 107×
-//   Left bind, depth 10000               0.043 µs     161 µs     344 ms   CE 2137× → 1895×
-//   Map chain, depth 1000                0.044 µs    19.8 µs    22.6 µs   CE 1.14× → 1.06×
-//   Map chain, depth 10000               0.044 µs     105 µs     136 µs   CE 1.30× → 1.20×
-//   CAS reference updates ×1000          1.83 µs     23.9 µs    26.6 µs   CE 1.11× → 1.00×
-//   Complete then read promise ×1000     14.7 µs     65.8 µs    70.3 µs   CE 1.07× → 1.10×
-//   Queue, 1 producer / 1 consumer       67.8 µs      110 µs    76.4 µs   Kyo 1.45× → 1.45×
-//   Uncontended permit ×1000             4.97 µs      340 µs    59.1 µs   Kyo 5.76× → 5.02×
-//   Sequential spawn/join ×1000          2.85 ms      412 µs     156 µs   Kyo 2.64× → 2.75×
-//   Bounded workers, work 0              0.218 ms    0.272 ms   0.205 ms  Kyo 1.33× → 1.13×
-//   Bounded workers, work 64             0.322 ms    0.338 ms   0.596 ms  CE 1.76× → 2.22×
-//   Collect successes, work 0            0.277 ms    0.892 ms   0.960 ms  CE 1.08× → CE 1.08×
-//   Collect successes, work 64           0.324 ms    1.01 ms    1.36 ms   CE 1.35× → 1.41×
-//   Sequential chunks, work 0            6.74 µs      522 µs     768 µs   fs2 1.47× → 1.24×
-//   Sequential chunks, work 64           0.630 ms    1.18 ms    1.58 ms   fs2 1.34× → 1.18×
-//   Parallel chunks, work 0              24.1 µs     1.36 ms    0.82 ms   Kyo 1.66× → 1.93×
-//   Parallel chunks, work 64             0.184 ms    1.85 ms    1.76 ms   Kyo 1.06× → 1.11×
-//   Queue-backed chunks, work 0          20.7 µs      562 µs     142 µs   Kyo 3.96× → 3.70×
-//   Queue-backed chunks, work 64         0.738 ms    1.29 ms    0.81 ms   Kyo 1.60× → 1.75×
+//   Runner overhead                      7.55 µs   8.47 µs    7.95 µs    7.53 µs   Kyo 1.06× → 1.20×
+//   Deep bind, depth 1000                0.045 µs      —      19.7 µs    20.2 µs   CE 1.02× → Kyo 1.01×
+//   Deep bind, depth 10000               0.043 µs      —       117 µs     137 µs   CE 1.17× → 1.14×
+//   Left bind, depth 1000                0.044 µs      —      24.8 µs    3.30 ms   CE 133× → 107×
+//   Left bind, depth 10000               0.044 µs      —       162 µs     342 ms   CE 2111× → 1895×
+//   Map chain, depth 1000                0.043 µs      —      18.3 µs    20.6 µs   CE 1.13× → 1.06×
+//   Map chain, depth 10000               0.043 µs      —       104 µs     130 µs   CE 1.25× → 1.20×
+//   CAS reference updates ×1000          1.81 µs       —      22.5 µs    24.9 µs   CE 1.10× → 1.00×
+//   Complete then read promise ×1000     13.4 µs   14.0 µs    65.7 µs    69.8 µs   CE 1.06× → 1.10×
+//   Queue, 1 producer / 1 consumer       66.4 µs   65.4 µs     118 µs    77.2 µs   Kyo 1.53× → 1.45×
+//   Uncontended permit ×1000             4.86 µs       —       335 µs    60.6 µs   Kyo 5.53× → 5.02×
+//   Sequential spawn/join ×1000          2.87 ms   0.575 ms    441 µs     153 µs   Kyo 2.87× → 2.75×
+//   Bounded workers, work 0              0.233 ms  0.248 ms   0.269 ms   0.201 ms  Kyo 1.34× → 1.13×
+//   Bounded workers, work 64             0.306 ms  0.323 ms   0.340 ms   0.589 ms  CE 1.73× → 2.22×
+//   Collect successes, work 0            0.272 ms  0.284 ms   1.02 ms    0.97 ms   Kyo 1.05× → CE 1.08×
+//   Collect successes, work 64           0.325 ms  0.327 ms   0.99 ms    1.35 ms   CE 1.37× → 1.41×
+//   Sequential chunks, work 0            6.73 µs       —       552 µs     722 µs   fs2 1.31× → 1.24×
+//   Sequential chunks, work 64           0.626 ms      —      1.17 ms    1.70 ms   fs2 1.46× → 1.18×
+//   Parallel chunks, work 0              24.2 µs   28.1 µs    1.51 ms    0.82 ms   Kyo 1.84× → 1.93×
+//   Parallel chunks, work 64             0.187 ms  0.192 ms   1.87 ms    1.72 ms   Kyo 1.09× → 1.11×
+//   Queue-backed chunks, work 0          20.8 µs   21.1 µs     592 µs     157 µs   Kyo 3.77× → 3.70×
+//   Queue-backed chunks, work 64         0.735 ms  0.737 ms   1.27 ms    0.81 ms   Kyo 1.58× → 1.75×
 //
 // Every Soundness construction runs on one task under `supervise`, joined once by the caller
 // (`Direct.running`), as the rivals' run inside their runtimes; that entry is the Soundness
 // runner-overhead row, and is included in every other row. The rows that spawn a task per
 // element or per batch in the rivals (collect successes, parallel chunks) use `concurrently`,
-// a fixed set of workers over numbered jobs, on the Soundness side: a task is a virtual thread,
-// costing about 2.5 µs to start and join from another virtual thread (and 7 µs from a platform
-// thread, whose park is a kernel call), against Kyo's 0.15 µs and cats-effect's 0.4 µs per
-// fiber, so the one row that spawns a thousand tasks by specification — sequential spawn/join —
-// is the one Soundness loses, and bounded fan-out is the idiom that wins the others.
-// Allocation tells the same story: 32 B for a thousand `Atomic` updates or `Mutex` sections,
-// 17 kB for a thousand queued ints, 1.1 MB for a thousand spawns.
+// a fixed set of workers over numbered jobs, on the Soundness side. A task on `virtualThreading`
+// is a virtual thread, costing about 2.5 µs to start and join from another virtual thread (and
+// 7 µs from a platform thread, whose park is a kernel call), against Kyo's 0.15 µs and
+// cats-effect's 0.4 µs per fiber; so the one row that spawns a thousand tasks by specification
+// — sequential spawn/join — is the one Soundness loses on virtual threads, and bounded fan-out
+// is the idiom that wins the others. The pooled supervisor hands a task to a waiting carrier
+// instead of starting a thread, which takes that row from 2.87 ms to 0.575 ms (Kyo 0.153 ms,
+// cats-effect 0.441 ms) and its allocation from 1.0 MB to 0.58 MB, while leaving every other
+// row within noise: the remaining gap to Kyo is that a Kyo fiber's parent and child share one
+// worker thread with no hand-off at all. Allocation tells the same story elsewhere: 32 B for a
+// thousand `Atomic` updates or `Mutex` sections, 17 kB for a thousand queued ints.
 //
 // An earlier form of these rows, spawning a task per element and joining from the harness's
 // platform thread, measured 4.7 ms for collect successes and 3.5 ms for parallel chunks (four
@@ -136,7 +141,7 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
 
   // The comparison axis; cats-effect is the baseline, since the blog reports Kyo relative to it.
   enum Library:
-    case Soundness, CatsEffect, Kyo
+    case Soundness, Pooled, CatsEffect, Kyo
 
   // Every parameter is read from an array at measurement time, so no arm — direct-style code
   // in particular — can see its loop bound as a compile-time constant.
@@ -177,10 +182,10 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
     // once. A join inside the construction is then a virtual-thread park, not a platform
     // thread's kernel park. This is also the runner-overhead row: entering a scope, starting
     // one task and joining it.
-    inline def running[result](inline body: Monitor ?=> result): result =
+    inline def running[result](inline body: Monitor ?=> result)(using Threading): result =
       supervise(async(body).await())
 
-    def runner(): Int = running(1)
+    def runner()(using Threading): Int = running(1)
 
     def deepBind(depth: Int): Int =
       @tailrec
@@ -211,7 +216,7 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
         i += 1
       ref()
 
-    def promise(ops: Int): Long = running:
+    def promise(ops: Int)(using Threading): Long = running:
       var sum = 0L
       var i = 0
       while i < ops do
@@ -222,7 +227,7 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
       sum
 
     // One producer task, the consumer on the calling strand, `Int`s boxed through the ring.
-    def queue(ops: Int, capacity: Int): Long = running:
+    def queue(ops: Int, capacity: Int)(using Threading): Long = running:
       val queue = Handoff(capacity)
       val producer = async:
         var i = 0
@@ -246,7 +251,7 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
         i += 1
       1
 
-    def spawnJoin(ops: Int): Long = running:
+    def spawnJoin(ops: Int)(using Threading): Long = running:
       var sum = 0L
       var i = 0
       while i < ops do
@@ -257,13 +262,16 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
 
     // `concurrently` is the rivals' `Workers` construction exactly: a shared index, an indexed
     // output array, min(size, parallelism) tasks, joined together.
-    def workers(values: IArray[Int], parallelism: Int, rounds: Int): IArray[Int] = running:
-      concurrently(values.length, parallelism)(i => work(values(i), rounds))
+    def workers(values: IArray[Int], parallelism: Int, rounds: Int)(using Threading)
+    :   IArray[Int] =
+      running:
+        concurrently(values.length, parallelism)(i => work(values(i), rounds))
 
-    // The rivals start one fiber per element; a Soundness task is a thread, so the bounded form
-    // is the idiom: eight workers over the elements, each element's failure caught where it
-    // happens (`safely` on the typed `abort`), and the absent results dropped in order.
-    def collectSuccesses(values: IArray[Int], parallelism: Int, rounds: Int): IArray[Int] =
+      // The rivals start one fiber per element; a Soundness task is a thread, so the bounded form
+      // is the idiom: eight workers over the elements, each element's failure caught where it
+      // happens (`safely` on the typed `abort`), and the absent results dropped in order.
+    def collectSuccesses(values: IArray[Int], parallelism: Int, rounds: Int)(using Threading)
+    :   IArray[Int] =
       running:
         val results: IArray[Optional[Int]] =
           concurrently(values.length, parallelism): i =>
@@ -298,7 +306,8 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
     // Soundness form keeps the same number of workers alive across the whole stream, each
     // transforming and folding whole batches in order of claim: the same bounded parallelism
     // and ordered result, without a spawn per batch or a barrier between batches.
-    def parallelChunks(batches: List[IArray[Int]], parallelism: Int, rounds: Int): Long =
+    def parallelChunks(batches: List[IArray[Int]], parallelism: Int, rounds: Int)(using Threading)
+    :   Long =
       running:
         val chunks: IArray[IArray[Int]] = IArray.from(batches.stdlib)
 
@@ -321,42 +330,51 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
 
     // A producer task hands each prebuilt chunk through a `Handoff` of `capacity` chunks; the
     // consumer takes exactly `batches.size` of them and transforms each as it arrives.
-    def queueChunks(batches: List[IArray[Int]], capacity: Int, rounds: Int): Long = running:
-      val queue = Handoff(capacity)
-      val producer = async:
-        batches.each(batch => queue.offer(batch.asInstanceOf[AnyRef]))
-        queue.finish()
-      var sum = 0L
-      var taken = 0
-      val count = batches.size
-      while taken < count do
-        val batch = queue.take().asInstanceOf[IArray[Int]]
-        var i = 0
-        while i < batch.length do
-          sum += work(batch(i), rounds)
-          i += 1
-        taken += 1
-      producer.await()
-      sum
+    def queueChunks(batches: List[IArray[Int]], capacity: Int, rounds: Int)(using Threading)
+    :   Long =
+      running:
+        val queue = Handoff(capacity)
+        val producer = async:
+          batches.each(batch => queue.offer(batch.asInstanceOf[AnyRef]))
+          queue.finish()
+        var sum = 0L
+        var taken = 0
+        val count = batches.size
+        while taken < count do
+          val batch = queue.take().asInstanceOf[IArray[Int]]
+          var i = 0
+          while i < batch.length do
+            sum += work(batch(i), rounds)
+            i += 1
+          taken += 1
+        producer.await()
+        sum
 
   // ── Agreement checks and the plan ───────────────────────────────────────────────────────
 
   private def agree[value](construction: Text)(soundness: value, catsEffect: value, kyo: value)
   :   Unit =
-    assert(soundness == catsEffect, s"$construction: Soundness $soundness ≠ cats-effect $catsEffect")
+    assert(soundness == catsEffect,
+           s"$construction: Soundness $soundness ≠ cats-effect $catsEffect")
     assert(kyo == catsEffect, s"$construction: Kyo $kyo ≠ cats-effect $catsEffect")
 
-  private def check(): Unit =
+  private def check()(using Threading): Unit =
     agree(t"runner")(Direct.runner(), Rivals.Ce.runner(), Rivals.Ky.runner())
 
     depths.foreach: depth =>
-      agree(t"deep bind $depth")(Direct.deepBind(depth), Rivals.Ce.deepBind(depth), Rivals.Ky.deepBind(depth))
-      agree(t"left bind $depth")(Direct.leftBind(depth), Rivals.Ce.leftBind(depth), Rivals.Ky.leftBind(depth))
-      agree(t"map chain $depth")(Direct.mapChain(depth), Rivals.Ce.mapChain(depth), Rivals.Ky.mapChain(depth))
+      agree(t"deep bind $depth")
+        ( Direct.deepBind(depth), Rivals.Ce.deepBind(depth), Rivals.Ky.deepBind(depth) )
+      agree(t"left bind $depth")
+        ( Direct.leftBind(depth), Rivals.Ce.leftBind(depth), Rivals.Ky.leftBind(depth) )
+      agree(t"map chain $depth")
+        ( Direct.mapChain(depth), Rivals.Ce.mapChain(depth), Rivals.Ky.mapChain(depth) )
 
     agree(t"ref")(Direct.ref(ops), Rivals.Ce.ref(ops), Rivals.Ky.ref(ops))
     agree(t"promise")(Direct.promise(ops), Rivals.Ce.deferred(ops), Rivals.Ky.promise(ops))
-    agree(t"queue")(Direct.queue(ops, capacity), Rivals.Ce.queue(ops, capacity), Rivals.Ky.queue(ops, capacity))
+    agree(t"queue")
+      ( Direct.queue(ops, capacity),
+        Rivals.Ce.queue(ops, capacity),
+        Rivals.Ky.queue(ops, capacity) )
     agree(t"permit")(Direct.permit(ops), Rivals.Ce.semaphore(ops), Rivals.Ky.semaphore(ops))
     agree(t"spawn/join")(Direct.spawnJoin(ops), Rivals.Ce.spawnJoin(ops), Rivals.Ky.spawnJoin(ops))
 
@@ -387,7 +405,8 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
           Rivals.Ky.queueChunks(batches, capacity, work) )
 
   def run(): Unit =
-    check()
+    check()(using threading.virtualThreading)
+    check()(using threading.pooledThreading)
 
     val bench = Bench(heap = t"2g", gc = t"G1")
     val depthAxis: Axis[Int] = Axis(t"depth")(1000, 10000)
@@ -395,7 +414,16 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
 
     suite(m"Runner baseline"):
       bench(m"Runner overhead")(target = 1*Second, baseline = Library.CatsEffect).over(Library):
-        case Library.Soundness  => '{ parasite.Benchmarks.Direct.runner() }
+        case Library.Soundness  =>
+          '{
+              given Threading = parasite.threading.virtualThreading
+              parasite.Benchmarks.Direct.runner()
+          }
+        case Library.Pooled  =>
+          '{
+              given Threading = parasite.threading.pooledThreading
+              parasite.Benchmarks.Direct.runner()
+          }
         case Library.CatsEffect => '{ parasite.Rivals.Ce.runner() }
         case Library.Kyo        => '{ parasite.Rivals.Ky.runner() }
 
@@ -433,21 +461,41 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
             '{ parasite.Rivals.Ky.mapChain(parasite.Benchmarks.depths(${depthAt(depth)})) }
 
     suite(m"Primitives (ops = 1000, queue capacity 64)"):
-      bench(m"CAS reference updates")(target = 1*Second, baseline = Library.CatsEffect).over(Library):
+      bench(m"CAS reference updates")(target = 1*Second, baseline = Library.CatsEffect)
+      . over(Library):
         case Library.Soundness  => '{ parasite.Benchmarks.Direct.ref(parasite.Benchmarks.ops) }
         case Library.CatsEffect => '{ parasite.Rivals.Ce.ref(parasite.Benchmarks.ops) }
         case Library.Kyo        => '{ parasite.Rivals.Ky.ref(parasite.Benchmarks.ops) }
 
       bench(m"Complete then read promise")(target = 1*Second, baseline = Library.CatsEffect)
       . over(Library):
-          case Library.Soundness  => '{ parasite.Benchmarks.Direct.promise(parasite.Benchmarks.ops) }
+          case Library.Soundness  =>
+            '{
+                given Threading = parasite.threading.virtualThreading
+                parasite.Benchmarks.Direct.promise(parasite.Benchmarks.ops)
+            }
+          case Library.Pooled  =>
+            '{
+                given Threading = parasite.threading.pooledThreading
+                parasite.Benchmarks.Direct.promise(parasite.Benchmarks.ops)
+            }
           case Library.CatsEffect => '{ parasite.Rivals.Ce.deferred(parasite.Benchmarks.ops) }
           case Library.Kyo        => '{ parasite.Rivals.Ky.promise(parasite.Benchmarks.ops) }
 
       bench(m"Queue: one producer, one consumer")(target = 1*Second, baseline = Library.CatsEffect)
       . over(Library):
           case Library.Soundness =>
-            '{ parasite.Benchmarks.Direct.queue(parasite.Benchmarks.ops, parasite.Benchmarks.capacity) }
+            '{
+                given Threading = parasite.threading.virtualThreading
+                parasite.Benchmarks.Direct.queue
+                  ( parasite.Benchmarks.ops, parasite.Benchmarks.capacity )
+            }
+          case Library.Pooled =>
+            '{
+                given Threading = parasite.threading.pooledThreading
+                parasite.Benchmarks.Direct.queue
+                  ( parasite.Benchmarks.ops, parasite.Benchmarks.capacity )
+            }
           case Library.CatsEffect =>
             '{ parasite.Rivals.Ce.queue(parasite.Benchmarks.ops, parasite.Benchmarks.capacity) }
           case Library.Kyo =>
@@ -461,7 +509,16 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
 
       bench(m"Sequential child spawn and join")(target = 1*Second, baseline = Library.CatsEffect)
       . over(Library):
-          case Library.Soundness  => '{ parasite.Benchmarks.Direct.spawnJoin(parasite.Benchmarks.ops) }
+          case Library.Soundness  =>
+            '{
+                given Threading = parasite.threading.virtualThreading
+                parasite.Benchmarks.Direct.spawnJoin(parasite.Benchmarks.ops)
+            }
+          case Library.Pooled  =>
+            '{
+                given Threading = parasite.threading.pooledThreading
+                parasite.Benchmarks.Direct.spawnJoin(parasite.Benchmarks.ops)
+            }
           case Library.CatsEffect => '{ parasite.Rivals.Ce.spawnJoin(parasite.Benchmarks.ops) }
           case Library.Kyo        => '{ parasite.Rivals.Ky.spawnJoin(parasite.Benchmarks.ops) }
 
@@ -470,6 +527,15 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
       . over(Library, workAxis):
           case (Library.Soundness, work) =>
             '{
+                given Threading = parasite.threading.virtualThreading
+                parasite.Benchmarks.Direct.workers
+                  ( parasite.Benchmarks.valuesArray,
+                    parasite.Benchmarks.parallelism,
+                    parasite.Benchmarks.rounds(${workAt(work)}) )
+            }
+          case (Library.Pooled, work) =>
+            '{
+                given Threading = parasite.threading.pooledThreading
                 parasite.Benchmarks.Direct.workers
                   ( parasite.Benchmarks.valuesArray,
                     parasite.Benchmarks.parallelism,
@@ -490,10 +556,20 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
                     parasite.Benchmarks.rounds(${workAt(work)}) )
             }
 
-      bench(m"Parallel attempt and collect successes")(target = 1*Second, baseline = Library.CatsEffect)
+      bench(m"Parallel attempt and collect successes")
+        ( target = 1*Second, baseline = Library.CatsEffect )
       . over(Library, workAxis):
           case (Library.Soundness, work) =>
             '{
+                given Threading = parasite.threading.virtualThreading
+                parasite.Benchmarks.Direct.collectSuccesses
+                  ( parasite.Benchmarks.valuesArray,
+                    parasite.Benchmarks.parallelism,
+                    parasite.Benchmarks.rounds(${workAt(work)}) )
+            }
+          case (Library.Pooled, work) =>
+            '{
+                given Threading = parasite.threading.pooledThreading
                 parasite.Benchmarks.Direct.collectSuccesses
                   ( parasite.Benchmarks.valuesArray,
                     parasite.Benchmarks.parallelism,
@@ -533,6 +609,15 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
       . over(Library, workAxis):
           case (Library.Soundness, work) =>
             '{
+                given Threading = parasite.threading.virtualThreading
+                parasite.Benchmarks.Direct.parallelChunks
+                  ( parasite.Benchmarks.batchArrays,
+                    parasite.Benchmarks.streamWorkers,
+                    parasite.Benchmarks.rounds(${workAt(work)}) )
+            }
+          case (Library.Pooled, work) =>
+            '{
+                given Threading = parasite.threading.pooledThreading
                 parasite.Benchmarks.Direct.parallelChunks
                   ( parasite.Benchmarks.batchArrays,
                     parasite.Benchmarks.streamWorkers,
@@ -557,6 +642,15 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
       . over(Library, workAxis):
           case (Library.Soundness, work) =>
             '{
+                given Threading = parasite.threading.virtualThreading
+                parasite.Benchmarks.Direct.queueChunks
+                  ( parasite.Benchmarks.batchArrays,
+                    parasite.Benchmarks.capacity,
+                    parasite.Benchmarks.rounds(${workAt(work)}) )
+            }
+          case (Library.Pooled, work) =>
+            '{
+                given Threading = parasite.threading.pooledThreading
                 parasite.Benchmarks.Direct.queueChunks
                   ( parasite.Benchmarks.batchArrays,
                     parasite.Benchmarks.capacity,
