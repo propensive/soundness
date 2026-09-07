@@ -423,6 +423,11 @@ not yet been recorded here.
   without progress`). A second launcher waiting on another launcher's startup follows the
   same rule (previously a fixed 4 s). This is a change to the Rust runner: rebuild stubs
   (`make runners-build`) or use a `runners-<version>` release carrying it. (#1938)
+- `ethereal.Runners.version` is `0.5`: `-Dbuild.executable` downloads its runner stub from the
+  `runners-0.5` GitHub release and verifies it against `etc/runners/0.5.tsv`. The `runners-0.4`
+  manifest did not match the assets that release served (its macOS-arm64 digest named a stub
+  that was never published), so building an executable on a machine without a cached stub
+  failed; a stub already cached under `~/.cache/ethereal/runners/0.4` is no longer consulted.
 
 ## probably (fume takes over running and reporting)
 
