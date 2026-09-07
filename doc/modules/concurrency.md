@@ -105,6 +105,22 @@ supervise:
 results says nothing about the order in which they finished. `race` returns the first to finish
 and the rest are canceled, since their results were not wanted.
 
+### Bounded parallelism
+
+A task is a thread, and starting one costs a few microseconds, so a thousand cheap jobs should
+not become a thousand tasks. `concurrently` runs numbered jobs across a fixed number of tasks,
+each taking the next job from a shared counter, and returns the results in job order once every
+task has finished:
+
+```scala
+supervise:
+  concurrently(1000, 8)(i => i*i)   // the squares of 0 to 999, in order, from eight tasks
+```
+
+The spawn cost is paid eight times rather than a thousand, and no job runs before an earlier one
+has been claimed, so the load balances itself: a slow job simply holds its task while the others
+continue through the rest. A job's exception fails the task it ran on and is rethrown at the join.
+
 ### Naming tasks
 
 `task` is `async` with a name, checked as the code compiles against the rules for a task name — no

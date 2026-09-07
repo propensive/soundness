@@ -40,7 +40,7 @@ export
       PlatformSupervisor, Promise,
       relent, retry, Shutdown, sleep, snooze, Strand, supervise, Supervisor, Task, task,
       Tenacity, Threading, Timeout, Transgression, contain, Containment, VirtualSupervisor, Worker,
-      AsyncTactic, Remedy, concurrent }
+      AsyncTactic, Remedy, concurrent, concurrently }
 
 package threading:
   export parasite.threading.{adaptiveThreading, javascriptThreading, platformThreading,

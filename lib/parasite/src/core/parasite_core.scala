@@ -36,6 +36,7 @@ import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 
 import scala.caps
+import scala.reflect.ClassTag
 
 import java.lang as jl
 
@@ -46,6 +47,7 @@ import digression.*
 import fulminate.*
 import nomenclature.*
 import prepositional.*
+import rudiments.Atomic
 import symbolism.*
 import vacuous.*
 
@@ -210,6 +212,46 @@ def supervise[result](block: Monitor ?=> result)(using threading: Threading, cod
 :   (Tactic[Async.Error]^) ?->{block} result =
 
   block(using Root(threading.supervisor()))
+
+
+// Runs the numbered jobs `job(0)` to `job(count - 1)` across at most `parallelism` tasks, each
+// taking the next index from a shared counter, and returns every result in index order once all
+// have completed. This is the bounded fan-out for a batch of small jobs: a task is a virtual
+// thread, whose start and join cost a few microseconds, so the spawn cost here is paid
+// `parallelism` times rather than `count` times — the form to prefer over one `async` per element
+// whenever the elements outnumber the cores and each is cheap. Results are kept in a plain array
+// indexed by job number, so the output is ordered by job, not by completion. A job's exception
+// fails its task and surfaces here at that task's join, as it would from an `await`.
+def concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int => result)
+  ( using monitor: Monitor^, probate: Probate^, codepoint: Codepoint )
+:   (Tactic[Async.Error]^) ?->{job, monitor, probate} scala.IArray[result] =
+
+  val index: Atomic[Int] = Atomic(0)
+  val output: scala.Array[result] = new scala.Array[result](count)
+
+  // Sealed to pure handles as the `sequence` façade does: the workers are started and joined
+  // inside this one call, so their captures (the output array, the job, the scope) never escape.
+  val tasks: List[Task[Unit]] =
+    List.fill(parallelism.min(count).max(0)):
+      caps.unsafe.unsafeAssumePure:
+       async:
+         // The write view of the shared output: each worker writes only the slots it has
+         // claimed through the counter, and the array is read only after every worker has
+         // joined — the discipline separation checking cannot see through the closure (cf.
+         // `Handoff#drain`).
+         val slots = output.asInstanceOf[scala.Array[result]^]
+         var running = true
+
+         while running do
+           // `ere` yields the counter's prior value: the index this worker has claimed.
+           val i = index.ere(_ + 1)
+           if i >= count then running = false else slots(i) = job(i)
+
+  // Joined here rather than through `sequence`, which would start one more task for the join;
+  // through the stdlib bridge because a `Task` join inside an `each` lambda trips the compiler.
+  tasks.stdlib.foreach { (task: Task[Unit]) => task.join() }
+
+  scala.IArray.unsafeFromArray(output)
 
 
 def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> value)

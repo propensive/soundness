@@ -546,3 +546,12 @@ not yet been recorded here.
   offered before `finish()` is always delivered. Previously a consumer racing the producer's last
   `offer`/`finish` pair could lose that item (about one hand-off in 10⁵ with both sides on virtual
   threads). Behaviour in every other interleaving is unchanged.
+
+## parasite
+
+- New: `parasite.concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int => result)(using Monitor^, Probate^, Codepoint): IArray[result] raises Async.Error`
+  (also exported as `soundness.concurrently`): runs `job(0)` to `job(count - 1)` across at most
+  `parallelism` tasks pulling indices from a shared counter, and returns the results in index
+  order once all have joined. Prefer it over one `async` per element for a batch of cheap jobs:
+  a task is a virtual thread, so the spawn cost is paid `parallelism` times instead of `count`.
+  A job's exception fails its task and is rethrown at the join.

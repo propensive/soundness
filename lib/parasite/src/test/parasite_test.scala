@@ -623,6 +623,46 @@ object Tests extends Suite(m"Parasite tests"):
           Chain[Int]().concurrent.stdlib.to(List)
         . assert(_ == List())
 
+      suite(m"Bounded concurrency"):
+        test(m"Results come back in job order"):
+          concurrently(100, 4)(i => i*i).toList
+        . assert(_ == scala.List.tabulate(100)(i => i*i))
+
+        test(m"No more than `parallelism` jobs run at once"):
+          val running = juca.AtomicInteger(0)
+          val peak = juca.AtomicInteger(0)
+
+          concurrently(64, 3): i =>
+            val now = running.incrementAndGet()
+            peak.accumulateAndGet(now, (a, b) => Math.max(a, b))
+            Thread.sleep(2)
+            running.decrementAndGet()
+            i
+
+          peak.get()
+        . assert(_ == 3)
+
+        test(m"Every job runs exactly once"):
+          val counts = juca.AtomicIntegerArray(200)
+          concurrently(200, 8) { i => counts.incrementAndGet(i) }
+          (0 until 200).forall(counts.get(_) == 1)
+        . assert(_ == true)
+
+        test(m"Zero jobs yields an empty result and starts nothing"):
+          concurrently(0, 8)(i => i).length
+        . assert(_ == 0)
+
+        test(m"Fewer jobs than workers starts only as many tasks as jobs"):
+          concurrently(2, 8)(i => i + 1).toList
+        . assert(_ == scala.List(1, 2))
+
+        test(m"A failing job surfaces its exception at the join"):
+          try
+            concurrently(10, 2) { i => if i == 5 then throw RuntimeException("job 5") else i }
+            "no failure"
+          catch case error: RuntimeException => error.getMessage
+        . assert(_ == "job 5")
+
       suite(m"High contention"):
         test(m"Many concurrent fulfill attempts result in one success"):
           val promise = Promise[Int]()
