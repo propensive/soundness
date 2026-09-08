@@ -8,26 +8,37 @@ by module, most-recently-added last within a module.
 
 - Soundness is compiled with Proscala's `-Zliterate-literals` flag, and every module that can
   reach `anticipation.text` adds `anticipation.literacy` to its `-Yimports` prelude. Under
-  that combination a string literal in a Soundness source is typed as `Text` (refined with
-  `type Topic = <the literal's singleton type>`) rather than `String`, wherever its expected
-  type does not already accept a `String`; a literal passed where `String` is expected is
-  unchanged. Consumers are unaffected unless they opt in: pass `-Zliterate-literals` (Proscala
-  3.9.0-p16 or later) and bring `anticipation.literacy.literate` into scope (by import, or by
-  the same `-Yimports` entry). Under the opt-in, code that calls `String` members on a bare
-  literal (`"…".charAt`, `.getBytes`, `.repeat`, `.stripMargin`, `.length`) must write
-  `"…".s` or ascribe `("…": String)`; a literal that heads a `+` chain of `String`s or seeds a
-  `foldLeft`, `getOrElse`/`.or` default, generic factory (`Set("a")`, `List("a")`) or map key
-  must be ascribed likewise when a `String` result is intended, and written `t"…"` when `Text`
-  is intended.
+  that combination a string literal in a Soundness source is typed as `Text` rather than
+  `String` wherever its expected type does not already accept a `String`; Soundness's own
+  sources now write `"…"` where they wrote `t"…"` or `"…".tt`. Consumers are unaffected unless
+  they opt in: pass `-Zliterate-literals` (Proscala 3.9.0-p16 or later) and bring
+  `anticipation.literacy.literate` into scope (by import, or by the same `-Yimports` entry).
+  Under the opt-in: a literal that must be a `String` is written `s"…"` (the `s` interpolator's
+  parts are typed against `String`, so it always yields a `String`); `"…".s` also reads a
+  `String` back. A literal keeps `String` where the expected type accepts it — notably as an
+  operand of `==` (compare a `Text` with `"…"` freely; `Optional[Text] == "…"` also compiles,
+  see vacuous below) — and in positions the compiler types before the expected type is known,
+  where `t"…"` is still needed for a `Text`: any argument, at any depth, of an *overloaded*
+  method (`proscenium.List(…)` and `Sequence(…)` are overloaded, so `List("a", "b")` is a
+  `List[String]`; write `List(t"a", t"b")` or `List[Text]("a", "b")`), an argument of an
+  `inline` method with an `inline` parameter (`optional.or("…")`, `.lay("…")`), and the
+  right-hand side of a pattern definition (`val (a, b) = …`).
 
 ## anticipation
 
 - `anticipation.TextLiterate[str <: String & Singleton]` added: a `scala.Literate[str]` whose
-  `Result` is `Text { type Topic = str }`, and `anticipation.literacy.literate`, the given that
-  supplies it. Both are the opt-in described under `build`.
-- `Text` gains an identity `.tt` extension (target name `ttIdentity`): `text.tt` on a value
-  that is already `Text` returns it unchanged, so a `"…".tt` that becomes `Text` under the
-  opt-in keeps compiling. Transitional; it will be removed once `.tt` on literals is gone.
+  `Result` is `Text`, and `anticipation.literacy.literate`, the given that supplies it. Both
+  are the opt-in described under `build`. The literal's singleton is not carried as a
+  refinement (`Text { type Topic = … }`): a literal is exactly a `Text`, so inferred types,
+  type-parameter instantiation and `Self`-typed given lookups see what `t"…"` gave them.
+- `Printable`'s `Text` instance is `given text: [text <: Text] => text is Printable` (was
+  `Text is Printable`), so a subtype of `Text` prints without an upcast.
+
+## vacuous
+
+- `Optional`'s companion gains `CanEqual[Optional[Text], String]` and its mirror
+  (`optionalTextEquality`, `equalityOptionalText`), so an `Optional[Text]` may be compared
+  with a `String` (in particular with a literal that stayed `String`) using `==`/`!=`.
 
 ## stratiform
 

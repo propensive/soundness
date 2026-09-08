@@ -37,15 +37,6 @@ extension (texts: Iterable[Text])
 
 extension (string: String) def tt: Text = Text(string)
 
-// Churn-reduction shim: a converted literal flowing into an existing
-// `"...".tt` site is already a Text; `.tt` becomes the identity on it. The
-// target name differs because Text erases to String, which would otherwise
-// clash with the String `.tt` above. Remove both when the migration
-// completes.
-extension (text: Text)
-  @scala.annotation.targetName("ttIdentity")
-  def tt: Text = text
-
 // The compiler's Literate hook: with this given in scope, a string literal
 // whose expected type does not require a String is re-typed as `Text`. The
 // literal's singleton is deliberately *not* carried as a `Topic` refinement:

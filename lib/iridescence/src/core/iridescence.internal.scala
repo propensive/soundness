@@ -62,7 +62,7 @@ object internal:
 
     if hex.length != 6 || !hex.forall(isHex) then halt:
       m"""
-        the color must be in the form ${"rgb\"#rrggbb\"".tt} or ${"rgb\"rrggbb\"".tt} where
+        the color must be in the form ${"rgb\"#rrggbb\""} or ${"rgb\"rrggbb\""} where
         rr, gg and bb are 2-digit hex values
       """
 
