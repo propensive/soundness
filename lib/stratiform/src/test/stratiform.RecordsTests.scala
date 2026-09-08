@@ -48,39 +48,39 @@ object RecordsTests extends Suite(m"Stratiform Records tests"):
   def run(): Unit =
     suite(m"TelBlueprint field access"):
       test(m"required String field is accessed as Text"):
-        val record = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
+        val record = ContactRecords.record("name Alice\nage 30\n".read[Tel])
         record.name
-      . assert(_ == t"Alice")
+      . assert(_ == "Alice")
 
       test(m"second required field is accessed as Text"):
-        val record = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
+        val record = ContactRecords.record("name Alice\nage 30\n".read[Tel])
         record.age
-      . assert(_ == t"30")
+      . assert(_ == "30")
 
       test(m"optional field is absent when missing"):
-        val record = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
+        val record = ContactRecords.record("name Alice\nage 30\n".read[Tel])
         record.email
       . assert(_ == Unset)
 
       test(m"optional field is present when supplied"):
         val record = ContactRecords.record
-                      (t"name Alice\nemail alice@example.com\nage 30\n".read[Tel])
+                      ("name Alice\nemail alice@example.com\nage 30\n".read[Tel])
         record.email
-      . assert(_ == (t"alice@example.com": Optional[Text]))
+      . assert(_ == ("alice@example.com": Optional[Text]))
 
       test(m"records derived from the same schema can be queried independently"):
-        val a = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
-        val b = ContactRecords.record(t"name Bob\nage 40\n".read[Tel])
+        val a = ContactRecords.record("name Alice\nage 30\n".read[Tel])
+        val b = ContactRecords.record("name Bob\nage 40\n".read[Tel])
         (a.name, b.name)
-      . assert(_ == (t"Alice", t"Bob"))
+      . assert(_ == ("Alice", "Bob"))
 
     suite(m"TelBlueprint flag fields"):
       test(m"present flag reads as true"):
-        val record = FeatureRecords.record(t"enabled\n".read[Tel])
+        val record = FeatureRecords.record("enabled\n".read[Tel])
         record.enabled
       . assert(_ == true)
 
       test(m"absent flag reads as false"):
-        val record = FeatureRecords.record(t"".read[Tel])
+        val record = FeatureRecords.record("".read[Tel])
         record.enabled
       . assert(_ == false)

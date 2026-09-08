@@ -61,30 +61,30 @@ object Tests extends Suite(m"Gesticulate tests"):
       val blockSizes = List(1, 2, 3, 7, 13, 32, 4096)
 
       val singlePart =
-        t"--xyz\r\n" +
-        t"Content-Disposition: form-data; name=\"field1\"\r\n" +
-        t"\r\n" +
-        t"value1\r\n" +
-        t"--xyz--\r\n"
+        "--xyz\r\n" +
+        "Content-Disposition: form-data; name=\"field1\"\r\n" +
+        "\r\n" +
+        "value1\r\n" +
+        "--xyz--\r\n"
 
       val twoParts =
-        t"--xyz\r\n" +
-        t"Content-Disposition: form-data; name=\"field1\"\r\n" +
-        t"\r\n" +
-        t"value1\r\n" +
-        t"--xyz\r\n" +
-        t"Content-Disposition: form-data; name=\"field2\"\r\n" +
-        t"\r\n" +
-        t"value2\r\n" +
-        t"--xyz--\r\n"
+        "--xyz\r\n" +
+        "Content-Disposition: form-data; name=\"field1\"\r\n" +
+        "\r\n" +
+        "value1\r\n" +
+        "--xyz\r\n" +
+        "Content-Disposition: form-data; name=\"field2\"\r\n" +
+        "\r\n" +
+        "value2\r\n" +
+        "--xyz--\r\n"
 
       val partsWithFilename =
-        t"--xyz\r\n" +
-        t"Content-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\n" +
-        t"Content-Type: text/plain\r\n" +
-        t"\r\n" +
-        t"file content\r\n" +
-        t"--xyz--\r\n"
+        "--xyz\r\n" +
+        "Content-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\n" +
+        "Content-Type: text/plain\r\n" +
+        "\r\n" +
+        "file content\r\n" +
+        "--xyz--\r\n"
 
       for blockSize <- blockSizes do
         test(m"Single part: count at block size $blockSize"):
@@ -95,12 +95,12 @@ object Tests extends Suite(m"Gesticulate tests"):
         test(m"Single part: name at block size $blockSize"):
           Multipart.parse(chunks(singlePart, blockSize)).parts.stdlib.head.name.or(t"")
 
-        . assert(_ == t"field1")
+        . assert(_ == "field1")
 
         test(m"Single part: body at block size $blockSize"):
           bodyText(Multipart.parse(chunks(singlePart, blockSize)).parts.stdlib.head)
 
-        . assert(_ == t"value1")
+        . assert(_ == "value1")
 
         test(m"Two parts: count at block size $blockSize"):
           Multipart.parse(chunks(twoParts, blockSize)).parts.stdlib.length
@@ -110,17 +110,17 @@ object Tests extends Suite(m"Gesticulate tests"):
         test(m"Two parts: names at block size $blockSize"):
           Multipart.parse(chunks(twoParts, blockSize)).parts.map(_.name.or(t""))
 
-        . assert(_ == Chain(t"field1", t"field2"))
+        . assert(_ == Chain("field1", "field2"))
 
         test(m"Two parts: bodies at block size $blockSize"):
           Multipart.parse(chunks(twoParts, blockSize)).parts.map(bodyText)
 
-        . assert(_ == Chain(t"value1", t"value2"))
+        . assert(_ == Chain("value1", "value2"))
 
       test(m"Filename extraction"):
         Multipart.parse(chunks(partsWithFilename, 4096)).parts.stdlib.head.filename.or(t"")
 
-      . assert(_ == t"hello.txt")
+      . assert(_ == "hello.txt")
 
       test(m"Disposition is FormData"):
         Multipart.parse(chunks(singlePart, 4096)).parts.stdlib.head.disposition
@@ -128,42 +128,42 @@ object Tests extends Suite(m"Gesticulate tests"):
       . assert(_ == Multipart.Disposition.FormData)
 
       test(m"Headers map preserved"):
-        Multipart.parse(chunks(partsWithFilename, 4096)).parts.stdlib.head.headers.at(t"Content-Type").or(t"")
+        Multipart.parse(chunks(partsWithFilename, 4096)).parts.stdlib.head.headers.at("Content-Type").or(t"")
 
-      . assert(_ == t"text/plain")
+      . assert(_ == "text/plain")
 
       test(m"Body containing CR but not boundary"):
         val body =
-          t"--xyz\r\n" +
-          t"Content-Disposition: form-data; name=\"field\"\r\n" +
-          t"\r\n" +
-          t"line1\rline2\r\n" +
-          t"--xyz--\r\n"
+          "--xyz\r\n" +
+          "Content-Disposition: form-data; name=\"field\"\r\n" +
+          "\r\n" +
+          "line1\rline2\r\n" +
+          "--xyz--\r\n"
         bodyText(Multipart.parse(chunks(body, 4096)).parts.stdlib.head)
 
-      . assert(_ == t"line1\rline2")
+      . assert(_ == "line1\rline2")
 
       test(m"Body containing CRLF but not boundary"):
         val body =
-          t"--xyz\r\n" +
-          t"Content-Disposition: form-data; name=\"field\"\r\n" +
-          t"\r\n" +
-          t"line1\r\nstill body\r\n" +
-          t"--xyz--\r\n"
+          "--xyz\r\n" +
+          "Content-Disposition: form-data; name=\"field\"\r\n" +
+          "\r\n" +
+          "line1\r\nstill body\r\n" +
+          "--xyz--\r\n"
         bodyText(Multipart.parse(chunks(body, 4096)).parts.stdlib.head)
 
-      . assert(_ == t"line1\r\nstill body")
+      . assert(_ == "line1\r\nstill body")
 
       test(m"Body containing partial boundary prefix"):
         val body =
-          t"--xyz\r\n" +
-          t"Content-Disposition: form-data; name=\"field\"\r\n" +
-          t"\r\n" +
-          t"--xy not the boundary\r\n" +
-          t"--xyz--\r\n"
+          "--xyz\r\n" +
+          "Content-Disposition: form-data; name=\"field\"\r\n" +
+          "\r\n" +
+          "--xy not the boundary\r\n" +
+          "--xyz--\r\n"
         bodyText(Multipart.parse(chunks(body, 4096)).parts.stdlib.head)
 
-      . assert(_ == t"--xy not the boundary")
+      . assert(_ == "--xy not the boundary")
 
       test(m"Empty input throws"):
         capture[Multipart.Error](Multipart.parse(Chain[Data]())).reason
@@ -173,40 +173,40 @@ object Tests extends Suite(m"Gesticulate tests"):
           case _                                 => false
 
       test(m"Non-dash leading byte throws Expected('-')"):
-        val body = t"X--xyz\r\n\r\n\r\n--xyz--\r\n"
+        val body = "X--xyz\r\n\r\n\r\n--xyz--\r\n"
         capture[Multipart.Error](Multipart.parse(Chain(body.in[Data]))).reason
 
       . assert(_ == Multipart.Error.Reason.Expected('-'))
 
       test(m"Single-dash leading sequence throws Expected('-')"):
         val body =
-          t"-xyz\r\nContent-Disposition: form-data; name=\"a\"\r\n\r\nv\r\n-xyz--\r\n"
+          "-xyz\r\nContent-Disposition: form-data; name=\"a\"\r\n\r\nv\r\n-xyz--\r\n"
         capture[Multipart.Error](Multipart.parse(Chain(body.in[Data]))).reason
 
       . assert(_ == Multipart.Error.Reason.Expected('-'))
 
     test(m"parse media type's type"):
-      t"application/json".as[MediaType].group
+      "application/json".as[MediaType].group
     . assert(_ == Media.Group.Application)
 
     test(m"parse media type's subtype"):
-      t"application/json".as[MediaType].subtype
-    . assert(_ == Media.Subtype.Standard(t"json"))
+      "application/json".as[MediaType].subtype
+    . assert(_ == Media.Subtype.Standard("json"))
 
     test(m"parse media type suffix"):
-      t"application/epub+zip".as[MediaType].suffixes
+      "application/epub+zip".as[MediaType].suffixes
     . assert(_ == List(Media.Suffix.Zip))
 
     test(m"parse full media type"):
-      t"application/json".as[MediaType]
-    . assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json")))
+      "application/json".as[MediaType]
+    . assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard("json")))
 
     test(m"parse full media type with parameter"):
-      t"application/json; charset=UTF-8".as[MediaType]
-    . assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json"),
+      "application/json; charset=UTF-8".as[MediaType]
+    . assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard("json"),
         parameters = List((t"charset", t"UTF-8"))))
 
     test(m"invalid media type"):
-      capture(t"applicationjson".as[MediaType])
-    . assert(_ == MediaType.Error(t"applicationjson",
+      capture("applicationjson".as[MediaType])
+    . assert(_ == MediaType.Error("applicationjson",
         MediaType.Error.Reason.NotOneSlash))

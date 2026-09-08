@@ -84,8 +84,8 @@ object nativeOptions:
 // toolchain (and sysroot) capable of cross-compilation.
 object nativeEdges:
   def apply(triples: Triple*)(using WorkingDirectory): List[Edge] raises Toolchain.Error =
-    val clang = probe(t"clang")
-    val clangpp = probe(t"clang++")
+    val clang = probe("clang")
+    val clangpp = probe("clang++")
 
     val targets: List[Triple] =
       // An unrecognized build host cannot name its own triple, and in any case has no Scala

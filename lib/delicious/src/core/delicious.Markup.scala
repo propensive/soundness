@@ -74,20 +74,20 @@ object Markup:
     def attr(name: Text): Optional[Text] =
       attrs.seek(_(0) == name).let(_(1))
 
-    val rendition = Rendition(attr(t"style"))
+    val rendition = Rendition(attr("style"))
 
     kind.s match
       case "type" =>
-        val marked: List[(Text, Text)] = attrs.filter(_(0) == t"p")
+        val marked: List[(Text, Text)] = attrs.filter(_(0) == "p")
         val decoded: List[Optional[Placeholder]] = marked.map { (_, value) => Placeholder.decode(value) }
 
         val placeholders: List[Placeholder] =
           decoded.sweep { case placeholder: Placeholder => placeholder }
 
-        Typed(attr(t"tasty"), placeholders, rendition, children)
+        Typed(attr("tasty"), placeholders, rendition, children)
 
-      case "sym"  => Symbolic(attr(t"name").or(t""), attr(t"full").or(t""), rendition, children)
-      case "name" => Named(attr(t"isType").let(_ == t"true").or(false), rendition, children)
+      case "sym"  => Symbolic(attr("name").or(t""), attr("full").or(t""), rendition, children)
+      case "name" => Named(attr("isType").let(_ == "true").or(false), rendition, children)
       case "code" => Code(rendition, children)
       case _      => Spanned(kind, rendition, children)
 
@@ -107,7 +107,7 @@ object Markup:
           children += Textual(text.toString.tt)
           text.clear()
 
-    val root = Frame(t"", Nil)
+    val root = Frame("", Nil)
     var stack: List[Frame^] = List(root)
     var index = 0
 
@@ -128,9 +128,9 @@ object Markup:
             case ""         => Nil
             case attributes =>
               attributes.tt.cut(AttrSep).map: keyValue =>
-                keyValue.cut(t"=", 2) match
+                keyValue.cut("=", 2) match
                   case List(key, value) => (key, decode(value))
-                  case _                => (keyValue, t"")
+                  case _                => (keyValue, "")
 
           stack = Frame(input.substring(index + 1, kindEnd).nn.tt, attrs) :: stack
           index = attrsEnd + 1

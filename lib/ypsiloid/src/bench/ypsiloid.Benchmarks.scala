@@ -53,7 +53,7 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
 
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
+  given byteDesignation: Designation[Bytes[1]] = () => "B"
   given decimalizer:     Decimalizer            = Decimalizer(2)
   given device:          BenchmarkDevice        = LocalhostDevice
   given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga, Tera))
@@ -133,12 +133,12 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
         '{ ypsiloid.Benchmarks.parseWithSnakeYaml(ypsiloid.Benchmarks.yamlText5.s) }
 
   // Fixture 1: small flow document — measures fixed overhead, dispatch.
-  lazy val yamlText1: Text = t"""{name: Alice, age: 30, items: [1, 2, 3]}"""
+  lazy val yamlText1: Text = """{name: Alice, age: 30, items: [1, 2, 3]}"""
 
   // Fixture 2: typical application config — block mapping, ~30 keys, mixed
   // scalar types. Stresses the line-by-line block-mapping path and
   // primitive scalar resolution.
-  lazy val yamlText2: Text = t"""server:
+  lazy val yamlText2: Text = """server:
   host: example.com
   port: 8080
   threads: 16
@@ -188,7 +188,7 @@ limits:
 
   // Fixture 4: deeply nested block structures (5 levels) — stresses
   // recursive descent and block-context indent tracking.
-  lazy val yamlText4: Text = t"""level1:
+  lazy val yamlText4: Text = """level1:
   level2:
     level3:
       level4:

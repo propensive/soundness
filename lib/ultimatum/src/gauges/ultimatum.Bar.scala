@@ -50,8 +50,8 @@ object Bar:
   // gives a bar that steps cell by cell.
   case class Glyphs
     ( full:     Text,
-       partials: Text           = t"",
-       empty:    Text           = t" ",
+       partials: Text           = "",
+       empty:    Text           = " ",
        leftCap:  Optional[Text] = Unset,
        rightCap: Optional[Text] = Unset,
        tip:      Optional[Text] = Unset )
@@ -61,8 +61,8 @@ object Bar:
 
   // The shades a bar collapses to when it has one cell: enough to tell nearly-done from
   // barely-started, which is all one cell can honestly say.
-  private val shades: Text = t"░▒▓█"
-  private val asciiShades: Text = t".:*#"
+  private val shades: Text = "░▒▓█"
+  private val asciiShades: Text = ".:*#"
 
 // How a proportion is drawn. Four shapes cover the catalogue: a bar that fills, a marker that
 // travels along a track, a run of discrete pips, and a bare figure.
@@ -78,7 +78,7 @@ enum Bar:
   def columnCount: Int = this match
     case Filled(_, columns, _)      => columns
     case Marker(_, _, columns)      => columns
-    case Segmented(_, _, gap, pips) => pips + (if gap == t"" then 0 else pips - 1)
+    case Segmented(_, _, gap, pips) => pips + (if gap == "" then 0 else pips - 1)
     case Numeric                    => 4
 
   def gaugeable(using gauging: Gauging): Fraction is Gaugeable = new Gaugeable:
@@ -100,8 +100,8 @@ enum Bar:
   def sweep(tick: Tick, width: Int, gauging: Gauging): Teletype =
     val palette = gauging.palette
     val plain = !gauging.permits(Gaugeable.Glyphs.Unicode)
-    val lit = if plain then t"#" else t"█"
-    val dark = if plain then t"-" else t"░"
+    val lit = if plain then "#" else "█"
+    val dark = if plain then "-" else "░"
     val window = (width/5).max(1)
     val span = (width - window).max(1)
 
@@ -120,7 +120,7 @@ enum Bar:
     val palette = gauging.palette
     val ascii = !gauging.permits(Gaugeable.Glyphs.Unicode)
 
-    if width <= 0 then Teletype(t"")
+    if width <= 0 then Teletype("")
     else if width == 1 then
       // One cell can still carry the magnitude, as a shade.
       val shades = if ascii then Bar.asciiShades else Bar.shades
@@ -147,7 +147,7 @@ enum Bar:
         case Segmented(pip, hollow, gap, pips) =>
           // Fit as many pips as the width allows, so a segmented bar thins out rather
           // than clipping.
-          val separator = if gap == t"" then 0 else 1
+          val separator = if gap == "" then 0 else 1
           val count = ((width + separator)/(1 + separator)).min(pips).max(1)
           val lit = (fraction.value*count).toInt.min(count)
 
@@ -236,7 +236,7 @@ enum Bar:
     // A track drawn with spaces is only visible as a background; one with its own glyph is drawn
     // in the track colour instead, so both kinds of design read correctly on any terminal.
     val rest =
-      if glyphs.empty == t" " then gauging.wash(palette.track)(blank)
+      if glyphs.empty == " " then gauging.wash(palette.track)(blank)
       else gauging.tint(palette.track)(blank)
 
     e"$filled$edge$rest"

@@ -38,11 +38,11 @@ import spectacular.*
 
 object Reaction:
   given showable: Reaction is Showable =
-    case NetForward     => t"→"
-    case BothDirections => t"⇄"
-    case Equilibrium    => t"⇋"
-    case Stoichiometric => t"↔"
-    case Resonance      => t"="
+    case NetForward     => "→"
+    case BothDirections => "⇄"
+    case Equilibrium    => "⇋"
+    case Stoichiometric => "↔"
+    case Resonance      => "="
 
 enum Reaction:
   case NetForward, BothDirections, Equilibrium, Stoichiometric, Resonance

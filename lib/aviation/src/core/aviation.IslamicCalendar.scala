@@ -46,7 +46,7 @@ class IslamicCalendar() extends Calendar:
   type MonthUnit = IslamicMonth.type
 
   private val epoch: Int = 1948440 // JDN of 1 Muharram 1 AH (civil)
-  val name: Text = t"Islamic"
+  val name: Text = "Islamic"
   def monthsInYear(year: Year): Int = 12
   def monthOrdinal(year: Year, month: IslamicMonth): Int = month.ordinal
   def monthOfOrdinal(year: Year, ordinal: Int): IslamicMonth = IslamicMonth.fromOrdinal(ordinal)

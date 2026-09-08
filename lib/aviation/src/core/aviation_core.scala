@@ -132,10 +132,10 @@ package dateNumerics:
   given variableWidthDateNumerics: Date.Numerics = Date.Numerics.VariableWidth
 
 package dateSeparators:
-  given slashDateSeparator: Date.Separation = () => t"/"
-  given hyphenDateSeparator: Date.Separation = () => t"-"
-  given dotDateSeparator: Date.Separation = () => t"."
-  given spaceDateSeparator: Date.Separation = () => t" "
+  given slashDateSeparator: Date.Separation = () => "/"
+  given hyphenDateSeparator: Date.Separation = () => "-"
+  given dotDateSeparator: Date.Separation = () => "."
+  given spaceDateSeparator: Date.Separation = () => " "
 
 package yearFormats:
   given twoDigitsYears: Years = Years.TwoDigitYear
@@ -143,161 +143,161 @@ package yearFormats:
 
 package weekdays:
   given englishWeekdays: Weekdays =
-    case Weekday.Mon => t"Monday"
-    case Weekday.Tue => t"Tuesday"
-    case Weekday.Wed => t"Wednesday"
-    case Weekday.Thu => t"Thursday"
-    case Weekday.Fri => t"Friday"
-    case Weekday.Sat => t"Saturday"
-    case Weekday.Sun => t"Sunday"
+    case Weekday.Mon => "Monday"
+    case Weekday.Tue => "Tuesday"
+    case Weekday.Wed => "Wednesday"
+    case Weekday.Thu => "Thursday"
+    case Weekday.Fri => "Friday"
+    case Weekday.Sat => "Saturday"
+    case Weekday.Sun => "Sunday"
 
   given englishShortWeekdays: Weekdays =
-    case Weekday.Mon => t"Mon"
-    case Weekday.Tue => t"Tue"
-    case Weekday.Wed => t"Wed"
-    case Weekday.Thu => t"Thu"
-    case Weekday.Fri => t"Fri"
-    case Weekday.Sat => t"Sat"
-    case Weekday.Sun => t"Sun"
+    case Weekday.Mon => "Mon"
+    case Weekday.Tue => "Tue"
+    case Weekday.Wed => "Wed"
+    case Weekday.Thu => "Thu"
+    case Weekday.Fri => "Fri"
+    case Weekday.Sat => "Sat"
+    case Weekday.Sun => "Sun"
 
   given oneLetterAmbiguousWeekdays: Weekdays =
-    case Weekday.Mon => t"M"
-    case Weekday.Tue => t"T"
-    case Weekday.Wed => t"W"
-    case Weekday.Thu => t"T"
-    case Weekday.Fri => t"F"
-    case Weekday.Sat => t"S"
-    case Weekday.Sun => t"S"
+    case Weekday.Mon => "M"
+    case Weekday.Tue => "T"
+    case Weekday.Wed => "W"
+    case Weekday.Thu => "T"
+    case Weekday.Fri => "F"
+    case Weekday.Sat => "S"
+    case Weekday.Sun => "S"
 
   given shortestUnambiguousWeekdays: Weekdays =
-    case Weekday.Mon => t"M"
-    case Weekday.Tue => t"Tu"
-    case Weekday.Wed => t"W"
-    case Weekday.Thu => t"Th"
-    case Weekday.Fri => t"F"
-    case Weekday.Sat => t"Sa"
-    case Weekday.Sun => t"Su"
+    case Weekday.Mon => "M"
+    case Weekday.Tue => "Tu"
+    case Weekday.Wed => "W"
+    case Weekday.Thu => "Th"
+    case Weekday.Fri => "F"
+    case Weekday.Sat => "Sa"
+    case Weekday.Sun => "Su"
 
   given twoLetterWeekdays: Weekdays =
-    case Weekday.Mon => t"Mo"
-    case Weekday.Tue => t"Tu"
-    case Weekday.Wed => t"We"
-    case Weekday.Thu => t"Th"
-    case Weekday.Fri => t"Fr"
-    case Weekday.Sat => t"Sa"
-    case Weekday.Sun => t"Su"
+    case Weekday.Mon => "Mo"
+    case Weekday.Tue => "Tu"
+    case Weekday.Wed => "We"
+    case Weekday.Thu => "Th"
+    case Weekday.Fri => "Fr"
+    case Weekday.Sat => "Sa"
+    case Weekday.Sun => "Su"
 
   given frenchWeekdays: Weekdays =
-    case Weekday.Mon => t"lundi"
-    case Weekday.Tue => t"mardi"
-    case Weekday.Wed => t"mercredi"
-    case Weekday.Thu => t"jeudi"
-    case Weekday.Fri => t"vendredi"
-    case Weekday.Sat => t"samedi"
-    case Weekday.Sun => t"dimanche"
+    case Weekday.Mon => "lundi"
+    case Weekday.Tue => "mardi"
+    case Weekday.Wed => "mercredi"
+    case Weekday.Thu => "jeudi"
+    case Weekday.Fri => "vendredi"
+    case Weekday.Sat => "samedi"
+    case Weekday.Sun => "dimanche"
 
   given germanWeekdays: Weekdays =
-    case Weekday.Mon => t"Montag"
-    case Weekday.Tue => t"Dienstag"
-    case Weekday.Wed => t"Mittwoch"
-    case Weekday.Thu => t"Donnerstag"
-    case Weekday.Fri => t"Freitag"
-    case Weekday.Sat => t"Samstag"
-    case Weekday.Sun => t"Sonntag"
+    case Weekday.Mon => "Montag"
+    case Weekday.Tue => "Dienstag"
+    case Weekday.Wed => "Mittwoch"
+    case Weekday.Thu => "Donnerstag"
+    case Weekday.Fri => "Freitag"
+    case Weekday.Sat => "Samstag"
+    case Weekday.Sun => "Sonntag"
 
   given spanishWeekdays: Weekdays =
-    case Weekday.Mon => t"lunes"
-    case Weekday.Tue => t"martes"
-    case Weekday.Wed => t"miércoles"
-    case Weekday.Thu => t"jueves"
-    case Weekday.Fri => t"viernes"
-    case Weekday.Sat => t"sábado"
-    case Weekday.Sun => t"domingo"
+    case Weekday.Mon => "lunes"
+    case Weekday.Tue => "martes"
+    case Weekday.Wed => "miércoles"
+    case Weekday.Thu => "jueves"
+    case Weekday.Fri => "viernes"
+    case Weekday.Sat => "sábado"
+    case Weekday.Sun => "domingo"
 
 package monthFormats:
   given englishMonths: Months =
-    case Jan => t"January"
-    case Feb => t"February"
-    case Mar => t"March"
-    case Apr => t"April"
-    case May => t"May"
-    case Jun => t"June"
-    case Jul => t"July"
-    case Aug => t"August"
-    case Sep => t"September"
-    case Oct => t"October"
-    case Nov => t"November"
-    case Dec => t"December"
+    case Jan => "January"
+    case Feb => "February"
+    case Mar => "March"
+    case Apr => "April"
+    case May => "May"
+    case Jun => "June"
+    case Jul => "July"
+    case Aug => "August"
+    case Sep => "September"
+    case Oct => "October"
+    case Nov => "November"
+    case Dec => "December"
 
   given englishShortMonths: Months =
-    case Jan => t"Jan"
-    case Feb => t"Feb"
-    case Mar => t"Mar"
-    case Apr => t"Apr"
-    case May => t"May"
-    case Jun => t"Jun"
-    case Jul => t"Jul"
-    case Aug => t"Aug"
-    case Sep => t"Sep"
-    case Oct => t"Oct"
-    case Nov => t"Nov"
-    case Dec => t"Dec"
+    case Jan => "Jan"
+    case Feb => "Feb"
+    case Mar => "Mar"
+    case Apr => "Apr"
+    case May => "May"
+    case Jun => "Jun"
+    case Jul => "Jul"
+    case Aug => "Aug"
+    case Sep => "Sep"
+    case Oct => "Oct"
+    case Nov => "Nov"
+    case Dec => "Dec"
 
   given frenchMonths: Months =
-    case Jan => t"janvier"
-    case Feb => t"février"
-    case Mar => t"mars"
-    case Apr => t"avril"
-    case May => t"mai"
-    case Jun => t"juin"
-    case Jul => t"juillet"
-    case Aug => t"août"
-    case Sep => t"septembre"
-    case Oct => t"octobre"
-    case Nov => t"novembre"
-    case Dec => t"décembre"
+    case Jan => "janvier"
+    case Feb => "février"
+    case Mar => "mars"
+    case Apr => "avril"
+    case May => "mai"
+    case Jun => "juin"
+    case Jul => "juillet"
+    case Aug => "août"
+    case Sep => "septembre"
+    case Oct => "octobre"
+    case Nov => "novembre"
+    case Dec => "décembre"
 
   given germanMonths: Months =
-    case Jan => t"Januar"
-    case Feb => t"Februar"
-    case Mar => t"März"
-    case Apr => t"April"
-    case May => t"Mai"
-    case Jun => t"Juni"
-    case Jul => t"Juli"
-    case Aug => t"August"
-    case Sep => t"September"
-    case Oct => t"Oktober"
-    case Nov => t"November"
-    case Dec => t"Dezember"
+    case Jan => "Januar"
+    case Feb => "Februar"
+    case Mar => "März"
+    case Apr => "April"
+    case May => "Mai"
+    case Jun => "Juni"
+    case Jul => "Juli"
+    case Aug => "August"
+    case Sep => "September"
+    case Oct => "Oktober"
+    case Nov => "November"
+    case Dec => "Dezember"
 
   given spanishMonths: Months =
-    case Jan => t"enero"
-    case Feb => t"febrero"
-    case Mar => t"marzo"
-    case Apr => t"abril"
-    case May => t"mayo"
-    case Jun => t"junio"
-    case Jul => t"julio"
-    case Aug => t"agosto"
-    case Sep => t"septiembre"
-    case Oct => t"octubre"
-    case Nov => t"noviembre"
-    case Dec => t"diciembre"
+    case Jan => "enero"
+    case Feb => "febrero"
+    case Mar => "marzo"
+    case Apr => "abril"
+    case May => "mayo"
+    case Jun => "junio"
+    case Jul => "julio"
+    case Aug => "agosto"
+    case Sep => "septiembre"
+    case Oct => "octubre"
+    case Nov => "noviembre"
+    case Dec => "diciembre"
 
   given oneLetterAmbiguousMonths: Months =
-    case Jan => t"J"
-    case Feb => t"F"
-    case Mar => t"M"
-    case Apr => t"A"
-    case May => t"M"
-    case Jun => t"J"
-    case Jul => t"J"
-    case Aug => t"A"
-    case Sep => t"S"
-    case Oct => t"O"
-    case Nov => t"N"
-    case Dec => t"D"
+    case Jan => "J"
+    case Feb => "F"
+    case Mar => "M"
+    case Apr => "A"
+    case May => "M"
+    case Jun => "J"
+    case Jul => "J"
+    case Aug => "A"
+    case Sep => "S"
+    case Oct => "O"
+    case Nov => "N"
+    case Dec => "D"
 
   given numericMonths: Months = _.numerical.show
 
@@ -346,20 +346,20 @@ package timeFormats:
 
 package timeMeridiems:
   given upperMeridiem: Meridiem is Showable =
-    case Meridiem.Am => t"AM"
-    case Meridiem.Pm => t"PM"
+    case Meridiem.Am => "AM"
+    case Meridiem.Pm => "PM"
 
   given lowerMeridiem: Meridiem is Showable =
-    case Meridiem.Am => t"am"
-    case Meridiem.Pm => t"pm"
+    case Meridiem.Am => "am"
+    case Meridiem.Pm => "pm"
 
   given upperPunctuatedMeridiem: Meridiem is Showable =
-    case Meridiem.Am => t"A.M."
-    case Meridiem.Pm => t"P.M."
+    case Meridiem.Am => "A.M."
+    case Meridiem.Pm => "P.M."
 
   given lowerPunctuatedMeridiem: Meridiem is Showable =
-    case Meridiem.Am => t"a.m."
-    case Meridiem.Pm => t"p.m."
+    case Meridiem.Am => "a.m."
+    case Meridiem.Pm => "p.m."
 
 package hourFormats:
   given twelveHourClock: (Meridiem is Showable) => Clockface.Format:
@@ -373,12 +373,12 @@ package hourFormats:
     def seconds: Boolean = false
 
   given twentyFourHourClock: Clockface.Format:
-    def postfix(meridiem: Meridiem): Text = t""
+    def postfix(meridiem: Meridiem): Text = ""
     def halfDay: Boolean = false
     def seconds: Boolean = false
 
   given twentyFourHourSecondsClock: Clockface.Format:
-    def postfix(meridiem: Meridiem): Text = t""
+    def postfix(meridiem: Meridiem): Text = ""
     def halfDay: Boolean = false
     def seconds: Boolean = true
 
@@ -391,10 +391,10 @@ package timeNumerics:
   given variableWidthTimeNumerics: Clockface.Numerics = Clockface.Numerics.VariableWidth
 
 package timeSeparators:
-  given dotTimeSeparator: Clockface.Separation = () => t"."
-  given colonTimeSeparator: Clockface.Separation = () => t":"
-  given noneTimeSeparator: Clockface.Separation = () => t""
-  given frenchTimeSeparator: Clockface.Separation = () => t"h"
+  given dotTimeSeparator: Clockface.Separation = () => "."
+  given colonTimeSeparator: Clockface.Separation = () => ":"
+  given noneTimeSeparator: Clockface.Separation = () => ""
+  given frenchTimeSeparator: Clockface.Separation = () => "h"
 
 // A human-readable, relative rendering of a `Timespan`, in place of the default ISO-8601 duration:
 // "in 18 minutes", "8 minutes ago", "just now", and their French/German/Spanish equivalents. Only
@@ -408,7 +408,7 @@ package timespanFormats:
   given spanishRelativeTimespan: Locale[es] => Timespan is Showable = Vernacular.spanish.relativeTimespan(_)
 
 package calendars:
-  given julianCalendar: RomanCalendar(t"Julian"):
+  given julianCalendar: RomanCalendar("Julian"):
     def leapYear(year: Annual): Boolean = year()%4 == 0
     def leapYearsSinceEpoch(year: Year): Int = year()/4
 
@@ -424,8 +424,8 @@ package calendars:
   given hebrewCalendar: HebrewCalendar = HebrewCalendar()
   given frenchRepublicanCalendar: FrenchRepublicanCalendar = FrenchRepublicanCalendar()
 
-  given buddhistCalendar: OffsetCalendar = OffsetCalendar(gregorianCalendar, 543, t"Buddhist")
-  given minguoCalendar: OffsetCalendar = OffsetCalendar(gregorianCalendar, -1911, t"Minguo")
+  given buddhistCalendar: OffsetCalendar = OffsetCalendar(gregorianCalendar, 543, "Buddhist")
+  given minguoCalendar: OffsetCalendar = OffsetCalendar(gregorianCalendar, -1911, "Minguo")
 
   // Year + day-of-year (no months); construct with `OrdinalCalendar(year, dayOfYear)`.
   given ordinalCalendar: OrdinalCalendar.type = OrdinalCalendar
@@ -435,13 +435,13 @@ package calendars:
   // neither calendar) is rejected. Provided for explicit import, like the calendars above.
   given papalCutover: Regime =
     Regime
-      ( t"Papal",
+      ( "Papal",
         Regime.Segment(Date.julianDay(Int.MinValue), julianCalendar),
         Regime.Segment(Date.julianDay(2299161), gregorianCalendar) )
 
   given britishCutover: Regime =
     Regime
-      ( t"British",
+      ( "British",
         Regime.Segment(Date.julianDay(Int.MinValue), julianCalendar),
         Regime.Segment(Date.julianDay(2361222), gregorianCalendar) )
 

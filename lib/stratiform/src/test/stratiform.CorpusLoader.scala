@@ -50,12 +50,12 @@ object CorpusLoader:
 
   case class Case(stem: Text, source: Data, check: Text)
 
-  def positive: List[Case] = load(t"pos")
-  def negative: List[Case] = load(t"neg")
+  def positive: List[Case] = load("pos")
+  def negative: List[Case] = load("neg")
 
   // Multi-document stream fixtures (§6.1): `.check` files hold a sequence of
   // `=== document N ===` sections (see CheckFormat.parseStream).
-  def streaming: List[Case] = load(t"stream")
+  def streaming: List[Case] = load("stream")
 
   private def load(category: Text): List[Case] =
     readIndex(category).filter(!_.s.startsWith("_")).map(caseByStem(category, _))
@@ -102,7 +102,7 @@ object CorpusLoader:
   // has no stem.
   def referenceStem(pragma: Tel.Pragma): Optional[Text] =
     pragma.reference.let: reference =>
-      if reference.isTels then t"tels"
+      if reference.isTels then "tels"
       else Text(reference.name.s.split("[/.]").nn.last.nn)
 
   // An auxiliary schema document for a corpus case, by reference-stem
@@ -120,7 +120,7 @@ object CorpusLoader:
 
   private def readIndex(category: Text): List[Text] =
     val text = readResourceText(t"/stratiform/corpus/$category.index")
-    text.cut(t"\n").map(_.trim).filter(_ != t"")
+    text.cut("\n").map(_.trim).filter(_ != "")
 
   private def readResource(path: Text): Data =
     val stream = getClass.getResourceAsStream(path.s)

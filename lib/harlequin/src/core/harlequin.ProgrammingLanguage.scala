@@ -58,8 +58,8 @@ object Scala extends ProgrammingLanguage:
 
   override def preprocess(text: Text, context: Optional[Context]): Text =
     context match
-      case Context.Term => t"val x = {\n"+text+t"\n}"
-      case Context.Type => t"type X =\n"+text
+      case Context.Term => "val x = {\n"+text+"\n}"
+      case Context.Type => "type X =\n"+text
       case _            => text
 
   override def postprocess(code: SourceCode, context: Optional[Context]): SourceCode =

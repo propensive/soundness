@@ -342,12 +342,12 @@ object internal:
   // English ordinal ("1st", "2nd", "3rd", "4th", …), used by the English `Vernacular`.
   def englishOrdinal(n: Int): Text =
     val suffix =
-      if (n%100)/10 == 1 then t"th"
+      if (n%100)/10 == 1 then "th"
       else n%10 match
-        case 1 => t"st"
-        case 2 => t"nd"
-        case 3 => t"rd"
-        case _ => t"th"
+        case 1 => "st"
+        case 2 => "nd"
+        case 3 => "rd"
+        case _ => "th"
 
     t"$n$suffix"
 
@@ -442,7 +442,7 @@ object internal:
       Interpolation.sourcePosition
         (parts, Interpolation.decodeOrigins[origins], 1, offset, length.max(1))
 
-    literal.tt.cut(t"/").map(_.s) match
+    literal.tt.cut("/").map(_.s) match
       case List(repeats, start, period) =>
         val startOffset = repeats.length + 1
         val periodOffset = startOffset + start.length + 1

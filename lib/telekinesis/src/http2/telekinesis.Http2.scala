@@ -230,11 +230,11 @@ object Http2:
       if !Flags.set(flags, Flags.Padded) then payload else
         if payload.length < 1 then abort(Http2.Error(Reason.Truncated))
         val padLength = payload.readUnchecked(0) & 0xff
-        if 1 + padLength > payload.length then abort(Http2.Error(Reason.Protocol(t"bad padding")))
+        if 1 + padLength > payload.length then abort(Http2.Error(Reason.Protocol("bad padding")))
         payload.segment((1).z till (payload.length - padLength).z)
 
     private def decodeSettings(payload: Bytes): List[Setting] raises Http2.Error =
-      if payload.length%6 != 0 then abort(Http2.Error(Reason.Protocol(t"bad SETTINGS length")))
+      if payload.length%6 != 0 then abort(Http2.Error(Reason.Protocol("bad SETTINGS length")))
       val builder = scala.collection.immutable.List.newBuilder[Setting]
       var i = 0
 
@@ -451,7 +451,7 @@ object Http2:
         def request(request: Http.Request, target: Endpoint[endpoint])(using (Http.Event is Loggable)^)
         :   Http.Response =
 
-          target.connect().fetch(request, t"http", target.authority)(1)
+          target.connect().fetch(request, "http", target.authority)(1)
 
   // Http2Error → Http2.Error
   object Error:
@@ -497,7 +497,7 @@ object Http2:
   object Connection:
     // The client connection preface (RFC 7540 §3.5): a fixed octet sequence that
     // precedes the first SETTINGS frame in prior-knowledge h2c.
-    private[telekinesis] val connectionPreface: Bytes = t"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".in[Bytes]
+    private[telekinesis] val connectionPreface: Bytes = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".in[Bytes]
 
     // The HTTP/2 default flow-control window (RFC 7540 §6.9.2): the initial
     // send budget for the connection, and for a stream until SETTINGS say

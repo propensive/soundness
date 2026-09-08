@@ -54,10 +54,10 @@ object Page:
 
     def update(node: Map[Text, Cos]): Inherited =
       Inherited
-        ( node(t"Resources").or(resources),
-          node(t"MediaBox").or(mediaBox),
-          node(t"CropBox").or(cropBox),
-          node(t"Rotate").or(rotate) )
+        ( node("Resources").or(resources),
+          node("MediaBox").or(mediaBox),
+          node("CropBox").or(cropBox),
+          node("Rotate").or(rotate) )
 
 // A leaf of the page tree, with its inherited attributes applied. A `Page` resolves lazily
 // through the document, so it captures the `Pdf` and cannot outlive the `open` scope;
@@ -73,22 +73,22 @@ class Page private[facsimile]
 
   // 1 default user-space unit is `userUnit`/72 inch; `/UserUnit` is not inheritable.
   def userUnit(using Tactic[Pdf.Error]): Double =
-    entries(t"UserUnit").let(pdf.resolved(_).double).or(1.0)
+    entries("UserUnit").let(pdf.resolved(_).double).or(1.0)
 
   def mediaBox(using Tactic[Pdf.Error]): Pdf.Rect =
-    box(entries(t"MediaBox").or(inherited.mediaBox))
-    . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"MediaBox"))))
+    box(entries("MediaBox").or(inherited.mediaBox))
+    . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry("MediaBox"))))
 
   def cropBox(using Tactic[Pdf.Error]): Pdf.Rect =
-    box(entries(t"CropBox").or(inherited.cropBox)).or(mediaBox)
+    box(entries("CropBox").or(inherited.cropBox)).or(mediaBox)
 
   // The bleed, trim and art boxes are not inheritable and default to the crop box.
-  def bleedBox(using Tactic[Pdf.Error]): Pdf.Rect = box(entries(t"BleedBox")).or(cropBox)
-  def trimBox(using Tactic[Pdf.Error]): Pdf.Rect = box(entries(t"TrimBox")).or(cropBox)
-  def artBox(using Tactic[Pdf.Error]): Pdf.Rect = box(entries(t"ArtBox")).or(cropBox)
+  def bleedBox(using Tactic[Pdf.Error]): Pdf.Rect = box(entries("BleedBox")).or(cropBox)
+  def trimBox(using Tactic[Pdf.Error]): Pdf.Rect = box(entries("TrimBox")).or(cropBox)
+  def artBox(using Tactic[Pdf.Error]): Pdf.Rect = box(entries("ArtBox")).or(cropBox)
 
   def rotation(using Tactic[Pdf.Error]): Page.Rotation =
-    val degrees = entries(t"Rotate").or(inherited.rotate).let(pdf.resolved(_).long).or(0L)
+    val degrees = entries("Rotate").or(inherited.rotate).let(pdf.resolved(_).long).or(0L)
 
     ((degrees%360 + 360)%360) match
       case 90L  => Page.Rotation.Quarter
@@ -108,10 +108,10 @@ class Page private[facsimile]
 
   // The page's fonts, keyed by resource name — the names `Tf` refers to.
   def fonts(using Tactic[Pdf.Error]): Map[Text, Pdf.Font] =
-    val resources = pdf.resolved(entries(t"Resources").or(inherited.resources).or(Cos.Nil))
+    val resources = pdf.resolved(entries("Resources").or(inherited.resources).or(Cos.Nil))
       . dictionary.or(Map[Text, Cos]())
 
-    pdf.resolved(resources(t"Font").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
+    pdf.resolved(resources("Font").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
     . to[List].bind: (name, value) =>
         Pdf.Font.read(pdf.resolved(value))(using pdf).lay(List[(Text, Pdf.Font)]()): font =>
           List(name -> font)
@@ -121,7 +121,7 @@ class Page private[facsimile]
   // The page's content: its `/Contents` streams decoded and concatenated, which the
   // specification requires to be treated as a single stream, with whitespace between.
   def content(using Tactic[Pdf.Error]): Data =
-    val streams = pdf.resolved(entries(t"Contents").or(Cos.Nil)) match
+    val streams = pdf.resolved(entries("Contents").or(Cos.Nil)) match
       case body: Cos.Body =>
         List(body)
 
@@ -162,7 +162,7 @@ class Page private[facsimile]
     val named = pdf.rawDestinations
     val scale = userUnit
 
-    pdf.resolved(entries(t"Annots").or(Cos.Nil)).elements.lay(List()): items =>
+    pdf.resolved(entries("Annots").or(Cos.Nil)).elements.lay(List()): items =>
       items.flatMap: item =>
         Annotation.read(item, pages, named(_), scale)(using pdf).lay(List())(List(_))
 

@@ -49,6 +49,6 @@ object Des:
 
 class Des
   ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
-extends BlockCipher(t"DES", mode, padding, cipher):
+extends BlockCipher("DES", mode, padding, cipher):
   type Size = 56
   def keySize: 56 = 56

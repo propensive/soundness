@@ -74,10 +74,10 @@ object Keyboard:
   def csiu(params: List[Char]): clavichord.Keypress =
     val text:   Text           = params.map(_.show).join
     // A `Sequence` rather than a `List`: the fields are only ever read by position.
-    val fields: Sequence[Text] = text.cut(t";").to[Sequence]
+    val fields: Sequence[Text] = text.cut(";").to[Sequence]
 
     def number(index: Int, default: Int): Int =
-      val field: Optional[Text] = fields.at(index.z).let(_.cut(t":")).let(_.prim)
+      val field: Optional[Text] = fields.at(index.z).let(_.cut(":")).let(_.prim)
       safely(Integer.parseInt(field.or(t"").s)).or(default)
 
     val bitmask: Int = (number(1, 1) - 1).max(0)
@@ -205,7 +205,7 @@ object Keyboard:
                     // pattern the extractor's evidence is summoned against a skolem-typed
                     // scrutinee, which fails to unify under capture checking.
                     val raw: Text = sequence.map(_.show).join
-                    val query: Boolean = raw.starts(t"?")
+                    val query: Boolean = raw.starts("?")
                     val fields: List[Text] = (if query then raw.skip(1) else raw).cut(';')
 
                     val report: Optional[Terminal.Info] = fields match
@@ -244,7 +244,7 @@ object Keyboard:
                 case _ #:: _ #:: tail => tail
                 case _                => Chain()
 
-              content.cut(t"/") match
+              content.cut("/") match
                 case List(red, green, blue) =>
                   def decimal(hex: Text): Int = Integer.parseInt(hex.s, 16)
 

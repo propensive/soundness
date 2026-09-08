@@ -87,7 +87,7 @@ class BinOpenable extends Openable:
     ( block: ((DocHandle & Granting[grants])^) ?=> result )
   :   result =
 
-    block(using new DocHandle(t"bin:"+value.name, flags) with Granting[grants] {})
+    block(using new DocHandle("bin:"+value.name, flags) with Granting[grants] {})
 
 class SoleOpenable extends Openable:
   type Self = Sole
@@ -149,40 +149,40 @@ given vaultCreatable: VaultCreatable = VaultCreatable()
 object Tests extends Suite(m"Aperture Tests"):
   def run(): Unit =
     test(m"An entity opens readably by default"):
-      Ref(t"alpha").open[Doc]() { handle ?=> handle.title }
-    . assert(_ == t"doc:alpha")
+      Ref("alpha").open[Doc]() { handle ?=> handle.title }
+    . assert(_ == "doc:alpha")
 
     test(m"An explicit form selects between instances"):
-      Ref(t"alpha").open[Bin]() { handle ?=> handle.title }
-    . assert(_ == t"doc:bin:alpha")
+      Ref("alpha").open[Bin]() { handle ?=> handle.title }
+    . assert(_ == "doc:bin:alpha")
 
     test(m"The form is inferred when the target has a unique instance"):
-      Sole(t"beta").open() { handle ?=> handle.title }
-    . assert(_ == t"doc:beta")
+      Sole("beta").open() { handle ?=> handle.title }
+    . assert(_ == "doc:beta")
 
     test(m"A mode of Read & Write permits both kinds of operation"):
-      Ref(t"gamma").open[Doc](Read & Write): handle ?=>
-        handle.append(t"more")
+      Ref("gamma").open[Doc](Read & Write): handle ?=>
+        handle.append("more")
         handle.title
-    . assert(_ == t"doc:gamma")
+    . assert(_ == "doc:gamma")
 
     test(m"Flags are passed through to the instance"):
-      Ref(t"delta").open[Doc](TestFlag.Fast, TestFlag.Careful) { handle ?=> handle.flags }
+      Ref("delta").open[Doc](TestFlag.Fast, TestFlag.Careful) { handle ?=> handle.flags }
     . assert(_ == List(TestFlag.Fast, TestFlag.Careful))
 
     test(m"Flags may follow an explicit mode"):
-      Ref(t"epsilon").open[Doc](Read & Write, TestFlag.Fast) { handle ?=> handle.flags }
+      Ref("epsilon").open[Doc](Read & Write, TestFlag.Fast) { handle ?=> handle.flags }
     . assert(_ == List(TestFlag.Fast))
 
     test(m"A write operation without the Write grant does not compile"):
       demilitarize:
-        Ref(t"zeta").open[Doc]() { handle ?=> handle.append(t"nope") }
+        Ref("zeta").open[Doc]() { handle ?=> handle.append("nope") }
       . map(_.message)
     . assert(_.nonEmpty)
 
     test(m"An ambiguous form does not compile"):
       demilitarize:
-        Ref(t"eta").open() { handle ?=> handle.title }
+        Ref("eta").open() { handle ?=> handle.title }
       . map(_.message)
     . assert(_.nonEmpty)
 
@@ -196,8 +196,8 @@ object Tests extends Suite(m"Aperture Tests"):
       val vault = Vault()
 
       VaultRef(vault).create(): scribe ?=>
-        scribe.append(t"first")
-        scribe.append(t"second")
+        scribe.append("first")
+        scribe.append("second")
 
       vault.committed
     . assert(_.lay(false)(_ == List(t"first", t"second")))
@@ -207,7 +207,7 @@ object Tests extends Suite(m"Aperture Tests"):
 
       try
         VaultRef(vault).create(): scribe ?=>
-          scribe.append(t"doomed")
+          scribe.append("doomed")
           throw new RuntimeException("boom")
       catch case _: RuntimeException => ()
 
@@ -218,9 +218,9 @@ object Tests extends Suite(m"Aperture Tests"):
       val vault = Vault()
 
       VaultRef(vault).create(): scribe ?=>
-        scribe.append(t"only")
-        t"result"
-    . assert(_ == t"result")
+        scribe.append("only")
+        "result"
+    . assert(_ == "result")
 
     test(m"A composite mode's atoms are its constituent atomic modes"):
       (Read & Write & Exclusive).atoms
@@ -232,6 +232,6 @@ object Tests extends Suite(m"Aperture Tests"):
 
     test(m"A read operation with only the Write grant does not compile"):
       demilitarize:
-        Ref(t"theta").open[Doc](Write) { handle ?=> handle.title }
+        Ref("theta").open[Doc](Write) { handle ?=> handle.title }
       . map(_.message)
     . assert(_.nonEmpty)

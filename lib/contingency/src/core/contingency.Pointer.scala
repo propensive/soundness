@@ -48,7 +48,7 @@ enum Pointer:
   case Child(parent: Pointer, label: Text)
 
   def text: Text = this match
-    case Self                 => "".tt
+    case Self                 => ""
     case Child(Self, label)   => label
     case Child(parent, label) => s"${parent.text}.$label".tt
 

@@ -47,7 +47,7 @@ class PersianCalendar() extends Calendar:
   type MonthUnit = PersianMonth.type
 
   private val epoch: Int = 1948321
-  val name: Text = t"Persian"
+  val name: Text = "Persian"
   def monthsInYear(year: Year): Int = 12
   def monthOrdinal(year: Year, month: PersianMonth): Int = month.ordinal
   def monthOfOrdinal(year: Year, ordinal: Int): PersianMonth = PersianMonth.fromOrdinal(ordinal)

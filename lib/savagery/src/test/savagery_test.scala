@@ -45,156 +45,156 @@ object Tests extends Suite(m"Savagery tests"):
     suite(m"Basic shapes"):
       test(m"Rectangle at origin"):
         Rectangle((0, 0), 10, 5).xml.show
-      .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="5.0"/>""")
+      .assert(_ == """<rect x="0.0" y="0.0" width="10.0" height="5.0"/>""")
 
       test(m"Rectangle offset"):
         Rectangle((2, 3), 8, 4).xml.show
-      .assert(_ == t"""<rect x="2.0" y="3.0" width="8.0" height="4.0"/>""")
+      .assert(_ == """<rect x="2.0" y="3.0" width="8.0" height="4.0"/>""")
 
       test(m"Rectangle with negative position"):
         Rectangle((-1, -2), 5, 5).xml.show
-      .assert(_ == t"""<rect x="-1.0" y="-2.0" width="5.0" height="5.0"/>""")
+      .assert(_ == """<rect x="-1.0" y="-2.0" width="5.0" height="5.0"/>""")
 
       test(m"Circle at origin"):
         Circle((0, 0), 5).xml.show
-      .assert(_ == t"""<circle cx="0.0" cy="0.0" r="5.0"/>""")
+      .assert(_ == """<circle cx="0.0" cy="0.0" r="5.0"/>""")
 
       test(m"Circle at offset"):
         Circle((10, 20), 3).xml.show
-      .assert(_ == t"""<circle cx="10.0" cy="20.0" r="3.0"/>""")
+      .assert(_ == """<circle cx="10.0" cy="20.0" r="3.0"/>""")
 
       test(m"Ellipse with different radii"):
         Ellipse((1, 2), 3, 4, Angle(0)).xml.show
-      .assert(_ == t"""<ellipse cx="1.0" cy="2.0" rx="3.0" ry="4.0"/>""")
+      .assert(_ == """<ellipse cx="1.0" cy="2.0" rx="3.0" ry="4.0"/>""")
 
       test(m"Ellipse with equal radii renders as circle"):
         Ellipse((0, 0), 5, 5, Angle(0)).xml.show
-      .assert(_ == t"""<circle cx="0.0" cy="0.0" r="5.0"/>""")
+      .assert(_ == """<circle cx="0.0" cy="0.0" r="5.0"/>""")
 
     suite(m"Path output"):
       test(m"Empty path"):
         Outline().xml.show
-      .assert(_ == t"""<path d=""/>""")
+      .assert(_ == """<path d=""/>""")
 
       test(m"Move and close"):
         Outline().moveTo((0, 0)).closed.xml.show
-      .assert(_ == t"""<path d="M 0.0 0.0 Z"/>""")
+      .assert(_ == """<path d="M 0.0 0.0 Z"/>""")
 
       test(m"Move and absolute line"):
         Outline().moveTo((0, 0)).lineTo((3, 4)).xml.show
-      .assert(_ == t"""<path d="M 0.0 0.0 L 3.0 4.0"/>""")
+      .assert(_ == """<path d="M 0.0 0.0 L 3.0 4.0"/>""")
 
       test(m"Move and cubic curve"):
         Outline().moveTo((0, 0)).curveTo((1, 1), (2, 1), (3, 0)).xml.show
-      .assert(_ == t"""<path d="M 0.0 0.0 C 1.0 1.0, 2.0 1.0, 3.0 0.0"/>""")
+      .assert(_ == """<path d="M 0.0 0.0 C 1.0 1.0, 2.0 1.0, 3.0 0.0"/>""")
 
       test(m"Plus sign path"):
         Outline().moveTo((0, 0)).lineUp(2).lineLeft(2).lineUp(1).lineRight(2).lineUp(2).lineRight(1)
             .lineDown(2).lineRight(2).lineDown(1).lineLeft(2).lineDown(2).closed.xml.show
-      .assert(_ == t"""<path d="M 0.0 0.0 h 2.0 v -2.0 h 1.0 v 2.0 h 2.0 v 1.0 h -2.0 v 2.0 h -1.0 v -2.0 h -2.0 Z"/>""")
+      .assert(_ == """<path d="M 0.0 0.0 h 2.0 v -2.0 h 1.0 v 2.0 h 2.0 v 1.0 h -2.0 v 2.0 h -1.0 v -2.0 h -2.0 Z"/>""")
 
     suite(m"Transform encoding"):
       test(m"Translate"):
         (Transform.Translate(Delta(10, 20)): Transform).encode
-      .assert(_ == t"translate(10.0,20.0)")
+      .assert(_ == "translate(10.0,20.0)")
 
       test(m"Translate with negative offset"):
         (Transform.Translate(Delta(-5, -10)): Transform).encode
-      .assert(_ == t"translate(-5.0,-10.0)")
+      .assert(_ == "translate(-5.0,-10.0)")
 
       test(m"Scale uniform"):
         (Transform.Scale(2.0f, Unset): Transform).encode
-      .assert(_ == t"scale(2.0)")
+      .assert(_ == "scale(2.0)")
 
       test(m"Scale non-uniform"):
         (Transform.Scale(2.0f, 3.0f): Transform).encode
-      .assert(_ == t"scale(2.0,3.0)")
+      .assert(_ == "scale(2.0,3.0)")
 
       test(m"Rotate"):
         (Transform.Rotate(Angle.degrees(45)): Transform).encode
-      .assert(_ == t"rotate(45.0)")
+      .assert(_ == "rotate(45.0)")
 
       test(m"Rotate by 90 degrees"):
         (Transform.Rotate(Angle.degrees(90)): Transform).encode
-      .assert(_ == t"rotate(90.0)")
+      .assert(_ == "rotate(90.0)")
 
       test(m"SkewX"):
         (Transform.Skew(Angle.degrees(45)): Transform).encode
-      .assert(_ == t"skewX(45.0)")
+      .assert(_ == "skewX(45.0)")
 
       test(m"SkewY"):
         (Transform.Skew(Angle.degrees(45), Orientation.Vertical): Transform).encode
-      .assert(_ == t"skewY(45.0)")
+      .assert(_ == "skewY(45.0)")
 
       test(m"Matrix identity"):
         (Transform.Matrix(Affine(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f)): Transform).encode
-      .assert(_ == t"matrix(1.0,0.0,0.0,1.0,0.0,0.0)")
+      .assert(_ == "matrix(1.0,0.0,0.0,1.0,0.0,0.0)")
 
       test(m"Matrix translation"):
         (Transform.Matrix(Affine(1.0f, 0.0f, 0.0f, 1.0f, 5.0f, 10.0f)): Transform).encode
-      .assert(_ == t"matrix(1.0,0.0,0.0,1.0,5.0,10.0)")
+      .assert(_ == "matrix(1.0,0.0,0.0,1.0,5.0,10.0)")
 
     suite(m"Outline with attributes"):
       test(m"Outline with id"):
-        Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed.xml.show
-      .assert(_ == t"""<path d="M 0.0 0.0 Z" id="plus"/>""")
+        Outline(id = Svg.Id("plus")).moveTo((0, 0)).closed.xml.show
+      .assert(_ == """<path d="M 0.0 0.0 Z" id="plus"/>""")
 
       test(m"Outline with single transform"):
         Outline(transforms = List(Transform.Translate(Delta(10, 20))))
             .moveTo((0, 0)).closed.xml.show
-      .assert(_ == t"""<path d="M 0.0 0.0 Z" transform="translate(10.0,20.0)"/>""")
+      .assert(_ == """<path d="M 0.0 0.0 Z" transform="translate(10.0,20.0)"/>""")
 
       test(m"Outline with multiple transforms"):
         Outline
          (transforms =
             List(Transform.Translate(Delta(1, 2)), Transform.Rotate(Angle.degrees(45))))
         . moveTo((0, 0)).closed.xml.show
-      .assert(_ == t"""<path d="M 0.0 0.0 Z" transform="translate(1.0,2.0) rotate(45.0)"/>""")
+      .assert(_ == """<path d="M 0.0 0.0 Z" transform="translate(1.0,2.0) rotate(45.0)"/>""")
 
       test(m"Outline with id and transform"):
         Outline
-         (id         = Svg.Id(t"shape1"),
+         (id         = Svg.Id("shape1"),
           transforms = List(Transform.Translate(Delta(5, 5))))
         . moveTo((0, 0)).closed.xml.show
-      .assert(_ == t"""<path d="M 0.0 0.0 Z" id="shape1" transform="translate(5.0,5.0)"/>""")
+      .assert(_ == """<path d="M 0.0 0.0 Z" id="shape1" transform="translate(5.0,5.0)"/>""")
 
     suite(m"Transform methods"):
       test(m"Outline rotate method"):
         Outline().moveTo((0, 0)).closed.rotate(Angle.degrees(90)).xml.show
-      .assert(_ == t"""<path d="M 0.0 0.0 Z" transform="rotate(90.0)"/>""")
+      .assert(_ == """<path d="M 0.0 0.0 Z" transform="rotate(90.0)"/>""")
 
       test(m"Rectangle translate method"):
         Rectangle((0, 0), 10, 5).translate(Delta(3, 4)).xml.show
-      .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(3.0,4.0)"/>""")
+      .assert(_ == """<rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(3.0,4.0)"/>""")
 
       test(m"Translate using unary + on tuple"):
         Rectangle((0, 0), 10, 5).translate(+(3, 4)).xml.show
-      .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(3.0,4.0)"/>""")
+      .assert(_ == """<rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(3.0,4.0)"/>""")
 
       test(m"Translate using unary - on tuple"):
         Rectangle((0, 0), 10, 5).translate(-(3, 4)).xml.show
-      .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(-3.0,-4.0)"/>""")
+      .assert(_ == """<rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(-3.0,-4.0)"/>""")
 
       test(m"Ellipse skew method"):
         Ellipse((0, 0), 5, 5, Angle(0)).skew(Angle.degrees(45)).xml.show
-      .assert(_ == t"""<circle cx="0.0" cy="0.0" r="5.0" transform="skewX(45.0)"/>""")
+      .assert(_ == """<circle cx="0.0" cy="0.0" r="5.0" transform="skewX(45.0)"/>""")
 
       test(m"Chained transforms compose left-to-right"):
         Rectangle((0, 0), 1, 1).translate(Delta(5, 0)).rotate(Angle.degrees(45)).xml.show
-      .assert(_ == t"""<rect x="0.0" y="0.0" width="1.0" height="1.0" transform="translate(5.0,0.0) rotate(45.0)"/>""")
+      .assert(_ == """<rect x="0.0" y="0.0" width="1.0" height="1.0" transform="translate(5.0,0.0) rotate(45.0)"/>""")
 
       test(m"Scale with single argument"):
         Rectangle((0, 0), 10, 10).scale(2.0f).xml.show
-      .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="10.0" transform="scale(2.0)"/>""")
+      .assert(_ == """<rect x="0.0" y="0.0" width="10.0" height="10.0" transform="scale(2.0)"/>""")
 
       test(m"Scale with two arguments"):
         Rectangle((0, 0), 10, 10).scale(2.0f, 3.0f).xml.show
-      .assert(_ == t"""<rect x="0.0" y="0.0" width="10.0" height="10.0" transform="scale(2.0,3.0)"/>""")
+      .assert(_ == """<rect x="0.0" y="0.0" width="10.0" height="10.0" transform="scale(2.0,3.0)"/>""")
 
       test(m"Svg wraps figures in group when transformed"):
         Svg(100, 100, figures = List(Rectangle((0, 0), 10, 10)))
           . rotate(Angle.degrees(45)).xml.show
-      .assert(_ == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><g transform="rotate(45.0)"><rect x="0.0" y="0.0" width="10.0" height="10.0"/></g></svg>""")
+      .assert(_ == """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><g transform="rotate(45.0)"><rect x="0.0" y="0.0" width="10.0" height="10.0"/></g></svg>""")
 
     suite(m"Affine arithmetic"):
       test(m"Delta + Delta yields Delta"):
@@ -260,50 +260,50 @@ object Tests extends Suite(m"Savagery tests"):
     suite(m"Gradient stops"):
       test(m"Stop with red at offset 0"):
         Stop(0.0, Red).xml.show
-      .assert(_ == t"""<stop offset="0.0" stop-color="#ff0000"/>""")
+      .assert(_ == """<stop offset="0.0" stop-color="#ff0000"/>""")
 
       test(m"Stop with blue at offset 1"):
         Stop(1.0, Blue).xml.show
-      .assert(_ == t"""<stop offset="1.0" stop-color="#0000ff"/>""")
+      .assert(_ == """<stop offset="1.0" stop-color="#0000ff"/>""")
 
       test(m"Stop with black at offset 0.5"):
         Stop(0.5, Black).xml.show
-      .assert(_ == t"""<stop offset="0.5" stop-color="#000000"/>""")
+      .assert(_ == """<stop offset="0.5" stop-color="#000000"/>""")
 
       test(m"Stop with white at offset 0.25"):
         Stop(0.25, White).xml.show
-      .assert(_ == t"""<stop offset="0.25" stop-color="#ffffff"/>""")
+      .assert(_ == """<stop offset="0.25" stop-color="#ffffff"/>""")
 
     suite(m"Linear gradient"):
       test(m"Single-stop gradient"):
-        Svg.LinearGradient(Svg.Id(t"grad1"), Stop(0.0, Red)).xml.show
+        Svg.LinearGradient(Svg.Id("grad1"), Stop(0.0, Red)).xml.show
       .assert: result =>
-          result == t"""<linearGradient id="grad1"><stop offset="0.0" stop-color="#ff0000"/></linearGradient>"""
+          result == """<linearGradient id="grad1"><stop offset="0.0" stop-color="#ff0000"/></linearGradient>"""
 
       test(m"Two-stop gradient"):
-        Svg.LinearGradient(Svg.Id(t"grad2"), Stop(0.0, Red), Stop(1.0, Blue)).xml.show
+        Svg.LinearGradient(Svg.Id("grad2"), Stop(0.0, Red), Stop(1.0, Blue)).xml.show
       .assert: result =>
-          result == t"""<linearGradient id="grad2"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient>"""
+          result == """<linearGradient id="grad2"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient>"""
 
       test(m"Three-stop gradient"):
         Svg.LinearGradient
-         (Svg.Id(t"rainbow"),
+         (Svg.Id("rainbow"),
           Stop(0.0, Red),
           Stop(0.5, Green),
           Stop(1.0, Blue))
         . xml.show
       .assert: result =>
-          result == t"""<linearGradient id="rainbow"><stop offset="0.0" stop-color="#ff0000"/><stop offset="0.5" stop-color="#008000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient>"""
+          result == """<linearGradient id="rainbow"><stop offset="0.0" stop-color="#ff0000"/><stop offset="0.5" stop-color="#008000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient>"""
 
     suite(m"SVG document"):
       test(m"Empty SVG"):
         Svg(100, 100).xml.show
-      .assert(_ == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"/>""")
+      .assert(_ == """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"/>""")
 
       test(m"SVG with single rectangle"):
         Svg(50, 50, figures = List(Rectangle((0, 0), 10, 10))).xml.show
       .assert: result =>
-          result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50.0 50.0" width="50.0" height="50.0"><rect x="0.0" y="0.0" width="10.0" height="10.0"/></svg>"""
+          result == """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50.0 50.0" width="50.0" height="50.0"><rect x="0.0" y="0.0" width="10.0" height="10.0"/></svg>"""
 
       test(m"SVG with two figures"):
         Svg
@@ -312,7 +312,7 @@ object Tests extends Suite(m"Savagery tests"):
           figures = List(Rectangle((0, 0), 10, 10), Circle((50, 50), 5)))
         . xml.show
       .assert: result =>
-          result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><rect x="0.0" y="0.0" width="10.0" height="10.0"/><circle cx="50.0" cy="50.0" r="5.0"/></svg>"""
+          result == """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><rect x="0.0" y="0.0" width="10.0" height="10.0"/><circle cx="50.0" cy="50.0" r="5.0"/></svg>"""
 
       test(m"SVG with defs"):
         Svg
@@ -321,7 +321,7 @@ object Tests extends Suite(m"Savagery tests"):
           defs = List(Svg.LinearGradient(Svg.Id(t"g1"), Stop(0.0, Red), Stop(1.0, Blue))))
         . xml.show
       .assert: result =>
-          result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><defs><linearGradient id="g1"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient></defs></svg>"""
+          result == """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><defs><linearGradient id="g1"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient></defs></svg>"""
 
       test(m"SVG with defs and figures"):
         Svg
@@ -331,37 +331,37 @@ object Tests extends Suite(m"Savagery tests"):
           figures = List(Rectangle((0, 0), 50, 50)))
         . xml.show
       .assert: result =>
-          result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><defs><linearGradient id="g1"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient></defs><rect x="0.0" y="0.0" width="50.0" height="50.0"/></svg>"""
+          result == """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><defs><linearGradient id="g1"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient></defs><rect x="0.0" y="0.0" width="50.0" height="50.0"/></svg>"""
 
     suite(m"SVG document with header"):
       test(m"Document[Svg] with UTF-8 includes XML declaration"):
         Document(Svg(10, 10), enc"UTF-8").show
       .assert: result =>
-          result == t"""<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10.0 10.0" width="10.0" height="10.0"/>"""
+          result == """<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10.0 10.0" width="10.0" height="10.0"/>"""
 
       test(m"Document[Svg] with content"):
         Document(Svg(50, 50, figures = List(Circle((25, 25), 10))), enc"UTF-8").show
       .assert: result =>
-          result == t"""<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50.0 50.0" width="50.0" height="50.0"><circle cx="25.0" cy="25.0" r="10.0"/></svg>"""
+          result == """<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50.0 50.0" width="50.0" height="50.0"><circle cx="25.0" cy="25.0" r="10.0"/></svg>"""
 
     suite(m"SVG parsing"):
       given XmlSchema = XmlSchema.Freeform
 
       test(m"Parse empty SVG"):
-        val svg = t"""<svg width="100" height="100"/>""".read[Svg]
+        val svg = """<svg width="100" height="100"/>""".read[Svg]
         (svg.width, svg.height, svg.figures.size, svg.defs.size)
       .assert(_ == (100.0f, 100.0f, 0, 0))
 
       test(m"Parse SVG with rectangle"):
         val svg =
-          t"""<svg width="50" height="50"><rect x="0" y="0" width="10" height="10"/></svg>"""
+          """<svg width="50" height="50"><rect x="0" y="0" width="10" height="10"/></svg>"""
         . read[Svg]
 
         svg.figures
       .assert(_ == List(Rectangle(Point(0, 0), 10, 10)))
 
       test(m"Parse SVG with circle"):
-        val svg = t"""<svg width="100" height="100"><circle cx="10" cy="20" r="5"/></svg>"""
+        val svg = """<svg width="100" height="100"><circle cx="10" cy="20" r="5"/></svg>"""
                 . read[Svg]
 
         svg.figures
@@ -369,19 +369,19 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Parse SVG with ellipse"):
         val svg =
-          t"""<svg width="100" height="100"><ellipse cx="1" cy="2" rx="3" ry="4"/></svg>"""
+          """<svg width="100" height="100"><ellipse cx="1" cy="2" rx="3" ry="4"/></svg>"""
         . read[Svg]
 
         svg.figures
       .assert(_ == List(Ellipse(Point(1, 2), 3, 4, Angle(0))))
 
       test(m"Parse SVG with simple path"):
-        val svg = t"""<svg width="10" height="10"><path d="M 0 0 L 1 1 Z"/></svg>""".read[Svg]
+        val svg = """<svg width="10" height="10"><path d="M 0 0 L 1 1 Z"/></svg>""".read[Svg]
         svg.figures.size
       .assert(_ == 1)
 
       test(m"Parse SVG with path and check ops"):
-        val svg = t"""<svg width="10" height="10"><path d="M 0 0 L 1 1 Z"/></svg>""".read[Svg]
+        val svg = """<svg width="10" height="10"><path d="M 0 0 L 1 1 Z"/></svg>""".read[Svg]
         svg.figures.stdlib.head
       .assert:
           case Outline(ops, Unset, Unset, Nil) =>
@@ -389,7 +389,7 @@ object Tests extends Suite(m"Savagery tests"):
           case _ => false
 
       test(m"Parse path with relative h and v"):
-        val svg = t"""<svg width="10" height="10"><path d="M 0 0 h 2 v -2 Z"/></svg>""".read[Svg]
+        val svg = """<svg width="10" height="10"><path d="M 0 0 h 2 v -2 Z"/></svg>""".read[Svg]
         svg.figures.stdlib.head
       .assert:
           case Outline(ops, _, _, _) =>
@@ -401,14 +401,14 @@ object Tests extends Suite(m"Savagery tests"):
           case _ => false
 
       test(m"Parse path with id"):
-        val svg = t"""<svg width="10" height="10"><path id="x" d="M 0 0 Z"/></svg>""".read[Svg]
+        val svg = """<svg width="10" height="10"><path id="x" d="M 0 0 Z"/></svg>""".read[Svg]
         svg.figures.stdlib.head
       .assert:
-          case Outline(_, _, id, _) => id == Svg.Id(t"x")
+          case Outline(_, _, id, _) => id == Svg.Id("x")
           case _                    => false
 
       test(m"Parse path with single transform"):
-        val svg = t"""<svg width="10" height="10"><path d="M 0 0 Z" transform="translate(5,10)"/></svg>"""
+        val svg = """<svg width="10" height="10"><path d="M 0 0 Z" transform="translate(5,10)"/></svg>"""
                 . read[Svg]
 
         svg.figures.stdlib.head
@@ -418,7 +418,7 @@ object Tests extends Suite(m"Savagery tests"):
           case _ => false
 
       test(m"Parse path with multiple transforms"):
-        val svg = t"""<svg width="10" height="10"><path d="M 0 0 Z" transform="translate(1,2) rotate(45)"/></svg>"""
+        val svg = """<svg width="10" height="10"><path d="M 0 0 Z" transform="translate(1,2) rotate(45)"/></svg>"""
                 . read[Svg]
 
         svg.figures.stdlib.head
@@ -429,7 +429,7 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Parse rgb hex color #ff0000"):
         val svg =
-          t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="#ff0000"/></linearGradient></defs></svg>"""
+          """<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="#ff0000"/></linearGradient></defs></svg>"""
         . read[Svg]
 
         svg.defs.stdlib.head
@@ -439,7 +439,7 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Parse short hex #f00"):
         val svg =
-          t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="#f00"/></linearGradient></defs></svg>"""
+          """<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="#f00"/></linearGradient></defs></svg>"""
         . read[Svg]
 
         svg.defs.stdlib.head
@@ -448,7 +448,7 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Parse rgb function"):
         val svg =
-          t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0.5" stop-color="rgb(255,0,0)"/></linearGradient></defs></svg>"""
+          """<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0.5" stop-color="rgb(255,0,0)"/></linearGradient></defs></svg>"""
         . read[Svg]
 
         svg.defs.stdlib.head
@@ -457,7 +457,7 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Parse named color red"):
         val svg =
-          t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="red"/></linearGradient></defs></svg>"""
+          """<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="red"/></linearGradient></defs></svg>"""
         . read[Svg]
 
         svg.defs.stdlib.head
@@ -466,17 +466,17 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Parse linear gradient with id"):
         val svg =
-          t"""<svg width="10" height="10"><defs><linearGradient id="myGrad"><stop offset="0" stop-color="#ff0000"/></linearGradient></defs></svg>"""
+          """<svg width="10" height="10"><defs><linearGradient id="myGrad"><stop offset="0" stop-color="#ff0000"/></linearGradient></defs></svg>"""
 
         . read[Svg]
 
         svg.defs.stdlib.head
       .assert:
-          case lg: Svg.LinearGradient[?] => lg.id == Svg.Id(t"myGrad")
+          case lg: Svg.LinearGradient[?] => lg.id == Svg.Id("myGrad")
 
       test(m"Skip unknown element"):
         val svg =
-          t"""<svg width="10" height="10"><text x="0" y="0">Hello</text><rect x="0" y="0" width="5" height="5"/></svg>"""
+          """<svg width="10" height="10"><text x="0" y="0">Hello</text><rect x="0" y="0" width="5" height="5"/></svg>"""
         . read[Svg]
 
         svg.figures.size
@@ -484,21 +484,21 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Flatten group"):
         val svg =
-          t"""<svg width="10" height="10"><g><rect x="0" y="0" width="5" height="5"/><circle cx="0" cy="0" r="3"/></g></svg>"""
+          """<svg width="10" height="10"><g><rect x="0" y="0" width="5" height="5"/><circle cx="0" cy="0" r="3"/></g></svg>"""
         . read[Svg]
 
         svg.figures.size
       .assert(_ == 2)
 
       test(m"Ignore unknown attributes"):
-        val svg = t"""<svg width="10" height="10"><rect x="0" y="0" width="5" height="5" foo="bar"/></svg>"""
+        val svg = """<svg width="10" height="10"><rect x="0" y="0" width="5" height="5" foo="bar"/></svg>"""
                 . read[Svg]
 
         svg.figures.stdlib.head
       .assert(_ == Rectangle(Point(0, 0), 5, 5))
 
       test(m"Default missing attributes to zero"):
-        val svg = t"""<svg width="10" height="10"><rect width="5" height="5"/></svg>""".read[Svg]
+        val svg = """<svg width="10" height="10"><rect width="5" height="5"/></svg>""".read[Svg]
         svg.figures.stdlib.head
       .assert(_ == Rectangle(Point(0, 0), 5, 5))
 
@@ -557,10 +557,10 @@ object Tests extends Suite(m"Savagery tests"):
         val original = Document(Svg(10, 10), enc"UTF-8")
         val parsed: Document[Svg] = original.show.load[Svg]
         parsed.metadata.name
-      .assert(_ == t"UTF-8")
+      .assert(_ == "UTF-8")
 
       test(m"Non-SVG root raises NotAnSvg"):
-        capture[Svg.Error](t"""<html/>""".read[Svg])
+        capture[Svg.Error]("""<html/>""".read[Svg])
       .assert:
           case Svg.Error(Svg.Error.Reason.NotAnSvg(_)) => true
           case _                                     => false
@@ -570,7 +570,7 @@ object Tests extends Suite(m"Savagery tests"):
         Inspectable.fallbacks
          ( Point(3, 4).inspect,
            Delta(1, -2).inspect,
-           Svg.Id(t"logo").inspect,
+           Svg.Id("logo").inspect,
            Rectangle((0, 0), 10, 5).inspect,
            Ellipse((1, 2), 3, 4, Angle(0)).inspect,
            Outline().moveTo((0, 0)).lineTo((3, 4)).inspect,
@@ -582,12 +582,12 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"a point shows both coordinates"):
         Point(3, 4).inspect
-      . assert(_ == t"Point(x:3.0F ╱ y:4.0F)")
+      . assert(_ == "Point(x:3.0F ╱ y:4.0F)")
 
       test(m"a delta shows both components"):
         Delta(1, -2).inspect
-      . assert(_ == t"Delta(dx:1.0F ╱ dy:-2.0F)")
+      . assert(_ == "Delta(dx:1.0F ╱ dy:-2.0F)")
 
       test(m"an SVG id names its type"):
-        Svg.Id(t"logo").inspect
-      . assert(_ == t"""Svg.Id(t"logo")""")
+        Svg.Id("logo").inspect
+      . assert(_ == """Svg.Id(t"logo")""")

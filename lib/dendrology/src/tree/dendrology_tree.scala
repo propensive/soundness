@@ -37,10 +37,10 @@ import gossamer.*
 
 package treeStyles:
   given squareTreeStyle: [text: Textual] => TextualTreeStyle[text] =
-    TextualTreeStyle(t"  ", t"└─", t"├─", t"│ ")
+    TextualTreeStyle("  ", "└─", "├─", "│ ")
 
   given roundedTreeStyle: [text: Textual] => TextualTreeStyle[text] =
-    TextualTreeStyle(t"  ", t"╰─", t"├─", t"│ ")
+    TextualTreeStyle("  ", "╰─", "├─", "│ ")
 
   given asciiTreeStyle: [text: Textual] => TextualTreeStyle[text] =
-    TextualTreeStyle(t"  ", t"+-", t"|-", t"| ")
+    TextualTreeStyle("  ", "+-", "|-", "| ")

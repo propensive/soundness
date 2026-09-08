@@ -182,7 +182,7 @@ extends GridSurface(widthFn(), 0):
     emit(csi.dectcem(false))
 
     // Rise to the block's top-left. On the first frame the cursor is already there.
-    emit(t"\r")
+    emit("\r")
     if started && flowCursorRow > 0 then emit(csi.cuu(flowCursorRow))
     started = true
 
@@ -194,8 +194,8 @@ extends GridSurface(widthFn(), 0):
       val rendered = trimmedRowContent(r, columns).render(termcap)
       emit(rendered)
       if rendered.contains(t"\e") then emit(csi.sgr(0))
-      emit(t"\r")
-      if r < h - 1 then emit(t"\n")
+      emit("\r")
+      if r < h - 1 then emit("\n")
       r += 1
     // The cursor now sits at the block's last drawn row (h - 1), column 0.
 
@@ -204,7 +204,7 @@ extends GridSurface(widthFn(), 0):
     if presentedRows > h then
       var k = h
       while k < presentedRows do
-        emit(t"\n")
+        emit("\n")
         emit(csi.el(2))
         k += 1
 
@@ -216,7 +216,7 @@ extends GridSurface(widthFn(), 0):
     // Place the caret relative to the block's last row (where the cursor is now).
     val cr = caretRow.min(h - 1).max(0)
     if h - 1 - cr > 0 then emit(csi.cuu(h - 1 - cr))
-    emit(t"\r")
+    emit("\r")
     val cc = caretColumn.min(columns - 1).max(0)
     if cc > 0 then emit(csi.cuf(cc))
     flowCursorRow = cr
@@ -320,8 +320,8 @@ extends GridSurface(widthFn(), 0):
           growth match
             case InlineGrowth.ScrollIntoScrollback =>
               emit(csi.cud(9999))
-              emit(t"\r")
-              emit(t"\n"*(h - presentedRows))
+              emit("\r")
+              emit("\n"*(h - presentedRows))
 
             case InlineGrowth.ClampToScreen =>
               ()
@@ -358,8 +358,8 @@ extends GridSurface(widthFn(), 0):
       // Reset only after a row that actually emitted SGR, so a plain row is byte-for-
       // byte as before and no colour bleeds into the next `el(2)`-cleared row.
       if rendered.contains(t"\e") then emit(csi.sgr(0))
-      emit(t"\r")
-      if r < h - 1 then emit(t"\n")
+      emit("\r")
+      if r < h - 1 then emit("\n")
       r += 1
 
     // Shrink: clear the rows a taller previous block vacated. Clearing happens BELOW
@@ -371,7 +371,7 @@ extends GridSurface(widthFn(), 0):
         var k = h
 
         while k < presentedRows do
-          emit(t"\n")
+          emit("\n")
           emit(csi.el(2))
           k += 1
       else
@@ -501,7 +501,7 @@ extends GridSurface(widthFn(), 0):
     if anchoring == InlineAnchoring.Flow then
       val down = presentedRows - 1 - flowCursorRow
       if down > 0 then Out.print(csi.cud(down))
-      Out.print(t"\r\n")
+      Out.print("\r\n")
     else
       // Drop the cursor just past the block's LAST drawn row (`presentedTop + presentedRows
       // - 1`) rather than at the screen foot. For a full bottom-docked block the last row IS
@@ -513,6 +513,6 @@ extends GridSurface(widthFn(), 0):
         else (presentedTop + presentedRows - 1).max(1).min(heightFn())
 
       Out.print(csi.cup(below.max(1), 1))
-      Out.print(t"\r\n")
+      Out.print("\r\n")
     Out.print(csi.dectcem(true))
     if anchoring == InlineAnchoring.Fullscreen && started then Out.print(t"\e[?1049l")

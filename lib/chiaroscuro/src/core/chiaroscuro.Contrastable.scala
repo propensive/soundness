@@ -88,7 +88,7 @@ object Contrastable:
         else juxtaposition(typeName, decompose(left), decompose(right))
 
   object Foundation extends Protofoundation:
-    given decomposition: Decomposition is Contrastable.Foundation = juxtaposition(t"", _, _)
+    given decomposition: Decomposition is Contrastable.Foundation = juxtaposition("", _, _)
     given int: Int is Contrastable.Foundation = long.juxtaposition(_, _)
     given short: Short is Contrastable.Foundation = long.juxtaposition(_, _)
     given byte: Byte is Contrastable.Foundation = long.juxtaposition(_, _)
@@ -106,7 +106,7 @@ object Contrastable:
             ( if set.size > 5 then set.to[List].keep(4) :+ t"…${(set.size - 4).show.subscripts}"
               else set.to[List] )
 
-            . join(t"{", t", ", t"}")
+            . join("{", ", ", "}")
 
           val message =
             if leftOnly.nil then t"+${describe(rightOnly)}"
@@ -117,8 +117,8 @@ object Contrastable:
 
     given exception: Exception is Contrastable.Foundation:
       def juxtaposition(left: Exception, right: Exception): Juxtaposition =
-        val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.tt)
-        val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.tt)
+        val leftMsg = Option(left.getMessage).fold("null")(_.nn.tt)
+        val rightMsg = Option(right.getMessage).fold("null")(_.nn.tt)
 
         if left.getClass == right.getClass && leftMsg == rightMsg then Juxtaposition.Same(leftMsg)
         else Juxtaposition.Different(leftMsg, rightMsg)
@@ -143,7 +143,7 @@ object Contrastable:
 
     given long: Long is Contrastable.Foundation = (left, right) =>
       if left == right then Juxtaposition.Same(left.show) else
-        val plus = if right > left then t"+" else t""
+        val plus = if right > left then "+" else ""
         Juxtaposition.Different(left.show, right.show, t"$plus${(right - left)}")
 
     given string: String is Contrastable.Foundation =
@@ -153,9 +153,9 @@ object Contrastable:
       (left, right) =>
         if left == right then Juxtaposition.Same(left) else
           def decompose(chars: Array[Char]^{}): Array[Decomposition]^{} = chars.remap: char =>
-            Decomposition.Primitive(t"Char", char.show, char)
+            Decomposition.Primitive("Char", char.show, char)
 
-          comparison[Char](t"Text", decompose(left.chars), decompose(right.chars), left, right)
+          comparison[Char]("Text", decompose(left.chars), decompose(right.chars), left, right)
 
   inline def nothing[value]: value is Contrastable = (left, right) =>
     provide[value is Decomposable](Juxtaposition.Same(left.decompose.text))
@@ -175,12 +175,12 @@ object Contrastable:
         // side is compared against a blank placeholder (as in the sum case below), so it
         // registers as a difference.
         val keys = left.keys + right.keys
-        val missing = Decomposition.Primitive(t"", t"", Unset)
+        val missing = Decomposition.Primitive("", "", Unset)
 
         Juxtaposition.Collation
           ( name,
             keys.to[List].map: key =>
-              key -> juxtaposition(t"", left(key).or(missing), right(key).or(missing)),
+              key -> juxtaposition("", left(key).or(missing), right(key).or(missing)),
             leftName,
             rightName )
 
@@ -188,11 +188,11 @@ object Contrastable:
         (left, right) match
           case (Decomposition.Product(lname, left, _), Decomposition.Product(rname, right, _)) =>
             val keys = left.keys + right.keys
-            val missing = Decomposition.Primitive(t"", t"", Unset)
+            val missing = Decomposition.Primitive("", "", Unset)
 
             val entries =
               keys.to[List].map: key =>
-                key -> juxtaposition(t"", left(key).or(missing), right(key).or(missing))
+                key -> juxtaposition("", left(key).or(missing), right(key).or(missing))
 
             val name = if lname == rname then lname else t"$lname/$rname"
             Juxtaposition.Collation(name, entries, lname, rname)
@@ -203,10 +203,10 @@ object Contrastable:
 
       case (left, right) =>
         def kind(value: Decomposition): Text = value match
-          case Decomposition.Primitive(_, _, _) => t"<primitive>"
-          case Decomposition.Sequence(_, _, _)  => t"<sequence>"
-          case Decomposition.Product(_, _, _)   => t"<product>"
-          case Decomposition.Sum(_, _, _)       => t"<sum>"
+          case Decomposition.Primitive(_, _, _) => "<primitive>"
+          case Decomposition.Sequence(_, _, _)  => "<sequence>"
+          case Decomposition.Product(_, _, _)   => "<product>"
+          case Decomposition.Sum(_, _, _)       => "<sum>"
 
         Juxtaposition.Different(kind(left), kind(right))
 
@@ -231,16 +231,16 @@ object Contrastable:
               label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
 
             case Ins(rightIndex, value) =>
-              t" ╱${rightIndex.show.subscripts}" -> Juxtaposition.Different(t"", value.short)
+              t" ╱${rightIndex.show.subscripts}" -> Juxtaposition.Different("", value.short)
 
             case Del(leftIndex, value) =>
               t"${leftIndex.show.superscripts}╱ " ->
-                Juxtaposition.Different(value.let(_.short).or(t"?"), t"")
+                Juxtaposition.Different(value.let(_.short).or(t"?"), "")
 
             case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
               val label = t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
-              label -> juxtaposition(t"", Decomposition(leftValue), Decomposition(rightValue))
+              label -> juxtaposition("", Decomposition(leftValue), Decomposition(rightValue))
 
       Juxtaposition.Collation(name, comparison.to[List], leftDebug, rightDebug)
 

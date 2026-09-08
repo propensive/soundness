@@ -42,7 +42,7 @@ import rudiments.*
 // an addition — a major event. This is the required default for content no other discipline
 // claims: unknown content is merely maximally conservative, never outside the algebra.
 object OpaqueDiscipline extends Discipline:
-  def id: Text = t"opaque/1"
+  def id: Text = "opaque/1"
   def claims(path: TreePath, data: Data): Boolean = true
 
   // Universal by necessity: it is the fallback, so it must be able to claim content in any

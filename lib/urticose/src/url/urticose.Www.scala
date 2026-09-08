@@ -46,7 +46,7 @@ object Www:
   given radical: %.type is Radical:
     type Plane = Www
 
-    def length(text: Text): Int raises Path.Error = if text.starts(t"/") then 1 else 0
+    def length(text: Text): Int raises Path.Error = if text.starts("/") then 1 else 0
     def encode(root: %.type): Text = "/"
     def decode(text: Text): %.type raises Path.Error = %
 
@@ -54,9 +54,9 @@ object Www:
     type UniqueRoot = false
 
     val name: Text = "World Wide Web"
-    val separator: Text = t"/"
-    val self: Text = t"."
-    val parent: Text = t".."
+    val separator: Text = "/"
+    val self: Text = "."
+    val parent: Text = ".."
 
     override def escape(part: Text): Text = part.urlEncode
     override def unescape(part: Text): Text = part.urlDecode

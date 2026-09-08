@@ -70,39 +70,39 @@ object Tests extends Suite(m"Legerdemain tests"):
   def run(): Unit =
     suite(m"Query decoding"):
       test(m"A complete query decodes"):
-        t"name=Ada&email=a%40b.c".as[Query].as[QPerson]
-      . assert(_ == QPerson(t"Ada", t"a@b.c"))
+        "name=Ada&email=a%40b.c".as[Query].as[QPerson]
+      . assert(_ == QPerson("Ada", "a@b.c"))
 
       test(m"A missing parameter aborts under a fail-fast strategy"):
-        capture[Query.Error](t"name=Ada".as[Query].as[QPerson]).reason
+        capture[Query.Error]("name=Ada".as[Query].as[QPerson]).reason
       . assert(_ == Query.Error.Reason.Missing)
 
     suite(m"Validation accrual"):
       test(m"Two missing parameters both accrue, with their pointers"):
-        validateQuery(t"".as[Query])(_.as[QPerson]).items.map(_(0).s).to[Set]
+        validateQuery("".as[Query])(_.as[QPerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set[String]("name", "email"))
 
       test(m"One missing parameter accrues one error; the present one does not"):
-        validateQuery(t"name=Ada".as[Query])(_.as[QPerson]).items.map(_(0).s)
+        validateQuery("name=Ada".as[Query])(_.as[QPerson]).items.map(_(0).s)
       . assert(_ == List("email"))
 
       test(m"Nested parameters accrue with dotted pointers"):
-        validateQuery(t"title=Skunkworks".as[Query])(_.as[QTeam]).items.map(_(0).s).to[Set]
+        validateQuery("title=Skunkworks".as[Query])(_.as[QTeam]).items.map(_(0).s).to[Set]
       . assert(_ == Set[String]("leader.name", "leader.email"))
 
       test(m"A fully-valid query accrues nothing"):
-        validateQuery(t"name=Ada&email=a%40b.c".as[Query])(_.as[QPerson]).items.size
+        validateQuery("name=Ada&email=a%40b.c".as[Query])(_.as[QPerson]).items.size
       . assert(_ == 0)
 
     suite(m"Gated construction"):
       test(m"Constructor does not run when any parameter failed"):
         QProbe.constructions = 0
-        val issues = validateQuery(t"name=Zoe".as[Query])(_.as[QChecked])
+        val issues = validateQuery("name=Zoe".as[Query])(_.as[QChecked])
         (issues.items.size, QProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Constructor runs exactly once when all parameters are present"):
         QProbe.constructions = 0
-        validateQuery(t"name=Zoe&email=z%40y.x".as[Query])(_.as[QChecked])
+        validateQuery("name=Zoe&email=z%40y.x".as[Query])(_.as[QChecked])
         QProbe.constructions
       . assert(_ == 1)

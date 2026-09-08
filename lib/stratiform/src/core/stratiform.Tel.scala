@@ -395,7 +395,7 @@ object Tel extends Tel2:
           // A positional atom becomes a synthetic one-atom compound, exactly
           // the element form `gathered` re-assembles into its document.
           def parseAtomElement(text: Text)(using Tactic[Tel.Error]): Any =
-            Tel.make(Tel.Compound(t"", Array(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
+            Tel.make(Tel.Compound("", Array(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
 
           def gathered(elements: List[Any]): value =
             val gathering: List[Tel.Compound] =
@@ -421,7 +421,7 @@ object Tel extends Tel2:
           // one-atom compound, as the derived decoder hands one over.
           override def parseAtom(text: Text)(using Tactic[Tel.Error]): value =
             decodable.decoded:
-              Tel.make(Tel.Compound(t"", Array(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
+              Tel.make(Tel.Compound("", Array(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
 
     // The one-line opt-in to direct parsing for a structural type:
     // `given MyType is Tel.Parsable = Tel.Parsable.derived` — a
@@ -778,15 +778,15 @@ object Tel extends Tel2:
     // `NotScalar` with the offending text, as on both other paths.
     def atomInt(text: Text)(using Tactic[Tel.Error]): Int =
       val parsed = try Optional(text.s.toInt) catch case _: NumberFormatException => Unset
-      parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Int"))) yet 0)
+      parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, "Int"))) yet 0)
 
     def atomLong(text: Text)(using Tactic[Tel.Error]): Long =
       val parsed = try Optional(text.s.toLong) catch case _: NumberFormatException => Unset
-      parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Long"))) yet 0L)
+      parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, "Long"))) yet 0L)
 
     def atomBoolean(text: Text)(using Tactic[Tel.Error]): Boolean =
-      if text == t"true" then true else if text == t"false" then false
-      else raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Boolean"))) yet false
+      if text == "true" then true else if text == "false" then false
+      else raise(Tel.Error(Tel.Error.Reason.NotScalar(text, "Boolean"))) yet false
 
     // Field instances travel wrapped in the `Field.Adapter`; the engine
     // looks through it for repeatability and element hooks.
@@ -1590,9 +1590,9 @@ object Tel extends Tel2:
 
             if idx - flatStart < definition.variants.length
             then definition.variants.readUnchecked(idx - flatStart).keyword
-            else t""
+            else ""
 
-          case _: Tels.Exclude => t""
+          case _: Tels.Exclude => ""
 
         if repeatable then results.foreach: element =>
           val idx = indexOf(element)
@@ -1735,11 +1735,11 @@ object Tel extends Tel2:
       private def identifier(value: Text): Response =
         val s = value.s
 
-        if s.isEmpty then fail(t"the identifier must not be empty", (0, 0))
-        else if s.startsWith("-") then fail(t"the identifier must not begin with a hyphen", (0, 1))
-        else if s.endsWith("-") then fail(t"the identifier must not end with a hyphen",
+        if s.isEmpty then fail("the identifier must not be empty", (0, 0))
+        else if s.startsWith("-") then fail("the identifier must not begin with a hyphen", (0, 1))
+        else if s.endsWith("-") then fail("the identifier must not end with a hyphen",
           (s.length - 1, s.length))
-        else if s.contains("--") then fail(t"the identifier must not contain consecutive hyphens",
+        else if s.contains("--") then fail("the identifier must not contain consecutive hyphens",
           (s.indexOf("--"), s.indexOf("--") + 2))
         else
           var i = 0
@@ -1759,12 +1759,12 @@ object Tel extends Tel2:
       private def typeName(value: Text): Response =
         val s = value.s
 
-        if s.isEmpty then fail(t"the type name must not be empty", (0, 0))
+        if s.isEmpty then fail("the type name must not be empty", (0, 0))
         else
           val first = s.charAt(0)
 
           if !(first >= 'A' && first <= 'Z') then
-            fail(t"the type name must start with an uppercase ASCII letter", (0, 1))
+            fail("the type name must start with an uppercase ASCII letter", (0, 1))
           else
             var i = 1
 
@@ -1781,18 +1781,18 @@ object Tel extends Tel2:
       private def sigilCheck(value: Text): Response =
         val s = value.s
 
-        if s.length != 1 then fail(t"the sigil must be a single character", (0, s.length))
+        if s.length != 1 then fail("the sigil must be a single character", (0, s.length))
         else
           val c = s.charAt(0)
 
           if c == ' ' || c == '\n' || c == '\r' || c == '\t' then
-            fail(t"the sigil must not be whitespace", (0, 1))
+            fail("the sigil must not be whitespace", (0, 1))
           else if (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') then
-            fail(t"the sigil must not be a letter or digit", (0, 1))
-          else if ("()[]{}<>": String).indexOf(c.toInt) >= 0 then
-            fail(t"the sigil must not be a parenthetical symbol", (0, 1))
+            fail("the sigil must not be a letter or digit", (0, 1))
+          else if s"()[]{}<>".indexOf(c.toInt) >= 0 then
+            fail("the sigil must not be a parenthetical symbol", (0, 1))
           else if c == '+' then
-            fail(t"the sigil must not be the layer-selection marker '+'", (0, 1))
+            fail("the sigil must not be the layer-selection marker '+'", (0, 1))
           else
             Response.Valid
 
@@ -1936,7 +1936,7 @@ object Tel extends Tel2:
       // meta-schema, recognised at resolution step 1 without network
       // access.
       val tels: Reference =
-        Reference(t"specification.tel", t"tels", Selector.Version(2, 0, 0))
+        Reference("specification.tel", "tels", Selector.Version(2, 0, 0))
 
       // Total form check: `Unset` for any grammar violation, so the
       // pragma parser (and later re-classification) chooses the error
@@ -2516,10 +2516,10 @@ object Tel extends Tel2:
           raise(Tel.Error(Tel.Error.Reason.NotScalar(text, expected))) yet sentinel
 
   given textParsable: Text is Tel.Parsable =
-    primitiveParsable(Morphology.Str, t"Text", t""): atom => atom
+    primitiveParsable(Morphology.Str, "Text", t""): atom => atom
 
   given stringParsable: String is Tel.Parsable =
-    primitiveParsable(Morphology.Str, t"String", ""): atom => atom.s
+    primitiveParsable(Morphology.Str, "String", ""): atom => atom.s
 
   // `Int`/`Long`/`Boolean` distinguish the two ways a byte-parsed primitive
   // can be `Unset` through `Parsable.scalarFault`: a missing atom raises
@@ -2540,14 +2540,14 @@ object Tel extends Tel2:
       override def nature: Tel.Nature = Tel.Nature.Scalar
 
       def parse(reader: TelReader^, indent: Int): Int =
-        reader.int().lay(Parsable.scalarFault(reader, t"Int", 0))(identity)
+        reader.int().lay(Parsable.scalarFault(reader, "Int", 0))(identity)
 
       override def absent()(using Tactic[Tel.Error]): Int =
         raise(Tel.Error(Tel.Error.Reason.Absent)) yet 0
 
       override def parseAtom(text: Text)(using Tactic[Tel.Error]): Int =
         val parsed = try Optional(text.s.toInt) catch case _: NumberFormatException => Unset
-        parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Int"))) yet 0)
+        parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, "Int"))) yet 0)
 
   given longParsable: Long is Tel.Parsable =
     new Tel.Parsable:
@@ -2556,17 +2556,17 @@ object Tel extends Tel2:
       override def nature: Tel.Nature = Tel.Nature.Scalar
 
       def parse(reader: TelReader^, indent: Int): Long =
-        reader.long().lay(Parsable.scalarFault(reader, t"Long", 0L))(identity)
+        reader.long().lay(Parsable.scalarFault(reader, "Long", 0L))(identity)
 
       override def absent()(using Tactic[Tel.Error]): Long =
         raise(Tel.Error(Tel.Error.Reason.Absent)) yet 0L
 
       override def parseAtom(text: Text)(using Tactic[Tel.Error]): Long =
         val parsed = try Optional(text.s.toLong) catch case _: NumberFormatException => Unset
-        parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Long"))) yet 0L)
+        parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, "Long"))) yet 0L)
 
   given doubleParsable: Double is Tel.Parsable =
-    primitiveParsable(Morphology.Real, t"Double", 0.0): atom =>
+    primitiveParsable(Morphology.Real, "Double", 0.0): atom =>
       try atom.s.toDouble catch case _: NumberFormatException => Unset
 
   given booleanParsable: Boolean is Tel.Parsable =
@@ -2576,7 +2576,7 @@ object Tel extends Tel2:
       override def nature: Tel.Nature = Tel.Nature.Scalar
 
       def parse(reader: TelReader^, indent: Int): Boolean =
-        reader.boolean().lay(Parsable.scalarFault(reader, t"Boolean", false))(identity)
+        reader.boolean().lay(Parsable.scalarFault(reader, "Boolean", false))(identity)
 
       override def absent()(using Tactic[Tel.Error]): Boolean =
         raise(Tel.Error(Tel.Error.Reason.Absent)) yet false
@@ -2633,8 +2633,8 @@ object Tel extends Tel2:
       def shape(): Morphology = Morphology.Str
       override def nature: Tel.Nature = Tel.Nature.Scalar
       def parse(reader: TelReader^, indent: Int): value = codec.decoded(reader.atom().or(t""))
-      override def parse(reader: TelReader^): value = codec.decoded(t"")
-      override def absent()(using Tactic[Tel.Error]): value = codec.decoded(t"")
+      override def parse(reader: TelReader^): value = codec.decoded("")
+      override def absent()(using Tactic[Tel.Error]): value = codec.decoded("")
       override def parseAtom(text: Text)(using Tactic[Tel.Error]): value = codec.decoded(text)
 
   // `source.read[List[Tel]]` / `read[Chain[Tel]]` for a multi-document source
@@ -2699,7 +2699,7 @@ object Tel extends Tel2:
         producer.put(Text(text))
 
       def emitCompound(compound: Tel.Compound, indent: Int, sigil: Char): Unit =
-        val pad = ("  ": String)*indent
+        val pad = s"  "*indent
         val line = StringBuilder()
         line.append(pad)
         line.append(compound.keyword.s)
@@ -2729,7 +2729,7 @@ object Tel extends Tel2:
 
         trailingAtom match
           case Tel.Atom.Source(text) =>
-            val sourcePad = ("  ": String)*(indent + 2)
+            val sourcePad = s"  "*(indent + 2)
             // §14 "Convention A": `text` is LF-separated with no trailing LF, so each LF-delimited
             // segment is one source line (an empty segment is a blank line with no indentation).
             val sourceText = text.s
@@ -2743,7 +2743,7 @@ object Tel extends Tel2:
               if nl < 0 then start = sourceText.length + 1 else start = nl + 1
 
           case Tel.Atom.Literal(delimiter, text) =>
-            val delimiterLine = ("  ": String)*(indent + 3) + delimiter.s
+            val delimiterLine = s"  "*(indent + 3) + delimiter.s
             out(delimiterLine)
             val payload = text.s
             var start = 0
@@ -2765,7 +2765,7 @@ object Tel extends Tel2:
           childIndex += 1
 
       def emitBlock(block: Tel.Block, indent: Int, sigil: Char): Unit =
-        val pad = ("  ": String)*indent
+        val pad = s"  "*indent
 
         block.comments.each: comment =>
           val text = comment.text.s
@@ -2800,7 +2800,7 @@ object Tel extends Tel2:
 
       val sigil = document.pragma.let(_.sigil.or('#')).or('#')
 
-      document.interpreterDirective.let: payload => out(("#!": String) + payload.s)
+      document.interpreterDirective.let: payload => out(s"#!${payload.s}")
 
       document.pragma.let: pragma =>
         val parts = scala.collection.mutable.ArrayBuffer.empty[String]
@@ -2835,7 +2835,7 @@ object Tel extends Tel2:
     val builder: StringBuilder = new StringBuilder()
     showable.text(tel: Tel).each { char => builder.append(Inspectable.escape(char).s) }
 
-    (("tel\"": String)+builder.toString+"\"").tt
+    t"tel\"${builder.toString}\""
 
   // Macro-friendly factory: bypasses the private constructor so generated
   // code from the `tel"…"` interpolator can produce Tel values without
@@ -3537,7 +3537,7 @@ object Tel extends Tel2:
     // This eliminates the prior `parsed.copy(atoms = finalAtoms, children = ...)`
     // double-allocation: Tel.Compound is built exactly once with its final
     // atoms and children set.
-    var compoundLineKeyword: Text = t""
+    var compoundLineKeyword: Text = ""
     var compoundLineRemark:  Optional[Text] = Unset
 
     // ── Keyword interning cache ───────────────────────────────────────────────
@@ -3861,7 +3861,7 @@ object Tel extends Tel2:
       compoundScratchIx = 0
       java.util.Arrays.fill(scratchBlocks.asInstanceOf[scala.Array[AnyRef]], null)
       blockScratchIx = 0
-      compoundLineKeyword = t""
+      compoundLineKeyword = ""
       compoundLineRemark  = Unset
 
     // Soft reset between documents in a stream (§6.1). Re-initialises only
@@ -3896,7 +3896,7 @@ object Tel extends Tel2:
       compoundScratchIx = 0
       java.util.Arrays.fill(scratchBlocks.asInstanceOf[scala.Array[AnyRef]], null)
       blockScratchIx = 0
-      compoundLineKeyword = t""
+      compoundLineKeyword = ""
       compoundLineRemark  = Unset
 
     // ── Top-level parse ───────────────────────────────────────────────────────
@@ -4332,7 +4332,7 @@ object Tel extends Tel2:
           // The sigil form is a *final* single character; a non-final one
           // matches no form (E121), whatever the character.
           if !isFinal then bad(column, 1)
-          else if c.isLetterOrDigit || ("()[]{}<>": String).indexOf(c.toInt) >= 0
+          else if c.isLetterOrDigit || s"()[]{}<>".indexOf(c.toInt) >= 0
           then recoverAt(Reason.BadSigil, line, column, 1)(())
           else
             sigil = c.toByte
@@ -5023,7 +5023,7 @@ object Tel extends Tel2:
 
       if !more || peek == LF || peek == CR then
         consumeLineEnding()
-        t""
+        ""
       else if peek == SP then
         // Skip the introducer space.
         advance()
@@ -5064,7 +5064,7 @@ object Tel extends Tel2:
         // §16 / E120: non-space immediately after marker is malformed; >1
         // leading space is malformed (unless empty heading).
         if !more || peek == LF || peek == CR then
-          headings += t""
+          headings += ""
           done = true
         else if peek != SP then
           errorAt(Reason.BadTabulationHeading, head.startLine, lineCol + 1)
@@ -5086,11 +5086,11 @@ object Tel extends Tel2:
               // Empty heading; new marker.
               markers += lineCol
               advance(); lineCol += 1
-              headings += t""
+              headings += ""
               // continue outer loop for next column
             else if !more || peek == LF || peek == CR then
               // Empty heading at line end.
-              headings += t""
+              headings += ""
               done = true
             else
               // E120: more spaces or non-sigil content after empty.
@@ -5400,7 +5400,7 @@ object Tel extends Tel2:
         consumeLineEnding()
         raw.substring(0, end)
 
-      val closingLine = ((" ": String)*literalIndent)+delimiter
+      val closingLine = (s" "*literalIndent)+delimiter
       sb.setLength(0)
       var done = false
 
@@ -5505,7 +5505,7 @@ object Tel extends Tel2:
       // earlier by parsePragma; anything matching here is a violation.
       // §19.5 RestartFromPragma: record the misplaced pragma but parse the line as
       // an ordinary compound (the keyword is already read; the rest follows).
-      if mayBeMisplacedPragma && keyword == t"tel" then
+      if mayBeMisplacedPragma && keyword == "tel" then
         recoverAt(Reason.PragmaNotFirst, lineNumber, 1, keyword.s.length)(())
 
       hasConsumedNonBlankLine = true
@@ -5732,7 +5732,7 @@ object Tel extends Tel2:
       directKeywordHigh = high
       directKeywordLen = len
 
-      if len == 0 then t""
+      if len == 0 then ""
       else if len > 8 then
         Text(sliceText(startMark))
       else
@@ -5840,7 +5840,7 @@ object Tel extends Tel2:
       else
         directKeywordPacked = TelReader.KeywordOpaque
         directEntryKeywordLazy = false
-        directEntryKeyword = if len == 0 then t"" else Text(sliceText(startMark))
+        directEntryKeyword = if len == 0 then "" else Text(sliceText(startMark))
 
     // The lazily-materialized text of a fast-stepped keyword: rebuilt from
     // the fingerprint (byte-exact — the packed bytes are printable ASCII)
@@ -5906,7 +5906,7 @@ object Tel extends Tel2:
     var directEntrySpaces:  Int = 0
     var directEntryIndent:  Int = 0
     var directEntryLine:    Int = 1
-    var directEntryKeyword: Text = t""
+    var directEntryKeyword: Text = ""
 
     // The stepped-to keyword's length in characters, recorded when it is read
     // (`directKeywordLen` is a byte length, and is only meaningful for the
@@ -6046,7 +6046,7 @@ object Tel extends Tel2:
               val keyword = readKeyword()
 
               // E102 / §19.5 RestartFromPragma, as in `parseCompoundLine`.
-              if mayBeMisplacedPragma && keyword == t"tel" then
+              if mayBeMisplacedPragma && keyword == "tel" then
                 recoverAt(Reason.PragmaNotFirst, directEntryLine, 1, keyword.s.length)(())
 
               directEntryKeyword = keyword
@@ -6598,8 +6598,8 @@ object Tel extends Tel2:
       val column = span.startColumn.lay(1)(_.n1)
       val length = span.length.or(0)
 
-      if length > 1 then Text(("line ": String)+line+(", columns ": String)+column+("-": String)+(column + length - 1))
-      else Text(("line ": String)+line+(", column ": String)+column)
+      if length > 1 then Text(s"line $line, columns $column-"+(column + length - 1))
+      else Text(s"line $line, column $column")
 
     // The `Line`-mode `Span` for a token of `length` characters starting at the
     // parser's 1-indexed `line`/`column`. `Span`'s own coordinates are 0-based, and
@@ -6634,7 +6634,7 @@ object Tel extends Tel2:
         override val offset: Optional[Int] = Unset,
         override val length: Optional[Int] = Unset )
     extends Format.Position derives CanEqual:
-      def describe: Text = Text(("line ": String)+line+(", column ": String)+column)
+      def describe: Text = Text(s"line $line, column $column")
 
       override def span: Span =
         Span.line((line - 1).max(0).z, (column - 1).max(0).z, length.or(0))
@@ -7207,7 +7207,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // compound's keyword text.
   def keyword: Text = subtree match
     case c: Tel.Compound  => c.keyword
-    case _: Tel.Document  => t""
+    case _: Tel.Document  => ""
 
   // Flat list of atom texts attached to this node, in atom order: inline
   // atoms first, then the source or literal atom if one follows the line

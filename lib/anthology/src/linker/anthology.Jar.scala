@@ -39,4 +39,4 @@ import gossamer.*
 // `jarEdges`. Unexported: `soundness` already exports zeppelin's `Jar`.
 @unexported
 object Jar extends Format.Application:
-  def id: Text = t"jar"
+  def id: Text = "jar"

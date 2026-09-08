@@ -87,7 +87,7 @@ object Sh:
       Command(arguments*)
 
     def initial: State = State(Awaiting, false, Nil.stdlib)
-    def skip(state: State): State = insert(state, Parameters(t"x"))
+    def skip(state: State): State = insert(state, Parameters("x"))
 
     def insert(state: State, value: Parameters): State = value.params.toList match
       case head :: tail =>
@@ -104,10 +104,10 @@ object Sh:
             State(Unquoted, false, arguments ++ ((t"$last$head" :: tail): sci.List[Text]))
 
           case State(Quotes1, false, arguments :+ last, _, _) =>
-            State(Quotes1, false, arguments :+ ((t"$last$head" :: tail): sci.List[Text]).join(t" "))
+            State(Quotes1, false, arguments :+ ((t"$last$head" :: tail): sci.List[Text]).join(" "))
 
           case State(Quotes2, false, arguments :+ last, _, _) =>
-            State(Quotes2, false, arguments :+ ((t"$last$head" :: tail): sci.List[Text]).join(t" "))
+            State(Quotes2, false, arguments :+ ((t"$last$head" :: tail): sci.List[Text]).join(" "))
 
         state2.copy(offset = state.offset + 1, quoteStart = state.quoteStart)
 
@@ -143,10 +143,10 @@ object Sh:
           State(Quotes1, false, arguments)
 
         case (State(Awaiting, false, arguments, _, _), '"') =>
-          State(Quotes2, false, arguments :+ t"")
+          State(Quotes2, false, arguments :+ "")
 
         case (State(Awaiting, false, arguments, _, _), '\'') =>
-          State(Quotes1, false, arguments :+ t"")
+          State(Quotes1, false, arguments :+ "")
 
         case (State(Awaiting, _, arguments, _, _), char) =>
           State(Unquoted, false, arguments :+ t"$char")
@@ -164,7 +164,7 @@ object Sh:
         ( offset = state.offset + 1,
           quoteStart = if entering then state.offset else state.quoteStart )
 
-  given nothing: Insertion[Parameters, Nothing] = value => Parameters(t"")
+  given nothing: Insertion[Parameters, Nothing] = value => Parameters("")
   given text: Insertion[Parameters, Text] = value => Parameters(value)
   given list: Insertion[Parameters, List[Text]] = xs => Parameters(xs*)
   given command: Insertion[Parameters, Command] = command => Parameters(command.arguments*)

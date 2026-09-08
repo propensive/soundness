@@ -359,7 +359,7 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
     assert(kyo == catsEffect, s"$construction: Kyo $kyo ≠ cats-effect $catsEffect")
 
   private def check()(using Threading): Unit =
-    agree(t"runner")(Direct.runner(), Rivals.Ce.runner(), Rivals.Ky.runner())
+    agree("runner")(Direct.runner(), Rivals.Ce.runner(), Rivals.Ky.runner())
 
     depths.foreach: depth =>
       agree(t"deep bind $depth")
@@ -369,14 +369,14 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
       agree(t"map chain $depth")
         ( Direct.mapChain(depth), Rivals.Ce.mapChain(depth), Rivals.Ky.mapChain(depth) )
 
-    agree(t"ref")(Direct.ref(ops), Rivals.Ce.ref(ops), Rivals.Ky.ref(ops))
-    agree(t"promise")(Direct.promise(ops), Rivals.Ce.deferred(ops), Rivals.Ky.promise(ops))
-    agree(t"queue")
+    agree("ref")(Direct.ref(ops), Rivals.Ce.ref(ops), Rivals.Ky.ref(ops))
+    agree("promise")(Direct.promise(ops), Rivals.Ce.deferred(ops), Rivals.Ky.promise(ops))
+    agree("queue")
       ( Direct.queue(ops, capacity),
         Rivals.Ce.queue(ops, capacity),
         Rivals.Ky.queue(ops, capacity) )
-    agree(t"permit")(Direct.permit(ops), Rivals.Ce.semaphore(ops), Rivals.Ky.semaphore(ops))
-    agree(t"spawn/join")(Direct.spawnJoin(ops), Rivals.Ce.spawnJoin(ops), Rivals.Ky.spawnJoin(ops))
+    agree("permit")(Direct.permit(ops), Rivals.Ce.semaphore(ops), Rivals.Ky.semaphore(ops))
+    agree("spawn/join")(Direct.spawnJoin(ops), Rivals.Ce.spawnJoin(ops), Rivals.Ky.spawnJoin(ops))
 
     rounds.foreach: work =>
       agree(t"workers $work")
@@ -408,9 +408,9 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
     check()(using threading.virtualThreading)
     check()(using threading.pooledThreading)
 
-    val bench = Bench(heap = t"2g", gc = t"G1")
-    val depthAxis: Axis[Int] = Axis(t"depth")(1000, 10000)
-    val workAxis: Axis[Int] = Axis(t"work")(0, 64)
+    val bench = Bench(heap = "2g", gc = "G1")
+    val depthAxis: Axis[Int] = Axis("depth")(1000, 10000)
+    val workAxis: Axis[Int] = Axis("work")(0, 64)
 
     suite(m"Runner baseline"):
       bench(m"Runner overhead")(target = 1*Second, baseline = Library.CatsEffect).over(Library):

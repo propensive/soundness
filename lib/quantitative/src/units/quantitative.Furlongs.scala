@@ -36,7 +36,7 @@ import anticipation.*
 import rudiments.*
 
 object Furlongs:
-  given designation: Designation[Furlongs[1]] = () => "fur".tt
+  given designation: Designation[Furlongs[1]] = () => "fur"
   inline given ratio: Ratio[Metres[1] & Furlongs[-1], 201.168] = !!
 
 trait Furlongs[Power <: Nat] extends Units[Power, Distance]

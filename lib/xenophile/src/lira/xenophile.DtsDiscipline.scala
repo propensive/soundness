@@ -49,7 +49,7 @@ import errorDiagnostics.emptyDiagnostics
 // TypeScript consumer compiles against, whatever produced the JavaScript beneath it — hand-written
 // JavaScript, TypeScript, or a compiler targeting neither.
 object DtsDiscipline extends Discipline:
-  def id: Text = t"dts/1"
+  def id: Text = "dts/1"
 
   // Universal, for want of a universe to name. The base schema's universes are `jvm`, `sjsir` and
   // `nir` (§9.4 reserves `js` for a future schema layer), and §11.3 already admits foreign

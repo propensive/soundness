@@ -132,7 +132,7 @@ object Xml extends Tag.Container
     case _ if xml eq Absent                    => Unset
     case TextNode(text)                        => text
     case Element(_, _, Array(TextNode(text))) => text
-    case Element(_, _, Array())               => t""
+    case Element(_, _, Array())               => ""
     case Fragment(node: Node)                  => textOf(node)
     case _                                     => Unset
 
@@ -155,60 +155,60 @@ object Xml extends Tag.Container
       textOf(xml).let: text =>
         try Integer.parseInt(text.s).nn
         catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Int"))) yet 0
+          raise(Xml.Error(Reason.Malformed(text, "Int"))) yet 0
 
       . or:
-          raise(Xml.Error(Reason.Untextual(t"Int"))) yet 0
+          raise(Xml.Error(Reason.Untextual("Int"))) yet 0
 
   given long: (tactic: Tactic[Xml.Error]) => Long is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Long.parseLong(text.s).nn
         catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Long"))) yet 0L
+          raise(Xml.Error(Reason.Malformed(text, "Long"))) yet 0L
 
       . or:
-          raise(Xml.Error(Reason.Untextual(t"Long"))) yet 0L
+          raise(Xml.Error(Reason.Untextual("Long"))) yet 0L
 
   given short: (tactic: Tactic[Xml.Error]) => Short is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Short.parseShort(text.s).nn
         catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Short"))) yet 0.toShort
+          raise(Xml.Error(Reason.Malformed(text, "Short"))) yet 0.toShort
 
       . or:
-          raise(Xml.Error(Reason.Untextual(t"Short"))) yet 0.toShort
+          raise(Xml.Error(Reason.Untextual("Short"))) yet 0.toShort
 
   given byte: (tactic: Tactic[Xml.Error]) => Byte is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Byte.parseByte(text.s).nn
         catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Byte"))) yet 0.toByte
+          raise(Xml.Error(Reason.Malformed(text, "Byte"))) yet 0.toByte
 
       . or:
-          raise(Xml.Error(Reason.Untextual(t"Byte"))) yet 0.toByte
+          raise(Xml.Error(Reason.Untextual("Byte"))) yet 0.toByte
 
   given double: (tactic: Tactic[Xml.Error]) => Double is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Double.parseDouble(text.s).nn
         catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Double"))) yet 0.0
+          raise(Xml.Error(Reason.Malformed(text, "Double"))) yet 0.0
 
       . or:
-          raise(Xml.Error(Reason.Untextual(t"Double"))) yet 0.0
+          raise(Xml.Error(Reason.Untextual("Double"))) yet 0.0
 
   given float: (tactic: Tactic[Xml.Error]) => Float is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Float.parseFloat(text.s).nn
         catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Float"))) yet 0.0f
+          raise(Xml.Error(Reason.Malformed(text, "Float"))) yet 0.0f
 
       . or:
-          raise(Xml.Error(Reason.Untextual(t"Float"))) yet 0.0f
+          raise(Xml.Error(Reason.Untextual("Float"))) yet 0.0f
 
   given boolean: (tactic: Tactic[Xml.Error]) => Boolean is Decodable in Xml =
     caps.unsafe.unsafeAssumePure: xml =>
@@ -216,17 +216,17 @@ object Xml extends Tag.Container
         text.s match
           case "true"  => true
           case "false" => false
-          case _       => raise(Xml.Error(Reason.Malformed(text, t"Boolean"))) yet false
+          case _       => raise(Xml.Error(Reason.Malformed(text, "Boolean"))) yet false
 
       . or:
-          raise(Xml.Error(Reason.Untextual(t"Boolean"))) yet false
+          raise(Xml.Error(Reason.Untextual("Boolean"))) yet false
 
   // The encoding counterpart of the `boolean` decodable above. The other
   // primitives encode through the blanket `encodable`'s `Encodable in Text`
   // branch, but no `Boolean is Encodable in Text` exists, so without this a
   // `Boolean` field cannot be written at all despite reading fine.
   given booleanEncodable: Boolean is Encodable in Xml =
-    value => TextNode(if value then t"true" else t"false")
+    value => TextNode(if value then "true" else "false")
 
   // Marks a `Decodable in Xml` / `Encodable in Xml` as *repeatable* —
   // xylophone's counterpart of stratiform's `Tel.Decodable.repeatable` flag.
@@ -324,7 +324,7 @@ object Xml extends Tag.Container
               // collection) has no per-element XML shape; it nests under an
               // unnamed element, relabelled by the enclosing product.
               case Fragment(nested*) =>
-                nodes += Element(t"", Attributes.empty, Array.from(nested))
+                nodes += Element("", Attributes.empty, Array.from(nested))
 
           Fragment(nodes.toSeq*)
 
@@ -364,8 +364,8 @@ object Xml extends Tag.Container
       xml =>
         provide[Tactic[Xml.Error]]:
           val text: Text =
-            if xml eq Absent then raise(Xml.Error(Reason.Missing)) yet t""
-            else textOf(xml).or(raise(Xml.Error(Reason.Empty)) yet t"")
+            if xml eq Absent then raise(Xml.Error(Reason.Missing)) yet ""
+            else textOf(xml).or(raise(Xml.Error(Reason.Empty)) yet "")
 
           summon[`value` is Decodable in Text].decoded(text)
 
@@ -436,7 +436,7 @@ object Xml extends Tag.Container
 
             case _ =>
               raise(Xml.Error(Reason.AbsentProduct(typeName)))
-              buildWith[derivation](Element(t"", Attributes.empty, Array.empty))
+              buildWith[derivation](Element("", Attributes.empty, Array.empty))
 
     // Scans the venture slots and constructs positionally through the threaded `Mirror` — a
     // plain method: the argument buffer must not be allocated inside an inline expansion,
@@ -1301,64 +1301,64 @@ object Xml extends Tag.Container
   given intParsable: Int is Xml.Parsable = new Xml.Parsable:
     type Self = Int
     def parse(reader: Xml.Reader^): Int =
-      reader.int().or(reader.fault(Reason.Untextual(t"Int")) yet 0)
+      reader.int().or(reader.fault(Reason.Untextual("Int")) yet 0)
 
     override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Int =
-      raise(Xml.Error(Reason.Absent(t"Int"))) yet 0
+      raise(Xml.Error(Reason.Absent("Int"))) yet 0
 
     override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): Int =
       try Integer.parseInt(text.s)
       catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Int"))) yet 0
+          raise(Xml.Error(Reason.Malformed(text, "Int"))) yet 0
 
   given longParsable: Long is Xml.Parsable = new Xml.Parsable:
     type Self = Long
     def parse(reader: Xml.Reader^): Long =
-      reader.long().or(reader.fault(Reason.Untextual(t"Long")) yet 0L)
+      reader.long().or(reader.fault(Reason.Untextual("Long")) yet 0L)
 
     override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Long =
-      raise(Xml.Error(Reason.Absent(t"Long"))) yet 0L
+      raise(Xml.Error(Reason.Absent("Long"))) yet 0L
 
     override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): Long =
       try jl.Long.parseLong(text.s)
       catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Long"))) yet 0L
+          raise(Xml.Error(Reason.Malformed(text, "Long"))) yet 0L
 
-  given shortParsable: Short is Xml.Parsable = primitiveParsable(0.toShort, t"Short"): text =>
+  given shortParsable: Short is Xml.Parsable = primitiveParsable(0.toShort, "Short"): text =>
     try jl.Short.parseShort(text.s) catch case _: NumberFormatException => Unset
 
-  given byteParsable: Byte is Xml.Parsable = primitiveParsable(0.toByte, t"Byte"): text =>
+  given byteParsable: Byte is Xml.Parsable = primitiveParsable(0.toByte, "Byte"): text =>
     try jl.Byte.parseByte(text.s) catch case _: NumberFormatException => Unset
 
   given doubleParsable: Double is Xml.Parsable = new Xml.Parsable:
     type Self = Double
     def parse(reader: Xml.Reader^): Double =
-      reader.double().or(reader.fault(Reason.Untextual(t"Double")) yet 0.0)
+      reader.double().or(reader.fault(Reason.Untextual("Double")) yet 0.0)
 
     override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Double =
-      raise(Xml.Error(Reason.Absent(t"Double"))) yet 0.0
+      raise(Xml.Error(Reason.Absent("Double"))) yet 0.0
 
     override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): Double =
       try jl.Double.parseDouble(text.s)
       catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Double"))) yet 0.0
+          raise(Xml.Error(Reason.Malformed(text, "Double"))) yet 0.0
 
-  given floatParsable: Float is Xml.Parsable = primitiveParsable(0.0f, t"Float"): text =>
+  given floatParsable: Float is Xml.Parsable = primitiveParsable(0.0f, "Float"): text =>
     try jl.Float.parseFloat(text.s) catch case _: NumberFormatException => Unset
 
   given booleanParsable: Boolean is Xml.Parsable = new Xml.Parsable:
     type Self = Boolean
     def parse(reader: Xml.Reader^): Boolean =
-      reader.boolean().or(reader.fault(Reason.Untextual(t"Boolean")) yet false)
+      reader.boolean().or(reader.fault(Reason.Untextual("Boolean")) yet false)
 
     override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): Boolean =
-      raise(Xml.Error(Reason.Absent(t"Boolean"))) yet false
+      raise(Xml.Error(Reason.Absent("Boolean"))) yet false
 
     override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): Boolean =
       text.s match
         case "true"  => true
         case "false" => false
-        case _       => raise(Xml.Error(Reason.Malformed(text, t"Boolean"))) yet false
+        case _       => raise(Xml.Error(Reason.Malformed(text, "Boolean"))) yet false
 
   // Element-wise `Xml.Field` for collections, resolved during derivation:
   // the element's own parser comes from the fallback chain, so nested
@@ -1407,11 +1407,11 @@ object Xml extends Tag.Container
       type Self = value
 
       def parse(reader: Xml.Reader^): value =
-        codec.decoded(reader.text().or(reader.fault(Reason.Empty) yet t""))
+        codec.decoded(reader.text().or(reader.fault(Reason.Empty) yet ""))
 
       override def absent()(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
         raise(Xml.Error(Reason.Missing))
-        codec.decoded(t"")
+        codec.decoded("")
 
       override def attribute(text: Text)(using Tactic[Xml.Error], Foci[Xml.Focus]): value =
         codec.decoded(text)
@@ -1746,10 +1746,10 @@ object Xml extends Tag.Container
 
     while index < length do
       source.charAt(index) match
-        case '&'  => escape(t"&amp;")
-        case '<'  => escape(t"&lt;")
-        case '>'  => escape(t"&gt;")
-        case '\r' => escape(t"&#xD;")
+        case '&'  => escape("&amp;")
+        case '<'  => escape("&lt;")
+        case '>'  => escape("&gt;")
+        case '\r' => escape("&#xD;")
         case _    => ()
 
       index += 1
@@ -1772,13 +1772,13 @@ object Xml extends Tag.Container
 
     while index < length do
       source.charAt(index) match
-        case '&'  => escape(t"&amp;")
-        case '<'  => escape(t"&lt;")
-        case '>'  => escape(t"&gt;")
-        case '"'  => escape(t"&quot;")
-        case '\t' => escape(t"&#x9;")
-        case '\n' => escape(t"&#xA;")
-        case '\r' => escape(t"&#xD;")
+        case '&'  => escape("&amp;")
+        case '<'  => escape("&lt;")
+        case '>'  => escape("&gt;")
+        case '"'  => escape("&quot;")
+        case '\t' => escape("&#x9;")
+        case '\n' => escape("&#xA;")
+        case '\r' => escape("&#xD;")
         case _    => ()
 
       index += 1
@@ -1903,7 +1903,7 @@ object Xml extends Tag.Container
     val builder: StringBuilder = new StringBuilder()
     markup.each { char => builder.append(Inspectable.escape(char).s) }
 
-    (("xml\"": String)+builder.toString+"\"").tt
+    t"xml\"${builder.toString}\""
 
   private enum Token:
     case Close, Comment, Empty, Open, Header, Cdata, Pi, Doctype
@@ -1918,7 +1918,7 @@ object Xml extends Tag.Container
           type Topic = node.Topic
 
   import Issue.*
-  def name: Text = t"XML"
+  def name: Text = "XML"
 
   given text: [label >: "#text" <: Label] => Conversion[Text, Xml of label] =
     TextNode(_).of[label]
@@ -2765,7 +2765,7 @@ object Xml extends Tag.Container
             // we report it but include U+0000 in the value text so the
             // macro post-processor can locate it.
             appendSlice(segStart, buf)
-            callback(position.z, Hole.Attribute(tag, t""))
+            callback(position.z, Hole.Attribute(tag, ""))
             buf.append('\u0000')
             advance()
             segStart = begin()
@@ -2842,7 +2842,7 @@ object Xml extends Tag.Container
             if q == '\u0000' then
               callback(position.z, Hole.Attribute(tag, key))
               advance()
-              t"\u0000"
+              "\u0000"
             else if q == '"' || q == '\'' then
               advance()
               readAttrValue(tag, q)
@@ -2989,7 +2989,7 @@ object Xml extends Tag.Container
         headers = false
         skipWs()
         val versionKey = readName()
-        if versionKey != t"version" then fail(Issue.Unexpected(versionKey.s.charAt(0)), nameStart)
+        if versionKey != "version" then fail(Issue.Unexpected(versionKey.s.charAt(0)), nameStart)
         skipWs()
         expectChar('=')
         skipWs()
@@ -3004,7 +3004,7 @@ object Xml extends Tag.Container
 
         if more && peek == 'e' then
           val key = readName()
-          if key != t"encoding" then fail(Issue.Unexpected(key.s.charAt(0)), nameStart)
+          if key != "encoding" then fail(Issue.Unexpected(key.s.charAt(0)), nameStart)
           skipWs()
           expectChar('=')
           skipWs()
@@ -3017,7 +3017,7 @@ object Xml extends Tag.Container
 
         if more && peek == 's' then
           val key = readName()
-          if key != t"standalone" then fail(Issue.Unexpected(key.s.charAt(0)), nameStart)
+          if key != "standalone" then fail(Issue.Unexpected(key.s.charAt(0)), nameStart)
           skipWs()
           expectChar('=')
           skipWs()
@@ -3089,12 +3089,12 @@ object Xml extends Tag.Container
     protected def readElement()(using Tactic[Parse.Error]): Element =
       // Detect `<\u0000` (macro element hole)
       if more && peek == '\u0000' then
-        callback(position.z, Hole.Element(t""))
+        callback(position.z, Hole.Element(""))
         advance()
         if !more then fail(Issue.ExpectedMore)
         if peek != '>' then fail(Issue.Unexpected(peek))
         advance()
-        Element(t"\u0000", Attributes.empty, Array.empty[Node])
+        Element("\u0000", Attributes.empty, Array.empty[Node])
       else
         val name = readName()
         val attrs = readAttributes(name)
@@ -3209,7 +3209,7 @@ object Xml extends Tag.Container
 
       while more do
         if peek != '<' then
-          val text = readText(t"")
+          val text = readText("")
           if text.length > 0 then nodes += TextNode(text)
         else
           syncTo()
@@ -3278,7 +3278,7 @@ object Xml extends Tag.Container
       // Macro element holes can't carry meaningful positions; emit an empty
       // attribute / child set and a zero-length descriptor.
       if more && peek == '\u0000' then
-        callback(position.z, Hole.Element(t""))
+        callback(position.z, Hole.Element(""))
         advance()
         if !more then fail(Issue.ExpectedMore)
         if peek != '>' then fail(Issue.Unexpected(peek))
@@ -3295,7 +3295,7 @@ object Xml extends Tag.Container
         relinquishIndexBuffer()
         relinquishIndexBuffer()
         relinquishIndexBuffer()
-        Element(t"\u0000", Attributes.empty, Array.empty[Node])
+        Element("\u0000", Attributes.empty, Array.empty[Node])
       else
         val attrDescs = getIndexBuffer()
         val attrEnds  = getIndexBuffer()
@@ -3393,7 +3393,7 @@ object Xml extends Tag.Container
             if q == '\u0000' then
               callback(position.z, Hole.Attribute(tag, key))
               advance()
-              t"\u0000"
+              "\u0000"
             else if q == '"' || q == '\'' then
               advance()
               readAttrValue(tag, q)
@@ -3506,7 +3506,7 @@ object Xml extends Tag.Container
 
       while more do
         if peek != '<' then
-          val text = readText(t"")
+          val text = readText("")
           if text.length > 0 then nodes += TextNode(text)
         else
           advance()
@@ -3609,7 +3609,7 @@ object Xml extends Tag.Container
     @scala.caps.unsafe.untrackedCaptures
     private var directChildPackable: Boolean = false
     @scala.caps.unsafe.untrackedCaptures
-    private var directChildName:     Text = t""
+    private var directChildName:     Text = ""
 
     private inline def directPop(): Text = directNames.remove(directNames.length - 1)
 
@@ -3650,7 +3650,7 @@ object Xml extends Tag.Container
 
     // The root character data, up to the next markup or the end of the
     // input — read exactly as `parseXml0` reads a root-level text run.
-    private[xylophone] def directRootText()(using Tactic[Parse.Error]): Text = readText(t"")
+    private[xylophone] def directRootText()(using Tactic[Parse.Error]): Text = readText("")
 
     // The attributes of the element opened most recently. Valid until the
     // next element is opened.
@@ -3791,7 +3791,7 @@ object Xml extends Tag.Container
       if directEmpty then
         directEmpty = false
         directPop()
-        t""
+        ""
       else
         val parent = directNames(directNames.length - 1)
         var nodes = 0
@@ -3829,7 +3829,7 @@ object Xml extends Tag.Container
               if nodes == 0 then single = text
               nodes += 1
 
-        if nodes == 0 then t"" else if nodes == 1 then single else null
+        if nodes == 0 then "" else if nodes == 1 then single else null
 
     // ── Byte-parsed scalar content ─────────────────────────────────────────
     // The current element's text content parsed straight from the buffered

@@ -70,7 +70,7 @@ case class Argument
     // suggestion that is not a flag (an operand value offered at the same position) is left
     // alone: there is no cluster to extend.
     case Argument.Format.CharFlag(index) =>
-      if !suggestion.core.starts(t"-") then suggestion
+      if !suggestion.core.starts("-") then suggestion
       else
         suggestion.copy
          ( core       = suggestion.core.skip(1),
@@ -79,10 +79,10 @@ case class Argument
            incomplete = true )
 
     case Argument.Format.EqualityPrefix =>
-      suggestion.copy(core = suggestion.core+t"="+value.after(value.offsetOf("=").or(Prim)))
+      suggestion.copy(core = suggestion.core+"="+value.after(value.offsetOf("=").or(Prim)))
 
     case Argument.Format.EqualitySuffix =>
-      val suggestion2 = suggestion.copy(prefix = value.before(value.offsetOf("=").or(Prim))+t"=")
+      val suggestion2 = suggestion.copy(prefix = value.before(value.offsetOf("=").or(Prim))+"=")
       suggestion2
 
   def apply(): Text = format match
@@ -114,8 +114,8 @@ case class Argument
       case Argument.Format.Full            => (t"", t"")
       case Argument.Format.FlagSuffix      => (value.keep(2), t"")
       case Argument.Format.CharFlag(index) => (value.before(index + 1), value.after(index + 1))
-      case Argument.Format.EqualityPrefix  => (t"", value.after(value.offsetOf("=").or(Prim)))
-      case Argument.Format.EqualitySuffix  => (value.before(value.offsetOf("=").or(Prim)), t"")
+      case Argument.Format.EqualityPrefix  => (t"", value.after(value.offsetOf(t"=").or(Prim)))
+      case Argument.Format.EqualitySuffix  => (value.before(value.offsetOf(t"=").or(Prim)), t"")
 
     cli.suggest(this, update, prefix, suffix)
 

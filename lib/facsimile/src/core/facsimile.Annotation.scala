@@ -62,29 +62,29 @@ object Annotation:
 
     pdf.resolved(value) match
       case Cos.Dictionary(entries) =>
-        Pdf.Rect.read(entries(t"Rect").or(Cos.Nil), scale).let: rect =>
-          val action = pdf.resolved(entries(t"A").or(Cos.Nil))
-          val kind = action(t"S").let(_.name).or(t"")
+        Pdf.Rect.read(entries("Rect").or(Cos.Nil), scale).let: rect =>
+          val action = pdf.resolved(entries("A").or(Cos.Nil))
+          val kind = action("S").let(_.name).or(t"")
 
-          entries(t"Subtype").let(pdf.resolved(_).name).or(t"") match
-            case t"Link" =>
-              val target = entries(t"Dest")
-                . or(if kind == t"GoTo" then action(t"D") else Unset)
+          entries("Subtype").let(pdf.resolved(_).name).or(t"") match
+            case "Link" =>
+              val target = entries("Dest")
+                . or(if kind == "GoTo" then action("D") else Unset)
 
               val uri =
-                if kind == t"URI" then action(t"URI").let(pdf.resolved(_).text) else Unset
+                if kind == "URI" then action("URI").let(pdf.resolved(_).text) else Unset
 
               Link(rect, target.let(Destination.read(_, pages, named)), uri, entries)
 
-            case t"Text" =>
+            case "Text" =>
               Note
                 ( rect,
-                  entries(t"Contents").let(pdf.resolved(_).text),
-                  entries(t"Open").let(pdf.resolved(_).truth).or(false),
+                  entries("Contents").let(pdf.resolved(_).text),
+                  entries("Open").let(pdf.resolved(_).truth).or(false),
                   entries )
 
-            case t"Widget" =>
-              Widget(rect, entries(t"T").let(pdf.resolved(_).text), entries)
+            case "Widget" =>
+              Widget(rect, entries("T").let(pdf.resolved(_).text), entries)
 
             case subtype =>
               Other(subtype, rect, entries)

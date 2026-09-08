@@ -41,13 +41,13 @@ case class Shelf(name: Text)
 case class Box(name: Text)
 case class Pencil(name: Text)
 
-val top = Shelf(t"top")
-val middle = Shelf(t"middle")
-val bottom = Shelf(t"bottom")
+val top = Shelf("top")
+val middle = Shelf("middle")
+val bottom = Shelf("bottom")
 
-val red = Pencil(t"red")
-val green = Pencil(t"green")
-val blue = Pencil(t"blue")
+val red = Pencil("red")
+val green = Pencil("green")
+val blue = Pencil("blue")
 
 object Tests extends Suite(m"Anamnesis tests"):
   def run(): Unit =
@@ -57,8 +57,8 @@ object Tests extends Suite(m"Anamnesis tests"):
                                Box -< Pencil,
                        Text >- Box) = Database()
 
-    val alpha: Ref of Box in db.type = Box(t"Alpha").store()
-    val beta: Ref of Box in db.type = Box(t"Beta").store()
+    val alpha: Ref of Box in db.type = Box("Alpha").store()
+    val beta: Ref of Box in db.type = Box("Beta").store()
 
     test(m"Database is initally empty"):
       alpha.lookup[Pencil]

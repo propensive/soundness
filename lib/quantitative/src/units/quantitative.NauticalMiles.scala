@@ -36,7 +36,7 @@ import anticipation.*
 import rudiments.*
 
 object NauticalMiles:
-  given designation: Designation[NauticalMiles[1]] = () => "NM".tt
+  given designation: Designation[NauticalMiles[1]] = () => "NM"
   inline given ratio: Ratio[NauticalMiles[1] & Metres[-1], 5.399568034557236E-4] = !!
 
 trait NauticalMiles[Power <: Nat] extends Units[Power, Distance]

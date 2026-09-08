@@ -57,7 +57,7 @@ extension (session: Llm.Session^)
   :   value =
 
     val answer: Llm.Tool =
-      Llm.Tool(t"answer", t"The structured answer to the question.", schematic.schema())
+      Llm.Tool("answer", "The structured answer to the question.", schematic.schema())
 
     val reply = session.forced(Llm.Message(Llm.Role.User, prompt), answer)
     val arguments: Json = session.arguments(reply)

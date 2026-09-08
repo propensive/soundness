@@ -65,7 +65,7 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
 
   // A base schema with a three-variant Select, referenced by `pet`.
   private def menagerie(required: Boolean, layerBody: Text): Text =
-    val polarity = if required then t"" else t" optional"
+    val polarity = if required then "" else " optional"
     Text(s"""|tel 1.0
              |
              |name menagerie
@@ -91,19 +91,19 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
   def run(): Unit =
     suite(m"Sigil validity (E207)"):
       test(m"a parenthetical sigil raises E207"):
-        codeOf(schemaOf(t"tel 1.0\nname t\ndocument\n  field a String\n").copy(sigil = '('))
+        codeOf(schemaOf("tel 1.0\nname t\ndocument\n  field a String\n").copy(sigil = '('))
       . assert(_ == 207)
 
       test(m"a letter sigil raises E207"):
-        codeOf(schemaOf(t"tel 1.0\nname t\ndocument\n  field a String\n").copy(sigil = 'x'))
+        codeOf(schemaOf("tel 1.0\nname t\ndocument\n  field a String\n").copy(sigil = 'x'))
       . assert(_ == 207)
 
       test(m"a symbolic sigil is accepted"):
-        codeOf(schemaOf(t"tel 1.0\nname t\ndocument\n  field a String\n").copy(sigil = '%'))
+        codeOf(schemaOf("tel 1.0\nname t\ndocument\n  field a String\n").copy(sigil = '%'))
       . assert(_ == 0)
 
       test(m"the layer-selection marker '+' as sigil raises E207"):
-        codeOf(schemaOf(t"tel 1.0\nname t\ndocument\n  field a String\n").copy(sigil = '+'))
+        codeOf(schemaOf("tel 1.0\nname t\ndocument\n  field a String\n").copy(sigil = '+'))
       . assert(_ == 207)
 
     suite(m"Base-side select constraints"):
@@ -225,7 +225,7 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
                                                    |  select Pet
                                                    |    exclude fox
                                                    |""".stripMargin)))
-        composed.selects.readable.find(_.name == t"Pet").get.variants.readable.map(_.keyword.s).toList
+        composed.selects.readable.find(_.name == "Pet").get.variants.readable.map(_.keyword.s).toList
       . assert(_ == List("cat", "dog"))
 
       test(m"a document using an excluded variant fails with E306"):
@@ -234,7 +234,7 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
                                                    |  select Pet
                                                    |    exclude fox
                                                    |""".stripMargin)))
-        capture[Tel.Error](Tel.Type.assign(t"tel 1.0\n\nfox robin\n".read[Tel], composed))
+        capture[Tel.Error](Tel.Type.assign("tel 1.0\n\nfox robin\n".read[Tel], composed))
         . reason.number
       . assert(_ == 306)
 
@@ -306,7 +306,7 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
         val body = doc.bintel(Tels.Axiom.tels)
         val element = Bintel.decode(body, Tels.Axiom.tels)
         val composed = Tels.Validation.validate(Tels.SemanticReconstructor.fromElement(element))
-        composed.selects.readable.find(_.name == t"Pet").get.variants.readable.map(_.keyword.s).toList
+        composed.selects.readable.find(_.name == "Pet").get.variants.readable.map(_.keyword.s).toList
       . assert(_ == List("cat", "dog"))
 
     suite(m"Pattern constraints (§21.8)"):
@@ -325,80 +325,80 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
       def pattern(regex: Text): Text = Text(s"  pattern ${regex.s}\n")
 
       test(m"a scalar constrained by a pattern alone is valid"):
-        schemaCode(coded(pattern(t"[A-Z]{2}-[0-9]{4}"), t""))
+        schemaCode(coded(pattern("[A-Z]{2}-[0-9]{4}"), ""))
       . assert(_ == 0)
 
       test(m"a scalar with neither validate nor pattern raises E224"):
-        schemaCode(t"tel 1.0\n\nname u\n\nscalar Loose\n\ndocument\n  field x Loose\n")
+        schemaCode("tel 1.0\n\nname u\n\nscalar Loose\n\ndocument\n  field x Loose\n")
       . assert(_ == 224)
 
       test(m"an unparseable pattern raises E222"):
-        schemaCode(coded(pattern(t"[unclosed"), t""))
+        schemaCode(coded(pattern("[unclosed"), ""))
       . assert(_ == 222)
 
       test(m"a pattern using a construct outside RE2 raises E222"):
-        schemaCode(coded(pattern(t"(?=foo)bar"), t""))
+        schemaCode(coded(pattern("(?=foo)bar"), ""))
       . assert(_ == 222)
 
       test(m"E222 is reported before E223"):
         // The layer widens *and* the base pattern is invalid; the invalid
         // pattern must win, since containment cannot be asked about it.
-        schemaCode(coded(pattern(t"[unclosed"), t"layer l\n  scalar Code\n    pattern .*\n"))
+        schemaCode(coded(pattern("[unclosed"), "layer l\n  scalar Code\n    pattern .*\n"))
       . assert(_ == 222)
 
       test(m"a layer narrowing a pattern is accepted"):
-        schemaCode(coded(pattern(t"[A-Z]{2}-[0-9]{4}"),
-            t"layer regional\n  scalar Code\n    pattern (EU|UK)-[0-9]{4}\n"))
+        schemaCode(coded(pattern("[A-Z]{2}-[0-9]{4}"),
+            "layer regional\n  scalar Code\n    pattern (EU|UK)-[0-9]{4}\n"))
       . assert(_ == 0)
 
       test(m"a layer widening a pattern raises E223"):
-        schemaCode(coded(pattern(t"[A-Z]{2}-[0-9]{4}"),
-            t"layer regional\n  scalar Code\n    pattern (EU|USA)-[0-9]{4}\n"))
+        schemaCode(coded(pattern("[A-Z]{2}-[0-9]{4}"),
+            "layer regional\n  scalar Code\n    pattern (EU|USA)-[0-9]{4}\n"))
       . assert(_ == 223)
 
       test(m"a layer with no pattern lines inherits the base's"):
-        val schema = Tels.Validation.validate(schemaOf(coded(pattern(t"[A-Z]{2}-[0-9]{4}"),
-            t"layer regional\n  scalar Code\n    encoding hex\n")))
+        val schema = Tels.Validation.validate(schemaOf(coded(pattern("[A-Z]{2}-[0-9]{4}"),
+            "layer regional\n  scalar Code\n    encoding hex\n")))
 
-        schema.scalars.readable.find(_.name == t"Code").get.patterns.readable.map(_.s).toList
+        schema.scalars.readable.find(_.name == "Code").get.patterns.readable.map(_.s).toList
       . assert(_ == List("[A-Z]{2}-[0-9]{4}"))
 
       // An inherited empty list denotes Σ*, so a layer's first patterns are
       // trivially contained and need no decision.
       test(m"a layer's first patterns are accepted over an unpatterned base"):
-        schemaCode(coded(t"  validate string\n",
-            t"layer l\n  scalar Code\n    pattern [A-Z]{2}-[0-9]{4}\n"))
+        schemaCode(coded("  validate string\n",
+            "layer l\n  scalar Code\n    pattern [A-Z]{2}-[0-9]{4}\n"))
       . assert(_ == 0)
 
       test(m"restating an identical list needs no containment decision"):
         // A word boundary is `Unverifiable`, so this only passes if the
         // textual-identity short-circuit fires before any decision is made.
-        schemaCode(coded(pattern(t"\\bfoo\\b"),
-            t"layer l\n  scalar Code\n    pattern \\bfoo\\b\n"))
+        schemaCode(coded(pattern("\\bfoo\\b"),
+            "layer l\n  scalar Code\n    pattern \\bfoo\\b\n"))
       . assert(_ == 0)
 
       test(m"an undecidable replacement fails closed as E223"):
-        schemaCode(coded(pattern(t"[a-z]+"), t"layer l\n  scalar Code\n    pattern \\bfoo\\b\n"))
+        schemaCode(coded(pattern("[a-z]+"), "layer l\n  scalar Code\n    pattern \\bfoo\\b\n"))
       . assert(_ == 223)
 
       // Neither replacement pattern alone is contained in the base, but their
       // intersection is: the n-ary containment decision is what accepts this.
       test(m"a multi-pattern replacement is decided as an intersection"):
-        schemaCode(coded(pattern(t"[A-Z]{2}-[0-9]{4}"),
-            t"layer l\n  scalar Code\n    pattern [A-Z]{2}-[0-9]{4}|[A-Z]{2}-[0-9]{2}\n" +
-            t"    pattern [A-Z]{2}-[0-9]{4}|[A-Z]{2}-[0-9]{6}\n"))
+        schemaCode(coded(pattern("[A-Z]{2}-[0-9]{4}"),
+            "layer l\n  scalar Code\n    pattern [A-Z]{2}-[0-9]{4}|[A-Z]{2}-[0-9]{2}\n" +
+            "    pattern [A-Z]{2}-[0-9]{4}|[A-Z]{2}-[0-9]{6}\n"))
       . assert(_ == 0)
 
       test(m"patterns survive a BinTEL round-trip of the schema document"):
-        val doc = coded(pattern(t"[A-Z]{2}-[0-9]{4}"), t"").read[Tel]
+        val doc = coded(pattern("[A-Z]{2}-[0-9]{4}"), "").read[Tel]
         val element = Bintel.decode(doc.bintel(Tels.Axiom.tels), Tels.Axiom.tels)
         val composed = Tels.Validation.validate(Tels.SemanticReconstructor.fromElement(element))
-        composed.scalars.readable.find(_.name == t"Code").get.patterns.readable.map(_.s).toList
+        composed.scalars.readable.find(_.name == "Code").get.patterns.readable.map(_.s).toList
       . assert(_ == List("[A-Z]{2}-[0-9]{4}"))
 
     suite(m"Pattern value checks (§21.8)"):
       val schema = Tels.Validation.validate(schemaOf
-         (t"tel 1.0\n\nname coded\n\nscalar Code\n  pattern [0-9]+\n\ndocument\n  field code Code\n"))
+         ("tel 1.0\n\nname coded\n\nscalar Code\n  pattern [0-9]+\n\ndocument\n  field code Code\n"))
 
       def valueCode(text: Text): Int =
         try
@@ -406,23 +406,23 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
           0
         catch case error: Tel.Error => error.reason.number
 
-      test(m"a value matching the pattern is accepted")(valueCode(t"code 1234\n"))
+      test(m"a value matching the pattern is accepted")(valueCode("code 1234\n"))
       . assert(_ == 0)
 
-      test(m"a value failing the pattern raises E315")(valueCode(t"code 12a4\n"))
+      test(m"a value failing the pattern raises E315")(valueCode("code 12a4\n"))
       . assert(_ == 315)
 
       // §21.8 matches the *entire* value text, as if `\\A(?:p)\\z`, so a
       // partial match is a failure rather than a success.
-      test(m"a leading partial match still raises E315")(valueCode(t"code 12x\n"))
+      test(m"a leading partial match still raises E315")(valueCode("code 12x\n"))
       . assert(_ == 315)
 
-      test(m"a trailing partial match still raises E315")(valueCode(t"code x12\n"))
+      test(m"a trailing partial match still raises E315")(valueCode("code x12\n"))
       . assert(_ == 315)
 
       test(m"multiple patterns AND-conjoin"):
-        val both = Tels.Validation.validate(schemaOf(t"tel 1.0\n\nname coded\n\nscalar Code\n" +
-            t"  pattern [0-9]+\n  pattern ..\n\ndocument\n  field code Code\n"))
+        val both = Tels.Validation.validate(schemaOf("tel 1.0\n\nname coded\n\nscalar Code\n" +
+            "  pattern [0-9]+\n  pattern ..\n\ndocument\n  field code Code\n"))
 
         def code(text: Text): Int =
           try
@@ -430,20 +430,20 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
             0
           catch case error: Tel.Error => error.reason.number
 
-        (code(t"code 12\n"), code(t"code 123\n"))
+        (code("code 12\n"), code("code 123\n"))
       . assert(_ == (0, 315))
 
       // §21.8: validators report E310 and patterns E315 independently, and a
       // value may accumulate several. Under an accrual boundary both are seen,
       // in the §21.7 order — validators first, then patterns.
       test(m"a value failing both a validator and a pattern accrues 310 then 315"):
-        val schema = Tels.Validation.validate(schemaOf(t"tel 1.0\n\nname coded\n\nscalar Code\n" +
-            t"  validate identifier\n  pattern [0-9]+\n\ndocument\n  field code Code\n"))
+        val schema = Tels.Validation.validate(schemaOf("tel 1.0\n\nname coded\n\nscalar Code\n" +
+            "  validate identifier\n  pattern [0-9]+\n\ndocument\n  field code Code\n"))
 
         validate[Tel.Focus](Accrued()):
           case error: Tel.Error => accrual + error.reason.number
         . protect:
-            Tel.Type.assign(t"code -Bad\n".read[Tel], schema, Tel.Validator.Registry.builtins)
+            Tel.Type.assign("code -Bad\n".read[Tel], schema, Tel.Validator.Registry.builtins)
             ()
         . codes.stdlib.toList.reverse
       . assert(_ == scala.List(310, 315))

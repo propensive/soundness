@@ -59,9 +59,9 @@ class Namer(classpath: LocalClasspath):
       if !tasty.path.let(_ == path).or(false) then Unset else
         tasty.covering(line).prim.let: definition =>
           val owners: List[Text] = definition.owners.reverse.map(display(_))
-          val owner: Text = owners.filter(_ != t"").join(t".")
+          val owner: Text = owners.filter(_ != "").join(".")
           val name = display(definition.name)
-          if owner == t"" then name else t"$owner.$name"
+          if owner == "" then name else t"$owner.$name"
 
   private def load(name: Text): Optional[Tasty.File] =
     files.getOrElseUpdate(name, fetch(name.s))
@@ -83,6 +83,6 @@ class Namer(classpath: LocalClasspath):
   private def display(name: Text): Text =
     val stripped = if name.s.endsWith("$") then name.s.dropRight(1).nn else name.s
 
-    if stripped == "<init>" then t"ⲛ"
+    if stripped == "<init>" then "ⲛ"
     else if stripped.contains("$") then StackTrace.rewrite(stripped)
     else stripped.tt

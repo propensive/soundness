@@ -249,7 +249,7 @@ object LaneDagDiagram:
 
   given printable: [node: Showable] => (style: LaneDagStyle[Text])
   =>  LaneDagDiagram[node] is Printable =
-    (diagram, termcap) => diagram.render[Text]{ node => t" $node" }.join(t"\n")
+    (diagram, termcap) => diagram.render[Text]{ node => t" $node" }.join("\n")
 
   private def keepRow[node](row: (List[DagTile], Optional[node])): Boolean =
     val (tiles, node) = row

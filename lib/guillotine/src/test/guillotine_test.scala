@@ -50,127 +50,127 @@ object Tests extends Suite(m"Guillotine tests"):
     suite(m"Parsing"):
       test(m"parse simple command"):
         sh"ls -la"
-      . assert(_ == Command(t"ls", t"-la"))
+      . assert(_ == Command("ls", "-la"))
 
       test(m"parse a substitution"):
-        val flags = t"-la"
+        val flags = "-la"
         sh"ls $flags"
-      . assert(_ == Command(t"ls", t"-la"))
+      . assert(_ == Command("ls", "-la"))
 
       test(m"parse two substitutions"):
-        val flags = t"-la"
-        val file = t"filename"
+        val flags = "-la"
+        val file = "filename"
         sh"ls $flags $file"
-      . assert(_ == Command(t"ls", t"-la", t"filename"))
+      . assert(_ == Command("ls", "-la", "filename"))
 
       test(m"parse irregular spacing"):
-        val flags = t"-la"
-        val file = t"filename"
+        val flags = "-la"
+        val file = "filename"
         sh"ls  $flags     $file"
-      . assert(_ == Command(t"ls", t"-la", t"filename"))
+      . assert(_ == Command("ls", "-la", "filename"))
 
       test(m"parse irregular spacing 2"):
-        val flags = t"-la"
-        val file = t"filename"
+        val flags = "-la"
+        val file = "filename"
         sh"ls  $flags $file"
-      . assert(_ == Command(t"ls", t"-la", t"filename"))
+      . assert(_ == Command("ls", "-la", "filename"))
 
       test(m"adjacent substitutions"):
-        val a = t"a"
-        val b = t"b"
+        val a = "a"
+        val b = "b"
         sh"ls $a$b"
-      . assert(_ == Command(t"ls", t"ab"))
+      . assert(_ == Command("ls", "ab"))
 
       test(m"substitute a list"):
         val a = List(t"a", t"b")
         sh"ls $a"
-      . assert(_ == Command(t"ls", t"a", t"b"))
+      . assert(_ == Command("ls", "a", "b"))
 
       test(m"substitute a single-quoted list"):
         val a = List(t"a", t"b")
         sh"ls '$a'"
-      . assert(_ == Command(t"ls", t"a b"))
+      . assert(_ == Command("ls", "a b"))
 
       test(m"substitute in a double-quoted list"):
         val a = List(t"a", t"b")
         sh"""ls "$a""""
-      . assert(_ == Command(t"ls", t"a b"))
+      . assert(_ == Command("ls", "a b"))
 
       test(m"insertion after arg"):
         val a = List(t"a", t"b")
         sh"""ls ${a}x"""
-      . assert(_ == Command(t"ls", t"a", t"bx"))
+      . assert(_ == Command("ls", "a", "bx"))
 
       test(m"insertion before arg"):
         val a = List(t"a", t"b")
         sh"""ls x${a}"""
-      . assert(_ == Command(t"ls", t"xa", t"b"))
+      . assert(_ == Command("ls", "xa", "b"))
 
       test(m"insertion before quoted arg"):
         val a = List(t"a", t"b")
         sh"""ls ${a}'x'"""
-      . assert(_ == Command(t"ls", t"a", t"bx"))
+      . assert(_ == Command("ls", "a", "bx"))
 
       test(m"insertion after quoted arg"):
         val a = List(t"a", t"b")
         sh"""ls 'x'${a}"""
-      . assert(_ == Command(t"ls", t"xa", t"b"))
+      . assert(_ == Command("ls", "xa", "b"))
 
       test(m"empty list insertion unquoted"):
         val a = List()
         sh"""ls ${a}"""
-      . assert(_ == Command(t"ls"))
+      . assert(_ == Command("ls"))
 
       test(m"empty list insertion quoted"):
         val a = List()
         sh"""ls '${a}'"""
-      . assert(_ == Command(t"ls", t""))
+      . assert(_ == Command("ls", ""))
 
       test(m"empty parameters"):
         sh"""ls '' ''"""
-      . assert(_ == Command(t"ls", t"", t""))
+      . assert(_ == Command("ls", "", ""))
 
       test(m"three empty parameters"):
         sh"""ls '' '' ''"""
-      . assert(_ == Command(t"ls", t"", t"", t""))
+      . assert(_ == Command("ls", "", "", ""))
 
       test(m"one empty parameter, specified twice"):
         sh"""ls ''''"""
-      . assert(_ == Command(t"ls", t""))
+      . assert(_ == Command("ls", ""))
 
       test(m"single quote inside double quotes"):
         sh"""ls "'" """
-      . assert(_ == Command(t"ls", t"'"))
+      . assert(_ == Command("ls", "'"))
 
       test(m"double quote inside single quotes"):
         sh"""ls '"' """
-      . assert(_ == Command(t"ls", t"\""))
+      . assert(_ == Command("ls", "\""))
 
       test(m"escaped double quote"):
         sh"""ls \" """
-      . assert(_ == Command(t"ls", t"\""))
+      . assert(_ == Command("ls", "\""))
 
       test(m"escaped single quote"):
         sh"""ls \' """
-      . assert(_ == Command(t"ls", t"'"))
+      . assert(_ == Command("ls", "'"))
 
       test(m"escape inside double quotes"):
         sh"""ls "a\"b" """
-      . assert(_ == Command(t"ls", t"a\"b"))
+      . assert(_ == Command("ls", "a\"b"))
 
       test(m"backslash inside single quotes is literal"):
         sh"""ls 'a\b'"""
-      . assert(_ == Command(t"ls", t"a\\b"))
+      . assert(_ == Command("ls", "a\\b"))
 
       test(m"substitute a Pid"):
         val pid = Pid(42L)
         sh"echo $pid"
-      . assert(_ == Command(t"echo", t"↯42"))
+      . assert(_ == Command("echo", "↯42"))
 
       test(m"substitute a Path on Linux"):
         val path: Path on Linux = (% / "etc" / "hosts").on[Linux]
         sh"cat $path"
-      . assert(_ == Command(t"cat", t"/etc/hosts"))
+      . assert(_ == Command("cat", "/etc/hosts"))
 
     suite(m"Compile-time checking"):
       test(m"unterminated single quote is a compile error"):
@@ -210,14 +210,14 @@ object Tests extends Suite(m"Guillotine tests"):
       . assert(_ == List("\\"))
 
       test(m"escape character before a substitution is a compile error"):
-        val file = t"file"
+        val file = "file"
         demilitarize:
           sh"""ls \$file"""
         . map(_.message)
       . assert(_.headOption.exists(_.contains("substitution")))
 
       test(m"quote opened after a substitution is positioned correctly"):
-        val flags = t"-la"
+        val flags = "-la"
         demilitarize:
           sh"ls $flags 'unclosed"
         . map(_.focus)
@@ -231,45 +231,45 @@ object Tests extends Suite(m"Guillotine tests"):
     suite(m"Showable, Inspectable, equality"):
       test(m"render simple command"):
         (sh"echo Hello World": Command).inspect
-      . check(_ == t"""sh"echo Hello World"""")
+      . check(_ == """sh"echo Hello World"""")
 
       test(m"render command with quoted space"):
         (sh"echo 'Hello World'": Command).inspect
-      . check(_ == t"""sh"echo 'Hello World'"""")
+      . check(_ == """sh"echo 'Hello World'"""")
 
       test(m"render command with quote and space"):
-        Command(t"echo", t"Don't stop").inspect
-      . check(_ == t"sh\"\"\"echo \"Don't stop\"\"\"\"")
+        Command("echo", "Don't stop").inspect
+      . check(_ == "sh\"\"\"echo \"Don't stop\"\"\"\"")
 
       test(m"render command with single and double quote"):
-        Command(t"echo", t"single ' and double \" quotes").inspect
-      . check(_ == t"sh\"\"\"echo \"single ' and double \\\" quotes\"\"\"\"")
+        Command("echo", "single ' and double \" quotes").inspect
+      . check(_ == "sh\"\"\"echo \"single ' and double \\\" quotes\"\"\"\"")
 
       test(m"render command with tab"):
-        Command(t"echo", t"a\tb").inspect
+        Command("echo", "a\tb").inspect
       . check(_ == t"""sh"echo 'a\tb'"""")
 
       test(m"render command with backslash"):
-        Command(t"echo", t"back\\slash").inspect
+        Command("echo", "back\\slash").inspect
       . check(_ == t"""sh"echo 'back\\slash'"""")
 
       test(m"render pipeline of two commands"):
         (sh"echo Hello" | sh"sed s/e/a/g").inspect
-      . check(_ == t"""sh"echo Hello" | sh"sed s/e/a/g"""")
+      . check(_ == """sh"echo Hello" | sh"sed s/e/a/g"""")
 
       test(m"render pipeline of three commands"):
         (sh"echo Hello" | sh"sed s/e/a/g" | sh"wc -c").inspect
-      . check(_ == t"""sh"echo Hello" | sh"sed s/e/a/g" | sh"wc -c"""")
+      . check(_ == """sh"echo Hello" | sh"sed s/e/a/g" | sh"wc -c"""")
 
       test(m"command Showable produces unquoted form"):
         val cmd: Command = sh"echo hi"
         cmd.show
-      . assert(_ == t"echo hi")
+      . assert(_ == "echo hi")
 
       test(m"pipeline Showable joins with pipe"):
         val pipe: Pipeline = sh"echo hi" | sh"cat"
         pipe.show
-      . assert(_ == t"echo hi | cat")
+      . assert(_ == "echo hi | cat")
 
       test(m"two commands written differently are equivalent"):
         sh"echo 'hello world'"
@@ -308,36 +308,36 @@ object Tests extends Suite(m"Guillotine tests"):
       test(m"Pid substitutes with no extra quoting"):
         val pid = Pid(42L)
         sh"kill $pid"
-      . assert(_ == Command(t"kill", t"↯42"))
+      . assert(_ == Command("kill", "↯42"))
 
       test(m"Path substitutes encoded form"):
         val path: Path on Linux = (% / "tmp" / "x").on[Linux]
         sh"rm $path"
-      . assert(_ == Command(t"rm", t"/tmp/x"))
+      . assert(_ == Command("rm", "/tmp/x"))
 
       test(m"Custom Parameterizable via contramap"):
         case class Tag(value: Int)
         given Tag is Parameterizable = summon[Text is Parameterizable].contramap(t => t"<${t.value}>")
         sh"echo ${Tag(7)}"
-      . assert(_ == Command(t"echo", t"<7>"))
+      . assert(_ == Command("echo", "<7>"))
 
     suite(m"Execution — result shapes"):
       test(m"echo string"):
         sh"echo hello".exec[Text]().trim
-      . assert(_ == t"hello")
+      . assert(_ == "hello")
 
       test(m"substitute string into echo"):
-        val text = t"Hello world!"
+        val text = "Hello world!"
         sh"echo $text".exec[Text]().trim
-      . assert(_ == t"Hello world!")
+      . assert(_ == "Hello world!")
 
       test(m"pipe output through two commands"):
         (sh"echo 'Hello world'" | sh"sed s/e/a/g").exec[Text]().trim
-      . assert(_ == t"Hallo world")
+      . assert(_ == "Hallo world")
 
       test(m"pipe output through three commands"):
         (sh"echo 'a b c'" | sh"tr ' ' '\n'" | sh"wc -l").exec[Text]().trim
-      . assert(_ == t"3")
+      . assert(_ == "3")
 
       test(m"read stream of strings"):
         sh"echo 'Hello world'".exec[Iterator[Text]]().to(List)
@@ -357,7 +357,7 @@ object Tests extends Suite(m"Guillotine tests"):
 
       test(m"read Stderr"):
         sh"sh -c 'echo oops 1>&2'".exec[Stderr]().text.trim
-      . assert(_ == t"oops")
+      . assert(_ == "oops")
 
       test(m"exec[Unit] succeeds"):
         sh"true".exec[Unit]()
@@ -444,7 +444,7 @@ object Tests extends Suite(m"Guillotine tests"):
         val proc = sh"cat".fork[Text]()
         proc.stdin(Stream(Data(104, 105, 10)))
         proc.await().trim
-      . assert(_ == t"hi")
+      . assert(_ == "hi")
 
       test(m"drive a live process incrementally through its intake"):
         val proc = sh"cat".fork[Text]()
@@ -456,13 +456,13 @@ object Tests extends Suite(m"Guillotine tests"):
         intake.put(Data(98, 121, 101, 10))
         intake.finish()
         (alive, proc.await().trim)
-      . assert(_ == (true, t"hi\nbye"))
+      . assert(_ == (true, "hi\nbye"))
 
       test(m"pipe Chain[Data] into the head of a pipeline"):
         val proc = (sh"cat" | sh"tr a-z A-Z").fork[Text]()
         proc.stdin(Stream(Data(104, 105, 10)))
         proc.await().trim
-      . assert(_ == t"HI")
+      . assert(_ == "HI")
 
       test(m"drive a live pipeline incrementally through its intake"):
         val proc = (sh"cat" | sh"tr a-z A-Z").fork[Text]()
@@ -473,7 +473,7 @@ object Tests extends Suite(m"Guillotine tests"):
         intake.put(Data(98, 121, 101, 10))
         intake.finish()
         (alive, proc.await().trim)
-      . assert(_ == (true, t"HI\nBYE"))
+      . assert(_ == (true, "HI\nBYE"))
 
       test(m"read stderr from a forked job"):
         val proc = sh"sh -c 'echo err 1>&2; sleep 0.05'".fork[Unit]()
@@ -485,19 +485,19 @@ object Tests extends Suite(m"Guillotine tests"):
     suite(m"Pid"):
       test(m"Pid show formats with arrow"):
         Pid(123L).show
-      . assert(_ == t"↯123")
+      . assert(_ == "↯123")
 
       test(m"Pid encode formats with arrow"):
         Pid(123L).encode
-      . assert(_ == t"↯123")
+      . assert(_ == "↯123")
 
       test(m"decode Pid from numeric Text"):
-        t"42".as[Pid]
+        "42".as[Pid]
       . assert(_ == Pid(42L))
 
       test(m"decode Pid from non-numeric Text raises Number.Error"):
-        capture[Number.Error](t"abc".as[Pid])
-      . assert(_.text == t"abc")
+        capture[Number.Error]("abc".as[Pid])
+      . assert(_.text == "abc")
 
     suite(m"OS Process"):
       test(m"Process() returns the current process"):
@@ -535,7 +535,7 @@ object Tests extends Suite(m"Guillotine tests"):
     suite(m"Implied return type via Intelligible"):
       test(m"echo() returns Text"):
         sh"echo hi"().trim
-      . assert(_ == t"hi")
+      . assert(_ == "hi")
 
       test(m"head() returns Chain[Text]"):
         sh"head -n 1 /dev/null"().to(List)
@@ -548,7 +548,7 @@ object Tests extends Suite(m"Guillotine tests"):
     suite(m"Exec.Error"):
       test(m"running a missing binary raises Exec.Error"):
         capture[Exec.Error](sh"definitely-not-a-binary-xyz".exec[Text]())
-      . assert(_.command.arguments.head == t"definitely-not-a-binary-xyz")
+      . assert(_.command.arguments.head == "definitely-not-a-binary-xyz")
 
       test(m"Exec.Error reports the failing command"):
         val err = capture[Exec.Error](sh"definitely-not-a-binary-xyz".exec[Text]())
@@ -559,11 +559,11 @@ object Tests extends Suite(m"Guillotine tests"):
       test(m"nested Command in sh -c"):
         val cmd = sh"echo 'Hello world'"
         sh"sh -c '$cmd'".exec[Text]().trim
-      . assert(_ == t"Hello world")
+      . assert(_ == "Hello world")
 
       test(m"Command#escape wraps each argument in single quotes"):
-        Command(t"echo", t"a b").escape
-      . assert(_ == t"'echo' 'a b'")
+        Command("echo", "a b").escape
+      . assert(_ == "'echo' 'a b'")
 
     suite(m"Native-rendering coverage"):
       test(m"guillotine's types inspect natively"):
@@ -572,4 +572,4 @@ object Tests extends Suite(m"Guillotine tests"):
 
       test(m"A PID shows its number, marked as a process"):
         Pid(1234L).inspect
-      . assert(_ == t"↯1234")
+      . assert(_ == "↯1234")

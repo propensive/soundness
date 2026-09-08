@@ -79,15 +79,15 @@ object Tests extends Suite(m"Mosquito tests"):
 
     test(m"Show Vector 3-vector"):
       Vector(1, 3, 6).show
-    . assert(_ == t"\u239b 1 \u239e\n\u239c 3 \u239f\n\u239d 6 \u23a0")
+    . assert(_ == "\u239b 1 \u239e\n\u239c 3 \u239f\n\u239d 6 \u23a0")
 
     test(m"Show Vector 1-vector"):
       Vector(Mono(42)).show
-    . assert(_ == t"( 42 )")
+    . assert(_ == "( 42 )")
 
     test(m"Show Vector 2-vector"):
       Vector(1, 2).show
-    . assert(_ == t"\u239b 1 \u239e\n\u239d 2 \u23a0")
+    . assert(_ == "\u239b 1 \u239e\n\u239d 2 \u23a0")
 
     test(m"Add two tensors"):
       Vector(1, 2, 3) + Vector(3, 4, 5)
@@ -123,7 +123,7 @@ object Tests extends Suite(m"Mosquito tests"):
       . assert(_ == List(1, 2, 3))
 
       test(m"iarray conversion"):
-        Vector(t"a", t"b", t"c").iarray.to[List]
+        Vector("a", "b", "c").iarray.to[List]
       . assert(_ == List(t"a", t"b", t"c"))
 
       test(m"size of a 4-vector"):
@@ -704,8 +704,8 @@ object Tests extends Suite(m"Mosquito tests"):
 
       test(m"a vector inspects on one line"):
         Vector(1, 2, 3).inspect
-      . assert(_ == t"⟨1 ∣ 2 ∣ 3⟩")
+      . assert(_ == "⟨1 ∣ 2 ∣ 3⟩")
 
       test(m"a matrix inspects row by row"):
         Matrix[2, 2]((1, 2), (3, 4)).inspect
-      . assert(_ == t"⌈1 ∣ 2 ⫽ 3 ∣ 4⌋")
+      . assert(_ == "⌈1 ∣ 2 ⫽ 3 ∣ 4⌋")

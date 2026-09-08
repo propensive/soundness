@@ -66,8 +66,8 @@ object GitHub:
     given showable: Repository is Showable = _.text
 
     // A hint is `owner/repo`: exactly one slash, both parts non-empty.
-    def parse(text: Text): Repository raises UserError = text.cut(t"/") match
-      case List(owner, name) if owner != t"" && name != t"" => Repository(owner, name)
+    def parse(text: Text): Repository raises UserError = text.cut("/") match
+      case List(owner, name) if owner != "" && name != "" => Repository(owner, name)
 
       case _ =>
         abort(UserError(m"$text is not a GitHub repository of the form owner/repo"))
@@ -78,12 +78,12 @@ object GitHub:
   // The subset of the releases-API payload that matters here. `digest` is absent (or `null`) on
   // assets uploaded before GitHub started computing them; those cannot be matched.
   case class Asset
-    ( name: Text, @name[Json](t"browser_download_url") url: Text, digest: Optional[Text] )
+    ( name: Text, @name[Json]("browser_download_url") url: Text, digest: Optional[Text] )
 
   case class Release(assets: List[Asset])
 
   private val pageSize: Int = 100
-  private val digestPrefix: Text = t"sha256:"
+  private val digestPrefix: Text = "sha256:"
   private val jsonMedia: MediaType = media"application/vnd.github+json"
 
   // Indexes every `.jar` asset carrying a SHA-256 digest by its lowercase hex hash. The API
@@ -91,7 +91,7 @@ object GitHub:
   // the newest release's URL wins. Pure, so the mapping is testable without the network.
   def indexReleases(releases: List[Release]): Map[Text, HttpUrl] =
     def entry(asset: Asset): Optional[(Text, HttpUrl)] = asset.digest.let: digest =>
-      if asset.name.ends(t".jar") && digest.starts(digestPrefix)
+      if asset.name.ends(".jar") && digest.starts(digestPrefix)
       then safely(asset.url.as[HttpUrl]).let: url => (digest.skip(digestPrefix.length).lower, url)
       else Unset
 

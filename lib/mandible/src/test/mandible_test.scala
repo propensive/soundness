@@ -56,7 +56,7 @@ object Tests extends Suite(m"Mandible tests"):
   // between — `static final` constants, `protected` members and bridge methods all say what they
   // mean here.
   val base: Text =
-    t"""|package fixture;
+    """|package fixture;
         |public class Base {
         |  public static final int CONSTANT = 7;
         |  public int inherited() { return 1; }
@@ -66,21 +66,21 @@ object Tests extends Suite(m"Mandible tests"):
         |""".s.stripMargin.tt
 
   val derived: Text =
-    t"""|package fixture;
+    """|package fixture;
         |public class Derived extends Base {
         |  public int own() { return 4; }
         |}
         |""".s.stripMargin.tt
 
   val api: Text =
-    t"""|package fixture;
+    """|package fixture;
         |public interface Api {
         |  int one();
         |}
         |""".s.stripMargin.tt
 
   val holder: Text =
-    t"""|package fixture;
+    """|package fixture;
         |public class Holder<T> {
         |  public Object get() { return null; }
         |}
@@ -92,55 +92,55 @@ object Tests extends Suite(m"Mandible tests"):
 
   def sources(base: Text, derived: Text, api: Text, holder: Text = holder): Map[Text, Text] =
     Map
-      ( t"fixture/Base.java"    -> base,
-        t"fixture/Derived.java" -> derived,
-        t"fixture/Api.java"     -> api,
-        t"fixture/Holder.java"  -> holder )
+      ( "fixture/Base.java"    -> base,
+        "fixture/Derived.java" -> derived,
+        "fixture/Api.java"     -> api,
+        "fixture/Holder.java"  -> holder )
 
   def run(): Unit =
     classfileDisciplineTests()
     jvmProfileTests()
     test(m"Locate a known method on a classfile"):
-      Classfile[StackTrace].let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset))
+      Classfile[StackTrace].let(_.methods.stdlib.find(_.name == "rewrite").getOrElse(Unset))
     . assert(_ != Unset)
 
     test(m"Disassemble a known method's bytecode"):
       Classfile[StackTrace]
-      . let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset))
+      . let(_.methods.stdlib.find(_.name == "rewrite").getOrElse(Unset))
       . let(_.bytecode)
       . lay(0)(_.instructions.size)
     . assert(_ > 0)
 
     test(m"Bytecode carries declared maxStack and maxLocals"):
       Classfile[StackTrace]
-      . let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset))
+      . let(_.methods.stdlib.find(_.name == "rewrite").getOrElse(Unset))
       . let(_.bytecode)
       . lay((-1, -1))(bytecode => (bytecode.maxStack, bytecode.maxLocals))
     . assert((s, l) => s >= 0 && l >= 0)
 
     test(m"Method descriptor parser handles primitives and references"):
-      Bytecode.Descriptor.parse(t"(Ljava/lang/String;I)V")
+      Bytecode.Descriptor.parse("(Ljava/lang/String;I)V")
     . assert: parsed =>
         parsed.args.size == 2 && parsed.result.absent
 
     test(m"Method descriptor parser handles array types and return"):
-      Bytecode.Descriptor.parse(t"([[Ljava/lang/Object;J)Z")
+      Bytecode.Descriptor.parse("([[Ljava/lang/Object;J)Z")
     . assert: parsed =>
         parsed.args.size == 2 && parsed.result == Bytecode.Frame.Z
 
     test(m"Detect virtual call as effectively static when receiver is a singleton"):
       // Construct: GETSTATIC Foo$.MODULE$:LFoo$;  followed by  INVOKEVIRTUAL Foo$.doIt()V
-      val moduleFrame = Bytecode.Frame.L(t"Foo$$")
+      val moduleFrame = Bytecode.Frame.L("Foo$")
       val getstatic =
         Bytecode.Instruction
-          ( Bytecode.Opcode.Getstatic(t"Foo$$", t"MODULE$$", t"LFoo$$;"),
+          ( Bytecode.Opcode.Getstatic("Foo$", "MODULE$", "LFoo$;"),
             Unset,
             proscenium.List(moduleFrame),
             0 )
 
       val invoke =
         Bytecode.Instruction
-          ( Bytecode.Opcode.Invokevirtual(t"Foo$$", t"doIt", t"()V"),
+          ( Bytecode.Opcode.Invokevirtual("Foo$", "doIt", "()V"),
             Unset,
             Nil,
             3 )
@@ -149,17 +149,17 @@ object Tests extends Suite(m"Mandible tests"):
     . assert(_ == Set(3))
 
     test(m"A virtual call on an opaque receiver is not flagged as static"):
-      val opaqueFrame = Bytecode.Frame.L(t"?")
+      val opaqueFrame = Bytecode.Frame.L("?")
       val getstatic =
         Bytecode.Instruction
-          ( Bytecode.Opcode.Getstatic(t"Bar", t"thing", t"Ljava/lang/Object;"),
+          ( Bytecode.Opcode.Getstatic("Bar", "thing", "Ljava/lang/Object;"),
             Unset,
             proscenium.List(opaqueFrame),
             0 )
 
       val invoke =
         Bytecode.Instruction
-          ( Bytecode.Opcode.Invokevirtual(t"Foo$$", t"doIt", t"()V"),
+          ( Bytecode.Opcode.Invokevirtual("Foo$", "doIt", "()V"),
             Unset,
             Nil,
             3 )
@@ -168,17 +168,17 @@ object Tests extends Suite(m"Mandible tests"):
     . assert(_.stdlib.isEmpty)
 
     test(m"Linearizer inlines a resolvable static-dispatchable call"):
-      val moduleFrame = Bytecode.Frame.L(t"Foo$$")
+      val moduleFrame = Bytecode.Frame.L("Foo$")
       val getstatic =
         Bytecode.Instruction
-          ( Bytecode.Opcode.Getstatic(t"Foo$$", t"MODULE$$", t"LFoo$$;"),
+          ( Bytecode.Opcode.Getstatic("Foo$", "MODULE$", "LFoo$;"),
             Unset,
             proscenium.List(moduleFrame),
             0 )
 
       val invoke =
         Bytecode.Instruction
-          ( Bytecode.Opcode.Invokevirtual(t"Foo$$", t"doIt", t"()V"),
+          ( Bytecode.Opcode.Invokevirtual("Foo$", "doIt", "()V"),
             Unset,
             Nil,
             3 )
@@ -191,7 +191,7 @@ object Tests extends Suite(m"Mandible tests"):
       val callee = Bytecode(Unset, calleeBody, 1, 0)
 
       val resolver: (Text, Text, Text) => Optional[Bytecode] =
-        (o, n, d) => if o == t"Foo$$" && n == t"doIt" then callee else Unset
+        (o, n, d) => if o == "Foo$" && n == "doIt" then callee else Unset
 
       caller.linearize(resolver, maxDepth = 2).map(_.depth)
     . assert(_ == List(0, 0, 1, 1))
@@ -234,7 +234,7 @@ object Tests extends Suite(m"Mandible tests"):
 
     def atomize(base: Text, derived: Text, api: Text, holder: Text = holder): Atomization =
       val (content, out) = compile(base, derived, api, holder)
-      ClassfileDiscipline.atomize(content, Discipline.Context(t"jvm", classpath = List(out)))
+      ClassfileDiscipline.atomize(content, Discipline.Context("jvm", classpath = List(out)))
 
     def listing(atomization: Atomization): scala.List[(Text, Text)] =
       atomization.atoms.stdlib
@@ -274,7 +274,7 @@ object Tests extends Suite(m"Mandible tests"):
 
     test(m"an inherited member's atom differs in value from the declared one"):
       val table = listing(baseline).toMap
-      table.get(t"fixture/Base#inherited:()I") != table.get(t"fixture/Derived#inherited:()I")
+      table.get("fixture/Base#inherited:()I") != table.get("fixture/Derived#inherited:()I")
     . assert(identity)
 
     // A constant presents through the subclass too, and javac will have inlined `Derived.CONSTANT`
@@ -297,24 +297,24 @@ object Tests extends Suite(m"Mandible tests"):
     . assert(_ == Grade.Patch)
 
     test(m"adding a concrete method grades as a minor"):
-      val added = t"public int added() { return 9; }\n  public int inherited"
-      grade(edit(base, t"public int inherited", added), derived, api)
+      val added = "public int added() { return 9; }\n  public int inherited"
+      grade(edit(base, "public int inherited", added), derived, api)
     . assert(_ == Grade.Minor)
 
     test(m"changing a static final constant's value grades as a minor"):
-      grade(edit(base, t"CONSTANT = 7", t"CONSTANT = 8"), derived, api)
+      grade(edit(base, "CONSTANT = 7", "CONSTANT = 8"), derived, api)
     . assert(_ == Grade.Minor)
 
     test(m"removing a protected method grades as a major"):
-      grade(edit(base, t"protected int guarded() { return 2; }", t""), derived, api)
+      grade(edit(base, "protected int guarded() { return 2; }", ""), derived, api)
     . assert(_ == Grade.Major)
 
     test(m"narrowing a method's accessibility grades as a major"):
-      grade(edit(base, t"protected int guarded", t"private int guarded"), derived, api)
+      grade(edit(base, "protected int guarded", "private int guarded"), derived, api)
     . assert(_ == Grade.Major)
 
     test(m"adding an abstract method to an open interface grades as a major"):
-      grade(base, derived, edit(api, t"int one();", t"int one();\n  int two();"))
+      grade(base, derived, edit(api, "int one();", "int one();\n  int two();"))
     . assert(_ == Grade.Major)
 
     // Registry ordering (§11.2): `tasty/1` claims `.class` atomless, and the registry claims by
@@ -323,27 +323,27 @@ object Tests extends Suite(m"Mandible tests"):
     test(m"the discipline claims classfiles and nothing else"):
       val data = Array.freeze(Array.allocate[Byte](0))
 
-      (ClassfileDiscipline.claims(TreePath(t"fixture/Base.class"), data),
-       ClassfileDiscipline.claims(TreePath(t"fixture/Base.tasty"), data),
-       ClassfileDiscipline.claims(TreePath(t"readme.md"), data))
+      (ClassfileDiscipline.claims(TreePath("fixture/Base.class"), data),
+       ClassfileDiscipline.claims(TreePath("fixture/Base.tasty"), data),
+       ClassfileDiscipline.claims(TreePath("readme.md"), data))
     . assert(_ == (true, false, false))
 
     test(m"the discipline claims nothing outside the jvm universe"):
       val (content, out) = compile(base, derived, api)
       val registry = Discipline.Registry(List(ClassfileDiscipline))
-      val context = Discipline.Context(t"sjsir", classpath = List(out))
+      val context = Discipline.Context("sjsir", classpath = List(out))
 
       registry.atomize(content, context).stdlib.map(_.discipline)
-    . assert(_ == scala.List(t"opaque/1"))
+    . assert(_ == scala.List("opaque/1"))
 
     test(m"a registry listing the discipline first atomizes the classfiles"):
       val (content, out) = compile(base, derived, api)
       val registry = Discipline.Registry(List(ClassfileDiscipline))
-      val context = Discipline.Context(t"jvm", classpath = List(out))
+      val context = Discipline.Context("jvm", classpath = List(out))
 
       registry.atomize(content, context).stdlib.map: atomization =>
         (atomization.discipline, atomization.atoms.stdlib.size > 0)
-    . assert(_ == scala.List((t"classfile/1", true)))
+    . assert(_ == scala.List(("classfile/1", true)))
 
   def jvmProfileTests(): Unit =
     import reliquary.*
@@ -376,7 +376,7 @@ object Tests extends Suite(m"Mandible tests"):
 
     def atomize(base: Text, derived: Text, api: Text, holder: Text = holder): Atomization =
       val (content, out) = compile(base, derived, api, holder)
-      ClassfileDiscipline.atomize(content, Discipline.Context(t"jvm", classpath = List(out)))
+      ClassfileDiscipline.atomize(content, Discipline.Context("jvm", classpath = List(out)))
 
     val before = evidence(base, derived, api)
 
@@ -385,39 +385,39 @@ object Tests extends Suite(m"Mandible tests"):
 
     test(m"the profile certifies linkage and nothing else"):
       (JvmProfile.id, JvmProfile.certifies)
-    . assert(_ == (t"jvm/1", Set(Discipline.Guarantee.Linkage)))
+    . assert(_ == ("jvm/1", Set(Discipline.Guarantee.Linkage)))
 
     test(m"an unchanged release violates no linkage predicate"):
       violations(base, derived, api)
     . assert(_.isEmpty)
 
     test(m"adding a concrete method violates no linkage predicate"):
-      val added = t"public int added() { return 9; }\n  public int inherited"
-      violations(edit(base, t"public int inherited", added), derived, api)
+      val added = "public int added() { return 9; }\n  public int inherited"
+      violations(edit(base, "public int inherited", added), derived, api)
     . assert(_.isEmpty)
 
     test(m"removing a presented method is a linkage violation"):
-      violations(edit(base, t"protected int guarded() { return 2; }", t""), derived, api)
+      violations(edit(base, "protected int guarded() { return 2; }", ""), derived, api)
     . assert: details =>
         details.exists(_.s.startsWith("fixture/Base#guarded:()I"))
           && details.exists(_.s.startsWith("fixture/Derived#guarded:()I"))
 
     test(m"narrowing accessibility is a linkage violation"):
-      violations(edit(base, t"protected int guarded", t"private int guarded"), derived, api)
+      violations(edit(base, "protected int guarded", "private int guarded"), derived, api)
     . assert(_.nonEmpty)
 
     test(m"changing a method's return type is a linkage violation"):
-      violations(edit(base, t"public int inherited() { return 1; }",
-          t"public long inherited() { return 1; }"), derived, api)
+      violations(edit(base, "public int inherited() { return 1; }",
+          "public long inherited() { return 1; }"), derived, api)
     . assert(_.nonEmpty)
 
     test(m"a changed constant is reported apart from the linkage predicates"):
-      val changed = edit(base, t"CONSTANT = 7", t"CONSTANT = 8")
+      val changed = edit(base, "CONSTANT = 7", "CONSTANT = 8")
 
       (violations(changed, derived, api),
        JvmProfile.constants(before, evidence(changed, derived, api)).stdlib)
     . assert(_ == (scala.List(),
-        scala.List(t"fixture/Base.CONSTANT:I", t"fixture/Derived.CONSTANT:I")))
+        scala.List("fixture/Base.CONSTANT:I", "fixture/Derived.CONSTANT:I")))
 
     // Appendix D.1's second bullet, made executable: a change can break recompilation while
     // leaving linkage untouched. Tightening a class's type-parameter bound rewrites its generic
@@ -426,7 +426,7 @@ object Tests extends Suite(m"Mandible tests"):
     // major; the profile — which reads the linkage-only fold — finds nothing to report. Both are
     // right, which is exactly why the two levels are recorded separately.
     test(m"a recompilation break with no linkage break is graded but not reported"):
-      val bounded = edit(holder, t"class Holder<T>", t"class Holder<T extends Number>")
+      val bounded = edit(holder, "class Holder<T>", "class Holder<T extends Number>")
 
       (Grade.between(List(atomize(base, derived, api)), List(atomize(base, derived, api, bounded))),
        JvmProfile.check(before, evidence(base, derived, api, bounded)).stdlib)
@@ -437,11 +437,11 @@ object Tests extends Suite(m"Mandible tests"):
     test(m"an unrecorded linkage break is rejected"):
       val registry = EcosystemProfile.Registry(List(JvmProfile))
       val declared = List(Lira.Manifest.Profile(t"jvm/1"))
-      val after = evidence(edit(base, t"protected int guarded() { return 2; }", t""), derived, api)
+      val after = evidence(edit(base, "protected int guarded() { return 2; }", ""), derived, api)
 
       import errorDiagnostics.stackTracesDiagnostics
       capture[Lira.Error](EcosystemProfile.audit(registry, declared, before, after)).reason
-    . assert(_ == Lira.Error.Reason.UnrecordedBreak(t"jvm/1", t"linkage"))
+    . assert(_ == Lira.Error.Reason.UnrecordedBreak("jvm/1", "linkage"))
 
     test(m"a recorded linkage break is accepted"):
       val registry = EcosystemProfile.Registry(List(JvmProfile))
@@ -449,7 +449,7 @@ object Tests extends Suite(m"Mandible tests"):
       val declared =
         List(Lira.Manifest.Profile(t"jvm/1", List(Lira.Manifest.Guarantee.Linkage)))
 
-      val after = evidence(edit(base, t"protected int guarded() { return 2; }", t""), derived, api)
+      val after = evidence(edit(base, "protected int guarded() { return 2; }", ""), derived, api)
 
       EcosystemProfile.audit(registry, declared, before, after).unchecked.stdlib
     . assert(_ == scala.List())
@@ -459,11 +459,11 @@ object Tests extends Suite(m"Mandible tests"):
       val declared = List(Lira.Manifest.Profile(t"unknown/1"))
 
       EcosystemProfile.audit(registry, declared, before, before).unchecked.stdlib
-    . assert(_ == scala.List(t"unknown/1"))
+    . assert(_ == scala.List("unknown/1"))
 
     test(m"a violation at an uncertified level is the profile's defect, L128"):
       val broken = new EcosystemProfile:
-        def id: Text = t"broken/1"
+        def id: Text = "broken/1"
         def certifies: Set[Discipline.Guarantee] = Set(Discipline.Guarantee.Linkage)
 
         def check(previous: EcosystemProfile.Evidence, next: EcosystemProfile.Evidence)
@@ -475,7 +475,7 @@ object Tests extends Suite(m"Mandible tests"):
 
       import errorDiagnostics.stackTracesDiagnostics
       capture[Lira.Error](EcosystemProfile.audit(registry, declared, before, before)).reason
-    . assert(_ == Lira.Error.Reason.ProfileViolated(t"broken/1", t"out of scope"))
+    . assert(_ == Lira.Error.Reason.ProfileViolated("broken/1", "out of scope"))
 
     test(m"the toolchain predicate reports releases with no toolchain record"):
       def data(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
@@ -487,11 +487,11 @@ object Tests extends Suite(m"Mandible tests"):
           toolchain = toolchain,
           api       = List(),
           section   = List(),
-          payload   = Lira.Manifest.Payload(t"brotli", 0L,
+          payload   = Lira.Manifest.Payload("brotli", 0L,
               Lira.Hash(Lira.Hash.Domain.Blob, data(module))))
 
-      val tooled = release(t"alpha", List(Lira.Manifest.Tool(t"scala", t"3.9.0")))
-      val bare = release(t"beta", List())
+      val tooled = release("alpha", List(Lira.Manifest.Tool(t"scala", t"3.9.0")))
+      val bare = release("beta", List())
 
       JvmProfile.coherence(List(tooled, bare)).stdlib.map(_.s.takeWhile(_ != ' '))
     . assert(_ == scala.List("beta"))
@@ -499,7 +499,7 @@ object Tests extends Suite(m"Mandible tests"):
     test(m"changed constants surface through the audit's advisory channel"):
       val registry = EcosystemProfile.Registry(List(JvmProfile))
       val declared = List(Lira.Manifest.Profile(t"jvm/1"))
-      val after = evidence(edit(base, t"CONSTANT = 7", t"CONSTANT = 8"), derived, api)
+      val after = evidence(edit(base, "CONSTANT = 7", "CONSTANT = 8"), derived, api)
 
       EcosystemProfile.audit(registry, declared, before, after).advisories.stdlib
     . assert: advisories =>
@@ -511,12 +511,12 @@ object Tests extends Suite(m"Mandible tests"):
     test(m"jsig claims signature files and classfiles in both its realms"):
       val data = Array.freeze(Array.allocate[Byte](0))
 
-      (JsigDiscipline.claims(TreePath(t"java.base/java/lang/Object.sig"), data),
-       JsigDiscipline.claims(TreePath(t"android/view/View.class"), data),
-       JsigDiscipline.claims(TreePath(t"readme.md"), data),
-       JsigDiscipline.domain.covers(t"host"),
-       JsigDiscipline.domain.covers(t"jvm"),
-       JsigDiscipline.domain.covers(t"sjsir"))
+      (JsigDiscipline.claims(TreePath("java.base/java/lang/Object.sig"), data),
+       JsigDiscipline.claims(TreePath("android/view/View.class"), data),
+       JsigDiscipline.claims(TreePath("readme.md"), data),
+       JsigDiscipline.domain.covers("host"),
+       JsigDiscipline.domain.covers("jvm"),
+       JsigDiscipline.domain.covers("sjsir"))
     . assert(_ == (true, true, false, true, true, false))
 
     test(m"a supertype outside the claimed content is a boundary, not an error"):
@@ -525,9 +525,9 @@ object Tests extends Suite(m"Mandible tests"):
 
       // The classpath is empty, so `Base` is unresolvable: `classfile/1` must fail here, and
       // `jsig/1` must not — the presented set simply lacks what the boundary hides.
-      val atoms = JsigDiscipline.atomize(derivedOnly, Discipline.Context(t"host")).atoms
+      val atoms = JsigDiscipline.atomize(derivedOnly, Discipline.Context("host")).atoms
 
-      (atoms.stdlib.exists(_.key == t"fixture/Derived"),
+      (atoms.stdlib.exists(_.key == "fixture/Derived"),
        atoms.stdlib.exists(_.key.s.startsWith("fixture/Derived#")),
        atoms.stdlib.exists(_.key.s.startsWith("fixture/Base")))
     . assert(_ == (true, true, false))
@@ -536,7 +536,7 @@ object Tests extends Suite(m"Mandible tests"):
       val (v1, _) = compile(base, derived, api)
 
       val (v2, _) = compile(edit(base, t"public int inherited",
-          t"public int added() { return 9; }\n  public int inherited"), derived, api)
+          "public int added() { return 9; }\n  public int inherited"), derived, api)
 
       val (v3, _) = compile(edit(base, t"protected int guarded() { return 2; }", t""),
           derived, api)
@@ -546,9 +546,9 @@ object Tests extends Suite(m"Mandible tests"):
         HostRelease(t"jdk-18", v2),
         HostRelease(t"jdk-19", v3))
 
-      val liras = HostContracts.assemble(t"fixture-host", releases,
+      val liras = HostContracts.assemble("fixture-host", releases,
         List(Lira.Manifest.Tool(t"jsig-harvest", t"0.1")),
-        allowMajor = { tag => tag == t"jdk-19" })
+        allowMajor = { tag => tag == "jdk-19" })
 
       val parsed = liras.stdlib.map { (tag, bytes) => (tag, Lira.read(bytes)) }
       parsed.foreach { (_, lira) => Verification.install(lira) }
@@ -561,7 +561,7 @@ object Tests extends Suite(m"Mandible tests"):
        parsed.flatMap { (_, lira) => lira.manifest.tag.stdlib },
        parsed.forall { (_, lira) => lira.manifest.hostContract })
     . assert(_ == (scala.List("0.1.0", "0.2.0", "0.3.0"), scala.List(1, 2, 1),
-        scala.List(t"jdk-17", t"jdk-18", t"jdk-19"), true))
+        scala.List("jdk-17", "jdk-18", "jdk-19"), true))
 
     test(m"an unsanctioned major refuses the sequence, L110"):
       val (v1, _) = compile(base, derived, api)
@@ -572,20 +572,20 @@ object Tests extends Suite(m"Mandible tests"):
       import errorDiagnostics.stackTracesDiagnostics
 
       capture[Lira.Error]:
-        HostContracts.assemble(t"fixture-host",
+        HostContracts.assemble("fixture-host",
           List(HostRelease(t"a", v1), HostRelease(t"b", v2)),
           List(Lira.Manifest.Tool(t"jsig-harvest", t"0.1")))
       . reason
-    . assert(_ == Lira.Error.Reason.UngradedSuccessor(t"b"))
+    . assert(_ == Lira.Error.Reason.UngradedSuccessor("b"))
 
     test(m"ct.sym harvests a verifiable, tagged jdk contract"):
       CtSym.location().lay(true): path =>
         val releases = CtSym.releases(path)
         val earliest = releases.stdlib.head
-        val surface = CtSym.surface(path, earliest, prefix = t"java.base/java/lang/")
+        val surface = CtSym.surface(path, earliest, prefix = "java.base/java/lang/")
         val tag = Text(s"jdk-$earliest")
 
-        val liras = HostContracts.assemble(t"jdk", List(HostRelease(tag, surface)),
+        val liras = HostContracts.assemble("jdk", List(HostRelease(tag, surface)),
           List(Lira.Manifest.Tool(t"jsig-harvest", t"0.1")))
 
         val lira = Lira.read(liras.stdlib.head(1))
@@ -605,7 +605,7 @@ object Tests extends Suite(m"Mandible tests"):
     // Package-private: the source compiles in the `Holder.java` fixture slot, where a public
     // class of another name could not.
     val consumerOld: Text =
-      t"""|package fixture;
+      """|package fixture;
           |class Consumer {
           |  public int use(Base b) { return b.inherited(); }
           |}
@@ -618,25 +618,25 @@ object Tests extends Suite(m"Mandible tests"):
     test(m"references spell membership keys and exclude the content's own classes"):
       val refs = UsedSets.references(consumerContent(base, consumerOld))
 
-      (refs.stdlib.contains(t"fixture/Base#inherited:()I"),
-       refs.stdlib.contains(t"java/lang/Object"),
+      (refs.stdlib.contains("fixture/Base#inherited:()I"),
+       refs.stdlib.contains("java/lang/Object"),
        refs.stdlib.exists(_.s.startsWith("fixture/Consumer")))
     . assert(_ == (true, true, false))
 
     test(m"resolution splits a contract's atoms from foreign references"):
       val (surface, _) = compile(base, derived, api)
-      val listing = JsigDiscipline.atomize(surface, Discipline.Context(t"host"))
+      val listing = JsigDiscipline.atomize(surface, Discipline.Context("host"))
       val (matched, unmatched) = UsedSets.resolve(
           UsedSets.references(consumerContent(base, consumerOld)), listing)
 
       (matched.stdlib.nonEmpty,
-       unmatched.stdlib.contains(t"java/lang/Object"),
+       unmatched.stdlib.contains("java/lang/Object"),
        unmatched.stdlib.exists(_.s.startsWith("fixture/Base")))
     . assert(_ == (true, true, false))
 
     test(m"the uses blob round-trips its resolved hashes"):
       val (surface, _) = compile(base, derived, api)
-      val listing = JsigDiscipline.atomize(surface, Discipline.Context(t"host"))
+      val listing = JsigDiscipline.atomize(surface, Discipline.Context("host"))
       val content = consumerContent(base, consumerOld)
       val (usesBlob, _) = UsedSets.uses(t"fixture-host", content, listing)
       val (matched, _) = UsedSets.resolve(UsedSets.references(content), listing)
@@ -646,38 +646,38 @@ object Tests extends Suite(m"Mandible tests"):
     . assert(identity)
 
     test(m"a computed used-set decides host satisfaction by spanning"):
-      val added = edit(base, t"public int inherited",
-          t"public int added() { return 9; }\n  public int inherited")
+      val added = edit(base, "public int inherited",
+          "public int added() { return 9; }\n  public int inherited")
 
       val consumerNew = consumerOld.s.replace("b.inherited()", "b.added()").nn.tt
 
       val (v1, _) = compile(base, derived, api)
       val (v2, _) = compile(added, derived, api)
 
-      val contracts = HostContracts.assemble(t"fixture-host",
+      val contracts = HostContracts.assemble("fixture-host",
         List(HostRelease(t"v1", v1), HostRelease(t"v2", v2)),
         List(Lira.Manifest.Tool(t"jsig-harvest", t"0.1")))
 
       val v1Manifest = Lira.read(contracts.stdlib.head(1)).manifest
       val v2Manifest = Lira.read(contracts.stdlib.last(1)).manifest
 
-      val v1Listing = JsigDiscipline.atomize(v1, Discipline.Context(t"host"))
-      val v2Listing = JsigDiscipline.atomize(v2, Discipline.Context(t"host"))
+      val v1Listing = JsigDiscipline.atomize(v1, Discipline.Context("host"))
+      val v2Listing = JsigDiscipline.atomize(v2, Discipline.Context("host"))
 
       // Both consumers compiled against, and resolved against, the v2 surface; the question is
       // whether the *older* contract release satisfies each, and only their used-sets differ.
       val snap2 = v2Manifest.lineage.stdlib.last
-      val markerOld = blob(encode(t"uses-old"))
-      val markerNew = blob(encode(t"uses-new"))
+      val markerOld = blob(encode("uses-old"))
+      val markerNew = blob(encode("uses-new"))
 
       def library(marker: Data): Lira.Manifest =
         Lira.Manifest(
-          module  = t"consumer",
+          module  = "consumer",
           lineage = List(Lira.Hash(Lira.Hash.Domain.Snapshot, encode(t"consumer"))),
           api     = List(),
           section = List(Section(t"jvm", tree = blob(encode(t"tree")),
               requires = List(Lira.Manifest.Requires(t"fixture-host", snap2, uses = marker)))),
-          payload = Lira.Manifest.Payload(t"brotli", 0L, blob(encode(t"consumer"))))
+          payload = Lira.Manifest.Payload("brotli", 0L, blob(encode("consumer"))))
 
       def usedSet(consumer: Text): scala.collection.immutable.Set[Text] =
         val (matched, _) = UsedSets.resolve(
@@ -689,7 +689,7 @@ object Tests extends Suite(m"Mandible tests"):
       val newUses = usedSet(consumerNew)
 
       val contractAtoms = { (module: Text) =>
-        if module == t"fixture-host"
+        if module == "fixture-host"
         then v1Listing.atoms.stdlib.map { atom => Lira.Hash.text(atom.valueHash) }.toSet
         else Unset
       }
@@ -701,7 +701,7 @@ object Tests extends Suite(m"Mandible tests"):
       // v2-only method provably does not.
       val spans =
         Buildpath(List(library(markerOld)))
-        . validate(t"jvm", contracts = List(v1Manifest), atoms = contractAtoms,
+        . validate("jvm", contracts = List(v1Manifest), atoms = contractAtoms,
             used = lookup(markerOld, oldUses))
         . stdlib.isEmpty
 
@@ -710,23 +710,23 @@ object Tests extends Suite(m"Mandible tests"):
       val refused =
         capture[Lira.Error]:
           Buildpath(List(library(markerNew)))
-          . validate(t"jvm", contracts = List(v1Manifest), atoms = contractAtoms,
+          . validate("jvm", contracts = List(v1Manifest), atoms = contractAtoms,
               used = lookup(markerNew, newUses))
         . reason
 
       (spans, refused)
-    . assert(_ == (true, Lira.Error.Reason.UnsatisfiedRequirement(t"fixture-host")))
+    . assert(_ == (true, Lira.Error.Reason.UnsatisfiedRequirement("fixture-host")))
 
     test(m"fixture references resolve against a harvested jdk surface"):
       CtSym.location().lay(true): path =>
         val release = CtSym.releases(path).stdlib.head
-        val surface = CtSym.surface(path, release, prefix = t"java.base/java/lang/")
-        val listing = JsigDiscipline.atomize(surface, Discipline.Context(t"host"))
+        val surface = CtSym.surface(path, release, prefix = "java.base/java/lang/")
+        val listing = JsigDiscipline.atomize(surface, Discipline.Context("host"))
 
         val (matched, unmatched) = UsedSets.resolve(
             UsedSets.references(consumerContent(base, consumerOld)), listing)
 
-        matched.stdlib.nonEmpty && !unmatched.stdlib.contains(t"java/lang/Object")
+        matched.stdlib.nonEmpty && !unmatched.stdlib.contains("java/lang/Object")
     . assert(_ == true)
 
     test(m"references partition across per-module contract listings"):
@@ -747,8 +747,8 @@ object Tests extends Suite(m"Mandible tests"):
 
       (parts.stdlib.map(_(0)),
        parts.stdlib.forall { part => part(1).stdlib.nonEmpty },
-       remainder.stdlib.contains(t"java/lang/Object"))
-    . assert(_ == (scala.List(t"mod.base", t"mod.api"), true, true))
+       remainder.stdlib.contains("java/lang/Object"))
+    . assert(_ == (scala.List("mod.base", "mod.api"), true, true))
 
     test(m"ct.sym partitions a release by platform module"):
       CtSym.location().lay(true): path =>
@@ -759,10 +759,10 @@ object Tests extends Suite(m"Mandible tests"):
         // The module segment is stripped; what remains under `java.base` need not all be
         // `java/*` (internal packages ride in ct.sym too), but none may still carry the
         // module prefix.
-        val stripped = modules.stdlib.find(_(0) == t"java.base").map: pair =>
+        val stripped = modules.stdlib.find(_(0) == "java.base").map: pair =>
           pair(1).stdlib.exists { entry => entry(0).text.s.startsWith("java/lang/") }
             && !pair(1).stdlib.exists { entry => entry(0).text.s.startsWith("java.base/") }
         . getOrElse(false)
 
-        names.contains(t"java.base") && names.length > 5 && stripped
+        names.contains("java.base") && names.length > 5 && stripped
     . assert(_ == true)

@@ -45,13 +45,13 @@ object Patch:
   // diffs and mode-only changes produce a FileDiff with no hunks.
   def parse(lines: Iterator[Text]^): List[FileDiff] =
     val cursor = lines.buffered
-    while cursor.hasNext && !cursor.head.starts(t"diff --git ") do cursor.next()
+    while cursor.hasNext && !cursor.head.starts("diff --git ") do cursor.next()
     val files = scala.collection.mutable.ListBuffer[FileDiff]()
 
     while cursor.hasNext do
       val header = cursor.next()
       val body = scala.collection.mutable.ListBuffer[Text]()
-      while cursor.hasNext && !cursor.head.starts(t"diff --git ") do body += cursor.next()
+      while cursor.hasNext && !cursor.head.starts("diff --git ") do body += cursor.next()
       files += parseFile(header, body.to(List))
 
     files.to(List)
@@ -61,7 +61,7 @@ object Patch:
   def asDiff(file: FileDiff): Diff[Text] & Retained =
     Diff(file.hunks.bind(_.edits).stdlib*).retained
 
-  private def parseHunkRange(text: Text): (Int, Int) = text.cut(t",") match
+  private def parseHunkRange(text: Text): (Int, Int) = text.cut(",") match
     case List(start)        => (start.s.toInt, 1)
     case List(start, count) => (start.s.toInt, count.s.toInt)
     case _                  => (0, 0)
@@ -92,7 +92,7 @@ object Patch:
         State()
 
     def step(state: State, line: Text): State = line match
-      case t"--- /dev/null" =>
+      case "--- /dev/null" =>
         state.copy(oldPath = Unset, changeKind = ChangeKind.Added)
 
       case r"--- a/$path(.*)" =>
@@ -130,13 +130,13 @@ object Patch:
         flushed.copy(hunk = hunk, oldLine = oldStart, newLine = newStart)
 
       case other if state.hunk.present =>
-        if other.starts(t"+") then
+        if other.starts("+") then
           val text = other.skip(1)
           state.push(Ins(state.newLine, text).retained).copy(newLine = state.newLine + 1)
-        else if other.starts(t"-") then
+        else if other.starts("-") then
           val text = other.skip(1)
           state.push(Del(state.oldLine, text).retained).copy(oldLine = state.oldLine + 1)
-        else if other.starts(t" ") then
+        else if other.starts(" ") then
           val text = other.skip(1)
           val advanced = state.copy(oldLine = state.oldLine + 1, newLine = state.newLine + 1)
           advanced.push(Par(state.oldLine, state.newLine, text).retained)

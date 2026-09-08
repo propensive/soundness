@@ -78,114 +78,114 @@ object Tests extends Suite(m"Escapade tests"):
     suite(m"Interpolator: plain text"):
       test(m"empty interpolator renders empty text"):
         emit(e"")
-      . assert(_ == t"")
+      . assert(_ == "")
 
       test(m"plain text passes through"):
         emit(e"hello world")
-      . assert(_ == t"hello world")
+      . assert(_ == "hello world")
 
       test(m"plain text plain accessor"):
         e"hello world".plain
-      . assert(_ == t"hello world")
+      . assert(_ == "hello world")
 
       test(m"newline preserved in plain"):
         e"line\nbreak".plain
-      . assert(_ == t"line\nbreak")
+      . assert(_ == "line\nbreak")
 
       test(m"tab preserved in plain"):
         e"|\t|".plain
-      . assert(_ == t"|\t|")
+      . assert(_ == "|\t|")
 
       test(m"carriage return preserved in plain"):
         e"a\rb".plain
-      . assert(_ == t"a\rb")
+      . assert(_ == "a\rb")
 
       test(m"backspace preserved in plain"):
         e"a\bb".plain
-      . assert(_ == t"a\bb")
+      . assert(_ == "a\bb")
 
       test(m"unicode escape converted"):
         e"|@|".plain
-      . assert(_ == t"|@|")
+      . assert(_ == "|@|")
 
       test(m"backslash escape preserved"):
         e"a\\b".plain
-      . assert(_ == t"a\\b")
+      . assert(_ == "a\\b")
 
       test(m"dollar escape preserved as literal dollar"):
         e"a$$b".plain
-      . assert(_ == t"a$$b")
+      . assert(_ == "a$b")
 
     // ─── interpolator: substitution ───────────────────────────────────────
 
     suite(m"Interpolator: substitution"):
       test(m"string substitution"):
         emit(e"hello ${"world"}")
-      . assert(_ == t"hello world")
+      . assert(_ == "hello world")
 
       test(m"text substitution"):
         emit(e"hello ${t"world"}")
-      . assert(_ == t"hello world")
+      . assert(_ == "hello world")
 
       test(m"int substitution"):
         emit(e"answer is ${42}")
-      . assert(_ == t"answer is 42")
+      . assert(_ == "answer is 42")
 
       test(m"teletype substitution preserves styling"):
         val inner: Teletype = e"$Bold(bold)"
-        styled(emulate(e"x${inner}y"), t"bold")(_.bold)
+        styled(emulate(e"x${inner}y"), "bold")(_.bold)
       . assert(identity(_))
 
       test(m"non-stylize substitution does not consume bracket"):
         val n = 42
         emit(e"${n}[text]")
-      . assert(_ == t"42[text]")
+      . assert(_ == "42[text]")
 
       test(m"non-stylize substitution does not consume paren"):
         val n = 42
         emit(e"${n}(text)")
-      . assert(_ == t"42(text)")
+      . assert(_ == "42(text)")
 
       test(m"two adjacent substitutions"):
         emit(e"${"a"}${"b"}")
-      . assert(_ == t"ab")
+      . assert(_ == "ab")
 
     // ─── interpolator: bracket parsing ────────────────────────────────────
 
     suite(m"Interpolator: brackets"):
       test(m"parenthesis bracket"):
-        styled(emulate(e"$Bold(bold)"), t"bold")(_.bold)
+        styled(emulate(e"$Bold(bold)"), "bold")(_.bold)
       . assert(identity(_))
 
       test(m"square bracket"):
-        styled(emulate(e"$Bold[bold]"), t"bold")(_.bold)
+        styled(emulate(e"$Bold[bold]"), "bold")(_.bold)
       . assert(identity(_))
 
       test(m"curly bracket"):
-        styled(emulate(e"$Bold{bold}"), t"bold")(_.bold)
+        styled(emulate(e"$Bold{bold}"), "bold")(_.bold)
       . assert(identity(_))
 
       test(m"angle bracket"):
-        styled(emulate(e"$Bold<bold>"), t"bold")(_.bold)
+        styled(emulate(e"$Bold<bold>"), "bold")(_.bold)
       . assert(identity(_))
 
       test(m"guillemet bracket"):
-        styled(emulate(e"$Bold«bold»"), t"bold")(_.bold)
+        styled(emulate(e"$Bold«bold»"), "bold")(_.bold)
       . assert(identity(_))
 
       test(m"mismatched closing bracket type is ignored as text"):
-        styled(emulate(e"$Bold(a]b)"), t"a]b")(_.bold)
+        styled(emulate(e"$Bold(a]b)"), "a]b")(_.bold)
       . assert(identity(_))
 
       test(m"mismatched closing bracket inside parens does not close span"):
-        styled(emulate(e"$Bold(a]b)c"), t"c")(!_.bold)
+        styled(emulate(e"$Bold(a]b)c"), "c")(!_.bold)
       . assert(identity(_))
 
     // ─── interpolator: escapes ────────────────────────────────────────────
 
     suite(m"Interpolator: escapes"):
       test(m"escaped backslash before stylize is preserved"):
-        emit(e"\\${Bold}(text)").contains(t"\\")
+        emit(e"\\${Bold}(text)").contains("\\")
       . assert(_ == false)
 
       test(m"escape before stylize cancels the markup"):
@@ -351,39 +351,39 @@ object Tests extends Suite(m"Escapade tests"):
 
     suite(m"Nesting: stack restoration"):
       test(m"inner color overrides outer"):
-        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(yellow))"), t"yellow")(_.foreground == yellow)
+        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(yellow))"), "yellow")(_.foreground == yellow)
       . assert(identity(_))
 
       test(m"outer color restored after inner closes"):
-        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(yellow)red)"), t"red")(_.foreground == red)
+        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(yellow)red)"), "red")(_.foreground == red)
       . assert(identity(_))
 
       test(m"default restored after outermost closes"):
-        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(yellow)red)tail"), t"tail")(_.foreground == white)
+        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(yellow)red)tail"), "tail")(_.foreground == white)
       . assert(identity(_))
 
       test(m"three levels of nested color restore correctly"):
-        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(${Fg(green)}(g)y)r)x"), t"x")(_.foreground == white)
+        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(${Fg(green)}(g)y)r)x"), "x")(_.foreground == white)
       . assert(identity(_))
 
       test(m"middle color of three-deep stack restores correctly"):
-        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(${Fg(green)}(g)y)r)"), t"y")(_.foreground == yellow)
+        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(${Fg(green)}(g)y)r)"), "y")(_.foreground == yellow)
       . assert(identity(_))
 
       test(m"outer color of three-deep stack restores correctly"):
-        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(${Fg(green)}(g)y)r)"), t"r")(_.foreground == red)
+        styled(emulate(e"${Fg(red)}(${Fg(yellow)}(${Fg(green)}(g)y)r)"), "r")(_.foreground == red)
       . assert(identity(_))
 
       test(m"nested bold and italic both apply"):
-        styled(emulate(e"$Bold(b$Italic(bi)b)"), t"bi") { s => s.bold && s.italic }
+        styled(emulate(e"$Bold(b$Italic(bi)b)"), "bi") { s => s.bold && s.italic }
       . assert(identity(_))
 
       test(m"italic removed after inner span ends but bold remains"):
-        styled(emulate(e"$Bold(b$Italic(bi)b2)"), t"b2") { s => s.bold && !s.italic }
+        styled(emulate(e"$Bold(b$Italic(bi)b2)"), "b2") { s => s.bold && !s.italic }
       . assert(identity(_))
 
       test(m"nested background restores outer background"):
-        styled(emulate(e"${Bg(red)}(${Bg(blue)}(blue)red)"), t"red")(_.background == red)
+        styled(emulate(e"${Bg(red)}(${Bg(blue)}(blue)red)"), "red")(_.background == red)
       . assert(identity(_))
 
       test(m"nested fg/bg combinations restore independently"):
@@ -397,45 +397,45 @@ object Tests extends Suite(m"Escapade tests"):
     suite(m"Escaping"):
       test(m"\\n produces a newline character"):
         e"\n".plain
-      . assert(_ == t"\n")
+      . assert(_ == "\n")
 
       test(m"\\t produces a tab character"):
         e"\t".plain
-      . assert(_ == t"\t")
+      . assert(_ == "\t")
 
       test(m"\\r produces a carriage return"):
         e"\r".plain
-      . assert(_ == t"\r")
+      . assert(_ == "\r")
 
       test(m"\\u escape converts to character"):
         e"A".plain
-      . assert(_ == t"A")
+      . assert(_ == "A")
 
       test(m"\\\\ produces a literal backslash"):
         e"\\".plain
-      . assert(_ == t"\\")
+      . assert(_ == "\\")
 
     // ─── Teletype direct API ──────────────────────────────────────────────
 
     suite(m"Teletype: render"):
       test(m"empty Teletype renders to empty text"):
         Teletype.empty.render(termcapDefinitions.xtermTrueColorTermcap)
-      . assert(_ == t"")
+      . assert(_ == "")
 
       test(m"basic termcap (no ansi) returns plain text"):
         plainRender(e"$Bold(text)")
-      . assert(_ == t"text")
+      . assert(_ == "text")
 
       test(m"basic termcap output has no escape characters"):
-        plainRender(e"$Bold(${Fg(red)}(text))").contains(t"\u001b")
+        plainRender(e"$Bold(${Fg(red)}(text))").contains("\u001b")
       . assert(_ == false)
 
       test(m"xtermTrueColor encodes 24-bit color"):
-        emit(e"${Fg(red)}(x)").contains(t"38;2;255;0;0")
+        emit(e"${Fg(red)}(x)").contains("38;2;255;0;0")
       . assert(_ == true)
 
       test(m"xterm256 encodes palette color"):
-        emit256(e"${Fg(red)}(x)").contains(t"38;5;")
+        emit256(e"${Fg(red)}(x)").contains("38;5;")
       . assert(_ == true)
 
       test(m"explicit shows escape as \\\\e"):
@@ -444,48 +444,48 @@ object Tests extends Suite(m"Escapade tests"):
 
     suite(m"Teletype: append"):
       test(m"append text grows plain"):
-        e"hello".append(t" world").plain
-      . assert(_ == t"hello world")
+        e"hello".append(" world").plain
+      . assert(_ == "hello world")
 
       test(m"append teletype preserves left styling"):
         val left = e"$Bold(bold)"
-        styled(emulate(left.append(e"plain")), t"bold")(_.bold)
+        styled(emulate(left.append(e"plain")), "bold")(_.bold)
       . assert(identity(_))
 
       test(m"append teletype preserves right styling"):
         val right = e"$Bold(bold)"
-        styled(emulate(e"plain".append(right)), t"bold")(_.bold)
+        styled(emulate(e"plain".append(right)), "bold")(_.bold)
       . assert(identity(_))
 
       test(m"+ operator behaves as append"):
         (e"a" + e"b").plain
-      . assert(_ == t"ab")
+      . assert(_ == "ab")
 
     suite(m"Teletype: dropChars and takeChars"):
       test(m"dropChars from start"):
         e"abcdef".dropChars(2).plain
-      . assert(_ == t"cdef")
+      . assert(_ == "cdef")
 
       test(m"dropChars from end"):
         e"abcdef".dropChars(2, Rtl).plain
-      . assert(_ == t"abcd")
+      . assert(_ == "abcd")
 
       test(m"takeChars from start"):
         e"abcdef".takeChars(3).plain
-      . assert(_ == t"abc")
+      . assert(_ == "abc")
 
       test(m"takeChars from end"):
         e"abcdef".takeChars(3, Rtl).plain
-      . assert(_ == t"def")
+      . assert(_ == "def")
 
       test(m"dropChars preserves styling on remaining range"):
         val tt = e"$Bold(abcdef)".dropChars(2)
-        styled(emulate(tt), t"cdef")(_.bold)
+        styled(emulate(tt), "cdef")(_.bold)
       . assert(identity(_))
 
       test(m"takeChars preserves styling on remaining range"):
         val tt = e"$Bold(abcdef)".takeChars(3)
-        styled(emulate(tt), t"abc")(_.bold)
+        styled(emulate(tt), "abc")(_.bold)
       . assert(identity(_))
 
     // ─── Textual extension methods (from gossamer) ────────────────────────
@@ -510,43 +510,43 @@ object Tests extends Suite(m"Escapade tests"):
     suite(m"Textual: slicing"):
       test(m"keep"):
         e"hello world".keep(5).plain
-      . assert(_ == t"hello")
+      . assert(_ == "hello")
 
       test(m"keep with Rtl"):
         e"hello world".keep(5, Rtl).plain
-      . assert(_ == t"world")
+      . assert(_ == "world")
 
       test(m"skip"):
         e"hello world".skip(6).plain
-      . assert(_ == t"world")
+      . assert(_ == "world")
 
       test(m"skip with Rtl"):
         e"hello world".skip(6, Rtl).plain
-      . assert(_ == t"hello")
+      . assert(_ == "hello")
 
       test(m"tail"):
         e"hello".tail.plain
-      . assert(_ == t"ello")
+      . assert(_ == "ello")
 
       test(m"init"):
         e"hello".init.plain
-      . assert(_ == t"hell")
+      . assert(_ == "hell")
 
       test(m"before"):
         e"hello".before(Ter).plain
-      . assert(_ == t"he")
+      . assert(_ == "he")
 
       test(m"after"):
         e"hello".after(Ter).plain
-      . assert(_ == t"lo")
+      . assert(_ == "lo")
 
       test(m"upto"):
         e"hello".upto(Ter).plain
-      . assert(_ == t"hel")
+      . assert(_ == "hel")
 
       test(m"from"):
         e"hello".from(Ter).plain
-      . assert(_ == t"llo")
+      . assert(_ == "llo")
 
       test(m"slices"):
         e"abcdefg".slices(3).map(_.plain)
@@ -555,19 +555,19 @@ object Tests extends Suite(m"Escapade tests"):
       test(m"snip"):
         val (a, b) = e"hello world".snip(5)
         (a.plain, b.plain)
-      . assert(_ == ((t"hello", t" world")))
+      . assert(_ == (("hello", " world")))
 
       test(m"reverse"):
         e"hello".reverse.plain
-      . assert(_ == t"olleh")
+      . assert(_ == "olleh")
 
     suite(m"Textual: searching"):
       test(m"contains text"):
-        e"hello world".contains(t"world")
+        e"hello world".contains("world")
       . assert(_ == true)
 
       test(m"does not contain"):
-        e"hello".contains(t"world")
+        e"hello".contains("world")
       . assert(_ == false)
 
       test(m"contains char"):
@@ -575,35 +575,35 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(_ == true)
 
       test(m"offsetOf substring (Ltr)"):
-        e"hello world".offsetOf(t"world")
+        e"hello world".offsetOf("world")
       . assert(_ == Sept)
 
       test(m"offsetOf missing returns Unset"):
-        e"hello".offsetOf(t"world")
+        e"hello".offsetOf("world")
       . assert(_ == Unset)
 
       test(m"offsetOf substring Rtl finds last occurrence"):
-        e"abcabc".offsetOf(t"a", Rtl)
+        e"abcabc".offsetOf("a", Rtl)
       . assert(_ == Quat)
 
       test(m"starts with prefix"):
-        e"hello world".starts(t"hello")
+        e"hello world".starts("hello")
       . assert(_ == true)
 
       test(m"does not start with prefix"):
-        e"hello world".starts(t"world")
+        e"hello world".starts("world")
       . assert(_ == false)
 
       test(m"ends with suffix"):
-        e"hello world".ends(t"world")
+        e"hello world".ends("world")
       . assert(_ == true)
 
       test(m"does not end with suffix"):
-        e"hello world".ends(t"hello")
+        e"hello world".ends("hello")
       . assert(_ == false)
 
       test(m"count text occurrences"):
-        e"abcabcabc".tally(t"a")
+        e"abcabcabc".tally("a")
       . assert(_ == 3)
 
       test(m"count predicate"):
@@ -616,73 +616,73 @@ object Tests extends Suite(m"Escapade tests"):
 
       test(m"before predicate"):
         e"hello".before(_ == 'l').plain
-      . assert(_ == t"he")
+      . assert(_ == "he")
 
       test(m"upto predicate"):
         e"hello".upto(_ == 'l').plain
-      . assert(_ == t"hel")
+      . assert(_ == "hel")
 
     suite(m"Textual: case"):
       test(m"lower"):
         e"HELLO".lower.plain
-      . assert(_ == t"hello")
+      . assert(_ == "hello")
 
       test(m"upper"):
         e"hello".upper.plain
-      . assert(_ == t"HELLO")
+      . assert(_ == "HELLO")
 
       test(m"capitalize"):
         e"hello".capitalize.plain
-      . assert(_ == t"Hello")
+      . assert(_ == "Hello")
 
       test(m"uncapitalize"):
         e"Hello".uncapitalize.plain
-      . assert(_ == t"hello")
+      . assert(_ == "hello")
 
     suite(m"Textual: trim, pad, fit"):
       test(m"trim"):
         e"  hello  ".trim.plain
-      . assert(_ == t"hello")
+      . assert(_ == "hello")
 
       test(m"trim Ltr"):
         e"  hello  ".trim(Ltr).plain
-      . assert(_ == t"hello  ")
+      . assert(_ == "hello  ")
 
       test(m"trim Rtl"):
         e"  hello  ".trim(Rtl).plain
-      . assert(_ == t"  hello")
+      . assert(_ == "  hello")
 
       test(m"chomp prefix"):
-        e"prehello".chomp(t"pre").plain
-      . assert(_ == t"hello")
+        e"prehello".chomp("pre").plain
+      . assert(_ == "hello")
 
       test(m"chomp suffix Rtl"):
-        e"hellopost".chomp(t"post", Rtl).plain
-      . assert(_ == t"hello")
+        e"hellopost".chomp("post", Rtl).plain
+      . assert(_ == "hello")
 
       test(m"pad to width"):
         e"hi".pad(5).plain
-      . assert(_ == t"hi   ")
+      . assert(_ == "hi   ")
 
       test(m"pad with custom char"):
         e"hi".pad(5, char = '_').plain
-      . assert(_ == t"hi___")
+      . assert(_ == "hi___")
 
       test(m"pad Rtl"):
         e"hi".pad(5, Rtl).plain
-      . assert(_ == t"   hi")
+      . assert(_ == "   hi")
 
       test(m"center"):
         e"hi".center(6).plain
-      . assert(_ == t"  hi  ")
+      . assert(_ == "  hi  ")
 
       test(m"fit truncates when too long"):
         e"hello world".fit(5).plain
-      . assert(_ == t"hello")
+      . assert(_ == "hello")
 
       test(m"fit pads when too short"):
         e"hi".fit(5).plain
-      . assert(_ == t"hi   ")
+      . assert(_ == "hi   ")
 
       test(m"blank on empty is true"):
         e"".blank
@@ -720,50 +720,50 @@ object Tests extends Suite(m"Escapade tests"):
     suite(m"Textual: predicates"):
       test(m"keep predicate takes while predicate is true"):
         e"hello world".keep(_.isLetter).plain
-      . assert(_ == t"hello")
+      . assert(_ == "hello")
 
       test(m"skip predicate drops while predicate is true"):
         e"hello world".skip(_.isLetter).plain
-      . assert(_ == t" world")
+      . assert(_ == " world")
 
       test(m"erase removes characters"):
         e"hello".erase('l').plain
-      . assert(_ == t"heo")
+      . assert(_ == "heo")
 
       test(m"translate"):
         e"hello".tr(c => if c == 'l' then 'L' else c).plain
-      . assert(_ == t"heLLo")
+      . assert(_ == "heLLo")
 
       test(m"tr"):
         e"hello".tr('l', 'L').plain
-      . assert(_ == t"heLLo")
+      . assert(_ == "heLLo")
 
     suite(m"Textual: transforms"):
       test(m"subscripts"):
         e"123".subscripts.plain
-      . assert(_ == t"₁₂₃")
+      . assert(_ == "₁₂₃")
 
       test(m"superscripts"):
         e"123".superscripts.plain
-      . assert(_ == t"¹²³")
+      . assert(_ == "¹²³")
 
     // ─── Cuttable ─────────────────────────────────────────────────────────
 
     suite(m"Cuttable"):
       test(m"cut on comma"):
-        e"a,b,c".cut(t",").map(_.plain)
+        e"a,b,c".cut(",").map(_.plain)
       . assert(_ == List(t"a", t"b", t"c"))
 
       test(m"cut on multi-char"):
-        e"hello-world".cut(t"-").map(_.plain)
+        e"hello-world".cut("-").map(_.plain)
       . assert(_ == List(t"hello", t"world"))
 
       test(m"cut empty input"):
-        e"".cut(t",").map(_.plain)
+        e"".cut(",").map(_.plain)
       . assert(_ == List(t""))
 
       test(m"cut preserves bold styling on parts"):
-        styled(emulate(e"$Bold(a,b,c)"), t"a,b,c")(_.bold)
+        styled(emulate(e"$Bold(a,b,c)"), "a,b,c")(_.bold)
       . assert(_ == true)
 
     // ─── Joinable & Concatenable ──────────────────────────────────────────
@@ -771,38 +771,38 @@ object Tests extends Suite(m"Escapade tests"):
     suite(m"Joinable"):
       test(m"join with separator"):
         scala.collection.immutable.List(e"a", e"b", e"c").join(e",").plain
-      . assert(_ == t"a,b,c")
+      . assert(_ == "a,b,c")
 
       test(m"join with bookends"):
         scala.collection.immutable.List(e"a", e"b", e"c").join(e"[", e",", e"]").plain
-      . assert(_ == t"[a,b,c]")
+      . assert(_ == "[a,b,c]")
 
       test(m"join preserves nested styling"):
         val parts = scala.collection.immutable.List(e"$Bold(a)", e"plain", e"$Italic(c)")
-        styled(emulate(parts.join(e",")), t"a")(_.bold)
+        styled(emulate(parts.join(e",")), "a")(_.bold)
       . assert(_ == true)
 
       test(m"empty list joins to empty"):
         scala.collection.immutable.List[Teletype]().join(e",").plain
-      . assert(_ == t"")
+      . assert(_ == "")
 
       test(m"concat via concat instance"):
         Teletype.concatenable.concat(e"hello", e" world").plain
-      . assert(_ == t"hello world")
+      . assert(_ == "hello world")
 
     // ─── Teletypeable instances ───────────────────────────────────────────
 
     suite(m"Teletypeable instances"):
       test(m"text is teletypeable"):
-        emit(t"hello".teletype)
-      . assert(_ == t"hello")
+        emit("hello".teletype)
+      . assert(_ == "hello")
 
       test(m"showable Int is teletypeable"):
         emit(42.teletype)
-      . assert(_ == t"42")
+      . assert(_ == "42")
 
       test(m"some option is teletypeable"):
-        emit((Some(t"hello"): Option[Text]).teletype).contains(t"hello")
+        emit((Some("hello"): Option[Text]).teletype).contains("hello")
       . assert(_ == true)
 
       test(m"none option is teletypeable"):
@@ -810,71 +810,71 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(_ > 0)
 
       test(m"message renders the text"):
-        emit(m"hello world".teletype).contains(t"hello world")
+        emit(m"hello world".teletype).contains("hello world")
       . assert(_ == true)
 
     // ─── Ribbon ───────────────────────────────────────────────────────────
 
     suite(m"Ribbon"):
       test(m"single-segment ribbon contains the text"):
-        emulate(Ribbon(Bg(red)).fill(e"one"), width = 80).buffer.find(t"one").or(Unset)
+        emulate(Ribbon(Bg(red)).fill(e"one"), width = 80).buffer.find("one").or(Unset)
       . assert(_ != Unset)
 
       test(m"three-segment ribbon contains all parts"):
         val pty = emulate(Ribbon(Bg(red), Bg(yellow), Bg(green)).fill(e"one", e"two", e"three"), width = 80)
-        ( pty.buffer.find(t"one").or(Unset),
-          pty.buffer.find(t"two").or(Unset),
-          pty.buffer.find(t"three").or(Unset) )
+        ( pty.buffer.find("one").or(Unset),
+          pty.buffer.find("two").or(Unset),
+          pty.buffer.find("three").or(Unset) )
       . assert { case (a, b, c) => a != Unset && b != Unset && c != Unset }
 
       test(m"first ribbon segment has correct background"):
         val pty = emulate(Ribbon(Bg(red), Bg(yellow)).fill(e"one", e"two"), width = 80)
-        styled(pty, t"one")(_.background == red)
+        styled(pty, "one")(_.background == red)
       . assert(_ == true)
 
       test(m"second ribbon segment has correct background"):
         val pty = emulate(Ribbon(Bg(red), Bg(yellow)).fill(e"one", e"two"), width = 80)
-        styled(pty, t"two")(_.background == yellow)
+        styled(pty, "two")(_.background == yellow)
       . assert(_ == true)
 
       test(m"zero-length ribbon with no parts is empty"):
         Ribbon().fill().plain
-      . assert(_ == t"")
+      . assert(_ == "")
 
       test(m"zero-color ribbon with parts still preserves part text"):
         Ribbon().fill(e"hello", e"world").plain
-      . assert(_ == t"hello world")
+      . assert(_ == "hello world")
 
     // ─── csi helpers ──────────────────────────────────────────────────────
 
     suite(m"csi helpers"):
       test(m"cuu with no parameter"):
         csi.cuu()
-      . assert(_ == t"\u001b[A")
+      . assert(_ == "\u001b[A")
 
       test(m"cuu with parameter"):
         csi.cuu(3)
-      . assert(_ == t"\u001b[3A")
+      . assert(_ == "\u001b[3A")
 
       test(m"cup with both parameters"):
         csi.cup(2, 5)
-      . assert(_ == t"\u001b[2;5H")
+      . assert(_ == "\u001b[2;5H")
 
       test(m"sgr with single parameter"):
         csi.sgr(1)
-      . assert(_ == t"\u001b[1m")
+      . assert(_ == "\u001b[1m")
 
       test(m"sgr with multiple parameters"):
         csi.sgr(1, 31)
-      . assert(_ == t"\u001b[1;31m")
+      . assert(_ == "\u001b[1;31m")
 
       test(m"dectcem on"):
         csi.dectcem(true)
-      . assert(_ == t"\u001b[?25h")
+      . assert(_ == "\u001b[?25h")
 
       test(m"dectcem off"):
         csi.dectcem(false)
-      . assert(_ == t"\u001b[?25l")
+      . assert(_ == "\u001b[?25l")
 
       test(m"hidden cursor reflected in pty"):
         Pty(80, 4).consume(csi.dectcem(false)).cursorVisible
@@ -884,12 +884,12 @@ object Tests extends Suite(m"Escapade tests"):
 
     suite(m"Escape"):
       test(m"escape with on/off pair toggles bold"):
-        val esc = Escape(t"[1m", t"[22m")
+        val esc = Escape("[1m", "[22m")
         emulate(e"a${esc}(b)c").buffer.style(1.z, 0.z).bold
       . assert(_ == true)
 
       test(m"escape pair restores after span"):
-        val esc = Escape(t"[1m", t"[22m")
+        val esc = Escape("[1m", "[22m")
         emulate(e"a${esc}(b)c").buffer.style(2.z, 0.z).bold
       . assert(_ == false)
 
@@ -899,7 +899,7 @@ object Tests extends Suite(m"Escapade tests"):
       test(m"plain.length matches pty char count"):
         val tt = e"hello $Bold(world)"
         val pty = emulate(tt)
-        val visible = pty.buffer.find(t"hello world").or(Unset)
+        val visible = pty.buffer.find("hello world").or(Unset)
         visible != Unset
       . assert(_ == true)
 
@@ -920,15 +920,15 @@ object Tests extends Suite(m"Escapade tests"):
 
       test(m"link contents are the visible text"):
         e"a${Hyperlink(t"https://x.test")}[middle]b".plain
-      . assert(_ == t"amiddleb")
+      . assert(_ == "amiddleb")
 
       test(m"link at end of text emits trailing close"):
-        emit(e"${Hyperlink(t"https://x.test")}[link]").contains(t"]8;;")
+        emit(e"${Hyperlink(t"https://x.test")}[link]").contains("]8;;")
       . assert(_ == true)
 
       test(m"basic termcap drops hyperlink escapes"):
         plainRender(e"${Hyperlink(t"https://x.test")}[link]")
-      . assert(_ == t"link")
+      . assert(_ == "link")
 
       test(m"styled text inside a hyperlink keeps both"):
         val rendered = emit(e"${Hyperlink(t"https://x.test")}[$Bold(bold link)]")
@@ -937,7 +937,7 @@ object Tests extends Suite(m"Escapade tests"):
 
       test(m"hyperlink stored at correct position"):
         e"hi ${Hyperlink(t"https://x.test")}[click]".hyperlinks(3)
-      . assert(_ == t"https://x.test")
+      . assert(_ == "https://x.test")
 
     // ─── new style attributes ─────────────────────────────────────────────
 
@@ -968,7 +968,7 @@ object Tests extends Suite(m"Escapade tests"):
 
       test(m"plain renderer drops new attributes"):
         plainRender(e"a$Faint($Overline(b))c")
-      . assert(_ == t"abc")
+      . assert(_ == "abc")
 
     // ─── concat invariant ──────────────────────────────────────────────────
 
@@ -977,11 +977,11 @@ object Tests extends Suite(m"Escapade tests"):
         val a = e"$Bold(hello) "
         val b = e"$Italic(world)"
         a.append(b).plain
-      . assert(_ == t"hello world")
+      . assert(_ == "hello world")
 
       test(m"appended teletype carries both left and right SGR codes"):
         val rendered = emit(e"$Bold(hello) ".append(e"$Italic(world)"))
-        (rendered.contains(t"[1m"), rendered.contains(t"[3m"))
+        (rendered.contains("[1m"), rendered.contains("[3m"))
       . assert(_ == ((true, true)))
 
       test(m"styleAt returns the correct style for each position"):
@@ -1007,15 +1007,15 @@ object Tests extends Suite(m"Escapade tests"):
         cells.reverse
 
       test(m"plain Text decomposes into one cell per grapheme"):
-        cellList(t"abc").map(_._1.text)
+        cellList("abc").map(_._1.text)
       . assert(_ == List(t"a", t"b", t"c"))
 
       test(m"plain Text cells carry the default style"):
-        cellList(t"abc").map(_._2 == StyleWord.Default)
+        cellList("abc").map(_._2 == StyleWord.Default)
       . assert(_ == List(true, true, true))
 
       test(m"an accented character is a single grapheme cell"):
-        cellList(t"é").size
+        cellList("é").size
       . assert(_ == 1)
 
       test(m"a styled Teletype carries its style per cell"):
@@ -1029,14 +1029,14 @@ object Tests extends Suite(m"Escapade tests"):
       val truecolor = termcapDefinitions.xtermTrueColorTermcap
 
       test(m"a Showable-only value renders plainly"):
-        val rendered = Fruit(t"kiwi").teletype
-        (rendered.plain, rendered.render(truecolor).contains(t"\u001b["))
-      . assert(_ == (t"kiwi", false))
+        val rendered = Fruit("kiwi").teletype
+        (rendered.plain, rendered.render(truecolor).contains("\u001b["))
+      . assert(_ == ("kiwi", false))
 
       // Formerly ambiguous: with both upstream instances present, the two peer givens both
       // matched (issue #261); the collapsed given now resolves, preferring `Colorable`.
       test(m"a value with a Colorable instance resolves, and renders in colour"):
         given Fruit is Colorable = Colorable(Red)
-        val rendered = Fruit(t"cherry").teletype
-        (rendered.plain, rendered.render(truecolor).contains(t"\u001b["))
-      . assert(_ == (t"cherry", true))
+        val rendered = Fruit("cherry").teletype
+        (rendered.plain, rendered.render(truecolor).contains("\u001b["))
+      . assert(_ == ("cherry", true))

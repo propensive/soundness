@@ -65,7 +65,7 @@ private[scintillate] object Connections:
 
     val uri = exchange.getRequestURI.nn
     val query = Optional(uri.getQuery)
-    val target = uri.getPath.nn.tt+query.let(t"?"+_.tt).or(t"")
+    val target = uri.getPath.nn.tt+query.let("?"+_.tt).or(t"")
     val method = exchange.getRequestMethod.nn.show.as[Http.Method]
 
     val headers: List[Http.Header] =
@@ -118,7 +118,7 @@ private[scintillate] object Connections:
 
         response.textHeaders.each:
           case Http.Header(key, value) =>
-            if key.lower == t"transfer-encoding" && value.lower == t"chunked" then chunked = true
+            if key.lower == "transfer-encoding" && value.lower == "chunked" then chunked = true
 
             exchange.getResponseHeaders.nn.add(key.s, value.s)
 

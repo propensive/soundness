@@ -60,7 +60,7 @@ object LiraBundle:
   def tool[universe <: Universe](version: Text)(using emission: Universe.Emission[universe])
   :   Lira.Manifest.Tool =
 
-    Lira.Manifest.Tool(t"scala", version, emission.flags)
+    Lira.Manifest.Tool("scala", version, emission.flags)
 
   private def section(universe: Text, out: Text, suffixes: List[Text])
   :   LiraAssembler.SectionInput raises Lira.Error =

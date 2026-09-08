@@ -64,7 +64,7 @@ object SchemaResolver:
   // palimpsest of `SchemaSignature.fromDocument` over the canonical
   // tels.tel source. Pinned as a golden value, and recomputed from the
   // corpus by the test suite.
-  val telsSignature: Text = t"ÔŀưḞ2żbτȚÆAĄſЬMẍỳϋῩJλḤӛ3ñẉḢkŻẋzǓĥ"
+  val telsSignature: Text = "ÔŀưḞ2żbτȚÆAĄſЬMẍỳϋῩJλḤӛ3ñẉḢkŻẋzǓĥ"
 
   // A resolution outcome: the schema composed with the pragma's layer
   // selection; its source document (`Unset` for the built-in axiom);

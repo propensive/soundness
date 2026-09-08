@@ -95,21 +95,21 @@ sealed trait Executable:
 object Command:
   private def formattedArguments(arguments: List[Text]): Text =
     arguments.map: (argument: Text) =>
-      if argument.contains(t"\"") && !argument.contains(t"'") then t"""'$argument'"""
-      else if argument.contains(t"'") && !argument.contains(t"\"") then t""""$argument""""
-      else if argument.contains(t"'") && argument.contains(t"\"")
+      if argument.contains("\"") && !argument.contains("'") then t"""'$argument'"""
+      else if argument.contains("'") && !argument.contains("\"") then t""""$argument""""
+      else if argument.contains("'") && argument.contains("\"")
       then t""""${argument.sub(r"""\"""", t"\\\\\"")}""""
-      else if argument.contains(t" ") || argument.contains(t"\t") || argument.contains(t"\\")
+      else if argument.contains(" ") || argument.contains("\t") || argument.contains("\\")
       then t"'$argument'"
       else argument
 
-    . join(t" ")
+    . join(" ")
 
   // Subtype-bounded, so that the type `sh"…"` expands to — a refinement of `Command`, not
   // `Command` itself — still finds this instance rather than falling through to `showable`.
   given inspectable: [command <: Command] => command is Inspectable = command =>
     val commandText: Text = formattedArguments(command.arguments.to(List))
-    if commandText.contains(t"\"") then t"sh\"\"\"$commandText\"\"\"" else t"sh\"$commandText\""
+    if commandText.contains("\"") then t"sh\"\"\"$commandText\"\"\"" else t"sh\"$commandText\""
 
   given showable: Command is Showable = command => formattedArguments(command.arguments.to(List))
 
@@ -136,7 +136,7 @@ case class Command(arguments: Text*) extends Executable:
     new Job(process)
 
 
-  def escape: Text = arguments.map { argument => t"'${argument.sub(t"'", t"\'")}'" }.join(t" ")
+  def escape: Text = arguments.map { argument => t"'${argument.sub(t"'", t"\'")}'" }.join(" ")
 
 object Pipeline:
   given communicable: Pipeline is Communicable =
@@ -144,8 +144,8 @@ object Pipeline:
 
   // Subtype-bounded for the same reason as `Command.inspectable`, above.
   given inspectable: [pipeline <: Pipeline] => pipeline is Inspectable =
-    _.commands.map(_.inspect).join(t" | ")
-  given showable: Pipeline is Showable = _.commands.map(_.show).join(t" | ")
+    _.commands.map(_.inspect).join(" | ")
+  given showable: Pipeline is Showable = _.commands.map(_.show).join(" | ")
 
 case class Pipeline(commands: Command*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)

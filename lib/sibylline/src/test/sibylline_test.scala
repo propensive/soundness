@@ -53,7 +53,7 @@ extends Llm.Dialect:
   private val replies: scm.Queue[Llm.Reply] = scm.Queue(answers.stdlib*)
   private val streams: scm.Queue[List[Llm.Event]] = scm.Queue(scripts.stdlib*)
 
-  def name: Text = t"scripted"
+  def name: Text = "scripted"
 
   def exchange(turn: Llm.Exchange): Llm.Reply =
     calls.append(turn)
@@ -74,21 +74,21 @@ object Tests extends Suite(m"Sibylline tests"):
     suite(m"Conversation tests"):
       test(m"a one-shot ask returns the scripted reply"):
         val dialect = Scripted(List(Scripted.reply(t"Suur Munamägi")))
-        session(dialect).ask(t"Tallest mountain in Estonia?").text
-      . assert(_ == t"Suur Munamägi")
+        session(dialect).ask("Tallest mountain in Estonia?").text
+      . assert(_ == "Suur Munamägi")
 
       test(m"asking commits both turns to history"):
         val dialect = Scripted(List(Scripted.reply(t"Suur Munamägi")))
         val handle = session(dialect)
-        handle.ask(t"Tallest mountain in Estonia?")
+        handle.ask("Tallest mountain in Estonia?")
         handle.history.stdlib.length
       . assert(_ == 2)
 
       test(m"a second ask sends the accumulated history"):
         val dialect = Scripted(List(Scripted.reply(t"one"), Scripted.reply(t"two")))
         val handle = session(dialect)
-        handle.ask(t"first")
-        handle.ask(t"second")
+        handle.ask("first")
+        handle.ask("second")
         dialect.calls.last.history.stdlib.length
       . assert(_ == 3)
 
@@ -97,26 +97,26 @@ object Tests extends Suite(m"Sibylline tests"):
           Scripted(List(Scripted.reply(t"one", Usage(3, 5)), Scripted.reply(t"two", Usage(7, 11))))
 
         val handle = session(dialect)
-        handle.ask(t"first")
-        handle.ask(t"second")
+        handle.ask("first")
+        handle.ask("second")
         handle.usage
       . assert(_ == Usage(10, 16))
 
       test(m"recorded messages are sent but cost nothing"):
         val dialect = Scripted(List(Scripted.reply(t"seen")))
         val handle = session(dialect)
-        handle.record(Message(Role.User, t"context"))
-        handle.record(Message(Role.Assistant, t"noted"))
-        handle.ask(t"question")
+        handle.record(Message(Role.User, "context"))
+        handle.record(Message(Role.Assistant, "noted"))
+        handle.ask("question")
         (dialect.calls.last.history.stdlib.length, handle.usage.input)
       . assert(_ == (3, 3))
 
       test(m"the system prompt reaches the dialect out-of-band"):
         val dialect = Scripted(List(Scripted.reply(t"yes")))
-        val handle = session(dialect, system = t"Be terse.")
-        handle.ask(t"Ready?")
+        val handle = session(dialect, system = "Be terse.")
+        handle.ask("Ready?")
         dialect.calls.last.system
-      . assert(_ == t"Be terse.")
+      . assert(_ == "Be terse.")
 
     suite(m"Vocabulary tests"):
       test(m"absent optional counts stay absent when folded"):
@@ -128,7 +128,7 @@ object Tests extends Suite(m"Sibylline tests"):
       . assert(_ == Usage(4, 6, cacheRead = 15, reasoning = 7))
 
       test(m"a reply's text concatenates only its textual blocks"):
-        Scripted.reply(t"one").copy
+        Scripted.reply("one").copy
           ( message = Message
               ( Role.Assistant,
                 List
@@ -136,85 +136,85 @@ object Tests extends Suite(m"Sibylline tests"):
                     Content.Thinking(t"hmm"),
                     Content.Textual(t"two") ) ) )
         . text
-      . assert(_ == t"one two")
+      . assert(_ == "one two")
 
       test(m"a reply's tool calls are just its tool-use blocks"):
-        val call = Content.ToolUse(t"id1", t"price", j"""{"ticker": "AAPL"}""")
+        val call = Content.ToolUse("id1", "price", j"""{"ticker": "AAPL"}""")
 
-        Scripted.reply(t"x").copy
+        Scripted.reply("x").copy
           ( message = Message(Role.Assistant, List(Content.Textual(t"…"), call)) )
         . toolCalls
       . assert(_ == List(Content.ToolUse(t"id1", t"price", j"""{"ticker": "AAPL"}""")))
 
     suite(m"Streaming tests"):
       def script(chunks: Text*): List[Event] =
-        val head = scala.Seq(Event.Started(t"msg_1", t"scripted-1"), Event.Opened(0, Content.Textual(t"")))
+        val head = scala.Seq(Event.Started("msg_1", "scripted-1"), Event.Opened(0, Content.Textual("")))
         val tail = scala.Seq(Event.Closed(0), Event.Update(Stop.Ended, Usage(2, 9)), Event.Finished)
         ((head ++ chunks.map { chunk => Event.Delta(0, Increment.Textual(chunk)) } ++ tail).toList).to(List)
 
       test(m"text deltas stream in order"):
         val dialect = Scripted(scripts = List(script(t"fjord", t" of ", t"Norway")))
         val handle = session(dialect)
-        val response = handle.stream(t"go")
+        val response = handle.stream("go")
         response.text.to(List)
       . assert(_ == List(t"fjord", t" of ", t"Norway"))
 
       test(m"draining a response assembles the full reply"):
         val dialect = Scripted(scripts = List(script(t"fjord", t" of ", t"Norway")))
         val handle = session(dialect)
-        handle.stream(t"go").reply().text
-      . assert(_ == t"fjord of Norway")
+        handle.stream("go").reply().text
+      . assert(_ == "fjord of Norway")
 
       test(m"a partially-consumed stream still completes on reply"):
         val dialect = Scripted(scripts = List(script(t"fjord", t" of ", t"Norway")))
         val handle = session(dialect)
-        val response = handle.stream(t"go")
+        val response = handle.stream("go")
         response.text.next()
         response.reply().text
-      . assert(_ == t"fjord of Norway")
+      . assert(_ == "fjord of Norway")
 
       test(m"reply is idempotent"):
         val dialect = Scripted(scripts = List(script(t"fjord")))
         val handle = session(dialect)
-        val response = handle.stream(t"go")
+        val response = handle.stream("go")
         (response.reply(), response.reply())
       . assert { case (first, second) => first == second }
 
       test(m"draining commits both turns and the usage"):
         val dialect = Scripted(scripts = List(script(t"fjord")))
         val handle = session(dialect)
-        handle.stream(t"go").reply()
+        handle.stream("go").reply()
         (handle.history.stdlib.length, handle.usage)
       . assert(_ == (2, Usage(2, 9)))
 
       test(m"an abandoned stream commits nothing"):
         val dialect = Scripted(scripts = List(script(t"fjord")))
         val handle = session(dialect)
-        handle.stream(t"go")
+        handle.stream("go")
         handle.history.stdlib.length
       . assert(_ == 0)
 
       test(m"the streamed reply carries its id and model"):
         val dialect = Scripted(scripts = List(script(t"fjord")))
         val handle = session(dialect)
-        val reply = handle.stream(t"go").reply()
+        val reply = handle.stream("go").reply()
         (reply.id, reply.model)
-      . assert(_ == (t"msg_1", t"scripted-1"))
+      . assert(_ == ("msg_1", "scripted-1"))
 
       test(m"streamed tool arguments parse when the block closes"):
         val events: List[Event] =
           List
             ( Event.Started(Unset, Unset),
-              Event.Opened(0, Content.ToolUse(t"id1", t"price", j"{}")),
-              Event.Delta(0, Increment.Arguments(t"""{"tick""")),
-              Event.Delta(0, Increment.Arguments(t"""er": "AAPL"}""")),
+              Event.Opened(0, Content.ToolUse("id1", "price", j"{}")),
+              Event.Delta(0, Increment.Arguments("""{"tick""")),
+              Event.Delta(0, Increment.Arguments("""er": "AAPL"}""")),
               Event.Closed(0),
               Event.Update(Stop.ToolCall, Unset),
               Event.Finished )
 
         val dialect = Scripted(scripts = List(events))
         val handle = session(dialect)
-        val reply = handle.stream(t"go").reply()
+        val reply = handle.stream("go").reply()
         (reply.stop, reply.toolCalls)
       . assert(_ == (Stop.ToolCall, List(Content.ToolUse(t"id1", t"price", j"""{"ticker": "AAPL"}"""))))
 
@@ -227,7 +227,7 @@ object Tests extends Suite(m"Sibylline tests"):
 
         val dialect = Scripted(scripts = List(events))
         val handle = session(dialect)
-        capture[Llm.Error](handle.stream(t"go").reply()).reason
+        capture[Llm.Error](handle.stream("go").reply()).reason
       . assert(_ == Llm.Error.Reason.Interrupted)
 
       test(m"an unclosed block raises Interrupted even when finished"):
@@ -240,6 +240,6 @@ object Tests extends Suite(m"Sibylline tests"):
 
         val dialect = Scripted(scripts = List(events))
         val handle = session(dialect)
-        capture[Llm.Error](handle.stream(t"go").reply()).reason
+        capture[Llm.Error](handle.stream("go").reply()).reason
       . assert(_ == Llm.Error.Reason.Interrupted)
 

@@ -39,7 +39,7 @@ object Aiff:
   def apply(): Audible = audibility
 
   given audibility: Aiff is Audible:
-    def name: Text           = "AIFF".tt
+    def name: Text           = "AIFF"
     def mediaType: MediaType = media"audio/x-aiff"
 
 sealed trait Aiff

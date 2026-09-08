@@ -469,7 +469,7 @@ object internal:
     val reentrant = TypeRepr.of[Reentrant].appliedTo(instance)
 
     val elementGivens =
-      extraGivens.indexed.map: (tpe, ordinal) => syntheticGiven(("$wisteriaGiven$": String)+ordinal.n0, tpe)
+      extraGivens.indexed.map: (tpe, ordinal) => syntheticGiven(s"$$wisteriaGiven$$${ordinal.n0}", tpe)
 
     val markers =
       syntheticGiven("$wisteriaReentrant", reentrant) ::
@@ -595,7 +595,7 @@ object internal:
                     val fieldType = product.memberType(field)
 
                     val childPath =
-                      if parentPath.isEmpty then field.name else parentPath+(".": String)+field.name
+                      if parentPath.isEmpty then field.name else parentPath+s".${field.name}"
 
                     if keys.has(childPath) then
                       ()
@@ -638,7 +638,7 @@ object internal:
           val flags = Flags.Given | Flags.Lazy
 
           val symbol =
-            Symbol.newVal(owner, ("wisteria$": String)+index, instanceOf(tpe), flags, Symbol.noSymbol)
+            Symbol.newVal(owner, s"wisteria$$$index", instanceOf(tpe), flags, Symbol.noSymbol)
 
           (key, tpe, symbol)
 
@@ -1037,7 +1037,7 @@ object internal:
         resolveField[typeclass, field]
 
       case Some((root, parentPath, given_, keys)) =>
-        val childPath = if parentPath.isEmpty then fieldName else parentPath+(".": String)+fieldName
+        val childPath = if parentPath.isEmpty then fieldName else parentPath+s".$fieldName"
 
         if keys.has(childPath) then
           // Take the override's value from the given's runtime `instances` map (cast to the field's
@@ -1067,7 +1067,7 @@ object internal:
     val symbol =
       Symbol.newVal
         ( Symbol.spliceOwner,
-          ("wisteria$field$": String)+index,
+          s"wisteria$$field$$$index",
           TypeRepr.of[typeclass[field]],
           Flags.EmptyFlags,
           Symbol.noSymbol )
@@ -1080,7 +1080,7 @@ object internal:
   def getDefault[product: Type, field: Type](index: Expr[Int]): Macro[Optional[field]] =
     import quotes.reflect.*
 
-    val methodName: String = ("$lessinit$greater$default$": String)+(index.valueOrAbort + 1)
+    val methodName: String = s"$$lessinit$$greater$$default$$"+(index.valueOrAbort + 1)
     val productSymbol = TypeRepr.of[product].classSymbol
 
     productSymbol.flatMap: symbol =>

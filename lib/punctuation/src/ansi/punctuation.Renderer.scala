@@ -55,9 +55,9 @@ import vacuous.*
 object Renderer:
 
   // U+2010 HYPHEN — the visible-but-not-soft variant used at wrap points.
-  private val Hyphen: Text = t"‐"
-  private val Space: Teletype = Teletype(t" ")
-  private val Newline: Teletype = Teletype(t"\n")
+  private val Hyphen: Text = "‐"
+  private val Space: Teletype = Teletype(" ")
+  private val Newline: Teletype = Teletype("\n")
 
   def render
     ( markdown: Markdown of Layout, width: Int )
@@ -118,9 +118,9 @@ object Renderer:
   private def plainTextOf(node: Prose): Text = node match
     case Prose.Textual(text)                  => text
     case Prose.Code(code)                     => code
-    case Prose.Softbreak                      => t" "
-    case Prose.Linebreak                      => t" "
-    case Prose.HtmlInline(_)                  => t""
+    case Prose.Softbreak                      => " "
+    case Prose.Linebreak                      => " "
+    case Prose.HtmlInline(_)                  => ""
     case Prose.Emphasis(children*)            => children.map(plainTextOf(_)).to(List).join
     case Prose.Strong(children*)              => children.map(plainTextOf(_)).to(List).join
     case Prose.Link(_, _, children*)          => children.map(plainTextOf(_)).to(List).join
@@ -162,7 +162,7 @@ object Renderer:
               List(prefix)
 
             case head :: tail =>
-              (prefix + head) :: tail.map(indent(_, t" "*(level + 1)))
+              (prefix + head) :: tail.map(indent(_, " "*(level + 1)))
 
     case Layout.Paragraph(_, children*) =>
       val styled = children.map(inlineProse(_)).to(List).join
@@ -195,7 +195,7 @@ object Renderer:
       val body: Teletype = formatted.or:
         e"${Fg(palette.subdued)}($code)"
 
-      val raw = body.cut(t"\n")
+      val raw = body.cut("\n")
       // Drop a trailing empty line that comes from a final '\n' in `code`.
       val lines = if raw.last.lay(false)(_.plain.length == 0) then raw.skip(1, Bidi.Rtl) else raw
 
@@ -205,7 +205,7 @@ object Renderer:
     case Layout.HtmlBlock(_, html) =>
       val text: Teletype = e"${Fg(palette.subdued)}($html)"
 
-      text.cut(t"\n") match
+      text.cut("\n") match
         case Nil => Nil
 
         case lines @ _ :: _ =>
@@ -233,7 +233,7 @@ object Renderer:
       val rendered = items.indexed.map: (item, ordinal) =>
         val mk = marker(ordinal.n0)
         val markerSize = mk.plain.length + 1   // marker + one space
-        val hang = t" "*markerSize
+        val hang = " "*markerSize
         val inner = item.map(layoutLines(_, (width - markerSize).max(1))).filter(!_.nil)
         val joined = if tight then concatItems(inner) else interleaveBlanks(inner)
 

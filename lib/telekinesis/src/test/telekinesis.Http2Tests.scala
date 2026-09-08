@@ -52,46 +52,46 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
     suite(m"Huffman (RFC 7541 Appendix C)"):
       // C.4.1: "www.example.com" → Huffman
       test(m"encode www.example.com"):
-        hex(Huffman.encode(ascii(t"www.example.com")))
-      . assert(_ == t"f1e3c2e5f23a6ba0ab90f4ff")
+        hex(Huffman.encode(ascii("www.example.com")))
+      . assert(_ == "f1e3c2e5f23a6ba0ab90f4ff")
 
       test(m"decode www.example.com"):
-        Huffman.decode(bytes(t"f1e3c2e5f23a6ba0ab90f4ff")).to[List]
-      . assert(_ == ascii(t"www.example.com").to[List])
+        Huffman.decode(bytes("f1e3c2e5f23a6ba0ab90f4ff")).to[List]
+      . assert(_ == ascii("www.example.com").to[List])
 
       // C.4.2: "no-cache"
       test(m"encode no-cache"):
-        hex(Huffman.encode(ascii(t"no-cache")))
-      . assert(_ == t"a8eb10649cbf")
+        hex(Huffman.encode(ascii("no-cache")))
+      . assert(_ == "a8eb10649cbf")
 
       test(m"decode no-cache"):
-        Huffman.decode(bytes(t"a8eb10649cbf")).to[List]
-      . assert(_ == ascii(t"no-cache").to[List])
+        Huffman.decode(bytes("a8eb10649cbf")).to[List]
+      . assert(_ == ascii("no-cache").to[List])
 
       // C.4.3: "custom-key" and "custom-value"
       test(m"encode custom-key"):
-        hex(Huffman.encode(ascii(t"custom-key")))
-      . assert(_ == t"25a849e95ba97d7f")
+        hex(Huffman.encode(ascii("custom-key")))
+      . assert(_ == "25a849e95ba97d7f")
 
       test(m"encode custom-value"):
-        hex(Huffman.encode(ascii(t"custom-value")))
-      . assert(_ == t"25a849e95bb8e8b4bf")
+        hex(Huffman.encode(ascii("custom-value")))
+      . assert(_ == "25a849e95bb8e8b4bf")
 
       // C.6.1: "302" status, "private", a date, and a URL — exercises digits + EOS pad
       test(m"encode 302"):
-        hex(Huffman.encode(ascii(t"302")))
-      . assert(_ == t"6402")
+        hex(Huffman.encode(ascii("302")))
+      . assert(_ == "6402")
 
       test(m"encode private"):
-        hex(Huffman.encode(ascii(t"private")))
-      . assert(_ == t"aec3771a4b")
+        hex(Huffman.encode(ascii("private")))
+      . assert(_ == "aec3771a4b")
 
       test(m"decode private"):
-        Huffman.decode(bytes(t"aec3771a4b")).to[List]
-      . assert(_ == ascii(t"private").to[List])
+        Huffman.decode(bytes("aec3771a4b")).to[List]
+      . assert(_ == ascii("private").to[List])
 
       test(m"round-trip a long date string"):
-        val date = ascii(t"Mon, 21 Oct 2013 20:13:21 GMT")
+        val date = ascii("Mon, 21 Oct 2013 20:13:21 GMT")
         Huffman.decode(Huffman.encode(date)).to[List] == date.to[List]
       . assert(_ == true)
 
@@ -109,17 +109,17 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
         hpack.decode(bytes(hex)).map(e => (e.name, e.value))
 
       test(m"C.3.1 first request"):
-        fields(t"828684410f7777772e6578616d706c652e636f6d")
+        fields("828684410f7777772e6578616d706c652e636f6d")
       . assert(_ == List((t":method", t"GET"), (t":scheme", t"http"), (t":path", t"/"),
           (t":authority", t"www.example.com")))
 
       test(m"C.3.2 second request (uses dynamic table + new header)"):
-        fields(t"828684be58086e6f2d6361636865")
+        fields("828684be58086e6f2d6361636865")
       . assert(_ == List((t":method", t"GET"), (t":scheme", t"http"), (t":path", t"/"),
           (t":authority", t"www.example.com"), (t"cache-control", t"no-cache")))
 
       test(m"C.3.3 third request (custom header)"):
-        fields(t"828785bf400a637573746f6d2d6b65790c637573746f6d2d76616c7565")
+        fields("828785bf400a637573746f6d2d6b65790c637573746f6d2d76616c7565")
       . assert(_ == List((t":method", t"GET"), (t":scheme", t"https"), (t":path", t"/index.html"),
           (t":authority", t"www.example.com"), (t"custom-key", t"custom-value")))
 
@@ -130,12 +130,12 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
         hpack.decode(bytes(hex)).map(e => (e.name, e.value))
 
       test(m"C.4.1 first request, Huffman-coded authority"):
-        fields(t"828684418cf1e3c2e5f23a6ba0ab90f4ff")
+        fields("828684418cf1e3c2e5f23a6ba0ab90f4ff")
       . assert(_ == List((t":method", t"GET"), (t":scheme", t"http"), (t":path", t"/"),
           (t":authority", t"www.example.com")))
 
       test(m"C.4.2 second request, Huffman-coded no-cache"):
-        fields(t"828684be5886a8eb10649cbf")
+        fields("828684be5886a8eb10649cbf")
       . assert(_ == List((t":method", t"GET"), (t":scheme", t"http"), (t":path", t"/"),
           (t":authority", t"www.example.com"), (t"cache-control", t"no-cache")))
 
@@ -156,23 +156,23 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
     suite(m"Frame codec — golden bytes"):
       test(m"SETTINGS ack serialises to the canonical empty-ack frame"):
         hex(Frame.Settings(Nil, ack = true).serialize)
-      . assert(_ == t"000000040100000000")
+      . assert(_ == "000000040100000000")
 
       test(m"empty SETTINGS (non-ack) is a zero-length frame"):
         hex(Frame.Settings(Nil, ack = false).serialize)
-      . assert(_ == t"000000040000000000")
+      . assert(_ == "000000040000000000")
 
       test(m"WINDOW_UPDATE on stream 1 with increment 65535"):
         hex(Frame.WindowUpdate(1, 65535).serialize)
-      . assert(_ == t"0000040800000000010000ffff")
+      . assert(_ == "0000040800000000010000ffff")
 
       test(m"a DATA frame's 9-byte header carries length, type, flags and stream"):
-        hex(Frame.Data(3, ascii(t"hi"), endStream = true).serialize)
-      . assert(_ == t"00000200010000000368 69".sub(t" ", t""))
+        hex(Frame.Data(3, ascii("hi"), endStream = true).serialize)
+      . assert(_ == "00000200010000000368 69".sub(" ", ""))
 
       test(m"PING ack echoes its 8 opaque bytes"):
-        hex(Frame.Ping(bytes(t"0102030405060708"), ack = true).serialize)
-      . assert(_ == t"000008060100000000 0102030405060708".sub(t" ", t""))
+        hex(Frame.Ping(bytes("0102030405060708"), ack = true).serialize)
+      . assert(_ == "000008060100000000 0102030405060708".sub(" ", ""))
 
     suite(m"Frame codec — round-trips"):
       def roundTrip(frame: Frame): Frame raises Http2.Error =
@@ -185,20 +185,20 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
       . assert(_ == true)
 
       test(m"DATA round-trips with payload and END_STREAM"):
-        roundTrip(Frame.Data(7, ascii(t"hello"), endStream = true)) match
-          case Frame.Data(id, p, end) => (id, p.to[List], end) == (7, ascii(t"hello").to[List], true)
+        roundTrip(Frame.Data(7, ascii("hello"), endStream = true)) match
+          case Frame.Data(id, p, end) => (id, p.to[List], end) == (7, ascii("hello").to[List], true)
           case _                      => false
       . assert(_ == true)
 
       test(m"HEADERS round-trips its block + flags"):
-        roundTrip(Frame.Headers(1, ascii(t"block"), endStream = false, endHeaders = true)) match
+        roundTrip(Frame.Headers(1, ascii("block"), endStream = false, endHeaders = true)) match
           case Frame.Headers(id, b, es, eh) => (id, b.to[List], es, eh)
-              == (1, ascii(t"block").to[List], false, true)
+              == (1, ascii("block").to[List], false, true)
           case _                            => false
       . assert(_ == true)
 
       test(m"GOAWAY round-trips last-stream-id and error code"):
-        roundTrip(Frame.GoAway(5, ErrorCode.ProtocolError.code, ascii(t""))) match
+        roundTrip(Frame.GoAway(5, ErrorCode.ProtocolError.code, ascii(""))) match
           case Frame.GoAway(last, code, _) => (last, code) == (5, 0x1L)
           case _                           => false
       . assert(_ == true)
@@ -209,9 +209,9 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
 
       test(m"a padded DATA frame decodes to its unpadded payload"):
         // length=5: padLength byte (0x02) + ("hi": String) + 2 pad bytes; PADDED flag = 0x08
-        val padded = bytes(t"0000050008000000030268690000")
+        val padded = bytes("0000050008000000030268690000")
         Frame.decode(padded, 0)(0) match
-          case Frame.Data(_, p, _) => p.to[List] == ascii(t"hi").to[List]
+          case Frame.Data(_, p, _) => p.to[List] == ascii("hi").to[List]
           case _                   => false
       . assert(_ == true)
 
@@ -263,7 +263,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
 
                 val trailers = hpack.encode(List(Hpack.Entry(t"grpc-status", t"0")))
                 serverSide.send(zephyrine.Stream(Frame.Headers(id, respHeaders, false, true).serialize))
-                serverSide.send(zephyrine.Stream(Frame.Data(id, ascii(t"pong"), false).serialize))
+                serverSide.send(zephyrine.Stream(Frame.Data(id, ascii("pong"), false).serialize))
                 serverSide.send(zephyrine.Stream(Frame.Headers(id, trailers, true, true).serialize))
 
               case _ => ()
@@ -275,16 +275,16 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           val connection = Http2.Connection(clientSide)
           connection.start()
 
-          val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]),
-              t"/echo.Service/Call", Nil, () => Stream(ascii(t"ping")))
+          val request = Http.Request(Http.Post, 2.0, unsafely("unix".as[Host]),
+              "/echo.Service/Call", Nil, () => Stream(ascii("ping")))
 
           val (stream, response) = connection.fetch(request, t"http", t"unix")
-          val bodyText = ascii(t"pong").to[List] == response.body.stream.memoize.to[List]
+          val bodyText = ascii("pong").to[List] == response.body.stream.memoize.to[List]
           val statusCode = response.status.code
-          val grpcStatus = stream.trailers.await().stdlib.find(_.name == t"grpc-status").map(_.value)
+          val grpcStatus = stream.trailers.await().stdlib.find(_.name == "grpc-status").map(_.value)
           server.cancel()
-          (statusCode, bodyText, grpcStatus.getOrElse(t"?"))
-      . assert(_ == (200, true, t"0"))
+          (statusCode, bodyText, grpcStatus.getOrElse("?"))
+      . assert(_ == (200, true, "0"))
 
       test(m"the Http.Client given resolves and drives a request over h2c"):
         supervise:
@@ -299,16 +299,16 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           // against the loopback without a socket.
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
           // Summon the HTTP/2 client given exactly as telekinesis's fetch machinery
           // would, and invoke its `request` — verifying it captures the ambient
           // Monitor/Probate and produces a telekinesis `Http.Response`.
           val client = summon[Http.Client onto Http2.Endpoint[Loopback]]
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"unix")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "unix")
 
-          val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]),
-              t"/echo.Service/Call", Nil, () => Iterator.empty[Data].stream)
+          val request = Http.Request(Http.Get, 2.0, unsafely("unix".as[Host]),
+              "/echo.Service/Call", Nil, () => Iterator.empty[Data].stream)
 
           client.request(request, endpoint).status.code
       . assert(_ == 200)
@@ -347,7 +347,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           scala.caps.unsafe.unsafeAssumeSeparate:
             serverStarted.await()
 
-          val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/hello", Nil,
+          val request = Http.Request(Http.Get, 2.0, unsafely("unix".as[Host]), "/hello", Nil,
               () => Http.emptyBody())
 
           val (_, response) = client.fetch(request, t"http", t"unix")
@@ -358,7 +358,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           server.close()
           body
 
-      . assert(_ == t"echo:GET:/hello")
+      . assert(_ == "echo:GET:/hello")
 
       test(m"the server role emits response trailers the client reads"):
         supervise:
@@ -377,7 +377,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
                   // (gRPC status) closes the stream.
                   val head = List(Hpack.Entry(t":status", t"200"))
                   server0.sendHeaders(stream.id, head, endStream = false)
-                  server0.sendData(stream.id, ascii(t"body"), endStream = false)
+                  server0.sendData(stream.id, ascii("body"), endStream = false)
                   server0.sendTrailers(stream.id, List(Hpack.Entry(t"grpc-status", t"0")))
 
           val client = Http2.Connection(clientSide)
@@ -386,17 +386,17 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           scala.caps.unsafe.unsafeAssumeSeparate:
             serverStarted.await()
 
-          val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]), t"/call", Nil,
-              () => Stream(ascii(t"ping")))
+          val request = Http.Request(Http.Post, 2.0, unsafely("unix".as[Host]), "/call", Nil,
+              () => Stream(ascii("ping")))
 
           val (stream, response) = client.fetch(request, t"http", t"unix")
           val body = response.body.stream.memoize.utf8
-          val grpcStatus = stream.trailers.await().seek(_.name == t"grpc-status").let(_.value)
+          val grpcStatus = stream.trailers.await().seek(_.name == "grpc-status").let(_.value)
           client.close()
           server.close()
           (body, grpcStatus.or(t"?"))
 
-      . assert(_ == (t"body", t"0"))
+      . assert(_ == ("body", "0"))
 
       test(m"a flow window drains in bounded chunks and blocks until replenished"):
         supervise:
@@ -461,7 +461,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           scala.caps.unsafe.unsafeAssumeSeparate:
             serverStarted.await()
 
-          val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/big", Nil,
+          val request = Http.Request(Http.Get, 2.0, unsafely("unix".as[Host]), "/big", Nil,
               () => Http.emptyBody())
 
           val (_, response) = client.fetch(request, t"http", t"unix")
@@ -506,7 +506,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           scala.caps.unsafe.unsafeAssumeSeparate:
             serverStarted.await()
 
-          val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/slow", Nil,
+          val request = Http.Request(Http.Get, 2.0, unsafely("unix".as[Host]), "/slow", Nil,
               () => Http.emptyBody())
 
           val (_, response) = client.fetch(request, t"http", t"unix")
@@ -578,7 +578,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
 
           val payload: Data = Array.tabulate(20000)(i => (i%256).toByte)
 
-          val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]), t"/upload",
+          val request = Http.Request(Http.Post, 2.0, unsafely("unix".as[Host]), "/upload",
               Nil, () => Stream(payload))
 
           val fetched = scala.caps.unsafe.unsafeAssumeSeparate:
@@ -636,20 +636,20 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"loopback")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "loopback")
 
           // Both fetches multiplex on the single connection the session lends;
           // the connection is torn down when the scope ends.
           endpoint.session: connection ?=>
-            val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]),
-                t"/echo.Service/Call", Nil, () => Stream(ascii(t"ping")))
+            val request = Http.Request(Http.Post, 2.0, unsafely("unix".as[Host]),
+                "/echo.Service/Call", Nil, () => Stream(ascii("ping")))
 
             val (_, first) = connection.fetch(request, t"http", t"loopback")
             val (_, second) = connection.fetch(request, t"http", t"loopback")
 
             List(first, second).count: response =>
-              ascii(t"pong").to[List] == response.body.stream.memoize.to[List]
+              ascii("pong").to[List] == response.body.stream.memoize.to[List]
 
       . assert(_ == 2)

@@ -143,7 +143,7 @@ private[punctuation] object ParserSupport:
         case _ =>
           return Text(s.substring(i, len).nn)
 
-    if i == 0 then line else if i >= len then t"" else Text(s.substring(i, len).nn)
+    if i == 0 then line else if i >= len then "" else Text(s.substring(i, len).nn)
 
   // After stripping a container's marker and follow-space (which may have
   // partially consumed a tab character), build a self-contained residual:
@@ -212,7 +212,7 @@ private[punctuation] object ParserSupport:
       contentEnd = walkBack(s, contentStart, hashesEnd)(isSpaceTab)
 
     val content =
-      if contentEnd > contentStart then Text(s.substring(contentStart, contentEnd).nn) else t""
+      if contentEnd > contentStart then Text(s.substring(contentStart, contentEnd).nn) else ""
 
     val level: 1 | 2 | 3 | 4 | 5 | 6 = (hashes: @unchecked) match
       case 1 => 1; case 2 => 2; case 3 => 3; case 4 => 4; case 5 => 5; case 6 => 6
@@ -313,7 +313,7 @@ private[punctuation] object ParserSupport:
   :   (Ordinal, Text) =
 
     if markerEnd >= n || isBlank(Text(s.substring(markerEnd, n).nn)) then
-      ((markerColEnd + 1).z, t"")
+      ((markerColEnd + 1).z, "")
     else if postCol >= 5 then
       // 5+ rule: consume only the first post-marker char as follow-space;
       // remaining post-marker whitespace becomes residual leading content.

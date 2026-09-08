@@ -123,38 +123,38 @@ object Apoplexy:
     import quotes.reflect.*
 
     val members = refinements(self.asTerm.tpe.widen).to(Map)
-    val locus = members(t"Locus").lay(t"/")(stringOf(_))
-    val source = members(t"Source").or(halt(m"apoplexy: the receiver has no spec `Source`"))
-    val wire = members(t"Transport").lay(Wire.Json)(wireOfRepr(_))
+    val locus = members("Locus").lay(t"/")(stringOf(_))
+    val source = members("Source").or(halt(m"apoplexy: the receiver has no spec `Source`"))
+    val wire = members("Transport").lay(Wire.Json)(wireOfRepr(_))
 
     (locus, stringOf(source), wire)
 
   // --- path utilities ------------------------------------------------------
 
-  private def segments(path: Text): List[Text] = path.cut(t"/").filter(_ != t"")
-  private def isTemplate(segment: Text): Boolean = segment.starts(t"{") && segment.s.endsWith("}")
+  private def segments(path: Text): List[Text] = path.cut("/").filter(_ != "")
+  private def isTemplate(segment: Text): Boolean = segment.starts("{") && segment.s.endsWith("}")
   private def templateName(segment: Text): Text = segment.skip(1).keep(segment.length - 2)
 
   private def isPrefix(short: List[Text], long: List[Text]): Boolean =
     short.size <= long.size && short.zip(long).all(_ == _)
 
   private def join(locus: Text, segment: Text): Text =
-    if locus == t"/" then t"/$segment" else t"$locus/$segment"
+    if locus == "/" then t"/$segment" else t"$locus/$segment"
 
-  private def escape(text: Text): Text = text.sub(t"~", t"~0").sub(t"/", t"~1")
+  private def escape(text: Text): Text = text.sub("~", "~0").sub("/", "~1")
 
   // --- HTTP method helpers -------------------------------------------------
 
   private val verbs: Map[Text, Http.Method] =
-    Map(t"get" -> Http.Get, t"post" -> Http.Post, t"put" -> Http.Put, t"patch" -> Http.Patch,
-        t"delete" -> Http.Delete)
+    Map("get" -> Http.Get, "post" -> Http.Post, "put" -> Http.Put, "patch" -> Http.Patch,
+        "delete" -> Http.Delete)
 
   private def methodName(method: Http.Method): Text = method match
-    case Http.Post   => t"post"
-    case Http.Put    => t"put"
-    case Http.Patch  => t"patch"
-    case Http.Delete => t"delete"
-    case _           => t"get"
+    case Http.Post   => "post"
+    case Http.Put    => "put"
+    case Http.Patch  => "patch"
+    case Http.Delete => "delete"
+    case _           => "get"
 
   private def methodExpr(using Quotes)(method: Http.Method): Expr[Http.Method] = method match
     case Http.Post   => '{Http.Post}
@@ -204,19 +204,19 @@ object Apoplexy:
     case Json, Xml
 
   private def mediaOf(wire: Wire): Text = wire match
-    case Wire.Json => t"application/json"
-    case Wire.Xml  => t"application/xml"
+    case Wire.Json => "application/json"
+    case Wire.Xml  => "application/xml"
 
   // JSON wins ties (the OpenAPI default, and the historical behaviour).
   private def wireOf(content: Map[Text, OpenApi.MediaTypeObject]): Optional[Wire] =
     if content.nil then Unset
-    else if content.defines(t"application/json") then Wire.Json
-    else if content.defines(t"application/xml") || content.defines(t"text/xml") then Wire.Xml
+    else if content.defines("application/json") then Wire.Json
+    else if content.defines("application/xml") || content.defines("text/xml") then Wire.Xml
     else Wire.Json
 
   // The wire format of an operation's first 2xx response body, if any.
   private def responseWire(operation: OpenApi.Operation): Optional[Wire] =
-    val status = operation.responses.keys.filter(_.starts(t"2")).to[List].order(_.s).prim
+    val status = operation.responses.keys.filter(_.starts("2")).to[List].order(_.s).prim
 
     status.let(operation.responses(_)).let: response => wireOf(response.content)
 
@@ -296,7 +296,7 @@ object Apoplexy:
     val queryExpr = Lifts.list(queryEntries)
 
     val status =
-      operation.responses.keys.filter(_.starts(t"2")).to[List].order(_.s).prim.or(t"200")
+      operation.responses.keys.filter(_.starts("2")).to[List].order(_.s).prim.or(t"200")
 
     // The wire format the spec dictates for this operation: the response body's
     // media type, else the request body's, else JSON. An operation that mixes
@@ -422,16 +422,16 @@ object Apoplexy:
     val members = (refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)).to(Map)
 
     val source =
-      members(t"Locus").lay(halt(m"apoplexy: the resource has no `Locus` path"))(stringOf(_))
+      members("Locus").lay(halt(m"apoplexy: the resource has no `Locus` path"))(stringOf(_))
 
     val doc = spec(source)
     val base = doc.servers.prim.lay(t"")(_.url)
     val baseExpr = Expr(base.s)
     val wire = uniformWire(doc)
 
-    apiType(t"/", source, wire).asType.absolve match
+    apiType("/", source, wire).asType.absolve match
       case '[type result <: Api; result] =>
-        '{Api.make(Api.Request(Http.Get, $baseExpr.tt, t"/")).asInstanceOf[result]}
+        '{Api.make(Api.Request(Http.Get, $baseExpr.tt, "/")).asInstanceOf[result]}
 
   def select(self: Expr[Api], field: Expr[String]): Macro[Any] =
     val name = field.valueOrAbort.tt
@@ -540,8 +540,8 @@ object Apoplexy:
     val (locus, source, wire) = receiver(self)
     val doc = spec(source)
     val entries = pairs(args)
-    val named = entries.filter(_(0) != t"")
-    val positional = entries.filter(_(0) == t"").map(_(1))
+    val named = entries.filter(_(0) != "")
+    val positional = entries.filter(_(0) == "").map(_(1))
 
     verbs(name) match
       case method: Http.Method if defines(doc, locus, method) =>
@@ -581,11 +581,11 @@ object Apoplexy:
 
   // Resolve the response-schema `JsonSchema` at a JSON-pointer into the spec.
   private def resolveSchema(using Quotes)(source: Text, pointer: Text): JsonSchema =
-    val segments = pointer.cut(t"/").skip(1)
+    val segments = pointer.cut("/").skip(1)
 
     val node =
       segments.fold(specJson(source)): (node, segment) =>
-        try node(segment.sub(t"~1", t"/").sub(t"~0", t"~"))
+        try node(segment.sub("~1", "/").sub("~0", "~"))
         catch case error: Exception => halt(m"apoplexy: could not resolve the schema at $pointer")
 
     try node.as[JsonSchema]
@@ -603,7 +603,7 @@ object Apoplexy:
       case AppliedType(_, scala.collection.immutable.List(element)) if repr <:< TypeRepr.of[List[Any]] => element
       case _                                                                => Unset
 
-    def componentName(pointer: JsonPointer): Text = pointer.encode.cut(t"/").stdlib.last
+    def componentName(pointer: JsonPointer): Text = pointer.encode.cut("/").stdlib.last
 
     def ok(value: TypeRepr, schema: JsonSchema): Boolean = schema match
       case ref: JsonSchema.Ref   => simpleName(value) == componentName(ref.pointer)
@@ -644,10 +644,10 @@ object Apoplexy:
       val members = (refinements(self.asTerm.tpe) ++ refinements(self.asTerm.tpe.widen)).to(Map)
 
       val pointer =
-        members(t"Result").lay(halt(m"apoplexy: missing response schema pointer"))(stringOf(_))
+        members("Result").lay(halt(m"apoplexy: missing response schema pointer"))(stringOf(_))
 
       val source =
-        members(t"Form").lay(halt(m"apoplexy: missing spec source"))(stringOf(_))
+        members("Form").lay(halt(m"apoplexy: missing spec source"))(stringOf(_))
 
       conformsTo(valueRepr, resolveSchema(source, pointer))
 

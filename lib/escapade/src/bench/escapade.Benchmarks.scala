@@ -53,7 +53,7 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
   sealed trait Chars[Power <: Nat] extends Units[Power, Information]
   val Char: MetricUnit[Chars[1]] = MetricUnit(1.0)
 
-  given charDesignation: Designation[Chars[1]] = () => t"ch"
+  given charDesignation: Designation[Chars[1]] = () => "ch"
   given decimalizer:     Decimalizer            = Decimalizer(2)
   given device:          BenchmarkDevice        = LocalhostDevice
   given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga, Tera))

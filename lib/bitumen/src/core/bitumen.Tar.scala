@@ -98,7 +98,7 @@ object Tar:
 
     private[bitumen] val paxRef: Tar.Ref =
       import strategies.throwUnsafely
-      t"PaxHeaders/0".as[Relative on Tar]
+      "PaxHeaders/0".as[Relative on Tar]
 
     private[bitumen] def sparseExtensionBlocks(segments: List[SparseSegment]): List[Data] =
       if segments.nil then Nil
@@ -121,7 +121,7 @@ object Tar:
     private[bitumen] def formatLongOctal(number: Long, width: Int): Data =
       val str: String = java.lang.Long.toOctalString(number).nn
       val pad: Int = (width - 1 - str.length).max(0)
-      ((("0": String)*pad) + str).tt.in[Data]
+      ((s"0"*pad) + str).tt.in[Data]
 
     // Re-blocks arbitrary chunks as 512-byte archive blocks, the final block
     // zero-padded, without regard to the incoming chunk boundaries.
@@ -275,8 +275,8 @@ object Tar:
 
     def entryName: Text = this match
       case directory: Directory => t"${directory.path}/"
-      case _: Pax               => t"PaxHeaders/0"
-      case _: GnuLong           => t"././@LongLink"
+      case _: Pax               => "PaxHeaders/0"
+      case _: GnuLong           => "././@LongLink"
       case other                => this.path.show
 
     def link: Optional[Text] = this.only:
@@ -293,7 +293,7 @@ object Tar:
     def formatLong(number: Long, width: Int): Data =
       val str: String = java.lang.Long.toOctalString(number).nn
       val pad: Int = (width - 1 - str.length).max(0)
-      ((("0": String)*pad) + str).tt.in[Data]
+      ((s"0"*pad) + str).tt.in[Data]
 
     def header: Data = headerWith(size)
 
@@ -307,7 +307,7 @@ object Tar:
       array.place(group.bytes, 116.z)
       array.place(format(size0, 12), 124.z)
       array.place(format(mtime, 12), 136.z)
-      array.place(t"        ".in[Data], 148.z)
+      array.place("        ".in[Data], 148.z)
       array(156) = typeFlag.id.toByte
 
       link.let: link =>
@@ -326,8 +326,8 @@ object Tar:
         val nameData = name.in[Data]
         array.place(if nameData.length > 32 then nameData.segment((0).z till (32).z) else nameData, 297.z)
 
-      array.place(t"ustar\u0000".in[Data], 257.z)
-      array.place(t"00".in[Data], 263.z)
+      array.place("ustar\u0000".in[Data], 257.z)
+      array.place("00".in[Data], 263.z)
 
       this.only:
         case sparse: Sparse =>

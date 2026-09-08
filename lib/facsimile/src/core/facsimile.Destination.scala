@@ -103,7 +103,7 @@ object Destination:
               Unset
 
       case dictionary: Cos.Dictionary =>
-        dictionary(t"D").let(read(_, pages, named, following))
+        dictionary("D").let(read(_, pages, named, following))
 
       case other =>
         if following then Unset else

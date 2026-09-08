@@ -89,11 +89,11 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       . assert(_ == List(0x08, 0x96, 0x01))
 
       test(m"a string field is length-delimited"):
-        wire(Person(t"AB", 0))
+        wire(Person("AB", 0))
       . assert(_ == List(0x0a, 0x02, 0x41, 0x42, 0x10, 0x00))
 
       test(m"sparse field numbers produce the right tags"):
-        wire(Sparse(1, t"")).stdlib.take(2)
+        wire(Sparse(1, "")).stdlib.take(2)
       . assert(_ == List(0x18, 0x01))
 
     suite(m"Round-trips"):
@@ -107,20 +107,20 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       . assert(_ == Point(0, 5))
 
       test(m"string and int fields"):
-        proscenium.Chain(Person(t"Alice", 30).in[Protobuf].encode).read[Person in Protobuf]
-      . assert(_ == Person(t"Alice", 30))
+        proscenium.Chain(Person("Alice", 30).in[Protobuf].encode).read[Person in Protobuf]
+      . assert(_ == Person("Alice", 30))
 
       test(m"read[Protobuf] then as[T] (two-step)"):
-        proscenium.Chain(Person(t"Alice", 30).in[Protobuf].encode).read[Protobuf].as[Person]
-      . assert(_ == Person(t"Alice", 30))
+        proscenium.Chain(Person("Alice", 30).in[Protobuf].encode).read[Protobuf].as[Person]
+      . assert(_ == Person("Alice", 30))
 
       test(m"nested message"):
-        proscenium.Chain(Wrapper(Point(3, 4), t"origin").in[Protobuf].encode).read[Wrapper in Protobuf]
-      . assert(_ == Wrapper(Point(3, 4), t"origin"))
+        proscenium.Chain(Wrapper(Point(3, 4), "origin").in[Protobuf].encode).read[Wrapper in Protobuf]
+      . assert(_ == Wrapper(Point(3, 4), "origin"))
 
       test(m"sparse field numbers"):
-        proscenium.Chain(Sparse(9, t"x").in[Protobuf].encode).read[Sparse in Protobuf]
-      . assert(_ == Sparse(9, t"x"))
+        proscenium.Chain(Sparse(9, "x").in[Protobuf].encode).read[Sparse in Protobuf]
+      . assert(_ == Sparse(9, "x"))
 
     suite(m"Repeated fields"):
       test(m"repeated strings round-trip in order"):
@@ -145,7 +145,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
         wire(Tags(Nil))
       . assert(_ == Nil)
 
-      val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+      val tree = Tree("root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
 
       test(m"a type recursive through a List round-trips"):
         proscenium.Chain(tree.in[Protobuf].encode).read[Protobuf].as[Tree]
@@ -157,8 +157,8 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
     suite(m"Optional presence"):
       test(m"a set optional round-trips"):
-        proscenium.Chain(MaybeName(t"set").in[Protobuf].encode).read[MaybeName in Protobuf]
-      . assert(_ == MaybeName(t"set"))
+        proscenium.Chain(MaybeName("set").in[Protobuf].encode).read[MaybeName in Protobuf]
+      . assert(_ == MaybeName("set"))
 
       test(m"an unset optional writes nothing and round-trips to Unset"):
         proscenium.Chain(MaybeName(Unset).in[Protobuf].encode).read[MaybeName in Protobuf]
@@ -201,21 +201,21 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
     suite(m"Maps"):
       test(m"a string→string map round-trips"):
-        val labels = Labels(Map(t"a" -> t"1", t"b" -> t"2"))
+        val labels = Labels(Map("a" -> "1", "b" -> "2"))
         proscenium.Chain(labels.in[Protobuf].encode).read[Labels in Protobuf]
-      . assert(_ == Labels(Map(t"a" -> t"1", t"b" -> t"2")))
+      . assert(_ == Labels(Map("a" -> "1", "b" -> "2")))
 
       test(m"a string→int map round-trips"):
-        val counts = Counts(Map(t"x" -> 10, t"y" -> 20))
+        val counts = Counts(Map("x" -> 10, "y" -> 20))
         proscenium.Chain(counts.in[Protobuf].encode).read[Counts in Protobuf]
-      . assert(_ == Counts(Map(t"x" -> 10, t"y" -> 20)))
+      . assert(_ == Counts(Map("x" -> 10, "y" -> 20)))
 
       test(m"an empty map writes nothing"):
         wire(Labels(Map()))
       . assert(_ == Nil)
 
       test(m"a single entry encodes as a length-delimited message"):
-        wire(Labels(Map(t"a" -> t"b")))
+        wire(Labels(Map("a" -> "b")))
       . assert(_ == List(0x0a, 0x06, 0x0a, 0x01, 0x61, 0x12, 0x01, 0x62))
 
     suite(m"Parse errors carry a byte offset"):
@@ -248,31 +248,31 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
     suite(m"HTTP content-type integration"):
       test(m"serialises with the application/protobuf media type"):
-        Person(t"Alice", 30).in[Protobuf].generic(0)
-      . assert(_ == t"application/protobuf")
+        Person("Alice", 30).in[Protobuf].generic(0)
+      . assert(_ == "application/protobuf")
 
       test(m"request/response body round-trips"):
-        val message = Person(t"Alice", 30).in[Protobuf]
+        val message = Person("Alice", 30).in[Protobuf]
         message.generic(1).read[Person in Protobuf]
-      . assert(_ == Person(t"Alice", 30))
+      . assert(_ == Person("Alice", 30))
 
     suite(m"Optics"):
       import conversions.encodableToProtobuf
       // Protobuf is number-keyed: the `Ordinal` selects a field by number (Prim =
       // field 1). Wrapper encodes `point` at field 1 and `label` at field 2.
-      def wrapper: Protobuf = Wrapper(Point(3, 4), t"origin").in[Protobuf]
+      def wrapper: Protobuf = Wrapper(Point(3, 4), "origin").in[Protobuf]
 
       test(m"field optic replaces a sub-message field by number"):
         wrapper.lens(_(Prim) = Point(7, 8).in[Protobuf]).as[Wrapper]
-      . assert(_ == Wrapper(Point(7, 8), t"origin"))
+      . assert(_ == Wrapper(Point(7, 8), "origin"))
 
       test(m"field optic leaves other fields unchanged"):
         wrapper.lens(_(Prim) = Point(7, 8)).as[Wrapper].label
-      . assert(_ == t"origin")
+      . assert(_ == "origin")
 
       test(m"an absent field number is a no-op"):
         wrapper.lens(_(Sen) = Point(7, 8)).as[Wrapper]
-      . assert(_ == Wrapper(Point(3, 4), t"origin"))
+      . assert(_ == Wrapper(Point(3, 4), "origin"))
 
     suite(m"Direct parsing (Inlinable)"):
       given (Point is Protobuf.Parsable) = Inlinable.parsable[Point]
@@ -291,16 +291,16 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       def encoded[value: Encodable in Protobuf](value: value): Data = value.in[Protobuf].encode
 
       test(m"a flat message reads directly from bytes"):
-        encoded(Person(t"Alice", 30)).read[Person in Protobuf]
-      . assert(_ == Person(t"Alice", 30))
+        encoded(Person("Alice", 30)).read[Person in Protobuf]
+      . assert(_ == Person("Alice", 30))
 
       test(m"a nested message inlines through its own generated parser"):
-        encoded(Wrapper(Point(3, 4), t"origin")).read[Wrapper in Protobuf]
-      . assert(_ == Wrapper(Point(3, 4), t"origin"))
+        encoded(Wrapper(Point(3, 4), "origin")).read[Wrapper in Protobuf]
+      . assert(_ == Wrapper(Point(3, 4), "origin"))
 
       test(m"sparse @field numbers dispatch correctly"):
-        encoded(Sparse(9, t"x")).read[Sparse in Protobuf]
-      . assert(_ == Sparse(9, t"x"))
+        encoded(Sparse(9, "x")).read[Sparse in Protobuf]
+      . assert(_ == Sparse(9, "x"))
 
       test(m"repeated strings gather in stream order"):
         encoded(Tags(List(t"a", t"b", t"c"))).read[Tags in Protobuf]
@@ -343,8 +343,8 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       . assert(_ == Point(0, 0))
 
       test(m"a set optional bridges through its Decodable"):
-        encoded(MaybeName(t"set")).read[MaybeName in Protobuf]
-      . assert(_ == MaybeName(t"set"))
+        encoded(MaybeName("set")).read[MaybeName in Protobuf]
+      . assert(_ == MaybeName("set"))
 
       test(m"an unset optional reads back to Unset"):
         encoded(MaybeName(Unset)).read[MaybeName in Protobuf]
@@ -364,10 +364,10 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       . assert(_ == Typed(7.bits.u32, 8L.bits.u64, -3.bits.s32, -4L.bits.s64, 5.bits, 6L.bits))
 
       test(m"a map field bridges through the entry-message Decodable"):
-        encoded(Counts(Map(t"a" -> 1, t"b" -> 2))).read[Counts in Protobuf]
-      . assert(_ == Counts(Map(t"a" -> 1, t"b" -> 2)))
+        encoded(Counts(Map("a" -> 1, "b" -> 2))).read[Counts in Protobuf]
+      . assert(_ == Counts(Map("a" -> 1, "b" -> 2)))
 
       test(m"a recursive type degrades its recursive field to the seam"):
-        val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+        val tree = Tree("root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
         encoded(tree).read[Tree in Protobuf]
-      . assert(_ == Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))
+      . assert(_ == Tree("root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))

@@ -65,7 +65,7 @@ object Showable:
   given message: Message is Showable = _.text
   given double: (decimalizer: DecimalConverter) => Double is Showable = decimalizer.decimalize(_)
   given boolean: (affirmation: Affirmation) => Boolean is Showable = affirmation(_)
-  given option: [value: Showable] => Option[value] is Showable = _.fold("none".tt)(value.text(_))
+  given option: [value: Showable] => Option[value] is Showable = _.fold("none")(value.text(_))
   given bytes: Bytes is Showable = _.text
   given enumeration: [enumeration <: reflect.Enum] => enumeration is Showable = _.toString.tt
 
@@ -78,7 +78,7 @@ object Showable:
   given sequence: [element: Showable] => Sequence[element] is Showable =
     sequence => enclose(sequence.map(_.show), "[ ", " ", " ]")
 
-  given none: None.type is Showable = none => "none".tt
+  given none: None.type is Showable = none => "none"
 
   given specializable: Specializable is Showable = value =>
     value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt

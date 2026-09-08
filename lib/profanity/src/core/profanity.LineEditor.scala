@@ -94,7 +94,7 @@ object LineEditor:
     (row, column)
 
 case class LineEditor
-  ( value:     Text            = t"",
+  ( value:     Text            = "",
     position0: Optional[Int]   = Unset,
     mode:      LineEditor.Mode = LineEditor.Mode.SingleLine )
 extends Question[Text]:
@@ -123,7 +123,7 @@ extends Question[Text]:
   // The logical lines, their start offsets, and the index of the cursor's line. Both are
   // `Sequence`s rather than `List`s because every use of them is a positional read.
   private def layout: (Sequence[Text], Sequence[Int], Int) =
-    val lines:   Sequence[Text] = value.cut(t"\n").to[Sequence]
+    val lines:   Sequence[Text] = value.cut("\n").to[Sequence]
     val offsets: Sequence[Int]  = lines.trace(0)(_ + _.length + 1)
     val starts:  Sequence[Int]  = offsets.occupied.lay(offsets)(_.lead)
 

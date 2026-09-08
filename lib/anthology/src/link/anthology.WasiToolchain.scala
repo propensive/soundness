@@ -45,8 +45,8 @@ import rudiments.*
 // so linking for `Backend.Wasi` cannot discover a missing tool at link time.
 object WasiToolchain:
   def apply()(using WorkingDirectory): WasiToolchain raises Toolchain.Error =
-    probe(t"wasm-tools")
-    probe(t"wit-bindgen")
+    probe("wasm-tools")
+    probe("wit-bindgen")
     new WasiToolchain()
 
   private def probe(tool: Text)(using WorkingDirectory): Unit raises Toolchain.Error =

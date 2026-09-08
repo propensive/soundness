@@ -99,4 +99,4 @@ trait Deserializable extends Findable, caps.Pure:
   :   Data raises Serialization.Error
 
   def deserialize(value: Text)(using Tactic[Serialization.Error]): Data =
-    deserialize(t"", value, 0, true)
+    deserialize("", value, 0, true)

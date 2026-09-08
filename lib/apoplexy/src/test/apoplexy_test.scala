@@ -96,7 +96,7 @@ object Tests extends Suite(m"OpenAPI tests"):
           }
         }
       }
-    }""".tt
+    }"""
 
   val yamlSpec: Text =
     """openapi: "3.0.3"
@@ -153,7 +153,7 @@ components:
           type: string
         pet:
           $ref: "#/components/schemas/Pet"
-""".tt
+"""
 
   def run(): Unit =
     val fromJson = jsonSpec.read[OpenApi]
@@ -162,38 +162,38 @@ components:
     test(m"JSON and YAML specs decode to the same model")(fromYaml).assert(_ == fromJson)
 
     test(m"the operationId of GET /pets is read"):
-      fromJson.paths(t"/pets").let(_.get).let(_.operationId)
-    .assert(_ == t"listPets")
+      fromJson.paths("/pets").let(_.get).let(_.operationId)
+    .assert(_ == "listPets")
 
     test(m"the path parameter location is decoded as Path"):
-      fromJson.paths(t"/pets/{id}").let(_.get).let(_.parameters.stdlib.head.in)
+      fromJson.paths("/pets/{id}").let(_.get).let(_.parameters.stdlib.head.in)
     .assert(_ == OpenApi.Parameter.In.Path)
 
     test(m"a reference property is kept lazy"):
-      fromJson.components.let(_.schemas(t"Pet"))
+      fromJson.components.let(_.schemas("Pet"))
     .assert:
       case JsonSchema.Object(_, properties, _, _, _, _, _) =>
-        properties(t"owner") match
-          case JsonSchema.Ref(pointer, _, _) => pointer.encode == t"#/components/schemas/Owner"
+        properties("owner") match
+          case JsonSchema.Ref(pointer, _, _) => pointer.encode == "#/components/schemas/Owner"
           case _                             => false
       case _ => false
 
     test(m"a component reference resolves to its schema"):
       given OpenApi = fromJson
-      JsonSchema.Ref(t"#/components/schemas/Pet".as[JsonPointer])()
+      JsonSchema.Ref("#/components/schemas/Pet".as[JsonPointer])()
     .assert:
       case _: JsonSchema.Object => true
       case _                    => false
 
     test(m"a cyclic reference resolves one hop without looping"):
       given OpenApi = fromJson
-      JsonSchema.Ref(t"#/components/schemas/Owner".as[JsonPointer])()
+      JsonSchema.Ref("#/components/schemas/Owner".as[JsonPointer])()
     .assert:
       case _: JsonSchema.Object => true
       case _                    => false
 
     test(m"an unsupported OpenAPI version is rejected"):
       capture[OpenApi.Error]:
-        """{"openapi": "2.0", "info": {"title": "x", "version": "1"}}""".tt.read[OpenApi]
-    .assert(_.reason == OpenApi.Error.Reason.UnsupportedVersion(t"2.0"))
+        """{"openapi": "2.0", "info": {"title": "x", "version": "1"}}""".read[OpenApi]
+    .assert(_.reason == OpenApi.Error.Reason.UnsupportedVersion("2.0"))
 

@@ -53,7 +53,7 @@ import denominative.dysasymptotics.linearSize
 // and signed—bound to the Android runtime: the application node reached from `Classfile`
 // through `Dex`.
 object Apk extends Format.Application:
-  def id: Text = t"apk"
+  def id: Text = "apk"
 
   // ApkConfiguration → Apk.Configuration
   object Configuration:
@@ -65,15 +65,15 @@ object Apk extends Format.Application:
       Apk.Configuration
         ( minApi      = 26,
           targetApi   = 34,
-          packageName = t"dev.soundness.app",
+          packageName = "dev.soundness.app",
           versionCode = 1,
-          versionName = t"1.0",
-          label       = t"Soundness App",
+          versionName = "1.0",
+          label       = "Soundness App",
           permissions = Nil,
           keystore    = t"$home/.android/debug.keystore",
-          storePass   = t"android",
-          alias       = t"androiddebugkey",
-          keyPass     = t"android" )
+          storePass   = "android",
+          alias       = "androiddebugkey",
+          keyPass     = "android" )
 
   // What an Android application package needs beyond its compiled code: the Android API level it
   // targets, the package name and human label, the requested runtime permissions, and the keystore
@@ -123,13 +123,13 @@ object Apk extends Format.Application:
       val permissionElements: List[Axml.Element] =
         permissions.map: permission =>
           Axml.Element
-            ( t"uses-permission",
+            ( "uses-permission",
               List(android(t"name", nameAttr, Axml.Value.Str(permission))),
               Nil )
 
       val launcher =
         Axml.Element
-          ( t"intent-filter",
+          ( "intent-filter",
             Nil,
             List
               ( Axml.Element
@@ -145,7 +145,7 @@ object Apk extends Format.Application:
 
       val activityElement =
         Axml.Element
-          ( t"activity",
+          ( "activity",
             List
               ( android(t"name", nameAttr, Axml.Value.Str(activity)),
                 android(t"exported", exportedAttr, Axml.Value.Bool(true)) ),
@@ -153,20 +153,20 @@ object Apk extends Format.Application:
 
       val application =
         Axml.Element
-          ( t"application",
+          ( "application",
             List(android(t"label", labelAttr, Axml.Value.Str(label))),
             List(activityElement) )
 
       val usesSdk =
         Axml.Element
-          ( t"uses-sdk",
+          ( "uses-sdk",
             List
               ( android(t"minSdkVersion", minSdkVersion, Axml.Value.Num(minSdk)),
                 android(t"targetSdkVersion", targetSdkVersion, Axml.Value.Num(targetSdk)) ),
             Nil )
 
       Axml.Element
-        ( t"manifest",
+        ( "manifest",
           List
             ( Axml.Attribute(Unset, t"package", Unset, Axml.Value.Str(packageName)),
               android(t"versionCode", Apk.Manifest.versionCode, Axml.Value.Num(versionCode)),
@@ -185,7 +185,7 @@ object Apk extends Format.Application:
     private val chunkSize:         Int  = 1048576
     private val signAlgorithm:     Long = 0x0103L        // RSASSA-PKCS1-v1.5 with SHA2-256
     private val v2BlockId:         Long = 0x7109871aL
-    private val magic:             Text = t"APK Sig Block 42"
+    private val magic:             Text = "APK Sig Block 42"
 
     private def u32(value: Long): Data =
       Array((value & 0xff).toByte, ((value >> 8) & 0xff).toByte, ((value >> 16) & 0xff).toByte,

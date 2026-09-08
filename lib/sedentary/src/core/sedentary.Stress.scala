@@ -442,7 +442,7 @@ extends Rig:
     runner.declare
       ( testId,
         Entry.Kind.Stress,
-        Axis.Spec(t"N", Axis.Domain.Integral, emergent = true),
+        Axis.Spec("N", Axis.Domain.Integral, emergent = true),
         start.toDouble,
         limit.toDouble )
 

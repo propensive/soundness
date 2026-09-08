@@ -80,7 +80,7 @@ object Svg:
 
   given showable: [doc <: Document[Svg]] => doc is Showable =
     document =>
-      val header = Header(t"1.0", document.metadata.name, Unset)
+      val header = Header("1.0", document.metadata.name, Unset)
 
       val full: Xml = document.root.xml.absolve match
         case node: Node       => Fragment(header, node)
@@ -107,15 +107,15 @@ object Svg:
   object Parser:
     def labelOf(xml: Xml): Text = xml match
       case e: Element => e.label
-      case _          => t"<unknown>"
+      case _          => "<unknown>"
 
 
     def findSvg(nodes: List[Node])(using Tactic[Svg.Error]): Element =
-      nodes.reap { case e: Element if e.label == t"svg" => e }.or:
-        abort(Svg.Error(Svg.Error.Reason.NotAnSvg(t"<missing>")))
+      nodes.reap { case e: Element if e.label == "svg" => e }.or:
+        abort(Svg.Error(Svg.Error.Reason.NotAnSvg("<missing>")))
 
     def rootElement(xml: Xml)(using Tactic[Svg.Error]): Element = xml match
-      case e: Element if e.label == t"svg" => e
+      case e: Element if e.label == "svg" => e
       case Fragment(nodes*)                => findSvg(nodes.to(List))
 
       case other =>
@@ -126,19 +126,19 @@ object Svg:
       . or(default)
 
     def decodeSvg(elem: Element)(using Tactic[Svg.Error]): Svg =
-      val width = numAttr(elem, t"width")
-      val height = numAttr(elem, t"height")
+      val width = numAttr(elem, "width")
+      val height = numAttr(elem, "height")
 
       val defs = ListBuffer[Def]()
       val figures = ListBuffer[Figure]()
 
       def walk(parent: Element): Unit = parent.children.each:
         case child: Element => child.label match
-          case t"defs" => child.children.each:
+          case "defs" => child.children.each:
             case dd: Element => decodeSvgDef(dd).let: svgDef => defs += svgDef
             case _           => ()
 
-          case t"g" =>
+          case "g" =>
             walk(child)
 
           case _ =>
@@ -152,36 +152,36 @@ object Svg:
 
     private def decodeFigure(elem: Element)(using Tactic[Svg.Error]): Optional[Figure] =
       elem.label match
-        case t"rect"    => decodeRectangle(elem)
-        case t"circle"  => decodeCircle(elem)
-        case t"ellipse" => decodeEllipse(elem)
-        case t"path"    => decodePath(elem)
+        case "rect"    => decodeRectangle(elem)
+        case "circle"  => decodeCircle(elem)
+        case "ellipse" => decodeEllipse(elem)
+        case "path"    => decodePath(elem)
         case _          => Unset
 
     private def decodeRectangle(elem: Element): Rectangle =
       Rectangle
-        ( Point(numAttr(elem, t"x"), numAttr(elem, t"y")),
-         numAttr(elem, t"width"),
-         numAttr(elem, t"height") )
+        ( Point(numAttr(elem, "x"), numAttr(elem, "y")),
+         numAttr(elem, "width"),
+         numAttr(elem, "height") )
 
     private def decodeCircle(elem: Element): Ellipse =
-      val cx = numAttr(elem, t"cx")
-      val cy = numAttr(elem, t"cy")
-      val r = numAttr(elem, t"r")
+      val cx = numAttr(elem, "cx")
+      val cy = numAttr(elem, "cy")
+      val r = numAttr(elem, "r")
       Ellipse(Point(cx, cy), r, r, Angle(0))
 
     private def decodeEllipse(elem: Element): Ellipse =
-      val cx = numAttr(elem, t"cx")
-      val cy = numAttr(elem, t"cy")
-      val rx = numAttr(elem, t"rx")
-      val ry = numAttr(elem, t"ry")
+      val cx = numAttr(elem, "cx")
+      val cy = numAttr(elem, "cy")
+      val rx = numAttr(elem, "rx")
+      val ry = numAttr(elem, "ry")
       Ellipse(Point(cx, cy), rx, ry, Angle(0))
 
     private def decodePath(elem: Element)(using Tactic[Svg.Error]): Outline =
-      val d = elem.attributes(t"d").or(t"")
+      val d = elem.attributes("d").or(t"")
       val ops = parsePathData(d)
-      val id = elem.attributes(t"id").let(Id(_))
-      val transforms = elem.attributes(t"transform").let(parseTransforms).or(Nil)
+      val id = elem.attributes("id").let(Id(_))
+      val transforms = elem.attributes("transform").let(parseTransforms).or(Nil)
       Outline(ops = ops.reverse, id = id, transforms = transforms)
 
 
@@ -190,7 +190,7 @@ object Svg:
     :   Optional[Def] =
 
       elem.label match
-        case t"linearGradient" => decodeLinearGradient(elem)
+        case "linearGradient" => decodeLinearGradient(elem)
         case _                 => Unset
 
 
@@ -198,25 +198,25 @@ object Svg:
       ( using Tactic[Svg.Error] )
     :   LinearGradient[Color in Srgb] =
 
-      val id = elem.attributes(t"id").let(Id(_)).or(Id(t""))
+      val id = elem.attributes("id").let(Id(_)).or(Id(""))
 
       val stops: List[Stop[Color in Srgb]] =
 
           elem.children.readable.toList.collect:
-            case e: Element if e.label == t"stop" => decodeStop(e)
+            case e: Element if e.label == "stop" => decodeStop(e)
           . to(List)
 
       LinearGradient(id, stops*)
 
 
     private def decodeStop(elem: Element)(using Tactic[Svg.Error]): Stop[Color in Srgb] =
-      val rawOffset = elem.attributes(t"offset")
+      val rawOffset = elem.attributes("offset")
         . let: text => safely(text.as[Double]).or(0.0)
         . or(0.0)
 
       val clamped = rawOffset.max(0.0).min(1.0)
       val offset: 0.0 ~ 1.0 = NumericRange.apply[0.0, 1.0](clamped)
-      val colorText = elem.attributes(t"stop-color").or(t"#000000")
+      val colorText = elem.attributes("stop-color").or(t"#000000")
       Stop(offset, parseColor(colorText))
 
     // SVG path-data tokeniser + dispatcher. Supports M/m, L/l, H/h, V/v, C/c, Q/q, Z/z.
@@ -482,7 +482,7 @@ object Svg:
 
   case class LinearGradient[color](id: Id, stops: Stop[color]*) extends Def:
     def xml: Xml =
-      Element(t"linearGradient", Attributes(t"id" -> Id.text(id)), List.from(stops.map(_.xml)).nodes)
+      Element("linearGradient", Attributes(t"id" -> Id.text(id)), List.from(stops.map(_.xml)).nodes)
 
 case class Svg
   ( width:      Float,
@@ -500,10 +500,10 @@ extends Documentary:
 
     val attrs: Ledger[Text, Text] =
       Ledger
-        ( t"xmlns"   -> t"http://www.w3.org/2000/svg",
-          t"viewBox" -> t"0 0 ${width.show} ${height.show}",
-          t"width"   -> width.show,
-          t"height"  -> height.show )
+        ( "xmlns"   -> "http://www.w3.org/2000/svg",
+          "viewBox" -> t"0 0 ${width.show} ${height.show}",
+          "width"   -> width.show,
+          "height"  -> height.show )
 
     val defsElement: List[Xml] =
       if defs.nil then Nil
@@ -513,9 +513,9 @@ extends Documentary:
       if transforms.nil then figures.map(_.xml)
       else
         val groupAttrs =
-          Ledger(t"transform" -> transforms.map(_.encode).join(t" "))
+          Ledger("transform" -> transforms.map(_.encode).join(" "))
 
         List(Element(t"g", Attributes.from(groupAttrs.to[Map]), figures.map(_.xml).nodes))
 
     val children: Array[Node]^{} = (defsElement + figureNodes).nodes
-    Element(t"svg", Attributes.from(attrs.to[Map]), children)
+    Element("svg", Attributes.from(attrs.to[Map]), children)

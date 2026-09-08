@@ -92,7 +92,7 @@ object ClassSurface:
     // on anything else is not a constant a consumer's compiler inlines, so the predicate tests
     // all three conditions, not merely the attribute's presence.
     def inlinable: Boolean =
-      val constable = descriptor == t"Ljava/lang/String;" || descriptor.s.length == 1
+      val constable = descriptor == "Ljava/lang/String;" || descriptor.s.length == 1
       kind == Kind.Field && static && finl && constable && constant.present
 
   private def text(entry: jlc.constantpool.Utf8Entry): Text = entry.stringValue.nn.tt

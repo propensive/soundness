@@ -49,7 +49,7 @@ object Requirable:
     // capability — mirroring `Extractable.decodable`. Laundered pure: the retained context
     // function shares the instance's given-resolution lifetime (the codec-thunk seal pattern).
     caps.unsafe.unsafeAssumePure:
-      () => safely(decodable(using strategies.throwUnsafely).decoded("".tt)).absent
+      () => safely(decodable(using strategies.throwUnsafely).decoded("")).absent
 
 trait Requirable extends Typeclass:
   protected def isRequired(): Boolean

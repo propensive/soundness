@@ -45,11 +45,11 @@ object Tests extends Suite(m"Iridescence tests"):
     suite(m"Native-rendering coverage"):
       test(m"a packed 12-bit colour inspects as hexadecimal"):
         Rgb12(15, 0, 15).inspect
-      . assert(_ == t"#f0f")
+      . assert(_ == "#f0f")
 
       test(m"a packed 32-bit colour inspects as its three channels"):
         Rgb32(1023, 4095, 0).inspect
-      . assert(_ == t"rgb32(1023, 4095, 0)")
+      . assert(_ == "rgb32(1023, 4095, 0)")
 
       test(m"iridescence's packed colour types inspect natively"):
         Inspectable.fallbacks(Rgb12(15, 0, 15).inspect, Rgb32(1023, 4095, 0).inspect)

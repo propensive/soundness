@@ -55,7 +55,7 @@ object Path:
   // galilei; the generic `Path` algebra stays here.
 
   @targetName("Root")
-  object % extends Path(t"/"):
+  object % extends Path("/"):
     type Topic = EmptyTuple
     type Limit = %.type
 
@@ -66,7 +66,7 @@ object Path:
     text =>
       val root = radical.encode(radical.decode(text))
       val parts = text.skip(radical.length(text)).cut(filesystem.separator).stdlib
-      val parts2 = if parts.last == t"" then parts.init else parts
+      val parts2 = if parts.last == "" then parts.init else parts
 
       Path(root, (parts2.reverse.map(filesystem.unescape(_))).to(List))
 
@@ -77,7 +77,7 @@ object Path:
     text =>
       val root = radical.encode(radical.decode(text))
       val parts = text.skip(radical.length(text)).cut(filesystem.separator).stdlib
-      val parts2 = if parts.last == t"" then parts.init else parts
+      val parts2 = if parts.last == "" then parts.init else parts
 
       Path(root, (parts2.reverse.map(filesystem.unescape(_))).to(List))
 
@@ -119,7 +119,7 @@ object Path:
 
   given encodable: [filesystem: Filesystem] => Path on filesystem is Encodable in Text =
     path =>
-      path.descent.map(filesystem.escape(_)).reverse.join(path.root, filesystem.separator, t"")
+      path.descent.map(filesystem.escape(_)).reverse.join(path.root, filesystem.separator, "")
 
   given showable: [filesystem: Filesystem] => Path on filesystem is Showable = _.encode
 
@@ -129,7 +129,7 @@ object Path:
   // the filesystem's own notation, `/` or `C:\` — and the descent is joined with `/`, without
   // escaping, so that the segments are shown exactly as they are held.
   given inspectable: [path <: Path] => path is Inspectable = path =>
-    path.descent.reverse.join(path.root, t"/", t"")
+    path.descent.reverse.join(path.root, "/", "")
 
   given communicable: [filesystem: Filesystem] => Path on filesystem is Communicable =
     path => Message(path.encode)

@@ -40,10 +40,10 @@ trait TestService:
   def name: Text
 
 class TestServiceA extends TestService:
-  def name: Text = t"A"
+  def name: Text = "A"
 
 class TestServiceB extends TestService:
-  def name: Text = t"B"
+  def name: Text = "B"
 
 object Tests extends Suite(m"Hellenism Tests"):
   def run(): Unit =
@@ -53,7 +53,7 @@ object Tests extends Suite(m"Hellenism Tests"):
 
     test(m"Decode a classpath"):
       unsafely:
-        t"/scala/Option.class".as[Path on Classpath]
+        "/scala/Option.class".as[Path on Classpath]
     . assert(_ == Classpath / "scala" / "Option.class")
 
     test(m"check that a classpath file is streamable"):
@@ -72,11 +72,11 @@ object Tests extends Suite(m"Hellenism Tests"):
       import systems.javaBaseSystem
       val classpath = LocalClasspath.of(Classloader[Tests.type])
       classpath.services[TestService].stdlib.map(_.name).to(Set)
-    . assert(_ == Set(t"A", t"B"))
+    . assert(_ == Set("A", "B"))
 
     suite(m"Native-rendering coverage"):
-      val classpath = LocalClasspath(Classpath.Entry.Jar(t"/x.jar"),
-                                     Classpath.Entry.Directory(t"/a/b/"))
+      val classpath = LocalClasspath(Classpath.Entry.Jar("/x.jar"),
+                                     Classpath.Entry.Directory("/a/b/"))
 
       test(m"hellenism's types inspect natively"):
         Inspectable.fallbacks(classpath.inspect, ClassRef(classOf[String]).inspect)
@@ -84,8 +84,8 @@ object Tests extends Suite(m"Hellenism Tests"):
 
       test(m"A classpath shows its entries, separated by colons"):
         classpath.inspect
-      . assert(_ == t"classpath⟨/x.jar:/a/b/⟩")
+      . assert(_ == "classpath⟨/x.jar:/a/b/⟩")
 
       test(m"A class reference shows the source which produces it"):
         ClassRef(classOf[String]).inspect
-      . assert(_ == t"classOf[java.lang.String]")
+      . assert(_ == "classOf[java.lang.String]")

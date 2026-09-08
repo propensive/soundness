@@ -70,7 +70,7 @@ object Roff:
   def quote(text: Text): Text = t"\"${escape(text, quotable = true)}\""
 
   private def line(text: Text): Text =
-    if text.starts(t".") || text.starts(t"'") then t"\\&$text" else text
+    if text.starts(".") || text.starts("'") then t"\\&$text" else text
 
   // A `.P` directly after `.SH`/`.SS` is redundant (mandoc lints it), so a section's leading
   // paragraph contributes only its text line.
@@ -113,7 +113,7 @@ object Roff:
       case Paragraph(prose) => List(t".P", line(prose.map(_.serialize).join))
 
       case Example(lines) =>
-        t".EX" :: (lines.map { text => line(escape(text)) } + List(t".EE"))
+        ".EX" :: (lines.map { text => line(escape(text)) } + List(t".EE"))
 
       // A tagged paragraph with nothing to say still names its subject; emitting an empty body
       // line would leave a stray blank line in the rendered page.
@@ -123,7 +123,7 @@ object Roff:
         if body.nil then List(t".TP", label)
         else List(t".TP", label, line(body.map(_.serialize).join))
 
-      case Indented(blocks) => t".RS" :: (blocks.flatMap(_.serialize) + List(t".RE"))
+      case Indented(blocks) => ".RS" :: (blocks.flatMap(_.serialize) + List(t".RE"))
 
 case class Roff
   ( title:   Text,
@@ -136,8 +136,8 @@ case class Roff
   def serialize: Text =
     val arguments =
       List(title.upper, section.show, date.or(t""), source.or(t""), manual.or(t""))
-      . stdlib.reverse.dropWhile(_ == t"").reverse
+      . stdlib.reverse.dropWhile(_ == "").reverse
 
-    val header = (t".TH" :: arguments.to(List).map(Roff.quote)).join(t" ")
+    val header = (".TH" :: arguments.to(List).map(Roff.quote)).join(" ")
 
-    (header :: blocks.flatMap(_.serialize)).join(t"", t"\n", t"\n")
+    (header :: blocks.flatMap(_.serialize)).join("", "\n", "\n")

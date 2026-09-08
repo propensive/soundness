@@ -124,7 +124,7 @@ object Rrule:
         part(!rule.bySetPos.nil, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") +
         part(rule.weekStart != Weekday.Mon, t"WKST=${code(rule.weekStart)}")
 
-    parts.join(t";")
+    parts.join(";")
 
   // The RFC 5545 rule text, with the `DTSTART` which the wire form deliberately leaves out written
   // in front of it — a rule and its start are one value here. Unlike `encodable` this asks only
@@ -159,7 +159,7 @@ object Rrule:
   :   Rrule[point] =
 
     val pairs: List[(Text, Text)] =
-      text.cut(t";").map(_.cut(t"=")).sweep:
+      text.cut(";").map(_.cut("=")).sweep:
         case List(key, value) => key.upper -> value
 
     val fields: Map[Text, Text] = pairs.to[Map]
@@ -168,30 +168,30 @@ object Rrule:
 
     Rrule
       ( start,
-        field(t"FREQ").lay(abort(Rrule.Error(text)))(frequencyOf(_, text)),
-        field(t"INTERVAL").lay(1)(intOf(_, text)),
-        field(t"COUNT").lay(Unset)(intOf(_, text)),
-        field(t"UNTIL").lay(Unset)(_.as[point]),
-        field(t"BYMONTH").lay(Nil)(ints(_, text).map { n => Month.fromOrdinal(n - 1) }),
-        field(t"BYMONTHDAY").lay(Nil)(ints(_, text)),
-        field(t"BYDAY").lay(Nil) { value => value.cut(t",").map(dayOf(_, text)) },
-        field(t"BYYEARDAY").lay(Nil)(ints(_, text)),
-        field(t"BYWEEKNO").lay(Nil)(ints(_, text)),
-        field(t"BYHOUR").lay(Nil)(ints(_, text)),
-        field(t"BYMINUTE").lay(Nil)(ints(_, text)),
-        field(t"BYSECOND").lay(Nil)(ints(_, text)),
-        field(t"BYSETPOS").lay(Nil)(ints(_, text)),
-        field(t"WKST").lay(Weekday.Mon)(weekdayOf(_, text)) )
+        field("FREQ").lay(abort(Rrule.Error(text)))(frequencyOf(_, text)),
+        field("INTERVAL").lay(1)(intOf(_, text)),
+        field("COUNT").lay(Unset)(intOf(_, text)),
+        field("UNTIL").lay(Unset)(_.as[point]),
+        field("BYMONTH").lay(Nil)(ints(_, text).map { n => Month.fromOrdinal(n - 1) }),
+        field("BYMONTHDAY").lay(Nil)(ints(_, text)),
+        field("BYDAY").lay(Nil) { value => value.cut(",").map(dayOf(_, text)) },
+        field("BYYEARDAY").lay(Nil)(ints(_, text)),
+        field("BYWEEKNO").lay(Nil)(ints(_, text)),
+        field("BYHOUR").lay(Nil)(ints(_, text)),
+        field("BYMINUTE").lay(Nil)(ints(_, text)),
+        field("BYSECOND").lay(Nil)(ints(_, text)),
+        field("BYSETPOS").lay(Nil)(ints(_, text)),
+        field("WKST").lay(Weekday.Mon)(weekdayOf(_, text)) )
 
   private def frequencyOf(text: Text, context: Text)(using Tactic[Rrule.Error]): Frequency =
     text.upper match
-      case t"SECONDLY" => Frequency.Secondly
-      case t"MINUTELY" => Frequency.Minutely
-      case t"HOURLY"   => Frequency.Hourly
-      case t"DAILY"    => Frequency.Daily
-      case t"WEEKLY"   => Frequency.Weekly
-      case t"MONTHLY"  => Frequency.Monthly
-      case t"YEARLY"   => Frequency.Yearly
+      case "SECONDLY" => Frequency.Secondly
+      case "MINUTELY" => Frequency.Minutely
+      case "HOURLY"   => Frequency.Hourly
+      case "DAILY"    => Frequency.Daily
+      case "WEEKLY"   => Frequency.Weekly
+      case "MONTHLY"  => Frequency.Monthly
+      case "YEARLY"   => Frequency.Yearly
       case _           => abort(Rrule.Error(context))
 
   private def intOf(text: Text, context: Text)(using Tactic[Rrule.Error]): Int =
@@ -200,7 +200,7 @@ object Rrule:
     if body.nonEmpty && body.forall(_.isDigit) then string.toInt else abort(Rrule.Error(context))
 
   private def ints(text: Text, context: Text)(using Tactic[Rrule.Error]): List[Int] =
-    text.cut(t",").map(intOf(_, context))
+    text.cut(",").map(intOf(_, context))
 
   private def weekdayOf(text: Text, context: Text)(using Tactic[Rrule.Error]): Weekday =
     weekdayCodes.where(_ == text.upper).lay(abort(Rrule.Error(context))): index =>

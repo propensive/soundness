@@ -192,7 +192,7 @@ object Wit:
 
     private def fail(detail: Text, tokens: SList[String]): Nothing raises Error =
       val near = Text(tokens.take(5).mkString(" "))
-      abort(Error(Reason.Syntax(detail, if near.s.isEmpty then t"the end" else near)))
+      abort(Error(Reason.Syntax(detail, if near.s.isEmpty then "the end" else near)))
 
     private def unsupported(construct: Text): Nothing raises Error =
       abort(Error(Reason.Unsupported(construct)))
@@ -246,9 +246,9 @@ object Wit:
       case "@since" :: "(" :: rest =>
         rest.dropWhile(_ != ")") match
           case ")" :: more => gates(more)
-          case other       => fail(t"an unterminated @since gate", other)
+          case other       => fail("an unterminated @since gate", other)
 
-      case "@unstable" :: _ => unsupported(t"an @unstable item")
+      case "@unstable" :: _ => unsupported("an @unstable item")
       case _                => tokens
 
     // --- types ----------------------------------------------------------------------------------
@@ -259,20 +259,20 @@ object Wit:
 
     private def typeOf(tokens: SList[String]): (Foreign.Type, SList[String]) raises Error =
       tokens match
-        case ("stream" | "future") :: _ => unsupported(t"a stream or future type")
+        case ("stream" | "future") :: _ => unsupported("a stream or future type")
 
         case name :: "<" :: rest =>
           def arguments(tokens: SList[String], acc: SList[Foreign.Type])
           :   (SList[Foreign.Type], SList[String]) raises Error =
 
             val (arg, after) = tokens match
-              case "_" :: more => (Foreign.Type.Named(t"_"), more)
+              case t"_" :: more => (Foreign.Type.Named(t"_"), more)
               case _           => typeOf(tokens)
 
             after match
               case "," :: more => arguments(more, arg :: acc)
               case ">" :: more => ((arg :: acc).reverse, more)
-              case _           => fail(t"a type argument must be followed by `,` or `>`", after)
+              case _           => fail("a type argument must be followed by `,` or `>`", after)
 
           val (args, after) = arguments(rest, SList())
           (Foreign.Type.Applied(name.tt, args.to(List)), after)
@@ -280,7 +280,7 @@ object Wit:
         case name :: rest if name.headOption.exists { char => char.isLetter || char == '%' } =>
           (Foreign.Type.Named(Text(name.stripPrefix("%").nn)), rest)
 
-        case _ => fail(t"a type was expected", tokens)
+        case _ => fail("a type was expected", tokens)
 
     // --- functions ------------------------------------------------------------------------------
 
@@ -298,17 +298,17 @@ object Wit:
             val (typed, after) = typeOf(rest)
             recur(after, (Text(name.stripPrefix("%").nn), typed) :: acc)
 
-          case _ => fail(t"a parameter was expected", tokens)
+          case _ => fail("a parameter was expected", tokens)
 
       tokens match
         case "(" :: rest => recur(rest, SList())
-        case _           => fail(t"a parameter list was expected", tokens)
+        case _           => fail("a parameter list was expected", tokens)
 
     private def functionType(name: Text, tokens: SList[String], static: Boolean)
     :   (Function, SList[String]) raises Error =
 
       val afterAsync = tokens match
-        case "async" :: rest => unsupported(t"an async function")
+        case "async" :: rest => unsupported("an async function")
         case _               => tokens
 
       afterAsync match
@@ -324,9 +324,9 @@ object Wit:
 
           afterResult match
             case ";" :: more => (Function(name, params, result, static), more)
-            case _           => fail(t"a `;` was expected", afterResult)
+            case _           => fail("a `;` was expected", afterResult)
 
-        case _ => fail(t"`func` was expected", afterAsync)
+        case _ => fail("`func` was expected", afterAsync)
 
     // --- interface items ------------------------------------------------------------------------
 
@@ -344,11 +344,11 @@ object Wit:
             recur(rest, (name.tt, alias.tt) :: acc)
 
           case name :: rest => recur(rest, (name.tt, name.tt) :: acc)
-          case SNil         => fail(t"a use list is unterminated", tokens)
+          case SNil         => fail("a use list is unterminated", tokens)
 
       tokens match
         case "{" :: rest => recur(rest, SList())
-        case _           => fail(t"a `{` was expected", tokens)
+        case _           => fail("a `{` was expected", tokens)
 
     private def fieldList(tokens: SList[String], closer: Text)
     :   (List[(Text, Foreign.Type)], SList[String]) raises Error =
@@ -364,7 +364,7 @@ object Wit:
             val (typed, after) = typeOf(rest)
             recur(after, (Text(name.stripPrefix("%").nn), typed) :: acc)
 
-          case _ => fail(t"a field was expected", tokens)
+          case _ => fail("a field was expected", tokens)
 
       recur(tokens, SList())
 
@@ -383,10 +383,10 @@ object Wit:
 
             after match
               case ")" :: more => recur(more, (name.tt, Optional(typed)) :: acc)
-              case _           => fail(t"a `)` was expected", after)
+              case _           => fail("a `)` was expected", after)
 
           case name :: rest => recur(rest, (name.tt, Unset) :: acc)
-          case SNil         => fail(t"a case list is unterminated", tokens)
+          case SNil         => fail("a case list is unterminated", tokens)
 
       recur(tokens, SList())
 
@@ -400,7 +400,7 @@ object Wit:
           case "}" :: rest  => (acc.reverse.to(List), rest)
           case "," :: rest  => recur(rest, acc)
           case name :: rest => recur(rest, name.tt :: acc)
-          case SNil         => fail(t"a name list is unterminated", tokens)
+          case SNil         => fail("a name list is unterminated", tokens)
 
       recur(tokens, SList())
 
@@ -418,9 +418,9 @@ object Wit:
 
             afterParams match
               case ";" :: more =>
-                recur(more, Function(t"constructor", params, constructor = true) :: acc)
+                recur(more, Function("constructor", params, constructor = true) :: acc)
 
-              case _ => fail(t"a `;` was expected", afterParams)
+              case _ => fail("a `;` was expected", afterParams)
 
           case name :: ":" :: "static" :: rest =>
             val (function, after) = functionType(Text(name.stripPrefix("%").nn), rest, true)
@@ -430,7 +430,7 @@ object Wit:
             val (function, after) = functionType(Text(name.stripPrefix("%").nn), rest, false)
             recur(after, function :: acc)
 
-          case _ => fail(t"a resource member was expected", tokens)
+          case _ => fail("a resource member was expected", tokens)
 
       recur(tokens, SList())
 
@@ -448,14 +448,14 @@ object Wit:
 
             after match
               case ";" :: more => recur(more, Item.Use(from.tt, names) :: acc)
-              case _           => fail(t"a `;` was expected", after)
+              case _           => fail("a `;` was expected", after)
 
           case "type" :: name :: "=" :: rest =>
             val (typed, after) = typeOf(rest)
 
             after match
               case ";" :: more => recur(more, Item.Alias(name.tt, typed) :: acc)
-              case _           => fail(t"a `;` was expected", after)
+              case _           => fail("a `;` was expected", after)
 
           case "record" :: name :: "{" :: rest =>
             val (fields, after) = fieldList(rest, t"}")
@@ -485,7 +485,7 @@ object Wit:
             recur(after, Item.Function(function) :: acc)
 
           case construct :: _ => unsupported(construct.tt)
-          case SNil           => fail(t"an interface body is unterminated", tokens)
+          case SNil           => fail("an interface body is unterminated", tokens)
 
       recur(tokens, SList())
 
@@ -516,7 +516,7 @@ object Wit:
               val (_, after) = interfaceBody(body)
               (Unset, after)
 
-            case _ => fail(t"`func` or `interface` was expected", tokens)
+            case _ => fail("`func` or `interface` was expected", tokens)
 
         gates(tokens) match
           case "}" :: rest =>
@@ -544,9 +544,9 @@ object Wit:
           case "export" :: name :: ";" :: rest =>
             recur(rest, imports, name.tt :: exports, inlineImports, inlineExports)
 
-          case "include" :: _ => unsupported(t"a world include")
+          case "include" :: _ => unsupported("a world include")
           case construct :: _ => unsupported(construct.tt)
-          case SNil           => fail(t"a world body is unterminated", tokens)
+          case SNil           => fail("a world body is unterminated", tokens)
 
       recur(tokens, SList(), SList(), SList(), SList())
 

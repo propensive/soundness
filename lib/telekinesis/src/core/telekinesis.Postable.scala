@@ -127,5 +127,5 @@ trait Postable extends Typeclass:
         val string: Text = sample.serialize[Hex]
         if count > 128 then t"$string..." else string
 
-      case _ => t""
+      case _ => ""
     finally endpoint.close()

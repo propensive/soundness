@@ -43,7 +43,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-object Rfc1123 extends Date.Format(t"RFC 1123"):
+object Rfc1123 extends Date.Format("RFC 1123"):
   given Issue is Communicable =
     case Issue.DayName(days*)     => m"expected a day name (${days.map(_.show).join(t", ")})"
     case Issue.MonthName(months*) => m"expected a month name (${months.map(_.show).join(t", ")})"

@@ -41,44 +41,44 @@ import prepositional.*
 import vacuous.*
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
-  object Boot extends BaseLayout[Mono["boot"]](t"boot", readOnly = true)
-  object Efi extends BaseLayout[Mono["efi"]](t"efi", readOnly = true)
-  object Etc extends BaseLayout[Mono["etc"]](t"etc")
-  object Home extends BaseLayout[Mono["home"]](t"home")
-  object Root extends BaseLayout[Mono["roto"]](t"root")
-  object Srv extends BaseLayout[Mono["srv"]](t"srv")
-  object Tmp extends BaseLayout[Mono["tmp"]](t"tmp")
+  object Boot extends BaseLayout[Mono["boot"]]("boot", readOnly = true)
+  object Efi extends BaseLayout[Mono["efi"]]("efi", readOnly = true)
+  object Etc extends BaseLayout[Mono["etc"]]("etc")
+  object Home extends BaseLayout[Mono["home"]]("home")
+  object Root extends BaseLayout[Mono["roto"]]("root")
+  object Srv extends BaseLayout[Mono["srv"]]("srv")
+  object Tmp extends BaseLayout[Mono["tmp"]]("tmp")
 
-  object Run extends BaseLayout[Mono["run"]](t"run"):
-    object Log extends BaseLayout[("log", "run")](t"log")
-    object User extends BaseLayout[("user", "run")](t"user")
+  object Run extends BaseLayout[Mono["run"]]("run"):
+    object Log extends BaseLayout[("log", "run")]("log")
+    object User extends BaseLayout[("user", "run")]("user")
 
-  object Usr extends BaseLayout[Mono["usr"]](t"usr", readOnly = true):
-    object Bin extends BaseLayout[("bin", "usr")](t"bin", readOnly = true)
-    object Include extends BaseLayout[("include", "usr")](t"include", readOnly = true)
-    object Lib extends BaseLayout[("lib", "usr")](t"lib", readOnly = true)
+  object Usr extends BaseLayout[Mono["usr"]]("usr", readOnly = true):
+    object Bin extends BaseLayout[("bin", "usr")]("bin", readOnly = true)
+    object Include extends BaseLayout[("include", "usr")]("include", readOnly = true)
+    object Lib extends BaseLayout[("lib", "usr")]("lib", readOnly = true)
 
-    object Share extends BaseLayout(t"share", readOnly = true):
-      object Doc extends BaseLayout(t"doc", readOnly = true)
+    object Share extends BaseLayout("share", readOnly = true):
+      object Doc extends BaseLayout("doc", readOnly = true)
 
-      object Factory extends BaseLayout(t"factory", readOnly = true):
-        object Etc extends BaseLayout(t"etc", readOnly = true)
-        object Var extends BaseLayout(t"var", readOnly = true)
+      object Factory extends BaseLayout("factory", readOnly = true):
+        object Etc extends BaseLayout("etc", readOnly = true)
+        object Var extends BaseLayout("var", readOnly = true)
 
-  object Var extends BaseLayout[Mono["var"]](t"var"):
-    object Cache extends BaseLayout[("cache", "var")](t"cache")
-    object Lib extends BaseLayout[("lib", "var")](t"lib")
-    object Log extends BaseLayout[("log", "var")](t"log")
-    object Spool extends BaseLayout[("spool", "var")](t"spool")
-    object Tmp extends BaseLayout[("tmp", "var")](t"tmp")
+  object Var extends BaseLayout[Mono["var"]]("var"):
+    object Cache extends BaseLayout[("cache", "var")]("cache")
+    object Lib extends BaseLayout[("lib", "var")]("lib")
+    object Log extends BaseLayout[("log", "var")]("log")
+    object Spool extends BaseLayout[("spool", "var")]("spool")
+    object Tmp extends BaseLayout[("tmp", "var")]("tmp")
 
-  object Dev extends BaseLayout[Mono["dev"]](t"dev"):
-    object Shm extends BaseLayout[("shm", "dev")](t"shm")
+  object Dev extends BaseLayout[Mono["dev"]]("dev"):
+    object Shm extends BaseLayout[("shm", "dev")]("shm")
 
-  object Proc extends BaseLayout[Mono["proc"]](t"proc"):
+  object Proc extends BaseLayout[Mono["proc"]]("proc"):
     def apply(pid: Pid): BaseLayout[(Pid, "proc")] =
       BaseLayout(pid.value.toString.tt, readOnly = true)
 
-    object Sys extends BaseLayout[("sys", "proc")](t"sys", readOnly = true)
+    object Sys extends BaseLayout[("sys", "proc")]("sys", readOnly = true)
 
-  object Sys extends BaseLayout[Mono["sys"]](t"sys", readOnly = true)
+  object Sys extends BaseLayout[Mono["sys"]]("sys", readOnly = true)

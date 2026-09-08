@@ -165,12 +165,12 @@ extends Interactivity[Terminal.Event], caps.ExclusiveCapability:
   metrics.mode = safely:
     def hex(text: Text): Int = Integer.parseInt(text.s, 16)
 
-    Environment.terminalBg.cut(t"/") match
+    Environment.terminalBg.cut("/") match
       case red :: green :: blue :: Nil =>
         if Terminal.dark(hex(red), hex(green), hex(blue)) then Brightness.Dark else Brightness.Light
 
       case _ =>
-        abort(Environment.Error(t"TERMINAL_BG"))
+        abort(Environment.Error("TERMINAL_BG"))
 
   metrics.rows = safely(Environment.lines.as[Int])
   metrics.columns = safely(Environment.columns.as[Int])

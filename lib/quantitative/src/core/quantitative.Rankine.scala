@@ -36,6 +36,6 @@ import anticipation.*
 import gossamer.*
 
 object Rankine extends TemperatureScale:
-  def suffix: Text = t"°R"
+  def suffix: Text = "°R"
   def apply(value: Double): Temperature = Temperature(value*5/9)
   def kelvin(value: Temperature): Double = value.rankine

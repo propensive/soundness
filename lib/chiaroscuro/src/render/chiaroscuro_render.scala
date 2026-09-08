@@ -167,14 +167,14 @@ package teletypeables:
               data(1) match
                 case Same(v) =>
                   Row
-                    ( line(t"▪"),
+                    ( line("▪"),
                       e"${Fg(palette.informative)}($v)",
                       e"${Fg(palette.informative)}($v)",
                       e"" )
 
                 case Different(left, right, difference) =>
                   Row
-                    ( line(t"▪"),
+                    ( line("▪"),
                       e"${Fg(palette.positive)}($left)",
                       e"${Fg(palette.negative)}($right)",
                       difference.let(_.teletype).or(e"") )
@@ -187,14 +187,14 @@ package teletypeables:
                     val distance = left.proximity(right).toInt
 
                     Row
-                      ( line(t"▪"),
+                      ( line("▪"),
                         e"${Fg(palette.positive)}($left)",
                         e"${Fg(palette.negative)}($right)",
                         e"lev = $distance" )
 
                   else
                     Row
-                      ( line(t"■"),
+                      ( line("■"),
                         e"${Fg(palette.informative)}($left)",
                         e"${Fg(palette.informative)}($right)",
                         e"" )

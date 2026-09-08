@@ -87,7 +87,7 @@ private def demoLayout: Pane =
   // A rounded border around the menu; the menu itself is 20 wide, so the bordered
   // sidebar is 22.
   val sidebar = border(BorderStyle.rounded):
-    menu(List(t"Overview", t"Compose", t"Activity", t"Settings"), t"Overview",
+    menu(List(t"Overview", t"Compose", t"Activity", t"Settings"), "Overview",
         minWidth = 20, maxWidth = 20)
 
   // A column of gauges, each keyed on a different status type and each picking up its design from
@@ -98,13 +98,13 @@ private def demoLayout: Pane =
   val resolving =
     given spinner: (Fraction is Gaugeable) = spinners.brailleDotsSpinner
 
-    gauge(Reading(Captioned(Fraction.indeterminate, t"resolving")), minHeight = 1, maxHeight = 1)
+    gauge(Reading(Captioned(Fraction.indeterminate, "resolving")), minHeight = 1, maxHeight = 1)
 
   val activity = border():
     stack
-      ( panel(minHeight = 1, maxHeight = 1)(Out.print(t"  Activity")),
+      ( panel(minHeight = 1, maxHeight = 1)(Out.print("  Activity")),
         resolving,
-        gauge(Reading(Captioned(Fraction(0.62), t"compiling")), minHeight = 1, maxHeight = 1),
+        gauge(Reading(Captioned(Fraction(0.62), "compiling")), minHeight = 1, maxHeight = 1),
         gauge(Reading(Reckoning(17, 120)), minHeight = 1, maxHeight = 1),
         gauge(Reading(Sequence(2.0, 5.0, 3.0, 8.0, 6.0, 9.0, 4.0)), minHeight = 1,
             maxHeight = 1),
@@ -113,10 +113,10 @@ private def demoLayout: Pane =
   // A bottom-only border draws a single rule under the heading, a separator with
   // no corners or sides.
   val heading = border(top = false, left = false, right = false):
-    panel(minHeight = 1, maxHeight = 1)(Out.print(t"  Compose"))
+    panel(minHeight = 1, maxHeight = 1)(Out.print("  Compose"))
 
-  val title = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  ULTIMATUM · fullscreen demo"))
-  val status = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  [Tab] focus    [Esc] quit"))
+  val title = panel(minHeight = 1, maxHeight = 1)(Out.print("  ULTIMATUM · fullscreen demo"))
+  val status = panel(minHeight = 1, maxHeight = 1)(Out.print("  [Tab] focus    [Esc] quit"))
 
   // A multiline compose box: Enter inserts a newline (it never submits, so the
   // arrow keys can move the cursor up and down between lines).

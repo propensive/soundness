@@ -57,7 +57,7 @@ object kotlincEdges:
   extends Tool:
     type Settings = Unit
 
-    def name: Text = t"kotlinc"
+    def name: Text = "kotlinc"
     def initial: Unit = ()
 
     def run
@@ -75,8 +75,8 @@ object kotlincEdges:
       given compileEvents: (CompileEvent is Loggable) = CompileEvents.relay(using linkEvents)
 
       mitigate:
-        case Compiler.Error() => Link.Error(Link.Error.Reason.CompilerUnusable(t"kotlinc"))
-        case Async.Error(_)   => Link.Error(Link.Error.Reason.CompilerUnusable(t"kotlinc"))
+        case Compiler.Error() => Link.Error(Link.Error.Reason.CompilerUnusable("kotlinc"))
+        case Async.Error(_)   => Link.Error(Link.Error.Reason.CompilerUnusable("kotlinc"))
 
       . protect:
           val process = kotlinc(classpath)(sources, out)

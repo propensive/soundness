@@ -43,6 +43,6 @@ enum Language extends Format.Source:
   case Scala, Java, Kotlin
 
   def id: Text = this match
-    case Scala  => t"scala"
-    case Java   => t"java"
-    case Kotlin => t"kotlin"
+    case Scala  => "scala"
+    case Java   => "java"
+    case Kotlin => "kotlin"

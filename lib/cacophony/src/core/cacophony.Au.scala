@@ -39,7 +39,7 @@ object Au:
   def apply(): Audible = audibility
 
   given audibility: Au is Audible:
-    def name: Text           = "AU".tt
+    def name: Text           = "AU"
     def mediaType: MediaType = media"audio/basic"
 
 sealed trait Au

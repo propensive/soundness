@@ -40,7 +40,7 @@ object Png:
   def apply(): Rasterizable = rasterization
 
   given rasterization: Png is Rasterizable:
-    def name: Text = "PNG".tt
+    def name: Text = "PNG"
     def mediaType = media"image/png"
     def alpha: Boolean = true
 

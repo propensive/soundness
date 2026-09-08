@@ -93,12 +93,12 @@ object internal:
           val lineContent: Text = sourceCode.lines.readUnchecked(position.line).map(_.show).join
 
           try lineContent.segment(position.startColumn.z thru position.endColumn.u)
-          catch case e: Exception => t""
+          catch case e: Exception => ""
 
-        ((t" "*(position.startColumn - init.n0))+content)
+        ((" "*(position.startColumn - init.n0))+content)
 
       case _ =>
-        t""
+        ""
 
     extension (tastyTree: Tasty.Tree)
       def children(nodes2: Tree*): Tasty.Tree =
@@ -130,69 +130,69 @@ object internal:
 
 
       def repr(name: Text, repr: Optional[TypeRepr], parameter: Optional[Text] = Unset): Tasty.Tree =
-        apply(' ', t"", name, Unset, repr.let(stenography.internal.name(_)), parameter).typeNode
+        apply(' ', "", name, Unset, repr.let(stenography.internal.name(_)), parameter).typeNode
 
       def expandType(repr: TypeRepr): Tasty.Tree =
         repr match
-          case TypeRef(ref, name) => TreeBuilder.repr(t"TypeRef", repr, name)
+          case TypeRef(ref, name) => TreeBuilder.repr("TypeRef", repr, name)
 
           case AndType(left, right) =>
-            TreeBuilder.repr(t"AndType", repr).typeChildren(left, right)
+            TreeBuilder.repr("AndType", repr).typeChildren(left, right)
 
           case OrType(left, right) =>
-            TreeBuilder.repr(t"OrType", repr).typeChildren(left, right)
+            TreeBuilder.repr("OrType", repr).typeChildren(left, right)
 
           case AppliedType(tycon, arguments) =>
-            TreeBuilder.repr(t"AppliedType", repr).typeChildren(tycon :: arguments*)
+            TreeBuilder.repr("AppliedType", repr).typeChildren(tycon :: arguments*)
 
           case AnnotatedType(underlying, term) =>
-            TreeBuilder.repr(t"AnnotatedType", repr).typeChildren(underlying).children(term)
+            TreeBuilder.repr("AnnotatedType", repr).typeChildren(underlying).children(term)
 
           case Refinement(parent, name, info) =>
-            TreeBuilder.repr(t"Refinement", repr, name)
+            TreeBuilder.repr("Refinement", repr, name)
             . typeChildren(parent, info)
 
           case MatchType(bound, scrutinee, cases) =>
-            TreeBuilder.repr(t"MatchType", repr).typeChildren(bound :: scrutinee :: cases*)
+            TreeBuilder.repr("MatchType", repr).typeChildren(bound :: scrutinee :: cases*)
 
           case SuperType(thisType, superType) =>
-            TreeBuilder.repr(t"SuperType", repr).typeChildren(thisType, superType)
+            TreeBuilder.repr("SuperType", repr).typeChildren(thisType, superType)
 
           case ByNameType(byName) =>
-            TreeBuilder.repr(t"ByNameType", repr).typeChildren(byName)
+            TreeBuilder.repr("ByNameType", repr).typeChildren(byName)
 
           case ParamRef(lambdaType, n) =>
-            TreeBuilder.repr(t"ParamRef", repr, n.show).typeChildren(lambdaType)
+            TreeBuilder.repr("ParamRef", repr, n.show).typeChildren(lambdaType)
 
           case ThisType(thisType) =>
-            TreeBuilder.repr(t"ThisType", repr).typeChildren(thisType)
+            TreeBuilder.repr("ThisType", repr).typeChildren(thisType)
 
           case RecursiveThis(thisType) =>
-            TreeBuilder.repr(t"RecursiveThis", repr).typeChildren(thisType)
+            TreeBuilder.repr("RecursiveThis", repr).typeChildren(thisType)
 
           case RecursiveType(recursive) =>
-            TreeBuilder.repr(t"RecursiveType", repr).typeChildren(recursive)
+            TreeBuilder.repr("RecursiveType", repr).typeChildren(recursive)
 
           case MethodType(names, params, result) =>
-            TreeBuilder.repr(t"MethodType", repr, names.map(_.tt).join(t", "))
+            TreeBuilder.repr("MethodType", repr, names.map(_.tt).join(", "))
             . typeChildren(params :+ result*)
 
           case PolyType(names, bounds, result) =>
-            TreeBuilder.repr(t"PolyType", repr, names.map(_.tt).join(t", "))
+            TreeBuilder.repr("PolyType", repr, names.map(_.tt).join(", "))
             . typeChildren(bounds :+ result*)
 
           case TypeLambda(names, bounds, result) =>
-            TreeBuilder.repr(t"TypeLambda", repr, names.map(_.tt).join(t", "))
+            TreeBuilder.repr("TypeLambda", repr, names.map(_.tt).join(", "))
             . typeChildren(bounds :+ result*)
 
           case MatchCase(pattern, rhs) =>
-            TreeBuilder.repr(t"MatchCase", repr).typeChildren(pattern, rhs)
+            TreeBuilder.repr("MatchCase", repr).typeChildren(pattern, rhs)
 
           case TypeBounds(low, high) =>
-            TreeBuilder.repr(t"TypeBounds", repr).typeChildren(low, high)
+            TreeBuilder.repr("TypeBounds", repr).typeChildren(low, high)
 
           case NoPrefix() =>
-            TreeBuilder.repr(t"NoPrefix", repr)
+            TreeBuilder.repr("NoPrefix", repr)
 
           case FlexibleType(tpe) =>
             TreeBuilder.repr("FlexibleType", repr).typeChildren(tpe)
@@ -201,24 +201,24 @@ object internal:
             def value = constant.constant.value.toString.tt
 
             constant.constant.absolve match
-              case BooleanConstant(_) => TreeBuilder.repr(t"BooleanConstant", repr, value)
-              case ByteConstant(_)    => TreeBuilder.repr(t"ByteConstant", repr, value)
-              case ShortConstant(_)   => TreeBuilder.repr(t"ShortConstant", repr, value)
-              case IntConstant(_)     => TreeBuilder.repr(t"IntConstant", repr, value)
-              case LongConstant(_)    => TreeBuilder.repr(t"LongConstant", repr, value)
-              case FloatConstant(_)   => TreeBuilder.repr(t"FloatConstant", repr, value)
-              case DoubleConstant(_)  => TreeBuilder.repr(t"DoubleConstant", repr, value)
-              case CharConstant(_)    => TreeBuilder.repr(t"CharConstant", repr, value)
-              case StringConstant(_)  => TreeBuilder.repr(t"StringConstant", repr, value)
-              case UnitConstant()     => TreeBuilder.repr(t"UnitConstant", repr, t"()")
-              case NullConstant()     => TreeBuilder.repr(t"NullConstant", repr, t"null")
-              case ClassOfConstant(_) => TreeBuilder.repr(t"ClassOfConstant", repr, value)
+              case BooleanConstant(_) => TreeBuilder.repr("BooleanConstant", repr, value)
+              case ByteConstant(_)    => TreeBuilder.repr("ByteConstant", repr, value)
+              case ShortConstant(_)   => TreeBuilder.repr("ShortConstant", repr, value)
+              case IntConstant(_)     => TreeBuilder.repr("IntConstant", repr, value)
+              case LongConstant(_)    => TreeBuilder.repr("LongConstant", repr, value)
+              case FloatConstant(_)   => TreeBuilder.repr("FloatConstant", repr, value)
+              case DoubleConstant(_)  => TreeBuilder.repr("DoubleConstant", repr, value)
+              case CharConstant(_)    => TreeBuilder.repr("CharConstant", repr, value)
+              case StringConstant(_)  => TreeBuilder.repr("StringConstant", repr, value)
+              case UnitConstant()     => TreeBuilder.repr("UnitConstant", repr, "()")
+              case NullConstant()     => TreeBuilder.repr("NullConstant", repr, "null")
+              case ClassOfConstant(_) => TreeBuilder.repr("ClassOfConstant", repr, value)
 
           case TermRef(qual, name) =>
             TreeBuilder.repr("TermRef", repr, name.tt).typeChildren(qual)
 
           case _ =>
-            TreeBuilder.repr(t"unknown", repr)
+            TreeBuilder.repr("unknown", repr)
 
       def expand(tag: Char, tree: Tree): Tasty.Tree =
         val typeName =
@@ -227,194 +227,194 @@ object internal:
               case '{$term: tpe} => stenography.internal.name[tpe]
               case _             => Unset
 
-          . or(t"")
+          . or("")
 
         tree match
           case typeTree: TypeTree => expandType(typeTree.tpe)
 
           case PackageClause(ref, chs) =>
-            TreeBuilder(tag, typeName, t"PackageClause", tree)
+            TreeBuilder(tag, typeName, "PackageClause", tree)
             . add('r', ref)
             . children(chs*)
             . definition
 
           case Import(expr, selectors) =>
-            TreeBuilder(tag, typeName, t"Import", tree)
+            TreeBuilder(tag, typeName, "Import", tree)
 
           case Export(tree, selectors) =>
-            TreeBuilder(tag, typeName, t"Export", tree)
+            TreeBuilder(tag, typeName, "Export", tree)
 
           case ClassDef(name, constructor, parents, selfOpt, body) =>
-            TreeBuilder(tag, typeName, t"ClassDef", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, "ClassDef", tree, parameter = name.tt)
             . children(body*)
             . definition
 
           case TypeDef(name, rhs) =>
-            TreeBuilder(tag, typeName, t"TypeDef", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, "TypeDef", tree, parameter = name.tt)
             . children(rhs)
             . typeNode
             . definition
 
           case Wildcard() =>
-            TreeBuilder(tag, typeName, t"Wildcard", tree)
+            TreeBuilder(tag, typeName, "Wildcard", tree)
 
           case This(qual) =>
-            TreeBuilder(tag, typeName, t"This", tree, parameter = qual.map(_.tt).getOrElse(t""))
+            TreeBuilder(tag, typeName, "This", tree, parameter = qual.map(_.tt).getOrElse(""))
 
           case New(tpt) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TreeBuilder(tag, typeName, t"New", tree)
+            TreeBuilder(tag, typeName, "New", tree)
             . children(tpt)
 
           case NamedArg(name, argument) =>
-            TreeBuilder(tag, typeName, t"NamedArg", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, "NamedArg", tree, parameter = name.tt)
             . add('a', argument)
 
           case Bind(name, term) =>
-            TreeBuilder(tag, typeName, t"Bind", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, "Bind", tree, parameter = name.tt)
             . children(term)
 
           case Typed(expr, tpt) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TreeBuilder(tag, typeName, t"Typed", tree)
+            TreeBuilder(tag, typeName, "Typed", tree)
             . children(expr)
             . typed(tpt)
 
           case TypedOrTest(focus, tpt) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TreeBuilder(tag, typeName, t"TypedOrTest", tree)
+            TreeBuilder(tag, typeName, "TypedOrTest", tree)
             . children(focus)
             . typed(tpt)
 
           case Inlined(call, bindings, child) =>
             if inlining then expand(tag, child) else
-              TreeBuilder(tag, typeName, t"Inlined", tree)
+              TreeBuilder(tag, typeName, "Inlined", tree)
               . add('c', call.to(List)*)
               . add('b', bindings*)
               . children(child)
 
           case Apply(fun, arguments) =>
-            TreeBuilder(tag, typeName, t"Apply", tree)
+            TreeBuilder(tag, typeName, "Apply", tree)
             . children(fun)
             . add('a', arguments*)
 
           case Assign(lhs, rhs) =>
-            TreeBuilder(tag, typeName, t"Assign", tree)
+            TreeBuilder(tag, typeName, "Assign", tree)
             . add('d', lhs)
             . children(rhs)
 
           case TypeApply(fun, arguments) =>
-            TreeBuilder(tag, typeName, t"TypeApply", tree)
+            TreeBuilder(tag, typeName, "TypeApply", tree)
             . children(fun)
             . add('a', arguments*)
 
           case Select(qualifier, name) =>
-            TreeBuilder(tag, typeName, t"Select", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, "Select", tree, parameter = name.tt)
             . children(qualifier)
 
           case SelectOuter(qualifier, name, levels) =>
-            TreeBuilder(tag, typeName, t"SelectOuter", tree, parameter = t"$name^$levels")
+            TreeBuilder(tag, typeName, "SelectOuter", tree, parameter = t"$name^$levels")
             . children(qualifier)
 
           case Singleton(ref) =>
-            TreeBuilder(tag, typeName, t"Singleton", tree)
+            TreeBuilder(tag, typeName, "Singleton", tree)
             . typeNode
             . children(ref)
 
           case Super(qual, mix) =>
-            TreeBuilder(tag, typeName, t"Super", tree, parameter = mix.map(_.tt).getOrElse(t""))
+            TreeBuilder(tag, typeName, "Super", tree, parameter = mix.map(_.tt).getOrElse(""))
             . children(qual)
 
           case Ident(name) =>
-            TreeBuilder(tag, typeName, t"Ident", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, "Ident", tree, parameter = name.tt)
 
           case If(cond, thenp, elsep) =>
-            TreeBuilder(tag, typeName, t"If", tree)
+            TreeBuilder(tag, typeName, "If", tree)
             . add('p', cond)
             . add('t', thenp)
             . add('f', elsep)
 
           case While(cond, body) =>
-            TreeBuilder(tag, typeName, t"While", tree)
+            TreeBuilder(tag, typeName, "While", tree)
             . add('p', cond)
             . children(body)
 
           case TypeIdent(name) =>
-            TreeBuilder(tag, typeName, t"TypeIdent", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, "TypeIdent", tree, parameter = name.tt)
             . typeNode
 
           case TypeProjection(qualifier, name) =>
-            TreeBuilder(tag, typeName, t"TypeProjection", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, "TypeProjection", tree, parameter = name.tt)
             . typeNode
             . children(qualifier)
 
           case TypeSelect(term, name) =>
-            TreeBuilder(tag, typeName, t"TypeIdent", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, "TypeIdent", tree, parameter = name.tt)
             . typeNode
             . children(term)
 
           case Try(expr, cases, finalizer) =>
-            TreeBuilder(tag, typeName, t"Try", tree)
+            TreeBuilder(tag, typeName, "Try", tree)
             . add('t', expr)
             . add('c', cases*)
             . add('f', finalizer.to(List)*)
 
           case Block(statements, last) =>
-            TreeBuilder(tag, typeName, t"Block", tree)
+            TreeBuilder(tag, typeName, "Block", tree)
             . children(statements*)
             . add('r', last)
 
           case ByName(result) =>
-            TreeBuilder(tag, typeName, t"ByName", tree)
+            TreeBuilder(tag, typeName, "ByName", tree)
             . children(result)
 
           case Closure(focus, tpe) =>
-            TreeBuilder(tag, typeName, t"Closure", tree)
+            TreeBuilder(tag, typeName, "Closure", tree)
             . children(focus)
 
           case Literal(value) =>
-            TreeBuilder(tag, typeName, t"Literal", tree, parameter = value.show.tt)
+            TreeBuilder(tag, typeName, "Literal", tree, parameter = value.show.tt)
 
           case Lambda(defs, term) =>
-            TreeBuilder(tag, typeName, t"Lambda", tree)
+            TreeBuilder(tag, typeName, "Lambda", tree)
             . add('a', defs*)
             . children(term)
 
           case LambdaTypeTree(tparams, body) =>
-            TreeBuilder(tag, typeName, t"LambdaTypeTree", tree)
+            TreeBuilder(tag, typeName, "LambdaTypeTree", tree)
             . add('a', tparams*)
             . children(body)
             . typeNode
 
           case TypeBoundsTree(low, high) =>
-            TreeBuilder(tag, typeName, t"TypeBoundsTree", tree)
+            TreeBuilder(tag, typeName, "TypeBoundsTree", tree)
             . add('l', low)
             . add('h', high)
             . typeNode
 
           case WildcardTypeTree() =>
-            TreeBuilder(tag, typeName, t"WildcardTypeTree", tree)
+            TreeBuilder(tag, typeName, "WildcardTypeTree", tree)
             . typeNode
 
           case TypeBind(name, tpt) =>
             val typeName = tpt.show.tt
-            TreeBuilder(tag, typeName, t"TypeBind", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, "TypeBind", tree, parameter = name.tt)
             . typed(tpt)
 
           case TypeBlock(aliases, tpt) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TreeBuilder(tag, typeName, t"TypeBlock", tree)
+            TreeBuilder(tag, typeName, "TypeBlock", tree)
             . add('a', aliases*)
             . typed(tpt)
             . typeNode
 
           case Match(selector, cases) =>
-            TreeBuilder(tag, typeName, t"Match", tree)
+            TreeBuilder(tag, typeName, "Match", tree)
             . add('s', selector)
             . add('c', cases*)
 
           case MatchTypeTree(bound, selector, cases) =>
-            TreeBuilder(tag, typeName, t"MatchTypeTree", tree)
+            TreeBuilder(tag, typeName, "MatchTypeTree", tree)
             . add('b', bound.to(List)*)
             . add('s', selector)
             . add('c', cases*)
@@ -422,46 +422,46 @@ object internal:
 
           case Applied(tpt, arguments) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TreeBuilder(tag, typeName, t"Applied", tree)
+            TreeBuilder(tag, typeName, "Applied", tree)
             . typed(tpt)
             . add('a', arguments*)
             . typeNode
 
           case Annotated(argument, annotation) =>
-            TreeBuilder(tag, typeName, t"Annotated", tree)
+            TreeBuilder(tag, typeName, "Annotated", tree)
             . add('a', argument)
             . children(annotation)
 
           case Repeated(elems, tpt) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TreeBuilder(tag, typeName, t"Repeated", tree)
+            TreeBuilder(tag, typeName, "Repeated", tree)
             . children(elems*)
             . typed(tpt)
 
           case Refined(tpt, refinements) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TreeBuilder(tag, typeName, t"Refined", tree)
+            TreeBuilder(tag, typeName, "Refined", tree)
             . typed(tpt)
             . add('m', refinements*)
             . typeNode
 
           case Return(expr, from) =>
-            TreeBuilder(tag, typeName, t"Return", tree)
+            TreeBuilder(tag, typeName, "Return", tree)
             . children(expr)
 
           case Unapply(fun, implicits, patterns) =>
-            TreeBuilder(tag, typeName, t"Unapply", tree)
+            TreeBuilder(tag, typeName, "Unapply", tree)
             . children(fun)
             . add('i', implicits*)
             . add('p', patterns*)
 
           case Alternatives(patterns) =>
-            TreeBuilder(tag, typeName, t"Alternatives", tree)
+            TreeBuilder(tag, typeName, "Alternatives", tree)
             . add('p', patterns*)
             . typeNode
 
           case TypeCaseDef(pattern, rhs) =>
-            TreeBuilder(tag, typeName, t"TypeCaseDef", tree)
+            TreeBuilder(tag, typeName, "TypeCaseDef", tree)
             . add('p', pattern)
             . children(rhs)
             . typeNode
@@ -471,33 +471,33 @@ object internal:
 
             val clauses = paramss.map:
               case TermParamClause(params) =>
-                TreeBuilder('a', typeName, t"TermParamClause", tree).add('a', params*)
+                TreeBuilder('a', typeName, "TermParamClause", tree).add('a', params*)
 
               case TypeParamClause(params) =>
-                TreeBuilder('t', typeName, t"TypeParamClause", tree).add('a', params*)
+                TreeBuilder('t', typeName, "TypeParamClause", tree).add('a', params*)
 
               case clause =>
                 panic(m"unexpected parameter clause: ${clause.toString}")
 
-            TreeBuilder(tag, typeName, t"DefDef", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, "DefDef", tree, parameter = name.tt)
             . copy(nodes = clauses.to(List))
             . typed(tpt)
             . children(rhs.to(List)*)
             . definition
 
           case SummonFrom(cases) =>
-            TreeBuilder(tag, typeName, t"SummonFrom", tree)
+            TreeBuilder(tag, typeName, "SummonFrom", tree)
             . add('c', cases*)
 
           case ValDef(name, tpt, rhs) =>
             val typeName = stenography.internal.name(tpt.tpe)
-            TreeBuilder(tag, typeName, t"ValDef", tree, parameter = name.tt)
+            TreeBuilder(tag, typeName, "ValDef", tree, parameter = name.tt)
             . typed(tpt)
             . children(rhs.to(List)*)
             . definition
 
           case CaseDef(pattern, guard, rhs) =>
-            TreeBuilder(tag, typeName, t"CaseDef", tree)
+            TreeBuilder(tag, typeName, "CaseDef", tree)
             . add('p', pattern)
             . add('g', guard.to(List)*)
             . children(rhs)
@@ -536,7 +536,7 @@ object internal:
       case New(tree)                => stenography.internal.name(tree.tpe).show
 
       case TypeApply(subject, params) =>
-        val params2 = params.map(_.tpe).map(stenography.internal.name(_)).join(t", ")
+        val params2 = params.map(_.tpe).map(stenography.internal.name(_)).join(", ")
         t"${render(subject)}[$params2]"
 
       case _ =>
@@ -625,7 +625,7 @@ object internal:
         then t"${position.sourceFile.name}:${position.start}"
         else t"${position.sourceFile.name}:${position.start}-${position.end}"
 
-      . getOrElse(t"")
+      . getOrElse("")
 
     val details: List[(Text, Text | List[Text])] =
       List

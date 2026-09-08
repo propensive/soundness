@@ -62,7 +62,7 @@ case class CaptionLayout(gap: Int, trailing: Boolean, elide: Boolean):
     val room = width - gaugeWidth - gap
     val label = if !elide then caption else shorten(caption, room, gauging)
     val text = gauging.tint(gauging.palette.caption)(Teletype(label))
-    val spacer = t" "*gap.max(0)
+    val spacer = " "*gap.max(0)
 
     val composed =
       if room <= 0 then gauge else if trailing then e"$gauge$spacer$text" else e"$text$spacer$gauge"
@@ -72,4 +72,4 @@ case class CaptionLayout(gap: Int, trailing: Boolean, elide: Boolean):
 
   private def shorten(caption: Text, room: Int, gauging: Gauging): Text =
     given Text is Measurable = gauging.metric
-    if room <= 0 then t"" else Flow.shorten(caption, room)
+    if room <= 0 then "" else Flow.shorten(caption, room)

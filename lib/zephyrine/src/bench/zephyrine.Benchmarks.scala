@@ -54,7 +54,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
 
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
+  given byteDesignation: Designation[Bytes[1]] = () => "B"
   given decimalizer:     Decimalizer            = Decimalizer(2)
   given device:          BenchmarkDevice        = LocalhostDevice
   given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga, Tera))
@@ -182,7 +182,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
 
   def cursorTake64(text: Text): Int =
     val c = Cursor(Iterator(text))
-    c.take(t"")(64).s.length
+    c.take("")(64).s.length
 
   // Walks `data10k` peeking each byte then advancing. Measures the safe
   // `peek` extension against the hand-rolled `if finished then -1 else

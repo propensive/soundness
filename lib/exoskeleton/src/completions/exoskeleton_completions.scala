@@ -90,11 +90,11 @@ def execute[result <: Termination: scala.Precise]
         given Stdio = invocation.stdio
 
         if !missing.nil then
-          Err.println(t"The following required options were not specified:")
+          Err.println("The following required options were not specified:")
           missing.each { flag => Err.println(t"  ${Flag.serialize(flag.name)}") }
 
         if !invalid.nil then
-          Err.println(t"The following options were given invalid values:")
+          Err.println("The following options were given invalid values:")
 
           invalid.each: (flag, message) =>
             Err.println(t"  ${Flag.serialize(flag.name)}: $message")
@@ -131,7 +131,7 @@ def helpTree
 
   def probe(prefix: List[Text]): Probe =
     val focus = prefix.size
-    val textArguments = prefix :+ t""
+    val textArguments = prefix :+ ""
     val synthesized = Cli.arguments(textArguments, focus, Unset, Prim)
 
     // A recording view of the environment: every variable the application reads while its
@@ -154,7 +154,7 @@ def helpTree
           focus,
           Unset,
           stdio,
-          t"",
+          "",
           Prim,
           login )
 
@@ -251,13 +251,13 @@ package executives:
 
       arguments match
         case
-          t"{completions}" :: t"powershell" :: As.Int(cursor) :: _ :: tty ::
-            t"--" ::
+          "{completions}" :: "powershell" :: As.Int(cursor) :: _ :: tty ::
+            "--" ::
             rawLine ::
             Nil =>
 
-          val parts0 = rawLine.cut(t" ")
-          val parts = if cursor > rawLine.length then parts0 :+ t"" else parts0
+          val parts0 = rawLine.cut(" ")
+          val parts = if cursor > rawLine.length then parts0 :+ "" else parts0
           // A single documented stdlib view: locating the cursor's word needs a running scan
           // and then several already-guarded positional reads over its result.
           val wordStarts = parts.stdlib.scanLeft(0){ (pos, w) => pos + w.length + 1 }.init
@@ -285,26 +285,26 @@ package executives:
               login )
 
         case
-          t"{completions}" :: shellName :: As.Int(focus0) :: As.Int(position0) :: tty ::
-            t"--" ::
+          "{completions}" :: shellName :: As.Int(focus0) :: As.Int(position0) :: tty ::
+            "--" ::
             command ::
             rest =>
 
             val shell = shellName match
-              case t"zsh"        => Shell.Zsh
-              case t"fish"       => Shell.Fish
-              case t"powershell" => Shell.Powershell
+              case "zsh"        => Shell.Zsh
+              case "fish"       => Shell.Fish
+              case "powershell" => Shell.Powershell
               case _             => Shell.Bash
 
             val focus1 =
-              if shell == Shell.Bash && rest.last == t"=" then focus0 + 1 else focus0
+              if shell == Shell.Bash && rest.last == "=" then focus0 + 1 else focus0
 
             def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
               case Nil                                 => done.reverse
-              case t"=" :: tail if shell == Shell.Bash => read(tail, false, done)
+              case "=" :: tail if shell == Shell.Bash => read(tail, false, done)
 
               case head :: tail =>
-                read(tail, head.starts(t"--"), head :: done)
+                read(tail, head.starts("--"), head :: done)
 
             val rest2 = read(rest, false, Nil)
 
@@ -312,7 +312,7 @@ package executives:
 
             val position = if shell == Shell.Bash then Unset else position0
             val tab = Completions.tab(tty, Completions.Tab(arguments, focus, position0))
-            val equalses = rest.keep(focus0).count(_ == t"=")
+            val equalses = rest.keep(focus0).count(_ == "=")
             val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
 
             Completion
@@ -328,25 +328,25 @@ package executives:
                 tab,
                 login )
 
-        case t"{admin}" :: command :: Nil =>
+        case "{admin}" :: command :: Nil =>
           given Stdio = stdio
 
           command match
-            case t"pid"     => Out.println(Process().pid.value.show) yet Exit.Ok
-            case t"kill"    => java.lang.System.exit(0) yet Exit.Ok
+            case "pid"     => Out.println(Process().pid.value.show) yet Exit.Ok
+            case "kill"    => java.lang.System.exit(0) yet Exit.Ok
 
-            case t"await" =>
+            case "await" =>
               Cli.prepare()
               import parasite.threading.platformThreading
               safely(parasite.supervise(Cli.await())).or(Nil).map(Out.println(_))
               Exit.Ok
 
-            case t"install" =>
+            case "install" =>
               given entrypoint0: (Entrypoint^{entrypoint}) = entrypoint
               given WorkingDirectory = workingDirectory
               import errorDiagnostics.stackTracesDiagnostics
               import logging.silentLogging
-              Out.println(Completions.ensure(force = true).join(t"\n"))
+              Out.println(Completions.ensure(force = true).join("\n"))
               Exit.Ok
 
             case _ =>

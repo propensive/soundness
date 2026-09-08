@@ -163,7 +163,7 @@ object internal:
           // `items` came over the stdlib bridge, so this chain is stdlib throughout. An
           // unqualified `Nil` is proscenium's opaque empty list, which makes `:::` resolve to
           // the opaque extension and reject the stdlib `middle`.
-          (top :: middle ::: bottom :: scala.Nil).join(t"\n")
+          (top :: middle ::: bottom :: scala.Nil).join("\n")
 
   extension [left](left: Vector[left, 3])
     def cross[right](right: Vector[right, 3])

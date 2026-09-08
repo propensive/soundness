@@ -84,70 +84,70 @@ object Tests extends Suite(m"Monotonous tests"):
     test(m"Serialize to Binary"):
       import alphabets.binaryStandard
       numbers.serialize[Binary]
-    . assert(_ == t"000000000000000100000010000000111000001110000010100000011000000011111100111111011111111011111111")
+    . assert(_ == "000000000000000100000010000000111000001110000010100000011000000011111100111111011111111011111111")
 
     test(m"Serialize to Octal"):
       import alphabets.octalStandard
       numbers.serialize[Octal]
-    . assert(_ == t"00000402007016024030037477377377")
+    . assert(_ == "00000402007016024030037477377377")
 
     test(m"Serialize to Hex"):
       import alphabets.hexLowerCase
       numbers.serialize[Hex]
-    . assert(_ == t"0001020383828180fcfdfeff")
+    . assert(_ == "0001020383828180fcfdfeff")
 
     test(m"Serialize to BASE32"):
       import alphabets.base32UpperCase
       numbers.serialize[Base32]
-    . assert(_ == t"AAAQEA4DQKAYB7H5737Q====")
+    . assert(_ == "AAAQEA4DQKAYB7H5737Q====")
 
     test(m"Serialize to BASE64"):
       import alphabets.base64Standard
       numbers.serialize[Base64]
-    . assert(_ == t"AAECA4OCgYD8/f7/")
+    . assert(_ == "AAECA4OCgYD8/f7/")
 
     import strategies.throwUnsafely
 
     test(m"Deserialize from Binary"):
       import alphabets.binaryStandard
-      t"000000000000000100000010000000111000001110000010100000011000000011111100111111011111111011111111".deserialize[Binary].to[List]
+      "000000000000000100000010000000111000001110000010100000011000000011111100111111011111111011111111".deserialize[Binary].to[List]
     . assert(_ == numberList)
 
     test(m"Deserialize from Octal"):
       import alphabets.octalStandard
-      t"00000402007016024030037477377377".deserialize[Octal].to[List]
+      "00000402007016024030037477377377".deserialize[Octal].to[List]
     . assert(_ == numberList)
 
     test(m"Deserialize from Hex"):
       import alphabets.hexLowerCase
-      t"0001020383828180fcfdfeff".deserialize[Hex].to[List]
+      "0001020383828180fcfdfeff".deserialize[Hex].to[List]
     . assert(_ == numberList)
 
     test(m"Deserialize from BASE32"):
       import alphabets.base32UpperCase
-      t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
+      "AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == numberList)
 
     test(m"Deserialize from BASE64"):
       import alphabets.base64Standard
-      t"AAECA4OCgYD8/f7/".deserialize[Base64].to[List]
+      "AAECA4OCgYD8/f7/".deserialize[Base64].to[List]
     . assert(_ == numberList)
 
     test(m"Tolerant BASE32"):
       import alphabets.base32LowerCase
-      t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
+      "AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == numberList)
 
     test(m"Intolerant BASE32"):
       capture[Serialization.Error]:
         import alphabets.base32StrictLowerCase
-        t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
+        "AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == Serialization.Error(0, 'A'))
 
     test(m"Bad character offset"):
       capture[Serialization.Error]:
         import alphabets.base32LowerCase
-        t"AAAQEA4?DQKAYB7H5737Q====".deserialize[Base32].to[List]
+        "AAAQEA4?DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == Serialization.Error(7, '?'))
 
     given Seed = Seed(1L)

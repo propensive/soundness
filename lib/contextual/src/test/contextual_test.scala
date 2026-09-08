@@ -93,31 +93,31 @@ object Tests extends Suite(m"Contextual Tests"):
     suite(m"Interpolation tests"):
       test(m"Interpolate a literal with no substitutions"):
         slug"hello"
-      . assert(_ == Slug(t"hello"))
+      . assert(_ == Slug("hello"))
 
       test(m"Interpolate an empty literal"):
         slug""
-      . assert(_ == Slug(t""))
+      . assert(_ == Slug(""))
 
       test(m"Interpolate a single substitution"):
-        val name = t"world"
+        val name = "world"
         slug"hello $name"
-      . assert(_ == Slug(t"hello world"))
+      . assert(_ == Slug("hello world"))
 
       test(m"Interpolate several substitutions"):
         val first = 1
         val second = 2
         slug"$first and $second"
-      . assert(_ == Slug(t"1 and 2"))
+      . assert(_ == Slug("1 and 2"))
 
       test(m"A substitution may start the literal"):
-        val prefix = t"pre"
+        val prefix = "pre"
         slug"${prefix}fix"
-      . assert(_ == Slug(t"prefix"))
+      . assert(_ == Slug("prefix"))
 
       test(m"A doubled dollar is a literal dollar"):
         slug"cost: $$5"
-      . assert(_ == Slug(t"cost: $$5"))
+      . assert(_ == Slug("cost: $5"))
 
       test(m"The transport tuple holds the parts in reverse order"):
         val hole = 1
@@ -131,36 +131,36 @@ object Tests extends Suite(m"Contextual Tests"):
 
     suite(m"Extrapolation tests"):
       test(m"A matching literal pattern succeeds"):
-        Slug(t"hello") match
-          case slug"hello" => t"matched"
-          case _           => t"unmatched"
-      . assert(_ == t"matched")
+        Slug("hello") match
+          case slug"hello" => "matched"
+          case _           => "unmatched"
+      . assert(_ == "matched")
 
       test(m"A non-matching literal pattern fails"):
-        Slug(t"goodbye") match
-          case slug"hello" => t"matched"
-          case _           => t"unmatched"
-      . assert(_ == t"unmatched")
+        Slug("goodbye") match
+          case slug"hello" => "matched"
+          case _           => "unmatched"
+      . assert(_ == "unmatched")
 
       test(m"An empty pattern matches only an empty value"):
-        Slug(t"") match
-          case slug"" => t"matched"
-          case _      => t"unmatched"
-      . assert(_ == t"matched")
+        Slug("") match
+          case slug"" => "matched"
+          case _      => "unmatched"
+      . assert(_ == "matched")
 
     suite(m"Embeddable tests"):
       test(m"Embed a value into its operand type"):
-        Tag.embeddable.embed(Tag(t"widget"))
-      . assert(_ == t"widget")
+        Tag.embeddable.embed(Tag("widget"))
+      . assert(_ == "widget")
 
       test(m"Contramap an embedding onto another type"):
         val embeddable = Tag.embeddable.contramap[Int](count => Tag(count.show))
         embeddable.embed(42)
-      . assert(_ == t"42")
+      . assert(_ == "42")
 
       test(m"An Embeddable value provides a Substitution"):
-        summon[Substitution[Text, Tag, "x"]].embed(Tag(t"widget"))
-      . assert(_ == t"widget")
+        summon[Substitution[Text, Tag, "x"]].embed(Tag("widget"))
+      . assert(_ == "widget")
 
     suite(m"Source-position mapping tests"):
       test(m"Unescaped text maps to itself"):

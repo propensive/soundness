@@ -84,7 +84,7 @@ object LiraAssembler:
 
     // Every message below is bound outside the combinator lambdas that use it: a `t"…"`
     // interpolation evaluated inside such a lambda trips the compiler's `wildApprox` assertion.
-    val noSections = t"a release needs at least one section"
+    val noSections = "a release needs at least one section"
     def divergence(realm: Text, key: Text): Text = t"$realm differs at $key"
 
     // `occupied` records the non-emptiness in the type, so `inputs.head` below is total.
@@ -234,7 +234,7 @@ object LiraAssembler:
           dependency  = dependency,
           delta       = deltaBlob.let { data => Lira.Hash(Lira.Hash.Domain.Blob, data) },
           section     = builtSections.map(_(0)),
-          payload     = Lira.Manifest.Payload(t"brotli", 0L, Lira.Hash(Lira.Hash.Domain.Blob,
+          payload     = Lira.Manifest.Payload("brotli", 0L, Lira.Hash(Lira.Hash.Domain.Blob,
               Array.freeze(Array.allocate[Byte](0)))) )
 
     // The producer never emits a file a consumer would reject: L131/L133/L135 are decidable

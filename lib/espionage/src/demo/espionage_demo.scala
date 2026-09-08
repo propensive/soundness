@@ -65,9 +65,9 @@ object DemoAcpClient:
 
         . apply:
             val session = connection.newSession(summon[WorkingDirectory].directory())
-            val text = arguments.map(_()).join(t" ")
+            val text = arguments.map(_()).join(" ")
             val stop = connection.prompt(session.sessionId, text)
-            Out.println(t"")
+            Out.println("")
             Out.println(t"The turn ended: $stop")
 
       Exit.Ok

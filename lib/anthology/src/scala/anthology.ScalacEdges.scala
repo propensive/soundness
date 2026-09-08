@@ -75,7 +75,7 @@ object scalacEdges:
   extends Tool:
     type Settings = Unit
 
-    def name: Text = t"scalac"
+    def name: Text = "scalac"
     def initial: Unit = ()
 
     def run
@@ -96,8 +96,8 @@ object scalacEdges:
         CompileEvents.relay(using linkEvents)
 
       mitigate:
-        case Compiler.Error() => Link.Error(Link.Error.Reason.CompilerUnusable(t"scalac"))
-        case Async.Error(_)   => Link.Error(Link.Error.Reason.CompilerUnusable(t"scalac"))
+        case Compiler.Error() => Link.Error(Link.Error.Reason.CompilerUnusable("scalac"))
+        case Async.Error(_)   => Link.Error(Link.Error.Reason.CompilerUnusable("scalac"))
 
       . protect:
           val process = scalac(classpath)(sources, out)

@@ -70,7 +70,7 @@ object Standing:
 
     // Draw one standing, padded to `width`.
     def draw(standing: Standing, width: Int, gauging: Gauging): Teletype =
-      fit(width, gauging).lay(Teletype(t" "*width.max(0))): marks =>
+      fit(width, gauging).lay(Teletype(" "*width.max(0))): marks =>
         val glyph = gauging.tint(gauging.palette.colorOf(standing))(Teletype(marks(standing)))
         val padding = width - marks.columns
         if padding > 0 then e"$glyph${t" "*padding}" else glyph

@@ -38,7 +38,7 @@ import prepositional.*
 
 object EncodableManifest:
   given mainClass: ("Main-Class" is EncodableManifest of Fqcn) = _.text
-  given manifestVersion: ("Manifest-Version" is EncodableManifest of Unit) = _ => "1.0".tt
+  given manifestVersion: ("Manifest-Version" is EncodableManifest of Unit) = _ => "1.0"
   given createdBy: ("Created-By" is EncodableManifest of Text) = identity(_)
 
 trait EncodableManifest extends Topical:

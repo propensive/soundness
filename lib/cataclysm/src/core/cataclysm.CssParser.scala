@@ -157,12 +157,12 @@ private[cataclysm] object CssParser:
         val body = nodes()
         if cursor.peek == '}' then cursor.advance() else fail(Css.Error.Reason.UnexpectedEnd)
 
-        if text.starts(t"@") then
+        if text.starts("@") then
           val (name, prelude) = atRule(text)
           Node.At(name, prelude, body)
         else
           Node.Rule(SelectorParser.parse(text), body)
-      else if text.starts(t"@") then
+      else if text.starts("@") then
         val (name, prelude) = atRule(text)
         Node.At(name, prelude, Unset)
       else if colonAt >= 0 then
@@ -171,14 +171,14 @@ private[cataclysm] object CssParser:
         if validating then validate(property, value)
         Node.Declaration(property, value)
       else
-        if validating then validate(text, t"")
-        Node.Declaration(text, t"")
+        if validating then validate(text, "")
+        Node.Declaration(text, "")
 
     // Check a declaration's property name and value, accumulating (via `raise`)
     // any error rather than aborting, so the rest of the stylesheet is still
     // read. Custom properties (`--…`) accept any value.
     private def validate(property: Text, value: Text): Unit =
-      if property.starts(t"--") then ()
+      if property.starts("--") then ()
       else PropertyDef.of(property) match
         case definition: PropertyDef =>
           SyntaxMatcher.check(definition, value) match
@@ -200,7 +200,7 @@ private[cataclysm] object CssParser:
       val body = text.s.substring(1).nn
       val space = body.indexOf(' ')
 
-      if space < 0 then (body.tt, t"")
+      if space < 0 then (body.tt, "")
       else (body.substring(0, space).nn.tt, body.substring(space + 1).nn.tt.trim)
 
     // Consume the body of a `/* … */` comment; the opening `/*` is already read.

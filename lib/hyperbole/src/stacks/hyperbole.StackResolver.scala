@@ -80,7 +80,7 @@ object StackResolver:
   // which survived compilation unchanged identifies its definition outright.
   def matches(method: Text, hint: Optional[Kind], definition: Tasty.Definition): Boolean =
     hint match
-      case Kind.Constructor => definition.name == t"<init>"
+      case Kind.Constructor => definition.name == "<init>"
       case Kind.Lambda      => definition.kind == Kind.Lambda
       case _                => definition.name == method
 
@@ -92,7 +92,7 @@ object StackResolver:
   def display(name: Text): Text =
     val stripped = if name.s.endsWith("$") then name.s.dropRight(1).nn else name.s
 
-    if stripped == "<init>" then t"ⲛ"
+    if stripped == "<init>" then "ⲛ"
     else if stripped.contains("$") then StackTrace.rewrite(stripped)
     else stripped.tt
 
@@ -129,9 +129,9 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
             // frame's owner, but only the compiled name can name the frame itself.
             if definition.kind == Kind.Class then
               val name = StackResolver.display(definition.name)
-              ((chain :+ name).join(t"."), frame.method.method)
+              ((chain :+ name).join("."), frame.method.method)
             else
-              (chain.join(t"."), StackResolver.display(definition.name))
+              (chain.join("."), StackResolver.display(definition.name))
 
         frame.copy(source = StackTrace.Frame.Source(path, owner, name, kind, code))
 
@@ -175,7 +175,7 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
   :   Optional[StackTrace.Frame.Source] =
 
     tasty.covering(line).prim.let: definition =>
-      val owner = definition.owners.reverse.map(StackResolver.display).join(t".")
+      val owner = definition.owners.reverse.map(StackResolver.display).join(".")
       val name = StackResolver.display(definition.name)
 
       StackTrace.Frame.Source(path, owner, name, definition.kind, sourceLine(path, line))
@@ -209,4 +209,4 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
     sourceFiles.synchronized:
       sourceFiles.getOrElseUpdate
        ( path,
-         safely(path.as[Path on Linux].read[Text].cut(t"\n").to[Sequence]) )
+         safely(path.as[Path on Linux].read[Text].cut("\n").to[Sequence]) )

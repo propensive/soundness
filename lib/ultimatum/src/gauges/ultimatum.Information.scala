@@ -50,4 +50,4 @@ val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
 // Single-canonical, and structurally un-anchorable: the subject is a type declared in this file
 // but the typeclass belongs to `quantitative`, so there is no companion for it to live in. Named
 // distinctly for that reason, per the given-placement rules.
-given informationDesignation: Designation[Bytes[1]] = () => t"B"
+given informationDesignation: Designation[Bytes[1]] = () => "B"

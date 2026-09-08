@@ -52,7 +52,7 @@ object Elicitable extends Elicitable2:
   given boolean: Boolean is Elicitable:
     type Operand = Checkbox
 
-    def input(value: Boolean): Text = if value then t"on" else t""
+    def input(value: Boolean): Text = if value then "on" else ""
     def widget(id: Text, label: Text, value: Text): Checkbox = Checkbox(id, value)
 
   given enumerable: [enumerable: Enumerable] => enumerable is Elicitable:

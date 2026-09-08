@@ -112,7 +112,7 @@ object YamlPath extends Root(""):
 
         index += 1
 
-      val segments = text.skip(1).cut(t"/").filter(_ != t"")
+      val segments = text.skip(1).cut("/").filter(_ != "")
 
       // Build with root `/`, matching the derivation's `prepend`, so the
       // slashless encoder (`#${path}`) renders `#/a/b`. The whole-document path

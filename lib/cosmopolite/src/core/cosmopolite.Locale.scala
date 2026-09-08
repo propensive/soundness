@@ -48,10 +48,10 @@ object Locale:
     locale => ("Locale(".s+locale.language.code.s+")").tt
 
   given decodable: Locale[en & pl & fr & de & es] is Decodable in Text =
-    case t"pl" => Locale(pl)
-    case t"fr" => Locale(fr)
-    case t"de" => Locale(de)
-    case t"es" => Locale(es)
+    case "pl" => Locale(pl)
+    case "fr" => Locale(fr)
+    case "de" => Locale(de)
+    case "es" => Locale(es)
     case _     => Locale(en)
 
 case class Locale[-language](language: Language) extends Findable

@@ -37,10 +37,10 @@ import spectacular.*
 
 object CardinalWind:
   given showable: CardinalWind is Showable =
-    case North => t"↑"
-    case East  => t"→"
-    case South => t"↓"
-    case West  => t"←"
+    case North => "↑"
+    case East  => "→"
+    case South => "↓"
+    case West  => "←"
 
 enum CardinalWind:
   case North, East, South, West

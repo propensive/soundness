@@ -66,13 +66,13 @@ object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence test
     val buffer = scala.collection.mutable.ListBuffer.empty[(String, String)]
 
     def recur(element: Tel.Element, prefix: String): Unit = element match
-      case Tel.Element.Value(idx, _, text) => buffer += ((prefix + ("/": String) + idx, text.s))
+      case Tel.Element.Value(idx, _, text) => buffer += ((prefix + s"/$idx", text.s))
 
       case Tel.Element.Node(idx, Tels.Flag, _) =>
-        buffer += ((prefix + ("/": String) + idx.or(-1), "+"))
+        buffer += ((prefix + s"/" + idx.or(-1), "+"))
 
       case Tel.Element.Node(idx, _, children) =>
-        val next = idx.lay(prefix)(prefix + ("/": String) + _)
+        val next = idx.lay(prefix)(prefix + s"/" + _)
         var i = 0
 
         while i < children.length do
@@ -111,9 +111,9 @@ object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence test
 
       test(m"positional atoms agree across codecs and type assignment (#1694)"):
         equivalent[PDelivery]
-         ( t"recipient  Acme Corporation\n  address  1 Acme Way\n",
-           Tels.tels[PDelivery](t"delivery"),
-           PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")),
+         ( "recipient  Acme Corporation\n  address  1 Acme Way\n",
+           Tels.tels[PDelivery]("delivery"),
+           PDelivery(PRecipient("Acme Corporation", "1 Acme Way")),
            scala.collection.immutable.List
             ( ("#/0/0", "Acme Corporation"),
               ("#/0/1", "1 Acme Way") ) )
@@ -121,9 +121,9 @@ object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence test
 
       test(m"a repeatable split between atoms and children agrees"):
         equivalent[PLogBook]
-         ( t"log lbl 1\n  values 2\n",
-           Tels.tels[PLogBook](t"logbook"),
-           PLogBook(PLog(t"lbl", List(1, 2))),
+         ( "log lbl 1\n  values 2\n",
+           Tels.tels[PLogBook]("logbook"),
+           PLogBook(PLog("lbl", List(1, 2))),
            scala.collection.immutable.List
             ( ("#/0/0", "lbl"),
               ("#/0/1", "1"),
@@ -131,22 +131,22 @@ object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence test
       . assert(identity)
 
       test(m"the canonical form validates against the derived schema"):
-        val doc = Tel.canonical(PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")))
-        validateAssign(doc, Tels.tels[PDelivery](t"delivery")).items.size
+        val doc = Tel.canonical(PDelivery(PRecipient("Acme Corporation", "1 Acme Way")))
+        validateAssign(doc, Tels.tels[PDelivery]("delivery")).items.size
       . assert(_ == 0)
 
       test(m"a source atom agrees across codecs and type assignment"):
         equivalent[PNote]
-         ( t"body\n    line one\n    line two\n",
-           Tels.tels[PNote](t"note"),
-           PNote(t"line one\nline two"),
+         ( "body\n    line one\n    line two\n",
+           Tels.tels[PNote]("note"),
+           PNote("line one\nline two"),
            scala.collection.immutable.List(("#/0", "line one\nline two")) )
       . assert(identity)
 
     suite(m"Codec/assign equivalence (negative)"):
       test(m"both layers reject an atom overflow with E302"):
-        val doc = t"recipient a b c\n"
-        val schema = Tels.tels[PDelivery](t"delivery")
+        val doc = "recipient a b c\n"
+        val schema = Tels.tels[PDelivery]("delivery")
         val schemaReasons = validateAssign(doc.read[Tel], schema).items.map(_(1).reason).to[Set]
         val codecReason = capture[Tel.Error](doc.read[Tel].as[PDelivery]).reason
         (schemaReasons, codecReason)
@@ -160,18 +160,18 @@ object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence test
       // E311.
       test(m"a Boolean field's encoding validates and decodes back"):
         val encoded = PFlags(true, Unset).encode
-        val issues = validateAssign(encoded, Tels.tels[PFlags](t"flags")).items.size
+        val issues = validateAssign(encoded, Tels.tels[PFlags]("flags")).items.size
         (encoded.as[PFlags], issues)
       . assert(_ == (PFlags(true, Unset), 0))
 
       test(m"a false Boolean's encoding validates against the derived schema"):
         val encoded = PFlags(false, false).encode
-        val issues = validateAssign(encoded, Tels.tels[PFlags](t"flags")).items.size
+        val issues = validateAssign(encoded, Tels.tels[PFlags]("flags")).items.size
         (encoded.as[PFlags], issues)
       . assert(_ == (PFlags(false, false), 0))
 
       test(m"a record of scalars, collections and nested records validates"):
-        val value = PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way"))
-        val issues = validateAssign(value.encode, Tels.tels[PDelivery](t"delivery")).items.size
+        val value = PDelivery(PRecipient("Acme Corporation", "1 Acme Way"))
+        val issues = validateAssign(value.encode, Tels.tels[PDelivery]("delivery")).items.size
         (value.encode.as[PDelivery], issues)
-      . assert(_ == (PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")), 0))
+      . assert(_ == (PDelivery(PRecipient("Acme Corporation", "1 Acme Way")), 0))

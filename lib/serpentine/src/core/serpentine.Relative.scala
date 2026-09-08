@@ -71,7 +71,7 @@ object Relative:
     text =>
       if text == filesystem.self then ? else
         text.cut(filesystem.separator).stdlib.pipe: parts =>
-          (if parts.last == t"" then parts.init else parts).pipe: parts =>
+          (if parts.last == "" then parts.init else parts).pipe: parts =>
             if parts.isEmpty then Relative(0) else
               (if parts.head == filesystem.self then parts.tail else parts).pipe: parts =>
                 val ascent = parts.takeWhile(_ == filesystem.parent).length
@@ -95,7 +95,7 @@ object Relative:
         . descent
         . stdlib
         . reverse
-        . join(ascender*relative.ascent, filesystem.separator, t"")
+        . join(ascender*relative.ascent, filesystem.separator, "")
 
   given showable: [filesystem: Filesystem, relative <: Relative on filesystem]
   =>  relative is Showable =
@@ -110,8 +110,8 @@ object Relative:
   // path — regardless of the filesystem the value is (or is not) qualified with.
   given inspectable: [relative <: Relative] => relative is Inspectable = relative =>
     if relative.descent.nil then
-      if relative.ascent == 0 then t"." else List.fill(relative.ascent)(t"..").join(t"/")
-    else relative.descent.reverse.join(t"../"*relative.ascent, t"/", t"")
+      if relative.ascent == 0 then "." else List.fill(relative.ascent)("..").join("/")
+    else relative.descent.reverse.join("../"*relative.ascent, "/", "")
 
   // The explicit type ascription after this method is used to force silent failure of this `given`
   // definition, so that contextual search can continue normally if it fails. This would not be the

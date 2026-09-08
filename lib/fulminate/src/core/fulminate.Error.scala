@@ -70,13 +70,13 @@ extends Exception(message.text.s, cause, false, diagnostics.captureStack), caps.
   def component: Text = List.head(fullClass)
 
   def errorCode: Text =
-    if d == 0 then "".tt
+    if d == 0 then ""
     else
       val ePart = if e == 0 then "" else s".$e"
       f"SN-$d%03d$ePart".tt
 
   def colourCode: Text =
-    if d == 0 then "".tt
+    if d == 0 then ""
     else
       val hyperlink = false
       val esc = 27.toChar

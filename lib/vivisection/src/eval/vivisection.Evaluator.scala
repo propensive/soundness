@@ -61,16 +61,16 @@ object Evaluator:
 
     // Discovered once and reused for every classfile of an evaluation.
     private lazy val byteArrayType: ReferenceTypeId =
-      loaded(t"[B")
+      loaded("[B")
 
     private lazy val classLoaderClass: ReferenceTypeId =
-      loaded(t"Ljava/lang/ClassLoader;")
+      loaded("Ljava/lang/ClassLoader;")
 
     private lazy val defineClass: MethodId =
-      val signature = t"(Ljava/lang/String;[BII)Ljava/lang/Class;"
+      val signature = "(Ljava/lang/String;[BII)Ljava/lang/Class;"
 
       val found = connection.methods(classLoaderClass).seek: method =>
-        method.name == t"defineClass" && method.signature == signature
+        method.name == "defineClass" && method.signature == signature
 
       found.let(_.method).or(Jdwp.Ref.empty)
 
@@ -122,10 +122,10 @@ extends caps.ExclusiveCapability:
   private def packageOf(signature: Text): Text =
     val body = signature.s.substring(1, signature.s.length - 1).nn
     val slash = body.lastIndexOf('/')
-    if slash < 0 then t"" else body.substring(0, slash).nn.replace('/', '.').nn.tt
+    if slash < 0 then "" else body.substring(0, slash).nn.replace('/', '.').nn.tt
 
   def apply(expression: Text): Variable.Snapshot =
-    execute(t"java.lang.String.valueOf(($expression): scala.Any)", t"java.lang.String") match
+    execute(t"java.lang.String.valueOf(($expression): scala.Any)", "java.lang.String") match
       case Jdwp.Value.Reference(Jdwp.Tag.StringTag, id) if !id.empty =>
         Variable.Snapshot.Str(id, connection.stringValue(Jdwp.Ref(id.long)))
 
@@ -156,7 +156,7 @@ extends caps.ExclusiveCapability:
       table.lay(List[(Text, Text, Jdwp.Value)]()): table =>
         val live = table.slots.filter: slot =>
           val index = location.index
-          slot.name != t"this" && slot.index <= index && index < slot.index + slot.length
+          slot.name != "this" && slot.index <= index && index < slot.index + slot.length
 
         val requests: List[(Int, Jdwp.Tag)] =
           live.map: slot => (slot.slot, Variable.tag(slot.signature))
@@ -206,7 +206,7 @@ extends caps.ExclusiveCapability:
 
       val loader = classLoaderFor(location.cls)
       val injector = Evaluator.Injector(connection, thread, loader)
-      val qualified = if pkg == t"" then className else t"$pkg.$className"
+      val qualified = if pkg == "" then className else t"$pkg.$className"
 
       // Define every classfile. `defineClass` loads without linking, so the entry class is then
       // forced through `Class.forName(name, true, loader)` to prepare it, after which its methods
@@ -219,8 +219,8 @@ extends caps.ExclusiveCapability:
         if path.encode.s.endsWith(".class") then injector.define(classNameOf(path.encode), bytecode)
 
       val cls = prepared(qualified, loader)
-      val constructor = connection.methods(cls).seek(_.name == t"<init>").let(_.method)
-      val run = connection.methods(cls).seek(_.name == t"run").let(_.method)
+      val constructor = connection.methods(cls).seek(_.name == "<init>").let(_.method)
+      val run = connection.methods(cls).seek(_.name == "run").let(_.method)
       val arguments: List[Jdwp.Value] = locals.map: (_, _, value) => value
 
       constructor.let: ctor =>
@@ -285,9 +285,9 @@ extends caps.ExclusiveCapability:
   // object back to its reference type. `defineClass` alone leaves the class loaded but unprepared,
   // so its method table cannot yet be read.
   private def prepared(qualified: Text, loader: ClassLoaderId): ReferenceTypeId =
-    val classClass = loadedType(t"Ljava/lang/Class;")
-    val descriptor = t"(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;"
-    val forName = methodId(classClass, t"forName", descriptor)
+    val classClass = loadedType("Ljava/lang/Class;")
+    val descriptor = "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;"
+    val forName = methodId(classClass, "forName", descriptor)
     val nameString = connection.createString(qualified)
     val nameArg = Jdwp.Value.Reference(Jdwp.Tag.StringTag, Jdwp.Ref(nameString.long))
     val loaderArg = Jdwp.Value.Reference(Jdwp.Tag.ObjectTag, Jdwp.Ref(loader.long))
@@ -303,8 +303,8 @@ extends caps.ExclusiveCapability:
     val loader = connection.classLoader(cls)
 
     if !loader.empty then loader else
-      val classLoaderClass = loadedType(t"Ljava/lang/ClassLoader;")
-      val method = methodId(classLoaderClass, t"getSystemClassLoader", t"()Ljava/lang/ClassLoader;")
+      val classLoaderClass = loadedType("Ljava/lang/ClassLoader;")
+      val method = methodId(classLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;")
 
       connection.invokeStatic(classLoaderClass, thread, method, List()).result match
         case Jdwp.Value.Reference(_, id) => Jdwp.Ref(id.long)
@@ -329,11 +329,11 @@ extends caps.ExclusiveCapability:
     ( name: Text, pkg: Text, params: List[(Text, Text)], resultType: Text, body: Text )
   :   Text =
 
-    val parameters = params.map { (field, kind) => t"$field: $kind" }.join(t", ").s
+    val parameters = params.map { (field, kind) => t"$field: $kind" }.join(", ").s
 
     // `spectacular` is imported so `.inspect` resolves for the rendering path; an evaluation which
     // does not use it simply leaves the import unused.
     val imports = "import spectacular.*\n\n"
-    val header = if pkg == t"" then imports else s"package ${pkg.s}\n\n$imports"
+    val header = if pkg == "" then imports else s"package ${pkg.s}\n\n$imports"
 
     s"${header}class ${name.s}($parameters):\n  def run(): ${resultType.s} = ${body.s}\n".tt

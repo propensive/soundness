@@ -52,7 +52,7 @@ object Directories:
 
 
   def homeText(using system: System): Text =
-    system(t"user.home").or(panic(m"the `user.home` system property is not set"))
+    system("user.home").or(panic(m"the `user.home` system property is not set"))
 
 
   def dataHome[path](using instantiable: (path is Instantiable across Paths from Text)^)
@@ -112,16 +112,16 @@ object Directories:
 
 
   private def isWindows(using system: System): Boolean =
-    system(t"os.name").or(t"").lower.starts(t"windows")
+    system("os.name").or(t"").lower.starts("windows")
 
   private def localAppDataText(using environment: Environment, system: System): Text =
-    safely(Environment[Text](t"LOCALAPPDATA")).or(t"${homeText}\\AppData\\Local")
+    safely(Environment[Text]("LOCALAPPDATA")).or(t"${homeText}\\AppData\\Local")
 
   private def roamingAppDataText(using environment: Environment, system: System): Text =
-    safely(Environment[Text](t"APPDATA")).or(t"${homeText}\\AppData\\Roaming")
+    safely(Environment[Text]("APPDATA")).or(t"${homeText}\\AppData\\Roaming")
 
   private def programDataText(using environment: Environment): Text =
-    safely(Environment[Text](t"PROGRAMDATA")).or(t"C:\\ProgramData")
+    safely(Environment[Text]("PROGRAMDATA")).or(t"C:\\ProgramData")
 
 
   private def localAppData[path](using instantiable: (path is Instantiable across Paths from Text)^)

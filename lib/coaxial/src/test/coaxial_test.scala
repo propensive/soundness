@@ -94,43 +94,43 @@ object Tests extends Suite(m"Coaxial tests"):
 
     suite(m"Transmissible serialization"):
       test(m"Data is transmitted as a single chunk"):
-        drained(summon[Data is Transmissible].serialize(ascii(t"abc")))
-      . assert(_ == bytes(ascii(t"abc")))
+        drained(summon[Data is Transmissible].serialize(ascii("abc")))
+      . assert(_ == bytes(ascii("abc")))
 
       test(m"A Chain[Data] is transmitted unchanged"):
-        val stream = Chain(ascii(t"ab"), ascii(t"cd"))
+        val stream = Chain(ascii("ab"), ascii("cd"))
         drained(summon[Chain[Data] is Transmissible].serialize(stream))
-      . assert(_ == bytes(ascii(t"abcd")))
+      . assert(_ == bytes(ascii("abcd")))
 
       test(m"Text is transmitted via its character encoding"):
-        drained(summon[Text is Transmissible].serialize(t"hello"))
-      . assert(_ == bytes(ascii(t"hello")))
+        drained(summon[Text is Transmissible].serialize("hello"))
+      . assert(_ == bytes(ascii("hello")))
 
       test(m"An Encodable value is transmitted via its Text encoding"):
         drained(summon[Port is Transmissible].serialize(Port.unsafe[Tcp](8080)))
-      . assert(_ == bytes(ascii(t"8080")))
+      . assert(_ == bytes(ascii("8080")))
 
       test(m"contramap adapts a Transmissible to a new source type"):
         val ints: Int is Transmissible = summon[Text is Transmissible].contramap[Int](_.show)
         drained(ints.serialize(42))
-      . assert(_ == bytes(ascii(t"42")))
+      . assert(_ == bytes(ascii("42")))
 
     suite(m"Ingressive deserialization"):
       test(m"Data is received as identity"):
-        bytes(Ingressive.bytes.deserialize(ascii(t"xyz")))
-      . assert(_ == bytes(ascii(t"xyz")))
+        bytes(Ingressive.bytes.deserialize(ascii("xyz")))
+      . assert(_ == bytes(ascii("xyz")))
 
       test(m"Text is received via its character encoding"):
-        Ingressive.text.deserialize(ascii(t"hello"))
-      . assert(_ == t"hello")
+        Ingressive.text.deserialize(ascii("hello"))
+      . assert(_ == "hello")
 
       test(m"A Decodable value is received via its Text decoding"):
-        Ingressive.decoder[Port].deserialize(ascii(t"443")).number
+        Ingressive.decoder[Port].deserialize(ascii("443")).number
       . assert(_ == 443)
 
       test(m"map adapts an Ingressive to a new result type"):
         val lengths: Int is Ingressive = Ingressive.text.map[Int](_.length)
-        lengths.deserialize(ascii(t"hello"))
+        lengths.deserialize(ascii("hello"))
       . assert(_ == 5)
 
     suite(m"Control state machine"):
@@ -147,28 +147,28 @@ object Tests extends Suite(m"Coaxial tests"):
       . assert(_ == true)
 
       test(m"Reply from Data stores the message bytes verbatim"):
-        bytes(Reply(ascii(t"hi"), 3).message)
-      . assert(_ == bytes(ascii(t"hi")))
+        bytes(Reply(ascii("hi"), 3).message)
+      . assert(_ == bytes(ascii("hi")))
 
       test(m"Conclude from Data stores the message bytes verbatim"):
-        bytes(Conclude(ascii(t"bye"), 3).message)
-      . assert(_ == bytes(ascii(t"bye")))
+        bytes(Conclude(ascii("bye"), 3).message)
+      . assert(_ == bytes(ascii("bye")))
 
       test(m"Continue and Reply are Interactive"):
-        (Continue(1).isInstanceOf[Interactive], Reply(ascii(t"x"), 1).isInstanceOf[Interactive])
+        (Continue(1).isInstanceOf[Interactive], Reply(ascii("x"), 1).isInstanceOf[Interactive])
       . assert(_ == (true, true))
 
       test(m"Conclude is not Interactive"):
-        Conclude(ascii(t"x"), 1).isInstanceOf[Interactive]
+        Conclude(ascii("x"), 1).isInstanceOf[Interactive]
       . assert(_ == false)
 
       test(m"Reply serializes a Transmissible (Text) message"):
-        bytes(Reply(t"hi", 1).message)
-      . assert(_ == bytes(ascii(t"hi")))
+        bytes(Reply("hi", 1).message)
+      . assert(_ == bytes(ascii("hi")))
 
       test(m"Conclude serializes a Transmissible (Text) message"):
-        bytes(Conclude(t"bye", 1).message)
-      . assert(_ == bytes(ascii(t"bye")))
+        bytes(Conclude("bye", 1).message)
+      . assert(_ == bytes(ascii("bye")))
 
     suite(m"UdpResponse"):
       test(m"Ignore is a distinct response"):
@@ -176,40 +176,40 @@ object Tests extends Suite(m"Coaxial tests"):
       . assert(_ == UdpResponse.Ignore)
 
       test(m"Reply carries its payload"):
-        UdpResponse.Reply(ascii(t"pong")) match
+        UdpResponse.Reply(ascii("pong")) match
           case UdpResponse.Reply(data) => bytes(data)
           case UdpResponse.Ignore      => Nil
-      . assert(_ == bytes(ascii(t"pong")))
+      . assert(_ == bytes(ascii("pong")))
 
     suite(m"Packet"):
       test(m"A Packet exposes its data, sender and port"):
-        val packet = Packet(ascii(t"payload"), ip"192.168.0.1", Port.unsafe[Udp](9999))
+        val packet = Packet(ascii("payload"), ip"192.168.0.1", Port.unsafe[Udp](9999))
         (bytes(packet.data), packet.sender, packet.port.number)
-      . assert(_ == (bytes(ascii(t"payload")), ip"192.168.0.1", 9999))
+      . assert(_ == (bytes(ascii("payload")), ip"192.168.0.1", 9999))
 
     suite(m"DomainSocket"):
       test(m"A DomainSocket endpoint pairs a socket with a path"):
         val socket = DomainSocket(t"/var/run/docker.sock")
-        socket.at(t"/info") == DomainSocket.Endpoint(socket, t"/info")
+        socket.at("/info") == DomainSocket.Endpoint(socket, "/info")
       . assert(_ == true)
 
     suite(m"Bind.Error"):
       test(m"PortInUse has a descriptive message"):
         Bind.Error.Reason.PortInUse.communicate.text
-      . assert(_ == t"another process is already bound to the port")
+      . assert(_ == "another process is already bound to the port")
 
       test(m"PermissionDenied has a descriptive message"):
         Bind.Error.Reason.PermissionDenied.communicate.text
-      . assert(_ == t"the user does not have permission to bind the port")
+      . assert(_ == "the user does not have permission to bind the port")
 
       test(m"AddressUnavailable has a descriptive message"):
         Bind.Error.Reason.AddressUnavailable.communicate.text
-      . assert(_ == t"the requested address is not available on this host")
+      . assert(_ == "the requested address is not available on this host")
 
       test(m"A Bind.Error incorporates its reason"):
         Bind.Error(Bind.Error.Reason.PortInUse).message.text
-      . assert(_ == t"the socket could not be bound because another process is already "+
-          t"bound to the port")
+      . assert(_ == "the socket could not be bound because another process is already "+
+          "bound to the port")
 
     supervise:
       suite(m"UDP server and client"):
@@ -219,7 +219,7 @@ object Tests extends Suite(m"Coaxial tests"):
 
           val handler = (packet: Packet) =>
             received.fulfill(packet.data.utf8)
-            UdpResponse.Reply(ascii(t"ack"))
+            UdpResponse.Reply(ascii("ack"))
 
           port.listen[Data](handler):
 
@@ -228,23 +228,23 @@ object Tests extends Suite(m"Coaxial tests"):
             // makes any type conform to `Unit`, the `Routable` overload is not
             // reachable by ascription, so its given is exercised directly here.
             val routable = summon[Udp.Port is Routable]
-            routable.transmit(routable.connect(port, Unset), zephyrine.Stream(ascii(t"ping")))
+            routable.transmit(routable.connect(port, Unset), zephyrine.Stream(ascii("ping")))
             received.await()
-        . assert(_ == t"ping")
+        . assert(_ == "ping")
 
       suite(m"TCP server and client"):
         test(m"A client reacts to the server's pushed message"):
           val port = Port[Tcp]()
-          port.listen[Data](socket => ascii(t"greeting")):
+          port.listen[Data](socket => ascii("greeting")):
             val received: Data = port.react(Data())[Data]: message =>
-              Conclude(ascii(t""), message)
+              Conclude(ascii(""), message)
 
             bytes(received)
-        . assert(_ == bytes(ascii(t"greeting")))
+        . assert(_ == bytes(ascii("greeting")))
 
       suite(m"Unix domain socket server and client"):
         test(m"A server receives the bytes a client transmits"):
-          val path = t"/tmp/coaxial-request-response.sock"
+          val path = "/tmp/coaxial-request-response.sock"
           java.nio.file.Files.deleteIfExists(java.nio.file.Path.of(path.s))
           val socket = DomainSocket(path)
           val received: Promise[Text] = Promise()
@@ -258,13 +258,13 @@ object Tests extends Suite(m"Coaxial tests"):
 
             // The ascription selects the `Serviceable` overload of `transmit`; the
             // client half-closes after sending, so the server reads to EOF.
-            val _: zephyrine.Stream[Data] over zephyrine.Credit = socket.transmit(t"request")
+            val _: zephyrine.Stream[Data] over zephyrine.Credit = socket.transmit("request")
             received.await()
-        . assert(_ == t"request")
+        . assert(_ == "request")
 
       suite(m"Duplex connections"):
         test(m"A Duplex sends and receives over a domain socket"):
-          val path = t"/tmp/coaxial-duplex.sock"
+          val path = "/tmp/coaxial-duplex.sock"
           java.nio.file.Files.deleteIfExists(java.nio.file.Path.of(path.s))
           val socket = DomainSocket(path)
 
@@ -277,7 +277,7 @@ object Tests extends Suite(m"Coaxial tests"):
           socket.listen[Data](handler):
 
             socket.duplex: duplex =>
-              duplex.send(zephyrine.Stream(ascii(t"ping")))
+              duplex.send(zephyrine.Stream(ascii("ping")))
 
               // One refill window is the server's single reply.
               val source = duplex.source
@@ -286,7 +286,7 @@ object Tests extends Suite(m"Coaxial tests"):
                 source.lend { region => range => region.materialize(range.capped(count)) }
 
               bytes(data)
-        . assert(_ == bytes(ascii(t"ping")))
+        . assert(_ == bytes(ascii("ping")))
 
     suite(m"Socket options"):
       test(m"reuseAddress sets SO_REUSEADDR on a configured TCP server socket"):
@@ -341,4 +341,4 @@ object Tests extends Suite(m"Coaxial tests"):
 
       test(m"A domain socket shows its path, marked as an endpoint"):
         DomainSocket(t"/tmp/example.sock").inspect
-      . assert(_ == t"⇄/tmp/example.sock")
+      . assert(_ == "⇄/tmp/example.sock")

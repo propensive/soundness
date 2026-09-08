@@ -57,7 +57,7 @@ object Tests extends Suite(m"Cosmopolite tests"):
 
       test(m"Polish uppercase is a tertiary difference: ó < Ó"):
         given Locale[pl] = Locale(pl)
-        t"ó" < t"Ó"
+        "ó" < "Ó"
       . assert(_ == true)
 
       test(m"Spanish ñ sorts as a letter between n and o"):
@@ -72,7 +72,7 @@ object Tests extends Suite(m"Cosmopolite tests"):
 
       test(m"German umlauts differ at the secondary level"):
         given Locale[de] = Locale(de)
-        (t"äb" > t"ab", t"äa" < t"ab")
+        ("äb" > "ab", "äa" < "ab")
       . assert(_ == (true, true))
 
       // Forward secondary accents: modern CLDR French. The reversed relative order of coté
@@ -89,4 +89,4 @@ object Tests extends Suite(m"Cosmopolite tests"):
         def first: Text via pl = proscenium.List(t"ó", t"oz").minimum.or(t"")
         given Locale[pl] = Locale(pl)
         first
-      . assert(_ == t"oz")
+      . assert(_ == "oz")

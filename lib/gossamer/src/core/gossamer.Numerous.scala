@@ -37,6 +37,6 @@ import scala.language.experimental.pureFunctions
 
 import anticipation.*
 
-case class Numerous(word: Text, pluralEnd: Text = "s".tt, singularEnd: Text = "".tt):
+case class Numerous(word: Text, pluralEnd: Text = "s", singularEnd: Text = ""):
   def apply(elements: Iterable[?]): Text = apply(elements.size)
   def apply(value: Int): Text = Text(word.s+(if value == 1 then singularEnd.s else pluralEnd.s))

@@ -82,8 +82,8 @@ object Strain:
       // axis, so a sweep's steps accumulate as cells of one entry. If the producer already
       // supplied an `N` coordinate, it is respected.
       val coordinates2 =
-        if coordinates.exists(_(0).label == t"N") then coordinates else
-          val axis = Axis.Spec(t"N", Axis.Domain.Integral, emergent = true)
+        if coordinates.exists(_(0).label == "N") then coordinates else
+          val axis = Axis.Spec("N", Axis.Domain.Integral, emergent = true)
           coordinates :+ (axis -> Value.Integral(strain.concurrency))
 
       report.emit:

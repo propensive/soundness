@@ -156,18 +156,18 @@ object Markdown:
 
   given inspectable: [markdown <: Markdown] => markdown is Inspectable = markdown =>
     val entries:  List[Text] = markdown.linkRefs.map(inspectLinkRef(_))
-    val linkRefs: Text       = entries.join(t"[", t", ", t"]")
+    val linkRefs: Text       = entries.join("[", ", ", "]")
 
     t"Markdown(linkRefs:$linkRefs ╱ children:${inspectNodes(markdown.children)})"
 
   private def inspectNodes[node <: Markdown.Node](nodes: List[node]): Text =
     val entries: List[Text] = nodes.map(inspectNode(_))
-    entries.join(t"[", t", ", t"]")
+    entries.join("[", ", ", "]")
 
   private def inspectNode(node: Markdown.Node): Text = node match
     case Prose.Textual(text)    => t"Textual(${text.inspect})"
-    case Prose.Softbreak        => t"Softbreak"
-    case Prose.Linebreak        => t"Linebreak"
+    case Prose.Softbreak        => "Softbreak"
+    case Prose.Linebreak        => "Linebreak"
     case Prose.Code(code)       => t"Code(${code.inspect})"
     case Prose.HtmlInline(html) => t"HtmlInline(${html.inspect})"
     case Prose.Emphasis(prose*) => t"Emphasis(${inspectNodes(prose.toList.to(List))})"

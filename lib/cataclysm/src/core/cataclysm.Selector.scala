@@ -46,7 +46,7 @@ import vacuous.*
 // `Compound` (simple selectors with no whitespace between them, the tightest).
 
 object SelectorList:
-  given showable: SelectorList is Showable = selectorList => selectorList.selectors.map(_.show).join(t", ")
+  given showable: SelectorList is Showable = selectorList => selectorList.selectors.map(_.show).join(", ")
 
   // A non-raising parse of already-validated selector text, used by the `css"…"`
   // interpolator to rebuild a rule's selector at runtime.
@@ -57,7 +57,7 @@ case class SelectorList(selectors: List[Selector]) derives CanEqual
 object Selector:
   given showable: Selector is Showable = selector =>
     val lead = selector.lead.lay(t""):
-      case Combinator.Descendant => t""
+      case Combinator.Descendant => ""
       case other                 => t"${other.show} "
 
     // `step` is a named method rather than a lambda: an interpolation inside a lambda passed to
@@ -89,11 +89,11 @@ derives CanEqual
 
 object Combinator:
   given showable: Combinator is Showable =
-    case Descendant        => t" "
-    case Child             => t">"
-    case NextSibling       => t"+"
-    case SubsequentSibling => t"~"
-    case Column            => t"||"
+    case Descendant        => " "
+    case Child             => ">"
+    case NextSibling       => "+"
+    case SubsequentSibling => "~"
+    case Column            => "||"
 
 enum Combinator derives CanEqual:
   case Descendant         //
@@ -121,15 +121,15 @@ object Simple:
     case Type(namespace, name)         => t"${prefix(namespace)}$name"
     case Id(name)                      => t"#$name"
     case Class(name)                   => t".$name"
-    case Nesting                       => t"&"
+    case Nesting                       => "&"
     case Attribute(namespace, name, t) => t"[${prefix(namespace)}$name${attributeTest(t)}]"
     case PseudoClass(name, argument)   => t":$name${pseudoArgument(argument)}"
     case PseudoElement(name, argument) => t"::$name${pseudoArgument(argument)}"
 
   // Render the optional namespace prefix of a type, universal or attribute selector.
   private def prefix(namespace: Optional[Prefix]): Text = namespace.lay(t""):
-    case Prefix.Any         => t"*|"
-    case Prefix.Default     => t"|"
+    case Prefix.Any         => "*|"
+    case Prefix.Default     => "|"
     case Prefix.Named(name) => t"$name|"
 
   private def attributeTest(test: Optional[AttributeTest]): Text = test.lay(t""): test =>
@@ -137,12 +137,12 @@ object Simple:
     t"${matcherSymbol(test.matcher)}${test.value}$modifier"
 
   private def matcherSymbol(matcher: AttributeMatcher): Text = matcher match
-    case AttributeMatcher.Exact     => t"="
-    case AttributeMatcher.Includes  => t"~="
-    case AttributeMatcher.DashMatch => t"|="
-    case AttributeMatcher.Prefix    => t"^="
-    case AttributeMatcher.Suffix    => t"$$="
-    case AttributeMatcher.Substring => t"*="
+    case AttributeMatcher.Exact     => "="
+    case AttributeMatcher.Includes  => "~="
+    case AttributeMatcher.DashMatch => "|="
+    case AttributeMatcher.Prefix    => "^="
+    case AttributeMatcher.Suffix    => "$="
+    case AttributeMatcher.Substring => "*="
 
   private def pseudoArgument(argument: Optional[PseudoArgument]): Text = argument.lay(t""):
     case PseudoArgument.Selectors(list) => t"(${list.show})"
@@ -155,12 +155,12 @@ object Simple:
   private def nth(a: Int, b: Int): Text =
     if a == 0 then b.show else
       val coefficient = a match
-        case 1  => t"n"
-        case -1 => t"-n"
+        case 1  => "n"
+        case -1 => "-n"
         case _  => t"${a}n"
 
       val offset =
-        if b == 0 then t"" else if b > 0 then t"+$b" else t"-${-b}"
+        if b == 0 then "" else if b > 0 then t"+$b" else t"-${-b}"
 
       t"$coefficient$offset"
 

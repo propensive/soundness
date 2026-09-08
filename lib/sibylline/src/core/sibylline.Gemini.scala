@@ -112,10 +112,10 @@ object Gemini:
   // Gemini reports finish reasons in upper snake case. A reply containing a function call is
   // `ToolCall` regardless: the API says `STOP` for those too.
   private[sibylline] def stop(code: Text): Llm.Stop = code match
-    case t"STOP"       => Llm.Stop.Ended
-    case t"MAX_TOKENS" => Llm.Stop.Exhausted
+    case "STOP"       => Llm.Stop.Ended
+    case "MAX_TOKENS" => Llm.Stop.Exhausted
 
-    case t"SAFETY" | t"RECITATION" | t"BLOCKLIST" | t"PROHIBITED_CONTENT" | t"SPII" =>
+    case "SAFETY" | "RECITATION" | "BLOCKLIST" | "PROHIBITED_CONTENT" | "SPII" =>
       Llm.Stop.Filtered(code)
 
     case other => Llm.Stop.Other(other)
@@ -156,7 +156,7 @@ object Gemini:
                                  response = Json.make(result = body.in[Json]) ) )
 
     case Llm.Content.Opaque(provider, json) =>
-      if provider == t"gemini" then json else Unset
+      if provider == "gemini" then json else Unset
 
     case _ => Unset
 
@@ -172,20 +172,20 @@ object Gemini:
 
   private[sibylline] def content(message: Llm.Message): Json =
     val role = message.role match
-      case Llm.Role.User      => t"user"
-      case Llm.Role.Assistant => t"model"
+      case Llm.Role.User      => "user"
+      case Llm.Role.Assistant => "model"
 
     val parts = message.content.bind(part(_).let(List(_)).or(List()))
     Json.make(role = role.in[Json], parts = parts.in[Json])
 
   private def mode(choice: Llm.ToolChoice): Json = choice match
-    case Llm.ToolChoice.Auto      => Json.make(mode = t"AUTO".in[Json])
-    case Llm.ToolChoice.Forbidden => Json.make(mode = t"NONE".in[Json])
-    case Llm.ToolChoice.Required  => Json.make(mode = t"ANY".in[Json])
+    case Llm.ToolChoice.Auto      => Json.make(mode = "AUTO".in[Json])
+    case Llm.ToolChoice.Forbidden => Json.make(mode = "NONE".in[Json])
+    case Llm.ToolChoice.Required  => Json.make(mode = "ANY".in[Json])
 
     case Llm.ToolChoice.Named(tool) =>
       Json.make
-        ( mode                 = t"ANY".in[Json],
+        ( mode                 = "ANY".in[Json],
           allowedFunctionNames = (List(tool): List[Text]).in[Json] )
 
   private def calling(choice: Optional[Llm.ToolChoice]): Json =
@@ -227,7 +227,7 @@ object Gemini:
       safely(json.functionCall).let: call =>
         Llm.Content.ToolUse(text(call.name), text(call.name), call.args)
 
-      . or(Llm.Content.Opaque(t"gemini", json))
+      . or(Llm.Content.Opaque("gemini", json))
 
   private[sibylline] def reply(json: Json)(using Diagnostics): Llm.Reply raises Json.Error =
     val candidate = json.candidates(0)
@@ -257,9 +257,9 @@ object Gemini:
   :   List[Llm.Event] =
 
     given jsonTactic: (Tactic[Json.Error]^) = summon[Tactic[Llm.Error]].contramap: _ =>
-      Llm.Error(Llm.Error.Reason.Malformed, t"a stream frame had an unexpected shape")
+      Llm.Error(Llm.Error.Reason.Malformed, "a stream frame had an unexpected shape")
 
-    val json: Json = Llm.parsed(sse.data.join(t"\n"))
+    val json: Json = Llm.parsed(sse.data.join("\n"))
 
     val started: List[Llm.Event] =
       if progress.begun then List() else
@@ -349,7 +349,7 @@ class Gemini private
   def on(base: HttpUrl): Gemini = copy(base = base)
 
   private[sibylline] def address(streaming: Boolean): HttpUrl =
-    val method = if streaming then t"streamGenerateContent?alt=sse" else t"generateContent"
+    val method = if streaming then "streamGenerateContent?alt=sse" else "generateContent"
     Url(base.origin, t"${base.location}/v1beta/models/$model:$method")
 
   private[sibylline] def submit(endpoint: HttpUrl, body: Json)
@@ -368,16 +368,16 @@ private[sibylline] class GeminiDialect(target: Gemini)
           diagnostics: Diagnostics )
 extends Llm.Dialect, caps.ExclusiveCapability:
 
-  def name: Text = t"gemini"
+  def name: Text = "gemini"
 
   private given connectTactic: (Tactic[Connect.Error]^) = tactic.contramap: _ =>
-    Llm.Error(Llm.Error.Reason.Unreachable, t"the provider could not be reached")
+    Llm.Error(Llm.Error.Reason.Unreachable, "the provider could not be reached")
 
   private given jsonTactic: (Tactic[Json.Error]^) = tactic.contramap: _ =>
-    Llm.Error(Llm.Error.Reason.Malformed, t"the reply had an unexpected shape")
+    Llm.Error(Llm.Error.Reason.Malformed, "the reply had an unexpected shape")
 
   private given sseTactic: (Tactic[Sse.Error]^) = tactic.contramap: _ =>
-    Llm.Error(Llm.Error.Reason.Malformed, t"a server-sent event was not valid")
+    Llm.Error(Llm.Error.Reason.Malformed, "a server-sent event was not valid")
 
   def exchange(turn: Llm.Exchange): Llm.Reply =
     // The send thunk captures the tactic `fetch` raises through, as in `AnthropicDialect`.

@@ -218,7 +218,7 @@ object internal:
                   }
               }
 
-          case ProcessingInstruction("\u0000", t"") =>
+          case ProcessingInstruction("\u0000", "") =>
             index += 1
             types ::= TypeRepr.of[ProcessingInstruction]
 
@@ -760,7 +760,7 @@ object internal:
             ' {
                 ( ${Expr(key)},
                   $ {
-                      if value == "\u0000".tt then iterator.next().asExprOf[Text]
+                      if value == "\u0000" then iterator.next().asExprOf[Text]
                       else Expr[Text](value)
                     } )
               }
@@ -777,7 +777,7 @@ object internal:
           List('{Element(${Expr(label)}, Attributes.from($map), $elements)})
 
         case Comment(text) =>
-          val parts = text.cut(t"\u0000").stdlib.map(_.s)
+          val parts = text.cut("\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -790,7 +790,7 @@ object internal:
           List('{Comment($content.tt)})
 
         case Cdata(text) =>
-          val parts = text.cut(t"\u0000").stdlib.map(_.s)
+          val parts = text.cut("\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -803,7 +803,7 @@ object internal:
           List('{Cdata($content.tt)})
 
         case ProcessingInstruction(target, data0) =>
-          val parts = data0.cut(t"\u0000").stdlib.map(_.s)
+          val parts = data0.cut("\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -819,7 +819,7 @@ object internal:
           List(iterator.next().asExprOf[Node])
 
         case TextNode(text) =>
-          val parts = text.cut(t"\u0000").stdlib.map(_.s)
+          val parts = text.cut("\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -1325,19 +1325,19 @@ object internal:
 
     if !classSymbol.flags.is(Flags.Case) then
       report.errorAndAbort
-        (("xylophone: staged parsing requires a case class; sums and other types use ": String) +
+        (s"xylophone: staged parsing requires a case class; sums and other types use " +
           "`Xml.Parsable.derived`")
 
     if classSymbol.owner.isTerm then
       report.errorAndAbort
-        (("xylophone: staged parsing requires a top-level or object-nested case class; ": String) +
+        (s"xylophone: staged parsing requires a top-level or object-nested case class; " +
           "method-local classes use `Xml.Parsable.derived`")
 
     val ctor = classSymbol.primaryConstructor
 
     if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
       report.errorAndAbort
-        (("xylophone: staged parsing requires a single parameter list; use ": String) +
+        (s"xylophone: staged parsing requires a single parameter list; use " +
           "`Xml.Parsable.derived`")
 
     val fields = classSymbol.caseFields
@@ -1462,16 +1462,16 @@ object internal:
       val tactic = Ref(tacticSymbol).asExprOf[Tactic[Xml.Error]]
 
       val slots = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, ("slot": String)+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, s"slot$index", fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
 
       val seens = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, ("seen": String)+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, s"seen$index", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
 
       // Occurrence buffers for the fields that may gather (repeatable
       // instances), allocated lazily on the first occurrence.
       val buffers: List[Option[Symbol]] = List.range(0, arity).map: index =>
         if kinds(index) != InstanceK then None else
-          Some(Symbol.newVal(owner, ("gather": String)+index, bufferType, Flags.Mutable, Symbol.noSymbol))
+          Some(Symbol.newVal(owner, s"gather$index", bufferType, Flags.Mutable, Symbol.noSymbol))
 
       val slotDefs = List.range(0, arity).map: index =>
         ValDef(slots(index), Some(zero(fieldTypes(index))))
@@ -1591,14 +1591,14 @@ object internal:
                 firstWins:
                   '{
                     Xml.Parsable.focusing($foci, $keyText):
-                      $reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"Text")); t"" }
+                      $reader.text().or { $reader.fault(Xml.Error.Reason.Untextual("Text")); "" }
                   }.asTerm
 
               case StringK =>
                 firstWins:
                   '{
                     Xml.Parsable.focusing($foci, $keyText):
-                      ($reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"String")); t"" }).s
+                      ($reader.text().or { $reader.fault(Xml.Error.Reason.Untextual("String")); "" }).s
                   }.asTerm
 
               case InstanceK =>
@@ -1712,7 +1712,7 @@ object internal:
                                . asExprOf[fieldType]
               case BooleanK => '{ Xml.Parsable.missing[Boolean](false)(using $tactic) }
                                . asExprOf[fieldType]
-              case TextK    => '{ Xml.Parsable.missing[Text](t"")(using $tactic) }
+              case TextK    => '{ Xml.Parsable.missing[Text]("")(using $tactic) }
                                . asExprOf[fieldType]
               case StringK  => '{ Xml.Parsable.missing[String]("")(using $tactic) }
                                . asExprOf[fieldType]
@@ -1794,7 +1794,7 @@ object internal:
                                . asExprOf[fieldType]
               case BooleanK => '{ Xml.Parsable.missing[Boolean](false)(using $tactic) }
                                . asExprOf[fieldType]
-              case TextK    => '{ Xml.Parsable.missing[Text](t"")(using $tactic) }
+              case TextK    => '{ Xml.Parsable.missing[Text]("")(using $tactic) }
                                . asExprOf[fieldType]
               case StringK  => '{ Xml.Parsable.missing[String]("")(using $tactic) }
                                . asExprOf[fieldType]

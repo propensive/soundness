@@ -46,11 +46,11 @@ import errorDiagnostics.emptyDiagnostics
 // domain is the single realm `{host}` — FFI is a host assumption, and the header describes what
 // the environment provides, never what a library on the buildpath supplies.
 object CHeaderDiscipline extends Discipline:
-  def id: Text = t"cheader/1"
+  def id: Text = "cheader/1"
 
   def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".h")
 
-  def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"host"))
+  def domain: Discipline.Domain = Discipline.Domain.Realms(Set("host"))
   def keying: Discipline.Keying = Discipline.Keying.Declaration
 
   def guarantees(realm: Text): Set[Discipline.Guarantee] =

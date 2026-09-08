@@ -95,62 +95,62 @@ object Tests extends Suite(m"Diuretic Tests"):
 
     suite(m"java.nio.file.Path tests"):
       test(m"Instantiate a Path from text"):
-        JavaNioPath(t"/tmp/example")
+        JavaNioPath("/tmp/example")
       . assert(_ == jnf.Paths.get("/tmp/example").nn)
 
       test(m"Abstract an absolute Path to text"):
         JavaNioPath.genericize(jnf.Paths.get("/tmp/example").nn)
-      . assert(_ == t"/tmp/example")
+      . assert(_ == "/tmp/example")
 
       test(m"A relative Path is abstracted as an absolute path"):
-        JavaNioPath.genericize(jnf.Paths.get("example").nn).starts(t"/")
+        JavaNioPath.genericize(jnf.Paths.get("example").nn).starts("/")
       . assert(_ == true)
 
       test(m"Path conversion round-trips for an absolute path"):
-        JavaNioPath.genericize(JavaNioPath(t"/tmp/example"))
-      . assert(_ == t"/tmp/example")
+        JavaNioPath.genericize(JavaNioPath("/tmp/example"))
+      . assert(_ == "/tmp/example")
 
       test(m"Redundant separators are normalized away"):
-        JavaNioPath.genericize(JavaNioPath(t"/tmp//example"))
-      . assert(_ == t"/tmp/example")
+        JavaNioPath.genericize(JavaNioPath("/tmp//example"))
+      . assert(_ == "/tmp/example")
 
     suite(m"java.io.File tests"):
       test(m"Instantiate a File from text"):
-        JavaIoFile(t"/tmp/example")
+        JavaIoFile("/tmp/example")
       . assert(_ == ji.File("/tmp/example"))
 
       test(m"Abstract an absolute File to text"):
         JavaIoFile.genericize(ji.File("/tmp/example"))
-      . assert(_ == t"/tmp/example")
+      . assert(_ == "/tmp/example")
 
       test(m"A relative File is abstracted as an absolute path"):
-        JavaIoFile.genericize(ji.File("example")).starts(t"/")
+        JavaIoFile.genericize(ji.File("example")).starts("/")
       . assert(_ == true)
 
       test(m"File conversion round-trips for an absolute path"):
-        JavaIoFile.genericize(JavaIoFile(t"/tmp/example"))
-      . assert(_ == t"/tmp/example")
+        JavaIoFile.genericize(JavaIoFile("/tmp/example"))
+      . assert(_ == "/tmp/example")
 
     suite(m"java.net.URL tests"):
       test(m"Instantiate a URL from text"):
-        JavaNetUrl(t"https://soundness.dev/index.html")
+        JavaNetUrl("https://soundness.dev/index.html")
       . assert(_.toString.nn == "https://soundness.dev/index.html")
 
       test(m"Abstract a URL to text"):
         JavaNetUrl.genericize(jn.URI("https://soundness.dev/").nn.toURL().nn)
-      . assert(_ == t"https://soundness.dev/")
+      . assert(_ == "https://soundness.dev/")
 
       test(m"URL conversion round-trips"):
-        JavaNetUrl.genericize(JavaNetUrl(t"https://soundness.dev/index.html"))
-      . assert(_ == t"https://soundness.dev/index.html")
+        JavaNetUrl.genericize(JavaNetUrl("https://soundness.dev/index.html"))
+      . assert(_ == "https://soundness.dev/index.html")
 
       test(m"A URL with a query string round-trips"):
-        JavaNetUrl.genericize(JavaNetUrl(t"https://soundness.dev/search?q=text"))
-      . assert(_ == t"https://soundness.dev/search?q=text")
+        JavaNetUrl.genericize(JavaNetUrl("https://soundness.dev/search?q=text"))
+      . assert(_ == "https://soundness.dev/search?q=text")
 
       test(m"A URL with an explicit port round-trips"):
-        JavaNetUrl.genericize(JavaNetUrl(t"http://localhost:8080/api"))
-      . assert(_ == t"http://localhost:8080/api")
+        JavaNetUrl.genericize(JavaNetUrl("http://localhost:8080/api"))
+      . assert(_ == "http://localhost:8080/api")
 
     suite(m"Interface given tests"):
       test(m"A java.time.Instant interface is available"):

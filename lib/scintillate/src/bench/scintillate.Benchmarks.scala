@@ -65,7 +65,7 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
 
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
+  given byteDesignation: Designation[Bytes[1]] = () => "B"
   given decimalizer:     Decimalizer            = Decimalizer(2)
   given device:          BenchmarkDevice        = LocalhostDevice
   given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga))
@@ -78,7 +78,7 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
         t"Accept: text/html",
         t"User-Agent: bench" )
 
-    . join(t"", t"\r\n", t"\r\n\r\n")
+    . join("", "\r\n", "\r\n\r\n")
     . in[Data]
 
   lazy val getRequestBytes: scala.Array[Byte] = Array.unsafeJvm(getRequest)
@@ -122,8 +122,8 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
     // The real-socket rows: 2 GB heap, all cores (the machine itself is the resource under
     // test), and G1 rather than the harness's default Serial collector, whose single-threaded
     // stop-the-world pauses would dominate p99 latency in a saturated server workload.
-    val stress = Stress(heap = t"2g", gc = t"G1")
-    val profile = Profile(heap = t"2g")
+    val stress = Stress(heap = "2g", gc = "G1")
+    val profile = Profile(heap = "2g")
 
     val requestSize  = getRequest.length*Byte
     val responseSize = serializeResponse(okResponse)*Byte

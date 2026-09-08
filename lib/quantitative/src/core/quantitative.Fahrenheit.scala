@@ -36,6 +36,6 @@ import anticipation.*
 import gossamer.*
 
 object Fahrenheit extends TemperatureScale:
-  def suffix: Text = t"°F"
+  def suffix: Text = "°F"
   def apply(value: Double): Temperature = Temperature((value - 32)*5/9 + 273.15)
   def kelvin(value: Temperature): Double = value.fahrenheit

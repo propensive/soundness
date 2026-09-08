@@ -223,7 +223,7 @@ private[cataclysm] object ValueTokenizer:
       cursor.advance()
       skipSpaces()
 
-      if cursor.peek == '"' || cursor.peek == '\'' then ValueToken.Function(t"url")
+      if cursor.peek == '"' || cursor.peek == '\'' then ValueToken.Function("url")
       else
         val buf = java.lang.StringBuilder()
 

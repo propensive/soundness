@@ -36,7 +36,7 @@ import anticipation.*
 import rudiments.*
 
 object Grains:
-  given designation: Designation[Grains[1]] = () => "gr".tt
+  given designation: Designation[Grains[1]] = () => "gr"
   inline given ratio: Ratio[Kilograms[1] & Grains[-1], 0.0000647989] = !!
 
 trait Grains[Power <: Nat] extends Units[Power, Mass]

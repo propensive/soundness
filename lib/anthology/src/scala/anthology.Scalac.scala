@@ -119,7 +119,7 @@ object Scalac:
             // cannot fail; the bytes are fresh from `toByteArray`, so no writer is retained.
             else scala.List((unsafely(path.as[Path on Classpath]), Array.unsafeFrozen(file.toByteArray)))
 
-        walk(output, t"").to(Map)
+        walk(output, "").to(Map)
 
       def save[path: Abstractable across Paths to Text](directory: path): Unit =
         val root = jnf.Paths.get(directory.generic.s).nn

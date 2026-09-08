@@ -419,7 +419,7 @@ case class Buildpath(releases: List[Lira.Manifest]):
       profiles(id).let: profile =>
         val details = profile.coherence(releases)
 
-        if !details.nil then abort(Lira.Error(Reason.ProfileViolated(id, details.join(t"; "))))
+        if !details.nil then abort(Lira.Error(Reason.ProfileViolated(id, details.join("; "))))
 
     val required = requiredContracts(universe, assignment)
 

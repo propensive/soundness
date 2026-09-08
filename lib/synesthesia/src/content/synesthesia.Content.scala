@@ -135,14 +135,14 @@ object Content:
 
   object Role:
     given encodable: Role is Json.Encodable = Json.Encodable(() => Morphology.Str):
-      case Role.User      => t"user".in[Json]
-      case Role.Assistant => t"assistant".in[Json]
+      case Role.User      => "user".in[Json]
+      case Role.Assistant => "assistant".in[Json]
 
     given decodable: Tactic[Json.Error] => Role is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
-          case t"user"      => Role.User
-          case t"assistant" => Role.Assistant
+          case "user"      => Role.User
+          case "assistant" => Role.Assistant
           case _            => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum Role:
@@ -151,14 +151,14 @@ object Content:
   object ContentBlock:
     import dynamicAccess.dynamicJson
 
-    private val typeTag = Json.discriminatedUnion[ContentBlock](t"type")
+    private val typeTag = Json.discriminatedUnion[ContentBlock]("type")
 
     given encodable: ContentBlock is Json.Encodable = Json.Encodable(() => Morphology.Any):
-      case content: TextContent      => typeTag.rewrite(t"text",          content.in[Json])
-      case content: ImageContent     => typeTag.rewrite(t"image",         content.in[Json])
-      case content: AudioContent     => typeTag.rewrite(t"audio",         content.in[Json])
-      case content: ResourceLink     => typeTag.rewrite(t"resource_link", content.in[Json])
-      case content: EmbeddedResource => typeTag.rewrite(t"resource", content.in[Json])
+      case content: TextContent      => typeTag.rewrite("text",          content.in[Json])
+      case content: ImageContent     => typeTag.rewrite("image",         content.in[Json])
+      case content: AudioContent     => typeTag.rewrite("audio",         content.in[Json])
+      case content: ResourceLink     => typeTag.rewrite("resource_link", content.in[Json])
+      case content: EmbeddedResource => typeTag.rewrite("resource", content.in[Json])
 
     given decodable: Tactic[Json.Error] => ContentBlock is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>

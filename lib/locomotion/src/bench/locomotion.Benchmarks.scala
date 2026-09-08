@@ -56,7 +56,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
 
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
+  given byteDesignation: Designation[Bytes[1]] = () => "B"
   given decimalizer:     Decimalizer            = Decimalizer(2)
   given device:          BenchmarkDevice        = LocalhostDevice
   given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga, Tera))
@@ -153,7 +153,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
   // Corpus 1: a small message with three scalar fields — exercises the tag /
   // varint / short-string fast paths.
-  lazy val value1: Small = Small(42L, t"Alice", true)
+  lazy val value1: Small = Small(42L, "Alice", true)
 
   // Corpus 2: 100 user records as a repeated (unpacked) message field — the
   // typical "array of records" shape.
@@ -164,13 +164,13 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
          t"user$index",
          t"user$index@example.com",
          (index & 1) == 0,
-         if index%10 == 0 then t"admin" else t"user" )
+         if index%10 == 0 then "admin" else "user" )
 
   // Corpus 3: 500 log entries with six fields each — a larger throughput target
   // dominated by short strings and small integers.
   lazy val value3: Logs =
-    val levels   = Array(t"info", t"debug", t"warn", t"error")
-    val services = Array(t"auth", t"api", t"db", t"cache", t"worker")
+    val levels   = Array("info", "debug", "warn", "error")
+    val services = Array("auth", "api", "db", "cache", "worker")
     Logs:
       List.tabulate(500): index =>
         LogEntry
@@ -192,7 +192,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
   // Corpus 6: a message nested five levels deep — stresses nested encode/decode.
   lazy val value6: Deep1 =
-    Deep1(t"level0", Deep2(t"level1", Deep3(t"level2", Deep4(t"level3", Deep5(t"level4")))))
+    Deep1("level0", Deep2("level1", Deep3("level2", Deep4("level3", Deep5("level4")))))
 
   lazy val bytes1: Data = value1.in[Protobuf].encode
   lazy val bytes2: Data = value2.in[Protobuf].encode

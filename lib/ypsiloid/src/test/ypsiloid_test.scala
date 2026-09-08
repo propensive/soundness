@@ -45,7 +45,7 @@ case class Outer(inner: Inner) derives CanEqual
 case class NamedOuter(name: Text, inner: Inner) derives CanEqual
 case class WithDefault(name: Text, age: Int = 18) derives CanEqual
 case class WithOption(name: Text, age: Option[Int]) derives CanEqual
-case class YRenamed(@name[Yaml](t"full_name") fullName: Text, @name(t"yob") year: Int)
+case class YRenamed(@name[Yaml]("full_name") fullName: Text, @name("yob") year: Int)
 derives CanEqual
 
 enum Shape derives CanEqual:
@@ -54,8 +54,8 @@ enum Shape derives CanEqual:
   case Triangle(a: Double, b: Double, c: Double)
 
 enum YStatus derives CanEqual:
-  @name[Yaml](t"ok") case Active(since: Int)
-  @name(t"gone")     case Removed(at: Int)
+  @name[Yaml]("ok") case Active(since: Int)
+  @name("gone")     case Removed(at: Int)
                      case Pending(at: Int)
 
 // Recursion through a collection (#1429) and a generic product used over a recursive type.
@@ -69,562 +69,562 @@ object Tests extends Suite(m"Ypsiloid Tests"):
     suite(m"Native-rendering coverage"):
       test(m"a Yaml document inspects on one line, with its breaks escaped"):
         42.in[Yaml].inspect
-      . assert(_ == t"yaml\"42\\n\"")
+      . assert(_ == "yaml\"42\\n\"")
 
       test(m"a bare Yaml.Ast is marked apart from the document wrapping it"):
         Yaml.Ast.Integer(42).inspect
-      . assert(_ == t"yaml\"42\\n\"ᵃˢᵗ")
+      . assert(_ == "yaml\"42\\n\"ᵃˢᵗ")
 
       test(m"ypsiloid's types inspect natively"):
         Inspectable.fallbacks
-         ( 42.in[Yaml].inspect, t"foo".in[Yaml].inspect, Yaml.Ast.Integer(42).inspect,
-           Yaml.Ast.Str(t"foo").inspect )
+         ( 42.in[Yaml].inspect, "foo".in[Yaml].inspect, Yaml.Ast.Integer(42).inspect,
+           Yaml.Ast.Str("foo").inspect )
       . assert(_ == Nil)
 
     suite(m"Plain scalar parsing"):
       test(m"Parse a plain integer"):
-        t"42".read[Yaml].as[Int]
+        "42".read[Yaml].as[Int]
       . assert(_ == 42)
 
       test(m"Parse a negative integer"):
-        t"-99".read[Yaml].as[Int]
+        "-99".read[Yaml].as[Int]
       . assert(_ == -99)
 
       test(m"Parse zero"):
-        t"0".read[Yaml].as[Int]
+        "0".read[Yaml].as[Int]
       . assert(_ == 0)
 
       test(m"Parse a long"):
-        t"1234567890123".read[Yaml].as[Long]
+        "1234567890123".read[Yaml].as[Long]
       . assert(_ == 1234567890123L)
 
       test(m"Parse a hexadecimal integer"):
-        t"0x2A".read[Yaml].as[Int]
+        "0x2A".read[Yaml].as[Int]
       . assert(_ == 42)
 
       test(m"Parse an octal integer"):
-        t"0o17".read[Yaml].as[Int]
+        "0o17".read[Yaml].as[Int]
       . assert(_ == 15)
 
       test(m"Parse a float"):
-        t"3.1415".read[Yaml].as[Float]
+        "3.1415".read[Yaml].as[Float]
       . assert(_ == 3.1415f)
 
       test(m"Parse a double"):
-        t"3.1415926".read[Yaml].as[Double]
+        "3.1415926".read[Yaml].as[Double]
       . assert(_ == 3.1415926)
 
       test(m"Parse a negative float"):
-        t"-2.5".read[Yaml].as[Double]
+        "-2.5".read[Yaml].as[Double]
       . assert(_ == -2.5)
 
       test(m"Parse positive infinity"):
-        t".inf".read[Yaml].as[Double]
+        ".inf".read[Yaml].as[Double]
       . assert(_ == Double.PositiveInfinity)
 
       test(m"Parse negative infinity"):
-        t"-.inf".read[Yaml].as[Double]
+        "-.inf".read[Yaml].as[Double]
       . assert(_ == Double.NegativeInfinity)
 
       test(m"Parse NaN"):
-        t".nan".read[Yaml].as[Double]
+        ".nan".read[Yaml].as[Double]
       . assert(_.isNaN)
 
       test(m"Parse true"):
-        t"true".read[Yaml].as[Boolean]
+        "true".read[Yaml].as[Boolean]
       . assert(identity)
 
       test(m"Parse false"):
-        t"false".read[Yaml].as[Boolean]
+        "false".read[Yaml].as[Boolean]
       . assert(!_)
 
       test(m"Parse null literal"):
-        t"null".read[Yaml].as[Unit]
+        "null".read[Yaml].as[Unit]
       . assert(_ == ())
 
       test(m"Parse tilde as null"):
-        t"~".read[Yaml].as[Unit]
+        "~".read[Yaml].as[Unit]
       . assert(_ == ())
 
       test(m"Parse empty document as Yaml.Ast.Null"):
-        Yaml.unseal(t"".read[Yaml])
+        Yaml.unseal("".read[Yaml])
       . assert(_ == Yaml.Ast.Null)
 
       test(m"Parse a plain (unquoted) string"):
-        t"hello".read[Yaml].as[Text]
-      . assert(_ == t"hello")
+        "hello".read[Yaml].as[Text]
+      . assert(_ == "hello")
 
       test(m"Plain string containing a number-like prefix is text"):
-        t"3things".read[Yaml].as[Text]
-      . assert(_ == t"3things")
+        "3things".read[Yaml].as[Text]
+      . assert(_ == "3things")
 
     suite(m"Quoted strings"):
       test(m"Parse a single-quoted string"):
-        t"'hello'".read[Yaml].as[Text]
-      . assert(_ == t"hello")
+        "'hello'".read[Yaml].as[Text]
+      . assert(_ == "hello")
 
       test(m"Parse a double-quoted string"):
-        t"\"hello\"".read[Yaml].as[Text]
-      . assert(_ == t"hello")
+        "\"hello\"".read[Yaml].as[Text]
+      . assert(_ == "hello")
 
       test(m"Single-quoted string preserves backslashes"):
-        t"'a\\b'".read[Yaml].as[Text]
-      . assert(_ == t"a\\b")
+        "'a\\b'".read[Yaml].as[Text]
+      . assert(_ == "a\\b")
 
       test(m"Double-quoted string with newline escape"):
-        t"\"line1\\nline2\"".read[Yaml].as[Text]
-      . assert(_ == t"line1\nline2")
+        "\"line1\\nline2\"".read[Yaml].as[Text]
+      . assert(_ == "line1\nline2")
 
       test(m"Double-quoted string with tab escape"):
-        t"\"a\\tb\"".read[Yaml].as[Text]
-      . assert(_ == t"a\tb")
+        "\"a\\tb\"".read[Yaml].as[Text]
+      . assert(_ == "a\tb")
 
       test(m"Double-quoted string with escaped backslash"):
-        t"\"a\\\\b\"".read[Yaml].as[Text]
-      . assert(_ == t"a\\b")
+        "\"a\\\\b\"".read[Yaml].as[Text]
+      . assert(_ == "a\\b")
 
       test(m"Double-quoted string with escaped quote"):
-        t"\"a\\\"b\"".read[Yaml].as[Text]
-      . assert(_ == t"a\"b")
+        "\"a\\\"b\"".read[Yaml].as[Text]
+      . assert(_ == "a\"b")
 
       test(m"Double-quoted string with unicode escape"):
-        t"\"\\u00e9\"".read[Yaml].as[Text]
-      . assert(_ == t"é")
+        "\"\\u00e9\"".read[Yaml].as[Text]
+      . assert(_ == "é")
 
       test(m"Double-quoted string with hex escape"):
-        t"\"\\x41\"".read[Yaml].as[Text]
-      . assert(_ == t"A")
+        "\"\\x41\"".read[Yaml].as[Text]
+      . assert(_ == "A")
 
       test(m"Single-quoted string with embedded apostrophe"):
-        t"'don''t'".read[Yaml].as[Text]
-      . assert(_ == t"don't")
+        "'don''t'".read[Yaml].as[Text]
+      . assert(_ == "don't")
 
       test(m"Hash inside a quoted string is not a comment"):
-        t"\"a # b\"".read[Yaml].as[Text]
-      . assert(_ == t"a # b")
+        "\"a # b\"".read[Yaml].as[Text]
+      . assert(_ == "a # b")
 
       test(m"Empty single-quoted string"):
-        t"''".read[Yaml].as[Text]
-      . assert(_ == t"")
+        "''".read[Yaml].as[Text]
+      . assert(_ == "")
 
       test(m"Empty double-quoted string"):
-        t"\"\"".read[Yaml].as[Text]
-      . assert(_ == t"")
+        "\"\"".read[Yaml].as[Text]
+      . assert(_ == "")
 
       test(m"Multi-line double-quoted string folds newline to space"):
-        t"\"first\n  second\"".read[Yaml].as[Text]
-      . assert(_ == t"first second")
+        "\"first\n  second\"".read[Yaml].as[Text]
+      . assert(_ == "first second")
 
       test(m"Multi-line single-quoted string folds newline to space"):
-        t"'first\n  second'".read[Yaml].as[Text]
-      . assert(_ == t"first second")
+        "'first\n  second'".read[Yaml].as[Text]
+      . assert(_ == "first second")
 
       test(m"Multi-line double-quoted string with three lines"):
-        t"\"a\n  b\n  c\"".read[Yaml].as[Text]
-      . assert(_ == t"a b c")
+        "\"a\n  b\n  c\"".read[Yaml].as[Text]
+      . assert(_ == "a b c")
 
       test(m"Multi-line double-quoted with empty line preserves a single newline"):
-        t"\"first\n\n  second\"".read[Yaml].as[Text]
-      . assert(_ == t"first\nsecond")
+        "\"first\n\n  second\"".read[Yaml].as[Text]
+      . assert(_ == "first\nsecond")
 
       test(m"Multi-line double-quoted string with three blank lines yields two newlines"):
-        t"\"a\n\n\n  b\"".read[Yaml].as[Text]
-      . assert(_ == t"a\n\nb")
+        "\"a\n\n\n  b\"".read[Yaml].as[Text]
+      . assert(_ == "a\n\nb")
 
       test(m"Multi-line double-quoted string as block-mapping value"):
-        t"key: \"first\n  second\"".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"key" -> t"first second"))
+        "key: \"first\n  second\"".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("key" -> "first second"))
 
       test(m"Multi-line single-quoted string as flow-sequence element"):
-        t"['first\n  second', other]".read[Yaml].as[List[Text]]
+        "['first\n  second', other]".read[Yaml].as[List[Text]]
       . assert(_ == List(t"first second", t"other"))
 
     suite(m"Flow sequences"):
       test(m"Parse an empty flow sequence"):
-        t"[]".read[Yaml].as[List[Int]]
+        "[]".read[Yaml].as[List[Int]]
       . assert(_ == Nil)
 
       test(m"Parse a flow sequence of integers"):
-        t"[1, 2, 3]".read[Yaml].as[List[Int]]
+        "[1, 2, 3]".read[Yaml].as[List[Int]]
       . assert(_ == List(1, 2, 3))
 
       test(m"Parse a flow sequence of strings"):
-        t"[alice, bob, carol]".read[Yaml].as[List[Text]]
+        "[alice, bob, carol]".read[Yaml].as[List[Text]]
       . assert(_ == List(t"alice", t"bob", t"carol"))
 
       test(m"Parse a flow sequence with mixed whitespace"):
-        t"[ 1 ,  2  , 3 ]".read[Yaml].as[List[Int]]
+        "[ 1 ,  2  , 3 ]".read[Yaml].as[List[Int]]
       . assert(_ == List(1, 2, 3))
 
       test(m"Parse a nested flow sequence"):
-        t"[[1, 2], [3, 4]]".read[Yaml].as[List[List[Int]]]
+        "[[1, 2], [3, 4]]".read[Yaml].as[List[List[Int]]]
       . assert(_ == List(List(1, 2), List(3, 4)))
 
       test(m"Parse a flow sequence of quoted strings with commas"):
-        t"[\"a,b\", \"c,d\"]".read[Yaml].as[List[Text]]
+        "[\"a,b\", \"c,d\"]".read[Yaml].as[List[Text]]
       . assert(_ == List(t"a,b", t"c,d"))
 
       // Decoded via `List` and rebuilt: the `Factory`-based collection decoders do not yet have
       // instances for the opaque `Sequence` (a pending work item across the serialization modules).
       test(m"Parse a flow sequence into a Sequence"):
-        t"[10, 20, 30]".read[Yaml].as[List[Int]].stdlib.pipe(Sequence.from(_))
+        "[10, 20, 30]".read[Yaml].as[List[Int]].stdlib.pipe(Sequence.from(_))
       . assert(_ == Sequence(10, 20, 30))
 
       test(m"Parse a flow sequence into a Set"):
-        t"[1, 2, 3]".read[Yaml].as[List[Int]].stdlib.pipe(_.to(Set))
+        "[1, 2, 3]".read[Yaml].as[List[Int]].stdlib.pipe(_.to(Set))
       . assert(_ == Set(1, 2, 3))
 
       test(m"Empty flow sequence parses to Yaml.Ast.Sequence with no items"):
-        Yaml.unseal(t"[]".read[Yaml]) match
+        Yaml.unseal("[]".read[Yaml]) match
           case Yaml.Ast.Sequence(items) => items.length
           case _                       => -1
       . assert(_ == 0)
 
       test(m"Flow sequence parses to Yaml.Ast.Sequence"):
-        Yaml.unseal(t"[1, 2, 3]".read[Yaml]) match
+        Yaml.unseal("[1, 2, 3]".read[Yaml]) match
           case Yaml.Ast.Sequence(items) => items.length
           case _                       => -1
       . assert(_ == 3)
 
     suite(m"Flow mappings"):
       test(m"Parse an empty flow mapping"):
-        t"{}".read[Yaml].as[Map[Text, Int]]
+        "{}".read[Yaml].as[Map[Text, Int]]
       . assert(_.nil)
 
       test(m"Parse a single-pair flow mapping"):
-        t"{a: 1}".read[Yaml].as[Map[Text, Int]]
-      . assert(_ == Map(t"a" -> 1))
+        "{a: 1}".read[Yaml].as[Map[Text, Int]]
+      . assert(_ == Map("a" -> 1))
 
       test(m"Parse a multi-pair flow mapping"):
-        t"{a: 1, b: 2, c: 3}".read[Yaml].as[Map[Text, Int]]
-      . assert(_ == Map(t"a" -> 1, t"b" -> 2, t"c" -> 3))
+        "{a: 1, b: 2, c: 3}".read[Yaml].as[Map[Text, Int]]
+      . assert(_ == Map("a" -> 1, "b" -> 2, "c" -> 3))
 
       test(m"Parse a flow mapping with text values"):
-        t"{name: Alice, role: admin}".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"name" -> t"Alice", t"role" -> t"admin"))
+        "{name: Alice, role: admin}".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("name" -> "Alice", "role" -> "admin"))
 
       test(m"Parse a nested flow mapping"):
-        t"{outer: {inner: 7}}".read[Yaml].as[Map[Text, Map[Text, Int]]]
-      . assert(_ == Map(t"outer" -> Map(t"inner" -> 7)))
+        "{outer: {inner: 7}}".read[Yaml].as[Map[Text, Map[Text, Int]]]
+      . assert(_ == Map("outer" -> Map("inner" -> 7)))
 
       test(m"Parse a flow mapping with sequence value"):
-        t"{xs: [1, 2, 3]}".read[Yaml].as[Map[Text, List[Int]]]
-      . assert(_ == Map(t"xs" -> List(1, 2, 3)))
+        "{xs: [1, 2, 3]}".read[Yaml].as[Map[Text, List[Int]]]
+      . assert(_ == Map("xs" -> List(1, 2, 3)))
 
       test(m"Parse a flow mapping with quoted string values"):
-        t"{a: \"hello\", b: \"world\"}".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"a" -> t"hello", t"b" -> t"world"))
+        "{a: \"hello\", b: \"world\"}".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("a" -> "hello", "b" -> "world"))
 
       test(m"Parse a flow mapping with quoted-string keys containing commas"):
-        t"{\"a,b\": 1, \"c,d\": 2}".read[Yaml].as[Map[Text, Int]]
-      . assert(_ == Map(t"a,b" -> 1, t"c,d" -> 2))
+        "{\"a,b\": 1, \"c,d\": 2}".read[Yaml].as[Map[Text, Int]]
+      . assert(_ == Map("a,b" -> 1, "c,d" -> 2))
 
       test(m"Empty flow mapping parses to Yaml.Ast.Mapping with no entries"):
-        Yaml.unseal(t"{}".read[Yaml]) match
+        Yaml.unseal("{}".read[Yaml]) match
           case Yaml.Ast.Mapping(entries) => entries.length
           case _                        => -1
       . assert(_ == 0)
 
       test(m"Flow mapping parses to Yaml.Ast.Mapping"):
-        Yaml.unseal(t"{a: 1, b: 2}".read[Yaml]) match
+        Yaml.unseal("{a: 1, b: 2}".read[Yaml]) match
           case Yaml.Ast.Mapping(entries) => entries.length
           case _                        => -1
       . assert(_ == 2)
 
     suite(m"`in Yaml` decoder shorthand"):
       test(m"`read[T in Yaml]` resolves a value directly from text"):
-        t"{name: Alice, age: 30}".read[Person in Yaml]
-      . assert(_ == Person(t"Alice", 30))
+        "{name: Alice, age: 30}".read[Person in Yaml]
+      . assert(_ == Person("Alice", 30))
 
       test(m"`read[T in Yaml]` works for nested case classes"):
-        t"{inner: {n: 7}}".read[Outer in Yaml]
+        "{inner: {n: 7}}".read[Outer in Yaml]
       . assert(_ == Outer(Inner(7)))
 
       test(m"`read[List[T] in Yaml]` decodes a sequence directly"):
-        t"[{name: Alice, age: 30}, {name: Bob, age: 25}]".read[List[Person] in Yaml]
+        "[{name: Alice, age: 30}, {name: Bob, age: 25}]".read[List[Person] in Yaml]
       . assert(_ == List(Person(t"Alice", 30), Person(t"Bob", 25)))
 
     suite(m"Case-class derivation"):
       test(m"Decode a flat case class from a flow mapping"):
-        t"{name: Alice, age: 30}".read[Yaml].as[Person]
-      . assert(_ == Person(t"Alice", 30))
+        "{name: Alice, age: 30}".read[Yaml].as[Person]
+      . assert(_ == Person("Alice", 30))
 
       test(m"Decode a flat case class with quoted strings"):
-        t"{name: \"Bob Smith\", age: 25}".read[Yaml].as[Person]
-      . assert(_ == Person(t"Bob Smith", 25))
+        "{name: \"Bob Smith\", age: 25}".read[Yaml].as[Person]
+      . assert(_ == Person("Bob Smith", 25))
 
       test(m"Decode a nested case class"):
-        t"{inner: {n: 42}}".read[Yaml].as[Outer]
+        "{inner: {n: 42}}".read[Yaml].as[Outer]
       . assert(_ == Outer(Inner(42)))
 
       test(m"Decode a deeper nested case class"):
-        t"{name: hello, inner: {n: 7}}".read[Yaml].as[NamedOuter]
-      . assert(_ == NamedOuter(t"hello", Inner(7)))
+        "{name: hello, inner: {n: 7}}".read[Yaml].as[NamedOuter]
+      . assert(_ == NamedOuter("hello", Inner(7)))
 
       test(m"Decode a sequence of case classes"):
-        t"[{name: Alice, age: 30}, {name: Bob, age: 25}]".read[Yaml].as[List[Person]]
+        "[{name: Alice, age: 30}, {name: Bob, age: 25}]".read[Yaml].as[List[Person]]
       . assert(_ == List(Person(t"Alice", 30), Person(t"Bob", 25)))
 
       test(m"Decode a case class with a default field omitted"):
-        t"{name: Eve}".read[Yaml].as[WithDefault]
-      . assert(_ == WithDefault(t"Eve", 18))
+        "{name: Eve}".read[Yaml].as[WithDefault]
+      . assert(_ == WithDefault("Eve", 18))
 
       test(m"Decode a case class with all fields supplied"):
-        t"{name: Eve, age: 99}".read[Yaml].as[WithDefault]
-      . assert(_ == WithDefault(t"Eve", 99))
+        "{name: Eve, age: 99}".read[Yaml].as[WithDefault]
+      . assert(_ == WithDefault("Eve", 99))
 
       test(m"Decode honours @name[Yaml] and bare @name keys"):
-        t"{full_name: Ann, yob: 1984}".read[Yaml].as[YRenamed]
-      . assert(_ == YRenamed(t"Ann", 1984))
+        "{full_name: Ann, yob: 1984}".read[Yaml].as[YRenamed]
+      . assert(_ == YRenamed("Ann", 1984))
 
       test(m"@name renames round-trip"):
-        YRenamed(t"Ann", 1984).in[Yaml].as[YRenamed]
-      . assert(_ == YRenamed(t"Ann", 1984))
+        YRenamed("Ann", 1984).in[Yaml].as[YRenamed]
+      . assert(_ == YRenamed("Ann", 1984))
 
       test(m"Decode a present Option field"):
-        t"{name: Frank, age: 40}".read[Yaml].as[WithOption]
-      . assert(_ == WithOption(t"Frank", Some(40)))
+        "{name: Frank, age: 40}".read[Yaml].as[WithOption]
+      . assert(_ == WithOption("Frank", Some(40)))
 
       test(m"Decode a missing Option field as None"):
-        t"{name: Grace}".read[Yaml].as[WithOption]
-      . assert(_ == WithOption(t"Grace", None))
+        "{name: Grace}".read[Yaml].as[WithOption]
+      . assert(_ == WithOption("Grace", None))
 
       test(m"Decode an explicitly null Option field as None"):
-        t"{name: Hank, age: null}".read[Yaml].as[WithOption]
-      . assert(_ == WithOption(t"Hank", None))
+        "{name: Hank, age: null}".read[Yaml].as[WithOption]
+      . assert(_ == WithOption("Hank", None))
 
       test(m"Decode Option[Int] from a top-level integer"):
-        t"42".read[Yaml].as[Option[Int]]
+        "42".read[Yaml].as[Option[Int]]
       . assert(_ == Some(42))
 
       test(m"Decode Option[Int] from null"):
-        t"null".read[Yaml].as[Option[Int]]
+        "null".read[Yaml].as[Option[Int]]
       . assert(_ == None)
 
     suite(m"Block sequences"):
       test(m"Parse a block sequence of integers"):
-        t"- 1\n- 2\n- 3".read[Yaml].as[List[Int]]
+        "- 1\n- 2\n- 3".read[Yaml].as[List[Int]]
       . assert(_ == List(1, 2, 3))
 
       test(m"Parse a block sequence of strings"):
-        t"- alice\n- bob".read[Yaml].as[List[Text]]
+        "- alice\n- bob".read[Yaml].as[List[Text]]
       . assert(_ == List(t"alice", t"bob"))
 
       test(m"Parse a block sequence with quoted strings"):
-        t"- \"hello world\"\n- 'goodbye'".read[Yaml].as[List[Text]]
+        "- \"hello world\"\n- 'goodbye'".read[Yaml].as[List[Text]]
       . assert(_ == List(t"hello world", t"goodbye"))
 
       test(m"Block sequence parses to Yaml.Ast.Sequence"):
-        Yaml.unseal(t"- 1\n- 2".read[Yaml]) match
+        Yaml.unseal("- 1\n- 2".read[Yaml]) match
           case Yaml.Ast.Sequence(items) => items.length
           case _                       => -1
       . assert(_ == 2)
 
       test(m"Parse a block sequence with leading and trailing blank lines"):
-        t"\n- 1\n- 2\n".read[Yaml].as[List[Int]]
+        "\n- 1\n- 2\n".read[Yaml].as[List[Int]]
       . assert(_ == List(1, 2))
 
       test(m"Parse a block sequence with comments interleaved"):
-        t"# comment\n- 1\n# more\n- 2".read[Yaml].as[List[Int]]
+        "# comment\n- 1\n# more\n- 2".read[Yaml].as[List[Int]]
       . assert(_ == List(1, 2))
 
     suite(m"Block mappings"):
       test(m"Parse a single-pair block mapping"):
-        t"name: Alice".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"name" -> t"Alice"))
+        "name: Alice".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("name" -> "Alice"))
 
       test(m"Parse a multi-pair block mapping"):
-        t"a: 1\nb: 2\nc: 3".read[Yaml].as[Map[Text, Int]]
-      . assert(_ == Map(t"a" -> 1, t"b" -> 2, t"c" -> 3))
+        "a: 1\nb: 2\nc: 3".read[Yaml].as[Map[Text, Int]]
+      . assert(_ == Map("a" -> 1, "b" -> 2, "c" -> 3))
 
       test(m"Parse a block mapping into a case class"):
-        t"name: Alice\nage: 30".read[Yaml].as[Person]
-      . assert(_ == Person(t"Alice", 30))
+        "name: Alice\nage: 30".read[Yaml].as[Person]
+      . assert(_ == Person("Alice", 30))
 
       test(m"Parse a nested block mapping"):
-        t"inner:\n  n: 42".read[Yaml].as[Outer]
+        "inner:\n  n: 42".read[Yaml].as[Outer]
       . assert(_ == Outer(Inner(42)))
 
       test(m"Parse a deeper nested block mapping"):
-        t"name: hello\ninner:\n  n: 7".read[Yaml].as[NamedOuter]
-      . assert(_ == NamedOuter(t"hello", Inner(7)))
+        "name: hello\ninner:\n  n: 7".read[Yaml].as[NamedOuter]
+      . assert(_ == NamedOuter("hello", Inner(7)))
 
       test(m"Parse a block mapping containing a block sequence"):
-        t"items:\n  - 1\n  - 2\n  - 3".read[Yaml].as[Map[Text, List[Int]]]
-      . assert(_ == Map(t"items" -> List(1, 2, 3)))
+        "items:\n  - 1\n  - 2\n  - 3".read[Yaml].as[Map[Text, List[Int]]]
+      . assert(_ == Map("items" -> List(1, 2, 3)))
 
       test(m"Parse a block mapping containing a flow sequence"):
-        t"xs: [1, 2, 3]".read[Yaml].as[Map[Text, List[Int]]]
-      . assert(_ == Map(t"xs" -> List(1, 2, 3)))
+        "xs: [1, 2, 3]".read[Yaml].as[Map[Text, List[Int]]]
+      . assert(_ == Map("xs" -> List(1, 2, 3)))
 
       test(m"Parse a block sequence of case classes"):
-        t"- name: Alice\n  age: 30\n- name: Bob\n  age: 25".read[Yaml].as[List[Person]]
+        "- name: Alice\n  age: 30\n- name: Bob\n  age: 25".read[Yaml].as[List[Person]]
       . assert(_ == List(Person(t"Alice", 30), Person(t"Bob", 25)))
 
       test(m"Block mapping parses to Yaml.Ast.Mapping"):
-        Yaml.unseal(t"a: 1\nb: 2".read[Yaml]) match
+        Yaml.unseal("a: 1\nb: 2".read[Yaml]) match
           case Yaml.Ast.Mapping(entries) => entries.length
           case _                        => -1
       . assert(_ == 2)
 
       test(m"Block mapping with comments interleaved"):
-        t"a: 1\n# comment\nb: 2".read[Yaml].as[Map[Text, Int]]
-      . assert(_ == Map(t"a" -> 1, t"b" -> 2))
+        "a: 1\n# comment\nb: 2".read[Yaml].as[Map[Text, Int]]
+      . assert(_ == Map("a" -> 1, "b" -> 2))
 
     suite(m"Block scalars"):
       test(m"Literal block scalar preserves newlines"):
-        t"text: |\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"text" -> t"line1\nline2\n"))
+        "text: |\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("text" -> "line1\nline2\n"))
 
       test(m"Folded block scalar joins lines with spaces"):
-        t"text: >\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"text" -> t"line1 line2\n"))
+        "text: >\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("text" -> "line1 line2\n"))
 
       test(m"Literal scalar with strip indicator drops trailing newline"):
-        t"text: |-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"text" -> t"line1\nline2"))
+        "text: |-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("text" -> "line1\nline2"))
 
       test(m"Folded scalar with strip indicator drops trailing newline"):
-        t"text: >-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"text" -> t"line1 line2"))
+        "text: >-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("text" -> "line1 line2"))
 
       test(m"Literal block scalar in a sequence item"):
-        t"- |\n  line1\n  line2".read[Yaml].as[List[Text]]
+        "- |\n  line1\n  line2".read[Yaml].as[List[Text]]
       . assert(_ == List(t"line1\nline2\n"))
 
       test(m"Block mapping with literal scalar then another field"):
-        val yaml = t"a: |\n  hello\n  world\nb: tail"
+        val yaml = "a: |\n  hello\n  world\nb: tail"
         yaml.read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"a" -> t"hello\nworld\n", t"b" -> t"tail"))
+      . assert(_ == Map("a" -> "hello\nworld\n", "b" -> "tail"))
 
       test(m"Single-line literal block scalar"):
-        t"text: |\n  only".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"text" -> t"only\n"))
+        "text: |\n  only".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("text" -> "only\n"))
 
       test(m"Single-line literal scalar with strip"):
-        t"text: |-\n  only".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"text" -> t"only"))
+        "text: |-\n  only".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("text" -> "only"))
 
       test(m"Literal scalar with explicit indent indicator"):
-        t"text: |2\n   indented".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"text" -> t" indented\n"))
+        "text: |2\n   indented".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("text" -> " indented\n"))
 
       test(m"Folded scalar with explicit indent indicator"):
-        t"text: >2\n   indented\n   more".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"text" -> t" indented\n more\n"))
+        "text: >2\n   indented\n   more".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("text" -> " indented\n more\n"))
 
       test(m"Literal scalar with explicit indent then strip"):
-        t"text: |2-\n   indented".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"text" -> t" indented"))
+        "text: |2-\n   indented".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("text" -> " indented"))
 
       test(m"Literal scalar with strip then explicit indent (chomp first)"):
-        t"text: |-2\n   indented".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"text" -> t" indented"))
+        "text: |-2\n   indented".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("text" -> " indented"))
 
     suite(m"Tags"):
       test(m"!!str forces a number-looking value to a string"):
-        t"!!str 42".read[Yaml].as[Text]
-      . assert(_ == t"42")
+        "!!str 42".read[Yaml].as[Text]
+      . assert(_ == "42")
 
       test(m"!!str on an already-quoted string is a no-op"):
-        t"!!str \"hello\"".read[Yaml].as[Text]
-      . assert(_ == t"hello")
+        "!!str \"hello\"".read[Yaml].as[Text]
+      . assert(_ == "hello")
 
       test(m"!!int forces a quoted-string value to an integer"):
-        t"!!int \"42\"".read[Yaml].as[Int]
+        "!!int \"42\"".read[Yaml].as[Int]
       . assert(_ == 42)
 
       test(m"!!float forces an integer value to a decimal"):
-        t"!!float 7".read[Yaml].as[Double]
+        "!!float 7".read[Yaml].as[Double]
       . assert(_ == 7.0)
 
       test(m"!!float forces a quoted-string value to a decimal"):
-        t"!!float \"3.14\"".read[Yaml].as[Double]
+        "!!float \"3.14\"".read[Yaml].as[Double]
       . assert(_ == 3.14)
 
       test(m"!!bool forces a quoted-string value to a boolean"):
-        t"!!bool \"true\"".read[Yaml].as[Boolean]
+        "!!bool \"true\"".read[Yaml].as[Boolean]
       . assert(identity)
 
       test(m"!!null tags any value as null"):
-        Yaml.unseal(t"!!null whatever".read[Yaml])
+        Yaml.unseal("!!null whatever".read[Yaml])
       . assert(_ == Yaml.Ast.Null)
 
       test(m"Unknown tag passes the value through unchanged"):
-        t"!myTag 42".read[Yaml].as[Int]
+        "!myTag 42".read[Yaml].as[Int]
       . assert(_ == 42)
 
       test(m"!!str on a tagged block-mapping value with continuation"):
-        t"key: !!str\n  hello world".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"key" -> t"hello world"))
+        "key: !!str\n  hello world".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("key" -> "hello world"))
 
       test(m"!!str on a tagged block-mapping value with multi-line content"):
-        t"key: !!str\n  first\n  second".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"key" -> t"first second"))
+        "key: !!str\n  first\n  second".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("key" -> "first second"))
 
     suite(m"Anchors and aliases"):
       test(m"Alias resolves to anchored scalar"):
-        t"a: &x 1\nb: *x".read[Yaml].as[Map[Text, Int]]
-      . assert(_ == Map(t"a" -> 1, t"b" -> 1))
+        "a: &x 1\nb: *x".read[Yaml].as[Map[Text, Int]]
+      . assert(_ == Map("a" -> 1, "b" -> 1))
 
       test(m"Alias resolves to anchored flow sequence"):
-        t"a: &xs [1, 2, 3]\nb: *xs".read[Yaml].as[Map[Text, List[Int]]]
-      . assert(_ == Map(t"a" -> List(1, 2, 3), t"b" -> List(1, 2, 3)))
+        "a: &xs [1, 2, 3]\nb: *xs".read[Yaml].as[Map[Text, List[Int]]]
+      . assert(_ == Map("a" -> List(1, 2, 3), "b" -> List(1, 2, 3)))
 
       test(m"Alias resolves to anchored flow mapping"):
-        t"a: &m {n: 1}\nb: *m".read[Yaml].as[Map[Text, Inner]]
-      . assert(_ == Map(t"a" -> Inner(1), t"b" -> Inner(1)))
+        "a: &m {n: 1}\nb: *m".read[Yaml].as[Map[Text, Inner]]
+      . assert(_ == Map("a" -> Inner(1), "b" -> Inner(1)))
 
       test(m"Alias resolves to anchored block mapping"):
-        t"defaults: &d\n  n: 7\nuse: *d".read[Yaml].as[Map[Text, Inner]]
-      . assert(_ == Map(t"defaults" -> Inner(7), t"use" -> Inner(7)))
+        "defaults: &d\n  n: 7\nuse: *d".read[Yaml].as[Map[Text, Inner]]
+      . assert(_ == Map("defaults" -> Inner(7), "use" -> Inner(7)))
 
       test(m"Alias resolves to anchored block sequence"):
-        t"a: &xs\n  - 1\n  - 2\nb: *xs".read[Yaml].as[Map[Text, List[Int]]]
-      . assert(_ == Map(t"a" -> List(1, 2), t"b" -> List(1, 2)))
+        "a: &xs\n  - 1\n  - 2\nb: *xs".read[Yaml].as[Map[Text, List[Int]]]
+      . assert(_ == Map("a" -> List(1, 2), "b" -> List(1, 2)))
 
       test(m"Alias resolves to anchored string"):
-        t"a: &name Alice\nb: *name".read[Yaml].as[Map[Text, Text]]
-      . assert(_ == Map(t"a" -> t"Alice", t"b" -> t"Alice"))
+        "a: &name Alice\nb: *name".read[Yaml].as[Map[Text, Text]]
+      . assert(_ == Map("a" -> "Alice", "b" -> "Alice"))
 
       test(m"Unknown alias raises a Parse.Error"):
-        capture[Parse.Error](t"a: *missing".read[Yaml].as[Map[Text, Int]])
+        capture[Parse.Error]("a: *missing".read[Yaml].as[Map[Text, Int]])
       . assert(_ => true)
 
     suite(m"Multi-document streams"):
       test(m"Parse a single document with explicit start marker"):
-        t"---\n42".read[Yaml].as[Int]
+        "---\n42".read[Yaml].as[Int]
       . assert(_ == 42)
 
       test(m"Parse a single document with start and end markers"):
-        t"---\n42\n...".read[Yaml].as[Int]
+        "---\n42\n...".read[Yaml].as[Int]
       . assert(_ == 42)
 
       test(m"Chain of three documents"):
-        t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int])
+        "---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int])
       . assert(_ == List(1, 2, 3))
 
       suite(m"Streaming reads"):
-        val personDoc = t"name: Alice\nage: 42"
+        val personDoc = "name: Alice\nage: 42"
 
         test(m"a document parses from a fragmented text stream"):
           summon[Yaml is Aggregable by Text]
           . accept(personDoc.s.grouped(3).map(_.tt).stream).as[Person]
-        . assert(_ == Person(t"Alice", 42))
+        . assert(_ == Person("Alice", 42))
 
         test(m"a document parses from a single-char-chunk stream"):
           summon[Yaml is Aggregable by Text]
           . accept(personDoc.s.grouped(1).map(_.tt).stream).as[Person]
-        . assert(_ == Person(t"Alice", 42))
+        . assert(_ == Person("Alice", 42))
 
         test(m"a document parses from a byte stream without transcoding"):
           import charEncoders.utf8Encoder
           summon[Yaml is Aggregable by Data].accept(personDoc.in[Data].stream).as[Person]
-        . assert(_ == Person(t"Alice", 42))
+        . assert(_ == Person("Alice", 42))
 
         test(m"multi-document YAML parses from a stream"):
           summon[List[Yaml] is Aggregable by Text]
-          . accept(t"---\n1\n---\n2\n---\n3".s.grouped(2).map(_.tt).stream)
+          . accept("---\n1\n---\n2\n---\n3".s.grouped(2).map(_.tt).stream)
           . map(_.as[Int])
         . assert(_ == List(1, 2, 3))
 
@@ -632,93 +632,93 @@ object Tests extends Suite(m"Ypsiloid Tests"):
           // Single-char chunks split the astral character's surrogate pair
           // across encoder windows; the duct must carry it.
           summon[Yaml is Aggregable by Text]
-          . accept(t"name: Zoë £€𐍈\nage: 1".s.grouped(1).map(_.tt).stream).as[Person]
-        . assert(_ == Person(t"Zoë £€𐍈", 1))
+          . accept("name: Zoë £€𐍈\nage: 1".s.grouped(1).map(_.tt).stream).as[Person]
+        . assert(_ == Person("Zoë £€𐍈", 1))
 
         test(m"a tracked parse works over a stream"):
           given Yaml.Tracking = Yaml.Tracking.On
           summon[Yaml is Aggregable by Text]
           . accept(personDoc.s.grouped(3).map(_.tt).stream).as[Person]
-        . assert(_ == Person(t"Alice", 42))
+        . assert(_ == Person("Alice", 42))
 
       test(m"Empty stream yields no documents"):
-        t"".read[List[Yaml]].size
+        "".read[List[Yaml]].size
       . assert(_ == 0)
 
       test(m"Chain of mixed-type documents"):
-        t"---\nname: Alice\n---\n[1, 2, 3]".read[List[Yaml]].size
+        "---\nname: Alice\n---\n[1, 2, 3]".read[List[Yaml]].size
       . assert(_ == 2)
 
       test(m"Single-document stream without leading separator"):
-        t"42".read[List[Yaml]].map(_.as[Int])
+        "42".read[List[Yaml]].map(_.as[Int])
       . assert(_ == List(42))
 
       test(m"Chain with trailing end marker"):
-        t"1\n---\n2\n...".read[List[Yaml]].map(_.as[Int])
+        "1\n---\n2\n...".read[List[Yaml]].map(_.as[Int])
       . assert(_ == List(1, 2))
 
     suite(m"Comment handling"):
       test(m"Comment after a scalar is ignored"):
-        t"42 # the answer".read[Yaml].as[Int]
+        "42 # the answer".read[Yaml].as[Int]
       . assert(_ == 42)
 
       test(m"Standalone comment line is ignored"):
-        t"# a comment\n42".read[Yaml].as[Int]
+        "# a comment\n42".read[Yaml].as[Int]
       . assert(_ == 42)
 
     suite(m"Whitespace"):
       test(m"Leading and trailing newlines are ignored"):
-        t"\n\n42\n\n".read[Yaml].as[Int]
+        "\n\n42\n\n".read[Yaml].as[Int]
       . assert(_ == 42)
 
       test(m"Trailing spaces on a scalar line are stripped"):
-        t"hello   ".read[Yaml].as[Text]
-      . assert(_ == t"hello")
+        "hello   ".read[Yaml].as[Text]
+      . assert(_ == "hello")
 
     suite(m"Direct AST inspection"):
       test(m"Plain integer parses to Yaml.Ast.Integer"):
-        Yaml.unseal(t"42".read[Yaml])
+        Yaml.unseal("42".read[Yaml])
       . assert(_ == Yaml.Ast.Integer(42L))
 
       test(m"Float parses to Yaml.Ast.Decimal"):
-        Yaml.unseal(t"3.14".read[Yaml])
+        Yaml.unseal("3.14".read[Yaml])
       . assert(_ == Yaml.Ast.Decimal(3.14))
 
       test(m"Boolean parses to Yaml.Ast.Bool"):
-        Yaml.unseal(t"true".read[Yaml])
+        Yaml.unseal("true".read[Yaml])
       . assert(_ == Yaml.Ast.Bool(true))
 
       test(m"Null parses to Yaml.Ast.Null"):
-        Yaml.unseal(t"null".read[Yaml])
+        Yaml.unseal("null".read[Yaml])
       . assert(_ == Yaml.Ast.Null)
 
       test(m"Tilde parses to Yaml.Ast.Null"):
-        Yaml.unseal(t"~".read[Yaml])
+        Yaml.unseal("~".read[Yaml])
       . assert(_ == Yaml.Ast.Null)
 
       test(m"Plain string parses to Yaml.Ast.Str"):
-        Yaml.unseal(t"hello".read[Yaml])
-      . assert(_ == Yaml.Ast.Str(t"hello"))
+        Yaml.unseal("hello".read[Yaml])
+      . assert(_ == Yaml.Ast.Str("hello"))
 
     suite(m"AST equality"):
       test(m"Two equal sequence Yaml.Asts compare equal via Yaml"):
         Yaml.Ast.deepEquals
-                ( Yaml.unseal(t"[1, 2, 3]".read[Yaml]),
-                  Yaml.unseal(t"[1, 2, 3]".read[Yaml]) )
+                ( Yaml.unseal("[1, 2, 3]".read[Yaml]),
+                  Yaml.unseal("[1, 2, 3]".read[Yaml]) )
       . assert(identity)
 
       test(m"Two equal mapping Yaml.Asts compare equal via Yaml"):
         Yaml.Ast.deepEquals
-                ( Yaml.unseal(t"{a: 1, b: 2}".read[Yaml]),
-                  Yaml.unseal(t"{a: 1, b: 2}".read[Yaml]) )
+                ( Yaml.unseal("{a: 1, b: 2}".read[Yaml]),
+                  Yaml.unseal("{a: 1, b: 2}".read[Yaml]) )
       . assert(identity)
 
       test(m"Two equal Yaml documents compare equal"):
-        t"{a: [1, 2], b: 3}".read[Yaml] == t"{a: [1, 2], b: 3}".read[Yaml]
+        "{a: [1, 2], b: 3}".read[Yaml] == "{a: [1, 2], b: 3}".read[Yaml]
       . assert(identity)
 
       test(m"Different sequences compare unequal"):
-        t"[1, 2, 3]".read[Yaml] == t"[1, 2, 4]".read[Yaml]
+        "[1, 2, 3]".read[Yaml] == "[1, 2, 4]".read[Yaml]
       . assert(!_)
 
       test(m"Equal sequences hash to the same value"):
@@ -727,11 +727,11 @@ object Tests extends Suite(m"Ypsiloid Tests"):
 
     suite(m"Type errors"):
       test(m"Decoding a string as Int raises a Yaml.Error"):
-        capture[Yaml.Error](t"hello".read[Yaml].as[Int])
+        capture[Yaml.Error]("hello".read[Yaml].as[Int])
       . assert(_ => true)
 
       test(m"Decoding a number as Boolean raises a Yaml.Error"):
-        capture[Yaml.Error](t"42".read[Yaml].as[Boolean])
+        capture[Yaml.Error]("42".read[Yaml].as[Boolean])
       . assert(_ => true)
 
     suite(m"Encodable derivation"):
@@ -752,38 +752,38 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(identity)
 
       test(m"Encode a Text"):
-        t"hello".in[Yaml].as[Text]
-      . assert(_ == t"hello")
+        "hello".in[Yaml].as[Text]
+      . assert(_ == "hello")
 
       test(m"Encode a List"):
         (List(1, 2, 3): List[Int]).in[Yaml].as[List[Int]]
       . assert(_ == List(1, 2, 3))
 
       test(m"Encode a Map"):
-        Map(t"a" -> 1, t"b" -> 2).in[Yaml].as[Map[Text, Int]]
-      . assert(_ == Map(t"a" -> 1, t"b" -> 2))
+        Map("a" -> 1, "b" -> 2).in[Yaml].as[Map[Text, Int]]
+      . assert(_ == Map("a" -> 1, "b" -> 2))
 
       test(m"Encode Some(value)"):
         (Some(42): Option[Int]).in[Yaml].as[Option[Int]]
       . assert(_ == Some(42))
 
       test(m"Encode None to absent and decode back"):
-        WithOption(t"x", None).in[Yaml].as[WithOption]
-      . assert(_ == WithOption(t"x", None))
+        WithOption("x", None).in[Yaml].as[WithOption]
+      . assert(_ == WithOption("x", None))
 
       test(m"Round-trip a simple case class"):
-        Person(t"Alice", 30).in[Yaml].as[Person]
-      . assert(_ == Person(t"Alice", 30))
+        Person("Alice", 30).in[Yaml].as[Person]
+      . assert(_ == Person("Alice", 30))
 
       test(m"Round-trip a nested case class"):
-        NamedOuter(t"x", Inner(7)).in[Yaml].as[NamedOuter]
-      . assert(_ == NamedOuter(t"x", Inner(7)))
+        NamedOuter("x", Inner(7)).in[Yaml].as[NamedOuter]
+      . assert(_ == NamedOuter("x", Inner(7)))
 
       test(m"Round-trip a list of case classes"):
         (List(Person(t"A", 1), Person(t"B", 2)): List[Person]).in[Yaml].as[List[Person]]
       . assert(_ == List(Person(t"A", 1), Person(t"B", 2)))
 
-      val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+      val tree = Tree("root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
 
       test(m"Round-trip a type recursive through a List"):
         tree.in[Yaml].as[Tree]
@@ -794,7 +794,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == Boxed(tree))
 
       test(m"Encoded case class produces a Yaml.Ast.Mapping"):
-        Person(t"Alice", 30).in[Yaml].root match
+        Person("Alice", 30).in[Yaml].root match
           case Yaml.Ast.Mapping(entries) => entries.length
           case _                        => -1
       . assert(_ == 2)
@@ -806,7 +806,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == 3)
 
       test(m"Encoding skips Optional fields that are Unset/None"):
-        WithOption(t"x", None).in[Yaml].root match
+        WithOption("x", None).in[Yaml].root match
           case Yaml.Ast.Mapping(entries) => entries.length
           case _                        => -1
       . assert(_ == 1)
@@ -834,7 +834,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         shape.in[Yaml].root match
           case Yaml.Ast.Mapping(entries) =>
             entries.readable.collectFirst:
-              case (Yaml.Ast.Str(k), Yaml.Ast.Str(v)) if k == t"type" => v.s
+              case (Yaml.Ast.Str(k), Yaml.Ast.Str(v)) if k == "type" => v.s
             . getOrElse("none")
           case _ => "none"
       . assert(_ == "Circle")
@@ -843,7 +843,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         (YStatus.Active(5): YStatus).in[Yaml].root match
           case Yaml.Ast.Mapping(entries) =>
             entries.readable.collectFirst:
-              case (Yaml.Ast.Str(k), Yaml.Ast.Str(v)) if k == t"type" => v.s
+              case (Yaml.Ast.Str(k), Yaml.Ast.Str(v)) if k == "type" => v.s
             . getOrElse("none")
           case _ => "none"
       . assert(_ == "ok")
@@ -853,11 +853,11 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == List(YStatus.Active(5), YStatus.Removed(9), YStatus.Pending(1)))
 
       test(m"Decode a sum-type variant from a flow mapping"):
-        t"{type: Circle, radius: 2.5}".read[Yaml].as[Shape]
+        "{type: Circle, radius: 2.5}".read[Yaml].as[Shape]
       . assert(_ == Shape.Circle(2.5))
 
       test(m"Decode a sum-type variant from a block mapping"):
-        t"type: Square\nside: 7.0".read[Yaml].as[Shape]
+        "type: Square\nside: 7.0".read[Yaml].as[Shape]
       . assert(_ == Shape.Square(7.0))
 
       test(m"Round-trip a list of sum-type variants"):
@@ -867,22 +867,22 @@ object Tests extends Suite(m"Ypsiloid Tests"):
 
     suite(m"Direct accessors"):
       test(m"Index a sequence by integer"):
-        val ys = t"[10, 20, 30]".read[Yaml]
+        val ys = "[10, 20, 30]".read[Yaml]
         ys(1).as[Int]
       . assert(_ == 20)
 
       test(m"Look up a mapping field by Text"):
-        val m = t"{name: Alice, age: 30}".read[Yaml]
-        m(t"age").as[Int]
+        val m = "{name: Alice, age: 30}".read[Yaml]
+        m("age").as[Int]
       . assert(_ == 30)
 
       test(m"Missing mapping field decodes as None via Option"):
-        val m = t"{name: Alice}".read[Yaml]
-        m(t"age").as[Option[Int]]
+        val m = "{name: Alice}".read[Yaml]
+        m("age").as[Option[Int]]
       . assert(_ == None)
 
       test(m"Indexing a non-sequence raises a Yaml.Error"):
-        val y = t"42".read[Yaml]
+        val y = "42".read[Yaml]
         capture[Yaml.Error](y(0))
       . assert(_ => true)
 
@@ -890,52 +890,52 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       import dynamicAccess.dynamicYaml
 
       test(m"Read a field via selectDynamic"):
-        val y = t"{name: Alice, age: 30}".read[Yaml]
+        val y = "{name: Alice, age: 30}".read[Yaml]
         y.name.as[Text]
-      . assert(_ == t"Alice")
+      . assert(_ == "Alice")
 
       test(m"Read a nested field by chaining"):
-        val y = t"outer: {inner: {n: 7}}".read[Yaml]
+        val y = "outer: {inner: {n: 7}}".read[Yaml]
         y.outer.inner.n.as[Int]
       . assert(_ == 7)
 
       test(m"Read a sequence-valued field by index"):
-        val y = t"items: [10, 20, 30]".read[Yaml]
+        val y = "items: [10, 20, 30]".read[Yaml]
         y.items(1).as[Int]
       . assert(_ == 20)
 
       test(m"Update a mapping field dynamically"):
-        val y = t"{name: Alice, age: 30}".read[Yaml]
+        val y = "{name: Alice, age: 30}".read[Yaml]
         val updated = y.age = 31
         updated.as[Person]
-      . assert(_ == Person(t"Alice", 31))
+      . assert(_ == Person("Alice", 31))
 
       test(m"Add a new field via dynamic assignment"):
-        val y = t"{name: Alice}".read[Yaml]
+        val y = "{name: Alice}".read[Yaml]
         val updated = y.age = 18
         updated.as[Person]
-      . assert(_ == Person(t"Alice", 18))
+      . assert(_ == Person("Alice", 18))
 
       test(m"Delete a field by assigning Unset"):
-        val y = t"{name: Alice, age: 30}".read[Yaml]
+        val y = "{name: Alice, age: 30}".read[Yaml]
         val updated = y.age = Unset
         updated.as[WithDefault]
-      . assert(_ == WithDefault(t"Alice", 18))
+      . assert(_ == WithDefault("Alice", 18))
 
       test(m"Update a sequence element by index"):
-        val y = t"[1, 2, 3]".read[Yaml]
+        val y = "[1, 2, 3]".read[Yaml]
         val updated = y(1) = 5
         updated.as[List[Int]]
       . assert(_ == List(1, 5, 3))
 
     suite(m"Yaml.make construction"):
       test(m"Yaml.make with one field"):
-        Yaml.make(name = t"Anna".in[Yaml]).as[Map[Text, Text]]
-      . assert(_ == Map(t"name" -> t"Anna"))
+        Yaml.make(name = "Anna".in[Yaml]).as[Map[Text, Text]]
+      . assert(_ == Map("name" -> "Anna"))
 
       test(m"Yaml.make with multiple fields"):
-        Yaml.make(name = t"Anna".in[Yaml], age = 30.in[Yaml]).as[Person]
-      . assert(_ == Person(t"Anna", 30))
+        Yaml.make(name = "Anna".in[Yaml], age = 30.in[Yaml]).as[Person]
+      . assert(_ == Person("Anna", 30))
 
       test(m"Nested Yaml.make"):
         Yaml.make(inner = Yaml.make(n = 7.in[Yaml])).as[Outer]
@@ -943,30 +943,30 @@ object Tests extends Suite(m"Ypsiloid Tests"):
 
     suite(m"Bytes decoder"):
       test(m"Decode a numeric value as Bytes"):
-        t"255".read[Yaml].as[Bytes]
+        "255".read[Yaml].as[Bytes]
       . assert(_ == 255L.b)
 
     suite(m"BCD arbitrary-precision numbers"):
       test(m"21-digit integer parses as BCD"):
-        Yaml.unseal(t"123456789012345678901".read[Yaml]).isBcd
+        Yaml.unseal("123456789012345678901".read[Yaml]).isBcd
       . assert(identity)
 
       test(m"Long-range integer still parses as Long"):
-        Yaml.unseal(t"123456789012345".read[Yaml]).isLong
+        Yaml.unseal("123456789012345".read[Yaml]).isLong
       . assert(identity)
 
       test(m"Decimal with > 17 significant digits parses as BCD"):
-        Yaml.unseal(t"3.14159265358979323846".read[Yaml]).isBcd
+        Yaml.unseal("3.14159265358979323846".read[Yaml]).isBcd
       . assert(identity)
 
       test(m"Decimal with low precision still parses as Double"):
-        Yaml.unseal(t"3.14".read[Yaml]).isDouble
+        Yaml.unseal("3.14".read[Yaml]).isDouble
       . assert(identity)
 
       test(m"BCD round-trips through .as[BigDecimal] when Decodable provided"):
         // No BCD-specific decoder yet, but the BCD value is reachable
         // via the AST extensions for callers who need full precision.
-        val ast = Yaml.unseal(t"99999999999999999999999999".read[Yaml])
+        val ast = Yaml.unseal("99999999999999999999999999".read[Yaml])
         ast.isBcd && {
           import strategies.throwUnsafely
           ast.bcd.toBigDecimal == BigDecimal("99999999999999999999999999")
@@ -974,9 +974,9 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(identity)
 
       test(m"isNumber accepts Long, Double, and BCD"):
-        val l = Yaml.unseal(t"42".read[Yaml]).isNumber
-        val d = Yaml.unseal(t"3.14".read[Yaml]).isNumber
-        val b = Yaml.unseal(t"123456789012345678901".read[Yaml]).isNumber
+        val l = Yaml.unseal("42".read[Yaml]).isNumber
+        val d = Yaml.unseal("3.14".read[Yaml]).isNumber
+        val b = Yaml.unseal("123456789012345678901".read[Yaml]).isNumber
         l && d && b
       . assert(identity)
 
@@ -987,9 +987,9 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == 42)
 
       test(m"Interpolate a value into a mapping"):
-        val name = t"Alice"
+        val name = "Alice"
         y"name: $name".as[Map[Text, Text]]
-      . assert(_ == Map(t"name" -> t"Alice"))
+      . assert(_ == Map("name" -> "Alice"))
 
       test(m"Interpolate a value into a flow sequence"):
         val a = 1
@@ -998,59 +998,59 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == List(1, 2, 3))
 
       test(m"Interpolate two values into a mapping"):
-        val name = t"Alice"
+        val name = "Alice"
         val age = 30
         y"""
           name: $name
           age: $age
         """.as[Person]
-      . assert(_ == Person(t"Alice", 30))
+      . assert(_ == Person("Alice", 30))
 
       test(m"Interpolate inside a string-valued field"):
-        val name = t"Alice"
+        val name = "Alice"
         y"greeting: hello $name".as[Map[Text, Text]]
-      . assert(_ == Map(t"greeting" -> t"hello Alice"))
+      . assert(_ == Map("greeting" -> "hello Alice"))
 
     suite(m"y\"...\" extractor"):
       test(m"Match a literal flow mapping"):
-        t"{a: 1, b: 2}".read[Yaml] match
+        "{a: 1, b: 2}".read[Yaml] match
           case y"{a: 1, b: 2}" => true
           case _               => false
       . assert(identity)
 
       test(m"Capture a single value"):
-        t"name: Alice".read[Yaml] match
-          case y"name: $n" => Yaml.unseal(n) == Yaml.Ast.Str(t"Alice")
+        "name: Alice".read[Yaml] match
+          case y"name: $n" => Yaml.unseal(n) == Yaml.Ast.Str("Alice")
           case _           => false
       . assert(identity)
 
     suite(m"YamlPath"):
       test(m"Empty path encodes with #"):
-        YamlPath().encode.contains(t"#")
+        YamlPath().encode.contains("#")
       . assert(identity)
 
       test(m"Path with one segment includes the segment"):
-        YamlPath()(t"foo").encode.contains(t"foo")
+        YamlPath()("foo").encode.contains("foo")
       . assert(identity)
 
       test(m"Path with multiple segments includes all"):
-        val p = YamlPath()(t"a")(t"b")(t"c").encode
-        p.contains(t"a") && p.contains(t"b") && p.contains(t"c")
+        val p = YamlPath()("a")("b")("c").encode
+        p.contains("a") && p.contains("b") && p.contains("c")
       . assert(identity)
 
       test(m"Path escapes ~ as ~0 in segment"):
-        val p = YamlPath()(t"a~b").encode
-        p.contains(t"~0")
+        val p = YamlPath()("a~b").encode
+        p.contains("~0")
       . assert(identity)
 
       test(m"Path escapes / as ~1 in segment"):
-        val p = YamlPath()(t"a/b").encode
-        p.contains(t"~1")
+        val p = YamlPath()("a/b").encode
+        p.contains("~1")
       . assert(identity)
 
       test(m"Path with ordinal segment encodes the index"):
         val p = YamlPath()(Prim).encode
-        p.contains(t"0")
+        p.contains("0")
       . assert(identity)
 
       test(m"YamlPath.Error reason describes itself"):
@@ -1061,11 +1061,11 @@ object Tests extends Suite(m"Ypsiloid Tests"):
     suite(m"yp\"...\" interpolator"):
       test(m"a same-document path parses"):
         yp"#/foo/bar".encode
-      . assert(_ == t"#/foo/bar")
+      . assert(_ == "#/foo/bar")
 
       test(m"the whole-document path parses"):
         yp"#".encode
-      . assert(_ == t"#")
+      . assert(_ == "#")
 
       test(m"a path not beginning with '#' is rejected at the first character"):
         demilitarize:
@@ -1082,27 +1082,27 @@ object Tests extends Suite(m"Ypsiloid Tests"):
     suite(m"Lens"):
       import dynamicAccess.dynamicYaml, conversions.encodableToYaml
 
-      val org = Yaml.ast(NamedOuter(t"a", Inner(7)).in[Yaml].root)
+      val org = Yaml.ast(NamedOuter("a", Inner(7)).in[Yaml].root)
 
       test(m"Lens update on a nested mapping"):
         val updated = org.lens(_.inner.n = 99.in[Yaml])
         updated.as[NamedOuter]
-      . assert(_ == NamedOuter(t"a", Inner(99)))
+      . assert(_ == NamedOuter("a", Inner(99)))
 
       test(m"Lens update of top-level field"):
-        val updated = org.lens(_.name = t"b")
+        val updated = org.lens(_.name = "b")
         updated.as[NamedOuter]
-      . assert(_ == NamedOuter(t"b", Inner(7)))
+      . assert(_ == NamedOuter("b", Inner(7)))
 
       test(m"Optical update on a sequence element"):
-        val y = t"items: [10, 20, 30]".read[Yaml]
+        val y = "items: [10, 20, 30]".read[Yaml]
         val updated = y.lens(_.items(Prim) = 99)
         updated.items.as[List[Int]]
       . assert(_ == List(99, 20, 30))
 
       test(m"Lens reads a field by name"):
         summon["name" is Lens from Yaml onto Yaml](org).as[Text]
-      . assert(_ == t"a")
+      . assert(_ == "a")
 
       test(m"Lens.modify transforms a field through a function"):
         val lens = summon["n" is Lens from Yaml onto Yaml]
@@ -1111,12 +1111,12 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == Inner(8))
 
       test(m"Each optic updates every sequence element"):
-        val y = t"items: [10, 20, 30]".read[Yaml]
+        val y = "items: [10, 20, 30]".read[Yaml]
         y.lens(_.items(Each) = 0).items.as[List[Int]]
       . assert(_ == List(0, 0, 0))
 
       test(m"Filter optic updates only matching elements"):
-        val y = t"items: [10, 20, 30]".read[Yaml]
+        val y = "items: [10, 20, 30]".read[Yaml]
         y.lens(_.items(Filter[Yaml](_.as[Int] > 15)) = 0).items.as[List[Int]]
       . assert(_ == List(10, 0, 0))
 
@@ -1175,44 +1175,44 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(!_)
 
       test(m"Roundtrip a simple string"):
-        roundtrip(t"hello")
-      . assert(_ == t"hello")
+        roundtrip("hello")
+      . assert(_ == "hello")
 
       test(m"Roundtrip a string with a space"):
-        roundtrip(t"hello world")
-      . assert(_ == t"hello world")
+        roundtrip("hello world")
+      . assert(_ == "hello world")
 
       test(m"Roundtrip a string that looks like an integer"):
-        roundtrip(t"42")
-      . assert(_ == t"42")
+        roundtrip("42")
+      . assert(_ == "42")
 
       test(m"Roundtrip a string that looks like a boolean"):
-        roundtrip(t"true")
-      . assert(_ == t"true")
+        roundtrip("true")
+      . assert(_ == "true")
 
       test(m"Roundtrip a string that looks like null"):
-        roundtrip(t"null")
-      . assert(_ == t"null")
+        roundtrip("null")
+      . assert(_ == "null")
 
       test(m"Roundtrip an empty string"):
-        roundtrip(t"")
-      . assert(_ == t"")
+        roundtrip("")
+      . assert(_ == "")
 
       test(m"Roundtrip a string with a colon"):
-        roundtrip(t"key: value")
-      . assert(_ == t"key: value")
+        roundtrip("key: value")
+      . assert(_ == "key: value")
 
       test(m"Roundtrip a string with a newline"):
-        roundtrip(t"line1\nline2")
-      . assert(_ == t"line1\nline2")
+        roundtrip("line1\nline2")
+      . assert(_ == "line1\nline2")
 
       test(m"Roundtrip a string with a quote and backslash"):
-        roundtrip(t"a\"b\\c")
-      . assert(_ == t"a\"b\\c")
+        roundtrip("a\"b\\c")
+      . assert(_ == "a\"b\\c")
 
       test(m"Roundtrip a string with leading indicator"):
-        roundtrip(t"- not a list")
-      . assert(_ == t"- not a list")
+        roundtrip("- not a list")
+      . assert(_ == "- not a list")
 
       test(m"Roundtrip a list of integers"):
         roundtrip[List[Int]](List(1, 2, 3))
@@ -1227,16 +1227,16 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == Nil)
 
       test(m"Roundtrip a map"):
-        roundtrip(Map(t"a" -> 1, t"b" -> 2))
-      . assert(_ == Map(t"a" -> 1, t"b" -> 2))
+        roundtrip(Map("a" -> 1, "b" -> 2))
+      . assert(_ == Map("a" -> 1, "b" -> 2))
 
       test(m"Roundtrip a case class"):
-        roundtrip(Person(t"Jon", 42))
-      . assert(_ == Person(t"Jon", 42))
+        roundtrip(Person("Jon", 42))
+      . assert(_ == Person("Jon", 42))
 
       test(m"Roundtrip a nested case class"):
-        roundtrip(NamedOuter(t"a", Inner(7)))
-      . assert(_ == NamedOuter(t"a", Inner(7)))
+        roundtrip(NamedOuter("a", Inner(7)))
+      . assert(_ == NamedOuter("a", Inner(7)))
 
       test(m"Roundtrip a list of case classes"):
         roundtrip[List[Person]](List(Person(t"a", 1), Person(t"b", 2)))
@@ -1247,19 +1247,19 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == List(List(1, 2), List(3, 4)))
 
       test(m"AST stable: nested mapping"):
-        astStable(t"outer:\n  inner: 1\n  other: two")
+        astStable("outer:\n  inner: 1\n  other: two")
       . assert(identity)
 
       test(m"AST stable: sequence of mappings"):
-        astStable(t"- a: 1\n  b: 2\n- a: 3\n  b: 4")
+        astStable("- a: 1\n  b: 2\n- a: 3\n  b: 4")
       . assert(identity)
 
       test(m"AST stable: empty flow mapping"):
-        astStable(t"{}")
+        astStable("{}")
       . assert(identity)
 
       test(m"AST stable: empty flow sequence"):
-        astStable(t"[]")
+        astStable("[]")
       . assert(identity)
 
     suite(m"HTTP content-type integration"):
@@ -1267,13 +1267,13 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       import formatting.blockYamlFormatting
 
       test(m"serialises with an application/yaml media type"):
-        Person(t"Jon", 42).in[Yaml].generic(0)
-      . assert(_.starts(t"application/yaml"))
+        Person("Jon", 42).in[Yaml].generic(0)
+      . assert(_.starts("application/yaml"))
 
       test(m"request body parses back via Instantiable"):
         val instantiable = summon[Yaml is Instantiable across HttpRequests from Text]
-        instantiable(t"name: Jon\nage: 42").as[Person]
-      . assert(_ == Person(t"Jon", 42))
+        instantiable("name: Jon\nage: 42").as[Person]
+      . assert(_ == Person("Jon", 42))
 
     ConformanceTests.all()
 

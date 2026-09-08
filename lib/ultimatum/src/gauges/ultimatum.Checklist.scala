@@ -45,8 +45,8 @@ import vacuous.*
 object Checklist:
   // The frames the running step's marker cycles through, so that a checklist shows which step is
   // working rather than merely which is next.
-  private val working: Text = t"⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
-  private val asciiWorking: Text = t"-\\|/"
+  private val working: Text = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+  private val asciiWorking: Text = "-\\|/"
 
 // How a run of steps is drawn. These differ in *height* — `Rows` is one row per step, the rest are
 // a single row — which is why `Procession` has no default: the choice changes the layout around it,
@@ -87,11 +87,11 @@ enum Checklist:
 
       standing match
         case Standing.Running   => frames.s.charAt(tick.index.abs%count).toString.tt
-        case Standing.Succeeded => if plain then t"+" else t"✓"
-        case Standing.Failed    => if plain then t"x" else t"✗"
-        case Standing.Warned    => t"!"
-        case Standing.Skipped   => if plain then t"-" else t"‑"
-        case Standing.Pending   => if plain then t"." else t"·"
+        case Standing.Succeeded => if plain then "+" else "✓"
+        case Standing.Failed    => if plain then "x" else "✗"
+        case Standing.Warned    => "!"
+        case Standing.Skipped   => if plain then "-" else "‑"
+        case Standing.Pending   => if plain then "." else "·"
 
     def pad(content: Teletype): Teletype =
       given Text is Measurable = gauging.metric
@@ -133,14 +133,14 @@ enum Checklist:
 
       case Beads =>
         // A compact chain: one bead per step, joined by a rule. Fixed at `2n - 1` cells.
-        val link = if plain then t"-" else t"━"
+        val link = if plain then "-" else "━"
 
         // Named, as above (`wildApprox`).
         def bead(step: Step, ordinal: Ordinal): Teletype =
           val glyph = step.standing match
-            case Standing.Pending => if plain then t"o" else t"○"
-            case Standing.Running => if plain then t"*" else t"◐"
-            case _                => if plain then t"@" else t"●"
+            case Standing.Pending => if plain then "o" else "○"
+            case Standing.Running => if plain then "*" else "◐"
+            case _                => if plain then "@" else "●"
 
           val bead = gauging.tint(palette.colorOf(step.standing))(Teletype(glyph))
 
@@ -153,7 +153,7 @@ enum Checklist:
         beads.occupied.lay(List(pad(e""))): beads => List(pad(beads.reduce(merge)))
 
       case Breadcrumb =>
-        val separator = if plain then t">" else t"›"
+        val separator = if plain then ">" else "›"
 
         val crumbs = steps.map: step =>
           val faded = step.standing == Standing.Pending

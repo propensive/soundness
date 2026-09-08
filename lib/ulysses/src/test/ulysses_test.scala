@@ -58,19 +58,19 @@ object Tests extends Suite(m"Ulysses tests"):
     . assert(_ == 994)
 
     val bloom = test(m"Add an element to a Bloom filter"):
-      BloomFilter[Text](100, 0.001) + t"Hello world"
+      BloomFilter[Text](100, 0.001) + "Hello world"
 
-    . check(_.hits(t"Hello world"))
+    . check(_.hits("Hello world"))
 
     test(m"Check that Bloom filter does not contain other strings"):
-      !bloom.hits(t"hello")
+      !bloom.hits("hello")
 
     . check(identity(_))
 
     test(m"Add multiple elements to a Bloom filter"):
       bloom ++ List(t"hello", t"world")
 
-    . assert { b => b.hits(t"hello") && b.hits(t"world") }
+    . assert { b => b.hits("hello") && b.hits("world") }
 
     val numbers = List(t"one", t"two", t"three", t"four", t"five", t"six", t"seven", t"eight", t"9", t"10", t"11", t"12", t"13", t"14", t"15", t"16").map { n => Array.frozen(n.digest[Blake3].data.readable.slice(0, 12)) }
     val numbers2 = (1 to 20).map(_.toString.tt.digest[Blake3].data)

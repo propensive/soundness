@@ -56,10 +56,10 @@ object OpenApi:
   object Parameter:
     object In:
       given decodable: Tactic[OpenApi.Error] => In is Decodable in Text = _.lower match
-        case t"path"   => In.Path
-        case t"query"  => In.Query
-        case t"header" => In.Header
-        case t"cookie" => In.Cookie
+        case "path"   => In.Path
+        case "query"  => In.Query
+        case "header" => In.Header
+        case "cookie" => In.Cookie
         case other     => abort(OpenApi.Error(OpenApi.Error.Reason.BadParameterLocation(other)))
 
     // Anchored (rather than derived inline at each use) so that `PathItem` and
@@ -172,7 +172,7 @@ object OpenApi:
     def response(status: Http.Status): Optional[Response] =
       operation.responses.at(status.code.show)
       . or(operation.responses.at(t"${status.code/100}XX"))
-      . or(operation.responses.at(t"default"))
+      . or(operation.responses.at("default"))
 
   // Resolve a single `$ref` hop against the document's component schemas, via
   // `ref()`. Resolving one hop at a time (never inlining recursively) keeps
@@ -182,7 +182,7 @@ object OpenApi:
     def apply()(using doc: OpenApi): JsonSchema raises OpenApi.Error = schema match
       case JsonSchema.Ref(pointer, _, _) =>
         val reference = pointer.encode
-        val prefix = t"#/components/schemas/"
+        val prefix = "#/components/schemas/"
 
         if reference.starts(prefix) then
           val name = reference.skip(prefix.length)
@@ -210,67 +210,67 @@ object OpenApi:
     def field[value: Decodable in Yaml](name: Text): Optional[value] =
       yaml(name).as[Optional[value]]
 
-    field[Text]("$ref".tt).let: reference =>
-      JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"))
+    field[Text]("$ref").let: reference =>
+      JsonSchema.Ref(reference.as[JsonPointer], field[Text]("description"))
 
     . or:
-        field[Text](t"type") match
-          case t"array" =>
+        field[Text]("type") match
+          case "array" =>
             JsonSchema.Array
-              ( field[Text](t"description"),
-                field[JsonSchema](t"items"),
-                field[Int](t"minItems"),
-                field[Int](t"maxItems"),
+              ( field[Text]("description"),
+                field[JsonSchema]("items"),
+                field[Int]("minItems"),
+                field[Int]("maxItems"),
                 false,
-                field[Int](t"maxContains"),
-                field[Int](t"minContains") )
+                field[Int]("maxContains"),
+                field[Int]("minContains") )
 
-          case t"string" =>
+          case "string" =>
             JsonSchema.String
-              ( field[Text](t"description"),
-                field[Int](t"minLength"),
-                field[Int](t"maxLength"),
-                field[Text](t"pattern"),
-                field[JsonSchema.Format](t"format"),
+              ( field[Text]("description"),
+                field[Int]("minLength"),
+                field[Int]("maxLength"),
+                field[Text]("pattern"),
+                field[JsonSchema.Format]("format"),
                 false )
 
-          case t"number" =>
+          case "number" =>
             JsonSchema.Number
-              ( field[Text](t"description"),
-                field[Double](t"multipleOf"),
-                field[Double](t"maximum"),
-                field[Double](t"minimum"),
-                field[Double](t"exclusiveMinimum"),
-                field[Double](t"exclusiveMaximum"),
+              ( field[Text]("description"),
+                field[Double]("multipleOf"),
+                field[Double]("maximum"),
+                field[Double]("minimum"),
+                field[Double]("exclusiveMinimum"),
+                field[Double]("exclusiveMaximum"),
                 false )
 
-          case t"integer" =>
+          case "integer" =>
             JsonSchema.Integer
-              ( field[Text](t"description"),
-                field[Int](t"maximum"),
-                field[Int](t"minimum"),
-                field[Int](t"exclusiveMinimum"),
-                field[Int](t"exclusiveMaximum"),
+              ( field[Text]("description"),
+                field[Int]("maximum"),
+                field[Int]("minimum"),
+                field[Int]("exclusiveMinimum"),
+                field[Int]("exclusiveMaximum"),
                 false )
 
-          case t"boolean" =>
-            JsonSchema.Boolean(field[Text](t"description"), false)
+          case "boolean" =>
+            JsonSchema.Boolean(field[Text]("description"), false)
 
-          case t"null" =>
-            JsonSchema.Null(field[Text](t"description"), false)
+          case "null" =>
+            JsonSchema.Null(field[Text]("description"), false)
 
           case _ =>
             JsonSchema.Object
-              ( field[Text](t"description"),
-                field[Map[Text, JsonSchema]](t"properties").or(Map()),
+              ( field[Text]("description"),
+                field[Map[Text, JsonSchema]]("properties").or(Map()),
                 false,
-                field[List[Text]](t"required"),
+                field[List[Text]]("required"),
                 // `enum` holds raw `Json` values, and there is no `Yaml`->`Json`
                 // bridge, so enum constraint values are not carried through the YAML
                 // path; they do not affect endpoint structure.
                 Unset,
-                yaml(t"additionalProperties").as[Optional[scala.Boolean]].or(false),
-                field[List[JsonSchema]](t"oneOf") )
+                yaml("additionalProperties").as[Optional[scala.Boolean]].or(false),
+                field[List[JsonSchema]]("oneOf") )
 
   // Anchor the top-level model so `as[OpenApi]` (below) materialises its decoder
   // once — with each nested type resolving to its own anchor — rather than inlining
@@ -292,11 +292,11 @@ object OpenApi:
           case JsonPointer.Error(_, _) => OpenApi.Error(OpenApi.Error.Reason.Malformed)
 
         . protect:
-            if text.trim.starts(t"{") || text.trim.starts(t"[")
+            if text.trim.starts("{") || text.trim.starts("[")
             then text.as[Json].as[OpenApi]
             else text.as[Yaml].as[OpenApi]
 
-      if document.openapi.starts(t"3.") then document
+      if document.openapi.starts("3.") then document
       else abort(OpenApi.Error(OpenApi.Error.Reason.UnsupportedVersion(document.openapi)))
 
   // OpenApiError → OpenApi.Error

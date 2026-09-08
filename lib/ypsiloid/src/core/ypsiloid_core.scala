@@ -59,7 +59,7 @@ import zephyrine.*
 // implicit scope; this is only the emitter.
 private[ypsiloid] def renderAst(yaml: Yaml.Ast)(using formatting: Yaml.Formatting): Text =
   val spaces: Text =
-    t"                                                                "
+    "                                                                "
 
   // A string is safe to emit as a plain scalar when it is a leading-letter run of `[A-Za-z0-9_-]`
   // (no whitespace or indicator characters, never empty) that the parser would not resolve as a
@@ -93,7 +93,7 @@ private[ypsiloid] def renderAst(yaml: Yaml.Ast)(using formatting: Yaml.Formattin
 
   def unicode(char: Char): Text =
     val hex = Integer.toHexString(char.toInt).nn
-    Text(("\\u": String) + "0"*(4 - hex.length) + hex)
+    Text(s"\\u" + "0"*(4 - hex.length) + hex)
 
   Producer.collect[Text](): producer =>
     def indent(count: Int): Unit =
@@ -118,11 +118,11 @@ private[ypsiloid] def renderAst(yaml: Yaml.Ast)(using formatting: Yaml.Formattin
 
         while index < length do
           string.charAt(index) match
-            case '"'          => escape(t"\\\"")
-            case '\\'         => escape(t"\\\\")
-            case '\n'         => escape(t"\\n")
-            case '\r'         => escape(t"\\r")
-            case '\t'         => escape(t"\\t")
+            case '"'          => escape("\\\"")
+            case '\\'         => escape("\\\\")
+            case '\n'         => escape("\\n")
+            case '\r'         => escape("\\r")
+            case '\t'         => escape("\\t")
             case c if c < ' ' => escape(unicode(c))
             case _            => ()
 
@@ -209,7 +209,7 @@ package formatting:
 
 package discriminables:
   given yamlByTypeDiscriminable: [value] => value is Discriminable in Yaml =
-    Yaml.discriminatedUnion[value](t"type")
+    Yaml.discriminatedUnion[value]("type")
 
   given yamlByKindDiscriminable: [value] => value is Discriminable in Yaml =
-    Yaml.discriminatedUnion[value](t"kind")
+    Yaml.discriminatedUnion[value]("kind")

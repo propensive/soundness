@@ -82,10 +82,10 @@ private[facsimile] object Filter:
 
       case Cos.Sequence(elements) =>
         elements.map: element =>
-          element.name.or(abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"Filter", t"a name"))))
+          element.name.or(abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch("Filter", "a name"))))
 
       case _ =>
-        abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"Filter", t"a name or array of names")))
+        abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch("Filter", "a name or array of names")))
 
     val parameters: List[Map[Text, Cos]] = parms.lay(List()):
       case Cos.Dictionary(entries) =>
@@ -98,10 +98,10 @@ private[facsimile] object Filter:
             case Cos.Nil                 => Map()
 
             case _ =>
-              abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"DecodeParms", t"a dictionary")))
+              abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch("DecodeParms", "a dictionary")))
 
       case _ =>
-        abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"DecodeParms", t"a dictionary or array")))
+        abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch("DecodeParms", "a dictionary or array")))
 
 
     // Walked in step rather than indexed: positional access on a `List` is O(n), and
@@ -141,7 +141,7 @@ private[facsimile] object Filter:
     // far as `.to(List)`.
 
       chain.stdlib.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
-        val predicted = parms(t"Predictor").let(_.long).or(1L) > 1
+        val predicted = parms("Predictor").let(_.long).or(1L) > 1
 
         id match
           case Id.Flate =>
@@ -183,25 +183,25 @@ private[facsimile] object Filter:
   private def lzw(data: Data, parms: Map[Text, Cos])(using Tactic[Pdf.Error]): Data =
     try Lzw.decompress(Chain(data), earlyChange(parms)).flat.to[Array]
     catch case _: IllegalStateException =>
-      abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"LZWDecode")))
+      abort(Pdf.Error(Pdf.Error.Reason.CorruptStream("LZWDecode")))
 
   private def earlyChange(parms: Map[Text, Cos]): Boolean =
-    parms(t"EarlyChange").let(_.long).or(1L) == 1L
+    parms("EarlyChange").let(_.long).or(1L) == 1L
 
   private def predict(data: Data, parms: Map[Text, Cos])(using Tactic[Pdf.Error]): Data =
-    val predictor = parms(t"Predictor").let(_.long).or(1L).toInt
+    val predictor = parms("Predictor").let(_.long).or(1L).toInt
 
     if predictor <= 1 then data else
-      val colors = parms(t"Colors").let(_.long).or(1L).toInt
-      val bits = parms(t"BitsPerComponent").let(_.long).or(8L).toInt
-      val columns = parms(t"Columns").let(_.long).or(1L).toInt
+      val colors = parms("Colors").let(_.long).or(1L).toInt
+      val bits = parms("BitsPerComponent").let(_.long).or(8L).toInt
+      val columns = parms("Columns").let(_.long).or(1L).toInt
       Predictor(data, predictor, colors, bits, columns)
 
   // FlateDecode is zlib-framed deflate, but raw streams occur in the wild: on a zlib failure,
   // retry nowrap before giving up.
   private def flate(data: Data)(using Tactic[Pdf.Error]): Data =
     inflate(data, nowrap = false).or(inflate(data, nowrap = true))
-    . or(abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"FlateDecode"))))
+    . or(abort(Pdf.Error(Pdf.Error.Reason.CorruptStream("FlateDecode"))))
 
   private def inflate(data: Data, nowrap: Boolean): Optional[Data] =
     val builder = DataBuilder()
@@ -234,7 +234,7 @@ private[facsimile] object Filter:
           else if !CosLexer.whitespace(byte) then
             val value = CosLexer.hexadecimal(byte)
 
-            if value < 0 then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"ASCIIHexDecode")))
+            if value < 0 then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream("ASCIIHexDecode")))
             else if high < 0 then high = value
             else
               bytes += ((high << 4) + value).toByte
@@ -259,12 +259,12 @@ private[facsimile] object Filter:
             val run = surveyor.take(length + 1)
 
             if (run: Interval).size <= length
-            then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"RunLengthDecode")))
+            then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream("RunLengthDecode")))
 
             data.iterate(run) { index => bytes += data.at(index) }
           else
             // One byte, repeated `257 - length` times.
-            surveyor.next(abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"RunLengthDecode")))):
+            surveyor.next(abort(Pdf.Error(Pdf.Error.Reason.CorruptStream("RunLengthDecode")))):
               byte =>
                 var j = 0
 

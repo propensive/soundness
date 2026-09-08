@@ -80,31 +80,31 @@ object Mathml:
     def contents: List[Mathml] = Nil
 
   case class Mi(value: Text, attributes: List[(Text, Text)] = Nil) extends Token:
-    def label: Text = t"mi"
+    def label: Text = "mi"
     def text: Optional[Text] = value
 
   case class Mn(value: Text, attributes: List[(Text, Text)] = Nil) extends Token:
-    def label: Text = t"mn"
+    def label: Text = "mn"
     def text: Optional[Text] = value
 
   case class Mo(value: Text, attributes: List[(Text, Text)] = Nil) extends Token:
-    def label: Text = t"mo"
+    def label: Text = "mo"
     def text: Optional[Text] = value
 
   case class Mtext(value: Text, attributes: List[(Text, Text)] = Nil) extends Token:
-    def label: Text = t"mtext"
+    def label: Text = "mtext"
     def text: Optional[Text] = value
 
   case class Ms(value: Text, attributes: List[(Text, Text)] = Nil) extends Token:
-    def label: Text = t"ms"
+    def label: Text = "ms"
     def text: Optional[Text] = value
 
   case class Mspace(attributes: List[(Text, Text)] = Nil) extends Token:
-    def label: Text = t"mspace"
+    def label: Text = "mspace"
     def text: Optional[Text] = Unset
 
   case class Mglyph(attributes: List[(Text, Text)] = Nil) extends Token:
-    def label: Text = t"mglyph"
+    def label: Text = "mglyph"
     def text: Optional[Text] = Unset
 
   // General layout schemata. The uniform containers (`Mrow`, `Msqrt`, `Mstyle`,
@@ -119,58 +119,58 @@ object Mathml:
     def apply(children: Mathml*): Mrow = Mrow(children.to(List))
 
   case class Mrow(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
-    def label: Text = t"mrow"
+    def label: Text = "mrow"
 
   case class Mfrac(numerator: Mathml, denominator: Mathml, attributes: List[(Text, Text)] = Nil)
   extends Layout:
-    def label: Text = t"mfrac"
+    def label: Text = "mfrac"
     def contents: List[Mathml] = List(numerator, denominator)
 
   object Msqrt:
     def apply(children: Mathml*): Msqrt = Msqrt(children.to(List))
 
   case class Msqrt(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
-    def label: Text = t"msqrt"
+    def label: Text = "msqrt"
 
   case class Mroot(base: Mathml, index: Mathml, attributes: List[(Text, Text)] = Nil) extends Layout:
-    def label: Text = t"mroot"
+    def label: Text = "mroot"
     def contents: List[Mathml] = List(base, index)
 
   object Mstyle:
     def apply(children: Mathml*): Mstyle = Mstyle(children.to(List))
 
   case class Mstyle(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
-    def label: Text = t"mstyle"
+    def label: Text = "mstyle"
 
   object Merror:
     def apply(children: Mathml*): Merror = Merror(children.to(List))
 
   case class Merror(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
-    def label: Text = t"merror"
+    def label: Text = "merror"
 
   object Mpadded:
     def apply(children: Mathml*): Mpadded = Mpadded(children.to(List))
 
   case class Mpadded(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
-    def label: Text = t"mpadded"
+    def label: Text = "mpadded"
 
   object Mphantom:
     def apply(children: Mathml*): Mphantom = Mphantom(children.to(List))
 
   case class Mphantom(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
-    def label: Text = t"mphantom"
+    def label: Text = "mphantom"
 
   object Menclose:
     def apply(children: Mathml*): Menclose = Menclose(children.to(List))
 
   case class Menclose(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
-    def label: Text = t"menclose"
+    def label: Text = "menclose"
 
   object Mfenced:
     def apply(children: Mathml*): Mfenced = Mfenced(children.to(List))
 
   case class Mfenced(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
-    def label: Text = t"mfenced"
+    def label: Text = "mfenced"
 
   // Script and limit schemata. `Msub`/`Msup`/`Msubsup` and `Munder`/`Mover`/
   // `Munderover` are positional; `Mmultiscripts` is a container whose children
@@ -182,12 +182,12 @@ object Mathml:
 
   case class Msub(base: Mathml, subscript: Mathml, attributes: List[(Text, Text)] = Nil)
   extends Script:
-    def label: Text = t"msub"
+    def label: Text = "msub"
     def contents: List[Mathml] = List(base, subscript)
 
   case class Msup(base: Mathml, superscript: Mathml, attributes: List[(Text, Text)] = Nil)
   extends Script:
-    def label: Text = t"msup"
+    def label: Text = "msup"
     def contents: List[Mathml] = List(base, superscript)
 
   case class Msubsup
@@ -196,17 +196,17 @@ object Mathml:
       superscript: Mathml,
       attributes:  List[(Text, Text)] = Nil )
   extends Script:
-    def label: Text = t"msubsup"
+    def label: Text = "msubsup"
     def contents: List[Mathml] = List(base, subscript, superscript)
 
   case class Munder(base: Mathml, underscript: Mathml, attributes: List[(Text, Text)] = Nil)
   extends Script:
-    def label: Text = t"munder"
+    def label: Text = "munder"
     def contents: List[Mathml] = List(base, underscript)
 
   case class Mover(base: Mathml, overscript: Mathml, attributes: List[(Text, Text)] = Nil)
   extends Script:
-    def label: Text = t"mover"
+    def label: Text = "mover"
     def contents: List[Mathml] = List(base, overscript)
 
   case class Munderover
@@ -215,7 +215,7 @@ object Mathml:
       overscript:  Mathml,
       attributes:  List[(Text, Text)] = Nil )
   extends Script:
-    def label: Text = t"munderover"
+    def label: Text = "munderover"
     def contents: List[Mathml] = List(base, underscript, overscript)
 
   object Mmultiscripts:
@@ -223,14 +223,14 @@ object Mathml:
 
   case class Mmultiscripts(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Script:
-    def label: Text = t"mmultiscripts"
+    def label: Text = "mmultiscripts"
 
   case class Mprescripts(attributes: List[(Text, Text)] = Nil) extends Script:
-    def label: Text = t"mprescripts"
+    def label: Text = "mprescripts"
     def contents: List[Mathml] = Nil
 
   case class Mnone(attributes: List[(Text, Text)] = Nil) extends Script:
-    def label: Text = t"mnone"
+    def label: Text = "mnone"
     def contents: List[Mathml] = Nil
 
   // Table schemata: `<mtable>` and its rows (`<mtr>`, `<mlabeledtr>`), cells
@@ -243,33 +243,33 @@ object Mathml:
     def apply(rows: Mathml*): Mtable = Mtable(rows.to(List))
 
   case class Mtable(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Tabular:
-    def label: Text = t"mtable"
+    def label: Text = "mtable"
 
   object Mtr:
     def apply(cells: Mathml*): Mtr = Mtr(cells.to(List))
 
   case class Mtr(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Tabular:
-    def label: Text = t"mtr"
+    def label: Text = "mtr"
 
   object Mlabeledtr:
     def apply(cells: Mathml*): Mlabeledtr = Mlabeledtr(cells.to(List))
 
   case class Mlabeledtr(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Tabular:
-    def label: Text = t"mlabeledtr"
+    def label: Text = "mlabeledtr"
 
   object Mtd:
     def apply(children: Mathml*): Mtd = Mtd(children.to(List))
 
   case class Mtd(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Tabular:
-    def label: Text = t"mtd"
+    def label: Text = "mtd"
 
   case class Maligngroup(attributes: List[(Text, Text)] = Nil) extends Tabular:
-    def label: Text = t"maligngroup"
+    def label: Text = "maligngroup"
     def contents: List[Mathml] = Nil
 
   case class Malignmark(attributes: List[(Text, Text)] = Nil) extends Tabular:
-    def label: Text = t"malignmark"
+    def label: Text = "malignmark"
     def contents: List[Mathml] = Nil
 
   // Elementary-math schemata, used for column arithmetic and long division:
@@ -284,45 +284,45 @@ object Mathml:
 
   case class Mstack(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Elementary:
-    def label: Text = t"mstack"
+    def label: Text = "mstack"
 
   object Mlongdiv:
     def apply(children: Mathml*): Mlongdiv = Mlongdiv(children.to(List))
 
   case class Mlongdiv(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Elementary:
-    def label: Text = t"mlongdiv"
+    def label: Text = "mlongdiv"
 
   object Msgroup:
     def apply(children: Mathml*): Msgroup = Msgroup(children.to(List))
 
   case class Msgroup(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Elementary:
-    def label: Text = t"msgroup"
+    def label: Text = "msgroup"
 
   object Msrow:
     def apply(children: Mathml*): Msrow = Msrow(children.to(List))
 
   case class Msrow(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Elementary:
-    def label: Text = t"msrow"
+    def label: Text = "msrow"
 
   object Mscarries:
     def apply(children: Mathml*): Mscarries = Mscarries(children.to(List))
 
   case class Mscarries(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Elementary:
-    def label: Text = t"mscarries"
+    def label: Text = "mscarries"
 
   object Mscarry:
     def apply(children: Mathml*): Mscarry = Mscarry(children.to(List))
 
   case class Mscarry(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Elementary:
-    def label: Text = t"mscarry"
+    def label: Text = "mscarry"
 
   case class Msline(attributes: List[(Text, Text)] = Nil) extends Elementary:
-    def label: Text = t"msline"
+    def label: Text = "msline"
     def contents: List[Mathml] = Nil
 
   // `<maction>` (bound actions such as toggle/highlight) plus the semantics
@@ -337,7 +337,7 @@ object Mathml:
 
   case class Maction(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Semantic:
-    def label: Text = t"maction"
+    def label: Text = "maction"
     def text: Optional[Text] = Unset
 
   object Semantics:
@@ -345,11 +345,11 @@ object Mathml:
 
   case class Semantics(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Semantic:
-    def label: Text = t"semantics"
+    def label: Text = "semantics"
     def text: Optional[Text] = Unset
 
   case class Annotation(value: Text, attributes: List[(Text, Text)] = Nil) extends Semantic:
-    def label: Text = t"annotation"
+    def label: Text = "annotation"
     def contents: List[Mathml] = Nil
     def text: Optional[Text] = value
 
@@ -358,7 +358,7 @@ object Mathml:
 
   case class AnnotationXml(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Semantic:
-    def label: Text = t"annotation-xml"
+    def label: Text = "annotation-xml"
     def text: Optional[Text] = Unset
 
   // MathmlError → Mathml.Error
@@ -383,15 +383,15 @@ object Mathml:
   object Parser:
     def labelOf(xml: Xml): Text = xml match
       case element: Element => element.label
-      case _                => t"<unknown>"
+      case _                => "<unknown>"
 
     def findMath(nodes: List[Node])(using Tactic[Mathml.Error]): Element =
-      nodes.reap { case element: Element if element.label == t"math" => element }
+      nodes.reap { case element: Element if element.label == "math" => element }
       . or:
-        abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))
+        abort(Mathml.Error(Mathml.Error.Reason.NotMathml("<missing>")))
 
     def rootElement(xml: Xml)(using Tactic[Mathml.Error]): Element = xml match
-      case element: Element if element.label == t"math" => element
+      case element: Element if element.label == "math" => element
       case Fragment(nodes*)                             => findMath(nodes.to(List))
 
       case other =>
@@ -413,9 +413,9 @@ object Mathml:
       nodes.stdlib.lift(index).getOrElse(Mrow(Nil))
 
     def decodeMath(elem: Element)(using Tactic[Mathml.Error]): Math =
-      val kept = attributesOf(elem).filter { case (key, _) => key != t"xmlns" && key != t"display" }
+      val kept = attributesOf(elem).filter { case (key, _) => key != "xmlns" && key != "display" }
 
-      val display: Optional[Display] = elem.attributes(t"display").let: text =>
+      val display: Optional[Display] = elem.attributes("display").let: text =>
         Display.unapply(text).getOrElse(Display.Inline)
 
       Math(children(elem), display, kept)
@@ -425,54 +425,54 @@ object Mathml:
       val cs = children(elem)
 
       elem.label match
-        case t"mi"             => Mi(textOf(elem), attrs)
-        case t"mn"             => Mn(textOf(elem), attrs)
-        case t"mo"             => Mo(textOf(elem), attrs)
-        case t"mtext"          => Mtext(textOf(elem), attrs)
-        case t"ms"             => Ms(textOf(elem), attrs)
-        case t"mspace"         => Mspace(attrs)
-        case t"mglyph"         => Mglyph(attrs)
+        case "mi"             => Mi(textOf(elem), attrs)
+        case "mn"             => Mn(textOf(elem), attrs)
+        case "mo"             => Mo(textOf(elem), attrs)
+        case "mtext"          => Mtext(textOf(elem), attrs)
+        case "ms"             => Ms(textOf(elem), attrs)
+        case "mspace"         => Mspace(attrs)
+        case "mglyph"         => Mglyph(attrs)
 
-        case t"mrow"           => Mrow(cs, attrs)
-        case t"msqrt"          => Msqrt(cs, attrs)
-        case t"mstyle"         => Mstyle(cs, attrs)
-        case t"merror"         => Merror(cs, attrs)
-        case t"mpadded"        => Mpadded(cs, attrs)
-        case t"mphantom"       => Mphantom(cs, attrs)
-        case t"menclose"       => Menclose(cs, attrs)
-        case t"mfenced"        => Mfenced(cs, attrs)
-        case t"mfrac"          => Mfrac(at(cs, 0), at(cs, 1), attrs)
-        case t"mroot"          => Mroot(at(cs, 0), at(cs, 1), attrs)
+        case "mrow"           => Mrow(cs, attrs)
+        case "msqrt"          => Msqrt(cs, attrs)
+        case "mstyle"         => Mstyle(cs, attrs)
+        case "merror"         => Merror(cs, attrs)
+        case "mpadded"        => Mpadded(cs, attrs)
+        case "mphantom"       => Mphantom(cs, attrs)
+        case "menclose"       => Menclose(cs, attrs)
+        case "mfenced"        => Mfenced(cs, attrs)
+        case "mfrac"          => Mfrac(at(cs, 0), at(cs, 1), attrs)
+        case "mroot"          => Mroot(at(cs, 0), at(cs, 1), attrs)
 
-        case t"msub"           => Msub(at(cs, 0), at(cs, 1), attrs)
-        case t"msup"           => Msup(at(cs, 0), at(cs, 1), attrs)
-        case t"msubsup"        => Msubsup(at(cs, 0), at(cs, 1), at(cs, 2), attrs)
-        case t"munder"         => Munder(at(cs, 0), at(cs, 1), attrs)
-        case t"mover"          => Mover(at(cs, 0), at(cs, 1), attrs)
-        case t"munderover"     => Munderover(at(cs, 0), at(cs, 1), at(cs, 2), attrs)
-        case t"mmultiscripts"  => Mmultiscripts(cs, attrs)
-        case t"mprescripts"    => Mprescripts(attrs)
-        case t"mnone"          => Mnone(attrs)
+        case "msub"           => Msub(at(cs, 0), at(cs, 1), attrs)
+        case "msup"           => Msup(at(cs, 0), at(cs, 1), attrs)
+        case "msubsup"        => Msubsup(at(cs, 0), at(cs, 1), at(cs, 2), attrs)
+        case "munder"         => Munder(at(cs, 0), at(cs, 1), attrs)
+        case "mover"          => Mover(at(cs, 0), at(cs, 1), attrs)
+        case "munderover"     => Munderover(at(cs, 0), at(cs, 1), at(cs, 2), attrs)
+        case "mmultiscripts"  => Mmultiscripts(cs, attrs)
+        case "mprescripts"    => Mprescripts(attrs)
+        case "mnone"          => Mnone(attrs)
 
-        case t"mtable"         => Mtable(cs, attrs)
-        case t"mtr"            => Mtr(cs, attrs)
-        case t"mlabeledtr"     => Mlabeledtr(cs, attrs)
-        case t"mtd"            => Mtd(cs, attrs)
-        case t"maligngroup"    => Maligngroup(attrs)
-        case t"malignmark"     => Malignmark(attrs)
+        case "mtable"         => Mtable(cs, attrs)
+        case "mtr"            => Mtr(cs, attrs)
+        case "mlabeledtr"     => Mlabeledtr(cs, attrs)
+        case "mtd"            => Mtd(cs, attrs)
+        case "maligngroup"    => Maligngroup(attrs)
+        case "malignmark"     => Malignmark(attrs)
 
-        case t"mstack"         => Mstack(cs, attrs)
-        case t"mlongdiv"       => Mlongdiv(cs, attrs)
-        case t"msgroup"        => Msgroup(cs, attrs)
-        case t"msrow"          => Msrow(cs, attrs)
-        case t"mscarries"      => Mscarries(cs, attrs)
-        case t"mscarry"        => Mscarry(cs, attrs)
-        case t"msline"         => Msline(attrs)
+        case "mstack"         => Mstack(cs, attrs)
+        case "mlongdiv"       => Mlongdiv(cs, attrs)
+        case "msgroup"        => Msgroup(cs, attrs)
+        case "msrow"          => Msrow(cs, attrs)
+        case "mscarries"      => Mscarries(cs, attrs)
+        case "mscarry"        => Mscarry(cs, attrs)
+        case "msline"         => Msline(attrs)
 
-        case t"maction"        => Maction(cs, attrs)
-        case t"semantics"      => Semantics(cs, attrs)
-        case t"annotation"     => Annotation(textOf(elem), attrs)
-        case t"annotation-xml" => AnnotationXml(cs, attrs)
+        case "maction"        => Maction(cs, attrs)
+        case "semantics"      => Semantics(cs, attrs)
+        case "annotation"     => Annotation(textOf(elem), attrs)
+        case "annotation-xml" => AnnotationXml(cs, attrs)
 
         case other             => abort(Mathml.Error(Mathml.Error.Reason.UnknownElement(other)))
 
@@ -485,12 +485,12 @@ object Mathml:
 
   object Reader:
     def read(html: Html)(using Tactic[Mathml.Error]): Math =
-      findMath(html).lay(abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))): element =>
+      findMath(html).lay(abort(Mathml.Error(Mathml.Error.Reason.NotMathml("<missing>")))): element =>
         Mathml.Parser.decodeMath(toXmlElement(element))
 
     def findMath(html: Html): Optional[honeycomb.Element] = html match
       case element: honeycomb.Element =>
-        if element.label == t"math" then element else searchNodes(element.children)
+        if element.label == "math" then element else searchNodes(element.children)
 
       case fragment: honeycomb.Fragment => searchNodes(Array.from(fragment.nodes))
       case _                            => Unset
@@ -516,7 +516,7 @@ object Mathml:
       case element: honeycomb.Element   => toXmlElement(element)
       case textNode: honeycomb.TextNode => TextNode(textNode.text)
       case comment: honeycomb.Comment   => Comment(comment.text)
-      case _                            => TextNode(t"")
+      case _                            => TextNode("")
 
 trait Mathml:
   def label: Text

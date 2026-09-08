@@ -50,7 +50,7 @@ object Logo:
 // contributes styling but no structure of its own.
 trait Logo extends Archetype:
   // The logo's wording.
-  def logoText: Text = t""
+  def logoText: Text = ""
 
   // The rendered logo — a phrasing-level mark a page may drop wherever it likes.
   protected def logo: Html of (? <: Phrasing) = Span(`class` = Logo.logoClass)(logoText)

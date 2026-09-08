@@ -101,7 +101,7 @@ extends Topical:
 
   def matches(key: Argument): Boolean =
     val flag =
-      if key().starts(t"--") then key().skip(2) else if key().starts(t"-")
+      if key().starts("--") then key().skip(2) else if key().starts("-")
       then key()(Sec) else Unset
 
     flag == name || aliases.has(flag)
@@ -187,8 +187,8 @@ extends Topical:
     // generic explanation, distinguishing an operand which was never given from one which
     // could not be interpreted.
     val bland =
-      if located.or(Nil).nil then t"a value is required but none was given"
-      else t"the value is not valid"
+      if located.or(Nil).nil then "a value is required but none was given"
+      else "the value is not valid"
 
     // The plain conditionals below (rather than `let`/`or` chains) are deliberate: an `or`
     // default which touches the `cli` would be a by-name closure capturing a capability, which

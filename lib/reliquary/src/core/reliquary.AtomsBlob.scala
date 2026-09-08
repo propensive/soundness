@@ -56,7 +56,7 @@ object AtomsBlob:
       t"atom ${atom.atomClass.keyword}  ${Lira.Hash.text(atom.valueHash)}  ${atom.key}"
 
     val rows: List[Text] = atomization.atoms.map(row)
-    val body = rows.join(t"\n")
+    val body = rows.join("\n")
     val header = s"tel 1.0 ${Lira.Schemas.atomsSignature}\n\ndiscipline ${atomization.discipline}"
     val text = Text(if rows.nil then s"$header\n" else s"$header\n\n$body\n")
     charEncoders.utf8Encoder.encoded(text)
@@ -77,27 +77,27 @@ object AtomsBlob:
           tel
 
     val discipline =
-      document.childCompounds.readable.find(_.keyword == t"discipline")
+      document.childCompounds.readable.find(_.keyword == "discipline")
       . map: compound => atomTexts(compound)
       . flatMap(_.headOption)
-      . getOrElse(abort(badBlob(t"the discipline identifier is missing")))
+      . getOrElse(abort(badBlob("the discipline identifier is missing")))
 
-    val rows = document.childCompounds.readable.filter(_.keyword == t"atom").toVector
+    val rows = document.childCompounds.readable.filter(_.keyword == "atom").toVector
 
     val atoms = rows.map: compound =>
       val atoms0 = atomTexts(compound)
 
-      if atoms0.length != 3 then abort(badBlob(t"an atom row does not have exactly three atoms"))
+      if atoms0.length != 3 then abort(badBlob("an atom row does not have exactly three atoms"))
 
       val atomClass = Atom.Class.parse(atoms0(0)) match
         case atomClass: Atom.Class => atomClass
-        case _                    => abort(badBlob(t"an atom class is malformed"))
+        case _                    => abort(badBlob("an atom class is malformed"))
 
       val hash =
         import errorDiagnostics.emptyDiagnostics
 
         mitigate:
-          case Base256.Error(_) => badBlob(t"an atom hash is malformed")
+          case Base256.Error(_) => badBlob("an atom hash is malformed")
 
         . protect(Base256.decodeStrict(atoms0(1)))
 
@@ -107,7 +107,7 @@ object AtomsBlob:
 
     while index < atoms.length do
       if Blob.compare(atoms(index - 1).valueHash, atoms(index).valueHash) > 0
-      then abort(badBlob(t"rows are not in ascending value-hash order"))
+      then abort(badBlob("rows are not in ascending value-hash order"))
 
       index += 1
 

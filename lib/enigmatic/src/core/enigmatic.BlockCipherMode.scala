@@ -57,7 +57,7 @@ trait BlockCipherMode extends Typeclass:
   def blockAligned: Boolean
 
 object Cbc:
-  given mode: Cbc is BlockCipherMode = BlockCipherMode(t"CBC", true, true)
+  given mode: Cbc is BlockCipherMode = BlockCipherMode("CBC", true, true)
 
 sealed trait Cbc
 
@@ -65,21 +65,21 @@ object Ecb:
   // ECB reveals plaintext structure and is gated as a "disallowed" mode: summoning
   // its mode evidence (for either direction, or even key generation) needs a permit.
   given mode: (erased permit: Permit[Concession.Ecb]) => (Ecb is BlockCipherMode) =
-    BlockCipherMode(t"ECB", false, true)
+    BlockCipherMode("ECB", false, true)
 
 sealed trait Ecb
 
 object Ctr:
-  given mode: Ctr is BlockCipherMode = BlockCipherMode(t"CTR", true, false)
+  given mode: Ctr is BlockCipherMode = BlockCipherMode("CTR", true, false)
 
 sealed trait Ctr
 
 object Cfb:
-  given mode: Cfb is BlockCipherMode = BlockCipherMode(t"CFB", true, false)
+  given mode: Cfb is BlockCipherMode = BlockCipherMode("CFB", true, false)
 
 sealed trait Cfb
 
 object Ofb:
-  given mode: Ofb is BlockCipherMode = BlockCipherMode(t"OFB", true, false)
+  given mode: Ofb is BlockCipherMode = BlockCipherMode("OFB", true, false)
 
 sealed trait Ofb

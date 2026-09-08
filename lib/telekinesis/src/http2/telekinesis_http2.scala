@@ -69,9 +69,9 @@ extends Sessional:
     import Connect.Error.Reason.*
 
     val scheme: Text = target.scheme.name
-    val secure: Boolean = scheme == t"https"
+    val secure: Boolean = scheme == "https"
 
-    if scheme != t"http" && scheme != t"https" then abort(Connect.Error(Unknown))
+    if scheme != "http" && scheme != "https" then abort(Connect.Error(Unknown))
 
     val defaultPort: Int = if secure then 443 else 80
     val host: Host = target.host.or(abort(Connect.Error(Dns)))
@@ -94,7 +94,7 @@ extends Sessional:
 
       try
         duplex.alpnProtocol match
-          case t"h2" =>
+          case "h2" =>
             // The `:authority` pseudo-header omits a default port, like browsers do.
             val authority: Text = if port == 443 then host.show else t"${host.show}:$port"
 

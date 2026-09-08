@@ -55,7 +55,7 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
 
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
+  given byteDesignation: Designation[Bytes[1]] = () => "B"
   given decimalizer:     Decimalizer            = Decimalizer(2)
   given device:          BenchmarkDevice        = LocalhostDevice
 
@@ -192,7 +192,7 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
 
   // Example 1: a small, self-contained page — the "hello world" of HTML with
   // a title, a heading and a short paragraph.
-  val htmlExample1: Text = t"""<!doctype html>
+  val htmlExample1: Text = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -208,7 +208,7 @@ parser. It contains a single heading and one short paragraph.</p>
 
   // Example 2: a typical structured page with a nav, header, sidebar and
   // footer — broadly the shape of a marketing or documentation page.
-  val htmlExample2: Text = t"""<!doctype html>
+  val htmlExample2: Text = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -265,7 +265,7 @@ parser. It contains a single heading and one short paragraph.</p>
   // Example 3: a longer article with a richer mix of inline elements, lists,
   // blockquotes, code blocks and a small table. Exercises text and entity
   // handling across many small text nodes.
-  val htmlExample3: Text = t"""<!doctype html>
+  val htmlExample3: Text = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">

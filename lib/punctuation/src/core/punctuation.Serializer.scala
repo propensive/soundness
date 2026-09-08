@@ -76,15 +76,15 @@ private[punctuation] object Serializer:
       if writer.written && !writer.atLineStart then writer.newline()
 
       refs.each: (ref: Markdown.LinkRef) =>
-        writer.raw(t"[")
+        writer.raw("[")
         writer.raw(escapeLinkLabel(ref.label))
-        writer.raw(t"]: ")
+        writer.raw("]: ")
         writer.raw(linkDestination(ref.destination))
 
         ref.title.let: title =>
-          writer.raw(t" \"")
-          writer.raw(title.sub(t"\"", t"\\\""))
-          writer.raw(t"\"")
+          writer.raw(" \"")
+          writer.raw(title.sub("\"", "\\\""))
+          writer.raw("\"")
 
         writer.newline()
 
@@ -190,7 +190,7 @@ private[punctuation] object Serializer:
 
       i += 1
 
-    t"`"*(longest + 1)
+    "`"*(longest + 1)
 
   // The needed extra-space padding for code spans whose content begins or
   // ends with a backtick or is wholly whitespace.
@@ -227,7 +227,7 @@ private[punctuation] object Serializer:
 
       i += 1
 
-    t"`"*(longestRun + 1)
+    "`"*(longestRun + 1)
 
   private def prose(builder: StringBuilder, node: Prose): Unit = node match
     case Prose.Textual(text) =>
@@ -237,7 +237,7 @@ private[punctuation] object Serializer:
       builder.add('\n')
 
     case Prose.Linebreak =>
-      builder.add(t"\\\n")
+      builder.add("\\\n")
 
     case Prose.Code(code) =>
       val fence = codeSpanDelimiter(code)
@@ -253,33 +253,33 @@ private[punctuation] object Serializer:
       builder.add('*')
 
     case Prose.Strong(children*) =>
-      builder.add(t"**")
+      builder.add("**")
       children.each(prose(builder, _))
-      builder.add(t"**")
+      builder.add("**")
 
     case Prose.Link(destination, title, children*) =>
       builder.add('[')
       children.each(prose(builder, _))
-      builder.add(t"](")
+      builder.add("](")
       builder.add(linkDestination(destination))
 
       title.let: t =>
-        builder.add(t" \"")
-        builder.add(t.sub(t"\"", t"\\\""))
-        builder.add(t"\"")
+        builder.add(" \"")
+        builder.add(t.sub("\"", "\\\""))
+        builder.add("\"")
 
       builder.add(')')
 
     case Prose.Image(destination, title, children*) =>
-      builder.add(t"![")
+      builder.add("![")
       children.each(prose(builder, _))
-      builder.add(t"](")
+      builder.add("](")
       builder.add(linkDestination(destination))
 
       title.let: t =>
-        builder.add(t" \"")
-        builder.add(t.sub(t"\"", t"\\\""))
-        builder.add(t"\"")
+        builder.add(" \"")
+        builder.add(t.sub("\"", "\\\""))
+        builder.add("\"")
 
       builder.add(')')
 
@@ -314,7 +314,7 @@ private[punctuation] object Serializer:
         first = false
         layout(inner, node)
 
-  private def trimNewline(text: Text): Text = if text.ends(t"\n") then text.skip(1, Rtl) else text
+  private def trimNewline(text: Text): Text = if text.ends("\n") then text.skip(1, Rtl) else text
 
   // Word-wrap a paragraph's inline content: textual nodes break at their spaces, inline constructs
   // are atomic. `protectFirst` backslash-escapes a leading block-start character.
@@ -331,8 +331,8 @@ private[punctuation] object Serializer:
 
   private def layout(writer: Writer^, node: Layout): Unit = node match
     case Layout.Heading(_, level, children*) =>
-      writer.raw(t"#"*level)
-      writer.raw(t" ")
+      writer.raw("#"*level)
+      writer.raw(" ")
       writer.raw(inlineLine(children.toList.to(List)))
       writer.newline()
 
@@ -341,31 +341,31 @@ private[punctuation] object Serializer:
       writer.newline()
 
     case Layout.ThematicBreak(_) =>
-      writer.raw(t"---")
+      writer.raw("---")
       writer.newline()
 
     case Layout.CodeBlock(_, info, code) =>
       val fence = codeBlockFence(code)
       writer.raw(fence)
-      if !info.nil then writer.raw(info.join(t" "))
+      if !info.nil then writer.raw(info.join(" "))
       writer.newline()
       writer.raw(code)
-      if !code.ends(t"\n") then writer.newline()
+      if !code.ends("\n") then writer.newline()
       writer.raw(fence)
       writer.newline()
 
     case Layout.BlockQuote(_, children*) =>
-      trimNewline(render(children.toList.to(List), writer.width)).cut(t"\n").each: line =>
-        if line.length == 0 then writer.raw(t">")
+      trimNewline(render(children.toList.to(List), writer.width)).cut("\n").each: line =>
+        if line.length == 0 then writer.raw(">")
         else
-          writer.raw(t"> ")
+          writer.raw("> ")
           writer.raw(line)
 
         writer.newline()
 
     case Layout.HtmlBlock(_, html) =>
       writer.raw(html)
-      if !html.ends(t"\n") then writer.newline()
+      if !html.ends("\n") then writer.newline()
 
     case Layout.BulletList(_, tight, items*) =>
       var first = true
@@ -373,7 +373,7 @@ private[punctuation] object Serializer:
       items.each: item =>
         if !first && !tight then writer.blankLine()
         first = false
-        listItem(writer, item, t"- ", t"  ")
+        listItem(writer, item, "- ", "  ")
 
     case Layout.OrderedList(_, start, tight, delimiter, items*) =>
       var n = start
@@ -383,7 +383,7 @@ private[punctuation] object Serializer:
         if !first && !tight then writer.blankLine()
         first = false
         val marker = t"$n${delimiter.or('.')} "
-        listItem(writer, item, marker, t" "*marker.length)
+        listItem(writer, item, marker, " "*marker.length)
         n += 1
 
   // Emit a list item: the first line carries the marker, subsequent lines the hanging indent.
@@ -391,7 +391,7 @@ private[punctuation] object Serializer:
     if item.nil then writer.newline() else
       var first = true
 
-      trimNewline(render(item, writer.width)).cut(t"\n").each: line =>
+      trimNewline(render(item, writer.width)).cut("\n").each: line =>
         writer.raw(if first then marker else hanging)
         writer.raw(line)
         writer.newline()
@@ -436,7 +436,7 @@ private[punctuation] object Serializer:
           col = if lastNl < 0 then col + s.length else s.length - lastNl - 1
 
     update def newline(): Unit =
-      producer.put(t"\n")
+      producer.put("\n")
       written = true
       trailing += 1
       col = 0
@@ -475,7 +475,7 @@ private[punctuation] object Serializer:
     update def hard(): Unit =
       flushSeg()
       pendingSpaces = 0
-      raw(t"\\")
+      raw("\\")
       newline()
 
     update def endFlow(): Unit = flushSeg()
@@ -488,12 +488,12 @@ private[punctuation] object Serializer:
         if pendingSpaces > 0 then
           if width != Int.MaxValue && col > 0 && col + pendingSpaces + word.length > width
           then newline()
-          else raw(t" "*pendingSpaces)
+          else raw(" "*pendingSpaces)
 
           pendingSpaces = 0
 
         if protect then
           protect = false
-          if blockStart(word.s.charAt(0)) then raw(t"\\")
+          if blockStart(word.s.charAt(0)) then raw("\\")
 
         raw(word)

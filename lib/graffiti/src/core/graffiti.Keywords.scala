@@ -41,4 +41,4 @@ import prepositional.*
 // Adds a `<meta name="keywords">`, from the comma-joined trait parameters.
 trait Keywords(keywords: Text*) extends Archetype:
   protected override def head: Html of (? <: Metadata) =
-    Fragment[Metadata](Meta.Keywords(content = keywords.join(t", ")), super.head)
+    Fragment[Metadata](Meta.Keywords(content = keywords.join(", ")), super.head)

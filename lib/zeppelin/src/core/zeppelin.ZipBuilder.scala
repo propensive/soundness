@@ -88,7 +88,7 @@ class JarBuilder private[zeppelin] (using Tactic[Zip.Error]) extends ZipBuilder:
   // convention prefers.
   def manifest(attributes: (Text, Text)*)(using Zip.Compression): Unit =
     val lines = attributes.to(List).map { (key, value) => wrap(t"$key: $value") }
-    val text = lines.join(t"", t"\r\n", t"\r\n\r\n")
+    val text = lines.join("", "\r\n", "\r\n\r\n")
     insert(Zip.Entry(ZipBuilder.manifestRef, text))
 
   private def wrap(line: Text): Text =
@@ -96,7 +96,7 @@ class JarBuilder private[zeppelin] (using Tactic[Zip.Error]) extends ZipBuilder:
 
 object ZipBuilder:
   private[zeppelin] val manifestRef: Path on Zip =
-    Path[Zip, Text, Tuple](t"", List(t"MANIFEST.MF", t"META-INF"))
+    Path[Zip, Text, Tuple]("", List(t"MANIFEST.MF", t"META-INF"))
 
   // Creation instances for the `Zip` and `Jar` forms. The default `make` (a discarded
   // builder) writes a valid empty archive. `CreateFlag.Parents` and `CreateFlag.Replace`

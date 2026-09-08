@@ -56,48 +56,48 @@ object InterpreterTests extends Suite(m"Commandline interpreter tests"):
 
     suite(m"POSIX clustering interpreter"):
       test(m"`-abc` sets the flag `-a`"):
-        reading(clustering, Flag('a'), t"-abc")
-      . assert(_ == t"[]")
+        reading(clustering, Flag('a'), "-abc")
+      . assert(_ == "[]")
 
       test(m"`-abc` sets the flag `-b`"):
-        reading(clustering, Flag('b'), t"-abc")
-      . assert(_ == t"[]")
+        reading(clustering, Flag('b'), "-abc")
+      . assert(_ == "[]")
 
       test(m"`-abc` sets the flag `-c`"):
-        reading(clustering, Flag('c'), t"-abc")
-      . assert(_ == t"[]")
+        reading(clustering, Flag('c'), "-abc")
+      . assert(_ == "[]")
 
       test(m"`-abc` does not set a flag for an absent character"):
-        reading(clustering, Flag('d'), t"-abc")
-      . assert(_ == t"absent")
+        reading(clustering, Flag('d'), "-abc")
+      . assert(_ == "absent")
 
       test(m"an operand attaches to the last flag of a cluster"):
-        reading(clustering, Flag('b'), t"-ab", t"x")
-      . assert(_ == t"[x]")
+        reading(clustering, Flag('b'), "-ab", "x")
+      . assert(_ == "[x]")
 
       test(m"an operand does not attach to an earlier flag of a cluster"):
-        reading(clustering, Flag('a'), t"-ab", t"x")
-      . assert(_ == t"[]")
+        reading(clustering, Flag('a'), "-ab", "x")
+      . assert(_ == "[]")
 
       test(m"an operand attaches to the last of three clustered flags"):
-        reading(clustering, Flag('c'), t"-abc", t"x")
-      . assert(_ == t"[x]")
+        reading(clustering, Flag('c'), "-abc", "x")
+      . assert(_ == "[x]")
 
       test(m"a two-character flag is not expanded"):
-        reading(clustering, Flag('a'), t"-a")
-      . assert(_ == t"[]")
+        reading(clustering, Flag('a'), "-a")
+      . assert(_ == "[]")
 
       test(m"a two-character flag still takes its operand"):
-        reading(clustering, Flag('a'), t"-a", t"x")
-      . assert(_ == t"[x]")
+        reading(clustering, Flag('a'), "-a", "x")
+      . assert(_ == "[x]")
 
       test(m"a long flag is not treated as a cluster"):
-        reading(clustering, Flag("verbose"), t"--verbose")
-      . assert(_ == t"[]")
+        reading(clustering, Flag("verbose"), "--verbose")
+      . assert(_ == "[]")
 
       test(m"a long flag sets no per-character flags"):
-        reading(clustering, Flag('v'), t"--verbose")
-      . assert(_ == t"absent")
+        reading(clustering, Flag('v'), "--verbose")
+      . assert(_ == "absent")
 
       // The occurrence count needs the parameters map, which the `Interpreter` surface
       // does not expose (`locate` seeks the first match); the given's `Topic` is known to
@@ -113,21 +113,21 @@ object InterpreterTests extends Suite(m"Commandline interpreter tests"):
     // behaviour.
     suite(m"POSIX interpreter"):
       test(m"`-abc` is the flag `-a` with operand `bc`"):
-        reading(posix, Flag('a'), t"-abc")
-      . assert(_ == t"[bc]")
+        reading(posix, Flag('a'), "-abc")
+      . assert(_ == "[bc]")
 
       test(m"`-abc` does not set the flag `-b`"):
-        reading(posix, Flag('b'), t"-abc")
-      . assert(_ == t"absent")
+        reading(posix, Flag('b'), "-abc")
+      . assert(_ == "absent")
 
       test(m"a following argument joins the embedded operand"):
-        reading(posix, Flag('a'), t"-abc", t"x")
-      . assert(_ == t"[bc x]")
+        reading(posix, Flag('a'), "-abc", "x")
+      . assert(_ == "[bc x]")
 
       test(m"a two-character flag takes its operand as under clustering"):
-        reading(posix, Flag('a'), t"-a", t"x")
-      . assert(_ == t"[x]")
+        reading(posix, Flag('a'), "-a", "x")
+      . assert(_ == "[x]")
 
       test(m"a long flag reads identically under both interpreters"):
-        reading(posix, Flag("verbose"), t"--verbose")
-      . assert(_ == t"[]")
+        reading(posix, Flag("verbose"), "--verbose")
+      . assert(_ == "[]")

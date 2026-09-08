@@ -51,9 +51,9 @@ extension [encodable: Encodable in Data](value: encodable)
 // The digest an asymmetric signature is taken over. `Signature.Digest`'s companion supplies
 // SHA-256, so importing one of these is only necessary to choose something else.
 package signatureDigests:
-  given sha256Signature: Signature.Digest = Signature.Digest(t"SHA256")
-  given sha384Signature: Signature.Digest = Signature.Digest(t"SHA384")
-  given sha512Signature: Signature.Digest = Signature.Digest(t"SHA512")
+  given sha256Signature: Signature.Digest = Signature.Digest("SHA256")
+  given sha384Signature: Signature.Digest = Signature.Digest("SHA384")
+  given sha512Signature: Signature.Digest = Signature.Digest("SHA512")
 
 package blockCipherModes:
   export Cbc.mode as cbc

@@ -119,7 +119,7 @@ object TypescriptDialect extends Dialect:
           signature match
             case Typescript.Type.Function(parameters, result, _, _) =>
               val arguments = parameters.map: parameter =>
-                val typed = parameter.typed.lay(Foreign.Type.Named(t"any"))(foreign(_))
+                val typed = parameter.typed.lay(Foreign.Type.Named("any"))(foreign(_))
                 if parameter.optional then optional(typed) else typed
 
               Prototype(arguments, foreign(result))
@@ -134,14 +134,14 @@ object TypescriptDialect extends Dialect:
   // to a named type carrying their source shape, so they remain distinguishable from one another
   // and from anything that *is* expressible — they simply will not marshal.
   private def foreign(typed: Typescript.Type): Foreign.Type = typed match
-    case Typescript.Type.Named(t"null" | t"undefined", _) => Foreign.Type.Named(t"undefined")
+    case Typescript.Type.Named("null" | "undefined", _) => Foreign.Type.Named("undefined")
     case Typescript.Type.Named(name, Nil)                 => Foreign.Type.Named(name)
 
     case Typescript.Type.Named(name, arguments) =>
       Foreign.Type.Applied(name, arguments.map(foreign(_)))
 
     case Typescript.Type.Array(element) =>
-      Foreign.Type.Applied(t"Array", List(foreign(element)))
+      Foreign.Type.Applied("Array", List(foreign(element)))
 
     case Typescript.Type.Union(members)     => Foreign.Type.Union(members.map(foreign(_)))
     case Typescript.Type.Literal(value, _)  => Foreign.Type.Named(value)

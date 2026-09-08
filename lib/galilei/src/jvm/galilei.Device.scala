@@ -50,8 +50,8 @@ object Device:
     case Char
 
     def flag: Text = this match
-      case Block => t"b"
-      case Char  => t"c"
+      case Block => "b"
+      case Char  => "c"
 
   def create[plane <: Posix: Filesystem]
     ( path: Path on plane, kind: Kind, major: Int, minor: Int )

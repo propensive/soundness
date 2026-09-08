@@ -383,7 +383,7 @@ object Yaml extends Yaml2, Dynamic:
     val builder: StringBuilder = new StringBuilder()
     unseal(yaml: Yaml).show.each { char => builder.append(Inspectable.escape(char).s) }
 
-    (("yaml\"": String)+builder.toString+"\"").tt
+    t"yaml\"${builder.toString}\""
 
   // Controls how a `Yaml` value is serialized. YAML's block style is fixed and round-trip-
   // constrained, so this currently carries no options; importing `formatting.blockYamlFormatting`
@@ -478,7 +478,7 @@ object Yaml extends Yaml2, Dynamic:
       val builder: StringBuilder = new StringBuilder()
       renderAst(ast: Ast).each { char => builder.append(Inspectable.escape(char).s) }
 
-      (("yaml\"": String)+builder.toString+"\"ᵃˢᵗ").tt
+      t"yaml\"${builder.toString}\"ᵃˢᵗ"
 
     def name: Text = "YAML"
 
@@ -488,7 +488,7 @@ object Yaml extends Yaml2, Dynamic:
         override val offset: Optional[Int] = Unset,
         override val length: Optional[Int] = Unset )
     extends Format.Position:
-      def describe: Text = (("line ": String)+line+(", column ": String)+column).tt
+      def describe: Text = t"line $line, column $column"
 
       // `line`/`column` are 1-based here; the public span is 0-based.
       override def span: Span =
@@ -1099,7 +1099,7 @@ object Yaml extends Yaml2, Dynamic:
           expected(Yaml.Primitive.Decimal) yet Bcd(BigDecimal(0))
 
       def string(using Tactic[Yaml.Error]): Text =
-        if isString then yaml.asInstanceOf[String].tt else expected(Yaml.Primitive.Str) yet t""
+        if isString then yaml.asInstanceOf[String].tt else expected(Yaml.Primitive.Str) yet ""
 
       def boolean(using Tactic[Yaml.Error]): Boolean =
         if isBoolean then yaml.asInstanceOf[Boolean] else expected(Yaml.Primitive.Bool) yet false
@@ -1361,7 +1361,7 @@ object Yaml extends Yaml2, Dynamic:
   =>  ((Text is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case s: String => s.tt
-      case _         => primitiveFault(yaml, Yaml.Primitive.Str, t"")
+      case _         => primitiveFault(yaml, Yaml.Primitive.Str, "")
 
   given string: (tactic: Tactic[Yaml.Error])
   =>  ((String is Decodable in Yaml)^{tactic}) = yaml =>
@@ -1454,7 +1454,7 @@ object Yaml extends Yaml2, Dynamic:
             val rawValue = xs(i*2 + 1).asInstanceOf[Yaml.Ast]
 
             val keyText: Text =
-              if rawKey.isNull then t"null"
+              if rawKey.isNull then "null"
               else rawKey.asMatchable match
                 case s: String  => s.tt
                 case k: Long    => k.toString.tt
@@ -2054,8 +2054,8 @@ object Yaml extends Yaml2, Dynamic:
     // Out-parameters for `consumeNodePrefixes` and `readPlainScalarText` —
     // overwritten on each call and consumed immediately by the caller, so
     // no Tuple2/Tuple3 allocation per node.
-    private var prefixAnchor:   Text    = t""
-    private var prefixTag:      Text    = t""
+    private var prefixAnchor:   Text    = ""
+    private var prefixTag:      Text    = ""
     private var prefixHeadByte: Int     = -1
     private var sawMappingColon: Boolean = false
 
@@ -2117,8 +2117,8 @@ object Yaml extends Yaml2, Dynamic:
       blockParentIndent = -1
       flowParentIndent = -1
       sawMappingColon = false
-      prefixAnchor = t""
-      prefixTag = t""
+      prefixAnchor = ""
+      prefixTag = ""
       prefixHeadByte = -1
       prefixesConsumed = false
       lastScalarSpannedLines = false
@@ -2837,8 +2837,8 @@ object Yaml extends Yaml2, Dynamic:
     // can detect a bare-prefix-with-block). Writes results to `prefixAnchor`,
     // `prefixTag`, `prefixHeadByte` to avoid per-call Tuple3 allocation.
     private update def consumeNodePrefixes()(using Tactic[Parse.Error]): Unit =
-      var anchorName = t""
-      var tagText = t""
+      var anchorName: Text = ""
+      var tagText: Text = ""
       var done = false
 
       while !done do
@@ -3039,7 +3039,7 @@ object Yaml extends Yaml2, Dynamic:
       docStartLineEnd >= 0 && pos <= docStartLineEnd
 
     private update def parsePlainOrBlockMapping
-      ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
+      ( indent: Int, headTag: Text = "", headAnchor: Text = "" )
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
@@ -4723,7 +4723,7 @@ object Yaml extends Yaml2, Dynamic:
         case "!" | "!!" =>
           // Non-specific tags. `!` forces the string type for plain
           // scalars (preventing implicit type resolution into int/bool/etc).
-          if value.asInstanceOf[AnyRef] == null then Yaml.Ast.Str(t"")
+          if value.asInstanceOf[AnyRef] == null then Yaml.Ast.Str("")
           else value.asInstanceOf[Matchable] match
             case _: String  => value
             case n: Long    => Yaml.Ast.Str(n.toString.tt)
@@ -4734,7 +4734,7 @@ object Yaml extends Yaml2, Dynamic:
         case "!!str" =>
           // A bare `!!str` with no scalar content is the empty string,
           // not the literal text "null".
-          if value.asInstanceOf[AnyRef] == null then Yaml.Ast.Str(t"")
+          if value.asInstanceOf[AnyRef] == null then Yaml.Ast.Str("")
           else value.asInstanceOf[Matchable] match
             case _: String  => value
             case n: Long    => Yaml.Ast.Str(n.toString.tt)
@@ -5762,7 +5762,7 @@ object Yaml extends Yaml2, Dynamic:
         result
       else
         parsePlainOrBlockMappingTracked
-          ( indent, t"", t"", indexOut, startLine, startColumn, startMark )
+          ( indent, "", "", indexOut, startLine, startColumn, startMark )
 
     // Tracked variant of `parseMinus`. Either parses a block sequence
     // (emitting a composite descriptor) or delegates to
@@ -5792,7 +5792,7 @@ object Yaml extends Yaml2, Dynamic:
           ( currentColumn(), indexOut, startLine, startColumn, startMark )
       else
         parsePlainOrBlockMappingTracked
-          ( indent, t"", t"", indexOut, startLine, startColumn, startMark )
+          ( indent, "", "", indexOut, startLine, startColumn, startMark )
 
     // Tracked variant of `readExplicitPair`. Appends the key's position
     // descriptor (3 ints) plus the value's descriptor to `scratch`.

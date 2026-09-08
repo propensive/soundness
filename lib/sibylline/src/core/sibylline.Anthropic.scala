@@ -64,7 +64,7 @@ object Anthropic:
   // a refinement of its `Self`, so `Anthropic(…).session` would not resolve at any call site.
   def apply(model: Text, key: Text): Anthropic =
     new Anthropic
-      ( model, key, url"https://api.anthropic.com", t"2023-06-01", Unset, Unset, Llm.Settings(),
+      ( model, key, url"https://api.anthropic.com", "2023-06-01", Unset, Unset, Llm.Settings(),
         List(), List() )
 
   // A named instance class rather than an anonymous given: an anonymous subclass would freshen
@@ -166,72 +166,72 @@ object Anthropic:
   // How the wire spells each neutral stop reason, decoded totally: an unrecognized reason
   // becomes `Other` and the code the API sent is never lost.
   private[sibylline] def stop(code: Text, sequence: Optional[Text]): Llm.Stop = code match
-    case t"end_turn"      => Llm.Stop.Ended
-    case t"max_tokens"    => Llm.Stop.Exhausted
-    case t"tool_use"      => Llm.Stop.ToolCall
-    case t"refusal"       => Llm.Stop.Refused
-    case t"stop_sequence" => Llm.Stop.Sequence(sequence.or(t""))
+    case "end_turn"      => Llm.Stop.Ended
+    case "max_tokens"    => Llm.Stop.Exhausted
+    case "tool_use"      => Llm.Stop.ToolCall
+    case "refusal"       => Llm.Stop.Refused
+    case "stop_sequence" => Llm.Stop.Sequence(sequence.or(t""))
     case other            => Llm.Stop.Other(other)
 
   // One neutral content block, encoded as the wire wants it — or `Unset` for another
   // provider's opaque block, which this dialect cannot honestly replay.
   private[sibylline] def encode(content: Llm.Content): Optional[Json] = content match
     case Llm.Content.Textual(text) =>
-      Json.make(`type` = t"text".in[Json], text = text.in[Json])
+      Json.make(`type` = "text".in[Json], text = text.in[Json])
 
     case Llm.Content.Graphic(source) =>
-      Json.make(`type` = t"image".in[Json], source = origin(source))
+      Json.make(`type` = "image".in[Json], source = origin(source))
 
     case Llm.Content.Document(source) =>
-      Json.make(`type` = t"document".in[Json], source = origin(source))
+      Json.make(`type` = "document".in[Json], source = origin(source))
 
     case Llm.Content.ToolUse(id, tool, arguments) =>
       Json.make
-        ( `type` = t"tool_use".in[Json], id = id.in[Json], name = tool.in[Json],
+        ( `type` = "tool_use".in[Json], id = id.in[Json], name = tool.in[Json],
           input  = arguments )
 
     case Llm.Content.ToolResult(id, content, failure) =>
       Json.make
-        ( `type`      = t"tool_result".in[Json],
+        ( `type`      = "tool_result".in[Json],
           tool_use_id = id.in[Json],
           content     = content.bind { block => encode(block).let(List(_)).or(List()) }.in[Json],
           is_error    = (if failure then failure else Unset).in[Json] )
 
     case Llm.Content.Thinking(text, signature) =>
       Json.make
-        ( `type`    = t"thinking".in[Json], thinking = text.in[Json],
+        ( `type`    = "thinking".in[Json], thinking = text.in[Json],
           signature = signature.in[Json] )
 
     case Llm.Content.Redacted(data) =>
-      Json.make(`type` = t"redacted_thinking".in[Json], data = data.in[Json])
+      Json.make(`type` = "redacted_thinking".in[Json], data = data.in[Json])
 
     case Llm.Content.Opaque(provider, json) =>
-      if provider == t"anthropic" then json else Unset
+      if provider == "anthropic" then json else Unset
 
   private def origin(source: Llm.Content.Source): Json = source match
     case Llm.Content.Source.Inline(data, mediaType) =>
       Json.make
-        ( `type`     = t"base64".in[Json], media_type = mediaType.show.in[Json],
+        ( `type`     = "base64".in[Json], media_type = mediaType.show.in[Json],
           data       = data.serialize[Base64].in[Json] )
 
     case Llm.Content.Source.Remote(url) =>
-      Json.make(`type` = t"url".in[Json], url = url.show.in[Json])
+      Json.make(`type` = "url".in[Json], url = url.show.in[Json])
 
   private[sibylline] def message(message: Llm.Message): Json =
     val role = message.role match
-      case Llm.Role.User      => t"user"
-      case Llm.Role.Assistant => t"assistant"
+      case Llm.Role.User      => "user"
+      case Llm.Role.Assistant => "assistant"
 
     val content = message.content.bind: block => encode(block).let(List(_)).or(List())
     Json.make(role = role.in[Json], content = content.in[Json])
 
   private[sibylline] def choice(choice: Llm.ToolChoice): Json = choice match
-    case Llm.ToolChoice.Auto        => Json.make(`type` = t"auto".in[Json])
-    case Llm.ToolChoice.Forbidden   => Json.make(`type` = t"none".in[Json])
-    case Llm.ToolChoice.Required    => Json.make(`type` = t"any".in[Json])
+    case Llm.ToolChoice.Auto        => Json.make(`type` = "auto".in[Json])
+    case Llm.ToolChoice.Forbidden   => Json.make(`type` = "none".in[Json])
+    case Llm.ToolChoice.Required    => Json.make(`type` = "any".in[Json])
 
     case Llm.ToolChoice.Named(tool) =>
-      Json.make(`type` = t"tool".in[Json], name = tool.in[Json])
+      Json.make(`type` = "tool".in[Json], name = tool.in[Json])
 
   private[sibylline] def tool(tool: Llm.Tool): Json =
     Json.make
@@ -243,14 +243,14 @@ object Anthropic:
   // not model is preserved verbatim as `Opaque`, so a transcript never lies.
   private[sibylline] def block(json: Json)(using Diagnostics): Llm.Content raises Json.Error =
     safely(text(json.`type`)).or(t"") match
-      case t"text"     => Llm.Content.Textual(text(json.text))
-      case t"tool_use" => Llm.Content.ToolUse(text(json.id), text(json.name), json.input)
+      case "text"     => Llm.Content.Textual(text(json.text))
+      case "tool_use" => Llm.Content.ToolUse(text(json.id), text(json.name), json.input)
 
-      case t"thinking" =>
+      case "thinking" =>
         Llm.Content.Thinking(text(json.thinking), safely(text(json.signature)))
 
-      case t"redacted_thinking" => Llm.Content.Redacted(text(json.data))
-      case _                    => Llm.Content.Opaque(t"anthropic", json)
+      case "redacted_thinking" => Llm.Content.Redacted(text(json.data))
+      case _                    => Llm.Content.Opaque("anthropic", json)
 
   // The whole non-streamed reply.
   private[sibylline] def reply(json: Json)(using Diagnostics): Llm.Reply raises Json.Error =
@@ -266,40 +266,40 @@ object Anthropic:
   // and output-only updates, which the accumulator sums without double-counting.
   private[sibylline] def events(sse: Sse)(using Tactic[Llm.Error], Diagnostics): List[Llm.Event] =
     given jsonTactic: (Tactic[Json.Error]^) = summon[Tactic[Llm.Error]].contramap: _ =>
-      Llm.Error(Llm.Error.Reason.Malformed, t"a stream event had an unexpected shape")
+      Llm.Error(Llm.Error.Reason.Malformed, "a stream event had an unexpected shape")
 
-    val json: Json = Llm.parsed(sse.data.join(t"\n"))
+    val json: Json = Llm.parsed(sse.data.join("\n"))
 
     sse.event match
-      case t"message_start" =>
+      case "message_start" =>
         val usage = safely(tokens(json.message.usage)).let(Tokens.usage(_))
 
         List
           ( Llm.Event.Started(safely(text(json.message.id)), safely(text(json.message.model))),
             Llm.Event.Update(Unset, usage.let(_.copy(output = 0))) )
 
-      case t"content_block_start" =>
+      case "content_block_start" =>
         List(Llm.Event.Opened(integer(json.index), block(json.content_block)))
 
-      case t"content_block_delta" =>
+      case "content_block_delta" =>
         val index = integer(json.index)
 
         val increment = text(json.delta.`type`) match
-          case t"text_delta"      => Llm.Event.Increment.Textual(text(json.delta.text))
+          case "text_delta"      => Llm.Event.Increment.Textual(text(json.delta.text))
 
-          case t"input_json_delta" =>
+          case "input_json_delta" =>
             Llm.Event.Increment.Arguments(text(json.delta.partial_json))
 
-          case t"thinking_delta"  => Llm.Event.Increment.Thinking(text(json.delta.thinking))
-          case t"signature_delta" => Llm.Event.Increment.Signature(text(json.delta.signature))
-          case other              => Llm.Event.Increment.Textual(t"")
+          case "thinking_delta"  => Llm.Event.Increment.Thinking(text(json.delta.thinking))
+          case "signature_delta" => Llm.Event.Increment.Signature(text(json.delta.signature))
+          case other              => Llm.Event.Increment.Textual("")
 
         List(Llm.Event.Delta(index, increment))
 
-      case t"content_block_stop" =>
+      case "content_block_stop" =>
         List(Llm.Event.Closed(integer(json.index)))
 
-      case t"message_delta" =>
+      case "message_delta" =>
         val stopped =
           safely(text(json.delta.stop_reason))
           . let(stop(_, safely(text(json.delta.stop_sequence))))
@@ -307,10 +307,10 @@ object Anthropic:
         val usage = safely(tokens(json.usage)).let(Tokens.usage(_)).let(_.copy(input = 0))
         List(Llm.Event.Update(stopped, usage))
 
-      case t"message_stop" => List(Llm.Event.Finished)
-      case t"ping"         => List()
+      case "message_stop" => List(Llm.Event.Finished)
+      case "ping"         => List()
 
-      case t"error" =>
+      case "error" =>
         abort(failure(Http.Status.InternalServerError, json))
 
       case other => List()
@@ -326,13 +326,13 @@ object Anthropic:
       json.let { json => safely(text(json.error.message)) }.or(t"the request failed")
 
     val reason = kind match
-      case t"authentication_error"  => Llm.Error.Reason.Unauthorized
-      case t"permission_error"      => Llm.Error.Reason.Unauthorized
-      case t"invalid_request_error" => Llm.Error.Reason.Invalid
-      case t"not_found_error"       => Llm.Error.Reason.NotFound
-      case t"request_too_large"     => Llm.Error.Reason.TooLarge
-      case t"rate_limit_error"      => Llm.Error.Reason.RateLimited
-      case t"overloaded_error"      => Llm.Error.Reason.Overloaded
+      case "authentication_error"  => Llm.Error.Reason.Unauthorized
+      case "permission_error"      => Llm.Error.Reason.Unauthorized
+      case "invalid_request_error" => Llm.Error.Reason.Invalid
+      case "not_found_error"       => Llm.Error.Reason.NotFound
+      case "request_too_large"     => Llm.Error.Reason.TooLarge
+      case "rate_limit_error"      => Llm.Error.Reason.RateLimited
+      case "overloaded_error"      => Llm.Error.Reason.Overloaded
       case code: Text               => Llm.Error.Reason.Provider(code)
 
       case _ => status.code match
@@ -424,7 +424,7 @@ class Anthropic private
 
     given connectTactic: (Tactic[Connect.Error]^) =
       summon[Tactic[Llm.Error]].contramap: _ =>
-        Llm.Error(Llm.Error.Reason.Unreachable, t"the provider could not be reached")
+        Llm.Error(Llm.Error.Reason.Unreachable, "the provider could not be reached")
 
     val body =
       Json.make
@@ -437,10 +437,10 @@ class Anthropic private
     val response =
       caps.unsafe.unsafeAssumeSeparate:
         Llm.fetch(Anthropic.failure(_, _)):
-          submit(address(t"v1/messages/count_tokens"), body)
+          submit(address("v1/messages/count_tokens"), body)
 
     safely(Anthropic.integer(Llm.receive(response).input_tokens)).lest:
-      Llm.Error(Llm.Error.Reason.Malformed, t"the token count was missing from the reply")
+      Llm.Error(Llm.Error.Reason.Malformed, "the token count was missing from the reply")
 
   private[sibylline] def submit(endpoint: HttpUrl, body: Json)
     ( using Online, Http.Backend, (Http.Event is Loggable)^, Tactic[Connect.Error] )
@@ -465,18 +465,18 @@ private[sibylline] class AnthropicDialect(target: Anthropic)
           diagnostics: Diagnostics )
 extends Llm.Dialect, caps.ExclusiveCapability:
 
-  def name: Text = t"anthropic"
+  def name: Text = "anthropic"
 
-  private def endpoint: HttpUrl = target.address(t"v1/messages")
+  private def endpoint: HttpUrl = target.address("v1/messages")
 
   private given connectTactic: (Tactic[Connect.Error]^) = tactic.contramap: _ =>
-    Llm.Error(Llm.Error.Reason.Unreachable, t"the provider could not be reached")
+    Llm.Error(Llm.Error.Reason.Unreachable, "the provider could not be reached")
 
   private given jsonTactic: (Tactic[Json.Error]^) = tactic.contramap: _ =>
-    Llm.Error(Llm.Error.Reason.Malformed, t"the reply had an unexpected shape")
+    Llm.Error(Llm.Error.Reason.Malformed, "the reply had an unexpected shape")
 
   private given sseTactic: (Tactic[Sse.Error]^) = tactic.contramap: _ =>
-    Llm.Error(Llm.Error.Reason.Malformed, t"a server-sent event was not valid")
+    Llm.Error(Llm.Error.Reason.Malformed, "a server-sent event was not valid")
 
   def exchange(turn: Llm.Exchange): Llm.Reply =
     // As in `countTokens`: the send thunk captures the tactic `fetch` raises through.

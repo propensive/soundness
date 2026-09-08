@@ -49,7 +49,7 @@ import denominative.dysasymptotics.linearSize
 
 object Decomposition:
   def apply(optional: Optional[Decomposition]): Decomposition = optional.or:
-    Decomposition.Primitive(t"Unset", t"Unset", Unset)
+    Decomposition.Primitive("Unset", "Unset", Unset)
 
   // An explicit instance to avoid deriving `Inspectable[Decomposition]`, whose derived anon
   // class the Scala.js pipeline rejects (the `text` parameter acquires a fresh capture var,
@@ -72,7 +72,7 @@ enum Decomposition:
   def text2: Text = this match
     case Primitive(_, text, _)  => text
     case Sum(name, value, _)    => t"$name:${value.text}"
-    case Sequence(_, values, _) => values.map(_.text).join(t"[", t", ", t"]")
+    case Sequence(_, values, _) => values.map(_.text).join("[", ", ", "]")
 
     case Product(name, values, _) =>
       val fields: List[Text] = values.remap { (key, value) => field(key, value) }
@@ -90,14 +90,14 @@ enum Decomposition:
       builder.toString.tt
 
   def multiline(indent: Int = 0, newline: Boolean = true)(using TextBuilder aka "builder"): Unit =
-    val space = t"  "
+    val space = "  "
 
     this match
       case Primitive(typeName, text, _) => append(t"$text")
 
       case Sum(name, value, _) =>
         if newline then
-          append(t"\n")
+          append("\n")
           append(space*indent)
 
         append(t"$name.")
@@ -105,29 +105,29 @@ enum Decomposition:
 
       case Sequence(name, values, _) =>
         if newline then
-          append(t"\n")
+          append("\n")
           append(space*indent)
 
         val last = values.size
 
         values.each: item =>
           append(ordinal.show)
-          append(t": ")
+          append(": ")
           item.multiline(indent + 1, true)
 
-          if ordinal < last - 1 then append(t"\n"+(space*indent))
+          if ordinal < last - 1 then append("\n"+(space*indent))
 
       case Product(name, values, _) =>
         if newline then
-          append(t"\n")
+          append("\n")
           append(space*indent)
 
         append(t"$name:")
         val last = values.size
-        append(t"\n"+(space*indent))
+        append("\n"+(space*indent))
 
         values.each: (key, value) =>
           append(t"$space$key:")
           value.multiline(indent + 2, true)
 
-          if ordinal < last - 1 then append(t"\n"+(space*indent))
+          if ordinal < last - 1 then append("\n"+(space*indent))

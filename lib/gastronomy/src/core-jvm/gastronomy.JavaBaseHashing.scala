@@ -46,8 +46,8 @@ import gossamer.*
 // single home of `java.security`/`java.util.zip` usage in gastronomy. It does not
 // offer BLAKE3 (the JDK has no implementation) — use the Soundness provider.
 object JavaBaseHashing extends Hashing:
-  def md5:  Hashing.Function = messageDigest(t"MD5")
-  def sha1: Hashing.Function = messageDigest(t"SHA1")
+  def md5:  Hashing.Function = messageDigest("MD5")
+  def sha1: Hashing.Function = messageDigest("SHA1")
   def sha2(bits: Int): Hashing.Function = messageDigest(t"SHA-$bits")
 
   // The JDK has `java.util.zip` CRC-32 and Adler-32 (both intrinsified) but no CRC-64, so this

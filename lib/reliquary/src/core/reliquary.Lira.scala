@@ -54,12 +54,12 @@ import rudiments.sortingAlgorithms.timsort
 object Lira:
   // The interpreter directive's payload, as the parser stores it (without the `#!`). The full
   // first line of every `.lira` file is byte-fixed (§5.1, L115).
-  val directive: Text = t"/usr/bin/env lira"
+  val directive: Text = "/usr/bin/env lira"
 
   private val directiveBytes: Data =
-    charEncoders.utf8Encoder.encoded(t"#!/usr/bin/env lira\n")
+    charEncoders.utf8Encoder.encoded("#!/usr/bin/env lira\n")
 
-  private val separatorBytes: Data = charEncoders.utf8Encoder.encoded(t"\n##\n")
+  private val separatorBytes: Data = charEncoders.utf8Encoder.encoded("\n##\n")
 
   // Locates the document separator: the first line that is exactly `##`. §5.2 fixes the byte
   // layout so this split needs no TEL parsing — which is essential, since everything after the
@@ -97,7 +97,7 @@ object Lira:
       case position: Int => position
 
       case _ =>
-        abort(Lira.Error(Reason.InvalidManifest(t"the document separator is missing")))
+        abort(Lira.Error(Reason.InvalidManifest("the document separator is missing")))
 
     val manifestData = slice(data, 0, separator + 1)
     val compressed = slice(data, separator + separatorBytes.length, data.length)
@@ -135,7 +135,7 @@ object Lira:
     val compressed = Lira.Payload.compress(stream)
 
     val payload =
-      Lira.Manifest.Payload(t"brotli", stream.length.toLong, Lira.Payload.hash(stream))
+      Lira.Manifest.Payload("brotli", stream.length.toLong, Lira.Payload.hash(stream))
 
     val text = manifest.copy(payload = payload).render
     val manifestData = charEncoders.utf8Encoder.encoded(text)
@@ -231,7 +231,7 @@ object Lira:
         import errorDiagnostics.emptyDiagnostics
 
         mitigate:
-          case Base256.Error(_) => bad(t"a hash is malformed")
+          case Base256.Error(_) => bad("a hash is malformed")
 
         . protect(Base256.decodeStrict(text))
 
@@ -245,14 +245,14 @@ object Lira:
 
       val compounds = document.childCompounds.readable
 
-      val added = compounds.filter(_.keyword == t"add").toVector.map: compound =>
+      val added = compounds.filter(_.keyword == "add").toVector.map: compound =>
         val atoms = texts(compound)
-        if atoms.length != 1 then abort(bad(t"an add row does not have exactly one atom"))
+        if atoms.length != 1 then abort(bad("an add row does not have exactly one atom"))
         hash(atoms(0))
 
-      val replaced = compounds.filter(_.keyword == t"replace").toVector.map: compound =>
+      val replaced = compounds.filter(_.keyword == "replace").toVector.map: compound =>
         val atoms = texts(compound)
-        if atoms.length != 2 then abort(bad(t"a replace row does not have exactly two atoms"))
+        if atoms.length != 2 then abort(bad("a replace row does not have exactly two atoms"))
         Replacement(hash(atoms(0)), hash(atoms(1)))
 
       Lira.Delta(added.to(List), replaced.to(List))
@@ -269,7 +269,7 @@ object Lira:
 
       val rows = addRows + replaceRows
       val header = s"tel 1.0 ${Lira.Schemas.deltaSignature}"
-      val body = rows.join(t"\n")
+      val body = rows.join("\n")
       val text = Text(if rows.nil then s"$header\n" else s"$header\n\n$body\n")
       charEncoders.utf8Encoder.encoded(text)
 
@@ -401,7 +401,7 @@ object Lira:
   // format epoch. Atom domains additionally carry the full discipline identifier, so atoms from
   // different disciplines — or different versions of one discipline — can never collide.
   object Hash:
-    val epoch: Text = t"lira/1"
+    val epoch: Text = "lira/1"
     val size: Int = 32
 
     // The `0x00` byte separating the domain from the content; a fresh byte array is
@@ -433,7 +433,7 @@ object Lira:
 
     // The hash of the empty byte string in the blob domain, pinned as a golden value guarding the
     // stability of the domain-separation construction itself.
-    val emptyBlob: Text = t"ǢjЪ6ДľIẈḟžЭŠГȕJЂĘґƟḁsЬțДǶṛḠẄήϋƧЪ"
+    val emptyBlob: Text = "ǢjЪ6ДľIẈḟžЭŠГȕJЂĘґƟḁsЬțДǶṛḠẄήϋƧЪ"
 
   // LiraManifest → Lira.Manifest
   object Manifest:
@@ -446,8 +446,8 @@ object Lira:
       case Linkage, Recompilation
 
       def keyword: Text = this match
-        case Linkage       => t"linkage"
-        case Recompilation => t"recompilation"
+        case Linkage       => "linkage"
+        case Recompilation => "recompilation"
 
     object Guarantee:
       def parse(keyword: Text): Optional[Guarantee] = keyword.s match
@@ -514,9 +514,9 @@ object Lira:
       case Export, Track, Scan
 
       def keyword: Text = this match
-        case Export => t"export"
-        case Track  => t"track"
-        case Scan   => t"scan"
+        case Export => "export"
+        case Track  => "track"
+        case Scan   => "scan"
 
     object ResourceMode:
       def parse(keyword: Text): Optional[ResourceMode] = keyword.s match
@@ -553,13 +553,13 @@ object Lira:
       import errorDiagnostics.emptyDiagnostics
 
       mitigate:
-        case Base256.Error(_) => bad(t"a hash is malformed")
+        case Base256.Error(_) => bad("a hash is malformed")
 
       . protect(Base256.decodeStrict(text))
 
     private def semver(text: Text): Semver raises Lira.Error =
       val parts = text.s.split("\\.", -1).nn
-      if parts.length != 3 then abort(bad(t"the version is not `major.minor.patch`"))
+      if parts.length != 3 then abort(bad("the version is not `major.minor.patch`"))
       Semver(parts(0).nn.toLong, parts(1).nn.toLong, parts(2).nn.toLong)
 
     private def children(compound: Tel.Compound): scala.collection.immutable.Vector[Tel.Compound] =
@@ -592,117 +592,117 @@ object Lira:
     def decode(tel: Tel): Lira.Manifest raises Lira.Error =
       val top = tel.childCompounds.readable.toVector
 
-      val toolchain = top.filter(_.keyword == t"toolchain").map: compound =>
+      val toolchain = top.filter(_.keyword == "toolchain").map: compound =>
         val fields = children(compound)
 
         Tool
-          ( required(fields, t"name"),
-            required(fields, t"version"),
-            repeated(fields, t"flag").to(List) )
+          ( required(fields, "name"),
+            required(fields, "version"),
+            repeated(fields, "flag").to(List) )
 
-      val api = top.filter(_.keyword == t"api").map: compound =>
+      val api = top.filter(_.keyword == "api").map: compound =>
         val fields = children(compound)
-        Api(required(fields, t"discipline"), hash(required(fields, t"atoms")))
+        Api(required(fields, "discipline"), hash(required(fields, "atoms")))
 
-      val dependency = top.filter(_.keyword == t"dependency").map: compound =>
+      val dependency = top.filter(_.keyword == "dependency").map: compound =>
         val fields = children(compound)
 
         Dependency
-          ( module      = required(fields, t"module"),
-            api         = hash(required(fields, t"api")),
-            version     = field(fields, t"version").let(semver(_)),
-            build       = field(fields, t"build").let(hash(_)),
-            universe    = repeated(fields, t"universe").to(List),
-            serves      = field(fields, t"serves"),
-            integration = repeated(fields, t"integration").to(List),
-            uses        = field(fields, t"uses").let(hash(_)),
-            spans       = (repeated(fields, t"spans").map(hash(_))).to(List) )
+          ( module      = required(fields, "module"),
+            api         = hash(required(fields, "api")),
+            version     = field(fields, "version").let(semver(_)),
+            build       = field(fields, "build").let(hash(_)),
+            universe    = repeated(fields, "universe").to(List),
+            serves      = field(fields, "serves"),
+            integration = repeated(fields, "integration").to(List),
+            uses        = field(fields, "uses").let(hash(_)),
+            spans       = (repeated(fields, "spans").map(hash(_))).to(List) )
 
-      val resource = top.filter(_.keyword == t"resource").map: compound =>
+      val resource = top.filter(_.keyword == "resource").map: compound =>
         val mode = texts(compound) match
           case scala.collection.immutable.Vector(mode) =>
             ResourceMode.parse(mode).or(abort(bad(t"$mode is not a resource mode")))
 
           case _ =>
-            abort(bad(t"a resource needs exactly one mode"))
+            abort(bad("a resource needs exactly one mode"))
 
-        Resource(mode, TreePath(required(children(compound), t"path")))
+        Resource(mode, TreePath(required(children(compound), "path")))
 
-      val profile = top.filter(_.keyword == t"profile").map: compound =>
+      val profile = top.filter(_.keyword == "profile").map: compound =>
         val fields = children(compound)
 
-        val breaks = repeated(fields, t"breaks").map: keyword =>
+        val breaks = repeated(fields, "breaks").map: keyword =>
           Guarantee.parse(keyword).or(abort(bad(t"$keyword is not a guarantee level")))
 
-        Profile(required(fields, t"id"), breaks.to(List))
+        Profile(required(fields, "id"), breaks.to(List))
 
-      val integration = top.filter(_.keyword == t"integration").map: compound =>
+      val integration = top.filter(_.keyword == "integration").map: compound =>
         val fields = children(compound)
 
         Integration
-          ( id    = required(fields, t"id"),
-            rank  = field(fields, t"rank").let { text => text.s.toLong },
-            label = field(fields, t"label") )
+          ( id    = required(fields, "id"),
+            rank  = field(fields, "rank").let { text => text.s.toLong },
+            label = field(fields, "label") )
 
-      val section = top.filter(_.keyword == t"section").map: compound =>
+      val section = top.filter(_.keyword == "section").map: compound =>
         val realm = texts(compound) match
           case scala.collection.immutable.Vector(realm) => realm
 
           case _ =>
-            abort(bad(t"a section needs exactly one realm"))
+            abort(bad("a section needs exactly one realm"))
 
         val fields = children(compound)
 
-        val requires = fields.filter(_.keyword == t"requires").map: requirement =>
+        val requires = fields.filter(_.keyword == "requires").map: requirement =>
           val subfields = children(requirement)
 
           Requires
-            ( module  = required(subfields, t"module"),
-              api     = hash(required(subfields, t"api")),
-              version = field(subfields, t"version").let(semver(_)),
-              uses    = field(subfields, t"uses").let(hash(_)) )
+            ( module  = required(subfields, "module"),
+              api     = hash(required(subfields, "api")),
+              version = field(subfields, "version").let(semver(_)),
+              uses    = field(subfields, "uses").let(hash(_)) )
 
         Section
           ( realm       = realm,
-            integration = field(fields, t"integration"),
-            tree        = hash(required(fields, t"tree")),
-            delete      = (repeated(fields, t"delete").map(TreePath(_))).to(List),
-            derivative  = field(fields, t"derivative").let(hash(_)),
+            integration = field(fields, "integration"),
+            tree        = hash(required(fields, "tree")),
+            delete      = (repeated(fields, "delete").map(TreePath(_))).to(List),
+            derivative  = field(fields, "derivative").let(hash(_)),
             requires    = requires.to(List) )
 
-      val payload = top.filter(_.keyword == t"payload").toList match
+      val payload = top.filter(_.keyword == "payload").toList match
         case scala.List(compound) =>
           val fields = children(compound)
 
           Payload
-            ( required(fields, t"compression"),
-              required(fields, t"length").s.toLong,
-              hash(required(fields, t"hash")) )
+            ( required(fields, "compression"),
+              required(fields, "length").s.toLong,
+              hash(required(fields, "hash")) )
 
-        case _ => abort(bad(t"the payload record is missing or repeated"))
+        case _ => abort(bad("the payload record is missing or repeated"))
 
-      val signature = top.filter(_.keyword == t"signature").map: compound =>
+      val signature = top.filter(_.keyword == "signature").map: compound =>
         val fields = children(compound)
 
         Signature
-          ( required(fields, t"signer"),
-            required(fields, t"algorithm"),
-            hash(required(fields, t"key")),
-            required(fields, t"value") )
+          ( required(fields, "signer"),
+            required(fields, "algorithm"),
+            hash(required(fields, "key")),
+            required(fields, "value") )
 
       Lira.Manifest
-        ( module      = required(top, t"module"),
-          version     = field(top, t"version").let(semver(_)),
-          tag         = repeated(top, t"tag").to(List),
-          lineage     = (repeated(top, t"lineage").map(hash(_))).to(List),
+        ( module      = required(top, "module"),
+          version     = field(top, "version").let(semver(_)),
+          tag         = repeated(top, "tag").to(List),
+          lineage     = (repeated(top, "lineage").map(hash(_))).to(List),
           toolchain   = toolchain.to(List),
-          owns        = repeated(top, t"owns").to(List),
+          owns        = repeated(top, "owns").to(List),
           resource    = resource.to(List),
           api         = api.to(List),
           profile     = profile.to(List),
           integration = integration.to(List),
           dependency  = dependency.to(List),
-          delta       = field(top, t"delta").let(hash(_)),
+          delta       = field(top, "delta").let(hash(_)),
           section     = section.to(List),
           payload     = payload,
           signature   = signature.to(List) )
@@ -735,7 +735,7 @@ object Lira:
 
     // A release carrying a `host` section is a host contract (§9.4, hosts.md §4) — recognizable
     // from its manifest alone, which is what makes L137 checkable at resolution time.
-    def hostContract: Boolean = section.exists(_.realm == t"host")
+    def hostContract: Boolean = section.exists(_.realm == "host")
 
     // The canonical text of the whole file's manifest part: directive, pragma, one blank line,
     // then the compounds in schema order, LF-terminated. Deterministic; `Lira.read` accepts any
@@ -865,7 +865,7 @@ object Lira:
     def decompress(compressed: Data, length: Long, declaredHash: Data): Data raises Lira.Error =
       val result =
         try compressed.decompress[Brotli] catch case error: Exception =>
-          abort(Lira.Error(Reason.MalformedPayload(t"the payload does not decompress")))
+          abort(Lira.Error(Reason.MalformedPayload("the payload does not decompress")))
 
       if result.length.toLong != length then abort(Lira.Error(Reason.PayloadLength(length)))
       if Blob.compare(hash(result), declaredHash) != 0 then abort(Lira.Error(Reason.PayloadHash))
@@ -890,10 +890,10 @@ object Lira:
     case Jvm, Sjsir, Nir, Host
 
     def keyword: Text = this match
-      case Jvm   => t"jvm"
-      case Sjsir => t"sjsir"
-      case Nir   => t"nir"
-      case Host  => t"host"
+      case Jvm   => "jvm"
+      case Sjsir => "sjsir"
+      case Nir   => "nir"
+      case Host  => "host"
 
     // Whether independently-published libraries compose in this realm: true of every realm except
     // `host`, whose sections are never materialized onto any artifact path (§13.5).
@@ -943,18 +943,18 @@ object Lira:
 
     private def variant(keyword: String): Variant = Variant(Text(keyword), Tels.Flag)
 
-    private val hash:         Type = Reference(t"Hash")
-    private val moduleName:   Type = Reference(t"ModuleName")
-    private val namespace:    Type = Reference(t"Namespace")
-    private val semver:       Type = Reference(t"Semver")
-    private val natural:      Type = Reference(t"Natural")
-    private val disciplineId: Type = Reference(t"DisciplineId")
-    private val identifier:   Type = Reference(t"Identifier")
-    private val profileId:    Type = Reference(t"ProfileId")
-    private val guarantee:    Type = Reference(t"Guarantee")
-    private val string:       Type = Reference(t"String")
-    private val treePath:     Type = Reference(t"TreePath")
-    private val tagName:      Type = Reference(t"TagName")
+    private val hash:         Type = Reference("Hash")
+    private val moduleName:   Type = Reference("ModuleName")
+    private val namespace:    Type = Reference("Namespace")
+    private val semver:       Type = Reference("Semver")
+    private val natural:      Type = Reference("Natural")
+    private val disciplineId: Type = Reference("DisciplineId")
+    private val identifier:   Type = Reference("Identifier")
+    private val profileId:    Type = Reference("ProfileId")
+    private val guarantee:    Type = Reference("Guarantee")
+    private val string:       Type = Reference("String")
+    private val treePath:     Type = Reference("TreePath")
+    private val tagName:      Type = Reference("TagName")
 
     private val hashScalar: ScalarDefinition = scalar("Hash", "base-256-hash")
 
@@ -967,24 +967,24 @@ object Lira:
       scalar("String", "string"))
 
     val lira: Tels = Tels(
-      name     = t"lira",
+      name     = "lira",
       document = Struct(
         members = Array(
           field("module", moduleName),
           field("version", semver, required = Loose),
           field("tag", tagName, required = Loose, repeatable = Loose),
           field("lineage", hash, repeatable = Loose),
-          field("toolchain", Reference(t"Tool"), repeatable = Loose),
+          field("toolchain", Reference("Tool"), repeatable = Loose),
           field("owns", namespace, required = Loose, repeatable = Loose),
-          field("resource", Reference(t"Resource"), required = Loose, repeatable = Loose),
-          field("api", Reference(t"Api"), repeatable = Loose),
-          field("profile", Reference(t"Profile"), required = Loose, repeatable = Loose),
-          field("integration", Reference(t"Integration"), required = Loose, repeatable = Loose),
-          field("dependency", Reference(t"Dependency"), required = Loose, repeatable = Loose),
+          field("resource", Reference("Resource"), required = Loose, repeatable = Loose),
+          field("api", Reference("Api"), repeatable = Loose),
+          field("profile", Reference("Profile"), required = Loose, repeatable = Loose),
+          field("integration", Reference("Integration"), required = Loose, repeatable = Loose),
+          field("dependency", Reference("Dependency"), required = Loose, repeatable = Loose),
           field("delta", hash, required = Loose),
-          field("section", Reference(t"Section"), repeatable = Loose),
-          field("payload", Reference(t"Payload")),
-          field("signature", Reference(t"Signature"), required = Loose, repeatable = Loose)),
+          field("section", Reference("Section"), repeatable = Loose),
+          field("payload", Reference("Payload")),
+          field("signature", Reference("Signature"), required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
@@ -1034,7 +1034,7 @@ object Lira:
           field("tree", hash),
           field("delete", string, required = Loose, repeatable = Loose),
           field("derivative", hash, required = Loose),
-          field("requires", Reference(t"Requires"), required = Loose, repeatable = Loose)),
+          field("requires", Reference("Requires"), required = Loose, repeatable = Loose)),
 
         record("Payload",
           field("compression", identifier),
@@ -1070,32 +1070,32 @@ object Lira:
           variant("scan"))))
 
     val tree: Tels = Tels(
-      name     = t"lira-tree",
+      name     = "lira-tree",
       document = Struct(
-        members    = Array(field("entry", Reference(t"Entry"),
+        members    = Array(field("entry", Reference("Entry"),
             required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
       records  = Array(
         record("Entry",
-          field("path", Reference(t"TreePath")),
+          field("path", Reference("TreePath")),
           field("blob", hash))),
       scalars  = Array.frozen(builtins.readable ++ Array(hashScalar, scalar("TreePath", "tree-path")).readable),
       selects  = Array.empty[SelectDefinition])
 
     val atoms: Tels = Tels(
-      name     = t"lira-atoms",
+      name     = "lira-atoms",
       document = Struct(
         members = Array(
           field("discipline", disciplineId),
-          field("atom", Reference(t"Atom"), required = Loose, repeatable = Loose)),
+          field("atom", Reference("Atom"), required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
       records  = Array(
         record("Atom",
-          field("class", Reference(t"AtomClass")),
+          field("class", Reference("AtomClass")),
           field("hash", hash),
           field("key", string))),
       scalars  = Array.frozen(builtins.readable ++ Array(
@@ -1105,7 +1105,7 @@ object Lira:
       selects  = Array.empty[SelectDefinition])
 
     val uses: Tels = Tels(
-      name     = t"lira-uses",
+      name     = "lira-uses",
       document = Struct(
         members = Array(
           field("module", moduleName),
@@ -1118,11 +1118,11 @@ object Lira:
       selects  = Array.empty[SelectDefinition])
 
     val delta: Tels = Tels(
-      name     = t"lira-delta",
+      name     = "lira-delta",
       document = Struct(
         members = Array(
           field("add", hash, required = Loose, repeatable = Loose),
-          field("replace", Reference(t"Replacement"), required = Loose, repeatable = Loose)),
+          field("replace", Reference("Replacement"), required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
       sigil    = Unset,
@@ -1137,9 +1137,9 @@ object Lira:
     // tree item at the path `capabilities`, claimed by `capability/1`. Rows are sorted by
     // ascending name with no duplicates; `probe` is advisory and enters no atom.
     val capabilities: Tels = Tels(
-      name     = t"lira-capabilities",
+      name     = "lira-capabilities",
       document = Struct(
-        members    = Array(field("capability", Reference(t"Capability"),
+        members    = Array(field("capability", Reference("Capability"),
             required = Loose, repeatable = Loose)),
         validators = Array.empty[Text]),
       layers   = Array.empty[Tels.Layer],
@@ -1155,12 +1155,12 @@ object Lira:
     // The BASE-256 schema signatures of the six canonical documents, pinned as golden values (the
     // test suite recomputes each from its `res/test/reliquary/*.tel` mirror and checks agreement).
     // A conforming document of each schema carries its signature on the pragma line.
-    val liraSignature:  Text = t"ῘΔìẅḍβlίZOǒžAζȉḠẌLŠῺẃȕЊTȧGƜ2ДNΫΫA"
-    val treeSignature:  Text = t"ǨẙơẗỵclϋẁЫĥᾸMôĮẍOώżӯάǢЗĆӸkҚțȐωǢέӫ"
-    val atomsSignature: Text = t"2ӪççÃ5AḟǑXϋƤzᾱĺHϕЂẌǒEẂẁĮί9ḀẘΊÐιЪp"
-    val usesSignature:  Text = t"şşCȧOӖGҐΪḍḋjΊӁῚƟȐЌĥέȦЬƜδĻĘ1Ȑḟ6ӟÔḍ"
-    val deltaSignature: Text = t"gЪΪΞKῺκḢҚdḣulƒjazỲύþῺѝgļEvḞϕϊḟẉtǣ"
-    val capabilitiesSignature: Text = t"ẋƒҢιƟžŀæДNGqЌλ1ḞλſẉûÙῡẂȧώẆlώĘdSỲÔ"
+    val liraSignature:  Text = "ῘΔìẅḍβlίZOǒžAζȉḠẌLŠῺẃȕЊTȧGƜ2ДNΫΫA"
+    val treeSignature:  Text = "ǨẙơẗỵclϋẁЫĥᾸMôĮẍOώżӯάǢЗĆӸkҚțȐωǢέӫ"
+    val atomsSignature: Text = "2ӪççÃ5AḟǑXϋƤzᾱĺHϕЂẌǒEẂẁĮί9ḀẘΊÐιЪp"
+    val usesSignature:  Text = "şşCȧOӖGҐΪḍḋjΊӁῚƟȐЌĥέȦЬƜδĻĘ1Ȑḟ6ӟÔḍ"
+    val deltaSignature: Text = "gЪΪΞKῺκḢҚdḣulƒjazỲύþῺѝgļEvḞϕϊḟẉtǣ"
+    val capabilitiesSignature: Text = "ẋƒҢιƟžŀæДNGqЌλ1ḞλſẉûÙῡẂȧώẆlώĘdSỲÔ"
 
   // LiraTree → Lira.Tree
   object Tree:
@@ -1212,7 +1212,7 @@ object Lira:
             tel.validate(using Lira.Schemas.tree, Lira.Validators.registry)
             tel
 
-      val compounds = document.childCompounds.readable.filter(_.keyword == t"entry").toVector
+      val compounds = document.childCompounds.readable.filter(_.keyword == "entry").toVector
 
       val entries = compounds.map: compound =>
         val atoms = compound.atoms.readable.collect:
@@ -1221,7 +1221,7 @@ object Lira:
           case Tel.Atom.Literal(_, text) => text
 
         if atoms.length != 2
-        then abort(Lira.Error(Reason.InvalidTree(t"an entry does not have exactly two atoms")))
+        then abort(Lira.Error(Reason.InvalidTree("an entry does not have exactly two atoms")))
 
         val path = TreePath(atoms(0))
 
@@ -1229,7 +1229,7 @@ object Lira:
           import errorDiagnostics.emptyDiagnostics
 
           mitigate:
-            case Base256.Error(_) => Lira.Error(Reason.InvalidTree(t"a blob hash is malformed"))
+            case Base256.Error(_) => Lira.Error(Reason.InvalidTree("a blob hash is malformed"))
 
           . protect(Base256.decodeStrict(atoms(1)))
 
@@ -1242,7 +1242,7 @@ object Lira:
 
         val detail =
           if order == 0 then t"the path ${entries(index).path.text} appears twice"
-          else t"rows are not in ascending path order"
+          else "rows are not in ascending path order"
 
         if order >= 0 then abort(Lira.Error(Reason.InvalidTree(detail)))
         index += 1
@@ -1264,7 +1264,7 @@ object Lira:
       val rows = entries.map: entry =>
         Text(s"entry ${entry.path.text}  ${Lira.Hash.text(entry.blob)}")
 
-      val body = rows.join(t"\n")
+      val body = rows.join("\n")
       val text = Text(s"tel 1.0 ${Lira.Schemas.treeSignature}\n\n$body\n")
       charEncoders.utf8Encoder.encoded(text)
 
@@ -1314,7 +1314,7 @@ object Lira:
       if value.s.length != Lira.Hash.size
       then fail(t"a hash must be exactly ${Lira.Hash.size} BASE-256 characters", (0, value.s.length))
       else safely(Base256.decodeStrict(value)) match
-        case Unset => fail(t"the hash contains characters outside the BASE-256 alphabet", (0, 32))
+        case Unset => fail("the hash contains characters outside the BASE-256 alphabet", (0, 32))
         case _     => Response.Valid
 
     private def kebabChar(c: Char): Boolean =
@@ -1329,9 +1329,9 @@ object Lira:
       val s = value.s
       def good(part: String | Null): Boolean = kebab(part.nn)
 
-      if s.isEmpty then fail(t"the module name must not be empty", (0, 0))
+      if s.isEmpty then fail("the module name must not be empty", (0, 0))
       else if !s.split("[/.]", -1).nn.forall(good)
-      then fail(t"each `/`- or `.`-separated segment must be kebab-case", (0, s.length))
+      then fail("each `/`- or `.`-separated segment must be kebab-case", (0, s.length))
       else Response.Valid
 
     // A tag name (§12.6): a letter followed by letters, digits, `-` and `.` — `jdk-19`,
@@ -1343,11 +1343,11 @@ object Lira:
         c == '-' || c == '.' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
           || (c >= '0' && c <= '9')
 
-      if s.isEmpty then fail(t"the tag must not be empty", (0, 0))
+      if s.isEmpty then fail("the tag must not be empty", (0, 0))
       else if !s.charAt(0).isLetter
-      then fail(t"a tag must start with a letter", (0, 1))
+      then fail("a tag must start with a letter", (0, 1))
       else if !s.forall(tagChar)
-      then fail(t"a tag may contain only letters, digits, `-` and `.`", (0, s.length))
+      then fail("a tag may contain only letters, digits, `-` and `.`", (0, s.length))
       else Response.Valid
 
     private def namespaceChar(c: Char): Boolean =
@@ -1361,9 +1361,9 @@ object Lira:
         val leading = !text.isEmpty && !(text.charAt(0) >= '0' && text.charAt(0) <= '9')
         leading && text.forall(namespaceChar)
 
-      if s.isEmpty then fail(t"the namespace must not be empty", (0, 0))
+      if s.isEmpty then fail("the namespace must not be empty", (0, 0))
       else if !s.split("\\.", -1).nn.forall(segment)
-      then fail(t"each dotted segment must be a package-style identifier", (0, s.length))
+      then fail("each dotted segment must be a package-style identifier", (0, s.length))
       else Response.Valid
 
     private def digit(c: Char): Boolean = c >= '0' && c <= '9'
@@ -1374,20 +1374,20 @@ object Lira:
 
     private def natural(value: Text): Response =
       if naturalNumber(value.s) then Response.Valid
-      else fail(t"a natural number with no leading zero is required", (0, value.s.length))
+      else fail("a natural number with no leading zero is required", (0, value.s.length))
 
     private def semver(value: Text): Response =
       val parts = value.s.split("\\.", -1).nn
 
       if parts.length != 3 || !parts.forall(naturalNumber)
-      then fail(t"the version must be `major.minor.patch`, each a natural", (0, value.s.length))
+      then fail("the version must be `major.minor.patch`, each a natural", (0, value.s.length))
       else Response.Valid
 
     private def disciplineId(value: Text): Response =
       val parts = value.s.split("/", -1).nn
 
       if parts.length != 2 || !kebab(parts(0).nn) || !naturalNumber(parts(1)) || parts(1) == "0"
-      then fail(t"a discipline is identified as `<name>/<positive integer>`", (0, value.s.length))
+      then fail("a discipline is identified as `<name>/<positive integer>`", (0, value.s.length))
       else Response.Valid
 
     // §11.6: a profile is identified on the same terms as a discipline, and must likewise bump its
@@ -1396,27 +1396,27 @@ object Lira:
       val parts = value.s.split("/", -1).nn
 
       if parts.length != 2 || !kebab(parts(0).nn) || !naturalNumber(parts(1)) || parts(1) == "0"
-      then fail(t"a profile is identified as `<name>/<positive integer>`", (0, value.s.length))
+      then fail("a profile is identified as `<name>/<positive integer>`", (0, value.s.length))
       else Response.Valid
 
     // §11.5 names three guarantee levels, but only two can be claimed or broken: behavior is not
     // certified by any hash scheme, so it is not expressible in a `breaks` field.
     private def guarantee(value: Text): Response =
       if value.s == "linkage" || value.s == "recompilation" then Response.Valid
-      else fail(t"a guarantee level is `linkage` or `recompilation`", (0, value.s.length))
+      else fail("a guarantee level is `linkage` or `recompilation`", (0, value.s.length))
 
     private def treePath(value: Text): Response =
       val s = value.s
       def segment(part: String | Null): Boolean = !part.nn.isEmpty && part != "." && part != ".."
 
-      if s.isEmpty then fail(t"the path must not be empty", (0, 0))
+      if s.isEmpty then fail("the path must not be empty", (0, 0))
       else if !s.split("/", -1).nn.forall(segment)
-      then fail(t"the path must be relative, with no empty, `.` or `..` segments", (0, s.length))
+      then fail("the path must be relative, with no empty, `.` or `..` segments", (0, s.length))
       else Response.Valid
 
     private def atomClass(value: Text): Response =
       if value.s == "rigid" || value.s == "replaceable" then Response.Valid
-      else fail(t"the atom class must be `rigid` or `replaceable`", (0, value.s.length))
+      else fail("the atom class must be `rigid` or `replaceable`", (0, value.s.length))
 
 // A read `.lira` file: the typed manifest, the parsed TEL document it projects (the semantic
 // model that signing and reserialization operate on), and the still-compressed payload.

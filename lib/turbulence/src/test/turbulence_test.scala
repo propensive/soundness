@@ -70,7 +70,7 @@ object Tests extends Suite(m"Turbulence tests"):
         . assert(_ === data)
 
     suite(m"Streaming Unicode tests"):
-      val ascii = Array(t"", t"a", t"ab", t"abc", t"abcd")
+      val ascii = Array("", "a", "ab", "abc", "abcd")
 
       val strings = for
         asc0 <- List(t"", t"a", t"ab", t"abc") // 4 combinations
@@ -100,13 +100,13 @@ object Tests extends Suite(m"Turbulence tests"):
         . assert(_ == string.s)
 
       test(m"a surrogate pair split across chunks encodes correctly"):
-        val gothic = t"𐍈"
+        val gothic = "𐍈"
         val high = gothic.s.charAt(0).toString.tt
         val low = gothic.s.charAt(1).toString.tt
 
         summon[CharEncoder].encoded(Chain(t"a", high, low, t"b"))
         . stdlib.to(List).map(_.readable).reduce(_ ++ _).to(List)
-      . assert(_ == t"a𐍈b".in[Data].readable.to(List))
+      . assert(_ == "a𐍈b".in[Data].readable.to(List))
 
       test(m"per-char-chunk streams roundtrip through encode and decode"):
         val string: String = "aë€𐍈z"
@@ -118,7 +118,7 @@ object Tests extends Suite(m"Turbulence tests"):
         . stdlib.to(List).map(_.s).mkString
       . assert(_ == "aë€𐍈z")
 
-    val qbf = t"The quick brown fox\njumps over the lazy dog"
+    val qbf = "The quick brown fox\njumps over the lazy dog"
     val qbfData = qbf.in[Data]
 
     object Ref:
@@ -154,27 +154,27 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read type as Text with Text and Byte Source"):
         Ref().read[Text].s
-      . assert(_ == t"abcdef".s)
+      . assert(_ == "abcdef".s)
 
       test(m"Read type as Data with Text and Byte Source"):
         Ref().read[Data].to[List]
-      . assert(_ == t"abcdef".in[Data].to[List])
+      . assert(_ == "abcdef".in[Data].to[List])
 
       test(m"Read some type as Text with only Text Source instance"):
         Ref2().read[Text].s
-      . assert(_ == t"abcdef".s)
+      . assert(_ == "abcdef".s)
 
       test(m"Read some type as Data with only Text Source instance"):
         Ref2().read[Data].to[List]
-      . assert(_ == t"abcdef".in[Data].to[List])
+      . assert(_ == "abcdef".in[Data].to[List])
 
       test(m"Read some type as Text with only Data Source instance"):
         Ref3().read[Text].s
-      . assert(_ == t"abcdef".s)
+      . assert(_ == "abcdef".s)
 
       test(m"Read some type as Data with only Data Streamable instance"):
         Ref3().read[Data].to[List]
-      . assert(_ == t"abcdef".in[Data].to[List])
+      . assert(_ == "abcdef".in[Data].to[List])
 
       test(m"Read Text as Chain[Text]"):
         qbf.read[Chain[Text]].join
@@ -241,7 +241,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       class TextStore():
         @scala.caps.unsafe.untrackedCaptures
-        var text: Text = t""
+        var text: Text = ""
         def apply(): Text = text
 
       object TextStore:
@@ -428,18 +428,18 @@ object Tests extends Suite(m"Turbulence tests"):
     suite(m"Relay tests"):
       test(m"records put before draining arrive in order"):
         val relay = Relay[Text]()
-        relay.put(t"one")
-        relay.put(t"two")
-        relay.put(t"three")
+        relay.put("one")
+        relay.put("two")
+        relay.put("three")
         relay.stop()
         relay.stream.records.to(List)
       . assert(_ == List(t"one", t"two", t"three"))
 
       test(m"records already queued batch into one window"):
         val relay = Relay[Text]()
-        relay.put(t"a")
-        relay.put(t"b")
-        relay.put(t"c")
+        relay.put("a")
+        relay.put("b")
+        relay.put("c")
         relay.stop()
         var windows: Int = 0
 
@@ -457,9 +457,9 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"records after stop are not delivered"):
         val relay = Relay[Text]()
-        relay.put(t"before")
+        relay.put("before")
         relay.stop()
-        relay.put(t"after")
+        relay.put("after")
         relay.stream.records.to(List)
       . assert(_ == List(t"before"))
 
@@ -486,7 +486,7 @@ object Tests extends Suite(m"Turbulence tests"):
       // reader attached.
       test(m"relay puts never block, even with no reader"):
         val relay = Relay[Text]()
-        for _ <- 1 to 100000 do relay.put(t"x")
+        for _ <- 1 to 100000 do relay.put("x")
         relay.stop()
         relay.stream.records.to(List).length
       . assert(_ == 100000)
@@ -504,7 +504,7 @@ object Tests extends Suite(m"Turbulence tests"):
     suite(m"Line splitting"):
       test(m"whole-value Data delineate agrees with the stream form"):
         import lineSeparation.adaptiveLinefeedLineSeparation
-        val bytes: Data = t"one\ntwo\r\nthree".in[Data]
+        val bytes: Data = "one\ntwo\r\nthree".in[Data]
         bytes.delineate.to[List]
       . assert(_ == List(t"one", t"two", t"three"))
 
@@ -559,7 +559,7 @@ object Tests extends Suite(m"Turbulence tests"):
       suite(m"adaptive linefeeds"):
         import lineSeparation.adaptiveLinefeedLineSeparation
 
-        check(t"adaptive", List(
+        check("adaptive", List(
           (t"", List()),
           (t"a", List(t"a")),
           (t"a\nb", List(t"a", t"b")),
@@ -575,7 +575,7 @@ object Tests extends Suite(m"Turbulence tests"):
       suite(m"linefeeds"):
         import lineSeparation.linefeedLineSeparation
 
-        check(t"linefeed", List(
+        check("linefeed", List(
           (t"a\nb", List(t"a", t"b")),
           (t"a\rb", List(t"ab")),
           (t"a\r\nb", List(t"a", t"b")),
@@ -588,7 +588,7 @@ object Tests extends Suite(m"Turbulence tests"):
         // NOTE: the packaged policy's action table is (cr = Nl, lf = Lf, ...) —
         // identical to strictCarriageReturn's, which looks inverted for a
         // "linefeeds" policy, but the duct must match the table as it stands.
-        check(t"strict linefeed", List(
+        check("strict linefeed", List(
           (t"a\nb", List(t"a\nb")),
           (t"a\rb", List(t"a", t"b")),
           (t"a\r\nb", List(t"a", t"\nb")),
@@ -597,7 +597,7 @@ object Tests extends Suite(m"Turbulence tests"):
       suite(m"carriage returns"):
         import lineSeparation.carriageReturnLineSeparation
 
-        check(t"carriage return", List(
+        check("carriage return", List(
           (t"a\rb", List(t"a", t"b")),
           (t"a\nb", List(t"ab")),
           (t"a\r\nb", List(t"a", t"b")),
@@ -607,7 +607,7 @@ object Tests extends Suite(m"Turbulence tests"):
       suite(m"strict carriage returns"):
         import lineSeparation.strictCarriageReturnLineSeparation
 
-        check(t"strict carriage return", List(
+        check("strict carriage return", List(
           (t"a\rb", List(t"a", t"b")),
           (t"a\nb", List(t"a\nb")),
           (t"a\r\nb", List(t"a", t"\nb")),
@@ -616,7 +616,7 @@ object Tests extends Suite(m"Turbulence tests"):
       suite(m"carriage return linefeeds"):
         import lineSeparation.carriageReturnLinefeedLineSeparation
 
-        check(t"crlf", List(
+        check("crlf", List(
           (t"a\r\nb", List(t"a", t"b")),
           (t"a\nb", List(t"a\nb")),
           (t"a\rb", List(t"ab")),
@@ -628,12 +628,12 @@ object Tests extends Suite(m"Turbulence tests"):
         import lineSeparation.adaptiveLinefeedLineSeparation
 
         test(m"lines splits a byte stream through the character decoder"):
-          t"first\nsecond\r\nthird".in[Data].stream.delineate.records.to(List)
+          "first\nsecond\r\nthird".in[Data].stream.delineate.records.to(List)
         . assert(_ == List(t"first", t"second", t"third"))
 
         test(m"a line spanning many windows is reassembled"):
           val long = Text(String(scala.Array.fill(10000)('x')))
-          val input = long + t"\ny"
+          val input = long + "\ny"
           input.s.grouped(7).map(_.tt).stream.delineate.records.to(List)
         . assert(_ == List(Text(String(scala.Array.fill(10000)('x'))), t"y"))
 
@@ -642,7 +642,7 @@ object Tests extends Suite(m"Turbulence tests"):
         // is forced to accumulate a partial character and decode it only once
         // the whole line is present. (The char-level harness cannot cover this:
         // fragmenting *characters* would split the surrogate pair of `🚀`.)
-        val multiByte = t"café\n— dash\n数据\r\n🚀 rocket"
+        val multiByte = "café\n— dash\n数据\r\n🚀 rocket"
         val multiByteLines = List(t"café", t"— dash", t"数据", t"🚀 rocket")
 
         for chunk <- List(1, 2, 3, 5, 7) do
@@ -656,7 +656,7 @@ object Tests extends Suite(m"Turbulence tests"):
         for size <- List(10, 100, 700, 1000, 4000) do
           test(m"a long line of multi-byte characters is decoded whole, $size chars"):
             val long = Text(String(scala.Array.fill(size)('数')))
-            splitBytes(long + t"\n" + long, 3) == List(long, long)
+            splitBytes(long + "\n" + long, 3) == List(long, long)
           . assert(_ == true)
 
         test(m"lines of an empty byte stream is empty"):
@@ -682,7 +682,7 @@ object Tests extends Suite(m"Turbulence tests"):
         Array.unsafeFrozen(output.toByteArray.nn).to[List]
       . assert(_ == payload.readable.to(List))
 
-      val original = t"The quick brown fox jumps over the lazy dog"*100
+      val original = "The quick brown fox jumps over the lazy dog"*100
 
       test(m"reader source delivers text across refills"):
         val reader = ji.StringReader(original.s)

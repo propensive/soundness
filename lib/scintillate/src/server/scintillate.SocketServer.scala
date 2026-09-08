@@ -149,7 +149,7 @@ extends RequestServable:
   // connection is closed rather than read in full to reach the next request.
   private val drainLimit: Int = 65536
 
-  private val continueResponse: Data = t"HTTP/1.1 100 Continue\r\n\r\n".in[Data]
+  private val continueResponse: Data = "HTTP/1.1 100 Continue\r\n\r\n".in[Data]
 
   // With `flushEach` (the default), the stream is flushed after every block: a streaming
   // body (chunked response, SSE, or an upgraded WebSocket) may never end, so its bytes
@@ -220,7 +220,7 @@ extends RequestServable:
     // writes.
     val out: ji.BufferedOutputStream = ji.BufferedOutputStream(sink, 8192)
 
-    val closeHeader: Http.Header = Http.Header(t"connection", t"close")
+    val closeHeader: Http.Header = Http.Header("connection", "close")
 
     // Handle one request off the cursor; return whether to keep the connection
     // alive for a further request.
@@ -457,9 +457,9 @@ extends RequestServable:
                     Optional(tls.getApplicationProtocol).let(_.tt).or(t"")
 
                   case _ =>
-                    t""
+                    ""
 
-                if protocol == t"h2" then Http2Serve.serveSession(scope0, in, out, port)
+                if protocol == "h2" then Http2Serve.serveSession(scope0, in, out, port)
                 else
                   // An HTTP/1.1 keep-alive connection is also a per-connection
                   // scope; its session `handle` serves the connection's requests.

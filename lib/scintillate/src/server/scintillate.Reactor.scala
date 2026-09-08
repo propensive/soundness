@@ -87,7 +87,7 @@ object Reactor:
   // been seen, this bound stops a trickling client growing the accumulator unbounded.
   private val headLimit: Int = 8192 + 65536
 
-  private val closeHeader: Http.Header = Http.Header(t"connection", t"close")
+  private val closeHeader: Http.Header = Http.Header("connection", "close")
 
   // The write-queue watermarks: above `highWater` queued response bytes, a connection's
   // read interest is dropped — `Pace.Halted` in zephyrine's demand vocabulary: stop

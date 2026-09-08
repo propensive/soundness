@@ -78,7 +78,7 @@ object Zip:
 
     def length(text: Text): Int raises Path.Error = 0
     def decode(text: Text): %.type raises Path.Error = %
-    def encode(root: %.type): Text = t""
+    def encode(root: %.type): Text = ""
 
   // Anchored here so `path.open[Zip]()` and `data.open[Zip]()` resolve with no import.
   given openable: [path: Abstractable across Paths to Text]

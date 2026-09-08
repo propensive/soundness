@@ -39,10 +39,10 @@ import spectacular.*
 object Target:
   given showable: Target is Showable =
     case Browse(value) => value
-    case Self          => t"_self"
-    case Blank         => t"_blank"
-    case Parent        => t"_parent"
-    case Top           => t"_top"
+    case Self          => "_self"
+    case Blank         => "_blank"
+    case Parent        => "_parent"
+    case Top           => "_top"
 
 enum Target:
   case Browse(value: Text)

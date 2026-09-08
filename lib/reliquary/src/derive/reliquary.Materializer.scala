@@ -61,8 +61,8 @@ object Materializer:
 
     // `host` sections are never materialized onto any artifact path (§13.5): a host contract's
     // content describes the environment and joins nothing.
-    if universe == t"host"
-    then abort(Lira.Error(Reason.BadHostContract(t"the host realm derives no artifacts")))
+    if universe == "host"
+    then abort(Lira.Error(Reason.BadHostContract("the host realm derives no artifacts")))
 
     val path = Buildpath(liras.map(_.manifest))
     val (assignment, _) = path.resolved(universe)

@@ -389,7 +389,7 @@ private[cataclysm] object SelectorParser:
       ws()
       val (a, b) = anPlusB()
       ws()
-      val of = if keyword(t"of") then nthOf() else Unset
+      val of = if keyword("of") then nthOf() else Unset
       PseudoArgument.Nth(a, b, of)
 
     private def nthOf(): SelectorList =
@@ -397,9 +397,9 @@ private[cataclysm] object SelectorParser:
       selectorList(relative = false)
 
     private def anPlusB(): (Int, Int) =
-      if keyword(t"odd") then
+      if keyword("odd") then
         (2, 1)
-      else if keyword(t"even") then
+      else if keyword("even") then
         (2, 0)
       else
         val sign = signOpt()

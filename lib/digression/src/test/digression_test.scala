@@ -44,38 +44,38 @@ object Tests extends Suite(m"Digression Tests"):
       test(m"An operator name is decoded"):
         StackTrace.rewrite("$plus$plus", method = true)
 
-      . assert(_ == t"++()")
+      . assert(_ == "++()")
 
       test(m"An anonymous function is marked as a lambda"):
         StackTrace.rewrite("Foo$$anonfun$3", method = true)
 
-      . assert(_ == t"Foo.λ₃()")
+      . assert(_ == "Foo.λ₃()")
 
       test(m"A default getter is marked as a default"):
         StackTrace.rewrite("defaulted$default$1")
 
-      . assert(_ == t"defaultedδ₁")
+      . assert(_ == "defaultedδ₁")
 
       test(m"A constructor is marked as an initializer"):
         StackTrace.rewrite("<init>", method = true)
 
-      . assert(_ == t"ⲛ()")
+      . assert(_ == "ⲛ()")
 
       test(m"A module class keeps its marker"):
         StackTrace.rewrite("pkg.Foo$")
 
-      . assert(_ == t"pkg.ΞFoo")
+      . assert(_ == "pkg.ΞFoo")
 
       test(m"A name with no `.` to split on is left alone"):
         StackTrace.rewrite("Foo$")
 
-      . assert(_ == t"Foo#")
+      . assert(_ == "Foo#")
 
     suite(m"Capturing a stack trace"):
       test(m"A captured frame keeps the compiled names it was built from"):
         Exception("boom").stackTrace.frames.prim.let(_.jvmClass)
 
-      . assert(_.let(_.starts(t"digression.Tests")) == true)
+      . assert(_.let(_.starts("digression.Tests")) == true)
 
       test(m"Frames are unresolved unless a resolver is imported"):
         Exception("boom").stackTrace.frames.map(_.source).to[Set]
@@ -87,36 +87,36 @@ object Tests extends Suite(m"Digression Tests"):
           (frame.displayClass, frame.displayMethod)
 
       . assert: value =>
-          value.let((cls, method) => cls.starts(t"digression.ΞTests") && method.ends(t"()"))
+          value.let((cls, method) => cls.starts("digression.ΞTests") && method.ends("()"))
           == true
 
     suite(m"Resolved frames"):
-      val source = StackTrace.Frame.Source(t"/src/Foo.scala", t"pkg.Foo.bar", t"λ", Kind.Lambda)
+      val source = StackTrace.Frame.Source("/src/Foo.scala", "pkg.Foo.bar", "λ", Kind.Lambda)
 
       val frame =
         StackTrace.Frame
-         ( StackTrace.Method(t"pkg.ΞFoo", t"bar.λ₁()"), t"Foo.scala", 12, false,
-           t"pkg.Foo$$", t"bar$$anonfun$$1", source )
+         ( StackTrace.Method("pkg.ΞFoo", "bar.λ₁()"), "Foo.scala", 12, false,
+           "pkg.Foo$", "bar$anonfun$1", source )
 
       test(m"A resolved frame displays the source definition"):
         (frame.displayClass, frame.displayMethod)
 
-      . assert(_ == (t"pkg.Foo.bar", t"λ"))
+      . assert(_ == ("pkg.Foo.bar", "λ"))
 
       test(m"The displayed owner splits at its last segment"):
         (frame.displayPrefix, frame.displaySegment)
 
-      . assert(_ == (t"pkg.Foo", t"bar"))
+      . assert(_ == ("pkg.Foo", "bar"))
 
       test(m"A definition joins its owner and name"):
         source.definition
 
-      . assert(_ == t"pkg.Foo.bar.λ")
+      . assert(_ == "pkg.Foo.bar.λ")
 
       test(m"A definition with no owner is just its name"):
-        source.copy(owner = t"").definition
+        source.copy(owner = "").definition
 
-      . assert(_ == t"λ")
+      . assert(_ == "λ")
 
       test(m"Compiler-generated frames are marked as plumbing"):
         List(Kind.Bridge, Kind.Forwarder, Kind.Initializer, Kind.Specialized, Kind.Synthetic)
@@ -167,7 +167,7 @@ object Tests extends Suite(m"Digression Tests"):
 
     suite(m"SMAP parsing and expansion"):
       test(m"Unparsable text is not an SMAP"):
-        Smap.parse(t"not an SMAP")
+        Smap.parse("not an SMAP")
 
       . assert(_ == Unset)
 
@@ -231,53 +231,53 @@ object Tests extends Suite(m"Digression Tests"):
             . mkString("\n")
 
       test(m"An inlined line answers the generated range standing for it"):
-        smap.let(_.sites(t"Util.scala", 3))
+        smap.let(_.sites("Util.scala", 3))
 
       . assert(_ == List((121, 122)))
 
       test(m"Each line of a coalesced run answers its own range"):
-        smap.let(_.sites(t"Util.scala", 4))
+        smap.let(_.sites("Util.scala", 4))
 
       . assert(_ == List((122, 123)))
 
       test(m"A line beyond the inlined run answers nothing"):
-        smap.let(_.sites(t"Util.scala", 5).stdlib.isEmpty)
+        smap.let(_.sites("Util.scala", 5).stdlib.isEmpty)
 
       . assert(_ == true)
 
       test(m"The generated file's own lines are not sites"):
-        smap.let(_.sites(t"Main.scala", 3).stdlib.isEmpty)
+        smap.let(_.sites("Main.scala", 3).stdlib.isEmpty)
 
       . assert(_ == true)
 
       test(m"A file foreign to the SMAP answers nothing"):
-        smap.let(_.sites(t"Nowhere.scala", 3).stdlib.isEmpty)
+        smap.let(_.sites("Nowhere.scala", 3).stdlib.isEmpty)
 
       . assert(_ == true)
 
       test(m"A line inlined at several sites answers every range"):
-        multi.let(_.sites(t"Util.scala", 3))
+        multi.let(_.sites("Util.scala", 3))
 
       . assert(_ == List((101, 102), (105, 107)))
 
       test(m"Nested inlining sites resolve per file"):
-        (nested.let(_.sites(t"B.scala", 3)), nested.let(_.sites(t"A.scala", 3)))
+        (nested.let(_.sites("B.scala", 3)), nested.let(_.sites("A.scala", 3)))
 
       . assert(_ == (List((11, 12)), List((12, 13))))
 
     suite(m"Rendering inlined frames"):
-      val method = StackTrace.Method(t"Main", t"run()")
+      val method = StackTrace.Method("Main", "run()")
 
       val inlined =
         List
           ( StackTrace.Frame.Inlined(t"A.scala", t"A.scala", 3),
             StackTrace.Frame.Inlined(t"B.scala", t"B.scala", 3) )
 
-      val frame = StackTrace.Frame(method, t"Main.scala", 3, false, inlined = inlined)
-      val stack = StackTrace(t"scala", t"Exception", Message(t"boom"), List(frame), Unset)
+      val frame = StackTrace.Frame(method, "Main.scala", 3, false, inlined = inlined)
+      val stack = StackTrace("scala", "Exception", Message("boom"), List(frame), Unset)
 
       test(m"An inlined origin is rendered beneath its frame"):
-        stack.show.contains(t"↳ inlined from A.scala:3")
+        stack.show.contains("↳ inlined from A.scala:3")
 
       . assert(_ == true)
 
@@ -288,18 +288,18 @@ object Tests extends Suite(m"Digression Tests"):
       . assert(_ == true)
 
       test(m"A frame with no inline information renders as before"):
-        StackTrace(t"scala", t"Exception", Message(t"boom"),
+        StackTrace("scala", "Exception", Message("boom"),
             List(frame.copy(inlined = Nil)), Unset)
-        . show.contains(t"inlined")
+        . show.contains("inlined")
 
       . assert(_ == false)
 
       test(m"A resolved inline origin names its definition ahead of its position"):
-        val source = StackTrace.Frame.Source(t"A.scala", t"ThrowerA", t"fail", Kind.Method)
-        val origin = StackTrace.Frame.Inlined(t"A.scala", t"A.scala", 3, source)
+        val source = StackTrace.Frame.Source("A.scala", "ThrowerA", "fail", Kind.Method)
+        val origin = StackTrace.Frame.Inlined("A.scala", "A.scala", 3, source)
 
-        StackTrace(t"scala", t"Exception", Message(t"boom"),
+        StackTrace("scala", "Exception", Message("boom"),
             List(frame.copy(inlined = List(origin))), Unset)
-        . show.contains(t"↳ inlined from ThrowerA.fail (A.scala:3)")
+        . show.contains("↳ inlined from ThrowerA.fail (A.scala:3)")
 
       . assert(_ == true)

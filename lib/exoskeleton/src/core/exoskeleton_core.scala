@@ -69,11 +69,11 @@ package backstops:
   given genericErrorMessageBackstop: Backstop:
     def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception =>
-        Out.println(t"An unexpected error occurred.")
+        Out.println("An unexpected error occurred.")
         Exit(1)
 
       case error: Throwable =>
-        Out.println(t"An unexpected error occurred.")
+        Out.println("An unexpected error occurred.")
         Exit(2)
 
   given exceptionMessageBackstop: Backstop:
@@ -117,7 +117,7 @@ package executives:
           environments.javaBaseEnvironment,
           workingDirectories.javaBaseWorkingDirectory,
           stdio,
-          arguments.prim.let(_ != t"{admin}").or(true),
+          arguments.prim.let(_ != "{admin}").or(true),
           login )
 
 

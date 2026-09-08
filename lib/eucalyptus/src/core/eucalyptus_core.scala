@@ -44,10 +44,10 @@ import spectacular.*
 
 package logFormats:
   given textLevelLogFormat: Level is Showable =
-    case Level.Fine => t"FINE"
-    case Level.Info => t"INFO"
-    case Level.Warn => t"WARN"
-    case Level.Fail => t"FAIL"
+    case Level.Fine => "FINE"
+    case Level.Info => "INFO"
+    case Level.Warn => "WARN"
+    case Level.Fail => "FAIL"
 
   given timestampedLogFormat: [event: Communicable] => event is Inscribable in Text =
     (event, level, timestamp) =>
@@ -56,7 +56,7 @@ package logFormats:
   given untimestampedLogFormat: [event: Communicable] => event is Inscribable in Text =
     (event, level, timestamp) => t"[$level] ${event.communicate}\n"
 
-val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
+val dateFormat = jt.SimpleDateFormat("yyyy-MMM-dd HH:mm:ss.SSS".s)
 
 // Runs `lambda` with logging of `event` suppressed, regardless of any ambient `LogSink`s. The
 // silent

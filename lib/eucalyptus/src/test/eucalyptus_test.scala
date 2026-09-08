@@ -106,7 +106,7 @@ object Tests extends Suite(m"Eucalyptus tests"):
       val errors: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
 
       handle:
-        case Truncation.Error(_) => errors.put(t"cut")
+        case Truncation.Error(_) => errors.put("cut")
       . protect:
           // The test logger is this test's single owner; no aliased writer.
           given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(Failing()))
@@ -119,8 +119,8 @@ object Tests extends Suite(m"Eucalyptus tests"):
       val capture = Capture()
       // The test logger is this test's single owner; no aliased writer.
       given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture, categories = Set(Log.Network)))
-      Log.info(Signal.Net(t"a"))
-      Log.info(Signal.Fs(t"b"))
+      Log.info(Signal.Net("a"))
+      Log.info(Signal.Fs("b"))
       capture.queue.take()
 
     . assert(_ == t"[INFO] net: a\n")
@@ -129,8 +129,8 @@ object Tests extends Suite(m"Eucalyptus tests"):
       val capture = Capture()
       // The test logger is this test's single owner; no aliased writer.
       given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture))
-      Log.info(Signal.Net(t"a"))
-      Log.info(Signal.Fs(t"b"))
+      Log.info(Signal.Net("a"))
+      Log.info(Signal.Fs("b"))
       List(capture.queue.take(), capture.queue.take())
 
     . assert(_ == List(t"[INFO] net: a\n", t"[INFO] fs: b\n"))

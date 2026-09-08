@@ -72,7 +72,7 @@ object Repackager:
   given burdockMain: ("Burdock-Main" is EncodableManifest of Fqcn) = _.text
 
   given burdockRequire: ("Burdock-Require" is EncodableManifest of List[Requirement]) =
-    _.map(_.text).join(t" ")
+    _.map(_.text).join(" ")
 
   given burdockVerbosity: ("Burdock-Verbosity" is EncodableManifest of Text) = identity(_)
 
@@ -186,8 +186,8 @@ object Repackager:
 
     . protect:
         val resource: Text = burdock.internal.ResourcePath.tt
-        val bootstrapName: Text = t"burdock/Bootstrap.class"
-        val manifestName: Text = t"META-INF/MANIFEST.MF"
+        val bootstrapName: Text = "burdock/Bootstrap.class"
+        val manifestName: Text = "META-INF/MANIFEST.MF"
         var manifestData: Optional[Data] = Unset
         var depsData: Optional[Data] = Unset
         var inputCount: Int = 0
@@ -220,7 +220,7 @@ object Repackager:
 
         val hashes: List[Text] =
           depsData.lest(RepackageError(m"the JAR has no $resource resource")).utf8
-          . cut(t"\n").filter(_ != t"")
+          . cut("\n").filter(_ != "")
 
         val ownEntries: List[Zip.Entry] = ownBuilder.result().to(List)
         val (requirements, inlined) = partition(hashes, resolve, cached, progress)
@@ -245,7 +245,7 @@ object Repackager:
 
         val manifest2: Manifest =
           manifest - MainClass + BurdockRequire(requirements) + BurdockMain(originalMain) +
-            BurdockVerbosity(t"silent") + MainClass(fqcn"burdock.Bootstrap")
+            BurdockVerbosity("silent") + MainClass(fqcn"burdock.Bootstrap")
 
         // The freshly-built entries — the rewritten manifest and the force-included bootstrap class
         // — are the only two that are compressed here; everything else is a verbatim copy.

@@ -40,7 +40,7 @@ import workingDirectories.javaBaseWorkingDirectory
 object SettingTests extends Suite(m"Setting tests"):
   import interpreters.posixInterpreter
 
-  given prefix: Configurator.Prefix = Configurator.Prefix(t"myapp")
+  given prefix: Configurator.Prefix = Configurator.Prefix("myapp")
 
   def fixedEnvironment(entries: (Text, Text)*): Environment =
     val map = entries.to(Map)
@@ -57,16 +57,16 @@ object SettingTests extends Suite(m"Setting tests"):
         summon[WorkingDirectory],
         stdios.muteStdio,
         true,
-        Login(t"tester", Unset) )
+        Login("tester", Unset) )
 
   def run(): Unit =
-    val Port = Setting[Int](t"port", description = t"the port to listen on")
-    val LogLevel = Setting[Text](t"logLevel", description = t"logging verbosity")
+    val Port = Setting[Int]("port", description = "the port to listen on")
+    val LogLevel = Setting[Text]("logLevel", description = "logging verbosity")
 
     test(m"A CLI parameter beats a property and an environment variable"):
       given environment: Environment = fixedEnvironment(t"MYAPP_PORT" -> t"1")
       given system: System = fixedSystem(t"myapp.port" -> t"2")
-      given cli: Cli = invocation(t"--port", t"3")
+      given cli: Cli = invocation("--port", "3")
       Port()
     . assert(_ == 3)
 
@@ -103,21 +103,21 @@ object SettingTests extends Suite(m"Setting tests"):
       given system: System = fixedSystem()
       given cli: Cli = invocation()
       LogLevel()
-    . assert(_ == t"info")
+    . assert(_ == "info")
 
     test(m"A multi-word name maps to a dotted system property"):
       given environment: Environment = fixedEnvironment()
       given system: System = fixedSystem(t"myapp.log.level" -> t"warn")
       given cli: Cli = invocation()
       LogLevel()
-    . assert(_ == t"warn")
+    . assert(_ == "warn")
 
     test(m"A multi-word name maps to a kebab-case command-line flag"):
       given environment: Environment = fixedEnvironment()
       given system: System = fixedSystem()
-      given cli: Cli = invocation(t"--log-level", t"debug")
+      given cli: Cli = invocation("--log-level", "debug")
       LogLevel()
-    . assert(_ == t"debug")
+    . assert(_ == "debug")
 
     test(m"A malformed value in the winning source does not fall through"):
       given environment: Environment = fixedEnvironment(t"MYAPP_PORT" -> t"invalid")
@@ -127,20 +127,20 @@ object SettingTests extends Suite(m"Setting tests"):
     . assert(_ == Unset)
 
     test(m"An explicit variable override is consulted verbatim"):
-      val Home = Setting[Text](t"home", variable = t"MYTOOL_HOME")
+      val Home = Setting[Text]("home", variable = "MYTOOL_HOME")
       given environment: Environment = fixedEnvironment(t"MYTOOL_HOME" -> t"/opt/mytool")
       given system: System = fixedSystem()
       given cli: Cli = invocation()
       Home()
-    . assert(_ == t"/opt/mytool")
+    . assert(_ == "/opt/mytool")
 
     test(m"A user-defined configurator overrides the default cascade"):
       given environment: Environment = fixedEnvironment(t"MYAPP_LOG_LEVEL" -> t"info")
       given system: System = fixedSystem()
-      given configurator: Configurator = name => t"custom"
+      given configurator: Configurator = name => "custom"
       given cli: Cli = invocation()
       LogLevel()
-    . assert(_ == t"custom")
+    . assert(_ == "custom")
 
     test(m"Reading a setting registers its flag for completion"):
       given environment: Environment = fixedEnvironment()
@@ -148,7 +148,7 @@ object SettingTests extends Suite(m"Setting tests"):
         Completion
           ( Cli.arguments(List(t"")), Cli.arguments(List(t""), 0, Unset, Prim),
             summon[Environment], summon[WorkingDirectory], Shell.Zsh, 0, Unset,
-            stdios.muteStdio, t"", Prim, Login(t"tester", Unset) )
+            stdios.muteStdio, "", Prim, Login("tester", Unset) )
 
       given system: System = fixedSystem()
       Port()(using completion)
@@ -167,4 +167,4 @@ object SettingTests extends Suite(m"Setting tests"):
       given cli: Cli = invocation()
       Port()
       variables.to(scala.List)
-    . assert(_ == scala.List(t"MYAPP_PORT"))
+    . assert(_ == scala.List("MYAPP_PORT"))

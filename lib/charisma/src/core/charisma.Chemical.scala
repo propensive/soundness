@@ -75,9 +75,9 @@ object Chemical:
 
     given showable: Formula is Showable = formula =>
       formula.molecules.to[List].map: (molecule, count) =>
-        (if count == 1 then t"" else count.show)+molecule.show
+        (if count == 1 then "" else count.show)+molecule.show
 
-      . join(t" + ")
+      . join(" + ")
 
     // Every coefficient is written out, including a `1` which the `Showable` leaves implicit, so
     // that a one-molecule formula is never rendered identically to the `Molecule` it holds.
@@ -86,7 +86,7 @@ object Chemical:
         val number: Text = count.show
         t"$number${molecule.inspect}"
 
-      if parts.nil then t"∅" else parts.join(t" + ")
+      if parts.nil then "∅" else parts.join(" + ")
 
   case class Formula(molecules: Ledger[Molecule, Int]) extends Formulable:
     def formula: Formula = this

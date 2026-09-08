@@ -80,7 +80,7 @@ object Tests extends Suite(m"Delicious Tests"):
 
   def run(): Unit =
     test(m"Unmarked text parses as a single text node"):
-      Markup.parse(t"type mismatch")
+      Markup.parse("type mismatch")
     . assert(_ == List(Markup.Textual(t"type mismatch")))
 
     test(m"A sym marker parses with its attributes"):
@@ -91,21 +91,21 @@ object Tests extends Suite(m"Delicious Tests"):
           Markup.Textual(t" here") ))
 
     test(m"A name marker records whether it is a type name"):
-      Markup.parse(mark(t"name", List(t"isType" -> t"true"), t"Elem"))
+      Markup.parse(mark("name", List(t"isType" -> t"true"), "Elem"))
     . assert(_ == List(Markup.Named(true, Rendition.Default, List(Markup.Textual(t"Elem")))))
 
     test(m"An unknown marker kind falls back to a spanned node"):
-      Markup.parse(mark(t"mystery", Nil, t"???"))
+      Markup.parse(mark("mystery", Nil, "???"))
     . assert(_ == List(Markup.Spanned(t"mystery", Rendition.Default, List(Markup.Textual(t"???")))))
 
     test(m"Renditions decode from their wire names"):
-      Markup.parse(mark(t"sym", List(t"name" -> t"foo", t"style" -> t"dcl"), t"def foo: Int"))
+      Markup.parse(mark("sym", List(t"name" -> t"foo", t"style" -> t"dcl"), "def foo: Int"))
     . assert(_ == List
         ( Markup.Symbolic(t"foo", t"", Rendition.Declaration, List(Markup.Textual(t"def foo: Int"))) ))
 
     test(m"Markers nest, and children keep their order"):
-      val inner = mark(t"sym", List(t"name" -> t"foo"), t"foo")
-      Markup.parse(mark(t"name", Nil, t"method $inner"))
+      val inner = mark("sym", List(t"name" -> t"foo"), "foo")
+      Markup.parse(mark("name", Nil, t"method $inner"))
     . assert(_ == List
         ( Markup.Named
             ( false,
@@ -115,7 +115,7 @@ object Tests extends Suite(m"Delicious Tests"):
                   Markup.Symbolic(t"foo", t"", Rendition.Default, List(Markup.Textual(t"foo"))) )) ))
 
     test(m"Percent-encoded attribute values decode"):
-      Markup.parse(mark(t"sym", List(t"name" -> t"%003ainit%003a"), t"constructor"))
+      Markup.parse(mark("sym", List(t"name" -> t"%003ainit%003a"), "constructor"))
     . assert(_ == List
         ( Markup.Symbolic(t":init:", t"", Rendition.Default, List(Markup.Textual(t"constructor"))) ))
 
@@ -136,13 +136,13 @@ object Tests extends Suite(m"Delicious Tests"):
     . assert(_ == List(Markup.Textual(t"a sym no header end")))
 
     test(m"Plain text strips all markers"):
-      val inner = mark(t"sym", List(t"name" -> t"foo"), t"foo")
+      val inner = mark("sym", List(t"name" -> t"foo"), "foo")
       Markup.plain(t"method ${mark(t"name", Nil, t"call of $inner")} failed")
-    . assert(_ == t"method call of foo failed")
+    . assert(_ == "method call of foo failed")
 
     test(m"A type marker carries its TASTy payload and placeholders"):
-      val placeholder = t"0|local-type|Foo|1||Foo[Int]"
-      Markup.parse(mark(t"type", List(t"tasty" -> t"QUJD", t"p" -> placeholder), t"Foo[Int]"))
+      val placeholder = "0|local-type|Foo|1||Foo[Int]"
+      Markup.parse(mark("type", List(t"tasty" -> t"QUJD", t"p" -> placeholder), "Foo[Int]"))
     . assert(_ == List
         ( Markup.Typed
             ( t"QUJD",
@@ -151,75 +151,75 @@ object Tests extends Suite(m"Delicious Tests"):
               List(Markup.Textual(t"Foo[Int]")) ) ))
 
     test(m"A placeholder decodes its six fields"):
-      Placeholder.decode(t"3|skolem|x|0|Test.scala:5|x.type")
-    . assert(_ == Placeholder(3, PlaceholderKind.Skolem, t"x", 0, t"Test.scala:5", t"x.type"))
+      Placeholder.decode("3|skolem|x|0|Test.scala:5|x.type")
+    . assert(_ == Placeholder(3, PlaceholderKind.Skolem, "x", 0, "Test.scala:5", "x.type"))
 
     test(m"A placeholder with an escaped pipe decodes"):
-      Placeholder.decode(t"1|error|a%007cb|0||a|b")
+      Placeholder.decode("1|error|a%007cb|0||a|b")
     . assert(_ == Unset)
 
     test(m"An escaped pipe within a field decodes to a literal pipe"):
-      Placeholder.decode(t"1|error|a%007cb|0||printed")
-    . assert(_ == Placeholder(1, PlaceholderKind.Error, t"a|b", 0, Unset, t"printed"))
+      Placeholder.decode("1|error|a%007cb|0||printed")
+    . assert(_ == Placeholder(1, PlaceholderKind.Error, "a|b", 0, Unset, "printed"))
 
     test(m"A non-numeric placeholder id is rejected"):
-      Placeholder.decode(t"x|error|a|0||printed")
+      Placeholder.decode("x|error|a|0||printed")
     . assert(_ == Unset)
 
     test(m"A placeholder with too few fields is rejected"):
-      Placeholder.decode(t"1|error|a|0|")
+      Placeholder.decode("1|error|a|0|")
     . assert(_ == Unset)
 
     test(m"An unknown placeholder kind is preserved"):
-      Placeholder.decode(t"1|quantum|a|0||printed")
-    . assert(_ == Placeholder(1, PlaceholderKind.Other(t"quantum"), t"a", 0, Unset, t"printed"))
+      Placeholder.decode("1|quantum|a|0||printed")
+    . assert(_ == Placeholder(1, PlaceholderKind.Other("quantum"), "a", 0, Unset, "printed"))
 
     test(m"A placeholder reference is recognized"):
-      Placeholder.reference(t"⟨scala-diag:42⟩")
+      Placeholder.reference("⟨scala-diag:42⟩")
     . assert(_ == 42)
 
     test(m"A non-placeholder literal is not a reference"):
-      Placeholder.reference(t"⟨scala-diag:esc:7⟩")
+      Placeholder.reference("⟨scala-diag:esc:7⟩")
     . assert(_ == Unset)
 
     test(m"An escaped literal unescapes"):
-      Placeholder.escaped(t"⟨scala-diag:esc:real text⟩")
-    . assert(_ == t"real text")
+      Placeholder.escaped("⟨scala-diag:esc:real text⟩")
+    . assert(_ == "real text")
 
     test(m"A semantic message finds nested type markers"):
-      val typed = mark(t"type", List(t"tasty" -> t"QUJD"), t"List[Int]")
+      val typed = mark("type", List(t"tasty" -> t"QUJD"), "List[Int]")
       SemanticMessage.parse(t"Found: ${mark(t"name", Nil, t"value of $typed")}").types.stdlib.length
     . assert(_ == 1)
 
     test(m"A message without markers is not marked"):
-      SemanticMessage.marked(t"ordinary message")
+      SemanticMessage.marked("ordinary message")
     . assert(_ == false)
 
     test(m"A message with markers is marked"):
-      SemanticMessage.marked(mark(t"sym", Nil, t"foo"))
+      SemanticMessage.marked(mark("sym", Nil, "foo"))
     . assert(_ == true)
 
     test(m"Substitution replaces a placeholder sentinel"):
       val placeholder =
-        Placeholder(0, PlaceholderKind.LocalType, t"Local", 0, Unset, t"Bad.Local")
+        Placeholder(0, PlaceholderKind.LocalType, "Local", 0, Unset, "Bad.Local")
 
-      val list = Syntax.Simple(Designator(t"scala.collection.immutable.List"))
+      val list = Syntax.Simple(Designator("scala.collection.immutable.List"))
       val syntax =
         Syntax.Application(list, List(Syntax.Primitive(t"\"⟨scala-diag:0⟩\"")), false)
 
       Reifier.substitute(syntax, List(placeholder))
     . assert(_ == Syntax.Application
-        ( Syntax.Simple(Designator(t"scala.collection.immutable.List")),
+        ( Syntax.Simple(Designator("scala.collection.immutable.List")),
           List(Syntax.Symbolic(t"Bad.Local")),
           false ))
 
     test(m"Substitution unescapes an escaped genuine literal"):
-      Reifier.substitute(Syntax.Primitive(t"\"⟨scala-diag:esc:x⟩\""), Nil)
-    . assert(_ == Syntax.Primitive(t"\"x\""))
+      Reifier.substitute(Syntax.Primitive("\"⟨scala-diag:esc:x⟩\""), Nil)
+    . assert(_ == Syntax.Primitive("\"x\""))
 
     test(m"Substitution leaves other primitives alone"):
-      Reifier.substitute(Syntax.Primitive(t"42"), Nil)
-    . assert(_ == Syntax.Primitive(t"42"))
+      Reifier.substitute(Syntax.Primitive("42"), Nil)
+    . assert(_ == Syntax.Primitive("42"))
 
     // Payloads captured from a semdiag compiler run over:
     //   object Bad:
@@ -229,10 +229,10 @@ object Tests extends Suite(m"Delicious Tests"):
     // TASTy is version-locked (28.9-0, the stable 3.9.0 release), so these decode under any
     // compiler built from the 3.9.0-final-based stream.
     val stringPayload: Text =
-      t"XKGrH5yJgJpTY2FsYSAzLjkuMC1SQzYtcHJvcGVuc2l2ZQAadmNlJOIHAAAAAAAAAACeAYRBU1RzAYZTdHJpbmcBhGphdmEBhGxhbmcCgoKDgIR1gUCE"
+      "XKGrH5yJgJpTY2FsYSAzLjkuMC1SQzYtcHJvcGVuc2l2ZQAadmNlJOIHAAAAAAAAAACeAYRBU1RzAYZTdHJpbmcBhGphdmEBhGxhbmcCgoKDgIR1gUCE"
 
     val placeholderPayload: Text =
-      t"XKGrH5yJgJpTY2FsYSAzLjkuMC1SQzYtcHJvcGVuc2l2ZQDQKNr7HmsuAAAAAAAAAADGAYRBU1RzAYRMaXN0AYVzY2FsYQGKY29sbGVjdGlvbgKCgoMBiWltbXV0YWJsZQKChIUBkuKfqHNjYWxhLWRpYWc6MOKfqYCIoYZ1gUCGSoc="
+      "XKGrH5yJgJpTY2FsYSAzLjkuMC1SQzYtcHJvcGVuc2l2ZQDQKNr7HmsuAAAAAAAAAADGAYRBU1RzAYRMaXN0AYVzY2FsYQGKY29sbGVjdGlvbgKCgoMBiWltbXV0YWJsZQKChIUBkuKfqHNjYWxhLWRpYWc6MOKfqYCIoYZ1gUCGSoc="
 
     proscalaLibrary().let: lib =>
       val jars = List("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
@@ -242,40 +242,40 @@ object Tests extends Suite(m"Delicious Tests"):
 
       test(m"A pickled type payload reifies to a stenography rendering"):
         reifier.syntax(Markup.Typed(stringPayload, Nil, Rendition.Default, Nil)).let(_.text)
-      . assert(_ == t"java.lang.String")
+      . assert(_ == "java.lang.String")
 
       test(m"A placeholder payload reifies with its placeholder substituted"):
         val placeholder =
-          Placeholder(0, PlaceholderKind.LocalType, t"Local", 0, t"Bad.scala:2", t"Bad.Local")
+          Placeholder(0, PlaceholderKind.LocalType, "Local", 0, "Bad.scala:2", "Bad.Local")
 
         reifier.syntax(Markup.Typed(placeholderPayload, List(placeholder), Rendition.Default, Nil))
         . let(_.text)
-      . assert(_ == t"scala.collection.immutable.List[Bad.Local]")
+      . assert(_ == "scala.collection.immutable.List[Bad.Local]")
 
       test(m"An unpicklable payload degrades to Unset"):
-        reifier.syntax(Markup.Typed(t"bm90IHRhc3R5", Nil, Rendition.Default, Nil))
+        reifier.syntax(Markup.Typed("bm90IHRhc3R5", Nil, Rendition.Default, Nil))
       . assert(_ == Unset)
 
       test(m"A marked message renders types through stenography"):
-        val typed = mark(t"type", List(t"tasty" -> stringPayload), t"printed")
+        val typed = mark("type", List(t"tasty" -> stringPayload), "printed")
         SemanticMessage.parse(t"Required: $typed").render(reifier)
-      . assert(_ == t"Required: java.lang.String")
+      . assert(_ == "Required: java.lang.String")
 
       test(m"A styled rendering preserves the visible text"):
-        val code = mark(t"code", Nil, t"List(1.5)")
-        val typed = mark(t"type", List(t"tasty" -> stringPayload), t"printed")
+        val code = mark("code", Nil, "List(1.5)")
+        val typed = mark("type", List(t"tasty" -> stringPayload), "printed")
         delicious.teletype(SemanticMessage.parse(t"Tree: $code has type $typed"))(reifier).plain
-      . assert(_ == t"Tree: List(1.5) has type java.lang.String")
+      . assert(_ == "Tree: List(1.5) has type java.lang.String")
 
       test(m"A code sample is syntax-highlighted, not plain"):
-        val code = mark(t"code", Nil, t"val x = 42")
+        val code = mark("code", Nil, "val x = 42")
         delicious.teletype(SemanticMessage.parse(t"code: $code"))(reifier)
       . assert(_ != e"code: val x = 42")
 
       test(m"Compiler styling is stripped before highlighting"):
-        val code = mark(t"code", Nil, t"${Esc}[33m1.5d${Esc}[0m")
+        val code = mark("code", Nil, t"${Esc}[33m1.5d${Esc}[0m")
         delicious.teletype(SemanticMessage.parse(t"Tree: $code"))(reifier).plain
-      . assert(_ == t"Tree: 1.5d")
+      . assert(_ == "Tree: 1.5d")
 
       // End-to-end through the embedded compiler. Feature-detecting: a compiler
       // without semdiag (releases up to p5) produces no markup, and only the
@@ -285,14 +285,14 @@ object Tests extends Suite(m"Delicious Tests"):
         Files.createDirectories(Paths.get(out.encode.s))
 
         val source: Text =
-          t"""|object Bad:
+          """|object Bad:
               |  class Local
               |  val xs: List[String] = List(new Local)
               |""".s.stripMargin.tt
 
         val process =
           Scalac[3.9](List(scalacOptions.semanticDiagnostics))
-            (classpath)(Map(t"bad.scala" -> source), out)
+            (classpath)(Map("bad.scala" -> source), out)
 
         process.complete()
         val notices = process.notices.stdlib.toList
@@ -314,11 +314,11 @@ object Tests extends Suite(m"Delicious Tests"):
 
           test(m"A semantic notice renders its types through stenography"):
             marked.map { notice => notice.semantic.let(_.render(reifier)).or(t"") }
-            . join(t"\n")
+            . join("\n")
           . assert { rendered =>
               // `java.lang.String` (not the compiler-printed `String`) proves the type
               // came through stenography; `Bad.Local` proves placeholder substitution.
-              rendered.subsumes(t"java.lang.String") && rendered.subsumes(t"Bad.Local")
+              rendered.subsumes("java.lang.String") && rendered.subsumes("Bad.Local")
             }
 
     // The running JVM's own classpath carries stenography's classes together with its
@@ -328,38 +328,38 @@ object Tests extends Suite(m"Delicious Tests"):
       val entries: List[Classpath.Entry.Directory | Classpath.Entry.Jar] =
         LocalClasspath.of(Classloader[Tests.type])()
         . cut(java.io.File.pathSeparator.nn.tt)
-        . filter(_ != t"")
+        . filter(_ != "")
         . map: entry =>
-            if entry.ends(t".jar") then Classpath.Entry.Jar(entry) else Classpath.Entry.Directory(entry)
+            if entry.ends(".jar") then Classpath.Entry.Jar(entry) else Classpath.Entry.Directory(entry)
 
       LocalClasspath(entries*)
 
     val ownReifier = Reifier(ownClasspath)
-    val soundnessScope: sci.Set[Designator] = sci.Set(Designator(t"soundness"))
-    val syntaxType: Designator = Designator(t"stenography#Syntax")
+    val soundnessScope: sci.Set[Designator] = sci.Set(Designator("soundness"))
+    val syntaxType: Designator = Designator("stenography#Syntax")
 
     test(m"A wildcard-imported prelude's export makes its target direct"):
       ownReifier.imports(soundnessScope, sci.Set()).hasDirect(syntaxType)
     . assert(_ == true)
 
     test(m"A prelude's export makes the target's companion direct too"):
-      ownReifier.imports(soundnessScope, sci.Set()).hasDirect(Designator(t"stenography.Syntax"))
+      ownReifier.imports(soundnessScope, sci.Set()).hasDirect(Designator("stenography.Syntax"))
     . assert(_ == true)
 
     test(m"An exported type renders by its leaf name under the exporting import"):
       Syntax.Simple(syntaxType).text(using ownReifier.imports(soundnessScope, sci.Set()))
-    . assert(_ == t"Syntax")
+    . assert(_ == "Syntax")
 
     test(m"Without export resolution the same type stays qualified"):
       Syntax.Simple(syntaxType).text(using Imports(soundnessScope, sci.Set()))
-    . assert(_ == t"stenography.Syntax")
+    . assert(_ == "stenography.Syntax")
 
     test(m"A scope which declares no exports adds nothing"):
-      ownReifier.imports(sci.Set(Designator(t"stenography")), sci.Set()).direct
+      ownReifier.imports(sci.Set(Designator("stenography")), sci.Set()).direct
     . assert(_ == sci.Set())
 
     test(m"An unresolvable scope adds nothing and does not throw"):
-      ownReifier.imports(sci.Set(Designator(t"no.such.scope")), sci.Set()).direct
+      ownReifier.imports(sci.Set(Designator("no.such.scope")), sci.Set()).direct
     . assert(_ == sci.Set())
 
   def proscalaLibrary(): Optional[java.nio.file.Path] =

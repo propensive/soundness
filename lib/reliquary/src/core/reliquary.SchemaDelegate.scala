@@ -60,7 +60,7 @@ import vacuous.*
 // through `Verification.install` before the schema body is extracted.
 object SchemaDelegate:
   // The tels/1 fixed payload path.
-  val schemaPath: Text = t"schema.tel"
+  val schemaPath: Text = "schema.tel"
 
   // The release-store seam: reliquary keeps releases as in-memory
   // `Lira` values, so the resolver is parameterized over whatever holds

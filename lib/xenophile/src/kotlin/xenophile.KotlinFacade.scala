@@ -65,7 +65,7 @@ object KotlinFacade:
   private def transport(using quotes: Quotes)(self: Expr[Facade]): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
-    Xenophile.refinements(self.asTerm.tpe.widen).to(Map)(t"Transport").or:
+    Xenophile.refinements(self.asTerm.tpe.widen).to(Map)("Transport").or:
       halt(m"xenophile: the facade does not record its underlying type")
 
   private def classNameOf(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Text =
@@ -80,9 +80,9 @@ object KotlinFacade:
     case Foreign.Type.Union(members) =>
       // `filter` stays on the `stdlib` view because the `List(…)` extractor in scope here is
       // the stdlib's (this file builds `quotes.reflect` trees).
-      members.stdlib.filter(_ != Foreign.Type.Named(t"null")) match
+      members.stdlib.filter(_ != Foreign.Type.Named("null")) match
         case List(inner) if members.size == 2 => t"${kotlinType(inner)}?"
-        case _ => members.map(kotlinType).join(t" | ")
+        case _ => members.map(kotlinType).join(" | ")
 
     case Foreign.Type.Named(name) =>
       simple(name)
@@ -91,7 +91,7 @@ object KotlinFacade:
       t"${simple(name)}<${arguments.map(kotlinType).join(t", ")}>"
 
   private def simple(name: Text): Text =
-    if name.s.startsWith("#") then t"T" else name.s.substring(name.s.lastIndexOf('.') + 1).nn.tt
+    if name.s.startsWith("#") then "T" else name.s.substring(name.s.lastIndexOf('.') + 1).nn.tt
 
   private[xenophile] def rendered(name: Text, prototype: Prototype): Text =
     prototype.parameters.lay(t"val $name: ${kotlinType(prototype.result)}"): parameters =>
@@ -119,15 +119,15 @@ object KotlinFacade:
 
     if candidates.nil then halt(m"xenophile: $className has no member $name")
     else
-      val listed = candidates.join(t"; ")
+      val listed = candidates.join("; ")
       halt(m"xenophile: $className has no member $name; did you mean: $listed")
 
   // Whether the Kotlin-level result type is nullable, and its non-null form.
   private def denull(km: Foreign.Type): (Foreign.Type, Boolean) = km match
     case Foreign.Type.Union(members) =>
       // As `kotlinType` above: the `List(…)` extractor in scope is the stdlib's.
-      members.stdlib.filter(_ != Foreign.Type.Named(t"null")) match
-        case List(inner) => (inner, members.has(Foreign.Type.Named(t"null")))
+      members.stdlib.filter(_ != Foreign.Type.Named("null")) match
+        case List(inner) => (inner, members.has(Foreign.Type.Named("null")))
         case _           => (km, false)
 
     case _ =>
@@ -173,39 +173,39 @@ object KotlinFacade:
 
     def passthrough(name: Text): Boolean =
       name.s.startsWith("#") || Set(
-          t"kotlin.Int", t"kotlin.Long", t"kotlin.Short", t"kotlin.Byte", t"kotlin.Boolean",
-          t"kotlin.Double", t"kotlin.Float", t"kotlin.Char", t"kotlin.Unit", t"kotlin.Any",
-          t"kotlin.Nothing").has(name)
+          "kotlin.Int", "kotlin.Long", "kotlin.Short", "kotlin.Byte", "kotlin.Boolean",
+          "kotlin.Double", "kotlin.Float", "kotlin.Char", "kotlin.Unit", "kotlin.Any",
+          "kotlin.Nothing").has(name)
 
     val underlying = solid(call.tpe)
 
     if nullable then inner match
-      case Foreign.Type.Named(t"kotlin.String" | t"kotlin.CharSequence") =>
+      case Foreign.Type.Named("kotlin.String" | "kotlin.CharSequence") =>
         '{Optional(${call.asExpr}.asInstanceOf[Text | Null])}
 
       // A nullable primitive arrives boxed; absence maps to `Unset` and presence unboxes.
-      case Foreign.Type.Named(t"kotlin.Int") =>
+      case Foreign.Type.Named("kotlin.Int") =>
         '{Optional(${call.asExpr}.asInstanceOf[java.lang.Integer | Null]).let(_.intValue)}
 
-      case Foreign.Type.Named(t"kotlin.Long") =>
+      case Foreign.Type.Named("kotlin.Long") =>
         '{Optional(${call.asExpr}.asInstanceOf[java.lang.Long | Null]).let(_.longValue)}
 
-      case Foreign.Type.Named(t"kotlin.Short") =>
+      case Foreign.Type.Named("kotlin.Short") =>
         '{Optional(${call.asExpr}.asInstanceOf[java.lang.Short | Null]).let(_.shortValue)}
 
-      case Foreign.Type.Named(t"kotlin.Byte") =>
+      case Foreign.Type.Named("kotlin.Byte") =>
         '{Optional(${call.asExpr}.asInstanceOf[java.lang.Byte | Null]).let(_.byteValue)}
 
-      case Foreign.Type.Named(t"kotlin.Boolean") =>
+      case Foreign.Type.Named("kotlin.Boolean") =>
         '{Optional(${call.asExpr}.asInstanceOf[java.lang.Boolean | Null]).let(_.booleanValue)}
 
-      case Foreign.Type.Named(t"kotlin.Double") =>
+      case Foreign.Type.Named("kotlin.Double") =>
         '{Optional(${call.asExpr}.asInstanceOf[java.lang.Double | Null]).let(_.doubleValue)}
 
-      case Foreign.Type.Named(t"kotlin.Float") =>
+      case Foreign.Type.Named("kotlin.Float") =>
         '{Optional(${call.asExpr}.asInstanceOf[java.lang.Float | Null]).let(_.floatValue)}
 
-      case Foreign.Type.Named(t"kotlin.Char") =>
+      case Foreign.Type.Named("kotlin.Char") =>
         '{Optional(${call.asExpr}.asInstanceOf[java.lang.Character | Null]).let(_.charValue)}
 
       // A substituted type parameter is already the user's own Scala type: no facade wrapping.
@@ -217,7 +217,7 @@ object KotlinFacade:
           '{Optional(${call.asExpr}.asInstanceOf[u | Null]).let { value => Facade[u](value) }}
 
     else inner match
-      case Foreign.Type.Named(t"kotlin.String" | t"kotlin.CharSequence") =>
+      case Foreign.Type.Named("kotlin.String" | "kotlin.CharSequence") =>
         '{${call.asExpr}.asInstanceOf[Text]}
 
       // Cast to the definite (null-stripped) type: Kotlin declares the result non-nullable,
@@ -254,7 +254,7 @@ object KotlinFacade:
     val stringy = TypeRepr.of[String] <:< target || target =:= TypeRepr.of[CharSequence]
 
     val transported =
-      Xenophile.refinements(argument.tpe.widen).to(Map)(t"Transport").lay(false)(_ <:< target)
+      Xenophile.refinements(argument.tpe.widen).to(Map)("Transport").lay(false)(_ <:< target)
 
     val direct = argument.tpe.widen <:< target || (textual && stringy) || transported
 
@@ -685,11 +685,11 @@ object KotlinFacade:
       else Unset
 
     def conversionMethod(repr: TypeRepr): Optional[Text] =
-      if repr =:= TypeRepr.of[Short] then t"toShort"
-      else if repr =:= TypeRepr.of[Int] then t"toInt"
-      else if repr =:= TypeRepr.of[Long] then t"toLong"
-      else if repr =:= TypeRepr.of[Float] then t"toFloat"
-      else if repr =:= TypeRepr.of[Double] then t"toDouble"
+      if repr =:= TypeRepr.of[Short] then "toShort"
+      else if repr =:= TypeRepr.of[Int] then "toInt"
+      else if repr =:= TypeRepr.of[Long] then "toLong"
+      else if repr =:= TypeRepr.of[Float] then "toFloat"
+      else if repr =:= TypeRepr.of[Double] then "toDouble"
       else Unset
 
     val widened: Optional[Term] =
@@ -1034,7 +1034,7 @@ object KotlinFacade:
 
       case Nil =>
         val declared = rendered(field, prototype)
-        val supplied = args.map(_.tpe.widen.show.tt).join(t", ")
+        val supplied = args.map(_.tpe.widen.show.tt).join(", ")
         halt(m"xenophile: $className declares $declared, which cannot accept ($supplied)")
 
       case _ =>
@@ -1308,7 +1308,7 @@ object KotlinFacade:
     val pairs: List[(Text, Term)] = arguments match
       case Varargs(exprs) => exprs.to(List).map:
         case '{($key: String, $value: v)} => (key.valueOrAbort.tt, value.asTerm)
-        case other                        => (t"", other.asTerm)
+        case other                        => ("", other.asTerm)
 
       case _ =>
         halt(m"xenophile: the arguments must be passed directly")
@@ -1330,7 +1330,7 @@ object KotlinFacade:
           case Nil =>
             acc
 
-          case (t"", term) :: rest =>
+          case ("", term) :: rest =>
             val index = (0 until member.arity).find(!acc.defines(_)).getOrElse:
               halt(m"xenophile: too many arguments for $className.$field")
 
@@ -1338,7 +1338,7 @@ object KotlinFacade:
 
           case (key, term) :: rest =>
             val index = positions(key).or:
-              val declared = member.parameters.join(t", ")
+              val declared = member.parameters.join(", ")
               halt(m"xenophile: $className.$field has no parameter $key; it declares: $declared")
 
             assign(rest, next, acc.define(index, term))
@@ -1362,7 +1362,7 @@ object KotlinFacade:
           val parameter: Optional[Text] = member.parameters.at(index.z)
           parameter.or(t"")
 
-        . join(t", ")
+        . join(", ")
         halt(m"xenophile: $className.$field requires arguments for: $names")
 
       bridgeCall(self, repr, className, member, provided, prototype)
@@ -1383,7 +1383,7 @@ object KotlinFacade:
     val entries = KotlinDialect.enumEntries(className)
 
     if !entries.nil && !entries.has(entryName) then
-      val listed = entries.join(t", ")
+      val listed = entries.join(", ")
       halt(m"xenophile: $className has no entry $entryName; its entries are: $listed")
 
     val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
@@ -1463,7 +1463,7 @@ object KotlinFacade:
 
     // A concrete-scrutinee match rather than an Optional combinator: an inline lambda
     // whose arms are quote literals crashes pickleQuotes (the aviation.internal caveat).
-    Xenophile.refinements(self.asTerm.tpe.widen).get(t"Transport") match
+    Xenophile.refinements(self.asTerm.tpe.widen).get("Transport") match
       case scala.None => '{$self.raw}
 
       case scala.Some(transport) =>

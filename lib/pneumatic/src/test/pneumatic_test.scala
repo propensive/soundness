@@ -240,7 +240,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       test(m"A gzip stream with optional header fields decodes"):
         // FLG = FEXTRA | FNAME | FCOMMENT exercises every optional-field state
         val out = ji.ByteArrayOutputStream()
-        val payload: Data = t"optional header fields".in[Data]
+        val payload: Data = "optional header fields".in[Data]
         val deflated = jdkDeflate(payload, true)
         val crc = java.util.zip.CRC32()
         crc.update(Array.unsafeJvm(payload))
@@ -266,7 +266,7 @@ object Tests extends Suite(m"Pneumatic tests"):
           index += 1
 
         Array.unsafeFrozen(out.toByteArray.nn).decompress[Gzip].to[List]
-      . assert(_ == t"optional header fields".in[Data].to[List])
+      . assert(_ == "optional header fields".in[Data].to[List])
 
 
     suite(m"Brotli tests"):
@@ -282,16 +282,16 @@ object Tests extends Suite(m"Pneumatic tests"):
           114, 111, 119, 110, 32, 102, 111, 120, 32, 106, 117, 109, 112, 115, 32, 111, 118, 101, 114,
           32, 116, 104, 101, 32, 108, 97, 122, 121, 32, 100, 111, 103, 46, 3)
 
-      val ukkonooaPlain: Text = t"ukko nooa, ukko nooa oli kunnon mies, kun han meni saunaan, pisti laukun naulaan, "
-      val foxPlain: Text = t"The quick brown fox jumps over the lazy dog."
+      val ukkonooaPlain: Text = "ukko nooa, ukko nooa oli kunnon mies, kun han meni saunaan, pisti laukun naulaan, "
+      val foxPlain: Text = "The quick brown fox jumps over the lazy dog."
 
       test(m"Decode reference Brotli output (single byte)"):
         xBrotli.decompress[Brotli].to[List]
-      . assert(_ == t"x".in[Data].to[List])
+      . assert(_ == "x".in[Data].to[List])
 
       test(m"Decode reference Brotli output (run-length)"):
         tenXtenYBrotli.decompress[Brotli].to[List]
-      . assert(_ == t"XXXXXXXXXXYYYYYYYYYY".in[Data].to[List])
+      . assert(_ == "XXXXXXXXXXYYYYYYYYYY".in[Data].to[List])
 
       test(m"Decode reference Brotli output (natural-language text)"):
         ukkonooaBrotli.decompress[Brotli].to[List]
@@ -343,7 +343,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == true)
 
       test(m"Brotli actually compresses a repetitive payload"):
-        val payload = (t"the quick brown fox jumped " * 500).in[Data]
+        val payload = ("the quick brown fox jumped " * 500).in[Data]
         payload.compress[Brotli].length < payload.length
       . assert(_ == true)
 
@@ -365,7 +365,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       // Golden vectors: real `xz` command-line output, decoded here — validating the decoder against
       // the reference implementation, not merely against our own encoder. All decode to "hello hello
       // hello world".
-      val hello = t"hello hello hello world".in[Data].to[List]
+      val hello = "hello hello hello world".in[Data].to[List]
 
       val crc64Xz: Data = Data(-3, 55, 122, 88, 90, 0, 0, 4, -26, -42, -76, 70, 4, -64, 24, 23, 33,
           1, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 52, -73, -61, 72, -32, 0, 22, 0, 16, 93, 0, 52, 25, 73,
@@ -399,7 +399,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       test(m"A corrupted payload is detected by the integrity check"):
         // Flip a byte inside the LZMA2 payload (after the 12-byte stream and 12-byte block headers)
         // and confirm decoding rejects it — via either a decode error or a check mismatch.
-        val original = (t"the quick brown fox " * 40).in[Data]
+        val original = ("the quick brown fox " * 40).in[Data]
         val source = original.compress[Xz]
 
         // The tampered copy is built in an exclusive buffer and frozen once, so corrupting a
@@ -459,7 +459,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == xzVaried.to[List])
 
       test(m"Xz actually compresses a repetitive payload"):
-        val payload = (t"the quick brown fox jumped " * 500).in[Data]
+        val payload = ("the quick brown fox jumped " * 500).in[Data]
         payload.compress[Xz].length < payload.length
       . assert(_ == true)
 
@@ -515,7 +515,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         catch case _: ji.IOException => true // xz binary unavailable; skip
 
       test(m"The xz binary decodes our output (repetitive)"):
-        xzBinaryDecodes((t"the quick brown fox " * 400).in[Data])
+        xzBinaryDecodes(("the quick brown fox " * 400).in[Data])
       . assert(_ == true)
 
       test(m"The xz binary decodes our output (varied)"):

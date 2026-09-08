@@ -218,7 +218,7 @@ package socketBackends:
         val net = network()
         val socketHandle = createSocket()
         val socket: Foreign of "tcp-socket" from Wit = socketHandle
-        socket.`start-bind`(net, address(t"0.0.0.0", port.number)).call[Unit]()
+        socket.`start-bind`(net, address("0.0.0.0", port.number)).call[Unit]()
         socket.`finish-bind`.call[Unit]()
         socket.`start-listen`.call[Unit]()
         socket.`finish-listen`.call[Unit]()
@@ -267,7 +267,7 @@ package socketBackends:
 
     def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
     :   WasiExchange =
-      unsafely(connect(t"127.0.0.1", port.number))
+      unsafely(connect("127.0.0.1", port.number))
 
     def dialDomain(address: DomainSocket, options: List[Socket.Option]): WasiExchange =
       unsafely(abort(Socket.Error(Socket.Error.Reason.Accept)))

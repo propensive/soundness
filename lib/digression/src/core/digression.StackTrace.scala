@@ -48,7 +48,7 @@ object StackTrace:
     private lazy val pivot = className.s.lastIndexOf(".")
 
     lazy val cls: Text = if pivot >= 0 then className.s.substring(pivot + 1).nn.tt else className.s
-    lazy val prefix: Text = if pivot >= 0 then className.s.substring(0, pivot).nn.tt else "".tt
+    lazy val prefix: Text = if pivot >= 0 then className.s.substring(0, pivot).nn.tt else ""
 
   object Frame:
     // What a frame turned out to be, once resolved against the definitions the compiler recorded.
@@ -69,7 +69,7 @@ object StackTrace:
     case class Source
       ( path: Text, owner: Text, name: Text, kind: Kind, code: Optional[Text] = Unset ):
 
-      def definition: Text = if owner.s.isEmpty then name else (owner.s+(".": String)+name.s).tt
+      def definition: Text = if owner.s.isEmpty then name else (owner.s+s".${name.s}").tt
 
     // Where a frame's code was written, when the classfile's SMAP (the JSR-45
     // `SourceDebugExtension` attribute) records that it was inlined from another source file: one
@@ -84,8 +84,8 @@ object StackTrace:
       file:      Text,
       line:      Optional[Int],
       native:    Boolean,
-      jvmClass:  Text = "".tt,
-      jvmMethod: Text = "".tt,
+      jvmClass:  Text = "",
+      jvmMethod: Text = "",
       source:    Optional[Frame.Source] = Unset,
       inlined:   List[Frame.Inlined] = Nil ):
 
@@ -101,7 +101,7 @@ object StackTrace:
 
     // `displayClass` without its last segment.
     def displayPrefix: Text =
-      if pivot >= 0 then displayClass.s.substring(0, pivot).nn.tt else "".tt
+      if pivot >= 0 then displayClass.s.substring(0, pivot).nn.tt else ""
 
     // The last segment of `displayClass`.
     def displaySegment: Text =
@@ -129,19 +129,19 @@ object StackTrace:
       case (msg, frame) =>
         val obj = frame.method.className.s.endsWith("#")
         val drop = if frame.source.absent && obj then 1 else 0
-        val file = (" ": String).repeat(fileWidth - frame.file.s.length).nn+frame.file
-        val dot = if frame.source.present || obj then ".".tt else "#".tt
+        val file = s" ".repeat(fileWidth - frame.file.s.length).nn+frame.file
+        val dot = if frame.source.present || obj then "." else "#"
         val className = frame.displayClass.s.dropRight(drop)
-        val classPad = (" ": String).repeat(classWidth - className.length).nn.tt
+        val classPad = s" ".repeat(classWidth - className.length).nn.tt
         val method = frame.displayMethod
-        val methodPad = (" ": String).repeat(methodWidth - method.s.length).nn.tt
-        val line = frame.line.let(_.show).or("?".tt)
-        val code = frame.source.let(_.code).lay("".tt)(code => s"\n       $code".tt)
+        val methodPad = s" ".repeat(methodWidth - method.s.length).nn.tt
+        val line = frame.line.let(_.show).or(Text("?"))
+        val code = frame.source.let(_.code).lay(Text(""))(code => s"\n       $code".tt)
 
         // Each level of inlining the SMAP recorded, innermost first: extra detail about the same
         // frame, so it is indented beneath it like a quoted line of source. When the position
         // resolved to a definition, the inline method is named ahead of its position.
-        val inlined = frame.inlined.fold(("": String)):
+        val inlined = frame.inlined.fold(s""):
           case (text, origin) =>
             val where = origin.source.lay(s"${origin.file}:${origin.line}"): source =>
               s"${source.definition} (${origin.file}:${origin.line})"
@@ -154,18 +154,18 @@ object StackTrace:
 
   val legend: Map[Text, Text] =
     Map
-      ( "Λₙ".tt -> "adapted lambda",
-        "λₙ".tt -> "lambda".tt,
-        "αₙ".tt -> "anonymous class".tt,
-        "ι ".tt  -> "initialization".tt,
-        "↑ ".tt  -> "super reference".tt,
-        "⊢ ".tt  -> "extension method".tt,
-        "∂ ".tt  -> "direct".tt,
-        "δ ".tt  -> "default".tt,
-        "⁅⁆".tt -> "package file".tt,
-        "ⲛ ".tt  -> "class initializer".tt,
-        "ℓ ".tt  -> "lazy initializer".tt,
-        "Σ ".tt  -> "specialized method".tt )
+      ( "Λₙ" -> "adapted lambda",
+        "λₙ" -> "lambda",
+        "αₙ" -> "anonymous class",
+        "ι "  -> "initialization",
+        "↑ "  -> "super reference",
+        "⊢ "  -> "extension method",
+        "∂ "  -> "direct",
+        "δ "  -> "default",
+        "⁅⁆" -> "package file",
+        "ⲛ "  -> "class initializer",
+        "ℓ "  -> "lazy initializer",
+        "Σ "  -> "specialized method" )
 
   def rewrite(name: String, method: Boolean = false): Text =
     val buffer: StringBuilder = StringBuilder()
@@ -211,7 +211,7 @@ object StackTrace:
       else char(index) match
         case '<' =>
           if
-            (0 until 6).all: offset => char(index + offset) == ("<init>": String).charAt(offset)
+            (0 until 6).all: offset => char(index + offset) == s"<init>".charAt(offset)
           then
             buffer.append("ⲛ")
             recur(index + 6)
@@ -221,7 +221,7 @@ object StackTrace:
 
         case 'i' =>
           if
-            (0 until 8).all: offset => char(index + offset) == ("initial$": String).charAt(offset)
+            (0 until 8).all: offset => char(index + offset) == s"initial$$".charAt(offset)
           then
             buffer.append("ι")
             recur(index + 8)
@@ -231,7 +231,7 @@ object StackTrace:
 
         case 'l' =>
           if
-            (0 until 7).all: offset => char(index + offset) == ("lzyINIT": String).charAt(offset)
+            (0 until 7).all: offset => char(index + offset) == s"lzyINIT".charAt(offset)
           then
             buffer.append("ℓ")
             recur(index + 7, true)
@@ -241,7 +241,7 @@ object StackTrace:
 
         case 's' =>
           if
-            (0 until 6).all: offset => char(index + offset) == ("super$": String).charAt(offset)
+            (0 until 6).all: offset => char(index + offset) == s"super$$".charAt(offset)
           then
             buffer.append("↑")
             recur(index + 6)
@@ -314,8 +314,8 @@ object StackTrace:
                 val types = List.iterator(List.tail(arguments)).mkString("Σ((", ", ", ")")
 
                 val name2 =
-                  if arguments.size == 2 then ("Σ(": String)+List.last(arguments)+(" -> ": String)+head+")"
-                  else types+(" -> ": String)+head+")"
+                  if arguments.size == 2 then s"Σ("+List.last(arguments)+s" -> $head)"
+                  else types+s" -> $head)"
 
                 val mc = name.substring(index, index + 3).nn
                 token(index, mc, name2)
@@ -380,7 +380,7 @@ object StackTrace:
       val args =
         if n < 2 then s"Any" else List.iterator(List.fill(n)("Any")).mkString("(", ", ", ")")
 
-      ("(": String)+args+" => Unit)"
+      s"($args => Unit)"
 
     else if rewritten.s.endsWith("#") then
       val pivot = rewritten.s.lastIndexOf(".")
@@ -393,7 +393,7 @@ object StackTrace:
         val head = rewritten.s.substring(0, pivot).nn
         val tail = rewritten.s.substring(pivot + 1).nn.dropRight(1)
 
-        (head+(".": String)+sub+tail).tt
+        (head+s".$sub$tail").tt
     else
       rewritten
 
@@ -434,23 +434,23 @@ object StackTrace:
     val fileWidth = stack.frames.map(_.file.s.length).maximum.or(0)
     val fullClass = s"${stack.component}.${stack.className}".tt
     val init = s"$fullClass: ${stack.message}".tt
-    val nbsp = "\u00a0".tt
+    val nbsp = "\u00a0"
 
     val root = stack.frames.fuse(init):
       val obj = next.method.className.s.endsWith("#")
       val drop = if next.source.absent && obj then 1 else 0
       val file = (nbsp*(fileWidth - next.file.s.length))+next.file
-      val dot = if next.source.present || obj then ".".tt else "#".tt
+      val dot = if next.source.present || obj then "." else "#"
       val className = next.displayClass.s.dropRight(drop)
       val classPad = (nbsp*(classWidth - className.length))
       val method = next.displayMethod
       val methodPad = (nbsp*(methodWidth - method.s.length))
 
       val line = next.line match
-        case Unset => "?".tt
+        case Unset => "?"
         case value => value.toString.tt
 
-      val inlined = next.inlined.fold(("": String)):
+      val inlined = next.inlined.fold(s""):
         case (text, origin) =>
           val where = origin.source.lay(s"${origin.file}:${origin.line}"): source =>
             s"${source.definition}$nbsp(${origin.file}:${origin.line})"

@@ -38,44 +38,44 @@ object Tests extends Suite(m"Virility Tests"):
   def run(): Unit =
     suite(m"Escaping tests"):
       test(m"Hyphens become hyphen-minus escapes"):
-        Roff.escape(t"list-files")
-      . assert(_ == t"list\\-files")
+        Roff.escape("list-files")
+      . assert(_ == "list\\-files")
 
       test(m"Backslashes become the rs escape"):
-        Roff.escape(t"C:\\Users")
-      . assert(_ == t"C:\\[rs]Users")
+        Roff.escape("C:\\Users")
+      . assert(_ == "C:\\[rs]Users")
 
       test(m"A backslash before a hyphen escapes both independently"):
-        Roff.escape(t"a\\-b")
-      . assert(_ == t"a\\[rs]\\-b")
+        Roff.escape("a\\-b")
+      . assert(_ == "a\\[rs]\\-b")
 
       test(m"Newlines become spaces"):
-        Roff.escape(t"one\ntwo")
-      . assert(_ == t"one two")
+        Roff.escape("one\ntwo")
+      . assert(_ == "one two")
 
       test(m"Quoted arguments escape embedded double quotes"):
-        Roff.quote(t"a\"b")
-      . assert(_ == t"\"a\\[dq]b\"")
+        Roff.quote("a\"b")
+      . assert(_ == "\"a\\[dq]b\"")
 
       test(m"Quoted arguments keep hyphens verbatim"):
-        Roff.quote(t"2026-08-17")
-      . assert(_ == t"\"2026-08-17\"")
+        Roff.quote("2026-08-17")
+      . assert(_ == "\"2026-08-17\"")
 
     suite(m"Serialization tests"):
       test(m"A minimal document is a TH line with trailing arguments dropped"):
-        Roff(t"grep", 1).serialize
-      . assert(_ == t".TH \"GREP\" \"1\"\n")
+        Roff("grep", 1).serialize
+      . assert(_ == ".TH \"GREP\" \"1\"\n")
 
       test(m"Unset middle arguments are kept when later ones are set"):
-        Roff(t"grep", 1, Unset, Unset, t"User Commands").serialize
-      . assert(_ == t".TH \"GREP\" \"1\" \"\" \"\" \"User Commands\"\n")
+        Roff("grep", 1, Unset, Unset, "User Commands").serialize
+      . assert(_ == ".TH \"GREP\" \"1\" \"\" \"\" \"User Commands\"\n")
 
       test(m"A paragraph starting with a dot is protected"):
-        Roff.Block.Paragraph(Roff.Inline.plain(t".profile is read at startup")).serialize
+        Roff.Block.Paragraph(Roff.Inline.plain(".profile is read at startup")).serialize
       . assert(_ == List(t".P", t"\\&.profile is read at startup"))
 
       test(m"A paragraph starting with a quote is protected"):
-        Roff.Block.Paragraph(Roff.Inline.plain(t"'quoted' words")).serialize
+        Roff.Block.Paragraph(Roff.Inline.plain("'quoted' words")).serialize
       . assert(_ == List(t".P", t"\\&'quoted' words"))
 
       test(m"Bold and italic serialize as font alternations"):
@@ -90,7 +90,7 @@ object Tests extends Suite(m"Virility Tests"):
 
       test(m"A tagged paragraph emits TP, tag line and body line"):
         Roff.Block.Tagged
-         (List(Roff.Inline.bold(t"--verbose")), Roff.Inline.plain(t"Print more detail."))
+         (List(Roff.Inline.bold(t"--verbose")), Roff.Inline.plain("Print more detail."))
         . serialize
       . assert(_ == List(t".TP", t"\\fB\\-\\-verbose\\fP", t"Print more detail."))
 
@@ -100,7 +100,7 @@ object Tests extends Suite(m"Virility Tests"):
 
       test(m"Sections nest their blocks and indentation closes with RE"):
         Roff
-         (t"demo", 1, t"2026-08-17", t"demo 1.0", t"User Commands",
+         ("demo", 1, "2026-08-17", "demo 1.0", "User Commands",
           List
            (Roff.Block.Section
              (t"Name",
@@ -109,5 +109,5 @@ object Tests extends Suite(m"Virility Tests"):
                 Roff.Block.Indented
                  (List(Roff.Block.Paragraph(Roff.Inline.plain(t"indented"))))))))
         . serialize
-      . assert(_ == t".TH \"DEMO\" \"1\" \"2026-08-17\" \"demo 1.0\" \"User Commands\"\n"
-                    + t".SH \"Name\"\ndemo \\- a demonstration\n.RS\n.P\nindented\n.RE\n")
+      . assert(_ == ".TH \"DEMO\" \"1\" \"2026-08-17\" \"demo 1.0\" \"User Commands\"\n"
+                    + ".SH \"Name\"\ndemo \\- a demonstration\n.RS\n.P\nindented\n.RE\n")

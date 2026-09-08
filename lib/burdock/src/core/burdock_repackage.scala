@@ -125,7 +125,7 @@ def repackage(arguments: List[Text]): Unit = application(arguments):
 
         if !cacheJar.existent() then Unset else
           Zipfile.read(cacheJar).entries.filter: entry =>
-            !entry.directory && entry.ref.show != t"META-INF/MANIFEST.MF"
+            !entry.directory && entry.ref.show != "META-INF/MANIFEST.MF"
 
           . stdlib.to(List)
 
@@ -148,7 +148,7 @@ def repackage(arguments: List[Text]): Unit = application(arguments):
       // The GitHub index is a few requests per repository rather than one per dependency, so
       // it is built once up front; the hinted repositories are consulted before deps.dev,
       // since a hint the user typed is meant to take precedence over the global index.
-      val token: Optional[Text] = safely(Environment[Text](t"GITHUB_TOKEN"))
+      val token: Optional[Text] = safely(Environment[Text]("GITHUB_TOKEN"))
       val index: Map[Text, HttpUrl] = GitHub.index(repositories, token)
 
       val resolve: Repackager.Resolver = hash =>
@@ -200,14 +200,14 @@ private val usage: Message = m"usage: soundness.repackage [--github owner/repo].
 // comma-separated lists in either form.
 def parseArguments(arguments: List[Text]): List[GitHub.Repository] raises UserError =
   def repositories(operand: Text): List[GitHub.Repository] =
-    operand.cut(t",").filter(_ != t"").map(GitHub.Repository.parse(_))
+    operand.cut(",").filter(_ != "").map(GitHub.Repository.parse(_))
 
   def recur(arguments: List[Text]): List[GitHub.Repository] = arguments match
-    case t"--github" :: operand :: rest => repositories(operand) + recur(rest)
-    case t"--github" :: Nil             => abort(UserError(m"--github needs a repository; $usage"))
+    case "--github" :: operand :: rest => repositories(operand) + recur(rest)
+    case "--github" :: Nil             => abort(UserError(m"--github needs a repository; $usage"))
 
     case argument :: rest =>
-      if argument.starts(t"--github=") then repositories(argument.skip(9)) + recur(rest)
+      if argument.starts("--github=") then repositories(argument.skip(9)) + recur(rest)
       else abort(UserError(m"unrecognized argument $argument; $usage"))
 
     case _ => Nil

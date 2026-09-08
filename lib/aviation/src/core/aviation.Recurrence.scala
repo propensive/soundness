@@ -110,13 +110,13 @@ object Recurrence:
   =>  (Recurrence of point by (Timespan of topic)) is Decodable in Text =
 
     text =>
-      text.cut(t"/") match
+      text.cut("/") match
         case List(repeats, start, period) =>
           val repetitions =
-            if repeats == t"R" then Unset else
+            if repeats == "R" then Unset else
               val digits = repeats.skip(1).s
 
-              if repeats.starts(t"R") && digits.nonEmpty && digits.forall(_.isDigit)
+              if repeats.starts("R") && digits.nonEmpty && digits.forall(_.isDigit)
               then digits.toInt
               else abort(Recurrence.Error(text))
 

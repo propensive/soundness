@@ -49,8 +49,8 @@ object Lexis:
   // requires a *following* hard keyword), so lexeme mapping identifies them by text
   // everywhere, keeping corpus statistics and completion-time behaviour consistent.
   private val soft: Set[Text] =
-    Set(t"inline", t"opaque", t"open", t"transparent", t"infix", t"update", t"erased",
-        t"tracked", t"using")
+    Set("inline", "opaque", "open", "transparent", "infix", "update", "erased",
+        "tracked", "using")
 
   private[harlequin] def identifierChar(char: Char): Boolean =
     char.isLetterOrDigit || char == '_'
@@ -71,12 +71,12 @@ object Lexis:
     case _ if glyphic(token.text) && token.accent != Accent.String &&
       token.accent != Accent.Error =>
       token.text match
-        case t"(" => Lexeme.Open(Lexeme.Bracket.Round)
-        case t")" => Lexeme.Close(Lexeme.Bracket.Round)
-        case t"[" => Lexeme.Open(Lexeme.Bracket.Square)
-        case t"]" => Lexeme.Close(Lexeme.Bracket.Square)
-        case t"{" => Lexeme.Open(Lexeme.Bracket.Brace)
-        case t"}" => Lexeme.Close(Lexeme.Bracket.Brace)
+        case "(" => Lexeme.Open(Lexeme.Bracket.Round)
+        case ")" => Lexeme.Close(Lexeme.Bracket.Round)
+        case "[" => Lexeme.Open(Lexeme.Bracket.Square)
+        case "]" => Lexeme.Close(Lexeme.Bracket.Square)
+        case "{" => Lexeme.Open(Lexeme.Bracket.Brace)
+        case "}" => Lexeme.Close(Lexeme.Bracket.Brace)
         case _    => Lexeme.Symbol(token.text)
 
     case Accent.Keyword | Accent.Modifier =>

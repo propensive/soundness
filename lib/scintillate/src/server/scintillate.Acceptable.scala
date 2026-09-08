@@ -60,7 +60,7 @@ object Acceptable:
           abort(Multipart.Error(Multipart.Error.Reason.MediaType))
 
         if contentType.base == media"multipart/form-data" then
-          val boundary = contentType.at(t"boundary").or:
+          val boundary = contentType.at("boundary").or:
             abort(Multipart.Error(Multipart.Error.Reason.MediaType))
 
           // Interim: `Multipart.parse` is still `Streamable`-typed; the whole body is

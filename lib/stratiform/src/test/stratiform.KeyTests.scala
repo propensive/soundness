@@ -100,7 +100,7 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
   def run(): Unit =
     suite(m"TELS axiom ordering"):
       test(m"Field record members put key at index 6, before default"):
-        val field = Tels.Axiom.tels.records.readable.find(_.name == t"Field").get
+        val field = Tels.Axiom.tels.records.readable.find(_.name == "Field").get
         field.members.readable.toList.map:
           case f: Tels.Field => f.keyword.s
           case _             => "?"
@@ -112,7 +112,7 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
       // `SemanticReconstructor` reads these positions by index, so this order
       // is load-bearing, not decorative.
       test(m"Scalar record members put pattern at index 2, before encoding"):
-        val scalar = Tels.Axiom.tels.records.readable.find(_.name == t"Scalar").get
+        val scalar = Tels.Axiom.tels.records.readable.find(_.name == "Scalar").get
         scalar.members.readable.toList.map:
           case f: Tels.Field => f.keyword.s
           case _             => "?"
@@ -127,7 +127,7 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
                                   |document
                                   |  field user User
                                   |""".stripMargin))
-        val field = schema.records.readable.find(_.name == t"User").get.members.readable.head
+        val field = schema.records.readable.find(_.name == "User").get.members.readable.head
         field.absolve match
           case f: Tels.Field => (f.key, f.default.absent)
       . assert(_ == (true, true))
@@ -140,7 +140,7 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
                                   |""".stripMargin))
         schema.document.members.readable.head.absolve match
           case f: Tels.Field => (f.key, f.default)
-      . assert(_ == (false, t"England"))
+      . assert(_ == (false, "England"))
 
       test(m"key then default: both are read, in flags-before-default order"):
         val schema = schemaOf(Text("""|tel 1.0
@@ -150,7 +150,7 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
                                   |""".stripMargin))
         schema.document.members.readable.head.absolve match
           case f: Tels.Field => (f.key, f.default)
-      . assert(_ == (true, t"fallback"))
+      . assert(_ == (true, "fallback"))
 
       test(m"key as a compound child also sets the flag"):
         val schema = schemaOf(Text("""|tel 1.0
@@ -176,7 +176,7 @@ object KeyTests extends Suite(m"Stratiform key field tests"):
                        |  record User
                        |    field username Identifier key
                        |""".stripMargin))
-        composed.records.readable.find(_.name == t"User").get.members.readable.head.absolve match
+        composed.records.readable.find(_.name == "User").get.members.readable.head.absolve match
           case f: Tels.Field => f.key
       . assert(_ == true)
 

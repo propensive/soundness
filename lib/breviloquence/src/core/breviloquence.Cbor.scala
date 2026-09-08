@@ -655,7 +655,7 @@ object Cbor extends Cbor2, Dynamic:
       type Result = HttpStreams.Content
 
       def genericize(value: Cbor): HttpStreams.Content =
-        (t"application/cbor", HttpStreams.Body(Ast.encodable.encoded(Cbor.unseal(value))))
+        ("application/cbor", HttpStreams.Body(Ast.encodable.encoded(Cbor.unseal(value))))
 
   object Parsable:
     // The base of generated parsers: generated code is capture-erased, so

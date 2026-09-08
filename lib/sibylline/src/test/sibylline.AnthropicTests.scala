@@ -65,55 +65,55 @@ object FakeModel:
   // text deltas, and the usage convention (input on `message_start`, output on
   // `message_delta`).
   val streamed: Text = scala.List
-    ( t"""event: message_start""",
-      t"""data: {"type": "message_start", "message": {"id": "msg_2", "model": "claude-sonnet-4-5", "usage": {"input_tokens": 11, "output_tokens": 1}}}""",
-      t"""""",
-      t"""event: content_block_start""",
-      t"""data: {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}""",
-      t"""""",
-      t"""event: ping""",
-      t"""data: {"type": "ping"}""",
-      t"""""",
-      t"""event: content_block_delta""",
-      t"""data: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "fjord of "}}""",
-      t"""""",
-      t"""event: content_block_delta""",
-      t"""data: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "Norway"}}""",
-      t"""""",
-      t"""event: content_block_stop""",
-      t"""data: {"type": "content_block_stop", "index": 0}""",
-      t"""""",
-      t"""event: message_delta""",
-      t"""data: {"type": "message_delta", "delta": {"stop_reason": "end_turn"}, "usage": {"output_tokens": 9}}""",
-      t"""""",
-      t"""event: message_stop""",
-      t"""data: {"type": "message_stop"}""",
-      t"""""" )
+    ( """event: message_start""",
+      """data: {"type": "message_start", "message": {"id": "msg_2", "model": "claude-sonnet-4-5", "usage": {"input_tokens": 11, "output_tokens": 1}}}""",
+      """""",
+      """event: content_block_start""",
+      """data: {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}""",
+      """""",
+      """event: ping""",
+      """data: {"type": "ping"}""",
+      """""",
+      """event: content_block_delta""",
+      """data: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "fjord of "}}""",
+      """""",
+      """event: content_block_delta""",
+      """data: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "Norway"}}""",
+      """""",
+      """event: content_block_stop""",
+      """data: {"type": "content_block_stop", "index": 0}""",
+      """""",
+      """event: message_delta""",
+      """data: {"type": "message_delta", "delta": {"stop_reason": "end_turn"}, "usage": {"output_tokens": 9}}""",
+      """""",
+      """event: message_stop""",
+      """data: {"type": "message_stop"}""",
+      """""" )
   . mkString("\n").tt
 
   // A streamed tool call whose arguments arrive as split partial JSON.
   val streamedTool: Text = scala.List
-    ( t"""event: message_start""",
-      t"""data: {"type": "message_start", "message": {"id": "msg_3", "model": "claude-sonnet-4-5", "usage": {"input_tokens": 5, "output_tokens": 1}}}""",
-      t"""""",
-      t"""event: content_block_start""",
-      t"""data: {"type": "content_block_start", "index": 0, "content_block": {"type": "tool_use", "id": "toolu_1", "name": "price", "input": {}}}""",
-      t"""""",
-      t"""event: content_block_delta""",
+    ( """event: message_start""",
+      """data: {"type": "message_start", "message": {"id": "msg_3", "model": "claude-sonnet-4-5", "usage": {"input_tokens": 5, "output_tokens": 1}}}""",
+      """""",
+      """event: content_block_start""",
+      """data: {"type": "content_block_start", "index": 0, "content_block": {"type": "tool_use", "id": "toolu_1", "name": "price", "input": {}}}""",
+      """""",
+      """event: content_block_delta""",
       t"""data: {"type": "content_block_delta", "index": 0, "delta": {"type": "input_json_delta", "partial_json": "{\\"tick"}}""",
-      t"""""",
-      t"""event: content_block_delta""",
+      """""",
+      """event: content_block_delta""",
       t"""data: {"type": "content_block_delta", "index": 0, "delta": {"type": "input_json_delta", "partial_json": "er\\": \\"AAPL\\"}"}}""",
-      t"""""",
-      t"""event: content_block_stop""",
-      t"""data: {"type": "content_block_stop", "index": 0}""",
-      t"""""",
-      t"""event: message_delta""",
-      t"""data: {"type": "message_delta", "delta": {"stop_reason": "tool_use"}, "usage": {"output_tokens": 4}}""",
-      t"""""",
-      t"""event: message_stop""",
-      t"""data: {"type": "message_stop"}""",
-      t"""""" )
+      """""",
+      """event: content_block_stop""",
+      """data: {"type": "content_block_stop", "index": 0}""",
+      """""",
+      """event: message_delta""",
+      """data: {"type": "message_delta", "delta": {"stop_reason": "tool_use"}, "usage": {"output_tokens": 4}}""",
+      """""",
+      """event: message_stop""",
+      """data: {"type": "message_stop"}""",
+      """""" )
   . mkString("\n").tt
 
 // A fake Messages API: routes on method and path, records the conversation — headers and
@@ -131,7 +131,7 @@ class FakeModel(route: (Http.Method, Text, Int) -> Http.Response) extends Http.B
 
     val data = body().memoize
     val sent = if data.readable.isEmpty then Unset else data.read[Text]
-    val path = url.skip(t"http://model.test".length)
+    val path = url.skip("http://model.test".length)
     val attempt = exchanges.stdlib.size
     exchanges ::= FakeModel.Exchange(method, path, headers, sent)
 
@@ -140,7 +140,7 @@ class FakeModel(route: (Http.Method, Text, Int) -> Http.Response) extends Http.B
 object AnthropicTests extends Suite(m"Anthropic dialect tests"):
   import Llm.{Content, Role, Stop, Usage}
 
-  val target: Anthropic = Anthropic(t"claude-sonnet-4-5", t"sk-test").on(url"http://model.test")
+  val target: Anthropic = Anthropic("claude-sonnet-4-5", "sk-test").on(url"http://model.test")
 
   def sent(fake: FakeModel): Json =
     fake.exchanges.stdlib.reverse.head.body.option.get.read[Json]
@@ -150,98 +150,98 @@ object AnthropicTests extends Suite(m"Anthropic dialect tests"):
 
   def run(): Unit =
     test(m"a one-shot ask decodes the reply"):
-      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer(t"Suur Munamägi"))
-      val reply = target.session(llm.ask(t"Tallest mountain in Estonia?"))
+      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer("Suur Munamägi"))
+      val reply = target.session(llm.ask("Tallest mountain in Estonia?"))
       (reply.text, reply.stop, reply.usage, reply.id)
-    . assert(_ == (t"Suur Munamägi", Stop.Ended, Usage(7, 13), t"msg_1"))
+    . assert(_ == ("Suur Munamägi", Stop.Ended, Usage(7, 13), "msg_1"))
 
     test(m"the request carries the model, system and message"):
-      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer(t"yes"))
-      target.prompted(t"Be terse.").limit(512).session(llm.ask(t"Ready?"))
+      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer("yes"))
+      target.prompted("Be terse.").limit(512).session(llm.ask("Ready?"))
       val json = sent(fake)
 
       ( json.model.as[Text], json.system.as[Text], json.max_tokens.as[Int],
         json.messages(0).role.as[Text], json.messages(0).content(0).text.as[Text] )
-    . assert(_ == (t"claude-sonnet-4-5", t"Be terse.", 512, t"user", t"Ready?"))
+    . assert(_ == ("claude-sonnet-4-5", "Be terse.", 512, "user", "Ready?"))
 
     test(m"unset knobs are omitted from the request"):
-      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer(t"yes"))
-      target.session(llm.ask(t"Ready?"))
+      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer("yes"))
+      target.session(llm.ask("Ready?"))
       val body = fake.exchanges.stdlib.reverse.head.body.option.get
 
-      ( body.contains(t"temperature"), body.contains(t"stop_sequences"),
-        body.contains(t"tools") )
+      ( body.contains("temperature"), body.contains("stop_sequences"),
+        body.contains("tools") )
     . assert(_ == (false, false, false))
 
     test(m"the wire headers are sent"):
-      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer(t"yes"))
-      target.session(llm.ask(t"Ready?"))
-      (header(fake, t"x-api-key"), header(fake, t"anthropic-version"))
-    . assert(_ == (t"sk-test", t"2023-06-01"))
+      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer("yes"))
+      target.session(llm.ask("Ready?"))
+      (header(fake, "x-api-key"), header(fake, "anthropic-version"))
+    . assert(_ == ("sk-test", "2023-06-01"))
 
     test(m"the endpoint is the Messages API"):
-      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer(t"yes"))
-      target.session(llm.ask(t"Ready?"))
+      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer("yes"))
+      target.session(llm.ask("Ready?"))
       val exchange = fake.exchanges.stdlib.reverse.head
       (exchange.method, exchange.path)
-    . assert(_ == (Http.Post, t"/v1/messages"))
+    . assert(_ == (Http.Post, "/v1/messages"))
 
     test(m"a rate limit with retry-after is retried"):
       given fake: FakeModel = FakeModel: (_, _, attempt) =>
         if attempt == 0
         then Http.Response(Http.TooManyRequests, retryAfter = t"0"):
           t"""{"type": "error", "error": {"type": "rate_limit_error", "message": "slow down"}}"""
-        else FakeModel.answer(t"eventually")
+        else FakeModel.answer("eventually")
 
-      val reply = target.session(llm.ask(t"Ready?"))
+      val reply = target.session(llm.ask("Ready?"))
       (reply.text, fake.exchanges.stdlib.size)
-    . assert(_ == (t"eventually", 2))
+    . assert(_ == ("eventually", 2))
 
     test(m"an authentication failure raises Unauthorized with the status"):
       given fake: FakeModel = FakeModel: (_, _, _) =>
-        FakeModel.failure(Http.Unauthorized, t"authentication_error", t"invalid x-api-key")
+        FakeModel.failure(Http.Unauthorized, "authentication_error", "invalid x-api-key")
 
-      val error = capture[Llm.Error](target.session(llm.ask(t"Ready?")))
+      val error = capture[Llm.Error](target.session(llm.ask("Ready?")))
       (error.reason, error.status)
     . assert(_ == (Llm.Error.Reason.Unauthorized, 401))
 
     test(m"an unrecognized error code is preserved under Provider"):
       given fake: FakeModel = FakeModel: (_, _, _) =>
-        FakeModel.failure(Http.InternalServerError, t"novel_error", t"strange")
+        FakeModel.failure(Http.InternalServerError, "novel_error", "strange")
 
-      capture[Llm.Error](target.session(llm.ask(t"Ready?"))).reason
-    . assert(_ == Llm.Error.Reason.Provider(t"novel_error"))
+      capture[Llm.Error](target.session(llm.ask("Ready?"))).reason
+    . assert(_ == Llm.Error.Reason.Provider("novel_error"))
 
     test(m"a streamed turn assembles text, usage and identity"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.reply(FakeModel.streamed))
 
-      val reply = target.session(llm.stream(t"go").reply())
+      val reply = target.session(llm.stream("go").reply())
       (reply.text, reply.usage, reply.id, reply.stop)
-    . assert(_ == (t"fjord of Norway", Usage(11, 9), t"msg_2", Stop.Ended))
+    . assert(_ == ("fjord of Norway", Usage(11, 9), "msg_2", Stop.Ended))
 
     test(m"streamed deltas arrive incrementally"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.reply(FakeModel.streamed))
 
-      target.session(llm.stream(t"go").text.to(List))
+      target.session(llm.stream("go").text.to(List))
     . assert(_ == List(t"fjord of ", t"Norway"))
 
     test(m"a streamed request asks for a stream"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.reply(FakeModel.streamed))
 
-      target.session(llm.stream(t"go").reply())
+      target.session(llm.stream("go").reply())
       sent(fake).stream.as[Boolean]
     . assert(_ == true)
 
     test(m"streamed tool arguments assemble across deltas"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.reply(FakeModel.streamedTool))
 
-      val reply = target.session(llm.stream(t"go").reply())
+      val reply = target.session(llm.stream("go").reply())
       (reply.stop, reply.toolCalls)
     . assert:
         _ == (Stop.ToolCall, List(Content.ToolUse(t"toolu_1", t"price", j"""{"ticker": "AAPL"}""")))
 
     test(m"a tool result round-trips to the wire shape"):
-      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer(t"noted"))
+      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer("noted"))
 
       target.session:
         llm.ask
@@ -251,12 +251,12 @@ object AnthropicTests extends Suite(m"Anthropic dialect tests"):
 
       val block = sent(fake).messages(0).content(0)
       (block.`type`.as[Text], block.tool_use_id.as[Text], block.content(0).text.as[Text])
-    . assert(_ == (t"tool_result", t"toolu_1", t"42.5"))
+    . assert(_ == ("tool_result", "toolu_1", "42.5"))
 
     test(m"countTokens reads the count"):
       given fake: FakeModel = FakeModel: (_, path, _) =>
-        if path == t"/v1/messages/count_tokens" then FakeModel.reply(t"""{"input_tokens": 42}""")
-        else FakeModel.answer(t"no")
+        if path == "/v1/messages/count_tokens" then FakeModel.reply("""{"input_tokens": 42}""")
+        else FakeModel.answer("no")
 
       target.countTokens(List(Llm.Message(Role.User, t"hello")))
     . assert(_ == 42)

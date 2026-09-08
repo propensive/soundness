@@ -155,11 +155,11 @@ object Acp:
 
   object StopReason:
     given encodable: StopReason is Json.Encodable = Json.Encodable(() => Morphology.Str):
-      case StopReason.EndTurn         => t"end_turn".in[Json]
-      case StopReason.MaxTokens       => t"max_tokens".in[Json]
-      case StopReason.MaxTurnRequests => t"max_turn_requests".in[Json]
-      case StopReason.Refusal         => t"refusal".in[Json]
-      case StopReason.Cancelled       => t"cancelled".in[Json]
+      case StopReason.EndTurn         => "end_turn".in[Json]
+      case StopReason.MaxTokens       => "max_tokens".in[Json]
+      case StopReason.MaxTurnRequests => "max_turn_requests".in[Json]
+      case StopReason.Refusal         => "refusal".in[Json]
+      case StopReason.Cancelled       => "cancelled".in[Json]
 
     given decodable: StopReason is Json.Decodable =
       // Pure and throwing, like the derivation anchors: the decode cannot thread a
@@ -169,11 +169,11 @@ object Acp:
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
-            case t"end_turn"          => StopReason.EndTurn
-            case t"max_tokens"        => StopReason.MaxTokens
-            case t"max_turn_requests" => StopReason.MaxTurnRequests
-            case t"refusal"           => StopReason.Refusal
-            case t"cancelled"         => StopReason.Cancelled
+            case "end_turn"          => StopReason.EndTurn
+            case "max_tokens"        => StopReason.MaxTokens
+            case "max_turn_requests" => StopReason.MaxTurnRequests
+            case "refusal"           => StopReason.Refusal
+            case "cancelled"         => StopReason.Cancelled
             case _                    => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   // Why a prompt turn ended: the result of `session/prompt`.
@@ -191,15 +191,15 @@ object Acp:
 
   object ToolKind:
     given encodable: ToolKind is Json.Encodable = Json.Encodable(() => Morphology.Str):
-      case ToolKind.Read    => t"read".in[Json]
-      case ToolKind.Edit    => t"edit".in[Json]
-      case ToolKind.Delete  => t"delete".in[Json]
-      case ToolKind.Move    => t"move".in[Json]
-      case ToolKind.Search  => t"search".in[Json]
-      case ToolKind.Execute => t"execute".in[Json]
-      case ToolKind.Think   => t"think".in[Json]
-      case ToolKind.Fetch   => t"fetch".in[Json]
-      case ToolKind.Other   => t"other".in[Json]
+      case ToolKind.Read    => "read".in[Json]
+      case ToolKind.Edit    => "edit".in[Json]
+      case ToolKind.Delete  => "delete".in[Json]
+      case ToolKind.Move    => "move".in[Json]
+      case ToolKind.Search  => "search".in[Json]
+      case ToolKind.Execute => "execute".in[Json]
+      case ToolKind.Think   => "think".in[Json]
+      case ToolKind.Fetch   => "fetch".in[Json]
+      case ToolKind.Other   => "other".in[Json]
 
     given decodable: ToolKind is Json.Decodable =
       // Pure and throwing, like the derivation anchors: the decode cannot thread a
@@ -209,14 +209,14 @@ object Acp:
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
-            case t"read"    => ToolKind.Read
-            case t"edit"    => ToolKind.Edit
-            case t"delete"  => ToolKind.Delete
-            case t"move"    => ToolKind.Move
-            case t"search"  => ToolKind.Search
-            case t"execute" => ToolKind.Execute
-            case t"think"   => ToolKind.Think
-            case t"fetch"   => ToolKind.Fetch
+            case "read"    => ToolKind.Read
+            case "edit"    => ToolKind.Edit
+            case "delete"  => ToolKind.Delete
+            case "move"    => ToolKind.Move
+            case "search"  => ToolKind.Search
+            case "execute" => ToolKind.Execute
+            case "think"   => ToolKind.Think
+            case "fetch"   => ToolKind.Fetch
             case _          => ToolKind.Other
 
   enum ToolKind:
@@ -224,11 +224,11 @@ object Acp:
 
   object ToolCallStatus:
     given encodable: ToolCallStatus is Json.Encodable = Json.Encodable(() => Morphology.Str):
-      case ToolCallStatus.Pending    => t"pending".in[Json]
-      case ToolCallStatus.InProgress => t"in_progress".in[Json]
-      case ToolCallStatus.Completed  => t"completed".in[Json]
-      case ToolCallStatus.Failed     => t"failed".in[Json]
-      case ToolCallStatus.Cancelled  => t"cancelled".in[Json]
+      case ToolCallStatus.Pending    => "pending".in[Json]
+      case ToolCallStatus.InProgress => "in_progress".in[Json]
+      case ToolCallStatus.Completed  => "completed".in[Json]
+      case ToolCallStatus.Failed     => "failed".in[Json]
+      case ToolCallStatus.Cancelled  => "cancelled".in[Json]
 
     given decodable: ToolCallStatus is Json.Decodable =
       // Pure and throwing, like the derivation anchors: the decode cannot thread a
@@ -238,11 +238,11 @@ object Acp:
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
-            case t"pending"     => ToolCallStatus.Pending
-            case t"in_progress" => ToolCallStatus.InProgress
-            case t"completed"   => ToolCallStatus.Completed
-            case t"failed"      => ToolCallStatus.Failed
-            case t"cancelled"   => ToolCallStatus.Cancelled
+            case "pending"     => ToolCallStatus.Pending
+            case "in_progress" => ToolCallStatus.InProgress
+            case "completed"   => ToolCallStatus.Completed
+            case "failed"      => ToolCallStatus.Failed
+            case "cancelled"   => ToolCallStatus.Cancelled
             case _              => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum ToolCallStatus:
@@ -253,12 +253,12 @@ object Acp:
   object ToolCallContent:
     import dynamicAccess.dynamicJson
 
-    private val typeTag = Json.discriminatedUnion[ToolCallContent](t"type")
+    private val typeTag = Json.discriminatedUnion[ToolCallContent]("type")
 
     given encodable: ToolCallContent is Json.Encodable = Json.Encodable(() => Morphology.Any):
-      case content: ToolContent  => typeTag.rewrite(t"content",  content.in[Json])
-      case content: ToolDiff     => typeTag.rewrite(t"diff",     content.in[Json])
-      case content: ToolTerminal => typeTag.rewrite(t"terminal", content.in[Json])
+      case content: ToolContent  => typeTag.rewrite("content",  content.in[Json])
+      case content: ToolDiff     => typeTag.rewrite("diff",     content.in[Json])
+      case content: ToolTerminal => typeTag.rewrite("terminal", content.in[Json])
 
     given decodable: ToolCallContent is Json.Decodable =
       // Pure and throwing, like the derivation anchors: the decode cannot thread a
@@ -348,9 +348,9 @@ object Acp:
 
   object PlanPriority:
     given encodable: PlanPriority is Json.Encodable = Json.Encodable(() => Morphology.Str):
-      case PlanPriority.High   => t"high".in[Json]
-      case PlanPriority.Medium => t"medium".in[Json]
-      case PlanPriority.Low    => t"low".in[Json]
+      case PlanPriority.High   => "high".in[Json]
+      case PlanPriority.Medium => "medium".in[Json]
+      case PlanPriority.Low    => "low".in[Json]
 
     given decodable: PlanPriority is Json.Decodable =
       // Pure and throwing, like the derivation anchors: the decode cannot thread a
@@ -360,9 +360,9 @@ object Acp:
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
-            case t"high"   => PlanPriority.High
-            case t"medium" => PlanPriority.Medium
-            case t"low"    => PlanPriority.Low
+            case "high"   => PlanPriority.High
+            case "medium" => PlanPriority.Medium
+            case "low"    => PlanPriority.Low
             case _         => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum PlanPriority:
@@ -370,9 +370,9 @@ object Acp:
 
   object PlanStatus:
     given encodable: PlanStatus is Json.Encodable = Json.Encodable(() => Morphology.Str):
-      case PlanStatus.Pending    => t"pending".in[Json]
-      case PlanStatus.InProgress => t"in_progress".in[Json]
-      case PlanStatus.Completed  => t"completed".in[Json]
+      case PlanStatus.Pending    => "pending".in[Json]
+      case PlanStatus.InProgress => "in_progress".in[Json]
+      case PlanStatus.Completed  => "completed".in[Json]
 
     given decodable: PlanStatus is Json.Decodable =
       // Pure and throwing, like the derivation anchors: the decode cannot thread a
@@ -382,9 +382,9 @@ object Acp:
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
-            case t"pending"     => PlanStatus.Pending
-            case t"in_progress" => PlanStatus.InProgress
-            case t"completed"   => PlanStatus.Completed
+            case "pending"     => PlanStatus.Pending
+            case "in_progress" => PlanStatus.InProgress
+            case "completed"   => PlanStatus.Completed
             case _              => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum PlanStatus:
@@ -399,20 +399,20 @@ object Acp:
   object SessionUpdate:
     import dynamicAccess.dynamicJson
 
-    private val typeTag = Json.discriminatedUnion[SessionUpdate](t"sessionUpdate")
+    private val typeTag = Json.discriminatedUnion[SessionUpdate]("sessionUpdate")
 
     given encodable: SessionUpdate is Json.Encodable = Json.Encodable(() => Morphology.Any):
-      case update: UserMessageChunk  => typeTag.rewrite(t"user_message_chunk", update.in[Json])
-      case update: AgentMessageChunk => typeTag.rewrite(t"agent_message_chunk", update.in[Json])
-      case update: AgentThoughtChunk => typeTag.rewrite(t"agent_thought_chunk", update.in[Json])
-      case update: ToolCall          => typeTag.rewrite(t"tool_call", update.in[Json])
-      case update: ToolCallUpdate    => typeTag.rewrite(t"tool_call_update", update.in[Json])
-      case update: Plan              => typeTag.rewrite(t"plan", update.in[Json])
+      case update: UserMessageChunk  => typeTag.rewrite("user_message_chunk", update.in[Json])
+      case update: AgentMessageChunk => typeTag.rewrite("agent_message_chunk", update.in[Json])
+      case update: AgentThoughtChunk => typeTag.rewrite("agent_thought_chunk", update.in[Json])
+      case update: ToolCall          => typeTag.rewrite("tool_call", update.in[Json])
+      case update: ToolCallUpdate    => typeTag.rewrite("tool_call_update", update.in[Json])
+      case update: Plan              => typeTag.rewrite("plan", update.in[Json])
 
       case update: AvailableCommandsUpdate =>
-        typeTag.rewrite(t"available_commands_update", update.in[Json])
+        typeTag.rewrite("available_commands_update", update.in[Json])
 
-      case update: CurrentModeUpdate => typeTag.rewrite(t"current_mode_update", update.in[Json])
+      case update: CurrentModeUpdate => typeTag.rewrite("current_mode_update", update.in[Json])
 
     given decodable: SessionUpdate is Json.Decodable =
       // Pure and throwing, like the derivation anchors: the decode cannot thread a
@@ -501,10 +501,10 @@ object Acp:
 
   object PermissionOptionKind:
     given encodable: PermissionOptionKind is Json.Encodable = Json.Encodable(() => Morphology.Str):
-      case PermissionOptionKind.AllowOnce    => t"allow_once".in[Json]
-      case PermissionOptionKind.AllowAlways  => t"allow_always".in[Json]
-      case PermissionOptionKind.RejectOnce   => t"reject_once".in[Json]
-      case PermissionOptionKind.RejectAlways => t"reject_always".in[Json]
+      case PermissionOptionKind.AllowOnce    => "allow_once".in[Json]
+      case PermissionOptionKind.AllowAlways  => "allow_always".in[Json]
+      case PermissionOptionKind.RejectOnce   => "reject_once".in[Json]
+      case PermissionOptionKind.RejectAlways => "reject_always".in[Json]
 
     given decodable: PermissionOptionKind is Json.Decodable =
       // Pure and throwing, like the derivation anchors: the decode cannot thread a
@@ -514,10 +514,10 @@ object Acp:
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
-            case t"allow_once"    => PermissionOptionKind.AllowOnce
-            case t"allow_always"  => PermissionOptionKind.AllowAlways
-            case t"reject_once"   => PermissionOptionKind.RejectOnce
-            case t"reject_always" => PermissionOptionKind.RejectAlways
+            case "allow_once"    => PermissionOptionKind.AllowOnce
+            case "allow_always"  => PermissionOptionKind.AllowAlways
+            case "reject_once"   => PermissionOptionKind.RejectOnce
+            case "reject_always" => PermissionOptionKind.RejectAlways
             case _                => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum PermissionOptionKind:
@@ -536,15 +536,15 @@ object Acp:
   object RequestPermissionOutcome:
     import dynamicAccess.dynamicJson
 
-    private val typeTag = Json.discriminatedUnion[RequestPermissionOutcome](t"outcome")
+    private val typeTag = Json.discriminatedUnion[RequestPermissionOutcome]("outcome")
 
     given encodable: RequestPermissionOutcome is Json.Encodable =
       Json.Encodable(() => Morphology.Any):
         case Selected(optionId) =>
-          typeTag.rewrite(t"selected", Map(t"optionId" -> optionId.in[Json]).in[Json])
+          typeTag.rewrite("selected", Map("optionId" -> optionId.in[Json]).in[Json])
 
         case Cancelled =>
-          typeTag.rewrite(t"cancelled", Map[Text, Json]().in[Json])
+          typeTag.rewrite("cancelled", Map[Text, Json]().in[Json])
 
     given decodable: RequestPermissionOutcome is Json.Decodable =
       // Pure and throwing, like the derivation anchors: the decode cannot thread a
@@ -1139,10 +1139,10 @@ object Acp:
       ( sessionId: Text, path: Text, line: Optional[Int], limit: Optional[Int] )
     :   ReadTextFileResult =
 
-      if handlers.readFile0 == null then unregistered(ReadTextFileResult(t"")) else
+      if handlers.readFile0 == null then unregistered(ReadTextFileResult("")) else
         val content: Text =
           turned3[Text aka "path", Optional[Int] aka "line", Optional[Int] aka "limit", Text]
-           ( t"" )
+           ( "" )
            ( handlers.readFile0 )
            ( sessionId, path.aka["path"], line.aka["line"], limit.aka["limit"] )
 
@@ -1169,7 +1169,7 @@ object Acp:
     :   CreateTerminalResult =
 
       terminals match
-        case null => unregistered(CreateTerminalResult(t""))
+        case null => unregistered(CreateTerminalResult(""))
 
         case terminals: Terminals =>
           CreateTerminalResult
@@ -1178,7 +1178,7 @@ object Acp:
 
     def `terminal/output`(sessionId: Text, terminalId: Text): TerminalOutputResult =
       terminals match
-        case null                 => unregistered(TerminalOutputResult(t"", false))
+        case null                 => unregistered(TerminalOutputResult("", false))
         case terminals: Terminals => terminals.output(sessionId, terminalId)
 
     def `terminal/wait_for_exit`(sessionId: Text, terminalId: Text): TerminalExitStatus =
@@ -1227,7 +1227,7 @@ object Acp:
       source.chunks.frames[Linefeed].each: frame =>
         val message: Text = frame.utf8
 
-        if message.length > 0 && message != t"\r" then
+        if message.length > 0 && message != "\r" then
           observer.received(message)
           receive(message)
 
@@ -1301,8 +1301,8 @@ object Acp:
 
         val response: Optional[Json] =
           try dispatch(json) catch
-            case error: Json.Error => JsonRpc.failure(-32602, t"Invalid params", id)
-            case error: Exception  => JsonRpc.failure(-32603, t"Internal error", id)
+            case error: Json.Error => JsonRpc.failure(-32602, "Invalid params", id)
+            case error: Exception  => JsonRpc.failure(-32603, "Internal error", id)
 
         service.conclude(json, response).let(connection.put)
 
@@ -1323,7 +1323,7 @@ object Acp:
           safely(message.as[Json]).let: json =>
             Acp.method(json).lay(sessionDispatch(json) yet ()): method =>
               if sessionMethods.has(method) then
-                if method == t"session/update" then serve(sessionDispatch)(json)
+                if method == "session/update" then serve(sessionDispatch)(json)
                 else async(serve(sessionDispatch)(json)) yet ()
               else if fsMethods.has(method) then
                 async(serve(fsDispatch)(json)) yet ()
@@ -1333,7 +1333,7 @@ object Acp:
                 // A method this client does not model: a request is answered, so the agent never
                 // hangs, and a notification is ignored, as the protocol allows.
                 Acp.identifier(json).let: id =>
-                  connection.put(JsonRpc.failure(-32601, t"Method not found", id))
+                  connection.put(JsonRpc.failure(-32601, "Method not found", id))
 
       try lambda(connection) finally
         reader.cancel()

@@ -59,7 +59,7 @@ case class Dog(name: Text) extends Animal
 case object Cat extends Animal
 
 class Underived(val x: Int):
-  override def toString: String = ("Underived(": String)+x+")"
+  override def toString: String = s"Underived($x)"
 
 case class Holder(item: Underived, count: Int)
 
@@ -67,282 +67,282 @@ object Tests extends Suite(m"Spectacular Tests"):
   def run(): Unit =
     suite(m"Debug tests"):
       test(m"serialize boring string"):
-        t"Hello world!".inspect
-      . assert(_ == t"t\"Hello world!\"")
+        "Hello world!".inspect
+      . assert(_ == "t\"Hello world!\"")
 
       test(m"serialize string with newline"):
-        t"Hello\nworld".inspect
-      . assert(_ == t"t\"Hello\\nworld\"")
+        "Hello\nworld".inspect
+      . assert(_ == "t\"Hello\\nworld\"")
 
       test(m"serialize string with tab"):
-        t"Hello\tworld".inspect
-      . assert(_ == t"t\"Hello\\tworld\"")
+        "Hello\tworld".inspect
+      . assert(_ == "t\"Hello\\tworld\"")
 
       test(m"serialize string with apostrophe"):
-        t"Hell' world".inspect
-      . assert(_ == t"t\"Hell\\' world\"")
+        "Hell' world".inspect
+      . assert(_ == "t\"Hell\\' world\"")
 
       test(m"serialize string with quote"):
-        t"Hello \"world\"".inspect
-      . assert(_ == t"t\"Hello \\\"world\\\"\"")
+        "Hello \"world\"".inspect
+      . assert(_ == "t\"Hello \\\"world\\\"\"")
 
       test(m"serialize string with backslash"):
-        t"Hello\\world".inspect
-      . assert(_ == t"t\"Hello\\\\world\"")
+        "Hello\\world".inspect
+      . assert(_ == "t\"Hello\\\\world\"")
 
       test(m"serialize string with linefeed"):
-        t"Hello world\r".inspect
-      . assert(_ == t"t\"Hello world\\r\"")
+        "Hello world\r".inspect
+      . assert(_ == "t\"Hello world\\r\"")
 
       test(m"serialize string with unicode escapes"):
-        t"Hello мир".inspect
-      . assert(_ == t"t\"Hello \\u043c\\u0438\\u0440\"")
+        "Hello мир".inspect
+      . assert(_ == "t\"Hello \\u043c\\u0438\\u0440\"")
 
       test(m"pattern match on Text"):
-        var text = t"Hello"
+        var text: Text = "Hello"
         text match
-          case t"Hello" => true
+          case "Hello" => true
           case _        => false
       . assert(_ == true)
 
       test(m"pattern non-match on Text"):
-        var text = t"Hello"
+        var text: Text = "Hello"
         text match
-          case t"World" => true
+          case "World" => true
           case _        => false
       . assert(_ == false)
 
       test(m"serialize double"):
         3.1.inspect
-      . assert(_ == t"3.1")
+      . assert(_ == "3.1")
 
       test(m"serialize float"):
         3.1f.inspect
-      . assert(_ == t"3.1F")
+      . assert(_ == "3.1F")
 
       test(m"serialize long"):
         3L.inspect
-      . assert(_ == t"3L")
+      . assert(_ == "3L")
 
       test(m"serialize int"):
         3.inspect
-      . assert(_ == t"3")
+      . assert(_ == "3")
 
       test(m"serialize short"):
         3.toShort.inspect
-      . assert(_ == t"3.toShort")
+      . assert(_ == "3.toShort")
 
       test(m"serialize +infinity"):
         (1.0/0.0).inspect
-      . assert(_ == t"Double.PositiveInfinity")
+      . assert(_ == "Double.PositiveInfinity")
 
       test(m"serialize -infinity"):
         (-1.0/0.0).inspect
-      . assert(_ == t"Double.NegativeInfinity")
+      . assert(_ == "Double.NegativeInfinity")
 
       test(m"serialize NaN"):
         (0.0/0.0).inspect
-      . assert(_ == t"Double.NaN")
+      . assert(_ == "Double.NaN")
 
       test(m"serialize float +infinity"):
         (1.0F/0.0F).inspect
-      . assert(_ == t"Float.PositiveInfinity")
+      . assert(_ == "Float.PositiveInfinity")
 
       test(m"serialize float -infinity"):
         (-1.0F/0.0F).inspect
-      . assert(_ == t"Float.NegativeInfinity")
+      . assert(_ == "Float.NegativeInfinity")
 
       test(m"serialize float NaN"):
         (0.0F/0.0F).inspect
-      . assert(_ == t"Float.NaN")
+      . assert(_ == "Float.NaN")
 
       test(m"serialize tab char"):
         '\t'.inspect
-      . assert(_ == t"'\\t'")
+      . assert(_ == "'\\t'")
 
       test(m"serialize backslash char"):
         '\\'.inspect
-      . assert(_ == t"'\\\\'")
+      . assert(_ == "'\\\\'")
 
       test(m"serialize newline char"):
         '\n'.inspect
-      . assert(_ == t"'\\n'")
+      . assert(_ == "'\\n'")
 
       test(m"serialize backspace char"):
         '\b'.inspect
-      . assert(_ == t"'\\b'")
+      . assert(_ == "'\\b'")
 
       test(m"serialize unicode char"):
         '«'.inspect
-      . assert(_ == t"'\\u00ab'")
+      . assert(_ == "'\\u00ab'")
 
       test(m"serialize apostrophe char"):
         '\''.inspect
-      . assert(_ == t"'\\''")
+      . assert(_ == "'\\''")
 
       test(m"serialize quote char"):
         '\"'.inspect
-      . assert(_ == t"'\\\"'")
+      . assert(_ == "'\\\"'")
 
       test(m"serialize case class"):
-        Person(t"Simon", 72).inspect
-      . assert(_ == t"Person(name:t\"Simon\" ╱ age:72)")
+        Person("Simon", 72).inspect
+      . assert(_ == "Person(name:t\"Simon\" ╱ age:72)")
 
       test(m"serialize tuple"):
-        (t"Simon", 72).inspect
-      . assert(_ == t"(t\"Simon\" ╱ 72)")
+        ("Simon", 72).inspect
+      . assert(_ == "(t\"Simon\" ╱ 72)")
 
       test(m"serialize list of strings"):
         (List(t"one", t"two", t"three"): List[Text]).inspect
-      . assert(_ == t"""[t"one", t"two", t"three"]""")
+      . assert(_ == """[t"one", t"two", t"three"]""")
 
       test(m"serialize set of strings"):
-        Set(t"one", t"two", t"three").inspect
-      . assert(_ == t"""{t"one", t"two", t"three"}""")
+        Set("one", "two", "three").inspect
+      . assert(_ == """{t"one", t"two", t"three"}""")
 
       test(m"serialize Array of strings"):
         Inspectable.array[Text].text:
           java.util.Arrays
-          . copyOf(scala.Array(t"one", t"two", t"three").asInstanceOf[scala.Array[AnyRef | Null]], 3)
+          . copyOf(scala.Array("one", "two", "three").asInstanceOf[scala.Array[AnyRef | Null]], 3)
           . nn.asInstanceOf[scala.Array[Text]]
-      . assert(_ == t"""⦋🅻₀t"one"∣₁t"two"∣₂t"three"⦌""")
+      . assert(_ == """⦋🅻₀t"one"∣₁t"two"∣₂t"three"⦌""")
 
       test(m"serialize Array of ints"):
         Inspectable.array[Int].text(java.util.Arrays.copyOf(scala.Array(1, 2, 3), 3).nn.asInstanceOf[scala.Array[Int]])
-      . assert(_ == t"""⦋🅸₀1∣₁2∣₂3⦌""")
+      . assert(_ == """⦋🅸₀1∣₁2∣₂3⦌""")
 
       test(m"serialize Sequence of shorts"):
         Sequence(1.toShort, 2.toShort, 3.toShort).inspect
-      . assert(_ == t"""⟨ 1.toShort 2.toShort 3.toShort ⟩""")
+      . assert(_ == """⟨ 1.toShort 2.toShort 3.toShort ⟩""")
 
       test(m"serialize Array of Longs"):
         Inspectable.array[Long].text(java.util.Arrays.copyOf(scala.Array(1L, 2L, 3L), 3).nn.asInstanceOf[scala.Array[Long]])
-      . assert(_ == t"""⦋🅹₀1L∣₁2L∣₂3L⦌""")
+      . assert(_ == """⦋🅹₀1L∣₁2L∣₂3L⦌""")
 
       test(m"serialize frozen array of booleans"):
         Array(true, false, true).inspect
-      . assert(_ == t"""🆉⁅₀true╱₁false╱₂true⁆""")
+      . assert(_ == """🆉⁅₀true╱₁false╱₂true⁆""")
 
       test(m"serialize frozen array of strings"):
-        Array(t"one", t"two", t"three").inspect
-      . assert(_ == t"""🅻⁅₀t"one"╱₁t"two"╱₂t"three"⁆""")
+        Array("one", "two", "three").inspect
+      . assert(_ == """🅻⁅₀t"one"╱₁t"two"╱₂t"three"⁆""")
 
     suite(m"Derivation tests"):
       test(m"derive deeply-nested case class graph (issue #666)"):
         Depth0(Depth1(Depth2(Depth3(Depth4(Leaf(5), 4), 3), 2), 1), 0).inspect
-      . assert(_ == t"Depth0(child:Depth1(child:Depth2(child:Depth3(child:Depth4(leaf:Leaf(value:5) ╱ tag:4) ╱ tag:3) ╱ tag:2) ╱ tag:1) ╱ tag:0)")
+      . assert(_ == "Depth0(child:Depth1(child:Depth2(child:Depth3(child:Depth4(leaf:Leaf(value:5) ╱ tag:4) ╱ tag:3) ╱ tag:2) ╱ tag:1) ╱ tag:0)")
 
       test(m"derive recursive case class via collection field"):
         Branch(1, List(Branch(2, Nil), Branch(3, Nil))).inspect
-      . assert(_ == t"Branch(value:1 ╱ kids:[Branch(value:2 ╱ kids:[]), Branch(value:3 ╱ kids:[])])")
+      . assert(_ == "Branch(value:1 ╱ kids:[Branch(value:2 ╱ kids:[]), Branch(value:3 ╱ kids:[])])")
 
       test(m"derivable field with underivable leaf falls back to toString"):
         Holder(Underived(7), 3).inspect
-      . assert(_ == t"Holder(item:“Underived(7)” ╱ count:3)")
+      . assert(_ == "Holder(item:“Underived(7)” ╱ count:3)")
 
     suite(m"Primitive tests"):
       test(m"serialize boolean true"):
         true.inspect
-      . assert(_ == t"true")
+      . assert(_ == "true")
 
       test(m"serialize boolean false"):
         false.inspect
-      . assert(_ == t"false")
+      . assert(_ == "false")
 
       test(m"serialize byte"):
         3.toByte.inspect
-      . assert(_ == t"3.toByte")
+      . assert(_ == "3.toByte")
 
       test(m"serialize unit"):
         ().inspect
-      . assert(_ == t"()")
+      . assert(_ == "()")
 
       test(m"serialize BigInt"):
         BigInt(42).inspect
-      . assert(_ == t"BigInt(42)")
+      . assert(_ == "BigInt(42)")
 
       test(m"serialize BigDecimal"):
         BigDecimal("1.5").inspect
-      . assert(_ == t"BigDecimal(1.5)")
+      . assert(_ == "BigDecimal(1.5)")
 
       test(m"serialize int"):
         42.inspect
-      . assert(_ == t"42")
+      . assert(_ == "42")
 
       // `Self` is invariant, so an instance written against the bare type would not match a
       // singleton literal type, and the value would fall through to the `“…”` toString case.
       test(m"inspect a value typed as an integer literal"):
         val three: 3 = 3
         three.inspect
-      . assert(_ == t"3")
+      . assert(_ == "3")
 
       test(m"inspect a value typed as a character literal"):
         val char: 'x' = 'x'
         char.inspect
-      . assert(_ == t"'x'")
+      . assert(_ == "'x'")
 
       test(m"inspect a value typed as a boolean literal"):
         val yes: true = true
         yes.inspect
-      . assert(_ == t"true")
+      . assert(_ == "true")
 
     suite(m"Sized numeric tests"):
       test(m"inspect an unsigned byte"):
         U8(200.toByte.bits).inspect
-      . assert(_ == t"200ᵘ⁸")
+      . assert(_ == "200ᵘ⁸")
 
       test(m"inspect an unsigned 16-bit integer"):
         U16(40000.toShort.bits).inspect
-      . assert(_ == t"40000ᵘ¹⁶")
+      . assert(_ == "40000ᵘ¹⁶")
 
       test(m"inspect an unsigned 32-bit integer"):
         U32(7.bits).inspect
-      . assert(_ == t"7ᵘ³²")
+      . assert(_ == "7ᵘ³²")
 
       test(m"inspect an unsigned 64-bit integer"):
         U64(7L.bits).inspect
-      . assert(_ == t"7ᵘ⁶⁴")
+      . assert(_ == "7ᵘ⁶⁴")
 
       test(m"inspect a signed 32-bit integer"):
         S32(-7.bits).inspect
-      . assert(_ == t"-7ˢ³²")
+      . assert(_ == "-7ˢ³²")
 
       test(m"inspect a signed 64-bit integer"):
         S64(-7L.bits).inspect
-      . assert(_ == t"-7ˢ⁶⁴")
+      . assert(_ == "-7ˢ⁶⁴")
 
       test(m"inspect an 8-bit bitmap"):
         47.toByte.bits.inspect
-      . assert(_ == t"2Fᵇ⁸")
+      . assert(_ == "2Fᵇ⁸")
 
       test(m"inspect a 32-bit bitmap"):
         255.bits.inspect
-      . assert(_ == t"000000FFᵇ³²")
+      . assert(_ == "000000FFᵇ³²")
 
       test(m"inspect a 64-bit bitmap"):
         (-1L).bits.inspect
-      . assert(_ == t"FFFFFFFFFFFFFFFFᵇ⁶⁴")
+      . assert(_ == "FFFFFFFFFFFFFFFFᵇ⁶⁴")
 
       test(m"inspect a 64-bit floating-point number"):
         F64(3.5).inspect
-      . assert(_ == t"3.5ᶠ⁶⁴")
+      . assert(_ == "3.5ᶠ⁶⁴")
 
       test(m"inspect a floating-point infinity"):
         F64(Double.PositiveInfinity).inspect
-      . assert(_ == t"∞ᶠ⁶⁴")
+      . assert(_ == "∞ᶠ⁶⁴")
 
     suite(m"Quantity and message tests"):
       test(m"inspect a byte count"):
         Bytes(4194304L).inspect
-      . assert(_ == t"4194304B")
+      . assert(_ == "4194304B")
 
       test(m"inspect a digit"):
         Digit(7).inspect
-      . assert(_ == t"｢7ᵈᵍ｣")
+      . assert(_ == "｢7ᵈᵍ｣")
 
       test(m"inspect a message"):
         m"the file was not found".inspect
-      . assert(_ == t"m\"the file was not found\"")
+      . assert(_ == "m\"the file was not found\"")
 
     // A missing instance never fails to compile, so coverage can only be held in place by
     // asserting on the renderings themselves. Each of these lists the types a library owns;
@@ -350,7 +350,7 @@ object Tests extends Suite(m"Spectacular Tests"):
     suite(m"Native-rendering coverage"):
       test(m"the types spectacular renders itself all inspect natively"):
         Inspectable.fallbacks
-         ( t"text".inspect,
+         ( "text".inspect,
            'x'.inspect,
            42.inspect,
            42L.inspect,
@@ -368,7 +368,7 @@ object Tests extends Suite(m"Spectacular Tests"):
            Ordinal.zerary(0).inspect,
            Interval().inspect,
            Span.empty.inspect,
-           Person(t"Simon", 72).inspect,
+           Person("Simon", 72).inspect,
            Colour.Red.inspect,
            Shape.Circle(5).inspect )
       . assert(_ == Nil)
@@ -412,171 +412,171 @@ object Tests extends Suite(m"Spectacular Tests"):
     suite(m"Position tests"):
       test(m"inspect the first ordinal"):
         Ordinal.zerary(0).inspect
-      . assert(_ == t"1ˢᵗ")
+      . assert(_ == "1ˢᵗ")
 
       test(m"inspect the third ordinal"):
         Ordinal.zerary(2).inspect
-      . assert(_ == t"3ʳᵈ")
+      . assert(_ == "3ʳᵈ")
 
       test(m"inspect a teens ordinal"):
         Ordinal.zerary(10).inspect
-      . assert(_ == t"11ᵗʰ")
+      . assert(_ == "11ᵗʰ")
 
       test(m"inspect the twenty-first ordinal"):
         Ordinal.zerary(20).inspect
-      . assert(_ == t"21ˢᵗ")
+      . assert(_ == "21ˢᵗ")
 
       test(m"inspect an interval"):
         (Ordinal.zerary(0) thru Ordinal.zerary(4)).inspect
-      . assert(_ == t"1ˢᵗ‥5ᵗʰ")
+      . assert(_ == "1ˢᵗ‥5ᵗʰ")
 
       test(m"inspect an empty interval"):
         Interval().inspect
-      . assert(_ == t"∅")
+      . assert(_ == "∅")
 
       test(m"inspect an empty span"):
         Span.empty.inspect
-      . assert(_ == t"⟪∅⟫")
+      . assert(_ == "⟪∅⟫")
 
       test(m"inspect an offset span"):
         Span.offset(Ordinal.zerary(3), 5).inspect
-      . assert(_ == t"⟪@4+5⟫")
+      . assert(_ == "⟪@4+5⟫")
 
       test(m"inspect a line span"):
         Span.line(Ordinal.zerary(3), Ordinal.zerary(7), 5).inspect
-      . assert(_ == t"⟪4:8+5⟫")
+      . assert(_ == "⟪4:8+5⟫")
 
       test(m"inspect a whole-lines span"):
         Span.lines(Ordinal.zerary(3), 5).inspect
-      . assert(_ == t"⟪4‥8⟫")
+      . assert(_ == "⟪4‥8⟫")
 
       test(m"inspect an area span"):
         Span.area(Ordinal.zerary(3), Ordinal.zerary(7), Ordinal.zerary(5), Ordinal.zerary(1))
         . inspect
-      . assert(_ == t"⟪4:8‥6:2⟫")
+      . assert(_ == "⟪4:8‥6:2⟫")
 
     suite(m"Collection tests"):
       test(m"serialize map"):
         Map(1 -> 2, 3 -> 4).inspect
-      . assert(_ == t"{1 → 2, 3 → 4}")
+      . assert(_ == "{1 → 2, 3 → 4}")
 
       test(m"serialize map with string values"):
-        Map(t"a" -> 1).inspect
-      . assert(_ == t"""{t"a" → 1}""")
+        Map("a" -> 1).inspect
+      . assert(_ == """{t"a" → 1}""")
 
       test(m"serialize empty map"):
         Map[Int, Int]().inspect
-      . assert(_ == t"{}")
+      . assert(_ == "{}")
 
       test(m"serialize set of ints (no spurious optional wrapping)"):
         Set(1).inspect
-      . assert(_ == t"{1}")
+      . assert(_ == "{1}")
 
       test(m"serialize map of ints (no spurious optional wrapping)"):
         Map(1 -> 2).inspect
-      . assert(_ == t"{1 → 2}")
+      . assert(_ == "{1 → 2}")
 
       // Bracketed differently from a `Map`, whose entries have no significant order.
       test(m"serialize ledger"):
         Ledger(1 -> 2, 3 -> 4).inspect
-      . assert(_ == t"⟦1 → 2, 3 → 4⟧")
+      . assert(_ == "⟦1 → 2, 3 → 4⟧")
 
       test(m"a ledger keeps its insertion order"):
         Ledger(3 -> 4, 1 -> 2).inspect
-      . assert(_ == t"⟦3 → 4, 1 → 2⟧")
+      . assert(_ == "⟦3 → 4, 1 → 2⟧")
 
       // Raw `Vector` is not a `Sequence` (which is opaque) and matches no curated instance, so
       // it falls back to the quoted `toString` rendering; `Sequence` renders as `⟨ 1 2 3 ⟩`.
       test(m"serialize vector"):
         Vector(1, 2, 3).inspect
-      . assert(_ == t"“Vector(1, 2, 3)”")
+      . assert(_ == "“Vector(1, 2, 3)”")
 
       test(m"serialize sequence"):
         Sequence(1, 2, 3).inspect
-      . assert(_ == t"⟨ 1 2 3 ⟩")
+      . assert(_ == "⟨ 1 2 3 ⟩")
 
       test(m"serialize empty list"):
         List[Int]().inspect
-      . assert(_ == t"[]")
+      . assert(_ == "[]")
 
       test(m"serialize option some"):
         (Some(3): Option[Int]).inspect
-      . assert(_ == t"Some(3)")
+      . assert(_ == "Some(3)")
 
       test(m"serialize option none"):
         (None: Option[Int]).inspect
-      . assert(_ == t"None")
+      . assert(_ == "None")
 
       test(m"serialize nested options in list"):
         (List(Some(1), None): List[Option[Int]]).inspect
-      . assert(_ == t"[Some(1), None]")
+      . assert(_ == "[Some(1), None]")
 
     suite(m"Optional tests"):
       test(m"serialize set optional"):
         (5: Optional[Int]).inspect
-      . assert(_ == t"｢5｣")
+      . assert(_ == "｢5｣")
 
       test(m"serialize unset optional"):
         (Unset: Optional[Int]).inspect
-      . assert(_ == t"○")
+      . assert(_ == "○")
 
       test(m"serialize bare Unset"):
         Unset.inspect
-      . assert(_ == t"○")
+      . assert(_ == "○")
 
     suite(m"Sum-type derivation tests"):
       test(m"derive sealed trait product case"):
-        (Dog(t"Rex"): Animal).inspect
-      . assert(_ == t"""Dog(name:t"Rex")""")
+        (Dog("Rex"): Animal).inspect
+      . assert(_ == """Dog(name:t"Rex")""")
 
       test(m"derive sealed trait case object (no trailing parens)"):
         (Cat: Animal).inspect
-      . assert(_ == t"Cat")
+      . assert(_ == "Cat")
 
       test(m"derive case object directly"):
         Cat.inspect
-      . assert(_ == t"Cat")
+      . assert(_ == "Cat")
 
       test(m"inspect simple enum case"):
         Colour.Red.inspect
-      . assert(_ == t"Red")
+      . assert(_ == "Red")
 
       test(m"inspect parameterised enum case"):
         (Shape.Circle(5): Shape).inspect
-      . assert(_ == t"Circle(radius:5)")
+      . assert(_ == "Circle(radius:5)")
 
     suite(m"Show tests"):
       test(m"Show a string"):
-        t"Hello world".show
-      . assert(_ == t"Hello world")
+        "Hello world".show
+      . assert(_ == "Hello world")
 
       test(m"Show an Int"):
         43.show
-      . assert(_ == t"43")
+      . assert(_ == "43")
 
       test(m"Show yes/no booleans"):
         import affirmations.yesNoAffirmation
         t"${true} ${false}"
-      . assert(_ == t"yes no")
+      . assert(_ == "yes no")
 
       test(m"Show true/false booleans"):
         import affirmations.trueFalseAffirmation
         t"${true} ${false}"
-      . assert(_ == t"true false")
+      . assert(_ == "true false")
 
       test(m"Show on/off booleans"):
         import affirmations.onOffAffirmation
         t"${true} ${false}"
-      . assert(_ == t"on off")
+      . assert(_ == "on off")
 
       test(m"Show 1/0 booleans"):
         import affirmations.oneZeroAffirmation
         t"${true} ${false}"
-      . assert(_ == t"1 0")
+      . assert(_ == "1 0")
 
       // Inspection borrows the `Showable` rendering only as a last resort, and marks it as
       // borrowed: a human-facing form is not a debug form.
       test(m"Show a locally-declared showable"):
         given Exception is Showable = e => txt"<exception>"
         Exception("error message").inspect
-      . assert(_ == t"⸢<exception>⸣")
+      . assert(_ == "⸢<exception>⸣")

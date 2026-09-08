@@ -166,7 +166,7 @@ extends caps.ExclusiveCapability:
 
       def declaring(cls0: ReferenceTypeId): Optional[FieldId] =
         if cls0.empty then Unset else
-          connection.fields(cls0).seek(_.name == t"detailMessage").let(_.field).or:
+          connection.fields(cls0).seek(_.name == "detailMessage").let(_.field).or:
             declaring(connection.superclass(cls0))
 
       val message: Optional[Text] = declaring(cls).lay(Unset):
@@ -208,7 +208,7 @@ extends caps.ExclusiveCapability:
     val locals = table.lay(List[Variable]()): table =>
       val live = table.slots.filter: slot =>
         val index = location0.index
-        slot.name != t"this" && slot.index <= index && index < slot.index + slot.length
+        slot.name != "this" && slot.index <= index && index < slot.index + slot.length
 
       val requests: List[(Int, Jdwp.Tag)] =
         live.map: slot => (slot.slot, Variable.tag(slot.signature))
@@ -304,7 +304,7 @@ extends caps.ExclusiveCapability:
         val signature = connection.signature(cls)
 
         if signature.s.startsWith("Lscala/runtime/") && signature.s.endsWith("Ref;") then
-          val elem = connection.fields(cls).seek(_.name == t"elem")
+          val elem = connection.fields(cls).seek(_.name == "elem")
 
           elem.let: field =>
             connection.fieldValues(id, List(field.field)).prim.let: value0 =>
@@ -365,7 +365,7 @@ extends caps.ExclusiveCapability:
         val lazily: Optional[Text] = Variable.lazyField(name)
         val capture: Optional[Text] = Variable.captured(name)
 
-        if name == t"$$outer" then value match
+        if name == "$outer" then value match
           case Jdwp.Value.Reference(_, outer) if !outer.empty =>
             capturesOf(outer, path + List(name))
 

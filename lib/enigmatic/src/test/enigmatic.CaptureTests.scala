@@ -56,14 +56,14 @@ object CaptureTests extends Suite(m"Capability confinement tests"):
     test(m"uncloak still works as normal under capture checking"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"a roundtrip within uncloak compiles without errors"):
       demilitarize:
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         key.uncloak:
-          t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+          "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
     . assert(_ == Nil)
 
     test(m"the Encryptor capability cannot be returned from uncloak"):
@@ -83,13 +83,13 @@ object CaptureTests extends Suite(m"Capability confinement tests"):
       demilitarize:
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         val later = key.uncloak:
-          () => t"secret".encrypt(InitializationVector.random)
+          () => "secret".encrypt(InitializationVector.random)
     . assert(_.nonEmpty)
 
     test(m"a closure decrypting later cannot escape uncloak"):
       demilitarize:
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
-        val ciphertext = key.uncloak(t"secret".encrypt(InitializationVector.random))
+        val ciphertext = key.uncloak("secret".encrypt(InitializationVector.random))
         val later = key.uncloak(() => ciphertext.decrypt.as[Text])
     . assert(_.nonEmpty)
 
@@ -98,7 +98,7 @@ object CaptureTests extends Suite(m"Capability confinement tests"):
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         var stash: () => Unit = () => ()
         key.uncloak:
-          stash = () => { t"secret".encrypt(InitializationVector.random); () }
+          stash = () => { "secret".encrypt(InitializationVector.random); () }
       . map(_.message)
     . assert(_.exists(_.contains("is not included in the allowed capture set")))
 
@@ -111,36 +111,36 @@ object CaptureTests extends Suite(m"Capability confinement tests"):
       demilitarize:
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         val ciphertext = key.uncloak:
-          Chain(t"Hello world".in[Data]).encrypt(InitializationVector.random)
+          Chain("Hello world".in[Data]).encrypt(InitializationVector.random)
     . assert(_ == Nil)
 
     test(m"a password's cleartext is available within uncloak"):
-      Password(t"hunter2").uncloak(String(cleartext.chars).tt)
-    . assert(_ == t"hunter2")
+      Password("hunter2").uncloak(String(cleartext.chars).tt)
+    . assert(_ == "hunter2")
 
     test(m"the Cleartext capability cannot be returned from uncloak"):
       demilitarize:
-        val password = Password(t"hunter2")
+        val password = Password("hunter2")
         val stolen = password.uncloak(summon[Cleartext])
       . map(_.message)
     . assert(_.exists(_.contains("outlives its scope")))
 
     test(m"a closure reading the cleartext later cannot escape uncloak"):
       demilitarize:
-        val password = Password(t"hunter2")
+        val password = Password("hunter2")
         val later = password.uncloak(() => cleartext.chars)
     . assert(_.nonEmpty)
 
     test(m"a password never renders its secret"):
-      Password(t"hunter2").show
-    . assert(_ == t"Password(•••)")
+      Password("hunter2").show
+    . assert(_ == "Password(•••)")
 
     test(m"an off-heap-cloaked key round-trips under capture checking"):
       import cloaks.offHeapCloak
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"an off-heap-cloaked key cannot be ascribed a pure type"):
       demilitarize:

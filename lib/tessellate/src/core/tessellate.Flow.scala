@@ -121,7 +121,7 @@ object Flow:
   // word that still fits (with `hyphen` appended) is preferred; failing that, the line wraps
   // at the last space; failing that, the over-long word runs on beyond `width`.
   def wrap[textual: Textual { type Result = Char }]
-    ( content: textual, width: Int, hyphen: Text = t"-" )
+    ( content: textual, width: Int, hyphen: Text = "-" )
     ( using metric: Text is Measurable, hyphenation: Hyphenation )
   :   Sequence[textual] =
 
@@ -138,7 +138,7 @@ object Flow:
     def charStart(cluster: Int): Int = boundaries.readable(cluster)
 
     def segment(fromCluster: Int, toCluster: Int): textual =
-      if fromCluster == toCluster then textual(t"")
+      if fromCluster == toCluster then textual("")
       else content.segment(charStart(fromCluster).z thru charStart(toCluster).u)
 
     // A line as emitted: trailing spaces are dropped, as at a soft break. The walk skips
@@ -219,7 +219,7 @@ object Flow:
   // already fits is returned unchanged. Truncation is by cluster, so a wide character never
   // straddles the cut.
   def shorten[textual: Textual { type Result = Char }]
-    ( content: textual, width: Int, ellipsis: Text = t"…" )
+    ( content: textual, width: Int, ellipsis: Text = "…" )
     ( using metric: Text is Measurable )
   :   textual =
 
@@ -234,7 +234,7 @@ object Flow:
       while keep < boundaries.readable.length - 1 && widths.readable(keep + 1) <= room do keep += 1
 
       val kept =
-        if keep == 0 then textual(t"") else content.segment(0.z thru boundaries.readable(keep).u)
+        if keep == 0 then textual("") else content.segment(0.z thru boundaries.readable(keep).u)
 
       kept + textual(ellipsis)
 
@@ -244,7 +244,7 @@ object Flow:
     ( content:   textual,
       width:     Int,
       alignment: Alignment = Alignment.Left,
-      ellipsis:  Text = t"…",
+      ellipsis:  Text = "…",
       last:      Boolean = true )
     ( using metric: Text is Measurable )
   :   textual =

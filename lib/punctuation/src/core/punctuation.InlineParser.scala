@@ -251,7 +251,7 @@ private[punctuation] object InlineParser:
   :   Int =
 
     if brackets.isEmpty then
-      list.append(TextData(t"]"))
+      list.append(TextData("]"))
       return closePos + 1
 
     val entry = brackets.pop()
@@ -259,7 +259,7 @@ private[punctuation] object InlineParser:
     if !entry.active then
       // Inactive marker: leave bracket node (renders as literal `[`/`![`),
       // emit literal `]`
-      list.append(TextData(t"]"))
+      list.append(TextData("]"))
       return closePos + 1
 
     // Try to match link/image syntax starting at the character after `]`
@@ -298,7 +298,7 @@ private[punctuation] object InlineParser:
       case _ =>
         // No link match: leave bracket node in place (its data renders as the
         // literal `[` or `![`); emit `]` as text
-        list.append(TextData(t"]"))
+        list.append(TextData("]"))
         afterClose
 
 

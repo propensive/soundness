@@ -70,7 +70,7 @@ import Tel.given
 
 object Tests extends Suite(m"Stratiform Tests"):
   case class Person(name: Text, age: Int) derives CanEqual
-  case class Renamed(@name[Tel](t"full_name") fullName: Text, @name(t"yob") year: Int)
+  case class Renamed(@name[Tel]("full_name") fullName: Text, @name("yob") year: Int)
   derives CanEqual
   case class PersonAge(name: Text, age: Int) derives CanEqual
   case class Team(name: Text, members: List[Person]) derives CanEqual
@@ -121,11 +121,11 @@ object Tests extends Suite(m"Stratiform Tests"):
     // asserting on the renderings: `fallbacks` returns those which used a marked fallback.
     suite(m"Native-rendering coverage"):
       test(m"a Tel document inspects on one line, with its breaks escaped"):
-        t"name Jane\n".read[Tel].inspect
-      . assert(_ == t"tel\"name Jane\\n\"")
+        "name Jane\n".read[Tel].inspect
+      . assert(_ == "tel\"name Jane\\n\"")
 
       test(m"stratiform's types inspect natively"):
-        Inspectable.fallbacks(t"name Jane\n".read[Tel].inspect, Tel.empty.inspect)
+        Inspectable.fallbacks("name Jane\n".read[Tel].inspect, Tel.empty.inspect)
       . assert(_ == Nil)
 
     // Positive fixtures whose reference dump differs from this implementation's
@@ -159,27 +159,27 @@ object Tests extends Suite(m"Stratiform Tests"):
       // blanks are preserved as a blank-only block, so these documents must
       // round-trip byte-for-byte.
       test(m"a blank line before a first child round-trips byte-for-byte"):
-        t"parent\n\n  child\n".read[Tel].show
-      . assert(_ == t"parent\n\n  child\n")
+        "parent\n\n  child\n".read[Tel].show
+      . assert(_ == "parent\n\n  child\n")
 
       test(m"a blank line before a deeper comment round-trips byte-for-byte"):
-        t"parent\n\n  # note\n  child\n".read[Tel].show
-      . assert(_ == t"parent\n\n  # note\n  child\n")
+        "parent\n\n  # note\n  child\n".read[Tel].show
+      . assert(_ == "parent\n\n  # note\n  child\n")
 
       test(m"a blank line before a grandchild round-trips byte-for-byte"):
-        t"parent\n  a\n\n    b\n".read[Tel].show
-      . assert(_ == t"parent\n  a\n\n    b\n")
+        "parent\n  a\n\n    b\n".read[Tel].show
+      . assert(_ == "parent\n  a\n\n    b\n")
 
       test(m"two blank lines before a first child round-trip byte-for-byte"):
-        t"parent\n\n\n  child\n".read[Tel].show
-      . assert(_ == t"parent\n\n\n  child\n")
+        "parent\n\n\n  child\n".read[Tel].show
+      . assert(_ == "parent\n\n\n  child\n")
 
       test(m"a blank line before an over-indented line fails fast with E111"):
-        capture[Tel.Error](t"parent\n\n    too-deep\n".read[Tel]).reason.number
+        capture[Tel.Error]("parent\n\n    too-deep\n".read[Tel]).reason.number
       . assert(_ == 111)
 
       test(m"the streaming parser agrees on a blank-then-deeper document"):
-        val source = t"parent\n\n  child value\n"
+        val source = "parent\n\n  child value\n"
         val bytes: Data = summon[CharEncoder].encoded(source)
         TelCheckTree.of(Tel.make(Tel.Parser.parse(Cursor[Data](bytes))))
         == TelCheckTree.of(source.read[Tel])
@@ -281,32 +281,32 @@ object Tests extends Suite(m"Stratiform Tests"):
         . assert(_ == CheckFormat.parseStream(testcase.check).map(_.tree))
 
       test(m"two documents yield a list of two"):
-        CorpusLoader.caseByStem(t"stream", t"two-documents").source.read[List[Tel]].stdlib.length
+        CorpusLoader.caseByStem("stream", "two-documents").source.read[List[Tel]].stdlib.length
       . assert(_ == 2)
 
       test(m"a trailing separator yields no empty trailing document"):
-        CorpusLoader.caseByStem(t"stream", t"trailing-separator").source.read[List[Tel]].stdlib.length
+        CorpusLoader.caseByStem("stream", "trailing-separator").source.read[List[Tel]].stdlib.length
       . assert(_ == 1)
 
       test(m"two consecutive separators yield an empty document between them"):
-        CorpusLoader.caseByStem(t"stream", t"empty-between").source.read[List[Tel]].stdlib.length
+        CorpusLoader.caseByStem("stream", "empty-between").source.read[List[Tel]].stdlib.length
       . assert(_ == 3)
 
       test(m"a malformed document in a stream raises (fail-fast)"):
         // The second document has an odd indentation (E107); reading the whole
         // list eagerly surfaces it.
-        capture[Tel.Error](t"a 1\n##\nparent\n   bad".read[List[Tel]]).reason.number
+        capture[Tel.Error]("a 1\n##\nparent\n   bad".read[List[Tel]]).reason.number
       . assert(_ == 107)
 
       test(m"read[Chain[Tel]] is lazy past a malformed later document"):
-        val source = t"first ok\n##\nparent\n   bad"
+        val source = "first ok\n##\nparent\n   bad"
         TelCheckTree.of(source.read[Chain[Tel]].stdlib.head)
       . assert(_ == TelCheckTree.of(t"first ok".read[Tel]))
 
     suite(m"Encode/decode primitives"):
       test(m"Text round-trip"):
-        t"hello".encode.as[Text]
-      . assert(_ == t"hello")
+        "hello".encode.as[Text]
+      . assert(_ == "hello")
 
       test(m"Int round-trip"):
         42.encode.as[Int]
@@ -322,28 +322,28 @@ object Tests extends Suite(m"Stratiform Tests"):
 
     suite(m"Wisteria derivation"):
       test(m"case class round-trip"):
-        Tests.Person(t"Alice", 30).encode.as[Tests.Person]
-      . assert(_ == Tests.Person(t"Alice", 30))
+        Tests.Person("Alice", 30).encode.as[Tests.Person]
+      . assert(_ == Tests.Person("Alice", 30))
 
       test(m"@name[Tel] keyword is used verbatim (overriding camel→kebab)"):
-        t"full_name Ann\nyob 1984\n".read[Tel].as[Tests.Renamed]
-      . assert(_ == Tests.Renamed(t"Ann", 1984))
+        "full_name Ann\nyob 1984\n".read[Tel].as[Tests.Renamed]
+      . assert(_ == Tests.Renamed("Ann", 1984))
 
       test(m"@name renames round-trip"):
-        Tests.Renamed(t"Ann", 1984).encode.as[Tests.Renamed]
-      . assert(_ == Tests.Renamed(t"Ann", 1984))
+        Tests.Renamed("Ann", 1984).encode.as[Tests.Renamed]
+      . assert(_ == Tests.Renamed("Ann", 1984))
 
       test(m"a List field encodes as one repeated compound per element"):
-        val team = Tests.Team(t"Reds", List(Tests.Person(t"Alice", 30), Tests.Person(t"Bob", 25)))
-        team.encode.childCompounds.filter(_.keyword == t"members").readable.length
+        val team = Tests.Team("Reds", List(Tests.Person(t"Alice", 30), Tests.Person(t"Bob", 25)))
+        team.encode.childCompounds.filter(_.keyword == "members").readable.length
       . assert(_ == 2)
 
       test(m"an empty List field encodes as no compounds"):
-        Tests.Team(t"Reds", Nil).encode.childCompounds.filter(_.keyword == t"members").readable.length
+        Tests.Team("Reds", Nil).encode.childCompounds.filter(_.keyword == "members").readable.length
       . assert(_ == 0)
 
       test(m"an unset Optional field encodes as no compounds"):
-        Tests.OptField(7, Unset).encode.childCompounds.filter(_.keyword == t"note").readable.length
+        Tests.OptField(7, Unset).encode.childCompounds.filter(_.keyword == "note").readable.length
       . assert(_ == 0)
 
       test(m"an unset Optional field round-trips as Unset through the text format"):
@@ -351,13 +351,13 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Tests.OptField(7, Unset))
 
       test(m"a present empty Optional field round-trips as empty text"):
-        Tests.OptField(7, t"").encode.as[Tests.OptField]
-      . assert(_ == Tests.OptField(7, t""))
+        Tests.OptField(7, "").encode.as[Tests.OptField]
+      . assert(_ == Tests.OptField(7, ""))
 
       test(m"a sum encodes its variant as a child keyed by the variant name"):
         val shape: Tests.Shape2 = Tests.Shape2.Circle(7)
         shape.encode.childCompounds.readable.head.keyword
-      . assert(_ == t"circle")
+      . assert(_ == "circle")
 
       test(m"a single-field sum variant round-trips"):
         val shape: Tests.Shape2 = Tests.Shape2.Circle(7)
@@ -375,11 +375,11 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Tests.Shape2.Dot)
 
       test(m"decoding a sum from an empty node raises Absent, not a crash"):
-        capture[Tel.Error](t"\n".read[Tel].as[Tests.Shape2]).reason
+        capture[Tel.Error]("\n".read[Tel].as[Tests.Shape2]).reason
       . assert(_ == Tel.Error.Reason.Absent)
 
       val tree =
-        Tests.Tree(t"root", List(Tests.Tree(t"a", Nil),
+        Tests.Tree("root", List(Tests.Tree(t"a", Nil),
             Tests.Tree(t"b", List(Tests.Tree(t"c", Nil)))))
 
       test(m"a type recursive through a List round-trips"):
@@ -387,9 +387,9 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == tree)
 
       test(m"a directly-recursive type via Optional round-trips"):
-        val value = Tests.TreeOpt(t"a", Tests.TreeOpt(t"b", Unset))
+        val value = Tests.TreeOpt("a", Tests.TreeOpt("b", Unset))
         value.encode.as[Tests.TreeOpt]
-      . assert(_ == Tests.TreeOpt(t"a", Tests.TreeOpt(t"b", Unset)))
+      . assert(_ == Tests.TreeOpt("a", Tests.TreeOpt("b", Unset)))
 
       test(m"a generic product over a recursive type stays structurally derived"):
         Tests.Boxed(tree).encode.as[Tests.Boxed[Tests.Tree]]
@@ -401,27 +401,27 @@ object Tests extends Suite(m"Stratiform Tests"):
 
     suite(m"sum-type schema derivation"):
       test(m"a sum derives a select with one variant per case"):
-        Tels.tels[Tests.Shape2](t"shape").selects.bind(_.variants).readable.map(_.keyword).to(List)
+        Tels.tels[Tests.Shape2]("shape").selects.bind(_.variants).readable.map(_.keyword).to(List)
       . assert(_ == List(t"circle", t"rectangle", t"dot"))
 
       test(m"each variant's fields are derived into its struct"):
-        val select = Tels.tels[Tests.Shape2](t"shape").selects.readable.head
-        select.variants.readable.find(_.keyword == t"rectangle").get.variantType match
+        val select = Tels.tels[Tests.Shape2]("shape").selects.readable.head
+        select.variants.readable.find(_.keyword == "rectangle").get.variantType match
           case struct: Tels.Struct => struct.members.readable.length
           case _                   => -1
       . assert(_ == 2)
 
       test(m"the document root references the select"):
-        Tels.tels[Tests.Shape2](t"shape").document.members.readable.map:
+        Tels.tels[Tests.Shape2]("shape").document.members.readable.map:
           case ref: Tels.SelectRef => ref.reference
-          case _                   => t""
+          case _                   => ""
         . to(List)
       . assert(_ == List(t"Shape2"))
 
     suite(m"`in Tel` decoder shorthand"):
       test(m"`read[T in Tel]` resolves a value directly from text"):
-        t"name Alice\nage 30\n".read[Tests.Person in Tel]
-      . assert(_ == Tests.Person(t"Alice", 30))
+        "name Alice\nage 30\n".read[Tests.Person in Tel]
+      . assert(_ == Tests.Person("Alice", 30))
 
     suite(m"Direct parsing tests"):
       given Tests.Person is Tel.Parsable = Tel.Parsable.derived
@@ -441,101 +441,101 @@ object Tests extends Suite(m"Stratiform Tests"):
         tel.read[value in Tel] == tel.read[Tel].as[value]
 
       test(m"Derive a direct product parser"):
-        t"name Alice\nage 30\n".read[Tests.Person in Tel]
-      . assert(_ == Tests.Person(t"Alice", 30))
+        "name Alice\nage 30\n".read[Tests.Person in Tel]
+      . assert(_ == Tests.Person("Alice", 30))
 
       test(m"Derived parser accepts reordered fields, equally on both paths"):
-        parity[Tests.Person](t"age 30\nname Alice\n")
+        parity[Tests.Person]("age 30\nname Alice\n")
       . assert(identity)
 
       test(m"Field names map to kebab-case keywords"):
-        t"first-name Jo\nshoe-size 9\n".read[Tests.KebabRecord in Tel]
-      . assert(_ == Tests.KebabRecord(t"Jo", 9))
+        "first-name Jo\nshoe-size 9\n".read[Tests.KebabRecord in Tel]
+      . assert(_ == Tests.KebabRecord("Jo", 9))
 
       test(m"@name renames apply to direct parsing"):
-        parity[Tests.Renamed](t"full_name Jon\nyob 1983\n")
+        parity[Tests.Renamed]("full_name Jon\nyob 1983\n")
       . assert(identity)
 
       test(m"A missing field takes the declared default"):
-        t"name Kid\n".read[Tests.WithDefault in Tel]
-      . assert(_ == Tests.WithDefault(t"Kid", 18))
+        "name Kid\n".read[Tests.WithDefault in Tel]
+      . assert(_ == Tests.WithDefault("Kid", 18))
 
       test(m"A missing required field raises Tel.Error Absent"):
-        capture[Tel.Error](t"age 30\n".read[Tests.Person in Tel]).reason
+        capture[Tel.Error]("age 30\n".read[Tests.Person in Tel]).reason
       . assert(_ == Tel.Error.Reason.Absent)
 
       test(m"A repeatable field gathers scattered occurrences, as on the AST path"):
-        val doc = t"members\n  name Amy\n  age 1\nname Alpha\nmembers\n  name Bea\n  age 2\n"
+        val doc = "members\n  name Amy\n  age 1\nname Alpha\nmembers\n  name Bea\n  age 2\n"
         (doc.read[Tests.Team in Tel], parity[Tests.Team](doc))
-      . assert(_ == (Tests.Team(t"Alpha", List(Tests.Person(t"Amy", 1), Tests.Person(t"Bea", 2))),
+      . assert(_ == (Tests.Team("Alpha", List(Tests.Person(t"Amy", 1), Tests.Person(t"Bea", 2))),
           true))
 
       test(m"A duplicate non-repeatable keyword keeps the first match, as on the AST path"):
-        val doc = t"name Amy\nname Bea\nage 50\n"
+        val doc = "name Amy\nname Bea\nage 50\n"
         (doc.read[Tests.Person in Tel], parity[Tests.Person](doc))
-      . assert(_ == (Tests.Person(t"Amy", 50), true))
+      . assert(_ == (Tests.Person("Amy", 50), true))
 
       test(m"Nested records parse directly"):
-        val doc = t"title Acme\nboss\n  name Bob\n  age 40\n"
+        val doc = "title Acme\nboss\n  name Bob\n  age 40\n"
         (doc.read[Tests.Company in Tel], parity[Tests.Company](doc))
-      . assert(_ == (Tests.Company(t"Acme", Tests.Person(t"Bob", 40)), true))
+      . assert(_ == (Tests.Company("Acme", Tests.Person("Bob", 40)), true))
 
       test(m"A blank line before a nested record's children parses directly (#1834)"):
-        val doc = t"title Acme\nboss\n\n  name Bob\n  age 40\n"
+        val doc = "title Acme\nboss\n\n  name Bob\n  age 40\n"
         (doc.read[Tests.Company in Tel], parity[Tests.Company](doc))
-      . assert(_ == (Tests.Company(t"Acme", Tests.Person(t"Bob", 40)), true))
+      . assert(_ == (Tests.Company("Acme", Tests.Person("Bob", 40)), true))
 
       test(m"An absent Optional field reads as Unset, equally on both paths"):
-        val doc = t"x 1\n"
+        val doc = "x 1\n"
         (doc.read[Tests.OptField in Tel], parity[Tests.OptField](doc))
       . assert(_ == (Tests.OptField(1, Unset), true))
 
       test(m"A present Optional field reads its value, equally on both paths"):
-        val doc = t"x 1\nnote hello\n"
+        val doc = "x 1\nnote hello\n"
         (doc.read[Tests.OptField in Tel], parity[Tests.OptField](doc))
-      . assert(_ == (Tests.OptField(1, t"hello"), true))
+      . assert(_ == (Tests.OptField(1, "hello"), true))
 
       test(m"A source atom supplies a scalar field, equally on both paths"):
-        val doc = t"name\n    Alice\n    Smith\nage 30\n"
+        val doc = "name\n    Alice\n    Smith\nage 30\n"
         (doc.read[Tests.Person in Tel], parity[Tests.Person](doc))
-      . assert(_ == (Tests.Person(t"Alice\nSmith", 30), true))
+      . assert(_ == (Tests.Person("Alice\nSmith", 30), true))
 
       test(m"A literal atom supplies a scalar field, equally on both paths"):
-        val doc = t"name\n      ---\nAlice  Smith\n      ---\nage 30\n"
+        val doc = "name\n      ---\nAlice  Smith\n      ---\nage 30\n"
         (doc.read[Tests.Person in Tel], parity[Tests.Person](doc))
-      . assert(_ == (Tests.Person(t"Alice  Smith", 30), true))
+      . assert(_ == (Tests.Person("Alice  Smith", 30), true))
 
       test(m"A source atom supplies a numeric field, equally on both paths"):
-        val doc = t"name Amy\nage\n    30\n"
+        val doc = "name Amy\nage\n    30\n"
         (doc.read[Tests.Person in Tel], parity[Tests.Person](doc))
-      . assert(_ == (Tests.Person(t"Amy", 30), true))
+      . assert(_ == (Tests.Person("Amy", 30), true))
 
       test(m"A source atom gives an Optional field substance, equally on both paths"):
-        val doc = t"x 1\nnote\n    hello there\n"
+        val doc = "x 1\nnote\n    hello there\n"
         (doc.read[Tests.OptField in Tel], parity[Tests.OptField](doc))
-      . assert(_ == (Tests.OptField(1, t"hello there"), true))
+      . assert(_ == (Tests.OptField(1, "hello there"), true))
 
       test(m"Unknown keywords are skipped, including their child subtrees"):
-        t"name Amy\nextra one two\n  deep 1\n  deeper\n    x 9\nage 50\n"
+        "name Amy\nextra one two\n  deep 1\n  deeper\n    x 9\nage 50\n"
         . read[Tests.Person in Tel]
-      . assert(_ == Tests.Person(t"Amy", 50))
+      . assert(_ == Tests.Person("Amy", 50))
 
       test(m"Comments and blank lines between fields are transparent"):
-        parity[Tests.Person](t"# leading\nname Amy\n\n# interlude\nage 50\n")
+        parity[Tests.Person]("# leading\nname Amy\n\n# interlude\nage 50\n")
       . assert(identity)
 
       test(m"Recursive types parse directly"):
-        val doc = t"value a\nchildren\n  value b\nchildren\n  value c\n"
+        val doc = "value a\nchildren\n  value b\nchildren\n  value c\n"
         (doc.read[Tests.Tree in Tel], parity[Tests.Tree](doc))
-      . assert(_ == (Tests.Tree(t"a", List(Tests.Tree(t"b", Nil), Tests.Tree(t"c", Nil))), true))
+      . assert(_ == (Tests.Tree("a", List(Tests.Tree(t"b", Nil), Tests.Tree(t"c", Nil))), true))
 
       test(m"Recursion through an Optional parses directly"):
-        val doc = t"value a\nchild\n  value b\n"
+        val doc = "value a\nchild\n  value b\n"
         (doc.read[Tests.TreeOpt in Tel], parity[Tests.TreeOpt](doc))
-      . assert(_ == (Tests.TreeOpt(t"a", Tests.TreeOpt(t"b", Unset)), true))
+      . assert(_ == (Tests.TreeOpt("a", Tests.TreeOpt("b", Unset)), true))
 
       test(m"A top-level collection reads every entry as an element"):
-        val doc = t"p\n  name Amy\n  age 1\nq\n  name Bea\n  age 2\n"
+        val doc = "p\n  name Amy\n  age 1\nq\n  name Bea\n  age 2\n"
         (doc.read[List[Tests.Person] in Tel], parity[List[Tests.Person]](doc))
       . assert(_ == (List(Tests.Person(t"Amy", 1), Tests.Person(t"Bea", 2)), true))
 
@@ -550,9 +550,9 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         given Tests.Crew is Tel.Parsable = Tel.Parsable.derived
 
-        val doc = t"worker Syd\nsize 3\n"
+        val doc = "worker Syd\nsize 3\n"
         (doc.read[Tests.Crew in Tel], parity[Tests.Crew](doc))
-      . assert(_ == (Tests.Crew(Tests.Worker(t"Syd", 0), 3), true))
+      . assert(_ == (Tests.Crew(Tests.Worker("Syd", 0), 3), true))
 
     suite(m"Staged direct parsing tests"):
       given Tests.Person is Tel.Parsable = Tel.Parsable.staged
@@ -572,100 +572,100 @@ object Tests extends Suite(m"Stratiform Tests"):
         tel.read[value in Tel] == tel.read[Tel].as[value]
 
       test(m"A staged parser reads a simple record"):
-        t"name Alice\nage 30\n".read[Tests.Person in Tel]
-      . assert(_ == Tests.Person(t"Alice", 30))
+        "name Alice\nage 30\n".read[Tests.Person in Tel]
+      . assert(_ == Tests.Person("Alice", 30))
 
       test(m"A staged parser accepts reordered fields, equally on both paths"):
-        parity[Tests.Person](t"age 30\nname Alice\n")
+        parity[Tests.Person]("age 30\nname Alice\n")
       . assert(identity)
 
       test(m"Staged field names map to kebab-case keywords"):
-        t"first-name Jo\nshoe-size 9\n".read[Tests.KebabRecord in Tel]
-      . assert(_ == Tests.KebabRecord(t"Jo", 9))
+        "first-name Jo\nshoe-size 9\n".read[Tests.KebabRecord in Tel]
+      . assert(_ == Tests.KebabRecord("Jo", 9))
 
       test(m"@name renames apply to staged parsing"):
-        parity[Tests.Renamed](t"full_name Jon\nyob 1983\n")
+        parity[Tests.Renamed]("full_name Jon\nyob 1983\n")
       . assert(identity)
 
       test(m"A staged parser takes declared defaults"):
-        t"name Kid\n".read[Tests.WithDefault in Tel]
-      . assert(_ == Tests.WithDefault(t"Kid", 18))
+        "name Kid\n".read[Tests.WithDefault in Tel]
+      . assert(_ == Tests.WithDefault("Kid", 18))
 
       test(m"A staged parser raises Tel.Error Absent for missing required fields"):
-        capture[Tel.Error](t"age 30\n".read[Tests.Person in Tel]).reason
+        capture[Tel.Error]("age 30\n".read[Tests.Person in Tel]).reason
       . assert(_ == Tel.Error.Reason.Absent)
 
       test(m"A staged parser gathers a repeatable field's scattered occurrences"):
-        val doc = t"members\n  name Amy\n  age 1\nname Alpha\nmembers\n  name Bea\n  age 2\n"
+        val doc = "members\n  name Amy\n  age 1\nname Alpha\nmembers\n  name Bea\n  age 2\n"
         (doc.read[Tests.Team in Tel], parity[Tests.Team](doc))
-      . assert(_ == (Tests.Team(t"Alpha", List(Tests.Person(t"Amy", 1), Tests.Person(t"Bea", 2))),
+      . assert(_ == (Tests.Team("Alpha", List(Tests.Person(t"Amy", 1), Tests.Person(t"Bea", 2))),
           true))
 
       test(m"A staged parser keeps the first match of a duplicate keyword"):
-        val doc = t"name Amy\nname Bea\nage 50\n"
+        val doc = "name Amy\nname Bea\nage 50\n"
         (doc.read[Tests.Person in Tel], parity[Tests.Person](doc))
-      . assert(_ == (Tests.Person(t"Amy", 50), true))
+      . assert(_ == (Tests.Person("Amy", 50), true))
 
       test(m"Nested records parse through sibling staged instances"):
-        val doc = t"title Acme\nboss\n  name Bob\n  age 40\n"
+        val doc = "title Acme\nboss\n  name Bob\n  age 40\n"
         (doc.read[Tests.Company in Tel], parity[Tests.Company](doc))
-      . assert(_ == (Tests.Company(t"Acme", Tests.Person(t"Bob", 40)), true))
+      . assert(_ == (Tests.Company("Acme", Tests.Person("Bob", 40)), true))
 
       test(m"A staged parser reads absent and present Optional fields"):
-        ( t"x 1\n".read[Tests.OptField in Tel],
-          t"x 1\nnote hello\n".read[Tests.OptField in Tel] )
-      . assert(_ == (Tests.OptField(1, Unset), Tests.OptField(1, t"hello")))
+        ( "x 1\n".read[Tests.OptField in Tel],
+          "x 1\nnote hello\n".read[Tests.OptField in Tel] )
+      . assert(_ == (Tests.OptField(1, Unset), Tests.OptField(1, "hello")))
 
       test(m"A staged parser skips unknown keywords with their subtrees"):
-        t"name Amy\nextra one two\n  deep 1\n  deeper\n    x 9\nage 50\n"
+        "name Amy\nextra one two\n  deep 1\n  deeper\n    x 9\nage 50\n"
         . read[Tests.Person in Tel]
-      . assert(_ == Tests.Person(t"Amy", 50))
+      . assert(_ == Tests.Person("Amy", 50))
 
       test(m"Comments and blank lines are transparent to a staged parser"):
-        parity[Tests.Person](t"# leading\nname Amy\n\n# interlude\nage 50\n")
+        parity[Tests.Person]("# leading\nname Amy\n\n# interlude\nage 50\n")
       . assert(identity)
 
       test(m"Recursive types parse through a staged instance"):
-        val doc = t"value a\nchildren\n  value b\nchildren\n  value c\n"
+        val doc = "value a\nchildren\n  value b\nchildren\n  value c\n"
         (doc.read[Tests.Tree in Tel], parity[Tests.Tree](doc))
-      . assert(_ == (Tests.Tree(t"a", List(Tests.Tree(t"b", Nil), Tests.Tree(t"c", Nil))), true))
+      . assert(_ == (Tests.Tree("a", List(Tests.Tree(t"b", Nil), Tests.Tree(t"c", Nil))), true))
 
       test(m"Recursion through an Optional parses through a staged instance"):
-        val doc = t"value a\nchild\n  value b\n"
+        val doc = "value a\nchild\n  value b\n"
         (doc.read[Tests.TreeOpt in Tel], parity[Tests.TreeOpt](doc))
-      . assert(_ == (Tests.TreeOpt(t"a", Tests.TreeOpt(t"b", Unset)), true))
+      . assert(_ == (Tests.TreeOpt("a", Tests.TreeOpt("b", Unset)), true))
 
       test(m"A top-level collection reads staged elements"):
-        val doc = t"p\n  name Amy\n  age 1\nq\n  name Bea\n  age 2\n"
+        val doc = "p\n  name Amy\n  age 1\nq\n  name Bea\n  age 2\n"
         (doc.read[List[Tests.Person] in Tel], parity[List[Tests.Person]](doc))
       . assert(_ == (List(Tests.Person(t"Amy", 1), Tests.Person(t"Bea", 2)), true))
 
       test(m"A keyword longer than eight bytes dispatches through the text step"):
         // `first-name` cannot pack into a single word, so it exercises the
         // `KeywordOpaque` fallback; `shoe-size` stays on the packed chain.
-        parity[Tests.KebabRecord](t"shoe-size 9\nfirst-name Jo\n")
+        parity[Tests.KebabRecord]("shoe-size 9\nfirst-name Jo\n")
       . assert(identity)
 
     suite(m"tel\"…\" interpolator"):
       test(m"simple literal"):
         val parsed = tel"hello"
-        parsed.childCompounds.readable.headOption.map(_.keyword).getOrElse(t"")
-      . assert(_ == t"hello")
+        parsed.childCompounds.readable.headOption.map(_.keyword).getOrElse("")
+      . assert(_ == "hello")
 
       test(m"keyword with atom and hole"):
-        val alice = t"Alice"
+        val alice = "Alice"
         val parsed = tel"name $alice"
         parsed.childCompounds.readable.headOption.map(c =>
-          (c.keyword, c.atoms.readable.collect { case Tel.Atom.Inline(t, _) => t }.headOption.getOrElse(t"")))
-          .getOrElse((t"", t""))
-      . assert(_ == (t"name", t"Alice"))
+          (c.keyword, c.atoms.readable.collect { case Tel.Atom.Inline(t, _) => t }.headOption.getOrElse("")))
+          .getOrElse(("", ""))
+      . assert(_ == ("name", "Alice"))
 
       test(m"multi-line tel literal parses"):
         val parsed = tel"""parent
   child
 """
-        parsed.childCompounds.readable.headOption.map(_.keyword).getOrElse(t"")
-      . assert(_ == t"parent")
+        parsed.childCompounds.readable.headOption.map(_.keyword).getOrElse("")
+      . assert(_ == "parent")
 
     suite(m"tel\"…\" extractor"):
       test(m"literal pattern matches"):
@@ -686,30 +686,30 @@ object Tests extends Suite(m"Stratiform Tests"):
         val input = tel"name Alice"
         input match
           case tel"name $name" => name.primaryAtom
-          case _               => t""
-      . assert(_ == t"Alice")
+          case _               => ""
+      . assert(_ == "Alice")
 
       test(m"two captures across separate atoms"):
         val input = tel"contact Alice alice@example.com"
         input match
           case tel"contact $name $email" => (name.primaryAtom, email.primaryAtom)
-          case _                          => (t"", t"")
-      . assert(_ == (t"Alice", t"alice@example.com"))
+          case _                          => ("", "")
+      . assert(_ == ("Alice", "alice@example.com"))
 
       test(m"multiple captures within a single atom — split on hyphen"):
         val input = tel"item foo-bar"
         input match
           case tel"item $prefix-$suffix" => (prefix.primaryAtom, suffix.primaryAtom)
-          case _                          => (t"", t"")
-      . assert(_ == (t"foo", t"bar"))
+          case _                          => ("", "")
+      . assert(_ == ("foo", "bar"))
 
       test(m"three captures within a single atom — split on dots"):
         val input = tel"version 1.2.3"
         input match
           case tel"version $major.$minor.$patch" =>
             (major.primaryAtom, minor.primaryAtom, patch.primaryAtom)
-          case _ => (t"", t"", t"")
-      . assert(_ == (t"1", t"2", t"3"))
+          case _ => ("", "", "")
+      . assert(_ == ("1", "2", "3"))
 
       test(m"multi-marker non-match falls through"):
         val input = tel"item foo"  // no hyphen, no second capture site
@@ -771,16 +771,16 @@ object Tests extends Suite(m"Stratiform Tests"):
     suite(m"Schema axiom"):
       test(m"tels axiom has the documented name"):
         Tels.Axiom.tels.name
-      . assert(_ == t"tels")
+      . assert(_ == "tels")
 
       test(m"axiom declares the Field record"):
-        Tels.Axiom.tels.records.exists(_.name == t"Field")
+        Tels.Axiom.tels.records.exists(_.name == "Field")
       . assert(identity)
 
       test(m"axiom declares the four built-in scalars"):
         Tels.Axiom.tels.scalars.readable.map(_.name).toSet
       . assert: scalars =>
-          scalars == Set(t"Identifier", t"TypeName", t"Sigil", t"String").stdlib
+          scalars == Set("Identifier", "TypeName", "Sigil", "String").stdlib
 
     suite(m"E107 schema-aware recovery (§19.5)"):
       // A schema where a root-level `parent` field references a
@@ -790,22 +790,22 @@ object Tests extends Suite(m"Stratiform Tests"):
       // following a `parent` line must be recovered to the deeper
       // candidate.
       val recoverSchema = Tels(
-        name     = t"recover",
+        name     = "recover",
         document = Tels.Struct(
           members = Array(
             Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
-               t"parent",
-               Tels.Reference(t"Parent"),
+               "parent",
+               Tels.Reference("Parent"),
                Unset )),
           validators = Array.empty),
         layers   = Array.empty,
         sigil    = Unset,
         records  = Array(Tels.RecordDefinition(
-          t"Parent",
+          "Parent",
           Array(Tels.Field
                  ( Tels.Polarity.Loose, Tels.Polarity.Loose,
-                   t"child", Tels.Scalar(Array(t"string")), Unset )),
+                   "child", Tels.Scalar(Array("string")), Unset )),
           Array.empty)),
         scalars  = Array.empty,
         selects  = Array.empty)
@@ -815,28 +815,28 @@ object Tests extends Suite(m"Stratiform Tests"):
         // sibling but valid as a child of `parent`; the parser
         // recovers to the deeper interpretation, and the printer
         // re-emits at the canonical two-space indent.
-        val src = summon[CharEncoder].encoded(t"parent\n child Alice\n")
+        val src = summon[CharEncoder].encoded("parent\n child Alice\n")
         val tel = Tel.parse(src, recoverSchema)
         tel.show
-      . assert(_ == t"parent\n  child Alice\n")
+      . assert(_ == "parent\n  child Alice\n")
 
       test(m"prefers shallower on tie"):
         // A `thing` keyword admissible at both depths via a
         // self-referential record; shallower must win.
         val tieSchema = Tels(
-          name     = t"tie",
+          name     = "tie",
           document = Tels.Struct(
             members = Array(Tels.Field
                             ( Tels.Polarity.Loose, Tels.Polarity.Loose,
-                              t"thing", Tels.Reference(t"Thing"), Unset )),
+                              "thing", Tels.Reference("Thing"), Unset )),
             validators = Array.empty),
           layers   = Array.empty,
           sigil    = Unset,
           records  = Array(Tels.RecordDefinition(
-            t"Thing",
+            "Thing",
             Array(Tels.Field
                    ( Tels.Polarity.Loose, Tels.Polarity.Loose,
-                     t"thing", Tels.Reference(t"Thing"), Unset )),
+                     "thing", Tels.Reference("Thing"), Unset )),
             Array.empty)),
           scalars  = Array.empty,
           selects  = Array.empty)
@@ -844,7 +844,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         // Open one level (`thing`), then an odd-indented `thing`.
         // Both depths admit `thing`; shallower wins per the
         // tie-breaker.
-        val src = summon[CharEncoder].encoded(t"thing\n thing\n")
+        val src = summon[CharEncoder].encoded("thing\n thing\n")
         val tel = Tel.parse(src, tieSchema)
         // The output's child compound is the shallower interpretation
         // (sibling at root) — its keyword is "thing".
@@ -853,7 +853,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"without schema, original shallower-wins still raises E107"):
         // The schema-independent parse path still aborts on odd indent.
-        capture[Tel.Error](t"parent\n child Alice\n".read[Tel]).reason
+        capture[Tel.Error]("parent\n child Alice\n".read[Tel]).reason
       . assert(_ == Tel.Error.Reason.OddIndentation)
 
     suite(m"Error spans"):
@@ -863,58 +863,58 @@ object Tests extends Suite(m"Stratiform Tests"):
       // rather than source bytes. `Span`'s coordinates are 0-based.
 
       test(m"BOM error is at line 1, column 1"):
-        capture[Tel.Error](t"﻿tel 1.0\n".read[Tel]).span
+        capture[Tel.Error]("﻿tel 1.0\n".read[Tel]).span
       . assert(_ == Tel.Error.spanAt(1, 1, 1))
 
       test(m"OddIndentation error reports the offending line"):
-        capture[Tel.Error](t"parent\n child Alice\n".read[Tel]).span.startLine
+        capture[Tel.Error]("parent\n child Alice\n".read[Tel]).span.startLine
       . assert(_ == 1.z)
 
       test(m"OddIndentation error spans the odd indent"):
-        capture[Tel.Error](t"parent\n child Alice\n".read[Tel]).span.length
+        capture[Tel.Error]("parent\n child Alice\n".read[Tel]).span.length
       . assert(_ == 1)
 
       test(m"BadVersion error reports the pragma line"):
-        capture[Tel.Error](t"tel notaversion\n".read[Tel]).span.startLine
+        capture[Tel.Error]("tel notaversion\n".read[Tel]).span.startLine
       . assert(_ == 0.z)
 
       test(m"BadVersion error spans the malformed version phrase"):
-        val span = capture[Tel.Error](t"tel notaversion\n".read[Tel]).span
+        val span = capture[Tel.Error]("tel notaversion\n".read[Tel]).span
         (span.startColumn.let(_.n1), span.length)
       . assert(_ == (5, 11))
 
       test(m"PragmaNotFirst error reports the misplaced pragma's line"):
-        capture[Tel.Error](t"foo bar\ntel 1.0\nbaz\n".read[Tel]).span.startLine
+        capture[Tel.Error]("foo bar\ntel 1.0\nbaz\n".read[Tel]).span.startLine
       . assert(_ == 1.z)
 
       test(m"PragmaNotFirst error spans the `tel` keyword"):
-        capture[Tel.Error](t"foo bar\ntel 1.0\nbaz\n".read[Tel]).span.length
+        capture[Tel.Error]("foo bar\ntel 1.0\nbaz\n".read[Tel]).span.length
       . assert(_ == 3)
 
       test(m"TrailingSpaces error reports the offending line"):
-        capture[Tel.Error](t"good\nbad   \n".read[Tel]).span.startLine
+        capture[Tel.Error]("good\nbad   \n".read[Tel]).span.startLine
       . assert(_ == 1.z)
 
       test(m"TrailingSpaces error spans exactly the trailing spaces"):
-        val span = capture[Tel.Error](t"good\nbad   \n".read[Tel]).span
+        val span = capture[Tel.Error]("good\nbad   \n".read[Tel]).span
         (span.startColumn.let(_.n1), span.length)
       . assert(_ == (4, 3))
 
       test(m"Validation error (Type.assign) leaves the span empty"):
         val schema = Tels(
-          name     = t"person",
+          name     = "person",
           document = Tels.Struct(
             members = Array(
               Tels.Field
                ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-                 t"name", Tels.Scalar(Array(t"string")), Unset )),
+                 "name", Tels.Scalar(Array("string")), Unset )),
             validators = Array.empty),
           layers   = Array.empty,
           sigil    = Unset,
           records  = Array.empty,
           scalars  = Array.empty,
           selects  = Array.empty)
-        val doc = t"age 30\n".read[Tel]
+        val doc = "age 30\n".read[Tel]
         capture[Tel.Error](Tel.Type.assign(doc, schema)).span
       . assert(_ == Span.empty)
 
@@ -922,15 +922,15 @@ object Tests extends Suite(m"Stratiform Tests"):
       // A small hand-built schema for a `person` document with required
       // name (Scalar String) and optional age (Scalar Identifier).
       val personSchema = Tels(
-        name     = t"person",
+        name     = "person",
         document = Tels.Struct(
           members = Array(
             Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-               t"name", Tels.Scalar(Array(t"string")), Unset ),
+               "name", Tels.Scalar(Array("string")), Unset ),
             Tels.Field
              ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-               t"age", Tels.Scalar(Array(t"identifier")), Unset )),
+               "age", Tels.Scalar(Array("identifier")), Unset )),
           validators = Array.empty),
         layers   = Array.empty,
         sigil    = Unset,
@@ -939,7 +939,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         selects  = Array.empty)
 
       test(m"assigns Value for present scalar field"):
-        val doc = t"name Alice\nage 30\n".read[Tel]
+        val doc = "name Alice\nage 30\n".read[Tel]
         val root = Tel.Type.assign(doc, personSchema)
         root match
           case Tel.Element.Node(_, _, children) =>
@@ -951,33 +951,33 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == List(t"Alice", t"30"))
 
       test(m"raises E307 when required scalar field is missing"):
-        val doc = t"age 30\n".read[Tel]
+        val doc = "age 30\n".read[Tel]
         capture[Tel.Error](Tel.Type.assign(doc, personSchema)).reason
       . assert(_ == Tel.Error.Reason.RequiredMemberAbsent)
 
       // A schema with a Status SelectRef whose variants are all Flag,
       // exercising sum-type handling.
       val statusSchema = Tels(
-        name     = t"status",
+        name     = "status",
         document = Tels.Struct(
           members = Array(Tels.SelectRef
            ( required   = Tels.Polarity.Implicit,
              repeatable = Tels.Polarity.Implicit,
-             reference  = t"Status" )),
+             reference  = "Status" )),
           validators = Array.empty),
         layers   = Array.empty,
         sigil    = Unset,
         records  = Array.empty,
         scalars  = Array.empty,
         selects  = Array(Tels.SelectDefinition(
-          name     = t"Status",
+          name     = "Status",
           variants = Array(
-            Tels.Variant(t"active",   Tels.Flag),
-            Tels.Variant(t"archived", Tels.Flag)),
+            Tels.Variant("active",   Tels.Flag),
+            Tels.Variant("archived", Tels.Flag)),
           validators = Array.empty)))
 
       test(m"SelectRef variant matches compound child"):
-        val doc = t"active\n".read[Tel]
+        val doc = "active\n".read[Tel]
         val root = Tel.Type.assign(doc, statusSchema)
         root match
           case Tel.Element.Node(_, _, children) => children.readable.length
@@ -985,36 +985,36 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == 1)
 
       test(m"unknown SelectRef variant raises E306"):
-        val doc = t"unknown\n".read[Tel]
+        val doc = "unknown\n".read[Tel]
         capture[Tel.Error](Tel.Type.assign(doc, statusSchema)).reason
       . assert(_ == Tel.Error.Reason.UnknownKeyword)
 
       test(m"scalar compound with two atoms raises E302"):
-        val doc = t"name Alice Bob\n".read[Tel]
+        val doc = "name Alice Bob\n".read[Tel]
         capture[Tel.Error](Tel.Type.assign(doc, personSchema)).reason
       . assert(_ == Tel.Error.Reason.TooManyAtoms)
 
       test(m"scalar compound with a child raises E301"):
-        val doc = t"name Alice\n  extra x\n".read[Tel]
+        val doc = "name Alice\n  extra x\n".read[Tel]
         capture[Tel.Error](Tel.Type.assign(doc, personSchema)).reason
       . assert(_ == Tel.Error.Reason.NonStructCompound)
 
       test(m"flag compound with an atom raises E311"):
-        val doc = t"active foo\n".read[Tel]
+        val doc = "active foo\n".read[Tel]
         capture[Tel.Error](Tel.Type.assign(doc, statusSchema)).reason
       . assert(_ == Tel.Error.Reason.FlagWithContent)
 
       // Two repeatable scalar members, for the §20.2 step 4c contiguity rule.
       val contiguitySchema = Tels(
-        name     = t"doc",
+        name     = "doc",
         document = Tels.Struct(
           members = Array(
             Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
-               t"a", Tels.Scalar(Array(t"string")), Unset ),
+               "a", Tels.Scalar(Array("string")), Unset ),
             Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
-               t"b", Tels.Scalar(Array(t"string")), Unset )),
+               "b", Tels.Scalar(Array("string")), Unset )),
           validators = Array.empty),
         layers   = Array.empty,
         sigil    = Unset,
@@ -1023,12 +1023,12 @@ object Tests extends Suite(m"Stratiform Tests"):
         selects  = Array.empty)
 
       test(m"non-contiguous member children raise E309"):
-        val doc = t"a x\na y\nb z\na w\n".read[Tel]
+        val doc = "a x\na y\nb z\na w\n".read[Tel]
         capture[Tel.Error](Tel.Type.assign(doc, contiguitySchema)).reason
       . assert(_ == Tel.Error.Reason.MembersNonContiguous)
 
       test(m"contiguous runs of repeatable members do not raise E309"):
-        val doc = t"a x\na y\nb z\n".read[Tel]
+        val doc = "a x\na y\nb z\n".read[Tel]
         Tel.Type.assign(doc, contiguitySchema) match
           case Tel.Element.Node(_, _, children) => children.readable.length
           case _                                => -1
@@ -1037,64 +1037,64 @@ object Tests extends Suite(m"Stratiform Tests"):
       // A repeatable all-Flag SelectRef: its variants share a member index,
       // so they interleave freely without E309.
       val repeatableStatusSchema = Tels(
-        name     = t"status",
+        name     = "status",
         document = Tels.Struct(
           members = Array(Tels.SelectRef
            ( required   = Tels.Polarity.Implicit,
              repeatable = Tels.Polarity.Loose,
-             reference  = t"Status" )),
+             reference  = "Status" )),
           validators = Array.empty),
         layers   = Array.empty,
         sigil    = Unset,
         records  = Array.empty,
         scalars  = Array.empty,
         selects  = Array(Tels.SelectDefinition(
-          name     = t"Status",
+          name     = "Status",
           variants = Array(
-            Tels.Variant(t"active",   Tels.Flag),
-            Tels.Variant(t"archived", Tels.Flag)),
+            Tels.Variant("active",   Tels.Flag),
+            Tels.Variant("archived", Tels.Flag)),
           validators = Array.empty)))
 
       test(m"interleaved variants of one SelectRef do not raise E309"):
-        val doc = t"active\narchived\nactive\n".read[Tel]
+        val doc = "active\narchived\nactive\n".read[Tel]
         Tel.Type.assign(doc, repeatableStatusSchema) match
           case Tel.Element.Node(_, _, children) => children.readable.length
           case _                                => -1
       . assert(_ == 3)
 
       test(m"non-repeatable member filled twice raises E308"):
-        val doc = t"name Alice\nname Bob\n".read[Tel]
+        val doc = "name Alice\nname Bob\n".read[Tel]
         capture[Tel.Error](Tel.Type.assign(doc, personSchema)).reason
       . assert(_ == Tel.Error.Reason.NonRepeatableTooMany)
 
       test(m"repeatable member filled three times is accepted"):
-        val doc = t"a x\na y\na z\nb w\n".read[Tel]
+        val doc = "a x\na y\na z\nb w\n".read[Tel]
         Tel.Type.assign(doc, contiguitySchema) match
           case Tel.Element.Node(_, _, children) => children.readable.length
           case _                                => -1
       . assert(_ == 4)
 
       test(m"absent required SelectRef raises E307"):
-        val doc = t"\n".read[Tel]
+        val doc = "\n".read[Tel]
         capture[Tel.Error](Tel.Type.assign(doc, statusSchema)).reason
       . assert(_ == Tel.Error.Reason.RequiredMemberAbsent)
 
       // A self-referential schema describing arbitrarily deep nesting, for
       // the §20.2 recursion-depth limit.
       val treeSchema = Tels(
-        name     = t"tree",
+        name     = "tree",
         document = Tels.Struct(
           members = Array(Tels.Field
            ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-             t"node", Tels.Reference(t"Node"), Unset )),
+             "node", Tels.Reference("Node"), Unset )),
           validators = Array.empty),
         layers   = Array.empty,
         sigil    = Unset,
         records  = Array(Tels.RecordDefinition(
-          t"Node",
+          "Node",
           Array(Tels.Field
            ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-             t"node", Tels.Reference(t"Node"), Unset )),
+             "node", Tels.Reference("Node"), Unset )),
           Array.empty)),
         scalars  = Array.empty,
         selects  = Array.empty)
@@ -1135,15 +1135,15 @@ object Tests extends Suite(m"Stratiform Tests"):
       :   Tels =
 
         Tels(
-          name     = t"test",
+          name     = "test",
           document = Tels.Struct(
             members = Array(Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-               t"item", Tels.Reference(t"Item"), Unset )),
+               "item", Tels.Reference("Item"), Unset )),
             validators = Array.empty),
           layers   = Array.empty,
           sigil    = Unset,
-          records  = Array(Tels.RecordDefinition(t"Item", members, Array.empty)),
+          records  = Array(Tels.RecordDefinition("Item", members, Array.empty)),
           scalars  = Array.empty,
           selects  = selects)
 
@@ -1155,7 +1155,7 @@ object Tests extends Suite(m"Stratiform Tests"):
             case Tel.Element.Node(_, _, inner) =>
               inner.readable.collect:
                 case Tel.Element.Value(idx, _, text) => (idx, text)
-                case Tel.Element.Node(idx, _, _)     => (idx.or(-1), t"")
+                case Tel.Element.Node(idx, _, _)     => (idx.or(-1), "")
               .toList
 
             case _ => Nil
@@ -1164,64 +1164,64 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"atom skips optional flag and fills scalar (worked example)"):
         val schema = itemSchema(Array(
-          Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"a", Tels.Flag, Unset),
-          Tels.Field(Tels.Polarity.Loose, Tels.Polarity.Implicit, t"b", Tels.Flag, Unset),
+          Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, "a", Tels.Flag, Unset),
+          Tels.Field(Tels.Polarity.Loose, Tels.Polarity.Implicit, "b", Tels.Flag, Unset),
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"c", Tels.Scalar(Array(t"string")), Unset )))
+             "c", Tels.Scalar(Array("string")), Unset )))
 
-        project(Tel.Type.assign(t"item a xyz\n".read[Tel], schema))
+        project(Tel.Type.assign("item a xyz\n".read[Tel], schema))
       . assert(_ == List((0, t""), (2, t"xyz")))
 
       test(m"repeatable scalar consumes every remaining atom"):
         val schema = itemSchema(Array(
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"label", Tels.Scalar(Array(t"string")), Unset ),
+             "label", Tels.Scalar(Array("string")), Unset ),
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
-             t"values", Tels.Scalar(Array(t"string")), Unset )))
+             "values", Tels.Scalar(Array("string")), Unset )))
 
-        project(Tel.Type.assign(t"item lbl 1 2 3\n".read[Tel], schema))
+        project(Tel.Type.assign("item lbl 1 2 3\n".read[Tel], schema))
       . assert(_ == List((0, t"lbl"), (1, t"1"), (1, t"2"), (1, t"3")))
 
       test(m"optional scalar is never skipped (§20.8)"):
         val schema = itemSchema(Array(
           Tels.Field
            ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-             t"first", Tels.Scalar(Array(t"string")), Unset ),
+             "first", Tels.Scalar(Array("string")), Unset ),
           Tels.Field
            ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-             t"second", Tels.Scalar(Array(t"string")), Unset )))
+             "second", Tels.Scalar(Array("string")), Unset )))
 
-        project(Tel.Type.assign(t"item hello\n".read[Tel], schema))
+        project(Tel.Type.assign("item hello\n".read[Tel], schema))
       . assert(_ == List((0, t"hello")))
 
       test(m"source atom participates in positional assignment"):
         val schema = itemSchema(Array(
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"body", Tels.Scalar(Array(t"string")), Unset )))
+             "body", Tels.Scalar(Array("string")), Unset )))
 
-        project(Tel.Type.assign(t"item\n    payload\n".read[Tel], schema))
+        project(Tel.Type.assign("item\n    payload\n".read[Tel], schema))
       . assert(_ == List((0, t"payload")))
 
       test(m"excess atoms raise E302"):
         val schema = itemSchema(Array(
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"only", Tels.Scalar(Array(t"string")), Unset )))
+             "only", Tels.Scalar(Array("string")), Unset )))
 
-        capture[Tel.Error](Tel.Type.assign(t"item x y\n".read[Tel], schema)).reason
+        capture[Tel.Error](Tel.Type.assign("item x y\n".read[Tel], schema)).reason
       . assert(_ == Tel.Error.Reason.TooManyAtoms)
 
       test(m"atom at required struct-typed member raises E303"):
         val schema = itemSchema(Array(
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"address", Tels.Struct(Array.empty, Array.empty), Unset )))
+             "address", Tels.Struct(Array.empty, Array.empty), Unset )))
 
-        capture[Tel.Error](Tel.Type.assign(t"item x\n".read[Tel], schema)).reason
+        capture[Tel.Error](Tel.Type.assign("item x\n".read[Tel], schema)).reason
       . assert(_ == Tel.Error.Reason.AtomAtNonAssignablePos)
 
       test(m"unmatched variant at required SelectRef raises E304"):
@@ -1229,31 +1229,31 @@ object Tests extends Suite(m"Stratiform Tests"):
           Array(Tels.SelectRef
            ( required   = Tels.Polarity.Implicit,
              repeatable = Tels.Polarity.Implicit,
-             reference  = t"Status" )),
+             reference  = "Status" )),
           selects = Array(Tels.SelectDefinition(
-            name     = t"Status",
+            name     = "Status",
             variants = Array(
-              Tels.Variant(t"active",   Tels.Flag),
-              Tels.Variant(t"archived", Tels.Flag)),
+              Tels.Variant("active",   Tels.Flag),
+              Tels.Variant("archived", Tels.Flag)),
             validators = Array.empty)))
 
-        capture[Tel.Error](Tel.Type.assign(t"item pending\n".read[Tel], schema)).reason
+        capture[Tel.Error](Tel.Type.assign("item pending\n".read[Tel], schema)).reason
       . assert(_ == Tel.Error.Reason.AtomVariantUnmatched)
 
       test(m"mismatched atom at required flag raises E305"):
         val schema = itemSchema(Array(
-          Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"a", Tels.Flag, Unset)))
+          Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, "a", Tels.Flag, Unset)))
 
-        capture[Tel.Error](Tel.Type.assign(t"item xyz\n".read[Tel], schema)).reason
+        capture[Tel.Error](Tel.Type.assign("item xyz\n".read[Tel], schema)).reason
       . assert(_ == Tel.Error.Reason.AtomFlagKeywordMismatch)
 
       test(m"atom plus child for a non-repeatable member raises E308"):
         val schema = itemSchema(Array(
           Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"only", Tels.Scalar(Array(t"string")), Unset )))
+             "only", Tels.Scalar(Array("string")), Unset )))
 
-        capture[Tel.Error](Tel.Type.assign(t"item x\n  only y\n".read[Tel], schema)).reason
+        capture[Tel.Error](Tel.Type.assign("item x\n  only y\n".read[Tel], schema)).reason
       . assert(_ == Tel.Error.Reason.NonRepeatableTooMany)
 
     suite(m"Schema default-field"):
@@ -1261,15 +1261,15 @@ object Tests extends Suite(m"Stratiform Tests"):
       // so a document omitting it is filled with the default rather than
       // raising `RequiredMemberAbsent`.
       val defaultingSchema = Tels(
-        name     = t"person",
+        name     = "person",
         document = Tels.Struct(
           members = Array(
             Tels.Field
              ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-               t"name", Tels.Scalar(Array(t"string")), t"Anonymous" ),
+               "name", Tels.Scalar(Array("string")), "Anonymous" ),
             Tels.Field
              ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-               t"age", Tels.Scalar(Array(t"identifier")), Unset )),
+               "age", Tels.Scalar(Array("identifier")), Unset )),
           validators = Array.empty),
         layers   = Array.empty,
         sigil    = Unset,
@@ -1278,7 +1278,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         selects  = Array.empty)
 
       test(m"applies the schema default when the field is omitted"):
-        val doc = t"age 30\n".read[Tel]
+        val doc = "age 30\n".read[Tel]
         Tel.Type.assign(doc, defaultingSchema) match
           case Tel.Element.Node(_, _, children) =>
             val values = children.readable.collect:
@@ -1287,10 +1287,10 @@ object Tests extends Suite(m"Stratiform Tests"):
             values.toSeq.to(Set)
 
           case _ => Set()
-      . assert(_ == Set(t"Anonymous", t"30"))
+      . assert(_ == Set("Anonymous", "30"))
 
       test(m"an explicit value overrides the schema default"):
-        val doc = t"name Alice\nage 30\n".read[Tel]
+        val doc = "name Alice\nage 30\n".read[Tel]
         Tel.Type.assign(doc, defaultingSchema) match
           case Tel.Element.Node(_, _, children) =>
             children.readable.collect:
@@ -1304,46 +1304,46 @@ object Tests extends Suite(m"Stratiform Tests"):
       val reg = Tel.Validator.Registry.builtins
 
       test(m"string validator accepts any text"):
-        reg(Tel.Validator.Request.Scalar(t"string", t"anything"))
+        reg(Tel.Validator.Request.Scalar("string", "anything"))
       . assert(_ == Tel.Validator.Response.Valid)
 
       test(m"identifier accepts kebab-case"):
-        reg(Tel.Validator.Request.Scalar(t"identifier", t"first-name"))
+        reg(Tel.Validator.Request.Scalar("identifier", "first-name"))
       . assert(_ == Tel.Validator.Response.Valid)
 
       test(m"identifier rejects leading hyphen"):
-        reg(Tel.Validator.Request.Scalar(t"identifier", t"-leading")) match
+        reg(Tel.Validator.Request.Scalar("identifier", "-leading")) match
           case Tel.Validator.Response.Invalid(_) => true
           case _                                => false
       . assert(identity)
 
       test(m"type-name accepts PascalCase"):
-        reg(Tel.Validator.Request.Scalar(t"type-name", t"PhoneNumber"))
+        reg(Tel.Validator.Request.Scalar("type-name", "PhoneNumber"))
       . assert(_ == Tel.Validator.Response.Valid)
 
       test(m"type-name rejects leading lowercase"):
-        reg(Tel.Validator.Request.Scalar(t"type-name", t"phoneNumber")) match
+        reg(Tel.Validator.Request.Scalar("type-name", "phoneNumber")) match
           case Tel.Validator.Response.Invalid(_) => true
           case _                                => false
       . assert(identity)
 
       test(m"sigil accepts a permitted symbol"):
-        reg(Tel.Validator.Request.Scalar(t"sigil", t"#"))
+        reg(Tel.Validator.Request.Scalar("sigil", "#"))
       . assert(_ == Tel.Validator.Response.Valid)
 
       test(m"sigil rejects letters"):
-        reg(Tel.Validator.Request.Scalar(t"sigil", t"a")) match
+        reg(Tel.Validator.Request.Scalar("sigil", "a")) match
           case Tel.Validator.Response.Invalid(_) => true
           case _                                => false
       . assert(identity)
 
       test(m"type assignment with identifier validator rejects bad identifier"):
         val schemaWithValidator = Tels(
-          name     = t"ident",
+          name     = "ident",
           document = Tels.Struct(
             members = Array(Tels.Field
-             ( Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"name",
-               Tels.Scalar(Array(t"identifier")), Unset )),
+             ( Tels.Polarity.Implicit, Tels.Polarity.Implicit, "name",
+               Tels.Scalar(Array("identifier")), Unset )),
             validators = Array.empty),
           layers  = Array.empty,
           sigil   = Unset,
@@ -1351,7 +1351,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           scalars = Array.empty,
           selects = Array.empty)
 
-        val doc = t"name -bad\n".read[Tel]
+        val doc = "name -bad\n".read[Tel]
         capture[Tel.Error]:
           Tel.Type.assign(doc, schemaWithValidator, Tel.Validator.Registry.builtins)
         .reason
@@ -1360,18 +1360,18 @@ object Tests extends Suite(m"Stratiform Tests"):
     suite(m"Layer composition"):
       test(m"a layer adding a field extends the document Struct"):
         val base = Tels(
-          name     = t"base",
+          name     = "base",
           document = Tels.Struct(
             members = Array(Tels.Field
-             ( Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"name",
-               Tels.Scalar(Array(t"string")), Unset )),
+             ( Tels.Polarity.Implicit, Tels.Polarity.Implicit, "name",
+               Tels.Scalar(Array("string")), Unset )),
             validators = Array.empty),
           layers = Array(Tels.Layer(
-            name     = t"extra",
+            name     = "extra",
             overlay  = Tels.Struct(
               members = Array(Tels.Field
-               ( Tels.Polarity.Loose, Tels.Polarity.Implicit, t"email",
-                 Tels.Scalar(Array(t"string")), Unset )),
+               ( Tels.Polarity.Loose, Tels.Polarity.Implicit, "email",
+                 Tels.Scalar(Array("string")), Unset )),
               validators = Array.empty),
             records = Array.empty, scalars = Array.empty, selects = Array.empty)),
           sigil    = Unset,
@@ -1384,21 +1384,21 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == 2)
 
       test(m"plain as[Person] decodes a conforming document"):
-        val tel = t"name Alice\nage 30\n".read[Tel]
+        val tel = "name Alice\nage 30\n".read[Tel]
         tel.as[Tests.PersonAge]
-      . assert(_ == Tests.PersonAge(t"Alice", 30))
+      . assert(_ == Tests.PersonAge("Alice", 30))
 
       test(m"asValidated validates and decodes a conforming document"):
         val schema = Tels(
-          name     = t"person",
+          name     = "person",
           document = Tels.Struct(
             members = Array(
               Tels.Field
-               ( Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"name",
-                 Tels.Scalar(Array(t"string")), Unset ),
+               ( Tels.Polarity.Implicit, Tels.Polarity.Implicit, "name",
+                 Tels.Scalar(Array("string")), Unset ),
               Tels.Field
-               ( Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"age",
-                 Tels.Scalar(Array(t"string")), Unset )),
+               ( Tels.Polarity.Implicit, Tels.Polarity.Implicit, "age",
+                 Tels.Scalar(Array("string")), Unset )),
             validators = Array.empty),
           layers  = Array.empty,
           sigil   = Unset,
@@ -1408,18 +1408,18 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         given Tels = schema
         import Tels.Decoder.asValidated
-        val tel = t"name Alice\nage 30\n".read[Tel]
+        val tel = "name Alice\nage 30\n".read[Tel]
         tel.asValidated[Tests.PersonAge]
-      . assert(_ == Tests.PersonAge(t"Alice", 30))
+      . assert(_ == Tests.PersonAge("Alice", 30))
 
       test(m"duplicate layer name raises E204"):
         val layer = Tels.Layer
-         ( name    = t"dup",
+         ( name    = "dup",
            overlay = Tels.Struct(Array.empty, Array.empty),
            records = Array.empty, scalars = Array.empty, selects = Array.empty )
 
         val base = Tels(
-          name = t"base",
+          name = "base",
           document = Tels.Struct(Array.empty, Array.empty),
           layers = Array(layer, layer),
           sigil = Unset,
@@ -1440,13 +1440,13 @@ object Tests extends Suite(m"Stratiform Tests"):
         case _ => scala.collection.immutable.Nil
 
       test(m"§18.3: children are in member order, not document order"):
-        val schema = schemaOf(t"name order\n\ndocument\n  field alpha String\n  field beta String\n")
-        indices(Tel.Type.assign(t"beta 1\nalpha 2\n".read[Tel], schema))
+        val schema = schemaOf("name order\n\ndocument\n  field alpha String\n  field beta String\n")
+        indices(Tel.Type.assign("beta 1\nalpha 2\n".read[Tel], schema))
       . assert(_ == scala.collection.immutable.List(0, 1))
 
       test(m"§18.3: a default-supplied value takes its member's place"):
-        val schema = schemaOf(t"name order\n\ndocument\n  field alpha String required Ann\n  field beta String\n")
-        indices(Tel.Type.assign(t"beta 1\n".read[Tel], schema))
+        val schema = schemaOf("name order\n\ndocument\n  field alpha String required Ann\n  field beta String\n")
+        indices(Tel.Type.assign("beta 1\n".read[Tel], schema))
       . assert(_ == scala.collection.immutable.List(0, 1))
 
       test(m"§18.3: variant fills of one SelectRef keep their source order"):
@@ -1460,7 +1460,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                                      |  field owner String
                                      |  select Pet repeatable
                                      |""".stripMargin))
-        indices(Tel.Type.assign(t"owner amy\ncat tom\ndog rex\n".read[Tel], schema))
+        indices(Tel.Type.assign("owner amy\ncat tom\ndog rex\n".read[Tel], schema))
       . assert(_ == scala.collection.immutable.List(0, 2, 1))
 
       test(m"§20.3: a layer field colliding with a variant keyword is E205"):
@@ -1527,27 +1527,27 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Tel.Error.Reason.EmptySelectVariants)
 
       test(m"§16.2: the keyword portion overflowing the first column is E118"):
-        capture[Tel.Error](t"# ID  # Name\nAlexandra 30\n".read[Tel]).reason
+        capture[Tel.Error]("# ID  # Name\nAlexandra 30\n".read[Tel]).reason
       . assert(_ == Tel.Error.Reason.ColumnValueTooWide)
 
       test(m"§16.2: a value reaching the separator positions is E118"):
-        capture[Tel.Error](t"# ID    # Name  # Age\nAlice   Roberta 30\n".read[Tel]).reason
+        capture[Tel.Error]("# ID    # Name  # Age\nAlice   Roberta 30\n".read[Tel]).reason
       . assert(_ == Tel.Error.Reason.ColumnValueTooWide)
 
       test(m"§17: the document margin is recorded"):
-        t"  alpha 1\n  beta 2\n".read[Tel].document.let(_.margin)
+        "  alpha 1\n  beta 2\n".read[Tel].document.let(_.margin)
       . assert(_ == 2)
 
       test(m"§6.1: the continuation line follows the separator"):
-        t"alpha 1\n##\nbeta 2\n".read[Tel].document.let(_.continuation)
+        "alpha 1\n##\nbeta 2\n".read[Tel].document.let(_.continuation)
       . assert(_ == 3)
 
       test(m"§6.1: a document ended by end of input has no continuation"):
-        t"alpha 1\n".read[Tel].document.let(_.continuation).absent
+        "alpha 1\n".read[Tel].document.let(_.continuation).absent
       . assert(_ == true)
 
       test(m"§15: the closing delimiter is the opening line without trailing spaces"):
-        val source = t"code\n      EOF  \nline one\n      EOF\nnext 1\n"
+        val source = "code\n      EOF  \nline one\n      EOF\nnext 1\n"
         source.read[Tel].document.let(_.children.readable.head.compounds.readable.length)
       . assert(_ == 2)
 
@@ -1555,204 +1555,204 @@ object Tests extends Suite(m"Stratiform Tests"):
       import dynamicAccess.dynamicTel
 
       test(m"select-dynamic on encoded case class"):
-        val doc = Tests.Person(t"Alice", 30).encode
+        val doc = Tests.Person("Alice", 30).encode
         doc.name.as[Text]
-      . assert(_ == t"Alice")
+      . assert(_ == "Alice")
 
       test(m"camelCase → kebab-case keyword lookup"):
         case class CamelCase(firstName: Text, lastName: Text) derives CanEqual
-        val cc = CamelCase(t"Alice", t"Anderson").encode
+        val cc = CamelCase("Alice", "Anderson").encode
         cc.firstName.as[Text]
-      . assert(_ == t"Alice")
+      . assert(_ == "Alice")
 
     suite(m"Mutation primitives"):
       def doc(source: String): Tel = source.tt.read[Tel]
 
       test(m"UpdateAtom rewrites the targeted inline atom"):
         val tel    = doc("name Alice\n")
-        val ptr    = Tel.Pointer.of(t"name")
-        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"Bob"))
+        val ptr    = Tel.Pointer.of("name")
+        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, "Bob"))
         result.show
-      . assert(_ == t"name Bob\n")
+      . assert(_ == "name Bob\n")
 
       test(m"AttachRemark adds a remark to the targeted compound"):
         val tel    = doc("name Alice\n")
-        val ptr    = Tel.Pointer.of(t"name")
-        val result = Mutation(tel, Mutation.Op.AttachRemark(ptr, t"primary contact"))
+        val ptr    = Tel.Pointer.of("name")
+        val result = Mutation(tel, Mutation.Op.AttachRemark(ptr, "primary contact"))
         result.show
-      . assert(_ == t"name Alice  # primary contact\n")
+      . assert(_ == "name Alice  # primary contact\n")
 
       test(m"RemoveRemark drops a previously attached remark"):
         val tel    = doc("name Alice  # noted\n")
-        val ptr    = Tel.Pointer.of(t"name")
+        val ptr    = Tel.Pointer.of("name")
         val result = Mutation(tel, Mutation.Op.RemoveRemark(ptr))
         result.show
-      . assert(_ == t"name Alice\n")
+      . assert(_ == "name Alice\n")
 
       test(m"Insert appends a child compound to the parent"):
         val tel    = doc("contact\n  name Alice\n")
         val newCompound = Tel.Compound
-                          (t"email",
-                           Array(Tel.Atom.Inline(t"alice@example.com", 1)),
+                          ("email",
+                           Array(Tel.Atom.Inline("alice@example.com", 1)),
                            Unset, Array.empty)
-        val ptr    = Tel.Pointer.of(t"contact")
+        val ptr    = Tel.Pointer.of("contact")
         val result = Mutation(tel, Mutation.Op.Insert(ptr, newCompound))
         result.show
-      . assert(_ == t"contact\n  name Alice\n  email alice@example.com\n")
+      . assert(_ == "contact\n  name Alice\n  email alice@example.com\n")
 
       test(m"Delete removes the addressed compound"):
         val tel    = doc("name Alice\nemail alice@example.com\n")
-        val ptr    = Tel.Pointer.of(t"email")
+        val ptr    = Tel.Pointer.of("email")
         val result = Mutation(tel, Mutation.Op.Delete(ptr))
         result.show
-      . assert(_ == t"name Alice\n")
+      . assert(_ == "name Alice\n")
 
       test(m"InsertBefore places a new sibling before the target"):
         val tel    = doc("b two\n")
         val a      = Tel.Compound
-                      (t"a", Array(Tel.Atom.Inline(t"one", 1)), Unset, Array.empty)
-        val ptr    = Tel.Pointer.of(t"b")
+                      ("a", Array(Tel.Atom.Inline("one", 1)), Unset, Array.empty)
+        val ptr    = Tel.Pointer.of("b")
         val result = Mutation(tel, Mutation.Op.InsertBefore(ptr, a))
         result.show
-      . assert(_ == t"a one\nb two\n")
+      . assert(_ == "a one\nb two\n")
 
       test(m"InsertAfter places a new sibling after the target"):
         val tel    = doc("a one\n")
         val b      = Tel.Compound
-                      (t"b", Array(Tel.Atom.Inline(t"two", 1)), Unset, Array.empty)
-        val ptr    = Tel.Pointer.of(t"a")
+                      ("b", Array(Tel.Atom.Inline("two", 1)), Unset, Array.empty)
+        val ptr    = Tel.Pointer.of("a")
         val result = Mutation(tel, Mutation.Op.InsertAfter(ptr, b))
         result.show
-      . assert(_ == t"a one\nb two\n")
+      . assert(_ == "a one\nb two\n")
 
       test(m"Replace swaps a compound for a new one"):
         val tel    = doc("name Alice\n")
         val replacement = Tel.Compound
-                           (t"name", Array(Tel.Atom.Inline(t"Charlie", 1)),
+                           ("name", Array(Tel.Atom.Inline("Charlie", 1)),
                             Unset, Array.empty)
-        val ptr    = Tel.Pointer.of(t"name")
+        val ptr    = Tel.Pointer.of("name")
         val result = Mutation(tel, Mutation.Op.Replace(ptr, replacement))
         result.show
-      . assert(_ == t"name Charlie\n")
+      . assert(_ == "name Charlie\n")
 
       test(m"SetFlag places an inline atom on a childless compound (§22.2)"):
         val tel    = doc("opt\n")
-        val ptr    = Tel.Pointer.of(t"opt")
-        val result = Mutation(tel, Mutation.Op.SetFlag(ptr, t"enabled"))
+        val ptr    = Tel.Pointer.of("opt")
+        val result = Mutation(tel, Mutation.Op.SetFlag(ptr, "enabled"))
         result.show
-      . assert(_ == t"opt enabled\n")
+      . assert(_ == "opt enabled\n")
 
       test(m"SetFlag extends an existing inline-atom line"):
         val tel    = doc("opts fast\n")
-        val ptr    = Tel.Pointer.of(t"opts")
-        val result = Mutation(tel, Mutation.Op.SetFlag(ptr, t"safe"))
+        val ptr    = Tel.Pointer.of("opts")
+        val result = Mutation(tel, Mutation.Op.SetFlag(ptr, "safe"))
         result.show
-      . assert(_ == t"opts fast safe\n")
+      . assert(_ == "opts fast safe\n")
 
       test(m"SetFlag places a compound child when compound children exist"):
         val tel    = doc("opt\n  sub x\n")
-        val ptr    = Tel.Pointer.of(t"opt")
-        val result = Mutation(tel, Mutation.Op.SetFlag(ptr, t"enabled"))
+        val ptr    = Tel.Pointer.of("opt")
+        val result = Mutation(tel, Mutation.Op.SetFlag(ptr, "enabled"))
         result.show
-      . assert(_ == t"opt\n  sub x\n  enabled\n")
+      . assert(_ == "opt\n  sub x\n  enabled\n")
 
       test(m"SetFlag rejects a flag already present as an inline atom"):
         val tel = doc("opts fast\n")
-        val ptr = Tel.Pointer.of(t"opts")
-        capture[Mutation.Error](Mutation(tel, Mutation.Op.SetFlag(ptr, t"fast"))).reason
+        val ptr = Tel.Pointer.of("opts")
+        capture[Mutation.Error](Mutation(tel, Mutation.Op.SetFlag(ptr, "fast"))).reason
       . assert(_ == Mutation.Error.Reason.FlagAlreadySet)
 
       test(m"UnsetFlag removes a previously set flag"):
         val tel    = doc("opt\n  enabled\n")
-        val ptr    = Tel.Pointer.of(t"opt")
-        val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, t"enabled"))
+        val ptr    = Tel.Pointer.of("opt")
+        val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, "enabled"))
         result.show
-      . assert(_ == t"opt\n")
+      . assert(_ == "opt\n")
 
       test(m"UnsetFlag removes an inline-atom flag, preserving other atoms"):
         val tel    = doc("opts fast safe\n")
-        val ptr    = Tel.Pointer.of(t"opts")
-        val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, t"safe"))
+        val ptr    = Tel.Pointer.of("opts")
+        val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, "safe"))
         result.show
-      . assert(_ == t"opts fast\n")
+      . assert(_ == "opts fast\n")
 
       test(m"UnsetFlag ignores a same-keyword compound that is not flag-shaped"):
         val tel    = doc("opt\n  enabled x\n")
-        val ptr    = Tel.Pointer.of(t"opt")
-        val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, t"enabled"))
+        val ptr    = Tel.Pointer.of("opt")
+        val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, "enabled"))
         result.show
-      . assert(_ == t"opt\n  enabled x\n")
+      . assert(_ == "opt\n  enabled x\n")
 
       test(m"UnsetFlag of an absent flag is the identity (§22.2)"):
         val tel    = doc("opt\n")
-        val ptr    = Tel.Pointer.of(t"opt")
-        val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, t"missing"))
+        val ptr    = Tel.Pointer.of("opt")
+        val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, "missing"))
         result.show
-      . assert(_ == t"opt\n")
+      . assert(_ == "opt\n")
 
       test(m"sequenced ops apply in order"):
         val tel    = doc("name Alice\n")
-        val ptr    = Tel.Pointer.of(t"name")
+        val ptr    = Tel.Pointer.of("name")
         val ops    = List
                       ( Mutation.Op.UpdateAtom(ptr, 0, t"Bob"),
                         Mutation.Op.AttachRemark(ptr, t"note") )
         val result = Mutation(tel, ops)
         result.show
-      . assert(_ == t"name Bob  # note\n")
+      . assert(_ == "name Bob  # note\n")
 
       test(m"pointer with no match raises PointerNotFound"):
         val tel = doc("name Alice\n")
-        val ptr = Tel.Pointer.of(t"missing")
+        val ptr = Tel.Pointer.of("missing")
         capture[Mutation.Error](Mutation(tel, Mutation.Op.Delete(ptr))).reason
       . assert(_ == Mutation.Error.Reason.PointerNotFound)
 
       test(m"ReorderWithinGroup moves a same-keyword sibling"):
         val tel = doc("item a\nitem b\nitem c\n")
-        val op  = Mutation.Op.ReorderWithinGroup(Tel.Pointer.Empty, t"item", 0, 2)
+        val op  = Mutation.Op.ReorderWithinGroup(Tel.Pointer.Empty, "item", 0, 2)
         Mutation(tel, op).show
-      . assert(_ == t"item b\nitem c\nitem a\n")
+      . assert(_ == "item b\nitem c\nitem a\n")
 
       test(m"ReorderWithinGroup with same old and new is a no-op"):
         val tel = doc("item a\nitem b\n")
-        val op  = Mutation.Op.ReorderWithinGroup(Tel.Pointer.Empty, t"item", 1, 1)
+        val op  = Mutation.Op.ReorderWithinGroup(Tel.Pointer.Empty, "item", 1, 1)
         Mutation(tel, op).show
-      . assert(_ == t"item a\nitem b\n")
+      . assert(_ == "item a\nitem b\n")
 
       test(m"ReorderWithinGroup with out-of-range index raises"):
         val tel = doc("item a\nitem b\n")
-        val op  = Mutation.Op.ReorderWithinGroup(Tel.Pointer.Empty, t"item", 0, 5)
+        val op  = Mutation.Op.ReorderWithinGroup(Tel.Pointer.Empty, "item", 0, 5)
         capture[Mutation.Error](Mutation(tel, op)).reason
       . assert(_ == Mutation.Error.Reason.PointerNotFound)
 
       test(m"ReorderGroups moves a group after another within a shared block"):
         val tel = doc("name Alice\nname Bob\nage 30\nage 31\n")
         val op  = Mutation.Op.ReorderGroups
-                    (Tel.Pointer.Empty, t"name", t"age", Mutation.Placement.After)
+                    (Tel.Pointer.Empty, "name", "age", Mutation.Placement.After)
         Mutation(tel, op).show
-      . assert(_ == t"age 30\nage 31\nname Alice\nname Bob\n")
+      . assert(_ == "age 30\nage 31\nname Alice\nname Bob\n")
 
       test(m"ReorderGroups before the current position is the identity (§22.2)"):
         val tel = doc("name Alice\nage 30\n")
         val op  = Mutation.Op.ReorderGroups
-                    (Tel.Pointer.Empty, t"name", t"age", Mutation.Placement.Before)
+                    (Tel.Pointer.Empty, "name", "age", Mutation.Placement.Before)
         Mutation(tel, op).show
-      . assert(_ == t"name Alice\nage 30\n")
+      . assert(_ == "name Alice\nage 30\n")
 
       test(m"ReorderGroups raises when a group is missing"):
         val tel = doc("name Alice\n")
-        val op  = Mutation.Op.ReorderGroups(Tel.Pointer.Empty, t"name", t"age")
+        val op  = Mutation.Op.ReorderGroups(Tel.Pointer.Empty, "name", "age")
         capture[Mutation.Error](Mutation(tel, op)).reason
       . assert(_ == Mutation.Error.Reason.PointerNotFound)
 
       test(m"Construct picks inline atoms for simple values"):
-        val c = Mutation.construct(t"name", t"Alice")
+        val c = Mutation.construct("name", "Alice")
         c.atoms.readable.head match
           case Tel.Atom.Inline(text, _) => text
-          case _                        => t""
-      . assert(_ == t"Alice")
+          case _                        => ""
+      . assert(_ == "Alice")
 
       test(m"Construct picks a source atom for multi-line values"):
-        val c = Mutation.construct(t"note", t"first line\nsecond line")
+        val c = Mutation.construct("note", "first line\nsecond line")
         c.atoms.readable.head match
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
@@ -1760,7 +1760,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == "source")
 
       test(m"Construct falls back to literal for blank-line payloads"):
-        val c = Mutation.construct(t"note", t"first\n\nsecond\n")
+        val c = Mutation.construct("note", "first\n\nsecond\n")
         c.atoms.readable.head match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
@@ -1768,7 +1768,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == "literal")
 
       test(m"Construct's inline atom uses one preceding space"):
-        val c = Mutation.construct(t"name", t"Alice")
+        val c = Mutation.construct("name", "Alice")
         c.atoms.readable.head match
           case Tel.Atom.Inline(_, sp) => sp
           case _                       => -1
@@ -1777,7 +1777,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"Construct escalates a trailing-LF value to a literal atom (§22.2)"):
         // A trailing LF is unrepresentable as a source atom (Convention A,
         // §14), so the value must be carried by a literal atom.
-        val c = Mutation.construct(t"note", t"single line\n")
+        val c = Mutation.construct("note", "single line\n")
         c.atoms.readable.head match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
@@ -1787,7 +1787,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"Construct's inline atom uses two preceding spaces for a spaced value"):
         // §22.3: a value containing a space is emitted with a hard-space
         // separator so its soft spaces survive as content (§10.3).
-        val c = Mutation.construct(t"name", t"Jon Pretty")
+        val c = Mutation.construct("name", "Jon Pretty")
         c.atoms.readable.head match
           case Tel.Atom.Inline(_, sp) => sp
           case _                       => -1
@@ -1796,7 +1796,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"Construct keeps an internal space-then-sigil value inline (§22.2)"):
         // The remark risk (§11.2) is only a *leading* sigil-then-space; an
         // internal `<space><sigil>` is content in hard-space mode.
-        val c = Mutation.construct(t"note", t"see #3")
+        val c = Mutation.construct("note", "see #3")
         c.atoms.readable.head match
           case _: Tel.Atom.Inline  => "inline"
           case _: Tel.Atom.Source  => "source"
@@ -1804,20 +1804,20 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == "inline")
 
       test(m"Construct escalates a leading sigil-then-space value off inline (§22.2)"):
-        val c = Mutation.construct(t"note", t"# heading")
+        val c = Mutation.construct("note", "# heading")
         c.atoms.readable.head match
           case _: Tel.Atom.Inline  => "inline"
           case _                    => "escalated"
       . assert(_ == "escalated")
 
       test(m"Construct emits no atom for an empty value (§22.3)"):
-        Mutation.construct(t"flag", t"").atoms.readable.length
+        Mutation.construct("flag", "").atoms.readable.length
       . assert(_ == 0)
 
       test(m"UpdateAtom escalates an inline atom to a literal for a trailing-LF value"):
         val tel    = doc("note text\n")
-        val ptr    = Tel.Pointer.of(t"note")
-        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"line\n"))
+        val ptr    = Tel.Pointer.of("note")
+        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, "line\n"))
         result.childCompounds.readable.head.atoms.readable.head match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
@@ -1826,8 +1826,8 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"UpdateAtom escalates an inline atom to a source atom for a multi-line value"):
         val tel    = doc("note text\n")
-        val ptr    = Tel.Pointer.of(t"note")
-        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"line one\nline two"))
+        val ptr    = Tel.Pointer.of("note")
+        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, "line one\nline two"))
         result.childCompounds.readable.head.atoms.readable.head match
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
@@ -1837,8 +1837,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"UpdateAtom never downgrades a literal atom to inline (§22.3)"):
         // A literal atom updated to an inline-safe value stays literal.
         val tel    = doc("note\n      ===\nnow literal\n      ===\n")
-        val ptr    = Tel.Pointer.of(t"note")
-        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"now simple"))
+        val ptr    = Tel.Pointer.of("note")
+        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, "now simple"))
         result.childCompounds.readable.head.atoms.readable.head match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
@@ -1848,67 +1848,67 @@ object Tests extends Suite(m"Stratiform Tests"):
       // A top-level literal atom's delimiter line is six spaces plus the
       // delimiter (§15), and the parser strips a trailing CR before matching
       // it, so `      ---\r` in the payload must count as a §22.2 collision.
-      val crCollision = t"before\n      ---\r\nafter\n"
+      val crCollision = "before\n      ---\r\nafter\n"
 
       test(m"A CR-terminated delimiter line in the payload extends the delimiter"):
         val tel    = doc("note x\n")
-        val ptr    = Tel.Pointer.of(t"note")
+        val ptr    = Tel.Pointer.of("note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, crCollision))
         result.childCompounds.readable.head.atoms.readable.head match
           case Tel.Atom.Literal(delimiter, _) => delimiter
-          case _                              => t""
-      . assert(_ == t"----")
+          case _                              => ""
+      . assert(_ == "----")
 
       test(m"A payload line of delimiter-then-CR survives a round-trip"):
         val tel    = doc("note x\n")
-        val ptr    = Tel.Pointer.of(t"note")
+        val ptr    = Tel.Pointer.of("note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, crCollision))
         result.show.read[Tel].childCompounds.readable.head.atoms.readable.head match
           case Tel.Atom.Literal(_, text) => text
-          case _                         => t""
+          case _                         => ""
       . assert(_ == crCollision)
 
       test(m"RemoveRemark of an absent remark is the identity (§22.2)"):
         val tel    = doc("a 1\n")
-        val ptr    = Tel.Pointer.of(t"a")
+        val ptr    = Tel.Pointer.of("a")
         val result = Mutation(tel, Mutation.Op.RemoveRemark(ptr))
         result.show
-      . assert(_ == t"a 1\n")
+      . assert(_ == "a 1\n")
 
       test(m"Replace retains the original compound's remark (§22.2)"):
         val tel    = doc("email a@x  # personal\n")
         val replacement = Tel.Compound
-                           (t"email", Array(Tel.Atom.Inline(t"b@x", 1)), Unset, Array.empty)
-        val ptr    = Tel.Pointer.of(t"email")
+                           ("email", Array(Tel.Atom.Inline("b@x", 1)), Unset, Array.empty)
+        val ptr    = Tel.Pointer.of("email")
         val result = Mutation(tel, Mutation.Op.Replace(ptr, replacement))
         result.show
-      . assert(_ == t"email b@x  # personal\n")
+      . assert(_ == "email b@x  # personal\n")
 
       test(m"Delete removes an emptied block with its attached comments (§22.2)"):
         val tel    = doc("# note\na 1\n\nb 2\n")
-        val ptr    = Tel.Pointer.of(t"a")
+        val ptr    = Tel.Pointer.of("a")
         val result = Mutation(tel, Mutation.Op.Delete(ptr))
         result.show
-      . assert(_ == t"b 2\n")
+      . assert(_ == "b 2\n")
 
       test(m"Insert takes the natural position after the last same-member compound"):
         val tel    = doc("a 1\na 2\n\nb 3\n")
-        val nine   = Tel.Compound(t"a", Array(Tel.Atom.Inline(t"9", 1)), Unset, Array.empty)
+        val nine   = Tel.Compound("a", Array(Tel.Atom.Inline("9", 1)), Unset, Array.empty)
         val result = Mutation(tel, Mutation.Op.Insert(Tel.Pointer.Empty, nine))
         result.show
-      . assert(_ == t"a 1\na 2\na 9\n\nb 3\n")
+      . assert(_ == "a 1\na 2\na 9\n\nb 3\n")
 
       test(m"UpdateAtom preserves tabulation padding (§22.2 identity rule)"):
         val tel    = doc("# Name  # Age\nAlice   30\n")
-        val ptr    = Tel.Pointer.of(t"Alice")
-        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"31"))
+        val ptr    = Tel.Pointer.of("Alice")
+        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, "31"))
         result.show
-      . assert(_ == t"# Name  # Age\nAlice   31\n")
+      . assert(_ == "# Name  # Age\nAlice   31\n")
 
       test(m"UpdateAtom escalates a tab-before-LF value past source form (§22.2)"):
         val tel    = doc("note text\n")
-        val ptr    = Tel.Pointer.of(t"note")
-        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"line1\t\nline2"))
+        val ptr    = Tel.Pointer.of("note")
+        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, "line1\t\nline2"))
         result.childCompounds.readable.head.atoms.readable.head match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
@@ -1917,28 +1917,28 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"InsertAfter a tabulated row opens a new block after the table (§22.2)"):
         val tel    = doc("# Name  # Age\nAlice   30\n")
-        val note   = Tel.Compound(t"note", Array(Tel.Atom.Inline(t"x", 1)), Unset, Array.empty)
-        val result = Mutation(tel, Mutation.Op.InsertAfter(Tel.Pointer.of(t"Alice"), note))
+        val note   = Tel.Compound("note", Array(Tel.Atom.Inline("x", 1)), Unset, Array.empty)
+        val result = Mutation(tel, Mutation.Op.InsertAfter(Tel.Pointer.of("Alice"), note))
         result.show
-      . assert(_ == t"# Name  # Age\nAlice   30\n\nnote x\n")
+      . assert(_ == "# Name  # Age\nAlice   30\n\nnote x\n")
 
       test(m"InsertBefore a tabulated row opens a new block before the table (§22.2)"):
         val tel    = doc("# Name  # Age\nAlice   30\n")
-        val note   = Tel.Compound(t"note", Array(Tel.Atom.Inline(t"x", 1)), Unset, Array.empty)
-        val result = Mutation(tel, Mutation.Op.InsertBefore(Tel.Pointer.of(t"Alice"), note))
+        val note   = Tel.Compound("note", Array(Tel.Atom.Inline("x", 1)), Unset, Array.empty)
+        val result = Mutation(tel, Mutation.Op.InsertBefore(Tel.Pointer.of("Alice"), note))
         result.show
-      . assert(_ == t"note x\n\n# Name  # Age\nAlice   30\n")
+      . assert(_ == "note x\n\n# Name  # Age\nAlice   30\n")
 
       test(m"InsertIntoBlock appends a re-padded row to a tabulated block"):
         val tel    = doc("# Name  # Age\nAlice   30\nBob     25\n")
-        val row    = Revision.compound(t"Carol", t"40")
+        val row    = Revision.compound("Carol", "40")
         val result = Mutation(tel, Mutation.Op.InsertIntoBlock(Tel.Pointer.Empty, 0, row))
         result.show
-      . assert(_ == t"# Name  # Age\nAlice   30\nBob     25\nCarol   40\n")
+      . assert(_ == "# Name  # Age\nAlice   30\nBob     25\nCarol   40\n")
 
       test(m"InsertIntoBlock rejects a row exceeding column capacity"):
         val tel = doc("# Name  # Age\nAlice   30\n")
-        val row = Revision.compound(t"Christopher", t"40")
+        val row = Revision.compound("Christopher", "40")
         capture[Mutation.Error]
           (Mutation(tel, Mutation.Op.InsertIntoBlock(Tel.Pointer.Empty, 0, row))).reason
       . assert(_ == Mutation.Error.Reason.TabulationOverflow)
@@ -1947,17 +1947,17 @@ object Tests extends Suite(m"Stratiform Tests"):
         val tel    = doc("# Name    # Age\nAl        30\n")
         val result = Mutation(tel, Mutation.Op.ResizeTabulation(Tel.Pointer.Empty, 0))
         result.show
-      . assert(_ == t"# Name  # Age\nAl      30\n")
+      . assert(_ == "# Name  # Age\nAl      30\n")
 
       test(m"ResizeTabulation of a nested block starts at twice the indent"):
         val tel    = doc("person\n  # Name    # Age\n  Al        30\n")
-        val result = Mutation(tel, Mutation.Op.ResizeTabulation(Tel.Pointer.of(t"person"), 0))
+        val result = Mutation(tel, Mutation.Op.ResizeTabulation(Tel.Pointer.of("person"), 0))
         result.show
-      . assert(_ == t"person\n  # Name  # Age\n  Al      30\n")
+      . assert(_ == "person\n  # Name  # Age\n  Al      30\n")
 
       test(m"ResizeTabulation accommodates planned rows, then InsertIntoBlock fits"):
         val tel = doc("# Name  # Age\nAl      30\n")
-        val row = Revision.compound(t"Christopher", t"40")
+        val row = Revision.compound("Christopher", "40")
 
         val result = Mutation
                       ( tel,
@@ -1966,7 +1966,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                            Mutation.Op.InsertIntoBlock(Tel.Pointer.Empty, 0, row) ) )
 
         result.show
-      . assert(_ == t"# Name       # Age\nAl           30\nChristopher  40\n")
+      . assert(_ == "# Name       # Age\nAl           30\nChristopher  40\n")
 
       test(m"ResizeTabulation of a block without a tabulation is rejected"):
         val tel = doc("a 1\n")
@@ -1977,13 +1977,13 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"ReorderGroups moves whole blocks with their comments (§22.2)"):
         val tel = doc("# emails\ne 1\n\n# phones\np 2\n")
         val op  = Mutation.Op.ReorderGroups
-                    (Tel.Pointer.Empty, t"p", t"e", Mutation.Placement.Before)
+                    (Tel.Pointer.Empty, "p", "e", Mutation.Placement.Before)
         Mutation(tel, op).show
-      . assert(_ == t"# phones\np 2\n\n# emails\ne 1\n")
+      . assert(_ == "# phones\np 2\n\n# emails\ne 1\n")
 
       test(m"Construct over members: inline run, flags, and child fallback (§22.3)"):
         val c = Mutation.construct
-                 ( t"person",
+                 ( "person",
                    List
                     ( Mutation.Member.Value(t"name", List(t"Alice Smith")),
                       Mutation.Member.Flag(t"active"),
@@ -1992,11 +1992,11 @@ object Tests extends Suite(m"Stratiform Tests"):
         val tel    = doc("")
         val result = Mutation(tel, Mutation.Op.Insert(Tel.Pointer.Empty, c))
         result.show
-      . assert(_ == t"person  Alice Smith  active\n  bio\n      line1\n      line2\n")
+      . assert(_ == "person  Alice Smith  active\n  bio\n      line1\n      line2\n")
 
       test(m"Construct over members: repeatable occurrences stay together (§22.3)"):
         val c = Mutation.construct
-                 ( t"opts",
+                 ( "opts",
                    List
                     ( Mutation.Member.Value(t"tag", List(t"a", t"b")),
                       Mutation.Member.Value(t"note", List(t"x")) ) )
@@ -2004,106 +2004,106 @@ object Tests extends Suite(m"Stratiform Tests"):
         val tel    = doc("")
         val result = Mutation(tel, Mutation.Op.Insert(Tel.Pointer.Empty, c))
         result.show
-      . assert(_ == t"opts a b\n  note x\n")
+      . assert(_ == "opts a b\n  note x\n")
 
       test(m"Construct over members: an empty value becomes a bare-keyword child"):
         val c = Mutation.construct
-                 (t"entry", List(Mutation.Member.Value(t"note", List(t""))))
+                 ("entry", List(Mutation.Member.Value(t"note", List(t""))))
 
         val tel    = doc("")
         val result = Mutation(tel, Mutation.Op.Insert(Tel.Pointer.Empty, c))
         result.show
-      . assert(_ == t"entry\n  note\n")
+      . assert(_ == "entry\n  note\n")
 
     suite(m"Tel.fields repeated-keyword accessor"):
       test(m"fields returns all matching children in order"):
-        val tel = t"item 1\nitem 2\nitem 3\n".read[Tel]
-        tel.fields(t"item").readable.map(_.primaryAtom).toList.to(List)
+        val tel = "item 1\nitem 2\nitem 3\n".read[Tel]
+        tel.fields("item").readable.map(_.primaryAtom).toList.to(List)
       . assert(_ == List(t"1", t"2", t"3"))
 
       test(m"fields returns empty array when none match"):
-        val tel = t"other 1\n".read[Tel]
-        tel.fields(t"item").readable.length
+        val tel = "other 1\n".read[Tel]
+        tel.fields("item").readable.length
       . assert(_ == 0)
 
     suite(m".read[Tel] from Text"):
       test(m"reading a Text value gives a Tel"):
-        val tel = t"name Alice\n".read[Tel]
-        tel.childCompounds.readable.headOption.map(_.keyword).getOrElse(t"")
-      . assert(_ == t"name")
+        val tel = "name Alice\n".read[Tel]
+        tel.childCompounds.readable.headOption.map(_.keyword).getOrElse("")
+      . assert(_ == "name")
 
     suite(m".load[Tel] returns Document[Tel] with metadata"):
       test(m"prologue-free document has empty metadata"):
-        val doc = t"name Alice\n".load[Tel]
+        val doc = "name Alice\n".load[Tel]
         (doc.metadata.interpreterDirective.absent, doc.metadata.pragma.absent)
       . assert(_ == (true, true))
 
       test(m"pragma is captured in Document metadata"):
-        val doc = t"tel 1.0\nname Alice\n".load[Tel]
+        val doc = "tel 1.0\nname Alice\n".load[Tel]
         doc.metadata.pragma.let(_.version).or((0, 0))
       . assert(_ == (1, 0))
 
       test(m"Document[Tel].root parses the content"):
-        val doc = t"name Alice\n".load[Tel]
-        doc.root.childCompounds.readable.headOption.map(_.keyword).getOrElse(t"")
-      . assert(_ == t"name")
+        val doc = "name Alice\n".load[Tel]
+        doc.root.childCompounds.readable.headOption.map(_.keyword).getOrElse("")
+      . assert(_ == "name")
 
     suite(m"LIRA-based pragma grammar (§8)"):
       def pragmaOf(source: Text): Optional[Tel.Pragma] = source.load[Tel].metadata.pragma
 
       test(m"a sigil-only pragma parses"):
-        pragmaOf(t"tel 1.0 %\nname Alice\n").let(_.sigil).or(' ')
+        pragmaOf("tel 1.0 %\nname Alice\n").let(_.sigil).or(' ')
       . assert(_ == '%')
 
       test(m"a versioned reference parses structurally"):
-        pragmaOf(t"tel 1.0 propensive.dev/build:2.1.0\nname Alice\n").let(_.reference)
-      . assert(_ == Tel.Pragma.Reference(t"propensive.dev", t"build",
+        pragmaOf("tel 1.0 propensive.dev/build:2.1.0\nname Alice\n").let(_.reference)
+      . assert(_ == Tel.Pragma.Reference("propensive.dev", "build",
           Tel.Pragma.Reference.Selector.Version(2, 1, 0)))
 
       test(m"a tagged reference parses structurally"):
-        pragmaOf(t"tel 1.0 specification.tel/jdk:jdk-19\nname Alice\n")
+        pragmaOf("tel 1.0 specification.tel/jdk:jdk-19\nname Alice\n")
         . let(_.reference).let(_.selector)
-      . assert(_ == Tel.Pragma.Reference.Selector.Tag(t"jdk-19"))
+      . assert(_ == Tel.Pragma.Reference.Selector.Tag("jdk-19"))
 
       test(m"a bare reference has no selector"):
-        pragmaOf(t"tel 1.0 propensive.dev/build\nname Alice\n")
+        pragmaOf("tel 1.0 propensive.dev/build\nname Alice\n")
         . let(_.reference).let(_.selector.absent)
       . assert(_ == true)
 
       test(m"layer selections are captured in order"):
-        pragmaOf(t"tel 1.0 propensive.dev/build +publishing +maven\nname Alice\n").let(_.layers)
+        pragmaOf("tel 1.0 propensive.dev/build +publishing +maven\nname Alice\n").let(_.layers)
       . assert(_ == List(t"publishing", t"maven"))
 
       test(m"the pinned tels coordinate is recognised"):
-        pragmaOf(t"tel 1.0 specification.tel/tels:2.0.0\nname Alice\n")
+        pragmaOf("tel 1.0 specification.tel/tels:2.0.0\nname Alice\n")
         . let(_.reference).let(_.isTels)
       . assert(_ == true)
 
       test(m"the deleted URL identifier form is E121"):
-        capture[Tel.Error](t"tel 1.0 https://example.com/schema\nname Alice\n".read[Tel]).reason
+        capture[Tel.Error]("tel 1.0 https://example.com/schema\nname Alice\n".read[Tel]).reason
       . assert(_ == Tel.Error.Reason.BadPragmaPhrase)
 
       test(m"a second reference is E122"):
-        capture[Tel.Error](t"tel 1.0 example.com/a example.com/b\nname Alice\n".read[Tel])
+        capture[Tel.Error]("tel 1.0 example.com/a example.com/b\nname Alice\n".read[Tel])
         . reason
       . assert(_ == Tel.Error.Reason.MisplacedPragmaPhrase)
 
       test(m"a two-part version selector fails the reference grammar"):
-        Tel.Pragma.Reference.parse(t"example.com/b:1.0").absent
+        Tel.Pragma.Reference.parse("example.com/b:1.0").absent
       . assert(_ == true)
 
       test(m"a leading-zero version selector fails the reference grammar"):
-        Tel.Pragma.Reference.parse(t"example.com/b:01.0.0").absent
+        Tel.Pragma.Reference.parse("example.com/b:01.0.0").absent
       . assert(_ == true)
 
       test(m"a non-kebab module name fails the reference grammar"):
-        Tel.Pragma.Reference.parse(t"example.com/Bad_Name").absent
+        Tel.Pragma.Reference.parse("example.com/Bad_Name").absent
       . assert(_ == true)
 
       test(m"the serializer emits reference, layers and sigil"):
-        t"tel 1.0 propensive.dev/build +publishing +maven %\nname Alice\n"
-        . read[Tel].show.cut(t"\n").stdlib.headOption.getOrElse(t"")
-      . assert(_ == t"tel 1.0 propensive.dev/build +publishing +maven %")
+        "tel 1.0 propensive.dev/build +publishing +maven %\nname Alice\n"
+        . read[Tel].show.cut("\n").stdlib.headOption.getOrElse("")
+      . assert(_ == "tel 1.0 propensive.dev/build +publishing +maven %")
 
     suite(m"Integration: parse → mutate → print → reparse"):
       def doc(source: String): Tel = source.tt.read[Tel]
@@ -2112,22 +2112,22 @@ object Tests extends Suite(m"Stratiform Tests"):
         import dynamicAccess.dynamicTel
         val original = doc("# header\nname Alice\nemail a@example.com\n")
         val lens = summon["email" is Lens from Tel onto Tel]
-        val updated = lens.modify(original)(_ => Tel.scalar(t"b@example.com"))
+        val updated = lens.modify(original)(_ => Tel.scalar("b@example.com"))
         updated.show
-      . assert(_ == t"# header\nname Alice\nemail b@example.com\n")
+      . assert(_ == "# header\nname Alice\nemail b@example.com\n")
 
       test(m"a multi-step Revision log round-trips through the printer"):
         val original = doc("name Alice\n")
         val edited =
           original.edited
-            ( Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
+            ( Revision.at(Tel.Pointer.of("name")).update("Bob")
            ++ Revision.at(Tel.Pointer.Empty)
-                  .insert(Revision.compound(t"email", t"b@example.com")) )
+                  .insert(Revision.compound("email", "b@example.com")) )
 
         val printed   = edited.show
         val reparsed  = printed.s.tt.read[Tel]
         reparsed.show
-      . assert(_ == t"name Bob\nemail b@example.com\n")
+      . assert(_ == "name Bob\nemail b@example.com\n")
 
     suite(m"Tel.modify and Lens given"):
       import dynamicAccess.dynamicTel
@@ -2135,28 +2135,28 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"modify replaces an existing field's compound"):
         val tel = doc("name Alice\n")
-        val updated = tel.modify("name", Tel.scalar(t"Bob"))
+        val updated = tel.modify("name", Tel.scalar("Bob"))
         updated.selectDynamic("name").primaryAtom
-      . assert(_ == t"Bob")
+      . assert(_ == "Bob")
 
       test(m"modify appends when the field is absent"):
         val tel = doc("name Alice\n")
-        val updated = tel.modify("email", Tel.scalar(t"a@b.c"))
+        val updated = tel.modify("email", Tel.scalar("a@b.c"))
         updated.selectDynamic("email").primaryAtom
-      . assert(_ == t"a@b.c")
+      . assert(_ == "a@b.c")
 
       test(m"Lens by field name reads the current value"):
         val tel = doc("name Alice\n")
         val lens = summon["name" is Lens from Tel onto Tel]
         lens(tel).primaryAtom
-      . assert(_ == t"Alice")
+      . assert(_ == "Alice")
 
       test(m"Lens.modify updates the field through the transform"):
         val tel = doc("name Alice\n")
         val lens = summon["name" is Lens from Tel onto Tel]
-        val updated = lens.modify(tel)(_ => Tel.scalar(t"Carol"))
+        val updated = lens.modify(tel)(_ => Tel.scalar("Carol"))
         updated.selectDynamic("name").primaryAtom
-      . assert(_ == t"Carol")
+      . assert(_ == "Carol")
 
     suite(m"Optics: positional child traversal"):
       import dynamicAccess.dynamicTel
@@ -2164,123 +2164,123 @@ object Tests extends Suite(m"Stratiform Tests"):
       def contacts: Tel = doc("contacts\n  contact alice\n  contact bob\n")
 
       test(m"ordinal optic replaces the n-th child compound"):
-        contacts.lens(_.contacts(Sec) = Tel.scalar(t"carol")).contacts(1).primaryAtom
-      . assert(_ == t"carol")
+        contacts.lens(_.contacts(Sec) = Tel.scalar("carol")).contacts(1).primaryAtom
+      . assert(_ == "carol")
 
       test(m"ordinal optic leaves siblings unchanged"):
-        contacts.lens(_.contacts(Sec) = Tel.scalar(t"carol")).contacts(0).primaryAtom
-      . assert(_ == t"alice")
+        contacts.lens(_.contacts(Sec) = Tel.scalar("carol")).contacts(0).primaryAtom
+      . assert(_ == "alice")
 
       test(m"ordinal optic preserves the child's keyword"):
-        contacts.lens(_.contacts(Sec) = Tel.scalar(t"carol")).applyDynamic("contacts")(1).keyword
-      . assert(_ == t"contact")
+        contacts.lens(_.contacts(Sec) = Tel.scalar("carol")).applyDynamic("contacts")(1).keyword
+      . assert(_ == "contact")
 
       test(m"each optic transforms every child compound"):
-        val updated = contacts.lens(_.contacts(Each) = Tel.scalar(t"x"))
+        val updated = contacts.lens(_.contacts(Each) = Tel.scalar("x"))
         (updated.contacts(0).primaryAtom, updated.contacts(1).primaryAtom)
-      . assert(_ == (t"x", t"x"))
+      . assert(_ == ("x", "x"))
 
       test(m"an out-of-range ordinal is a no-op"):
-        contacts.lens(_.contacts(Quat) = Tel.scalar(t"none")).contacts(1).primaryAtom
-      . assert(_ == t"bob")
+        contacts.lens(_.contacts(Quat) = Tel.scalar("none")).contacts(1).primaryAtom
+      . assert(_ == "bob")
 
       test(m"editing through an ordinal optic preserves surrounding formatting"):
         val original = doc("# header\ncontacts\n  contact alice\n  contact bob\n")
-        val updated = original.lens(_.contacts(Sec) = Tel.scalar(t"carol"))
+        val updated = original.lens(_.contacts(Sec) = Tel.scalar("carol"))
         updated.show
-      . assert(_ == t"# header\ncontacts\n  contact alice\n  contact carol\n")
+      . assert(_ == "# header\ncontacts\n  contact alice\n  contact carol\n")
 
     suite(m"Revision DSL"):
       def doc(source: String): Tel = source.tt.read[Tel]
 
       test(m"single-op edit changes one atom"):
         val tel  = doc("name Alice\n")
-        val edit = Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
+        val edit = Revision.at(Tel.Pointer.of("name")).update("Bob")
         tel.edited(edit).show
-      . assert(_ == t"name Bob\n")
+      . assert(_ == "name Bob\n")
 
       test(m"chained edits apply in order"):
         val tel = doc("name Alice\n")
-        val edit = Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
-                ++ Revision.at(Tel.Pointer.of(t"name")).attachRemark(t"note")
+        val edit = Revision.at(Tel.Pointer.of("name")).update("Bob")
+                ++ Revision.at(Tel.Pointer.of("name")).attachRemark("note")
 
         tel.edited(edit).show
-      . assert(_ == t"name Bob  # note\n")
+      . assert(_ == "name Bob  # note\n")
 
       test(m"Revision.compound helper builds an inline-atom compound"):
-        val c = Revision.compound(t"email", t"a@b.c")
+        val c = Revision.compound("email", "a@b.c")
         c.keyword
-      . assert(_ == t"email")
+      . assert(_ == "email")
 
       test(m"inserting via Revision composes with deletion"):
         val tel  = doc("a 1\nb 2\n")
-        val edit = Revision.at(Tel.Pointer.of(t"b")).delete
-                ++ Revision.at(Tel.Pointer.of(t"a")).insertAfter(Revision.compound(t"c", t"3"))
+        val edit = Revision.at(Tel.Pointer.of("b")).delete
+                ++ Revision.at(Tel.Pointer.of("a")).insertAfter(Revision.compound("c", "3"))
 
         tel.edited(edit).show
-      . assert(_ == t"a 1\nc 3\n")
+      . assert(_ == "a 1\nc 3\n")
 
       test(m"noop edit returns the document unchanged"):
         val tel = doc("name Alice\n")
         tel.edited(Revision.noop).show
-      . assert(_ == t"name Alice\n")
+      . assert(_ == "name Alice\n")
 
     suite(m"Opening documents"):
       def cell(source: String): Cell = new Cell(source.tt)
 
       test(m"A Text source opens read-only by default"):
-        t"name Alice\n".open[Tel]() { handle ?=> handle.current.show }
-      . assert(_ == t"name Alice\n")
+        "name Alice\n".open[Tel]() { handle ?=> handle.current.show }
+      . assert(_ == "name Alice\n")
 
       test(m"Metadata reports the line endings under the Read grant"):
-        t"name Alice\r\n".open[Tel]() { handle ?=> handle.metadata.let(_.lineEndings) }
+        "name Alice\r\n".open[Tel]() { handle ?=> handle.metadata.let(_.lineEndings) }
       . assert(_ == Tel.LineEndings.Crlf)
 
       test(m"Mutating through a writable handle writes back on close"):
         val source = cell("name Alice\n")
 
         source.open[Tel](Read & Write): handle ?=>
-          handle.update(Tel.Pointer.of(t"name"), t"Bob")
+          handle.update(Tel.Pointer.of("name"), "Bob")
 
         source.content
-      . assert(_ == t"name Bob\n")
+      . assert(_ == "name Bob\n")
 
       test(m"A composed revision applies through the handle"):
         val source = cell("name Alice\n")
 
         source.open[Tel](Read & Write): handle ?=>
           handle.revise
-            ( Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
-             ++ Revision.at(Tel.Pointer.Empty).insert(Revision.compound(t"email", t"b@x")) )
+            ( Revision.at(Tel.Pointer.of("name")).update("Bob")
+             ++ Revision.at(Tel.Pointer.Empty).insert(Revision.compound("email", "b@x")) )
 
         source.content
-      . assert(_ == t"name Bob\nemail b@x\n")
+      . assert(_ == "name Bob\nemail b@x\n")
 
       test(m"Presentation details survive open, mutate, and write-back"):
         val source = cell("# comment\nname Alice  # remark\n\n# Name  # Age\nAl      30\n")
 
         source.open[Tel](Read & Write): handle ?=>
-          handle.update(Tel.Pointer.of(t"name"), t"Bob")
+          handle.update(Tel.Pointer.of("name"), "Bob")
 
         source.content
-      . assert(_ == t"# comment\nname Bob  # remark\n\n# Name  # Age\nAl      30\n")
+      . assert(_ == "# comment\nname Bob  # remark\n\n# Name  # Age\nAl      30\n")
 
       test(m"A rejected operation aborts at its call site"):
         val source = cell("name Alice\n")
 
         source.open[Tel](Read & Write): handle ?=>
-          capture[Mutation.Error](handle.remove(Tel.Pointer.of(t"missing"))).reason
+          capture[Mutation.Error](handle.remove(Tel.Pointer.of("missing"))).reason
       . assert(_ == Mutation.Error.Reason.PointerNotFound)
 
       test(m"A rejected operation leaves the document intact for further edits"):
         val source = cell("name Alice\n")
 
         source.open[Tel](Read & Write): handle ?=>
-          capture[Mutation.Error](handle.remove(Tel.Pointer.of(t"missing")))
-          handle.update(Tel.Pointer.of(t"name"), t"Bob")
+          capture[Mutation.Error](handle.remove(Tel.Pointer.of("missing")))
+          handle.update(Tel.Pointer.of("name"), "Bob")
 
         source.content
-      . assert(_ == t"name Bob\n")
+      . assert(_ == "name Bob\n")
 
       test(m"An unmutated document is not rewritten"):
         val source = cell("name Alice\n")
@@ -2292,34 +2292,34 @@ object Tests extends Suite(m"Stratiform Tests"):
         val source = cell("name Alice\n")
         source.open[Tel](Read & Write, Tel.Flag.Force) { handle ?=> () }
         (source.writes, source.content)
-      . assert(_ == (1, t"name Alice\n"))
+      . assert(_ == (1, "name Alice\n"))
 
       test(m"An exception escaping the block writes nothing back"):
         val source = cell("name Alice\n")
 
         try
           source.open[Tel](Read & Write): handle ?=>
-            handle.update(Tel.Pointer.of(t"name"), t"Bob")
+            handle.update(Tel.Pointer.of("name"), "Bob")
             throw jl.RuntimeException("boom")
         catch case _: jl.RuntimeException => ()
 
         (source.content, source.writes)
-      . assert(_ == (t"name Alice\n", 0))
+      . assert(_ == ("name Alice\n", 0))
 
       test(m"Write mode on an unwritable source is refused"):
-        capture[Mutation.Error](t"name Alice\n".open[Tel](Write) { () }).reason
+        capture[Mutation.Error]("name Alice\n".open[Tel](Write) { () }).reason
       . assert(_ == Mutation.Error.Reason.WriteUnsupported)
 
       test(m"Mutation without the Write grant does not compile"):
         demilitarize:
-          val source = new Cell(t"name Alice\n")
-          source.open[Tel]() { handle ?=> handle.update(Tel.Pointer.of(t"name"), t"Bob") }
+          val source = new Cell("name Alice\n")
+          source.open[Tel]() { handle ?=> handle.update(Tel.Pointer.of("name"), "Bob") }
         . map(_.message)
       . assert(_.nonEmpty)
 
       test(m"Reading without the Read grant does not compile"):
         demilitarize:
-          val source = new Cell(t"name Alice\n")
+          val source = new Cell("name Alice\n")
           source.open[Tel](Write) { handle ?=> handle.current.show }
         . map(_.message)
       . assert(_.nonEmpty)
@@ -2334,10 +2334,10 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"A file path opened Read & Write writes the mutation back"):
         val name: Text = Uuid().show
         val dest: Path on Linux = (% / "tmp" / name).on[Linux]
-        dest.write(t"name Alice\n")
+        dest.write("name Alice\n")
 
         dest.open[Tel](Read & Write): handle ?=>
-          handle.update(Tel.Pointer.of(t"name"), t"Bob")
+          handle.update(Tel.Pointer.of("name"), "Bob")
 
         // The decoder is scoped to the read alone: an ambient `CharDecoder`
         // alongside the file-level `CharEncoder` would make turbulence's
@@ -2350,7 +2350,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         dest.delete()
         result
-      . assert(_ == t"name Bob\n")
+      . assert(_ == "name Bob\n")
 
     suite(m"Negative corpus (E1xx parsing)"):
       CorpusLoader.negative.each: testcase =>
@@ -2398,10 +2398,10 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"empty bytes round-trip to empty text"):
         Base256.encode(Array.empty[Byte])
-      . assert(_ == t"")
+      . assert(_ == "")
 
       test(m"empty text round-trips to empty bytes"):
-        Base256.decode(t"").readable.length
+        Base256.decode("").readable.length
       . assert(_ == 0)
 
       test(m"encoded length in characters equals input length in bytes"):
@@ -2410,7 +2410,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == 256)
 
       test(m"permissive decode accepts non-alphabet chars by residue"):
-        Base256.decode(t"A ").readable.toSeq
+        Base256.decode("A ").readable.toSeq
       . assert(_ == Seq(0x41.toByte, 0x20.toByte))
 
       test(m"strict decode accepts the alphabet"):
@@ -2536,11 +2536,11 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(identity)
 
     val nameSchema = Tels(
-      name     = t"contact",
+      name     = "contact",
       document = Tels.Struct(
         members = Array(Tels.Field
          ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-           t"name", Tels.Scalar(Array(t"string")), Unset )),
+           "name", Tels.Scalar(Array("string")), Unset )),
         validators = Array.empty),
       layers   = Array.empty,
       sigil    = Unset,
@@ -2573,12 +2573,12 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == "00")
 
       test(m"single scalar child via tel.bintel(schema)"):
-        hex(t"name Alice\n".read[Tel].bintel(nameSchema))
+        hex("name Alice\n".read[Tel].bintel(nameSchema))
       . assert(_ == "01 00 05 41 6C 69 63 65")
 
       test(m"empty scalar value encodes as zero-length"):
         val scalar = Tels.Scalar(Array.empty)
-        val value = Tel.Element.Value(0, scalar, t"")
+        val value = Tel.Element.Value(0, scalar, "")
         val root = Tel.Element.Node(Unset, nameSchema.document, Array(value))
         hex(root.bintel(nameSchema))
       . assert(_ == "01 00 00")
@@ -2586,7 +2586,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"UTF-8 byte length is encoded, not character count"):
         // "café" = 0x63 0x61 0x66 0xC3 0xA9 = 5 bytes, 4 chars
         val scalar = Tels.Scalar(Array.empty)
-        val value = Tel.Element.Value(0, scalar, t"café")
+        val value = Tel.Element.Value(0, scalar, "café")
         val root = Tel.Element.Node(Unset, nameSchema.document, Array(value))
         hex(root.bintel(nameSchema))
       . assert(_ == "01 00 05 63 61 66 C3 A9")
@@ -2594,11 +2594,11 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"flag node encodes as just its keyword index"):
         val flagNode = Tel.Element.Node(0, Tels.Flag, Array.empty)
         val flagSchema = Tels(
-          name     = t"feature",
+          name     = "feature",
           document = Tels.Struct(
             members = Array(Tels.Field
              ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-               t"enabled", Tels.Flag, Unset )),
+               "enabled", Tels.Flag, Unset )),
             validators = Array.empty),
           layers   = Array.empty,
           sigil    = Unset,
@@ -2614,17 +2614,17 @@ object Tests extends Suite(m"Stratiform Tests"):
         val innerStruct = Tels.Struct(
           members = Array(Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"host", innerScalar, Unset )),
+             "host", innerScalar, Unset )),
           validators = Array.empty)
         val outerStruct = Tels.Struct(
           members = Array(Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"config", innerStruct, Unset )),
+             "config", innerStruct, Unset )),
           validators = Array.empty)
 
         val configNode = Tel.Element.Node(
           0, innerStruct,
-          Array(Tel.Element.Value(0, innerScalar, t"example.com")))
+          Array(Tel.Element.Value(0, innerScalar, "example.com")))
 
         val root = Tel.Element.Node(Unset, outerStruct, Array(configNode))
         hex(root.bintel(nameSchema))
@@ -2632,7 +2632,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"large keyword index uses multi-byte varint"):
         val scalar = Tels.Scalar(Array.empty)
-        val value = Tel.Element.Value(128, scalar, t"x")
+        val value = Tel.Element.Value(128, scalar, "x")
         val root = Tel.Element.Node(Unset, nameSchema.document, Array(value))
         hex(root.bintel(nameSchema))
       . assert(_ == "01 80 01 01 78")
@@ -2646,13 +2646,13 @@ object Tests extends Suite(m"Stratiform Tests"):
         val struct = Tels.Struct(
           members = Array(
             Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-                       t"first",  scalar, Unset),
+                       "first",  scalar, Unset),
             Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-                       t"second", scalar, Unset)),
+                       "second", scalar, Unset)),
           validators = Array.empty)
         val children = Array[Tel.Element](
-          Tel.Element.Value(1, scalar, t"B"),
-          Tel.Element.Value(0, scalar, t"A"))
+          Tel.Element.Value(1, scalar, "B"),
+          Tel.Element.Value(0, scalar, "A"))
         val root = Tel.Element.Node(Unset, struct, children)
         hex(root.bintel(nameSchema))
       . assert(_ == "02 00 01 41 01 01 42")
@@ -2662,11 +2662,11 @@ object Tests extends Suite(m"Stratiform Tests"):
         val scalar = Tels.Scalar(Array.empty)
         val struct = Tels.Struct(
           members = Array(Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Loose,
-                                       t"item", scalar, Unset)),
+                                       "item", scalar, Unset)),
           validators = Array.empty)
         val children = Array[Tel.Element](
-          Tel.Element.Value(0, scalar, t"first"),
-          Tel.Element.Value(0, scalar, t"second"))
+          Tel.Element.Value(0, scalar, "first"),
+          Tel.Element.Value(0, scalar, "second"))
         val root = Tel.Element.Node(Unset, struct, children)
         // 2 children, then two Value(0, len, text)s.
         hex(root.bintel(nameSchema))
@@ -2683,7 +2683,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == 0)
 
       test(m"single scalar value round-trips"):
-        val original = t"name Alice\n".read[Tel]
+        val original = "name Alice\n".read[Tel]
         val bytes = original.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
@@ -2695,7 +2695,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"a value derives its own schema and round-trips through BinTEL"):
         val shape: Tests.Shape2 = Tests.Shape2.Rectangle(3, 4)
-        val schema = Tels.tels[Tests.Shape2](t"shape")
+        val schema = Tels.tels[Tests.Shape2]("shape")
 
         def values(element: Tel.Element): List[Text] = element match
           case Tel.Element.Node(_, _, children) => children.to[List].bind(values)
@@ -2715,13 +2715,13 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Tests.Shape2.Dot)
 
       test(m"a product round-trips bytes-to-typed-value through bintel/read"):
-        Bintel.read[Tests.Person](Tests.Person(t"Alice", 30).bintel)
-      . assert(_ == Tests.Person(t"Alice", 30))
+        Bintel.read[Tests.Person](Tests.Person("Alice", 30).bintel)
+      . assert(_ == Tests.Person("Alice", 30))
 
       test(m"empty scalar value round-trips"):
         val scalar = Tels.Scalar(Array.empty)
         val root = Tel.Element.Node
-                    (Unset, nameSchema.document, Array(Tel.Element.Value(0, scalar, t"")))
+                    (Unset, nameSchema.document, Array(Tel.Element.Value(0, scalar, "")))
         val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
@@ -2734,7 +2734,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"UTF-8 multi-byte scalar round-trips"):
         val scalar = Tels.Scalar(Array.empty)
         val root = Tel.Element.Node
-                    (Unset, nameSchema.document, Array(Tel.Element.Value(0, scalar, t"café")))
+                    (Unset, nameSchema.document, Array(Tel.Element.Value(0, scalar, "café")))
         val bytes = root.bintel(nameSchema)
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
@@ -2746,11 +2746,11 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"flag element round-trips"):
         val flagSchema = Tels(
-          name     = t"feature",
+          name     = "feature",
           document = Tels.Struct(
             members = Array(Tels.Field
              ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-               t"enabled", Tels.Flag, Unset )),
+               "enabled", Tels.Flag, Unset )),
             validators = Array.empty),
           layers   = Array.empty,
           sigil    = Unset,
@@ -2771,21 +2771,21 @@ object Tests extends Suite(m"Stratiform Tests"):
         val innerStruct = Tels.Struct(
           members = Array(Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"host", innerScalar, Unset )),
+             "host", innerScalar, Unset )),
           validators = Array.empty)
         val outerStruct = Tels.Struct(
           members = Array(Tels.Field
            ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-             t"config", innerStruct, Unset )),
+             "config", innerStruct, Unset )),
           validators = Array.empty)
         val outerSchema = Tels(
-          name = t"app", document = outerStruct, layers = Array.empty,
+          name = "app", document = outerStruct, layers = Array.empty,
           sigil = Unset, records = Array.empty, scalars = Array.empty,
           selects = Array.empty)
 
         val configNode = Tel.Element.Node(
           0, innerStruct,
-          Array(Tel.Element.Value(0, innerScalar, t"example.com")))
+          Array(Tel.Element.Value(0, innerScalar, "example.com")))
         val root = Tel.Element.Node(Unset, outerStruct, Array(configNode))
 
         val bytes = root.bintel(nameSchema)
@@ -2798,14 +2798,14 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == List(t"example.com"))
 
       test(m"trailing bytes after document root raise Bintel.Error"):
-        val original = t"name Alice\n".read[Tel]
+        val original = "name Alice\n".read[Tel]
         val bytes = original.bintel(nameSchema)
         val padded = (bytes.readable.toList :+ 0xff.toByte).toArray.asInstanceOf[Array[Byte]]
         capture[Bintel.Error](Bintel.decode(padded, nameSchema)).reason
       . assert(_ == Bintel.Error.Reason.TrailingBytes)
 
       test(m"truncated input raises Bintel.Error"):
-        val original = t"name Alice\n".read[Tel]
+        val original = "name Alice\n".read[Tel]
         val bytes = original.bintel(nameSchema)
         val truncated = Array.frozen(bytes.readable.slice(0, bytes.readable.length - 1))
         // B02 (inside a varint), B06 (inside a value) or B09 (otherwise),
@@ -2942,12 +2942,12 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == true)
 
       test(m"tel.bintelDocument produces a file beginning with magic"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = "name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
         bytes.readable.slice(0, 4).toSeq
       . assert(_ == Seq(0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte))
 
       test(m"decodeDocument round-trips through frame + decode"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = "name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
         val doc = Bintel.decodeDocument(bytes, nameSchema)
         doc.root match
           case Tel.Element.Node(_, _, children) =>
@@ -2959,22 +2959,22 @@ object Tests extends Suite(m"Stratiform Tests"):
       def firstName(document: Bintel.Document): Text = document.root match
         case Tel.Element.Node(_, _, children) =>
           children.readable.toList.collect { case Tel.Element.Value(_, _, t) => t }.head
-        case _ => t"?"
+        case _ => "?"
 
       test(m"decodeDocument reports the continuation offset"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = "name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
         Bintel.decodeDocument(bytes, nameSchema).continuation == bytes.readable.length
       . assert(_ == true)
 
       test(m"single-document decoding ignores the continuation"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = "name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
         val junk: Data = scala.Array[Byte](0x7f, 0x7f).asInstanceOf[Array[Byte]]
         val doc = Bintel.decodeDocument(concat(bytes, junk), nameSchema)
         (firstName(doc), doc.continuation == bytes.readable.length)
-      . assert(_ == (t"Alice", true))
+      . assert(_ == ("Alice", true))
 
       test(m"a declared length longer than the structure is B16"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = "name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
         val forged = new scala.Array[Byte](bytes.readable.length + 1)
         bytes.readable.copyToArray(forged)
         forged(4) = (forged(4) + 1).toByte
@@ -2983,7 +2983,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Bintel.Error.Reason.DeclaredLengthMismatch)
 
       test(m"a declared length shorter than the structure fails inside the body"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = "name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
         val forged = bytes.readable.toList.toArray
         forged(4) = (forged(4) - 1).toByte
         capture[Bintel.Error](Bintel.decodeDocument(forged.asInstanceOf[Array[Byte]], nameSchema))
@@ -2991,24 +2991,24 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Bintel.Error.Reason.ValueTruncated)
 
       test(m"decodeWholeDocument accepts exactly one document"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = "name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
         firstName(Bintel.decodeWholeDocument(bytes, nameSchema))
-      . assert(_ == t"Alice")
+      . assert(_ == "Alice")
 
       test(m"decodeWholeDocument rejects a continuation as B08"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = "name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
         capture[Bintel.Error](Bintel.decodeWholeDocument(concat(bytes, bytes), nameSchema)).reason
       . assert(_ == Bintel.Error.Reason.TrailingBytes)
 
       test(m"decodeStream yields every document of a stream in order"):
-        val alice = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
-        val bob   = t"name Bob\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val alice = "name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bob   = "name Bob\n".read[Tel].bintelDocument(nameSchema, sig32)
         Bintel.decodeStream(concat(alice, bob), nameSchema).map(firstName)
       . assert(_ == List(t"Alice", t"Bob"))
 
       test(m"decodeStream reports each document's continuation"):
-        val alice = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
-        val bob   = t"name Bob\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val alice = "name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bob   = "name Bob\n".read[Tel].bintelDocument(nameSchema, sig32)
         val docs = Bintel.decodeStream(concat(alice, bob), nameSchema).map(_.continuation)
         docs == List(alice.readable.length, alice.readable.length + bob.readable.length)
       . assert(_ == true)
@@ -3018,7 +3018,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == List())
 
       test(m"a continuation that is not BinTEL is B01 at that position"):
-        val alice = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val alice = "name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
         val junk: Data = scala.Array[Byte](0x7f, 0x7f, 0x7f, 0x7f, 0x7f).asInstanceOf[Array[Byte]]
         capture[Bintel.Error](Bintel.decodeStream(concat(alice, junk), nameSchema)).reason
       . assert(_ == Bintel.Error.Reason.BadMagic)
@@ -3027,12 +3027,12 @@ object Tests extends Suite(m"Stratiform Tests"):
       val sig32: Data = scala.Array.fill[Byte](32)(0x55.toByte).asInstanceOf[Array[Byte]]
 
       test(m"text begins with βτελ (the four BASE-256 chars for the magic bytes)"):
-        val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val bytes = "name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
         Bintel.text(bytes).s.substring(0, 4)
       . assert(_ == "βτελ")
 
       test(m"text/fromText round-trip"):
-        val source = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
+        val source = "name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
         val text = Bintel.text(source)
         val recovered = Bintel.fromText(text)
         recovered.readable.toSeq == source.readable.toSeq
@@ -3172,20 +3172,20 @@ object Tests extends Suite(m"Stratiform Tests"):
 
     suite(m"BinTEL §3 value hash"):
       test(m"valueHash is deterministic"):
-        val tel = t"name Alice\n".read[Tel]
+        val tel = "name Alice\n".read[Tel]
         val a = tel.valueHash(nameSchema).data.readable.toSeq
         val b = tel.valueHash(nameSchema).data.readable.toSeq
         a == b
       . assert(_ == true)
 
       test(m"valueHash differs when value differs"):
-        val a = t"name Alice\n".read[Tel].valueHash(nameSchema).data.readable.toSeq
-        val b = t"name Bob\n".read[Tel].valueHash(nameSchema).data.readable.toSeq
+        val a = "name Alice\n".read[Tel].valueHash(nameSchema).data.readable.toSeq
+        val b = "name Bob\n".read[Tel].valueHash(nameSchema).data.readable.toSeq
         a == b
       . assert(_ == false)
 
       test(m"valueHash output is 32 bytes"):
-        t"name Alice\n".read[Tel].valueHash(nameSchema).data.readable.length
+        "name Alice\n".read[Tel].valueHash(nameSchema).data.readable.length
       . assert(_ == 32)
 
       test(m"§3 canonical tels.tel value hash is deterministic"):
@@ -3237,7 +3237,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                         |document
                         |  field name Identifier
                         |""".s.stripMargin.tt
-      val dataDoc = t"name Alice\n"
+      val dataDoc = "name Alice\n"
 
       def selfContained(): Data =
         Bintel.selfContained(dataDoc.read[Tel], schemaDoc.read[Tel])
@@ -3340,36 +3340,36 @@ object Tests extends Suite(m"Stratiform Tests"):
       given (Tests.BShape is Bintel.Parsable) = BintelInlinable.parsable[Tests.BShape]
 
       test(m"a flat struct reads directly from body bytes"):
-        Bintel.parse[Tests.Person](Tests.Person(t"Alice", 30).bintel)
-      . assert(_ == Tests.Person(t"Alice", 30))
+        Bintel.parse[Tests.Person](Tests.Person("Alice", 30).bintel)
+      . assert(_ == Tests.Person("Alice", 30))
 
       test(m"the direct read agrees with Bintel.read"):
-        val bytes = Tests.Person(t"Iris", 44).bintel
+        val bytes = Tests.Person("Iris", 44).bintel
         Bintel.parse[Tests.Person](bytes) == Bintel.read[Tests.Person](bytes)
       . assert(identity)
 
       test(m"a nested struct inlines through its own generated parser"):
-        val company = Tests.Company(t"Acme", Tests.Person(t"Bob", 50))
+        val company = Tests.Company("Acme", Tests.Person("Bob", 50))
         Bintel.parse[Tests.Company](company.bintel)
-      . assert(_ == Tests.Company(t"Acme", Tests.Person(t"Bob", 50)))
+      . assert(_ == Tests.Company("Acme", Tests.Person("Bob", 50)))
 
       test(m"a repeatable struct field gathers every occurrence in order"):
-        val team = Tests.Team(t"crew", List(Tests.Person(t"A", 1), Tests.Person(t"B", 2)))
+        val team = Tests.Team("crew", List(Tests.Person(t"A", 1), Tests.Person(t"B", 2)))
         Bintel.parse[Tests.Team](team.bintel)
-      . assert(_ == Tests.Team(t"crew", List(Tests.Person(t"A", 1), Tests.Person(t"B", 2))))
+      . assert(_ == Tests.Team("crew", List(Tests.Person(t"A", 1), Tests.Person(t"B", 2))))
 
       test(m"a repeatable scalar field gathers every occurrence in order"):
-        val readings = Tests.Readings(List(3, 1, 4, 1, 5), t"pi")
+        val readings = Tests.Readings(List(3, 1, 4, 1, 5), "pi")
         Bintel.parse[Tests.Readings](readings.bintel)
-      . assert(_ == Tests.Readings(List(3, 1, 4, 1, 5), t"pi"))
+      . assert(_ == Tests.Readings(List(3, 1, 4, 1, 5), "pi"))
 
       test(m"an empty repeatable field reads as empty"):
-        Bintel.parse[Tests.Readings](Tests.Readings(Nil, t"none").bintel)
-      . assert(_ == Tests.Readings(Nil, t"none"))
+        Bintel.parse[Tests.Readings](Tests.Readings(Nil, "none").bintel)
+      . assert(_ == Tests.Readings(Nil, "none"))
 
       test(m"an Optional field reads its value when present"):
-        Bintel.parse[Tests.OptField](Tests.OptField(7, t"note").bintel)
-      . assert(_ == Tests.OptField(7, t"note"))
+        Bintel.parse[Tests.OptField](Tests.OptField(7, "note").bintel)
+      . assert(_ == Tests.OptField(7, "note"))
 
       test(m"an unset Optional field round-trips as Unset through the encoder"):
         // The encoder omits an unset `Optional` field entirely (it contributes
@@ -3388,8 +3388,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Tests.OptField(7, Unset))
 
       test(m"a present empty Optional field round-trips as empty text through BinTEL"):
-        Bintel.read[Tests.OptField](Tests.OptField(7, t"").bintel)
-      . assert(_ == Tests.OptField(7, t""))
+        Bintel.read[Tests.OptField](Tests.OptField(7, "").bintel)
+      . assert(_ == Tests.OptField(7, ""))
 
       test(m"a truly absent Optional field reads Unset"):
         // A hand-built body: one child, index 0 ("x"), scalar "7" — the
@@ -3402,7 +3402,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         // A hand-built body: one child, index 0 ("name"), scalar "Bob".
         val bytes = Array[Byte](0x01, 0x00, 0x03, 'B'.toByte, 'o'.toByte, 'b'.toByte)
         Bintel.parse[Tests.WithDefault](bytes)
-      . assert(_ == Tests.WithDefault(t"Bob", 18))
+      . assert(_ == Tests.WithDefault("Bob", 18))
 
       test(m"a missing required field raises Absent with its sentinel"):
         // One child, index 1 ("age"), scalar "9" — "name" is missing.
@@ -3437,7 +3437,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Bintel.Error.Reason.BadKeywordIndex)
 
       test(m"trailing bytes are rejected"):
-        val good = Tests.Person(t"Alice", 30).bintel
+        val good = Tests.Person("Alice", 30).bintel
         val padded = Array.from(good.to[List].stdlib :+ 0.toByte)
         capture[Bintel.Error](Bintel.parse[Tests.Person](padded)).reason
       . assert(_ == Bintel.Error.Reason.TrailingBytes)
@@ -3445,10 +3445,10 @@ object Tests extends Suite(m"Stratiform Tests"):
     suite(m"TEL direct parsing recursion"):
       test(m"an inlined recursive type ties through its own nominal Parsable"):
         given (Tests.Tree is Tel.Parsable) = Inlinable.parsable[Tests.Tree]
-        val tree = Tests.Tree(t"root", List(Tests.Tree(t"a", Nil)))
+        val tree = Tests.Tree("root", List(Tests.Tree(t"a", Nil)))
         val data: Data = Array.unsafeFrozen(tree.in[Tel].show.s.getBytes("UTF-8").nn)
         data.read[Tests.Tree in Tel]
-      . assert(_ == Tests.Tree(t"root", List(Tests.Tree(t"a", Nil))))
+      . assert(_ == Tests.Tree("root", List(Tests.Tree(t"a", Nil))))
 
     suite(m"Compile-time error positioning"):
       test(m"an odd-indentation error's focus lands inside the literal"):

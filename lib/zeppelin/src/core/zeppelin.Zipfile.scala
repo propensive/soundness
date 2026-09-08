@@ -300,7 +300,7 @@ object Zipfile:
         q += 4 + dataSize
 
       val nameText = decodeText(nameBytes)
-      val directory = nameText.ends(t"/")
+      val directory = nameText.ends("/")
       val cleanName = if directory then nameText.s.stripSuffix("/").nn.tt else nameText
 
       val method = methodId match
@@ -319,7 +319,7 @@ object Zipfile:
           // `decode` performs no per-segment validation, so check each name component
           // against `Zip.Rules` (which also forbids the `.`/`..` traversal segments) to
           // make `InvalidName` reachable and reject Zip-Slip / path-traversing entry names.
-          cleanName.cut(t"/").each(Name[Zip](_))
+          cleanName.cut("/").each(Name[Zip](_))
           cleanName.as[Path on Zip]
 
       val payloadOffset = localOffset + prefixDelta
@@ -359,7 +359,7 @@ object Zipfile:
     val encoded: Text = entry.ref.encode
     // ZIP entry names are relative; absolute `Path on Zip` values encode with a leading
     // slash, which `java -jar` and the spec reject, so strip it.
-    val base: Text = if encoded.starts(t"/") then encoded.skip(1) else encoded
+    val base: Text = if encoded.starts("/") then encoded.skip(1) else encoded
     (if entry.directory then t"$base/" else base).in[Data]
 
   private def textBytes(text: Text): Data = text.in[Data]

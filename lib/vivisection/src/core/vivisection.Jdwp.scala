@@ -67,7 +67,7 @@ import zephyrine.*
 object Jdwp:
   // The 14 bytes each end sends, and expects back, before any packet flows.
   val Handshake: Data =
-    Array.unsafeFrozen(("JDWP-Handshake": String).getBytes(jnc.StandardCharsets.US_ASCII).nn)
+    Array.unsafeFrozen(s"JDWP-Handshake".getBytes(jnc.StandardCharsets.US_ASCII).nn)
 
   // Every JDWP identifier is an integer that fits a `Long`, but the wire width of each *kind* of
   // identifier is negotiated per connection (`VirtualMachine.IDSizes`). `Ref` is one opaque
@@ -248,10 +248,10 @@ object Jdwp:
       case OfLong(long)       => long.inspect
       case OfShort(short)     => short.inspect
       case OfBoolean(boolean) => boolean.inspect
-      case Void               => t"()"
+      case Void               => "()"
 
       case Reference(tag, id) =>
-        if id.empty then t"null" else (tag.id.toString+"＠"+id.long).tt
+        if id.empty then "null" else (tag.id.toString+"＠"+id.long).tt
 
   // A tagged value read from or written to a frame slot, field, or array. Primitives are decoded
   // eagerly; references stay as identifiers for the semantics layer to interpret.
@@ -1216,7 +1216,7 @@ object Jdwp:
           Unset
 
         case Connection.Reply.Failed(code) =>
-          raise(Debugger.Error(Debugger.Error.Reason(code), t"command (6, 2)"))
+          raise(Debugger.Error(Debugger.Error.Reason(code), "command (6, 2)"))
           Unset
 
     // ObjectReference (command set 9).

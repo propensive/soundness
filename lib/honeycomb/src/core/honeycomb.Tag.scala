@@ -146,13 +146,13 @@ object Tag:
       val nodes = children.compact.to(List).nodes
 
       val presets2 =
-        if attribution.attribute == t"" then presets
+        if attribution.attribute == "" then presets
         else
           val name: Text = valueOf[className]
 
           val value =
-            if attribution.attribute == t"class"
-            then presets(t"class").lay(name): preset => t"$preset $name"
+            if attribution.attribute == "class"
+            then presets("class").lay(name): preset => t"$preset $name"
             else name
 
           presets.define(attribution.attribute, value)
@@ -192,13 +192,13 @@ object Tag:
     :   Element of Topic in Form =
 
       val presets2 =
-        if attribution.attribute == t"" then presets
+        if attribution.attribute == "" then presets
         else
           val name: Text = valueOf[className]
 
           val value =
-            if attribution.attribute == t"class"
-            then presets(t"class").lay(name): preset => t"$preset $name"
+            if attribution.attribute == "class"
+            then presets("class").lay(name): preset => t"$preset $name"
             else name
 
           presets.define(attribution.attribute, value)
@@ -249,13 +249,13 @@ extends Element(label, Attributes.from(presets), Array(), foreign),
   // majority of (non-table) tags.
   val tableLike: Boolean =
     label.s.charAt(0) == 't' &&
-      (label == t"tr" || label == t"table" || label == t"tbody" ||
-        label == t"thead" || label == t"tfoot")
+      (label == "tr" || label == "table" || label == "tbody" ||
+        label == "thead" || label == "tfoot")
 
   // True iff the tag's label is exactly `"table"`. Used by the parser's
   // foster-parenting logic to detect "are we entering a table?" without
   // re-running `label == t"table"` on every descend.
-  val isTable: Boolean = label == t"table"
+  val isTable: Boolean = label == "table"
 
 
   inline def applyDynamicNamed[label <: Label: scala.Precise: ValueOf](inline method: label)

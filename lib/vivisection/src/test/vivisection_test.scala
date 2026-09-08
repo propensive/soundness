@@ -53,7 +53,7 @@ object Attach:
     type Self = Attach
     def connect(attach: Attach, interface: Optional[MacAddress]): Duplex = attach.duplex
 
-  given showable: Attach is Showable = _ => t"attach"
+  given showable: Attach is Showable = _ => "attach"
 
 object Tests extends Suite(m"Vivisection tests"):
   // An ephemeral free port, so live cases never collide on a fixed number and can run alongside
@@ -122,7 +122,7 @@ object Tests extends Suite(m"Vivisection tests"):
     def request(command: Text, arguments: Json = j"{}"): Unit =
       import strategies.throwUnsafely
       val message = Json.make(seq = seq.incrementAndGet().in[Json], command = command.in[Json])
-      val typed = message.updateDynamic("type")(t"request".in[Json])
+      val typed = message.updateDynamic("type")("request".in[Json])
       handle(typed.updateDynamic("arguments")(arguments))
 
     // Pulls messages until one satisfies `predicate`; other messages (events arriving before a
@@ -130,7 +130,7 @@ object Tests extends Suite(m"Vivisection tests"):
     private def awaitMatch(predicate: Json => Boolean): Json =
       def recur(): Json =
         val message = inbox.poll(20, java.util.concurrent.TimeUnit.SECONDS)
-        if message == null then abort(Debugger.Error(Debugger.Error.Reason.Disconnected, t"timeout"))
+        if message == null then abort(Debugger.Error(Debugger.Error.Reason.Disconnected, "timeout"))
         else if predicate(message) then message else recur()
 
       recur()
@@ -138,12 +138,12 @@ object Tests extends Suite(m"Vivisection tests"):
     def awaitResponse(command: Text): Json =
       awaitMatch: json =>
         val envelope = Dap.envelope(json)
-        envelope.command.let(_ == command).or(false) && envelope.`type` == t"response"
+        envelope.command.let(_ == command).or(false) && envelope.`type` == "response"
 
     def awaitEvent(name: Text): Json =
       awaitMatch: json =>
         val envelope = Dap.envelope(json)
-        envelope.event.let(_ == name).or(false) && envelope.`type` == t"event"
+        envelope.event.let(_ == name).or(false) && envelope.`type` == "event"
 
   // Runs `scenario` against a live `DapSession` driven through a `DapClient`. The adapter's
   // `emit` appends each message to the client's queue; teardown closes the session, which
@@ -177,7 +177,7 @@ object Tests extends Suite(m"Vivisection tests"):
     def request(command: Text, arguments: Json = j"{}"): Unit =
       import strategies.throwUnsafely
       val message = Json.make(seq = seq.incrementAndGet().in[Json], command = command.in[Json])
-      val typed = message.updateDynamic("type")(t"request".in[Json])
+      val typed = message.updateDynamic("type")("request".in[Json])
       val full = typed.updateDynamic("arguments")(arguments)
       toServer.write(DapTransport.frame(full.encode).mutable(using Unsafe))
       toServer.flush()
@@ -185,7 +185,7 @@ object Tests extends Suite(m"Vivisection tests"):
     private def awaitMatch(predicate: Json => Boolean): Json =
       def recur(): Json =
         val message = inbox.poll(20, java.util.concurrent.TimeUnit.SECONDS)
-        if message == null then abort(Debugger.Error(Debugger.Error.Reason.Disconnected, t"timeout"))
+        if message == null then abort(Debugger.Error(Debugger.Error.Reason.Disconnected, "timeout"))
         else if predicate(message) then message else recur()
 
       recur()
@@ -193,12 +193,12 @@ object Tests extends Suite(m"Vivisection tests"):
     def awaitResponse(command: Text): Json =
       awaitMatch: json =>
         val envelope = Dap.envelope(json)
-        envelope.command.let(_ == command).or(false) && envelope.`type` == t"response"
+        envelope.command.let(_ == command).or(false) && envelope.`type` == "response"
 
     def awaitEvent(name: Text): Json =
       awaitMatch: json =>
         val envelope = Dap.envelope(json)
-        envelope.event.let(_ == name).or(false) && envelope.`type` == t"event"
+        envelope.event.let(_ == name).or(false) && envelope.`type` == "event"
 
   def dapStdioScenario[result](scenario: DapStdioClient => result)(using Monitor): result =
     val toServer = java.io.PipedOutputStream()
@@ -243,7 +243,7 @@ object Tests extends Suite(m"Vivisection tests"):
     val debuggee: Debuggee = Debuggee(command, freePort())
 
     debuggee.session:
-      debug.exceptions(uncaught, caught, within = t"vivisection.*"): stop ?=>
+      debug.exceptions(uncaught, caught, within = "vivisection.*"): stop ?=>
         outcome.offer(handler(using stop))
         stop.remain()
 
@@ -291,16 +291,16 @@ object Tests extends Suite(m"Vivisection tests"):
     . assert(_ == 'Z')
 
     test(m"ASCII string round-trips"):
-      roundtrip(_.string(t"HelloJDWP"))(_.string())
-    . assert(_ == t"HelloJDWP")
+      roundtrip(_.string("HelloJDWP"))(_.string())
+    . assert(_ == "HelloJDWP")
 
     test(m"string with embedded null round-trips"):
-      roundtrip(_.string(t"a\u0000b"))(_.string())
-    . assert(_ == t"a\u0000b")
+      roundtrip(_.string("a\u0000b"))(_.string())
+    . assert(_ == "a\u0000b")
 
     test(m"multi-byte string round-trips"):
-      roundtrip(_.string(t"caf\u00e9"))(_.string())
-    . assert(_ == t"caf\u00e9")
+      roundtrip(_.string("caf\u00e9"))(_.string())
+    . assert(_ == "caf\u00e9")
 
     val eightByteSizes = Jdwp.IdSizes(8, 8, 8, 8, 8)
     val fourByteSizes = Jdwp.IdSizes(4, 4, 4, 4, 4)
@@ -371,57 +371,57 @@ object Tests extends Suite(m"Vivisection tests"):
 
     test(m"an int value inspects as its literal"):
       Jdwp.Value.OfInt(3).inspect
-    . assert(_ == t"3")
+    . assert(_ == "3")
 
     test(m"a long value inspects with its suffix"):
       Jdwp.Value.OfLong(3L).inspect
-    . assert(_ == t"3L")
+    . assert(_ == "3L")
 
     test(m"a reference value inspects as tag and identity"):
       Jdwp.Value.Reference(Jdwp.Tag.ObjectTag, Jdwp.Ref(77L)).inspect
-    . assert(_ == t"L＠77")
+    . assert(_ == "L＠77")
 
     test(m"a null reference value inspects as null"):
       Jdwp.Value.Reference(Jdwp.Tag.ObjectTag, Jdwp.Ref(0L)).inspect
-    . assert(_ == t"null")
+    . assert(_ == "null")
 
     test(m"an object snapshot inspects as its simple name and identity"):
-      Variable.Snapshot.Obj(Jdwp.Ref(4021L), t"scala.collection.immutable.List").inspect
-    . assert(_ == t"List＠4021")
+      Variable.Snapshot.Obj(Jdwp.Ref(4021L), "scala.collection.immutable.List").inspect
+    . assert(_ == "List＠4021")
 
     test(m"a string snapshot inspects as text"):
-      Variable.Snapshot.Str(Jdwp.Ref(1L), t"answer").inspect
-    . assert(_ == t"t\"answer\"")
+      Variable.Snapshot.Str(Jdwp.Ref(1L), "answer").inspect
+    . assert(_ == "t\"answer\"")
 
     test(m"an unforced variable inspects with the unforced marker"):
-      val provenance = Variable.Provenance.Field(t"Holder", Jdwp.Ref(9L), Jdwp.Ref(1L))
+      val provenance = Variable.Provenance.Field("Holder", Jdwp.Ref(9L), Jdwp.Ref(1L))
 
-      Variable(t"x", Unset, t"Int", Unset, provenance, false, Variable.State.Unforced).inspect
-    . assert(_ == t"x:∿∿∿")
+      Variable("x", Unset, "Int", Unset, provenance, false, Variable.State.Unforced).inspect
+    . assert(_ == "x:∿∿∿")
 
     test(m"a demangled primitive signature names the Scala type"):
-      Variable.demangle(t"I")
-    . assert(_ == t"Int")
+      Variable.demangle("I")
+    . assert(_ == "Int")
 
     test(m"a demangled class signature reads as a dotted name"):
-      Variable.demangle(t"Lscala/collection/immutable/List;")
-    . assert(_ == t"scala.collection.immutable.List")
+      Variable.demangle("Lscala/collection/immutable/List;")
+    . assert(_ == "scala.collection.immutable.List")
 
     test(m"a demangled array signature nests"):
-      Variable.demangle(t"[I")
-    . assert(_ == t"Array[Int]")
+      Variable.demangle("[I")
+    . assert(_ == "Array[Int]")
 
     test(m"a captured field recovers the written name"):
-      Variable.captured(t"seed$$1")
-    . assert(_ == t"seed")
+      Variable.captured("seed$1")
+    . assert(_ == "seed")
 
     test(m"a plain field is not treated as a capture"):
-      Variable.captured(t"plain")
+      Variable.captured("plain")
     . assert(_ == Unset)
 
     test(m"a lazy backing field recovers the written name"):
-      Variable.lazyField(t"squared$$lzy1")
-    . assert(_ == t"squared")
+      Variable.lazyField("squared$lzy1")
+    . assert(_ == "squared")
 
     test(m"command packet decodes to its fields"):
       val body = Jdwp.Writer(sizes).int(42).data
@@ -487,15 +487,15 @@ object Tests extends Suite(m"Vivisection tests"):
           val version = Jdwp.Packet.decode(incoming.next())
 
           val versionBody =
-            Jdwp.Writer(sizes).string(t"a fake VM").int(1).int(8).string(t"1.8.0")
-              .string(t"FakeVM").data
+            Jdwp.Writer(sizes).string("a fake VM").int(1).int(8).string("1.8.0")
+              .string("FakeVM").data
 
           vmSide.send(Stream(Jdwp.Packet.reply(version.id, 0, versionBody)))
 
         Jdwp.Connection.exchange(clientSide): connection =>
           connection.version()
 
-    . assert(_.vmName == t"FakeVM")
+    . assert(_.vmName == "FakeVM")
 
     test(m"a full attach session connects, handshakes and reads the VM version"):
       supervise:
@@ -512,8 +512,8 @@ object Tests extends Suite(m"Vivisection tests"):
           val version = Jdwp.Packet.decode(incoming.next())
 
           val versionBody =
-            Jdwp.Writer(sizes).string(t"a fake VM").int(1).int(8).string(t"1.8.0")
-              .string(t"FakeVM").data
+            Jdwp.Writer(sizes).string("a fake VM").int(1).int(8).string("1.8.0")
+              .string("FakeVM").data
 
           vmSide.send(Stream(Jdwp.Packet.reply(version.id, 0, versionBody)))
 
@@ -521,7 +521,7 @@ object Tests extends Suite(m"Vivisection tests"):
         Debugger(Attach(clientSide)).session: debug ?=>
           debug.version()
 
-    . assert(_.vmName == t"FakeVM")
+    . assert(_.vmName == "FakeVM")
 
     test(m"a session sets a breakpoint and reads the hit from the event stream"):
       supervise:
@@ -657,7 +657,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // enclosing `Specimen`'s state through `this` — a field, and an unforced lazy val.
     test(m"a live session recovers the variables at a breakpoint"):
       supervise:
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
+        debugFixture("vivisection.Fixture", "vivisection.Fixture.scala", Ordinal.uniary(67)):
           stop ?=> stop.variables()
 
     . assert: variables =>
@@ -666,18 +666,18 @@ object Tests extends Suite(m"Vivisection tests"):
         def snapshot(name: Text): Optional[Variable.Snapshot] =
           byName.get(name).flatMap(_.value.option).getOrElse(Unset)
 
-        val total = snapshot(t"total") == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(42))
+        val total = snapshot("total") == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(42))
 
-        val tag = snapshot(t"tag") match
-          case Variable.Snapshot.Str(_, text) => text == t"answer"
+        val tag = snapshot("tag") match
+          case Variable.Snapshot.Str(_, text) => text == "answer"
           case _                              => false
 
-        val values = snapshot(t"values") match
+        val values = snapshot("values") match
           case Variable.Snapshot.Arr(_, Jdwp.Tag.IntTag, 3, _) => true
           case _                                               => false
 
-        val seed = snapshot(t"seed") == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(7))
-        val squared = byName.get(t"squared").map(_.state).contains(Variable.State.Unforced)
+        val seed = snapshot("seed") == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(7))
+        val squared = byName.get("squared").map(_.state).contains(Variable.State.Unforced)
 
         total && tag && values && seed && squared
 
@@ -687,14 +687,14 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
+        debugFixture("vivisection.Fixture", "vivisection.Fixture.scala", Ordinal.uniary(67)):
           stop ?=>
             stop.evaluator(classpath): eval ?=>
-              eval(t"total + 1") match
+              eval("total + 1") match
                 case Variable.Snapshot.Str(_, text) => text
                 case other                          => other.inspect
 
-    . assert(_ == t"43")
+    . assert(_ == "43")
 
     // Renders a live local through its `Inspectable` instance, resolved and invoked in the
     // debuggee: the array is typed as `Array[Int]` in the synthetic class, so its own notation
@@ -703,10 +703,10 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
-          stop ?=> stop.evaluator(classpath) { eval ?=> eval.inspect(t"values") }
+        debugFixture("vivisection.Fixture", "vivisection.Fixture.scala", Ordinal.uniary(67)):
+          stop ?=> stop.evaluator(classpath) { eval ?=> eval.inspect("values") }
 
-    . assert(_.starts(t"⦋"))
+    . assert(_.starts("⦋"))
 
     // The headline case: `port` erases to `Int`, but Purview recovers its declared type `Port` from
     // TASTy, so the synthetic class types it as `Port` and `.inspect` selects `Port`'s own instance
@@ -715,10 +715,10 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
-          stop ?=> stop.evaluator(classpath) { eval ?=> eval.inspect(t"port") }
+        debugFixture("vivisection.Fixture", "vivisection.Fixture.scala", Ordinal.uniary(67)):
+          stop ?=> stop.evaluator(classpath) { eval ?=> eval.inspect("port") }
 
-    . assert(_ == t"⟨port 8080⟩")
+    . assert(_ == "⟨port 8080⟩")
 
     // The declared static type of a binding, recovered from TASTy and rendered through stenography,
     // surfaced to the caller as `Variable.static`: `port` is reported as its opaque type `Port`,
@@ -727,13 +727,13 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
+        debugFixture("vivisection.Fixture", "vivisection.Fixture.scala", Ordinal.uniary(67)):
           stop ?=>
             stop.evaluator(classpath): eval ?=>
-              val port = eval.variables().stdlib.find(_.name == t"port")
-              port.flatMap(_.static.option).getOrElse(t"«none»")
+              val port = eval.variables().stdlib.find(_.name == "port")
+              port.flatMap(_.static.option).getOrElse("«none»")
 
-    . assert(_ == t"vivisection.Fixture.Port")
+    . assert(_ == "vivisection.Fixture.Port")
 
     // Static types for a method's *body* locals, not just its parameters: `gateway` is a local
     // `val` in `marker`, and Purview recovers its declared `Port` from the method's tree — reported
@@ -742,14 +742,14 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpath = fixtureClasspath
 
-        debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
+        debugFixture("vivisection.Fixture", "vivisection.Fixture.scala", Ordinal.uniary(67)):
           stop ?=>
             stop.evaluator(classpath): eval ?=>
-              val gateway = eval.variables().stdlib.find(_.name == t"gateway")
-              val static = gateway.flatMap(_.static.option).getOrElse(t"«none»")
-              (static, eval.inspect(t"gateway"))
+              val gateway = eval.variables().stdlib.find(_.name == "gateway")
+              val static = gateway.flatMap(_.static.option).getOrElse("«none»")
+              (static, eval.inspect("gateway"))
 
-    . assert(_ == (t"vivisection.Fixture.Port", t"⟨port 443⟩"))
+    . assert(_ == ("vivisection.Fixture.Port", "⟨port 443⟩"))
 
     // ── Variable-recovery matrix ────────────────────────────────────────────────────────────────
     // One launch of `Menagerie` captures every local at a single breakpoint; the cases below are
@@ -757,7 +757,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // debuggee.
     val menagerie: scala.collection.immutable.Map[Text, Variable] =
       supervise:
-        debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(57)):
+        debugFixture("vivisection.Menagerie", "vivisection.Menagerie.scala", Ordinal.uniary(57)):
           stop ?=> named(stop.variables())
 
     def valueOf(name: Text): Optional[Variable.Snapshot] =
@@ -767,85 +767,85 @@ object Tests extends Suite(m"Vivisection tests"):
       menagerie.get(name).map(_.erased).getOrElse(Unset)
 
     test(m"a byte local is recovered with its value"):
-      valueOf(t"byte")
+      valueOf("byte")
     . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfByte(-7)))
 
     test(m"a short local is recovered with its value"):
-      valueOf(t"short")
+      valueOf("short")
     . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfShort(1234)))
 
     test(m"an int local is recovered with its value"):
-      valueOf(t"int")
+      valueOf("int")
     . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(42)))
 
     test(m"a long local is recovered with its value"):
-      valueOf(t"long")
+      valueOf("long")
     . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfLong(9999999999L)))
 
     test(m"a float local is recovered with its value"):
-      valueOf(t"float")
+      valueOf("float")
     . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfFloat(3.5f)))
 
     test(m"a double local is recovered with its value"):
-      valueOf(t"double")
+      valueOf("double")
     . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfDouble(2.5)))
 
     test(m"a char local is recovered with its value"):
-      valueOf(t"char")
+      valueOf("char")
     . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfChar('Z')))
 
     test(m"a boolean local is recovered with its value"):
-      valueOf(t"boolean")
+      valueOf("boolean")
     . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfBoolean(true)))
 
     test(m"a string local is recovered with its text"):
-      valueOf(t"text") match
+      valueOf("text") match
         case Variable.Snapshot.Str(_, text) => text
-        case _                              => t"«not a string»"
-    . assert(_ == t"hello")
+        case _                              => "«not a string»"
+    . assert(_ == "hello")
 
     test(m"an empty string local is recovered"):
-      valueOf(t"empty") match
+      valueOf("empty") match
         case Variable.Snapshot.Str(_, text) => text
-        case _                              => t"«not a string»"
-    . assert(_ == t"")
+        case _                              => "«not a string»"
+    . assert(_ == "")
 
     test(m"an int-array local is recovered with component and length"):
-      valueOf(t"ints") match
+      valueOf("ints") match
         case Variable.Snapshot.Arr(_, tag, length, _) => (tag, length)
         case _                                        => (Jdwp.Tag.VoidTag, -1)
     . assert(_ == (Jdwp.Tag.IntTag, 3))
 
     test(m"a byte-array local is recovered with component and length"):
-      valueOf(t"bytes") match
+      valueOf("bytes") match
         case Variable.Snapshot.Arr(_, tag, length, _) => (tag, length)
         case _                                        => (Jdwp.Tag.VoidTag, -1)
     . assert(_ == (Jdwp.Tag.ByteTag, 3))
 
     test(m"a long array reports full length but a bounded prefix"):
-      valueOf(t"many") match
+      valueOf("many") match
         case Variable.Snapshot.Arr(_, _, length, prefix) => (length, prefix.stdlib.length)
         case _                                           => (-1, -1)
     . assert(_ == (13, 10))
 
     test(m"an int local reports its erased type"):
-      erasedOf(t"int")
-    . assert(_ == t"Int")
+      erasedOf("int")
+    . assert(_ == "Int")
 
     test(m"an int-array local reports its erased type"):
-      erasedOf(t"ints")
-    . assert(_ == t"Array[Int]")
+      erasedOf("ints")
+    . assert(_ == "Array[Int]")
 
     test(m"a string local reports its erased type"):
-      erasedOf(t"text")
-    . assert(_ == t"java.lang.String")
+      erasedOf("text")
+    . assert(_ == "java.lang.String")
 
     // ── Captured-state matrix ───────────────────────────────────────────────────────────────────
     // At a breakpoint inside a local class's method, nothing is an ordinary local slot: every
     // binding is recovered by un-flattening `this`'s captured fields and walking its `$outer` chain.
     val closures: scala.collection.immutable.Map[Text, Variable] =
       supervise:
-        debugFixture(t"vivisection.Closures", t"vivisection.Closures.scala", Ordinal.uniary(56)):
+        debugFixture("vivisection.Closures", "vivisection.Closures.scala", Ordinal.uniary(56)):
           stop ?=> named(stop.variables())
 
     test(m"captured bindings are recovered by their written names"):
@@ -853,23 +853,23 @@ object Tests extends Suite(m"Vivisection tests"):
     . assert(_ == "cached,label,seed,tally")
 
     test(m"a captured val is recovered with its value"):
-      closures.get(t"label").flatMap(_.value.option).getOrElse(Unset) match
+      closures.get("label").flatMap(_.value.option).getOrElse(Unset) match
         case Variable.Snapshot.Str(_, text) => text
-        case _                              => t"«absent»"
-    . assert(_ == t"captured")
+        case _                              => "«absent»"
+    . assert(_ == "captured")
 
     test(m"a captured var is unboxed from its ref cell and marked mutable"):
-      val tally = closures.get(t"tally")
+      val tally = closures.get("tally")
       val value = tally.flatMap(_.value.option).getOrElse(Unset)
       (value == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(100)), tally.map(_.mutable))
     . assert(_ == (true, scala.Some(true)))
 
     test(m"a binding captured through the outer chain is recovered"):
-      closures.get(t"seed").flatMap(_.value.option).getOrElse(Unset)
+      closures.get("seed").flatMap(_.value.option).getOrElse(Unset)
     . assert(_ == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(100)))
 
     test(m"an unforced lazy val is reported unforced and never evaluated"):
-      closures.get(t"cached").map(_.state)
+      closures.get("cached").map(_.state)
     . assert(_ == scala.Some(Variable.State.Unforced))
 
     // ── Rendering / purity matrix ───────────────────────────────────────────────────────────────
@@ -878,28 +878,28 @@ object Tests extends Suite(m"Vivisection tests"):
     // markers are how the debugger signals a value was not rendered through a verified-pure instance.
     val renderings: (Text, Text, Text) =
       supervise:
-        debugFixture(t"vivisection.Renderings", t"vivisection.Renderings.scala", Ordinal.uniary(62)):
+        debugFixture("vivisection.Renderings", "vivisection.Renderings.scala", Ordinal.uniary(62)):
           stop ?=>
             stop.evaluator(fixtureClasspath): eval ?=>
-              (eval.inspect(t"point"), eval.inspect(t"tagged"), eval.inspect(t"plain"))
+              (eval.inspect("point"), eval.inspect("tagged"), eval.inspect("plain"))
 
     test(m"a derived Inspectable renders structurally with no fallback marker"):
       renderings(0)
-    . assert(_ == t"Point(x:3 ╱ y:4)")
+    . assert(_ == "Point(x:3 ╱ y:4)")
 
     test(m"a Showable-only type renders under the borrowed marker"):
       renderings(1)
-    . assert(_ == t"⸢tag:alpha⸣")
+    . assert(_ == "⸢tag:alpha⸣")
 
     test(m"a toString-only type renders under the toString marker"):
       renderings(2)
-    . assert(_ == t"“Plain#7”")
+    . assert(_ == "“Plain#7”")
 
     // ── Static-type matrix ──────────────────────────────────────────────────────────────────────
     // Richer declared types recovered from TASTy and rendered through stenography, keyed by name.
     val typeShapes: scala.collection.immutable.Map[Text, Text] =
       supervise:
-        debugFixture(t"vivisection.Types", t"vivisection.Types.scala", Ordinal.uniary(48)):
+        debugFixture("vivisection.Types", "vivisection.Types.scala", Ordinal.uniary(48)):
           stop ?=>
             stop.evaluator(fixtureClasspath): eval ?=>
               val bindings = eval.variables().stdlib.flatMap: variable =>
@@ -908,50 +908,50 @@ object Tests extends Suite(m"Vivisection tests"):
               bindings.toMap
 
     test(m"a generic collection's static type keeps its type argument"):
-      typeShapes.get(t"list")
-    . assert(_ == scala.Some(t"List[Int]"))
+      typeShapes.get("list")
+    . assert(_ == scala.Some("List[Int]"))
 
     test(m"a tuple's static type is rendered in tuple syntax"):
-      typeShapes.get(t"pair")
-    . assert(_ == scala.Some(t"(Int, java.lang.String)"))
+      typeShapes.get("pair")
+    . assert(_ == scala.Some("(Int, java.lang.String)"))
 
     test(m"a function's static type is rendered in arrow syntax"):
-      typeShapes.get(t"function")
-    . assert(_ == scala.Some(t"Int => java.lang.String"))
+      typeShapes.get("function")
+    . assert(_ == scala.Some("Int => java.lang.String"))
 
     test(m"an optional's static type is recovered"):
-      typeShapes.get(t"option")
-    . assert(_ == scala.Some(t"scala.Option[Int]"))
+      typeShapes.get("option")
+    . assert(_ == scala.Some("scala.Option[Int]"))
 
     // ── Evaluation matrix ───────────────────────────────────────────────────────────────────────
     // Compile-and-run expressions over the `Menagerie` locals: arithmetic, a comparison, a method
     // call, and array indexing, each producing a value read back as text.
     val evaluations: (Text, Text, Text, Text) =
       supervise:
-        debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(57)):
+        debugFixture("vivisection.Menagerie", "vivisection.Menagerie.scala", Ordinal.uniary(57)):
           stop ?=>
             stop.evaluator(fixtureClasspath): eval ?=>
               def text(expression: Text): Text = eval(expression) match
                 case Variable.Snapshot.Str(_, string) => string
                 case other                            => other.inspect
 
-              (text(t"int*2"), text(t"int > 40"), text(t"text.length"), text(t"ints(0)"))
+              (text("int*2"), text("int > 40"), text("text.length"), text("ints(0)"))
 
     test(m"an arithmetic expression over a local evaluates"):
       evaluations(0)
-    . assert(_ == t"84")
+    . assert(_ == "84")
 
     test(m"a comparison expression over a local evaluates"):
       evaluations(1)
-    . assert(_ == t"true")
+    . assert(_ == "true")
 
     test(m"a method call on a local evaluates"):
       evaluations(2)
-    . assert(_ == t"5")
+    . assert(_ == "5")
 
     test(m"an array-indexing expression over a local evaluates"):
       evaluations(3)
-    . assert(_ == t"10")
+    . assert(_ == "10")
 
     // The headline end-to-end case: a scripted client drives a real debuggee through the whole
     // launch cycle over the wire — initialize, a pre-launch breakpoint that verifies on class
@@ -963,47 +963,47 @@ object Tests extends Suite(m"Vivisection tests"):
 
       supervise:
         dapScenario: client ?=>
-          client.request(t"initialize")
-          val initialized = client.awaitResponse(t"initialize")
+          client.request("initialize")
+          val initialized = client.awaitResponse("initialize")
 
           // The DAP ordering: launch opens the session (suspended at startup), then breakpoints
           // are set, then configurationDone resumes — the program cannot run before then.
           val launchArgs =
-            Json.make(mainClass = t"vivisection.Menagerie".in[Json], classpath = classpathText.in[Json])
+            Json.make(mainClass = "vivisection.Menagerie".in[Json], classpath = classpathText.in[Json])
 
-          client.request(t"launch", launchArgs)
-          client.awaitResponse(t"launch")
+          client.request("launch", launchArgs)
+          client.awaitResponse("launch")
 
-          val source = Json.make(path = t"vivisection.Menagerie.scala".in[Json])
+          val source = Json.make(path = "vivisection.Menagerie.scala".in[Json])
           val points = List(Json.make(line = 57.in[Json]))
           val setArgs = Json.make(source = source, breakpoints = j"[$points*]")
 
-          client.request(t"setBreakpoints", setArgs)
-          client.awaitResponse(t"setBreakpoints")
-          client.request(t"configurationDone")
-          client.awaitResponse(t"configurationDone")
+          client.request("setBreakpoints", setArgs)
+          client.awaitResponse("setBreakpoints")
+          client.request("configurationDone")
+          client.awaitResponse("configurationDone")
 
-          val stopped = client.awaitEvent(t"stopped")
+          val stopped = client.awaitEvent("stopped")
           val thread = stopped.body.threadId.as[Int]
 
-          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
-          val trace = client.awaitResponse(t"stackTrace")
+          client.request("stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse("stackTrace")
           val frame = trace.body.stackFrames(0).id.as[Int]
 
-          client.request(t"scopes", Json.make(frameId = frame.in[Json]))
-          val scopes = client.awaitResponse(t"scopes")
+          client.request("scopes", Json.make(frameId = frame.in[Json]))
+          val scopes = client.awaitResponse("scopes")
           val scope = scopes.body.scopes(0).variablesReference.as[Int]
 
-          client.request(t"variables", Json.make(variablesReference = scope.in[Json]))
-          val variables = client.awaitResponse(t"variables")
+          client.request("variables", Json.make(variablesReference = scope.in[Json]))
+          val variables = client.awaitResponse("variables")
 
           val names = variables.body.variables.as[List[Json]].map(_.name.as[Text])
 
-          client.request(t"disconnect")
-          client.awaitResponse(t"disconnect")
+          client.request("disconnect")
+          client.awaitResponse("disconnect")
 
           (initialized.body.supportsConfigurationDoneRequest.as[Boolean],
-           names.stdlib.contains(t"int"))
+           names.stdlib.contains("int"))
 
     . assert(_ == (true, true))
 
@@ -1015,41 +1015,41 @@ object Tests extends Suite(m"Vivisection tests"):
 
       supervise:
         dapScenario: client ?=>
-          client.request(t"initialize")
-          client.awaitResponse(t"initialize")
+          client.request("initialize")
+          client.awaitResponse("initialize")
 
           val launchArgs =
-            Json.make(mainClass = t"vivisection.Menagerie".in[Json], classpath = classpathText.in[Json])
+            Json.make(mainClass = "vivisection.Menagerie".in[Json], classpath = classpathText.in[Json])
 
-          client.request(t"launch", launchArgs)
-          client.awaitResponse(t"launch")
+          client.request("launch", launchArgs)
+          client.awaitResponse("launch")
 
-          val source = Json.make(path = t"vivisection.Menagerie.scala".in[Json])
+          val source = Json.make(path = "vivisection.Menagerie.scala".in[Json])
           val points = List(Json.make(line = 57.in[Json]))
           val setArgs = Json.make(source = source, breakpoints = j"[$points*]")
 
-          client.request(t"setBreakpoints", setArgs)
-          client.awaitResponse(t"setBreakpoints")
-          client.request(t"configurationDone")
-          client.awaitResponse(t"configurationDone")
+          client.request("setBreakpoints", setArgs)
+          client.awaitResponse("setBreakpoints")
+          client.request("configurationDone")
+          client.awaitResponse("configurationDone")
 
-          val stopped = client.awaitEvent(t"stopped")
+          val stopped = client.awaitEvent("stopped")
           val thread = stopped.body.threadId.as[Int]
 
-          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
-          val trace = client.awaitResponse(t"stackTrace")
+          client.request("stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse("stackTrace")
           val frame = trace.body.stackFrames(0).id.as[Int]
 
-          val evalArgs = Json.make(expression = t"int + 1".in[Json], frameId = frame.in[Json])
-          client.request(t"evaluate", evalArgs)
-          val evaluated = client.awaitResponse(t"evaluate")
+          val evalArgs = Json.make(expression = "int + 1".in[Json], frameId = frame.in[Json])
+          client.request("evaluate", evalArgs)
+          val evaluated = client.awaitResponse("evaluate")
 
-          client.request(t"disconnect")
-          client.awaitResponse(t"disconnect")
+          client.request("disconnect")
+          client.awaitResponse("disconnect")
 
           evaluated.body.result.as[Text]
 
-    . assert(_ == t"43")
+    . assert(_ == "43")
 
     // Completions over the wire, typechecked against the stopped frame: a bare prefix resolves
     // the frame's locals; a member selection resolves the local's declared type's members; and a
@@ -1060,29 +1060,29 @@ object Tests extends Suite(m"Vivisection tests"):
 
       supervise:
         dapScenario: client ?=>
-          client.request(t"initialize")
-          client.awaitResponse(t"initialize")
+          client.request("initialize")
+          client.awaitResponse("initialize")
 
           val launchArgs =
-            Json.make(mainClass = t"vivisection.Menagerie".in[Json], classpath = classpathText.in[Json])
+            Json.make(mainClass = "vivisection.Menagerie".in[Json], classpath = classpathText.in[Json])
 
-          client.request(t"launch", launchArgs)
-          client.awaitResponse(t"launch")
+          client.request("launch", launchArgs)
+          client.awaitResponse("launch")
 
-          val source = Json.make(path = t"vivisection.Menagerie.scala".in[Json])
+          val source = Json.make(path = "vivisection.Menagerie.scala".in[Json])
           val points = List(Json.make(line = 57.in[Json]))
           val setArgs = Json.make(source = source, breakpoints = j"[$points*]")
 
-          client.request(t"setBreakpoints", setArgs)
-          client.awaitResponse(t"setBreakpoints")
-          client.request(t"configurationDone")
-          client.awaitResponse(t"configurationDone")
+          client.request("setBreakpoints", setArgs)
+          client.awaitResponse("setBreakpoints")
+          client.request("configurationDone")
+          client.awaitResponse("configurationDone")
 
-          val stopped = client.awaitEvent(t"stopped")
+          val stopped = client.awaitEvent("stopped")
           val thread = stopped.body.threadId.as[Int]
 
-          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
-          val trace = client.awaitResponse(t"stackTrace")
+          client.request("stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse("stackTrace")
           val frame = trace.body.stackFrames(0).id.as[Int]
 
           def labels(text: Text, column: Int): scala.List[Text] =
@@ -1090,19 +1090,19 @@ object Tests extends Suite(m"Vivisection tests"):
               Json.make
                 ( text = text.in[Json], column = column.in[Json], frameId = frame.in[Json] )
 
-            client.request(t"completions", arguments)
-            val completed = client.awaitResponse(t"completions")
+            client.request("completions", arguments)
+            val completed = client.awaitResponse("completions")
             completed.body.targets.as[List[Json]].stdlib.map(_.label.as[Text])
 
-          val prefixed = labels(t"in", 3)
-          val members = labels(t"text.le", 8)
-          val bindings = labels(t"val ", 5)
+          val prefixed = labels("in", 3)
+          val members = labels("text.le", 8)
+          val bindings = labels("val ", 5)
 
-          client.request(t"disconnect")
-          client.awaitResponse(t"disconnect")
+          client.request("disconnect")
+          client.awaitResponse("disconnect")
 
-          ( prefixed.contains(t"int") && prefixed.contains(t"ints"),
-            members.contains(t"length"),
+          ( prefixed.contains("int") && prefixed.contains("ints"),
+            members.contains("length"),
             bindings.isEmpty )
 
     . assert(_ == (true, true, true))
@@ -1117,29 +1117,29 @@ object Tests extends Suite(m"Vivisection tests"):
 
       supervise:
         dapScenario: client ?=>
-          client.request(t"initialize")
-          client.awaitResponse(t"initialize")
+          client.request("initialize")
+          client.awaitResponse("initialize")
 
           val launchArgs =
-            Json.make(mainClass = t"vivisection.Elaborated".in[Json], classpath = classpathText.in[Json])
+            Json.make(mainClass = "vivisection.Elaborated".in[Json], classpath = classpathText.in[Json])
 
-          client.request(t"launch", launchArgs)
-          client.awaitResponse(t"launch")
+          client.request("launch", launchArgs)
+          client.awaitResponse("launch")
 
-          val source = Json.make(path = t"vivisection.Elaborated.scala".in[Json])
+          val source = Json.make(path = "vivisection.Elaborated.scala".in[Json])
           val points = List(Json.make(line = 56.in[Json]))
           val setArgs = Json.make(source = source, breakpoints = j"[$points*]")
 
-          client.request(t"setBreakpoints", setArgs)
-          client.awaitResponse(t"setBreakpoints")
-          client.request(t"configurationDone")
-          client.awaitResponse(t"configurationDone")
+          client.request("setBreakpoints", setArgs)
+          client.awaitResponse("setBreakpoints")
+          client.request("configurationDone")
+          client.awaitResponse("configurationDone")
 
-          val stopped = client.awaitEvent(t"stopped")
+          val stopped = client.awaitEvent("stopped")
           val thread = stopped.body.threadId.as[Int]
 
-          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
-          val trace = client.awaitResponse(t"stackTrace")
+          client.request("stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse("stackTrace")
           val frame = trace.body.stackFrames(0).id.as[Int]
 
           def evaluate(expression: Text, context: Optional[Text]): Json =
@@ -1149,23 +1149,23 @@ object Tests extends Suite(m"Vivisection tests"):
             val arguments = context.lay(base): ctx =>
               base.updateDynamic("context")(ctx.in[Json])
 
-            client.request(t"evaluate", arguments)
-            client.awaitResponse(t"evaluate")
+            client.request("evaluate", arguments)
+            client.awaitResponse("evaluate")
 
-          val callHover = evaluate(t"combine", t"hover").body.result.as[Text]
-          val localHover = evaluate(t"total", t"hover").body.result.as[Text]
-          val exprHover = evaluate(t"total + 1", t"hover").success.as[Boolean]
-          val consoleEval = evaluate(t"total + 1", Unset).body.result.as[Text]
+          val callHover = evaluate("combine", "hover").body.result.as[Text]
+          val localHover = evaluate("total", "hover").body.result.as[Text]
+          val exprHover = evaluate("total + 1", "hover").success.as[Boolean]
+          val consoleEval = evaluate("total + 1", Unset).body.result.as[Text]
 
-          client.request(t"disconnect")
-          client.awaitResponse(t"disconnect")
+          client.request("disconnect")
+          client.awaitResponse("disconnect")
 
-          ( callHover.contains(t"[scala.Int]") && callHover.contains(t"intSemigroup"),
-            localHover.contains(t"7") && localHover.contains(t"scala.Int"),
+          ( callHover.contains("[scala.Int]") && callHover.contains("intSemigroup"),
+            localHover.contains("7") && localHover.contains("scala.Int"),
             exprHover,
             consoleEval )
 
-    . assert(_ == (true, true, false, t"8"))
+    . assert(_ == (true, true, false, "8"))
 
     // The transport itself, over real pipes: `initialize` and `disconnect` without ever opening
     // a debuggee, so this exercises the framing and the server's teardown-on-EOF in isolation.
@@ -1174,10 +1174,10 @@ object Tests extends Suite(m"Vivisection tests"):
 
       supervise:
         dapStdioScenario: client =>
-          client.request(t"initialize")
-          val initialized = client.awaitResponse(t"initialize")
-          client.request(t"disconnect")
-          client.awaitResponse(t"disconnect")
+          client.request("initialize")
+          val initialized = client.awaitResponse("initialize")
+          client.request("disconnect")
+          client.awaitResponse("disconnect")
           initialized.body.supportsConfigurationDoneRequest.as[Boolean]
 
     . assert(_ == true)
@@ -1191,39 +1191,39 @@ object Tests extends Suite(m"Vivisection tests"):
 
       supervise:
         dapStdioScenario: client =>
-          client.request(t"initialize")
-          client.awaitResponse(t"initialize")
+          client.request("initialize")
+          client.awaitResponse("initialize")
 
           val launchArgs =
-            Json.make(mainClass = t"vivisection.Menagerie".in[Json], classpath = classpathText.in[Json])
+            Json.make(mainClass = "vivisection.Menagerie".in[Json], classpath = classpathText.in[Json])
 
-          client.request(t"launch", launchArgs)
-          client.awaitResponse(t"launch")
+          client.request("launch", launchArgs)
+          client.awaitResponse("launch")
 
-          val source = Json.make(path = t"vivisection.Menagerie.scala".in[Json])
+          val source = Json.make(path = "vivisection.Menagerie.scala".in[Json])
           val points = List(Json.make(line = 57.in[Json]))
-          client.request(t"setBreakpoints", Json.make(source = source, breakpoints = j"[$points*]"))
-          client.awaitResponse(t"setBreakpoints")
-          client.request(t"configurationDone")
-          client.awaitResponse(t"configurationDone")
+          client.request("setBreakpoints", Json.make(source = source, breakpoints = j"[$points*]"))
+          client.awaitResponse("setBreakpoints")
+          client.request("configurationDone")
+          client.awaitResponse("configurationDone")
 
-          val stopped = client.awaitEvent(t"stopped")
+          val stopped = client.awaitEvent("stopped")
           val thread = stopped.body.threadId.as[Int]
 
-          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
-          val trace = client.awaitResponse(t"stackTrace")
+          client.request("stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse("stackTrace")
           val frame = trace.body.stackFrames(0).id.as[Int]
 
-          client.request(t"scopes", Json.make(frameId = frame.in[Json]))
-          val scope = client.awaitResponse(t"scopes").body.scopes(0).variablesReference.as[Int]
+          client.request("scopes", Json.make(frameId = frame.in[Json]))
+          val scope = client.awaitResponse("scopes").body.scopes(0).variablesReference.as[Int]
 
-          client.request(t"variables", Json.make(variablesReference = scope.in[Json]))
-          val variables = client.awaitResponse(t"variables")
+          client.request("variables", Json.make(variablesReference = scope.in[Json]))
+          val variables = client.awaitResponse("variables")
           val names = variables.body.variables.as[List[Json]].map(_.name.as[Text])
 
-          client.request(t"disconnect")
-          client.awaitResponse(t"disconnect")
-          names.stdlib.contains(t"int")
+          client.request("disconnect")
+          client.awaitResponse("disconnect")
+          names.stdlib.contains("int")
 
     . assert(_ == true)
 
@@ -1242,7 +1242,7 @@ object Tests extends Suite(m"Vivisection tests"):
           val first = Promise[scala.List[(Optional[Text], Int, Boolean)]]()
           val second = Promise[scala.List[(Optional[Text], Int, Boolean)]]()
 
-          debug.breakpoint(t"vivisection.Paced.scala", Ordinal.uniary(40)): stop ?=>
+          debug.breakpoint("vivisection.Paced.scala", Ordinal.uniary(40)): stop ?=>
             stopped.offer(stop.thread)
             stop.remain()
 
@@ -1269,9 +1269,9 @@ object Tests extends Suite(m"Vivisection tests"):
           (landing1, second.await().lastOption)
 
     . assert(_ ==
-        ( scala.List((t"vivisection.Doubling.scala", 40, true),
-              (t"vivisection.Paced.scala", 41, false)),
-          scala.Some((t"vivisection.Paced.scala", 42, false)) ))
+        ( scala.List(("vivisection.Doubling.scala", 40, true),
+              ("vivisection.Paced.scala", 41, false)),
+          scala.Some(("vivisection.Paced.scala", 42, false)) ))
 
     // Stepping *into* advances the logical (innermost) line: having arrived at the inline
     // call's first body line, a step in moves to the body's next line — line by line within
@@ -1287,7 +1287,7 @@ object Tests extends Suite(m"Vivisection tests"):
           val arrival = Promise[Unit]()
           val landing = Promise[scala.List[(Optional[Text], Int, Boolean)]]()
 
-          debug.breakpoint(t"vivisection.Paced.scala", Ordinal.uniary(40)): stop ?=>
+          debug.breakpoint("vivisection.Paced.scala", Ordinal.uniary(40)): stop ?=>
             stopped.offer(stop.thread)
             stop.remain()
 
@@ -1311,8 +1311,8 @@ object Tests extends Suite(m"Vivisection tests"):
           landing.await()
 
     . assert(_ == scala.List(
-          (t"vivisection.Doubling.scala", 41, true),
-          (t"vivisection.Paced.scala", 41, false)))
+          ("vivisection.Doubling.scala", 41, true),
+          ("vivisection.Paced.scala", 41, false)))
 
     // The SMAP path end to end: a breakpoint on the body of an inline method — in a file whose
     // class never loads at runtime — binds at the inlined copy inside the caller's class, and
@@ -1320,14 +1320,14 @@ object Tests extends Suite(m"Vivisection tests"):
     // frame at its call-site line.
     test(m"a breakpoint on an inline body binds cross-file and expands its positions"):
       supervise:
-        debugFixture(t"vivisection.Inlined", t"vivisection.Doubling.scala", Ordinal.uniary(40)):
+        debugFixture("vivisection.Inlined", "vivisection.Doubling.scala", Ordinal.uniary(40)):
           stop ?=>
             stop.positions(stop.location).stdlib.map: position =>
               (position.source, position.line, position.inlined)
 
     . assert(_ == scala.List(
-          (t"vivisection.Doubling.scala", 40, true),
-          (t"vivisection.Inlined.scala", 40, false)))
+          ("vivisection.Doubling.scala", 40, true),
+          ("vivisection.Inlined.scala", 40, false)))
 
     // The same stop through the protocol: the stack trace carries a subtle frame at the inline
     // origin and the real frame at its call site, each with its source; scopes against the
@@ -1338,48 +1338,48 @@ object Tests extends Suite(m"Vivisection tests"):
 
       supervise:
         dapScenario: client ?=>
-          client.request(t"initialize")
-          client.awaitResponse(t"initialize")
+          client.request("initialize")
+          client.awaitResponse("initialize")
 
           val launchArgs =
-            Json.make(mainClass = t"vivisection.Inlined".in[Json], classpath = classpathText.in[Json])
+            Json.make(mainClass = "vivisection.Inlined".in[Json], classpath = classpathText.in[Json])
 
-          client.request(t"launch", launchArgs)
-          client.awaitResponse(t"launch")
+          client.request("launch", launchArgs)
+          client.awaitResponse("launch")
 
-          val source = Json.make(path = t"vivisection.Doubling.scala".in[Json])
+          val source = Json.make(path = "vivisection.Doubling.scala".in[Json])
           val points = List(Json.make(line = 40.in[Json]))
-          client.request(t"setBreakpoints", Json.make(source = source, breakpoints = j"[$points*]"))
-          client.awaitResponse(t"setBreakpoints")
-          client.request(t"configurationDone")
-          client.awaitResponse(t"configurationDone")
+          client.request("setBreakpoints", Json.make(source = source, breakpoints = j"[$points*]"))
+          client.awaitResponse("setBreakpoints")
+          client.request("configurationDone")
+          client.awaitResponse("configurationDone")
 
-          val stopped = client.awaitEvent(t"stopped")
+          val stopped = client.awaitEvent("stopped")
           val thread = stopped.body.threadId.as[Int]
 
-          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
-          val trace = client.awaitResponse(t"stackTrace")
+          client.request("stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse("stackTrace")
           val inline = trace.body.stackFrames(0)
           val real = trace.body.stackFrames(1)
 
-          client.request(t"scopes", Json.make(frameId = inline.id.as[Int].in[Json]))
-          val scopes = client.awaitResponse(t"scopes")
+          client.request("scopes", Json.make(frameId = inline.id.as[Int].in[Json]))
+          val scopes = client.awaitResponse("scopes")
 
-          client.request(t"disconnect")
-          client.awaitResponse(t"disconnect")
+          client.request("disconnect")
+          client.awaitResponse("disconnect")
 
           ( inline.presentationHint.as[Text], inline.source.name.as[Text], inline.line.as[Int],
             real.source.name.as[Text], real.line.as[Int], scopes.success.as[Boolean],
-            inline.name.as[Text].starts(t"vivisection.Doubling.double") )
+            inline.name.as[Text].starts("vivisection.Doubling.double") )
 
-    . assert(_ == (t"subtle", t"vivisection.Doubling.scala", 40,
-          t"vivisection.Inlined.scala", 40, true, true))
+    . assert(_ == ("subtle", "vivisection.Doubling.scala", 40,
+          "vivisection.Inlined.scala", 40, true, true))
 
     test(m"a DAP request envelope decodes its routing fields"):
       import strategies.throwUnsafely
       val message = j"""{"seq": 3, "type": "request", "command": "initialize"}"""
       Dap.envelope(message)
-    . assert(_ == Dap.Envelope(3, t"request", t"initialize", Unset))
+    . assert(_ == Dap.Envelope(3, "request", "initialize", Unset))
 
     test(m"a malformed DAP message still yields an envelope"):
       import strategies.throwUnsafely
@@ -1389,42 +1389,42 @@ object Tests extends Suite(m"Vivisection tests"):
     test(m"a DAP response carries its type, correlation and body"):
       import strategies.throwUnsafely
       import dynamicAccess.dynamicJson
-      val request = Dap.Envelope(seq = 3, command = t"threads")
+      val request = Dap.Envelope(seq = 3, command = "threads")
       val body = Dap.ThreadsBody(List(Dap.ThreadInfo(1, t"main"))).in[Json]
       val response = Dap.response(7, request, body)
 
       ( response.`type`.as[Text], response.request_seq.as[Int], response.success.as[Boolean],
         response.body.threads(0).name.as[Text] )
-    . assert(_ == (t"response", 3, true, t"main"))
+    . assert(_ == ("response", 3, true, "main"))
 
     test(m"a DAP failure response reports its message"):
       import strategies.throwUnsafely
       import dynamicAccess.dynamicJson
-      val request = Dap.Envelope(seq = 9, command = t"nonesuch")
-      val failure = Dap.failure(2, request, t"unrecognized command")
+      val request = Dap.Envelope(seq = 9, command = "nonesuch")
+      val failure = Dap.failure(2, request, "unrecognized command")
       (failure.success.as[Boolean], failure.message.as[Text])
-    . assert(_ == (false, t"unrecognized command"))
+    . assert(_ == (false, "unrecognized command"))
 
     test(m"an Unset member is absent from the wire"):
       import strategies.throwUnsafely
       import formatting.compactJsonFormatting
       Dap.Breakpoint(verified = true).in[Json].show
-    . assert(_ == t"""{"verified":true}""")
+    . assert(_ == """{"verified":true}""")
 
     test(m"a DAP event names itself and carries its body"):
       import strategies.throwUnsafely
       import dynamicAccess.dynamicJson
-      val event = Dap.event(4, t"stopped", Dap.StoppedBody(t"breakpoint", threadId = 1).in[Json])
+      val event = Dap.event(4, "stopped", Dap.StoppedBody("breakpoint", threadId = 1).in[Json])
       (event.`type`.as[Text], event.event.as[Text], event.body.reason.as[Text])
-    . assert(_ == (t"event", t"stopped", t"breakpoint"))
+    . assert(_ == ("event", "stopped", "breakpoint"))
 
     test(m"a Content-Length frame round-trips through the transport"):
       import strategies.throwUnsafely
       val received = scala.collection.mutable.ArrayBuffer[Text]()
-      val data = DapTransport.frame(t"""{"seq":1}""")
+      val data = DapTransport.frame("""{"seq":1}""")
       DapTransport.pump(Stream(data), _ => ())(received.append(_))
       received.toList
-    . assert(_ == scala.List(t"""{"seq":1}"""))
+    . assert(_ == scala.List("""{"seq":1}"""))
 
     // A launch session drains the debuggee's console from the moment of the fork: its output is
     // readable as a stream, and its exit status resolves when it terminates — so a debuggee
@@ -1441,7 +1441,7 @@ object Tests extends Suite(m"Vivisection tests"):
           debug.console.let: console =>
             // The agent's own "Listening for transport" banner precedes the program's output.
             val text = console.stdout.stdlib.toList.map(_.utf8).mkString.tt.trim
-            (text.ends(t"mark"), console.exited.await())
+            (text.ends("mark"), console.exited.await())
 
     . assert(_ == (true, Exit.Ok))
 
@@ -1451,42 +1451,42 @@ object Tests extends Suite(m"Vivisection tests"):
     // catches it.
     test(m"an uncaught-exception request stops at the uncaught throw only"):
       supervise:
-        exceptionFixture(t"vivisection.Exceptions", uncaught = true, caught = false):
+        exceptionFixture("vivisection.Exceptions", uncaught = true, caught = false):
           stop ?=> stop.exceptionInfo()
 
-    . assert(_ == Halt.ExceptionInfo(t"java.lang.RuntimeException", t"unhandled", false))
+    . assert(_ == Halt.ExceptionInfo("java.lang.RuntimeException", "unhandled", false))
 
     // With caught throws included, the first stop is the `IllegalStateException` inside `flaky`,
     // reported as caught.
     test(m"a caught-exception request stops at the caught throw first"):
       supervise:
-        exceptionFixture(t"vivisection.Exceptions", uncaught = true, caught = true):
+        exceptionFixture("vivisection.Exceptions", uncaught = true, caught = true):
           stop ?=> stop.exceptionInfo()
 
-    . assert(_ == Halt.ExceptionInfo(t"java.lang.IllegalStateException", t"recoverable", true))
+    . assert(_ == Halt.ExceptionInfo("java.lang.IllegalStateException", "recoverable", true))
 
     // Assignment writes through provenance: a local slot is written in place and observed
     // changed when the variables are read again at the same stop.
     test(m"assigning a local slot changes its value at the stop"):
       supervise:
-        debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(57)):
+        debugFixture("vivisection.Menagerie", "vivisection.Menagerie.scala", Ordinal.uniary(57)):
           stop ?=>
-            named(stop.variables()).get(t"int").foreach: variable =>
+            named(stop.variables()).get("int").foreach: variable =>
               stop.assign(variable, Jdwp.Value.OfInt(99))
 
-            named(stop.variables()).get(t"int").map(_.value)
+            named(stop.variables()).get("int").map(_.value)
 
     . assert(_ == scala.Some(Variable.Snapshot.Primitive(Jdwp.Value.OfInt(99))))
 
     // A captured `var` lives in a ref cell; its assignment routes through the cell's `elem`.
     test(m"assigning a captured var writes through its ref cell"):
       supervise:
-        debugFixture(t"vivisection.Closures", t"vivisection.Closures.scala", Ordinal.uniary(56)):
+        debugFixture("vivisection.Closures", "vivisection.Closures.scala", Ordinal.uniary(56)):
           stop ?=>
-            named(stop.variables()).get(t"tally").foreach: variable =>
+            named(stop.variables()).get("tally").foreach: variable =>
               stop.assign(variable, Jdwp.Value.OfInt(7))
 
-            named(stop.variables()).get(t"tally").map(_.value)
+            named(stop.variables()).get("tally").map(_.value)
 
     . assert(_ == scala.Some(Variable.Snapshot.Primitive(Jdwp.Value.OfInt(7))))
 
@@ -1507,7 +1507,7 @@ object Tests extends Suite(m"Vivisection tests"):
           // breakpoint cleared before resuming.
           val loaded = Promise[Unit]()
 
-          val entry = debug.breakpoint(t"vivisection.Ledger$$Account", t"deposit"): stop ?=>
+          val entry = debug.breakpoint("vivisection.Ledger$Account", "deposit"): stop ?=>
             loaded.offer(())
             stop.remain()
 
@@ -1515,7 +1515,7 @@ object Tests extends Suite(m"Vivisection tests"):
           loaded.await()
           entry.clear()
 
-          debug.watch(t"vivisection.Ledger$$Account", t"balance"): stop ?=>
+          debug.watch("vivisection.Ledger$Account", "balance"): stop ?=>
             stop.cause match
               case Halt.Cause.Modification(_, _, _, incoming) =>
                 if incoming == Jdwp.Value.OfInt(100) then
@@ -1540,7 +1540,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val debuggee: Debuggee = Debuggee(command, freePort())
 
         debuggee.session:
-          debug.breakpoint(t"vivisection.Recount$$", t"tally"): stop ?=>
+          debug.breakpoint("vivisection.Recount$", "tally"): stop ?=>
             outcome.offer(true)
             stop.remain()
 
@@ -1560,7 +1560,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val debuggee: Debuggee = Debuggee(command, freePort())
 
         debuggee.session:
-          debug.breakpoint(t"vivisection.Recount.scala", Ordinal.uniary(43)): stop ?=>
+          debug.breakpoint("vivisection.Recount.scala", Ordinal.uniary(43)): stop ?=>
             if hits.incrementAndGet() == 1
             then stop.frames().stdlib.headOption.foreach { (frame, _) => stop.pop(frame) }
             else
@@ -1577,13 +1577,13 @@ object Tests extends Suite(m"Vivisection tests"):
     // value.
     test(m"an evaluated assignment writes a local which evaluation then sees"):
       supervise:
-        debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(57)):
+        debugFixture("vivisection.Menagerie", "vivisection.Menagerie.scala", Ordinal.uniary(57)):
           stop ?=>
             stop.evaluator(fixtureClasspath): eval ?=>
-              eval.assign(t"int", t"int + 58")
+              eval.assign("int", "int + 58")
 
-              eval(t"int") match
+              eval("int") match
                 case Variable.Snapshot.Str(_, text) => text
                 case other                          => other.inspect
 
-    . assert(_ == t"100")
+    . assert(_ == "100")

@@ -45,12 +45,12 @@ import prepositional.*
 object Attribution:
   // Evidence that one or more names are classes, carried as the `Topic` type.
   def classes[topic <: Label](): Attribution of topic =
-    new Attribution(t"class"):
+    new Attribution("class"):
       type Topic = topic
 
   // The no-op attribution for a plain `Tag(children)` call, which dispatches via
   // `Dynamic` to `applyDynamic("apply")`. An empty `attribute` adds nothing.
-  given empty: Attribution(t""):
+  given empty: Attribution(""):
     type Topic = "apply"
 
 case class Attribution(attribute: Text) extends Topical, Findable

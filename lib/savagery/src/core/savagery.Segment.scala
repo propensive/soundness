@@ -39,6 +39,6 @@ case class Segment(symbol: Char, parameters: (Double | Boolean)*):
   def text: Text =
     parameters.map:
       case double: Double   => double.toString.tt
-      case boolean: Boolean => if boolean then t"1" else t"0"
+      case boolean: Boolean => if boolean then "1" else "0"
 
-    . join(t"$symbol ", t" ", t"")
+    . join(t"$symbol ", " ", "")

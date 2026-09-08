@@ -36,7 +36,7 @@ import anticipation.*
 import rudiments.*
 
 object Miles:
-  given designation: Designation[Miles[1]] = () => "mi".tt
+  given designation: Designation[Miles[1]] = () => "mi"
   inline given ratio: Ratio[Miles[-1] & Metres[1], 1609.344] = !!
 
 trait Miles[Power <: Nat] extends Units[Power, Distance]

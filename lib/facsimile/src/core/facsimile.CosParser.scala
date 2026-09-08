@@ -66,9 +66,9 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
   // stream dictionary. The payload itself is never traversed: every object is located through
   // the cross-reference table, so parsing stops at the `stream` keyword.
   def indirect()(using Tactic[Pdf.Error]): (Int, Int, Cos) =
-    val number = integral(t"an object number")
-    val generation = integral(t"a generation number")
-    expect(CosToken.Keyword(t"obj"), t"the keyword 'obj'")
+    val number = integral("an object number")
+    val generation = integral("a generation number")
+    expect(CosToken.Keyword("obj"), "the keyword 'obj'")
     (number, generation, content())
 
   private def integral(expected: Text)(using Tactic[Pdf.Error]): Int =
@@ -94,13 +94,13 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
             Cos.Body(entries, lexer.payloadStart())
 
           case _ =>
-            abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, t"a stream dictionary")))
+            abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, "a stream dictionary")))
 
         case other =>
-          abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, t"the keyword 'endobj'")))
+          abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, "the keyword 'endobj'")))
 
       case _ =>
-        abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, t"the keyword 'endobj'")))
+        abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, "the keyword 'endobj'")))
 
   // One content-stream instruction: operand values followed by an operator keyword, or
   // `Unset` at the end of the stream. Operands left dangling by a truncated stream are
@@ -167,10 +167,10 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
       case "true"  => Cos.Truth(true)
       case "false" => Cos.Truth(false)
       case "null"  => Cos.Nil
-      case other   => abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, t"an object")))
+      case other   => abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, "an object")))
 
     case _ =>
-      abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, t"an object")))
+      abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, "an object")))
 
   private def sequence()(using Tactic[Pdf.Error]): Cos =
     val elements = scala.collection.immutable.List.newBuilder[Cos]
@@ -206,7 +206,7 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
           abort(Pdf.Error(Pdf.Error.Reason.Truncated))
 
         case token =>
-          abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, t"a name key")))
+          abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, "a name key")))
     do ()
 
     Cos.Dictionary(entries.result().to(Map))

@@ -68,7 +68,7 @@ object Examples:
   def oneFrame(done: Int, total: Int)(using Stdio): Unit =
     Out.print(e"\r${gaugeLine(Fraction.of(done, total), 40)} $done/$total${csi.el()}")
 
-  def captioned: Pane = gauge(Reading(Captioned(Fraction.indeterminate, t"resolving dependencies")))
+  def captioned: Pane = gauge(Reading(Captioned(Fraction.indeterminate, "resolving dependencies")))
 
   def procession: Pane =
     val steps =

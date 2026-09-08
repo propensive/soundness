@@ -45,12 +45,12 @@ import CheckFormat.CheckTree
 
 object TelCheckTree:
 
-  def of(tel: Tel): CheckTree = tel.document.lay(CheckTree.Variant(t"<no-doc>", Unset)): doc =>
+  def of(tel: Tel): CheckTree = tel.document.lay(CheckTree.Variant("<no-doc>", Unset)): doc =>
     of(doc)
 
   def of(document: Tel.Document): CheckTree =
     CheckTree.Struct
-      ( t"Document",
+      ( "Document",
         List
          ( t"interpreter_directive" -> ofOptional(document.interpreterDirective)(s => CheckTree.Str(s)),
            t"pragma"                -> ofOptional(document.pragma)(ofPragma),
@@ -63,7 +63,7 @@ object TelCheckTree:
   private def ofPragma(p: Tel.Pragma): CheckTree =
     val (major, minor) = p.version
     CheckTree.Struct
-      ( t"Pragma",
+      ( "Pragma",
         List
          ( t"version"   -> CheckTree.Tuple(List(CheckTree.Num(major), CheckTree.Num(minor))),
            t"reference" -> ofOptional(p.reference)(r => CheckTree.Str(r.text)),
@@ -72,12 +72,12 @@ object TelCheckTree:
            t"sigil"     -> ofOptional(p.sigil)(c => CheckTree.Str(Text(c.toString))) ) )
 
   private def ofLineEndings(lineEndings: Tel.LineEndings): CheckTree = lineEndings match
-    case Tel.LineEndings.Lf   => CheckTree.Variant(t"LF", Unset)
-    case Tel.LineEndings.Crlf => CheckTree.Variant(t"CRLF", Unset)
+    case Tel.LineEndings.Lf   => CheckTree.Variant("LF", Unset)
+    case Tel.LineEndings.Crlf => CheckTree.Variant("CRLF", Unset)
 
   private def ofBlock(block: Tel.Block): CheckTree =
     CheckTree.Struct
-      ( t"Block",
+      ( "Block",
         List
          ( t"comments"             -> ofArray(block.comments)(ofComment),
            t"tabulation"           -> ofOptional(block.tabulation)(ofTabulation),
@@ -85,18 +85,18 @@ object TelCheckTree:
            t"trailing_blank_lines" -> CheckTree.Num(block.trailingBlankLines) ) )
 
   private def ofComment(comment: Tel.Comment): CheckTree =
-    CheckTree.Struct(t"Comment", List(t"text" -> CheckTree.Str(comment.text)))
+    CheckTree.Struct("Comment", List(t"text" -> CheckTree.Str(comment.text)))
 
   private def ofTabulation(tabulation: Tel.Tabulation): CheckTree =
     CheckTree.Struct
-      ( t"Tabulation",
+      ( "Tabulation",
         List
          ( t"marker_offsets" -> CheckTree.Sequence((tabulation.markerOffsets.readable.toList.map(CheckTree.Num(_))).to(List)),
            t"headings"       -> CheckTree.Sequence((tabulation.headings.readable.toList.map(h => CheckTree.Str(h))).to(List)) ) )
 
   private def ofCompound(compound: Tel.Compound): CheckTree =
     CheckTree.Struct
-      ( t"Compound",
+      ( "Compound",
         List
          ( t"keyword"  -> CheckTree.Str(compound.keyword),
            t"atoms"    -> ofArray(compound.atoms)(ofAtom),
@@ -106,23 +106,23 @@ object TelCheckTree:
   private def ofAtom(atom: Tel.Atom): CheckTree = atom match
     case Tel.Atom.Inline(text, precedingSpaces) =>
       CheckTree.Struct
-        ( t"Inline",
+        ( "Inline",
           List
            ( t"text"             -> CheckTree.Str(text),
              t"preceding_spaces" -> CheckTree.Num(precedingSpaces) ) )
 
     case Tel.Atom.Source(text) =>
-      CheckTree.Struct(t"Source", List(t"text" -> CheckTree.Str(text)))
+      CheckTree.Struct("Source", List(t"text" -> CheckTree.Str(text)))
 
     case Tel.Atom.Literal(delimiter, text) =>
       CheckTree.Struct
-        ( t"Literal",
+        ( "Literal",
           List
            ( t"delimiter" -> CheckTree.Str(delimiter),
              t"text"      -> CheckTree.Str(text) ) )
 
   private def ofOptional[value](opt: Optional[value])(f: value => CheckTree): CheckTree =
-    opt.lay(CheckTree.Variant(t"None", Unset))(v => CheckTree.Variant(t"Some", f(v)))
+    opt.lay(CheckTree.Variant("None", Unset))(v => CheckTree.Variant("Some", f(v)))
 
   private def ofArray[value](items: Array[value])(f: value => CheckTree): CheckTree =
     CheckTree.Sequence(items.readable.toList.map(f).to(List))

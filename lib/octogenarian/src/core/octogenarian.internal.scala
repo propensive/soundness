@@ -59,11 +59,11 @@ object internal:
     def parse(text: Text)(using Tactic[Git.RefError]): Text =
       def fail(reason: Git.RefError.Reason): Text = abort(Git.RefError(text, reason))
 
-      text.cut(t"/").each: part =>
-        if part.starts(t".") || part.ends(t".") then fail(Git.RefError.Reason.LeadingOrTrailingDot)
-        if part.ends(t".lock")                  then fail(Git.RefError.Reason.ReservedSuffix)
-        if part.contains(t"@{")                 then fail(Git.RefError.Reason.ReservedSequence)
-        if part.contains(t"..")                 then fail(Git.RefError.Reason.DoubleDot)
+      text.cut("/").each: part =>
+        if part.starts(".") || part.ends(".") then fail(Git.RefError.Reason.LeadingOrTrailingDot)
+        if part.ends(".lock")                  then fail(Git.RefError.Reason.ReservedSuffix)
+        if part.contains("@{")                 then fail(Git.RefError.Reason.ReservedSequence)
+        if part.contains("..")                 then fail(Git.RefError.Reason.DoubleDot)
         if part.length == 0                     then fail(Git.RefError.Reason.EmptySegment)
 
         for char <- List('*', '[', '\\', ' ', '^', '~', ':', '?')

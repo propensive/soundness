@@ -203,7 +203,7 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[Websocket.Error
       recur(Unset)
 
 object Websocket:
-  val magic: Text = t"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+  val magic: Text = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
   given servable: [message, state] => Websocket[message, state] is Servable:
     def serve(websocket: Websocket[message, state]): Http.Response =
@@ -217,8 +217,8 @@ object Websocket:
         ( Http.SwitchingProtocols,
           secWebsocketAccept  = acceptKey,
           secWebsocketVersion = 13,
-          connection          = t"Upgrade",
-          upgrade             = t"websocket" )
+          connection          = "Upgrade",
+          upgrade             = "websocket" )
         // The channel's reader endpoint is a singleton: the upgrade body is
         // materialized exactly once, by the server's response writer.
         ( Http.Body.Flowing(() => websocket.channel.stream) )

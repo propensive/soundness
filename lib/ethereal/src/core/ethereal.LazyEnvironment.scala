@@ -40,7 +40,7 @@ import vacuous.*
 
 class LazyEnvironment(variables: List[Text]) extends Environment:
   private lazy val map: Map[Text, Text] =
-    variables.map(_.cut(t"=", 2)).sweep:
+    variables.map(_.cut("=", 2)).sweep:
       case List(key, value) => (key, value)
     . to[Map]
 

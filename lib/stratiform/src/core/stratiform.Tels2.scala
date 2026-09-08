@@ -110,12 +110,12 @@ object Tels2:
       val entry =
         Tels.Struct
           ( Array
-              ( Tels.Field(Polarity.Tight, Polarity.Implicit, t"key", reify(key), Unset),
-                Tels.Field(Polarity.Tight, Polarity.Implicit, t"value", reify(value), Unset) ),
+              ( Tels.Field(Polarity.Tight, Polarity.Implicit, "key", reify(key), Unset),
+                Tels.Field(Polarity.Tight, Polarity.Implicit, "value", reify(value), Unset) ),
             Array.empty )
 
       Tels.Struct
-        ( Array(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
+        ( Array(Tels.Field(Polarity.Implicit, Polarity.Loose, "entries", entry, Unset)),
           Array.empty )
 
     case Morphology.Obj(fields, required) =>
@@ -198,12 +198,12 @@ trait Tels2:
       val entry =
         Tels.Struct
           ( Array
-              ( Tels.Field(Polarity.Tight, Polarity.Implicit, t"key", key.schema(), Unset),
-                Tels.Field(Polarity.Tight, Polarity.Implicit, t"value", value.schema(), Unset) ),
+              ( Tels.Field(Polarity.Tight, Polarity.Implicit, "key", key.schema(), Unset),
+                Tels.Field(Polarity.Tight, Polarity.Implicit, "value", value.schema(), Unset) ),
             Array.empty )
 
       Tels.Struct
-        ( Array(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
+        ( Array(Tels.Field(Polarity.Implicit, Polarity.Loose, "entries", entry, Unset)),
           Array.empty )
 
   inline given schematic: [value: Reflection] => value is TelSchematic over Tels.Type =

@@ -74,7 +74,7 @@ object Facet:
     // stdlib `indexWhere`/`patch` pair.
     val kept = shed(facets.stdlib.toList)
 
-    if kept.isEmpty || extent(kept) > width then Teletype(t" "*width.max(0)) else
+    if kept.isEmpty || extent(kept) > width then Teletype(" "*width.max(0)) else
       val surplus = width - extent(kept)
 
       val parts = kept.map: facet =>

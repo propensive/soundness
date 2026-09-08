@@ -47,15 +47,15 @@ import denominative.dysasymptotics.linearSize
 object Tests extends Suite(m"Bitumen Tests"):
   def run(): Unit =
     val helloFile = Tar.Entry.File
-                     ( path  = t"hello.txt".as[Relative on Tar],
+                     ( path  = "hello.txt".as[Relative on Tar],
                        mode  = UnixMode(),
                        user  = UnixUser(0),
                        group = UnixGroup(0),
                        mtime = 0.bits.u32,
-                       data  = Tar.Body(t"hello".in[Data]) )
+                       data  = Tar.Body("hello".in[Data]) )
 
     val emptyDir = Tar.Entry.Directory
-                    ( path  = t"data".as[Relative on Tar],
+                    ( path  = "data".as[Relative on Tar],
                       mode  = UnixMode(),
                       user  = UnixUser(0),
                       group = UnixGroup(0),
@@ -105,7 +105,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == List('d', 'a', 't', 'a', '/'))
 
     suite(m"PAX extended headers for long names"):
-      val longPath: Text = ("a": String).repeat(150).nn.tt
+      val longPath: Text = s"a".repeat(150).nn.tt
       val longFile = Tar.Entry.File
                       ( path  = longPath.as[Relative on Tar],
                         mode  = UnixMode(),
@@ -144,9 +144,9 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == ('a', 'a'))
 
     suite(m"PAX extended headers for long link targets"):
-      val longTarget: Text = ("b": String).repeat(150).nn.tt
+      val longTarget: Text = s"b".repeat(150).nn.tt
       val longSymlink = Tar.Entry.Symlink
-                         ( path   = t"link".as[Relative on Tar],
+                         ( path   = "link".as[Relative on Tar],
                            mode   = UnixMode(),
                            user   = UnixUser(0),
                            group  = UnixGroup(0),
@@ -191,7 +191,7 @@ object Tests extends Suite(m"Bitumen Tests"):
     suite(m"Reader: large payloads stream in bounded chunks"):
       val big: Data = Array.fill[Byte](200000)(42)
       val bigFile = Tar.Entry.File
-                     ( path  = t"big.bin".as[Relative on Tar],
+                     ( path  = "big.bin".as[Relative on Tar],
                        mode  = UnixMode(),
                        user  = UnixUser(0),
                        group = UnixGroup(0),
@@ -225,7 +225,7 @@ object Tests extends Suite(m"Bitumen Tests"):
 
       test(m"file name round-trips"):
         entries.head.entryName
-      . assert(_ == t"hello.txt")
+      . assert(_ == "hello.txt")
 
       test(m"file data round-trips"):
         entries.head match
@@ -252,11 +252,11 @@ object Tests extends Suite(m"Bitumen Tests"):
       test(m"directory name has no trailing slash after read"):
         entries(1) match
           case d: Tar.Entry.Directory => d.path.show
-          case _                     => t""
-      . assert(_ == t"data")
+          case _                     => ""
+      . assert(_ == "data")
 
     suite(m"Reader: PAX long name round-trip"):
-      val longPath: Text = ("a": String).repeat(150).nn.tt
+      val longPath: Text = s"a".repeat(150).nn.tt
       val longFile = Tar.Entry.File
                       ( path  = longPath.as[Relative on Tar],
                         mode  = UnixMode(),
@@ -277,9 +277,9 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == longPath)
 
     suite(m"Reader: PAX long linkpath round-trip"):
-      val longTarget: Text = ("b": String).repeat(150).nn.tt
+      val longTarget: Text = s"b".repeat(150).nn.tt
       val longSymlink = Tar.Entry.Symlink
-                         ( path   = t"link".as[Relative on Tar],
+                         ( path   = "link".as[Relative on Tar],
                            mode   = UnixMode(),
                            user   = UnixUser(0),
                            group  = UnixGroup(0),
@@ -296,17 +296,17 @@ object Tests extends Suite(m"Bitumen Tests"):
       test(m"linkpath is preserved via PAX override"):
         entries.head match
           case s: Tar.Entry.Symlink => s.target
-          case _                   => t""
+          case _                   => ""
       . assert(_ == longTarget)
 
     suite(m"Reader: mode, user, group round-trip"):
       val executable = Tar.Entry.File
-                        ( path  = t"bin".as[Relative on Tar],
+                        ( path  = "bin".as[Relative on Tar],
                           mode  = UnixMode(ownerExec = true, groupExec = true, otherExec = true),
-                          user  = UnixUser(1000, t"alice"),
-                          group = UnixGroup(1000, t"alice"),
+                          user  = UnixUser(1000, "alice"),
+                          group = UnixGroup(1000, "alice"),
                           mtime = 12345.bits.u32,
-                          data  = Tar.Body(t"#!/bin/sh\n".in[Data]) )
+                          data  = Tar.Body("#!/bin/sh\n".in[Data]) )
 
       val bytes = Tarfile(List(executable)).source[Data].chain
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
@@ -326,8 +326,8 @@ object Tests extends Suite(m"Bitumen Tests"):
       test(m"uname round-trips"):
         entries.head match
           case f: Tar.Entry.File => f.user.name.or(t"")
-          case _                => t""
-      . assert(_ == t"alice")
+          case _                => ""
+      . assert(_ == "alice")
 
       test(m"mtime round-trips"):
         entries.head match
@@ -379,7 +379,7 @@ object Tests extends Suite(m"Bitumen Tests"):
           i += 1
 
         val octal: String = java.lang.Long.toOctalString(sum).nn
-        val padded: String = ("000000": String).substring(octal.length).nn + octal
+        val padded: String = s"000000".substring(octal.length).nn + octal
 
         var patchedBlock = flagged
         i = 0
@@ -404,11 +404,11 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == (1, true, Some(true)))
 
     suite(m"PAX: long uname / gname round-trip"):
-      val longName: Text = ("u": String).repeat(40).nn.tt
-      val longGroup: Text = ("g": String).repeat(40).nn.tt
+      val longName: Text = s"u".repeat(40).nn.tt
+      val longGroup: Text = s"g".repeat(40).nn.tt
 
       val file = Tar.Entry.File
-                  ( path  = t"a".as[Relative on Tar],
+                  ( path  = "a".as[Relative on Tar],
                     mode  = UnixMode(),
                     user  = UnixUser(1000, longName),
                     group = UnixGroup(1000, longGroup),
@@ -433,18 +433,18 @@ object Tests extends Suite(m"Bitumen Tests"):
         val entries = Tarfile.read(blocks.iterator.stream).toList
         entries.head match
           case f: Tar.Entry.File => f.user.name.or(t"")
-          case _                => t""
+          case _                => ""
       . assert(_ == longName)
 
       test(m"long gname round-trips via reader"):
         val entries = Tarfile.read(blocks.iterator.stream).toList
         entries.head match
           case f: Tar.Entry.File => f.group.name.or(t"")
-          case _                => t""
+          case _                => ""
       . assert(_ == longGroup)
 
     suite(m"GNU long-name: writer emits 'L' block and round-trips"):
-      val longPath: Text = ("a": String).repeat(150).nn.tt
+      val longPath: Text = s"a".repeat(150).nn.tt
       val longFile = Tar.Entry.File
                       ( path  = longPath.as[Relative on Tar],
                         mode  = UnixMode(),
@@ -477,9 +477,9 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == longPath)
 
     suite(m"GNU long-name: 'K' block emitted for long link target"):
-      val longTarget: Text = ("b": String).repeat(150).nn.tt
+      val longTarget: Text = s"b".repeat(150).nn.tt
       val longSymlink = Tar.Entry.Symlink
-                         ( path   = t"link".as[Relative on Tar],
+                         ( path   = "link".as[Relative on Tar],
                            mode   = UnixMode(),
                            user   = UnixUser(0),
                            group  = UnixGroup(0),
@@ -496,49 +496,49 @@ object Tests extends Suite(m"Bitumen Tests"):
       test(m"long link target round-trips via reader honouring 'K'"):
         Tarfile.read(blocks.iterator.stream).toList.head match
           case s: Tar.Entry.Symlink => s.target
-          case _                   => t""
+          case _                   => ""
       . assert(_ == longTarget)
 
     suite(m"PAX: atime / ctime / sub-second mtime round-trip via .pax field"):
       val file = Tar.Entry.File
-                  ( path  = t"clock".as[Relative on Tar],
+                  ( path  = "clock".as[Relative on Tar],
                     mode  = UnixMode(),
                     user  = UnixUser(0),
                     group = UnixGroup(0),
                     mtime = 1234567890.bits.u32,
                     data  = Tar.Body(),
                     pax   = Map
-                             ( t"atime"   -> t"1700000000.500000000",
-                               t"ctime"   -> t"1700000001.250000000",
-                               t"mtime"   -> t"1234567890.987654321",
-                               t"comment" -> t"a test file" ) )
+                             ( "atime"   -> "1700000000.500000000",
+                               "ctime"   -> "1700000001.250000000",
+                               "mtime"   -> "1234567890.987654321",
+                               "comment" -> "a test file" ) )
 
       val bytes = Tarfile(List(file)).source[Data].chain
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
 
       test(m"atime round-trips"):
         entries.head match
-          case f: Tar.Entry.File => f.pax.stdlib.get(t"atime").getOrElse(t"")
-          case _                => t""
-      . assert(_ == t"1700000000.500000000")
+          case f: Tar.Entry.File => f.pax.stdlib.get("atime").getOrElse("")
+          case _                => ""
+      . assert(_ == "1700000000.500000000")
 
       test(m"ctime round-trips"):
         entries.head match
-          case f: Tar.Entry.File => f.pax.stdlib.get(t"ctime").getOrElse(t"")
-          case _                => t""
-      . assert(_ == t"1700000001.250000000")
+          case f: Tar.Entry.File => f.pax.stdlib.get("ctime").getOrElse("")
+          case _                => ""
+      . assert(_ == "1700000001.250000000")
 
       test(m"mtime sub-second portion round-trips"):
         entries.head match
-          case f: Tar.Entry.File => f.pax.stdlib.get(t"mtime").getOrElse(t"")
-          case _                => t""
-      . assert(_ == t"1234567890.987654321")
+          case f: Tar.Entry.File => f.pax.stdlib.get("mtime").getOrElse("")
+          case _                => ""
+      . assert(_ == "1234567890.987654321")
 
       test(m"comment round-trips"):
         entries.head match
-          case f: Tar.Entry.File => f.pax.stdlib.get(t"comment").getOrElse(t"")
-          case _                => t""
-      . assert(_ == t"a test file")
+          case f: Tar.Entry.File => f.pax.stdlib.get("comment").getOrElse("")
+          case _                => ""
+      . assert(_ == "a test file")
 
     suite(m"External tar reads archives produced by Bitumen"):
       import systems.javaBaseSystem
@@ -566,19 +566,19 @@ object Tests extends Suite(m"Bitumen Tests"):
           .filter(!_.s.isEmpty)
 
       test(m"single-file archive lists hello.txt"):
-        listing(writeArchive(Tarfile(List(helloFile)), t"hello.tar"))
+        listing(writeArchive(Tarfile(List(helloFile)), "hello.tar"))
       . assert(_ == List(t"hello.txt"))
 
       test(m"directory archive lists data/"):
-        listing(writeArchive(Tarfile(List(emptyDir)), t"dir.tar"))
+        listing(writeArchive(Tarfile(List(emptyDir)), "dir.tar"))
       . assert(_ == List(t"data/"))
 
       test(m"file + directory archive lists both"):
-        listing(writeArchive(Tarfile(List(helloFile, emptyDir)), t"both.tar"))
+        listing(writeArchive(Tarfile(List(helloFile, emptyDir)), "both.tar"))
       . assert(_ == List(t"hello.txt", t"data/"))
 
-      val longPathA: Text = ("a": String).repeat(150).nn.tt
-      val longPathB: Text = ("b": String).repeat(150).nn.tt
+      val longPathA: Text = s"a".repeat(150).nn.tt
+      val longPathB: Text = s"b".repeat(150).nn.tt
 
       val longFileA = Tar.Entry.File
                        ( path  = longPathA.as[Relative on Tar],
@@ -597,27 +597,27 @@ object Tests extends Suite(m"Bitumen Tests"):
                          data  = Tar.Body() )
 
       test(m"long PAX path is readable by external tar"):
-        listing(writeArchive(Tarfile(List(longFileA)), t"longpax.tar"))
+        listing(writeArchive(Tarfile(List(longFileA)), "longpax.tar"))
       . assert(_ == List(longPathA))
 
       test(m"long GNU 'L' path is readable by external tar"):
-        listing(writeArchive(Tarfile(List(longFileB), LongNameFormat.Gnu), t"longgnu.tar"))
+        listing(writeArchive(Tarfile(List(longFileB), LongNameFormat.Gnu), "longgnu.tar"))
       . assert(_ == List(longPathB))
 
       val longSymlink = Tar.Entry.Symlink
-                         ( path   = t"link".as[Relative on Tar],
+                         ( path   = "link".as[Relative on Tar],
                            mode   = UnixMode(),
                            user   = UnixUser(0),
                            group  = UnixGroup(0),
                            mtime  = 0.bits.u32,
-                           target = ("t": String).repeat(150).nn.tt )
+                           target = s"t".repeat(150).nn.tt )
 
       test(m"long PAX linkpath is readable by external tar"):
-        listing(writeArchive(Tarfile(List(longSymlink)), t"linkpax.tar"))
+        listing(writeArchive(Tarfile(List(longSymlink)), "linkpax.tar"))
       . assert(_ == List(t"link"))
 
       test(m"long GNU 'K' linkpath is readable by external tar"):
-        listing(writeArchive(Tarfile(List(longSymlink), LongNameFormat.Gnu), t"linkgnu.tar"))
+        listing(writeArchive(Tarfile(List(longSymlink), LongNameFormat.Gnu), "linkgnu.tar"))
       . assert(_ == List(t"link"))
 
     suite(m"Filesystem integration: Tarfile.from / extractTo"):
@@ -638,7 +638,7 @@ object Tests extends Suite(m"Bitumen Tests"):
         val source = freshDir()
         val sourceFile = source / "hello.txt"
         sourceFile.create[File]()
-        sourceFile.open[File](Write): handle ?=> handle.write(t"hi there".in[Data])
+        sourceFile.open[File](Write): handle ?=> handle.write("hi there".in[Data])
 
         // The extension is called directly: fallback from the companion overload no longer
         // re-elaborates under the frozen `Data` stream parameter.
@@ -656,9 +656,9 @@ object Tests extends Suite(m"Bitumen Tests"):
         val sub = source / "sub"
         sub.create[Directory]()
         (sub / "a.txt").create[File]()
-        (sub / "a.txt").open[File](Write) { handle ?=> handle.write(t"A".in[Data]) }
+        (sub / t"a.txt").open[File](Write) { handle ?=> handle.write("A".in[Data]) }
         (sub / "b.txt").create[File]()
-        (sub / "b.txt").open[File](Write) { handle ?=> handle.write(t"B".in[Data]) }
+        (sub / t"b.txt").open[File](Write) { handle ?=> handle.write("B".in[Data]) }
 
         val tar = bitumen.from(Tarfile)(source)
         val dest = freshDir()
@@ -675,7 +675,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       test(m"symlink round-trips"):
         val source = freshDir()
         (source / "real.txt").create[File]()
-        (source / "real.txt").open[File](Write) { handle ?=> handle.write(t"realdata".in[Data]) }
+        (source / t"real.txt").open[File](Write) { handle ?=> handle.write("realdata".in[Data]) }
         (source / "real.txt").symlinkTo(source / "link.txt")
 
         val tar = bitumen.from(Tarfile)(source)
@@ -756,7 +756,7 @@ object Tests extends Suite(m"Bitumen Tests"):
 
         scala.caps.unsafe.unsafeAssumeSeparate:
          target.create[Tar](): builder ?=>
-          builder.insert(t"hello.txt".as[Relative on Tar], t"hello".in[Data])
+          builder.insert("hello.txt".as[Relative on Tar], "hello".in[Data])
 
         target.open[Tar]():
           bitumen.tar.entries.to(List).map(_.entryName)
@@ -766,7 +766,7 @@ object Tests extends Suite(m"Bitumen Tests"):
         val target: Path on Linux = createDir / "made.tar.gz"
 
         target.create[Tar](Tar.Flag.Gzip): builder ?=>
-          builder.insert(t"data.txt".as[Relative on Tar], t"payload".in[Data])
+          builder.insert("data.txt".as[Relative on Tar], "payload".in[Data])
 
         target.open[Tar](Tar.Flag.Gzip):
           bitumen.tar.entries.to(List).map(_.entryName)
@@ -777,7 +777,7 @@ object Tests extends Suite(m"Bitumen Tests"):
 
         scala.caps.unsafe.unsafeAssumeSeparate:
          target.create[Tar](): builder ?=>
-          builder.file(t"chunks.bin".as[Relative on Tar]): entry ?=>
+          builder.file("chunks.bin".as[Relative on Tar]): entry ?=>
             for i <- 1 to 5 do entry.put(Array.fill[Byte](1000)(i.toByte))
 
         target.open[Tar]():
@@ -791,10 +791,10 @@ object Tests extends Suite(m"Bitumen Tests"):
 
         scala.caps.unsafe.unsafeAssumeSeparate:
          target.create[Tar](): builder ?=>
-          builder.insert(t"first.txt".as[Relative on Tar], t"one".in[Data])
-          builder.file(t"second.bin".as[Relative on Tar]): entry ?=>
-            entry.put(t"two".in[Data])
-          builder.insert(t"third.txt".as[Relative on Tar], t"three".in[Data])
+          builder.insert("first.txt".as[Relative on Tar], "one".in[Data])
+          builder.file("second.bin".as[Relative on Tar]): entry ?=>
+            entry.put("two".in[Data])
+          builder.insert("third.txt".as[Relative on Tar], "three".in[Data])
 
         target.open[Tar]():
           bitumen.tar.entries.to(List).map(_.entryName)
@@ -804,8 +804,8 @@ object Tests extends Suite(m"Bitumen Tests"):
         val target: Path on Linux = createDir / "streamed.tar.gz"
 
         target.create[Tar](Tar.Flag.Gzip): builder ?=>
-          builder.file(t"z.bin".as[Relative on Tar]): entry ?=>
-            entry.put(t"zipped".in[Data])
+          builder.file("z.bin".as[Relative on Tar]): entry ?=>
+            entry.put("zipped".in[Data])
 
         target.open[Tar](Tar.Flag.Gzip):
           bitumen.tar.entries.to(List).head match
@@ -820,7 +820,7 @@ object Tests extends Suite(m"Bitumen Tests"):
         capture[Tar.Error]:
           scala.caps.unsafe.unsafeAssumeSeparate:
            target.create[Tar](): builder ?=>
-            builder.insert(t"x".as[Relative on Tar], t"data".in[Data])
+            builder.insert("x".as[Relative on Tar], "data".in[Data])
             abort(Tar.Error(Tar.Error.Reason.WriteUnsupported))
 
         target.existent()
@@ -828,7 +828,7 @@ object Tests extends Suite(m"Bitumen Tests"):
 
     suite(m"GNU sparse: round-trip a simple sparse file"):
       val sparseEntry = Tar.Entry.Sparse
-                         ( path     = t"sparse.bin".as[Relative on Tar],
+                         ( path     = "sparse.bin".as[Relative on Tar],
                            mode     = UnixMode(),
                            user     = UnixUser(0),
                            group    = UnixGroup(0),
@@ -892,7 +892,7 @@ object Tests extends Suite(m"Bitumen Tests"):
         SparseSegment((i*1000L), 50L)
 
       val sparseEntry = Tar.Entry.Sparse
-                         ( path     = t"bigsparse.bin".as[Relative on Tar],
+                         ( path     = "bigsparse.bin".as[Relative on Tar],
                            mode     = UnixMode(),
                            user     = UnixUser(0),
                            group    = UnixGroup(0),

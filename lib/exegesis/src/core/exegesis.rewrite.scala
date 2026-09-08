@@ -54,7 +54,7 @@ object rewrite:
      ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"initialize") = Lsp.Registry.Slot[Json => Json]: json =>
+    proxy.results("initialize") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       val result = json.as[InitializeResult]
 
@@ -64,7 +64,7 @@ object rewrite:
   // is the `null` a server sends when it has none, and is passed on as it stands, so a rewriter
   // never has to spell out the empty case.
   transparent inline def hover(inline lambda: Hover => Hover)(using proxy: Lsp.Proxy^): Unit =
-    proxy.results(t"textDocument/hover") = Lsp.Registry.Slot[Json => Json]: json =>
+    proxy.results("textDocument/hover") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       try lambda(json.as[Hover]).in[Json] catch case _: Exception => json
 
@@ -72,7 +72,7 @@ object rewrite:
      ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/completion") = Lsp.Registry.Slot[Json => Json]: json =>
+    proxy.results("textDocument/completion") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       lambda(json.as[CompletionList]).in[Json]
 
@@ -80,7 +80,7 @@ object rewrite:
      ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/definition") = Lsp.Registry.Slot[Json => Json]: json =>
+    proxy.results("textDocument/definition") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       lambda(json.as[List[Location]]).in[Json]
 
@@ -88,7 +88,7 @@ object rewrite:
      ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/documentSymbol") = Lsp.Registry.Slot[Json => Json]: json =>
+    proxy.results("textDocument/documentSymbol") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       lambda(json.as[List[DocumentSymbol]]).in[Json]
 
@@ -96,7 +96,7 @@ object rewrite:
      ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/codeAction") = Lsp.Registry.Slot[Json => Json]: json =>
+    proxy.results("textDocument/codeAction") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       lambda(json.as[List[CodeAction]]).in[Json]
 
@@ -104,7 +104,7 @@ object rewrite:
      ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/codeLens") = Lsp.Registry.Slot[Json => Json]: json =>
+    proxy.results("textDocument/codeLens") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       lambda(json.as[List[CodeLens]]).in[Json]
 
@@ -112,7 +112,7 @@ object rewrite:
      ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/inlayHint") = Lsp.Registry.Slot[Json => Json]: json =>
+    proxy.results("textDocument/inlayHint") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       lambda(json.as[List[InlayHint]]).in[Json]
 
@@ -120,7 +120,7 @@ object rewrite:
      ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/signatureHelp") = Lsp.Registry.Slot[Json => Json]: json =>
+    proxy.results("textDocument/signatureHelp") = Lsp.Registry.Slot[Json => Json]: json =>
       import strategies.throwUnsafely
       try lambda(json.as[SignatureHelp]).in[Json] catch case _: Exception => json
 
@@ -131,14 +131,14 @@ object rewrite:
      ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.notices(t"textDocument/publishDiagnostics") = Lsp.Registry.Slot[Json => Json]: params =>
+    proxy.notices("textDocument/publishDiagnostics") = Lsp.Registry.Slot[Json => Json]: params =>
       import dynamicAccess.dynamicJson
       import strategies.throwUnsafely
 
       Map
-       ( t"uri"         -> params.uri,
-         t"version"     -> params.version,
-         t"diagnostics" -> lambda(params.diagnostics.as[List[Diagnostic]]).in[Json] )
+       ( "uri"         -> params.uri,
+         "version"     -> params.version,
+         "diagnostics" -> lambda(params.diagnostics.as[List[Diagnostic]]).in[Json] )
 
       . in[Json]
 

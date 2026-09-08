@@ -57,7 +57,7 @@ object Tabulation:
   =>  Tabulation[text] is Printable =
 
     (tabulation, termcap) =>
-      tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
+      tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join("\n")
 
 abstract class Tabulation[text: ClassTag]():
   type Row

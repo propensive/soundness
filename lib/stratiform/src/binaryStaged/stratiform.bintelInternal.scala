@@ -125,15 +125,15 @@ object bintelInternal:
 
   private val primitiveClasses: scala.collection.immutable.Map[String, Class[?]] =
     scala.collection.immutable.Map
-      ( ("scala.Int": String)     -> classOf[Int],
-        ("scala.Long": String)    -> classOf[Long],
-        ("scala.Double": String)  -> classOf[Double],
-        ("scala.Float": String)   -> classOf[Float],
-        ("scala.Boolean": String) -> classOf[Boolean],
-        ("scala.Short": String)   -> classOf[Short],
-        ("scala.Byte": String)    -> classOf[Byte],
-        ("scala.Char": String)    -> classOf[Char],
-        ("scala.Unit": String)    -> classOf[Unit] )
+      ( s"scala.Int"     -> classOf[Int],
+        s"scala.Long"    -> classOf[Long],
+        s"scala.Double"  -> classOf[Double],
+        s"scala.Float"   -> classOf[Float],
+        s"scala.Boolean" -> classOf[Boolean],
+        s"scala.Short"   -> classOf[Short],
+        s"scala.Byte"    -> classOf[Byte],
+        s"scala.Char"    -> classOf[Char],
+        s"scala.Unit"    -> classOf[Unit] )
 
   private def binaryName(using Quotes)(symbol: quotes.reflect.Symbol): String =
     import quotes.reflect.*
@@ -143,10 +143,10 @@ object bintelInternal:
 
       if owner.isPackageDef then
         val prefix = owner.fullName
-        if prefix == "<empty>" then symbol.name else prefix+(".": String)+symbol.name
+        if prefix == "<empty>" then symbol.name else prefix+s".${symbol.name}"
       else
         val ownerName = build(if owner.isClassDef then owner else owner.owner)
-        ownerName+("$": String)+symbol.name
+        ownerName+s"$$${symbol.name}"
 
     build(symbol)
 
@@ -520,7 +520,7 @@ object bintelInternal:
     if !productSupported(tpe) then
       report.errorAndAbort
         (s"stratiform: ${tpe.show} is not an inlinable BinTEL struct (a non-generic, " +
-          ("top-level or object-nested case class with a single parameter list and no ": String) +
+          s"top-level or object-nested case class with a single parameter list and no " +
           "`@name` renames); use `Bintel.read`")
 
     val classSymbol = tpe.classSymbol.get
@@ -549,10 +549,10 @@ object bintelInternal:
       val owner = Symbol.spliceOwner
 
       val slots = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, ("slot": String)+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, s"slot$index", fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
 
       val seens = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, ("seen": String)+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, s"seen$index", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
 
       def zero(fieldType: TypeRepr): Term =
         if fieldType =:= TypeRepr.of[Int] then Literal(IntConstant(0))
@@ -578,7 +578,7 @@ object bintelInternal:
             val atom = Text($parser.directScalar()(using $btactic))
 
             try atom.s.toInt catch case _: NumberFormatException =>
-              raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Int")))(using $tactic)
+              raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, "Int")))(using $tactic)
               0
           }
 
@@ -587,7 +587,7 @@ object bintelInternal:
             val atom = Text($parser.directScalar()(using $btactic))
 
             try atom.s.toLong catch case _: NumberFormatException =>
-              raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Long")))(using $tactic)
+              raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, "Long")))(using $tactic)
               0L
           }
 
@@ -600,7 +600,7 @@ object bintelInternal:
               case "false" => false
 
               case _ =>
-                raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Boolean")))(using $tactic)
+                raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, "Boolean")))(using $tactic)
                 false
           }
 
@@ -609,7 +609,7 @@ object bintelInternal:
             val atom = Text($parser.directScalar()(using $btactic))
 
             try atom.s.toDouble catch case _: NumberFormatException =>
-              raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Double")))(using $tactic)
+              raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, "Double")))(using $tactic)
               0.0
           }
 
@@ -621,8 +621,8 @@ object bintelInternal:
         case KLong    => Expr(0L)
         case KBoolean => Expr(false)
         case KDouble  => Expr(0.0)
-        case KText    => '{ t"" }
-        case KString  => Expr(("": String))
+        case KText    => '{ "" }
+        case KString  => Expr(s"")
 
       def seamRead(decoder: Any, encoding: Option[String]): Expr[Any] =
         val found = decoder.asInstanceOf[Expr[Any]]
@@ -647,7 +647,7 @@ object bintelInternal:
                 TypeRepr.of[scm.Builder].appliedTo(List(elementType, fieldTypes(index)))
 
               Some(index -> Symbol.newVal
-                (owner, ("builder": String)+index, builderType, Flags.EmptyFlags, Symbol.noSymbol))
+                (owner, s"builder$index", builderType, Flags.EmptyFlags, Symbol.noSymbol))
 
             case _ =>
               None
@@ -685,7 +685,7 @@ object bintelInternal:
           case _                 => fieldTypes(index)
 
         Symbol.newMethod
-          (owner, ("readField": String)+index, MethodType(Nil)(_ => Nil, _ => resultType))
+          (owner, s"readField$index", MethodType(Nil)(_ => Nil, _ => resultType))
 
       val readDefDefs: List[Statement] = List.range(0, arity).map: index =>
         val keyword: Expr[Text] = '{ ${Expr(keywords(index))}.tt }

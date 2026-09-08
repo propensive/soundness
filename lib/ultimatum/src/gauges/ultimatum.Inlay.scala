@@ -75,7 +75,7 @@ class Inlay[status: Gaugeable as design]
 
     while index < rows.length do
       Out.print(e"${rows(index)}${csi.el()}")
-      if index < rows.length - 1 then Out.print(t"\n")
+      if index < rows.length - 1 then Out.print("\n")
       index += 1
 
     drawn = rows.length
@@ -83,7 +83,7 @@ class Inlay[status: Gaugeable as design]
   // Back to the first column of the block's first row.
   private def rewind(): Unit =
     if drawn > 1 then Out.print(csi.cuu(drawn - 1))
-    Out.print(t"\r")
+    Out.print("\r")
 
   // Paint once, and — if the design animates — keep painting until `finish`. A design with no
   // period is drawn once here and thereafter only when its `Reading` changes and calls back.
@@ -117,9 +117,9 @@ class Inlay[status: Gaugeable as design]
 
     while index < drawn do
       Out.print(csi.el())
-      if index < drawn - 1 then Out.print(t"\n")
+      if index < drawn - 1 then Out.print("\n")
       index += 1
 
     if drawn > 1 then Out.print(csi.cuu(drawn - 1))
-    Out.print(t"\r")
+    Out.print("\r")
     drawn = 0

@@ -39,16 +39,16 @@ import gossamer.*
 import spectacular.*
 
 object Designation:
-  given metres: Designation[Metres[1]] = () => t"m"
-  given candelas: Designation[Candelas[1]] = () => t"cd"
-  given moles: Designation[Moles[1]] = () => t"mol"
-  given amperes: Designation[Amperes[1]] = () => t"A"
-  given kelvins: Designation[Kelvins[1]] = () => t"K"
-  given seconds: Designation[Seconds[1]] = () => t"s"
+  given metres: Designation[Metres[1]] = () => "m"
+  given candelas: Designation[Candelas[1]] = () => "cd"
+  given moles: Designation[Moles[1]] = () => "mol"
+  given amperes: Designation[Amperes[1]] = () => "A"
+  given kelvins: Designation[Kelvins[1]] = () => "K"
+  given seconds: Designation[Seconds[1]] = () => "s"
 
   given kilograms: Designation[Kilograms[1]]:
     override def siPrefix: MetricPrefix = Kilo
-    def name(): Text = t"g"
+    def name(): Text = "g"
 
 trait Designation[-value]:
   def siPrefix: MetricPrefix = NoPrefix

@@ -49,10 +49,10 @@ import wisteria.*
 object Decomposable extends Decomposable2:
   object Base:
     given text: Text is Base =
-      value => Decomposition.Primitive(t"Text", value, value)
+      value => Decomposition.Primitive("Text", value, value)
 
     given int: Int is Base =
-      value => Decomposition.Primitive(t"Int", value.show, value)
+      value => Decomposition.Primitive("Int", value.show, value)
 
     given string: String is Base =
       value => Decomposition.Primitive("String", value, value)
@@ -70,7 +70,7 @@ object Decomposable extends Decomposable2:
   =>  collection is Decomposable =
 
     caps.unsafe.unsafeAssumePure: list =>
-        Decomposition.Sequence(t"List", list.map(decomposable.decomposition(_)), list)
+        Decomposition.Sequence("List", list.map(decomposable.decomposition(_)), list)
 
 
   given sequence: [element, collection <: Sequence[element]]
@@ -79,7 +79,7 @@ object Decomposable extends Decomposable2:
 
     caps.unsafe.unsafeAssumePure: sequence =>
         val values: Sequence[Decomposition] = sequence.map(decomposable.decomposition(_))
-        Decomposition.Sequence(t"Sequence", values.to[List], sequence)
+        Decomposition.Sequence("Sequence", values.to[List], sequence)
 
   given iarray: [element]
   =>  ( decomposable: => element is Decomposable )
@@ -87,7 +87,7 @@ object Decomposable extends Decomposable2:
 
     caps.unsafe.unsafeAssumePure: iarray =>
         Decomposition.Sequence
-          ( t"Array",
+          ( "Array",
             iarray.readable.toSeq.map(decomposable.decomposition(_)).to(List),
             iarray )
 
@@ -112,10 +112,10 @@ trait Decomposable2 extends Decomposable3:
           case decomposable: (`inner` is Decomposable) =>
             value =>
               val inside = value match
-                case Unset => Decomposition.Primitive(t"Unset", t"∅", Unset)
+                case Unset => Decomposition.Primitive("Unset", "∅", Unset)
                 case other => decomposable.decomposition(other.asInstanceOf[inner])
 
-              Decomposition.Sum(t"Optional", inside, value)
+              Decomposition.Sum("Optional", inside, value)
 
     // Every remaining leaf is rendered by `Inspectable`, which is the typeclass for showing a
     // value to a programmer — which is what a test failure does. Previously this tail summoned
@@ -132,7 +132,7 @@ trait Decomposable2 extends Decomposable3:
     value => Decomposition.Primitive(name, value.toString.tt, value)
 
   def any[value]: value is Decomposable =
-    value => Decomposition.Primitive(t"Any", value.toString.tt, value)
+    value => Decomposition.Primitive("Any", value.toString.tt, value)
 
   object Derivation extends Derivable[Decomposable]:
     inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decomposable =
@@ -156,4 +156,4 @@ trait Decomposable2 extends Decomposable3:
 
 trait Decomposable3:
   given fallback: [value] => value is Decomposable =
-    value => Decomposition.Primitive(t"Any", value.toString.tt, value)
+    value => Decomposition.Primitive("Any", value.toString.tt, value)

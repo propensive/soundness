@@ -79,14 +79,14 @@ object BlobStream:
 
         mitigate:
           case _: Varint.Error =>
-            Lira.Error(Reason.MalformedPayload(t"a record length is malformed"))
+            Lira.Error(Reason.MalformedPayload("a record length is malformed"))
 
         . protect(Varint.decode(data, offset))
 
       val length = decoded.value
 
       if length > Int.MaxValue.toLong || decoded.next + length.toInt > data.length
-      then abort(Lira.Error(Reason.MalformedPayload(t"a record overruns the end of the stream")))
+      then abort(Lira.Error(Reason.MalformedPayload("a record overruns the end of the stream")))
 
       val content = Array.allocate[Byte](length.toInt)
       System.arraycopy(Array.unsafeJvm(data), decoded.next, content.raw, 0, length.toInt)
@@ -97,10 +97,10 @@ object BlobStream:
         val order = Blob.compare(previous.nn, hash)
 
         if order == 0
-        then abort(Lira.Error(Reason.InvalidBlobStream(t"two records have equal hashes")))
+        then abort(Lira.Error(Reason.InvalidBlobStream("two records have equal hashes")))
 
         if order > 0
-        then abort(Lira.Error(Reason.InvalidBlobStream(t"records are not in ascending hash order")))
+        then abort(Lira.Error(Reason.InvalidBlobStream("records are not in ascending hash order")))
 
       blobs += Blob(hash, bytes)
       previous = hash

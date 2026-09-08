@@ -54,18 +54,18 @@ object Pathname:
   // The property is read straight off the `System` capability rather than through
   // `Directories.homeText`, which panics when it is unset. An unknown home leaves `~` alone,
   // to resolve (and fail) like any other name.
-  private def home(using System): Optional[Text] = summon[System](t"user.home").let: text =>
-    if text.length > 1 && text.ends(t"/") then text.skip(1, Bidi.Rtl) else text
+  private def home(using System): Optional[Text] = summon[System]("user.home").let: text =>
+    if text.length > 1 && text.ends("/") then text.skip(1, Bidi.Rtl) else text
 
   // A shell expands `~` before exec, but a quoted argument and every partial word handed to
   // the completion script arrive with the tilde intact, so it is expanded here too.
   private def expand(text: Text)(using System): Text = home.lay(text): home =>
-    if text == t"~" then home else if text.starts(t"~/") then home+text.skip(1) else text
+    if text == "~" then home else if text.starts("~/") then home+text.skip(1) else text
 
   // The inverse, so a completion under a tilde stays short and keeps its tilde.
   private def abbreviate(text: Text)(using System): Text = home.lay(text): home =>
-    if text == home then t"~"
-    else if text.starts(home+t"/") then t"~"+text.skip(home.length)
+    if text == home then "~"
+    else if text.starts(home+"/") then "~"+text.skip(home.length)
     else text
 
   // The pathname completion candidates for the partially-typed `operand` — expanding `~`,
@@ -82,46 +82,46 @@ object Pathname:
       // and accepting it should advance to the next argument. Every candidate is an operand
       // value rather than a subcommand, so the help tree does not enumerate the working
       // directory as though it were syntax (see `Suggestion.operand`).
-      Suggestion(core, Unset, incomplete = path.ends(t"/"), prefix = prefix, operand = true)
+      Suggestion(core, Unset, incomplete = path.ends("/"), prefix = prefix, operand = true)
 
     safely:
       // `children` is a lazy `Chain`; each branch forces it once into a `List` before filtering.
-      if operand == t"." then
+      if operand == "." then
         val children0: List[Path on Local] = workingDirectory.children.to[List]
 
-        suggest(t"../") ::
-          children0.filter(_.name.starts(t".")).map: path =>
+        suggest("../") ::
+          children0.filter(_.name.starts(".")).map: path =>
             val directory = safely(path.entry() == galilei.Directory).or(false)
-            suggest(if directory then path.name+t"/" else path.name)
+            suggest(if directory then path.name+"/" else path.name)
 
-      else if operand == t".." then
+      else if operand == ".." then
         val children0: List[Path on Local] = workingDirectory.children.to[List]
 
-        suggest(t"../") ::
-          children0.filter(_.name.starts(t"..")).map: path =>
+        suggest("../") ::
+          children0.filter(_.name.starts("..")).map: path =>
             val directory = safely(path.entry() == galilei.Directory).or(false)
-            suggest(if directory then path.name+t"/" else path.name)
+            suggest(if directory then path.name+"/" else path.name)
 
       else if operand.nil then
         val children0: List[Path on Local] = workingDirectory.children.to[List]
         val showAll = tab > Prim
         val children =
-          if !showAll then children0.filter(!_.name.starts(t".")) else children0
+          if !showAll then children0.filter(!_.name.starts(".")) else children0
 
         children.map: path =>
           val directory = safely(path.entry() == galilei.Directory).or(false)
-          suggest(if directory then path.name+t"/" else path.name)
+          suggest(if directory then path.name+"/" else path.name)
 
       else
-        val tilde = home.present && (operand == t"~" || operand.starts(t"~/"))
-        val absolute = operand.starts(t"/")
+        val tilde = home.present && (operand == "~" || operand.starts("~/"))
+        val absolute = operand.starts("/")
         // A bare `~` names the home directory itself, so it lists that directory's children,
         // exactly as `~/` does; without this it would list the home directory's siblings.
-        val directory = operand.ends(t"/") || operand == t"~"
+        val directory = operand.ends("/") || operand == "~"
         // Resolution runs under its own optional tactic; no aliased writer.
         val prototype = scala.caps.unsafe.unsafeAssumeSeparate:
           workingDirectory.resolve(expand(operand))
-        val showAll = tab > Prim || prototype.name.starts(t".")
+        val showAll = tab > Prim || prototype.name.starts(".")
         val base: Optional[Path on Local] = if directory then prototype else prototype.parent
         val children0 = base.let(base => base.children.to[List]).or(List[Path on Local]())
 
@@ -130,11 +130,11 @@ object Pathname:
           else children0.filter(_.name.starts(prototype.name))
 
         val children2 =
-          if !showAll then children.filter(!_.name.starts(t".")) else children
+          if !showAll then children.filter(!_.name.starts(".")) else children
 
         children2.map: path =>
           val directory = safely(path.entry() == galilei.Directory).or(false)
-          val slash = if directory then t"/" else t""
+          val slash = if directory then "/" else ""
 
           suggest:
             if tilde then abbreviate(path.encode)+slash

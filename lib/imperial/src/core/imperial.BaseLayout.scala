@@ -51,9 +51,9 @@ object BaseLayout:
 
     def render(homeDir: Text): Text =
       // The filesystem root (`Base`): not home-relative and no path segments → `/`.
-      if !home && path.nil then t"/"
+      if !home && path.nil then "/"
       else
-        val slash = if path.nil then t"" else t"/"
+        val slash = if path.nil then "" else "/"
         t"${if home then homeDir else t""}$slash${path.reverse.join(t"/")}"
 
 // `caps.Pure`: a layout is pure path data (`part`, `readOnly`, `Dir`); the marker also keeps the
@@ -71,9 +71,9 @@ extends caps.Pure:
     val dir = part.let(baseDir/_).or(baseDir)
     // Only home-relative layouts need `$HOME`; the `/`-rooted `Base.*` layouts render without it.
     val home2: Text =
-      if !dir.home then t"" else
+      if !dir.home then "" else
         val home: Text = Environment.home[Text]
-        if home.ends(t"/") then home.skip(1, Rtl) else home
+        if home.ends("/") then home.skip(1, Rtl) else home
 
     dir.render(home2)
 

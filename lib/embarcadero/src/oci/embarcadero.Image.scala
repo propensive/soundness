@@ -72,8 +72,8 @@ object Image:
   def apply
     ( layers:       List[Layer],
       config:       Optional[ContainerConfig] = Unset,
-      architecture: Text                      = t"amd64",
-      os:           Text                      = t"linux",
+      architecture: Text                      = "amd64",
+      os:           Text                      = "linux",
       annotations:  Optional[Map[Text, Text]] = Unset )
   :   Image =
 
@@ -81,7 +81,7 @@ object Image:
       Image.Config
         ( architecture = architecture,
           os           = os,
-          rootfs       = RootFs(t"layers", layers.map(_.diffId)),
+          rootfs       = RootFs("layers", layers.map(_.diffId)),
           config       = config )
 
     assemble
@@ -101,8 +101,8 @@ object Image:
       exports:      List[Text]                = Nil,
       imports:      List[Text]                = Nil,
       target:       Optional[Text]            = Unset,
-      architecture: Text                      = t"wasm",
-      os:           Text                      = t"wasip2",
+      architecture: Text                      = "wasm",
+      os:           Text                      = "wasip2",
       annotations:  Optional[Map[Text, Text]] = Unset )
   :   Image =
 
@@ -176,7 +176,7 @@ object Image:
     // (for layers: compressed) chunks — undecoded and unverified.
     private def body(digest: Text)(using Tactic[Oci.Error]): Tar.Body =
       if !digest.s.startsWith("sha256:")
-      then abort(Oci.Error(Oci.Error.Reason.UnsupportedDigest(digest.cut(t":").prim.or(t""))))
+      then abort(Oci.Error(Oci.Error.Reason.UnsupportedDigest(digest.cut(":").prim.or(t""))))
 
       val name = t"blobs/sha256/${digest.s.stripPrefix("sha256:").tt}"
 
@@ -192,18 +192,18 @@ object Image:
 
     // The decoded top-level index, after validating the `oci-layout` marker.
     def index(using Tactic[Oci.Error]): Index =
-      val layoutBytes = document(t"oci-layout", Oci.Error.Reason.MissingLayout)
+      val layoutBytes = document("oci-layout", Oci.Error.Reason.MissingLayout)
 
-      val layout = decode(t"oci-layout"):
+      val layout = decode("oci-layout"):
         import strategies.throwUnsafely
         layoutBytes.read[Json].as[OciLayout]
 
       if !layout.imageLayoutVersion.s.startsWith("1.")
       then abort(Oci.Error(Oci.Error.Reason.UnsupportedLayout(layout.imageLayoutVersion)))
 
-      val indexBytes = document(t"index.json", Oci.Error.Reason.MissingIndex)
+      val indexBytes = document("index.json", Oci.Error.Reason.MissingIndex)
 
-      decode(t"index.json"):
+      decode("index.json"):
         import strategies.throwUnsafely
         indexBytes.read[Json].as[Index]
 
@@ -356,8 +356,8 @@ case class Image
           mtime = 0.bits.u32,
           data  = Tar.Body(content) )
 
-    val layoutEntry = entry(t"oci-layout", t"""{"imageLayoutVersion":"1.0.0"}""".in[Data])
-    val indexEntry  = entry(t"index.json", indexBytes)
+    val layoutEntry = entry("oci-layout", """{"imageLayoutVersion":"1.0.0"}""".in[Data])
+    val indexEntry  = entry("index.json", indexBytes)
 
     val blobEntries: List[bitumen.Tar.Entry] = blobs.map: (digest, content) =>
       val hex = digest.s.stripPrefix("sha256:").tt

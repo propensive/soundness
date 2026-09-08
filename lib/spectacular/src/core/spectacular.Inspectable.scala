@@ -108,7 +108,7 @@ object Inspectable extends Inspectable2:
   // further refinement of it. Each such near-miss falls silently through `derived` to the
   // `“…”` toString case rather than failing to compile, so the bound is what keeps a rendering
   // from disappearing when a type is refined.
-  given char: [char <: Char] => char is Inspectable = char => (("'": String)+escape(char).s+"'").tt
+  given char: [char <: Char] => char is Inspectable = char => (s"'"+escape(char).s+"'").tt
   given int: [int <: Int] => int is Inspectable = int => int.toString.tt
   given long: [long <: Long] => long is Inspectable = long => (long.toString+"L").tt
   given byte: [byte <: Byte] => byte is Inspectable = byte => (byte.toString+".toByte").tt
@@ -121,30 +121,30 @@ object Inspectable extends Inspectable2:
     val builder: StringBuilder = new StringBuilder()
     text.each { char => builder.append(escape(char, true).s) }
 
-    (("t\"": String)+builder.toString+"\"").tt
+    s"t\"${builder.toString}\"".tt
 
   given float: [float <: Float] => float is Inspectable =
-    case Float.PositiveInfinity => "Float.PositiveInfinity".tt
-    case Float.NegativeInfinity => "Float.NegativeInfinity".tt
-    case float if float.isNaN   => "Float.NaN".tt
+    case Float.PositiveInfinity => "Float.PositiveInfinity"
+    case Float.NegativeInfinity => "Float.NegativeInfinity"
+    case float if float.isNaN   => "Float.NaN"
     case float                  => (float.toString+"F").tt
 
   given double: [double <: Double] => double is Inspectable =
-    case Double.PositiveInfinity => "Double.PositiveInfinity".tt
-    case Double.NegativeInfinity => "Double.NegativeInfinity".tt
-    case double if double.isNaN  => "Double.NaN".tt
+    case Double.PositiveInfinity => "Double.PositiveInfinity"
+    case Double.NegativeInfinity => "Double.NegativeInfinity"
+    case double if double.isNaN  => "Double.NaN"
     case double                  => double.toString.tt
 
   given boolean: [boolean <: Boolean] => boolean is Inspectable = boolean =>
-    if boolean then "true".tt else "false".tt
+    if boolean then "true" else "false"
 
-  given unit: [unit <: Unit] => unit is Inspectable = unit => "()".tt
-  given bigInt: [bigInt <: BigInt] => bigInt is Inspectable = bigInt => (("BigInt(": String)+bigInt+")").tt
+  given unit: [unit <: Unit] => unit is Inspectable = unit => "()"
+  given bigInt: [bigInt <: BigInt] => bigInt is Inspectable = bigInt => s"BigInt($bigInt)".tt
 
   given bigDecimal: [bigDecimal <: BigDecimal] => bigDecimal is Inspectable = bigDecimal =>
-    (("BigDecimal(": String)+bigDecimal+")").tt
+    s"BigDecimal($bigDecimal)".tt
 
-  given unset: [unset <: Unset] => unset is Inspectable = unset => "○".tt
+  given unset: [unset <: Unset] => unset is Inspectable = unset => "○"
 
   // Only for a value statically typed as `reflect.Enum` itself, for which no reflection is
   // available; a value of a known enum type is rendered structurally by `enumeration`, below.
@@ -243,7 +243,7 @@ object Inspectable extends Inspectable2:
 
   given interval: [interval <: Interval] => interval is Inspectable = interval =>
     val value: Interval = interval
-    if value.nil then "∅".tt else (ordinal(value.start).s+("‥": String)+ordinal(value.end).s).tt
+    if value.nil then "∅" else (ordinal(value.start).s+s"‥"+ordinal(value.end).s).tt
 
   // A `Span` packs one of five differently-shaped ranges into a `Long`, so its rendering shows
   // the shape as well as the numbers: `⟪∅⟫` empty, `⟪@4+5⟫` an offset and length, `⟪4:8+5⟫` a
@@ -254,16 +254,16 @@ object Inspectable extends Inspectable2:
 
     val body = span.mode match
       case Span.Mode.Empty  => "∅"
-      case Span.Mode.Offset => ("@": String)+n(span.offset)+("+": String)+span.length.let(_.toString).or("?")
-      case Span.Mode.Lines  => n(span.startLine)+("‥": String)+n(span.endLine)
+      case Span.Mode.Offset => s"@"+n(span.offset)+s"+"+span.length.let(_.toString).or("?")
+      case Span.Mode.Lines  => n(span.startLine)+s"‥"+n(span.endLine)
 
       case Span.Mode.Line =>
-        n(span.startLine)+(":": String)+n(span.startColumn)+("+": String)+span.length.let(_.toString).or("?")
+        n(span.startLine)+s":"+n(span.startColumn)+s"+"+span.length.let(_.toString).or("?")
 
       case Span.Mode.Area =>
-        n(span.startLine)+(":": String)+n(span.startColumn)+("‥": String)+n(span.endLine)+(":": String)+n(span.endColumn)
+        n(span.startLine)+s":"+n(span.startColumn)+s"‥"+n(span.endLine)+s":"+n(span.endColumn)
 
-    (("⟪": String)+body+"⟫").tt
+    s"⟪$body⟫".tt
 
   // `Bytes` is a count, not a quantity to be rounded for display: an inspection which showed
   // `4MB` would hide the difference between two nearby sizes, which is usually the reason for
@@ -274,7 +274,7 @@ object Inspectable extends Inspectable2:
   // A `Message` renders as its own text, in the style of a `t"…"` literal but marked `m"…"`,
   // since the interpolated parts are no longer distinguishable once the message is built.
   given message: [message <: Message] => message is Inspectable = message =>
-    (("m\"": String)+message.text.s+"\"").tt
+    s"m\"${message.text}\"".tt
 
   // A missing instance is never a compile error: `derived` always succeeds, and quietly
   // substitutes a `toString`, a `Showable` or an `Encodable` rendering, each marked as such.
@@ -293,15 +293,15 @@ object Inspectable extends Inspectable2:
   def marker(char: Char): Boolean = char == '“' || char == '⸢' || char == '⸤'
 
   def escape(char: Char, eEscape: Boolean = false): Text = char match
-    case '\n'                => "\\n".tt
-    case '\t'                => "\\t".tt
-    case '\r'                => "\\r".tt
-    case '\\'                => "\\\\".tt
-    case '\"'                => "\\\"".tt
-    case '\''                => "\\\'".tt
-    case '\b'                => "\\b".tt
-    case '\f'                => "\\f".tt
-    case '\u001b' if eEscape => "\\e".tt
+    case '\n'                => "\\n"
+    case '\t'                => "\\t"
+    case '\r'                => "\\r"
+    case '\\'                => "\\\\"
+    case '\"'                => "\\\""
+    case '\''                => "\\\'"
+    case '\b'                => "\\b"
+    case '\f'                => "\\f"
+    case '\u001b' if eEscape => "\\e"
 
     case char =>
       if char < 128 && char >= 32
@@ -334,7 +334,7 @@ object Inspectable extends Inspectable2:
 
     entries =>
       entries.remap: (key, value) =>
-        inspKey().text(key).s+(" → ": String)+inspValue().text(value).s
+        inspKey().text(key).s+s" → "+inspValue().text(value).s
 
       . stdlib.mkString("{", ", ", "}").tt
 
@@ -352,7 +352,7 @@ object Inspectable extends Inspectable2:
 
     ledger =>
       Showable.enclose
-        ( ledger.remap { (key, value) => inspKey().text(key).s+(" → ": String)+inspValue().text(value).s },
+        ( ledger.remap { (key, value) => inspKey().text(key).s+s" → "+inspValue().text(value).s },
           "⟦", ", ", "⟧" )
 
   // `Self` is subtype-parametric so branded literals (`Sequence(1, 2, 3)`, typed
@@ -380,7 +380,7 @@ object Inspectable extends Inspectable2:
         val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
         (subscript+insp().text(value).s).tt
 
-      . mkString(("⦋": String)+arrayPrefix(array.toString), "∣", "⦌").tt
+      . mkString(s"⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
 
   given arraySeq: [element, arraySeq <: scm.ArraySeq[element]]
   =>  (inspectable: => element is Inspectable)
@@ -392,7 +392,7 @@ object Inspectable extends Inspectable2:
         val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
         (subscript+insp().text(value).s).tt
 
-      . mkString(("⦋": String)+arrayPrefix(array.toString), "∣", "⦌ₛ").tt
+      . mkString(s"⦋"+arrayPrefix(array.toString), "∣", "⦌ₛ").tt
 
   // Exact `Self`, for the reason given at `set` above: `Chain` is opaque too.
   given stream: [element] => (inspectable: => element is Inspectable)
@@ -402,13 +402,13 @@ object Inspectable extends Inspectable2:
 
     stream =>
       def recur(stream: Chain[element], todo: Int): Text =
-        if todo <= 0 then "..?".tt
+        if todo <= 0 then "..?"
         // The opaque `Chain`'s runtime `toString` still comes from the underlying
         // `sci.LazyList`, so the un-forced marker is spelt `LazyList(<not computed>)`.
-        else if stream.toString == "LazyList(<not computed>)" then "∿∿∿".tt
+        else if stream.toString == "LazyList(<not computed>)" then "∿∿∿"
         else stream match
-          case first #:: rest => (insp().text(first).s+(" ⋰ ": String)+recur(rest, todo - 1)).tt
-          case _              => "⯁ ".tt
+          case first #:: rest => (insp().text(first).s+s" ⋰ "+recur(rest, todo - 1)).tt
+          case _              => "⯁ "
 
       recur(stream, 3)
 
@@ -439,7 +439,7 @@ object Inspectable extends Inspectable2:
       case 'Z' => "🆉" // Boolean
       case _   => "🯄" // Unknown
 
-    val dimension = if brackets < 2 then "".tt else brackets.toString.map { digit => "⁰¹²³⁴⁵⁶⁷⁸⁹".s.charAt(digit - '0') }.tt
+    val dimension = if brackets < 2 then "" else brackets.toString.map { digit => "⁰¹²³⁴⁵⁶⁷⁸⁹".s.charAt(digit - '0') }.tt
 
     arrayType+dimension//+renderBraille(string.split("@").nn(1).nn)
 
@@ -448,11 +448,11 @@ object Inspectable extends Inspectable2:
     val insp: () -> (value is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
 
     {
-      case None        => "None".tt
+      case None        => "None"
       case Some(value) => s"Some(${insp().text(value).s})".tt
     }
 
-  given none: None.type is Inspectable = none => "None".tt
+  given none: None.type is Inspectable = none => "None"
 
 trait Inspectable2:
   // The `Encodable` and `Showable` branches borrow a rendering which was designed for another
@@ -462,8 +462,8 @@ trait Inspectable2:
   // so that the types still relying on them can be found by inspecting output. A type whose
   // encoded form is escaped (`legerdemain.Query`, URL-encoded) must define its own instance.
   inline given derived: [value] => value is Inspectable = compiletime.summonFrom:
-    case given (`value` is Encodable in Text) => value => (("⸤": String)+value.encode.s+"⸥").tt
-    case given (`value` is Showable)          => value => (("⸢": String)+value.show.s+"⸣").tt
+    case given (`value` is Encodable in Text) => value => s"⸤${value.encode}⸥".tt
+    case given (`value` is Showable)          => value => s"⸢${value.show}⸣".tt
 
     case mandatable: (`value` is Mandatable) =>
       val inspectable = compiletime.summonInline[mandatable.Result is Inspectable]
@@ -472,10 +472,10 @@ trait Inspectable2:
         optional.let: present =>
           s"｢${inspectable.text(present.asInstanceOf[mandatable.Result])}｣".tt
 
-        . or("○".tt)
+        . or("○")
 
     case given Reflection[`value`] => Inspectable.Derivation.derived[value]
-    case _                         => value => (("“": String)+value+"”").tt
+    case _                         => value => s"“$value”".tt
 
 trait Inspectable extends Typeclass.Pure:
   def text(value: Self): Text

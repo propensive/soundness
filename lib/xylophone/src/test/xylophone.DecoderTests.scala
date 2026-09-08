@@ -67,7 +67,7 @@ case class XMix(shape: DShape, name: Text) derives CanEqual
 // site's implicit context.
 object DefaultPersonScope:
   given XmlSchema = XmlSchema.Freeform
-  given Default[DPerson] = () => DPerson(t"", 0, t"")
+  given Default[DPerson] = () => DPerson("", 0, "")
 
   def run(): Set[String] =
     val xml = x"<root><company>Acme</company></root>"
@@ -115,11 +115,11 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
     suite(m"Simple product"):
       test(m"Decode a flat case class"):
         x"<root><name>Alice</name><age>30</age><email>a@b.c</email></root>".as[DPerson]
-      . assert(_ == DPerson(t"Alice", 30, t"a@b.c"))
+      . assert(_ == DPerson("Alice", 30, "a@b.c"))
 
       test(m"Field order doesn't matter"):
         x"<root><age>21</age><email>b@x</email><name>Bob</name></root>".as[DPerson]
-      . assert(_ == DPerson(t"Bob", 21, t"b@x"))
+      . assert(_ == DPerson("Bob", 21, "b@x"))
 
     suite(m"Nested product"):
       test(m"Decode a nested case class"):
@@ -127,7 +127,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
               <person><name>Carol</name><age>40</age><email>c@x</email></person>
               <company>Acme</company>
             </root>""".as[DContact]
-      . assert(_ == DContact(DPerson(t"Carol", 40, t"c@x"), t"Acme"))
+      . assert(_ == DContact(DPerson("Carol", 40, "c@x"), "Acme"))
 
     suite(m"Gated construction"):
       test(m"Constructor does not run when any field failed"):
@@ -275,10 +275,10 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
         . protect(decode(document)).items
 
       test(m"Missing-field error on a tracked Xml reports the parent's position"):
-        val source = t"<root>\n  <name>Alice</name>\n  <age>30</age>\n</root>"
+        val source = "<root>\n  <name>Alice</name>\n  <age>30</age>\n</root>"
         val tracked = source.load[Xml]
         val results = validateWithPositions(tracked)(_.asTracked[DPerson])
-        results.seek(_(0) == t"/email[1]").let(_(1))
+        results.seek(_(0) == "/email[1]").let(_(1))
       . assert(_ == Unset)
 
       test(m"Non-tracked Xml has Unset positions"):

@@ -381,7 +381,7 @@ object JsonBlueprint:
         val suffix = if required then "" else "?"
 
         pattern.let(Member.Value("pattern".s+suffix, _)).or:
-          Member.Value(format.or("string".tt)+suffix)
+          Member.Value(format.or(t"string")+suffix)
 
       case "integer" =>
         val end = if minimum.absent && maximum.absent then (if required then "" else "?") else "!"

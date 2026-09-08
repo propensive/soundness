@@ -116,15 +116,15 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
     suite(m"Layer-selective composition"):
       test(m"an empty selection composes the base alone"):
         memberKeywords(Tels.Layers.compose(layeredSchema, List()))
-      . assert(_ == t"name")
+      . assert(_ == "name")
 
       test(m"a single selection composes only that layer"):
         memberKeywords(Tels.Layers.compose(layeredSchema, List(t"alpha")))
-      . assert(_ == t"email,name")
+      . assert(_ == "email,name")
 
       test(m"a sparse selection skips unselected layers"):
         memberKeywords(Tels.Layers.compose(layeredSchema, List(t"alpha", t"gamma")))
-      . assert(_ == t"email,fax,name")
+      . assert(_ == "email,fax,name")
 
       test(m"selecting every layer matches compose-all"):
         memberKeywords(Tels.Layers.compose(layeredSchema, List(t"alpha", t"beta", t"gamma")))
@@ -144,7 +144,7 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
       test(m"an unknown layer name is a resolution error"):
         capture[Tels.Resolution.Error]
          (Tels.Layers.compose(layeredSchema, List(t"delta"))).reason
-      . assert(_ == Tels.Resolution.Error.Reason.UnknownLayer(t"delta"))
+      . assert(_ == Tels.Resolution.Error.Reason.UnknownLayer("delta"))
 
     suite(m"Signature decomposition under a layer selection (§8.1)"):
       test(m"the base-only signature verifies with an empty selection"):
@@ -171,19 +171,19 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
         val (base, layerHashes) = SchemaSignature.componentHashes(layeredDoc, Tels.Axiom.tels)
         val hashes = layeredSchema.layers.readable.toList.map(_.name).zip(layerHashes.stdlib).toMap
         val swapped =
-          SchemaSignature.encode((base :: scala.List(hashes(t"gamma"), hashes(t"alpha"))).to(List))
+          SchemaSignature.encode((base :: scala.List(hashes("gamma"), hashes("alpha"))).to(List))
 
         capture[Tels.Resolution.Error]:
           SchemaSignature.verifySelection
            ( layeredDoc, layeredSchema, Tels.Axiom.tels, List(t"alpha", t"gamma"), swapped )
         . reason
-      . assert(_ == Tels.Resolution.Error.Reason.LayerMismatch(t"alpha"))
+      . assert(_ == Tels.Resolution.Error.Reason.LayerMismatch("alpha"))
 
       test(m"a layer hash in base position is a base mismatch"):
         val (base, layerHashes) = SchemaSignature.componentHashes(layeredDoc, Tels.Axiom.tels)
         val hashes = layeredSchema.layers.readable.toList.map(_.name).zip(layerHashes.stdlib).toMap
         val wrongBase =
-          SchemaSignature.encode((hashes(t"gamma") :: scala.List(hashes(t"alpha"))).to(List))
+          SchemaSignature.encode((hashes("gamma") :: scala.List(hashes("alpha"))).to(List))
 
         capture[Tels.Resolution.Error]:
           SchemaSignature.verifySelection
@@ -201,7 +201,7 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
       . assert(_ == Tels.Resolution.Step.Builtin)
 
       test(m"the unpinned tels coordinate answers at the built-in step"):
-        val reference = Tel.Pragma.Reference(t"specification.tel", t"tels", Unset)
+        val reference = Tel.Pragma.Reference("specification.tel", "tels", Unset)
         SchemaResolver.resolve(pragma(reference = reference)).step
       . assert(_ == Tels.Resolution.Step.Builtin)
 
@@ -211,7 +211,7 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
 
       test(m"a mismatched tels version pin does not answer as built-in"):
         val reference = Tel.Pragma.Reference
-         ( t"specification.tel", t"tels", Tel.Pragma.Reference.Selector.Version(3, 0, 0) )
+         ( "specification.tel", "tels", Tel.Pragma.Reference.Selector.Version(3, 0, 0) )
 
         capture[Tels.Resolution.Error](SchemaResolver.resolve(pragma(reference = reference)))
         . reason
@@ -254,15 +254,15 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
            library = List(layeredDoc) )
 
         (resolved.step, memberKeywords(resolved.schema))
-      . assert(_ == (Tels.Resolution.Step.Library, t"email,name"))
+      . assert(_ == (Tels.Resolution.Step.Library, "email,name"))
 
       test(m"a bare reference resolves from the local store only"):
         val store = Tels.Resolution.Store.Memory()
-        store.install(t"example.com", t"layered", layeredBytes)
+        store.install("example.com", "layered", layeredBytes)
         val delegate = RecordingDelegate(Unset)
 
         val resolved = SchemaResolver.resolve
-         ( pragma(reference = Tel.Pragma.Reference(t"example.com", t"layered", Unset)),
+         ( pragma(reference = Tel.Pragma.Reference("example.com", "layered", Unset)),
            stores = List(store), delegate = delegate )
 
         (resolved.step, delegate.signatureCalls + delegate.selectorCalls)
@@ -274,20 +274,20 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
         val reason =
           capture[Tels.Resolution.Error]:
             SchemaResolver.resolve
-             ( pragma(reference = Tel.Pragma.Reference(t"example.com", t"absent", Unset)),
+             ( pragma(reference = Tel.Pragma.Reference("example.com", "absent", Unset)),
                delegate = delegate )
           . reason
 
         (reason, delegate.signatureCalls + delegate.selectorCalls)
       . assert(_ == (Tels.Resolution.Error.Reason.Unresolved
-          (Tels.Resolution.Step.Cache, t"example.com/absent"), 0))
+          (Tels.Resolution.Step.Cache, "example.com/absent"), 0))
 
       test(m"a selector-form reference resolves through the delegate and is cached"):
         val store = Tels.Resolution.Store.Memory()
         val delegate = RecordingDelegate(layeredBytes)
 
         val reference = Tel.Pragma.Reference
-         ( t"example.com", t"layered", Tel.Pragma.Reference.Selector.Version(1, 0, 0) )
+         ( "example.com", "layered", Tel.Pragma.Reference.Selector.Version(1, 0, 0) )
 
         val first = SchemaResolver.resolve
          ( pragma(reference = reference), stores = List(store), delegate = delegate )

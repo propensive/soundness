@@ -40,23 +40,23 @@ object Tests extends Suite(m"Baroque tests"):
   def run(): Unit =
     test(m"Show a complex number"):
       Complex(1, 3).show
-    . assert(_ == t"1 + 3ℐ")
+    . assert(_ == "1 + 3ℐ")
 
     test(m"Show a complex number with negative imaginary"):
       Complex(1, -3).show
-    . assert(_ == t"1 - 3ℐ")
+    . assert(_ == "1 - 3ℐ")
 
     test(m"Show a complex number with no imaginary part"):
       Complex(1, 0).show
-    . assert(_ == t"1")
+    . assert(_ == "1")
 
     test(m"Show a complex number with no real part"):
       Complex(0, 3).show
-    . assert(_ == t"3ℐ")
+    . assert(_ == "3ℐ")
 
     test(m"Show a rational complex number"):
       Complex(Q64(1, 2), Q64(1, 3)).show
-    . assert(_ == t"1/2 + 1/3ℐ")
+    . assert(_ == "1/2 + 1/3ℐ")
 
     test(m"Add rational complex numbers"):
       Complex(Q64(1, 2), Q64(1, 3)) + Complex(Q64(1, 3), Q64(1, 6))
@@ -74,20 +74,20 @@ object Tests extends Suite(m"Baroque tests"):
       val re = 1.0*Metre/Second
       val im = Metre*9.0/Second
       Complex(re, im).show
-    . assert(_ == t"(1.00 + 9.00ℐ) m·s¯¹")
+    . assert(_ == "(1.00 + 9.00ℐ) m·s¯¹")
 
     test(m"Show a quantity complex number with only a real part"):
       val re = 1.0*Metre/Second
       val im = 0.0*Metre/Second
       Complex[Quantity[Metres[1] & Seconds[-1]]](re, im).show
-    . assert(_ == t"1.00 m·s¯¹")
+    . assert(_ == "1.00 m·s¯¹")
 
     test(m"Show a quantity value in feet and inches"):
       type Distance = Quanta[Inches[1]] in (Feet[1], Yards[1])
       val re: Distance = Quanta(1, 2, 0)
       val im: Distance = Quanta(2, 0, 6)
       Complex[Distance](re, im).show
-    . assert(_ == t"(1 + 2ℐ) yd, 2 ft, (6ℐ) in")
+    . assert(_ == "(1 + 2ℐ) yd, 2 ft, (6ℐ) in")
 
     test(m"Add two int-complex numbers"):
       Complex(1, 2) + Complex(8, 2)
@@ -160,8 +160,8 @@ object Tests extends Suite(m"Baroque tests"):
 
       test(m"A complex number shows both parts, as the parts inspect"):
         Complex(1, 3).inspect
-      . assert(_ == t"1+3i")
+      . assert(_ == "1+3i")
 
       test(m"A negative imaginary part is shown with a minus sign"):
         Complex(1.0, -3.0).inspect
-      . assert(_ == t"1.0-3.0i")
+      . assert(_ == "1.0-3.0i")

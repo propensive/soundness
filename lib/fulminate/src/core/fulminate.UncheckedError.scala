@@ -36,12 +36,12 @@ import anticipation.*
 
 object UncheckedError:
   def describe(message: Text): Message =
-    if message == "".tt then m"unchecked error with no message"
+    if message == "" then m"unchecked error with no message"
     else m"unchecked error with message, $message"
 
   def apply(throwable: Throwable): UncheckedError =
     val message: Text = throwable.getMessage() match
-      case null    => "".tt
+      case null    => ""
       case message => message.tt
 
     new UncheckedError(message, throwable.getStackTrace)

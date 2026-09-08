@@ -95,7 +95,7 @@ object Html extends Tag.Container
     extension (value: Document[Html])
       def mediaType: MediaType = media"text/html"(charset = "UTF-8")
 
-  def doctype: Doctype = Doctype(t"html")
+  def doctype: Doctype = Doctype("html")
 
   extension (html: List[Html])
     def nodes: Array[Node]^{} =
@@ -197,7 +197,7 @@ object Html extends Tag.Container
   given strictLoadable: (dom: Dom, tactic: Tactic[Parse.Error])
   =>  ( strict: NotGiven[Html.Recovery.Permissive] )
   =>  ((Html is Loadable by Text)^{tactic, caps.any}) = stream =>
-    val root = Tag.root(Set(t"html"))
+    val root = Tag.root(Set("html"))
 
     HtmlParser.fromStream
       ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^],
@@ -266,7 +266,7 @@ object Html extends Tag.Container
   =>  Html.Recovery.Permissive
   =>  Html is Loadable by Text = stream =>
     given Tactic[Parse.Error] = lenientTactic
-    val root = Tag.root(Set(t"html"))
+    val root = Tag.root(Set("html"))
 
     lenient(Document(Fragment(), dom)):
       HtmlParser.fromStream
@@ -318,7 +318,7 @@ object Html extends Tag.Container
     val builder: StringBuilder = new StringBuilder()
     markup.each { char => builder.append(Inspectable.escape(char).s) }
 
-    (("html\"": String)+builder.toString+"\"").tt
+    t"html\"${builder.toString}\""
 
   // HTML5 text-content escaping: `&`, `<` and `>`. Raw-text elements such as `script` and `style`
   // use `Mode.Raw` and are written verbatim by `writeHtml`.
@@ -335,9 +335,9 @@ object Html extends Tag.Container
 
     while index < length do
       source.charAt(index) match
-        case '&' => escape(t"&amp;")
-        case '<' => escape(t"&lt;")
-        case '>' => escape(t"&gt;")
+        case '&' => escape("&amp;")
+        case '<' => escape("&lt;")
+        case '>' => escape("&gt;")
         case _   => ()
 
       index += 1
@@ -359,8 +359,8 @@ object Html extends Tag.Container
 
     while index < length do
       source.charAt(index) match
-        case '&' => escape(t"&amp;")
-        case '"' => escape(t"&quot;")
+        case '&' => escape("&amp;")
+        case '"' => escape("&quot;")
         case _   => ()
 
       index += 1
@@ -441,8 +441,8 @@ object Html extends Tag.Container
     case Ascend, Descend, Peer, Skip
 
   private val formattingTags: Set[Text] = Set(
-    t"a", t"b", t"big", t"code", t"em", t"font", t"i", t"nobr",
-    t"s", t"small", t"strike", t"strong", t"tt", t"u" )
+    "a", "b", "big", "code", "em", "font", "i", "nobr",
+    "s", "small", "strike", "strong", "tt", "u" )
 
   trait Vacuiscible:
     node: Element =>
@@ -465,7 +465,7 @@ object Html extends Tag.Container
 
 
   import Issue.*
-  def name: Text = t"HTML"
+  def name: Text = "HTML"
 
   given text: [label >: "#text" <: Label] => Conversion[Text, Html of label] =
     TextNode(_).of[label]
@@ -963,7 +963,7 @@ object Html extends Tag.Container
     :   Html =
       val buffer: jl.StringBuilder = jl.StringBuilder()
       def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
-      var content: Text = t""
+      var content: Text = ""
       var extra: Attributes = Attributes.empty
       // Resolved `Tag` for the current opening token. `tag()` already walks
       // `dom.elements` to look up the tag definition; stash the result so that
@@ -1248,7 +1248,7 @@ object Html extends Tag.Container
 
                   case '\u0000' =>
                     callback.let(_(position.z, Hole.Attribute(tag, key2)))
-                    next() yet t"\u0000"
+                    next() yet "\u0000"
 
                   case _ =>
                     unquoted(begin()) // FIXME: Only alphanumeric characters
@@ -1584,7 +1584,7 @@ object Html extends Tag.Container
 
               if lay(false)(_ == '\u0000') then
                 callback.let(_(position.z, Hole.Element(parent.label)))
-                content = t"\u0000"
+                content = "\u0000"
                 node()
                 expect('>')
                 next()
@@ -1636,7 +1636,7 @@ object Html extends Tag.Container
                         level = Level.Descend
                   else if focus.void then
                     empty()
-                  else if (content == t"a" || content == t"nobr") &&
+                  else if (content == "a" || content == "nobr") &&
                     (parent.label == content || state.stackContainsAncestor(content)) then
                     reset(mark)
                     close()

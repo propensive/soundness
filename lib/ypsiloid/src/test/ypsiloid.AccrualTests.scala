@@ -64,55 +64,55 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
   def run(): Unit =
     suite(m"Single-error decoding (sanity)"):
       test(m"Fully-valid object: no errors accrued"):
-        val yaml = t"name: Alice\nage: 30\nemail: a@b.c\n".read[Yaml]
+        val yaml = "name: Alice\nage: 30\nemail: a@b.c\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 0)
 
       test(m"Single missing field: one error"):
-        val yaml = t"name: Alice\nage: 30\n".read[Yaml]
+        val yaml = "name: Alice\nage: 30\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 1)
 
       test(m"Single wrong-type field: one error"):
-        val yaml = t"name: Alice\nage: thirty\nemail: a@b\n".read[Yaml]
+        val yaml = "name: Alice\nage: thirty\nemail: a@b\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 1)
 
     suite(m"Multiple missing fields"):
       test(m"Two missing primitive fields accrue two errors"):
-        val yaml = t"name: Alice\n".read[Yaml]
+        val yaml = "name: Alice\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify the missing fields"):
-        val yaml = t"name: Alice\n".read[Yaml]
+        val yaml = "name: Alice\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set[String]("#/age", "#/email"))
 
       test(m"Each missing-field error has reason Absent"):
-        val yaml = t"name: Alice\n".read[Yaml]
+        val yaml = "name: Alice\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.all:
           case (_, err) => err.reason == Yaml.Error.Reason.Absent
       . assert(identity)
 
       test(m"Three missing fields: three errors accrued"):
-        val yaml = t"{}".read[Yaml]
+        val yaml = "{}".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 3)
 
     suite(m"Multiple wrong-type fields"):
       test(m"Two wrong types accrue two errors"):
-        val yaml = t"name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
+        val yaml = "name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.size
       . assert(_ == 2)
 
       test(m"Pointers identify the wrong-type fields"):
-        val yaml = t"name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
+        val yaml = "name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set[String]("#/name", "#/age"))
 
       test(m"Wrong-type errors have reason NotType"):
-        val yaml = t"name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
+        val yaml = "name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.all:
           case (_, err) => err.reason match
             case Yaml.Error.Reason.NotType(_, _) => true
@@ -121,7 +121,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
 
     suite(m"Missing + wrong-type mixed"):
       test(m"One wrong-type plus two missing: three errors at the right pointers"):
-        val yaml = t"name: 42\n".read[Yaml]
+        val yaml = "name: 42\n".read[Yaml]
         validateYaml(yaml)(_.as[APerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set[String]("#/name", "#/age", "#/email"))
 
@@ -131,7 +131,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
         // class hits the wrong-shape branch of the inner conjunction,
         // which builds against an empty mapping and lets each sub-
         // field raise its own missing-field error.
-        val yaml = t"company: Acme\n".read[Yaml]
+        val yaml = "company: Acme\n".read[Yaml]
         validateYaml(yaml)(_.as[AContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
           paths == Set[String]
@@ -140,7 +140,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
              "#/person/email" )
 
       test(m"Mixed errors at different depths accrue together"):
-        val yaml = t"person:\n  name: D\ncompany: Acme\n".read[Yaml]
+        val yaml = "person:\n  name: D\ncompany: Acme\n".read[Yaml]
         // person is present but missing `age` and `email`; company is
         // present.
         validateYaml(yaml)(_.as[AContact]).items.map(_(0).s).to[Set]

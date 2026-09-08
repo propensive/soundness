@@ -50,19 +50,19 @@ object Tests extends Suite(m"Obligatory Tests"):
   def run(): Unit =
     suite(m"Unframing tests"):
       test(m"Unframe by carriage-return lines"):
-        Chain(t"one\rtwo\r", t"three").iterator.frames[CarriageReturn].to(List)
+        Chain("one\rtwo\r", "three").iterator.frames[CarriageReturn].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by carriage-return lines, without terminal line"):
-        Chain(t"one\rtwo", t"\rthree\r").iterator.frames[CarriageReturn].to(List)
+        Chain("one\rtwo", "\rthree\r").iterator.frames[CarriageReturn].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by linefeed lines"):
-        Chain(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].to(List)
+        Chain("one\ntwo\nth", "ree").iterator.frames[Linefeed].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by linefeed lines, without terminal line"):
-        Chain(t"one\ntwo\nthree\n").iterator.frames[Linefeed].to(List)
+        Chain("one\ntwo\nthree\n").iterator.frames[Linefeed].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by cr/lf lines"):
@@ -74,7 +74,7 @@ object Tests extends Suite(m"Obligatory Tests"):
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe bytes by linefeed lines"):
-        Chain(t"one\ntwo\nth".in[Data], t"ree".in[Data])
+        Chain("one\ntwo\nth".in[Data], "ree".in[Data])
         . iterator
         . frames[Linefeed]
         . map(_.utf8)
@@ -82,11 +82,11 @@ object Tests extends Suite(m"Obligatory Tests"):
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe bytes by linefeed lines, without terminal fragment"):
-        Chain(t"one\ntwo\nthree\n".in[Data]).iterator.frames[Linefeed].map(_.utf8).to(List)
+        Chain("one\ntwo\nthree\n".in[Data]).iterator.frames[Linefeed].map(_.utf8).to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe bytes by linefeed lines, retaining empty lines"):
-        Chain(t"one\n\ntwo\n".in[Data]).iterator.frames[Linefeed].map(_.utf8).to(List)
+        Chain("one\n\ntwo\n".in[Data]).iterator.frames[Linefeed].map(_.utf8).to(List)
       . assert(_ == List("one", "", "two"))
 
       test(m"Unframe bytes by linefeed splits multi-byte UTF-8 content correctly"):
@@ -107,38 +107,38 @@ object Tests extends Suite(m"Obligatory Tests"):
 
       test(m"Content-Length-prefixed chunks"):
         val input =
-          t"Content-Type: x\r\nContent-Length: 5\r\n\r\n12345Content-Length: 3\r\n\r\nabc"
+          "Content-Type: x\r\nContent-Length: 5\r\n\r\n12345Content-Length: 3\r\n\r\nabc"
 
         Iterator(input.in[Data]).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List("12345", "abc"))
 
       test(m"Content-Length counts bytes, not characters"):
-        val body = t"""{"text":"café"}"""
+        val body = """{"text":"café"}"""
         val input = t"Content-Length: ${body.in[Data].readable.length}\r\n\r\n"+body
 
         Iterator(input.in[Data]).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List(t"""{"text":"café"}"""))
 
       test(m"Server-side events"):
-        val input = t"data: foobar\ndata: baz\n\ndata: hello world\n\n"
+        val input = "data: foobar\ndata: baz\n\ndata: hello world\n\n"
 
         Iterator(input).frames[Sse].to(List)
       . assert(_ == List("data: foobar\ndata: baz", "data: hello world"))
 
       test(m"Server-side events without terminal newlines"):
-        val input = t"data: foobar\ndata: baz\n\ndata: hello world"
+        val input = "data: foobar\ndata: baz\n\ndata: hello world"
 
         Iterator(input).frames[Sse].to(List)
       . assert(_ == List("data: foobar\ndata: baz", "data: hello world"))
 
       test(m"Typed server-side events"):
-        val input = t"event: one\ndata: foobar\ndata: baz\n\ndata: hello world"
+        val input = "event: one\ndata: foobar\ndata: baz\n\ndata: hello world"
 
         Iterator(input).frames[Sse].map(_.as[Sse]).to(List)
       . assert(_ == List(Sse("one", List("foobar", "baz")), Sse("message", List("hello world"))))
 
       test(m"Typed server-side events with more fields"):
-        val input = t"event: one\nid: 123\ndata: foobar\ndata: baz\n\ndata: hello world\nretry: 54321"
+        val input = "event: one\nid: 123\ndata: foobar\ndata: baz\n\ndata: hello world\nretry: 54321"
 
         Iterator(input).frames[Sse].map(_.as[Sse]).to(List)
       . assert(_ == List(Sse("one", List("foobar", "baz"), "123"), Sse("message", List("hello world"), Unset, 54321L)))
@@ -147,21 +147,21 @@ object Tests extends Suite(m"Obligatory Tests"):
       def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
 
       test(m"encode prefixes a flag byte and 4-byte length"):
-        Grpc.Framing.encode(ascii(t"hi")).to[List]
-      . assert(_ == Array.frozen(Data(0, 0, 0, 0, 2).readable ++ ascii(t"hi").readable).to[List])
+        Grpc.Framing.encode(ascii("hi")).to[List]
+      . assert(_ == Array.frozen(Data(0, 0, 0, 0, 2).readable ++ ascii("hi").readable).to[List])
 
       test(m"round-trip a single message"):
-        val framed = Grpc.Framing.encode(ascii(t"hello"))
+        val framed = Grpc.Framing.encode(ascii("hello"))
         Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.readable.to(List))
       . assert(_ == List(ascii(t"hello").to[List]))
 
       test(m"split two concatenated messages"):
-        val framed = Array.frozen(Grpc.Framing.encode(ascii(t"one")).readable ++ Grpc.Framing.encode(ascii(t"two")).readable)
+        val framed = Array.frozen(Grpc.Framing.encode(ascii("one")).readable ++ Grpc.Framing.encode(ascii("two")).readable)
         Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.readable.to(List))
       . assert(_ == List(ascii(t"one").to[List], ascii(t"two").to[List]))
 
       test(m"gzip-compressed message round-trips"):
-        val framed = Grpc.Framing.encode(ascii(t"compress me please"), compress = true)
+        val framed = Grpc.Framing.encode(ascii("compress me please"), compress = true)
         Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.readable.to(List))
       . assert(_ == List(ascii(t"compress me please").to[List]))
 
@@ -226,7 +226,7 @@ object Tests extends Suite(m"Obligatory Tests"):
 
                 case _ => ()
 
-      val method = Grpc.Method(t"echo.Echo", t"Call")
+      val method = Grpc.Method("echo.Echo", "Call")
 
       test(m"a unary call decodes a typed response and OK status"):
         supervise:
@@ -240,11 +240,11 @@ object Tests extends Suite(m"Obligatory Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
-          channel.unary[Ping, Pong](method, Ping(t"ping")).message
-      . assert(_ == t"pong")
+          val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), "localhost"))
+          channel.unary[Ping, Pong](method, Ping("ping")).message
+      . assert(_ == "pong")
 
       test(m"a scoped channel session makes a unary call and tears down with the scope"):
         supervise:
@@ -258,11 +258,11 @@ object Tests extends Suite(m"Obligatory Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          Grpc.Endpoint(Http2.Endpoint(Loopback(clientSide), t"localhost")).session: channel ?=>
-            channel.unary[Ping, Pong](method, Ping(t"ping")).message
-      . assert(_ == t"pong")
+          Grpc.Endpoint(Http2.Endpoint(Loopback(clientSide), "localhost")).session: channel ?=>
+            channel.unary[Ping, Pong](method, Ping("ping")).message
+      . assert(_ == "pong")
 
       test(m"a non-Ok trailing status raises a Grpc.Error"):
         supervise:
@@ -274,10 +274,10 @@ object Tests extends Suite(m"Obligatory Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
-          capture[Grpc.Error](channel.unary[Ping, Pong](method, Ping(t"ping"))).status
+          val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), "localhost"))
+          capture[Grpc.Error](channel.unary[Ping, Pong](method, Ping("ping"))).status
       . assert(_ == Grpc.Status.NotFound)
 
       test(m"a server-streaming call decodes every response message"):
@@ -286,9 +286,9 @@ object Tests extends Suite(m"Obligatory Tests"):
 
           val body =
             Array.frozen
-             ( Grpc.Framing.encode(Pong(t"a").in[Protobuf].encode).readable
-               ++ Grpc.Framing.encode(Pong(t"b").in[Protobuf].encode).readable
-               ++ Grpc.Framing.encode(Pong(t"c").in[Protobuf].encode).readable )
+             ( Grpc.Framing.encode(Pong("a").in[Protobuf].encode).readable
+               ++ Grpc.Framing.encode(Pong("b").in[Protobuf].encode).readable
+               ++ Grpc.Framing.encode(Pong("c").in[Protobuf].encode).readable )
 
           runServer(serverSide, (hpack, id) =>
             List
@@ -298,10 +298,10 @@ object Tests extends Suite(m"Obligatory Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
-          channel.serverStreaming[Ping, Pong](method, Ping(t"ping")).map(_.message).stdlib.to(List)
+          val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), "localhost"))
+          channel.serverStreaming[Ping, Pong](method, Ping("ping")).map(_.message).stdlib.to(List)
       . assert(_ == List(t"a", t"b", t"c"))
 
       test(m"a derived @rpc client stub round-trips a unary call"):
@@ -316,29 +316,29 @@ object Tests extends Suite(m"Obligatory Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
-          val echo = Grpc.remote[Echo](channel, t"echo.Echo")
-          echo.call(Ping(t"ping")).message
-      . assert(_ == t"pong")
+          val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), "localhost"))
+          val echo = Grpc.remote[Echo](channel, "echo.Echo")
+          echo.call(Ping("ping")).message
+      . assert(_ == "pong")
 
     suite(m"JSON-RPC error responses"):
       import dynamicAccess.dynamicJson
       import Json.jsonEncodableInText
 
       test(m"a failure carries the fault in the error member"):
-        JsonRpc.failure(-32601, t"Method not found", 7.in[Json]).error.code.as[Int]
+        JsonRpc.failure(-32601, "Method not found", 7.in[Json]).error.code.as[Int]
       . assert(_ == -32601)
 
       test(m"a failure echoes the failing request's id"):
-        JsonRpc.failure(-32601, t"Method not found", 7.in[Json]).id.as[Int]
+        JsonRpc.failure(-32601, "Method not found", 7.in[Json]).id.as[Int]
       . assert(_ == 7)
 
       test(m"a failure has no result member"):
-        JsonRpc.failure(-32601, t"Method not found", 7.in[Json]).encode
-      . assert(!_.contains(t"result"))
+        JsonRpc.failure(-32601, "Method not found", 7.in[Json]).encode
+      . assert(!_.contains("result"))
 
       test(m"an unknowable id is an explicit null"):
-        JsonRpc.failure(-32700, t"Parse error").encode
-      . assert(_.contains(t"\"id\":null"))
+        JsonRpc.failure(-32700, "Parse error").encode
+      . assert(_.contains("\"id\":null"))

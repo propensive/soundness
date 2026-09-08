@@ -49,7 +49,7 @@ object TreeDiagram:
     by[node](node.children(_))(roots*)
 
   given printable: [node: Showable] => (style: TreeStyle[Text]) => TreeDiagram[node] is Printable =
-    (diagram, termcap) => (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
+    (diagram, termcap) => (diagram.render[Text] { node => t"▪ $node" }).join("\n")
 
   def by[node](getChildren: node => List[node])(roots: node*): TreeDiagram[node] =
     def recur(level: List[TreeTile], input: List[node]): Chain[(List[TreeTile], node)] =
@@ -85,8 +85,8 @@ case class TreeDiagram[node](lines: Chain[(List[TreeTile], node)]):
       // `space`), and nothing requires the substitutes to have the same display width, so both
       // prefixes are measured and the content wraps against the tighter budget — conservative
       // for the first row under a wider follow-on prefix, but no row can exceed `width`.
-      val prefix = style.serialize(tiles, textual(t"")).plain.metrics
-      val followOnPrefix = style.followOn(tiles, textual(t"")).plain.metrics
+      val prefix = style.serialize(tiles, textual("")).plain.metrics
+      val followOnPrefix = style.followOn(tiles, textual("")).plain.metrics
 
       Flow.wrap(content, (width - prefix.max(followOnPrefix)).max(1)).to[List].absolve match
         case Nil => Chain(style.serialize(tiles, content))

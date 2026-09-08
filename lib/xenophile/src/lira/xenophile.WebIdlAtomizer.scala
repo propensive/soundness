@@ -56,7 +56,7 @@ import rudiments.sortingAlgorithms.timsort
 // is minor, and only *required* dictionary members fold (adding one breaks every caller
 // constructing the dictionary), while optional members stand alone.
 object WebIdlAtomizer:
-  val id: Text = t"webidl/1"
+  val id: Text = "webidl/1"
 
   private def malformed(detail: Text): Discipline.Error =
     import errorDiagnostics.emptyDiagnostics
@@ -243,7 +243,7 @@ object WebIdlAtomizer:
     if exposed.nil then name else
       // Ordered by the underlying `String`, as before: this is a canonical key, not a display
       // order, so it must not depend on a locale's collation.
-      val scopes: Text = exposed.order(_.s).join(t",")
+      val scopes: Text = exposed.order(_.s).join(",")
       t"$name[$scopes]"
 
   def atomize(definitions: List[WebIdl.Definition]): List[Atom] raises Discipline.Error =

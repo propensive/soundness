@@ -81,13 +81,13 @@ object StackTests extends Suite(m"Stack-trace resolution tests"):
     // The frames below the fixture belong to the test framework and the JDK, so every test looks
     // at the topmost frame in the fixture's own file.
     def frame(stackTrace: StackTrace): Optional[StackTrace.Frame] =
-      stackTrace.frames.seek(_.jvmClass.starts(t"hyperbole."))
+      stackTrace.frames.seek(_.jvmClass.starts("hyperbole."))
 
     suite(m"Resolving as a trace is captured"):
       test(m"An imported resolver resolves frames at capture time"):
         frame(captured(StackFixture.lambda())).let(_.source).let(_.definition)
 
-      . assert(_ == t"hyperbole.StackFixture.lambda.λ")
+      . assert(_ == "hyperbole.StackFixture.lambda.λ")
 
       test(m"Without an imported resolver, frames are left alone"):
         frame(capture0(StackFixture.lambda())).lay(false)(_.source == Unset)
@@ -98,10 +98,10 @@ object StackTests extends Suite(m"Stack-trace resolution tests"):
       test(m"A module class resolves through its top-level class"):
         frame(capture(StackFixture.method())).let(_.source).let(_.path)
 
-      . assert(_.let(_.ends(t"hyperbole.StackTests.scala")) == true)
+      . assert(_.let(_.ends("hyperbole.StackTests.scala")) == true)
 
       test(m"An unresolvable class leaves the frame untouched"):
-        val frame = StackTrace.Frame(StackTrace.Method(t"java.lang.Thread", t"run()"), t"", 1, false)
+        val frame = StackTrace.Frame(StackTrace.Method("java.lang.Thread", "run()"), "", 1, false)
         StackResolver().resolve(frame).source
 
       . assert(_ == Unset)
@@ -110,27 +110,27 @@ object StackTests extends Suite(m"Stack-trace resolution tests"):
       test(m"A method frame names the method"):
         frame(capture(StackFixture.method())).let(_.source).let(_.definition)
 
-      . assert(_ == t"hyperbole.StackFixture.method")
+      . assert(_ == "hyperbole.StackFixture.method")
 
       test(m"A lambda frame names the method containing it"):
         frame(capture(StackFixture.lambda())).let(_.source).let(_.definition)
 
-      . assert(_ == t"hyperbole.StackFixture.lambda.λ")
+      . assert(_ == "hyperbole.StackFixture.lambda.λ")
 
       test(m"An extension method frame names the extension"):
         frame(capture(1.extended)).let(_.source).let(_.definition)
 
-      . assert(_ == t"hyperbole.hyperbole.StackTests⁆.extended")
+      . assert(_ == "hyperbole.hyperbole.StackTests⁆.extended")
 
       test(m"A default getter is named as `rewrite` would name it"):
         frame(capture(StackFixture.defaulted())).let(_.source).let(_.definition)
 
-      . assert(_ == t"hyperbole.StackFixture.defaultedδ₁")
+      . assert(_ == "hyperbole.StackFixture.defaultedδ₁")
 
       test(m"A lazy value's initializer names the value"):
         frame(capture(StackFixture.lazily)).let(_.source).let(_.definition)
 
-      . assert(_ == t"hyperbole.StackFixture.lazily")
+      . assert(_ == "hyperbole.StackFixture.lazily")
 
     suite(m"Classifying frames"):
       test(m"A lambda is classified as a lambda"):
@@ -157,9 +157,9 @@ object StackTests extends Suite(m"Stack-trace resolution tests"):
       test(m"A frame carries the line of source it was compiled from"):
         frame(capture(StackFixture.method())).let(_.source).let(_.code)
 
-      . assert(_ == t"""def method(): Unit = throw Exception("method")""")
+      . assert(_ == """def method(): Unit = throw Exception("method")""")
 
       test(m"The line quoted for a lambda is the line inside it"):
         frame(capture(StackFixture.lambda())).let(_.source).let(_.code)
 
-      . assert(_ == t"""throw Exception("lambda")""")
+      . assert(_ == """throw Exception("lambda")""")

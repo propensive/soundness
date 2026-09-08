@@ -160,7 +160,7 @@ object protointernal extends anteprotointernal:
         parts.zip(value.components.keys).map: (number, units) =>
           t"$number $units"
 
-        . join(t", ")
+        . join(", ")
 
     inline given distributive2: [base <: AnyUnit, form <: Divisions]
     =>  (Quanta[base] in form) is Distributive by Long =

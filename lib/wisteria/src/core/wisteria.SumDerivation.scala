@@ -293,7 +293,7 @@ object SumDerivation:
 
         case _ =>
           inline if fallible
-          then provide[Tactic[Variant.Error]](abort(Variant.Error[derivation]("".tt)))
+          then provide[Tactic[Variant.Error]](abort(Variant.Error[derivation]("")))
           else panic(m"Should be unreachable")
 
 

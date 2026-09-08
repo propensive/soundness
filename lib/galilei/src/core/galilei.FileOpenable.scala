@@ -80,7 +80,7 @@ extends Openable:
     // and overlap correctly with enclosing directory scopes; a file which is about to be
     // created cannot be resolved, so it falls back to its normalized absolute form.
     val real: Text =
-      if !locking then t"" else
+      if !locking then "" else
         try value.nioPath.toRealPath().nn.toString.tt
         catch case _: Exception => value.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt
 

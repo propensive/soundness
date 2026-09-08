@@ -56,7 +56,7 @@ import vacuous.*
 // supertype carrying no metadata — a Java class, or a virtual builtin such as `kotlin.Any` —
 // contributes nothing here: its surface is a classfile-level concern, not this carrier's.
 object KotlinMetadataAtomizer:
-  val id: Text = t"kotlin-metadata/1"
+  val id: Text = "kotlin-metadata/1"
 
   private def malformed(detail: Text): Discipline.Error =
     import errorDiagnostics.emptyDiagnostics

@@ -59,7 +59,7 @@ object Tests extends Suite(m"Chiaroscuro tests"):
       test(m"Decompose an unknown type"):
         24.decompose
 
-      . assert(_ == Primitive(t"Int", t"24", 24))
+      . assert(_ == Primitive("Int", "24", 24))
 
       // Decomposition renders its leaves through `Inspectable`, not `Showable`: a test failure
       // is read by a programmer, so it should show what `.inspect` shows. Before this, the two
@@ -68,64 +68,64 @@ object Tests extends Suite(m"Chiaroscuro tests"):
         Divergent(7).decompose
 
       . assert:
-          case Primitive(_, text, _) => text == t"inspected-7"
+          case Primitive(_, text, _) => text == "inspected-7"
           case _                     => false
 
       test(m"Decompose a known type"):
-        t"hello".decompose
+        "hello".decompose
 
-      . assert(_ == Primitive(t"Text", t"hello", t"hello"))
+      . assert(_ == Primitive("Text", "hello", "hello"))
 
 
       test(m"Decompose a person"):
-        Person(t"Bill", 29).decompose
+        Person("Bill", 29).decompose
 
       . assert: value =>
           value == Product
-            ( t"Person",
-              Map(t"name" -> Primitive(t"Text", t"Bill", t"Bill"),
-                  t"age"  -> Primitive(t"Int", t"29", 29)),
-              Person(t"Bill", 29))
+            ( "Person",
+              Map("name" -> Primitive("Text", "Bill", "Bill"),
+                  "age"  -> Primitive("Int", "29", 29)),
+              Person("Bill", 29))
 
       test(m"Decompose an organization"):
-        Organization(t"Acme", Person(t"Bill", 29), Nil).decompose
+        Organization("Acme", Person("Bill", 29), Nil).decompose
 
       . assert:
           _ == Product
-                (t"Organization",
-                 Map(t"name"  -> Primitive(t"Text", t"Acme", t"Acme"),
-                     t"ceo"   -> Product
-                                  (t"Person",
-                                   Map(t"name" -> Primitive(t"Text", t"Bill", t"Bill"),
-                                       t"age"  -> Primitive(t"Int", t"29", 29)),
-                                   Person(t"Bill", 29)),
-                     t"staff" -> Decomposition.Sequence(t"List", Nil, Nil)),
-                 Organization(t"Acme", Person(t"Bill", 29), Nil))
+                ("Organization",
+                 Map("name"  -> Primitive("Text", "Acme", "Acme"),
+                     "ceo"   -> Product
+                                  ("Person",
+                                   Map("name" -> Primitive("Text", "Bill", "Bill"),
+                                       "age"  -> Primitive("Int", "29", 29)),
+                                   Person("Bill", 29)),
+                     "staff" -> Decomposition.Sequence("List", Nil, Nil)),
+                 Organization("Acme", Person("Bill", 29), Nil))
 
       test(m"Decompose a sequence"):
         val list: List[Char] = List('a', 'b')
         list.decompose
 
       . assert:
-          _ == Decomposition.Sequence(t"List", List(Primitive(t"Char", t"'a'", 'a'),
+          _ == Decomposition.Sequence("List", List(Primitive(t"Char", t"'a'", 'a'),
                                       Primitive(t"Char", t"'b'", 'b')), List('a', 'b'))
 
       test(m"Decompose an optional value"):
         val x: Optional[Int] = 12
         x.decompose
 
-      . assert(_ == Sum(t"Optional", Primitive(t"Int", t"12", 12), 12))
+      . assert(_ == Sum("Optional", Primitive("Int", "12", 12), 12))
 
       test(m"Decompose an unset optional"):
         val x: Optional[Int] = Unset
         x.decompose
 
-      . assert(_ == Sum(t"Optional", Primitive(t"Unset", t"∅", Unset), Unset))
+      . assert(_ == Sum("Optional", Primitive("Unset", "∅", Unset), Unset))
 
       test(m"Decompose a non-showable value"):
         3.1415926.decompose
 
-      . assert(_ == Primitive(t"Double", t"3.1415926", 3.1415926))
+      . assert(_ == Primitive("Double", "3.1415926", 3.1415926))
 
       // Decomposition renders through `Inspectable`, not `Showable`, so a `Decimalizer` in
       // scope no longer rounds it: a test failure should report the value it compared, not a
@@ -134,36 +134,36 @@ object Tests extends Suite(m"Chiaroscuro tests"):
         given Decimalizer(3)
         3.1415926.decompose
 
-      . assert(_ == Primitive(t"Double", t"3.1415926", 3.1415926))
+      . assert(_ == Primitive("Double", "3.1415926", 3.1415926))
 
       test(m"Decompose an Any-typed value"):
-        val x: Any = t"hello"
+        val x: Any = "hello"
         x.decompose
 
-      . assert(_ == Primitive(t"Any", t"hello", t"hello"))
+      . assert(_ == Primitive("Any", "hello", "hello"))
 
       test(m"Decompose list of Any-typed value"):
         val x: List[Any] = List(t"hello")
         x.decompose
 
-      . assert(_ == Decomposition.Sequence(t"List", List(Primitive(t"Any", t"hello", t"hello")), List(t"hello")))
+      . assert(_ == Decomposition.Sequence("List", List(Primitive(t"Any", t"hello", t"hello")), List(t"hello")))
 
       test(m"Decompose list of list of text"):
         val x: List[List[Text]] = List(List(t"hello"))
         x.decompose
 
-      . assert(_ == Decomposition.Sequence(t"List", List(Decomposition.Sequence(t"List", List(Primitive(t"Text", t"hello", t"hello")), List(t"hello"))), List(List(t"hello"))))
+      . assert(_ == Decomposition.Sequence("List", List(Decomposition.Sequence(t"List", List(Primitive(t"Text", t"hello", t"hello")), List(t"hello"))), List(List(t"hello"))))
 
 
       test(m"Structural comparison"):
-        Organization(t"Acme", Person(t"John", 49), List(Person(t"Janet", 19), Person(t"Paweł", 32)))
+        Organization("Acme", Person("John", 49), List(Person(t"Janet", 19), Person(t"Paweł", 32)))
 
       . aspire:
-          _ == Organization(t"Acme", Person(t"John", 43), List(Person(t"Paul", 32), Person(t"Janet", 19)))
+          _ == Organization("Acme", Person("John", 43), List(Person(t"Paul", 32), Person(t"Janet", 19)))
 
       test(m"Text comparison"):
-        t"The quick brown fox jumps over the lazy dog"
-      . aspire(_ == t"The quick brown foxes jumped over the dog")
+        "The quick brown fox jumps over the lazy dog"
+      . aspire(_ == "The quick brown foxes jumped over the dog")
 
     suite(m"Juxtaposition rendering tests"):
       // `Text is Measurable` is derived generically from `Char is Measurable`, as escritoire does.
@@ -185,12 +185,12 @@ object Tests extends Suite(m"Chiaroscuro tests"):
       // renders any `Showable` value unstyled, so a call site which fails to import it degrades
       // silently — printing `Collation(Text,List(…))` — rather than failing to compile.
       test(m"A differing pair renders as a difference table, not as the enum's text"):
-        t"alpha".contrast(t"alpha".sub(t"a", t"b")).teletype.plain.trim
-      . assert(_ == t"""────┬─────┬────
+        "alpha".contrast("alpha".sub("a", "b")).teletype.plain.trim
+      . assert(_ == """────┬─────┬────
    ⁰│alpha│⁵   
    ₀│blphb│₅   
 ────┴─────┴────""")
 
       test(m"An equal pair renders as the expected value"):
         24.contrast(24).teletype.plain
-      . assert(_ == t"The value 24 was expected")
+      . assert(_ == "The value 24 was expected")

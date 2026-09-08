@@ -70,15 +70,15 @@ object Tests extends Suite(m"Inimitable Tests"):
 
       test(m"Convert a UUID to Text"):
         uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".text
-      . assert(_ == t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c")
+      . assert(_ == "a0cb16f0-d41e-4c28-862f-bd6164bbcc8c")
 
       test(m"Parse a UUID at runtime"):
-        unsafely(Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"))
+        unsafely(Uuid.parse("a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"))
       . assert(_ == Uuid(-6860364383762101208L, -8777588922722300788L))
 
       test(m"Parse a bad UUID at runtime"):
-        unsafely(capture[Uuid.Error](Uuid.parse(t"not-a-uuid")))
-      . assert(_ == Uuid.Error(t"not-a-uuid"))
+        unsafely(capture[Uuid.Error](Uuid.parse("not-a-uuid")))
+      . assert(_ == Uuid.Error("not-a-uuid"))
 
       val uuid1 = Uuid()
       val uuid2 = Uuid()
@@ -104,4 +104,4 @@ object Tests extends Suite(m"Inimitable Tests"):
 
       test(m"A UUID shows its canonical hyphenated form"):
         uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".inspect
-      . assert(_ == t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c")
+      . assert(_ == "a0cb16f0-d41e-4c28-862f-bd6164bbcc8c")

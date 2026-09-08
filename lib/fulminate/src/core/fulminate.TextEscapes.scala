@@ -61,7 +61,7 @@ object TextEscapes:
       case ch if esc =>
         throw TextEscapes.Error
           ( Message
-              ( List("the character ".tt, " should not be escaped".tt),
+              ( List[Text]("the character ", " should not be escaped"),
                 List(Message(ch.toString.tt)) ) )
 
       case ch =>
@@ -70,7 +70,7 @@ object TextEscapes:
 
   private def parseUnicode(chars: String): Char throws TextEscapes.Error =
     if chars.length < 4
-    then throw TextEscapes.Error(Message("the unicode escape is incomplete".tt))
+    then throw TextEscapes.Error(Message("the unicode escape is incomplete"))
     else Integer.parseInt(chars, 16).toChar
 
   def escape(text: Text): Text throws TextEscapes.Error =
@@ -84,7 +84,7 @@ object TextEscapes:
         recur(index, escape)
       else if esc
       then
-        throw TextEscapes.Error(Message("the final character cannot be an escape".tt))
+        throw TextEscapes.Error(Message("the final character cannot be an escape"))
 
     recur(0, false)
 

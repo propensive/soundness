@@ -49,6 +49,6 @@ object Rc2:
 
 class Rc2[bits <: 40 | 64 | 128: ValueOf]
   ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
-extends BlockCipher(t"RC2", mode, padding, cipher):
+extends BlockCipher("RC2", mode, padding, cipher):
   type Size = bits
   def keySize: bits = valueOf[bits]

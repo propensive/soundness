@@ -63,7 +63,7 @@ object Foreign extends prophesy.Completable:
 
     def text: Text = this match
       case Named(name)         => name
-      case Union(members)      => members.map(_.text).join(t"|")
+      case Union(members)      => members.map(_.text).join("|")
       case Applied(name, args) => t"$name<${args.map(_.text).join(t", ")}>"
 
   def make(tree: Expression): Foreign = new Foreign:
@@ -83,9 +83,9 @@ object Foreign extends prophesy.Completable:
 
     val members = Xenophile.refinements(receiver).to(Map)
 
-    members(t"Topic").lay(Nil): topicRepr =>
-      members(t"Origin").lay(Nil): originRepr =>
-        members(t"Locus").lay(Nil): locusRepr =>
+    members("Topic").lay(Nil): topicRepr =>
+      members("Origin").lay(Nil): originRepr =>
+        members("Locus").lay(Nil): locusRepr =>
           (topicRepr.dealias, locusRepr.dealias) match
             case (ConstantType(StringConstant(topic)), ConstantType(StringConstant(locus))) =>
               Xenophile.definitions(originRepr, locus.tt)(topic.tt).lay(Nil): prototypes =>
@@ -100,7 +100,7 @@ object Foreign extends prophesy.Completable:
                   val result: Text = prototype.result.text
 
                   val signature = declared.lay(result): parameters =>
-                    val rendered: Text = parameters.map(_.text).join(t", ")
+                    val rendered: Text = parameters.map(_.text).join(", ")
                     t"($rendered): $result"
 
                   prophesy.Completion(name, kind, Syntax.Symbolic(signature))

@@ -44,7 +44,7 @@ class IndianCalendar() extends Calendar:
   type Mensual = IndianMonth
   type MonthUnit = IndianMonth.type
 
-  val name: Text = t"Indian National"
+  val name: Text = "Indian National"
   def monthsInYear(year: Year): Int = 12
   def monthOrdinal(year: Year, month: IndianMonth): Int = month.ordinal
   def monthOfOrdinal(year: Year, ordinal: Int): IndianMonth = IndianMonth.fromOrdinal(ordinal)

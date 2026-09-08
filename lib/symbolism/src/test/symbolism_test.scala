@@ -65,7 +65,7 @@ object Chunk:
     (left, right) => Chunk(left.text+right.text)
 
   given zeroic: Chunk is Zeroic:
-    def zero: Chunk = Chunk(t"")
+    def zero: Chunk = Chunk("")
 
 case class Fraction(numerator: Int, denominator: Int)
 
@@ -114,8 +114,8 @@ object Tests extends Suite(m"Symbolism Tests"):
       . assert(_ == Vector2(11, 22))
 
       test(m"A Concatenable value is Addable"):
-        Chunk(t"one") + Chunk(t"two")
-      . assert(_ == Chunk(t"onetwo"))
+        Chunk("one") + Chunk("two")
+      . assert(_ == Chunk("onetwo"))
 
       test(m"Adding mismatched types is rejected"):
         demilitarize:
@@ -161,12 +161,12 @@ object Tests extends Suite(m"Symbolism Tests"):
       . assert(_ == Vector2(9, 12))
 
       test(m"Repeat a Concatenable value with the `*` operator"):
-        Chunk(t"ab")*3
-      . assert(_ == Chunk(t"ababab"))
+        Chunk("ab")*3
+      . assert(_ == Chunk("ababab"))
 
       test(m"Repeating a Concatenable value zero times gives zero"):
-        Chunk(t"ab")*0
-      . assert(_ == Chunk(t""))
+        Chunk("ab")*0
+      . assert(_ == Chunk(""))
 
     suite(m"Divisible tests"):
       test(m"Divide two Ints through the typeclass"):
@@ -264,9 +264,9 @@ object Tests extends Suite(m"Symbolism Tests"):
 
       test(m"An undecomposable quotient does not match"):
         Fraction(3, 0) match
-          case numerator /: denominator => t"matched"
-          case _                        => t"unmatched"
-      . assert(_ == t"unmatched")
+          case numerator /: denominator => "matched"
+          case _                        => "unmatched"
+      . assert(_ == "unmatched")
 
     suite(m"Comparable tests"):
       test(m"Compare two Ints"):

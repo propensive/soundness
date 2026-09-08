@@ -122,7 +122,7 @@ object Teletype:
 
   // Empty Teletype: dense form with no chars and one trailing entry.
   val empty: Teletype =
-    new Teletype(t"", Array(0L), Map.empty, TreeMap.empty, Array.empty[Int])
+    new Teletype("", Array(0L), Map.empty, TreeMap.empty, Array.empty[Int])
 
   given joinable: Teletype is Joinable = _.fold(empty)(_ + _)
   given printable: Teletype is Printable = _.render(_)
@@ -157,7 +157,7 @@ object Teletype:
     val styled: Long = transform(TextStyle()).styleWord
 
     if text.length == 0 then
-      new Teletype(t"", Array(styled, 0L), Map.empty, TreeMap.empty, Array(0))
+      new Teletype("", Array(styled, 0L), Map.empty, TreeMap.empty, Array(0))
     else
       new Teletype(text, Array(styled, 0L), Map.empty, TreeMap.empty, Array(0))
 

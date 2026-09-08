@@ -68,7 +68,7 @@ trait Ansi2:
 object Ansi extends Ansi2:
   type Transform = TextStyle -> TextStyle
 
-  def strip(txt: Text): Text = txt.sub(t"""\e\\[?.*?[\\@-~]""", t"")
+  def strip(txt: Text): Text = txt.sub(t"""\e\\[?.*?[\\@-~]""", "")
 
   given escape: Stylize[Escape] = identity(_)
 

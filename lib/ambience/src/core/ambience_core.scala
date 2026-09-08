@@ -54,7 +54,7 @@ package systems:
 package workingDirectories:
   // Derives the working directory from the ambient `System` (reading `user.dir`).
   given systemWorkingDirectory: (properties: System) => WorkingDirectory =
-    () => properties(t"user.dir").or(panic(m"the property `user.dir` should be present"))
+    () => properties("user.dir").or(panic(m"the property `user.dir` should be present"))
 
   // The `java.base` working directory: `systemWorkingDirectory` specialised to the JVM
   // `System`, equivalent to reading `user.dir` directly.

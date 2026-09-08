@@ -41,18 +41,18 @@ import symbolism.*
 // a span counted in Islamic months can only be added to a date read in the Islamic calendar.
 object IslamicMonth extends MonthRadix:
   given showable: IslamicMonth is Showable =
-    case Muharram      => t"Muharram"
-    case Safar         => t"Safar"
-    case RabiAlAwwal   => t"Rabi I"
-    case RabiAlThani   => t"Rabi II"
-    case JumadaAlAwwal => t"Jumada I"
-    case JumadaAlThani => t"Jumada II"
-    case Rajab         => t"Rajab"
-    case Shaban        => t"Shaban"
-    case Ramadan       => t"Ramadan"
-    case Shawwal       => t"Shawwal"
-    case DhuAlQadah    => t"Dhu al-Qadah"
-    case DhuAlHijjah   => t"Dhu al-Hijjah"
+    case Muharram      => "Muharram"
+    case Safar         => "Safar"
+    case RabiAlAwwal   => "Rabi I"
+    case RabiAlThani   => "Rabi II"
+    case JumadaAlAwwal => "Jumada I"
+    case JumadaAlThani => "Jumada II"
+    case Rajab         => "Rajab"
+    case Shaban        => "Shaban"
+    case Ramadan       => "Ramadan"
+    case Shawwal       => "Shawwal"
+    case DhuAlQadah    => "Dhu al-Qadah"
+    case DhuAlHijjah   => "Dhu al-Hijjah"
 
   given multiply: Int is Multiplicable by IslamicMonth.type to (Timespan of IslamicMonth.type) =
     Multiplicable: (n, _) => Timespan(IslamicMonth, n)

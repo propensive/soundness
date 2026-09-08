@@ -44,6 +44,6 @@ import htmlDoms.whatwg, whatwg.*
 
 object Checkbox:
   given renderable: Checkbox is Renderable in Phrasing = checkbox =>
-    Input.Checkbox(name = checkbox.name, checked = (checkbox.value != t""))
+    Input.Checkbox(name = checkbox.name, checked = (checkbox.value != ""))
 
 case class Checkbox(name: Text, value: Text) extends Widget

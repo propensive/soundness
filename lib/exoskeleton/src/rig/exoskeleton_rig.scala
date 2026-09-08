@@ -63,10 +63,10 @@ extension (shell: Shell)
         var psFile: Optional[Path on Linux] = Unset
 
         val shellBinary = shell match
-          case Shell.Zsh        => t"zsh"
-          case Shell.Fish       => t"fish"
-          case Shell.Bash       => t"bash"
-          case Shell.Powershell => t"pwsh"
+          case Shell.Zsh        => "zsh"
+          case Shell.Fish       => "fish"
+          case Shell.Bash       => "bash"
+          case Shell.Powershell => "pwsh"
 
         locally:
           import logging.silentLogging
@@ -75,9 +75,9 @@ extension (shell: Shell)
           then abort(Tmux.Error(Tmux.Error.Reason.ShellNotInstalled(shellBinary)))
 
         val shellInvocation = shell match
-          case Shell.Zsh        => t"zsh -l"
-          case Shell.Fish       => t"fish -l"
-          case Shell.Bash       => t"bash -l"
+          case Shell.Zsh        => "zsh -l"
+          case Shell.Fish       => "fish -l"
+          case Shell.Bash       => "bash -l"
 
           case Shell.Powershell =>
             val cmd = summon[Enclave.Tool].command
@@ -148,7 +148,7 @@ extension (shell: Shell)
 
         shell match
           case Shell.Zsh =>
-            val command = t"""precmd_functions=() preexec_functions=() PROMPT="> " RPROMPT="""""
+            val command = """precmd_functions=() preexec_functions=() PROMPT="> " RPROMPT="""""
             sh"""tmux send-keys -t ${tmux.id} $command C-m""".exec[Unit]()
             sh"""tmux send-keys -t ${tmux.id} "path+=(\"$path\")" C-m""".exec[Unit]()
 
@@ -264,7 +264,7 @@ extension (shell: Shell)
 
             while !psReady && psAttempts < 666 do
               delay(0.03*Second)
-              psReady = Tmux.screenshot().screen.filter(_.starts(t">")).readable.length > 0
+              psReady = Tmux.screenshot().screen.filter(_.starts(">")).readable.length > 0
               psAttempts += 1
 
         val result = action

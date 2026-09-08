@@ -79,13 +79,13 @@ given tastySymbolTeletypeable: (palette: TastyPalette) => Tasty.Symbol is Telety
           case (key, items: List[Text] @unchecked) =>
             key -> e"${Fg(palette.outline)}(${items.join(t", ")})"
 
-    val name = (t"Name", e"$Bold(${symbol.prefix}${Fg(palette.foreground)}(${symbol.name}))")
+    val name = ("Name", e"$Bold(${symbol.prefix}${Fg(palette.foreground)}(${symbol.name}))")
 
     Scaffold[(Text, Teletype)]
       ( Column(e"$Bold(Property)", textAlign = TextAlignment.Right)(_(0)),
         Column(e"$Bold(Value)", sizing = columnar.ParagraphOrBreak)(_(1)) )
 
-    . tabulate(name :: (t"Flags", flags) :: (t"Properties", properties) :: details)
+    . tabulate(name :: ("Flags", flags) :: ("Properties", properties) :: details)
     . grid(120)
     . render
     . join(e"\n")
@@ -106,7 +106,7 @@ private def expandTastyTree(tree: Tasty.Tree)(using palette: TastyPalette)
         case (false, false) => palette.typeReference
 
       val text = e"$color(${node.name})"
-      val tag2: Text = if node.tag == ' ' then "▪".tt else ("⟨": String)+node.tag+"⟩"
+      val tag2: Text = if node.tag == ' ' then "▪" else s"⟨${node.tag}⟩"
 
       // The root tile is dropped: it prefixes the tree's own line, which is drawn separately.
       val rest: List[TreeTile] = tiles match

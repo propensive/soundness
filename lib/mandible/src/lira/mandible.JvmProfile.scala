@@ -56,13 +56,13 @@ import rudiments.sortingAlgorithms.timsort
 // be a clean minor by the core algebra and still fail these predicates; it can also break
 // recompilation, graded a major, while every predicate here passes.
 object JvmProfile extends EcosystemProfile:
-  def id: Text = t"jvm/1"
+  def id: Text = "jvm/1"
 
   // Linkage alone. `tasty/1` certifies recompilation over the same release, and this profile
   // adds no predicate about it: a profile adds guarantees, never subtracts them (L129).
   def certifies: Set[Discipline.Guarantee] = Set(Discipline.Guarantee.Linkage)
 
-  private val universe: Text = t"jvm"
+  private val universe: Text = "jvm"
 
   // The atoms `classfile/1` would produce for one release's `jvm` section, as a lookup by key.
   // An absent section — a release that carries no `jvm` universe at all — has no linkage surface
@@ -123,7 +123,7 @@ object JvmProfile extends EcosystemProfile:
     // uncheckable rather than false, and is reported as such.
     next.manifest.let: manifest =>
       if manifest.toolchain.nil
-      then violate(t"the release records no toolchain, so TASTy readability cannot be checked")
+      then violate("the release records no toolchain, so TASTy readability cannot be checked")
 
     violations.toList.to(List)
 

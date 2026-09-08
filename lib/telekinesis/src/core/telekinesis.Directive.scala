@@ -48,14 +48,14 @@ object Directive:
     _.name
 
   given accept: ("accept" is Directive of MediaType) = _.show
-  given accept2: ("accept" is Directive of List[MediaType]) = _.map(_.show).join(t",")
+  given accept2: ("accept" is Directive of List[MediaType]) = _.map(_.show).join(",")
   given authorization: ("authorization" is Directive of Auth) = _.show
   given cacheControl: ("cacheControl" is Directive of Text) = identity(_)
   given connection: ("connection" is Directive of Text) = identity(_)
   given contentMd5: ("contentMd5" is Directive of Text) = identity(_)
   given contentType: ("contentType" is Directive of MediaType) = _.basic
   given contentLength: ("contentLength" is Directive of Bytes) = _.long.toString.tt
-  given cookie: ("cookie" is Directive of List[Cookie.Value]) = _.map(_.show).join(t"; ")
+  given cookie: ("cookie" is Directive of List[Cookie.Value]) = _.map(_.show).join("; ")
   given date: ("date" is Directive of Text) = identity(_)
   given expect: ("expect" is Directive of Text) = identity(_)
   given forwarded: ("forwarded" is Directive of Text) = identity(_)

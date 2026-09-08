@@ -43,7 +43,7 @@ import symbolism.*
 // and `AdarSheni` follows it. A distinct `MonthRadix`.
 object HebrewMonth extends MonthRadix:
   given showable: HebrewMonth is Showable =
-    case AdarSheni => t"Adar II"
+    case AdarSheni => "Adar II"
     case month     => month.toString.tt
 
   given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =

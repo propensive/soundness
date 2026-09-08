@@ -52,7 +52,7 @@ import vacuous.*
 // baffling decode failure.
 object Streamer:
   // The derived BinTEL schema for `TestEvent`, computed once; every event encodes under it.
-  private lazy val schema: Tels = Tels.tels[TestEvent](t"test-event")
+  private lazy val schema: Tels = Tels.tels[TestEvent]("test-event")
 
   // A canonical structural rendering of the derived schema — name, document structure, and
   // select definitions with their variants, in declaration order — hashed with BLAKE3. This is
@@ -65,7 +65,7 @@ object Streamer:
         t"{${rendered.join(t";")}}"
 
       case Tels.Scalar(_, encoding, _) => t"scalar(${encoding.or(t"")})"
-      case Tels.Flag                   => t"flag"
+      case Tels.Flag                   => "flag"
       case Tels.Reference(name)        => t"ref($name)"
 
     def renderMember(member: Tels.Member): Text = member match

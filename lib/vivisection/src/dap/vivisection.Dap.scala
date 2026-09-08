@@ -137,7 +137,7 @@ object Dap:
           success     = true.in[Json],
           command     = request.command.or(t"").in[Json] )
 
-    val typed = base.updateDynamic("type")(t"response".in[Json])
+    val typed = base.updateDynamic("type")("response".in[Json])
 
     body.lay(typed): body => typed.updateDynamic("body")(body)
 
@@ -152,12 +152,12 @@ object Dap:
           command     = request.command.or(t"").in[Json],
           message     = message.in[Json] )
 
-    base.updateDynamic("type")(t"response".in[Json])
+    base.updateDynamic("type")("response".in[Json])
 
   def event(seq: Int, name: Text, body: Optional[Json]): Json =
     import strategies.throwUnsafely
     val base = Json.make(seq = seq.in[Json], event = name.in[Json])
-    val typed = base.updateDynamic("type")(t"event".in[Json])
+    val typed = base.updateDynamic("type")("event".in[Json])
 
     body.lay(typed): body => typed.updateDynamic("body")(body)
 

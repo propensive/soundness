@@ -36,7 +36,7 @@ import anticipation.*
 import rudiments.*
 
 object Days:
-  given designation: Designation[Hours[1]] = () => "d".tt
+  given designation: Designation[Hours[1]] = () => "d"
   inline given ratio: Ratio[Seconds[1] & Days[-1], 86400.0] = !!
 
 trait Days[Power <: Nat] extends Units[Power, Time]

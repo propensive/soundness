@@ -77,13 +77,13 @@ object PseudoHeaders:
     val headers = scm.ListBuffer[Http.Header]()
 
     headerBlock.each: entry =>
-      if entry.name == t":status" then statusText = entry.value
-      else if !entry.name.starts(t":") then headers += Http.Header(entry.name, entry.value)
+      if entry.name == ":status" then statusText = entry.value
+      else if !entry.name.starts(":") then headers += Http.Header(entry.name, entry.value)
 
     val code: Int = statusText.let { text => safely(Integer.parseInt(text.s)).or(0) }.or(0)
 
     val status: Http.Status =
-      Http.Status.unapply(code).optional.lest(Http2.Error(Reason.Protocol(t"missing :status")))
+      Http.Status.unapply(code).optional.lest(Http2.Error(Reason.Protocol("missing :status")))
 
     status(headers.to(List), Http.Body.Flowing(() => zephyrine.Stream(body)))
 
@@ -104,21 +104,21 @@ object PseudoHeaders:
     val headers = scm.ListBuffer[Http.Header]()
 
     headerBlock.each: entry =>
-      if entry.name == t":method" then methodText = entry.value
-      else if entry.name == t":path" then pathText = entry.value
-      else if entry.name == t":authority" then authorityText = entry.value
-      else if !entry.name.starts(t":") then headers += Http.Header(entry.name, entry.value)
+      if entry.name == ":method" then methodText = entry.value
+      else if entry.name == ":path" then pathText = entry.value
+      else if entry.name == ":authority" then authorityText = entry.value
+      else if !entry.name.starts(":") then headers += Http.Header(entry.name, entry.value)
 
     val authority: Text =
-      authorityText.lest(Http2.Error(Reason.Protocol(t"missing :authority")))
+      authorityText.lest(Http2.Error(Reason.Protocol("missing :authority")))
 
     val host: Host =
       safely(authority.as[Host]).or:
-        safely(authority.cut(t":").prim.or(authority).as[Host]).or:
-          abort(Http2.Error(Reason.Protocol(t"bad :authority")))
+        safely(authority.cut(":").prim.or(authority).as[Host]).or:
+          abort(Http2.Error(Reason.Protocol("bad :authority")))
 
-    val target: Text = pathText.lest(Http2.Error(Reason.Protocol(t"missing :path")))
-    val method: Http.Method = methodText.lest(Http2.Error(Reason.Protocol(t"missing :method"))).as
+    val target: Text = pathText.lest(Http2.Error(Reason.Protocol("missing :path")))
+    val method: Http.Method = methodText.lest(Http2.Error(Reason.Protocol("missing :method"))).as
 
     Http.Request(method, 2.0, host, target, headers.to(List), body)
 
@@ -135,4 +135,4 @@ object PseudoHeaders:
     . filter: entry =>
         !forbidden.has(entry.name)
 
-    Hpack.Entry(t":status", response.status.code.show) :: regular
+    Hpack.Entry(":status", response.status.code.show) :: regular

@@ -42,8 +42,8 @@ case class Verdict(ticker: Text, rating: Text)
 
 object Broker:
   @ability
-  @about(t"Look up the current price of a stock ticker")
-  def price(ticker: Text): Double = if ticker == t"AAPL" then 211.5 else 100.0
+  @about("Look up the current price of a stock ticker")
+  def price(ticker: Text): Double = if ticker == "AAPL" then 211.5 else 100.0
 
   @ability
   def shout(message: Text)(using suffix: Text): Text = t"$message$suffix"
@@ -51,7 +51,7 @@ object Broker:
 object ToolkitTests extends Suite(m"Toolkit and tool-loop tests"):
   import Llm.{Content, Message, Role, Settings, Stop, Usage}
 
-  given suffix: Text = t"!"
+  given suffix: Text = "!"
   val kit: Toolkit = Toolkit(Broker)
 
   def session(consume dialect: Llm.Dialect^, settings: Settings = Settings()): Llm.Session^ =
@@ -69,24 +69,24 @@ object ToolkitTests extends Suite(m"Toolkit and tool-loop tests"):
       val properties = spec.parameters.in[Json].properties
 
       (spec.name, spec.description, properties.ticker.`type`.as[Text])
-    . assert(_ == (t"price", t"Look up the current price of a stock ticker", t"string"))
+    . assert(_ == ("price", "Look up the current price of a stock ticker", "string"))
 
     test(m"invoking a tool decodes arguments and encodes the result"):
-      kit.invoke(t"price", j"""{"ticker": "AAPL"}""")
+      kit.invoke("price", j"""{"ticker": "AAPL"}""")
     . assert(_ == j"211.5")
 
     test(m"a contextual parameter is summoned at the construction site"):
-      kit.invoke(t"shout", j"""{"message": "hello"}""")
+      kit.invoke("shout", j"""{"message": "hello"}""")
     . assert(_ == j""""hello!"""")
 
     test(m"an unknown tool raises Invalid"):
-      capture[Llm.Error](kit.invoke(t"missing", j"{}")).reason
+      capture[Llm.Error](kit.invoke("missing", j"{}")).reason
     . assert(_ == Llm.Error.Reason.Invalid)
 
     test(m"the ambient toolkit's specs are offered to the model"):
       given Toolkit = kit
       val dialect = Scripted(List(Scripted.reply(t"fine")))
-      session(dialect).ask(t"Ready?")
+      session(dialect).ask("Ready?")
       dialect.calls.head.tools.map(_.name)
     . assert(_ == List(t"price", t"shout"))
 
@@ -95,16 +95,16 @@ object ToolkitTests extends Suite(m"Toolkit and tool-loop tests"):
 
       val dialect = Scripted:
         List
-          ( calling(t"c1", t"price", j"""{"ticker": "AAPL"}"""),
-            Scripted.reply(t"It costs quite a lot.") )
+          ( calling("c1", "price", j"""{"ticker": "AAPL"}"""),
+            Scripted.reply("It costs quite a lot.") )
 
       val handle = session(dialect)
-      val reply = handle.ask(t"Price AAPL?")
+      val reply = handle.ask("Price AAPL?")
       val followup = dialect.calls.last.history.stdlib.last.content
 
       (reply.text, dialect.calls.size, followup)
     . assert:
-        _ == ( t"It costs quite a lot.", 2,
+        _ == ( "It costs quite a lot.", 2,
                List(Content.ToolResult(t"c1", List(Content.Textual(t"211.5")))) )
 
     test(m"the loop commits every turn to history"):
@@ -112,11 +112,11 @@ object ToolkitTests extends Suite(m"Toolkit and tool-loop tests"):
 
       val dialect = Scripted:
         List
-          ( calling(t"c1", t"price", j"""{"ticker": "AAPL"}"""),
-            Scripted.reply(t"Done.") )
+          ( calling("c1", "price", j"""{"ticker": "AAPL"}"""),
+            Scripted.reply("Done.") )
 
       val handle = session(dialect)
-      handle.ask(t"Price AAPL?")
+      handle.ask("Price AAPL?")
       handle.history.stdlib.size
     . assert(_ == 4)
 
@@ -125,47 +125,47 @@ object ToolkitTests extends Suite(m"Toolkit and tool-loop tests"):
 
       val dialect = Scripted:
         List
-          ( calling(t"c1", t"price", j"""{"wrong": true}"""),
-            Scripted.reply(t"Sorry.") )
+          ( calling("c1", "price", j"""{"wrong": true}"""),
+            Scripted.reply("Sorry.") )
 
       val handle = session(dialect)
-      handle.ask(t"Price AAPL?")
+      handle.ask("Price AAPL?")
 
       dialect.calls.last.history.stdlib.last.content.stdlib.head match
         case Content.ToolResult(id, _, failure) => (id, failure)
-        case other                              => (t"?", false)
-    . assert(_ == (t"c1", true))
+        case other                              => ("?", false)
+    . assert(_ == ("c1", true))
 
     test(m"an unanswerable loop raises ToolLoopExceeded"):
       given Toolkit = kit
 
       val dialect = Scripted:
         List
-          ( calling(t"c1", t"price", j"""{"ticker": "AAPL"}"""),
-            calling(t"c2", t"price", j"""{"ticker": "AAPL"}""") )
+          ( calling("c1", "price", j"""{"ticker": "AAPL"}"""),
+            calling("c2", "price", j"""{"ticker": "AAPL"}""") )
 
       val handle = session(dialect, Settings(iterations = 1))
-      capture[Llm.Error](handle.ask(t"Price AAPL?")).reason
+      capture[Llm.Error](handle.ask("Price AAPL?")).reason
     . assert(_ == Llm.Error.Reason.ToolLoopExceeded)
 
     test(m"elicit decodes the forced tool call's arguments"):
       val dialect =
         Scripted(List(calling(t"a1", t"answer", j"""{"ticker": "AAPL", "rating": "buy"}""")))
 
-      session(dialect).elicit[Verdict](t"Summarise your recommendation.")
-    . assert(_ == Verdict(t"AAPL", t"buy"))
+      session(dialect).elicit[Verdict]("Summarise your recommendation.")
+    . assert(_ == Verdict("AAPL", "buy"))
 
     test(m"elicit forces the synthetic answer tool"):
       val dialect =
         Scripted(List(calling(t"a1", t"answer", j"""{"ticker": "AAPL", "rating": "buy"}""")))
 
       val handle = session(dialect)
-      handle.elicit[Verdict](t"Summarise.")
+      handle.elicit[Verdict]("Summarise.")
       val turn = dialect.calls.head
       (turn.tools.map(_.name), turn.settings.toolChoice)
-    . assert(_ == (List(t"answer"), Llm.ToolChoice.Named(t"answer")))
+    . assert(_ == (List(t"answer"), Llm.ToolChoice.Named("answer")))
 
     test(m"a reply that ignores the forced tool raises Malformed"):
       val dialect = Scripted(List(Scripted.reply(t"I refuse to be structured.")))
-      capture[Llm.Error](session(dialect).elicit[Verdict](t"Summarise.")).reason
+      capture[Llm.Error](session(dialect).elicit[Verdict]("Summarise.")).reason
     . assert(_ == Llm.Error.Reason.Malformed)

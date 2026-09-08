@@ -51,7 +51,7 @@ private[facsimile] object ObjectStream:
         offsets = offsets.define(number.toInt, offset.toInt)
 
       case _ =>
-        abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"ObjStm")))
+        abort(Pdf.Error(Pdf.Error.Reason.CorruptStream("ObjStm")))
 
     new ObjectStream(data, first, offsets)
 

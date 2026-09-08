@@ -53,17 +53,17 @@ object protointernal:
   object Runtime:
     import unsafeExceptions.canThrowAny
 
-    def initial: Text = t""
+    def initial: Text = ""
 
     def parse(state: Text, next: Text): Text = state+next
 
-    def skip(state: Text): Text = state+t"1"
+    def skip(state: Text): Text = state+"1"
 
     def substitute(state: Text, sub: Text): Text = state+sub
 
     def insert(state: Text, value: Url.Fragment): Text = value match
       case Url.Fragment.Integral(port) =>
-        if !state.ends(t":")
+        if !state.ends(":")
         then throw UrlInterpolatorError(m"a port number must be specified after a colon")
 
         try throwErrors((state+port.show).as[HttpUrl]) catch

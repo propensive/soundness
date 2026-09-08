@@ -45,7 +45,7 @@ import vacuous.*
 // `wasip1` for the preview-1 syscall ABI, `wasip2` for the component model, `wasip3` once native
 // async lands.
 case class OciConfiguration
-  ( architecture: Text                = t"wasm",
-    os:           Text                = t"wasip2",
+  ( architecture: Text                = "wasm",
+    os:           Text                = "wasip2",
     author:       Optional[Text]      = Unset,
     annotations:  Map[Text, Text]     = Map() )

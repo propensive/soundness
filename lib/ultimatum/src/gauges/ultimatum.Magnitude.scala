@@ -57,15 +57,15 @@ object Magnitude:
   // A count, abbreviated once it stops being readable at a glance: `947`, `1.2k`, `15k`, `3.4M`.
   def count(value: Long): Text =
     if value < 1000 then value.show
-    else if value < 1000000 then scaled(value, 1000.0, t"k")
-    else if value < 1000000000L then scaled(value, 1000000.0, t"M")
-    else scaled(value, 1000000000.0, t"G")
+    else if value < 1000000 then scaled(value, 1000.0, "k")
+    else if value < 1000000000L then scaled(value, 1000000.0, "M")
+    else scaled(value, 1000000000.0, "G")
 
   // A percentage, always three cells wide (`  0%` … `100%` less its sign), so a bar's right-hand
   // figure never shifts as it fills.
   def percentage(fraction: Fraction): Text =
     val value = fraction.percentage
-    if value >= 100 then t"100%" else if value >= 10 then t" $value%" else t"  $value%"
+    if value >= 100 then "100%" else if value >= 10 then t" $value%" else t"  $value%"
 
   // A byte count in the largest prefix that leaves a figure above one: `947 B`, `4.01 MiB`,
   // `1.20 GB`. `binary` selects the 1024-based prefixes (`KiB`) over the 1000-based ones (`kB`);
@@ -75,8 +75,8 @@ object Magnitude:
     val step = if binary then 1024.0 else 1000.0
 
     val units: scala.Array[Text] =
-      if binary then scala.Array(t"B", t"KiB", t"MiB", t"GiB", t"TiB")
-      else scala.Array(t"B", t"kB", t"MB", t"GB", t"TB")
+      if binary then scala.Array("B", "KiB", "MiB", "GiB", "TiB")
+      else scala.Array("B", "kB", "MB", "GB", "TB")
 
     var size = value.max(0.0)
     var index = 0

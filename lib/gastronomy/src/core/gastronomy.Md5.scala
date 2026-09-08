@@ -41,7 +41,7 @@ import prepositional.*
 
 object Md5:
   given hash: (hashing: Hashing { def md5: Hashing.Function }) => Hash in Md5 =
-    Hash(t"MD5", t"HmacMD5", hashing.md5)
+    Hash("MD5", "HmacMD5", hashing.md5)
 
 sealed trait Md5 extends Algorithm:
   type Bits = 128

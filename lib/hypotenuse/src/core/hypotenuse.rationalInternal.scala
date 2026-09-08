@@ -1031,8 +1031,8 @@ object rationalInternal:
           if left < 0L then -quotient else quotient
 
       def text: Text =
-        if left == Long.MinValue then "NaR".tt
-        else if left == 0L then "0".tt
+        if left == Long.MinValue then "NaR"
+        else if left == 0L then "0"
         else
           val (numerator, denominator) = fractionOf(left & Long.MaxValue)
           render(left < 0L, numerator, denominator)
@@ -1333,8 +1333,8 @@ object rationalInternal:
           if left < 0 then -quotient else quotient
 
       def text: Text =
-        if left == Int.MinValue then "NaR".tt
-        else if left == 0 then "0".tt
+        if left == Int.MinValue then "NaR"
+        else if left == 0 then "0"
         else
           val (numerator, denominator) = fractionOf((left & Int.MaxValue).toLong)
           render(left < 0, numerator, denominator)

@@ -97,14 +97,14 @@ object Pty:
     ( cursor:             Ordinal = Prim,
       savedCursor:        Ordinal = Prim,
       savedStyle:         Style   = Style(),
-      savedLink:          Text    = t"",
+      savedLink:          Text    = "",
       style:              Style   = Style(),
       focusDetectionMode: Boolean = false,
       focus:              Boolean = true,
       bracketedPasteMode: Boolean = false,
       hideCursor:         Boolean = false,
-      title:              Text    = t"",
-      link:               Text    = t"",
+      title:              Text    = "",
+      link:               Text    = "",
       scrollTop:          Ordinal = Prim,
       scrollBottom:       Ordinal = Prim,
       pendingWrap:        Boolean = false )
@@ -211,13 +211,13 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
         cursor() = Prim
 
       case n =>
-        raise(Pty.Error(BadCsiParameter(n, t"ED")))
+        raise(Pty.Error(BadCsiParameter(n, "ED")))
 
     def el(n: Int): Unit = n match
       case 0 => for x <- cursor.x.n0 until buffer2.width do set(x.z, cursor.y, Grapheme(" "))
       case 1 => for x <- 0 to cursor.x.n0 do set(x.z, cursor.y, Grapheme(" "))
       case 2 => for x <- 0 until buffer2.width do set(x.z, cursor.y, Grapheme(" "))
-      case n => raise(Pty.Error(BadCsiParameter(n, t"EL")))
+      case n => raise(Pty.Error(BadCsiParameter(n, "EL")))
 
     def title(text: Text): Unit = state2 = state2.copy(title = text)
     def setLink(text: Text): Unit = link = text
@@ -428,7 +428,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
 
     def ris(): Unit =
       style = Style()
-      link = t""
+      link = ""
       scrollTop = Prim
       scrollBottom = (buffer2.height - 1).z
       for i <- 0 until buffer2.capacity do wipe(i.z)
@@ -480,7 +480,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
           case n if 100 <= n <= 107          => Background(style) = palette(n - 92)
 
           case _ =>
-            abort(Pty.Error(BadSgrParameters(params.map(_.show).join(t";"))))
+            abort(Pty.Error(BadSgrParameters(params.map(_.show).join(";"))))
 
         sgr(tail)
 
@@ -491,27 +491,27 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
 
     def parseInts(text: Text): List[Int] =
       if text.nil then Nil
-      else text.cut(t";").map(parseInt(_, 0))
+      else text.cut(";").map(parseInt(_, 0))
 
     def parsePair(text: Text, default: Int): (Int, Int) =
       if text.nil then (default, default) else
-        text.cut(t";") match
+        text.cut(";") match
           case first :: second :: _ => (parseInt(first, default), parseInt(second, default))
           case first :: _           => (parseInt(first, default), default)
           case _                    => (default, default)
 
     def privateMode(params: Text, char: Char): Unit = (params, char) match
-      case (t"?25",   'h') => dectcem(true)
-      case (t"?25",   'l') => dectcem(false)
-      case (t"?1004", 'h') => detectFocus(true)
-      case (t"?1004", 'l') => detectFocus(false)
-      case (t"?2004", 'h') => bcp(true)
-      case (t"?2004", 'l') => bcp(false)
+      case ("?25",   'h') => dectcem(true)
+      case ("?25",   'l') => dectcem(false)
+      case ("?1004", 'h') => detectFocus(true)
+      case ("?1004", 'l') => detectFocus(false)
+      case ("?2004", 'h') => bcp(true)
+      case ("?2004", 'l') => bcp(false)
       case (_, 'h' | 'l')  => () // unknown DEC private modes are silently ignored
       case _               => raise(Pty.Error(BadCsiCommand(params, char)))
 
     def csi(params: Text, char: Char): Unit =
-      if params.starts(t"?") then privateMode(params, char) else char match
+      if params.starts("?") then privateMode(params, char) else char match
         case 'm' => sgr(parseInts(params))
         case 'A' => cuu(parseInt(params, 1))
         case 'B' => cud(parseInt(params, 1))
@@ -545,8 +545,8 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
         case 'u' if params.nil                                   => rcp()
         case 'I' if params.nil                                   => focus(true)
         case 'O' if params.nil                                   => focus(false)
-        case 'c' if params.nil || params == t"0"                 => primaryDa()
-        case 'c' if params.starts(t">")                          => secondaryDa()
+        case 'c' if params.nil || params == "0"                 => primaryDa()
+        case 'c' if params.starts(">")                          => secondaryDa()
 
         case _ => raise(Pty.Error(BadCsiCommand(params, char)))
 

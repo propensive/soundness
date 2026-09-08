@@ -71,29 +71,29 @@ object Tests extends Suite(m"Telekinesis tests"):
       test(m"Construct a Query"):
         inline given key: ("key" is Parametric to Text) = !!
         inline given param: ("param" is Parametric to Int) = !!
-        Query.make(key = t"hello world", param = 24).show
+        Query.make(key = "hello world", param = 24).show
 
-      . assert(_ == t"key=hello+world&param=24")
+      . assert(_ == "key=hello+world&param=24")
 
       case class Person(name: Text, age: Int)
       case class Couple(first: Person, second: Person)
 
       test(m"Construct a Query by generic derivation"):
-        Person(t"Jack", 12).query.show
+        Person("Jack", 12).query.show
 
-      . assert(_ == t"name=Jack&age=12")
+      . assert(_ == "name=Jack&age=12")
 
       test(m"Construct a Query by partial generic derivation"):
         // This import seems to be required
         import queryParameters.arbitraryQueryParameter
-        Query.make(person = Person(t"Ken", 39)).show
+        Query.make(person = Person("Ken", 39)).show
 
-      . assert(_ == t"person.name=Ken&person.age=39")
+      . assert(_ == "person.name=Ken&person.age=39")
 
       test(m"Construct a Query by nested generic derivation"):
-        Couple(Person(t"Jack", 12), Person(t"Jill", 11)).query.show
+        Couple(Person("Jack", 12), Person("Jill", 11)).query.show
 
-      . assert(_ == t"first.name=Jack&first.age=12&second.name=Jill&second.age=11")
+      . assert(_ == "first.name=Jack&first.age=12&second.name=Jill&second.age=11")
 
       val query = Query(List(t"first.name"  -> t"Jack",
                              t"first.age"   -> t"12",
@@ -131,7 +131,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       val blockSizes = List(1, 2, 3, 7, 13, 4096)
 
       suite(m"Status line"):
-        val fixture = t"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nbody"
+        val fixture = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nbody"
         for blockSize <- blockSizes do
           test(m"Parse 200 OK at block size $blockSize"):
             Http.Response.parse(chunks(fixture, blockSize)).status
@@ -146,7 +146,7 @@ object Tests extends Suite(m"Telekinesis tests"):
           test(m"Parse body at block size $blockSize"):
             bodyText(Http.Response.parse(chunks(fixture, blockSize)))
 
-          . assert(_ == t"body")
+          . assert(_ == "body")
 
         for status <- List(Http.Continue, Http.Ok, Http.NoContent, Http.MovedPermanently,
                            Http.NotModified, Http.BadRequest, Http.NotFound,
@@ -158,13 +158,13 @@ object Tests extends Suite(m"Telekinesis tests"):
           . assert(_ == status)
 
         test(m"Parse HTTP/1.0 version"):
-          val fixture = t"HTTP/1.0 200 OK\r\n\r\n"
+          val fixture = "HTTP/1.0 200 OK\r\n\r\n"
           Http.Response.parse(chunks(fixture, 4096)).version
 
         . assert(_ == 1.0)
 
         test(m"Parse status with long reason phrase"):
-          val fixture = t"HTTP/1.1 503 Service Temporarily Unavailable, please try again later\r\n\r\n"
+          val fixture = "HTTP/1.1 503 Service Temporarily Unavailable, please try again later\r\n\r\n"
           Http.Response.parse(chunks(fixture, 4096)).status
 
         . assert(_ == Http.ServiceUnavailable)
@@ -172,20 +172,20 @@ object Tests extends Suite(m"Telekinesis tests"):
       suite(m"Headers"):
         for blockSize <- blockSizes do
           test(m"Zero headers at block size $blockSize"):
-            val fixture = t"HTTP/1.1 200 OK\r\n\r\nbody"
+            val fixture = "HTTP/1.1 200 OK\r\n\r\nbody"
             Http.Response.parse(chunks(fixture, blockSize)).textHeaders
 
           . assert(_ == Nil)
 
           test(m"Single header at block size $blockSize"):
-            val fixture = t"HTTP/1.1 200 OK\r\nX-Foo: bar\r\n\r\nbody"
+            val fixture = "HTTP/1.1 200 OK\r\nX-Foo: bar\r\n\r\nbody"
             Http.Response.parse(chunks(fixture, blockSize)).textHeaders
 
           . assert(_ == List(Http.Header(t"X-Foo", t"bar")))
 
           test(m"Multiple headers at block size $blockSize"):
             val fixture =
-              t"HTTP/1.1 200 OK\r\nX-Foo: a\r\nX-Bar: b\r\nX-Baz: c\r\n\r\nbody"
+              "HTTP/1.1 200 OK\r\nX-Foo: a\r\nX-Bar: b\r\nX-Baz: c\r\n\r\nbody"
             Http.Response.parse(chunks(fixture, blockSize)).textHeaders
 
           . assert(_ == List(Http.Header(t"X-Foo", t"a"),
@@ -193,32 +193,32 @@ object Tests extends Suite(m"Telekinesis tests"):
                              Http.Header(t"X-Baz", t"c")))
 
           test(m"Header value with leading whitespace at block size $blockSize"):
-            val fixture = t"HTTP/1.1 200 OK\r\nX-Foo:    spacey\r\n\r\n"
+            val fixture = "HTTP/1.1 200 OK\r\nX-Foo:    spacey\r\n\r\n"
             Http.Response.parse(chunks(fixture, blockSize)).textHeaders
 
           . assert(_ == List(Http.Header(t"X-Foo", t"spacey")))
 
           test(m"Header value with leading tab at block size $blockSize"):
-            val fixture = t"HTTP/1.1 200 OK\r\nX-Foo:\tspacey\r\n\r\n"
+            val fixture = "HTTP/1.1 200 OK\r\nX-Foo:\tspacey\r\n\r\n"
             Http.Response.parse(chunks(fixture, blockSize)).textHeaders
 
           . assert(_ == List(Http.Header(t"X-Foo", t"spacey")))
 
         test(m"Header with hyphenated mixed-case name"):
-          val fixture = t"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
+          val fixture = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
           Http.Response.parse(chunks(fixture, 4096)).textHeaders
 
         . assert(_ == List(Http.Header(t"Content-Type", t"text/html")))
 
         test(m"Long header value"):
-          val long = t"a"*500
+          val long = "a"*500
           val fixture = t"HTTP/1.1 200 OK\r\nX-Long: $long\r\n\r\n"
           Http.Response.parse(chunks(fixture, 4096)).textHeaders.prim.let(_.value)
 
-        . assert(_ == t"a"*500)
+        . assert(_ == "a"*500)
 
         test(m"Duplicate header keys preserved"):
-          val fixture = t"HTTP/1.1 200 OK\r\nX-Same: a\r\nX-Same: b\r\n\r\n"
+          val fixture = "HTTP/1.1 200 OK\r\nX-Same: a\r\nX-Same: b\r\n\r\n"
           Http.Response.parse(chunks(fixture, 4096)).textHeaders
 
         . assert(_ == List(Http.Header(t"X-Same", t"a"), Http.Header(t"X-Same", t"b")))
@@ -226,22 +226,22 @@ object Tests extends Suite(m"Telekinesis tests"):
       suite(m"Body"):
         for blockSize <- blockSizes do
           test(m"Empty body at block size $blockSize"):
-            val fixture = t"HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n"
+            val fixture = "HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n"
             bodyText(Http.Response.parse(chunks(fixture, blockSize)))
 
-          . assert(_ == t"")
+          . assert(_ == "")
 
           test(m"Multi-byte body at block size $blockSize"):
-            val fixture = t"HTTP/1.1 200 OK\r\n\r\nHello, world!"
+            val fixture = "HTTP/1.1 200 OK\r\n\r\nHello, world!"
             bodyText(Http.Response.parse(chunks(fixture, blockSize)))
 
-          . assert(_ == t"Hello, world!")
+          . assert(_ == "Hello, world!")
 
           test(m"Body containing CRLF at block size $blockSize"):
-            val fixture = t"HTTP/1.1 200 OK\r\n\r\nline1\r\nline2\r\n"
+            val fixture = "HTTP/1.1 200 OK\r\n\r\nline1\r\nline2\r\n"
             bodyText(Http.Response.parse(chunks(fixture, blockSize)))
 
-          . assert(_ == t"line1\r\nline2\r\n")
+          . assert(_ == "line1\r\nline2\r\n")
 
           test(m"Long body at block size $blockSize"):
             val payload = (0 until 1000).map(i => (i%10).toString.tt).reduce(_ + _)
@@ -253,7 +253,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       suite(m"Malformed input"):
         test(m"Wrong protocol prefix raises Expectation"):
           capture[Http.Response.Error]:
-            Http.Response.parse(chunks(t"XTTP/1.1 200 OK\r\n\r\n", 4096))
+            Http.Response.parse(chunks("XTTP/1.1 200 OK\r\n\r\n", 4096))
           . reason
 
         . assert:
@@ -262,7 +262,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
         test(m"Non-digit in status code raises Status"):
           capture[Http.Response.Error]:
-            Http.Response.parse(chunks(t"HTTP/1.1 2X0 OK\r\n\r\n", 4096))
+            Http.Response.parse(chunks("HTTP/1.1 2X0 OK\r\n\r\n", 4096))
           . reason
 
         . assert:
@@ -271,7 +271,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
         test(m"Status code first digit out of range raises Status"):
           capture[Http.Response.Error]:
-            Http.Response.parse(chunks(t"HTTP/1.1 700 Weird\r\n\r\n", 4096))
+            Http.Response.parse(chunks("HTTP/1.1 700 Weird\r\n\r\n", 4096))
           . reason
 
         . assert:
@@ -292,8 +292,8 @@ object Tests extends Suite(m"Telekinesis tests"):
 
             def next(): Data =
               pulls += 1
-              if pulls == 1 then t"HTTP/1.1 204 No Content\r\nServer: test\r\n\r\n".in[Data]
-              else t"HTTP/1.1 200 OK\r\n\r\n".in[Data]
+              if pulls == 1 then "HTTP/1.1 204 No Content\r\nServer: test\r\n\r\n".in[Data]
+              else "HTTP/1.1 200 OK\r\n\r\n".in[Data]
 
           val live = Live()
           val head = Http.Response.parseHead(Cursor[Data](live))
@@ -303,24 +303,24 @@ object Tests extends Suite(m"Telekinesis tests"):
       test(m"Fetch a URL"):
         url"https://httpbin.org/post"
         . submit(Http.Post, contentEncoding = enc"UTF-8", accept = media"application/json")
-        . apply(t"Hello world")
+        . apply("Hello world")
 
       . aspire()
 
       test(m"Fetch another URL without header names"):
         url"https://httpbin.org/post".submit(Http.Post, enc"UTF-8", accept = media"application/json")
-          ( t"Hello world" )
+          ( "Hello world" )
 
       . aspire()
 
       test(m"Fetch another URL with just a method"):
         url"https://httpbin.org/put".submit(Http.Put)
-          ( t"Hello world" )
+          ( "Hello world" )
 
       . aspire()
 
       test(m"Fetch another URL with defaults"):
-        url"https://httpbin.org/post".submit()(t"Hello world")
+        url"https://httpbin.org/post".submit()("Hello world")
 
       . aspire()
 
@@ -336,7 +336,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       def bodyText(request: Http.Request^): Text = request.body().memoize.utf8
 
       val blockSizes = List(1, 2, 3, 7, 13, 4096)
-      val fixture = t"GET /path?q=1 HTTP/1.1\r\nHost: example.com\r\nX-Foo: bar\r\n\r\nbody"
+      val fixture = "GET /path?q=1 HTTP/1.1\r\nHost: example.com\r\nX-Foo: bar\r\n\r\nbody"
 
       for blockSize <- blockSizes do
         test(m"Parse method at block size $blockSize"):
@@ -347,7 +347,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         test(m"Parse target at block size $blockSize"):
           Http.Request.parse(chunks(fixture, blockSize)).target
 
-        . assert(_ == t"/path?q=1")
+        . assert(_ == "/path?q=1")
 
         test(m"Parse version at block size $blockSize"):
           Http.Request.parse(chunks(fixture, blockSize)).version
@@ -357,7 +357,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         test(m"Parse host at block size $blockSize"):
           Http.Request.parse(chunks(fixture, blockSize)).host.show
 
-        . assert(_ == t"example.com")
+        . assert(_ == "example.com")
 
         test(m"Parse headers at block size $blockSize"):
           Http.Request.parse(chunks(fixture, blockSize)).textHeaders
@@ -367,7 +367,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         test(m"Parse body at block size $blockSize"):
           bodyText(Http.Request.parse(chunks(fixture, blockSize)))
 
-        . assert(_ == t"body")
+        . assert(_ == "body")
 
       val methods: List[Http.Method] =
         List(Http.Get, Http.Head, Http.Post, Http.Put, Http.Delete, Http.Patch, Http.Options,
@@ -398,21 +398,21 @@ object Tests extends Suite(m"Telekinesis tests"):
       . assert(_ == true)
 
       test(m"Parse HTTP/1.0 version"):
-        val fixture = t"GET / HTTP/1.0\r\nHost: example.com\r\n\r\n"
+        val fixture = "GET / HTTP/1.0\r\nHost: example.com\r\n\r\n"
         Http.Request.parse(chunks(fixture, 4096)).version
 
       . assert(_ == 1.0)
 
       test(m"Host header with port has the port stripped"):
-        val fixture = t"GET / HTTP/1.1\r\nHost: example.com:8080\r\n\r\n"
+        val fixture = "GET / HTTP/1.1\r\nHost: example.com:8080\r\n\r\n"
         Http.Request.parse(chunks(fixture, 4096)).host.show
 
-      . assert(_ == t"example.com")
+      . assert(_ == "example.com")
 
       test(m"Missing Host header raises Host reason"):
         capture[Http.Request.Error]:
           // bound so the fresh Request does not escape the capture block as its result
-          val request = Http.Request.parse(chunks(t"GET / HTTP/1.1\r\n\r\n", 4096))
+          val request = Http.Request.parse(chunks("GET / HTTP/1.1\r\n\r\n", 4096))
           ()
         . reason
 
@@ -422,38 +422,38 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       for blockSize <- blockSizes do
         test(m"fixedBody reads exactly N bytes at block size $blockSize"):
-          val cursor = Cursor[Data](chunks(t"hello world", blockSize).stdlib.iterator)
+          val cursor = Cursor[Data](chunks("hello world", blockSize).stdlib.iterator)
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.fixedBody(cursor, 5).memoize.utf8
 
-        . assert(_ == t"hello")
+        . assert(_ == "hello")
 
         test(m"fixedBody leaves the cursor after the body at block size $blockSize"):
-          val cursor = Cursor[Data](chunks(t"hello world", blockSize).stdlib.iterator)
+          val cursor = Cursor[Data](chunks("hello world", blockSize).stdlib.iterator)
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.fixedBody(cursor, 5).memoize
           scala.caps.unsafe.unsafeAssumeSeparate:
             cursor.remainder.read[Data].utf8
 
-        . assert(_ == t" world")
+        . assert(_ == " world")
 
         test(m"chunkedBody decodes chunks at block size $blockSize"):
-          val fixture = t"5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n"
+          val fixture = "5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n"
           val cursor = Cursor[Data](chunks(fixture, blockSize).stdlib.iterator)
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.chunkedBody(cursor).memoize.utf8
 
-        . assert(_ == t"hello world")
+        . assert(_ == "hello world")
 
         test(m"chunkedBody leaves the cursor after the body at block size $blockSize"):
-          val fixture = t"3\r\nabc\r\n0\r\n\r\nNEXT"
+          val fixture = "3\r\nabc\r\n0\r\n\r\nNEXT"
           val cursor = Cursor[Data](chunks(fixture, blockSize).stdlib.iterator)
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.chunkedBody(cursor).memoize
           scala.caps.unsafe.unsafeAssumeSeparate:
             cursor.remainder.read[Data].utf8
 
-        . assert(_ == t"NEXT")
+        . assert(_ == "NEXT")
 
     suite(m"Response serialization"):
       def chunks(text: Text, size: Int): Chain[Data] =
@@ -474,7 +474,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       test(m"Status line carries code and reason phrase"):
         wire(Http.Response(Http.NotFound)()).cut(t"\r\n").prim
 
-      . assert(_ == t"HTTP/1.1 404 Not Found")
+      . assert(_ == "HTTP/1.1 404 Not Found")
 
       for blockSize <- blockSizes do
         test(m"Round-trip a fixed body at block size $blockSize"):
@@ -482,7 +482,7 @@ object Tests extends Suite(m"Telekinesis tests"):
           val parsed = Http.Response.parse(chunks(wire(response), blockSize))
           (parsed.status, bodyText(parsed))
 
-        . assert(_ == (Http.Ok, t"hello world"))
+        . assert(_ == (Http.Ok, "hello world"))
 
       test(m"Fixed body sets a correct Content-Length"):
         wire(Http.Response(Http.Ok)(t"hello")).contains(t"content-length: 5")
@@ -499,29 +499,29 @@ object Tests extends Suite(m"Telekinesis tests"):
         wire(Http.Response(Http.Ok)(body))
 
       . assert: text =>
-          text.contains(t"transfer-encoding: chunked")
-          && text.contains(t"5\r\nHello\r\n")
-          && text.contains(t"5\r\nWorld\r\n")
-          && text.ends(t"0\r\n\r\n")
+          text.contains("transfer-encoding: chunked")
+          && text.contains("5\r\nHello\r\n")
+          && text.contains("5\r\nWorld\r\n")
+          && text.ends("0\r\n\r\n")
 
       test(m"Streaming body skips zero-length blocks"):
         val body = Http.Body.Flowing(() => Stream(Chain(t"ab".in[Data], t"".in[Data], t"cd".in[Data]).iterator))
         wire(Http.Response(Http.Ok)(body))
 
-      . assert(_.contains(t"2\r\nab\r\n2\r\ncd\r\n"))
+      . assert(_.contains("2\r\nab\r\n2\r\ncd\r\n"))
 
       // A `Servable` for `Text` sets `content-type` itself, so naming it at the call site would
       // once have sent the field twice. A singleton field must not repeat; a list-based field or
       // `Set-Cookie` may, and must therefore survive the same merge.
       test(m"A singleton header named at the call site overrides the Servable's"):
         val response = Http.Response(Http.Ok, contentType = media"text/plain")(t"hello")
-        response.textHeaders.stdlib.count(_.key.lower == t"content-type")
+        response.textHeaders.stdlib.count(_.key.lower == "content-type")
 
       . assert(_ == 1)
 
       test(m"The overriding singleton keeps the call site's value"):
         val response = Http.Response(Http.Ok, contentType = media"text/plain")(t"hello")
-        wire(response).contains(t"content-type: text/plain")
+        wire(response).contains("content-type: text/plain")
 
       . assert(_ == true)
 
@@ -532,29 +532,29 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       test(m"Set-Cookie is repeatable, so both values are kept"):
         val served = Http.Response(Http.Ok, setCookie = t"a=1")(t"hello") + Cookie.Value(t"b", t"2")
-        served.textHeaders.stdlib.count(_.key.lower == t"set-cookie")
+        served.textHeaders.stdlib.count(_.key.lower == "set-cookie")
 
       . assert(_ == 2)
 
       test(m"A repeatable field is not treated as a singleton"):
-        (Http.Header.repeatable(t"set-cookie"), Http.Header.repeatable(t"vary"))
+        (Http.Header.repeatable("set-cookie"), Http.Header.repeatable("vary"))
 
       . assert(_ == (true, true))
 
       test(m"Field names are matched case-insensitively"):
-        (Http.Header.repeatable(t"Set-Cookie"), Http.Header.repeatable(t"Content-Type"))
+        (Http.Header.repeatable("Set-Cookie"), Http.Header.repeatable("Content-Type"))
 
       . assert(_ == (true, false))
 
       test(m"An unknown field is treated as a singleton"):
-        Http.Header.repeatable(t"x-soundness-unknown")
+        Http.Header.repeatable("x-soundness-unknown")
 
       . assert(_ == false)
 
       test(m"HEAD response omits the body but keeps headers"):
         val response = Http.Response(Http.Ok)(t"hello")
         val text = wire(response, includeBody = false)
-        text.ends(t"\r\n\r\n") && !text.contains(t"hello") && text.contains(t"content-length: 5")
+        text.ends("\r\n\r\n") && !text.contains("hello") && text.contains("content-length: 5")
 
       . assert(_ == true)
 
@@ -603,44 +603,44 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       val backend: Http.Backend = httpBackends.soundnessHttp
 
-      def fetchNative(target: Text, method: Http.Method = Http.Get, body: Text = t"")
+      def fetchNative(target: Text, method: Http.Method = Http.Get, body: Text = "")
       :   Http.Response =
 
         backend.request
           ( t"http://127.0.0.1:$port$target",
             method,
             Nil,
-            () => if body == t"" then Http.emptyBody() else body.in[Data].stream )
+            () => if body == "" then Http.emptyBody() else body.in[Data].stream )
 
       test(m"Fetch a fixed-length response over a raw TCP socket"):
-        val response = fetchNative(t"/fixed")
+        val response = fetchNative("/fixed")
         (response.status, response.body.stream.memoize.utf8)
 
-      . assert(_ == (Http.Ok, t"Hello, native!"))
+      . assert(_ == (Http.Ok, "Hello, native!"))
 
       test(m"Fetch a chunked response over a raw TCP socket"):
-        fetchNative(t"/chunked").body.stream.memoize.utf8
+        fetchNative("/chunked").body.stream.memoize.utf8
 
-      . assert(_ == t"HelloWorld")
+      . assert(_ == "HelloWorld")
 
       test(m"An error status is conveyed"):
-        fetchNative(t"/missing").status
+        fetchNative("/missing").status
 
       . assert(_ == Http.NotFound)
 
       test(m"A response to HEAD has no body"):
-        fetchNative(t"/fixed", Http.Head).body
+        fetchNative("/fixed", Http.Head).body
 
       . assert(_ == Http.Body.Empty)
 
       test(m"A request body is transmitted"):
-        fetchNative(t"/echo", Http.Post, t"ping-pong").body.stream.memoize.utf8
+        fetchNative("/echo", Http.Post, "ping-pong").body.stream.memoize.utf8
 
-      . assert(_ == t"ping-pong")
+      . assert(_ == "ping-pong")
 
       test(m"Sequential requests reuse a kept-alive connection"):
-        val first = fetchNative(t"/port").body.stream.memoize.utf8
-        val second = fetchNative(t"/port").body.stream.memoize.utf8
+        val first = fetchNative("/port").body.stream.memoize.utf8
+        val second = fetchNative("/port").body.stream.memoize.utf8
         first == second
 
       . assert(_ == true)
@@ -649,7 +649,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         val target = t"http://127.0.0.1:$port".as[HttpUrl]
 
         target.session: session ?=>
-          val request = Http.Request(Http.Get, 1.1, t"127.0.0.1".as[Host], t"/port", Nil,
+          val request = Http.Request(Http.Get, 1.1, "127.0.0.1".as[Host], "/port", Nil,
               () => Http.emptyBody())
 
           val first = session.fetch(request).body.stream.memoize.utf8
@@ -664,13 +664,13 @@ object Tests extends Suite(m"Telekinesis tests"):
         val target = t"http://127.0.0.1:$port".as[HttpUrl]
 
         target.session: session ?=>
-          val request = Http.Request(Http.Get, 1.1, t"127.0.0.1".as[Host], t"/fixed", Nil,
+          val request = Http.Request(Http.Get, 1.1, "127.0.0.1".as[Host], "/fixed", Nil,
               () => Http.emptyBody())
 
           session.fetch(request) // never consumed
           session.fetch(request).body.stream.memoize.utf8
 
-      . assert(_ == t"Hello, native!")
+      . assert(_ == "Hello, native!")
 
       server.stop(0)
 
@@ -735,7 +735,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         server.stop(0)
         (response.status, response.body.stream.memoize.utf8)
 
-      . assert(_ == (Http.Ok, t"secure-native"))
+      . assert(_ == (Http.Ok, "secure-native"))
 
       import Http2.Frame
 
@@ -780,7 +780,7 @@ object Tests extends Suite(m"Telekinesis tests"):
                   case Frame.Headers(id, _, _, _) =>
                     val head = hpack.encode(List(Hpack.Entry(t":status", t"200")))
                     write(Frame.Headers(id, head, false, true))
-                    write(Frame.Data(id, t"h2-native".in[Data], true))
+                    write(Frame.Data(id, "h2-native".in[Data], true))
 
                   case _ => ()
           catch case error: Exception => () })
@@ -797,7 +797,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         serverSocket.close()
         (response.status, response.body.stream.memoize.utf8)
 
-      . assert(_ == (Http.Ok, t"h2-native"))
+      . assert(_ == (Http.Ok, "h2-native"))
 
       test(m"A TLS session multiplexes several fetches on one h2 connection"):
         val serverSocket = h2Server()
@@ -805,7 +805,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         val target = t"https://localhost:$port".as[HttpUrl]
 
         val texts = target.session: session ?=>
-          val request = Http.Request(Http.Get, 1.1, t"localhost".as[Host], t"/", Nil,
+          val request = Http.Request(Http.Get, 1.1, "localhost".as[Host], "/", Nil,
               () => Http.emptyBody())
 
           List(session.fetch(request), session.fetch(request)).map: response =>
@@ -1003,15 +1003,15 @@ object Tests extends Suite(m"Telekinesis tests"):
     suite(m"Native-rendering coverage"):
       test(m"telekinesis's types inspect natively"):
         Inspectable.fallbacks
-         ( new Cookie[Text](t"session", Unset, Unset, true, true, Unset).inspect,
-           Cookie.Value(t"session", t"abc", secure = true).inspect,
-           Session(t"a3f1").inspect )
+         ( new Cookie[Text]("session", Unset, Unset, true, true, Unset).inspect,
+           Cookie.Value("session", "abc", secure = true).inspect,
+           Session("a3f1").inspect )
       . assert(_ == Nil)
 
       test(m"A cookie template inspects with its attributes"):
-        new Cookie[Text](t"session", Unset, 3600L, true, false, Unset).inspect
-      . assert(_ == t"""Cookie(t"session" ╱ expiry:3600L ╱ secure)""")
+        new Cookie[Text]("session", Unset, 3600L, true, false, Unset).inspect
+      . assert(_ == """Cookie(t"session" ╱ expiry:3600L ╱ secure)""")
 
       test(m"A session inspects with its key quoted"):
-        Session(t"a3f1").inspect
-      . assert(_ == t"""Session(t"a3f1")""")
+        Session("a3f1").inspect
+      . assert(_ == """Session(t"a3f1")""")

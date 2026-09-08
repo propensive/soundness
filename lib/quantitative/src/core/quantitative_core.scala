@@ -39,7 +39,7 @@ import gossamer.*
 
 package temperatureScales:
   given kelvinScale: TemperatureScale:
-    def suffix: Text = t"K"
+    def suffix: Text = "K"
     def apply(value: Double): Temperature = Temperature(value)
     def kelvin(value: Temperature): Double = value.kelvin
 

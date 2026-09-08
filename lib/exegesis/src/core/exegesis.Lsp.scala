@@ -199,7 +199,7 @@ object Lsp:
 
   // Language features
 
-  case class MarkupContent(kind: Text = t"markdown", value: Text)
+  case class MarkupContent(kind: Text = "markdown", value: Text)
 
   case class CompletionContext(triggerKind: Int, triggerCharacter: Optional[Text] = Unset)
 
@@ -638,7 +638,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class DocumentDiagnosticReport
-    ( kind: Text = t"full", resultId: Optional[Text] = Unset, items: List[Diagnostic] = Nil )
+    ( kind: Text = "full", resultId: Optional[Text] = Unset, items: List[Diagnostic] = Nil )
 
   // Workspace
 
@@ -937,7 +937,7 @@ object Lsp:
     // transcoding is needed.
     private[exegesis] class State(val uri: Text, val language: Text):
       @scala.caps.unsafe.untrackedCaptures private[Document] var version0: Int = 0
-      @scala.caps.unsafe.untrackedCaptures private[Document] var text0: Text = t""
+      @scala.caps.unsafe.untrackedCaptures private[Document] var text0: Text = ""
       @scala.caps.unsafe.untrackedCaptures private var index: Optional[scala.Array[Int]] = Unset
 
       def version: Int = version0
@@ -1688,15 +1688,15 @@ object Lsp:
         summon[Stdio].out.flush()
 
     LspTransport.pump(summon[Stdio].in.source[Data], observer): message =>
-      safely(message.as[Json]).lay(session.put(JsonRpc.failure(-32700, t"Parse error"))):
+      safely(message.as[Json]).lay(session.put(JsonRpc.failure(-32700, "Parse error"))):
         json =>
           val response: Optional[Json] =
             try dispatch(json) catch
               case error: Json.Error =>
-                JsonRpc.failure(-32602, t"Invalid params", requestId(json))
+                JsonRpc.failure(-32602, "Invalid params", requestId(json))
 
               case error: Exception =>
-                JsonRpc.failure(-32603, t"Internal error", requestId(json))
+                JsonRpc.failure(-32603, "Internal error", requestId(json))
 
           session.conclude(json, response).let(session.put)
 
@@ -1807,7 +1807,7 @@ object Lsp:
 
     def initialize
        ( root:         Optional[Text]        = Unset,
-         name:         Text                  = t"soundness",
+         name:         Text                  = "soundness",
          version:      Optional[Text]        = Unset,
          folders:      List[Lsp.Folder]      = Nil,
          capabilities: Json                  = Map[Text, Json]().in[Json] )
@@ -2518,7 +2518,7 @@ object Lsp:
 
       try
         val result = json.result
-        Map(t"jsonrpc" -> t"2.0".in[Json], t"result" -> rewrite(result), t"id" -> json.id).in[Json]
+        Map("jsonrpc" -> "2.0".in[Json], "result" -> rewrite(result), "id" -> json.id).in[Json]
 
       catch case _: Exception => json
 
@@ -2534,13 +2534,13 @@ object Lsp:
         // Rebuilt rather than amended in place: a notification carries no id, and a request the
         // server made of its client must keep the one it chose.
         Lsp.identifier(json).lay:
-          Map(t"jsonrpc" -> t"2.0".in[Json], t"method" -> method, t"params" -> params).in[Json]
+          Map("jsonrpc" -> "2.0".in[Json], "method" -> method, "params" -> params).in[Json]
         . apply: id =>
             Map
-             ( t"jsonrpc" -> t"2.0".in[Json],
-               t"method"  -> method,
-               t"params"  -> params,
-               t"id"      -> id )
+             ( "jsonrpc" -> "2.0".in[Json],
+               "method"  -> method,
+               "params"  -> params,
+               "id"      -> id )
 
             . in[Json]
 

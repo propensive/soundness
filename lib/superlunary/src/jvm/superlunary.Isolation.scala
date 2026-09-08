@@ -61,7 +61,7 @@ object Isolation extends Rig(using Classloader[Isolation.type]):
     // typed lambda mints fresh read capabilities that cannot match the stage's own.
     val bridge: AnyRef = ((input: scala.Array[Pojo]) =>
       val classloader: Classloader = stage.target
-      val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
+      val cls = classloader.on("Generated$Code$From$Quoted").or(???)
       val instance = cls.getDeclaredConstructor().nn.newInstance().nn
       val method = cls.getMethod("apply").nn
       val function = method.invoke(instance).nn

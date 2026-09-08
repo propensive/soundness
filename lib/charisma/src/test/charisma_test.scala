@@ -60,15 +60,15 @@ object Tests extends Suite(m"Charisma Tests"):
       . assert(_ == Unset)
 
       test(m"Look up an element by symbol"):
-        PeriodicTable(t"Cu")
+        PeriodicTable("Cu")
       . assert(_ == Cu)
 
       test(m"An unknown symbol has no element"):
-        PeriodicTable(t"Zz")
+        PeriodicTable("Zz")
       . assert(_ == Unset)
 
       test(m"Symbol lookup is case-sensitive"):
-        PeriodicTable(t"cu")
+        PeriodicTable("cu")
       . assert(_ == Unset)
 
       test(m"Every element's number matches its position"):
@@ -82,23 +82,23 @@ object Tests extends Suite(m"Charisma Tests"):
 
       test(m"An element is shown as its symbol"):
         Fe.show
-      . assert(_ == t"Fe")
+      . assert(_ == "Fe")
 
       test(m"Element 119 has a systematic name"):
         PeriodicTable.element(119).name
-      . assert(_ == t"Ununennium")
+      . assert(_ == "Ununennium")
 
       test(m"Element 119 has a systematic symbol"):
         PeriodicTable.element(119).symbol
-      . assert(_ == t"Uue")
+      . assert(_ == "Uue")
 
       test(m"Element 120 has a systematic name"):
         PeriodicTable.element(120).name
-      . assert(_ == t"Unbinilium")
+      . assert(_ == "Unbinilium")
 
       test(m"Doubled `i`s are elided from systematic names"):
         PeriodicTable.element(122).name
-      . assert(_ == t"Unbibium")
+      . assert(_ == "Unbibium")
 
       test(m"A systematic element keeps its atomic number"):
         PeriodicTable.element(126).number
@@ -160,43 +160,43 @@ object Tests extends Suite(m"Charisma Tests"):
     suite(m"Molecule rendering tests"):
       test(m"Water is rendered with a subscript"):
         (H[2]*O).show
-      . assert(_ == t"H₂O")
+      . assert(_ == "H₂O")
 
       test(m"Elements are ordered alphabetically without carbon"):
         (S*O[4]).show
-      . assert(_ == t"O₄S")
+      . assert(_ == "O₄S")
 
       test(m"Carbon and hydrogen lead in an organic molecule"):
         (C[6]*H[12]*O[6]).show
-      . assert(_ == t"C₆H₁₂O₆")
+      . assert(_ == "C₆H₁₂O₆")
 
       test(m"Carbon leads even without hydrogen"):
         (C*O[2]).show
-      . assert(_ == t"CO₂")
+      . assert(_ == "CO₂")
 
       test(m"A single anion charge is a bare minus sign"):
         (-Cl.molecule).show
-      . assert(_ == t"Cl⁻")
+      . assert(_ == "Cl⁻")
 
       test(m"A single cation charge is a bare plus sign"):
         (+(N*H[4])).show
-      . assert(_ == t"H₄N⁺")
+      . assert(_ == "H₄N⁺")
 
       test(m"A charge above one is rendered as a superscript"):
         (S*O[4]).ion(-2).show
-      . assert(_ == t"O₄S²⁻")
+      . assert(_ == "O₄S²⁻")
 
       test(m"A multi-digit charge is rendered as superscripts"):
         C.molecule.ion(12).show
-      . assert(_ == t"C¹²⁺")
+      . assert(_ == "C¹²⁺")
 
       test(m"A physical state is appended to the molecule"):
         (Na*Cl).inState(PhysicalState.Aqueous).show
-      . assert(_ == t"ClNa(aq)")
+      . assert(_ == "ClNa(aq)")
 
       test(m"A charge precedes the physical state"):
         (-Cl.molecule).inState(PhysicalState.Aqueous).show
-      . assert(_ == t"Cl⁻(aq)")
+      . assert(_ == "Cl⁻(aq)")
 
       test(m"Physical states are rendered in parentheses"):
         Array.unsafeFrozen(PhysicalState.values).readable.to(List).map(_.show)
@@ -225,15 +225,15 @@ object Tests extends Suite(m"Charisma Tests"):
 
       test(m"An empty coefficient is omitted when rendering"):
         (H[2]*O).formula.show
-      . assert(_ == t"H₂O")
+      . assert(_ == "H₂O")
 
       test(m"A coefficient is rendered before the molecule"):
         (H[2]*2).show
-      . assert(_ == t"2H₂")
+      . assert(_ == "2H₂")
 
       test(m"Formula terms are joined with a plus sign"):
         (H[2]*2 + O[2]).show
-      . assert(_ == t"2H₂ + O₂")
+      . assert(_ == "2H₂ + O₂")
 
     suite(m"Chemical equation tests"):
       val hydrogen = H[2]
@@ -258,7 +258,7 @@ object Tests extends Suite(m"Charisma Tests"):
 
       test(m"A net-forward equation uses a single arrow"):
         (hydrogen*2 + oxygen --> water*2).show
-      . assert(_ == t"2H₂ + O₂ → 2H₂O")
+      . assert(_ == "2H₂ + O₂ → 2H₂O")
 
       test(m"Reactions are rendered with distinct arrows"):
         Array.unsafeFrozen(Reaction.values).readable.to(List).map(_.show)
@@ -292,12 +292,12 @@ object Tests extends Suite(m"Charisma Tests"):
 
       test(m"an element is marked as one"):
         H.inspect
-      . assert(_ == t"⚛H(1)")
+      . assert(_ == "⚛H(1)")
 
       test(m"a molecule inspects as its formula"):
         (H[2]*O).inspect
-      . assert(_ == t"H₂O")
+      . assert(_ == "H₂O")
 
       test(m"a formula writes out every coefficient"):
         (H[2]*2 + O[2]).inspect
-      . assert(_ == t"2H₂ + 1O₂")
+      . assert(_ == "2H₂ + 1O₂")

@@ -492,11 +492,11 @@ object Tests extends Suite(m"Parasite tests"):
           val a = async:
             counter.incrementAndGet()
             gate.attend()
-            t"A"
+            "A"
           val b = async:
             counter.incrementAndGet()
             gate.attend()
-            t"B"
+            "B"
           while counter.get() < 2 do Thread.`yield`()
           gate.fulfill(())
           a.await(); b.await()
@@ -525,7 +525,7 @@ object Tests extends Suite(m"Parasite tests"):
           // intersects the Optional union and the equality no longer sees an Optional.
           val current: Optional[Name[Async]] = captured.get().nn
           current
-        . assert(_.lay(false)(_ == t"named"))
+        . assert(_.lay(false)(_ == "named"))
 
       suite(m"Task error handling"):
         test(m"Awaiting a cancelled task raises Cancelled"):
@@ -691,15 +691,15 @@ object Tests extends Suite(m"Parasite tests"):
           val gate = Promise[Unit]()
           val winner = Promise[Unit]()
           val tasks = Sequence(
-            async { winner.await(); t"first" },
-            async { gate.await(); t"second" },
-            async { gate.await(); t"third" } )
+            async { winner.await(); "first" },
+            async { gate.await(); "second" },
+            async { gate.await(); "third" } )
           val raceTask = async(tasks.race())
           winner.fulfill(())
           val result = raceTask.await()
           gate.fulfill(())
           result
-        . assert(_ == t"first")
+        . assert(_ == "first")
 
         test(m"Race with all tasks succeeding picks one"):
           val tasks = (1 to 5).map: i =>
@@ -1333,25 +1333,25 @@ object Tests extends Suite(m"Parasite tests"):
           val tasks = Sequence(
             async:
               snooze(200.0*Milli(Second))
-              t"slow",
+              "slow",
             async:
               gate.await()
-              t"fast" )
+              "fast" )
           val task = async(tasks.race())
           gate.fulfill(())
           val result = task.await()
           result
-        . assert(_ == t"fast")
+        . assert(_ == "fast")
 
         test(m"Race cancels losing tasks"):
           val loserGate = Promise[Unit]()
           val winnerGate = Promise[Unit]()
           val loser = async:
             loserGate.await()
-            t"loser"
+            "loser"
           val winner = async:
             winnerGate.await()
-            t"winner"
+            "winner"
           val tasks = Sequence(winner, loser)
           val raceTask = async(tasks.race())
           winnerGate.fulfill(())
@@ -1478,14 +1478,14 @@ object Tests extends Suite(m"Parasite tests"):
             inner.await()
           task.await()
           val current: Optional[Text] = captured.get().nn
-          current.lay(false)(_.contains(t"//"))
+          current.lay(false)(_.contains("//"))
         . assert(_ == true)
 
       suite(m"Async names"):
         test(m"A valid name is accepted at compiletime"):
           val name: Name[Async] = n"worker"
           name
-        . assert(_ == t"worker")
+        . assert(_ == "worker")
 
         test(m"A name containing a separator is not a valid Async name"):
           demilitarize:
@@ -1493,8 +1493,8 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_.nonEmpty)
 
         test(m"Constructing an invalid Async name raises Name.Error"):
-          capture[Name.Error](Name[Async](t"bad/name")).message.show
-        . assert(_ == t"the name bad/name is not valid because it must match [A-Za-z][A-Za-z0-9_-]*")
+          capture[Name.Error](Name[Async]("bad/name")).message.show
+        . assert(_ == "the name bad/name is not valid because it must match [A-Za-z][A-Za-z0-9_-]*")
 
       suite(m"Concurrent stream details"):
         test(m"Concurrent stream preserves head element with delays"):
@@ -1748,7 +1748,7 @@ object Tests extends Suite(m"Parasite tests"):
 
         test(m"A task that raises one of two error types delivers the one that occurred"):
           def make(flag: Boolean) = async:
-            if flag then abort(FooError(1)) else abort(BarError(t"b"))
+            if flag then abort(FooError(1)) else abort(BarError("b"))
           capture[FooError](make(true).await()).value
         . assert(_ == 1)
 

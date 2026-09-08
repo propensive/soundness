@@ -68,17 +68,17 @@ object FocusTests extends Suite(m"Ypsiloid focus + position tests"):
   def run(): Unit =
     suite(m"Pointer-only focus (untracked Yaml)"):
       test(m"Missing field reports the focus pointer (no position)"):
-        val yaml = t"name: Alice\nage: 30".read[Yaml]
+        val yaml = "name: Alice\nage: 30".read[Yaml]
         captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to[Set]
       . assert(_ == Set[String]("#/email"))
 
       test(m"Wrong-type field reports the focus pointer (no position)"):
-        val yaml = t"name: Alice\nage: thirty\nemail: a@b".read[Yaml]
+        val yaml = "name: Alice\nage: thirty\nemail: a@b".read[Yaml]
         captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to[Set]
       . assert(_ == Set[String]("#/age"))
 
       test(m"Nested case-class missing field reports root-first path"):
-        val yaml = t"""
+        val yaml = """
 person:
   name: X
   age: 1
@@ -94,7 +94,7 @@ address:
       . assert(_ == Set[String]("#/address/city", "#/address/zip"))
 
       test(m"Untracked roots leave the focus position Unset"):
-        val yaml = t"name: Alice\nage: 30".read[Yaml]
+        val yaml = "name: Alice\nage: 30".read[Yaml]
         captureFoci(yaml)(_.as[FPerson]).all((_, line, _) => line == Unset)
       . assert(identity)
 
@@ -108,12 +108,12 @@ address:
         // focus *path* is registered by the focus block's try/finally
         // either way, so we verify that path here and exercise the
         // `withPosition` plumbing in a separate direct test below.
-        val yaml = t"name: Alice\nage: 30".read[Yaml]
+        val yaml = "name: Alice\nage: 30".read[Yaml]
         captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to[Set]
       . assert(_ == Set[String]("#/email"))
 
       test(m"Nested missing field reports root-first path on a tracked root"):
-        val source = t"""person:
+        val source = """person:
   name: C
   age: 25
   email: c@x
@@ -129,12 +129,12 @@ address:
         // run, the plumbing is wired correctly — once primitive
         // decoders gain raise+yet sentinels in PR 3, wrong-type errors
         // will land with `position` populated through this same path.
-        val source = t"name: Alice\nage: 30\nemail: a@b\n"
+        val source = "name: Alice\nage: 30\nemail: a@b\n"
         val yaml = source.read[Yaml]
-        Yaml.Focus(YamlPath()(t"age")).withPosition(yaml).position.let(_.line)
+        Yaml.Focus(YamlPath()("age")).withPosition(yaml).position.let(_.line)
       . assert(_ == 2)
 
       test(m"withPosition leaves position Unset when the pointer doesn't resolve"):
-        val yaml = t"name: Alice".read[Yaml]
-        Yaml.Focus(YamlPath()(t"missing")).withPosition(yaml).position
+        val yaml = "name: Alice".read[Yaml]
+        Yaml.Focus(YamlPath()("missing")).withPosition(yaml).position
       . assert(_ == Unset)

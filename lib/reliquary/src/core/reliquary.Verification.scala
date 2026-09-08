@@ -86,7 +86,7 @@ object Verification:
         then abort(Lira.Error(Reason.BadIntegration(t"the section names undeclared $id")))
 
       if integration.absent && !declared.nil
-      then abort(Lira.Error(Reason.BadIntegration(t"a section names no integration")))
+      then abort(Lira.Error(Reason.BadIntegration("a section names no integration")))
 
     manifest.section.group(_.key).each: (key, group) =>
       if group.size > 1
@@ -105,12 +105,12 @@ object Verification:
   def hostShape(manifest: Lira.Manifest): Unit raises Lira.Error =
     if manifest.hostContract then
       def bad(detail: Text): Nothing = abort(Lira.Error(Reason.BadHostContract(detail)))
-      if manifest.section.size != 1 then bad(t"it carries more than one section")
-      if !manifest.integration.nil then bad(t"it declares integrations")
-      if !manifest.dependency.nil then bad(t"it declares dependencies")
+      if manifest.section.size != 1 then bad("it carries more than one section")
+      if !manifest.integration.nil then bad("it declares integrations")
+      if !manifest.dependency.nil then bad("it declares dependencies")
 
       manifest.section.each: section =>
-        if !section.requires.nil then bad(t"its section carries requirements")
+        if !section.requires.nil then bad("its section carries requirements")
 
   def install(lira: Lira): Report raises Lira.Error =
     val manifest = lira.manifest

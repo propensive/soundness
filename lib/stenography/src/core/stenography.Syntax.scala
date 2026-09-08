@@ -107,7 +107,7 @@ object Syntax:
 
     val raw = base(rt.underlying)
 
-    if raw.isEmpty then "self".tt else (raw.head.toLower.toString + raw.drop(1)).tt
+    if raw.isEmpty then "self" else (raw.head.toLower.toString + raw.drop(1)).tt
 
   // The elements of a `@retains[…]` capture set. Several capabilities are joined into a single
   // type argument with `|`, and `Nothing` stands for the empty set.

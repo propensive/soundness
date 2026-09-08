@@ -40,27 +40,27 @@ object Tests extends Suite(m"Fulminate Tests"):
     suite(m"Existing behaviour"):
       test(m"Whitespace in strings embedded into text should be quoted"):
         m"This (${t" "}) should be quoted".text
-      . assert(_ == t"This (“ ”) should be quoted")
+      . assert(_ == "This (“ ”) should be quoted")
 
       test(m"Static text renders unchanged"):
         m"hello".text
-      . assert(_ == t"hello")
+      . assert(_ == "hello")
 
       test(m"Single substitution"):
-        val name = t"world"
+        val name = "world"
         m"hello $name".text
-      . assert(_ == t"hello world")
+      . assert(_ == "hello world")
 
       test(m"Multiple substitutions render in order"):
-        val a = t"foo"
-        val b = t"bar"
+        val a = "foo"
+        val b = "bar"
         m"a=$a, b=$b".text
-      . assert(_ == t"a=foo, b=bar")
+      . assert(_ == "a=foo, b=bar")
 
       test(m"Substitution at start"):
-        val x = t"start"
+        val x = "start"
         m"${x}-end".text
-      . assert(_ == t"start-end")
+      . assert(_ == "start-end")
 
       test(m"Static text has texts.size 1"):
         m"hello".texts.size
@@ -77,7 +77,7 @@ object Tests extends Suite(m"Fulminate Tests"):
 
       test(m"Append concatenates texts at the boundary"):
         (m"hello " + m"world").text
-      . assert(_ == t"hello world")
+      . assert(_ == "hello world")
 
       test(m"Append yields one continuous text segment when boundary merges"):
         (m"hello " + m"world").texts.size
@@ -87,7 +87,7 @@ object Tests extends Suite(m"Fulminate Tests"):
         val inner = m"world"
         val outer = m"hello $inner end"
         outer.colorText
-      . assert(_ == t"hello \u001B[3mworld\u001B[0m end")
+      . assert(_ == "hello \u001B[3mworld\u001B[0m end")
 
       test(m"Doubly-embedded renders bold-italics at depth 2 in colorText"):
         val deepest = m"deep"
@@ -99,15 +99,15 @@ object Tests extends Suite(m"Fulminate Tests"):
       test(m"Int substitution renders as decimal"):
         val n: Int = 42
         m"value=$n".text
-      . assert(_ == t"value=42")
+      . assert(_ == "value=42")
 
       test(m"Char substitution renders as the character"):
         val c: Char = 'X'
         m"char=$c".text
-      . assert(_ == t"char=X")
+      . assert(_ == "char=X")
 
       test(m"segments interleaves texts and messages"):
-        val name = t"foo"
+        val name = "foo"
         m"a $name b".segments.size
       . assert(_ == 3)
 
@@ -117,7 +117,7 @@ object Tests extends Suite(m"Fulminate Tests"):
 
       test(m"backslash escape decodes to a literal backslash"):
         m"a\\b".texts.stdlib.head
-      . assert(_ == t"a\\b")
+      . assert(_ == "a\\b")
 
     suite(m"Backtick-delimited nesting"):
       test(m"single backtick pair produces an embedded message"):
@@ -127,7 +127,7 @@ object Tests extends Suite(m"Fulminate Tests"):
 
       test(m"backticks render as nested italics in colorText"):
         m"hello `world` today".colorText
-      . assert(_ == t"hello \u001B[3mworld\u001B[0m today")
+      . assert(_ == "hello \u001B[3mworld\u001B[0m today")
 
       test(m"backticks at start of string"):
         m"`x` y".messages.stdlib.head.texts
@@ -138,7 +138,7 @@ object Tests extends Suite(m"Fulminate Tests"):
       . assert(_ == List(t"x"))
 
       test(m"substitution inside backtick region attaches to inner message"):
-        val name = t"y"
+        val name = "y"
         val msg = m"`x $name`"
         (msg.texts, msg.messages.size, msg.messages.stdlib.head.texts, msg.messages.stdlib.head.messages.size)
       . assert(_ == ((List(t"", t""), 1, List(t"x ", t""), 1)))

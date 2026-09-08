@@ -39,4 +39,4 @@ import gossamer.*
 // `soundness` already exports xenophile's `Wasm`.
 @unexported
 object Wasm extends Format.Application:
-  def id: Text = t"wasm"
+  def id: Text = "wasm"

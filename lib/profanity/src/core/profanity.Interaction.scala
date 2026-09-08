@@ -83,7 +83,7 @@ object Interaction:
 
     override def after(): Unit =
       surface.move(Prim, endRow.z)
-      surface.put(t"\n")
+      surface.put("\n")
       surface.flush()
 
     override def submits(event: Terminal.Event, editor: LineEditor): Boolean =

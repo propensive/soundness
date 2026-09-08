@@ -66,10 +66,10 @@ object Trust:
     case Tls10, Tls11
 
     def id: Text = this match
-      case Tls10 => t"TLSv1"
-      case Tls11 => t"TLSv1.1"
-      case Tls12 => t"TLSv1.2"
-      case Tls13 => t"TLSv1.3"
+      case Tls10 => "TLSv1"
+      case Tls11 => "TLSv1.1"
+      case Tls12 => "TLSv1.2"
+      case Tls13 => "TLSv1.3"
 
   enum Revocation:
     case Required, SoftFail, Unchecked

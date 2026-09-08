@@ -226,16 +226,16 @@ object KotlinDialect extends Dialect:
         Entry
           ( field.getName.nn.tt,
             JvmMember
-              ( typeName, field.getName.nn.tt, t"", false, true, true, 0, Nil, Nil ),
+              ( typeName, field.getName.nn.tt, "", false, true, true, 0, Nil, Nil ),
             Prototype(Unset, javaType(field.getType.nn)) )
 
       val constructorEntries = listOf(cls.getConstructors).map: constructor =>
         val parameters = listOf(constructor.getParameterTypes)
 
         Entry
-          ( t"<init>",
+          ( "<init>",
             JvmMember
-              ( typeName, t"<init>", t"", false, false, false, parameters.size, Nil, Nil,
+              ( typeName, "<init>", "", false, false, false, parameters.size, Nil, Nil,
                 constructor.isVarArgs ),
             Prototype(parameters.map(javaType), Foreign.Type.Named(typeName)) )
 
@@ -264,16 +264,16 @@ object KotlinDialect extends Dialect:
   // Java types read through the same Kotlin-named model, so the rest of the machinery (`Text`
   // for strings, primitives, facade wrapping) applies uniformly.
   private def javaType(cls: Class[?]): Foreign.Type =
-    if cls == java.lang.Void.TYPE then Foreign.Type.Named(t"kotlin.Unit")
-    else if cls == java.lang.Integer.TYPE then Foreign.Type.Named(t"kotlin.Int")
-    else if cls == java.lang.Long.TYPE then Foreign.Type.Named(t"kotlin.Long")
-    else if cls == java.lang.Boolean.TYPE then Foreign.Type.Named(t"kotlin.Boolean")
-    else if cls == java.lang.Double.TYPE then Foreign.Type.Named(t"kotlin.Double")
-    else if cls == java.lang.Float.TYPE then Foreign.Type.Named(t"kotlin.Float")
-    else if cls == java.lang.Short.TYPE then Foreign.Type.Named(t"kotlin.Short")
-    else if cls == java.lang.Byte.TYPE then Foreign.Type.Named(t"kotlin.Byte")
-    else if cls == java.lang.Character.TYPE then Foreign.Type.Named(t"kotlin.Char")
-    else if cls == classOf[String] then Foreign.Type.Named(t"kotlin.String")
+    if cls == java.lang.Void.TYPE then Foreign.Type.Named("kotlin.Unit")
+    else if cls == java.lang.Integer.TYPE then Foreign.Type.Named("kotlin.Int")
+    else if cls == java.lang.Long.TYPE then Foreign.Type.Named("kotlin.Long")
+    else if cls == java.lang.Boolean.TYPE then Foreign.Type.Named("kotlin.Boolean")
+    else if cls == java.lang.Double.TYPE then Foreign.Type.Named("kotlin.Double")
+    else if cls == java.lang.Float.TYPE then Foreign.Type.Named("kotlin.Float")
+    else if cls == java.lang.Short.TYPE then Foreign.Type.Named("kotlin.Short")
+    else if cls == java.lang.Byte.TYPE then Foreign.Type.Named("kotlin.Byte")
+    else if cls == java.lang.Character.TYPE then Foreign.Type.Named("kotlin.Char")
+    else if cls == classOf[String] then Foreign.Type.Named("kotlin.String")
     else Foreign.Type.Named(cls.getName.nn.replace('$', '.').nn.tt)
 
   private def metadataOf(cls: Class[?]): Optional[KotlinClassMetadata] =
@@ -366,7 +366,7 @@ object KotlinDialect extends Dialect:
 
         List:
           Entry
-            ( t"<init>",
+            ( "<init>",
               JvmMember
                 ( owner, signature.getName.nn.tt, signature.getDescriptor.nn.tt, false, false,
                   false, parameters.size, defaults, names, vararg ),
@@ -416,7 +416,7 @@ object KotlinDialect extends Dialect:
         Foreign.Type.Named(t"#${classifier.getId}")
 
       case _ =>
-        Foreign.Type.Named(t"*")
+        Foreign.Type.Named("*")
 
     if Attributes.isNullable(tpe)
     then Foreign.Type.Union(List(base, Foreign.Type.Named(t"null")))

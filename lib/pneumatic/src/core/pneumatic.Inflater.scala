@@ -1394,7 +1394,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
     val produced = space - availOut
 
     if result == ZDataError || result == ZStreamError
-    then throw IllegalStateException(("the compressed data is corrupt: ": String)+msg)
+    then throw IllegalStateException(s"the compressed data is corrupt: $msg")
 
     produced
 

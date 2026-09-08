@@ -147,7 +147,7 @@ object Assembler:
     ( using Tactic[Assembler.Error], Tactic[Io.Error], Tactic[Truncation.Error] )
   :   Unit =
 
-    val isWindows: Boolean = platformLabel.starts(t"windows")
+    val isWindows: Boolean = platformLabel.starts("windows")
     val patched: Data = patch(runner, buildId, javaMinimum, javaPreferred, jdk, publicKey)
 
     // Assemble into a hidden sibling and rename it over the output at the end. The
@@ -163,7 +163,7 @@ object Assembler:
     temporary.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)
       ( file.write(Chain(patched)) )
 
-    if platformLabel.starts(t"macos") then
+    if platformLabel.starts("macos") then
       if !isWindows then temporary.executable() = true
       safely(mute[Exec.Event](sh"codesign --sign - --force $temporary".exec[Exit]()))
 

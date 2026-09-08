@@ -81,7 +81,7 @@ case class Setting(name: Text, flag: Flag, variable: Optional[Text]) extends Top
 
     // Registered after the flag read, whose own registration carries no suggestions, so that
     // this setting's `Discoverable` is the one a completion retains.
-    cli.register(flag, suggestions, t"value")
+    cli.register(flag, suggestions, "value")
 
     parameter.let(decodable.decoded(_))
       .or(variable.let(cli.environment.variable(_)).let(decodable.decoded(_)))

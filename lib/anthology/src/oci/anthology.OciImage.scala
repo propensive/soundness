@@ -39,4 +39,4 @@ import gossamer.*
 // container runtime with a Wasm shim (`io.containerd.wasmtime.v1`) schedules, and a registry
 // distributes: the application node reached from `Sjsir` through the `wasip2` component.
 object OciImage extends Format.Application:
-  def id: Text = t"oci"
+  def id: Text = "oci"

@@ -115,11 +115,11 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
         // Only what the compiler says about the sources becomes a notice; its logging output,
         // which `-verbose` makes copious, would otherwise flood the stream.
         if importance != Importance.Info || location != null then
-          val text: Text = if message == null then t"" else message.tt
+          val text: Text = if message == null then "" else message.tt
           Log.fine(CompileEvent.Notice(text))
 
           val file: Text =
-            if location == null then t"unknown"
+            if location == null then "unknown"
             else location.getPath.nn.tt.pipe: path => names(path).or(path)
 
           val span: Optional[Span] =
@@ -140,11 +140,11 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
         commandLineArguments +
         names.keys.to[List]
 
-    Log.info(CompileEvent.Running(t"kotlinc" :: arguments))
+    Log.info(CompileEvent.Running("kotlinc" :: arguments))
 
     async:
       try
-        process.put(CompileProgress(0.1, t"kotlinc"))
+        process.put(CompileProgress(0.1, "kotlinc"))
         jnf.Files.createDirectories(jnf.Paths.get(out.generic.s))
         val compiler = K2JVMCompiler()
         val parsed = compiler.createArguments().nn
@@ -154,7 +154,7 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
         val exit = compiler.exec(collector, Services.EMPTY.nn, parsed).nn
         val success = exit == ExitCode.OK
 
-        if success then process.put(CompileProgress(1.0, t"kotlinc"))
+        if success then process.put(CompileProgress(1.0, "kotlinc"))
         process.put(if success then CompileResult.Success else CompileResult.Failure)
 
       catch case suc.NonFatal(error) =>

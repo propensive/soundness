@@ -97,11 +97,11 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"rootfs type is 'layers'"):
         imageConfig.rootfs.`type`
-      . assert(_ == t"layers")
+      . assert(_ == "layers")
 
       test(m"architecture and os default to amd64/linux"):
         (imageConfig.architecture, imageConfig.os)
-      . assert(_ == (t"amd64", t"linux"))
+      . assert(_ == ("amd64", "linux"))
 
       test(m"config blob JSON uses the snake_case diff_ids key"):
         imageConfig.in[Json].show.s.contains("\"diff_ids\"")
@@ -142,11 +142,11 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       // Explicit result type and reasserting cast: the collect lambda re-freshens the
       // frozen chunk to an `any.rd` that leaks out of the partial function.
       val layoutData = entries.sweep[Data, List[Data]]:
-        case file: Tar.Entry.File if file.entryName == t"oci-layout" =>
+        case file: Tar.Entry.File if file.entryName == "oci-layout" =>
           file.data.memoize.asInstanceOf[Data]
 
       test(m"archive contains the oci-layout marker and index.json"):
-        (names.has(t"oci-layout"), names.has(t"index.json"))
+        (names.has("oci-layout"), names.has("index.json"))
       . assert(_ == (true, true))
 
       test(m"archive contains one blob per config, layer and manifest"):
@@ -155,7 +155,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"the layer blob is stored under its digest path"):
         val hex = layer.digest.s.stripPrefix("sha256:")
-        names.stdlib.map(_.s).contains(("blobs/sha256/": String)+hex)
+        names.stdlib.map(_.s).contains(s"blobs/sha256/$hex")
       . assert(_ == true)
 
       test(m"oci-layout declares image layout version 1.0.0"):
@@ -208,12 +208,12 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == image.index)
 
       test(m"an archive without the oci-layout marker is rejected"):
-        val data = rebuilt(_.filter(_.entryName != t"oci-layout"))
+        val data = rebuilt(_.filter(_.entryName != "oci-layout"))
         failure(data.open[Image]() { handle ?=> handle.index })
       . assert(_ == Oci.Error.Reason.MissingLayout)
 
       test(m"an archive without index.json is rejected"):
-        val data = rebuilt(_.filter(_.entryName != t"index.json"))
+        val data = rebuilt(_.filter(_.entryName != "index.json"))
         failure(data.open[Image]() { handle ?=> handle.index })
       . assert(_ == Oci.Error.Reason.MissingIndex)
 
@@ -224,7 +224,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"a corrupted blob fails its digest check"):
         val data = rebuilt(_.map: entry =>
-          if entry.entryName == manifestBlobPath then fileEntry(manifestBlobPath, t"{}")
+          if entry.entryName == manifestBlobPath then fileEntry(manifestBlobPath, "{}")
           else entry)
 
         failure(data.open[Image]() { handle ?=> handle.manifest })
@@ -242,14 +242,14 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
     suite(m"Wasm OCI artifact"):
       // Not a real component: the artifact machinery never parses the bytes, so an
       // arbitrary payload exercises every digest, descriptor and document the same way.
-      val component = t"\u0000asm\u0001\u0000\u0000\u0000".in[Data]
+      val component = "\u0000asm\u0001\u0000\u0000\u0000".in[Data]
 
       val artifact =
         Image.wasm
           ( component,
             exports = List(t"wasi:http/incoming-handler@0.2.0"),
             imports = List(t"wasi:io/streams@0.2.0"),
-            target  = t"wasi:http/proxy@0.2.0" )
+            target  = "wasi:http/proxy@0.2.0" )
 
       val wasmConfig = artifact.wasmConfig.or(panic(m"the fixture artifact always has a wasm config"))
       val wasmLayer  = artifact.layers.stdlib.head
@@ -276,7 +276,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"architecture and os default to wasm/wasip2"):
         (wasmConfig.architecture, wasmConfig.os)
-      . assert(_ == (t"wasm", t"wasip2"))
+      . assert(_ == ("wasm", "wasip2"))
 
       test(m"layerDigests names the component blob"):
         wasmConfig.layerDigests
@@ -288,7 +288,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           _ == WasmComponent
                 ( List(t"wasi:http/incoming-handler@0.2.0"),
                   List(t"wasi:io/streams@0.2.0"),
-                  t"wasi:http/proxy@0.2.0" )
+                  "wasi:http/proxy@0.2.0" )
 
       test(m"config JSON uses the spec's camelCase layerDigests key"):
         wasmConfig.in[Json].show.s.contains("\"layerDigests\"")
@@ -308,7 +308,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           Tarfile.read(artifact.archive.source[Data]).to(List).asInstanceOf[List[bitumen.Tar.Entry]]
 
         val names = entries.map(_.entryName)
-        (names.has(t"oci-layout"), names.stdlib.count(_.s.startsWith("blobs/sha256/")))
+        (names.has("oci-layout"), names.stdlib.count(_.s.startsWith("blobs/sha256/")))
       . assert(_ == (true, 3))
 
       test(m"the component round-trips out of the archive unchanged"):
@@ -374,7 +374,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
                 case Frame.Headers(id, block, _, _) =>
                   val fields = hpack.decode(block)
-                  fields.stdlib.find(_.name == t"containerd-namespace").foreach: entry =>
+                  fields.stdlib.find(_.name == "containerd-namespace").foreach: entry =>
                     namespace.offer(entry.value)
 
                   val status = hpack.encode(List(Hpack.Entry(t":status", t"200"),
@@ -391,19 +391,19 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
         supervise:
           val (clientSide, serverSide) = pair()
           val namespace = Promise[Text]()
-          val body = Grpc.Framing.encode(VersionResponse(t"1.7.0", t"deadbeef").in[Protobuf].encode)
+          val body = Grpc.Framing.encode(VersionResponse("1.7.0", "deadbeef").in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
-          val containerd = Containerd(endpoint, t"example")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "localhost")
+          val containerd = Containerd(endpoint, "example")
           scala.caps.unsafe.unsafeAssumeSeparate:
             val response = containerd.version()
             (response.version, response.revision, namespace.await())
-      . assert(_ == (t"1.7.0", t"deadbeef", t"example"))
+      . assert(_ == ("1.7.0", "deadbeef", "example"))
 
       test(m"containers() decodes a repeated, labelled list"):
         supervise:
@@ -418,10 +418,10 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
-          val containerd = Containerd(endpoint, t"example")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "localhost")
+          val containerd = Containerd(endpoint, "example")
           scala.caps.unsafe.unsafeAssumeSeparate:
             containerd.containers().map(container => (container.id, container.labels))
       . assert(_ == List((t"alpha", Map(t"tier" -> t"db")), (t"beta", Map())))
@@ -432,20 +432,20 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val namespace = Promise[Text]()
 
           val response =
-            GetContainerResponse(Container(t"gamma", Map(t"x" -> t"y"), image = t"img:1"))
+            GetContainerResponse(Container("gamma", Map("x" -> "y"), image = "img:1"))
 
           val body = Grpc.Framing.encode(response.in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "localhost")
           scala.caps.unsafe.unsafeAssumeSeparate:
-            val container = Containerd(endpoint, t"example").container(t"gamma")
+            val container = Containerd(endpoint, "example").container("gamma")
             (container.id, container.labels, container.image)
-      . assert(_ == (t"gamma", Map(t"x" -> t"y"), t"img:1"))
+      . assert(_ == ("gamma", Map("x" -> "y"), "img:1"))
 
       test(m"namespaces() decodes the namespace list"):
         supervise:
@@ -460,11 +460,11 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "localhost")
           scala.caps.unsafe.unsafeAssumeSeparate:
-            Containerd(endpoint, t"example").namespaces().map(ns => (ns.name, ns.labels))
+            Containerd(endpoint, "example").namespaces().map(ns => (ns.name, ns.labels))
       . assert(_ == List((t"default", Map()), (t"k8s.io", Map(t"managed" -> t"true"))))
 
       test(m"images() decodes a list with nested descriptors and labels"):
@@ -472,8 +472,8 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val (clientSide, serverSide) = pair()
           val namespace = Promise[Text]()
 
-          val target = ContentDescriptor(t"application/vnd.oci.image.manifest.v1+json",
-              t"sha256:abc", 1234L)
+          val target = ContentDescriptor("application/vnd.oci.image.manifest.v1+json",
+              "sha256:abc", 1234L)
 
           val list = ListImagesResponse(List(ImageRecord(t"docker.io/library/alpine:latest",
               Map(t"arch" -> t"amd64"), target)))
@@ -483,12 +483,12 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "localhost")
 
           scala.caps.unsafe.unsafeAssumeSeparate:
-            Containerd(endpoint, t"example").images().map: image =>
+            Containerd(endpoint, "example").images().map: image =>
               (image.name, image.labels, image.target.digest, image.target.size)
       . assert(_ == List((t"docker.io/library/alpine:latest", Map(t"arch" -> t"amd64"),
           t"sha256:abc", 1234L)))
@@ -498,38 +498,38 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val (clientSide, serverSide) = pair()
           val namespace = Promise[Text]()
 
-          val container = Container(t"web", image = t"img:1",
-              runtime = Runtime(t"io.containerd.runc.v2"),
-              spec = AnyMessage(t"oci-spec", AnyMessage.Payload(t"hello".in[Data])))
+          val container = Container("web", image = "img:1",
+              runtime = Runtime("io.containerd.runc.v2"),
+              spec = AnyMessage("oci-spec", AnyMessage.Payload("hello".in[Data])))
 
           val body = Grpc.Framing.encode(CreateContainerResponse(container).in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "localhost")
           scala.caps.unsafe.unsafeAssumeSeparate:
-            val created = Containerd(endpoint, t"example").createContainer(container)
+            val created = Containerd(endpoint, "example").createContainer(container)
             (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.data.to[List])
-      . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".in[Data].to[List]))
+      . assert(_ == ("web", "io.containerd.runc.v2", "oci-spec", "hello".in[Data].to[List]))
 
       test(m"createTask sends rootfs mounts and returns the task pid"):
         supervise:
           val (clientSide, serverSide) = pair()
           val namespace = Promise[Text]()
-          val body = Grpc.Framing.encode(CreateTaskResponse(t"web", 4321).in[Protobuf].encode)
+          val body = Grpc.Framing.encode(CreateTaskResponse("web", 4321).in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "localhost")
           val rootfs = List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
           scala.caps.unsafe.unsafeAssumeSeparate:
-            Containerd(endpoint, t"example").createTask(t"web", rootfs).pid
+            Containerd(endpoint, "example").createTask("web", rootfs).pid
       . assert(_ == 4321)
 
       test(m"tasks() decodes processes and maps the status code to ProcessStatus"):
@@ -545,19 +545,19 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "localhost")
           scala.caps.unsafe.unsafeAssumeSeparate:
-            Containerd(endpoint, t"example").tasks().map(task => (task.containerId, task.pid, task.state))
+            Containerd(endpoint, "example").tasks().map(task => (task.containerId, task.pid, task.state))
       . assert(_ == List((t"web", 4321, ProcessStatus.Running)))
 
     suite(m"workload lifecycle over a gRPC loopback"):
       import threading.virtualThreading
       import probates.cancelProbate
 
-      val containersService = t"/containerd.services.containers.v1.Containers"
-      val tasksService = t"/containerd.services.tasks.v1.Tasks"
+      val containersService = "/containerd.services.containers.v1.Containers"
+      val tasksService = "/containerd.services.tasks.v1.Tasks"
 
       def pair(): (Duplex, Duplex) = Duplex.pair()
 
@@ -601,7 +601,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
                 case Frame.Headers(id, block, _, _) =>
                   val fields = hpack.decode(block)
-                  val path = fields.seek(_.name == t":path").let(_.value).or(t"")
+                  val path = fields.seek(_.name == ":path").let(_.value).or(t"")
                   calls.synchronized(calls.append(path))
 
                   val status = hpack.encode(List(Hpack.Entry(t":status", t"200"),
@@ -625,15 +625,15 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       def lifecycleResponses(startPid: Int): Map[Text, Data] =
         Map
           ( t"$containersService/Create" ->
-              Grpc.Framing.encode(CreateContainerResponse(Container(t"web")).in[Protobuf].encode),
+              Grpc.Framing.encode(CreateContainerResponse(Container("web")).in[Protobuf].encode),
             t"$tasksService/Create" ->
-              Grpc.Framing.encode(CreateTaskResponse(t"web", 4321).in[Protobuf].encode),
+              Grpc.Framing.encode(CreateTaskResponse("web", 4321).in[Protobuf].encode),
             t"$tasksService/Start" ->
               Grpc.Framing.encode(StartResponse(startPid).in[Protobuf].encode),
             t"$tasksService/Wait" ->
               Grpc.Framing.encode(WaitResponse(7).in[Protobuf].encode),
             t"$tasksService/Delete" ->
-              Grpc.Framing.encode(DeleteTaskResponse(t"web", 4321, 7).in[Protobuf].encode) )
+              Grpc.Framing.encode(DeleteTaskResponse("web", 4321, 7).in[Protobuf].encode) )
 
       test(m"a Read-mode open creates container and task, never starts, then deletes"):
         supervise:
@@ -643,12 +643,12 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "localhost")
           scala.caps.unsafe.unsafeAssumeSeparate:
-            given containerd: (Containerd^) = Containerd(endpoint, t"example")
-            val spec = Container(t"web", image = t"img:1")
+            given containerd: (Containerd^) = Containerd(endpoint, "example")
+            val spec = Container("web", image = "img:1")
             val pid = spec.open[Workload]() { workload ?=> workload.pid }
             (pid, calls.synchronized(calls.to(List)))
       . assert(_ == (4321, List(t"$containersService/Create", t"$tasksService/Create",
@@ -662,12 +662,12 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "localhost")
           scala.caps.unsafe.unsafeAssumeSeparate:
-            given containerd: (Containerd^) = Containerd(endpoint, t"example")
-            val spec = Container(t"web", image = t"img:1")
+            given containerd: (Containerd^) = Containerd(endpoint, "example")
+            val spec = Container("web", image = "img:1")
 
             val (pid, exit) = spec.open[Workload](Read & embarcadero.Launch & Signal): workload ?=>
               (workload.pid, workload.await().exitStatus)
@@ -685,21 +685,21 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "localhost")
           scala.caps.unsafe.unsafeAssumeSeparate:
-            given containerd: (Containerd^) = Containerd(endpoint, t"example")
-            val spec = Container(t"web", image = t"img:1")
+            given containerd: (Containerd^) = Containerd(endpoint, "example")
+            val spec = Container("web", image = "img:1")
 
             val outcome =
               try
                 spec.open[Workload](Read & embarcadero.Launch) { workload ?=> throw java.lang.IllegalStateException() }
-                t"returned"
-              catch case _: java.lang.IllegalStateException => t"escaped"
+                "returned"
+              catch case _: java.lang.IllegalStateException => "escaped"
 
             (outcome, calls.synchronized(calls.to(List)))
-      . assert(_ == (t"escaped", List(t"$containersService/Create", t"$tasksService/Create",
+      . assert(_ == ("escaped", List(t"$containersService/Create", t"$tasksService/Create",
           t"$tasksService/Start", t"$tasksService/Kill", t"$tasksService/Wait",
           t"$tasksService/Delete", t"$containersService/Delete")))
 
@@ -711,12 +711,12 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
-          given (Loopback is Showable) = _ => t"loopback"
+          given (Loopback is Showable) = _ => "loopback"
 
-          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val endpoint = Http2.Endpoint(Loopback(clientSide), "localhost")
           scala.caps.unsafe.unsafeAssumeSeparate:
-            given containerd: (Containerd^) = Containerd(endpoint, t"example")
-            val spec = Container(t"web", image = t"img:1")
+            given containerd: (Containerd^) = Containerd(endpoint, "example")
+            val spec = Container("web", image = "img:1")
             val result = safely(spec.open[Workload]() { workload ?=> () })
             (result.absent, calls.synchronized(calls.to(List)))
       . assert(_ == (true, List(t"$containersService/Create")))
@@ -730,7 +730,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       val moment = Instant(1_700_000_001_000L)
 
       test(m"a Container timestamp round-trips and converts to an Aviation Instant"):
-        val container = Container(t"svc", createdAt = embarcadero.Timestamp.of(moment))
+        val container = Container("svc", createdAt = embarcadero.Timestamp.of(moment))
         val restored = proscenium.Chain(container.in[Protobuf].encode).read[Container in Protobuf]
         restored.createdAt.instant[Instant over Unix]
       . assert(_ == moment)

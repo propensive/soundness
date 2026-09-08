@@ -65,7 +65,7 @@ object internal:
         all.find(_.tpe.typeSymbol == aboutType).map: annotation =>
           '{${annotation.asExprOf[synesthesia.about]}.text}
 
-        . getOrElse('{t""})
+        . getOrElse('{""})
 
       val explicit = method.paramSymss.headOption.getOrElse(scala.Nil)
       val paramNames = explicit.map: param => '{${Expr(param.name)}.tt}

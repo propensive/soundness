@@ -55,13 +55,13 @@ object ForeignLibrary:
   // same-width FFM value layout. Opaque/unknown named types are assumed to be
   // passed by pointer (the `extern "C"` convention for handles like `EVP_PKEY*`).
   def layout(tpe: Foreign.Type): MemoryLayout = tpe match
-    case Foreign.Type.Named(t"int")    => ValueLayout.JAVA_INT.nn
-    case Foreign.Type.Named(t"long")   => ValueLayout.JAVA_LONG.nn
-    case Foreign.Type.Named(t"short")  => ValueLayout.JAVA_SHORT.nn
-    case Foreign.Type.Named(t"char")   => ValueLayout.JAVA_BYTE.nn
-    case Foreign.Type.Named(t"double") => ValueLayout.JAVA_DOUBLE.nn
-    case Foreign.Type.Named(t"float")  => ValueLayout.JAVA_FLOAT.nn
-    case Foreign.Type.Named(t"bool")   => ValueLayout.JAVA_BOOLEAN.nn
+    case Foreign.Type.Named("int")    => ValueLayout.JAVA_INT.nn
+    case Foreign.Type.Named("long")   => ValueLayout.JAVA_LONG.nn
+    case Foreign.Type.Named("short")  => ValueLayout.JAVA_SHORT.nn
+    case Foreign.Type.Named("char")   => ValueLayout.JAVA_BYTE.nn
+    case Foreign.Type.Named("double") => ValueLayout.JAVA_DOUBLE.nn
+    case Foreign.Type.Named("float")  => ValueLayout.JAVA_FLOAT.nn
+    case Foreign.Type.Named("bool")   => ValueLayout.JAVA_BOOLEAN.nn
     case _                             => ValueLayout.ADDRESS.nn
 
   def descriptor(signature: Prototype): FunctionDescriptor =
@@ -69,7 +69,7 @@ object ForeignLibrary:
     // capture checker rejects any array value at a Java varargs formal (which it types as a
     // pure array), while per-element calls let the compiler build the tiny array itself.
     val base = signature.result match
-      case Foreign.Type.Named(t"void") => FunctionDescriptor.ofVoid().nn
+      case Foreign.Type.Named("void") => FunctionDescriptor.ofVoid().nn
       case result                      => FunctionDescriptor.of(layout(result)).nn
 
     signature.parameters.or(Nil).fold(base): (acc, parameter) =>
@@ -130,7 +130,7 @@ object ForeignLibrary:
         catch case _: Throwable => attempt(rest)
 
       case Nil =>
-        throw IllegalArgumentException(("no native library could be loaded from ": String)+paths)
+        throw IllegalArgumentException(s"no native library could be loaded from $paths")
 
     registered.add(attempt(paths.to(List)))
 

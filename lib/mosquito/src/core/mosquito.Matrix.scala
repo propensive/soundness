@@ -88,15 +88,15 @@ object Matrix:
                 sizes.readUnchecked(matrix.columns*row + column)
 
       (0 until matrix.rows).map: row =>
-        val before = if row == 0 then t"⎡ " else if row == matrix.rows - 1 then t"⎣ " else t"⎪ "
-        val after = if row == 0 then t" ⎤" else if row == matrix.rows - 1 then t" ⎦" else t" ⎪"
+        val before = if row == 0 then "⎡ " else if row == matrix.rows - 1 then "⎣ " else "⎪ "
+        val after = if row == 0 then " ⎤" else if row == matrix.rows - 1 then " ⎦" else " ⎪"
 
         (0 until matrix.columns).map: column =>
           textElements.readUnchecked(matrix.columns*row + column).pad(columnWidths.readUnchecked(column), Rtl)
 
-        . join(before, t" ", after)
+        . join(before, " ", after)
 
-      . join(t"\n")
+      . join("\n")
 
   given addable
   :   [ a,

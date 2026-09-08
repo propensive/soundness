@@ -84,16 +84,16 @@ object Variable:
           (subscript+render(element).s).tt
 
         // The prefix is bounded by `Halt.prefixLength`, so counting it is a handful of cells.
-        val ellipsis = if length > prefix.size then t"…" else t""
+        val ellipsis = if length > prefix.size then "…" else ""
 
-        items.join(t"⦋${letter(component).tt}", t"∣", t"$ellipsis⦌＠${id.long}")
+        items.join(t"⦋${letter(component).tt}", "∣", t"$ellipsis⦌＠${id.long}")
 
       case Obj(id, cls) =>
         val simple = cls.s.substring(cls.s.lastIndexOf('.') + 1).nn
         (simple+"＠"+id.long).tt
 
       case Null =>
-        t"null"
+        "null"
 
     private def letter(tag: Jdwp.Tag): String = tag match
       case Jdwp.Tag.ByteTag    => "🅱"
@@ -118,7 +118,7 @@ object Variable:
 
   given inspectable: Variable is Inspectable = variable =>
     val value = variable.state match
-      case State.Unforced => t"∿∿∿"
+      case State.Unforced => "∿∿∿"
       case State.Forced   => variable.value.let(_.inspect).or(t"○")
 
     t"${variable.name}:$value"
@@ -132,15 +132,15 @@ object Variable:
   // can say: primitives by name, `Lscala/collection/List;` as `scala.collection.List`, arrays
   // recursively. A module class's trailing `$` is dropped and inner-class `$`s read as dots.
   private[vivisection] def demangle(signature: Text): Text = signature.s.charAt(0) match
-    case 'B' => t"Byte"
-    case 'C' => t"Char"
-    case 'D' => t"Double"
-    case 'F' => t"Float"
-    case 'I' => t"Int"
-    case 'J' => t"Long"
-    case 'S' => t"Short"
-    case 'Z' => t"Boolean"
-    case 'V' => t"Unit"
+    case 'B' => "Byte"
+    case 'C' => "Char"
+    case 'D' => "Double"
+    case 'F' => "Float"
+    case 'I' => "Int"
+    case 'J' => "Long"
+    case 'S' => "Short"
+    case 'Z' => "Boolean"
+    case 'V' => "Unit"
     case '[' => t"Array[${demangle(signature.s.substring(1).nn.tt)}]"
 
     case 'L' =>
@@ -153,18 +153,18 @@ object Variable:
 
   // The name a wire tag implies, for values whose signature is not to hand (array elements).
   private[vivisection] def tagName(tag: Jdwp.Tag): Text = tag match
-    case Jdwp.Tag.ByteTag    => t"Byte"
-    case Jdwp.Tag.CharTag    => t"Char"
-    case Jdwp.Tag.DoubleTag  => t"Double"
-    case Jdwp.Tag.FloatTag   => t"Float"
-    case Jdwp.Tag.IntTag     => t"Int"
-    case Jdwp.Tag.LongTag    => t"Long"
-    case Jdwp.Tag.ShortTag   => t"Short"
-    case Jdwp.Tag.BooleanTag => t"Boolean"
-    case Jdwp.Tag.VoidTag    => t"Unit"
-    case Jdwp.Tag.StringTag  => t"String"
-    case Jdwp.Tag.ArrayTag   => t"Array"
-    case _                   => t"Object"
+    case Jdwp.Tag.ByteTag    => "Byte"
+    case Jdwp.Tag.CharTag    => "Char"
+    case Jdwp.Tag.DoubleTag  => "Double"
+    case Jdwp.Tag.FloatTag   => "Float"
+    case Jdwp.Tag.IntTag     => "Int"
+    case Jdwp.Tag.LongTag    => "Long"
+    case Jdwp.Tag.ShortTag   => "Short"
+    case Jdwp.Tag.BooleanTag => "Boolean"
+    case Jdwp.Tag.VoidTag    => "Unit"
+    case Jdwp.Tag.StringTag  => "String"
+    case Jdwp.Tag.ArrayTag   => "Array"
+    case _                   => "Object"
 
   // Strips the owner-qualified prefix from an outer-accessor field name: a class reaching an
   // enclosing instance's member `seed` sees it as a field named `pkg$Owner$$seed`, where the `$$`

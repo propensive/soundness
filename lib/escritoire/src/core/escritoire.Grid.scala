@@ -52,13 +52,13 @@ object Grid:
   =>  ( Text is Measurable )
   =>  Grid[text] is Printable =
 
-    (layout, termcap) => layout.render.map(printable.print(_, termcap)).join(t"\n")
+    (layout, termcap) => layout.render.map(printable.print(_, termcap)).join("\n")
 
 case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
   def render
     ( using metrics: Text is Measurable, textual: text is Textual { type Result = Char } )
   :   Chain[text] =
-    val pad = t" "*style.padding
+    val pad = " "*style.padding
 
     // The edges are BARE rule glyphs: the gutter padding belongs to each cell, so that a
     // cell's decoration (a background, say) covers its whole width — padding included —
@@ -89,7 +89,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
                     ( cell(line), widths.readUnchecked(index), line == cell.minHeight - 1 )
 
                 else
-                  Textual((t" "*widths.readUnchecked(index)))
+                  Textual((" "*widths.readUnchecked(index)))
 
               val padded: text = textual.concat(textual.concat(Textual(pad), body), Textual(pad))
               cell.decorate.lay(padded) { decoration => decoration(padded) }

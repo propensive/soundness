@@ -96,7 +96,7 @@ object dexEdges:
   private object DexTool extends Tool:
     type Settings = DexConfiguration
 
-    def name: Text = t"dex"
+    def name: Text = "dex"
     def initial: DexConfiguration = configuration
 
     def run

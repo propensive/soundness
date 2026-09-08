@@ -48,9 +48,9 @@ package logFormats:
     case class GcpLog(severity: Text, message: Text)
 
     val severity = level match
-      case Level.Fine => t"DEBUG"
-      case Level.Info => t"INFO"
-      case Level.Warn => t"WARNING"
-      case Level.Fail => t"ERROR"
+      case Level.Fine => "DEBUG"
+      case Level.Info => "INFO"
+      case Level.Warn => "WARNING"
+      case Level.Fail => "ERROR"
 
     GcpLog(severity, event.text).in[Json].show

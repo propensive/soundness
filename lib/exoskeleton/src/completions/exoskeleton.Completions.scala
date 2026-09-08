@@ -150,10 +150,10 @@ object Completions:
             then Installation.InstallResult.ShellNotInstalled(Shell.Zsh)
             else
               val dirNamesCmd = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'"
-              val dirNames = dirNamesCmd.exec[Text]().cut(t",")
+              val dirNames = dirNamesCmd.exec[Text]().cut(",")
 
               val dirs: List[Path on Linux] =
-                dirNames.filter(_.trim != t"").bind: dir =>
+                dirNames.filter(_.trim != "").bind: dir =>
                   safely(dir.as[Path on Linux]).lay(Nil: List[Path on Linux])(List(_))
 
               install(Shell.Zsh, command, Name[Linux](t"_$command"), dirs)

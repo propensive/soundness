@@ -89,9 +89,9 @@ object Debuggee:
     def session[result](target: Debuggee)(lambda: (session: Debug^) ?=> result): result =
       given Diagnostics = note
 
-      val launchFailed = Debugger.Error(Debugger.Error.Reason.Disconnected, t"could not launch")
-      val badPort = Debugger.Error(Debugger.Error.Reason.Disconnected, t"the port was invalid")
-      val unresponsive = Debugger.Error(Debugger.Error.Reason.Disconnected, t"never listened")
+      val launchFailed = Debugger.Error(Debugger.Error.Reason.Disconnected, "could not launch")
+      val badPort = Debugger.Error(Debugger.Error.Reason.Disconnected, "the port was invalid")
+      val unresponsive = Debugger.Error(Debugger.Error.Reason.Disconnected, "never listened")
 
       given execTactic: (Tactic[Exec.Error]^) = tactic.contramap(_ => launchFailed)
       given portTactic: (Tactic[Port.Error]^) = tactic.contramap(_ => badPort)
@@ -129,7 +129,7 @@ object Debuggee:
         // Connected directly (not via `Debugger(endpoint).session`): delegating would rebuild the
         // socket `Connectable` from the captured `online`, whose capture set `.duplex` rejects.
         // `connect` returns a plain `Duplex`, so `online` never has to flow into an empty set.
-        val endpoint = Endpoint(t"localhost", Port[Tcp](target.port))
+        val endpoint = Endpoint("localhost", Port[Tcp](target.port))
         val duplex = summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
 
         try
@@ -158,7 +158,7 @@ object Debuggee:
 case class Debuggee(command: Command, port: Int = 5005, suspended: Boolean = true):
   // The command with the jdwp agent option inserted just after the executable.
   private[vivisection] def agented: Command =
-    val wait = if suspended then t"y" else t"n"
+    val wait = if suspended then "y" else "n"
     val flag = t"-agentlib:jdwp=transport=dt_socket,server=y,suspend=$wait,address=*:$port"
     val args = command.arguments
 

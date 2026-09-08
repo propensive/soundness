@@ -50,6 +50,6 @@ object Err:
     mutex:
       lines.foreach: line =>
         stdio.printErr(printable.print(line(using stdio.termcap), stdio.termcap))
-        stdio.printErr("\n".tt)
+        stdio.printErr("\n")
 
-  def println()(using Stdio^): Unit = print("\n".tt)
+  def println()(using Stdio^): Unit = print("\n")

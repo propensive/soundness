@@ -80,8 +80,8 @@ object ApiTests extends Suite(m"Api client tests"):
 
     val api = Api(cp"/apoplexy/petstore.json")
 
-    val petJson  = t"""{"id": 42, "name": "Milo", "tag": "cat"}"""
-    val petsJson = t"""[{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]"""
+    val petJson  = """{"id": 42, "name": "Milo", "tag": "cat"}"""
+    val petsJson = """[{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]"""
 
     def ok(body: Text): Http.Response =
       Http.Response(Http.Ok, contentType = media"application/json")(body)
@@ -90,41 +90,41 @@ object ApiTests extends Suite(m"Api client tests"):
       test(m"a literal segment refines Locus"):
         val pets: Api at "/pets" = api.pets
         pets.request.path
-      . assert(_ == t"/pets")
+      . assert(_ == "/pets")
 
       test(m"a positional arg fills the following path template"):
         val one: Api at "/pets/{petId}" = api.pets(42)
         one.request.substitutions
-      . assert(_ == Map(t"petId" -> t"42"))
+      . assert(_ == Map("petId" -> "42"))
 
       test(m"nested templated navigation"):
         val photos: Api at "/pets/{petId}/photos" = api.pets(42).photos
         photos.request.path
-      . assert(_ == t"/pets/{petId}/photos")
+      . assert(_ == "/pets/{petId}/photos")
 
     suite(m"the apply shortcut invokes the sole non-DELETE method"):
       test(m"GET sole method with query params (the user's example shape)"):
         api.pets(42).photos(width = 10, height = 20).request
       . assert: request =>
-          request.method == Http.Get && request.path == t"/pets/{petId}/photos"
-          && request.substitutions == Map(t"petId" -> t"42")
+          request.method == Http.Get && request.path == "/pets/{petId}/photos"
+          && request.substitutions == Map("petId" -> "42")
           && request.query == List(t"width" -> t"10", t"height" -> t"20")
 
       test(m"POST sole method with a positional body"):
-        api.login(Credentials(t"jon", t"pw")).request
+        api.login(Credentials("jon", "pw")).request
 
       . assert: request =>
-          request.method == Http.Post && request.path == t"/login" && request.body != Api.Body.Empty
+          request.method == Http.Post && request.path == "/login" && request.body != Api.Body.Empty
 
       test(m"PUT sole method with a positional body (verb omitted)"):
-        api.profile(NewPet(t"Rex")).request
+        api.profile(NewPet("Rex")).request
 
       . assert: request =>
-          request.method == Http.Put && request.path == t"/profile" &&
+          request.method == Http.Put && request.path == "/profile" &&
             request.body != Api.Body.Empty
 
       test(m"the verb is still explicitly usable on a sole-method endpoint"):
-        api.profile.put(NewPet(t"Rex")).request.method
+        api.profile.put(NewPet("Rex")).request.method
       . assert(_ == Http.Put)
 
       test(m"an optional query parameter may be omitted"):
@@ -137,15 +137,15 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(request => request.method == Http.Get && request.query == List(t"limit" -> t"10"))
 
       test(m"POST /pets via explicit .post with a body"):
-        api.pets.post(NewPet(t"Milo", tag = t"cat")).request
+        api.pets.post(NewPet("Milo", tag = "cat")).request
       . assert(request => request.method == Http.Post && (request.body != Api.Body.Empty))
 
       test(m"GET /pets/{petId} via explicit .get with no arguments"):
         api.pets(42).get.request
-      . assert(request => request.method == Http.Get && request.path == t"/pets/{petId}")
+      . assert(request => request.method == Http.Get && request.path == "/pets/{petId}")
 
       test(m"PUT /pets/{petId} via explicit .put with a body"):
-        api.pets(42).put(NewPet(t"Rex")).request.method
+        api.pets(42).put(NewPet("Rex")).request.method
       . assert(_ == Http.Put)
 
     suite(m"delete is always explicit"):
@@ -157,7 +157,7 @@ object ApiTests extends Suite(m"Api client tests"):
         api.sessions(t"abc").delete.request
 
       . assert: request =>
-          request.method == Http.Delete && request.substitutions == Map(t"token" -> t"abc")
+          request.method == Http.Delete && request.substitutions == Map("token" -> "abc")
 
       test(m"a DELETE-only endpoint reached by a bare segment"):
         api.logout.delete.request.method
@@ -173,7 +173,7 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(_ > 0)
 
       test(m"a path parameter of the wrong type is rejected"):
-        demilitarize(api.pets(t"notAnInt")).length
+        demilitarize(api.pets("notAnInt")).length
       . assert(_ > 0)
 
       test(m"the apply shortcut is rejected on a multi-method endpoint"):
@@ -185,7 +185,7 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(_ > 0)
 
       test(m"a query parameter of the wrong type is rejected"):
-        demilitarize(api.pets(42).photos(width = t"big")).length
+        demilitarize(api.pets(42).photos(width = "big")).length
       . assert(_ > 0)
 
       test(m"omitting a required query parameter is rejected"):
@@ -196,7 +196,7 @@ object ApiTests extends Suite(m"Api client tests"):
       test(m".call[Pet]() decodes a single pet"):
         given Http.Backend = Recorder(() => ok(petJson))
         api.pets(42).get.call[Pet]()
-      . assert(_ == Pet(42, t"Milo", t"cat"))
+      . assert(_ == Pet(42, "Milo", "cat"))
 
       test(m".call[List[Pet]]() decodes a list of pets"):
         given Http.Backend = Recorder(() => ok(petsJson))
@@ -206,7 +206,7 @@ object ApiTests extends Suite(m"Api client tests"):
       test(m".call[Json]() returns the raw body"):
         given Http.Backend = Recorder(() => ok(petJson))
         api.pets(42).get.call[Json]()
-      . assert(_.as[Pet] == Pet(42, t"Milo", t"cat"))
+      . assert(_.as[Pet] == Pet(42, "Milo", "cat"))
 
       test(m".call[Http.Response]() returns the raw response"):
         given Http.Backend = Recorder(() => ok(petJson))
@@ -230,12 +230,12 @@ object ApiTests extends Suite(m"Api client tests"):
         given Http.Backend = recorder
         api.pets(42).get.call[Pet]()
         (recorder.lastUrl, recorder.lastMethod)
-      . assert(_ == (t"https://api.example.com/v1/pets/42", Http.Get))
+      . assert(_ == ("https://api.example.com/v1/pets/42", Http.Get))
 
       test(m"a POST sends its body"):
         val recorder = Recorder(() => ok(petJson))
         given Http.Backend = recorder
-        api.pets.post(NewPet(t"Milo", tag = t"cat")).call[Pet]()
+        api.pets.post(NewPet("Milo", tag = "cat")).call[Pet]()
         (recorder.lastMethod, recorder.lastBody.present)
       . assert(_ == (Http.Post, true))
 
@@ -253,7 +253,7 @@ object ApiTests extends Suite(m"Api client tests"):
 
     suite(m"the spec decides the wire format (Api over Json / over Xml)"):
       val xmlApi = Api(cp"/apoplexy/xmlstore.json")
-      val noteXml = t"<Note><id>1</id><text>hello</text></Note>"
+      val noteXml = "<Note><id>1</id><text>hello</text></Note>"
 
       def okXml(body: Text): Http.Response =
         Http.Response(Http.Ok, contentType = media"application/xml")(body)
@@ -261,12 +261,12 @@ object ApiTests extends Suite(m"Api client tests"):
       test(m"a uniform JSON spec is tracked as `Api over Json`"):
         val typed: Api over Json = api
         typed.request.path
-      . assert(_ == t"/")
+      . assert(_ == "/")
 
       test(m"a uniform XML spec is tracked as `Api over Xml`"):
         val typed: Api over Xml = xmlApi
         typed.request.path
-      . assert(_ == t"/")
+      . assert(_ == "/")
 
       test(m"an XML endpoint's response is `Api.Response over Xml`"):
         given Http.Backend = Recorder(() => okXml(noteXml))
@@ -277,17 +277,17 @@ object ApiTests extends Suite(m"Api client tests"):
       test(m".call[Note]() decodes an XML response body"):
         given Http.Backend = Recorder(() => okXml(noteXml))
         xmlApi.notes(1).get.call[Note]()
-      . assert(_ == Note(1, t"hello"))
+      . assert(_ == Note(1, "hello"))
 
       test(m"an XML GET sends `Accept: application/xml`"):
         val recorder = Recorder(() => okXml(noteXml))
         given Http.Backend = recorder
         xmlApi.notes(1).get.call[Note]()
-        recorder.lastHeaders.filter(_.key == t"accept").map(_.value)
+        recorder.lastHeaders.filter(_.key == "accept").map(_.value)
       . assert(_ == List(t"application/xml"))
 
       test(m"the request body is encoded as XML"):
-        xmlApi.notes.post(NewNote(t"hi")).request.body match
+        xmlApi.notes.post(NewNote("hi")).request.body match
           case Api.Body.Xml(_) => true
           case _               => false
       . assert(_ == true)
@@ -295,6 +295,6 @@ object ApiTests extends Suite(m"Api client tests"):
       test(m"an XML POST sends an XML body and content-type"):
         val recorder = Recorder(() => Http.Response(Http.Created, contentType = media"application/xml")(noteXml))
         given Http.Backend = recorder
-        xmlApi.notes.post(NewNote(t"hi")).call[Note]()
-        (recorder.lastHeaders.filter(_.key == t"content-type").map(_.value), recorder.lastBody.present)
+        xmlApi.notes.post(NewNote("hi")).call[Note]()
+        (recorder.lastHeaders.filter(_.key == "content-type").map(_.value), recorder.lastBody.present)
       . assert(_ == (List(t"application/xml"), true))

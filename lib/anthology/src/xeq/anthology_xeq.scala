@@ -124,7 +124,7 @@ object xeqEdges:
       val jar = input.product(anthology.Xeq(delivery))
 
       val runners = settings.runners.or:
-        abort(Link.Error(Link.Error.Reason.MissingSetting(t"runners")))
+        abort(Link.Error(Link.Error.Reason.MissingSetting("runners")))
 
       // With no explicit targets, target every platform the runner source names; a local
       // directory names none, so explicit targets are required there.
@@ -134,7 +134,7 @@ object xeqEdges:
             hashes.keys.to[List].order(_.s)
 
           case Packaging.RunnerSource.Local(_) =>
-            abort(Link.Error(Link.Error.Reason.MissingSetting(t"targets")))
+            abort(Link.Error(Link.Error.Reason.MissingSetting("targets")))
 
       val packaging =
         Packaging

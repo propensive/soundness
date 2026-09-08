@@ -81,7 +81,7 @@ trait Archetype:
   def content: Html of (? <: Flow)
 
   // Document-level metadata.
-  def pageTitle: Text = t""
+  def pageTitle: Text = ""
 
   // Writing direction. `Ltr` by default; flipping it to `Rtl` swaps every logical-property layout
   // (verso ⇄ recto) with no change to the emitted CSS — the browser resolves `inline-start`/`-end`.

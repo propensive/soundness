@@ -98,11 +98,11 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == true)
 
       test(m"Map key membership"):
-        Map(t"a" -> 1, t"b" -> 2).defines(t"a")
+        Map("a" -> 1, "b" -> 2).defines("a")
       . assert(_ == true)
 
       test(m"Map missing key"):
-        Map(t"a" -> 1, t"b" -> 2).defines(t"c")
+        Map("a" -> 1, "b" -> 2).defines("c")
       . assert(_ == false)
 
     suite(m"Mapping tests"):
@@ -119,30 +119,30 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == Set(2, 3, 4))
 
       test(m"Map map transforms values, preserving keys"):
-        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        val m: Map[Text, Int] = Map("a" -> 1, "b" -> 2)
         m.map(_ + 10)
-      . assert(_ == Map(t"a" -> 11, t"b" -> 12))
+      . assert(_ == Map("a" -> 11, "b" -> 12))
 
       test(m"Map map operand is the value, not the pair"):
-        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        val m: Map[Text, Int] = Map("a" -> 1, "b" -> 2)
         m.map(_*2)
-      . assert(_ == Map(t"a" -> 2, t"b" -> 4))
+      . assert(_ == Map("a" -> 2, "b" -> 4))
 
       test(m"remap transforms entries pairwise into a Map"):
-        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        val m: Map[Text, Int] = Map("a" -> 1, "b" -> 2)
         m.remap { (key, value) => value -> key }
-      . assert(_ == Map(1 -> t"a", 2 -> t"b"))
+      . assert(_ == Map(1 -> "a", 2 -> "b"))
 
     suite(m"Query tests"):
       test(m"minimize finds the element with the least key"):
         val xs: List[Text] = List(t"epsilon", t"mu", t"beta")
         xs.minimize(_.length)
-      . assert(_ == t"mu")
+      . assert(_ == "mu")
 
       test(m"maximize finds the element with the greatest key"):
         val xs: List[Text] = List(t"epsilon", t"mu", t"beta")
         xs.maximize(_.length)
-      . assert(_ == t"epsilon")
+      . assert(_ == "epsilon")
 
       test(m"minimize of empty is Unset"):
         val xs: List[Int] = List()
@@ -283,20 +283,20 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == Unset)
 
       test(m"omit removes a map key"):
-        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
-        m.omit(t"b")
-      . assert(_ == Map(t"a" -> 1))
+        val m: Map[Text, Int] = Map("a" -> 1, "b" -> 2)
+        m.omit("b")
+      . assert(_ == Map("a" -> 1))
 
       test(m"omit of an absent key changes nothing"):
-        val m: Map[Text, Int] = Map(t"a" -> 1)
-        m.omit(t"z")
-      . assert(_ == Map(t"a" -> 1))
+        val m: Map[Text, Int] = Map("a" -> 1)
+        m.omit("z")
+      . assert(_ == Map("a" -> 1))
 
       test(m"maps concatenate right-biased"):
-        val left: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
-        val right: Map[Text, Int] = Map(t"b" -> 20, t"c" -> 3)
+        val left: Map[Text, Int] = Map("a" -> 1, "b" -> 2)
+        val right: Map[Text, Int] = Map("b" -> 20, "c" -> 3)
         left + right
-      . assert(_ == Map(t"a" -> 1, t"b" -> 20, t"c" -> 3))
+      . assert(_ == Map("a" -> 1, "b" -> 20, "c" -> 3))
 
     suite(m"Set algebra tests"):
       test(m"intersect keeps common elements"):
@@ -317,22 +317,22 @@ object Tests extends Suite(m"Rudiments Tests"):
 
     suite(m"Keyed tests"):
       test(m"Map keys are a Set"):
-        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        val m: Map[Text, Int] = Map("a" -> 1, "b" -> 2)
         m.keys
-      . assert(_ == Set(t"a", t"b"))
+      . assert(_ == Set("a", "b"))
 
       test(m"Map values are a List"):
-        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        val m: Map[Text, Int] = Map("a" -> 1, "b" -> 2)
         m.values.to[Set]
       . assert(_ == Set(1, 2))
 
       test(m"Ledger keys are an insertion-ordered List"):
-        val ledger: Ledger[Text, Int] = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+        val ledger: Ledger[Text, Int] = Ledger("c" -> 3, "a" -> 1, "b" -> 2)
         ledger.keys
       . assert(_ == List(t"c", t"a", t"b"))
 
       test(m"Ledger values preserve insertion order"):
-        val ledger: Ledger[Text, Int] = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+        val ledger: Ledger[Text, Int] = Ledger("c" -> 3, "a" -> 1, "b" -> 2)
         ledger.values
       . assert(_ == List(3, 1, 2))
 
@@ -420,11 +420,11 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == 2)
 
       test(m"an attested map key reads bare"):
-        val map: Map[Text, Int] = Map(t"one" -> 1, t"two" -> 2)
+        val map: Map[Text, Int] = Map("one" -> 1, "two" -> 2)
 
         unsafely:
           // Defined by construction: the literal above binds the key.
-          val value: Int = map(map.attested(t"two"))
+          val value: Int = map(map.attested("two"))
           value
       . assert(_ == 2)
 
@@ -452,14 +452,14 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == Sequence(1, 2, 3))
 
       test(m"define replaces a map value by key"):
-        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
-        m.define(t"b", 20)
-      . assert(_ == Map(t"a" -> 1, t"b" -> 20))
+        val m: Map[Text, Int] = Map("a" -> 1, "b" -> 2)
+        m.define("b", 20)
+      . assert(_ == Map("a" -> 1, "b" -> 20))
 
       test(m"define adds an absent key"):
-        val m: Map[Text, Int] = Map(t"a" -> 1)
-        m.define(t"b", 2)
-      . assert(_ == Map(t"a" -> 1, t"b" -> 2))
+        val m: Map[Text, Int] = Map("a" -> 1)
+        m.define("b", 2)
+      . assert(_ == Map("a" -> 1, "b" -> 2))
 
       test(m"define on a list demands the linear-access acknowledgement"):
         import denominative.dysasymptotics.linearAccess
@@ -481,36 +481,36 @@ object Tests extends Suite(m"Rudiments Tests"):
 
     suite(m"Ordered reshaping tests"):
       test(m"Map sorts into a Ledger iterating in sorted order"):
-        val m: Map[Text, Int] = Map(t"b" -> 2, t"c" -> 3, t"a" -> 1)
+        val m: Map[Text, Int] = Map("b" -> 2, "c" -> 3, "a" -> 1)
         m.order { (key, value) => key }.to[List]
       . assert(_ == List(t"a" -> 1, t"b" -> 2, t"c" -> 3))
 
       test(m"Map sort result is a Ledger"):
-        val m: Map[Text, Int] = Map(t"b" -> 2, t"a" -> 1)
+        val m: Map[Text, Int] = Map("b" -> 2, "a" -> 1)
         val sorted: Ledger[Text, Int] = m.order { (key, value) => key }
         sorted.to[List]
       . assert(_ == List(t"a" -> 1, t"b" -> 2))
 
       test(m"Ledger filter preserves insertion order and shape"):
-        val ledger: Ledger[Text, Int] = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+        val ledger: Ledger[Text, Int] = Ledger("c" -> 3, "a" -> 1, "b" -> 2)
         val filtered: Ledger[Text, Int] = ledger.filter { (key, value) => value != 1 }
         filtered.to[List]
       . assert(_ == List(t"c" -> 3, t"b" -> 2))
 
       test(m"Ledger sorts into a Ledger"):
-        val ledger: Ledger[Text, Int] = Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2)
+        val ledger: Ledger[Text, Int] = Ledger("c" -> 3, "a" -> 1, "b" -> 2)
         val sorted: Ledger[Text, Int] = ledger.order { (key, value) => value }
         sorted.to[List]
       . assert(_ == List(t"a" -> 1, t"b" -> 2, t"c" -> 3))
 
       test(m"Map non-pair stable reshape still yields a List"):
-        val m: Map[Text, Int] = Map(t"b" -> 2, t"a" -> 1)
+        val m: Map[Text, Int] = Map("b" -> 2, "a" -> 1)
         val traced: List[Int] = m.trace(0) { (total, pair) => total + pair(1) }
         traced
       . assert(_ == List(0, 2, 3))
 
     suite(m"Confined index tests"):
-      val text = t"hello"
+      val text = "hello"
       val array = Array(10, 20, 30)
 
       test(m"Plain `at` returns Optional"):
@@ -558,7 +558,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"`tail` drops the first character of a text"):
         text.tail
-      . assert(_ == "ello".tt)
+      . assert(_ == "ello")
 
       test(m"`spot(after)` resumes the scan from the interval's limit"):
         // text = "hello": first 'l' after the prefix of non-'l's... then scan again past it
@@ -617,7 +617,7 @@ object Tests extends Suite(m"Rudiments Tests"):
         val builder = java.lang.StringBuilder()
         text.retrace { i => builder.append(text(i)) }
         builder.toString.tt
-      . assert(_ == t"olleh")
+      . assert(_ == "olleh")
 
     suite(m"Scribe tests"):
       test(m"`Array.scribe` fills through branded indices"):
@@ -668,7 +668,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == 2)
 
       test(m"a surveyor skips whitespace and reports the run"):
-        val line = t"   indent"
+        val line = "   indent"
         var skipped = -1
         var next = ' '
 
@@ -693,8 +693,8 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == List(3, 2, 1))
 
       test(m"a negated `pace` stops at the delimiter, and `remainder` brands the rest"):
-        val csv = t"key:value"
-        var key = t""
+        val csv = "key:value"
+        var key: Text = ""
         var rest = -1
 
         csv.survey: surveyor =>
@@ -705,10 +705,10 @@ object Tests extends Suite(m"Rudiments Tests"):
           rest = (surveyor.remainder: Interval).size
 
         (key, rest)
-      . assert(_ == ((t"key", 6)))
+      . assert(_ == (("key", 6)))
 
       test(m"`peek` tests the current element without advancing"):
-        val text = t"-x"
+        val text = "-x"
 
         text.survey: surveyor =>
           val dash = surveyor.peek(_ == '-')
@@ -718,18 +718,18 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == ((true, true, false, true)))
 
       test(m"`matches` compares a pattern without advancing"):
-        val data = t"abcdef"
+        val data = "abcdef"
 
         data.survey: surveyor =>
           surveyor.advance()
-          val hit = surveyor.matches(t"bcd") { (left, right) => left == right }
-          val miss = surveyor.matches(t"bce") { (left, right) => left == right }
-          val long = surveyor.matches(t"bcdefgh") { (left, right) => left == right }
+          val hit = surveyor.matches("bcd") { (left, right) => left == right }
+          val miss = surveyor.matches("bce") { (left, right) => left == right }
+          val long = surveyor.matches("bcdefgh") { (left, right) => left == right }
           (hit, miss, long, surveyor.passed)
       . assert(_ == ((true, false, false, 1)))
 
       test(m"`glimpse` lends a branded lookahead window without advancing"):
-        val text = t"hello"
+        val text = "hello"
 
         text.survey: surveyor =>
           val window = surveyor.glimpse(3).let { interval => (interval: Interval).size }
@@ -738,7 +738,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == ((3, Unset, 0)))
 
       test(m"`next` consumes elements one at a time"):
-        val text = t"ab"
+        val text = "ab"
         val builder = java.lang.StringBuilder()
 
         text.survey: surveyor =>
@@ -746,10 +746,10 @@ object Tests extends Suite(m"Rudiments Tests"):
           surveyor.next(builder.append('!')) { char => builder.append(char) }
 
         builder.toString.tt
-      . assert(_ == t"ab!")
+      . assert(_ == "ab!")
 
       test(m"`take` consumes a counted, clamped run"):
-        val text = t"abcde"
+        val text = "abcde"
         var sizes: List[Int] = Nil
 
         text.survey: surveyor =>
@@ -782,11 +782,11 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == ((10, 0, 10, 0)))
 
       test(m"`adjacent` visits every overlapping pair"):
-        val text = t"abcd"
+        val text = "abcd"
         val builder = java.lang.StringBuilder()
         text.adjacent { (left, right) => builder.append(left).nn.append(right).nn.append('.') }
         builder.toString.tt
-      . assert(_ == t"ab.bc.cd.")
+      . assert(_ == "ab.bc.cd.")
 
       test(m"a lattice mints whole rows within the storage"):
         // 10 elements, rows of 3 spaced 4 apart: rows at 0, 4 — a third row (start 8,
@@ -831,7 +831,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == List(1, 1, 0, 2, 2, 0))
 
       test(m"an exhausted surveyor has no point and an empty remainder"):
-        val text = t"ab"
+        val text = "ab"
 
         text.survey: surveyor =>
           surveyor.pace { _ => true }
@@ -1026,7 +1026,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"Take Map#upsert as an update"):
         val map = Map(1 -> "one", 2 -> "two")
-        map.upsert(2, _.or(t"")+t"!")
+        map.upsert(2, _.or(t"")+"!")
       . assert(_ == Map(1 -> "one", 2 -> "two!"))
 
       test(m"Collation"):
@@ -1218,43 +1218,43 @@ object Tests extends Suite(m"Rudiments Tests"):
     // receiver these tests exercise; collection receivers activate as the aliases become opaque.
     suite(m"Convertible tests"):
       test(m"Text to List of chars"):
-        "abc".tt.to[List]
+        "abc".to[List]
       . assert(_ == List('a', 'b', 'c'))
 
       test(m"Text to Set of chars deduplicates"):
-        "aba".tt.to[Set]
+        "aba".to[Set]
       . assert(_ == Set('a', 'b'))
 
       test(m"Text to Sequence of chars"):
-        "abc".tt.to[Sequence]
+        "abc".to[Sequence]
       . assert(_ == Sequence('a', 'b', 'c'))
 
       test(m"Text to Text is the identity"):
-        "abc".tt.to[Text]
-      . assert(_ == "abc".tt)
+        "abc".to[Text]
+      . assert(_ == "abc")
 
       test(m"Result type of to[List] is inferred fully applied"):
-        val list: List[Char] = "xy".tt.to[List]
+        val list: List[Char] = "xy".to[List]
         list.size
       . assert(_ == 2)
 
     suite(m"Vacuiscible tests"):
       test(m"non-empty Text is not nil"):
-        "abc".tt.nil
+        "abc".nil
       . assert(_ == false)
 
       test(m"empty Text is nil"):
-        "".tt.nil
+        "".nil
       . assert(_ == true)
 
     suite(m"confine tests"):
       test(m"confined Map key accesses bare value"):
-        val map = Map(1 -> "one".tt, 2 -> "two".tt)
+        val map = Map(1 -> "one", 2 -> "two")
         map.confine(1).let(map(_))
-      . assert(_ == "one".tt)
+      . assert(_ == "one")
 
       test(m"absent Map key does not confine"):
-        val map = Map(1 -> "one".tt)
+        val map = Map(1 -> "one")
         map.confine(9).let(map(_))
       . assert(_ == Unset)
 
@@ -1323,13 +1323,13 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"a cell reads back its initial value"):
         Atomic.Ref(t"alpha")()
-      . assert(_ == t"alpha")
+      . assert(_ == "alpha")
 
       test(m"a cell is stored through assignment syntax"):
         val cell = Atomic.Ref(t"alpha")
-        cell() = t"beta"
+        cell() = "beta"
         cell()
-      . assert(_ == t"beta")
+      . assert(_ == "beta")
 
       // The `.nn` this replaces would THROW here rather than yielding `Unset`, since `Unset` is
       // `null` at runtime. This test is the guarantee that a vacant cell reads as absent.
@@ -1339,13 +1339,13 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"a vacant cell holds a value once filled"):
         val cell = Atomic.Ref.vacant[Text]
-        cell() = t"filled"
+        cell() = "filled"
         cell()
-      . assert(_ == t"filled")
+      . assert(_ == "filled")
 
       test(m"an emptied cell reads as Unset again"):
         val cell = Atomic.Ref.vacant[Text]
-        cell() = t"filled"
+        cell() = "filled"
         cell() = Unset
         cell()
       . assert(_ == Unset)
@@ -1356,21 +1356,21 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"a cell slot is stored through assignment syntax"):
         val cells = Atomic.Refs[Text](4)
-        cells(Prim) = t"first"
+        cells(Prim) = "first"
         cells(Prim)
-      . assert(_ == t"first")
+      . assert(_ == "first")
 
       test(m"cell slots are independent"):
         val cells = Atomic.Refs[Text](4)
-        cells(Prim) = t"first"
+        cells(Prim) = "first"
         cells(Sec)
       . assert(_ == Unset)
 
       test(m"a published cell slot is readable"):
         val cells = Atomic.Refs[Text](4)
-        cells.publish(Sec, t"second")
+        cells.publish(Sec, "second")
         cells(Sec)
-      . assert(_ == t"second")
+      . assert(_ == "second")
 
       test(m"cells report their size"):
         Atomic.Refs[Text](6).size
@@ -1397,17 +1397,17 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == false)
 
       test(m"Atomic of a reference type is a cell"):
-        val cell: Atomic[Person] = Atomic(Person(t"Ada", 36))
+        val cell: Atomic[Person] = Atomic(Person("Ada", 36))
         cell().name
-      . assert(_ == t"Ada")
+      . assert(_ == "Ada")
 
       // The risky reduction: `Optional[Text]` is the union `Unset | Text`, and the match type
       // must rule out the `Int`/`Long`/`Boolean` arms against a union scrutinee to reach `Cell`.
       test(m"Atomic of an Optional reduces to a cell"):
         val cell: Atomic[Optional[Text]] = Atomic(Unset)
-        cell() = t"present"
+        cell() = "present"
         cell()
-      . assert(_ == t"present")
+      . assert(_ == "present")
 
       test(m"an Optional-typed atomic reads as Unset when vacant"):
         val cell: Atomic[Optional[Text]] = Atomic(Unset)
@@ -1562,21 +1562,21 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"a cell transition installs the new value"):
         val cell = Atomic.Ref(t"alpha")
-        cell.since(_ => t"beta")
-      . assert(_ == t"beta")
+        cell.since(_ => "beta")
+      . assert(_ == "beta")
 
       test(m"a cell transition displaces the old value"):
         val cell = Atomic.Ref(t"alpha")
-        cell.ere(_ => t"beta")
-      . assert(_ == t"alpha")
+        cell.ere(_ => "beta")
+      . assert(_ == "alpha")
 
       test(m"a cell transition may call a method on the value"):
         val cell = Atomic.Ref(t"ALPHA")
         cell.since(_.lower)
-      . assert(_ == t"alpha")
+      . assert(_ == "alpha")
 
       test(m"a cell transition may construct from the value"):
-        val cell = Atomic.Ref(Person(t"Ada", 36))
+        val cell = Atomic.Ref(Person("Ada", 36))
         cell.since(p => Person(p.name, p.age + 1)).age
       . assert(_ == 37)
 
@@ -1639,8 +1639,8 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"setting a cell displaces the old value"):
         val cell = Atomic.Ref(t"alpha")
-        cell.ere(t"beta")
-      . assert(_ == t"alpha")
+        cell.ere("beta")
+      . assert(_ == "alpha")
 
       test(m"the transition overload still resolves alongside it"):
         val count = Atomic.Int(3)
@@ -1739,7 +1739,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       // Any surviving dispatch to the wrapper's own vocabulary would mean an extension had not
       // inlined, and every operation would pay a call it should not.
       def callsWrapper(bytecode: Bytecode): Boolean =
-        val names = Set(t"ere", t"since", t"revise", t"publish", t"swap", t"replace", t"update")
+        val names = Set("ere", "since", "revise", "publish", "swap", "replace", "update")
 
         bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
@@ -1761,87 +1761,87 @@ object Tests extends Suite(m"Rudiments Tests"):
       def allocatesClosure(bytecode: Bytecode): Boolean =
         bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
-            case Bytecode.Opcode.Invokeinterface(owner, t"apply", _, _) =>
+            case Bytecode.Opcode.Invokeinterface(owner, "apply", _, _) =>
               owner.s.startsWith("scala.Function")
 
             case _ =>
               false
 
       test(m"since(_ + 1) becomes incrementAndGet"):
-        calls(t"intSince", t"incrementAndGet")
+        calls("intSince", "incrementAndGet")
       . assert(_ == true)
 
       test(m"ere(_ + 1) becomes getAndIncrement"):
-        calls(t"intEre", t"getAndIncrement")
+        calls("intEre", "getAndIncrement")
       . assert(_ == true)
 
       test(m"since(_ + n) becomes addAndGet"):
-        calls(t"intAdd", t"addAndGet")
+        calls("intAdd", "addAndGet")
       . assert(_ == true)
 
       test(m"ere(_ + n) becomes getAndAdd"):
-        calls(t"intClaim", t"getAndAdd")
+        calls("intClaim", "getAndAdd")
       . assert(_ == true)
 
       test(m"since(_ - 1) becomes decrementAndGet"):
-        calls(t"intDecrement", t"decrementAndGet")
+        calls("intDecrement", "decrementAndGet")
       . assert(_ == true)
 
       test(m"ere(value) becomes getAndSet"):
-        calls(t"intSet", t"getAndSet")
+        calls("intSet", "getAndSet")
       . assert(_ == true)
 
       test(m"a long transition reaches AtomicLong's intrinsic"):
-        calls(t"longSince", t"incrementAndGet")
+        calls("longSince", "incrementAndGet")
       . assert(_ == true)
 
       test(m"raising a flag becomes getAndSet"):
-        calls(t"boolRaise", t"getAndSet")
+        calls("boolRaise", "getAndSet")
       . assert(_ == true)
 
       test(m"a read becomes get"):
-        calls(t"intRead", t"get")
+        calls("intRead", "get")
       . assert(_ == true)
 
       // The release store must stay a release store: promoting it to `set` would silently
       // strengthen the ordering that zephyrine's single-producer rings depend on.
       test(m"publish on an int array becomes lazySet, not set"):
-        calls(t"intsPublish", t"lazySet")
+        calls("intsPublish", "lazySet")
       . assert(_ == true)
 
       test(m"publish on an int array does not become set"):
-        calls(t"intsPublish", t"set")
+        calls("intsPublish", "set")
       . assert(_ == false)
 
       test(m"publish on a long array becomes lazySet"):
-        calls(t"longsPublish", t"lazySet")
+        calls("longsPublish", "lazySet")
       . assert(_ == true)
 
       test(m"an intrinsic transition leaves no dispatch to the wrapper"):
-        methodBytecode(t"intSince").lay(true)(callsWrapper)
+        methodBytecode("intSince").lay(true)(callsWrapper)
       . assert(_ == false)
 
       test(m"a general transition leaves no dispatch to the wrapper"):
-        methodBytecode(t"intGeneral").lay(true)(callsWrapper)
+        methodBytecode("intGeneral").lay(true)(callsWrapper)
       . assert(_ == false)
 
       test(m"a general transition compiles to a compare-and-set loop"):
-        calls(t"intGeneral", t"compareAndSet")
+        calls("intGeneral", "compareAndSet")
       . assert(_ == true)
 
       test(m"a general transition allocates no closure"):
-        methodBytecode(t"intGeneral").lay(true)(allocatesClosure)
+        methodBytecode("intGeneral").lay(true)(allocatesClosure)
       . assert(_ == false)
 
       test(m"an unboxed transition does not box"):
-        methodBytecode(t"intGeneral").lay(true)(hasBoxing)
+        methodBytecode("intGeneral").lay(true)(hasBoxing)
       . assert(_ == false)
 
       test(m"a reference read does not call nnFail"):
-        methodBytecode(t"refRead").lay(true): bytecode =>
+        methodBytecode("refRead").lay(true): bytecode =>
           bytecode.instructions.stdlib.exists: instruction =>
             instruction.opcode match
-              case Bytecode.Opcode.Invokestatic(_, t"nnFail", _) => true
+              case Bytecode.Opcode.Invokestatic(_, "nnFail", _) => true
               case _                                             => false
 
       . assert(_ == false)

@@ -141,15 +141,15 @@ object stagedInternal:
 
   private val primitiveClasses: scala.collection.immutable.Map[String, Class[?]] =
     scala.collection.immutable.Map
-      ( ("scala.Int": String)     -> classOf[Int],
-        ("scala.Long": String)    -> classOf[Long],
-        ("scala.Double": String)  -> classOf[Double],
-        ("scala.Float": String)   -> classOf[Float],
-        ("scala.Boolean": String) -> classOf[Boolean],
-        ("scala.Short": String)   -> classOf[Short],
-        ("scala.Byte": String)    -> classOf[Byte],
-        ("scala.Char": String)    -> classOf[Char],
-        ("scala.Unit": String)    -> classOf[Unit] )
+      ( s"scala.Int"     -> classOf[Int],
+        s"scala.Long"    -> classOf[Long],
+        s"scala.Double"  -> classOf[Double],
+        s"scala.Float"   -> classOf[Float],
+        s"scala.Boolean" -> classOf[Boolean],
+        s"scala.Short"   -> classOf[Short],
+        s"scala.Byte"    -> classOf[Byte],
+        s"scala.Char"    -> classOf[Char],
+        s"scala.Unit"    -> classOf[Unit] )
 
   // The binary name of a class symbol: package segments joined with dots,
   // enclosing type segments with dollars.
@@ -161,10 +161,10 @@ object stagedInternal:
 
       if owner.isPackageDef then
         val prefix = owner.fullName
-        if prefix == "<empty>" then symbol.name else prefix+(".": String)+symbol.name
+        if prefix == "<empty>" then symbol.name else prefix+s".${symbol.name}"
       else
         val ownerName = build(if owner.isClassDef then owner else owner.owner)
-        ownerName+("$": String)+symbol.name
+        ownerName+s"$$${symbol.name}"
 
     build(symbol)
 
@@ -628,7 +628,7 @@ object stagedInternal:
     if !productSupported(tpe) then
       report.errorAndAbort
         (s"xylophone: ${tpe.show} is not an inlinable product (a non-generic, top-level or " +
-          ("object-nested case class with a single parameter list and no `@name` or ": String) +
+          s"object-nested case class with a single parameter list and no `@name` or " +
           "`@attribute` annotations); use `Xml.Parsable.staged` or `derived`")
 
     val classSymbol = tpe.classSymbol.get
@@ -666,10 +666,10 @@ object stagedInternal:
     val unit = Literal(UnitConstant())
 
     val slots = List.range(0, arity).map: index =>
-      Symbol.newVal(owner, ("slot": String)+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
+      Symbol.newVal(owner, s"slot$index", fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
 
     val seens = List.range(0, arity).map: index =>
-      Symbol.newVal(owner, ("seen": String)+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+      Symbol.newVal(owner, s"seen$index", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
 
     def zero(fieldType: TypeRepr): Term =
       if fieldType =:= TypeRepr.of[Int] then Literal(IntConstant(0))
@@ -708,7 +708,7 @@ object stagedInternal:
 
                       val builderSymbol =
                         Symbol.newVal
-                          ( owner, ("gather": String)+index,
+                          ( owner, s"gather$index",
                             TypeRepr.of[scm.Builder[element, fieldType]],
                             Flags.EmptyFlags, Symbol.noSymbol )
 
@@ -732,7 +732,7 @@ object stagedInternal:
 
                       val elementSymbol =
                         Symbol.newMethod
-                          ( owner, ("parseElement": String)+index,
+                          ( owner, s"parseElement$index",
                             MethodType(Nil)(_ => Nil, _ => TypeRepr.of[element]) )
 
                       val elementRhs =
@@ -762,7 +762,7 @@ object stagedInternal:
             case '[fieldType] =>
               val instanceSymbol =
                 Symbol.newVal
-                  ( owner, ("instance": String)+index, TypeRepr.of[fieldType is Xml.Parsing],
+                  ( owner, s"instance$index", TypeRepr.of[fieldType is Xml.Parsing],
                     Flags.EmptyFlags, Symbol.noSymbol )
 
               val instanceDef =
@@ -774,14 +774,14 @@ object stagedInternal:
 
               val repeatsSymbol =
                 Symbol.newVal
-                  ( owner, ("repeats": String)+index, TypeRepr.of[Boolean],
+                  ( owner, s"repeats$index", TypeRepr.of[Boolean],
                     Flags.EmptyFlags, Symbol.noSymbol )
 
               val repeatsDef =
                 ValDef(repeatsSymbol, Some('{ Xml.Parsable.repeats($instanceRef) }.asTerm))
 
               val bufferSymbol =
-                Symbol.newVal(owner, ("buffer": String)+index, bufferType, Flags.Mutable, Symbol.noSymbol)
+                Symbol.newVal(owner, s"buffer$index", bufferType, Flags.Mutable, Symbol.noSymbol)
 
               val bufferDef = ValDef(bufferSymbol, Some('{ null }.asTerm))
 
@@ -805,7 +805,7 @@ object stagedInternal:
 
               val symbol =
                 Symbol.newMethod
-                  ( owner, ("parseNested": String)+index,
+                  ( owner, s"parseNested$index",
                     MethodType(Nil)(_ => Nil, _ => fieldTypes(index)) )
 
               val rhs = instance.parse(reader).asTerm.changeOwner(symbol)
@@ -1233,7 +1233,7 @@ object stagedInternal:
     if !productSupported(TypeRepr.of[value].dealias) then
       report.errorAndAbort
         (s"xylophone: ${TypeRepr.of[value].show} is not an inlinable product (a non-generic, " +
-          ("top-level or object-nested case class with a single parameter list and no `@name` ": String) +
+          s"top-level or object-nested case class with a single parameter list and no `@name` " +
           "or `@attribute` annotations); use `Xml.Parsable.staged` or `derived`")
 
     '{

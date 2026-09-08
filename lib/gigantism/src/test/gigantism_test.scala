@@ -41,12 +41,12 @@ case class Shape(name: Text)
 case class Missing(name: Text)
 
 object Colours:
-  given red: Colour = Colour(t"red")
-  given green: Colour = Colour(t"green")
-  given blue: Colour = Colour(t"blue")
+  given red: Colour = Colour("red")
+  given green: Colour = Colour("green")
+  given blue: Colour = Colour("blue")
 
 object Shapes:
-  given square: Shape = Shape(t"square")
+  given square: Shape = Shape("square")
 
 object Tests extends Suite(m"Gigantism Tests"):
   def run(): Unit =
@@ -63,29 +63,29 @@ object Tests extends Suite(m"Gigantism Tests"):
       test(m"Every mutually-ambiguous instance in scope is found"):
         import Colours.{red, green, blue}
         every[Colour].values.map(_.name).to(Set)
-      . assert(_ == Set(t"red", t"green", t"blue"))
+      . assert(_ == Set("red", "green", "blue"))
 
       test(m"Only the imported instances are found"):
         import Colours.{red, blue}
         every[Colour].values.map(_.name).to(Set)
-      . assert(_ == Set(t"red", t"blue"))
+      . assert(_ == Set("red", "blue"))
 
       test(m"Instances are not found outside their import scope"):
         every[Colour].values
       . assert(_ == Nil)
 
       test(m"A locally-defined instance is found"):
-        given local: Shape = Shape(t"triangle")
+        given local: Shape = Shape("triangle")
         every[Shape].values
       . assert(_ == List(Shape(t"triangle")))
 
       test(m"Local and imported instances are both found"):
         import Shapes.square
-        given local: Shape = Shape(t"triangle")
+        given local: Shape = Shape("triangle")
         every[Shape].values.map(_.name).to(Set)
-      . assert(_ == Set(t"square", t"triangle"))
+      . assert(_ == Set("square", "triangle"))
 
       test(m"The default given collects every instance"):
         import Colours.{red, green}
         (summon[Every[Colour]].values.map(_.name)).to(Set)
-      . assert(_ == Set(t"red", t"green"))
+      . assert(_ == Set("red", "green"))

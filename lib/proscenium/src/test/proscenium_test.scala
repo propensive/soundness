@@ -195,8 +195,8 @@ object Tests extends Suite(m"Proscenium Tests"):
       // A `Ledger` is exactly a `Map` that promises insertion order; that promise is the
       // whole reason the type exists, and it is what these tests check.
       test(m"a ledger iterates in insertion order"):
-        Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2).stdlib.keys.toList
-      . assert(_ == scala.List(t"c", t"a", t"b"))
+        Ledger("c" -> 3, "a" -> 1, "b" -> 2).stdlib.keys.toList
+      . assert(_ == scala.List("c", "a", "b"))
 
       test(m"insertion order survives many entries, where a Map's would not"):
         val pairs = (0 until 32).map { n => (n, n*n) }
@@ -208,15 +208,15 @@ object Tests extends Suite(m"Proscenium Tests"):
       . assert(_ == 0)
 
       test(m"a ledger looks up by key"):
-        Ledger(t"a" -> 1, t"b" -> 2).stdlib(t"b")
+        Ledger("a" -> 1, "b" -> 2).stdlib("b")
       . assert(_ == 2)
 
       test(m"a later pair for the same key wins"):
-        Ledger(t"a" -> 1, t"a" -> 2).stdlib(t"a")
+        Ledger("a" -> 1, "a" -> 2).stdlib("a")
       . assert(_ == 2)
 
       test(m"a collection converts to a ledger"):
-        scala.List((1, t"one"), (2, t"two")).to(Ledger).stdlib.keys.toList
+        scala.List((1, "one"), (2, "two")).to(Ledger).stdlib.keys.toList
       . assert(_ == scala.List(1, 2))
 
     suite(m"Set, Map and Sequence"):
@@ -233,7 +233,7 @@ object Tests extends Suite(m"Proscenium Tests"):
       . assert(_ == scala.collection.immutable.Set(1, 2))
 
       test(m"a map looks up by key"):
-        Map(t"a" -> 1, t"b" -> 2)(t"a")
+        Map("a" -> 1, "b" -> 2)("a")
       . assert(_ == 1)
 
       test(m"an empty map has no entries"):

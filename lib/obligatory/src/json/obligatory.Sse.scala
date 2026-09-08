@@ -97,7 +97,7 @@ object Sse:
       var retry: Optional[Long] = Unset
 
       text.cut(Lf).each: line =>
-        line.offsetOf(t":").lay(raise(Sse.Error(Sse.Error.Reason.MalformedField))): ordinal =>
+        line.offsetOf(":").lay(raise(Sse.Error(Sse.Error.Reason.MalformedField))): ordinal =>
           val n = ordinal.n0
           val value = line.skip(if line(n.z + 1) == ' ' then n + 2 else n + 1)
 

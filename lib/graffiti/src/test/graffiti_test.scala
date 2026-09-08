@@ -63,15 +63,15 @@ class WideVerso extends Archetype, VersoPanel:
 
 // A fuller page: the regions (hero, masthead, mainstay, colophon) plus a head full of metadata.
 class FullPage(title: Text)
-extends Archetype, Mainstay, Masthead, Colophon, Hero(t"Big Headline"), Headline(title),
-    StandardMetadata(t"A demo page"), Author(t"Jon Pretty"), Keywords(t"scala", t"html"),
-    Favicon(t"/icon.png"), Canonical(t"https://example.com/"):
+extends Archetype, Mainstay, Masthead, Colophon, Hero("Big Headline"), Headline(title),
+    StandardMetadata("A demo page"), Author("Jon Pretty"), Keywords("scala", "html"),
+    Favicon("/icon.png"), Canonical("https://example.com/"):
   def content: Html of (? <: Flow) = P("Main body")
   override def masthead: Html of (? <: Flow) = P("Site name")
   override def colophon: Html of (? <: Flow) = P("Copyright")
 
 // A page carrying only the aggregated standard metadata.
-class MetaPage extends Archetype, StandardMetadata(t"Just a description"):
+class MetaPage extends Archetype, StandardMetadata("Just a description"):
   def content: Html of (? <: Flow) = P("x")
 
 // Two features that each introduce a `sidebar` slot of their own — a genuinely incompatible pair:
@@ -84,91 +84,91 @@ trait RightRail extends Archetype:
 
 // A concrete dashboard, supplying only the details `Dashboard` leaves abstract.
 class AdminDashboard extends Dashboard:
-  def brand: Text = t"Admin"
+  def brand: Text = "Admin"
 
   def cards: List[Dashboard.Card] =
     List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
 
 object Tests extends Suite(m"Graffiti tests"):
   def run(): Unit =
-    val page = Page(t"Welcome", List(t"home", t"docs"))
+    val page = Page("Welcome", List(t"home", t"docs"))
     val html = page.html.show
     val css = page.css.show
 
     suite(m"Page assembly"):
       test(m"the document title is set from the Title trait"):
-        html.contains(t"<title>Welcome</title>")
+        html.contains("<title>Welcome</title>")
       . assert(_ == true)
 
       test(m"the page's own content is present"):
-        html.contains(t"Hello, world!")
+        html.contains("Hello, world!")
       . assert(_ == true)
 
       test(m"the Title trait contributes a heading"):
-        html.contains(t"<h1")
+        html.contains("<h1")
       . assert(_ == true)
 
       test(m"the top menu is present, with its items"):
-        html.contains(t"graffiti-top-menu") && html.contains(t"Home")
+        html.contains("graffiti-top-menu") && html.contains("Home")
       . assert(_ == true)
 
       test(m"the verso slot is filled by the menu helper"):
-        html.contains(t"graffiti-verso")
+        html.contains("graffiti-verso")
       . assert(_ == true)
 
       test(m"the recto panel is present"):
-        html.contains(t"graffiti-recto")
+        html.contains("graffiti-recto")
       . assert(_ == true)
 
       test(m"the breadcrumb trail is present"):
-        html.contains(t"graffiti-breadcrumbs")
+        html.contains("graffiti-breadcrumbs")
       . assert(_ == true)
 
     suite(m"Contributed CSS"):
       test(m"each trait's rules reach the embedded stylesheet"):
-        css.contains(t".graffiti-top-menu") && css.contains(t".graffiti-verso-layout")
-        && css.contains(t".graffiti-recto-layout")
+        css.contains(".graffiti-top-menu") && css.contains(".graffiti-verso-layout")
+        && css.contains(".graffiti-recto-layout")
       . assert(_ == true)
 
       test(m"the layout grids are real grids"):
-        css.contains(t"display: grid")
+        css.contains("display: grid")
       . assert(_ == true)
 
     suite(m"Direction is logical, never left/right"):
       test(m"the default page is left-to-right"):
-        html.contains(t"""dir="ltr"""")
+        html.contains("""dir="ltr"""")
       . assert(_ == true)
 
       test(m"an RTL page only changes the dir attribute"):
-        Page(t"Welcome", List(t"home"), HDir.Rtl).html.show.contains(t"""dir="rtl"""")
+        Page("Welcome", List(t"home"), HDir.Rtl).html.show.contains("""dir="rtl"""")
       . assert(_ == true)
 
       test(m"the CSS uses logical edges and mentions no physical left"):
-        css.contains(t"inline-size") && !css.contains(t"left")
+        css.contains("inline-size") && !css.contains("left")
       . assert(_ == true)
 
       test(m"the CSS mentions no physical right"):
-        !css.contains(t"right")
+        !css.contains("right")
       . assert(_ == true)
 
       test(m"flipping direction leaves the stylesheet byte-for-byte identical"):
-        Page(t"Welcome", List(t"home"), HDir.Rtl).css.show == Page(t"Welcome", List(t"home")).css.show
+        Page("Welcome", List(t"home"), HDir.Rtl).css.show == Page("Welcome", List(t"home")).css.show
       . assert(_ == true)
 
     suite(m"Feature independence"):
       test(m"verso-then-recto carries both panels"):
         val text = VersoFirst().css.show
-        text.contains(t".graffiti-verso-layout") && text.contains(t".graffiti-recto-layout")
+        text.contains(".graffiti-verso-layout") && text.contains(".graffiti-recto-layout")
       . assert(_ == true)
 
       test(m"recto-then-verso, the opposite mix-in order, carries both panels too"):
         val text = RectoFirst().css.show
-        text.contains(t".graffiti-verso-layout") && text.contains(t".graffiti-recto-layout")
+        text.contains(".graffiti-verso-layout") && text.contains(".graffiti-recto-layout")
       . assert(_ == true)
 
     suite(m"Customisation through hooks"):
       test(m"a config hook changes the CSS without super or a frame/styles override"):
-        WideVerso().css.show.contains(t"20rem")
+        WideVerso().css.show.contains("20rem")
       . assert(_ == true)
 
       test(m"the final page assembly cannot be overridden"):
@@ -180,42 +180,42 @@ object Tests extends Suite(m"Graffiti tests"):
       . assert(_ == true)
 
     suite(m"Page regions"):
-      val html = FullPage(t"Demo").html.show
+      val html = FullPage("Demo").html.show
 
       test(m"the content is wrapped in a <main> landmark"):
-        html.contains(t"graffiti-mainstay")
+        html.contains("graffiti-mainstay")
       . assert(_ == true)
 
       test(m"the masthead region and its content are present"):
-        html.contains(t"graffiti-masthead") && html.contains(t"Site name")
+        html.contains("graffiti-masthead") && html.contains("Site name")
       . assert(_ == true)
 
       test(m"the colophon region and its content are present"):
-        html.contains(t"graffiti-colophon") && html.contains(t"Copyright")
+        html.contains("graffiti-colophon") && html.contains("Copyright")
       . assert(_ == true)
 
       test(m"the hero banner and its headline are present"):
-        html.contains(t"graffiti-hero") && html.contains(t"Big Headline")
+        html.contains("graffiti-hero") && html.contains("Big Headline")
       . assert(_ == true)
 
     suite(m"Head metadata"):
-      val html = FullPage(t"Demo").html.show
+      val html = FullPage("Demo").html.show
 
       test(m"StandardMetadata contributes a description and a viewport"):
-        html.contains(t"A demo page") && html.contains(t"width=device-width")
+        html.contains("A demo page") && html.contains("width=device-width")
       . assert(_ == true)
 
       test(m"author and keywords reach the head"):
-        html.contains(t"Jon Pretty") && html.contains(t"scala, html")
+        html.contains("Jon Pretty") && html.contains("scala, html")
       . assert(_ == true)
 
       test(m"favicon and canonical links reach the head"):
-        html.contains(t"/icon.png") && html.contains(t"https://example.com/")
+        html.contains("/icon.png") && html.contains("https://example.com/")
       . assert(_ == true)
 
       test(m"StandardMetadata alone yields a description and a viewport"):
         val head = MetaPage().html.show
-        head.contains(t"Just a description") && head.contains(t"viewport")
+        head.contains("Just a description") && head.contains("viewport")
       . assert(_ == true)
 
     suite(m"Incompatible combinations"):
@@ -230,27 +230,27 @@ object Tests extends Suite(m"Graffiti tests"):
       val html = AdminDashboard().html.show
 
       test(m"the brand titles the document and fills the masthead"):
-        html.contains(t"<title>Admin</title>") && html.contains(t"graffiti-masthead")
+        html.contains("<title>Admin</title>") && html.contains("graffiti-masthead")
       . assert(_ == true)
 
       test(m"the cards are laid out in the dashboard grid"):
-        html.contains(t"graffiti-dashboard") && html.contains(t"graffiti-card")
+        html.contains("graffiti-dashboard") && html.contains("graffiti-card")
       . assert(_ == true)
 
       test(m"each card shows its heading and its own content"):
-        html.contains(t"Users") && html.contains(t"128 active") && html.contains(t"Revenue")
+        html.contains("Users") && html.contains("128 active") && html.contains("Revenue")
       . assert(_ == true)
 
       test(m"the cards sit inside the <main> landmark"):
-        html.contains(t"graffiti-mainstay")
+        html.contains("graffiti-mainstay")
       . assert(_ == true)
 
     suite(m"Serving over HTTP"):
       test(m"an archetype declares the text/html media type"):
-        Page(t"Demo", Nil).mediaType.show
-      . assert(_.starts(t"text/html"))
+        Page("Demo", Nil).mediaType.show
+      . assert(_.starts("text/html"))
 
       test(m"serving an archetype streams the full HTML document, with a doctype"):
-        supervise(Page(t"Demo", Nil).read[Text])
+        supervise(Page("Demo", Nil).read[Text])
       . assert: served =>
-          served.contains(t"<!DOCTYPE html>") && served.contains(t"Hello, world!")
+          served.contains("<!DOCTYPE html>") && served.contains("Hello, world!")

@@ -44,11 +44,11 @@ import vacuous.*
 // with reference cycles guarded.
 private[facsimile] object Trees:
   def names(root: Cos)(using Pdf)(using Tactic[Pdf.Error]): List[(Text, Cos)] =
-    pairs(root, t"Names", Set()).bind: (key, value) =>
+    pairs(root, "Names", Set()).bind: (key, value) =>
       key.text.let(text => List((text, value))).or(List())
 
   def numbers(root: Cos)(using Pdf)(using Tactic[Pdf.Error]): List[(Long, Cos)] =
-    pairs(root, t"Nums", Set()).bind: (key, value) =>
+    pairs(root, "Nums", Set()).bind: (key, value) =>
       key.long.let(number => List((number, value))).or(List())
 
   private def pairs(node: Cos, key: Text, visited: Set[Int])(using pdf: Pdf)
@@ -61,7 +61,7 @@ private[facsimile] object Trees:
         else pairs(pdf.resolved(node), key, visited :+ number)
 
       case Cos.Dictionary(entries) =>
-        entries(t"Kids").let(pdf.resolved(_).elements).lay(leaf(entries, key)): kids =>
+        entries("Kids").let(pdf.resolved(_).elements).lay(leaf(entries, key)): kids =>
           kids.bind(pairs(_, key, visited))
 
       case _ =>

@@ -100,8 +100,8 @@ object LineSeparation:
           // most two — `NlNl`) rather than emitted through a callback: a
           // closure's captures hide from subsequent statements under
           // separation checking, so the caller drains these instead.
-          private var out0: Text = "".tt
-          private var out1: Text = "".tt
+          private var out0: Text = ""
+          private var out1: Text = ""
           private var emitted: Int = 0
 
           // Stage a line that is already built. `step`'s fast path constructs a
@@ -364,8 +364,8 @@ object LineSeparation:
 
       override def quantum: Int = 2
 
-      private var out0: Text = "".tt
-      private var out1: Text = "".tt
+      private var out0: Text = ""
+      private var out1: Text = ""
       private var emitted: Int = 0
 
       private update def emit(line: Text): Unit =
@@ -556,10 +556,10 @@ object LineSeparation:
     case Cr, Lf, CrLf, LfCr
 
     def text: Text = this match
-      case Cr   => "\r".tt
-      case Lf   => "\n".tt
-      case CrLf => "\r\n".tt
-      case LfCr => "\n\r".tt
+      case Cr   => "\r"
+      case Lf   => "\n"
+      case CrLf => "\r\n"
+      case LfCr => "\n\r"
 
   enum Action:
     case Nl, NlCr, NlLf, LfNl, CrNl, NlNl, Cr, Lf, Skip

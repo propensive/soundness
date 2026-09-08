@@ -71,15 +71,15 @@ object Benchmarks extends Suite(m"Kaleidoscope regex benchmarks"):
   // RE2-safe, so the same pattern text drives all four arms. The pathological input does NOT
   // match, which is what forces a backtracker to explore every path.
   val patterns: scala.IArray[Text] = scala.IArray
-    ( t"\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} (?:INFO|WARN|ERROR) [a-z.]+ - .*",
-      t"(?:(?:alpha|bravo|charlie|delta|echo|foxtrot|golf|hotel|india|juliett|kilo|lima|mike|november|oscar|papa|quebec|romeo|sierra|tango) ?)+",
-      t"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
-      t"(?:a|a)*c" )
+    ( "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} (?:INFO|WARN|ERROR) [a-z.]+ - .*",
+      "(?:(?:alpha|bravo|charlie|delta|echo|foxtrot|golf|hotel|india|juliett|kilo|lima|mike|november|oscar|papa|quebec|romeo|sierra|tango) ?)+",
+      "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+      "(?:a|a)*c" )
 
   val inputs: scala.IArray[Text] = scala.IArray
-    ( t"2026-08-23 14:31:07 INFO server.dispatch - accepted connection from 10.0.0.7",
-      t"alpha bravo charlie delta echo foxtrot golf hotel india juliett kilo lima mike november oscar papa quebec romeo sierra tango alpha bravo charlie delta",
-      t"f81d4fae-7dec-41d0-a765-00a0c91e6bf6",
+    ( "2026-08-23 14:31:07 INFO server.dispatch - accepted connection from 10.0.0.7",
+      "alpha bravo charlie delta echo foxtrot golf hotel india juliett kilo lima mike november oscar papa quebec romeo sierra tango alpha bravo charlie delta",
+      "f81d4fae-7dec-41d0-a765-00a0c91e6bf6",
       ("a".repeat(22).nn).tt )
 
   val jurPatterns: scala.IArray[java.util.regex.Pattern] =
@@ -131,11 +131,11 @@ object Benchmarks extends Suite(m"Kaleidoscope regex benchmarks"):
   // There is no static-FSA arm: the generated matcher is a whole-input test, and seeking runs
   // the Pike VM with the literal-prefix (memchr-style, via the `String.indexOf` intrinsic) or
   // first-symbol-class jump.
-  val seekFiller: String = ("lorem ipsum dolor sit amet ": String).repeat(150).nn
+  val seekFiller: String = s"lorem ipsum dolor sit amet ".repeat(150).nn
 
   val seekPatterns: scala.IArray[Text] = scala.IArray
-    ( t"ERROR [a-z.]+",
-      t"\\d{4}-\\d{2}-\\d{2}" )
+    ( "ERROR [a-z.]+",
+      "\\d{4}-\\d{2}-\\d{2}" )
 
   val seekInputs: scala.IArray[Text] = scala.IArray
     ( (seekFiller + "ERROR server.overload").tt,
@@ -165,17 +165,17 @@ object Benchmarks extends Suite(m"Kaleidoscope regex benchmarks"):
 
     while corpus < 4 do
       val expected = jurMatches(corpus)
-      assert(pikeMatches(corpus) == expected, ("Pike VM disagrees on corpus ": String)+corpus)
-      assert(fsaMatches(corpus) == expected, ("static FSA disagrees on corpus ": String)+corpus)
-      assert(re2jMatches(corpus) == expected, ("re2j disagrees on corpus ": String)+corpus)
+      assert(pikeMatches(corpus) == expected, s"Pike VM disagrees on corpus $corpus")
+      assert(fsaMatches(corpus) == expected, s"static FSA disagrees on corpus $corpus")
+      assert(re2jMatches(corpus) == expected, s"re2j disagrees on corpus $corpus")
       corpus += 1
 
     var seekCorpus = 0
 
     while seekCorpus < 2 do
-      assert(jurSeek(seekCorpus), ("jur seek missed corpus ": String)+seekCorpus)
-      assert(pikeSeek(seekCorpus), ("praxinoscope seek missed corpus ": String)+seekCorpus)
-      assert(re2jSeek(seekCorpus), ("re2j seek missed corpus ": String)+seekCorpus)
+      assert(jurSeek(seekCorpus), s"jur seek missed corpus $seekCorpus")
+      assert(pikeSeek(seekCorpus), s"praxinoscope seek missed corpus $seekCorpus")
+      assert(re2jSeek(seekCorpus), s"re2j seek missed corpus $seekCorpus")
       seekCorpus += 1
 
     val bench = Bench()

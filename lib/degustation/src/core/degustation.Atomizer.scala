@@ -140,7 +140,7 @@ object Atomizer:
 
         case ConstantType(constant) =>
           tag(out, 'C')
-          utf8(out, constant.getClass.getName.nn + (":": String) + constant.show)
+          utf8(out, constant.getClass.getName.nn + s":${constant.show}")
 
         case tpe: TypeLambda =>
           tag(out, 'L')
@@ -370,7 +370,7 @@ object Atomizer:
 
           case Literal(constant) =>
             tag(out, 'k')
-            utf8(out, constant.getClass.getName.nn + (":": String) + constant.show)
+            utf8(out, constant.getClass.getName.nn + s":${constant.show}")
 
           case This(_) =>
             tag(out, 'z')

@@ -106,7 +106,7 @@ object Api:
     val contentTypeHeader: List[Http.Header] = contentType.lay(Nil): media =>
       List(Http.Header(t"content-type", media))
 
-    val headers: List[Http.Header] = Http.Header(t"accept", accept) :: contentTypeHeader
+    val headers: List[Http.Header] = Http.Header("accept", accept) :: contentTypeHeader
 
     val httpRequest =
       Http.Request
@@ -180,11 +180,11 @@ object Api:
 
       inline compiletime.erasedValue[this.Transport] match
         case _: jacinta.Json =>
-          val response = dispatch(t"application/json")
+          val response = dispatch("application/json")
           compiletime.summonInline[(value is Conformant) over jacinta.Json].read(response)
 
         case _: xylophone.Xml =>
-          val response = dispatch(t"application/xml")
+          val response = dispatch("application/xml")
           compiletime.summonInline[(value is Conformant) over xylophone.Xml].read(response)
 
   // ApiError → Api.Error

@@ -75,8 +75,8 @@ object ociEdges:
   // The world a component exports `wasi:http/incoming-handler` from is, by construction, the
   // standard HTTP proxy world; naming it as the artifact's `target` is what lets a host know the
   // component is servable without inspecting its exports one by one.
-  private val incomingHandler = t"wasi:http/incoming-handler@0.2.0"
-  private val proxy = t"wasi:http/proxy@0.2.0"
+  private val incomingHandler = "wasi:http/incoming-handler@0.2.0"
+  private val proxy = "wasi:http/proxy@0.2.0"
 
   def apply()(using world: Wasi.World): List[Edge] =
     List(Edge(Wasi(Wasi.Version.Wasip2), OciImage, OciTool(world)))
@@ -84,7 +84,7 @@ object ociEdges:
   private case class OciTool(world: Wasi.World) extends Tool:
     type Settings = OciConfiguration
 
-    def name: Text = t"oci"
+    def name: Text = "oci"
     def initial: OciConfiguration = OciConfiguration()
 
     def run

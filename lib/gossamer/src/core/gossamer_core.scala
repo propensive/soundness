@@ -149,10 +149,10 @@ extension [self, textual](words: self)
   (using instance: textual is Textual { type Result = Char })
   def pascal: textual = traversable.traverse(words).map(_.lower.capitalize).to(Iterable).join
   def camel: textual = words.pascal.uncapitalize
-  def snake: textual = words.join(instance.apply("_".tt))
-  def kebab: textual = words.join(instance.apply("-".tt))
-  def dotted: textual = words.join(instance.apply(".".tt))
-  def spaced: textual = words.join(instance.apply(" ".tt))
+  def snake: textual = words.join(instance.apply("_"))
+  def kebab: textual = words.join(instance.apply("-"))
+  def dotted: textual = words.join(instance.apply("."))
+  def spaced: textual = words.join(instance.apply(" "))
 
 // The ordinal-bounded `before`/`upto`/`from`/`after` now live in `rudiments`, alongside the
 // other generic positional operations over `Segmentable` and `Countable`.
@@ -207,7 +207,7 @@ extension [textual: Textual as instance](text: textual)
         val gap = ((spaces.toDouble/word.n0) + 0.5).toInt
 
         recur(word - 1, spaces - gap,
-              result+instance.apply(t" "*(gap + 1))+List.at(words, List.size(words) - word.n0))
+              result+instance.apply(" "*(gap + 1))+List.at(words, List.size(words) - word.n0))
 
     recur(Prim, extra, List.at(words, 0))
 
@@ -264,10 +264,10 @@ extension [textual: Textual as instance](text: textual)
 
       recur(Prim, 0)
 
-  def words: List[textual] = text.cut(" ".tt)
-  def lines: List[textual] = text.cut("\n".tt)
-  def unkebab: List[textual] = text.cut("-".tt)
-  def unsnake: List[textual] = text.cut("_".tt)
+  def words: List[textual] = text.cut(" ")
+  def lines: List[textual] = text.cut("\n")
+  def unkebab: List[textual] = text.cut("-")
+  def unsnake: List[textual] = text.cut("_")
 
   def starts(prefix: Text): Boolean = textual.text(text).s.startsWith(prefix.s)
   def ends(suffix: Text): Boolean = textual.text(text).s.endsWith(suffix.s)

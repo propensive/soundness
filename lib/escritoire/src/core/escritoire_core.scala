@@ -136,7 +136,7 @@ package columnar:
         Sequence.from:
           lines.readable.to(IndexedSeq).bind(Flow.chop(_, width)).toVector
 
-  case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
+  case class Fixed(fixedWidth: Int, ellipsis: Text = "…") extends Columnar:
     def flex[text: Textual { type Result = Char }](lines: Array[text]^{}, maxWidth: Int)
       ( using Text is Measurable )
     :   Flex =
@@ -151,7 +151,7 @@ package columnar:
 
       Sequence.from(lines.readable.toVector.map(Flow.shorten(_, width, ellipsis)))
 
-  case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
+  case class Shortened(fixedWidth: Int, ellipsis: Text = "…") extends Columnar:
     // Elastic between one cell and its natural width, truncating whatever exceeds the
     // settled width with an ellipsis.
     def flex[text: Textual { type Result = Char }](lines: Array[text]^{}, maxWidth: Int)

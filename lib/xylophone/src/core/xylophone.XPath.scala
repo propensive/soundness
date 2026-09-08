@@ -50,7 +50,7 @@ import denominative.dysasymptotics.linearSize
 // parse failure, carrying the offset at which it was detected. `XPath.Error` is reserved
 // for the distinct failure of *evaluating* an expression that parsed.
 object XPath extends Format:
-  def name: Text = t"XPath"
+  def name: Text = "XPath"
 
   // An XPath is a line-less source, so the span is `Offset`-mode: a character index into
   // the expression text, which the `xp"…"` interpolator maps back onto a source-file caret.
@@ -67,19 +67,19 @@ object XPath extends Format:
   // The thirteen XPath 1.0 axes (§2.2). `keyword` is the spelling used in the
   // unabbreviated `axis::test` syntax.
   enum Axis(val keyword: Text) derives CanEqual:
-    case Ancestor          extends Axis(t"ancestor")
-    case AncestorOrSelf    extends Axis(t"ancestor-or-self")
-    case Attribute         extends Axis(t"attribute")
-    case Child             extends Axis(t"child")
-    case Descendant        extends Axis(t"descendant")
-    case DescendantOrSelf  extends Axis(t"descendant-or-self")
-    case Following         extends Axis(t"following")
-    case FollowingSibling  extends Axis(t"following-sibling")
-    case Namespace         extends Axis(t"namespace")
-    case Parent            extends Axis(t"parent")
-    case Preceding         extends Axis(t"preceding")
-    case PrecedingSibling  extends Axis(t"preceding-sibling")
-    case Self              extends Axis(t"self")
+    case Ancestor          extends Axis("ancestor")
+    case AncestorOrSelf    extends Axis("ancestor-or-self")
+    case Attribute         extends Axis("attribute")
+    case Child             extends Axis("child")
+    case Descendant        extends Axis("descendant")
+    case DescendantOrSelf  extends Axis("descendant-or-self")
+    case Following         extends Axis("following")
+    case FollowingSibling  extends Axis("following-sibling")
+    case Namespace         extends Axis("namespace")
+    case Parent            extends Axis("parent")
+    case Preceding         extends Axis("preceding")
+    case PrecedingSibling  extends Axis("preceding-sibling")
+    case Self              extends Axis("self")
 
   // A node test (§2.3). `Textual` rather than `Text`, which would shadow
   // gossamer's `Text` throughout this file.
@@ -151,10 +151,10 @@ object XPath extends Format:
     def |(right: into[Expression]): Expression = Expression.Union(this, right)
 
     infix def contains(right: into[Expression]): Expression =
-      Expression.Call(Unset, t"contains", List(this, right))
+      Expression.Call(Unset, "contains", List(this, right))
 
     infix def startsWith(right: into[Expression]): Expression =
-      Expression.Call(Unset, t"starts-with", List(this, right))
+      Expression.Call(Unset, "starts-with", List(this, right))
 
   // The simple positional view of a path: what `Xml`'s position `Locator` can
   // resolve against a `PositionIndex`, and what the Wisteria-derived decoders
@@ -206,8 +206,8 @@ object XPath extends Format:
   val textual: Expression =
     Expression.Route(Origin.Here, List(Step(Axis.Child, NodeTest.Textual)))
 
-  val position: Expression = Expression.Call(Unset, t"position", Nil)
-  val last: Expression = Expression.Call(Unset, t"last", Nil)
+  val position: Expression = Expression.Call(Unset, "position", Nil)
+  val last: Expression = Expression.Call(Unset, "last", Nil)
 
   def function(name: Text)(arguments: into[Expression]*): Expression =
     Expression.Call(Unset, name, List(arguments*))
@@ -232,7 +232,7 @@ object XPath extends Format:
         builder.toString.nn.tt
 
       case _ =>
-        t""
+        ""
 
     private def accumulate(element: Element, builder: StringBuilder): Unit =
       val children = element.children
@@ -277,10 +277,10 @@ object XPath extends Format:
       case index: Int => subject match
         case element: Element =>
           val values = element.attributes.values.drop(index)
-          if values.hasNext then values.next() else t""
+          if values.hasNext then values.next() else ""
 
         case _ =>
-          t""
+          ""
 
       case _ => subject match
         case node: Node => Locus.textOf(node)
@@ -317,7 +317,7 @@ object XPath extends Format:
 
     def text: Text = this match
       case Textual(value) => value
-      case Truth(value)   => if value then t"true" else t"false"
+      case Truth(value)   => if value then "true" else "false"
       case Numeric(value) => XPath.renderNumber(value)
 
       case NodeSet(loci) => loci.prim.let(_.stringValue).or(t"")
@@ -375,25 +375,25 @@ object XPath extends Format:
       if level < minimum then t"($text)" else text
 
     expression match
-      case Expression.Or(left, right)             => binary(t" or ", left, right, 1)
-      case Expression.And(left, right)            => binary(t" and ", left, right, 2)
-      case Expression.Equal(left, right)          => binary(t"=", left, right, 3)
-      case Expression.Unequal(left, right)        => binary(t"!=", left, right, 3)
-      case Expression.Less(left, right)           => binary(t"<", left, right, 4)
-      case Expression.LessOrEqual(left, right)    => binary(t"<=", left, right, 4)
-      case Expression.Greater(left, right)        => binary(t">", left, right, 4)
-      case Expression.GreaterOrEqual(left, right) => binary(t">=", left, right, 4)
-      case Expression.Add(left, right)            => binary(t" + ", left, right, 5)
-      case Expression.Subtract(left, right)       => binary(t" - ", left, right, 5)
-      case Expression.Multiply(left, right)       => binary(t" * ", left, right, 6)
-      case Expression.Divide(left, right)         => binary(t" div ", left, right, 6)
-      case Expression.Modulo(left, right)         => binary(t" mod ", left, right, 6)
+      case Expression.Or(left, right)             => binary(" or ", left, right, 1)
+      case Expression.And(left, right)            => binary(" and ", left, right, 2)
+      case Expression.Equal(left, right)          => binary("=", left, right, 3)
+      case Expression.Unequal(left, right)        => binary("!=", left, right, 3)
+      case Expression.Less(left, right)           => binary("<", left, right, 4)
+      case Expression.LessOrEqual(left, right)    => binary("<=", left, right, 4)
+      case Expression.Greater(left, right)        => binary(">", left, right, 4)
+      case Expression.GreaterOrEqual(left, right) => binary(">=", left, right, 4)
+      case Expression.Add(left, right)            => binary(" + ", left, right, 5)
+      case Expression.Subtract(left, right)       => binary(" - ", left, right, 5)
+      case Expression.Multiply(left, right)       => binary(" * ", left, right, 6)
+      case Expression.Divide(left, right)         => binary(" div ", left, right, 6)
+      case Expression.Modulo(left, right)         => binary(" mod ", left, right, 6)
 
       case Expression.Negate(operand) =>
         val text = t"-${render(operand, 7)}"
         if minimum > 7 then t"($text)" else text
 
-      case Expression.Union(left, right)          => binary(t"|", left, right, 8)
+      case Expression.Union(left, right)          => binary("|", left, right, 8)
       case Expression.Literal(text)               => renderLiteral(text)
       case Expression.Number(value)               => renderNumber(value)
       case Expression.Variable(prefix, name)      => t"$$${qualify(prefix, name)}"
@@ -407,8 +407,8 @@ object XPath extends Format:
   // XPath 1.0 number syntax has no exponent, and the canonical form of an
   // integral value has no decimal point (`string(1.0)` is `1`).
   private[xylophone] def renderNumber(value: Double): Text =
-    if value != value then t"NaN"
-    else if java.lang.Double.isInfinite(value) then (if value > 0 then t"Infinity" else t"-Infinity")
+    if value != value then "NaN"
+    else if java.lang.Double.isInfinite(value) then (if value > 0 then "Infinity" else "-Infinity")
     else if value == Math.floor(value) && Math.abs(value) < 1e15 then value.toLong.toString.tt
     else value.toString.tt
 
@@ -420,20 +420,20 @@ object XPath extends Format:
     if text.s.indexOf('\'') < 0 then t"'$text'"
     else if text.s.indexOf('"') < 0 then t"\"$text\""
     else
-      val pieces = text.cut(t"'").map { (piece: Text) => t"'$piece'" }
+      val pieces = text.cut("'").map { (piece: Text) => t"'$piece'" }
       t"concat(${pieces.join(t",\"'\",")})"
 
   private def renderTest(test: NodeTest): Text = test match
     case NodeTest.Name(prefix, local)    => qualify(prefix, local)
-    case NodeTest.Wildcard               => t"*"
+    case NodeTest.Wildcard               => "*"
     case NodeTest.PrefixWildcard(prefix) => t"$prefix:*"
-    case NodeTest.Node                   => t"node()"
-    case NodeTest.Textual                => t"text()"
-    case NodeTest.Comment                => t"comment()"
+    case NodeTest.Node                   => "node()"
+    case NodeTest.Textual                => "text()"
+    case NodeTest.Comment                => "comment()"
 
     case NodeTest.Instruction(target) => target match
       case target: Text => t"processing-instruction('$target')"
-      case _            => t"processing-instruction()"
+      case _            => "processing-instruction()"
 
   private def renderPredicates(predicates: List[Expression]): Text =
     predicates.map { predicate => t"[${render(predicate, 1)}]" }.join
@@ -445,10 +445,10 @@ object XPath extends Format:
   // full.
   private def renderStep(step: Step, last: Boolean): Text = step match
     case Step(Axis.DescendantOrSelf, NodeTest.Node, Nil) =>
-      if last then t"descendant-or-self::node()" else t""
+      if last then "descendant-or-self::node()" else ""
 
-    case Step(Axis.Self, NodeTest.Node, Nil)   => t"."
-    case Step(Axis.Parent, NodeTest.Node, Nil) => t".."
+    case Step(Axis.Self, NodeTest.Node, Nil)   => "."
+    case Step(Axis.Parent, NodeTest.Node, Nil) => ".."
 
     case Step(Axis.Child, test, predicates) =>
       t"${renderTest(test)}${renderPredicates(predicates)}"
@@ -461,15 +461,15 @@ object XPath extends Format:
 
   private def renderSteps(steps: List[Step]): Text =
     val length = steps.size
-    steps.indexed.map { (step, index) => renderStep(step, index.n0 == length - 1) }.join(t"/")
+    steps.indexed.map { (step, index) => renderStep(step, index.n0 == length - 1) }.join("/")
 
   private def renderRoute(origin: Origin, steps: List[Step]): Text = origin match
     case Origin.Root => steps match
-      case Nil => t"/"
+      case Nil => "/"
       case _   => t"/${renderSteps(steps)}"
 
     case Origin.Here => steps match
-      case Nil => t"."
+      case Nil => "."
       case _   => renderSteps(steps)
 
     case Origin.Filter(expression, predicates) =>
@@ -484,7 +484,7 @@ object XPath extends Format:
         case other                                  => t"(${render(other, 1)})"
 
       val trail = steps match
-        case Nil => t""
+        case Nil => ""
         case _   => t"/${renderSteps(steps)}"
 
       t"$head${renderPredicates(predicates)}$trail"

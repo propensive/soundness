@@ -95,7 +95,7 @@ class MenuField[item: Showable](initial: SelectMenu[item]) extends Focus:
       canvas.move(Prim, row.z)
 
       val marker =
-        if option != menu.current then t"   " else if focused then t" > " else t" · "
+        if option != menu.current then "   " else if focused then " > " else " · "
 
       val line = t"$marker${option.show}"
       canvas.put(line)

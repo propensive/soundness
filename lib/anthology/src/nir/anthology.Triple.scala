@@ -55,9 +55,9 @@ enum Triple:
   case Arm64MacOs, X64MacOs, Arm64Linux, X64Linux, Arm64Windows, X64Windows
 
   def text: Text = this match
-    case Arm64MacOs   => t"arm64-apple-darwin"
-    case X64MacOs     => t"x86_64-apple-darwin"
-    case Arm64Linux   => t"aarch64-unknown-linux-gnu"
-    case X64Linux     => t"x86_64-unknown-linux-gnu"
-    case Arm64Windows => t"aarch64-pc-windows-msvc"
-    case X64Windows   => t"x86_64-pc-windows-msvc"
+    case Arm64MacOs   => "arm64-apple-darwin"
+    case X64MacOs     => "x86_64-apple-darwin"
+    case Arm64Linux   => "aarch64-unknown-linux-gnu"
+    case X64Linux     => "x86_64-unknown-linux-gnu"
+    case Arm64Windows => "aarch64-pc-windows-msvc"
+    case X64Windows   => "x86_64-pc-windows-msvc"

@@ -94,7 +94,7 @@ object Math:
 
   given showable: [doc <: Document[Math]] => doc is Showable =
     document =>
-      val header = Header(t"1.0", document.metadata.name, Unset)
+      val header = Header("1.0", document.metadata.name, Unset)
 
       val full: Xml = document.root.xml.absolve match
         case node: Node       => Fragment(header, node)
@@ -154,7 +154,7 @@ object Math:
   given q32: Q32 is Encodable in Math = value => rationalMathml(value.numerator, value.denominator)
 
   private def rationalMathml(numerator: Long, denominator: Long): Math =
-    if denominator == 0L then Math(Mtext(t"NaR")) else
+    if denominator == 0L then Math(Mtext("NaR")) else
       val body =
         if denominator == 1L then Mn(math.abs(numerator).toString.tt)
         else Mfrac(Mn(math.abs(numerator).toString.tt), Mn(denominator.toString.tt))
@@ -183,7 +183,7 @@ object Math:
   given vector: [element: Encodable in Math, size <: Int]
   =>  Vector[element, size] is Encodable in Math =
     vector =>
-      Math(fenced(Mtable(vector.list.map { element => Mtr(Mtd(element.mathml)) }*), t"(", t")"))
+      Math(fenced(Mtable(vector.list.map { element => Mtr(Mtd(element.mathml)) }*), "(", ")"))
 
   given matrix: [element: Encodable in Math, height <: Int, width <: Int]
   =>  Matrix[element, height, width] is Encodable in Math =
@@ -191,7 +191,7 @@ object Math:
       val rows = (0 until matrix.rows).toList.map: row =>
         Mtr((0 until matrix.columns).toList.map { column => Mtd(matrix(row, column).mathml) }*)
 
-      Math(fenced(Mtable(rows*), t"[", t"]"))
+      Math(fenced(Mtable(rows*), "[", "]"))
 
   private def quantityMathml(value: Double, units: Map[Text, Int]): Mathml =
     val unitNodes: List[Mathml] =
@@ -233,10 +233,10 @@ extends Documentary:
     val displayPairs: List[(Text, Text)] = display.lay(Nil): value =>
       List(t"display" -> value.encode)
 
-    (t"xmlns" -> mathmlNamespace) :: displayPairs + attributes
+    ("xmlns" -> mathmlNamespace) :: displayPairs + attributes
 
   def xml: Xml =
     val children: Array[Node]^{} = contents.map(_.xml).nodes
-    Element(t"math", Attributes(attributePairs*), children)
+    Element("math", Attributes(attributePairs*), children)
 
   def html: Html of "math" = Math.renderable.render(this)

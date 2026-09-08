@@ -44,8 +44,8 @@ object CaptureTests extends Suite(m"Confinement tests"):
     test(m"the session cannot be stashed in an outer variable"):
       demilitarize:
         def attempt(using session: Llm.Session^): Unit =
-          var stash: () => Llm.Reply = () => Scripted.reply(t"")
-          stash = () => session.ask(t"late")
+          var stash: () => Llm.Reply = () => Scripted.reply("")
+          stash = () => session.ask("late")
           ()
     . assert(_.nonEmpty)
 
@@ -53,7 +53,7 @@ object CaptureTests extends Suite(m"Confinement tests"):
       demilitarize:
         def attempt(using session: Llm.Session^): Unit =
           var stash: () => Unit = () => ()
-          val response = session.stream(t"go")
+          val response = session.stream("go")
           stash = () => response.reply().unit
           ()
     . assert(_.nonEmpty)
@@ -61,7 +61,7 @@ object CaptureTests extends Suite(m"Confinement tests"):
     test(m"a pure reply may leave the session block"):
       demilitarize:
         def attempt(using session: Llm.Session^): Llm.Reply =
-          session.ask(t"fine")
+          session.ask("fine")
     . assert(_.isEmpty)
 
     test(m"the history snapshot may leave the session block"):

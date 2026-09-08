@@ -38,11 +38,11 @@ import guillotine.*
 
 object ResetMode:
   given parameterizable: ResetMode is Parameterizable =
-    case Soft  => t"--soft"
-    case Mixed => t"--mixed"
-    case Hard  => t"--hard"
-    case Merge => t"--merge"
-    case Keep  => t"--keep"
+    case Soft  => "--soft"
+    case Mixed => "--mixed"
+    case Hard  => "--hard"
+    case Merge => "--merge"
+    case Keep  => "--keep"
 
 enum ResetMode:
   case Soft, Mixed, Hard, Merge, Keep

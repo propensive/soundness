@@ -40,7 +40,7 @@ object Bmp:
   def apply(): Rasterizable = rasterization
 
   given rasterization: Bmp is Rasterizable:
-    def name: Text = "BMP".tt
+    def name: Text = "BMP"
     def mediaType = media"image/bmp"
     def alpha: Boolean = false
 

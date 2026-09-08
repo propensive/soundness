@@ -1358,13 +1358,13 @@ object Json extends Json2, Dynamic:
 
           while index < length do
             string.charAt(index) match
-              case '"'          => escape(t"\\\"")
-              case '\\'         => escape(t"\\\\")
-              case '\b'         => escape(t"\\b")
-              case '\f'         => escape(t"\\f")
-              case '\n'         => escape(t"\\n")
-              case '\r'         => escape(t"\\r")
-              case '\t'         => escape(t"\\t")
+              case '"'          => escape("\\\"")
+              case '\\'         => escape("\\\\")
+              case '\b'         => escape("\\b")
+              case '\f'         => escape("\\f")
+              case '\n'         => escape("\\n")
+              case '\r'         => escape("\\r")
+              case '\t'         => escape("\\t")
               case c if c < ' ' => escape(unicode(c))
               case _            => ()
 
@@ -1492,7 +1492,7 @@ object Json extends Json2, Dynamic:
         override val offset: Optional[Int] = Unset,
         override val length: Optional[Int] = Unset )
     extends Format.Position:
-      def describe: Text = (("line ": String)+line+(", column ": String)+column).tt
+      def describe: Text = t"line $line, column $column"
 
       // `line`/`column` are 1-based here; the public span is 0-based.
       override def span: Span =
@@ -1831,7 +1831,7 @@ object Json extends Json2, Dynamic:
 
       def string: Text raises Json.Error =
         if isString then json.asInstanceOf[Text]
-        else expected(Json.Primitive.String) yet "".tt
+        else expected(Json.Primitive.String) yet ""
 
       def boolean: Boolean raises Json.Error =
         if isBoolean then json.asInstanceOf[Boolean]

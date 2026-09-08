@@ -38,20 +38,20 @@ import hieroglyph.*
 
 package dagStyles:
   given boxDrawingDagStyle: [text: Textual] => TextualDagStyle[text] =
-    TextualDagStyle("  ".tt, "└─".tt, "│ ".tt, "├─".tt, "──".tt, "┴─".tt, "│─".tt, "┼─".tt)
+    TextualDagStyle("  ", "└─", "│ ", "├─", "──", "┴─", "│─", "┼─")
 
   given asciiDagStyle: [text: Textual] => TextualDagStyle[text] =
-    TextualDagStyle("  ".tt, "+-".tt, "| ".tt, "+-".tt, "--".tt, "+-".tt, "|-".tt, "+-".tt)
+    TextualDagStyle("  ", "+-", "| ", "+-", "--", "+-", "|-", "+-")
 
 package laneDagStyles:
   given boxDrawingLaneDagStyle: [text: Textual] => (Text is Measurable)
   =>  TextualLaneDagStyle[text] =
     TextualLaneDagStyle
-      ( "  ".tt, "│ ".tt, "──".tt, "╰─".tt, "╯ ".tt, "╭─".tt, "╮ ".tt,
-        "┴─".tt, "┬─".tt, "├─".tt, "┤ ".tt, "┼─".tt, "──".tt, "● ".tt )
+      ( "  ", "│ ", "──", "╰─", "╯ ", "╭─", "╮ ",
+        "┴─", "┬─", "├─", "┤ ", "┼─", "──", "● " )
 
   given asciiLaneDagStyle: [text: Textual] => (Text is Measurable)
   =>  TextualLaneDagStyle[text] =
     TextualLaneDagStyle
-      ( "  ".tt, "| ".tt, "--".tt, "+-".tt, "+ ".tt, "+-".tt, "+ ".tt,
-        "+-".tt, "+-".tt, "+-".tt, "+ ".tt, "+-".tt, "--".tt, "* ".tt )
+      ( "  ", "| ", "--", "+-", "+ ", "+-", "+ ",
+        "+-", "+-", "+-", "+ ", "+-", "--", "* " )

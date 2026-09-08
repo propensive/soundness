@@ -730,7 +730,7 @@ object Tests extends Suite(m"Hallucination Tests"):
       ( String(encoded.readable.slice(0, 4).toArray, "UTF-8").tt,
         String(encoded.readable.slice(8, 12).toArray, "UTF-8").tt,
         String(encoded.readable.slice(12, 16).toArray, "UTF-8").tt )
-    . assert(_ == (t"RIFF", t"WEBP", t"VP8 "))
+    . assert(_ == ("RIFF", "WEBP", "VP8 "))
 
     test(m"a smaller image also lossy-encodes and round-trips"):
       val src = Raster(16, 16)((x, y) => Chroma(x*16, y*16, 128))
@@ -769,4 +769,4 @@ object Tests extends Suite(m"Hallucination Tests"):
       ( String(encoded.readable.slice(0, 4).toArray, "UTF-8").tt,
         String(encoded.readable.slice(8, 12).toArray, "UTF-8").tt,
         String(encoded.readable.slice(12, 16).toArray, "UTF-8").tt )
-    . assert(_ == (t"RIFF", t"WEBP", t"VP8L"))
+    . assert(_ == ("RIFF", "WEBP", "VP8L"))

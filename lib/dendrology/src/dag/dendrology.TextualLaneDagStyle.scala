@@ -90,7 +90,7 @@ extends LaneDagStyle[line]:
         val padding = if w > 1 then filler.repeat(w - 1).nn else "".s
         line(Text(cell + padding))
 
-    parts.fold(line(t""))(_+_)+label.or(line(t""))
+    parts.fold(line(""))(_+_)+label.or(line(""))
 
   def text(tile: DagTile): Text = tile match
     case Space      => space

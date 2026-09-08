@@ -352,7 +352,7 @@ private[xylophone] object XPathEngine:
       case Axis.Attribute        => attributeLoci(locus)
 
       case Axis.Namespace =>
-        abort(Error(Reason.Unsupported(t"the namespace axis")))
+        abort(Error(Reason.Unsupported("the namespace axis")))
 
   // Node tests, with the principal node type of the axis (§2.3): a name or
   // wildcard on the attribute axis matches attributes; on every other axis,
@@ -472,7 +472,7 @@ private[xylophone] object XPathEngine:
     case _ => locus.subject match
       case element: Element                     => element.label
       case ProcessingInstruction(target, _)     => target
-      case _                                    => t""
+      case _                                    => ""
 
   // The rounding used by `round()` and `substring()` (§4.2, §4.4):
   // floor(x + 0.5), with NaN and the infinities passing through.
@@ -517,12 +517,12 @@ private[xylophone] object XPathEngine:
         Value.Numeric(nodeSetArgument(args.head).size)
 
       case "id" =>
-        abort(Error(Reason.Unsupported(t"the id() function")))
+        abort(Error(Reason.Unsupported("the id() function")))
 
       case "local-name" | "name" | "namespace-uri" =>
         arity(0, 1)
 
-        if name.s == "namespace-uri" then Value.Textual(t"") else
+        if name.s == "namespace-uri" then Value.Textual("") else
           val loci =
             if arguments.nil then List(context.locus) else nodeSetArgument(args.head)
 
@@ -555,14 +555,14 @@ private[xylophone] object XPathEngine:
         arity(2, 2)
         val whole = args(0).text.s
         val index = whole.indexOf(args(1).text.s)
-        Value.Textual(if index < 0 then t"" else whole.substring(0, index).nn.tt)
+        Value.Textual(if index < 0 then "" else whole.substring(0, index).nn.tt)
 
       case "substring-after" =>
         arity(2, 2)
         val whole = args(0).text.s
         val part = args(1).text.s
         val index = whole.indexOf(part)
-        Value.Textual(if index < 0 then t"" else whole.substring(index + part.length).nn.tt)
+        Value.Textual(if index < 0 then "" else whole.substring(index + part.length).nn.tt)
 
       case "substring" =>
         arity(2, 3)
@@ -649,7 +649,7 @@ private[xylophone] object XPathEngine:
         val declared = (context.locus :: ancestorLoci(context.locus)).flatMap: locus =>
           locus.subject match
             case element: Element if attributeIndexOf(locus) < 0 =>
-              element.attributes.fetch(t"xml:lang") match
+              element.attributes.fetch("xml:lang") match
                 case value: Text => List(value.s.toLowerCase.nn)
                 case _           => Nil
 

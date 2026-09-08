@@ -46,12 +46,12 @@ import Tels.{Field, Polarity, Scalar, Struct}
 // optional `email` (String scalar), and a required `age` (identifier).
 object ContactSchemaFixture:
   val tels: Tels = Tels(
-    name     = t"contact",
+    name     = "contact",
     document = Struct(
       members = Array(
-        Field(Polarity.Implicit, Polarity.Implicit, t"name",  Scalar(Array(t"string")),     Unset),
-        Field(Polarity.Loose,    Polarity.Implicit, t"email", Scalar(Array(t"string")),     Unset),
-        Field(Polarity.Implicit, Polarity.Implicit, t"age",   Scalar(Array(t"identifier")), Unset)),
+        Field(Polarity.Implicit, Polarity.Implicit, "name",  Scalar(Array("string")),     Unset),
+        Field(Polarity.Loose,    Polarity.Implicit, "email", Scalar(Array("string")),     Unset),
+        Field(Polarity.Implicit, Polarity.Implicit, "age",   Scalar(Array("identifier")), Unset)),
       validators = Array.empty),
     layers   = Array.empty,
     sigil    = Unset,
@@ -68,10 +68,10 @@ object ContactRecords extends TelBlueprint(ContactSchemaFixture.tels):
 // A second schema with a Flag-typed field for the boolean records test.
 object FeatureSchemaFixture:
   val tels: Tels = Tels(
-    name     = t"feature",
+    name     = "feature",
     document = Struct(
       members    = Array
-                    (Field(Polarity.Loose, Polarity.Implicit, t"enabled", Tels.Flag, Unset)),
+                    (Field(Polarity.Loose, Polarity.Implicit, "enabled", Tels.Flag, Unset)),
       validators = Array.empty),
     layers   = Array.empty,
     sigil    = Unset,

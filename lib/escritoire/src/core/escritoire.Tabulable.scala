@@ -70,17 +70,17 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
         [field] => tabulable =>
           tabulable.table().columns.map: element =>
             element.contramap(dereference).retitle:
-              labels.at(label).or(label.uncamel.join(t" ").capitalize)
+              labels.at(label).or(label.uncamel.join(" ").capitalize)
 
   given int: Int is Tabulable[Text] = () =>
-    Scaffold[Int, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))
+    Scaffold[Int, Text](Column("", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))
 
   given double: Decimalizer => Double is Tabulable[Text] = () =>
     Scaffold[Double, Text]
-      ( Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show) )
+      ( Column("", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show) )
 
   given text: Text is Tabulable[Text] = () =>
-    Scaffold[Text, Text](Column(t"", TextAlignment.Left, Unset, columnar.Paragraph)(identity))
+    Scaffold[Text, Text](Column("", TextAlignment.Left, Unset, columnar.Paragraph)(identity))
 
 trait Tabulable[text] extends Typeclass:
   def table(): Scaffold[Self, text]

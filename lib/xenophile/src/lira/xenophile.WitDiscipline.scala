@@ -45,11 +45,11 @@ import errorDiagnostics.emptyDiagnostics
 // contract — and, when the reserved `component` universe's schema layer lands, of a library
 // component — atomized per `wit.md`.
 object WitDiscipline extends Discipline:
-  def id: Text = t"wit/1"
+  def id: Text = "wit/1"
 
   def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".wit")
 
-  def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"host", t"component"))
+  def domain: Discipline.Domain = Discipline.Domain.Realms(Set("host", "component"))
   def keying: Discipline.Keying = Discipline.Keying.Declaration
 
   def guarantees(realm: Text): Set[Discipline.Guarantee] =
