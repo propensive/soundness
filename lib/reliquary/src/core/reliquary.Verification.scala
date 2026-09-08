@@ -148,7 +148,7 @@ object Verification:
     // minimality rules (L107). Unknown universes stay opaque (§9.4).
     val trees = manifest.section.map: section => (section, Lira.Tree.decode(resolve(section.tree)))
 
-    trees.each: pair => pair(1).entries.each: entry => resolve(entry.blob)
+    trees.each: pair => pair(1).entries.each(entry => resolve(entry.blob))
 
     val materialized: List[(Section, Lira.Tree)] = trees match
       case (rootSection, rootTree) :: rest =>
