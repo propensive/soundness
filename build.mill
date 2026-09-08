@@ -106,7 +106,6 @@ object settings:
     "-Zgiven-prefixes",
     "-Zinline-source-maps",
     "-Zliterate-literals",
-    "-Zopaque-mutability",
     "-Zpure-iarrays",
     "-Zretains-bounds",
     "-Zretains-skolems",
@@ -185,6 +184,14 @@ object settings:
   // `import language.experimental.separationChecking`.
   def sep(options: Seq[String]): Seq[String] =
     cc(options) :+ "-language:experimental.separationChecking"
+
+  // Opaque aliases over mutable types classified as mutable under capture checking
+  // (`-Zopaque-mutability`). Per component rather than global: only the components whose
+  // opaque types alias mutable representations need it, and on the 3.10 stream the patch
+  // crashes the compiler (an assertion in `TypeOps.dominators` reached from
+  // `isArrayUnderStrictMut` on a union type) in components that do not.
+  def opaqueMutability(options: Seq[String]): Seq[String] =
+    options :+ "-Zopaque-mutability"
 
   // Override `-Xmax-inlines` to `limit`, replacing any existing setting rather
   // than appending a second one (which the compiler reports as "Option
@@ -1838,7 +1845,8 @@ object escritoire extends Library:
 object polysyllabic extends Library:
   object core extends Component(gossamer.core, gossamer.lexicon):
     override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium,anticipation.literacy"))
+      settings.opaqueMutability:
+        settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium,anticipation.literacy"))
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
@@ -2169,7 +2177,8 @@ object gossamer extends Library:
   object core extends Component(hieroglyph.core, kaleidoscope.core, spectacular.core,
       hypotenuse.core):
     override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium,anticipation.literacy"))
+      settings.opaqueMutability:
+        settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium,anticipation.literacy"))
   // Decoding `Text` from bytes and naming enum cases: gossamer's only uses of distillate,
   // and so the component that keeps distillate (with digression, inimitable and wisteria
   // behind it) out of the closure of everything that merely handles text.
@@ -2363,7 +2372,8 @@ object hyperbole extends Library:
 object hypotenuse extends Library:
   object core extends Component(anticipation.opaque, contingency.core):
     override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium,anticipation.literacy"))
+      settings.opaqueMutability:
+        settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium,anticipation.literacy"))
   object test extends Tests(core, quantitative.units, abacist.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
@@ -3271,7 +3281,8 @@ object ulysses extends Library:
   object core extends Component(gastronomy.core, cardinality.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium,anticipation.literacy"))
+      settings.opaqueMutability:
+        settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium,anticipation.literacy"))
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
@@ -3358,7 +3369,8 @@ object vivisection extends Library:
   // the live suite launches real JVMs under the jdwp agent.
   object test extends Tests(core, eval, dap, eucalyptus.core, ambience.core):
     override def scalacOptions = Task:
-      settings.sep(super.scalacOptions())
+      settings.opaqueMutability:
+        settings.sep(super.scalacOptions())
 
 object wisteria extends Library:
   object core extends Component(contingency.core, vicarious.core):
