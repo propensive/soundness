@@ -58,7 +58,7 @@ object Fixture:
     lazy val squared: Int = seed*seed
 
     def compute(base: Int): Unit =
-      val label = "answer"
+      val label : String = "answer"
       val numbers = Array(base, base + 1, base + 2)
       marker(base + seed, label, numbers, Port(8080))
 

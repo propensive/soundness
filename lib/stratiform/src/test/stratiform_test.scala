@@ -2456,7 +2456,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == true)
 
       test(m"§11 shared vector: the tels value hash"):
-        val hex = "d440b01e327c62c41ac641047f2c4d8df3cbe94abb24db33f189226b7b8b7ad3"
+        val hex: String = "d440b01e327c62c41ac641047f2c4d8df3cbe94abb24db33f189226b7b8b7ad3"
         val bytes = hex.grouped(2).map(java.lang.Integer.parseInt(_, 16).toByte).toArray
         Base256.encode(bytes.asInstanceOf[Array[Byte]]).s
       . assert(_ == "ÔŀưḞ2żbτȚÆAĄſЬMẍỳϋῩJλḤӛ3ñẉḢkŻẋzǓ")

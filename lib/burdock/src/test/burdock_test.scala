@@ -516,7 +516,7 @@ object Tests extends Suite(m"Burdock Tests"):
       val delayTwo = juca.AtomicLong(300)
 
       def serve(name: String, bytes: scala.Array[Byte], delay: juca.AtomicLong): Unit =
-        server.createContext("/"+name, { exchange =>
+        server.createContext(("/": String)+name, { exchange =>
           requests.incrementAndGet()
           peak.accumulateAndGet(inFlight.incrementAndGet(), (a, b) => Math.max(a, b))
           try
@@ -526,8 +526,8 @@ object Tests extends Suite(m"Burdock Tests"):
             exchange.nn.close()
           finally inFlight.decrementAndGet() })
 
-      val one: scala.Array[Byte] = "dependency one".getBytes("UTF-8").nn
-      val two: scala.Array[Byte] = "dependency two".getBytes("UTF-8").nn
+      val one: scala.Array[Byte] = "dependency one".s.getBytes("UTF-8").nn
+      val two: scala.Array[Byte] = "dependency two".s.getBytes("UTF-8").nn
       serve("one.jar", one, delayOne)
       serve("two.jar", two, delayTwo)
       server.start()
@@ -601,7 +601,7 @@ object Tests extends Suite(m"Burdock Tests"):
         (warmOutput, requests.get() - coldRequests)
       .assert(_ == (t"probe", 0))
 
-      jnf.Files.write(jnf.Paths.get(t"$cache/burdock/$hashOne.jar".s), "corrupted".getBytes("UTF-8").nn)
+      jnf.Files.write(jnf.Paths.get(t"$cache/burdock/$hashOne.jar".s), ("corrupted": String).getBytes("UTF-8").nn)
 
       test(m"a corrupted cached requirement is rejected with status 1"):
         status(jar, cache)

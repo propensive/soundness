@@ -1044,7 +1044,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
               while jl.System.currentTimeMillis < deadline do
                 bytes += 4096
-                _root_.java.nio.file.Files.writeString(path, "0 1 "+bytes+"\n")
+                _root_.java.nio.file.Files.writeString(path, ("0 1 ": String)+bytes+"\n")
                 jl.Thread.sleep(500)
 
               _root_.java.nio.file.Files.deleteIfExists(path)
