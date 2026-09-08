@@ -628,7 +628,7 @@ trait Tests(dependencies: JavaModule*) extends BaseScalaModule:
 
   def scalacOptions = Task:
     settings.scalaOptions
-      ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+      ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium,anticipation.literacy")
       :+ s"-Xplugin:${larceny.plugin.assembly().path}"
       :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
 trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
