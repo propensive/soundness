@@ -312,7 +312,7 @@ object Blake3:
       current.rootOutputBytes(outLen)
 
   given hash: (hashing: Hashing { def blake3: Hashing.Function }) => Hash in Blake3 =
-    Hash(t"BLAKE3", t"HMAC-BLAKE3", hashing.blake3)
+    Hash("BLAKE3", "HMAC-BLAKE3", hashing.blake3)
 
   // The pure-Scala BLAKE3 `Digestion`, used by the Soundness hashing provider.
   def digestion(): Digestion^ = new Digestion:

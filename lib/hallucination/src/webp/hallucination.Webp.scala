@@ -41,7 +41,7 @@ object Webp:
   def apply(): Rasterizable = rasterization
 
   given rasterization: Webp is Rasterizable:
-    def name: Text = "WEBP".tt
+    def name: Text = "WEBP"
     def mediaType = media"image/webp"
     def alpha: Boolean = true
 

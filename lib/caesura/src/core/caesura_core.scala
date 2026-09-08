@@ -54,10 +54,10 @@ package dsvFormats:
 
 package dsvRedesignations:
   given unchangedRedesignation: Dsv.Redesignation = identity(_)
-  given lowerDottedRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(t" ")
-  given lowerSlashedRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(t" ")
-  given capitalizedWordsRedesignation: Dsv.Redesignation = _.uncamel.map(_.capitalize).join(t" ")
-  given lowerWordsRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(t" ")
+  given lowerDottedRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(" ")
+  given lowerSlashedRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(" ")
+  given capitalizedWordsRedesignation: Dsv.Redesignation = _.uncamel.map(_.capitalize).join(" ")
+  given lowerWordsRedesignation: Dsv.Redesignation = _.uncamel.map(_.lower).join(" ")
 
 extension [encodable: Encodable in Dsv](value: encodable) def dsv: Dsv = encodable.encode(value)
 
@@ -114,7 +114,7 @@ private def parsedIterator[value](consume reader: DsvReader^, parsable: value is
 package optics:
   private def cell(row: Dsv, name: String): Text =
     row.columns.let(_(name.tt)).let: index => row.data.at(index.z)
-    . or(t"")
+    . or("")
 
   private def withCell(row: Dsv, name: String, value: Text): Dsv =
     row.columns.let(_(name.tt)).lay(row): index => row.copy(data = Array.frozen(row.data.readable.updated(index, value)))

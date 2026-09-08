@@ -138,28 +138,28 @@ object Tests extends Suite(m"Anthology Tests"):
 
     test(m"No path exists against the direction of the edges"):
       capture[Link.Error](android.path(Apk, Universe.Classfile)).reason
-    . assert(_ == Link.Error.Reason.NoPath(t"apk", t"classfile"))
+    . assert(_ == Link.Error.Reason.NoPath("apk", "classfile"))
 
     test(m"An unregistered edge leaves its format unreachable"):
       capture[Link.Error](Toolchain(jarEdges()).path(Universe.Classfile, Dex)).reason
-    . assert(_ == Link.Error.Reason.NoPath(t"classfile", t"dex"))
+    . assert(_ == Link.Error.Reason.NoPath("classfile", "dex"))
 
     test(m"Duplicate edges between the same formats are rejected"):
       capture[Link.Error](Toolchain(dexEdges(), dexEdges())).reason
-    . assert(_ == Link.Error.Reason.DuplicateEdge(t"classfile", t"dex"))
+    . assert(_ == Link.Error.Reason.DuplicateEdge("classfile", "dex"))
 
     test(m"A cyclic toolchain is rejected"):
-      val a = TestIr(t"a")
-      val b = TestIr(t"b")
+      val a = TestIr("a")
+      val b = TestIr("b")
       val cycle = List(Edge(a, b, passTool(t"ab")), Edge(b, a, passTool(t"ba")))
       capture[Link.Error](Toolchain(cycle)).reason
     . assert(_ == Link.Error.Reason.CyclicToolchain)
 
     test(m"Two shortest paths between formats are ambiguous"):
-      val a = TestIr(t"a")
-      val b1 = TestIr(t"b1")
-      val b2 = TestIr(t"b2")
-      val c = TestApp(t"c")
+      val a = TestIr("a")
+      val b1 = TestIr("b1")
+      val b2 = TestIr("b2")
+      val c = TestApp("c")
 
       val diamond =
         Toolchain
@@ -170,16 +170,16 @@ object Tests extends Suite(m"Anthology Tests"):
                 Edge(b2, c, passTool(t"b2-c")) ) )
 
       capture[Link.Error](diamond.path(a, c)).reason
-    . assert(_ == Link.Error.Reason.AmbiguousPath(t"a", t"c"))
+    . assert(_ == Link.Error.Reason.AmbiguousPath("a", "c"))
 
     test(m"Native binaries for different triples are distinct formats"):
       Binary(Triple.Arm64MacOs) == Binary(Triple.X64Linux)
     . assert(_ == false)
 
     supervise:
-      val a = TestIr(t"a")
-      val b = TestIr(t"b")
-      val c = TestApp(t"c")
+      val a = TestIr("a")
+      val b = TestIr("b")
+      val c = TestApp("c")
 
       val chain =
         Toolchain(List(Edge(a, b, passTool(t"first")), Edge(b, c, passTool(t"second"))))
@@ -236,7 +236,7 @@ object Tests extends Suite(m"Anthology Tests"):
       test(m"An xeq bundle requires a runner source"):
         val target = anthology.Xeq(ziggurat.Packaging.Delivery.EmbedAll)
         capture[Link.Error](bundles.produce(jarInput, anthology.Jar, target, scratch)).reason
-      . assert(_ == Link.Error.Reason.MissingSetting(t"runners"))
+      . assert(_ == Link.Error.Reason.MissingSetting("runners"))
 
       test(m"A local runner source cannot imply the targets"):
         val target = anthology.Xeq(ziggurat.Packaging.Delivery.EmbedAll)
@@ -244,7 +244,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
         capture[Link.Error](bundles.produce(jarInput, anthology.Jar, target, scratch, settings))
         . reason
-      . assert(_ == Link.Error.Reason.MissingSetting(t"targets"))
+      . assert(_ == Link.Error.Reason.MissingSetting("targets"))
 
       test(m"Native delivery requires exactly one target"):
         val target = anthology.Xeq(ziggurat.Packaging.Delivery.Native)
@@ -262,40 +262,40 @@ object Tests extends Suite(m"Anthology Tests"):
 
     test(m"A library JAR's universe must match its compilation's"):
       capture[Link.Error](Toolchain(jarEdges()).path(Universe.Sjsir, Library(Universe.Nir))).reason
-    . assert(_ == Link.Error.Reason.NoPath(t"sjsir", t"library-nir"))
+    . assert(_ == Link.Error.Reason.NoPath("sjsir", "library-nir"))
 
     test(m"An sjsir compilation cannot be packaged as an executable JAR"):
       capture[Link.Error](Toolchain(jarEdges()).path(Universe.Sjsir, anthology.Jar)).reason
-    . assert(_ == Link.Error.Reason.NoPath(t"sjsir", t"jar"))
+    . assert(_ == Link.Error.Reason.NoPath("sjsir", "jar"))
 
     test(m"A classfile compilation cannot be linked as JavaScript"):
       val target = anthology.Js(anthology.Js.Module.Es)
       capture[Link.Error](Toolchain(sjsEdges()).path(Universe.Classfile, target)).reason
-    . assert(_ == Link.Error.Reason.NoPath(t"classfile", t"js-es"))
+    . assert(_ == Link.Error.Reason.NoPath("classfile", "js-es"))
 
     test(m"WASI 0.3 is unreachable without an edge producing it"):
       val target = Wasi(Wasi.Version.Wasip3)
       capture[Link.Error](Toolchain(sjsEdges()).path(Universe.Sjsir, target)).reason
-    . assert(_ == Link.Error.Reason.NoPath(t"sjsir", t"wasip3"))
+    . assert(_ == Link.Error.Reason.NoPath("sjsir", "wasip3"))
 
     // The `component` and `wasm-object` universes are nodes without edges: LIRA's registry
     // names them, and composition tools will register into them, but no Soundness tool yet
     // produces or consumes either.
     test(m"The component universe is a node awaiting edges"):
       capture[Link.Error](Toolchain(sjsEdges()).path(Universe.Sjsir, Component)).reason
-    . assert(_ == Link.Error.Reason.NoPath(t"sjsir", t"component"))
+    . assert(_ == Link.Error.Reason.NoPath("sjsir", "component"))
 
     test(m"The wasm-object universe is a node awaiting edges"):
       capture[Link.Error](Toolchain(sjsEdges()).path(WasmObject, Wasi(Wasi.Version.Wasip1))).reason
-    . assert(_ == Link.Error.Reason.NoPath(t"wasm-object", t"wasip1"))
+    . assert(_ == Link.Error.Reason.NoPath("wasm-object", "wasip1"))
 
     test(m"The AXML encoder emits the binary-XML chunk header"):
-      val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))
+      val axml = Axml.encode(Axml.Element("manifest", Nil, Nil))
       List(axml.readable(0), axml.readable(1), axml.readable(2), axml.readable(3)).map(_.toInt & 0xff)
     . assert(_ == List(0x03, 0x00, 0x08, 0x00))
 
     test(m"The AXML total-size field equals the encoded length"):
-      val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))
+      val axml = Axml.encode(Axml.Element("manifest", Nil, Nil))
       def u8(index: Int): Int = axml.readable(index).toInt & 0xff
       val declared = u8(4) | (u8(5) << 8) | (u8(6) << 16) | (u8(7) << 24)
       declared == axml.readable.length
@@ -322,7 +322,7 @@ object Tests extends Suite(m"Anthology Tests"):
         val classpath: LocalClasspath = ???
 
         Scalac[3.8](Nil).on(classpath).session:
-          val process = compilation.compile(Map(t"a.scala" -> t"class A"))
+          val process = compilation.compile(Map("a.scala" -> "class A"))
           process.errors
 
         ()
@@ -344,8 +344,8 @@ object Tests extends Suite(m"Anthology Tests"):
         val classpath: LocalClasspath = ???
 
         Scalac[3.8](Nil).on(classpath).session:
-          val process1 = compilation.compile(Map(t"a.scala" -> t"class A"))
-          val process2 = compilation.compile(Map(t"b.scala" -> t"class B"))
+          val process1 = compilation.compile(Map("a.scala" -> "class A"))
+          val process2 = compilation.compile(Map("b.scala" -> "class B"))
           process1.errors
     . aspire(_.nonEmpty)
 
@@ -353,21 +353,21 @@ object Tests extends Suite(m"Anthology Tests"):
     // edge, whose provider probes the WASI toolchain), so its graph shape is checkable without
     // `wasm-tools` installed.
     val ociToolchain =
-      val world = Wasi.World(unsafely(temporaryDirectory / Uuid()), t"main")
+      val world = Wasi.World(unsafely(temporaryDirectory / Uuid()), "main")
       Toolchain(ociEdges()(using world))
 
     test(m"An OCI image is unreachable from a classfile compilation"):
       capture[Link.Error](ociToolchain.path(Universe.Classfile, OciImage)).reason
-    . assert(_ == Link.Error.Reason.NoPath(t"classfile", t"oci"))
+    . assert(_ == Link.Error.Reason.NoPath("classfile", "oci"))
 
     test(m"An OCI image is unreachable without the component edge"):
       capture[Link.Error](ociToolchain.path(Universe.Sjsir, OciImage)).reason
-    . assert(_ == Link.Error.Reason.NoPath(t"sjsir", t"oci"))
+    . assert(_ == Link.Error.Reason.NoPath("sjsir", "oci"))
 
     test(m"An OCI image config defaults to the wasm/wasip2 platform"):
       val config = OciConfiguration()
       (config.architecture, config.os)
-    . assert(_ == (t"wasm", t"wasip2"))
+    . assert(_ == ("wasm", "wasip2"))
 
     test(m"An sjsir compilation is not a native compilation"):
       demilitarize:
@@ -382,13 +382,13 @@ object Tests extends Suite(m"Anthology Tests"):
 
     test(m"Triples render as LLVM target triples"):
       Triple.Arm64MacOs.text
-    . assert(_ == t"arm64-apple-darwin")
+    . assert(_ == "arm64-apple-darwin")
 
     // An end-to-end exercise of the portable pipeline—compile with `-scalajs`, then link as
     // JavaScript—which runs only when a cached proscala toolchain (whose distribution includes
     // the Scala.js runtime JARs) can be found.
     val source: Text =
-      t"""|object Main:
+      """|object Main:
           |  def main(args: scala.Array[String]): Unit = println("hello")
           |""".s.stripMargin.tt
 
@@ -399,7 +399,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
         val process =
           Scalac[3.8](Nil).targeting[Universe.Sjsir]
-            (classpath)(Map(t"hello.scala" -> source), out)
+            (classpath)(Map("hello.scala" -> source), out)
 
         test(m"A portable compilation succeeds"):
           process.complete()
@@ -443,7 +443,7 @@ object Tests extends Suite(m"Anthology Tests"):
         val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
         Files.createDirectories(Paths.get(out.encode.s))
 
-        val process = Scalac[3.8](Nil)(classpath)(Map(t"hello.scala" -> source), out)
+        val process = Scalac[3.8](Nil)(classpath)(Map("hello.scala" -> source), out)
 
         test(m"A classfile compilation succeeds"):
           process.complete()
@@ -461,7 +461,7 @@ object Tests extends Suite(m"Anthology Tests"):
               List(EntryPoint(Fqcn(t"Main"))) )
           . pipe: artifact =>
               mute[Exec.Event](sh"java -jar $artifact".exec[Text]()).trim
-        . assert(_ == t"hello")
+        . assert(_ == "hello")
 
         // The whole point of source nodes: one path from `.scala` text to a runnable JAR, with
         // the compiler and the bundler both selected by the path rather than named by the caller.
@@ -470,7 +470,7 @@ object Tests extends Suite(m"Anthology Tests"):
           val staged: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
           toolchain.produce
-            ( Deliverable.Sources(Map(t"hello.scala" -> source), classpath),
+            ( Deliverable.Sources(Map("hello.scala" -> source), classpath),
               Language.Scala,
               anthology.Jar,
               staged,
@@ -479,12 +479,12 @@ object Tests extends Suite(m"Anthology Tests"):
 
           . pipe: artifact =>
               mute[Exec.Event](sh"java -jar $artifact".exec[Text]()).trim
-        . assert(_ == t"hello")
+        . assert(_ == "hello")
 
         test(m"A compile edge reports a failing compilation as an error count"):
           val toolchain = Toolchain(List(scalacEdges.classfile(Scalac[3.8](Nil))))
           val staged: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
-          val bad = Map(t"bad.scala" -> t"class Bad:\n  def x: Int = \"nope\"\n")
+          val bad = Map("bad.scala" -> "class Bad:\n  def x: Int = \"nope\"\n")
 
           capture[Link.Error]
             ( toolchain.produce
@@ -509,8 +509,8 @@ object Tests extends Suite(m"Anthology Tests"):
         . assert(_ == true)
 
         // Warm-session compilations: one retained compiler context across several compiles.
-        val alpha = Map(t"alpha.scala" -> t"class Alpha:\n  def x: Int = 42\n")
-        val beta = Map(t"beta.scala" -> t"class Beta:\n  def alpha: Alpha = Alpha()\n")
+        val alpha = Map("alpha.scala" -> "class Alpha:\n  def x: Int = 42\n")
+        val beta = Map("beta.scala" -> "class Beta:\n  def alpha: Alpha = Alpha()\n")
 
         test(m"A session's second compile sees the first compile's symbols"):
           Scalac[3.8](Nil).on(classpath).session:
@@ -520,7 +520,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
         test(m"A failed compile leaves the session usable"):
           Scalac[3.8](Nil).on(classpath).session:
-            val bad = Map(t"gamma.scala" -> t"class Gamma:\n  def x: Int = \"nope\"\n")
+            val bad = Map("gamma.scala" -> "class Gamma:\n  def x: Int = \"nope\"\n")
             val failure = bad.compile().complete()
             (failure, alpha.compile().complete())
         . assert(_ == (CompileResult.Failure, CompileResult.Success))
@@ -529,7 +529,7 @@ object Tests extends Suite(m"Anthology Tests"):
           Scalac[3.8](Nil).on(classpath).session:
             val process = alpha.compile()
             process.complete()
-            process.classfiles.stdlib.contains(t"/Alpha.class".as[Path on Classpath])
+            process.classfiles.stdlib.contains("/Alpha.class".as[Path on Classpath])
         . assert(_ == true)
 
         test(m"A session compile's updates report progress and completion"):
@@ -569,7 +569,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
         val process =
           Scalac[3.8](Nil).targeting[Universe.Nir]
-            (classpath)(Map(t"hello.scala" -> source), out)
+            (classpath)(Map("hello.scala" -> source), out)
 
         test(m"A native compilation succeeds"):
           process.complete()
@@ -596,7 +596,7 @@ object Tests extends Suite(m"Anthology Tests"):
                 List(EntryPoint(Fqcn(t"Main"))) )
             . pipe: artifact =>
                 mute[Exec.Event](sh"$artifact".exec[Text]()).trim
-          . assert(_ == t"hello")
+          . assert(_ == "hello")
 
     // `Kotlinc` itself is not constructed here: linking it resolves the compiler classes, which
     // are a compile-only dependency, so the options are checked through the flags they carry.
@@ -619,12 +619,12 @@ object Tests extends Suite(m"Anthology Tests"):
         val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
         val greeting: Text =
-          t"""|package demo
+          """|package demo
               |
               |fun greet(): String = "hello"
               |""".s.stripMargin.tt
 
-        val process = Kotlinc[2.4](Nil)(classpath)(Map(t"demo/Greeting.kt" -> greeting), out)
+        val process = Kotlinc[2.4](Nil)(classpath)(Map("demo/Greeting.kt" -> greeting), out)
 
         test(m"A Kotlin compilation succeeds"):
           process.complete()
@@ -636,13 +636,13 @@ object Tests extends Suite(m"Anthology Tests"):
         . assert(_ == true)
 
         val broken: Text =
-          t"""|package demo
+          """|package demo
               |
               |fun broken(): Int = "not an integer"
               |""".s.stripMargin.tt
 
         val out2: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
-        val failing = Kotlinc[2.4](Nil)(classpath)(Map(t"demo/Broken.kt" -> broken), out2)
+        val failing = Kotlinc[2.4](Nil)(classpath)(Map("demo/Broken.kt" -> broken), out2)
 
         test(m"A Kotlin compilation with a type error fails"):
           failing.complete()
@@ -667,7 +667,7 @@ object Tests extends Suite(m"Anthology Tests"):
     if !compiler then Unset else
       LocalClasspath.of(Classloader[Tests.type])()
       . cut(java.io.File.pathSeparator.nn.tt)
-      . filter(_.contains(t"kotlin-stdlib"))
+      . filter(_.contains("kotlin-stdlib"))
       . prim
 
   // Locates a cached proscala release's `lib` directory, which carries the fork standard

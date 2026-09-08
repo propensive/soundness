@@ -113,7 +113,7 @@ object Wasm:
     // error value's class.
     private def nameOf(value: Any): Text =
       val simple = value.getClass.getSimpleName.nn.tt
-      val stripped = if simple.ends(t"$$") then simple.skip(1, Rtl) else simple
+      val stripped = if simple.ends("$") then simple.skip(1, Rtl) else simple
       stripped.uncamel.kebab
 
   // The `err` arm of a WIT `result<…>`, raised by `invoke`'s decoder. The error value (e.g. a case
@@ -141,7 +141,7 @@ object Wasm:
     // spelling `apply` accepts, and the same derivation as `Wasm.Error.name`).
     def caseName(value: Any): Text =
       val simple = value.getClass.getSimpleName.nn.tt
-      val stripped = if simple.ends(t"$$") then simple.skip(1, Rtl) else simple
+      val stripped = if simple.ends("$") then simple.skip(1, Rtl) else simple
       stripped.uncamel.kebab
 
     given interoperable: [topic <: Label]

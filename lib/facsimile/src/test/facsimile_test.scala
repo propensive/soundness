@@ -74,7 +74,7 @@ object Tests extends Suite(m"Facsimile tests"):
     def textOf(cos: Cos): Text =
       cos.chars.let: bytes =>
         bytes.utf8
-      . or(t"")
+      . or("")
 
     def bytesOf(cos: Cos): List[Int] =
       cos.chars.let(v => (v.to[List]: List[Byte]).map(_.toInt & 0xff)).or(List())
@@ -93,19 +93,19 @@ object Tests extends Suite(m"Facsimile tests"):
 
     def pad10(value: Long): Text =
       val digits = value.toString
-      ("0".repeat(10 - digits.length).nn + digits).tt
+      ("0".s.repeat(10 - digits.length).nn + digits).tt
 
     // Assembles a complete classic-xref PDF from pre-rendered object bodies, numbering them
     // from 1 and computing correct byte offsets; object 1 is the catalog by convention.
-    def document(bodies: Data*): Data = documentWith(t"", bodies*)
+    def document(bodies: Data*): Data = documentWith("", bodies*)
 
     def documentWith(trailerExtra: Text, bodies: Data*): Data =
-      var out: Data = t"%PDF-1.7\n".in[Data]
+      var out: Data = "%PDF-1.7\n".in[Data]
       val offsets = scala.collection.immutable.List.newBuilder[Long]
 
       bodies.zipWithIndex.each: (body, index) =>
         offsets += out.length.toLong
-        out = out ++ t"${index + 1} 0 obj\n".in[Data] ++ body ++ t"\nendobj\n".in[Data]
+        out = out ++ t"${index + 1} 0 obj\n".in[Data] ++ body ++ "\nendobj\n".in[Data]
 
       val xrefOffset = out.length
       out = out ++ t"xref\n0 ${bodies.length + 1}\n0000000000 65535 f \n".in[Data]
@@ -115,7 +115,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       out ++ t"trailer\n<< /Size ${bodies.length + 1} /Root 1 0 R $trailerExtra >>\nstartxref\n$xrefOffset\n%%EOF".in[Data]
 
-    val catalog: Data = t"<< /Type /Catalog >>".in[Data]
+    val catalog: Data = "<< /Type /Catalog >>".in[Data]
 
     // A filename Text is its own abstract path, for opening temp files on disk.
     given (Text is Abstractable across Paths to Text) = identity(_)
@@ -164,13 +164,13 @@ object Tests extends Suite(m"Facsimile tests"):
 
       val os2 =
         big16(2, 500, 700, 5, 8) ++ big16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0) ++ big16(0) ++
-          big16(0, 0, 0, 0, 0) ++ big32(0L, 0L, 0L, 0L) ++ t"TEST".in[Data] ++
+          big16(0, 0, 0, 0, 0) ++ big32(0L, 0L, 0L, 0L) ++ "TEST".in[Data] ++
           big16(0x40, 0x41, 0x7a) ++ big16(750, -250, 100) ++ big16(820, 220) ++
           big32(0L, 0L) ++ big16(530, 730, 0, 32, 0)
 
       val name =
         big16(0, 2, 30) ++ big16(3, 1, 0x409, 1, 18, 0) ++ big16(3, 1, 0x409, 6, 16, 18) ++
-          utf16(t"Test Sans") ++ utf16(t"TestSans")
+          utf16("Test Sans") ++ utf16("TestSans")
 
       val glyph3 =
         big16(-1, 0, 0, 500, 700) ++ big16(0x0021, 1, 0, 0) ++ big16(0x0008, 2, 0, 0x4000)
@@ -198,142 +198,142 @@ object Tests extends Suite(m"Facsimile tests"):
 
     suite(m"COS object syntax"):
       test(m"a bare integer"):
-        parse(t"42")
+        parse("42")
       . assert(_ == Cos.Integral(42))
 
       test(m"a negative integer"):
-        parse(t"-17")
+        parse("-17")
       . assert(_ == Cos.Integral(-17))
 
       test(m"an explicitly positive integer"):
-        parse(t"+9")
+        parse("+9")
       . assert(_ == Cos.Integral(9))
 
       test(m"a real number"):
-        parse(t"3.25")
+        parse("3.25")
       . assert(_ == Cos.Real(3.25))
 
       test(m"a real number with no integer part"):
-        parse(t"-.5")
+        parse("-.5")
       . assert(_ == Cos.Real(-0.5))
 
       test(m"a real number with no fractional part"):
-        parse(t"4.")
+        parse("4.")
       . assert(_ == Cos.Real(4.0))
 
       test(m"the true keyword"):
-        parse(t"true")
+        parse("true")
       . assert(_ == Cos.Truth(true))
 
       test(m"the false keyword"):
-        parse(t"false")
+        parse("false")
       . assert(_ == Cos.Truth(false))
 
       test(m"the null keyword"):
-        parse(t"null")
+        parse("null")
       . assert(_ == Cos.Nil)
 
       test(m"a name"):
-        parse(t"/Type")
-      . assert(_ == Cos.Name(t"Type"))
+        parse("/Type")
+      . assert(_ == Cos.Name("Type"))
 
       test(m"a name with hexadecimal escapes"):
-        parse(t"/A#42C")
-      . assert(_ == Cos.Name(t"ABC"))
+        parse("/A#42C")
+      . assert(_ == Cos.Name("ABC"))
 
       test(m"the empty name"):
-        parse(t"/")
-      . assert(_ == Cos.Name(t""))
+        parse("/")
+      . assert(_ == Cos.Name(""))
 
       test(m"a literal string"):
-        textOf(parse(t"(Hello, world)"))
-      . assert(_ == t"Hello, world")
+        textOf(parse("(Hello, world)"))
+      . assert(_ == "Hello, world")
 
       test(m"a literal string with escapes"):
-        textOf(parse(t"(a\\(b\\)c\\\\d)"))
-      . assert(_ == t"a(b)c\\d")
+        textOf(parse("(a\\(b\\)c\\\\d)"))
+      . assert(_ == "a(b)c\\d")
 
       test(m"a literal string with control escapes"):
-        bytesOf(parse(t"(a\\n\\t\\r\\b\\fz)"))
+        bytesOf(parse("(a\\n\\t\\r\\b\\fz)"))
       . assert(_ == List[Int]('a', 0x0a, 0x09, 0x0d, 0x08, 0x0c, 'z'))
 
       test(m"a literal string with octal escapes"):
-        textOf(parse(t"(\\101\\102\\103)"))
-      . assert(_ == t"ABC")
+        textOf(parse("(\\101\\102\\103)"))
+      . assert(_ == "ABC")
 
       test(m"a short octal escape ends at a non-octal character"):
-        bytesOf(parse(t"(\\53Z)"))
+        bytesOf(parse("(\\53Z)"))
       . assert(_ == List[Int](43, 'Z'))
 
       test(m"nested parentheses need no escaping"):
-        textOf(parse(t"((nested) text)"))
-      . assert(_ == t"(nested) text")
+        textOf(parse("((nested) text)"))
+      . assert(_ == "(nested) text")
 
       test(m"a line continuation produces nothing"):
-        textOf(parse(t"(one\\\ntwo)"))
-      . assert(_ == t"onetwo")
+        textOf(parse("(one\\\ntwo)"))
+      . assert(_ == "onetwo")
 
       test(m"an unescaped CRLF in a string is a single line feed"):
-        bytesOf(parse(t"(a\r\nb)"))
+        bytesOf(parse("(a\r\nb)"))
       . assert(_ == List[Int]('a', 0x0a, 'b'))
 
       test(m"an unknown escape drops the reverse solidus"):
-        textOf(parse(t"(\\q)"))
-      . assert(_ == t"q")
+        textOf(parse("(\\q)"))
+      . assert(_ == "q")
 
       test(m"a hexadecimal string"):
-        textOf(parse(t"<48656C6C6F>"))
-      . assert(_ == t"Hello")
+        textOf(parse("<48656C6C6F>"))
+      . assert(_ == "Hello")
 
       test(m"whitespace is ignored inside hexadecimal strings"):
-        textOf(parse(t"<48 65\n6C 6C 6F>"))
-      . assert(_ == t"Hello")
+        textOf(parse("<48 65\n6C 6C 6F>"))
+      . assert(_ == "Hello")
 
       test(m"an odd hexadecimal digit implies a trailing zero"):
-        bytesOf(parse(t"<484>"))
+        bytesOf(parse("<484>"))
       . assert(_ == List(0x48, 0x40))
 
       test(m"an array of integers"):
-        parse(t"[1 2 3]")
+        parse("[1 2 3]")
       . assert(_ == Cos.Sequence(List(Cos.Integral(1), Cos.Integral(2), Cos.Integral(3))))
 
       test(m"an indirect reference"):
-        parse(t"[12 0 R]")
+        parse("[12 0 R]")
       . assert(_ == Cos.Sequence(List(Cos.Ref(12, 0))))
 
       test(m"two integers followed by a name are not a reference"):
-        parse(t"[12 0 /R]")
+        parse("[12 0 /R]")
       . assert(_ == Cos.Sequence(List(Cos.Integral(12), Cos.Integral(0), Cos.Name(t"R"))))
 
       test(m"a dictionary"):
-        parse(t"<< /A 1 /B (two) >>")(t"A")
+        parse("<< /A 1 /B (two) >>")("A")
       . assert(_ == Cos.Integral(1))
 
       test(m"a nested dictionary"):
-        parse(t"<< /A << /B /C >> >>")(t"A")
-      . assert(_ == Cos.Dictionary(Map(t"B" -> Cos.Name(t"C"))))
+        parse("<< /A << /B /C >> >>")("A")
+      . assert(_ == Cos.Dictionary(Map("B" -> Cos.Name("C"))))
 
       test(m"a null dictionary value is equivalent to absence"):
-        parse(t"<< /A null >>")(t"A")
+        parse("<< /A null >>")("A")
       . assert(_ == Unset)
 
       test(m"comments are whitespace"):
-        parse(t"[1 % comment ] 2\n3]")
+        parse("[1 % comment ] 2\n3]")
       . assert(_ == Cos.Sequence(List(Cos.Integral(1), Cos.Integral(3))))
 
       test(m"a value spanning many scan windows"):
-        textOf(parse(("(" + "a".repeat(20000).nn + ")").tt)).length
+        textOf(parse((s"(" + s"a".repeat(20000).nn + ")").tt)).length
       . assert(_ == 20000)
 
     suite(m"Stream filters"):
       test(m"FlateDecode round-trips deflated data"):
-        val expected = t"The quick brown fox jumps over the lazy dog".in[Data]
+        val expected = "The quick brown fox jumps over the lazy dog".in[Data]
         Filter.decode(deflate(expected), List((Filter.Id.Flate, noParms))).to[List]
-      . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to[List])
+      . assert(_ == "The quick brown fox jumps over the lazy dog".in[Data].to[List])
 
       test(m"ASCIIHexDecode"):
-        Filter.decode(t"48656c6C6F>".in[Data], List((Filter.Id.AsciiHex, noParms))).to[List]
-      . assert(_ == t"Hello".in[Data].to[List])
+        Filter.decode("48656c6C6F>".in[Data], List((Filter.Id.AsciiHex, noParms))).to[List]
+      . assert(_ == "Hello".in[Data].to[List])
 
       test(m"RunLengthDecode literal and repeated runs"):
         Filter.decode(data(2, 'a', 'b', 'c', 254, 'x', 128), List((Filter.Id.RunLength, noParms)))
@@ -357,15 +357,15 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == List(10, 15, 20, 3, 4, 5))
 
       test(m"a predictor after FlateDecode"):
-        val parms: Map[Text, Cos] = Map(t"Predictor" -> Cos.Integral(12), t"Columns" -> Cos.Integral(3))
+        val parms: Map[Text, Cos] = Map("Predictor" -> Cos.Integral(12), "Columns" -> Cos.Integral(3))
 
         Filter.decode(deflate(data(2, 1, 2, 3, 2, 3, 3, 3)), List((Filter.Id.Flate, parms)))
         . to[List].map(_.toInt)
       . assert(_ == List(1, 2, 3, 4, 5, 6))
 
       test(m"an unknown filter name is an error"):
-        capture[Pdf.Error](Filter.chain(Cos.Name(t"BogusDecode"), Unset)).reason
-      . assert(_ == Pdf.Error.Reason.UnknownFilter(t"BogusDecode"))
+        capture[Pdf.Error](Filter.chain(Cos.Name("BogusDecode"), Unset)).reason
+      . assert(_ == Pdf.Error.Reason.UnknownFilter("BogusDecode"))
 
     suite(m"Whole documents"):
       test(m"the version comes from the header"):
@@ -375,20 +375,20 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"the trailer holds the catalog reference"):
         PdfFile(document(catalog)).open():
-          pdf.trailer(t"Root")
+          pdf.trailer("Root")
       . assert(_ == Cos.Ref(1, 0))
 
       test(m"an object resolves through the cross-reference table"):
         PdfFile(document(catalog)).open():
-          pdf(1, 0)(t"Type")
-      . assert(_ == Cos.Name(t"Catalog"))
+          pdf(1, 0)("Type")
+      . assert(_ == Cos.Name("Catalog"))
 
       test(m"resolved objects are pure values and escape the scope"):
         val name = PdfFile(document(catalog)).open():
-          pdf(1, 0)(t"Type").let(_.name)
+          pdf(1, 0)("Type").let(_.name)
 
         name
-      . assert(_ == t"Catalog")
+      . assert(_ == "Catalog")
 
       test(m"a reference to an absent object is null"):
         PdfFile(document(catalog)).open():
@@ -401,41 +401,41 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == Cos.Nil)
 
       test(m"objects reference each other"):
-        val doc = document(t"<< /Type /Catalog /Next 2 0 R >>".in[Data], t"[1 0 R (x)]".in[Data])
+        val doc = document("<< /Type /Catalog /Next 2 0 R >>".in[Data], "[1 0 R (x)]".in[Data])
 
         PdfFile(doc).open():
-          pdf.resolved(pdf(1, 0)(t"Next").or(Cos.Nil)).elements.let(_.size)
+          pdf.resolved(pdf(1, 0)("Next").or(Cos.Nil)).elements.let(_.size)
       . assert(_ == 2)
 
       test(m"a stream payload with no filter"):
-        val body = t"<< /Length 5 >>\nstream\nHello\nendstream".in[Data]
+        val body = "<< /Length 5 >>\nstream\nHello\nendstream".in[Data]
 
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
             case body: Cos.Body => pdf.payload(body).utf8
-            case _              => t""
-      . assert(_ == t"Hello")
+            case _              => ""
+      . assert(_ == "Hello")
 
       test(m"a stream payload with an indirect length"):
-        val body = t"<< /Length 3 0 R >>\nstream\nHello\nendstream".in[Data]
+        val body = "<< /Length 3 0 R >>\nstream\nHello\nendstream".in[Data]
 
         PdfFile(document(catalog, body, t"5".in[Data])).open():
           pdf(2, 0) match
             case body: Cos.Body => pdf.payload(body).utf8
-            case _              => t""
-      . assert(_ == t"Hello")
+            case _              => ""
+      . assert(_ == "Hello")
 
       test(m"a FlateDecode stream payload"):
-        val payload = deflate(t"compressed content".in[Data])
+        val payload = deflate("compressed content".in[Data])
 
         val body = t"<< /Length ${payload.length} /Filter /FlateDecode >>\nstream\n".in[Data]
-          ++ payload ++ t"\nendstream".in[Data]
+          ++ payload ++ "\nendstream".in[Data]
 
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
             case body: Cos.Body => pdf.payload(body).utf8
-            case _              => t""
-      . assert(_ == t"compressed content")
+            case _              => ""
+      . assert(_ == "compressed content")
 
       test(m"an incremental update supersedes an object"):
         val base = document(catalog)
@@ -449,7 +449,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         var out = base
         val objectOffset = out.length
-        out = out ++ t"1 0 obj\n<< /Type /Catalog /Version /2.0 >>\nendobj\n".in[Data]
+        out = out ++ "1 0 obj\n<< /Type /Catalog /Version /2.0 >>\nendobj\n".in[Data]
         val newXref = out.length
 
         out = out
@@ -458,8 +458,8 @@ object Tests extends Suite(m"Facsimile tests"):
              . in[Data]
 
         PdfFile(out).open():
-          pdf(1, 0)(t"Version")
-      . assert(_ == Cos.Name(t"2.0"))
+          pdf(1, 0)("Version")
+      . assert(_ == Cos.Name("2.0"))
 
       test(m"garbage input is not a PDF"):
         capture[Pdf.Error](PdfFile(t"not a pdf at all".in[Data]).open()(pdf.version)).reason
@@ -475,33 +475,33 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == 1)
 
       test(m"a public-key security handler is unsupported"):
-        val doc = documentWith(t"/Encrypt << /Filter /Adobe.PubSec /V 4 >>", catalog)
+        val doc = documentWith("/Encrypt << /Filter /Adobe.PubSec /V 4 >>", catalog)
         capture[Pdf.Error](PdfFile(doc).open()(pdf.version)).reason
       . assert(_ == Pdf.Error.Reason.UnsupportedEncryption(0))
 
     suite(m"Writing"):
       // A document with a catalog (obj 1), a note object (obj 2), and a page tree, for editing.
       def editable: Data = document
-        ( t"<< /Type /Catalog /Pages 3 0 R /Note 2 0 R >>".in[Data],
-          t"<< /Value (original) >>".in[Data],
-          t"<< /Type /Pages /Kids [4 0 R] /Count 1 /MediaBox [0 0 200 300] >>".in[Data],
-          t"<< /Type /Page /Parent 3 0 R >>".in[Data] )
+        ( "<< /Type /Catalog /Pages 3 0 R /Note 2 0 R >>".in[Data],
+          "<< /Value (original) >>".in[Data],
+          "<< /Type /Pages /Kids [4 0 R] /Count 1 /MediaBox [0 0 200 300] >>".in[Data],
+          "<< /Type /Page /Parent 3 0 R >>".in[Data] )
 
       test(m"a replaced object is visible after the write, via an incremental update"):
         val path = tempPdf(editable)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map(t"Value" -> Cos.Chars(t"edited".in[Data]))))
+          doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map("Value" -> Cos.Chars("edited".in[Data]))))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.resolved(pdf(2, 0))(t"Value").let(_.text)
-      . assert(_ == t"edited")
+          pdf.resolved(pdf(2, 0))("Value").let(_.text)
+      . assert(_ == "edited")
 
       test(m"the original bytes are preserved (incremental append, not rewrite)"):
         val path = tempPdf(editable)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map(t"Value" -> Cos.Chars(t"edited".in[Data]))))
+          doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map("Value" -> Cos.Chars("edited".in[Data]))))
 
         fileBytes(path).segment((0).z till (editable.length).z).to[List]
       . assert(_ == editable.to[List])
@@ -520,12 +520,12 @@ object Tests extends Suite(m"Facsimile tests"):
         var allocated = 0
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val ref = doc.allocate(Cos.Dictionary(Map(t"Kind" -> Cos.Name(t"New"))))
+          val ref = doc.allocate(Cos.Dictionary(Map("Kind" -> Cos.Name("New"))))
           allocated = ref.number
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf(allocated)(t"Kind")
-      . assert(_ == Cos.Name(t"New"))
+          pdf(allocated)("Kind")
+      . assert(_ == Cos.Name("New"))
 
       test(m"a fresh object number is one past the original size"):
         val path = tempPdf(editable)
@@ -548,9 +548,9 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(editable)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map(t"Value" -> Cos.Chars(t"live".in[Data]))))
-          doc.resolved(doc(2, 0))(t"Value").let(_.text)
-      . assert(_ == t"live")
+          doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map("Value" -> Cos.Chars("live".in[Data]))))
+          doc.resolved(doc(2, 0))("Value").let(_.text)
+      . assert(_ == "live")
 
       test(m"a scope that changes nothing appends nothing"):
         val path = tempPdf(editable)
@@ -567,10 +567,10 @@ object Tests extends Suite(m"Facsimile tests"):
 
       // A one-page A4 document with Helvetica, for page and content edits.
       def onePage: Data = document
-        ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
-          t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>".in[Data],
-          t"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
-          t"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".in[Data] )
+        ( "<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+          "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>".in[Data],
+          "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
+          "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".in[Data] )
 
       test(m"replacing a page's content is visible as extracted text"):
         val path = tempPdf(onePage)
@@ -585,7 +585,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).text
-      . assert(_ == t"Written")
+      . assert(_ == "Written")
 
       test(m"setting a page's rotation round-trips"):
         val path = tempPdf(onePage)
@@ -604,7 +604,7 @@ object Tests extends Suite(m"Facsimile tests"):
             Quantity[Points[1]](200.0), Quantity[Points[1]](400.0))
 
         PdfFile(path).open(Read & Write): doc ?=>
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.setBox(doc.page(Prim), t"CropBox", target))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.setBox(doc.page(Prim), "CropBox", target))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).cropBox.width
@@ -629,10 +629,10 @@ object Tests extends Suite(m"Facsimile tests"):
         val a4 = Pdf.Rect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
             Quantity[Points[1]](595.0), Quantity[Points[1]](842.0))
 
-        val helvetica = Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Font"),
-            t"Subtype" -> Cos.Name(t"Type1"), t"BaseFont" -> Cos.Name(t"Helvetica")))
+        val helvetica = Cos.Dictionary(Map("Type" -> Cos.Name("Font"),
+            "Subtype" -> Cos.Name("Type1"), "BaseFont" -> Cos.Name("Helvetica")))
 
-        val resources = Cos.Dictionary(Map(t"Font" -> Cos.Dictionary(Map(t"F1" -> helvetica))))
+        val resources = Cos.Dictionary(Map("Font" -> Cos.Dictionary(Map("F1" -> helvetica))))
 
         PdfFile(path).open(Read & Write): doc ?=>
           val operators = List
@@ -644,14 +644,14 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Sec).text
-      . assert(_ == t"Second")
+      . assert(_ == "Second")
 
       test(m"a removed page decreases the page count"):
         val twoPages = document
-          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
-            t"<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 100 100] >>".in[Data],
-            t"<< /Type /Page /Parent 2 0 R >>".in[Data],
-            t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
+          ( "<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 100 100] >>".in[Data],
+            "<< /Type /Page /Parent 2 0 R >>".in[Data],
+            "<< /Type /Page /Parent 2 0 R >>".in[Data] )
 
         val path = tempPdf(twoPages)
 
@@ -666,11 +666,11 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(editable)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          doc.setInfo(Pdf.Info(t"A Title", t"An Author", Unset, Unset, Unset, Unset, Unset, Unset))
+          doc.setInfo(Pdf.Info("A Title", "An Author", Unset, Unset, Unset, Unset, Unset, Unset))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           (pdf.info.title, pdf.info.author)
-      . assert(_ == (t"A Title", t"An Author"))
+      . assert(_ == ("A Title", "An Author"))
 
       test(m"a set creation date round-trips through the D: format"):
         val path = tempPdf(editable)
@@ -718,9 +718,9 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"adding a link annotation round-trips"):
         val onePage = document
-          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
-            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
-            t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
+          ( "<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            "<< /Type /Page /Parent 2 0 R >>".in[Data] )
 
         val path = tempPdf(onePage)
 
@@ -728,42 +728,42 @@ object Tests extends Suite(m"Facsimile tests"):
             Quantity[Points[1]](50.0), Quantity[Points[1]](20.0))
 
         PdfFile(path).open(Read & Write): doc ?=>
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addLink(doc.page(Prim), rect, uri = t"https://soundness.dev/"))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addLink(doc.page(Prim), rect, uri = "https://soundness.dev/"))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).annotations.stdlib.head match
             case Annotation.Link(_, _, uri, _) => uri
             case _                             => Unset
-      . assert(_ == t"https://soundness.dev/")
+      . assert(_ == "https://soundness.dev/")
 
       // A one-page document with no font, for embedding a font into.
       def blankPage: Data = document
-        ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
-          t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>".in[Data],
-          t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
+        ( "<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+          "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>".in[Data],
+          "<< /Type /Page /Parent 2 0 R >>".in[Data] )
 
       // Stand-in font-program bytes: the reader wraps FontFile2 bytes in `Truetype` without
       // validating, and the embedder degrades gracefully on an unparseable program, so this
       // exercises the embedding plumbing without a real font file in the repo.
-      val fontProgram: Data = t"pretend-truetype-font-program".in[Data]
+      val fontProgram: Data = "pretend-truetype-font-program".in[Data]
 
       test(m"an embedded font's program round-trips as FontFile2"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Truetype(fontProgram), t"MyFont")
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
+          val font = doc.embedFont(Truetype(fontProgram), "MyFont")
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), "Font", "F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts(t"F1").let(_.embedded).let(_.data.to[List])
+          pdf.page(Prim).fonts("F1").let(_.embedded).let(_.data.to[List])
       . assert(_ == fontProgram.to[List])
 
       test(m"content using an embedded font extracts as text"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Truetype(fontProgram), t"MyFont")
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
+          val font = doc.embedFont(Truetype(fontProgram), "MyFont")
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), "Font", "F1", font))
 
           val operators = List
             ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12),
@@ -774,17 +774,17 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).text
-      . assert(_ == t"Embedded text")
+      . assert(_ == "Embedded text")
 
       test(m"the embedded font is a simple WinAnsi TrueType font"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Truetype(fontProgram), t"MyFont")
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
+          val font = doc.embedFont(Truetype(fontProgram), "MyFont")
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), "Font", "F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts(t"F1") match
+          pdf.page(Prim).fonts("F1") match
             case _: Pdf.Font.TrueType => true
             case _                   => false
       . assert(_ == true)
@@ -794,11 +794,11 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Truetype(miniFont))
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), "Font", "F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts(t"F1").let(_.baseFont)
-      . assert(_ == t"TestSans")
+          pdf.page(Prim).fonts("F1").let(_.baseFont)
+      . assert(_ == "TestSans")
 
       test(m"the font descriptor carries the font's real metrics"):
         val path = tempPdf(blankPage)
@@ -808,12 +808,12 @@ object Tests extends Suite(m"Facsimile tests"):
           val dict = doc.resolved(font).dictionary.or(noParms)
 
           val descriptor =
-            doc.resolved(dict(t"FontDescriptor").or(Cos.Nil)).dictionary.or(noParms)
+            doc.resolved(dict("FontDescriptor").or(Cos.Nil)).dictionary.or(noParms)
 
-          ( descriptor(t"FontBBox"),
-            descriptor(t"ItalicAngle"),
-            descriptor(t"CapHeight"),
-            descriptor(t"Flags") )
+          ( descriptor("FontBBox"),
+            descriptor("ItalicAngle"),
+            descriptor("CapHeight"),
+            descriptor("Flags") )
       . assert(_ == (Cos.Sequence(List(Cos.Integral(-50), Cos.Integral(-200), Cos.Integral(1000),
             Cos.Integral(800))), Cos.Real(-11.5), Cos.Integral(730), Cos.Integral(97)))
 
@@ -824,7 +824,7 @@ object Tests extends Suite(m"Facsimile tests"):
           val font = doc.embedFont(Truetype(miniFont))
           val dict = doc.resolved(font).dictionary.or(noParms)
 
-          dict(t"Widths") match
+          dict("Widths") match
             case Cos.Sequence(widths) => (widths.stdlib('A' - 32), widths.stdlib('z' - 32))
             case _                    => Unset
       . assert(_ == (Cos.Integral(500), Cos.Integral(0)))
@@ -833,24 +833,24 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Truetype(miniFont), subset = t"AB")
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
+          val font = doc.embedFont(Truetype(miniFont), subset = "AB")
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), "Font", "F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts(t"F1").let(_.baseFont)
+          pdf.page(Prim).fonts("F1").let(_.baseFont)
       . assert(_.lay(false)(_.s.matches("[A-Z]{6}\\+TestSans")))
 
       test(m"a subset program keeps used outlines and drops the rest"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Truetype(miniFont), subset = t"A")
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
+          val font = doc.embedFont(Truetype(miniFont), subset = "A")
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), "Font", "F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           // The embedded program is read back as the `Sfnt` its tables say it is; these
           // assertions are about TrueType outlines, so narrow to `Truetype`.
-          pdf.page(Prim).fonts(t"F1").let(_.embedded).let:
+          pdf.page(Prim).fonts("F1").let(_.embedded).let:
             case ttf: Truetype => (ttf.glyf(1).empty, ttf.glyf(2).empty)
       . assert(_ == (false, true))
 
@@ -858,16 +858,16 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(blankPage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val font = doc.embedFont(Truetype(miniFont), subset = t"C")
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
+          val font = doc.embedFont(Truetype(miniFont), subset = "C")
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), "Font", "F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).fonts(t"F1").let(_.embedded).let:
+          pdf.page(Prim).fonts("F1").let(_.embedded).let:
             case ttf: Truetype => (ttf.glyf(1).empty, ttf.glyf(2).empty, ttf.glyf(3).composite)
       . assert(_ == (false, false, true))
 
       test(m"winAnsi encodes accented characters to their code page byte"):
-        (winAnsi(t"café").to[List]: List[Byte]).map(_.toInt & 0xff)
+        (winAnsi("café").to[List]: List[Byte]).map(_.toInt & 0xff)
       . assert(_ == List('c'.toInt, 'a'.toInt, 'f'.toInt, 0xe9))
 
     suite(m"Creation from scratch"):
@@ -900,10 +900,10 @@ object Tests extends Suite(m"Facsimile tests"):
       test(m"a created page's content extracts as text"):
         val path = freshPath
 
-        val helvetica = Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Font"),
-            t"Subtype" -> Cos.Name(t"Type1"), t"BaseFont" -> Cos.Name(t"Helvetica")))
+        val helvetica = Cos.Dictionary(Map("Type" -> Cos.Name("Font"),
+            "Subtype" -> Cos.Name("Type1"), "BaseFont" -> Cos.Name("Helvetica")))
 
-        val resources = Cos.Dictionary(Map(t"Font" -> Cos.Dictionary(Map(t"F1" -> helvetica))))
+        val resources = Cos.Dictionary(Map("Font" -> Cos.Dictionary(Map("F1" -> helvetica))))
 
         path.create[Pdf](): doc ?=>
           val operators = List
@@ -915,17 +915,17 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.page(Prim).text
-      . assert(_ == t"From scratch")
+      . assert(_ == "From scratch")
 
       test(m"document information set at creation round-trips"):
         val path = freshPath
         path.create[Pdf](): doc ?=>
           doc.appendPage(a4)
-          doc.setInfo(Pdf.Info(t"Made", Unset, Unset, Unset, Unset, Unset, Unset, Unset))
+          doc.setInfo(Pdf.Info("Made", Unset, Unset, Unset, Unset, Unset, Unset, Unset))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.info.title
-      . assert(_ == t"Made")
+      . assert(_ == "Made")
 
       test(m"creating over an existing file needs the Replace flag"):
         val path = freshPath
@@ -936,15 +936,15 @@ object Tests extends Suite(m"Facsimile tests"):
           // Overlap false positive: `doc` is chained through `create`'s own result.
           scala.caps.unsafe.unsafeAssumeSeparate(path.create[Pdf]() { doc ?=> doc.appendPage(a4) })
         . reason
-      . assert(_ == Pdf.Error.Reason.Io(t"the file already exists"))
+      . assert(_ == Pdf.Error.Reason.Io("the file already exists"))
 
     suite(m"Damaged-file recovery"):
       // A minimal well-formed document whose objects can be found by scanning, used as the
       // basis for various corruptions.
       def recoverable: Data = document
-        ( t"<< /Type /Catalog /Pages 2 0 R /Note (kept) >>".in[Data],
-          t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 300] >>".in[Data],
-          t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
+        ( "<< /Type /Catalog /Pages 2 0 R /Note (kept) >>".in[Data],
+          "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 300] >>".in[Data],
+          "<< /Type /Page /Parent 2 0 R >>".in[Data] )
 
       test(m"a document with no startxref is recovered by scanning"):
         // Truncate the cross-reference section and trailer entirely.
@@ -960,8 +960,8 @@ object Tests extends Suite(m"Facsimile tests"):
         val truncated = text.substring(0, text.indexOf("xref")).nn.tt.in[Data]
 
         PdfFile(truncated).open():
-          pdf.resolved(pdf.trailer(t"Root").or(Cos.Nil))(t"Note").let(_.text)
-      . assert(_ == t"kept")
+          pdf.resolved(pdf.trailer("Root").or(Cos.Nil))("Note").let(_.text)
+      . assert(_ == "kept")
 
       test(m"a corrupt startxref offset falls back to scanning"):
         val text = String(Array.unsafeJvm(recoverable), "ISO-8859-1")
@@ -974,7 +974,7 @@ object Tests extends Suite(m"Facsimile tests"):
       test(m"shifted cross-reference offsets are recovered per object"):
         // Prepend junk so every recorded offset is wrong by a fixed amount, but leave the
         // xref table itself syntactically valid.
-        val shifted = t"% a comment prepended by some tool\n".in[Data] ++ recoverable
+        val shifted = "% a comment prepended by some tool\n".in[Data] ++ recoverable
 
         PdfFile(shifted).open():
           pdf.page(Prim).mediaBox.height
@@ -1000,21 +1000,21 @@ object Tests extends Suite(m"Facsimile tests"):
           (base + "1 0 obj\n<< /Type /Catalog /Pages 2 0 R /Note (updated) >>\nendobj\n").tt
 
         PdfFile(updated.in[Data]).open():
-          pdf.resolved(pdf.trailer(t"Root").or(Cos.Nil))(t"Note").let(_.text)
-      . assert(_ == t"updated")
+          pdf.resolved(pdf.trailer("Root").or(Cos.Nil))("Note").let(_.text)
+      . assert(_ == "updated")
 
     suite(m"Cross-reference streams and object streams"):
       def xrefStreamDocument(): Data =
-        var out: Data = t"%PDF-1.5\n".in[Data]
+        var out: Data = "%PDF-1.5\n".in[Data]
 
         val offset1 = out.length
-        out = out ++ t"1 0 obj\n<< /Type /Catalog /Answer 4 0 R /Greeting 5 0 R >>\nendobj\n"
+        out = out ++ "1 0 obj\n<< /Type /Catalog /Answer 4 0 R /Greeting 5 0 R >>\nendobj\n"
           . in[Data]
 
         // An object stream holding objects 4 and 5: the pair table is 8 bytes, so /First 8.
         val offset2 = out.length
-        out = out ++ t"2 0 obj\n<< /Type /ObjStm /N 2 /First 8 /Length 15 >>\nstream\n".in[Data]
-          ++ t"4 0 5 3\n42 (hi)".in[Data] ++ t"\nendstream\nendobj\n".in[Data]
+        out = out ++ "2 0 obj\n<< /Type /ObjStm /N 2 /First 8 /Length 15 >>\nstream\n".in[Data]
+          ++ "4 0 5 3\n42 (hi)".in[Data] ++ "\nendstream\nendobj\n".in[Data]
 
         // The cross-reference stream itself, object 3: six unfiltered rows of /W [1 2 1].
         val offset3 = out.length
@@ -1028,26 +1028,26 @@ object Tests extends Suite(m"Facsimile tests"):
             2, 0, 2, 1 )
 
         out = out
-          ++ t"3 0 obj\n<< /Type /XRef /Size 6 /W [1 2 1] /Root 1 0 R /Length 24 >>\nstream\n"
+          ++ "3 0 obj\n<< /Type /XRef /Size 6 /W [1 2 1] /Root 1 0 R /Length 24 >>\nstream\n"
              . in[Data]
-          ++ rows ++ t"\nendstream\nendobj\n".in[Data]
+          ++ rows ++ "\nendstream\nendobj\n".in[Data]
 
         out ++ t"startxref\n$offset3\n%%EOF".in[Data]
 
       test(m"the trailer is the cross-reference stream dictionary"):
         PdfFile(xrefStreamDocument()).open():
-          pdf.trailer(t"Type")
-      . assert(_ == Cos.Name(t"XRef"))
+          pdf.trailer("Type")
+      . assert(_ == Cos.Name("XRef"))
 
       test(m"an object loads from a compressed object stream"):
         PdfFile(xrefStreamDocument()).open():
-          pdf.resolved(pdf(1, 0)(t"Answer").or(Cos.Nil))
+          pdf.resolved(pdf(1, 0)("Answer").or(Cos.Nil))
       . assert(_ == Cos.Integral(42))
 
       test(m"a string loads from a compressed object stream"):
         PdfFile(xrefStreamDocument()).open():
-          textOf(pdf.resolved(pdf(1, 0)(t"Greeting").or(Cos.Nil)))
-      . assert(_ == t"hi")
+          textOf(pdf.resolved(pdf(1, 0)("Greeting").or(Cos.Nil)))
+      . assert(_ == "hi")
 
       // An update must take the same form as the section it chains to: `/Prev` in a classic
       // trailer addresses a classic section, and `/Prev` in a cross-reference stream addresses
@@ -1059,18 +1059,18 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(source)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          doc.set(Cos.Ref(1, 0), Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Catalog"))))
+          doc.set(Cos.Ref(1, 0), Cos.Dictionary(Map("Type" -> Cos.Name("Catalog"))))
 
         String(fileBytes(path).mutable(using Unsafe), "ISO-8859-1").nn.tt.skip(source.length)
 
       test(m"an update over a cross-reference stream is itself a cross-reference stream"):
         val tail = appended(xrefStreamDocument())
-        (tail.contains(t"/Type /XRef"), tail.contains(t"trailer"))
+        (tail.contains("/Type /XRef"), tail.contains("trailer"))
       . assert(_ == (true, false))
 
       test(m"an update over a classic table is still a classic table"):
-        val tail = appended(document(t"<< /Type /Catalog >>".in[Data]))
-        (tail.contains(t"trailer"), tail.contains(t"/Type /XRef"))
+        val tail = appended(document("<< /Type /Catalog >>".in[Data]))
+        (tail.contains("trailer"), tail.contains("/Type /XRef"))
       . assert(_ == (true, false))
 
       // The edited object must be found in the new section, and an object compressed into the
@@ -1083,23 +1083,23 @@ object Tests extends Suite(m"Facsimile tests"):
           doc.set
            ( Cos.Ref(1, 0),
              Cos.Dictionary
-              (Map(t"Type" -> Cos.Name(t"Catalog"), t"Answer" -> Cos.Ref(4, 0),
-                   t"Edited" -> Cos.Name(t"yes"))) )
+              (Map("Type" -> Cos.Name("Catalog"), "Answer" -> Cos.Ref(4, 0),
+                   "Edited" -> Cos.Name("yes"))) )
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          ( pdf(1, 0)(t"Edited").or(Cos.Nil),
-            pdf.resolved(pdf(1, 0)(t"Answer").or(Cos.Nil)) )
-      . assert(_ == (Cos.Name(t"yes"), Cos.Integral(42)))
+          ( pdf(1, 0)("Edited").or(Cos.Nil),
+            pdf.resolved(pdf(1, 0)("Answer").or(Cos.Nil)) )
+      . assert(_ == (Cos.Name("yes"), Cos.Integral(42)))
 
     // A one-page document with Helvetica as `/F1` and the given content stream.
     def contentPage(content: Text): Data =
       document
-        ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
-          t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>".in[Data],
-          t"<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>"
+        ( "<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+          "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>".in[Data],
+          "<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>"
           . in[Data],
           t"<< /Length ${content.length} >>\nstream\n$content\nendstream".in[Data],
-          t"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".in[Data] )
+          "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".in[Data] )
 
     suite(m"Content operators"):
       def operators(content: Text): List[Pdf.Operator] =
@@ -1107,7 +1107,7 @@ object Tests extends Suite(m"Facsimile tests"):
           pdf.page(Prim).operators
 
       test(m"a graphics-state and text block parses to typed operators"):
-        operators(t"q 1 0 0 1 50 60 cm BT /F1 12 Tf 72 720 Td (Hi) Tj ET Q").map(_.ordinal)
+        operators("q 1 0 0 1 50 60 cm BT /F1 12 Tf 72 720 Td (Hi) Tj ET Q").map(_.ordinal)
       . assert: ordinals =>
           ordinals == proscenium.List(Pdf.Operator.Save, Pdf.Operator.Concat(Pdf.Matrix.Identity),
               Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12), Pdf.Operator.Offset(72, 720),
@@ -1115,24 +1115,24 @@ object Tests extends Suite(m"Facsimile tests"):
             . map(_.ordinal)
 
       test(m"cm carries its matrix"):
-        operators(t"2 0 0 2 10 20 cm")
+        operators("2 0 0 2 10 20 cm")
       . assert(_ == List(Pdf.Operator.Concat(Pdf.Matrix(2, 0, 0, 2, 10, 20))))
 
       test(m"re carries its rectangle"):
-        operators(t"1 2 30 40 re f")
+        operators("1 2 30 40 re f")
       . assert(_ == List(Pdf.Operator.Rectangle(1, 2, 30, 40),
           Pdf.Operator.Fill(Pdf.Operator.FillRule.NonZero)))
 
       test(m"rg becomes an Srgb colour"):
-        operators(t"1 0 0.5 rg")
+        operators("1 0 0.5 rg")
       . assert(_ == List(Pdf.Operator.FillRgb(Srgb(1.0, 0.0, 0.5))))
 
       test(m"a dash pattern parses"):
-        operators(t"[2 1] 0 d")
+        operators("[2 1] 0 d")
       . assert(_ == List(Pdf.Operator.SetDashPattern(List(2.0, 1.0), 0.0)))
 
       test(m"TJ mixes strings and kerning adjustments"):
-        operators(t"BT [(A) -500 (B)] TJ ET").stdlib match
+        operators("BT [(A) -500 (B)] TJ ET").stdlib match
           case List(_, Pdf.Operator.ShowTexts(elements), _) =>
             // Via the stdlib list and a `Double`-first match: the frozen-array union member
             // takes a reach capture under pattern binding that `Mappable` rejects.
@@ -1147,19 +1147,19 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == List(t"A", -500.0, t"B"))
 
       test(m"unknown operators survive as Unrecognized"):
-        operators(t"BX /x 7 fancyNewOp EX")
+        operators("BX /x 7 fancyNewOp EX")
       . assert(_ == List(Pdf.Operator.BeginCompatibility,
           Pdf.Operator.Unrecognized(t"fancyNewOp", List(Cos.Name(t"x"), Cos.Integral(7))),
           Pdf.Operator.EndCompatibility))
 
       test(m"a known operator with missing operands is an error"):
-        capture[Pdf.Error](operators(t"w")).reason
-      . assert(_ == Pdf.Error.Reason.MalformedOperator(t"w"))
+        capture[Pdf.Error](operators("w")).reason
+      . assert(_ == Pdf.Error.Reason.MalformedOperator("w"))
 
       test(m"an inline image folds into one operator"):
-        operators(t"BI /W 2 /H 2 /L 4 ID \u0001\u0002\u0003\u0004 EI").stdlib match
+        operators("BI /W 2 /H 2 /L 4 ID \u0001\u0002\u0003\u0004 EI").stdlib match
           case List(Pdf.Operator.InlineImage(parameters, data)) =>
-            (parameters(t"W"), data.length)
+            (parameters("W"), data.length)
 
           case _ =>
             (Unset, 0)
@@ -1167,62 +1167,62 @@ object Tests extends Suite(m"Facsimile tests"):
 
     suite(m"Fonts"):
       test(m"a standard-14 font is recognized with its metrics"):
-        PdfFile(contentPage(t"")).open():
-          pdf.page(Prim).fonts(t"F1").let: font =>
+        PdfFile(contentPage("")).open():
+          pdf.page(Prim).fonts("F1").let: font =>
             (font.standard, font.width('A'))
       . assert(_ == (Pdf.Font.Standard.Helvetica, 667.0))
 
       test(m"declared widths override standard metrics"):
         val doc = document
-          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
-            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
-            t"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
-            t"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /FirstChar 65 /Widths [800] >>"
+          ( "<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /FirstChar 65 /Widths [800] >>"
             . in[Data] )
 
         PdfFile(doc).open():
-          pdf.page(Prim).fonts(t"F1").let: font =>
+          pdf.page(Prim).fonts("F1").let: font =>
             (font.width('A'), font.width('B'))
       . assert(_ == (800.0, 667.0))
 
       test(m"differences remap codes through glyph names"):
         val doc = document
-          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
-            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
-            t"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
-            t"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding << /BaseEncoding /WinAnsiEncoding /Differences [65 /eacute] >> >>"
+          ( "<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding << /BaseEncoding /WinAnsiEncoding /Differences [65 /eacute] >> >>"
             . in[Data] )
 
         PdfFile(doc).open():
-          pdf.page(Prim).fonts(t"F1").let(_.decode(data('A', 'B', 0x93)))
-      . assert(_ == t"éB“")
+          pdf.page(Prim).fonts("F1").let(_.decode(data('A', 'B', 0x93)))
+      . assert(_ == "éB“")
 
       test(m"a ToUnicode map takes precedence"):
-        val cmap = t"/CIDInit /ProcSet findresource begin begincmap 1 begincodespacerange <00> <FF> endcodespacerange 2 beginbfchar <41> <0042> endbfchar 1 beginbfrange <60> <62> <0070> endbfrange endcmap end"
+        val cmap = "/CIDInit /ProcSet findresource begin begincmap 1 begincodespacerange <00> <FF> endcodespacerange 2 beginbfchar <41> <0042> endbfchar 1 beginbfrange <60> <62> <0070> endbfrange endcmap end"
 
         val doc = document
-          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
-            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
-            t"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
-            t"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /ToUnicode 5 0 R >>".in[Data],
+          ( "<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /ToUnicode 5 0 R >>".in[Data],
             t"<< /Length ${cmap.length} >>\nstream\n$cmap\nendstream".in[Data] )
 
         PdfFile(doc).open():
-          pdf.page(Prim).fonts(t"F1").let(_.decode(data('A', 0x60, 0x61, 0x62)))
-      . assert(_ == t"Bpqr")
+          pdf.page(Prim).fonts("F1").let(_.decode(data('A', 0x60, 0x61, 0x62)))
+      . assert(_ == "Bpqr")
 
       test(m"a Type0 font reads two-byte codes and CID widths"):
         val doc = document
-          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
-            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
-            t"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
-            t"<< /Type /Font /Subtype /Type0 /BaseFont /Test /Encoding /Identity-H /DescendantFonts [5 0 R] >>"
+          ( "<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
+            "<< /Type /Font /Subtype /Type0 /BaseFont /Test /Encoding /Identity-H /DescendantFonts [5 0 R] >>"
             . in[Data],
-            t"<< /Type /Font /Subtype /CIDFontType2 /BaseFont /Test /DW 750 /W [10 [600 650] 20 22 500] >>"
+            "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /Test /DW 750 /W [10 [600 650] 20 22 500] >>"
             . in[Data] )
 
         PdfFile(doc).open():
-          pdf.page(Prim).fonts(t"F1").let: font =>
+          pdf.page(Prim).fonts("F1").let: font =>
             (font.codes(data(0, 10, 0, 11)), font.width(10), font.width(21), font.width(99))
       . assert(_ == (List(10, 11), 600.0, 500.0, 750.0))
 
@@ -1232,51 +1232,51 @@ object Tests extends Suite(m"Facsimile tests"):
           pdf.page(Prim).text
 
       test(m"a single show operation extracts its text"):
-        extracted(t"BT /F1 12 Tf 72 720 Td (Hello) Tj ET")
-      . assert(_ == t"Hello")
+        extracted("BT /F1 12 Tf 72 720 Td (Hello) Tj ET")
+      . assert(_ == "Hello")
 
       test(m"a gap between shows on a baseline becomes a space"):
-        extracted(t"BT /F1 12 Tf 72 720 Td (Hello) Tj 100 0 Td (world) Tj ET")
-      . assert(_ == t"Hello world")
+        extracted("BT /F1 12 Tf 72 720 Td (Hello) Tj 100 0 Td (world) Tj ET")
+      . assert(_ == "Hello world")
 
       test(m"adjacent shows do not gain a space"):
-        extracted(t"BT /F1 12 Tf 72 720 Td (Hel) Tj (lo) Tj ET")
-      . assert(_ == t"Hello")
+        extracted("BT /F1 12 Tf 72 720 Td (Hel) Tj (lo) Tj ET")
+      . assert(_ == "Hello")
 
       test(m"a baseline change becomes a newline"):
-        extracted(t"BT /F1 12 Tf 72 720 Td (one) Tj 0 -14 Td (two) Tj ET")
-      . assert(_ == t"one\ntwo")
+        extracted("BT /F1 12 Tf 72 720 Td (one) Tj 0 -14 Td (two) Tj ET")
+      . assert(_ == "one\ntwo")
 
       test(m"T* advances by the leading"):
-        extracted(t"BT /F1 12 Tf 14 TL 72 720 Td (one) Tj T* (two) Tj ET")
-      . assert(_ == t"one\ntwo")
+        extracted("BT /F1 12 Tf 14 TL 72 720 Td (one) Tj T* (two) Tj ET")
+      . assert(_ == "one\ntwo")
 
       test(m"a large TJ adjustment reads as a space"):
-        extracted(t"BT /F1 12 Tf 72 720 Td [(Hello) -600 (world)] TJ ET")
-      . assert(_ == t"Hello world")
+        extracted("BT /F1 12 Tf 72 720 Td [(Hello) -600 (world)] TJ ET")
+      . assert(_ == "Hello world")
 
       test(m"runs carry their positions in points"):
-        PdfFile(contentPage(t"BT /F1 12 Tf 72 720 Td (Hello) Tj ET")).open():
+        PdfFile(contentPage("BT /F1 12 Tf 72 720 Td (Hello) Tj ET")).open():
           pdf.page(Prim).runs.stdlib match
             case List(run) => (run.x, run.y, run.size, run.text)
             case _         => (Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
-                                  Quantity[Points[1]](0.0), t"")
+                                  Quantity[Points[1]](0.0), "")
       . assert(_ == (Quantity[Points[1]](72.0), Quantity[Points[1]](720.0),
-          Quantity[Points[1]](12.0), t"Hello"))
+          Quantity[Points[1]](12.0), "Hello"))
 
       test(m"the transformation matrix scales positions"):
-        PdfFile(contentPage(t"q 2 0 0 2 0 0 cm BT /F1 12 Tf 50 100 Td (X) Tj ET Q")).open():
+        PdfFile(contentPage("q 2 0 0 2 0 0 cm BT /F1 12 Tf 50 100 Td (X) Tj ET Q")).open():
           pdf.page(Prim).runs.stdlib match
             case List(run) => (run.x, run.size)
             case _         => (Quantity[Points[1]](0.0), Quantity[Points[1]](0.0))
       . assert(_ == (Quantity[Points[1]](100.0), Quantity[Points[1]](24.0)))
 
       test(m"text is a pure value and escapes the scope"):
-        val kept = PdfFile(contentPage(t"BT /F1 12 Tf 72 720 Td (Kept) Tj ET")).open():
+        val kept = PdfFile(contentPage("BT /F1 12 Tf 72 720 Td (Kept) Tj ET")).open():
           pdf.page(Prim).text
 
         kept
-      . assert(_ == t"Kept")
+      . assert(_ == "Kept")
 
     suite(m"Streaming payloads"):
       def drain(stream: (Stream[Data] over Credit)^): Data =
@@ -1308,33 +1308,33 @@ object Tests extends Suite(m"Facsimile tests"):
                 drain(pdf.spring(body)()).utf8
 
             case _ =>
-              t""
+              ""
 
       test(m"a raw payload streams in chunks"):
         scala.caps.unsafe.unsafeAssumeSeparate:
-          streamed(t"<< /Length 11 >>\nstream\nHello world\nendstream".in[Data])
-      . assert(_ == t"Hello world")
+          streamed("<< /Length 11 >>\nstream\nHello world\nendstream".in[Data])
+      . assert(_ == "Hello world")
 
       test(m"a Flate payload streams through the zlib duct"):
-        val payload = deflate(t"streamed and inflated".in[Data])
+        val payload = deflate("streamed and inflated".in[Data])
 
         val body = t"<< /Length ${payload.length} /Filter /FlateDecode >>\nstream\n".in[Data]
-          ++ payload ++ t"\nendstream".in[Data]
+          ++ payload ++ "\nendstream".in[Data]
 
         scala.caps.unsafe.unsafeAssumeSeparate(streamed(body))
-      . assert(_ == t"streamed and inflated")
+      . assert(_ == "streamed and inflated")
 
       test(m"a gathered filter delivers through flush"):
         scala.caps.unsafe.unsafeAssumeSeparate:
-          streamed(t"<< /Length 11 /Filter /ASCIIHexDecode >>\nstream\n48656C6C6F>\nendstream"
+          streamed("<< /Length 11 /Filter /ASCIIHexDecode >>\nstream\n48656C6C6F>\nendstream"
             . in[Data])
-      . assert(_ == t"Hello")
+      . assert(_ == "Hello")
 
       test(m"a spring re-materializes the same content"):
-        val payload = deflate(t"again and again".in[Data])
+        val payload = deflate("again and again".in[Data])
 
         val body = t"<< /Length ${payload.length} /Filter /FlateDecode >>\nstream\n".in[Data]
-          ++ payload ++ t"\nendstream".in[Data]
+          ++ payload ++ "\nendstream".in[Data]
 
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
@@ -1346,8 +1346,8 @@ object Tests extends Suite(m"Facsimile tests"):
                 (first, second)
 
             case _ =>
-              (t"", t"")
-      . assert(_ == (t"again and again", t"again and again"))
+              ("", "")
+      . assert(_ == ("again and again", "again and again"))
 
     suite(m"Encryption"):
       val padding: scala.Array[Byte] = scala.Array[Byte]
@@ -1449,8 +1449,8 @@ object Tests extends Suite(m"Facsimile tests"):
         def hex(bytes: scala.Array[Byte]): Text = hexOf(bytes)
 
         val version = if revision == 2 then 1 else 2
-        val secret = rc4(objectKey(2, 0), t"Secret".s.getBytes("ISO-8859-1").nn)
-        val streamPlain = t"encrypted stream".s.getBytes("ISO-8859-1").nn
+        val secret = rc4(objectKey(2, 0), "Secret".s.getBytes("ISO-8859-1").nn)
+        val streamPlain = "encrypted stream".s.getBytes("ISO-8859-1").nn
         val streamCipher = rc4(objectKey(3, 0), streamPlain)
 
         val encrypt =
@@ -1458,23 +1458,23 @@ object Tests extends Suite(m"Facsimile tests"):
 
         buildEncrypted
           ( encrypt,
-            t"<< /Type /Catalog >>".in[Data],
+            "<< /Type /Catalog >>".in[Data],
             t"<< /Secret <${hex(secret)}> >>".in[Data],
             (t"<< /Length ${streamCipher.length} >>\nstream\n".in[Data]
-                ++ Array.unsafeFrozen(streamCipher) ++ t"\nendstream".in[Data]) )
+                ++ Array.unsafeFrozen(streamCipher) ++ "\nendstream".in[Data]) )
 
       // Assembles a document with an `/Encrypt` entry (object N+1) and an `/ID`.
       def buildEncrypted(encrypt: Text, bodies: Data*): Data =
-        var out: Data = t"%PDF-1.6\n".in[Data]
+        var out: Data = "%PDF-1.6\n".in[Data]
         val offsets = scala.collection.immutable.List.newBuilder[Long]
 
         bodies.zipWithIndex.each: (body, index) =>
           offsets += out.length.toLong
-          out = out ++ t"${index + 1} 0 obj\n".in[Data] ++ body ++ t"\nendobj\n".in[Data]
+          out = out ++ t"${index + 1} 0 obj\n".in[Data] ++ body ++ "\nendobj\n".in[Data]
 
         val encryptNumber = bodies.length + 1
         offsets += out.length.toLong
-        out = out ++ t"$encryptNumber 0 obj\n".in[Data] ++ encrypt.in[Data] ++ t"\nendobj\n".in[Data]
+        out = out ++ t"$encryptNumber 0 obj\n".in[Data] ++ encrypt.in[Data] ++ "\nendobj\n".in[Data]
 
         val idHex = hexOf(id)
         val xrefOffset = out.length
@@ -1512,7 +1512,7 @@ object Tests extends Suite(m"Facsimile tests"):
             val e = cipher.doFinal(input).nn
             var sum = 0
             for i <- 0 until 16 do sum += e(i) & 0xff
-            val algo = sum%3 match
+            val algo: String = sum%3 match
               case 0 => "SHA-256"
               case 1 => "SHA-384"
               case _ => "SHA-512"
@@ -1554,8 +1554,8 @@ object Tests extends Suite(m"Facsimile tests"):
               jcs.IvParameterSpec(iv))
           iv ++ cipher.doFinal(padded).nn
 
-        val secret = encryptStream(2, t"Secret".s.getBytes("UTF-8").nn)
-        val streamCipher = encryptStream(3, t"encrypted stream".s.getBytes("UTF-8").nn)
+        val secret = encryptStream(2, "Secret".s.getBytes("UTF-8").nn)
+        val streamCipher = encryptStream(3, "encrypted stream".s.getBytes("UTF-8").nn)
 
         val ownerHex = hex(new scala.Array[Byte](48))
         val encrypt =
@@ -1563,14 +1563,14 @@ object Tests extends Suite(m"Facsimile tests"):
 
         buildEncrypted
           ( encrypt,
-            t"<< /Type /Catalog >>".in[Data],
+            "<< /Type /Catalog >>".in[Data],
             (t"<< /Secret <${hex(secret)}> >>".in[Data]),
             (t"<< /Length ${streamCipher.length} >>\nstream\n".in[Data]
-                ++ Array.unsafeFrozen(streamCipher) ++ t"\nendstream".in[Data]) )
+                ++ Array.unsafeFrozen(streamCipher) ++ "\nendstream".in[Data]) )
 
       test(m"RC4 matches its known-answer vector"):
-        Rc4(t"Key".in[Data], t"Plaintext".in[Data]).to[List].map(b => f"${b & 0xff}%02X".tt).join
-      . assert(_ == t"BBF316E8D940AF0AD3")
+        Rc4("Key".in[Data], "Plaintext".in[Data]).to[List].map(b => f"${b & 0xff}%02X".tt).join
+      . assert(_ == "BBF316E8D940AF0AD3")
 
       test(m"an encrypted document reports it"):
         PdfFile(rc4Document(3)).open():
@@ -1579,36 +1579,36 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"a revision-3 string decrypts with the empty password"):
         PdfFile(rc4Document(3)).open():
-          pdf.resolved(pdf(2, 0)(t"Secret").or(Cos.Nil)).text
-      . assert(_ == t"Secret")
+          pdf.resolved(pdf(2, 0)("Secret").or(Cos.Nil)).text
+      . assert(_ == "Secret")
 
       test(m"a revision-3 stream decrypts"):
         PdfFile(rc4Document(3)).open():
           pdf(3, 0) match
             case body: Cos.Body => pdf.payload(body).utf8
-            case _              => t""
-      . assert(_ == t"encrypted stream")
+            case _              => ""
+      . assert(_ == "encrypted stream")
 
       test(m"a revision-2 (40-bit) string decrypts"):
         PdfFile(rc4Document(2)).open():
-          pdf.resolved(pdf(2, 0)(t"Secret").or(Cos.Nil)).text
-      . assert(_ == t"Secret")
+          pdf.resolved(pdf(2, 0)("Secret").or(Cos.Nil)).text
+      . assert(_ == "Secret")
 
       test(m"an AES-256 string decrypts with the right password"):
-        PdfFile(aes256Document(t"open sesame")).open(Password(t"open sesame")):
-          pdf.resolved(pdf(2, 0)(t"Secret").or(Cos.Nil)).text
-      . assert(_ == t"Secret")
+        PdfFile(aes256Document("open sesame")).open(Password("open sesame")):
+          pdf.resolved(pdf(2, 0)("Secret").or(Cos.Nil)).text
+      . assert(_ == "Secret")
 
       test(m"an AES-256 stream decrypts"):
-        PdfFile(aes256Document(t"open sesame")).open(Password(t"open sesame")):
+        PdfFile(aes256Document("open sesame")).open(Password("open sesame")):
           pdf(3, 0) match
             case body: Cos.Body => pdf.payload(body).utf8
-            case _              => t""
-      . assert(_ == t"encrypted stream")
+            case _              => ""
+      . assert(_ == "encrypted stream")
 
       test(m"a wrong password is rejected at open"):
         capture[Pdf.Error]:
-          PdfFile(aes256Document(t"open sesame")).open(Password(t"wrong"))(pdf.version)
+          PdfFile(aes256Document("open sesame")).open(Password("wrong"))(pdf.version)
         . reason
       . assert(_ == Pdf.Error.Reason.BadPassword)
 
@@ -1617,45 +1617,45 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           doc.set(Cos.Ref(1, 0),
-              Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Catalog"), t"Marker" -> Cos.Chars(t"added".in[Data]))))
+              Cos.Dictionary(Map("Type" -> Cos.Name("Catalog"), "Marker" -> Cos.Chars("added".in[Data]))))
 
         // Re-reading (with the empty password) must decrypt the newly-written string; a
         // failure to encrypt on write would surface as garbage here.
         PdfFile(fileBytes(path)).open():
-          pdf.resolved(pdf(1, 0))(t"Marker").let(_.text)
-      . assert(_ == t"added")
+          pdf.resolved(pdf(1, 0))("Marker").let(_.text)
+      . assert(_ == "added")
 
       test(m"an edit to an AES-256 document round-trips"):
-        val path = tempPdf(aes256Document(t"open sesame"))
+        val path = tempPdf(aes256Document("open sesame"))
 
-        PdfFile(path).open(Read & Write, Password(t"open sesame")): doc ?=>
+        PdfFile(path).open(Read & Write, Password("open sesame")): doc ?=>
           doc.set(Cos.Ref(1, 0),
-              Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Catalog"), t"Marker" -> Cos.Chars(t"aes".in[Data]))))
+              Cos.Dictionary(Map("Type" -> Cos.Name("Catalog"), "Marker" -> Cos.Chars("aes".in[Data]))))
 
-        PdfFile(fileBytes(path)).open(Password(t"open sesame")):
-          pdf.resolved(pdf(1, 0))(t"Marker").let(_.text)
-      . assert(_ == t"aes")
+        PdfFile(fileBytes(path)).open(Password("open sesame")):
+          pdf.resolved(pdf(1, 0))("Marker").let(_.text)
+      . assert(_ == "aes")
 
       test(m"a newly-written stream in an encrypted document decrypts on re-read"):
         val path = tempPdf(rc4Document(3))
 
         PdfFile(path).open(Read & Write): doc ?=>
-          val ref = doc.allocate(doc.newStream(t"secret stream".in[Data]))
+          val ref = doc.allocate(doc.newStream("secret stream".in[Data]))
           doc.set(Cos.Ref(1, 0),
-              Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Catalog"), t"Extra" -> ref)))
+              Cos.Dictionary(Map("Type" -> Cos.Name("Catalog"), "Extra" -> ref)))
 
         PdfFile(fileBytes(path)).open():
-          pdf.resolved(pdf(1, 0)(t"Extra").or(Cos.Nil)) match
+          pdf.resolved(pdf(1, 0)("Extra").or(Cos.Nil)) match
             case body: Cos.Body => pdf.payload(body).utf8
-            case _              => t""
-      . assert(_ == t"secret stream")
+            case _              => ""
+      . assert(_ == "secret stream")
 
     // A two-page document: object 1 catalog, 2 page-tree root (A4 media box, inherited),
     // 3 a plain page, 4 a page with its own crop box and rotation.
-    def paged(extraCatalog: Text = t"", page3: Text = t"", page4: Text = t""): Data =
+    def paged(extraCatalog: Text = "", page3: Text = "", page4: Text = ""): Data =
       document
         ( t"<< /Type /Catalog /Pages 2 0 R $extraCatalog >>".in[Data],
-          t"<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 595 842] >>".in[Data],
+          "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 595 842] >>".in[Data],
           t"<< /Type /Page /Parent 2 0 R $page3 >>".in[Data],
           t"<< /Type /Page /Parent 2 0 R /CropBox [10 10 300 400] /Rotate 90 $page4 >>"
           . in[Data] )
@@ -1702,14 +1702,14 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == Page.Rotation.None)
 
       test(m"a UserUnit scales the boxes"):
-        PdfFile(paged(page3 = t"/UserUnit 2")).open():
+        PdfFile(paged(page3 = "/UserUnit 2")).open():
           pdf.page(Prim).mediaBox.width
       . assert(_ == Quantity[Points[1]](1190.0))
 
       test(m"a cyclic page tree is an error"):
         val doc = document
-          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
-            t"<< /Type /Pages /Kids [2 0 R] /Count 1 >>".in[Data] )
+          ( "<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            "<< /Type /Pages /Kids [2 0 R] /Count 1 >>".in[Data] )
 
         capture[Pdf.Error]:
           // Overlap false positive: the opened document is chained through `open`'s result.
@@ -1719,42 +1719,42 @@ object Tests extends Suite(m"Facsimile tests"):
 
     suite(m"Document information"):
       def informed(info: Text): Data =
-        val body = t"<< /Type /Catalog /Pages 3 0 R >>".in[Data]
-        val pages = t"<< /Type /Pages /Kids [] /Count 0 >>".in[Data]
-        documentWith(t"/Info 2 0 R", body, t"<< $info >>".in[Data], pages)
+        val body = "<< /Type /Catalog /Pages 3 0 R >>".in[Data]
+        val pages = "<< /Type /Pages /Kids [] /Count 0 >>".in[Data]
+        documentWith("/Info 2 0 R", body, t"<< $info >>".in[Data], pages)
 
       test(m"the title is read"):
-        PdfFile(informed(t"/Title (A Document)")).open():
+        PdfFile(informed("/Title (A Document)")).open():
           pdf.info.title
-      . assert(_ == t"A Document")
+      . assert(_ == "A Document")
 
       test(m"a UTF-16BE string decodes by its byte-order mark"):
-        PdfFile(informed(t"/Author <FEFF00480069>")).open():
+        PdfFile(informed("/Author <FEFF00480069>")).open():
           pdf.info.author
-      . assert(_ == t"Hi")
+      . assert(_ == "Hi")
 
       test(m"PDFDocEncoding maps its differences from Latin-1"):
-        PdfFile(informed(t"/Subject (caf\\351 \\200)")).open():
+        PdfFile(informed("/Subject (caf\\351 \\200)")).open():
           pdf.info.subject
-      . assert(_ == t"café •")
+      . assert(_ == "café •")
 
       test(m"a creation date parses with its offset"):
-        PdfFile(informed(t"/CreationDate (D:20240102030405+01'30')")).open():
+        PdfFile(informed("/CreationDate (D:20240102030405+01'30')")).open():
           pdf.info.created.let(_.offset)
       . assert(_ == Quantity[Seconds[1]](5400.0))
 
       test(m"a date with no offset has an unknown zone"):
-        PdfFile(informed(t"/CreationDate (D:20240102030405)")).open():
+        PdfFile(informed("/CreationDate (D:20240102030405)")).open():
           pdf.info.created.let(_.offset)
       . assert(_ == Unset)
 
       test(m"a malformed date is unset, not an error"):
-        PdfFile(informed(t"/ModDate (yesterday)")).open():
+        PdfFile(informed("/ModDate (yesterday)")).open():
           pdf.info.modified
       . assert(_ == Unset)
 
       test(m"a truncated date defaults its later components"):
-        PdfFile(informed(t"/CreationDate (D:2024)")).open():
+        PdfFile(informed("/CreationDate (D:2024)")).open():
           pdf.info.created.let(_.timestamp)
       . assert: timestamp =>
           import calendars.gregorianCalendar
@@ -1762,9 +1762,9 @@ object Tests extends Suite(m"Facsimile tests"):
               Clockface(Base24(0), Base60(0), Base60(0)))
 
       test(m"document information escapes the scope as a pure value"):
-        val info = PdfFile(informed(t"/Title (Kept)")).open()(pdf.info)
+        val info = PdfFile(informed("/Title (Kept)")).open()(pdf.info)
         info.title
-      . assert(_ == t"Kept")
+      . assert(_ == "Kept")
 
     suite(m"Navigation"):
       def navigable(catalogExtra: Text, objects: Data*): Data =
@@ -1777,26 +1777,26 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"a named destination resolves through the name tree"):
         val doc = navigable
-          ( t"/Names << /Dests << /Names [(intro) [3 0 R /XYZ 10 20 null]] >> >>" )
+          ( "/Names << /Dests << /Names [(intro) [3 0 R /XYZ 10 20 null]] >> >>" )
 
         PdfFile(doc).open():
-          pdf.destinations(t"intro")
+          pdf.destinations("intro")
       . assert(_ == Destination.Xyz(Prim, 10.0, 20.0, Unset))
 
       test(m"an old-style /Dests dictionary also resolves"):
-        val doc = navigable(t"/Dests << /intro [3 0 R /FitH 30] >>")
+        val doc = navigable("/Dests << /intro [3 0 R /FitH 30] >>")
 
         PdfFile(doc).open():
-          pdf.destinations(t"intro")
+          pdf.destinations("intro")
       . assert(_ == Destination.FitWidth(Prim, 30.0))
 
       test(m"bookmarks form a tree with destinations"):
         val doc = navigable
-          ( t"/Outlines 4 0 R",
-            t"<< /Type /Outlines /First 5 0 R >>".in[Data],
-            t"<< /Title (One) /Parent 4 0 R /Next 6 0 R /Dest [3 0 R /Fit] >>".in[Data],
-            t"<< /Title (Two) /Parent 4 0 R /First 7 0 R >>".in[Data],
-            t"<< /Title (Child) /Parent 6 0 R >>".in[Data] )
+          ( "/Outlines 4 0 R",
+            "<< /Type /Outlines /First 5 0 R >>".in[Data],
+            "<< /Title (One) /Parent 4 0 R /Next 6 0 R /Dest [3 0 R /Fit] >>".in[Data],
+            "<< /Title (Two) /Parent 4 0 R /First 7 0 R >>".in[Data],
+            "<< /Title (Child) /Parent 6 0 R >>".in[Data] )
 
         PdfFile(doc).open():
           pdf.bookmarks.map(bookmark => (bookmark.title, bookmark.children.size))
@@ -1804,9 +1804,9 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"a bookmark destination lands on its page"):
         val doc = navigable
-          ( t"/Outlines 4 0 R",
-            t"<< /Type /Outlines /First 5 0 R >>".in[Data],
-            t"<< /Title (One) /Parent 4 0 R /Dest [3 0 R /Fit] >>".in[Data] )
+          ( "/Outlines 4 0 R",
+            "<< /Type /Outlines /First 5 0 R >>".in[Data],
+            "<< /Title (One) /Parent 4 0 R /Dest [3 0 R /Fit] >>".in[Data] )
 
         PdfFile(doc).open():
           pdf.bookmarks.stdlib.head.destination
@@ -1814,9 +1814,9 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"a cyclic outline terminates"):
         val doc = navigable
-          ( t"/Outlines 4 0 R",
-            t"<< /Type /Outlines /First 5 0 R >>".in[Data],
-            t"<< /Title (Loop) /Parent 4 0 R /Next 5 0 R >>".in[Data] )
+          ( "/Outlines 4 0 R",
+            "<< /Type /Outlines /First 5 0 R >>".in[Data],
+            "<< /Title (Loop) /Parent 4 0 R /Next 5 0 R >>".in[Data] )
 
         PdfFile(doc).open():
           pdf.bookmarks.size
@@ -1825,39 +1825,39 @@ object Tests extends Suite(m"Facsimile tests"):
     suite(m"Annotations, attachments and labels"):
       test(m"a URI link annotation"):
         val doc = document
-          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
-            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
-            t"<< /Type /Page /Parent 2 0 R /Annots [4 0 R] >>".in[Data],
-            t"<< /Subtype /Link /Rect [0 0 10 20] /A << /S /URI /URI (https://x.com) >> >>"
+          ( "<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            "<< /Type /Page /Parent 2 0 R /Annots [4 0 R] >>".in[Data],
+            "<< /Subtype /Link /Rect [0 0 10 20] /A << /S /URI /URI (https://x.com) >> >>"
             . in[Data] )
 
         PdfFile(doc).open():
           pdf.page(Prim).annotations.stdlib.head match
             case Annotation.Link(rect, _, uri, _) => (rect.height, uri)
             case _                                => (Quantity[Points[1]](0.0), Unset)
-      . assert(_ == (Quantity[Points[1]](20.0), t"https://x.com"))
+      . assert(_ == (Quantity[Points[1]](20.0), "https://x.com"))
 
       test(m"a note annotation carries its contents"):
         val doc = document
-          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
-            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
-            t"<< /Type /Page /Parent 2 0 R /Annots [4 0 R] >>".in[Data],
-            t"<< /Subtype /Text /Rect [0 0 5 5] /Contents (Remember) /Open true >>".in[Data] )
+          ( "<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            "<< /Type /Page /Parent 2 0 R /Annots [4 0 R] >>".in[Data],
+            "<< /Subtype /Text /Rect [0 0 5 5] /Contents (Remember) /Open true >>".in[Data] )
 
         PdfFile(doc).open():
           pdf.page(Prim).annotations.stdlib.head match
             case Annotation.Note(_, contents, open, _) => (contents, open)
             case _                                     => (Unset, false)
-      . assert(_ == (t"Remember", true))
+      . assert(_ == ("Remember", true))
 
       test(m"an attachment surfaces its metadata and content"):
         val doc = document
-          ( t"<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles << /Names [(notes.txt) 4 0 R] >> >> >>"
+          ( "<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles << /Names [(notes.txt) 4 0 R] >> >> >>"
             . in[Data],
-            t"<< /Type /Pages /Kids [] /Count 0 >>".in[Data],
-            t"<< /Type /Page >>".in[Data],
-            t"<< /Type /Filespec /F (notes.txt) /EF << /F 5 0 R >> >>".in[Data],
-            t"<< /Type /EmbeddedFile /Subtype /text#2Fplain /Length 5 >>\nstream\nhello\nendstream"
+            "<< /Type /Pages /Kids [] /Count 0 >>".in[Data],
+            "<< /Type /Page >>".in[Data],
+            "<< /Type /Filespec /F (notes.txt) /EF << /F 5 0 R >> >>".in[Data],
+            "<< /Type /EmbeddedFile /Subtype /text#2Fplain /Length 5 >>\nstream\nhello\nendstream"
             . in[Data] )
 
         PdfFile(doc).open():
@@ -1872,18 +1872,18 @@ object Tests extends Suite(m"Facsimile tests"):
                 attachment.data.utf8 )
 
             case _ =>
-              (t"", t"", t"", t"")
-      . assert(_ == (t"notes.txt", t"notes.txt", t"text/plain", t"hello"))
+              ("", "", "", "")
+      . assert(_ == ("notes.txt", "notes.txt", "text/plain", "hello"))
 
       test(m"page labels follow the number-tree ranges"):
         val doc = document
-          ( t"<< /Type /Catalog /Pages 2 0 R /PageLabels << /Nums [0 << /S /r >> 2 << /S /D /St 5 /P (A-) >>] >> >>"
+          ( "<< /Type /Catalog /Pages 2 0 R /PageLabels << /Nums [0 << /S /r >> 2 << /S /D /St 5 /P (A-) >>] >> >>"
             . in[Data],
-            t"<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3 /MediaBox [0 0 9 9] >>"
+            "<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3 /MediaBox [0 0 9 9] >>"
             . in[Data],
-            t"<< /Type /Page /Parent 2 0 R >>".in[Data],
-            t"<< /Type /Page /Parent 2 0 R >>".in[Data],
-            t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
+            "<< /Type /Page /Parent 2 0 R >>".in[Data],
+            "<< /Type /Page /Parent 2 0 R >>".in[Data],
+            "<< /Type /Page /Parent 2 0 R >>".in[Data] )
 
         PdfFile(doc).open():
           List(pdf.pageLabel(0.z), pdf.pageLabel(1.z), pdf.pageLabel(2.z))
@@ -1892,80 +1892,80 @@ object Tests extends Suite(m"Facsimile tests"):
       test(m"a document without page labels numbers plainly"):
         PdfFile(paged()).open():
           pdf.pageLabel(1.z)
-      . assert(_ == t"2")
+      . assert(_ == "2")
 
       test(m"ASCII85Decode decodes a full group"):
-        Filter.decode(t"9jqo^~>".in[Data], List((Filter.Id.Ascii85, noParms))).utf8
-      . assert(_ == t"Man ")
+        Filter.decode("9jqo^~>".in[Data], List((Filter.Id.Ascii85, noParms))).utf8
+      . assert(_ == "Man ")
 
       test(m"ASCII85Decode decodes a partial final group"):
-        Filter.decode(t"9jqo~>".in[Data], List((Filter.Id.Ascii85, noParms))).utf8
-      . assert(_ == t"Man")
+        Filter.decode("9jqo~>".in[Data], List((Filter.Id.Ascii85, noParms))).utf8
+      . assert(_ == "Man")
 
       test(m"the z shorthand is four zero bytes"):
-        Filter.decode(t"z~>".in[Data], List((Filter.Id.Ascii85, noParms))).to[List].map(_.toInt)
+        Filter.decode("z~>".in[Data], List((Filter.Id.Ascii85, noParms))).to[List].map(_.toInt)
       . assert(_ == List(0, 0, 0, 0))
 
       test(m"LZWDecode decodes the specification's example"):
         val encoded = data(0x80, 0x0b, 0x60, 0x50, 0x22, 0x0c, 0x0c, 0x85, 0x01)
         Filter.decode(encoded, List((Filter.Id.Lzw, noParms))).utf8
-      . assert(_ == t"-----A---B")
+      . assert(_ == "-----A---B")
 
       test(m"a wrong stream length falls back to the endstream keyword"):
-        val body = t"<< /Length 3 >>\nstream\nHello\nendstream".in[Data]
+        val body = "<< /Length 3 >>\nstream\nHello\nendstream".in[Data]
 
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
             case body: Cos.Body => pdf.payload(body).utf8
-            case _              => t""
-      . assert(_ == t"Hello")
+            case _              => ""
+      . assert(_ == "Hello")
 
       test(m"a missing stream length falls back to the endstream keyword"):
-        val body = t"<< /Kind /Bare >>\nstream\nHello\nendstream".in[Data]
+        val body = "<< /Kind /Bare >>\nstream\nHello\nendstream".in[Data]
 
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
             case body: Cos.Body => pdf.payload(body).utf8
-            case _              => t""
-      . assert(_ == t"Hello")
+            case _              => ""
+      . assert(_ == "Hello")
 
       test(m"a hybrid-reference file resolves its compressed objects"):
-        var out: Data = t"%PDF-1.5\n".in[Data]
+        var out: Data = "%PDF-1.5\n".in[Data]
 
         val offset1 = out.length
-        out = out ++ t"1 0 obj\n<< /Type /Catalog /Value 4 0 R >>\nendobj\n".in[Data]
+        out = out ++ "1 0 obj\n<< /Type /Catalog /Value 4 0 R >>\nendobj\n".in[Data]
 
         // An object stream holding just object 4, whose pair table is 4 bytes long.
         val offset2 = out.length
-        out = out ++ t"2 0 obj\n<< /Type /ObjStm /N 1 /First 4 /Length 6 >>\nstream\n".in[Data]
-          ++ t"4 0\n99".in[Data] ++ t"\nendstream\nendobj\n".in[Data]
+        out = out ++ "2 0 obj\n<< /Type /ObjStm /N 1 /First 4 /Length 6 >>\nstream\n".in[Data]
+          ++ "4 0\n99".in[Data] ++ "\nendstream\nendobj\n".in[Data]
 
         // The cross-reference stream covering only object 4, as compressed.
         val offset3 = out.length
         out = out
-          ++ t"3 0 obj\n<< /Type /XRef /Size 5 /W [1 2 1] /Index [4 1] /Length 4 >>\nstream\n"
+          ++ "3 0 obj\n<< /Type /XRef /Size 5 /W [1 2 1] /Index [4 1] /Length 4 >>\nstream\n"
              . in[Data]
-          ++ data(2, 0, 2, 0) ++ t"\nendstream\nendobj\n".in[Data]
+          ++ data(2, 0, 2, 0) ++ "\nendstream\nendobj\n".in[Data]
 
         // The classic table marks object 4 free — the hybrid signature — and points at the
         // cross-reference stream through /XRefStm.
         val xrefOffset = out.length
-        out = out ++ t"xref\n0 5\n0000000000 65535 f \n".in[Data]
+        out = out ++ "xref\n0 5\n0000000000 65535 f \n".in[Data]
           ++ t"${pad10(offset1)} 00000 n \n${pad10(offset2)} 00000 n \n".in[Data]
           ++ t"${pad10(offset3)} 00000 n \n0000000000 00000 f \n".in[Data]
           ++ t"trailer\n<< /Size 5 /Root 1 0 R /XRefStm $offset3 >>\n".in[Data]
           ++ t"startxref\n$xrefOffset\n%%EOF".in[Data]
 
         PdfFile(out).open():
-          pdf.resolved(pdf(1, 0)(t"Value").or(Cos.Nil))
+          pdf.resolved(pdf(1, 0)("Value").or(Cos.Nil))
       . assert(_ == Cos.Integral(99))
 
       test(m"XMP metadata surfaces as raw bytes"):
         val doc = document
-          ( t"<< /Type /Catalog /Pages 2 0 R /Metadata 3 0 R >>".in[Data],
-            t"<< /Type /Pages /Kids [] /Count 0 >>".in[Data],
-            t"<< /Type /Metadata /Subtype /XML /Length 5 >>\nstream\n<xmp/\nendstream".in[Data] )
+          ( "<< /Type /Catalog /Pages 2 0 R /Metadata 3 0 R >>".in[Data],
+            "<< /Type /Pages /Kids [] /Count 0 >>".in[Data],
+            "<< /Type /Metadata /Subtype /XML /Length 5 >>\nstream\n<xmp/\nendstream".in[Data] )
 
         PdfFile(doc).open():
           pdf.xmp.let(bytes => bytes.utf8)
-      . assert(_ == t"<xmp/")
+      . assert(_ == "<xmp/")

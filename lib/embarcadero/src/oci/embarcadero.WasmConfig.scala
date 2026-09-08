@@ -48,8 +48,8 @@ import vacuous.*
 case class WasmConfig
   ( created:      Optional[Text]          = Unset,
     author:       Optional[Text]          = Unset,
-    architecture: Text                    = t"wasm",
-    os:           Text                    = t"wasip2",
+    architecture: Text                    = "wasm",
+    os:           Text                    = "wasip2",
     layerDigests: List[Text],
     component:    Optional[WasmComponent] = Unset )
 derives CanEqual

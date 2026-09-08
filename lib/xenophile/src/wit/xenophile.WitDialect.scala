@@ -113,7 +113,7 @@ object WitDialect extends Dialect:
         Prototype
           ( fn.parameters.map { (_, typed) => project(typed) },
             if fn.constructor then Foreign.Type.Named(resource.or(t""))
-            else result0.let(project(_)).or(Foreign.Type.Named(t"unit")),
+            else result0.let(project(_)).or(Foreign.Type.Named("unit")),
             module,
             resource,
             fn.static || fn.constructor )
@@ -131,15 +131,15 @@ object WitDialect extends Dialect:
         // to the bit-vector that holds its members, so the FFM layouts stay correct.
         case Wit.Item.Enumeration(name, cases) =>
           val count = cases.size
-          val topic = if count <= 256 then t"u8" else if count <= 65536 then t"u16" else t"u32"
+          val topic = if count <= 256 then "u8" else if count <= 65536 then "u16" else "u32"
           typedefs = typedefs.define(name, Foreign.Type.Named(topic))
 
         case Wit.Item.Flags(name, names) =>
           val count = names.size
 
           val topic =
-            if count <= 8 then t"b8" else if count <= 16 then t"b16"
-            else if count <= 32 then t"b32" else t"b64"
+            if count <= 8 then "b8" else if count <= 16 then "b16"
+            else if count <= 32 then "b32" else "b64"
 
           typedefs = typedefs.define(name, Foreign.Type.Named(topic))
 
@@ -176,7 +176,7 @@ object WitDialect extends Dialect:
   // union `T | none` (an `Optional`), and a `result` always carries exactly two arms.
   private def project(typed: Foreign.Type): Foreign.Type = typed match
     case Foreign.Type.Named(name) =>
-      if name == t"result" then padded(Nil) else typed
+      if name == "result" then padded(Nil) else typed
 
     case applied: Foreign.Type.Applied =>
       val arguments: List[Foreign.Type] = applied.arguments.map(project(_))
@@ -185,22 +185,22 @@ object WitDialect extends Dialect:
       // before it is read (`wildApprox`), and anything else falls through unchanged, as before.
       val single: Optional[Foreign.Type] = if arguments.size == 1 then arguments.prim else Unset
 
-      if applied.constructor == t"option"
+      if applied.constructor == "option"
       then single.lay(Foreign.Type.Applied(applied.constructor, arguments)): inner =>
         Foreign.Type.Union(List(inner, Foreign.Type.Named(t"none")))
-      else if applied.constructor == t"result" then padded(arguments)
+      else if applied.constructor == "result" then padded(arguments)
       else Foreign.Type.Applied(applied.constructor, arguments)
 
     case Foreign.Type.Union(members) =>
       Foreign.Type.Union(members.map(project(_)))
 
   private def padded(args: List[Foreign.Type]): Foreign.Type =
-    val unit = Foreign.Type.Named(t"_")
-    Foreign.Type.Applied(t"result", (args + List(unit, unit)).keep(2))
+    val unit = Foreign.Type.Named("_")
+    Foreign.Type.Applied("result", (args + List(unit, unit)).keep(2))
 
   // The pseudo-member recording, for a memberless type declaration, the module that defines it.
   private def declaration(name: Text, module: Optional[Text]): Map[Text, Prototype] =
-    Map(t"" -> Prototype(Unset, Foreign.Type.Named(name), module))
+    Map("" -> Prototype(Unset, Foreign.Type.Named(name), module))
 
   // Resolves every `type` alias appearing in a type, transitively.
   private def resolve
@@ -233,6 +233,6 @@ object WitDialect extends Dialect:
   // interface name is spliced in before the `@version`. `Unset` when there is no `package`
   // declaration.
   private def moduleId(pkg: Optional[Text], iface: Text): Optional[Text] = pkg.let: id =>
-    id.cut(t"@") match
+    id.cut("@") match
       case base :: version :: _ => t"$base/$iface@$version"
       case _                    => t"$id/$iface"

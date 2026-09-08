@@ -52,7 +52,7 @@ object Tests extends Suite(m"Probably Tests"):
   def run(): Unit =
     test(n"square", m"square a number", n"quick")(3*3).assert(_ == 9)
 
-    test(m"double every value").over(Axis(t"n")(1, 2, 3, 4)): n =>
+    test(m"double every value").over(Axis("n")(1, 2, 3, 4)): n =>
       n*2
     . assert((n, result) => result == n*2)
 
@@ -60,7 +60,7 @@ object Tests extends Suite(m"Probably Tests"):
       codec.ordinal
     . assert((codec, ordinal) => ordinal >= 0 && ordinal < 3)
 
-    test(m"biaxial spread with a gap").over(Axis(t"x")(1, 2, 3), Axis(t"y")(10, 20)):
+    test(m"biaxial spread with a gap").over(Axis("x")(1, 2, 3), Axis("y")(10, 20)):
       case (x, y) if x + y != 23 => x*y
     . assert((x, y, result) => result == x*y)
 
@@ -126,7 +126,7 @@ object Tests extends Suite(m"Probably Tests"):
 
     test(m"not: on an axis constraint removes only the matching cells"):
       val id = test(m"probe")
-      val axis = Axis(t"N")(4, 8)
+      val axis = Axis("N")(4, 8)
       val selection = Selection.parse(List(t"not:N=4"))
 
       ( selection.admits(id, Entry.Kind.Check, List(axis.coordinate(4)), Nil),
@@ -153,7 +153,7 @@ object Tests extends Suite(m"Probably Tests"):
 
     test(m"open ranges admit from, and up to, their bounds"):
       val id = test(m"probe")
-      val axis = Axis(t"N")(2, 4, 8)
+      val axis = Axis("N")(2, 4, 8)
       val least = Selection.parse(List(t"N=4.."))
       val most = Selection.parse(List(t"N=..4"))
 
@@ -167,7 +167,7 @@ object Tests extends Suite(m"Probably Tests"):
       given verdicts: Inclusion[Unit, Verdict] = (_, _, _, _) => ()
       given details: Inclusion[Unit, Verdict.Detail] = (_, _, _, _) => ()
 
-      test(m"spread", n"axial").over(Axis(t"n")(1, 2, 3)) { n => n }.assert(_ > 0)
+      test(m"spread", n"axial").over(Axis("n")(1, 2, 3)) { n => n }.assert(_ > 0)
 
       runner.listed.map: row =>
         ( row.id.name.text,
@@ -181,14 +181,14 @@ object Tests extends Suite(m"Probably Tests"):
       given verdicts: Inclusion[Unit, Verdict] = (_, _, _, _) => ()
       given details: Inclusion[Unit, Verdict.Detail] = (_, _, _, _) => ()
 
-      test(m"spread").over(Axis(t"n")(1, 2, 3)) { n => n }.assert(_ > 0)
+      test(m"spread").over(Axis("n")(1, 2, 3)) { n => n }.assert(_ > 0)
       runner.listed.map { row => row.axes.map { axis => axis.values.map(_.text) } }
     . assert(_ == List(List(List(t"2", t"3"))))
 
     test(m"a declared emergent axis is listed with its bounds and no values"):
       val runner = listing()
       val id = test(m"stress")
-      val spec = Axis.Spec(t"N", Axis.Domain.Integral, emergent = true)
+      val spec = Axis.Spec("N", Axis.Domain.Integral, emergent = true)
       runner.declare(id, Entry.Kind.Stress, spec, 1.0, 64.0)
       runner.skip(id, Entry.Kind.Stress, Nil, 100L)
 
@@ -202,7 +202,7 @@ object Tests extends Suite(m"Probably Tests"):
     test(m"a declaration for an unlisted test is not reported"):
       val runner = listing(List(t"kind:bench"))
       val id = test(m"stress")
-      runner.declare(id, Entry.Kind.Stress, Axis.Spec(t"N", Axis.Domain.Integral, true), 1.0, 8.0)
+      runner.declare(id, Entry.Kind.Stress, Axis.Spec("N", Axis.Domain.Integral, true), 1.0, 8.0)
       runner.skip(id, Entry.Kind.Stress, Nil, 100L)
       runner.listed
     . assert(_ == Nil)

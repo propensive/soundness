@@ -62,31 +62,31 @@ object Figure:
       case Rectangle(position, width, height, transforms) =>
         val body =
           fields
-            ( t"position"   -> position.inspect,
-              t"width"      -> width.inspect,
-              t"height"     -> height.inspect,
-              t"transforms" -> transforms.inspect )
+            ( "position"   -> position.inspect,
+              "width"      -> width.inspect,
+              "height"     -> height.inspect,
+              "transforms" -> transforms.inspect )
 
         t"Rectangle($body)"
 
       case Outline(ops, style, id, transforms) =>
         val body =
           fields
-            ( t"ops"        -> ops.inspect,
-              t"style"      -> style.lay(t"○") { css => t"｢${css.text.inspect}｣" },
-              t"id"         -> id.lay(t"○") { svgId => t"｢${svgId.inspect}｣" },
-              t"transforms" -> transforms.inspect )
+            ( "ops"        -> ops.inspect,
+              "style"      -> style.lay(t"○") { css => t"｢${css.text.inspect}｣" },
+              "id"         -> id.lay(t"○") { svgId => t"｢${svgId.inspect}｣" },
+              "transforms" -> transforms.inspect )
 
         t"Outline($body)"
 
       case Ellipse(center, xRadius, yRadius, angle, transforms) =>
         val body =
           fields
-            ( t"center"     -> center.inspect,
-              t"xRadius"    -> xRadius.inspect,
-              t"yRadius"    -> yRadius.inspect,
-              t"angle"      -> angle.inspect,
-              t"transforms" -> transforms.inspect )
+            ( "center"     -> center.inspect,
+              "xRadius"    -> xRadius.inspect,
+              "yRadius"    -> yRadius.inspect,
+              "angle"      -> angle.inspect,
+              "transforms" -> transforms.inspect )
 
         t"Ellipse($body)"
 
@@ -100,15 +100,15 @@ extends Figure:
   def xml: Xml =
     given showable: Float is Showable = _.toString.tt
     val attrs = VectorMap.newBuilder[Text, Text]
-    attrs += t"x" -> position.x.show
-    attrs += t"y" -> position.y.show
-    attrs += t"width" -> width.show
-    attrs += t"height" -> height.show
+    attrs += "x" -> position.x.show
+    attrs += "y" -> position.y.show
+    attrs += "width" -> width.show
+    attrs += "height" -> height.show
 
     if !transforms.nil
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+    then attrs += "transform" -> transforms.map(_.encode).join(" ")
 
-    Element(t"rect", Attributes.from(attrs.result().to(Map)), Array())
+    Element("rect", Attributes.from(attrs.result().to(Map)), Array())
 
 case class Outline
   ( ops:        List[Stroke]       = Nil,
@@ -120,16 +120,16 @@ extends Figure:
   import Stroke.*
 
   def xml: Xml =
-    val d: Text = ops.reverse.map(_.encode).join(t" ")
+    val d: Text = ops.reverse.map(_.encode).join(" ")
     val attrs = VectorMap.newBuilder[Text, Text]
-    attrs += t"d" -> d
-    id.let: svgId => attrs += t"id" -> svgId.text
+    attrs += "d" -> d
+    id.let: svgId => attrs += "id" -> svgId.text
 
     if !transforms.nil
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+    then attrs += "transform" -> transforms.map(_.encode).join(" ")
 
-    style.let: css => attrs += t"style" -> css.text
-    Element(t"path", Attributes.from(attrs.result().to(Map)), Array())
+    style.let: css => attrs += "style" -> css.text
+    Element("path", Attributes.from(attrs.result().to(Map)), Array())
 
   def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
   def lineTo(point: Point): Outline = copy(ops = DrawTo(point) :: ops)
@@ -174,15 +174,15 @@ extends Figure:
   def xml: Xml =
     given showable: Float is Showable = _.toString.tt
     val attrs = VectorMap.newBuilder[Text, Text]
-    attrs += t"cx" -> center.x.show
-    attrs += t"cy" -> center.y.show
+    attrs += "cx" -> center.x.show
+    attrs += "cy" -> center.y.show
 
-    if circle then attrs += t"r" -> xRadius.show
+    if circle then attrs += "r" -> xRadius.show
     else
-      attrs += t"rx" -> xRadius.show
-      attrs += t"ry" -> yRadius.show
+      attrs += "rx" -> xRadius.show
+      attrs += "ry" -> yRadius.show
 
     if !transforms.nil
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+    then attrs += "transform" -> transforms.map(_.encode).join(" ")
 
-    Element(if circle then t"circle" else t"ellipse", Attributes.from(attrs.result().to(Map)), Array())
+    Element(if circle then "circle" else "ellipse", Attributes.from(attrs.result().to(Map)), Array())

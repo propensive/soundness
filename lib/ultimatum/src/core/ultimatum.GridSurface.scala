@@ -127,7 +127,7 @@ extends Board:
   // base); a width-2 grapheme writes an empty trailing sentinel into the next cell and
   // wraps to a new row if it would straddle the right edge.
   protected def putCell(grapheme: Grapheme, style: StyleWord): Unit =
-    if grapheme.text == t"\n" then newline()
+    if grapheme.text == "\n" then newline()
     else
       val cellWidth = metric.width(grapheme)
 
@@ -137,10 +137,10 @@ extends Board:
         if col + cellWidth > gridWidth then newline()
 
         if row < gridHeight && col < gridWidth then
-          screen.set(col.z, row.z, grapheme, style, t"")
+          screen.set(col.z, row.z, grapheme, style, "")
 
           if cellWidth >= 2 && col + 1 < gridWidth then
-            screen.set((col + 1).z, row.z, Grapheme(""), style, t"")
+            screen.set((col + 1).z, row.z, Grapheme(""), style, "")
 
         col += cellWidth
 
@@ -164,7 +164,7 @@ extends Board:
     var c = col
 
     while c < gridWidth do
-      screen.set(c.z, row.z, Grapheme(" "), StyleWord.Default, t"")
+      screen.set(c.z, row.z, Grapheme(" "), StyleWord.Default, "")
       c += 1
 
   // The plain text of row `r` (graphemes concatenated, wide-trailing sentinels
@@ -207,7 +207,7 @@ extends Board:
     var end = limit.min(screen2.width)
 
     while end > 0
-      && screen2.grapheme((end - 1).z, r.z).text == t" "
+      && screen2.grapheme((end - 1).z, r.z).text == " "
       && screen2.style((end - 1).z, r.z).raw == StyleWord.Default.raw
     do end -= 1
 

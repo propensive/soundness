@@ -75,7 +75,7 @@ object Cli:
 
     val padded =
       if textArguments.size >= target then textArguments
-      else textArguments + List.fill(target - textArguments.size)(t"")
+      else textArguments + List.fill(target - textArguments.size)("")
 
     padded.indexed.map: (text, ordinal) =>
       val index = ordinal.n0

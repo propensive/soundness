@@ -40,7 +40,7 @@ import prepositional.*
 
 // Adds a responsive `<meta name="viewport">`. Override `viewport` to change the directive.
 trait Viewport extends Archetype:
-  def viewport: Text = t"width=device-width, initial-scale=1"
+  def viewport: Text = "width=device-width, initial-scale=1"
 
   protected override def head: Html of (? <: Metadata) =
     Fragment[Metadata](Meta.Viewport(content = viewport), super.head)

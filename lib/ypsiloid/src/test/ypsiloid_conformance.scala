@@ -132,7 +132,7 @@ object Conformance:
         else
           val description =
             try new String(Files.readAllBytes(dir.resolve("===")).nn).trim.nn
-            catch case _: IOException => "?"
+            catch case _: IOException => s"?"
 
           val isError = Files.isReadable(dir.resolve("error"))
           val yamlText = new String(Files.readAllBytes(inYaml).nn, "UTF-8")
@@ -253,7 +253,7 @@ object Conformance:
     val overallPassed = inScopePassed + outOfScopePassed
     val overallTotal = results.length
 
-    val divider = "=".repeat(80)
+    val divider = s"=".repeat(80)
     Predef.println()
     Predef.println(divider)
     Predef.println("YAML Test Suite Conformance")
@@ -289,7 +289,7 @@ object Conformance:
                 Predef.println(t"    expected: ${expected.take(120)}")
                 Predef.println(t"    actual:   ${actual.take(120)}")
               case Outcome.ShouldHaveErrored =>
-                Predef.println(t"    (should have errored)")
+                Predef.println("    (should have errored)")
               case Outcome.UnexpectedError(msg) =>
                 Predef.println(t"    error: ${msg.take(120)}")
               case Outcome.Passed => ()
@@ -301,7 +301,7 @@ object Conformance:
 
   private def printFailure(result: Result): Unit =
     val descShort = result.testCase.description.linesIterator.next().take(60)
-    val tagsShort = if result.testCase.tags.isEmpty then ""
+    val tagsShort = if result.testCase.tags.isEmpty then s""
                     else result.testCase.tags.toList.sorted.mkString(" {", ",", "}")
     result.outcome match
       case Outcome.Mismatch(actual, expected) =>
@@ -350,7 +350,7 @@ object Conformance:
       // canonical JSON the test fixtures produce.
       if !d.isNaN && !d.isInfinity && d == d.toLong.toDouble then d.toLong.toString
       else d.toString
-    case s: String         => "\"" + s + "\""
+    case s: String         => s"\"$s\""
 
     case nums: scala.Array[Double] @unchecked =>
       // jacinta stores number-only JSON arrays unboxed as `Array[Double]`.
@@ -373,7 +373,7 @@ object Conformance:
         val pairs = (0 until n/2).map: i =>
           (arr(i*2).asInstanceOf[String], arr(i*2 + 1))
         pairs.order(_._1)
-            .map((k, v) => "\"" + k + "\":" + renderAny(v))
+            .map((k, v) => s"\"$k\":" + renderAny(v))
             .mkString("{", ",", "}")
       else
         val last = arr(n - 1)

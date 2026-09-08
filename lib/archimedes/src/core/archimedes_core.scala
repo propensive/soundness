@@ -43,7 +43,7 @@ import Mathml.*
 
 // The MathML namespace URI, written as the `xmlns` attribute on the root
 // `<math>` element.
-val mathmlNamespace: Text = t"http://www.w3.org/1998/Math/MathML"
+val mathmlNamespace: Text = "http://www.w3.org/1998/Math/MathML"
 
 // Converts any type with an `Encodable in Math` instance to a `<math>` root or a
 // single MathML node — `5.math`, `complex.mathml`, `quantity.math`, etc. Instances

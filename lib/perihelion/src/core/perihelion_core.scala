@@ -191,10 +191,10 @@ given wsClient: ( online:            Online,
     type Connection = Websocket.Connection
 
     def connect(url: Websocket.Url, interface: Optional[MacAddress]): Websocket.Connection =
-      val secure: Boolean = url.scheme.name == t"wss"
+      val secure: Boolean = url.scheme.name == "wss"
 
       val host: Host = url.host.or:
-        abort(Websocket.Error(Websocket.Error.Reason.Handshake(t"the URL had no host")))
+        abort(Websocket.Error(Websocket.Error.Reason.Handshake("the URL had no host")))
 
       val defaultPort: Int = if secure then 443 else 80
       val portNumber: Int = url.authority.lay(defaultPort)(_.port.or(defaultPort))
@@ -249,13 +249,13 @@ given wsClient: ( online:            Online,
       val response: Http.Response = Http.Response.parse(Chain(headerBytes))
 
       if response.status != Http.SwitchingProtocols then
-        abort(Websocket.Error(Websocket.Error.Reason.Handshake(t"the server did not upgrade")))
+        abort(Websocket.Error(Websocket.Error.Reason.Handshake("the server did not upgrade")))
 
       given accept: ("secWebsocketAccept" is Directive of Text) = identity(_)
       val expected: Text = t"$key${Websocket.magic}".digest[Sha1].serialize[Base64].keep(28)
 
       if response.headers.secWebsocketAccept.prim != expected then
-        abort(Websocket.Error(Websocket.Error.Reason.Handshake(t"the Sec-WebSocket-Accept was wrong")))
+        abort(Websocket.Error(Websocket.Error.Reason.Handshake("the Sec-WebSocket-Accept was wrong")))
 
       val masking: Masking = Masking.Client()
       given Masking = masking

@@ -73,7 +73,7 @@ private[cataclysm] object protointernal:
 
     val members = refinements(styles.asTerm.tpe) ++ refinements(styles.asTerm.tpe.widen)
 
-    val locus = members.get(t"Locus").getOrElse:
+    val locus = members.get("Locus").getOrElse:
       halt(m"cataclysm: the stylesheet carries no path")
 
     locus.absolve match
@@ -117,7 +117,7 @@ private[cataclysm] object protointernal:
 
     val (classes, ids) = references(stylesPath)
 
-    val attribute =
+    val attribute: String =
       if classes.has(target) && ids.has(target)
       then halt(m"cataclysm: $target is both a class and an id in the stylesheet; rename one")
       else if classes.has(target) then "class"
@@ -132,7 +132,7 @@ private[cataclysm] object protointernal:
 
     val members = refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)
 
-    val locus = members.get(t"Locus").getOrElse:
+    val locus = members.get("Locus").getOrElse:
       halt(m"cataclysm: the resource carries no path (it has no `Locus`)")
 
     Refinement(TypeRepr.of[Styles], "Locus", TypeBounds(locus, locus)).asType.absolve match

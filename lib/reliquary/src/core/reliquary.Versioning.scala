@@ -70,7 +70,7 @@ object Versioning:
       case Grade.Minor => lineage + List(snapshot)
 
       case Grade.Major =>
-        if !forceMajor then abort(Lira.Error(Reason.UngradedSuccessor(t"the release")))
+        if !forceMajor then abort(Lira.Error(Reason.UngradedSuccessor("the release")))
         List(snapshot)
 
   // The §12.4 comparison, as warn-only advisories: a declared version that is not numeric, or

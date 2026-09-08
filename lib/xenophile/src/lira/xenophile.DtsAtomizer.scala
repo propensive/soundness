@@ -60,7 +60,7 @@ import rudiments.sortingAlgorithms.timsort
 // every TypeScript interface is open in that sense, since structural typing needs no declaration
 // of intent to implement one.
 object DtsAtomizer:
-  val id: Text = t"dts/1"
+  val id: Text = "dts/1"
 
   // --- canonical binary encoding ---------------------------------------------------------------
 

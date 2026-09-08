@@ -48,9 +48,9 @@ object TreePath:
     val s = text.s
     def segment(part: String | Null): Boolean = !part.nn.isEmpty && part != "." && part != ".."
 
-    if s.isEmpty then t"the path is empty"
+    if s.isEmpty then "the path is empty"
     else if !s.split("/", -1).nn.forall(segment)
-    then t"the path has an empty, `.` or `..` segment"
+    then "the path has an empty, `.` or `..` segment"
     else Unset
 
   def apply(text: Text): TreePath raises Lira.Error =

@@ -36,6 +36,6 @@ import anticipation.*
 import gossamer.*
 
 object Celsius extends TemperatureScale:
-  def suffix: Text = t"°C"
+  def suffix: Text = "°C"
   def apply(value: Double): Temperature = Temperature(value + 273.15)
   def kelvin(value: Temperature): Double = value.celsius

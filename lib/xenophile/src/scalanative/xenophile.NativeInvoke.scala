@@ -113,17 +113,17 @@ object NativeInvoke extends Materializer:
       case Plain, Str, Address
 
     def cType(tpe: Foreign.Type): (TypeRepr, Kind) = tpe match
-      case Foreign.Type.Named(t"int")    => (TypeRepr.of[Int], Kind.Plain)
-      case Foreign.Type.Named(t"long")   => (TypeRepr.of[Long], Kind.Plain)
-      case Foreign.Type.Named(t"short")  => (TypeRepr.of[Short], Kind.Plain)
-      case Foreign.Type.Named(t"char")   => (TypeRepr.of[Byte], Kind.Plain)
-      case Foreign.Type.Named(t"double") => (TypeRepr.of[Double], Kind.Plain)
-      case Foreign.Type.Named(t"float")  => (TypeRepr.of[Float], Kind.Plain)
-      case Foreign.Type.Named(t"bool")   => (TypeRepr.of[Boolean], Kind.Plain)
-      case Foreign.Type.Named(t"void")   => (TypeRepr.of[Unit], Kind.Plain)
-      case Foreign.Type.Named(t"string") => (cstringType, Kind.Str)
+      case Foreign.Type.Named("int")    => (TypeRepr.of[Int], Kind.Plain)
+      case Foreign.Type.Named("long")   => (TypeRepr.of[Long], Kind.Plain)
+      case Foreign.Type.Named("short")  => (TypeRepr.of[Short], Kind.Plain)
+      case Foreign.Type.Named("char")   => (TypeRepr.of[Byte], Kind.Plain)
+      case Foreign.Type.Named("double") => (TypeRepr.of[Double], Kind.Plain)
+      case Foreign.Type.Named("float")  => (TypeRepr.of[Float], Kind.Plain)
+      case Foreign.Type.Named("bool")   => (TypeRepr.of[Boolean], Kind.Plain)
+      case Foreign.Type.Named("void")   => (TypeRepr.of[Unit], Kind.Plain)
+      case Foreign.Type.Named("string") => (cstringType, Kind.Str)
 
-      case Foreign.Type.Applied(t"ptr", _) =>
+      case Foreign.Type.Applied("ptr", _) =>
         (ptrByteType, Kind.Address)
 
       case _ =>

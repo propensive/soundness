@@ -45,6 +45,6 @@ import ziggurat.*
 @unexported
 case class Xeq(delivery: Packaging.Delivery) extends Format.Application:
   def id: Text = delivery match
-    case Packaging.Delivery.EmbedAll => t"xeq-embedall"
-    case Packaging.Delivery.Download => t"xeq-download"
-    case Packaging.Delivery.Native   => t"xeq-native"
+    case Packaging.Delivery.EmbedAll => "xeq-embedall"
+    case Packaging.Delivery.Download => "xeq-download"
+    case Packaging.Delivery.Native   => "xeq-native"

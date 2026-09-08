@@ -43,21 +43,21 @@ package standings:
   import Gaugeable.Glyphs.{Ascii, Unicode}
 
   private val ascii: Standing.Marks =
-    Standing.Marks(t"+", t"x", t"!", t"-", t"*", t".", 1, Ascii)
+    Standing.Marks("+", "x", "!", "-", "*", ".", 1, Ascii)
 
   given asciiStanding: Gauging => Standing is Gaugeable = ascii.gaugeable
 
   given tickStanding: Gauging => Standing is Gaugeable =
-    Standing.Marks(t"✓", t"✗", t"!", t"‑", t"⠋", t"·", 1, Unicode, ascii).gaugeable
+    Standing.Marks("✓", "✗", "!", "‑", "⠋", "·", 1, Unicode, ascii).gaugeable
 
   given heavyStanding: Gauging => Standing is Gaugeable =
-    Standing.Marks(t"✔", t"✘", t"⚠", t"⊘", t"◐", t"◌", 1, Unicode, ascii).gaugeable
+    Standing.Marks("✔", "✘", "⚠", "⊘", "◐", "◌", 1, Unicode, ascii).gaugeable
 
   given squareStanding: Gauging => Standing is Gaugeable =
-    Standing.Marks(t"■", t"▨", t"▩", t"□", t"▤", t"·", 1, Unicode, ascii).gaugeable
+    Standing.Marks("■", "▨", "▩", "□", "▤", "·", 1, Unicode, ascii).gaugeable
 
   // Words rather than glyphs, for a transcript that will be read rather than watched. Four cells,
   // so a column of them aligns.
   given wordStanding: Gauging => Standing is Gaugeable =
-    Standing.Marks(t"  ok", t"FAIL", t"warn", t"skip", t" run", t"   …", 4, Unicode, ascii)
+    Standing.Marks("  ok", "FAIL", "warn", "skip", " run", "   …", 4, Unicode, ascii)
     . gaugeable

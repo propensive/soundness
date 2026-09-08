@@ -385,7 +385,7 @@ object Honeycomb:
             ' {
                 ( ${Expr(key)},
                   $ {
-                      if value == "\u0000".tt then iterator.next().asExprOf[Optional[Text]]
+                      if value == "\u0000" then iterator.next().asExprOf[Optional[Text]]
                       else if value == Unset then '{Unset}
                       else Expr[Text](value.asInstanceOf[Text])
                     } )
@@ -402,13 +402,13 @@ object Honeycomb:
           List('{Element(${Expr(label)}, $attrs, $elements, ${Expr(foreign)})})
 
         case Doctype(text) =>
-          if text.contains(t"\u0000")
+          if text.contains("\u0000")
           then halt(m"cannot substitute into a document type declaration")
           else List('{Doctype(${Expr(text)})})
 
         case Comment(text) =>
           // Deliberate stdlib opt-out: `recur` below walks the stdlib `List` the quotes API uses.
-          val parts = text.cut(t"\u0000").stdlib.map(_.s)
+          val parts = text.cut("\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -425,7 +425,7 @@ object Honeycomb:
 
         case TextNode(text) =>
           // Deliberate stdlib opt-out: `recur` below walks the stdlib `List` the quotes API uses.
-          val parts = text.cut(t"\u0000").stdlib.map(_.s)
+          val parts = text.cut("\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr

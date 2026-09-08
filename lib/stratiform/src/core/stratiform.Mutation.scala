@@ -487,11 +487,11 @@ object Mutation:
           val kept = if value.s.indexOf(' ') >= 0 && spaces < 2 then 2 else spaces
           Tel.Atom.Inline(value, kept)
         else if sourceSafe(value) then Tel.Atom.Source(value)
-        else Tel.Atom.Literal(literalDelimiter(value, t"---"), value)
+        else Tel.Atom.Literal(literalDelimiter(value, "---"), value)
 
       case Tel.Atom.Source(_) =>
         if sourceSafe(value) then Tel.Atom.Source(value)
-        else Tel.Atom.Literal(literalDelimiter(value, t"---"), value)
+        else Tel.Atom.Literal(literalDelimiter(value, "---"), value)
 
       case Tel.Atom.Literal(delimiter, _) =>
         Tel.Atom.Literal(literalDelimiter(value, delimiter), value)
@@ -1089,7 +1089,7 @@ object Mutation:
   private[stratiform] def chooseAtomForm(value: Text, sigil: Char): Tel.Atom =
     if inlineSafe(value, sigil) then Tel.Atom.Inline(value, inlinePrecedingSpaces(value))
     else if sourceSafe(value) then Tel.Atom.Source(value)
-    else Tel.Atom.Literal(literalDelimiter(value, t"---"), value)
+    else Tel.Atom.Literal(literalDelimiter(value, "---"), value)
 
   // §22.3: an inline atom whose value contains a space uses a two-space
   // (hard-space) separator so the parser keeps the soft spaces as content

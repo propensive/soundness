@@ -62,11 +62,11 @@ enum WindowsSignal:
   case CtrlC, CtrlBreak, Close, Logoff, Shutdown
 
   def shortName: Text = this match
-    case CtrlC     => t"CTRL_C"
-    case CtrlBreak => t"CTRL_BREAK"
-    case Close     => t"CLOSE"
-    case Logoff    => t"LOGOFF"
-    case Shutdown  => t"SHUTDOWN"
+    case CtrlC     => "CTRL_C"
+    case CtrlBreak => "CTRL_BREAK"
+    case Close     => "CLOSE"
+    case Logoff    => "LOGOFF"
+    case Shutdown  => "SHUTDOWN"
 
 object CtrlChar:
   def unapply(code: Char)

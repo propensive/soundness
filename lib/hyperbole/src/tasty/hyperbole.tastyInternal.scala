@@ -160,7 +160,7 @@ private[hyperbole] object stacksInternal:
             case TYPEDEF                   => Kind.Class
             case VALDEF                    => Kind.Value
             case _ if extension            => Kind.Extension
-            case _ if name == t"$$anonfun" => Kind.Lambda
+            case _ if name == "$anonfun" => Kind.Lambda
             case _                         => Kind.Method
 
           val first = positions.lines.line(start)
@@ -206,7 +206,7 @@ private[hyperbole] object stacksInternal:
                 then
                   readByte()
                   val name = label()
-                  if name == t"<empty>" then Nil else List(name)
+                  if name == "<empty>" then Nil else List(name)
                 else
                   owners
 

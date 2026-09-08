@@ -56,7 +56,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         captured: stdio ?=>
           val surface = TerminalBoard(80, 24)
           surface.move(10.z, 5.z)
-          surface.put(t"X")
+          surface.put("X")
       . assert(_ == t"\e[6;11HX")
 
       test(m"clear erases the whole display"):
@@ -76,53 +76,53 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"text wraps at the rectangle's width"):
         val flow = extent(3, 2)
-        flow.put(t"abcdef")
+        flow.put("abcdef")
         flow.render
-      . assert(_ == t"abc\ndef")
+      . assert(_ == "abc\ndef")
 
       test(m"a wide (CJK) grapheme occupies two cells"):
         val flow = extent(4, 1)
-        flow.put(t"a中b")
+        flow.put("a中b")
         flow.render
-      . assert(_ == t"a中b")
+      . assert(_ == "a中b")
 
       test(m"a wide grapheme wraps when it would straddle the right edge"):
         val flow = extent(3, 2)
-        flow.put(t"ab中")
+        flow.put("ab中")
         flow.render
-      . assert(_ == t"ab \n中 ")
+      . assert(_ == "ab \n中 ")
 
       test(m"a newline moves to the start of the next row"):
         val flow = extent(5, 3)
-        flow.put(t"ab\ncd")
+        flow.put("ab\ncd")
         flow.render
-      . assert(_ == t"ab   \ncd   \n     ")
+      . assert(_ == "ab   \ncd   \n     ")
 
       test(m"the grid scrolls up when the last row overflows"):
         val flow = extent(3, 2)
-        flow.put(t"abcdefghi")
+        flow.put("abcdefghi")
         flow.render
-      . assert(_ == t"def\nghi")
+      . assert(_ == "def\nghi")
 
       test(m"clear blanks the whole grid"):
         val flow = extent(3, 2)
-        flow.put(t"abcdef")
+        flow.put("abcdef")
         flow.clear()
         flow.render
-      . assert(_ == t"   \n   ")
+      . assert(_ == "   \n   ")
 
       test(m"Out output through the extent (an Stdio) flows into the grid"):
         val flow = extent(5, 1)
         given Stdio = flow
-        Out.print(t"hi")
+        Out.print("hi")
         flow.render
-      . assert(_ == t"hi   ")
+      . assert(_ == "hi   ")
 
       test(m"flush paints the grid onto the parent at the rect's offset"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap)
         val flow = FlowExtent(TerminalBoard(80, 24), Rect(2, 1, 3, 1))
-        flow.put(t"xy")
+        flow.put("xy")
         flow.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[2;3Hxy ")
@@ -268,7 +268,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap)
 
-        paint(TerminalBoard(4, 1), strip(panel()(Out.print(t"AA")), panel()(Out.print(t"BB"))))
+        paint(TerminalBoard(4, 1), strip(panel()(Out.print("AA")), panel()(Out.print("BB"))))
 
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[1;1HAA\e[1;3HBB")
@@ -279,7 +279,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
         // "HELLO" in a 2x1 panel wraps and scrolls until only "O" remains; the
         // sibling panel's "X" is unaffected, so neither bleeds past column 2.
-        paint(TerminalBoard(4, 1), strip(panel()(Out.print(t"HELLO")), panel()(Out.print(t"X"))))
+        paint(TerminalBoard(4, 1), strip(panel()(Out.print("HELLO")), panel()(Out.print("X"))))
 
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[1;1HO \e[1;3HX ")
@@ -295,38 +295,38 @@ object Tests extends Suite(m"Ultimatum Tests"):
         field.handle(Keypress.CharKey('h'))
         field.handle(Keypress.CharKey('i'))
         field.value
-      . assert(_ == t"hi")
+      . assert(_ == "hi")
 
       // The demo's compose box is multiline; the Up/Down arrows must move the
       // cursor between lines (in single-line mode they are inert).
       test(m"a multiline editor field moves its cursor up a line on Up"):
-        val field = EditorField(LineEditor(t"ab\ncd", mode = LineEditor.Mode.Multiline(_ => false)))
+        val field = EditorField(LineEditor("ab\ncd", mode = LineEditor.Mode.Multiline(_ => false)))
         field.handle(Keypress.Up)
         field.handle(Keypress.CharKey('X'))
         field.value
-      . assert(_ == t"abX\ncd")
+      . assert(_ == "abX\ncd")
 
       test(m"a multiline editor field moves its cursor down a line on Down"):
-        val field = EditorField(LineEditor(t"ab\ncd", 0,
+        val field = EditorField(LineEditor("ab\ncd", 0,
             mode = LineEditor.Mode.Multiline(_ => false)))
         field.handle(Keypress.Down)
         field.handle(Keypress.CharKey('X'))
         field.value
-      . assert(_ == t"ab\nXcd")
+      . assert(_ == "ab\nXcd")
 
       test(m"an editor field's intrinsic height grows when its text wraps"):
-        EditorField(LineEditor(t"aaaaa")).measure(3)
+        EditorField(LineEditor("aaaaa")).measure(3)
       . assert(_ == (0, 2))
 
       test(m"a single-line editor field needs one row"):
-        EditorField(LineEditor(t"hello")).measure(80)
+        EditorField(LineEditor("hello")).measure(80)
       . assert(_ == (0, 1))
 
       test(m"a menu field moves its selection on Down"):
-        val field = MenuField(SelectMenu(List(t"a", t"b", t"c"), t"a"))
+        val field = MenuField(SelectMenu(List(t"a", t"b", t"c"), "a"))
         field.handle(Keypress.Down)
         field.value
-      . assert(_ == t"b")
+      . assert(_ == "b")
 
       test(m"a moved or resized cell is dirty"):
         val before = Sequence(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
@@ -358,7 +358,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
         Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(events.iterator)
         root.render
-      . assert(_ == t"hi        \n          \nyo        \n          ")
+      . assert(_ == "hi        \n          \nyo        \n          ")
 
       // Typing 21 characters into the top editor wraps it onto three rows, raising
       // its panel's minimum height; the solver re-tiles and the bottom editor is
@@ -369,7 +369,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val events = List.fill(21)(Keypress.CharKey('a')) ++ List(Keypress.Escape)
         Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(events.iterator)
         root.render
-      . assert(_ == t"aaaaaaaaaa\naaaaaaaaaa\na         \n          ")
+      . assert(_ == "aaaaaaaaaa\naaaaaaaaaa\na         \n          ")
 
       // A terminal resize surfaces as a WindowSize event (the SIGWINCH handler in
       // profanity's Terminal queries the new size); the layout re-tiles to it and
@@ -389,9 +389,9 @@ object Tests extends Suite(m"Ultimatum Tests"):
             root.resize(10, 2)
             Terminal.Info.WindowSize(2, 10)
 
-        Form(root, Occupancy.Fullscreen, stack(panel()(Out.print(t"A")), panel()(Out.print(t"B")))).run(resize)
+        Form(root, Occupancy.Fullscreen, stack(panel()(Out.print("A")), panel()(Out.print("B")))).run(resize)
         root.render
-      . assert(_ == t"A         \nB         \n          \n          ")
+      . assert(_ == "A         \nB         \n          \n          ")
 
     suite(m"InlineRoot present (inline mode)"):
       def capturing(): (ji.ByteArrayOutputStream, Stdio) =
@@ -407,7 +407,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         root.put(e"$Bold(hi)")
         root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_.contains(t"[1m"))
+      . assert(_.contains("[1m"))
 
       // The block (2 rows) is docked to the bottom of the 4-row terminal: it scrolls
       // 2 rows in (`\n\n`) to reserve space, then draws each row at an absolute screen
@@ -418,7 +418,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val root = InlineRoot(3, 4)
         root.reframe(3, 2)
         root.move(Prim, Prim)
-        root.put(t"hi")
+        root.put("hi")
         root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[9999B\r\n\n\e[3;1H\e[2Khi\r\n\e[2K\r\e[3;1H\e[?25h")
@@ -427,9 +427,9 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
-        root.reframe(3, 1); root.move(Prim, Prim); root.put(t"a"); root.flush()
+        root.reframe(3, 1); root.move(Prim, Prim); root.put("a"); root.flush()
         bytes.reset()
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[9999B\r\n\e[3;1H\e[2Kab\r\n\e[2Kcd\r\e[3;1H\e[?25h")
 
@@ -439,9 +439,9 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd"); root.flush()
         bytes.reset()
-        root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ef"); root.flush()
+        root.reframe(3, 1); root.move(Prim, Prim); root.put("ef"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[4;1H\e[2Kef\r\e[3;1H\e[2K\e[4;1H\e[?25h")
 
@@ -451,7 +451,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val root = InlineRoot(3, 4)
         root.reframe(3, 2)
         root.move(Prim, Prim)
-        root.put(t"ab\ncd")
+        root.put("ab\ncd")
         root.showCaret(Sec, Sec)
         root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
@@ -461,7 +461,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd"); root.flush()
         bytes.reset()
         root.finish()
         String(bytes.toByteArray.nn, "UTF-8").tt
@@ -474,10 +474,10 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd"); root.flush()
         bytes.reset()
         root.invalidate()
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[1;1H\e[0J\e[1;1H\e[2Kab\r\n\e[2Kcd\r\e[1;1H\e[?25h")
 
@@ -488,10 +488,10 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd"); root.flush()
         bytes.reset()
         root.invalidate()
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[3;1H\e[0J\e[3;1H\e[2Kab\r\n\e[2Kcd\r\e[3;1H\e[?25h")
 
@@ -502,7 +502,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[1;1H\e[2Kab\r\n\e[2Kcd\r\e[1;1H\e[?25h")
 
@@ -512,7 +512,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?1049h\e[?25l\e[1;1H\e[2Kab\r\n\e[2Kcd\r\e[1;1H\e[?25h")
 
@@ -522,7 +522,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd"); root.flush()
         bytes.reset()
         root.finish()
         String(bytes.toByteArray.nn, "UTF-8").tt
@@ -535,9 +535,9 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd"); root.flush()
         bytes.reset()
-        root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ef"); root.flush()
+        root.reframe(3, 1); root.move(Prim, Prim); root.put("ef"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[3;1H\e[2Kef\r\n\e[2K\e[3;1H\e[?25h")
 
@@ -548,9 +548,9 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
-        root.reframe(3, 1); root.move(Prim, Prim); root.put(t"a"); root.flush()
+        root.reframe(3, 1); root.move(Prim, Prim); root.put("a"); root.flush()
         bytes.reset()
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[3;1H\e[2Kab\r\n\e[2Kcd\r\e[3;1H\e[?25h")
 
@@ -577,28 +577,28 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         given ji.ByteArrayOutputStream = bytes
-        represent(3, 2, t"ab\ncd", t"ab\ncd")
-      . assert(_ == t"")
+        represent(3, 2, "ab\ncd", "ab\ncd")
+      . assert(_ == "")
 
       test(m"a single changed cell emits one absolutely-addressed grapheme"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         given ji.ByteArrayOutputStream = bytes
-        represent(3, 2, t"ab\ncd", t"ab\ncD")
+        represent(3, 2, "ab\ncd", "ab\ncD")
       . assert(_ == t"\e[?25l\e[4;2HD\e[3;1H\e[?25h")
 
       test(m"adjacent changed cells coalesce into one run"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         given ji.ByteArrayOutputStream = bytes
-        represent(3, 2, t"ab\ncd", t"ab\nxy")
+        represent(3, 2, "ab\ncd", "ab\nxy")
       . assert(_ == t"\e[?25l\e[4;1Hxy\e[3;1H\e[?25h")
 
       test(m"disjoint changed cells are addressed as separate runs"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         given ji.ByteArrayOutputStream = bytes
-        represent(3, 1, t"abc", t"xbz")
+        represent(3, 1, "abc", "xbz")
       . assert(_ == t"\e[?25l\e[4;1Hx\e[4;3Hz\e[4;1H\e[?25h")
 
       // A wide (CJK) glyph occupies two cells (its trailing sentinel carries the same
@@ -607,21 +607,21 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         given ji.ByteArrayOutputStream = bytes
-        represent(3, 1, t"abc", t"a中")
+        represent(3, 1, "abc", "a中")
       . assert(_ == t"\e[?25l\e[4;2H中\e[4;1H\e[?25h")
 
       test(m"narrow cells replacing a wide glyph re-emit both cells"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         given ji.ByteArrayOutputStream = bytes
-        represent(3, 1, t"a中", t"abc")
+        represent(3, 1, "a中", "abc")
       . assert(_ == t"\e[?25l\e[4;2Hbc\e[4;1H\e[?25h")
 
       test(m"an unchanged wide glyph beside a changed cell is not re-emitted"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         given ji.ByteArrayOutputStream = bytes
-        represent(4, 1, t"中ab", t"中ax")
+        represent(4, 1, "中ab", "中ax")
       . assert(_ == t"\e[?25l\e[4;4Hx\e[4;1H\e[?25h")
 
       // A style-only change is damage too, and the run renders its SGR self-contained
@@ -631,7 +631,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         given Stdio =
           Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.xtermTrueColorTermcap)
         val root = InlineRoot(3, 4)
-        root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ab"); root.flush()
+        root.reframe(3, 1); root.move(Prim, Prim); root.put("ab"); root.flush()
         bytes.reset()
         root.reframe(3, 1); root.move(Prim, Prim); root.put(e"$Bold(a)b"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
@@ -643,9 +643,9 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd"); root.flush()
         bytes.reset()
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd")
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\ncd")
         root.showCaret(Sec, Prim)
         root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
@@ -668,12 +668,12 @@ object Tests extends Suite(m"Ultimatum Tests"):
         @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
-        root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
+        root.reframe(6, 2); root.move(Prim, Prim); root.put("abcdef\nhi"); root.flush()
         bytes.reset()
         w = 4
         root.invalidate()
         root.anchor(2, 1)
-        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
+        root.reframe(4, 2); root.move(Prim, Prim); root.put("abcd\nhi"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[2;1H\e[0J\e[3;1H\e[2Kabcd\r\n\e[2Khi\r\e[3;1H\e[?25h")
 
@@ -686,14 +686,14 @@ object Tests extends Suite(m"Ultimatum Tests"):
         @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
-        root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
+        root.reframe(6, 2); root.move(Prim, Prim); root.put("abcdef\nhi")
         root.showCaret(5.z, Prim)
         root.flush()
         bytes.reset()
         w = 4
         root.invalidate()
         root.anchor(3, 2)
-        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
+        root.reframe(4, 2); root.move(Prim, Prim); root.put("abcd\nhi"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[2;1H\e[0J\e[3;1H\e[2Kabcd\r\n\e[2Khi\r\e[3;4H\e[?25h")
 
@@ -705,14 +705,14 @@ object Tests extends Suite(m"Ultimatum Tests"):
         @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
-        root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
+        root.reframe(6, 2); root.move(Prim, Prim); root.put("abcdef\nhi")
         root.showCaret(5.z, Prim)
         root.flush()
         bytes.reset()
         w = 4
         root.invalidate()
         root.anchor(3, 4)
-        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
+        root.reframe(4, 2); root.move(Prim, Prim); root.put("abcd\nhi"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[3;1H\e[0J\e[3;1H\e[2Kabcd\r\n\e[2Khi\r\e[3;4H\e[?25h")
 
@@ -724,14 +724,14 @@ object Tests extends Suite(m"Ultimatum Tests"):
         @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
-        root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
+        root.reframe(6, 2); root.move(Prim, Prim); root.put("abcdef\nhi")
         root.showCaret(5.z, Prim)
         root.flush()
         bytes.reset()
         w = 4
         root.invalidate()
         root.anchor(3, 3)
-        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
+        root.reframe(4, 2); root.move(Prim, Prim); root.put("abcd\nhi"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[1;1H\e[0J\e[1;1H\e[2Kabcd\r\n\e[2Khi\r\e[1;4H\e[?25h")
 
@@ -740,12 +740,12 @@ object Tests extends Suite(m"Ultimatum Tests"):
         given Stdio = stdio
         var w = 4
         val root = new InlineRoot(() => w, () => 4)
-        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
+        root.reframe(4, 2); root.move(Prim, Prim); root.put("ab\nhi"); root.flush()
         bytes.reset()
         w = 6
         root.invalidate()
         root.anchor(2, 1)
-        root.reframe(6, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
+        root.reframe(6, 2); root.move(Prim, Prim); root.put("ab\nhi"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[2;1H\e[0J\e[3;1H\e[2Kab\r\n\e[2Khi\r\e[3;1H\e[?25h")
 
@@ -757,15 +757,15 @@ object Tests extends Suite(m"Ultimatum Tests"):
         @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
-        root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
+        root.reframe(6, 2); root.move(Prim, Prim); root.put("abcdef\nhi"); root.flush()
         w = 4
         root.invalidate()
         root.anchor(2, 1)
-        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
+        root.reframe(4, 2); root.move(Prim, Prim); root.put("abcd\nhi"); root.flush()
         bytes.reset()
         w = 3
         root.invalidate()
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\nhi"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[1;1H\e[0J\e[1;1H\e[2Kab\r\n\e[2Khi\r\e[1;1H\e[?25h")
 
@@ -776,14 +776,14 @@ object Tests extends Suite(m"Ultimatum Tests"):
         given Stdio = stdio
         var w = 4
         val root = new InlineRoot(() => w, () => 4)
-        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"ab中\nhi")
+        root.reframe(4, 2); root.move(Prim, Prim); root.put("ab中\nhi")
         root.showCaret(Prim, Sec)
         root.flush()
         bytes.reset()
         w = 3
         root.invalidate()
         root.anchor(4, 1)
-        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put("ab\nhi"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[2;1H\e[0J\e[3;1H\e[2Kab\r\n\e[2Khi\r\e[4;1H\e[?25h")
 
@@ -794,7 +794,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(4, 4)
-        root.reframe(4, 1); root.move(Prim, Prim); root.put(t"a中"); root.flush()
+        root.reframe(4, 1); root.move(Prim, Prim); root.put("a中"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[9999B\r\n\e[4;1H\e[2Ka中\r\e[4;1H\e[?25h")
 
@@ -842,7 +842,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
             remaining = remaining.tail
             head()
 
-        Form(root, Occupancy.Inline, stack(panel()(Out.print(t"abcdef")))).run(events)
+        Form(root, Occupancy.Inline, stack(panel()(Out.print("abcdef")))).run(events)
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_.contains(t"\e[2;1H\e[0J"))
 
@@ -874,16 +874,16 @@ object Tests extends Suite(m"Ultimatum Tests"):
         given Stdio = stdio
         val root = ScreenRoot(3, 2)
         root.move(Prim, Prim)
-        root.put(t"ab")
+        root.put("ab")
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"")
+      . assert(_ == "")
 
       test(m"the first flush redraws every row absolutely"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = ScreenRoot(3, 2)
         root.move(Prim, Prim)
-        root.put(t"ab")
+        root.put("ab")
         root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[1;1H\e[2Kab \e[2;1H\e[2K   \e[1;1H\e[?25h")
@@ -892,19 +892,19 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = ScreenRoot(3, 2)
-        root.move(Prim, Prim); root.put(t"ab"); root.flush()
+        root.move(Prim, Prim); root.put("ab"); root.flush()
         bytes.reset()
         root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"")
+      . assert(_ == "")
 
       test(m"a single changed cell is overprinted alone"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = ScreenRoot(3, 2)
-        root.move(Prim, Prim); root.put(t"ab"); root.flush()
+        root.move(Prim, Prim); root.put("ab"); root.flush()
         bytes.reset()
-        root.move(Sec, Prim); root.put(t"X"); root.flush()
+        root.move(Sec, Prim); root.put("X"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[1;2HX\e[1;1H\e[?25h")
 
@@ -915,7 +915,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = ScreenRoot(3, 2)
-        root.move(Prim, Prim); root.put(t"ab"); root.flush()
+        root.move(Prim, Prim); root.put("ab"); root.flush()
         bytes.reset()
         root.invalidate()
         root.flush()
@@ -926,7 +926,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = ScreenRoot(3, 2)
-        root.move(Prim, Prim); root.put(t"ab"); root.flush()
+        root.move(Prim, Prim); root.put("ab"); root.flush()
         bytes.reset()
         root.clear()
         root.flush()
@@ -953,11 +953,11 @@ object Tests extends Suite(m"Ultimatum Tests"):
             liveRows = 2
             Terminal.Info.WindowSize(2, 10)
 
-        Form(root, Occupancy.Fullscreen, stack(panel()(Out.print(t"A")), panel()(Out.print(t"B"))))
+        Form(root, Occupancy.Fullscreen, stack(panel()(Out.print("A")), panel()(Out.print("B"))))
         . run(resize)
 
         root.render
-      . assert(_ == t"A         \nB         ")
+      . assert(_ == "A         \nB         ")
 
     suite(m"Dynamic panes"):
       def cell(): Pane = panel()(())
@@ -1009,7 +1009,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a form picks up a pane appended while it runs"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = FlowExtent(TerminalBoard(10, 2), Rect(0, 0, 10, 2))
-        val panes = Panes(panel()(Out.print(t"A")))
+        val panes = Panes(panel()(Out.print("A")))
 
         val events = new Iterator[Terminal.Event]:
           @scala.caps.unsafe.untrackedCaptures
@@ -1018,12 +1018,12 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
           def next() =
             pending = false
-            panes.append(panel()(Out.print(t"B")))
+            panes.append(panel()(Out.print("B")))
             Terminal.Info.Redraw
 
         Form(root, Occupancy.Fullscreen, stack(panes)).run(events)
         root.render
-      . assert(_ == t"A         \nB         ")
+      . assert(_ == "A         \nB         ")
 
     suite(m"Focus indication"):
       def grid(): FlowExtent =
@@ -1038,24 +1038,24 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a focused menu marks its selection with a pointer"):
         val extent = grid()
-        MenuField(SelectMenu(List(t"alpha", t"beta"), t"alpha")).render(extent, true)
+        MenuField(SelectMenu(List(t"alpha", t"beta"), "alpha")).render(extent, true)
         extent.render
-      . assert(_ == t" > alpha    \n   beta     ")
+      . assert(_ == " > alpha    \n   beta     ")
 
       test(m"an unfocused menu marks its selection with a dot"):
         val extent = grid()
-        MenuField(SelectMenu(List(t"alpha", t"beta"), t"alpha")).render(extent, false)
+        MenuField(SelectMenu(List(t"alpha", t"beta"), "alpha")).render(extent, false)
         extent.render
-      . assert(_ == t" · alpha    \n   beta     ")
+      . assert(_ == " · alpha    \n   beta     ")
 
       test(m"a focused editor shows the hardware cursor"):
         captured: stdio ?=>
-          EditorField(LineEditor(t"hi")).render(TerminalBoard(20, 1), true)
+          EditorField(LineEditor("hi")).render(TerminalBoard(20, 1), true)
       . assert(_.s.contains("\u001B[?25h"))
 
       test(m"an unfocused editor hides the hardware cursor"):
         captured: stdio ?=>
-          EditorField(LineEditor(t"hi")).render(TerminalBoard(20, 1), false)
+          EditorField(LineEditor("hi")).render(TerminalBoard(20, 1), false)
       . assert(_.s.contains("\u001B[?25l"))
 
       // Tabbing focus away from the menu must repaint it, so its marker updates
@@ -1063,10 +1063,10 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a panel that loses focus is repainted so its marker updates"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = FlowExtent(TerminalBoard(12, 3), Rect(0, 0, 12, 3))
-        val pane = stack(menu(List(t"alpha", t"beta"), t"alpha"), editor())
+        val pane = stack(menu(List(t"alpha", t"beta"), "alpha"), editor())
         Form(root, Occupancy.Fullscreen, pane).run(List(Keypress.Tab, Keypress.Escape).iterator)
         root.render
-      . assert(_ == t" · alpha    \n   beta     \n            ")
+      . assert(_ == " · alpha    \n   beta     \n            ")
 
     suite(m"Borders"):
       def render(width: Int, height: Int)(pane: Pane): Text =
@@ -1076,25 +1076,25 @@ object Tests extends Suite(m"Ultimatum Tests"):
         root.render
 
       test(m"a full border frames the content with corners and rules"):
-        render(4, 3)(border()(panel()(Out.print(t"hi"))))
-      . assert(_ == t"┌──┐\n│hi│\n└──┘")
+        render(4, 3)(border()(panel()(Out.print("hi"))))
+      . assert(_ == "┌──┐\n│hi│\n└──┘")
 
       test(m"the border style selects the glyphs (rounded corners)"):
-        render(3, 3)(border(BorderStyle.rounded)(panel()(Out.print(t"x"))))
-      . assert(_ == t"╭─╮\n│x│\n╰─╯")
+        render(3, 3)(border(BorderStyle.rounded)(panel()(Out.print("x"))))
+      . assert(_ == "╭─╮\n│x│\n╰─╯")
 
       test(m"a rule re-fills to the content's width"):
-        render(6, 3)(border()(panel()(Out.print(t"wide"))))
-      . assert(_ == t"┌────┐\n│wide│\n└────┘")
+        render(6, 3)(border()(panel()(Out.print("wide"))))
+      . assert(_ == "┌────┐\n│wide│\n└────┘")
 
       test(m"a top-only border is a single rule with no corners"):
         render(2, 2)(border(top = true, right = false, bottom = false, left = false)
-            (panel()(Out.print(t"ab"))))
-      . assert(_ == t"──\nab")
+            (panel()(Out.print("ab"))))
+      . assert(_ == "──\nab")
 
       test(m"left-and-right-only borders omit every corner"):
-        render(4, 1)(border(top = false, bottom = false)(panel()(Out.print(t"ab"))))
-      . assert(_ == t"│ab│")
+        render(4, 1)(border(top = false, bottom = false)(panel()(Out.print("ab"))))
+      . assert(_ == "│ab│")
 
       test(m"a full border adds one cell on every side to the minimum size"):
         val bordered = border()(panel(minWidth = 3, minHeight = 2)(())).frame
@@ -1132,81 +1132,81 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a half-full smooth bar fills exactly half its cells"):
         bar(bars.smoothBar)(Fraction(0.5), 10)
-      . assert(_ == t"█████     ")
+      . assert(_ == "█████     ")
 
       test(m"an eighth-block bar advances by a fraction of a cell"):
         bar(bars.smoothBar)(Fraction(0.05), 10)
-      . assert(_ == t"▌         ")
+      . assert(_ == "▌         ")
 
       test(m"a full bar leaves no empty cells"):
         bar(bars.smoothBar)(Fraction(1.0), 8)
-      . assert(_ == t"████████")
+      . assert(_ == "████████")
 
       test(m"an empty bar draws no filled cells"):
         bar(bars.smoothBar)(Fraction(0.0), 8)
-      . assert(_ == t"        ")
+      . assert(_ == "        ")
 
       test(m"a block bar draws its own track glyph"):
         bar(bars.blockBar)(Fraction(0.5), 8)
-      . assert(_ == t"████░░░░")
+      . assert(_ == "████░░░░")
 
       test(m"an ASCII bar keeps its caps and fills between them"):
         bar(bars.asciiBar)(Fraction(0.5), 10)
-      . assert(_ == t"[####----]")
+      . assert(_ == "[####----]")
 
       test(m"an arrowhead bar puts the boundary cell at the head of the fill"):
         bar(bars.arrowheadBar)(Fraction(0.5), 10)
-      . assert(_ == t"[===>    ]")
+      . assert(_ == "[===>    ]")
 
       test(m"a segmented bar lights whole pips"):
         bar(bars.segmentedBar)(Fraction(0.5), 20)
-      . assert(_ == t"▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱")
+      . assert(_ == "▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱")
 
       test(m"a marker bar shows a position, with nothing filled behind it"):
         bar(bars.markerBar)(Fraction(0.5), 9)
-      . assert(_ == t"────◆────")
+      . assert(_ == "────◆────")
 
       test(m"a bar too narrow for caps drops them and still fills"):
         bar(bars.asciiBar)(Fraction(0.5), 6)
-      . assert(_ == t"###---")
+      . assert(_ == "###---")
 
       test(m"a bar degrades to a percentage when it cannot be drawn"):
         bar(bars.smoothBar)(Fraction(0.42), 3)
-      . assert(_ == t"42%")
+      . assert(_ == "42%")
 
       test(m"a bar degrades to a single shade glyph at one cell"):
         bar(bars.smoothBar)(Fraction(0.9), 1)
-      . assert(_ == t"█")
+      . assert(_ == "█")
 
       test(m"the percentage design pads to a stable width as it fills"):
         (bar(bars.percentageBar)(Fraction(0.07), 4),
             bar(bars.percentageBar)(Fraction(1.0), 4))
-      . assert(_ == (t"  7%", t"100%"))
+      . assert(_ == ("  7%", "100%"))
 
       test(m"a spinner advances one frame per period"):
         val design = spinners.brailleDotsSpinner
         (0 to 3).map { index => spin(design)(Fraction(0.0), 1, Tick.at(index*80, 80)) }.mkString.tt
-      . assert(_ == t"⠋⠙⠹⠸")
+      . assert(_ == "⠋⠙⠹⠸")
 
       test(m"a spinner cycles back to its first frame"):
         spin(spinners.brailleDotsSpinner)(Fraction(0.0), 1, Tick.at(10*80, 80))
-      . assert(_ == t"⠋")
+      . assert(_ == "⠋")
 
 
       // Progress that may not be known is one status: a figure when there is one, a sweep when
       // there is not, so a job that learns its total does not change type half way through.
       test(m"a bar over unknown progress sweeps rather than sitting at zero"):
         sweeping(bars.smoothBar)(Fraction.indeterminate, 10, Tick.zero)
-      . assert(_ == t"██░░░░░░░░")
+      . assert(_ == "██░░░░░░░░")
 
       test(m"the sweep travels, and returns rather than jumping back"):
         (sweeping(bars.smoothBar)(Fraction.indeterminate, 10, Tick.at(240, 80)),
             sweeping(bars.smoothBar)(Fraction.indeterminate, 10, Tick.at(80*10, 80)))
-      . assert(_ == (t"░░░██░░░░░", t"░░░░░░██░░"))
+      . assert(_ == ("░░░██░░░░░", "░░░░░░██░░"))
 
       test(m"the same design draws a bar once the fraction is known"):
         sweeping(bars.smoothBar)(Fraction(0.5), 10, Tick.zero)
-      . assert(_ == t"█████     ")
+      . assert(_ == "█████     ")
 
       test(m"an unknown-progress design animates; a definite bar does not"):
         given definite: (Fraction is Gaugeable) = bars.smoothBar
@@ -1223,11 +1223,11 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a wide spinner falls back to a narrower design in a narrow column"):
         spin(spinners.bouncingBarSpinner)(Fraction(0.0), 1, Tick.zero)
-      . assert(_ == t"-")
+      . assert(_ == "-")
 
       test(m"a multi-cell spinner draws at its full width when it fits"):
         spin(spinners.bouncingBarSpinner)(Fraction(0.0), 6, Tick.at(80, 80))
-      . assert(_ == t"[=   ]")
+      . assert(_ == "[=   ]")
 
     suite(m"Gauge glyph repertoires"):
       import palettes.emberGaugePalette
@@ -1242,12 +1242,12 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"an emoji spinner renders as emoji when they are permitted"):
         import gaugeGlyphs.emojiGlyphs
         spin(spinners.moonPhaseSpinner)(Fraction(0.0), 2)
-      . assert(_ == t"🌑")
+      . assert(_ == "🌑")
 
       test(m"an emoji spinner falls back to its BMP sibling when they are not"):
         import gaugeGlyphs.unicodeGlyphs
         spin(spinners.moonPhaseSpinner)(Fraction(0.0), 2)
-      . assert(_ == t"◌ ")
+      . assert(_ == "◌ ")
 
       test(m"under ASCII glyphs every spinner degrades to seven-bit output"):
         import gaugeGlyphs.asciiGlyphs
@@ -1269,24 +1269,24 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // catalogue this size.
       val designs: scala.List[(Text, Int => Text)] =
         scala.List
-         ( (t"smoothBar", width => bars.smoothBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"blockBar", width => bars.blockBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"shadedBar", width => bars.shadedBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"risingBar", width => bars.risingBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"fineBar", width => bars.fineBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"dotBar", width => bars.dotBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"railBar", width => bars.railBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"squareBar", width => bars.squareBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"brailleBar", width => bars.brailleBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"capsuleBar", width => bars.capsuleBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"asciiBar", width => bars.asciiBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"equalsBar", width => bars.equalsBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"arrowheadBar", width => bars.arrowheadBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"gradientBar", width => bars.gradientBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"segmentedBar", width => bars.segmentedBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"pipBar", width => bars.pipBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"markerBar", width => bars.markerBar.rows(Fraction(0.37), Tick.zero, width)),
-           (t"percentageBar", width => bars.percentageBar.rows(Fraction(0.37), Tick.zero, width)) )
+         ( ("smoothBar", width => bars.smoothBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("blockBar", width => bars.blockBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("shadedBar", width => bars.shadedBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("risingBar", width => bars.risingBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("fineBar", width => bars.fineBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("dotBar", width => bars.dotBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("railBar", width => bars.railBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("squareBar", width => bars.squareBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("brailleBar", width => bars.brailleBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("capsuleBar", width => bars.capsuleBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("asciiBar", width => bars.asciiBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("equalsBar", width => bars.equalsBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("arrowheadBar", width => bars.arrowheadBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("gradientBar", width => bars.gradientBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("segmentedBar", width => bars.segmentedBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("pipBar", width => bars.pipBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("markerBar", width => bars.markerBar.rows(Fraction(0.37), Tick.zero, width)),
+           ("percentageBar", width => bars.percentageBar.rows(Fraction(0.37), Tick.zero, width)) )
         . map: (name, render) =>
             (name, (width: Int) => render(width).stdlib.head.plain)
 
@@ -1327,23 +1327,23 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a wide row keeps every facet and stretches the flexible one"):
         row(24)
-      . assert(_ == t"compiling ========== 42%")
+      . assert(_ == "compiling ========== 42%")
 
       test(m"a narrower row sheds the most expendable facet first"):
         row(12)
-      . assert(_ == t"======== 42%")
+      . assert(_ == "======== 42%")
 
       test(m"a narrower row still sheds in shed order"):
         row(8)
-      . assert(_ == t"==== 42%")
+      . assert(_ == "==== 42%")
 
       test(m"the flexible facet is never shed"):
         row(4)
-      . assert(_ == t"====")
+      . assert(_ == "====")
 
       test(m"a row below every minimum is blank rather than corrupt"):
         row(2)
-      . assert(_ == t"  ")
+      . assert(_ == "  ")
 
       test(m"a solved row is always exactly the width it was given"):
         (1 to 60).map(row(_).length).toList.filter(_ != 0)
@@ -1365,7 +1365,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val flow = FlowExtent(TerminalBoard(10, 1), Rect(0, 0, 10, 1))
         Gaugeable.Fixture(Reading(Fraction(0.3)))(using bars.blockBar).render(flow, false)
         flow.render
-      . assert(_ == t"███░░░░░░░")
+      . assert(_ == "███░░░░░░░")
 
       test(m"a gauge reports its design's preferred width to the solver"):
         Gaugeable.Fixture(Reading(Fraction(0.5)))(using bars.smoothBar).measure(80)
@@ -1389,16 +1389,16 @@ object Tests extends Suite(m"Ultimatum Tests"):
         reading() = Fraction(0.5)
         fixture.render(flow, false)
         flow.render
-      . assert(_ == t"████░░░░")
+      . assert(_ == "████░░░░")
 
       test(m"a bar in a stack is painted at the width the solver gave it"):
         render(8, 2):
           stack
-           ( panel(minHeight = 1, maxHeight = 1)(Out.print(t"job")),
+           ( panel(minHeight = 1, maxHeight = 1)(Out.print("job")),
              Pane.Widget
               ( Sizing(minHeight = 1, maxHeight = 1),
                 Gaugeable.Fixture(Reading(Fraction(0.5)))(using bars.blockBar) ) )
-      . assert(_ == t"job     \n████░░░░")
+      . assert(_ == "job     \n████░░░░")
 
     suite(m"Meters, sparklines, counters and processions"):
       import gaugeGlyphs.unicodeGlyphs
@@ -1410,68 +1410,68 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a column meter shows a bounded reading as one cell"):
         plain(meters.columnMeter)(Meter(0.5), 1)
-      . assert(_ == t"▅")
+      . assert(_ == "▅")
 
       test(m"a meter reads against its own bounds, not against zero to one"):
         plain(meters.columnMeter)(Meter(50.0, 0.0, 100.0), 1)
-      . assert(_ == t"▅")
+      . assert(_ == "▅")
 
       test(m"an ASCII meter fills between its brackets"):
         plain(meters.asciiMeter)(Meter(0.5), 10)
-      . assert(_ == t"[####----]")
+      . assert(_ == "[####----]")
 
       test(m"a thermometer is a column of its own height"):
-        plain(meters.thermometerMeter)(Meter(1.0), 1).cut(t"\n").size
+        plain(meters.thermometerMeter)(Meter(1.0), 1).cut("\n").size
       . assert(_ == 5)
 
       test(m"a block sparkline draws one cell per sample"):
         plain(sparklines.blockSparkline)(Sequence(0.0, 0.5, 1.0), 3)
-      . assert(_ == t"▁▅█")
+      . assert(_ == "▁▅█")
 
       test(m"a sparkline auto-scales to the range of its samples"):
         plain(sparklines.blockSparkline)(Sequence(10.0, 20.0), 2)
-      . assert(_ == t"▁█")
+      . assert(_ == "▁█")
 
       test(m"fixed bounds keep a sparkline's scale still between frames"):
         plain(Sparkline.Blocks.scaled(0.0, 10.0))(Sequence(0.0, 5.0), 2)
-      . assert(_ == t"▁▅")
+      . assert(_ == "▁▅")
 
       // Decimation, not truncation: a narrow sparkline keeps the peaks rather than showing only
       // the oldest samples.
       test(m"a sparkline narrower than its series keeps the peaks"):
         plain(sparklines.blockSparkline)(Sequence(0.0, 1.0, 0.0, 0.0), 2)
-      . assert(_ == t"█▁")
+      . assert(_ == "█▁")
 
       test(m"a plain counter writes done over total"):
         plain(counters.plainCounter)(Reckoning(17, 120), 7)
-      . assert(_ == t"17/120 ")
+      . assert(_ == "17/120 ")
 
       test(m"a counter with no total writes only what is done"):
         plain(counters.plainCounter)(Reckoning(17), 2)
-      . assert(_ == t"17")
+      . assert(_ == "17")
 
       // The numerator is right-aligned to the total's width, so the field does not jitter.
       test(m"a padded counter holds its width as it counts up"):
         (plain(counters.paddedCounter)(Reckoning(7, 120), 7),
             plain(counters.paddedCounter)(Reckoning(117, 120), 7))
-      . assert(_ == (t"  7/120", t"117/120"))
+      . assert(_ == ("  7/120", "117/120"))
 
       test(m"a scaled counter abbreviates large figures"):
         plain(counters.scaledCounter)(Reckoning(1200, 8400), 9)
-      . assert(_ == t"1.2k/8.4k")
+      . assert(_ == "1.2k/8.4k")
 
       test(m"a tick standing is a single coloured glyph"):
         plain(standings.tickStanding)(Standing.Succeeded, 1)
-      . assert(_ == t"✓")
+      . assert(_ == "✓")
 
       test(m"an ASCII standing stays within seven bits"):
         plain(standings.asciiStanding)(Standing.Failed, 1)
-      . assert(_ == t"x")
+      . assert(_ == "x")
 
       test(m"a word standing pads to a fixed width so a column aligns"):
         (plain(standings.wordStanding)(Standing.Succeeded, 4),
             plain(standings.wordStanding)(Standing.Failed, 4))
-      . assert(_ == (t"  ok", t"FAIL"))
+      . assert(_ == ("  ok", "FAIL"))
 
       val steps =
         Sequence
@@ -1480,24 +1480,24 @@ object Tests extends Suite(m"Ultimatum Tests"):
            Step(t"publish", Standing.Pending) )
 
       test(m"a checklist is one row per step"):
-        plain(processions.checklistProcession)(steps, 12).cut(t"\n").size
+        plain(processions.checklistProcession)(steps, 12).cut("\n").size
       . assert(_ == 3)
 
       test(m"a checklist marks each step by its standing"):
         plain(processions.checklistProcession)(steps, 9)
-      . assert(_ == t"✓ resolve\n⠋ compile\n· publish")
+      . assert(_ == "✓ resolve\n⠋ compile\n· publish")
 
       test(m"a numbered procession counts the steps that have started"):
         plain(processions.numberedProcession)(steps, 14)
-      . assert(_ == t"[2/3] compile ")
+      . assert(_ == "[2/3] compile ")
 
       test(m"a bead procession is a chain of two cells per step, less one"):
         plain(processions.beadProcession)(steps, 5)
-      . assert(_ == t"●━◐━○")
+      . assert(_ == "●━◐━○")
 
       test(m"a breadcrumb procession joins the steps on one row"):
         plain(processions.breadcrumbProcession)(steps, 29)
-      . assert(_ == t"resolve › compile › publish  ")
+      . assert(_ == "resolve › compile › publish  ")
 
       test(m"a checklist declares an animation period; a breadcrumb does not"):
         (processions.checklistProcession.period, processions.breadcrumbProcession.period)
@@ -1518,29 +1518,29 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a compact elapsed time gives the two largest useful units"):
         spent(timers.compactElapsed)(161.0*Second, 5)
-      . assert(_ == t"2m41s")
+      . assert(_ == "2m41s")
 
       test(m"a compact elapsed time under a minute is just seconds"):
         spent(timers.compactElapsed)(41.0*Second, 3)
-      . assert(_ == t"41s")
+      . assert(_ == "41s")
 
       test(m"a digital elapsed time keeps its shape as it crosses a minute"):
         (spent(timers.digitalElapsed)(59.0*Second, 5),
             spent(timers.digitalElapsed)(61.0*Second, 5))
-      . assert(_ == (t"00:59", t"01:01"))
+      . assert(_ == ("00:59", "01:01"))
 
       test(m"a digital elapsed time grows an hours field only when there are hours"):
         spent(timers.digitalElapsed)(3661.0*Second, 7)
-      . assert(_ == t"1:01:01")
+      . assert(_ == "1:01:01")
 
       // A countdown is clamped at zero, so a deadline that has passed reads as `0s`.
       test(m"a countdown past its deadline reads as zero"):
         left(timers.compactCountdown)(Countdown(-5.0*Second), 2)
-      . assert(_ == t"0s")
+      . assert(_ == "0s")
 
       test(m"a narrow timer keeps the seconds, which are what is moving"):
         spent(timers.compactElapsed)(161.0*Second, 3)
-      . assert(_ == t"41s")
+      . assert(_ == "41s")
 
       test(m"a timer is inelastic, so it does not stretch across a row"):
         timers.compactElapsed.columns(161.0*Second)
@@ -1560,21 +1560,21 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a caption follows the gauge it labels"):
         import bars.blockBar
-        plain(summon[Captioned[Fraction] is Gaugeable])(Captioned(Fraction(0.5), t"copying"), 12)
-      . assert(_ == t"██░░░ copyi…")
+        plain(summon[Captioned[Fraction] is Gaugeable])(Captioned(Fraction(0.5), "copying"), 12)
+      . assert(_ == "██░░░ copyi…")
 
       // Both degradations compose: the caption is cut to its half-row allowance, and the three
       // cells that leaves the bar are too few to draw one, so it falls through to a figure.
       test(m"a narrow captioned gauge elides the label and degrades the bar"):
         import bars.blockBar
-        plain(summon[Captioned[Fraction] is Gaugeable])(Captioned(Fraction(0.5), t"copying"), 8)
-      . assert(_ == t"50% cop…")
+        plain(summon[Captioned[Fraction] is Gaugeable])(Captioned(Fraction(0.5), "copying"), 8)
+      . assert(_ == "50% cop…")
 
       test(m"a leading caption precedes the gauge"):
         import bars.blockBar
         import captions.leadingCaption
-        plain(summon[Captioned[Fraction] is Gaugeable])(Captioned(Fraction(0.5), t"go"), 8)
-      . assert(_ == t"go ██░░░")
+        plain(summon[Captioned[Fraction] is Gaugeable])(Captioned(Fraction(0.5), "go"), 8)
+      . assert(_ == "go ██░░░")
 
       test(m"a captioned spinner inherits the spinner's animation period"):
         import spinners.brailleDotsSpinner
@@ -1603,7 +1603,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == Some(80L))
 
       test(m"a layout of static panels arms no wake at all"):
-        wakes(panel()(Out.print(t"still"))).stdlib.length
+        wakes(panel()(Out.print("still"))).stdlib.length
       . assert(_ == 0)
 
       test(m"a bar alone does not animate"):

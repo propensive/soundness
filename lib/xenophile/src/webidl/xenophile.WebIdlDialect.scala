@@ -103,7 +103,7 @@ object WebIdlDialect extends Dialect:
         record(name, Unset, navigable(members))
 
       case WebIdl.Definition.Enumeration(name, _) =>
-        typedefs = typedefs.define(name, Foreign.Type.Named(t"string"))
+        typedefs = typedefs.define(name, Foreign.Type.Named("string"))
 
       case WebIdl.Definition.Alias(name, typed) =>
         typedefs = typedefs.define(name, typed)

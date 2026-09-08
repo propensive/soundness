@@ -56,7 +56,7 @@ import rudiments.sortingAlgorithms.timsort
 // inessential can only over-report a change, which grades a needless major, while omitting
 // something essential under-reports a break, which is unsound.
 object ClassfileAtomizer:
-  val id: Text = t"classfile/1"
+  val id: Text = "classfile/1"
 
   // The result of atomizing one release's classes. `unresolved` names supertypes that were not
   // on the classpath: an unresolved supertype means an unknown member set, so the caller must
@@ -129,9 +129,9 @@ object ClassfileAtomizer:
 
   // Constructors are not inherited, and a class initializer is never resolvable surface.
   private def inheritable(member: ClassSurface.Member): Boolean =
-    member.name != t"<init>" && member.name != t"<clinit>"
+    member.name != "<init>" && member.name != "<clinit>"
 
-  private def declarable(member: ClassSurface.Member): Boolean = member.name != t"<clinit>"
+  private def declarable(member: ClassSurface.Member): Boolean = member.name != "<clinit>"
 
   // Membership keying (§11.2 requirement 4): a JVM call site names the *receiver*, so the linkage
   // surface of a type includes every member it presents, not merely those it declares. The

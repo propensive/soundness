@@ -38,7 +38,7 @@ import anticipation.*
 import gossamer.*
 
 object Redesignation:
-  given joules: Redesignation[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")
-  given newtons: Redesignation[Kilograms[1] & Metres[1] & Seconds[-2]](t"N")
+  given joules: Redesignation[Kilograms[1] & Metres[2] & Seconds[-2]]("J")
+  given newtons: Redesignation[Kilograms[1] & Metres[1] & Seconds[-2]]("N")
 
 trait Redesignation[units <: Measure](val name: Text)

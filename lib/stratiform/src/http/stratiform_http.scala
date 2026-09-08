@@ -41,7 +41,7 @@ import telekinesis.*
 import zephyrine.*
 
 private val telMediaType: MediaType =
-  MediaType(Media.Group.Application, Media.Subtype.Vendor(t"tel"))
+  MediaType(Media.Group.Application, Media.Subtype.Vendor("tel"))
 
 package postables:
   given telPostable: (encoder: CharEncoder) => Tel is Postable =

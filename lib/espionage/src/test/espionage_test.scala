@@ -127,39 +127,39 @@ object AgentFixture:
   private def record(note: Text): Unit = received.synchronized(received.append(note))
 
   private def result(id: Json, result: Json): Json =
-    Map(t"jsonrpc" -> t"2.0".in[Json], t"id" -> id, t"result" -> result).in[Json]
+    Map("jsonrpc" -> "2.0".in[Json], "id" -> id, "result" -> result).in[Json]
 
   private def request(id: Text, method: Text, params: Json): Json =
     Map
-     ( t"jsonrpc" -> t"2.0".in[Json],
-       t"id"      -> id.in[Json],
-       t"method"  -> method.in[Json],
-       t"params"  -> params )
+     ( "jsonrpc" -> "2.0".in[Json],
+       "id"      -> id.in[Json],
+       "method"  -> method.in[Json],
+       "params"  -> params )
     . in[Json]
 
   private def notification(method: Text, params: Json): Json =
-    Map(t"jsonrpc" -> t"2.0".in[Json], t"method" -> method.in[Json], t"params" -> params).in[Json]
+    Map("jsonrpc" -> "2.0".in[Json], "method" -> method.in[Json], "params" -> params).in[Json]
 
   private def update(sessionId: Text, update: SessionUpdate): Json =
     notification
-     ( t"session/update",
-       Map(t"sessionId" -> sessionId.in[Json], t"update" -> update.in[Json]).in[Json] )
+     ( "session/update",
+       Map("sessionId" -> sessionId.in[Json], "update" -> update.in[Json]).in[Json] )
 
   private def permission(id: Text, sessionId: Text): Json =
     // Literal JSON rather than encoded records: the inline encodable for the opaque `List`
     // cannot be summoned here, and a fixture's wire text reads best as wire text anyway.
     val options: Json =
-      t"""[{"optionId":"allow","name":"Allow","kind":"allow_once"},
+      """[{"optionId":"allow","name":"Allow","kind":"allow_once"},
           {"optionId":"deny","name":"Deny","kind":"reject_once"}]"""
       . as[Json]
 
     request
      ( id,
-       t"session/request_permission",
+       "session/request_permission",
        Map
-        ( t"sessionId" -> sessionId.in[Json],
-          t"toolCall"  -> t"""{"toolCallId":"call1"}""".as[Json],
-          t"options"   -> options )
+        ( "sessionId" -> sessionId.in[Json],
+          "toolCall"  -> """{"toolCallId":"call1"}""".as[Json],
+          "options"   -> options )
        . in[Json] )
 
   // Runs the scripted agent over the given streams until its input is exhausted.
@@ -181,56 +181,56 @@ object AgentFixture:
 
       if message.length > 0 then
         val json: Json = message.as[Json]
-        val method: Text = try json.method.as[Text] catch case _: Exception => t""
+        val method: Text = try json.method.as[Text] catch case _: Exception => ""
 
         method match
-          case t"initialize" =>
-            record(t"initialize")
+          case "initialize" =>
+            record("initialize")
 
             send:
               result
                ( json.id,
                  Map
-                  ( t"protocolVersion"   -> Acp.version.in[Json],
-                    t"agentCapabilities" -> Map(t"loadSession" -> false.in[Json]).in[Json] )
+                  ( "protocolVersion"   -> Acp.version.in[Json],
+                    "agentCapabilities" -> Map("loadSession" -> false.in[Json]).in[Json] )
                  . in[Json] )
 
-          case t"session/new" =>
+          case "session/new" =>
             record(t"session/new:${json.params.cwd.as[Text]}")
-            send(result(json.id, Map(t"sessionId" -> t"sess1".in[Json]).in[Json]))
+            send(result(json.id, Map("sessionId" -> "sess1".in[Json]).in[Json]))
 
-          case t"session/prompt" =>
+          case "session/prompt" =>
             val sessionId: Text = json.params.sessionId.as[Text]
             val text: Text =
               try json.params.prompt.as[List[ContentBlock]] match
                 case TextContent(text, _) :: _ => text
-                case _                         => t""
-              catch case _: Exception => t""
+                case _                         => ""
+              catch case _: Exception => ""
 
             record(t"session/prompt:$sessionId:$text")
 
             promptRequest = json
 
-            if text == t"cancel me" then
+            if text == "cancel me" then
               // Hold the turn open: the permission request is sent only once the client's
               // cancellation arrives.
               ()
             else
-              send(update(sessionId, AgentMessageChunk(TextContent(t"Hello, "))))
-              send(update(sessionId, AgentMessageChunk(TextContent(t"world!"))))
-              send(update(sessionId, ToolCall(t"call1", t"Reading a file")))
-              send(permission(t"perm1", sessionId))
+              send(update(sessionId, AgentMessageChunk(TextContent("Hello, "))))
+              send(update(sessionId, AgentMessageChunk(TextContent("world!"))))
+              send(update(sessionId, ToolCall("call1", "Reading a file")))
+              send(permission("perm1", sessionId))
 
-          case t"session/cancel" =>
+          case "session/cancel" =>
             val sessionId: Text = json.params.sessionId.as[Text]
             record(t"session/cancel:$sessionId")
-            send(permission(t"perm2", sessionId))
+            send(permission("perm2", sessionId))
 
-          case t"" =>
+          case "" =>
             // A response: a permission answer, correlated by id.
-            val id: Text = try json.id.as[Text] catch case _: Exception => t""
+            val id: Text = try json.id.as[Text] catch case _: Exception => ""
             val outcome: Text =
-              try json.result.outcome.outcome.as[Text] catch case _: Exception => t"?"
+              try json.result.outcome.outcome.as[Text] catch case _: Exception => "?"
 
             record(t"answer:$id:$outcome")
 
@@ -239,12 +239,12 @@ object AgentFixture:
                 send:
                   result
                    ( Acp.requestId(prompt).or(json.id),
-                     Map(t"stopReason" -> stopReason.in[Json]).in[Json] )
+                     Map("stopReason" -> stopReason.in[Json]).in[Json] )
 
               promptRequest = Unset
 
-            if id == t"perm1" then conclude(t"end_turn")
-            else if id == t"perm2" then conclude(t"cancelled")
+            if id == "perm1" then conclude("end_turn")
+            else if id == "perm2" then conclude("cancelled")
 
           case other =>
             record(t"unexpected:$other")
@@ -258,14 +258,14 @@ object Tests extends Suite(m"Espionage Tests"):
     suite(m"String enum codecs"):
       test(m"StopReason encodes as its wire string"):
         StopReason.MaxTurnRequests.in[Json].encode
-      . assert(_ == t"\"max_turn_requests\"")
+      . assert(_ == "\"max_turn_requests\"")
 
       test(m"StopReason decodes from its wire string"):
-        t"\"refusal\"".as[Json].as[StopReason]
+        "\"refusal\"".as[Json].as[StopReason]
       . assert(_ == StopReason.Refusal)
 
       test(m"ToolKind decodes an unknown kind as Other"):
-        t"\"_custom\"".as[Json].as[ToolKind]
+        "\"_custom\"".as[Json].as[ToolKind]
       . assert(_ == ToolKind.Other)
 
       test(m"PermissionOptionKind round-trips"):
@@ -282,69 +282,69 @@ object Tests extends Suite(m"Espionage Tests"):
 
     suite(m"Session update codecs"):
       test(m"agent_message_chunk decodes"):
-        val json = t"""{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"hi"}}"""
+        val json = """{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"hi"}}"""
         json.as[Json].as[SessionUpdate]
-      . assert(_ == AgentMessageChunk(TextContent(t"hi")))
+      . assert(_ == AgentMessageChunk(TextContent("hi")))
 
       test(m"user_message_chunk decodes"):
-        val json = t"""{"sessionUpdate":"user_message_chunk","content":{"type":"text","text":"hi"}}"""
+        val json = """{"sessionUpdate":"user_message_chunk","content":{"type":"text","text":"hi"}}"""
         json.as[Json].as[SessionUpdate]
-      . assert(_ == UserMessageChunk(TextContent(t"hi")))
+      . assert(_ == UserMessageChunk(TextContent("hi")))
 
       test(m"agent_thought_chunk decodes"):
-        val json = t"""{"sessionUpdate":"agent_thought_chunk","content":{"type":"text","text":"hm"}}"""
+        val json = """{"sessionUpdate":"agent_thought_chunk","content":{"type":"text","text":"hm"}}"""
         json.as[Json].as[SessionUpdate]
-      . assert(_ == AgentThoughtChunk(TextContent(t"hm")))
+      . assert(_ == AgentThoughtChunk(TextContent("hm")))
 
       test(m"tool_call decodes with kind, status and a diff"):
         val json =
-          t"""{"sessionUpdate":"tool_call","toolCallId":"c1","title":"Edit","kind":"edit",
+          """{"sessionUpdate":"tool_call","toolCallId":"c1","title":"Edit","kind":"edit",
               "status":"in_progress","content":[{"type":"diff","path":"/a.txt","newText":"x"}]}"""
 
         json.as[Json].as[SessionUpdate]
       . assert:
           _ == ToolCall
-                ( t"c1",
-                  t"Edit",
+                ( "c1",
+                  "Edit",
                   ToolKind.Edit,
                   ToolCallStatus.InProgress,
                   List(ToolDiff(t"/a.txt", Unset, t"x")) )
 
       test(m"tool_call_update decodes with only an id and status"):
-        val json = t"""{"sessionUpdate":"tool_call_update","toolCallId":"c1","status":"completed"}"""
+        val json = """{"sessionUpdate":"tool_call_update","toolCallId":"c1","status":"completed"}"""
         json.as[Json].as[SessionUpdate]
-      . assert(_ == ToolCallUpdate(t"c1", status = ToolCallStatus.Completed))
+      . assert(_ == ToolCallUpdate("c1", status = ToolCallStatus.Completed))
 
       test(m"plan decodes"):
         val json =
-          t"""{"sessionUpdate":"plan","entries":[{"content":"step","priority":"high","status":"pending"}]}"""
+          """{"sessionUpdate":"plan","entries":[{"content":"step","priority":"high","status":"pending"}]}"""
 
         json.as[Json].as[SessionUpdate]
       . assert(_ == Plan(List(PlanEntry(t"step", PlanPriority.High, PlanStatus.Pending))))
 
       test(m"available_commands_update decodes"):
         val json =
-          t"""{"sessionUpdate":"available_commands_update","availableCommands":[{"name":"web","description":"Search"}]}"""
+          """{"sessionUpdate":"available_commands_update","availableCommands":[{"name":"web","description":"Search"}]}"""
 
         json.as[Json].as[SessionUpdate]
       . assert(_ == AvailableCommandsUpdate(List(AvailableCommand(t"web", t"Search"))))
 
       test(m"current_mode_update decodes"):
-        val json = t"""{"sessionUpdate":"current_mode_update","currentModeId":"yolo"}"""
+        val json = """{"sessionUpdate":"current_mode_update","currentModeId":"yolo"}"""
         json.as[Json].as[SessionUpdate]
-      . assert(_ == CurrentModeUpdate(t"yolo"))
+      . assert(_ == CurrentModeUpdate("yolo"))
 
     suite(m"Permission outcome codecs"):
       test(m"a selection encodes with its discriminator"):
         import dynamicAccess.dynamicJson
-        val json = Selected(t"allow").asInstanceOf[RequestPermissionOutcome].in[Json]
+        val json = Selected("allow").asInstanceOf[RequestPermissionOutcome].in[Json]
         (json.outcome.as[Text], json.optionId.as[Text])
-      . assert(_ == (t"selected", t"allow"))
+      . assert(_ == ("selected", "allow"))
 
       test(m"a cancellation encodes with its discriminator"):
         import dynamicAccess.dynamicJson
         Cancelled.asInstanceOf[RequestPermissionOutcome].in[Json].outcome.as[Text]
-      . assert(_ == t"cancelled")
+      . assert(_ == "cancelled")
 
     suite(m"Capability derivation"):
       test(m"no registrations advertise no capabilities"):
@@ -355,7 +355,7 @@ object Tests extends Suite(m"Espionage Tests"):
       test(m"a read handler advertises only readTextFile"):
         val registry: Acp.Registry^ = Acp.Registry()
         given registry0: (Acp.Registry^{registry}) = registry
-        readFile(t"")
+        readFile("")
         registry.capabilities
       . assert(_ == ClientCapabilities(fs = FsCapabilities(readTextFile = true)))
 
@@ -373,10 +373,10 @@ object Tests extends Suite(m"Espionage Tests"):
                 cwd:             Optional[Text],
                 outputByteLimit: Optional[Long] )
             :   Text =
-              t"term1"
+              "term1"
 
             def output(sessionId: Text, terminalId: Text): TerminalOutputResult =
-              TerminalOutputResult(t"", false)
+              TerminalOutputResult("", false)
 
             def waitForExit(sessionId: Text, terminalId: Text): TerminalExitStatus =
               TerminalExitStatus(0)
@@ -403,7 +403,7 @@ object Tests extends Suite(m"Espionage Tests"):
         TestClient.updates.synchronized(TestClient.updates.clear())
 
         val message =
-          t"""{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"s1",
+          """{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"s1",
               "update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"hi"}}}}"""
 
         TestClient.roundtrip(message.as[Json])
@@ -412,48 +412,48 @@ object Tests extends Suite(m"Espionage Tests"):
 
       test(m"session/request_permission answers the handler's selection"):
         val message =
-          t"""{"jsonrpc":"2.0","id":9,"method":"session/request_permission","params":{
+          """{"jsonrpc":"2.0","id":9,"method":"session/request_permission","params":{
               "sessionId":"s1","toolCall":{"toolCallId":"c1"},
               "options":[{"optionId":"go","name":"Go","kind":"allow_once"}]}}"""
 
         import dynamicAccess.dynamicJson
         TestClient.roundtrip(message.as[Json]).let(_.result.outcome.optionId.as[Text])
-      . assert(_ == t"go")
+      . assert(_ == "go")
 
       test(m"session/request_permission rejects when no option is allowable"):
         val message =
-          t"""{"jsonrpc":"2.0","id":10,"method":"session/request_permission","params":{
+          """{"jsonrpc":"2.0","id":10,"method":"session/request_permission","params":{
               "sessionId":"s1","toolCall":{"toolCallId":"c1"},
               "options":[{"optionId":"no","name":"No","kind":"reject_once"}]}}"""
 
         import dynamicAccess.dynamicJson
         TestClient.roundtrip(message.as[Json]).let(_.result.outcome.outcome.as[Text])
-      . assert(_ == t"cancelled")
+      . assert(_ == "cancelled")
 
       test(m"a cancelled session answers permission requests with cancelled"):
-        TestClient.state.cancel(t"s2")
+        TestClient.state.cancel("s2")
 
         val message =
-          t"""{"jsonrpc":"2.0","id":11,"method":"session/request_permission","params":{
+          """{"jsonrpc":"2.0","id":11,"method":"session/request_permission","params":{
               "sessionId":"s2","toolCall":{"toolCallId":"c1"},
               "options":[{"optionId":"go","name":"Go","kind":"allow_once"}]}}"""
 
         import dynamicAccess.dynamicJson
         TestClient.roundtrip(message.as[Json]).let(_.result.outcome.outcome.as[Text])
-      . assert(_ == t"cancelled")
+      . assert(_ == "cancelled")
 
       test(m"fs/read_text_file answers the handler's content"):
         val message =
-          t"""{"jsonrpc":"2.0","id":12,"method":"fs/read_text_file","params":{
+          """{"jsonrpc":"2.0","id":12,"method":"fs/read_text_file","params":{
               "sessionId":"s1","path":"/tmp/a.txt"}}"""
 
         TestClient.roundtrip(message.as[Json])
         . let(_.as[JsonRpc.Response].result.as[ReadTextFileResult])
-      . assert(_ == ReadTextFileResult(t"contents of /tmp/a.txt"))
+      . assert(_ == ReadTextFileResult("contents of /tmp/a.txt"))
 
       test(m"an unregistered capability is answered with an error"):
         val message =
-          t"""{"jsonrpc":"2.0","id":13,"method":"fs/write_text_file","params":{
+          """{"jsonrpc":"2.0","id":13,"method":"fs/write_text_file","params":{
               "sessionId":"s1","path":"/tmp/a.txt","content":"x"}}"""
 
         import dynamicAccess.dynamicJson
@@ -485,16 +485,16 @@ object Tests extends Suite(m"Espionage Tests"):
                   log.synchronized(log.append(t"tool:${update.title}"))
 
                 case other =>
-                  log.synchronized(log.append(t"other"))
+                  log.synchronized(log.append("other"))
 
             permission:
               options.filter(_.kind == PermissionOptionKind.AllowOnce).prim
               . lay(Cancelled): option => Selected(option.optionId)
 
           . apply:
-              val session = connection.newSession(t"/workspace")
+              val session = connection.newSession("/workspace")
               log.synchronized(log.append(t"session:${session.sessionId}"))
-              val stop = connection.prompt(session.sessionId, t"hello agent")
+              val stop = connection.prompt(session.sessionId, "hello agent")
               log.synchronized(log.append(t"stop:$stop"))
 
         log.synchronized(log.to(List))
@@ -535,9 +535,9 @@ object Tests extends Suite(m"Espionage Tests"):
               . lay(Cancelled): option => Selected(option.optionId)
 
           . apply:
-              val session = connection.newSession(t"/workspace")
+              val session = connection.newSession("/workspace")
 
-              async(stopped.offer(connection.prompt(session.sessionId, t"cancel me")))
+              async(stopped.offer(connection.prompt(session.sessionId, "cancel me")))
 
               // Cancel once the agent has the prompt: the fixture answers the prompt only after
               // its post-cancellation permission request is answered `cancelled`.
@@ -552,4 +552,4 @@ object Tests extends Suite(m"Espionage Tests"):
 
       test(m"the cancelled turn's permission request was answered cancelled"):
         AgentFixture.received.synchronized(AgentFixture.received.to(List))
-      . assert(_.has(t"answer:perm2:cancelled"))
+      . assert(_.has("answer:perm2:cancelled"))

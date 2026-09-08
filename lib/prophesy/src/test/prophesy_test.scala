@@ -42,9 +42,9 @@ object Tests extends Suite(m"Prophesy tests"):
     // A miniature tree exercising the lookup semantics; the real Scala tree is exercised
     // end-to-end from harlequin's tests. Reversed contexts read caret-outwards: the head is
     // the lexeme immediately before the caret.
-    val statement = Keywords(Set(t"val", t"var", t"def", t"if"))
-    val definition = Keywords(Set(t"def", t"given"))
-    val parameter = Keywords(Set(t"using"), Expectation.TermBinding)
+    val statement = Keywords(Set("val", "var", "def", "if"))
+    val definition = Keywords(Set("def", "given"))
+    val parameter = Keywords(Set("using"), Expectation.TermBinding)
 
     val tree = KeywordPattern
       ( Unset,
@@ -96,7 +96,7 @@ object Tests extends Suite(m"Prophesy tests"):
 
       test(m"a class element matches any of its members"):
         (tree(List(Lexeme.Term)), tree(List(Lexeme.Close(Bracket.Brace))))
-      . assert(_ == (Keywords(Set(t"match")), Keywords(Set(t"match"))))
+      . assert(_ == (Keywords(Set("match")), Keywords(Set("match"))))
 
       test(m"an exact branch takes precedence over a later class branch"):
         // `Term` also matches `ValueEnd`, but the keyword branch is listed first for the
@@ -108,5 +108,5 @@ object Tests extends Suite(m"Prophesy tests"):
       test(m"lookup consumes no more context than the tree's depth"):
         val deep: proscenium.List[Lexeme] =
           (scala.collection.immutable.List.fill(10)(Lexeme.Term) :+ Lexeme.Break).to(proscenium.List)
-        tree(Lexeme.Symbol(t".") :: deep)
+        tree(Lexeme.Symbol(".") :: deep)
       . assert(_ == Keywords(Set(), Expectation.Nothing))

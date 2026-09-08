@@ -228,19 +228,19 @@ object Inlinable:
     type Self = Text
 
     def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Text]): Expr[Text] =
-      '{ $reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"Text")); t"" } }
+      '{ $reader.text().or { $reader.fault(Xml.Error.Reason.Untextual("Text")); "" } }
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[Text])
     :   Expr[Text] =
 
-      '{ Xml.Parsable.missing[Text](t"")(using $tactic) }
+      '{ Xml.Parsable.missing[Text]("")(using $tactic) }
 
   given string: (String is Inlinable) = new Inlinable:
     type Self = String
 
     def parse(reader: Expr[Xml.Reader])(using Quotes, Type[String]): Expr[String] =
-      '{ ($reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"String")); t"" }).s }
+      '{ ($reader.text().or { $reader.fault(Xml.Error.Reason.Untextual("String")); "" }).s }
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       (using Quotes, Type[String])

@@ -50,7 +50,7 @@ import vacuous.*
 import java.io as ji
 import fulminate.*
 
-object Classpath extends Root(t""):
+object Classpath extends Root(""):
   type Plane = Classpath
   type Rules = MustNotContain["/"] & MustNotMatch["[0-9].*"] & MustMatch["[a-zA-Z0-9_$.]+"]
 
@@ -62,9 +62,9 @@ object Classpath extends Root(t""):
     def length(text: Text): Int raises Path.Error = 1
 
     def decode(text: Text): Classpath.type raises Path.Error =
-      if text.starts(t"/") then Classpath else abort(Path.Error(_.InvalidRoot))
+      if text.starts("/") then Classpath else abort(Path.Error(_.InvalidRoot))
 
-    def encode(root: Classpath.type): Text = t""
+    def encode(root: Classpath.type): Text = ""
 
   object Directory:
     def apply[path: Abstractable across Paths to Text](path: path): Classpath.Entry.Directory =
@@ -164,12 +164,12 @@ object Classpath extends Root(t""):
     case object JavaRuntime extends Classpath.Entry
 
     def apply(url: jn.URL): Optional[Classpath.Entry] = url.getProtocol.nn.tt match
-      case t"jrt"             => Classpath.Entry.JavaRuntime
-      case t"http" | t"https" => Classpath.Entry.Url(url.toString.tt)
+      case "jrt"             => Classpath.Entry.JavaRuntime
+      case "http" | "https" => Classpath.Entry.Url(url.toString.tt)
 
-      case t"file" =>
+      case "file" =>
         val path: Text = url.getPath.nn.tt
-        if path.ends(t"/") then Classpath.Entry.Directory(path) else Classpath.Entry.Jar(path)
+        if path.ends("/") then Classpath.Entry.Directory(path) else Classpath.Entry.Jar(path)
 
       case _ =>
         Unset

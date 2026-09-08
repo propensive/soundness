@@ -108,31 +108,31 @@ object Tests extends Suite(m"Tessellate tests"):
         Flow.wrap(content, width).stdlib.to(SList)
 
       test(m"a paragraph wraps at spaces"):
-        wrapped(t"the quick brown fox", 10)
+        wrapped("the quick brown fox", 10)
 
-      . assert(_ == SList(t"the quick", t"brown fox"))
+      . assert(_ == SList("the quick", "brown fox"))
 
       test(m"a hard line break always forces a new line"):
-        wrapped(t"one\ntwo", 10)
+        wrapped("one\ntwo", 10)
 
-      . assert(_ == SList(t"one", t"two"))
+      . assert(_ == SList("one", "two"))
 
       test(m"consecutive hard breaks preserve the empty line"):
-        wrapped(t"one\n\ntwo", 10)
+        wrapped("one\n\ntwo", 10)
 
-      . assert(_ == SList(t"one", t"", t"two"))
+      . assert(_ == SList("one", "", "two"))
 
       test(m"an overflowing word breaks at its latest fitting hyphenation point"):
-        wrapped(t"hyphenation", 7)
+        wrapped("hyphenation", 7)
 
-      . assert(_ == SList(t"hyphen-", t"ation"))
+      . assert(_ == SList("hyphen-", "ation"))
 
       // Regression check for #1788: a pre-tessellate implementation dropped the character
       // before every hyphenation break (`artifact` became `art-`/`fact`), silently, at any
       // width. Reassembling the wrapped lines — stripping the inserted hyphens and the spaces
       // consumed at soft breaks — must reproduce the content's characters exactly.
       test(m"hyphenated wrapping preserves every character at every width"):
-        val content = t"the realm to atomize a bare artifact in a derivative membership"
+        val content = "the realm to atomize a bare artifact in a derivative membership"
         val expected = content.s.replace(" ", "")
 
         (5 to 20).toList.map: width =>
@@ -142,66 +142,66 @@ object Tests extends Suite(m"Tessellate tests"):
       . assert(_ == true)
 
       test(m"wide characters wrap by display width, not char count"):
-        wrapped(t"日本語 テスト", 6)
+        wrapped("日本語 テスト", 6)
 
-      . assert(_ == SList(t"日本語", t"テスト"))
+      . assert(_ == SList("日本語", "テスト"))
 
       test(m"an unbreakable over-long word runs on beyond the width"):
         import polysyllabic.Hyphenation.fallback
-        Flow.wrap(t"abcdefghij", 4).stdlib.to(SList)
+        Flow.wrap("abcdefghij", 4).stdlib.to(SList)
 
-      . assert(_ == SList(t"abcdefghij"))
+      . assert(_ == SList("abcdefghij"))
 
     suite(m"Flow.fit"):
       test(m"short content pads to the right under Left alignment"):
-        Flow.fit(t"abc", 6)
+        Flow.fit("abc", 6)
 
-      . assert(_ == t"abc   ")
+      . assert(_ == "abc   ")
 
       test(m"short content pads to the left under Right alignment"):
-        Flow.fit(t"abc", 6, Alignment.Right)
+        Flow.fit("abc", 6, Alignment.Right)
 
-      . assert(_ == t"   abc")
+      . assert(_ == "   abc")
 
       test(m"short content centers under Center alignment"):
-        Flow.fit(t"ab", 6, Alignment.Center)
+        Flow.fit("ab", 6, Alignment.Center)
 
-      . assert(_ == t"  ab  ")
+      . assert(_ == "  ab  ")
 
       test(m"Justify stretches word gaps to fill the width"):
-        Alignment.Justify.pad(t"a b c", 9, last = false)
+        Alignment.Justify.pad("a b c", 9, last = false)
 
-      . assert(_ == t"a   b   c")
+      . assert(_ == "a   b   c")
 
       test(m"over-wide content truncates with an ellipsis"):
-        Flow.fit(t"hello world", 8)
+        Flow.fit("hello world", 8)
 
-      . assert(_ == t"hello w…")
+      . assert(_ == "hello w…")
 
       test(m"truncation never cuts a wide character in half"):
-        Flow.fit(t"日本語abc", 5)
+        Flow.fit("日本語abc", 5)
 
-      . assert(_ == t"日本…")
+      . assert(_ == "日本…")
 
     suite(m"Intrinsic metrics"):
       test(m"minContent is the widest word; natural is the widest line"):
-        Flow.metrics(t"the quick brown\nfox")
+        Flow.metrics("the quick brown\nfox")
 
       . assert(_ == Metrics(5, 15))
 
       test(m"a ZWJ emoji family counts as one wide cluster"):
-        Flow.metrics(t"👨‍👩‍👧 ab")
+        Flow.metrics("👨‍👩‍👧 ab")
 
       . assert(_ == Metrics(2, 5))
 
     suite(m"Reflowable"):
       test(m"a Reflowable instance is summonable for Text"):
-        summon[Text is Reflowable].metrics(t"one two")
+        summon[Text is Reflowable].metrics("one two")
 
       . assert(_ == Metrics(3, 7))
 
       test(m"flowed lines are padded to exactly the given width"):
-        summon[Text is Reflowable].flow(t"the quick brown fox", 10, Alignment.Left)
+        summon[Text is Reflowable].flow("the quick brown fox", 10, Alignment.Left)
           . stdlib.to(SList)
 
-      . assert(_ == SList(t"the quick ", t"brown fox "))
+      . assert(_ == SList("the quick ", "brown fox "))

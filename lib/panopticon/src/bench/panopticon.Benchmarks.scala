@@ -61,64 +61,64 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
   case class Department(name: Text, lead: Employee, members: List[Employee])
   case class Org(name: Text, hq: Address, depts: List[Department])
 
-  lazy val addr: Address = Address(t"1 Way", t"Townville", t"AA1")
-  lazy val role: Role    = Role(t"CEO", 100)
-  lazy val emp:  Employee = Employee(t"Alice", 30, addr, role)
-  lazy val dept: Department = Department(t"Eng", emp, List(emp, emp, emp))
-  lazy val org:  Org = Org(t"Acme", addr, List(dept, dept, dept))
+  lazy val addr: Address = Address("1 Way", "Townville", "AA1")
+  lazy val role: Role    = Role("CEO", 100)
+  lazy val emp:  Employee = Employee("Alice", 30, addr, role)
+  lazy val dept: Department = Department("Eng", emp, List(emp, emp, emp))
+  lazy val org:  Org = Org("Acme", addr, List(dept, dept, dept))
 
   // ─── helpers (called from quoted bench bodies) ────────────────────────────
 
   def singleDepth4(o: Org): Org =
-    o.lens(_.depts(Prim).lead.addr.city = t"X")
+    o.lens(_.depts(Prim).lead.addr.city = "X")
 
   def twoSharedDepth3(o: Org): Org =
     o.lens
-      ( _.depts(Prim).lead.addr.city     = t"X",
-        _.depts(Prim).lead.addr.postcode = t"Y" )
+      ( _.depts(Prim).lead.addr.city     = "X",
+        _.depts(Prim).lead.addr.postcode = "Y" )
 
   def fourSharedDepth2(o: Org): Org =
     o.lens
-      ( _.depts(Prim).lead.addr.city     = t"X",
-        _.depts(Prim).lead.addr.postcode = t"Y",
-        _.depts(Prim).lead.role.name     = t"Z",
+      ( _.depts(Prim).lead.addr.city     = "X",
+        _.depts(Prim).lead.addr.postcode = "Y",
+        _.depts(Prim).lead.role.name     = "Z",
         _.depts(Prim).lead.role.count    = 99 )
 
   def fourDisjoint(o: Org): Org =
     o.lens
-      ( _.name                          = t"A",
-        _.hq.city                       = t"B",
-        _.depts(Prim).name              = t"C",
+      ( _.name                          = "A",
+        _.hq.city                       = "B",
+        _.depts(Prim).name              = "C",
         _.depts(Prim).lead.role.count   = 99 )
 
   def eightMixed(o: Org): Org =
     o.lens
-      ( _.depts(Prim).lead.addr.city     = t"X",
-        _.depts(Prim).lead.addr.postcode = t"Y",
-        _.depts(Prim).lead.role.name     = t"Z",
+      ( _.depts(Prim).lead.addr.city     = "X",
+        _.depts(Prim).lead.addr.postcode = "Y",
+        _.depts(Prim).lead.role.name     = "Z",
         _.depts(Prim).lead.role.count    = 99,
-        _.hq.street                      = t"S",
-        _.hq.city                        = t"C",
-        _.hq.postcode                    = t"P",
-        _.name                           = t"N" )
+        _.hq.street                      = "S",
+        _.hq.city                        = "C",
+        _.hq.postcode                    = "P",
+        _.name                           = "N" )
 
   def eachTwoLeaves(o: Org): Org =
     o.lens
-      ( _.depts(Each).lead.role.name  = t"Boss",
+      ( _.depts(Each).lead.role.name  = "Boss",
         _.depts(Each).lead.role.count = 0 )
 
   // Same updates routed through the pre-fusion `lensFold` (the original `def lens`
   // body). Used to measure the speedup of singleton-traversal fusion.
   def eachTwoLeavesFold(o: Org): Org =
     o.lensFold
-      ( _.depts(Each).lead.role.name  = t"Boss",
+      ( _.depts(Each).lead.role.name  = "Boss",
         _.depts(Each).lead.role.count = 0 )
 
   // Manual map-and-copy: the theoretical optimum for `_.depts(Each).lead.role.…`.
   def eachTwoLeavesManual(o: Org): Org =
     o.copy(depts = o.depts.map { d =>
       val r = d.lead.role
-      d.copy(lead = d.lead.copy(role = r.copy(name = t"Boss", count = 0)))
+      d.copy(lead = d.lead.copy(role = r.copy(name = "Boss", count = 0)))
     })
 
   // ─── field-only fusion targets (no traversals) ────────────────────────────
@@ -126,21 +126,21 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
   // Single field-only update at depth 2 — this exercises the macro on the simplest
   // shape (one path, no fusion to perform but the same code emission as fusion).
   def singleFieldDepth2(o: Org): Org =
-    o.lens(_.hq.city = t"X")
+    o.lens(_.hq.city = "X")
 
   // Three updates sharing a depth-1 prefix (`hq`). Foldleft rebuilds Address and Org
   // three times; fusion rebuilds each once.
   def threeSharedHq(o: Org): Org =
     o.lens
-      ( _.hq.street   = t"S",
-        _.hq.city     = t"C",
-        _.hq.postcode = t"P" )
+      ( _.hq.street   = "S",
+        _.hq.city     = "C",
+        _.hq.postcode = "P" )
 
   // Three top-level disjoint updates. Foldleft rebuilds Org three times; fusion
   // rebuilds it once.
   def threeDisjointTop(o: Org): Org =
     o.lens
-      ( _.name  = t"N",
+      ( _.name  = "N",
         _.hq    = addr,
         _.depts = Nil )
 
@@ -148,29 +148,29 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
   // `.copy(...)` — the theoretical optimum any optic library should be measured against.
 
   def singleFieldDepth2Manual(o: Org): Org =
-    o.copy(hq = o.hq.copy(city = t"X"))
+    o.copy(hq = o.hq.copy(city = "X"))
 
   def threeSharedHqManual(o: Org): Org =
-    o.copy(hq = o.hq.copy(street = t"S", city = t"C", postcode = t"P"))
+    o.copy(hq = o.hq.copy(street = "S", city = "C", postcode = "P"))
 
   def threeDisjointTopManual(o: Org): Org =
-    o.copy(name = t"N", hq = addr, depts = Nil)
+    o.copy(name = "N", hq = addr, depts = Nil)
 
   // True pre-fusion baselines — call `lensFold` (the original `def lens` body),
   // bypassing the macro entirely. Single-call multi-lambda foldLeft semantics.
 
   def singleFieldDepth2Fold(o: Org): Org =
-    o.lensFold(_.hq.city = t"X")
+    o.lensFold(_.hq.city = "X")
 
   def threeSharedHqFold(o: Org): Org =
     o.lensFold
-      ( _.hq.street   = t"S",
-        _.hq.city     = t"C",
-        _.hq.postcode = t"P" )
+      ( _.hq.street   = "S",
+        _.hq.city     = "C",
+        _.hq.postcode = "P" )
 
   def threeDisjointTopFold(o: Org): Org =
     o.lensFold
-      ( _.name  = t"N",
+      ( _.name  = "N",
         _.hq    = addr,
         _.depts = Nil )
 

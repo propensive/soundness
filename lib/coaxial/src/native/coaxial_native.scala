@@ -603,7 +603,7 @@ private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
 
           while written < count do
             val result = libcrypto.BIO_write(bio, array.atUnsafe(start + written), count - written)
-            if result <= 0 then throw ji.IOException("TLS: BIO_write failed: "+opensslError())
+            if result <= 0 then throw ji.IOException("TLS: BIO_write failed: ".s+opensslError())
             written += result
 
     def close(): Unit =

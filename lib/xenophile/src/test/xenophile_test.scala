@@ -100,54 +100,54 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"a call with a wrongly-typed argument is rejected"):
         demilitarize:
           Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]
-          . getProgressionLastElement(t"one", 10, 2)
+          . getProgressionLastElement("one", 10, 2)
       . assert(_.nonEmpty)
 
     suite(m"Kotlin facades"):
-      val pair = make[kotlin.Pair[Text, Text]](t"a", t"b")
+      val pair = make[kotlin.Pair[Text, Text]]("a", "b")
 
       test(m"a Kotlin class constructs through its facade"):
         pair.k.toString.tt
-      . assert(_ == t"(a, b)")
+      . assert(_ == "(a, b)")
 
       test(m"a property substitutes the facade's type arguments"):
         val first: Text = pair.first
         first
-      . assert(_ == t"a")
+      . assert(_ == "a")
 
       test(m"the second component reads likewise"):
         val second: Text = pair.second
         second
-      . assert(_ == t"b")
+      . assert(_ == "b")
 
-      val regex = make[kotlin.text.Regex](t"[0-9]+")
+      val regex = make[kotlin.text.Regex]("[0-9]+")
 
       test(m"an instance method accepts Text for a CharSequence parameter"):
-        val matches: Boolean = regex.matches(t"123")
+        val matches: Boolean = regex.matches("123")
         matches
       . assert(_ == true)
 
       test(m"a non-matching input reports false"):
-        val matches: Boolean = regex.matches(t"abc")
+        val matches: Boolean = regex.matches("abc")
         matches
       . assert(_ == false)
 
       test(m"a nullable result is an Optional, absent on no match"):
-        regex.find(t"abc", 0).absent
+        regex.find("abc", 0).absent
       . assert(_ == true)
 
       test(m"a nullable result is present on a match, as a facade"):
-        regex.find(t"a1b2", 0).let { result => result.value: Text }
-      . assert(_ == t"1")
+        regex.find("a1b2", 0).let { result => result.value: Text }
+      . assert(_ == "1")
 
       test(m"a Kotlin String property reads as Text"):
         val pattern: Text = regex.pattern
         pattern
-      . assert(_ == t"[0-9]+")
+      . assert(_ == "[0-9]+")
 
       test(m"an unknown property is rejected"):
         demilitarize:
-          make[kotlin.Pair[Text, Text]](t"a", t"b").third
+          make[kotlin.Pair[Text, Text]]("a", "b").third
       . assert(_.nonEmpty)
 
       test(m"a wrongly-typed constructor argument is rejected"):
@@ -156,13 +156,13 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_.nonEmpty)
 
       test(m"a companion object's members are reachable"):
-        val escaped: Text = companion[kotlin.text.Regex].escape(t"a.b")
+        val escaped: Text = companion[kotlin.text.Regex].escape("a.b")
         escaped
-      . assert(_ == t"\\Qa.b\\E")
+      . assert(_ == "\\Qa.b\\E")
 
       test(m"an unknown member's error suggests near misses in Kotlin syntax"):
         demilitarize:
-          make[kotlin.text.Regex](t"x").matchez(t"y")
+          make[kotlin.text.Regex]("x").matchez("y")
         . map(_.message)
       . assert(_.exists(_.contains("did you mean")))
 
@@ -172,29 +172,29 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_.nonEmpty)
 
       test(m"a Scala lambda satisfies a Kotlin function-type parameter"):
-        val replaced: Text = regex.replace(t"a1b2",
+        val replaced: Text = regex.replace("a1b2",
             (m: Facade over kotlin.text.MatchResult) => t"<${m.value}>")
 
         replaced
-      . assert(_ == t"a<1>b<2>")
+      . assert(_ == "a<1>b<2>")
 
       test(m"a lambda's facade parameter navigates the Kotlin type inside"):
-        val upper: Text = regex.replace(t"3x4", (m: Facade over kotlin.text.MatchResult) =>
+        val upper: Text = regex.replace("3x4", (m: Facade over kotlin.text.MatchResult) =>
             t"${m.value}${m.value}")
 
         upper
-      . assert(_ == t"33x44")
+      . assert(_ == "33x44")
 
       test(m"a var property accepts assignment through its setter"):
-        val parameter = make[kotlin.metadata.KmValueParameter](t"x")
-        parameter.name = t"y"
+        val parameter = make[kotlin.metadata.KmValueParameter]("x")
+        parameter.name = "y"
         val name: Text = parameter.name
         name
-      . assert(_ == t"y")
+      . assert(_ == "y")
 
       test(m"assignment to a val property is rejected"):
         demilitarize:
-          make[kotlin.Pair[Text, Text]](t"a", t"b").first = t"z"
+          make[kotlin.Pair[Text, Text]]("a", "b").first = "z"
       . assert(_.nonEmpty)
 
       test(m"an object singleton's constant properties are reachable"):
@@ -208,24 +208,24 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_.nonEmpty)
 
       test(m"omitted trailing parameters fall back to Kotlin defaults"):
-        regex.find(t"a7b").let(_.value)
-      . assert(_ == t"7")
+        regex.find("a7b").let(_.value)
+      . assert(_ == "7")
 
       test(m"operator get is reachable as apply"):
-        regex.find(t"a1b").let(_.groups(0)).let(_.value)
-      . assert(_ == t"1")
+        regex.find("a1b").let(_.groups(0)).let(_.value)
+      . assert(_ == "1")
 
       // Note `unwrap.toString`: `toString`/`equals`/`hashCode` are real members of the facade
       // wrapper itself, so `Dynamic` cannot intercept them.
       test(m"a plain Java class resolves through the reflection fallback"):
-        make[java.lang.StringBuilder](t"ab").reverse().k.toString.tt
-      . assert(_ == t"ba")
+        make[java.lang.StringBuilder]("ab").reverse().k.toString.tt
+      . assert(_ == "ba")
 
       test(m"an enum entry is reachable by name, and usable as an argument"):
         val relaxed = make[kotlin.text.Regex]
-          ( t"[a-z]+", xenophile.enumEntry[kotlin.text.RegexOption]("IGNORE_CASE") )
+          ( "[a-z]+", xenophile.enumEntry[kotlin.text.RegexOption]("IGNORE_CASE") )
 
-        val matches: Boolean = relaxed.matches(t"ABC")
+        val matches: Boolean = relaxed.matches("ABC")
         matches
       . assert(_ == true)
 
@@ -236,25 +236,25 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_.exists(_.contains("IGNORE_CASE")))
 
       test(m"a data class destructures into a typed tuple"):
-        make[kotlin.Pair[Text, Text]](t"a", t"b").tuple
-      . assert(_ == (t"a", t"b"))
+        make[kotlin.Pair[Text, Text]]("a", "b").tuple
+      . assert(_ == ("a", "b"))
 
       test(m"a Kotlin list result copies out as a Scala List of Text"):
-        val parts: List[Text] = regex.split(t"a1b2").scala
+        val parts: List[Text] = regex.split("a1b2").scala
         parts
       . assert(_ == List(t"a", t"b", t""))
 
       test(m"a named argument selects its declared parameter"):
-        regex.find(input = t"a5b").let(_.value)
-      . assert(_ == t"5")
+        regex.find(input = "a5b").let(_.value)
+      . assert(_ == "5")
 
       test(m"named arguments reorder to their declared positions"):
-        regex.find(startIndex = 2, input = t"1a2b").let(_.value)
-      . assert(_ == t"2")
+        regex.find(startIndex = 2, input = "1a2b").let(_.value)
+      . assert(_ == "2")
 
       test(m"an unknown parameter name lists the declared ones"):
         demilitarize:
-          regex.find(inpit = t"a5b")
+          regex.find(inpit = "a5b")
         . map(_.message)
       . assert(_.exists(_.contains("input")))
 
@@ -265,12 +265,12 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_ == 2)
 
       test(m"surplus arguments collect into a vararg tail"):
-        make[java.util.Formatter]().format(t"[%s:%s]", t"x", t"y").k.toString.tt
-      . assert(_ == t"[x:y]")
+        make[java.util.Formatter]().format("[%s:%s]", "x", "y").k.toString.tt
+      . assert(_ == "[x:y]")
 
       test(m"a value-class member is rejected with a clear diagnostic"):
         demilitarize:
-          companion[kotlin.time.Duration].parse(t"1s")
+          companion[kotlin.time.Duration].parse("1s")
         . map(_.message)
       . assert(_.exists(_.contains("value class")))
 
@@ -292,7 +292,7 @@ object Tests extends Suite(m"Xenophile tests"):
         val list = make[java.util.ArrayList[Text]](List(t"ccc", t"a", t"bb"))
         val _ = list.sort((left, right) => left.length - right.length)   // no ascriptions
         list.get(0).k.toString.tt
-      . assert(_ == t"a")
+      . assert(_ == "a")
 
       test(m"an UNTYPED lambda infers on a facade RETURNED from a method"):
         val list = make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc", t"d"))
@@ -314,23 +314,23 @@ object Tests extends Suite(m"Xenophile tests"):
         val list = make[java.util.ArrayList[Text]](List())
         val _ = list.add(42)
         list.get(0).k.toString.tt
-      . assert(_ == t"42")
+      . assert(_ == "42")
 
       test(m"a Java bean getter reads as a short property name"):
-        val entry: Text = make[java.util.zip.ZipEntry](t"file.txt").name   // getName() -> .name
+        val entry: Text = make[java.util.zip.ZipEntry]("file.txt").name   // getName() -> .name
         entry
-      . assert(_ == t"file.txt")
+      . assert(_ == "file.txt")
 
       test(m"a Java bean setter writes via assignment"):
-        val entry = make[java.util.zip.ZipEntry](t"e")
-        entry.comment = t"hello"            // setComment(String) via `.comment = …`
+        val entry = make[java.util.zip.ZipEntry]("e")
+        entry.comment = "hello"            // setComment(String) via `.comment = …`
         val comment: Text = entry.comment   // getComment() -> .comment
         comment
-      . assert(_ == t"hello")
+      . assert(_ == "hello")
 
       test(m"a Scala array bridges to a Java array parameter (element conversion)"):
         // The `E[]` constructor wants `CharSequence[]`; a Scala `Array[Text]` bridges to it.
-        val strings: scala.Array[Text] = scala.Array(t"a", t"bb")
+        val strings: scala.Array[Text] = scala.Array("a", "bb")
         val list = make[java.util.concurrent.CopyOnWriteArrayList[CharSequence]](strings)
         list.size()
       . assert(_ == 2)
@@ -368,21 +368,21 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"a member access has the precise refined static type"):
         val bar: Foreign of "Bar" from Typescript = foo.bar
         bar.expr
-      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Foo"), t"bar", t"Foo"))
+      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference("Foo"), "bar", "Foo"))
 
       test(m"navigate a cyclic foreign type graph"):
         val cyclic: Foreign of "Foo" from Typescript = foo.bar.qux
         cyclic.expr
       . assert: expr =>
-          val inner = Foreign.Expression.Select(Foreign.Expression.Reference(t"Foo"), t"bar", t"Foo")
-          expr == Foreign.Expression.Select(inner, t"qux", t"Bar")
+          val inner = Foreign.Expression.Select(Foreign.Expression.Reference("Foo"), "bar", "Foo")
+          expr == Foreign.Expression.Select(inner, "qux", "Bar")
 
     suite(m"Function application"):
       test(m"applyDynamic builds an `Apply` node typed by the method's result"):
-        val greeting: Foreign of "string" from Typescript = foo.greet(t"hello")
+        val greeting: Foreign of "string" from Typescript = foo.greet("hello")
         greeting.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args) if args.length == 1 => m == t"greet"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args) if args.length == 1 => m == "greet"
           case _                                                                      => false
 
       test(m"a Foreign argument of the declared parameter type is accepted"):
@@ -391,20 +391,20 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert:
           case Foreign.Expression.Apply(_, args__) if args__.length == 1 =>
             args__.head match
-              case Foreign.Expression.Select(_, b, _) => b == t"bar"
+              case Foreign.Expression.Select(_, b, _) => b == "bar"
               case _                                  => false
           case _                                                                      => false
 
     suite(m"Conversion of Scala values to Foreign"):
       test(m"a Scala value converts into a `Foreign` literal"):
-        val text: Foreign of "string" from Typescript = t"hello"
+        val text: Foreign of "string" from Typescript = "hello"
         text.expr
       . assert:
           case Foreign.Expression.Literal(_) => true
           case _                             => false
 
       test(m"a Scala argument is converted to a `Foreign` literal upon application"):
-        foo.greet(t"hi").expr
+        foo.greet("hi").expr
       . assert:
           case Foreign.Expression.Apply(_, args__) if args__.length == 1 =>
             args__.head match
@@ -413,7 +413,7 @@ object Tests extends Suite(m"Xenophile tests"):
           case _                                                                 => false
 
       test(m"an Optional value converts to a `Foreign` literal (optional instance)"):
-        val opt: Foreign of ("string" | "undefined") from Typescript = t"hi": Optional[Text]
+        val opt: Foreign of ("string" | "undefined") from Typescript = "hi": Optional[Text]
         opt.expr
       . assert:
           case Foreign.Expression.Literal(_) => true
@@ -423,7 +423,7 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"an array field is read as `Array<T>`"):
         val tags: Foreign of ("Array" over "string") from Typescript = foo.tags
         tags.expr
-      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Foo"), t"tags", t"Foo"))
+      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference("Foo"), "tags", "Foo"))
 
       test(m"indexing an array value yields the element's foreign type"):
         val tags: Foreign of ("Array" over "string") from Typescript = foo.tags
@@ -437,21 +437,21 @@ object Tests extends Suite(m"Xenophile tests"):
         val nickname: Foreign of ("string" | "undefined") from Typescript = foo.nickname
         nickname.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"nickname"
+          case Foreign.Expression.Select(_, m, _) => m == "nickname"
           case _                                   => false
 
       test(m"a union field has a bare-union foreign type"):
         val id: Foreign of ("string" | "number") from Typescript = foo.id
         id.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"id"
+          case Foreign.Expression.Select(_, m, _) => m == "id"
           case _                                   => false
 
       test(m"a generic field has an `over` foreign type"):
         val lookup: Foreign of ("Map" over ("number", "string")) from Typescript = foo.lookup
         lookup.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"lookup"
+          case Foreign.Expression.Select(_, m, _) => m == "lookup"
           case _                                   => false
 
     suite(m"Compile-time safety"):
@@ -460,7 +460,7 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_ == List(t"xenophile: the foreign type Foo has no member nonexistent"))
 
       test(m"calling a method with the wrong arity is a compile error"):
-        demilitarize(foo.greet(t"a", t"b")).map(_.message)
+        demilitarize(foo.greet("a", "b")).map(_.message)
       . assert(_ == List(t"xenophile: greet expects 1 arguments, not 2"))
 
       test(m"passing an argument of the wrong foreign type is a compile error"):
@@ -472,9 +472,9 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"FFM: call libc strlen through a parsed C header"):
         val arena = java.lang.foreign.Arena.global().nn
-        val libc = ForeignLibrary.system(t"long strlen(const char* s);")
+        val libc = ForeignLibrary.system("long strlen(const char* s);")
         val text = arena.allocateFrom("hello, world").nn
-        libc.handle(t"strlen").invokeWithArguments(text).nn.asInstanceOf[Long]
+        libc.handle("strlen").invokeWithArguments(text).nn.asInstanceOf[Long]
       . assert(_ == 12L)
 
       // The bare `invoke`, on a module that also depends on the Wasm, JS, Kotlin and Scala Native
@@ -488,43 +488,43 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"a C struct field has the field's foreign type"):
         val point: Foreign of "Point" from Native = Foreign["Point", Native]
         point.x.expr
-      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Point"), t"x", t"Point"))
+      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference("Point"), "x", "Point"))
 
       test(m"applying a C function builds an `Apply` node typed by its result"):
         val absolute: Foreign of "int" from Native = library.abs(5)
         absolute.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == t"abs"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == "abs"
           case _                                                                      => false
 
       test(m"a function returning `const char*` has the C-string foreign type"):
         val version: Foreign of "string" from Native = library.version()
         version.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == t"version"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == "version"
           case _                                                                  => false
 
       test(m"a `union` field has the field's foreign type"):
         val number: Foreign of "Number" from Native = Foreign["Number", Native]
         number.f.expr
-      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Number"), t"f", t"Number"))
+      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference("Number"), "f", "Number"))
 
       test(m"a `typedef` alias resolves to its underlying foreign type"):
         val counter: Foreign of "int" from Native = library.increment(1)
         counter.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == t"increment"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == "increment"
           case _                                                                      => false
 
       test(m"a fixed-width `int32_t` is canonicalised to `int`"):
         val value: Foreign of "int" from Native = library.identity(42)
         value.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == t"identity"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == "identity"
           case _                                                                      => false
 
       test(m"passing a C argument of the wrong foreign type is a compile error"):
-        demilitarize(library.abs(t"five")).map(_.message)
+        demilitarize(library.abs("five")).map(_.message)
       . assert(_ == List(t"xenophile: abs expects an argument of foreign type int"))
 
     suite(m"Wit (WebAssembly Interface Types)"):
@@ -533,57 +533,57 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"a WIT record field keeps its faithful (Hypotenuse-backed) type"):
         val point: Foreign of "point" from Wit = Foreign["point", Wit]
         point.x.expr
-      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"point"), t"x", t"point"))
+      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference("point"), "x", "point"))
 
       // `greet` is declared after a `resource { … }` in the interface, so this also checks that the
       // resource's braces are skipped and the functions following it are still parsed.
       test(m"a function declared after a `resource` is typed by its result"):
-        val greeting: Foreign of "string" from Wit = api.greet(t"hi")
+        val greeting: Foreign of "string" from Wit = api.greet("hi")
         greeting.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == t"greet"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == "greet"
           case _                                                                      => false
 
       test(m"an `enum` is the unsigned discriminant sized to its cases"):
         val shade: Foreign of "u8" from Wit = api.shade()
         shade.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == t"shade"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == "shade"
           case _                                                                  => false
 
       test(m"a `flags` type is a Hypotenuse bit-vector sized to its members"):
         val caps: Foreign of "b8" from Wit = api.caps()
         caps.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == t"caps"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == "caps"
           case _                                                                  => false
 
       test(m"a WIT `list<T>` result has an `over` foreign type"):
         val tags: Foreign of ("list" over "string") from Wit = api.tags()
         tags.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == t"tags"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == "tags"
           case _                                                                  => false
 
       test(m"a WIT `option<T>` result is a union with `none`"):
-        val found: Foreign of ("string" | "none") from Wit = api.lookup(t"k")
+        val found: Foreign of ("string" | "none") from Wit = api.lookup("k")
         found.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == t"lookup"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == "lookup"
           case _                                                                      => false
 
       test(m"passing a WIT argument of the wrong foreign type is a compile error"):
-        demilitarize(api.add(t"two", t"three")).map(_.message)
+        demilitarize(api.add("two", "three")).map(_.message)
       . assert(_ == List(t"xenophile: add expects an argument of foreign type s32"))
 
       test(m"an interface function is qualified with its package's module id"):
-        val wit = t"package wasi:random@0.2.0; interface random { get-random-u64: func() -> u64; }"
-        WitDialect.parse(wit).stdlib(t"random").stdlib(t"get-random-u64").module.or(t"")
-      . assert(_ == t"wasi:random/random@0.2.0")
+        val wit = "package wasi:random@0.2.0; interface random { get-random-u64: func() -> u64; }"
+        WitDialect.parse(wit).stdlib("random").stdlib("get-random-u64").module.or(t"")
+      . assert(_ == "wasi:random/random@0.2.0")
 
     suite(m"Wit worlds"):
       val source =
-        t"""package test:demo@1.0.0;
+        """package test:demo@1.0.0;
             world service {
               import wasi:io/streams@0.2.0;
               import wasi:clocks/monotonic-clock@0.2.0;
@@ -591,35 +591,35 @@ object Tests extends Suite(m"Xenophile tests"):
             }"""
 
       test(m"a world's imports are read in order, as Component Model ids"):
-        WitDialect.worlds(source).stdlib(t"service").imports
+        WitDialect.worlds(source).stdlib("service").imports
       . assert(_ == List(t"wasi:io/streams@0.2.0", t"wasi:clocks/monotonic-clock@0.2.0"))
 
       test(m"a world's exports are read separately from its imports"):
-        WitDialect.worlds(source).stdlib(t"service").exports
+        WitDialect.worlds(source).stdlib("service").exports
       . assert(_ == List(t"wasi:http/incoming-handler@0.2.0"))
 
       test(m"a bare interface name is qualified with the package id"):
-        val wit = t"package test:demo@1.0.0; world w { import helper; }"
-        WitDialect.worlds(wit).stdlib(t"w").imports
+        val wit = "package test:demo@1.0.0; world w { import helper; }"
+        WitDialect.worlds(wit).stdlib("w").imports
       . assert(_ == List(t"test:demo/helper@1.0.0"))
 
       test(m"an inline function import references no interface"):
-        val wit = t"package test:demo@1.0.0; world w { import log: func(message: string); }"
-        WitDialect.worlds(wit).stdlib(t"w").imports
+        val wit = "package test:demo@1.0.0; world w { import log: func(message: string); }"
+        WitDialect.worlds(wit).stdlib("w").imports
       . assert(_ == List())
 
       test(m"an inline interface export references no interface"):
-        val wit = t"package test:demo@1.0.0; world w { export handler: interface { go: func(); } }"
-        WitDialect.worlds(wit).stdlib(t"w").exports
+        val wit = "package test:demo@1.0.0; world w { export handler: interface { go: func(); } }"
+        WitDialect.worlds(wit).stdlib("w").exports
       . assert(_ == List())
 
       test(m"a world does not capture items from an interface beside it"):
-        val wit = t"package test:demo@1.0.0; interface i { go: func(); } world w { import wasi:io/streams@0.2.0; }"
-        WitDialect.worlds(wit).stdlib(t"w").imports
+        val wit = "package test:demo@1.0.0; interface i { go: func(); } world w { import wasi:io/streams@0.2.0; }"
+        WitDialect.worlds(wit).stdlib("w").imports
       . assert(_ == List(t"wasi:io/streams@0.2.0"))
 
       test(m"every world in a source is read"):
-        val wit = t"package test:demo@1.0.0; world a { export x:y/z@1.0.0; } world b { import p:q/r@1.0.0; }"
+        val wit = "package test:demo@1.0.0; world a { export x:y/z@1.0.0; } world b { import p:q/r@1.0.0; }"
         WitDialect.worlds(wit).stdlib.keySet.to(proscenium.List).sort
       . assert(_ == List(t"a", t"b"))
 
@@ -630,69 +630,69 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"an attribute is read as a field of its declared foreign type"):
         val name: Foreign of "string" from WebIdl = shape.name
         name.expr
-      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Shape"), t"name", t"Shape"))
+      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference("Shape"), "name", "Shape"))
 
       test(m"`octet` canonicalises to the Hypotenuse-backed `u8`"):
         val sides: Foreign of "u8" from WebIdl = shape.sides
         sides.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"sides"
+          case Foreign.Expression.Select(_, m, _) => m == "sides"
           case _                                   => false
 
       test(m"`unsigned long` canonicalises to `u32`"):
         val area: Foreign of "u32" from WebIdl = shape.area
         area.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"area"
+          case Foreign.Expression.Select(_, m, _) => m == "area"
           case _                                   => false
 
       test(m"a `sequence<T>` operation has an `over` foreign type"):
         val labels: Foreign of ("sequence" over "string") from WebIdl = shape.labels()
         labels.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == t"labels"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), Nil) => m == "labels"
           case _                                                                  => false
 
       test(m"a nullable `T?` result is a union with `null`"):
-        val described: Foreign of ("string" | "null") from WebIdl = shape.describe(t"the ")
+        val described: Foreign of ("string" | "null") from WebIdl = shape.describe("the ")
         described.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == t"describe"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == "describe"
           case _                                                                      => false
 
       test(m"an `enum` reference resolves to `string`"):
         val style: Foreign of "string" from WebIdl = shape.style
         style.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"style"
+          case Foreign.Expression.Select(_, m, _) => m == "style"
           case _                                   => false
 
       test(m"a `typedef` to a union resolves transitively"):
         val id: Foreign of ("string" | "s32") from WebIdl = shape.id
         id.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"id"
+          case Foreign.Expression.Select(_, m, _) => m == "id"
           case _                                   => false
 
       test(m"a `partial interface` member is merged into the interface"):
         val order: Foreign of "s32" from WebIdl = shape.order
         order.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"order"
+          case Foreign.Expression.Select(_, m, _) => m == "order"
           case _                                   => false
 
       test(m"an inherited attribute resolves on the derived interface"):
         val area: Foreign of "u32" from WebIdl = circle.area
         area.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"area"
+          case Foreign.Expression.Select(_, m, _) => m == "area"
           case _                                   => false
 
       test(m"a mixin member applied with `includes` resolves"):
         val visible: Foreign of "boolean" from WebIdl = circle.visible
         visible.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"visible"
+          case Foreign.Expression.Select(_, m, _) => m == "visible"
           case _                                   => false
 
       test(m"a `dictionary` field is read as a field of its foreign type"):
@@ -700,11 +700,11 @@ object Tests extends Suite(m"Xenophile tests"):
         val color: Foreign of "string" from WebIdl = options.color
         color.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"color"
+          case Foreign.Expression.Select(_, m, _) => m == "color"
           case _                                   => false
 
       test(m"passing a WebIDL argument of the wrong foreign type is a compile error"):
-        demilitarize(shape.scale(t"large")).map(_.message)
+        demilitarize(shape.scale("large")).map(_.message)
       . assert(_ == List(t"xenophile: scale expects an argument of foreign type f64"))
 
     suite(m"WebIDL (real DOM from webref)"):
@@ -714,27 +714,27 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"a DOM attribute is read as a field of its foreign type"):
         val nodeName: Foreign of "string" from WebIdlDom = node.nodeName
         nodeName.expr
-      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference(t"Node"), t"nodeName", t"Node"))
+      . assert(_ == Foreign.Expression.Select(Foreign.Expression.Reference("Node"), "nodeName", "Node"))
 
       test(m"`unsigned short` canonicalises to `u16`"):
         val nodeType: Foreign of "u16" from WebIdlDom = node.nodeType
         nodeType.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"nodeType"
+          case Foreign.Expression.Select(_, m, _) => m == "nodeType"
           case _                                   => false
 
       test(m"an inherited attribute resolves up the chain (HTMLElement → Element)"):
         val tagName: Foreign of "string" from WebIdlDom = element.tagName
         tagName.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"tagName"
+          case Foreign.Expression.Select(_, m, _) => m == "tagName"
           case _                                   => false
 
       test(m"a member inherited from the root (HTMLElement → … → Node) resolves"):
         val nodeName: Foreign of "string" from WebIdlDom = element.nodeName
         nodeName.expr
       . assert:
-          case Foreign.Expression.Select(_, m, _) => m == t"nodeName"
+          case Foreign.Expression.Select(_, m, _) => m == "nodeName"
           case _                                   => false
 
       test(m"an operation inherited from EventTarget resolves on HTMLElement"):
@@ -744,7 +744,7 @@ object Tests extends Suite(m"Xenophile tests"):
         dispatched.expr
       . assert:
           case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 =>
-            m == t"dispatchEvent"
+            m == "dispatchEvent"
 
           case _ =>
             false
@@ -754,7 +754,7 @@ object Tests extends Suite(m"Xenophile tests"):
         appended.expr
       . assert:
           case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 =>
-            m == t"appendChild"
+            m == "appendChild"
 
           case _ =>
             false
@@ -776,7 +776,7 @@ object Tests extends Suite(m"Xenophile tests"):
       def completionsAt(source: Text): List[prophesy.Completion] =
         Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items)
 
-      val header = t"import xenophile.*\nimport xenophile.tsInterface\n"
+      val header = "import xenophile.*\nimport xenophile.tsInterface\n"
 
       test(m"a partial member on a Foreign receiver completes from the definitions"):
         completionsAt(t"${header}val foo = Foreign[\"Foo\", Typescript]\nval x = foo.ba").map(_.name)
@@ -814,107 +814,107 @@ object Tests extends Suite(m"Xenophile tests"):
     // replaced; each test names the shape rather than the mechanism.
 
     test(m"a generic interface is read, not dropped"):
-      names(t"interface Box<T> { value: T; }")
-    . assert(_ == scala.List(t"Box"))
+      names("interface Box<T> { value: T; }")
+    . assert(_ == scala.List("Box"))
 
     test(m"an interface's extends clause is recorded"):
-      declarations(t"interface A { x: number; }\ninterface B extends A { y: number; }").stdlib
+      declarations("interface A { x: number; }\ninterface B extends A { y: number; }").stdlib
       . collect { case interface: Typescript.Declaration.Interface => interface }
       . flatMap(_.extending.stdlib.map(_.text))
-    . assert(_ == scala.List(t"A"))
+    . assert(_ == scala.List("A"))
 
     test(m"a type alias is a declaration"):
-      names(t"type Id = string | number;")
-    . assert(_ == scala.List(t"Id"))
+      names("type Id = string | number;")
+    . assert(_ == scala.List("Id"))
 
     test(m"a class, an enum, a function and a const are declarations"):
-      names(t"""|declare class C { m(): void; }
+      names("""|declare class C { m(): void; }
                 |declare enum E { A, B }
                 |declare function f(x: number): string;
                 |declare const k: number;
                 |""".s.stripMargin.tt)
-    . assert(_ == scala.List(t"C", t"E", t"f", t"k"))
+    . assert(_ == scala.List("C", "E", "f", "k"))
 
     test(m"a namespace qualifies the declarations it encloses"):
-      names(t"declare namespace a { namespace b { interface X { y: number; } } }")
-    . assert(_ == scala.List(t"a.b.X"))
+      names("declare namespace a { namespace b { interface X { y: number; } } }")
+    . assert(_ == scala.List("a.b.X"))
 
     test(m"only exported declarations are exported in a module"):
-      declarations(t"export interface A { x: number; }\ninterface B { y: number; }").stdlib
+      declarations("export interface A { x: number; }\ninterface B { y: number; }").stdlib
       . map { declaration => (declaration.key, declaration.exported) }
-    . assert(_ == scala.List((t"A", true), (t"B", false)))
+    . assert(_ == scala.List(("A", true), ("B", false)))
 
     test(m"every top-level declaration is exported in a global script"):
-      declarations(t"interface A { x: number; }").stdlib.map(_.exported)
+      declarations("interface A { x: number; }").stdlib.map(_.exported)
     . assert(_ == scala.List(true))
 
     test(m"a comment does not start a declaration"):
-      names(t"// interface Ghost { x: number; }\ninterface Real { x: number; }")
-    . assert(_ == scala.List(t"Real"))
+      names("// interface Ghost { x: number; }\ninterface Real { x: number; }")
+    . assert(_ == scala.List("Real"))
 
     test(m"a block comment is skipped entirely"):
-      names(t"/* interface Ghost {\n x: number; } */\ninterface Real { x: number; }")
-    . assert(_ == scala.List(t"Real"))
+      names("/* interface Ghost {\n x: number; } */\ninterface Real { x: number; }")
+    . assert(_ == scala.List("Real"))
 
     test(m"an index signature is a member of its own kind"):
-      members(t"interface A { [key: string]: number; }")
-    . assert(_ == scala.List(t"[]"))
+      members("interface A { [key: string]: number; }")
+    . assert(_ == scala.List("[]"))
 
     test(m"a call signature and a construct signature are distinct members"):
-      members(t"interface A { (x: number): string; new (y: string): A; }")
-    . assert(_ == scala.List(t"()", t"new()"))
+      members("interface A { (x: number): string; new (y: string): A; }")
+    . assert(_ == scala.List("()", "new()"))
 
     test(m"a getter and a setter do not collide with a property"):
-      members(t"interface A { get x(): number; set x(value: number); }")
-    . assert(_ == scala.List(t"get x", t"set x"))
+      members("interface A { get x(): number; set x(value: number); }")
+    . assert(_ == scala.List("get x", "set x"))
 
     test(m"overloads accumulate under one member rather than overwriting"):
-      declarations(t"interface A { f(x: number): string; f(x: string): number; }").stdlib
+      declarations("interface A { f(x: number): string; f(x: string): number; }").stdlib
       . flatMap(_.declaredMembers.stdlib).map(_.signatures.stdlib.length)
     . assert(_ == scala.List(2))
 
     test(m"an inline object type does not terminate the enclosing interface"):
-      members(t"interface A { config: { host: string; port: number }; after: number; }")
-    . assert(_ == scala.List(t"config", t"after"))
+      members("interface A { config: { host: string; port: number }; after: number; }")
+    . assert(_ == scala.List("config", "after"))
 
     test(m"a function type is read as a function, not as a stray parenthesis"):
-      declarations(t"interface A { handler: (event: string) => void; }").stdlib
+      declarations("interface A { handler: (event: string) => void; }").stdlib
       . flatMap(_.declaredMembers.stdlib).flatMap(_.signatures.stdlib).map(_.text)
-    . assert(_ == scala.List(t"(event: string) => void"))
+    . assert(_ == scala.List("(event: string) => void"))
 
     test(m"an intersection is not truncated to its first member"):
-      declarations(t"type T = A & B;").stdlib
+      declarations("type T = A & B;").stdlib
       . collect { case alias: Typescript.Declaration.Alias => alias.target.text }
-    . assert(_ == scala.List(t"A & B"))
+    . assert(_ == scala.List("A & B"))
 
     test(m"a tuple type is read"):
-      declarations(t"type T = [string, number];").stdlib
+      declarations("type T = [string, number];").stdlib
       . collect { case alias: Typescript.Declaration.Alias => alias.target.text }
-    . assert(_ == scala.List(t"[string, number]"))
+    . assert(_ == scala.List("[string, number]"))
 
     test(m"a string literal type keeps its value and is not confused with a name"):
-      declarations(t"""type T = "a" | "b";""").stdlib
+      declarations("""type T = "a" | "b";""").stdlib
       . collect { case alias: Typescript.Declaration.Alias => alias.target.text }
-    . assert(_ == scala.List(t"a | b"))
+    . assert(_ == scala.List("a | b"))
 
     test(m"a negative numeric literal type keeps its sign"):
-      declarations(t"type T = -1;").stdlib
+      declarations("type T = -1;").stdlib
       . collect { case alias: Typescript.Declaration.Alias => alias.target.text }
-    . assert(_ == scala.List(t"-1"))
+    . assert(_ == scala.List("-1"))
 
     test(m"a nested array type is read to the right depth"):
-      declarations(t"type T = string[][];").stdlib
+      declarations("type T = string[][];").stdlib
       . collect { case alias: Typescript.Declaration.Alias => alias.target.text }
-    . assert(_ == scala.List(t"string[][]"))
+    . assert(_ == scala.List("string[][]"))
 
     test(m"a type predicate is read"):
-      declarations(t"declare function isFoo(x: unknown): x is Foo;").stdlib
+      declarations("declare function isFoo(x: unknown): x is Foo;").stdlib
       . collect { case function: Typescript.Declaration.Function => function }
       . flatMap(_.signatures.stdlib).map(_.text)
-    . assert(_ == scala.List(t"(x: unknown) => x is Foo"))
+    . assert(_ == scala.List("(x: unknown) => x is Foo"))
 
     test(m"a rest parameter is marked as such"):
-      declarations(t"declare function f(...args: string[]): void;").stdlib
+      declarations("declare function f(...args: string[]): void;").stdlib
       . collect { case function: Typescript.Declaration.Function => function }
       . flatMap(_.signatures.stdlib)
       . collect { case Typescript.Type.Function(parameters, _, _, _) => parameters.stdlib.map(_.rest) }
@@ -929,47 +929,47 @@ object Tests extends Suite(m"Xenophile tests"):
       capture[Typescript.Error](Typescript.Parser.parse(source)).reason
 
     test(m"a conditional type is refused"):
-      refuses(t"type T<A> = A extends string ? number : boolean;")
-    . assert(_ == Typescript.Error.Reason.Unsupported(t"a conditional type"))
+      refuses("type T<A> = A extends string ? number : boolean;")
+    . assert(_ == Typescript.Error.Reason.Unsupported("a conditional type"))
 
     test(m"a template literal type is refused"):
       refuses(t"type T = `a${'$'}{B}c`;")
-    . assert(_ == Typescript.Error.Reason.Unsupported(t"a template literal type"))
+    . assert(_ == Typescript.Error.Reason.Unsupported("a template literal type"))
 
     test(m"an infer binder is refused"):
-      refuses(t"type T<A> = Array<infer B>;")
-    . assert(_ == Typescript.Error.Reason.Unsupported(t"an `infer` binder"))
+      refuses("type T<A> = Array<infer B>;")
+    . assert(_ == Typescript.Error.Reason.Unsupported("an `infer` binder"))
 
     test(m"a mapped type is refused under its own name"):
-      refuses(t"interface A { [K in B]: number; }")
-    . assert(_ == Typescript.Error.Reason.Unsupported(t"a mapped type"))
+      refuses("interface A { [K in B]: number; }")
+    . assert(_ == Typescript.Error.Reason.Unsupported("a mapped type"))
 
     test(m"an unterminated string literal is a syntax error"):
-      refuses(t"""type T = "unterminated;""").let:
+      refuses("""type T = "unterminated;""").let:
         case Typescript.Error.Reason.Syntax(_, _) => true
         case _                                   => false
     . assert(_ == true)
 
     test(m"a duplicated class declaration is refused"):
-      refuses(t"declare class A {}\ndeclare class A {}")
-    . assert(_ == Typescript.Error.Reason.Duplicate(t"A"))
+      refuses("declare class A {}\ndeclare class A {}")
+    . assert(_ == Typescript.Error.Reason.Duplicate("A"))
 
     test(m"interfaces merge, so a repeated interface name is accepted"):
-      names(t"interface A { x: number; }\ninterface A { y: number; }")
-    . assert(_ == scala.List(t"A", t"A"))
+      names("interface A { x: number; }\ninterface A { y: number; }")
+    . assert(_ == scala.List("A", "A"))
 
     // The dialect projection, which the foreign-function macro reads.
 
     test(m"the dialect resolves a member inherited through extends"):
-      TypescriptDialect.parse(t"interface A { x: number; }\ninterface B extends A { y: number; }")
-      . at(t"B").lay(scala.Nil) { members => members.stdlib.keys.toList }
+      TypescriptDialect.parse("interface A { x: number; }\ninterface B extends A { y: number; }")
+      . at("B").lay(scala.Nil) { members => members.stdlib.keys.toList }
       . sortBy(_.s)
-    . assert(_ == scala.List(t"x", t"y"))
+    . assert(_ == scala.List("x", "y"))
 
     test(m"the dialect reads a generic interface the old grammar dropped"):
-      TypescriptDialect.parse(t"interface Box<T> { value: T; }")
-      . at(t"Box").lay(scala.Nil) { members => members.stdlib.keys.toList }
-    . assert(_ == scala.List(t"value"))
+      TypescriptDialect.parse("interface Box<T> { value: T; }")
+      . at("Box").lay(scala.Nil) { members => members.stdlib.keys.toList }
+    . assert(_ == scala.List("value"))
 
   def dtsDisciplineTests(): Unit =
     import reliquary.*
@@ -980,7 +980,7 @@ object Tests extends Suite(m"Xenophile tests"):
       List((TreePath(t"types/index.d.ts"), Array.unsafeFrozen(source.s.getBytes("UTF-8").nn)))
 
     def atomize(source: Text): Atomization =
-      DtsDiscipline.atomize(content(source), Discipline.Context(t"jvm"))
+      DtsDiscipline.atomize(content(source), Discipline.Context("jvm"))
 
     def keys(source: Text): scala.List[Text] =
       atomize(source).atoms.stdlib.map(_.key).sortBy(_.s)
@@ -989,7 +989,7 @@ object Tests extends Suite(m"Xenophile tests"):
       Grade.between(List(atomize(before)), List(atomize(after)))
 
     val baseline: Text =
-      t"""|export interface Client {
+      """|export interface Client {
           |  send(message: string): void;
           |  readonly id: string;
           |}
@@ -1000,23 +1000,23 @@ object Tests extends Suite(m"Xenophile tests"):
     test(m"the discipline claims declaration files and nothing else"):
       val data = Array.freeze(Array.allocate[Byte](0))
 
-      (DtsDiscipline.claims(TreePath(t"types/index.d.ts"), data),
-       DtsDiscipline.claims(TreePath(t"lib/index.js"), data),
-       DtsDiscipline.claims(TreePath(t"readme.md"), data))
+      (DtsDiscipline.claims(TreePath("types/index.d.ts"), data),
+       DtsDiscipline.claims(TreePath("lib/index.js"), data),
+       DtsDiscipline.claims(TreePath("readme.md"), data))
     . assert(_ == (true, false, false))
 
     test(m"the discipline certifies recompilation and not linkage"):
-      (DtsDiscipline.id, DtsDiscipline.guarantees(t"jvm"), DtsDiscipline.keying)
-    . assert(_ == (t"dts/1", Set(Discipline.Guarantee.Recompilation),
+      (DtsDiscipline.id, DtsDiscipline.guarantees("jvm"), DtsDiscipline.keying)
+    . assert(_ == ("dts/1", Set(Discipline.Guarantee.Recompilation),
         Discipline.Keying.Declaration))
 
     test(m"each exported declaration and each member yields an atom"):
       keys(baseline)
-    . assert(_ == scala.List(t"Client", t"Client#id", t"Client#send", t"Handle", t"connect"))
+    . assert(_ == scala.List("Client", "Client#id", "Client#send", "Handle", "connect"))
 
     test(m"an unexported declaration is not part of the contract"):
-      keys(t"export interface A { x: number; }\ninterface Hidden { y: number; }")
-    . assert(_ == scala.List(t"A", t"A#x"))
+      keys("export interface A { x: number; }\ninterface Hidden { y: number; }")
+    . assert(_ == scala.List("A", "A#x"))
 
     test(m"atomization is deterministic"):
       def once(): scala.List[(Text, Text)] =
@@ -1028,15 +1028,15 @@ object Tests extends Suite(m"Xenophile tests"):
     . assert(identity)
 
     test(m"renaming a type parameter changes nothing"):
-      grade(t"export interface Box<T> { value: T; }", t"export interface Box<U> { value: U; }")
+      grade("export interface Box<T> { value: T; }", "export interface Box<U> { value: U; }")
     . assert(_ == Grade.Patch)
 
     test(m"reordering the members of a union changes nothing"):
-      grade(t"export type T = A | B;", t"export type T = B | A;")
+      grade("export type T = A | B;", "export type T = B | A;")
     . assert(_ == Grade.Patch)
 
     test(m"reordering the elements of a tuple is a major change"):
-      grade(t"export type T = [A, B];", t"export type T = [B, A];")
+      grade("export type T = [A, B];", "export type T = [B, A];")
     . assert(_ == Grade.Major)
 
     // The one change that is honestly two events: adding a member is pure extension for a
@@ -1044,41 +1044,41 @@ object Tests extends Suite(m"Xenophile tests"):
     // atom records the first; the fold of member keys into the interface's atom records the
     // second, and the second is what the grade reports.
     test(m"adding an interface member is a major change for implementors"):
-      grade(t"export interface A { x: number; }", t"export interface A { x: number; y: number; }")
+      grade("export interface A { x: number; }", "export interface A { x: number; y: number; }")
     . assert(_ == Grade.Major)
 
     test(m"the added member is nonetheless an atom of its own"):
-      keys(t"export interface A { x: number; y: number; }")
-    . assert(_ == scala.List(t"A", t"A#x", t"A#y"))
+      keys("export interface A { x: number; y: number; }")
+    . assert(_ == scala.List("A", "A#x", "A#y"))
 
     test(m"adding a whole interface is a minor change"):
-      grade(t"export interface A { x: number; }",
-          t"export interface A { x: number; }\nexport interface B { y: number; }")
+      grade("export interface A { x: number; }",
+          "export interface A { x: number; }\nexport interface B { y: number; }")
     . assert(_ == Grade.Minor)
 
     test(m"removing a member is a major change"):
-      grade(t"export interface A { x: number; y: number; }", t"export interface A { x: number; }")
+      grade("export interface A { x: number; y: number; }", "export interface A { x: number; }")
     . assert(_ == Grade.Major)
 
     test(m"making a member optional is a major change"):
-      grade(t"export interface A { x: number; }", t"export interface A { x?: number; }")
+      grade("export interface A { x: number; }", "export interface A { x?: number; }")
     . assert(_ == Grade.Major)
 
     test(m"adding an overload is a major change"):
-      grade(t"export interface A { f(x: number): void; }",
-          t"export interface A { f(x: number): void; f(x: string): void; }")
+      grade("export interface A { f(x: number): void; }",
+          "export interface A { f(x: number): void; f(x: string): void; }")
     . assert(_ == Grade.Major)
 
     test(m"changing a declaration's namespace changes its key"):
-      keys(t"export declare namespace a { interface X { y: number; } }")
-    . assert(_ == scala.List(t"a.X", t"a.X#y"))
+      keys("export declare namespace a { interface X { y: number; } }")
+    . assert(_ == scala.List("a.X", "a.X#y"))
 
     test(m"an unreadable declaration file is an atomization error"):
       import errorDiagnostics.stackTracesDiagnostics
 
       capture[Discipline.Error]:
-        DtsDiscipline.atomize(content(t"export type T<A> = A extends string ? 1 : 2;"),
-            Discipline.Context(t"jvm"))
+        DtsDiscipline.atomize(content("export type T<A> = A extends string ? 1 : 2;"),
+            Discipline.Context("jvm"))
 
       . reason
     . assert:
@@ -1089,8 +1089,8 @@ object Tests extends Suite(m"Xenophile tests"):
       val registry = Discipline.Registry(List(DtsDiscipline))
       val js = List((TreePath(t"lib/index.js"), Array.freeze(Array.allocate[Byte](1))))
 
-      registry.atomize(js, Discipline.Context(t"jvm")).stdlib.map(_.discipline)
-    . assert(_ == scala.List(t"opaque/1"))
+      registry.atomize(js, Discipline.Context("jvm")).stdlib.map(_.discipline)
+    . assert(_ == scala.List("opaque/1"))
 
   def webIdlDisciplineTests(): Unit =
     import reliquary.*
@@ -1100,7 +1100,7 @@ object Tests extends Suite(m"Xenophile tests"):
       List((TreePath(t"idl/browser.idl"), Array.unsafeFrozen(source.s.getBytes("UTF-8").nn)))
 
     def atomize(source: Text): Atomization =
-      WebIdlDiscipline.atomize(content(source), Discipline.Context(t"host"))
+      WebIdlDiscipline.atomize(content(source), Discipline.Context("host"))
 
     def keys(source: Text): scala.List[Text] =
       atomize(source).atoms.stdlib.map(_.key).sortBy(_.s)
@@ -1109,7 +1109,7 @@ object Tests extends Suite(m"Xenophile tests"):
       Grade.between(List(atomize(before)), List(atomize(after)))
 
     val baseline: Text =
-      t"""|interface Widget {
+      """|interface Widget {
           |  readonly attribute DOMString name;
           |  undefined render(long depth);
           |};
@@ -1124,16 +1124,16 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"the discipline claims idl files in the host world and nothing else"):
         val data = Array.freeze(Array.allocate[Byte](0))
 
-        (WebIdlDiscipline.claims(TreePath(t"idl/dom.idl"), data),
-         WebIdlDiscipline.claims(TreePath(t"lib/index.js"), data),
-         WebIdlDiscipline.domain.covers(t"host"),
-         WebIdlDiscipline.domain.covers(t"jvm"))
+        (WebIdlDiscipline.claims(TreePath("idl/dom.idl"), data),
+         WebIdlDiscipline.claims(TreePath("lib/index.js"), data),
+         WebIdlDiscipline.domain.covers("host"),
+         WebIdlDiscipline.domain.covers("jvm"))
       . assert(_ == (true, false, true, false))
 
       test(m"declarations, members, fields and values yield atoms"):
         keys(baseline)
-      . assert(_ == scala.List(t"Direction", t"Direction#down", t"Direction#up", t"Options",
-          t"Options#retries", t"Widget", t"Widget#name", t"Widget#render(s32)"))
+      . assert(_ == scala.List("Direction", "Direction#down", "Direction#up", "Options",
+          "Options#retries", "Widget", "Widget#name", "Widget#render(s32)"))
 
       test(m"adding an interface member is a minor for callers"):
         val grown = t"${baseline}partial interface Widget { attribute long depth; };"
@@ -1162,13 +1162,13 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"a mixin's members atomize under the including interface"):
         val mixed =
-          t"""|interface Base {};
+          """|interface Base {};
               |interface mixin Extras { undefined extra(); };
               |Base includes Extras;
               |""".s.stripMargin.tt
 
         keys(mixed)
-      . assert(_ == scala.List(t"Base", t"Base#extra()"))
+      . assert(_ == scala.List("Base", "Base#extra()"))
 
       test(m"a partial interface in another file completes its target"):
         val split = List(
@@ -1178,16 +1178,16 @@ object Tests extends Suite(m"Xenophile tests"):
            Array.unsafeFrozen(t"partial interface W { attribute long x; };".s
               .getBytes("UTF-8").nn)))
 
-        WebIdlDiscipline.atomize(split, Discipline.Context(t"host")).atoms.stdlib.map(_.key)
+        WebIdlDiscipline.atomize(split, Discipline.Context("host")).atoms.stdlib.map(_.key)
         . sortBy(_.s)
-      . assert(_ == scala.List(t"W", t"W#x"))
+      . assert(_ == scala.List("W", "W#x"))
 
       test(m"exposure scopes are part of the key"):
-        keys(t"[Exposed=(Window,Worker)] interface Scoped {};")
-      . assert(_ == scala.List(t"Scoped[Window,Worker]"))
+        keys("[Exposed=(Window,Worker)] interface Scoped {};")
+      . assert(_ == scala.List("Scoped[Window,Worker]"))
 
       test(m"identically-shaped members of different interfaces do not alias"):
-        val twins = t"interface A { attribute long x; };\ninterface B { attribute long x; };"
+        val twins = "interface A { attribute long x; };\ninterface B { attribute long x; };"
         val atoms = atomize(twins).atoms.stdlib
 
         atoms.map { atom => Lira.Hash.text(atom.valueHash) }.distinct.size
@@ -1195,8 +1195,8 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(identity)
 
       test(m"union member order does not affect a hash"):
-        val one = atomize(t"interface U { attribute (long or DOMString) x; };")
-        val two = atomize(t"interface U { attribute (DOMString or long) x; };")
+        val one = atomize("interface U { attribute (long or DOMString) x; };")
+        val two = atomize("interface U { attribute (DOMString or long) x; };")
 
         one.atoms.stdlib.map { atom => Lira.Hash.text(atom.valueHash) }
         == two.atoms.stdlib.map { atom => Lira.Hash.text(atom.valueHash) }
@@ -1205,7 +1205,7 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"an unsupported construct is an atomization error"):
         import errorDiagnostics.stackTracesDiagnostics
 
-        capture[Discipline.Error](atomize(t"weird thing;")).reason match
+        capture[Discipline.Error](atomize("weird thing;")).reason match
           case Discipline.Error.Reason.Malformed(_) => true
           case _                                   => false
       . assert(identity)
@@ -1225,7 +1225,7 @@ object Tests extends Suite(m"Xenophile tests"):
       List((TreePath(t"wit/api.wit"), Array.unsafeFrozen(source.s.getBytes("UTF-8").nn)))
 
     def atomize(source: Text): Atomization =
-      WitDiscipline.atomize(content(source), Discipline.Context(t"host"))
+      WitDiscipline.atomize(content(source), Discipline.Context("host"))
 
     def keys(source: Text): scala.List[Text] =
       atomize(source).atoms.stdlib.map(_.key).sortBy(_.s)
@@ -1234,7 +1234,7 @@ object Tests extends Suite(m"Xenophile tests"):
       Grade.between(List(atomize(before)), List(atomize(after)))
 
     val baseline: Text =
-      t"""|package wasi:random@0.2.0;
+      """|package wasi:random@0.2.0;
           |
           |interface random {
           |  record seed { value: u64 }
@@ -1251,21 +1251,21 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"the discipline claims wit files in its two worlds and nothing else"):
         val data = Array.freeze(Array.allocate[Byte](0))
 
-        (WitDiscipline.claims(TreePath(t"wit/world.wit"), data),
-         WitDiscipline.claims(TreePath(t"lib/api.idl"), data),
-         WitDiscipline.domain.covers(t"host"),
-         WitDiscipline.domain.covers(t"component"),
-         WitDiscipline.domain.covers(t"jvm"))
+        (WitDiscipline.claims(TreePath("wit/world.wit"), data),
+         WitDiscipline.claims(TreePath("lib/api.idl"), data),
+         WitDiscipline.domain.covers("host"),
+         WitDiscipline.domain.covers("component"),
+         WitDiscipline.domain.covers("jvm"))
       . assert(_ == (true, false, true, true, false))
 
       test(m"interfaces, items and worlds yield package-qualified atoms"):
         keys(baseline)
       . assert(_ == scala.List(
-          t"wasi:random/host@0.2.0",
-          t"wasi:random/host@0.2.0#import wasi:random/random@0.2.0",
-          t"wasi:random/random@0.2.0",
-          t"wasi:random/random@0.2.0#get-random-bytes",
-          t"wasi:random/random@0.2.0#seed"))
+          "wasi:random/host@0.2.0",
+          "wasi:random/host@0.2.0#import wasi:random/random@0.2.0",
+          "wasi:random/random@0.2.0",
+          "wasi:random/random@0.2.0#get-random-bytes",
+          "wasi:random/random@0.2.0#seed"))
 
       test(m"adding a function to an interface is minor"):
         val grown = baseline.s.replace("}\n\nworld",
@@ -1290,7 +1290,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"a use-imported reference is qualified to its source interface"):
         val direct =
-          t"""|package a:pkg;
+          """|package a:pkg;
               |interface one {
               |  type id = u64;
               |}
@@ -1305,7 +1305,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
         val hashes = { (source: Text) =>
           atomize(source).atoms.stdlib
-          . filter(_.key == t"a:pkg/two#get")
+          . filter(_.key == "a:pkg/two#get")
           . map { atom => Lira.Hash.text(atom.valueHash) }
         }
 
@@ -1316,7 +1316,7 @@ object Tests extends Suite(m"Xenophile tests"):
         import errorDiagnostics.stackTracesDiagnostics
 
         val gated =
-          t"""|package a:pkg;
+          """|package a:pkg;
               |interface one {
               |  @since(version = 0.2.1)
               |  get: func() -> u64;
@@ -1326,7 +1326,7 @@ object Tests extends Suite(m"Xenophile tests"):
         val unstable = gated.s.replace("@since(version = 0.2.1)",
             "@unstable(feature = fancy)").nn.tt
 
-        val accepted = atomize(gated).atoms.stdlib.exists(_.key == t"a:pkg/one#get")
+        val accepted = atomize(gated).atoms.stdlib.exists(_.key == "a:pkg/one#get")
 
         val refused =
           capture[Discipline.Error](atomize(unstable)).reason match
@@ -1340,7 +1340,7 @@ object Tests extends Suite(m"Xenophile tests"):
         import errorDiagnostics.stackTracesDiagnostics
 
         capture[Discipline.Error]:
-          atomize(t"package a:pkg;\ninterface one { get: func() -> mystery; }")
+          atomize("package a:pkg;\ninterface one { get: func() -> mystery; }")
         . reason match
             case Discipline.Error.Reason.Unresolved(_) => true
             case _                                    => false
@@ -1361,7 +1361,7 @@ object Tests extends Suite(m"Xenophile tests"):
       List((TreePath(t"include/library.h"), Array.unsafeFrozen(source.s.getBytes("UTF-8").nn)))
 
     def atomize(source: Text): Atomization =
-      CHeaderDiscipline.atomize(content(source), Discipline.Context(t"host"))
+      CHeaderDiscipline.atomize(content(source), Discipline.Context("host"))
 
     def keys(source: Text): scala.List[Text] =
       atomize(source).atoms.stdlib.map(_.key).sortBy(_.s)
@@ -1374,7 +1374,7 @@ object Tests extends Suite(m"Xenophile tests"):
       Grade.between(List(atomize(before)), List(atomize(after)))
 
     val baseline: Text =
-      t"""|typedef struct Point { int x; int y; } Point;
+      """|typedef struct Point { int x; int y; } Point;
           |typedef enum { LEFT, RIGHT } Direction;
           |int add(int a, int b);
           |size_t strlen(const char* s);
@@ -1384,15 +1384,15 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"the discipline claims headers in the host world and nothing else"):
         val data = Array.freeze(Array.allocate[Byte](0))
 
-        (CHeaderDiscipline.claims(TreePath(t"include/openssl.h"), data),
-         CHeaderDiscipline.claims(TreePath(t"src/main.c"), data),
-         CHeaderDiscipline.domain.covers(t"host"),
-         CHeaderDiscipline.domain.covers(t"nir"))
+        (CHeaderDiscipline.claims(TreePath("include/openssl.h"), data),
+         CHeaderDiscipline.claims(TreePath("src/main.c"), data),
+         CHeaderDiscipline.domain.covers("host"),
+         CHeaderDiscipline.domain.covers("nir"))
       . assert(_ == (true, false, true, false))
 
       test(m"declarations are keyed by bare name"):
         keys(baseline)
-      . assert(_ == scala.List(t"Direction", t"Point", t"add", t"strlen"))
+      . assert(_ == scala.List("Direction", "Point", "add", "strlen"))
 
       test(m"adding a declaration is minor and removing one is major"):
         val grown = t"${baseline}double pow(double base, double exponent);"
@@ -1400,37 +1400,37 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_ == (Grade.Minor, Grade.Major))
 
       test(m"signedness distinguishes hashes"):
-        hashOf(t"int f(unsigned int x);", t"f") != hashOf(t"int f(int x);", t"f")
+        hashOf("int f(unsigned int x);", "f") != hashOf("int f(int x);", "f")
       . assert(identity)
 
       test(m"pointer depth distinguishes hashes"):
-        hashOf(t"int f(char** x);", t"f") != hashOf(t"int f(char* x);", t"f")
+        hashOf("int f(char** x);", "f") != hashOf("int f(char* x);", "f")
       . assert(identity)
 
       test(m"pointee constness folds and by-value constness does not"):
-        (hashOf(t"int f(const char* x);", t"f") != hashOf(t"int f(char* x);", t"f"),
-         hashOf(t"int f(const int x);", t"f") == hashOf(t"int f(int x);", t"f"))
+        (hashOf("int f(const char* x);", "f") != hashOf("int f(char* x);", "f"),
+         hashOf("int f(const int x);", "f") == hashOf("int f(int x);", "f"))
       . assert(_ == (true, true))
 
       test(m"parameter names do not fold"):
-        hashOf(t"int add(int a, int b);", t"add") == hashOf(t"int add(int x, int y);", t"add")
+        hashOf("int add(int a, int b);", "add") == hashOf("int add(int x, int y);", "add")
       . assert(identity)
 
       test(m"enumerator values fold, explicit or implicit"):
-        (hashOf(t"typedef enum { A, B } E;", t"E")
-           == hashOf(t"typedef enum { A = 0, B = 1 } E;", t"E"),
-         hashOf(t"typedef enum { A, B } E;", t"E")
-           != hashOf(t"typedef enum { A, B = 5 } E;", t"E"))
+        (hashOf("typedef enum { A, B } E;", "E")
+           == hashOf("typedef enum { A = 0, B = 1 } E;", "E"),
+         hashOf("typedef enum { A, B } E;", "E")
+           != hashOf("typedef enum { A, B = 5 } E;", "E"))
       . assert(_ == (true, true))
 
       test(m"completing an opaque struct changes its value"):
-        hashOf(t"struct S;", t"S") != hashOf(t"struct S { int x; };", t"S")
+        hashOf("struct S;", "S") != hashOf("struct S { int x; };", "S")
       . assert(identity)
 
       test(m"an unsupported construct is an atomization error"):
         import errorDiagnostics.stackTracesDiagnostics
 
-        capture[Discipline.Error](atomize(t"int x = 4;")).reason match
+        capture[Discipline.Error](atomize("int x = 4;")).reason match
           case Discipline.Error.Reason.Malformed(_) => true
           case _                                   => false
       . assert(identity)
@@ -1440,7 +1440,7 @@ object Tests extends Suite(m"Xenophile tests"):
         val bytes = stream.readAllBytes().nn
         stream.close()
         atomize(Text(String(bytes, "UTF-8"))).atoms.stdlib.map(_.key).sortBy(_.s)
-      . assert(_.contains(t"HMAC") == false)
+      . assert(_.contains("HMAC") == false)
 
       test(m"the openssl header atomizes with its functions keyed by symbol"):
         // The header lives in enigmatic's resources; where it is absent from this suite's
@@ -1450,7 +1450,7 @@ object Tests extends Suite(m"Xenophile tests"):
         if stream == null then true else
           val bytes = stream.nn.readAllBytes().nn
           stream.nn.close()
-          atomize(Text(String(bytes, "UTF-8"))).atoms.stdlib.exists(_.key == t"RAND_bytes")
+          atomize(Text(String(bytes, "UTF-8"))).atoms.stdlib.exists(_.key == "RAND_bytes")
       . assert(_ == true)
 
   def kotlinMetadataDisciplineTests(): Unit =
@@ -1471,58 +1471,58 @@ object Tests extends Suite(m"Xenophile tests"):
         . to(List)
 
     def atomize(names: Text*): Atomization =
-      KotlinMetadataDiscipline.atomize(content(names*), Discipline.Context(t"jvm"))
+      KotlinMetadataDiscipline.atomize(content(names*), Discipline.Context("jvm"))
 
     suite(m"The `kotlin-metadata/1` discipline"):
       test(m"the discipline claims metadata-carrying classfiles and nothing else"):
-        val kotlin = classfile(t"kotlin.Pair")
-        val scala0 = classfile(t"xenophile.Tests")
+        val kotlin = classfile("kotlin.Pair")
+        val scala0 = classfile("xenophile.Tests")
 
-        (KotlinMetadataDiscipline.claims(TreePath(t"kotlin/Pair.class"), kotlin),
-         KotlinMetadataDiscipline.claims(TreePath(t"xenophile/Tests.class"), scala0),
-         KotlinMetadataDiscipline.claims(TreePath(t"readme.md"), kotlin))
+        (KotlinMetadataDiscipline.claims(TreePath("kotlin/Pair.class"), kotlin),
+         KotlinMetadataDiscipline.claims(TreePath("xenophile/Tests.class"), scala0),
+         KotlinMetadataDiscipline.claims(TreePath("readme.md"), kotlin))
       . assert(_ == (true, false, false))
 
       test(m"a data class atomizes its members, constructor and class atom"):
-        val keys = atomize(t"kotlin.Pair").atoms.stdlib.map(_.key)
+        val keys = atomize("kotlin.Pair").atoms.stdlib.map(_.key)
 
-        (keys.contains(t"kotlin.Pair"),
-         keys.contains(t"kotlin.Pair.first"),
+        (keys.contains("kotlin.Pair"),
+         keys.contains("kotlin.Pair.first"),
          keys.exists(_.s.startsWith("kotlin.Pair#component1(")),
          keys.exists(_.s.startsWith("kotlin.Pair#constructor(")))
       . assert(_ == (true, true, true, true))
 
       test(m"parameter types carry nullability marks in the key"):
-        atomize(t"kotlin.Pair").atoms.stdlib.map(_.key.s)
+        atomize("kotlin.Pair").atoms.stdlib.map(_.key.s)
         . exists { key => key.startsWith("kotlin.Pair#constructor(") }
       . assert(identity)
 
       test(m"suspend functions are atomized rather than dropped"):
         // `kotlin.sequences.SequenceScope` is the canonical suspend surface: `yield` is a
         // suspend function, and the whole point of this discipline is that it is visible.
-        atomize(t"kotlin.sequences.SequenceScope").atoms.stdlib.map(_.key.s)
+        atomize("kotlin.sequences.SequenceScope").atoms.stdlib.map(_.key.s)
         . exists(_.startsWith("kotlin.sequences.SequenceScope#yield("))
       . assert(identity)
 
       test(m"an enum class atomizes with its class atom"):
-        atomize(t"kotlin.DeprecationLevel").atoms.stdlib.map(_.key)
-        . contains(t"kotlin.DeprecationLevel")
+        atomize("kotlin.DeprecationLevel").atoms.stdlib.map(_.key)
+        . contains("kotlin.DeprecationLevel")
       . assert(identity)
 
       test(m"atomization is deterministic"):
-        val one = atomize(t"kotlin.Pair").atoms.stdlib.map { a => Lira.Hash.text(a.valueHash) }
-        val two = atomize(t"kotlin.Pair").atoms.stdlib.map { a => Lira.Hash.text(a.valueHash) }
+        val one = atomize("kotlin.Pair").atoms.stdlib.map { a => Lira.Hash.text(a.valueHash) }
+        val two = atomize("kotlin.Pair").atoms.stdlib.map { a => Lira.Hash.text(a.valueHash) }
         one == two
       . assert(identity)
 
       test(m"identically-shaped members of different classes do not alias"):
-        val atoms = atomize(t"kotlin.Pair", t"kotlin.Triple").atoms.stdlib
+        val atoms = atomize("kotlin.Pair", "kotlin.Triple").atoms.stdlib
         atoms.map { atom => Lira.Hash.text(atom.valueHash) }.distinct.size == atoms.size
       . assert(identity)
 
       test(m"the registry claims kotlin classes ahead of the opaque fallback"):
         val registry = Discipline.Registry(List(KotlinMetadataDiscipline))
-        val mixed = content(t"kotlin.Pair") 
+        val mixed = content("kotlin.Pair") 
 
-        registry.atomize(mixed, Discipline.Context(t"jvm")).stdlib.map(_.discipline)
-      . assert(_ == scala.List(t"kotlin-metadata/1"))
+        registry.atomize(mixed, Discipline.Context("jvm")).stdlib.map(_.discipline)
+      . assert(_ == scala.List("kotlin-metadata/1"))

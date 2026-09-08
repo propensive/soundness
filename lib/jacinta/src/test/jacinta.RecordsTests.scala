@@ -45,7 +45,7 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
     val record = test(m"Construct a new record"):
 
       val spec: Json =
-        t"""{
+        """{
           "name": "Jim",
           "active": true,
           "sub": { "date": "11/12/20" },
@@ -63,7 +63,7 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
 
     test(m"Get a text value"):
       record.name
-    . assert(_ == t"Jim")
+    . assert(_ == "Jim")
 
     test(m"Get an integer value"):
       record.age
@@ -87,18 +87,18 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
         record.children.prim.let(_.color)
     . assert
         ( _ == JsonBlueprint.Error
-                  ( JsonBlueprint.Error.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}") ) )
+                  ( JsonBlueprint.Error.Reason.PatternMismatch("green", r"#[0-9a-f]{6}") ) )
 
     test(m"Get a color"):
       record.children.stdlib(1).color
-    . assert(_ == t"#ff0000")
+    . assert(_ == "#ff0000")
 
     test(m"Get a nested item value"):
       record.sub.date
-    . assert(_ == t"11/12/20")
+    . assert(_ == "11/12/20")
 
     test(m"Get a regex value"):
-      record.pattern.matches(t"acb")
+      record.pattern.matches("acb")
     . assert(identity)
 
     test(m"Get some values in a list"):

@@ -37,34 +37,34 @@ import gossamer.*
 import spectacular.*
 
 object kotlincOptions:
-  val javaParameters = Kotlinc.Option[Kotlinc.Versions](t"-java-parameters")
-  val noJdk = Kotlinc.Option[Kotlinc.Versions](t"-no-jdk")
-  val progressive = Kotlinc.Option[Kotlinc.Versions](t"-progressive")
-  val verbose = Kotlinc.Option[Kotlinc.Versions](t"-verbose")
+  val javaParameters = Kotlinc.Option[Kotlinc.Versions]("-java-parameters")
+  val noJdk = Kotlinc.Option[Kotlinc.Versions]("-no-jdk")
+  val progressive = Kotlinc.Option[Kotlinc.Versions]("-progressive")
+  val verbose = Kotlinc.Option[Kotlinc.Versions]("-verbose")
 
-  def moduleName(name: Text) = Kotlinc.Option[Kotlinc.Versions](t"-module-name", name)
-  def jvmTarget(version: Int) = Kotlinc.Option[Kotlinc.Versions](t"-jvm-target", version.show)
-  def optIn(marker: Text) = Kotlinc.Option[Kotlinc.Versions](t"-opt-in", marker)
+  def moduleName(name: Text) = Kotlinc.Option[Kotlinc.Versions]("-module-name", name)
+  def jvmTarget(version: Int) = Kotlinc.Option[Kotlinc.Versions]("-jvm-target", version.show)
+  def optIn(marker: Text) = Kotlinc.Option[Kotlinc.Versions]("-opt-in", marker)
 
   object warnings:
-    val none = Kotlinc.Option[Kotlinc.Versions](t"-nowarn")
-    val asErrors = Kotlinc.Option[Kotlinc.Versions](t"-Werror")
-    val extra = Kotlinc.Option[2.0 | 2.1 | 2.2 | 2.3 | 2.4](t"-Wextra")
+    val none = Kotlinc.Option[Kotlinc.Versions]("-nowarn")
+    val asErrors = Kotlinc.Option[Kotlinc.Versions]("-Werror")
+    val extra = Kotlinc.Option[2.0 | 2.1 | 2.2 | 2.3 | 2.4]("-Wextra")
 
   object compatibility:
     def api(version: Kotlinc.Versions) =
-      Kotlinc.Option[Kotlinc.Versions](t"-api-version", version.toString.tt)
+      Kotlinc.Option[Kotlinc.Versions]("-api-version", version.toString.tt)
 
     def language(version: Kotlinc.Versions) =
-      Kotlinc.Option[Kotlinc.Versions](t"-language-version", version.toString.tt)
+      Kotlinc.Option[Kotlinc.Versions]("-language-version", version.toString.tt)
 
     def jdkRelease(version: Int) =
       Kotlinc.Option[Kotlinc.Versions](t"-Xjdk-release=${version.show}")
 
   object explicitApi:
-    val strict = Kotlinc.Option[Kotlinc.Versions](t"-Xexplicit-api=strict")
-    val warning = Kotlinc.Option[Kotlinc.Versions](t"-Xexplicit-api=warning")
+    val strict = Kotlinc.Option[Kotlinc.Versions]("-Xexplicit-api=strict")
+    val warning = Kotlinc.Option[Kotlinc.Versions]("-Xexplicit-api=warning")
 
   object advanced:
-    val noCallAssertions = Kotlinc.Option[Kotlinc.Versions](t"-Xno-call-assertions")
-    val noParameterAssertions = Kotlinc.Option[Kotlinc.Versions](t"-Xno-param-assertions")
+    val noCallAssertions = Kotlinc.Option[Kotlinc.Versions]("-Xno-call-assertions")
+    val noParameterAssertions = Kotlinc.Option[Kotlinc.Versions]("-Xno-param-assertions")

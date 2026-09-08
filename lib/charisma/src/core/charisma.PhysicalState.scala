@@ -38,10 +38,10 @@ import spectacular.*
 
 object PhysicalState:
   given showable: PhysicalState is Showable =
-    case Solid   => t"(s)"
-    case Liquid  => t"(l)"
-    case Gas     => t"(g)"
-    case Aqueous => t"(aq)"
+    case Solid   => "(s)"
+    case Liquid  => "(l)"
+    case Gas     => "(g)"
+    case Aqueous => "(aq)"
 
 enum PhysicalState:
   case Solid, Liquid, Gas, Aqueous

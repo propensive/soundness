@@ -88,17 +88,17 @@ private case class Failure
 // The wire form of an element handle, under the W3C "web element identifier" — a key chosen to be
 // one no page can collide with.
 private case class ElementRef
-  ( @name[Json](t"element-6066-11e4-a52e-4f735466cecf") elementId: Text )
+  ( @name[Json]("element-6066-11e4-a52e-4f735466cecf") elementId: Text )
 
 // The `alwaysMatch` capability objects, one per driver family. Vendor extension keys contain a
 // colon, so they are spelled with `@name[Json]` rather than as Scala identifiers.
 private case class Arguments(args: List[Text])
 private case class Named(browserName: Text)
-private case class Edgium(browserName: Text, @name[Json](t"ms:edgeOptions") opts: Arguments)
-private case class Gecko(browserName: Text, @name[Json](t"moz:firefoxOptions") opts: Arguments)
+private case class Edgium(browserName: Text, @name[Json]("ms:edgeOptions") opts: Arguments)
+private case class Gecko(browserName: Text, @name[Json]("moz:firefoxOptions") opts: Arguments)
 
 private case class Chromium
-  ( browserName: Text, @name[Json](t"goog:chromeOptions") opts: Arguments )
+  ( browserName: Text, @name[Json]("goog:chromeOptions") opts: Arguments )
 
 object WebDriver:
   // The W3C driver programs, as data: adding a browser is a new case with a command and a name,
@@ -116,10 +116,10 @@ object WebDriver:
       case Safaridriver => sh"safaridriver --port $port"
 
     def browserName: Text = this match
-      case Chromedriver => t"chrome"
-      case Geckodriver  => t"firefox"
-      case Safaridriver => t"safari"
-      case Edgedriver   => t"MicrosoftEdge"
+      case Chromedriver => "chrome"
+      case Geckodriver  => "firefox"
+      case Safaridriver => "safari"
+      case Edgedriver   => "MicrosoftEdge"
 
     // Chromium took `--headless=new` as the supported spelling when the old `--headless` became
     // an alias for it; Firefox has always taken a single-dashed `-headless`. Safari has no
@@ -140,10 +140,10 @@ object WebDriver:
     // method would carry the instance in its prefix, and a lambda built from it would hide
     // capabilities overlapping the tactic it is applied to.
     private def unstarted(using Diagnostics): Error =
-      Error(Error.Reason.SessionNotCreated, t"the WebDriver could not be started", Nil)
+      Error(Error.Reason.SessionNotCreated, "the WebDriver could not be started", Nil)
 
     private def unresponsive(using Diagnostics): Error =
-      Error(Error.Reason.Timeout, t"the WebDriver did not start listening", Nil)
+      Error(Error.Reason.Timeout, "the WebDriver did not start listening", Nil)
 
     // A session on a browser: fork the driver, wait for it to answer, open a session on it,
     // and stop it — process and all — when the scope ends. The `Job` is a local of this method:
@@ -300,34 +300,34 @@ object WebDriver:
       // unrecognized code becomes `Other`, so decoding is total, and the code a driver sent is
       // never lost.
       def apply(code: Text): Reason = code match
-        case t"no such element"            => NoSuchElement
-        case t"stale element reference"    => StaleElement
-        case t"no such window"             => NoSuchWindow
-        case t"javascript error"           => JavascriptError
-        case t"script timeout"             => ScriptTimeout
-        case t"timeout"                    => Timeout
-        case t"unknown command"            => UnknownCommand
-        case t"element click intercepted"  => ElementClickIntercepted
-        case t"element not interactable"   => ElementNotInteractable
-        case t"insecure certificate"       => InsecureCertificate
-        case t"invalid argument"           => InvalidArgument
-        case t"invalid cookie domain"      => InvalidCookieDomain
-        case t"invalid element state"      => InvalidElementState
-        case t"invalid selector"           => InvalidSelector
-        case t"invalid session id"         => InvalidSessionId
-        case t"move target out of bounds"  => MoveTargetOutOfBounds
-        case t"no such alert"              => NoSuchAlert
-        case t"no such cookie"             => NoSuchCookie
-        case t"no such frame"              => NoSuchFrame
-        case t"no such shadow root"        => NoSuchShadowRoot
-        case t"detached shadow root"       => DetachedShadowRoot
-        case t"session not created"        => SessionNotCreated
-        case t"unable to set cookie"       => UnableToSetCookie
-        case t"unable to capture screen"   => UnableToCaptureScreen
-        case t"unexpected alert open"      => UnexpectedAlertOpen
-        case t"unknown error"              => UnknownError
-        case t"unknown method"             => UnknownMethod
-        case t"unsupported operation"      => UnsupportedOperation
+        case "no such element"            => NoSuchElement
+        case "stale element reference"    => StaleElement
+        case "no such window"             => NoSuchWindow
+        case "javascript error"           => JavascriptError
+        case "script timeout"             => ScriptTimeout
+        case "timeout"                    => Timeout
+        case "unknown command"            => UnknownCommand
+        case "element click intercepted"  => ElementClickIntercepted
+        case "element not interactable"   => ElementNotInteractable
+        case "insecure certificate"       => InsecureCertificate
+        case "invalid argument"           => InvalidArgument
+        case "invalid cookie domain"      => InvalidCookieDomain
+        case "invalid element state"      => InvalidElementState
+        case "invalid selector"           => InvalidSelector
+        case "invalid session id"         => InvalidSessionId
+        case "move target out of bounds"  => MoveTargetOutOfBounds
+        case "no such alert"              => NoSuchAlert
+        case "no such cookie"             => NoSuchCookie
+        case "no such frame"              => NoSuchFrame
+        case "no such shadow root"        => NoSuchShadowRoot
+        case "detached shadow root"       => DetachedShadowRoot
+        case "session not created"        => SessionNotCreated
+        case "unable to set cookie"       => UnableToSetCookie
+        case "unable to capture screen"   => UnableToCaptureScreen
+        case "unexpected alert open"      => UnexpectedAlertOpen
+        case "unknown error"              => UnknownError
+        case "unknown method"             => UnknownMethod
+        case "unsupported operation"      => UnsupportedOperation
         case other                         => Other(other)
 
     // The error codes a WebDriver may report, as the driver spells them in the `error` field of
@@ -335,35 +335,35 @@ object WebDriver:
     // meanings they were first published with — including `Other` at 8, out of alphabetical
     // order — and every code added since appends from 9.
     enum Reason(val number: Int, val code: Text) extends Clarification:
-      case NoSuchElement           extends Reason(1, t"no such element")
-      case StaleElement            extends Reason(2, t"stale element reference")
-      case NoSuchWindow            extends Reason(3, t"no such window")
-      case JavascriptError         extends Reason(4, t"javascript error")
-      case ScriptTimeout           extends Reason(5, t"script timeout")
-      case Timeout                 extends Reason(6, t"timeout")
-      case UnknownCommand          extends Reason(7, t"unknown command")
+      case NoSuchElement           extends Reason(1, "no such element")
+      case StaleElement            extends Reason(2, "stale element reference")
+      case NoSuchWindow            extends Reason(3, "no such window")
+      case JavascriptError         extends Reason(4, "javascript error")
+      case ScriptTimeout           extends Reason(5, "script timeout")
+      case Timeout                 extends Reason(6, "timeout")
+      case UnknownCommand          extends Reason(7, "unknown command")
       case Other(code0: Text)      extends Reason(8, code0)
-      case ElementClickIntercepted extends Reason(9, t"element click intercepted")
-      case ElementNotInteractable  extends Reason(10, t"element not interactable")
-      case InsecureCertificate     extends Reason(11, t"insecure certificate")
-      case InvalidArgument         extends Reason(12, t"invalid argument")
-      case InvalidCookieDomain     extends Reason(13, t"invalid cookie domain")
-      case InvalidElementState     extends Reason(14, t"invalid element state")
-      case InvalidSelector         extends Reason(15, t"invalid selector")
-      case InvalidSessionId        extends Reason(16, t"invalid session id")
-      case MoveTargetOutOfBounds   extends Reason(17, t"move target out of bounds")
-      case NoSuchAlert             extends Reason(18, t"no such alert")
-      case NoSuchCookie            extends Reason(19, t"no such cookie")
-      case NoSuchFrame             extends Reason(20, t"no such frame")
-      case NoSuchShadowRoot        extends Reason(21, t"no such shadow root")
-      case DetachedShadowRoot      extends Reason(22, t"detached shadow root")
-      case SessionNotCreated       extends Reason(23, t"session not created")
-      case UnableToSetCookie       extends Reason(24, t"unable to set cookie")
-      case UnableToCaptureScreen   extends Reason(25, t"unable to capture screen")
-      case UnexpectedAlertOpen     extends Reason(26, t"unexpected alert open")
-      case UnknownError            extends Reason(27, t"unknown error")
-      case UnknownMethod           extends Reason(28, t"unknown method")
-      case UnsupportedOperation    extends Reason(29, t"unsupported operation")
+      case ElementClickIntercepted extends Reason(9, "element click intercepted")
+      case ElementNotInteractable  extends Reason(10, "element not interactable")
+      case InsecureCertificate     extends Reason(11, "insecure certificate")
+      case InvalidArgument         extends Reason(12, "invalid argument")
+      case InvalidCookieDomain     extends Reason(13, "invalid cookie domain")
+      case InvalidElementState     extends Reason(14, "invalid element state")
+      case InvalidSelector         extends Reason(15, "invalid selector")
+      case InvalidSessionId        extends Reason(16, "invalid session id")
+      case MoveTargetOutOfBounds   extends Reason(17, "move target out of bounds")
+      case NoSuchAlert             extends Reason(18, "no such alert")
+      case NoSuchCookie            extends Reason(19, "no such cookie")
+      case NoSuchFrame             extends Reason(20, "no such frame")
+      case NoSuchShadowRoot        extends Reason(21, "no such shadow root")
+      case DetachedShadowRoot      extends Reason(22, "detached shadow root")
+      case SessionNotCreated       extends Reason(23, "session not created")
+      case UnableToSetCookie       extends Reason(24, "unable to set cookie")
+      case UnableToCaptureScreen   extends Reason(25, "unable to capture screen")
+      case UnexpectedAlertOpen     extends Reason(26, "unexpected alert open")
+      case UnknownError            extends Reason(27, "unknown error")
+      case UnknownMethod           extends Reason(28, "unknown method")
+      case UnsupportedOperation    extends Reason(29, "unsupported operation")
 
     given communicable: Reason is Communicable =
       case Reason.NoSuchElement           => m"the requested element was not found"
@@ -464,8 +464,8 @@ object WebDriver:
       case Portrait, Landscape
 
       def name: Text = this match
-        case Portrait  => t"portrait"
-        case Landscape => t"landscape"
+        case Portrait  => "portrait"
+        case Landscape => "landscape"
 
     // The options `POST /print` takes. `pageRanges` is the specification's own string form —
     // `List(t"1-3", t"5")` — since a range there may be open-ended.
@@ -524,12 +524,12 @@ object WebDriver:
         case Key, Pointer
 
         def id: Text = this match
-          case Key     => t"keyboard"
-          case Pointer => t"pointer"
+          case Key     => "keyboard"
+          case Pointer => "pointer"
 
         def kind: Text = this match
-          case Key     => t"key"
-          case Pointer => t"pointer"
+          case Key     => "key"
+          case Pointer => "pointer"
 
       // The buttons as the specification numbers them, which is the DOM's numbering and not the
       // one a user would guess: the middle button is 1 and the right button 2.
@@ -542,20 +542,20 @@ object WebDriver:
       // codepoints, named by `clavichord`'s vocabulary rather than a table of our own.
       def codepoint(keypress: Keypress): Optional[Text] = keypress match
         case Keypress.CharKey(char)  => char.show
-        case Keypress.Enter          => t"\uE007"
-        case Keypress.Tab            => t"\uE004"
-        case Keypress.Backspace      => t"\uE003"
-        case Keypress.Escape         => t"\uE00C"
-        case Keypress.Delete         => t"\uE017"
-        case Keypress.Insert         => t"\uE016"
-        case Keypress.Home           => t"\uE011"
-        case Keypress.End            => t"\uE010"
-        case Keypress.PageUp         => t"\uE00E"
-        case Keypress.PageDown       => t"\uE00F"
-        case Keypress.Up             => t"\uE013"
-        case Keypress.Down           => t"\uE015"
-        case Keypress.Left           => t"\uE012"
-        case Keypress.Right          => t"\uE014"
+        case Keypress.Enter          => "\uE007"
+        case Keypress.Tab            => "\uE004"
+        case Keypress.Backspace      => "\uE003"
+        case Keypress.Escape         => "\uE00C"
+        case Keypress.Delete         => "\uE017"
+        case Keypress.Insert         => "\uE016"
+        case Keypress.Home           => "\uE011"
+        case Keypress.End            => "\uE010"
+        case Keypress.PageUp         => "\uE00E"
+        case Keypress.PageDown       => "\uE00F"
+        case Keypress.Up             => "\uE013"
+        case Keypress.Down           => "\uE015"
+        case Keypress.Left           => "\uE012"
+        case Keypress.Right          => "\uE014"
 
         // F1 is U+E031, and the rest follow in order.
         case Keypress.FunctionKey(n) => if n < 1 || n > 12 then Unset else (0xE030 + n).toChar.show
@@ -566,10 +566,10 @@ object WebDriver:
 
       // The modifier a wrapper stands for, as its own codepoint.
       private def modifier(keypress: Keypress): Optional[Text] = keypress match
-        case _: Keypress.Shift => t"\uE008"
-        case _: Keypress.Ctrl  => t"\uE009"
-        case _: Keypress.Alt   => t"\uE00A"
-        case _: Keypress.Meta  => t"\uE03D"
+        case _: Keypress.Shift => "\uE008"
+        case _: Keypress.Ctrl  => "\uE009"
+        case _: Keypress.Alt   => "\uE00A"
+        case _: Keypress.Meta  => "\uE03D"
         case _                 => Unset
 
       private def inner(keypress: Keypress): Optional[Keypress] = keypress match
@@ -601,23 +601,23 @@ object WebDriver:
       // Written by hand rather than derived: the discriminator is a `type` field whose values are
       // the specification's camel-cased names, and each variant carries a different set of keys.
       given encodable: Action is Encodable in Json =
-        case KeyDown(value)  => Json.make(`type` = t"keyDown".in[Json], value = value.in[Json])
-        case KeyUp(value)    => Json.make(`type` = t"keyUp".in[Json], value = value.in[Json])
-        case Pause(duration) => Json.make(`type` = t"pause".in[Json], duration = duration.in[Json])
+        case KeyDown(value)  => Json.make(`type` = "keyDown".in[Json], value = value.in[Json])
+        case KeyUp(value)    => Json.make(`type` = "keyUp".in[Json], value = value.in[Json])
+        case Pause(duration) => Json.make(`type` = "pause".in[Json], duration = duration.in[Json])
 
         case PointerDown(button) =>
-          Json.make(`type` = t"pointerDown".in[Json], button = button.in[Json])
+          Json.make(`type` = "pointerDown".in[Json], button = button.in[Json])
 
         case PointerUp(button) =>
-          Json.make(`type` = t"pointerUp".in[Json], button = button.in[Json])
+          Json.make(`type` = "pointerUp".in[Json], button = button.in[Json])
 
         case PointerMove(x, y, duration, origin) =>
           Json.make
-            ( `type`   = t"pointerMove".in[Json],
+            ( `type`   = "pointerMove".in[Json],
               x        = x.in[Json],
               y        = y.in[Json],
               duration = duration.in[Json],
-              origin   = origin.lay(t"viewport".in[Json])(_.in[Json]) )
+              origin   = origin.lay("viewport".in[Json])(_.in[Json]) )
 
     // One step of an input sequence. This is the only way to send a modifier, a chord, a hover or a
     // drag: the specification replaced the JSON Wire Protocol's `/moveto`, `/click` and `/keys`
@@ -639,7 +639,7 @@ object WebDriver:
     // returns. So each shape the protocol replies with gets its own line here.
     // The literal `null`, parsed once. Constructing it here rather than in the session keeps the
     // `unsafely` — which cannot fail, the text being a literal — out of the request path.
-    private[tarantula] val nul: Json = unsafely(t"null".read[Json])
+    private[tarantula] val nul: Json = unsafely("null".read[Json])
 
     // Encoded by hand rather than derived: every length crosses the wire in centimetres, and
     // `Quantity#value` is in metres, so each needs the factor of 100 applying. A derivation would
@@ -716,17 +716,17 @@ object WebDriver:
 
     // The W3C "web element identifier": the key under which a driver returns an element handle,
     // chosen to be one no page can collide with.
-    private final val Wei: Text = t"element-6066-11e4-a52e-4f735466cecf"
+    private final val Wei: Text = "element-6066-11e4-a52e-4f735466cecf"
 
     // The shadow-root counterpart of `Wei`.
-    private final val Shadow: Text = t"shadow-6066-11e4-a52e-4f735466cecf"
+    private final val Shadow: Text = "shadow-6066-11e4-a52e-4f735466cecf"
 
     // Set once by `create`, before the handle is lent to a block: neither exists until the driver
     // has minted them, and there is no session to be a method of until then. Both are pure values,
     // so the variables track nothing; the annotation says so, rather than making the whole session
     // `Stateful` for two write-once fields.
     @scala.caps.unsafe.untrackedCaptures
-    private var id: Text = t""
+    private var id: Text = ""
 
     @scala.caps.unsafe.untrackedCaptures
     private var negotiated: Optional[Json] = Unset
@@ -737,9 +737,9 @@ object WebDriver:
     // and version that answered, and says whether optional behaviour — `setWindowRect`,
     // `acceptInsecureCerts` — is available. Vendor keys (`moz:*`, `goog:*`) are left as `Json`.
     def capabilities: Json = negotiated.or(Empty().in[Json])
-    def browserName: Optional[Text] = capability(t"browserName")
-    def browserVersion: Optional[Text] = capability(t"browserVersion")
-    def platformName: Optional[Text] = capability(t"platformName")
+    def browserName: Optional[Text] = capability("browserName")
+    def browserVersion: Optional[Text] = capability("browserVersion")
+    def platformName: Optional[Text] = capability("platformName")
 
     private def capability(name: Text): Optional[Text] =
       safely(Session.text(capabilities.selectDynamic(name.s)))
@@ -758,19 +758,19 @@ object WebDriver:
     // error type and not five. `contramap` builds each translating tactic once, from the caller's
     // own, so the caller's diagnostics and recovery strategy still apply.
     private given connectTactic: (Tactic[Connect.Error]^) =
-      tactic.contramap(_ => Session.malformed(t"the WebDriver could not be reached")(using note))
+      tactic.contramap(_ => Session.malformed("the WebDriver could not be reached")(using note))
 
     private given jsonTactic: (Tactic[Json.Error]^) =
-      tactic.contramap(_ => Session.malformed(t"the reply had an unexpected shape")(using note))
+      tactic.contramap(_ => Session.malformed("the reply had an unexpected shape")(using note))
 
     private given mediaTactic: (Tactic[MediaType.Error]^) =
-      tactic.contramap(_ => Session.malformed(t"the media type was not valid")(using note))
+      tactic.contramap(_ => Session.malformed("the media type was not valid")(using note))
 
     private given base64Tactic: (Tactic[Serialization.Error]^) =
-      tactic.contramap(_ => Session.malformed(t"the screenshot was not valid Base64")(using note))
+      tactic.contramap(_ => Session.malformed("the screenshot was not valid Base64")(using note))
 
     private given decodeTactic: (Tactic[CharDecoder.Error]^) =
-      tactic.contramap(_ => Session.malformed(t"the reply was not valid UTF-8")(using note))
+      tactic.contramap(_ => Session.malformed("the reply was not valid UTF-8")(using note))
 
     // The `using`/`value` pair the specification requires, rendered by the `Focusable` instance.
     private def locator[focus: Focusable](value: focus): Json =
@@ -795,7 +795,7 @@ object WebDriver:
           Error
             ( Error.Reason(failure.error.or(t"unknown error")),
               failure.message.or(body),
-              failure.stacktrace.lay(Nil)(_.cut(t"\n")),
+              failure.stacktrace.lay(Nil)(_.cut("\n")),
               failure.data )
 
     private def get(path: Text): Json =
@@ -823,7 +823,7 @@ object WebDriver:
     // sees it — the constructor cannot do it, because a failure here must reach the caller as a
     // `Error` and not as an exception from a field initializer.
     private[tarantula] def create(capabilities: Json): Unit =
-      val value = post(t"session", capabilities).value
+      val value = post("session", capabilities).value
       id = Session.text(value.sessionId)
       negotiated = safely(value.capabilities)
 
@@ -846,47 +846,47 @@ object WebDriver:
     // Navigation.
 
     def navigateTo[url: Abstractable across Urls to Text](url: url): Unit =
-      command(t"url", Address(url.generic).in[Json])
+      command("url", Address(url.generic).in[Json])
 
     // Overloaded for the commonest case. `url"http://…"` has the singleton type `Url["http"]`,
     // while the `Abstractable` instance is declared for `HttpUrl` — `Url["http" | "https"]` —
     // whose `Self` member is invariant, so the generic form alone rejects the interpolator's own
     // result.
-    def navigateTo(url: HttpUrl): Unit = command(t"url", Address(url.show).in[Json])
+    def navigateTo(url: HttpUrl): Unit = command("url", Address(url.show).in[Json])
 
     def url[url: Instantiable across Urls from Text](): url =
-      url(Session.text(read(t"url").value))
+      url(Session.text(read("url").value))
 
-    def back(): Unit = command(t"back", Empty().in[Json])
-    def forward(): Unit = command(t"forward", Empty().in[Json])
-    def refresh(): Unit = command(t"refresh", Empty().in[Json])
-    def title(): Text = Session.text(read(t"title").value)
-    def source(): Text = Session.text(read(t"source").value)
+    def back(): Unit = command("back", Empty().in[Json])
+    def forward(): Unit = command("forward", Empty().in[Json])
+    def refresh(): Unit = command("refresh", Empty().in[Json])
+    def title(): Text = Session.text(read("title").value)
+    def source(): Text = Session.text(read("source").value)
 
     // The raw PNG bytes of the viewport. `screenshot()`, which decodes them into a `Raster in
     // Png`, is an extension method in `tarantula.image`, so that browser automation does not
     // depend on an image-codec library.
     def screenshotData(): Data =
-      Session.text(read(t"screenshot").value).deserialize[Base64]
+      Session.text(read("screenshot").value).deserialize[Base64]
 
     // Windows and tabs. A handle is an opaque token, like an element's, and only the current
     // window responds to commands — hence `switchTo`.
-    def window(): Text = Session.text(read(t"window").value)
+    def window(): Text = Session.text(read("window").value)
 
     def closeWindow(): List[Text] =
       Session.texts(delete(t"session/$id/window").value)
 
-    def switchTo(window: Text): Unit = command(t"window", Handle(window).in[Json])
-    def windowRect(): Session.Rect = Session.rect(read(t"window/rect").value)
-    def maximize(): Session.Rect = sized(t"maximize")
-    def minimize(): Session.Rect = sized(t"minimize")
-    def fullscreen(): Session.Rect = sized(t"fullscreen")
+    def switchTo(window: Text): Unit = command("window", Handle(window).in[Json])
+    def windowRect(): Session.Rect = Session.rect(read("window/rect").value)
+    def maximize(): Session.Rect = sized("maximize")
+    def minimize(): Session.Rect = sized("minimize")
+    def fullscreen(): Session.Rect = sized("fullscreen")
 
     def windows(): List[Text] =
-      Session.texts(read(t"window/handles").value)
+      Session.texts(read("window/handles").value)
 
     def windowRect(rect: Session.Rect): Unit =
-      command(t"window/rect", rect.in[Json])
+      command("window/rect", rect.in[Json])
 
     // The reply is the resulting geometry, which is worth returning: a window manager may refuse
     // to make a window the size that was asked for.
@@ -896,44 +896,44 @@ object WebDriver:
     // A new window or tab is *not* switched to: the specification leaves the current window where
     // it was, and hands back a handle to pass to `switchTo`.
     def newWindow(tab: Boolean = true): Text =
-      val kind = if tab then t"tab" else t"window"
-      Session.text(send(t"window/new", Kind(kind).in[Json]).value.handle)
+      val kind = if tab then "tab" else "window"
+      Session.text(send("window/new", Kind(kind).in[Json]).value.handle)
 
     // Frames. Commands address the current browsing context, so entering a frame is a mode change
     // rather than an argument, and `topFrame()` is the way back out of any depth.
-    def frame(element: Element): Unit = command(t"frame", Frame(element.in[Json]).in[Json])
-    def frame(index: Int): Unit = command(t"frame", Frame(index.in[Json]).in[Json])
-    def parentFrame(): Unit = command(t"frame/parent", Empty().in[Json])
+    def frame(element: Element): Unit = command("frame", Frame(element.in[Json]).in[Json])
+    def frame(index: Int): Unit = command("frame", Frame(index.in[Json]).in[Json])
+    def parentFrame(): Unit = command("frame/parent", Empty().in[Json])
     // `{"id":null}`, not `{}`: the protocol distinguishes an explicit null — return to the
     // top-level browsing context — from an absent key, which is invalid.
-    def topFrame(): Unit = command(t"frame", Frame(Session.nul).in[Json])
+    def topFrame(): Unit = command("frame", Frame(Session.nul).in[Json])
 
     // User prompts. Every other command fails with `UnexpectedAlertOpen` while one of these is
     // open, unless the session asked for a different `unhandledPromptBehavior`.
-    def acceptAlert(): Unit = command(t"alert/accept", Empty().in[Json])
-    def dismissAlert(): Unit = command(t"alert/dismiss", Empty().in[Json])
-    def alertText(): Text = Session.text(read(t"alert/text").value)
-    def alertText(text: Text): Unit = command(t"alert/text", Alert(text).in[Json])
+    def acceptAlert(): Unit = command("alert/accept", Empty().in[Json])
+    def dismissAlert(): Unit = command("alert/dismiss", Empty().in[Json])
+    def alertText(): Text = Session.text(read("alert/text").value)
+    def alertText(text: Text): Unit = command("alert/text", Alert(text).in[Json])
 
     // Timeouts.
     def timeouts(): Session.Timeouts =
-      Session.timeouts(read(t"timeouts").value)
+      Session.timeouts(read("timeouts").value)
 
     def timeouts(timeouts: Session.Timeouts): Unit =
-      command(t"timeouts", timeouts.in[Json])
+      command("timeouts", timeouts.in[Json])
 
     // Cookies, reusing telekinesis's own `Cookie.Value`, whose fields are already the names the
     // protocol uses. It has no `sameSite`, so that attribute is neither read nor set; a cookie
     // needing one can be installed with `execute`.
     def cookies(): List[Cookie.Value] =
-      Session.cookies(read(t"cookie").value)
+      Session.cookies(read("cookie").value)
 
     def cookie(name: Text): Cookie.Value =
       Session.cookie(read(t"cookie/$name").value)
 
-    def addCookie(cookie: Cookie.Value): Unit = command(t"cookie", Cookies(cookie).in[Json])
+    def addCookie(cookie: Cookie.Value): Unit = command("cookie", Cookies(cookie).in[Json])
     def deleteCookie(name: Text): Unit = drop(t"cookie/$name")
-    def deleteCookies(): Unit = drop(t"cookie")
+    def deleteCookies(): Unit = drop("cookie")
 
     // Input actions. One call drives one input source; `actions` takes the assembled JSON for the
     // rare case of two sources moving in lockstep.
@@ -943,7 +943,7 @@ object WebDriver:
       val encoded = steps.map(_.in[Json])
       actions(Sequences(List(Sequence(source.id, source.kind, encoded).in[Json])).in[Json])
 
-    def actions(json: Json): Unit = command(t"actions", json)
+    def actions(json: Json): Unit = command("actions", json)
 
     // Types a sequence of keypresses, modifiers and all. `WebDriver.Element#value` remains the
     // way to fill a field with plain text — it is one request rather than four actions per
@@ -953,36 +953,36 @@ object WebDriver:
       perform(Session.Action.Source.Key, steps)
 
     // Releases every key and button an earlier `perform` left held, and clears the input state.
-    def releaseActions(): Unit = drop(t"actions")
+    def releaseActions(): Unit = drop("actions")
 
     // The page as a PDF, in raw bytes. Not universally implemented — Safari does not have it —
     // and unrelated to `screenshotData`, which captures what is rendered rather than what would
     // be printed.
     def printPage(options: Session.Print = Session.Print()): Data =
-      Session.text(send(t"print", Session.encode(options)).value).deserialize[Base64]
+      Session.text(send("print", Session.encode(options)).value).deserialize[Base64]
 
     // Script execution: the escape hatch for anything the protocol does not model.
     def execute(script: Text, arguments: List[Json] = Nil): Json =
-      send(t"execute/sync", Script(script, arguments).in[Json]).value
+      send("execute/sync", Script(script, arguments).in[Json]).value
 
     def executeAsync(script: Text, arguments: List[Json] = Nil): Json =
-      send(t"execute/async", Script(script, arguments).in[Json]).value
+      send("execute/async", Script(script, arguments).in[Json]).value
 
     // Finding elements, at page scope and relative to an element. `Element` is pure, so building
     // one inside this `map` constructs no capability and hoists no fresh root.
     def element[focus: Focusable](value: focus): Element =
-      Element(handle(send(t"element", locator(value)), Wei))
+      Element(handle(send("element", locator(value)), Wei))
 
     def elements[focus: Focusable](value: focus): List[Element] =
-      handles(send(t"elements", locator(value)))
+      handles(send("elements", locator(value)))
 
     def element[focus: Focusable](element: Element, value: focus): Element =
-      Element(handle(send(elementPath(element, t"element"), locator(value)), Wei))
+      Element(handle(send(elementPath(element, "element"), locator(value)), Wei))
 
     def elements[focus: Focusable](element: Element, value: focus): List[Element] =
-      handles(send(elementPath(element, t"elements"), locator(value)))
+      handles(send(elementPath(element, "elements"), locator(value)))
 
-    def activeElement(): Element = Element(handle(read(t"element/active"), Wei))
+    def activeElement(): Element = Element(handle(read("element/active"), Wei))
 
     // Waiting. The protocol has no wait command: the `implicit` timeout covers find commands and
     // nothing else, so a button becoming enabled, a heading's text changing or a prompt appearing
@@ -1008,7 +1008,7 @@ object WebDriver:
       ( using Tenacity, Monitor, Tactic[Tenacity.Error] )
     :   Element =
 
-      awaitElements(value).prim.lest(Error(Error.Reason.NoSuchElement, t"nothing matched", Nil))
+      awaitElements(value).prim.lest(Error(Error.Reason.NoSuchElement, "nothing matched", Nil))
 
     // The general form, for a condition the caller can evaluate without raising — comparing a
     // title, counting elements, reading a cookie.
@@ -1019,7 +1019,7 @@ object WebDriver:
 
     // Shadow DOM. Only *open* shadow roots are reachable; a closed one raises `NoSuchShadowRoot`.
     def shadowRoot(element: Element): ShadowRoot =
-      ShadowRoot(handle(read(elementPath(element, t"shadow")), Shadow))
+      ShadowRoot(handle(read(elementPath(element, "shadow")), Shadow))
 
     def element[focus: Focusable](root: ShadowRoot, value: focus): Element =
       Element(handle(send(t"shadow/${root.shadowId}/element", locator(value)), Wei))
@@ -1028,11 +1028,11 @@ object WebDriver:
       handles(send(t"shadow/${root.shadowId}/elements", locator(value)))
 
     // Acting on an element.
-    def click(element: Element): Unit = command(elementPath(element, t"click"), Empty().in[Json])
-    def clear(element: Element): Unit = command(elementPath(element, t"clear"), Empty().in[Json])
+    def click(element: Element): Unit = command(elementPath(element, "click"), Empty().in[Json])
+    def clear(element: Element): Unit = command(elementPath(element, "clear"), Empty().in[Json])
 
     def value(element: Element, text: Text): Unit =
-      command(elementPath(element, t"value"), Keys(text).in[Json])
+      command(elementPath(element, "value"), Keys(text).in[Json])
 
     // Reading an element's state. `attribute` reads the markup's attribute, `property` the live
     // DOM property; the two diverge as soon as a page's script touches the node.
@@ -1041,22 +1041,22 @@ object WebDriver:
     // rendered text, not `textContent` — and `text` is already a top-level extension in the
     // `soundness` package, contributed by gossamer for `Array[Char]`.
     def innerText(element: Element): Text =
-      Session.text(read(elementPath(element, t"text")).value)
+      Session.text(read(elementPath(element, "text")).value)
 
     def tagName(element: Element): Text =
-      Session.text(read(elementPath(element, t"name")).value)
+      Session.text(read(elementPath(element, "name")).value)
 
     def role(element: Element): Text =
-      Session.text(read(elementPath(element, t"computedrole")).value)
+      Session.text(read(elementPath(element, "computedrole")).value)
 
     def label(element: Element): Text =
-      Session.text(read(elementPath(element, t"computedlabel")).value)
+      Session.text(read(elementPath(element, "computedlabel")).value)
 
     def enabled(element: Element): Boolean =
-      Session.boolean(read(elementPath(element, t"enabled")).value)
+      Session.boolean(read(elementPath(element, "enabled")).value)
 
     def selected(element: Element): Boolean =
-      Session.boolean(read(elementPath(element, t"selected")).value)
+      Session.boolean(read(elementPath(element, "selected")).value)
 
     def attribute(element: Element, name: Text): Optional[Text] =
       safely(Session.text(read(elementPath(element, t"attribute/$name")).value))
@@ -1068,17 +1068,17 @@ object WebDriver:
       Session.text(read(elementPath(element, t"css/$name")).value)
 
     def rect(element: Element): Session.Rect =
-      Session.rect(read(elementPath(element, t"rect")).value)
+      Session.rect(read(elementPath(element, "rect")).value)
 
     // Not a protocol command: `displayed` was dropped between the JSON Wire Protocol and the W3C
     // specification, which offers the "element displayedness" atom instead. Running it as a script
     // is what every conforming client does.
     def displayed(element: Element): Boolean =
       Session.boolean:
-        execute(t"return arguments[0].getClientRects().length > 0", List(element.in[Json]))
+        execute("return arguments[0].getClientRects().length > 0", List(element.in[Json]))
 
     def screenshotData(element: Element): Data =
-      Session.text(read(elementPath(element, t"screenshot")).value).deserialize[Base64]
+      Session.text(read(elementPath(element, "screenshot")).value).deserialize[Base64]
 
 // A WebDriver that is already listening: one started by hand, or a remote grid.
 // `WebDriver.Chrome` and its siblings are the usual entry points; this is what they delegate to

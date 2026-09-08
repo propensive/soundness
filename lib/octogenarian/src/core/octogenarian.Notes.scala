@@ -53,10 +53,10 @@ object Notes:
   type Plane = Notes
 
   given filesystem: Notes is Filesystem:
-    val name: Text = t"Notes"
-    val separator: Text = t"/"
-    val self: Text = t"@"
-    val parent: Text = t".."
+    val name: Text = "Notes"
+    val separator: Text = "/"
+    val self: Text = "@"
+    val parent: Text = ".."
 
   // Serpentine's `/` consults `Admissible` only to decide platformed-vs-
   // unplatformed; it does not invoke `check` at construction time.  Per-

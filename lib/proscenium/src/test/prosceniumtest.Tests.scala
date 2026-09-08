@@ -61,16 +61,16 @@ object Tests extends Suite(m"Proscenium consumer-view tests"):
       . assert(_ == scala.collection.immutable.Set(1, 2))
 
       test(m"a map crosses to the stdlib"):
-        Map(t"a" -> 1).stdlib
-      . assert(_ == scala.collection.immutable.Map(t"a" -> 1))
+        Map("a" -> 1).stdlib
+      . assert(_ == scala.collection.immutable.Map("a" -> 1))
 
       test(m"a sequence crosses to the stdlib"):
         Sequence(1, 2, 3).stdlib
       . assert(_ == scala.collection.immutable.Vector(1, 2, 3))
 
       test(m"a ledger crosses to the stdlib keeping its order"):
-        Ledger(t"b" -> 2, t"a" -> 1).stdlib.keys.toList
-      . assert(_ == scala.collection.immutable.List(t"b", t"a"))
+        Ledger("b" -> 2, "a" -> 1).stdlib.keys.toList
+      . assert(_ == scala.collection.immutable.List("b", "a"))
 
       test(m"a frozen array crosses to the stdlib as an IArray"):
         Array(1, 2, 3).readable.toList
@@ -89,7 +89,7 @@ object Tests extends Suite(m"Proscenium consumer-view tests"):
 
       test(m"a stdlib collection builds a ledger in insertion order"):
         val ledger: Ledger[Int, Text] =
-          scala.collection.immutable.List((2, t"b"), (1, t"a")).to(Ledger)
+          scala.collection.immutable.List((2, "b"), (1, "a")).to(Ledger)
 
         ledger.stdlib.keys.toList
       . assert(_ == scala.collection.immutable.List(2, 1))

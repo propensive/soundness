@@ -355,15 +355,15 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
       recur(1, false)
 
     def key(character: Text): Optional[Git.Status] = character match
-      case t" " => Unset
-      case t"M" => Git.Status.Updated
-      case t"A" => Git.Status.Added
-      case t"D" => Git.Status.Deleted
-      case t"R" => Git.Status.Renamed
-      case t"C" => Git.Status.Copied
-      case t"U" => Git.Status.Unmerged
-      case t"?" => Git.Status.Untracked
-      case t"!" => Git.Status.Ignored
+      case " " => Unset
+      case "M" => Git.Status.Updated
+      case "A" => Git.Status.Added
+      case "D" => Git.Status.Deleted
+      case "R" => Git.Status.Renamed
+      case "C" => Git.Status.Copied
+      case "U" => Git.Status.Unmerged
+      case "?" => Git.Status.Untracked
+      case "!" => Git.Status.Ignored
       case _    => Unset
 
     sh"$git $repoOptions status --porcelain $ignoredParam".exec[List[Text]]().bind:

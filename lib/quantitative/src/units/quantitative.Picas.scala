@@ -36,7 +36,7 @@ import anticipation.*
 import rudiments.*
 
 object Picas:
-  given designation: Designation[Picas[1]] = () => "pc".tt
+  given designation: Designation[Picas[1]] = () => "pc"
   inline given ratio: Ratio[Picas[-1] & Metres[1], 0.004233333333333333] = !!
 
 trait Picas[Power <: Nat] extends Units[Power, Distance]

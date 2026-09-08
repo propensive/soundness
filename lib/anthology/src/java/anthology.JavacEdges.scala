@@ -56,7 +56,7 @@ object javacEdges:
   private case class JavacTool(javac: Javac) extends Tool:
     type Settings = Unit
 
-    def name: Text = t"javac"
+    def name: Text = "javac"
     def initial: Unit = ()
 
     def run
@@ -74,8 +74,8 @@ object javacEdges:
       given compileEvents: (CompileEvent is Loggable) = CompileEvents.relay(using linkEvents)
 
       mitigate:
-        case Compiler.Error() => Link.Error(Link.Error.Reason.CompilerUnusable(t"javac"))
-        case Async.Error(_)   => Link.Error(Link.Error.Reason.CompilerUnusable(t"javac"))
+        case Compiler.Error() => Link.Error(Link.Error.Reason.CompilerUnusable("javac"))
+        case Async.Error(_)   => Link.Error(Link.Error.Reason.CompilerUnusable("javac"))
 
       . protect:
           val process = javac(classpath)(sources, out)

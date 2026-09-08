@@ -64,7 +64,7 @@ object SchemaResolver:
   // palimpsest of `SchemaSignature.fromDocument` over the canonical
   // tels.tel source. Pinned as a golden value, and recomputed from the
   // corpus by the test suite.
-  val telsSignature: Text = t"ÔŀưḞ2żbτȚÆAĄſЬMẍỳϋῩJλḤӛ3ñẉḢkŻẋzǓĥ"
+  val telsSignature: Text = "ÔŀưḞ2żbτȚÆAĄſЬMẍỳϋῩJλḤӛ3ñẉḢkŻẋzǓĥ"
 
   // A resolution outcome: the schema composed with the pragma's layer
   // selection; its source document (`Unset` for the built-in axiom);
@@ -79,7 +79,8 @@ object SchemaResolver:
       delegate: Optional[Tels.Resolution.Delegate] = Unset,
       embedded: Optional[(Data, Data)]           = Unset,
       axiom:    Tels                             = Tels.Axiom.tels )
-  :   Resolved raises Tel.Error raises Bintel.Error raises ResolutionError =
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error], Tactic[ResolutionError] )
+  :   Resolved =
 
     val selection = pragma.layers
     val claimed: Optional[Data] = pragma.signature.let(Base256.decode(_))

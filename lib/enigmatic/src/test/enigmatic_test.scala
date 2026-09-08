@@ -47,7 +47,7 @@ import alphabets.hexUpperCase
 
 object Tests extends Suite(m"Enigmatic tests"):
 
-  val request: Text = t"""
+  val request: Text = """
     |-----BEGIN CERTIFICATE REQUEST-----
     |MIIB9TCCAWACAQAwgbgxGTAXBgNVBAoMEFF1b1ZhZGlzIExpbWl0ZWQxHDAaBgNV
     |BAsME0RvY3VtZW50IERlcGFydG1lbnQxOTA3BgNVBAMMMFdoeSBhcmUgeW91IGRl
@@ -66,7 +66,7 @@ object Tests extends Suite(m"Enigmatic tests"):
   // A self-signed certificate, produced by `openssl req -x509 -newkey rsa:2048`. It is here for its
   // shape rather than its content: v3 extensions behind a `[3] EXPLICIT` tag, a `[0] EXPLICIT`
   // version, RDNs in `SET`s, object identifiers, `UTCTime`s and a `BIT STRING` signature.
-  val certificate: Text = t"""
+  val certificate: Text = """
     |-----BEGIN CERTIFICATE-----
     |MIIDtTCCAp2gAwIBAgIUfOcoc0ZbdhisC8NxLHW9Nj+CvPEwDQYJKoZIhvcNAQEL
     |BQAwajELMAkGA1UEBhMCR0IxFzAVBgNVBAgMDkNhbWJyaWRnZXNoaXJlMRIwEAYD
@@ -91,52 +91,52 @@ object Tests extends Suite(m"Enigmatic tests"):
     |-----END CERTIFICATE-----
     """.s.stripMargin.show
 
-  val pangram: Text = t"The quick brown fox jumps over the lazy dog"
+  val pangram: Text = "The quick brown fox jumps over the lazy dog"
 
   def run(): Unit =
     test(m"Sha256, Hex"):
-      t"Hello world".digest[Sha2[256]].serialize[Hex]
-    . assert(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
+      "Hello world".digest[Sha2[256]].serialize[Hex]
+    . assert(_ == "64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
 
     test(m"Md5, Base64"):
       import alphabets.base64Standard
-      t"Hello world".digest[Md5].serialize[Base64]
-    . assert(_ == t"PiWWCnnbxptnTNTsZ6csYg==")
+      "Hello world".digest[Md5].serialize[Base64]
+    . assert(_ == "PiWWCnnbxptnTNTsZ6csYg==")
 
     test(m"Sha1, Base64Url"):
       import alphabets.base64Url
-      t"Hello world".digest[Sha1].data.serialize[Base64]
-    . assert(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
+      "Hello world".digest[Sha1].data.serialize[Base64]
+    . assert(_ == "e1AsOh9IyGCa4hLN-2Od7jlnP14")
 
     test(m"Sha384, Base64"):
       import alphabets.base64Standard
-      t"Hello world".digest[Sha2[384]].serialize[Base64]
-    . assert(_ == t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
+      "Hello world".digest[Sha2[384]].serialize[Base64]
+    . assert(_ == "kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
 
     test(m"Sha512, Base64"):
       import alphabets.base64Standard
-      t"Hello world".digest[Sha2[512]].serialize[Base64]
-    . assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
+      "Hello world".digest[Sha2[512]].serialize[Base64]
+    . assert(_ == "t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
 
     test(m"Encode to Binary"):
       import alphabets.binaryStandard
       Array[Byte](1, 2, 3, 4).serialize[Binary]
-    . assert(_ == t"00000001000000100000001100000100")
+    . assert(_ == "00000001000000100000001100000100")
 
     test(m"Extract PEM message type"):
-      val example = t"""
+      val example = """
         |-----BEGIN EXAMPLE-----
         |MIIB9TCCAWACAQAwgbgxGTAXBgNVBAoMEFF1b1ZhZGlzIExpbWl0ZWQxHDAaBgNV
         |-----END EXAMPLE-----
         """.s.stripMargin.show
 
       example.read[Pem].label
-    . assert(_ == Pem.Label.Proprietary(t"EXAMPLE"))
+    . assert(_ == Pem.Label.Proprietary("EXAMPLE"))
 
     test(m"Decode PEM certificate"):
       import alphabets.base64Standard
       request.read[Pem].data.digest[Md5].serialize[Base64]
-    . assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
+    . assert(_ == "iMwRdyDFStqq08vqjPbzYw==")
 
     test(m"PEM roundtrip"):
       request.read[Pem].serialize
@@ -146,7 +146,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       import alphabets.base64Standard
       val stream = request.s.grouped(7).map(_.tt).stream
       summon[Pem is Aggregable by Text].accept(stream).data.digest[Md5].serialize[Base64]
-    . assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
+    . assert(_ == "iMwRdyDFStqq08vqjPbzYw==")
 
     test(m"PEM parses from a single-char-chunk stream"):
       val stream = request.s.grouped(1).map(_.tt).stream
@@ -154,14 +154,14 @@ object Tests extends Suite(m"Enigmatic tests"):
     . assert(_ == Pem.Label.CertificateRequest)
 
     test(m"PEM certificate chain parses lazily from a stream"):
-      val example = t"-----BEGIN EXAMPLE-----\nAAAA\n-----END EXAMPLE-----\n"
+      val example = "-----BEGIN EXAMPLE-----\nAAAA\n-----END EXAMPLE-----\n"
       val chain = t"subject=/CN=example\n$example\nissuer comment\n$example$example"
       val stream = chain.s.grouped(11).map(_.tt).stream
       summon[Chain[Pem] is Aggregable by Text].accept(stream).map(_.label).stdlib.to(List)
-    . assert(_ == List.fill(3)(Pem.Label.Proprietary(t"EXAMPLE")))
+    . assert(_ == List.fill(3)(Pem.Label.Proprietary("EXAMPLE")))
 
     test(m"PEM chain of an input without blocks is empty"):
-      summon[Chain[Pem] is Aggregable by Text].accept(t"no blocks here\n".stream).stdlib.to(List)
+      summon[Chain[Pem] is Aggregable by Text].accept("no blocks here\n".stream).stdlib.to(List)
     . assert(_ == List())
 
     test(m"PEM streams its armored form"):
@@ -171,122 +171,122 @@ object Tests extends Suite(m"Enigmatic tests"):
     test(m"RSA roundtrip"):
       val privateKey: PrivateKey[Rsa[1024]] = PrivateKey.generate[Rsa[1024]]()
       val message: Data = privateKey.public.uncloak:
-        t"Hello world".encrypt(InitializationVector.random)
+        "Hello world".encrypt(InitializationVector.random)
       privateKey.uncloak:
         message.decrypt.as[Text]
-    . assert(_ == t"Hello world")
+    . assert(_ == "Hello world")
 
     test(m"AES roundtrip"):
       import blockCipherModes.cbc, blockCipherPaddings.pkcs7
       val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"AES/CBC/PKCS7 roundtrip (mode and padding fully specified)"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"AES/ECB/ISO10126 roundtrip (mode and padding fully specified)"):
       val key = SymmetricKey.generate[Aes[256] over Ecb against Iso10126]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"AES/CTR/NoPadding roundtrip (mode and padding fully specified)"):
       val key = SymmetricKey.generate[Aes[128] over Ctr against NoPadding]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"AES/CBC with padding inferred as PKCS7 from import"):
       import blockCipherPaddings.pkcs7
       val key = SymmetricKey.generate[Aes[256] over Cbc]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"AES with mode and padding inferred as CBC/PKCS7 from imports"):
       import blockCipherModes.cbc, blockCipherPaddings.pkcs7
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"stream-encrypted data decrypts through the whole-value path"):
       import blockCipherModes.cbc, blockCipherPaddings.pkcs7
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
-        t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize
+        "Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize
         . decrypt.as[Text]
-    . assert(_ == t"Hello world")
+    . assert(_ == "Hello world")
 
     test(m"whole-value-encrypted data decrypts through a stream"):
       import blockCipherModes.cbc, blockCipherPaddings.pkcs7
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).stream.decrypt.memoize.to[List]
-    . assert(_ == t"Hello world".in[Data].to[List])
+        "Hello world".encrypt(InitializationVector.random).stream.decrypt.memoize.to[List]
+    . assert(_ == "Hello world".in[Data].to[List])
 
     test(m"one-byte-chunk streams roundtrip through stream encrypt and decrypt"):
       import blockCipherModes.cbc, blockCipherPaddings.pkcs7
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
-        val plain = t"The quick brown fox jumps over the lazy dog".in[Data]
+        val plain = "The quick brown fox jumps over the lazy dog".in[Data]
         val encrypted = plain.readable.grouped(1).map(Array.frozen(_)).iterator.stream.encrypt(InitializationVector.random)
         encrypted.memoize.readable.grouped(1).map(Array.frozen(_)).iterator.stream.decrypt.memoize.to[List]
-    . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to[List])
+    . assert(_ == "The quick brown fox jumps over the lazy dog".in[Data].to[List])
 
     test(m"CTR/NoPadding streams roundtrip (stream-aligned check at end)"):
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[128] over Ctr against NoPadding]()
       key.uncloak:
-        t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize
+        "Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize
         . stream.decrypt.memoize.to[List]
-    . assert(_ == t"Hello world".in[Data].to[List])
+    . assert(_ == "Hello world".in[Data].to[List])
 
     test(m"legacy Chain encryption survives one-byte chunks"):
       import blockCipherModes.cbc, blockCipherPaddings.pkcs7
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
-        val plain = t"Hello world".in[Data]
+        val plain = "Hello world".in[Data]
         val chunks = plain.readable.grouped(1).map { chunk => Array.frozen(chunk) }.to(Chain)
         Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.readable).reduce(_ ++ _)).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+    . assert(_ == "Hello world")
 
     test(m"CBC encryption of the same plaintext differs run-to-run (random IV)"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
-        val first = t"Hello world".encrypt(InitializationVector.random).serialize[Hex]
-        val second = t"Hello world".encrypt(InitializationVector.random).serialize[Hex]
+        val first = "Hello world".encrypt(InitializationVector.random).serialize[Hex]
+        val second = "Hello world".encrypt(InitializationVector.random).serialize[Hex]
         first == second
     . assert(_ == false)
 
     test(m"A fixed IV makes CBC encryption deterministic"):
-      val iv = InitializationVector.fixed(t"0123456789abcdef".in[Data])
+      val iv = InitializationVector.fixed("0123456789abcdef".in[Data])
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
-        t"Hello world".encrypt(iv).serialize[Hex] == t"Hello world".encrypt(iv).serialize[Hex]
+        "Hello world".encrypt(iv).serialize[Hex] == "Hello world".encrypt(iv).serialize[Hex]
     . assert(_ == true)
 
     test(m"A fixed IV still round-trips"):
-      val iv = InitializationVector.fixed(t"0123456789abcdef".in[Data])
+      val iv = InitializationVector.fixed("0123456789abcdef".in[Data])
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
-        t"Hello world".encrypt(iv).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(iv).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"A zero IV makes CBC encryption deterministic"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
-        val first = t"Hello world".encrypt(InitializationVector.zero).serialize[Hex]
-        val second = t"Hello world".encrypt(InitializationVector.zero).serialize[Hex]
+        val first = "Hello world".encrypt(InitializationVector.zero).serialize[Hex]
+        val second = "Hello world".encrypt(InitializationVector.zero).serialize[Hex]
         first == second
     . assert(_ == true)
 
@@ -305,40 +305,40 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
-        val first = t"Hello world".encrypt(InitializationVector.random).serialize[Hex]
-        val second = t"Hello world".encrypt(InitializationVector.random).serialize[Hex]
+        val first = "Hello world".encrypt(InitializationVector.random).serialize[Hex]
+        val second = "Hello world".encrypt(InitializationVector.random).serialize[Hex]
         first == second
     . assert(_ == true)
 
     test(m"DES/CBC/PKCS7 roundtrip"):
       val key = SymmetricKey.generate[Des over Cbc against Pkcs7]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"TripleDES/CBC/PKCS7 roundtrip"):
       val key = SymmetricKey.generate[TripleDes[168] over Cbc against Pkcs7]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"Blowfish/CBC/PKCS7 roundtrip"):
       val key = SymmetricKey.generate[Blowfish[448] over Cbc against Pkcs7]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"RC2/CFB/ISO10126 roundtrip"):
       val key = SymmetricKey.generate[Rc2[128] over Cfb against Iso10126]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"DES/CTR/NoPadding roundtrip"):
       val key = SymmetricKey.generate[Des over Ctr against NoPadding]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     // Wrong-key CBC decryption yields uniform garbage, and PKCS7 unpadding accepts any
     // final block ending `0x01` (or `0x02 0x02`, and so on), so about one run in 256 the
@@ -348,11 +348,11 @@ object Tests extends Suite(m"Enigmatic tests"):
     test(m"Decryption with the wrong key never recovers the plaintext"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       val wrongKey = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
-      val ciphertext = key.uncloak(t"Hello world".encrypt(InitializationVector.random))
+      val ciphertext = key.uncloak("Hello world".encrypt(InitializationVector.random))
 
       attempt[Crypto.Error](wrongKey.uncloak(ciphertext.decrypt.as[Text])) match
         case Attempt.Failure(error) => error.reason == Crypto.Error.Reason.BadPadding
-        case Attempt.Success(text)  => text != t"Hello world"
+        case Attempt.Success(text)  => text != "Hello world"
 
     . assert(_ == true)
 
@@ -361,99 +361,99 @@ object Tests extends Suite(m"Enigmatic tests"):
       // `Crypto.Error`, not the raw JCE exception, when the final window is pulled.
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       val wrongKey = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
-      val ciphertext = key.uncloak(t"Hello world".encrypt(InitializationVector.random))
+      val ciphertext = key.uncloak("Hello world".encrypt(InitializationVector.random))
 
       attempt[Crypto.Error](wrongKey.uncloak(ciphertext.stream.decrypt.memoize)) match
         case Attempt.Failure(error) => error.reason == Crypto.Error.Reason.BadPadding
 
         case Attempt.Success(data) =>
-          data.serialize[Hex] != t"Hello world".in[Data].serialize[Hex]
+          data.serialize[Hex] != "Hello world".in[Data].serialize[Hex]
 
     . assert(_ == true)
 
     test(m"AES/CBC/NoPadding round-trips block-aligned input"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
       key.uncloak:
-        t"0123456789abcdef".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"0123456789abcdef")
+        "0123456789abcdef".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "0123456789abcdef")
 
     test(m"AES/CBC/NoPadding rejects misaligned input with a Crypto.Error"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
-      capture[Crypto.Error](key.uncloak(t"Hello world".encrypt(InitializationVector.random))).reason
+      capture[Crypto.Error](key.uncloak("Hello world".encrypt(InitializationVector.random))).reason
     . assert(_ == Crypto.Error.Reason.IllegalBlockSize)
 
     test(m"Invalid PKCS7 padding is reported as BadPadding"):
-      val bytes: Data = t"a-32-byte-key-for-aes-256-cbc!!!".in[Data]
+      val bytes: Data = "a-32-byte-key-for-aes-256-cbc!!!".in[Data]
       val rawKey: SymmetricKey[Aes[256] over Cbc against NoPadding] = SymmetricKey(bytes)
       val paddedKey: SymmetricKey[Aes[256] over Cbc against Pkcs7] = SymmetricKey(bytes)
 
       // The recovered final block ends in `f` (0x66), which is never a valid PKCS7 pad
       // length, so unpadding fails for every run rather than for 255 runs in 256.
-      val ciphertext = rawKey.uncloak(t"0123456789abcdef".encrypt(InitializationVector.random))
+      val ciphertext = rawKey.uncloak("0123456789abcdef".encrypt(InitializationVector.random))
       capture[Crypto.Error](paddedKey.uncloak(ciphertext.decrypt.as[Text])).reason
     . assert(_ == Crypto.Error.Reason.BadPadding)
 
     test(m"AES/CTR/NoPadding (stream mode) accepts any length"):
       val key = SymmetricKey.generate[Aes[256] over Ctr against NoPadding]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
-    . assert(_ == t"Hello world")
+        "Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+    . assert(_ == "Hello world")
 
     test(m"Streaming encryption round-trips via one-shot decryption"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
-        val chunks = Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
+        val chunks = Chain("Hello, ".in[Data], "streaming ".in[Data], "world!".in[Data])
         Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.readable).reduce(_ ++ _)).decrypt.as[Text]
-    . assert(_ == t"Hello, streaming world!")
+    . assert(_ == "Hello, streaming world!")
 
     test(m"Streaming and one-shot encryption agree for a fixed IV"):
-      val iv = InitializationVector.fixed(t"0123456789abcdef".in[Data])
+      val iv = InitializationVector.fixed("0123456789abcdef".in[Data])
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
         val streamed =
-          Array.frozen(Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data]).encrypt(iv).stdlib.map(_.readable).reduce(_ ++ _))
+          Array.frozen(Chain("Hello, ".in[Data], "streaming ".in[Data], "world!".in[Data]).encrypt(iv).stdlib.map(_.readable).reduce(_ ++ _))
 
-        streamed.serialize[Hex] == t"Hello, streaming world!".in[Data].encrypt(iv).serialize[Hex]
+        streamed.serialize[Hex] == "Hello, streaming world!".in[Data].encrypt(iv).serialize[Hex]
     . assert(_ == true)
 
     test(m"Sign some data with DSA"):
       val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()
-      val message = t"Hello world"
+      val message = "Hello world"
       val signature = privateKey.sign(message)
       privateKey.public.verify(message, signature)
     . assert(identity)
 
     test(m"Check bad signature"):
       val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()
-      val message = t"Hello world"
-      val signature = privateKey.sign(t"Something else")
+      val message = "Hello world"
+      val signature = privateKey.sign("Something else")
       privateKey.public.verify(message, signature)
     . assert(!identity(_))
 
     test(m"MD5 HMAC"):
-      pangram.hmac[Md5](t"key".in[Data]).serialize[Hex]
-    .check(_ == t"80070713463E7749B90C2DC24911E275")
+      pangram.hmac[Md5]("key".in[Data]).serialize[Hex]
+    .check(_ == "80070713463E7749B90C2DC24911E275")
 
     test(m"SHA1 HMAC"):
-      pangram.hmac[Sha1](t"key".in[Data]).serialize[Hex]
-    . assert(_ == t"DE7C9B85B8B78AA6BC8A7A36F70A90701C9DB4D9")
+      pangram.hmac[Sha1]("key".in[Data]).serialize[Hex]
+    . assert(_ == "DE7C9B85B8B78AA6BC8A7A36F70A90701C9DB4D9")
 
     test(m"SHA256 HMAC"):
-      pangram.hmac[Sha2[256]](t"key".in[Data]).serialize[Hex]
-    . assert(_ == t"F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
+      pangram.hmac[Sha2[256]]("key".in[Data]).serialize[Hex]
+    . assert(_ == "F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
 
     test(m"SHA384 HMAC"):
       import alphabets.base64Standard
-      pangram.hmac[Sha2[384]](t"key".in[Data]).serialize[Base64]
-    . assert(_ == t"1/RyfiwLOa4PHkDMlvYCQtW3gBhBzqb8WSxdPhrlBwBYKpbPNeHlVJlf5OAzgcI3")
+      pangram.hmac[Sha2[384]]("key".in[Data]).serialize[Base64]
+    . assert(_ == "1/RyfiwLOa4PHkDMlvYCQtW3gBhBzqb8WSxdPhrlBwBYKpbPNeHlVJlf5OAzgcI3")
 
     test(m"SHA512 HMAC"):
       import alphabets.base64Standard
-      pangram.hmac[Sha2[512]](t"key".in[Data]).serialize[Base64]
-    . assert(_ == t"tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr6Lr7rOg==")
+      pangram.hmac[Sha2[512]]("key".in[Data]).serialize[Base64]
+    . assert(_ == "tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr6Lr7rOg==")
 
     suite(m"COSE Mac0 (HMAC-SHA-256)"):
-      val keyBytes: Data = t"a-32-byte-key-for-hmac-sha256!!!".in[Data]
+      val keyBytes: Data = "a-32-byte-key-for-hmac-sha256!!!".in[Data]
       val key: SymmetricKey[HmacCipher[Sha2[256]]] = SymmetricKey(keyBytes)
       val payload: Data = pangram.in[Data]
 
@@ -488,32 +488,32 @@ object Tests extends Suite(m"Enigmatic tests"):
       // A local `given Crypto` outranks the file-level `javaBaseCrypto` import,
       // so each block unambiguously selects its provider; cross-validating the two
       // proves the OpenSSL path agrees with the JDK on the wire.
-      val key32: Data = t"a-32-byte-key-for-aes-256-cbc!!!".in[Data]
+      val key32: Data = "a-32-byte-key-for-aes-256-cbc!!!".in[Data]
 
       test(m"RAND_bytes returns the requested number of bytes"):
         OpensslCrypto.random.bytes(32).readable.length
       . assert(_ == 32)
 
       test(m"HMAC-SHA256 agrees with the JDK provider"):
-        val jdk = pangram.hmac[Sha2[256]](t"key".in[Data]).serialize[Hex]
-        val openssl = { given Crypto = OpensslCrypto; pangram.hmac[Sha2[256]](t"key".in[Data]).serialize[Hex] }
+        val jdk = pangram.hmac[Sha2[256]]("key".in[Data]).serialize[Hex]
+        val openssl = { given Crypto = OpensslCrypto; pangram.hmac[Sha2[256]]("key".in[Data]).serialize[Hex] }
         jdk == openssl
       . assert(_ == true)
 
       test(m"HMAC-SHA512 agrees with the JDK provider"):
-        val jdk = pangram.hmac[Sha2[512]](t"key".in[Data]).serialize[Hex]
-        val openssl = { given Crypto = OpensslCrypto; pangram.hmac[Sha2[512]](t"key".in[Data]).serialize[Hex] }
+        val jdk = pangram.hmac[Sha2[512]]("key".in[Data]).serialize[Hex]
+        val openssl = { given Crypto = OpensslCrypto; pangram.hmac[Sha2[512]]("key".in[Data]).serialize[Hex] }
         jdk == openssl
       . assert(_ == true)
 
       test(m"AES-256-CBC ciphertext agrees with the JDK provider (fixed IV)"):
-        val iv = InitializationVector.fixed(t"0123456789abcdef".in[Data])
+        val iv = InitializationVector.fixed("0123456789abcdef".in[Data])
         val key: SymmetricKey[Aes[256] over Cbc against Pkcs7] = SymmetricKey(key32)
-        val jdk = key.uncloak(t"Hello world".encrypt(iv).serialize[Hex])
+        val jdk = key.uncloak("Hello world".encrypt(iv).serialize[Hex])
 
         val openssl =
           given Crypto = OpensslCrypto
-          key.uncloak(t"Hello world".encrypt(iv).serialize[Hex])
+          key.uncloak("Hello world".encrypt(iv).serialize[Hex])
 
         jdk == openssl
       . assert(_ == true)
@@ -521,30 +521,30 @@ object Tests extends Suite(m"Enigmatic tests"):
       test(m"AES-256-CBC round-trips under the OpenSSL provider"):
         given Crypto = OpensslCrypto
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
-        key.uncloak(t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text])
-      . assert(_ == t"Hello world")
+        key.uncloak("Hello world".encrypt(InitializationVector.random).decrypt.as[Text])
+      . assert(_ == "Hello world")
 
       test(m"OpenSSL decrypts what the JDK encrypted (CBC, fixed IV)"):
-        val iv = InitializationVector.fixed(t"0123456789abcdef".in[Data])
+        val iv = InitializationVector.fixed("0123456789abcdef".in[Data])
         val key: SymmetricKey[Aes[256] over Cbc against Pkcs7] = SymmetricKey(key32)
-        val ciphertext = key.uncloak(t"Interoperable!".encrypt(iv))
+        val ciphertext = key.uncloak("Interoperable!".encrypt(iv))
         val plaintext = { given Crypto = OpensslCrypto; key.uncloak(ciphertext.decrypt.as[Text]) }
         plaintext
-      . assert(_ == t"Interoperable!")
+      . assert(_ == "Interoperable!")
 
       test(m"AES-128-CTR/NoPadding round-trips under the OpenSSL provider"):
         given Crypto = OpensslCrypto
         val key = SymmetricKey.generate[Aes[128] over Ctr against NoPadding]()
-        key.uncloak(t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text])
-      . assert(_ == t"Hello world")
+        key.uncloak("Hello world".encrypt(InitializationVector.random).decrypt.as[Text])
+      . assert(_ == "Hello world")
 
       test(m"OpenSSL streaming encryption round-trips via one-shot decryption"):
         given Crypto = OpensslCrypto
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         key.uncloak:
-          val chunks = Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
+          val chunks = Chain("Hello, ".in[Data], "streaming ".in[Data], "world!".in[Data])
           Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.readable).reduce(_ ++ _)).decrypt.as[Text]
-      . assert(_ == t"Hello, streaming world!")
+      . assert(_ == "Hello, streaming world!")
 
     suite(m"Keystores"):
       import java.io as ji
@@ -564,85 +564,85 @@ object Tests extends Suite(m"Enigmatic tests"):
       val guarded = createKeystore(scala.Array('s', 'e', 's', 'a', 'm', 'e'))
 
       test(m"An empty keystore opens with the right password"):
-        guarded.open[Keystore](Password(t"sesame")):
+        guarded.open[Keystore](Password("sesame")):
           keystore.aliases
       . assert(_ == Nil)
 
       test(m"A wrong password is refused as Unreadable"):
-        capture[Keystore.Error](guarded.open[Keystore](Password(t"wrong")) { () }).reason
+        capture[Keystore.Error](guarded.open[Keystore](Password("wrong")) { () }).reason
       . assert(_ == Keystore.Error.Reason.Unreadable)
 
       test(m"Opening a keystore for writing is refused"):
-        capture[Keystore.Error](guarded.open[Keystore](Write, Password(t"sesame")) { () }).reason
+        capture[Keystore.Error](guarded.open[Keystore](Write, Password("sesame")) { () }).reason
       . assert(_ == Keystore.Error.Reason.WriteUnsupported)
 
       test(m"A missing certificate alias is Unset"):
-        guarded.open[Keystore](Password(t"sesame")):
-          keystore.certificate(t"absent")
+        guarded.open[Keystore](Password("sesame")):
+          keystore.certificate("absent")
       . assert(_ == Unset)
 
       test(m"A keystore opens with a password held by the veiled-heap cloak"):
         import soundness.cloaks.veiledHeapCloak
-        guarded.open[Keystore](Password(t"sesame")):
+        guarded.open[Keystore](Password("sesame")):
           keystore.aliases
       . assert(_ == Nil)
 
     suite(m"Cloak strategies"):
       def roundtrip()(using cloak: Cloak): Text =
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
-        key.uncloak(t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text])
+        key.uncloak("Hello world".encrypt(InitializationVector.random).decrypt.as[Text])
 
       def passwordTrip()(using cloak: Cloak): Text =
-        Password(t"hunter2").uncloak(String(cleartext.chars).tt)
+        Password("hunter2").uncloak(String(cleartext.chars).tt)
 
       // Each strategy is imported through the `soundness` bundle, exercising the re-export
       // of the (inline, capability-yielding) givens as well as the strategies themselves.
       test(m"AES round-trips through the heap cloak"):
         import soundness.cloaks.heapCloak
         roundtrip()
-      . assert(_ == t"Hello world")
+      . assert(_ == "Hello world")
 
       test(m"AES round-trips through the off-heap cloak"):
         import soundness.cloaks.offHeapCloak
         roundtrip()
-      . assert(_ == t"Hello world")
+      . assert(_ == "Hello world")
 
       test(m"AES round-trips through the veiled-heap cloak"):
         import soundness.cloaks.veiledHeapCloak
         roundtrip()
-      . assert(_ == t"Hello world")
+      . assert(_ == "Hello world")
 
       test(m"AES round-trips through the veiled-off-heap cloak"):
         import soundness.cloaks.veiledOffHeapCloak
         roundtrip()
-      . assert(_ == t"Hello world")
+      . assert(_ == "Hello world")
 
       test(m"a password round-trips through the off-heap cloak"):
         import soundness.cloaks.offHeapCloak
         passwordTrip()
-      . assert(_ == t"hunter2")
+      . assert(_ == "hunter2")
 
       test(m"a password round-trips through the veiled-heap cloak"):
         import soundness.cloaks.veiledHeapCloak
         passwordTrip()
-      . assert(_ == t"hunter2")
+      . assert(_ == "hunter2")
 
       test(m"a password round-trips through the veiled-off-heap cloak"):
         import soundness.cloaks.veiledOffHeapCloak
         passwordTrip()
-      . assert(_ == t"hunter2")
+      . assert(_ == "hunter2")
 
       test(m"constructing a password from chars zeroes the input array"):
         val chars = scala.Array('h', 'u', 'n', 't', 'e', 'r', '2')
         val password = Password(chars)
         (chars.forall(_ == '\u0000'), password.uncloak(String(cleartext.chars).tt))
-      . assert(_ == (true, t"hunter2"))
+      . assert(_ == (true, "hunter2"))
 
       test(m"DSA signing works through an off-heap cloak"):
         import soundness.cloaks.offHeapCloak
         val key = PrivateKey.generate[Dsa[1024]]()
-        val signature = key.sign(t"attested")
-        key.public.verify(t"attested", signature)
+        val signature = key.sign("attested")
+        key.public.verify("attested", signature)
       . assert(_ == true)
 
       test(m"a symmetric key's material survives multiple uncloaks intact"):
@@ -667,7 +667,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"An RSA signature fails over different content"):
         val key = PrivateKey.generate[Rsa[2048]]()
-        key.public.verify(t"a different message", key.sign(pangram))
+        key.public.verify("a different message", key.sign(pangram))
       . assert(!_)
 
       test(m"The signature digest is selectable"):
@@ -685,9 +685,9 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"RSA still encrypts and decrypts"):
         val key = PrivateKey.generate[Rsa[2048]]()
-        val message: Data = key.public.uncloak(t"Hello world".encrypt(InitializationVector.random))
+        val message: Data = key.public.uncloak("Hello world".encrypt(InitializationVector.random))
         key.uncloak(message.decrypt.as[Text])
-      . assert(_ == t"Hello world")
+      . assert(_ == "Hello world")
 
       test(m"An ECDSA signature verifies against the matching public key"):
         val key = PrivateKey.generate[Ecdsa[256]]()
@@ -762,7 +762,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"An ML-DSA signature fails over different content"):
         val key = PrivateKey.generate[MlDsa[65]]()
-        key.public.verify(t"a different message", key.sign(pangram))
+        key.public.verify("a different message", key.sign(pangram))
       . assert(!_)
 
       test(m"A tampered ML-DSA signature fails to verify"):
@@ -800,9 +800,9 @@ object Tests extends Suite(m"Enigmatic tests"):
       import chronometries.unixChronometry
 
       val subject = Distinguished
-                     ( commonName = t"asn1.example.com",
-                       organization = t"Propensive",
-                       country = t"GB" )
+                     ( commonName = "asn1.example.com",
+                       organization = "Propensive",
+                       country = "GB" )
 
       val period = Instant(1_600_000_000_000L) ~ Instant(1_900_000_000_000L)
 
@@ -1028,31 +1028,31 @@ object Tests extends Suite(m"Enigmatic tests"):
       . assert(_ == vectors)
 
       test(m"A value reads directly from bytes tagged with its form"):
-        t"A003020102".deserialize[Hex].read[Asn1 in Der]
+        "A003020102".deserialize[Hex].read[Asn1 in Der]
       . assert(_ == Asn1.Tagged(0, true, Asn1.Integer(BigInt(2))))
 
       test(m"A constructed context tag holding one value is an explicit tag"):
-        decode(t"A003020102")
+        decode("A003020102")
       . assert(_ == Asn1.Tagged(0, true, Asn1.Integer(BigInt(2))))
 
       test(m"A constructed context tag holding two values is opaque"):
-        decode(t"A30405000500") match
+        decode("A30405000500") match
           case Asn1.Unknown(2, 3, true, _) => true
           case _                           => false
       . assert(identity)
 
       test(m"A primitive context tag is opaque"):
-        decode(t"8001AB") match
+        decode("8001AB") match
           case Asn1.Unknown(2, 0, false, _) => true
           case _                            => false
       . assert(identity)
 
       test(m"An unmodelled universal tag is preserved verbatim"):
-        roundtrip(t"1E0400480049")
-      . assert(_ == t"1E0400480049")
+        roundtrip("1E0400480049")
+      . assert(_ == "1E0400480049")
 
       test(m"Indefinite lengths are rejected"):
-        reason(t"0480")
+        reason("0480")
       . assert(_ == Asn1.Error.Reason.IndefiniteLength(1))
 
       test(m"Overlong lengths and tags are rejected"):
@@ -1060,7 +1060,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       . assert(_ == List(Asn1.Error.Reason.NonMinimalLength(1), Asn1.Error.Reason.NonMinimalTag(1)))
 
       test(m"A length needing more than four bytes is rejected"):
-        reason(t"048501010101010101")
+        reason("048501010101010101")
       . assert(_ == Asn1.Error.Reason.Overflow(1))
 
       test(m"Non-minimal and empty integers are rejected"):
@@ -1069,11 +1069,11 @@ object Tests extends Suite(m"Enigmatic tests"):
           Asn1.Error.Reason.EmptyInteger(0)))
 
       test(m"A boolean other than 0x00 or 0xFF is rejected"):
-        reason(t"010101")
+        reason("010101")
       . assert(_ == Asn1.Error.Reason.BadBoolean(0, 1))
 
       test(m"A null with content is rejected"):
-        reason(t"050100")
+        reason("050100")
       . assert(_ == Asn1.Error.Reason.BadLength(0, 5, 1))
 
       test(m"Invalid bit-string padding is rejected"):
@@ -1091,11 +1091,11 @@ object Tests extends Suite(m"Enigmatic tests"):
       . assert(_ == List(Asn1.Error.Reason.BadOid(3), Asn1.Error.Reason.OidArcOverflow(3)))
 
       test(m"An unsorted set is rejected"):
-        reason(t"3106040102040101")
+        reason("3106040102040101")
       . assert(_ == Asn1.Error.Reason.UnsortedSet(5))
 
       test(m"An impossible date is rejected"):
-        reason(t"170D3730303233303030303030305A")
+        reason("170D3730303233303030303030305A")
       . assert(_ == Asn1.Error.Reason.BadTime(0))
 
       test(m"Truncated input and trailing bytes are rejected"):
@@ -1103,7 +1103,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       . assert(_ == List(Asn1.Error.Reason.Truncated(2), Asn1.Error.Reason.Trailing(2)))
 
       test(m"The reserved tag number zero is rejected"):
-        reason(t"0000")
+        reason("0000")
       . assert(_ == Asn1.Error.Reason.ReservedTag(0))
 
       test(m"A real X.509 certificate round-trips byte-exactly"):
@@ -1130,8 +1130,8 @@ object Tests extends Suite(m"Enigmatic tests"):
 
         Inspectable.fallbacks
          ( (Asn1.Integer(BigInt(42)): Asn1).in[Der].inspect,
-           pangram.hmac[Sha2[256]](t"a key".in[Data]).inspect,
-           Password(t"secret").inspect,
+           pangram.hmac[Sha2[256]]("a key".in[Data]).inspect,
+           Password("secret").inspect,
            key.inspect,
            key.public.inspect,
            key.sign(pangram).inspect,
@@ -1141,13 +1141,13 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"A DER document inspects as its full hexadecimal"):
         (Asn1.Integer(BigInt(42)): Asn1).in[Der].inspect
-      . assert(_ == t"Der(02012a)")
+      . assert(_ == "Der(02012a)")
 
       test(m"A password never reveals its cleartext"):
-        Password(t"secret").inspect
-      . assert(_ == t"Password(\u2022\u2022\u2022)")
+        Password("secret").inspect
+      . assert(_ == "Password(\u2022\u2022\u2022)")
 
       test(m"A private key never reveals its key material"):
         PrivateKey.generate[Rsa[2048]]().inspect
-      . assert(_ == t"PrivateKey(\u2022\u2022\u2022)")
+      . assert(_ == "PrivateKey(\u2022\u2022\u2022)")
 

@@ -51,11 +51,11 @@ import rudiments.*
 // `java.lang.Object`'s absence; producers harvest closures whole, and a supertype *within* the
 // claimed content that fails to read still fails the atomization.
 object JsigDiscipline extends Discipline:
-  def id: Text = t"jsig/1"
+  def id: Text = "jsig/1"
 
   // Host contracts carried as signature stubs are the motivating case; the `jvm` inclusion
   // admits a library whose interface carrier genuinely is Java signatures.
-  def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"jvm", t"host"))
+  def domain: Discipline.Domain = Discipline.Domain.Realms(Set("jvm", "host"))
 
   // A call site names the receiver, so a type's contract surface includes what it presents —
   // sound here as it is for `classfile/1`, and required for the same reason.

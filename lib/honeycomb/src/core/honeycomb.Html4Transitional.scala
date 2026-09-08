@@ -319,7 +319,7 @@ class Html4Transitional() extends Dom:
   import Html4Transitional.*
 
   def doctype: Doctype =
-    val dtd = t""""-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd""""
+    val dtd = """"-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd""""
     Doctype(t"HTML PUBLIC $dtd")
 
   // Content categories
@@ -428,16 +428,16 @@ class Html4Transitional() extends Dom:
     type Transport = ""
     type Form = Html4Transitional
 
-    val Hidden = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"hidden"))
-    val Text = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"text"))
-    val Password = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"password"))
-    val Checkbox = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"checkbox"))
-    val Radio = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"radio"))
-    val Submit = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"submit"))
-    val Image = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"image"))
-    val Reset = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"reset"))
-    val Button = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"button"))
-    val File = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"file"))
+    val Hidden = Tag.void["input", Html4Transitional](presets = proscenium.Map("type" -> "hidden"))
+    val Text = Tag.void["input", Html4Transitional](presets = proscenium.Map("type" -> "text"))
+    val Password = Tag.void["input", Html4Transitional](presets = proscenium.Map("type" -> "password"))
+    val Checkbox = Tag.void["input", Html4Transitional](presets = proscenium.Map("type" -> "checkbox"))
+    val Radio = Tag.void["input", Html4Transitional](presets = proscenium.Map("type" -> "radio"))
+    val Submit = Tag.void["input", Html4Transitional](presets = proscenium.Map("type" -> "submit"))
+    val Image = Tag.void["input", Html4Transitional](presets = proscenium.Map("type" -> "image"))
+    val Reset = Tag.void["input", Html4Transitional](presets = proscenium.Map("type" -> "reset"))
+    val Button = Tag.void["input", Html4Transitional](presets = proscenium.Map("type" -> "button"))
+    val File = Tag.void["input", Html4Transitional](presets = proscenium.Map("type" -> "file"))
 
   val Ins = Tag.transparent["ins", "", Html4Transitional]()
   val Isindex = Tag.void["isindex", Html4Transitional]()
@@ -513,8 +513,8 @@ class Html4Transitional() extends Dom:
     Dictionary(this.membersOfType[Tag].map { tag => tag.label -> tag }*)
 
   val entities: Dictionary[Text] =
-    val list = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n")
-    . map(_.cut(t"\t")).sweep:
+    val list = cp"/honeycomb/entities-html4.tsv".read[Text].cut("\n")
+    . map(_.cut("\t")).sweep:
         case List(key, value) => (key, value)
 
     Dictionary(list*)

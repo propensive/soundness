@@ -248,10 +248,10 @@ object Xenophile:
 
     val members = refinements(self.asTerm.tpe.widen).to(Map)
 
-    val topic = members(t"Topic").or:
+    val topic = members("Topic").or:
       halt(m"xenophile: the receiver is not a foreign type (it has no `Topic`)")
 
-    val origin = members(t"Origin").or:
+    val origin = members("Origin").or:
       halt(m"xenophile: the receiver does not record its source language (it has no `Origin`)")
 
     (topic, origin)
@@ -274,7 +274,7 @@ object Xenophile:
 
     import quotes.reflect.*
 
-    refinements(self.asTerm.tpe.widen).to(Map)(t"Locus")
+    refinements(self.asTerm.tpe.widen).to(Map)("Locus")
 
   // Summons the `Interface` given for a source language and reads its definitions path (`Locus`)
   // as the singleton path type, or `Unset` when no such `Interface` (or no path) is in scope.
@@ -291,7 +291,7 @@ object Xenophile:
 
         case Some(found) =>
           val members = (refinements(found.asTerm.tpe) ++ refinements(found.asTerm.tpe.widen)).to(Map)
-          members(t"Locus")
+          members("Locus")
 
   // The definitions path carried by a `Locus` singleton type.
   private[xenophile] def locusText(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Text =
@@ -381,7 +381,7 @@ object Xenophile:
     val paramTopic = reprOf(paramType)
     val argRepr = arg.asTerm.tpe.widen
 
-    val argTopic = refinements(argRepr).to(Map)(t"Topic").or:
+    val argTopic = refinements(argRepr).to(Map)("Topic").or:
       halt(m"xenophile: the foreign type of an argument to $method is not known")
 
     // The `ok` arm topic of a `result<ok, err>` parameter, if it is one — so a value of that arm's
@@ -396,7 +396,7 @@ object Xenophile:
     // pointerness, not pointee identity, exactly as C itself does.
     val pointerOk: Boolean = paramType match
       case Foreign.Type.Applied(constructor, _) if constructor.s == "ptr" =>
-        argTopic <:< reprOf(Foreign.Type.Named(t"pointer"))
+        argTopic <:< reprOf(Foreign.Type.Named("pointer"))
 
       case _ =>
         false
@@ -458,7 +458,7 @@ object Xenophile:
   // TypeScript `Array`/`ReadonlyArray`, and WIT `list`. All are encoded by `reprOf` as
   // `<constructor> { type Transport = <element> }` (the prepositional `over`).
   private val arrayConstructors: Set[Text] =
-    Set(t"sequence", t"FrozenArray", t"Array", t"ReadonlyArray", t"list")
+    Set("sequence", "FrozenArray", "Array", "ReadonlyArray", "list")
 
   // Indexes into an array-typed foreign value: checks the receiver's `Topic` is one of the
   // `arrayConstructors` applied to a single element type, and yields a `Foreign` of that element.
@@ -555,7 +555,7 @@ object Xenophile:
 
     val members = (refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)).to(Map)
 
-    val locusRepr = members(t"Locus").or:
+    val locusRepr = members("Locus").or:
       halt(m"xenophile: the resource does not carry a singleton path type (it has no `Locus`)")
 
     interfaceOf[form](locusRepr)

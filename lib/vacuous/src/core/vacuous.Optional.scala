@@ -32,6 +32,7 @@
                                                                                                   */
 package vacuous
 
+import anticipation.Text
 import fulminate.{Diagnostics, m}
 
 import scala.caps
@@ -50,6 +51,12 @@ object Optional:
 
   given unsetEquality: [value] => CanEqual[value, Unset] = CanEqual.derived
   given equalityUnset: [value] => CanEqual[Unset, value] = CanEqual.derived
+
+  // A string literal compared with an `Optional[Text]` keeps its `String` type (the
+  // expected type of `==`'s operand is `Any`), so the comparison needs the same permission
+  // `Text` itself grants against `String`.
+  given optionalTextEquality: CanEqual[Optional[Text], String] = CanEqual.derived
+  given equalityOptionalText: CanEqual[String, Optional[Text]] = CanEqual.derived
 
   inline def apply[value](value: value | Null): Optional[value] =
     if value == null then Unset else value

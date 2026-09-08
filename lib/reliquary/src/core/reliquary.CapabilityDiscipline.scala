@@ -55,13 +55,13 @@ import vacuous.*
 // Like `opaque/1` and `resource/1` it is language-blind and lives in the core, since every
 // verifier must be able to implement it (§16, step 4).
 object CapabilityDiscipline extends Discipline:
-  def id: Text = t"capability/1"
+  def id: Text = "capability/1"
 
-  def claims(path: TreePath, data: Data): Boolean = path.text == t"capabilities"
+  def claims(path: TreePath, data: Data): Boolean = path.text == "capabilities"
 
   // The single realm `{host}`: capability listings describe environments, never libraries, and
   // L127 rejects a library release that declares this discipline.
-  def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"host"))
+  def domain: Discipline.Domain = Discipline.Domain.Realms(Set("host"))
   def keying: Discipline.Keying = Discipline.Keying.Declaration
 
   // Presence, on the same terms as `resource/1` — the recompilation level for content addressed
@@ -71,7 +71,7 @@ object CapabilityDiscipline extends Discipline:
 
   private def malformed(detail: Text): Discipline.Error =
     import errorDiagnostics.emptyDiagnostics
-    Discipline.Error(t"capability/1", Discipline.Error.Reason.Malformed(detail))
+    Discipline.Error("capability/1", Discipline.Error.Reason.Malformed(detail))
 
   def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
   :   Atomization raises Discipline.Error =
@@ -92,7 +92,7 @@ object CapabilityDiscipline extends Discipline:
           tel.validate(using Lira.Schemas.capabilities, Lira.Validators.registry)
           tel
 
-    val compounds = document.childCompounds.readable.filter(_.keyword == t"capability").toVector
+    val compounds = document.childCompounds.readable.filter(_.keyword == "capability").toVector
 
     val entries = compounds.map: compound =>
       val fields = compound.children.readable.flatMap(_.compounds.readable).toVector
@@ -106,12 +106,12 @@ object CapabilityDiscipline extends Discipline:
 
         values.headOption.getOrElse(Unset)
 
-      val name = field(t"name").or(abort(malformed(t"a capability row has no name")))
-      (name, field(t"version"))
+      val name = field("name").or(abort(malformed("a capability row has no name")))
+      (name, field("version"))
 
     entries.zip(entries.drop(1)).foreach: (left, right) =>
       if left(0).s == right(0).s then abort(malformed(t"the capability ${left(0)} is duplicated"))
-      if left(0).s > right(0).s then abort(malformed(t"capability rows are not sorted by name"))
+      if left(0).s > right(0).s then abort(malformed("capability rows are not sorted by name"))
 
     val listing = entries.toList.map: (name, predicate) =>
       val encoding = Array.collect[Byte](): out =>

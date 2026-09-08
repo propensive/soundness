@@ -48,10 +48,10 @@ object Attributive:
     if value then (key, Unset) else Unset
 
   given switch: Boolean is Attributive to Whatwg.Switch = (key, value) =>
-    ( key, if value then t"on" else t"off" )
+    ( key, if value then "on" else "off" )
 
   given truth: Boolean is Attributive to Whatwg.Truth = (key, value) =>
-    ( key, if value then t"true" else t"false" )
+    ( key, if value then "true" else "false" )
 
   given int: Int is Attributive to Whatwg.Integral = _ -> _.show
   given posInt: Int is Attributive to Whatwg.PositiveInt = _ -> _.show
@@ -59,7 +59,7 @@ object Attributive:
   given domId: (Name[DomId] is Attributive to Whatwg.Id) = _ -> _
   given cssClass: (Name[CssClass] is Attributive to Whatwg.CssClassList) = _ -> _
   given classList: ClassList is Attributive to Whatwg.CssClassList =
-    _ -> _.classes.to[List].join(t" ")
+    _ -> _.classes.to[List].join(" ")
 
   given url: [url: Abstractable across Urls to Text] => url is Attributive to Whatwg.Url =
     (key, value) => (key, value.generic)
@@ -67,10 +67,10 @@ object Attributive:
   given style: Text is Attributive to Whatwg.Css = (key, value) => (key, value)
 
   given cssClassList: List[Name[CssClass]] is Attributive to Whatwg.CssClassList =
-    (key, value) => (key, value.join(t" "))
+    (key, value) => (key, value.join(" "))
 
   given domIds: List[Name[DomId]] is Attributive to Whatwg.Ids =
-    (key, value) => (key, value.join(t" "))
+    (key, value) => (key, value.join(" "))
 
 trait Attributive extends Typeclass, Resultant:
   def attribute(key: Text, value: Self): Optional[(Text, Optional[Text])]

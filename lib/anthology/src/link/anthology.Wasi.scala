@@ -47,9 +47,9 @@ object Wasi:
     case Wasip1, Wasip2, Wasip3
 
     def id: Text = this match
-      case Wasip1 => t"wasip1"
-      case Wasip2 => t"wasip2"
-      case Wasip3 => t"wasip3"
+      case Wasip1 => "wasip1"
+      case Wasip2 => "wasip2"
+      case Wasip3 => "wasip3"
 
   // WitWorld → Wasi.World
   // The WIT definitions a WASI component link resolves its imports and exports against: a

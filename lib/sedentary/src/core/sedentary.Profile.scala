@@ -155,7 +155,8 @@ extends Rig:
 
               if method != null then
                 val cls = method.getType.nn.getName
-                val key = (if cls == null then "?" else cls) + "\t" + method.getName
+                val key =
+                  ((if cls == null then "?" else cls): String) + s"\t${method.getName}"
                 val previous = counts.get(key)
                 counts.put(key, (if previous == null then 0L else previous) + 1L)
                 total += 1L
@@ -171,7 +172,7 @@ extends Rig:
 
           List.from:
             total.toString.tt :: sorted.map: (key, count) =>
-              (count.toString + "\t" + key).tt
+              (count.toString + s"\t$key").tt
         }
 
     // A profile records for its (scaled) target duration, so the declared time is the estimate.
@@ -182,7 +183,7 @@ extends Rig:
         Hotspots
           ( results.prim.let(_.s.toLong).or(0L),
             results.skip(1).map: line =>
-              line.cut(t"\t") match
+              line.cut("\t") match
                 case count :: className :: method :: Nil =>
                   Hotspots.Frame
                     ( StackTrace.rewrite(className.s),
@@ -190,7 +191,7 @@ extends Rig:
                       count.s.toLong )
 
                 case other =>
-                  Hotspots.Frame(t"?", line, 0L) )
+                  Hotspots.Frame("?", line, 0L) )
 
       inclusion.include(runner.report, testId, hotspots)
 

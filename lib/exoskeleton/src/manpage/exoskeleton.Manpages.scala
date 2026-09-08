@@ -85,7 +85,7 @@ object Manpages:
     . protect:
         safely:
           val dir: Path on Linux =
-            Xdg.dataHome[Path on Linux]/Name[Linux](t"man")/Name[Linux](t"man${page.section}")
+            Xdg.dataHome[Path on Linux]/Name[Linux]("man")/Name[Linux](t"man${page.section}")
 
           if !dir.existent() then dir.create[Directory](CreateFlag.Parents)
 

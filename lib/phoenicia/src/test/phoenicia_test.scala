@@ -117,7 +117,7 @@ object Tests extends Suite(m"Phoenicia Tests"):
     ++ u16(0)                            // family class
     ++ u16(0, 0, 0, 0, 0)                // panose
     ++ u32(0L, 0L, 0L, 0L)               // unicode ranges
-    ++ ascii(t"TEST")                    // vendor id
+    ++ ascii("TEST")                    // vendor id
     ++ u16(0x40, 0x41, 0x7a)             // selection and first/last character index
     ++ u16(750, -250, 100)               // typographic ascent, descent and line gap
     ++ u16(820, 220)                     // Windows ascent and descent
@@ -129,7 +129,7 @@ object Tests extends Suite(m"Phoenicia Tests"):
     ++ u16(3, 1, 0x409, 1, 18, 0)  // Windows family name
     ++ u16(3, 1, 0x409, 6, 16, 18) // Windows PostScript name
     ++ u16(1, 0, 0, 6, 7, 34)      // Macintosh PostScript name
-    ++ utf16(t"Test Sans") ++ utf16(t"TestSans") ++ ascii(t"MacName")
+    ++ utf16("Test Sans") ++ utf16("TestSans") ++ ascii("MacName")
 
   // Glyphs 1 and 2 are simple single-contour glyphs; glyph 3 is a composite of both, its
   // second component using byte-sized args and a single scale.
@@ -234,7 +234,7 @@ object Tests extends Suite(m"Phoenicia Tests"):
       . assert(_ == 25)
 
       test(m"Text width scales advances by the em size"):
-        ttf.width(t"AB")
+        ttf.width("AB")
       . assert(_ == 0.9*Em)
 
     suite(m"Font tables"):
@@ -270,11 +270,11 @@ object Tests extends Suite(m"Phoenicia Tests"):
 
       test(m"Windows names are preferred to Macintosh names"):
         ttf.fontName
-      . assert(_ == t"TestSans")
+      . assert(_ == "TestSans")
 
       test(m"The family name is decoded from UTF-16"):
         ttf.familyName
-      . assert(_ == t"Test Sans")
+      . assert(_ == "Test Sans")
 
     suite(m"Glyph outlines"):
       val ttf = font()
@@ -296,7 +296,7 @@ object Tests extends Suite(m"Phoenicia Tests"):
       . assert(_ == Set(1, 2, 3))
 
       test(m"Long-format loca offsets are read unhalved"):
-        font(head = headTableWith(1), extra = t"loca" -> locaTableLong).glyf(3).bytes.length
+        font(head = headTableWith(1), extra = "loca" -> locaTableLong).glyf(3).bytes.length
       . assert(_ == 26)
 
     suite(m"Subsetting"):
@@ -320,12 +320,12 @@ object Tests extends Suite(m"Phoenicia Tests"):
       . assert(_ == (false, false, true))
 
       test(m"Character mapping survives subsetting"):
-        ttf.subset(t"A").glyph('A').id
+        ttf.subset("A").glyph('A').id
       . assert(_ == 1)
 
       test(m"Metrics and names are carried over"):
-        (ttf.subset(t"A").advanceWidth('A'), ttf.subset(t"A").fontName)
-      . assert(_ == (500, t"TestSans"))
+        (ttf.subset("A").advanceWidth('A'), ttf.subset("A").fontName)
+      . assert(_ == (500, "TestSans"))
 
       test(m"The subset head switches to long loca offsets"):
         ttf.subset(Set('A')).head.indexToLocFormat.int

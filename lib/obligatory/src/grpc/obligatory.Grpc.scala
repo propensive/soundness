@@ -140,7 +140,7 @@ object Grpc:
     ( connection: Http2.Connection^, authority: Text, defaults: Grpc.Metadata = Grpc.Metadata() ):
     // The `:authority` pseudo-header is supplied to `fetch` separately; the request's
     // `Host` is unused by the HTTP/2 transport, so the hostname is parsed leniently.
-    private val host: Host = unsafely(authority.cut(t":").prim.or(authority).as[Host])
+    private val host: Host = unsafely(authority.cut(":").prim.or(authority).as[Host])
 
     // Build the gRPC HTTP/2 request: POST to `/package.Service/Method` with the
     // mandatory content-type and `te: trailers`, plus any custom metadata, and a body
@@ -152,8 +152,8 @@ object Grpc:
         Http.Header(key, value)
 
       val headers =
-        Http.Header(t"content-type", t"application/grpc+proto") ::
-          Http.Header(t"te", t"trailers") ::
+        Http.Header("content-type", "application/grpc+proto") ::
+          Http.Header("te", "trailers") ::
           metadataHeaders
 
       val body: Spring[Data] = () => Stream(Framing.encode(message))
@@ -176,8 +176,8 @@ object Grpc:
     :   Unit =
 
       val fields = stream.trailers.await() + stream.headers.await()
-      val codeText = fields.seek(_.name == t"grpc-status").let(_.value)
-      val message = fields.seek(_.name == t"grpc-message").let(_.value).or(t"")
+      val codeText = fields.seek(_.name == "grpc-status").let(_.value)
+      val message = fields.seek(_.name == "grpc-message").let(_.value).or(t"")
 
       val code =
         codeText.lay(Grpc.Status.Unknown.code): text =>
@@ -209,7 +209,7 @@ object Grpc:
     :   response =
 
       val (stream, response) =
-        connection.fetch(httpRequest(method, metadata, encodeMessage(value)), t"http", authority)
+        connection.fetch(httpRequest(method, metadata, encodeMessage(value)), "http", authority)
 
       expectOk(response)
       val messages = stream.body.stream.records.frames[Framing]
@@ -219,7 +219,7 @@ object Grpc:
       // response surfaces its real status rather than "no message".
       expectStatus(stream)
 
-      first.lay(abort(Error(Grpc.Status.Internal, t"the server sent no response message"))):
+      first.lay(abort(Error(Grpc.Status.Internal, "the server sent no response message"))):
         message => decodeMessage[response](message)
 
     // A server-streaming call: send one message, then lazily decode each response
@@ -233,7 +233,7 @@ object Grpc:
     :   Chain[response] =
 
       val (stream, response) =
-        connection.fetch(httpRequest(method, metadata, encodeMessage(value)), t"http", authority)
+        connection.fetch(httpRequest(method, metadata, encodeMessage(value)), "http", authority)
 
       expectOk(response)
       val messages = stream.body.stream.records.frames[Framing]
@@ -285,7 +285,7 @@ object Grpc:
     given framable: (tactic: Tactic[Error])
     =>  ((Data is Framable by Framing)^{tactic}) = input =>
       def truncated(): Nothing =
-        abort(Error(Grpc.Status.Internal, t"the gRPC message frame was truncated"))
+        abort(Error(Grpc.Status.Internal, "the gRPC message frame was truncated"))
 
       val cursor = Cursor(input)
 

@@ -44,9 +44,9 @@ object Js:
     case Es, CommonJs, Script
 
     def id: Text = this match
-      case Es       => t"es"
-      case CommonJs => t"commonjs"
-      case Script   => t"script"
+      case Es       => "es"
+      case CommonJs => "commonjs"
+      case Script   => "script"
 
 // JavaScript, bound to a JavaScript host (a browser's DOM or a runtime such as Node) through
 // the given module system: one application node per module system. Unexported: `soundness`

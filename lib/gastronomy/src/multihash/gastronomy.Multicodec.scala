@@ -59,24 +59,24 @@ import vacuous.*
 // `Sha384`/`Sha512` share the codes of `Sha2[384]`/`Sha2[512]`: they are the same functions,
 // and the table has one entry apiece.
 object Multicodec:
-  given sha1: Sha1 is Multicodec = Multicodec(0x11, t"sha1")
-  given sha2_256: Sha2[256] is Multicodec = Multicodec(0x12, t"sha2-256")
-  given sha2_512: Sha2[512] is Multicodec = Multicodec(0x13, t"sha2-512")
-  given sha2_384: Sha2[384] is Multicodec = Multicodec(0x20, t"sha2-384")
-  given sha2_224: Sha2[224] is Multicodec = Multicodec(0x1013, t"sha2-224")
-  given sha384: Sha384 is Multicodec = Multicodec(0x20, t"sha2-384")
-  given sha512: Sha512 is Multicodec = Multicodec(0x13, t"sha2-512")
+  given sha1: Sha1 is Multicodec = Multicodec(0x11, "sha1")
+  given sha2_256: Sha2[256] is Multicodec = Multicodec(0x12, "sha2-256")
+  given sha2_512: Sha2[512] is Multicodec = Multicodec(0x13, "sha2-512")
+  given sha2_384: Sha2[384] is Multicodec = Multicodec(0x20, "sha2-384")
+  given sha2_224: Sha2[224] is Multicodec = Multicodec(0x1013, "sha2-224")
+  given sha384: Sha384 is Multicodec = Multicodec(0x20, "sha2-384")
+  given sha512: Sha512 is Multicodec = Multicodec(0x13, "sha2-512")
 
   // Draft entries in the table, but unambiguous and widely implemented.
-  given blake3: Blake3 is Multicodec = Multicodec(0x1e, t"blake3")
-  given md5: Md5 is Multicodec = Multicodec(0xd5, t"md5")
+  given blake3: Blake3 is Multicodec = Multicodec(0x1e, "blake3")
+  given md5: Md5 is Multicodec = Multicodec(0xd5, "md5")
 
   // The registered names of every code above, so a decoded envelope can be described even
   // though its algorithm is not recoverable as a type. Codes outside this set are legal and
   // representable; they simply have no name here.
   private val names: Map[Int, Text] =
-    Map(0x11 -> t"sha1", 0x12 -> t"sha2-256", 0x13 -> t"sha2-512", 0x20 -> t"sha2-384",
-        0x1013 -> t"sha2-224", 0x1e -> t"blake3", 0xd5 -> t"md5", 0x00 -> t"identity")
+    Map(0x11 -> "sha1", 0x12 -> "sha2-256", 0x13 -> "sha2-512", 0x20 -> "sha2-384",
+        0x1013 -> "sha2-224", 0x1e -> "blake3", 0xd5 -> "md5", 0x00 -> "identity")
 
   def name(code: Int): Optional[Text] = names.at(code)
 

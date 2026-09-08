@@ -566,19 +566,19 @@ object internal:
 
     if !classSymbol.flags.is(Flags.Case) then
       report.errorAndAbort
-        ("stratiform: staged parsing requires a case class; sums and other types use " +
+        (s"stratiform: staged parsing requires a case class; sums and other types use " +
           "`Tel.Parsable.derived`")
 
     if classSymbol.owner.isTerm then
       report.errorAndAbort
-        ("stratiform: staged parsing requires a top-level or object-nested case class; " +
+        (s"stratiform: staged parsing requires a top-level or object-nested case class; " +
           "method-local classes use `Tel.Parsable.derived`")
 
     val ctor = classSymbol.primaryConstructor
 
     if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
       report.errorAndAbort
-        ("stratiform: staged parsing requires a single parameter list; use " +
+        (s"stratiform: staged parsing requires a single parameter list; use " +
           "`Tel.Parsable.derived`")
 
     val fields = classSymbol.caseFields
@@ -666,22 +666,22 @@ object internal:
       val bufferType = TypeRepr.of[scala.collection.mutable.ListBuffer[Any] | Null]
 
       val slots = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "slot"+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, s"slot$index", fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
 
       val seens = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "seen"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, s"seen$index", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
 
       // Whether a field's slot was filled by a positionally-assigned atom
       // rather than a keyword child — a later same-keyword child then fills
       // a non-repeatable member twice (§20.2 step 5c).
       val atomFilleds = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "atom"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, s"atom$index", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
 
       // Occurrence buffers for the fields that may gather (repeatable
       // instances), allocated lazily on the first occurrence.
       val buffers: List[Option[Symbol]] = List.range(0, arity).map: index =>
         if kinds(index) != InstanceK then None else
-          Some(Symbol.newVal(owner, "gather"+index, bufferType, Flags.Mutable, Symbol.noSymbol))
+          Some(Symbol.newVal(owner, s"gather$index", bufferType, Flags.Mutable, Symbol.noSymbol))
 
       val slotDefs = List.range(0, arity).map: index =>
         ValDef(slots(index), Some(zero(fieldTypes(index))))
@@ -727,14 +727,14 @@ object internal:
                 firstWins:
                   '{
                     Tel.Parsable.focusing($foci, $reader, $keyText):
-                      $reader.int().lay(Tel.Parsable.scalarFault($reader, t"Int", 0))(identity)
+                      $reader.int().lay(Tel.Parsable.scalarFault($reader, "Int", 0))(identity)
                   }.asTerm
 
               case LongK =>
                 firstWins:
                   '{
                     Tel.Parsable.focusing($foci, $reader, $keyText):
-                      $reader.long().lay(Tel.Parsable.scalarFault($reader, t"Long", 0L))(identity)
+                      $reader.long().lay(Tel.Parsable.scalarFault($reader, "Long", 0L))(identity)
                   }.asTerm
 
               case BooleanK =>
@@ -742,7 +742,7 @@ object internal:
                   '{
                     Tel.Parsable.focusing($foci, $reader, $keyText):
                       $reader.boolean()
-                      . lay(Tel.Parsable.scalarFault($reader, t"Boolean", false))(identity)
+                      . lay(Tel.Parsable.scalarFault($reader, "Boolean", false))(identity)
                   }.asTerm
 
               case TextK =>
@@ -750,7 +750,7 @@ object internal:
                   '{
                     Tel.Parsable.focusing($foci, $reader, $keyText):
                       $reader.atom()
-                      . lay { $reader.fault(Tel.Error.Reason.Absent); t"" } (identity)
+                      . lay { $reader.fault(Tel.Error.Reason.Absent); "" } (identity)
                   }.asTerm
 
               case StringK =>
@@ -977,7 +977,7 @@ object internal:
 
               case IntK     => '{ Tel.Parsable.missing[Int](0)(using $tactic) }.asExprOf[fieldType]
               case LongK    => '{ Tel.Parsable.missing[Long](0L)(using $tactic) }.asExprOf[fieldType]
-              case TextK    => '{ Tel.Parsable.missing[Text](t"")(using $tactic) }.asExprOf[fieldType]
+              case TextK    => '{ Tel.Parsable.missing[Text]("")(using $tactic) }.asExprOf[fieldType]
               case StringK  => '{ Tel.Parsable.missing[String]("")(using $tactic) }.asExprOf[fieldType]
 
               case BooleanK =>

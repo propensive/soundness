@@ -36,7 +36,7 @@ import anticipation.*
 import rudiments.*
 
 object Feet:
-  given designation: Designation[Feet[1]] = () => "ft".tt
+  given designation: Designation[Feet[1]] = () => "ft"
   inline given ratio: Ratio[Feet[-1] & Metres[1], 0.3048] = !!
 
 trait Feet[Power <: Nat] extends Units[Power, Distance]

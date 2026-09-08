@@ -136,17 +136,17 @@ object Multipart:
 
     def parsePart(headers: Map[Text, Text], stream: Chain[Data])
     :   Part =
-      headers.at(t"Content-Disposition").let: disposition =>
-        val parts = disposition.cut(t";").map(_.trim)
+      headers.at("Content-Disposition").let: disposition =>
+        val parts = disposition.cut(";").map(_.trim)
 
         val params: Map[Text, Text] =
           parts.skip(1).map: param =>
-            param.cut(t"=", 2) match
+            param.cut("=", 2) match
               case List(key, value) =>
                 // `pen` is present only when `value` has at least two characters, so a lone
                 // `"` (which starts and ends with a quote) is left unstripped rather than
                 // miscomputed.
-                if value.starts(t"\"") && value.ends(t"\"")
+                if value.starts("\"") && value.ends("\"")
                 then key -> value.pen.lay(value)((pen: Ordinal) => value.segment(Sec thru pen))
                 else key -> value
 
@@ -163,8 +163,8 @@ object Multipart:
           case _ =>
             abort(Multipart.Error(Multipart.Error.Reason.BadDisposition))
 
-        val filename = params.at(t"filename")
-        val name = params.at(t"name")
+        val filename = params.at("filename")
+        val name = params.at("name")
 
         Part(dispositionValue, headers, name, filename, stream)
 

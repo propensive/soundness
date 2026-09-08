@@ -69,10 +69,10 @@ object Cookie:
        cookie.domain.let { domain => t"domain:${domain.inspect}" },
        cookie.path.let { path => t"path:${path.inspect}" },
        cookie.expiry.let { expiry => t"expiry:${expiry.inspect}" },
-       if cookie.secure then t"secure" else Unset,
-       if cookie.httpOnly then t"httpOnly" else Unset )
+       if cookie.secure then "secure" else Unset,
+       if cookie.httpOnly then "httpOnly" else Unset )
 
-    . compact.join(t"Cookie(", t" ╱ ", t")")
+    . compact.join("Cookie(", " ╱ ", ")")
 
   object Value:
     given showable: Value is Showable = cookie =>
@@ -81,10 +81,10 @@ object Cookie:
           cookie.expiry.let { expiry => t"Max-Age=$expiry" },
           cookie.domain.let { domain => t"Domain=$domain" },
           cookie.path.let { path => t"Path=$path" },
-          if cookie.secure then t"Secure" else Unset,
-          if cookie.httpOnly then t"HttpOnly" else Unset )
+          if cookie.secure then "Secure" else Unset,
+          if cookie.httpOnly then "HttpOnly" else Unset )
 
-      . compact.join(t"; ")
+      . compact.join("; ")
 
     // `showable` renders the `Set-Cookie` form, which already shows every attribute the value
     // carries and omits only those which are unset; wrapping it names the type, so the
@@ -97,7 +97,7 @@ object Cookie:
 
     given addable: Http.Response is Addable by Cookie.Value to Http.Response =
       Addable: (response, cookie) =>
-        val header = Http.Header(t"set-cookie", cookie.show)
+        val header = Http.Header("set-cookie", cookie.show)
 
         // `response` is pure here, so its body is pure; the seal only discharges
         // the field's capture-polymorphic declared type (see `Protoresponse`).
@@ -105,8 +105,8 @@ object Cookie:
         response.status(header :: response.textHeaders, body)
 
     given decodable: List[Cookie.Value] is Decodable in Text = value =>
-      value.cut(t"; ").bind:
-        _.cut(t"=", 2) match
+      value.cut("; ").bind:
+        _.cut("=", 2) match
           case List(key, value) => List(Cookie.Value(key.urlDecode, value.urlDecode))
           case _                => Nil
 

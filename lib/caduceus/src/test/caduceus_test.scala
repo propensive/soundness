@@ -53,114 +53,114 @@ case class Report(title: Text, body: Text)
 
 object Tests extends Suite(m"Caduceus tests"):
   def run(): Unit =
-    val jack = unsafely(EmailAddress.parse(t"jack@example.com"))
-    val jill = unsafely(EmailAddress.parse(t"jill@example.com"))
-    val jane = unsafely(EmailAddress.parse(t"jane@example.com"))
+    val jack = unsafely(EmailAddress.parse("jack@example.com"))
+    val jill = unsafely(EmailAddress.parse("jill@example.com"))
+    val jane = unsafely(EmailAddress.parse("jane@example.com"))
 
     suite(m"Email body tests"):
       test(m"A text-only body has text but no HTML"):
-        val body = Email.Body(t"hello")
+        val body = Email.Body("hello")
         (body.text, body.html)
-      . assert(_ == (t"hello", Unset))
+      . assert(_ == ("hello", Unset))
 
       test(m"An HTML-only body has HTML but no text"):
-        val body = Email.Body.HtmlOnly(t"<p>hello</p>")
+        val body = Email.Body.HtmlOnly("<p>hello</p>")
         (body.text, body.html)
-      . assert(_ == (Unset, t"<p>hello</p>"))
+      . assert(_ == (Unset, "<p>hello</p>"))
 
       test(m"An alternatives body has both text and HTML"):
-        val body = Email.Body(t"hello", t"<p>hello</p>")
+        val body = Email.Body("hello", "<p>hello</p>")
         (body.text, body.html)
-      . assert(_ == (t"hello", t"<p>hello</p>"))
+      . assert(_ == ("hello", "<p>hello</p>"))
 
       test(m"A text-only body is plain text"):
-        Email.Body(t"hello").contentType
+        Email.Body("hello").contentType
       . assert(_ == media"text/plain")
 
       test(m"An HTML-only body is HTML"):
-        Email.Body.HtmlOnly(t"<p>hello</p>").contentType
+        Email.Body.HtmlOnly("<p>hello</p>").contentType
       . assert(_ == media"text/html")
 
       test(m"An alternatives body is multipart"):
-        Email.Body(t"hello", t"<p>hello</p>").contentType
+        Email.Body("hello", "<p>hello</p>").contentType
       . assert(_ == media"multipart/alternative")
 
     suite(m"Email content tests"):
       test(m"Content without inlines has the body's content type"):
-        Email.Content(Email.Body(t"hello")).contentType
+        Email.Content(Email.Body("hello")).contentType
       . assert(_ == media"text/plain")
 
       test(m"Content with an inline is related multipart"):
-        val inline = Email.Inline(t"cid1", media"image/png", Chain())
-        Email.Content(Email.Body(t"hello"), inline).contentType
+        val inline = Email.Inline("cid1", media"image/png", Chain())
+        Email.Content(Email.Body("hello"), inline).contentType
       . assert(_ == media"multipart/related")
 
       test(m"A message without attachments has the content's type"):
-        Email.Message(Email.Content(Email.Body(t"hello"))).contentType
+        Email.Message(Email.Content(Email.Body("hello"))).contentType
       . assert(_ == media"text/plain")
 
       test(m"A message with an attachment is mixed multipart"):
-        val asset = Asset(t"report.txt", media"text/plain", Chain())
-        Email.Message(Email.Content(Email.Body(t"hello")), List(asset)).contentType
+        val asset = Asset("report.txt", media"text/plain", Chain())
+        Email.Message(Email.Content(Email.Body("hello")), List(asset)).contentType
       . assert(_ == media"multipart/mixed")
 
     suite(m"Sendable tests"):
       test(m"Text becomes a plain-text email"):
-        Email(t"hello").text
-      . assert(_ == t"hello")
+        Email("hello").text
+      . assert(_ == "hello")
 
       test(m"Text becomes an email with no HTML"):
-        Email(t"hello").html
+        Email("hello").html
       . assert(_ == Unset)
 
       test(m"An email is sendable as itself"):
-        val email = Email(t"hello")
+        val email = Email("hello")
         Email(email)
-      . assert(_ == Email(t"hello"))
+      . assert(_ == Email("hello"))
 
       test(m"An email starts with no headers"):
-        Email(t"hello").headers
+        Email("hello").headers
       . assert(_ == Map())
 
       test(m"An email starts with no attachments"):
-        Email(t"hello").attachments
+        Email("hello").attachments
       . assert(_ == Nil)
 
       test(m"An email starts with no inlines"):
-        Email(t"hello").inlines
+        Email("hello").inlines
       . assert(_ == Nil)
 
       test(m"Contramap a Sendable onto another type"):
         val sendable = Sendable.text.contramap[Report](_.body)
-        sendable.email(Report(t"Q3", t"all good")).text
-      . assert(_ == t"all good")
+        sendable.email(Report("Q3", "all good")).text
+      . assert(_ == "all good")
 
     suite(m"Attachment tests"):
-      val asset = Asset(t"report.txt", media"text/plain", Chain())
+      val asset = Asset("report.txt", media"text/plain", Chain())
 
       test(m"An Asset attaches as itself"):
         Attachable.asset.attachment(asset)
       . assert(_ == asset)
 
       test(m"Attaching adds the asset to the email"):
-        Email(t"hello").attach(asset).attachments
+        Email("hello").attach(asset).attachments
       . assert(_ == List(asset))
 
       test(m"Attaching twice keeps both assets in order"):
-        val other = Asset(t"data.csv", media"text/csv", Chain())
-        Email(t"hello").attach(asset).attach(other).attachments.map(_.name)
+        val other = Asset("data.csv", media"text/csv", Chain())
+        Email("hello").attach(asset).attach(other).attachments.map(_.name)
       . assert(_ == List(t"report.txt", t"data.csv"))
 
       test(m"Attaching does not change the body"):
-        Email(t"hello").attach(asset).text
-      . assert(_ == t"hello")
+        Email("hello").attach(asset).text
+      . assert(_ == "hello")
 
       test(m"Contramap an Attachable onto another type"):
         val attachable = Attachable.asset.contramap[Report]: report =>
           Asset(report.title, media"text/plain", Chain())
 
-        attachable.attachment(Report(t"Q3", t"all good")).name
-      . assert(_ == t"Q3")
+        attachable.attachment(Report("Q3", "all good")).name
+      . assert(_ == "Q3")
 
     suite(m"Envelope tests"):
       test(m"A single recipient becomes a one-element list"):
@@ -179,35 +179,35 @@ object Tests extends Suite(m"Caduceus tests"):
       test(m"Sending records the subject"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = jill)
+        "hello".send(subject = "Greetings", to = jill)
         courier.envelopes.stdlib.head.subject
-      . assert(_ == t"Greetings")
+      . assert(_ == "Greetings")
 
       test(m"Sending records the sender"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = jill)
+        "hello".send(subject = "Greetings", to = jill)
         courier.envelopes.stdlib.head.from
       . assert(_ == jack)
 
       test(m"Sending records a single recipient"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = jill)
+        "hello".send(subject = "Greetings", to = jill)
         courier.envelopes.stdlib.head.to
       . assert(_ == List(jill))
 
       test(m"Sending records several recipients"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = soundness.List(jill, jane).asInstanceOf[soundness.List[soundness.EmailAddress]])
+        "hello".send(subject = "Greetings", to = soundness.List(jill, jane).asInstanceOf[soundness.List[soundness.EmailAddress]])
         courier.envelopes.stdlib.head.to
       . assert(_ == List(jill, jane))
 
       test(m"Copied and blind-copied recipients are recorded"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = jill, cc = jane, bcc = jack)
+        "hello".send(subject = "Greetings", to = jill, cc = jane, bcc = jack)
         val envelope = courier.envelopes.stdlib.head
         (envelope.cc, envelope.bcc)
       . assert(_ == (List(jane), List(jack)))
@@ -215,7 +215,7 @@ object Tests extends Suite(m"Caduceus tests"):
       test(m"Recipients default to empty lists"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = jill)
+        "hello".send(subject = "Greetings", to = jill)
         val envelope = courier.envelopes.stdlib.head
         (envelope.cc, envelope.bcc, envelope.replyTo)
       . assert(_ == (Nil, Nil, Nil))
@@ -223,13 +223,13 @@ object Tests extends Suite(m"Caduceus tests"):
       test(m"The sent email carries the body"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = jill)
+        "hello".send(subject = "Greetings", to = jill)
         courier.emails.stdlib.head.text
-      . assert(_ == t"hello")
+      . assert(_ == "hello")
 
     suite(m"Error message tests"):
       test(m"A courier error names both parties and the subject"):
-        val error = Courier.Error(jack, jill, t"Greetings")
+        val error = Courier.Error(jack, jill, "Greetings")
         error.message.text
-      . assert(_ == t"unable to send email from jack@example.com to jill@example.com with "+
-          t"subject Greetings")
+      . assert(_ == "unable to send email from jack@example.com to jill@example.com with "+
+          "subject Greetings")

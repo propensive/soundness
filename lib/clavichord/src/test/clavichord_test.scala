@@ -46,20 +46,20 @@ object Tests extends Suite(m"Clavichord tests"):
     def rendered(keypress: Keypress): Text = keypress.show
 
     suite(m"Edit keys"):
-      test(m"Tab")       (rendered(Keypress.Tab))       .assert(_ == t"[⇥]")
-      test(m"Enter")     (rendered(Keypress.Enter))     .assert(_ == t"[↵]")
-      test(m"Backspace") (rendered(Keypress.Backspace)) .assert(_ == t"[⌫]")
-      test(m"Delete")    (rendered(Keypress.Delete))    .assert(_ == t"[⌦]")
-      test(m"Escape")    (rendered(Keypress.Escape))    .assert(_ == t"[⎋]")
-      test(m"Up")        (rendered(Keypress.Up))        .assert(_ == t"[↑]")
-      test(m"Down")      (rendered(Keypress.Down))      .assert(_ == t"[↓]")
-      test(m"Left")      (rendered(Keypress.Left))      .assert(_ == t"[←]")
-      test(m"Right")     (rendered(Keypress.Right))     .assert(_ == t"[→]")
-      test(m"Home")      (rendered(Keypress.Home))      .assert(_ == t"[↖]")
-      test(m"End")       (rendered(Keypress.End))       .assert(_ == t"[↘]")
-      test(m"PageUp")    (rendered(Keypress.PageUp))    .assert(_ == t"[⇞]")
-      test(m"PageDown")  (rendered(Keypress.PageDown))  .assert(_ == t"[⇟]")
-      test(m"Insert")    (rendered(Keypress.Insert))    .assert(_ == t"[⎀]")
+      test(m"Tab")       (rendered(Keypress.Tab))       .assert(_ == "[⇥]")
+      test(m"Enter")     (rendered(Keypress.Enter))     .assert(_ == "[↵]")
+      test(m"Backspace") (rendered(Keypress.Backspace)) .assert(_ == "[⌫]")
+      test(m"Delete")    (rendered(Keypress.Delete))    .assert(_ == "[⌦]")
+      test(m"Escape")    (rendered(Keypress.Escape))    .assert(_ == "[⎋]")
+      test(m"Up")        (rendered(Keypress.Up))        .assert(_ == "[↑]")
+      test(m"Down")      (rendered(Keypress.Down))      .assert(_ == "[↓]")
+      test(m"Left")      (rendered(Keypress.Left))      .assert(_ == "[←]")
+      test(m"Right")     (rendered(Keypress.Right))     .assert(_ == "[→]")
+      test(m"Home")      (rendered(Keypress.Home))      .assert(_ == "[↖]")
+      test(m"End")       (rendered(Keypress.End))       .assert(_ == "[↘]")
+      test(m"PageUp")    (rendered(Keypress.PageUp))    .assert(_ == "[⇞]")
+      test(m"PageDown")  (rendered(Keypress.PageDown))  .assert(_ == "[⇟]")
+      test(m"Insert")    (rendered(Keypress.Insert))    .assert(_ == "[⎀]")
 
       test(m"every edit key renders distinctly"):
         val keys = List(Keypress.Tab, Keypress.Home, Keypress.End, Keypress.PageUp,
@@ -73,68 +73,68 @@ object Tests extends Suite(m"Clavichord tests"):
     suite(m"Character and function keys"):
       test(m"an ordinary character is bracketed"):
         rendered(Keypress.CharKey('a'))
-      . assert(_ == t"[a]")
+      . assert(_ == "[a]")
 
       test(m"a space is shown as its own symbol, not as a space"):
         rendered(Keypress.CharKey(' '))
-      . assert(_ == t"[␣]")
+      . assert(_ == "[␣]")
 
       test(m"a digit is bracketed like any other character"):
         rendered(Keypress.CharKey('7'))
-      . assert(_ == t"[7]")
+      . assert(_ == "[7]")
 
       test(m"a function key is numbered"):
         rendered(Keypress.FunctionKey(5))
-      . assert(_ == t"[F5]")
+      . assert(_ == "[F5]")
 
       test(m"a two-digit function key keeps both digits"):
         rendered(Keypress.FunctionKey(12))
-      . assert(_ == t"[F12]")
+      . assert(_ == "[F12]")
 
       test(m"an escape sequence shows its identifier"):
         rendered(Keypress.EscapeSeq('R'))
-      . assert(_ == t"[⎋R]")
+      . assert(_ == "[⎋R]")
 
       test(m"an escape sequence's content does not appear"):
         rendered(Keypress.EscapeSeq('R', '1', '2'))
-      . assert(_ == t"[⎋R]")
+      . assert(_ == "[⎋R]")
 
     suite(m"Modifiers"):
       test(m"shift joins to the key it modifies"):
         rendered(Keypress.Shift(Keypress.Enter))
-      . assert(_ == t"[⇧]+[↵]")
+      . assert(_ == "[⇧]+[↵]")
 
       test(m"alt joins to the key it modifies"):
         rendered(Keypress.Alt(Keypress.Right))
-      . assert(_ == t"[⌥]+[→]")
+      . assert(_ == "[⌥]+[→]")
 
       test(m"meta joins to the key it modifies"):
         rendered(Keypress.Meta(Keypress.Shift(Keypress.Tab)))
-      . assert(_ == t"[⌘]+[⇧]+[⇥]")
+      . assert(_ == "[⌘]+[⇧]+[⇥]")
 
       test(m"shift applies to a function key"):
         rendered(Keypress.Shift(Keypress.FunctionKey(3)))
-      . assert(_ == t"[⇧]+[F3]")
+      . assert(_ == "[⇧]+[F3]")
 
       // `Ctrl`'s field is a union of `Keypress` and a set of `Char` literals, and `render`
       // widens it before testing, so the two arms are reached by different code. Both are
       // covered here.
       test(m"control of a character brackets the character"):
         rendered(Keypress.Ctrl('C'))
-      . assert(_ == t"[⌃]+[C]")
+      . assert(_ == "[⌃]+[C]")
 
       test(m"control of a punctuation character brackets it too"):
         rendered(Keypress.Ctrl('['))
-      . assert(_ == t"[⌃]+[[]")
+      . assert(_ == "[⌃]+[[]")
 
       test(m"control of a keypress renders that keypress"):
         rendered(Keypress.Ctrl(Keypress.Left))
-      . assert(_ == t"[⌃]+[←]")
+      . assert(_ == "[⌃]+[←]")
 
       test(m"nested modifiers are joined with plus"):
         rendered(Keypress.Ctrl(Keypress.Shift(Keypress.Enter)))
-      . assert(_ == t"[⌃]+[⇧]+[↵]")
+      . assert(_ == "[⌃]+[⇧]+[↵]")
 
       test(m"the full modifier stack nests outermost-first"):
         rendered(Keypress.Meta(Keypress.Ctrl(Keypress.Alt(Keypress.Shift(Keypress.Home)))))
-      . assert(_ == t"[⌘]+[⌃]+[⌥]+[⇧]+[↖]")
+      . assert(_ == "[⌘]+[⌃]+[⌥]+[⇧]+[↖]")

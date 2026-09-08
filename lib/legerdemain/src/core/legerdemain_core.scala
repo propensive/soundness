@@ -49,7 +49,7 @@ def elicit[value: Formulaic]
 :   Html of Flow =
 
   formulation.form
-    ( value.fields(Pointer.Self, t"", query.or(Query()), validation, formulation), submit )
+    ( value.fields(Pointer.Self, "", query.or(Query()), validation, formulation), submit )
 
 
 extension [formulaic: {Formulaic, Encodable in Query}](value: formulaic)
@@ -57,7 +57,7 @@ extension [formulaic: {Formulaic, Encodable in Query}](value: formulaic)
   :   Html of Flow =
 
     formulation.form
-      ( formulaic.fields(Pointer.Self, t"", formulaic.encoded(value), validation, formulation),
+      ( formulaic.fields(Pointer.Self, "", formulaic.encoded(value), validation, formulation),
         submit )
 
 
@@ -65,7 +65,7 @@ package formulations:
   given postFormulation: Formulation:
     def form(content: List[Html of Flow], submit: Optional[Text]): Html of Flow =
       Form
-        ( action = t".", method = t"post" )
+        ( action = ".", method = "post" )
         ( Fragment(content*), Input.Submit(value = submit.or(t"Submit")) )
 
 
@@ -77,7 +77,7 @@ package formulations:
     :   Html of Flow =
 
       given alertClass: (Attribution of "alert" | "required") = Attribution.classes()
-      Div(P.alert(validation.let(_.html)), Label(legend, widget), Span.required(t"*"))
+      Div(P.alert(validation.let(_.html)), Label(legend, widget), Span.required("*"))
 
       // Div
       //  (validation.let(_.html).let(P.alert(_)),

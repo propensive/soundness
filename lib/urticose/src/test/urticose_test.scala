@@ -58,7 +58,7 @@ object Tests extends Suite(m"Urticose tests"):
       test(m"A styled URL still contains the URL's own text"):
         val url = url"https://example.com/path"
         e"$url".plain
-      . assert(_ == t"https://example.com/path")
+      . assert(_ == "https://example.com/path")
 
     suite(m"Internet tests"):
       def remoteCall()(using Internet): Unit = ()
@@ -90,38 +90,38 @@ object Tests extends Suite(m"Urticose tests"):
            ip"255.123.143.0".subnet(12).inspect,
            MacAddress(1, 2, 3, 4, 5, 6).inspect,
            tcp"smtp".inspect,
-           t"www.example.com".as[Hostname].inspect,
-           t"simple@example.com".as[EmailAddress].inspect,
+           "www.example.com".as[Hostname].inspect,
+           "simple@example.com".as[EmailAddress].inspect,
            url"https://example.com/path".inspect,
            url"https://example.com/path".scheme.inspect,
-           t"user@example.com:8080".as[Authority].inspect,
-           Endpoint(t"example.com", 8080).inspect )
+           "user@example.com:8080".as[Authority].inspect,
+           Endpoint("example.com", 8080).inspect )
       . assert(_ == Nil)
 
       test(m"An authority inspects as its URL form, introduced by `//`"):
-        t"user@example.com:8080".as[Authority].inspect
-      . assert(_ == t"//user@example.com:8080")
+        "user@example.com:8080".as[Authority].inspect
+      . assert(_ == "//user@example.com:8080")
 
       test(m"An endpoint inspects both its remote and its port"):
-        Endpoint(t"example.com", 8080).inspect
-      . assert(_ == t"""Endpoint(t"example.com":8080)""")
+        Endpoint("example.com", 8080).inspect
+      . assert(_ == """Endpoint(t"example.com":8080)""")
 
     suite(m"IPv4 tests"):
       test(m"Parse in IPv4 address"):
-        t"1.2.3.4".as[Ipv4]
+        "1.2.3.4".as[Ipv4]
       . assert(_ == Ipv4(1, 2, 3, 4))
 
       test(m"Show an Ipv4 address"):
         Ipv4(127, 244, 197, 0).show
-      . assert(_ == t"127.244.197.0")
+      . assert(_ == "127.244.197.0")
 
       test(m"Show a zero Ipv4 address"):
         Ipv4(0, 0, 0, 0).show
-      . assert(_ == t"0.0.0.0")
+      . assert(_ == "0.0.0.0")
 
       test(m"Show a 'maximum' Ipv4 address"):
         Ipv4(255, 255, 255, 255).show
-      . assert(_ == t"255.255.255.255")
+      . assert(_ == "255.255.255.255")
 
       test(m"Get an IP address as an integer"):
         Ipv4(192, 168, 0, 1).int
@@ -129,44 +129,44 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"Inspect an Ipv4 address"):
         Ipv4(127, 244, 197, 0).inspect
-      . assert(_ == t"127.244.197.0")
+      . assert(_ == "127.244.197.0")
 
     suite(m"IPv6 tests"):
       test(m"Parse an IPv6 address"):
-        t"2001:db8:0000:1:1:1:1:1".as[Ipv6]
+        "2001:db8:0000:1:1:1:1:1".as[Ipv6]
       . assert(_ == Ipv6(0x2001, 0xdb8, 0, 0x1, 0x1, 0x1, 0x1, 0x1))
 
       test(m"Render an IPv6 address"):
-        t"2001:db8:0000:1:1:1:1:1".as[Ipv6].show
-      . assert(_ == t"2001:db8:0:1:1:1:1:1")
+        "2001:db8:0000:1:1:1:1:1".as[Ipv6].show
+      . assert(_ == "2001:db8:0:1:1:1:1:1")
 
       test(m"Inspect an IPv6 address"):
-        t"2001:db8:0000:1:1:1:1:1".as[Ipv6].inspect
-      . assert(_ == t"2001:db8:0:1:1:1:1:1")
+        "2001:db8:0000:1:1:1:1:1".as[Ipv6].inspect
+      . assert(_ == "2001:db8:0:1:1:1:1:1")
 
       test(m"Parse zero IPv6 address"):
-        t"::".as[Ipv6]
+        "::".as[Ipv6]
       . assert(_ == Ipv6(0, 0, 0, 0, 0, 0, 0, 0))
 
       test(m"Parse zero-leading IPv6 address"):
-        t"::2".as[Ipv6]
+        "::2".as[Ipv6]
       . assert(_ == Ipv6(0, 0, 0, 0, 0, 0, 0, 2))
 
       test(m"Parse zeroes-trailing IPv6 address"):
-        t"8::".as[Ipv6]
+        "8::".as[Ipv6]
       . assert(_ == Ipv6(8, 0, 0, 0, 0, 0, 0, 0))
 
       test(m"Show zero IPv6 address"):
         Ipv6(0, 0, 0, 0, 0, 0, 0, 0).show
-      . assert(_ == t"::")
+      . assert(_ == "::")
 
       test(m"Show zero-leading IPv6 address"):
         Ipv6(0, 0, 0, 0, 0, 0, 0, 1).show
-      . assert(_ == t"::1")
+      . assert(_ == "::1")
 
       test(m"Show zeroes-trailing IPv6 address"):
         Ipv6(8, 0, 0, 0, 0, 0, 0, 0).show
-      . assert(_ == t"8::")
+      . assert(_ == "8::")
 
       test(m"Parse IPv4 address at compiletime"):
         ip"122.0.0.1"
@@ -178,10 +178,10 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"Create and show a subnet"):
         (ip"255.123.143.0".subnet(12)).show
-      . assert(_ == t"255.112.0.0/12")
+      . assert(_ == "255.112.0.0/12")
 
       test(m"Parse an IPv6 containing capital letters"):
-        t"2001:DB8::1:1:1:1:1".as[Ipv6]
+        "2001:DB8::1:1:1:1:1".as[Ipv6]
       . assert(_ == Ipv6(0x2001, 0xdb8, 0, 0x1, 0x1, 0x1, 0x1, 0x1))
 
       test(m"Invalid IP address is compile error"):
@@ -189,32 +189,32 @@ object Tests extends Suite(m"Urticose tests"):
       . assert(_ == List(t"[↯SN-077.3] the IP address is not valid because the address contains 6 period-separated groups instead of 4"))
 
       test(m"IP address byte out of range"):
-        capture(t"100.300.200.0".as[Ipv4])
+        capture("100.300.200.0".as[Ipv4])
       . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv4ByteOutOfRange(300)))
 
       test(m"IPv4 address wrong number of bytes"):
-        capture(t"10.3.20.0.8".as[Ipv4])
+        capture("10.3.20.0.8".as[Ipv4])
       . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv4WrongNumberOfGroups(5)))
 
       test(m"IPv6 address non-hex value"):
-        capture(t"::8:abcg:abc:1234".as[Ipv6])
-      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6GroupNotHex(t"abcg")))
+        capture("::8:abcg:abc:1234".as[Ipv6])
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6GroupNotHex("abcg")))
 
       test(m"IPv6 address too many groups"):
-        capture(t"1:2:3:4::5:6:7:8".as[Ipv6])
+        capture("1:2:3:4::5:6:7:8".as[Ipv6])
       . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6TooManyNonzeroGroups(8)))
 
       test(m"IPv6 address wrong number of groups"):
-        capture(t"1:2:3:4:5:6:7:8:9".as[Ipv6])
+        capture("1:2:3:4:5:6:7:8:9".as[Ipv6])
       . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6WrongNumberOfGroups(9)))
 
       test(m"IPv6 duplicate double-colon"):
-        capture(t"1::3:7::9".as[Ipv6])
+        capture("1::3:7::9".as[Ipv6])
       . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6MultipleDoubleColons))
 
       test(m"IPv6 address wrong-length group"):
-        capture(t"::8:abcde:abc:1234".as[Ipv6])
-      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6GroupWrongLength(t"abcde")))
+        capture("::8:abcde:abc:1234".as[Ipv6])
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6GroupWrongLength("abcde")))
 
     suite(m"Subnet tests"):
       test(m"Create an IPv4 subnet at compiletime"):
@@ -223,7 +223,7 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"IPv4 subnet at compiletime masks host bits"):
         subnet"255.123.143.0/12".show
-      . assert(_ == t"255.112.0.0/12")
+      . assert(_ == "255.112.0.0/12")
 
       test(m"Create an IPv6 subnet at compiletime"):
         subnet"2001:db8::/32"
@@ -231,30 +231,30 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"Show an IPv6 subnet"):
         subnet"2001:db8::/32".show
-      . assert(_ == t"2001:db8::/32")
+      . assert(_ == "2001:db8::/32")
 
       test(m"Parse an IPv4 subnet at runtime"):
-        t"10.0.0.0/8".as[Ipv4Subnet]
+        "10.0.0.0/8".as[Ipv4Subnet]
       . assert(_ == Ipv4(10, 0, 0, 0).subnet(8))
 
       test(m"Parse an IPv6 subnet at runtime"):
-        t"2001:db8::/32".as[Ipv6Subnet]
+        "2001:db8::/32".as[Ipv6Subnet]
       . assert(_ == Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 0).subnet(32))
 
       test(m"IPv4 subnet prefix out of range"):
-        capture(t"10.0.0.0/40".as[Ipv4Subnet])
+        capture("10.0.0.0/40".as[Ipv4Subnet])
       . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv4SubnetPrefixOutOfRange(40)))
 
       test(m"IPv6 subnet prefix out of range"):
-        capture(t"2001:db8::/130".as[Ipv6Subnet])
+        capture("2001:db8::/130".as[Ipv6Subnet])
       . assert(_ == IpAddress.Error(IpAddress.Error.Reason.Ipv6SubnetPrefixOutOfRange(130)))
 
       test(m"Subnet prefix not numeric"):
-        capture(t"10.0.0.0/x".as[Ipv4Subnet])
-      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.SubnetPrefixNotNumeric(t"x")))
+        capture("10.0.0.0/x".as[Ipv4Subnet])
+      . assert(_ == IpAddress.Error(IpAddress.Error.Reason.SubnetPrefixNotNumeric("x")))
 
       test(m"Subnet without a prefix is wrong format"):
-        capture(t"10.0.0.0".as[Ipv4Subnet])
+        capture("10.0.0.0".as[Ipv4Subnet])
       . assert(_ == IpAddress.Error(IpAddress.Error.Reason.SubnetWrongFormat(1)))
 
       test(m"Invalid subnet prefix is compile error"):
@@ -265,378 +265,378 @@ object Tests extends Suite(m"Urticose tests"):
       import EmailAddress.Error.Reason.*
 
       test(m"simple@example.com"):
-        t"simple@example.com".as[EmailAddress]
+        "simple@example.com".as[EmailAddress]
       . assert()
 
       test(m"very.common@example.com"):
-        t"very.common@example.com".as[EmailAddress]
+        "very.common@example.com".as[EmailAddress]
       . assert()
 
       test(m"x@example.com"):
-        t"x@example.com".as[EmailAddress]
+        "x@example.com".as[EmailAddress]
       . assert()
 
       test(m"long.email-address-with-hyphens@and.subdomains.example.com"):
-        t"long.email-address-with-hyphens@and.subdomains.example.com".as[EmailAddress]
+        "long.email-address-with-hyphens@and.subdomains.example.com".as[EmailAddress]
       . assert()
 
       test(m"user.name+tag+sorting@example.com"):
-        t"user.name+tag+sorting@example.com".as[EmailAddress]
+        "user.name+tag+sorting@example.com".as[EmailAddress]
       . assert()
 
       test(m"name/surname@example.com"):
-        t"name/surname@example.com".as[EmailAddress]
+        "name/surname@example.com".as[EmailAddress]
       . assert()
 
       test(m"admin@example"):
-        t"admin@example".as[EmailAddress]
+        "admin@example".as[EmailAddress]
       . assert()
 
       test(m"example@s.example"):
-        t"example@s.example".as[EmailAddress]
+        "example@s.example".as[EmailAddress]
       . assert()
 
       test(m"\" \"@example.org"):
-        t"\" \"@example.org".as[EmailAddress]
+        "\" \"@example.org".as[EmailAddress]
       . assert()
 
       test(m"\"john..doe\"@example.org"):
-        t"\"john..doe\"@example.org".as[EmailAddress]
+        "\"john..doe\"@example.org".as[EmailAddress]
       . assert()
 
       test(m"mailhost!username@example.org"):
-        t"mailhost!username@example.org".as[EmailAddress]
+        "mailhost!username@example.org".as[EmailAddress]
       . assert()
 
       test(m"\"very.(),:;<>[]\\\".VERY.\\\"very@\\\\ \\\"very\\\".unusual\"@strange.example.com"):
-        t"\"very.(),:;<>[]\\\".VERY.\\\"very@\\\\ \\\"very\\\".unusual\"@strange.example.com".as[EmailAddress]
+        "\"very.(),:;<>[]\\\".VERY.\\\"very@\\\\ \\\"very\\\".unusual\"@strange.example.com".as[EmailAddress]
       . assert()
 
       test(m"user%example.com@example.org"):
-        t"user%example.com@example.org".as[EmailAddress]
+        "user%example.com@example.org".as[EmailAddress]
       . assert()
 
       test(m"user-@example.org"):
-        t"user-@example.org".as[EmailAddress]
+        "user-@example.org".as[EmailAddress]
       . assert()
 
       test(m"postmaster@[123.123.123.123]"):
-        t"postmaster@[123.123.123.123]".as[EmailAddress]
+        "postmaster@[123.123.123.123]".as[EmailAddress]
       . assert()
 
       test(m"postmaster@[IPv6:2001:0db8:85a3:0000:0000:8a2e:0370:7334]"):
-        t"postmaster@[IPv6:2001:0db8:85a3:0000:0000:8a2e:0370:7334]".as[EmailAddress]
+        "postmaster@[IPv6:2001:0db8:85a3:0000:0000:8a2e:0370:7334]".as[EmailAddress]
       . assert()
 
       test(m"Empty email address"):
-        capture(t"".as[EmailAddress])
+        capture("".as[EmailAddress])
       . assert(_ == EmailAddress.Error(Empty))
 
       test(m"abc.example.com"):
-        capture(t"abc.example.com".as[EmailAddress])
+        capture("abc.example.com".as[EmailAddress])
       . assert(_ == EmailAddress.Error(MissingAtSymbol))
 
       test(m"a@b@c@example.com"):
-        capture(t"a@b@c@example.com".as[EmailAddress])
-      . assert(_ == EmailAddress.Error(InvalidDomain(Hostname.Error(t"b@c@example.com", Hostname.Error.Reason.InvalidChar('@')))))
+        capture("a@b@c@example.com".as[EmailAddress])
+      . assert(_ == EmailAddress.Error(InvalidDomain(Hostname.Error("b@c@example.com", Hostname.Error.Reason.InvalidChar('@')))))
 
       test(m"a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com"):
-        capture(t"a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com".as[EmailAddress])
+        capture("a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com".as[EmailAddress])
       . assert(_ == EmailAddress.Error(InvalidChar('\\')))
 
       test(m"just\"not\"right@example.com"):
-        capture(t"just\"not\"right@example.com".as[EmailAddress])
+        capture("just\"not\"right@example.com".as[EmailAddress])
       . assert(_ == EmailAddress.Error(InvalidChar('\"')))
 
       test(m"this is\\\"not\\allowed@example.com"):
-        capture(t"this is\\\"not\\allowed@example.com".as[EmailAddress])
+        capture("this is\\\"not\\allowed@example.com".as[EmailAddress])
       . assert(_ == EmailAddress.Error(InvalidChar(' ')))
 
       test(m"this\\ still\\\"not\\\\allowed@example.com"):
-        capture(t"this\\ still\\\"not\\\\allowed@example.com".as[EmailAddress])
+        capture("this\\ still\\\"not\\\\allowed@example.com".as[EmailAddress])
       . assert(_ == EmailAddress.Error(InvalidChar('\\')))
 
       test(m"64-digit local part with tag is too long"):
-        capture(t"1234567890123456789012345678901234567890123456789012345678901234+x@example.com".as[EmailAddress])
+        capture("1234567890123456789012345678901234567890123456789012345678901234+x@example.com".as[EmailAddress])
       . assert(_ == EmailAddress.Error(LongLocalPart))
 
       test(m"user@[not-an-ip]"):
-        capture(t"user@[not-an-ip]".as[EmailAddress])
+        capture("user@[not-an-ip]".as[EmailAddress])
       . assert(_ == EmailAddress.Error(InvalidDomain(IpAddress.Error(IpAddress.Error.Reason.Ipv4WrongNumberOfGroups(1)))))
 
       test(m"i.like.underscores@but_they_are_not_allowed_in_this_part"):
-        capture(t"i.like.underscores@but_they_are_not_allowed_in_this_part".as[EmailAddress])
-      . assert(_ == EmailAddress.Error(InvalidDomain(Hostname.Error(t"but_they_are_not_allowed_in_this_part", Hostname.Error.Reason.InvalidChar('_')))))
+        capture("i.like.underscores@but_they_are_not_allowed_in_this_part".as[EmailAddress])
+      . assert(_ == EmailAddress.Error(InvalidDomain(Hostname.Error("but_they_are_not_allowed_in_this_part", Hostname.Error.Reason.InvalidChar('_')))))
 
       test(m"I❤️CHOCOLATE🍫@example.com"):
-        capture(t"I❤️CHOCOLATE🍫@example.com".as[EmailAddress])
+        capture("I❤️CHOCOLATE🍫@example.com".as[EmailAddress])
       .matches:
         case EmailAddress.Error(InvalidChar(_)) =>
 
       test(m"Create an email address at compiletime"):
         email"test@example.com"
-      . assert(_ == t"test@example.com".as[EmailAddress])
+      . assert(_ == "test@example.com".as[EmailAddress])
 
       test(m"Create an IPv4 email address at compiletime"):
         email"test@[192.168.0.1]"
-      . assert(_ == t"test@[192.168.0.1]".as[EmailAddress])
+      . assert(_ == "test@[192.168.0.1]".as[EmailAddress])
 
       test(m"Create an IPv6 email address at compiletime"):
         email"test@[IPv6:1234::6789]"
-      . assert(_ == t"test@[IPv6:1234::6789]".as[EmailAddress])
+      . assert(_ == "test@[IPv6:1234::6789]".as[EmailAddress])
 
       test(m"Create a quoted email address at compiletime"):
         email""""test user"@example.com"""
-      . assert(_ == t""""test user"@example.com""".as[EmailAddress])
+      . assert(_ == """"test user"@example.com""".as[EmailAddress])
 
       test(m"forbidden.@example.com"):
-        capture(t"forbidden.@example.com".as[EmailAddress])
+        capture("forbidden.@example.com".as[EmailAddress])
       . assert(_ == EmailAddress.Error(TerminalPeriod))
 
       test(m".forbidden@example.com"):
-        capture(t".forbidden@example.com".as[EmailAddress])
+        capture(".forbidden@example.com".as[EmailAddress])
       . assert(_ == EmailAddress.Error(InitialPeriod))
 
       test(m"not..allowed@example.com"):
-        capture(t"not..allowed@example.com".as[EmailAddress])
+        capture("not..allowed@example.com".as[EmailAddress])
       . assert(_ == EmailAddress.Error(SuccessivePeriods))
 
       test(m""""unescaped quote " is forbidden"@example.com"""):
-        capture(t""""unescaped quote " is forbidden"@example.com""".as[EmailAddress])
+        capture(""""unescaped quote " is forbidden"@example.com""".as[EmailAddress])
       . assert(_ == EmailAddress.Error(UnescapedQuote))
 
       test(m""""unclosed.quote@example.com"""):
-        capture(t""""unclosed.quote@example.com""".as[EmailAddress])
+        capture(""""unclosed.quote@example.com""".as[EmailAddress])
       . assert(_ == EmailAddress.Error(UnclosedQuote))
 
       test(m"""missing.domain@"""):
-        capture(t"""missing.domain@""".as[EmailAddress])
+        capture("""missing.domain@""".as[EmailAddress])
       . assert(_ == EmailAddress.Error(MissingDomain))
 
       test(m"""unclosed IP address domain"""):
-        capture(t"""user@[192.168.0.1""".as[EmailAddress])
+        capture("""user@[192.168.0.1""".as[EmailAddress])
       . assert(_ == EmailAddress.Error(UnclosedIpAddress))
 
     suite(m"URL tests"):
       test(m"inspect a URL"):
         url"https://example.com/foo/bar".inspect
-      . assert(_ == t"https://example.com/foo/bar")
+      . assert(_ == "https://example.com/foo/bar")
 
       test(m"parse Authority with username and password"):
-        t"username:password@example.com".as[Authority]
-      . assert(_ == Authority(example.com, t"username:password"))
+        "username:password@example.com".as[Authority]
+      . assert(_ == Authority(example.com, "username:password"))
 
       test(m"parse Authority with username but not password"):
-        t"username@example.com".as[Authority]
-      . assert(_ == Authority(example.com, t"username"))
+        "username@example.com".as[Authority]
+      . assert(_ == Authority(example.com, "username"))
 
       test(m"parse Authority with username, password and port"):
-        t"username:password@example.com:8080".as[Authority]
-      . assert(_ == Authority(example.com, t"username:password", 8080))
+        "username:password@example.com:8080".as[Authority]
+      . assert(_ == Authority(example.com, "username:password", 8080))
 
       test(m"parse Authority with username and port"):
-        t"username@example.com:8080".as[Authority]
-      . assert(_ == Authority(example.com, t"username", 8080))
+        "username@example.com:8080".as[Authority]
+      . assert(_ == Authority(example.com, "username", 8080))
 
       test(m"parse Authority with username, numerical password and port"):
-        t"username:1234@example.com:8080".as[Authority]
-      . assert(_ == Authority(example.com, t"username:1234", 8080))
+        "username:1234@example.com:8080".as[Authority]
+      . assert(_ == Authority(example.com, "username:1234", 8080))
 
       test(m"Authority with invalid port fails"):
         scala.caps.unsafe.unsafeAssumeSeparate:
-          capture(t"username@example.com:no".as[Authority])
+          capture("username@example.com:no".as[Authority])
       .matches:
         case Url.Error(_, position, Url.Error.Reason.Expected(Url.Error.Expectation.Number)) if position == 21.z =>
 
       test(m"Parse full URL"):
-        t"http://user:pw@example.com:8080/path/to/location?query=1#ref".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com, t"user:pw", 8080)),
-          t"/path/to/location", t"query=1", t"ref"))
+        "http://user:pw@example.com:8080/path/to/location?query=1#ref".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com, "user:pw", 8080)),
+          "/path/to/location", "query=1", "ref"))
 
       test(m"Parse simple URL"):
-        t"https://example.com/foo".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Https, Authority(example.com)), t"/foo"))
+        "https://example.com/foo".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Https, Authority(example.com)), "/foo"))
 
       test(m"Parse url with fragment"):
-        t"https://example.com/#id".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Https, Authority(example.com)), t"/", Unset, t"id"))
+        "https://example.com/#id".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Https, Authority(example.com)), "/", Unset, "id"))
 
       test(m"Show simple URL"):
-        t"http://example.com/foo".as[HttpUrl].show
-      . assert(_ == t"http://example.com/foo")
+        "http://example.com/foo".as[HttpUrl].show
+      . assert(_ == "http://example.com/foo")
 
       test(m"show url with fragment"):
-        t"https://example.com/#id".as[HttpUrl].show
-      . assert(_ == t"https://example.com/#id")
+        "https://example.com/#id".as[HttpUrl].show
+      . assert(_ == "https://example.com/#id")
 
       test(m"Parse full URL at compiletime"):
         url"http://user:pw@example.com:8080/path/to/location?query=1#ref"
-      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com, t"user:pw", 8080)),
-          t"/path/to/location", t"query=1", t"ref"))
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com, "user:pw", 8080)),
+          "/path/to/location", "query=1", "ref"))
 
       test(m"Parse FTP URL at compiletime"):
         url"ftp://user:pw@example.com:8080/path/to/location"
-      . assert(_ == Url(Origin(Scheme(t"ftp"), Authority(example.com, t"user:pw", 8080)),
-          t"/path/to/location"))
+      . assert(_ == Url(Origin(Scheme("ftp"), Authority(example.com, "user:pw", 8080)),
+          "/path/to/location"))
 
       test(m"Parse URL at compiletime with substitution"):
         val port = 1234
         url"http://user:pw@example.com:$port/path/to/location"
-      . assert(_ == Url(Origin(Scheme(t"http"), Authority(example.com, t"user:pw", 1234)),
-          t"/path/to/location"))
+      . assert(_ == Url(Origin(Scheme("http"), Authority(example.com, "user:pw", 1234)),
+          "/path/to/location"))
 
       test(m"Parse URL at compiletime with escaped substitution"):
-        val message: Text = t"Hello world!"
+        val message: Text = "Hello world!"
         url"http://user:pw@example.com/$message"
-      . assert(_ == Url(Origin(Scheme(t"http"), Authority(example.com, t"user:pw")), t"/Hello+world%21"))
+      . assert(_ == Url(Origin(Scheme("http"), Authority(example.com, "user:pw")), "/Hello+world%21"))
 
       test(m"Parse URL with no path"):
-        t"http://example.com".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t""))
+        "http://example.com".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), ""))
 
       test(m"Parse URL with port and no path"):
-        t"http://example.com:8080".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com, Unset, 8080)), t""))
+        "http://example.com:8080".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com, Unset, 8080)), ""))
 
       test(m"Parse URL with query and no path"):
-        t"http://example.com?q=1".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"", t"q=1"))
+        "http://example.com?q=1".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), "", "q=1"))
 
       test(m"Parse URL with fragment and no path"):
-        t"http://example.com#frag".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"", Unset, t"frag"))
+        "http://example.com#frag".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), "", Unset, "frag"))
 
       test(m"Parse URL with port, query and no path"):
-        t"http://example.com:8080?q=1".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com, Unset, 8080)), t"", t"q=1"))
+        "http://example.com:8080?q=1".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com, Unset, 8080)), "", "q=1"))
 
       test(m"Parse URL with port, fragment and no path"):
-        t"http://example.com:8080#frag".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com, Unset, 8080)), t"", Unset, t"frag"))
+        "http://example.com:8080#frag".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com, Unset, 8080)), "", Unset, "frag"))
 
       test(m"Parse URL with empty query delimiter"):
-        t"http://example.com/?".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"/", t""))
+        "http://example.com/?".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), "/", ""))
 
       test(m"Parse URL with empty fragment delimiter"):
-        t"http://example.com/#".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"/", Unset, t""))
+        "http://example.com/#".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), "/", Unset, ""))
 
       test(m"Parse URL with empty query and empty fragment"):
-        t"http://example.com/?#".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"/", t"", t""))
+        "http://example.com/?#".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), "/", "", ""))
 
       test(m"Parse URL with multiple query params"):
-        t"http://example.com/a/b?x=1&y=2".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"/a/b", t"x=1&y=2"))
+        "http://example.com/a/b?x=1&y=2".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), "/a/b", "x=1&y=2"))
 
       test(m"Parse URL with question mark inside query"):
-        t"http://example.com/a?x=?".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t"/a", t"x=?"))
+        "http://example.com/a?x=?".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), "/a", "x=?"))
 
       test(m"Parse RFC 3986 ftp URL"):
-        t"ftp://ftp.is.co.za/rfc/rfc1808.txt".as[Url[Label]].show
-      . assert(_ == t"ftp://ftp.is.co.za/rfc/rfc1808.txt")
+        "ftp://ftp.is.co.za/rfc/rfc1808.txt".as[Url[Label]].show
+      . assert(_ == "ftp://ftp.is.co.za/rfc/rfc1808.txt")
 
       test(m"Parse RFC 3986 http URL"):
-        t"http://www.ietf.org/rfc/rfc2396.txt".as[Url[Label]].show
-      . assert(_ == t"http://www.ietf.org/rfc/rfc2396.txt")
+        "http://www.ietf.org/rfc/rfc2396.txt".as[Url[Label]].show
+      . assert(_ == "http://www.ietf.org/rfc/rfc2396.txt")
 
       test(m"Parse RFC 3986 mailto URL"):
-        t"mailto:John.Doe@example.com".as[Url[Label]].show
-      . assert(_ == t"mailto:John.Doe@example.com")
+        "mailto:John.Doe@example.com".as[Url[Label]].show
+      . assert(_ == "mailto:John.Doe@example.com")
 
       test(m"Parse RFC 3986 news URL"):
-        t"news:comp.infosystems.www.servers.unix".as[Url[Label]].show
-      . assert(_ == t"news:comp.infosystems.www.servers.unix")
+        "news:comp.infosystems.www.servers.unix".as[Url[Label]].show
+      . assert(_ == "news:comp.infosystems.www.servers.unix")
 
       test(m"Parse RFC 3986 tel URL"):
-        t"tel:+1-816-555-1212".as[Url[Label]].show
-      . assert(_ == t"tel:+1-816-555-1212")
+        "tel:+1-816-555-1212".as[Url[Label]].show
+      . assert(_ == "tel:+1-816-555-1212")
 
       test(m"Parse RFC 3986 urn URL"):
-        t"urn:oasis:names:specification:docbook:dtd:xml:4.1.2".as[Url[Label]].show
-      . assert(_ == t"urn:oasis:names:specification:docbook:dtd:xml:4.1.2")
+        "urn:oasis:names:specification:docbook:dtd:xml:4.1.2".as[Url[Label]].show
+      . assert(_ == "urn:oasis:names:specification:docbook:dtd:xml:4.1.2")
 
       test(m"Parse opaque mailto with query"):
-        t"mailto:user@example.com?subject=hi".as[Url[Label]].show
-      . assert(_ == t"mailto:user@example.com?subject=hi")
+        "mailto:user@example.com?subject=hi".as[Url[Label]].show
+      . assert(_ == "mailto:user@example.com?subject=hi")
 
       test(m"Parse opaque data URL with fragment"):
-        t"data:text/html,test#test".as[Url[Label]].show
-      . assert(_ == t"data:text/html,test#test")
+        "data:text/html,test#test".as[Url[Label]].show
+      . assert(_ == "data:text/html,test#test")
 
       test(m"Round-trip URL with no path"):
-        t"http://example.com".as[HttpUrl].show
-      . assert(_ == t"http://example.com")
+        "http://example.com".as[HttpUrl].show
+      . assert(_ == "http://example.com")
 
       test(m"Round-trip URL with port and no path"):
-        t"http://example.com:8080".as[HttpUrl].show
-      . assert(_ == t"http://example.com:8080")
+        "http://example.com:8080".as[HttpUrl].show
+      . assert(_ == "http://example.com:8080")
 
       test(m"Round-trip URL with query and no path"):
-        t"http://example.com?q=1".as[HttpUrl].show
-      . assert(_ == t"http://example.com?q=1")
+        "http://example.com?q=1".as[HttpUrl].show
+      . assert(_ == "http://example.com?q=1")
 
       test(m"Round-trip URL with fragment and no path"):
-        t"http://example.com#frag".as[HttpUrl].show
-      . assert(_ == t"http://example.com#frag")
+        "http://example.com#frag".as[HttpUrl].show
+      . assert(_ == "http://example.com#frag")
 
       test(m"Parse URL with IPv6 host and port"):
-        t"http://[::1]:8080/path".as[HttpUrl]
+        "http://[::1]:8080/path".as[HttpUrl]
       . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1), Unset, 8080)),
-          t"/path"))
+          "/path"))
 
       test(m"Parse URL with IPv6 host and no port"):
-        t"http://[::1]/".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), t"/"))
+        "http://[::1]/".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), "/"))
 
       test(m"Parse URL with IPv6 host, no port, no path"):
-        t"http://[::1]".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), t""))
+        "http://[::1]".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), ""))
 
       test(m"Parse URL with IPv6 host, userinfo and port"):
-        t"http://user:pw@[2001:db8::1]:443/path".as[HttpUrl]
+        "http://user:pw@[2001:db8::1]:443/path".as[HttpUrl]
       . assert(_ == Url(
-          Origin(Scheme.Http, Authority(Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 1), t"user:pw", 443)),
-          t"/path"))
+          Origin(Scheme.Http, Authority(Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 1), "user:pw", 443)),
+          "/path"))
 
       test(m"Parse RFC 3986 ldap URL with IPv6 host"):
-        t"ldap://[2001:db8::7]/c=GB?objectClass?one".as[Url[Label]]
+        "ldap://[2001:db8::7]/c=GB?objectClass?one".as[Url[Label]]
       . assert(_ == Url(
-          Origin(Scheme(t"ldap"), Authority(Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 7))),
-          t"/c=GB",
-          t"objectClass?one"))
+          Origin(Scheme("ldap"), Authority(Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 7))),
+          "/c=GB",
+          "objectClass?one"))
 
       test(m"Round-trip URL with IPv6 host"):
-        t"http://[::1]:8080/path".as[HttpUrl].show
-      . assert(_ == t"http://[::1]:8080/path")
+        "http://[::1]:8080/path".as[HttpUrl].show
+      . assert(_ == "http://[::1]:8080/path")
 
       test(m"Round-trip RFC 3986 ldap URL"):
-        t"ldap://[2001:db8::7]/c=GB?objectClass?one".as[Url[Label]].show
-      . assert(_ == t"ldap://[2001:db8::7]/c=GB?objectClass?one")
+        "ldap://[2001:db8::7]/c=GB?objectClass?one".as[Url[Label]].show
+      . assert(_ == "ldap://[2001:db8::7]/c=GB?objectClass?one")
 
       test(m"Parse URL with IPv6 host and fragment"):
-        t"http://[::1]#frag".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), t"",
-          Unset, t"frag"))
+        "http://[::1]#frag".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), "",
+          Unset, "frag"))
 
       test(m"Parse URL with IPv6 host and query"):
-        t"http://[::1]?q=1".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), t"", t"q=1"))
+        "http://[::1]?q=1".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1))), "", "q=1"))
 
       test(m"Parse URL with IPv4 host"):
-        t"http://192.168.0.1/path".as[HttpUrl]
-      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv4(192, 168, 0, 1))), t"/path"))
+        "http://192.168.0.1/path".as[HttpUrl]
+      . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv4(192, 168, 0, 1))), "/path"))
 
       test(m"Parse URL with IPv4 host and port"):
-        t"http://192.168.0.1:8080/path".as[HttpUrl]
+        "http://192.168.0.1:8080/path".as[HttpUrl]
       . assert(_ == Url(Origin(Scheme.Http, Authority(Ipv4(192, 168, 0, 1), Unset, 8080)),
-          t"/path"))
+          "/path"))
 
       test(m"Round-trip URL with IPv4 host"):
-        t"http://192.168.0.1:8080/path".as[HttpUrl].show
-      . assert(_ == t"http://192.168.0.1:8080/path")
+        "http://192.168.0.1:8080/path".as[HttpUrl].show
+      . assert(_ == "http://192.168.0.1:8080/path")
 
 
 
@@ -653,54 +653,54 @@ object Tests extends Suite(m"Urticose tests"):
 
     suite(m"Hostname tests"):
       test(m"Parse a simple hostname"):
-        t"www.example.com".as[Hostname]
-      . assert(_ == Hostname(DnsLabel(t"www"), DnsLabel(t"example"), DnsLabel(t"com")))
+        "www.example.com".as[Hostname]
+      . assert(_ == Hostname(DnsLabel("www"), DnsLabel("example"), DnsLabel("com")))
 
       test(m"Inspect a hostname"):
-        t"www.example.com".as[Hostname].inspect
-      . assert(_ == t"www.example.com")
+        "www.example.com".as[Hostname].inspect
+      . assert(_ == "www.example.com")
 
       test(m"A hostname cannot end in a period"):
-        capture[Hostname.Error](t"www.example.".as[Hostname])
-      . assert(_ == Hostname.Error(t"www.example.", Hostname.Error.Reason.EmptyDnsLabel(2)))
+        capture[Hostname.Error]("www.example.".as[Hostname])
+      . assert(_ == Hostname.Error("www.example.", Hostname.Error.Reason.EmptyDnsLabel(2)))
 
       test(m"A hostname cannot start with a period"):
-        capture[Hostname.Error](t".example.com".as[Hostname])
-      . assert(_ == Hostname.Error(t".example.com", Hostname.Error.Reason.EmptyDnsLabel(0)))
+        capture[Hostname.Error](".example.com".as[Hostname])
+      . assert(_ == Hostname.Error(".example.com", Hostname.Error.Reason.EmptyDnsLabel(0)))
 
       test(m"A hostname cannot have adjacent periods"):
-        capture[Hostname.Error](t"www..com".as[Hostname])
-      . assert(_ == Hostname.Error(t"www..com", Hostname.Error.Reason.EmptyDnsLabel(1)))
+        capture[Hostname.Error]("www..com".as[Hostname])
+      . assert(_ == Hostname.Error("www..com", Hostname.Error.Reason.EmptyDnsLabel(1)))
 
       test(m"A hostname cannot contain symbols"):
-        capture[Hostname.Error](t"www.maybe?.com".as[Hostname])
-      . assert(_ == Hostname.Error(t"www.maybe?.com", Hostname.Error.Reason.InvalidChar('?')))
+        capture[Hostname.Error]("www.maybe?.com".as[Hostname])
+      . assert(_ == Hostname.Error("www.maybe?.com", Hostname.Error.Reason.InvalidChar('?')))
 
       test(m"A DNS Label cannot begin with a dash"):
-        capture[Hostname.Error](t"www.-maybe.com".as[Hostname])
-      . assert(_ == Hostname.Error(t"www.-maybe.com", Hostname.Error.Reason.InitialDash(t"-maybe")))
+        capture[Hostname.Error]("www.-maybe.com".as[Hostname])
+      . assert(_ == Hostname.Error("www.-maybe.com", Hostname.Error.Reason.InitialDash("-maybe")))
 
       test(m"A hostname can contain two consecutive dashes"):
-        t"www.exam--ple.com".as[Hostname]
-      . assert(_ == Hostname(DnsLabel(t"www"), DnsLabel(t"exam--ple"), DnsLabel(t"com")))
+        "www.exam--ple.com".as[Hostname]
+      . assert(_ == Hostname(DnsLabel("www"), DnsLabel("exam--ple"), DnsLabel("com")))
 
       test(m"A DNS label cannot be longer than 63 characters"):
-        capture[Hostname.Error](t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij.com".as[Hostname])
+        capture[Hostname.Error]("www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij.com".as[Hostname])
       . assert(_ == Hostname.Error(
-        t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij.com",
-        Hostname.Error.Reason.LongDnsLabel(t"abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij")
+        "www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij.com",
+        Hostname.Error.Reason.LongDnsLabel("abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij")
       ))
 
       test(m"A DNS label may be 63 characters long"):
-        t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghi.com".as[Hostname]
-      . assert(_ == Hostname(DnsLabel(t"www"), DnsLabel(t"abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghi"), DnsLabel(t"com")))
+        "www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghi.com".as[Hostname]
+      . assert(_ == Hostname(DnsLabel("www"), DnsLabel("abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghi"), DnsLabel("com")))
 
       test(m"A DNS label may be 253 characters long"):
-        t"www.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.com".as[Hostname]
+        "www.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.com".as[Hostname]
       . assert()
 
       test(m"A DNS label may not be longer than 253 characters"):
-        capture(t"www.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxy.com".as[Hostname])
+        capture("www.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxy.com".as[Hostname])
       . assert(_.reason == Hostname.Error.Reason.LongHostname)
 
       test(m"Parse hostname at compiletime"):
@@ -715,40 +715,40 @@ object Tests extends Suite(m"Urticose tests"):
       import MacAddress.Error.Reason.*
 
       test(m"Test simple MAC address"):
-        t"01-23-45-ab-cd-ef".as[MacAddress]
+        "01-23-45-ab-cd-ef".as[MacAddress]
       . assert(_ == MacAddress(1251004370415L))
 
       test(m"Check MAC address with 5 groups"):
-        capture[MacAddress.Error](t"01-23-ab-cd-ef".as[MacAddress])
+        capture[MacAddress.Error]("01-23-ab-cd-ef".as[MacAddress])
       . assert(_ == MacAddress.Error(WrongGroupCount(5)))
 
       test(m"Check MAC address with 7 groups"):
-        capture[MacAddress.Error](t"01-23-45-67-ab-cd-ef".as[MacAddress])
+        capture[MacAddress.Error]("01-23-45-67-ab-cd-ef".as[MacAddress])
       . assert(_ == MacAddress.Error(WrongGroupCount(7)))
 
       test(m"Check MAC address with short group"):
-        capture[MacAddress.Error](t"01-23-45-6-ab-cd".as[MacAddress])
+        capture[MacAddress.Error]("01-23-45-6-ab-cd".as[MacAddress])
       . assert(_ == MacAddress.Error(WrongGroupLength(3, 1)))
 
       test(m"Check MAC address with long group"):
-        capture[MacAddress.Error](t"01-23-45-67-ab-cde".as[MacAddress])
+        capture[MacAddress.Error]("01-23-45-67-ab-cde".as[MacAddress])
       . assert(_ == MacAddress.Error(WrongGroupLength(5, 3)))
 
       test(m"Check MAC address with empty group"):
-        capture[MacAddress.Error](t"01-23-45--ab-cd".as[MacAddress])
+        capture[MacAddress.Error]("01-23-45--ab-cd".as[MacAddress])
       . assert(_ == MacAddress.Error(WrongGroupLength(3, 0)))
 
       test(m"Check MAC address with non-hex character"):
-        capture[MacAddress.Error](t"01-23-45-6g-ab-cd".as[MacAddress])
-      . assert(_ == MacAddress.Error(NotHex(3, t"6g")))
+        capture[MacAddress.Error]("01-23-45-6g-ab-cd".as[MacAddress])
+      . assert(_ == MacAddress.Error(NotHex(3, "6g")))
 
       test(m"Show a MAC address"):
-        t"01-23-45-ab-cd-ef".as[MacAddress].show
-      . assert(_ == t"01-23-45-ab-cd-ef")
+        "01-23-45-ab-cd-ef".as[MacAddress].show
+      . assert(_ == "01-23-45-ab-cd-ef")
 
       test(m"Create a MAC address statically (and show it)"):
         mac"01-23-45-ab-cd-ef".show
-      . assert(_ == t"01-23-45-ab-cd-ef")
+      . assert(_ == "01-23-45-ab-cd-ef")
 
       test(m"Check that a bad MAC address fails at compiletime"):
         demilitarize:
@@ -758,11 +758,11 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"Create a MAC address from bytes"):
         MacAddress(1, 2, 3, 4, 5, 6).show
-      . assert(_ == t"01-02-03-04-05-06")
+      . assert(_ == "01-02-03-04-05-06")
 
       test(m"Inspect a MAC address"):
         MacAddress(1, 2, 3, 4, 5, 6).inspect
-      . assert(_ == t"01-02-03-04-05-06")
+      . assert(_ == "01-02-03-04-05-06")
 
     suite(m"Named port services"):
       test(m"Check SMTP over TCP port"):
@@ -771,7 +771,7 @@ object Tests extends Suite(m"Urticose tests"):
 
       test(m"Inspect a port"):
         tcp"smtp".inspect
-      . assert(_ == t"⌗25")
+      . assert(_ == "⌗25")
 
       test(m"Check Docker over TCP port"):
         tcp"docker"
@@ -820,7 +820,7 @@ object Tests extends Suite(m"Urticose tests"):
       . assert(_ == NetworkInterface.all().stdlib.head.index)
 
       test(m"Looking up a nonexistent interface name yields Unset"):
-        NetworkInterface.byName(t"definitely-not-an-interface")
+        NetworkInterface.byName("definitely-not-an-interface")
       . assert(_ == Unset)
 
       test(m"An interface's addresses partition into IPv4 and IPv6"):
@@ -834,4 +834,4 @@ object Tests extends Suite(m"Urticose tests"):
       . assert(_ == true)
 
 object example:
-  val com = Hostname(DnsLabel(t"example"), DnsLabel(t"com"))
+  val com = Hostname(DnsLabel("example"), DnsLabel("com"))

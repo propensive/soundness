@@ -41,12 +41,12 @@ import prepositional.*
 
 object Display:
   given encodable: Display is Encodable in Text =
-    case Block  => t"block"
-    case Inline => t"inline"
+    case Block  => "block"
+    case Inline => "inline"
 
   def unapply(text: Text): Option[Display] = text match
-    case t"block"  => Some(Block)
-    case t"inline" => Some(Inline)
+    case "block"  => Some(Block)
+    case "inline" => Some(Inline)
     case _         => None
 
 enum Display:

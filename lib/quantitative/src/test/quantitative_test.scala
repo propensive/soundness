@@ -90,7 +90,7 @@ object Tests extends Suite(m"Quantitative Tests"):
         demilitarize:
           Second*2 + Metre*3.0
         .map(_.message)
-      . assert(_.contains(t"quantitative: the left operand represents time, but the right operand represents distance; these are incompatible physical quantities"))
+      . assert(_.contains("quantitative: the left operand represents time, but the right operand represents distance; these are incompatible physical quantities"))
 
       test(m"Units cancel out"):
         demilitarize:
@@ -279,52 +279,52 @@ object Tests extends Suite(m"Quantitative Tests"):
     suite(m"Rendering tests"):
       test(m"Show a value in metres"):
         (7.567*Metre).show
-      . assert(_ == t"7.57 m")
+      . assert(_ == "7.57 m")
 
       test(m"Show a value in square metres"):
         (1.4*Metre*Metre).show
-      . assert(_ == t"1.40 m²")
+      . assert(_ == "1.40 m²")
 
       test(m"Show a value in metres per second"):
         (8.54*Metre/Second).show
-      . assert(_ == t"8.54 m·s¯¹")
+      . assert(_ == "8.54 m·s¯¹")
 
       test(m"Show a value in kilometres per second"):
         (8.54*Kilo(Metre)/Second).show
-      . assert(_ == t"8.54×10³ m·s¯¹")
+      . assert(_ == "8.54×10³ m·s¯¹")
 
       test(m"Show a value in kilograms"):
         (10.4*Kilo(Gram)/Second).show
-      . assert(_ == t"10.4 kg·s¯¹")
+      . assert(_ == "10.4 kg·s¯¹")
 
       test(m"Show the speed of light"):
         constants.SpeedOfLightInVacuum.show
-      . assert(_ == t"3.00×10⁸ m·s¯¹")
+      . assert(_ == "3.00×10⁸ m·s¯¹")
 
       test(m"Show Planck's constant"):
         constants.PlanckConstant.show
-      . assert(_ == t"6.63×10¯³⁴ m²·kg·s¯¹")
+      . assert(_ == "6.63×10¯³⁴ m²·kg·s¯¹")
 
       test(m"Show an energy using custom units"):
         (45*Joule).show
-      . assert(_ == t"45.0 J")
+      . assert(_ == "45.0 J")
 
       test(m"Show a force in Newtons"):
         (100*Newton).show
-      . assert(_ == t"100 N")
+      . assert(_ == "100 N")
 
     suite(m"Quantity descriptions"):
       test(m"describe a base dimension"):
         Metre.dimension
-      . assert(_ == t"distance")
+      . assert(_ == "distance")
 
       test(m"describe a compound dimension"):
         (Metre/Second).dimension
-      . assert(_ == t"velocity")
+      . assert(_ == "velocity")
 
       test(m"describe a complex compound dimension"):
         (Foot*Foot*Kilo(Gram)/(Second*Second*Mole)).dimension
-      . assert(_ == t"chemical potential")
+      . assert(_ == "chemical potential")
 
     suite(m"Quantifiability tests"):
       case class Pts(value: Double)
@@ -342,54 +342,54 @@ object Tests extends Suite(m"Quantitative Tests"):
       test(m"Get Celsius value"):
         import temperatureScales.celsiusScale
         (zero[Temperature] + 300*Kelvin).show
-      . assert(_ == t"26.9 °C")
+      . assert(_ == "26.9 °C")
 
       test(m"Get Fahrenheit value"):
         import temperatureScales.fahrenheitScale
         (zero[Temperature] + 300*Kelvin).show
-      . assert(_ == t"80.3 °F")
+      . assert(_ == "80.3 °F")
 
       test(m"Create Celsius value"):
         import temperatureScales.celsiusScale
         Celsius(30).show
-      . assert(_ == t"30.0 °C")
+      . assert(_ == "30.0 °C")
 
       test(m"Create Fahrenheit value"):
         import temperatureScales.fahrenheitScale
         Fahrenheit(30).show
-      . assert(_ == t"30.0 °F")
+      . assert(_ == "30.0 °F")
 
       test(m"Check stored Celsius value"):
         Celsius(30).toString.show
-      . assert(_ == t"303.15")
+      . assert(_ == "303.15")
 
       test(m"Check stored Fahrenheit value"):
         Fahrenheit(32).toString.show
-      . assert(_ == t"273.15")
+      . assert(_ == "273.15")
 
       test(m"Convert Fahrenheit value to Kelvin"):
         (Fahrenheit(0) - zero[Temperature]).convert[Kelvins].show
-      . assert(_ == t"255 K")
+      . assert(_ == "255 K")
 
       test(m"Convert Fahrenheit value to Rankine"):
         (Fahrenheit(100) - zero[Temperature]).convert[Rankines].show
-      . assert(_ == t"560 °R")
+      . assert(_ == "560 °R")
 
       test(m"Convert Fahrenheit directly to Celsius"):
         import temperatureScales.celsiusScale
         Fahrenheit(100).show
-      . assert(_ == t"37.8 °C")
+      . assert(_ == "37.8 °C")
 
       test(m"Add a Rankine quantity to a Temperature"):
         import temperatureScales.kelvinScale
         // (9*Kelvin).convert[Rankines] is 16.2 R, equivalent to 9 K
         (zero[Temperature] + (9.0*Kelvin).convert[Rankines]).show
-      . assert(_ == t"9.00 K")
+      . assert(_ == "9.00 K")
 
       test(m"Subtract a Rankine quantity from a Temperature"):
         import temperatureScales.kelvinScale
         ((zero[Temperature] + 20.0*Kelvin) - (9.0*Kelvin).convert[Rankines]).show
-      . assert(_ == t"11.0 K")
+      . assert(_ == "11.0 K")
 
     suite(m"Aggregation tests"):
       test(m"Total some values"):
@@ -412,66 +412,66 @@ object Tests extends Suite(m"Quantitative Tests"):
       sealed trait Information extends Dimension
       sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
       val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
-      given byteDesignation: Designation[Bytes[1]] = () => t"B"
+      given byteDesignation: Designation[Bytes[1]] = () => "B"
 
       test(m"Without `Prefixes` in scope, falls back to raw rendering"):
         (5000*Byte).show
-      . assert(_ == t"5.00×10³ B")
+      . assert(_ == "5.00×10³ B")
 
       test(m"SI prefix scales 5000 B to kB"):
         given Prefixes on Bytes[1] = Prefixes(List(Kilo, Mega, Giga, Tera))
         (5000*Byte).show
-      . assert(_ == t"5.00 kB")
+      . assert(_ == "5.00 kB")
 
       test(m"SI prefix scales 5_000_000 B to MB"):
         given Prefixes on Bytes[1] = Prefixes(List(Kilo, Mega, Giga, Tera))
         (5_000_000*Byte).show
-      . assert(_ == t"5.00 MB")
+      . assert(_ == "5.00 MB")
 
       test(m"SI prefix scales 1.5×10⁹ B to GB"):
         given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega, Giga, Tera))
         (1_500_000_000.0*Byte).show
-      . assert(_ == t"1.50 GB")
+      . assert(_ == "1.50 GB")
 
       test(m"Default floor 1.0 keeps 500 B unscaled"):
         given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega, Giga))
         (500*Byte).show
-      . assert(_ == t"500 B")
+      . assert(_ == "500 B")
 
       test(m"Lower floor 0.1 scales 100 B to kB"):
         given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega, Giga), 0.1)
         (100*Byte).show
-      . assert(_ == t"0.100 kB")
+      . assert(_ == "0.100 kB")
 
       test(m"Binary prefix scales 5000 B to KiB"):
         given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kibi, Mebi, Gibi))
         (5000*Byte).show
-      . assert(_ == t"4.88 KiB")
+      . assert(_ == "4.88 KiB")
 
       test(m"Binary prefix scales 5_000_000 B to MiB"):
         given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kibi, Mebi, Gibi))
         (5_000_000*Byte).show
-      . assert(_ == t"4.77 MiB")
+      . assert(_ == "4.77 MiB")
 
       test(m"Binary prefix scales 4×10⁹ B to GiB"):
         given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kibi, Mebi, Gibi))
         (4_000_000_000.0*Byte).show
-      . assert(_ == t"3.73 GiB")
+      . assert(_ == "3.73 GiB")
 
       test(m"Negative value uses absolute magnitude for prefix selection"):
         given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega, Giga))
         (-5000*Byte).show
-      . assert(_ == t"-5.00 kB")
+      . assert(_ == "-5.00 kB")
 
       test(m"Zero uses no prefix"):
         given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Kilo, Mega))
         (Quantity[Bytes[1]](0.0)).show
-      . assert(_ == t"0.00 B")
+      . assert(_ == "0.00 B")
 
       test(m"Compound dimension scales as a whole"):
         given prefixes: (Prefixes on Bytes[1] & Seconds[-1]) = Prefixes(List(Kilo, Mega, Giga))
         ((1_500_000_000.0*Byte)/Second).show
-      . assert(_ == t"1.50 GB·s¯¹")
+      . assert(_ == "1.50 GB·s¯¹")
 
       test(m"Value below floor with no smaller prefix falls through to lowest"):
         // 0.5 is below the floor of 1.0 and no sub-1 prefix is configured, so
@@ -479,7 +479,7 @@ object Tests extends Suite(m"Quantitative Tests"):
         // candidate with the smallest exponent (here `NoPrefix`).
         given prefixes: (Prefixes on Bytes[1]) = Prefixes(List(Mega, Giga), 1.0)
         (0.5*Byte).show
-      . assert(_ == t"0.500 B")
+      . assert(_ == "0.500 B")
 
     suite(m"Bytecode shape"):
       import classloaders.threadContextClassloader
@@ -494,7 +494,7 @@ object Tests extends Suite(m"Quantitative Tests"):
       // given accessor (such as `Quantity$.negatable()`) are dead code once
       // the typeclass operation is inlined and don't count.
       def callsTypeclassOp(bytecode: Bytecode): Boolean =
-        val ops = Set(t"negate", t"add", t"subtract", t"multiply", t"divide", t"root", t"op")
+        val ops = Set("negate", "add", "subtract", "multiply", "divide", "root", "op")
         bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Invokevirtual(_, name, _)      => ops.has(name)
@@ -506,7 +506,7 @@ object Tests extends Suite(m"Quantitative Tests"):
           instruction.opcode match
             case Bytecode.Opcode.Invokestatic(owner, method, _) =>
               (owner.s.contains("Double") || owner.s.contains("BoxesRunTime"))
-              && (method.s.contains("box") || method == t"valueOf")
+              && (method.s.contains("box") || method == "valueOf")
             case _ =>
               false
 
@@ -541,63 +541,63 @@ object Tests extends Suite(m"Quantitative Tests"):
             case _                    => false
 
       test(m"Quantity negation has no virtual call to `negate`"):
-        methodBytecode(t"viaQuantity_negate").lay(true)(callsTypeclassOp)
+        methodBytecode("viaQuantity_negate").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
       test(m"Quantity negation has no boxing"):
-        methodBytecode(t"viaQuantity_negate").lay(true)(hasBoxing)
+        methodBytecode("viaQuantity_negate").lay(true)(hasBoxing)
       . assert(_ == false)
 
       test(m"Quantity negation contains the primitive `Dneg` instruction"):
-        methodBytecode(t"viaQuantity_negate").lay(false)(containsDneg)
+        methodBytecode("viaQuantity_negate").lay(false)(containsDneg)
       . assert(_ == true)
 
       test(m"Quantity * Double contains the primitive `Dmul` instruction"):
-        methodBytecode(t"viaQuantity_mulScalar").lay(false)(containsDmul)
+        methodBytecode("viaQuantity_mulScalar").lay(false)(containsDmul)
       . assert(_ == true)
 
       test(m"Quantity / Double contains the primitive `Ddiv` instruction"):
-        methodBytecode(t"viaQuantity_divScalar").lay(false)(containsDdiv)
+        methodBytecode("viaQuantity_divScalar").lay(false)(containsDdiv)
       . assert(_ == true)
 
       test(m"Quantity * Double has no virtual call to `multiply`"):
-        methodBytecode(t"viaQuantity_mulScalar").lay(true)(callsTypeclassOp)
+        methodBytecode("viaQuantity_mulScalar").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
       test(m"Quantity / Double has no virtual call to `divide`"):
-        methodBytecode(t"viaQuantity_divScalar").lay(true)(callsTypeclassOp)
+        methodBytecode("viaQuantity_divScalar").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
       test(m"Quantity + Quantity contains the primitive `Dadd` instruction"):
-        methodBytecode(t"viaQuantity_addQ").lay(false)(containsDadd)
+        methodBytecode("viaQuantity_addQ").lay(false)(containsDadd)
       . assert(_ == true)
 
       test(m"Quantity + Quantity has no virtual call to `add` or `op`"):
-        methodBytecode(t"viaQuantity_addQ").lay(true)(callsTypeclassOp)
+        methodBytecode("viaQuantity_addQ").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
       test(m"Quantity - Quantity contains the primitive `Dsub` instruction"):
-        methodBytecode(t"viaQuantity_subQ").lay(false)(containsDsub)
+        methodBytecode("viaQuantity_subQ").lay(false)(containsDsub)
       . assert(_ == true)
 
       test(m"Quantity - Quantity has no virtual call to `subtract` or `op`"):
-        methodBytecode(t"viaQuantity_subQ").lay(true)(callsTypeclassOp)
+        methodBytecode("viaQuantity_subQ").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
       test(m"Quantity * Quantity contains the primitive `Dmul` instruction"):
-        methodBytecode(t"viaQuantity_mulQ").lay(false)(containsDmul)
+        methodBytecode("viaQuantity_mulQ").lay(false)(containsDmul)
       . assert(_ == true)
 
       test(m"Quantity * Quantity has no virtual call to `multiply` or `op`"):
-        methodBytecode(t"viaQuantity_mulQ").lay(true)(callsTypeclassOp)
+        methodBytecode("viaQuantity_mulQ").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
       test(m"Quantity / Quantity contains the primitive `Ddiv` instruction"):
-        methodBytecode(t"viaQuantity_divQ").lay(false)(containsDdiv)
+        methodBytecode("viaQuantity_divQ").lay(false)(containsDdiv)
       . assert(_ == true)
 
       test(m"Quantity / Quantity has no virtual call to `divide` or `op`"):
-        methodBytecode(t"viaQuantity_divQ").lay(true)(callsTypeclassOp)
+        methodBytecode("viaQuantity_divQ").lay(true)(callsTypeclassOp)
       . assert(_ == false)
 
 

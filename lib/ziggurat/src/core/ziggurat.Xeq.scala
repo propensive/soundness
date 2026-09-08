@@ -62,9 +62,9 @@ import rudiments.sortingAlgorithms.timsort
 
 object Xeq:
   private val ChunkSize: Int = 8000
-  private val RunnerPrefix = t"runner-"
-  private val ExeSuffix = t".exe"
-  private val DataName = t"data"
+  private val RunnerPrefix = "runner-"
+  private val ExeSuffix = ".exe"
+  private val DataName = "data"
 
   def installer(payloads: List[Payload]): Data =
     val template = cp"/ziggurat/xeq.tmpl".read[Text]
@@ -73,18 +73,18 @@ object Xeq:
     val sh       = cp"/ziggurat/xeq-installer.sh".read[Text]
 
     val prefix: Text =
-      template.cut(t"@@BAT@@").join(bat).cut(t"@@PS1@@").join(ps1).cut(t"@@SH@@").join(sh)
+      template.cut("@@BAT@@").join(bat).cut("@@PS1@@").join(ps1).cut("@@SH@@").join(sh)
 
     val encoded = payloads.map: payload =>
       val raw: Data =
         if !payload.gzip then payload.bytes
         else Chain(payload.bytes).compress[Gzip].read[Data]
 
-      payload.label -> raw.serialize[Base64].slices(ChunkSize).join(t"", t"\n", t"\n")
+      payload.label -> raw.serialize[Base64].slices(ChunkSize).join("", "\n", "\n")
 
     val builder = StringBuilder()
     builder.add(prefix)
-    if !prefix.ends(t"\n") then builder.add('\n')
+    if !prefix.ends("\n") then builder.add('\n')
 
     var offset = 1
 
@@ -93,16 +93,16 @@ object Xeq:
       offset = offset + content.count(_ == '\n') + 2
       entry
 
-    builder.add(t"index:")
-    builder.add(indexEntries.join(t","))
+    builder.add("index:")
+    builder.add(indexEntries.join(","))
     builder.add('\n')
 
     encoded.each: (_, content) =>
-      builder.add(t"-----BEGIN CERTIFICATE-----\n")
+      builder.add("-----BEGIN CERTIFICATE-----\n")
       builder.add(content)
-      builder.add(t"-----END CERTIFICATE-----\n")
+      builder.add("-----END CERTIFICATE-----\n")
 
-    builder.add(t"#>\n")
+    builder.add("#>\n")
     builder.text.in[Data](using charEncoders.utf8Encoder)
 
   def downloader(url: Text, hash: Text): Data =
@@ -112,18 +112,18 @@ object Xeq:
     val sh       = cp"/ziggurat/xeq-downloader.sh".read[Text]
 
     val prefix: Text =
-      template.cut(t"@@BAT@@").join(bat).cut(t"@@PS1@@").join(ps1).cut(t"@@SH@@").join(sh)
+      template.cut("@@BAT@@").join(bat).cut("@@PS1@@").join(ps1).cut("@@SH@@").join(sh)
 
     val builder = StringBuilder()
     builder.add(prefix)
-    if !prefix.ends(t"\n") then builder.add('\n')
-    builder.add(t"# URL=")
+    if !prefix.ends("\n") then builder.add('\n')
+    builder.add("# URL=")
     builder.add(url)
     builder.add('\n')
-    builder.add(t"# HASH=")
+    builder.add("# HASH=")
     builder.add(hash)
     builder.add('\n')
-    builder.add(t"#>\n")
+    builder.add("#>\n")
     builder.text.in[Data](using charEncoders.utf8Encoder)
 
   // The polyglot per-platform dispatcher: the smallest possible cross-platform artefact.
@@ -144,17 +144,17 @@ object Xeq:
     val sh       = cp"/ziggurat/xeq-dispatcher.sh".read[Text]
 
     val prefix: Text =
-      template.cut(t"@@BAT@@").join(bat).cut(t"@@PS1@@").join(ps1).cut(t"@@SH@@").join(sh)
+      template.cut("@@BAT@@").join(bat).cut("@@PS1@@").join(ps1).cut("@@SH@@").join(sh)
 
     val rows: List[Text] = entries.map: (label, url, hash) => t"$label=$url|$hash"
 
     val builder = StringBuilder()
     builder.add(prefix)
-    if !prefix.ends(t"\n") then builder.add('\n')
-    builder.add(t"assets:")
-    builder.add(rows.join(t","))
+    if !prefix.ends("\n") then builder.add('\n')
+    builder.add("assets:")
+    builder.add(rows.join(","))
     builder.add('\n')
-    builder.add(t"#>\n")
+    builder.add("#>\n")
     builder.text.in[Data](using charEncoders.utf8Encoder)
 
   // The polyglot online launcher. Unlike `installer` (which embeds every bare stub), this
@@ -169,25 +169,25 @@ object Xeq:
     val sh       = cp"/ziggurat/xeq-onlinelauncher.sh".read[Text]
 
     val prefix: Text =
-      template.cut(t"@@BAT@@").join(bat).cut(t"@@PS1@@").join(ps1).cut(t"@@SH@@").join(sh)
+      template.cut("@@BAT@@").join(bat).cut("@@PS1@@").join(ps1).cut("@@SH@@").join(sh)
 
     // The JAR is embedded uncompressed, mirroring the installer's `data` payload, so the
     // same `index:`/`-----BEGIN CERTIFICATE-----` extraction logic decodes it.
-    val content: Text = jar.serialize[Base64].slices(ChunkSize).join(t"", t"\n", t"\n")
+    val content: Text = jar.serialize[Base64].slices(ChunkSize).join("", "\n", "\n")
 
     val rows: List[Text] = entries.map: (label, url, hash) => t"$label=$url|$hash"
 
     val builder = StringBuilder()
     builder.add(prefix)
-    if !prefix.ends(t"\n") then builder.add('\n')
+    if !prefix.ends("\n") then builder.add('\n')
     builder.add(t"index:$DataName=1\n")
-    builder.add(t"-----BEGIN CERTIFICATE-----\n")
+    builder.add("-----BEGIN CERTIFICATE-----\n")
     builder.add(content)
-    builder.add(t"-----END CERTIFICATE-----\n")
-    builder.add(t"assets:")
-    builder.add(rows.join(t","))
+    builder.add("-----END CERTIFICATE-----\n")
+    builder.add("assets:")
+    builder.add(rows.join(","))
     builder.add('\n')
-    builder.add(t"#>\n")
+    builder.add("#>\n")
     builder.text.in[Data](using charEncoders.utf8Encoder)
 
   private def write(output: Path on Linux, data: Data): Unit = unsafely:
@@ -215,7 +215,7 @@ object Xeq:
             else withoutPrefix
 
           val data: Data = path.read[Data]
-          val gzip = !label.starts(t"windows")
+          val gzip = !label.starts("windows")
           Payload(label, data, gzip)
 
     val dataPath: Path on Linux = staging/DataName
@@ -239,18 +239,18 @@ object Xeq:
     unsafely:
       val outputPath: Path on Linux = output.as[Path on Linux]
       val jarData: Data = jar.as[Path on Linux].read[Data]
-      val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
+      val base: Text = if baseUrl.ends("/") then baseUrl else t"$baseUrl/"
 
       val entries: List[(Text, Text, Text)] =
-        manifest.as[Path on Linux].read[Text].cut(t"\n").map(_.trim)
-        . filter(_ != t"")
+        manifest.as[Path on Linux].read[Text].cut("\n").map(_.trim)
+        . filter(_ != "")
         . map: line =>
-            val fields = line.cut(t"\t")
+            val fields = line.cut("\t")
             val label: Text = fields.prim.or(t"")
             val hash: Text = fields.reverse.prim.or(t"")
 
             val name: Text =
-              if label.starts(t"windows") then t"runner-$label.exe" else t"runner-$label"
+              if label.starts("windows") then t"runner-$label.exe" else t"runner-$label"
 
             (label, t"$base$name", hash)
 
@@ -261,11 +261,11 @@ object Xeq:
   // platform, naming the finished executables wherever they are published.
   private def dispatcherMain(output: Text, manifest: Text): Unit = unsafely:
     val entries: List[(Text, Text, Text)] =
-      manifest.as[Path on Linux].read[Text].cut(t"\n").map(_.trim)
-      . filter(_ != t"")
+      manifest.as[Path on Linux].read[Text].cut("\n").map(_.trim)
+      . filter(_ != "")
       . map: line =>
-          val fields = line.cut(t"\t")
-          (fields.prim.or(t""), fields.stdlib.lift(1).getOrElse(t""), fields.reverse.prim.or(t""))
+          val fields = line.cut("\t")
+          (fields.prim.or(t""), fields.stdlib.lift(1).getOrElse(""), fields.reverse.prim.or(t""))
 
     write(output.as[Path on Linux], dispatcher(entries))
 

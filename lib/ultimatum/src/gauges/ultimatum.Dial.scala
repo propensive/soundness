@@ -45,7 +45,7 @@ import vacuous.*
 import denominative.dysasymptotics.linearSize
 
 object Dial:
-  private val levels: Text = t"▁▂▃▄▅▆▇█"
+  private val levels: Text = "▁▂▃▄▅▆▇█"
 
 // How a bounded reading is drawn. A meter is not progress — it can fall as well as rise — so these
 // designs mark the scale, and colour the reading by where it sits on it rather than by how far it
@@ -106,10 +106,10 @@ enum Dial:
           val fromTop = stem - 1 - row
           val filled = (total - fromTop).max(0.0).min(1.0)
 
-          if filled <= 0 then gauging.tint(palette.track)(Teletype(t"░"))
+          if filled <= 0 then gauging.tint(palette.track)(Teletype("░"))
           else gauging.tint(color)(Teletype(level(Fraction(filled))))
 
-        cells.toList.to(List) :+ gauging.tint(color)(Teletype(if plain then t"o" else t"◍"))
+        cells.toList.to(List) :+ gauging.tint(color)(Teletype(if plain then "o" else "◍"))
 
       case Battery =>
         // Caps, cells and a terminal nub. A battery reddens as it *empties*, so the severity ramp
@@ -117,15 +117,15 @@ enum Dial:
         val inner = (width - 3).max(1)
         val lit = (fraction.value*inner).toInt.min(inner)
         val color = palette.severity(1 - fraction.value)
-        val body = gauging.tint(color)(Teletype((if plain then t"#" else t"█")*lit))
-        val empty = if plain then t"-" else t"░"
+        val body = gauging.tint(color)(Teletype((if plain then "#" else "█")*lit))
+        val empty = if plain then "-" else "░"
         val rest = gauging.tint(palette.track)(Teletype(empty*(inner - lit)))
 
         if plain then List(pad(e"[$body$rest]"))
         else
-          val nub = gauging.tint(color)(Teletype(t"╸"))
-          val left = gauging.tint(palette.track)(Teletype(t"▐"))
-          val right = gauging.tint(palette.track)(Teletype(t"▌"))
+          val nub = gauging.tint(color)(Teletype("╸"))
+          val left = gauging.tint(palette.track)(Teletype("▐"))
+          val right = gauging.tint(palette.track)(Teletype("▌"))
 
           List(pad(e"$left$body$rest$right$nub"))
 
@@ -134,9 +134,9 @@ enum Dial:
         // suggestion that the space behind it has been filled.
         val span = (width - 2).max(1)
         val at = (fraction.value*(span - 1)).toInt.min(span - 1).max(0)
-        val rail = if plain then t"-" else t"─"
-        val head = if plain then t"|" else t"┃"
-        val cap = if plain then t"+" else t"╷"
+        val rail = if plain then "-" else "─"
+        val head = if plain then "|" else "┃"
+        val cap = if plain then "+" else "╷"
         val before = gauging.tint(palette.track)(Teletype(rail*at))
         val after = gauging.tint(palette.track)(Teletype(rail*(span - at - 1)))
         val marker = gauging.tint(palette.severity(fraction.value))(Teletype(head))
@@ -152,10 +152,10 @@ enum Dial:
         val cells = (0 until width).map: index =>
           val band = index.toDouble/width.max(1)
 
-          if index < lit then gauging.tint(palette.severity(fraction.value))(Teletype(t"█"))
-          else if plain then gauging.tint(palette.track)(Teletype(t"-"))
+          if index < lit then gauging.tint(palette.severity(fraction.value))(Teletype("█"))
+          else if plain then gauging.tint(palette.track)(Teletype("-"))
           else
-            val shade = if band < 0.5 then t"░" else if band < 0.8 then t"▒" else t"▓"
+            val shade = if band < 0.5 then "░" else if band < 0.8 then "▒" else "▓"
             gauging.tint(palette.track)(Teletype(shade))
 
         List(pad(cells.reduceLeft { (l, r) => e"$l$r" }))
@@ -163,7 +163,7 @@ enum Dial:
       case Ascii =>
         val inner = (width - 2).max(1)
         val lit = (fraction.value*inner).toInt.min(inner)
-        val body = gauging.tint(palette.severity(fraction.value))(Teletype(t"#"*lit))
-        val rest = gauging.tint(palette.track)(Teletype(t"-"*(inner - lit)))
+        val body = gauging.tint(palette.severity(fraction.value))(Teletype("#"*lit))
+        val rest = gauging.tint(palette.track)(Teletype("-"*(inner - lit)))
 
         List(pad(e"[$body$rest]"))

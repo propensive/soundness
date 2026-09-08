@@ -44,9 +44,9 @@ import vacuous.*
 
 object Sparkline:
   // Ascending block heights: the standard eight-level ramp.
-  private val blocks: Text = t"▁▂▃▄▅▆▇█"
-  private val dots: Text = t"⣀⠤⠒⠉"
-  private val ascii: Text = t"_.-^"
+  private val blocks: Text = "▁▂▃▄▅▆▇█"
+  private val dots: Text = "⣀⠤⠒⠉"
+  private val ascii: Text = "_.-^"
 
   // Reduce `samples` to exactly `width` values by taking the maximum of each group. A sparkline
   // narrower than its series must drop information; taking the maximum keeps the peaks, whereas

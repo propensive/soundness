@@ -118,9 +118,9 @@ case class Truetype(data: Data) extends Sfnt:
       else List(ref.id.text -> data.segment((ref.offset).z till (ref.offset + ref.length).z))
 
     val entries =
-      (t"glyf", Array.freeze(newGlyf)) ::
-        (t"loca", Array.freeze(newLoca)) ::
-        (t"head", Array.freeze(newHead)) :: (carried: List[(Text, Data)])
+      ("glyf", Array.freeze(newGlyf)) ::
+        ("loca", Array.freeze(newLoca)) ::
+        ("head", Array.freeze(newHead)) :: (carried: List[(Text, Data)])
 
     Truetype(Sfnt.assemble(data.segment((0).z till (4).z), entries))
 

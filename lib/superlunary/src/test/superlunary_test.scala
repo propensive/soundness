@@ -59,22 +59,22 @@ object Tests extends Suite(m"Superlunary Tests"):
 
     suite(m"Dispatching to a compiled JVM"):
       test(m"a dispatched quote returns the value its body constructs"):
-        fn(Example(t"one", jl.System.currentTimeMillis)).count
+        fn(Example("one", jl.System.currentTimeMillis)).count
       . assert(_ == 9L)
 
       test(m"spliced values reach the staged body"):
-        fn(Example(t"one", jl.System.currentTimeMillis)).name
-      . assert(_.starts(t"Time: one "))
+        fn(Example("one", jl.System.currentTimeMillis)).name
+      . assert(_.starts("Time: one "))
 
       test(m"a second dispatch of the same quote splices its own values"):
-        fn(Example(t"two", jl.System.currentTimeMillis)).name
-      . assert(_.starts(t"Time: two "))
+        fn(Example("two", jl.System.currentTimeMillis)).name
+      . assert(_.starts("Time: two "))
 
     suite(m"Isolation"):
       test(m"a captured local is spliced into the isolated quote"):
         var count = 100
 
         Isolation.dispatch:
-          '{"hello message"+($count + 1)}
+          '{s"hello message"+($count + 1)}
 
       . assert(_ == "hello message101")

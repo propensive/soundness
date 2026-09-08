@@ -43,12 +43,12 @@ case class Decimalizer
     decimalPoint:       Char           = '.',
     minusSign:          Char           = '-',
     plusSign:           Optional[Char] = Unset,
-    exponent:           Text           = "×10".tt,
+    exponent:           Text           = "×10",
     exponentThreshold:  Optional[Int]  = 3,
     superscript:        Boolean        = true,
     exponentMultiple:   Int            = 1,
-    infinity:           Text           = "\u221e".tt,
-    nan:                Text           = "\u2209\u211d".tt )
+    infinity:           Text           = "\u221e",
+    nan:                Text           = "\u2209\u211d" )
 extends DecimalConverter:
   def exponentScale(index: Int, a: Int): Int =
     if index == 0 then a else exponentScale(index/10, a + 1)

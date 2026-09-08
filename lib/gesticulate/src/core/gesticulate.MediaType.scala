@@ -63,19 +63,19 @@ object MediaType:
     caps.unsafe.unsafeAssumePure(Media.parse(_))
 
   given formenctype: ("formenctype" is GenericHtmlAttribute[MediaType]):
-    def name: Text = t"formenctype"
+    def name: Text = "formenctype"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
   given media: ("media" is GenericHtmlAttribute[MediaType]):
-    def name: Text = t"media"
+    def name: Text = "media"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
   given enctype: ("enctype" is GenericHtmlAttribute[MediaType]):
-    def name: Text = t"enctype"
+    def name: Text = "enctype"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
   given htype: ("htype" is GenericHtmlAttribute[MediaType]):
-    def name: Text = t"type"
+    def name: Text = "type"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
   def unapply(value: Text): Option[MediaType] = safely(Media.parse(value)).let(Some(_)).or(None)

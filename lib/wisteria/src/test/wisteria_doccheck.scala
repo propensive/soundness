@@ -33,7 +33,7 @@ object DerivationTutorial:
       value =>
         fields(value):
           [field] => field => t"$label=${contextual.present(field)}"
-        . join(t"${typeName[derivation]}(", t", ", t")")
+        . join(t"${typeName[derivation]}(", ", ", ")")
 
     inline def disjunction[derivation: SumReflection]: Presentation[derivation] =
       value =>
@@ -45,7 +45,7 @@ object DerivationTutorial:
 
   case class Person(name: Text, age: Int) derives Presentation
 
-  Person(t"Ada", 36).present   // t"Person(name=Ada, age=36)"
+  Person("Ada", 36).present   // t"Person(name=Ada, age=36)"
 
   trait Labels[value]:
     def labels: List[Text]
@@ -73,11 +73,11 @@ object DerivationTutorial:
 
     inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
       text =>
-        val columns = text.cut(t",")
+        val columns = text.cut(",")
         build[derivation]:
           [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
 
-  Parsing.derived[Person].parse(t"Ada,36")   // Person(t"Ada", 36)
+  Parsing.derived[Person].parse("Ada,36")   // Person(t"Ada", 36)
 
   object ParsingSums extends Derivation[Parsing]:
     inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
@@ -85,7 +85,7 @@ object DerivationTutorial:
 
     inline def disjunction[derivation: SumReflection]: Parsing[derivation] =
       text =>
-        text.cut(t":") match
+        text.cut(":") match
           case List(prefix, rest) =>
             delegate[derivation](prefix):
               [variant <: derivation] => parsing => parsing.parse(rest)
@@ -111,7 +111,7 @@ object DerivationTutorial:
           [variant <: derivation] => leftValue =>
             complement(right).lay(false)(contextual.equal(leftValue, _))
 
-  Equivalence.derived[Person].equal(Person(t"Ada", 36), Person(t"ADA", 36))   // true
+  Equivalence.derived[Person].equal(Person("Ada", 36), Person("ADA", 36))   // true
 
   trait Naming[value]:
     def name(value: value): Text
@@ -131,7 +131,7 @@ object DerivationTutorial:
   object LenientParsing extends ProductDerivation[Parsing]:
     inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
       text =>
-        val columns = text.cut(t",")
+        val columns = text.cut(",")
         build[derivation]:
           [field] => parsing =>
             columns(Ordinal.zerary(index)).let(parsing.parse(_))
@@ -139,13 +139,13 @@ object DerivationTutorial:
 
   case class Settings(name: Text, retries: Int = 3)
 
-  LenientParsing.derived[Settings].parse(t"primary")   // Settings(t"primary", 3)
+  LenientParsing.derived[Settings].parse("primary")   // Settings(t"primary", 3)
 
   import arithmetic.addable
 
   case class Pair(label: Text, count: Int)
 
-  Pair(t"foo", 10) + Pair(t"bar", 15)   // Pair(t"foobar", 25)
+  Pair("foo", 10) + Pair("bar", 15)   // Pair(t"foobar", 25)
 
   enum Tree derives Presentation:
     case Leaf
@@ -166,5 +166,5 @@ object DerivationTutorial:
   extension [value](value: value)
     def render(using rendering: Rendering[value]): Text = rendering.render(value)
 
-  Person(t"Ada", 36).render   // through Presentation, which Person derives
+  Person("Ada", 36).render   // through Presentation, which Person derives
   3.14.render                 // through Showable, which Double has

@@ -56,12 +56,12 @@ object OpensslCrypto extends Crypto:
   // On the JVM, `libcrypto` must be loaded for symbol resolution; on Scala Native, registration
   // is a no-op — the library is statically linked instead (`-lcrypto`).
   ForeignLibrary.register
-    ( t"/opt/homebrew/opt/openssl@3/lib/libcrypto.dylib",
-      t"/opt/homebrew/lib/libcrypto.dylib",
-      t"/usr/local/opt/openssl@3/lib/libcrypto.dylib",
-      t"libcrypto.so.3",
-      t"libcrypto.so",
-      t"libcrypto.dylib" )
+    ( "/opt/homebrew/opt/openssl@3/lib/libcrypto.dylib",
+      "/opt/homebrew/lib/libcrypto.dylib",
+      "/usr/local/opt/openssl@3/lib/libcrypto.dylib",
+      "libcrypto.so.3",
+      "libcrypto.so",
+      "libcrypto.dylib" )
 
   private given interface: (Interface in Native at "/enigmatic/openssl.h") =
     Interface[Native]("/enigmatic/openssl.h")
@@ -97,7 +97,7 @@ object OpensslCrypto extends Crypto:
         output.free()
         outputLength.free()
 
-  def aes: Crypto.SymmetricCipher = symmetric(t"AES")
+  def aes: Crypto.SymmetricCipher = symmetric("AES")
 
   // RSA is not yet implemented natively (it needs EVP_PKEY DER parsing and keygen); delegate to
   // the JDK provider so this remains a complete `Crypto` (on Scala Native, where that provider
@@ -110,18 +110,18 @@ object OpensslCrypto extends Crypto:
   def ecdsa(digest: Text): Crypto.SignatureScheme = JavaBaseCrypto.ecdsa(digest)
 
   private def digest(algorithm: Text): Address = algorithm match
-    case t"HmacSHA256" => Foreign["library", Native].EVP_sha256().call[Address]()
-    case t"HmacSHA384" => Foreign["library", Native].EVP_sha384().call[Address]()
-    case t"HmacSHA512" => Foreign["library", Native].EVP_sha512().call[Address]()
-    case t"HmacSHA1"   => Foreign["library", Native].EVP_sha1().call[Address]()
-    case t"HmacMD5"    => Foreign["library", Native].EVP_md5().call[Address]()
+    case "HmacSHA256" => Foreign["library", Native].EVP_sha256().call[Address]()
+    case "HmacSHA384" => Foreign["library", Native].EVP_sha384().call[Address]()
+    case "HmacSHA512" => Foreign["library", Native].EVP_sha512().call[Address]()
+    case "HmacSHA1"   => Foreign["library", Native].EVP_sha1().call[Address]()
+    case "HmacMD5"    => Foreign["library", Native].EVP_md5().call[Address]()
     case other         => panic(m"unsupported HMAC algorithm: $other")
 
   // Maps a JCE-style cipher name (`AES`, `CBC`, key length) to OpenSSL's name, e.g.
   // `aes-256-cbc`. Only AES is offered; other block ciphers would need their own key-length
   // handling.
   private def opensslCipher(algorithm: Text, mode: Text, keyLength: Int): Text = algorithm match
-    case t"AES" => t"aes-${keyLength*8}-${mode.lower}"
+    case "AES" => t"aes-${keyLength*8}-${mode.lower}"
     case other  => panic(m"unsupported OpenSSL cipher: $other")
 
   private def cipher(name: Text): Address =
@@ -160,7 +160,7 @@ object OpensslCrypto extends Crypto:
         . EVP_DecryptInit_ex(context, cipher0, Address.Null, keyBuffer.pointer, ivPointer)
         . call[Int]()
 
-      if padding == t"NoPadding" then
+      if padding == "NoPadding" then
         Foreign["library", Native].EVP_CIPHER_CTX_set_padding(context, 0).call[Int]()
 
     finally
@@ -214,7 +214,7 @@ object OpensslCrypto extends Crypto:
       length.free()
 
   private def symmetric(algorithm: Text): Crypto.SymmetricCipher = new Crypto.SymmetricCipher:
-    def blockSize(transformation: Text): Int = if algorithm == t"AES" then 16 else 8
+    def blockSize(transformation: Text): Int = if algorithm == "AES" then 16 else 8
     def generateKey(bits: Int): Data = random.bytes(bits/8)
 
     def encrypt(transformation: Text, key: Data, iv: Optional[Data], data: Data): Data =
@@ -237,7 +237,7 @@ object OpensslCrypto extends Crypto:
 
       val context = newContext()
       initialise(context, transformation, key, iv, encrypting)
-      val block = if transformation.cut(t"/").prim == t"AES" then 16 else 8
+      val block = if transformation.cut("/").prim == "AES" then 16 else 8
 
       new Cipher.Session:
         def update(chunk: Data): Data = OpensslCrypto.update(context, chunk, block, encrypting)
@@ -255,7 +255,7 @@ object OpensslCrypto extends Crypto:
 
     try
       initialise(context, transformation, key, iv, encrypting)
-      val block = if transformation.cut(t"/").prim == t"AES" then 16 else 8
+      val block = if transformation.cut("/").prim == "AES" then 16 else 8
 
       Array.frozen
        ( update(context, data, block, encrypting).readable

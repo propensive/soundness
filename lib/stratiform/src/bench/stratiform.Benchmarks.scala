@@ -82,15 +82,15 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
 
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
+  given byteDesignation: Designation[Bytes[1]] = () => "B"
   given decimalizer:     Decimalizer            = Decimalizer(2)
   given device:          BenchmarkDevice        = LocalhostDevice
   given prefixes:        Prefixes = Prefixes(List(Kilo, Mega, Giga, Tera))
 
   // Load a benchmark resource as raw UTF-8 bytes.
   private def loadBytes(name: String): Data =
-    val stream = getClass.getResourceAsStream("/stratiform/" + name)
-    if stream == null then sys.error("missing benchmark resource: " + name)
+    val stream = getClass.getResourceAsStream(s"/stratiform/$name")
+    if stream == null then sys.error(s"missing benchmark resource: $name")
     val out = new _root_.java.io.ByteArrayOutputStream
     val buf = new scala.Array[Byte](8192)
     var n = stream.read(buf)

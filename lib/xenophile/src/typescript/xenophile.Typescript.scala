@@ -220,9 +220,9 @@ object Typescript:
       case Typescript.Member.Kind.Method    => name
       case Typescript.Member.Kind.Getter    => t"get $name"
       case Typescript.Member.Kind.Setter    => t"set $name"
-      case Typescript.Member.Kind.Call      => t"()"
-      case Typescript.Member.Kind.Construct => t"new()"
-      case Typescript.Member.Kind.Index     => t"[]"
+      case Typescript.Member.Kind.Call      => "()"
+      case Typescript.Member.Kind.Construct => "new()"
+      case Typescript.Member.Kind.Index     => "[]"
 
     // A `private` member is not part of any consumer's contract, and a TypeScript consumer cannot
     // name it. `protected` is, since a subclass may.
@@ -291,21 +291,21 @@ object Typescript:
         case Union(members)         => render(members, " | ")
         case Intersection(members)  => render(members, " & ")
         case Array(element)         => element.text.s+"[]"
-        case Keyof(target)          => "keyof "+target.text.s
-        case Typeof(target)         => "typeof "+target.s
-        case Named(name, arguments) => name.s+"<"+render(arguments, ", ")+">"
-        case Tuple(members, _)      => "["+render(members, ", ")+"]"
-        case Indexed(target, index) => target.text.s+"["+index.text.s+"]"
-        case Predicate(name, target) => name.s+" is "+target.text.s
+        case Keyof(target)          => s"keyof ${target.text.s}"
+        case Typeof(target)         => s"typeof ${target.s}"
+        case Named(name, arguments) => name.s+s"<"+render(arguments, ", ")+">"
+        case Tuple(members, _)      => s"["+render(members, ", ")+"]"
+        case Indexed(target, index) => target.text.s+s"[${index.text.s}]"
+        case Predicate(name, target) => name.s+s" is ${target.text.s}"
 
         case Object(members) =>
-          "{ "+members.stdlib.map { member => member.name.s }.mkString("; ")+" }"
+          s"{ "+members.stdlib.map { member => member.name.s }.mkString("; ")+" }"
 
         case Function(parameters, result, _, construct) =>
           val arguments = parameters.stdlib.map: parameter =>
-            parameter.name.s+": "+parameter.typed.lay("any") { value => value.text.s }
+            parameter.name.s+s": "+parameter.typed.lay("any") { value => value.text.s }
 
-          (if construct then "new " else "")+"("+arguments.mkString(", ")+") => "+result.text.s
+          ((if construct then "new " else ""): String)+s"("+arguments.mkString(", ")+s") => ${result.text.s}"
 
       rendered.tt
 
@@ -381,7 +381,7 @@ object Typescript:
             end += 1
 
         if end >= text.length
-        then abort(Typescript.Error(Reason.Syntax(t"the string literal is unterminated", t"$quote")))
+        then abort(Typescript.Error(Reason.Syntax("the string literal is unterminated", t"$quote")))
 
         tokens += Token.Str(builder.toString.tt)
         end + 1
@@ -398,7 +398,7 @@ object Typescript:
           && !(text.charAt(index) == '*' && text.charAt(index + 1) == '/') do index += 1
           index = (index + 2).min(text.length)
         else if char == '`' then
-          abort(Typescript.Error(Reason.Unsupported(t"a template literal type")))
+          abort(Typescript.Error(Reason.Unsupported("a template literal type")))
         else if char == '"' || char == '\'' then index = string(index, char)
         else if char.isDigit then index = number(index)
         else if char.isLetter || char == '_' || char == '$' then index = word(index)
@@ -415,7 +415,7 @@ object Typescript:
               if singles.indexOf(char.toInt) >= 0 then
                 tokens += Token.Punct(char.toString.tt)
                 index += 1
-              else abort(Typescript.Error(Reason.Syntax(t"unexpected character", char.toString.tt)))
+              else abort(Typescript.Error(Reason.Syntax("unexpected character", char.toString.tt)))
 
       tokens.toList.to(List)
 
@@ -471,13 +471,13 @@ object Typescript:
         case Token.Word(text) => text
         case Token.Str(text)  => text
         case Token.Num(text)  => text
-        case _ => abort(Typescript.Error(Reason.Syntax(t"expected a name", here)))
+        case _ => abort(Typescript.Error(Reason.Syntax("expected a name", here)))
 
       // Consumes a `;` or `,` separator where the grammar permits either, and tolerates its
       // absence: a newline terminates a member in TypeScript, and the lexer has discarded newlines.
       def separator(): Unit =
-        skip(t";")
-        skip(t",")
+        skip(";")
+        skip(",")
         ()
 
       // --- declarations ------------------------------------------------------------------------
@@ -493,7 +493,7 @@ object Typescript:
 
         while !found && index < items.length do
           items(index) match
-            case Token.Word(text) => found = text == t"export" || text == t"import"
+            case Token.Word(text) => found = text == "export" || text == "import"
             case _                => ()
 
           index += 1
@@ -531,8 +531,8 @@ object Typescript:
           ambient: Boolean )
       :   Unit raises Typescript.Error =
 
-        while peek().present && !at(t"}") do
-          if at(t"}") then () else declaration(scope, module, into, ambient)
+        while peek().present && !at("}") do
+          if at("}") then () else declaration(scope, module, into, ambient)
 
         ()
 
@@ -543,17 +543,17 @@ object Typescript:
           ambient: Boolean )
       :   Unit raises Typescript.Error =
 
-        if skip(t";") then ()
-        else if at(t"import") then skipStatement()
-        else if at(t"@") then abort(Typescript.Error(Reason.Unsupported(t"a decorator")))
+        if skip(";") then ()
+        else if at("import") then skipStatement()
+        else if at("@") then abort(Typescript.Error(Reason.Unsupported("a decorator")))
         else
-          val exported = skip(t"export")
+          val exported = skip("export")
 
           // `export default …`, `export = …` and `export { … }` re-export existing names; they
           // change nothing about the declarations themselves, which are parsed where they stand.
-          if exported && (at(t"default") || at(t"=") || at(t"{") || at(t"*")) then skipStatement()
+          if exported && (at("default") || at("=") || at("{") || at("*")) then skipStatement()
           else
-            skip(t"declare")
+            skip("declare")
             declared(scope, module, into, ambient, exported || ambient || !module)
 
       private def declared
@@ -564,21 +564,21 @@ object Typescript:
           visible: Boolean )
       :   Unit raises Typescript.Error =
 
-        if at(t"namespace") || at(t"module") || at(t"global") then
+        if at("namespace") || at("module") || at("global") then
           val keyword = identifier()
-          val name = if keyword == t"global" then t"global" else identifier()
-          expect(t"{")
+          val name = if keyword == "global" then "global" else identifier()
+          expect("{")
           // The namespace's own visibility becomes its contents': an unexported namespace exports
           // nothing, however its members are written.
           block(scope + List(name), module, into, ambient = visible)
-          expect(t"}")
-        else if at(t"interface") then into += interfaceDeclaration(scope, visible)
-        else if at(t"class") || at(t"abstract") then into += classDeclaration(scope, visible)
-        else if at(t"type") then into += aliasDeclaration(scope, visible)
-        else if at(t"enum") || at(t"const") && ahead(1, t"enum")
+          expect("}")
+        else if at("interface") then into += interfaceDeclaration(scope, visible)
+        else if at("class") || at("abstract") then into += classDeclaration(scope, visible)
+        else if at("type") then into += aliasDeclaration(scope, visible)
+        else if at("enum") || at("const") && ahead(1, "enum")
         then into += enumDeclaration(scope, visible)
-        else if at(t"function") then into += functionDeclaration(scope, visible)
-        else if at(t"const") || at(t"let") || at(t"var") then into += variableDeclaration(scope, visible)
+        else if at("function") then into += functionDeclaration(scope, visible)
+        else if at("const") || at("let") || at("var") then into += variableDeclaration(scope, visible)
         else abort(Typescript.Error(Reason.Unsupported(t"a top-level ${here} declaration")))
 
       // `import` and re-export forms are recorded by their absence: they bind no new contract of
@@ -586,39 +586,39 @@ object Typescript:
       private def skipStatement(): Unit =
         var depth = 0
 
-        while peek().present && !(depth == 0 && (at(t";") || at(t"}"))) do
-          if at(t"{") then depth += 1
-          if at(t"}") then depth -= 1
+        while peek().present && !(depth == 0 && (at(";") || at("}"))) do
+          if at("{") then depth += 1
+          if at("}") then depth -= 1
           next()
 
-        skip(t";")
+        skip(";")
         ()
 
       private def interfaceDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
       :   Typescript.Declaration raises Typescript.Error =
 
-        expect(t"interface")
+        expect("interface")
         val name = identifier()
         val typed = typeParameters()
-        val extending = if skip(t"extends") then typeList() else Nil
-        expect(t"{")
+        val extending = if skip("extends") then typeList() else Nil
+        expect("{")
         val members = memberList()
-        expect(t"}")
+        expect("}")
 
         Typescript.Declaration.Interface(name, scope, typed, extending, members, exported)
 
       private def classDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
       :   Typescript.Declaration raises Typescript.Error =
 
-        val isAbstract = skip(t"abstract")
-        expect(t"class")
+        val isAbstract = skip("abstract")
+        expect("class")
         val name = identifier()
         val typed = typeParameters()
-        val extending: Optional[Typescript.Type] = if skip(t"extends") then typeExpression() else Unset
-        val implements = if skip(t"implements") then typeList() else Nil
-        expect(t"{")
+        val extending: Optional[Typescript.Type] = if skip("extends") then typeExpression() else Unset
+        val implements = if skip("implements") then typeList() else Nil
+        expect("{")
         val members = memberList()
-        expect(t"}")
+        expect("}")
 
         Typescript.Declaration.Class
           (name, scope, typed, extending, implements, members, isAbstract, exported)
@@ -626,10 +626,10 @@ object Typescript:
       private def aliasDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
       :   Typescript.Declaration raises Typescript.Error =
 
-        expect(t"type")
+        expect("type")
         val name = identifier()
         val typed = typeParameters()
-        expect(t"=")
+        expect("=")
         val target = typeExpression()
         separator()
 
@@ -638,30 +638,30 @@ object Typescript:
       private def enumDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
       :   Typescript.Declaration raises Typescript.Error =
 
-        val constant = skip(t"const")
-        expect(t"enum")
+        val constant = skip("const")
+        expect("enum")
         val name = identifier()
-        expect(t"{")
+        expect("{")
         val members = scala.collection.mutable.ListBuffer[(Text, Optional[Text])]()
 
-        while !at(t"}") && peek().present do
+        while !at("}") && peek().present do
           val member = identifier()
-          val value: Optional[Text] = if skip(t"=") then identifier() else Unset
+          val value: Optional[Text] = if skip("=") then identifier() else Unset
           members += ((member, value))
           separator()
 
-        expect(t"}")
+        expect("}")
 
         Typescript.Declaration.Enumeration(name, scope, members.toList.to(List), constant, exported)
 
       private def functionDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
       :   Typescript.Declaration raises Typescript.Error =
 
-        expect(t"function")
+        expect("function")
         val name = identifier()
         val typed = typeParameters()
         val parameters = parameterList()
-        val result = if skip(t":") then typeExpression() else Typescript.Type.Named(t"void")
+        val result = if skip(":") then typeExpression() else Typescript.Type.Named("void")
         separator()
 
         Typescript.Declaration.Function
@@ -670,10 +670,10 @@ object Typescript:
       private def variableDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
       :   Typescript.Declaration raises Typescript.Error =
 
-        val constant = at(t"const")
+        val constant = at("const")
         next()
         val name = identifier()
-        val typed: Optional[Typescript.Type] = if skip(t":") then typeExpression() else Unset
+        val typed: Optional[Typescript.Type] = if skip(":") then typeExpression() else Unset
         separator()
 
         Typescript.Declaration.Variable(name, scope, typed, constant, exported)
@@ -683,7 +683,7 @@ object Typescript:
       private def memberList(): List[Typescript.Member] raises Typescript.Error =
         val members = scala.collection.mutable.ListBuffer[Typescript.Member]()
 
-        while !at(t"}") && peek().present do
+        while !at("}") && peek().present do
           member().let { value => members += value }
           separator()
 
@@ -707,8 +707,8 @@ object Typescript:
         merged.values.toList.to(List)
 
       private def member(): Optional[Typescript.Member] raises Typescript.Error =
-        if skip(t";") then Unset
-        else if at(t"@") then abort(Typescript.Error(Reason.Unsupported(t"a decorator")))
+        if skip(";") then Unset
+        else if at("@") then abort(Typescript.Error(Reason.Unsupported("a decorator")))
         else declaredMember()
 
       private def declaredMember(): Typescript.Member raises Typescript.Error =
@@ -720,51 +720,51 @@ object Typescript:
         var scanning = true
 
         while scanning do
-          if at(t"public") then { next(); visibility = Typescript.Member.Visibility.Public }
-          else if at(t"protected") then { next(); visibility = Typescript.Member.Visibility.Protected }
-          else if at(t"private") then { next(); visibility = Typescript.Member.Visibility.Private }
-          else if at(t"static") then { next(); static = true }
-          else if at(t"abstract") then { next(); isAbstract = true }
+          if at("public") then { next(); visibility = Typescript.Member.Visibility.Public }
+          else if at("protected") then { next(); visibility = Typescript.Member.Visibility.Protected }
+          else if at("private") then { next(); visibility = Typescript.Member.Visibility.Private }
+          else if at("static") then { next(); static = true }
+          else if at("abstract") then { next(); isAbstract = true }
           // `readonly` is only a modifier when something follows it that can be named; `readonly`
           // as a member name is legal TypeScript.
-          else if at(t"readonly") && !(ahead(1, t":")
-              || ahead(1, t"?")
-              || ahead(1, t"(")) then { next(); readonly = true }
+          else if at("readonly") && !(ahead(1, ":")
+              || ahead(1, "?")
+              || ahead(1, "(")) then { next(); readonly = true }
           else scanning = false
 
         // A call signature `(…): T`, or a generic one `<T>(…): U`.
-        if at(t"(") || at(t"<") then
+        if at("(") || at("<") then
           val typed = typeParameters()
           val parameters = parameterList()
-          val result = if skip(t":") then typeExpression() else Typescript.Type.Named(t"any")
+          val result = if skip(":") then typeExpression() else Typescript.Type.Named("any")
 
           Typescript.Member
-            ( t"", Typescript.Member.Kind.Call,
+            ( "", Typescript.Member.Kind.Call,
               List(Typescript.Type.Function(parameters, result, typed)),
               visibility, static, readonly )
 
         // A construct signature `new (…): T`.
-        else if at(t"new") && (ahead(1, t"(") || peek(1)
-            == Optional(Token.Punct(t"<"))) then
+        else if at("new") && (ahead(1, "(") || peek(1)
+            == Optional(Token.Punct("<"))) then
           next()
           val typed = typeParameters()
           val parameters = parameterList()
-          val result = if skip(t":") then typeExpression() else Typescript.Type.Named(t"any")
+          val result = if skip(":") then typeExpression() else Typescript.Type.Named("any")
 
           Typescript.Member
-            ( t"", Typescript.Member.Kind.Construct,
+            ( "", Typescript.Member.Kind.Construct,
               List(Typescript.Type.Function(parameters, result, typed, construct = true)),
               visibility, static, readonly )
 
         // An index signature `[key: string]: T`. Distinguished from a computed property name
         // (`[Symbol.iterator]()`) by the `:` after the key.
-        else if at(t"[") && ahead(2, t":") then
-          expect(t"[")
+        else if at("[") && ahead(2, ":") then
+          expect("[")
           val key = identifier()
-          expect(t":")
+          expect(":")
           val keyType = typeExpression()
-          expect(t"]")
-          expect(t":")
+          expect("]")
+          expect(":")
           val value = typeExpression()
 
           Typescript.Member
@@ -775,25 +775,25 @@ object Typescript:
         // A mapped type (`[K in T]: U`) is refused under its own name: it fails the index-signature
         // test above because `in` follows the binder where `:` would, but calling it a computed
         // property name would misdirect whoever reads the diagnostic.
-        else if at(t"[") && ahead(2, t"in")
-        then abort(Typescript.Error(Reason.Unsupported(t"a mapped type")))
-        else if at(t"[") then abort(Typescript.Error(Reason.Unsupported(t"a computed property name")))
+        else if at("[") && ahead(2, "in")
+        then abort(Typescript.Error(Reason.Unsupported("a mapped type")))
+        else if at("[") then abort(Typescript.Error(Reason.Unsupported("a computed property name")))
         else
-          val getter = at(t"get") && !(ahead(1, t":")
-              || ahead(1, t"("))
+          val getter = at("get") && !(ahead(1, ":")
+              || ahead(1, "("))
 
-          val setter = at(t"set") && !(ahead(1, t":")
-              || ahead(1, t"("))
+          val setter = at("set") && !(ahead(1, ":")
+              || ahead(1, "("))
 
           if getter || setter then next()
 
           val name = identifier()
-          val optional = skip(t"?")
+          val optional = skip("?")
 
-          if at(t"(") || at(t"<") then
+          if at("(") || at("<") then
             val typed = typeParameters()
             val parameters = parameterList()
-            val result = if skip(t":") then typeExpression() else Typescript.Type.Named(t"any")
+            val result = if skip(":") then typeExpression() else Typescript.Type.Named("any")
 
             val kind =
               if getter then Typescript.Member.Kind.Getter
@@ -804,7 +804,7 @@ object Typescript:
               ( name, kind, List(Typescript.Type.Function(parameters, result, typed)), visibility,
                 static, readonly, optional, isAbstract )
           else
-            val typed = if skip(t":") then typeExpression() else Typescript.Type.Named(t"any")
+            val typed = if skip(":") then typeExpression() else Typescript.Type.Named("any")
 
             Typescript.Member
               ( name, Typescript.Member.Kind.Property, List(typed), visibility, static, readonly,
@@ -813,93 +813,93 @@ object Typescript:
       // --- types -------------------------------------------------------------------------------
 
       private def typeParameters(): List[Typescript.Type.Parameter] raises Typescript.Error =
-        if !skip(t"<") then Nil else
+        if !skip("<") then Nil else
           val parameters = scala.collection.mutable.ListBuffer[Typescript.Type.Parameter]()
 
-          while !at(t">") && peek().present do
-            if at(t"infer") then abort(Typescript.Error(Reason.Unsupported(t"an `infer` binder")))
+          while !at(">") && peek().present do
+            if at("infer") then abort(Typescript.Error(Reason.Unsupported("an `infer` binder")))
             val name = identifier()
-            val bound: Optional[Typescript.Type] = if skip(t"extends") then typeExpression() else Unset
-            val default: Optional[Typescript.Type] = if skip(t"=") then typeExpression() else Unset
+            val bound: Optional[Typescript.Type] = if skip("extends") then typeExpression() else Unset
+            val default: Optional[Typescript.Type] = if skip("=") then typeExpression() else Unset
             parameters += Typescript.Type.Parameter(name, bound, default)
-            skip(t",")
+            skip(",")
 
-          expect(t">")
+          expect(">")
           parameters.toList.to(List)
 
       private def typeArguments(): List[Typescript.Type] raises Typescript.Error =
-        if !skip(t"<") then Nil else
+        if !skip("<") then Nil else
           val arguments = scala.collection.mutable.ListBuffer[Typescript.Type]()
 
-          while !at(t">") && peek().present do
+          while !at(">") && peek().present do
             arguments += typeExpression()
-            skip(t",")
+            skip(",")
 
-          expect(t">")
+          expect(">")
           arguments.toList.to(List)
 
       private def typeList(): List[Typescript.Type] raises Typescript.Error =
         val types = scala.collection.mutable.ListBuffer[Typescript.Type]()
         types += typeExpression()
-        while skip(t",") do types += typeExpression()
+        while skip(",") do types += typeExpression()
 
         types.toList.to(List)
 
       private def parameterList(): List[Typescript.Type.Argument] raises Typescript.Error =
-        expect(t"(")
+        expect("(")
         val parameters = scala.collection.mutable.ListBuffer[Typescript.Type.Argument]()
 
-        while !at(t")") && peek().present do
-          val rest = skip(t"...")
+        while !at(")") && peek().present do
+          val rest = skip("...")
           // Parameter modifiers (`public readonly x: T`) appear in constructor parameter
           // properties; they declare a member, but the parameter's own contract is its type.
-          skip(t"public")
-          skip(t"protected")
-          skip(t"private")
-          skip(t"readonly")
+          skip("public")
+          skip("protected")
+          skip("private")
+          skip("readonly")
           val name = identifier()
-          val optional = skip(t"?")
-          val typed: Optional[Typescript.Type] = if skip(t":") then typeExpression() else Unset
+          val optional = skip("?")
+          val typed: Optional[Typescript.Type] = if skip(":") then typeExpression() else Unset
           // A default value makes a parameter optional; the value itself is behaviour, not
           // contract, so it is consumed and discarded.
-          if skip(t"=") then skipDefault()
+          if skip("=") then skipDefault()
           parameters += Typescript.Type.Argument(name, typed, optional, rest)
-          skip(t",")
+          skip(",")
 
-        expect(t")")
+        expect(")")
         parameters.toList.to(List)
 
       private def skipDefault(): Unit =
         var depth = 0
 
-        while peek().present && !(depth == 0 && (at(t",") || at(t")"))) do
-          if at(t"(") || at(t"[") || at(t"{") then depth += 1
-          if at(t")") || at(t"]") || at(t"}") then depth -= 1
+        while peek().present && !(depth == 0 && (at(",") || at(")"))) do
+          if at("(") || at("[") || at("{") then depth += 1
+          if at(")") || at("]") || at("}") then depth -= 1
           next()
 
         ()
 
       def typeExpression(): Typescript.Type raises Typescript.Error =
         // A leading `|` or `&` is legal and purely cosmetic.
-        skip(t"|")
-        skip(t"&")
+        skip("|")
+        skip("&")
 
         val first = intersection()
 
-        if !at(t"|") then first else
+        if !at("|") then first else
           val members = scala.collection.mutable.ListBuffer[Typescript.Type]()
           members += first
-          while skip(t"|") do members += intersection()
+          while skip("|") do members += intersection()
 
           Typescript.Type.Union(members.toList.to(List))
 
       private def intersection(): Typescript.Type raises Typescript.Error =
         val first = suffixed()
 
-        if !at(t"&") then first else
+        if !at("&") then first else
           val members = scala.collection.mutable.ListBuffer[Typescript.Type]()
           members += first
-          while skip(t"&") do members += suffixed()
+          while skip("&") do members += suffixed()
 
           Typescript.Type.Intersection(members.toList.to(List))
 
@@ -907,26 +907,26 @@ object Typescript:
       private def suffixed(): Typescript.Type raises Typescript.Error =
         var result = primary()
 
-        while at(t"[") do
-          expect(t"[")
+        while at("[") do
+          expect("[")
 
-          if skip(t"]") then result = Typescript.Type.Array(result)
+          if skip("]") then result = Typescript.Type.Array(result)
           else
             val index = typeExpression()
-            expect(t"]")
+            expect("]")
             result = Typescript.Type.Indexed(result, index)
 
-        if skip(t"is") then
+        if skip("is") then
           result match
             case Typescript.Type.Named(name, Nil) =>
               Typescript.Type.Predicate(name, typeExpression())
 
             case _ =>
-              abort(Typescript.Error(Reason.Syntax(t"a type predicate needs a parameter name", here)))
+              abort(Typescript.Error(Reason.Syntax("a type predicate needs a parameter name", here)))
         else result
 
       private def primary(): Typescript.Type raises Typescript.Error =
-        if at(t"(") then
+        if at("(") then
           // Either a parenthesised type or a function type. They are distinguished only by what
           // follows the closing parenthesis, and `(a: T)` is not a valid type on its own, so the
           // parser reads the parenthesised form as a parameter list first and rewinds if no `=>`
@@ -936,7 +936,7 @@ object Typescript:
           val function: Optional[Typescript.Type] =
             try
               val parameters = parameterList()
-              if skip(t"=>") then Typescript.Type.Function(parameters, typeExpression()) else Unset
+              if skip("=>") then Typescript.Type.Function(parameters, typeExpression()) else Unset
             catch case _: Exception => Unset
 
           function match
@@ -944,72 +944,72 @@ object Typescript:
 
             case _ =>
               position = mark
-              expect(t"(")
+              expect("(")
               val inner = typeExpression()
-              expect(t")")
+              expect(")")
               inner
 
-        else if at(t"<") then
+        else if at("<") then
           val typed = typeParameters()
           val parameters = parameterList()
-          expect(t"=>")
+          expect("=>")
 
           Typescript.Type.Function(parameters, typeExpression(), typed)
 
-        else if at(t"new") then
+        else if at("new") then
           next()
           val typed = typeParameters()
           val parameters = parameterList()
-          expect(t"=>")
+          expect("=>")
 
           Typescript.Type.Function(parameters, typeExpression(), typed, construct = true)
 
-        else if at(t"{") then
-          expect(t"{")
+        else if at("{") then
+          expect("{")
           val members = memberList()
-          expect(t"}")
+          expect("}")
 
           Typescript.Type.Object(members)
 
-        else if at(t"[") then
-          expect(t"[")
+        else if at("[") then
+          expect("[")
           val members = scala.collection.mutable.ListBuffer[Typescript.Type]()
           val names = scala.collection.mutable.ListBuffer[Optional[Text]]()
 
-          while !at(t"]") && peek().present do
-            skip(t"...")
-            skip(t"readonly")
+          while !at("]") && peek().present do
+            skip("...")
+            skip("readonly")
 
             // A labelled tuple element (`[first: A, second: B]`) names a position; the name is
             // documentation to TypeScript, so it is kept but never distinguishes a type.
             val label: Optional[Text] =
-              if ahead(1, t":") then
+              if ahead(1, ":") then
                 val name = identifier()
-                expect(t":")
+                expect(":")
                 name
               else Unset
 
             names += label
             members += typeExpression()
-            skip(t"?")
-            skip(t",")
+            skip("?")
+            skip(",")
 
-          expect(t"]")
+          expect("]")
 
           Typescript.Type.Tuple(members.toList.to(List), names.toList.to(List))
 
-        else if at(t"keyof") then
+        else if at("keyof") then
           next()
           Typescript.Type.Keyof(primary())
 
-        else if at(t"typeof") then
+        else if at("typeof") then
           next()
           Typescript.Type.Typeof(qualifiedName())
 
-        else if at(t"infer") then abort(Typescript.Error(Reason.Unsupported(t"an `infer` binder")))
-        else if at(t"asserts") then
-          abort(Typescript.Error(Reason.Unsupported(t"an assertion signature")))
-        else if at(t"unique") then abort(Typescript.Error(Reason.Unsupported(t"a `unique symbol`")))
+        else if at("infer") then abort(Typescript.Error(Reason.Unsupported("an `infer` binder")))
+        else if at("asserts") then
+          abort(Typescript.Error(Reason.Unsupported("an assertion signature")))
+        else if at("unique") then abort(Typescript.Error(Reason.Unsupported("a `unique symbol`")))
         else peek() match
           case Token.Str(value)  => { next(); Typescript.Type.Literal(value,
               Typescript.Type.LiteralKind.String) }
@@ -1017,7 +1017,7 @@ object Typescript:
           case Token.Num(value)  => { next(); Typescript.Type.Literal(value,
               Typescript.Type.LiteralKind.Number) }
 
-          case Token.Punct(t"-") =>
+          case Token.Punct("-") =>
             next()
 
             peek() match
@@ -1025,9 +1025,9 @@ object Typescript:
                 next()
                 Typescript.Type.Literal(t"-$value", Typescript.Type.LiteralKind.Number)
 
-              case _ => abort(Typescript.Error(Reason.Syntax(t"expected a number", here)))
+              case _ => abort(Typescript.Error(Reason.Syntax("expected a number", here)))
 
-          case Token.Word(word) if word == t"true" || word == t"false" =>
+          case Token.Word(word) if word == "true" || word == "false" =>
             next()
             Typescript.Type.Literal(word, Typescript.Type.LiteralKind.Boolean)
 
@@ -1038,16 +1038,16 @@ object Typescript:
 
             // A conditional type is recognised here, where its `extends` follows a type rather
             // than a declaration name, and rejected rather than approximated.
-            if at(t"extends")
-            then abort(Typescript.Error(Reason.Unsupported(t"a conditional type")))
+            if at("extends")
+            then abort(Typescript.Error(Reason.Unsupported("a conditional type")))
             else named
 
-          case _ => abort(Typescript.Error(Reason.Syntax(t"expected a type", here)))
+          case _ => abort(Typescript.Error(Reason.Syntax("expected a type", here)))
 
       private def qualifiedName(): Text raises Typescript.Error =
         val parts = scala.collection.mutable.ListBuffer[Text]()
         parts += identifier()
-        while skip(t".") do parts += identifier()
+        while skip(".") do parts += identifier()
 
         parts.toList.map(_.s).mkString(".").tt
 

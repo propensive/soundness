@@ -109,32 +109,32 @@ object Tmux:
         scala.caps.unsafe.unsafeAssumeSeparate(attend(enter('\r')))
         var count = 0
 
-        while Tmux.screenshot().screen.filter(_ == t">").readable.length == 0 && count < 333 do
+        while Tmux.screenshot().screen.filter(_ == ">").readable.length == 0 && count < 333 do
           delay(0.03*Second)
           count += 1
         // A named method, not a lambda: interpolating inside a lambda passed to a collection
         // combinator runs the interpolator's implicit search while the combinator's element type
         // is still uninstantiated, tripping dotc's `wildApprox` assertion (scala/scala3#24824).
-        def described(line: Text): List[Text] = line.cut(t"@@") match
+        def described(line: Text): List[Text] = line.cut("@@") match
           case name :: desc :: Nil => List(t"$name  ($desc)")
           case name :: Nil         => List(name)
           case _                   => Nil
 
         val lines: List[Text] = screenshot().screen.to[List]
-        val shown: List[Text] = lines.filter(!_.starts(t">"))
+        val shown: List[Text] = lines.filter(!_.starts(">"))
         val trimmed: List[Text] = shown.map(_.trim).filter(_.length > 0)
 
-        trimmed.bind(described).join(t"  ")
+        trimmed.bind(described).join("  ")
 
       case _ =>
         enter(tool.command)
         enter(' ')
         enter(text)
         scala.caps.unsafe.unsafeAssumeSeparate(attend(enter(Ht)))
-        screenshot().screen.filter(!_.starts(t"> ")).readable.toSeq.join(t"\n").trim
+        screenshot().screen.filter(!_.starts("> ")).readable.toSeq.join("\n").trim
 
 
-  def progress(text: Text, decorate: Char => Text = char => t"^")
+  def progress(text: Text, decorate: Char => Text = char => "^")
     ( using tool: Enclave.Tool, tmux: Tmux )
     ( using Monitor, WorkingDirectory, Tactic[Tmux.Error] )
   :   Text =
@@ -169,7 +169,7 @@ object Tmux:
       case _ =>
         scala.caps.unsafe.unsafeAssumeSeparate(attend(enter(Ht)))
 
-    screenshot().currentLine(decorate).sub(t"> ${tool.command} ", t"")
+    screenshot().currentLine(decorate).sub(t"> ${tool.command} ", "")
 
   // TmuxError → Tmux.Error
   object Error:
@@ -194,11 +194,11 @@ case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height
 extends Findable, caps.ExclusiveCapability
 
 case class Screenshot(screen: Array[Text]^{}, size: (Int, Int), cursor: (Ordinal, Ordinal)):
-  def apply(): Text = screen.readable.toSeq.join(t"\n")
+  def apply(): Text = screen.readable.toSeq.join("\n")
 
   def currentLine(decorate: Char => Text): Text =
     val line0 = screen.at(cursor(1)).or(t"")
-    val line = line0+t" "*(size(0) - line0.length)
+    val line = line0+" "*(size(0) - line0.length)
 
     t"${line.before(cursor(0))}${line(cursor(0)).let(decorate).or(t"?")}${line.from(cursor(0))}"
     . trim

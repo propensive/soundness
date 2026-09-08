@@ -51,8 +51,8 @@ import denominative.dysasymptotics.linearSize
 // carries. So AXML has its own small model here, in the Android layer that owns that knowledge.
 object Axml:
   // The Android resources namespace, and the prefix a manifest conventionally binds it to.
-  val androidUri: Text = t"http://schemas.android.com/apk/res/android"
-  val androidPrefix: Text = t"android"
+  val androidUri: Text = "http://schemas.android.com/apk/res/android"
+  val androidPrefix: Text = "android"
 
   // A typed attribute value: Android reads each attribute at a specific `TypedValue` type, so
   // the encoder must commit to one rather than emit every value as a string.

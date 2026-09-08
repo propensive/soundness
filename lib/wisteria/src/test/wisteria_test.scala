@@ -49,12 +49,12 @@ object Tests extends Suite(m"Wisteria tests"):
   object Presentation extends Derivation[Presentation]:
     given Presentation[Text] = identity(_)
     given Presentation[Double] = _.toString.tt
-    given Presentation[Boolean] = boolean => if boolean then t"yes" else t"no"
+    given Presentation[Boolean] = boolean => if boolean then "yes" else "no"
     given Presentation[Int] = _.toString.tt
 
     inline def conjunction[derivation <: Product: ProductReflection]: Presentation[derivation] = value =>
       inline if singleton[derivation] then typeName[derivation] else
-        val prefix = inline if tuple[derivation] then t"" else typeName[derivation]
+        val prefix = inline if tuple[derivation] then "" else typeName[derivation]
         fields(value):
           [field] => field => s"$index:$label=${contextual.present(field)}".tt
         .readable.mkString((prefix.s+"("), ", ", ")").tt
@@ -62,7 +62,7 @@ object Tests extends Suite(m"Wisteria tests"):
     inline def disjunction[derivation: SumReflection]: Presentation[derivation] = value =>
       variant(value):
         [variant <: derivation] =>
-          variant => (typeName[derivation].s+"."+contextual.present(variant)).tt
+          variant => (typeName[derivation].s+s"."+contextual.present(variant)).tt
 
   extension [value](value: value)
     def present(using presentation: Presentation[value]): Text = presentation.present(value)
@@ -75,7 +75,7 @@ object Tests extends Suite(m"Wisteria tests"):
   object Readable extends Derivation[Readable]:
     given text: Readable[Text] = identity(_)
     given int: Readable[Int] = _.s.toInt
-    given boolean: Readable[Boolean] = _ == t"yes"
+    given boolean: Readable[Boolean] = _ == "yes"
 
     inline def conjunction[derivation <: Product: ProductReflection]: Readable[derivation] = text =>
       Array.unsafeFrozen(text.s.split(",").nn).to[List].map(_.nn).pipe:
@@ -159,7 +159,7 @@ object Tests extends Suite(m"Wisteria tests"):
       inline if choice[derivation] then
         variant(value):
           [variant <: derivation] =>
-            arm => typeName[derivation].s+"."+contextual.show(arm)
+            arm => typeName[derivation].s+s"."+contextual.show(arm)
       else
         compiletime.error("cannot derive Show for adt")
 
@@ -217,8 +217,8 @@ object Tests extends Suite(m"Wisteria tests"):
     case Leaf
     case Branch(value: Int, left: Tree, right: Tree)
 
-  case class Person(name: Text = t"noone", age: Int = 100, male: Boolean = true)
-  case class User(person: Person, email: Text = t"nobody@nowhere.com")
+  case class Person(name: Text = "noone", age: Int = 100, male: Boolean = true)
+  case class User(person: Person, email: Text = "nobody@nowhere.com")
 
   enum SumOnlyEnum:
     case Alpha(n: Int)
@@ -300,47 +300,47 @@ object Tests extends Suite(m"Wisteria tests"):
 
       test(m"Present a product with default arguments"):
         Person().present
-      . assert(_ == t"Person(0:name=noone, 1:age=100, 2:male=yes)")
+      . assert(_ == "Person(0:name=noone, 1:age=100, 2:male=yes)")
 
       test(m"Present a nested product"):
         User(person = Person()).present
-      . assert(_ == t"User(0:person=Person(0:name=noone, 1:age=100, 2:male=yes), 1:email=nobody@nowhere.com)")
+      . assert(_ == "User(0:person=Person(0:name=noone, 1:age=100, 2:male=yes), 1:email=nobody@nowhere.com)")
 
       test(m"Present an empty product"):
         Empty().present
-      . assert(_ == t"Empty()")
+      . assert(_ == "Empty()")
 
       test(m"Present a single-field product"):
         Wrap(7).present
-      . assert(_ == t"Wrap(0:n=7)")
+      . assert(_ == "Wrap(0:n=7)")
 
       test(m"Present a tuple"):
-        val pair: (Int, Text) = (5, t"hi")
+        val pair: (Int, Text) = (5, "hi")
         pair.present
-      . assert(_ == t"(0:_1=5, 1:_2=hi)")
+      . assert(_ == "(0:_1=5, 1:_2=hi)")
 
       test(m"Read a product by comma-separated text"):
-        t"alice,32,yes".read[Person]
-      . assert(_ == Person(t"alice", 32, true))
+        "alice,32,yes".read[Person]
+      . assert(_ == Person("alice", 32, true))
 
       test(m"Read a product falling back to defaults for missing tail"):
-        t"alice".read[Person]
-      . assert(_ == Person(t"alice"))
+        "alice".read[Person]
+      . assert(_ == Person("alice"))
 
       test(m"Read a product partially with defaults"):
-        t"alice,42".read[Person]
-      . assert(_ == Person(t"alice", 42, true))
+        "alice,42".read[Person]
+      . assert(_ == Person("alice", 42, true))
 
       test(m"Compare equal products"):
         Eq.derived[Person].equal(Person(), Person())
       . assert(_ == true)
 
       test(m"Compare unequal products"):
-        Eq.derived[Person].equal(Person(t"alice"), Person(t"bob"))
+        Eq.derived[Person].equal(Person("alice"), Person("bob"))
       . assert(_ == false)
 
       test(m"Equality is case-insensitive (per Eq[Text] given)"):
-        Eq.derived[Person].equal(Person(t"ALICE"), Person(t"alice"))
+        Eq.derived[Person].equal(Person("ALICE"), Person("alice"))
       . assert(_ == true)
 
       test(m"Equality of two empty products"):
@@ -359,20 +359,20 @@ object Tests extends Suite(m"Wisteria tests"):
       test(m"Present a singleton variant"):
         val tree: Tree = Tree.Leaf
         tree.present
-      . assert(_ == t"Tree.Leaf")
+      . assert(_ == "Tree.Leaf")
 
       test(m"Present a recursive product variant"):
         val tree: Tree = Tree.Branch(1, Tree.Leaf, Tree.Leaf)
         tree.present
-      . assert(_ == t"Tree.Branch(0:value=1, 1:left=Tree.Leaf, 2:right=Tree.Leaf)")
+      . assert(_ == "Tree.Branch(0:value=1, 1:left=Tree.Leaf, 2:right=Tree.Leaf)")
 
       test(m"Present a deeply-nested recursive value"):
         val tree: Tree = Tree.Branch(1, Tree.Branch(2, Tree.Leaf, Tree.Leaf), Tree.Leaf)
         tree.present
-      . assert(_ == t"Tree.Branch(0:value=1, 1:left=Tree.Branch(0:value=2, 1:left=Tree.Leaf, 2:right=Tree.Leaf), 2:right=Tree.Leaf)")
+      . assert(_ == "Tree.Branch(0:value=1, 1:left=Tree.Branch(0:value=2, 1:left=Tree.Leaf, 2:right=Tree.Leaf), 2:right=Tree.Leaf)")
 
       test(m"Read a product with multiple Int fields"):
-        Readable.derived[Time].read(t"1,30,45")
+        Readable.derived[Time].read("1,30,45")
       . assert(_ == Time(1, 30, 45))
 
       test(m"Equal sum variants compare equal"):
@@ -411,10 +411,10 @@ object Tests extends Suite(m"Wisteria tests"):
         case class WrappedBool(value: Boolean) extends Wrapped
 
         try
-          Readable.derived[Wrapped].read(t"Unknown:42")
-          t""
+          Readable.derived[Wrapped].read("Unknown:42")
+          ""
         catch case error: Variant.Error => error.inputLabel
-      . assert(_ == t"Unknown")
+      . assert(_ == "Unknown")
 
       test(m"Variant.Error reports the parent sum type"):
         sealed trait Wrapped
@@ -422,10 +422,10 @@ object Tests extends Suite(m"Wisteria tests"):
         case class WrappedBool(value: Boolean) extends Wrapped
 
         try
-          Readable.derived[Wrapped].read(t"Unknown:42")
-          t""
+          Readable.derived[Wrapped].read("Unknown:42")
+          ""
         catch case error: Variant.Error => error.sum
-      . assert(_ == t"Wrapped")
+      . assert(_ == "Wrapped")
 
       test(m"Variant.Error lists the valid variants"):
         sealed trait Wrapped
@@ -433,7 +433,7 @@ object Tests extends Suite(m"Wisteria tests"):
         case class WrappedBool(value: Boolean) extends Wrapped
 
         try
-          Readable.derived[Wrapped].read(t"Unknown:42")
+          Readable.derived[Wrapped].read("Unknown:42")
           List.empty[Text]
         catch case error: Variant.Error => error.validVariants
       . assert(_ == List(t"WrappedInt", t"WrappedBool"))
@@ -475,8 +475,8 @@ object Tests extends Suite(m"Wisteria tests"):
 
       test(m"Addable composes products field-wise"):
         import arithmetic.addable
-        Pair(t"foo", 10) + Pair(t"bar", 15)
-      . assert(_ == Pair(t"foobar", 25))
+        Pair("foo", 10) + Pair("bar", 15)
+      . assert(_ == Pair("foobar", 25))
 
       test(m"Subtractable composes products field-wise"):
         import arithmetic.subtractable
@@ -547,7 +547,7 @@ object Tests extends Suite(m"Wisteria tests"):
             case root.ceo.age()  => ageCodec
 
         wisteria.internal.overridePaths[CodecJson, Company].stdlib.pipe(_.to(Set))
-      . assert(_ == Set(t"cto.name", t"ceo.age"))
+      . assert(_ == Set("cto.name", "ceo.age"))
 
       test(m"A Specific for a different typeclass is ignored"):
         given (Company is Specific over (Codec in Json)) =
@@ -558,13 +558,13 @@ object Tests extends Suite(m"Wisteria tests"):
       . assert(_ == Nil)
 
     suite(m"Specific override in derivation"):
-      val company = Company(Employee(t"al", 30), Employee(t"bo", 40))
+      val company = Company(Employee("al", 30), Employee("bo", 40))
       val shout: Text is Display = _.upper
       val doubled: Int is Display = n => (n*2).toString.tt
 
       test(m"Without a Specific, all fields use default instances"):
         Display.derived[Company].display(company)
-      . assert(_ == t"al,30,bo,40")
+      . assert(_ == "al,30,bo,40")
 
       test(m"A Specific overrides one field path along its spine only"):
         given (Company is Specific over Display) =
@@ -572,7 +572,7 @@ object Tests extends Suite(m"Wisteria tests"):
             case root.cto.name() => shout
 
         Display.derived[Company].display(company)
-      . assert(_ == t"al,30,BO,40")
+      . assert(_ == "al,30,BO,40")
 
       test(m"Overrides at distinct spines stay independent"):
         given (Company is Specific over Display) =
@@ -581,7 +581,7 @@ object Tests extends Suite(m"Wisteria tests"):
             case root.cto.age()  => doubled
 
         Display.derived[Company].display(company)
-      . assert(_ == t"AL,30,bo,80")
+      . assert(_ == "AL,30,bo,80")
 
       test(m"A whole non-leaf field can be overridden with a custom instance"):
         val terse: Employee is Display = e => t"<${e.name}>"
@@ -591,16 +591,16 @@ object Tests extends Suite(m"Wisteria tests"):
             case root.cto() => terse
 
         Display.derived[Company].display(company)
-      . assert(_ == t"al,30,<bo>")
+      . assert(_ == "al,30,<bo>")
 
       test(m"A local element given is picked up by re-derivation"):
         given Employee is Display = e => t"E(${e.name})"
         Display.derived[Company].display(company)
-      . assert(_ == t"E(al),E(bo)")
+      . assert(_ == "E(al),E(bo)")
 
       test(m"a sum field's variant is overridden via a local given + re-derive"):
-        val maskedEmail: Email is Display = e => t"<hidden>"
-        val account = Account(t"ann", Email(t"ann@example.com"))
+        val maskedEmail: Email is Display = e => "<hidden>"
+        val account = Account("ann", Email("ann@example.com"))
 
         given (Account is Specific over Display) =
           specifically:
@@ -609,11 +609,11 @@ object Tests extends Suite(m"Wisteria tests"):
               Display.derived[Contact]
 
         Display.derived[Account].display(account)
-      . assert(_ == t"ann,<hidden>")
+      . assert(_ == "ann,<hidden>")
 
       test(m"the same override leaves other variants on their defaults"):
-        val maskedEmail: Email is Display = e => t"<hidden>"
-        val account = Account(t"bob", Phone(t"555-1234"))
+        val maskedEmail: Email is Display = e => "<hidden>"
+        val account = Account("bob", Phone("555-1234"))
 
         given (Account is Specific over Display) =
           specifically:
@@ -622,13 +622,13 @@ object Tests extends Suite(m"Wisteria tests"):
               Display.derived[Contact]
 
         Display.derived[Account].display(account)
-      . assert(_ == t"bob,555-1234")
+      . assert(_ == "bob,555-1234")
 
       test(m"a nested Specific specialises one branch of a component"):
         // `Account.contact` uses a `Contact` whose `Email` variant has its `address` masked, while
         // a top-level `Account` derivation leaves other `Contact`s alone.
-        val masked: Text is Display = _ => t"***"
-        val account = Account(t"ann", Email(t"ann@example.com"))
+        val masked: Text is Display = _ => "***"
+        val account = Account("ann", Email("ann@example.com"))
 
         given (Account is Specific over Display) =
           specifically:
@@ -641,4 +641,4 @@ object Tests extends Suite(m"Wisteria tests"):
               Display.derived[Contact]
 
         Display.derived[Account].display(account)
-      . assert(_ == t"ann,***")
+      . assert(_ == "ann,***")

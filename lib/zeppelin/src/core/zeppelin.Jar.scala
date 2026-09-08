@@ -51,7 +51,7 @@ import zephyrine.*
 trait Jar
 
 object Jar:
-  private val ManifestName: Text = t"META-INF/MANIFEST.MF"
+  private val ManifestName: Text = "META-INF/MANIFEST.MF"
 
   class JarHandle private[zeppelin] (zipfile: Zipfile) extends Zip.Handle(zipfile):
 

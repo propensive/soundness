@@ -72,7 +72,7 @@ import filesystemOptions.dereferenceSymlinks
 // polyglot launcher. Burdock remote dependencies remain unimplemented.
 object Packager:
   // The embedded JAR payload's label — must match the launcher templates' `get_offset "data"`.
-  private val DataName: Text = t"data"
+  private val DataName: Text = "data"
 
   def pack(config: Packaging)(using WorkingDirectory): Path on Linux raises Packager.Error =
     val appJar: Path on Linux = config.dependencies.absolve match
@@ -120,7 +120,7 @@ object Packager:
         // downloaded and verified against the manifest hash.
         def stub(label: Text): Data =
           val name: Text =
-            if label.starts(t"windows") then t"runner-$label.exe" else t"runner-$label"
+            if label.starts("windows") then t"runner-$label.exe" else t"runner-$label"
 
           config.runnerSource.absolve match
             case Packaging.RunnerSource.Local(directory) =>
@@ -131,7 +131,7 @@ object Packager:
               val expected: Text =
                 hashes(label).lest(Packager.Error(m"No runner hash given for $label"))
 
-              val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
+              val base: Text = if baseUrl.ends("/") then baseUrl else t"$baseUrl/"
               val runner: Data = mute[Http.Event](t"$base$name".as[HttpUrl].fetch().read[Data])
               val actual: Text = runner.digest[Sha2[256]].serialize[Hex]
 
@@ -160,7 +160,7 @@ object Packager:
                   ( stub(label), config.buildId, config.java.minimum, config.java.preferred, jdk,
                     publicKey )
 
-              Payload(label, patched, gzip = !label.starts(t"windows"))
+              Payload(label, patched, gzip = !label.starts("windows"))
 
             val data: Payload = Payload(DataName, appJar.read[Data], gzip = false)
             write(config.output, Xeq.installer(stubs :+ data))
@@ -175,11 +175,11 @@ object Packager:
                 abort(Packager.Error(m"Download delivery requires a Remote runner source"))
 
               case Packaging.RunnerSource.Remote(baseUrl, hashes) =>
-                val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
+                val base: Text = if baseUrl.ends("/") then baseUrl else t"$baseUrl/"
 
                 config.targets.map: label =>
                   val name: Text =
-                    if label.starts(t"windows") then t"runner-$label.exe" else t"runner-$label"
+                    if label.starts("windows") then t"runner-$label.exe" else t"runner-$label"
 
                   val hash: Text =
                     hashes(label).lest(Packager.Error(m"No runner hash given for $label"))

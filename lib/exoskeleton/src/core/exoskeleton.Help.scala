@@ -66,7 +66,7 @@ object Help:
     case Blank
 
   private[exoskeleton] def label(param: Param): Text =
-    val names: Text = ((param.name :: param.aliases): List[Text]).join(t", ")
+    val names: Text = ((param.name :: param.aliases): List[Text]).join(", ")
 
     val core: Text = param.operand.absolve match
       case Unset         => names
@@ -80,7 +80,7 @@ object Help:
   // Shared by the `teletype` renderer and the manpage renderer, so their synopses agree.
   private[exoskeleton] def summarize(params: List[Param], plural: Text): Text =
     params match
-      case Nil => t""
+      case Nil => ""
 
       case param :: Nil =>
         val core: Text = param.operand.absolve match
@@ -103,7 +103,7 @@ object Help:
 
       val description: Optional[Text | Teletype] =
         if !param.required then explanation else explanation.absolve match
-          case Unset              => t"(required)"
+          case Unset              => "(required)"
           case text: Text         => t"$text (required)"
           case teletype: Teletype => e"$teletype (required)"
 
@@ -234,7 +234,7 @@ case class Help
       val commonRows: List[Help.Row] =
         if common.nil then Nil
         else
-          Help.Row.Blank :: Help.Row.Label(1, t"Common options:") :: Help.paramItems(common, 2)
+          Help.Row.Blank :: Help.Row.Label(1, "Common options:") :: Help.paramItems(common, 2)
 
       val title: Text = t"${group.name}:"
 
@@ -324,11 +324,11 @@ case class Help
       case Help.Row.Blank => List(e"")
 
       case Help.Row.Label(depth, text) =>
-        val indent: Text = t"  "*depth
+        val indent: Text = "  "*depth
         List(e"$indent$Bold($text)")
 
       case Help.Row.Item(depth, label, bold, description) =>
-        val indent: Text = t"  "*depth
+        val indent: Text = "  "*depth
 
         val explanation: Optional[Teletype] = description.absolve match
           case Unset              => Unset
@@ -342,7 +342,7 @@ case class Help
           case explanation: Teletype =>
             val fitted: Text = label.fit(column - 2 - indent.length)
             val padded: Teletype = if bold then e"$indent$Bold($fitted)" else e"$indent$fitted"
-            val margin: Text = t" "*column
+            val margin: Text = " "*column
 
             // A named method, not a lambda, for the `wildApprox` reason noted against
             // `groupSection` above.
@@ -355,17 +355,17 @@ case class Help
 
     val usage: Teletype =
       if leaf && split then
-        val globals: Text = Help.summarize(globalParams, t"global options")
+        val globals: Text = Help.summarize(globalParams, "global options")
         e"$Bold(Usage:) $command$globals${Help.summarize(localParams, t"options")}"
       else if leaf then
         e"$Bold(Usage:) $command${Help.summarize(parameters, t"options")}"
       else
-        val globals: Text = Help.summarize(globalParams, t"global options")
+        val globals: Text = Help.summarize(globalParams, "global options")
 
         val posterior: List[Help.Param] =
           (localParams + subcommands.flatMap(Help.descendants)).distinct
 
-        val locals: Text = Help.summarize(posterior, t"options")
+        val locals: Text = Help.summarize(posterior, "options")
 
         e"$Bold(Usage:) $command$globals <command>$locals"
 

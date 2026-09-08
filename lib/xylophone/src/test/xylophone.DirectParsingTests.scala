@@ -46,8 +46,8 @@ import denominative.dysasymptotics.linearSize
 case class PWorker(name: Text, age: Int) derives CanEqual
 case class PFirm(title: Text, boss: PWorker) derives CanEqual
 case class PBook(title: Text, @attribute isbn: Text) derives CanEqual
-case class PTagged(@name[Xml](t"ISBN") @attribute isbn: Text, title: Text) derives CanEqual
-case class PLabelled(@name[Xml](t"Title") title: Text, pages: Int) derives CanEqual
+case class PTagged(@name[Xml]("ISBN") @attribute isbn: Text, title: Text) derives CanEqual
+case class PLabelled(@name[Xml]("Title") title: Text, pages: Int) derives CanEqual
 case class PDefaulted(name: Text, age: Int = 18) derives CanEqual
 
 enum PShape derives CanEqual:
@@ -74,12 +74,12 @@ extends Error(m"${items.size} XML decoding issues"):
 // checking that the direct path's absent handling honors it identically.
 object DirectDefaultScope:
   given XmlSchema = XmlSchema.Freeform
-  given Default[PWorker] = () => PWorker(t"", 0)
+  given Default[PWorker] = () => PWorker("", 0)
   given PWorker is Xml.Parsable = Xml.Parsable.derived
   given PFirm is Xml.Parsable = Xml.Parsable.derived
 
   def run(): Set[String] =
-    val input = t"<root><title>Acme</title></root>"
+    val input = "<root><title>Acme</title></root>"
     validate[Xml.Focus](PIssues()):
       case error: Xml.Error => accrual + (prior.let(_.path.encode).or(t"#"), error)
     . protect(input.read[PFirm in Xml]).items.map(_(0).s).to[Set]
@@ -126,38 +126,38 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
 
     suite(m"Products"):
       test(m"Derive a direct product parser"):
-        t"<root><name>Alice</name><age>30</age></root>".read[PWorker in Xml]
-      . assert(_ == PWorker(t"Alice", 30))
+        "<root><name>Alice</name><age>30</age></root>".read[PWorker in Xml]
+      . assert(_ == PWorker("Alice", 30))
 
       test(m"Field order doesn't matter, equally on both paths"):
-        parity[PWorker](t"<root><age>21</age><name>Bob</name></root>")
+        parity[PWorker]("<root><age>21</age><name>Bob</name></root>")
       . assert(identity)
 
       test(m"Nested products parse directly"):
-        val input = t"""<root>
+        val input = """<root>
                           <title>Acme</title>
                           <boss><name>Carol</name><age>40</age></boss>
                         </root>"""
         (input.read[PFirm in Xml], parity[PFirm](input))
-      . assert(_ == (PFirm(t"Acme", PWorker(t"Carol", 40)), true))
+      . assert(_ == (PFirm("Acme", PWorker("Carol", 40)), true))
 
       test(m"Unknown children are skipped, including nested subtrees"):
-        t"""<root><name>Amy</name>
+        """<root><name>Amy</name>
               <extra a="1"><deep><x/>text</deep><more/></extra>
               <age>50</age></root>""".read[PWorker in Xml]
-      . assert(_ == PWorker(t"Amy", 50))
+      . assert(_ == PWorker("Amy", 50))
 
       test(m"A duplicate child keeps the first occurrence, as on the AST path"):
-        val input = t"<root><name>Amy</name><name>Bea</name><age>3</age></root>"
+        val input = "<root><name>Amy</name><name>Bea</name><age>3</age></root>"
         (input.read[PWorker in Xml], parity[PWorker](input))
-      . assert(_ == (PWorker(t"Amy", 3), true))
+      . assert(_ == (PWorker("Amy", 3), true))
 
       test(m"A missing field takes the declared default"):
-        t"<root><name>Kid</name></root>".read[PDefaulted in Xml]
-      . assert(_ == PDefaulted(t"Kid", 18))
+        "<root><name>Kid</name></root>".read[PDefaulted in Xml]
+      . assert(_ == PDefaulted("Kid", 18))
 
       test(m"A missing required field raises Xml.Error"):
-        capture[Xml.Error](t"<root><age>30</age></root>".read[PWorker in Xml])
+        capture[Xml.Error]("<root><age>30</age></root>".read[PWorker in Xml])
         true
       . assert(identity)
 
@@ -165,195 +165,195 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
         // (Also exercises `Xml.Parsable.derived` at an applied-generic root,
         // the `derivedOne` requirement.)
         given PBoxed[Int] is Xml.Parsable = Xml.Parsable.derived
-        t"<root><value>42</value></root>".read[PBoxed[Int] in Xml]
+        "<root><value>42</value></root>".read[PBoxed[Int] in Xml]
       . assert(_ == PBoxed(42))
 
     suite(m"Content shapes"):
       test(m"Mixed content between children is ignored, equally on both paths"):
-        val input = t"<root>hello<name>A</name><!--c--><?pi data?> <age>4</age>bye</root>"
+        val input = "<root>hello<name>A</name><!--c--><?pi data?> <age>4</age>bye</root>"
         (input.read[PWorker in Xml], parity[PWorker](input))
-      . assert(_ == (PWorker(t"A", 4), true))
+      . assert(_ == (PWorker("A", 4), true))
 
       test(m"Entities in leaf text expand, equally on both paths"):
-        val input = t"<root><name>a&amp;b&#33;</name><age>1</age></root>"
+        val input = "<root><name>a&amp;b&#33;</name><age>1</age></root>"
         (input.read[PWorker in Xml], parity[PWorker](input))
-      . assert(_ == (PWorker(t"a&b!", 1), true))
+      . assert(_ == (PWorker("a&b!", 1), true))
 
       test(m"A self-closing leaf reads as empty text"):
-        val input = t"<root><name/><age>1</age></root>"
+        val input = "<root><name/><age>1</age></root>"
         (input.read[PWorker in Xml], parity[PWorker](input))
-      . assert(_ == (PWorker(t"", 1), true))
+      . assert(_ == (PWorker("", 1), true))
 
       test(m"An empty start/end leaf reads as empty text"):
-        val input = t"<root><name></name><age>1</age></root>"
+        val input = "<root><name></name><age>1</age></root>"
         (input.read[PWorker in Xml], parity[PWorker](input))
-      . assert(_ == (PWorker(t"", 1), true))
+      . assert(_ == (PWorker("", 1), true))
 
       test(m"CDATA in a leaf is wrong-shape on both paths"):
         // `textOf` accepts only a single `TextNode` child, so a CDATA leaf
         // raises (and continues with the empty sentinel) on the AST path;
         // the direct path must accrue the same focus.
-        val input = t"<root><name><![CDATA[A]]></name><age>1</age></root>"
+        val input = "<root><name><![CDATA[A]]></name><age>1</age></root>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (direct, ast) => direct == ast && direct == Set("/name[1]") }
+      . assert { (direct, ast) => direct == ast && direct == Set[String]("/name[1]") }
 
       test(m"A primitive root element parses directly"):
-        val input = t"<message>1</message>"
+        val input = "<message>1</message>"
         (input.read[Int in Xml], parity[Int](input))
       . assert(_ == (1, true))
 
       test(m"A bad primitive root raises Xml.Error on both paths"):
-        capture[Xml.Error](t"<message>ABC</message>".read[Int in Xml])
+        capture[Xml.Error]("<message>ABC</message>".read[Int in Xml])
         true
       . assert(identity)
 
     suite(m"Attributes and renames"):
       test(m"An @attribute field reads from the attribute"):
-        val input = t"""<PBook isbn="0441013597"><title>Dune</title></PBook>"""
+        val input = """<PBook isbn="0441013597"><title>Dune</title></PBook>"""
         (input.read[PBook in Xml], parity[PBook](input))
-      . assert(_ == (PBook(t"Dune", t"0441013597"), true))
+      . assert(_ == (PBook("Dune", "0441013597"), true))
 
       test(m"An @name-renamed @attribute field reads from the renamed attribute"):
-        val input = t"""<x ISBN="99"><title>T</title></x>"""
+        val input = """<x ISBN="99"><title>T</title></x>"""
         (input.read[PTagged in Xml], parity[PTagged](input))
-      . assert(_ == (PTagged(t"99", t"T"), true))
+      . assert(_ == (PTagged("99", "T"), true))
 
       test(m"A child element sharing an @attribute field's name is skipped"):
-        val input = t"""<x isbn="1"><isbn>2</isbn><title>T</title></x>"""
+        val input = """<x isbn="1"><isbn>2</isbn><title>T</title></x>"""
         (input.read[PBook in Xml], parity[PBook](input))
-      . assert(_ == (PBook(t"T", t"1"), true))
+      . assert(_ == (PBook("T", "1"), true))
 
       test(m"@name[Xml] renames an element field, equally on both paths"):
-        val input = t"<x><Title>Dune</Title><pages>412</pages></x>"
+        val input = "<x><Title>Dune</Title><pages>412</pages></x>"
         (input.read[PLabelled in Xml], parity[PLabelled](input))
-      . assert(_ == (PLabelled(t"Dune", 412), true))
+      . assert(_ == (PLabelled("Dune", 412), true))
 
     suite(m"Sums by element label"):
       test(m"Decode the Circle variant directly"):
-        val input = t"<Circle><radius>5</radius></Circle>"
+        val input = "<Circle><radius>5</radius></Circle>"
         (input.read[PShape in Xml], parity[PShape](input))
       . assert(_ == (PShape.Circle(5), true))
 
       test(m"Decode the Square variant directly"):
-        val input = t"<Square><side>4</side></Square>"
+        val input = "<Square><side>4</side></Square>"
         (input.read[PShape in Xml], parity[PShape](input))
       . assert(_ == (PShape.Square(4), true))
 
       test(m"An unknown variant aborts on both paths"):
-        capture[Xml.Error](t"<Triangle><foo>1</foo></Triangle>".read[PShape in Xml])
+        capture[Xml.Error]("<Triangle><foo>1</foo></Triangle>".read[PShape in Xml])
         true
       . assert(identity)
 
     suite(m"Recursion"):
       test(m"an inlined recursive type ties through its own nominal Parsable"):
-        val tree = PTree(t"root", List(PTree(t"a", Nil), PTree(t"b", List(PTree(t"c", Nil)))))
+        val tree = PTree("root", List(PTree(t"a", Nil), PTree(t"b", List(PTree(t"c", Nil)))))
         tree.in[Xml].show.read[PTree in Xml]
-      . assert(_ == PTree(t"root", List(PTree(t"a", Nil), PTree(t"b", List(PTree(t"c", Nil))))))
+      . assert(_ == PTree("root", List(PTree(t"a", Nil), PTree(t"b", List(PTree(t"c", Nil))))))
 
     suite(m"Collections"):
       test(m"Contiguous repeated elements gather in order, equally on both paths"):
-        val input = t"<root><name>Mix</name><songs>A</songs><songs>B</songs><songs>C</songs></root>"
+        val input = "<root><name>Mix</name><songs>A</songs><songs>B</songs><songs>C</songs></root>"
         (input.read[PPlaylist in Xml], parity[PPlaylist](input))
-      . assert(_ == (PPlaylist(t"Mix", List(t"A", t"B", t"C")), true))
+      . assert(_ == (PPlaylist("Mix", List(t"A", t"B", t"C")), true))
 
       test(m"Non-contiguous repeated elements still gather in document order"):
-        val input = t"<root><songs>A</songs><name>Mix</name><songs>B</songs></root>"
+        val input = "<root><songs>A</songs><name>Mix</name><songs>B</songs></root>"
         (input.read[PPlaylist in Xml], parity[PPlaylist](input))
-      . assert(_ == (PPlaylist(t"Mix", List(t"A", t"B")), true))
+      . assert(_ == (PPlaylist("Mix", List(t"A", t"B")), true))
 
       test(m"No matching children decode as the empty list on both paths"):
-        val input = t"<root><name>Mix</name></root>"
+        val input = "<root><name>Mix</name></root>"
         (input.read[PPlaylist in Xml], parity[PPlaylist](input))
-      . assert(_ == (PPlaylist(t"Mix", Nil), true))
+      . assert(_ == (PPlaylist("Mix", Nil), true))
 
       test(m"Nested record elements in lists decode equally on both paths"):
-        val input = t"""<root>
+        val input = """<root>
                           <name>Reds</name>
                           <members><name>Ann</name><age>1</age></members>
                           <extra>skipme</extra>
                           <members><name>Bob</name><age>2</age></members>
                         </root>"""
         (input.read[PTeam in Xml], parity[PTeam](input))
-      . assert(_ == (PTeam(t"Reds", List(PWorker(t"Ann", 1), PWorker(t"Bob", 2))), true))
+      . assert(_ == (PTeam("Reds", List(PWorker(t"Ann", 1), PWorker(t"Bob", 2))), true))
 
       test(m"A list round-trips through the encoder, equally on both paths"):
-        val team = PTeam(t"Blues", List(PWorker(t"Cyd", 3), PWorker(t"Dee", 4)))
+        val team = PTeam("Blues", List(PWorker(t"Cyd", 3), PWorker(t"Dee", 4)))
         val input = team.in[Xml].show
         (input.read[PTeam in Xml], parity[PTeam](input))
-      . assert(_ == (PTeam(t"Blues", List(PWorker(t"Cyd", 3), PWorker(t"Dee", 4))), true))
+      . assert(_ == (PTeam("Blues", List(PWorker(t"Cyd", 3), PWorker(t"Dee", 4))), true))
 
       test(m"An empty list encodes to no children and round-trips"):
-        val input = PPlaylist(t"Quiet", Nil).in[Xml].show
+        val input = PPlaylist("Quiet", Nil).in[Xml].show
         (input.read[PPlaylist in Xml], parity[PPlaylist](input))
-      . assert(_ == (PPlaylist(t"Quiet", Nil), true))
+      . assert(_ == (PPlaylist("Quiet", Nil), true))
 
     suite(m"Custom-Decodable bridge"):
       test(m"A type with only a custom Decodable reads through the bridge"):
-        t"<t>21</t>".read[PTemperature in Xml]
+        "<t>21</t>".read[PTemperature in Xml]
       . assert(_ == PTemperature(21))
 
       test(m"A bridged field materializes just its own element"):
-        val input = t"<r><temp>21</temp><station>Kew</station></r>"
+        val input = "<r><temp>21</temp><station>Kew</station></r>"
         (input.read[PReading in Xml], parity[PReading](input))
-      . assert(_ == (PReading(PTemperature(21), t"Kew"), true))
+      . assert(_ == (PReading(PTemperature(21), "Kew"), true))
 
     suite(m"Accrual parity"):
       test(m"A fully-valid input accrues zero errors"):
-        issues(t"<root><name>A</name><age>1</age></root>".read[PWorker in Xml])
+        issues("<root><name>A</name><age>1</age></root>".read[PWorker in Xml])
       . assert(_ == Set())
 
       test(m"A missing field accrues the same focus on both paths"):
-        val input = t"<root><name>Alice</name></root>"
+        val input = "<root><name>Alice</name></root>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (direct, ast) => direct == ast && direct == Set("/age[1]") }
+      . assert { (direct, ast) => direct == ast && direct == Set[String]("/age[1]") }
 
       test(m"A wrong-type primitive accrues the same focus on both paths"):
-        val input = t"<root><name>Alice</name><age>old</age></root>"
+        val input = "<root><name>Alice</name><age>old</age></root>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (direct, ast) => direct == ast && direct == Set("/age[1]") }
+      . assert { (direct, ast) => direct == ast && direct == Set[String]("/age[1]") }
 
       test(m"A missing nested product expands per sub-field on both paths"):
-        val input = t"<root><title>Acme</title></root>"
+        val input = "<root><title>Acme</title></root>"
         ( issues(input.read[PFirm in Xml]),
           issues(input.read[Xml].as[PFirm]) )
       . assert: (direct, ast) =>
           direct == ast &&
-            direct == Set("/boss[1]", "/boss[1]/name[1]", "/boss[1]/age[1]")
+            direct == Set[String]("/boss[1]", "/boss[1]/name[1]", "/boss[1]/age[1]")
 
       test(m"An empty root element accrues every field on both paths"):
-        val input = t"<root/>"
+        val input = "<root/>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (direct, ast) => direct == ast && direct == Set("/name[1]", "/age[1]") }
+      . assert { (direct, ast) => direct == ast && direct == Set[String]("/name[1]", "/age[1]") }
 
       test(m"Default[PWorker] collapses a missing nested value into one error"):
         DirectDefaultScope.run()
-      . assert(_ == Set("/boss[1]"))
+      . assert(_ == Set[String]("/boss[1]"))
 
     suite(m"Malformed input"):
       test(m"A mismatched close tag is a Parse.Error on the direct path too"):
-        capture[Parse.Error](t"<root><name>A</name><age>1</b></root>".read[PWorker in Xml])
+        capture[Parse.Error]("<root><name>A</name><age>1</b></root>".read[PWorker in Xml])
         . issue
       . assert: issue =>
           issue match
-            case Xml.Issue.MismatchedTag(t"age", t"b") => true
+            case Xml.Issue.MismatchedTag("age", "b") => true
             case _                                     => false
 
       test(m"A mismatched close tag inside a skipped element is still checked"):
-        capture[Parse.Error](t"<root><junk><a></b></junk></root>".read[PWorker in Xml]).issue
+        capture[Parse.Error]("<root><junk><a></b></junk></root>".read[PWorker in Xml]).issue
       . assert: issue =>
           issue match
-            case Xml.Issue.MismatchedTag(t"a", t"b") => true
+            case Xml.Issue.MismatchedTag("a", "b") => true
             case _                                   => false
 
       test(m"An unclosed element is Incomplete on the direct path too"):
-        capture[Parse.Error](t"<root><name>A</name>".read[PWorker in Xml]).issue
+        capture[Parse.Error]("<root><name>A</name>".read[PWorker in Xml]).issue
       . assert: issue =>
           issue match
-            case Xml.Issue.Incomplete(t"root") => true
+            case Xml.Issue.Incomplete("root") => true
             case _                             => false
 
     suite(m"Staged direct parsing"):
@@ -368,97 +368,97 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
       given PTeam is Xml.Parsable = Xml.Parsable.staged
 
       test(m"A staged parser reads a simple record"):
-        t"<root><name>Alice</name><age>30</age></root>".read[PWorker in Xml]
-      . assert(_ == PWorker(t"Alice", 30))
+        "<root><name>Alice</name><age>30</age></root>".read[PWorker in Xml]
+      . assert(_ == PWorker("Alice", 30))
 
       test(m"A staged parser accepts reordered fields, equally on both paths"):
-        parity[PWorker](t"<root><age>21</age><name>Bob</name></root>")
+        parity[PWorker]("<root><age>21</age><name>Bob</name></root>")
       . assert(identity)
 
       test(m"Nested records parse through sibling staged instances"):
-        val input = t"<root><title>Acme</title><boss><name>Carol</name><age>40</age></boss></root>"
+        val input = "<root><title>Acme</title><boss><name>Carol</name><age>40</age></boss></root>"
         (input.read[PFirm in Xml], parity[PFirm](input))
-      . assert(_ == (PFirm(t"Acme", PWorker(t"Carol", 40)), true))
+      . assert(_ == (PFirm("Acme", PWorker("Carol", 40)), true))
 
       test(m"A staged parser skips unknown children with their subtrees"):
-        t"""<root><name>Amy</name>
+        """<root><name>Amy</name>
               <extra a="1"><deep><x/>text</deep><more/></extra>
               <age>50</age></root>""".read[PWorker in Xml]
-      . assert(_ == PWorker(t"Amy", 50))
+      . assert(_ == PWorker("Amy", 50))
 
       test(m"A staged parser keeps the first occurrence of a duplicate child"):
-        val input = t"<root><name>Amy</name><name>Bea</name><age>3</age></root>"
+        val input = "<root><name>Amy</name><name>Bea</name><age>3</age></root>"
         (input.read[PWorker in Xml], parity[PWorker](input))
-      . assert(_ == (PWorker(t"Amy", 3), true))
+      . assert(_ == (PWorker("Amy", 3), true))
 
       test(m"A staged parser takes declared defaults"):
-        t"<root><name>Kid</name></root>".read[PDefaulted in Xml]
-      . assert(_ == PDefaulted(t"Kid", 18))
+        "<root><name>Kid</name></root>".read[PDefaulted in Xml]
+      . assert(_ == PDefaulted("Kid", 18))
 
       test(m"An @attribute field reads from the attribute in a staged parser"):
-        val input = t"""<PBook isbn="0441013597"><title>Dune</title></PBook>"""
+        val input = """<PBook isbn="0441013597"><title>Dune</title></PBook>"""
         (input.read[PBook in Xml], parity[PBook](input))
-      . assert(_ == (PBook(t"Dune", t"0441013597"), true))
+      . assert(_ == (PBook("Dune", "0441013597"), true))
 
       test(m"A staged @name-renamed @attribute field reads from the renamed attribute"):
-        val input = t"""<x ISBN="99"><title>T</title></x>"""
+        val input = """<x ISBN="99"><title>T</title></x>"""
         (input.read[PTagged in Xml], parity[PTagged](input))
-      . assert(_ == (PTagged(t"99", t"T"), true))
+      . assert(_ == (PTagged("99", "T"), true))
 
       test(m"A staged child sharing an @attribute field's name is skipped"):
-        val input = t"""<x isbn="1"><isbn>2</isbn><title>T</title></x>"""
+        val input = """<x isbn="1"><isbn>2</isbn><title>T</title></x>"""
         (input.read[PBook in Xml], parity[PBook](input))
-      . assert(_ == (PBook(t"T", t"1"), true))
+      . assert(_ == (PBook("T", "1"), true))
 
       test(m"@name[Xml] renames an element field in a staged parser"):
-        val input = t"<x><Title>Dune</Title><pages>412</pages></x>"
+        val input = "<x><Title>Dune</Title><pages>412</pages></x>"
         (input.read[PLabelled in Xml], parity[PLabelled](input))
-      . assert(_ == (PLabelled(t"Dune", 412), true))
+      . assert(_ == (PLabelled("Dune", 412), true))
 
       test(m"Repeated elements gather in document order in a staged parser"):
-        val input = t"<root><songs>A</songs><name>Mix</name><songs>B</songs></root>"
+        val input = "<root><songs>A</songs><name>Mix</name><songs>B</songs></root>"
         (input.read[PPlaylist in Xml], parity[PPlaylist](input))
-      . assert(_ == (PPlaylist(t"Mix", List(t"A", t"B")), true))
+      . assert(_ == (PPlaylist("Mix", List(t"A", t"B")), true))
 
       test(m"No matching children decode as the empty list in a staged parser"):
-        val input = t"<root><name>Mix</name></root>"
+        val input = "<root><name>Mix</name></root>"
         (input.read[PPlaylist in Xml], parity[PPlaylist](input))
-      . assert(_ == (PPlaylist(t"Mix", Nil), true))
+      . assert(_ == (PPlaylist("Mix", Nil), true))
 
       test(m"Record elements in lists parse through staged element instances"):
-        val input = t"""<root><name>A</name>
+        val input = """<root><name>A</name>
               <members><name>X</name><age>1</age></members>
               <members><name>Y</name><age>2</age></members></root>"""
         (input.read[PTeam in Xml], parity[PTeam](input))
-      . assert(_ == (PTeam(t"A", List(PWorker(t"X", 1), PWorker(t"Y", 2))), true))
+      . assert(_ == (PTeam("A", List(PWorker(t"X", 1), PWorker(t"Y", 2))), true))
 
       test(m"A bridged custom-Decodable field parses in a staged parser"):
-        val input = t"<r><temp>21</temp><station>Kew</station></r>"
+        val input = "<r><temp>21</temp><station>Kew</station></r>"
         (input.read[PReading in Xml], parity[PReading](input))
-      . assert(_ == (PReading(PTemperature(21), t"Kew"), true))
+      . assert(_ == (PReading(PTemperature(21), "Kew"), true))
 
       test(m"A staged missing field accrues the same focus as the AST path"):
-        val input = t"<root><name>Alice</name></root>"
+        val input = "<root><name>Alice</name></root>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (staged, ast) => staged == ast && staged == Set("/age[1]") }
+      . assert { (staged, ast) => staged == ast && staged == Set[String]("/age[1]") }
 
       test(m"A staged wrong-type primitive accrues the same focus as the AST path"):
-        val input = t"<root><name>Alice</name><age>old</age></root>"
+        val input = "<root><name>Alice</name><age>old</age></root>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (staged, ast) => staged == ast && staged == Set("/age[1]") }
+      . assert { (staged, ast) => staged == ast && staged == Set[String]("/age[1]") }
 
       test(m"A staged missing nested product expands per sub-field, as on the AST path"):
-        val input = t"<root><title>Acme</title></root>"
+        val input = "<root><title>Acme</title></root>"
         ( issues(input.read[PFirm in Xml]),
           issues(input.read[Xml].as[PFirm]) )
       . assert: (staged, ast) =>
           staged == ast &&
-            staged == Set("/boss[1]", "/boss[1]/name[1]", "/boss[1]/age[1]")
+            staged == Set[String]("/boss[1]", "/boss[1]/name[1]", "/boss[1]/age[1]")
 
       test(m"An empty root element accrues every staged field, as on the AST path"):
-        val input = t"<root/>"
+        val input = "<root/>"
         ( issues(input.read[PWorker in Xml]),
           issues(input.read[Xml].as[PWorker]) )
-      . assert { (staged, ast) => staged == ast && staged == Set("/name[1]", "/age[1]") }
+      . assert { (staged, ast) => staged == ast && staged == Set[String]("/name[1]", "/age[1]") }

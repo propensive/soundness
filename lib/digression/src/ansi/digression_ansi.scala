@@ -86,7 +86,7 @@ package teletypeables:
   given stackTraceTeletype: (Text is Measurable) => (palette: StackTracePalette)
   =>  StackTrace is Teletypeable = stack =>
 
-    // A static match, not `selectDynamic(s"accent$n")`: structural selection reflects through
+    // A static match, not `selectDynamics"accent$n"`: structural selection reflects through
     // `Class.getMethod`, unsupported on Scala Native (and these are real trait members anyway).
     def accent(level: Int): Color in Srgb = (level % 5) + 1 match
       case 1 => palette.accent1
@@ -124,7 +124,7 @@ package teletypeables:
 
     val rows: List[Row] =
 
-        stack.frames.fold((List.empty[Row], t"", t"")):
+        stack.frames.fold((List.empty[Row], "", "")):
           case ((acc, lastClass, lastFile), frame) =>
             val sameClass = frame.displayClass == lastClass
             val sameFile = frame.file == lastFile
@@ -146,7 +146,7 @@ package teletypeables:
 
       case _ =>
         val frame = row.frame
-        val obj = frame.displaySegment.starts(t"Ξ")
+        val obj = frame.displaySegment.starts("Ξ")
         val methodCls = if obj then frame.displaySegment.skip(1) else frame.displaySegment
         // Every row's prefix was registered when `packages` was built from the same frames; an
         // unregistered prefix falls back to the first accent colour.
@@ -163,7 +163,7 @@ package teletypeables:
         // A resolved frame names a chain of source definitions, which is joined with dots however
         // the chain happens to have been compiled.
         val resolved = row.frame.source.present
-        val ch = if resolved || row.frame.displaySegment.starts(t"Ξ") then t"." else t"⌗"
+        val ch = if resolved || row.frame.displaySegment.starts("Ξ") then "." else "⌗"
         e"${palette.separator}($ch)"
 
     def methodCell(row: Row): Teletype = row.inlined match

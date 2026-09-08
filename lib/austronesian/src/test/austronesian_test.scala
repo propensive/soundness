@@ -76,7 +76,7 @@ object Tests extends Suite(m"Austronesian tests"):
       unsafely(color.pojo.as[Color])
     . assert(_ == Color.Green)
 
-    val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+    val tree = Tree("root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
 
     test(m"Roundtrip a type recursive through a List"):
       unsafely(tree.pojo.as[Tree])

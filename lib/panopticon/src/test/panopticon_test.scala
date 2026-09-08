@@ -78,15 +78,15 @@ object Tests extends Suite(m"Panopticon tests"):
       company.lens(_.ceo.roles(Each).name = prior+"!")
     . assert(_ == Company(Person("John", List(Role("CEO!", 1), Role("CFO!", 2), Role("CIO!", 3))), "Acme"))
 
-    val user = User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("CFO", 2), t"cio" -> Role("CIO", 3)))
+    val user = User("John", Map("ceo" -> Role("CEO", 1), "cfo" -> Role("CFO", 2), "cio" -> Role("CIO", 3)))
 
     test(m"adjust user role"):
-      user.lens(_.roles(t"cfo") = Role("CFO!", 2))
-    . assert(_ == User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("CFO!", 2), t"cio" -> Role("CIO", 3))))
+      user.lens(_.roles(t"cfo") = Role(t"CFO!", 2))
+    . assert(_ == User("John", Map("ceo" -> Role("CEO", 1), "cfo" -> Role("CFO!", 2), "cio" -> Role("CIO", 3))))
 
     test(m"adjust user role name"):
-      user.lens(_.roles(t"cfo").name = "CFO!")
-    . assert(_ == User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("CFO!", 2), t"cio" -> Role("CIO", 3))))
+      user.lens(_.roles("cfo").name = "CFO!")
+    . assert(_ == User("John", Map("ceo" -> Role("CEO", 1), "cfo" -> Role("CFO!", 2), "cio" -> Role("CIO", 3))))
 
     test(m"filter traversal"):
       company.lens(_.ceo.roles(Filter[Role](_.count > 1)) = Role("Changed", 0))
@@ -236,12 +236,12 @@ object Tests extends Suite(m"Panopticon tests"):
 
     case class Crew(members: List[Text])
     test(m"ordinal optic on a List field"):
-      Crew(List(t"a", t"b", t"c")).lens(_.members(Prim) = t"z")
+      Crew(List(t"a", t"b", t"c")).lens(_.members(Prim) = "z")
     . assert(_ == Crew(List(t"z", t"b", t"c")))
 
     test(m"filter-by-key traversal over a Map field"):
-      user.lens(_.roles(Filter[Text](_ == t"cfo")).name = "X")
-    . assert(_ == User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("X", 2), t"cio" -> Role("CIO", 3))))
+      user.lens(_.roles(Filter[Text](_ == "cfo")).name = "X")
+    . assert(_ == User("John", Map("ceo" -> Role("CEO", 1), "cfo" -> Role("X", 2), "cio" -> Role("CIO", 3))))
 
     import htmlDoms.whatwg.*
 

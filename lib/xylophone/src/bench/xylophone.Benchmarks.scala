@@ -54,7 +54,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
 
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
+  given byteDesignation: Designation[Bytes[1]] = () => "B"
   given decimalizer:     Decimalizer            = Decimalizer(2)
   given device:          BenchmarkDevice        = LocalhostDevice
   given schema:          XmlSchema              = XmlSchema.Freeform
@@ -204,7 +204,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
   lazy val xml5: Text = xmlText5.tt
 
   // Example 1: a small, self-contained RSS 2.0 feed with two items.
-  val xmlExample1: Text = t"""<?xml version="1.0" encoding="UTF-8"?>
+  val xmlExample1: Text = """<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
     <title>Example Channel</title>
@@ -231,7 +231,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
 """
 
   // Example 2: a SOAP 1.1 request envelope with a moderately nested body.
-  val xmlExample2: Text = t"""<?xml version="1.0" encoding="UTF-8"?>
+  val xmlExample2: Text = """<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
                xmlns:ord="http://example.com/orders">
   <soap:Header>
@@ -275,7 +275,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
 
   // Example 3: an Atom 1.0 feed with several entries — exercises text-heavy
   // content and a richer mix of attributes and elements.
-  val xmlExample3: Text = t"""<?xml version="1.0" encoding="UTF-8"?>
+  val xmlExample3: Text = """<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title>Example Atom Feed</title>
   <link href="http://example.org/" rel="alternate" type="text/html"/>

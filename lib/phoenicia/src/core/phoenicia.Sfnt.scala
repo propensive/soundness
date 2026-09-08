@@ -84,13 +84,13 @@ object Sfnt:
 
     object Otf extends Extractor[Text, Otf]:
       def extract(text: Text): Optional[Otf] = text match
-        case t"OS/2" => Os2
-        case t"CFF " => Cff
+        case "OS/2" => Os2
+        case "CFF " => Cff
         case other   => safely(Otf.valueOf(other.lower.capitalize.s))
 
     object Ttf extends Extractor[Text, Ttf]:
       def extract(text: Text): Optional[Ttf] = text match
-        case t"cvt " => Cvt
+        case "cvt " => Cvt
         case other   => safely(Ttf.valueOf(other.lower.capitalize.s))
 
     enum Ttf extends Tag:
@@ -99,7 +99,7 @@ object Sfnt:
         Meta, Name, Post, Prep, Sbix, Vhea, Vmtx
 
       def text: Text = this match
-        case Cvt   => t"cvt "
+        case Cvt   => "cvt "
         case table => table.toString.tt.lower
 
     enum Otf extends Tag:
@@ -108,8 +108,8 @@ object Sfnt:
         Ltsh, Math, Merg, Mvar, Os2, Pclt, Stat, Svg, Vdmx, Vorg, Vvar
 
       def text: Text = this match
-        case Os2   => t"OS/2"
-        case Cff   => t"CFF "
+        case Os2   => "OS/2"
+        case Cff   => "CFF "
         case table => table.toString.tt.upper
 
   // Serialises a table set as an sfnt font file: the header, a directory sorted by tag, and the
@@ -176,7 +176,7 @@ object Sfnt:
       putU32(directory + 4, checksum(offset, table.length))
       putU32(directory + 8, offset.toLong)
       putU32(directory + 12, table.length.toLong)
-      if tag == t"head" then headOffset = offset
+      if tag == "head" then headOffset = offset
       offset += padded(table.length)
 
     // The caller supplies head with its adjustment zeroed, so the directory checksum above

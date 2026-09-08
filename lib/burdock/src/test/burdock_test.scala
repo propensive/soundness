@@ -59,7 +59,7 @@ object Tests extends Suite(m"Burdock Tests"):
       val hashes: List[Text] =
         val stream = getClass.nn.getResourceAsStream("/META-INF/burdock.deps").nn
         val content: Text = _root_.java.lang.String(stream.readAllBytes().nn, "UTF-8").tt
-        content.cut(t"\n").filter(_ != t"")
+        content.cut("\n").filter(_ != "")
 
       test(m"embeds a non-empty set of dependency hashes as a resource"):
         hashes.stdlib.length
@@ -77,10 +77,10 @@ object Tests extends Suite(m"Burdock Tests"):
 
     suite(m"Repackager partition"):
       val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
-      val resolve: Text => Optional[HttpUrl] = h => if h == t"aaa" then published else Unset
-      val classEntry = Zip.Entry(t"pkg/X.class".as[Path on Zip], t"bytes".in[Data])
+      val resolve: Text => Optional[HttpUrl] = h => if h == "aaa" then published else Unset
+      val classEntry = Zip.Entry("pkg/X.class".as[Path on Zip], "bytes".in[Data])
       val cached: Repackager.CacheReader =
-        h => if h == t"bbb" then (List(classEntry): List[Zip.Entry]) else Unset
+        h => if h == "bbb" then (List(classEntry): List[Zip.Entry]) else Unset
 
       test(m"a published hash becomes a remote requirement"):
         val (requirements, inlined) = Repackager.partition(List(t"aaa"), resolve, cached)
@@ -134,30 +134,30 @@ object Tests extends Suite(m"Burdock Tests"):
     suite(m"Progress bar"):
       test(m"an empty bar is all spaces"):
         ProgressBar.render(0.0).plain
-      .assert(_ == t" "*40)
+      .assert(_ == " "*40)
 
       test(m"a full bar is all full blocks"):
         ProgressBar.render(1.0).plain
-      .assert(_ == t"█"*40)
+      .assert(_ == "█"*40)
 
       test(m"a half bar is twenty blocks then twenty spaces"):
         ProgressBar.render(0.5).plain
-      .assert(_ == t"█"*20 + t" "*20)
+      .assert(_ == "█"*20 + " "*20)
 
       test(m"a sub-cell fraction renders one partial block"):
         ProgressBar.render(4.0/320).plain
-      .assert(_ == t"▌" + t" "*39)
+      .assert(_ == "▌" + " "*39)
 
       test(m"the bar is always forty cells wide"):
         List(0.0, 0.1, 0.333, 0.5, 0.9, 1.0).all(ProgressBar.render(_).plain.length == 40)
       .assert(_ == true)
 
     suite(m"GitHub release index"):
-      val hex: Text = t"A"*64
-      val lower: Text = t"a"*64
-      val other: Text = t"b"*64
-      val jarUrl: Text = t"https://github.com/o/r/releases/download/v1/lib-1.jar"
-      val oldUrl: Text = t"https://github.com/o/r/releases/download/v0/lib-1.jar"
+      val hex: Text = "A"*64
+      val lower: Text = "a"*64
+      val other: Text = "b"*64
+      val jarUrl: Text = "https://github.com/o/r/releases/download/v1/lib-1.jar"
+      val oldUrl: Text = "https://github.com/o/r/releases/download/v0/lib-1.jar"
       val mavenUrl = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
 
       def asset(name: Text, url: Text, digest: Optional[Text]): GitHub.Asset =
@@ -190,8 +190,8 @@ object Tests extends Suite(m"Burdock Tests"):
       .assert(_ == jarUrl)
 
       test(m"owner/repo parses into its two parts"):
-        GitHub.Repository.parse(t"propensive/soundness")
-      .assert(_ == GitHub.Repository(t"propensive", t"soundness"))
+        GitHub.Repository.parse("propensive/soundness")
+      .assert(_ == GitHub.Repository("propensive", "soundness"))
 
       test(m"malformed repository coordinates are rejected"):
         List(t"owner", t"owner/", t"/repo", t"a/b/c").all: text =>
@@ -224,50 +224,50 @@ object Tests extends Suite(m"Burdock Tests"):
       val inputJar: Path on Linux = tmp/t"burdock-in-${Uuid().show}.jar"
       val outputJar: Path on Linux = tmp/t"burdock-out-${Uuid().show}.jar"
 
-      val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
+      val manifestText: Text = "Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
       Zipfile.write(inputJar):
-        ( Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
-          #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"aaa\nbbb".in[Data])
-          #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".in[Data])
+        ( Zip.Entry("META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
+          #:: Zip.Entry("META-INF/burdock.deps".as[Path on Zip], "aaa\nbbb".in[Data])
+          #:: Zip.Entry("com/example/Main.class".as[Path on Zip], "main".in[Data])
           #:: Chain() ).to[List]
 
       val resolve: Repackager.Resolver =
-        h => if h == t"aaa" then url"https://repo1.maven.org/maven2/g/a/1/a-1.jar" else Unset
+        h => if h == "aaa" then url"https://repo1.maven.org/maven2/g/a/1/a-1.jar" else Unset
 
       val cached: Repackager.CacheReader =
-        h => if h == t"bbb" then (List(Zip.Entry(t"dep/Lib.class".as[Path on Zip], t"lib".in[Data])): List[Zip.Entry])
+        h => if h == "bbb" then (List(Zip.Entry(t"dep/Lib.class".as[Path on Zip], t"lib".in[Data])): List[Zip.Entry])
              else Unset
 
-      Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap-bytes".in[Data])
+      Repackager.repackage(inputJar, outputJar, resolve, cached, "bootstrap-bytes".in[Data])
 
       val names: List[Text] = Zipfile.read(outputJar).entries.stdlib.map(_.ref.show).to(List)
 
       val manifest: Text =
-        Zipfile.read(outputJar).entries.stdlib.find(_.ref.show == t"META-INF/MANIFEST.MF").get.read[Data].utf8
+        Zipfile.read(outputJar).entries.stdlib.find(_.ref.show == "META-INF/MANIFEST.MF").get.read[Data].utf8
 
       test(m"keeps the application's own class"):
-        names.has(t"com/example/Main.class")
+        names.has("com/example/Main.class")
       .assert(_ == true)
 
       test(m"inlines the unpublished cached dependency"):
-        names.has(t"dep/Lib.class")
+        names.has("dep/Lib.class")
       .assert(_ == true)
 
       test(m"force-includes the bootstrap class"):
-        names.has(t"burdock/Bootstrap.class")
+        names.has("burdock/Bootstrap.class")
       .assert(_ == true)
 
       test(m"sets Main-Class to the burdock bootstrap"):
-        manifest.contains(t"burdock.Bootstrap")
+        manifest.contains("burdock.Bootstrap")
       .assert(_ == true)
 
       test(m"preserves the original entry point as Burdock-Main"):
-        manifest.contains(t"com.example.Main")
+        manifest.contains("com.example.Main")
       .assert(_ == true)
 
       test(m"records the published dependency as a requirement"):
-        manifest.contains(t"aaa")
+        manifest.contains("aaa")
       .assert(_ == true)
 
     suite(m"Repackager (directory entries)"):
@@ -279,20 +279,20 @@ object Tests extends Suite(m"Burdock Tests"):
       val inputJar: Path on Linux = tmp/t"burdock-dir-in-${Uuid().show}.jar"
       val outputJar: Path on Linux = tmp/t"burdock-dir-out-${Uuid().show}.jar"
 
-      val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
+      val manifestText: Text = "Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
       Zipfile.write(inputJar):
-        ( Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
-          #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"".in[Data])
-          #:: Zip.Entry(t"com/example".as[Path on Zip], t"".in[Data]).asDirectory
-          #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".in[Data])
+        ( Zip.Entry("META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
+          #:: Zip.Entry("META-INF/burdock.deps".as[Path on Zip], "".in[Data])
+          #:: Zip.Entry("com/example".as[Path on Zip], "".in[Data]).asDirectory
+          #:: Zip.Entry("com/example/Main.class".as[Path on Zip], "main".in[Data])
           #:: Chain() ).to[List]
 
       val resolve: Repackager.Resolver = _ => Unset
       val cached: Repackager.CacheReader = _ => Unset
 
       val summary =
-        Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap".in[Data])
+        Repackager.repackage(inputJar, outputJar, resolve, cached, "bootstrap".in[Data])
 
       val entries = Zipfile.read(outputJar).entries.stdlib.to(List)
       val names: List[Text] = entries.map(_.ref.show).to(List)
@@ -302,11 +302,11 @@ object Tests extends Suite(m"Burdock Tests"):
       .assert(_ == true)
 
       test(m"no zero-byte slash-less package entry remains"):
-        names.has(t"com/example")
+        names.has("com/example")
       .assert(_ == false)
 
       test(m"the application's own class is kept"):
-        names.has(t"com/example/Main.class")
+        names.has("com/example/Main.class")
       .assert(_ == true)
 
       test(m"the summary records the skipped directory entry"):
@@ -324,40 +324,40 @@ object Tests extends Suite(m"Burdock Tests"):
       val inputJar: Path on Linux = tmp/t"burdock-dup-in-${Uuid().show}.jar"
       val outputJar: Path on Linux = tmp/t"burdock-dup-out-${Uuid().show}.jar"
 
-      val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
+      val manifestText: Text = "Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
       Zipfile.write(inputJar):
-        ( Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
-          #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"bbb".in[Data])
-          #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".in[Data])
-          #:: Zip.Entry(t"burdock/Bootstrap.class".as[Path on Zip], t"stale-bootstrap".in[Data])
-          #:: Zip.Entry(t"dep/Lib.class".as[Path on Zip], t"bundled-lib".in[Data])
+        ( Zip.Entry("META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
+          #:: Zip.Entry("META-INF/burdock.deps".as[Path on Zip], "bbb".in[Data])
+          #:: Zip.Entry("com/example/Main.class".as[Path on Zip], "main".in[Data])
+          #:: Zip.Entry("burdock/Bootstrap.class".as[Path on Zip], "stale-bootstrap".in[Data])
+          #:: Zip.Entry("dep/Lib.class".as[Path on Zip], "bundled-lib".in[Data])
           #:: Chain() ).to[List]
 
       val resolve: Repackager.Resolver = _ => Unset
 
       val cached: Repackager.CacheReader = h =>
-        if h == t"bbb"
+        if h == "bbb"
         then proscenium.List
              ( Zip.Entry(t"dep/Lib.class".as[Path on Zip], t"cached-lib".in[Data]),
                Zip.Entry(t"burdock/Bootstrap.class".as[Path on Zip], t"cached-bootstrap".in[Data]) )
         else Unset
 
-      Repackager.repackage(inputJar, outputJar, resolve, cached, t"real-bootstrap".in[Data])
+      Repackager.repackage(inputJar, outputJar, resolve, cached, "real-bootstrap".in[Data])
 
       val names: List[Text] = Zipfile.read(outputJar).entries.stdlib.map(_.ref.show).to(List)
 
       test(m"a bundled bootstrap class is not duplicated"):
-        names.stdlib.count(_ == t"burdock/Bootstrap.class")
+        names.stdlib.count(_ == "burdock/Bootstrap.class")
       .assert(_ == 1)
 
       test(m"the force-included bootstrap bytes win over the bundled copy"):
-        Zipfile.read(outputJar).entries.stdlib.find(_.ref.show == t"burdock/Bootstrap.class").get
+        Zipfile.read(outputJar).entries.stdlib.find(_.ref.show == "burdock/Bootstrap.class").get
         . read[Data].utf8
-      .assert(_ == t"real-bootstrap")
+      .assert(_ == "real-bootstrap")
 
       test(m"a cached class already bundled is not duplicated"):
-        names.stdlib.count(_ == t"dep/Lib.class")
+        names.stdlib.count(_ == "dep/Lib.class")
       .assert(_ == 1)
 
     suite(m"Repackager (slimming)"):
@@ -369,51 +369,51 @@ object Tests extends Suite(m"Burdock Tests"):
       val inputJar: Path on Linux = tmp/t"burdock-slim-in-${Uuid().show}.jar"
       val outputJar: Path on Linux = tmp/t"burdock-slim-out-${Uuid().show}.jar"
 
-      val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
+      val manifestText: Text = "Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
       Zipfile.write(inputJar):
-        ( Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
-          #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"pub\nunpub".in[Data])
-          #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".in[Data])
-          #:: Zip.Entry(t"published/Lib.class".as[Path on Zip], t"published-bytes".in[Data])
-          #:: Zip.Entry(t"unpublished/Lib.class".as[Path on Zip], t"unpublished-bytes".in[Data])
+        ( Zip.Entry("META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
+          #:: Zip.Entry("META-INF/burdock.deps".as[Path on Zip], "pub\nunpub".in[Data])
+          #:: Zip.Entry("com/example/Main.class".as[Path on Zip], "main".in[Data])
+          #:: Zip.Entry("published/Lib.class".as[Path on Zip], "published-bytes".in[Data])
+          #:: Zip.Entry("unpublished/Lib.class".as[Path on Zip], "unpublished-bytes".in[Data])
           #:: Chain() ).to[List]
 
       val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
-      val resolve: Repackager.Resolver = h => if h == t"pub" then published else Unset
+      val resolve: Repackager.Resolver = h => if h == "pub" then published else Unset
 
       // The published dep's cached JAR lists the class bundled in the assembly (so it can be
       // identified and stripped); the unpublished dep stays bundled.
-      val pubEntry = Zip.Entry(t"published/Lib.class".as[Path on Zip], t"x".in[Data])
-      val unpubEntry = Zip.Entry(t"unpublished/Lib.class".as[Path on Zip], t"y".in[Data])
+      val pubEntry = Zip.Entry("published/Lib.class".as[Path on Zip], "x".in[Data])
+      val unpubEntry = Zip.Entry("unpublished/Lib.class".as[Path on Zip], "y".in[Data])
 
       val cached: Repackager.CacheReader = h =>
-        if h == t"pub" then (List(pubEntry): List[Zip.Entry])
-        else if h == t"unpub" then (List(unpubEntry): List[Zip.Entry])
+        if h == "pub" then (List(pubEntry): List[Zip.Entry])
+        else if h == "unpub" then (List(unpubEntry): List[Zip.Entry])
         else Unset
 
-      Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap".in[Data])
+      Repackager.repackage(inputJar, outputJar, resolve, cached, "bootstrap".in[Data])
 
       val names: List[Text] = Zipfile.read(outputJar).entries.stdlib.map(_.ref.show).to(List)
 
       val manifest: Text =
-        Zipfile.read(outputJar).entries.stdlib.find(_.ref.show == t"META-INF/MANIFEST.MF").get
+        Zipfile.read(outputJar).entries.stdlib.find(_.ref.show == "META-INF/MANIFEST.MF").get
         . read[Data].utf8
 
       test(m"strips a published dependency's bundled class"):
-        names.has(t"published/Lib.class")
+        names.has("published/Lib.class")
       .assert(_ == false)
 
       test(m"keeps the application's own class"):
-        names.has(t"com/example/Main.class")
+        names.has("com/example/Main.class")
       .assert(_ == true)
 
       test(m"keeps an unpublished dependency's bundled class"):
-        names.has(t"unpublished/Lib.class")
+        names.has("unpublished/Lib.class")
       .assert(_ == true)
 
       test(m"records the published dependency as a requirement"):
-        manifest.contains(t"pub")
+        manifest.contains("pub")
       .assert(_ == true)
 
     suite(m"Repackager (verbatim copy)"):
@@ -425,53 +425,53 @@ object Tests extends Suite(m"Burdock Tests"):
       val inputJar: Path on Linux = tmp/t"burdock-verbatim-in-${Uuid().show}.jar"
       val outputJar: Path on Linux = tmp/t"burdock-verbatim-out-${Uuid().show}.jar"
 
-      val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
+      val manifestText: Text = "Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
       // A `Stored` entry (kept uncompressed) and a `Deflate` entry (a compressible payload, so the
       // deflate actually wins and the method is recorded as `Deflate`).
       val storedEntry: Zip.Entry =
         given Zip.Compression = Zip.Compression.Stored
-        Zip.Entry(t"pkg/Stored.class".as[Path on Zip], t"stored-payload".in[Data])
+        Zip.Entry("pkg/Stored.class".as[Path on Zip], "stored-payload".in[Data])
 
       val deflateEntry: Zip.Entry =
         given Zip.Compression = Zip.Compression.Deflate(-1)
-        Zip.Entry(t"pkg/Deflated.class".as[Path on Zip], (t"a"*2000).in[Data])
+        Zip.Entry("pkg/Deflated.class".as[Path on Zip], ("a"*2000).in[Data])
 
       Zipfile.write(inputJar):
-        ( Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
-          #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"".in[Data])
+        ( Zip.Entry("META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
+          #:: Zip.Entry("META-INF/burdock.deps".as[Path on Zip], "".in[Data])
           #:: storedEntry
           #:: deflateEntry
           #:: Chain() ).to[List]
 
-      Repackager.repackage(inputJar, outputJar, _ => Unset, _ => Unset, t"bootstrap".in[Data])
+      Repackager.repackage(inputJar, outputJar, _ => Unset, _ => Unset, "bootstrap".in[Data])
 
       def entry(jar: Path on Linux, name: Text): Zip.Entry =
         Zipfile.read(jar).entries.stdlib.find(_.ref.show == name).get
 
       test(m"a Stored input entry stays Stored (no re-deflate)"):
-        entry(outputJar, t"pkg/Stored.class").method
+        entry(outputJar, "pkg/Stored.class").method
       .assert(_ == Zip.Method.Stored)
 
       test(m"a Deflate input entry stays Deflate"):
-        entry(outputJar, t"pkg/Deflated.class").method
+        entry(outputJar, "pkg/Deflated.class").method
       .assert(_ == Zip.Method.Deflate)
 
       test(m"the CRC-32 is carried through unchanged"):
-        entry(outputJar, t"pkg/Deflated.class").crc32
-      .assert(_ == entry(inputJar, t"pkg/Deflated.class").crc32)
+        entry(outputJar, "pkg/Deflated.class").crc32
+      .assert(_ == entry(inputJar, "pkg/Deflated.class").crc32)
 
       test(m"the compressed size is carried through unchanged"):
-        entry(outputJar, t"pkg/Deflated.class").compressedSize
-      .assert(_ == entry(inputJar, t"pkg/Deflated.class").compressedSize)
+        entry(outputJar, "pkg/Deflated.class").compressedSize
+      .assert(_ == entry(inputJar, "pkg/Deflated.class").compressedSize)
 
       test(m"the decompressed Stored payload is preserved"):
-        entry(outputJar, t"pkg/Stored.class").read[Data].utf8
-      .assert(_ == t"stored-payload")
+        entry(outputJar, "pkg/Stored.class").read[Data].utf8
+      .assert(_ == "stored-payload")
 
       test(m"the decompressed Deflate payload is preserved"):
-        entry(outputJar, t"pkg/Deflated.class").read[Data].utf8
-      .assert(_ == t"a"*2000)
+        entry(outputJar, "pkg/Deflated.class").read[Data].utf8
+      .assert(_ == "a"*2000)
 
     // The bootstrap itself, run as a real JVM against a loopback server: the JAR under test
     // carries `burdock.Bootstrap`, a `Burdock-Main` probe class, and two requirements whose
@@ -516,7 +516,7 @@ object Tests extends Suite(m"Burdock Tests"):
       val delayTwo = juca.AtomicLong(300)
 
       def serve(name: String, bytes: scala.Array[Byte], delay: juca.AtomicLong): Unit =
-        server.createContext("/"+name, { exchange =>
+        server.createContext(s"/$name", { exchange =>
           requests.incrementAndGet()
           peak.accumulateAndGet(inFlight.incrementAndGet(), (a, b) => Math.max(a, b))
           try
@@ -526,8 +526,8 @@ object Tests extends Suite(m"Burdock Tests"):
             exchange.nn.close()
           finally inFlight.decrementAndGet() })
 
-      val one: scala.Array[Byte] = "dependency one".getBytes("UTF-8").nn
-      val two: scala.Array[Byte] = "dependency two".getBytes("UTF-8").nn
+      val one: scala.Array[Byte] = "dependency one".s.getBytes("UTF-8").nn
+      val two: scala.Array[Byte] = "dependency two".s.getBytes("UTF-8").nn
       serve("one.jar", one, delayOne)
       serve("two.jar", two, delayTwo)
       server.start()
@@ -551,14 +551,14 @@ object Tests extends Suite(m"Burdock Tests"):
         val jar: Path on Linux = root/name
 
         Zipfile.write(jar):
-          ( Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], data(out.toByteArray.nn))
-            #:: Zip.Entry(t"burdock/Bootstrap.class".as[Path on Zip], data(resource("/burdock/Bootstrap.class")))
-            #:: Zip.Entry(t"burdock/Probe.class".as[Path on Zip], data(resource("/burdock/Probe.class")))
+          ( Zip.Entry("META-INF/MANIFEST.MF".as[Path on Zip], data(out.toByteArray.nn))
+            #:: Zip.Entry("burdock/Bootstrap.class".as[Path on Zip], data(resource("/burdock/Bootstrap.class")))
+            #:: Zip.Entry("burdock/Probe.class".as[Path on Zip], data(resource("/burdock/Probe.class")))
             #:: Chain() ).to[List]
 
         jar
 
-      val jar: Path on Linux = appJar(t"app.jar", requirements)
+      val jar: Path on Linux = appJar("app.jar", requirements)
       val cache: Text = t"${root.show}/cache"
       val progress: Text = t"${root.show}/progress"
 
@@ -573,7 +573,7 @@ object Tests extends Suite(m"Burdock Tests"):
 
       test(m"the application's main class runs after a cold fetch"):
         coldOutput
-      .assert(_ == t"probe")
+      .assert(_ == "probe")
 
       test(m"both requirements are fetched once"):
         coldRequests
@@ -599,16 +599,16 @@ object Tests extends Suite(m"Burdock Tests"):
 
       test(m"a warm cache makes no requests"):
         (warmOutput, requests.get() - coldRequests)
-      .assert(_ == (t"probe", 0))
+      .assert(_ == ("probe", 0))
 
-      jnf.Files.write(jnf.Paths.get(t"$cache/burdock/$hashOne.jar".s), "corrupted".getBytes("UTF-8").nn)
+      jnf.Files.write(jnf.Paths.get(t"$cache/burdock/$hashOne.jar".s), s"corrupted".getBytes("UTF-8").nn)
 
       test(m"a corrupted cached requirement is rejected with status 1"):
         status(jar, cache)
       .assert(_ == Exit.Fail(1))
 
       test(m"a malformed requirement exits with status 2"):
-        status(appJar(t"malformed.jar", t"not-a-requirement"), cache)
+        status(appJar("malformed.jar", "not-a-requirement"), cache)
       .assert(_ == Exit.Fail(2))
 
       // With the server slowed down, the progress file can be watched from outside while the
@@ -625,18 +625,18 @@ object Tests extends Suite(m"Burdock Tests"):
           while !task.ready do
             if exists(progress) then
               val line: Text = jnf.Files.readString(jnf.Paths.get(progress.s)).nn.tt.trim
-              if line != t"" && !seen.has(line) then seen = line :: seen
+              if line != "" && !seen.has(line) then seen = line :: seen
             snooze(0.05*Second)
           seen.reverse
 
       test(m"the progress file reports the requirements before any download completes"):
         observed match
           case first :: _ => first
-          case _          => t""
-      .assert(_ == t"0 2 0")
+          case _          => ""
+      .assert(_ == "0 2 0")
 
       test(m"the progress file reports the first requirement's completion"):
-        observed.exists(_.starts(t"1 2 "))
+        observed.exists(_.starts("1 2 "))
       .assert(_ == true)
 
       server.stop(0)

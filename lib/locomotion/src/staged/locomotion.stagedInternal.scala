@@ -163,15 +163,15 @@ object stagedInternal:
 
   private val primitiveClasses: scala.collection.immutable.Map[String, Class[?]] =
     scala.collection.immutable.Map
-      ( "scala.Int"     -> classOf[Int],
-        "scala.Long"    -> classOf[Long],
-        "scala.Double"  -> classOf[Double],
-        "scala.Float"   -> classOf[Float],
-        "scala.Boolean" -> classOf[Boolean],
-        "scala.Short"   -> classOf[Short],
-        "scala.Byte"    -> classOf[Byte],
-        "scala.Char"    -> classOf[Char],
-        "scala.Unit"    -> classOf[Unit] )
+      ( ("scala.Int": String)     -> classOf[Int],
+        ("scala.Long": String)    -> classOf[Long],
+        ("scala.Double": String)  -> classOf[Double],
+        ("scala.Float": String)   -> classOf[Float],
+        ("scala.Boolean": String) -> classOf[Boolean],
+        ("scala.Short": String)   -> classOf[Short],
+        ("scala.Byte": String)    -> classOf[Byte],
+        ("scala.Char": String)    -> classOf[Char],
+        ("scala.Unit": String)    -> classOf[Unit] )
 
   // The binary name of a class symbol: package segments joined with dots,
   // enclosing type segments with dollars.
@@ -183,10 +183,10 @@ object stagedInternal:
 
       if owner.isPackageDef then
         val prefix = owner.fullName
-        if prefix == "<empty>" then symbol.name else prefix+"."+symbol.name
+        if prefix == "<empty>" then symbol.name else prefix+(".": String)+symbol.name
       else
         val ownerName = build(if owner.isClassDef then owner else owner.owner)
-        ownerName+"$"+symbol.name
+        ownerName+("$": String)+symbol.name
 
     build(symbol)
 
@@ -569,7 +569,7 @@ object stagedInternal:
     if !productSupported(tpe) then
       report.errorAndAbort
         (s"locomotion: ${tpe.show} is not an inlinable message (a non-generic, top-level or " +
-          "object-nested case class with a single parameter list and distinct, statically " +
+          ("object-nested case class with a single parameter list and distinct, statically ": String) +
           "readable field numbers); use a `Decodable in Protobuf`")
 
     val classSymbol = tpe.classSymbol.get
@@ -588,10 +588,10 @@ object stagedInternal:
       val owner = Symbol.spliceOwner
 
       val slots = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "slot"+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, ("slot": String)+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
 
       val seens = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "seen"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+        Symbol.newVal(owner, ("seen": String)+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
 
       def zero(fieldType: TypeRepr): Term =
         if fieldType =:= TypeRepr.of[Int] then Literal(IntConstant(0))
@@ -652,7 +652,7 @@ object stagedInternal:
                 TypeRepr.of[scm.Builder].appliedTo(List(elementType, fieldTypes(index)))
 
               Some(index -> Symbol.newVal
-                (owner, "builder"+index, builderType, Flags.EmptyFlags, Symbol.noSymbol))
+                (owner, ("builder": String)+index, builderType, Flags.EmptyFlags, Symbol.noSymbol))
 
             case _ =>
               None
@@ -663,7 +663,7 @@ object stagedInternal:
           plans(index) match
             case Plan.Seam =>
               Some(index -> Symbol.newVal
-                ( owner, "buffer"+index, TypeRepr.of[scm.ListBuffer[Protobuf]],
+                ( owner, ("buffer": String)+index, TypeRepr.of[scm.ListBuffer[Protobuf]],
                   Flags.EmptyFlags, Symbol.noSymbol ))
 
             case _ =>
@@ -702,13 +702,13 @@ object stagedInternal:
             case Plan.Leaf(_) | Plan.Nested(_) | Plan.NestedRuntime(_) | Plan.OptionalLeaf(_)
                | Plan.OptionalNested(_, _) =>
               Some(index -> Symbol.newMethod
-                ( owner, "readField"+index,
+                ( owner, ("readField": String)+index,
                   MethodType(List("code"))(_ => List(TypeRepr.of[Int]),
                     _ => fieldTypes(index)) ))
 
             case Plan.Gather(_, _) =>
               Some(index -> Symbol.newMethod
-                ( owner, "readOccurrence"+index,
+                ( owner, ("readOccurrence": String)+index,
                   MethodType(List("code"))(_ => List(TypeRepr.of[Int]),
                     _ => TypeRepr.of[Unit]) ))
 

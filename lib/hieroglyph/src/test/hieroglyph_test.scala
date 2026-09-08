@@ -48,7 +48,7 @@ extends Error(m"${items.size} decoding issues"):
 
 object Tests extends Suite(m"Hieroglyph tests"):
   def run(): Unit =
-    val japanese = t"平ぱ記動テ使村方島おゃぎむ万離ワ学つス携"
+    val japanese = "平ぱ記動テ使村方島おゃぎむ万離ワ学つス携"
     val japaneseData = Array.unsafeFrozen(japanese.s.getBytes("UTF-8").nn)
 
     suite(m"Character widths"):
@@ -82,12 +82,12 @@ object Tests extends Suite(m"Hieroglyph tests"):
       test(m"Decode invalid UTF-8 sequence, skipping errors"):
         import textSanitizers.skipSanitizer
         charDecoders.utf8Decoder.decoded(badUtf8)
-      . assert(_ == t"-10")
+      . assert(_ == "-10")
 
       test(m"Decode invalid UTF-8 with question mark substitution"):
         import textSanitizers.substituteSanitizer
         charDecoders.utf8Decoder.decoded(badUtf8)
-      . assert(_ == t"-?10")
+      . assert(_ == "-?10")
 
       test(m"Decode invalid UTF-8 sequence, throwing exception"):
         import textSanitizers.strictSanitizer
@@ -129,14 +129,14 @@ object Tests extends Suite(m"Hieroglyph tests"):
       . assert(_.items == List((1, CharDecoder.Error(1, enc"UTF-8")), (3, CharDecoder.Error(3, enc"UTF-8"))))
 
       test(m"Decoded text substitutes the replacement character at each error"):
-        var text: Text = t""
+        var text: Text = ""
         validate[CharDecoder.Focus](DecodeIssues()):
           case error: CharDecoder.Error => accrual + (prior.let(_.position).or(0), error)
         . protect:
             import textSanitizers.accrueSanitizer
             text = charDecoders.utf8Decoder.decoded(worseUtf8)
         text
-      . assert(_ == t"-?1?0")
+      . assert(_ == "-?1?0")
 
     suite(m"Compile-time tests"):
       test(m"Check that an invalid encoding produces an error"):
@@ -207,15 +207,15 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
     suite(m"Grapheme cluster boundaries"):
       test(m"empty string yields single sentinel"):
-        GraphemeBreak.boundaries(t"").to[List]
+        GraphemeBreak.boundaries("").to[List]
       . assert(_ == List(0))
 
       test(m"ASCII string boundaries"):
-        GraphemeBreak.boundaries(t"abc").to[List]
+        GraphemeBreak.boundaries("abc").to[List]
       . assert(_ == List(0, 1, 2, 3))
 
       test(m"CR LF stays one cluster"):
-        GraphemeBreak.boundaries(t"a\r\nb").to[List]
+        GraphemeBreak.boundaries("a\r\nb").to[List]
       . assert(_ == List(0, 1, 3, 4))
 
       test(m"combining diaeresis joins with space"):
@@ -228,7 +228,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
       // UAX #29 conformance against the official GraphemeBreakTest.txt fixture.
       test(m"UAX #29 conformance"):
-        val resourcePath = "/hieroglyph/GraphemeBreakTest.txt"
+        val resourcePath: String = "/hieroglyph/GraphemeBreakTest.txt"
         val stream = getClass.getResourceAsStream(resourcePath).nn
         val lines = scala.io.Source.fromInputStream(stream).getLines().to(List)
 
@@ -265,46 +265,46 @@ object Tests extends Suite(m"Hieroglyph tests"):
       val root = CollationTable.root
 
       test(m"Hangul syllable decomposes arithmetically"):
-        Normalization.decompose(t"각").to[List]
+        Normalization.decompose("각").to[List]
       . assert(_ == List(0x1100, 0x1161, 0x11a8))
 
       test(m"é decomposes to e plus combining acute"):
-        Normalization.decompose(t"é").to[List]
+        Normalization.decompose("é").to[List]
       . assert(_ == List('e'.toInt, 0x301))
 
       test(m"combining marks reorder canonically by combining class"):
-        Normalization.decompose(t"ą́").to[List]
+        Normalization.decompose("ą́").to[List]
       . assert(_ == List('a'.toInt, 0x328, 0x301))
 
       test(m"æ expands to sort between ae and af"):
-        (root.compare(t"æ", t"ae") > 0, root.compare(t"æ", t"af") < 0)
+        (root.compare("æ", "ae") > 0, root.compare("æ", "af") < 0)
       . assert(_ == (true, true))
 
       test(m"accents order before case: cafe < café < caff"):
-        (root.compare(t"cafe", t"café") < 0, root.compare(t"café", t"caff") < 0)
+        (root.compare("cafe", "café") < 0, root.compare("café", "caff") < 0)
       . assert(_ == (true, true))
 
       test(m"case is a tertiary difference: abc < ABC"):
-        root.compare(t"abc", t"ABC") < 0
+        root.compare("abc", "ABC") < 0
       . assert(_ == true)
 
       test(m"unmapped CJK take implicit weights in codepoint order"):
-        root.compare(t"丂", t"中") < 0
+        root.compare("丂", "中") < 0
       . assert(_ == true)
 
       test(m"tailored ó sorts primary-after o and before p"):
         val polish = root.tailor(List(CollationRule(t"o", t"ó", CollationLevel.Primary)))
 
-        ( polish.compare(t"oz", t"ó") < 0,
-          polish.compare(t"ó", t"p") < 0,
-          root.compare(t"ó", t"oz") < 0 )
+        ( polish.compare("oz", "ó") < 0,
+          polish.compare("ó", "p") < 0,
+          root.compare("ó", "oz") < 0 )
       . assert(_ == (true, true, true))
 
       // UTS #10 conformance against the official CollationTest fixture: every line's sort
       // key must be no greater than its successor's, with ties broken by comparing the NFD
       // forms of the two lines by codepoint.
       test(m"UTS #10 conformance (non-ignorable)"):
-        val resourcePath = "/hieroglyph/CollationTest_NON_IGNORABLE_SHORT.txt"
+        val resourcePath: String = "/hieroglyph/CollationTest_NON_IGNORABLE_SHORT.txt"
         val stream = getClass.getResourceAsStream(resourcePath).nn
         val lines = scala.io.Source.fromInputStream(stream).getLines().to(List)
 

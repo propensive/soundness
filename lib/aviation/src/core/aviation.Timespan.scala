@@ -73,12 +73,12 @@ object Timespan:
   // ISO-8601 duration text, e.g. `P1Y2M3DT4H5M6S`. Zero components are omitted; the all-zero span
   // is `PT0S`. Fractional seconds render with a decimal point.
   private def renderDuration(span: Timespan): Text =
-    def part(value: Int, unit: Text): Text = if value == 0 then t"" else t"$value$unit"
+    def part(value: Int, unit: Text): Text = if value == 0 then "" else t"$value$unit"
 
     val seconds = span.seconds.value
 
     val secondsText =
-      if seconds == 0.0 then t""
+      if seconds == 0.0 then ""
       else if seconds == seconds.toLong.toDouble then t"${seconds.toLong}S"
       else t"${seconds.toString.tt}S"
 
@@ -88,8 +88,8 @@ object Timespan:
 
     val time = List(part(span.hours, t"H"), part(span.minutes, t"M"), secondsText).join
 
-    if date == t"" && time == t"" then t"PT0S"
-    else if time == t"" then t"P$date"
+    if date == "" && time == "" then "PT0S"
+    else if time == "" then t"P$date"
     else t"P${date}T$time"
 
   // The ISO-8601 duration is also the inspection form: it is self-identifying, complete (a

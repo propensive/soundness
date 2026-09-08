@@ -58,31 +58,31 @@ object Stroke:
 
   given inspectable: [stroke <: Stroke] => stroke is Inspectable =
     _.absolve match
-      case Close                        => t"Close"
-      case MoveTo(point)                => form(t"MoveTo", point.inspect)
-      case Move(shift)                  => form(t"Move", shift.inspect)
-      case DrawTo(point)                => form(t"DrawTo", point.inspect)
-      case Draw(shift)                  => form(t"Draw", shift.inspect)
-      case QuadraticTo(ctrl1, point)    => form(t"QuadraticTo", optional(ctrl1), point.inspect)
-      case Quadratic(ctrl1, shift)      => form(t"Quadratic", optional(ctrl1), shift.inspect)
+      case Close                        => "Close"
+      case MoveTo(point)                => form("MoveTo", point.inspect)
+      case Move(shift)                  => form("Move", shift.inspect)
+      case DrawTo(point)                => form("DrawTo", point.inspect)
+      case Draw(shift)                  => form("Draw", shift.inspect)
+      case QuadraticTo(ctrl1, point)    => form("QuadraticTo", optional(ctrl1), point.inspect)
+      case Quadratic(ctrl1, shift)      => form("Quadratic", optional(ctrl1), shift.inspect)
 
       case CubicTo(ctrl1, ctrl2, point) =>
-        form(t"CubicTo", optional(ctrl1), ctrl2.inspect, point.inspect)
+        form("CubicTo", optional(ctrl1), ctrl2.inspect, point.inspect)
 
       case Cubic(ctrl1, ctrl2, shift) =>
-        form(t"Cubic", optional(ctrl1), ctrl2.inspect, shift.inspect)
+        form("Cubic", optional(ctrl1), ctrl2.inspect, shift.inspect)
 
       case ArcTo(rx, ry, angle, largeArc, sweep, point) =>
         form
-         ( t"ArcTo", rx.inspect, ry.inspect, angle.inspect, largeArc.inspect, sweep.inspect,
+         ( "ArcTo", rx.inspect, ry.inspect, angle.inspect, largeArc.inspect, sweep.inspect,
            point.inspect )
 
       case Arc(rx, ry, angle, largeArc, sweep, shift) =>
         form
-         ( t"Arc", rx.inspect, ry.inspect, angle.inspect, largeArc.inspect, sweep.inspect,
+         ( "Arc", rx.inspect, ry.inspect, angle.inspect, largeArc.inspect, sweep.inspect,
            shift.inspect )
 
-  private def bit(value: Boolean): Text = if value then t"1" else t"0"
+  private def bit(value: Boolean): Text = if value then "1" else "0"
 
   given encodable: Stroke is Encodable in Text =
     _.absolve match
@@ -92,7 +92,7 @@ object Stroke:
       case Draw(delta) if delta.dy == 0.0f      => t"h ${delta.dx.toDouble}"
       case Draw(shift)                          => t"l $shift"
       case DrawTo(point)                        => t"L $point"
-      case Close                                => t"Z"
+      case Close                                => "Z"
       case CubicTo(Unset, ctrl2, point)         => t"S $ctrl2, $point"
       case Cubic(Unset, ctrl2, shift)           => t"s $ctrl2, $shift"
       case CubicTo(ctrl1: Point, ctrl2, point)  => t"C $ctrl1, $ctrl2, $point"

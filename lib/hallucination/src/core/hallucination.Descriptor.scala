@@ -84,7 +84,7 @@ case class Descriptor(entries: List[Descriptor.Entry]):
     recur(entries, totalBits)
 
   def has(label: Text): Boolean = entries.exists(_.label == label)
-  def hasAlpha: Boolean = has("alpha".tt)
+  def hasAlpha: Boolean = has("alpha")
 
   // The channel positions of each colour model the layout might carry, resolved once per
   // descriptor: present exactly when *every* channel of the group is present. The per-pixel
@@ -92,20 +92,20 @@ case class Descriptor(entries: List[Descriptor.Entry]):
   // without `green`) degrades to the next fallback path instead of panicking, and the
   // per-pixel bodies perform no channel lookups and no allocation.
   private lazy val rgbPositions: Optional[((Int, Int), (Int, Int), (Int, Int))] =
-    locate("red".tt).let: red =>
-      locate("green".tt).let: green =>
-        locate("blue".tt).let: blue =>
+    locate("red").let: red =>
+      locate("green").let: green =>
+        locate("blue").let: blue =>
           (red, green, blue)
 
   private lazy val cmykPositions: Optional[((Int, Int), (Int, Int), (Int, Int), (Int, Int))] =
-    locate("cyan".tt).let: cyan =>
-      locate("magenta".tt).let: magenta =>
-        locate("yellow".tt).let: yellow =>
-          locate("key".tt).let: key =>
+    locate("cyan").let: cyan =>
+      locate("magenta").let: magenta =>
+        locate("yellow").let: yellow =>
+          locate("key").let: key =>
             (cyan, magenta, yellow, key)
 
-  private lazy val alphaPosition: Optional[(Int, Int)] = locate("alpha".tt)
-  private lazy val greyPosition: Optional[(Int, Int)] = locate("grey".tt)
+  private lazy val alphaPosition: Optional[(Int, Int)] = locate("alpha")
+  private lazy val greyPosition: Optional[(Int, Int)] = locate("grey")
 
   private def component(word: Long, position: (Int, Int)): Int =
     val (shift, depth) = position

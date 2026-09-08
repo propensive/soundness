@@ -76,7 +76,7 @@ class InlineBoard(val width: Int, val height: Int)(using Stdio) extends Board:
       val char = string.charAt(i)
 
       if char == '\n' then
-        Out.print(t"\r\n")
+        Out.print("\r\n")
         row += 1
         column = 0
       else

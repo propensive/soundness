@@ -69,7 +69,7 @@ object DepsDev:
     val result: QueryResult = mute[Http.Event](query.fetch().receive[Json]).as[QueryResult]
 
     val key: VersionKey =
-      result.results.map(_.version.versionKey).seek(_.system == t"MAVEN")
+      result.results.map(_.version.versionKey).seek(_.system == "MAVEN")
       . or(abort(Unresolved()))
 
     // `name` is `group:artifact`; the Maven Central path uses `/` for the group.

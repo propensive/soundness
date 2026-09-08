@@ -173,11 +173,11 @@ object Tels extends Tels2:
   // schema-of-schemas and any user schema that references them via
   // `Reference(TypeName)`.
   object Builtin:
-    val String:     Text = t"String"
-    val Identifier: Text = t"Identifier"
-    val TypeName:   Text = t"TypeName"
-    val Sigil:      Text = t"Sigil"
-    val Flag:       Text = t"Flag"
+    val String:     Text = "String"
+    val Identifier: Text = "Identifier"
+    val TypeName:   Text = "TypeName"
+    val Sigil:      Text = "Sigil"
+    val Flag:       Text = "Flag"
 
   // Hand-encoded `tels` axiom per §20.5 of the TEL specification.
   // This Scala literal mirrors the canonical `tels.tel` document
@@ -477,7 +477,8 @@ object Tels extends Tels2:
     // §8.1: compose the base plus exactly the named layer selection.
     // Unknown names and order violations are raised by `select`.
     def compose(schema: Tels, selection: List[Text])
-    :   Tels raises Tel.Error raises Resolution.Error =
+      (using Tactic[Tel.Error], Tactic[Resolution.Error])
+    :   Tels =
 
       val chosen = select(schema, selection)
       var composed = schema.copy(layers = Array.empty)
@@ -493,7 +494,8 @@ object Tels extends Tels2:
     // out-of-order or duplicate selection is E124, so each selected
     // layer set has exactly one canonical pragma spelling.
     def select(schema: Tels, selection: List[Text])
-    :   List[Tels.Layer] raises Tel.Error raises Resolution.Error =
+      (using Tactic[Tel.Error], Tactic[Resolution.Error])
+    :   List[Tels.Layer] =
 
       val declared = schema.layers.readable
       val chosen = scala.collection.mutable.ListBuffer.empty[Tels.Layer]
@@ -884,7 +886,8 @@ object Tels extends Tels2:
     // selected layers; the post-composition checks run against the
     // composition in use.
     def validate(schema: Tels, selection: List[Text])
-    :   Tels raises Tel.Error raises Resolution.Error =
+      (using Tactic[Tel.Error], Tactic[Resolution.Error])
+    :   Tels =
 
       checkBase(schema)
       checkComposed(Layers.compose(schema, selection))
@@ -976,7 +979,7 @@ object Tels extends Tels2:
         val seen = scala.collection.mutable.HashSet.empty[Text]
 
         select.variants.each: variant =>
-          if variant.keyword == t"tel" then abort(Tel.Error(Reason.TelKeywordReserved))
+          if variant.keyword == "tel" then abort(Tel.Error(Reason.TelKeywordReserved))
           if !seen.add(variant.keyword) then abort(Tel.Error(Reason.DuplicateKeywordInStruct))
 
       composed
@@ -988,7 +991,7 @@ object Tels extends Tels2:
     private def sigilValid(sigil: Char): Boolean =
       !(sigil == ' ' || sigil == '\n' || sigil == '\r' || sigil == '\t')
         && !sigil.isLetterOrDigit
-        && "()[]{}<>".indexOf(sigil.toInt) < 0
+        && s"()[]{}<>".indexOf(sigil.toInt) < 0
         && sigil != '+'
 
     // The Scalar a type resolves to through the composed namespace and
@@ -1019,7 +1022,7 @@ object Tels extends Tels2:
       // E201: keyword uniqueness spans the Field keywords and the variant
       // keywords of SelectRef-referenced SelectDefinitions alike.
       def claim(keyword: Text): Unit raises Tel.Error =
-        if keyword == t"tel" then abort(Tel.Error(Reason.TelKeywordReserved))
+        if keyword == "tel" then abort(Tel.Error(Reason.TelKeywordReserved))
         if !keywords.add(keyword) then abort(Tel.Error(Reason.DuplicateKeywordInStruct))
 
       struct.members.each:
@@ -1192,10 +1195,10 @@ object Tels extends Tels2:
 
       val builtinScalars =
         Array
-          ( ScalarDefinition(t"Identifier", Array(t"identifier")),
-            ScalarDefinition(t"TypeName",   Array(t"type-name")),
-            ScalarDefinition(t"Sigil",      Array(t"sigil")),
-            ScalarDefinition(t"String",     Array(t"string")) )
+          ( ScalarDefinition("Identifier", Array("identifier")),
+            ScalarDefinition("TypeName",   Array("type-name")),
+            ScalarDefinition("Sigil",      Array("sigil")),
+            ScalarDefinition("String",     Array("string")) )
 
       Tels
         ( name     = name.or(abort(Tel.Error(Reason.RequiredMemberAbsent))),
@@ -1217,14 +1220,14 @@ object Tels extends Tels2:
       c.children.bind(_.compounds)
 
     private def parseType(name: Text): Type =
-      if name == t"Flag" then Flag else Reference(name)
+      if name == "Flag" then Flag else Reference(name)
 
     // A Definition's name: the first inline atom, or (per the §20.5
     // atom/compound interchangeability rule) an explicit `name <value>`
     // child compound.
     private def nameOf(c: Tel.Compound): Optional[Text] =
       firstAtomText(c).or:
-        childCompounds(c).seek(_.keyword == t"name").let(scalarAtomText(_))
+        childCompounds(c).seek(_.keyword == "name").let(scalarAtomText(_))
 
     // The text of a scalar-valued child compound, taking its first atom
     // (inline, source, or literal) — used for both `default` and the §20
@@ -1238,7 +1241,7 @@ object Tels extends Tels2:
     // The optional §20 `description` of a Definition/Field/Variant: the
     // text of its `description` child compound, or `Unset` if absent.
     private def descriptionOf(children: Array[Tel.Compound]^{}): Optional[Text] =
-      children.seek(_.keyword == t"description").let(scalarAtomText(_))
+      children.seek(_.keyword == "description").let(scalarAtomText(_))
 
     private def parseRecord(c: Tel.Compound): RecordDefinition raises Tel.Error =
       val recName = nameOf(c).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
@@ -1251,21 +1254,21 @@ object Tels extends Tels2:
       val children = childCompounds(c)
 
       val validators = children.bind: cc =>
-        if cc.keyword == t"validate" then atomTexts(cc) else Array.empty[Text]
+        if cc.keyword == "validate" then atomTexts(cc) else Array.empty[Text]
 
       // §21.8: one RE2 pattern per `pattern` child, in declaration order. The
       // value is read with `scalarAtomText` rather than `atomTexts` because
       // §20.5 makes `pattern` a compound child whose regex may be carried as a
       // source atom (§14) when it contains a hard-space run.
       val patterns = children.bind: cc =>
-        if cc.keyword == t"pattern"
+        if cc.keyword == "pattern"
         then scalarAtomText(cc).lay(Array.empty[Text])(Array(_))
         else Array.empty[Text]
 
       var encoding: Optional[Text] = Unset
 
       children.each: cc =>
-        if cc.keyword == t"encoding" && encoding.absent then encoding = firstAtomText(cc)
+        if cc.keyword == "encoding" && encoding.absent then encoding = firstAtomText(cc)
 
       ScalarDefinition(scName, validators, descriptionOf(children), encoding, patterns)
 
@@ -1440,15 +1443,15 @@ object Tels extends Tels2:
 
       val builtinScalars =
         Array
-          ( ScalarDefinition(t"Identifier", Array(t"identifier")),
-            ScalarDefinition(t"TypeName",   Array(t"type-name")),
-            ScalarDefinition(t"Sigil",      Array(t"sigil")),
-            ScalarDefinition(t"String",     Array(t"string")) )
+          ( ScalarDefinition("Identifier", Array("identifier")),
+            ScalarDefinition("TypeName",   Array("type-name")),
+            ScalarDefinition("Sigil",      Array("sigil")),
+            ScalarDefinition("String",     Array("string")) )
 
       Tels(name, document, layers, sigil, records, Array.frozen(builtinScalars.readable ++ scalars.readable), selects)
 
     private def typeFromText(name: Text): Type =
-      if name == t"Flag" then Flag else Reference(name)
+      if name == "Flag" then Flag else Reference(name)
 
     private def childrenOf(element: Tel.Element): Array[Tel.Element]^{} = element match
       case Tel.Element.Node(_, _, c) => c

@@ -40,32 +40,32 @@ object Tests extends Suite(m"Geodesy tests"):
       val angle = 45.deg
       angle.show
 
-    . assert(_ == t"45.0°")
+    . assert(_ == "45.0°")
 
     test(m"render a simple angle"):
       val angle = Angle.degrees(45)
       angle.show
 
-    . assert(_ == t"45.0°")
+    . assert(_ == "45.0°")
 
     test(m"render an angle to 1 decimal place"):
       val angle = Angle.degrees(7.25)
       angle.show
 
-    . assert(_ == t"7.3°")
+    . assert(_ == "7.3°")
 
     test(m"render zero degrees"):
       val angle = Angle.degrees(0)
       angle.show
 
-    . assert(_ == t"0.0°")
+    . assert(_ == "0.0°")
 
     // Inspection keeps the precision which `show` rounds away.
     test(m"inspect an angle at full precision"):
       val angle = Angle.degrees(7.25)
       angle.inspect
 
-    . assert(_ == t"7.25°")
+    . assert(_ == "7.25°")
 
     // A missing `Inspectable` never fails to compile — `derived` substitutes a marked
     // `toString`, `Showable` or `Encodable` rendering — so coverage is held in place by
@@ -85,19 +85,19 @@ object Tests extends Suite(m"Geodesy tests"):
     test(m"inspect a location as a pair of angles"):
       Location(Angle.degrees(51.5), Angle.degrees(0.126)).inspect
 
-    . assert(_ == t"⌖51.4999999718275°,0.12600003747548583°")
+    . assert(_ == "⌖51.4999999718275°,0.12600003747548583°")
 
     test(m"render principal angle"):
       val angle = Angle.degrees(375)
       angle.principal.show
 
-    . assert(_ == t"15.0°")
+    . assert(_ == "15.0°")
 
     test(m"render canonical angle"):
       val angle = Angle.degrees(355)
       angle.canonical.show
 
-    . assert(_ == t"-5.0°")
+    . assert(_ == "-5.0°")
 
     suite(m"Compass.points8"):
       test(m"contains eight points"):

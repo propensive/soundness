@@ -49,7 +49,7 @@ class HebrewCalendar() extends Calendar:
   type MonthUnit = HebrewMonth.type
 
   private val epoch: Int = 347998
-  val name: Text = t"Hebrew"
+  val name: Text = "Hebrew"
 
   override def monthName(month: HebrewMonth): Text = month.show
 

@@ -128,7 +128,7 @@ object WebIdl:
     // selectors), `new(…)` for constructors, and the special-operation keyword in brackets for
     // anonymous getters, setters and deleters.
     def selector: Text =
-      def signature: Text = arguments.map(_.typed.text).join(t",")
+      def signature: Text = arguments.map(_.typed.text).join(",")
 
       kind match
         case Member.Kind.Attribute | Member.Kind.Constant => name
@@ -238,7 +238,7 @@ object WebIdl:
 
     private def fail(detail: Text, tokens: SList[String]): Nothing raises Error =
       val near = Text(tokens.take(5).mkString(" "))
-      abort(Error(Reason.Syntax(detail, if near.s.isEmpty then t"the end" else near)))
+      abort(Error(Reason.Syntax(detail, if near.s.isEmpty then "the end" else near)))
 
     private def unsupported(construct: Text): Nothing raises Error =
       abort(Error(Reason.Unsupported(construct)))
@@ -311,7 +311,7 @@ object WebIdl:
             group(rest, depth, acc :+ name.tt)
 
           case _ :: rest => group(rest, depth, acc)
-          case SNil   => fail(t"an extended attribute is unterminated", tokens)
+          case SNil   => fail("an extended attribute is unterminated", tokens)
 
       tokens match
         case "[" :: rest =>
@@ -335,23 +335,23 @@ object WebIdl:
     private def baseType(tokens: SList[String]): (Foreign.Type, SList[String]) raises Error =
       tokens match
         case "(" :: rest                            => union(rest, SList())
-        case "unsigned" :: "long" :: "long" :: rest => (Foreign.Type.Named(t"u64"), rest)
-        case "unsigned" :: "long" :: rest           => (Foreign.Type.Named(t"u32"), rest)
-        case "unsigned" :: "short" :: rest          => (Foreign.Type.Named(t"u16"), rest)
-        case "long" :: "long" :: rest               => (Foreign.Type.Named(t"s64"), rest)
-        case "long" :: rest                         => (Foreign.Type.Named(t"s32"), rest)
-        case "short" :: rest                        => (Foreign.Type.Named(t"s16"), rest)
-        case "byte" :: rest                         => (Foreign.Type.Named(t"s8"), rest)
-        case "octet" :: rest                        => (Foreign.Type.Named(t"u8"), rest)
-        case "unrestricted" :: "float" :: rest      => (Foreign.Type.Named(t"f32"), rest)
-        case "unrestricted" :: "double" :: rest     => (Foreign.Type.Named(t"f64"), rest)
-        case "float" :: rest                        => (Foreign.Type.Named(t"f32"), rest)
-        case "double" :: rest                       => (Foreign.Type.Named(t"f64"), rest)
-        case "boolean" :: rest                      => (Foreign.Type.Named(t"boolean"), rest)
-        case "void" :: rest                         => (Foreign.Type.Named(t"undefined"), rest)
+        case "unsigned" :: "long" :: "long" :: rest => (Foreign.Type.Named("u64"), rest)
+        case "unsigned" :: "long" :: rest           => (Foreign.Type.Named("u32"), rest)
+        case "unsigned" :: "short" :: rest          => (Foreign.Type.Named("u16"), rest)
+        case "long" :: "long" :: rest               => (Foreign.Type.Named("s64"), rest)
+        case "long" :: rest                         => (Foreign.Type.Named("s32"), rest)
+        case "short" :: rest                        => (Foreign.Type.Named("s16"), rest)
+        case "byte" :: rest                         => (Foreign.Type.Named("s8"), rest)
+        case "octet" :: rest                        => (Foreign.Type.Named("u8"), rest)
+        case "unrestricted" :: "float" :: rest      => (Foreign.Type.Named("f32"), rest)
+        case "unrestricted" :: "double" :: rest     => (Foreign.Type.Named("f64"), rest)
+        case "float" :: rest                        => (Foreign.Type.Named("f32"), rest)
+        case "double" :: rest                       => (Foreign.Type.Named("f64"), rest)
+        case "boolean" :: rest                      => (Foreign.Type.Named("boolean"), rest)
+        case "void" :: rest                         => (Foreign.Type.Named("undefined"), rest)
 
         case ("DOMString" | "USVString" | "ByteString" | "CSSOMString") :: rest =>
-          (Foreign.Type.Named(t"string"), rest)
+          (Foreign.Type.Named("string"), rest)
 
         case name :: "<" :: rest =>
           val (args, after) = typeArguments(rest, SList())
@@ -360,7 +360,7 @@ object WebIdl:
         case name :: rest if name.headOption.exists(_.isLetter) =>
           (Foreign.Type.Named(name.tt), rest)
 
-        case _ => fail(t"a type was expected", tokens)
+        case _ => fail("a type was expected", tokens)
 
     private def union(tokens: SList[String], acc: SList[Foreign.Type])
     :   (Foreign.Type, SList[String]) raises Error =
@@ -370,7 +370,7 @@ object WebIdl:
       rest match
         case "or" :: more => union(more, member :: acc)
         case ")" :: more  => (Foreign.Type.Union(((member :: acc).reverse).to(List)), more)
-        case _            => fail(t"a union member must be followed by `or` or `)`", rest)
+        case _            => fail("a union member must be followed by `or` or `)`", rest)
 
     private def typeArguments(tokens: SList[String], acc: SList[Foreign.Type])
     :   (List[Foreign.Type], SList[String]) raises Error =
@@ -380,7 +380,7 @@ object WebIdl:
       rest match
         case "," :: more => typeArguments(more, arg :: acc)
         case ">" :: more => (((arg :: acc).reverse).to(List), more)
-        case _           => fail(t"a type argument must be followed by `,` or `>`", rest)
+        case _           => fail("a type argument must be followed by `,` or `>`", rest)
 
     // --- default values -------------------------------------------------------------------------
 
@@ -425,13 +425,13 @@ object WebIdl:
                 afterDefault match
                   case "," :: more => recur(more, argument :: acc)
                   case ")" :: more => (((argument :: acc).reverse).to(List), more)
-                  case _           => fail(t"an argument must be followed by `,` or `)`", afterDefault)
+                  case _           => fail("an argument must be followed by `,` or `)`", afterDefault)
 
-              case SNil => fail(t"an argument name was expected", afterVariadic)
+              case SNil => fail("an argument name was expected", afterVariadic)
 
       tokens match
         case "(" :: rest => recur(rest, SList())
-        case _           => fail(t"an argument list was expected", tokens)
+        case _           => fail("an argument list was expected", tokens)
 
     private def member(tokens: SList[String])
     :   (Optional[Member], Optional[(Text, List[Foreign.Type])], SList[String]) raises
@@ -445,7 +445,7 @@ object WebIdl:
 
       def semicolon(tokens: SList[String]): SList[String] raises Error = tokens match
         case ";" :: rest => rest
-        case _           => fail(t"a `;` was expected", tokens)
+        case _           => fail("a `;` was expected", tokens)
 
       def attribute(tokens: SList[String], readonly: Boolean)
       :   (Optional[Member], Optional[(Text, List[Foreign.Type])], SList[String]) raises
@@ -461,7 +461,7 @@ object WebIdl:
 
             (member, Unset, semicolon(rest))
 
-          case SNil => fail(t"an attribute name was expected", afterType)
+          case SNil => fail("an attribute name was expected", afterType)
 
       def intrinsic(keyword: Text, tokens: SList[String])
       :   (Optional[Member], Optional[(Text, List[Foreign.Type])], SList[String]) raises
@@ -486,7 +486,7 @@ object WebIdl:
             val (arguments, after) = argumentList(afterType)
 
             val member =
-              Member(Member.Kind.Operation, t"", typed, arguments, static = static,
+              Member(Member.Kind.Operation, "", typed, arguments, static = static,
                   special = special)
 
             (member, Unset, semicolon(after))
@@ -500,7 +500,7 @@ object WebIdl:
 
             (member, Unset, semicolon(after))
 
-          case SNil => fail(t"an operation was expected", afterType)
+          case SNil => fail("an operation was expected", afterType)
 
       afterStatic match
         case "readonly" :: "attribute" :: rest => attribute(rest, readonly = true)
@@ -522,26 +522,26 @@ object WebIdl:
 
               (constant, Unset, semicolon(afterValue))
 
-            case SNil => fail(t"a constant name was expected", afterType)
+            case SNil => fail("a constant name was expected", afterType)
 
         case "constructor" :: rest =>
           val (arguments, after) = argumentList(rest)
 
           val member =
-            Member(Member.Kind.Constructor, t"", Foreign.Type.Named(t"undefined"),
+            Member(Member.Kind.Constructor, "", Foreign.Type.Named("undefined"),
                 arguments)
 
           (member, Unset, semicolon(after))
 
-        case "stringifier" :: ";" :: rest      => (Unset, (t"stringifier", List()), rest)
+        case "stringifier" :: ";" :: rest      => (Unset, ("stringifier", List()), rest)
         case "stringifier" :: rest             => member(rest)
-        case "iterable" :: rest                => intrinsic(t"iterable", rest)
-        case "maplike" :: rest                 => intrinsic(t"maplike", rest)
-        case "setlike" :: rest                 => intrinsic(t"setlike", rest)
-        case "async" :: "iterable" :: rest     => intrinsic(t"async-iterable", rest)
-        case "getter" :: rest                  => operation(rest, t"getter")
-        case "setter" :: rest                  => operation(rest, t"setter")
-        case "deleter" :: rest                 => operation(rest, t"deleter")
+        case "iterable" :: rest                => intrinsic("iterable", rest)
+        case "maplike" :: rest                 => intrinsic("maplike", rest)
+        case "setlike" :: rest                 => intrinsic("setlike", rest)
+        case "async" :: "iterable" :: rest     => intrinsic("async-iterable", rest)
+        case "getter" :: rest                  => operation(rest, "getter")
+        case "setter" :: rest                  => operation(rest, "setter")
+        case "deleter" :: rest                 => operation(rest, "deleter")
         case _                                 => operation(afterStatic, Unset)
 
     private def memberList(tokens: SList[String])
@@ -559,8 +559,8 @@ object WebIdl:
           case "}" :: ";" :: rest =>
             (members.reverse.to(List), intrinsics.reverse.to(List), rest)
 
-          case "}" :: rest => fail(t"a definition must end `};`", rest)
-          case SNil     => fail(t"a definition body is unterminated", tokens)
+          case "}" :: rest => fail("a definition must end `};`", rest)
+          case SNil     => fail("a definition body is unterminated", tokens)
 
           case _ =>
             val (parsed, intrinsic, rest) = member(tokens)
@@ -570,7 +570,7 @@ object WebIdl:
 
       tokens match
         case "{" :: rest => recur(rest, SList(), SList())
-        case _           => fail(t"a definition body was expected", tokens)
+        case _           => fail("a definition body was expected", tokens)
 
     // --- definitions ----------------------------------------------------------------------------
 
@@ -591,7 +591,7 @@ object WebIdl:
             (WebIdl.Definition.Interface(name.tt, parent, exposed, members, intrinsics, partial,
                 mixin, callback), after)
 
-          case SNil => fail(t"an interface name was expected", tokens)
+          case SNil => fail("an interface name was expected", tokens)
 
       def dictionary(tokens: SList[String], partial: Boolean)
       :   (WebIdl.Definition, SList[String]) raises Error =
@@ -601,7 +601,7 @@ object WebIdl:
 
           tokens match
             case "}" :: ";" :: rest => (acc.reverse.to(List), rest)
-            case SNil            => fail(t"a dictionary body is unterminated", tokens)
+            case SNil            => fail("a dictionary body is unterminated", tokens)
 
             case _ =>
               val (_, afterAttrs) = attributes(tokens)
@@ -620,9 +620,9 @@ object WebIdl:
                     case ";" :: more =>
                       fields(more, Field(name.tt, typed, required, default) :: acc)
 
-                    case _ => fail(t"a `;` was expected", afterDefault)
+                    case _ => fail("a `;` was expected", afterDefault)
 
-                case SNil => fail(t"a dictionary member name was expected", afterType)
+                case SNil => fail("a dictionary member name was expected", afterType)
 
         tokens match
           case name :: rest =>
@@ -635,9 +635,9 @@ object WebIdl:
                 val (members, after) = fields(body, SList())
                 (WebIdl.Definition.Dictionary(name.tt, parent, members, partial), after)
 
-              case _ => fail(t"a dictionary body was expected", afterParent)
+              case _ => fail("a dictionary body was expected", afterParent)
 
-          case SNil => fail(t"a dictionary name was expected", tokens)
+          case SNil => fail("a dictionary name was expected", tokens)
 
       afterAttrs match
         case "partial" :: "interface" :: "mixin" :: rest => interface(rest, true, true, false)
@@ -667,7 +667,7 @@ object WebIdl:
               case value :: rest if value.startsWith("\"") =>
                 values(rest, Text(value.substring(1, value.length - 1).nn) :: acc)
 
-              case _ => fail(t"an enumeration value was expected", tokens)
+              case _ => fail("an enumeration value was expected", tokens)
 
           val (list, after) = values(rest, SList())
           (WebIdl.Definition.Enumeration(name.tt, list), after)
@@ -677,7 +677,7 @@ object WebIdl:
 
           afterType match
             case name :: ";" :: more => (WebIdl.Definition.Alias(name.tt, typed), more)
-            case _                   => fail(t"a typedef name and `;` were expected", afterType)
+            case _                   => fail("a typedef name and `;` were expected", afterType)
 
         case "callback" :: name :: "=" :: rest =>
           val (result, afterResult) = typeOf(rest)
@@ -685,13 +685,13 @@ object WebIdl:
 
           after match
             case ";" :: more => (WebIdl.Definition.CallbackFunction(name.tt, result, arguments), more)
-            case _           => fail(t"a `;` was expected", after)
+            case _           => fail("a `;` was expected", after)
 
         case target :: "includes" :: mixin :: ";" :: rest =>
           (WebIdl.Definition.Includes(target.tt, mixin.tt), rest)
 
         case construct :: _ => unsupported(construct.tt)
-        case SNil        => fail(t"a definition was expected", afterAttrs)
+        case SNil        => fail("a definition was expected", afterAttrs)
 
 trait WebIdl extends Ecosystem:
   type Grammar = WebIdlDialect.type

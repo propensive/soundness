@@ -429,7 +429,7 @@ object Git:
   // at `refs/` and is slash-separated, so it maps cleanly onto a Serpentine
   // path. Component-level validation reproduces the rules `git check-ref-format`
   // enforces, expressed as an `Admissible` typeclass.
-  object Refs extends Root(t"refs/"):
+  object Refs extends Root("refs/"):
     type Plane = Git.Refs
 
     // Construct a notes-namespace ref path of the form `refs/notes/<namespace>`.
@@ -450,7 +450,7 @@ object Git:
       Git.Refs / t"tags" / tag
 
     // The default notes namespace used by `git notes` when no `--ref` is given.
-    val defaultNotes: Path on Git.Refs = unsafely(Git.Refs.notes(t"commits"))
+    val defaultNotes: Path on Git.Refs = unsafely(Git.Refs.notes("commits"))
 
     // Serpentine's `/` operator does not invoke an `Admissible`'s `check` at
     // construction time, so the per-segment rules live here and are invoked
@@ -458,11 +458,11 @@ object Git:
     def validateSegment(segment: Text)(using Tactic[Git.RefError]): Unit =
       def fail(reason: Git.RefError.Reason) = abort(Git.RefError(segment, reason))
       if segment.length == 0     then fail(Git.RefError.Reason.EmptySegment)
-      if segment.starts(t".")    then fail(Git.RefError.Reason.LeadingOrTrailingDot)
-      if segment.ends(t".")      then fail(Git.RefError.Reason.LeadingOrTrailingDot)
-      if segment.ends(t".lock")  then fail(Git.RefError.Reason.ReservedSuffix)
-      if segment.contains(t"@{") then fail(Git.RefError.Reason.ReservedSequence)
-      if segment.contains(t"..") then fail(Git.RefError.Reason.DoubleDot)
+      if segment.starts(".")    then fail(Git.RefError.Reason.LeadingOrTrailingDot)
+      if segment.ends(".")      then fail(Git.RefError.Reason.LeadingOrTrailingDot)
+      if segment.ends(".lock")  then fail(Git.RefError.Reason.ReservedSuffix)
+      if segment.contains("@{") then fail(Git.RefError.Reason.ReservedSequence)
+      if segment.contains("..") then fail(Git.RefError.Reason.DoubleDot)
 
       List('*', '[', '\\', ' ', '^', '~', ':', '?', '/').each: ch =>
         if segment.contains(ch) then fail(Git.RefError.Reason.InvalidCharacter)
@@ -474,10 +474,10 @@ object Git:
     given admissible: [text <: Text] => text is Admissible on Git.Refs = _ => ()
 
     given filesystem: Git.Refs is Filesystem:
-      val name: Text = t"Git.Refs"
-      val separator: Text = t"/"
-      val self: Text = t"@"
-      val parent: Text = t".."
+      val name: Text = "Git.Refs"
+      val separator: Text = "/"
+      val self: Text = "@"
+      val parent: Text = ".."
 
     // A validated `Path on Git.Refs` already satisfies every rule git enforces,
     // so it is safe to expose it as an opaque `Refspec` for any operation that
@@ -604,8 +604,8 @@ object Git:
         case r"$name(\S+)\t$url(\S+) \($kind(fetch|push)\)" => (name, url, kind)
 
       val remotes = grouped.to(List).group(_._1).to[List].map: (name, rows) =>
-        val fetch = rows.reap { case (_, url, t"fetch") => url }.or(t"")
-        val push  = rows.reap { case (_, url, t"push")  => url }
+        val fetch = rows.reap { case (_, url, "fetch") => url }.or(t"")
+        val push  = rows.reap { case (_, url, "push")  => url }
         Remote(name, fetch, push)
 
       remotes
@@ -664,7 +664,7 @@ object Git:
                         parents.reverse,
                         author,
                         committer,
-                        parsePem(signature.join(t"\n")),
+                        parsePem(signature.join("\n")),
                         body.reverse )
 
       // A gpgsig block continues on the following one-space-indented lines.
@@ -679,7 +679,7 @@ object Git:
         buffer.to(List)
 
       while lines.hasNext do lines.next() match
-        case t""                 => ()
+        case ""                 => ()
 
         case r"commit $h(.{40})" =>
           flush()
@@ -712,7 +712,7 @@ object Git:
     :   List[ReflogEntry] =
 
       val refArg = ref.lay(sh""): ref => sh"$ref"
-      val format = t"--format=%H %gd %ct %gs"
+      val format = "--format=%H %gd %ct %gs"
 
       sh"$git $repoOptions reflog show $format $refArg".exec[Iterator[Text]]().collect:
         case r"$hash([a-f0-9]{40}) $selector(\S+) $time([0-9]+) $message(.*)" =>
@@ -741,7 +741,7 @@ object Git:
             // not part of the stored note; strip it to round-trip cleanly with
             // bodies passed in to `add` / `append`.
             val raw = sh"$git $repoOptions notes $refArg show $target".exec[Text]()
-            if raw.ends(t"\n") then raw.skip(1, Rtl) else raw
+            if raw.ends("\n") then raw.skip(1, Rtl) else raw
 
           case _ =>
             Unset
@@ -833,10 +833,10 @@ object Git:
 
         case _ =>
           val (block, rest) = remaining.span(_ != t"")
-          block :: blocks(rest.skip(_ == t""))
+          block :: blocks(rest.skip(_ == ""))
 
       val worktrees = blocks(lines).bind: block =>
-        val isBare = block.has(t"bare")
+        val isBare = block.has("bare")
 
         block.sweep:
           case r"worktree $path(.*)" if !isBare =>

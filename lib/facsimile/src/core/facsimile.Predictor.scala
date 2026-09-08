@@ -49,10 +49,10 @@ private[facsimile] object Predictor:
     if predictor <= 1 then data
     else if predictor == 2 then tiff(data, colors, bits, columns)
     else if predictor >= 10 && predictor <= 15 then png(data, colors, bits, columns)
-    else abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"Predictor")))
+    else abort(Pdf.Error(Pdf.Error.Reason.CorruptStream("Predictor")))
 
   private def tiff(data: Data, colors: Int, bits: Int, columns: Int)(using Tactic[Pdf.Error]): Data =
-    if bits != 8 then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"Predictor"))) else
+    if bits != 8 then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream("Predictor"))) else
       val rowLength = colors*columns
       // The row decorrelation is undone in place, so the working copy is built exclusively
       // and frozen once at the end rather than thawed out of `data`.
@@ -139,7 +139,7 @@ private[facsimile] object Predictor:
             i += 1
 
         case _ =>
-          abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"Predictor")))
+          abort(Pdf.Error(Pdf.Error.Reason.CorruptStream("Predictor")))
 
       // A truncated final row yields only the bytes that were present.
       i = 0

@@ -107,12 +107,12 @@ package interpreters:
           commandline.parameters.to[List].bind: (key, values) =>
             val flag = key.value
 
-            if flag.starts(t"--") && flag.contains(t"=")
+            if flag.starts("--") && flag.contains("=")
             then
               val key2 = key.copy(format = Argument.Format.EqualityPrefix)
               val value = key.copy(format = Argument.Format.EqualitySuffix)
               List(key2 -> (List(value) + values))
-            else if flag.starts(t"-") && !flag.starts(t"--") && flag.length > 2
+            else if flag.starts("-") && !flag.starts("--") && flag.length > 2
             then
               if clustering then
                 val init =
@@ -142,8 +142,8 @@ package interpreters:
 
       todo match
         case head :: tail =>
-          if head.value == t"--" then push().copy(postpositional = tail)
-          else if head.value.starts(t"-") then recur(tail, Nil, head, push())
+          if head.value == "--" then push().copy(postpositional = tail)
+          else if head.value.starts("-") then recur(tail, Nil, head, push())
           else
             val commandline2 =
               if head.cursor.present then commandline.copy(focus = current) else commandline

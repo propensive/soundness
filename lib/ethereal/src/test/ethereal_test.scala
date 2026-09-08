@@ -86,15 +86,15 @@ object Tests extends Suite(m"Ethereal Tests"):
             cli:
               arguments match
                 case Nil =>
-                  execute(Out.print(t"ready") yet Exit.Ok)
+                  execute(Out.print("ready") yet Exit.Ok)
 
                 case Argument("args") :: arguments =>
                   execute:
-                    Out.print(arguments.map(_()).join(t"\n")) yet Exit.Ok
+                    Out.print(arguments.map(_()).join("\n")) yet Exit.Ok
 
                 case Argument("lines") :: arguments =>
                   execute:
-                    Out.print(arguments.map(_()).join(t"\n") + t"\n") yet Exit.Ok
+                    Out.print(arguments.map(_()).join("\n") + "\n") yet Exit.Ok
 
                 case Argument("echo") :: text :: Nil =>
                   execute(Out.print(text()) yet Exit.Ok)
@@ -150,7 +150,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                         SignalResponse.Accept
 
                     val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
-                    val text: Text = if raw == null then t"(timeout)" else raw
+                    val text: Text = if raw == null then "(timeout)" else raw
                     Out.print(text) yet Exit.Ok
 
                 case Argument("trap-reject") :: Nil =>
@@ -164,13 +164,13 @@ object Tests extends Suite(m"Ethereal Tests"):
 
                     trap:
                       case Interrupt.Int =>
-                        received.offer(t"outer")
+                        received.offer("outer")
                         SignalResponse.Accept
 
                     trap { case _: UnixSignal => SignalResponse.Defer }
 
                     val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
-                    val text: Text = if raw == null then t"(timeout)" else raw
+                    val text: Text = if raw == null then "(timeout)" else raw
                     Out.print(text) yet Exit.Ok
 
                 case Argument("trap-undefined") :: Nil =>
@@ -194,13 +194,13 @@ object Tests extends Suite(m"Ethereal Tests"):
                     import strategies.throwUnsafely
 
                     Installer.install(force = true, target = dir().as[Path on Linux])
-                    Out.print(t"installed")
+                    Out.print("installed")
                     Exit.Ok
 
                 case _ =>
                   execute(Exit.Fail(1))
 
-            t"finished"
+            "finished"
           }
 
       sh"rm -f $stateDir/fail".exec[Unit]()
@@ -210,12 +210,12 @@ object Tests extends Suite(m"Ethereal Tests"):
           suite(m"Basic invocation"):
             test(m"first invocation prints expected output"):
               sh"$tool echo hello".exec[Text]()
-            .assert(_ == t"hello")
+            .assert(_ == "hello")
 
             test(m"second invocation reuses the daemon"):
               sh"$tool echo hello".exec[Text]()
               sh"$tool echo world".exec[Text]()
-            .assert(_ == t"world")
+            .assert(_ == "world")
 
             test(m"exit code 0 is returned on success"):
               sh"$tool".exec[Exit]()
@@ -232,30 +232,30 @@ object Tests extends Suite(m"Ethereal Tests"):
           suite(m"Argument passing"):
             test(m"single argument is passed through"):
               sh"$tool args one".exec[Text]()
-            .assert(_ == t"one")
+            .assert(_ == "one")
 
             test(m"multiple arguments are passed through"):
               sh"$tool args one two three".exec[Text]()
-            .assert(_ == t"one\ntwo\nthree")
+            .assert(_ == "one\ntwo\nthree")
 
             test(m"argument with spaces is preserved"):
-              val arg = t"hello world"
+              val arg = "hello world"
               sh"$tool args $arg".exec[Text]()
-            .assert(_ == t"hello world")
+            .assert(_ == "hello world")
 
             test(m"empty argument is preserved"):
               sh"$tool args '' something".exec[Text]()
-            .assert(_ == t"\nsomething")
+            .assert(_ == "\nsomething")
 
             test(m"trailing newline in output is preserved"):
               sh"$tool lines one two three".exec[Text]()
-            .assert(_ == t"one\ntwo\nthree\n")
+            .assert(_ == "one\ntwo\nthree\n")
 
           suite(m"Environment forwarding"):
             test(m"environment variable is forwarded"):
-              val env = t"TEST_ETHEREAL_VAR=hello_ethereal"
+              val env = "TEST_ETHEREAL_VAR=hello_ethereal"
               sh"env $env $tool env TEST_ETHEREAL_VAR".exec[Text]()
-            .assert(_ == t"hello_ethereal")
+            .assert(_ == "hello_ethereal")
 
           suite(m"Working directory"):
             test(m"working directory is forwarded"):
@@ -265,7 +265,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           suite(m"Stderr forwarding"):
             test(m"stderr output is forwarded"):
               sh"$tool stderr 'error message'".exec[Stderr]().text.trim
-            .assert(_ == t"error message")
+            .assert(_ == "error message")
 
           suite(m"Interrupt forwarding"):
             test(m"SIGTERM causes the launcher to exit"):
@@ -282,7 +282,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               snooze(0.1*Second)
               sh"kill -WINCH ${proc.pid.value}".exec[Unit]()
               proc.await(3*Second)
-            . assert(_ == t"WINCH")
+            . assert(_ == "WINCH")
 
             test(m"SIGUSR1 is forwarded to the application"):
               val proc = sh"$tool signal".fork[Text]()
@@ -290,7 +290,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               sh"kill -USR1 ${proc.pid.value}".exec[Unit]()
               proc.await(3*Second)
 
-            . assert(_ == t"USR1")
+            . assert(_ == "USR1")
 
             test(m"SIGUSR2 is forwarded to the application"):
               val proc = sh"$tool signal".fork[Text]()
@@ -298,7 +298,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               sh"kill -USR2 ${proc.pid.value}".exec[Unit]()
               proc.await(3*Second)
 
-            . assert(_ == t"USR2")
+            . assert(_ == "USR2")
 
             test(m"SIGHUP is forwarded to the application"):
               val proc = sh"$tool signal".fork[Text]()
@@ -306,7 +306,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               sh"kill -HUP ${proc.pid.value}".exec[Unit]()
               proc.await(3*Second)
 
-            . assert(_ == t"HUP")
+            . assert(_ == "HUP")
 
             test(m"SIGINT is forwarded to the application"):
               val proc = sh"$tool signal".fork[Text]()
@@ -314,7 +314,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               sh"kill -INT ${proc.pid.value}".exec[Unit]()
               proc.await(3*Second)
 
-            . assert(_ == t"INT")
+            . assert(_ == "INT")
 
             test(m"trap returning Reject lets the launcher fall back to OS default"):
               val proc = sh"$tool trap-reject".fork[Exit]()
@@ -329,7 +329,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               sh"kill -INT ${proc.pid.value}".exec[Unit]()
               proc.await(3*Second)
 
-            . assert(_ == t"outer")
+            . assert(_ == "outer")
 
             test(m"signal not matched by any trap PF causes launcher to fall back"):
               val proc = sh"$tool trap-undefined".fork[Exit]()
@@ -426,7 +426,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               snooze(0.1*Second)
               sh"$tool echo recovered".exec[Text]()
 
-            . assert(_ == t"recovered")
+            . assert(_ == "recovered")
 
             test(m"stale pid file is cleaned up"):
               sh"$tool echo pretest".exec[Text]()
@@ -439,7 +439,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               sh"rm -f $stateDir/fail".exec[Unit]()
               sh"$tool echo fresh".exec[Text]()
 
-            . assert(_ == t"fresh")
+            . assert(_ == "fresh")
 
             test(m"fail file is removed after 2 seconds"):
               sh"mkdir -p $stateDir".exec[Unit]()
@@ -448,7 +448,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               snooze(2.5*Second)
               sh"$tool echo after-fail".exec[Text]()
 
-            . assert(_ == t"after-fail")
+            . assert(_ == "after-fail")
 
           suite(m"Concurrent invocations"):
             test(m"parallel invocations share the same daemon"):
@@ -478,7 +478,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               snooze(0.1*Second)
               sh"$tool echo still-alive".exec[Text]()
 
-            . assert(_ == t"still-alive")
+            . assert(_ == "still-alive")
 
             test(m"launcher exits when daemon is killed"):
               val proc = sh"$tool sleep 30".fork[Exit]()
@@ -493,13 +493,13 @@ object Tests extends Suite(m"Ethereal Tests"):
             test(m"new daemon starts after previous was killed"):
               sh"$tool echo restarted".exec[Text]()
 
-            . assert(_ == t"restarted")
+            . assert(_ == "restarted")
 
           suite(m"State file integrity"):
             test(m"build file records build id, size and mtime"):
               sh"$tool echo probe".exec[Unit]()
               val content = sh"cat $stateDir/build".exec[Text]().trim
-              val fields = content.cut(t" ").stdlib
+              val fields = content.cut(" ").stdlib
 
               fields.length == 3
                 && safely(fields(0).as[Long]).let(_ => true).or(false)
@@ -532,9 +532,9 @@ object Tests extends Suite(m"Ethereal Tests"):
             . assert(_ == Exit.Ok)
 
             test(m"reinstallation replaces the target's inode"):
-              val inode1 = sh"ls -i $installDir/$name".exec[Text]().trim.cut(t" ").stdlib.head
+              val inode1 = sh"ls -i $installDir/$name".exec[Text]().trim.cut(" ").stdlib.head
               sh"$tool install $installDir".exec[Text]()
-              val inode2 = sh"ls -i $installDir/$name".exec[Text]().trim.cut(t" ").stdlib.head
+              val inode2 = sh"ls -i $installDir/$name".exec[Text]().trim.cut(" ").stdlib.head
               inode1 != inode2
 
             . assert(_ == true)
@@ -545,7 +545,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             test(m"pipe input is forwarded to the application"):
               (sh"echo 'piped input'" | sh"$tool cat").exec[Text]()
 
-            . assert(_ == t"piped input")
+            . assert(_ == "piped input")
 
           suite(m"Cooked terminal mode"):
             // These need a real terminal, so they run inside a tmux pane. The launcher
@@ -576,8 +576,8 @@ object Tests extends Suite(m"Ethereal Tests"):
                   Tmux.enter(t"$command cooked")
                   Tmux.enter('\r')
                   snooze(0.5*Second)
-                  Tmux.enter(t"kestrel")
-                  awaitScreen(_.contains(t"kestrel"))
+                  Tmux.enter("kestrel")
+                  awaitScreen(_.contains("kestrel"))
 
             . assert(_ == true)
 
@@ -591,9 +591,9 @@ object Tests extends Suite(m"Ethereal Tests"):
                   Tmux.enter(t"$command cooked")
                   Tmux.enter('\r')
                   snooze(0.5*Second)
-                  Tmux.enter(t"osprey")
+                  Tmux.enter("osprey")
                   Tmux.enter('\r')
-                  awaitScreen(_.contains(t"[osprey]"))
+                  awaitScreen(_.contains("[osprey]"))
 
             . assert(_ == true)
 
@@ -607,11 +607,11 @@ object Tests extends Suite(m"Ethereal Tests"):
                   Tmux.enter(t"$command cooked")
                   Tmux.enter('\r')
                   snooze(0.5*Second)
-                  Tmux.enter(t"merlix")
-                  Tmux.enter(t"BSpace")
-                  Tmux.enter(t"n")
+                  Tmux.enter("merlix")
+                  Tmux.enter("BSpace")
+                  Tmux.enter("n")
                   Tmux.enter('\r')
-                  awaitScreen(_.contains(t"[merlin]"))
+                  awaitScreen(_.contains("[merlin]"))
 
             . assert(_ == true)
 
@@ -625,9 +625,9 @@ object Tests extends Suite(m"Ethereal Tests"):
                   Tmux.enter(t"$command cat")
                   Tmux.enter('\r')
                   snooze(0.5*Second)
-                  Tmux.enter(t"harrier")
+                  Tmux.enter("harrier")
                   snooze(0.5*Second)
-                  Tmux.screenshot().screen.filter(_.contains(t"harrier")).readable.length > 0
+                  Tmux.screenshot().screen.filter(_.contains("harrier")).readable.length > 0
 
             . assert(_ == false)
 
@@ -638,7 +638,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               sh"$tool".exec[Unit]()
               val jvmPid = sh"$tool '{admin}' pid".exec[Text]().trim
               val parent = sh"ps -p $jvmPid -o ppid=".exec[Text]().trim
-              sh"ps -p $parent -o comm=".exec[Text]().trim.cut(t"/").stdlib.last
+              sh"ps -p $parent -o comm=".exec[Text]().trim.cut("/").stdlib.last
 
             . assert(_ == name)
 
@@ -669,12 +669,12 @@ object Tests extends Suite(m"Ethereal Tests"):
             cli:
               arguments match
                 case Argument("version") :: Nil =>
-                  execute(Out.print(t"v1") yet Exit.Ok)
+                  execute(Out.print("v1") yet Exit.Ok)
 
                 case _ =>
                   execute(Exit.Fail(1))
 
-            t"finished"
+            "finished"
           }
 
       val toolV1 = launcherV1.path
@@ -687,12 +687,12 @@ object Tests extends Suite(m"Ethereal Tests"):
             cli:
               arguments match
                 case Argument("version") :: Nil =>
-                  execute(Out.print(t"v2 (upgraded build)") yet Exit.Ok)
+                  execute(Out.print("v2 (upgraded build)") yet Exit.Ok)
 
                 case _ =>
                   execute(Exit.Fail(1))
 
-            t"finished"
+            "finished"
           }
 
       val toolV2 = launcherV2.path
@@ -719,19 +719,19 @@ object Tests extends Suite(m"Ethereal Tests"):
 
       suite(m"Daemon upgrade"):
         test(m"v1 daemon starts and returns v1 output"):
-          serves(toolV1, t"v1")
-        .assert(_ == t"v1")
+          serves(toolV1, "v1")
+        .assert(_ == "v1")
 
         test(m"v1 daemon is still running before upgrade"):
-          serves(toolV1, t"v1")
-        .assert(_ == t"v1")
+          serves(toolV1, "v1")
+        .assert(_ == "v1")
 
         test(m"v2 launcher replaces v1 daemon and returns v2 output"):
-          serves(toolV2, t"v2 (upgraded build)")
-        .assert(_ == t"v2 (upgraded build)")
+          serves(toolV2, "v2 (upgraded build)")
+        .assert(_ == "v2 (upgraded build)")
 
         test(m"v1 daemon is no longer running after upgrade"):
-          serves(toolV2, t"v2 (upgraded build)") == t"v2 (upgraded build)"
+          serves(toolV2, "v2 (upgraded build)") == "v2 (upgraded build)"
         .assert(_ == true)
 
       safely(sh"$toolV2 '{admin}' kill".exec[Exit]())
@@ -759,12 +759,12 @@ object Tests extends Suite(m"Ethereal Tests"):
             cli:
               arguments match
                 case Argument("version") :: Nil =>
-                  execute(Out.print(t"s1") yet Exit.Ok)
+                  execute(Out.print("s1") yet Exit.Ok)
 
                 case _ =>
                   execute(Exit.Fail(1))
 
-            t"finished"
+            "finished"
           }
 
       val dispV2 = Enclave(dispName, buildId = 1).dispatch:
@@ -775,22 +775,22 @@ object Tests extends Suite(m"Ethereal Tests"):
             cli:
               arguments match
                 case Argument("version") :: Nil =>
-                  execute(Out.print(t"s2") yet Exit.Ok)
+                  execute(Out.print("s2") yet Exit.Ok)
 
                 case _ =>
                   execute(Exit.Fail(1))
 
-            t"finished"
+            "finished"
           }
 
       suite(m"Content-based staleness"):
         test(m"first build's daemon starts and serves it"):
-          serves(dispV1.path, t"s1")
-        .assert(_ == t"s1")
+          serves(dispV1.path, "s1")
+        .assert(_ == "s1")
 
         test(m"a same-build-id rebuild displaces the resident daemon"):
-          serves(dispV2.path, t"s2")
-        .assert(_ == t"s2")
+          serves(dispV2.path, "s2")
+        .assert(_ == "s2")
 
       safely(sh"${dispV2.path} '{admin}' kill".exec[Exit]())
       snooze(0.2*Second)
@@ -812,12 +812,12 @@ object Tests extends Suite(m"Ethereal Tests"):
             cli:
               arguments match
                 case Argument("version") :: Nil =>
-                  execute(Out.print(t"v1") yet Exit.Ok)
+                  execute(Out.print("v1") yet Exit.Ok)
 
                 case _ =>
                   execute(Exit.Fail(1))
 
-            t"finished"
+            "finished"
           }
 
       val selfuV2 = Enclave(selfuName, buildId = 2).dispatch:
@@ -828,12 +828,12 @@ object Tests extends Suite(m"Ethereal Tests"):
             cli:
               arguments match
                 case Argument("version") :: Nil =>
-                  execute(Out.print(t"v2") yet Exit.Ok)
+                  execute(Out.print("v2") yet Exit.Ok)
 
                 case _ =>
                   execute(Exit.Fail(1))
 
-            t"finished"
+            "finished"
           }
 
       suite(m"Self-update"):
@@ -850,7 +850,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           sh"cp ${selfuV2.path} $selfuDataDir/.pending".exec[Unit]()
           sh"${selfuV1.path} version".exec[Text]()
 
-        .assert(_ == t"v1")
+        .assert(_ == "v1")
 
         test(m"rejected pending binary is deleted"):
           sh"test ! -e $selfuDataDir/.pending".exec[Exit]()
@@ -871,7 +871,7 @@ object Tests extends Suite(m"Ethereal Tests"):
         // The wire contract shared with the Rust runner: `bintel.rs` pins the same
         // signature and frames, so the two implementations cannot drift apart silently.
         val signatureHex =
-          t"4701ec19cd0fd3ecfc0e1b8a6525b4edc3a3b1deda370f681986db9aa39c1da692"
+          "4701ec19cd0fd3ecfc0e1b8a6525b4edc3a3b1deda370f681986db9aa39c1da692"
 
         def hex(data: Data): Text = Text(data.readable.map(b => f"${b & 0xff}%02x").mkString)
 
@@ -893,7 +893,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
         val init =
           Launcher.Message.Init
-            ( 7, 501, t"jon", t"/usr/bin/x", t"/tmp", true, List(t"a", t"b c"), List(t"K=V") )
+            ( 7, 501, "jon", "/usr/bin/x", "/tmp", true, List(t"a", t"b c"), List(t"K=V") )
 
         test(m"an init message frames as the pinned bytes"):
           hex(Launcher.encode(init))
@@ -966,7 +966,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           Zipfile.write(jar)(contents)
 
           Assembler.assemble
-            (stub, jar, output, t"macos-arm64", 1L, 21, 24, false, publicKey)
+            (stub, jar, output, "macos-arm64", 1L, 21, 24, false, publicKey)
 
           output
 
@@ -998,7 +998,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               arguments match
                 case _ => execute(Exit.Ok)
 
-            t"unreachable"
+            "unreachable"
           }
       . path
 
@@ -1044,16 +1044,16 @@ object Tests extends Suite(m"Ethereal Tests"):
 
               while jl.System.currentTimeMillis < deadline do
                 bytes += 4096
-                _root_.java.nio.file.Files.writeString(path, "0 1 "+bytes+"\n")
+                _root_.java.nio.file.Files.writeString(path, s"0 1 $bytes\n")
                 jl.Thread.sleep(500)
 
               _root_.java.nio.file.Files.deleteIfExists(path)
 
             cli:
               arguments match
-                case _ => execute(Out.print(if progress == null then t"" else progress.tt) yet Exit.Ok)
+                case _ => execute(Out.print(if progress == null then "" else progress.tt) yet Exit.Ok)
 
-            t"finished"
+            "finished"
           }
       . path
 
@@ -1066,9 +1066,9 @@ object Tests extends Suite(m"Ethereal Tests"):
 
             cli:
               arguments match
-                case _ => execute(Out.print(t"stalled") yet Exit.Ok)
+                case _ => execute(Out.print("stalled") yet Exit.Ok)
 
-            t"finished"
+            "finished"
           }
       . path
 
@@ -1081,7 +1081,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
       suite(m"Startup progress"):
         test(m"a daemon reporting progress may take longer than the idle limit to bind"):
-          coldStart(t"prgrs", progressStateDir)
+          coldStart("prgrs", progressStateDir)
           sh"$progressExe hello".exec[Text]()
         . assert(_ == t"$progressStateDir/progress")
 
@@ -1090,7 +1090,7 @@ object Tests extends Suite(m"Ethereal Tests"):
         . assert(_ != Exit.Ok)
 
         test(m"a daemon binding late without reporting progress is abandoned"):
-          coldStart(t"stald", stalledStateDir)
+          coldStart("stald", stalledStateDir)
           safely(sh"$stalledExe hello".exec[Exit]()).or(Exit.Fail(1))
         . assert(_ != Exit.Ok)
 

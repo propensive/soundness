@@ -46,7 +46,7 @@ object OrdinalCalendar extends Calendar:
 
   private def base: RomanCalendar = calendars.gregorianCalendar
 
-  def name: Text = t"Ordinal"
+  def name: Text = "Ordinal"
   def monthsInYear(year: Year): Int = 1
   def daysInYear(year: Year): Int = base.daysInYear(year)
   def daysInMonth(month: Annus.type, year: Year): Int = base.daysInYear(year)

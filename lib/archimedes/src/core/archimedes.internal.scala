@@ -82,7 +82,7 @@ object internal:
       import strategies.throwUnsafely
       import errorDiagnostics.emptyDiagnostics
 
-      try Ergo.interpolate(parts.stdlib.map(_.tt), List.fill(atoms.stdlib.length)(Mi(t"?")).stdlib)
+      try Ergo.interpolate(parts.stdlib.map(_.tt), List.fill(atoms.stdlib.length)(Mi("?")).stdlib)
       catch case error: Ergo.Error =>
         // The parser's offset refers to the parts joined with a one-character hole sentinel
         // per substitution; clamp end-of-input errors onto the last character.

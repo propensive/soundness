@@ -344,7 +344,7 @@ object CompositionTests extends Suite(m"Contingency composition"):
 
       test(m"focus supplements venture-recorded errors"):
         collectLocated:
-          focus(prior.or(Pointer.Self)(t"field")):
+          focus(prior.or(Pointer.Self)("field")):
             venture(failA(9))
           ()
         . items

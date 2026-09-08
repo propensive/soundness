@@ -62,10 +62,10 @@ case class YChecked(name: Text, age: Int) derives CanEqual:
 case class YMix(shape: DShape, name: Text) derives CanEqual
 
 object DefaultPersonScope:
-  given Default[DPerson] = () => DPerson(t"", 0, t"")
+  given Default[DPerson] = () => DPerson("", 0, "")
 
   def run(): Set[String] =
-    val yaml = t"company: Acme\n".read[Yaml]
+    val yaml = "company: Acme\n".read[Yaml]
     validate[Yaml.Focus](Issues2()):
       case error: Yaml.Error =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
@@ -75,7 +75,7 @@ object DefaultShapeScope:
   given Default[DShape] = () => DShape.Circle(-1)
 
   def runIssues(): (Set[String], Int) =
-    val yaml = t"type: Triangle\nfoo: bar\n".read[Yaml]
+    val yaml = "type: Triangle\nfoo: bar\n".read[Yaml]
     val issues = validate[Yaml.Focus](Issues2()):
       case error: Yaml.Error =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
@@ -98,19 +98,19 @@ object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
     suite(m"Default-driven sentinels"):
       test(m"Default[DPerson] collapses a missing nested into one error"):
         DefaultPersonScope.run()
-      . assert(_ == Set("#/person"))
+      . assert(_ == Set[String]("#/person"))
 
       test(m"Default[DShape] handles an unknown discriminator at the top level"):
         DefaultShapeScope.runIssues()
-      . assert((paths, count) => count == 1 && paths == Set("#"))
+      . assert((paths, count) => count == 1 && paths == Set[String]("#"))
 
       test(m"Without Default[DPerson], a missing nested still expands"):
         // Confirms the existing (no-Default) PR-3 accrual semantics
         // are unchanged for users who don't opt in.
-        val yaml = t"company: Acme\n".read[Yaml]
+        val yaml = "company: Acme\n".read[Yaml]
         validateYaml(yaml)(_.as[DContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
-          paths == Set
+          paths == Set[String]
            ( "#/person/name",
              "#/person/age",
              "#/person/email" )
@@ -119,31 +119,31 @@ object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
         // Outside a `Default[DShape]`, the disjunction calls `abort`,
         // which the surrounding `validate` captures as one accrual
         // entry. No `Variant.Error` punches through.
-        val yaml = t"type: Triangle\nfoo: bar\n".read[Yaml]
+        val yaml = "type: Triangle\nfoo: bar\n".read[Yaml]
         validateYaml(yaml)(_.as[DShape]).items.size
       . assert(_ == 1)
 
       test(m"Without Default[DShape], absent discriminator aborts cleanly"):
-        val yaml = t"foo: bar\n".read[Yaml]
+        val yaml = "foo: bar\n".read[Yaml]
         validateYaml(yaml)(_.as[DShape]).items.size
       . assert(_ == 1)
 
     suite(m"Gated construction"):
       test(m"Constructor does not run when any field failed"):
         YProbe.constructions = 0
-        val yaml = t"name: Zoe\n".read[Yaml]
+        val yaml = "name: Zoe\n".read[Yaml]
         val issues = validateYaml(yaml)(_.as[YChecked])
         (issues.items.size, YProbe.constructions)
       . assert(_ == (1, 0))
 
       test(m"Constructor runs exactly once when all fields are clean"):
         YProbe.constructions = 0
-        val yaml = t"name: Zoe\nage: 5\n".read[Yaml]
+        val yaml = "name: Zoe\nage: 5\n".read[Yaml]
         validateYaml(yaml)(_.as[YChecked])
         YProbe.constructions
       . assert(_ == 1)
 
       test(m"A failing sum field and a missing sibling both accrue"):
-        val yaml = t"shape:\n  foo: bar\n".read[Yaml]
+        val yaml = "shape:\n  foo: bar\n".read[Yaml]
         validateYaml(yaml)(_.as[YMix]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("#/shape", "#/name"))
+      . assert(_ == Set[String]("#/shape", "#/name"))

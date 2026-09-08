@@ -122,7 +122,7 @@ def cli[bus <: Matchable](using executive: Executive)
           case destination: Text =>
             val javaMinimum = safely(System.properties.build.java.minimum[Int]()).or(21)
             val javaPreferred = safely(System.properties.build.java.preferred[Int]()).or(24)
-            val jdk = safely(System.properties.build.java.bundle[Text]() == t"jdk").or(false)
+            val jdk = safely(System.properties.build.java.bundle[Text]() == "jdk").or(false)
 
             val path = safely(destination.as[Path on Linux]).or:
               val work: Path on Linux = workingDirectory
@@ -138,17 +138,17 @@ def cli[bus <: Matchable](using executive: Executive)
               val osArch = safely(System.properties.os.arch[Text]().lower).or(t"")
 
               val os =
-                if osName.contains(t"mac") || osName.contains(t"darwin") then t"macos"
-                else if osName.contains(t"win")
-                then t"windows"
-                else t"linux"
+                if osName.contains("mac") || osName.contains("darwin") then "macos"
+                else if osName.contains("win")
+                then "windows"
+                else "linux"
 
               val arch =
-                if osArch.contains(t"aarch") || osArch == t"arm64" then t"arm64" else t"x64"
+                if osArch.contains("aarch") || osArch == "arm64" then "arm64" else "x64"
 
               t"$os-$arch"
 
-            val isWindows: Boolean = platformLabel.starts(t"windows")
+            val isWindows: Boolean = platformLabel.starts("windows")
 
             val runnerName: Text =
               if isWindows then t"runner-$platformLabel.exe" else t"runner-$platformLabel"
@@ -166,7 +166,7 @@ def cli[bus <: Matchable](using executive: Executive)
             val localRunner: Path on Linux = t"$runnersDir/$runnerName".as[Path on Linux]
 
             val cacheDir: Path on Linux =
-              Directories.cacheHome[Path on Linux]/t"ethereal"/t"runners"/Runners.version
+              Directories.cacheHome[Path on Linux]/"ethereal"/"runners"/Runners.version
 
             val cacheRunner: Path on Linux = cacheDir/runnerName
 
@@ -473,7 +473,7 @@ def cli[bus <: Matchable](using executive: Executive)
           lazy val color: ColorDepth =
             import workingDirectories.systemWorkingDirectory
 
-            if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
+            if safely(Environment.colorterm[Text]) == "truecolor" then ColorDepth.TrueColor
             else
               ColorDepth
                 ( safely(mute[Exec.Event](sh"tput colors".exec[Text]().as[Int])).or(-1) )
@@ -570,7 +570,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
     supervise:
       import logFormats.timestampedLogFormat
-      given syslog: Logger[DaemonLogEvent, Message] = Logger(Syslog(t"ethereal"))
+      given syslog: Logger[DaemonLogEvent, Message] = Logger(Syslog("ethereal"))
 
       safely(socketFile.wipe())
 
@@ -648,7 +648,7 @@ def cli[bus <: Matchable](using executive: Executive)
                       case Delete(_, file)  => file
                       case Modify(_, file)  => file
                       case NewFile(_, file) => file
-                      case other            => t""
+                      case other            => ""
 
                     // A metadata-only change to the launcher (`touch`) leaves its
                     // content intact; verify it before treating the event as fatal

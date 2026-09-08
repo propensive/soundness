@@ -44,7 +44,7 @@ object Tests extends Suite(m"Plutocrat tests"):
         val amount: Money in "EUR" = Eur(3.01)
         t"Received $amount"
 
-      . assert(_ == t"Received €3.01")
+      . assert(_ == "Received €3.01")
 
       test(m"Type error for different currencies"):
         demilitarize:
@@ -69,7 +69,7 @@ object Tests extends Suite(m"Plutocrat tests"):
         val amount = Eur(3.01)
         t"Received $amount"
 
-      . assert(_ == t"Received 3.01 EUR")
+      . assert(_ == "Received 3.01 EUR")
 
       test(m"Add two amounts"):
         Eur(3.01) + Eur(0.02)
@@ -153,23 +153,23 @@ object Tests extends Suite(m"Plutocrat tests"):
 
       test(m"Create an ISIN and get country code"):
         unsafely(Isin("US0378331005")).countryCode
-      . assert(_ == t"US")
+      . assert(_ == "US")
 
       test(m"Create an ISIN and get NSIN"):
         unsafely(Isin("US0378331005")).nsin
-      . assert(_ == t"0378331005")
+      . assert(_ == "0378331005")
 
       test(m"Create an ISIN and get it back"):
         unsafely(Isin("US0378331005")).isin
-      . assert(_ == t"US0378331005")
+      . assert(_ == "US0378331005")
 
       test(m"Create a more complex ISIN and get it back"):
         unsafely(Isin("GB00BH4HKS39")).isin
-      . assert(_ == t"GB00BH4HKS39")
+      . assert(_ == "GB00BH4HKS39")
 
       test(m"Compiletime ISIN"):
         isin"GB00BH4HKS39"
-      . assert(_ == unsafely(Isin(t"GB00BH4HKS39")))
+      . assert(_ == unsafely(Isin("GB00BH4HKS39")))
 
       test(m"Compiletime ISIN length error"):
         demilitarize(isin"GB00BH4HKS3").map(_.message)
@@ -194,8 +194,8 @@ object Tests extends Suite(m"Plutocrat tests"):
 
       test(m"A monetary value shows its currency and exact minor units"):
         Eur(3.01).inspect
-      . assert(_ == t"¤EUR301ₘ")
+      . assert(_ == "¤EUR301ₘ")
 
       test(m"An ISIN shows the form its interpolator takes"):
         isin"US0378331005".inspect
-      . assert(_ == t"isin\"US0378331005\"")
+      . assert(_ == "isin\"US0378331005\"")

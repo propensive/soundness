@@ -141,11 +141,11 @@ object OpenAI:
     caps.unsafe.unsafeAssumeSeparate(text.as[Sse])
 
   private[sibylline] def stop(code: Text): Llm.Stop = code match
-    case t"stop"           => Llm.Stop.Ended
-    case t"length"         => Llm.Stop.Exhausted
-    case t"tool_calls"     => Llm.Stop.ToolCall
-    case t"function_call"  => Llm.Stop.ToolCall
-    case t"content_filter" => Llm.Stop.Filtered(Unset)
+    case "stop"           => Llm.Stop.Ended
+    case "length"         => Llm.Stop.Exhausted
+    case "tool_calls"     => Llm.Stop.ToolCall
+    case "function_call"  => Llm.Stop.ToolCall
+    case "content_filter" => Llm.Stop.Filtered(Unset)
     case other             => Llm.Stop.Other(other)
 
   private[sibylline] def usage(json: Json)(using Diagnostics): Optional[Llm.Usage] =
@@ -165,11 +165,11 @@ object OpenAI:
   // opaque blocks have no Chat form, and are dropped.
   private def part(content: Llm.Content): Optional[Json] = content match
     case Llm.Content.Textual(text) =>
-      Json.make(`type` = t"text".in[Json], text = text.in[Json])
+      Json.make(`type` = "text".in[Json], text = text.in[Json])
 
     case Llm.Content.Graphic(source) =>
       Json.make
-        ( `type`    = t"image_url".in[Json],
+        ( `type`    = "image_url".in[Json],
           image_url = Json.make(url = address(source).in[Json]) )
 
     case _ => Unset
@@ -184,7 +184,7 @@ object OpenAI:
           List:
             Json.make
               ( id       = id.in[Json],
-                `type`   = t"function".in[Json],
+                `type`   = "function".in[Json],
                 function = Json.make
                              ( name      = tool.in[Json],
                                arguments = arguments.encode.in[Json] ) )
@@ -199,8 +199,8 @@ object OpenAI:
 
       List:
         Json.make
-          ( role       = t"assistant".in[Json],
-            content    = (if body == t"" then Unset else body).in[Json],
+          ( role       = "assistant".in[Json],
+            content    = (if body == "" then Unset else body).in[Json],
             tool_calls = (if calls.nil then Unset else calls).in[Json] )
 
     case Llm.Role.User =>
@@ -214,7 +214,7 @@ object OpenAI:
 
           List:
             Json.make
-              ( role         = t"tool".in[Json],
+              ( role         = "tool".in[Json],
                 tool_call_id = id.in[Json],
                 content      = body.in[Json] )
 
@@ -236,26 +236,27 @@ object OpenAI:
 
   private[sibylline] def tool(tool: Llm.Tool): Json =
     Json.make
-      ( `type`   = t"function".in[Json],
+      ( `type`   = "function".in[Json],
         function = Json.make
                      ( name        = tool.name.in[Json],
                        description = tool.description.in[Json],
                        parameters  = tool.parameters.in[Json] ) )
 
   private[sibylline] def choice(choice: Llm.ToolChoice): Json = choice match
-    case Llm.ToolChoice.Auto      => t"auto".in[Json]
-    case Llm.ToolChoice.Forbidden => t"none".in[Json]
-    case Llm.ToolChoice.Required  => t"required".in[Json]
+    case Llm.ToolChoice.Auto      => "auto".in[Json]
+    case Llm.ToolChoice.Forbidden => "none".in[Json]
+    case Llm.ToolChoice.Required  => "required".in[Json]
 
     case Llm.ToolChoice.Named(tool) =>
       Json.make
-        ( `type`   = t"function".in[Json],
+        ( `type`   = "function".in[Json],
           function = Json.make(name = tool.in[Json]) )
 
   // The non-streamed Chat reply: `choices[0].message`, its tool calls (arguments arrive as a
   // *string* of JSON), the finish reason and the usage.
-  private[sibylline] def reply(json: Json)(using Diagnostics)
-  :   Llm.Reply raises Json.Error raises Llm.Error =
+  private[sibylline] def reply(json: Json)
+    (using Diagnostics, Tactic[Json.Error], Tactic[Llm.Error])
+  :   Llm.Reply =
 
     val message = json.choices(0).message
 
@@ -281,11 +282,11 @@ object OpenAI:
   :   List[Llm.Event] =
 
     given jsonTactic: (Tactic[Json.Error]^) = summon[Tactic[Llm.Error]].contramap: _ =>
-      Llm.Error(Llm.Error.Reason.Malformed, t"a stream chunk had an unexpected shape")
+      Llm.Error(Llm.Error.Reason.Malformed, "a stream chunk had an unexpected shape")
 
     val data: Text = sse.data.prim.or(t"")
 
-    if data == t"[DONE]" then List() else
+    if data == "[DONE]" then List() else
       val json: Json = Llm.parsed(data)
 
       val started: List[Llm.Event] =
@@ -319,7 +320,7 @@ object OpenAI:
                     Llm.Content.ToolUse
                       ( safely(text(call.id)).or(t""),
                         safely(text(call.function.name)).or(t""),
-                        Llm.parsed(t"{}") ) )
+                        Llm.parsed("{}") ) )
             else
               List()
 
@@ -353,7 +354,7 @@ object OpenAI:
       case 503       => Llm.Error.Reason.Overloaded
 
       case _ =>
-        if code == t"context_length_exceeded" then Llm.Error.Reason.TooLarge
+        if code == "context_length_exceeded" then Llm.Error.Reason.TooLarge
         else code.let(Llm.Error.Reason.Provider(_)).or(Llm.Error.Reason.Invalid)
 
     Llm.Error(reason, detail, status.code)
@@ -441,18 +442,18 @@ private[sibylline] class ChatDialect(target: OpenAI)
           diagnostics: Diagnostics )
 extends Llm.Dialect, caps.ExclusiveCapability:
 
-  def name: Text = t"openai"
+  def name: Text = "openai"
 
-  private def endpoint: HttpUrl = target.address(t"chat/completions")
+  private def endpoint: HttpUrl = target.address("chat/completions")
 
   private given connectTactic: (Tactic[Connect.Error]^) = tactic.contramap: _ =>
-    Llm.Error(Llm.Error.Reason.Unreachable, t"the provider could not be reached")
+    Llm.Error(Llm.Error.Reason.Unreachable, "the provider could not be reached")
 
   private given jsonTactic: (Tactic[Json.Error]^) = tactic.contramap: _ =>
-    Llm.Error(Llm.Error.Reason.Malformed, t"the reply had an unexpected shape")
+    Llm.Error(Llm.Error.Reason.Malformed, "the reply had an unexpected shape")
 
   private given sseTactic: (Tactic[Sse.Error]^) = tactic.contramap: _ =>
-    Llm.Error(Llm.Error.Reason.Malformed, t"a server-sent event was not valid")
+    Llm.Error(Llm.Error.Reason.Malformed, "a server-sent event was not valid")
 
   def exchange(turn: Llm.Exchange): Llm.Reply =
     // The send thunk captures the tactic `fetch` raises through, as in `AnthropicDialect`.
@@ -463,7 +464,7 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     OpenAI.reply(Llm.receive(response))
 
-  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
+  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, caps.any} =
     val response =
       caps.unsafe.unsafeAssumeSeparate:
         Llm.fetch(OpenAI.failure(_, _)):
@@ -503,7 +504,7 @@ private[sibylline] object ResponsesDialect:
         case Llm.Content.ToolUse(id, tool, arguments) =>
           List:
             Json.make
-              ( `type`    = t"function_call".in[Json],
+              ( `type`    = "function_call".in[Json],
                 call_id   = id.in[Json],
                 name      = tool.in[Json],
                 arguments = arguments.encode.in[Json] )
@@ -517,14 +518,14 @@ private[sibylline] object ResponsesDialect:
       . join
 
       val turn: List[Json] =
-        if body == t"" then List()
+        if body == "" then List()
         else
-          val part = Json.make(`type` = t"output_text".in[Json], text = body.in[Json])
+          val part = Json.make(`type` = "output_text".in[Json], text = body.in[Json])
 
           List:
             Json.make
-              ( `type`  = t"message".in[Json],
-                role    = t"assistant".in[Json],
+              ( `type`  = "message".in[Json],
+                role    = "assistant".in[Json],
                 content = (List(part): List[Json]).in[Json] )
 
       turn + calls
@@ -540,7 +541,7 @@ private[sibylline] object ResponsesDialect:
 
           List:
             Json.make
-              ( `type`  = t"function_call_output".in[Json],
+              ( `type`  = "function_call_output".in[Json],
                 call_id = id.in[Json],
                 output  = body.in[Json] )
 
@@ -552,7 +553,7 @@ private[sibylline] object ResponsesDialect:
 
         case Llm.Content.Graphic(Llm.Content.Source.Remote(url)) =>
           List:
-            Json.make(`type` = t"input_image".in[Json], image_url = url.show.in[Json])
+            Json.make(`type` = "input_image".in[Json], image_url = url.show.in[Json])
 
         case _ => List()
 
@@ -561,15 +562,15 @@ private[sibylline] object ResponsesDialect:
         else
           List:
             Json.make
-              ( `type`  = t"message".in[Json],
-                role    = t"user".in[Json],
+              ( `type`  = "message".in[Json],
+                role    = "user".in[Json],
                 content = parts.in[Json] )
 
       results + turn
 
   private def tool(tool: Llm.Tool): Json =
     Json.make
-      ( `type`      = t"function".in[Json],
+      ( `type`      = "function".in[Json],
         name        = tool.name.in[Json],
         description = tool.description.in[Json],
         parameters  = tool.parameters.in[Json] )
@@ -593,32 +594,34 @@ private[sibylline] object ResponsesDialect:
   // Unlike Chat Completions, a named Responses tool choice is flat, not nested.
   private def choice(choice: Llm.ToolChoice): Json = choice match
     case Llm.ToolChoice.Named(tool) =>
-      Json.make(`type` = t"function".in[Json], name = tool.in[Json])
+      Json.make(`type` = "function".in[Json], name = tool.in[Json])
 
     case other => OpenAI.choice(other)
 
   // One output item as neutral content blocks.
-  private def blocks(item: Json)(using Diagnostics)
-  :   List[Llm.Content] raises Json.Error raises Llm.Error =
+  private def blocks(item: Json)
+    (using Diagnostics, Tactic[Json.Error], Tactic[Llm.Error])
+  :   List[Llm.Content] =
 
     safely(text(item.`type`)).or(t"") match
-      case t"message" =>
+      case "message" =>
         list(item.content).bind: part =>
           safely(text(part.`type`)).or(t"") match
-            case t"output_text" => List(Llm.Content.Textual(text(part.text)))
-            case t"refusal"     => List(Llm.Content.Textual(text(part.refusal)))
+            case "output_text" => List(Llm.Content.Textual(text(part.text)))
+            case "refusal"     => List(Llm.Content.Textual(text(part.refusal)))
             case _              => List(Llm.Content.Opaque(t"openai-responses", part))
 
-      case t"function_call" =>
+      case "function_call" =>
         List:
           Llm.Content.ToolUse
             ( text(item.call_id), text(item.name), Llm.parsed(text(item.arguments)) )
 
-      case t"reasoning" => List()
+      case "reasoning" => List()
       case _            => List(Llm.Content.Opaque(t"openai-responses", item))
 
-  private[sibylline] def reply(json: Json)(using Diagnostics)
-  :   Llm.Reply raises Json.Error raises Llm.Error =
+  private[sibylline] def reply(json: Json)
+    (using Diagnostics, Tactic[Json.Error], Tactic[Llm.Error])
+  :   Llm.Reply =
 
     val content: List[Llm.Content] = list(json.output).bind(blocks(_))
 
@@ -629,12 +632,12 @@ private[sibylline] object ResponsesDialect:
     val stop: Llm.Stop =
       if called then Llm.Stop.ToolCall
       else safely(text(json.status)).or(t"completed") match
-        case t"completed"  => Llm.Stop.Ended
+        case "completed"  => Llm.Stop.Ended
 
-        case t"incomplete" =>
+        case "incomplete" =>
           safely(text(json.incomplete_details.reason)).or(t"") match
-            case t"max_output_tokens" => Llm.Stop.Exhausted
-            case t"content_filter"    => Llm.Stop.Filtered(Unset)
+            case "max_output_tokens" => Llm.Stop.Exhausted
+            case "content_filter"    => Llm.Stop.Filtered(Unset)
             case other                => Llm.Stop.Other(other)
 
         case other => Llm.Stop.Other(other)
@@ -652,62 +655,62 @@ private[sibylline] object ResponsesDialect:
   :   List[Llm.Event] =
 
     given jsonTactic: (Tactic[Json.Error]^) = summon[Tactic[Llm.Error]].contramap: _ =>
-      Llm.Error(Llm.Error.Reason.Malformed, t"a stream event had an unexpected shape")
+      Llm.Error(Llm.Error.Reason.Malformed, "a stream event had an unexpected shape")
 
     val json: Json = Llm.parsed(sse.data.prim.or(t"{}"))
 
     sse.event match
-      case t"response.created" =>
+      case "response.created" =>
         progress.begun = true
 
         List:
           Llm.Event.Started
             ( safely(text(json.response.id)), safely(text(json.response.model)) )
 
-      case t"response.output_item.added" =>
+      case "response.output_item.added" =>
         val index = integer(json.output_index)
         progress.open(index)
 
         safely(text(json.item.`type`)).or(t"") match
-          case t"message" =>
+          case "message" =>
             List(Llm.Event.Opened(index, Llm.Content.Textual(t"")))
 
-          case t"function_call" =>
+          case "function_call" =>
             List:
               Llm.Event.Opened
                 ( index,
                   Llm.Content.ToolUse
                     ( safely(text(json.item.call_id)).or(t""),
                       safely(text(json.item.name)).or(t""),
-                      Llm.parsed(t"{}") ) )
+                      Llm.parsed("{}") ) )
 
           case _ =>
             List:
-              Llm.Event.Opened(index, Llm.Content.Opaque(t"openai-responses", json.item))
+              Llm.Event.Opened(index, Llm.Content.Opaque("openai-responses", json.item))
 
-      case t"response.output_text.delta" =>
+      case "response.output_text.delta" =>
         List:
           Llm.Event.Delta
             ( integer(json.output_index), Llm.Event.Increment.Textual(text(json.delta)) )
 
-      case t"response.function_call_arguments.delta" =>
+      case "response.function_call_arguments.delta" =>
         List:
           Llm.Event.Delta
             ( integer(json.output_index), Llm.Event.Increment.Arguments(text(json.delta)) )
 
-      case t"response.output_item.done" =>
+      case "response.output_item.done" =>
         val index = integer(json.output_index)
         progress.opened.remove(index)
 
-        val called = safely(text(json.item.`type`)) == t"function_call"
+        val called = safely(text(json.item.`type`)) == "function_call"
         if called then progress.stop = Llm.Stop.ToolCall
         List(Llm.Event.Closed(index))
 
-      case t"response.completed" =>
+      case "response.completed" =>
         usage(json.response.usage).let(progress.usage = _)
         List()
 
-      case t"error" =>
+      case "error" =>
         abort:
           Llm.Error
             ( Llm.Error.Reason.Provider(safely(text(json.code)).or(t"error")),
@@ -726,18 +729,18 @@ private[sibylline] class ResponsesDialect(target: OpenAI)
           diagnostics: Diagnostics )
 extends Llm.Dialect, caps.ExclusiveCapability:
 
-  def name: Text = t"openai-responses"
+  def name: Text = "openai-responses"
 
-  private def endpoint: HttpUrl = target.address(t"responses")
+  private def endpoint: HttpUrl = target.address("responses")
 
   private given connectTactic: (Tactic[Connect.Error]^) = tactic.contramap: _ =>
-    Llm.Error(Llm.Error.Reason.Unreachable, t"the provider could not be reached")
+    Llm.Error(Llm.Error.Reason.Unreachable, "the provider could not be reached")
 
   private given jsonTactic: (Tactic[Json.Error]^) = tactic.contramap: _ =>
-    Llm.Error(Llm.Error.Reason.Malformed, t"the reply had an unexpected shape")
+    Llm.Error(Llm.Error.Reason.Malformed, "the reply had an unexpected shape")
 
   private given sseTactic: (Tactic[Sse.Error]^) = tactic.contramap: _ =>
-    Llm.Error(Llm.Error.Reason.Malformed, t"a server-sent event was not valid")
+    Llm.Error(Llm.Error.Reason.Malformed, "a server-sent event was not valid")
 
   def exchange(turn: Llm.Exchange): Llm.Reply =
     val response =
@@ -747,7 +750,7 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     ResponsesDialect.reply(Llm.receive(response))
 
-  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
+  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, caps.any} =
     val response =
       caps.unsafe.unsafeAssumeSeparate:
         Llm.fetch(OpenAI.failure(_, _)):

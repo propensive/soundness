@@ -121,7 +121,7 @@ package filesystemBackends:
           . call[List[(Wasm.Handle of "descriptor", Text)]]()
 
         def covers(preopen: Text): Boolean =
-          target == preopen || preopen == t"/" || target.starts(t"$preopen/")
+          target == preopen || preopen == "/" || target.starts(t"$preopen/")
 
         val covering = preopens.filter: entry =>
           covers(entry(1))
@@ -138,8 +138,8 @@ package filesystemBackends:
         preopens.each: entry => if entry(0) != descriptor then entry(0).dispose()
 
         val remainder =
-          if target == prefix then t"."
-          else if prefix == t"/" then target.keep(target.length - 1, Rtl)
+          if target == prefix then "."
+          else if prefix == "/" then target.keep(target.length - 1, Rtl)
           else target.keep(target.length - prefix.length - 1, Rtl)
 
         (descriptor, remainder)
@@ -312,13 +312,13 @@ package filesystemBackends:
           directory.`set-times-at`
             ( follow(true),
               relative,
-              Wasm.Case["new-timestamp"](t"now"),
-              Wasm.Case["new-timestamp"](t"now") )
+              Wasm.Case["new-timestamp"]("now"),
+              Wasm.Case["new-timestamp"]("now") )
 
           . call[Unit]()
 
       def hidden(path: Path on Plane)(using Tactic[Io.Error]): Boolean =
-        path.descent.to(List).prim.let(_.starts(t".")).or(false)
+        path.descent.to(List).prim.let(_.starts(".")).or(false)
 
       def volume(path: Path on Plane)(using Tactic[Io.Error]): Volume =
         abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))

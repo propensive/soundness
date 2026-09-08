@@ -50,9 +50,9 @@ object Linux:
   given filesystem: Linux is Filesystem:
     type UniqueRoot = true
     val name: Text = "Linux"
-    val separator: Text = t"/"
-    val self: Text = t"."
-    val parent: Text = t".."
+    val separator: Text = "/"
+    val self: Text = "."
+    val parent: Text = ".."
 
   given radical: %.type is Radical:
     type Plane = Linux
@@ -60,9 +60,9 @@ object Linux:
     def length(text: Text): Int raises Path.Error = 1
 
     def decode(text: Text): %.type raises Path.Error =
-      if text.starts(t"/") then % else abort(Path.Error(_.InvalidRoot))
+      if text.starts("/") then % else abort(Path.Error(_.InvalidRoot))
 
-    def encode(root: %.type): Text = t"/"
+    def encode(root: %.type): Text = "/"
 
   given submissible: %.type is Submissible on Linux = _ => ()
 

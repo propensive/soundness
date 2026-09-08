@@ -43,7 +43,7 @@ object Out:
   def print[textual: Printable as printable](text: Termcap ?=> textual)(using stdio: Stdio^): Unit =
     stdio.print(printable.print(text(using stdio.termcap), stdio.termcap))
 
-  def println()(using Stdio^): Unit = print("\n".tt)
+  def println()(using Stdio^): Unit = print("\n")
 
   def println[textual: Printable as printable, C^](lines: (Termcap ?->{C} textual)*)
     ( using stdio: Stdio )
@@ -52,4 +52,4 @@ object Out:
     mutex:
       lines.foreach: line =>
         stdio.print(printable.print(line(using stdio.termcap), stdio.termcap))
-        stdio.print("\n".tt)
+        stdio.print("\n")

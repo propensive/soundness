@@ -74,10 +74,10 @@ object Bundler:
 
     val manifest =
       main.let(MainClass(_)).let: main =>
-        Manifest(ManifestVersion(()), CreatedBy(t"Soundness"), main)
+        Manifest(ManifestVersion(()), CreatedBy("Soundness"), main)
 
       . or:
-          Manifest(ManifestVersion(()), CreatedBy(t"Soundness"))
+          Manifest(ManifestVersion(()), CreatedBy("Soundness"))
 
     val omissions: Set[Text] = Set("MANIFEST.MF", "plugin.properties")
 
@@ -102,7 +102,7 @@ object Bundler:
             // decompression or recompression is needed.
             Zipfile.read(jarfile).entries.filter: entry =>
               val name: Text = entry.ref.encode
-              !entry.directory && name != t"META-INF/MANIFEST.MF"
+              !entry.directory && name != "META-INF/MANIFEST.MF"
 
           case _ =>
             Nil

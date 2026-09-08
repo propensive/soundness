@@ -57,9 +57,9 @@ object LocalClasspath:
     _.entries.map:
       case Classpath.Entry.Directory(directory) => directory
       case Classpath.Entry.Jar(jar)             => jar
-      case Classpath.Entry.JavaRuntime          => t"‹jrt›"
+      case Classpath.Entry.JavaRuntime          => "‹jrt›"
 
-    . join(t"classpath⟨", t":", t"⟩")
+    . join("classpath⟨", ":", "⟩")
 
   given decodable: (System, Tactic[Property.Error])
   =>  LocalClasspath is Decodable in Text =
@@ -68,8 +68,8 @@ object LocalClasspath:
       val entries: List[Classpath.Entry.Directory | Classpath.Entry.Jar] =
         classpath.cut(System.properties.path.separator())
         . map[Classpath.Entry.Directory | Classpath.Entry.Jar]: path =>
-          if path.ends(t"/") then Classpath.Entry.Directory(path)
-          else if path.ends(t".jar") then Classpath.Entry.Jar(path)
+          if path.ends("/") then Classpath.Entry.Directory(path)
+          else if path.ends(".jar") then Classpath.Entry.Jar(path)
           else Classpath.Entry.Directory(path)
 
       // `Set` is invariant, so the elements are widened before the conversion.

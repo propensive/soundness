@@ -73,7 +73,7 @@ open class JavaServlet(handle: Http.Connection => Http.Response) extends jsh.Htt
 
     val uri = request.getRequestURI.nn.tt
     val query = Optional(request.getQueryString).let(_.tt)
-    val target = uri+query.let(t"?"+_).or(t"")
+    val target = uri+query.let("?"+_).or(t"")
 
     val headers: List[Http.Header] =
       request.getHeaderNames.nn.to[List].map: key =>

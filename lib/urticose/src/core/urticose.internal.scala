@@ -68,7 +68,7 @@ object internal:
         safely:
           val uri =
             new java.net.URI
-              ( "https://www.iana.org/assignments/service-names-port-numbers/" +
+              ( s"https://www.iana.org/assignments/service-names-port-numbers/" +
                 "service-names-port-numbers.csv" )
 
           uri.toURL().nn.openStream().nn: ji.InputStream
@@ -77,15 +77,15 @@ object internal:
           panic(m"could not read /urticose/service-names-port-numbers.csv from classpath")
 
     val lines: Iterator[List[Text]] =
-      scala.io.Source.fromInputStream(stream).getLines().map(_.tt).map(_.cut(t","))
+      scala.io.Source.fromInputStream(stream).getLines().map(_.tt).map(_.cut(","))
 
     // Each CSV row is `name,port,protocol,…`; rows which are too short, name a transport other
     // than TCP or UDP, or carry an unparseable port number, contribute nothing.
     def entries(row: List[Text]): List[((Boolean, Text), Int)] = row match
       case name :: port :: protocol :: _ =>
         safely:
-          if protocol == t"tcp" then List((true, name) -> port.as[Int])
-          else if protocol == t"udp" then List((false, name) -> port.as[Int])
+          if protocol == "tcp" then List((true, name) -> port.as[Int])
+          else if protocol == "udp" then List((false, name) -> port.as[Int])
           else Nil
 
         . or(Nil)
@@ -134,7 +134,7 @@ object internal:
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
 
       def parse(text: Text): Ipv4 raises IpAddress.Error =
-        val bytes: List[Text] = text.cut(t".")
+        val bytes: List[Text] = text.cut(".")
 
         if bytes.size == 4 then
           mitigate:
@@ -171,7 +171,7 @@ object internal:
       def apply(value: Long): MacAddress = value
 
       def parse(text: Text): MacAddress raises MacAddress.Error =
-        val groups: List[Text] = text.cut(t"-")
+        val groups: List[Text] = text.cut("-")
         val count = groups.size
 
         if count != 6 then raise(MacAddress.Error(WrongGroupCount(count)))
@@ -285,7 +285,7 @@ object internal:
       def byte5: Int = macAddress.toInt & 255
 
       def text: Text =
-        List(byte0, byte1, byte2, byte3, byte4, byte5).map(_.hex.pad(2, Rtl, '0')).join(t"-")
+        List(byte0, byte1, byte2, byte3, byte4, byte5).map(_.hex.pad(2, Rtl, '0')).join("-")
 
       def long: Long = macAddress
 
@@ -324,7 +324,7 @@ object internal:
       parse(_)
 
     def parse(text: Text): Ipv4Subnet raises IpAddress.Error =
-      text.cut(t"/") match
+      text.cut("/") match
         case List(address, prefixText) =>
           Ipv4.parse(address).subnet(subnetPrefix(prefixText, 32)(Ipv4SubnetPrefixOutOfRange(_)))
 
@@ -358,7 +358,7 @@ object internal:
         if groups.size == 4 then groups else unpack(long >>> 16, (long & 65535).toInt :: groups)
 
       def hex(values: List[Int]): Text =
-        values.map(_.hex).join(t":")
+        values.map(_.hex).join(":")
 
       val groups = unpack(ip.highBits) + unpack(ip.lowBits)
       // `longestTrain` is defined on `Iterable`, which the opaque `List` is not.
@@ -387,23 +387,23 @@ object internal:
       case Nil          => accumulator
       case head :: tail => pack(tail, (accumulator << 16) + (head & 65535))
 
-    private val zeroes: List[Text] = List.fill(8)(t"0")
+    private val zeroes: List[Text] = List.fill(8)("0")
 
     def parse(text: Text): Ipv6 raises IpAddress.Error =
-      val groups: List[Text] = text.cut(t"::") match
+      val groups: List[Text] = text.cut("::") match
         case List(left, right) =>
-          val leftGroups = left.cut(t":").filter(_ != t"")
-          val rightGroups = right.cut(t":").filter(_ != t"")
+          val leftGroups = left.cut(":").filter(_ != "")
+          val rightGroups = right.cut(":").filter(_ != "")
 
           if leftGroups.size + rightGroups.size > 7
           then
             raise(IpAddress.Error(Ipv6TooManyNonzeroGroups(leftGroups.size + rightGroups.size)))
 
-          leftGroups + List.fill(8 - leftGroups.size - rightGroups.size)(t"0") +
+          leftGroups + List.fill(8 - leftGroups.size - rightGroups.size)("0") +
             rightGroups
 
         case List(whole) =>
-          val groups = whole.cut(t":")
+          val groups = whole.cut(":")
 
           if groups.size != 8
           then abort(IpAddress.Error(Ipv6WrongNumberOfGroups(groups.size)))
@@ -446,7 +446,7 @@ object internal:
       parse(_)
 
     def parse(text: Text): Ipv6Subnet raises IpAddress.Error =
-      text.cut(t"/") match
+      text.cut("/") match
         case List(address, prefixText) =>
           Ipv6.parse(address).subnet(subnetPrefix(prefixText, 128)(Ipv6SubnetPrefixOutOfRange(_)))
 
@@ -477,7 +477,7 @@ object internal:
     import quotes.reflect.*
 
     val id = context.valueOrAbort.parts.head.tt
-    val portType = if tcp then t"TCP" else t"UDP"
+    val portType = if tcp then "TCP" else "UDP"
 
     safely(id.as[Int]).let: portNumber =>
       if 1 <= portNumber <= 65535 then
@@ -502,7 +502,7 @@ object internal:
     val text = Text(context.valueOrAbort.parts.head)
 
     abortive:
-      if text.contains(t".") then
+      if text.contains(".") then
         val ipv4 = text.as[Ipv4]
         '{Ipv4(${Expr(ipv4.byte0)}, ${Expr(ipv4.byte1)}, ${Expr(ipv4.byte2)}, ${Expr(ipv4.byte3)})}
 
@@ -514,8 +514,8 @@ object internal:
     val text = Text(context.valueOrAbort.parts.head)
 
     abortive:
-      val dotted = text.cut(t"/").absolve match
-        case head :: _ => head.contains(t".")
+      val dotted = text.cut("/").absolve match
+        case head :: _ => head.contains(".")
 
       if dotted then
         val subnet = Ipv4Subnet.parse(text)

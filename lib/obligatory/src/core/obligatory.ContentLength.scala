@@ -67,7 +67,7 @@ object ContentLength:
       def fail(): Nothing = abort(Framing.Error(Framing.Error.Reason.ShortRead))
       def lower(byte: Byte): Byte = if byte >= 65 && byte <= 90 then (byte + 32).toByte else byte
 
-      val name: Text = t"content-length"
+      val name: Text = "content-length"
 
       def frame(): Optional[Data] =
         if cursor.finished then Unset else

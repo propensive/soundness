@@ -55,7 +55,7 @@ object Vocabulary:
     new Vocabulary(load(adjectives), load(animals)).asInstanceOf[Vocabulary over transport]
 
   private def load[source: Streamable by Data over Credit](resource: source): List[Text] =
-    resource.read[Text].cut(t"\n").map(_.trim).filter(_ != t"")
+    resource.read[Text].cut("\n").map(_.trim).filter(_ != "")
 
 class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   type Transport
@@ -78,7 +78,7 @@ class Vocabulary private (adjectives: List[Text], animals: List[Text]):
     else t"${adjectiveArray.readable(ordinal/animalCount)}-${animalArray.readable(ordinal%animalCount)}"
 
   def number(moniker: Text)(using Tactic[Moniker.Error]): Int =
-    moniker.cut(t"-") match
+    moniker.cut("-") match
       case List(adjective, animal) =>
         val first = adjectiveIndex.at(adjective).or:
           abort(Moniker.Error(Moniker.Error.Reason.UnknownWord(adjective)))

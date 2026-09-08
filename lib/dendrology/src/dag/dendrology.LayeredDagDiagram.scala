@@ -244,7 +244,7 @@ object LayeredDagDiagram:
 
   given printable: [node: Showable] => (style: LaneDagStyle[Text])
   =>  LayeredDagDiagram[node] is Printable =
-    (diagram, termcap) => diagram.render[Text]{ node => t"● $node  " }.join(t"\n")
+    (diagram, termcap) => diagram.render[Text]{ node => t"● $node  " }.join("\n")
 
 case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
   val size: Int = rows.length

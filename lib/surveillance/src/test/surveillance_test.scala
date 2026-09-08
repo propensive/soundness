@@ -46,7 +46,7 @@ import filesystemBackends.javaBaseFilesystem
 object Tests extends Suite(m"Surveillance tests"):
   def run(): Unit =
     test(m"Watching a path beneath a nonexistent directory raises a Watch.Error"):
-      val target = t"/surveillance-nonexistent-parent-9d3f17/child".as[Path on Local]
+      val target = "/surveillance-nonexistent-parent-9d3f17/child".as[Path on Local]
       capture[Watch.Error](target.open[Watch]() { () }).reason
 
     . assert(_ == Watch.Error.Reason.Nonexistent)

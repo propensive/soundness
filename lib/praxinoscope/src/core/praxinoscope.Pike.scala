@@ -147,7 +147,7 @@ object Pike:
     // whose symbol no opening op accepts cannot begin a match; disabled for nullable patterns,
     // which match (emptily) everywhere.
     val skipping = !anchoredStart && !program.nullable && program.firstBounds.length > 0
-    val prefix = if skipping then program.prefix else "".tt
+    val prefix = if skipping then program.prefix else ""
 
     def candidate(from: Int): Int =
       if !skipping || from > length then from

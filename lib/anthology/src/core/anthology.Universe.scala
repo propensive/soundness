@@ -66,15 +66,15 @@ enum Universe extends Format.Ir:
   case Classfile, Sjsir, Nir
 
   def id: Text = this match
-    case Classfile => t"classfile"
-    case Sjsir     => t"sjsir"
-    case Nir       => t"nir"
+    case Classfile => "classfile"
+    case Sjsir     => "sjsir"
+    case Nir       => "nir"
 
   // The label of the LIRA section holding this universe's content.
   def section: Text = this match
-    case Classfile => t"jvm"
-    case Sjsir     => t"sjsir"
-    case Nir       => t"nir"
+    case Classfile => "jvm"
+    case Sjsir     => "sjsir"
+    case Nir       => "nir"
 
   // The filename suffixes of this universe's stored representations: each universe's binary
   // form, plus the TASTy that carries its interface.

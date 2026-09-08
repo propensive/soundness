@@ -42,10 +42,10 @@ import adversaria.unique
 // `variantRelabelling`. `Accept` is renamed for one type argument, `Reject` by a
 // bare `@name` (i.e. `name[Any]`), and `Defer` is unannotated.
 sealed trait Decision
-@name[Person](t"yes")
+@name[Person]("yes")
 case object Accept extends Decision
 
-@name(t"no")
+@name("no")
 case object Reject extends Decision
 
 case object Defer  extends Decision
@@ -97,27 +97,27 @@ object Tests extends Suite(m"Adversaria tests"):
 
     test(m"fieldAnnotations drops fields without the queried annotation"):
       fieldAnnotations[Marked, marker[Person]]
-    . assert(_ == Map(t"one" -> Set(marker[Person](1))))
+    . assert(_ == Map("one" -> Set(marker[Person](1))))
 
     test(m"a bare annotation (no type argument) is read as the `Any` instance"):
       fieldAnnotations[Tagged, marker[Any]]
-    . assert(_ == Map(t"bare" -> Set(marker(1)), t"anyArg" -> Set(marker(2))))
+    . assert(_ == Map("bare" -> Set(marker(1)), "anyArg" -> Set(marker(2))))
 
     test(m"a bare annotation is not read by a specific type-argument query"):
       fieldAnnotations[Tagged, marker[Person]]
-    . assert(_ == Map(t"specific" -> Set(marker[Person](3))))
+    . assert(_ == Map("specific" -> Set(marker[Person](3))))
 
     test(m"subtypeAnnotations reads @name on sum-type variants"):
       subtypeAnnotations[Decision, name[Person]]
-    . assert(_ == Map(t"Accept" -> Set(adversaria.name[Person](t"yes"))))
+    . assert(_ == Map("Accept" -> Set(adversaria.name[Person]("yes"))))
 
     test(m"variantRelabelling merges per-format and bare variant renames"):
       variantRelabelling[Decision, Person]
-    . assert(_ == Map(t"Accept" -> t"yes", t"Reject" -> t"no"))
+    . assert(_ == Map("Accept" -> "yes", "Reject" -> "no"))
 
     test(m"List map of fields of an object"):
       summon[Example1.type is Dereferenceable to Int].members(Example1)
-    . assert(_ == Map(t"foo" -> 42, t"baz" -> 12))
+    . assert(_ == Map("foo" -> 42, "baz" -> 12))
 
     test(m"Get all members of a particular type"):
       Example1.membersOfType[Int].to[Set]
@@ -129,43 +129,43 @@ object Tests extends Suite(m"Adversaria tests"):
       val letters = Letters(1, 2, 3, 4)
 
       test(m"a lens reads the field it names"):
-        dereferenceable.lens(t"beta").let(_(letters))
+        dereferenceable.lens("beta").let(_(letters))
       . assert(_ == 2)
 
       test(m"a lens writes the field it names, leaving the others"):
-        dereferenceable.lens(t"beta").let(_.update(letters, 20))
+        dereferenceable.lens("beta").let(_.update(letters, 20))
       . assert(_ == Letters(1, 20, 3, 4))
 
       test(m"a lens modifies in place"):
-        dereferenceable.lens(t"delta").let(_.modify(letters)(_*10))
+        dereferenceable.lens("delta").let(_.modify(letters)(_*10))
       . assert(_ == Letters(1, 2, 3, 40))
 
       test(m"update through the typeclass"):
-        dereferenceable.update(letters, t"alpha", 100)
+        dereferenceable.update(letters, "alpha", 100)
       . assert(_ == Letters(100, 2, 3, 4))
 
       test(m"modify through the typeclass"):
-        dereferenceable.modify(letters, t"gamma")(_ + 7)
+        dereferenceable.modify(letters, "gamma")(_ + 7)
       . assert(_ == Letters(1, 2, 10, 4))
 
       test(m"a name which is not a field has no lens"):
-        dereferenceable.lens(t"epsilon")
+        dereferenceable.lens("epsilon")
       . assert(_ == Unset)
 
       // Reading is unchanged: every discovered field still reports, whether or not it is
       // writable, so nothing that depended on the read-only accessors changes.
       test(m"reading still covers every discovered field"):
         dereferenceable.members(letters)
-      . assert(_ == Map(t"alpha" -> 1, t"beta" -> 2, t"gamma" -> 3, t"delta" -> 4))
+      . assert(_ == Map("alpha" -> 1, "beta" -> 2, "gamma" -> 3, "delta" -> 4))
 
       // An object's `val`s are not constructor parameters, so there is nothing to write: they
       // remain readable, and simply have no lens.
       test(m"a field which is not a constructor parameter is readable"):
-        summon[Example1.type is Dereferenceable to Int].select(Example1, t"foo")
+        summon[Example1.type is Dereferenceable to Int].select(Example1, "foo")
       . assert(_ == 42)
 
       test(m"a field which is not a constructor parameter has no lens"):
-        summon[Example1.type is Dereferenceable to Int].lens(t"foo")
+        summon[Example1.type is Dereferenceable to Int].lens("foo")
       . assert(_ == Unset)
 
       // Finding an annotated field and then writing through it, which is what the name alone
@@ -173,8 +173,8 @@ object Tests extends Suite(m"Adversaria tests"):
       test(m"an annotated field yields a lens onto itself"):
         val annotated = summon[Person is Annotated by ident]
         annotated.lens.update(Person(t"Jack", t"jack@example.com"), t"jill@example.com")
-      . assert(_ == Person(t"Jack", t"jill@example.com"))
+      . assert(_ == Person("Jack", "jill@example.com"))
 
       test(m"an annotated field's lens reads it"):
-        summon[Person is Annotated by ident].lens(Person(t"Jack", t"jack@example.com"))
-      . assert(_ == t"jack@example.com")
+        summon[Person is Annotated by ident].lens(Person("Jack", "jack@example.com"))
+      . assert(_ == "jack@example.com")

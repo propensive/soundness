@@ -37,13 +37,13 @@ import soundness.*
 object Tests extends Suite(m"Distillate Tests"):
   def run(): Unit =
     test(m"Extract an int"):
-      t"123" match
+      "123" match
         case As[Int](n) => n
         case _          => 0
     . assert(_ == 123)
 
     test(m"Extract three ints from inside a regex"):
-      t"12:13:14" match
+      "12:13:14" match
         case r"${As[Int](first)}(\d+):${As[Int](second)}(\d+):${As[Int](third)}(\d+)" =>
           List(first, second, third)
 
@@ -58,14 +58,14 @@ object Tests extends Suite(m"Distillate Tests"):
     . assert(_ == (12, 13, 14))
 
     test(m"Extract an email address"):
-      t"foo@bar.com" match
+      "foo@bar.com" match
         case As[EmailAddress](email) => email
         case _                       => email"something@else.com"
 
     . assert(_ == email"foo@bar.com")
 
     test(m"Do not extract an invalid email address"):
-      t"foobar.com" match
+      "foobar.com" match
         case As[EmailAddress](email) => email
         case _                       => email"something@else.com"
 

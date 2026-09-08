@@ -90,9 +90,9 @@ extension (help: Help)
         t"${help.command} - $synopsis"
 
     val synopsis: Text =
-      if leaf then Help.summarize(help.parameters, t"options")
+      if leaf then Help.summarize(help.parameters, "options")
       else
-        val globals: Text = Help.summarize(globalParams, t"global options")
+        val globals: Text = Help.summarize(globalParams, "global options")
 
         val posterior: List[Help.Param] =
           (localParams + help.subcommands.flatMap(Help.descendants)).distinct
@@ -143,7 +143,7 @@ extension (help: Help)
 
             Block.Subsection(group.name, explanation + commandBlocks(members))
 
-        section(t"COMMANDS", commandBlocks(ungrouped) + grouped)
+        section("COMMANDS", commandBlocks(ungrouped) + grouped)
 
     val exampleBlocks: List[Block] =
       manual.examples.flatMap: example =>
@@ -231,18 +231,18 @@ extension (help: Help)
       referenceBlocks + homepage
 
     val nameSection =
-      Block.Section(t"NAME", List(Block.Paragraph(List(Inline.Plain(name)))))
+      Block.Section("NAME", List(Block.Paragraph(List(Inline.Plain(name)))))
 
     val synopsisSection =
       Block.Section
-        ( t"SYNOPSIS",
+        ( "SYNOPSIS",
           List(Block.Paragraph(List(Inline.bold(help.command), Inline.Plain(synopsis)))) )
 
     val optionSections: List[Block] =
-      if leaf then section(t"OPTIONS", optionBlocks(help.parameters))
+      if leaf then section("OPTIONS", optionBlocks(help.parameters))
       else
-        section(t"GLOBAL OPTIONS", optionBlocks(globalParams)) +
-          section(t"OPTIONS", optionBlocks(localParams))
+        section("GLOBAL OPTIONS", optionBlocks(globalParams)) +
+          section("OPTIONS", optionBlocks(localParams))
 
     val blocks: List[Block] =
       List

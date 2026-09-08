@@ -77,16 +77,16 @@ object PdfFile:
   :   Unit =
 
     mitigate:
-      case Path.Error(_, _)     => Pdf.Error(Pdf.Error.Reason.Io(t"the path is invalid"))
-      case Name.Error(_, _, _)  => Pdf.Error(Pdf.Error.Reason.Io(t"the path is invalid"))
-      case Io.Error(_, _, _, _) => Pdf.Error(Pdf.Error.Reason.Io(t"the file could not be written"))
+      case Path.Error(_, _)     => Pdf.Error(Pdf.Error.Reason.Io("the path is invalid"))
+      case Name.Error(_, _, _)  => Pdf.Error(Pdf.Error.Reason.Io("the path is invalid"))
+      case Io.Error(_, _, _, _) => Pdf.Error(Pdf.Error.Reason.Io("the file could not be written"))
 
     . protect:
         val target: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
           workingDirectory[Path on Local].resolve(filename)
 
         if !flags.has(CreateFlag.Replace) && target.existent()
-        then abort(Pdf.Error(Pdf.Error.Reason.Io(t"the file already exists")))
+        then abort(Pdf.Error(Pdf.Error.Reason.Io("the file already exists")))
 
         if flags.has(CreateFlag.Parents) then
           target.parent.let: parent =>
@@ -205,10 +205,10 @@ class PdfFile private (origin: PdfFile.Origin):
 
       case Origin.OnDisk(filename) =>
         mitigate:
-          case Path.Error(_, _)     => Pdf.Error(Pdf.Error.Reason.Io(t"the path is invalid"))
+          case Path.Error(_, _)     => Pdf.Error(Pdf.Error.Reason.Io("the path is invalid"))
 
           case Io.Error(_, _, _, _) =>
-            Pdf.Error(Pdf.Error.Reason.Io(t"the file could not be opened"))
+            Pdf.Error(Pdf.Error.Reason.Io("the file could not be opened"))
 
         . protect:
             val path: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:

@@ -49,8 +49,8 @@ object Geolocation:
   private given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 6)
 
   private def parseParams(text: Text): List[(Text, Text)] raises Geolocation.Error =
-    text.cut(t";").map: parameter =>
-      parameter.cut(t"=") match
+    text.cut(";").map: parameter =>
+      parameter.cut("=") match
         case List(key, value) => (key, value)
         case Nil | List(_)    => abort(Geolocation.Error(MissingEquals))
         case _                => abort(Geolocation.Error(MultipleEquals))
@@ -62,14 +62,14 @@ object Geolocation:
         unsafely(Location(latitude.as[Double].deg, longitude.as[Double].deg))
 
       more match
-        case t""           => Geolocation(location)
+        case ""           => Geolocation(location)
 
         case r",$more(.*)" => more match
           case r"$altitude0(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
             val altitude = unsafely(altitude0.as[Double])
 
             more match
-              case t"" =>
+              case "" =>
                 Geolocation(location, altitude)
 
               case r";.*" =>

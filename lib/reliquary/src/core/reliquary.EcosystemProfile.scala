@@ -104,8 +104,8 @@ object EcosystemProfile:
 
     // The separators are bound outside the `each` lambda below: a `t"…"` interpolation evaluated
     // inside a combinator lambda trips the compiler's `wildApprox` assertion.
-    val semicolons = t"; "
-    val commas = t", "
+    val semicolons = "; "
+    val commas = ", "
 
     declared.each: record =>
       registry(record.id) match
@@ -151,8 +151,8 @@ object EcosystemProfile:
     case Lira.Manifest.Guarantee.Recompilation => Discipline.Guarantee.Recompilation
 
   private def keyword(level: Discipline.Guarantee): Text = level match
-    case Discipline.Guarantee.Linkage       => t"linkage"
-    case Discipline.Guarantee.Recompilation => t"recompilation"
+    case Discipline.Guarantee.Linkage       => "linkage"
+    case Discipline.Guarantee.Recompilation => "recompilation"
 
 // A named, versioned set of predicates an ecosystem imposes in addition to those of the core
 // specification (§11.6). Profiles add predicates and add guarantees; they never subtract (L129),

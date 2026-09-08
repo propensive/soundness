@@ -41,7 +41,7 @@ object Jpeg:
   def apply(): Rasterizable = rasterization
 
   given rasterization: Jpeg is Rasterizable:
-    def name: Text = "JPEG".tt
+    def name: Text = "JPEG"
     def mediaType: MediaType = media"image/jpeg"
     def alpha: Boolean = false
 

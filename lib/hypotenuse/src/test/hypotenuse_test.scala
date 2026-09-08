@@ -134,31 +134,31 @@ object Tests extends Suite(m"Hypotenuse tests"):
     suite(m"Bit-pattern formatting"):
       test(m"Byte.hex of -1 is two characters"):
         (-1: Byte).hex
-      . assert(_ == t"ff")
+      . assert(_ == "ff")
 
       test(m"Byte.hex of 0x80 is two characters"):
         (0x80.toByte).hex
-      . assert(_ == t"80")
+      . assert(_ == "80")
 
       test(m"Byte.binary of -1 is eight characters"):
         (-1: Byte).binary
-      . assert(_ == t"11111111")
+      . assert(_ == "11111111")
 
       test(m"Byte.octal of -1 is three characters"):
         (-1: Byte).octal
-      . assert(_ == t"377")
+      . assert(_ == "377")
 
       test(m"Short.hex of -1 is four characters"):
         (-1: Short).hex
-      . assert(_ == t"ffff")
+      . assert(_ == "ffff")
 
       test(m"Short.binary of -1 is sixteen characters"):
         (-1: Short).binary
-      . assert(_ == t"1111111111111111")
+      . assert(_ == "1111111111111111")
 
       test(m"Short.octal of -1 is six characters"):
         (-1: Short).octal
-      . assert(_ == t"177777")
+      . assert(_ == "177777")
 
     suite(m"Signed overflow detection"):
       import arithmeticOptions.checkedOverflow
@@ -491,56 +491,56 @@ object Tests extends Suite(m"Hypotenuse tests"):
 
       test(m"zero renders as 0"):
         Decimal(0L).text
-      . assert(_ == t"0")
+      . assert(_ == "0")
 
       test(m"an integer renders without a point"):
         Decimal(1234567890123L).text
-      . assert(_ == t"1234567890123")
+      . assert(_ == "1234567890123")
 
       test(m"a negative scaled value renders plainly"):
         Decimal(-1234567, 4).text
-      . assert(_ == t"-123.4567")
+      . assert(_ == "-123.4567")
 
       test(m"a small fraction pads with leading zeros"):
         Decimal(7, 5).text
-      . assert(_ == t"0.00007")
+      . assert(_ == "0.00007")
 
       test(m"a negative scale expands with trailing zeros"):
         Decimal(42, -3).text
-      . assert(_ == t"42000")
+      . assert(_ == "42000")
 
       test(m"trailing zeros are canonically stripped"):
         Decimal(1100, 2).text
-      . assert(_ == t"11")
+      . assert(_ == "11")
 
       test(m"a Double converts by shortest representation, not binary expansion"):
         Decimal(0.1).text
-      . assert(_ == t"0.1")
+      . assert(_ == "0.1")
 
       test(m"a large Double converts through its exponent form"):
         Decimal(1.0e21).text
-      . assert(_ == t"1000000000000000000000")
+      . assert(_ == "1000000000000000000000")
 
       test(m"a tiny Double converts through its negative exponent form"):
         Decimal(2.5e-7).text
-      . assert(_ == t"0.00000025")
+      . assert(_ == "0.00000025")
 
       test(m"a non-finite Double is refused"):
         capture[Decimal.Error](Decimal(Double.NaN))
       . assert(_ => true)
 
       test(m"parsing accepts exponents and signs"):
-        Decimal.parse(t"-12.34e+2").text
-      . assert(_ == t"-1234")
+        Decimal.parse("-12.34e+2").text
+      . assert(_ == "-1234")
 
       test(m"parsing rejects malformed text"):
-        capture[Decimal.Error](Decimal.parse(t"1.2.3"))
+        capture[Decimal.Error](Decimal.parse("1.2.3"))
       . assert(_ => true)
 
       test(m"a numeric literal constructs a Decimal"):
         val price: Decimal = 12.99
         price.text
-      . assert(_ == t"12.99")
+      . assert(_ == "12.99")
 
       test(m"comparison agrees with ordering"):
         List(Decimal(1, 1) < Decimal(2, 1), Decimal(-3) < Decimal(2), Decimal(10) < Decimal(2))
@@ -551,17 +551,17 @@ object Tests extends Suite(m"Hypotenuse tests"):
       . assert(_ == List(t"-0.5", t"0.5"))
 
       test(m"addition carries across limbs"):
-        (Decimal.parse(t"999999999999999999") + Decimal(1)).text
-      . assert(_ == t"1000000000000000000")
+        (Decimal.parse("999999999999999999") + Decimal(1)).text
+      . assert(_ == "1000000000000000000")
 
       test(m"multiplication of many-digit values"):
-        (Decimal.parse(t"123456789012345678901234567890")
-            * Decimal.parse(t"987654321098765432109876543210")).text
-      . assert(_ == t"121932631137021795226185032733622923332237463801111263526900")
+        (Decimal.parse("123456789012345678901234567890")
+            * Decimal.parse("987654321098765432109876543210")).text
+      . assert(_ == "121932631137021795226185032733622923332237463801111263526900")
 
       test(m"division to a scale with HalfEven"):
         Decimal(1).divide(Decimal(3), 10, Decimal.Rounding.HalfEven).text
-      . assert(_ == t"0.3333333333")
+      . assert(_ == "0.3333333333")
 
       test(m"division by zero raises"):
         capture[hypotenuse.Arithmetic.Error](Decimal(1).divide(Decimal(0L), 2, Decimal.Rounding.HalfUp))
@@ -660,19 +660,19 @@ object Tests extends Suite(m"Hypotenuse tests"):
 
       test(m"one half renders as 1/2"):
         Q64(1, 2).text
-      . assert(_ == t"1/2")
+      . assert(_ == "1/2")
 
       test(m"whole values render without a denominator"):
         Q64(7, 1).text
-      . assert(_ == t"7")
+      . assert(_ == "7")
 
       test(m"negative values render with a leading minus"):
         Q64(-5, 3).text
-      . assert(_ == t"-5/3")
+      . assert(_ == "-5/3")
 
       test(m"zero renders as 0"):
         Q64(0).text
-      . assert(_ == t"0")
+      . assert(_ == "0")
 
       test(m"encoding is canonical, so equal values are bit-equal"):
         Q64(6, 4)
@@ -870,11 +870,11 @@ object Tests extends Suite(m"Hypotenuse tests"):
       . assert(_ == Q64(3, 8))
 
       test(m"parse reads fraction notation"):
-        Q64.parse(t"-5/3")
+        Q64.parse("-5/3")
       . assert(_ == Q64(-5, 3))
 
       test(m"parse reads NaR"):
-        Q64.parse(t"NaR").nar
+        Q64.parse("NaR").nar
       . assert(identity)
 
       test(m"text round-trips through parse"):

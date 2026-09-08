@@ -69,7 +69,7 @@ object SourceCode:
 
   // This list was found in scala/scala3:compiler/src/dotty/tools/dotc/core/parsing/Parsers.scala
   private val soft: Set[Text] =
-    Set(t"inline", t"opaque", t"open", t"transparent", t"infix", t"update", t"erased", t"tracked")
+    Set("inline", "opaque", "open", "transparent", "infix", "update", "erased", "tracked")
 
   def apply(language: ProgrammingLanguage, text: Text, caret: Optional[Ordinal])
     ( using highlighting: Highlight )
@@ -164,7 +164,7 @@ object SourceCode:
       if language == Java then JavaScanners.JavaScanner(source) else Scanners.Scanner(source)
 
     def untab(text: Text): Chain[Token] =
-      Chain(Token(text.sub(t"\t", t"  "), Accent.Unparsed), Token.Newline)
+      Chain(Token(text.sub("\t", "  "), Accent.Unparsed), Token.Newline)
 
     def hard(stream: Chain[Token]): Boolean = stream match
       case Token(_, Accent.Unparsed, _, _, _) #:: more                  => hard(more)
@@ -173,7 +173,7 @@ object SourceCode:
       case other                                                        => false
 
     def soften(stream: Chain[Token]): Chain[Token] = stream match
-      case (Token(text@(t"using" | t"erased"), Accent.Term, _, _, _)) #:: more =>
+      case (Token(text@("using" | "erased"), Accent.Term, _, _, _)) #:: more =>
         Token(text, Accent.Modifier) #:: soften(more)
 
       case (token@Token(text, Accent.Term, _, _, _)) #:: more if soft.has(text) =>
@@ -197,7 +197,7 @@ object SourceCode:
         val unparsed: Chain[Token] =
           if lastEnd == start then Chain() else
             text.segment(lastEnd.z thru start.u)
-            . cut(t"\n")
+            . cut("\n")
             . to[Chain]
             . flatMap(untab(_).filter(_.length > 0))
             . pipe { chain => chain.occupied.lay(chain)(_.lead) }
@@ -215,7 +215,7 @@ object SourceCode:
 
         val content: Chain[Token] =
           if start == end then Chain() else
-            text.segment(start.z thru end.u).cut(t"\n").to[Chain].flatMap: line =>
+            text.segment(start.z thru end.u).cut("\n").to[Chain].flatMap: line =>
               Chain(Token(line, tokenAccent, meta, role = role), Token.Newline)
 
             . pipe { chain => chain.occupied.lay(chain)(_.lead) }
@@ -471,7 +471,7 @@ object SourceCode:
         // carries a read capability the pure formal rejects.
         val args = java.util.ArrayList[String]()
 
-        (t"-classpath" :: cp :: scalac.commandLineArguments + List(t"")).each: argument =>
+        ("-classpath" :: cp :: scalac.commandLineArguments + List(t"")).each: argument =>
           args.add(argument.s)
           ()
 
@@ -509,7 +509,8 @@ object SourceCode:
   :   Optional[Completions] =
 
     try
-      val settings = ("-classpath" :: cp.s :: scalac.commandLineArguments.map(_.s)).map(_.nn)
+      val settings =
+        (s"-classpath" :: cp.s :: scalac.commandLineArguments.map(_.s)).map(_.nn)
       // stdlib bridge: the presentation compiler's own API takes a `scala.List[String]`.
       val driver = Shim.interactiveDriver(settings.stdlib)
       // The driver resolves the URI as a path, so it must use the `file` scheme, though no

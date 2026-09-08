@@ -37,7 +37,7 @@ import scala.annotation.*
 import prepositional.*
 
 object Printable:
-  given text: Text is Printable = (text, termcap) => text
+  given text: [text <: Text] => text is Printable = (text, termcap) => text
   given string: String is Printable = (string, termcap) => string.tt
   given char: Char is Printable = (char, termcap) => char.toString.tt
 

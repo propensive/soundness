@@ -178,7 +178,7 @@ object Raster:
     ( rasterizable: Optional[Rasterizable], reason: Optional[Raster.Error.Reason] = Unset )
     ( using Diagnostics )
   extends fulminate.Error
-    ( m"unable to read the raster image in ${rasterizable.lay("unspecified".tt)(_.name)} format" )
+    ( m"unable to read the raster image in ${rasterizable.lay(Text("unspecified"))(_.name)} format" )
 
   // RasterFormats → Raster.Formats
   // The formats `Raster` will try when asked to decode data whose format it was not told. Because

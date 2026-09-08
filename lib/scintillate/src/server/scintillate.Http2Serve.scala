@@ -100,8 +100,8 @@ object Http2Serve:
               // (e.g. gRPC's `grpc-status`) — rather than in the initial block.
               val trailerNames =
                 response.textHeaders
-                  . filter(_.key.lower == t"trailer")
-                  . flatMap(_.value.cut(t",").map(_.trim.lower))
+                  . filter(_.key.lower == "trailer")
+                  . flatMap(_.value.cut(",").map(_.trim.lower))
                   . to[Set]
 
               val (trailerEntries, headEntries) =

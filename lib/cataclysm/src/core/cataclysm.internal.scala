@@ -158,9 +158,9 @@ object internal:
       expr match
         case '{$value: tpe} =>
           if TypeRepr.of[tpe] <:< TypeRepr.of[Name[CssClass]]
-          then '{(${Expr(".")} + ${value.asExprOf[Text]}.s).tt}
+          then '{(${Expr(s".")} + ${value.asExprOf[Text]}.s).tt}
           else if TypeRepr.of[tpe] <:< TypeRepr.of[Name[DomId]]
-          then '{(${Expr("#")} + ${value.asExprOf[Text]}.s).tt}
+          then '{(${Expr(s"#")} + ${value.asExprOf[Text]}.s).tt}
           else halt(m"cataclysm: only a CSS class or DOM id may be substituted in a selector", pos)
 
         case _ =>
@@ -280,20 +280,20 @@ object internal:
 
     val members = refinements(convertible.asTerm.tpe) ++ refinements(convertible.asTerm.tpe.widen)
 
-    members.get(t"Topic") match
+    members.get("Topic") match
       case Some(ConstantType(StringConstant(name))) => name.tt
-      case _                                        => t""
+      case _                                        => ""
 
   // A canonical instance of a value type, used to probe a property's grammar.
   private def sample(topic: Text): Optional[Text] = topic match
-    case t"length"     => t"1px"
-    case t"color"      => t"#000000"
-    case t"percentage" => t"1%"
-    case t"number"     => t"1.5"
-    case t"integer"    => t"1"
-    case t"time"       => t"1s"
-    case t"angle"      => t"1deg"
-    case t"flex"       => t"1fr"
+    case "length"     => "1px"
+    case "color"      => "#000000"
+    case "percentage" => "1%"
+    case "number"     => "1.5"
+    case "integer"    => "1"
+    case "time"       => "1s"
+    case "angle"      => "1deg"
+    case "flex"       => "1fr"
     case _             => Unset
 
   // `Unset` if a value of VDS type `topic` is acceptable for `property`; otherwise
@@ -301,7 +301,7 @@ object internal:
   def propertyIssue(property: Text, topic: Text): Optional[Message] =
     PropertyDef.of(property).lay(m"cataclysm: $property is not a known CSS property"): definition =>
       // A wildcard topic (the CSS-wide keywords) is valid for any known property.
-      if topic == t"*" then Unset
+      if topic == "*" then Unset
       else sample(topic).lay(Unset):
         sampleText =>
           val outcome = safely(SyntaxMatcher.check(definition, sampleText))

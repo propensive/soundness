@@ -115,7 +115,7 @@ object BintelInlinable:
     :   Expr[Iterable[element]] =
 
       quotes.reflect.report.errorAndAbort
-        ("stratiform: a repeatable field parses through its struct's generated parser; a " +
+        (s"stratiform: a repeatable field parses through its struct's generated parser; a " +
           "collection has no standalone BinTEL form")
 
   // The structural instance for a *top-level* sealed sum, whose schema root
@@ -144,7 +144,7 @@ object BintelInlinable:
         val atom = $reader.scalar()
 
         try atom.s.toInt catch case _: NumberFormatException =>
-          raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Int")))(using infer[Tactic[Tel.Error]])
+          raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, "Int")))(using infer[Tactic[Tel.Error]])
           0
       }
 
@@ -159,7 +159,7 @@ object BintelInlinable:
         val atom = $reader.scalar()
 
         try atom.s.toLong catch case _: NumberFormatException =>
-          raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Long")))(using infer[Tactic[Tel.Error]])
+          raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, "Long")))(using infer[Tactic[Tel.Error]])
           0L
       }
 
@@ -178,7 +178,7 @@ object BintelInlinable:
           case "false" => false
 
           case _ =>
-            raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Boolean")))
+            raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, "Boolean")))
               (using infer[Tactic[Tel.Error]])
 
             false
@@ -197,7 +197,7 @@ object BintelInlinable:
         val atom = $reader.scalar()
 
         try atom.s.toDouble catch case _: NumberFormatException =>
-          raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Double")))
+          raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, "Double")))
             (using infer[Tactic[Tel.Error]])
 
           0.0
@@ -215,7 +215,7 @@ object BintelInlinable:
       '{ $reader.scalar() }
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Text]): Expr[Text] =
-      '{ Tel.Parsable.missing[Text](t"")(using $tactic) }
+      '{ Tel.Parsable.missing[Text]("")(using $tactic) }
 
   given string: (String is BintelInlinable) = new BintelInlinable:
     type Self = String

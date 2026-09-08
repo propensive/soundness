@@ -105,14 +105,14 @@ object Css:
     def newline(indent: Int): Unit = if formatter.newlines then put(indentText(indent))
 
     def block(body: List[Css.Node], indent: Int): Unit =
-      put(if formatter.spaces then t" {" else t"{")
+      put(if formatter.spaces then " {" else "{")
 
       body.each: child =>
         newline(indent + 1)
         emitNode(child, indent + 1)
 
       newline(indent)
-      put(t"}")
+      put("}")
 
     def emitNode(node: Css.Node, indent: Int): Unit = node match
       case Css.Node.Rule(selector, body) =>
@@ -121,15 +121,15 @@ object Css:
 
       case Css.Node.Declaration(property, value) =>
         put(property)
-        put(if formatter.spaces then t": " else t":")
+        put(if formatter.spaces then ": " else ":")
         put(value)
-        put(t";")
+        put(";")
 
       case Css.Node.At(name, prelude, body) =>
         put(t"@$name")
-        if prelude != t"" then put(t" $prelude")
+        if prelude != "" then put(t" $prelude")
 
-        body.lay(put(t";")): nodes => block(nodes, indent)
+        body.lay(put(";")): nodes => block(nodes, indent)
 
     var first = true
 
@@ -137,9 +137,9 @@ object Css:
       if first then first = false else newline(0)
       emitNode(child, 0)
 
-    if formatter.newlines then put(t"\n")
+    if formatter.newlines then put("\n")
 
-  private def indentText(indent: Int): Text = ("\n" + " ".repeat(2*indent).nn).tt
+  private def indentText(indent: Int): Text = (s"\n" + s" ".repeat(2*indent).nn).tt
 
   // The `css"…"` interpolator: substitutions are checked against the property they
   // sit in (see `internal.expand`). Wired through `contextual` like `x"…"`/`h"…"`.
@@ -188,7 +188,7 @@ object Css:
     // type is still uninstantiated, tripping dotc's `wildApprox` assertion (scala/scala3#24824).
     def text: Text =
       def declaration(name: Text, value: Text): Text = t"$name: $value"
-      properties.map { (name, value) => declaration(name, value) }.join(t"; ")
+      properties.map { (name, value) => declaration(name, value) }.join("; ")
 
   // A typed CSS value tagged with its value-definition-syntax type (e.g.
   // `Css.Value of "length"`). Native types convert in via `Css.Convertible`; the
@@ -334,15 +334,15 @@ object Css:
     given decimal: (Double is Css.Convertible of "number") = Css.number(_)
 
     given keyword: (Css.Keyword is Css.Convertible of "*") = _ match
-      case Css.Keyword.Inherit     => t"inherit"
-      case Css.Keyword.Initial     => t"initial"
-      case Css.Keyword.Unset       => t"unset"
-      case Css.Keyword.Revert      => t"revert"
-      case Css.Keyword.RevertLayer => t"revert-layer"
+      case Css.Keyword.Inherit     => "inherit"
+      case Css.Keyword.Initial     => "initial"
+      case Css.Keyword.Unset       => "unset"
+      case Css.Keyword.Revert      => "revert"
+      case Css.Keyword.RevertLayer => "revert-layer"
 
     given colorKeyword: (Css.ColorKeyword is Css.Convertible of "color") = _ match
-      case Css.ColorKeyword.Transparent  => t"transparent"
-      case Css.ColorKeyword.CurrentColor => t"currentcolor"
+      case Css.ColorKeyword.Transparent  => "transparent"
+      case Css.ColorKeyword.CurrentColor => "currentcolor"
 
     private def number(value: Double): Text = Css.number(value)
 

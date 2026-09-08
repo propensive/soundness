@@ -46,11 +46,11 @@ import errorDiagnostics.emptyDiagnostics
 // host, not a universe, and a `js`-universe library's carrier is `.d.ts` — so a release
 // carrying it is a host contract (L135) and L127 rejects a library that declares it.
 object WebIdlDiscipline extends Discipline:
-  def id: Text = t"webidl/1"
+  def id: Text = "webidl/1"
 
   def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".idl")
 
-  def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"host"))
+  def domain: Discipline.Domain = Discipline.Domain.Realms(Set("host"))
   def keying: Discipline.Keying = Discipline.Keying.Declaration
 
   // Recompilation, for consumers type-checking against declarations generated from the IDL;

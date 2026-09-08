@@ -66,7 +66,7 @@ private[facsimile] object PdfWriter:
     def ascii(text: Text): Unit = raw(charEncoders.iso88591Encoder.encoded(text))
 
     // A binary comment after the header marks the file as containing binary data.
-    ascii(t"%PDF-1.7\n")
+    ascii("%PDF-1.7\n")
     raw(Array[Byte]('%'.toByte, 0xe2.toByte, 0xe3.toByte, 0xcf.toByte, 0xd3.toByte, '\n'.toByte))
 
     val maxNumber = pdf.nextNumber - 1
@@ -79,7 +79,7 @@ private[facsimile] object PdfWriter:
         ascii(t"$number 0 obj\n")
         // The writer thunks share only this append pass's own accumulators.
         scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
-        ascii(t"\nendobj\n")
+        ascii("\nendobj\n")
 
     val xrefOffset = length
     ascii(t"xref\n0 ${maxNumber + 1}\n0000000000 65535 f \n")
@@ -87,7 +87,7 @@ private[facsimile] object PdfWriter:
     (1 to maxNumber).each: number =>
       offsets.at(number) match
         case offset: Long => ascii(t"${pad10(offset)} 00000 n \n")
-        case _            => ascii(t"0000000000 00000 f \n")
+        case _            => ascii("0000000000 00000 f \n")
 
     ascii(t"trailer\n<< /Size ${maxNumber + 1}")
 
@@ -114,7 +114,7 @@ private[facsimile] object PdfWriter:
     def ascii(text: Text): Unit = raw(charEncoders.iso88591Encoder.encoded(text))
 
     // A leading end-of-line guards against the original file not ending in one.
-    ascii(t"\n")
+    ascii("\n")
 
     val changed = pdf.overlay.keys.to(scala.List).sorted
     val offsets = scala.collection.mutable.HashMap[Int, Long]()
@@ -135,7 +135,7 @@ private[facsimile] object PdfWriter:
 
       // The writer thunks share only this append pass's own accumulators.
       scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value, encryption))
-      ascii(t"\nendobj\n")
+      ascii("\nendobj\n")
 
     val xrefOffset = baseOffset + length
     val freed = pdf.freed.to(scala.List).sorted
@@ -164,13 +164,13 @@ private[facsimile] object PdfWriter:
     then scala.caps.unsafe.unsafeAssumeSeparate
           ( streamed(pdf, raw, ascii, xrefOffset, numbers, offsets, entries) )
     else
-      ascii(t"xref\n")
+      ascii("xref\n")
 
       subsections(numbers).each: (first, run) =>
         ascii(t"$first ${run.size}\n")
 
         run.each: number =>
-          if number == 0 then ascii(t"0000000000 65535 f \n")
+          if number == 0 then ascii("0000000000 65535 f \n")
           else if pdf.freed.contains(number) then
             val generation = pdf.xref.entries(number) match
               case Xref.Entry.Direct(_, gen) => gen + 1
@@ -230,7 +230,7 @@ private[facsimile] object PdfWriter:
     val index = subsections(rows).flatMap((first, run) => List(first, run.size))
 
     ascii(t"$number 0 obj\n<< /Type /XRef /Size ${number + 1} /W [1 4 2] /Index [")
-    ascii(index.map(_.toString.tt).join(t" "))
+    ascii(index.map(_.toString.tt).join(" "))
     ascii(t"] /Length ${rows.size*7}")
 
     entries.each: (key, value) =>
@@ -240,7 +240,7 @@ private[facsimile] object PdfWriter:
 
     pdf.xref.startxref.let: previous => ascii(t" /Prev $previous")
 
-    ascii(t" >>\nstream\n")
+    ascii(" >>\nstream\n")
 
     rows.each: entry =>
       if entry == number then row(1, offset, 0)
@@ -274,11 +274,11 @@ private[facsimile] object PdfWriter:
         val payload = encryption.lay(stored): (guard, number, generation) =>
           guard.encryptStream(stored, number, generation)
 
-        val entries = body.entries.define(t"Length", Cos.Integral(payload.length.toLong))
+        val entries = body.entries.define("Length", Cos.Integral(payload.length.toLong))
         raw(CosWriter.dictionaryBytes(entries))
-        ascii(t"\nstream\n")
+        ascii("\nstream\n")
         raw(payload)
-        ascii(t"\nendstream")
+        ascii("\nendstream")
 
       case _ =>
         raw(CosWriter.write(cos))
@@ -329,8 +329,8 @@ private[facsimile] object PdfWriter:
 
   private def pad10(value: Long): Text =
     val digits = value.toString
-    ("0".repeat(10 - digits.length).nn + digits).tt
+    ("0".s.repeat(10 - digits.length).nn + digits).tt
 
   private def pad5(value: Int): Text =
     val digits = value.toString
-    ("0".repeat(5 - digits.length).nn + digits).tt
+    ("0".s.repeat(5 - digits.length).nn + digits).tt

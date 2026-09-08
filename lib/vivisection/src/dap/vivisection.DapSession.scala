@@ -204,12 +204,12 @@ private[vivisection] class DapSession(emit: Json => Unit)
       val out: () => Unit =
         caps.unsafe.unsafeAssumePure: () =>
           console.stdout.each: data =>
-            adapter.send(t"output", Dap.OutputBody(data.utf8, t"stdout").in[Json])
+            adapter.send("output", Dap.OutputBody(data.utf8, "stdout").in[Json])
 
       val err: () => Unit =
         caps.unsafe.unsafeAssumePure: () =>
           console.stderr.each: data =>
-            adapter.send(t"output", Dap.OutputBody(data.utf8, t"stderr").in[Json])
+            adapter.send("output", Dap.OutputBody(data.utf8, "stderr").in[Json])
 
       val exit: () => Unit =
         caps.unsafe.unsafeAssumePure: () =>
@@ -218,8 +218,8 @@ private[vivisection] class DapSession(emit: Json => Unit)
               case Exit.Fail(code) => code
               case _               => 0
 
-            adapter.send(t"exited", Dap.ExitedBody(code).in[Json])
-            adapter.send(t"terminated")
+            adapter.send("exited", Dap.ExitedBody(code).in[Json])
+            adapter.send("terminated")
 
       val outTask: Task[Unit] = async(out())
       val errTask: Task[Unit] = async(err())
@@ -236,7 +236,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
     val id = threadHandle(halt.thread)
     stops(id) = DapSession.HaltSlot(caps.unsafe.unsafeAssumePure(halt))
     halt.remain()
-    send(t"stopped", Dap.StoppedBody(reason, id, all, hits).in[Json])
+    send("stopped", Dap.StoppedBody(reason, id, all, hits).in[Json])
 
   // Clears every per-stop registry; handles minted before a resume are invalid after it.
   private def clearStops(): Unit =
@@ -252,17 +252,17 @@ private[vivisection] class DapSession(emit: Json => Unit)
   def handle(json: Json): Unit =
     val request = Dap.envelope(json)
 
-    if request.`type` == t"request" then
+    if request.`type` == "request" then
       try dispatch(request, json)
       catch case error: Exception => fail(request, error.toString.tt)
 
   private def dispatch(request: Dap.Envelope, json: Json): Unit =
     request.command.or(t"") match
-      case t"initialize" =>
+      case "initialize" =>
         respond(request, Dap.Capabilities().in[Json])
-        send(t"initialized")
+        send("initialized")
 
-      case t"launch" =>
+      case "launch" =>
         val arguments = json.arguments.as[Dap.LaunchArguments]
         classpath0 = arguments.classpath.as[LocalClasspath]
         namer0 = classpath0.let(Namer(_))
@@ -286,7 +286,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
         ready.await()
         respond(request)
 
-      case t"attach" =>
+      case "attach" =>
         val arguments = json.arguments.as[Dap.AttachArguments]
 
         val endpoint: Endpoint[Tcp.Port] =
@@ -312,7 +312,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
         ready.await()
         respond(request)
 
-      case t"setBreakpoints" =>
+      case "setBreakpoints" =>
         val arguments = json.arguments.as[Dap.SetBreakpointsArguments]
         val path = arguments.source.path.or(arguments.source.name.or(t""))
         val source = basename(path)
@@ -328,11 +328,11 @@ private[vivisection] class DapSession(emit: Json => Unit)
             // registries cannot name, but it dies with the session.
             val verified: Jdwp.Location => Unit =
               caps.unsafe.unsafeAssumePure: _ =>
-                self.send(t"breakpoint", Dap.BreakpointEventBody(t"changed",
+                self.send("breakpoint", Dap.BreakpointEventBody("changed",
                     Dap.Breakpoint(true, id, spec.line)).in[Json])
 
             val handle = debug.breakpoint(source, Ordinal.uniary(spec.line), verified):
-              stop ?=> adapter.onStop(t"breakpoint", List(id), true)(using stop)
+              stop ?=> adapter.onStop("breakpoint", List(id), true)(using stop)
 
             (DapSession.SourceSlot(caps.unsafe.unsafeAssumePure(handle), id), spec.line)
 
@@ -343,27 +343,27 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
           respond(request, Dap.BreakpointsBody(breakpoints).in[Json])
 
-      case t"setExceptionBreakpoints" =>
+      case "setExceptionBreakpoints" =>
         val arguments = json.arguments.as[Dap.SetExceptionBreakpointsArguments]
 
         withDebug(request): debug =>
           val adapter = self
           exceptionRequests.each: slot => safely(slot.handle.clear())
 
-          val uncaught = arguments.filters.has(t"uncaught")
-          val caught = arguments.filters.has(t"caught")
+          val uncaught = arguments.filters.has("uncaught")
+          val caught = arguments.filters.has("caught")
 
           exceptionRequests =
             if !uncaught && !caught then List() else
               val handle = debug.exceptions(uncaught, caught):
-                stop ?=> adapter.onStop(t"exception", List(), true)(using stop)
+                stop ?=> adapter.onStop("exception", List(), true)(using stop)
 
               List(DapSession.RequestSlot(caps.unsafe.unsafeAssumePure(handle)))
 
           val breakpoints = arguments.filters.map: _ => Dap.Breakpoint(true)
           respond(request, Dap.BreakpointsBody(breakpoints).in[Json])
 
-      case t"setFunctionBreakpoints" =>
+      case "setFunctionBreakpoints" =>
         val arguments = json.arguments.as[Dap.SetFunctionBreakpointsArguments]
 
         withDebug(request): debug =>
@@ -374,10 +374,10 @@ private[vivisection] class DapSession(emit: Json => Unit)
             val id = counter.since(_ + 1)
             val dot = spec.name.s.lastIndexOf('.')
             val cls = if dot < 0 then spec.name else spec.name.s.substring(0, dot).nn.tt
-            val method = if dot < 0 then t"" else spec.name.s.substring(dot + 1).nn.tt
+            val method = if dot < 0 then "" else spec.name.s.substring(dot + 1).nn.tt
 
             val handle = debug.breakpoint(cls, method):
-              stop ?=> adapter.onStop(t"function breakpoint", List(id), true)(using stop)
+              stop ?=> adapter.onStop("function breakpoint", List(id), true)(using stop)
 
             DapSession.SourceSlot(caps.unsafe.unsafeAssumePure(handle), id)
 
@@ -386,7 +386,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
           val breakpoints = created.map: slot => Dap.Breakpoint(slot.handle.bound, slot.id)
           respond(request, Dap.BreakpointsBody(breakpoints).in[Json])
 
-      case t"dataBreakpointInfo" =>
+      case "dataBreakpointInfo" =>
         val arguments = json.arguments.as[Dap.DataBreakpointInfoArguments]
 
         val target = arguments.variablesReference.let(nodes.get(_).getOrElse(scala.None)) match
@@ -405,12 +405,12 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
             case _ =>
               respond(request, Dap.DataBreakpointInfoBody(Unset,
-                  t"only a member field supports a data breakpoint").in[Json])
+                  "only a member field supports a data breakpoint").in[Json])
 
           case _ =>
-            respond(request, Dap.DataBreakpointInfoBody(Unset, t"unknown variable").in[Json])
+            respond(request, Dap.DataBreakpointInfoBody(Unset, "unknown variable").in[Json])
 
-      case t"setDataBreakpoints" =>
+      case "setDataBreakpoints" =>
         val arguments = json.arguments.as[Dap.SetDataBreakpointsArguments]
 
         withDebug(request): debug =>
@@ -427,7 +427,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
               val field = spec.dataId.s.substring(colon + 1).nn.tt
 
               val handle = debug.watch(cls, field):
-                stop ?=> adapter.onStop(t"data breakpoint", List(), true)(using stop)
+                stop ?=> adapter.onStop("data breakpoint", List(), true)(using stop)
 
               handle match
                 case watch: Breakpoint =>
@@ -441,19 +441,19 @@ private[vivisection] class DapSession(emit: Json => Unit)
           val breakpoints = arguments.breakpoints.map: spec => Dap.Breakpoint(!created.nil)
           respond(request, Dap.BreakpointsBody(breakpoints).in[Json])
 
-      case t"configurationDone" =>
+      case "configurationDone" =>
         withDebug(request): debug =>
           debug.resume()
           respond(request)
 
-      case t"threads" =>
+      case "threads" =>
         withDebug(request): debug =>
           val all = debug.threads().map: thread =>
             Dap.ThreadInfo(threadHandle(thread), safely(debug.name(thread)).or(t"?"))
 
           respond(request, Dap.ThreadsBody(all).in[Json])
 
-      case t"stackTrace" =>
+      case "stackTrace" =>
         val arguments = json.arguments.as[Dap.StackTraceArguments]
 
         withStop(request, arguments.threadId): halt =>
@@ -476,7 +476,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
               val id = counter.since(_ + 1)
               frames(id) = (arguments.threadId, frame, location)
               val source = file.let(Dap.Source(_, path))
-              val hint: Optional[Text] = if position.inlined then t"subtle" else Unset
+              val hint: Optional[Text] = if position.inlined then "subtle" else Unset
 
               // An inline frame is named for the definition the programmer wrote, when the
               // launch classpath's TASTy can resolve it; the class-based name is the fallback.
@@ -491,7 +491,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
           respond(request, Dap.StackTraceBody(trace, trace.size).in[Json])
 
-      case t"scopes" =>
+      case "scopes" =>
         val arguments = json.arguments.as[Dap.FrameArguments]
 
         frames.get(arguments.frameId) match
@@ -501,9 +501,9 @@ private[vivisection] class DapSession(emit: Json => Unit)
             respond(request, Dap.ScopesBody(List(Dap.Scope(t"Locals", ref))).in[Json])
 
           case _ =>
-            fail(request, t"unknown frame")
+            fail(request, "unknown frame")
 
-      case t"variables" =>
+      case "variables" =>
         val arguments = json.arguments.as[Dap.VariablesArguments]
 
         nodes.get(arguments.variablesReference) match
@@ -518,24 +518,24 @@ private[vivisection] class DapSession(emit: Json => Unit)
               respond(request, Dap.VariablesBody(all).in[Json])
 
           case _ =>
-            fail(request, t"unknown variables reference")
+            fail(request, "unknown variables reference")
 
-      case t"continue" =>
+      case "continue" =>
         withDebug(request): debug =>
           clearStops()
           debug.resume()
           respond(request, Dap.ContinueBody().in[Json])
 
-      case t"next" =>
+      case "next" =>
         stepWith(request, json, Jdwp.StepDepth.Over)
 
-      case t"stepIn" =>
+      case "stepIn" =>
         stepWith(request, json, Jdwp.StepDepth.Into)
 
-      case t"stepOut" =>
+      case "stepOut" =>
         stepWith(request, json, Jdwp.StepDepth.Out)
 
-      case t"pause" =>
+      case "pause" =>
         val arguments = json.arguments.as[Dap.ThreadArguments]
 
         withDebug(request): debug =>
@@ -545,13 +545,13 @@ private[vivisection] class DapSession(emit: Json => Unit)
               stops(arguments.threadId) = DapSession.HaltSlot(halt)
               respond(request)
 
-              send(t"stopped",
-                  Dap.StoppedBody(t"pause", arguments.threadId, false).in[Json])
+              send("stopped",
+                  Dap.StoppedBody("pause", arguments.threadId, false).in[Json])
 
             case _ =>
-              fail(request, t"unknown thread")
+              fail(request, "unknown thread")
 
-      case t"setVariable" =>
+      case "setVariable" =>
         val arguments = json.arguments.as[Dap.SetVariableArguments]
 
         nodes.get(arguments.variablesReference) match
@@ -568,19 +568,19 @@ private[vivisection] class DapSession(emit: Json => Unit)
                       fail(request, t"the value is not expressible in ${variable.erased}")
 
                 case _ =>
-                  fail(request, t"unknown variable")
+                  fail(request, "unknown variable")
 
           case _ =>
-            fail(request, t"only a local scope supports assignment")
+            fail(request, "only a local scope supports assignment")
 
-      case t"evaluate" =>
+      case "evaluate" =>
         val arguments = json.arguments.as[Dap.EvaluateArguments]
 
         // A hover must never run debuggee code (it fires on mere cursor movement), so it serves
         // only side-effect-free answers: the value and static type of a visible local, and the
         // elaboration of a call named in the stopped method. Anything else returns no hover.
         // Every other context (`repl`, `watch`, absent) evaluates as before.
-        if arguments.context == t"hover" then
+        if arguments.context == "hover" then
           withFrame(request, arguments.frameId): (thread, halt) =>
             withClasspath(request): classpath =>
               // The evaluator block returns only pure data — the local's rendering and the raw
@@ -599,7 +599,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
               val callText: Optional[Text] = calls match
                 case Nil   => Unset
-                case found => found.map(renderElaboration).join(t"\n")
+                case found => found.map(renderElaboration).join("\n")
 
               val answer: Optional[Text] = (local, callText) match
                 case (l: Text, c: Text) => t"$l\n$c"
@@ -609,7 +609,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
               answer match
                 case text: Text => respond(request, Dap.EvaluateBody(text).in[Json])
-                case _          => fail(request, t"no hover information is available")
+                case _          => fail(request, "no hover information is available")
         else
           withFrame(request, arguments.frameId): (thread, halt) =>
             withClasspath(request): classpath =>
@@ -621,7 +621,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
               respond(request, Dap.EvaluateBody(rendered).in[Json])
 
-      case t"completions" =>
+      case "completions" =>
         val arguments = json.arguments.as[Dap.CompletionsArguments]
 
         withFrame(request, arguments.frameId): (thread, halt) =>
@@ -637,9 +637,9 @@ private[vivisection] class DapSession(emit: Json => Unit)
             staged.let: (source, offset) =>
               val targets = complete(classpath, source, offset, cursor)
               respond(request, Dap.CompletionsBody(targets).in[Json])
-            . or(fail(request, t"the frame does not support completion"))
+            . or(fail(request, "the frame does not support completion"))
 
-      case t"setExpression" =>
+      case "setExpression" =>
         val arguments = json.arguments.as[Dap.SetExpressionArguments]
 
         withFrame(request, arguments.frameId): (thread, halt) =>
@@ -647,19 +647,19 @@ private[vivisection] class DapSession(emit: Json => Unit)
             halt.evaluator(classpath): eval ?=> eval.assign(arguments.expression, arguments.value)
             respond(request, Dap.SetVariableBody(arguments.value).in[Json])
 
-      case t"exceptionInfo" =>
+      case "exceptionInfo" =>
         val arguments = json.arguments.as[Dap.ThreadArguments]
 
         withStop(request, arguments.threadId): halt =>
           halt.exceptionInfo() match
             case info: Halt.ExceptionInfo =>
-              val mode = if info.caught then t"always" else t"unhandled"
+              val mode = if info.caught then "always" else "unhandled"
               respond(request, Dap.ExceptionInfoBody(info.className, mode, info.message).in[Json])
 
             case _ =>
-              fail(request, t"the thread is not stopped at an exception")
+              fail(request, "the thread is not stopped at an exception")
 
-      case t"restartFrame" =>
+      case "restartFrame" =>
         val arguments = json.arguments.as[Dap.FrameArguments]
 
         frames.get(arguments.frameId) match
@@ -669,18 +669,18 @@ private[vivisection] class DapSession(emit: Json => Unit)
               frames.clear()
               nodes.clear()
               respond(request)
-              send(t"stopped", Dap.StoppedBody(t"restart", thread).in[Json])
+              send("stopped", Dap.StoppedBody("restart", thread).in[Json])
 
           case _ =>
-            fail(request, t"unknown frame")
+            fail(request, "unknown frame")
 
-      case t"disconnect" =>
+      case "disconnect" =>
         clearStops()
         respond(request)
         terminate.offer(())
 
       case _ =>
-        fail(request, t"unrecognized command")
+        fail(request, "unrecognized command")
 
   private def stepWith(request: Dap.Envelope, json: Json, depth: Jdwp.StepDepth): Unit =
     val arguments = json.arguments.as[Dap.ThreadArguments]
@@ -691,14 +691,14 @@ private[vivisection] class DapSession(emit: Json => Unit)
       threads.get(arguments.threadId) match
         case scala.Some(thread) =>
           debug.step(thread, depth):
-            stop ?=> adapter.onStop(t"step", List(), false)(using stop)
+            stop ?=> adapter.onStop("step", List(), false)(using stop)
 
           clearStops()
           debug.resume()
           respond(request)
 
         case _ =>
-          fail(request, t"unknown thread")
+          fail(request, "unknown thread")
 
   private def variableInfo(thread: Int, variable: Variable): Dap.VariableInfo =
     val ref = variable.value match
@@ -720,12 +720,12 @@ private[vivisection] class DapSession(emit: Json => Unit)
   private inline def withDebug(request: Dap.Envelope)(inline body: Debug => Unit): Unit =
     currentDebug match
       case debug: Debug => body(debug)
-      case _            => fail(request, t"no debug session is open")
+      case _            => fail(request, "no debug session is open")
 
   private inline def withStop(request: Dap.Envelope, thread: Int)(inline body: Halt => Unit): Unit =
     stops.get(thread) match
       case scala.Some(slot) => body(slot.halt)
-      case _                => fail(request, t"the thread is not stopped")
+      case _                => fail(request, "the thread is not stopped")
 
   private inline def withFrame(request: Dap.Envelope, frameId: Optional[Int])
     ( inline body: (Int, Halt) => Unit )
@@ -733,14 +733,14 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
     frameId.let(frames.get(_).getOrElse(scala.None)) match
       case (thread: Int, _, _) => withStop(request, thread): halt => body(thread, halt)
-      case _                   => fail(request, t"unknown frame")
+      case _                   => fail(request, "unknown frame")
 
   private inline def withClasspath(request: Dap.Envelope)(inline body: LocalClasspath => Unit)
   :   Unit =
 
     classpath0 match
       case classpath: LocalClasspath => body(classpath)
-      case _                         => fail(request, t"no classpath was given at launch")
+      case _                         => fail(request, "no classpath was given at launch")
 
   // Typechecks the staged source with an interactive compiler session over the debuggee's
   // classpath and rebases the resulting replacement span from source coordinates back to the
@@ -769,11 +769,11 @@ private[vivisection] class DapSession(emit: Json => Unit)
   // placeholder standing in for whatever the programmer wrote.
   private def renderElaboration(elaboration: prophesy.Elaboration): Text =
     val types = elaboration.typeArguments match
-      case Nil  => t""
+      case Nil  => ""
       case args => t"[${args.map(_.qualified).join(t", ")}]"
 
     val givens = elaboration.givenArguments match
-      case Nil  => t""
+      case Nil  => ""
       case args => t"(using ${args.map(_.name).join(t", ")})"
 
     t"${elaboration.method}$types(…)$givens"
@@ -782,11 +782,11 @@ private[vivisection] class DapSession(emit: Json => Unit)
     import prophesy.Completion.Kind
 
     kind match
-      case Kind.Method | Kind.Extension => t"method"
-      case Kind.Type                    => t"class"
-      case Kind.Module | Kind.Package   => t"module"
-      case Kind.Keyword                 => t"keyword"
-      case Kind.Term | Kind.Given       => t"variable"
+      case Kind.Method | Kind.Extension => "method"
+      case Kind.Type                    => "class"
+      case Kind.Module | Kind.Package   => "module"
+      case Kind.Keyword                 => "keyword"
+      case Kind.Term | Kind.Given       => "variable"
 
   // Parses a plain DAP `setVariable` value at the variable's erased type: the primitives, plus
   // a fresh remote string. Anything richer belongs to `setExpression`.

@@ -358,11 +358,11 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(identity(_))
 
       test(m"text's gamut spans its characters"):
-        t"hello".gamut.size
+        "hello".gamut.size
       . assert(_ == 5)
 
       test(m"empty text is nil"):
-        t"".nil
+        "".nil
       . assert(identity(_))
 
       test(m"an integer counts itself"):
@@ -373,107 +373,107 @@ object Tests extends Suite(m"Denominative Tests"):
       test(m"nominal names a known ordinal"):
         import ordinalTextualizables.nominalOrdinal
         Quat.textual
-      . assert(_ == t"quat")
+      . assert(_ == "quat")
 
       test(m"nominal falls back for an unnamed ordinal"):
         import ordinalTextualizables.nominalOrdinal
         7.z.textual
-      . assert(_ == t"7.z")
+      . assert(_ == "7.z")
 
       test(m"the uniary showable counts from one"):
         import ordinalTextualizables.uniaryOrdinal
         Prim.textual
-      . assert(_ == t"1♭")
+      . assert(_ == "1♭")
 
       test(m"the zerary showable counts from zero"):
         import ordinalTextualizables.zeraryOrdinal
         Prim.textual
-      . assert(_ == t"0♯")
+      . assert(_ == "0♯")
 
       test(m"the unmarked uniary showable counts from one"):
         import ordinalTextualizables.unmarkedUniaryOrdinal
         Sec.textual
-      . assert(_ == t"2")
+      . assert(_ == "2")
 
       test(m"the unmarked zerary showable counts from zero"):
         import ordinalTextualizables.unmarkedZeraryOrdinal
         Sec.textual
-      . assert(_ == t"1")
+      . assert(_ == "1")
 
       test(m"the intermediate showable shows both indices"):
         import ordinalTextualizables.intermediateOrdinal
         Prim.textual
-      . assert(_ == t"⌞0⌟|⌞1⌟")
+      . assert(_ == "⌞0⌟|⌞1⌟")
 
       test(m"english renders the first ordinal"):
         import ordinalTextualizables.englishOrdinal
         Prim.textual
-      . assert(_ == t"1st")
+      . assert(_ == "1st")
 
       test(m"english renders the second ordinal"):
         import ordinalTextualizables.englishOrdinal
         Sec.textual
-      . assert(_ == t"2nd")
+      . assert(_ == "2nd")
 
       test(m"english renders the third ordinal"):
         import ordinalTextualizables.englishOrdinal
         Ter.textual
-      . assert(_ == t"3rd")
+      . assert(_ == "3rd")
 
       test(m"english renders a regular ordinal"):
         import ordinalTextualizables.englishOrdinal
         Quat.textual
-      . assert(_ == t"4th")
+      . assert(_ == "4th")
 
       test(m"english renders the eleventh ordinal"):
         import ordinalTextualizables.englishOrdinal
         10.z.textual
-      . assert(_ == t"11th")
+      . assert(_ == "11th")
 
       test(m"english renders the twenty-first ordinal"):
         import ordinalTextualizables.englishOrdinal
         20.z.textual
-      . assert(_ == t"21st")
+      . assert(_ == "21st")
 
       test(m"english renders the thirteenth ordinal"):
         import ordinalTextualizables.englishOrdinal
         12.z.textual
-      . assert(_ == t"13th")
+      . assert(_ == "13th")
 
       test(m"english superscript renders the first ordinal"):
         import ordinalTextualizables.englishSuperscriptOrdinal
         Prim.textual
-      . assert(_ == t"1ˢᵗ")
+      . assert(_ == "1ˢᵗ")
 
       test(m"english superscript renders the second ordinal"):
         import ordinalTextualizables.englishSuperscriptOrdinal
         Sec.textual
-      . assert(_ == t"2ⁿᵈ")
+      . assert(_ == "2ⁿᵈ")
 
       test(m"french renders the first ordinal"):
         import ordinalTextualizables.frenchOrdinal
         Prim.textual
-      . assert(_ == t"1ᵉʳ")
+      . assert(_ == "1ᵉʳ")
 
       test(m"french renders the second ordinal"):
         import ordinalTextualizables.frenchOrdinal
         Sec.textual
-      . assert(_ == t"2ᵉ")
+      . assert(_ == "2ᵉ")
 
       test(m"italian renders the first ordinal"):
         import ordinalTextualizables.italianOrdinal
         Prim.textual
-      . assert(_ == t"1ᵒ")
+      . assert(_ == "1ᵒ")
 
       test(m"spanish renders the second ordinal"):
         import ordinalTextualizables.spanishOrdinal
         Sec.textual
-      . assert(_ == t"2.ᵒ")
+      . assert(_ == "2.ᵒ")
 
       test(m"russian renders the second ordinal"):
         import ordinalTextualizables.russianOrdinal
         Sec.textual
-      . assert(_ == t"2-й")
+      . assert(_ == "2-й")
 
     suite(m"Span offset-mode tests"):
       val span = Span.offset(10.z, 5)

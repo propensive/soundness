@@ -667,7 +667,7 @@ object decimalInternal:
       // Plain decimal notation — no exponent, no trailing zeros — with `BigDecimal`'s
       // `stripTrailingZeros.toPlainString` semantics built into the canonical form.
       def text: Text =
-        if left(0) == 0 then "0".tt else
+        if left(0) == 0 then "0" else
           val digits = StringBuilder()
           if left(0) < 0 then digits.append('-')
           val start = digits.length

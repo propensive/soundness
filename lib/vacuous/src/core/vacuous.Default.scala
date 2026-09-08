@@ -41,7 +41,7 @@ object Default:
   given int: Default[Int] = () => 0
   given singleton: [value: ValueOf] => Default[value] = () => valueOf[value]
   given default: Default[Long] = () => 0L
-  given text: Default[Text] = () => "".tt
+  given text: Default[Text] = () => ""
   given string: Default[String] = () => ""
   given list: [element] => Default[List[element]] = () => Nil
   given set: [element] => Default[Set[element]] = () => Set()

@@ -138,31 +138,31 @@ object Dsv extends Dsv2:
   given int: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Int is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"Int", 0): cell =>
+      decodeCell(dsv, "Int", 0): cell =>
         try Integer.parseInt(cell.s) catch case _: NumberFormatException => Unset
 
   given long: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Long is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"Long", 0L): cell =>
+      decodeCell(dsv, "Long", 0L): cell =>
         try java.lang.Long.parseLong(cell.s) catch case _: NumberFormatException => Unset
 
   given double: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Double is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"Double", 0.0): cell =>
+      decodeCell(dsv, "Double", 0.0): cell =>
         try java.lang.Double.parseDouble(cell.s) catch case _: NumberFormatException => Unset
 
   given float: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Float is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"Float", 0.0f): cell =>
+      decodeCell(dsv, "Float", 0.0f): cell =>
         try java.lang.Float.parseFloat(cell.s) catch case _: NumberFormatException => Unset
 
   given boolean: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Boolean is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"Boolean", false): cell =>
+      decodeCell(dsv, "Boolean", false): cell =>
         cell.s match
           case "true"  => true
           case "false" => false
@@ -170,11 +170,11 @@ object Dsv extends Dsv2:
 
   given text: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Text is Decodable in Dsv =
-    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"Text", t"")(cell => cell)
+    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, "Text", "")(cell => cell)
 
   given string: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  String is Decodable in Dsv =
-    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"String", "")(cell => cell.s)
+    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, "String", "": String)(cell => cell.s)
 
   inline given decodableDerivation: [value <: Product: ProductReflection]
   =>  value is Decodable in Dsv =

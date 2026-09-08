@@ -226,8 +226,8 @@ trait protointernal extends caps.Pure:
         Expr.summon[Principal[dimension, ?]].absolve match
           case None =>
             val dimensionName =
-              dimensionality.quantityName.map: name => "the physical quantity "+name
-              . getOrElse("the same quantity")
+              dimensionality.quantityName.map: name => s"the physical quantity $name"
+              . getOrElse(s"the same quantity")
 
             halt:
               m"""
@@ -289,8 +289,8 @@ trait protointernal extends caps.Pure:
             else
               val quantityName = from.dimensionRef.dimensionality.quantityName
 
-              val dimensionName = quantityName.map("the physical quantity "+_).getOrElse:
-                "the same physical quantity"
+              val dimensionName = quantityName.map(s"the physical quantity "+_).getOrElse:
+                "the same physical quantity": String
 
               halt:
                 m"""
@@ -411,8 +411,8 @@ trait protointernal extends caps.Pure:
   private def incompatibleTypeText(left: UnitsMap, right: UnitsMap)(using Quotes): String =
     (left.dimensionality.quantityName, right.dimensionality.quantityName) match
       case (Some(leftName), Some(rightName)) =>
-        "quantitative: the left operand represents "+leftName+", but the right " +
-          "operand represents "+rightName+"; these are incompatible physical quantities"
+        s"quantitative: the left operand represents $leftName, but the right " +
+          s"operand represents $rightName; these are incompatible physical quantities"
 
       case _ =>
         "quantitative: the operands represent different physical quantities"

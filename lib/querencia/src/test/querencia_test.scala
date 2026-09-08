@@ -45,36 +45,36 @@ object Tests extends Suite(m"Querencia tests"):
   def run(): Unit =
     suite(m"DOM navigation and JavaScript rendering"):
       test(m"a navigated DOM call renders to JavaScript"):
-        Javascript.serialize(document.getElementById(t"foo").focus().expr)
-      . assert(_ == t"document.getElementById('foo').focus()")
+        Javascript.serialize(document.getElementById("foo").focus().expr)
+      . assert(_ == "document.getElementById('foo').focus()")
 
       test(m"array indexing renders to a bracket access"):
-        Javascript.serialize(document.querySelectorAll(t".btn")(0).click().expr)
-      . assert(_ == t"document.querySelectorAll('.btn')[0].click()")
+        Javascript.serialize(document.querySelectorAll(".btn")(0).click().expr)
+      . assert(_ == "document.querySelectorAll('.btn')[0].click()")
 
       test(m"the `window` global renders a method call"):
-        Javascript.serialize(window.alert(t"hi").expr)
-      . assert(_ == t"window.alert('hi')")
+        Javascript.serialize(window.alert("hi").expr)
+      . assert(_ == "window.alert('hi')")
 
       test(m"navigating through `window.document` chains"):
-        Javascript.serialize(window.document.getElementById(t"x").focus().expr)
-      . assert(_ == t"window.document.getElementById('x').focus()")
+        Javascript.serialize(window.document.getElementById("x").focus().expr)
+      . assert(_ == "window.document.getElementById('x').focus()")
 
       test(m"a string argument is escaped for the JavaScript string literal"):
-        Javascript.serialize(document.getElementById(t"it's a \\ backslash").expr)
-      . assert(_ == t"document.getElementById('it\\'s a \\\\ backslash')")
+        Javascript.serialize(document.getElementById("it's a \\ backslash").expr)
+      . assert(_ == "document.getElementById('it\\'s a \\\\ backslash')")
 
       test(m"a member access has the precise refined foreign type"):
-        val element: Foreign of "HTMLElement" from Browser = document.getElementById(t"foo")
+        val element: Foreign of "HTMLElement" from Browser = document.getElementById("foo")
 
         element.expr
       . assert: expr =>
-          val root = Foreign.Expression.Reference(t"document")
-          val select = Foreign.Expression.Select(root, t"getElementById", t"Document")
+          val root = Foreign.Expression.Reference("document")
+          val select = Foreign.Expression.Select(root, "getElementById", "Document")
           expr == Foreign.Expression.Apply(select, List(Foreign.Expression.Literal(t"foo")))
 
       test(m"indexing yields the element's foreign type"):
-        val element: Foreign of "HTMLElement" from Browser = document.querySelectorAll(t".x")(0)
+        val element: Foreign of "HTMLElement" from Browser = document.querySelectorAll(".x")(0)
 
         element.expr
       . assert:
@@ -83,9 +83,9 @@ object Tests extends Suite(m"Querencia tests"):
 
     suite(m"Honeycomb integration"):
       test(m"a foreign DOM expression is accepted as an `onclick` handler"):
-        Button(onclick = document.getElementById(t"foo").focus()).show
-      . assert(_.contains(t"onclick=\"document.getElementById('foo').focus()\""))
+        Button(onclick = document.getElementById("foo").focus()).show
+      . assert(_.contains("onclick=\"document.getElementById('foo').focus()\""))
 
       test(m"a chained handler renders inside the rendered HTML"):
-        Button(onclick = document.querySelector(t".x").click()).show
-      . assert(_.contains(t"document.querySelector('.x').click()"))
+        Button(onclick = document.querySelector(".x").click()).show
+      . assert(_.contains("document.querySelector('.x').click()"))

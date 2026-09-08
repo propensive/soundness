@@ -182,7 +182,7 @@ object Ergo:
   private def sequence(nodes: List[Mathml])(using Tactic[Ergo.Error]): Text =
     val parts: List[Text] = nodes.map(emit(_, false)).filter(!_.s.isEmpty)
 
-    parts.fold[Text](t""): (acc: Text, next: Text) =>
+    parts.fold[Text](""): (acc: Text, next: Text) =>
       if acc.s.isEmpty then next
       else if merges(acc.s.charAt(acc.s.length - 1), next.s.charAt(0)) then t"$acc $next"
       else t"$acc$next"
@@ -231,15 +231,15 @@ object Ergo:
       finish(t"${operand(base)}↘${operand(sub)}↗${operand(sup)}", attributes, asOperand, false)
 
     case Munder(base, under, attributes) =>
-      val kept = accentless(attributes, under, t"accentunder")
+      val kept = accentless(attributes, under, "accentunder")
       finish(t"${operand(base)}↓${operand(under)}", kept, asOperand, false)
 
     case Mover(base, over, attributes) =>
-      val kept = accentless(attributes, over, t"accent")
+      val kept = accentless(attributes, over, "accent")
       finish(t"${operand(base)}↑${operand(over)}", kept, asOperand, false)
 
     case Munderover(base, under, over, attributes) =>
-      val kept = accentless(accentless(attributes, under, t"accentunder"), over, t"accent")
+      val kept = accentless(accentless(attributes, under, "accentunder"), over, "accent")
       finish(t"${operand(base)}↓${operand(under)}↑${operand(over)}", kept, asOperand, false)
 
     case other => scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Unsupported(other.label))))
@@ -253,7 +253,7 @@ object Ergo:
       case _: Mo => true
       case _     => false
 
-    if accent then attributes.filter { pair => pair != (name, t"true") } else attributes
+    if accent then attributes.filter { pair => pair != (name, "true") } else attributes
 
   private def serializeTable(table: Mtable)(using Tactic[Ergo.Error]): Text =
     val rows: List[List[Text]] =
@@ -385,17 +385,17 @@ object Ergo:
 
         case (u, Unset) =>
           val script = u.or(base)
-          Munder(base, script, accent(script, t"accentunder"))
+          Munder(base, script, accent(script, "accentunder"))
 
         case (Unset, o) =>
           val script = o.or(base)
-          Mover(base, script, accent(script, t"accent"))
+          Mover(base, script, accent(script, "accent"))
 
         case (u, o) =>
           val below = u.or(base)
           val above = o.or(base)
           Munderover(base, below, above,
-            accent(below, t"accentunder") + accent(above, t"accent"))
+            accent(below, "accentunder") + accent(above, "accent"))
 
       (sub, sup) match
         case (Unset, Unset) => limited

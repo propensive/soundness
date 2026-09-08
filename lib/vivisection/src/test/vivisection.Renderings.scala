@@ -49,7 +49,7 @@ object Renderings:
     given (Tagged is Showable) = tagged => t"tag:${tagged.name}"
 
   class Plain(val id: Int):
-    override def toString: String = "Plain#"+id
+    override def toString: String = s"Plain#$id"
 
   def main(args: Array[String]): Unit =
     Specimen().render()

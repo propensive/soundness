@@ -76,35 +76,35 @@ object Selection:
   def parse(arguments: List[Text]): Selection =
     arguments.fold(all): (selection, argument) =>
       // An empty argument selects nothing and is not a term (so a bare `not:` is ignored).
-      if argument == t"" then selection
-      else if argument == t"--list" then selection.copy(listOnly = true)
+      if argument == "" then selection
+      else if argument == "--list" then selection.copy(listOnly = true)
       // `--scale=<factor>` is not a selection at all — it changes how long the tests it
       // admits are given to run — but it arrives on the same command line, and a host like
       // fume has no other channel to a suite. A non-positive or unparseable factor is
       // ignored rather than fatal: a mistyped duration should not lose a run's results.
-      else if argument.starts(t"--scale=") then
+      else if argument.starts("--scale=") then
         number(argument.skip(8)).lay(selection): factor =>
           if factor > 0.0 then selection.copy(scale = factor) else selection
-      else if argument.starts(t"kind:") then
+      else if argument.starts("kind:") then
         val kinds = argument.skip(5) match
-          case t"test"    => List(Entry.Kind.Check)
-          case t"bench"   => List(Entry.Kind.Bench)
-          case t"stress"  => List(Entry.Kind.Stress)
-          case t"profile" => List(Entry.Kind.Profile)
+          case "test"    => List(Entry.Kind.Check)
+          case "bench"   => List(Entry.Kind.Bench)
+          case "stress"  => List(Entry.Kind.Stress)
+          case "profile" => List(Entry.Kind.Profile)
           case _          => Nil
 
         selection.copy(kinds = selection.kinds + kinds)
       // `tag:a,b` admits a test carrying ANY of the listed tags; a second `tag:` term
       // intersects with the first, so `tag:slow tag:network` means slow AND network.
-      else if argument.starts(t"tag:") then
-        val tags: Set[Text] = argument.skip(4).cut(t",").filter(_ != t"").to[Set]
+      else if argument.starts("tag:") then
+        val tags: Set[Text] = argument.skip(4).cut(",").filter(_ != "").to[Set]
         if tags.nil then selection else selection.copy(tags = selection.tags :+ tags)
       // `not:<term>` subtracts: the inner term is parsed as a selection of its own, and any
       // cell it would admit is excluded. Each `not:` is independent (they union), so
       // `not:tag:slow not:kind:bench` excludes every slow test AND every benchmark. An inner
       // term that selects nothing in particular (`not:` alone, or `not:--list`) is ignored,
       // as excluding everything could never be what was meant.
-      else if argument.starts(t"not:") then
+      else if argument.starts("not:") then
         val exclusion = parse(List(argument.skip(4)))
         if exclusion.trivial then selection
         else selection.copy(exclusions = selection.exclusions :+ exclusion)
@@ -122,24 +122,24 @@ object Selection:
     def bound(operator: Text)(make: (Text, Double) => Constraint): Optional[Constraint] =
       split(operator).let: (axis, value) => number(value).let(make(axis, _))
 
-    bound(t"<=")(Constraint.Most(_, _, true))
-    . or(bound(t">=")(Constraint.Least(_, _, true)))
-    . or(bound(t"<")(Constraint.Most(_, _, false)))
-    . or(bound(t">")(Constraint.Least(_, _, false)))
+    bound("<=")(Constraint.Most(_, _, true))
+    . or(bound(">=")(Constraint.Least(_, _, true)))
+    . or(bound("<")(Constraint.Most(_, _, false)))
+    . or(bound(">")(Constraint.Least(_, _, false)))
     . or:
-        split(t"=").let: (axis, value) =>
-          if value.contains(t"..") then
+        split("=").let: (axis, value) =>
+          if value.contains("..") then
             val index = value.s.indexOf("..")
             val least: Text = value.keep(index)
             val most: Text = value.skip(index + 2)
 
             // A range may be open at either end: `N=4..` means at least 4 and `N=..64` at
             // most 64 (both inclusive), spellings which need no shell quoting, unlike `>=`.
-            if least == t"" && most == t"" then Unset
-            else if least == t"" then number(most).let(Constraint.Most(axis, _, true))
-            else if most == t"" then number(least).let(Constraint.Least(axis, _, true))
+            if least == "" && most == "" then Unset
+            else if least == "" then number(most).let(Constraint.Most(axis, _, true))
+            else if most == "" then number(least).let(Constraint.Least(axis, _, true))
             else number(least).let { least => number(most).let(Constraint.Interval(axis, least, _)) }
-          else Constraint.Membership(axis, value.cut(t",").to[Set])
+          else Constraint.Membership(axis, value.cut(",").to[Set])
 
 
 // A subset of a suite's tests, parsed from command-line terms: which tests run (and, for
@@ -192,11 +192,11 @@ case class Selection
   private def admitted(id: Test.Id): Boolean = terms.nil || locally:
     val chain = ancestry(id)
     val names = chain.reverse.map(_.name.text)
-    val path = names.join(t"/")
+    val path = names.join("/")
 
     // A path of monikers where declared, falling back to names, so that mixed selections
     // like `jacinta/parseJson` work even when only some links are named.
-    val monikerPath = chain.reverse.map { link => link.moniker.or(link.name.text) }.join(t"/")
+    val monikerPath = chain.reverse.map { link => link.moniker.or(link.name.text) }.join("/")
 
     terms.exists:
       case Selection.Term.Identifier(name) =>

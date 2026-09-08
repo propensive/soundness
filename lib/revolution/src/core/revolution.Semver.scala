@@ -56,9 +56,9 @@ object Semver:
         case long: Long => long.show
 
       val prerelease =
-        if semver.prerelease.nil then t"" else t"-"+semver.prerelease.map(_.text).join(t".")
+        if semver.prerelease.nil then "" else "-"+semver.prerelease.map(_.text).join(".")
 
-      val build = if semver.build.nil then t"" else t"+"+semver.build.map(_.text).join(t".")
+      val build = if semver.build.nil then "" else "+"+semver.build.map(_.text).join(".")
 
       t"${semver.major}.${semver.minor}.${semver.patch}$prerelease$build"
 
@@ -68,8 +68,8 @@ object Semver:
     text =>
       text match
         case r"$major([0-9]+)\.$minor([0-9]+)\.$patch([0-9]+)$prerelease(-[^\+]+)?$build(\+.+)?" =>
-          val prerelease2: List[Text] = prerelease.let(_.skip(1).cut(t".")).or(Nil)
-          val build2: List[Text] = build.let(_.skip(1).cut(t".")).or(Nil)
+          val prerelease2: List[Text] = prerelease.let(_.skip(1).cut(".")).or(Nil)
+          val build2: List[Text] = build.let(_.skip(1).cut(".")).or(Nil)
 
           if prerelease == t"-" || build == t"+" then
             raise(Semver.Error(text, Semver.Error.Reason.EmptyIdentifier))
@@ -94,17 +94,17 @@ object Semver:
           . protect:
               val major2 = major.as[Long]
 
-              if major.starts(t"0") && major2 != 0
+              if major.starts("0") && major2 != 0
               then raise(Semver.Error(text, Semver.Error.Reason.LeadingZero))
 
               val minor2 = minor.as[Long]
 
-              if minor.starts(t"0") && minor2 != 0
+              if minor.starts("0") && minor2 != 0
               then raise(Semver.Error(text, Semver.Error.Reason.LeadingZero))
 
               val patch2 = patch.as[Long]
 
-              if patch.starts(t"0") && patch2 != 0
+              if patch.starts("0") && patch2 != 0
               then raise(Semver.Error(text, Semver.Error.Reason.LeadingZero))
 
               Semver(major2, minor2, patch2, prerelease3, build3)

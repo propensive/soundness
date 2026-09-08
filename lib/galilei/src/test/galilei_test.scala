@@ -51,9 +51,9 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"Writing then reading a file round-trips its content"):
         unsafely:
-          dest.write(t"Hello world")
+          dest.write("Hello world")
           dest.read[Text]
-      . assert(_ == t"Hello world")
+      . assert(_ == "Hello world")
 
     suite(m"Opening files"):
       val openLeaf: Text = Uuid().show
@@ -66,10 +66,10 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"A file opened for writing can be written and read back"):
         unsafely:
           dest.open[File](Write, OpenFlag.Create): handle ?=>
-            handle.write(Chain(t"Hello world".in[Data]))
+            handle.write(Chain("Hello world".in[Data]))
 
           dest.read[Text]
-      . assert(_ == t"Hello world")
+      . assert(_ == "Hello world")
 
       test(m"The path exists after writing"):
         dest
@@ -78,15 +78,15 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"Opening an Eof appends to the file"):
         unsafely:
           Eof(dest).open(Write): handle ?=>
-            handle.write(Chain(t"!".in[Data]))
+            handle.write(Chain("!".in[Data]))
 
           dest.read[Text]
-      . assert(_ == t"Hello world!")
+      . assert(_ == "Hello world!")
 
       test(m"The file accessor reaches the contextual handle"):
         unsafely:
           dest.open[File]()(file.stream.read[Data]).utf8
-      . assert(_ == t"Hello world!")
+      . assert(_ == "Hello world!")
 
     suite(m"Opening directories"):
       import filesystemOptions.createNonexistentParents
@@ -102,9 +102,9 @@ object Tests extends Suite(m"Galilei tests"):
           scala.caps.unsafe.unsafeAssumeSeparate:
            root.open[Directory](Read & Write): dir ?=>
             val target = dir / "greeting.txt"
-            target.overwrite(t"Hello directory")
+            target.overwrite("Hello directory")
             target.contents[Text]
-      . assert(_ == t"Hello directory")
+      . assert(_ == "Hello directory")
 
       test(m"An entry is extant after writing, and a missing one is not"):
         unsafely:
@@ -124,7 +124,7 @@ object Tests extends Suite(m"Galilei tests"):
           scala.caps.unsafe.unsafeAssumeSeparate:
            root.open[Directory](Read & Write): dir ?=>
             val doomed = dir / "doomed.txt"
-            doomed.overwrite(t"temporary")
+            doomed.overwrite("temporary")
             doomed.remove()
             doomed.extant()
       . assert(_ == false)
@@ -133,7 +133,7 @@ object Tests extends Suite(m"Galilei tests"):
         import errorDiagnostics.emptyDiagnostics
         unsafely:
           val plainFile: Path on Linux = root / "plain.txt"
-          plainFile.write(t"not a directory")
+          plainFile.write("not a directory")
           capture[Io.Error](plainFile.open[Directory]() { () }).reason
       . assert(_ == Io.Error.Reason.IsNotDirectory)
 
@@ -141,7 +141,7 @@ object Tests extends Suite(m"Galilei tests"):
         demilitarize:
           import strategies.throwUnsafely
           root.open[Directory](): dir ?=>
-            (dir / "nope.txt").overwrite(t"nope")
+            (dir / t"nope.txt").overwrite("nope")
         . map(_.message)
       . assert(_.nonEmpty)
 
@@ -158,7 +158,7 @@ object Tests extends Suite(m"Galilei tests"):
           import strategies.throwUnsafely
           root.open[Directory](): first ?=>
             root.open[Directory](Read & Write): second ?=>
-              (first / "stolen.txt").overwrite(t"nope")
+              (first / t"stolen.txt").overwrite("nope")
         . map(_.message)
       . assert(_.nonEmpty)
 
@@ -203,11 +203,11 @@ object Tests extends Suite(m"Galilei tests"):
 
           scala.caps.unsafe.unsafeAssumeSeparate:
            target.create[Directory](): dir ?=>
-            (dir / "inner.txt").overwrite(t"hello")
+            (dir / t"inner.txt").overwrite("hello")
 
           val inner: Path on Linux = target / "inner.txt"
           inner.read[Text]
-      . assert(_ == t"hello")
+      . assert(_ == "hello")
 
       test(m"A failed directory authoring scope leaves nothing behind"):
         unsafely:
@@ -216,7 +216,7 @@ object Tests extends Suite(m"Galilei tests"):
           capture[Io.Error]:
             scala.caps.unsafe.unsafeAssumeSeparate:
              target.create[Directory](): dir ?=>
-              (dir / "x.txt").overwrite(t"data")
+              (dir / t"x.txt").overwrite("data")
               abort(Io.Error(target, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
 
           target.existent()
@@ -227,10 +227,10 @@ object Tests extends Suite(m"Galilei tests"):
           val target: Path on Linux = base / "staged.txt"
 
           target.create[File](): handle ?=>
-            handle.write(Chain(t"payload".in[Data]))
+            handle.write(Chain("payload".in[Data]))
 
           target.read[Text]
-      . assert(_ == t"payload")
+      . assert(_ == "payload")
 
       test(m"A failed file authoring scope leaves nothing behind"):
         unsafely:
@@ -239,7 +239,7 @@ object Tests extends Suite(m"Galilei tests"):
           capture[Io.Error]:
             scala.caps.unsafe.unsafeAssumeSeparate:
              target.create[File](): handle ?=>
-              handle.write(Chain(t"data".in[Data]))
+              handle.write(Chain("data".in[Data]))
               abort(Io.Error(target, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
 
           target.existent()
@@ -258,7 +258,7 @@ object Tests extends Suite(m"Galilei tests"):
         unsafely:
           scala.caps.unsafe.unsafeAssumeSeparate:
             val (written, stem) = base.open[Scratch](Read & Write): scratch ?=>
-              (scratch / "file.txt").overwrite(t"data")
+              (scratch / t"file.txt").overwrite("data")
               ((scratch / "file.txt").extant(), scratch.stem)
 
             (written, stem.existent())
@@ -281,48 +281,48 @@ object Tests extends Suite(m"Galilei tests"):
     suite(m"Memory-mapped access"):
       val ramLeaf: Text = Uuid().show
       val ramFile: Path on Linux = unsafely((% / "tmp" / ramLeaf).on[Linux])
-      unsafely(ramFile.write(t"0123456789"))
+      unsafely(ramFile.write("0123456789"))
 
       test(m"A mapped file serves positional reads"):
         unsafely:
           ramFile.open[Ram](): ram ?=>
             ram(2, 3).utf8
-      . assert(_ == t"234")
+      . assert(_ == "234")
 
       test(m"A mapped file accepts positional writes and persists them"):
         unsafely:
           ramFile.open[Ram](Read & Write): ram ?=>
-            ram(3L) = t"XYZ".in[Data]
+            ram(3L) = "XYZ".in[Data]
 
           ramFile.read[Text]
-      . assert(_ == t"012XYZ6789")
+      . assert(_ == "012XYZ6789")
 
       test(m"The expanse view reads consistently"):
         unsafely:
           ramFile.open[Ram](): ram ?=>
             val source = ram.expanse
             (source.size, source.read(0, 3).utf8)
-      . assert(_ == (10L, t"012"))
+      . assert(_ == (10L, "012"))
 
       test(m"A positional write without the Write grant does not compile"):
         demilitarize:
           import strategies.throwUnsafely
           ramFile.open[Ram](): ram ?=>
-            ram(0L) = t"no".in[Data]
+            ram(0L) = "no".in[Data]
         . map(_.message)
       . assert(_.nonEmpty)
 
       test(m"Growing a mapping extends the file for positional writes past the old end"):
         val growLeaf: Text = Uuid().show
         val growFile: Path on Linux = unsafely((% / "tmp" / growLeaf).on[Linux])
-        unsafely(growFile.write(t"0123456789"))
+        unsafely(growFile.write("0123456789"))
         unsafely:
           growFile.open[Ram](Read & Write): ram ?=>
             ram.grow(13L)
-            ram(10L) = t"abc".in[Data]
+            ram(10L) = "abc".in[Data]
 
           growFile.read[Text]
-      . assert(_ == t"0123456789abc")
+      . assert(_ == "0123456789abc")
 
       test(m"Growing does not shrink when passed a smaller size"):
         unsafely:
@@ -351,10 +351,10 @@ object Tests extends Suite(m"Galilei tests"):
           val target: Path on Linux = ramBase / "fresh.bin"
 
           target.create[Ram](RamFlag.Size(16L)): ram ?=>
-            ram(0L) = t"ABCD".in[Data]
+            ram(0L) = "ABCD".in[Data]
 
           (target.read[Data].readable.length, Array.frozen(target.read[Data].readable.slice(0, 4)).utf8)
-      . assert(_ == (16, t"ABCD"))
+      . assert(_ == (16, "ABCD"))
 
       test(m"Creating a mapping without Size is refused"):
         unsafely:
@@ -427,43 +427,43 @@ object Tests extends Suite(m"Galilei tests"):
 
       unsafely:
         root.create[Directory]()
-        (root / "a.jar").write(t"a")
-        (root / "a.txt").write(t"a")
+        (root / t"a.jar").write("a")
+        (root / t"a.txt").write("a")
         (root / "sub1").create[Directory]()
-        (root / "sub1" / "b.jar").write(t"b")
+        (root / t"sub1" / t"b.jar").write("b")
         (root / "sub1" / "inner").create[Directory]()
-        (root / "sub1" / "inner" / "c.jar").write(t"c")
+        (root / t"sub1" / t"inner" / t"c.jar").write("c")
         (root / "sub2").create[Directory]()
-        (root / "sub2" / "d.jar").write(t"d")
+        (root / t"sub2" / t"d.jar").write("d")
 
       def names(paths: List[Path on Linux]): List[Text] = paths.map(_.name).sort
 
       test(m"A star glob matches entries of the root only"):
-        unsafely(names(root.glob(Glob.parse(t"*.jar"))))
+        unsafely(names(root.glob(Glob.parse("*.jar"))))
       . assert(_ == List(t"a.jar"))
 
       test(m"A question mark matches a single character"):
-        unsafely(names(root.glob(Glob.parse(t"?.txt"))))
+        unsafely(names(root.glob(Glob.parse("?.txt"))))
       . assert(_ == List(t"a.txt"))
 
       test(m"A character range filters a wildcard segment"):
-        unsafely(names(root.glob(Glob.parse(t"*/[bd].jar"))))
+        unsafely(names(root.glob(Glob.parse("*/[bd].jar"))))
       . assert(_ == List(t"b.jar", t"d.jar"))
 
       test(m"A literal segment descends directly"):
-        unsafely(names(root.glob(Glob.parse(t"sub1/*.jar"))))
+        unsafely(names(root.glob(Glob.parse("sub1/*.jar"))))
       . assert(_ == List(t"b.jar"))
 
       test(m"A globstar spans any number of directories"):
-        unsafely(names(root.glob(Glob.parse(t"**/*.jar"))))
+        unsafely(names(root.glob(Glob.parse("**/*.jar"))))
       . assert(_ == List(t"a.jar", t"b.jar", t"c.jar", t"d.jar"))
 
       test(m"A globstar below a literal segment spans its subtree only"):
-        unsafely(names(root.glob(Glob.parse(t"sub1/**/*.jar"))))
+        unsafely(names(root.glob(Glob.parse("sub1/**/*.jar"))))
       . assert(_ == List(t"b.jar", t"c.jar"))
 
       test(m"A pattern matching nothing yields an empty list"):
-        unsafely(root.glob(Glob.parse(t"nowhere/*.jar")))
+        unsafely(root.glob(Glob.parse("nowhere/*.jar")))
       . assert(_ == List())
 
     suite(m"File locking"):
@@ -477,14 +477,14 @@ object Tests extends Suite(m"Galilei tests"):
 
       unsafely:
         lockDir.create[Directory]()
-        (lockDir / "target.txt").write(t"content")
+        (lockDir / t"target.txt").write("content")
 
       val target: Path on Linux = unsafely(lockDir / "target.txt")
 
       test(m"An Exclusive file open succeeds and reads its content"):
         unsafely:
           target.open[File](Read & Exclusive)(file.stream.read[Data]).utf8
-      . assert(_ == t"content")
+      . assert(_ == "content")
 
       test(m"A second Exclusive open of the same file is Busy"):
         unsafely:
@@ -523,7 +523,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       val expanseLeaf: Text = Uuid().show
       val source: Path on Linux = unsafely((% / "tmp" / expanseLeaf).on[Linux])
-      unsafely(source.write(t"0123456789abcdef"))
+      unsafely(source.write("0123456789abcdef"))
 
       test(m"The expanse reports the file's size"):
         unsafely(source.expanse(_.size))
@@ -531,17 +531,17 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"A positional read returns the requested slice"):
         unsafely(source.expanse(_.read(4L, 6)).utf8)
-      . assert(_ == t"456789")
+      . assert(_ == "456789")
 
       test(m"Reads at different offsets are independent"):
         unsafely:
           source.expanse: expanse =>
             (expanse.read(10L, 3).utf8, expanse.read(0L, 3).utf8)
-      . assert(_ == (t"abc", t"012"))
+      . assert(_ == ("abc", "012"))
 
       test(m"A read overlapping the end returns the bytes which exist"):
         unsafely(source.expanse(_.read(12L, 100)).utf8)
-      . assert(_ == t"cdef")
+      . assert(_ == "cdef")
 
     suite(m"Storage filesystem axis"):
       import anticipation.instantiables.epochMillisecondsInstantiable
@@ -589,8 +589,8 @@ object Tests extends Suite(m"Galilei tests"):
       val identified: Path on Linux = unsafely((% / "tmp" / identifiedLeaf).on[Linux])
       val linked: Path on Linux = unsafely((% / "tmp" / linkedLeaf).on[Linux])
       val separate: Path on Linux = unsafely((% / "tmp" / separateLeaf).on[Linux])
-      unsafely(identified.write(t"content"))
-      unsafely(separate.write(t"content"))
+      unsafely(identified.write("content"))
+      unsafely(separate.write("content"))
       unsafely(identified.hardLinkTo(linked))
 
       test(m"An entry has a device and inode number"):
@@ -612,7 +612,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       val sharedLeaf: Text = Uuid().show
       val shared: Path on Linux = unsafely((% / "tmp" / sharedLeaf).on[Linux])
-      unsafely(shared.write(t"content"))
+      unsafely(shared.write("content"))
 
       test(m"Shared opens of one file coexist"):
         unsafely:
@@ -646,7 +646,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       val awaitLeaf: Text = Uuid().show
       val awaited: Path on Linux = unsafely((% / "tmp" / awaitLeaf).on[Linux])
-      unsafely(awaited.write(t"content"))
+      unsafely(awaited.write("content"))
 
       test(m"An awaited open blocks until the holder's scope ends, then proceeds"):
         unsafely:
@@ -678,13 +678,13 @@ object Tests extends Suite(m"Galilei tests"):
 
       val sliceLeaf: Text = Uuid().show
       val sliced: Path on Linux = unsafely((% / "tmp" / sliceLeaf).on[Linux])
-      unsafely(sliced.write(t"0123456789abcdef"))
+      unsafely(sliced.write("0123456789abcdef"))
 
       test(m"A slice view is windowed to its range"):
         unsafely:
           Slice(sliced, 4L, 6L).open[File](Read): view ?=>
             (view.size, view.read(0L, 6).utf8, view.read(4L, 100).utf8)
-      . assert(_ == (6L, t"456789", t"89"))
+      . assert(_ == (6L, "456789", "89"))
 
       test(m"Overlapping exclusive slices conflict"):
         unsafely:
@@ -717,25 +717,25 @@ object Tests extends Suite(m"Galilei tests"):
 
       val xattrLeaf: Text = Uuid().show
       val xattred: Path on Linux = unsafely((% / "tmp" / xattrLeaf).on[Linux])
-      unsafely(xattred.write(t"content"))
+      unsafely(xattred.write("content"))
 
       test(m"An attribute round-trips on a matched attributed filesystem"):
         def roundtrip[transport <: Attributed](path: Path on Linux over transport)
         :   (Optional[Text], Boolean) =
           unsafely:
-            path.attribute(t"origin", t"soundness".in[Data])
-            (path.attribute[Data](t"origin").let(_.utf8), path.attributes().has(t"origin"))
+            path.attribute("origin", "soundness".in[Data])
+            (path.attribute[Data]("origin").let(_.utf8), path.attributes().has("origin"))
 
         xattred match
           case Apfs(path)  => roundtrip(path)
           case Btrfs(path) => roundtrip(path)
           case Ext4(path)  => roundtrip(path)
-          case _           => (t"soundness", true) // no attributed filesystem here; gate held
-      . assert(_ == (t"soundness", true))
+          case _           => ("soundness", true) // no attributed filesystem here; gate held
+      . assert(_ == ("soundness", true))
 
       test(m"An unset attribute is absent"):
         xattred match
-          case Apfs(path) => unsafely(path.attribute[Data](t"missing")).absent
+          case Apfs(path) => unsafely(path.attribute[Data]("missing")).absent
           case _          => true
       . assert(_ == true)
 
@@ -747,30 +747,30 @@ object Tests extends Suite(m"Galilei tests"):
 
       val windowLeaf: Text = Uuid().show
       val windowed: Path on Linux = unsafely((% / "tmp" / windowLeaf).on[Linux])
-      unsafely(windowed.write(t"0123456789abcdef"))
+      unsafely(windowed.write("0123456789abcdef"))
 
       test(m"A write lands at the window-adjusted offset and reads back"):
         unsafely:
           Slice(windowed, 4L, 6L).open[File](Read & Write & Exclusive): window ?=>
-            window.write(2L, t"XY".in[Data]) yet ()
+            window.write(2L, "XY".in[Data]) yet ()
 
           windowed.read[Text]
-      . assert(_ == t"012345XY89abcdef")
+      . assert(_ == "012345XY89abcdef")
 
       test(m"A write is clamped to the window and reports the count"):
         unsafely:
           Slice(windowed, 12L, 4L).open[File](Read & Write & Exclusive): window ?=>
-            window.write(2L, t"WXYZ".in[Data])
+            window.write(2L, "WXYZ".in[Data])
       . assert(_ == 2)
 
       test(m"A clamped write stores only the bytes which fit"):
         unsafely(windowed.read[Text])
-      . assert(_ == t"012345XY89abcdWX")
+      . assert(_ == "012345XY89abcdWX")
 
       test(m"A write past the window's end stores nothing"):
         unsafely:
           Slice(windowed, 0L, 4L).open[File](Read & Write & Exclusive): window ?=>
-            window.write(4L, t"zz".in[Data])
+            window.write(4L, "zz".in[Data])
       . assert(_ == 0)
 
     suite(m"Searchpaths"):
@@ -788,9 +788,9 @@ object Tests extends Suite(m"Galilei tests"):
         stemB.create[Directory]()
         (stemA / "icons").create[Directory]()
         (stemB / "icons").create[Directory]()
-        (stemA / "icons" / "app.png").write(t"A")
-        (stemB / "icons" / "app.png").write(t"B")
-        (stemB / "icons" / "extra.png").write(t"B2")
+        (stemA / t"icons" / t"app.png").write("A")
+        (stemB / t"icons" / t"app.png").write("B")
+        (stemB / t"icons" / t"extra.png").write("B2")
         (stemB / "themes").create[Directory]()
 
       given Searchpaths.Stems on Xdg.Data onto Linux = new Searchpaths.Stems:
@@ -829,8 +829,8 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"the Xdg constructor reads the variables in spec order"):
         import systems.javaBaseSystem
         given Environment = name =>
-          if name == t"XDG_DATA_HOME" then stemA.encode
-          else if name == t"XDG_DATA_DIRS" then stemB.encode
+          if name == "XDG_DATA_HOME" then stemA.encode
+          else if name == "XDG_DATA_DIRS" then stemB.encode
           else Unset
 
         Xdg.dataSearch().stems

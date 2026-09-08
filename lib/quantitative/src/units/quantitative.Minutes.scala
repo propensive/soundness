@@ -36,7 +36,7 @@ import anticipation.*
 import rudiments.*
 
 object Minutes:
-  given designation: Designation[Minutes[1]] = () => "min".tt
+  given designation: Designation[Minutes[1]] = () => "min"
   inline given ratio: Ratio[Seconds[1] & Minutes[-1], 60.0] = !!
 
 trait Minutes[Power <: Nat] extends Units[Power, Time]

@@ -72,7 +72,7 @@ object TestServer:
                   message  = t"oops" ) ) )
 
     hover(Hover(MarkupContent(value = document.text)))
-    saved(client.progress(t"token".in[Json], t"begin".in[Json]))
+    saved(client.progress("token".in[Json], "begin".in[Json]))
 
     documentHighlights:
       List(DocumentHighlight(Range(position, position), DocumentHighlightKind.Write))
@@ -87,14 +87,14 @@ object TestServer:
         Nil )
 
     inlayHints(List(InlayHint(range.start, label = t": Int", kind = InlayHintKind.Type)))
-    command(t"do.thing")(t"do.thing".in[Json])
+    command("do.thing")("do.thing".in[Json])
 
-    command(t"test.fail"):
-      raise(Lsp.Error(Lsp.Error.Reason.RequestFailed, t"deliberate"))
+    command("test.fail"):
+      raise(Lsp.Error(Lsp.Error.Reason.RequestFailed, "deliberate"))
       Unset
 
-    resolveCompletion(item[CompletionItem].copy(detail = t"resolved"))
-    LspSession(registry, t"Test", t"1.0").asInstanceOf[AnyRef]
+    resolveCompletion(item[CompletionItem].copy(detail = "resolved"))
+    LspSession(registry, "Test", "1.0").asInstanceOf[AnyRef]
 
   private val dispatch0: AnyRef = Lsp.Dispatch(fixture.asInstanceOf[Lsp]).asInstanceOf[AnyRef]
 
@@ -113,7 +113,7 @@ object TrafficFixture:
   import Lsp.*
 
   val request: Text =
-    t"""{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"capabilities":{}}}"""
+    """{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"capabilities":{}}}"""
 
   // Every message the observer saw, as (direction, body) pairs in the order they were observed.
   lazy val observed: List[(Text, Text)] =
@@ -143,7 +143,7 @@ object TrafficFixture:
     given Stdio = Stdio(ji.PrintStream(out, true), null, in, termcapDefinitions.basicTermcap)
 
     supervise:
-      Lsp.listen(t"Test", t"1.0", observer):
+      Lsp.listen("Test", "1.0", observer):
         hover(Hover(MarkupContent(value = document.text)))
 
     log.synchronized(log.toList).to(List)
@@ -180,7 +180,7 @@ object LoopbackFixture:
 
     supervise:
       async:
-        Lsp.listen(t"Loopback", t"1.0"):
+        Lsp.listen("Loopback", "1.0"):
           opened:
             client.publishDiagnostics
               ( document.uri,
@@ -195,8 +195,8 @@ object LoopbackFixture:
           complete():
             CompletionList(items = List(CompletionItem(label = t"loopback")))
 
-          command(t"test.fail"):
-            raise(Lsp.Error(Lsp.Error.Reason.RequestFailed, t"deliberate"))
+          command("test.fail"):
+            raise(Lsp.Error(Lsp.Error.Reason.RequestFailed, "deliberate"))
             Unset
 
       Lsp.Server.streams(clientIn, toServer).session: connection ?=>
@@ -214,7 +214,7 @@ object ProxyFixture:
   // boundary tactic under separation checking.
   def commandName(message: Json): Text =
     import dynamicAccess.dynamicJson
-    try Lsp.params(message).command.as[Text] catch case _: Exception => t""
+    try Lsp.params(message).command.as[Text] catch case _: Exception => ""
 
   def connect[result](using listener: Lsp.Listener^)
      ( lambda: (session: Lsp.Connection^) ?=> result )
@@ -237,7 +237,7 @@ object ProxyFixture:
         given stdio: Stdio =
           Stdio(ji.PrintStream(fromServer, true), null, serverIn, termcapDefinitions.basicTermcap)
 
-        Lsp.listen(t"Upstream", t"1.0"):
+        Lsp.listen("Upstream", "1.0"):
           opened:
             client.publishDiagnostics
               ( document.uri,
@@ -252,7 +252,7 @@ object ProxyFixture:
           complete():
             CompletionList(items = List(CompletionItem(label = t"upstream")))
 
-          command(t"test.classpath")(t"a.jar".in[Json])
+          command("test.classpath")("a.jar".in[Json])
 
       async:
         given stdio: Stdio =
@@ -263,13 +263,13 @@ object ProxyFixture:
           rewrite.hover: hover =>
             hover.copy(contents = MarkupContent(value = t"[${hover.contents.value}]"))
 
-          rewrite.diagnostics(_.map(_.copy(message = t"proxied")))
+          rewrite.diagnostics(_.map(_.copy(message = "proxied")))
 
           // Asked as soon as the proxy has a server to ask, and kept for whoever wants it.
           rewrite.connected:
             val classpath: Json =
-              try upstream.execute(t"test.classpath").or(t"none".in[Json])
-              catch case _: Exception => t"none".in[Json]
+              try upstream.execute("test.classpath").or("none".in[Json])
+              catch case _: Exception => "none".in[Json]
 
             startup.offer(classpath)
 
@@ -278,15 +278,15 @@ object ProxyFixture:
           rewrite.outbound: (method, message) =>
             val name: Text = ProxyFixture.commandName(message)
 
-            if name == t"proxy.now" then
+            if name == "proxy.now" then
               val classpath: Json =
-                try upstream.execute(t"test.classpath").or(t"none".in[Json])
-                catch case _: Exception => t"none".in[Json]
+                try upstream.execute("test.classpath").or("none".in[Json])
+                catch case _: Exception => "none".in[Json]
 
               Transit.Answer(classpath)
 
-            else if name == t"proxy.startup"
-            then Transit.Answer(safely(startup.await()).or(t"none".in[Json]))
+            else if name == "proxy.startup"
+            then Transit.Answer(safely(startup.await()).or("none".in[Json]))
             else Transit.Forward
 
       Lsp.Server.streams(proxyOut, toProxy).session: connection ?=>
@@ -300,7 +300,7 @@ object Tests extends Suite(m"Exegesis Tests"):
       test(m"DiagnosticSeverity encodes to its protocol number"):
         val number: Text = DiagnosticSeverity.Warning.in[Json].encode
         number
-      . assert(_ == t"2")
+      . assert(_ == "2")
 
       test(m"DiagnosticSeverity decodes from its protocol number"):
         2.in[Json].as[DiagnosticSeverity]
@@ -309,15 +309,15 @@ object Tests extends Suite(m"Exegesis Tests"):
       test(m"TextDocumentSyncKind is numbered from zero"):
         val number: Text = TextDocumentSyncKind.Full.in[Json].encode
         number
-      . assert(_ == t"1")
+      . assert(_ == "1")
 
     suite(m"Content-Length framing"):
       test(m"a framed message is unframed to its body"):
-        Iterator(t"Content-Length: 5\r\n\r\n12345".in[Data]).frames[ContentLength].map(_.utf8).to(List)
+        Iterator("Content-Length: 5\r\n\r\n12345".in[Data]).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List(t"12345"))
 
       test(m"a multi-byte UTF-8 body is framed by byte length, not character count"):
-        val body = t"""{"k":"café"}"""
+        val body = """{"k":"café"}"""
         val message = t"Content-Length: ${body.in[Data].readable.length}\r\n\r\n"+body
         Iterator(message.in[Data]).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List(t"""{"k":"café"}"""))
@@ -325,7 +325,7 @@ object Tests extends Suite(m"Exegesis Tests"):
     suite(m"Dispatch"):
       test(m"initialize answers with the derived capabilities"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"capabilities":{}}}"""
+          """{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"capabilities":{}}}"""
           . as[Json]
 
         TestServer.dispatch(request).let: response =>
@@ -338,50 +338,50 @@ object Tests extends Suite(m"Exegesis Tests"):
 
       test(m"opening a document publishes a diagnostic to the client"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"file:///x","languageId":"text","version":1,"text":"hello world"}}}"""
+          """{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"file:///x","languageId":"text","version":1,"text":"hello world"}}}"""
           . as[Json]
 
         TestServer.dispatch(request)
         TestServer.session.outgoing.stdlib.iterator.next().as[JsonRpc.Request].method
-      . assert(_ == t"textDocument/publishDiagnostics")
+      . assert(_ == "textDocument/publishDiagnostics")
 
       test(m"a hover request is answered from the ambient document"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":1,"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///x"},"position":{"line":0,"character":0}}}"""
+          """{"jsonrpc":"2.0","id":1,"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///x"},"position":{"line":0,"character":0}}}"""
           . as[Json]
 
         TestServer.dispatch(request).let(_.as[JsonRpc.Response].result.as[Hover].contents.value)
-      . assert(_ == t"hello world")
+      . assert(_ == "hello world")
 
       test(m"an incremental change splices at UTF-16 offsets"):
         val change: Json =
-          t"""{"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":"file:///x","version":2},"contentChanges":[{"range":{"start":{"line":0,"character":6},"end":{"line":0,"character":11}},"text":"scala"}]}}"""
+          """{"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":"file:///x","version":2},"contentChanges":[{"range":{"start":{"line":0,"character":6},"end":{"line":0,"character":11}},"text":"scala"}]}}"""
           . as[Json]
 
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":2,"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///x"},"position":{"line":0,"character":0}}}"""
+          """{"jsonrpc":"2.0","id":2,"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///x"},"position":{"line":0,"character":0}}}"""
           . as[Json]
 
         TestServer.dispatch(change)
         TestServer.dispatch(request).let(_.as[JsonRpc.Response].result.as[Hover].contents.value)
-      . assert(_ == t"hello scala")
+      . assert(_ == "hello scala")
 
       test(m"a batch of changes applies in order"):
         val change: Json =
-          t"""{"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":"file:///x","version":3},"contentChanges":[{"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":5}},"text":"café"},{"range":{"start":{"line":0,"character":5},"end":{"line":0,"character":10}},"text":"lsp"}]}}"""
+          """{"jsonrpc":"2.0","method":"textDocument/didChange","params":{"textDocument":{"uri":"file:///x","version":3},"contentChanges":[{"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":5}},"text":"café"},{"range":{"start":{"line":0,"character":5},"end":{"line":0,"character":10}},"text":"lsp"}]}}"""
           . as[Json]
 
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":3,"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///x"},"position":{"line":0,"character":0}}}"""
+          """{"jsonrpc":"2.0","id":3,"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///x"},"position":{"line":0,"character":0}}}"""
           . as[Json]
 
         TestServer.dispatch(change)
         TestServer.dispatch(request).let(_.as[JsonRpc.Response].result.as[Hover].contents.value)
-      . assert(_ == t"café lsp")
+      . assert(_ == "café lsp")
 
       test(m"a document-highlight request encodes its kind as a protocol number"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":4,"method":"textDocument/documentHighlight","params":{"textDocument":{"uri":"file:///x"},"position":{"line":1,"character":2}}}"""
+          """{"jsonrpc":"2.0","id":4,"method":"textDocument/documentHighlight","params":{"textDocument":{"uri":"file:///x"},"position":{"line":1,"character":2}}}"""
           . as[Json]
 
         TestServer.dispatch(request).let: response =>
@@ -390,7 +390,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
       test(m"a folding-range request is answered with the folding ranges"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":5,"method":"textDocument/foldingRange","params":{"textDocument":{"uri":"file:///x"}}}"""
+          """{"jsonrpc":"2.0","id":5,"method":"textDocument/foldingRange","params":{"textDocument":{"uri":"file:///x"}}}"""
           . as[Json]
 
         TestServer.dispatch(request).let: response =>
@@ -399,7 +399,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
       test(m"a prepareRename request decodes a position and returns a range"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":6,"method":"textDocument/prepareRename","params":{"textDocument":{"uri":"file:///x"},"position":{"line":3,"character":5}}}"""
+          """{"jsonrpc":"2.0","id":6,"method":"textDocument/prepareRename","params":{"textDocument":{"uri":"file:///x"},"position":{"line":3,"character":5}}}"""
           . as[Json]
 
         TestServer.dispatch(request).let(_.as[JsonRpc.Response].result.as[Range].start.line)
@@ -407,16 +407,16 @@ object Tests extends Suite(m"Exegesis Tests"):
 
       test(m"an incomingCalls request decodes a CallHierarchyItem param and echoes it"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":7,"method":"callHierarchy/incomingCalls","params":{"item":{"name":"foo","kind":12,"uri":"file:///x","range":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}},"selectionRange":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}}}}}"""
+          """{"jsonrpc":"2.0","id":7,"method":"callHierarchy/incomingCalls","params":{"item":{"name":"foo","kind":12,"uri":"file:///x","range":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}},"selectionRange":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}}}}}"""
           . as[Json]
 
         TestServer.dispatch(request).let: response =>
           response.as[JsonRpc.Response].result.as[List[CallHierarchyIncomingCall]].stdlib.head.from.name
-      . assert(_ == t"foo")
+      . assert(_ == "foo")
 
       test(m"an inlayHint request encodes its kind as a protocol number"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":8,"method":"textDocument/inlayHint","params":{"textDocument":{"uri":"file:///x"},"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":1}}}}"""
+          """{"jsonrpc":"2.0","id":8,"method":"textDocument/inlayHint","params":{"textDocument":{"uri":"file:///x"},"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":1}}}}"""
           . as[Json]
 
         TestServer.dispatch(request).let(_.as[JsonRpc.Response].result.as[List[InlayHint]].stdlib.head.kind)
@@ -424,11 +424,11 @@ object Tests extends Suite(m"Exegesis Tests"):
 
       test(m"a registered command is dispatched by name"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":9,"method":"workspace/executeCommand","params":{"command":"do.thing","arguments":[]}}"""
+          """{"jsonrpc":"2.0","id":9,"method":"workspace/executeCommand","params":{"command":"do.thing","arguments":[]}}"""
           . as[Json]
 
         TestServer.dispatch(request).let(_.as[JsonRpc.Response].result.as[Text])
-      . assert(_ == t"do.thing")
+      . assert(_ == "do.thing")
 
       test(m"a $$/setTrace notification is dispatched without a response"):
         val request: Json =
@@ -440,27 +440,27 @@ object Tests extends Suite(m"Exegesis Tests"):
 
       test(m"saving a document sends a progress notification to the client"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","method":"textDocument/didSave","params":{"textDocument":{"uri":"file:///x"}}}"""
+          """{"jsonrpc":"2.0","method":"textDocument/didSave","params":{"textDocument":{"uri":"file:///x"}}}"""
           . as[Json]
 
         TestServer.dispatch(request)
         TestServer.session.outgoing.stdlib.iterator.next().as[JsonRpc.Request].method
-      . assert(_ == t"$$/progress")
+      . assert(_ == "$/progress")
 
       test(m"a completionItem/resolve request decodes a bare item and resolves it"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":10,"method":"completionItem/resolve","params":{"label":"foo"}}"""
+          """{"jsonrpc":"2.0","id":10,"method":"completionItem/resolve","params":{"label":"foo"}}"""
           . as[Json]
 
         TestServer.dispatch(request).let(_.as[JsonRpc.Response].result.as[CompletionItem].detail)
-      . assert(_ == t"resolved")
+      . assert(_ == "resolved")
 
     suite(m"Error responses"):
       import dynamicAccess.dynamicJson
 
       test(m"a handler fault becomes an error response with its wire code and the request id"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":11,"method":"workspace/executeCommand","params":{"command":"test.fail","arguments":[]}}"""
+          """{"jsonrpc":"2.0","id":11,"method":"workspace/executeCommand","params":{"command":"test.fail","arguments":[]}}"""
           . as[Json]
 
         TestServer.roundtrip(request).let: response =>
@@ -469,7 +469,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
       test(m"an unregistered command yields an InvalidParams error response"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":12,"method":"workspace/executeCommand","params":{"command":"no.such","arguments":[]}}"""
+          """{"jsonrpc":"2.0","id":12,"method":"workspace/executeCommand","params":{"command":"no.such","arguments":[]}}"""
           . as[Json]
 
         TestServer.roundtrip(request).let(_.error.code.as[Int])
@@ -477,7 +477,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
       test(m"a document-scoped request for an unopened document yields an error response"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","id":13,"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///nope"},"position":{"line":0,"character":0}}}"""
+          """{"jsonrpc":"2.0","id":13,"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///nope"},"position":{"line":0,"character":0}}}"""
           . as[Json]
 
         TestServer.roundtrip(request).let(_.error.code.as[Int])
@@ -485,12 +485,12 @@ object Tests extends Suite(m"Exegesis Tests"):
 
       test(m"a notification fault is reported through window/logMessage"):
         val request: Json =
-          t"""{"jsonrpc":"2.0","method":"textDocument/didSave","params":{"textDocument":{"uri":"file:///gone"}}}"""
+          """{"jsonrpc":"2.0","method":"textDocument/didSave","params":{"textDocument":{"uri":"file:///gone"}}}"""
           . as[Json]
 
         TestServer.roundtrip(request)
         TestServer.session.outgoing.stdlib.iterator.next().as[JsonRpc.Request].method
-      . assert(_ == t"window/logMessage")
+      . assert(_ == "window/logMessage")
 
     suite(m"Traffic observation"):
       val traffic: List[(Text, Text)] = TrafficFixture.observed
@@ -513,11 +513,11 @@ object Tests extends Suite(m"Exegesis Tests"):
         given listener: (LoopbackFixture.Record^) = record
 
         LoopbackFixture.connect: server ?=>
-          val result = server.initialize(root = t"file:///project")
+          val result = server.initialize(root = "file:///project")
           server.initialized()
           (result.serverInfo.let(_.name), result.capabilities.hoverProvider)
 
-      . assert(_ == (t"Loopback", true))
+      . assert(_ == ("Loopback", true))
 
       test(m"a request round-trips through the framing and the codecs"):
         val record = LoopbackFixture.Record()
@@ -526,10 +526,10 @@ object Tests extends Suite(m"Exegesis Tests"):
         LoopbackFixture.connect: server ?=>
           server.initialize()
           server.initialized()
-          server.open(t"file:///a.scala", t"scala", t"hello")
-          server.hover(t"file:///a.scala", Position(0, 0)).let(_.contents.value)
+          server.open("file:///a.scala", "scala", "hello")
+          server.hover("file:///a.scala", Position(0, 0)).let(_.contents.value)
 
-      . assert(_ == t"hello")
+      . assert(_ == "hello")
 
       test(m"a completion request decodes the server's list"):
         val record = LoopbackFixture.Record()
@@ -538,8 +538,8 @@ object Tests extends Suite(m"Exegesis Tests"):
         LoopbackFixture.connect: server ?=>
           server.initialize()
           server.initialized()
-          server.open(t"file:///a.scala", t"scala", t"hello")
-          server.complete(t"file:///a.scala", Position(0, 0)).items.stdlib.map(_.label.s)
+          server.open("file:///a.scala", "scala", "hello")
+          server.complete("file:///a.scala", Position(0, 0)).items.stdlib.map(_.label.s)
 
       . assert(_ == List("loopback"))
 
@@ -550,10 +550,10 @@ object Tests extends Suite(m"Exegesis Tests"):
         LoopbackFixture.connect: server ?=>
           server.initialize()
           server.initialized()
-          server.open(t"file:///a.scala", t"scala", t"hello")
+          server.open("file:///a.scala", "scala", "hello")
           // The notification is unsolicited, so a request is used to establish that it has been
           // read: the server publishes before it answers.
-          server.hover(t"file:///a.scala", Position(0, 0))
+          server.hover("file:///a.scala", Position(0, 0))
 
         record.notes.stdlib.map(_.s)
 
@@ -566,7 +566,7 @@ object Tests extends Suite(m"Exegesis Tests"):
         LoopbackFixture.connect: server ?=>
           server.initialize()
           server.initialized()
-          capture[Lsp.Error](server.execute(t"test.fail")).reason
+          capture[Lsp.Error](server.execute("test.fail")).reason
 
       . assert(_ == Lsp.Error.Reason.RequestFailed)
 
@@ -576,16 +576,16 @@ object Tests extends Suite(m"Exegesis Tests"):
           val result = server.initialize()
           (result.serverInfo.let(_.name), result.capabilities.renameProvider)
 
-      . assert(_ == (t"Upstream", true))
+      . assert(_ == ("Upstream", true))
 
       test(m"a registered rewriter amends the upstream response"):
         ProxyFixture.connect: server ?=>
           server.initialize()
           server.initialized()
-          server.open(t"file:///a.scala", t"scala", t"hello")
-          server.hover(t"file:///a.scala", Position(0, 0)).let(_.contents.value)
+          server.open("file:///a.scala", "scala", "hello")
+          server.hover("file:///a.scala", Position(0, 0)).let(_.contents.value)
 
-      . assert(_ == t"[hello]")
+      . assert(_ == "[hello]")
 
       test(m"a rewriter amends a notification the server sent unbidden"):
         val record = LoopbackFixture.Record()
@@ -594,9 +594,9 @@ object Tests extends Suite(m"Exegesis Tests"):
         ProxyFixture.connect: server ?=>
           server.initialize()
           server.initialized()
-          server.open(t"file:///a.scala", t"scala", t"hello")
+          server.open("file:///a.scala", "scala", "hello")
           // A request establishes that the notification preceding it has been read.
-          server.hover(t"file:///a.scala", Position(0, 0))
+          server.hover("file:///a.scala", Position(0, 0))
 
         record.notes.stdlib.map(_.s)
 
@@ -606,24 +606,24 @@ object Tests extends Suite(m"Exegesis Tests"):
         ProxyFixture.connect: server ?=>
           server.initialize()
           server.initialized()
-          server.execute(t"proxy.now").let(_.as[Text])
+          server.execute("proxy.now").let(_.as[Text])
 
-      . assert(_ == t"a.jar")
+      . assert(_ == "a.jar")
 
       test(m"a proxy asks the server a question as soon as it connects"):
         ProxyFixture.connect: server ?=>
           server.initialize()
           server.initialized()
-          server.execute(t"proxy.startup").let(_.as[Text])
+          server.execute("proxy.startup").let(_.as[Text])
 
-      . assert(_ == t"a.jar")
+      . assert(_ == "a.jar")
 
       test(m"an unregistered method passes through untouched"):
         ProxyFixture.connect: server ?=>
           server.initialize()
           server.initialized()
-          server.open(t"file:///a.scala", t"scala", t"hello")
-          server.complete(t"file:///a.scala", Position(0, 0)).items.stdlib.map(_.label.s)
+          server.open("file:///a.scala", "scala", "hello")
+          server.complete("file:///a.scala", Position(0, 0)).items.stdlib.map(_.label.s)
 
       . assert(_ == List("upstream"))
 

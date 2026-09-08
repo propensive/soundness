@@ -39,7 +39,7 @@ object Aifc:
   def apply(): Audible = audibility
 
   given audibility: Aifc is Audible:
-    def name: Text           = "AIFC".tt
+    def name: Text           = "AIFC"
     def mediaType: MediaType = media"audio/x-aifc"
 
 sealed trait Aifc

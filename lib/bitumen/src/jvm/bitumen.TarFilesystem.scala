@@ -152,7 +152,7 @@ private[bitumen] object TarFilesystem:
     ( using Tactic[Tar.Error] )
   :   Path on plane =
 
-    decodeAbsolute(root.encode.s+"/"+ref.show.s, root)
+    decodeAbsolute(root.encode.s+"/".s+ref.show.s, root)
 
   private def decodeAbsolute[plane <: Posix: Filesystem]
     ( text: String, base: Path on plane )

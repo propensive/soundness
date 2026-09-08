@@ -69,7 +69,7 @@ object HostContracts:
   :   List[(Text, Data)] =
 
     val registry = Discipline.Registry(List(discipline))
-    val context = Discipline.Context(t"host")
+    val context = Discipline.Context("host")
     val results = scala.collection.mutable.ListBuffer[(Text, Data)]()
 
     var previous: Optional[List[Atomization]] = Unset

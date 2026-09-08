@@ -91,9 +91,9 @@ object JsonRpc:
   // specification requires, when the request was unparseable and its id unknowable.
   def failure(code: Int, message: Text, id: Optional[Json] = Unset): Json =
     Map
-     ( t"jsonrpc" -> t"2.0".in[Json],
-       t"error"   -> Failure(code, message).in[Json],
-       t"id"      -> id.or(Json.ast(Json.Ast(Json.JsonNull))) )
+     ( "jsonrpc" -> "2.0".in[Json],
+       "error"   -> Failure(code, message).in[Json],
+       "id"      -> id.or(Json.ast(Json.Ast(Json.JsonNull))) )
     . in[Json]
 
   def notification(target: JsonRpc, method: Text, payload: Json): Promise[Unit] =

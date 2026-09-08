@@ -84,9 +84,9 @@ private[facsimile] object Ascii85:
               emit(5)
               members = 0
           else if !CosLexer.whitespace(byte) then
-            abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"ASCII85Decode")))
+            abort(Pdf.Error(Pdf.Error.Reason.CorruptStream("ASCII85Decode")))
 
-    if members == 1 then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"ASCII85Decode")))
+    if members == 1 then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream("ASCII85Decode")))
     if members > 1 then emit(members)
 
     bytes.result()

@@ -37,12 +37,12 @@ import soundness.*
 import strategies.throwUnsafely
 
 given Environment =
-  case t"HOME" => t"/home/work"
+  case "HOME" => "/home/work"
   case _       => Unset
 
 given System =
-  case t"user.home" => t"/home/work"
-  case _            => t""
+  case "user.home" => "/home/work"
+  case _            => ""
 
 given Text is Instantiable across Paths from Text = identity(_)
 
@@ -51,69 +51,69 @@ object Tests extends Suite(m"Imperial tests"):
 
     test(m"Home directory"):
       Home()
-    . assert(_ == t"/home/work")
+    . assert(_ == "/home/work")
 
     test(m"Cache directory"):
       Home.Cache()
-    . assert(_ == t"/home/work/.cache")
+    . assert(_ == "/home/work/.cache")
 
     test(m"~/.local/bin path"):
       Home.Local.Bin()
-    . assert(_ == t"/home/work/.local/bin")
+    . assert(_ == "/home/work/.local/bin")
 
     test(m"/ path"):
       Base()
-    . assert(_ == t"/")
+    . assert(_ == "/")
 
     test(m"/boot path"):
       Base.Boot()
-    . assert(_ == t"/boot")
+    . assert(_ == "/boot")
 
     test(m"/efi path"):
       Base.Efi()
-    . assert(_ == t"/efi")
+    . assert(_ == "/efi")
 
     test(m"/etc path"):
       Base.Etc()
-    . assert(_ == t"/etc")
+    . assert(_ == "/etc")
 
     test(m"/home path"):
       Base.Home()
-    . assert(_ == t"/home")
+    . assert(_ == "/home")
 
     test(m"/root path"):
       Base.Root()
-    . assert(_ == t"/root")
+    . assert(_ == "/root")
 
     test(m"/srv path"):
       Base.Srv()
-    . assert(_ == t"/srv")
+    . assert(_ == "/srv")
 
     test(m"/tmp path"):
       Base.Tmp()
-    . assert(_ == t"/tmp")
+    . assert(_ == "/tmp")
 
     test(m"/usr path"):
       Base.Usr()
-    . assert(_ == t"/usr")
+    . assert(_ == "/usr")
 
     test(m"/usr/share path"):
       Base.Usr.Share()
-    . assert(_ == t"/usr/share")
+    . assert(_ == "/usr/share")
 
     test(m"/usr/bin path"):
       Base.Usr.Bin()
-    . assert(_ == t"/usr/bin")
+    . assert(_ == "/usr/bin")
 
     test(m"/usr/share/doc path"):
       Base.Usr.Share.Doc()
-    . assert(_ == t"/usr/share/doc")
+    . assert(_ == "/usr/share/doc")
 
     test(m"/usr/share/factory/etc path"):
       Base.Usr.Share.Factory.Etc()
-    . assert(_ == t"/usr/share/factory/etc")
+    . assert(_ == "/usr/share/factory/etc")
 
     test(m"/proc PID path"):
       val proc = Base.Proc(Pid(2000))
       proc()
-    . assert(_ == t"/proc/2000")
+    . assert(_ == "/proc/2000")

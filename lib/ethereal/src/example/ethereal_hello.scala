@@ -42,5 +42,5 @@ import threading.virtualThreading
 @main
 def run(): Unit = cli:
   execute:
-    Out.println(t"Hello world")
+    Out.println("Hello world")
     Exit.Ok

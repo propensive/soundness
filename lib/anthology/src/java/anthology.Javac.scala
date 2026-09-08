@@ -93,7 +93,7 @@ case class Javac(options: List[Javac.Option]):
           process.put:
             Notice
               ( importance,
-                "name".tt,
+                "name",
                 diagnostic.getMessage(ju.Locale.getDefault()).nn.tt,
                 span )
 
@@ -104,13 +104,13 @@ case class Javac(options: List[Javac.Option]):
     async:
       try
         val success: Boolean =
-          process.put(CompileProgress(0.1, t"javac"))
+          process.put(CompileProgress(0.1, "javac"))
 
           Javac.compiler()
           . getTask(null, null, diagnostics, options.map(_.s).to[java.util.List], null, javaSources)
           . nn.call().nn.booleanValue()
 
-        if success then process.put(CompileProgress(1.0, t"javac"))
+        if success then process.put(CompileProgress(1.0, "javac"))
 
         process.put(if success then CompileResult.Success else CompileResult.Failure)
 

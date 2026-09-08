@@ -223,54 +223,54 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     :   Optional[value] =
       json(name).as[Optional[value]]
 
-    val reference = json("$ref".tt)
+    val reference = json("$ref")
 
     if !reference.root.isAbsent
-    then JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"))
-    else field[Text](t"type") match
-      case t"array" =>
+    then JsonSchema.Ref(reference.as[JsonPointer], field[Text]("description"))
+    else field[Text]("type") match
+      case "array" =>
         JsonSchema.Array
-          ( field[Text](t"description"),
-            field[JsonSchema](t"items"),
-            field[Int](t"minItems"),
-            field[Int](t"maxItems"),
+          ( field[Text]("description"),
+            field[JsonSchema]("items"),
+            field[Int]("minItems"),
+            field[Int]("maxItems"),
             false,
-            field[Int](t"maxContains"),
-            field[Int](t"minContains") )
+            field[Int]("maxContains"),
+            field[Int]("minContains") )
 
-      case t"string" =>
+      case "string" =>
         JsonSchema.String
-          ( field[Text](t"description"),
-            field[Int](t"minLength"),
-            field[Int](t"maxLength"),
-            field[Text](t"pattern"),
-            field[JsonSchema.Format](t"format"),
+          ( field[Text]("description"),
+            field[Int]("minLength"),
+            field[Int]("maxLength"),
+            field[Text]("pattern"),
+            field[JsonSchema.Format]("format"),
             false )
 
-      case t"number" =>
+      case "number" =>
         JsonSchema.Number
-          ( field[Text](t"description"),
-            field[Double](t"multipleOf"),
-            field[Double](t"maximum"),
-            field[Double](t"minimum"),
-            field[Double](t"exclusiveMinimum"),
-            field[Double](t"exclusiveMaximum"),
+          ( field[Text]("description"),
+            field[Double]("multipleOf"),
+            field[Double]("maximum"),
+            field[Double]("minimum"),
+            field[Double]("exclusiveMinimum"),
+            field[Double]("exclusiveMaximum"),
             false )
 
-      case t"integer" =>
+      case "integer" =>
         JsonSchema.Integer
-          ( field[Text](t"description"),
-            field[Int](t"maximum"),
-            field[Int](t"minimum"),
-            field[Int](t"exclusiveMinimum"),
-            field[Int](t"exclusiveMaximum"),
+          ( field[Text]("description"),
+            field[Int]("maximum"),
+            field[Int]("minimum"),
+            field[Int]("exclusiveMinimum"),
+            field[Int]("exclusiveMaximum"),
             false )
 
-      case t"boolean" =>
-        JsonSchema.Boolean(field[Text](t"description"), false)
+      case "boolean" =>
+        JsonSchema.Boolean(field[Text]("description"), false)
 
-      case t"null" =>
-        JsonSchema.Null(field[Text](t"description"), false)
+      case "null" =>
+        JsonSchema.Null(field[Text]("description"), false)
 
       case _ =>
         // `object`, or an untyped schema (treated as an object). The collection reads
@@ -300,13 +300,13 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
             (Json.map[Text, JsonSchema](using self)(using summon, jsonError))
 
         JsonSchema.Object
-          ( field[Text](t"description"),
-            field[Map[Text, JsonSchema]](t"properties")(using schemaMap).or(Map()),
+          ( field[Text]("description"),
+            field[Map[Text, JsonSchema]]("properties")(using schemaMap).or(Map()),
             false,
-            field[List[Text]](t"required")(using textList),
-            field[List[Json]](t"enum"),
-            field[scala.Boolean](t"additionalProperties").or(false),
-            field[List[JsonSchema]](t"oneOf")(using schemaList) )
+            field[List[Text]]("required")(using textList),
+            field[List[Json]]("enum"),
+            field[scala.Boolean]("additionalProperties").or(false),
+            field[List[JsonSchema]]("oneOf")(using schemaList) )
 
   given discriminatedUnion: JsonSchema is Discriminable:
     type Form = Json
@@ -336,7 +336,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
         contexts[derivation]():
           [field] => schema =>
             val schema2 = descriptions(label).lay(schema.schema()): memo =>
-              schema.schema().description = memo.map(_.description).join(t"\n")
+              schema.schema().description = memo.map(_.description).join("\n")
 
             (label, schema2)
 
@@ -362,7 +362,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
         choices:
           [variant <: derivation] => schema =>
             descriptions(label).lay(schema.schema()): memo =>
-              schema.schema().description = memo.map(_.description).join(t"\n")
+              schema.schema().description = memo.map(_.description).join("\n")
 
         . to[List]
 

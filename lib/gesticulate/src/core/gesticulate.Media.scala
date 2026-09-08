@@ -46,12 +46,12 @@ import vacuous.*
 object Media:
   given text: Text is Media:
     extension (value: Text)
-      def mediaType: MediaType = MediaType(Group.Text, Subtype.Standard(t"plain"))
+      def mediaType: MediaType = MediaType(Group.Text, Subtype.Standard("plain"))
 
   given nominable: [nominable: Nominable] => nominable is Media:
     extension (value: nominable)
       def mediaType: MediaType =
-        val parts = nominable.name(value).cut(t".").stdlib
+        val parts = nominable.name(value).cut(".").stdlib
         Extensions.guess(parts.last)
 
   object Group:
@@ -87,9 +87,16 @@ object Media:
       CborSeq, Zstd
 
     def name: Text = this match
-      case JsonSeq => t"json-seq"
-      case CborSeq => t"cbor-seq"
+      case JsonSeq => "json-seq"
+      case CborSeq => "cbor-seq"
       case other   => other.toString.tt.uncamel.kebab
+
+  // The `media""` interpolation's runtime entry: the literal was validated at compile
+  // time, so parsing cannot fail. A plain method, so `unsafely`'s capability context
+  // function elaborates once here rather than at every literal site — the 3.10 stream
+  // mis-checks the second expansion of an inline capability combinator in a unit
+  // (memoized-root family; cf. #1829).
+  def parseTrusted(string: Text): MediaType = unsafely(parse(string))
 
   def parse(string: Text)(using Tactic[MediaType.Error]^): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
@@ -100,7 +107,7 @@ object Media:
         case _ =>
           ()
 
-      ps.map((param: Text) => param.cut(t"=", 2)).map: (p: List[Text]) =>
+      ps.map((param: Text) => param.cut("=", 2)).map: (p: List[Text]) =>
         p.stdlib(0).show -> p.stdlib(1).show
 
     def parseSuffixes(suffixes: List[Text]): List[Suffix] =
@@ -109,12 +116,12 @@ object Media:
           abort(MediaType.Error(string, MediaType.Error.Reason.InvalidSuffix(suffix)))
 
     def parseInit(string: Text): (Subtype, List[Suffix]) =
-      val xs: List[Text] = string.cut(t"+")
+      val xs: List[Text] = string.cut("+")
 
       xs.absolve match
         case (h: Text) :: rest => (parseSubtype(h), parseSuffixes(rest))
 
-    def parseBasic(string: Text): (Group, Subtype, List[Suffix]) = string.cut(t"/") match
+    def parseBasic(string: Text): (Group, Subtype, List[Suffix]) = string.cut("/") match
       case List(group, subtype) => parseGroup(group) *: parseInit(subtype)
 
       case _ =>
@@ -136,12 +143,12 @@ object Media:
         Subtype.X(Array.from(chars.filter(!notAllowed(_))).text)
 
       . getOrElse:
-          if string.starts(t"vnd.") then Subtype.Vendor(string.skip(4))
-          else if string.starts(t"prs.") then Subtype.Personal(string.skip(4))
-          else if string.starts(t"x.") || string.starts(t"x-") then Subtype.X(string.skip(2))
+          if string.starts("vnd.") then Subtype.Vendor(string.skip(4))
+          else if string.starts("prs.") then Subtype.Personal(string.skip(4))
+          else if string.starts("x.") || string.starts("x-") then Subtype.X(string.skip(2))
           else Subtype.Standard(string)
 
-    val xs: List[Text] = string.cut(t";").map(_.trim)
+    val xs: List[Text] = string.cut(";").map(_.trim)
 
     xs.absolve match
       case (h: Text) :: rest =>

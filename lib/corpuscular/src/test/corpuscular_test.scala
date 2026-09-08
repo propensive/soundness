@@ -50,34 +50,34 @@ object Tests extends Suite(m"Corpuscular tests"):
       . assert(_ == 0)
 
       test(m"The empty segment checksums to zero"):
-        Crc32.checksum(t"".in[Data])
+        Crc32.checksum("".in[Data])
       . assert(_ == 0)
 
       // The standard check value: "123456789" has CRC-32 0xcbf43926.
       test(m"The standard check vector"):
-        Crc32.checksum(t"123456789".in[Data])
+        Crc32.checksum("123456789".in[Data])
       . assert(_ == 0xcbf43926)
 
       test(m"A single byte"):
-        Crc32.checksum(t"a".in[Data])
+        Crc32.checksum("a".in[Data])
       . assert(_ == 0xe8b7be43)
 
       // PNG chunks and ZIP entries checksum several segments as one stream.
       test(m"Segments accumulate as a single stream"):
-        Crc32.checksum(t"1234".in[Data], t"56789".in[Data])
+        Crc32.checksum("1234".in[Data], "56789".in[Data])
       . assert(_ == Crc32.checksum(t"123456789".in[Data]))
 
       test(m"The running form agrees with the one-shot form"):
-        val bytes = t"123456789".in[Data]
+        val bytes = "123456789".in[Data]
         val crc = Crc32()
         crc.update(bytes.mutable(using Unsafe), 0, bytes.length)
         crc.value == (Crc32.checksum(bytes).toLong & 0xffffffffL)
       . assert(_ == true)
 
       test(m"The running form accumulates across updates"):
-        val whole = t"123456789".in[Data]
-        val first = t"1234".in[Data]
-        val rest = t"56789".in[Data]
+        val whole = "123456789".in[Data]
+        val first = "1234".in[Data]
+        val rest = "56789".in[Data]
         val crc = Crc32()
         crc.update(first.mutable(using Unsafe), 0, first.length)
         crc.update(rest.mutable(using Unsafe), 0, rest.length)
@@ -85,7 +85,7 @@ object Tests extends Suite(m"Corpuscular tests"):
       . assert(_ == true)
 
       test(m"Reset returns the running form to its initial value"):
-        val bytes = t"123456789".in[Data]
+        val bytes = "123456789".in[Data]
         val crc = Crc32()
         crc.update(bytes.mutable(using Unsafe), 0, bytes.length)
         crc.reset()
@@ -95,7 +95,7 @@ object Tests extends Suite(m"Corpuscular tests"):
     suite(m"CRC-64"):
       // The ECMA-182 check value for "123456789".
       test(m"The standard check vector"):
-        val bytes = t"123456789".in[Data]
+        val bytes = "123456789".in[Data]
         val crc = Crc64()
         crc.update(bytes.mutable(using Unsafe), 0, bytes.length)
         crc.value
@@ -112,19 +112,19 @@ object Tests extends Suite(m"Corpuscular tests"):
 
       // The standard check value for "123456789".
       test(m"The standard check vector"):
-        val bytes = t"123456789".in[Data]
+        val bytes = "123456789".in[Data]
         val adler = Adler32()
         adler.update(bytes.mutable(using Unsafe), 0, bytes.length)
         adler.value
       . assert(_ == 0x091e01deL)
 
       test(m"Accumulates across updates"):
-        val first = t"1234".in[Data]
-        val rest = t"56789".in[Data]
+        val first = "1234".in[Data]
+        val rest = "56789".in[Data]
         val split = Adler32()
         split.update(first.mutable(using Unsafe), 0, first.length)
         split.update(rest.mutable(using Unsafe), 0, rest.length)
-        val whole = t"123456789".in[Data]
+        val whole = "123456789".in[Data]
         val once = Adler32()
         once.update(whole.mutable(using Unsafe), 0, whole.length)
         split.value == once.value

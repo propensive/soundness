@@ -85,7 +85,7 @@ object SchemaCorpusTests extends Suite(m"Stratiform schema corpus tests"):
     val tail = document.metadata.pragma.let(CorpusLoader.referenceStem(_))
 
     tail.let: tail =>
-      if tail == t"tels" then
+      if tail == "tels" then
         val assigned = assignCodes(tel, Tels.Axiom.tels)
 
         val constructed: scala.List[Int] =
@@ -110,7 +110,7 @@ object SchemaCorpusTests extends Suite(m"Stratiform schema corpus tests"):
             && codes.stdlib.exists(implemented.contains)
         then
           test(m"raises an expected error on ${testcase.stem}"):
-            collectCodes(testcase, t"neg").stdlib.exists(codes.has(_))
+            collectCodes(testcase, "neg").stdlib.exists(codes.has(_))
           . assert(_ == true)
 
     suite(m"Positive corpus (schema-bearing cases stay clean)"):
@@ -118,5 +118,5 @@ object SchemaCorpusTests extends Suite(m"Stratiform schema corpus tests"):
       // errors at all through schema checking and assignment.
       CorpusLoader.positive.each: testcase =>
         test(m"no schema or validation errors on ${testcase.stem}"):
-          collectCodes(testcase, t"pos")
+          collectCodes(testcase, "pos")
         . assert(_.stdlib.isEmpty)

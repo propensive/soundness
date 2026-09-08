@@ -91,7 +91,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
 
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
+  given byteDesignation: Designation[Bytes[1]] = () => "B"
   given decimalizer:     Decimalizer            = Decimalizer(2)
   given device:          BenchmarkDevice        = LocalhostDevice
   given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga, Tera))
@@ -303,9 +303,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   def run(): Unit =
     val bench = Bench()
     val stress = Stress()
-    val constrained = Stress(heap = t"128m")
-    val gated = Stress(heap = t"2g", cpus = 4)
-    val saturated = Stress(heap = t"2g")
+    val constrained = Stress(heap = "128m")
+    val gated = Stress(heap = "2g", cpus = 4)
+    val saturated = Stress(heap = "2g")
     val profile = Profile()
     val size = input.length*Byte
     val textSize = textData.length*Byte

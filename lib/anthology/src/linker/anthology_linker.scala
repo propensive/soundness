@@ -67,8 +67,8 @@ object jarEdges:
   private object JarTool extends Tool:
     type Settings = Text
 
-    def name: Text = t"jar"
-    def initial: Text = t"main.jar"
+    def name: Text = "jar"
+    def initial: Text = "main.jar"
 
     def run
       ( settings:    Text,
@@ -98,8 +98,8 @@ object jarEdges:
   private case class LibraryTool(universe: Universe) extends Tool:
     type Settings = Text
 
-    def name: Text = t"library"
-    def initial: Text = t"main.jar"
+    def name: Text = "library"
+    def initial: Text = "main.jar"
 
     // A library packages only the compilation's own output, and entry points do not apply.
     def run

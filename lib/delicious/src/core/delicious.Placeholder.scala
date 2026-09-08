@@ -40,7 +40,7 @@ object Placeholder:
   /** The reserved prefix of placeholder literal types. A genuine string
    *  literal type starting with this prefix is escaped by the compiler with
    *  the `esc:` form. */
-  final val Prefix: Text = t"⟨scala-diag:"
+  final val Prefix: Text = "⟨scala-diag:"
 
   def text(id: Int): Text = t"$Prefix$id⟩"
 
@@ -59,7 +59,7 @@ object Placeholder:
     else Unset
 
   def decode(text: Text): Optional[Placeholder] =
-    text.cut(t"|") match
+    text.cut("|") match
       case List(id, kind, name, arity, definedAt, printed) =>
         def field(value: Text): Text = Markup.decode(value)
 

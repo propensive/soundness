@@ -82,21 +82,21 @@ object Ranges:
 
   // The POSIX classes of RE2's `[[:name:]]` form, all ASCII-only.
   val posix: Map[String, Ranges] = Map
-    ( "alnum"  -> Ranges('0', '9').union(Ranges('A', 'Z')).union(Ranges('a', 'z')),
-      "alpha"  -> Ranges('A', 'Z').union(Ranges('a', 'z')),
-      "ascii"  -> Ranges(0x00, 0x7f),
-      "blank"  -> Ranges.point('\t').union(Ranges.point(' ')),
-      "cntrl"  -> Ranges(0x00, 0x1f).union(Ranges.point(0x7f)),
-      "digit"  -> digit,
-      "graph"  -> Ranges('!', '~'),
-      "lower"  -> Ranges('a', 'z'),
-      "print"  -> Ranges(' ', '~'),
-      "punct"  -> Ranges('!', '/').union(Ranges(':', '@')).union(Ranges('[', '`'))
+    ( s"alnum"  -> Ranges('0', '9').union(Ranges('A', 'Z')).union(Ranges('a', 'z')),
+      s"alpha"  -> Ranges('A', 'Z').union(Ranges('a', 'z')),
+      s"ascii"  -> Ranges(0x00, 0x7f),
+      s"blank"  -> Ranges.point('\t').union(Ranges.point(' ')),
+      s"cntrl"  -> Ranges(0x00, 0x1f).union(Ranges.point(0x7f)),
+      s"digit"  -> digit,
+      s"graph"  -> Ranges('!', '~'),
+      s"lower"  -> Ranges('a', 'z'),
+      s"print"  -> Ranges(' ', '~'),
+      s"punct"  -> Ranges('!', '/').union(Ranges(':', '@')).union(Ranges('[', '`'))
                   . union(Ranges('{', '~')),
-      "space"  -> Ranges('\t', '\r').union(Ranges.point(' ')),
-      "upper"  -> Ranges('A', 'Z'),
-      "word"   -> word,
-      "xdigit" -> Ranges('0', '9').union(Ranges('A', 'F')).union(Ranges('a', 'f')) )
+      s"space"  -> Ranges('\t', '\r').union(Ranges.point(' ')),
+      s"upper"  -> Ranges('A', 'Z'),
+      s"word"   -> word,
+      s"xdigit" -> Ranges('0', '9').union(Ranges('A', 'F')).union(Ranges('a', 'f')) )
 
   private val unicodeClasses: scala.collection.concurrent.TrieMap[String, Optional[Ranges]] =
     scala.collection.concurrent.TrieMap()

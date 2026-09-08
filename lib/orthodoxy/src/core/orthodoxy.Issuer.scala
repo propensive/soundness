@@ -107,7 +107,7 @@ class Issuer
 
               val query =
                 Query.make
-                  ( grant_type    = t"authorization_code",
+                  ( grant_type    = "authorization_code",
                     code          = code,
                     redirect_uri  = redirect,
                     client_id     = client )
@@ -126,7 +126,7 @@ class Issuer
                 // token.
                 case _ =>
                   state.refresh.let: refresh =>
-                    val query = Query.make(grant_type = t"refresh_token", refresh_token = refresh)
+                    val query = Query.make(grant_type = "refresh_token", refresh_token = refresh)
 
                     val response =
                       exchange.submit(Http.Post)(query.per(secret)(_.client_secret = _))
@@ -147,7 +147,7 @@ class Issuer
                 scala.caps.unsafe.unsafeAssumeSeparate(safely(json.refresh_token.as[Text]))
 
               val scopes =
-                scala.caps.unsafe.unsafeAssumeSeparate(json.scope.as[Text].cut(t" "))
+                scala.caps.unsafe.unsafeAssumeSeparate(json.scope.as[Text].cut(" "))
 
               val tokenType = // assume `Bearer`
                 scala.caps.unsafe.unsafeAssumeSeparate(json.token_type.as[Text])
@@ -181,9 +181,9 @@ class Issuer
         Query.make
           ( client_id     = client,
             redirect_uri  = redirect,
-            access_type   = t"offline",
-            scope         = scopes.flatMap(_.names).distinct.to(List).join(t" "),
+            access_type   = "offline",
+            scope         = scopes.flatMap(_.names).distinct.to(List).join(" "),
             state         = state.uuid.show,
-            response_type = t"code" )
+            response_type = "code" )
 
       Redirect(init.query(query))

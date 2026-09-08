@@ -55,7 +55,7 @@ object Query extends Dynamic:
 
   given encodable: Query is Encodable in Text =
     _.values.map: (key, value) => t"${key.urlEncode}=${value.urlEncode}"
-    . join(t"&")
+    . join("&")
 
   given decodable: Query is Decodable in Text = text => Query:
     text.cut(t"&").map: next =>
@@ -150,7 +150,7 @@ object Query extends Dynamic:
         gate[derivation](infer[ProductReflection[derivation]], slots, active)
 
   given booleanEncodable: Boolean is Encodable in Query =
-    boolean => if boolean then Query(t"on") else Query()
+    boolean => if boolean then Query("on") else Query()
 
   given booleanDecodable: Boolean is Decodable in Query = _().present
 
@@ -167,7 +167,7 @@ object Query extends Dynamic:
   // Declared explicitly because `Inspectable`'s derivation prefers `Encodable in Text`
   // over `Showable`, which would otherwise render `.inspect` URL-encoded too.
   given inspectable: Query is Inspectable =
-    _.values.map { case (key, value) => t"$key = \"${value}\"" }.join(t", ")
+    _.values.map { case (key, value) => t"$key = \"${value}\"" }.join(", ")
 
   inline given decodable: [value] => value is Decodable in Query =
     summonFrom:
@@ -257,7 +257,7 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
     case other              => Unset
 
   def apply(label: Text): Query =
-    val prefix = label+t"."
+    val prefix = label+"."
 
     Query:
       values.sweep:
@@ -272,4 +272,4 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
     values.map: (key, value) =>
       if key.length == 0 then value.urlEncode else t"${key.urlEncode}=${value.urlEncode}"
 
-    . join(t"&")
+    . join("&")

@@ -85,7 +85,7 @@ object Tests extends Suite(m"Murmuration tests"):
       . assert(_ == false)
 
       test(m"a set contains its element"):
-        Set(t"a", t"b").has(t"a")
+        Set("a", "b").has("a")
       . assert(_ == true)
 
       test(m"a sequence contains its element"):
@@ -93,11 +93,11 @@ object Tests extends Suite(m"Murmuration tests"):
       . assert(_ == true)
 
       test(m"text contains its character"):
-        t"hello".has('e')
+        "hello".has('e')
       . assert(_ == true)
 
       test(m"text does not contain an absent character"):
-        t"hello".has('z')
+        "hello".has('z')
       . assert(_ == false)
 
     suite(m"map"):
@@ -116,14 +116,14 @@ object Tests extends Suite(m"Murmuration tests"):
       // A `Map` is `Mappable` over its *values*: mapping preserves the keys, which is the whole
       // reason `map` is driven by `Mappable` rather than by `Traversable` plus `Reshapable`.
       test(m"a map maps its values, keeping its keys"):
-        Map(t"a" -> 1, t"b" -> 2).map(_*10)
-      . assert(_ == Map(t"a" -> 10, t"b" -> 20))
+        Map("a" -> 1, "b" -> 2).map(_*10)
+      . assert(_ == Map("a" -> 10, "b" -> 20))
 
     suite(m"remap"):
       // `remap` is the pairwise counterpart: it sees a `Map`'s entries as tuples.
       test(m"a map remaps its entries as pairs"):
-        Map(t"a" -> 1).remap { (key, value) => (key, value + 1) }
-      . assert(_ == Map(t"a" -> 2))
+        Map("a" -> 1).remap { (key, value) => (key, value + 1) }
+      . assert(_ == Map("a" -> 2))
 
       test(m"a list remaps like map"):
         List(1, 2).remap(_ + 1)
@@ -161,15 +161,15 @@ object Tests extends Suite(m"Murmuration tests"):
       // Text takes an overload that goes through `String.indexOf`, skipping the traversal
       // entirely; it must agree with the generic definition.
       test(m"text subsumes a substring"):
-        t"hello world".subsumes(t"lo wo")
+        "hello world".subsumes("lo wo")
       . assert(_ == true)
 
       test(m"text does not subsume a non-substring"):
-        t"hello world".subsumes(t"lowo")
+        "hello world".subsumes("lowo")
       . assert(_ == false)
 
       test(m"text subsumes the empty text"):
-        t"hello".subsumes(t"")
+        "hello".subsumes("")
       . assert(_ == true)
 
     suite(m"bind and flatMap"):
@@ -346,27 +346,27 @@ object Tests extends Suite(m"Murmuration tests"):
       // into when the lambda's result is not itself a pair. Ambiguity here is the classic
       // failure mode, so each rung is pinned.
       test(m"a map whose entries map to pairs stays a map"):
-        Map(1 -> t"a").remap { (key, value) => (key + 1, value) }
-      . assert(_ == Map(2 -> t"a"))
+        Map(1 -> "a").remap { (key, value) => (key + 1, value) }
+      . assert(_ == Map(2 -> "a"))
 
       test(m"a map whose entries map to non-pairs becomes a list"):
-        Map(1 -> t"a").remap { (key, value) => key }
+        Map(1 -> "a").remap { (key, value) => key }
       . assert(_ == List(1))
 
       test(m"a ledger whose entries map to non-pairs becomes a list"):
-        Ledger(1 -> t"a", 2 -> t"b").remap { (key, value) => key }
+        Ledger(1 -> "a", 2 -> "b").remap { (key, value) => key }
       . assert(_ == List(1, 2))
 
       test(m"a ledger keeps insertion order when reshaped to a list"):
-        Ledger(2 -> t"b", 1 -> t"a").remap { (key, value) => key }
+        Ledger(2 -> "b", 1 -> "a").remap { (key, value) => key }
       . assert(_ == List(2, 1))
 
       test(m"text reshapes to text"):
-        t"hello".filter(_ != 'l')
-      . assert(_ == t"heo")
+        "hello".filter(_ != 'l')
+      . assert(_ == "heo")
 
       test(m"text traverses as characters"):
-        t"abc".fold(0)((total, _) => total + 1)
+        "abc".fold(0)((total, _) => total + 1)
       . assert(_ == 3)
 
     suite(m"Sorting algorithms"):
@@ -470,8 +470,8 @@ object Tests extends Suite(m"Murmuration tests"):
 
       test(m"text sorts to text"):
         import sortingAlgorithms.quicksort
-        t"soundness".sort
-      . assert(_ == t"dennosssu")
+        "soundness".sort
+      . assert(_ == "dennosssu")
 
       test(m"sorting by a projection under each algorithm"):
         import sortingAlgorithms.heapsort

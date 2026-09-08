@@ -76,7 +76,7 @@ private[facsimile] object Xref:
       // cross-reference stream carrying the entries — typically for objects in object
       // streams — which legacy readers see as free. The table's live entries win, but its
       // free markers yield to the stream's.
-      val sectionEntries = sectionTrailer(t"XRefStm").let(_.long).lay(classicEntries):
+      val sectionEntries = sectionTrailer("XRefStm").let(_.long).lay(classicEntries):
         hybrid =>
           val (hybridEntries, _) = stream(source, hybrid)
 
@@ -87,7 +87,7 @@ private[facsimile] object Xref:
       val mergedEntries = sectionEntries + entries
       val mergedTrailer = sectionTrailer + trailer
 
-      sectionTrailer(t"Prev").let(_.long)
+      sectionTrailer("Prev").let(_.long)
       . lay(Xref(mergedEntries, mergedTrailer, head, streamed(source, head))): previous =>
           recur(previous, mergedEntries, mergedTrailer, visited :+ offset)
 
@@ -122,7 +122,7 @@ private[facsimile] object Xref:
 
       while i < limit do
         // A candidate object header is `<digits> <digits> obj` at a token boundary.
-        if matches(chunk, i, t"obj") && (i + 3 >= chunk.length || !CosLexer.regular(chunk.readUnchecked(i + 3) & 0xff))
+        if matches(chunk, i, "obj") && (i + 3 >= chunk.length || !CosLexer.regular(chunk.readUnchecked(i + 3) & 0xff))
            && (i == 0 || CosLexer.whitespace(chunk.readUnchecked(i - 1) & 0xff))
         then
           objectHeader(chunk, i).let: (number, generation, start) =>
@@ -143,7 +143,7 @@ private[facsimile] object Xref:
           safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
             content match
               case body @ Cos.Body(dictionary, _)
-              if dictionary(t"Type").let(_.name) == t"ObjStm" =>
+              if dictionary("Type").let(_.name) == "ObjStm" =>
                 objStmMembers(source, body).each: number =>
                   if !direct.defines(number)
                   then entries = entries.define(number, Entry.Compressed(container, 0))
@@ -181,14 +181,14 @@ private[facsimile] object Xref:
   // payload; tolerant of any failure (a member simply stays unrecovered).
   private def objStmMembers(source: ByteSource, body: Cos.Body): List[Int] =
     safely:
-      val length = body.entries(t"Length").let(_.long)
-        . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"Length")))).toInt
+      val length = body.entries("Length").let(_.long)
+        . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry("Length")))).toInt
 
-      val count = body.entries(t"N").let(_.long)
-        . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"N")))).toInt
+      val count = body.entries("N").let(_.long)
+        . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry("N")))).toInt
 
       val raw = source.read(body.start, length)
-      val chain = Filter.chain(body.entries(t"Filter"), body.entries(t"DecodeParms"))
+      val chain = Filter.chain(body.entries("Filter"), body.entries("DecodeParms"))
       val data = Filter.decode(raw, chain)
       val lexer = CosLexer(Scan(data))
 
@@ -197,7 +197,7 @@ private[facsimile] object Xref:
           case (CosToken.Integral(number), CosToken.Integral(_)) => number.toInt
 
           case _ =>
-            abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"ObjStm")))
+            abort(Pdf.Error(Pdf.Error.Reason.CorruptStream("ObjStm")))
 
     . or(List())
 
@@ -209,7 +209,7 @@ private[facsimile] object Xref:
       // simply means "not the catalog", as before.
       def catalog(offset: Long): Boolean =
         safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
-          content.dictionary.let(_(t"Type")).let(_.name) == t"Catalog"
+          content.dictionary.let(_("Type")).let(_.name) == "Catalog"
 
         . or(false)
 
@@ -217,14 +217,14 @@ private[facsimile] object Xref:
         case (number, Entry.Direct(offset, generation)) if catalog(offset) => (number, generation)
 
       . lay(Map[Text, Cos]()): (number, generation) =>
-          Map(t"Root" -> Cos.Ref(number, generation))
+          Map("Root" -> Cos.Ref(number, generation))
 
   // The last `trailer` dictionary in the file, if any (classic-xref files have one even when
   // their cross-reference table is corrupt).
   private def lastTrailer(source: ByteSource): Optional[Map[Text, Cos]] =
     val windowSize = source.size.min(4096L).toInt
     val window = source.read(source.size - windowSize, windowSize)
-    val marker = t"trailer"
+    val marker = "trailer"
 
     var i = window.length - marker.length
 
@@ -239,7 +239,7 @@ private[facsimile] object Xref:
     val windowSize = source.size.min(2048L).toInt
     val windowStart = source.size - windowSize
     val window = source.read(windowStart, windowSize)
-    val marker = t"startxref"
+    val marker = "startxref"
 
     var i = window.length - marker.length
 
@@ -328,18 +328,18 @@ private[facsimile] object Xref:
 
     parser.indirect() match
       case (_, _, Cos.Body(dictionary, start)) =>
-        val length = dictionary(t"Length").let(_.long)
-          . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"Length")))).toInt
+        val length = dictionary("Length").let(_.long)
+          . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry("Length")))).toInt
 
         val raw = source.read(start, length)
         if raw.length < length then abort(Pdf.Error(Pdf.Error.Reason.Truncated))
 
-        val chain = Filter.chain(dictionary(t"Filter"), dictionary(t"DecodeParms"))
+        val chain = Filter.chain(dictionary("Filter"), dictionary("DecodeParms"))
         val data = Filter.decode(raw, chain)
 
-        val widths: List[Int] = dictionary(t"W").let(_.elements)
-          . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"W"))))
-          . map(_.long.or(abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"W", t"an integer")))).toInt)
+        val widths: List[Int] = dictionary("W").let(_.elements)
+          . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry("W"))))
+          . map(_.long.or(abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch("W", "an integer")))).toInt)
 
         // Destructured once, rather than indexed three times per row: `/W` is defined to hold
         // exactly three widths, so the pattern is both the arity check and the accessor.
@@ -349,11 +349,11 @@ private[facsimile] object Xref:
           case _ =>
             abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
-        val size = dictionary(t"Size").let(_.long)
-          . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"Size"))))
+        val size = dictionary("Size").let(_.long)
+          . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry("Size"))))
 
         val ranges: List[(Long, Long)] =
-          dictionary(t"Index").let(_.elements).lay(List((0L, size))): elements =>
+          dictionary("Index").let(_.elements).lay(List((0L, size))): elements =>
             elements.map(_.long.or(abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))))
             . batched(2).to[List].map:
                 case List(first, count) => (first, count)

@@ -52,14 +52,14 @@ object Manual:
     def number: Int = ordinal + 1
 
     def title: Text = this match
-      case UserCommands         => t"User Commands"
-      case SystemCalls          => t"System Calls"
-      case LibraryFunctions     => t"Library Functions"
-      case Devices              => t"Devices"
-      case FileFormats          => t"File Formats"
-      case Games                => t"Games"
-      case Miscellanea          => t"Miscellanea"
-      case SystemAdministration => t"System Administration"
+      case UserCommands         => "User Commands"
+      case SystemCalls          => "System Calls"
+      case LibraryFunctions     => "Library Functions"
+      case Devices              => "Devices"
+      case FileFormats          => "File Formats"
+      case Games                => "Games"
+      case Miscellanea          => "Miscellanea"
+      case SystemAdministration => "System Administration"
 
   case class Reference(name: Text, section: Int = 1)
   case class ExitStatus(code: Int, description: Text)

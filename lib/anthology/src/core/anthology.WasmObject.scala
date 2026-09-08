@@ -42,4 +42,4 @@ import gossamer.*
 // produces or consumes it; the node exists so that foreign compilers and wasm linkers can
 // register theirs.
 object WasmObject extends Format.Ir:
-  def id: Text = t"wasm-object"
+  def id: Text = "wasm-object"

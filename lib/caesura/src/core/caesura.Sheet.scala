@@ -70,8 +70,8 @@ object Sheet:
       def genericize(dsv: Sheet): HttpStreams.Content =
         val mediaType: Text =
           dsv.format.let(_.delimiter) match
-            case '\t' => t"text/tab-separated-values"
-            case _    => t"text/csv"
+            case '\t' => "text/tab-separated-values"
+            case _    => "text/csv"
 
         val stream: (Stream[Data] over Credit)^ =
           dsv.source[Text].via(summon[CharEncoder]).asInstanceOf[(Stream[Data] over Credit)^]
@@ -116,7 +116,7 @@ object Sheet:
           if format.header then Sheet(rows, format, rows.prim.let(_.header))
           else Sheet(rows, format)
 
-  given showable: Dsv.Format => Sheet is Showable = _.rows.to[List].map(_.show).join(t"\n")
+  given showable: Dsv.Format => Sheet is Showable = _.rows.to[List].map(_.show).join("\n")
 
   // The `Showable` above needs a `Dsv.Format` to know which delimiter to write and which cells
   // to quote, and it produces the serialized form — in which a cell containing a delimiter is
@@ -132,7 +132,7 @@ object Sheet:
 
     t"Sheet(format:${sheet.format.lay(t"○")(_.inspect)} ╱ columns:$columns ╱ rows:${rows.tt})"
   given streamable: Dsv.Format => Sheet is Streamable by Text over Credit = sheet =>
-    Stream(sheet.rows.readable.iterator.map(_.show+t"\n"))
+    Stream(sheet.rows.readable.iterator.map(_.show+"\n"))
 
   // Parse rows from a pull endpoint as a single-consumer iterator, one
   // block-credit refill per chunk. Each call builds a fresh parser over the

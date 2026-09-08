@@ -36,10 +36,10 @@ import anticipation.*
 import gossamer.*
 
 enum UnusedFeature[version](val name: Text):
-  case Imports(strict: Boolean) extends UnusedFeature[3.3](t"imports")
-  case Privates extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6](t"privates")
-  case Locals extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6](t"locals")
-  case Explicits extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6](t"explicits")
-  case Implicits extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6](t"implicits")
-  case Params extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6](t"params")
-  case Linted extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6](t"linted")
+  case Imports(strict: Boolean) extends UnusedFeature[3.3]("imports")
+  case Privates extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6]("privates")
+  case Locals extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6]("locals")
+  case Explicits extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6]("explicits")
+  case Implicits extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6]("implicits")
+  case Params extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6]("params")
+  case Linted extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6]("linted")

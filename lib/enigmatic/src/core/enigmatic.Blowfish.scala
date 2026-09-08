@@ -50,6 +50,6 @@ object Blowfish:
 
 class Blowfish[bits <: 128 | 256 | 448: ValueOf]
   ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
-extends BlockCipher(t"Blowfish", mode, padding, cipher):
+extends BlockCipher("Blowfish", mode, padding, cipher):
   type Size = bits
   def keySize: bits = valueOf[bits]

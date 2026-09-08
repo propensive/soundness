@@ -73,7 +73,7 @@ object Tests extends Suite(m"Punctuation tests"):
 
     suite(m"Streaming reads"):
       test(m"markdown reads from a fragmented stream through the Aggregable given"):
-        val md = t"# Title\n\nA [link][ref] here.\n\n[ref]: https://example.org\n"
+        val md = "# Title\n\nA [link][ref] here.\n\n[ref]: https://example.org\n"
 
         summon[(Markdown of Layout) is Aggregable by Text]
         . accept(md.s.grouped(3).map(_.tt).stream)
@@ -86,12 +86,12 @@ object Tests extends Suite(m"Punctuation tests"):
     suite(m"Native-rendering coverage"):
       test(m"punctuation's types inspect natively"):
         Inspectable.fallbacks
-         ( Parser.parse(t"# Title\n\nA *word*.\n").inspect,
-           Parser.parse(t"- one\n- two\n\n> quoted\n\n```scala\nval x = 1\n```\n").inspect )
+         ( Parser.parse("# Title\n\nA *word*.\n").inspect,
+           Parser.parse("- one\n- two\n\n> quoted\n\n```scala\nval x = 1\n```\n").inspect )
       . assert(_ == Nil)
 
       test(m"a document inspects as its parsed tree"):
-        Parser.parse(t"# Title\n").inspect
+        Parser.parse("# Title\n").inspect
       . assert:
           _ == Text("Markdown(linkRefs:[] ╱ children:[Heading(1ˢᵗ ╱ 1 ╱ [Textual(t\"Title\")])])")
 
@@ -100,13 +100,13 @@ object Tests extends Suite(m"Punctuation tests"):
         Parser.parse(Parser.parse(markdown).show)
 
       test(m"simple heading"):
-        roundTrip(t"# Title\n").children.stdlib.head
+        roundTrip("# Title\n").children.stdlib.head
       . assert:
-          case Layout.Heading(_, 1, Prose.Textual(t"Title")) => true
+          case Layout.Heading(_, 1, Prose.Textual("Title")) => true
           case _                                             => false
 
       test(m"emphasis and strong"):
-        roundTrip(t"Hello **bold** and *em* here.\n").children.stdlib.head
+        roundTrip("Hello **bold** and *em* here.\n").children.stdlib.head
       . assert:
           case Layout.Paragraph(_, prose*) =>
             prose.exists:
@@ -119,7 +119,7 @@ object Tests extends Suite(m"Punctuation tests"):
           case _ => false
 
       test(m"fenced code block preserves content"):
-        val src = t"```scala\nval x = 1\n```\n"
+        val src = "```scala\nval x = 1\n```\n"
         val first = Parser.parse(src).children.stdlib.head
         val again = Parser.parse(Parser.parse(src).show).children.stdlib.head
 
@@ -129,48 +129,48 @@ object Tests extends Suite(m"Punctuation tests"):
       . assert(_ == true)
 
       test(m"link with title"):
-        val src = t"See [docs](https://example.org \"Docs\") here.\n"
+        val src = "See [docs](https://example.org \"Docs\") here.\n"
         Parser.parse(Parser.parse(src).show).children.stdlib.head
       . assert:
-          case Layout.Paragraph(_, _, Prose.Link(t"https://example.org", t"Docs", _*), _*) => true
+          case Layout.Paragraph(_, _, Prose.Link("https://example.org", "Docs", _*), _*) => true
           case _                                                                          => false
 
       test(m"blockquote nests paragraph"):
-        val src = t"> hello\n"
+        val src = "> hello\n"
         Parser.parse(Parser.parse(src).show).children.stdlib.head
       . assert:
-          case Layout.BlockQuote(_, Layout.Paragraph(_, Prose.Textual(t"hello"))) => true
+          case Layout.BlockQuote(_, Layout.Paragraph(_, Prose.Textual("hello"))) => true
           case _                                                                  => false
 
       test(m"bullet list with two items"):
-        val src = t"- one\n- two\n"
+        val src = "- one\n- two\n"
         Parser.parse(Parser.parse(src).show).children.stdlib.head
       . assert:
           case Layout.BulletList(_, true, items*) if items.size == 2 => true
           case _                                                     => false
 
       test(m"ordered list with two items"):
-        val src = t"1. one\n2. two\n"
+        val src = "1. one\n2. two\n"
         Parser.parse(Parser.parse(src).show).children.stdlib.head
       . assert:
           case Layout.OrderedList(_, 1, true, _, items*) if items.size == 2 => true
           case _                                                            => false
 
     suite(m"Serializer wrapping"):
-      def squash(text: Text): Text = text.cut(t"\n").join(t"").cut(t" ").join(t"")
-      val src = t"alpha beta gamma delta epsilon zeta eta theta iota kappa"
-      val document = Parser.parse(src+t"\n")
+      def squash(text: Text): Text = text.cut("\n").join("").cut(" ").join("")
+      val src = "alpha beta gamma delta epsilon zeta eta theta iota kappa"
+      val document = Parser.parse(src+"\n")
 
       test(m"bounded width keeps every line within the limit"):
         given Markdown.Formatting = Markdown.Formatting.bounded(20)
         val wrapped = document.show
-        wrapped.cut(t"\n").filter(_ != t"").all(_.length <= 20)
+        wrapped.cut("\n").filter(_ != "").all(_.length <= 20)
       . assert(_ == true)
 
       test(m"wrapping actually breaks the paragraph onto several lines"):
         given Markdown.Formatting = Markdown.Formatting.bounded(20)
         val wrapped = document.show
-        wrapped.cut(t"\n").filter(_ != t"").size
+        wrapped.cut("\n").filter(_ != "").size
       . assert(_ > 1)
 
       test(m"wrapping preserves the words and their order"):
@@ -180,7 +180,7 @@ object Tests extends Suite(m"Punctuation tests"):
       . assert(_ == squash(src))
 
       test(m"the default width never wraps"):
-        document.show.cut(t"\n").filter(_ != t"").size
+        document.show.cut("\n").filter(_ != "").size
       . assert(_ == 1)
 
     suite(m"Terminal renderer"):
@@ -188,22 +188,22 @@ object Tests extends Suite(m"Punctuation tests"):
       import termcapDefinitions.xtermTrueColorTermcap
 
       test(m"heading is styled and followed by a rule"):
-        val md = Parser.parse(t"# Hello\n")
+        val md = Parser.parse("# Hello\n")
         md.terminal(width = 20).plain
       . assert(_.s.contains("Hello"))
 
       test(m"link content carries an OSC 8 escape"):
-        val md = Parser.parse(t"See [home](https://example.org/) here.\n")
+        val md = Parser.parse("See [home](https://example.org/) here.\n")
         md.terminal(width = 60).render(xtermTrueColorTermcap).s
       . assert(_.contains("\u001B]8;;https://example.org/"))
 
       test(m"long word hyphenates at width 20"):
-        val md = Parser.parse(t"supercalifragilisticexpialidocious is a word.\n")
+        val md = Parser.parse("supercalifragilisticexpialidocious is a word.\n")
         md.terminal(width = 20).plain.s
       . assert(_.contains("‐"))
 
       test(m"thematic break is a horizontal rule of the requested width"):
-        val md = Parser.parse(t"---\n")
+        val md = Parser.parse("---\n")
         md.terminal(width = 10).plain.s
       . assert(_.contains("──────────"))
 
@@ -213,6 +213,6 @@ object Tests extends Suite(m"Punctuation tests"):
           def color = ColorDepth.NoColor
           override def width = 12
 
-        val md = Parser.parse(t"---\n")
+        val md = Parser.parse("---\n")
         summon[(Markdown of Layout) is Printable].print(md, summon[Termcap]).s
       . assert(_.contains("────────────"))

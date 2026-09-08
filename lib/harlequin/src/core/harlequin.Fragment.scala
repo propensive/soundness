@@ -68,8 +68,8 @@ object Fragment:
   // Keywords that make a following identifier a name, type or path rather than a value, so it
   // is not an infix receiver (`val x`, `def f`, `import p`, `case P`, `new T`, …).
   private val infixExcluded: Set[Text] =
-    Set(t"val", t"var", t"def", t"type", t"class", t"object", t"trait", t"enum", t"given",
-        t"package", t"import", t"export", t"case", t"extension", t"new")
+    Set("val", "var", "def", "type", "class", "object", "trait", "enum", "given",
+        "package", "import", "export", "case", "extension", "new")
 
   private val valueAccents: Set[Accent] =
     Set(Accent.Term, Accent.Number, Accent.String, Accent.Typal)
@@ -78,13 +78,13 @@ object Fragment:
   // `transparent`, `opaque`, `open`, `using`, `extension`, …) as identifiers — as Scala does —
   // so they would otherwise pass as infix receivers; this set excludes them all.
   private val allKeywords: Set[Text] =
-    Set(t"abstract", t"case", t"catch", t"class", t"def", t"do", t"else", t"enum", t"export",
-        t"extends", t"false", t"final", t"finally", t"for", t"given", t"if", t"implicit",
-        t"import", t"lazy", t"match", t"new", t"null", t"object", t"override", t"package",
-        t"private", t"protected", t"return", t"sealed", t"super", t"then", t"this", t"throw",
-        t"trait", t"true", t"try", t"type", t"val", t"var", t"while", t"with", t"yield",
-        t"as", t"derives", t"end", t"extension", t"infix", t"inline", t"opaque", t"open",
-        t"transparent", t"using")
+    Set("abstract", "case", "catch", "class", "def", "do", "else", "enum", "export",
+        "extends", "false", "final", "finally", "for", "given", "if", "implicit",
+        "import", "lazy", "match", "new", "null", "object", "override", "package",
+        "private", "protected", "return", "sealed", "super", "then", "this", "throw",
+        "trait", "true", "try", "type", "val", "var", "while", "with", "yield",
+        "as", "derives", "end", "extension", "infix", "inline", "opaque", "open",
+        "transparent", "using")
 
   // The lexer tags a symbolic operator (`+`, `::`, `<=`, …) as an identifier, just as Scala
   // treats it, and a closing bracket as a symbol — so accent alone cannot tell an operator
@@ -120,11 +120,11 @@ object Fragment:
 
       sig.last.lay((Unset, prefix)): last =>
         val text = last.text
-        val closeBracket = text == t")" || text == t"]" || text == t"}"
+        val closeBracket = text == ")" || text == "]" || text == "}"
 
         val valueEnding =
           !allKeywords.has(text)
-          && (closeBracket || text == t"_" || (valueAccents.has(last.accent) && !symbolic(text)))
+          && (closeBracket || text == "_" || (valueAccents.has(last.accent) && !symbolic(text)))
 
         if !valueEnding then (Unset, prefix) else
           var end = start

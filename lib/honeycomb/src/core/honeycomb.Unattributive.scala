@@ -58,7 +58,7 @@ object Unattributive:
       try text.s.toInt catch case _: NumberFormatException => Unset
 
   given cssClassList: Whatwg.CssClassList is Unattributive to List[Text] =
-    _.let(_.cut(t" ")).or(Nil)
+    _.let(_.cut(" ")).or(Nil)
 
   // given posInt: Int is Attributive to PositiveInt = _ -> _.show
   // given double: Double is Attributive to Decimal = _ -> _.toString.tt

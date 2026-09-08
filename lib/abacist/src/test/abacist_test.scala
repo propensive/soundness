@@ -190,20 +190,20 @@ object Tests extends Suite(m"Abacist Tests"):
       suite(m"Showing Quanta values"):
         test(m"Show a single-unit weight"):
           (Quanta(2): Weight).show
-        . assert(_ == t"2oz")
+        . assert(_ == "2oz")
 
         test(m"Show a more complex weight"):
           (Quanta(3, 2): Weight).show
-        . assert(_ == t"3lb 2oz")
+        . assert(_ == "3lb 2oz")
 
         test(m"Show a weight of three parts"):
           (Quanta(1, 3, 2): Weight).show
-        . assert(_ == t"1st 3lb 2oz")
+        . assert(_ == "1st 3lb 2oz")
 
         test(m"Show with custom unit rendering"):
           given UnitsNames[Height] = () => List(t"'", t"\"")
           (Quanta(5, 9): Height).show
-        . assert(_ == t"5' 9\"")
+        . assert(_ == "5' 9\"")
 
       suite(m"Aggregate tests"):
         test(m"Total of several values"):
@@ -223,4 +223,4 @@ object Tests extends Suite(m"Abacist Tests"):
 
       test(m"a quanta shows every component, including zeroes"):
         (Quanta(3, 2): Weight).inspect
-      . assert(_ == t"Quanta(0st 3lb 2oz)")
+      . assert(_ == "Quanta(0st 3lb 2oz)")

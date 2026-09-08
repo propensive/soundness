@@ -81,7 +81,7 @@ object internal:
     // doesn't propose (or recurse into) itself. Resolved by name and guarded
     // against absence — the real recursion stop is the name check in `seek`.
     val self: List[Symbol] =
-      List("frontier.context.explainMissingContext", "soundness.explainMissingContext")
+      List[String]("frontier.context.explainMissingContext", "soundness.explainMissingContext")
       . flatMap: path =>
           try List(Symbol.requiredMethod(path)) catch case _: Throwable => Nil
       . concat:
@@ -546,7 +546,7 @@ object internal:
         // search fails for a reason the re-search did not see.
         val found = Diagnostic.Found(name, Unset, proscenium.Nil)
         val tree = Diagnostic.Resolving(name, Unset, proscenium.List(found))
-        val headline = t"contextual value resolves without the catch-all"
+        val headline = "contextual value resolves without the catch-all"
         report.errorAndAbort(Diagnostic.render(tree, headline).s)
 
       case m: Missing =>

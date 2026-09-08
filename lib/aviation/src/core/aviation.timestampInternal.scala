@@ -107,7 +107,7 @@ object timestampInternal:
       val day = calendar.diurnal(date)()
       val millis = time.nanos/1_000_000
 
-      val fraction = if millis == 0 then t"" else t".${pad(millis, 3)}"
+      val fraction = if millis == 0 then "" else t".${pad(millis, 3)}"
       val clock = t"${pad(time.hour, 2)}:${pad(time.minute, 2)}:${pad(time.second, 2)}"
 
       t"${pad(year, 4)}-${pad(month, 2)}-${pad(day, 2)}T$clock$fraction"
@@ -204,7 +204,7 @@ object timestampInternal:
     given dateDecoder: Tactic[Moment.Error] => Date is Decodable in Text = value =>
       import calendars.gregorianCalendar
 
-      value.cut(t"-") match
+      value.cut("-") match
         case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
           Date(Year(year), Month(month), Day(day))
 
@@ -219,7 +219,7 @@ object timestampInternal:
           date.month.numerical.toString.tt.pad(2, Rtl, '0'),
           date.day().toString.tt.pad(2, Rtl, '0') )
 
-      . join(t"-")
+      . join("-")
 
     inline given dateOrderable: Date is Orderable:
       inline def compare

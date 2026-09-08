@@ -599,7 +599,7 @@ object Benchmarks extends Suite(m"Murmuration benchmarks"):
       val kind = shape.ordinal
 
       bench(name)(target = 250*Milli(Second), baseline = Algorithm.Choice.Timsort)
-      . over(Axis(Algorithm.Choice), Axis(t"size")(sizes*)):
+      . over(Axis(Algorithm.Choice), Axis("size")(sizes*)):
           case (Algorithm.Choice.Timsort, size) =>
             '{ murmuration.Benchmarks.timsorted(murmuration.Benchmarks.data($kind, $size)) }
 
@@ -632,40 +632,40 @@ object Benchmarks extends Suite(m"Murmuration benchmarks"):
     // the one shape-specialized instance is worth.
     suite(m"Receiver shape"):
       bench(m"Timsort over a List")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           '{ murmuration.Benchmarks.timsorted(murmuration.Benchmarks.data(${Expr(0)}, $size)) }
 
       bench(m"Timsort over a Sequence")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.sequence(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.timsortedSequence($input) }
 
       bench(m"Timsort over an array, in place")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.sortedInPlace($input) }
 
       // The copy the benchmark above makes to have something to consume, and nothing else: what
       // it measures has to be subtracted from that one to leave the sort.
       bench(m"the copy that in-place sorting consumes")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.copyOnly($input) }
 
       // The same three over elements that are references: here sorting in place really is the
       // algorithm and nothing else, with no boxing, no scratch array and no rebuild.
       bench(m"Timsort over a List of references")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.sortedTickets($input) }
 
       bench(m"Timsort over an array of references, in place")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.sortedTicketsInPlace($input) }
 
       bench(m"the copy that consumes, for references")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.copyTicketsOnly($input) }
 
@@ -673,16 +673,16 @@ object Benchmarks extends Suite(m"Murmuration benchmarks"):
     // algorithm the standard library uses.
     suite(m"Against the standard library"):
       bench(m"Timsort through Sortable")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           '{ murmuration.Benchmarks.timsorted(murmuration.Benchmarks.data(${Expr(0)}, $size)) }
 
       bench(m"Timsort through Sortable, counting first")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.timsortedCounted($input) }
 
       bench(m"the standard library's own sort")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           '{ murmuration.Benchmarks.stdlibSorted(murmuration.Benchmarks.data(${Expr(0)}, $size)) }
 
       bench(m"ten thousand comparisons through the inline operator")(target = 250*Milli(Second)):
@@ -693,58 +693,58 @@ object Benchmarks extends Suite(m"Murmuration benchmarks"):
 
       // What boxing and decoration still cost.
       bench(m"an Int array sorted in place, boxing into scratch")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.quicksortIntArrayInPlace($input) }
 
       bench(m"the JDK's primitive sort, boxing nothing")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.jdkPrimitiveSort($input) }
 
       bench(m"sorting by the elements themselves")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.sortWithoutKeys($input) }
 
       bench(m"ordering by a projection, which decorates")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.orderByIdentity($input) }
 
       // How `order` might carry its keys.
       bench(m"keys in an object beside each element")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.orderByPairs($input) }
 
       bench(m"keys interleaved with the elements")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.orderByInterleaving($input) }
 
       bench(m"keys in a primitive array beside the elements")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.orderByParallel($input) }
 
       bench(m"no keys carried, the projection recomputed")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.orderByRecomputing($input) }
 
       bench(m"the library's order, for scale")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.orderByLibrary($input) }
 
       // Everything but the sort, on each side, so that the sort can be had by subtraction.
       bench(m"the library's path without the sort")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.roundTrip($input) }
 
       bench(m"the standard library's path without the sort")(target = 250*Milli(Second))
-      . over(Axis(t"size")(sizes*)): size =>
+      . over(Axis("size")(sizes*)): size =>
           val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
           '{ murmuration.Benchmarks.stdlibRoundTrip($input) }

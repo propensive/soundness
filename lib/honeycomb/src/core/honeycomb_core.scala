@@ -65,7 +65,7 @@ package stylesheets:
   given uncheckedClasses: [classname <: Label: ValueOf] => NotGiven[classname =:= "apply"]
   =>  Attribution of classname =
 
-    new Attribution(t"class"):
+    new Attribution("class"):
       type Topic = classname
 
 package recoveries:

@@ -39,7 +39,7 @@ import anticipation.*
 object Communicable:
   given text: Text is Communicable = text =>
     Message:
-      if text.s.length == 0 || text.s(0) == ' ' || text.s.last == ' ' then ("“"+text+"”").tt
+      if text.s.length == 0 || text.s(0) == ' ' || text.s.last == ' ' then s"“$text”".tt
       else text
 
   given string: String is Communicable = text.contramap(_.tt)
@@ -60,8 +60,8 @@ object Communicable:
     messages =>
       // The `List.concat` primitive rather than symbolism's `+`: plain list plumbing needs no
       // typeclass here.
-      val bullets = List.fill(List.size(messages))("\n - ".tt)
-      Message(List.concat(bullets, List("".tt)), messages)
+      val bullets = List.fill(List.size(messages))("\n - ")
+      Message(List.concat(bullets, List[Text]("")), messages)
 
 // A `Communicable` is a `Transcribable to Message`: converting a value to a `Message` is exactly
 // how a loggable event is transcribed onto the common carrier. This lets `Loggable.fanOut` resolve

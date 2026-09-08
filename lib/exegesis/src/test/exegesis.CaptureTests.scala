@@ -46,7 +46,7 @@ object CaptureTests extends Suite(m"Handle confinement tests"):
     test(m"the document cannot be stashed in an outer variable"):
       demilitarize:
         def attempt(using registry: Lsp.Registry^): Unit =
-          var stash: () => Text = () => t""
+          var stash: () => Text = () => ""
 
           hover:
             stash = () => document.text
@@ -61,7 +61,7 @@ object CaptureTests extends Suite(m"Handle confinement tests"):
           var stash: () => Unit = () => ()
 
           opened:
-            stash = () => client.logMessage(t"late")
+            stash = () => client.logMessage("late")
 
           ()
     . assert(_.nonEmpty)
@@ -81,7 +81,7 @@ object CaptureTests extends Suite(m"Handle confinement tests"):
       demilitarize:
         def attempt()(using Stdio, Monitor, Probate): Optional[Lsp.Registry] =
           var stash: Optional[Lsp.Registry] = Unset
-          Lsp.listen(t"escape"):
+          Lsp.listen("escape"):
             stash = summon[Lsp.Registry]
           stash
     . assert(_.nonEmpty)
@@ -90,7 +90,7 @@ object CaptureTests extends Suite(m"Handle confinement tests"):
     test(m"a pure text snapshot may leave the handler"):
       demilitarize:
         def attempt(using registry: Lsp.Registry^): Unit =
-          var stash: Text = t""
+          var stash: Text = ""
 
           opened:
             stash = document.text

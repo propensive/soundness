@@ -96,10 +96,10 @@ private[telekinesis] object Sessions:
       val code: Int = head.status.code
 
       val chunked: Boolean = head.headers.exists: header =>
-        header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
+        header.key.lower == "transfer-encoding" && header.value.lower.contains("chunked")
 
       val length: Optional[Int] =
-        head.headers.filter(_.key.lower == t"content-length").prim.let(_.value)
+        head.headers.filter(_.key.lower == "content-length").prim.let(_.value)
         . lay(Unset: Optional[Int]): text => safely(Integer.parseInt(text.s.trim.nn))
 
       val bodiless: Boolean =
@@ -140,7 +140,7 @@ private[telekinesis] object Sessions:
 
       // RFC 7540 §8.1.2.2: connection-specific headers must not appear in h2.
       val headers: List[Http.Header] = request.textHeaders.filter: header =>
-        header.key.lower != t"connection"
+        header.key.lower != "connection"
 
       // The body spring comes from a pure `Request`, so the seal only
       // discharges the field's capture-polymorphic declared type.

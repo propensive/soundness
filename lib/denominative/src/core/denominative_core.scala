@@ -197,22 +197,22 @@ extension (any: Any)
 
 package ordinalTextualizables:
   given nominalOrdinal: Ordinal is Textualizable =
-    case Prim    => "prim".tt
-    case Sec     => "sec".tt
-    case Ter     => "ter".tt
-    case Quat    => "quat".tt
-    case Quin    => "quin".tt
-    case Sen     => "sen".tt
-    case Sept    => "sept".tt
-    case ordinal => (""+ordinal+".z").tt
+    case Prim    => "prim"
+    case Sec     => "sec"
+    case Ter     => "ter"
+    case Quat    => "quat"
+    case Quin    => "quin"
+    case Sen     => "sen"
+    case Sept    => "sept"
+    case ordinal => s"$ordinal.z".tt
 
-  given uniaryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n1+"♭"
-  given zeraryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n0+"♯"
-  given unmarkedUniaryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n1
-  given unmarkedZeraryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n0
+  given uniaryOrdinal: Ordinal is Textualizable = ordinal => s"${ordinal.n1}♭"
+  given zeraryOrdinal: Ordinal is Textualizable = ordinal => s"${ordinal.n0}♯"
+  given unmarkedUniaryOrdinal: Ordinal is Textualizable = ordinal => s"${ordinal.n1}"
+  given unmarkedZeraryOrdinal: Ordinal is Textualizable = ordinal => s"${ordinal.n0}"
 
   given intermediateOrdinal: Ordinal is Textualizable =
-    ordinal => "⌞"+ordinal.n0+"⌟|⌞"+ordinal.n1+"⌟"
+    ordinal => s"⌞${ordinal.n0}⌟|⌞${ordinal.n1}⌟"
 
   given englishOrdinal: Ordinal is Textualizable = ordinal =>
     ordinal.n1%100 match

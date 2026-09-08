@@ -48,7 +48,7 @@ import errorDiagnostics.emptyDiagnostics
 // exactly the TASTy's, so they contribute no atoms of their own and never fall through to
 // `opaque/1`, where every rebuild would register as a major event.
 object TastyDiscipline extends Discipline:
-  def id: Text = t"tasty/1"
+  def id: Text = "tasty/1"
 
   // The domain is the fixed set of TASTy-carrying universes (`tasty.md` §3) — not universal:
   // the cross-section invariant (§9.6) binds exactly these, which is what makes "one API on
@@ -58,7 +58,7 @@ object TastyDiscipline extends Discipline:
   // inherited member need not be re-atomized under each type that presents it. Classfile-level
   // linkage is the JVM ecosystem profile's, not this discipline's, so only the TASTy level is
   // certified here.
-  def domain: Discipline.Domain = Discipline.Domain.Realms(Set(t"jvm", t"sjsir", t"nir"))
+  def domain: Discipline.Domain = Discipline.Domain.Realms(Set("jvm", "sjsir", "nir"))
   def keying: Discipline.Keying = Discipline.Keying.Declaration
 
   def guarantees(universe: Text): Set[Discipline.Guarantee] =

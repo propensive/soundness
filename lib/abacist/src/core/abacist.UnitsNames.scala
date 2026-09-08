@@ -35,6 +35,6 @@ package abacist
 import anticipation.*
 
 trait UnitsNames[quanta]:
-  def prefix: Text = "".tt
-  def separator: Text = " ".tt
+  def prefix: Text = ""
+  def separator: Text = " "
   def units(): List[Text]

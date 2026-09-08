@@ -56,13 +56,13 @@ object TestMcpServer extends Mcp.Server():
     Thread.sleep(1500)
 
     case class WebsiteUrl(url: Text)
-    client.elicit[WebsiteUrl](t"Please provide the URL for your favourite website.")
+    client.elicit[WebsiteUrl]("Please provide the URL for your favourite website.")
 
-    client.log(t"Found it in the magic book")
+    client.log("Found it in the magic book")
     Thread.sleep(1500)
-    client.log(t"Cross-referencing magic recipe")
+    client.log("Cross-referencing magic recipe")
     Thread.sleep(1500)
-    client.log(t"Studying the recipe")
+    client.log("Studying the recipe")
     Thread.sleep(1500)
     client.log(t"Applying the recipe to $text")
     Thread.sleep(1500)

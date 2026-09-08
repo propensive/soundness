@@ -52,7 +52,7 @@ object DemoLspServer:
   def main(args: Array[Text]): Unit = cli:
     execute:
       supervise:
-        Lsp.listen(t"Exegesis Demo", t"0.1.0"):
+        Lsp.listen("Exegesis Demo", "0.1.0"):
           opened:
             client.publishDiagnostics
               ( document.uri,
@@ -72,7 +72,7 @@ object DemoLspServer:
                   ( CompletionItem(label = t"exegesis", kind = CompletionItemKind.Keyword),
                     CompletionItem(label = t"soundness", kind = CompletionItemKind.Keyword) ) )
 
-          command(t"demo.reverse"):
+          command("demo.reverse"):
             arguments.let(_.prim).let: argument =>
               val text: Text = argument.as[Text]
               Text(StringBuilder(text.s).reverse.toString).in[Json]

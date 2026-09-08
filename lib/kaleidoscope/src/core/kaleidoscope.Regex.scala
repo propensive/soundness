@@ -150,7 +150,7 @@ object Regex:
               case (group :: groups, index :: rest) =>
                 val first = slots(2*index)
                 val last = slots(2*index + 1)
-                val matched = if first < 0 then "".tt else text.s.substring(first, last).nn.tt
+                val matched = if first < 0 then "" else text.s.substring(first, last).nn.tt
                 val optional = group.quantifier == Regex.Quantifier.Between(0, 1)
 
                 val value: Optional[Text | Char] | List[Text | Char] =
@@ -195,9 +195,9 @@ object Regex:
     case Greedy, Reluctant, Possessive
 
     def serialize: Text = this match
-      case Greedy     => "".tt
-      case Reluctant  => "?".tt
-      case Possessive => "+".tt
+      case Greedy     => ""
+      case Reluctant  => "?"
+      case Possessive => "+"
 
   enum Quantifier:
     case Exactly(start: Int)
@@ -205,12 +205,12 @@ object Regex:
     case Between(start: Int, end: Int)
 
     def serialize: Text = this match
-      case Exactly(1)          => "".tt
+      case Exactly(1)          => ""
       case Exactly(start)      => s"{$start}".tt
-      case AtLeast(1)          => "+".tt
-      case AtLeast(0)          => "*".tt
+      case AtLeast(1)          => "+"
+      case AtLeast(0)          => "*"
       case AtLeast(start)      => s"{$start,}".tt
-      case Between(0, 1)       => "?".tt
+      case Between(0, 1)       => "?"
       case Between(start, end) => s"{$start,$end}".tt
 
     def unitary: Boolean = this == Exactly(1)
@@ -236,23 +236,23 @@ object Regex:
 
     def serialize(pattern: Text, index: Int, named: Boolean): (Int, Text) =
       if charClass then
-        val groupName = (if capture && named then s"?<g$index>" else "").tt
+        val groupName = (if capture && named then s"?<g$index>" else s"").tt
 
         if quantifier.unitary then (index, s"($groupName[${pattern.s.substring(start, end)}])")
         else
           val chars = pattern.s.substring(start, end)
           (index, s"($groupName[$chars]${quantifier.serialize}${greed.serialize})")
       else if singleChar then
-        val groupName = (if capture && named then s"?<g$index>" else "").tt
+        val groupName = (if capture && named then s"?<g$index>" else s"").tt
         val token = pattern.s.substring(start, end)
 
         if quantifier.unitary then (index, s"($groupName$token)")
         else (index, s"($groupName$token${quantifier.serialize}${greed.serialize})")
       else
         val (index2, subpattern) =
-          Regex.makePattern(pattern, groups, start, "".tt, end, index, named)
+          Regex.makePattern(pattern, groups, start, "", end, index, named)
 
-        val groupName = (if capture && named then s"?<g$index>" else "").tt
+        val groupName = (if capture && named then s"?<g$index>" else s"").tt
 
         if quantifier.unitary then (index2, s"($groupName$subpattern)".tt)
         else (index2, s"($groupName($subpattern)${quantifier.serialize}${greed.serialize})".tt)
@@ -267,7 +267,7 @@ object Regex:
     def validStart(part: Text): Boolean =
       val str = part.s
       str.startsWith("(") || str.startsWith("[") || str.startsWith(".") ||
-        (str.length >= 2 && str.charAt(0) == '\\' && "dDwWsS".indexOf(str.charAt(1)) >= 0)
+        (str.length >= 2 && str.charAt(0) == '\\' && s"dDwWsS".indexOf(str.charAt(1)) >= 0)
 
     parts.absolve match
       case head :: tail =>
@@ -369,7 +369,7 @@ object Regex:
 
         case '\\' if !escape && !charClass && captured.has(index) &&
           index + 1 < text.s.length &&
-          "dDwWsS".indexOf(text.s.charAt(index + 1)) >= 0 =>
+          s"dDwWsS".indexOf(text.s.charAt(index + 1)) >= 0 =>
 
           val groupStart = index
           index += 2
@@ -542,13 +542,13 @@ case class Regex(pattern: Text, groups: List[Regex.Group]) extends Formal:
     engine.search(this, input, start, overlap)
 
   lazy val capturePattern: Text =
-    Regex.makePattern(pattern, groups, 0, "".tt, pattern.s.length, 0)(1)
+    Regex.makePattern(pattern, groups, 0, "", pattern.s.length, 0)(1)
 
   // The pattern re-rendered with a plain `(…)` around every group, which is how it is handed to
   // praxinoscope: RE2 syntax has no named groups, so capture groups are identified by paren
   // order via `captureIndices` instead.
   private[kaleidoscope] lazy val plainPattern: Text =
-    Regex.makePattern(pattern, groups, 0, "".tt, pattern.s.length, 0, false)(1)
+    Regex.makePattern(pattern, groups, 0, "", pattern.s.length, 0, false)(1)
 
   // For each capture group (in `captureGroups` order), the 1-based index of its outer
   // parenthesis in `plainPattern`, mirroring the paren-emission order of `Group.serialize`: one

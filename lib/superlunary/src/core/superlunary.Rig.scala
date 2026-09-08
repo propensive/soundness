@@ -67,9 +67,9 @@ object Rig:
       case Unknown         extends Reason(3)
 
     given Reason is Showable =
-      case Reason.Serialization   => t"the output could not be serialized"
-      case Reason.Deserialization => t"the input could not be deserialized"
-      case Reason.Unknown         => t"of an unknown reason"
+      case Reason.Serialization   => "the output could not be serialized"
+      case Reason.Deserialization => "the input could not be deserialized"
+      case Reason.Unknown         => "of an unknown reason"
 
   case class Error(reason: Rig.Error.Reason)(using Diagnostics)
   extends fulminate.Error(306, reason.number)

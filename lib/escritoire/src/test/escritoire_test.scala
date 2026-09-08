@@ -50,54 +50,54 @@ object Tests extends Suite(m"Escritoire tests"):
     // ─── TextAlignment ──────────────────────────────────────────────────────
 
     test(m"Left alignment pads on the right"):
-      TextAlignment.Left.pad(t"hi", 6, true)
-    . assert(_ == t"hi    ")
+      TextAlignment.Left.pad("hi", 6, true)
+    . assert(_ == "hi    ")
 
     test(m"Right alignment pads on the left"):
-      TextAlignment.Right.pad(t"hi", 6, true)
-    . assert(_ == t"    hi")
+      TextAlignment.Right.pad("hi", 6, true)
+    . assert(_ == "    hi")
 
     test(m"Center alignment splits padding evenly"):
-      TextAlignment.Center.pad(t"hi", 6, true)
-    . assert(_ == t"  hi  ")
+      TextAlignment.Center.pad("hi", 6, true)
+    . assert(_ == "  hi  ")
 
     test(m"Center alignment puts the extra space on the right"):
-      TextAlignment.Center.pad(t"hi", 7, true)
-    . assert(_ == t"  hi   ")
+      TextAlignment.Center.pad("hi", 7, true)
+    . assert(_ == "  hi   ")
 
     test(m"Justify spreads spaces between words on non-final lines"):
-      TextAlignment.Justify.pad(t"a b c", 9, false)
-    . assert(_ == t"a   b   c")
+      TextAlignment.Justify.pad("a b c", 9, false)
+    . assert(_ == "a   b   c")
 
     test(m"Justify left-aligns the final line"):
-      TextAlignment.Justify.pad(t"a b c", 9, true)
-    . assert(_ == t"a b c    ")
+      TextAlignment.Justify.pad("a b c", 9, true)
+    . assert(_ == "a b c    ")
 
     // ─── Column combinators ─────────────────────────────────────────────────
 
     test(m"Column retitle changes the title"):
-      Column[Person, Text, Text](t"Name")(_.name).retitle(t"Forename").title
-    . assert(_ == t"Forename")
+      Column[Person, Text, Text]("Name")(_.name).retitle("Forename").title
+    . assert(_ == "Forename")
 
     test(m"Column contramap adapts the row type"):
-      val nameColumn = Column[Person, Text, Text](t"Name")(_.name)
-      nameColumn.contramap[(Person, Int)](_(0)).get((Person(t"Zoe", 9), 1))
-    . assert(_ == t"Zoe")
+      val nameColumn = Column[Person, Text, Text]("Name")(_.name)
+      nameColumn.contramap[(Person, Int)](_(0)).get((Person("Zoe", 9), 1))
+    . assert(_ == "Zoe")
 
     test(m"Int column is right-aligned by default"):
-      Column[Person, Int, Text](t"Age")(_.age).textAlign
+      Column[Person, Int, Text]("Age")(_.age).textAlign
     . assert(_ == TextAlignment.Right)
 
     test(m"Text column is left-aligned by default"):
-      Column[Person, Text, Text](t"Name")(_.name).textAlign
+      Column[Person, Text, Text]("Name")(_.name).textAlign
     . assert(_ == TextAlignment.Left)
 
     // ─── Basic rendering ────────────────────────────────────────────────────
 
     val scaffold =
       Scaffold[Person, Text]
-        ( Column(t"Name")(_.name),
-          Column(t"Age")(_.age) )
+        ( Column("Name")(_.name),
+          Column("Age")(_.age) )
 
     test(m"Render a simple table with rounded borders"):
       import tableStyles.thinRoundedTableStyle
@@ -153,14 +153,14 @@ object Tests extends Suite(m"Escritoire tests"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
       render(scaffold, people, 40)(3)
-    . assert(_ == t"│ Alice │  30 │")
+    . assert(_ == "│ Alice │  30 │")
 
     // ─── Paragraph wrapping ─────────────────────────────────────────────────
 
     val wrapping =
       Scaffold[Person, Text]
-        ( Column(t"Phrase", sizing = columnar.Paragraph)(_ => t"the quick brown fox"),
-          Column(t"Age")(_.age) )
+        ( Column("Phrase", sizing = columnar.Paragraph)(_ => "the quick brown fox"),
+          Column("Age")(_.age) )
 
     test(m"A paragraph column wraps text across several lines"):
       import tableStyles.thinRoundedTableStyle
@@ -187,13 +187,13 @@ object Tests extends Suite(m"Escritoire tests"):
 
     val truncating =
       Scaffold[Person, Text]
-        ( Column(t"Fixed", sizing = columnar.Fixed(6))(_ => t"abcdefghij") )
+        ( Column("Fixed", sizing = columnar.Fixed(6))(_ => "abcdefghij") )
 
     test(m"A Fixed column truncates over-long cells with an ellipsis"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
       render(truncating, List(Person(t"Alice", 30)), 40)(3)
-    . assert(_ == t"│ abcde… │")
+    . assert(_ == "│ abcde… │")
 
     // ─── Derivation ─────────────────────────────────────────────────────────
 
@@ -213,9 +213,9 @@ object Tests extends Suite(m"Escritoire tests"):
     test(m"TableRelabelling overrides a derived column title"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      given TableRelabelling[Person] = () => Map(t"name" -> t"Full Name")
+      given TableRelabelling[Person] = () => Map("name" -> "Full Name")
       summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.stdlib.to(List).head
-    . assert(_ == t"╭───────────┬─────╮")
+    . assert(_ == "╭───────────┬─────╮")
 
     test(m"A sequence of integers can be tabulated directly"):
       import tableStyles.thinRoundedTableStyle
@@ -237,7 +237,7 @@ object Tests extends Suite(m"Escritoire tests"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
       import hieroglyph.textMetrics.wideCharacterWidthMetric
-      val cjk = Scaffold[Person, Text](Column(t"N")(_ => t"日本"))
+      val cjk = Scaffold[Person, Text](Column("N")(_ => "日本"))
       cjk.tabulate(List(Person(t"Alice", 30))).grid(40).render.stdlib.to(List)
     . assert:
         _ == List
@@ -253,8 +253,8 @@ object Tests extends Suite(m"Escritoire tests"):
 
       val collapsing =
         Scaffold[Person, Text]
-          ( Column(t"Name")(_.name),
-            Column(t"Note", sizing = columnar.Collapsible(0.5))(_ => t"annotation") )
+          ( Column("Name")(_.name),
+            Column("Note", sizing = columnar.Collapsible(0.5))(_ => "annotation") )
 
       render(collapsing, people, 14)
     . assert:
@@ -272,8 +272,8 @@ object Tests extends Suite(m"Escritoire tests"):
 
       val collapsing =
         Scaffold[Person, Text]
-          ( Column(t"Name")(_.name),
-            Column(t"Note", sizing = columnar.Collapsible(0.5))(_ => t"annotation") )
+          ( Column("Name")(_.name),
+            Column("Note", sizing = columnar.Collapsible(0.5))(_ => "annotation") )
 
       render(collapsing, people, 30)
     . assert:
@@ -291,8 +291,8 @@ object Tests extends Suite(m"Escritoire tests"):
 
       val aligned =
         Scaffold[Person, Text]
-          ( Column(t"A")(_ => t"one two"),
-            Column(t"B", verticalAlign = VerticalAlignment.Bottom)(_ => t"x") )
+          ( Column("A")(_ => "one two"),
+            Column("B", verticalAlign = VerticalAlignment.Bottom)(_ => "x") )
 
       render(aligned, List(Person(t"Alice", 30)), 13)
     . assert:
@@ -309,13 +309,13 @@ object Tests extends Suite(m"Escritoire tests"):
     test(m"failAttenuation raises a Table.Error when the table is too wide"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.failAttenuation
-      val wide = Scaffold[Person, Text](Column(t"Name", sizing = columnar.Fixed(20))(_.name))
+      val wide = Scaffold[Person, Text](Column("Name", sizing = columnar.Fixed(20))(_.name))
       safely(wide.tabulate(people).grid(5).render.stdlib.to(List)).absent
     . assert(_ == true)
 
     test(m"ignoreAttenuation renders without raising when the table is too wide"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      val wide = Scaffold[Person, Text](Column(t"Name", sizing = columnar.Fixed(20))(_.name))
+      val wide = Scaffold[Person, Text](Column("Name", sizing = columnar.Fixed(20))(_.name))
       safely(wide.tabulate(people).grid(5).render.stdlib.to(List)).absent
     . assert(_ == false)

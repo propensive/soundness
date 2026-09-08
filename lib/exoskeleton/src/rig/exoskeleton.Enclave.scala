@@ -115,7 +115,7 @@ extends Rig:
       // `Fqcn.apply` rather than the `fqcn""` interpolator: the macro's synthesized tree
       // fails capture-variable unification when expanded in a capture-checked module.
       val executor: Fqcn =
-        safely(Fqcn(t"superlunary.Executor2"))
+        safely(Fqcn("superlunary.Executor2"))
         . or(panic(m"the constant fully-qualified class name is well-formed"))
 
       val jarfile = supervise:
@@ -147,6 +147,6 @@ extends Rig:
         variables(inputParameters = input):
           sh"${stage.target}".exec[Exit]()
 
-      t"""[""]"""
+      """[""]"""
 
     Enclave.Launcher(stage.target)

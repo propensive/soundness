@@ -61,8 +61,8 @@ case class Boxed[value](value: value) derives CanEqual
 case class Team(lead: Person, size: Int) derives CanEqual
 case class OptPerson(name: Text, age: Optional[Int]) derives CanEqual
 case class Renamed
-   (@name[Cbor](t"data_files")  dataFiles:  List[Long],
-    @name[Cbor](t"index_files") indexFiles: List[Long])
+   (@name[Cbor]("data_files")  dataFiles:  List[Long],
+    @name[Cbor]("index_files") indexFiles: List[Long])
 derives CanEqual
 
 enum Shape derives CanEqual:
@@ -79,11 +79,11 @@ case class Nums(values: List[Int]) derives CanEqual
 case class Mixed(a: Double, b: Boolean, c: Text) derives CanEqual
 
 enum CStatus derives CanEqual:
-  @name[Cbor](t"ok") case Active(since: Int)
-  @name(t"gone")     case Removed(at: Int)
+  @name[Cbor]("ok") case Active(since: Int)
+  @name("gone")     case Removed(at: Int)
                      case Pending(at: Int)
 
-given (CStatus is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")
+given (CStatus is Discriminable in Cbor) = Cbor.discriminatedUnion("kind")
 
 private def hex(s: String): Data =
   val clean = s.filter(c => !c.isWhitespace)
@@ -170,15 +170,15 @@ object Tests extends Suite(m"Breviloquence Tests"):
     suite(m"Parsing strings"):
       test(m"Parse empty text string"):
         Cbor.ast(Cbor.Ast.parse(hex("60"))).as[Text]
-      . assert(_ == t"")
+      . assert(_ == "")
 
       test(m"Parse text 'a'"):
         Cbor.ast(Cbor.Ast.parse(hex("6161"))).as[Text]
-      . assert(_ == t"a")
+      . assert(_ == "a")
 
       test(m"Parse text 'IETF'"):
         Cbor.ast(Cbor.Ast.parse(hex("6449455446"))).as[Text]
-      . assert(_ == t"IETF")
+      . assert(_ == "IETF")
 
       test(m"Parse byte string [01 02 03 04]"):
         val bytes = Cbor.ast(Cbor.Ast.parse(hex("4401020304"))).as[Data]
@@ -205,11 +205,11 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"Parse {a: 1}"):
         Cbor.ast(Cbor.Ast.parse(hex("a1616101"))).as[Map[Text, Int]]
-      . assert(_ == Map(t"a" -> 1))
+      . assert(_ == Map("a" -> 1))
 
       test(m"Parse {a: 1, b: 2}"):
         Cbor.ast(Cbor.Ast.parse(hex("a26161016162 02"))).as[Map[Text, Int]]
-      . assert(_ == Map(t"a" -> 1, t"b" -> 2))
+      . assert(_ == Map("a" -> 1, "b" -> 2))
 
     suite(m"Tags"):
       test(m"Tag 1 (epoch time) preserves tag and inner value"):
@@ -240,15 +240,15 @@ object Tests extends Suite(m"Breviloquence Tests"):
     suite(m"Diagnostic notation"):
       test(m"Render 42 as '42'"):
         Cbor.Ast.parse(hex("182a")).show
-      . assert(_ == t"42")
+      . assert(_ == "42")
 
       test(m"Render [1, 2, 3]"):
         Cbor.Ast.parse(hex("83010203")).show
-      . assert(_ == t"[1, 2, 3]")
+      . assert(_ == "[1, 2, 3]")
 
       test(m"Render byte string as hex"):
         Cbor.Ast.parse(hex("4401020304")).show
-      . assert(_ == t"h'01020304'")
+      . assert(_ == "h'01020304'")
 
     suite(m"Generic derivation"):
       test(m"Encode Point(1, 2)"):
@@ -264,19 +264,19 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Point(3, 4))
 
       test(m"Round-trip Person(\"Ada\", 36)"):
-        val cbor = Person(t"Ada", 36).in[Cbor]
+        val cbor = Person("Ada", 36).in[Cbor]
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(cbor))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[Person]
-      . assert(_ == Person(t"Ada", 36))
+      . assert(_ == Person("Ada", 36))
 
       test(m"Round-trip Wrapper with list"):
-        val original = Wrapper(List(1, 2, 3), t"hello")
+        val original = Wrapper(List(1, 2, 3), "hello")
         val cbor = original.in[Cbor]
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(cbor))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[Wrapper] == original
       . assert(identity)
 
-      val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+      val tree = Tree("root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
 
       test(m"Round-trip a type recursive through a List"):
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(tree.in[Cbor]))
@@ -296,17 +296,17 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Point(3, 4))
 
       test(m"Aggregate split-chunk Chain[Data] to Cbor"):
-        val original = Person(t"Ada", 36)
+        val original = Person("Ada", 36)
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         val half = bytes.length/2
         proscenium.Chain(bytes.segment((0).z till (half).z), bytes.segment((half).z till (bytes.length).z)).read[Cbor].as[Person]
-      . assert(_ == Person(t"Ada", 36))
+      . assert(_ == Person("Ada", 36))
 
       test(m"Aggregate single-chunk Chain[Data] to Cbor.Ast"):
-        val original = Wrapper(List(1, 2, 3), t"hi")
+        val original = Wrapper(List(1, 2, 3), "hi")
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         Cbor.ast(proscenium.Chain(bytes).read[Cbor.Ast]).as[Wrapper]
-      . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
+      . assert(_ == Wrapper(List(1, 2, 3), "hi"))
 
     suite(m"`in Cbor` decoder shorthand"):
       test(m"`read[T in Cbor]` resolves a value directly from bytes"):
@@ -316,17 +316,17 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Point(3, 4))
 
       test(m"`read[T in Cbor]` works for nested case classes"):
-        val original = Wrapper(List(1, 2, 3), t"hi")
+        val original = Wrapper(List(1, 2, 3), "hi")
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         proscenium.Chain(bytes).read[Wrapper in Cbor]
-      . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
+      . assert(_ == Wrapper(List(1, 2, 3), "hi"))
 
     suite(m"@name field renaming"):
       test(m"Encode renames fields to wire keys"):
         val cbor = Renamed(List(1L, 2L), List(3L)).in[Cbor]
         val ast = Cbor.unseal(cbor)
         val keys = (0 until ast.entries).map(ast.key(_).string).toSet
-        keys == Set("data_files", "index_files")
+        keys == Set[String]("data_files", "index_files")
       . assert(identity)
 
       test(m"Decode reads wire keys back into Scala fields"):
@@ -336,11 +336,11 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Renamed(List(10L, 20L, 30L), List(99L)))
 
       test(m"No relabelling uses original field names"):
-        val original = Wrapper(List(1, 2, 3), t"x")
+        val original = Wrapper(List(1, 2, 3), "x")
         val cbor = original.in[Cbor]
         val ast = Cbor.unseal(cbor)
         val keys = (0 until ast.entries).map(ast.key(_).string).toSet
-        keys == Set("values", "label")
+        keys == Set[String]("values", "label")
       . assert(identity)
 
       test(m"@name renames a variant's discriminator"):
@@ -358,19 +358,19 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
     suite(m"HTTP content-type integration"):
       test(m"serialises with the application/cbor media type"):
-        Person(t"Alice", 30).in[Cbor].generic(0)
-      . assert(_ == t"application/cbor")
+        Person("Alice", 30).in[Cbor].generic(0)
+      . assert(_ == "application/cbor")
 
       test(m"request/response body round-trips"):
-        val body = Person(t"Alice", 30).in[Cbor]
+        val body = Person("Alice", 30).in[Cbor]
         body.generic(1).read[Person in Cbor]
-      . assert(_ == Person(t"Alice", 30))
+      . assert(_ == Person("Alice", 30))
 
     suite(m"Optics"):
       import dynamicAccess.dynamicCbor, conversions.encodableToCbor
 
-      val team = Team(Person(t"John", 40), 3).in[Cbor]
-      val list = Wrapper(List(1, 2, 3), t"hi").in[Cbor]
+      val team = Team(Person("John", 40), 3).in[Cbor]
+      val list = Wrapper(List(1, 2, 3), "hi").in[Cbor]
 
       test(m"lens reads a field by name"):
         summon["size" is Lens from Cbor onto Cbor](team).as[Int]
@@ -378,28 +378,28 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"lens sets a top-level field"):
         team.lens(_.size = 5.in[Cbor]).as[Team]
-      . assert(_ == Team(Person(t"John", 40), 5))
+      . assert(_ == Team(Person("John", 40), 5))
 
       test(m"lens sets a nested field"):
-        team.lens(_.lead.name = t"Bob").as[Team]
-      . assert(_ == Team(Person(t"Bob", 40), 3))
+        team.lens(_.lead.name = "Bob").as[Team]
+      . assert(_ == Team(Person("Bob", 40), 3))
 
       test(m"lens.modify transforms a field through a function"):
         val lens = summon["size" is Lens from Cbor onto Cbor]
         lens.modify(team)(cbor => (cbor.as[Int] + 1).in[Cbor]).as[Team]
-      . assert(_ == Team(Person(t"John", 40), 4))
+      . assert(_ == Team(Person("John", 40), 4))
 
       test(m"ordinal optic updates an array element"):
         list.lens(_.values(Sec) = 9).as[Wrapper]
-      . assert(_ == Wrapper(List(1, 9, 3), t"hi"))
+      . assert(_ == Wrapper(List(1, 9, 3), "hi"))
 
       test(m"each optic updates every array element"):
         list.lens(_.values(Each) = 0).as[Wrapper]
-      . assert(_ == Wrapper(List(0, 0, 0), t"hi"))
+      . assert(_ == Wrapper(List(0, 0, 0), "hi"))
 
       test(m"filter optic updates only matching elements"):
         list.lens(_.values(Filter[Cbor](_.as[Int] > 1)) = 0).as[Wrapper]
-      . assert(_ == Wrapper(List(1, 0, 0), t"hi"))
+      . assert(_ == Wrapper(List(1, 0, 0), "hi"))
 
       test(m"setting an absent field inserts it"):
         list.lens(_.extra = 7).selectDynamic("extra").as[Int]
@@ -428,31 +428,31 @@ object Tests extends Suite(m"Breviloquence Tests"):
       import dynamicAccess.dynamicCbor
 
       test(m"selectDynamic reads a map field by name"):
-        Person(t"Ada", 36).in[Cbor].selectDynamic("name").as[Text]
-      . assert(_ == t"Ada")
+        Person("Ada", 36).in[Cbor].selectDynamic("name").as[Text]
+      . assert(_ == "Ada")
 
       test(m"applyDynamic indexes into an array-valued field"):
-        Wrapper(List(10, 20, 30), t"hi").in[Cbor].applyDynamic("values")(1).as[Int]
+        Wrapper(List(10, 20, 30), "hi").in[Cbor].applyDynamic("values")(1).as[Int]
       . assert(_ == 20)
 
       test(m"updateDynamic replaces a field's value"):
-        Person(t"Ada", 36).in[Cbor].updateDynamic("age")(40).as[Person]
-      . assert(_ == Person(t"Ada", 40))
+        Person("Ada", 36).in[Cbor].updateDynamic("age")(40).as[Person]
+      . assert(_ == Person("Ada", 40))
 
       test(m"updateDynamic with Unset deletes a field"):
-        Person(t"Ada", 36).in[Cbor].updateDynamic("age")(Unset).as[OptPerson]
-      . assert(_ == OptPerson(t"Ada", Unset))
+        Person("Ada", 36).in[Cbor].updateDynamic("age")(Unset).as[OptPerson]
+      . assert(_ == OptPerson("Ada", Unset))
 
     suite(m"Optional fields"):
       test(m"an Optional field round-trips when present"):
-        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(OptPerson(t"Ada", 36).in[Cbor]))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(OptPerson("Ada", 36).in[Cbor]))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[OptPerson]
-      . assert(_ == OptPerson(t"Ada", 36))
+      . assert(_ == OptPerson("Ada", 36))
 
       test(m"an Optional field round-trips when unset"):
-        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(OptPerson(t"Eve", Unset).in[Cbor]))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(OptPerson("Eve", Unset).in[Cbor]))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[OptPerson]
-      . assert(_ == OptPerson(t"Eve", Unset))
+      . assert(_ == OptPerson("Eve", Unset))
 
     suite(m"Direct parsing (Inlinable)"):
       given (Point is Cbor.Parsable) = Inlinable.parsable[Point]
@@ -474,16 +474,16 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Point(3, 4))
 
       test(m"text and numeric scalars agree with the AST path"):
-        encoded(Mixed(2.5, true, t"hello")).read[Mixed in Cbor]
-      . assert(_ == Mixed(2.5, true, t"hello"))
+        encoded(Mixed(2.5, true, "hello")).read[Mixed in Cbor]
+      . assert(_ == Mixed(2.5, true, "hello"))
 
       test(m"a nested product inlines through its own generated parser"):
-        encoded(Team(Person(t"Ada", 36), 5)).read[Team in Cbor]
-      . assert(_ == Team(Person(t"Ada", 36), 5))
+        encoded(Team(Person("Ada", 36), 5)).read[Team in Cbor]
+      . assert(_ == Team(Person("Ada", 36), 5))
 
       test(m"a collection field loops over a definite-length array"):
-        encoded(Wrapper(List(1, 2, 3), t"hi")).read[Wrapper in Cbor]
-      . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
+        encoded(Wrapper(List(1, 2, 3), "hi")).read[Wrapper in Cbor]
+      . assert(_ == Wrapper(List(1, 2, 3), "hi"))
 
       test(m"a byte-string field reads in place"):
         encoded(Blob(hex("01020304"))).read[Blob in Cbor].data.to[List]
@@ -527,15 +527,15 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"an Optional field bridges to Unset when absent"):
         hex("a1 646e616d65 63457665").read[OptPerson in Cbor]
-      . assert(_ == OptPerson(t"Eve", Unset))
+      . assert(_ == OptPerson("Eve", Unset))
 
       test(m"an Optional field bridges to Unset from a wire undefined"):
         hex("a2 646e616d65 63457665 63616765 f7").read[OptPerson in Cbor]
-      . assert(_ == OptPerson(t"Eve", Unset))
+      . assert(_ == OptPerson("Eve", Unset))
 
       test(m"an Optional field reads its value when present"):
-        encoded(OptPerson(t"Ada", 36)).read[OptPerson in Cbor]
-      . assert(_ == OptPerson(t"Ada", 36))
+        encoded(OptPerson("Ada", 36)).read[OptPerson in Cbor]
+      . assert(_ == OptPerson("Ada", 36))
 
       test(m"a non-map item reads as an empty record"):
         capture[Cbor.Error](hex("07").read[Point in Cbor]).reason
@@ -550,15 +550,15 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == 7L)
 
       test(m"the aggregable trigger routes a stream through the direct parser"):
-        val bytes = encoded(Person(t"Ada", 36))
+        val bytes = encoded(Person("Ada", 36))
         proscenium.Chain(bytes).read[Person in Cbor]
-      . assert(_ == Person(t"Ada", 36))
+      . assert(_ == Person("Ada", 36))
 
       test(m"a recursive type degrades its recursive field to the seam"):
         given (Tree is Cbor.Parsable) = Inlinable.parsable[Tree]
-        val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+        val tree = Tree("root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
         encoded(tree).read[Tree in Cbor]
-      . assert(_ == Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))
+      . assert(_ == Tree("root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))
 
     suite(m"Validation accrual"):
       case class CIssues(items: List[(Text, Cbor.Error)] = Nil)(using Diagnostics)
@@ -574,15 +574,15 @@ object Tests extends Suite(m"Breviloquence Tests"):
         . protect(decode(cbor))
 
       test(m"Two mistyped fields both accrue, with their pointers"):
-        collectCbor(BadPerson(1, t"x").in[Cbor])(_.as[Person]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("name", "age"))
+        collectCbor(BadPerson(1, "x").in[Cbor])(_.as[Person]).items.map(_(0).s).to[Set]
+      . assert(_ == Set[String]("name", "age"))
 
       test(m"Two missing fields both accrue"):
         collectCbor(Point(1, 2).in[Cbor])(_.as[Person]).items.map(_(0).s).to[Set]
-      . assert(_ == Set("name", "age"))
+      . assert(_ == Set[String]("name", "age"))
 
       test(m"A fully-valid record accrues nothing"):
-        collectCbor(Person(t"Ada", 36).in[Cbor])(_.as[Person]).items.size
+        collectCbor(Person("Ada", 36).in[Cbor])(_.as[Person]).items.size
       . assert(_ == 0)
 
       test(m"Constructor does not run when any field failed"):
@@ -593,7 +593,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == (2, 0))
 
       test(m"Constructor runs exactly once when all fields are clean"):
-        val cbor = BChecked(t"Zoe", 5).in[Cbor]
+        val cbor = BChecked("Zoe", 5).in[Cbor]
         BProbe.constructions = 0
         collectCbor(cbor)(_.as[BChecked])
         BProbe.constructions

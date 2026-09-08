@@ -72,7 +72,7 @@ object Tests extends Suite(m"Sedentary Tests"):
       given anchors: Inclusion[Unit, Anchor] = (_, _, _, _) => ()
 
       bench(m"grid", n"slow")(target = 50*Milli(Second))
-      . over(Axis(t"x")(1, 2), Axis(t"y")(10, 20)):
+      . over(Axis("x")(1, 2), Axis("y")(10, 20)):
           case (x, y) => '{$x + $y}
 
       runner.listed.map: row =>
@@ -145,7 +145,7 @@ object Tests extends Suite(m"Sedentary Tests"):
     // share a single compilation and differ only in transported data; extraction is
     // memoized per slot, so the splice costs a cached read per iteration, not a decode.
     bench(m"count up to a limit")(target = 50*Milli(Second), iterations = 2, warmups = 1)
-    . over(Axis(t"limit")(1000, 4000)): limit =>
+    . over(Axis("limit")(1000, 4000)): limit =>
         ' {
             var i = 0
             var count = 0

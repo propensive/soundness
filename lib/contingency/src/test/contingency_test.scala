@@ -183,13 +183,13 @@ object Tests extends Suite(m"Contingency"):
     suite(m"raise / abort / raises type"):
       test(m"Method with raises is callable under an in-scope Tactic"):
         recover:
-          case ErrorA(_) => t"unused"
-        . protect(succeed(t"hello"))
-      . assert(_ == t"hello")
+          case ErrorA(_) => "unused"
+        . protect(succeed("hello"))
+      . assert(_ == "hello")
 
       test(m"val without ascription gets the result type, not Tactic ?=> T"):
-        val s = succeed(t"present")
-        s == t"present"
+        val s = succeed("present")
+        s == "present"
       . assert(_ == true)
 
       test(m"abort terminates with Nothing return type"):
@@ -241,20 +241,20 @@ object Tests extends Suite(m"Contingency"):
 
     suite(m"safely / unsafely"):
       test(m"safely returns the value when no error is raised"):
-        safely(succeed(t"present"))
-      . assert(_ == t"present")
+        safely(succeed("present"))
+      . assert(_ == "present")
 
       test(m"safely returns Unset on a raised error"):
         safely(failA(2))
       . assert(_ == Unset)
 
       test(m"unsafely yields the value when no error is raised"):
-        unsafely(succeed(t"plain"))
-      . assert(_ == t"plain")
+        unsafely(succeed("plain"))
+      . assert(_ == "plain")
 
       test(m"unsafely throws when an error is raised"):
-        try { unsafely(failA(5)); "no-throw".tt } catch case _: Exception => t"threw"
-      . assert(_ == t"threw")
+        try { unsafely(failA(5)); "no-throw" } catch case _: Exception => "threw"
+      . assert(_ == "threw")
 
     suite(m"capture / attempt / amalgamate"):
       test(m"capture returns the raised error"):
@@ -268,8 +268,8 @@ object Tests extends Suite(m"Contingency"):
       . assert(_ == true)
 
       test(m"attempt yields Success on a clean body"):
-        attempt[ErrorA](succeed(t"x"))
-      . assert(_ == Attempt.Success(t"x"))
+        attempt[ErrorA](succeed("x"))
+      . assert(_ == Attempt.Success("x"))
 
       test(m"attempt yields Failure on a raised error"):
         attempt[ErrorA](failA(13)) match
@@ -403,15 +403,15 @@ object Tests extends Suite(m"Contingency"):
     suite(m"Foci / Pointer / track / validate / focus"):
       test(m"Pointer.Self has empty text"):
         Pointer.Self.text
-      . assert(_ == t"")
+      . assert(_ == "")
 
       test(m"Pointer with single label encodes that label"):
-        Pointer(t"x").text
-      . assert(_ == t"x")
+        Pointer("x").text
+      . assert(_ == "x")
 
       test(m"Pointer chains labels with dots"):
-        Pointer(t"a")(t"b")(t"c").text
-      . assert(_ == t"a.b.c")
+        Pointer("a")("b")("c").text
+      . assert(_ == "a.b.c")
 
       test(m"Pointer.apply with no args is Self"):
         Pointer() == Pointer.Self
@@ -436,8 +436,8 @@ object Tests extends Suite(m"Contingency"):
       . assert(_ == 0)
 
       test(m"Foci.default fold returns initial"):
-        summon[Foci[Pointer]].fold(t"start")((_, acc) => _ => acc)
-      . assert(_ == t"start")
+        summon[Foci[Pointer]].fold("start")((_, acc) => _ => acc)
+      . assert(_ == "start")
 
       test(m"TrackFoci records errors"):
         val foci = TrackFoci[Pointer]()
@@ -474,7 +474,7 @@ object Tests extends Suite(m"Contingency"):
       test(m"focus supplements registered errors with a focus"):
         val foci = TrackFoci[Pointer]()
         given Foci[Pointer] = foci
-        focus[Pointer, Unit](prior.or(Pointer.Self)(t"field")):
+        focus[Pointer, Unit](prior.or(Pointer.Self)("field")):
           foci.register(ErrorA(0))
         foci.length
       . assert(_ == 1)
@@ -490,23 +490,23 @@ object Tests extends Suite(m"Contingency"):
 
     suite(m"Errors / Validation / Expectation.Error"):
       test(m"Errors with no entries communicates the count"):
-        Errors().message.text.starts(t"0 accrued errors")
+        Errors().message.text.starts("0 accrued errors")
       . assert(_ == true)
 
       test(m"Errors with one entry includes focus and message"):
-        val errs = Errors(t"field" -> ErrorA(5))
-        errs(t"field").let { case e: Error => e.message.text.contains(t"error a") }.or(false)
+        val errs = Errors("field" -> ErrorA(5))
+        errs("field").let { case e: Error => e.message.text.contains("error a") }.or(false)
       . assert(_ == true)
 
       test(m"Errors lookup returns Unset for absent focus"):
-        val errs = Errors(t"x" -> ErrorA(1))
-        errs(t"missing")
+        val errs = Errors("x" -> ErrorA(1))
+        errs("missing")
       . assert(_ == Unset)
 
       test(m"Errors + adds a focus/error pair"):
-        val errs = Errors() + (t"field", ErrorA(7))
+        val errs = Errors() + ("field", ErrorA(7))
 
-        errs(t"field").lay(-1): error =>
+        errs("field").lay(-1): error =>
           (error: @unchecked) match
             case e: ErrorA => e.value
       . assert(_ == 7)
@@ -516,20 +516,20 @@ object Tests extends Suite(m"Contingency"):
       . assert(_ == "no messages")
 
       test(m"Validation with one message renders 'one message'"):
-        (Validation() + (Pointer(t"f"), m"bad")).text.text.starts(t"one message")
+        (Validation() + (Pointer("f"), m"bad")).text.text.starts("one message")
       . assert(_ == true)
 
       test(m"Validation.apply returns Unset when pointer absent"):
-        Validation()(Pointer(t"x"))
+        Validation()(Pointer("x"))
       . assert(_ == Unset)
 
       test(m"Validation.apply returns the message when present"):
-        val v = Validation() + (Pointer(t"f"), m"bad")
-        v(Pointer(t"f")).let { case m: Message => m.text }.or(t"")
-      . assert(_ == t"bad")
+        val v = Validation() + (Pointer("f"), m"bad")
+        v(Pointer("f")).let { case m: Message => m.text }.or(t"")
+      . assert(_ == "bad")
 
       test(m"Expectation.Error communicates the result type"):
-        Expectation.Error("anything").message.text.contains(t"expected to fail")
+        Expectation.Error("anything").message.text.contains("expected to fail")
       . assert(_ == true)
 
     suite(m"Mitigable / Fatal / Unchecked / strategies"):
@@ -581,8 +581,8 @@ object Tests extends Suite(m"Contingency"):
 
     suite(m"Recovery and Accrual internals"):
       test(m"Recovery.Escape carries a value and has no stack trace"):
-        val e = Recovery.Escape(t"payload")
-        e.value == t"payload" && e.fillInStackTrace() == e
+        val e = Recovery.Escape("payload")
+        e.value == "payload" && e.fillInStackTrace() == e
       . assert(_ == true)
 
       test(m"Accrual.AccrueTactic.changed is false before any record"):
@@ -643,12 +643,12 @@ object Tests extends Suite(m"Contingency"):
           given Diagnostics = errorDiagnostics.stackTracesDiagnostics
           ErrorA(99)
         err.message.text
-      . assert(_ == t"error a: 99")
+      . assert(_ == "error a: 99")
 
       test(m"empty-trace error still serialises its message correctly"):
         val err: ErrorA =
           given Diagnostics = errorDiagnostics.emptyDiagnostics
           ErrorA(99)
         err.message.text
-      . assert(_ == t"error a: 99")
+      . assert(_ == "error a: 99")
 

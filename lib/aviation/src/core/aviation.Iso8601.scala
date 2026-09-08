@@ -44,7 +44,7 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-object Iso8601 extends Date.Format(t"ISO 8601"):
+object Iso8601 extends Date.Format("ISO 8601"):
   given Issue is Communicable =
     case Issue.Expect(char)   => m"$char was expected"
     case Issue.Digit          => m"a digit was expected"

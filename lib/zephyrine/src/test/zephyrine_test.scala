@@ -70,7 +70,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val producer = Producer[Text](4, 2)
           producer.put("zerofour")
           producer.iterator
-          var out = ""
+          var out: Text = ""
           if producer.iterator.hasNext then out += producer.iterator.next()
           if producer.iterator.hasNext then out += producer.iterator.next()
           out
@@ -80,7 +80,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val producer = Producer[Text](4, 2)
           producer.put("zerofoursix")
           producer.iterator
-          var out = ""
+          var out: Text = ""
           if producer.iterator.hasNext then out += producer.iterator.next()
           if producer.iterator.hasNext then out += producer.iterator.next()
           out
@@ -96,7 +96,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           producer.put("7")
           producer.put("8")
           producer.iterator
-          var out = ""
+          var out: Text = ""
           if producer.iterator.hasNext then out += producer.iterator.next()
           if producer.iterator.hasNext then out += producer.iterator.next()
           out
@@ -119,7 +119,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List("1234", "5678", "9012", "3456", "78"))
 
         for i <- 0 to 30 do
-          val string = (0 to i).map(_.toString).foldLeft("")(_ + _)
+          val string = (0 to i).map(_.toString).foldLeft(s"")(_ + _)
           test(m"String length $i, sent whole, async puts"):
             val producer = Producer[Text](5, 2)
             val fiber = async:
@@ -401,7 +401,7 @@ object Tests extends Suite(m"Zephyrine tests"):
                 for i <- 0 until length do cursor.next()
                 cursor.grab(start, cursor.mark)
 
-            . assert(_ == "Hello world!".substring(offset, offset + length).nn)
+            . assert(_ == s"Hello world!".substring(offset, offset + length).nn)
 
         test(m"Grab spanning multi-character blocks"):
           val cursor = Cursor(Iterator[Text]("hello", "world"))
@@ -861,7 +861,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         import charDecoders.utf8Decoder, charEncoders.utf8Encoder, textSanitizers.skipSanitizer
 
-        val exotic = t"héllo → 🎉 fin"
+        val exotic = "héllo → 🎉 fin"
 
         test(m"char decoder duct reassembles multi-byte characters split across refills"):
           val chunks = exotic.s.getBytes("UTF-8").nn.toSeq.map { byte => Array[Byte](byte) }
@@ -998,7 +998,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == (50*1000 + 49*50/2, 0.toByte, 49.toByte))
 
         test(m"memoize of a boxed stream assembles through the default path"):
-          Stream(Iterator(Array[Text](t"a", t"b"), Array[Text](t"c"))).memoize.to[List]
+          Stream(Iterator(Array[Text]("a", "b"), Array[Text]("c"))).memoize.to[List]
         . assert(_ == List(t"a", t"b", t"c"))
 
         test(m"memoize drains a text stream into a single text value"):
@@ -1322,7 +1322,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           handoff.offer("x")
           consumer.join(10000)
           (parked, received.get())
-        . assert(_ == ((true, "x")))
+        . assert(_ == ((true, "x": String)))
 
         test(m"interrupting a parked producer raises InterruptedException"):
           val handoff = Handoff(2)

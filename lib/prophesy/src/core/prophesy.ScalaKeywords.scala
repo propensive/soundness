@@ -59,32 +59,32 @@ import Lexeme.Bracket
 // strictly valid is harmless, whereas a missing one is a failure.
 object ScalaKeywords:
   private val expression: Set[Text] =
-    Set(t"new", t"if", t"for", t"while", t"try", t"throw", t"return", t"super", t"this",
-        t"true", t"false", t"null")
+    Set("new", "if", "for", "while", "try", "throw", "return", "super", "this",
+        "true", "false", "null")
 
   private val modifiers: Set[Text] =
-    Set(t"final", t"sealed", t"abstract", t"private", t"protected", t"override", t"lazy",
-        t"inline", t"transparent", t"opaque", t"open", t"infix")
+    Set("final", "sealed", "abstract", "private", "protected", "override", "lazy",
+        "inline", "transparent", "opaque", "open", "infix")
 
   private val definition: Set[Text] =
-    Set(t"val", t"var", t"def", t"given", t"type", t"class", t"object", t"trait", t"enum",
-        t"case", t"case class", t"case object", t"extension", t"import", t"export",
-        t"package") +
+    Set("val", "var", "def", "given", "type", "class", "object", "trait", "enum",
+        "case", "case class", "case object", "extension", "import", "export",
+        "package") +
       modifiers
 
   private val statement: Set[Text] = definition + expression
 
   // Keywords continuing a completed expression or definition on the same line.
   private val continuation: Set[Text] =
-    Set(t"match", t"with", t"then", t"else", t"do", t"yield", t"if", t"catch", t"finally",
-        t"extends")
+    Set("match", "with", "then", "else", "do", "yield", "if", "catch", "finally",
+        "extends")
 
   // Modifiers valid at the head of a parameter (a `(` whose preceding tokens name a
   // definition), including `case class` member visibility.
   private val parameter: Keywords =
     Keywords
-      ( Set(t"using", t"erased", t"inline", t"tracked", t"val", t"var", t"private",
-            t"protected", t"final", t"override"),
+      ( Set("using", "erased", "inline", "tracked", "val", "var", "private",
+            "protected", "final", "override"),
         Expectation.TermBinding )
 
   private def leaf(keywords: Set[Text]): KeywordPattern = KeywordPattern(Keywords(keywords))
@@ -163,7 +163,7 @@ object ScalaKeywords:
                ( Keywords(expression + Set(t"using", t"erased", t"inline")),
                  List
                   ( Element.Exact(Lexeme.Term) ->
-                    KeywordPattern(Keywords(expression + Set(t"using")), parameterHeads),
+                    KeywordPattern(Keywords(expression + Set[Text](t"using")), parameterHeads),
                     // A class/trait name lexes as a *type* identifier, so `class Foo(` finds
                     // its parameter position through a `Typal` branch.
                     Element.Exact(Lexeme.Typal) ->

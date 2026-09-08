@@ -49,121 +49,121 @@ object PositionTests extends Suite(m"Ypsiloid position-index tests"):
   def run(): Unit =
     suite(m"Single-line root primitives"):
       test(m"Locate a root integer"):
-        t"42".read[Yaml].locate(YamlPath())
+        "42".read[Yaml].locate(YamlPath())
       . assert(_ == at(1, 1, 2))
 
       test(m"Locate a root quoted string"):
-        t""""hello"""".read[Yaml].locate(YamlPath())
+        """"hello"""".read[Yaml].locate(YamlPath())
       . assert(_ == at(1, 1, 7))
 
       test(m"Locate a root boolean"):
-        t"true".read[Yaml].locate(YamlPath())
+        "true".read[Yaml].locate(YamlPath())
       . assert(_ == at(1, 1, 4))
 
       test(m"Locate a root null"):
-        t"null".read[Yaml].locate(YamlPath())
+        "null".read[Yaml].locate(YamlPath())
       . assert(_ == at(1, 1, 4))
 
       test(m"Locate a negative number includes the minus sign in length"):
-        t"-42".read[Yaml].locate(YamlPath())
+        "-42".read[Yaml].locate(YamlPath())
       . assert(_ == at(1, 1, 3))
 
     suite(m"Flow mappings"):
       test(m"Locate the root flow mapping"):
-        t"{a: 1, b: 2}".read[Yaml].locate(YamlPath())
+        "{a: 1, b: 2}".read[Yaml].locate(YamlPath())
       . assert(_ == at(1, 1, 12))
 
       test(m"Locate the value at key 'a'"):
-        t"{a: 1, b: 2}".read[Yaml].locate(YamlPath()(t"a"))
+        "{a: 1, b: 2}".read[Yaml].locate(YamlPath()("a"))
       . assert(_ == at(1, 5, 1))
 
       test(m"Locate the value at key 'b'"):
-        t"{a: 1, b: 2}".read[Yaml].locate(YamlPath()(t"b"))
+        "{a: 1, b: 2}".read[Yaml].locate(YamlPath()("b"))
       . assert(_ == at(1, 11, 1))
 
       test(m"Locate the key 'a' itself"):
-        t"{a: 1, b: 2}".read[Yaml].locateKey(YamlPath()(t"a"))
+        "{a: 1, b: 2}".read[Yaml].locateKey(YamlPath()("a"))
       . assert(_ == at(1, 2, 1))
 
       test(m"Locate the key 'b' itself"):
-        t"{a: 1, b: 2}".read[Yaml].locateKey(YamlPath()(t"b"))
+        "{a: 1, b: 2}".read[Yaml].locateKey(YamlPath()("b"))
       . assert(_ == at(1, 8, 1))
 
       test(m"Missing key returns Unset"):
-        t"{a: 1}".read[Yaml].locate(YamlPath()(t"missing"))
+        "{a: 1}".read[Yaml].locate(YamlPath()("missing"))
       . assert(_ == Unset)
 
     suite(m"Flow sequences"):
       test(m"Locate the root flow sequence"):
-        t"[10, 20, 30]".read[Yaml].locate(YamlPath())
+        "[10, 20, 30]".read[Yaml].locate(YamlPath())
       . assert(_ == at(1, 1, 12))
 
       test(m"Locate the first element"):
-        t"[10, 20, 30]".read[Yaml].locate(YamlPath()(Prim))
+        "[10, 20, 30]".read[Yaml].locate(YamlPath()(Prim))
       . assert(_ == at(1, 2, 2))
 
       test(m"Locate the last element"):
-        t"[10, 20, 30]".read[Yaml].locate(YamlPath()(Ter))
+        "[10, 20, 30]".read[Yaml].locate(YamlPath()(Ter))
       . assert(_ == at(1, 10, 2))
 
       test(m"Out-of-bounds index returns Unset"):
-        t"[10, 20]".read[Yaml].locate(YamlPath()(Ter))
+        "[10, 20]".read[Yaml].locate(YamlPath()(Ter))
       . assert(_ == Unset)
 
       test(m"Empty flow sequence locates only the root"):
-        t"[]".read[Yaml].locate(YamlPath())
+        "[]".read[Yaml].locate(YamlPath())
       . assert(_ == at(1, 1, 2))
 
     suite(m"Block mappings"):
       test(m"Block mapping: first key value is on line 1"):
-        val source = t"foo: 1\nbar: 2\n"
-        source.read[Yaml].locate(YamlPath()(t"foo")).let(_.line)
+        val source = "foo: 1\nbar: 2\n"
+        source.read[Yaml].locate(YamlPath()("foo")).let(_.line)
       . assert(_ == 1)
 
       test(m"Block mapping: second key value is on line 2"):
-        val source = t"foo: 1\nbar: 2\n"
-        source.read[Yaml].locate(YamlPath()(t"bar")).let(_.line)
+        val source = "foo: 1\nbar: 2\n"
+        source.read[Yaml].locate(YamlPath()("bar")).let(_.line)
       . assert(_ == 2)
 
       test(m"Block mapping: first key starts at column 1"):
-        val source = t"foo: 1\nbar: 2\n"
-        source.read[Yaml].locateKey(YamlPath()(t"foo")).let(_.column)
+        val source = "foo: 1\nbar: 2\n"
+        source.read[Yaml].locateKey(YamlPath()("foo")).let(_.column)
       . assert(_ == 1)
 
       test(m"Block mapping: value column is past `key: `"):
-        val source = t"foo: 1\nbar: 2\n"
-        source.read[Yaml].locate(YamlPath()(t"foo")).let(_.column)
+        val source = "foo: 1\nbar: 2\n"
+        source.read[Yaml].locate(YamlPath()("foo")).let(_.column)
       . assert(_ == 6)
 
       test(m"Indented block mapping: inner key on the right line"):
-        val source = t"outer:\n  inner: 99\n"
-        source.read[Yaml].locate(YamlPath()(t"outer")(t"inner")).let(_.line)
+        val source = "outer:\n  inner: 99\n"
+        source.read[Yaml].locate(YamlPath()("outer")("inner")).let(_.line)
       . assert(_ == 2)
 
       test(m"Indented block mapping: inner key past the indent"):
-        val source = t"outer:\n  inner: 99\n"
-        source.read[Yaml].locate(YamlPath()(t"outer")(t"inner")).let(_.column)
+        val source = "outer:\n  inner: 99\n"
+        source.read[Yaml].locate(YamlPath()("outer")("inner")).let(_.column)
       . assert(_ == 10)
 
     suite(m"Block sequences"):
       test(m"Block sequence: third element on line 3"):
-        val source = t"- 1\n- 2\n- 3\n"
+        val source = "- 1\n- 2\n- 3\n"
         source.read[Yaml].locate(YamlPath()(Ter)).let(_.line)
       . assert(_ == 3)
 
       test(m"Block sequence: first element column past the dash"):
-        val source = t"- 1\n- 2\n- 3\n"
+        val source = "- 1\n- 2\n- 3\n"
         source.read[Yaml].locate(YamlPath()(Prim)).let(_.column)
       . assert(_ == 3)
 
       test(m"Block sequence inside block mapping"):
-        val source = t"items:\n  - one\n  - two\n  - three\n"
-        source.read[Yaml].locate(YamlPath()(t"items")(Sec)).let(_.line)
+        val source = "items:\n  - one\n  - two\n  - three\n"
+        source.read[Yaml].locate(YamlPath()("items")(Sec)).let(_.line)
       . assert(_ == 3)
 
     suite(m"Subsequence property"):
       test(m"A nested mapping's descriptor slice has length == slot 0"):
-        val yaml = t"{a: {b: 42}}".read[Yaml]
+        val yaml = "{a: {b: 42}}".read[Yaml]
         yaml.positionIndex.let: index =>
           val data = index.ints
           // Root composite header: [size, line, col, len, n=1, off_0, ...]
@@ -182,5 +182,5 @@ object PositionTests extends Suite(m"Ypsiloid position-index tests"):
         // Locally override the suite-level `Tracking.On` to verify the
         // untracked path.
         given Yaml.Tracking = Yaml.Tracking.Off
-        t"42".read[Yaml].positionIndex
+        "42".read[Yaml].positionIndex
       . assert(_ == Unset)

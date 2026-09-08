@@ -67,7 +67,7 @@ object Derivative:
 
     // Hoisted out of the `map` lambda below: a `t"…"` interpolation evaluated inside a
     // combinator lambda trips the compiler's `wildApprox` assertion.
-    val notZipPath = t"the path is not a zip path"
+    val notZipPath = "the path is not a zip path"
 
     val entries: List[Zip.Entry] = tree.entries.map: entry =>
       val ref =

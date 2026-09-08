@@ -92,10 +92,10 @@ private[facsimile] class CosLexer(scan: Scan):
           scan.take()
           CosToken.DictEnd
         else
-          abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, t"a second '>'")))
+          abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, "a second '>'")))
 
       case ')' =>
-        abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, t"anything but an unmatched ')'")))
+        abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, "anything but an unmatched ')'")))
 
       case byte if numeric(byte) => number(byte, start)
       case byte                  => keyword(byte)
@@ -156,13 +156,13 @@ private[facsimile] class CosLexer(scan: Scan):
     val content = text.toString
 
     if content.indexOf('.') >= 0 || content.indexOf('e') >= 0 || content.indexOf('E') >= 0 then
-      val corrected: Text = if content == "." then t"0" else content.tt
+      val corrected: Text = if content == "." then "0" else content.tt
 
       safely(CosToken.Real(corrected.as[Double]))
-      . or(abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, t"a numeric object"))))
+      . or(abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, "a numeric object"))))
     else
       safely(CosToken.Integral(content.tt.as[Long]))
-      . or(abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, t"a numeric object"))))
+      . or(abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, "a numeric object"))))
 
   private def name(): CosToken =
     val bytes = DataBuilder()
@@ -247,7 +247,7 @@ private[facsimile] class CosLexer(scan: Scan):
         val value = hexadecimal(byte)
 
         if value < 0
-        then abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, t"a hexadecimal digit")))
+        then abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, "a hexadecimal digit")))
         else if high < 0 then high = value
         else
           bytes += ((high << 4) + value).toByte

@@ -220,7 +220,7 @@ object SyntaxMatcher:
         Nil
 
     private def literal(token: Text, tokens: List[ValueToken]): List[List[ValueToken]] =
-      if token == t"," then comma(tokens)
+      if token == "," then comma(tokens)
       else tokens match
         case ValueToken.Delim(char) :: tail if token == char.toString.tt =>
           List(tail)
@@ -425,7 +425,7 @@ object SyntaxMatcher:
       case ValueToken.Url(_) :: tail =>
         List(tail)
 
-      case ValueToken.Function(name) :: tail if same(name, t"url") =>
+      case ValueToken.Function(name) :: tail if same(name, "url") =>
         afterFunction(tail)
 
       case _ =>

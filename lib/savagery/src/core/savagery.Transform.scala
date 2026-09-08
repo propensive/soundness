@@ -51,11 +51,11 @@ object Transform:
   // only in scope where it has been imported by name — here.
   given inspectable: [transform <: Transform] => transform is Inspectable =
     _.absolve match
-      case Translate(delta)         => form(t"Translate", delta.inspect)
-      case Scale(x, y)              => form(t"Scale", x.inspect, y.inspect)
-      case Rotate(angle)            => form(t"Rotate", angle.inspect)
-      case Skew(angle, orientation) => form(t"Skew", angle.inspect, orientation.inspect)
-      case Matrix(affine)           => form(t"Matrix", affine.inspect)
+      case Translate(delta)         => form("Translate", delta.inspect)
+      case Scale(x, y)              => form("Scale", x.inspect, y.inspect)
+      case Rotate(angle)            => form("Rotate", angle.inspect)
+      case Skew(angle, orientation) => form("Skew", angle.inspect, orientation.inspect)
+      case Matrix(affine)           => form("Matrix", affine.inspect)
 
   private given floatShowable: Float is Showable = _.toString.tt
 

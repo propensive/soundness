@@ -67,7 +67,7 @@ object UsesBlob:
 
     val rows: List[Text] = sorted.map(row)
     val header = s"tel 1.0 ${Lira.Schemas.usesSignature}\n\nmodule $module"
-    val body = rows.join(t"\n")
+    val body = rows.join("\n")
     val text = Text(if rows.nil then s"$header\n" else s"$header\n\n$body\n")
     charEncoders.utf8Encoder.encoded(text)
 
@@ -99,19 +99,19 @@ object UsesBlob:
       . toVector
 
     val module =
-      document.childCompounds.readable.find(_.keyword == t"module")
+      document.childCompounds.readable.find(_.keyword == "module")
       . map(texts(_)).flatMap(_.headOption)
-      . getOrElse(abort(bad(t"the module name is missing")))
+      . getOrElse(abort(bad("the module name is missing")))
 
-    val atoms = document.childCompounds.readable.filter(_.keyword == t"atom").toVector.map:
+    val atoms = document.childCompounds.readable.filter(_.keyword == "atom").toVector.map:
       compound =>
         val row = texts(compound)
-        if row.length != 1 then abort(bad(t"an atom row does not have exactly one atom"))
+        if row.length != 1 then abort(bad("an atom row does not have exactly one atom"))
 
         import errorDiagnostics.emptyDiagnostics
 
         mitigate:
-          case _: Base256.Error => bad(t"an atom hash is malformed")
+          case _: Base256.Error => bad("an atom hash is malformed")
 
         . protect(Base256.decodeStrict(row(0)))
 

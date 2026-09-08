@@ -135,7 +135,7 @@ object Telp:
   // rendering falls back to `/` rather than failing.
   given encodable: Telp is Encodable in Text = path =>
     def free(delimiter: Char): Boolean = !path.components.exists(_.s.indexOf(delimiter.toInt) >= 0)
-    val candidates = t"/.".s + delimiters.s.filterNot { ch => ch == '/' || ch == '.' }
+    val candidates = "/.".s + delimiters.s.filterNot { ch => ch == '/' || ch == '.' }
     val delimiter = Text(candidates).s.find(free(_)).getOrElse('/')
     Text(s"$delimiter${path.components.join(Text(delimiter.toString))}")
 

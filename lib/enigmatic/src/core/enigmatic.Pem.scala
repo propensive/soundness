@@ -235,11 +235,11 @@ object Pem:
   // PemLabel → Pem.Label
   object Label:
     lazy val index: Map[Text, Pem.Label] =
-      (0 to 17).map(fromOrdinal(_)).indexBy(_.toString.tt.uncamel.map(_.upper).join(t" "))
+      (0 to 17).map(fromOrdinal(_)).indexBy(_.toString.tt.uncamel.map(_.upper).join(" "))
 
     given showable: Pem.Label is Showable =
       case Proprietary(label) => label
-      case other              => other.toString.tt.uncamel.map(_.upper).join(t" ")
+      case other              => other.toString.tt.uncamel.map(_.upper).join(" ")
 
     def unapply(text: Text): Some[Pem.Label] = Some(index.at(text).or(Proprietary(text)))
 
@@ -258,4 +258,4 @@ case class Pem(label: Pem.Label, data: Data):
         List(t"-----END $label-----") )
 
     . flat
-    . join(t"\n")
+    . join("\n")

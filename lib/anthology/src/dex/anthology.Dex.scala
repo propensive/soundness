@@ -39,4 +39,4 @@ import gossamer.*
 // `classes*.dex` files: an application node in its own right (`DexClassLoader` consumes it
 // directly), and the intermediate node on the path from `Classfile` to `Apk`.
 object Dex extends Format.Application:
-  def id: Text = t"dex"
+  def id: Text = "dex"

@@ -100,7 +100,7 @@ object EmailAddress:
           unquoted(index + 1, true)
 
         case char: Char =>
-          def symbolic: Boolean = t"!#$$%&'*+-/=?^_`{|}~".contains(char)
+          def symbolic: Boolean = "!#$%&'*+-/=?^_`{|}~".contains(char)
 
           if 'A' <= char <= 'Z' || 'a' <= char <= 'z' || char.isDigit || symbolic
           then buffer.append(char)
@@ -112,7 +112,7 @@ object EmailAddress:
           abort(EmailAddress.Error(MissingAtSymbol))
 
     val (localPart, index) =
-      if text.starts(t"\"") then quoted(Sec, false) else unquoted(Prim, false)
+      if text.starts("\"") then quoted(Sec, false) else unquoted(Prim, false)
 
     val domain =
       if index >= text.length.limit then abort(EmailAddress.Error(MissingDomain))
@@ -125,7 +125,7 @@ object EmailAddress:
             text.pen.lay(abort(EmailAddress.Error(UnclosedIpAddress))): (pen: Ordinal) =>
               text.segment(index.next thru pen)
 
-          if ipAddress.starts(t"IPv6:") then ipAddress.skip(5).as[Ipv6] else ipAddress.as[Ipv4]
+          if ipAddress.starts("IPv6:") then ipAddress.skip(5).as[Ipv6] else ipAddress.as[Ipv4]
         catch case error: IpAddress.Error => abort(EmailAddress.Error(InvalidDomain(error)))
 
       else

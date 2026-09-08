@@ -55,12 +55,12 @@ trait BlockCipherPadding extends Findable:
 
 object Pkcs7:
   // The JDK calls PKCS#7 padding "PKCS5Padding" for historical reasons.
-  given padding: Pkcs7 is BlockCipherPadding = BlockCipherPadding(t"PKCS5Padding")
+  given padding: Pkcs7 is BlockCipherPadding = BlockCipherPadding("PKCS5Padding")
 
 sealed trait Pkcs7
 
 object Iso10126:
-  given padding: Iso10126 is BlockCipherPadding = BlockCipherPadding(t"ISO10126Padding")
+  given padding: Iso10126 is BlockCipherPadding = BlockCipherPadding("ISO10126Padding")
 
 sealed trait Iso10126
 
@@ -68,7 +68,7 @@ object NoPadding:
   given padding: (tactic: Tactic[Crypto.Error]) => ((NoPadding is BlockCipherPadding)^{tactic}) =
     new BlockCipherPadding:
       type Self = NoPadding
-      val name: Text = t"NoPadding"
+      val name: Text = "NoPadding"
 
       override def verify(length: Int, blockSize: Int, blockAligned: Boolean): Unit =
         if blockAligned && length%blockSize != 0

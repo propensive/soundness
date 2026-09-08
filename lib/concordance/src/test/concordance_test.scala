@@ -52,42 +52,42 @@ import denominative.dysasymptotics.{linearSize, linearAccess}
 object Tests extends Suite(m"Concordance tests"):
   def run(): Unit =
     suite(m"Bijection"):
-      val bijection = Bijection(scala.collection.immutable.Map(1 -> t"one", 2 -> t"two"))
+      val bijection = Bijection(scala.collection.immutable.Map(1 -> "one", 2 -> "two"))
 
       test(m"a bijection looks up by key"):
         bijection.get(1)
-      . assert(_ == Some(t"one"))
+      . assert(_ == Some("one"))
 
       test(m"a bijection has no value for an absent key"):
         bijection.get(9)
       . assert(_ == None)
 
       test(m"flipping exchanges keys and values"):
-        bijection.flip.get(t"one")
+        bijection.flip.get("one")
       . assert(_ == Some(1))
 
       test(m"flipping twice restores the original"):
         bijection.flip.flip.get(1)
-      . assert(_ == Some(t"one"))
+      . assert(_ == Some("one"))
 
       test(m"a flipped bijection returns the same object when flipped back"):
         bijection.flip.flip.map
       . assert(_ == bijection.map)
 
       test(m"removing a key removes its transposition too"):
-        bijection.-(1).flip.get(t"one")
+        bijection.-(1).flip.get("one")
       . assert(_ == None)
 
       test(m"removing a key leaves the others"):
         bijection.-(1).get(2)
-      . assert(_ == Some(t"two"))
+      . assert(_ == Some("two"))
 
       test(m"a bijection iterates as pairs"):
         bijection.iterator.toSet
-      . assert(_ == scala.collection.immutable.Set((1, t"one"), (2, t"two")))
+      . assert(_ == scala.collection.immutable.Set((1, "one"), (2, "two")))
 
       test(m"a stdlib map converts to a bijection"):
-        scala.collection.immutable.Map(1 -> t"a").bijection.flip.get(t"a")
+        scala.collection.immutable.Map(1 -> "a").bijection.flip.get("a")
       . assert(_ == Some(1))
 
       test(m"a bijection is applicable by key"):
@@ -101,15 +101,15 @@ object Tests extends Suite(m"Concordance tests"):
     suite(m"prim, sec and ter"):
       test(m"prim reads the first element"):
         List(t"a", t"b", t"c").prim
-      . assert(_ == t"a")
+      . assert(_ == "a")
 
       test(m"sec reads the second element"):
         List(t"a", t"b", t"c").sec
-      . assert(_ == t"b")
+      . assert(_ == "b")
 
       test(m"ter reads the third element"):
         List(t"a", t"b", t"c").ter
-      . assert(_ == t"c")
+      . assert(_ == "c")
 
       test(m"prim is Unset for an empty list"):
         List.empty[Text].prim

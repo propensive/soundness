@@ -47,96 +47,96 @@ def laneDemo(): Unit =
     LaneDagDiagram(dag).render: node => t" $node"
     . each(Out.println(_))
 
-    Out.println(t"")
+    Out.println("")
 
   def showCompact(name: Text, dag: Dag[Text]): Unit =
     Out.println(t"=== $name (compact) ===")
     LaneDagDiagram(dag).compact.render{ node => t" $node" }.each(Out.println(_))
-    Out.println(t"")
+    Out.println("")
 
   def showHighlighted(name: Text, dag: Dag[Text], highlight: Text): Unit =
     Out.println(t"=== $name (highlight $highlight) ===")
-    val glyph = (node: Text) => if node == highlight then t"★ " else t"● "
+    val glyph = (node: Text) => if node == highlight then "★ " else "● "
     LaneDagDiagram(dag).render(glyph, node => t" $node").each(Out.println(_))
-    Out.println(t"")
+    Out.println("")
 
   def showLayered(name: Text, dag: Dag[Text]): Unit =
     Out.println(t"=== $name (layered) ===")
     LayeredDagDiagram(dag).render{ node => t"● $node  " }.each(Out.println(_))
-    Out.println(t"")
+    Out.println("")
 
   show
-    ( t"linear chain",
-      Dag(t"A" -> Set(), t"B" -> Set(t"A"), t"C" -> Set(t"B"), t"D" -> Set(t"C")) )
+    ( "linear chain",
+      Dag("A" -> Set(), "B" -> Set("A"), "C" -> Set("B"), "D" -> Set("C")) )
 
   show
-    ( t"diamond",
+    ( "diamond",
       Dag
-       ( t"A" -> Set(),
-         t"B" -> Set(t"A"),
-         t"C" -> Set(t"A"),
-         t"D" -> Set(t"B", t"C") ) )
+       ( "A" -> Set(),
+         "B" -> Set("A"),
+         "C" -> Set("A"),
+         "D" -> Set("B", "C") ) )
 
   show
-    ( t"high fan-out",
+    ( "high fan-out",
       Dag
-       ( t"root" -> Set(),
-         t"a"    -> Set(t"root"),
-         t"b"    -> Set(t"root"),
-         t"c"    -> Set(t"root"),
-         t"d"    -> Set(t"root") ) )
+       ( "root" -> Set(),
+         "a"    -> Set("root"),
+         "b"    -> Set("root"),
+         "c"    -> Set("root"),
+         "d"    -> Set("root") ) )
 
   show
-    ( t"high fan-in",
+    ( "high fan-in",
       Dag
-       ( t"a"    -> Set(),
-         t"b"    -> Set(),
-         t"c"    -> Set(),
-         t"d"    -> Set(),
-         t"sink" -> Set(t"a", t"b", t"c", t"d") ) )
+       ( "a"    -> Set(),
+         "b"    -> Set(),
+         "c"    -> Set(),
+         "d"    -> Set(),
+         "sink" -> Set("a", "b", "c", "d") ) )
 
   show
-    ( t"long edge over rows",
+    ( "long edge over rows",
       Dag
-       ( t"A" -> Set(),
-         t"B" -> Set(t"A"),
-         t"C" -> Set(t"B"),
-         t"D" -> Set(t"C"),
-         t"E" -> Set(t"A", t"D") ) )
+       ( "A" -> Set(),
+         "B" -> Set("A"),
+         "C" -> Set("B"),
+         "D" -> Set("C"),
+         "E" -> Set("A", "D") ) )
 
   show
-    ( t"two independent branches",
+    ( "two independent branches",
       Dag
-       ( t"A" -> Set(),
-         t"B" -> Set(t"A"),
-         t"C" -> Set(),
-         t"D" -> Set(t"C") ) )
+       ( "A" -> Set(),
+         "B" -> Set("A"),
+         "C" -> Set(),
+         "D" -> Set("C") ) )
 
   val scalaTypes =
     Dag
-      ( t"Any"        -> Set(),
-        t"Matchable"  -> Set(t"Any"),
-        t"AnyVal"     -> Set(t"Matchable"),
-        t"AnyRef"     -> Set(t"Matchable"),
-        t"Unit"       -> Set(t"AnyVal"),
-        t"Boolean"    -> Set(t"AnyVal"),
-        t"Int"        -> Set(t"AnyVal"),
-        t"String"     -> Set(t"AnyRef"),
-        t"List[Int]"  -> Set(t"AnyRef"),
-        t"Null"       -> Set(t"String", t"List[Int]"),
-        t"Nothing"    -> Set(t"Null", t"Unit", t"Boolean", t"Int") )
+      ( "Any"        -> Set(),
+        "Matchable"  -> Set("Any"),
+        "AnyVal"     -> Set("Matchable"),
+        "AnyRef"     -> Set("Matchable"),
+        "Unit"       -> Set("AnyVal"),
+        "Boolean"    -> Set("AnyVal"),
+        "Int"        -> Set("AnyVal"),
+        "String"     -> Set("AnyRef"),
+        "List[Int]"  -> Set("AnyRef"),
+        "Null"       -> Set("String", "List[Int]"),
+        "Nothing"    -> Set("Null", "Unit", "Boolean", "Int") )
 
-  show(t"Scala types", scalaTypes)
+  show("Scala types", scalaTypes)
 
-  showCompact(t"Scala types", scalaTypes)
+  showCompact("Scala types", scalaTypes)
 
-  showHighlighted(t"Scala types", scalaTypes, t"AnyVal")
+  showHighlighted("Scala types", scalaTypes, "AnyVal")
 
-  showLayered(t"diamond",
+  showLayered("diamond",
     Dag
-     ( t"A" -> Set(),
-       t"B" -> Set(t"A"),
-       t"C" -> Set(t"A"),
-       t"D" -> Set(t"B", t"C") ))
+     ( "A" -> Set(),
+       "B" -> Set("A"),
+       "C" -> Set("A"),
+       "D" -> Set("B", "C") ))
 
-  showLayered(t"Scala types", scalaTypes)
+  showLayered("Scala types", scalaTypes)

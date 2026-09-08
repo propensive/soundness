@@ -113,8 +113,8 @@ object Axis:
 
     // `reverse.prim` rather than `last`, which would need a linear-size acknowledgment for what
     // is a two- or three-element split.
-    val words: List[Text] = evidence.name.cut(t" ")
-    val parts: List[Text] = words.prim.or(t"").cut(t".")
+    val words: List[Text] = evidence.name.cut(" ")
+    val parts: List[Text] = words.prim.or(t"").cut(".")
     val label = parts.reverse.prim.or(t"").lower
     new Axis(label, evidence.values.readable.toList.to(List))
 

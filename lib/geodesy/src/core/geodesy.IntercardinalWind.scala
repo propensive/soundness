@@ -37,10 +37,10 @@ import spectacular.*
 
 object IntercardinalWind:
   given showable: IntercardinalWind is Showable =
-    case Northeast => t"↗"
-    case Southeast => t"↘"
-    case Southwest => t"↙"
-    case Northwest => t"↖"
+    case Northeast => "↗"
+    case Southeast => "↘"
+    case Southwest => "↙"
+    case Northwest => "↖"
 
 enum IntercardinalWind:
   case Northeast, Southeast, Southwest, Northwest

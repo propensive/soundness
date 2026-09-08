@@ -75,17 +75,17 @@ package filesystemBackends:
         def filesystemReason(error: jnf.FileSystemException): Reason =
           val message = Optional(error.getReason).let(_.tt.lower).or(t"")
 
-          if message.contains(t"not a directory") then IsNotDirectory
-          else if message.contains(t"is a directory") then IsDirectory
-          else if message.contains(t"cross-device") || message.contains(t"different disk")
+          if message.contains("not a directory") then IsNotDirectory
+          else if message.contains("is a directory") then IsDirectory
+          else if message.contains("cross-device") || message.contains("different disk")
           then NotSameVolume
-          else if message.contains(t"too many links") then TooManyLinks
-          else if message.contains(t"name too long") then NameTooLong
-          else if message.contains(t"quota") then QuotaExceeded
-          else if message.contains(t"no space") then StorageFull
-          else if message.contains(t"read-only") then ReadOnly
-          else if message.contains(t"busy") then Busy
-          else if message.contains(t"operation not permitted") then PermissionDenied
+          else if message.contains("too many links") then TooManyLinks
+          else if message.contains("name too long") then NameTooLong
+          else if message.contains("quota") then QuotaExceeded
+          else if message.contains("no space") then StorageFull
+          else if message.contains("read-only") then ReadOnly
+          else if message.contains("busy") then Busy
+          else if message.contains("operation not permitted") then PermissionDenied
           else Unsupported
 
         def fail(reason: Reason): Nothing = abort(Io.Error(path, operation, reason))

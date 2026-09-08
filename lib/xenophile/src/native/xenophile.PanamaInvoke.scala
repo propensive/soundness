@@ -88,19 +88,19 @@ object PanamaInvoke extends Materializer:
     // Panama API is quotable): the same mapping as `ForeignLibrary.layout`, resolved at compile
     // time from the header's own types.
     def layoutFor(tpe: Foreign.Type): Expr[MemoryLayout] = tpe match
-      case Foreign.Type.Named(t"int")    => '{ValueLayout.JAVA_INT.nn}
-      case Foreign.Type.Named(t"long")   => '{ValueLayout.JAVA_LONG.nn}
-      case Foreign.Type.Named(t"short")  => '{ValueLayout.JAVA_SHORT.nn}
-      case Foreign.Type.Named(t"char")   => '{ValueLayout.JAVA_BYTE.nn}
-      case Foreign.Type.Named(t"double") => '{ValueLayout.JAVA_DOUBLE.nn}
-      case Foreign.Type.Named(t"float")  => '{ValueLayout.JAVA_FLOAT.nn}
-      case Foreign.Type.Named(t"bool")   => '{ValueLayout.JAVA_BOOLEAN.nn}
+      case Foreign.Type.Named("int")    => '{ValueLayout.JAVA_INT.nn}
+      case Foreign.Type.Named("long")   => '{ValueLayout.JAVA_LONG.nn}
+      case Foreign.Type.Named("short")  => '{ValueLayout.JAVA_SHORT.nn}
+      case Foreign.Type.Named("char")   => '{ValueLayout.JAVA_BYTE.nn}
+      case Foreign.Type.Named("double") => '{ValueLayout.JAVA_DOUBLE.nn}
+      case Foreign.Type.Named("float")  => '{ValueLayout.JAVA_FLOAT.nn}
+      case Foreign.Type.Named("bool")   => '{ValueLayout.JAVA_BOOLEAN.nn}
       case _                             => '{ValueLayout.ADDRESS.nn}
 
     // One `appendArgumentLayouts` per parameter rather than a varargs splice: the generated
     // splice's array cannot flow into the Java varargs formal under separation checking.
     val base: Expr[FunctionDescriptor] = prototype.result match
-      case Foreign.Type.Named(t"void") => '{FunctionDescriptor.ofVoid().nn}
+      case Foreign.Type.Named("void") => '{FunctionDescriptor.ofVoid().nn}
       case result                      => '{FunctionDescriptor.of(${layoutFor(result)}).nn}
 
     val descriptor: Expr[FunctionDescriptor] =
@@ -108,7 +108,7 @@ object PanamaInvoke extends Materializer:
         '{$acc.appendArgumentLayouts(${layoutFor(tpe)}).nn}
 
     def isString(tpe: Foreign.Type): Boolean = tpe match
-      case Foreign.Type.Named(t"string") => true
+      case Foreign.Type.Named("string") => true
       case _                             => false
 
     val hasStringArg = parameterTypes.exists(isString)
@@ -122,12 +122,12 @@ object PanamaInvoke extends Materializer:
         val value = Xenophile.convertedValue(term).asExpr
 
         paramType match
-          case Foreign.Type.Named(t"string") =>
+          case Foreign.Type.Named("string") =>
             val place = arena.or(halt(m"xenophile: no arena for a string argument"))
             '{$place.allocateFrom($value.asInstanceOf[String]).nn}
 
-          case Foreign.Type.Named(t"int" | t"long" | t"short" | t"char" | t"double" | t"float"
-                                   | t"bool") =>
+          case Foreign.Type.Named("int" | "long" | "short" | "char" | "double" | "float"
+                                   | "bool") =>
             '{$value.asInstanceOf[AnyRef]}
 
           case _ =>
@@ -157,14 +157,14 @@ object PanamaInvoke extends Materializer:
     // native memory as `Text`, a pointer becomes its raw address (an `Address`), a primitive is
     // simply unboxed by the cast, and `void` yields `Unit`.
     prototype.result match
-      case Foreign.Type.Named(t"void") =>
+      case Foreign.Type.Named("void") =>
         '{$invocation; ()}.asInstanceOf[Expr[result]]
 
-      case Foreign.Type.Named(t"string") =>
+      case Foreign.Type.Named("string") =>
         '{ForeignLibrary.text($invocation.asInstanceOf[MemorySegment]).asInstanceOf[result]}
 
-      case Foreign.Type.Named(t"int" | t"long" | t"short" | t"char" | t"double" | t"float"
-                               | t"bool") =>
+      case Foreign.Type.Named("int" | "long" | "short" | "char" | "double" | "float"
+                               | "bool") =>
         '{$invocation.asInstanceOf[result]}
 
       case _ =>

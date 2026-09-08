@@ -62,7 +62,7 @@ object Javascript:
   // render verbatim through their `toString`.
   private def literal(value: Any): Text = value match
     case string: String   => quote(string.tt)
-    case boolean: Boolean => if boolean then t"true" else t"false"
+    case boolean: Boolean => if boolean then "true" else "false"
     case other            => other.toString.tt
 
   // A single-quoted JavaScript string literal, escaping backslash, single-quote and newlines.

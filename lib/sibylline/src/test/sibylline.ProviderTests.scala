@@ -44,7 +44,7 @@ import strategies.throwUnsafely
 object OpenAITests extends Suite(m"OpenAI dialect tests"):
   import Llm.{Content, Role, Stop, Usage}
 
-  val target: OpenAI = OpenAI.compatible(url"http://model.test/v1", t"gpt-test", t"sk-test")
+  val target: OpenAI = OpenAI.compatible(url"http://model.test/v1", "gpt-test", "sk-test")
 
   def sent(fake: FakeModel): Json =
     fake.exchanges.stdlib.reverse.head.body.option.get.read[Json]
@@ -67,70 +67,70 @@ object OpenAITests extends Suite(m"OpenAI dialect tests"):
   // A streamed completion: chunked text, a finish-reason chunk, the `include_usage` final
   // chunk, and the `[DONE]` sentinel.
   val streamed: Text = scala.List
-    ( t"""data: {"id": "cmpl_3", "model": "gpt-test", "choices": [{"index": 0, "delta": {"role": "assistant", "content": "fjord"}}]}""",
-      t"""""",
-      t"""data: {"id": "cmpl_3", "model": "gpt-test", "choices": [{"index": 0, "delta": {"content": " of Norway"}}]}""",
-      t"""""",
-      t"""data: {"id": "cmpl_3", "model": "gpt-test", "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]}""",
-      t"""""",
-      t"""data: {"id": "cmpl_3", "model": "gpt-test", "choices": [], "usage": {"prompt_tokens": 11, "completion_tokens": 9}}""",
-      t"""""",
-      t"""data: [DONE]""",
-      t"""""" )
+    ( """data: {"id": "cmpl_3", "model": "gpt-test", "choices": [{"index": 0, "delta": {"role": "assistant", "content": "fjord"}}]}""",
+      """""",
+      """data: {"id": "cmpl_3", "model": "gpt-test", "choices": [{"index": 0, "delta": {"content": " of Norway"}}]}""",
+      """""",
+      """data: {"id": "cmpl_3", "model": "gpt-test", "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]}""",
+      """""",
+      """data: {"id": "cmpl_3", "model": "gpt-test", "choices": [], "usage": {"prompt_tokens": 11, "completion_tokens": 9}}""",
+      """""",
+      """data: [DONE]""",
+      """""" )
   . mkString("\n").tt
 
   // A streamed tool call whose arguments arrive in fragments.
   val streamedTool: Text = scala.List
-    ( t"""data: {"id": "cmpl_4", "model": "gpt-test", "choices": [{"index": 0, "delta": {"role": "assistant", "tool_calls": [{"index": 0, "id": "call_2", "function": {"name": "price", "arguments": ""}}]}}]}""",
-      t"""""",
+    ( """data: {"id": "cmpl_4", "model": "gpt-test", "choices": [{"index": 0, "delta": {"role": "assistant", "tool_calls": [{"index": 0, "id": "call_2", "function": {"name": "price", "arguments": ""}}]}}]}""",
+      """""",
       t"""data: {"id": "cmpl_4", "model": "gpt-test", "choices": [{"index": 0, "delta": {"tool_calls": [{"index": 0, "function": {"arguments": "{\\"tick"}}]}}]}""",
-      t"""""",
+      """""",
       t"""data: {"id": "cmpl_4", "model": "gpt-test", "choices": [{"index": 0, "delta": {"tool_calls": [{"index": 0, "function": {"arguments": "er\\": \\"AAPL\\"}"}}]}}]}""",
-      t"""""",
-      t"""data: {"id": "cmpl_4", "model": "gpt-test", "choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}""",
-      t"""""",
-      t"""data: [DONE]""",
-      t"""""" )
+      """""",
+      """data: {"id": "cmpl_4", "model": "gpt-test", "choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]}""",
+      """""",
+      """data: [DONE]""",
+      """""" )
   . mkString("\n").tt
 
   def run(): Unit =
     test(m"a one-shot ask decodes the reply"):
-      given fake: FakeModel = FakeModel((_, _, _) => answer(t"Suur Munamägi"))
-      val reply = target.session(llm.ask(t"Tallest mountain in Estonia?"))
+      given fake: FakeModel = FakeModel((_, _, _) => answer("Suur Munamägi"))
+      val reply = target.session(llm.ask("Tallest mountain in Estonia?"))
       (reply.text, reply.stop, reply.usage, reply.id)
-    . assert(_ == (t"Suur Munamägi", Stop.Ended, Usage(3, 5), t"cmpl_1"))
+    . assert(_ == ("Suur Munamägi", Stop.Ended, Usage(3, 5), "cmpl_1"))
 
     test(m"the request goes to the configured base with Bearer auth"):
-      given fake: FakeModel = FakeModel((_, _, _) => answer(t"yes"))
-      target.session(llm.ask(t"Ready?"))
+      given fake: FakeModel = FakeModel((_, _, _) => answer("yes"))
+      target.session(llm.ask("Ready?"))
       val exchange = fake.exchanges.stdlib.reverse.head
 
       ( exchange.path,
-        exchange.headers.filter(_.key == t"authorization").prim.let(_.value) )
-    . assert(_ == (t"/v1/chat/completions", t"Bearer sk-test"))
+        exchange.headers.filter(_.key == "authorization").prim.let(_.value) )
+    . assert(_ == ("/v1/chat/completions", "Bearer sk-test"))
 
     test(m"a keyless compatible target sends no authorization header"):
-      given fake: FakeModel = FakeModel((_, _, _) => answer(t"yes"))
-      OpenAI.compatible(url"http://model.test/v1", t"llama").session(llm.ask(t"Ready?"))
-      fake.exchanges.stdlib.reverse.head.headers.filter(_.key == t"authorization").stdlib.size
+      given fake: FakeModel = FakeModel((_, _, _) => answer("yes"))
+      OpenAI.compatible(url"http://model.test/v1", "llama").session(llm.ask("Ready?"))
+      fake.exchanges.stdlib.reverse.head.headers.filter(_.key == "authorization").stdlib.size
     . assert(_ == 0)
 
     test(m"the system prompt becomes a leading system message"):
-      given fake: FakeModel = FakeModel((_, _, _) => answer(t"yes"))
-      target.prompted(t"Be terse.").session(llm.ask(t"Ready?"))
+      given fake: FakeModel = FakeModel((_, _, _) => answer("yes"))
+      target.prompted("Be terse.").session(llm.ask("Ready?"))
       val json = sent(fake)
       (json.messages(0).role.as[Text], json.messages(0).content.as[Text])
-    . assert(_ == (t"system", t"Be terse."))
+    . assert(_ == ("system", "Be terse."))
 
     test(m"a tool-call reply parses its string arguments"):
       given fake: FakeModel = FakeModel((_, _, _) => toolAnswer)
-      val reply = target.session(llm.ask(t"Price AAPL"))
+      val reply = target.session(llm.ask("Price AAPL"))
       (reply.stop, reply.toolCalls)
     . assert:
         _ == (Stop.ToolCall, List(Content.ToolUse(t"call_1", t"price", j"""{"ticker": "AAPL"}""")))
 
     test(m"tool history round-trips as tool_calls and tool messages"):
-      given fake: FakeModel = FakeModel((_, _, _) => answer(t"noted"))
+      given fake: FakeModel = FakeModel((_, _, _) => answer("noted"))
 
       val history = List
         ( Llm.Message
@@ -138,30 +138,30 @@ object OpenAITests extends Suite(m"OpenAI dialect tests"):
               List(Content.ToolUse(t"call_1", t"price", j"""{"ticker": "AAPL"}""")) ),
           Llm.Message(Role.User, List(Content.ToolResult(t"call_1", List(Content.Textual(t"42"))))) )
 
-      target.primed(history).session(llm.ask(t"So?"))
+      target.primed(history).session(llm.ask("So?"))
       val json = sent(fake)
 
       ( json.messages(0).tool_calls(0).function.name.as[Text],
         json.messages(1).role.as[Text],
         json.messages(1).tool_call_id.as[Text],
         json.messages(2).role.as[Text] )
-    . assert(_ == (t"price", t"tool", t"call_1", t"user"))
+    . assert(_ == ("price", "tool", "call_1", "user"))
 
     test(m"a streamed turn assembles text, usage and identity"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.reply(streamed))
-      val reply = target.session(llm.stream(t"go").reply())
+      val reply = target.session(llm.stream("go").reply())
       (reply.text, reply.usage, reply.id, reply.stop)
-    . assert(_ == (t"fjord of Norway", Usage(11, 9), t"cmpl_3", Stop.Ended))
+    . assert(_ == ("fjord of Norway", Usage(11, 9), "cmpl_3", Stop.Ended))
 
     test(m"a streamed request asks for usage"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.reply(streamed))
-      target.session(llm.stream(t"go").reply())
+      target.session(llm.stream("go").reply())
       sent(fake).stream_options.include_usage.as[Boolean]
     . assert(_ == true)
 
     test(m"streamed tool-call arguments assemble across chunks"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.reply(streamedTool))
-      val reply = target.session(llm.stream(t"go").reply())
+      val reply = target.session(llm.stream("go").reply())
       (reply.stop, reply.toolCalls)
     . assert:
         _ == (Stop.ToolCall, List(Content.ToolUse(t"call_2", t"price", j"""{"ticker": "AAPL"}""")))
@@ -171,14 +171,14 @@ object OpenAITests extends Suite(m"OpenAI dialect tests"):
         Http.Response(Http.Unauthorized):
           t"""{"error": {"message": "bad key", "type": "invalid_request_error", "code": "invalid_api_key"}}"""
 
-      capture[Llm.Error](target.session(llm.ask(t"Ready?"))).reason
+      capture[Llm.Error](target.session(llm.ask("Ready?"))).reason
     . assert(_ == Llm.Error.Reason.Unauthorized)
 
 object ResponsesTests extends Suite(m"OpenAI Responses dialect tests"):
   import Llm.{Content, Stop, Usage}
 
   val target: OpenAI.Responses =
-    OpenAI.compatible(url"http://model.test/v1", t"gpt-test", t"sk-test").responses
+    OpenAI.compatible(url"http://model.test/v1", "gpt-test", "sk-test").responses
 
   def sent(fake: FakeModel): Json =
     fake.exchanges.stdlib.reverse.head.body.option.get.read[Json]
@@ -190,42 +190,42 @@ object ResponsesTests extends Suite(m"OpenAI Responses dialect tests"):
          "usage": {"input_tokens": 3, "output_tokens": 5}}"""
 
   val streamed: Text = scala.List
-    ( t"""event: response.created""",
-      t"""data: {"type": "response.created", "response": {"id": "resp_2", "model": "gpt-test"}}""",
-      t"""""",
-      t"""event: response.output_item.added""",
-      t"""data: {"type": "response.output_item.added", "output_index": 0, "item": {"type": "message", "role": "assistant"}}""",
-      t"""""",
-      t"""event: response.output_text.delta""",
-      t"""data: {"type": "response.output_text.delta", "output_index": 0, "delta": "fjord"}""",
-      t"""""",
-      t"""event: response.output_text.delta""",
-      t"""data: {"type": "response.output_text.delta", "output_index": 0, "delta": " of Norway"}""",
-      t"""""",
-      t"""event: response.output_item.done""",
-      t"""data: {"type": "response.output_item.done", "output_index": 0, "item": {"type": "message"}}""",
-      t"""""",
-      t"""event: response.completed""",
-      t"""data: {"type": "response.completed", "response": {"id": "resp_2", "usage": {"input_tokens": 11, "output_tokens": 9}}}""",
-      t"""""" )
+    ( """event: response.created""",
+      """data: {"type": "response.created", "response": {"id": "resp_2", "model": "gpt-test"}}""",
+      """""",
+      """event: response.output_item.added""",
+      """data: {"type": "response.output_item.added", "output_index": 0, "item": {"type": "message", "role": "assistant"}}""",
+      """""",
+      """event: response.output_text.delta""",
+      """data: {"type": "response.output_text.delta", "output_index": 0, "delta": "fjord"}""",
+      """""",
+      """event: response.output_text.delta""",
+      """data: {"type": "response.output_text.delta", "output_index": 0, "delta": " of Norway"}""",
+      """""",
+      """event: response.output_item.done""",
+      """data: {"type": "response.output_item.done", "output_index": 0, "item": {"type": "message"}}""",
+      """""",
+      """event: response.completed""",
+      """data: {"type": "response.completed", "response": {"id": "resp_2", "usage": {"input_tokens": 11, "output_tokens": 9}}}""",
+      """""" )
   . mkString("\n").tt
 
   def run(): Unit =
     test(m"a one-shot ask decodes output items"):
-      given fake: FakeModel = FakeModel((_, _, _) => answer(t"Suur Munamägi"))
-      val reply = target.session(llm.ask(t"Tallest mountain in Estonia?"))
+      given fake: FakeModel = FakeModel((_, _, _) => answer("Suur Munamägi"))
+      val reply = target.session(llm.ask("Tallest mountain in Estonia?"))
       (reply.text, reply.stop, reply.usage, reply.id)
-    . assert(_ == (t"Suur Munamägi", Stop.Ended, Usage(3, 5), t"resp_1"))
+    . assert(_ == ("Suur Munamägi", Stop.Ended, Usage(3, 5), "resp_1"))
 
     test(m"the request uses input items and instructions"):
-      given fake: FakeModel = FakeModel((_, _, _) => answer(t"yes"))
-      target.chat.prompted(t"Be terse.").responses.session(llm.ask(t"Ready?"))
+      given fake: FakeModel = FakeModel((_, _, _) => answer("yes"))
+      target.chat.prompted("Be terse.").responses.session(llm.ask("Ready?"))
       val json = sent(fake)
       val exchange = fake.exchanges.stdlib.reverse.head
 
       ( exchange.path, json.instructions.as[Text], json.input(0).`type`.as[Text],
         json.input(0).content(0).`type`.as[Text] )
-    . assert(_ == (t"/v1/responses", t"Be terse.", t"message", t"input_text"))
+    . assert(_ == ("/v1/responses", "Be terse.", "message", "input_text"))
 
     test(m"a function_call output becomes a ToolCall reply"):
       given fake: FakeModel = FakeModel: (_, _, _) =>
@@ -235,21 +235,21 @@ object ResponsesTests extends Suite(m"OpenAI Responses dialect tests"):
                   "arguments": "{\\"ticker\\": \\"MSFT\\"}"}],
                "usage": {"input_tokens": 2, "output_tokens": 3}}"""
 
-      val reply = target.session(llm.ask(t"Price MSFT"))
+      val reply = target.session(llm.ask("Price MSFT"))
       (reply.stop, reply.toolCalls)
     . assert:
         _ == (Stop.ToolCall, List(Content.ToolUse(t"call_9", t"price", j"""{"ticker": "MSFT"}""")))
 
     test(m"a streamed turn assembles from semantic events"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.reply(streamed))
-      val reply = target.session(llm.stream(t"go").reply())
+      val reply = target.session(llm.stream("go").reply())
       (reply.text, reply.usage, reply.id)
-    . assert(_ == (t"fjord of Norway", Usage(11, 9), t"resp_2"))
+    . assert(_ == ("fjord of Norway", Usage(11, 9), "resp_2"))
 
 object GeminiTests extends Suite(m"Gemini dialect tests"):
   import Llm.{Content, Role, Stop, Usage}
 
-  val target: Gemini = Gemini(t"gemini-test", t"g-key").on(url"http://model.test")
+  val target: Gemini = Gemini("gemini-test", "g-key").on(url"http://model.test")
 
   def sent(fake: FakeModel): Json =
     fake.exchanges.stdlib.reverse.head.body.option.get.read[Json]
@@ -261,60 +261,60 @@ object GeminiTests extends Suite(m"Gemini dialect tests"):
          "usageMetadata": {"promptTokenCount": 3, "candidatesTokenCount": 5}}"""
 
   val streamed: Text = scala.List
-    ( t"""data: {"responseId": "gen_2", "modelVersion": "gemini-test", "candidates": [{"content": {"role": "model", "parts": [{"text": "fjord"}]}}], "usageMetadata": {"promptTokenCount": 11, "candidatesTokenCount": 2}}""",
-      t"""""",
-      t"""data: {"responseId": "gen_2", "candidates": [{"content": {"role": "model", "parts": [{"text": " of Norway"}]}, "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 11, "candidatesTokenCount": 9}}""",
-      t"""""" )
+    ( """data: {"responseId": "gen_2", "modelVersion": "gemini-test", "candidates": [{"content": {"role": "model", "parts": [{"text": "fjord"}]}}], "usageMetadata": {"promptTokenCount": 11, "candidatesTokenCount": 2}}""",
+      """""",
+      """data: {"responseId": "gen_2", "candidates": [{"content": {"role": "model", "parts": [{"text": " of Norway"}]}, "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 11, "candidatesTokenCount": 9}}""",
+      """""" )
   . mkString("\n").tt
 
   def run(): Unit =
     test(m"a one-shot ask decodes the candidate"):
-      given fake: FakeModel = FakeModel((_, _, _) => answer(t"Suur Munamägi"))
-      val reply = target.session(llm.ask(t"Tallest mountain in Estonia?"))
+      given fake: FakeModel = FakeModel((_, _, _) => answer("Suur Munamägi"))
+      val reply = target.session(llm.ask("Tallest mountain in Estonia?"))
       (reply.text, reply.stop, reply.usage, reply.id)
-    . assert(_ == (t"Suur Munamägi", Stop.Ended, Usage(3, 5), t"gen_1"))
+    . assert(_ == ("Suur Munamägi", Stop.Ended, Usage(3, 5), "gen_1"))
 
     test(m"the endpoint addresses the model and the key travels as a header"):
-      given fake: FakeModel = FakeModel((_, _, _) => answer(t"yes"))
-      target.session(llm.ask(t"Ready?"))
+      given fake: FakeModel = FakeModel((_, _, _) => answer("yes"))
+      target.session(llm.ask("Ready?"))
       val exchange = fake.exchanges.stdlib.reverse.head
 
       ( exchange.path,
-        exchange.headers.filter(_.key == t"x-goog-api-key").prim.let(_.value) )
-    . assert(_ == (t"/v1beta/models/gemini-test:generateContent", t"g-key"))
+        exchange.headers.filter(_.key == "x-goog-api-key").prim.let(_.value) )
+    . assert(_ == ("/v1beta/models/gemini-test:generateContent", "g-key"))
 
     test(m"the streamed endpoint asks for SSE"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.reply(streamed))
-      target.session(llm.stream(t"go").reply())
+      target.session(llm.stream("go").reply())
       fake.exchanges.stdlib.reverse.head.path
-    . assert(_ == t"/v1beta/models/gemini-test:streamGenerateContent?alt=sse")
+    . assert(_ == "/v1beta/models/gemini-test:streamGenerateContent?alt=sse")
 
     test(m"the request carries contents, system instruction and config"):
-      given fake: FakeModel = FakeModel((_, _, _) => answer(t"yes"))
-      target.prompted(t"Be terse.").limit(256).session(llm.ask(t"Ready?"))
+      given fake: FakeModel = FakeModel((_, _, _) => answer("yes"))
+      target.prompted("Be terse.").limit(256).session(llm.ask("Ready?"))
       val json = sent(fake)
 
       ( json.contents(0).role.as[Text], json.contents(0).parts(0).text.as[Text],
         json.systemInstruction.parts(0).text.as[Text],
         json.generationConfig.maxOutputTokens.as[Int] )
-    . assert(_ == (t"user", t"Ready?", t"Be terse.", 256))
+    . assert(_ == ("user", "Ready?", "Be terse.", 256))
 
     test(m"a functionCall part becomes a ToolCall reply keyed by name"):
       given fake: FakeModel = FakeModel: (_, _, _) =>
         FakeModel.reply:
-          t"""{"responseId": "gen_3", "modelVersion": "gemini-test", "candidates":
+          """{"responseId": "gen_3", "modelVersion": "gemini-test", "candidates":
                 [{"content": {"role": "model", "parts":
                    [{"functionCall": {"name": "price", "args": {"ticker": "GOOG"}}}]},
                   "finishReason": "STOP"}],
                "usageMetadata": {"promptTokenCount": 2, "candidatesTokenCount": 3}}"""
 
-      val reply = target.session(llm.ask(t"Price GOOG"))
+      val reply = target.session(llm.ask("Price GOOG"))
       (reply.stop, reply.toolCalls)
     . assert:
         _ == (Stop.ToolCall, List(Content.ToolUse(t"price", t"price", j"""{"ticker": "GOOG"}""")))
 
     test(m"a tool result encodes as a functionResponse part"):
-      given fake: FakeModel = FakeModel((_, _, _) => answer(t"noted"))
+      given fake: FakeModel = FakeModel((_, _, _) => answer("noted"))
 
       target.session:
         llm.ask
@@ -324,18 +324,18 @@ object GeminiTests extends Suite(m"Gemini dialect tests"):
 
       val part = sent(fake).contents(0).parts(0)
       (part.functionResponse.name.as[Text], part.functionResponse.response.result.as[Text])
-    . assert(_ == (t"price", t"42"))
+    . assert(_ == ("price", "42"))
 
     test(m"a streamed turn accumulates text and takes the final usage"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.reply(streamed))
-      val reply = target.session(llm.stream(t"go").reply())
+      val reply = target.session(llm.stream("go").reply())
       (reply.text, reply.usage, reply.id, reply.stop)
-    . assert(_ == (t"fjord of Norway", Usage(11, 9), t"gen_2", Stop.Ended))
+    . assert(_ == ("fjord of Norway", Usage(11, 9), "gen_2", Stop.Ended))
 
     test(m"a Google error envelope maps to the status"):
       given fake: FakeModel = FakeModel: (_, _, _) =>
         Http.Response(Http.TooManyRequests, retryAfter = t"0"):
           t"""{"error": {"code": 429, "message": "quota", "status": "RESOURCE_EXHAUSTED"}}"""
 
-      capture[Llm.Error](target.session(llm.ask(t"Ready?"))).reason
+      capture[Llm.Error](target.session(llm.ask("Ready?"))).reason
     . assert(_ == Llm.Error.Reason.RateLimited)

@@ -103,11 +103,11 @@ object Browser:
   // why they are constructed directly rather than via `Foreign["Document", Browser]`, whose
   // reference is the type name).
   val document: Foreign of "Document" from Browser =
-    Foreign.make(Foreign.Expression.Reference(t"document"))
+    Foreign.make(Foreign.Expression.Reference("document"))
     . asInstanceOf[Foreign of "Document" from Browser]
 
   val window: Foreign of "Window" from Browser =
-    Foreign.make(Foreign.Expression.Reference(t"window"))
+    Foreign.make(Foreign.Expression.Reference("window"))
     . asInstanceOf[Foreign of "Window" from Browser]
 
 trait Browser extends Ecosystem:

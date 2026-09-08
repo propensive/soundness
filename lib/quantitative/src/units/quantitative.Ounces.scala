@@ -36,7 +36,7 @@ import anticipation.*
 import rudiments.*
 
 object Ounces:
-  given designation: Designation[Ounces[1]] = () => "oz".tt
+  given designation: Designation[Ounces[1]] = () => "oz"
   inline given ratio: Ratio[Kilograms[1] & Ounces[-1], 0.0283495] = !!
 
 trait Ounces[Power <: Nat] extends Units[Power, Mass]

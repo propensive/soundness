@@ -183,7 +183,7 @@ object Bench:
         while d < ${Expr(batch)} do
           if count >= (1L << 34) then
             throw new RuntimeException(
-              "sedentary: benchmark body produced no measurable timing after 2^34 " +
+              s"sedentary: benchmark body produced no measurable timing after 2^34 " +
                 "iterations; suspected dead-code elimination")
 
           count *= 2L

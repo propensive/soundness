@@ -46,31 +46,31 @@ object Tests extends Suite(m"Aviation Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
       test(m"Parse a canonical date"):
-        t"2011-12-13".as[Date]
+        "2011-12-13".as[Date]
       .check(_ == 2011-Dec-13)
 
       test(m"Parse a date with a single-digit month"):
-        t"2011-09-13".as[Date]
+        "2011-09-13".as[Date]
       . assert(_ == 2011-Sep-13)
 
       test(m"Parse a date in the distant past"):
-        t"59-09-13".as[Date]
+        "59-09-13".as[Date]
       . assert(_ == 59-Sep-13)
 
       test(m"Month cannot be higher than 12"):
-        capture(t"59-13-13".as[Date])
-      . assert(_ == Moment.Error(_.Unknown(t"13", t"month")))
+        capture("59-13-13".as[Date])
+      . assert(_ == Moment.Error(_.Unknown("13", "month")))
 
       test(m"Month cannot be less than 1"):
-        capture(t"59-0-13".as[Date])
-      . assert(_ == Moment.Error(_.Unknown(t"0", t"month")))
+        capture("59-0-13".as[Date])
+      . assert(_ == Moment.Error(_.Unknown("0", "month")))
 
       test(m"Day cannot be over 31"):
-        capture(t"59-11-32".as[Date])
+        capture("59-11-32".as[Date])
       . assert(_ == Moment.Error(_.Invalid(59, 11, 32, calendars.gregorianCalendar)))
 
       test(m"Day must exist in month"):
-        capture(t"59-11-31".as[Date])
+        capture("59-11-31".as[Date])
       . assert(_ == Moment.Error(_.Invalid(59, 11, 31, calendars.gregorianCalendar)))
 
 
@@ -378,205 +378,205 @@ object Tests extends Suite(m"Aviation Tests"):
       suite(m"ISO 8601"):
         import instantDecodables.iso8601InstantDecodable
         test(m"with Z suffix (UTC)"):
-          t"1994-11-06T08:49:37Z".as[Instant over Unix]
+          "1994-11-06T08:49:37Z".as[Instant over Unix]
         . assert(_ == Instant(784111777000L))
 
         test(m"with positive timezone offset"):
-          t"1994-11-06T09:49:37+01:00".as[Instant over Unix]
+          "1994-11-06T09:49:37+01:00".as[Instant over Unix]
         . assert(_ == Instant(784111777000L))
 
         test(m"with negative timezone offset"):
-          t"1994-11-06T03:49:37-05:00".as[Instant over Unix]
+          "1994-11-06T03:49:37-05:00".as[Instant over Unix]
         . assert(_ == Instant(784111777000L))
 
         test(m"with fractional seconds (.123)"):
-          t"2020-02-29T12:34:56.123Z".as[Instant over Unix]
+          "2020-02-29T12:34:56.123Z".as[Instant over Unix]
         . assert(_ == Instant(1582979696123L))
 
         test(m"with nanosecond precision (.123456789)"):
-          t"2020-02-29T12:34:56.123456789Z".as[Instant over Unix]
+          "2020-02-29T12:34:56.123456789Z".as[Instant over Unix]
         . assert(_ == Instant(1582979696123L))
 
         test(m"date-only format (midnight UTC)"):
-          t"2020-12-31".as[Instant over Unix]
+          "2020-12-31".as[Instant over Unix]
         . assert(_ == Instant(1609372800000L))
 
         test(m"ISO 8601 leap second accepted as next second"):
-          t"2016-12-31T23:59:60Z".as[Instant over Unix]
+          "2016-12-31T23:59:60Z".as[Instant over Unix]
         . assert(_ == Instant(1483228800000L))
 
         test(m"Month-only format"):
-          t"2012-11".as[Instant over Unix]
+          "2012-11".as[Instant over Unix]
         . assert(_ == Instant(1351728000000L))
 
         test(m"ISO 8601 with timezone offset and fractional seconds"):
-          t"2023-03-25T10:15:30.456+02:00".as[Instant over Unix]
+          "2023-03-25T10:15:30.456+02:00".as[Instant over Unix]
         . assert(_ == Instant(1679732130456L))
 
         test(m"Calendar date, full time, Z"):
-          t"2023-05-28T14:30:59Z".as[Instant over Unix]
+          "2023-05-28T14:30:59Z".as[Instant over Unix]
         . assert(_ == Instant(1685284259000L))
 
         test(m"Calendar date, basic format, full time, Z"):
-          t"20230528T143059Z".as[Instant over Unix]
+          "20230528T143059Z".as[Instant over Unix]
         . assert(_ == Instant(1685284259000L))
 
         test(m"Calendar date, full time, offset +00:00"):
-          t"2023-05-28T14:30:59+00:00".as[Instant over Unix]
+          "2023-05-28T14:30:59+00:00".as[Instant over Unix]
         . assert(_ == Instant(1685284259000L))
 
         test(m"Calendar date, full time, offset +02:00"):
-          t"2023-05-28T14:30:59+02:00".as[Instant over Unix]
+          "2023-05-28T14:30:59+02:00".as[Instant over Unix]
         . assert(_ == Instant(1685277059000L))
 
         test(m"Calendar date, full time, offset -05:00"):
-          t"2023-05-28T14:30:59-05:00".as[Instant over Unix]
+          "2023-05-28T14:30:59-05:00".as[Instant over Unix]
         . assert(_ == Instant(1685302259000L))
 
         test(m"Calendar date, fractional seconds, Z"):
-          t"2023-05-28T14:30:59.123Z".as[Instant over Unix]
+          "2023-05-28T14:30:59.123Z".as[Instant over Unix]
         . assert(_ == Instant(1685284259123L))
 
         test(m"Calendar date, comma as decimal separator, Z"):
-          t"2023-05-28T14:30:59,123Z".as[Instant over Unix]
+          "2023-05-28T14:30:59,123Z".as[Instant over Unix]
         . assert(_ == Instant(1685284259123L))
 
         test(m"Calendar date, hours and minutes, Z"):
-          t"2023-05-28T14:30Z".as[Instant over Unix]
+          "2023-05-28T14:30Z".as[Instant over Unix]
         . assert(_ == Instant(1685284200000L))
 
         test(m"Calendar date, hour only, Z"):
-          t"2023-05-28T14Z".as[Instant over Unix]
+          "2023-05-28T14Z".as[Instant over Unix]
         . assert(_ == Instant(1685282400000L))
 
         test(m"Week date, Sunday of week 21, full time, Z"):
-          t"2023-W21-7T14:30:59Z".as[Instant over Unix]
+          "2023-W21-7T14:30:59Z".as[Instant over Unix]
         . assert(_ == Instant(1685284259000L))
 
         test(m"Week date, Monday of week 21, full time, Z"):
-          t"2023-W21-1T14:30:59Z".as[Instant over Unix]
+          "2023-W21-1T14:30:59Z".as[Instant over Unix]
         . assert(_ == Instant(1684765859000L))
 
         test(m"Week date, basic format, Sunday of week 21, full time, Z"):
-          t"2023W217T143059Z".as[Instant over Unix]
+          "2023W217T143059Z".as[Instant over Unix]
         . assert(_ == Instant(1685284259000L))
 
         test(m"Start of UNIX epoch"):
-          t"1970-01-01T00:00:00Z".as[Instant over Unix]
+          "1970-01-01T00:00:00Z".as[Instant over Unix]
         . assert(_ == Instant(0L))
 
         test(m"Leap day 2020"):
-          t"2020-02-29T12:00:00Z".as[Instant over Unix]
+          "2020-02-29T12:00:00Z".as[Instant over Unix]
         . assert(_ == Instant(1582977600000L))
 
         test(m"End of 1999"):
-          t"1999-12-31T23:59:59Z".as[Instant over Unix]
+          "1999-12-31T23:59:59Z".as[Instant over Unix]
         . assert(_ == Instant(946684799000L))
 
         test(m"Start of 2000"):
-          t"2000-01-01T00:00:00Z".as[Instant over Unix]
+          "2000-01-01T00:00:00Z".as[Instant over Unix]
         . assert(_ == Instant(946684800000L))
 
         test(m"Far future 2199"):
-          t"2199-12-31T23:59:59Z".as[Instant over Unix]
+          "2199-12-31T23:59:59Z".as[Instant over Unix]
         . assert(_ == Instant(7258118399000L))
 
         test(m"Far past 1800"):
-          t"1800-01-01T00:00:00Z".as[Instant over Unix]
+          "1800-01-01T00:00:00Z".as[Instant over Unix]
         . assert(_ == Instant(-5364662400000L))
 
         test(m"Middle of the day"):
-          t"2023-06-15T12:00:00Z".as[Instant over Unix]
+          "2023-06-15T12:00:00Z".as[Instant over Unix]
         . assert(_ == Instant(1686830400000L))
 
         test(m"New Year 2023"):
-          t"2023-01-01T00:00:00Z".as[Instant over Unix]
+          "2023-01-01T00:00:00Z".as[Instant over Unix]
         . assert(_ == Instant(1672531200000L))
 
         test(m"DST change irrelevant (UTC)"):
-          t"2021-03-28T01:30:00Z".as[Instant over Unix]
+          "2021-03-28T01:30:00Z".as[Instant over Unix]
         . assert(_ == Instant(1616895000000L))
 
         test(m"Millisecond rounding test"):
-          t"2022-11-15T23:59:59Z".as[Instant over Unix]
+          "2022-11-15T23:59:59Z".as[Instant over Unix]
         . assert(_ == Instant(1668556799000L))
 
       suite(m"RFC 1123"):
         import instantDecodables.rfc1123InstantDecodable
         test(m"basic with GMT timezone"):
-          t"Sun, 06 Nov 1994 08:49:37 GMT".as[Instant over Unix]
+          "Sun, 06 Nov 1994 08:49:37 GMT".as[Instant over Unix]
         . assert(_ == Instant(784111777000L))
 
         test(m"with unusual day of week (consistency check)"):
-          t"Tue, 01 Jan 2019 00:00:00 GMT".as[Instant over Unix]
+          "Tue, 01 Jan 2019 00:00:00 GMT".as[Instant over Unix]
         . assert(_ == Instant(1546300800000L))
 
         test(m"Standard RFC1123 date with full weekday and month names"):
-          t"Sun, 06 Nov 1994 08:49:37 GMT".as[Instant over Unix]
+          "Sun, 06 Nov 1994 08:49:37 GMT".as[Instant over Unix]
         . assert(_ == Instant(784111777000L))
 
         test(m"Leap day in a leap year"):
-          t"Mon, 29 Feb 2016 12:00:00 GMT".as[Instant over Unix]
+          "Mon, 29 Feb 2016 12:00:00 GMT".as[Instant over Unix]
         . assert(_ == Instant(1456747200000L))
 
         test(m"Epoch start date"):
-          t"Thu, 01 Jan 1970 00:00:00 GMT".as[Instant over Unix]
+          "Thu, 01 Jan 1970 00:00:00 GMT".as[Instant over Unix]
         . assert(_ == Instant(0L))
 
         test(m"Last second before Y2K"):
-          t"Fri, 31 Dec 1999 23:59:59 GMT".as[Instant over Unix]
+          "Fri, 31 Dec 1999 23:59:59 GMT".as[Instant over Unix]
         . assert(_ == Instant(946684799000L))
 
         test(m"First second of Y2K"):
-          t"Sat, 01 Jan 2000 00:00:00 GMT".as[Instant over Unix]
+          "Sat, 01 Jan 2000 00:00:00 GMT".as[Instant over Unix]
         . assert(_ == Instant(946684800000L))
 
         test(m"Date with single-digit day"):
-          capture(t"Wed, 3 Jul 2002 17:45:00 GMT".as[Instant over Unix])
-        . assert(_ == Moment.Error(_.Format(t"Wed, 3 Jul 2002 17:45:00 GMT", Rfc1123, Prim + 6)(Rfc1123.Issue.Digit)))
+          capture("Wed, 3 Jul 2002 17:45:00 GMT".as[Instant over Unix])
+        . assert(_ == Moment.Error(_.Format("Wed, 3 Jul 2002 17:45:00 GMT", Rfc1123, Prim + 6)(Rfc1123.Issue.Digit)))
 
         test(m"Date with single-digit hour, minute, and second"):
-          t"Tue, 02 Mar 2021 07:08:09 GMT".as[Instant over Unix]
+          "Tue, 02 Mar 2021 07:08:09 GMT".as[Instant over Unix]
         . assert(_ == Instant(1614668889000L))
 
         test(m"Date with correct day of week (Monday)"):
-          t"Mon, 15 Aug 2022 18:30:00 GMT".as[Instant over Unix]
+          "Mon, 15 Aug 2022 18:30:00 GMT".as[Instant over Unix]
         . assert(_ == Instant(1660588200000L))
 
         test(m"Incorrect weekday (should be Sunday, not Monday)"):
-          t"Mon, 31 Dec 2006 23:59:59 GMT".as[Instant over Unix]
+          "Mon, 31 Dec 2006 23:59:59 GMT".as[Instant over Unix]
         . assert(_ == Instant(1167609599000L))
 
         test(m"Date around DST end (should be in UTC, so no DST effect)"):
-          t"Sun, 01 Nov 2020 01:30:00 GMT".as[Instant over Unix]
+          "Sun, 01 Nov 2020 01:30:00 GMT".as[Instant over Unix]
         . assert(_ == Instant(1604194200000L))
 
         test(m"Far future date (2100)"):
-          t"Fri, 01 Jan 2100 00:00:00 GMT".as[Instant over Unix]
+          "Fri, 01 Jan 2100 00:00:00 GMT".as[Instant over Unix]
         . assert(_ == Instant(4102444800000L))
 
         test(m"Far past date (1900)"):
-          t"Mon, 01 Jan 1900 00:00:00 GMT".as[Instant over Unix]
+          "Mon, 01 Jan 1900 00:00:00 GMT".as[Instant over Unix]
         . assert(_ == Instant(-2208988800000L))
 
         test(m"Time with 2-digit hour 23"):
-          t"Wed, 08 Sep 2021 23:00:00 GMT".as[Instant over Unix]
+          "Wed, 08 Sep 2021 23:00:00 GMT".as[Instant over Unix]
         . assert(_ == Instant(1631142000000L))
 
         test(m"Midday exactly (12:00:00)"):
-          t"Sat, 25 Dec 2021 12:00:00 GMT".as[Instant over Unix]
+          "Sat, 25 Dec 2021 12:00:00 GMT".as[Instant over Unix]
         . assert(_ == Instant(1640433600000L))
 
         test(m"New Year's Eve (2022)"):
-          t"Sat, 31 Dec 2022 23:59:59 GMT".as[Instant over Unix]
+          "Sat, 31 Dec 2022 23:59:59 GMT".as[Instant over Unix]
         . assert(_ == Instant(1672531199000L))
 
         test(m"Short month name test (Jan)"):
-          t"Sun, 01 Jan 2023 00:00:00 GMT".as[Instant over Unix]
+          "Sun, 01 Jan 2023 00:00:00 GMT".as[Instant over Unix]
         . assert(_ == Instant(1672531200000L))
 
         test(m"Minimum valid time (00:00:00)"):
-          t"Sun, 10 Oct 2021 00:00:00 GMT".as[Instant over Unix]
+          "Sun, 10 Oct 2021 00:00:00 GMT".as[Instant over Unix]
         . assert(_ == Instant(1633824000000L))
 
       suite(m"Working days tests"):
@@ -828,32 +828,32 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == true)
 
       test(m"Year decode from text"):
-        t"2024".as[Year]
+        "2024".as[Year]
       . assert(_ == Year(2024))
 
     suite(m"Month operations"):
       test(m"Month from text: Jan"):
-        Month(t"Jan")
+        Month("Jan")
       . assert(_ == Jan)
 
       test(m"Month from text: Dec"):
-        Month(t"Dec")
+        Month("Dec")
       . assert(_ == Dec)
 
       test(m"Month from invalid text"):
-        capture(Month(t"foo"))
-      . assert(_ == Moment.Error(_.Unknown(t"foo", t"month")))
+        capture(Month("foo"))
+      . assert(_ == Moment.Error(_.Unknown("foo", "month")))
 
       test(m"Month from invalid number 0"):
         capture(Month(0))
-      . assert(_ == Moment.Error(_.Unknown(t"0", t"month")))
+      . assert(_ == Moment.Error(_.Unknown("0", "month")))
 
       test(m"Month from invalid number 13"):
         capture(Month(13))
-      . assert(_ == Moment.Error(_.Unknown(t"13", t"month")))
+      . assert(_ == Moment.Error(_.Unknown("13", "month")))
 
       test(m"Month.unapply on text matches"):
-        t"jan" match
+        "jan" match
           case Month(m) => m
           case _        => Jan
       . assert(_ == Jan)
@@ -962,13 +962,13 @@ object Tests extends Suite(m"Aviation Tests"):
         import dateEndianness.bigEndian, dateSeparators.dotDateSeparator
         import monthFormats.englishShortMonths
         (Mar - 14).show
-      . assert(_ == t"Mar.14")
+      . assert(_ == "Mar.14")
 
       test(m"Anniversary Showable, little-endian dot separator"):
         import dateEndianness.littleEndian, dateSeparators.dotDateSeparator
         import monthFormats.englishShortMonths
         (Mar - 14).show
-      . assert(_ == t"14.Mar")
+      . assert(_ == "14.Mar")
 
     suite(m"Monthstamp"):
       import calendars.gregorianCalendar
@@ -995,13 +995,13 @@ object Tests extends Suite(m"Aviation Tests"):
         import dateEndianness.bigEndian, dateSeparators.dotDateSeparator, yearFormats.fullYears
         import monthFormats.englishShortMonths
         (2024 - Mar).show
-      . assert(_ == t"Mar.2024")
+      . assert(_ == "Mar.2024")
 
       test(m"Monthstamp Showable, little-endian"):
         import dateEndianness.littleEndian, dateSeparators.dotDateSeparator, yearFormats.fullYears
         import monthFormats.englishShortMonths
         (2024 - Mar).show
-      . assert(_ == t"2024.Mar")
+      . assert(_ == "2024.Mar")
 
       test(m"Adding months to a Monthstamp stays a Monthstamp"):
         val ms: Monthstamp = (2024 - Jan) + 2*Month
@@ -1065,7 +1065,7 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"holiday returns the matching Holiday"):
         holidays.holiday(2025-Dec-25).let(_.name).or(t"")
-      . assert(_ == t"Christmas Day")
+      . assert(_ == "Christmas Day")
 
       test(m"holiday on a non-holiday returns Unset"):
         holidays.holiday(2025-Mar-15).absent
@@ -1101,27 +1101,27 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"european format"):
         import dateFormats.europeanDateFormat
         date.show
-      . assert(_ == t"07.04.2025")
+      . assert(_ == "07.04.2025")
 
       test(m"american format"):
         import dateFormats.americanDateFormat
         date.show
-      . assert(_ == t"04/07/2025")
+      . assert(_ == "04/07/2025")
 
       test(m"unitedKingdom format"):
         import dateFormats.unitedKingdomDateFormat
         date.show
-      . assert(_ == t"07/04/2025")
+      . assert(_ == "07/04/2025")
 
       test(m"southEastAsia format"):
         import dateFormats.southEastAsiaDateFormat
         date.show
-      . assert(_ == t"07-04-2025")
+      . assert(_ == "07-04-2025")
 
       test(m"iso8601 format"):
         import dateFormats.iso8601DateFormat
         date.show
-      . assert(_ == t"2025-04-07")
+      . assert(_ == "2025-04-07")
 
       test(m"two-digit year variant"):
         import dateEndianness.bigEndian
@@ -1129,7 +1129,7 @@ object Tests extends Suite(m"Aviation Tests"):
         import dateSeparators.hyphenDateSeparator
         import yearFormats.twoDigitsYears
         date.show
-      . assert(_ == t"25-04-07")
+      . assert(_ == "25-04-07")
 
       test(m"variable width single-digit month"):
         import dateEndianness.bigEndian
@@ -1137,7 +1137,7 @@ object Tests extends Suite(m"Aviation Tests"):
         import dateSeparators.hyphenDateSeparator
         import yearFormats.fullYears
         date.show
-      . assert(_ == t"2025-4-7")
+      . assert(_ == "2025-4-7")
 
     suite(m"Clockface Showable formats"):
       val time = Clockface(14, 30, 59)
@@ -1147,157 +1147,157 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"military format"):
         import timeFormats.militaryTimeFormat
         time.show
-      . assert(_ == t"1430")
+      . assert(_ == "1430")
 
       test(m"civilian format at 14:30"):
         import timeFormats.civilianTimeFormat
         time.show
-      . assert(_ == t"02:30 PM")
+      . assert(_ == "02:30 PM")
 
       test(m"civilian format at noon"):
         import timeFormats.civilianTimeFormat
         noon.show
-      . assert(_ == t"12:00 PM")
+      . assert(_ == "12:00 PM")
 
       test(m"civilian format at midnight"):
         import timeFormats.civilianTimeFormat
         midnight.show
-      . assert(_ == t"12:00 AM")
+      . assert(_ == "12:00 AM")
 
       test(m"associatedPress format"):
         import timeFormats.associatedPressTimeFormat
         time.show
-      . assert(_ == t"2:30 p.m.")
+      . assert(_ == "2:30 p.m.")
 
       test(m"french format"):
         import timeFormats.frenchTimeFormat
         time.show
-      . assert(_ == t"14h30")
+      . assert(_ == "14h30")
 
       test(m"iso8601 time format"):
         import timeFormats.iso8601TimeFormat
         time.show
-      . assert(_ == t"14:30:59")
+      . assert(_ == "14:30:59")
 
       test(m"ledger format"):
         import timeFormats.ledgerTimeFormat
         time.show
-      . assert(_ == t"14.30")
+      . assert(_ == "14.30")
 
       test(m"railway format"):
         import timeFormats.railwayTimeFormat
         time.show
-      . assert(_ == t"14:30")
+      . assert(_ == "14:30")
 
     suite(m"Weekday name formatters"):
 
       test(m"english full names: Mon"):
         weekdays.englishWeekdays.name(Mon)
-      . assert(_ == t"Monday")
+      . assert(_ == "Monday")
 
       test(m"english full names: Sun"):
         weekdays.englishWeekdays.name(Sun)
-      . assert(_ == t"Sunday")
+      . assert(_ == "Sunday")
 
       test(m"englishShort: Mon"):
         weekdays.englishShortWeekdays.name(Mon)
-      . assert(_ == t"Mon")
+      . assert(_ == "Mon")
 
       test(m"englishShort: Sun"):
         weekdays.englishShortWeekdays.name(Sun)
-      . assert(_ == t"Sun")
+      . assert(_ == "Sun")
 
       test(m"oneLetterAmbiguous: Mon"):
         weekdays.oneLetterAmbiguousWeekdays.name(Mon)
-      . assert(_ == t"M")
+      . assert(_ == "M")
 
       test(m"oneLetterAmbiguous: Tue"):
         weekdays.oneLetterAmbiguousWeekdays.name(Tue)
-      . assert(_ == t"T")
+      . assert(_ == "T")
 
       test(m"shortestUnambiguous: Tue"):
         weekdays.shortestUnambiguousWeekdays.name(Tue)
-      . assert(_ == t"Tu")
+      . assert(_ == "Tu")
 
       test(m"shortestUnambiguous: Thu"):
         weekdays.shortestUnambiguousWeekdays.name(Thu)
-      . assert(_ == t"Th")
+      . assert(_ == "Th")
 
       test(m"twoLetter: Mon"):
         weekdays.twoLetterWeekdays.name(Mon)
-      . assert(_ == t"Mo")
+      . assert(_ == "Mo")
 
       test(m"twoLetter: Sat"):
         weekdays.twoLetterWeekdays.name(Sat)
-      . assert(_ == t"Sa")
+      . assert(_ == "Sa")
 
     suite(m"Month name formatters"):
 
       test(m"english full names: Jan"):
         monthFormats.englishMonths.name(Jan)
-      . assert(_ == t"January")
+      . assert(_ == "January")
 
       test(m"english full names: Sep"):
         monthFormats.englishMonths.name(Sep)
-      . assert(_ == t"September")
+      . assert(_ == "September")
 
       test(m"englishShort: Jan"):
         monthFormats.englishShortMonths.name(Jan)
-      . assert(_ == t"Jan")
+      . assert(_ == "Jan")
 
       test(m"englishShort: Sep"):
         monthFormats.englishShortMonths.name(Sep)
-      . assert(_ == t"Sep")
+      . assert(_ == "Sep")
 
       test(m"oneLetterAmbiguous: Jan"):
         monthFormats.oneLetterAmbiguousMonths.name(Jan)
-      . assert(_ == t"J")
+      . assert(_ == "J")
 
       test(m"oneLetterAmbiguous: Mar"):
         monthFormats.oneLetterAmbiguousMonths.name(Mar)
-      . assert(_ == t"M")
+      . assert(_ == "M")
 
       test(m"numeric: Jan"):
         monthFormats.numericMonths.name(Jan)
-      . assert(_ == t"1")
+      . assert(_ == "1")
 
       test(m"numeric: Dec"):
         monthFormats.numericMonths.name(Dec)
-      . assert(_ == t"12")
+      . assert(_ == "12")
 
       test(m"twoDigit: Jan"):
         monthFormats.twoDigitMonths.name(Jan)
-      . assert(_ == t"01")
+      . assert(_ == "01")
 
       test(m"twoDigit: Dec"):
         monthFormats.twoDigitMonths.name(Dec)
-      . assert(_ == t"12")
+      . assert(_ == "12")
 
     suite(m"Meridiem formatters"):
 
       test(m"upper Am"):
         timeMeridiems.upperMeridiem.text(Meridiem.Am)
-      . assert(_ == t"AM")
+      . assert(_ == "AM")
 
       test(m"upper Pm"):
         timeMeridiems.upperMeridiem.text(Meridiem.Pm)
-      . assert(_ == t"PM")
+      . assert(_ == "PM")
 
       test(m"lower Am"):
         timeMeridiems.lowerMeridiem.text(Meridiem.Am)
-      . assert(_ == t"am")
+      . assert(_ == "am")
 
       test(m"lower Pm"):
         timeMeridiems.lowerMeridiem.text(Meridiem.Pm)
-      . assert(_ == t"pm")
+      . assert(_ == "pm")
 
       test(m"upperPunctuated Am"):
         timeMeridiems.upperPunctuatedMeridiem.text(Meridiem.Am)
-      . assert(_ == t"A.M.")
+      . assert(_ == "A.M.")
 
       test(m"lowerPunctuated Pm"):
         timeMeridiems.lowerPunctuatedMeridiem.text(Meridiem.Pm)
-      . assert(_ == t"p.m.")
+      . assert(_ == "p.m.")
 
     suite(m"Date arithmetic edge cases"):
       import calendars.gregorianCalendar
@@ -1403,22 +1403,22 @@ object Tests extends Suite(m"Aviation Tests"):
       import instantDecodables.iso8601InstantDecodable
 
       test(m"Non-digit at year start raises"):
-        capture(t"abcd-01-01".as[Instant over Unix])
+        capture("abcd-01-01".as[Instant over Unix])
       . matches:
           case _: Moment.Error =>
 
       test(m"Truncated year raises"):
-        capture(t"20".as[Instant over Unix])
+        capture("20".as[Instant over Unix])
       . matches:
           case _: Moment.Error =>
 
       test(m"Trailing junk after seconds raises"):
-        capture(t"2024-01-01T12:00:00garbage".as[Instant over Unix])
+        capture("2024-01-01T12:00:00garbage".as[Instant over Unix])
       . matches:
           case _: Moment.Error =>
 
       test(m"Bad week-date letter raises"):
-        capture(t"2024-X21-1".as[Instant over Unix])
+        capture("2024-X21-1".as[Instant over Unix])
       . matches:
           case _: Moment.Error =>
 
@@ -1426,22 +1426,22 @@ object Tests extends Suite(m"Aviation Tests"):
       import instantDecodables.rfc1123InstantDecodable
 
       test(m"Lowercase day name raises"):
-        capture(t"sun, 06 Nov 1994 08:49:37 GMT".as[Instant over Unix])
+        capture("sun, 06 Nov 1994 08:49:37 GMT".as[Instant over Unix])
       . matches:
           case _: Moment.Error =>
 
       test(m"Wrong month abbreviation raises"):
-        capture(t"Sun, 06 Jux 1994 08:49:37 GMT".as[Instant over Unix])
+        capture("Sun, 06 Jux 1994 08:49:37 GMT".as[Instant over Unix])
       . matches:
           case _: Moment.Error =>
 
       test(m"Missing trailing GMT raises"):
-        capture(t"Sun, 06 Nov 1994 08:49:37".as[Instant over Unix])
+        capture("Sun, 06 Nov 1994 08:49:37".as[Instant over Unix])
       . matches:
           case _: Moment.Error =>
 
       test(m"Truncated input raises"):
-        capture(t"Sun, ".as[Instant over Unix])
+        capture("Sun, ".as[Instant over Unix])
       . matches:
           case _: Moment.Error =>
 
@@ -1822,21 +1822,21 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"A Coptic date displays with its month name"):
         import calendars.copticCalendar
         copticCalendar.format(unsafely(Date(Year(1716), CopticMonth.Koiak, Day(22))))
-      . assert(_ == t"22 Koiak 1716")
+      . assert(_ == "22 Koiak 1716")
 
       test(m"Islamic month names are polished"):
         IslamicMonth.RabiAlAwwal.show
-      . assert(_ == t"Rabi I")
+      . assert(_ == "Rabi I")
 
       test(m"An Islamic date displays with its month name"):
         import calendars.islamicCalendar
         islamicCalendar.format(unsafely(Date(Year(1445), IslamicMonth.Ramadan, Day(15))))
-      . assert(_ == t"15 Ramadan 1445")
+      . assert(_ == "15 Ramadan 1445")
 
       test(m"The Hebrew leap month displays as Adar II"):
         import calendars.hebrewCalendar
         hebrewCalendar.format(unsafely(Date(Year(5784), HebrewMonth.AdarSheni, Day(1))))
-      . assert(_ == t"1 Adar II 5784")
+      . assert(_ == "1 Adar II 5784")
 
     suite(m"Clock"):
       test(m"Clock.fixed returns the same instant"):
@@ -2037,15 +2037,15 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"A bounded recurrence renders in ISO 8601 repeating-interval form"):
         Recurrence(2024-Jan-1, 1*Day, 5).encode
-      . assert(_ == t"R5/2024-01-01/P1D")
+      . assert(_ == "R5/2024-01-01/P1D")
 
       test(m"An unbounded recurrence renders with a bare R"):
         Recurrence(2024-Jan-1, 1*Day).encode
-      . assert(_ == t"R/2024-01-01/P1D")
+      . assert(_ == "R/2024-01-01/P1D")
 
       test(m"A recurrence round-trips from ISO 8601"):
         import monthEnds.clampMonthEnd
-        t"R3/2024-01-01/P1M".as[Recurrence of Date by (Timespan of Month.type)].occurrences.stdlib.to(List)
+        "R3/2024-01-01/P1M".as[Recurrence of Date by (Timespan of Month.type)].occurrences.stdlib.to(List)
       . assert(_ == List(2024-Jan-1, 2024-Feb-1, 2024-Mar-1))
 
       test(m"A rec literal builds a date recurrence at compile time"):
@@ -2060,7 +2060,7 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"A bounded rec literal round-trips its encoding"):
         rec"R5/2024-06-01/P1D".encode
-      . assert(_ == t"R5/2024-06-01/P1D")
+      . assert(_ == "R5/2024-06-01/P1D")
 
       test(m"An unbounded rec literal has no repetition count"):
         rec"R/2024-01-01/P1M".repetitions
@@ -2129,7 +2129,7 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"An rrule renders as an RFC 5545 rule string"):
         Rrule(2024-Jan-1, Frequency.Monthly, interval = 2, count = 10,
             byDay = List(WeekdayOrdinal(Mon, 3))).encode
-      . assert(_ == t"FREQ=MONTHLY;INTERVAL=2;COUNT=10;BYDAY=3MO")
+      . assert(_ == "FREQ=MONTHLY;INTERVAL=2;COUNT=10;BYDAY=3MO")
 
       test(m"An rrule round-trips through its RFC 5545 string"):
         val rule = Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
@@ -2138,11 +2138,11 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == true)
 
       test(m"A parsed rrule generates the right occurrences"):
-        Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences.stdlib.take(2).to(List)
+        Rrule.parse("FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences.stdlib.take(2).to(List)
       . assert(_ == List(2024-Jan-26, 2024-Feb-23))
 
       test(m"An invalid rrule string raises Rrule.Error"):
-        capture(Rrule.parse(t"FREQ=FORTNIGHTLY", 2024-Jan-1))
+        capture(Rrule.parse("FREQ=FORTNIGHTLY", 2024-Jan-1))
       . matches:
           case _: Rrule.Error =>
 
@@ -2222,30 +2222,30 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"An rrule reads as plain English"):
         Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
-      . assert(_ == t"every month on the 3rd Monday")
+      . assert(_ == "every month on the 3rd Monday")
 
       test(m"A yearly rule names the month and weekday"):
         Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
             byDay = List(WeekdayOrdinal(Thu, 4))).show
-      . assert(_ == t"every year on the 4th Thursday of November")
+      . assert(_ == "every year on the 4th Thursday of November")
 
       test(m"A multi-weekday weekly rule with a count"):
         Rrule(2024-Jan-1, Frequency.Weekly, byDay = List(WeekdayOrdinal(Mon), WeekdayOrdinal(Wed),
             WeekdayOrdinal(Fri)), count = 10).show
-      . assert(_ == t"every week on Monday, Wednesday and Friday, 10 times")
+      . assert(_ == "every week on Monday, Wednesday and Friday, 10 times")
 
       test(m"The last day of the month"):
         Rrule(2024-Jan-1, Frequency.Monthly, byMonthDay = List(-1)).show
-      . assert(_ == t"every month on the last day")
+      . assert(_ == "every month on the last day")
 
       test(m"An interval reads as 'every N units'"):
         Rrule(2024-Jan-1, Frequency.Daily, interval = 3).show
-      . assert(_ == t"every 3 days")
+      . assert(_ == "every 3 days")
 
       test(m"A Recurrence reads as plain English"):
         import dateFormats.iso8601DateFormat
         Recurrence(2024-Jan-1, 2*Week, 5).show
-      . assert(_ == t"every 2 weeks, 5 times from 2024-01-01")
+      . assert(_ == "every 2 weeks, 5 times from 2024-01-01")
 
     suite(m"French descriptions"):
       given Locale[fr] = Locale(fr)
@@ -2255,21 +2255,21 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"The 3rd Monday of each month, in French"):
         Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
-      . assert(_ == t"tous les mois le 3e lundi")
+      . assert(_ == "tous les mois le 3e lundi")
 
       test(m"Thanksgiving, in French"):
         Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
             byDay = List(WeekdayOrdinal(Thu, 4))).show
-      . assert(_ == t"tous les ans le 4e jeudi de novembre")
+      . assert(_ == "tous les ans le 4e jeudi de novembre")
 
       test(m"A relative timespan, in French"):
         Timespan(minutes = 18).show
-      . assert(_ == t"dans 18 minutes")
+      . assert(_ == "dans 18 minutes")
 
       test(m"A recurrence, in French"):
         import dateFormats.iso8601DateFormat
         Recurrence(2024-Jan-1, 2*Week, 5).show
-      . assert(_ == t"toutes les 2 semaines, 5 fois à partir du 2024-01-01")
+      . assert(_ == "toutes les 2 semaines, 5 fois à partir du 2024-01-01")
 
     suite(m"German descriptions"):
       given Locale[de] = Locale(de)
@@ -2279,16 +2279,16 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"The 3rd Monday of each month, in German"):
         Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
-      . assert(_ == t"jeden Monat am 3. Montag")
+      . assert(_ == "jeden Monat am 3. Montag")
 
       test(m"Thanksgiving, in German"):
         Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
             byDay = List(WeekdayOrdinal(Thu, 4))).show
-      . assert(_ == t"jedes Jahr am 4. Donnerstag im November")
+      . assert(_ == "jedes Jahr am 4. Donnerstag im November")
 
       test(m"A relative timespan, in German"):
         Timespan(minutes = 18).show
-      . assert(_ == t"in 18 Minuten")
+      . assert(_ == "in 18 Minuten")
 
     suite(m"Spanish descriptions"):
       given Locale[es] = Locale(es)
@@ -2298,20 +2298,20 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"The 3rd Monday of each month, in Spanish"):
         Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
-      . assert(_ == t"cada mes el tercer lunes")
+      . assert(_ == "cada mes el tercer lunes")
 
       test(m"Thanksgiving, in Spanish"):
         Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
             byDay = List(WeekdayOrdinal(Thu, 4))).show
-      . assert(_ == t"cada año el cuarto jueves de noviembre")
+      . assert(_ == "cada año el cuarto jueves de noviembre")
 
       test(m"A future relative timespan, in Spanish"):
         Timespan(minutes = 18).show
-      . assert(_ == t"en 18 minutos")
+      . assert(_ == "en 18 minutos")
 
       test(m"A past relative timespan, in Spanish"):
         Timespan(minutes = -18).show
-      . assert(_ == t"hace 18 minutos")
+      . assert(_ == "hace 18 minutos")
 
     suite(m"Locale gating"):
       import monthFormats.englishMonths
@@ -2374,22 +2374,22 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == Timestamp(1970-Jan-1, Clockface(0, 0, 0)))
 
       test(m"Same instant in London during winter is GMT (offset 0)"):
-        val winter = t"2024-01-15T12:00:00Z".as[Instant over Unix](using instantDecodables.iso8601InstantDecodable)
+        val winter = "2024-01-15T12:00:00Z".as[Instant over Unix](using instantDecodables.iso8601InstantDecodable)
         winter.in(tz"Europe/London").time.hour
       . assert(_ == 12)
 
       test(m"Same instant in London during summer is BST (offset +1)"):
-        val summer = t"2024-07-15T12:00:00Z".as[Instant over Unix](using instantDecodables.iso8601InstantDecodable)
+        val summer = "2024-07-15T12:00:00Z".as[Instant over Unix](using instantDecodables.iso8601InstantDecodable)
         summer.in(tz"Europe/London").time.hour
       . assert(_ == 13)
 
       test(m"New York winter offset (UTC-5)"):
-        val winter = t"2024-01-15T12:00:00Z".as[Instant over Unix](using instantDecodables.iso8601InstantDecodable)
+        val winter = "2024-01-15T12:00:00Z".as[Instant over Unix](using instantDecodables.iso8601InstantDecodable)
         winter.in(tz"America/New_York").time.hour
       . assert(_ == 7)
 
       test(m"New York summer offset (UTC-4)"):
-        val summer = t"2024-07-15T12:00:00Z".as[Instant over Unix](using instantDecodables.iso8601InstantDecodable)
+        val summer = "2024-07-15T12:00:00Z".as[Instant over Unix](using instantDecodables.iso8601InstantDecodable)
         summer.in(tz"America/New_York").time.hour
       . assert(_ == 8)
 
@@ -2412,31 +2412,31 @@ object Tests extends Suite(m"Aviation Tests"):
         import gapPolicies.pushBackwardGapPolicy
         given Timezone = tz"Europe/London"
         val grounded = Timestamp(2024-Mar-31, Clockface(1, 30, 0)).instant
-        grounded == t"2024-03-31T00:30:00Z".as[Instant over Unix]
+        grounded == "2024-03-31T00:30:00Z".as[Instant over Unix]
       . assert(_ == true)
 
       // On 2024-10-27 London clocks go back at 02:00 BST, so 01:30 local occurs twice: first at
       // 00:30 UTC (BST), then again at 01:30 UTC (GMT).
       test(m"DST fall-back: earlier overlap occurrence round-trips through London"):
         import instantDecodables.iso8601InstantDecodable
-        val earlier = t"2024-10-27T00:30:00Z".as[Instant over Unix]
+        val earlier = "2024-10-27T00:30:00Z".as[Instant over Unix]
         earlier.in(tz"Europe/London").instant == earlier
       . assert(_ == true)
 
       test(m"DST fall-back: later overlap occurrence round-trips through London"):
         import instantDecodables.iso8601InstantDecodable
-        val later = t"2024-10-27T01:30:00Z".as[Instant over Unix]
+        val later = "2024-10-27T01:30:00Z".as[Instant over Unix]
         later.in(tz"Europe/London").instant == later
       . assert(_ == true)
 
       test(m"DST fall-back: later overlap occurrence is flagged Second"):
         import instantDecodables.iso8601InstantDecodable
-        t"2024-10-27T01:30:00Z".as[Instant over Unix].in(tz"Europe/London").occurrence
+        "2024-10-27T01:30:00Z".as[Instant over Unix].in(tz"Europe/London").occurrence
       . assert(_ == Occurrence.Second)
 
       test(m"DST fall-back: earlier overlap occurrence is flagged First"):
         import instantDecodables.iso8601InstantDecodable
-        t"2024-10-27T00:30:00Z".as[Instant over Unix].in(tz"Europe/London").occurrence
+        "2024-10-27T00:30:00Z".as[Instant over Unix].in(tz"Europe/London").occurrence
       . assert(_ == Occurrence.First)
 
       test(m"The two overlap occurrences ground one hour apart"):
@@ -2451,14 +2451,14 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Spring-forward gap pushes forward by default"):
         import instantDecodables.iso8601InstantDecodable
         val grounded = Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant
-        grounded == t"2024-03-31T01:30:00Z".as[Instant over Unix]
+        grounded == "2024-03-31T01:30:00Z".as[Instant over Unix]
       . assert(_ == true)
 
       test(m"Spring-forward gap can push backward"):
         import instantDecodables.iso8601InstantDecodable
         import gapPolicies.pushBackwardGapPolicy
         val grounded = Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant
-        grounded == t"2024-03-31T00:30:00Z".as[Instant over Unix]
+        grounded == "2024-03-31T00:30:00Z".as[Instant over Unix]
       . assert(_ == true)
 
       test(m"Spring-forward gap can be rejected"):
@@ -2467,7 +2467,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == Moment.Error(_.Gap))
 
       test(m"Timezone(t\"NotARealZone\") raises Timezone.Error"):
-        capture(Timezone(t"NotARealZone"))
+        capture(Timezone("NotARealZone"))
       . matches:
           case _: Timezone.Error =>
 
@@ -2531,7 +2531,7 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"A zoned leap second renders as :60"):
         val moment: Moment = ts"2016-12-31T23:59:60Z"
         moment.show
-      . assert(_ == t"2016-12-31T23:59:60Z")
+      . assert(_ == "2016-12-31T23:59:60Z")
 
       test(m"A zoneless leap second is a compile error"):
         demilitarize(ts"2016-12-31T23:59:60")
@@ -2593,17 +2593,17 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == 12_000L)
 
       test(m"Instant in 2017 has +37 offset"):
-        val later = t"2017-06-15T00:00:00Z".as[Instant over Unix](using instantDecodables.iso8601InstantDecodable)
+        val later = "2017-06-15T00:00:00Z".as[Instant over Unix](using instantDecodables.iso8601InstantDecodable)
         LeapSeconds.tai(later.long) - later.long
       . assert(_ == 37_000L)
 
       test(m"Instant.over[Tai] counts leap seconds"):
-        val later = t"2017-06-15T00:00:00Z".as[Instant over Unix]
+        val later = "2017-06-15T00:00:00Z".as[Instant over Unix]
         later.over[Tai].long - later.long
       . assert(_ == 37_000L)
 
       test(m"An instant round-trips through TAI and back to POSIX"):
-        val instant = t"2017-06-15T00:00:00Z".as[Instant over Unix]
+        val instant = "2017-06-15T00:00:00Z".as[Instant over Unix]
         instant.over[Tai].over[Unix] == instant
       . assert(_ == true)
 
@@ -2614,7 +2614,7 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"An inserted leap second grounds to the following second"):
         val leapMoment = Moment(2016-Dec-31, Clockface(23, 59, 59), tz"UTC", leap = Leap.Inserted)
-        leapMoment.instant == t"2017-01-01T00:00:00Z".as[Instant over Unix]
+        leapMoment.instant == "2017-01-01T00:00:00Z".as[Instant over Unix]
       . assert(_ == true)
 
       test(m"An inserted leap second's TAI is one second before the following second"):
@@ -2647,18 +2647,18 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"A Timespan encodes as an ISO-8601 duration"):
         Timespan(years = 1, months = 2, days = 3, hours = 4, minutes = 5, seconds = Quantity(6.0))
         . encode
-      . assert(_ == t"P1Y2M3DT4H5M6S")
+      . assert(_ == "P1Y2M3DT4H5M6S")
 
       test(m"A zero Timespan encodes as PT0S"):
         Timespan().encode
-      . assert(_ == t"PT0S")
+      . assert(_ == "PT0S")
 
       test(m"Fractional seconds encode with a decimal point"):
         Timespan(seconds = Quantity(1.5)).encode
-      . assert(_ == t"PT1.5S")
+      . assert(_ == "PT1.5S")
 
       test(m"An ISO-8601 duration parses to a Timespan"):
-        t"P1Y2M3DT4H5M6S".as[Timespan]
+        "P1Y2M3DT4H5M6S".as[Timespan]
       . assert(_ == Timespan(years = 1, months = 2, days = 3, hours = 4, minutes = 5,
             seconds = Quantity(6.0)))
 
@@ -2668,8 +2668,8 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == true)
 
       test(m"A bare P is not a valid duration"):
-        capture(t"P".as[Timespan])
-      . assert(_ == Timespan.Error(t"P"))
+        capture("P".as[Timespan])
+      . assert(_ == Timespan.Error("P"))
 
       test(m"A dur literal parses a duration at compile time"):
         dur"P1Y2M3DT4H5M6S"
@@ -2694,31 +2694,31 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"A future single component reads as \"in …\""):
         Timespan(minutes = 18).show
-      . assert(_ == t"in 18 minutes")
+      . assert(_ == "in 18 minutes")
 
       test(m"A future two-component span joins with \"and\""):
         Timespan(hours = 1, seconds = Quantity(6.0)).show
-      . assert(_ == t"in 1 hour and 6 seconds")
+      . assert(_ == "in 1 hour and 6 seconds")
 
       test(m"A past single component reads as \"… ago\""):
         Timespan(minutes = -8).show
-      . assert(_ == t"8 minutes ago")
+      . assert(_ == "8 minutes ago")
 
       test(m"A past two-component span reads as \"… ago\""):
         Timespan(hours = -12, minutes = -38).show
-      . assert(_ == t"12 hours and 38 minutes ago")
+      . assert(_ == "12 hours and 38 minutes ago")
 
       test(m"A singular component is not pluralised"):
         Timespan(hours = 1).show
-      . assert(_ == t"in 1 hour")
+      . assert(_ == "in 1 hour")
 
       test(m"Three components use commas and a final \"and\""):
         Timespan(hours = 2, minutes = 5, seconds = Quantity(3.0)).show
-      . assert(_ == t"in 2 hours, 5 minutes and 3 seconds")
+      . assert(_ == "in 2 hours, 5 minutes and 3 seconds")
 
       test(m"A zero timespan reads as \"just now\""):
         Timespan().show
-      . assert(_ == t"just now")
+      . assert(_ == "just now")
 
     suite(m"Horology sexagesimal"):
       val horology = Horology.sexagesimal
@@ -2775,7 +2775,7 @@ object Tests extends Suite(m"Aviation Tests"):
         import dateFormats.iso8601DateFormat
         import timeFormats.iso8601TimeFormat
         Timestamp(2024-Jan-15, Clockface(14, 30, 59)).show
-      . assert(_ == t"14:30:59, 2024-01-15")
+      . assert(_ == "14:30:59, 2024-01-15")
 
       test(m"Timestamp.year accessor"):
         Timestamp(2024-Mar-15, Clockface(0, 0, 0)).year
@@ -2800,20 +2800,20 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == (2024, Mar))
 
       test(m"Timestamp.decode 'YYYY-MM-DDTHH:MM:SS'"):
-        t"2024-01-15T14:30:59".as[Timestamp]
+        "2024-01-15T14:30:59".as[Timestamp]
       . assert(_ == Timestamp(2024-Jan-15, Clockface(14, 30, 59)))
 
       test(m"Timestamp.decode 'YYYY-MM-DD HH:MM:SS'"):
-        t"2024-01-15 14:30:59".as[Timestamp]
+        "2024-01-15 14:30:59".as[Timestamp]
       . assert(_ == Timestamp(2024-Jan-15, Clockface(14, 30, 59)))
 
       test(m"Timestamp.decode rejects malformed input"):
-        capture(t"not-a-timestamp".as[Timestamp])
+        capture("not-a-timestamp".as[Timestamp])
       . matches:
           case _: Timestamp.Error =>
 
       test(m"Timestamp.decode rejects invalid month"):
-        capture(t"2024-13-15T14:30:59".as[Timestamp])
+        capture("2024-13-15T14:30:59".as[Timestamp])
       . matches:
           case _: Timestamp.Error =>
 
@@ -2849,44 +2849,44 @@ object Tests extends Suite(m"Aviation Tests"):
         def log(level: Level, timestamp: Long, event: => Tzdb.Event): Unit = ()
 
       test(m"parseFile on a non-existent file raises NoTzdbFile"):
-        capture(Tzdb.parseFile(t"this-does-not-exist"))
+        capture(Tzdb.parseFile("this-does-not-exist"))
       . matches:
           case _: Tzdb.Error =>
 
       test(m"parses a single Rule line"):
-        val lines = Chain(t"Rule\tUS\t2007\tmax\t-\tMar\tSun>=8\t2:00\t1:00\tD")
-        Tzdb.parse(t"inline", lines).prim
+        val lines = Chain("Rule\tUS\t2007\tmax\t-\tMar\tSun>=8\t2:00\t1:00\tD")
+        Tzdb.parse("inline", lines).prim
       . matches:
           case _: Tzdb.Entry.Rule =>
 
       test(m"parses a single Link line"):
-        val lines = Chain(t"Link\tEurope/London\tEurope/Belfast")
-        Tzdb.parse(t"inline", lines).prim
+        val lines = Chain("Link\tEurope/London\tEurope/Belfast")
+        Tzdb.parse("inline", lines).prim
       . matches:
           case _: Tzdb.Entry.Link =>
 
       test(m"parses a leap line with normal-time"):
-        val lines = Chain(t"Leap\t1972\tJun\t30\t23:59:59\t+\tS")
-        Tzdb.parse(t"inline", lines).prim
+        val lines = Chain("Leap\t1972\tJun\t30\t23:59:59\t+\tS")
+        Tzdb.parse("inline", lines).prim
       . matches:
           case _: Tzdb.Entry.Leap =>
 
       test(m"leap line with 60-second time raises Tzdb.Error"):
-        val lines = Chain(t"Leap\t1972\tJun\t30\t23:59:60\t+\tS")
-        capture(Tzdb.parse(t"inline", lines))
+        val lines = Chain("Leap\t1972\tJun\t30\t23:59:60\t+\tS")
+        capture(Tzdb.parse("inline", lines))
       . matches:
           case _: Tzdb.Error =>
 
 
       test(m"unparseable Rule raises UnexpectedRule"):
-        val lines = Chain(t"Rule\tonly")
-        capture(Tzdb.parse(t"inline", lines))
+        val lines = Chain("Rule\tonly")
+        capture(Tzdb.parse("inline", lines))
       . matches:
           case _: Tzdb.Error =>
 
       test(m"unparseable Link raises UnexpectedLink"):
-        val lines = Chain(t"Link\tonly")
-        capture(Tzdb.parse(t"inline", lines))
+        val lines = Chain("Link\tonly")
+        capture(Tzdb.parse("inline", lines))
       . matches:
           case _: Tzdb.Error =>
 
@@ -2923,11 +2923,11 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"An RFC 1123 timestamp with several bad fields accrues each error"):
         // Both day digits and one year digit are wrong: three independent format errors,
         // and no phantom `Invalid`-date error from a synthesised fallback date.
-        collectTime { Rfc1123.parse(t"Wed, XY Jul 20A2 17:45:00 GMT"); () }.count
+        collectTime { Rfc1123.parse("Wed, XY Jul 20A2 17:45:00 GMT"); () }.count
       . assert(_ == 3)
 
       test(m"A truncated ISO 8601 date accrues one error, not a masqueraded today()"):
-        collectTime { Iso8601.parse(t"2011-"); () }.count
+        collectTime { Iso8601.parse("2011-"); () }.count
       . assert(_ == 1)
 
     suite(m"Native-rendering coverage"):
@@ -2948,42 +2948,42 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"a date inspects as an ISO 8601 timestamp"):
         (2024-Jan-15).inspect
-      . assert(_ == t"2024-01-15T00:00:00")
+      . assert(_ == "2024-01-15T00:00:00")
 
       test(m"a timestamp keeps its time of day"):
         ts"2024-01-15T09:30:00".inspect
-      . assert(_ == t"2024-01-15T09:30:00")
+      . assert(_ == "2024-01-15T09:30:00")
 
       // Ascribed: `Year.apply` is `inline`, so an unascribed `ts"2024"` types as the underlying
       // `Int` and would reach `Int`'s instance rather than `Year`'s.
       test(m"a year is not rendered as a bare number"):
         (ts"2024": Year).inspect
-      . assert(_ == t"2024ʸ")
+      . assert(_ == "2024ʸ")
 
       test(m"a day of the month is not rendered as a bare number"):
         (Day(8): Day).inspect
-      . assert(_ == t"8ᵈ")
+      . assert(_ == "8ᵈ")
 
       test(m"a count of working days has its own suffix"):
         WorkingDays(5).inspect
-      . assert(_ == t"5ʷᵈ")
+      . assert(_ == "5ʷᵈ")
 
       test(m"an instant shows its raw ticks"):
         Instant.of[Unix](1720000000000L).inspect
-      . assert(_ == t"⧗1720000000000")
+      . assert(_ == "⧗1720000000000")
 
       test(m"an anniversary inspects as an ISO yearless date"):
         (2024-Jan-15).anniversary.inspect
-      . assert(_ == t"--01-15")
+      . assert(_ == "--01-15")
 
       test(m"a timespan inspects as an ISO 8601 duration"):
         dur"P1Y2M3DT4H5M6S".inspect
-      . assert(_ == t"P1Y2M3DT4H5M6S")
+      . assert(_ == "P1Y2M3DT4H5M6S")
 
       test(m"a recurrence inspects as an ISO repeating interval"):
         rec"R3/2024-01-01/P1M".inspect
-      . assert(_ == t"R3/2024-01-01T00:00:00/P1M")
+      . assert(_ == "R3/2024-01-01T00:00:00/P1M")
 
       test(m"a recurrence rule carries its start"):
         Rrule(2024-Jan-15, Frequency.Monthly, count = 4).inspect
-      . assert(_ == t"Rrule(2024-01-15T00:00:00 ╱ FREQ=MONTHLY;COUNT=4)")
+      . assert(_ == "Rrule(2024-01-15T00:00:00 ╱ FREQ=MONTHLY;COUNT=4)")

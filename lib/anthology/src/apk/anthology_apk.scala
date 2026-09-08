@@ -89,7 +89,7 @@ object apkEdges:
   private object ApkTool extends Tool:
     type Settings = Apk.Configuration
 
-    def name: Text = t"apk"
+    def name: Text = "apk"
     def initial: Apk.Configuration = Apk.Configuration.default
 
     def run
@@ -121,7 +121,7 @@ object apkEdges:
       jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
 
       val dexEntries = unsafely(Zipfile.read(dexArchive).entries).filter: entry =>
-        entry.ref.encode.ends(t".dex")
+        entry.ref.encode.ends(".dex")
 
       // The binary manifest, built from the configuration and the launcher activity.
       val manifest =

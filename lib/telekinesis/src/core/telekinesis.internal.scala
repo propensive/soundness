@@ -152,7 +152,7 @@ object internal:
               caps.unsafe.unsafeAssumePure($loggable)
             val host: Host = $submit.host
             val path = $submit.originForm
-            val contentType = Http.Header("content-type".tt, postable0.mediaType($payload).show)
+            val contentType = Http.Header("content-type", postable0.mediaType($payload).show)
 
             val request =
               Http.Request

@@ -171,17 +171,17 @@ object TelBlueprint:
         Member.Value(Text(s.validators.prim.or(t"string").s + suffix))
 
       case Tels.Flag =>
-        Member.Value(t"flag")
+        Member.Value("flag")
 
       case Tels.Reference(name) =>
         schema.scalars.seek(_.name == name).lay:
-          schema.records.seek(_.name == name).lay(Member.Value(t"tel")): rec =>
-            Member.Record(t"object", fieldsOf(Tels.Struct(rec.members, rec.validators), schema))
+          schema.records.seek(_.name == name).lay(Member.Value("tel")): rec =>
+            Member.Record("object", fieldsOf(Tels.Struct(rec.members, rec.validators), schema))
         . apply: sc =>
           Member.Value(Text(sc.validators.prim.or(t"string").s + suffix))
 
       case _: Tels.Struct =>
-        Member.Value(t"tel")
+        Member.Value("tel")
 
 abstract class TelBlueprint(val tels: Tels) extends Specification:
   type Origin = Tel

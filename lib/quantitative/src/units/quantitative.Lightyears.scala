@@ -36,7 +36,7 @@ import anticipation.*
 import rudiments.*
 
 object Lightyears:
-  given designation: Designation[Lightyears[1]] = () => "ly".tt
+  given designation: Designation[Lightyears[1]] = () => "ly"
   inline given ratio: Ratio[Lightyears[1] & Metres[-1], 1.057E-16] = !!
 
 trait Lightyears[Power <: Nat] extends Units[Power, Distance]

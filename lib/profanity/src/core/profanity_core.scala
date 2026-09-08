@@ -128,8 +128,8 @@ package terminalFeatures:
 
   given alternateScreenFeature: Terminal.Feature = Terminal.Feature(t"\e[?1049h", t"\e[?1049l")
   given kittyKeyboardFeature: Terminal.Feature = Terminal.Feature(t"\e[>1u", t"\e[<u")
-  given backgroundColorFeature: Terminal.Feature = Terminal.Feature(t"\e]11;?\e\\", t"")
-  given terminalSizeFeature: Terminal.Feature = Terminal.Feature(Terminal.reportSize, t"")
+  given backgroundColorFeature: Terminal.Feature = Terminal.Feature(t"\e]11;?\e\\", "")
+  given terminalSizeFeature: Terminal.Feature = Terminal.Feature(Terminal.reportSize, "")
 
 type UnixSignal = Interrupt
 

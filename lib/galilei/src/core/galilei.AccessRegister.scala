@@ -57,7 +57,7 @@ object AccessRegister:
   private var registrations: List[Registration] = Nil
 
   // The filesystem root would defeat the `+ "/"` prefix test, so it is normalized to empty.
-  private def normalize(real: Text): Text = if real == t"/" then t"" else real
+  private def normalize(real: Text): Text = if real == "/" then "" else real
 
   private def overlapping(left: Text, right: Text): Boolean =
     left == right || left.starts(t"$right/") || right.starts(t"$left/")

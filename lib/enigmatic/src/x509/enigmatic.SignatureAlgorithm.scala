@@ -44,13 +44,13 @@ object SignatureAlgorithm:
   // RSASSA-PKCS1-v1_5 identifiers live under the PKCS#1 arc, and RFC 3279 requires the parameters
   // field to be present and NULL — not absent.
   given rsa: [bits <: 1024 | 2048 | 3072 | 4096] => Rsa[bits] is SignatureAlgorithm = digest =>
-    arc(digest, t"SHA256" -> 11, t"SHA384" -> 12, t"SHA512" -> 13).let: last =>
+    arc(digest, "SHA256" -> 11, "SHA384" -> 12, "SHA512" -> 13).let: last =>
       Asn1.Sequence(List(Asn1.ObjectId(List(1, 2, 840, 113549, 1, 1, last)), Asn1.Null))
 
   // ECDSA identifiers live under the ANSI X9.62 arc, and RFC 5758 requires the parameters field to
   // be absent, since the curve is already named by the public key.
   given ecdsa: [bits <: 256 | 384 | 521] => Ecdsa[bits] is SignatureAlgorithm = digest =>
-    arc(digest, t"SHA256" -> 2, t"SHA384" -> 3, t"SHA512" -> 4).let: last =>
+    arc(digest, "SHA256" -> 2, "SHA384" -> 3, "SHA512" -> 4).let: last =>
       Asn1.Sequence(List(Asn1.ObjectId(List(1, 2, 840, 10045, 4, 3, last))))
 
   private def arc(digest: Signature.Digest, entries: (Text, Int)*): Optional[Int] =

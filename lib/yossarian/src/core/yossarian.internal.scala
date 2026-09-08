@@ -50,7 +50,7 @@ object internal:
     def apply[styling: ClassTag](width: Int, height: Int, blank: styling): Screen[styling] =
       val graphemes = scala.Array.fill[Grapheme](width*height)(Grapheme(" "))
       val styles = scala.Array.fill[styling](width*height)(blank)
-      val links = scala.Array.fill[Text](width*height)(t"")
+      val links = scala.Array.fill[Text](width*height)("")
       new Screen(width, blank, styles, graphemes, links)
 
     // The terminal-emulator buffer: cells are `yossarian.Style` blanked to the
@@ -153,7 +153,7 @@ object internal:
       while i < offset do
         styleTarget(fillStart + i) = blank
         graphemeTarget(fillStart + i) = Grapheme(" ")
-        linkTarget(fillStart + i) = t""
+        linkTarget(fillStart + i) = ""
         i += 1
 
     def set(x: Ordinal, y: Ordinal, grapheme: Grapheme, style: styling, link: Text): Unit =
@@ -201,17 +201,17 @@ object internal:
 
     given inspectable: Style is Inspectable = style =>
       Map
-        ( t"Bo" -> Bit.Bold(style),
-          t"F"  -> Bit.Faint(style),
-          t"I"  -> Bit.Italic(style),
-          t"S"  -> Bit.Strike(style),
-          t"Bl" -> Bit.Blink(style),
-          t"U"  -> Bit.Underline(style),
-          t"C"  -> Bit.Conceal(style),
-          t"R"  -> Bit.Reverse(style) )
+        ( "Bo" -> Bit.Bold(style),
+          "F"  -> Bit.Faint(style),
+          "I"  -> Bit.Italic(style),
+          "S"  -> Bit.Strike(style),
+          "Bl" -> Bit.Blink(style),
+          "U"  -> Bit.Underline(style),
+          "C"  -> Bit.Conceal(style),
+          "R"  -> Bit.Reverse(style) )
 
       .   remap: (key, value) => if value then key else t"!$key"
-      .   join(t"[", t" ", t" ${Foreground(style).inspect} ${Background(style).inspect}]")
+      .   join("[", " ", t" ${Foreground(style).inspect} ${Background(style).inspect}]")
 
     enum Bit:
       case Bold, Faint, Italic, Strike, Blink, Underline, Conceal, Reverse

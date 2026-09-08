@@ -56,7 +56,7 @@ import denominative.dysasymptotics.linearSize
 object Tests extends Suite(m"Profanity Tests"):
   def run(): Unit =
     supervise:
-      val launcher = Enclave(t"profanity-fixture").dispatch:
+      val launcher = Enclave("profanity-fixture").dispatch:
         ' {
             import executives.completionsExecutive
             import interpreters.posixInterpreter
@@ -67,7 +67,7 @@ object Tests extends Suite(m"Profanity Tests"):
                 case Argument("echo") :: Nil =>
                   execute:
                     interactive: terminal ?=>
-                      Out.println(t"READY")
+                      Out.println("READY")
                       val iter = terminal.eventIterator()
                       var done = false
                       while !done && iter.hasNext do iter.next() match
@@ -80,7 +80,7 @@ object Tests extends Suite(m"Profanity Tests"):
                 case Argument("line-editor") :: Nil =>
                   execute:
                     interactive: terminal ?=>
-                      Out.println(t"READY")
+                      Out.println("READY")
                       LineEditor().ask: result =>
                         Out.println(t"RESULT:$result")
                       Exit.Ok
@@ -90,7 +90,7 @@ object Tests extends Suite(m"Profanity Tests"):
                     interactive: terminal ?=>
                       terminal.columns = w.as[Int]
                       terminal.rows = h.as[Int]
-                      Out.println(t"READY")
+                      Out.println("READY")
                       LineEditor().ask: result =>
                         Out.println(t"RESULT:$result")
                       Exit.Ok
@@ -98,8 +98,8 @@ object Tests extends Suite(m"Profanity Tests"):
                 case Argument("select-menu") :: Nil =>
                   execute:
                     interactive: terminal ?=>
-                      Out.println(t"READY")
-                      SelectMenu(List(t"alpha", t"beta", t"gamma"), t"alpha").ask: result =>
+                      Out.println("READY")
+                      SelectMenu(List(t"alpha", t"beta", t"gamma"), "alpha").ask: result =>
                         Out.println(t"RESULT:$result")
                       Exit.Ok
 
@@ -108,16 +108,16 @@ object Tests extends Suite(m"Profanity Tests"):
                     interactive: terminal ?=>
                       terminal.columns = w.as[Int]
                       terminal.rows = h.as[Int]
-                      Out.println(t"READY")
+                      Out.println("READY")
                       val opts = List(t"first", t"averyverylongoptionnamethatwraps", t"third")
-                      SelectMenu(opts, t"first").ask: result =>
+                      SelectMenu(opts, "first").ask: result =>
                         Out.println(t"RESULT:$result")
                       Exit.Ok
 
                 case _ =>
                   execute(Exit.Fail(1))
 
-            t"finished"
+            "finished"
           }
 
       def waitFor(text: Text, ms: Int = 5000)(using Tmux, Monitor, WorkingDirectory): Boolean =
@@ -134,7 +134,7 @@ object Tests extends Suite(m"Profanity Tests"):
           found = matches
         found
 
-      def runFixture(arg: Text, marker: Text = t"RESULT:")(input: Tmux ?=> Unit)
+      def runFixture(arg: Text, marker: Text = "RESULT:")(input: Tmux ?=> Unit)
         ( using Enclave.Tool, Monitor, WorkingDirectory, TemporaryDirectory )
       :   Text =
 
@@ -145,51 +145,51 @@ object Tests extends Suite(m"Profanity Tests"):
             val tool = summon[Enclave.Tool].command
             Tmux.enter(tool, ' ', arg)
             Tmux.enter('\r')
-            if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+            if !waitFor("READY") then panic(m"profanity fixture did not become ready")
             input
             // Wait only for the marker this fixture actually prints. The `echo`
             // fixture emits `GOT:` and never `RESULT:`, so the old `RESULT:`-first
             // probe always burnt the full timeout before falling back to `GOT:`.
             waitFor(marker)
-            Tmux.screenshot().screen.readable.toSeq.join(t"\n")
+            Tmux.screenshot().screen.readable.toSeq.join("\n")
 
       launcher.sandbox:
         // Warmup run to spawn the daemon and avoid timing flake on the first real test
-        runFixture(t"echo", marker = t"GOT:"):
+        runFixture("echo", marker = "GOT:"):
           Tmux.enter('a')
 
         suite(m"Line buffering"):
           test(m"a single keypress reaches the app before Enter is pressed"):
-            runFixture(t"echo", marker = t"GOT:"):
+            runFixture("echo", marker = "GOT:"):
               Tmux.enter('a')
-          . assert(_.contains(t"GOT:a"))
+          . assert(_.contains("GOT:a"))
 
         suite(m"LineEditor"):
           test(m"submits accumulated text on Enter"):
-            runFixture(t"line-editor"):
+            runFixture("line-editor"):
               Tmux.enter("hello")
               Tmux.enter('\r')
-          . assert(_.contains(t"RESULT:hello"))
+          . assert(_.contains("RESULT:hello"))
 
           test(m"backspace removes characters"):
-            runFixture(t"line-editor"):
+            runFixture("line-editor"):
               Tmux.enter("helXX")
               Tmux.enter('', '')
               Tmux.enter("lo")
               Tmux.enter('\r')
-          . assert(_.contains(t"RESULT:hello"))
+          . assert(_.contains("RESULT:hello"))
 
           // Aspirational because, under Ethereal's daemon model, the socket round-trip
           // between consecutive bytes of \e[D can exceed Profanity's 30 ms ESC timeout in
           // Keyboard.process, which dismisses the widget before the arrow code completes.
           // The state-transition suite below covers Left-arrow handling deterministically.
           test(m"Left arrow moves the cursor"):
-            runFixture(t"line-editor"):
+            runFixture("line-editor"):
               Tmux.enter("helo")
-              Tmux.enter(t"Left")
+              Tmux.enter("Left")
               Tmux.enter("l")
               Tmux.enter('\r')
-          . aspire(_.contains(t"RESULT:hello"))
+          . aspire(_.contains("RESULT:hello"))
 
           // Wrap-aware redraw: typing past the terminal width and then backspacing back
           // across the wrap boundary must clear the wrapped row and reposition the cursor.
@@ -200,13 +200,13 @@ object Tests extends Suite(m"Profanity Tests"):
             scala.caps.unsafe.unsafeAssumeSeparate:
               Bash.tmux(width = 20, height = 10):
                 val tool = summon[Enclave.Tool].command
-                Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
+                Tmux.enter(tool, ' ', "line-editor-sized 20 10")
                 Tmux.enter('\r')
-                if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-                Tmux.enter(t"X"*25)
+                if !waitFor("READY") then panic(m"profanity fixture did not become ready")
+                Tmux.enter("X"*25)
                 Tmux.enter('', '', '', '', '')
                 Tmux.enter('\r')
-                waitFor(t"RESULT:")
+                waitFor("RESULT:")
                 Tmux.screenshot().screen.to[List].join
           . assert(_.contains(t"RESULT:${t"X"*20}"))
 
@@ -216,17 +216,17 @@ object Tests extends Suite(m"Profanity Tests"):
             scala.caps.unsafe.unsafeAssumeSeparate:
               Bash.tmux(width = 20, height = 10):
                 val tool = summon[Enclave.Tool].command
-                Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
+                Tmux.enter(tool, ' ', "line-editor-sized 20 10")
                 Tmux.enter('\r')
-                if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-                scala.caps.unsafe.unsafeAssumeSeparate(Tmux.attend(Tmux.enter(t"X"*25)))
+                if !waitFor("READY") then panic(m"profanity fixture did not become ready")
+                scala.caps.unsafe.unsafeAssumeSeparate(Tmux.attend(Tmux.enter("X"*25)))
                 delay(0.1*Second)
                 Tmux.attend:
                   Tmux.enter('', '', '', '', '')
                 delay(0.2*Second)
                 val mid = Tmux.screenshot()
                 Tmux.enter('\r')
-                waitFor(t"RESULT:")
+                waitFor("RESULT:")
                 mid.screen.to[List].map(_.count(_ == 'X')).total
           . assert(_ == 20)
 
@@ -241,17 +241,17 @@ object Tests extends Suite(m"Profanity Tests"):
             scala.caps.unsafe.unsafeAssumeSeparate:
               Bash.tmux(width = 20, height = 12):
                 val tool = summon[Enclave.Tool].command
-                Tmux.enter(tool, ' ', t"select-menu-long-sized 20 12")
+                Tmux.enter(tool, ' ', "select-menu-long-sized 20 12")
                 Tmux.enter('\r')
-                if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+                if !waitFor("READY") then panic(m"profanity fixture did not become ready")
                 delay(0.3*Second)
                 val mid = Tmux.screenshot()
                 Tmux.enter('\r')
-                waitFor(t"RESULT:")
+                waitFor("RESULT:")
                 // The third option ("third") must appear exactly once. If the renderer
                 // miscounts visual rows for the wrapped second option, the menu drifts
                 // on subsequent re-renders and stale copies of "third" pile up.
-                mid.screen.readable.toList.count(_.contains(t"third"))
+                mid.screen.readable.toList.count(_.contains("third"))
           . assert(_ == 1)
 
       // Pure state-transition tests, bypassing terminal IO. These exercise the
@@ -268,7 +268,7 @@ object Tests extends Suite(m"Profanity Tests"):
         def result(editor: LineEditor): Text = editor.value
 
       def selected(events: Terminal.Event*): Optional[Text] =
-        val menu = SelectMenu(List(t"alpha", t"beta", t"gamma"), t"alpha")
+        val menu = SelectMenu(List(t"alpha", t"beta", t"gamma"), "alpha")
         noopMenu(events.iterator, menu)(_(_))
 
       def edited(events: Terminal.Event*): Optional[Text] =
@@ -290,31 +290,31 @@ object Tests extends Suite(m"Profanity Tests"):
       suite(m"SelectMenu state transitions"):
         test(m"Enter selects the current item"):
           selected(Keypress.Enter)
-        . assert(_ == t"alpha")
+        . assert(_ == "alpha")
 
         test(m"Down then Enter selects the next item"):
           selected(Keypress.Down, Keypress.Enter)
-        . assert(_ == t"beta")
+        . assert(_ == "beta")
 
         test(m"Down twice then Enter selects gamma"):
           selected(Keypress.Down, Keypress.Down, Keypress.Enter)
-        . assert(_ == t"gamma")
+        . assert(_ == "gamma")
 
         test(m"Down past the end clamps at gamma"):
           selected(Keypress.Down, Keypress.Down, Keypress.Down, Keypress.Down, Keypress.Enter)
-        . assert(_ == t"gamma")
+        . assert(_ == "gamma")
 
         test(m"Up before alpha clamps at alpha"):
           selected(Keypress.Up, Keypress.Enter)
-        . assert(_ == t"alpha")
+        . assert(_ == "alpha")
 
         test(m"End jumps to the last item"):
           selected(Keypress.End, Keypress.Enter)
-        . assert(_ == t"gamma")
+        . assert(_ == "gamma")
 
         test(m"Home returns to the first item"):
           selected(Keypress.End, Keypress.Home, Keypress.Enter)
-        . assert(_ == t"alpha")
+        . assert(_ == "alpha")
 
         test(m"Escape dismisses without a result"):
           selected(Keypress.Escape).absent
@@ -327,68 +327,68 @@ object Tests extends Suite(m"Profanity Tests"):
       suite(m"LineEditor state transitions"):
         test(m"Typed characters accumulate"):
           edited(Keypress.CharKey('h'), Keypress.CharKey('i'), Keypress.Enter)
-        . assert(_ == t"hi")
+        . assert(_ == "hi")
 
         test(m"cursorPosition counts a wide grapheme as two columns"):
-          LineEditor.cursorPosition(t"中b", 2, 10)
+          LineEditor.cursorPosition("中b", 2, 10)
         . assert(_ == (0, 3))
 
         test(m"cursorPosition wraps a wide grapheme that would straddle the edge"):
-          LineEditor.cursorPosition(t"ab中", 3, 3)
+          LineEditor.cursorPosition("ab中", 3, 3)
         . assert(_ == (1, 2))
 
         test(m"Backspace removes the previous character"):
           edited
             ( Keypress.CharKey('h'), Keypress.CharKey('i'), Keypress.CharKey('x'),
               Keypress.Backspace, Keypress.Enter )
-        . assert(_ == t"hi")
+        . assert(_ == "hi")
 
         test(m"Left arrow then a character inserts at the cursor"):
           edited
             ( Keypress.CharKey('h'), Keypress.CharKey('i'), Keypress.Left,
               Keypress.CharKey('e'), Keypress.Enter )
-        . assert(_ == t"hei")
+        . assert(_ == "hei")
 
         test(m"Home then Delete removes the first character"):
           edited
             ( Keypress.CharKey('h'), Keypress.CharKey('i'), Keypress.Home, Keypress.Delete,
               Keypress.Enter )
-        . assert(_ == t"i")
+        . assert(_ == "i")
 
         test(m"End jumps to the end of the line"):
           edited
             ( Keypress.CharKey('a'), Keypress.CharKey('b'), Keypress.Home, Keypress.End,
               Keypress.CharKey('c'), Keypress.Enter )
-        . assert(_ == t"abc")
+        . assert(_ == "abc")
 
         test(m"Ctrl+U deletes from cursor to start of line"):
           edited
             ( Keypress.CharKey('h'), Keypress.CharKey('i'), Keypress.Ctrl('U'), Keypress.Enter )
-        . assert(_ == t"")
+        . assert(_ == "")
 
         test(m"Enter inserts a newline and Shift+Enter submits"):
           editedWith(shiftSubmit)
             ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('b'),
               clavichord.Keypress.Shift(clavichord.Keypress.Enter) )
-        . assert(_ == t"a\nb")
+        . assert(_ == "a\nb")
 
         test(m"the up arrow moves the cursor to the previous line"):
           editedWith(shiftSubmit)
             ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('b'), Keypress.Up,
               Keypress.CharKey('X'), clavichord.Keypress.Shift(clavichord.Keypress.Enter) )
-        . assert(_ == t"aX\nb")
+        . assert(_ == "aX\nb")
 
         test(m"the down arrow moves the cursor to the next line"):
           editedWith(shiftSubmit)
             ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('b'), Keypress.Home,
               Keypress.Up, Keypress.Down, Keypress.CharKey('Y'),
               clavichord.Keypress.Shift(clavichord.Keypress.Enter) )
-        . assert(_ == t"a\nYb")
+        . assert(_ == "a\nYb")
 
         test(m"a content predicate decides whether Enter submits or inserts a newline"):
-          editedWith(LineEditor(mode = LineEditor.Mode.Multiline(_.contains(t"!"))))
+          editedWith(LineEditor(mode = LineEditor.Mode.Multiline(_.contains("!"))))
             ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('!'), Keypress.Enter )
-        . assert(_ == t"a\n!")
+        . assert(_ == "a\n!")
 
         test(m"react can transform the editor state (e.g. completing on Tab)"):
           val completingEditor = new Interaction[Text, LineEditor]:
@@ -405,7 +405,7 @@ object Tests extends Suite(m"Profanity Tests"):
                     Keypress.Enter).iterator,
              LineEditor() )
            (_(_))
-        . assert(_ == t"geography")
+        . assert(_ == "geography")
 
     suite(m"Keyboard decoding"):
       test(m"Shift+Enter is decoded from its CSI-u sequence"):
@@ -486,7 +486,7 @@ object Tests extends Suite(m"Profanity Tests"):
 
         test(m"a query feature has an empty disable sequence"):
           terminalFeatures.backgroundColorFeature.disable
-        . assert(_ == t"")
+        . assert(_ == "")
 
         test(m"a by-name imported feature is collected by Every"):
           import terminalFeatures.kittyKeyboardFeature
@@ -498,19 +498,19 @@ object Tests extends Suite(m"Profanity Tests"):
 
         test(m"a modifier and a special key render with bracketed symbols"):
           rendered(clavichord.Keypress.Shift(clavichord.Keypress.Enter))
-        . assert(_ == t"[⇧]+[↵]")
+        . assert(_ == "[⇧]+[↵]")
 
         test(m"a control-letter brackets the letter"):
           rendered(clavichord.Keypress.Ctrl('C'))
-        . assert(_ == t"[⌃]+[C]")
+        . assert(_ == "[⌃]+[C]")
 
         test(m"an ordinary character is bracketed"):
           rendered(clavichord.Keypress.CharKey('a'))
-        . assert(_ == t"[a]")
+        . assert(_ == "[a]")
 
         test(m"nested modifiers are joined with plus"):
           rendered(clavichord.Keypress.Ctrl(clavichord.Keypress.Shift(clavichord.Keypress.Enter)))
-        . assert(_ == t"[⌃]+[⇧]+[↵]")
+        . assert(_ == "[⌃]+[⇧]+[↵]")
 
       suite(m"Interrupt POSIX numbering"):
         test(m"SIGHUP is 1")  (Interrupt.Hup.id)   .assert(_ == 1)

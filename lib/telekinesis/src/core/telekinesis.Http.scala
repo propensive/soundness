@@ -63,17 +63,17 @@ import scala.util.NotGiven
 object Http:
   object Version:
     given showable: Version is Showable =
-      case 0.9 => t"HTTP/0.9"
-      case 1.0 => t"HTTP/1.0"
-      case 1.1 => t"HTTP/1.1"
-      case 2.0 => t"HTTP/2"
-      case 3.0 => t"HTTP/3"
+      case 0.9 => "HTTP/0.9"
+      case 1.0 => "HTTP/1.0"
+      case 1.1 => "HTTP/1.1"
+      case 2.0 => "HTTP/2"
+      case 3.0 => "HTTP/3"
 
     def parse(text: Text): Version = text match
-      case t"HTTP/0.9"             => 0.9
-      case t"HTTP/1.1"             => 1.1
-      case t"HTTP/2" | t"HTTP/2.0" => 2.0
-      case t"HTTP/3" | t"HTTP/3.0" => 3.0
+      case "HTTP/0.9"             => 0.9
+      case "HTTP/1.1"             => 1.1
+      case "HTTP/2" | "HTTP/2.0" => 2.0
+      case "HTTP/3" | "HTTP/3.0" => 3.0
       case _                       => 1.0
 
   type Version = 0.9 | 1.0 | 1.1 | 2.0 | 3.0
@@ -88,14 +88,14 @@ object Http:
     // itself contain a comma (RFC 6265 §3).
     private val repeatableFields: Set[Text] =
       Set
-       ( t"accept", t"accept-charset", t"accept-encoding", t"accept-language", t"accept-patch",
-         t"accept-ranges", t"access-control-allow-headers", t"access-control-allow-methods",
-         t"access-control-expose-headers", t"access-control-request-headers", t"allow", t"alt-svc",
-         t"cache-control", t"clear-site-data", t"connection", t"content-encoding",
-         t"content-language", t"expect", t"forwarded", t"if-match", t"if-none-match", t"link",
-         t"pragma", t"prefer", t"preference-applied", t"proxy-authenticate", t"set-cookie", t"te",
-         t"trailer", t"transfer-encoding", t"upgrade", t"vary", t"via", t"warning",
-         t"www-authenticate" )
+       ( "accept", "accept-charset", "accept-encoding", "accept-language", "accept-patch",
+         "accept-ranges", "access-control-allow-headers", "access-control-allow-methods",
+         "access-control-expose-headers", "access-control-request-headers", "allow", "alt-svc",
+         "cache-control", "clear-site-data", "connection", "content-encoding",
+         "content-language", "expect", "forwarded", "if-match", "if-none-match", "link",
+         "pragma", "prefer", "preference-applied", "proxy-authenticate", "set-cookie", "te",
+         "trailer", "transfer-encoding", "upgrade", "vary", "via", "warning",
+         "www-authenticate" )
 
     // Whether a field may appear more than once. Field names are case-insensitive, so the key is
     // lowered before lookup. An unknown field is treated as a singleton: that is the safe default,
@@ -107,25 +107,25 @@ object Http:
 
   object Method:
     given formmethod: ("formmethod" is GenericHtmlAttribute[Method]):
-      def name: Text = t"formmethod"
+      def name: Text = "formmethod"
       def serialize(method: Method): Text = method.show
 
     given method: ("method" is GenericHtmlAttribute[Method]):
-      def name: Text = t"method"
+      def name: Text = "method"
       def serialize(method: Method): Text = method.show
 
     given showable: Method is Showable = _.toString.tt.upper
 
     given decodable: Method is Decodable in Text = _.upper match
-      case t"HEAD"    => Http.Head
-      case t"POST"    => Http.Post
-      case t"PUT"     => Http.Put
-      case t"DELETE"  => Http.Delete
-      case t"CONNECT" => Http.Connect
-      case t"OPTIONS" => Http.Options
-      case t"TRACE"   => Http.Trace
-      case t"PATCH"   => Http.Patch
-      case t"GET"     => Http.Get
+      case "HEAD"    => Http.Head
+      case "POST"    => Http.Post
+      case "PUT"     => Http.Put
+      case "DELETE"  => Http.Delete
+      case "CONNECT" => Http.Connect
+      case "OPTIONS" => Http.Options
+      case "TRACE"   => Http.Trace
+      case "PATCH"   => Http.Patch
+      case "GET"     => Http.Get
       case _          => Http.Get
 
   sealed trait Method:
@@ -191,59 +191,59 @@ object Http:
       case Informational, Successful, Redirection, ClientError, ServerError
 
   enum Status(val code: Int, val description: Text):
-    case Continue                      extends Status(100, t"Continue")
-    case SwitchingProtocols            extends Status(101, t"Switching Protocols")
-    case EarlyHints                    extends Status(103, t"Early Hints")
-    case Ok                            extends Status(200, t"OK")
-    case Created                       extends Status(201, t"Created")
-    case Accepted                      extends Status(202, t"Accepted")
-    case NonAuthoritativeInformation   extends Status(203, t"Non-Authoritative Information")
-    case NoContent                     extends Status(204, t"No Content")
-    case ResetContent                  extends Status(205, t"Reset Content")
-    case PartialContent                extends Status(206, t"Partial Content")
-    case MultipleChoices               extends Status(300, t"Multiple Choices")
-    case MovedPermanently              extends Status(301, t"Moved Permanently")
-    case Found                         extends Status(302, t"Found")
-    case SeeOther                      extends Status(303, t"See Other")
-    case NotModified                   extends Status(304, t"Not Modified")
-    case TemporaryRedirect             extends Status(307, t"Temporary Redirect")
-    case PermanentRedirect             extends Status(308, t"Permanent Redirect")
-    case BadRequest                    extends Status(400, t"Bad Request")
-    case Unauthorized                  extends Status(401, t"Unauthorized")
-    case PaymentRequired               extends Status(402, t"Payment Required")
-    case Forbidden                     extends Status(403, t"Forbidden")
-    case NotFound                      extends Status(404, t"Not Found")
-    case MethodNotAllowed              extends Status(405, t"Method Not Allowed")
-    case NotAcceptable                 extends Status(406, t"Not Acceptable")
-    case ProxyAuthenticationRequired   extends Status(407, t"Proxy Authentication Required")
-    case RequestTimeout                extends Status(408, t"Request Timeout")
-    case Conflict                      extends Status(409, t"Conflict")
-    case Gone                          extends Status(410, t"Gone")
-    case LengthRequired                extends Status(411, t"Length Required")
-    case PreconditionFailed            extends Status(412, t"Precondition Failed")
-    case PayloadTooLarge               extends Status(413, t"Payload Too Large")
-    case UriTooLong                    extends Status(414, t"URI Too Long")
-    case UnsupportedMediaType          extends Status(415, t"Unsupported Media Type")
-    case RangeNotSatisfiable           extends Status(416, t"Range Not Satisfiable")
-    case ExpectationFailed             extends Status(417, t"Expectation Failed")
-    case UnprocessableEntity           extends Status(422, t"Unprocessable Entity")
-    case TooEarly                      extends Status(425, t"Too Early")
-    case UpgradeRequired               extends Status(426, t"Upgrade Required")
-    case PreconditionRequired          extends Status(428, t"Precondition Required")
-    case TooManyRequests               extends Status(429, t"Too Many Requests")
-    case RequestHeaderFieldsTooLarge   extends Status(431, t"Request Header Fields Too Large")
-    case UnavailableForLegalReasons    extends Status(451, t"Unavailable For Legal Reasons")
-    case InternalServerError           extends Status(500, t"Internal Server Error")
-    case NotImplemented                extends Status(501, t"Not Implemented")
-    case BadGateway                    extends Status(502, t"Bad Gateway")
-    case ServiceUnavailable            extends Status(503, t"Service Unavailable")
-    case GatewayTimeout                extends Status(504, t"Gateway Timeout")
-    case HttpVersionNotSupported       extends Status(505, t"HTTP Version Not Supported")
-    case VariantAlsoNegotiates         extends Status(506, t"Variant Also Negotiates")
-    case InsufficientStorage           extends Status(507, t"Insufficient Storage")
-    case LoopDetected                  extends Status(508, t"Loop Detected")
-    case NotExtended                   extends Status(510, t"Not Extended")
-    case NetworkAuthenticationRequired extends Status(511, t"Network Authentication Required")
+    case Continue                      extends Status(100, "Continue")
+    case SwitchingProtocols            extends Status(101, "Switching Protocols")
+    case EarlyHints                    extends Status(103, "Early Hints")
+    case Ok                            extends Status(200, "OK")
+    case Created                       extends Status(201, "Created")
+    case Accepted                      extends Status(202, "Accepted")
+    case NonAuthoritativeInformation   extends Status(203, "Non-Authoritative Information")
+    case NoContent                     extends Status(204, "No Content")
+    case ResetContent                  extends Status(205, "Reset Content")
+    case PartialContent                extends Status(206, "Partial Content")
+    case MultipleChoices               extends Status(300, "Multiple Choices")
+    case MovedPermanently              extends Status(301, "Moved Permanently")
+    case Found                         extends Status(302, "Found")
+    case SeeOther                      extends Status(303, "See Other")
+    case NotModified                   extends Status(304, "Not Modified")
+    case TemporaryRedirect             extends Status(307, "Temporary Redirect")
+    case PermanentRedirect             extends Status(308, "Permanent Redirect")
+    case BadRequest                    extends Status(400, "Bad Request")
+    case Unauthorized                  extends Status(401, "Unauthorized")
+    case PaymentRequired               extends Status(402, "Payment Required")
+    case Forbidden                     extends Status(403, "Forbidden")
+    case NotFound                      extends Status(404, "Not Found")
+    case MethodNotAllowed              extends Status(405, "Method Not Allowed")
+    case NotAcceptable                 extends Status(406, "Not Acceptable")
+    case ProxyAuthenticationRequired   extends Status(407, "Proxy Authentication Required")
+    case RequestTimeout                extends Status(408, "Request Timeout")
+    case Conflict                      extends Status(409, "Conflict")
+    case Gone                          extends Status(410, "Gone")
+    case LengthRequired                extends Status(411, "Length Required")
+    case PreconditionFailed            extends Status(412, "Precondition Failed")
+    case PayloadTooLarge               extends Status(413, "Payload Too Large")
+    case UriTooLong                    extends Status(414, "URI Too Long")
+    case UnsupportedMediaType          extends Status(415, "Unsupported Media Type")
+    case RangeNotSatisfiable           extends Status(416, "Range Not Satisfiable")
+    case ExpectationFailed             extends Status(417, "Expectation Failed")
+    case UnprocessableEntity           extends Status(422, "Unprocessable Entity")
+    case TooEarly                      extends Status(425, "Too Early")
+    case UpgradeRequired               extends Status(426, "Upgrade Required")
+    case PreconditionRequired          extends Status(428, "Precondition Required")
+    case TooManyRequests               extends Status(429, "Too Many Requests")
+    case RequestHeaderFieldsTooLarge   extends Status(431, "Request Header Fields Too Large")
+    case UnavailableForLegalReasons    extends Status(451, "Unavailable For Legal Reasons")
+    case InternalServerError           extends Status(500, "Internal Server Error")
+    case NotImplemented                extends Status(501, "Not Implemented")
+    case BadGateway                    extends Status(502, "Bad Gateway")
+    case ServiceUnavailable            extends Status(503, "Service Unavailable")
+    case GatewayTimeout                extends Status(504, "Gateway Timeout")
+    case HttpVersionNotSupported       extends Status(505, "HTTP Version Not Supported")
+    case VariantAlsoNegotiates         extends Status(506, "Variant Also Negotiates")
+    case InsufficientStorage           extends Status(507, "Insufficient Storage")
+    case LoopDetected                  extends Status(508, "Loop Detected")
+    case NotExtended                   extends Status(510, "Not Extended")
+    case NetworkAuthenticationRequired extends Status(511, "Network Authentication Required")
 
     def category: Status.Category = (code/100).absolve match
       case 1 => Http.Category.Informational
@@ -260,30 +260,30 @@ object Http:
   object Request:
     given showable: Request is Showable = request =>
       val bodySample: Text =
-        try request.body().memoize.utf8 catch case error: Truncation.Error  => t"[-/-]"
+        try request.body().memoize.utf8 catch case error: Truncation.Error  => "[-/-]"
 
       val headers: Text =
         request.textHeaders.map: (header: Header) =>
           t"${header.key}: ${header.value}"
 
-        . join(t"\n          ")
+        . join("\n          ")
 
       val params: Text =
         request.query.values.map: (key, value) => t"$key = \"$value\""
-        . join(t"\n          ")
+        . join("\n          ")
 
       Ledger[Text, Text](
-        t"content" ->
+        "content" ->
           ( safely(request.headers.contentType.prim.or(media"application/octet-stream").show)
-            . or(t"?") ),
-        t"method"   -> request.method.show,
-        t"query"    -> request.query.show,
-        t"hostname" -> request.host.show,
-        t"path"     -> request.location,
-        t"body"     -> bodySample,
-        t"headers"  -> headers,
-        t"params"   -> params
-      ).to[List].map { (key, value) => t"$key = $value" }.join(t", ")
+            . or("?") ),
+        "method"   -> request.method.show,
+        "query"    -> request.query.show,
+        "hostname" -> request.host.show,
+        "path"     -> request.location,
+        "body"     -> bodySample,
+        "headers"  -> headers,
+        "params"   -> params
+      ).to[List].map { (key, value) => t"$key = $value" }.join(", ")
 
     // Serialize the request to its HTTP/1.1 wire form: the request line, `Host`
     // and framing headers, then the header block and body, as a fresh pull
@@ -329,14 +329,14 @@ object Http:
       val second: Optional[Data] = if first.absent then Unset else pull()
 
       def head(framing: Text): Text = Text.build:
-        def newline(): Unit = append(t"\r\n")
+        def newline(): Unit = append("\r\n")
         append(request.method.show)
-        append(t" ")
+        append(" ")
         append(request.target)
-        append(t" ")
+        append(" ")
         append(Http.Version.showable.text(request.version))
         newline()
-        append(t"Host: ")
+        append("Host: ")
         append(request.host.show)
         newline()
         append(framing)
@@ -344,18 +344,18 @@ object Http:
         request.textHeaders.map: parameter =>
           newline()
           append(parameter.key)
-          append(t": ")
+          append(": ")
           append(parameter.value)
 
         newline()
         newline()
 
       def frame(data: Data): Iterator[Data] =
-        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
+        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, "\r\n".in[Data])
 
       (first, second) match
         case (first: Data, second: Data) =>
-          val text = head(t"Transfer-Encoding: chunked")
+          val text = head("Transfer-Encoding: chunked")
 
           Stream
             ( Iterator(text.in[Data])
@@ -479,7 +479,7 @@ object Http:
       val hostText: Optional[Text] =
         headers.filter(_.key.s.equalsIgnoreCase("host")).prim.let(_.value)
 
-      val host: Host = hostText.lay(abort(Http.Request.Error(Http.Request.Error.Reason.Host(t"")))):
+      val host: Host = hostText.lay(abort(Http.Request.Error(Http.Request.Error.Reason.Host("")))):
         text =>
           // The typed parse of the union (`Hostname | Ipv4 | Ipv6`, trying each form) is
           // the costliest step of parsing a request, yet every request on a keep-alive
@@ -491,7 +491,7 @@ object Http:
             case _ =>
               val parsed =
                 safely(text.as[Host]).or:
-                  safely(text.cut(t":").prim.or(text).as[Host]).or:
+                  safely(text.cut(":").prim.or(text).as[Host]).or:
                     abort(Http.Request.Error(Http.Request.Error.Reason.Host(text)))
 
               hostMemo = (text, parsed)
@@ -694,18 +694,18 @@ object Http:
       Url[scheme](origin, target)
 
     private lazy val queryText: Text =
-      target.offsetOf(t"?").lay(t""): ordinal => target.skip(ordinal.n0 + 1)
+      target.offsetOf("?").lay(t""): ordinal => target.skip(ordinal.n0 + 1)
 
     lazy val query: Query =
       contentType.let(_.base.show) match
-        case t"application/x-www-form-urlencoded" =>
+        case "application/x-www-form-urlencoded" =>
           queryText.as[Query] ++ body().memoize.utf8.as[Query]
 
         case _ =>
           queryText.as[Query]
 
     lazy val location: Text =
-      target.offsetOf(t"?").lay(target): ordinal => target.keep(ordinal.n0)
+      target.offsetOf("?").lay(target): ordinal => target.keep(ordinal.n0)
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)
@@ -841,7 +841,7 @@ object Http:
         if !upgrade then response.textHeaders + extraHeaders else
           response.textHeaders.filter: header =>
             val key = header.key.lower
-            key != t"transfer-encoding" && key != t"content-length"
+            key != "transfer-encoding" && key != "content-length"
 
       // Built into a pre-sized buffer rather than through `Text.build`, whose
       // builder starts at the default sixteen characters and reallocates its way
@@ -895,7 +895,7 @@ object Http:
 
         . takeWhile(_.present).flatMap(_.lay(Iterator())(Iterator(_)))
       def frame(data: Data): Iterator[Data] =
-        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
+        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, "\r\n".in[Data])
 
       def bodyBytes: Iterator[Data]^ =
         if !includeBody then Iterator.empty
@@ -905,7 +905,7 @@ object Http:
           case Body.Fixed(data) => Iterator(data)
 
           case Body.Flowing(source) =>
-            if chunked then pulls(source()).flatMap(frame) ++ Iterator(t"0\r\n\r\n".in[Data])
+            if chunked then pulls(source()).flatMap(frame) ++ Iterator("0\r\n\r\n".in[Data])
             else pulls(source())
 
       // Hoisted: a by-name `++` operand may not mint a fresh capability.
@@ -1062,10 +1062,10 @@ object Http:
       // framing header at all, the body is delimited by connection close, as
       // before.
       val chunked: Boolean = headerList.exists: header =>
-        header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
+        header.key.lower == "transfer-encoding" && header.value.lower.contains("chunked")
 
       val length: Optional[Int] =
-        headerList.filter(_.key.lower == t"content-length").prim.let(_.value)
+        headerList.filter(_.key.lower == "content-length").prim.let(_.value)
         . lay(Unset: Optional[Int]): text =>
             safely(Integer.parseInt(text.s.trim.nn))
 
@@ -1294,7 +1294,7 @@ object Http:
             val code = response.status.code
 
             if !isRedirect(code) || remaining <= 0 then response else
-              response.textHeaders.seek(_.key.lower == t"location") match
+              response.textHeaders.seek(_.key.lower == "location") match
                 case Unset =>
                   response
 

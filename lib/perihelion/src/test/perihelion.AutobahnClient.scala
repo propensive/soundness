@@ -52,10 +52,10 @@ import probates.awaitProbate
 // `react`/`exchange`, which flatten each message to bytes — losing the Text/Binary frame type an
 // echo must preserve — and offer no hook to send an RFC close code on a protocol violation.
 object AutobahnClient:
-  private val agent: Text = t"soundness-perihelion"
+  private val agent: Text = "soundness-perihelion"
 
   def main(args: scala.Array[String]): Unit =
-    val host: Text = (if args.length > 0 then args(0) else "localhost").tt
+    val host: Text = if args.length > 0 then args(0).tt else "localhost"
     val port: Int = if args.length > 1 then Integer.parseInt(args(1)) else 9001
 
     supervise:
@@ -88,7 +88,7 @@ object AutobahnClient:
       var count: Int = 0
 
       // How many cases does the fuzzingserver have? It sends the count as one Text message.
-      session(t"/getCaseCount"): channel =>
+      session("/getCaseCount"): channel =>
         case perihelion.Message.Text(text) => count = safely(Integer.parseInt(text.s.trim)).or(count)
         case _                             => ()
 

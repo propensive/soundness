@@ -90,170 +90,170 @@ object Tests extends Suite(m"Cataclysm Tests"):
   def run(): Unit =
     suite(m"CSS parsing"):
       test(m"a single flat rule with one declaration"):
-        t"a { color: red; }".read[Css].rules
+        "a { color: red; }".read[Css].rules
       . assert(_ == List(rule(t"a", decl(t"color", t"red"))))
 
       test(m"multiple declarations in one rule"):
-        t"p { margin: 0; padding: 1px; }".read[Css].rules
+        "p { margin: 0; padding: 1px; }".read[Css].rules
       . assert(_ == List(rule(t"p", decl(t"margin", t"0"), decl(t"padding", t"1px"))))
 
       test(m"a final declaration without a trailing semicolon"):
-        t"a { color: red }".read[Css].rules
+        "a { color: red }".read[Css].rules
       . assert(_ == List(rule(t"a", decl(t"color", t"red"))))
 
       test(m"nested rules are supported"):
-        t"a { color: red; & b { color: blue } }".read[Css].rules
+        "a { color: red; & b { color: blue } }".read[Css].rules
       . assert(_ == List(rule(t"a", decl(t"color", t"red"), rule(t"& b", decl(t"color", t"blue")))))
 
-      val media = at(t"media", t"screen and (min-width: 700px)", rule(t"a", decl(t"color", t"red")))
+      val media = at("media", "screen and (min-width: 700px)", rule("a", decl("color", "red")))
 
       test(m"an at-rule block keeps its full prelude"):
-        t"@media screen and (min-width: 700px) { a { color: red } }".read[Css].rules
+        "@media screen and (min-width: 700px) { a { color: red } }".read[Css].rules
       . assert(_ == List(media))
 
       test(m"an at-rule statement has no body"):
-        t"""@import url("x.css");""".read[Css].rules
+        """@import url("x.css");""".read[Css].rules
       . assert(_ == List(At(t"import", t"""url("x.css")""", Unset)))
 
       test(m"comments are stripped from selectors and values"):
-        t"a /* x */ { color: /* y */ red }".read[Css].rules
+        "a /* x */ { color: /* y */ red }".read[Css].rules
       . assert(_ == List(rule(t"a", decl(t"color", t"red"))))
 
       test(m"a colon inside parentheses does not split a declaration"):
-        t"a { background-image: url(http://e.com/i.png) }".read[Css].rules
+        "a { background-image: url(http://e.com/i.png) }".read[Css].rules
       . assert(_ == List(rule(t"a", decl(t"background-image", t"url(http://e.com/i.png)"))))
 
       test(m"a semicolon inside a string does not terminate the value"):
-        t"""a { content: "a;b" }""".read[Css].rules
+        """a { content: "a;b" }""".read[Css].rules
       . assert(_ == List(rule(t"a", decl(t"content", t"\"a;b\""))))
 
     suite(m"Simple selectors"):
       test(m"a type selector"):
-        parse(t"div")
-      . assert(_ == sl(cx(cpd(typ(t"div")))))
+        parse("div")
+      . assert(_ == sl(cx(cpd(typ("div")))))
 
       test(m"a class selector"):
-        parse(t".header")
-      . assert(_ == sl(cx(cpd(cls(t"header")))))
+        parse(".header")
+      . assert(_ == sl(cx(cpd(cls("header")))))
 
       test(m"an id selector"):
-        parse(t"#main")
-      . assert(_ == sl(cx(cpd(hid(t"main")))))
+        parse("#main")
+      . assert(_ == sl(cx(cpd(hid("main")))))
 
       test(m"a universal selector"):
-        parse(t"*")
+        parse("*")
       . assert(_ == sl(cx(cpd(uni))))
 
       test(m"the nesting selector"):
-        parse(t"&")
+        parse("&")
       . assert(_ == sl(cx(cpd(Simple.Nesting))))
 
       test(m"a compound of type, class and id"):
-        parse(t"a.button#go")
-      . assert(_ == sl(cx(cpd(typ(t"a"), cls(t"button"), hid(t"go")))))
+        parse("a.button#go")
+      . assert(_ == sl(cx(cpd(typ("a"), cls("button"), hid("go")))))
 
       test(m"the nesting selector with a class"):
-        parse(t"&.active")
-      . assert(_ == sl(cx(cpd(Simple.Nesting, cls(t"active")))))
+        parse("&.active")
+      . assert(_ == sl(cx(cpd(Simple.Nesting, cls("active")))))
 
     suite(m"Combinators"):
       test(m"a descendant combinator"):
-        parse(t"a b")
-      . assert(_ == sl(cx(cpd(typ(t"a")), (desc, cpd(typ(t"b"))))))
+        parse("a b")
+      . assert(_ == sl(cx(cpd(typ("a")), (desc, cpd(typ("b"))))))
 
       test(m"a child combinator with spaces"):
-        parse(t"a > b")
-      . assert(_ == sl(cx(cpd(typ(t"a")), (child, cpd(typ(t"b"))))))
+        parse("a > b")
+      . assert(_ == sl(cx(cpd(typ("a")), (child, cpd(typ("b"))))))
 
       test(m"a child combinator without spaces"):
-        parse(t"a>b")
-      . assert(_ == sl(cx(cpd(typ(t"a")), (child, cpd(typ(t"b"))))))
+        parse("a>b")
+      . assert(_ == sl(cx(cpd(typ("a")), (child, cpd(typ("b"))))))
 
       test(m"a next-sibling combinator"):
-        parse(t"a + b")
-      . assert(_ == sl(cx(cpd(typ(t"a")), (next, cpd(typ(t"b"))))))
+        parse("a + b")
+      . assert(_ == sl(cx(cpd(typ("a")), (next, cpd(typ("b"))))))
 
       test(m"a subsequent-sibling combinator"):
-        parse(t"a ~ b")
-      . assert(_ == sl(cx(cpd(typ(t"a")), (subseq, cpd(typ(t"b"))))))
+        parse("a ~ b")
+      . assert(_ == sl(cx(cpd(typ("a")), (subseq, cpd(typ("b"))))))
 
       test(m"a column combinator"):
-        parse(t"col || td")
-      . assert(_ == sl(cx(cpd(typ(t"col")), (col, cpd(typ(t"td"))))))
+        parse("col || td")
+      . assert(_ == sl(cx(cpd(typ("col")), (col, cpd(typ("td"))))))
 
       val complex3 =
-        sl(cx(cpd(typ(t"ul"), cls(t"nav")), (child, cpd(typ(t"li"))), (desc, cpd(typ(t"a")))))
+        sl(cx(cpd(typ("ul"), cls("nav")), (child, cpd(typ("li"))), (desc, cpd(typ("a")))))
 
       test(m"a three-compound complex selector"):
-        parse(t"ul.nav > li a")
+        parse("ul.nav > li a")
       . assert(_ == complex3)
 
       test(m"a comma-separated selector list"):
-        parse(t"a, .b")
-      . assert(_ == sl(cx(cpd(typ(t"a"))), cx(cpd(cls(t"b")))))
+        parse("a, .b")
+      . assert(_ == sl(cx(cpd(typ("a"))), cx(cpd(cls("b")))))
 
     suite(m"Attribute selectors"):
-      val exactTest = AttributeTest(AttributeMatcher.Exact, t"\"text\"", Unset)
-      val prefixTest = AttributeTest(AttributeMatcher.Prefix, t"\"https\"", Unset)
-      val substringTest = AttributeTest(AttributeMatcher.Substring, t"foo", Unset)
-      val modifierTest = AttributeTest(AttributeMatcher.Exact, t"\"x\"", 'i')
+      val exactTest = AttributeTest(AttributeMatcher.Exact, "\"text\"", Unset)
+      val prefixTest = AttributeTest(AttributeMatcher.Prefix, "\"https\"", Unset)
+      val substringTest = AttributeTest(AttributeMatcher.Substring, "foo", Unset)
+      val modifierTest = AttributeTest(AttributeMatcher.Exact, "\"x\"", 'i')
 
       test(m"attribute presence"):
-        parse(t"[disabled]")
-      . assert(_ == sl(cx(cpd(Simple.Attribute(Unset, t"disabled", Unset)))))
+        parse("[disabled]")
+      . assert(_ == sl(cx(cpd(Simple.Attribute(Unset, "disabled", Unset)))))
 
       test(m"an exact attribute match with a quoted value"):
-        parse(t"""[type="text"]""")
-      . assert(_ == sl(cx(cpd(Simple.Attribute(Unset, t"type", exactTest)))))
+        parse("""[type="text"]""")
+      . assert(_ == sl(cx(cpd(Simple.Attribute(Unset, "type", exactTest)))))
 
       test(m"a prefix attribute match"):
-        parse(t"""[href^="https"]""")
-      . assert(_ == sl(cx(cpd(Simple.Attribute(Unset, t"href", prefixTest)))))
+        parse("""[href^="https"]""")
+      . assert(_ == sl(cx(cpd(Simple.Attribute(Unset, "href", prefixTest)))))
 
       test(m"a substring attribute match with an unquoted value"):
-        parse(t"[data*=foo]")
-      . assert(_ == sl(cx(cpd(Simple.Attribute(Unset, t"data", substringTest)))))
+        parse("[data*=foo]")
+      . assert(_ == sl(cx(cpd(Simple.Attribute(Unset, "data", substringTest)))))
 
       test(m"an attribute match with a case-insensitive modifier"):
-        parse(t"""[lang="x" i]""")
-      . assert(_ == sl(cx(cpd(Simple.Attribute(Unset, t"lang", modifierTest)))))
+        parse("""[lang="x" i]""")
+      . assert(_ == sl(cx(cpd(Simple.Attribute(Unset, "lang", modifierTest)))))
 
     suite(m"Namespaces"):
       test(m"a namespaced type selector"):
-        parse(t"svg|rect")
-      . assert(_ == sl(cx(cpd(Simple.Type(Prefix.Named(t"svg"), t"rect")))))
+        parse("svg|rect")
+      . assert(_ == sl(cx(cpd(Simple.Type(Prefix.Named("svg"), "rect")))))
 
       test(m"an any-namespace type selector"):
-        parse(t"*|a")
-      . assert(_ == sl(cx(cpd(Simple.Type(Prefix.Any, t"a")))))
+        parse("*|a")
+      . assert(_ == sl(cx(cpd(Simple.Type(Prefix.Any, "a")))))
 
       test(m"a default-namespace type selector"):
-        parse(t"|a")
-      . assert(_ == sl(cx(cpd(Simple.Type(Prefix.Default, t"a")))))
+        parse("|a")
+      . assert(_ == sl(cx(cpd(Simple.Type(Prefix.Default, "a")))))
 
     suite(m"Pseudo-classes and pseudo-elements"):
-      val notArg = PseudoArgument.Selectors(sl(cx(cpd(cls(t"a"))), cx(cpd(cls(t"b")))))
-      val hasArg = PseudoArgument.Selectors(sl(rel(child, cpd(typ(t"img")))))
+      val notArg = PseudoArgument.Selectors(sl(cx(cpd(cls("a"))), cx(cpd(cls("b")))))
+      val hasArg = PseudoArgument.Selectors(sl(rel(child, cpd(typ("img")))))
 
       test(m"a simple pseudo-class"):
-        parse(t"a:hover")
-      . assert(_ == sl(cx(cpd(typ(t"a"), pc(t"hover")))))
+        parse("a:hover")
+      . assert(_ == sl(cx(cpd(typ("a"), pc("hover")))))
 
       test(m"a pseudo-element"):
-        parse(t"p::before")
-      . assert(_ == sl(cx(cpd(typ(t"p"), Simple.PseudoElement(t"before", Unset)))))
+        parse("p::before")
+      . assert(_ == sl(cx(cpd(typ("p"), Simple.PseudoElement("before", Unset)))))
 
       test(m":not() takes a selector list"):
-        parse(t":not(.a, .b)")
-      . assert(_ == sl(cx(cpd(Simple.PseudoClass(t"not", notArg)))))
+        parse(":not(.a, .b)")
+      . assert(_ == sl(cx(cpd(Simple.PseudoClass("not", notArg)))))
 
       test(m":has() takes a relative selector list"):
-        parse(t":has(> img)")
-      . assert(_ == sl(cx(cpd(Simple.PseudoClass(t"has", hasArg)))))
+        parse(":has(> img)")
+      . assert(_ == sl(cx(cpd(Simple.PseudoClass("has", hasArg)))))
 
       test(m":lang() keeps its argument as raw text"):
-        parse(t":lang(en)")
-      . assert(_ == sl(cx(cpd(Simple.PseudoClass(t"lang", PseudoArgument.Raw(t"en"))))))
+        parse(":lang(en)")
+      . assert(_ == sl(cx(cpd(Simple.PseudoClass("lang", PseudoArgument.Raw("en"))))))
 
     suite(m"An+B"):
       def nth(text: Text): PseudoArgument =
@@ -262,151 +262,151 @@ object Tests extends Suite(m"Cataclysm Tests"):
         // middle `head` is `Selector`'s field, not a list operation.
         parse(text).selectors.prim.let(_.head.parts.prim) match
           case Simple.PseudoClass(_, argument: PseudoArgument) => argument
-          case _                                               => PseudoArgument.Raw(t"")
+          case _                                               => PseudoArgument.Raw("")
 
-      val ofList = sl(cx(cpd(cls(t"x"))))
+      val ofList = sl(cx(cpd(cls("x"))))
 
       test(m"odd keyword"):
-        nth(t":nth-child(odd)")
+        nth(":nth-child(odd)")
       . assert(_ == PseudoArgument.Nth(2, 1, Unset))
 
       test(m"even keyword"):
-        nth(t":nth-child(even)")
+        nth(":nth-child(even)")
       . assert(_ == PseudoArgument.Nth(2, 0, Unset))
 
       test(m"a bare integer"):
-        nth(t":nth-child(5)")
+        nth(":nth-child(5)")
       . assert(_ == PseudoArgument.Nth(0, 5, Unset))
 
       test(m"an an+b expression"):
-        nth(t":nth-child(2n+1)")
+        nth(":nth-child(2n+1)")
       . assert(_ == PseudoArgument.Nth(2, 1, Unset))
 
       test(m"an an+b expression with spaces"):
-        nth(t":nth-child(2n + 1)")
+        nth(":nth-child(2n + 1)")
       . assert(_ == PseudoArgument.Nth(2, 1, Unset))
 
       test(m"a negative coefficient"):
-        nth(t":nth-child(-n+3)")
+        nth(":nth-child(-n+3)")
       . assert(_ == PseudoArgument.Nth(-1, 3, Unset))
 
       test(m"an of-clause"):
-        nth(t":nth-child(2n of .x)")
+        nth(":nth-child(2n of .x)")
       . assert(_ == PseudoArgument.Nth(2, 0, ofList))
 
     suite(m"Selector errors"):
       test(m"an empty selector is rejected"):
-        capture[Css.Error](parse(t"")).reason
+        capture[Css.Error](parse("")).reason
       . assert(_ == Css.Error.Reason.EmptySelector)
 
       test(m"unexpected trailing input is rejected"):
-        capture[Css.Error](parse(t"a!")).reason
+        capture[Css.Error](parse("a!")).reason
       . assert(_ == Css.Error.Reason.UnexpectedChar('!'))
 
     suite(m"Property validation"):
       test(m"a known property is accepted"):
-        t"a { color: red }".read[Css].rules
+        "a { color: red }".read[Css].rules
       . assert(_ == List(rule(t"a", decl(t"color", t"red"))))
 
       test(m"an unknown property is rejected"):
-        capture[Css.Errors](t"a { colour: red }".read[Css]).errors.prim.let(_.reason)
-      . assert(_ == Css.Error.Reason.UnknownProperty(t"colour"))
+        capture[Css.Errors]("a { colour: red }".read[Css]).errors.prim.let(_.reason)
+      . assert(_ == Css.Error.Reason.UnknownProperty("colour"))
 
       test(m"errors from several declarations accumulate"):
-        capture[Css.Errors](t"a { colour: red; bogus: 1px }".read[Css]).errors.size
+        capture[Css.Errors]("a { colour: red; bogus: 1px }".read[Css]).errors.size
       . assert(_ == 2)
 
       test(m"an invalid value is reported"):
-        capture[Css.Errors](t"a { width: notalength }".read[Css]).errors.size
+        capture[Css.Errors]("a { width: notalength }".read[Css]).errors.size
       . assert(_ == 1)
 
       test(m"a var() value passes validation"):
-        t"a { width: var(--w) }".read[Css].rules.size
+        "a { width: var(--w) }".read[Css].rules.size
       . assert(_ == 1)
 
       test(m"a custom property is accepted"):
-        t"a { --my-color: red }".read[Css].rules
+        "a { --my-color: red }".read[Css].rules
       . assert(_ == List(rule(t"a", decl(t"--my-color", t"red"))))
 
       test(m"a known property's value grammar is loaded"):
-        PropertyDef.of(t"color").let(_.syntax)
-      . assert(_ == t"<color>")
+        PropertyDef.of("color").let(_.syntax)
+      . assert(_ == "<color>")
 
       test(m"an unknown property has no definition"):
-        PropertyDef.of(t"colour").absent
+        PropertyDef.of("colour").absent
       . assert(_ == true)
 
     suite(m"Value Definition Css.Syntax"):
       test(m"a primitive type"):
-        vp(t"<color>")
-      . assert(_ == ty(t"color"))
+        vp("<color>")
+      . assert(_ == ty("color"))
 
       test(m"a keyword"):
-        vp(t"auto")
-      . assert(_ == kw(t"auto"))
+        vp("auto")
+      . assert(_ == kw("auto"))
 
       test(m"alternatives with the bar combinator"):
-        vp(t"<length> | auto")
+        vp("<length> | auto")
       . assert(_ == Css.Syntax.OneOf(List(ty(t"length"), kw(t"auto"))))
 
       test(m"the any-order double-bar combinator"):
-        vp(t"<line-width> || <line-style> || <color>")
+        vp("<line-width> || <line-style> || <color>")
       . assert(_ == Css.Syntax.AnyOf(List(ty(t"line-width"), ty(t"line-style"), ty(t"color"))))
 
       test(m"the all-of double-ampersand combinator"):
-        vp(t"<a> && <b>")
+        vp("<a> && <b>")
       . assert(_ == Css.Syntax.AllOf(List(ty(t"a"), ty(t"b"))))
 
       test(m"juxtaposition is a sequence"):
-        vp(t"<a> <b>")
+        vp("<a> <b>")
       . assert(_ == Css.Syntax.Sequence(List(ty(t"a"), ty(t"b"))))
 
       test(m"the optional multiplier"):
-        vp(t"<a>?")
-      . assert(_ == Css.Syntax.Repeated(ty(t"a"), 0, 1, false))
+        vp("<a>?")
+      . assert(_ == Css.Syntax.Repeated(ty("a"), 0, 1, false))
 
       test(m"the star multiplier"):
-        vp(t"<a>*")
-      . assert(_ == Css.Syntax.Repeated(ty(t"a"), 0, Unset, false))
+        vp("<a>*")
+      . assert(_ == Css.Syntax.Repeated(ty("a"), 0, Unset, false))
 
       test(m"the plus multiplier"):
-        vp(t"<a>+")
-      . assert(_ == Css.Syntax.Repeated(ty(t"a"), 1, Unset, false))
+        vp("<a>+")
+      . assert(_ == Css.Syntax.Repeated(ty("a"), 1, Unset, false))
 
       test(m"a range multiplier"):
-        vp(t"<a>{1,4}")
-      . assert(_ == Css.Syntax.Repeated(ty(t"a"), 1, 4, false))
+        vp("<a>{1,4}")
+      . assert(_ == Css.Syntax.Repeated(ty("a"), 1, 4, false))
 
       test(m"the comma-separated-list multiplier"):
-        vp(t"<a>#")
-      . assert(_ == Css.Syntax.Repeated(ty(t"a"), 1, Unset, true))
+        vp("<a>#")
+      . assert(_ == Css.Syntax.Repeated(ty("a"), 1, Unset, true))
 
       test(m"a bounded comma-separated list"):
-        vp(t"<a>#{1,4}")
-      . assert(_ == Css.Syntax.Repeated(ty(t"a"), 1, 4, true))
+        vp("<a>#{1,4}")
+      . assert(_ == Css.Syntax.Repeated(ty("a"), 1, 4, true))
 
       test(m"a bracketed group with a multiplier"):
-        vp(t"[ <a> | <b> ]?")
+        vp("[ <a> | <b> ]?")
       . assert(_ == Css.Syntax.Repeated(Css.Syntax.OneOf(List(ty(t"a"), ty(t"b"))), 0, 1, false))
 
       test(m"functional notation"):
-        vp(t"rgb( <number>#{3} )")
-      . assert(_ == Css.Syntax.Function(t"rgb", Css.Syntax.Repeated(ty(t"number"), 3, 3, true)))
+        vp("rgb( <number>#{3} )")
+      . assert(_ == Css.Syntax.Function("rgb", Css.Syntax.Repeated(ty("number"), 3, 3, true)))
 
       test(m"a property reference"):
-        vp(t"<'border-width'>")
-      . assert(_ == Css.Syntax.Property(t"border-width"))
+        vp("<'border-width'>")
+      . assert(_ == Css.Syntax.Property("border-width"))
 
       test(m"a bounded type keeps its range as raw text"):
-        vp(t"<integer [1,4]>")
-      . assert(_ == Css.Syntax.Type(t"integer", t"1,4"))
+        vp("<integer [1,4]>")
+      . assert(_ == Css.Syntax.Type("integer", "1,4"))
 
       test(m"a literal slash in a sequence"):
-        vp(t"<a> / <b>")
+        vp("<a> / <b>")
       . assert(_ == Css.Syntax.Sequence(List(ty(t"a"), Css.Syntax.Literal(t"/"), ty(t"b"))))
 
       test(m"the bar combinator is looser than juxtaposition"):
-        vp(t"<a> <b> | <c>")
+        vp("<a> <b> | <c>")
       . assert(_ == Css.Syntax.OneOf(List(Css.Syntax.Sequence(List(ty(t"a"), ty(t"b"))), ty(t"c"))))
 
       test(m"every property's value grammar parses"):
@@ -425,146 +425,146 @@ object Tests extends Suite(m"Cataclysm Tests"):
               dim(2, t"px"), ValueToken.Close )
 
       test(m"an identifier"):
-        vt(t"auto")
+        vt("auto")
       . assert(_ == List(ValueToken.Ident(t"auto")))
 
       test(m"a dimension"):
-        vt(t"10px")
+        vt("10px")
       . assert(_ == List(dim(10, t"px")))
 
       test(m"a percentage"):
-        vt(t"50%")
+        vt("50%")
       . assert(_ == List(ValueToken.Percentage(50, t"50%")))
 
       test(m"a signed integer"):
-        vt(t"-3")
+        vt("-3")
       . assert(_ == List(ValueToken.Number(-3, true, t"-3")))
 
       test(m"a fractional number"):
-        vt(t"1.5")
+        vt("1.5")
       . assert(_ == List(ValueToken.Number(1.5, false, t"1.5")))
 
       test(m"a hash"):
-        vt(t"#ff0000")
+        vt("#ff0000")
       . assert(_ == List(ValueToken.Hash(t"ff0000")))
 
       test(m"a quoted string"):
-        vt(t""""hello"""")
+        vt(""""hello"""")
       . assert(_ == List(ValueToken.Quoted(t"hello")))
 
       test(m"a space-separated sequence"):
-        vt(t"1px solid red")
+        vt("1px solid red")
       . assert(_ == List(dim(1, t"px"), ws, ValueToken.Ident(t"solid"), ws, ValueToken.Ident(t"red")))
 
       test(m"functional notation"):
-        vt(t"rgb(1, 2, 3)")
+        vt("rgb(1, 2, 3)")
       . assert(_ == rgbTokens)
 
       test(m"em is a unit, not an exponent"):
-        vt(t"1em")
+        vt("1em")
       . assert(_ == List(dim(1, t"em")))
 
       test(m"scientific notation is one number"):
-        vt(t"1e3")
+        vt("1e3")
       . assert(_ == List(ValueToken.Number(1000, false, t"1e3")))
 
       test(m"a slash is a delimiter"):
-        vt(t"12px/1.5")
+        vt("12px/1.5")
       . assert(_ == List(dim(12, t"px"), ValueToken.Delim('/'), ValueToken.Number(1.5, false, t"1.5")))
 
       test(m"an unquoted url"):
-        vt(t"url(http://e.com/i.png)")
+        vt("url(http://e.com/i.png)")
       . assert(_ == List(ValueToken.Url(t"http://e.com/i.png")))
 
       test(m"a quoted url is a function"):
-        vt(t"""url("x.png")""")
+        vt("""url("x.png")""")
       . assert(_ == List(ValueToken.Function(t"url"), ValueToken.Quoted(t"x.png"), ValueToken.Close))
 
       test(m"a custom-property reference inside var()"):
-        vt(t"var(--my-color)")
+        vt("var(--my-color)")
       . assert(_ == List(ValueToken.Function(t"var"), ValueToken.Ident(t"--my-color"), ValueToken.Close))
 
       test(m"calc with spaced operators"):
-        vt(t"calc(1px + 2px)")
+        vt("calc(1px + 2px)")
       . assert(_ == calcTokens)
 
     suite(m"Value matching"):
       val numbers = Css.Syntax.OneOf(List(kw(t"auto"), ty(t"length")))
 
       test(m"a keyword value is valid"):
-        vm(t"color", t"red")
+        vm("color", "red")
       . assert(_ == Outcome.Valid)
 
       test(m"a length value is valid"):
-        vm(t"width", t"10px")
+        vm("width", "10px")
       . assert(_ == Outcome.Valid)
 
       test(m"a unitless zero is a valid length"):
-        vm(t"margin", t"0")
+        vm("margin", "0")
       . assert(_ == Outcome.Valid)
 
       test(m"a var() value is always valid"):
-        vm(t"width", t"var(--w)")
+        vm("width", "var(--w)")
       . assert(_ == Outcome.Valid)
 
       test(m"a calc() value is accepted where a length is expected"):
-        vm(t"width", t"calc(100% - 10px)")
+        vm("width", "calc(100% - 10px)")
       . assert(_ == Outcome.Valid)
 
       test(m"a matching keyword in a hand-built grammar"):
-        vmatch(numbers, t"auto")
+        vmatch(numbers, "auto")
       . assert(_ == Outcome.Valid)
 
       test(m"a non-matching value is invalid"):
-        vmatch(numbers, t"red")
+        vmatch(numbers, "red")
       . assert(_ == Outcome.Invalid)
 
       test(m"an unimplemented type is unsupported"):
-        vmatch(Css.Syntax.Type(t"frobnicate", Unset), t"anything")
+        vmatch(Css.Syntax.Type("frobnicate", Unset), "anything")
       . assert(_ == Outcome.Unsupported(List(t"frobnicate")))
 
       test(m"a sequence of lengths"):
-        vmatch(Css.Syntax.Sequence(List(ty(t"length"), ty(t"length"))), t"1px 2px")
+        vmatch(Css.Syntax.Sequence(List(ty(t"length"), ty(t"length"))), "1px 2px")
       . assert(_ == Outcome.Valid)
 
       test(m"any-order matching with the double-ampersand"):
-        vmatch(Css.Syntax.AnyOf(List(kw(t"a"), kw(t"b"))), t"b a")
+        vmatch(Css.Syntax.AnyOf(List(kw(t"a"), kw(t"b"))), "b a")
       . assert(_ == Outcome.Valid)
 
       test(m"a comma-separated repeat"):
-        vmatch(Css.Syntax.Repeated(ty(t"length"), 1, Unset, true), t"1px, 2px, 3px")
+        vmatch(Css.Syntax.Repeated(ty("length"), 1, Unset, true), "1px, 2px, 3px")
       . assert(_ == Outcome.Valid)
 
       test(m"the global keyword inherit is valid for any property"):
-        vm(t"color", t"inherit")
+        vm("color", "inherit")
       . assert(_ == Outcome.Valid)
 
       test(m"the global keyword unset is valid for any property"):
-        vm(t"width", t"unset")
+        vm("width", "unset")
       . assert(_ == Outcome.Valid)
 
       test(m"a flex value is valid"):
-        vmatch(ty(t"flex"), t"1fr")
+        vmatch(ty("flex"), "1fr")
       . assert(_ == Outcome.Valid)
 
       test(m"a ratio value is valid"):
-        vmatch(ty(t"ratio"), t"16/9")
+        vmatch(ty("ratio"), "16/9")
       . assert(_ == Outcome.Valid)
 
       test(m"a single-number ratio is valid"):
-        vmatch(ty(t"ratio"), t"1")
+        vmatch(ty("ratio"), "1")
       . assert(_ == Outcome.Valid)
 
     suite(m"Selector names"):
-      val css = t".a #b { color: red } @media screen { .c:not(.d) e#f { color: blue } }".read[Css]
+      val css = ".a #b { color: red } @media screen { .c:not(.d) e#f { color: blue } }".read[Css]
 
       test(m"class names are collected, including nested and inside :not()"):
         css.classes.stdlib.map(name => name: Text).to(Set)
-      . assert(_ == Set(t"a", t"c", t"d"))
+      . assert(_ == Set("a", "c", "d"))
 
       test(m"id names are collected, including nested"):
         css.ids.stdlib.map(name => name: Text).to(Set)
-      . assert(_ == Set(t"b", t"f"))
+      . assert(_ == Set("b", "f"))
 
     suite(m"CSS-checked attributions"):
       given (Styles at "/cataclysm/test.css") = Styles(cp"/cataclysm/test.css")
@@ -572,15 +572,15 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
       test(m"a class name resolves to the class attribute"):
         summon[Attribution of "button"].attribute
-      . assert(_ == t"class")
+      . assert(_ == "class")
 
       test(m"an id name resolves to the id attribute"):
         summon[Attribution of "main"].attribute
-      . assert(_ == t"id")
+      . assert(_ == "id")
 
       test(m"a class used only in a compound/pseudo selector is found"):
         summon[Attribution of "warning"].attribute
-      . assert(_ == t"class")
+      . assert(_ == "class")
 
       test(m"an unknown name fails to compile"):
         demilitarize:
@@ -596,22 +596,22 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
     suite(m"CSS errors"):
       test(m"an unterminated comment is reported"):
-        capture[Css.Errors](t"a { /* unterminated }".read[Css]).errors.prim.let(_.reason)
+        capture[Css.Errors]("a { /* unterminated }".read[Css]).errors.prim.let(_.reason)
       . assert(_ == Css.Error.Reason.UnterminatedComment)
 
       test(m"an unterminated string is reported"):
-        capture[Css.Errors](t"""a { content: "x }""".read[Css]).errors.prim.let(_.reason)
+        capture[Css.Errors]("""a { content: "x }""".read[Css]).errors.prim.let(_.reason)
       . assert(_ == Css.Error.Reason.UnterminatedString)
 
       test(m"a missing closing brace is reported"):
-        capture[Css.Errors](t"a { color: red;".read[Css]).errors.prim.let(_.reason)
+        capture[Css.Errors]("a { color: red;".read[Css]).errors.prim.let(_.reason)
       . assert(_ == Css.Error.Reason.UnexpectedEnd)
 
     suite(m"CSS serialization"):
-      val complex = t"""ul > li.item:nth-child(2n+1) a[href^="http"] { color: red }""".read[Css]
+      val complex = """ul > li.item:nth-child(2n+1) a[href^="http"] { color: red }""".read[Css]
 
       val nestedAtText =
-        t"@media screen and (min-width: 700px) { a { color: red; & b { color: blue } } }"
+        "@media screen and (min-width: 700px) { a { color: red; & b { color: blue } } }"
 
       val nestedAt = nestedAtText.read[Css]
 
@@ -621,13 +621,13 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
       test(m"compact serialization has no spaces or newlines"):
         import formatting.compactCssFormatting
-        t"a { color: red }".read[Css].show
-      . assert(_ == t"a{color:red;}")
+        "a { color: red }".read[Css].show
+      . assert(_ == "a{color:red;}")
 
       test(m"standard serialization indents declarations"):
         import formatting.indentedCssFormatting
-        t"a { color: red }".read[Css].show
-      . assert(_ == t"a {\n  color: red;\n}\n")
+        "a { color: red }".read[Css].show
+      . assert(_ == "a {\n  color: red;\n}\n")
 
       test(m"a complex selector round-trips through serialization"):
         roundTrip(complex)
@@ -647,47 +647,47 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
       test(m"pixels render with a px suffix"):
         lengthText(2.0*Px)
-      . assert(_ == t"2px")
+      . assert(_ == "2px")
 
       test(m"a fractional em keeps its decimal"):
         lengthText(1.5*Em)
-      . assert(_ == t"1.5em")
+      . assert(_ == "1.5em")
 
       test(m"a viewport-height value renders as vh"):
         lengthText(100.0*Vh)
-      . assert(_ == t"100vh")
+      . assert(_ == "100vh")
 
       test(m"a centimetre value renders in millimetres"):
         lengthText(3.0*Cm)
-      . assert(_ == t"30mm")
+      . assert(_ == "30mm")
 
       test(m"a metres-based length always renders in mm"):
         lengthText(2.0*Mm)
-      . assert(_ == t"2mm")
+      . assert(_ == "2mm")
 
       test(m"an Srgb colour renders as a hex triplet"):
         colorText(iridescence.Srgb(1.0, 0.0, 0.0))
-      . assert(_ == t"#ff0000")
+      . assert(_ == "#ff0000")
 
       test(m"a percentage renders with a percent sign"):
         percentageText(50.0*Pct)
-      . assert(_ == t"50%")
+      . assert(_ == "50%")
 
       test(m"a millisecond value renders with an ms suffix"):
         timeText(200.0*Ms)
-      . assert(_ == t"200ms")
+      . assert(_ == "200ms")
 
       test(m"a second value renders in milliseconds"):
         timeText(1.5*S)
-      . assert(_ == t"1500ms")
+      . assert(_ == "1500ms")
 
       test(m"a degree value renders with a deg suffix"):
         angleText(90.0*Deg)
-      . assert(_ == t"90deg")
+      . assert(_ == "90deg")
 
       test(m"a flex value renders with an fr suffix"):
         flexText(2.0*Fr)
-      . assert(_ == t"2fr")
+      . assert(_ == "2fr")
 
       test(m"adding two different relative units fails to compile"):
         demilitarize(2.0*Em + 1.0*Vh).nonEmpty
@@ -699,16 +699,16 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
     suite(m"CSS output integrations"):
       test(m"a stylesheet is served with the text/css media type"):
-        t"a { color: red }".read[Css].mediaType.show
-      . assert(_.starts(t"text/css"))
+        "a { color: red }".read[Css].mediaType.show
+      . assert(_.starts("text/css"))
 
       test(m"an inline style renders its declarations"):
         Css.Style(color = iridescence.Srgb(1.0, 0.0, 0.0), width = 4.0*Px).text
-      . assert(_ == t"color: #ff0000; width: 4px")
+      . assert(_ == "color: #ff0000; width: 4px")
 
       test(m"a camelCase property name becomes kebab-case"):
         Css.Style(borderWidth = 2.0*Px).text
-      . assert(_ == t"border-width: 2px")
+      . assert(_ == "border-width: 2px")
 
       test(m"a value of the wrong type fails to compile"):
         demilitarize(Css.Style(color = 4.0*Px)).exists(_.message.contains("not valid for"))
@@ -720,15 +720,15 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
       test(m"a global keyword is valid for any property"):
         Css.Style(color = Css.inherit, width = Css.unset).text
-      . assert(_ == t"color: inherit; width: unset")
+      . assert(_ == "color: inherit; width: unset")
 
       test(m"a transparent colour keyword renders"):
         Css.Style(color = Css.transparent).text
-      . assert(_ == t"color: transparent")
+      . assert(_ == "color: transparent")
 
       test(m"a millisecond duration renders in a style"):
         Css.Style(transitionDuration = 200.0*Ms).text
-      . assert(_ == t"transition-duration: 200ms")
+      . assert(_ == "transition-duration: 200ms")
 
       test(m"an angle value for a colour property fails to compile"):
         demilitarize(Css.Style(color = 5.0*Deg)).exists(_.message.contains("not valid for"))
@@ -744,46 +744,46 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
       test(m"a colour substitution in value position"):
         css"a { color: $red }"
-      . assert(_ == t"a { color: #ff0000 }".read[Css])
+      . assert(_ == "a { color: #ff0000 }".read[Css])
 
       test(m"an rgb colour literal substitution"):
         css"a { color: ${rgb"#3344ff"} }"
-      . assert(_ == t"a { color: #3344ff }".read[Css])
+      . assert(_ == "a { color: #3344ff }".read[Css])
 
       test(m"a length substitution in value position"):
         css"a { width: $width }"
-      . assert(_ == t"a { width: 4px }".read[Css])
+      . assert(_ == "a { width: 4px }".read[Css])
 
       test(m"multiple substitutions in one rule"):
         css"a { color: $red; width: $width }"
-      . assert(_ == t"a { color: #ff0000; width: 4px }".read[Css])
+      . assert(_ == "a { color: #ff0000; width: 4px }".read[Css])
 
       test(m"a substitution inside an at-rule body"):
         css"@media screen { a { width: $width } }"
-      . assert(_ == t"@media screen { a { width: 4px } }".read[Css])
+      . assert(_ == "@media screen { a { width: 4px } }".read[Css])
 
-      val button = Name[CssClass](t"button")
-      val main = Name[DomId](t"main")
+      val button = Name[CssClass]("button")
+      val main = Name[DomId]("main")
 
       test(m"a CSS class substitution in selector position"):
         css"$button { color: red }"
-      . assert(_ == t".button { color: red }".read[Css])
+      . assert(_ == ".button { color: red }".read[Css])
 
       test(m"a DOM id substitution in selector position"):
         css"$main { color: red }"
-      . assert(_ == t"#main { color: red }".read[Css])
+      . assert(_ == "#main { color: red }".read[Css])
 
       test(m"a class substitution compounded with an element"):
         css"div$button { color: red }"
-      . assert(_ == t"div.button { color: red }".read[Css])
+      . assert(_ == "div.button { color: red }".read[Css])
 
       test(m"a selector hole and a value hole in document order"):
         css"$button { color: $red }"
-      . assert(_ == t".button { color: #ff0000 }".read[Css])
+      . assert(_ == ".button { color: #ff0000 }".read[Css])
 
       test(m"a global keyword substitution in value position"):
         css"a { color: ${Css.inherit} }"
-      . assert(_ == t"a { color: inherit }".read[Css])
+      . assert(_ == "a { color: inherit }".read[Css])
 
       test(m"a wrong-typed substitution fails to compile"):
         demilitarize(css"a { color: $width }").exists(_.message.contains("not valid for"))
@@ -802,15 +802,15 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
       test(m"bare declarations produce an inline style set"):
         css"color: red; width: 4px".text
-      . assert(_ == t"color: red; width: 4px")
+      . assert(_ == "color: red; width: 4px")
 
       test(m"a substitution in a bare declaration is checked and rendered"):
         css"width: $width".text
-      . assert(_ == t"width: 4px")
+      . assert(_ == "width: 4px")
 
       test(m"a rule produces a stylesheet"):
         css"a { color: red }".rules
-      . assert(_ == t"a { color: red }".read[Css].rules)
+      . assert(_ == "a { color: red }".read[Css].rules)
 
       test(m"a bare style set is statically a Css.Style, not a stylesheet"):
         demilitarize(css"color: red".rules).nonEmpty
@@ -825,11 +825,11 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
       test(m"two stylesheets join into one"):
         (css"a { color: red }" + css"b { color: blue }").rules
-      . assert(_ == t"a { color: red } b { color: blue }".read[Css].rules)
+      . assert(_ == "a { color: red } b { color: blue }".read[Css].rules)
 
       test(m"two inline style sets join into one"):
         (css"color: red" + css"width: $width").text
-      . assert(_ == t"color: red; width: 4px")
+      . assert(_ == "color: red; width: 4px")
 
     suite(m"Compile-time error positioning"):
       test(m"an unterminated string clamps onto the last character"):

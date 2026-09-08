@@ -59,7 +59,7 @@ import scintillate.*
 import wisteria.*
 
 object Mcp:
-  val version = t"2025-11-25"
+  val version = "2025-11-25"
 
   type Cursor = Text
 
@@ -133,8 +133,8 @@ object Mcp:
             case Http.Get =>
               Http.Response
                 ( Http.Ok,
-                  connection         = t"keep-alive",
-                  cacheControl       = t"no-cache",
+                  connection         = "keep-alive",
+                  cacheControl       = "no-cache",
                   mcpProtocolVersion = version,
                   mcpSessionId       = id )
                 ( mcpInterface.stream )
@@ -307,16 +307,16 @@ object Mcp:
 
   object TaskSupport:
     given encodable: TaskSupport is Json.Encodable = Json.Encodable(() => Morphology.Str):
-      case TaskSupport.Forbidden => t"forbidden".in[Json]
-      case TaskSupport.Optional  => t"optional".in[Json]
-      case TaskSupport.Required  => t"required".in[Json]
+      case TaskSupport.Forbidden => "forbidden".in[Json]
+      case TaskSupport.Optional  => "optional".in[Json]
+      case TaskSupport.Required  => "required".in[Json]
 
     given decodable: Tactic[Json.Error] => TaskSupport is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
-          case t"forbidden" => TaskSupport.Forbidden
-          case t"optional"  => TaskSupport.Optional
-          case t"required"  => TaskSupport.Required
+          case "forbidden" => TaskSupport.Forbidden
+          case "optional"  => TaskSupport.Optional
+          case "required"  => TaskSupport.Required
           case _            => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum TaskSupport:
@@ -329,14 +329,14 @@ object Mcp:
     given decodable: Tactic[Json.Error] => LoggingLevel is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
-          case t"debug"     => LoggingLevel.Debug
-          case t"info"      => LoggingLevel.Info
-          case t"notice"    => LoggingLevel.Notice
-          case t"warning"   => LoggingLevel.Warning
-          case t"error"     => LoggingLevel.Error
-          case t"critical"  => LoggingLevel.Critical
-          case t"alert"     => LoggingLevel.Alert
-          case t"emergency" => LoggingLevel.Emergency
+          case "debug"     => LoggingLevel.Debug
+          case "info"      => LoggingLevel.Info
+          case "notice"    => LoggingLevel.Notice
+          case "warning"   => LoggingLevel.Warning
+          case "error"     => LoggingLevel.Error
+          case "critical"  => LoggingLevel.Critical
+          case "alert"     => LoggingLevel.Alert
+          case "emergency" => LoggingLevel.Emergency
           case _            => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum LoggingLevel:
@@ -346,20 +346,20 @@ object Mcp:
 
   object TaskStatus:
     given encodable: TaskStatus is Json.Encodable = Json.Encodable(() => Morphology.Str):
-      case TaskStatus.Working       => t"working".in[Json]
-      case TaskStatus.InputRequired => t"input_required".in[Json]
-      case TaskStatus.Completed     => t"completed".in[Json]
-      case TaskStatus.Failed        => t"failed".in[Json]
-      case TaskStatus.Cancelled     => t"cancelled".in[Json]
+      case TaskStatus.Working       => "working".in[Json]
+      case TaskStatus.InputRequired => "input_required".in[Json]
+      case TaskStatus.Completed     => "completed".in[Json]
+      case TaskStatus.Failed        => "failed".in[Json]
+      case TaskStatus.Cancelled     => "cancelled".in[Json]
 
     given decodable: Tactic[Json.Error] => TaskStatus is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
-          case t"working"        => TaskStatus.Working
-          case t"input_required" => TaskStatus.InputRequired
-          case t"completed"      => TaskStatus.Completed
-          case t"failed"         => TaskStatus.Failed
-          case t"cancelled"      => TaskStatus.Cancelled
+          case "working"        => TaskStatus.Working
+          case "input_required" => TaskStatus.InputRequired
+          case "completed"      => TaskStatus.Completed
+          case "failed"         => TaskStatus.Failed
+          case "cancelled"      => TaskStatus.Cancelled
           case _                 => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum TaskStatus:
@@ -384,11 +384,11 @@ object Mcp:
   object Reference:
     import dynamicAccess.dynamicJson
 
-    private val typeTag = Json.discriminatedUnion[Reference](t"type")
+    private val typeTag = Json.discriminatedUnion[Reference]("type")
 
     given encodable: Reference is Json.Encodable = Json.Encodable(() => Morphology.Any):
-      case ref: PromptReference           => typeTag.rewrite(t"ref/prompt", ref.in[Json])
-      case ref: ResourceTemplateReference => typeTag.rewrite(t"ref/resource", ref.in[Json])
+      case ref: PromptReference           => typeTag.rewrite("ref/prompt", ref.in[Json])
+      case ref: ResourceTemplateReference => typeTag.rewrite("ref/resource", ref.in[Json])
 
     given decodable: Tactic[Json.Error] => Reference is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
@@ -437,16 +437,16 @@ object Mcp:
 
   object Mode:
     given encodable: Mode is Json.Encodable = Json.Encodable(() => Morphology.Str):
-      case Mode.Auto     => t"auto".in[Json]
-      case Mode.Required => t"required".in[Json]
-      case Mode.None     => t"none".in[Json]
+      case Mode.Auto     => "auto".in[Json]
+      case Mode.Required => "required".in[Json]
+      case Mode.None     => "none".in[Json]
 
     given decodable: Tactic[Json.Error] => Mode is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
-          case t"auto"     => Mode.Auto
-          case t"required" => Mode.Required
-          case t"none"     => Mode.None
+          case "auto"     => Mode.Auto
+          case "required" => Mode.Required
+          case "none"     => Mode.None
           case _           => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum Mode:
@@ -467,14 +467,14 @@ object Mcp:
   object ToolUseContent:
     import dynamicAccess.dynamicJson
 
-    private val typeTag = Json.discriminatedUnion[SamplingMessageContentBlock](t"type")
+    private val typeTag = Json.discriminatedUnion[SamplingMessageContentBlock]("type")
 
     given encodable: SamplingMessageContentBlock is Json.Encodable = Json.Encodable(() => Morphology.Any):
-      case content: TextContent       => typeTag.rewrite(t"text",        content.in[Json])
-      case content: ImageContent      => typeTag.rewrite(t"image",       content.in[Json])
-      case content: AudioContent      => typeTag.rewrite(t"audio",       content.in[Json])
-      case content: ToolUseContent    => typeTag.rewrite(t"tool_use",    content.in[Json])
-      case content: ToolResultContent => typeTag.rewrite(t"tool_result", content.in[Json])
+      case content: TextContent       => typeTag.rewrite("text",        content.in[Json])
+      case content: ImageContent      => typeTag.rewrite("image",       content.in[Json])
+      case content: AudioContent      => typeTag.rewrite("audio",       content.in[Json])
+      case content: ToolUseContent    => typeTag.rewrite("tool_use",    content.in[Json])
+      case content: ToolResultContent => typeTag.rewrite("tool_result", content.in[Json])
 
     given decodable: Tactic[Json.Error] => SamplingMessageContentBlock is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
@@ -521,16 +521,16 @@ object Mcp:
 
   object ElicitAction:
     given encodable: ElicitAction is Json.Encodable = Json.Encodable(() => Morphology.Str):
-      case ElicitAction.Accept  => t"accept".in[Json]
-      case ElicitAction.Decline => t"decline".in[Json]
-      case ElicitAction.Cancel  => t"cancel".in[Json]
+      case ElicitAction.Accept  => "accept".in[Json]
+      case ElicitAction.Decline => "decline".in[Json]
+      case ElicitAction.Cancel  => "cancel".in[Json]
 
     given decodable: Tactic[Json.Error] => ElicitAction is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
-          case t"accept"  => ElicitAction.Accept
-          case t"decline" => ElicitAction.Decline
-          case t"cancel"  => ElicitAction.Cancel
+          case "accept"  => ElicitAction.Accept
+          case "decline" => ElicitAction.Decline
+          case "cancel"  => ElicitAction.Cancel
           case _          => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum ElicitAction:
@@ -862,7 +862,7 @@ object Mcp:
       `notifications/message`(LoggingLevel.Info, "updates", Map("message" -> message).in[Json])
 
     def elicit[result: Schematic over JsonSchema](message: Text): Json =
-      `elicitation/create`(t"form", message, result.schema().in[Json])
+      `elicitation/create`("form", message, result.schema().in[Json])
 
     def sample(message: Text): Unit = ???
 

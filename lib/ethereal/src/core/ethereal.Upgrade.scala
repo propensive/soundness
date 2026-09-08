@@ -102,7 +102,7 @@ object Upgrade:
 
         val pendingDir: Path on Linux = dataHome/name
         pendingDir.create[Directory](CreateFlag.Parents, CreateFlag.Replace)
-        val pendingPath: Path on Linux = pendingDir/t".pending"
+        val pendingPath: Path on Linux = pendingDir/".pending"
 
         pendingPath.open[File](Write, OpenFlag.Create): file ?=>
           file.write(Chain(bytes))
@@ -118,7 +118,7 @@ object Upgrade:
 
 
   private def isWindows(using system: System): Boolean =
-    safely(System.properties.os.name[Text]().lower.contains(t"win")).or(false)
+    safely(System.properties.os.name[Text]().lower.contains("win")).or(false)
 
   // UpgradeError → Upgrade.Error
   object Error:

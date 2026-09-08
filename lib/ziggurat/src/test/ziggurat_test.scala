@@ -94,12 +94,12 @@ object Tests extends Suite(m"Ziggurat tests"):
     val dockerOk = safely(sh"docker info".exec[Exit]()) == Exit.Ok
 
     val hostLabel = sh"uname -m".exec[Text]().trim match
-      case t"arm64" | t"aarch64" => t"macos-arm64"
-      case _                     => t"macos-x64"
+      case "arm64" | "aarch64" => "macos-arm64"
+      case _                     => "macos-x64"
 
     suite(m"bundle()"):
       test(m"output starts with bash shebang"):
-        bundleBytes.utf8.starts(t"#!/usr/bin/env bash")
+        bundleBytes.utf8.starts("#!/usr/bin/env bash")
       .assert(_ == true)
 
       test(m"index line contains every label"):
@@ -136,11 +136,11 @@ object Tests extends Suite(m"Ziggurat tests"):
 
     suite(m"onlineLauncher()"):
       val entries: proscenium.List[(Text, Text, Text)] =
-        labels.map(fileEntry(tempDir(), _, t"#!/bin/sh\n"))
-      val script: Data = Xeq.onlineLauncher(t"JAR".in[Data], entries)
+        labels.map(fileEntry(tempDir(), _, "#!/bin/sh\n"))
+      val script: Data = Xeq.onlineLauncher("JAR".in[Data], entries)
 
       test(m"output starts with bash shebang"):
-        script.utf8.starts(t"#!/usr/bin/env bash")
+        script.utf8.starts("#!/usr/bin/env bash")
       .assert(_ == true)
 
       test(m"assets line contains every label"):
@@ -149,7 +149,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       .assert(_ == true)
 
       test(m"embeds the JAR once as the data payload"):
-        script.utf8.contains(t"index:data=1")
+        script.utf8.contains("index:data=1")
       .assert(_ == true)
 
     def stageDispatcher(entries: List[(Text, Text, Text)]): Path on Linux =
@@ -163,11 +163,11 @@ object Tests extends Suite(m"Ziggurat tests"):
 
     suite(m"dispatcher()"):
       val entries: proscenium.List[(Text, Text, Text)] =
-        labels.map(fileEntry(tempDir(), _, t"#!/bin/sh\n"))
+        labels.map(fileEntry(tempDir(), _, "#!/bin/sh\n"))
       val script: Data = Xeq.dispatcher(entries)
 
       test(m"output starts with bash shebang"):
-        script.utf8.starts(t"#!/usr/bin/env bash")
+        script.utf8.starts("#!/usr/bin/env bash")
       .assert(_ == true)
 
       test(m"assets line contains every label"):
@@ -176,7 +176,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       .assert(_ == true)
 
       test(m"embeds no payload at all"):
-        script.utf8.contains(t"index:")
+        script.utf8.contains("index:")
       .assert(_ == false)
 
       // The downloaded "executable" reports its arguments, so this exercises the whole
@@ -195,18 +195,18 @@ object Tests extends Suite(m"Ziggurat tests"):
         val dir = tempDir()
         val entries: proscenium.List[(Text, Text, Text)] = proscenium.List.from:
           labels.stdlib.map: (label: Text) =>
-            fileEntry(dir, label, t"#!/bin/sh\necho again\n")
+            fileEntry(dir, label, "#!/bin/sh\necho again\n")
         val dispatch = stageDispatcher(entries)
         sh"$dispatch".exec[Text]()
         sh"$dispatch".exec[Text]().trim
-      .assert(_ == t"again")
+      .assert(_ == "again")
 
       test(m"rejects an executable whose hash does not match"):
         val dir = tempDir()
-        val badHash = t"0"*64
+        val badHash = "0"*64
         val entries: proscenium.List[(Text, Text, Text)] = proscenium.List.from:
           labels.stdlib.map: (label: Text) =>
-            fileEntry(dir, label, t"#!/bin/sh\necho oops\n", badHash)
+            fileEntry(dir, label, "#!/bin/sh\necho oops\n", badHash)
         val dispatch = stageDispatcher(entries)
         sh"$dispatch".exec[Exit]()
       .assert(_ != Exit.Ok)
@@ -224,10 +224,10 @@ object Tests extends Suite(m"Ziggurat tests"):
 
       test(m"rejects a binary whose hash does not match"):
         val dir = tempDir()
-        val badHash = t"0"*64
+        val badHash = "0"*64
         val entries: proscenium.List[(Text, Text, Text)] = proscenium.List.from:
           labels.stdlib.map: (label: Text) =>
-            fileEntry(dir, label, t"#!/bin/sh\necho oops\nexit 0\n", badHash)
+            fileEntry(dir, label, "#!/bin/sh\necho oops\nexit 0\n", badHash)
         sh"${stageDownloader(t"JAR".in[Data], entries)}".exec[Exit]()
       .assert(_ != Exit.Ok)
 
@@ -237,28 +237,28 @@ object Tests extends Suite(m"Ziggurat tests"):
       def config
          (delivery:     Packaging.Delivery,
           dependencies: Packaging.Dependencies,
-          runnerSource: Packaging.RunnerSource = Packaging.RunnerSource.Remote(t"https://x.test/", Map()),
+          runnerSource: Packaging.RunnerSource = Packaging.RunnerSource.Remote("https://x.test/", Map()),
           targets:      List[Text]             = List(t"linux-x64"))
       :   Packaging =
         val dir = tempDir()
         Packaging
-         (name         = t"hello",
+         (name         = "hello",
           targets      = targets,
           delivery     = delivery,
           dependencies = dependencies,
-          output       = dir/t"hello",
+          output       = dir/"hello",
           runnerSource = runnerSource)
 
-      val fatJar: Packaging.Dependencies = Packaging.Dependencies.FatJar(tempDir()/t"app.jar")
+      val fatJar: Packaging.Dependencies = Packaging.Dependencies.FatJar(tempDir()/"app.jar")
 
       test(m"Burdock remote dependencies are rejected"):
-        val dependencies = Packaging.Dependencies.BurdockRemote(tempDir()/t"app.jar")
+        val dependencies = Packaging.Dependencies.BurdockRemote(tempDir()/"app.jar")
         capture[Packager.Error](Packager.pack(config(Packaging.Delivery.EmbedAll, dependencies)))
       .assert(_ => true)
 
       test(m"remote runner with no hash for the target is rejected"):
         // Fails on the missing-hash check before any download is attempted.
-        val remote = Packaging.RunnerSource.Remote(t"https://example.invalid/", Map())
+        val remote = Packaging.RunnerSource.Remote("https://example.invalid/", Map())
         capture[Packager.Error]:
           Packager.pack(config(Packaging.Delivery.Native, fatJar, remote))
       .assert(_ => true)
@@ -286,15 +286,15 @@ object Tests extends Suite(m"Ziggurat tests"):
         val dir: Path on Linux = tempDir()
         labels.each(writeStub(dir, _))
 
-        val jar: Path on Linux = dir/t"app.jar"
+        val jar: Path on Linux = dir/"app.jar"
         jar.create[File]()
-        jar.open[File](Write) { h ?=> h.write(Chain(t"JARBYTES".in[Data])) }
+        jar.open[File](Write) { h ?=> h.write(Chain("JARBYTES".in[Data])) }
 
-        val out: Path on Linux = dir/t"hello"
+        val out: Path on Linux = dir/"hello"
 
         val packaging: Packaging =
           Packaging
-            ( name         = t"hello",
+            ( name         = "hello",
               targets      = labels,
               delivery     = Packaging.Delivery.EmbedAll,
               dependencies = Packaging.Dependencies.FatJar(jar),
@@ -304,38 +304,38 @@ object Tests extends Suite(m"Ziggurat tests"):
         Packager.pack(packaging)
         val text: Text = out.read[Data].utf8
 
-        text.starts(t"#!/usr/bin/env bash") && text.contains(t"data=")
+        text.starts("#!/usr/bin/env bash") && text.contains("data=")
         && labels.all { label => text.contains(t"$label=") }
       .assert(_ == true)
 
       test(m"Download embeds the JAR once and an asset row per target"):
         val dir: Path on Linux = tempDir()
 
-        val jar: Path on Linux = dir/t"app.jar"
+        val jar: Path on Linux = dir/"app.jar"
         jar.create[File]()
-        jar.open[File](Write) { h ?=> h.write(Chain(t"JARBYTES".in[Data])) }
+        jar.open[File](Write) { h ?=> h.write(Chain("JARBYTES".in[Data])) }
 
-        val out: Path on Linux = dir/t"hello"
-        val hashes: Map[Text, Text] = labels.map(_ -> t"0"*64).to[Map]
+        val out: Path on Linux = dir/"hello"
+        val hashes: Map[Text, Text] = labels.map(_ -> "0"*64).to[Map]
 
         val packaging: Packaging =
           Packaging
-            ( name         = t"hello",
+            ( name         = "hello",
               targets      = labels,
               delivery     = Packaging.Delivery.Download,
               dependencies = Packaging.Dependencies.FatJar(jar),
               output       = out,
-              runnerSource = Packaging.RunnerSource.Remote(t"https://r.test/", hashes) )
+              runnerSource = Packaging.RunnerSource.Remote("https://r.test/", hashes) )
 
         Packager.pack(packaging)
         val text: Text = out.read[Data].utf8
 
-        text.contains(t"index:data=1")
+        text.contains("index:data=1")
         && labels.all { label => text.contains(t"$label=https://r.test/runner-$label") }
       .assert(_ == true)
 
     // Docker on macOS cannot run macOS containers, so macOS coverage is host-native only.
-    if !dockerOk then Out.println(t"Docker unavailable; skipping Linux container tests")
+    if !dockerOk then Out.println("Docker unavailable; skipping Linux container tests")
     else
       suite(m"docker linux/amd64"):
         test(m"selects linux-x64 payload"):
@@ -343,7 +343,7 @@ object Tests extends Suite(m"Ziggurat tests"):
           val mount = t"$dir:/work"
           sh"docker run --rm --platform linux/amd64 -v $mount -w /work ubuntu:24.04 ./hello"
             .exec[Text]().trim
-        .assert(_ == t"hello from linux-x64")
+        .assert(_ == "hello from linux-x64")
 
       suite(m"docker linux/arm64"):
         test(m"selects linux-arm64 payload"):
@@ -351,7 +351,7 @@ object Tests extends Suite(m"Ziggurat tests"):
           val mount = t"$dir:/work"
           sh"docker run --rm --platform linux/arm64 -v $mount -w /work ubuntu:24.04 ./hello"
             .exec[Text]().trim
-        .assert(_ == t"hello from linux-arm64")
+        .assert(_ == "hello from linux-arm64")
 
     val winHost: Optional[Text] = safely(Environment.windowsHost[Text])
 
@@ -388,7 +388,7 @@ Add-Type -TypeDefinition $$src -OutputAssembly ziggurat-test-hello.exe -OutputTy
         else
           val winArm64Bytes: Data = localExe.read[Data]
           val allPayloads: proscenium.List[Payload] =
-            payloads :+ Payload(t"windows-arm64", winArm64Bytes, gzip = false)
+            payloads :+ Payload("windows-arm64", winArm64Bytes, gzip = false)
           val winBundle = Xeq.installer(allPayloads)
 
           def stageAndCopy(extension: Text): Text =
@@ -403,14 +403,14 @@ Add-Type -TypeDefinition $$src -OutputAssembly ziggurat-test-hello.exe -OutputTy
           try
             suite(m"windows-arm64 via cmd.exe"):
               test(m"selects windows-arm64 payload"):
-                val name = stageAndCopy(t"bat")
+                val name = stageAndCopy("bat")
                 sh"ssh $host cmd /c $name".exec[Text]()
-              .assert(_.contains(t"hello from windows-arm64"))
+              .assert(_.contains("hello from windows-arm64"))
 
             suite(m"windows-arm64 via PowerShell"):
               test(m"selects windows-arm64 payload"):
-                val name = stageAndCopy(t"ps1")
+                val name = stageAndCopy("ps1")
                 sh"ssh $host powershell -ExecutionPolicy Bypass -File $name".exec[Text]()
-              .assert(_.contains(t"hello from windows-arm64"))
+              .assert(_.contains("hello from windows-arm64"))
           finally
             safely(sh"ssh $host del /q ziggurat-test-*".exec[Exit]())

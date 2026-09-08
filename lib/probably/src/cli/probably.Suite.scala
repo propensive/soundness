@@ -110,7 +110,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
   // (full path segments, file and line), which no text format could carry unambiguously
   // (test and suite names may contain any character).
   final def invoke(arguments: Text, sink: TestEvent -> Unit): Int =
-    val selection = Selection.parse(arguments.cut(t"\n").filter(_ != t""))
+    val selection = Selection.parse(arguments.cut("\n").filter(_ != ""))
 
     if selection.listOnly then
       runner0 = makeRunner(selection, sink)

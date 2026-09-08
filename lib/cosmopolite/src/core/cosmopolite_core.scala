@@ -36,7 +36,7 @@ import anticipation.*
 import gossamer.*
 import hieroglyph.*
 
-object en extends Language(t"en"):
+object en extends Language("en"):
   type Code = en
 
   given collatable: en is Collatable:
@@ -44,7 +44,7 @@ object en extends Language(t"en"):
 
 trait en
 
-object pl extends Language(t"pl"):
+object pl extends Language("pl"):
   type Code = pl
 
   // CLDR Polish: nine accented letters collate as letters in their own right, after their
@@ -76,7 +76,7 @@ object pl extends Language(t"pl"):
 
 trait pl
 
-object fr extends Language(t"fr"):
+object fr extends Language("fr"):
   type Code = fr
 
   // CLDR root French is untailored (backward secondary accents are a Canadian French
@@ -86,7 +86,7 @@ object fr extends Language(t"fr"):
 
 trait fr
 
-object de extends Language(t"de"):
+object de extends Language("de"):
   type Code = de
 
   // CLDR standard German is untailored (umlauts differ at the secondary level, which is
@@ -96,7 +96,7 @@ object de extends Language(t"de"):
 
 trait de
 
-object es extends Language(t"es"):
+object es extends Language("es"):
   type Code = es
 
   // CLDR Spanish: ñ collates as a letter between n and o.

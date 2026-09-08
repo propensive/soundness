@@ -56,42 +56,42 @@ object Tests extends Suite(m"Yossarian Tests"):
 
     suite(m"Plain text"):
       test(m"writing text places characters in cells"):
-        row(fresh.consume(t"hi"), Prim)
-      . assert(_ == t"hi        ")
+        row(fresh.consume("hi"), Prim)
+      . assert(_ == "hi        ")
 
       test(m"cursor advances after writing"):
-        fresh.consume(t"hi").state.cursor
+        fresh.consume("hi").state.cursor
       . assert(_ == Ter)
 
       test(m"writing past row width wraps to next row"):
-        val pty = fresh.consume(t"0123456789X")
+        val pty = fresh.consume("0123456789X")
         (cell(pty, Prim, Sec), cell(pty, 9.z, Prim))
       . assert(_ == ('X', '9'))
 
     suite(m"Carriage return and line feed"):
       test(m"CR returns to column 0 of same row"):
-        val pty = fresh.consume(t"abc\rX")
+        val pty = fresh.consume("abc\rX")
         row(pty, Prim)
-      . assert(_ == t"Xbc       ")
+      . assert(_ == "Xbc       ")
 
       test(m"LF advances to next row at column 0"):
-        val pty = fresh.consume(t"ab\nc")
+        val pty = fresh.consume("ab\nc")
         (row(pty, Prim), row(pty, Sec))
-      . assert(_ == (t"ab        ", t"c         "))
+      . assert(_ == ("ab        ", "c         "))
 
     suite(m"Backspace"):
       test(m"BS moves cursor left without erasing"):
-        val pty = fresh.consume(t"abc\b")
+        val pty = fresh.consume("abc\b")
         (row(pty, Prim), pty.state.cursor)
-      . assert(_ == (t"abc       ", Ter))
+      . assert(_ == ("abc       ", Ter))
 
       test(m"BS+SP+BS erases the previous character"):
-        val pty = fresh.consume(t"abc\b \b")
+        val pty = fresh.consume("abc\b \b")
         (row(pty, Prim), pty.state.cursor)
-      . assert(_ == (t"ab        ", Ter))
+      . assert(_ == ("ab        ", Ter))
 
       test(m"BS at column 0 stays at column 0"):
-        val pty = fresh.consume(t"\b")
+        val pty = fresh.consume("\b")
         pty.state.cursor
       . assert(_ == Prim)
 
@@ -135,12 +135,12 @@ object Tests extends Suite(m"Yossarian Tests"):
       test(m"ED 2 clears the entire screen"):
         val pty = fresh.consume(t"abc\ndef$Esc[2J")
         (row(pty, Prim), row(pty, Sec))
-      . assert(_ == (t"          ", t"          "))
+      . assert(_ == ("          ", "          "))
 
       test(m"EL 2 clears the current line"):
         val pty = fresh.consume(t"abcdef$Esc[1;1H$Esc[2K")
         row(pty, Prim)
-      . assert(_ == t"          ")
+      . assert(_ == "          ")
 
     suite(m"SGR"):
       test(m"SGR 1 enables bold"):
@@ -167,22 +167,22 @@ object Tests extends Suite(m"Yossarian Tests"):
       test(m"OSC 0 sets the window title (BEL terminator)"):
         val pty = fresh.consume(t"$Esc]0;My Title$Bel")
         pty.state.title
-      . assert(_ == t"My Title")
+      . assert(_ == "My Title")
 
       test(m"OSC 0 sets the window title (ST terminator)"):
         val pty = fresh.consume(t"$Esc]0;My Title$Esc\\")
         pty.state.title
-      . assert(_ == t"My Title")
+      . assert(_ == "My Title")
 
       test(m"OSC 8 with empty params sets a hyperlink"):
         val pty = fresh.consume(t"$Esc]8;;https://example.com${Bel}X")
         pty.buffer.link(Prim, Prim)
-      . assert(_ == t"https://example.com")
+      . assert(_ == "https://example.com")
 
       test(m"OSC 8 with params field sets a hyperlink"):
         val pty = fresh.consume(t"$Esc]8;id=123;https://example.com${Bel}X")
         pty.buffer.link(Prim, Prim)
-      . assert(_ == t"https://example.com")
+      . assert(_ == "https://example.com")
 
     suite(m"DEC private modes"):
       test(m"unknown private mode is silently ignored"):
@@ -211,15 +211,15 @@ object Tests extends Suite(m"Yossarian Tests"):
 
     suite(m"Tab"):
       test(m"tab from column 0 advances to column 8"):
-        fresh.consume(t"\tX").state.cursor
+        fresh.consume("\tX").state.cursor
       . assert(_ == 9.z)
 
       test(m"tab from column 7 still advances to column 8"):
-        Pty(20, 4).consume(t"abcdefg\tX").state.cursor
+        Pty(20, 4).consume("abcdefg\tX").state.cursor
       . assert(_ == 9.z)
 
       test(m"tab past last tab stop clamps to last column"):
-        fresh.consume(t"abcdefghi\t").state.cursor
+        fresh.consume("abcdefghi\t").state.cursor
       . assert(_ == 9.z)
 
     suite(m"DECSC / DECRC"):
@@ -236,7 +236,7 @@ object Tests extends Suite(m"Yossarian Tests"):
       test(m"ESC c clears screen, homes cursor, and resets style"):
         val pty = fresh.consume(t"$Esc[1;31mhello${Esc}c")
         (row(pty, Prim), pty.state.cursor, pty.buffer.style(Prim, Prim).bold)
-      . assert(_ == (t"          ", Prim, false))
+      . assert(_ == ("          ", Prim, false))
 
     suite(m"String-discard sequences"):
       test(m"DCS string is silently absorbed up to ST"):
@@ -250,10 +250,10 @@ object Tests extends Suite(m"Yossarian Tests"):
     suite(m"Top-level accessors"):
       test(m"pty.title forwards to state.title"):
         fresh.consume(t"$Esc]0;My Window$Bel").title
-      . assert(_ == t"My Window")
+      . assert(_ == "My Window")
 
       test(m"pty.cursor forwards to state.cursor"):
-        fresh.consume(t"hi").cursor
+        fresh.consume("hi").cursor
       . assert(_ == Ter)
 
       test(m"pty.cursorVisible reflects DECTCEM"):
@@ -315,30 +315,30 @@ object Tests extends Suite(m"Yossarian Tests"):
       . assert(_ == 'X')
 
       test(m"LF at bottom row scrolls the screen"):
-        val pty = Pty24x80().consume(t"top\n" + (t"\n"*23) + t"bot")
+        val pty = Pty24x80().consume("top\n" + ("\n"*23) + "bot")
         (trim(row(pty, Prim)), trim(row(pty, 23.z)))
-      . assert(_ == (t"", t"bot"))
+      . assert(_ == ("", "bot"))
 
     suite(m"vttest §2: Screen features"):
       test(m"ED 0 from middle clears to end of screen"):
-        val pty = Pty24x80().consume(t"$Esc[1;1H" + (t"X"*80*5) + t"$Esc[3;1H$Esc[0J")
+        val pty = Pty24x80().consume(t"$Esc[1;1H" + ("X"*80*5) + t"$Esc[3;1H$Esc[0J")
         (row(pty, Sec), trim(row(pty, 4.z)))
-      . assert(_ == (t"X"*80, t""))
+      . assert(_ == ("X"*80, ""))
 
       test(m"ED 1 from middle clears from start of screen"):
-        val pty = Pty24x80().consume(t"$Esc[1;1H" + (t"X"*80*5) + t"$Esc[3;40H$Esc[1J")
+        val pty = Pty24x80().consume(t"$Esc[1;1H" + ("X"*80*5) + t"$Esc[3;40H$Esc[1J")
         (trim(row(pty, Sec)), row(pty, 4.z))
-      . assert(_ == (t"", t"X"*80))
+      . assert(_ == ("", "X"*80))
 
       test(m"EL 0 clears to end of line"):
         val pty = Pty24x80().consume(t"$Esc[1;1HABCDE$Esc[1;3H$Esc[0K")
         trim(row(pty, Prim))
-      . assert(_ == t"AB")
+      . assert(_ == "AB")
 
       test(m"EL 1 clears from start of line up to and including cursor"):
         val pty = Pty24x80().consume(t"$Esc[1;1HABCDE$Esc[1;3H$Esc[1K")
         take(row(pty, Prim), 6)
-      . assert(_ == t"   DE ")
+      . assert(_ == "   DE ")
 
       test(m"DECSC saves and DECRC restores cursor + style"):
         // After DECRC the cursor is at (4, 0) with bold+red active; writing
@@ -353,7 +353,7 @@ object Tests extends Suite(m"Yossarian Tests"):
         // within rows 3..7 only, leaving rows 1-2 and 8+ untouched.
         val pty = Pty24x80().consume(t"top$Esc[3;7r$Esc[7;1H\nlast")
         trim(row(pty, Prim))
-      . assert(_ == t"top")
+      . assert(_ == "top")
 
       test(m"IND (\\eD) at scroll-region bottom scrolls within region"):
         val pty = Pty24x80().consume(
@@ -388,12 +388,12 @@ object Tests extends Suite(m"Yossarian Tests"):
       test(m"ICH \\e[3@ inserts 3 spaces at cursor"):
         val pty = Pty24x80().consume(t"$Esc[1;1HABCDEFGH$Esc[1;4H$Esc[3@")
         take(row(pty, Prim), 11)
-      . assert(_ == t"ABC   DEFGH")
+      . assert(_ == "ABC   DEFGH")
 
       test(m"DCH \\e[3P deletes 3 chars at cursor"):
         val pty = Pty24x80().consume(t"$Esc[1;1HABCDEFGH$Esc[1;4H$Esc[3P")
         take(row(pty, Prim), 5)
-      . assert(_ == t"ABCGH")
+      . assert(_ == "ABCGH")
 
       test(m"IL \\e[2L inserts 2 blank lines at cursor row"):
         val pty = Pty24x80().consume(t"$Esc[1;1HA\nB\nC$Esc[2;1H$Esc[2L")
@@ -408,7 +408,7 @@ object Tests extends Suite(m"Yossarian Tests"):
       test(m"ECH \\e[3X overwrites 3 cells with spaces"):
         val pty = Pty24x80().consume(t"$Esc[1;1HABCDEFGH$Esc[1;4H$Esc[3X")
         take(row(pty, Prim), 8)
-      . assert(_ == t"ABC   GH")
+      . assert(_ == "ABC   GH")
 
     suite(m"vttest §10: Reset"):
       test(m"RIS clears screen, homes cursor, resets style"):
@@ -458,17 +458,17 @@ object Tests extends Suite(m"Yossarian Tests"):
         // After printing 'X', \e[3b should write 'X' three more times.
         val pty = Pty24x80().consume(t"X$Esc[3b")
         take(row(pty, Prim), 4)
-      . assert(_ == t"XXXX")
+      . assert(_ == "XXXX")
 
     suite(m"vttest §11.8: XTerm features"):
       test(m"OSC 0 sets the window title"):
         Pty24x80().consume(t"$Esc]0;hello world$Bel").title
-      . assert(_ == t"hello world")
+      . assert(_ == "hello world")
 
       test(m"OSC 8 sets a hyperlink that applies to subsequent characters"):
         val pty = Pty24x80().consume(t"$Esc]8;;https://soundness.dev${Bel}LINK")
         pty.buffer.link(Prim, Prim)
-      . assert(_ == t"https://soundness.dev")
+      . assert(_ == "https://soundness.dev")
 
       test(m"bracketed paste mode toggle is recorded in state"):
         val on = Pty24x80().consume(t"$Esc[?2004h").state.bracketedPasteMode
@@ -482,14 +482,14 @@ object Tests extends Suite(m"Yossarian Tests"):
         // currently silently ignores ?1049, so the writes leak through.
         val pty = Pty24x80().consume(t"main$Esc[?1049halt$Esc[?1049l")
         take(row(pty, Prim), 4)
-      . assert(_ == t"main")
+      . assert(_ == "main")
 
     suite(m"vttest §wide: Grapheme width"):
       test(m"a wide CJK character occupies 2 cells"):
         // '中' (U+4E2D) is East-Asian-Wide. The leading cell holds the
         // grapheme; the trailing cell is the wide-trailing sentinel; X lands
         // at column 2.
-        val pty = Pty24x80().consume(t"中X")
+        val pty = Pty24x80().consume("中X")
         ( pty.buffer.grapheme(Prim, Prim),
           pty.buffer.isWideTrailing(Sec, Prim),
           pty.buffer.char(Ter, Prim) )
@@ -498,21 +498,21 @@ object Tests extends Suite(m"Yossarian Tests"):
       test(m"a combining mark attaches to the previous cell, no advance"):
         // 'a' + COMBINING ACUTE ACCENT (U+0301) is one grapheme; cursor is
         // at column 2 after writing 'áX'; X lands at column 1.
-        val pty = Pty24x80().consume(t"áX")
+        val pty = Pty24x80().consume("áX")
         (pty.cursor, pty.buffer.char(Sec, Prim))
       . assert(_ == (Ter, 'X'))
 
       test(m"single-codepoint emoji occupies 2 cells"):
         // '😀' (U+1F600) is Extended_Pictographic and is width 2; X
         // lands at column 2.
-        val pty = Pty24x80().consume(t"😀X")
+        val pty = Pty24x80().consume("😀X")
         pty.buffer.char(Ter, Prim)
       . assert(_ == 'X')
 
       test(m"ZWJ family emoji '👨‍👩‍👧' occupies 2 cells as a single grapheme"):
         // Three emoji codepoints joined by U+200D collapse to one 2-cell
         // grapheme; X lands at column 2.
-        val pty = Pty24x80().consume(t"👨‍👩‍👧X")
+        val pty = Pty24x80().consume("👨‍👩‍👧X")
         pty.buffer.char(Ter, Prim)
       . assert(_ == 'X')
 

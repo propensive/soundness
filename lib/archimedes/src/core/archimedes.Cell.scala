@@ -69,8 +69,8 @@ object Cell:
   private val bigOperators: Set[Char] = Set('∑', '∏')
 
   private val binaryOperators: Set[Text] =
-    Set(t"+", t"−", t"-", t"=", t"±", t"∓", t"×", t"÷", t"·", t"∙", t"<", t">", t"≤", t"≥", t"≠",
-        t"≈", t"≡", t"→", t"⇒", t"↦", t"∈", t"∉", t"⊂", t"⊆", t"∪", t"∩", t"∧", t"∨")
+    Set("+", "−", "-", "=", "±", "∓", "×", "÷", "·", "∙", "<", ">", "≤", "≥", "≠",
+        "≈", "≡", "→", "⇒", "↦", "∈", "∉", "⊂", "⊆", "∪", "∩", "∧", "∨")
 
   private def max(left: Int, right: Int): Int = if left > right then left else right
   private def min(left: Int, right: Int): Int = if left < right then left else right
@@ -89,7 +89,7 @@ object Cell:
   // on, and which `render` shows only implicitly) are written first, then each line as a text
   // literal, so that trailing padding spaces are visible.
   given inspectable: [cell <: Cell] => cell is Inspectable = cell =>
-    val lines = cell.lines.map(_.text.inspect).join(t" ")
+    val lines = cell.lines.map(_.text.inspect).join(" ")
     t"Cell(${cell.width}×${cell.height}@${cell.baseline} $lines)"
 
   val empty: Cell = Cell(Sequence(Writing.empty), 0, 0)
@@ -172,7 +172,7 @@ object Cell:
   private def scriptTexts(nodes: List[Mathml]): Optional[Text] =
     // `Optional` is a union, so a `let` inside a `let` flattens: one absent child
     // makes the whole concatenation absent.
-    nodes.fold(t"": Optional[Text]): (text, node) =>
+    nodes.fold("": Optional[Text]): (text, node) =>
       text.let: prefix =>
         scriptText(node).let(part => t"$prefix$part")
 
@@ -185,7 +185,7 @@ object Cell:
         val char = text.s.charAt(index)
         if glyphs.contains(char) then recur(index + 1, t"$done${glyphs(char)}") else Unset
 
-    if length == 0 then Unset else recur(0, t"")
+    if length == 0 then Unset else recur(0, "")
 
   // A one-line rendering of `base` with `script` set beside it, when the base
   // occupies a single line and the script has glyphs for every character.
@@ -419,7 +419,7 @@ object Cell:
     brackets.contains(char) || integrals.contains(char) || bigOperators.contains(char)
 
   private def operator(value: Text): Text =
-    if value.s.length == 1 && value.s.charAt(0) >= '⁡' && value.s.charAt(0) <= '⁤' then t""
+    if value.s.length == 1 && value.s.charAt(0) >= '⁡' && value.s.charAt(0) <= '⁤' then ""
     else if binaryOperators.contains(value) then t" $value "
     else value
 
@@ -472,7 +472,7 @@ object Cell:
 
 case class Cell(lines: Sequence[Writing], width: Int, baseline: Int):
   def height: Int = lines.size
-  def render: Text = lines.map(_.text).join(t"\n")
+  def render: Text = lines.map(_.text).join("\n")
 
   // Pad each line on the left and right with spaces, widening the block.
   def hpad(left: Int, right: Int): Cell =

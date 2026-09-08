@@ -82,27 +82,27 @@ object Dot:
 
     def whitespace(): Unit =
       if end then
-        append(t"\n")
-        append(t"  "*level)
+        append("\n")
+        append("  "*level)
         end = false
       else
-        append(t" ")
+        append(" ")
 
     tokens.each:
-      case t""  => ()
-      case t"," => append(t",")
-      case t"{" => whitespace(); append(t"{"); indent(); newline()
-      case t"}" => outdent(); whitespace(); append(t"}"); newline()
-      case t"[" => whitespace(); append(t"[")
-      case t"]" => whitespace(); append(t"]"); newline()
-      case t";" => newline()
+      case ""  => ()
+      case "," => append(",")
+      case "{" => whitespace(); append("{"); indent(); newline()
+      case "}" => outdent(); whitespace(); append("}"); newline()
+      case "[" => whitespace(); append("[")
+      case "]" => whitespace(); append("]"); newline()
+      case ";" => newline()
       case word => whitespace(); append(word)
 
   private def tokenize(graph: Dot | Target | Statement | Property): List[Text] = graph match
     case Property(key, value) => List(t"$key=\"$value\"")
 
     case Target(directed, dest, link) =>
-      val operator = if directed then t"->" else t"--"
+      val operator = if directed then "->" else "--"
 
       val destTokens = (dest: @unchecked) match
         case subgraph: Statement.Subgraph => tokenize(subgraph)
@@ -112,7 +112,7 @@ object Dot:
 
     case Statement.Node(id, attrs*) =>
       t"\"${id: Text}\"" :: (if attrs.isEmpty then List() else (List(t"[") :::
-        attrs.to(List).flatMap(tokenize(_) :+ t",").init ::: List(t"]"))) :::
+        attrs.to(List).flatMap(tokenize(_) :+ ",").init ::: List(t"]"))) :::
         List(t";")
 
     case Statement.Edge(id, rhs, attrs*) =>
@@ -122,8 +122,8 @@ object Dot:
       List(t"\"${id: Text}\"", t"=", t"\"${id2: Text}\"", t";")
 
     case Statement.Subgraph(id, statements*) =>
-      t"subgraph" :: id.to(List).map { name => name: Text } :::
-        t"{" ::
+      "subgraph" :: id.to(List).map { name => name: Text } :::
+        "{" ::
         statements.to(List).flatMap(tokenize(_)) :::
         List(t"}")
 

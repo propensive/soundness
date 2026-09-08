@@ -60,7 +60,7 @@ object Signature:
   // Import `signatureDigests.sha384Signature` or `signatureDigests.sha512Signature` to override it;
   // an imported given outranks the one below.
   object Digest:
-    given sha256Signature: Signature.Digest = Signature.Digest(t"SHA256")
+    given sha256Signature: Signature.Digest = Signature.Digest("SHA256")
 
   // `token` is the digest's name as it appears in a JCE transformation, e.g. `SHA256` in
   // `SHA256withRSA`. It has no hyphen, unlike the same digest's name as a `Hash`.

@@ -41,7 +41,7 @@ import alphabets.hexUpperCase
 
 object Tests extends Suite(m"Gastronomy tests"):
 
-  val request: Text = t"""
+  val request: Text = """
     |-----BEGIN CERTIFICATE REQUEST-----
     |MIIB9TCCAWACAQAwgbgxGTAXBgNVBAoMEFF1b1ZhZGlzIExpbWl0ZWQxHDAaBgNV
     |BAsME0RvY3VtZW50IERlcGFydG1lbnQxOTA3BgNVBAMMMFdoeSBhcmUgeW91IGRl
@@ -57,37 +57,37 @@ object Tests extends Suite(m"Gastronomy tests"):
     |-----END CERTIFICATE REQUEST-----
     """.s.stripMargin.show
 
-  val pangram: Text = t"The quick brown fox jumps over the lazy dog"
+  val pangram: Text = "The quick brown fox jumps over the lazy dog"
 
   def run(): Unit =
     test(m"Sha256, Hex"):
-      t"Hello world".digest[Sha2[256]].serialize[Hex]
-    . assert(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
+      "Hello world".digest[Sha2[256]].serialize[Hex]
+    . assert(_ == "64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
 
     test(m"Md5, Base64"):
       import alphabets.base64Standard
-      t"Hello world".digest[Md5].serialize[Base64]
-    . assert(_ == t"PiWWCnnbxptnTNTsZ6csYg==")
+      "Hello world".digest[Md5].serialize[Base64]
+    . assert(_ == "PiWWCnnbxptnTNTsZ6csYg==")
 
     test(m"Sha1, Base64Url"):
       import alphabets.base64Url
-      t"Hello world".digest[Sha1].data.serialize[Base64]
-    . assert(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
+      "Hello world".digest[Sha1].data.serialize[Base64]
+    . assert(_ == "e1AsOh9IyGCa4hLN-2Od7jlnP14")
 
     test(m"Sha384, Base64"):
       import alphabets.base64Standard
-      t"Hello world".digest[Sha2[384]].serialize[Base64]
-    . assert(_ == t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
+      "Hello world".digest[Sha2[384]].serialize[Base64]
+    . assert(_ == "kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
 
     test(m"Sha512, Base64"):
       import alphabets.base64Standard
-      t"Hello world".digest[Sha2[512]].serialize[Base64]
-    . assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
+      "Hello world".digest[Sha2[512]].serialize[Base64]
+    . assert(_ == "t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
 
     test(m"Encode to Binary"):
       import alphabets.binaryStandard
       Array[Byte](1, 2, 3, 4).serialize[Binary]
-    . assert(_ == t"00000001000000100000001100000100")
+    . assert(_ == "00000001000000100000001100000100")
 
     test(m"Long digest covers the low nibble"):
       0L.digest[Sha2[256]].serialize[Hex] != 0xfL.digest[Sha2[256]].serialize[Hex]
@@ -101,7 +101,7 @@ object Tests extends Suite(m"Gastronomy tests"):
     test(m"Blake3 via Hash typeclass, empty input"):
       Array[Byte]().digest[Blake3].serialize[Hex]
     . assert: digest =>
-        digest == t"AF1349B9F5F9A1A6A0404DEA36DCC9499BCB25C9ADC112B7CC9A93CAE41F3262"
+        digest == "AF1349B9F5F9A1A6A0404DEA36DCC9499BCB25C9ADC112B7CC9A93CAE41F3262"
 
     suite(m"Blake3 official test vectors"):
       val key: Array[Byte]^{} = Array.unsafeFrozen(Blake3TestVectors.Key.getBytes("UTF-8").nn)
@@ -134,32 +134,32 @@ object Tests extends Suite(m"Gastronomy tests"):
         digestion.digest().serialize[Hex]
 
       test(m"pure SHA-256 of \"abc\""):
-        hex(PureHashes.sha2(256), t"abc")
-      . assert(_ == t"BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD")
+        hex(PureHashes.sha2(256), "abc")
+      . assert(_ == "BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD")
 
       test(m"pure SHA-224 of \"abc\""):
-        hex(PureHashes.sha2(224), t"abc")
-      . assert(_ == t"23097D223405D8228642A477BDA255B32AADBCE4BDA0B3F7E36C9DA7")
+        hex(PureHashes.sha2(224), "abc")
+      . assert(_ == "23097D223405D8228642A477BDA255B32AADBCE4BDA0B3F7E36C9DA7")
 
       test(m"pure SHA-384 of \"abc\""):
-        hex(PureHashes.sha2(384), t"abc")
+        hex(PureHashes.sha2(384), "abc")
       . assert: digest =>
-          digest == t"CB00753F45A35E8BB5A03D699AC65007272C32AB0EDED1631A8B605A43FF5BED"
-              + t"8086072BA1E7CC2358BAECA134C825A7"
+          digest == "CB00753F45A35E8BB5A03D699AC65007272C32AB0EDED1631A8B605A43FF5BED"
+              + "8086072BA1E7CC2358BAECA134C825A7"
 
       test(m"pure SHA-512 of \"abc\""):
-        hex(PureHashes.sha2(512), t"abc")
+        hex(PureHashes.sha2(512), "abc")
       . assert: digest =>
-          digest == t"DDAF35A193617ABACC417349AE20413112E6FA4E89A97EA20A9EEEE64B55D39A"
-              + t"2192992A274FC1A836BA3C23A3FEEBBD454D4423643CE80E2A9AC94FA54CA49F"
+          digest == "DDAF35A193617ABACC417349AE20413112E6FA4E89A97EA20A9EEEE64B55D39A"
+              + "2192992A274FC1A836BA3C23A3FEEBBD454D4423643CE80E2A9AC94FA54CA49F"
 
       test(m"pure SHA-1 of \"abc\""):
-        hex(PureHashes.sha1, t"abc")
-      . assert(_ == t"A9993E364706816ABA3E25717850C26C9CD0D89D")
+        hex(PureHashes.sha1, "abc")
+      . assert(_ == "A9993E364706816ABA3E25717850C26C9CD0D89D")
 
       test(m"pure MD5 of \"abc\""):
-        hex(PureHashes.md5, t"abc")
-      . assert(_ == t"900150983CD24FB0D6963F7D28E17F72")
+        hex(PureHashes.md5, "abc")
+      . assert(_ == "900150983CD24FB0D6963F7D28E17F72")
 
       // Random inputs at and around the 55/56/63/64/111/112/127/128-byte padding boundaries.
       val sizes = List(0, 1, 55, 56, 57, 63, 64, 65, 111, 112, 113, 127, 128, 129, 1000)
@@ -177,19 +177,19 @@ object Tests extends Suite(m"Gastronomy tests"):
 
         test(m"pure SHA-256 matches the JDK, size=$size"):
           pureHex(PureHashes.sha2(256))
-        . assert(_ == jdk(t"SHA-256"))
+        . assert(_ == jdk("SHA-256"))
 
         test(m"pure SHA-512 matches the JDK, size=$size"):
           pureHex(PureHashes.sha2(512))
-        . assert(_ == jdk(t"SHA-512"))
+        . assert(_ == jdk("SHA-512"))
 
         test(m"pure SHA-1 matches the JDK, size=$size"):
           pureHex(PureHashes.sha1)
-        . assert(_ == jdk(t"SHA-1"))
+        . assert(_ == jdk("SHA-1"))
 
         test(m"pure MD5 matches the JDK, size=$size"):
           pureHex(PureHashes.md5)
-        . assert(_ == jdk(t"MD5"))
+        . assert(_ == jdk("MD5"))
 
     suite(m"Windowed digestion"):
       val payload: Data = Array.tabulate(200001)(i => ((i*31 + 7) & 0xff).toByte)
@@ -280,19 +280,19 @@ object Tests extends Suite(m"Gastronomy tests"):
 
       test(m"CRC-32 of the standard check vector, via the JDK provider"):
         import providers.javaBaseProvider
-        t"123456789".digest[Crc32].serialize[Hex].lower
-      . assert(_ == t"cbf43926")
+        "123456789".digest[Crc32].serialize[Hex].lower
+      . assert(_ == "cbf43926")
 
       test(m"CRC-32 agrees between the JDK and Soundness providers"):
         val jdk =
           locally:
             import providers.javaBaseProvider
-            t"123456789".digest[Crc32].serialize[Hex]
+            "123456789".digest[Crc32].serialize[Hex]
 
         val pure =
           locally:
             import providers.soundnessProvider
-            t"123456789".digest[Crc32].serialize[Hex]
+            "123456789".digest[Crc32].serialize[Hex]
 
         jdk == pure
       . assert(_ == true)
@@ -301,12 +301,12 @@ object Tests extends Suite(m"Gastronomy tests"):
         val jdk =
           locally:
             import providers.javaBaseProvider
-            t"123456789".digest[Adler32].serialize[Hex]
+            "123456789".digest[Adler32].serialize[Hex]
 
         val pure =
           locally:
             import providers.soundnessProvider
-            t"123456789".digest[Adler32].serialize[Hex]
+            "123456789".digest[Adler32].serialize[Hex]
 
         jdk == pure
       . assert(_ == true)
@@ -315,21 +315,21 @@ object Tests extends Suite(m"Gastronomy tests"):
       // provider arrangement BLAKE3 already relies on.
       test(m"CRC-64 digests under the Soundness provider"):
         import providers.soundnessProvider
-        t"123456789".digest[Crc64].serialize[Hex].length
+        "123456789".digest[Crc64].serialize[Hex].length
       . assert(_ == 16)
 
     suite(m"The non-cryptographic concession"):
       test(m"digesting with a checksum needs the permit"):
         demilitarize:
           import providers.javaBaseProvider
-          t"123456789".digest[Crc32]
+          "123456789".digest[Crc32]
         . map(_.message)
       . assert(_.nonEmpty)
 
       test(m"digesting with SHA-2 needs no permit"):
         demilitarize:
           import providers.javaBaseProvider
-          t"123456789".digest[Sha2[256]]
+          "123456789".digest[Sha2[256]]
       . assert(_ == Nil)
 
     // The multihash envelope (#568), checked against the specification's own published test
@@ -350,20 +350,20 @@ object Tests extends Suite(m"Gastronomy tests"):
       // The vectors' `input` column is the ASCII *string* of those hex characters — the
       // generator pipes lines of text into the `multihash` tool — not bytes to be decoded.
       // Hashing the decoded bytes instead yields a digest that matches no vector.
-      val input = t"431fb5d4c9b735ba1a34d0df045118806ae2336f2c"
-      val input2 = t"2d6db2d7882fa8b7d56e74b8e24036deb475de8c94"
+      val input = "431fb5d4c9b735ba1a34d0df045118806ae2336f2c"
+      val input2 = "2d6db2d7882fa8b7d56e74b8e24036deb475de8c94"
 
       test(m"SHA-1 envelope matches the published vector"):
         rendered(Multihash(input.digest[Sha1]))
-      . assert(_ == t"1114e861e452cfd84dca9a176258c3d06e020a0c93d8")
+      . assert(_ == "1114e861e452cfd84dca9a176258c3d06e020a0c93d8")
 
       test(m"SHA-2-256 envelope matches the published vector"):
         rendered(Multihash(input.digest[Sha2[256]]))
-      . assert(_ == t"1220ffb31f07aa15348368c90c73a834dbf9f8710365860fa0fd4ddce9ac2782cc17")
+      . assert(_ == "1220ffb31f07aa15348368c90c73a834dbf9f8710365860fa0fd4ddce9ac2782cc17")
 
       val sha512Vector =
-        t"1340abffa1926b038a2f1833092d93859ba2ee56e07a86b158200fc7d4d5d1eaf350b0f0e51"
-        + t"1ea6f5043a9f4a7c7886f93355652114709d75b2db4c33741124fd4fe"
+        "1340abffa1926b038a2f1833092d93859ba2ee56e07a86b158200fc7d4d5d1eaf350b0f0e51"
+        + "1ea6f5043a9f4a7c7886f93355652114709d75b2db4c33741124fd4fe"
 
       test(m"SHA-2-512 envelope matches the published vector"):
         rendered(Multihash(input.digest[Sha2[512]]))
@@ -371,17 +371,17 @@ object Tests extends Suite(m"Gastronomy tests"):
 
       test(m"a second SHA-2-256 vector"):
         rendered(Multihash(input2.digest[Sha2[256]]))
-      . assert(_ == t"12203afa34fba2f3572ac56d80f52002e8727dd95f17a2e7c9376a3147a96d3e78ac")
+      . assert(_ == "12203afa34fba2f3572ac56d80f52002e8727dd95f17a2e7c9376a3147a96d3e78ac")
 
       // Decoding recovers the code and the bytes, and round-trips.
       test(m"parsing a published vector recovers its code"):
-        unsafely(Multihash.parse(hex(t"1114e861e452cfd84dca9a176258c3d06e020a0c93d8"))).code
+        unsafely(Multihash.parse(hex("1114e861e452cfd84dca9a176258c3d06e020a0c93d8"))).code
       . assert(_ == 0x11)
 
       test(m"parsing recovers the registered algorithm name"):
-        unsafely(Multihash.parse(hex(t"1220ffb31f07aa15348368c90c73a834dbf9f8710365860fa0fd4ddce9ac2782cc17")))
+        unsafely(Multihash.parse(hex("1220ffb31f07aa15348368c90c73a834dbf9f8710365860fa0fd4ddce9ac2782cc17")))
         . algorithm
-      . assert(_ == t"sha2-256")
+      . assert(_ == "sha2-256")
 
       test(m"an envelope round-trips through parse"):
         val original = Multihash(input.digest[Sha2[256]])
@@ -390,35 +390,35 @@ object Tests extends Suite(m"Gastronomy tests"):
 
       // A truncated digest is legal — the length is explicit — and the vectors include them.
       test(m"a truncated digest is parsed at its declared length"):
-        unsafely(Multihash.parse(hex(t"110ae861e452cfd84dca9a17"))).digest.length
+        unsafely(Multihash.parse(hex("110ae861e452cfd84dca9a17"))).digest.length
       . assert(_ == 10)
 
       // An algorithm this library cannot compute is representable, not an error: a consumer may
       // only need to compare or forward it.
       test(m"an unsupported algorithm decodes to its code and bytes"):
-        val decoded = unsafely(Multihash.parse(hex(t"1604aabbccdd")))
+        val decoded = unsafely(Multihash.parse(hex("1604aabbccdd")))
         (decoded.code, decoded.digest.length, decoded.algorithm)
       . assert(_ == (0x16, 4, Unset))
 
       // Multi-byte varints: SHA-2-224 is 0x1013, which does not fit in one group.
       test(m"a two-group varint code round-trips"):
-        val original = Multihash(0x1013, hex(t"aabbcc"))
+        val original = Multihash(0x1013, hex("aabbcc"))
         unsafely(Multihash.parse(original.serialize)).code
       . assert(_ == 0x1013)
 
       test(m"a length shorter than the remaining bytes is rejected"):
-        capture[Multihash.Error](Multihash.parse(hex(t"1103aabbccdd"))).reason
+        capture[Multihash.Error](Multihash.parse(hex("1103aabbccdd"))).reason
       . assert(_ == Multihash.Reason.Trailing)
 
       test(m"a length longer than the remaining bytes is rejected"):
-        capture[Multihash.Error](Multihash.parse(hex(t"1108aabbccdd"))).reason
+        capture[Multihash.Error](Multihash.parse(hex("1108aabbccdd"))).reason
       . assert(_ == Multihash.Reason.Truncated)
 
     suite(m"Native-rendering coverage"):
       test(m"gastronomy's types inspect natively"):
-        Inspectable.fallbacks(t"Hello world".digest[Sha2[256]].inspect)
+        Inspectable.fallbacks("Hello world".digest[Sha2[256]].inspect)
       . assert(_ == Nil)
 
       test(m"A digest shows every byte, in lowercase hexadecimal"):
-        t"Hello world".digest[Sha2[256]].inspect
-      . assert(_ == t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3cᴰ")
+        "Hello world".digest[Sha2[256]].inspect
+      . assert(_ == "64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3cᴰ")

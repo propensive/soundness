@@ -93,7 +93,7 @@ object Tests extends Suite(m"Vacuous Tests"):
         foo[String]
 
       . map(_.message)
-    . assert(_.contains(t"[↯SN-991] type T is abstract"))
+    . assert(_.contains("[↯SN-991] type T is abstract"))
 
     test(m"Abstract type is not proven distinct from anything, e.g. Int"):
       demilitarize:
@@ -101,7 +101,7 @@ object Tests extends Suite(m"Vacuous Tests"):
         foo[Int]
 
       . map(_.message)
-    . assert(_.contains(t"[↯SN-991] type T is abstract"))
+    . assert(_.contains("[↯SN-991] type T is abstract"))
 
     test(m"Inline abstract type not distinct from Int"):
       demilitarize:

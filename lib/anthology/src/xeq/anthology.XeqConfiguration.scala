@@ -43,7 +43,7 @@ import ziggurat.*
 // ETHRCFG block, self-upgrade signing, and the build number that orders upgrades. A runner
 // source must be specified: `xeqOptions.runners.standard` names the published release.
 case class XeqConfiguration
-  ( name:    Text                             = t"app",
+  ( name:    Text                             = "app",
     targets: List[Text]                       = Nil,
     runners: Optional[Packaging.RunnerSource] = Unset,
     java:    Packaging.JavaPolicy             = Packaging.JavaPolicy(),

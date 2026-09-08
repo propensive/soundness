@@ -198,7 +198,7 @@ object Llm:
   trait Dialect:
     def name: Text
     def exchange(turn: Exchange): Reply
-    def stream(turn: Exchange): Iterator[Event]^{this}
+    def stream(turn: Exchange): Iterator[Event]^{this, caps.any}
 
   object Error:
     // The numbers are the `SN-990.e` subcodes, and are frozen: codes added later append.
@@ -247,7 +247,7 @@ object Llm:
     import zephyrine.Buffering
 
     safely(text.read[Json]).or:
-      abort(Error(Error.Reason.Malformed, t"the streamed tool arguments were not valid JSON"))
+      abort(Error(Error.Reason.Malformed, "the streamed tool arguments were not valid JSON"))
 
   // The shared HTTP engine: one retry policy for every dialect. Rate limits and overloads
   // (429, 503, 529) are retried a few times, honouring `retry-after` when the provider sends
@@ -286,7 +286,7 @@ object Llm:
   private[sibylline] def receive(response: Http.Response)(using Tactic[Error], Diagnostics)
   :   Json =
 
-    body(response).lest(Error(Error.Reason.Malformed, t"the reply was not valid JSON"))
+    body(response).lest(Error(Error.Reason.Malformed, "the reply was not valid JSON"))
 
   // The response body as raw server-sent-event frames, one `Text` per event, decoded
   // incrementally off the live connection.
@@ -295,13 +295,13 @@ object Llm:
   :   Iterator[Text]^ =
 
     given decodeTactic: (Tactic[CharDecoder.Error]^) = tactic.contramap: _ =>
-      Error(Error.Reason.Malformed, t"the stream was not valid UTF-8")
+      Error(Error.Reason.Malformed, "the stream was not valid UTF-8")
 
     response.body.stream.via(summon[CharDecoder]).chunks.frames[Sse]
 
   // A frame no server can send — `data:` lines never contain a NUL — marking the end of the
   // frame stream to the translation.
-  private[sibylline] val Terminal: Text = t"\u0000"
+  private[sibylline] val Terminal: Text = "\u0000"
 
   // The streaming translation's working state: which block indexes are open, and whether the
   // message-level `Started` event has been emitted. Plain and single-owner, confined to one
@@ -378,7 +378,7 @@ object Llm:
         blocks(index) = Accumulator.Block(content)
 
       case Event.Delta(index, increment) =>
-        val block = blocks.getOrElseUpdate(index, Accumulator.Block(Content.Textual(t"")))
+        val block = blocks.getOrElseUpdate(index, Accumulator.Block(Content.Textual("")))
 
         increment match
           case Event.Increment.Textual(text)   => block.text.append(text.s)
@@ -399,12 +399,12 @@ object Llm:
     // Folds the accumulated blocks into the completed assistant message. An unclosed block or a
     // stream that ended without finishing raises `Interrupted`: the message would be a lie.
     def reply()(using Diagnostics): Reply raises Error =
-      if !finished0 then abort(Error(Error.Reason.Interrupted, t"the stream ended early"))
+      if !finished0 then abort(Error(Error.Reason.Interrupted, "the stream ended early"))
 
       val content: List[Content] =
         blocks.values.toList.map: block =>
           if block.open
-          then abort(Error(Error.Reason.Interrupted, t"a content block was never closed"))
+          then abort(Error(Error.Reason.Interrupted, "a content block was never closed"))
 
           val accumulated: Text = block.text.toString.tt
           val auxiliary: Text = block.extra.toString.tt
@@ -416,10 +416,10 @@ object Llm:
             case Content.Thinking(text, signature) =>
               Content.Thinking
                 ( t"$text$accumulated",
-                  if auxiliary == t"" then signature else auxiliary )
+                  if auxiliary == "" then signature else auxiliary )
 
             case Content.ToolUse(id, tool, arguments) =>
-              if auxiliary == t"" then Content.ToolUse(id, tool, arguments)
+              if auxiliary == "" then Content.ToolUse(id, tool, arguments)
               else Content.ToolUse(id, tool, parsed(auxiliary))
 
             case other =>
@@ -525,7 +525,7 @@ object Llm:
           remaining -= 1
           current = Message(Role.User, reply.toolCalls.map(outcome(toolkit, _)))
 
-      answer.or(abort(Error(Error.Reason.Malformed, t"the conversation yielded no reply")))
+      answer.or(abort(Error(Error.Reason.Malformed, "the conversation yielded no reply")))
 
     // One tool call's result, as the content block that answers it. A failure — unknown tool,
     // malformed arguments, or an error the tool itself raised — becomes an `is_error` result
@@ -559,10 +559,10 @@ object Llm:
 
     private[sibylline] update def arguments(reply: Reply): Json =
       reply.toolCalls.prim.let(_.arguments).or:
-        abort(Error(Error.Reason.Malformed, t"the model did not call the answer tool"))
+        abort(Error(Error.Reason.Malformed, "the model did not call the answer tool"))
 
     private[sibylline] update def malformed(): Nothing =
-      abort(Error(Error.Reason.Malformed, t"the answer did not match its schema"))
+      abort(Error(Error.Reason.Malformed, "the answer did not match its schema"))
 
     update def stream(text: Text): Response^{this, caps.any} = stream(Message(Role.User, text))
 

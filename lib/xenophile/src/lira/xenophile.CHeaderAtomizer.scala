@@ -49,7 +49,7 @@ import denominative.size
 // bare name — C has one flat namespace — with functions standalone and structs, unions, enums
 // and typedefs folding their contents.
 object CHeaderAtomizer:
-  val id: Text = t"cheader/1"
+  val id: Text = "cheader/1"
 
   private def uvarint(out: Scribe[Byte], value0: Long): Unit =
     var value = value0

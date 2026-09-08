@@ -177,7 +177,7 @@ object internal:
                             ' {
                                 val output =
                                   Map
-                                    ( "result".tt ->
+                                    ( "result" ->
                                       $encoder.encode(${application.asExprOf[result]}) )
 
                                 output.in[Json]
@@ -313,7 +313,7 @@ object internal:
                                   Mcp.Contents:
                                     Mcp.TextResourceContents
                                       ( $uri,
-                                        mimeType = t"text/html;profile=mcp-app", // FIXME
+                                        mimeType = "text/html;profile=mcp-app", // FIXME
                                         text = $value.read[Text] )
                                 }
 
@@ -402,16 +402,16 @@ object internal:
 
                 val outputSchema =
                   JsonSchema.Object
-                    ( properties = Map(t"result" -> $schematic.schema()),
+                    ( properties = Map("result" -> $schematic.schema()),
                       required   = List(t"result") )
 
                 val uiJson: Optional[Json] = $ui.let: resource =>
                   val ui =
                     Map
-                      ( t"visibility"  -> List(t"model", t"app").in[Json],
-                        t"resourceUri" -> resource.in[Json] )
+                      ( "visibility"  -> List(t"model", t"app").in[Json],
+                        "resourceUri" -> resource.in[Json] )
 
-                  Map(t"ui" -> ui.in[Json]).in[Json]
+                  Map("ui" -> ui.in[Json]).in[Json]
 
                 Mcp.Tool
                   ( name         = ${Expr(method.name)},

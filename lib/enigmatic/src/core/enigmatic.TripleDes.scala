@@ -50,6 +50,6 @@ object TripleDes:
 
 class TripleDes[bits <: 112 | 168: ValueOf]
   ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
-extends BlockCipher(t"DESede", mode, padding, cipher):
+extends BlockCipher("DESede", mode, padding, cipher):
   type Size = bits
   def keySize: bits = valueOf[bits]

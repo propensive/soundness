@@ -80,8 +80,8 @@ object ManifestSigning:
       import errorDiagnostics.emptyDiagnostics
 
       mitigate:
-        case _: Tel.Error    => Lira.Error(Reason.InvalidManifest(t"the manifest does not re-parse"))
-        case _: Bintel.Error => Lira.Error(Reason.InvalidManifest(t"the manifest does not encode"))
+        case _: Tel.Error    => Lira.Error(Reason.InvalidManifest("the manifest does not re-parse"))
+        case _: Bintel.Error => Lira.Error(Reason.InvalidManifest("the manifest does not encode"))
 
       . protect:
           val document = data.utf8.load[Tel]

@@ -75,7 +75,7 @@ object DagDiagram:
         (tiles, nodes(row))
 
   given printable: [node: Showable] => (style: DagStyle[Text]) => DagDiagram[node] is Printable =
-    (diagram, termcap) => (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
+    (diagram, termcap) => (diagram.render[Text] { node => t"▪ $node" }).join("\n")
 
 case class DagDiagram[node](lines: List[(List[DagTile], node)]):
   val size: Int = lines.length

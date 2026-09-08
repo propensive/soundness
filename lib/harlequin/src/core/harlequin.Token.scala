@@ -50,7 +50,7 @@ object Token:
   // `Syntax`, whose textual form needs an `Imports` context which inspection cannot supply, so
   // a present `Meta` is shown as `｢Meta｣`, without its type.
   given inspectable: [token <: Token] => token is Inspectable = token =>
-    val meta = if token.meta.present then t"｢Meta｣" else t"○"
+    val meta = if token.meta.present then "｢Meta｣" else "○"
     val role = token.role.lay(t"○"): role => t"｢${role.inspect}｣"
 
     val fields =

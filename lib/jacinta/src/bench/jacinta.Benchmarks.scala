@@ -87,7 +87,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
 
-  given byteDesignation: Designation[Bytes[1]] = () => t"B"
+  given byteDesignation: Designation[Bytes[1]] = () => "B"
   given decimalizer:     Decimalizer            = Decimalizer(2)
   given device:          BenchmarkDevice        = LocalhostDevice
 
@@ -128,18 +128,18 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       def user(): BenchUser =
         reader.openObject()
         var id = 0
-        var username: Text = t""
-        var email: Text = t""
+        var username: Text = ""
+        var email: Text = ""
         var active = false
-        var role: Text = t""
+        var role: Text = ""
 
         while
           reader.key().lay(false): key =>
-            if key == t"id" then id = reader.int()
-            else if key == t"username" then username = reader.string()
-            else if key == t"email" then email = reader.string()
-            else if key == t"active" then active = reader.boolean()
-            else if key == t"role" then role = reader.string()
+            if key == "id" then id = reader.int()
+            else if key == "username" then username = reader.string()
+            else if key == "email" then email = reader.string()
+            else if key == "active" then active = reader.boolean()
+            else if key == "role" then role = reader.string()
             else reader.skipValue()
             true
         do ()
@@ -151,7 +151,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
       while
         reader.key().lay(false): key =>
-          if key == t"users" then
+          if key == "users" then
             val builder = scala.collection.immutable.List.newBuilder[BenchUser]
             reader.openArray()
             while reader.element() do builder += user()
@@ -371,10 +371,10 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
               p += 1
 
               var id = 0
-              var username = ""
-              var email = ""
+              var username: Text = ""
+              var email: Text = ""
               var active = false
-              var role = ""
+              var role: Text = ""
               var seen = 0
               var userFirst = true
               var inUser = true
@@ -404,7 +404,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
                 else bail()
 
               if seen != 31 then bail()
-              builder += BenchUser(id, username.tt, email.tt, active, role.tt)
+              builder += BenchUser(id, username, email, active, role)
               p = ws(p)
 
               if p < limit && buffer(p) == ',' then p += 1
@@ -682,7 +682,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
   lazy val jsonBytes8: Data = Array.unsafeFrozen(jsonText8.getBytes("UTF-8").nn)
 
-  val jsonExample1: Text = t"""
+  val jsonExample1: Text = """
 
 {"web-app": {
   "servlet": [
@@ -774,12 +774,12 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     "taglib-location": "/WEB-INF/tlds/cofax.tld"}}}
 """
 
-  val jsonExample2: Text = t"""
+  val jsonExample2: Text = """
 {"menu":{"id":"file","value":"File","popup":{"menuitem":[{"value":"New","onclick":"CreateNewDoc()"},
 {"value":"Open","onclick":"OpenDoc()"},{"value":"Close","onclick":"CloseDoc()"}]}}}
 """
 
-  val jsonExample3: Text = t"""
+  val jsonExample3: Text = """
 {"menu": {
   "header": "SVG Viewer",
     "items": [

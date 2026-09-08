@@ -53,17 +53,17 @@ sealed trait OtherFormat
 // which infers `@name[Any]`); `note`'s rename is scoped to another format, so
 // XML must ignore it and use the field name.
 case class Labelled
-   (@name[Xml](t"Title")          title:  Text,
-    @name(t"writer")              author: Text,
-    @name[OtherFormat](t"n")      note:   Text,
+   (@name[Xml]("Title")          title:  Text,
+    @name("writer")              author: Text,
+    @name[OtherFormat]("n")      note:   Text,
                                   pages:  Int)
 derives CanEqual
 
 // `Stop` is renamed for XML only; `Go` for all formats (a bare `@name`); `Wait`
 // is unannotated.
 enum Light derives CanEqual:
-  @name[Xml](t"red") case Stop(seconds: Int)
-  @name(t"green")    case Go(seconds: Int)
+  @name[Xml]("red") case Stop(seconds: Int)
+  @name("green")    case Go(seconds: Int)
                      case Wait(seconds: Int)
 
 object EncoderTests extends Suite(m"Xylophone case-class encoder tests"):
@@ -72,22 +72,22 @@ object EncoderTests extends Suite(m"Xylophone case-class encoder tests"):
 
     suite(m"Simple product"):
       test(m"Encode a flat case class"):
-        DPerson(t"Alice", 30, t"a@b.c").in[Xml]
+        DPerson("Alice", 30, "a@b.c").in[Xml]
       . assert(_ == x"<DPerson><name>Alice</name><age>30</age><email>a@b.c</email></DPerson>")
 
       test(m"Flat case class round-trips"):
-        DPerson(t"Alice", 30, t"a@b.c").in[Xml].as[DPerson]
-      . assert(_ == DPerson(t"Alice", 30, t"a@b.c"))
+        DPerson("Alice", 30, "a@b.c").in[Xml].as[DPerson]
+      . assert(_ == DPerson("Alice", 30, "a@b.c"))
 
     suite(m"Nested product"):
       test(m"Encode a nested case class"):
-        DContact(DPerson(t"Carol", 40, t"c@x"), t"Acme").in[Xml]
+        DContact(DPerson("Carol", 40, "c@x"), "Acme").in[Xml]
       . assert: xml =>
           xml == x"""<DContact><person><name>Carol</name><age>40</age><email>c@x</email></person><company>Acme</company></DContact>"""
 
       test(m"Nested case class round-trips"):
-        DContact(DPerson(t"Carol", 40, t"c@x"), t"Acme").in[Xml].as[DContact]
-      . assert(_ == DContact(DPerson(t"Carol", 40, t"c@x"), t"Acme"))
+        DContact(DPerson("Carol", 40, "c@x"), "Acme").in[Xml].as[DContact]
+      . assert(_ == DContact(DPerson("Carol", 40, "c@x"), "Acme"))
 
     suite(m"Sum type by element label"):
       test(m"Encode the Circle variant"):
@@ -108,22 +108,22 @@ object EncoderTests extends Suite(m"Xylophone case-class encoder tests"):
 
     suite(m"@attribute fields"):
       test(m"An @attribute field encodes as an attribute"):
-        Book(t"Dune", t"0441013597").in[Xml]
+        Book("Dune", "0441013597").in[Xml]
       . assert(_ == x"""<Book isbn="0441013597"><title>Dune</title></Book>""")
 
       test(m"An @attribute field round-trips"):
-        Book(t"Dune", t"0441013597").in[Xml].as[Book]
-      . assert(_ == Book(t"Dune", t"0441013597"))
+        Book("Dune", "0441013597").in[Xml].as[Book]
+      . assert(_ == Book("Dune", "0441013597"))
 
     suite(m"@name fields"):
       test(m"@name[Xml] and bare @name rename elements; other-format @name ignored"):
-        Labelled(t"Dune", t"Herbert", t"sci-fi", 412).in[Xml]
+        Labelled("Dune", "Herbert", "sci-fi", 412).in[Xml]
       . assert: xml =>
           xml == x"""<Labelled><Title>Dune</Title><writer>Herbert</writer><note>sci-fi</note><pages>412</pages></Labelled>"""
 
       test(m"@name fields round-trip"):
-        Labelled(t"Dune", t"Herbert", t"sci-fi", 412).in[Xml].as[Labelled]
-      . assert(_ == Labelled(t"Dune", t"Herbert", t"sci-fi", 412))
+        Labelled("Dune", "Herbert", "sci-fi", 412).in[Xml].as[Labelled]
+      . assert(_ == Labelled("Dune", "Herbert", "sci-fi", 412))
 
     suite(m"@name variants"):
       test(m"@name[Xml] renames a variant's element"):

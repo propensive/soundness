@@ -107,11 +107,11 @@ case class Spinner
     private def frame(tick: Tick, width: Int): List[Teletype] =
       val chosen = fit(width, gauging)
 
-      val frame = chosen.lay(Teletype(t" "*width.max(0))): spinner =>
+      val frame = chosen.lay(Teletype(" "*width.max(0))): spinner =>
         val count = spinner.frames.size
 
         val index = tick.index.abs
-        val glyph = if count == 0 then t" " else spinner.frames.at((index%count).z).or(t" ")
+        val glyph = if count == 0 then " " else spinner.frames.at((index%count).z).or(t" ")
 
         val padding = width - spinner.columns
         val body = gauging.tint(gauging.palette.fill)(Teletype(glyph))

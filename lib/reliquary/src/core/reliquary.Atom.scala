@@ -51,8 +51,8 @@ object Atom:
     case Rigid, Replaceable
 
     def keyword: Text = this match
-      case Rigid       => t"rigid"
-      case Replaceable => t"replaceable"
+      case Rigid       => "rigid"
+      case Replaceable => "replaceable"
 
   // A symbolic reference from a replaceable atom's content (§11.2): the input to used-set closure.
   // Cross-module value hashes are not computable from one module's content alone, so disciplines

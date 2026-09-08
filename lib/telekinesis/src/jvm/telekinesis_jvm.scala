@@ -187,9 +187,9 @@ package httpBackends:
       val parsed: HttpUrl = safely(url.as[HttpUrl]).or(abort(Connect.Error(Unknown)))
       val scheme: Text = parsed.scheme.name
 
-      if scheme != t"http" && scheme != t"https" then abort(Connect.Error(Unknown))
+      if scheme != "http" && scheme != "https" then abort(Connect.Error(Unknown))
 
-      val secure: Boolean = scheme == t"https"
+      val secure: Boolean = scheme == "https"
       val defaultPort: Int = if secure then 443 else 80
       val host: Host = parsed.host.or(abort(Connect.Error(Dns)))
       val port: Int = parsed.authority.lay(defaultPort)(_.port.or(defaultPort))
@@ -198,7 +198,7 @@ package httpBackends:
 
       // An origin-form URL has an empty path; its request target is `/`.
       val target: Text =
-        if parsed.location == t"" then t"/${parsed.requestTarget}" else parsed.requestTarget
+        if parsed.location == "" then t"/${parsed.requestTarget}" else parsed.requestTarget
 
       if secure then httpsExchange(host, port, target, method, headers, body)
       else plaintextExchange(host, tcpPort, origin, target, method, headers, body)
@@ -289,15 +289,15 @@ private def plaintextExchange
       || response.textHeaders.exists: header =>
            val key = header.key.lower
 
-           key == t"content-length"
-           || (key == t"transfer-encoding" && header.value.lower.contains(t"chunked"))
+           key == "content-length"
+           || (key == "transfer-encoding" && header.value.lower.contains("chunked"))
 
     val serverClose: Boolean = response.textHeaders.exists: header =>
-      header.key.lower == t"connection" && header.value.lower.contains(t"close")
+      header.key.lower == "connection" && header.value.lower.contains("close")
 
     val reusable: Boolean =
       framed && !serverClose && response.version == 1.1
-      && !headers.exists(_.key.lower == t"connection")
+      && !headers.exists(_.key.lower == "connection")
 
     if reusable then surrender(duplex) else duplex.close()
 
@@ -341,7 +341,7 @@ private def httpsExchange
   val duplex: Duplex = secureConnect(host, port)
 
   duplex.alpnProtocol match
-    case t"h2" =>
+    case "h2" =>
       import threading.virtualThreading
       import probates.cancelProbate
 
@@ -349,7 +349,7 @@ private def httpsExchange
       val authority: Text = if port == 443 then host.show else t"${host.show}:$port"
 
       // RFC 7540 §8.1.2.2: connection-specific headers must not appear in h2.
-      val headers2: List[Http.Header] = headers.filter: header => header.key.lower != t"connection"
+      val headers2: List[Http.Header] = headers.filter: header => header.key.lower != "connection"
 
       val httpRequest = Http.Request(method, 1.1, host, target, headers2, body)
 
@@ -376,8 +376,8 @@ private def httpsExchange
       // One-shot HTTP/1.1 over the negotiated connection. `Connection: close`
       // is sent so a body without framing headers is still delimited.
       val headers2: List[Http.Header] =
-        if headers.exists(_.key.lower == t"connection") then headers
-        else Http.Header(t"connection", t"close") :: headers
+        if headers.exists(_.key.lower == "connection") then headers
+        else Http.Header("connection", "close") :: headers
 
       val httpRequest = Http.Request(method, 1.1, host, target, headers2, body)
 

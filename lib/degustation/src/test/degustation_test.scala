@@ -60,7 +60,7 @@ object Tests extends Suite(m"Degustation Tests"):
       . getOrElse(Unset)
 
   val fixture: Text =
-    t"""|package fixture
+    """|package fixture
         |
         |trait Openish:
         |  def abstractOne: Int
@@ -82,7 +82,7 @@ object Tests extends Suite(m"Degustation Tests"):
         |""".s.stripMargin.tt
 
   def run(): Unit = proscalaLibrary().let: lib =>
-    val jars = scala.List("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
+    val jars = scala.List[String]("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
     val classpath = LocalClasspath(jars.map { jar => Classpath.Entry.Jar(jar.toString.tt) }*)
     val libraryPaths = jars.map { jar => Text(jar.toString) }
 
@@ -96,8 +96,8 @@ object Tests extends Suite(m"Degustation Tests"):
         val process =
           if sjs then
             Scalac[3.9](List()).targeting[Universe.Sjsir]
-              (deps)(Map(t"fixture.scala" -> source), out)
-          else Scalac[3.9](List())(deps)(Map(t"fixture.scala" -> source), out)
+              (deps)(Map("fixture.scala" -> source), out)
+          else Scalac[3.9](List())(deps)(Map("fixture.scala" -> source), out)
 
         process.complete()
 
@@ -135,7 +135,7 @@ object Tests extends Suite(m"Degustation Tests"):
     . assert(!_)
 
     test(m"qualified-private members are conservatively API"):
-      val qualified = listing(t"""|package fixture
+      val qualified = listing("""|package fixture
           |
           |class Scoped:
           |  private[fixture] def limited: Int = 0
@@ -146,7 +146,7 @@ object Tests extends Suite(m"Degustation Tests"):
     . assert(_ == (true, false))
 
     test(m"an export forwarder atomizes as its hand-written equivalent"):
-      val exported = listing(t"""|package fixture
+      val exported = listing("""|package fixture
           |
           |object Impl:
           |  def value: Int = 3
@@ -155,7 +155,7 @@ object Tests extends Suite(m"Degustation Tests"):
           |  export Impl.value
           |""".s.stripMargin.tt)
 
-      val written = listing(t"""|package fixture
+      val written = listing("""|package fixture
           |
           |object Impl:
           |  def value: Int = 3
@@ -181,7 +181,7 @@ object Tests extends Suite(m"Degustation Tests"):
 
     test(m"declaration order does not affect the listing"):
       val reordered: Text =
-        t"""|package fixture
+        """|package fixture
             |
             |inline def double(n: Int): Int = n * 2
             |
@@ -223,7 +223,7 @@ object Tests extends Suite(m"Degustation Tests"):
           "def abstractOne: Int\n  def abstractTwo: Int").nn)
 
       val grown = listing(extended).toMap
-      grown(t"fixture.Openish") != baseline.toMap.apply(t"fixture.Openish")
+      grown("fixture.Openish") != baseline.toMap.apply("fixture.Openish")
     . assert(identity)
 
     test(m"an inline body change is isolated to the replaceable atom"):
@@ -241,7 +241,7 @@ object Tests extends Suite(m"Degustation Tests"):
 
     test(m"an import inside an inline body is transparent"):
       val plain: Text =
-        t"""|package lexical
+        """|package lexical
             |
             |inline def compute(a: Int): Int =
             |  val b = a + 1
@@ -249,7 +249,7 @@ object Tests extends Suite(m"Degustation Tests"):
             |""".s.stripMargin.tt
 
       val imported: Text =
-        t"""|package lexical
+        """|package lexical
             |
             |inline def compute(a: Int): Int =
             |  import scala.math.*
@@ -262,7 +262,7 @@ object Tests extends Suite(m"Degustation Tests"):
 
     test(m"an inline body references what it splices"):
       val source: Text =
-        t"""|package refs
+        """|package refs
             |
             |def helper(n: Int): Int = n + 1
             |inline def outer(n: Int): Int = helper(n) * 2
@@ -296,7 +296,7 @@ object Tests extends Suite(m"Degustation Tests"):
           "object Beta extends Choice\ncase class Gamma(y: Int) extends Choice").nn)
 
       val grown = listing(extended).toMap
-      grown(t"fixture.Choice") != baseline.toMap.apply(t"fixture.Choice")
+      grown("fixture.Choice") != baseline.toMap.apply("fixture.Choice")
     . assert(identity)
 
     // A corpus soak: the build's own compiled output for a foundational module, atomized twice.
@@ -325,11 +325,11 @@ object Tests extends Suite(m"Degustation Tests"):
 
     test(m"the discipline adapter claims tasty and derived binaries"):
       import reliquary.*
-      val path = TreePath(t"fixture/Alpha.tasty")
+      val path = TreePath("fixture/Alpha.tasty")
 
       (TastyDiscipline.claims(path, Array.freeze(Array.allocate[Byte](0))),
-       TastyDiscipline.claims(TreePath(t"fixture/Alpha.class"), Array.freeze(Array.allocate[Byte](0))),
-       TastyDiscipline.claims(TreePath(t"readme.md"), Array.freeze(Array.allocate[Byte](0))))
+       TastyDiscipline.claims(TreePath("fixture/Alpha.class"), Array.freeze(Array.allocate[Byte](0))),
+       TastyDiscipline.claims(TreePath("readme.md"), Array.freeze(Array.allocate[Byte](0))))
     . assert(_ == (true, true, false))
 
     test(m"a jvm-only lira assembles from a real compilation and verifies"):
@@ -343,7 +343,7 @@ object Tests extends Suite(m"Degustation Tests"):
       val registry = Discipline.Registry(List(TastyDiscipline))
 
       val bytes = LiraAssembler.assemble
-        ( t"fixture-core",
+        ( "fixture-core",
           List(input),
           registry,
           toolchain = List(LiraBundle.tool[Universe.Classfile](t"3.9.0")),
@@ -358,10 +358,10 @@ object Tests extends Suite(m"Degustation Tests"):
        lira.manifest.section.stdlib.map(_.realm),
        lira.manifest.section.stdlib.forall(_.derivative.present),
        report.atomizations.stdlib.map(_.discipline))
-    . assert(_ == (t"fixture-core", scala.List(t"tasty/1"), scala.List(t"jvm"), true,
-        scala.List(t"tasty/1")))
+    . assert(_ == ("fixture-core", scala.List("tasty/1"), scala.List("jvm"), true,
+        scala.List("tasty/1")))
 
-    val sjsJars = scala.List("scala3-library_sjs1.jar", "scalajs-scalalib_2.13.jar")
+    val sjsJars = scala.List[String]("scala3-library_sjs1.jar", "scalajs-scalalib_2.13.jar")
       . map(lib.resolve(_).nn)
       . filter(Files.exists(_))
       . ++ (Files.list(lib).nn.iterator.nn.asScala.to(scala.List).filter: path =>
@@ -388,11 +388,11 @@ object Tests extends Suite(m"Degustation Tests"):
         val registry = Discipline.Registry(List(TastyDiscipline))
 
         def contextClasspath(universe: Text): List[Text] =
-          if universe == t"sjsir" then (Text(sjsOut.s) :: sjsLibraryPaths).to(List)
+          if universe == "sjsir" then (Text(sjsOut.s) :: sjsLibraryPaths).to(List)
           else (Text(jvmOut.s) :: libraryPaths).to(List)
 
         val bytes = LiraAssembler.assemble
-          ( t"fixture-core",
+          ( "fixture-core",
             List(jvmInput, sjsInput),
             registry,
             toolchain = List(LiraBundle.tool[Universe.Classfile](t"3.9.0")),
@@ -400,13 +400,13 @@ object Tests extends Suite(m"Degustation Tests"):
 
         val lira = Lira.read(bytes)
         val report = Verification.install(lira)
-        val sjsSection = lira.manifest.section.stdlib.find(_.realm == t"sjsir")
+        val sjsSection = lira.manifest.section.stdlib.find(_.realm == "sjsir")
 
         (lira.manifest.section.stdlib.map(_.realm),
          report.materialized.stdlib.map(_(0).realm),
-         report.materialized.stdlib.find(_(0).realm == t"sjsir")
+         report.materialized.stdlib.find(_(0).realm == "sjsir")
            . map(_(1).entries.stdlib.exists(_.path.text.s.endsWith(".sjsir"))))
-      . assert(_ == (scala.List(t"jvm", t"sjsir"), scala.List(t"jvm", t"sjsir"),
+      . assert(_ == (scala.List("jvm", "sjsir"), scala.List("jvm", "sjsir"),
           scala.Some(true)))
 
     test(m"the discipline adapter atomizes tasty and holds binaries atomless"):
@@ -418,12 +418,12 @@ object Tests extends Suite(m"Degustation Tests"):
         val data = Array.unsafeFrozen(Files.readAllBytes(Paths.get(file.s)).nn)
         (TreePath(t"fixture/$name"), data)
 
-      val binary = (TreePath(t"fixture/Alpha.class"), Array.freeze(Array.allocate[Byte](4)))
+      val binary = (TreePath("fixture/Alpha.class"), Array.freeze(Array.allocate[Byte](4)))
       val all = (content.stdlib :+ binary).to(List)
-      val context = Discipline.Context(t"jvm", classpath = libraryPaths.to(List))
+      val context = Discipline.Context("jvm", classpath = libraryPaths.to(List))
       val atomization = TastyDiscipline.atomize(all, context)
 
       (atomization.discipline,
        atomization.atoms.stdlib.exists(_.key.s.startsWith("fixture.Overloads.f(")),
        atomization.atoms.stdlib.exists(_.key.s.contains("Alpha.class")))
-    . assert(_ == (t"tasty/1", true, false))
+    . assert(_ == ("tasty/1", true, false))

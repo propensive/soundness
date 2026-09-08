@@ -53,13 +53,13 @@ import workingDirectories.systemWorkingDirectory
 def fixture(): Unit = cli:
   arguments match
     case Nil =>
-      execute(Out.print(t"ready") yet Exit.Ok)
+      execute(Out.print("ready") yet Exit.Ok)
 
     case Argument("args") :: rest =>
-      execute(Out.print(rest.map(_()).join(t"\n")) yet Exit.Ok)
+      execute(Out.print(rest.map(_()).join("\n")) yet Exit.Ok)
 
     case Argument("lines") :: rest =>
-      execute(Out.print(rest.map(_()).join(t"\n") + t"\n") yet Exit.Ok)
+      execute(Out.print(rest.map(_()).join("\n") + "\n") yet Exit.Ok)
 
     case Argument("echo") :: text :: Nil =>
       execute(Out.print(text()) yet Exit.Ok)
@@ -126,7 +126,7 @@ def fixture(): Unit = cli:
             SignalResponse.Accept
 
         val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
-        val text: Text = if raw == null then t"(timeout)" else raw
+        val text: Text = if raw == null then "(timeout)" else raw
         Out.print(text) yet Exit.Ok
 
     case Argument("trap-reject") :: Nil =>
@@ -141,13 +141,13 @@ def fixture(): Unit = cli:
 
         trap:
           case Interrupt.Int =>
-            received.offer(t"outer")
+            received.offer("outer")
             SignalResponse.Accept
 
         trap { case _: UnixSignal => SignalResponse.Defer }
 
         val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
-        val text: Text = if raw == null then t"(timeout)" else raw
+        val text: Text = if raw == null then "(timeout)" else raw
         Out.print(text) yet Exit.Ok
 
     case Argument("trap-undefined") :: Nil =>

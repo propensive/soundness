@@ -73,7 +73,7 @@ private[facsimile] object FontEmbedder:
 
     val fontFile =
       pdf.allocate:
-        pdf.newBody(Map(t"Length1" -> Cos.Integral(program.data.length.toLong)), program.data)
+        pdf.newBody(Map("Length1" -> Cos.Integral(program.data.length.toLong)), program.data)
 
     val ascent = safely(scaled(program.hhea.ascender.int)).or(750L)
     val descent = safely(scaled(program.hhea.descender.int)).or(-250L)
@@ -97,16 +97,16 @@ private[facsimile] object FontEmbedder:
       pdf.allocate:
         Cos.Dictionary:
           Map
-            ( t"Type"        -> Cos.Name(t"FontDescriptor"),
-              t"FontName"    -> Cos.Name(baseFont),
-              t"Flags"       -> Cos.Integral(flags),
-              t"FontBBox"    -> boundingBox,
-              t"ItalicAngle" -> Cos.Real(italicAngle),
-              t"Ascent"      -> Cos.Integral(ascent),
-              t"Descent"     -> Cos.Integral(descent),
-              t"CapHeight"   -> Cos.Integral(capHeight),
-              t"StemV"       -> Cos.Integral(80),
-              t"FontFile2"   -> fontFile )
+            ( "Type"        -> Cos.Name("FontDescriptor"),
+              "FontName"    -> Cos.Name(baseFont),
+              "Flags"       -> Cos.Integral(flags),
+              "FontBBox"    -> boundingBox,
+              "ItalicAngle" -> Cos.Real(italicAngle),
+              "Ascent"      -> Cos.Integral(ascent),
+              "Descent"     -> Cos.Integral(descent),
+              "CapHeight"   -> Cos.Integral(capHeight),
+              "StemV"       -> Cos.Integral(80),
+              "FontFile2"   -> fontFile )
 
     // Widths for codes 32–255 under WinAnsi: each code's glyph advance, or 0 where the font
     // has no glyph for it.
@@ -119,14 +119,14 @@ private[facsimile] object FontEmbedder:
     pdf.allocate:
       Cos.Dictionary:
         Map
-          ( t"Type"           -> Cos.Name(t"Font"),
-            t"Subtype"        -> Cos.Name(t"TrueType"),
-            t"BaseFont"       -> Cos.Name(baseFont),
-            t"FirstChar"      -> Cos.Integral(32),
-            t"LastChar"       -> Cos.Integral(255),
-            t"Widths"         -> Cos.Sequence(widths),
-            t"Encoding"       -> Cos.Name(t"WinAnsiEncoding"),
-            t"FontDescriptor" -> descriptor )
+          ( "Type"           -> Cos.Name("Font"),
+            "Subtype"        -> Cos.Name("TrueType"),
+            "BaseFont"       -> Cos.Name(baseFont),
+            "FirstChar"      -> Cos.Integral(32),
+            "LastChar"       -> Cos.Integral(255),
+            "Widths"         -> Cos.Sequence(widths),
+            "Encoding"       -> Cos.Name("WinAnsiEncoding"),
+            "FontDescriptor" -> descriptor )
 
   // The font's advance for a character, in glyph space; zero for one it does not map.
   private def width(font: Sfnt, scaled: Int => Long, char: Char): Long =

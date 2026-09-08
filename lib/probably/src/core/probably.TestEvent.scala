@@ -105,16 +105,16 @@ object TestEvent:
 
   object Outcome:
     def of(verdict: Verdict): Outcome = verdict match
-      case Verdict.Pass(duration)       => Outcome(t"pass", duration, Unset)
-      case Verdict.Fail(duration)       => Outcome(t"fail", duration, Unset)
-      case Verdict.AspirePass(duration) => Outcome(t"aspire-pass", duration, Unset)
-      case Verdict.AspireFail(duration) => Outcome(t"aspire-fail", duration, Unset)
+      case Verdict.Pass(duration)       => Outcome("pass", duration, Unset)
+      case Verdict.Fail(duration)       => Outcome("fail", duration, Unset)
+      case Verdict.AspirePass(duration) => Outcome("aspire-pass", duration, Unset)
+      case Verdict.AspireFail(duration) => Outcome("aspire-fail", duration, Unset)
 
       case Verdict.Throws(exception, duration) =>
-        Outcome(t"throws", duration, Trace.of(StackTrace(exception)))
+        Outcome("throws", duration, Trace.of(StackTrace(exception)))
 
       case Verdict.CheckThrows(exception, duration) =>
-        Outcome(t"check-throws", duration, Trace.of(StackTrace(exception)))
+        Outcome("check-throws", duration, Trace.of(StackTrace(exception)))
 
   // One row of a flattened `Juxtaposition`, pre-order with depth, from which the comparison
   // tree can be rebuilt: `kind` is `same`, `different` or `collation` (whose type name travels
@@ -138,11 +138,11 @@ object TestEvent:
             List(CompareRow(depth, label, t"different", left, right, difference))
 
           case Juxtaposition.Collation(typeName, comparison, left, right) =>
-            CompareRow(depth, label, t"collation", left, right, typeName)
+            CompareRow(depth, label, "collation", left, right, typeName)
               :: comparison.bind[List[CompareRow], CompareRow, List[CompareRow]]:
                    (entry: (Text, Juxtaposition)) => recur(entry(0), entry(1), depth + 1)
 
-      recur(t"", juxtaposition, 0)
+      recur("", juxtaposition, 0)
 
   // An axis coordinate: the `Axis.Spec` fields plus the `Value`, its enum flattened into three
   // `Optional`s of which exactly one is present, according to `domain` (`discrete`, `integral`
@@ -158,9 +158,9 @@ object TestEvent:
   object Coordinate:
     def of(spec: Axis.Spec, value: Value): Coordinate =
       val domain = spec.domain match
-        case Axis.Domain.Discrete => t"discrete"
-        case Axis.Domain.Integral => t"integral"
-        case Axis.Domain.Decimal  => t"decimal"
+        case Axis.Domain.Discrete => "discrete"
+        case Axis.Domain.Integral => "integral"
+        case Axis.Domain.Decimal  => "decimal"
 
       value match
         case Value.Discrete(label) =>
@@ -200,9 +200,9 @@ object TestEvent:
   object AxisSchedule:
     def of(schedule: Axis.Schedule): AxisSchedule =
       val domain = schedule.spec.domain match
-        case Axis.Domain.Discrete => t"discrete"
-        case Axis.Domain.Integral => t"integral"
-        case Axis.Domain.Decimal  => t"decimal"
+        case Axis.Domain.Discrete => "discrete"
+        case Axis.Domain.Integral => "integral"
+        case Axis.Domain.Decimal  => "decimal"
 
       AxisSchedule
         ( schedule.spec.label,
@@ -213,10 +213,10 @@ object TestEvent:
           schedule.most )
 
   def kindName(kind: Entry.Kind): Text = kind match
-    case Entry.Kind.Check   => t"check"
-    case Entry.Kind.Bench   => t"bench"
-    case Entry.Kind.Stress  => t"stress"
-    case Entry.Kind.Profile => t"profile"
+    case Entry.Kind.Check   => "check"
+    case Entry.Kind.Bench   => "bench"
+    case Entry.Kind.Stress  => "stress"
+    case Entry.Kind.Profile => "profile"
 
 enum TestEvent:
   // The SCHEDULE: one per test a `--list` selection admits, before anything runs, so a

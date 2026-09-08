@@ -54,98 +54,98 @@ object PositionTests extends Suite(m"Xylophone position-index tests"):
 
     suite(m"Single-element tracked load"):
       test(m"Root element line"):
-        val tracked = trackedDoc(t"<root/>")
-        line(tracked.locate(XPath().element(t"root", 1)))
+        val tracked = trackedDoc("<root/>")
+        line(tracked.locate(XPath().element("root", 1)))
       . assert(_ == 1)
 
       test(m"Root element column"):
-        val tracked = trackedDoc(t"<root/>")
-        col(tracked.locate(XPath().element(t"root", 1)))
+        val tracked = trackedDoc("<root/>")
+        col(tracked.locate(XPath().element("root", 1)))
       . assert(_ == 1)
 
       test(m"Root element source length spans the open / close"):
-        val tracked = trackedDoc(t"<root>hello</root>")
-        len(tracked.locate(XPath().element(t"root", 1)))
+        val tracked = trackedDoc("<root>hello</root>")
+        len(tracked.locate(XPath().element("root", 1)))
       . assert(_ == 18)
 
     suite(m"Nested elements"):
       test(m"Single nested child line"):
-        val tracked = trackedDoc(t"<root><child/></root>")
-        line(tracked.locate(XPath().element(t"root", 1).element(t"child", 1)))
+        val tracked = trackedDoc("<root><child/></root>")
+        line(tracked.locate(XPath().element("root", 1).element("child", 1)))
       . assert(_ == 1)
 
       test(m"Single nested child column"):
-        val tracked = trackedDoc(t"<root><child/></root>")
-        col(tracked.locate(XPath().element(t"root", 1).element(t"child", 1)))
+        val tracked = trackedDoc("<root><child/></root>")
+        col(tracked.locate(XPath().element("root", 1).element("child", 1)))
       . assert(_ == 7)
 
       test(m"Second child with same name uses [2]"):
-        val tracked = trackedDoc(t"<root><x/><x/></root>")
-        col(tracked.locate(XPath().element(t"root", 1).element(t"x", 2)))
+        val tracked = trackedDoc("<root><x/><x/></root>")
+        col(tracked.locate(XPath().element("root", 1).element("x", 2)))
       . assert(_ == 11)
 
       test(m"Missing child returns Unset"):
-        val tracked = trackedDoc(t"<root><a/></root>")
-        tracked.locate(XPath().element(t"root", 1).element(t"missing", 1))
+        val tracked = trackedDoc("<root><a/></root>")
+        tracked.locate(XPath().element("root", 1).element("missing", 1))
       . assert(_ == Unset)
 
     suite(m"Leading XML declaration"):
       test(m"Declaration does not prevent tracked parsing"):
-        val tracked = trackedDoc(t"""<?xml version="1.0"?><root/>""")
-        tracked.locate(XPath().element(t"root", 1)) != Unset
+        val tracked = trackedDoc("""<?xml version="1.0"?><root/>""")
+        tracked.locate(XPath().element("root", 1)) != Unset
       . assert(_ == true)
 
       test(m"Root column accounts for the declaration prefix"):
-        val tracked = trackedDoc(t"""<?xml version="1.0"?><root/>""")
-        col(tracked.locate(XPath().element(t"root", 1)))
+        val tracked = trackedDoc("""<?xml version="1.0"?><root/>""")
+        col(tracked.locate(XPath().element("root", 1)))
       . assert(_ == 22)
 
       test(m"Declaration on its own line, root on the next"):
-        val tracked = trackedDoc(t"<?xml version=\"1.0\"?>\n<root>hello</root>")
-        line(tracked.locate(XPath().element(t"root", 1)))
+        val tracked = trackedDoc("<?xml version=\"1.0\"?>\n<root>hello</root>")
+        line(tracked.locate(XPath().element("root", 1)))
       . assert(_ == 2)
 
     suite(m"Attributes"):
       test(m"Single attribute column"):
-        val tracked = trackedDoc(t"""<root name="x"/>""")
-        col(tracked.locate(XPath().element(t"root", 1).attribute(t"name")))
+        val tracked = trackedDoc("""<root name="x"/>""")
+        col(tracked.locate(XPath().element("root", 1).attribute("name")))
       . assert(_ == 7)
 
       test(m"Attribute length spans name='value'"):
-        val tracked = trackedDoc(t"""<root name="alice"/>""")
-        len(tracked.locate(XPath().element(t"root", 1).attribute(t"name")))
+        val tracked = trackedDoc("""<root name="alice"/>""")
+        len(tracked.locate(XPath().element("root", 1).attribute("name")))
       . assert(_ == 12)
 
       test(m"Second attribute column"):
-        val tracked = trackedDoc(t"""<root a="1" b="2"/>""")
-        col(tracked.locate(XPath().element(t"root", 1).attribute(t"b")))
+        val tracked = trackedDoc("""<root a="1" b="2"/>""")
+        col(tracked.locate(XPath().element("root", 1).attribute("b")))
       . assert(_ == 13)
 
       test(m"Missing attribute returns Unset"):
-        val tracked = trackedDoc(t"""<root a="1"/>""")
-        tracked.locate(XPath().element(t"root", 1).attribute(t"missing"))
+        val tracked = trackedDoc("""<root a="1"/>""")
+        tracked.locate(XPath().element("root", 1).attribute("missing"))
       . assert(_ == Unset)
 
     suite(m"Multi-line input"):
       test(m"Second-line child is on line 2"):
-        val source = t"<root>\n  <child/>\n</root>"
+        val source = "<root>\n  <child/>\n</root>"
         val tracked = trackedDoc(source)
-        line(tracked.locate(XPath().element(t"root", 1).element(t"child", 1)))
+        line(tracked.locate(XPath().element("root", 1).element("child", 1)))
       . assert(_ == 2)
 
       test(m"Second-line child column reflects indent"):
-        val source = t"<root>\n  <child/>\n</root>"
+        val source = "<root>\n  <child/>\n</root>"
         val tracked = trackedDoc(source)
-        col(tracked.locate(XPath().element(t"root", 1).element(t"child", 1)))
+        col(tracked.locate(XPath().element("root", 1).element("child", 1)))
       . assert(_ == 3)
 
     suite(m"Mixed content"):
       test(m"Text between elements doesn't break child indexing"):
-        val tracked = trackedDoc(t"<root>hi<a/>bye<b/>!</root>")
-        col(tracked.locate(XPath().element(t"root", 1).element(t"b", 1)))
+        val tracked = trackedDoc("<root>hi<a/>bye<b/>!</root>")
+        col(tracked.locate(XPath().element("root", 1).element("b", 1)))
       . assert(_ == 16)
 
       test(m"Comment between elements doesn't break child indexing"):
-        val tracked = trackedDoc(t"<root><a/><!-- x --><b/></root>")
-        col(tracked.locate(XPath().element(t"root", 1).element(t"b", 1)))
+        val tracked = trackedDoc("<root><a/><!-- x --><b/></root>")
+        col(tracked.locate(XPath().element("root", 1).element("b", 1)))
       . assert(_ == 21)

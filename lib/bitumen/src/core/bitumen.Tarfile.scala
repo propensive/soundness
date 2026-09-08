@@ -170,24 +170,24 @@ object Tarfile:
               val header = TarHeader.parse(head)
 
               val checksummed: Venture[Unit] = venture:
-                TarHeader.verifyChecksum(head, TarHeader.decodeOctal(header.checksum, t"checksum"))
+                TarHeader.verifyChecksum(head, TarHeader.decodeOctal(header.checksum, "checksum"))
 
               // A block that fails its checksum cannot be trusted for anything — including the
               // size that locates the next header — so parsing on would only manufacture
               // cascade errors from corrupt bytes. Record the checksum error and end the walk.
               if !checksummed.ready then finished = true else
-                val size: Int = TarHeader.decodeOctal(header.size, t"size").long.toInt
-                val mtime: U32 = TarHeader.decodeOctal(header.mtime, t"mtime")
-                val mode = UnixMode.from(TarHeader.decodeOctal(header.mode, t"mode").long.toInt)
-                val uid = TarHeader.decodeOctal(header.uid, t"uid").long.toInt
-                val gid = TarHeader.decodeOctal(header.gid, t"gid").long.toInt
+                val size: Int = TarHeader.decodeOctal(header.size, "size").long.toInt
+                val mtime: U32 = TarHeader.decodeOctal(header.mtime, "mtime")
+                val mode = UnixMode.from(TarHeader.decodeOctal(header.mode, "mode").long.toInt)
+                val uid = TarHeader.decodeOctal(header.uid, "uid").long.toInt
+                val gid = TarHeader.decodeOctal(header.gid, "gid").long.toInt
 
                 val unameText =
-                  paxOverlay.at("uname".tt).or(globalOverlay.at("uname".tt))
+                  paxOverlay.at("uname").or(globalOverlay.at("uname"))
                   . or(TarHeader.decodeNulText(header.uname))
 
                 val gnameText =
-                  paxOverlay.at("gname".tt).or(globalOverlay.at("gname".tt))
+                  paxOverlay.at("gname").or(globalOverlay.at("gname"))
                   . or(TarHeader.decodeNulText(header.gname))
 
                 val user = UnixUser(uid, if unameText.s.isEmpty then Unset else unameText)
@@ -214,7 +214,7 @@ object Tarfile:
                     val isExtended: Boolean = head.readUnchecked(482) != 0.toByte
 
                     val realSize: Long =
-                      TarHeader.decodeOctal(head.segment((483).z till (495).z), t"realsize").long
+                      TarHeader.decodeOctal(head.segment((483).z till (495).z), "realsize").long
 
                     val extSegments = readSparseExtensions(cursor, isExtended)
                     val data = takeData(cursor, size)
@@ -297,13 +297,13 @@ object Tarfile:
         Tar.Entry.Symlink(path, mode, user, group, mtime, link, extras)
 
       case '3' =>
-        val major = TarHeader.decodeOctal(header.devMajor, t"devmajor")
-        val minor = TarHeader.decodeOctal(header.devMinor, t"devminor")
+        val major = TarHeader.decodeOctal(header.devMajor, "devmajor")
+        val minor = TarHeader.decodeOctal(header.devMinor, "devminor")
         Tar.Entry.CharSpecial(path, mode, user, group, mtime, (major, minor), extras)
 
       case '4' =>
-        val major = TarHeader.decodeOctal(header.devMajor, t"devmajor")
-        val minor = TarHeader.decodeOctal(header.devMinor, t"devminor")
+        val major = TarHeader.decodeOctal(header.devMajor, "devmajor")
+        val minor = TarHeader.decodeOctal(header.devMinor, "devminor")
         Tar.Entry.BlockSpecial(path, mode, user, group, mtime, (major, minor), extras)
 
       case '6' =>
@@ -340,7 +340,7 @@ object Tarfile:
       if data.readUnchecked(i) != 0.toByte then allZero = false
       i = i + 1
 
-    if allZero then 0L else TarHeader.decodeOctal(data, t"sparse.field").long
+    if allZero then 0L else TarHeader.decodeOctal(data, "sparse.field").long
 
   private def readInlineSparseMap(headerBlock: Data): List[SparseSegment] raises Tar.Error =
     val builder = scala.collection.immutable.List.newBuilder[SparseSegment]
@@ -390,7 +390,7 @@ object Tarfile:
   :   Text =
 
     longName.or:
-      paxOverlay.at("path".tt).or(globalOverlay.at("path".tt)).lay:
+      paxOverlay.at("path").or(globalOverlay.at("path")).lay:
         val name = TarHeader.decodeNulText(header.name)
         val prefix = TarHeader.decodeNulText(header.prefix)
         stripTrailingSlash(if prefix.s.isEmpty then name else t"$prefix/$name")
@@ -405,7 +405,7 @@ object Tarfile:
   :   Text =
 
     longLink.or:
-      paxOverlay.at("linkpath".tt).or(globalOverlay.at("linkpath".tt))
+      paxOverlay.at("linkpath").or(globalOverlay.at("linkpath"))
       . or(TarHeader.decodeNulText(header.linkName))
 
   private def stripTrailingSlash(text: Text): Text =
@@ -419,7 +419,7 @@ object Tarfile:
 
     . protect(text.as[Relative on Tar])
 
-  private val structuralPaxKeys: Set[Text] = Set(t"path", t"linkpath", t"uname", t"gname")
+  private val structuralPaxKeys: Set[Text] = Set("path", "linkpath", "uname", "gname")
 
   // The blocks that precede an entry's own header: GNU long-name/long-link
   // pseudo-entries and/or a PAX extended-header entry, per the format. These
@@ -448,7 +448,7 @@ object Tarfile:
     val records = paxRecordsFor(entry).filter: (key, _) =>
       longNameFormat match
         case LongNameFormat.Pax => true
-        case LongNameFormat.Gnu => key != t"path" && key != t"linkpath"
+        case LongNameFormat.Gnu => key != "path" && key != "linkpath"
 
     val paxPart: Iterator[Data] =
       if records.nil then Iterator.empty else Tar.Entry.Pax(Pax.records(records)).serialize
@@ -457,18 +457,18 @@ object Tarfile:
 
   private def paxRecordsFor(entry: Tar.Entry): List[(Text, Text)] =
     val builder = scala.collection.immutable.List.newBuilder[(Text, Text)]
-    if entry.entryName.in[Data].length > 100 then builder += ((t"path", entry.entryName))
+    if entry.entryName.in[Data].length > 100 then builder += (("path", entry.entryName))
 
     entry.link.let: link =>
-      if link.in[Data].length > 100 then builder += ((t"linkpath", link))
+      if link.in[Data].length > 100 then builder += (("linkpath", link))
 
     val (user, group) = userAndGroup(entry)
 
     user.name.let: name =>
-      if name.in[Data].length > 32 then builder += ((t"uname", name))
+      if name.in[Data].length > 32 then builder += (("uname", name))
 
     group.name.let: name =>
-      if name.in[Data].length > 32 then builder += ((t"gname", name))
+      if name.in[Data].length > 32 then builder += (("gname", name))
 
     paxOf(entry).foreach: (k, v) =>
       if !structuralPaxKeys.has(k) then builder += ((k, v))

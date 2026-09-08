@@ -140,7 +140,7 @@ object Audio:
   // AudioError → Audio.Error
   case class Error(audible: Optional[Audible])(using Diagnostics)
   extends
-    fulminate.Error(m"unable to read the audio in ${audible.lay("unspecified".tt)(_.name)} format")
+    fulminate.Error(m"unable to read the audio in ${audible.lay(Text("unspecified"))(_.name)} format")
 
 case class Audio
   ( private[cacophony] val format: jss.AudioFormat,

@@ -58,7 +58,7 @@ object PrivateKey:
   // more places (test output, a debugger's variable pane, a nested rendering of an enclosing
   // value), so it reveals nothing of the key material at all, not even a digest of it.
   given inspectable: [key <: PrivateKey[?]] => key is Inspectable =
-    _ => t"PrivateKey(•••)"
+    _ => "PrivateKey(•••)"
 
   given showable: [key <: Cipher] => PrivateKey[key] is Showable = key =>
     import alphabets.base64Standard

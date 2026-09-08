@@ -36,7 +36,7 @@ import anticipation.*
 import rudiments.*
 
 object Rankines:
-  given designation: Designation[Rankines[1]] = () => "°R".tt
+  given designation: Designation[Rankines[1]] = () => "°R"
   inline given ratio: Ratio[Rankines[1] & Kelvins[-1], 1.8] = !!
 
 trait Rankines[Power <: Nat] extends Units[Power, Heat]

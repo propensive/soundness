@@ -202,25 +202,25 @@ object Launcher:
       if tty then children += flag(5)
       arguments.each { argument => children += value(6, argument) }
       environment.each { variable => children += value(7, variable) }
-      node(Variant.init, t"Init", Array.from(children))
+      node(Variant.init, "Init", Array.from(children))
 
-    case Message.Stderr(pid)       => node(Variant.stderr, t"Stderr", Array(value(0, pid.show)))
-    case Message.Control(pid)      => node(Variant.control, t"Control", Array(value(0, pid.show)))
-    case Message.Exit(pid)         => node(Variant.exit, t"Exit", Array(value(0, pid.show)))
-    case Message.Verify            => node(Variant.verify, t"Verify", Array.empty)
-    case Message.ExitStatus(code)  => node(Variant.exitStatus, t"ExitStatus", Array(value(0, code.show)))
+    case Message.Stderr(pid)       => node(Variant.stderr, "Stderr", Array(value(0, pid.show)))
+    case Message.Control(pid)      => node(Variant.control, "Control", Array(value(0, pid.show)))
+    case Message.Exit(pid)         => node(Variant.exit, "Exit", Array(value(0, pid.show)))
+    case Message.Verify            => node(Variant.verify, "Verify", Array.empty)
+    case Message.ExitStatus(code)  => node(Variant.exitStatus, "ExitStatus", Array(value(0, code.show)))
 
     case Message.Signal(pid, name) =>
-      node(Variant.signal, t"Signal", Array(value(0, pid.show), value(1, name)))
+      node(Variant.signal, "Signal", Array(value(0, pid.show), value(1, name)))
 
     case Message.SignalAck(accept) =>
-      node(Variant.signalAck, t"SignalAck", if accept then Array(flag(0)) else Array.empty)
+      node(Variant.signalAck, "SignalAck", if accept then Array(flag(0)) else Array.empty)
 
     case Message.Verdict(fresh) =>
-      node(Variant.verdict, t"Verdict", if fresh then Array(flag(0)) else Array.empty)
+      node(Variant.verdict, "Verdict", if fresh then Array(flag(0)) else Array.empty)
 
     case Message.Mode(canonical) =>
-      node(Variant.mode, t"Mode", if canonical then Array(flag(0)) else Array.empty)
+      node(Variant.mode, "Mode", if canonical then Array(flag(0)) else Array.empty)
 
   // A message as one framed BinTEL document (§6.1): magic, length, signature, body.
   def encode(message: Message): Data =

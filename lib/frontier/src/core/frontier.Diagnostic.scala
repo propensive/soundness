@@ -50,7 +50,7 @@ import vacuous.*
 @unexported
 object Diagnostic:
   given treeStyle: [text: Textual] => TextualTreeStyle[text] =
-    TextualTreeStyle(t"   ", t" └─", t" ├─", t" │ ")
+    TextualTreeStyle("   ", " └─", " ├─", " │ ")
 
   given expandable: Diagnostic is Expandable = _.children
 
@@ -58,7 +58,7 @@ object Diagnostic:
   // `Resolving` node, which supplies the "■ resolving …" headline; its
   // children form the tree below. The default headline matches the legacy
   // Frontier wording; callers (e.g. Wisteria) may override it.
-  def render(diagnostic: Diagnostic, headline: Text = t"contextual value not found"): Text =
+  def render(diagnostic: Diagnostic, headline: Text = "contextual value not found"): Text =
     diagnostic match
       case Diagnostic.Resolving(name, label, children) =>
         TreeDiagram[Diagnostic](children*).render(line)

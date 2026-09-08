@@ -74,68 +74,68 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
   def run(): Unit =
     suite(m"Runtime verification"):
       test(m"A conformant value verifies and still decodes"):
-        Worker(t"Alice", 30).encode.verify[Worker].as[Worker]
-      . assert(_ == Worker(t"Alice", 30))
+        Worker("Alice", 30).encode.verify[Worker].as[Worker]
+      . assert(_ == Worker("Alice", 30))
 
       test(m"A conformant value verifies successfully"):
-        safely(Worker(t"Bob", 4).encode.verify[Worker]).present
+        safely(Worker("Bob", 4).encode.verify[Worker]).present
       . assert(_ == true)
 
       test(m"A wrong-typed field fails to verify"):
-        safely(TextAge(t"Bob", t"old").encode.verify[Worker]).absent
+        safely(TextAge("Bob", "old").encode.verify[Worker]).absent
       . assert(_ == true)
 
     suite(m"Typed navigation (no enabler import)"):
       test(m"Access a verified field"):
-        Worker(t"Alice", 30).encode.verify[Worker].name.as[Text]
-      . assert(_ == t"Alice")
+        Worker("Alice", 30).encode.verify[Worker].name.as[Text]
+      . assert(_ == "Alice")
 
       test(m"Access a verified Int field"):
-        Worker(t"Alice", 30).encode.verify[Worker].age.as[Int]
+        Worker("Alice", 30).encode.verify[Worker].age.as[Int]
       . assert(_ == 30)
 
       test(m"Access a nested verified field"):
-        Assignment(Worker(t"Bob", 2), Office(t"Main", t"Town"))
+        Assignment(Worker("Bob", 2), Office("Main", "Town"))
           .encode.verify[Assignment].office.city.as[Text]
-      . assert(_ == t"Town")
+      . assert(_ == "Town")
 
       test(m"Index into a verified collection field"):
-        Crew(t"Z", List(Worker(t"A", 1), Worker(t"B", 2)))
+        Crew("Z", List(Worker(t"A", 1), Worker(t"B", 2)))
           .encode.verify[Crew].members(1).name.as[Text]
-      . assert(_ == t"B")
+      . assert(_ == "B")
 
     suite(m"Collection round-trip"):
       test(m"A list field round-trips through TEL"):
-        Crew(t"Z", List(Worker(t"A", 1), Worker(t"B", 2))).encode.as[Crew]
-      . assert(_ == Crew(t"Z", List(Worker(t"A", 1), Worker(t"B", 2))))
+        Crew("Z", List(Worker(t"A", 1), Worker(t"B", 2))).encode.as[Crew]
+      . assert(_ == Crew("Z", List(Worker(t"A", 1), Worker(t"B", 2))))
 
       test(m"A map field round-trips through TEL"):
-        Config(t"c", Map(t"a" -> 1, t"b" -> 2)).encode.as[Config]
-      . assert(_ == Config(t"c", Map(t"a" -> 1, t"b" -> 2)))
+        Config("c", Map("a" -> 1, "b" -> 2)).encode.as[Config]
+      . assert(_ == Config("c", Map("a" -> 1, "b" -> 2)))
 
     suite(m"Schema derivation"):
       test(m"A product derives a Struct with kebab-cased field keywords"):
-        keywords(Tels.tels[Worker](t"worker").document)
+        keywords(Tels.tels[Worker]("worker").document)
       . assert(_ == List(t"name", t"age"))
 
       test(m"A required field has Tight polarity"):
 
-          Tels.tels[Worker](t"worker").document.members.to[List].stdlib.collect:
-            case field: Tels.Field if field.keyword == t"name" => field.required
+          Tels.tels[Worker]("worker").document.members.to[List].stdlib.collect:
+            case field: Tels.Field if field.keyword == "name" => field.required
           . to(List)
       . assert(_ == List(Tels.Polarity.Tight))
 
       test(m"An Optional field loosens to Loose polarity"):
 
-          Tels.tels[Nicked](t"nicked").document.members.to[List].stdlib.collect:
-            case field: Tels.Field if field.keyword == t"nick" => field.required
+          Tels.tels[Nicked]("nicked").document.members.to[List].stdlib.collect:
+            case field: Tels.Field if field.keyword == "nick" => field.required
           . to(List)
       . assert(_ == List(Tels.Polarity.Loose))
 
       test(m"A collection field is repeatable, typed as the element struct"):
 
-          Tels.tels[Crew](t"crew").document.members.to[List].stdlib.collect:
-            case field: Tels.Field if field.keyword == t"members" =>
+          Tels.tels[Crew]("crew").document.members.to[List].stdlib.collect:
+            case field: Tels.Field if field.keyword == "members" =>
               field.repeatable -> field.fieldType
           . collect:
               case (repeatable, struct: Tels.Struct) => repeatable -> keywords(struct)
@@ -144,11 +144,11 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
 
       test(m"A map field's type is a Struct of repeatable `entries` of key/value"):
 
-          Tels.tels[Config](t"config").document.members.to[List].stdlib.collect:
-            case field: Tels.Field if field.keyword == t"prefs" => field.fieldType
+          Tels.tels[Config]("config").document.members.to[List].stdlib.collect:
+            case field: Tels.Field if field.keyword == "prefs" => field.fieldType
           . collect:
               case struct: Tels.Struct => struct.members.to[List].stdlib.collect:
-                case field: Tels.Field if field.keyword == t"entries" => field.fieldType
+                case field: Tels.Field if field.keyword == "entries" => field.fieldType
           . flatten.collect:
               case struct: Tels.Struct => keywords(struct)
           . to(List)
@@ -162,7 +162,7 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
           case _              => false
 
     suite(m"Encodable & Schematic fusion"):
-      val worker = Worker(t"Alice", 30)
+      val worker = Worker("Alice", 30)
 
       test(m"A fused encoder encodes (and round-trips) as Tel"):
         telSchematics.encodable[Worker].encoded(worker).as[Worker]
@@ -187,24 +187,24 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
     suite(m"Compile-time schema checks"):
       test(m"An unknown field is rejected"):
         demilitarize:
-          Worker(t"Alice", 30).encode.verify[Worker].nope
+          Worker("Alice", 30).encode.verify[Worker].nope
         . head.message
       . assert(_.contains("has no field"))
 
       test(m"Indexing a non-collection field is rejected"):
         demilitarize:
-          Worker(t"Alice", 30).encode.verify[Worker].name(0)
+          Worker("Alice", 30).encode.verify[Worker].name(0)
         . head.message
       . assert(_.contains("not an indexable collection"))
 
       test(m"Field access on a scalar position is rejected"):
         demilitarize:
-          Worker(t"Alice", 30).encode.verify[Worker].name.deeper
+          Worker("Alice", 30).encode.verify[Worker].name.deeper
         . head.message
       . assert(_.contains("has no field"))
 
       test(m"Plain (unverified) field access requires the enabler"):
         demilitarize:
-          Worker(t"Alice", 30).encode.name
+          Worker("Alice", 30).encode.name
         . head.message
       . assert(_.contains("dynamicAccess.dynamicTel"))

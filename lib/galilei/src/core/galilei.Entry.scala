@@ -68,7 +68,7 @@ case object Directory extends WindowsEntry, UnixEntry:
     // checks, which cannot see grants after erasure.
     val atoms: Set[Mode]
 
-    def base: Path on Plane = Path[Plane, scala.EmptyTuple.type, EmptyTuple](t"", Nil)
+    def base: Path on Plane = Path[Plane, scala.EmptyTuple.type, EmptyTuple]("", Nil)
 
     // A method rather than an extension: generic `/` extensions (e.g. symbolism's) are lexically
     // visible at use sites and would be tried first, failing without falling through.

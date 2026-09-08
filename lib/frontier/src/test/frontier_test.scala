@@ -224,14 +224,14 @@ object Tests extends Suite(m"Frontier Tests"):
     test(m"join with a separator compiles with the catch-all in scope"):
       demilitarize:
         import frontier.context.explainMissingContext
-        val y = List(t"a", t"b").join(t", ")
+        val y = List(t"a", t"b").join(", ")
       . filter(_.error).map(_.message)
     . assert(_ == Nil)
 
     test(m"a stdlib List joins with the catch-all in scope"):
       demilitarize:
         import frontier.context.explainMissingContext
-        val y = scala.collection.immutable.List(t"a", t"b").map(_.upper).join
+        val y = scala.collection.immutable.List("a", "b").map(_.upper).join
       . filter(_.error).map(_.message)
     . assert(_ == Nil)
 
@@ -271,7 +271,7 @@ object Tests extends Suite(m"Frontier Tests"):
         import frontier.context.explainMissingContext
         import turbulence.*
         trait Widget
-        t"data".read[Widget]
+        "data".read[Widget]
       . map(_.message)
     . assert: msgs =>
         msgs.exists: m =>

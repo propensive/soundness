@@ -44,7 +44,7 @@ object Scheme:
   given inspectable: [scheme <: Scheme[Label]] => scheme is Inspectable = scheme =>
     t"${scheme.name}:"
 
-  object Http extends Scheme["http"](t"http")
-  object Https extends Scheme["https"](t"https")
+  object Http extends Scheme["http"]("http")
+  object Https extends Scheme["https"]("https")
 
 case class Scheme[+scheme <: Label](name: Text)

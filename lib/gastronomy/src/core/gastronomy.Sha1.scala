@@ -41,7 +41,7 @@ import prepositional.*
 
 object Sha1:
   given hash: (hashing: Hashing { def sha1: Hashing.Function }) => Hash in Sha1 =
-    Hash(t"SHA1", t"HmacSHA1", hashing.sha1)
+    Hash("SHA1", "HmacSHA1", hashing.sha1)
 
 sealed trait Sha1 extends Algorithm:
   type Bits = 160

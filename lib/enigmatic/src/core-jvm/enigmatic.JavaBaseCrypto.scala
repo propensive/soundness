@@ -56,11 +56,11 @@ object JavaBaseCrypto extends Crypto:
       js.SecureRandom().nextBytes(output.raw)
       Array.freeze(output)
 
-  def aes:       Crypto.SymmetricCipher = symmetric(t"AES")
-  def des:       Crypto.SymmetricCipher = symmetric(t"DES")
-  def tripleDes: Crypto.SymmetricCipher = symmetric(t"DESede")
-  def blowfish:  Crypto.SymmetricCipher = symmetric(t"Blowfish")
-  def rc2:       Crypto.SymmetricCipher = symmetric(t"RC2")
+  def aes:       Crypto.SymmetricCipher = symmetric("AES")
+  def des:       Crypto.SymmetricCipher = symmetric("DES")
+  def tripleDes: Crypto.SymmetricCipher = symmetric("DESede")
+  def blowfish:  Crypto.SymmetricCipher = symmetric("Blowfish")
+  def rc2:       Crypto.SymmetricCipher = symmetric("RC2")
 
   def hmac(algorithm: Text): Crypto.Mac = new Crypto.Mac:
     def mac(key: Data, data: Data): Data =
@@ -106,7 +106,7 @@ object JavaBaseCrypto extends Crypto:
       Array.unsafeFrozen(keyFactory().generatePublic(spec).nn.getEncoded.nn)
 
   def rsaSignature(digest: Text): Crypto.SignatureScheme =
-    new Signatory(t"${digest}withRSA", t"RSA"):
+    new Signatory(t"${digest}withRSA", "RSA"):
       def generateKeyPair(bits: Int): Data =
         val generator = js.KeyPairGenerator.getInstance("RSA").nn
         generator.initialize(bits)
@@ -118,9 +118,9 @@ object JavaBaseCrypto extends Crypto:
   // ECDSA over a NIST prime curve. The curve is chosen by key size, since `KeyPairGenerator` needs
   // a curve name rather than a bit count for EC; P-521 really is 521 bits, not 512.
   def ecdsa(digest: Text): Crypto.SignatureScheme =
-    new Signatory(t"${digest}withECDSA", t"EC"):
+    new Signatory(t"${digest}withECDSA", "EC"):
       def generateKeyPair(bits: Int): Data =
-        val curve = bits match
+        val curve: String = bits match
           case 256 => "secp256r1"
           case 384 => "secp384r1"
           case 521 => "secp521r1"

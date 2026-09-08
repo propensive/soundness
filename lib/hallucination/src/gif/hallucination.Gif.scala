@@ -40,7 +40,7 @@ object Gif:
   def apply(): Rasterizable = rasterization
 
   given rasterization: Gif is Rasterizable:
-    def name: Text = "GIF".tt
+    def name: Text = "GIF"
     def mediaType = media"image/gif"
     def alpha: Boolean = true
 

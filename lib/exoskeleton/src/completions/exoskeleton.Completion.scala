@@ -100,7 +100,7 @@ extends Cli:
     currentArgument == argument.position && argument.format.match
       case Argument.Format.Full              => true
       case Argument.Format.EqualityPrefix    => false
-      case Argument.Format.EqualitySuffix    => argument.value.contains(t"=")
+      case Argument.Format.EqualitySuffix    => argument.value.contains("=")
       case Argument.Format.CharFlag(ordinal) => false
       case Argument.Format.FlagSuffix        => focusPosition.let(_.z > Sec).or(true)
 
@@ -180,7 +180,7 @@ extends Cli:
 
   def serialize: List[Text] =
     val items0 =
-      if cursorSuggestions.nil then flagSuggestions(focusText.starts(t"--")) else cursorSuggestions
+      if cursorSuggestions.nil then flagSuggestions(focusText.starts("--")) else cursorSuggestions
 
     val items = interpreter.focus(parameters).lay(items0): focus => items0.map(focus.wrap(_))
 
@@ -190,18 +190,18 @@ extends Cli:
         val termcap: Termcap = termcapDefinitions.xtermTrueColorTermcap
 
         lazy val width = items.map { item => item.display.or(item.core).length }.maximize(identity).or(0)
-        lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).maximize(identity).or(0) + 1
+        lazy val aliasesWidth = items.map(_.aliases.join(" ").length).maximize(identity).or(0) + 1
 
         val itemLines: List[Command] = items.bind:
           case Suggestion(core0, description, hidden, incomplete, aliases, prefix, suffix, _, _, _,
                           display) =>
             val hiddenParam = if hidden then sh"-n" else sh""
-            val shortFlag = focusText.starts(t"-") && !focusText.starts(t"--")
+            val shortFlag = focusText.starts("-") && !focusText.starts("--")
             // The short-flag menu names the flag, then its long form. A clustered candidate has
             // already been named in full by `display`, so repeating the bare character there
             // would just print it twice.
             val aliasText =
-              if shortFlag && display.absent then core0 else aliases.join(t" ").fit(aliasesWidth)
+              if shortFlag && display.absent then core0 else aliases.join(" ").fit(aliasesWidth)
             val prefix2 = if prefix.nil then sh"" else sh"-p $prefix"
             val suffix2 = if suffix.nil then sh"" else sh"-s $suffix"
             val core = if shortFlag then aliases.prim.or(core0) else core0
@@ -234,7 +234,7 @@ extends Cli:
             (List(mainLine): List[Command]) + duplicateLine
 
         val lines: List[Command] = title + itemLines
-        lines.map(_.arguments.join(t"\u0000"))
+        lines.map(_.arguments.join("\u0000"))
 
       case Shell.Bash =>
         items.filter(!_.hidden).bind: suggestion =>
@@ -267,7 +267,7 @@ extends Cli:
 
               val mainLines: List[Text] = (suggestion.text :: aliases).map(line)
 
-              if !incomplete || !sole || suggestion.text.ends(t"/") then mainLines
+              if !incomplete || !sole || suggestion.text.ends("/") then mainLines
               else mainLines + (suggestion.text :: aliases).map(spaced)
 
       case Shell.Powershell =>

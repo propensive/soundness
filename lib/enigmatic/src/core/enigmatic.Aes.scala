@@ -47,6 +47,6 @@ object Aes:
 
 class Aes[bits <: 128 | 192 | 256: ValueOf]
   ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
-extends BlockCipher(t"AES", mode, padding, cipher):
+extends BlockCipher("AES", mode, padding, cipher):
   type Size = bits
   def keySize: bits = valueOf[bits]

@@ -51,7 +51,7 @@ import vacuous.*
 import Hostname.Error.Reason.*
 
 object Hostname:
-  given showable: Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
+  given showable: Hostname is Showable = _.dnsLabels.map(_.show).join(".")
   given inspectable: [hostname <: Hostname] => hostname is Inspectable = showable.text(_)
   given decodable: (tactic: Tactic[Hostname.Error])
   =>  ((Hostname is Decodable in Text)^{tactic}) =
@@ -84,7 +84,7 @@ object Hostname:
         // The linear `size` is paid only on this error path, never while parsing a valid name.
         if label.nil then raise(Hostname.Error(text, EmptyDnsLabel(dnsLabels.size)))
         if label.length > 63 then raise(Hostname.Error(text, LongDnsLabel(label)))
-        if label.starts(t"-") then raise(Hostname.Error(text, InitialDash(label)))
+        if label.starts("-") then raise(Hostname.Error(text, InitialDash(label)))
         val dnsLabels2 = DnsLabel(label) :: dnsLabels
         builder.clear()
 

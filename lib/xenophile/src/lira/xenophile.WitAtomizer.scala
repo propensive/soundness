@@ -56,7 +56,7 @@ import rudiments.sortingAlgorithms.timsort
 // capability is a minor) and its exports fold (an export is an obligation on every component
 // targeting the world).
 object WitAtomizer:
-  val id: Text = t"wit/1"
+  val id: Text = "wit/1"
 
   private def malformed(detail: Text): Discipline.Error =
     import errorDiagnostics.emptyDiagnostics
@@ -91,11 +91,11 @@ object WitAtomizer:
     Lira.Hash(Lira.Hash.Domain.Atom(id), Array.collect[Byte]()(encode))
 
   private val primitives: Set[Text] =
-    Set(t"bool", t"u8", t"u16", t"u32", t"u64", t"s8", t"s16", t"s32", t"s64", t"f32", t"f64",
-        t"char", t"string", t"_")
+    Set("bool", "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64",
+        "char", "string", "_")
 
   private val constructors: Set[Text] =
-    Set(t"list", t"option", t"result", t"tuple", t"own", t"borrow")
+    Set("list", "option", "result", "tuple", "own", "borrow")
 
   // Every named type reference is encoded fully qualified (`wit.md` §7): local names under the
   // declaring interface's id, `use`-imported names under the interface they came from. A name
@@ -123,7 +123,7 @@ object WitAtomizer:
         arguments.each: argument => encode(out, argument, scope)
 
       case Foreign.Type.Union(_) =>
-        abort(malformed(t"a union type is not WIT"))
+        abort(malformed("a union type is not WIT"))
 
   private def function
     ( container: Text,
@@ -161,7 +161,7 @@ object WitAtomizer:
       // Both `Optional` fields are bound to typed locals before they are read (`wildApprox`).
       val packageName: Optional[Text] = document.packageName
       val version: Optional[Text] = document.version
-      val pkg = packageName.or(abort(malformed(t"a document declares no package")))
+      val pkg = packageName.or(abort(malformed("a document declares no package")))
       val suffix = version.let { version => t"@$version" }.or(t"")
 
       def qualify(interface: Text): Text =

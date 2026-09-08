@@ -60,7 +60,7 @@ object Hue:
 object VerifyTests extends Suite(m"Jacinta verify tests"):
   def run(): Unit =
     suite(m"Encodable & Schematic fusion"):
-      val person = Employee(t"Alice", 30, t"a@b.c")
+      val person = Employee("Alice", 30, "a@b.c")
 
       test(m"A fused encoder encodes (and round-trips) as Json"):
         jsonSchematics.encodable[Employee].encoded(person).as[Employee]
@@ -73,7 +73,7 @@ object VerifyTests extends Suite(m"Jacinta verify tests"):
           case _                    => false
 
       test(m"A fused decoder decodes from Json"):
-        val json = t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
+        val json = """{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
         jsonSchematics.decodable[Employee].decoded(json)
       . assert(_ == person)
 
@@ -116,76 +116,76 @@ object VerifyTests extends Suite(m"Jacinta verify tests"):
 
     suite(m"Runtime verification"):
       test(m"A conformant object verifies and still decodes"):
-        val json = t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
+        val json = """{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
         json.verify[Employee].as[Employee]
-      . assert(_ == Employee(t"Alice", 30, t"a@b.c"))
+      . assert(_ == Employee("Alice", 30, "a@b.c"))
 
       test(m"A nonconformant object fails to verify"):
-        val json = t"""{"name": "Bob"}""".read[Json]
+        val json = """{"name": "Bob"}""".read[Json]
         safely(json.verify[Employee]).absent
       . assert(_ == true)
 
       test(m"A conformant object verifies successfully"):
-        val json = t"""{"name": "Bob", "age": 4, "email": "b@c.d"}""".read[Json]
+        val json = """{"name": "Bob", "age": 4, "email": "b@c.d"}""".read[Json]
         safely(json.verify[Employee]).present
       . assert(_ == true)
 
       test(m"A wrong-typed field fails to verify"):
-        val json = t"""{"name": "Bob", "age": "old", "email": "b@c.d"}""".read[Json]
+        val json = """{"name": "Bob", "age": "old", "email": "b@c.d"}""".read[Json]
         safely(json.verify[Employee]).absent
       . assert(_ == true)
 
       test(m"A wrong-typed nested array element fails to verify"):
-        val json = t"""{"lead": "Z", "members": [{"name": "A", "age": "x", "email": "a@a"}]}"""
+        val json = """{"lead": "Z", "members": [{"name": "A", "age": "x", "email": "a@a"}]}"""
                      .read[Json]
         safely(json.verify[Squad]).absent
       . assert(_ == true)
 
     suite(m"Typed navigation (no enabler import)"):
       test(m"Access a verified field"):
-        val json = t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
+        val json = """{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
         json.verify[Employee].name.as[Text]
-      . assert(_ == t"Alice")
+      . assert(_ == "Alice")
 
       test(m"Access a verified Int field"):
-        val json = t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
+        val json = """{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
         json.verify[Employee].age.as[Int]
       . assert(_ == 30)
 
       test(m"Access a nested verified field"):
-        val json = t"""{"employee": {"name": "Bob", "age": 2, "email": "b@c.d"},
+        val json = """{"employee": {"name": "Bob", "age": 2, "email": "b@c.d"},
                         "workplace": {"street": "Main", "city": "Town"}}""".read[Json]
         json.verify[Posting].workplace.city.as[Text]
-      . assert(_ == t"Town")
+      . assert(_ == "Town")
 
       test(m"Index into a verified array field"):
-        val json = t"""{"lead": "Z",
+        val json = """{"lead": "Z",
                         "members": [{"name": "A", "age": 1, "email": "a@a"},
                                     {"name": "B", "age": 2, "email": "b@b"}]}""".read[Json]
         json.verify[Squad].members(1).name.as[Text]
-      . assert(_ == t"B")
+      . assert(_ == "B")
 
     suite(m"Compile-time schema checks"):
       test(m"An unknown field is rejected"):
         demilitarize:
-          t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json].verify[Employee].nope
+          """{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json].verify[Employee].nope
         . head.message
       . assert(_.contains("has no field"))
 
       test(m"Indexing a non-array field is rejected"):
         demilitarize:
-          t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json].verify[Employee].name(0)
+          """{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json].verify[Employee].name(0)
         . head.message
       . assert(_.contains("not an indexable array"))
 
       test(m"Field access on a scalar position is rejected"):
         demilitarize:
-          t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json].verify[Employee].name.deeper
+          """{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json].verify[Employee].name.deeper
         . head.message
       . assert(_.contains("has no field"))
 
       test(m"Plain (unverified) field access requires the enabler"):
         demilitarize:
-          t"""{"name": "Alice"}""".read[Json].name
+          """{"name": "Alice"}""".read[Json].name
         . head.message
       . assert(_.contains("dynamicAccess.dynamicJson"))

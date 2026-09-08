@@ -42,4 +42,4 @@ import gossamer.*
 // runnable, and content in this universe when it is composed with others. No edge yet produces
 // or consumes it; the node exists so that composition tools can register theirs.
 object Component extends Format.Ir:
-  def id: Text = t"component"
+  def id: Text = "component"

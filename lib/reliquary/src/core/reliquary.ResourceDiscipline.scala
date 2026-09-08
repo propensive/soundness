@@ -51,7 +51,7 @@ import Lira.Manifest.{Resource, ResourceMode}
 // fallback, so an item under a scanned directory that a language discipline claims goes to that
 // discipline, and only the remainder are atomless.
 case class ResourceDiscipline(resources: List[Resource]) extends Discipline:
-  def id: Text = t"resource/1"
+  def id: Text = "resource/1"
 
   // Universal: resources are content, not a representation of one universe. Keys are paths, so
   // keying is by declaration in the only sense available. Rigid resource atoms certify presence

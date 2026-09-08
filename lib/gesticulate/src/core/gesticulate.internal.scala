@@ -64,26 +64,26 @@ object internal:
         scala.io.Source.fromInputStream(stream)
         . getLines()
         . map(Text(_))
-        . map(_.cut(t"\t").prim.or(t"").lower)
+        . map(_.cut("\t").prim.or(t"").lower)
         . to(Set)
 
   private val validGroups: Set[Text] =
     Set
-      ( t"application", t"audio", t"image", t"message", t"multipart",
-        t"text", t"video", t"font", t"example", t"model" )
+      ( "application", "audio", "image", "message", "multipart",
+        "text", "video", "font", "example", "model" )
 
   private val specials: Set[Char] =
     Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')
 
   def validateLiteral(text: Text): Optional[Message] =
-    val parts: List[Text] = text.cut(t";").map(_.trim)
+    val parts: List[Text] = text.cut(";").map(_.trim)
 
     parts.absolve match
       case Nil          => m"empty media type"
       case basic :: _   => validateBasic(basic)
 
   private def validateBasic(basic: Text): Optional[Message] =
-    basic.cut(t"/").absolve match
+    basic.cut("/").absolve match
       case List(group, subtype) =>
         val groupLower = group.lower
 
@@ -97,7 +97,7 @@ object internal:
     // The full subtype may be a `main+suffix` (e.g. `svg+xml`); the
     // character check applies to each segment individually since `+`
     // is itself a separator, not a body character.
-    val segments: List[Text] = subtype.cut(t"+")
+    val segments: List[Text] = subtype.cut("+")
 
     // The stdlib view gives a lazy scan that stops at the first offending character.
     val badChar: Option[Char] = segments.stdlib.iterator.flatMap: seg =>
@@ -113,8 +113,8 @@ object internal:
         val main: Text = segments.absolve match
           case segment :: _ => segment
         val isStandard =
-          !main.starts(t"vnd.") && !main.starts(t"prs.") &&
-            !main.starts(t"x.") && !main.starts(t"x-")
+          !main.starts("vnd.") && !main.starts("prs.") &&
+            !main.starts("x.") && !main.starts("x-")
 
         if !isStandard then Unset
         else
@@ -142,4 +142,4 @@ object internal:
 
     internal.validateLiteral(raw.tt).let(halt(_))
 
-    '{unsafely(Media.parse(${Expr(raw)}.tt))}
+    '{Media.parseTrusted(${Expr(raw)}.tt)}

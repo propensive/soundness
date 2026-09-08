@@ -36,6 +36,6 @@ import anticipation.*
 import gossamer.*
 
 object Ems:
-  given designation: Designation[Ems[1]] = () => t"em"
+  given designation: Designation[Ems[1]] = () => "em"
 
 sealed trait Ems[Power <: Nat] extends Units[Power, Typometry]

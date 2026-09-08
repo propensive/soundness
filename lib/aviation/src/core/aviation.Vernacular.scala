@@ -71,27 +71,27 @@ object Vernacular:
 
   private object English extends Vernacular:
     private def word(unit: TimeUnit): (Text, Text) = unit match
-      case TimeUnit.Years   => (t"year", t"years")
-      case TimeUnit.Months  => (t"month", t"months")
-      case TimeUnit.Weeks   => (t"week", t"weeks")
-      case TimeUnit.Days    => (t"day", t"days")
-      case TimeUnit.Hours   => (t"hour", t"hours")
-      case TimeUnit.Minutes => (t"minute", t"minutes")
-      case TimeUnit.Seconds => (t"second", t"seconds")
+      case TimeUnit.Years   => ("year", "years")
+      case TimeUnit.Months  => ("month", "months")
+      case TimeUnit.Weeks   => ("week", "weeks")
+      case TimeUnit.Days    => ("day", "days")
+      case TimeUnit.Hours   => ("hour", "hours")
+      case TimeUnit.Minutes => ("minute", "minutes")
+      case TimeUnit.Seconds => ("second", "seconds")
 
     private def ordinal(n: Int): Text = aviation.internal.englishOrdinal(n)
     private def monthDay(n: Int): Text =
-      if n == -1 then t"last day" else if n < 0 then t"${ordinal(-n)}-to-last day" else ordinal(n)
+      if n == -1 then "last day" else if n < 0 then t"${ordinal(-n)}-to-last day" else ordinal(n)
 
-    def conjunction: Text = t"and"
-    def justNow: Text = t"just now"
+    def conjunction: Text = "and"
+    def justNow: Text = "just now"
     def future(body: Text): Text = t"in $body"
     def past(body: Text): Text = t"$body ago"
     def times(count: Int): Text = t", $count times"
     def from(start: Text): Text = t"from $start"
 
     def position(n: Int): Text =
-      if n == -1 then t"last" else if n < 0 then t"${ordinal(-n)}-to-last" else ordinal(n)
+      if n == -1 then "last" else if n < 0 then t"${ordinal(-n)}-to-last" else ordinal(n)
 
     def units(count: Long, unit: TimeUnit): Text =
       t"$count ${if count == 1 then word(unit)(0) else word(unit)(1)}"
@@ -102,7 +102,7 @@ object Vernacular:
       if interval == 1 then t"every ${word(unit)(0)}" else t"every $interval ${word(unit)(1)}"
 
     def onDays(entries: List[(Optional[Int], Text)]): Text =
-      val article = if entries.exists(_(0).present) then t"the " else t""
+      val article = if entries.exists(_(0).present) then "the " else ""
       t"on $article${conjoin(entries.map(dayPhrase))}"
 
     def onMonthDays(days: List[Int]): Text = t"on the ${conjoin(days.map(monthDay))}"
@@ -114,25 +114,25 @@ object Vernacular:
 
   private object French extends Vernacular:
     private def word(unit: TimeUnit): (Text, Text, Boolean) = unit match
-      case TimeUnit.Years   => (t"an", t"ans", true)
-      case TimeUnit.Months  => (t"mois", t"mois", true)
-      case TimeUnit.Weeks   => (t"semaine", t"semaines", false)
-      case TimeUnit.Days    => (t"jour", t"jours", true)
-      case TimeUnit.Hours   => (t"heure", t"heures", false)
-      case TimeUnit.Minutes => (t"minute", t"minutes", false)
-      case TimeUnit.Seconds => (t"seconde", t"secondes", false)
+      case TimeUnit.Years   => ("an", "ans", true)
+      case TimeUnit.Months  => ("mois", "mois", true)
+      case TimeUnit.Weeks   => ("semaine", "semaines", false)
+      case TimeUnit.Days    => ("jour", "jours", true)
+      case TimeUnit.Hours   => ("heure", "heures", false)
+      case TimeUnit.Minutes => ("minute", "minutes", false)
+      case TimeUnit.Seconds => ("seconde", "secondes", false)
 
-    private def ordinal(n: Int): Text = if n == 1 then t"1er" else t"${n}e"
-    private def monthDay(n: Int): Text = if n == -1 then t"dernier jour" else t"$n"
-    private def article(unit: TimeUnit): Text = if word(unit)(2) then t"tous les" else t"toutes les"
+    private def ordinal(n: Int): Text = if n == 1 then "1er" else t"${n}e"
+    private def monthDay(n: Int): Text = if n == -1 then "dernier jour" else t"$n"
+    private def article(unit: TimeUnit): Text = if word(unit)(2) then "tous les" else "toutes les"
 
-    def conjunction: Text = t"et"
-    def justNow: Text = t"à l'instant"
+    def conjunction: Text = "et"
+    def justNow: Text = "à l'instant"
     def future(body: Text): Text = t"dans $body"
     def past(body: Text): Text = t"il y a $body"
     def times(count: Int): Text = t", $count fois"
     def from(start: Text): Text = t"à partir du $start"
-    def position(n: Int): Text = if n == -1 then t"dernier" else ordinal(n.abs)
+    def position(n: Int): Text = if n == -1 then "dernier" else ordinal(n.abs)
 
     def units(count: Long, unit: TimeUnit): Text =
       t"$count ${if count == 1 then word(unit)(0) else word(unit)(1)}"
@@ -156,25 +156,25 @@ object Vernacular:
 
   private object German extends Vernacular:
     private def word(unit: TimeUnit): (Text, Text, Text) = unit match
-      case TimeUnit.Years   => (t"Jahr", t"Jahre", t"jedes")
-      case TimeUnit.Months  => (t"Monat", t"Monate", t"jeden")
-      case TimeUnit.Weeks   => (t"Woche", t"Wochen", t"jede")
-      case TimeUnit.Days    => (t"Tag", t"Tage", t"jeden")
-      case TimeUnit.Hours   => (t"Stunde", t"Stunden", t"jede")
-      case TimeUnit.Minutes => (t"Minute", t"Minuten", t"jede")
-      case TimeUnit.Seconds => (t"Sekunde", t"Sekunden", t"jede")
+      case TimeUnit.Years   => ("Jahr", "Jahre", "jedes")
+      case TimeUnit.Months  => ("Monat", "Monate", "jeden")
+      case TimeUnit.Weeks   => ("Woche", "Wochen", "jede")
+      case TimeUnit.Days    => ("Tag", "Tage", "jeden")
+      case TimeUnit.Hours   => ("Stunde", "Stunden", "jede")
+      case TimeUnit.Minutes => ("Minute", "Minuten", "jede")
+      case TimeUnit.Seconds => ("Sekunde", "Sekunden", "jede")
 
     private def ordinal(n: Int): Text = t"$n."
-    private def monthDay(n: Int): Text = if n == -1 then t"letzten Tag" else t"$n."
-    private def setPos(n: Int): Text = if n == -1 then t"der letzte" else t"der ${ordinal(n.abs)}"
+    private def monthDay(n: Int): Text = if n == -1 then "letzten Tag" else t"$n."
+    private def setPos(n: Int): Text = if n == -1 then "der letzte" else t"der ${ordinal(n.abs)}"
 
-    def conjunction: Text = t"und"
-    def justNow: Text = t"gerade eben"
+    def conjunction: Text = "und"
+    def justNow: Text = "gerade eben"
     def future(body: Text): Text = t"in $body"
     def past(body: Text): Text = t"vor $body"
     def times(count: Int): Text = t", $count Mal"
     def from(start: Text): Text = t"ab $start"
-    def position(n: Int): Text = if n == -1 then t"letzte" else ordinal(n.abs)
+    def position(n: Int): Text = if n == -1 then "letzte" else ordinal(n.abs)
 
     def units(count: Long, unit: TimeUnit): Text =
       t"$count ${if count == 1 then word(unit)(0) else word(unit)(1)}"
@@ -195,13 +195,13 @@ object Vernacular:
 
   private object Spanish extends Vernacular:
     private def word(unit: TimeUnit): (Text, Text) = unit match
-      case TimeUnit.Years   => (t"año", t"años")
-      case TimeUnit.Months  => (t"mes", t"meses")
-      case TimeUnit.Weeks   => (t"semana", t"semanas")
-      case TimeUnit.Days    => (t"día", t"días")
-      case TimeUnit.Hours   => (t"hora", t"horas")
-      case TimeUnit.Minutes => (t"minuto", t"minutos")
-      case TimeUnit.Seconds => (t"segundo", t"segundos")
+      case TimeUnit.Years   => ("año", "años")
+      case TimeUnit.Months  => ("mes", "meses")
+      case TimeUnit.Weeks   => ("semana", "semanas")
+      case TimeUnit.Days    => ("día", "días")
+      case TimeUnit.Hours   => ("hora", "horas")
+      case TimeUnit.Minutes => ("minuto", "minutos")
+      case TimeUnit.Seconds => ("segundo", "segundos")
 
     // A `Sequence`, not a `List`: the only use is positional, and `Sequence` indexes in O(1)
     // with no dysasymptotic acknowledgement.
@@ -211,15 +211,15 @@ object Vernacular:
 
     private def ordinal(n: Int): Text = ordinalWords.at((n - 1).z).or(t"$n.º")
 
-    private def monthDay(n: Int): Text = if n == -1 then t"último día" else t"día $n"
+    private def monthDay(n: Int): Text = if n == -1 then "último día" else t"día $n"
 
-    def conjunction: Text = t"y"
-    def justNow: Text = t"justo ahora"
+    def conjunction: Text = "y"
+    def justNow: Text = "justo ahora"
     def future(body: Text): Text = t"en $body"
     def past(body: Text): Text = t"hace $body"
     def times(count: Int): Text = t", $count veces"
     def from(start: Text): Text = t"desde $start"
-    def position(n: Int): Text = if n == -1 then t"último" else ordinal(n.abs)
+    def position(n: Int): Text = if n == -1 then "último" else ordinal(n.abs)
 
     def units(count: Long, unit: TimeUnit): Text =
       t"$count ${if count == 1 then word(unit)(0) else word(unit)(1)}"
@@ -258,7 +258,7 @@ trait Vernacular:
   def takingPositions(positions: List[Int]): Text
 
   protected final def conjoin(items: List[Text]): Text = items match
-    case Nil        => t""
+    case Nil        => ""
     case List(item) => item
 
     case other =>

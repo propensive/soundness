@@ -75,7 +75,7 @@ object Tests extends Suite(m"Perihelion tests"):
       keytool.redirectOutput(java.lang.ProcessBuilder.Redirect.DISCARD)
       keytool.start().nn.waitFor()
 
-      val password = "changeit".toCharArray.nn
+      val password = "changeit".s.toCharArray.nn
       val keystore = java.security.KeyStore.getInstance("PKCS12").nn
       keystore.load(java.io.FileInputStream(path), password)
       val keyManagers = javax.net.ssl.KeyManagerFactory.getInstance("SunX509").nn
@@ -175,7 +175,7 @@ object Tests extends Suite(m"Perihelion tests"):
 
     def texts(messages: List[perihelion.Message]): List[Text] = messages.map:
       case perihelion.Message.Text(text) => text
-      case perihelion.Message.Binary(_)  => t"<binary>"
+      case perihelion.Message.Binary(_)  => "<binary>"
 
     // The pure-codec tests below read frames as a server does (inbound frames are the
     // client's, and masked); the client direction is exercised in "Client masking".
@@ -185,14 +185,14 @@ object Tests extends Suite(m"Perihelion tests"):
       test(m"A masked text frame decodes to its payload"):
         parseFrame(frame(0x1, octets("hi"))) match
           case Websocket.Frame.Text(fin, data) => (fin, data.utf8)
-          case _                     => (false, t"")
-      . assert(_ == (true, t"hi"))
+          case _                     => (false, "")
+      . assert(_ == (true, "hi"))
 
       test(m"A masked binary frame decodes to Binary"):
         parseFrame(frame(0x2, octets("xy"))) match
           case Websocket.Frame.Binary(fin, data) => (fin, data.utf8)
-          case _                       => (false, t"")
-      . assert(_ == (true, t"xy"))
+          case _                       => (false, "")
+      . assert(_ == (true, "xy"))
 
       test(m"An unmasked client frame is rejected"):
         capture[Websocket.Error](parseFrame(frame(0x1, octets("x"), masked = false))).reason
@@ -226,8 +226,8 @@ object Tests extends Suite(m"Perihelion tests"):
       test(m"A close frame carries its code and reason"):
         parseFrame(frame(0x8, closeBytes(1000, "bye"))) match
           case Websocket.Frame.Close(code, reason) => (code, reason.utf8)
-          case _                         => (0, t"")
-      . assert(_ == (1000, t"bye"))
+          case _                         => (0, "")
+      . assert(_ == (1000, "bye"))
 
       test(m"A close frame with no payload yields the 1005 sentinel"):
         parseFrame(frame(0x8, scala.Array[Byte]())) match
@@ -320,26 +320,26 @@ object Tests extends Suite(m"Perihelion tests"):
         Websocket.Frame.parse(Cursor[Data](Chain(bytes).iterator))(using masking)
 
       test(m"A client-masked frame is readable by the server"):
-        val masked: Data = Masking.Client().outbound(Websocket.Frame.Text(true, t"hi".in[Data]).encode)
+        val masked: Data = Masking.Client().outbound(Websocket.Frame.Text(true, "hi".in[Data]).encode)
         parseAs(Masking.Server, masked) match
           case Websocket.Frame.Text(_, data) => data.utf8
-          case _                   => t"?"
-      . assert(_ == t"hi")
+          case _                   => "?"
+      . assert(_ == "hi")
 
       test(m"A client masks with a fresh key each time"):
         val client = Masking.Client()
-        val frame = Websocket.Frame.Text(true, t"hello".in[Data]).encode
+        val frame = Websocket.Frame.Text(true, "hello".in[Data]).encode
         client.outbound(frame) != client.outbound(frame)
       . assert(_ == true)
 
       test(m"A client accepts an unmasked server frame"):
-        parseAs(Masking.Client(), Websocket.Frame.Text(true, t"hi".in[Data]).encode) match
+        parseAs(Masking.Client(), Websocket.Frame.Text(true, "hi".in[Data]).encode) match
           case Websocket.Frame.Text(_, data) => data.utf8
-          case _                   => t"?"
-      . assert(_ == t"hi")
+          case _                   => "?"
+      . assert(_ == "hi")
 
       test(m"A client rejects a masked server frame"):
-        val masked: Data = Masking.Client().outbound(Websocket.Frame.Text(true, t"hi".in[Data]).encode)
+        val masked: Data = Masking.Client().outbound(Websocket.Frame.Text(true, "hi".in[Data]).encode)
         capture[Websocket.Error](parseAs(Masking.Client(), masked)).reason
       . assert(_ == Websocket.Error.Reason.Masked)
 
@@ -357,10 +357,10 @@ object Tests extends Suite(m"Perihelion tests"):
           val out = socket.getOutputStream.nn
           val in = socket.getInputStream.nn
 
-          val key = t"dGhlIHNhbXBsZSBub25jZQ=="
+          val key = "dGhlIHNhbXBsZSBub25jZQ=="
 
           val upgrade =
-            t"GET / HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n"
+            "GET / HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n"
             + t"Sec-WebSocket-Key: $key\r\nSec-WebSocket-Version: 13\r\n\r\n"
 
           out.write(upgrade.s.getBytes("US-ASCII").nn)
@@ -377,9 +377,9 @@ object Tests extends Suite(m"Perihelion tests"):
           socket.close()
           server.cancel()
 
-          (head.contains(t"101"), opcode, echoed)
+          (head.contains("101"), opcode, echoed)
 
-        . assert(_ == (true, 0x1, t"hello"))
+        . assert(_ == (true, 0x1, "hello"))
 
       suite(m"Typed echo"):
         test(m"A Ping message round-trips over the wire as JSON"):
@@ -394,10 +394,10 @@ object Tests extends Suite(m"Perihelion tests"):
           val out = socket.getOutputStream.nn
           val in = socket.getInputStream.nn
 
-          val key = t"dGhlIHNhbXBsZSBub25jZQ=="
+          val key = "dGhlIHNhbXBsZSBub25jZQ=="
 
           val upgrade =
-            t"GET / HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n"
+            "GET / HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n"
             + t"Sec-WebSocket-Key: $key\r\nSec-WebSocket-Version: 13\r\n\r\n"
 
           out.write(upgrade.s.getBytes("US-ASCII").nn)
@@ -413,7 +413,7 @@ object Tests extends Suite(m"Perihelion tests"):
           socket.close()
           server.cancel()
 
-          (head.contains(t"101"), opcode, reply.value)
+          (head.contains("101"), opcode, reply.value)
 
         . assert(_ == (true, 0x1, 8))
 

@@ -109,7 +109,7 @@ object Slice:
 
       // As in `FileOpenable`: the register works on real paths.
       val real: Text =
-        if !locking then t"" else
+        if !locking then "" else
           try value.path.nioPath.toRealPath().nn.toString.tt
           catch case _: Exception =>
             value.path.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt

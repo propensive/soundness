@@ -56,7 +56,7 @@ object internal:
         halt(91, m"this type of lambda is not supported")
 
     val classname: Text =
-      TypeRepr.of[target].classSymbol.get.fullName.sub(t".", t"/").nn+t".class"
+      TypeRepr.of[target].classSymbol.get.fullName.sub(".", "/").nn+".class"
 
     ' {
         val classfile = Classfile(${Expr(classname)})(using $classloader)

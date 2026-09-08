@@ -109,7 +109,7 @@ object CHeader:
 
     import denominative.nil
 
-    val library: Text = t"library"
+    val library: Text = "library"
 
     def parse(source: Text): Map[Text, Map[Text, Prototype]] = parse0(source)
 
@@ -119,7 +119,7 @@ object CHeader:
 
       val typedefs: Map[Text, Foreign.Type] =
         declarations.sweep:
-          case Declaration.Enumeration(name, _) => name -> Foreign.Type.Named(t"int")
+          case Declaration.Enumeration(name, _) => name -> Foreign.Type.Named("int")
 
           case Declaration.Alias(name, target) if !functionPointer(target) =>
             name -> project(target)
@@ -148,12 +148,12 @@ object CHeader:
 
     private def functionPointer(typed: Foreign.Type): Boolean = typed match
       case applied: Foreign.Type.Applied =>
-        applied.constructor == t"fn" || applied.constructor == t"variadic"
+        applied.constructor == "fn" || applied.constructor == "variadic"
 
       case _ => false
 
     private def array(typed: Foreign.Type): Boolean = typed match
-      case applied: Foreign.Type.Applied => applied.constructor == t"array"
+      case applied: Foreign.Type.Applied => applied.constructor == "array"
       case _                             => false
 
     // Collapses the parser's faithful types to the marshalling vocabulary. Only a *plain* `char*`
@@ -163,12 +163,12 @@ object CHeader:
       case Foreign.Type.Named(name) => Foreign.Type.Named(canonical(name))
 
       case applied: Foreign.Type.Applied =>
-        if applied.constructor == t"ptr" then
+        if applied.constructor == "ptr" then
           val (base, count) = unwrap(typed)
 
-          if base == t"char" && count == 1 then Foreign.Type.Named(t"string")
-          else Foreign.Type.Applied(t"ptr", List(Foreign.Type.Named(canonical(base))))
-        else if applied.constructor == t"const" then
+          if base == "char" && count == 1 then Foreign.Type.Named("string")
+          else Foreign.Type.Applied("ptr", List(Foreign.Type.Named(canonical(base))))
+        else if applied.constructor == "const" then
           // A `const` wrapper always carries its one operand; the `Optional` head is bound to a
           // typed local before it is read (`wildApprox`).
           val inner: Optional[Foreign.Type] = applied.arguments.prim
@@ -186,24 +186,24 @@ object CHeader:
         // typed local before it is read (`wildApprox`).
         val operand: Optional[Foreign.Type] = applied.arguments.prim
 
-        if applied.constructor == t"const" then operand.lay((t"*", 0))(unwrap(_))
-        else if applied.constructor == t"ptr" then operand.lay((t"*", 0)): argument =>
+        if applied.constructor == "const" then operand.lay(("*", 0))(unwrap(_))
+        else if applied.constructor == "ptr" then operand.lay(("*", 0)): argument =>
           val (base, inner) = unwrap(argument)
           (base, inner + 1)
-        else (t"*", 0)
+        else ("*", 0)
 
-      case _ => (t"*", 0)
+      case _ => ("*", 0)
 
     // The width-exact and sign-qualified names map to the primitive of the same size, so the FFM
     // layout stays correct; widths without a matching primitive are left as-is.
     private def canonical(name: Text): Text = name.s match
-      case "unsigned-int" | "int32_t" | "uint32_t"              => t"int"
-      case "unsigned-char" | "signed-char"                      => t"char"
-      case "unsigned-short"                                     => t"short"
-      case "long-long" | "unsigned-long" | "unsigned-long-long" => t"long"
-      case "int64_t" | "uint64_t" | "intptr_t" | "uintptr_t"    => t"long"
-      case "size_t" | "ssize_t"                                 => t"long"
-      case "long-double"                                        => t"long double"
+      case "unsigned-int" | "int32_t" | "uint32_t"              => "int"
+      case "unsigned-char" | "signed-char"                      => "char"
+      case "unsigned-short"                                     => "short"
+      case "long-long" | "unsigned-long" | "unsigned-long-long" => "long"
+      case "int64_t" | "uint64_t" | "intptr_t" | "uintptr_t"    => "long"
+      case "size_t" | "ssize_t"                                 => "long"
+      case "long-double"                                        => "long double"
       case _                                                    => name
 
     // Resolves every `typedef` alias appearing in a type, transitively.
@@ -262,7 +262,7 @@ object CHeader:
 
     private def fail(detail: Text, tokens: SList[String]): Nothing raises Error =
       val near = Text(tokens.take(6).mkString(" "))
-      abort(Error(Reason.Syntax(detail, if near.s.isEmpty then t"the end" else near)))
+      abort(Error(Reason.Syntax(detail, if near.s.isEmpty then "the end" else near)))
 
     private def unsupported(construct: Text): Nothing raises Error =
       abort(Error(Reason.Unsupported(construct)))
@@ -313,25 +313,25 @@ object CHeader:
         (Foreign.Type.Named(name), rest)
 
       tokens match
-        case "unsigned" :: "long" :: "long" :: "int" :: rest => named(t"unsigned-long-long", rest)
-        case "unsigned" :: "long" :: "long" :: rest          => named(t"unsigned-long-long", rest)
-        case "unsigned" :: "long" :: "int" :: rest           => named(t"unsigned-long", rest)
-        case "unsigned" :: "long" :: rest                    => named(t"unsigned-long", rest)
-        case "unsigned" :: "short" :: "int" :: rest          => named(t"unsigned-short", rest)
-        case "unsigned" :: "short" :: rest                   => named(t"unsigned-short", rest)
-        case "unsigned" :: "char" :: rest                    => named(t"unsigned-char", rest)
-        case "unsigned" :: "int" :: rest                     => named(t"unsigned-int", rest)
-        case "unsigned" :: rest                              => named(t"unsigned-int", rest)
-        case "signed" :: "char" :: rest                      => named(t"signed-char", rest)
-        case "signed" :: "int" :: rest                       => named(t"int", rest)
-        case "signed" :: rest                                => named(t"int", rest)
-        case "long" :: "long" :: "int" :: rest               => named(t"long-long", rest)
-        case "long" :: "long" :: rest                        => named(t"long-long", rest)
-        case "long" :: "int" :: rest                         => named(t"long", rest)
-        case "long" :: "double" :: rest                      => named(t"long-double", rest)
-        case "long" :: rest                                  => named(t"long", rest)
-        case "short" :: "int" :: rest                        => named(t"short", rest)
-        case "short" :: rest                                 => named(t"short", rest)
+        case "unsigned" :: "long" :: "long" :: "int" :: rest => named("unsigned-long-long", rest)
+        case "unsigned" :: "long" :: "long" :: rest          => named("unsigned-long-long", rest)
+        case "unsigned" :: "long" :: "int" :: rest           => named("unsigned-long", rest)
+        case "unsigned" :: "long" :: rest                    => named("unsigned-long", rest)
+        case "unsigned" :: "short" :: "int" :: rest          => named("unsigned-short", rest)
+        case "unsigned" :: "short" :: rest                   => named("unsigned-short", rest)
+        case "unsigned" :: "char" :: rest                    => named("unsigned-char", rest)
+        case "unsigned" :: "int" :: rest                     => named("unsigned-int", rest)
+        case "unsigned" :: rest                              => named("unsigned-int", rest)
+        case "signed" :: "char" :: rest                      => named("signed-char", rest)
+        case "signed" :: "int" :: rest                       => named("int", rest)
+        case "signed" :: rest                                => named("int", rest)
+        case "long" :: "long" :: "int" :: rest               => named("long-long", rest)
+        case "long" :: "long" :: rest                        => named("long-long", rest)
+        case "long" :: "int" :: rest                         => named("long", rest)
+        case "long" :: "double" :: rest                      => named("long-double", rest)
+        case "long" :: rest                                  => named("long", rest)
+        case "short" :: "int" :: rest                        => named("short", rest)
+        case "short" :: rest                                 => named("short", rest)
 
         case ("struct" | "union" | "enum") :: tag :: rest =>
           named(tag.tt, rest)
@@ -339,7 +339,7 @@ object CHeader:
         case name :: rest if name.headOption.exists { char => char.isLetter || char == '_' } =>
           named(name.tt, rest)
 
-        case _ => fail(t"a type was expected", tokens)
+        case _ => fail("a type was expected", tokens)
 
     // A type as it appears in a parameter, return or field position: qualifiers, a base, then
     // pointer structure. `const` on a by-value type is not contract and drops away; `const`
@@ -357,8 +357,8 @@ object CHeader:
 
         tokens match
           case "*" :: rest =>
-            val pointee = if constant then Foreign.Type.Applied(t"const", List(typed)) else typed
-            pointers(rest, Foreign.Type.Applied(t"ptr", List(pointee)), false)
+            val pointee = if constant then Foreign.Type.Applied("const", List(typed)) else typed
+            pointers(rest, Foreign.Type.Applied("ptr", List(pointee)), false)
 
           case "const" :: rest => pointers(rest, typed, constant)
           case _               => (typed, tokens)
@@ -388,8 +388,8 @@ object CHeader:
               case rest                                                                   => rest
 
             val (adjusted, afterArray) = afterName match
-              case "[" :: "]" :: rest      => (Foreign.Type.Applied(t"ptr", List(typed)), rest)
-              case "[" :: _ :: "]" :: rest => (Foreign.Type.Applied(t"ptr", List(typed)), rest)
+              case t"[" :: t"]" :: rest      => (Foreign.Type.Applied(t"ptr", List(typed)), rest)
+              case t"[" :: _ :: t"]" :: rest => (Foreign.Type.Applied(t"ptr", List(typed)), rest)
               case rest                    => (typed, rest)
 
             recur(afterArray, adjusted :: acc)
@@ -397,7 +397,7 @@ object CHeader:
       tokens match
         case "(" :: "void" :: ")" :: rest => (List(), false, rest)
         case "(" :: rest                  => recur(rest, SList())
-        case _                            => fail(t"a parameter list was expected", tokens)
+        case _                            => fail("a parameter list was expected", tokens)
 
     // --- declarations ---------------------------------------------------------------------------
 
@@ -417,11 +417,11 @@ object CHeader:
               case name :: ";" :: rest => recur(rest, (name.tt, typed) :: acc)
 
               case name :: "[" :: size :: "]" :: ";" :: rest =>
-                val array = Foreign.Type.Applied(t"array", List(typed,
+                val array = Foreign.Type.Applied("array", List(typed,
                     Foreign.Type.Named(size.tt)))
                 recur(rest, (name.tt, array) :: acc)
 
-              case _ => fail(t"a field was expected", afterType)
+              case _ => fail("a field was expected", afterType)
 
       recur(tokens, SList())
 
@@ -439,12 +439,12 @@ object CHeader:
             val parsed =
               try java.lang.Long.decode(value).nn.longValue
               catch case _: NumberFormatException =>
-                fail(t"an enumerator value must be numeric", tokens)
+                fail("an enumerator value must be numeric", tokens)
 
             recur(rest, parsed + 1, (name.tt, parsed) :: acc)
 
           case name :: rest => recur(rest, next + 1, (name.tt, next) :: acc)
-          case SNil         => fail(t"an enumerator list is unterminated", tokens)
+          case SNil         => fail("an enumerator list is unterminated", tokens)
 
       recur(tokens, 0L, SList())
 
@@ -467,7 +467,7 @@ object CHeader:
                 case alias :: ";" :: more =>
                   (Declaration.Structure(alias.tt, union, fields), more)
 
-                case _ => fail(t"a typedef name was expected", after)
+                case _ => fail("a typedef name was expected", after)
 
             case "{" :: body =>
               val (fields, after) = fieldList(body)
@@ -476,12 +476,12 @@ object CHeader:
                 case alias :: ";" :: more =>
                   (Declaration.Structure(alias.tt, union, fields), more)
 
-                case _ => fail(t"a typedef name was expected", after)
+                case _ => fail("a typedef name was expected", after)
 
             case tag :: alias :: ";" :: more =>
               (Declaration.Alias(alias.tt, Foreign.Type.Named(tag.tt)), more)
 
-            case _ => fail(t"a struct typedef was expected", rest)
+            case _ => fail("a struct typedef was expected", rest)
 
         case "typedef" :: "enum" :: rest =>
           rest match
@@ -490,16 +490,16 @@ object CHeader:
 
               after match
                 case alias :: ";" :: more => (Declaration.Enumeration(alias.tt, cases), more)
-                case _                    => fail(t"a typedef name was expected", after)
+                case _                    => fail("a typedef name was expected", after)
 
             case tag :: "{" :: body =>
               val (cases, after) = enumerators(body)
 
               after match
                 case alias :: ";" :: more => (Declaration.Enumeration(alias.tt, cases), more)
-                case _                    => fail(t"a typedef name was expected", after)
+                case _                    => fail("a typedef name was expected", after)
 
-            case _ => fail(t"an enum typedef was expected", rest)
+            case _ => fail("an enum typedef was expected", rest)
 
         case "typedef" :: rest =>
           val (typed, afterType) = typeOf(rest)
@@ -508,17 +508,17 @@ object CHeader:
             // A function-pointer typedef: `typedef ret (*name)(params);`.
             case "(" :: "*" :: name :: ")" :: more =>
               val (params, variadic, after) = parameters(more)
-              val fn = Foreign.Type.Applied(t"fn", typed :: params)
+              val fn = Foreign.Type.Applied("fn", typed :: params)
 
               after match
                 case ";" :: rest2 =>
-                  val target = if variadic then Foreign.Type.Applied(t"variadic", List(fn)) else fn
+                  val target = if variadic then Foreign.Type.Applied("variadic", List(fn)) else fn
                   (Declaration.Alias(name.tt, target), rest2)
 
-                case _ => fail(t"a `;` was expected", after)
+                case _ => fail("a `;` was expected", after)
 
             case name :: ";" :: more => (Declaration.Alias(name.tt, typed), more)
-            case _                   => fail(t"a typedef name was expected", afterType)
+            case _                   => fail("a typedef name was expected", afterType)
 
         case ("struct" | "union") :: tag :: "{" :: body =>
           val union = tokens.head == "union"
@@ -526,7 +526,7 @@ object CHeader:
 
           after match
             case ";" :: more => (Declaration.Structure(tag.tt, union, fields), more)
-            case _           => fail(t"a `;` was expected", after)
+            case _           => fail("a `;` was expected", after)
 
         case ("struct" | "union") :: tag :: ";" :: rest =>
           (Declaration.Structure(tag.tt, tokens.head == "union", List(), opaque = true), rest)
@@ -536,7 +536,7 @@ object CHeader:
 
           after match
             case ";" :: more => (Declaration.Enumeration(tag.tt, cases), more)
-            case _           => fail(t"a `;` was expected", after)
+            case _           => fail("a `;` was expected", after)
 
         case _ =>
           val (result, afterType) = typeOf(tokens)
@@ -549,7 +549,7 @@ object CHeader:
                 case ";" :: more =>
                   (Declaration.Function(name.tt, result, params, variadic), more)
 
-                case _ => fail(t"a `;` was expected", after)
+                case _ => fail("a `;` was expected", after)
 
             case construct :: _ => unsupported(construct.tt)
-            case SNil           => fail(t"a declaration was expected", afterType)
+            case SNil           => fail("a declaration was expected", afterType)

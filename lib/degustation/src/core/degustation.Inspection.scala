@@ -70,7 +70,7 @@ object Inspection:
         abort(Inspection.Error(Reason.InspectionFailed(Text(error.getMessage.nn))))
 
     failure.let: detail => abort(Inspection.Error(Reason.Unencodable(detail)))
-    if !ok then abort(Inspection.Error(Reason.InspectionFailed(t"the compiler reported errors")))
+    if !ok then abort(Inspection.Error(Reason.InspectionFailed("the compiler reported errors")))
 
     result.to(List)
 

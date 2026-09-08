@@ -359,4 +359,4 @@ object internal extends protointernal:
 
           t"$unit$exponent"
 
-      . join(t"·")
+      . join("·")
