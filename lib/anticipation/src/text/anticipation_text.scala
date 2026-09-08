@@ -47,11 +47,16 @@ extension (text: Text)
   def tt: Text = text
 
 // The compiler's Literate hook: with this given in scope, a string literal
-// whose expected type does not require a String is re-typed as
-// `Text { type Topic = <literal>.type }` — its singleton carried as a type
-// member rather than by subtyping, so the opaque surface stays sealed.
+// whose expected type does not require a String is re-typed as `Text`. The
+// literal's singleton is deliberately *not* carried as a `Topic` refinement:
+// a refined `Text { type Topic = "x" }` is what type inference sees, and it
+// leaks into every `Self`-invariant typeclass lookup (`Text is Cuttable by
+// Text{…}`), inferred `val`/`var` types and type-parameter instantiation,
+// where `t"x"` had simply been `Text`. Until the compiler widens the
+// refinement in inference as it widens singletons, a literal is exactly a
+// `Text`.
 final class TextLiterate[str <: String & Singleton] extends scala.Literate[str]:
-  type Result = Text { type Topic = str }
+  type Result = Text
   inline def convert(inline value: str): Result = value.asInstanceOf[Result]
 
 // In `literacy` rather than at the package top level: wildcard imports and
