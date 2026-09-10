@@ -1138,6 +1138,18 @@ object Tests extends Suite(m"Ultimatum Tests"):
         bar(bars.smoothBar)(Fraction(0.05), 10)
       . assert(_ == t"▌         ")
 
+      // The boundary cell's glyph covers only part of its cell, and the rest of it is track, so
+      // it must carry the track background exactly as the empty cells to its right do. One
+      // background is therefore set for the whole run — before the boundary glyph — and never
+      // changed again; anything else shows as a sliver of the wrong colour at the leading edge.
+      test(m"the boundary cell shares the track's background"):
+        val rendered =
+          bars.smoothBar.rows(Fraction(0.05), Tick.zero, 10).stdlib.head
+          . render(termcapDefinitions.xtermTrueColorTermcap)
+
+        (rendered.cut(t"48;2;").size - 1, rendered.cut(t"▌").stdlib.head.contains(t"48;2;"))
+      . assert(_ == (1, true))
+
       test(m"a full bar leaves no empty cells"):
         bar(bars.smoothBar)(Fraction(1.0), 8)
       . assert(_ == t"████████")
