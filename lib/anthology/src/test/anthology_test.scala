@@ -228,34 +228,6 @@ object Tests extends Suite(m"Anthology Tests"):
         . reason
       . assert(_ == Link.Error.Reason.InapplicableSetting)
 
-      // The xeq packaging edges, exercised up to (but never through) `Packager.pack`'s
-      // filesystem and network work: every case below aborts before any stub is read.
-      val bundles = Toolchain(xeqEdges())
-      val jarInput = Deliverable.Product(scratch)
-
-      test(m"An xeq bundle requires a runner source"):
-        val target = anthology.Xeq(ziggurat.Packaging.Delivery.EmbedAll)
-        capture[Link.Error](bundles.produce(jarInput, anthology.Jar, target, scratch)).reason
-      . assert(_ == Link.Error.Reason.MissingSetting(t"runners"))
-
-      test(m"A local runner source cannot imply the targets"):
-        val target = anthology.Xeq(ziggurat.Packaging.Delivery.EmbedAll)
-        val settings = List(xeqOptions.runners.local(scratch))
-
-        capture[Link.Error](bundles.produce(jarInput, anthology.Jar, target, scratch, settings))
-        . reason
-      . assert(_ == Link.Error.Reason.MissingSetting(t"targets"))
-
-      test(m"Native delivery requires exactly one target"):
-        val target = anthology.Xeq(ziggurat.Packaging.Delivery.Native)
-        val settings = List(xeqOptions.runners.standard)
-
-        capture[Link.Error](bundles.produce(jarInput, anthology.Jar, target, scratch, settings))
-        . reason match
-            case Link.Error.Reason.Packaging(_) => true
-            case _                             => false
-      . assert(_ == true)
-
     test(m"JAR and library packaging edges need no evidence"):
       jarEdges().map(_.target.id)
     . assert(_ == List(t"jar", t"library-classfile", t"library-sjsir", t"library-nir"))

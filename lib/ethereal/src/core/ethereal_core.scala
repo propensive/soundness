@@ -45,7 +45,6 @@ import anticipation.*
 import aperture.*
 import coaxial.*
 import contingency.*
-import denominative.dysasymptotics.linearSize
 import digression.*
 import distillate.*
 import escapade.*
@@ -71,9 +70,7 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteRecursively
-import filesystemOptions.dereferenceSymlinks
 
 import filesystemBackends.javaBaseFilesystem
 
@@ -101,141 +98,14 @@ def cli[bus <: Matchable](using executive: Executive)
             val work: Path on Linux = workingDirectory
             work + jarFile.as[Relative on Linux]
 
-        safely(System.properties.build.executable[Text]()).absolve match
-          case Unset =>
-            Out.println(e"$Bold(This application must be invoked with the Ethereal launch script)")
-            Out.println(e"To build an Ethereal executable, run:")
-            val work: Path on Linux = workingDirectory
-            val relativeJar: Relative on Linux = work.toward(jarFile)
-            Out.println(e"    java -Dbuild.executable=$Italic(<filename>) -jar $relativeJar")
-            Out.println()
-            Out.println(e"Other $Italic(-D) Java options:")
-            val detail = e"preferred major version, e.g. $Italic(24) (default) or 21"
-            Out.println(e"  build.java.preferred  -- $detail")
-            val detail2 = e"minimum major version, e.g. $Italic(21) (default) or 16"
-            Out.println(e"  build.java.minimum    -- $detail2")
-            val detail3 = e"required bundle type, $Italic(jre) (default) or $Italic(jdk)"
-            Out.println(e"  build.java.bundle     -- $detail3")
-            Out.println()
-            Exit.Fail(1).terminate()
-
-          case destination: Text =>
-            val javaMinimum = safely(System.properties.build.java.minimum[Int]()).or(21)
-            val javaPreferred = safely(System.properties.build.java.preferred[Int]()).or(24)
-            val jdk = safely(System.properties.build.java.bundle[Text]() == t"jdk").or(false)
-
-            val path = safely(destination.as[Path on Linux]).or:
-              val work: Path on Linux = workingDirectory
-              work + destination.as[Relative on Linux]
-
-            val buildIdPath: Path on Classpath = Classpath/"build.id"
-
-            val buildId: Long = safely(System.properties.build.id[Long]()).or:
-              safely(buildIdPath.read[Text].trim.as[Long]).or(0L)
-
-            val platformLabel: Text = safely(System.properties.build.target[Text]()).or:
-              val osName = safely(System.properties.os.name[Text]().lower).or(t"")
-              val osArch = safely(System.properties.os.arch[Text]().lower).or(t"")
-
-              val os =
-                if osName.contains(t"mac") || osName.contains(t"darwin") then t"macos"
-                else if osName.contains(t"win")
-                then t"windows"
-                else t"linux"
-
-              val arch =
-                if osArch.contains(t"aarch") || osArch == t"arm64" then t"arm64" else t"x64"
-
-              t"$os-$arch"
-
-            val isWindows: Boolean = platformLabel.starts(t"windows")
-
-            val runnerName: Text =
-              if isWindows then t"runner-$platformLabel.exe" else t"runner-$platformLabel"
-
-            // The reusable runner stubs are not embedded in the JAR. A locally-built or
-            // pre-fetched directory (an explicit `-Dethereal.runners=<dir>`, or `dist/runners`
-            // relative to the working directory) takes priority; otherwise the one stub this
-            // platform needs is downloaded from the published `runners-<version>` GitHub
-            // release, verified against its SHA-256, and cached for subsequent builds.
-            val work: Path on Linux = workingDirectory
-
-            val runnersDir: Text =
-              safely(System.properties.ethereal.runners[Text]()).or(t"$work/dist/runners")
-
-            val localRunner: Path on Linux = t"$runnersDir/$runnerName".as[Path on Linux]
-
-            val cacheDir: Path on Linux =
-              Directories.cacheHome[Path on Linux]/t"ethereal"/t"runners"/Runners.version
-
-            val cacheRunner: Path on Linux = cacheDir/runnerName
-
-            val runnerBytes: Data =
-              // Each branch opens and fully reads its own file handle.
-              if localRunner.existent() then
-                scala.caps.unsafe.unsafeAssumeSeparate(localRunner.open[File]()(file.read[Data]))
-              else if cacheRunner.existent() then
-                scala.caps.unsafe.unsafeAssumeSeparate(cacheRunner.open[File]()(file.read[Data]))
-              else
-                mitigate:
-                  case Runners.Error(detail) =>
-                    Out.println(detail.text)
-                    Exit.Fail(1).terminate()
-
-                  case Io.Error(_, _, _, _) =>
-                    Out.println(e"Could not cache the downloaded runner stub $runnerName")
-                    Exit.Fail(1).terminate()
-
-                  case Truncation.Error(_) =>
-                    Out.println(e"The runner stub download was interrupted")
-                    Exit.Fail(1).terminate()
-
-                . protect:
-                    import filesystemOptions.failOnPreexisting
-                    Out.println(e"Downloading $runnerName from runners-${Runners.version}")
-                    val bytes: Data = Runners.download(platformLabel)
-                    if !cacheDir.existent() then cacheDir.create[Directory](CreateFlag.Parents)
-                    cacheRunner.open[File](Write, OpenFlag.Create)(file.write(Chain(bytes)))
-                    bytes
-
-            // ML-DSA-44 public key used by the runner to verify upgrades.
-            // When `ethereal.publicKey` is unset the slot stays zero and the
-            // runner's verifier rejects every upgrade — the safe default for
-            // dev builds where upgrades happen via `make install` rather
-            // than the .pending path. Releases that need signed upgrades
-            // pass `-Dethereal.publicKey=<path>` pointing at a 1312-byte raw
-            // ML-DSA-44 public key file.
-            val publicKey: Data =
-              safely(System.properties.ethereal.publicKey[Text]()).absolve match
-                case Unset =>
-                  Array.fill(Assembler.PublicKeyLength)(0.toByte)   // upgrades blocked
-
-                case keyPath: Text =>
-                  val resolved: Path on Linux = safely(keyPath.as[Path on Linux]).or:
-                    val work: Path on Linux = workingDirectory
-                    work + keyPath.as[Relative on Linux]
-
-                  val raw: Data = scala.caps.unsafe.unsafeAssumeSeparate(resolved.open[File]()(file.read[Data]))
-
-                  if raw.length != Assembler.PublicKeyLength then
-                    Out.println(e"Public key at $keyPath is the wrong size (expected 1312 bytes)")
-                    Exit.Fail(1).terminate()
-
-                  raw
-
-            mitigate:
-              case Assembler.Error(_) =>
-                Out.println(e"Runner binary does not contain the ETHRCFG\\x02 magic marker")
-                Exit.Fail(1).terminate()
-
-            . protect:
-                Assembler.assemble
-                  ( runnerBytes, jarFile, path, platformLabel, buildId, javaMinimum,
-                   javaPreferred, jdk, publicKey )
-
-            Out.println(t"Built executable file $destination")
-
-            Exit.Ok.terminate()
+        val work: Path on Linux = workingDirectory
+        val relativeJar: Relative on Linux = work.toward(jarFile)
+        Out.println(e"$Bold(This application must be invoked through its XEQ launcher.)")
+        Out.println(e"Build one with:")
+        Out.println(e"    xeq build --jar $Italic($relativeJar) --out $Italic(<name>)")
+        Out.println()
+        Out.println(e"`xeq` is published with the runner stubs; see $Italic(https://github.com/propensive/xeq)")
+        Exit.Fail(1).terminate()
 
     . protect(System.properties.ethereal.name[Text]())
 

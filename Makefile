@@ -73,20 +73,10 @@ release:
 sync-releases:
 	./etc/ci/sync-releases.sh $(VERSION)
 
-xeq-build:
-	@if [ -z "$(RUNNERS_VERSION)" ]; then echo "Usage: make xeq-build RUNNERS_VERSION=X" >&2; exit 1; fi
-	./etc/ci/xeq-build.sh "$(RUNNERS_VERSION)"
-
-runners-build:
-	./etc/ci/runners-build.sh
-
-runners-fetch:
-	@if [ -z "$(RUNNERS_VERSION)" ]; then echo "Usage: make runners-fetch RUNNERS_VERSION=X [REPO=owner/repo]" >&2; exit 1; fi
-	./etc/ci/runners-fetch.sh "$(RUNNERS_VERSION)" "$(REPO)"
-
-runners-release:
-	@if [ -z "$(RUNNERS_VERSION)" ]; then echo "Usage: make runners-release RUNNERS_VERSION=X [REPO=owner/repo]" >&2; exit 1; fi
-	./etc/ci/runners-release.sh "$(RUNNERS_VERSION)" "$(REPO)"
+# Fetch the pinned `xeq` builder script (etc/xeq.tsv) from the propensive/xeq release into
+# dist/xeq, verified against its SHA-256. The build shells out to it for packaging.
+xeq-fetch:
+	./etc/ci/xeq-fetch.sh
 
 scala/%:
 	TAG=$(word 1, $(subst :, ,$*)); \
@@ -113,4 +103,4 @@ matrix:
 	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
-.PHONY: publishLocal build dev ci wasm-e2e doccheck test bench matrix attest verify-attest push release xeq-build runners-build runners-fetch runners-release
+.PHONY: publishLocal build dev ci wasm-e2e doccheck test bench matrix attest verify-attest push release xeq-fetch

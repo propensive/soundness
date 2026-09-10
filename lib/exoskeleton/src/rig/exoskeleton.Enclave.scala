@@ -128,9 +128,13 @@ extends Rig:
               List(jarOptions.name(t"$name.jar")),
               List(EntryPoint(executor)) )
 
+      // Package the staged jar into an executable with the published `xeq` builder script
+      // (spec lives in the `propensive/xeq` repo). Resolve it from `$XEQ`, else `dist/xeq` under
+      // the working directory; the script fetches the runner stub it needs.
+      val xeq: Text = safely(Environment.xeq[Text]).or(t"dist/xeq")
       val cmd = (buildId: @unchecked) match
-        case id: Int => sh"java -Dbuild.id=$id -Dbuild.executable=$target -jar $jarfile '[]'"
-        case Unset   => sh"java -Dbuild.executable=$target -jar $jarfile '[]'"
+        case id: Int => sh"$xeq build --jar $jarfile --out $target --build-id $id"
+        case Unset   => sh"$xeq build --jar $jarfile --out $target"
 
       cmd.exec[Exit]() match
         case Exit.Ok         => target

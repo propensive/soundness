@@ -135,16 +135,17 @@ if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
   set +e
   (
     cd "$WORKTREE" || exit 1
-    # The reusable runner stubs are not stored in the repo or any JAR; build them into
-    # `dist/runners` so the test suite (the `Enclave` rig and the ethereal/profanity tests)
-    # can read them. They are not part of the Soundness (Mill) build.
+    # The `xeq` builder script is not stored in the repo or any JAR; fetch the pinned release
+    # into `dist/xeq` so the test suite (the `Enclave` rig and the ethereal/profanity tests,
+    # which shell out to it to package their fixtures) can find it. It is not part of the
+    # Soundness (Mill) build.
     # `soundness.all` is the JVM + WASI surface. `soundness.js` cross-compiles the
     # whole Scala.js-capable surface under `-scalajs`, which the JVM pipeline can't
     # catch — gating it here stops `main` from silently drifting into `-scalajs`-only
     # capture-checking breakage (there are no JS tests to run; compiling is the check).
     # `make wasm-e2e` then links the `.wasi` backends into a real Wasm component and runs
     # its scenarios under wasmtime — the only stage that exercises the WIT ABI at runtime.
-    make runners-build \
+    make xeq-fetch \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.all.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.js.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.native.compile \

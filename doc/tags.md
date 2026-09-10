@@ -140,4 +140,3 @@ yossarian: pty terminal-emulator ansi-escape screen-buffer vt100 cursor
 ypsiloid: yaml parser serialization yaml-ast anchors
 zephyrine: parser parsing cursor emitter sparse-format
 zeppelin: zip archive zip-file compression
-ziggurat: installer bootstrap deployment payload

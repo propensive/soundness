@@ -275,12 +275,12 @@ The `cli` entry point runs the server as a resident [daemon](daemons.md): the fi
 invocation launches a background JVM, and every later one connects to the process already
 running. An editor starts and restarts a language server often, so avoiding the JVM's
 startup cost — and keeping the just-in-time compiler's accumulated optimizations — on each
-launch matters. Running the server's JAR with the `build.executable` property set assembles
-a small native launcher that starts, or connects to, the daemon and forwards standard
-input, output and signals to it:
+launch matters. Packaging the server's JAR with the `xeq` builder (from
+[propensive/xeq](https://github.com/propensive/xeq)) assembles a small native launcher that
+starts, or connects to, the daemon and forwards standard input, output and signals to it:
 
 ```sh
-java -Dbuild.executable=demo-server -jar demo-server.jar
+xeq build --jar demo-server.jar --out demo-server
 ```
 
 ### A thin launcher
