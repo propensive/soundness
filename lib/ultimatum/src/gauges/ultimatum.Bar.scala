@@ -229,15 +229,23 @@ enum Bar:
 
         . reduceLeft: (left, right) => e"$left$right"
 
-    val edge = boundary.lay(e""): glyph => gauging.tint(palette.leadingEdge)(Teletype(glyph))
+    // A track drawn with spaces is only visible as a background; one with its own glyph is drawn
+    // in the track colour instead, so both kinds of design read correctly on any terminal.
+    val washedTrack = glyphs.empty == t" "
+
+    // The boundary cell is only partly covered by its glyph, and whatever the glyph leaves
+    // uncovered is track, so it needs the same background as the cells to its right. Without
+    // this, that uncovered fraction falls through to the terminal's default background and shows
+    // as a sliver of the wrong colour along the leading edge. Where the track is drawn as a glyph
+    // there is no background to match, and the cell is left alone.
+    val edge = boundary.lay(e""): glyph =>
+      val tinted = gauging.tint(palette.leadingEdge)(Teletype(glyph))
+      if washedTrack then gauging.wash(palette.track)(tinted) else tinted
 
     val blank = Teletype(glyphs.empty*(inner - used).max(0))
 
-    // A track drawn with spaces is only visible as a background; one with its own glyph is drawn
-    // in the track colour instead, so both kinds of design read correctly on any terminal.
     val rest =
-      if glyphs.empty == t" " then gauging.wash(palette.track)(blank)
-      else gauging.tint(palette.track)(blank)
+      if washedTrack then gauging.wash(palette.track)(blank) else gauging.tint(palette.track)(blank)
 
     e"$filled$edge$rest"
 
