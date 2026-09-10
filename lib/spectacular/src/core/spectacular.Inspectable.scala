@@ -80,6 +80,7 @@ import wisteria.*
 //                    ⟨ a b ⟩ sequence  ⟦k → v⟧ ledger    ⦋…⦌ array   ⁅…⁆ frozen array
 //                    a ⋰ b ⋰ ..? lazy  ∿∿∿ unforced      ⯁ end
 //     products       Name(field:value ╱ field2:value)    (a ╱ b) tuple
+//                    (name:value ╱ age:value) named tuple
 //     optionality    ｢value｣ present   ○ absent
 //     text           t"…" with escapes                   'x' char
 //     numbers        3 int   3L long   3.1F float   3.toByte byte   BigInt(42)
@@ -88,14 +89,17 @@ import wisteria.*
 //
 object Inspectable extends Inspectable2:
   object Derivation extends Derivable[Inspectable]:
+    // `this.tuple` is wisteria's compile-time predicate, inherited here; the prefix is what
+    // distinguishes it from the enclosing object's `tuple` *instance*, which is otherwise
+    // equally in scope and makes a bare reference ambiguous.
     inline def conjunction[derivation <: Product: ProductReflection]: derivation is Inspectable =
       value =>
         val rendered = fields(value): [field] => field =>
           val text = contextual.text(field)
-          if tuple then text else s"$label:$text"
+          if this.tuple then text else s"$label:$text"
 
-        if rendered.readable.isEmpty && !tuple then typeName
-        else rendered.readable.mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
+        if rendered.readable.isEmpty && !this.tuple then typeName
+        else rendered.readable.mkString(if this.tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 
     inline def disjunction[derivation: SumReflection]: derivation is Inspectable = value =>
       variant(value):
@@ -157,6 +161,80 @@ object Inspectable extends Inspectable2:
   inline given enumeration: [enumeration <: reflect.Enum: Reflection]
   =>  enumeration is Inspectable =
     Derivation.derived[enumeration]
+
+  // A tuple shows its elements, and a named tuple its labels as well, in the product notation
+  // with the type name omitted — `(a ╱ b)` and `(name:a ╱ age:b)`. Neither can be confused
+  // with a case class, whose rendering always carries its type name. Each element is rendered
+  // by the `Inspectable` summoned at that element's *static* type, so an element with no
+  // native instance degrades on its own, and its marker still shows through `fallbacks`.
+  //
+  // A named tuple is an opaque alias for its value tuple, so here it is neither `<: Tuple` nor
+  // `<: Product`, and the two instances below cannot be ambiguous with one another. That
+  // opacity is also why a named tuple cannot be derived: `Derivation` reaches its fields
+  // through `derivation & Product` and the type symbol's `caseFields`, and an alias has
+  // neither, so without the instance below a named tuple renders as its `toString`.
+  //
+  // Both instances delegate to a method, as `enumeration` does, rather than naming a function
+  // value directly: an `inline` given whose right-hand side is a closure is reported as one
+  // which will be duplicated at every summon site. `inline` itself is not optional, though —
+  // the recursion below can only walk element types which are known at the summon site.
+  inline given tuple: [tuple <: Tuple] => tuple is Inspectable = tupleInspectable[tuple]
+
+  inline given namedTuple: [named <: scala.NamedTuple.AnyNamedTuple] => named is Inspectable =
+    namedTupleInspectable[named]
+
+  private transparent inline def tupleInspectable[tuple <: Tuple]: tuple is Inspectable = value =>
+    elements[scala.EmptyTuple, tuple](value.asInstanceOf[Product], 0, "")
+    . or(unrenderable(value))
+
+  private transparent inline def namedTupleInspectable[named <: scala.NamedTuple.AnyNamedTuple]
+  :   named is Inspectable =
+
+    value =>
+      val product = value.asInstanceOf[Product]
+
+      elements[scala.NamedTuple.Names[named], scala.NamedTuple.DropNames[named]](product, 0, "")
+      . or(unrenderable(value))
+
+  // Renders the elements of the value tuple `tuple`, labelling the nth with the nth member of
+  // `names` where there is one, joining them with the product separator, and enclosing the
+  // result in parentheses. `Unset` when the element types are not statically known — a value
+  // typed as a bare `Tuple`, or a named tuple with abstract names — which the two instances
+  // above turn into the `“…”` marker, so an unwalkable tuple is reported by `fallbacks`
+  // instead of failing to compile.
+  //
+  // The terminator must be spelt `scala.EmptyTuple.type`. This file compiles under
+  // `-Yimports:java.lang,proscenium`, where a bare `EmptyTuple` names proscenium's export
+  // forwarder — a nullary *method*, whose singleton type is a `TermRef` to the method and not
+  // to the module — and the match would then never see the end of the tuple.
+  //
+  // Elements are read positionally with `productElement`, as wisteria's field macro does,
+  // rather than by destructuring `*:`: that costs a cast, but works at every arity, including
+  // the `TupleXXL` representation used beyond twenty-two elements.
+  private inline def elements[names <: Tuple, tuple <: Tuple]
+    ( product: Product, index: Int, done: String )
+  :   Optional[Text] =
+
+    inline compiletime.erasedValue[tuple] match
+      case _: (head *: tail) =>
+        val inspectable = compiletime.summonInline[head is Inspectable]
+        val text = inspectable.text(product.productElement(index).asInstanceOf[head]).s
+        val separator = if index == 0 then "" else " ╱ "
+
+        inline compiletime.erasedValue[names] match
+          case _: (name *: names2) =>
+            val label = compiletime.constValue[name].toString
+            elements[names2, tail](product, index + 1, done+separator+label+":"+text)
+
+          case _ =>
+            elements[scala.EmptyTuple, tail](product, index + 1, done+separator+text)
+
+      case _: scala.EmptyTuple.type => ("("+done+")").tt
+      case _                        => Unset
+
+  // The same marker `derived` uses for a value with no instance at all, so a tuple which
+  // cannot be walked is reported by `fallbacks` exactly as any other uncovered type is.
+  private def unrenderable(value: Any): Text = ("“"+value+"”").tt
 
   // The sized numeric types all erase to a primitive, so a rendering which showed only the
   // number would be indistinguishable from an `Int` or a `Long` — and, for the unsigned types,

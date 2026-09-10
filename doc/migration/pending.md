@@ -44,3 +44,19 @@ format. Entries are grouped by module, most-recently-added last within a module.
 
 - `TelBlueprint.fieldsOf` returns `List[(Text, Member)]` in schema order, not `Map[Text,
   Member]`; `TelBlueprint.fields` likewise. (#1974)
+
+## spectacular
+
+- A `scala.NamedTuple` now has a native `Inspectable` instance, `spectacular.Inspectable.namedTuple`,
+  and renders as its labelled elements in the product notation without a type name: `(name =
+  t"Simon", age = 72).inspect` yields `t"(name:t\"Simon\" ╱ age:72)"`. Each element is rendered by
+  the `Inspectable` summoned at that element's static type. Previously no instance matched a named
+  tuple, so it fell through to `Inspectable.derived`'s `toString` case and rendered
+  `t"“(Simon,72)”"`, with the labels lost and the elements' own instances bypassed. Code asserting
+  on the old rendering, or filtering it out of `Inspectable.fallbacks`, must be updated. (#1975)
+- `scala.Tuple` now has an explicit instance, `spectacular.Inspectable.tuple`, in place of the
+  wisteria derivation a tuple previously reached through `Inspectable.derived`. The rendering of a
+  tuple whose element types are statically known is unchanged (`(t"Simon", 72).inspect` still
+  yields `t"(t\"Simon\" ╱ 72)"`, and `EmptyTuple.inspect` still yields `t"()"`). A value whose
+  static type is a bare `Tuple`, whose element types cannot be walked, renders as its `toString` in
+  the `“…”` marker, as before. (#1975)
