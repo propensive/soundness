@@ -30,142 +30,51 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package polyvinyl
 
+import scala.quoted.*
 
-import soundness.*
+import anticipation.*
+import gossamer.*
 
+// Specification objects for the tests. Each lives in this module, compiled before `test`, so the
+// `record` macro can evaluate it while the call sites are being compiled.
 
-import charEncoders.utf8Encoder
-import errorDiagnostics.stackTracesDiagnostics
-import strategies.throwUnsafely
+object PersonRecords extends TreeBlueprint(List(
+  t"name"   -> Member.Value(t"text"),
+  t"size"   -> Member.Value(t"length"),
+  t"active" -> Member.Value(t"flag"),
+  t"raw"    -> Member.Value(t"tree"),
+  t"extras" -> Member.Value(t"params", t"alpha", t"beta"),
+  t"count"  -> Member.Value(t"counted"))):
+  transparent inline def record(tree: Tree): Record = ${build('tree)}
+  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
 
-object RecordsTests extends Suite(m"Jacinta records tests"):
-  def run(): Unit =
-    val record = test(m"Construct a new record"):
+object NestedRecords extends TreeBlueprint(List(
+  t"owner" -> Member.Record(t"node", List(
+    t"name"    -> Member.Value(t"text"),
+    t"address" -> Member.Record(t"node", List(t"city" -> Member.Value(t"text"))))),
+  t"tags"  -> Member.Record(t"items", List(t"label" -> Member.Value(t"text"))))):
+  transparent inline def record(tree: Tree): Record = ${build('tree)}
+  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
 
-      val spec: Json =
-        t"""{
-          "name": "Jim",
-          "active": true,
-          "sub": { "date": "11/12/20" },
-          "children": [
-            {"height": 100, "weight": 0.8, "color": "green" },
-            {"height": 9, "weight": 30.0, "color": "#ff0000"}
-          ],
-          "pattern": "a.b",
-          "domain": "example.com",
-          "email": "test@example.com"
-        }""".read[Json]
+object TitleRecords extends TreeBlueprint(List(t"title" -> Member.Value(t"text"))):
+  transparent inline def record(tree: Tree): Record = ${build('tree)}
+  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
 
-      RecordsExampleSchema.record(spec)
-    .check()
+// The remaining specifications are ill-formed: each compiles, but expanding its `record` macro
+// fails, which the compiletime tests check.
 
-    test(m"Get a text value"):
-      record.name
-    . assert(_ == t"Jim")
+object UnknownValueRecords extends TreeBlueprint(List(t"mystery" -> Member.Value(t"mystery"))):
+  transparent inline def record(tree: Tree): Record = ${build('tree)}
+  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
 
-    test(m"Get an integer value"):
-      record.age
-    . assert(_ == Unset)
+object UnknownRecordRecords
+extends TreeBlueprint(List(t"mystery" -> Member.Record(t"mystery", List()))):
+  transparent inline def record(tree: Tree): Record = ${build('tree)}
+  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
 
-    test(m"Get an array value"):
-      record.children
-    . assert()
-
-    test(m"Get the head of an array"):
-      record.children.prim
-    . assert()
-
-    test(m"Get a nested value"):
-      record.children.prim.let(_.weight)
-    . assert(_ == 0.8)
-
-    test(m"A bad pattern-checked value throws an exception"):
-      capture[JsonBlueprint.Error]:
-        // The blueprint error escapes `let`: the lambda runs eagerly on a present value.
-        record.children.prim.let(_.color)
-    . assert
-        ( _ == JsonBlueprint.Error
-                  ( JsonBlueprint.Error.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}") ) )
-
-    test(m"Get a color"):
-      record.children.stdlib(1).color
-    . assert(_ == t"#ff0000")
-
-    test(m"Get a nested item value"):
-      record.sub.date
-    . assert(_ == t"11/12/20")
-
-    test(m"Get a regex value"):
-      record.pattern.matches(t"acb")
-    . assert(identity)
-
-    test(m"Get some values in a list"):
-      capture:
-        record.children.map { elem => elem.height }
-    . assert(_ == JsonBlueprint.Error(JsonBlueprint.Error.Reason.IntOutOfRange(100, 1, 99)))
-
-    test(m"Get a boolean value"):
-      record.active
-    . assert(_ == true)
-
-    test(m"Get an absent optional boolean value"):
-      record.verified
-    . assert(_ == Unset)
-
-    test(m"Get an absent optional string value"):
-      record.nickname
-    . assert(_ == Unset)
-
-    test(m"Get an absent optional number value"):
-      record.score
-    . assert(_ == Unset)
-
-    test(m"Get an email address"):
-      record.email
-    . assert(_ == email"test@example.com")
-
-    test(m"Get an optional email address"):
-      record.maybeEmail
-    . assert(_ == Unset)
-
-    val valid: Json =
-      t"""{
-        "name": "Jim",
-        "active": true,
-        "sub": { "date": "11/12/20" },
-        "children": [{"height": 9, "weight": 30.0, "color": "#ff0000"}],
-        "pattern": "a.b",
-        "domain": "example.com",
-        "email": "test@example.com"
-      }""".read[Json]
-
-    test(m"A tuple's elements follow the schema's order"):
-      val (name, active, _, _, _, _, _, _, _, _, _, _) = RecordsExampleSchema.tuple(valid)
-      (name, active)
-    . assert(_ == (t"Jim", true))
-
-    test(m"A nested array becomes a list of tuples"):
-      RecordsExampleSchema.tuple(valid).children.prim.let(_.color)
-    . assert(_ == t"#ff0000")
-
-    test(m"A fallible element has its successful type"):
-      val email: EmailAddress = RecordsExampleSchema.tuple(valid).email
-      email
-    . assert(_ == email"test@example.com")
-
-    test(m"An invalid element fails when the tuple is built"):
-      val invalid: Json =
-        t"""{
-          "name": "Jim",
-          "active": true,
-          "sub": { "date": "11/12/20" },
-          "children": [{"height": 100, "weight": 0.8, "color": "#ff0000"}],
-          "pattern": "a.b",
-          "domain": "example.com",
-          "email": "test@example.com"
-        }""".read[Json]
-
-      capture[JsonBlueprint.Error](RecordsExampleSchema.tuple(invalid))
-    . assert(_ == JsonBlueprint.Error(JsonBlueprint.Error.Reason.IntOutOfRange(100, 1, 99)))
+// Instances are keyed by the exact label: `"Text"` is not `"text"`
+object MiscasedRecords extends TreeBlueprint(List(t"name" -> Member.Value(t"Text"))):
+  transparent inline def record(tree: Tree): Record = ${build('tree)}
+  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}

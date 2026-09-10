@@ -3,7 +3,7 @@ publishLocal:
 
 # Tests and benchmarks are run by `fume` (https://github.com/propensive/fume), which discovers
 # every suite in a built assembly from its META-INF/services/probably.Suite index. The classpath
-# for `make test`/`make ci` comes from `.fume/config.tel`; `$(TESTS)` are fume selection terms
+# for `make test`/`make ci` comes from `.pyrocosm/fume/config.tel`; `$(TESTS)` are fume selection terms
 # (test ids, name globs, axis constraints such as `N<=64`).
 test:
 	./mill test.assembly

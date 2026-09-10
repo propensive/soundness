@@ -30,142 +30,93 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package polyvinyl
 
+import anticipation.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
 
-import soundness.*
+// A `Specification` over `Tree`, exercising every kind of member polyvinyl supports: scalar
+// fields with and without parameters, and nested and repeated records.
+object TreeBlueprint:
+  // How many times the `"counted"` field has been evaluated: records evaluate a field on every
+  // access, whereas a tuple evaluates each field once, when it is built.
+  val evaluations: java.util.concurrent.atomic.AtomicInteger =
+    java.util.concurrent.atomic.AtomicInteger(0)
 
+  private def leaf(tree: Tree): Text = tree match
+    case Tree.Leaf(text) => text
+    case _               => t""
 
-import charEncoders.utf8Encoder
-import errorDiagnostics.stackTracesDiagnostics
-import strategies.throwUnsafely
+  given text: ("text" is Intensional in TreeBlueprint from Tree to Text) =
+    TreeBlueprint.intensional(leaf(_))
 
-object RecordsTests extends Suite(m"Jacinta records tests"):
-  def run(): Unit =
-    val record = test(m"Construct a new record"):
+  // A result type which is neither the origin type nor `Text`
+  given length: ("length" is Intensional in TreeBlueprint from Tree to Int) =
+    TreeBlueprint.intensional(leaf(_).s.length)
 
-      val spec: Json =
-        t"""{
-          "name": "Jim",
-          "active": true,
-          "sub": { "date": "11/12/20" },
-          "children": [
-            {"height": 100, "weight": 0.8, "color": "green" },
-            {"height": 9, "weight": 30.0, "color": "#ff0000"}
-          ],
-          "pattern": "a.b",
-          "domain": "example.com",
-          "email": "test@example.com"
-        }""".read[Json]
+  given flag: ("flag" is Intensional in TreeBlueprint from Tree to Boolean) =
+    TreeBlueprint.intensional(_ != Tree.Absent)
 
-      RecordsExampleSchema.record(spec)
-    .check()
+  given tree: ("tree" is Intensional in TreeBlueprint from Tree to Tree) =
+    TreeBlueprint.intensional: tree => tree
 
-    test(m"Get a text value"):
-      record.name
-    . assert(_ == t"Jim")
+  // Returns the member's parameters verbatim, to show that they reach the instance
+  given params: ("params" is Intensional in TreeBlueprint from Tree to List[Text]) =
+    new Intensional:
+      type Self = "params"
+      type Origin = Tree
+      type Form = TreeBlueprint
+      type Result = List[Text]
 
-    test(m"Get an integer value"):
-      record.age
-    . assert(_ == Unset)
+      def transform(tree: Tree, params: List[Text]): List[Text] = params
 
-    test(m"Get an array value"):
-      record.children
-    . assert()
+  given counted: ("counted" is Intensional in TreeBlueprint from Tree to Int) =
+    TreeBlueprint.intensional: tree => evaluations.incrementAndGet()
 
-    test(m"Get the head of an array"):
-      record.children.prim
-    . assert()
+  given node: ("node" is Structural[[value] =>> value] in TreeBlueprint from Tree) =
+    new Structural[[value] =>> value]:
+      type Self = "node"
+      type Origin = Tree
+      type Form = TreeBlueprint
 
-    test(m"Get a nested value"):
-      record.children.prim.let(_.weight)
-    . assert(_ == 0.8)
+      def transform[value](tree: Tree, make: Tree => value): value = make(tree)
 
-    test(m"A bad pattern-checked value throws an exception"):
-      capture[JsonBlueprint.Error]:
-        // The blueprint error escapes `let`: the lambda runs eagerly on a present value.
-        record.children.prim.let(_.color)
-    . assert
-        ( _ == JsonBlueprint.Error
-                  ( JsonBlueprint.Error.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}") ) )
+  given items: ("items" is Structural[List] in TreeBlueprint from Tree) =
+    new Structural[List]:
+      type Self = "items"
+      type Origin = Tree
+      type Form = TreeBlueprint
 
-    test(m"Get a color"):
-      record.children.stdlib(1).color
-    . assert(_ == t"#ff0000")
+      def transform[value](tree: Tree, make: Tree => value): List[value] = tree match
+        case Tree.Items(items) => items.map(make)
+        case _                 => List()
 
-    test(m"Get a nested item value"):
-      record.sub.date
-    . assert(_ == t"11/12/20")
+  // A pure function (`->`): the instance retains it, and a capturing accessor would make the
+  // instance itself a capability, which its pure self type forbids.
+  def intensional[name <: Label, value](accessor: Tree -> value)
+  :   name is Intensional in TreeBlueprint from Tree to value =
 
-    test(m"Get a regex value"):
-      record.pattern.matches(t"acb")
-    . assert(identity)
+    new Intensional:
+      type Self = name
+      type Origin = Tree
+      type Form = TreeBlueprint
+      type Result = value
 
-    test(m"Get some values in a list"):
-      capture:
-        record.children.map { elem => elem.height }
-    . assert(_ == JsonBlueprint.Error(JsonBlueprint.Error.Reason.IntOutOfRange(100, 1, 99)))
+      def transform(tree: Tree, params: List[Text]): value = accessor(tree)
 
-    test(m"Get a boolean value"):
-      record.active
-    . assert(_ == true)
+  def record(data0: Tree, access0: Text -> Tree -> Any): Record = new Record:
+    type Origin = Tree
+    val data: Tree = data0
+    def access: Text -> Tree -> Any = access0
 
-    test(m"Get an absent optional boolean value"):
-      record.verified
-    . assert(_ == Unset)
+abstract class TreeBlueprint(val fields: List[(Text, Member)]) extends Specification:
+  type Origin = Tree
+  type Form = TreeBlueprint
 
-    test(m"Get an absent optional string value"):
-      record.nickname
-    . assert(_ == Unset)
+  def access(name: Text, tree: Tree): Tree = tree match
+    case Tree.Node(children) if Map.defines(children, name) => Map.at(children, name)
+    case _                                                  => Tree.Absent
 
-    test(m"Get an absent optional number value"):
-      record.score
-    . assert(_ == Unset)
-
-    test(m"Get an email address"):
-      record.email
-    . assert(_ == email"test@example.com")
-
-    test(m"Get an optional email address"):
-      record.maybeEmail
-    . assert(_ == Unset)
-
-    val valid: Json =
-      t"""{
-        "name": "Jim",
-        "active": true,
-        "sub": { "date": "11/12/20" },
-        "children": [{"height": 9, "weight": 30.0, "color": "#ff0000"}],
-        "pattern": "a.b",
-        "domain": "example.com",
-        "email": "test@example.com"
-      }""".read[Json]
-
-    test(m"A tuple's elements follow the schema's order"):
-      val (name, active, _, _, _, _, _, _, _, _, _, _) = RecordsExampleSchema.tuple(valid)
-      (name, active)
-    . assert(_ == (t"Jim", true))
-
-    test(m"A nested array becomes a list of tuples"):
-      RecordsExampleSchema.tuple(valid).children.prim.let(_.color)
-    . assert(_ == t"#ff0000")
-
-    test(m"A fallible element has its successful type"):
-      val email: EmailAddress = RecordsExampleSchema.tuple(valid).email
-      email
-    . assert(_ == email"test@example.com")
-
-    test(m"An invalid element fails when the tuple is built"):
-      val invalid: Json =
-        t"""{
-          "name": "Jim",
-          "active": true,
-          "sub": { "date": "11/12/20" },
-          "children": [{"height": 100, "weight": 0.8, "color": "#ff0000"}],
-          "pattern": "a.b",
-          "domain": "example.com",
-          "email": "test@example.com"
-        }""".read[Json]
-
-      capture[JsonBlueprint.Error](RecordsExampleSchema.tuple(invalid))
-    . assert(_ == JsonBlueprint.Error(JsonBlueprint.Error.Reason.IntOutOfRange(100, 1, 99)))
+  def build(data: Tree, access: Text -> Tree -> Any): Record = TreeBlueprint.record(data, access)

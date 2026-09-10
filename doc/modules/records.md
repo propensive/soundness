@@ -65,14 +65,58 @@ record.age                   // does not compile if the schema has no age
 Nested objects become nested records, arrays become lists of records, and every access is checked
 against the specification — the same guarantee a hand-written class would give, without the class.
 
+### Tuples instead of records
+
+The same schema object can produce a [named
+tuple](https://docs.scala-lang.org/scala3/reference/other-new-features/named-tuples.html) instead
+of a record, through a second one-line macro beside `record`:
+
+<!-- doccheck: skip -->
+```scala
+object Catalogue extends JsonBlueprint(schema):
+  transparent inline def record(json: Json): Record = ${build('json)}
+  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+```
+
+For the schema above, `Catalogue.tuple(input)` has the type
+`(name: Text, age: Optional[Int], children: List[(weight: Double)])`: one element per field, named
+as the schema names it, in the schema's order. Nested objects become nested named tuples and arrays
+become lists of them. A named tuple is accessed by name like a record, but it is also an ordinary
+tuple, so it destructures positionally and converts to its unnamed form:
+
+<!-- doccheck: skip -->
+```scala
+val tuple = Catalogue.tuple(input)
+tuple.name                        // Text
+val (name, age, children) = tuple // in the schema's order
+tuple.toTuple                     // (Text, Optional[Int], List[(weight: Double)])
+```
+
+#### Eager and lazy
+
+The two forms differ in *when* the data is read. A record is lazy: it holds the raw data, and
+each field access reads and converts the field afresh, so a malformed field is only noticed when
+that field is accessed, and a field accessed twice is converted twice. A tuple is eager: every
+field is read once, when the tuple is built, and the tuple holds the converted values. A malformed
+field therefore fails the construction of the tuple, whether or not the program ever reads it.
+
+This changes how fallible fields are typed. A specification may declare a field's type as, say,
+`Int raises JsonBlueprint.Error`, meaning reading it can fail. In a record, that is the field's
+type, and each access needs a handler in scope. In a tuple, the failure can only happen during
+construction, so the element's type is plainly `Int`, and the handler must be in scope where the
+tuple is built: a `raises` clause is discharged there, by whichever `Tactic` the call site
+provides, and the call does not compile without one.
+
 ### Defining a specification
 
 A new source of schemas — a database's table definitions, a proprietary format — plugs in by
-implementing `Specification`: it supplies the field names and types as a map of `Member`s, and how
-a field's value is fetched from the underlying data at runtime. Two typeclasses complete the
-picture: an `Intensional` instance for each scalar type name the schema can declare, saying what
-Scala type it becomes and how to read it, and a `Structural` instance for the container shapes —
-nested objects, arrays.
+implementing `Specification`: it supplies the field names and types as an ordered list of
+`Member`s (a tuple's elements follow that order), and how a field's value is fetched from the
+underlying data at runtime. Two typeclasses complete the picture: an `Intensional` instance for
+each scalar type name the schema can declare, saying what Scala type it becomes and how to read
+it, and a `Structural` instance for the container shapes — nested objects, arrays. A `Structural`
+instance is polymorphic in the element type, since it places nested records and nested tuples
+alike, so it is written as an explicit instance rather than a lambda.
 
 The schema object then exposes the one-line macro that makes it usable:
 
@@ -84,7 +128,7 @@ transparent inline def record(json: Json): Record = ${build('json)}
 From that point, every caller gets records typed by whatever the specification said at the moment
 the calling code was compiled.
 
-`record` must be `transparent inline` for any of this to work. Its declared return type is
+`record` (and likewise `tuple`) must be `transparent inline` for any of this to work. Its declared return type is
 `Record`, but what it actually returns is a *structural refinement* of it — for a schema of three
 fields, the type
 
