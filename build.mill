@@ -995,7 +995,7 @@ object soundness extends Toolchain:
           => dependencies
 
 // The umbrella test assembly: every enabled `<lib>.test` module in one jar, which is what
-// `.fume/config.tel` names. It has no sources and no main class of its own: fume discovers the
+// `.pyrocosm/fume/config.tel` names. It has no sources and no main class of its own: fume discovers the
 // suites from the jar's `META-INF/services/probably.Suite` index, so `BaseScalaModule` (for its
 // `mergeRules`, which concatenate the per-module index fragments) is essential — as a plain
 // `Toolchain` module the assembly kept only the first module's fragment.
