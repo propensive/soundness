@@ -192,6 +192,43 @@ object Tests extends Suite(m"Spectacular Tests"):
         (t"Simon", 72).inspect
       . assert(_ == t"(t\"Simon\" ╱ 72)")
 
+      test(m"serialize named tuple"):
+        (name = t"Simon", age = 72).inspect
+      . assert(_ == t"(name:t\"Simon\" ╱ age:72)")
+
+      test(m"serialize empty tuple"):
+        EmptyTuple.inspect
+      . assert(_ == t"()")
+
+      test(m"serialize one-element tuple"):
+        Tuple1(72).inspect
+      . assert(_ == t"(72)")
+
+      test(m"serialize named tuple nested in a tuple"):
+        (t"Simon", (width = 3, height = 4)).inspect
+      . assert(_ == t"(t\"Simon\" ╱ (width:3 ╱ height:4))")
+
+      test(m"serialize tuple nested in a named tuple"):
+        (name = t"Simon", size = (3, 4)).inspect
+      . assert(_ == t"(name:t\"Simon\" ╱ size:(3 ╱ 4))")
+
+      // Only the *element* carries the marker: the surrounding named tuple still renders, and
+      // every other element still reaches its own instance.
+      test(m"a named tuple's underivable element falls back on its own"):
+        (item = Underived(7), count = 3).inspect
+      . assert(_ == t"(item:“Underived(7)” ╱ count:3)")
+
+      test(m"a fully-covered named tuple inspects natively"):
+        Inspectable.fallbacks((name = t"Simon", age = 72).inspect)
+      . assert(_ == Nil)
+
+      // The element types of a value typed as a bare `Tuple` cannot be walked, so the whole
+      // value falls back to its `toString`, marked as such.
+      test(m"a tuple of unknown shape falls back to toString"):
+        val opaqueTuple: Tuple = (t"Simon", 72)
+        Inspectable.fallbacks(opaqueTuple.inspect)
+      . assert(_ == List(t"“(Simon,72)”"))
+
       test(m"serialize list of strings"):
         (List(t"one", t"two", t"three"): List[Text]).inspect
       . assert(_ == t"""[t"one", t"two", t"three"]""")
