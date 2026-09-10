@@ -2692,7 +2692,7 @@ object polaris extends Library:
       settings.sep(super.scalacOptions())
 
 object polyvinyl extends Library:
-  object core extends Component(fulminate.core):
+  object core extends Component(fulminate.core, contingency.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Test fixtures: `Specification`s whose `record` macros must be compiled before the call sites

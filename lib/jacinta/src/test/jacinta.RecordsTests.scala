@@ -129,3 +129,43 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
     test(m"Get an optional email address"):
       record.maybeEmail
     . assert(_ == Unset)
+
+    val valid: Json =
+      t"""{
+        "name": "Jim",
+        "active": true,
+        "sub": { "date": "11/12/20" },
+        "children": [{"height": 9, "weight": 30.0, "color": "#ff0000"}],
+        "pattern": "a.b",
+        "domain": "example.com",
+        "email": "test@example.com"
+      }""".read[Json]
+
+    test(m"A tuple's elements follow the schema's order"):
+      val (name, active, _, _, _, _, _, _, _, _, _, _) = RecordsExampleSchema.tuple(valid)
+      (name, active)
+    . assert(_ == (t"Jim", true))
+
+    test(m"A nested array becomes a list of tuples"):
+      RecordsExampleSchema.tuple(valid).children.prim.let(_.color)
+    . assert(_ == t"#ff0000")
+
+    test(m"A fallible element has its successful type"):
+      val email: EmailAddress = RecordsExampleSchema.tuple(valid).email
+      email
+    . assert(_ == email"test@example.com")
+
+    test(m"An invalid element fails when the tuple is built"):
+      val invalid: Json =
+        t"""{
+          "name": "Jim",
+          "active": true,
+          "sub": { "date": "11/12/20" },
+          "children": [{"height": 100, "weight": 0.8, "color": "#ff0000"}],
+          "pattern": "a.b",
+          "domain": "example.com",
+          "email": "test@example.com"
+        }""".read[Json]
+
+      capture[JsonBlueprint.Error](RecordsExampleSchema.tuple(invalid))
+    . assert(_ == JsonBlueprint.Error(JsonBlueprint.Error.Reason.IntOutOfRange(100, 1, 99)))

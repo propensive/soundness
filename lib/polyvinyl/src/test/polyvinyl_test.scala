@@ -127,6 +127,48 @@ object Tests extends Suite(m"Polyvinyl tests"):
         (title.title, PersonRecords.record(alice).name)
       . assert(_ == (t"Dr", t"Alice"))
 
+    suite(m"Named tuples"):
+      test(m"a tuple has the specification's names and types, in order"):
+        val tuple
+        :   (name: Text, size: Int, active: Boolean, raw: Tree, extras: List[Text], count: Int) =
+          PersonRecords.tuple(alice)
+
+        tuple.name
+      . assert(_ == t"Alice")
+
+      test(m"a tuple's elements are accessed by name"):
+        PersonRecords.tuple(alice).size
+      . assert(_ == 5)
+
+      test(m"a tuple destructures positionally"):
+        val (name, size, active, _, _, _) = PersonRecords.tuple(alice)
+        (name, size, active)
+      . assert(_ == (t"Alice", 5, true))
+
+      test(m"a tuple's underlying tuple is plain"):
+        TitleRecords.tuple(Tree.Node(Map(t"title" -> Tree.Leaf(t"Dr")))).toTuple
+      . assert(_ == Tuple1(t"Dr"))
+
+      test(m"a nested node becomes a nested tuple"):
+        NestedRecords.tuple(estate).owner.address.city
+      . assert(_ == t"Tallinn")
+
+      test(m"a list member becomes a list of tuples"):
+        NestedRecords.tuple(estate).tags.map(_.label)
+      . assert(_ == List(t"old", t"large"))
+
+      test(m"a tuple evaluates each field once, when it is built"):
+        val before = TreeBlueprint.evaluations.get
+        val tuple = PersonRecords.tuple(alice)
+        tuple.count
+        tuple.count
+        TreeBlueprint.evaluations.get - before
+      . assert(_ == 1)
+
+      test(m"an undeclared tuple element does not compile"):
+        demilitarize(PersonRecords.tuple(Tree.Absent).nope)
+      . assert(_.exists(_.reason == CompileError.Reason.NotAMember))
+
     suite(m"Compiletime checks"):
       test(m"an undeclared field does not compile"):
         demilitarize(PersonRecords.record(Tree.Absent).nope)

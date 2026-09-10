@@ -75,3 +75,4 @@ object RecordsExampleSchema extends JsonBlueprint(t"""{
 }""".read[Json].as[JsonBlueprint.Doc]):
 
   transparent inline def record(json: Json): Record = ${build('json)}
+  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}

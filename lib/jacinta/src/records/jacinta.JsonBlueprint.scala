@@ -279,23 +279,23 @@ object JsonBlueprint:
     :   ("regex?" is Intensional in JsonBlueprint from Json to Optional[Regex in JavaBaseRegex]) =
     JsonBlueprint.intensional(_.as[Optional[Text]].let(Regex(_)))
 
-  given array: ("array" is Structural[List] in JsonBlueprint from Json) = _.as[List[Json]].map(_)
-
+  given array: ("array" is Structural[List] in JsonBlueprint from Json) =
+    JsonBlueprint.structural
+      ( [value] => (json: Json, make: Json => value) => json.as[List[Json]].map(make) )
 
   given optionalArray
   :   ("array?" is Structural[[element] =>> Optional[List[element]]] in JsonBlueprint from Json) =
 
-    (value, make) => value.as[List[Json]].map(make)
-
+    JsonBlueprint.structural
+      ( [value] => (json: Json, make: Json => value) => json.as[List[Json]].map(make) )
 
   given module: ("object" is Structural[[Type] =>> Type] in JsonBlueprint from Json) =
-    (value, make) => make(value)
-
+    JsonBlueprint.structural([value] => (json: Json, make: Json => value) => make(json))
 
   given optionalModule
   :   ("object?" is Structural[[value] =>> Optional[value]] in JsonBlueprint from Json) =
 
-    (value, make) => make(value)
+    JsonBlueprint.structural([value] => (json: Json, make: Json => value) => make(json))
 
 
   given pattern: ("pattern" is Intensional):
@@ -334,6 +334,33 @@ object JsonBlueprint:
     def access: Text => Json => Any = access0
 
 
+  // `Structural.transform` is polymorphic, so an instance cannot be a lambda; this takes the
+  // polymorphic function instead.
+  def structural[name <: Label, constructor[_]]
+    ( lambda: [value] => (Json, Json => value) => constructor[value] )
+  :   name is Structural[constructor] in JsonBlueprint from Json =
+
+    new Structural[constructor]:
+      type Self = name
+      type Origin = Json
+      type Form = JsonBlueprint
+
+      def transform[value](json: Json, make: Json => value): constructor[value] =
+        lambda(json, make)
+
+  // The properties of a schema object, in document order, which a named tuple's elements
+  // follow. Decoding to a `Map` would lose the order.
+  def entries(json: Json): List[(Text, Property)] =
+    val root = json.root
+    val builder = scala.collection.mutable.ListBuffer.empty[(Text, Property)]
+    var index = 0
+
+    while index < root.objectSize do
+      builder += root.objectKey(index).tt -> Json.ast(root.objectValue(index)).as[Property]
+      index += 1
+
+    builder.toList.to(List)
+
   def intensional[name <: Label, value](accessor: Json => value)
   :   name is Intensional in JsonBlueprint from Json to value =
 
@@ -349,8 +376,8 @@ object JsonBlueprint:
 
   case class Property
     ( `type`:     Text,
-      properties: Optional[Map[Text, Json]],
-      items:      Optional[Map[Text, Json]],
+      properties: Optional[Json],
+      items:      Optional[Json],
       required:   Optional[List[Text]],
       minimum:    Optional[Int],
       maximum:    Optional[Int],
@@ -361,17 +388,13 @@ object JsonBlueprint:
 
     // `remap` is the entry-wise map: a `Map`'s own `map` maps values, and the key is needed to
     // decide whether the field is required.
-    def arrayFields =
-      val fields: Optional[Map[Text, Member]] = items.let: entries =>
-        entries.remap: (key, value) => key -> value.as[Property].field(requiredFields.has(key))
+    def arrayFields: List[(Text, Member)] =
+      items.let(JsonBlueprint.entries(_)).or(panic(m"Some items were missing")).map:
+        case (key, property) => key -> property.field(requiredFields.has(key))
 
-      fields.or(panic(m"Some items were missing"))
-
-    def objectFields =
-      val fields: Optional[Map[Text, Member]] = properties.let: entries =>
-        entries.remap: (key, value) => key -> value.as[Property].field(requiredFields.has(key))
-
-      fields.or(panic(m"Some properties were missing"))
+    def objectFields: List[(Text, Member)] =
+      properties.let(JsonBlueprint.entries(_)).or(panic(m"Some properties were missing")).map:
+        case (key, property) => key -> property.field(requiredFields.has(key))
 
     def field(required: Boolean): Member = `type` match
       case "array"  => Member.Record(if required then "array" else "array?", arrayFields)
@@ -397,13 +420,13 @@ object JsonBlueprint:
       `$id`:      Text,
       title:      Text,
       `type`:     Text,
-      properties: Map[Text, JsonBlueprint.Property],
+      properties: Json,
       required:   Optional[List[Text]] ):
 
     lazy val requiredFields: Set[Text] = required.or(Nil).to[Set]
 
-    def fields: Map[Text, Member] =
-      properties.remap: (key, value) => key -> value.field(requiredFields.has(key))
+    def fields: List[(Text, Member)] = JsonBlueprint.entries(properties).map:
+      case (key, property) => key -> property.field(requiredFields.has(key))
 
   // JsonBlueprintError → JsonBlueprint.Error
   object Error:
@@ -436,4 +459,4 @@ abstract class JsonBlueprint(val doc: JsonBlueprint.Doc) extends Specification:
 
   def access(name: Text, json: Json): Json = json(name)
   def build(data: Json, access: Text => Json => Any): Record = JsonBlueprint.record(data, access)
-  def fields: Map[Text, Member] = unsafely(doc.fields)
+  def fields: List[(Text, Member)] = unsafely(doc.fields)

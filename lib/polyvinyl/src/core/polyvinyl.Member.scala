@@ -34,6 +34,9 @@ package polyvinyl
 
 import anticipation.*
 
+// A specification's description of one field. `fieldType` is the label by which the field's
+// `Intensional` (for a `Value`) or `Structural` (for a `Record`) instance is found. A `Record`'s
+// fields are ordered, because a named tuple's elements follow the specification's order.
 enum Member:
   case Value(fieldType: Text, params: Text*)
-  case Record(fieldType: Text, map: Map[Text, Member])
+  case Record(fieldType: Text, fields: List[(Text, Member)])

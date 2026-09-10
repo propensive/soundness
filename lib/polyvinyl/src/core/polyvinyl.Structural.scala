@@ -34,7 +34,11 @@ package polyvinyl
 
 import prepositional.*
 
+// How a container-shaped member (a nested object, an array) is read: `make` turns each element's
+// origin value into the nested record or named tuple, and the instance places the results in the
+// container. It is polymorphic in the element type because one instance serves both records and
+// named tuples, so it cannot be written as a lambda.
 trait Structural[constructor[_]] extends Original, Formal:
   type Self <: Label
 
-  def transform(data: Origin, make: Origin => Record): constructor[Record]
+  def transform[value](data: Origin, make: Origin => value): constructor[value]

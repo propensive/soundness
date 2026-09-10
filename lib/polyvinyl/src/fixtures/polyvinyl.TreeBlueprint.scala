@@ -60,7 +60,7 @@ object TreeBlueprint:
     TreeBlueprint.intensional(_ != Tree.Absent)
 
   given tree: ("tree" is Intensional in TreeBlueprint from Tree to Tree) =
-    TreeBlueprint.intensional(tree => tree)
+    TreeBlueprint.intensional: tree => tree
 
   // Returns the member's parameters verbatim, to show that they reach the instance
   given params: ("params" is Intensional in TreeBlueprint from Tree to List[Text]) =
@@ -73,7 +73,7 @@ object TreeBlueprint:
       def transform(tree: Tree, params: List[Text]): List[Text] = params
 
   given counted: ("counted" is Intensional in TreeBlueprint from Tree to Int) =
-    TreeBlueprint.intensional(tree => evaluations.incrementAndGet())
+    TreeBlueprint.intensional: tree => evaluations.incrementAndGet()
 
   given node: ("node" is Structural[[value] =>> value] in TreeBlueprint from Tree) =
     new Structural[[value] =>> value]:
@@ -81,7 +81,7 @@ object TreeBlueprint:
       type Origin = Tree
       type Form = TreeBlueprint
 
-      def transform(tree: Tree, make: Tree => Record): Record = make(tree)
+      def transform[value](tree: Tree, make: Tree => value): value = make(tree)
 
   given items: ("items" is Structural[List] in TreeBlueprint from Tree) =
     new Structural[List]:
@@ -89,7 +89,7 @@ object TreeBlueprint:
       type Origin = Tree
       type Form = TreeBlueprint
 
-      def transform(tree: Tree, make: Tree => Record): List[Record] = tree match
+      def transform[value](tree: Tree, make: Tree => value): List[value] = tree match
         case Tree.Items(items) => items.map(make)
         case _                 => List()
 
@@ -97,6 +97,7 @@ object TreeBlueprint:
   // instance itself a capability, which its pure self type forbids.
   def intensional[name <: Label, value](accessor: Tree -> value)
   :   name is Intensional in TreeBlueprint from Tree to value =
+
     new Intensional:
       type Self = name
       type Origin = Tree
@@ -110,12 +111,12 @@ object TreeBlueprint:
     val data: Tree = data0
     def access: Text -> Tree -> Any = access0
 
-abstract class TreeBlueprint(val fields: Map[Text, Member]) extends Specification:
+abstract class TreeBlueprint(val fields: List[(Text, Member)]) extends Specification:
   type Origin = Tree
   type Form = TreeBlueprint
 
   def access(name: Text, tree: Tree): Tree = tree match
     case Tree.Node(children) if Map.defines(children, name) => Map.at(children, name)
-    case _                                                   => Tree.Absent
+    case _                                                  => Tree.Absent
 
   def build(data: Tree, access: Text -> Tree -> Any): Record = TreeBlueprint.record(data, access)

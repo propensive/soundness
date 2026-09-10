@@ -614,6 +614,11 @@ Constraints in the schema are enforced as the values are read: a value failing a
 `maximum` raises a bounds error. The shape of the data is taken from the schema and
 checked by the compiler, without a Scala type mirroring it.
 
+A blueprint can equally produce a named tuple, `(name: Text, children: List[(weight:
+Double)])`, whose elements are all read when it is built, by declaring a `tuple` method
+beside `record`; the [records](records.md) tutorial describes both forms and how they
+differ.
+
 ### Dates and times
 
 Importing the time integration teaches Soundness to encode and decode the temporal

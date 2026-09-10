@@ -140,18 +140,18 @@ object TelBlueprint:
   // Walk a Tels.Struct to produce the polyvinyl `Member` map. Each
   // Field at the top level contributes one entry whose `fieldType`
   // names the Intensional instance to look up.
-  def fieldsOf(struct: Tels.Struct, schema: Tels): Map[Text, Member] =
-    val builder = scala.collection.mutable.LinkedHashMap.empty[Text, Member]
+  def fieldsOf(struct: Tels.Struct, schema: Tels): List[(Text, Member)] =
+    val builder = scala.collection.mutable.ListBuffer.empty[(Text, Member)]
     var i = 0
 
     while i < struct.members.length do
       struct.members.readable(i) match
-        case f: Tels.Field => builder(f.keyword) = memberOf(f, schema)
+        case f: Tels.Field => builder += f.keyword -> memberOf(f, schema)
         case _             => ()
 
       i += 1
 
-    builder.toMap.to(Map)
+    builder.toList.to(List)
 
   // Map a single Tels.Field to its polyvinyl Member representation.
   // Scalar / Flag / Reference types are translated to a Value member
@@ -187,7 +187,7 @@ abstract class TelBlueprint(val tels: Tels) extends Specification:
   type Origin = Tel
   type Form = TelBlueprint
 
-  def fields: Map[Text, Member] = TelBlueprint.fieldsOf(tels.document, tels)
+  def fields: List[(Text, Member)] = TelBlueprint.fieldsOf(tels.document, tels)
 
   def access(name: Text, tel: Tel): Tel = tel.field(name).or(Tel.empty)
 
