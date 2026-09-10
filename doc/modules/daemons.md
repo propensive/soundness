@@ -129,11 +129,12 @@ def configure(): Unit = cli[Message]:
 
 ### Packaging
 
-Running the application's JAR with `-Dbuild.executable` assembles the distributable: the platform's
-native launcher stub with the application embedded, as one executable file:
+The distributable is assembled by the `xeq` builder script, published with the runner stubs from
+[propensive/xeq](https://github.com/propensive/xeq). It joins the platform's native launcher stub,
+a small configuration record and the application JAR into one executable file:
 
 ```sh
-java -Dbuild.executable=mytool -jar mytool.jar
+xeq build --jar mytool.jar --out mytool
 ```
 
 The launcher finds or fetches a suitable JVM, starts the daemon when none is running, and — where a
@@ -161,14 +162,13 @@ Each release is then built and signed in two steps. The build bakes in the publi
 identifier:
 
 ```sh
-java -Dbuild.executable=dist/myapp \
-     -Dbuild.id=42 \
-     -Dethereal.publicKey=release-keys/myapp.pub \
-     -jar dist/myapp.jar
+xeq build --jar dist/myapp.jar --out dist/myapp \
+     --build-id 42 \
+     --public-key release-keys/myapp.pub
 ```
 
-`build.id` must increase monotonically; the verifier compares it against the running launcher's
-own and rejects downgrades. Omitting `ethereal.publicKey` leaves the key slot zeroed, producing a
+`--build-id` must increase monotonically; the verifier compares it against the running launcher's
+own and rejects downgrades. Omitting `--public-key` leaves the key slot zeroed, producing a
 binary whose launcher rejects *every* upgrade — the right default for a local build where the
 upgrade path is never exercised. Signing then produces the file to distribute:
 

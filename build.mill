@@ -341,6 +341,35 @@ object toolchain extends Module:
 // The Consequent Style checker, which supersedes the in-repo `decorum` plugin. It links against
 // compiler internals, so it is published per *exact* compiler version (the `CrossVersion.full`
 // convention); no artifact exists for the fork, so the coordinate is pinned to the stock
+// Fetches the pinned `xeq` builder script from the `propensive/xeq` GitHub release named in
+// `etc/xeq.tsv`, verifies it against the recorded SHA-256, caches it outside `out/`, and returns
+// its path. `xeq` is the single implementation of the ETHRCFG executable format; the Soundness
+// build shells out to it (example/demo packaging, and `exoskeleton.Enclave` at test time) rather
+// than carrying its own copy. Override with the `XEQ` environment variable for a local build.
+object xeqRelease extends Module:
+  def script(root: os.Path): os.Path =
+    sys.env.get("XEQ").map(os.Path(_)).getOrElse:
+      val pin = root / "etc" / "xeq.tsv"
+      val rows = os.read.lines(pin).map(_.split("\t", 2)).collect { case Array(k, v) => k -> v }.toMap
+      val version = rows.getOrElse("version", throw new Exception(s"no `version` in $pin"))
+      val want = rows.getOrElse("xeq", throw new Exception(s"no `xeq` hash in $pin"))
+      val dir = os.home / ".cache" / "soundness" / "xeq" / version
+      val path = dir / "xeq"
+      def sha(f: os.Path) = java.security.MessageDigest.getInstance("SHA-256")
+        .digest(os.read.bytes(f)).map("%02x".format(_)).mkString
+      if !(os.exists(path) && sha(path) == want) then
+        os.makeDir.all(dir)
+        val url = s"https://github.com/propensive/xeq/releases/download/xeq-$version/xeq"
+        val tmp = dir / "xeq.part"
+        os.proc("curl", "-fsSL", "-o", tmp.toString, url).call()
+        val got = sha(tmp)
+        if got != want then
+          os.remove(tmp)
+          throw new Exception(s"xeq SHA-256 mismatch (expected $want, got $got)")
+        os.move.over(tmp, path)
+      os.perms.set(path, "rwxr-xr-x")
+      path
+
 // `3.9.0-RC4` the fork is built from rather than derived from `settings.scalaVersion`. Resolved
 // intransitively for the same reason as `nscplugin` below: `-Xplugin:` rejects a non-plugin jar,
 // so exactly one must come back. `dev.propensive` artifacts published with `mill publishLocal`
@@ -834,7 +863,7 @@ object soundness extends Toolchain:
     surveillance.core, punctuation.ansi, hallucination.ansi, hallucination.canvas,
     hallucination.bmp, hallucination.gif, hallucination.jpeg, hallucination.png,
     hallucination.webp, hallucination.formats,
-    ziggurat.core, ziggurat.packager, tessellate.core,
+    tessellate.core,
     ultimatum.core, ultimatum.gauges, ultimatum.tables, xenophile.native, exoskeleton.args,
     exoskeleton.core, exoskeleton.manpage, virility.core):
     def summary = "Command-line applications: terminals, shells, files and processes"
@@ -870,7 +899,7 @@ object soundness extends Toolchain:
     anthology.lira,
     anthology.`scala`, exegesis.core, espionage.core, hellenism.jvm, delicious.core,
     delicious.`scala`, delicious.compiler, harlequin.compiler,
-    delicious.ansi, anthology.kotlin, anthology.oci, anthology.xeq, hyperbole.stacks,
+    delicious.ansi, anthology.kotlin, anthology.oci, hyperbole.stacks,
     vivisection.core, vivisection.eval, vivisection.dap):
     def summary = "Developer tools: compilers, build tooling, source analysis and version control"
 
@@ -1241,16 +1270,9 @@ object anthology extends Library:
     override def scalaJs = false // packages linked components (drives the Scala.js linker)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  // Packs an executable JAR as a self-contained command-line distributable: ethereal's reusable
-  // runner stubs and ziggurat's polyglot installer/launcher scripts, reached through the
-  // toolchain's `Jar` to `Xeq` edges.
-  object xeq extends Component(linker, ziggurat.packager):
-    override def scalaJs = false // native packaging (ethereal runners, telekinesis downloads)
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   object test
   extends Tests
-    ( `scala`, `java`, kotlin, core, linker, link, nir, dex, apk, oci, xeq, spectacular.core ):
+    ( `scala`, `java`, kotlin, core, linker, link, nir, dex, apk, oci, spectacular.core ):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -1872,17 +1894,6 @@ object ethereal extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-    // The platforms the reusable native runner stubs target — (label, binary filename).
-    // The stubs are built and published independently of this build (see `make
-    // runners-build` / `make runners-release`); the Soundness build never compiles them,
-    // and they are not embedded in any JAR.
-    val runnerTargets: Seq[(String, String)] = Seq(
-      ("windows-x64",   "runner.exe"),
-      ("linux-x64",     "runner"),
-      ("linux-arm64",   "runner"),
-      ("macos-x64",     "runner"),
-      ("macos-arm64",   "runner"))
-
   object example extends Internal(core, exoskeleton.completions):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
@@ -1892,65 +1903,27 @@ object ethereal extends Library:
     // (`ethereal.run` and `ethereal.fixture`).
     override def mainClass: Task.Simple[Option[String]] = Some("ethereal.run")
 
-    // The reusable runner stubs are read from `dist/runners` (the output of
-    // `make runners-build` or `make runners-fetch`); run one of those first.
-    def runnersDir = moduleDir / ".." / ".." / ".." / ".." / "dist" / "runners"
-
+    // Package the example around a runner stub with the published `xeq` builder script
+    // (fetched and pinned by `xeqRelease`), exactly as a shell user runs `xeq embed-all`. The
+    // script fetches the stubs it needs from the `xeq-<version>` release.
     def bin(): Command[PathRef] = Task.Command:
       val jar = assembly().path
       val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "hello"
       os.makeDir.all(target / os.up)
-
-      val runnersBase = runnersDir
-      if !os.exists(runnersBase)
-      then throw new Exception(s"$runnersBase not found — run `make runners-build` first")
-
-      val staging = Task.dest / "staging"
-      os.makeDir.all(staging)
-
-      core.runnerTargets.foreach: (label, binary) =>
-        val ext = if binary.endsWith(".exe") then ".exe" else ""
-        val src = runnersBase / s"runner-$label$ext"
-        os.copy.over(src, staging / s"runner-$label$ext")
-
-      os.copy.over(jar, staging / "data")
-
-      val classpath = ziggurat.core.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
-      os.proc("java", "-cp", classpath, "ziggurat.Xeq", "installer", target.toString, staging.toString)
+      os.proc(xeqRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "embed-all", "--jar", jar.toString, "--out", target.toString)
         .call(stdout = os.Inherit, stderr = os.Inherit)
-
       new java.io.File(target.toString).setExecutable(true)
       PathRef(target)
 
-    // The download-on-demand counterpart of `bin()`. Nothing app-specific is published:
-    // the bare reusable stubs are already released as `runners-<runnersVersion>` (see
-    // `make runners-release`). This embeds the application JAR once and emits a launcher
-    // that, on first run, downloads the one stub it needs from that release, verifies it
-    // against the committed `etc/runners/<runnersVersion>.tsv` manifest, appends the
-    // embedded JAR, and execs. Output: `./dist/hello`.
-    def distributable(runnersVersion: String): Command[PathRef] = Task.Command:
+    // The download-on-demand counterpart of `bin()`: `xeq download` embeds the JAR once and
+    // emits a launcher that fetches the one stub it needs at first run. Output: `./dist/hello`.
+    def distributable(): Command[PathRef] = Task.Command:
       val jar = assembly().path
-
-      val manifest =
-        moduleDir / ".." / ".." / ".." / ".." / "etc" / "runners" / s"$runnersVersion.tsv"
-
-      if !os.exists(manifest) then throw new Exception(
-        s"$manifest not found — run `make runners-release RUNNERS_VERSION=$runnersVersion` first")
-
       val dist = moduleDir / ".." / ".." / ".." / ".." / "dist"
       os.makeDir.all(dist)
       os.remove.all(dist / "hello")
-
-      val base =
-        s"https://github.com/propensive/soundness/releases/download/runners-$runnersVersion"
-
-      val classpath =
-        ziggurat.core.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
-
-      os.proc("java", "-cp", classpath, "ziggurat.Xeq", "onlinelauncher",
-          (dist / "hello").toString, jar.toString, manifest.toString, base)
+      os.proc(xeqRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "download", "--jar", jar.toString, "--out", (dist / "hello").toString)
         .call(stdout = os.Inherit, stderr = os.Inherit)
-
       PathRef(dist / "hello")
 
   object test extends Tests(core, exoskeleton.rig, quantitative.units):
@@ -3233,33 +3206,15 @@ object ultimatum extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
     override def mainClass: Task.Simple[Option[String]] = Some("ultimatum.demo")
 
-    // Build the demo as a self-contained Ethereal application: stage each
-    // platform's runner alongside the assembled JAR (as `data`) and let the
-    // ziggurat installer fuse the right runner with the JAR into `bin/demo`.
+    // Build the demo as a self-contained Ethereal application with the published `xeq`
+    // builder script (fetched and pinned by `xeqRelease`): `xeq embed-all` fuses the right
+    // runner and the JAR into `bin/demo`.
     def bin(): Command[PathRef] = Task.Command:
       val jar = assembly().path
       val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "demo"
       os.makeDir.all(target / os.up)
-
-      val runnersBase = moduleDir / ".." / ".." / ".." / ".." / "dist" / "runners"
-      if !os.exists(runnersBase)
-      then throw new Exception(s"$runnersBase not found — run `make runners-build` first")
-
-      val staging = Task.dest / "staging"
-      os.makeDir.all(staging)
-
-      ethereal.core.runnerTargets.foreach: (label, binary) =>
-        val ext = if binary.endsWith(".exe") then ".exe" else ""
-        os.copy.over(runnersBase / s"runner-$label$ext", staging / s"runner-$label$ext")
-
-      os.copy.over(jar, staging / "data")
-
-      val classpath =
-        ziggurat.core.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
-
-      os.proc("java", "-cp", classpath, "ziggurat.Xeq", "installer", target.toString, staging.toString)
+      os.proc(xeqRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "embed-all", "--jar", jar.toString, "--out", target.toString)
         .call(stdout = os.Inherit, stderr = os.Inherit)
-
       new java.io.File(target.toString).setExecutable(true)
       PathRef(target)
   object test extends Tests(core, gauges, tables):
@@ -3533,23 +3488,6 @@ object zeppelin extends Library:
       mvn"io.bullet::borer-derivation:1.16.1"
     )
 
-object ziggurat extends Library:
-  object core
-      extends Component(hellenism.core, monotonous.core, turbulence.core, pneumatic.flate,
-                       galilei.jvm):
-    override def scalaJs = false // JAR/zip packaging; `hellenism`, `galilei`
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object packager
-      extends Component(core, gastronomy.core, galilei.jvm, eucalyptus.core, ethereal.core,
-                       telekinesis.jvm):
-    override def scalaJs = false // native packaging; `guillotine`/`galilei`/`ethereal` (JVM)
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, packager):
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions())
-
 // Every top-level Library declared above must appear here exactly once. The
 // `groupCheck.validate` task verifies this list against the on-disk `lib/*/src`
 // directories.
@@ -3580,7 +3518,7 @@ val allLibraries: Seq[Library] = Seq(
   ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, virility,
   vivisection,
   wisteria, xenophile, xylophone,
-  yossarian, ypsiloid, zephyrine, zeppelin, ziggurat
+  yossarian, ypsiloid, zephyrine, zeppelin
 )
 
 // Every Scala.js-capable component's `js` cross-module — the module deps of `soundness.js`.
