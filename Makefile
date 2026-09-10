@@ -7,7 +7,7 @@ publishLocal:
 # (test ids, name globs, axis constraints such as `N<=64`).
 test:
 	./mill test.assembly
-	fume run $(TESTS)
+	fume run -c out/test/assembly.dest/out.jar $(TESTS)
 
 test.%:
 	./mill clean $*.test
@@ -44,7 +44,7 @@ dev:
 	./mill -w soundness.all
 
 ci:
-	fume run
+	fume run -c out/test/assembly.dest/out.jar
 
 wasm-e2e:
 	./etc/ci/wasm-e2e.sh
