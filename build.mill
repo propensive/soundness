@@ -2695,9 +2695,15 @@ object polyvinyl extends Library:
   object core extends Component(fulminate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  // Test fixtures: `Specification`s whose `record` macros must be compiled before the call sites
+  // in `test`, because the macro evaluates the specification object at expansion time.
+  object fixtures extends Internal(core, gossamer.core):
     override def scalacOptions = Task:
-      settings.sep(super.scalacOptions())
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // Not capture-checked, like every other consumer of records (`jacinta.test`, `stratiform.test`):
+  // under capture checking, selecting a `Text` member of a refined `Record` is rejected with
+  // `Found: Text, Required: Text^'s1`, even against an explicit `Text` annotation.
+  object test extends Tests(fixtures)
 
 // Proof of concept: a typeclass whose methods are macro-time code generators
 // (`Expr` in, `Expr` out), with instances evaluated at expansion time — by
