@@ -749,9 +749,12 @@ enum Syntax:
     case Declaration(method, syntaxes, result) =>
       s"${joined(syntaxes.map(_.text))}${if method then ": " else ""}${result.text}".tt
 
+    // An infix alias is written infix when it can be written unqualified: its parent is
+    // imported, or it is reachable by its leaf through an export.
     case Application(left, elements, infix) =>
       left match
-        case Simple(Designator.Type(parent, name)) if infix && imports.has(parent) =>
+        case Simple(Designator.Type(parent, name))
+        if infix && (imports.has(parent) || imports.hasDirect(Designator.Type(parent, name))) =>
           elements match
             case List(first, second) => Infix(first, name, second).text
             case _ => left.text+joined(elements.map(_.text), ", ", "[", "]").tt
@@ -759,10 +762,27 @@ enum Syntax:
         case _ =>
           left.text+joined(elements.map(_.text), ", ", "[", "]").tt
 
+    // A refinement of type members which are each aliased by an infix type alias in scope
+    // (`imports.aliases`, harvested by `Imports.resolve`) is written with those aliases:
+    // `Foo { type Form = Bar }` as `Foo in Bar`. A bounded member is not what an alias
+    // expands to, so any such member keeps the whole refinement in its written form. This is
+    // the render-time counterpart of the alias preference applied when a `Syntax` is built
+    // inside a macro, for a `Syntax` built elsewhere and rendered against a scope.
     case Structural(base, members, defs) =>
-      val members2: List[Text] = members.remap: (name, syntax) => s"type $name = ${syntax.text}".tt
-      val defs2: List[Text] = defs.remap: (name, syntax) => s"def $name${syntax.text}".tt
-      s"${base.text} { ${joined(members2 + defs2, "; ")} }".tt
+      val entries = members.stdlib.toList
+
+      val aliased: Boolean =
+        defs.stdlib.isEmpty && entries.nonEmpty && entries.forall: (name, syntax) =>
+          imports.aliases.contains(name.s) && (syntax match
+            case Declaration(_, _, _) => false
+            case _                    => true)
+
+      if aliased then
+        entries.foldLeft(base) { case (left, (name, syntax)) => Infix(left, imports.aliases(name.s), syntax) }.text
+      else
+        val members2: List[Text] = members.remap: (name, syntax) => s"type $name = ${syntax.text}".tt
+        val defs2: List[Text] = defs.remap: (name, syntax) => s"def $name${syntax.text}".tt
+        s"${base.text} { ${joined(members2 + defs2, "; ")} }".tt
 
     case Infix(left: Syntax, middle, right: Syntax) =>
       val left2 = if left.precedence < precedence then Sequence('(', List(left)) else left
