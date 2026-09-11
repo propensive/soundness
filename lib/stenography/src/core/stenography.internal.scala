@@ -160,13 +160,29 @@ object internal:
     import dotty.tools.dotc.core.Types
     import quotes.reflect.TypeRepr
 
+    // A re-export's target, when the forwarder is a plain renaming of it: a simple alias of a
+    // `TypeRef`, or a polymorphic one whose body applies a `TypeRef` to exactly its own
+    // parameters in order (an exported `infix type on[a, b]`, say). Other polymorphic aliases
+    // (tuple types, `Some`, `<:<`, …) reshape their parameters, so their target is not
+    // reachable by the forwarder's leaf, and they are skipped.
+    def target(tpe: Types.Type): Option[Types.TypeRef] = tpe match
+      case ref: Types.TypeRef => Some(ref)
+
+      case lambda: Types.HKTypeLambda => lambda.resType match
+        case Types.AppliedType(ref: Types.TypeRef, arguments)
+        if arguments.length == lambda.paramNames.length
+           && arguments.zipWithIndex.forall:
+                case (param: Types.TypeParamRef, index) => param.binder == lambda && param.paramNum == index
+                case _                                  => false
+        => Some(ref)
+
+        case _ => None
+
+      case _ => None
+
     decl.info match
-      // Only simple (non-polymorphic) alias targets can shorten to a name. Polymorphic
-      // re-exports (tuple types, `Some`, `<:<`, …) carry `TypeParamRef`s that `Syntax`
-      // cannot render — matching only `TypeRef` skips them instead of crashing. This path
-      // is now exercised by proscenium's prelude re-exports of the primitives.
-      case alias: Types.TypeAlias => alias.alias match
-        case ref: Types.TypeRef =>
+      case alias: Types.TypeAlias => target(alias.alias) match
+        case Some(ref) =>
           Syntax(ref.asInstanceOf[TypeRepr]) match
             // Add both forms so the same import path can shorten references
             // to either the type itself or its companion (e.g. `Textual` and
@@ -174,7 +190,7 @@ object internal:
             case Syntax.Simple(designator) => List(designator, designator.companionObject)
             case _                         => Nil
 
-        case _ =>
+        case None =>
           Nil
 
       case _ =>

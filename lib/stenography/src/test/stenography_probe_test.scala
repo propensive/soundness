@@ -40,3 +40,10 @@ import soundness.*
 object Probe:
   def exportedName: Text = Syntax.name[stenography.Syntax]
   def companionName: Text = Syntax.name[stenography.Syntax.type]
+
+  // `on` reaches this scope only through `soundness`'s re-export of `prepositional.on`, so
+  // its infix alias must be recognised through the forwarder, both when the alias is written
+  // (and kept by the compiler) and when the refinement it expands to is met.
+  trait Planar { type Plane }
+  def infixExportName: Text = Syntax.name[Planar on Int]
+  def refinedExportName: Text = Syntax.name[Planar { type Plane = Int }]

@@ -173,6 +173,20 @@ object Tests extends Suite(m"Stenography Tests"):
       stenographyProbe.Probe.companionName
     . assert(_ == t"Syntax.type")
 
+    test(m"Write an infix alias reached through a re-export infix, by its leaf"):
+      stenographyProbe.Probe.infixExportName
+    . assert(_ == t"Probe.Planar on Int")
+
+    test(m"Prefer an infix alias reached through a re-export over the refinement"):
+      stenographyProbe.Probe.refinedExportName
+    . assert(_ == t"Probe.Planar on Int")
+
+    test(m"Prefer an infix alias at render time, from the imports' aliases"):
+      val refined: Syntax =
+        Syntax.Structural(Syntax.Simple(Designator("Addable")), Ledger((t"Operand", Syntax.Simple(Designator("Int")))), Ledger())
+      refined.text(using Imports(scala.collection.immutable.Set(), scala.collection.immutable.Set(), scala.collection.immutable.Map("Operand" -> t"by")))
+    . assert(_ == t"Addable by Int")
+
     test(m"Show typeclass type"):
       Syntax.name[Addable by Int to Double]
     . assert(_ == t"Addable by Int to Double")
