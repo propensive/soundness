@@ -68,3 +68,28 @@ format. Entries are grouped by module, most-recently-added last within a module.
   yields `t"(t\"Simon\" ╱ 72)"`, and `EmptyTuple.inspect` still yields `t"()"`). A value whose
   static type is a bare `Tuple`, whose element types cannot be walked, renders as its `toString` in
   the `“…”` marker, as before. (#1975)
+
+## stenography
+
+- `stenography.Imports` gained a third parameter, `aliases: scala.collection.immutable.Map[String,
+  Text] = Map()`, mapping a refined type member's name to the infix type alias which refines
+  it. `Imports.resolve(designators, direct)` now fills it from every wildcard scope in
+  `designators`; `Imports(designators, direct)` written directly leaves it empty. New:
+  `Imports.infixAliases(scope: Designator)(using Context): Map[String, Text]`, the harvest for
+  one scope. (#1979)
+- `stenography.Syntax#text(using Imports)` now writes `Syntax.Structural(base, members, defs)`
+  as nested `Infix` applications when `defs` is empty and every member of `members` is a plain
+  alias (not a `Syntax.Declaration`) whose name is in `imports.aliases`: `Foo { type Form =
+  Bar }` renders as `Foo in Bar` under an `Imports` resolved against a scope declaring `infix
+  type in [refined, form] = refined { type Form = form }`. Previously this preference applied
+  only to a `Syntax` built inside a macro (`Syntax.name`), and `text` always wrote the
+  refinement. (#1979)
+- `stenography.Syntax#text(using Imports)` now writes `Syntax.Application(Simple(Type(parent,
+  name)), List(a, b), infix = true)` as `a name b` when `imports.hasDirect(Type(parent, name))`,
+  in addition to when `imports.has(parent)`. Previously such an alias reached only through an
+  `export` rendered as `parent.name[a, b]`. (#1979)
+- `stenography.Imports.exports(scope)` (and so `resolve`) now includes the target of a
+  polymorphic exported type alias whose body applies a `TypeRef` to exactly the alias's own
+  parameters in order (an `export prepositional.on` forwarder), so that target renders by its
+  leaf name under a wildcard import of `scope`. Previously only monomorphic aliases counted.
+  (#1979)
