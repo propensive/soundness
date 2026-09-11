@@ -79,6 +79,11 @@ package spinners:
   given brailleGrowSpinner: Gauging => Fraction is Gaugeable =
     Spinner.each(t"⠋⠙⠚⠞⠖⠦⠴⠲⠳⠓", 80, Unicode, line).gaugeable
 
+  // A ring of six dots with a two-dot gap chasing round it: eight frames, and a fuller cell than
+  // the dots.
+  given brailleRingSpinner: Gauging => Fraction is Gaugeable =
+    Spinner.each(t"⣸⢹⠻⠟⡏⣇⣦⣴", 80, Unicode, line).gaugeable
+
   // Circles, arcs and quadrants.
   given arcSpinner: Gauging => Fraction is Gaugeable = arc.gaugeable
   given circleQuadrantSpinner: Gauging => Fraction is Gaugeable = quadrant.gaugeable
