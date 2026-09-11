@@ -44,6 +44,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
 
 - `TelBlueprint.fieldsOf` returns `List[(Text, Member)]` in schema order, not `Map[Text,
   Member]`; `TelBlueprint.fields` likewise. (#1974)
+- `stratiform.Tel` serialization (`Tel.Document is Showable`, `Tel is Showable`): an empty
+  inline atom (a `Tel.Atom.Inline` whose text is empty, as `Tel.scalar(t"")` and the `Text`
+  encoder produce for an empty text) is now written as no atom at all, so a keyword-bearing
+  compound with an empty scalar serializes as the bare keyword (`text`) where it previously
+  wrote the keyword followed by the atom's preceding spaces (`text `). Reading is unchanged:
+  the bare keyword decodes as the empty string, where the previous output was refused as a
+  trailing space. Code comparing serialized documents textually must expect the bare keyword.
+  (#1977)
 
 ## spectacular
 

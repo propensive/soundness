@@ -2710,10 +2710,14 @@ object Tel extends Tel2:
           case atom @ Tel.Atom.Source(_)     => trailingAtom = atom
           case atom @ Tel.Atom.Literal(_, _) => trailingAtom = atom
 
+          // An empty inline atom serializes as no atom at all (a keyword-bearing compound with
+          // no atom reads back as the empty string), so its spacing is not written either: a
+          // trailing space would make the line unparseable.
           case Tel.Atom.Inline(text, precedingSpaces) =>
-            var k = 0
-            while k < precedingSpaces do { line.append(' '); k += 1 }
-            line.append(text.s)
+            if !text.s.isEmpty then
+              var k = 0
+              while k < precedingSpaces do { line.append(' '); k += 1 }
+              line.append(text.s)
 
         compound.remark.let: remark =>
           // Two spaces before the sigil ensure correct re-parsing regardless of whether the
