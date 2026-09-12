@@ -32,7 +32,7 @@
                                                                                                   */
 package tasseomancy
 
-import Cartesian.*
+import Framing.*
 import murmuration.Traversable
 import prepositional.*
 import rudiments.*
@@ -43,26 +43,31 @@ import vacuous.*
 object Scatter:
   case class Fit(abscissa: Scale, ordinate: Scale)
 
+  // A scatter plot's components — markers, error bars and point labels — are the ones every
+  // cartesian chart shares.
+  trait Style extends Chart.Cartesian
+
   given series: [x: {Continuous, Calibration}, y: {Continuous, Calibration}]
-  =>  Series[x, y] is Plottable in Scatter to Scatter.Fit =
+  =>  Series[x, y] is Plottable in Scatter to Scatter.Fit by Scatter.Style =
     plottable[Series[x, y], x, y]: series => List(traceOf(series))
 
   given traversable: [collection, x, y]
   =>  ( traversable: collection is Traversable by Series[x, y] )
   =>  ( continuousX: x is Continuous, calibrationX: x is Calibration )
   =>  ( continuousY: y is Continuous, calibrationY: y is Calibration )
-  =>  collection is Plottable in Scatter to Scatter.Fit =
+  =>  collection is Plottable in Scatter to Scatter.Fit by Scatter.Style =
     plottable[collection, x, y]: collection =>
       List.from(traversable.traverse(collection).map(traceOf(_)))
 
   private def plottable[data, x: {Continuous, Calibration}, y: {Continuous, Calibration}]
     ( traces: data -> List[Trace] )
-  :   data is Plottable in Scatter to Scatter.Fit =
+  :   data is Plottable in Scatter to Scatter.Fit by Scatter.Style =
 
     new Plottable:
       type Self = data
       type Form = Scatter
       type Result = Scatter.Fit
+      type Operand = Scatter.Style
 
       def fit(form: Scatter, data: data): Scatter.Fit =
         val (abscissa, ordinate) =
@@ -74,12 +79,12 @@ object Scatter:
         Lines.accommodatesTraces(traces(data), fit.abscissa, fit.ordinate)
 
       def draw(form: Scatter, data: data, fit: Scatter.Fit)
-        ( using style: Chart.Style, palette: ChartPalette, metric: FontMetric )
+        ( using style: Scatter.Style, palette: ChartPalette, metric: FontMetric )
       :   Chart.Drawing =
 
         val all = traces(data)
         val names = all.map(_.name)
-        val layout = Cartesian.layout(fit.abscissa, fit.ordinate, names)
+        val layout = Framing.layout(fit.abscissa, fit.ordinate, names)
         val frame = layout.frame
         var index = 0
 
@@ -89,23 +94,26 @@ object Scatter:
           val figures = trace.data.fold(List[Figure]()): (acc, datum) =>
             val x = frame.x(fit.abscissa.unit(datum.x))
             val y = frame.y(fit.ordinate.unit(datum.y))
-            val marker = Circle(point(x, y), style.markerRadius.toFloat, style = filled(color))
+            val marker = style.marker(point(x, y), color, index)
 
             val errors = datum.bounds.lay(Nil): (low, high) =>
               val top = frame.y(fit.ordinate.unit(high))
               val bottom = frame.y(fit.ordinate.unit(low))
-              errorBar(x, top, bottom, style.markerRadius)
+              style.errorBar(x, top, bottom, style.markerRadius, palette.axis)
 
-            errors.reverse + (marker :: acc)
+            val at = point(x, y)
+            val note = datum.note.lay(Nil): text => style.pointLabel(at, text, palette.text)
+            note.reverse + (errors.reverse + (marker.reverse + acc))
 
           val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
           index += 1
           part
 
         val legend = legendPart(layout.legend, names)
-        Cartesian.drawing(axes(frame, fit.abscissa, fit.ordinate) + seriesParts + legend)
+        Framing.drawing(axes(frame, fit.abscissa, fit.ordinate) + seriesParts + legend)
 
-// A marker per point, in no particular order, with error bars where the values carry intervals.
-// The same fit as a line chart; only the drawing differs.
+// A marker per point, in no particular order, with error bars where the values carry intervals
+// and a label where a point carries a note. The same fit as a line chart; only the drawing
+// differs.
 case class Scatter
   ( abscissa: Optional[Calibration] = Unset, ordinate: Optional[Calibration] = Unset )

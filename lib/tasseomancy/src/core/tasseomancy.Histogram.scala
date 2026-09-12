@@ -32,7 +32,7 @@
                                                                                                   */
 package tasseomancy
 
-import Cartesian.*
+import Framing.*
 import anticipation.*
 import denominative.*
 import gossamer.*
@@ -47,14 +47,17 @@ import vacuous.*
 object Histogram:
   case class Fit(edges: Sequence[Double], abscissa: Scale, ordinate: Scale)
 
+  // A histogram draws the same components as a bar chart.
+  trait Style extends Bars.Style
+
   given samples: [y: {Continuous, Calibration}]
-  =>  Samples[y] is Plottable in Histogram to Histogram.Fit =
+  =>  Samples[y] is Plottable in Histogram to Histogram.Fit by Histogram.Style =
     plottable[Samples[y], y]: samples => List(positions(samples))
 
   given traversable: [collection, y]
   =>  ( traversable: collection is Traversable by Samples[y] )
   =>  ( continuous: y is Continuous, calibration: y is Calibration )
-  =>  collection is Plottable in Histogram to Histogram.Fit =
+  =>  collection is Plottable in Histogram to Histogram.Fit by Histogram.Style =
     plottable[collection, y]: collection =>
       List.from(traversable.traverse(collection).map(positions(_)))
 
@@ -87,12 +90,13 @@ object Histogram:
 
   private def plottable[data, y: {Continuous as continuous, Calibration as calibration}]
     ( extract: data -> List[(Text, Sequence[Double])] )
-  :   data is Plottable in Histogram to Histogram.Fit =
+  :   data is Plottable in Histogram to Histogram.Fit by Histogram.Style =
 
     new Plottable:
       type Self = data
       type Form = Histogram
       type Result = Histogram.Fit
+      type Operand = Histogram.Style
 
       def fit(form: Histogram, data: data): Histogram.Fit =
         val all = extract(data)
@@ -138,12 +142,12 @@ object Histogram:
         within && mostCounted(fit, all).toDouble <= fit.ordinate.upper
 
       def draw(form: Histogram, data: data, fit: Histogram.Fit)
-        ( using style: Chart.Style, palette: ChartPalette, metric: FontMetric )
+        ( using style: Histogram.Style, palette: ChartPalette, metric: FontMetric )
       :   Chart.Drawing =
 
         val all = extract(data)
         val names = all.map(_(0))
-        val layout = Cartesian.layout(fit.abscissa, fit.ordinate, names)
+        val layout = Framing.layout(fit.abscissa, fit.ordinate, names)
         val frame = layout.frame
         val total = countOf(all).max(1)
         val bins = fit.edges.size - 1
@@ -155,7 +159,7 @@ object Histogram:
 
         val seriesParts = all.map: entry =>
           val tally = counts(fit, entry(1))
-          val color = filled(palette.color(index))
+          val color = palette.color(index)
           var bin = 0
           var figures: List[Figure] = Nil
 
@@ -165,8 +169,7 @@ object Histogram:
             if height > 0 then
               val x0 = frame.left + bin*binWidth + (binWidth - groupWidth)/2.0 + index*barWidth
               val y = frame.y(fit.ordinate.unit(height.toDouble))
-              val bar = Rectangle(point(x0, y), barWidth.toFloat, (zero - y).toFloat, style = color)
-              figures = bar :: figures
+              figures = style.bar(point(x0, y), barWidth, zero - y, color, index).reverse + figures
 
             bin += 1
 
@@ -175,7 +178,7 @@ object Histogram:
           part
 
         val legend = legendPart(layout.legend, names)
-        Cartesian.drawing(axes(frame, fit.abscissa, fit.ordinate) + seriesParts + legend)
+        Framing.drawing(axes(frame, fit.abscissa, fit.ordinate) + seriesParts + legend)
 
 // The distribution of samples: the range is cut into equal bins, and a bar per series in each
 // bin counts the samples that fall in it. Without a bin count, Sturges' rule chooses one.

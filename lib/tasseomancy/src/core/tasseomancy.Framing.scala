@@ -35,7 +35,6 @@ package tasseomancy
 import anticipation.*
 import cataclysm.Css
 import denominative.*
-import geodesy.*
 import gossamer.*
 import hypotenuse.*
 import iridescence.*
@@ -45,11 +44,12 @@ import savagery.*
 import symbolism.*
 import vacuous.*
 
-// The layout and axes shared by every chart kind with an abscissa and an ordinate: the plot
-// rectangle after room is taken for labels, titles and the legend; the grid, the two axes with
-// their gradations; the legend itself; and the normalized forms of series that the kinds fit
-// and draw from.
-private[tasseomancy] object Cartesian:
+// The layout shared by every chart kind with an abscissa and an ordinate: the plot rectangle
+// after room is taken for labels, titles and the legend; the grid, the two axes with their
+// gradations; the legend; and the normalized forms of series that the kinds fit and draw from.
+// Every figure is produced by a method of the style in scope, so this decides only where each
+// component goes.
+private[tasseomancy] object Framing:
   case class Frame(left: Double, top: Double, width: Double, height: Double):
     def right: Double = left + width
     def bottom: Double = top + height
@@ -59,14 +59,15 @@ private[tasseomancy] object Cartesian:
   case class Layout(frame: Frame, legend: Optional[Frame])
 
   // A series with numeric axes, and one with a categorical abscissa, reduced to positions.
-  case class Datum(x: Double, y: Double, bounds: Optional[(Double, Double)])
+  case class Datum(x: Double, y: Double, bounds: Optional[(Double, Double)], note: Optional[Text])
   case class Trace(name: Text, data: Sequence[Datum])
   case class Mark(category: Text, y: Double, bounds: Optional[(Double, Double)])
   case class Column(name: Text, marks: Sequence[Mark])
 
   def traceOf[x: Continuous as cx, y: Continuous as cy](series: Series[x, y]): Trace =
     val data = series.points.map: (abscissa, ordinate) =>
-      Datum(cx.position(abscissa), cy.position(ordinate), cy.bounds(ordinate))
+      val note = cx.annotation(abscissa).or(cy.annotation(ordinate))
+      Datum(cx.position(abscissa), cy.position(ordinate), cy.bounds(ordinate), note)
 
     Trace(series.name, data)
 
@@ -128,23 +129,11 @@ private[tasseomancy] object Cartesian:
       ( t"fill" -> t"none", t"stroke" -> hexOf(color), t"stroke-width" -> px(width),
         t"stroke-linejoin" -> t"round", t"stroke-linecap" -> t"round" )
 
-  def font(using style: Chart.Style, palette: ChartPalette): Css.Style =
-    css
-      ( t"font-family" -> style.fontFamily, t"font-size" -> px(style.fontSize),
-        t"fill" -> hexOf(palette.text) )
-
   def textWidth(text: Text)(using metric: FontMetric, style: Chart.Style): Double =
     metric.width(text).value*style.fontSize
 
   def point(x: Double, y: Double): Point = Point(x.toFloat, y.toFloat)
   def seriesId(index: Int): Svg.Id = Svg.Id(t"series-$index")
-
-  private def gap(using style: Chart.Style): Double = style.fontSize*0.4
-  private def lineHeight(using style: Chart.Style): Double = style.fontSize*1.6
-  private def swatch(using style: Chart.Style): Double = style.fontSize
-
-  private def legendWidth(names: List[Text])(using Chart.Style, FontMetric): Double =
-    names.fold(0.0) { (acc, name) => acc.max(textWidth(name)) } + swatch + gap
 
   // An axis's title: the style's, if given, with the axis's unit appended; otherwise the name and
   // unit the axis's type supplies; a categorical axis has neither.
@@ -152,43 +141,53 @@ private[tasseomancy] object Cartesian:
     case scale: Scale => scale.notation.title(supplied)
     case _            => supplied
 
-  // The plot rectangle: the style's size less the insets, the ordinate's labels (measured from
-  // the gradations the full height would allow), the abscissa's labels, any titles and the
-  // legend. A chart without an ordinate (a pie) passes none.
+  private def legendWidth(names: List[Text])(using style: Chart.Style, metric: FontMetric)
+  :   Double =
+
+    names.fold(0.0) { (acc, name) => acc.max(textWidth(name)) } + style.swatchSize + style.gap
+
+  // The plot rectangle: the style's size less the insets, the room each axis's labels need
+  // (which the style reports, from the gradations the full extent would allow), any titles and
+  // the legend. A chart without axes (a pie) passes none.
   def layout(abscissa: Optional[Ruler], ordinate: Optional[Ruler], names: List[Text])
-    ( using style: Chart.Style, metric: FontMetric )
+    ( using style: Chart.Cartesian, metric: FontMetric )
   :   Layout =
 
-    val titleRoom = style.fontSize*1.6
+    import Chart.Axis.*
+
     val entries = countOf(names)
     val showLegend = entries > 0 && style.legend != Chart.Legend.Hidden
     val rightLegend = showLegend && style.legend == Chart.Legend.Right
     val bottomLegend = showLegend && style.legend == Chart.Legend.Bottom
-
-    val labelWidth = ordinate.lay(0.0): ruler =>
-      val budget = (style.height/style.pitch).toInt.max(2)
-      ruler.gradations(budget).fold(0.0): (acc, gradation) => acc.max(textWidth(gradation.label))
-
-    val axisRoom = ordinate.lay(0.0) { _ => gap + style.tickLength }
     val ordinateTitle = ordinate.let(title(_, style.ordinateTitle)).or(style.ordinateTitle)
     val abscissaTitle = abscissa.let(title(_, style.abscissaTitle)).or(style.abscissaTitle)
-    val titleWidth = ordinateTitle.lay(0.0) { _ => titleRoom }
-    val left = style.inset + labelWidth + axisRoom + titleWidth
-    val legendRoom = if rightLegend then legendWidth(names) + gap*2 else 0.0
+
+    def labels(ruler: Ruler, length: Double): List[Text] =
+      ruler.gradations((length/style.pitch).toInt.max(2)).filter(_.major).map(_.label).to[List]
+
+    val ordinateRoom = ordinate.lay(0.0): ruler =>
+      style.labelRoom(Ordinate, labels(ruler, style.height))
+
+    val left = style.inset + ordinateRoom + ordinateTitle.lay(0.0) { _ => style.titleRoom }
+    val legendRoom = if rightLegend then legendWidth(names) + style.gap*2 else 0.0
     val right = style.inset + style.fontSize*0.6 + legendRoom
     val top = style.inset + style.fontSize*0.6
-    val legendRow = if bottomLegend then lineHeight else 0.0
-    val labelRow = ordinate.lay(0.0) { _ => style.fontSize + gap + style.tickLength }
-    val titleHeight = abscissaTitle.lay(0.0) { _ => titleRoom }
-    val bottom = style.inset + labelRow + titleHeight + legendRow
     val width = (style.width - left - right).max(1.0)
+
+    val abscissaRoom = abscissa.lay(0.0): ruler => style.labelRoom(Abscissa, labels(ruler, width))
+
+    val legendRow = if bottomLegend then style.legendLineHeight else 0.0
+    val titleHeight = abscissaTitle.lay(0.0) { _ => style.titleRoom }
+    val bottom = style.inset + abscissaRoom + titleHeight + legendRow
     val height = (style.height - top - bottom).max(1.0)
     val frame = Frame(left, top, width, height)
+
+    val lineHeight = style.legendLineHeight
 
     val legend: Optional[Frame] =
       if !showLegend then Unset
       else if rightLegend
-      then Frame(frame.right + gap*2, frame.top, legendWidth(names), entries*lineHeight)
+      then Frame(frame.right + style.gap*2, frame.top, legendWidth(names), entries*lineHeight)
       else Frame(frame.left, style.height - style.inset - lineHeight, frame.width, lineHeight)
 
     Layout(frame, legend)
@@ -196,7 +195,7 @@ private[tasseomancy] object Cartesian:
   // The abscissa's gradations: as many as the pitch allows on a numeric axis, reduced until their
   // labels no longer overlap; every band of a categorical one.
   def abscissaGradations(frame: Frame, ruler: Ruler)
-    ( using style: Chart.Style, metric: FontMetric )
+    ( using style: Chart.Cartesian, metric: FontMetric )
   :   Sequence[Gradation] =
 
     ruler match
@@ -208,7 +207,7 @@ private[tasseomancy] object Cartesian:
 
         def crowded: Boolean =
           val occupied = marks.fold(0.0): (acc, mark) =>
-            if mark.major then acc + textWidth(mark.label) + gap else acc
+            if mark.major then acc + textWidth(mark.label) + style.gap else acc
 
           occupied > frame.width
 
@@ -220,91 +219,81 @@ private[tasseomancy] object Cartesian:
 
       case other => other.gradations((frame.width/style.pitch).toInt.max(1))
 
+  // Whether a linear axis starts away from zero, which the style may mark with a break.
+  private def broken(ruler: Ruler): Boolean = ruler match
+    case scale: Scale =>
+      scale.transform == Scale.Transform.Linear && (scale.lower > 0.0 || scale.upper < 0.0)
+
+    case _ => false
+
   // The grid and both axes, as identified groups.
   def axes(frame: Frame, abscissa: Ruler, ordinate: Ruler)
-    ( using style: Chart.Style, palette: ChartPalette, metric: FontMetric )
+    ( using style: Chart.Cartesian, palette: ChartPalette, metric: FontMetric )
   :   List[(Svg.Id, Figure)] =
+
+    import Chart.Axis.*
 
     val xs = abscissaGradations(frame, abscissa)
     val ys = ordinate.gradations((frame.height/style.pitch).toInt.max(2))
-    val lettering = font
-    val gridStroke = stroked(palette.grid, 1.0)
-    val axisStroke = stroked(palette.axis, 1.0)
-
-    def line(x0: Double, y0: Double, x1: Double, y1: Double, style: Css.Style): Figure =
-      Polyline(List(point(x0, y0), point(x1, y1)), style = style)
+    val origin = point(frame.left, frame.bottom)
+    val axisColor = palette.axis
 
     val gridLines: List[Figure] =
-      if !style.grid then Nil else
-        val horizontal = ys.fold(List[Figure]()): (acc, mark) =>
-          if !mark.major then acc else
-            val y = frame.y(mark.position)
-            line(frame.left, y, frame.right, y, gridStroke) :: acc
+      val horizontal = ys.fold(List[Figure]()): (acc, mark) =>
+        if !mark.major then acc else
+          val y = frame.y(mark.position)
+          style.gridLine(point(frame.left, y), point(frame.right, y), Ordinate, palette.grid) + acc
 
-        abscissa match
-          case scale: Scale =>
-            xs.fold(horizontal): (acc, mark) =>
-              if !mark.major then acc else
-                val x = frame.x(mark.position)
-                line(x, frame.top, x, frame.bottom, gridStroke) :: acc
+      abscissa match
+        case scale: Scale =>
+          xs.fold(horizontal): (acc, mark) =>
+            if !mark.major then acc else
+              val x = frame.x(mark.position)
+              val top = point(x, frame.top)
+              style.gridLine(top, point(x, frame.bottom), Abscissa, palette.grid) + acc
 
-          case _ => horizontal
+        case _ => horizontal
+
+    // The gradations of one axis: each tick and, for a major gradation, its label.
+    def gradations(marks: Sequence[Gradation], axis: Chart.Axis, at: Gradation => Point)
+    :   List[Figure] =
+
+      val figures = marks.fold(List[Figure]()): (acc, mark) =>
+        val position = at(mark)
+        val tick = style.tick(position, axis, mark.major, axisColor)
+
+        val label =
+          if mark.major then style.tickLabel(position, mark.label, axis, palette.text) else Nil
+
+        label.reverse + (tick.reverse + acc)
+
+      figures.reverse
+
+    // The far-end arrowhead and the origin-end break mark of one axis, if the style draws them.
+    def ends(ruler: Ruler, axis: Chart.Axis, tip: Point): List[Figure] =
+      val break = if broken(ruler) then style.axisBreak(origin, axis, axisColor) else Nil
+      style.arrowhead(tip, axis, axisColor) + break
 
     val abscissaFigures: List[Figure] =
-      val baseline = line(frame.left, frame.bottom, frame.right, frame.bottom, axisStroke)
+      val line = style.axisLine(origin, point(frame.right, frame.bottom), Abscissa, axisColor)
+      val marks = gradations(xs, Abscissa, mark => point(frame.x(mark.position), frame.bottom))
 
-      val marks = xs.fold(List[Figure]()): (acc, mark) =>
-        val x = frame.x(mark.position)
-        val tick = line(x, frame.bottom, x, frame.bottom + style.tickLength, axisStroke)
+      val titleFigures = title(abscissa, style.abscissaTitle).lay(Nil): text =>
+        val room = style.labelRoom(Abscissa, xs.filter(_.major).map(_.label).to[List])
+        val at = point(frame.left + frame.width/2.0, frame.bottom + room + style.gap)
+        style.axisTitle(at, text, Abscissa, palette.text)
 
-        if !mark.major then tick :: acc else
-          val position = point(x, frame.bottom + style.tickLength + gap)
-
-          val label =
-            Lettering
-              ( position, mark.label, Lettering.Anchor.Middle, Lettering.Baseline.Hanging,
-                style = lettering )
-
-          label :: tick :: acc
-
-      val title = Cartesian.title(abscissa, style.abscissaTitle).lay(Nil): text =>
-        val y = frame.bottom + style.tickLength + gap + style.fontSize + gap
-        val position = point(frame.left + frame.width/2.0, y)
-
-        List
-          ( Lettering
-              ( position, text, Lettering.Anchor.Middle, Lettering.Baseline.Hanging,
-                style = lettering ) )
-
-      baseline :: (marks.reverse + title)
+      line + marks + titleFigures + ends(abscissa, Abscissa, point(frame.right, frame.bottom))
 
     val ordinateFigures: List[Figure] =
-      val baseline = line(frame.left, frame.top, frame.left, frame.bottom, axisStroke)
+      val line = style.axisLine(point(frame.left, frame.top), origin, Ordinate, axisColor)
+      val marks = gradations(ys, Ordinate, mark => point(frame.left, frame.y(mark.position)))
 
-      val marks = ys.fold(List[Figure]()): (acc, mark) =>
-        val y = frame.y(mark.position)
-        val tick = line(frame.left - style.tickLength, y, frame.left, y, axisStroke)
+      val titleFigures = title(ordinate, style.ordinateTitle).lay(Nil): text =>
+        val at = point(style.inset, frame.top + frame.height/2.0)
+        style.axisTitle(at, text, Ordinate, palette.text)
 
-        if !mark.major then tick :: acc else
-          val position = point(frame.left - style.tickLength - gap, y)
-
-          val label =
-            Lettering
-              ( position, mark.label, Lettering.Anchor.End, Lettering.Baseline.Middle,
-                style = lettering )
-
-          label :: tick :: acc
-
-      val title = Cartesian.title(ordinate, style.ordinateTitle).lay(Nil): text =>
-        val centre = Delta(style.inset.toFloat, (frame.top + frame.height/2.0).toFloat)
-        val transforms = List(Transform.Translate(centre), Transform.Rotate(Angle.degrees(-90.0)))
-
-        List
-          ( Lettering
-              ( point(0.0, 0.0), text, Lettering.Anchor.Middle, Lettering.Baseline.Hanging,
-                style = lettering, transforms = transforms ) )
-
-      baseline :: (marks.reverse + title)
+      line + marks + titleFigures + ends(ordinate, Ordinate, point(frame.left, frame.top))
 
     List
       ( Svg.Id(t"grid") -> Group(gridLines.reverse, id = Svg.Id(t"grid")),
@@ -316,39 +305,23 @@ private[tasseomancy] object Cartesian:
     ( using style: Chart.Style, palette: ChartPalette, metric: FontMetric )
   :   (Svg.Id, Figure) =
 
-    val lettering = font
     val vertical = style.legend == Chart.Legend.Right
+    val lineHeight = style.legendLineHeight
     var index = 0
     var x = frame.left
     var figures: List[Figure] = Nil
 
     names.foreach: name =>
       val y = if vertical then frame.top + index*lineHeight else frame.top
-      val corner = point(x, y + (lineHeight - swatch)/2.0)
-      val color = filled(palette.color(index))
-      val box = Rectangle(corner, swatch.toFloat, swatch.toFloat, style = color)
-      val position = point(x + swatch + gap, y + lineHeight/2.0)
-
-      val label =
-        Lettering
-          ( position, name, Lettering.Anchor.Start, Lettering.Baseline.Middle, style = lettering )
-
-      figures = label :: box :: figures
-      if !vertical then x += swatch + gap + textWidth(name) + gap*3
+      val corner = point(x, y + (lineHeight - style.swatchSize)/2.0)
+      val position = point(x + style.swatchSize + style.gap, y + lineHeight/2.0)
+      val swatch = style.swatch(corner, palette.color(index), index)
+      val entry = swatch + style.legendLabel(position, name, palette.text)
+      figures = entry.reverse + figures
+      if !vertical then x += style.swatchSize + style.gap + textWidth(name) + style.gap*3
       index += 1
 
     Svg.Id(t"legend") -> Group(figures.reverse, id = Svg.Id(t"legend"))
-
-  // An error bar: a vertical line between two ordinate positions with a cap at each end.
-  def errorBar(x: Double, low: Double, high: Double, cap: Double)(using palette: ChartPalette)
-  :   List[Figure] =
-
-    val bar = stroked(palette.axis, 1.0)
-
-    List
-      ( Polyline(List(point(x, low), point(x, high)), style = bar),
-        Polyline(List(point(x - cap, low), point(x + cap, low)), style = bar),
-        Polyline(List(point(x - cap, high), point(x + cap, high)), style = bar) )
 
   // The parts of a chart whose legend, if any, occupies the given frame.
   def legendPart(frame: Optional[Frame], names: List[Text])
@@ -362,10 +335,7 @@ private[tasseomancy] object Cartesian:
   def drawing(parts: List[(Svg.Id, Figure)])(using style: Chart.Style, palette: ChartPalette)
   :   Chart.Drawing =
 
-    val backdrop =
-      Rectangle
-        ( point(0.0, 0.0), style.width.toFloat, style.height.toFloat,
-          style = filled(palette.background), id = Svg.Id(t"backdrop") )
-
+    val figures = style.backdrop(style.width, style.height, palette.background)
+    val backdrop = Group(figures, id = Svg.Id(t"backdrop"))
     val all = (Svg.Id(t"backdrop") -> backdrop) :: parts
     Chart.Drawing(style.width, style.height, Nil, all.to[Ledger])

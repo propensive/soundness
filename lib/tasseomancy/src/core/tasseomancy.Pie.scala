@@ -32,12 +32,14 @@
                                                                                                   */
 package tasseomancy
 
-import Cartesian.*
+import Framing.*
 import anticipation.*
+import cataclysm.Css
 import denominative.*
 import geodesy.*
 import gossamer.*
 import hypotenuse.*
+import iridescence.*
 import prepositional.*
 import rudiments.*
 import savagery.*
@@ -47,13 +49,27 @@ import vacuous.*
 object Pie:
   case class Fit(labels: Sequence[Text], total: Double)
 
+  // The components of a pie: its wedges, given as the path operations of their outlines, and the
+  // percentage set on any wedge at least `labelThreshold` of the whole. `hole` hollows the
+  // centre to that fraction of the radius.
+  trait Style extends Chart.Style:
+    def hole: Double
+    def labelThreshold: Double = 0.04
+
+    def wedge(ops: List[Stroke], color: Color in Srgb, index: Int): List[Figure] =
+      List(Outline(ops, style = filled(color) + Css.Style.of(List(t"fill-rule" -> t"evenodd"))))
+
+    def wedgeLabel(at: Point, text: Text, color: Color in Srgb): List[Figure] =
+      List(lettering(at, text, Lettering.Anchor.Middle, Lettering.Baseline.Middle, color))
+
   given series: [x: Categorical, y: Continuous as continuous]
-  =>  Series[x, y] is Plottable in Pie to Pie.Fit =
+  =>  Series[x, y] is Plottable in Pie to Pie.Fit by Pie.Style =
 
     new Plottable:
       type Self = Series[x, y]
       type Form = Pie
       type Result = Pie.Fit
+      type Operand = Pie.Style
 
       def fit(form: Pie, data: Series[x, y]): Pie.Fit =
         val marks = columnOf(data).marks
@@ -72,18 +88,16 @@ object Pie:
         same
 
       def draw(form: Pie, data: Series[x, y], fit: Pie.Fit)
-        ( using style: Chart.Style, palette: ChartPalette, metric: FontMetric )
+        ( using style: Pie.Style, palette: ChartPalette, metric: FontMetric )
       :   Chart.Drawing =
 
         val marks = columnOf(data).marks
         val names = fit.labels.to[List]
-        val layout = Cartesian.layout(Unset, Unset, names)
-        val frame = layout.frame
+        val frame = pieFrame(names)
         val radius = (frame.width.min(frame.height)/2.0 - style.fontSize).max(1.0)
-        val hole = radius*form.hole.max(0.0).min(0.95)
+        val hole = radius*style.hole.max(0.0).min(0.95)
         val cx = frame.left + frame.width/2.0
         val cy = frame.top + frame.height/2.0
-        val lettering = font
 
         def rim(angle: Double, distance: Double): Point =
           point(cx + distance*sin(angle).double, cy - distance*cos(angle).double)
@@ -128,7 +142,6 @@ object Pie:
 
             inner + outer
 
-        val ring = css(t"fill-rule" -> t"evenodd")
         var start = 0.0
         var index = 0
 
@@ -139,26 +152,60 @@ object Pie:
           val end = start + sweep
           val complete = fraction >= 1.0 - Scale.tolerance
           val ops = if complete then whole else wedge(start, end, sweep > π)
-          val shape = Outline(ops, style = if complete then filled(color) + ring else filled(color))
+          val shape = style.wedge(ops, color, index)
 
           val label: List[Figure] =
-            if fraction < 0.04 then Nil else
+            if fraction < style.labelThreshold then Nil else
               val middle = (start + end)/2.0
               val distance = if hole <= 0.0 then radius*0.65 else (radius + hole)/2.0
               val text = t"${Scale.format(fraction*100.0, 0)}%"
-
-              List
-                ( Lettering
-                    ( rim(middle, distance), text, Lettering.Anchor.Middle,
-                      Lettering.Baseline.Middle, style = lettering ) )
+              style.wedgeLabel(rim(middle, distance), text, palette.text)
 
           start = end
           index += 1
-          label.reverse + (shape :: acc)
+          label.reverse + (shape.reverse + acc)
 
         val wedges = Svg.Id(t"wedges") -> Group(figures.reverse, id = Svg.Id(t"wedges"))
-        Cartesian.drawing(wedges :: legendPart(layout.legend, names))
+        Framing.drawing(wedges :: legendPart(legendFrame(names), names))
+
+      // A pie has no axes, so its frame is the canvas less the insets and the legend.
+      private def pieFrame(names: List[Text])
+        ( using style: Pie.Style, metric: FontMetric )
+      :   Frame =
+
+        val entries = countOf(names)
+        val showLegend = entries > 0 && style.legend != Chart.Legend.Hidden
+        val widest = names.fold(0.0): (acc, name) => acc.max(textWidth(name))
+        val legendWidth = widest + style.swatchSize + style.gap
+
+        val right =
+          if showLegend && style.legend == Chart.Legend.Right then legendWidth + style.gap*2
+          else 0.0
+
+        val bottom =
+          if showLegend && style.legend == Chart.Legend.Bottom then style.legendLineHeight else 0.0
+
+        val width = (style.width - style.inset*2 - right).max(1.0)
+        val height = (style.height - style.inset*2 - bottom).max(1.0)
+        Frame(style.inset, style.inset, width, height)
+
+      private def legendFrame(names: List[Text])
+        ( using style: Pie.Style, metric: FontMetric )
+      :   Optional[Frame] =
+
+        val entries = countOf(names)
+        val frame = pieFrame(names)
+        val widest = names.fold(0.0): (acc, name) => acc.max(textWidth(name))
+        val legendWidth = widest + style.swatchSize + style.gap
+        val lineHeight = style.legendLineHeight
+
+        if entries == 0 || style.legend == Chart.Legend.Hidden then Unset
+        else if style.legend == Chart.Legend.Right
+        then Frame(frame.right + style.gap*2, frame.top, legendWidth, entries*lineHeight)
+        else
+          val row = style.height - style.inset - style.legendLineHeight
+          Frame(frame.left, row, frame.width, style.legendLineHeight)
 
 // Parts of a whole: one series, each category a wedge proportional to its value, clockwise from
-// the top. A `hole` between 0 and 1 hollows the centre to that fraction of the radius.
-case class Pie(hole: Double = 0.0)
+// the top.
+case class Pie()

@@ -32,7 +32,7 @@
                                                                                                   */
 package tasseomancy
 
-import Cartesian.*
+import Framing.*
 import murmuration.Traversable
 import prepositional.*
 import rudiments.*
@@ -43,13 +43,16 @@ import vacuous.*
 object StackedBars:
   case class Fit(bands: Bands, ordinate: Scale)
 
+  // A stacked chart draws the same components as a grouped one.
+  trait Style extends Bars.Style
+
   // The running totals of a category's positive and negative values, stacked apart.
   private case class Stack(positive: Double, negative: Double)
 
   given traversable: [collection, x, y]
   =>  ( traversable: collection is Traversable by Series[x, y] )
   =>  ( categorical: x is Categorical, continuous: y is Continuous, calibration: y is Calibration )
-  =>  collection is Plottable in StackedBars to StackedBars.Fit =
+  =>  collection is Plottable in StackedBars to StackedBars.Fit by StackedBars.Style =
     plottable[collection, y]: collection =>
       List.from(traversable.traverse(collection).map(columnOf(_)))
 
@@ -81,12 +84,13 @@ object StackedBars:
 
   private def plottable[data, y: {Continuous as continuous, Calibration as calibration}]
     ( columns: data -> List[Column] )
-  :   data is Plottable in StackedBars to StackedBars.Fit =
+  :   data is Plottable in StackedBars to StackedBars.Fit by StackedBars.Style =
 
     new Plottable:
       type Self = data
       type Form = StackedBars
       type Result = StackedBars.Fit
+      type Operand = StackedBars.Style
 
       def fit(form: StackedBars, data: data): StackedBars.Fit =
         val all = columns(data)
@@ -113,19 +117,19 @@ object StackedBars:
         known && within
 
       def draw(form: StackedBars, data: data, fit: StackedBars.Fit)
-        ( using style: Chart.Style, palette: ChartPalette, metric: FontMetric )
+        ( using style: StackedBars.Style, palette: ChartPalette, metric: FontMetric )
       :   Chart.Drawing =
 
         val all = columns(data)
         val names = all.map(_.name)
-        val layout = Cartesian.layout(fit.bands, fit.ordinate, names)
+        val layout = Framing.layout(fit.bands, fit.ordinate, names)
         val frame = layout.frame
         val barWidth = frame.width*fit.bands.width*(1.0 - style.barGap)
         var stacks = empty(fit.bands.count)
         var index = 0
 
         val seriesParts = all.map: column =>
-          val color = filled(palette.color(index))
+          val color = palette.color(index)
 
           val figures = column.marks.fold(List[Figure]()): (acc, mark) =>
             fit.bands.index(mark.category).lay(acc): band =>
@@ -140,15 +144,14 @@ object StackedBars:
               val x0 = frame.x(fit.bands.centre(band)) - barWidth/2.0
               val y0 = frame.y(fit.ordinate.unit(from))
               val y1 = frame.y(fit.ordinate.unit(to))
-              val corner = point(x0, y0.min(y1))
-              Rectangle(corner, barWidth.toFloat, (y1 - y0).abs.toFloat, style = color) :: acc
+              style.bar(point(x0, y0.min(y1)), barWidth, (y1 - y0).abs, color, index).reverse + acc
 
           val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
           index += 1
           part
 
         val legend = legendPart(layout.legend, names)
-        Cartesian.drawing(axes(frame, fit.bands, fit.ordinate) + seriesParts + legend)
+        Framing.drawing(axes(frame, fit.bands, fit.ordinate) + seriesParts + legend)
 
 // Bars stacked by category: each series' value sits on the total of those before it, so that a
 // bar's full height is the category's total. Positive and negative values stack apart, in

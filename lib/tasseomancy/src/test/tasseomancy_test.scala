@@ -99,8 +99,8 @@ object Tests extends Suite(m"Tasseomancy tests"):
   def labels(scale: Scale, budget: Int): List[Text] =
     scale.gradations(budget).filter(_.major).map(_.label).to[List]
 
-  def rendered[data, form, fit](chart: Chart[data, form, fit])
-    ( using Chart.Style, ChartPalette, FontMetric )
+  def rendered[data, form, fit, style <: Chart.Style](chart: Chart[data, form, fit, style])
+    ( using style, ChartPalette, FontMetric )
   :   Text =
     chart.svg.xml.show
 
@@ -267,7 +267,7 @@ object Tests extends Suite(m"Tasseomancy tests"):
       . assert(_ == 1 + 6 + 2)
 
       test(m"a hidden legend draws no swatches"):
-        given Chart.Style = Chart.Style(legend = Chart.Legend.Hidden)
+        given Chart.Standard = Chart.Standard(legend = Chart.Legend.Hidden)
         occurrences(rendered(sales.chart(Bars())), t"<rect")
       . assert(_ == 1 + 6)
 
@@ -277,7 +277,7 @@ object Tests extends Suite(m"Tasseomancy tests"):
       . assert(_ >= 2)
 
       test(m"a scatter plot draws one marker per point"):
-        given Chart.Style = Chart.Style(grid = false, legend = Chart.Legend.Hidden)
+        given Chart.Standard = Chart.Standard(grid = false, legend = Chart.Legend.Hidden)
         occurrences(rendered(growth.chart(Scatter())), t"<circle")
       . assert(_ == 2)
 
@@ -301,7 +301,7 @@ object Tests extends Suite(m"Tasseomancy tests"):
       . assert(_ == 1 + 2 + 2)
 
       test(m"an error bar is drawn for an estimate"):
-        given Chart.Style = Chart.Style(grid = false, legend = Chart.Legend.Hidden)
+        given Chart.Standard = Chart.Standard(grid = false, legend = Chart.Legend.Hidden)
         val data = Series(t"a")((t"x", Estimate(5.0, 4.0, 6.0)))
         val text = rendered(data.chart(Bars())).s
         val start = text.indexOf("id=\"series-0\"")
@@ -315,7 +315,7 @@ object Tests extends Suite(m"Tasseomancy tests"):
       . assert(_ == true)
 
       test(m"a style's title takes the unit from the quantity"):
-        given Chart.Style = Chart.Style(ordinateTitle = t"tide height")
+        given Chart.Standard = Chart.Standard(ordinateTitle = t"tide height")
         val heights = Series(t"tide")((0.0, 1.2*Metre), (6.0, 4.6*Metre), (12.0, 1.1*Metre))
         rendered(heights.chart(Lines())).contains(t">tide height / m<")
       . assert(_ == true)
@@ -332,7 +332,7 @@ object Tests extends Suite(m"Tasseomancy tests"):
       . assert(_ == (true, true))
 
       test(m"axis titles are lettered"):
-        given Chart.Style = Chart.Style(abscissaTitle = t"month", ordinateTitle = t"sales")
+        given Chart.Standard = Chart.Standard(abscissaTitle = t"month", ordinateTitle = t"sales")
         val text = rendered(sales.chart(Bars()))
         (text.contains(t">month<"), text.contains(t">sales<"))
       . assert(_ == (true, true))
@@ -347,9 +347,8 @@ object Tests extends Suite(m"Tasseomancy tests"):
       . assert(_ == 0.9)
 
       test(m"a measured legend is narrower for a narrow face"):
-        given Chart.Style = Chart.Style()
-        val average = Cartesian.layout(Unset, Unset, List(t"ABC"))(using summon[Chart.Style], summon[FontMetric])
-        val measured = Cartesian.layout(Unset, Unset, List(t"ABC"))(using summon[Chart.Style], FontMetric.of(TestFont.font))
+        val average = Framing.layout(Unset, Unset, List(t"ABC"))(using summon[Chart.Standard], summon[FontMetric])
+        val measured = Framing.layout(Unset, Unset, List(t"ABC"))(using summon[Chart.Standard], FontMetric.of(TestFont.font))
         val width = measured.legend.let(_.width).or(0.0)
         (average.frame.width < measured.frame.width, (width - 32.4).abs < 0.000001)
       . assert(_ == (true, true))
@@ -371,6 +370,36 @@ object Tests extends Suite(m"Tasseomancy tests"):
         val (next, _) = growth.chart(Lines()).revise(growth.add((5.0, 5.0)))
         (next.fit.abscissa.upper, next.fit.ordinate.upper)
       . assert(_ == (10.0, 10.0))
+
+    suite(m"Styling"):
+      test(m"a component's rendering is an override on the standard style"):
+        given Chart.Standard = new Chart.Standard(legend = Chart.Legend.Hidden):
+          override def bar(corner: Point, width: Double, height: Double, color: Color in Srgb, series: Int)
+          :   List[Figure] =
+            List(Circle(corner, (width/2.0).toFloat))
+
+        val text = rendered(sales.chart(Bars()))
+        (occurrences(text, t"<circle"), occurrences(text, t"<rect"))
+      . assert(_ == (6, 1))
+
+      test(m"an axis gains an arrowhead through its hook"):
+        given Chart.Standard = new Chart.Standard():
+          override def arrowhead(tip: Point, axis: Chart.Axis, color: Color in Srgb): List[Figure] =
+            List(Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
+
+        occurrences(rendered(growth.chart(Lines())), t"<polygon")
+      . assert(_ == 2)
+
+      test(m"a style shared by every kind still resolves for each"):
+        given Chart.Standard = Chart.Standard(width = 320.0, height = 200.0)
+        rendered(Series(t"share")((t"a", 1.0), (t"b", 3.0)).chart(Pie())).contains(t"viewBox=\"0 0 320.0 200.0\"")
+      . assert(_ == true)
+
+      test(m"an annotated point is labelled beside its marker"):
+        val named = Series(t"cities")((1.0, Annotated(3.0, t"Paris")), (2.0, Annotated(5.0, t"Rome")))
+        val text = rendered(named.chart(Scatter()))
+        (text.contains(t">Paris<"), text.contains(t">Rome<"))
+      . assert(_ == (true, true))
 
     suite(m"Names"):
       test(m"a series may be named by any showable value"):

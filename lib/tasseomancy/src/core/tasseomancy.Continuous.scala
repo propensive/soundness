@@ -83,6 +83,10 @@ object Continuous:
     def position(value: Estimate): Double = value.value
     override def bounds(value: Estimate): Optional[(Double, Double)] = (value.lower, value.upper)
 
+  given annotated: Annotated is Continuous:
+    def position(value: Annotated): Double = value.value
+    override def annotation(value: Annotated): Optional[Text] = value.note
+
 // A value with a position on a numeric axis, and optionally an interval around it. Positions
 // are what a line, a scatter plot or a bar's height is drawn from; the notation says how an
 // axis of this type is graduated, written and titled, since seconds are read differently from
@@ -90,4 +94,5 @@ object Continuous:
 trait Continuous extends Typeclass.Pure:
   def position(value: Self): Double
   def bounds(value: Self): Optional[(Double, Double)] = Unset
+  def annotation(value: Self): Optional[Text] = Unset
   def notation: Scale.Notation = Scale.Notation()

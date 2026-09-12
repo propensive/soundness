@@ -32,7 +32,8 @@
                                                                                                   */
 package tasseomancy
 
-import Cartesian.*
+import Framing.*
+import iridescence.*
 import murmuration.Traversable
 import prepositional.*
 import rudiments.*
@@ -43,8 +44,18 @@ import vacuous.*
 object Bars:
   case class Fit(bands: Bands, ordinate: Scale)
 
+  // The components of a bar chart beyond the axes: the bars themselves, and how wide a group of
+  // them may be within its category's band.
+  trait Style extends Chart.Cartesian:
+    def barGap: Double
+
+    def bar(corner: Point, width: Double, height: Double, color: Color in Srgb, series: Int)
+    :   List[Figure] =
+
+      List(Rectangle(corner, width.toFloat, height.toFloat, style = filled(color)))
+
   given series: [x: Categorical, y: {Continuous, Calibration}]
-  =>  Series[x, y] is Plottable in Bars to Bars.Fit =
+  =>  Series[x, y] is Plottable in Bars to Bars.Fit by Bars.Style =
     plottable[Series[x, y], y]: series => List(columnOf(series))
 
   // The traversal evidence comes first: it is what determines `x` and `y`, which the evidence
@@ -52,18 +63,19 @@ object Bars:
   given traversable: [collection, x, y]
   =>  ( traversable: collection is Traversable by Series[x, y] )
   =>  ( categorical: x is Categorical, continuous: y is Continuous, calibration: y is Calibration )
-  =>  collection is Plottable in Bars to Bars.Fit =
+  =>  collection is Plottable in Bars to Bars.Fit by Bars.Style =
     plottable[collection, y]: collection =>
       List.from(traversable.traverse(collection).map(columnOf(_)))
 
   private def plottable[data, y: {Continuous as continuous, Calibration as calibration}]
     ( columns: data -> List[Column] )
-  :   data is Plottable in Bars to Bars.Fit =
+  :   data is Plottable in Bars to Bars.Fit by Bars.Style =
 
     new Plottable:
       type Self = data
       type Form = Bars
       type Result = Bars.Fit
+      type Operand = Bars.Style
 
       def fit(form: Bars, data: data): Bars.Fit =
         val all = columns(data)
@@ -86,12 +98,12 @@ object Bars:
             fit.bands.index(mark.category).present && fit.ordinate.accommodates(mark.y) && within
 
       def draw(form: Bars, data: data, fit: Bars.Fit)
-        ( using style: Chart.Style, palette: ChartPalette, metric: FontMetric )
+        ( using style: Bars.Style, palette: ChartPalette, metric: FontMetric )
       :   Chart.Drawing =
 
         val all = columns(data)
         val names = all.map(_.name)
-        val layout = Cartesian.layout(fit.bands, fit.ordinate, names)
+        val layout = Framing.layout(fit.bands, fit.ordinate, names)
         val frame = layout.frame
         val total = countOf(all).max(1)
         val groupWidth = frame.width*fit.bands.width*(1.0 - style.barGap)
@@ -100,28 +112,27 @@ object Bars:
         var index = 0
 
         val seriesParts = all.map: column =>
-          val color = filled(palette.color(index))
+          val color = palette.color(index)
 
           val figures = column.marks.fold(List[Figure]()): (acc, mark) =>
             fit.bands.index(mark.category).lay(acc): band =>
               val x0 = frame.x(fit.bands.centre(band)) - groupWidth/2.0 + index*barWidth
               val y = frame.y(fit.ordinate.unit(mark.y))
-              val corner = point(x0, y.min(zero))
-              val bar = Rectangle(corner, barWidth.toFloat, (y - zero).abs.toFloat, style = color)
+              val bar = style.bar(point(x0, y.min(zero)), barWidth, (y - zero).abs, color, index)
 
               val errors = mark.bounds.lay(Nil): (low, high) =>
                 val top = frame.y(fit.ordinate.unit(high))
                 val bottom = frame.y(fit.ordinate.unit(low))
-                errorBar(x0 + barWidth/2.0, top, bottom, barWidth/4.0)
+                style.errorBar(x0 + barWidth/2.0, top, bottom, barWidth/4.0, palette.axis)
 
-              errors.reverse + (bar :: acc)
+              errors.reverse + (bar.reverse + acc)
 
           val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
           index += 1
           part
 
         val legend = legendPart(layout.legend, names)
-        Cartesian.drawing(axes(frame, fit.bands, fit.ordinate) + seriesParts + legend)
+        Framing.drawing(axes(frame, fit.bands, fit.ordinate) + seriesParts + legend)
 
 // Bars grouped by category: one bar per series within each category's band, from zero to the
 // value, with error bars where the value carries an interval. The ordinate is anchored at zero,

@@ -32,8 +32,9 @@
                                                                                                   */
 package tasseomancy
 
-import Cartesian.*
+import Framing.*
 import denominative.*
+import iridescence.*
 import murmuration.Traversable
 import murmuration.sortingAlgorithms.timsort
 import prepositional.*
@@ -45,15 +46,29 @@ import vacuous.*
 object Lines:
   case class Fit(abscissa: Scale, ordinate: Scale)
 
+  // The components of a line chart beyond the axes: the line through a series' points, the band
+  // between their bounds, and a marker at each point if `markers` asks for one.
+  trait Style extends Chart.Cartesian:
+    def markers: Boolean
+
+    def line(points: List[Point], color: Color in Srgb, series: Int): List[Figure] =
+      List(Polyline(points, style = stroked(color, strokeWidth)))
+
+    def band(points: List[Point], color: Color in Srgb, series: Int): List[Figure] =
+      List(Polyline(points, closed = true, style = filled(color, 0.2)))
+
+    def lineMarker(at: Point, color: Color in Srgb, series: Int): List[Figure] =
+      if markers then marker(at, color, series) else Nil
+
   given series: [x: {Continuous, Calibration}, y: {Continuous, Calibration}]
-  =>  Series[x, y] is Plottable in Lines to Lines.Fit =
+  =>  Series[x, y] is Plottable in Lines to Lines.Fit by Lines.Style =
     plottable[Series[x, y], x, y]: series => List(traceOf(series))
 
   given traversable: [collection, x, y]
   =>  ( traversable: collection is Traversable by Series[x, y] )
   =>  ( continuousX: x is Continuous, calibrationX: x is Calibration )
   =>  ( continuousY: y is Continuous, calibrationY: y is Calibration )
-  =>  collection is Plottable in Lines to Lines.Fit =
+  =>  collection is Plottable in Lines to Lines.Fit by Lines.Style =
     plottable[collection, x, y]: collection =>
       List.from(traversable.traverse(collection).map(traceOf(_)))
 
@@ -85,12 +100,13 @@ object Lines:
 
   private def plottable[data, x: {Continuous, Calibration}, y: {Continuous, Calibration}]
     ( traces: data -> List[Trace] )
-  :   data is Plottable in Lines to Lines.Fit =
+  :   data is Plottable in Lines to Lines.Fit by Lines.Style =
 
     new Plottable:
       type Self = data
       type Form = Lines
       type Result = Lines.Fit
+      type Operand = Lines.Style
 
       def fit(form: Lines, data: data): Lines.Fit =
         val (abscissa, ordinate) = fitTraces[x, y](traces(data), form.abscissa, form.ordinate)
@@ -100,12 +116,12 @@ object Lines:
         accommodatesTraces(traces(data), fit.abscissa, fit.ordinate)
 
       def draw(form: Lines, data: data, fit: Lines.Fit)
-        ( using style: Chart.Style, palette: ChartPalette, metric: FontMetric )
+        ( using style: Lines.Style, palette: ChartPalette, metric: FontMetric )
       :   Chart.Drawing =
 
         val all = traces(data)
         val names = all.map(_.name)
-        val layout = Cartesian.layout(fit.abscissa, fit.ordinate, names)
+        val layout = Framing.layout(fit.abscissa, fit.ordinate, names)
         val frame = layout.frame
         var index = 0
 
@@ -124,23 +140,23 @@ object Lines:
               (at(datum, high) :: acc(0), at(datum, low) :: acc(1))
 
           val band: List[Figure] =
-            if highs.nil then Nil
-            else List(Polyline(highs.reverse + lows, closed = true, style = filled(color, 0.2)))
+            if highs.nil then Nil else style.band(highs.reverse + lows, color, index)
 
-          val line = Polyline(points, style = stroked(color, style.strokeWidth))
+          val line = style.line(points, color, index)
 
-          val radius = style.markerRadius.toFloat
+          val decorations: List[Figure] = sorted.fold(List[Figure]()): (acc, datum) =>
+            val position = at(datum, datum.y)
+            val marker = style.lineMarker(position, color, index)
+            val note = datum.note.lay(Nil): text => style.pointLabel(position, text, palette.text)
+            note.reverse + (marker.reverse + acc)
 
-          val markers: List[Figure] =
-            if !style.markers then Nil
-            else points.map: point => Circle(point, radius, style = filled(color))
-
-          val part = seriesId(index) -> Group(band + (line :: markers), id = seriesId(index))
+          val figures = band + line + decorations.reverse
+          val part = seriesId(index) -> Group(figures, id = seriesId(index))
           index += 1
           part
 
         val legend = legendPart(layout.legend, names)
-        Cartesian.drawing(axes(frame, fit.abscissa, fit.ordinate) + seriesParts + legend)
+        Framing.drawing(axes(frame, fit.abscissa, fit.ordinate) + seriesParts + legend)
 
 // A line per series through its points in abscissa order, with a translucent band where the
 // values carry intervals, and markers at the points if the style asks for them. Neither axis is

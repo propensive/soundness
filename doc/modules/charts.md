@@ -49,7 +49,8 @@ which a chart draws as an error bar or a band:
 val timings = Series(t"sort")((1000, Estimate(2.1, 1.9, 2.4)), (10000, Estimate(24.0, 22.5, 26.1)))
 ```
 
-A series' name, like a sample set's or a `Category`, is any showable value — text, an enum
+A value may also carry a note — `Annotated(3.0, t"Paris")` — which a scatter plot or a line
+chart sets beside the point. A series' name, like a sample set's or a `Category`, is any showable value — text, an enum
 case, a number — rendered once when it is made. A series is immutable, and `add` appends a point
 in constant amortized time, which is what a chart
 fed one measurement at a time needs. Several series are any collection of them — a `List`, a
@@ -109,17 +110,50 @@ five for numbers, and at clock steps — seconds, half-minutes, hours — for du
 
 ### Style
 
-A `Chart.Style` holds everything about appearance that is not data: the size, stroke width and
-marker radius, the typeface, how densely axes are graduated, where the legend goes and the axis
-titles. Colors are a `ChartPalette`, named by role — the series ramp, the axes, the grid, the
-lettering — so that one chart renders under any palette. Both have no-import defaults; a palette
-is chosen by importing one, and a style by giving one:
+Everything about a chart's appearance that is not data is a *style*: a trait with a method for
+each component the chart draws — a tick, a tick label, a bar, a wedge, a legend swatch — taking
+the geometry the chart computed and returning the figures to draw. `Chart.Style` holds what every
+kind shares (the canvas, the typeface, the legend and how text is set), `Chart.Cartesian` adds
+axes, gradations, grid, titles, markers and error bars, and each kind adds its own: `Bars.Style`
+has `bar`, `Lines.Style` has `line` and `band`, `Pie.Style` has `wedge`. A chart asks for the
+style of its kind, so a bar chart compiles against `Bars.Style`.
+
+`Chart.Standard` implements all of them. It is a case class, so its parameters are named
+arguments, and any component is an override:
+
+```scala
+given Chart.Standard = new Chart.Standard(width = 800.0, ordinateTitle = t"units sold"):
+  override def bar(corner: Point, width: Double, height: Double, color: Color in Srgb, series: Int)
+  :   List[Figure] =
+    List(Rectangle(corner, width.toFloat, height.toFloat, style = Css.Style(fill = color.to[Srgb])))
+
+  override def arrowhead(tip: Point, axis: Chart.Axis, color: Color in Srgb): List[Figure] =
+    List(Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
+```
+
+The hooks cover the details a chart is usually judged on: where a label sits relative to its
+tick and whether it is rotated (`tickLabel`, with `labelRoom` telling the layout how much space
+that takes), the stroke of each axis (`axisLine`), a break mark where a linear axis starts away
+from zero (`axisBreak`), arrowheads (`arrowhead`), the thickness of series lines (`line`), the
+typeface (`font`, or `lettering` for every run of text), and the labelling of points that carry
+a note (`pointLabel`, for an `Annotated` value).
+
+Colors are a `ChartPalette`, named by role — the series ramp, the axes, the grid, the
+lettering — so that one style renders under any palette; a palette is chosen by importing one:
 
 ```scala
 import palettes.solarizedDarkChartPalette
-
-given Chart.Style = Chart.Style(width = 800, height = 300, ordinateTitle = t"units sold")
 ```
+
+Text is measured to lay out the axis labels and legend. Without a font in scope, an average width
+per character is assumed; with a [font](fonts.md) loaded, its own glyph advances are used, and
+the margins fit their labels exactly:
+
+```scala
+import fontMetrics.averageFontMetric
+```
+
+The face measured should be the one the page will render, since the SVG does not embed it.
 
 An axis over a [quantity](quantities.md) is titled by what it measures and its unit, taken from
 the type: a series of `Quantity[Metres[1]]` values has the ordinate title `distance / m`, and one
