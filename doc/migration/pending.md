@@ -93,3 +93,64 @@ format. Entries are grouped by module, most-recently-added last within a module.
   parameters in order (an `export prepositional.on` forwarder), so that target renders by its
   leaf name under a wildcard import of `scope`. Previously only monomorphic aliases counted.
   (#1979)
+
+## phoenicia
+
+- New: `Typeface of family` (`Typeface["Inter"]`, with the CSS generic families as
+  `Typeface.SansSerif`, `Serif`, `Monospace`, `Cursive`, `Fantasy`, `SystemUi`), `Face of family`
+  (a typeface with `Weight`, `Slant`, `Stretch`, `Variation`s and `Face.Feature.Setting`s, built
+  fluently: `Inter.bold.italic.enabling(Face.Feature.OldstyleNumerals)`), `Weight`, `Slant`,
+  `Stretch`, `Variation` with `Variation.Axis`, `Coverage`, `Medium`, and the typeclass
+  `Typesettable` (`(Typeface of "Inter") is Typesettable in Web`, with `Typesettable.embedded(sfnts*)`
+  making a provision `in Medium` from font files and `Typesettable.Source` naming how a medium
+  obtains a font). All are exported from `soundness`.
+- New: `class Font(face, provision) extends Formal`, written `Font in Web`. `Font(face)` pairs a
+  face with the provision in scope for its typeface in the medium the expected type names;
+  `Font.of[medium](face)` names the medium. Both require `Typeface of family is Typesettable in
+  (? >: medium)` and a `Tactic[Font.Error]`. `Font.Error.Reason` gains `UncoveredWeight`,
+  `UncoveredSlant`, `UncoveredStretch`, `UnknownAxis`, `AxisOutOfRange` and `MissingFeature`
+  (numbers 5–10), and the error's message now reads "the font could not be used because …"
+  (formerly "read").
+- New: `Sfnt.fvar: Optional[FvarTable]` (a variable font's axes), `Sfnt.features:
+  List[Face.Feature]` (the `GSUB`/`GPOS` feature tags) and `Os2Table.italic`.
+- `Face` records its request in three type members, `Weights` (a literal such as `700`),
+  `Slanting` (`"upright"` or `"italic"`) and `Enabled` (a union of feature tags), each
+  `Face.Runtime` where decided at runtime; the fluent methods return `Face.Shape[family, …]`
+  refinements, and `Face.Feature` is a `Topical` class (`Feature of "onum"`) rather than an opaque
+  `Text`. `Typesettable` is now `Locative`, and `Typesettable.embedded(resource)` accepts a
+  `Locative` streamable source such as `cp"/fonts/x.ttf"`, keeping its path as the `Locus`.
+  `Font(face)` and `Font.of[medium](face)` are inline macros: where the provision's `Locus` is on
+  the compiler's classpath, the face's request is checked against the file at compile time and a
+  refusal is a compile error; `Font.paired` is the runtime pairing they expand to.
+
+## cataclysm
+
+- New: `trait Web extends Medium`, whose companion holds `Typesettable in Web` givens for the
+  generic families and the factories `Web.linked(url, coverage, format)`, `Web.imported(url,
+  coverage)`, `Web.local[family]()`, plus `Web.font(face): Font in Web` and `Web.sansSerifFont`.
+- New: `Css.fontFace(font)` and `Css.fontFaces(fonts*)`, the `@font-face`/`@import` rules for a
+  font's provision (embedded files as base-64 data URIs), and `FontFace`; `face.style` and
+  `font.style` render a face's `font-family`, `font-weight`, `font-style`, `font-stretch`,
+  `font-variation-settings` and `font-feature-settings` as a `Css.Style`. Exported from
+  `soundness` as `Web`, `FontFace` and `style`.
+- `cataclysm.core` now depends on `phoenicia.core`, `monotonous.core` and `anticipation.url`.
+
+## savagery
+
+- `Lettering` gains a field `font: Optional[Font in Web] = Unset` between `style` and
+  `transforms`; a positional eighth argument that was `transforms` must now be named. The
+  font's declarations join the inline `style` attribute, and `Svg.xml` writes a
+  `<defs><style>` of `@font-face` rules for the typefaces of all its lettering.
+- New: `Figure.fonts: List[Font in Web]` on every figure, and `Figure.fonts(figures)`.
+
+## tasseomancy
+
+- `Chart.Style.fontFamily: Text` is replaced by `font: Font in Web`; `Chart.Standard`'s
+  `fontFamily = t"sans-serif"` parameter is now `font = Web.sansSerifFont`. A named family becomes
+  a provision plus a font: `given (Typeface of "Menlo") is Typesettable in Web = Web.local()` and
+  `Chart.Standard(font = Web.font(Typeface["Menlo"].face))`.
+- `Chart.Style.font(color: Color in Srgb): Css.Style` is renamed `fontStyle(color)` and no longer
+  emits `font-family` (the lettering's `font` does).
+- `FontMetric`'s default given is now `FontMetric.fromStyle`, deriving from the style's font: an
+  embedded file's own metrics, else the average; formerly `FontMetric.average`, always the
+  average. New: `FontMetric.of(font: Font)`.
