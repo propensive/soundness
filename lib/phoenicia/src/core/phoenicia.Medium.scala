@@ -30,7 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package phoenicia
 
-export phoenicia.{Coverage, Face, Font, Glyph, Medium, Opentype, Sfnt, Slant, Stretch, Truetype, Typeface,
-    Typesettable, Variation, Weight}
+// A medium in which text is set: the web (a browser reading CSS), print (a PDF), or any other a
+// renderer defines. A `Typesettable` provision names the medium it serves as its `Form`, and a
+// provision `in Medium` itself serves every medium, since an embedded font can be carried
+// anywhere. The trait is open: each renderer declares its own medium as a trait with a companion,
+// which is where the provisions that medium can always honour — the CSS generic families, PDF's
+// standard fourteen — live.
+trait Medium

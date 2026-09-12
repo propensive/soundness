@@ -1524,10 +1524,12 @@ object clavichord extends Library:
       settings.sep(super.scalacOptions())
 
 object cataclysm extends Library:
+  // phoenicia supplies the typeface vocabulary that `@font-face` rules and font declarations
+  // are rendered from; monotonous encodes an embedded font as a base-64 data URI.
   object core extends Component(zephyrine.core, gossamer.core, gossamer.lexicon, turbulence.core,
       contingency.core, vacuous.core, fulminate.core, denominative.core, hellenism.core,
       jacinta.core, quantitative.units, iridescence.core, gesticulate.core, rudiments.core,
-      contextual.core, nomenclature.core):
+      contextual.core, nomenclature.core, phoenicia.core, monotonous.core, anticipation.url):
     override def scalaNative = false // loads its property/syntax tables from classpath resources
                                      // at runtime via hellenism's classloaders (JVM/JS-only)
     override def scalacOptions = Task:
@@ -2636,7 +2638,8 @@ object phoenicia extends Library:
   object core extends Component(quantitative.units, polaris.core, turbulence.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  // hellenism supplies `cp"…"` for the compile-time coverage tests over the fonts in `res/test`.
+  object test extends Tests(core, hellenism.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

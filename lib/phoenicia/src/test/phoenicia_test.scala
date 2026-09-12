@@ -299,6 +299,207 @@ object Tests extends Suite(m"Phoenicia Tests"):
         font(head = headTableWith(1), extra = t"loca" -> locaTableLong).glyf(3).bytes.length
       . assert(_ == 26)
 
+    suite(m"Typefaces, faces and provisions"):
+      trait Paper extends Medium
+      trait Screen extends Medium
+      val sans = Typeface["Test Sans"]
+      given provision: (Typeface of "Test Sans") is Typesettable in Medium =
+        Typesettable.embedded(font())
+
+
+      given screenOnly: (Typeface of "Other") is Typesettable in Screen = new Typesettable:
+        type Self = Typeface of "Other"
+        type Form = Screen
+        def sources: List[Typesettable.Source] = Nil
+        def coverage: Coverage = Coverage.Unknown
+
+      // A one-axis `fvar` table: weights from 100 to 900, defaulting to 400.
+      val fvarTable: Data =
+        u16(1, 0, 16, 2, 1, 20, 0, 0)
+        ++ ascii(t"wght") ++ u32(100L << 16, 400L << 16, 900L << 16) ++ u16(0, 256)
+
+      // A `GSUB` table whose feature list names two features; nothing else is read.
+      val gsubTable: Data =
+        u16(1, 0, 10, 10, 10) ++ u16(2) ++ ascii(t"liga") ++ u16(0) ++ ascii(t"onum") ++ u16(0)
+
+      def refusal(block: => Font in Paper): Int =
+        try
+          block
+          0
+        catch case error: Font.Error => error.reason.number
+
+      test(m"A weight outside the scale is brought to its end"):
+        Weight(1200).value
+      . assert(_ == 1000)
+
+      test(m"A face shows its typeface, weight and slant"):
+        sans.bold.italic.show
+      . assert(_ == t"Test Sans 700 italic")
+
+      test(m"A file's coverage reads the OS/2 weight and the post italic angle"):
+        Coverage.of(font())
+      . assert(_ == Coverage.Entries(List(Coverage.Entry(Weight.Bold.range, false, true,
+            Stretch.Normal.range, Nil, Nil))))
+
+      test(m"The face the file has is admitted"):
+        Font.of[Paper](sans.bold.italic).face.weight
+      . assert(_ == Weight.Bold)
+
+      test(m"A weight the file lacks is refused"):
+        refusal(Font.of[Paper](sans.regular.italic))
+      . assert(_ == 5)
+
+      test(m"An upright face of an italic file is refused"):
+        refusal(Font.of[Paper](sans.bold))
+      . assert(_ == 6)
+
+      test(m"A feature the file does not implement is refused"):
+        refusal(Font.of[Paper](sans.bold.italic.enabling(Face.Feature.Ligatures)))
+      . assert(_ == 10)
+
+      test(m"An axis the file does not have is refused"):
+        refusal(Font.of[Paper](sans.bold.italic.varying(Variation.Axis.OpticalSize, 12.0)))
+      . assert(_ == 8)
+
+      test(m"The GSUB feature list names the font's features"):
+        font(extra = t"GSUB" -> gsubTable).features.map(_.tag).join(t",")
+      . assert(_ == t"liga,onum")
+
+      test(m"A variable font's weight axis spans its weights"):
+        Coverage.of(font(extra = t"fvar" -> fvarTable)).complaint(sans.light.italic).absent
+      . assert(_ == true)
+
+      test(m"A value beyond an axis's range is refused"):
+        val face = sans.italic.varying(Variation.Axis.Weight, 950.0)
+        Coverage.of(font(extra = t"fvar" -> fvarTable)).complaint(face).let(_.number)
+      . assert(_ == 9)
+
+      test(m"A provision in Medium serves a medium named by an optional expected type"):
+        val font: Optional[Font in Paper] = Font(sans.bold.italic)
+        font.let(_.typeface.name)
+      . assert(_ == t"Test Sans")
+
+      test(m"A provision for one medium does not serve another"):
+        demilitarize:
+          Font.of[Paper](Typeface["Other"].face)
+        . exists(_.error)
+      . assert(_ == true)
+
+      test(m"A provision for a medium serves that medium"):
+        demilitarize:
+          Font.of[Screen](Typeface["Other"].face)
+        . exists(_.error)
+      . assert(_ == false)
+
+      test(m"A typeface without a provision cannot be a font"):
+        demilitarize:
+          Font.of[Paper](Typeface["Nope"].face)
+        . exists(_.error)
+      . assert(_ == true)
+
+    suite(m"Compile-time coverage"):
+      given Classloader = Classloader[Tests.type]
+
+      trait Paper extends Medium
+
+      // Two fonts on the test classpath: a static bold italic implementing `liga` and `kern`,
+      // and an upright variable font whose `wght` axis spans 100 to 900.
+      given bold: ((Typeface of "Bold") is Typesettable in Medium at "/phoenicia/bold.ttf") =
+        Typesettable.embedded(cp"/phoenicia/bold.ttf")
+
+      given variable: ((Typeface of "Var") is Typesettable in Medium at "/phoenicia/var.ttf") =
+        Typesettable.embedded(cp"/phoenicia/var.ttf")
+
+      val boldItalicFace = Typeface["Bold"]
+      val variableFace = Typeface["Var"]
+
+      test(m"a face's request is recorded in its type"):
+        val face = boldItalicFace.bold.italic.enabling(Face.Feature.Ligatures)
+        summon[face.Weights =:= 700]
+        summon[face.Slanting =:= "italic"]
+        summon[face.Enabled =:= "liga"]
+        face.weight
+      . assert(_ == Weight.Bold)
+
+      test(m"the face the file has compiles"):
+        demilitarize:
+          Font.of[Paper](boldItalicFace.bold.italic.enabling(Face.Feature.Ligatures))
+        . exists(_.error)
+      . assert(_ == false)
+
+      test(m"a weight the file lacks is a compile error"):
+        demilitarize:
+          Font.of[Paper](boldItalicFace.regular.italic)
+        . exists(_.error)
+      . assert(_ == true)
+
+      test(m"an upright face of an italic file is a compile error"):
+        demilitarize:
+          Font.of[Paper](boldItalicFace.bold)
+        . exists(_.error)
+      . assert(_ == true)
+
+      test(m"a feature the file does not implement is a compile error"):
+        demilitarize:
+          Font.of[Paper](boldItalicFace.bold.italic.enabling(Face.Feature.OldstyleNumerals))
+        . exists(_.error)
+      . assert(_ == true)
+
+      test(m"the error names the file and the missing feature"):
+        demilitarize:
+          Font.of[Paper](boldItalicFace.bold.italic.enabling(Face.Feature.OldstyleNumerals))
+        . map(_.message.tt).join(t" ").s
+      . assert { text => text.contains("/phoenicia/bold.ttf") && text.contains("onum") }
+
+      test(m"a variable font's weight axis admits any weight statically"):
+        demilitarize:
+          Font.of[Paper](variableFace.light)
+        . exists(_.error)
+      . assert(_ == false)
+
+      test(m"an italic of an upright variable font is a compile error"):
+        demilitarize:
+          Font.of[Paper](variableFace.italic)
+        . exists(_.error)
+      . assert(_ == true)
+
+      test(m"the optional expected-type form is checked too"):
+        demilitarize:
+          val font: Optional[Font in Paper] = Font(boldItalicFace.regular.italic)
+          font
+        . exists(_.error)
+      . assert(_ == true)
+
+      test(m"a weight decided at runtime defers to the runtime check"):
+        demilitarize:
+          Font.of[Paper](boldItalicFace.face.weighing(Weight(300)).italic)
+        . exists(_.error)
+      . assert(_ == false)
+
+      test(m"the runtime check still refuses a weight decided at runtime"):
+        given inMemory: (Typeface of "Memory") is Typesettable in Medium =
+          Typesettable.embedded(font())
+
+        try
+          Font.of[Paper](Typeface["Memory"].face.weighing(Weight(300)).italic)
+          0
+        catch case error: Font.Error => error.reason.number
+      . assert(_ == 5)
+
+      test(m"a face annotated without its request is checked at runtime only"):
+        val face: Face of "Bold" = boldItalicFace.regular.italic
+
+        demilitarize:
+          Font.of[Paper](face)
+        . exists(_.error)
+      . assert(_ == false)
+
+      test(m"the provision carries the resource's path as its Locus"):
+        summon[bold.Locus =:= "/phoenicia/bold.ttf"]
+        summon[variable.Locus =:= "/phoenicia/var.ttf"]
+        true
+      . assert(_ == true)
+
     suite(m"Subsetting"):
       val ttf = font()
 
