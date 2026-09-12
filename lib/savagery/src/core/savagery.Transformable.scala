@@ -59,6 +59,15 @@ object Transformable:
   given svg: Svg is Transformable =
     Transformable(_.transforms, (figure, ts) => figure.copy(transforms = ts))
 
+  given group: Group is Transformable =
+    Transformable(_.transforms, (figure, ts) => figure.copy(transforms = ts))
+
+  given polyline: Polyline is Transformable =
+    Transformable(_.transforms, (figure, ts) => figure.copy(transforms = ts))
+
+  given lettering: Lettering is Transformable =
+    Transformable(_.transforms, (figure, ts) => figure.copy(transforms = ts))
+
 trait Transformable extends Typeclass:
   def transforms(self: Self): List[Transform]
   def withTransforms(self: Self, transforms: List[Transform]): Self
