@@ -372,6 +372,19 @@ object Tests extends Suite(m"Tasseomancy tests"):
         (next.fit.abscissa.upper, next.fit.ordinate.upper)
       . assert(_ == (10.0, 10.0))
 
+    suite(m"Names"):
+      test(m"a series may be named by any showable value"):
+        Series(2024)((t"jan", 1.0)).name
+      . assert(_ == t"2024")
+
+      test(m"samples may be named by an enum case"):
+        Samples(Chart.Legend.Right)(1.0, 2.0).name
+      . assert(_ == t"Right")
+
+      test(m"a category may be made from any showable value"):
+        Category(42).label
+      . assert(_ == t"42")
+
     suite(m"Compatibility"):
       test(m"a categorical series cannot be a line chart"):
         demilitarize:

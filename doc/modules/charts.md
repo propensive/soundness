@@ -49,7 +49,9 @@ which a chart draws as an error bar or a band:
 val timings = Series(t"sort")((1000, Estimate(2.1, 1.9, 2.4)), (10000, Estimate(24.0, 22.5, 26.1)))
 ```
 
-A series is immutable, and `add` appends a point in constant amortized time, which is what a chart
+A series' name, like a sample set's or a `Category`, is any showable value — text, an enum
+case, a number — rendered once when it is made. A series is immutable, and `add` appends a point
+in constant amortized time, which is what a chart
 fed one measurement at a time needs. Several series are any collection of them — a `List`, a
 `Sequence`, a `Set` — since compatibility is stated for anything traversable by series.
 

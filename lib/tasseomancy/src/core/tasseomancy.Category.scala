@@ -33,6 +33,11 @@
 package tasseomancy
 
 import anticipation.*
+import spectacular.*
 
-// A category with no type of its own: what `Series.categorical` produces from a numeric axis.
+object Category:
+  def apply[label: Showable](label: label): Category = new Category(label.show)
+
+// A category with no type of its own: what `Series.categorical` produces from a numeric axis, or
+// any showable value wrapped by hand.
 case class Category(label: Text)
