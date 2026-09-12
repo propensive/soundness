@@ -30,10 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package tasseomancy
 
-export
-  savagery
-  . { Circle, Delta, Down, Ellipse, Figure, Group, Left, Lettering, Orientation, Outline, Point,
-      Polyline, Rectangle, Right, Segment, Stop, Stroke, Svg, Sweep, Transform, Transformable, Up,
-      unary_+, transform, translate, scale, rotate, skew }
+import anticipation.*
+import rudiments.*
+import spectacular.*
+
+object Series:
+  // A name is anything showable — a `Text`, an enum case, a number — shown once, at
+  // construction.
+  def apply[name: Showable, x, y](name: name)(points: (x, y)*): Series[x, y] =
+    Series(name.show, Sequence.from(points))
+
+// One named run of points: the unit of data a chart kind is compatible with. A series is
+// immutable; `add` appends in amortized constant time, which is what a chart fed one point at a
+// time needs.
+case class Series[x, y](name: Text, points: Sequence[(x, y)]):
+  def add(point: (x, y)): Series[x, y] = Series(name, Sequence.append(points, point))
+
+  // The same points with each abscissa value as a category, for a bar chart over what would
+  // otherwise be a numeric axis: a bar per input size, rather than a line over sizes.
+  def categorical(using showable: x is Showable): Series[Category, y] =
+    Series(name, points.map { (abscissa, ordinate) => (Category(abscissa.show), ordinate) })

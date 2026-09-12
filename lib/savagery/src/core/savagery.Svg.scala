@@ -47,6 +47,7 @@ import zephyrine.*
 import fulminate.*
 import scala.collection.mutable.ListBuffer
 import cardinality.*
+import cataclysm.Css
 import distillate.*
 import geodesy.*
 import iridescence.*
@@ -132,14 +133,11 @@ object Svg:
       val defs = ListBuffer[Def]()
       val figures = ListBuffer[Figure]()
 
-      def walk(parent: Element): Unit = parent.children.each:
+      elem.children.each:
         case child: Element => child.label match
           case t"defs" => child.children.each:
             case dd: Element => decodeSvgDef(dd).let: svgDef => defs += svgDef
             case _           => ()
-
-          case t"g" =>
-            walk(child)
 
           case _ =>
             decodeFigure(child).let: figure => figures += figure
@@ -147,42 +145,121 @@ object Svg:
         case _ =>
           ()
 
-      walk(elem)
       Svg(width, height, defs.toList.to(List), figures.toList.to(List))
 
     private def decodeFigure(elem: Element)(using Tactic[Svg.Error]): Optional[Figure] =
       elem.label match
-        case t"rect"    => decodeRectangle(elem)
-        case t"circle"  => decodeCircle(elem)
-        case t"ellipse" => decodeEllipse(elem)
-        case t"path"    => decodePath(elem)
-        case _          => Unset
+        case t"rect"     => decodeRectangle(elem)
+        case t"circle"   => decodeCircle(elem)
+        case t"ellipse"  => decodeEllipse(elem)
+        case t"path"     => decodePath(elem)
+        case t"g"        => decodeGroup(elem)
+        case t"polyline" => decodePolyline(elem, false)
+        case t"polygon"  => decodePolyline(elem, true)
+        case t"text"     => decodeLettering(elem)
+        case _           => Unset
+
+    // The attributes any figure may carry: read by every decoder, so that a figure's identifier,
+    // transform list and inline style survive a round trip whatever its shape.
+    private def idAttr(elem: Element): Optional[Id] = elem.attributes(t"id").let(Id(_))
+
+    private def transformsAttr(elem: Element): List[Transform] =
+      elem.attributes(t"transform").let(parseTransforms).or(Nil)
+
+    // An inline `style` attribute is `name: value` declarations separated by semicolons; each is
+    // split at its first colon, and a declaration without one is dropped.
+    private def styleAttr(elem: Element): Optional[Css.Style] =
+      elem.attributes(t"style").let: text =>
+        val declarations = ListBuffer[(Text, Text)]()
+
+        text.s.split(";").nn.iterator.map(_.nn).foreach: declaration =>
+          val colon = declaration.indexOf(':')
+
+          if colon > 0 then
+            val name = declaration.substring(0, colon).nn.trim.nn
+            val value = declaration.substring(colon + 1).nn.trim.nn
+            if !name.isEmpty then declarations += ((name.tt, value.tt))
+
+        if declarations.isEmpty then Unset else Css.Style.of(declarations.toList.to(List))
 
     private def decodeRectangle(elem: Element): Rectangle =
       Rectangle
         ( Point(numAttr(elem, t"x"), numAttr(elem, t"y")),
-         numAttr(elem, t"width"),
-         numAttr(elem, t"height") )
+          numAttr(elem, t"width"),
+          numAttr(elem, t"height"),
+          transformsAttr(elem),
+          styleAttr(elem),
+          idAttr(elem) )
 
     private def decodeCircle(elem: Element): Ellipse =
       val cx = numAttr(elem, t"cx")
       val cy = numAttr(elem, t"cy")
       val r = numAttr(elem, t"r")
-      Ellipse(Point(cx, cy), r, r, Angle(0))
+      Ellipse(Point(cx, cy), r, r, Angle(0), transformsAttr(elem), styleAttr(elem), idAttr(elem))
 
     private def decodeEllipse(elem: Element): Ellipse =
       val cx = numAttr(elem, t"cx")
       val cy = numAttr(elem, t"cy")
       val rx = numAttr(elem, t"rx")
       val ry = numAttr(elem, t"ry")
-      Ellipse(Point(cx, cy), rx, ry, Angle(0))
+      Ellipse
+        ( Point(cx, cy), rx, ry, Angle(0), transformsAttr(elem), styleAttr(elem), idAttr(elem) )
 
     private def decodePath(elem: Element)(using Tactic[Svg.Error]): Outline =
       val d = elem.attributes(t"d").or(t"")
       val ops = parsePathData(d)
-      val id = elem.attributes(t"id").let(Id(_))
-      val transforms = elem.attributes(t"transform").let(parseTransforms).or(Nil)
-      Outline(ops = ops.reverse, id = id, transforms = transforms)
+      Outline(ops.reverse, styleAttr(elem), idAttr(elem), transformsAttr(elem))
+
+    private def decodeGroup(elem: Element)(using Tactic[Svg.Error]): Group =
+      val figures = ListBuffer[Figure]()
+
+      elem.children.each:
+        case child: Element => decodeFigure(child).let: figure => figures += figure
+        case _              => ()
+
+      Group(figures.toList.to(List), idAttr(elem), styleAttr(elem), transformsAttr(elem))
+
+    // A `points` attribute is pairs of numbers, separated by whitespace or commas within and
+    // between pairs alike; an odd trailing number is dropped.
+    private def decodePolyline(elem: Element, closed: Boolean): Polyline =
+      val numbers = ListBuffer[Float]()
+
+      elem.attributes(t"points").or(t"").s.split("[\\s,]+").nn.iterator.map(_.nn).foreach: number =>
+        if !number.isEmpty then
+          try numbers += number.toFloat catch case _: NumberFormatException => ()
+
+      val points = ListBuffer[Point]()
+      var index = 0
+
+      while index + 1 < numbers.length do
+        points += Point(numbers(index), numbers(index + 1))
+        index += 2
+
+      Polyline(points.toList.to(List), closed, idAttr(elem), styleAttr(elem), transformsAttr(elem))
+
+    private def decodeLettering(elem: Element): Lettering =
+      val text: Text = elem.children.readable.toList.collect { case TextNode(text) => text }
+        . to(List).join
+
+      val anchor: Lettering.Anchor = elem.attributes(t"text-anchor") match
+        case t"middle" => Lettering.Anchor.Middle
+        case t"end"    => Lettering.Anchor.End
+        case _         => Lettering.Anchor.Start
+
+      val baseline: Optional[Lettering.Baseline] = elem.attributes(t"dominant-baseline") match
+        case t"alphabetic" => Lettering.Baseline.Alphabetic
+        case t"middle"     => Lettering.Baseline.Middle
+        case t"hanging"    => Lettering.Baseline.Hanging
+        case _             => Unset
+
+      Lettering
+        ( Point(numAttr(elem, t"x"), numAttr(elem, t"y")),
+          text,
+          anchor,
+          baseline,
+          idAttr(elem),
+          styleAttr(elem),
+          transformsAttr(elem) )
 
 
     private def decodeSvgDef(elem: Element)

@@ -30,10 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package tasseomancy
 
-export
-  savagery
-  . { Circle, Delta, Down, Ellipse, Figure, Group, Left, Lettering, Orientation, Outline, Point,
-      Polyline, Rectangle, Right, Segment, Stop, Stroke, Svg, Sweep, Transform, Transformable, Up,
-      unary_+, transform, translate, scale, rotate, skew }
+import anticipation.*
+import spectacular.*
+
+object Category:
+  def apply[label: Showable](label: label): Category = new Category(label.show)
+
+// A category with no type of its own: what `Series.categorical` produces from a numeric axis, or
+// any showable value wrapped by hand.
+case class Category(label: Text)

@@ -43,6 +43,7 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
+import vacuous.*
 
 object internal extends protointernal:
   opaque type Quantity[units <: Measure] = Double
@@ -102,6 +103,11 @@ object internal extends protointernal:
       ${quantitative.internal.collectUnits[units]}
 
     inline def units[units <: Measure]: Text = expressUnits(unitsMap[units])
+
+    // The name of the physical quantity some units measure — `distance`, `velocity` — or
+    // `Unset` for a combination of dimensions that has none.
+    inline def dimension[units <: Measure]: Optional[Text] =
+      ${quantitative.internal.describeOptional[units]}
 
     // Concrete inline-friendly operator instances. These are summoned via
     // `transparent inline given`s below so the static type at the use site

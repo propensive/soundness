@@ -134,6 +134,47 @@ object Tests extends Suite(m"Savagery tests"):
         (Transform.Matrix(Affine(1.0f, 0.0f, 0.0f, 1.0f, 5.0f, 10.0f)): Transform).encode
       .assert(_ == t"matrix(1.0,0.0,0.0,1.0,5.0,10.0)")
 
+    suite(m"Groups, polylines and lettering"):
+      test(m"Group wraps its figures"):
+        Group(List(Rectangle((0, 0), 1, 1), Circle((0, 0), 1)), id = Svg.Id(t"pair")).xml.show
+      .assert(_ == t"""<g id="pair"><rect x="0.0" y="0.0" width="1.0" height="1.0"/><circle cx="0.0" cy="0.0" r="1.0"/></g>""")
+
+      test(m"Empty group"):
+        Group(Nil).xml.show
+      .assert(_ == t"""<g/>""")
+
+      test(m"Polyline lists its points"):
+        Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0))).xml.show
+      .assert(_ == t"""<polyline points="0.0,0.0 10.0,5.0 20.0,0.0"/>""")
+
+      test(m"Closed polyline is a polygon"):
+        Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0)), closed = true).xml.show
+      .assert(_ == t"""<polygon points="0.0,0.0 10.0,5.0 20.0,0.0"/>""")
+
+      test(m"Lettering at its start"):
+        Lettering((1, 2), t"Hello").xml.show
+      .assert(_ == t"""<text x="1.0" y="2.0">Hello</text>""")
+
+      test(m"Lettering anchored at its middle on the hanging baseline"):
+        Lettering((1, 2), t"Hi", Lettering.Anchor.Middle, Lettering.Baseline.Hanging).xml.show
+      .assert(_ == t"""<text x="1.0" y="2.0" text-anchor="middle" dominant-baseline="hanging">Hi</text>""")
+
+      test(m"Lettering escapes markup"):
+        Lettering((0, 0), t"a < b").xml.show
+      .assert(_ == t"""<text x="0.0" y="0.0">a &lt; b</text>""")
+
+      test(m"Rectangle with style and id"):
+        Rectangle((0, 0), 1, 1, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box")).xml.show
+      .assert(_ == t"""<rect x="0.0" y="0.0" width="1.0" height="1.0" id="box" style="fill: #ff0000"/>""")
+
+      test(m"Ellipse with style"):
+        Circle((0, 0), 1, style = Css.Style(stroke = Srgb(0, 0, 1))).xml.show
+      .assert(_ == t"""<circle cx="0.0" cy="0.0" r="1.0" style="stroke: #0000ff"/>""")
+
+      test(m"Group translate method"):
+        Group(Nil).translate(Delta(1, 2)).xml.show
+      .assert(_ == t"""<g transform="translate(1.0,2.0)"/>""")
+
     suite(m"Outline with attributes"):
       test(m"Outline with id"):
         Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed.xml.show
@@ -476,19 +517,59 @@ object Tests extends Suite(m"Savagery tests"):
 
       test(m"Skip unknown element"):
         val svg =
-          t"""<svg width="10" height="10"><text x="0" y="0">Hello</text><rect x="0" y="0" width="5" height="5"/></svg>"""
+          t"""<svg width="10" height="10"><image href="x.png"/><rect x="0" y="0" width="5" height="5"/></svg>"""
         . read[Svg]
 
         svg.figures.size
       .assert(_ == 1)
 
-      test(m"Flatten group"):
+      test(m"Parse group as a Group figure"):
         val svg =
-          t"""<svg width="10" height="10"><g><rect x="0" y="0" width="5" height="5"/><circle cx="0" cy="0" r="3"/></g></svg>"""
+          t"""<svg width="10" height="10"><g id="pair"><rect x="0" y="0" width="5" height="5"/><circle cx="0" cy="0" r="3"/></g></svg>"""
         . read[Svg]
 
-        svg.figures.size
-      .assert(_ == 2)
+        svg.figures.stdlib.head
+      .assert:
+          case Group(figures, id, _, _) =>
+            id == Svg.Id(t"pair") && figures == List(Rectangle((0, 0), 5, 5), Circle((0, 0), 3))
+          case _ => false
+
+      test(m"Parse polyline points"):
+        val svg =
+          t"""<svg width="10" height="10"><polyline points="0,0 10,5 20 0"/></svg>""".read[Svg]
+
+        svg.figures.stdlib.head
+      .assert(_ == Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0))))
+
+      test(m"Parse polygon as closed polyline"):
+        val svg =
+          t"""<svg width="10" height="10"><polygon points="0,0 10,5 20,0"/></svg>""".read[Svg]
+
+        svg.figures.stdlib.head
+      .assert(_ == Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0)), closed = true))
+
+      test(m"Parse text with anchor and baseline"):
+        val svg =
+          t"""<svg width="10" height="10"><text x="1" y="2" text-anchor="middle" dominant-baseline="hanging">Hi</text></svg>"""
+        . read[Svg]
+
+        svg.figures.stdlib.head
+      .assert:
+          case Lettering(position, text, anchor, baseline, _, _, _) =>
+            position == Point(1, 2) && text == t"Hi" && anchor == Lettering.Anchor.Middle
+            && baseline == Lettering.Baseline.Hanging
+          case _ => false
+
+      test(m"Parse rectangle style and id"):
+        val svg =
+          t"""<svg width="10" height="10"><rect x="0" y="0" width="5" height="5" id="r" style="fill: red; stroke-width: 2px"/></svg>"""
+        . read[Svg]
+
+        svg.figures.stdlib.head
+      .assert:
+          case Rectangle(_, _, _, _, style, id) =>
+            id == Svg.Id(t"r") && style.let(_.text) == t"fill: red; stroke-width: 2px"
+          case _ => false
 
       test(m"Ignore unknown attributes"):
         val svg = t"""<svg width="10" height="10"><rect x="0" y="0" width="5" height="5" foo="bar"/></svg>"""
@@ -538,6 +619,24 @@ object Tests extends Suite(m"Savagery tests"):
         encoded.read[Svg].xml.show == encoded
       .assert(_ == true)
 
+      test(m"Round-trip: group with nested figures and text"):
+        val encoded = Svg
+         (100,
+          100,
+          figures = List
+           (Group
+             (List
+               (Rectangle((0, 0), 10, 10, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box")),
+                Polyline(List(Point(0, 0), Point(5, 5))),
+                Polyline(List(Point(0, 0), Point(5, 5), Point(0, 5)), closed = true),
+                Lettering((1, 2), t"label", Lettering.Anchor.End, Lettering.Baseline.Middle)),
+              id = Svg.Id(t"axes"),
+              transforms = List(Transform.Translate(Delta(5, 10))))))
+        . xml.show
+
+        encoded.read[Svg].xml.show == encoded
+      .assert(_ == true)
+
       test(m"Round-trip: SVG with multiple figures"):
         val encoded = Svg
          (100, 100, figures = List(Rectangle((0, 0), 10, 10), Circle((50, 50), 5)))
@@ -574,6 +673,9 @@ object Tests extends Suite(m"Savagery tests"):
            Rectangle((0, 0), 10, 5).inspect,
            Ellipse((1, 2), 3, 4, Angle(0)).inspect,
            Outline().moveTo((0, 0)).lineTo((3, 4)).inspect,
+           Group(List(Rectangle((0, 0), 1, 1)), id = Svg.Id(t"g")).inspect,
+           Polyline(List(Point(0, 0), Point(1, 1)), closed = true).inspect,
+           Lettering((0, 0), t"x", Lettering.Anchor.End, Lettering.Baseline.Middle).inspect,
            Transform.Rotate(Angle(0)).inspect,
            Transform.Matrix(Affine[Float](1, 0, 0, 1, 0, 0)).inspect,
            Stroke.MoveTo(Point(0, 0)).inspect )

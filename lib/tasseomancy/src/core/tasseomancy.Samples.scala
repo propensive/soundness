@@ -30,10 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package tasseomancy
 
-export
-  savagery
-  . { Circle, Delta, Down, Ellipse, Figure, Group, Left, Lettering, Orientation, Outline, Point,
-      Polyline, Rectangle, Right, Segment, Stop, Stroke, Svg, Sweep, Transform, Transformable, Up,
-      unary_+, transform, translate, scale, rotate, skew }
+import anticipation.*
+import spectacular.*
+
+object Samples:
+  def apply[name: Showable, y](name: name)(values: y*): Samples[y] =
+    Samples(name.show, Sequence.from(values))
+
+// Raw measurements under one name, before any summary: what a histogram bins and a box plot
+// summarizes.
+case class Samples[y](name: Text, values: Sequence[y]):
+  def add(value: y): Samples[y] = Samples(name, Sequence.append(values, value))

@@ -100,6 +100,40 @@ so a reference to a definition that does not exist is not silently rendered:
 Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed
 ```
 
+### Groups, polylines and text
+
+A `Group` is a `<g>` element: figures that move, style and identify together. A chart's axes, or
+one series of it, is a group, so that the whole part can be found and replaced by its identifier
+when it changes:
+
+```scala
+val axes = Group(List(Rectangle((0, 0), 100, 60)), id = Svg.Id(t"axes"))
+```
+
+A `Polyline` joins absolute points with straight segments, and becomes a `<polygon>` when it is
+`closed`, so a plotted line and the filled area beneath it are the same figure with one flag
+different:
+
+```scala
+val line = Polyline(List(Point(0, 60), Point(50, 20), Point(100, 40)))
+val area = Polyline(List(Point(0, 60), Point(50, 20), Point(100, 40), Point(100, 60)), closed = true)
+```
+
+`Lettering` sets text at a position — named for what it is in a drawing, since `Text` is the
+string type. Its anchor says whether the position is the start, middle or end of the run, and its
+baseline which line of the glyphs lies on the position:
+
+```scala
+Lettering((50, 70), t"time", Lettering.Anchor.Middle, Lettering.Baseline.Hanging)
+```
+
+Every figure may carry an inline `style`, a typed [CSS](css.md) declaration set whose property
+names and values are checked as the code compiles, and an `id`:
+
+```scala
+Rectangle((0, 0), 10, 10, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box"))
+```
+
 ### Gradients and color
 
 A linear gradient is a definition with typed stops, each an offset in `[0, 1]` — a

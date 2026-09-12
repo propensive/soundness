@@ -33,7 +33,18 @@
 package soundness
 
 export
-  savagery
-  . { Circle, Delta, Down, Ellipse, Figure, Group, Left, Lettering, Orientation, Outline, Point,
-      Polyline, Rectangle, Right, Segment, Stop, Stroke, Svg, Sweep, Transform, Transformable, Up,
-      unary_+, transform, translate, scale, rotate, skew }
+  tasseomancy
+  . { Annotated, Bands, Bars, Boxes, Calibration, Categorical, Category, Chart, ChartPalette,
+      Continuous, Estimate, FontMetric, Gradation, Histogram, Lines, Pie, Plottable, Ruler,
+      Samples, Scale, Scatter, Series, StackedBars, chart }
+
+package calibrations:
+  export tasseomancy.calibrations.{adaptiveCalibration, linearCalibration, logarithmicCalibration,
+      tightCalibration}
+
+package palettes:
+  export tasseomancy.palettes.{slateChartPalette, solarizedDarkChartPalette,
+      solarizedLightChartPalette}
+
+package fontMetrics:
+  export tasseomancy.fontMetrics.{averageFontMetric, tabularFontMetric}

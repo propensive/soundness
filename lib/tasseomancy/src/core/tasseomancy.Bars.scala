@@ -30,10 +30,111 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package tasseomancy
 
-export
-  savagery
-  . { Circle, Delta, Down, Ellipse, Figure, Group, Left, Lettering, Orientation, Outline, Point,
-      Polyline, Rectangle, Right, Segment, Stop, Stroke, Svg, Sweep, Transform, Transformable, Up,
-      unary_+, transform, translate, scale, rotate, skew }
+import Framing.*
+import iridescence.*
+import murmuration.Traversable
+import prepositional.*
+import rudiments.*
+import savagery.*
+import symbolism.*
+import vacuous.*
+
+object Bars:
+  case class Fit(bands: Bands, ordinate: Scale)
+
+  // The components of a bar chart beyond the axes: the bars themselves, and how wide a group of
+  // them may be within its category's band.
+  trait Style extends Chart.Cartesian:
+    def barGap: Double
+
+    def bar(corner: Point, width: Double, height: Double, color: Color in Srgb, series: Int)
+    :   List[Figure] =
+
+      List(Rectangle(corner, width.toFloat, height.toFloat, style = filled(color)))
+
+  given series: [x: Categorical, y: {Continuous, Calibration}]
+  =>  Series[x, y] is Plottable in Bars to Bars.Fit by Bars.Style =
+    plottable[Series[x, y], y]: series => List(columnOf(series))
+
+  // The traversal evidence comes first: it is what determines `x` and `y`, which the evidence
+  // after it is then resolved for.
+  given traversable: [collection, x, y]
+  =>  ( traversable: collection is Traversable by Series[x, y] )
+  =>  ( categorical: x is Categorical, continuous: y is Continuous, calibration: y is Calibration )
+  =>  collection is Plottable in Bars to Bars.Fit by Bars.Style =
+    plottable[collection, y]: collection =>
+      List.from(traversable.traverse(collection).map(columnOf(_)))
+
+  private def plottable[data, y: {Continuous as continuous, Calibration as calibration}]
+    ( columns: data -> List[Column] )
+  :   data is Plottable in Bars to Bars.Fit by Bars.Style =
+
+    new Plottable:
+      type Self = data
+      type Form = Bars
+      type Result = Bars.Fit
+      type Operand = Bars.Style
+
+      def fit(form: Bars, data: data): Bars.Fit =
+        val all = columns(data)
+
+        val extent = all.fold(Extent.empty): (acc, column) =>
+          column.marks.fold(acc): (acc2, mark) => acc2.include(mark.y).include(mark.bounds)
+
+        val scale =
+          form.ordinate.or(calibration)
+          . scale(extent.lowerOr0, extent.upperOr1, true, continuous.notation)
+
+        Bars.Fit(Bands(categories(all)), scale)
+
+      def accommodates(form: Bars, fit: Bars.Fit, data: data): Boolean =
+        columns(data).all: column =>
+          column.marks.all: mark =>
+            val within = mark.bounds.lay(true): (low, high) =>
+              fit.ordinate.accommodates(low) && fit.ordinate.accommodates(high)
+
+            fit.bands.index(mark.category).present && fit.ordinate.accommodates(mark.y) && within
+
+      def draw(form: Bars, data: data, fit: Bars.Fit)
+        ( using style: Bars.Style, palette: ChartPalette, metric: FontMetric )
+      :   Chart.Drawing =
+
+        val all = columns(data)
+        val names = all.map(_.name)
+        val layout = Framing.layout(fit.bands, fit.ordinate, names)
+        val frame = layout.frame
+        val total = countOf(all).max(1)
+        val groupWidth = frame.width*fit.bands.width*(1.0 - style.barGap)
+        val barWidth = groupWidth/total
+        val zero = frame.y(fit.ordinate.unit(0.0))
+        var index = 0
+
+        val seriesParts = all.map: column =>
+          val color = palette.color(index)
+
+          val figures = column.marks.fold(List[Figure]()): (acc, mark) =>
+            fit.bands.index(mark.category).lay(acc): band =>
+              val x0 = frame.x(fit.bands.centre(band)) - groupWidth/2.0 + index*barWidth
+              val y = frame.y(fit.ordinate.unit(mark.y))
+              val bar = style.bar(point(x0, y.min(zero)), barWidth, (y - zero).abs, color, index)
+
+              val errors = mark.bounds.lay(Nil): (low, high) =>
+                val top = frame.y(fit.ordinate.unit(high))
+                val bottom = frame.y(fit.ordinate.unit(low))
+                style.errorBar(x0 + barWidth/2.0, top, bottom, barWidth/4.0, palette.axis)
+
+              errors.reverse + (bar.reverse + acc)
+
+          val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
+          index += 1
+          part
+
+        val legend = legendPart(layout.legend, names)
+        Framing.drawing(axes(frame, fit.bands, fit.ordinate) + seriesParts + legend)
+
+// Bars grouped by category: one bar per series within each category's band, from zero to the
+// value, with error bars where the value carries an interval. The ordinate is anchored at zero,
+// since a bar's length is its meaning.
+case class Bars(ordinate: Optional[Calibration] = Unset)

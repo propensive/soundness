@@ -30,10 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package tasseomancy
 
-export
-  savagery
-  . { Circle, Delta, Down, Ellipse, Figure, Group, Left, Lettering, Orientation, Outline, Point,
-      Polyline, Rectangle, Right, Segment, Stop, Stroke, Svg, Sweep, Transform, Transformable, Up,
-      unary_+, transform, translate, scale, rotate, skew }
+import anticipation.*
+import contingency.*
+import phoenicia.*
+import quantitative.*
+import vacuous.*
+
+object FontMetric:
+  // The no-import default: an average width per character, which lays out a chart acceptably in
+  // any proportional face. Any `import fontMetrics.…` outranks this.
+  given average: FontMetric = tasseomancy.fontMetrics.averageFontMetric
+
+  // Widths summed from a font's own glyph advances, for the face the chart will be shown in;
+  // margins and legends then fit their text exactly. A character the face lacks would raise, so
+  // the average width stands in for any text containing one.
+  def of(font: Sfnt): FontMetric = text =>
+    safely(font.width(text)).or(tasseomancy.fontMetrics.averageFontMetric.width(text))
+
+// The width of a run of text in ems, as the chart's typeface will set it. Multiplied by the
+// style's font size, this is what decides how much room an axis's labels and a legend need.
+trait FontMetric:
+  def width(text: Text): Quantity[Ems[1]]

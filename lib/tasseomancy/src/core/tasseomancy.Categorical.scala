@@ -30,10 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package tasseomancy
 
-export
-  savagery
-  . { Circle, Delta, Down, Ellipse, Figure, Group, Left, Lettering, Orientation, Outline, Point,
-      Polyline, Rectangle, Right, Segment, Stop, Stroke, Svg, Sweep, Transform, Transformable, Up,
-      unary_+, transform, translate, scale, rotate, skew }
+import anticipation.*
+import distillate.*
+import prepositional.*
+
+object Categorical:
+  given text: Text is Categorical = text => text
+  given category: Category is Categorical = _.label
+
+  given enumerable: [enumeration <: scala.reflect.Enum: Enumerable as evidence]
+  =>  enumeration is Categorical =
+    evidence.name(_)
+
+// A value that names a category on an axis: distinct labels in first-appearance order, with no
+// arithmetic between them. What a bar chart's or a pie chart's abscissa is made of.
+trait Categorical extends Typeclass.Pure:
+  def label(value: Self): Text

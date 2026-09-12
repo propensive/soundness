@@ -30,10 +30,39 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package tasseomancy
 
-export
-  savagery
-  . { Circle, Delta, Down, Ellipse, Figure, Group, Left, Lettering, Orientation, Outline, Point,
-      Polyline, Rectangle, Right, Segment, Stop, Stroke, Svg, Sweep, Transform, Transformable, Up,
-      unary_+, transform, translate, scale, rotate, skew }
+import denominative.*
+import iridescence.*
+import prepositional.*
+import rudiments.*
+
+object ChartPalette:
+  // The no-import default: a light palette with a categorical ramp of eight distinguishable
+  // hues. Any `import palettes.…` outranks this, because a lexically-scoped given beats a
+  // companion one.
+  given slate: ChartPalette = tasseomancy.palettes.slateChartPalette
+
+  // A palette from a theme: its colours, in order, for the series; its foreground for the axes
+  // and text, and a blend of the two for the grid.
+  def of(theme: Theme { type Form = Srgb }): ChartPalette = new ChartPalette:
+    val series: Sequence[Color in Srgb] = theme.colors.to[Sequence]
+    def background: Color in Srgb = theme.background
+    def foreground: Color in Srgb = theme.foreground
+    def axis: Color in Srgb = mix(foreground, background, 0.3)
+    def grid: Color in Srgb = mix(foreground, background, 0.85)
+    def text: Color in Srgb = foreground
+
+// The colours a chart draws with, named by the role each plays rather than by hue: the series
+// ramp, cycled when there are more series than colours; the axes and their gradations; the grid;
+// the lettering. A real trait rather than a structural refinement of `Palette`, as `GaugePalette`
+// is, so that member selection is a virtual call rather than reflection.
+trait ChartPalette extends Palette:
+  type Form = Srgb
+  def series: Sequence[Color in Srgb]
+  def axis: Color in Srgb
+  def grid: Color in Srgb
+  def text: Color in Srgb
+
+  def color(index: Int): Color in Srgb =
+    if series.size == 0 then foreground else Sequence.at(series, index%series.size)

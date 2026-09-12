@@ -120,6 +120,7 @@ surveillance: file-watcher filesystem file-events directory-monitoring nio
 symbolism: operators arithmetic typeclass operator-overloading algebra
 synesthesia: mcp model-context-protocol llm ai-protocol
 tarantula: webdriver browser-automation chrome firefox safari edge selenium headless
+tasseomancy: charts graphs plotting data-visualization svg benchmarks bar-chart line-chart pie-chart histogram
 telekinesis: http http-client cookies authentication rest-client web-requests
 tessellate: layout box-drawing reflow alignment flex text-layout
 turbulence: streams io stdio streaming reactive line-separation

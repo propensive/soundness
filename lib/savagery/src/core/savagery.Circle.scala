@@ -32,7 +32,17 @@
                                                                                                   */
 package savagery
 
+import cataclysm.Css
 import geodesy.*
+import vacuous.*
 
 object Circle:
-  def apply(center: Point, radius: Float): Ellipse = Ellipse(center, radius, radius, Angle(0.0))
+  def apply
+    ( center:     Point,
+      radius:     Float,
+      transforms: List[Transform]     = Nil,
+      style:      Optional[Css.Style] = Unset,
+      id:         Optional[Svg.Id]    = Unset )
+  :   Ellipse =
+
+    Ellipse(center, radius, radius, Angle(0.0), transforms, style, id)

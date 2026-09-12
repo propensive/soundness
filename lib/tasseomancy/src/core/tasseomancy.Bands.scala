@@ -30,10 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package tasseomancy
 
-export
-  savagery
-  . { Circle, Delta, Down, Ellipse, Figure, Group, Left, Lettering, Orientation, Outline, Point,
-      Polyline, Rectangle, Right, Segment, Stop, Stroke, Svg, Sweep, Transform, Transformable, Up,
-      unary_+, transform, translate, scale, rotate, skew }
+import anticipation.*
+import denominative.*
+import rudiments.*
+import vacuous.*
+
+// The categorical counterpart of a `Scale`: the axis is divided into equal bands, one per
+// category in first-appearance order, and a value is placed at the centre of its band.
+case class Bands(categories: Sequence[Text]) extends Ruler:
+  def count: Int = categories.size
+  def width: Double = if count == 0 then 1.0 else 1.0/count
+  def centre(index: Int): Double = (index + 0.5)*width
+
+  def index(label: Text): Optional[Int] =
+    var found: Optional[Int] = Unset
+    var position: Int = 0
+
+    categories.foreach: category =>
+      if found.absent && category == label then found = position
+      position += 1
+
+    found
+
+  def gradations(budget: Int): Sequence[Gradation] =
+    var position: Int = 0
+    var marks: List[Gradation] = Nil
+
+    categories.foreach: category =>
+      marks = Gradation(centre(position), category) :: marks
+      position += 1
+
+    marks.reverse.to[Sequence]
