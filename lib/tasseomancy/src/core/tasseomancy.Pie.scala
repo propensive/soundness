@@ -77,7 +77,7 @@ object Pie:
 
         val marks = columnOf(data).marks
         val names = fit.labels.to[List]
-        val layout = Cartesian.layout(Unset, names)
+        val layout = Cartesian.layout(Unset, Unset, names)
         val frame = layout.frame
         val radius = (frame.width.min(frame.height)/2.0 - style.fontSize).max(1.0)
         val hole = radius*form.hole.max(0.0).min(0.95)

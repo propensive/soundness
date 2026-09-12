@@ -79,7 +79,7 @@ object Scatter:
 
         val all = traces(data)
         val names = all.map(_.name)
-        val layout = Cartesian.layout(fit.ordinate, names)
+        val layout = Cartesian.layout(fit.abscissa, fit.ordinate, names)
         val frame = layout.frame
         var index = 0
 

@@ -146,10 +146,16 @@ private[tasseomancy] object Cartesian:
   private def legendWidth(names: List[Text])(using Chart.Style, FontMetric): Double =
     names.fold(0.0) { (acc, name) => acc.max(textWidth(name)) } + swatch + gap
 
+  // An axis's title: the style's, if given, with the axis's unit appended; otherwise the name and
+  // unit the axis's type supplies; a categorical axis has neither.
+  def title(ruler: Ruler, supplied: Optional[Text]): Optional[Text] = ruler match
+    case scale: Scale => scale.notation.title(supplied)
+    case _            => supplied
+
   // The plot rectangle: the style's size less the insets, the ordinate's labels (measured from
   // the gradations the full height would allow), the abscissa's labels, any titles and the
   // legend. A chart without an ordinate (a pie) passes none.
-  def layout(ordinate: Optional[Ruler], names: List[Text])
+  def layout(abscissa: Optional[Ruler], ordinate: Optional[Ruler], names: List[Text])
     ( using style: Chart.Style, metric: FontMetric )
   :   Layout =
 
@@ -164,14 +170,16 @@ private[tasseomancy] object Cartesian:
       ruler.gradations(budget).fold(0.0): (acc, gradation) => acc.max(textWidth(gradation.label))
 
     val axisRoom = ordinate.lay(0.0) { _ => gap + style.tickLength }
-    val titleWidth = style.ordinateTitle.lay(0.0) { _ => titleRoom }
+    val ordinateTitle = ordinate.let(title(_, style.ordinateTitle)).or(style.ordinateTitle)
+    val abscissaTitle = abscissa.let(title(_, style.abscissaTitle)).or(style.abscissaTitle)
+    val titleWidth = ordinateTitle.lay(0.0) { _ => titleRoom }
     val left = style.inset + labelWidth + axisRoom + titleWidth
     val legendRoom = if rightLegend then legendWidth(names) + gap*2 else 0.0
     val right = style.inset + style.fontSize*0.6 + legendRoom
     val top = style.inset + style.fontSize*0.6
     val legendRow = if bottomLegend then lineHeight else 0.0
     val labelRow = ordinate.lay(0.0) { _ => style.fontSize + gap + style.tickLength }
-    val titleHeight = style.abscissaTitle.lay(0.0) { _ => titleRoom }
+    val titleHeight = abscissaTitle.lay(0.0) { _ => titleRoom }
     val bottom = style.inset + labelRow + titleHeight + legendRow
     val width = (style.width - left - right).max(1.0)
     val height = (style.height - top - bottom).max(1.0)
@@ -259,7 +267,7 @@ private[tasseomancy] object Cartesian:
 
           label :: tick :: acc
 
-      val title = style.abscissaTitle.lay(Nil): text =>
+      val title = Cartesian.title(abscissa, style.abscissaTitle).lay(Nil): text =>
         val y = frame.bottom + style.tickLength + gap + style.fontSize + gap
         val position = point(frame.left + frame.width/2.0, y)
 
@@ -287,7 +295,7 @@ private[tasseomancy] object Cartesian:
 
           label :: tick :: acc
 
-      val title = style.ordinateTitle.lay(Nil): text =>
+      val title = Cartesian.title(ordinate, style.ordinateTitle).lay(Nil): text =>
         val centre = Delta(style.inset.toFloat, (frame.top + frame.height/2.0).toFloat)
         val transforms = List(Transform.Translate(centre), Transform.Rotate(Angle.degrees(-90.0)))
 
@@ -349,5 +357,15 @@ private[tasseomancy] object Cartesian:
 
     frame.lay(Nil): frame => List(legend(frame, names))
 
-  def drawing(parts: List[(Svg.Id, Figure)])(using style: Chart.Style): Chart.Drawing =
-    Chart.Drawing(style.width, style.height, Nil, parts.to[Ledger])
+  // The parts behind a backdrop in the palette's background colour, so that a dark palette's
+  // lettering is not set on the page's white.
+  def drawing(parts: List[(Svg.Id, Figure)])(using style: Chart.Style, palette: ChartPalette)
+  :   Chart.Drawing =
+
+    val backdrop =
+      Rectangle
+        ( point(0.0, 0.0), style.width.toFloat, style.height.toFloat,
+          style = filled(palette.background), id = Svg.Id(t"backdrop") )
+
+    val all = (Svg.Id(t"backdrop") -> backdrop) :: parts
+    Chart.Drawing(style.width, style.height, Nil, all.to[Ledger])

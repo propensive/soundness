@@ -55,6 +55,19 @@ object Scale:
     case Interval
     case Clock
 
+  // How an axis of some type is read: how its gradations are spaced and written, what the
+  // quantity is called (`distance`, `time`), and the unit its values are in (`m`, `kg·s⁻²`).
+  // The name and unit make the axis title — `distance / m` — unless the style gives a title, in
+  // which case the unit is appended to it.
+  case class Notation
+    ( spacing:   Spacing        = Spacing.Decimal,
+      labelling: Labelling      = Labelling.Number(t""),
+      name:      Optional[Text] = Unset,
+      unit:      Optional[Text] = Unset ):
+
+    def title(supplied: Optional[Text]): Optional[Text] =
+      supplied.or(name).let { text => unit.lay(text) { unit => t"$text / $unit" } }.or(unit)
+
   // The slack allowed when a value is compared against a bound it was computed from, so that a
   // gradation at the end of a scale is not lost to a rounding error.
   private[tasseomancy] val tolerance: Double = 0.000000001
@@ -160,15 +173,13 @@ object Scale:
 // A fitted numeric axis: the range it shows, whether positions are linear or logarithmic in
 // value, and how it is graduated and labelled. A scale is plain data, so a chart can tell whether
 // a new point still fits the axis it was drawn with.
-case class Scale
-  ( lower:     Double,
-    upper:     Double,
-    transform: Scale.Transform,
-    spacing:   Scale.Spacing,
-    labelling: Scale.Labelling )
+case class Scale(lower: Double, upper: Double, transform: Scale.Transform, notation: Scale.Notation)
 extends Ruler:
 
   import Scale.*
+
+  def spacing: Spacing = notation.spacing
+  def labelling: Labelling = notation.labelling
 
   // Where a value lies along the axis, as a fraction of its length. On a logarithmic scale a
   // value at or below zero has no position, and is clipped to the axis's start.

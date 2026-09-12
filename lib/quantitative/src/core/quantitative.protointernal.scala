@@ -47,6 +47,7 @@ import hypotenuse.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
+import vacuous.*
 
 // `caps.Pure`: a stateless namespace of macro-support value classes; without the marker, the
 // nested classes' references to sibling members capture `protointernal.this`, which their pure
@@ -818,3 +819,9 @@ trait protointernal extends caps.Pure:
     UnitsMap[units].dimensionality.quantityName match
       case Some(name) => '{${Expr(name)}.tt}
       case None       => halt(m"there is no descriptive name for this physical quantity")
+
+  // The same name, or `Unset` where the dimension has none, for callers that can do without.
+  def describeOptional[units <: Measure: Type](using Quotes): Expr[Optional[Text]] =
+    UnitsMap[units].dimensionality.quantityName match
+      case Some(name) => '{${Expr(name)}.tt}
+      case None       => '{Unset}

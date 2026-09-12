@@ -107,7 +107,7 @@ object Histogram:
         val span0 = extent.upperOr1 - extent.lowerOr0
         val span = if span0 > 0.0 then span0 else extent.upperOr1.abs.max(1.0)
 
-        val width = continuous.spacing match
+        val width = continuous.notation.spacing match
           case Scale.Spacing.Decimal     => Scale.step(span/bins)
           case Scale.Spacing.Sexagesimal => Scale.sexagesimalStep(span/bins)
 
@@ -121,16 +121,14 @@ object Histogram:
           edges = edge :: edges
           count += 1
 
-        val abscissa =
-          Scale(first, edge, Scale.Transform.Linear, continuous.spacing, continuous.labelling)
-
+        val abscissa = Scale(first, edge, Scale.Transform.Linear, continuous.notation)
         val provisional = Histogram.Fit(edges.reverse.to[Sequence], abscissa, abscissa)
         val most = mostCounted(provisional, all)
-        val number = Scale.Labelling.Number(t"")
+        val counting = Scale.Notation(name = t"count")
 
         val ordinate =
           form.ordinate.or(Calibration[Int](Calibration.Policy.Linear))
-          . scale(0.0, most.toDouble, true, Scale.Spacing.Decimal, number)
+          . scale(0.0, most.toDouble, true, counting)
 
         Histogram.Fit(provisional.edges, abscissa, ordinate)
 
@@ -145,7 +143,7 @@ object Histogram:
 
         val all = extract(data)
         val names = all.map(_(0))
-        val layout = Cartesian.layout(fit.ordinate, names)
+        val layout = Cartesian.layout(fit.abscissa, fit.ordinate, names)
         val frame = layout.frame
         val total = countOf(all).max(1)
         val bins = fit.edges.size - 1

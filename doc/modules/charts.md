@@ -119,6 +119,19 @@ import palettes.solarizedDarkChartPalette
 given Chart.Style = Chart.Style(width = 800, height = 300, ordinateTitle = t"units sold")
 ```
 
+An axis over a [quantity](quantities.md) is titled by what it measures and its unit, taken from
+the type: a series of `Quantity[Metres[1]]` values has the ordinate title `distance / m`, and one
+of `Metre/Second` values `velocity / m·s¯¹`, with the units rendered as they are everywhere
+else in Soundness. A title given in the style replaces the name but keeps the unit:
+
+```scala
+val tides = Series(t"tide")((0.0, 1.2*Metre), (6.0, 4.6*Metre), (12.0, 1.1*Metre))
+tides.chart(Lines()).svg.xml.show.contains(t"distance / m")   // true
+```
+
+A `Duration` axis is titled `time`, and its gradations carry their own units — `250ms`,
+`1m30s` — since clock steps are not decimal.
+
 Text is measured to lay out the axis labels and legend. Without a font in scope, an average width
 per character is assumed; with a [font](fonts.md) loaded, its own glyph advances are used, and
 the margins fit their labels exactly:

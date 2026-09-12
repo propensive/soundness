@@ -73,7 +73,7 @@ object Bars:
 
         val scale =
           form.ordinate.or(calibration)
-          . scale(extent.lowerOr0, extent.upperOr1, true, continuous.spacing, continuous.labelling)
+          . scale(extent.lowerOr0, extent.upperOr1, true, continuous.notation)
 
         Bars.Fit(Bands(categories(all)), scale)
 
@@ -91,7 +91,7 @@ object Bars:
 
         val all = columns(data)
         val names = all.map(_.name)
-        val layout = Cartesian.layout(fit.ordinate, names)
+        val layout = Cartesian.layout(fit.bands, fit.ordinate, names)
         val frame = layout.frame
         val total = countOf(all).max(1)
         val groupWidth = frame.width*fit.bands.width*(1.0 - style.barGap)

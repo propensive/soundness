@@ -102,7 +102,7 @@ object Boxes:
 
         val scale =
           form.ordinate.or(calibration)
-          . scale(extent.lowerOr0, extent.upperOr1, false, continuous.spacing, continuous.labelling)
+          . scale(extent.lowerOr0, extent.upperOr1, false, continuous.notation)
 
         Boxes.Fit(Bands(names), scale, summaries)
 
@@ -120,7 +120,7 @@ object Boxes:
 
         val all = extract(data)
         val names = all.map(_(0))
-        val layout = Cartesian.layout(fit.ordinate, names)
+        val layout = Cartesian.layout(fit.bands, fit.ordinate, names)
         val frame = layout.frame
         val boxWidth = frame.width*fit.bands.width*(1.0 - style.barGap)
         val outline = stroked(palette.axis, 1.0)

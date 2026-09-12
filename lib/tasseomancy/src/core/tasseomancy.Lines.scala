@@ -68,8 +68,8 @@ object Lines:
       trace.data.fold(acc): (acc2, datum) =>
         (acc2(0).include(datum.x), acc2(1).include(datum.y).include(datum.bounds))
 
-    val xScale = abscissa.or(kx).scale(xs.lowerOr0, xs.upperOr1, false, cx.spacing, cx.labelling)
-    val yScale = ordinate.or(ky).scale(ys.lowerOr0, ys.upperOr1, false, cy.spacing, cy.labelling)
+    val xScale = abscissa.or(kx).scale(xs.lowerOr0, xs.upperOr1, false, cx.notation)
+    val yScale = ordinate.or(ky).scale(ys.lowerOr0, ys.upperOr1, false, cy.notation)
     (xScale, yScale)
 
   private[tasseomancy] def accommodatesTraces
@@ -105,7 +105,7 @@ object Lines:
 
         val all = traces(data)
         val names = all.map(_.name)
-        val layout = Cartesian.layout(fit.ordinate, names)
+        val layout = Cartesian.layout(fit.abscissa, fit.ordinate, names)
         val frame = layout.frame
         var index = 0
 

@@ -51,67 +51,50 @@ object Calibration:
   def apply[value](policy: Policy): value is Calibration = new Calibration:
     type Self = value
 
-    def scale
-      ( lower:     Double,
-        upper:     Double,
-        anchored:  Boolean,
-        spacing:   Scale.Spacing,
-        labelling: Scale.Labelling )
-    :   Scale =
-
+    def scale(lower: Double, upper: Double, anchored: Boolean, notation: Scale.Notation): Scale =
       policy match
-        case Policy.Linear =>
-          Calibration.linear(lower, upper, anchored, spacing, labelling, false)
-
-        case Policy.Tight =>
-          Calibration.linear(lower, upper, anchored, spacing, labelling, true)
-
-        case Policy.Logarithmic =>
-          Calibration.logarithmic(lower, upper, anchored, spacing, labelling)
+        case Policy.Linear      => Calibration.linear(lower, upper, anchored, notation, false)
+        case Policy.Tight       => Calibration.linear(lower, upper, anchored, notation, true)
+        case Policy.Logarithmic => Calibration.logarithmic(lower, upper, anchored, notation)
 
         case Policy.Adaptive =>
           if lower > 0.0 && upper/lower >= 1000.0
-          then Calibration.logarithmic(lower, upper, anchored, spacing, labelling)
-          else Calibration.linear(lower, upper, anchored, spacing, labelling, false)
+          then Calibration.logarithmic(lower, upper, anchored, notation)
+          else Calibration.linear(lower, upper, anchored, notation, false)
 
   private[tasseomancy] def linear
-    ( lower0:    Double,
-      upper0:    Double,
-      anchored:  Boolean,
-      spacing:   Scale.Spacing,
-      labelling: Scale.Labelling,
-      tight:     Boolean )
+    ( lower0:   Double,
+      upper0:   Double,
+      anchored: Boolean,
+      notation: Scale.Notation,
+      tight:    Boolean )
   :   Scale =
 
     val lower1 = if anchored && lower0 > 0.0 then 0.0 else lower0
     val upper1 = if anchored && upper0 < 0.0 then 0.0 else upper0
 
-    if tight then Scale(lower1, upper1, Scale.Transform.Linear, spacing, labelling) else
+    if tight then Scale(lower1, upper1, Scale.Transform.Linear, notation) else
       val span0 = upper1 - lower1
       val span = if span0 > 0.0 then span0 else if upper1 != 0.0 then upper1.abs else 1.0
 
-      val step = spacing match
+      val step = notation.spacing match
         case Scale.Spacing.Decimal     => Scale.step(span/5.0)
         case Scale.Spacing.Sexagesimal => Scale.sexagesimalStep(span/5.0)
 
       val lower = (lower1/step + Scale.tolerance).floor*step
       val upper = (upper1/step - Scale.tolerance).ceiling*step
       val upper2 = if upper > lower then upper else lower + step
-      Scale(lower, upper2, Scale.Transform.Linear, spacing, labelling)
+      Scale(lower, upper2, Scale.Transform.Linear, notation)
 
   private[tasseomancy] def logarithmic
-    ( lower0:    Double,
-      upper0:    Double,
-      anchored:  Boolean,
-      spacing:   Scale.Spacing,
-      labelling: Scale.Labelling )
+    ( lower0: Double, upper0: Double, anchored: Boolean, notation: Scale.Notation )
   :   Scale =
 
-    if lower0 <= 0.0 then linear(lower0, upper0, anchored, spacing, labelling, false) else
+    if lower0 <= 0.0 then linear(lower0, upper0, anchored, notation, false) else
       val lower = 10.0 ** log10(lower0).double.floor
       val upper = 10.0 ** log10(upper0).double.ceiling
       val upper2 = if upper > lower then upper else lower*10.0
-      Scale(lower, upper2, Scale.Transform.Logarithmic, spacing, labelling)
+      Scale(lower, upper2, Scale.Transform.Logarithmic, notation)
 
 // How the extent of the data becomes the range of an axis: whether positions are linear or
 // logarithmic, whether the range is padded out to whole gradations, and whether it must include
@@ -119,10 +102,4 @@ object Calibration:
 // one axis; the methods are independent of `Self`, so a calibration can also be passed explicitly
 // to a chart kind for one of its axes.
 trait Calibration extends Typeclass.Pure:
-  def scale
-    ( lower:     Double,
-      upper:     Double,
-      anchored:  Boolean,
-      spacing:   Scale.Spacing,
-      labelling: Scale.Labelling )
-  :   Scale
+  def scale(lower: Double, upper: Double, anchored: Boolean, notation: Scale.Notation): Scale

@@ -94,8 +94,7 @@ object TestFont:
         t"maxp" -> maxpTable)
 
 object Tests extends Suite(m"Tasseomancy tests"):
-  val number = Scale.Labelling.Number(t"")
-  val decimal = Scale.Spacing.Decimal
+  val decimal = Scale.Notation()
 
   def labels(scale: Scale, budget: Int): List[Text] =
     scale.gradations(budget).filter(_.major).map(_.label).to[List]
@@ -162,47 +161,47 @@ object Tests extends Suite(m"Tasseomancy tests"):
 
     suite(m"Calibration"):
       test(m"a linear scale pads outward to whole steps"):
-        val scale = Calibration.linear(0.0, 97.0, false, decimal, number, false)
+        val scale = Calibration.linear(0.0, 97.0, false, decimal, false)
         (scale.lower, scale.upper)
       . assert(_ == (0.0, 100.0))
 
       test(m"linear gradations fall on multiples of 1, 2 and 5"):
-        labels(Calibration.linear(0.0, 97.0, false, decimal, number, false), 5)
+        labels(Calibration.linear(0.0, 97.0, false, decimal, false), 5)
       . assert(_ == List(t"0", t"20", t"40", t"60", t"80", t"100"))
 
       test(m"a logarithmic scale spans whole decades"):
-        val scale = Calibration.logarithmic(3.0, 4200.0, false, decimal, number)
+        val scale = Calibration.logarithmic(3.0, 4200.0, false, decimal)
         (scale.transform, scale.lower, scale.upper)
       . assert(_ == (Scale.Transform.Logarithmic, 1.0, 10000.0))
 
       test(m"logarithmic gradations are powers of ten"):
-        labels(Calibration.logarithmic(3.0, 4200.0, false, decimal, number), 5)
+        labels(Calibration.logarithmic(3.0, 4200.0, false, decimal), 5)
       . assert(_ == List(t"1", t"10", t"100", t"1000", t"10000"))
 
       test(m"a logarithmic scale over non-positive values falls back to linear"):
-        Calibration.logarithmic(-1.0, 10.0, false, decimal, number).transform
+        Calibration.logarithmic(-1.0, 10.0, false, decimal).transform
       . assert(_ == Scale.Transform.Linear)
 
       test(m"adaptive calibration goes logarithmic at a thousandfold range"):
-        Calibration[Double](Calibration.Policy.Adaptive).scale(1.0, 5000.0, false, decimal, number).transform
+        Calibration[Double](Calibration.Policy.Adaptive).scale(1.0, 5000.0, false, decimal).transform
       . assert(_ == Scale.Transform.Logarithmic)
 
       test(m"adaptive calibration stays linear over a narrow range"):
-        Calibration[Double](Calibration.Policy.Adaptive).scale(1.0, 500.0, false, decimal, number).transform
+        Calibration[Double](Calibration.Policy.Adaptive).scale(1.0, 500.0, false, decimal).transform
       . assert(_ == Scale.Transform.Linear)
 
       test(m"an anchored scale includes zero"):
-        Calibration.linear(5.0, 9.0, true, decimal, number, false).lower
+        Calibration.linear(5.0, 9.0, true, decimal, false).lower
       . assert(_ == 0.0)
 
       test(m"a tight scale is exactly the data's extent"):
-        val scale = Calibration.linear(5.0, 9.0, false, decimal, number, true)
+        val scale = Calibration.linear(5.0, 9.0, false, decimal, true)
         (scale.lower, scale.upper)
       . assert(_ == (5.0, 9.0))
 
       test(m"sexagesimal gradations land on clock steps"):
-        val interval = Scale.Labelling.Interval
-        val scale = Calibration.linear(0.0, 100.0, false, Scale.Spacing.Sexagesimal, interval, false)
+        val clock = Scale.Notation(Scale.Spacing.Sexagesimal, Scale.Labelling.Interval)
+        val scale = Calibration.linear(0.0, 100.0, false, clock, false)
         labels(scale, 5)
       . assert(_ == List(t"0s", t"30s", t"1m", t"1m30s", t"2m"))
 
@@ -259,18 +258,18 @@ object Tests extends Suite(m"Tasseomancy tests"):
     suite(m"Drawing"):
       test(m"a chart's parts have stable identifiers"):
         val text = rendered(sales.chart(Bars()))
-        List(t"grid", t"abscissa", t"ordinate", t"series-0", t"series-1", t"legend").all: id =>
+        List(t"backdrop", t"grid", t"abscissa", t"ordinate", t"series-0", t"series-1", t"legend").all: id =>
           text.contains(t"""id="$id"""")
       . assert(_ == true)
 
       test(m"grouped bars draw one rectangle per value, plus the legend's swatches"):
         occurrences(rendered(sales.chart(Bars())), t"<rect")
-      . assert(_ == 8)
+      . assert(_ == 1 + 6 + 2)
 
       test(m"a hidden legend draws no swatches"):
         given Chart.Style = Chart.Style(legend = Chart.Legend.Hidden)
         occurrences(rendered(sales.chart(Bars())), t"<rect")
-      . assert(_ == 6)
+      . assert(_ == 1 + 6)
 
       test(m"a line chart draws one polyline per series"):
         val text = rendered(List(growth, Series(t"decay")((0.0, 10.0), (10.0, 0.0))).chart(Lines()))
@@ -290,16 +289,16 @@ object Tests extends Suite(m"Tasseomancy tests"):
       test(m"a set of series plots the same as a list"):
         val fromSet = rendered(sales.to[Set].chart(Bars()))
         occurrences(fromSet, t"<rect")
-      . assert(_ == 8)
+      . assert(_ == 9)
 
       test(m"a sequence of series plots the same as a list"):
         occurrences(rendered(sales.to[Sequence].chart(Bars())), t"<rect")
-      . assert(_ == 8)
+      . assert(_ == 9)
 
       test(m"a box plot draws a box and whiskers per sample set"):
         val data = List(Samples(t"a")(1.0, 2.0, 3.0), Samples(t"b")(2.0, 4.0, 8.0))
         occurrences(rendered(data.chart(Boxes())), t"<rect")
-      . assert(_ == 4)
+      . assert(_ == 1 + 2 + 2)
 
       test(m"an error bar is drawn for an estimate"):
         given Chart.Style = Chart.Style(grid = false, legend = Chart.Legend.Hidden)
@@ -309,6 +308,28 @@ object Tests extends Suite(m"Tasseomancy tests"):
         val end = text.indexOf("</g>", start)
         occurrences(text.substring(start, end).nn.tt, t"<polyline")
       . assert(_ == 3)
+
+      test(m"a quantity's axis is titled with its dimension and unit"):
+        val heights = Series(t"tide")((0.0, 1.2*Metre), (6.0, 4.6*Metre), (12.0, 1.1*Metre))
+        rendered(heights.chart(Lines())).contains(t">distance / m<")
+      . assert(_ == true)
+
+      test(m"a style's title takes the unit from the quantity"):
+        given Chart.Style = Chart.Style(ordinateTitle = t"tide height")
+        val heights = Series(t"tide")((0.0, 1.2*Metre), (6.0, 4.6*Metre), (12.0, 1.1*Metre))
+        rendered(heights.chart(Lines())).contains(t">tide height / m<")
+      . assert(_ == true)
+
+      test(m"a compound unit is rendered with its powers"):
+        val speeds = Series(t"gust")((0.0, 3.0*Metre/Second), (1.0, 7.5*Metre/Second))
+        rendered(speeds.chart(Lines())).contains(t">velocity / m·s¯¹<")
+      . assert(_ == true)
+
+      test(m"a duration axis is titled time, with units in its labels"):
+        val latency = Series(t"p99")((0.0*Second, 0.012*Second), (30.0*Second, 0.019*Second))
+        val text = rendered(latency.chart(Lines()))
+        (text.contains(t">time<"), text.contains(t">12ms<"))
+      . assert(_ == (true, true))
 
       test(m"axis titles are lettered"):
         given Chart.Style = Chart.Style(abscissaTitle = t"month", ordinateTitle = t"sales")
@@ -327,8 +348,8 @@ object Tests extends Suite(m"Tasseomancy tests"):
 
       test(m"a measured legend is narrower for a narrow face"):
         given Chart.Style = Chart.Style()
-        val average = Cartesian.layout(Unset, List(t"ABC"))(using summon[Chart.Style], summon[FontMetric])
-        val measured = Cartesian.layout(Unset, List(t"ABC"))(using summon[Chart.Style], FontMetric.of(TestFont.font))
+        val average = Cartesian.layout(Unset, Unset, List(t"ABC"))(using summon[Chart.Style], summon[FontMetric])
+        val measured = Cartesian.layout(Unset, Unset, List(t"ABC"))(using summon[Chart.Style], FontMetric.of(TestFont.font))
         val width = measured.legend.let(_.width).or(0.0)
         (average.frame.width < measured.frame.width, (width - 32.4).abs < 0.000001)
       . assert(_ == (true, true))
