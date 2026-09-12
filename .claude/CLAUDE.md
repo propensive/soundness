@@ -80,6 +80,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   stays at package top level with a **unique, library-qualified name** (`tarPathOpenable`,
   `terminalStdio`) and a comment explaining why; never a bare generic name, and never
   anonymous — an unnameable given cannot be selectively imported or disambiguated.
+- A given whose subject has no companion to anchor to — a literal type argument such as
+  `Typeface["sans-serif"]` — may live in the companion of a type its refinement names: the
+  companion of a type member's type is in implicit scope too, which is how `object Web` holds
+  `(Typeface of "sans-serif") is Typesettable in Web` and `object Print` the standard fourteen.
 - Traps: `import p.*` does NOT import givens (use by-name imports or `given` selectors — a
   sweep that replaces a by-name given import with a wildcard silently drops the given);
   synthesized export forwarders lose capture-annotated refinements (hand-write delegating

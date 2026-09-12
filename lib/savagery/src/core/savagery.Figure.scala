@@ -36,12 +36,15 @@ import scala.collection.immutable.VectorMap
 import scala.collection.mutable.Builder
 
 import anticipation.*
-import cataclysm.Css
+import cataclysm.{Css, Web, style}
 import denominative.*
 import geodesy.*
 import gossamer.*
+import phoenicia.Font
+import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 import xylophone.*
 
@@ -131,7 +134,7 @@ object Figure:
 
         t"Polyline($body)"
 
-      case Lettering(position, text, anchor, baseline, id, style, transforms) =>
+      case Lettering(position, text, anchor, baseline, id, style, font, transforms) =>
         val body =
           fields
             ( t"position"   -> position.inspect,
@@ -140,12 +143,20 @@ object Figure:
               t"baseline"   -> optional(baseline),
               t"id"         -> optional(id),
               t"style"      -> optional(style),
+              t"font"       -> optional(font),
               t"transforms" -> transforms.inspect )
 
         t"Lettering($body)"
 
+  // The fonts a list of figures sets text in, groups included, so that an `Svg` can carry the
+  // `@font-face` rules for every typeface its lettering names.
+  def fonts(figures: List[Figure]): List[Font in Web] = figures match
+    case head :: tail => head.fonts + fonts(tail)
+    case _            => Nil
+
 sealed trait Figure:
   def xml: Xml
+  def fonts: List[Font in Web] = Nil
 
 case class Rectangle
   ( position:   Point,
@@ -251,6 +262,8 @@ case class Group
     transforms: List[Transform]     = Nil )
 extends Figure:
 
+  override def fonts: List[Font in Web] = Figure.fonts(figures)
+
   def xml: Xml =
     val attrs = VectorMap.newBuilder[Text, Text]
     Figure.decorate(attrs, id, transforms, style)
@@ -297,7 +310,10 @@ object Lettering:
       case Hanging    => t"hanging"
 
 // A `<text>` element: a run of characters set at a position, anchored at its start, middle or end.
-// Named for what it is in a drawing — lettering — since `Text` is the string type.
+// Named for what it is in a drawing — lettering — since `Text` is the string type. The font is a
+// `Font in Web`, which exists only for a typeface with a provision in scope, so the SVG that
+// carries this lettering also carries the `@font-face` that makes the typeface available; its
+// declarations join the inline style.
 case class Lettering
   ( position:   Point,
     text:       Text,
@@ -305,8 +321,11 @@ case class Lettering
     baseline:   Optional[Lettering.Baseline] = Unset,
     id:         Optional[Svg.Id]             = Unset,
     style:      Optional[Css.Style]          = Unset,
+    font:       Optional[Font in Web]        = Unset,
     transforms: List[Transform]              = Nil )
 extends Figure:
+
+  override def fonts: List[Font in Web] = font.lay(Nil)(List(_))
 
   def xml: Xml =
     given showable: Float is Showable = _.toString.tt
@@ -315,6 +334,9 @@ extends Figure:
     attrs += t"y" -> position.y.show
     if anchor != Lettering.Anchor.Start then attrs += t"text-anchor" -> anchor.text
     baseline.let: baseline => attrs += t"dominant-baseline" -> baseline.text
-    Figure.decorate(attrs, id, transforms, style)
+
+    val styled: Optional[Css.Style] = font.lay(style): font => style.lay(font.style)(font.style + _)
+
+    Figure.decorate(attrs, id, transforms, styled)
 
     Element(t"text", Attributes.from(attrs.result().to(Map)), List[Xml](TextNode(text)).nodes)

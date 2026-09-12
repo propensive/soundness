@@ -303,6 +303,72 @@ object Tests extends Suite(m"Cataclysm Tests"):
         capture[Css.Error](parse(t"a!")).reason
       . assert(_ == Css.Error.Reason.UnexpectedChar('!'))
 
+    suite(m"Fonts"):
+      import formatting.compactCssFormatting
+
+      case class Link(text: Text)
+      given Link is Abstractable across Urls to Text = _.text
+      val inter = Typeface["Inter"]
+
+      test(m"A face's declarations name its family, weight and style"):
+        inter.bold.italic.style.text
+      . assert(_ == t"font-family: \"Inter\"; font-weight: 700; font-style: italic")
+
+      test(m"A generic family is not quoted"):
+        Typeface.SansSerif.face.style.text
+      . assert(_ == t"font-family: sans-serif; font-weight: 400")
+
+      test(m"Variations and features are low-level settings"):
+        inter.face.varying(Variation.Axis.OpticalSize, 14.0).disabling(Face.Feature.Ligatures)
+        . style.text
+      . assert(_ == t"font-family: \"Inter\"; font-weight: 400; font-variation-settings: "+
+            t"\"opsz\" 14.0; font-feature-settings: \"liga\" 0")
+
+      test(m"A linked provision is a @font-face with its declared coverage"):
+        given (Typeface of "Inter") is Typesettable in Web =
+          Web.linked
+            ( Link(t"https://x/inter.woff2"),
+              Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+              Typesettable.Source.Format.Woff2 )
+
+        Css.fontFace(Web.font(inter.bold)).show
+      . assert(_ == t"""@font-face{font-family:"Inter";src:url("https://x/inter.woff2") format("woff2");font-weight:100 900;}""")
+
+      test(m"A stylesheet provision is imported"):
+        given (Typeface of "Roboto") is Typesettable in Web =
+          Web.imported(Link(t"https://fonts/css"), Coverage.Unknown)
+
+        Css.fontFace(Web.font(Typeface["Roboto"].face)).show
+      . assert(_ == t"""@import url("https://fonts/css");""")
+
+      test(m"A local provision names the installed font"):
+        given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+        Css.fontFace(Web.font(Typeface["Menlo"].face)).show
+      . assert(_ == t"""@font-face{font-family:"Menlo";src:local("Menlo");}""")
+
+      test(m"An embedded font is a data URI"):
+        given (Typeface of "Emb") is Typesettable in Medium =
+          Typesettable.embedded(Sfnt(Array.fill[Byte](12)(0)))
+
+        Css.fontFace(Web.font(Typeface["Emb"].face)).show
+      . assert(_ == t"""@font-face{font-family:"Emb";src:url(data:font/ttf;base64,AAAAAAAAAAAAAAAA) format("truetype");}""")
+
+      test(m"A generic family needs no rule"):
+        Css.fontFace(Web.sansSerifFont).show
+      . assert(_ == t"")
+
+      test(m"Each typeface's rules appear once"):
+        given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+        val menlo = Typeface["Menlo"]
+        Css.fontFaces(Web.font(menlo.face), Web.font(menlo.bold)).show
+      . assert(_ == t"""@font-face{font-family:"Menlo";src:local("Menlo");}""")
+
+      test(m"A typeface without a provision cannot be a web font"):
+        demilitarize:
+          Web.font(Typeface["Nope"].face)
+        . exists(_.error)
+      . assert(_ == true)
+
     suite(m"Property validation"):
       test(m"a known property is accepted"):
         t"a { color: red }".read[Css].rules

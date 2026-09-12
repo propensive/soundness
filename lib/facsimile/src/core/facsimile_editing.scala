@@ -38,6 +38,7 @@ import contingency.*
 import denominative.*
 import gossamer.*
 import phoenicia.*
+import prepositional.*
 import quantitative.*
 import rudiments.*
 import vacuous.*
@@ -121,6 +122,43 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   :   Cos.Ref =
 
     FontEmbedder.embed(pdf, font, name, subset)
+
+  // Makes a font available to a page's content under a resource name, the name `Tf` then
+  // refers to. A `Font in Print` exists only for a typeface with a provision for print, so the
+  // face is either embedded from the provision's file — the one whose coverage admits the face,
+  // subset to `subset` if given — or declared by name as one of the standard fourteen fonts (or
+  // as the reader's own, for another local provision), so the document never names a font its
+  // reader cannot show.
+  def useFont(page: Page^, name: Text, font: Font in Print, subset: Optional[Text] = Unset)
+  ( using Tactic[Pdf.Error] )
+  :   Unit =
+
+    val ref = Print.embedded(font) match
+      case sfnt: Sfnt =>
+        embedFont(sfnt, subset = subset)
+
+      case _ =>
+        val standard = Print.standard(font)
+        val baseFont = standard.lay(font.typeface.name)(Print.baseFont(_))
+
+        // Symbol and ZapfDingbats have built-in encodings; the text fonts take WinAnsi.
+        val symbolic = standard match
+          case Pdf.Font.Standard.Symbol | Pdf.Font.Standard.ZapfDingbats => true
+          case _                                                          => false
+
+        val entries: Map[Text, Cos] =
+          Map
+            ( t"Type"     -> Cos.Name(t"Font"),
+              t"Subtype"  -> Cos.Name(t"Type1"),
+              t"BaseFont" -> Cos.Name(baseFont) )
+
+        val encoded =
+          if symbolic then entries
+          else entries.define(t"Encoding", Cos.Name(t"WinAnsiEncoding"))
+
+        pdf.allocate(Cos.Dictionary(encoded))
+
+    addResource(page, t"Font", name, ref)
 
   // Registers a resource (a font, XObject, …) in a page's `/Resources` under a category and
   // name — the name content operators refer to, e.g. `/F1` for a font used by `Tf`.

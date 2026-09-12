@@ -38,7 +38,7 @@ export cataclysm.{Css, SelectorList, Selector, Compound,
     ViewportWidths,
     ViewportHeights, ViewportMins, ViewportMaxes, Percents, Degrees, Radians, Turns, Flexes, Px,
     Rem, Ex, Ch, Vw, Vh, Vmin, Vmax, Cm, Mm, Pt, Pc, Pct, S, Ms, Deg, Rad, Turn, Fr, css, classes,
-    ids}
+    ids, Web, FontFace, style}
 
 package formatting:
   export cataclysm.formatting.{indentedCssFormatting, compactCssFormatting}

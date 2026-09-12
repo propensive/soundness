@@ -32,4 +32,4 @@
                                                                                                   */
 package phoenicia
 
-export phoenicia.internal.Glyph
+export phoenicia.internal.{Glyph, Stretch, Weight}

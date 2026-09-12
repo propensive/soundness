@@ -47,7 +47,8 @@ import zephyrine.*
 import fulminate.*
 import scala.collection.mutable.ListBuffer
 import cardinality.*
-import cataclysm.Css
+import cataclysm.formatting.compactCssFormatting
+import cataclysm.{Css, FontFace}
 import distillate.*
 import geodesy.*
 import iridescence.*
@@ -259,7 +260,7 @@ object Svg:
           baseline,
           idAttr(elem),
           styleAttr(elem),
-          transformsAttr(elem) )
+          transforms = transformsAttr(elem) )
 
 
     private def decodeSvgDef(elem: Element)
@@ -582,9 +583,17 @@ extends Documentary:
           t"width"   -> width.show,
           t"height"  -> height.show )
 
+    // The `@font-face` rules for every typeface the lettering names, as a `<style>` among the
+    // definitions, so the SVG carries the fonts it uses and renders alike wherever it is shown.
+    val css: Text = FontFace.stylesheet(Figure.fonts(figures)).show
+
+    val styleElement: List[Xml] =
+      if css == t"" then Nil
+      else List(Element(t"style", Attributes.empty, List[Xml](TextNode(css)).nodes))
+
     val defsElement: List[Xml] =
-      if defs.nil then Nil
-      else List(Element(t"defs", Attributes.empty, defs.map(_.xml).nodes))
+      if defs.nil && styleElement.nil then Nil
+      else List(Element(t"defs", Attributes.empty, (styleElement + defs.map(_.xml)).nodes))
 
     val figureNodes: List[Xml] =
       if transforms.nil then figures.map(_.xml)

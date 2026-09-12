@@ -30,9 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package phoenicia
 
-export facsimile.{Annotation, Bookmark, Cos, Destination, Page, Pdf, Print, TextRun, pdf, set,
-    allocate, newStream, free, setContents, setRotation, setBox, setPageEntry, appendPage,
-    removePage, setInfo, setBookmarks, setAnnotations, addLink, embedFont, useFont, addResource,
-    winAnsi}
+import anticipation.*
+import gossamer.*
+import spectacular.*
+
+object Slant:
+  given showable: Slant is Showable =
+    case Upright        => t"upright"
+    case Italic         => t"italic"
+    case Oblique(angle) => t"oblique ${angle.toString}°"
+
+  given inspectable: Slant is Inspectable =
+    case Upright        => t"Slant.Upright"
+    case Italic         => t"Slant.Italic"
+    case Oblique(angle) => t"Slant.Oblique(${angle.toString})"
+
+// Whether a face leans: upright, a true italic (drawn separately), or an oblique (slanted
+// upright) at an angle in degrees, leaning right when positive.
+enum Slant derives CanEqual:
+  case Upright, Italic
+  case Oblique(angle: Double)
+
+  def upright: Boolean = this == Upright

@@ -266,6 +266,42 @@ trait Sfnt:
 
   def familyName: Optional[Text] = safely(name(Sfnt.NameId.Family))
 
+  // The variation axes of a variable font, or nothing for a static font.
+  def fvar: Optional[FvarTable] = tables(Sfnt.Table.Ttf.Fvar).let: ref => FvarTable(ref.offset)
+
+  // The layout features the font implements, by tag, from the feature lists of its `GSUB` and
+  // `GPOS` tables. A font with neither table implements none.
+  lazy val features: List[Face.Feature] =
+    def featureTags(tag: Sfnt.Table.Tag): List[Text] = tables(tag).lay(Nil): ref =>
+      val list = ref.offset + B16(data, ref.offset + 6).u16.int
+      val count = B16(data, list).u16.int
+
+      List.tabulate(count): index =>
+        val record = list + 2 + index*6
+        String(Array.unsafeJvm(data), record, 4, StandardCharsets.US_ASCII).tt
+
+    (featureTags(Sfnt.Table.Otf.Gsub) + featureTags(Sfnt.Table.Otf.Gpos)).distinct.map:
+      tag => Face.Feature(tag)
+
+  // The font variations table: the axes along which a variable font's outlines move, each with
+  // the range of values it admits.
+  case class FvarTable(offset: Int):
+    lazy val axisCount: Int = B16(data, offset + 8).u16.int
+    lazy val axisSize: Int = B16(data, offset + 10).u16.int
+
+    lazy val axes: List[Axis] =
+      val start = offset + B16(data, offset + 4).u16.int
+
+      List.tabulate(axisCount): index =>
+        val record = start + index*axisSize
+        val tag = String(Array.unsafeJvm(data), record, 4, StandardCharsets.US_ASCII).tt
+        val nameId = B16(data, record + 18).u16.int
+        Axis(tag, fixed(record + 4), fixed(record + 8), fixed(record + 12), nameId)
+
+    private def fixed(position: Int): Double = B32(data, position).s32.int/65536.0
+
+    case class Axis(tag: Text, minimum: Double, default: Double, maximum: Double, nameId: Int)
+
   case class HeadTable
     ( majorVersion:       U16,
       minorVersion:       U16,
@@ -359,6 +395,9 @@ trait Sfnt:
     // Installable embedding is 0; of the restriction bits, only bit 1 forbids embedding
     // outright.
     def embeddable: Boolean = (fsType & 0x000f) != 0x0002
+
+    // Bit 0 of `fsSelection` marks an italic face and bit 9 an oblique one; either leans.
+    def italic: Boolean = (selection & 0x0001) != 0 || (selection & 0x0200) != 0
 
   // The naming table: localized, per-platform strings such as the font's family and
   // PostScript names.

@@ -758,6 +758,37 @@ object Tests extends Suite(m"Facsimile tests"):
           pdf.page(Prim).fonts(t"F1").let(_.embedded).let(_.data.to[List])
       . assert(_ == fontProgram.to[List])
 
+      test(m"a standard font is declared by name rather than embedded"):
+        val path = tempPdf(blankPage)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val font = Print.font(Print.Helvetica.bold)
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.useFont(doc.page(Prim), t"F1", font))
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.page(Prim).fonts(t"F1").let(_.baseFont)
+      . assert(_ == t"Helvetica-Bold")
+
+      test(m"a font from an embedded provision is embedded"):
+        given (Typeface of "Pretend") is Typesettable in Medium =
+          Typesettable.embedded(Truetype(fontProgram))
+
+        val path = tempPdf(blankPage)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val font = Print.font(Typeface["Pretend"].face)
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.useFont(doc.page(Prim), t"F1", font))
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.page(Prim).fonts(t"F1").let(_.embedded).let(_.data.to[List])
+      . assert(_ == fontProgram.to[List])
+
+      test(m"a typeface without a provision for print is refused"):
+        demilitarize:
+          Print.font(Typeface["Georgia"].face)
+        . exists(_.error)
+      . assert(_ == true)
+
       test(m"content using an embedded font extracts as text"):
         val path = tempPdf(blankPage)
 

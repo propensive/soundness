@@ -34,10 +34,11 @@ package tasseomancy
 
 import Framing.*
 import anticipation.*
-import cataclysm.Css
+import cataclysm.{Css, Web}
 import geodesy.*
 import gossamer.*
 import iridescence.*
+import phoenicia.Font
 import prepositional.*
 import rudiments.*
 import savagery.*
@@ -54,24 +55,28 @@ object Chart:
   object Style:
     given standard: Standard = Standard()
 
-  // What every kind of chart shares: the canvas, the typeface, the legend, and how the components
+  // What every kind of chart shares: the canvas, the font, the legend, and how the components
   // common to all of them — a run of text, the backdrop, a legend entry — become figures. A chart
   // kind computes the geometry (where a label sits, how tall a bar is) and calls one of these
   // methods for each component; a style overrides the methods it wants drawn differently, and
   // inherits the rest. `Standard` implements every kind's style with the defaults below.
+  //
+  // The font is a `Font in Web`: a face paired with a provision for its typeface, so a chart can
+  // only be styled in a typeface the SVG will carry a `@font-face` for, or a generic family.
   trait Style:
     def width: Double
     def height: Double
     def inset: Double
-    def fontFamily: Text
+    def font: Font in Web
     def fontSize: Double
     def legend: Legend
 
     // The unit of spacing between components, derived from the type size.
     def gap: Double = fontSize*0.4
 
-    def font(color: Color in Srgb): Css.Style =
-      css(t"font-family" -> fontFamily, t"font-size" -> px(fontSize), t"fill" -> hexOf(color))
+    // The size and colour of a run of text; the face itself is the lettering's `font`.
+    def fontStyle(color: Color in Srgb): Css.Style =
+      css(t"font-size" -> px(fontSize), t"fill" -> hexOf(color))
 
     // Every label, title and legend entry is set through this, unless a more specific method is
     // overridden.
@@ -84,7 +89,9 @@ object Chart:
         transforms: List[Transform] = Nil )
     :   Figure =
 
-      Lettering(position, text, anchor, baseline, style = font(color), transforms = transforms)
+      Lettering
+        ( position, text, anchor, baseline, style = fontStyle(color), font = font,
+          transforms = transforms )
 
     def backdrop(width: Double, height: Double, color: Color in Srgb): List[Figure] =
       List(Rectangle(point(0.0, 0.0), width.toFloat, height.toFloat, style = filled(color)))
@@ -193,7 +200,7 @@ object Chart:
     ( width:         Double         = 640.0,
       height:        Double         = 400.0,
       inset:         Double         = 12.0,
-      fontFamily:    Text           = t"sans-serif",
+      font:          Font in Web    = Web.sansSerifFont,
       fontSize:      Double         = 12.0,
       legend:        Legend         = Legend.Right,
       pitch:         Double         = 60.0,

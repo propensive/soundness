@@ -127,6 +127,19 @@ baseline which line of the glyphs lies on the position:
 Lettering((50, 70), t"time", Lettering.Anchor.Middle, Lettering.Baseline.Hanging)
 ```
 
+A `Lettering` may also name its `font`: a `Font in Web`, which is a face paired with a provision
+for its typeface (see [fonts](fonts.md)), and which exists only where such a provision is in
+scope. The font's declarations join the element's inline style, and the SVG writes a `<style>` of
+`@font-face` rules for every typeface its lettering names into its definitions, so the drawing
+renders alike wherever it is shown:
+
+<!-- doccheck: skip -->
+```scala
+given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+
+Lettering((50, 70), t"time", font = Font(Typeface["Menlo"].bold))
+```
+
 Every figure may carry an inline `style`, a typed [CSS](css.md) declaration set whose property
 names and values are checked as the code compiles, and an `id`:
 

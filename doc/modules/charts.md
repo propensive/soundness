@@ -135,8 +135,8 @@ The hooks cover the details a chart is usually judged on: where a label sits rel
 tick and whether it is rotated (`tickLabel`, with `labelRoom` telling the layout how much space
 that takes), the stroke of each axis (`axisLine`), a break mark where a linear axis starts away
 from zero (`axisBreak`), arrowheads (`arrowhead`), the thickness of series lines (`line`), the
-typeface (`font`, or `lettering` for every run of text), and the labelling of points that carry
-a note (`pointLabel`, for an `Annotated` value).
+size and colour of text (`fontStyle`, or `lettering` for every run of text), and the labelling of
+points that carry a note (`pointLabel`, for an `Annotated` value).
 
 Colors are a `ChartPalette`, named by role — the series ramp, the axes, the grid, the
 lettering — so that one style renders under any palette; a palette is chosen by importing one:
@@ -145,15 +145,25 @@ lettering — so that one style renders under any palette; a palette is chosen b
 import palettes.solarizedDarkChartPalette
 ```
 
-Text is measured to lay out the axis labels and legend. Without a font in scope, an average width
-per character is assumed; with a [font](fonts.md) loaded, its own glyph advances are used, and
-the margins fit their labels exactly:
+The style's `font` is a `Font in Web`: a face paired with a provision for its typeface (see
+[fonts](fonts.md)), so a chart can only be set in a typeface its SVG will carry a `@font-face`
+for, or in a generic family, which is the default. A provision is declared once, and the font
+chosen in the style:
+
+```scala
+given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+
+val monospaced = Chart.Standard(font = Web.font(Typeface["Menlo"].face))
+```
+
+Text is measured to lay out the axis labels and legend. An embedded font's own glyph advances
+are used, so the face measured is the face rendered and the margins fit their labels exactly;
+for a font without a file to hand, an average width per character is assumed. Either can be
+overridden by importing a metric:
 
 ```scala
 import fontMetrics.averageFontMetric
 ```
-
-The face measured should be the one the page will render, since the SVG does not embed it.
 
 An axis over a [quantity](quantities.md) is titled by what it measures and its unit, taken from
 the type: a series of `Quantity[Metres[1]]` values has the ordinate title `distance / m`, and one
@@ -168,15 +178,6 @@ tides.chart(Lines()).svg.xml.show.contains(t"distance / m")   // true
 A `Duration` axis is titled `time`, and its gradations carry their own units — `250ms`,
 `1m30s` — since clock steps are not decimal.
 
-Text is measured to lay out the axis labels and legend. Without a font in scope, an average width
-per character is assumed; with a [font](fonts.md) loaded, its own glyph advances are used, and
-the margins fit their labels exactly:
-
-```scala
-import fontMetrics.averageFontMetric
-```
-
-The face measured should be the one the page will render, since the SVG does not embed it.
 
 ### Rendering
 
