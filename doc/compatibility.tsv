@@ -138,6 +138,7 @@ surveillance	yes	no	no	no	file watching (`java.nio.file` WatchService)
 symbolism	yes	yes	yes	js	
 synesthesia	yes	no	no	no	transitively JVM-only (networking/crypto/fs/process)
 tarantula	yes	no	no	no	browser automation; depends on JVM-only `guillotine`/`telekinesis.jvm`
+tasseomancy	yes	yes	no	js	
 telekinesis	yes	core	no	wasi	backends: core+jvm+wasi; JVM-only submodule(s): jvm
 tessellate	yes	yes	yes	js	
 turbulence	yes	yes	yes	wasi	backends: core+wasi
