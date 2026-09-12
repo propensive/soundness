@@ -175,6 +175,41 @@ object Tests extends Suite(m"Savagery tests"):
         Group(Nil).translate(Delta(1, 2)).xml.show
       .assert(_ == t"""<g transform="translate(1.0,2.0)"/>""")
 
+    suite(m"Fonts"):
+      given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+      val menlo = Web.font(Typeface["Menlo"].bold)
+
+      test(m"Lettering joins its font's declarations to its style"):
+        Lettering((1, 2), t"Hi", font = Web.sansSerifFont).xml.show
+      . assert(_ == t"""<text x="1.0" y="2.0" style="font-family: sans-serif; font-weight: 400">Hi</text>""")
+
+      test(m"A font in an optional field is paired from the provision in scope"):
+        Lettering((0, 0), t"x", font = Font(Typeface["Menlo"].bold)).font.let(_.face.weight)
+      . assert(_ == Weight.Bold)
+
+      test(m"An SVG carries one @font-face per typeface its lettering names"):
+        val svg =
+          Svg
+            ( 10, 10,
+              figures = List
+                ( Lettering((0, 0), t"a", font = menlo),
+                  Group(List(Lettering((0, 0), t"b", font = menlo))) ) )
+          . xml.show.s
+
+        (svg.contains("<defs><style>@font-face"), svg.indexOf("@font-face") == svg.lastIndexOf("@font-face"))
+      . assert(_ == (true, true))
+
+      test(m"A generic family adds no definitions"):
+        Svg(10, 10, figures = List(Lettering((0, 0), t"a", font = Web.sansSerifFont))).xml.show.s
+        . contains("<defs>")
+      . assert(_ == false)
+
+      test(m"A typeface without a provision cannot letter an SVG"):
+        demilitarize:
+          Lettering((0, 0), t"x", font = Font(Typeface["Nope"].face))
+        . exists(_.error)
+      . assert(_ == true)
+
     suite(m"Outline with attributes"):
       test(m"Outline with id"):
         Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed.xml.show
@@ -555,7 +590,7 @@ object Tests extends Suite(m"Savagery tests"):
 
         svg.figures.stdlib.head
       .assert:
-          case Lettering(position, text, anchor, baseline, _, _, _) =>
+          case Lettering(position, text, anchor, baseline, _, _, _, _) =>
             position == Point(1, 2) && text == t"Hi" && anchor == Lettering.Anchor.Middle
             && baseline == Lettering.Baseline.Hanging
           case _ => false

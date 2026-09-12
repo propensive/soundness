@@ -353,6 +353,23 @@ object Tests extends Suite(m"Tasseomancy tests"):
         (average.frame.width < measured.frame.width, (width - 32.4).abs < 0.000001)
       . assert(_ == (true, true))
 
+    suite(m"Fonts"):
+      given (Typeface of "Test") is Typesettable in Medium = Typesettable.embedded(TestFont.font)
+      given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+
+      test(m"The metric of an embedded font is the font's own"):
+        FontMetric.of(Web.font(Typeface["Test"].face)).width(t"AB").value
+      . assert(_ == FontMetric.of(TestFont.font).width(t"AB").value)
+
+      test(m"The metric of a font without a file is the average"):
+        FontMetric.of(Web.font(Typeface["Menlo"].face)).width(t"AB").value
+      . assert(_ == 1.2)
+
+      test(m"A chart's SVG carries its font's @font-face"):
+        given Chart.Standard = Chart.Standard(font = Web.font(Typeface["Menlo"].face))
+        rendered(growth.chart(Lines())).s.contains("@font-face{font-family:\"Menlo\"")
+      . assert(_ == true)
+
     suite(m"Revision"):
       test(m"unchanged data revises nothing"):
         growth.chart(Lines()).revise(growth)(1)
