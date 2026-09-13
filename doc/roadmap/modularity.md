@@ -76,6 +76,7 @@ snapshots from that audit and must be re-verified at implementation time.
 ## mod-1: dead edges and dead code
 
 Horizon: near
+Done: #1746 (2026-08-08)
 
 Build edges that exist but are unused, and interface types nothing consumes. One PR, no code
 motion beyond deletions:
@@ -96,6 +97,7 @@ Done when: each dropped edge is verified unused by grep, the deletions compile, 
 ## mod-2: one-given integration submodules
 
 Horizon: near
+Done: #1746 (2026-08-08)
 
 Dependencies that exist to carry a single given instance (or one small file) move into
 integration submodules, following the established template of `jacinta.time`,
@@ -344,6 +346,7 @@ its remaining code uses.
 ## mod-4: per-codec and per-format splits
 
 Horizon: mid — ordered: pneumatic, then hallucination, then facsimile.
+Done: #1748, #1756 (2026-08-09) — the facsimile legs recorded below as blocked are not part of the criterion.
 
 - **pneumatic per-codec**: `pneumatic.{brotli,lzma,lzw}` alongside the existing `flate`;
   BrotliDictionaryData (1,761 lines of pure tables) rides with brotli instead of taxing
@@ -654,6 +657,7 @@ handful of relocatable givens.
 ## mod-8: dead edges, round two — and the misdeclarations they hide
 
 Horizon: near. One PR, deletions and dependency-list corrections only.
+Done: #1758 (2026-08-10)
 
 The scan surfaced two things the first audit's mod-1 did not: a second round of genuinely
 dead edges, and — more urgent — components using dependencies they never declared, reaching
@@ -719,6 +723,7 @@ component and its dependents compile (`make attest`, `make build`).
 
 ## mod-9: the critical-path head
 
+Done: #1759 (2026-08-10) — `harlequin.scala` remains a separately-approved design item.
 Horizon: near. The chain exegesis → obligatory.json → hyperbole → harlequin → anthology is
 held together by dead edges at its top links; severing them detaches the LSP and JSON-RPC
 stack from the compiler stack entirely.
@@ -831,6 +836,11 @@ relocation that severs this: the choice is between validated names and `Text` in
 concurrency API, which is a design decision of mod-7 class. Until it is made, gossamer and
 everything beneath it remain in the closure of parasite, turbulence, and most of the tree.
 After mod-8/9/10, this is the residual spine's only soft point.
+
+Done when: `parasite.core` declares no `mercator.core` edge and `turbulence.core` no
+`capricious.core` edge, and `gossamer.core`'s closure holds no more than 23 components. The
+gossamer, distillate and digression legs landed in #1760 (2026-08-10); the parasite and
+turbulence legs are what remain.
 
 ## Second-audit shape
 

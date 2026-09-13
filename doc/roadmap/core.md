@@ -29,8 +29,9 @@ Done when:
 
     git grep -lE 'TreeMap|TreeSet|TrieMap|SortedMap|SortedSet' -- lib | grep -v '^lib/proscenium/' | wc -l    # 0
 
-## core-2: `proscenium.compat` is empty — DONE (2026-08-24)
+## core-2: `proscenium.compat` is empty
 
+Done: #1848 (2026-08-24)
 Baseline was 475 importing files and a 551-line compat file (measured 2026-08-01). The file
 and its ratchet (`etc/check-compat-ratchet.py`, `etc/compat-baseline.txt`) are deleted; the
 compiler is now the guard. The final sites carried their proofs through the type system

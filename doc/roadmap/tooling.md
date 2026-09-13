@@ -35,7 +35,7 @@ Baseline: fume does not exist; 3 test suites are disabled (measured 2026-08-01)
 fume is the testing tool over the probably framework: multiple report formats, live updates in
 the terminal, and results recorded as git notes alongside the existing attestation notes. Its
 first milestone — running this repository's own suites in CI — is reached: `make ci` is
-`fume run` over the umbrella assembly named in `.fume/config.tel`, and probably no longer
+`fume run` over the umbrella assembly named in `.pyrocosm/fume/config.tel`, and probably no longer
 renders reports of its own. What remains is the disabled suites.
 
 Done when: fume runs the full Soundness suite in CI and
