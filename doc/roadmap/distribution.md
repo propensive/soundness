@@ -35,14 +35,16 @@ released has no entry.
 
 Horizon: near
 
-The keystone item: `doc/standards/migration.md` defines the agent-executable
+The keystone item: `doc/migration.md` defines the agent-executable
 migration-instruction format — what changed, how to detect affected code, the exact rewrite,
 and how to verify it — and CI enforces that breaking-labelled pull requests carry instructions
 in that format. Several tracks terminate here: it is what `api-6` flows through and what
 `tool-5` serves to agents.
 
-Done when: `doc/standards/migration.md` exists without a stub marker, and a CI check rejects
-breaking-labelled pull requests lacking conforming migration instructions.
+Done when: `doc/migration.md` defines the convention, `etc/ci/release.sh` refuses to tag
+without `doc/migration/<version>.md`, and a CI check fails any pull request that changes
+`lib/**/src` without touching `doc/migration/pending.md`. The convention is not label-based:
+every material change records itself in `pending.md`, and the release renames the file.
 
 ## dist-3: LIRA exists
 

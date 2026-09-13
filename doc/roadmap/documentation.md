@@ -52,7 +52,7 @@ topics; the rest is deleted rather than left to mislead.
 
 Done when:
 
-    git grep -l 'built by Fury' | wc -l    # 0
+    git grep -l 'built by Fury' -- lib web | wc -l    # 0
 
 and no `lib/*/doc/` directory remains.
 

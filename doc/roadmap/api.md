@@ -23,7 +23,9 @@ The C1 candidates — multi-word names whose prefix already names a same-module 
 inside that type: `Foo.Bar`, not `FooBar`. Each move ships with migration instructions once
 `dist-2` establishes the convention.
 
-Done when: the C1 section of the inventory is empty.
+Done when: the rename table in `doc/api-nesting-proposal.md` (which superseded the C1
+section) is fully applied, and the inventory's "Remaining names by prefix family" section
+lists no name outside "Reviewed items which should not be moved".
 
 ## api-2: homonyms and synonyms resolve
 
@@ -44,7 +46,8 @@ The C3 candidates — typeclass-backing entities and nested derivation objects t
 summoned, not named — are demoted, inlined or de-exported, and the C2 abbreviations are spelled
 out or established.
 
-Done when: the C2, C3 and C3b sections of the inventory are empty.
+Done when: the C2 section of the inventory is empty. (C3 and C3b were superseded by
+`doc/api-nesting-proposal.md` and closed with it.)
 
 ## api-4: naming conformance is checked
 

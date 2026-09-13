@@ -1,5 +1,5 @@
 # Machine-readable index of roadmap items. One `item` record per item across the
-# eight track files in doc/roadmap/. This file is the single source of status:
+# nine track files in doc/roadmap/. This file is the single source of status:
 # the prose files never claim completion; they link here.
 #
 # Fields:
@@ -10,6 +10,7 @@
 #   needs      hard dependency, intra- or cross-track (repeated)
 #   baseline   measured starting point, with measurement date
 #   criterion  the Done-when command or observable fact (authority: the track file)
+#   done       the closing pull request and date; present only when status is done
 #
 # Multi-token values use hard-space mode: a double space after the keyword.
 
@@ -27,7 +28,8 @@ item
   id core-2
   track core
   horizon near-mid
-  status open
+  status done
+  done  #1848 (2026-08-24)
   needs core-1
   baseline  475 files import proscenium.compat; the compat file is 551 lines (2026-08-01)
   criterion  git grep -l 'import proscenium.compat' -- lib | wc -l == 0, and the compat file has no members
@@ -161,7 +163,7 @@ item
   track api
   horizon near
   status open
-  criterion  the C1 section of doc/api-reduction-candidates.md is empty
+  criterion  the rename table in doc/api-nesting-proposal.md is fully applied, and the 'Remaining names by prefix family' section of doc/api-reduction-candidates.md lists no name outside 'Reviewed items which should not be moved'
 
 item
   id api-2
@@ -175,7 +177,7 @@ item
   track api
   horizon mid
   status open
-  criterion  the C2, C3 and C3b sections are empty
+  criterion  the C2 section of doc/api-reduction-candidates.md is empty (C3 and C3b were superseded by doc/api-nesting-proposal.md and closed with it)
 
 item
   id api-4
@@ -223,7 +225,7 @@ item
   horizon near
   status open
   baseline  92 files say "built by Fury"; 35 of 133 modules have no lib/*/doc/ (2026-08-01)
-  criterion  git grep -l 'built by Fury' | wc -l == 0, and no lib/*/doc/ directory remains
+  criterion  git grep -l 'built by Fury' -- lib web | wc -l == 0, and no lib/*/doc/ directory remains
 
 item
   id doc-4
@@ -366,7 +368,7 @@ item
   track distribution
   horizon near
   status open
-  criterion  doc/standards/migration.md exists without a stub marker; CI rejects breaking-labelled PRs lacking conforming instructions
+  criterion  doc/migration.md exists; etc/ci/release.sh refuses to tag without doc/migration/<version>.md; a CI check fails any pull request that changes lib/**/src without touching doc/migration/pending.md
 
 item
   id dist-3
@@ -458,3 +460,79 @@ item
   horizon long
   status open
   criterion  IMAP module ships with tests, SN pages and a topic; scripted session passes against a reference server
+
+item
+  id mod-1
+  track modularity
+  horizon near
+  status done
+  done  #1746 (2026-08-08)
+  criterion  each dropped edge is verified unused by grep, the deletions compile, and make attest passes
+
+item
+  id mod-2
+  track modularity
+  horizon near
+  status done
+  done  #1746 (2026-08-08)
+  criterion  each listed edge is cut, the new submodules are bundled, and no downstream module regains the severed closure transitively
+
+item
+  id mod-3
+  track modularity
+  horizon near-mid
+  status open
+  criterion  each split module is bundled and its parent's dependency list contains only edges its remaining code uses
+
+item
+  id mod-4
+  track modularity
+  horizon mid
+  status done
+  done  #1748, #1756 (2026-08-09)
+  criterion  a consumer of one format no longer compiles the others' code, and platform flags reflect the new closures
+
+item
+  id mod-5
+  track modularity
+  horizon mid
+  status open
+  needs mod-4
+  criterion  each algorithm has exactly one implementation, verified by grep for the signature patterns (CRC tables, Huffman builders, varint loops)
+
+item
+  id mod-6
+  track modularity
+  horizon mid-long
+  status open
+  criterion  no .staged module contains its own copy of the expansion environment, and the benchmark corpus shows performance parity per format
+
+item
+  id mod-7
+  track modularity
+  horizon long
+  status open
+  criterion  each stretch goal is separately approved before it starts; none is scheduled
+
+item
+  id mod-8
+  track modularity
+  horizon near
+  status done
+  done  #1758 (2026-08-10)
+  criterion  each misdeclaration is fixed, each dead edge is deleted, and every affected component and its dependents compile (make attest, make build)
+
+item
+  id mod-9
+  track modularity
+  horizon near
+  status done
+  done  #1759 (2026-08-10)
+  criterion  exegesis.core's closure contains no compiler-stack module, and the deepest chain through obligatory.json ends at jacinta
+
+item
+  id mod-10
+  track modularity
+  horizon near
+  status open
+  criterion  parasite.core declares no mercator.core edge and turbulence.core no capricious.core edge; gossamer.core's closure holds no more than 23 components
