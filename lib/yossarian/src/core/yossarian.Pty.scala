@@ -295,11 +295,8 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
 
     def rep(n: Int): Unit =
       val count = if n == 0 then 1 else n
-      var i = 0
-
-      while i < count do
+      repeat(count):
         writeGrapheme(lastGrapheme)
-        i += 1
 
     def ht(): Unit =
       val nextStop = ((cursor.x.n0/8 + 1)*8).z

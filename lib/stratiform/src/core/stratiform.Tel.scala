@@ -2796,11 +2796,8 @@ object Tel extends Tel2:
 
         block.compounds.each(emitCompound(_, indent, sigil))
 
-        var b = 0
-
-        while b < block.trailingBlankLines do
+        repeat(block.trailingBlankLines):
           out("")
-          b += 1
 
       val sigil = document.pragma.let(_.sigil.or('#')).or('#')
 

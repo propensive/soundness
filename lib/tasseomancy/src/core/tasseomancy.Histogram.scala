@@ -73,11 +73,8 @@ object Histogram:
 
   private def counts(fit: Histogram.Fit, values: Sequence[Double]): Sequence[Int] =
     var tally: Sequence[Int] = Sequence.empty
-    var index = 0
-
-    while index < fit.edges.size - 1 do
+    repeat(fit.edges.size - 1):
       tally = Sequence.append(tally, 0)
-      index += 1
 
     values.foreach: value =>
       val slot = bin(fit, value)

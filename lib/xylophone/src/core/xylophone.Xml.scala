@@ -1877,11 +1877,8 @@ object Xml extends Tag.Container
   private def newline(producer: (Producer[Text])^, formatting: Formatting, depth: Int): Unit =
     formatting.indent.let: unit =>
       producer.put("\n")
-      var i = 0
-
-      while i < depth do
+      repeat(depth):
         producer.put(unit)
-        i += 1
 
   given showable: [xml <: Xml] => (formatting: Formatting) => xml is Showable = node =>
     Producer.collect[Text](): producer =>

@@ -1610,11 +1610,8 @@ object Cbor extends Cbor2, Dynamic:
             if length < 0 || length > Int.MaxValue
             then abort(Cbor.Error(Reason.Overflow(pos.toLong)))
 
-            var index = 0
-
-            while index < length.toInt do
+            repeat(length.toInt):
               directSkipValue()
-              index += 1
 
         case 5 =>
           if info == 31 then
@@ -1627,12 +1624,9 @@ object Cbor extends Cbor2, Dynamic:
             if length < 0 || length > Int.MaxValue
             then abort(Cbor.Error(Reason.Overflow(pos.toLong)))
 
-            var index = 0
-
-            while index < length.toInt do
+            repeat(length.toInt):
               directSkipValue()
               directSkipValue()
-              index += 1
 
         case 6 =>
           if readLength(info, pos.toLong) < 0

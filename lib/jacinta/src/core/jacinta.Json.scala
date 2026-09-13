@@ -1333,11 +1333,8 @@ object Json extends Json2, Dynamic:
       Producer.collect[Text](): producer =>
         def newlineIndent(level: Int): Unit = formatting.indent.let: unit =>
           producer.put("\n")
-          var i = 0
-
-          while i < level do
+          repeat(level):
             producer.put(unit)
-            i += 1
 
         def unicode(char: Char): Text =
           val hex = Integer.toHexString(char.toInt).nn

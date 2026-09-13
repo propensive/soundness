@@ -266,10 +266,7 @@ private[facsimile] object Filter:
             // One byte, repeated `257 - length` times.
             surveyor.next(abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"RunLengthDecode")))):
               byte =>
-                var j = 0
-
-                while j < 257 - length do
+                repeat(257 - length):
                   bytes += byte
-                  j += 1
 
     bytes.result()

@@ -165,11 +165,8 @@ private[facsimile] object Guard:
 
     // Revision 3+: 50 further MD5 rounds over the first `keyBytes` bytes.
     if revision >= 3 then
-      var i = 0
-
-      while i < 50 do
+      repeat(50):
         hash = md5(hash.keep(keyBytes))
-        i += 1
 
     hash.keep(keyBytes)
 
@@ -238,13 +235,10 @@ private[facsimile] object Guard:
 
     while !done do
       val block = DataBuilder()
-      var i = 0
-
-      while i < 64 do
+      repeat(64):
         block.addAll(pw)
         block.addAll(k)
         if extra.length > 0 then block.addAll(extra)
-        i += 1
 
       val input = block.result()
       val key = Array.unsafeJvm(k.keep(16))
@@ -258,7 +252,8 @@ private[facsimile] object Guard:
       val e: Data = Array.unsafeFrozen(cipher.doFinal(Array.unsafeJvm(input)).nn)
 
       var sum = 0
-      i = 0
+      var i = 0
+
       while i < 16 do
         sum += e.readUnchecked(i) & 0xff
         i += 1

@@ -3585,9 +3585,7 @@ object Yaml extends Yaml2, Dynamic:
 
     private update def readHex(count: Int)(using Tactic[Parse.Error]): Int =
       var acc = 0
-      var i = 0
-
-      while i < count do
+      repeat(count):
         if !more then errorAt(Issue.TruncatedHexEscape)
         val b = peek
 
@@ -3599,7 +3597,6 @@ object Yaml extends Yaml2, Dynamic:
 
         acc = (acc << 4) | digit
         advance()
-        i += 1
 
       acc
 

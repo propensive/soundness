@@ -360,18 +360,12 @@ extension [textual: Textual { type Result = Char } as instance](text: textual)
       bidi match
         case Ltr =>
           builder.append(text)
-          var i = 0
-
-          while i < padSize do
+          repeat(padSize):
             builder.append(char)
-            i += 1
 
         case Rtl =>
-          var i = 0
-
-          while i < padSize do
+          repeat(padSize):
             builder.append(char)
-            i += 1
 
           builder.append(text)
 

@@ -722,11 +722,8 @@ object internal:
 
       val numberOfHoles =
         var c = 0
-        var k = 0
-
-        while k < parts2.size - 1 do
+        repeat(parts2.size - 1):
           c += 1
-          k += 1
 
         c
 
