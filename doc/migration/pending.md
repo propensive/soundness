@@ -154,3 +154,16 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `FontMetric`'s default given is now `FontMetric.fromStyle`, deriving from the style's font: an
   embedded file's own metrics, else the average; formerly `FontMetric.average`, always the
   average. New: `FontMetric.of(font: Font)`.
+
+## denominative
+
+- `each` on an `Interval` moved from `denominative.internal` to the `denominative` package. It
+  is no longer in the opaque type's implicit scope, so a call site with no import of
+  `denominative` (or `soundness`) must add one. Signature and behaviour unchanged:
+  `extension (interval: Interval) inline def each(inline lambda: Ordinal => Unit): Unit`.
+- New overload `extension [form](range: Interval in form) inline def each(inline lambda:
+  (Ordinal in form) => Unit): Unit`, selected for a confined interval such as `value.extent` or
+  `value.extent.capped(n)`. It supplies confined ordinals (`Ordinal in form`), so an indexed read
+  in the lambda resolves to the total `apply` and yields a bare element, not an `Optional`:
+  `xs.extent.each { ordinal => xs(ordinal) }`. It supersedes `value.iterate` and
+  `value.iterate(range)`, which are unchanged and still available.

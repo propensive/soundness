@@ -100,14 +100,6 @@ object internal:
     inline def subsequent(size: Int): Interval = end.subsequent(size)
     inline def preceding(size: Int): Interval = start.preceding(size)
 
-    inline def each(inline lambda: Ordinal => Unit): Unit =
-      var i: Ordinal = start
-
-      while i <= end do
-        lambda(i)
-        i = i.next
-
-
     inline def fuse[value](inline initial: value)
       ( inline lambda: (value aka "state", Ordinal aka "next") ?=> value )
     :   value =

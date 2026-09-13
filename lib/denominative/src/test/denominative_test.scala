@@ -369,6 +369,66 @@ object Tests extends Suite(m"Denominative Tests"):
         5.gamut.size
       . assert(_ == 5)
 
+    suite(m"Confined-iteration tests"):
+      // `extent` brands the whole range of a value to it, and iterating a branded interval
+      // yields branded ordinals, so the read inside the loop goes through the total `apply`:
+      // a bare element, no bounds check and no `Optional`. This is the confined counterpart of
+      // `var i = 0; while i < n do ... i += 1`. Each of these tests fails to COMPILE, not to
+      // run, if the brand is ever lost: `total += ...` does not accept an `Optional[Int]`.
+      test(m"a branded each reads without a bounds check"):
+        val array = Array(10, 20, 30)
+        var total = 0
+
+        array.extent.each: ordinal =>
+          total += array(ordinal)
+
+        total
+      . assert(_ == 60)
+
+      // `capped` narrows a branded interval while preserving the brand.
+      test(m"a branded each over a capped extent visits the kept ordinals"):
+        val array = Array(10, 20, 30, 40)
+        var total = 0
+
+        array.extent.capped(2).each: ordinal =>
+          total += array(ordinal)
+
+        total
+      . assert(_ == 30)
+
+      test(m"text reads inside a branded each are total"):
+        val text = t"hello"
+        var count = 0
+
+        text.extent.each: ordinal =>
+          val char: Char = text(ordinal)
+          if char == 'l' then count += 1
+
+        count
+      . assert(_ == 2)
+
+      test(m"a branded each over an empty extent visits nothing"):
+        val array = Array[Int]()
+        var visited = 0
+
+        array.extent.each: _ =>
+          visited += 1
+
+        visited
+      . assert(_ == 0)
+
+      // The older ordinal-driven spelling, which brands through the collection receiver rather
+      // than through the interval, stays equivalent.
+      test(m"iterate agrees with a branded each"):
+        val array = Array(10, 20, 30)
+        var total = 0
+
+        array.iterate: ordinal =>
+          total += array(ordinal)
+
+        total
+      . assert(_ == 60)
+
     suite(m"Ordinal-showable tests"):
       test(m"nominal names a known ordinal"):
         import ordinalTextualizables.nominalOrdinal
