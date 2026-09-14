@@ -53,8 +53,13 @@ object Framable:
         if ready == Unset then ready = frame
         ready != Unset
 
-      def next(): data = ready.asInstanceOf[data].also:
-        ready = Unset
+      // `hasNext` is what pulls a frame, so it is called here too: `next()` alone would otherwise
+      // hand back the unset cache — a null — rather than the next frame, and a caller following
+      // the `Iterator` contract loosely would get a silent null instead of an error.
+      def next(): data =
+        if !hasNext then throw new NoSuchElementException("the framed stream is exhausted")
+        ready.asInstanceOf[data].also:
+          ready = Unset
 
 trait Framable extends Typeclass, Operable:
   // The framed iterator lazily pulls from `input`, so it honestly captures it (and `input` is

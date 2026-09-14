@@ -306,9 +306,13 @@ object Grpc:
 
                 cursor.lay(truncated()): byte3 =>
                   cursor.next()
+                  // Masked before shifting, as in `LengthPrefix.framable`: an unmasked signed
+                  // `Byte` sign-extends and corrupts every length of 128 or more.
                   ( flag != 0,
-                    byte0.asInstanceOf[Byte] << 24 | byte1.asInstanceOf[Byte] << 16
-                      | byte2.asInstanceOf[Byte] << 8 | byte3.asInstanceOf[Byte] )
+                    (byte0.asInstanceOf[Byte] & 0xff) << 24
+                      | (byte1.asInstanceOf[Byte] & 0xff) << 16
+                      | (byte2.asInstanceOf[Byte] & 0xff) << 8
+                      | (byte3.asInstanceOf[Byte] & 0xff) )
 
       Framable.frames[Data]:
         header.let: (compressed, length) =>

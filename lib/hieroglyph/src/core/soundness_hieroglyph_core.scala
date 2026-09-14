@@ -37,7 +37,8 @@ export
   . { Bel, Bs, Bsl, CharDecoder, CharEncoder, Chars, Cr,
       description, Dqt, enc, Encoding, Esc, Ff, GraphemeBreak, Ht, Lf, majuscule, Measurable,
       metrics, minuscule, Normalization, Nul, Sqt, subscript, superscript, TextSanitizer, ucs,
-      Unicode, WideCharacterWidth, whitespace, control, designation, printable, unicode }
+      Unicode, WideCharacterWidth, whitespace, control, designation, printable, unicode, letter,
+      digit, alphanumeric, majuscular, minuscular }
 
 package textSanitizers:
   export hieroglyph.textSanitizers.{skipSanitizer, strictSanitizer, substituteSanitizer,

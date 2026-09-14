@@ -105,6 +105,30 @@ object Tests extends Suite(m"Obligatory Tests"):
         . map(_.to[List])
       . assert(_ == List(List(50, 100, -100), List(-128), List(5, 4, 3, 2, 1)))
 
+      // A length byte of 128 or more is negative as a signed `Byte`; before the masks in
+      // `LengthPrefix.framable` it sign-extended and the frame length came out wrong.
+      val longBody: Data = Array.tabulate[Byte](200)(_.toByte)
+      val hugeBody: Data = Array.tabulate[Byte](40000)(_.toByte)
+
+      val bodies: List[Data] =
+        List(Data(1, 2, 3), Data(), Data(-1, -2), Array.tabulate[Byte](300)(_.toByte))
+
+      test(m"Length-prefixed chunks longer than 127 bytes"):
+        Chain(LengthPrefix.encode(longBody)).iterator.frames[LengthPrefix].to(List).map(_.to[List])
+      . assert(_ == List(longBody.to[List]))
+
+      test(m"Length-prefixed chunks longer than 32767 bytes"):
+        Chain(LengthPrefix.encode(hugeBody)).iterator.frames[LengthPrefix].to(List).map(_.length)
+      . assert(_ == List(40000))
+
+      test(m"Length-prefixed records round-trip through `encode`"):
+        Chain(bodies.map(LengthPrefix.encode)*)
+        . iterator
+        . frames[LengthPrefix]
+        . to(List)
+        . map(_.to[List])
+      . assert(_ == bodies.map(_.to[List]))
+
       test(m"Content-Length-prefixed chunks"):
         val input =
           t"Content-Type: x\r\nContent-Length: 5\r\n\r\n12345Content-Length: 3\r\n\r\nabc"
