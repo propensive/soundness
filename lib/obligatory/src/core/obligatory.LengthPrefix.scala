@@ -39,6 +39,21 @@ import vacuous.*
 import zephyrine.*
 
 object LengthPrefix:
+  // Prefix one record for the wire: its length as four big-endian bytes, then the record. The
+  // inverse of `framable` below, and the half every caller of it needs, since a framed stream has
+  // to be written by somebody.
+  def encode(record: Data): Data =
+    val length = record.length
+
+    val header: Data =
+      Array
+        ( (length >>> 24).toByte,
+          (length >>> 16).toByte,
+          (length >>> 8).toByte,
+          length.toByte )
+
+    Array.frozen(header.readable ++ record.readable)
+
   // See `CarriageReturn.framable`: explicit `new` (the Scala.js pipeline mis-infers the SAM
   // lambda's `this`) plus a relabel of the local cursor's reachability of `input`.
   given framable: (tactic: Tactic[Framing.Error])
@@ -63,8 +78,11 @@ object LengthPrefix:
 
               cursor.lay(fail()): byte3 =>
                 cursor.next()
-                byte0.asInstanceOf[Byte] << 24 | byte1.asInstanceOf[Byte] << 16 |
-                  byte2.asInstanceOf[Byte] << 8 | byte3.asInstanceOf[Byte]
+                // Each byte is masked before it is shifted: `Data`'s operand is a SIGNED `Byte`,
+                // so a length byte of 128 or more would sign-extend on widening and corrupt the
+                // length — every record longer than 127 bytes among them.
+                (byte0.asInstanceOf[Byte] & 0xff) << 24 | (byte1.asInstanceOf[Byte] & 0xff) << 16 |
+                  (byte2.asInstanceOf[Byte] & 0xff) << 8 | (byte3.asInstanceOf[Byte] & 0xff)
 
       val framed =
         Framable.frames[Data]:

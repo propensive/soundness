@@ -64,6 +64,31 @@ object Tests extends Suite(m"Hieroglyph tests"):
         japanese.metrics
       . assert(_ == 40)
 
+    suite(m"Character classification"):
+      test(m"an ASCII letter is a letter, and not a digit"):
+        ('a'.letter, 'a'.digit, 'a'.alphanumeric)
+      . assert(_ == (true, false, true))
+
+      test(m"a digit is a digit, and not a letter"):
+        ('7'.letter, '7'.digit, '7'.alphanumeric)
+      . assert(_ == (false, true, true))
+
+      test(m"a non-ASCII letter is a letter"):
+        ('é'.letter, 'é'.alphanumeric)
+      . assert(_ == (true, true))
+
+      test(m"punctuation is neither letter nor digit"):
+        ('.'.letter, '.'.digit, '.'.alphanumeric)
+      . assert(_ == (false, false, false))
+
+      test(m"case is distinguished"):
+        ('A'.majuscular, 'A'.minuscular, 'a'.majuscular, 'a'.minuscular)
+      . assert(_ == (true, false, false, true))
+
+      test(m"a caseless character is neither majuscular nor minuscular"):
+        ('7'.majuscular, '7'.minuscular)
+      . assert(_ == (false, false))
+
     suite(m"Roundtrip decoding"):
 
       test(m"Decode Japanese from UTF-8"):

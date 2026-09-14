@@ -47,6 +47,17 @@ extension (char: Char)
   def printable: Boolean = !control && !whitespace
   def designation: Optional[Text] = Unicode.name(char)
 
+  // The Unicode general-category predicates, named as adjectives like their neighbours above
+  // rather than with the JVM's `is` prefix. `majuscular`/`minuscular` are the predicates
+  // corresponding to the `majuscule`/`minuscule` conversions below; they are deliberately NOT
+  // called `upper`/`lower`, which are gossamer's `Text` case conversions and would collide in
+  // the `soundness` umbrella.
+  def letter: Boolean = Character.isLetter(char)
+  def digit: Boolean = Character.isDigit(char)
+  def alphanumeric: Boolean = Character.isLetterOrDigit(char)
+  def majuscular: Boolean = Character.isUpperCase(char)
+  def minuscular: Boolean = Character.isLowerCase(char)
+
 package charDecoders:
   given utf8Decoder: (sanitizer: TextSanitizer) => (CharDecoder) =
     CharDecoder.unapply("UTF-8".tt).get

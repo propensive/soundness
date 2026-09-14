@@ -996,6 +996,27 @@ object Tests extends Suite(m"Escapade tests"):
 
     // ─── Imprintable: grapheme-cell decomposition ──────────────────────────
 
+    suite(m"Stripping escapes"):
+      test(m"an SGR sequence is removed, its text kept"):
+        t"\e[1mbold\e[0m text".unstyled
+      . assert(_ == t"bold text")
+
+      test(m"text with no escapes is unchanged"):
+        t"plain text".unstyled
+      . assert(_ == t"plain text")
+
+      test(m"a rendered Teletype strips back to its plain text"):
+        e"a$Bold(b)c".render(termcapDefinitions.xtermTrueColorTermcap).unstyled
+      . assert(_ == t"abc")
+
+      test(m"a cursor-movement sequence is removed too"):
+        t"a\e[2Kb\e[10;20Hc".unstyled
+      . assert(_ == t"abc")
+
+      test(m"a bare bracket is not an escape"):
+        t"xs[0m1]".unstyled
+      . assert(_ == t"xs[0m1]")
+
     suite(m"Imprintable"):
       def cellList[content](value: content)(using imprintable: content is Imprintable)
       :   List[(Grapheme, StyleWord)] =

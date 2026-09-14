@@ -34,12 +34,27 @@ package escapade
 
 import anticipation.*
 import gossamer.*
+import kaleidoscope.*
 import spectacular.*
 import vacuous.*
+
+// Strips the ANSI control sequences from `text`, leaving the characters that would be printed
+// were the escapes honoured. Every CSI sequence is removed, not just the SGR (`m`) sequences that
+// carry colour and style, so a cursor movement or an erase-line emitted into a captured stream
+// vanishes with them. This is the inverse direction to `Teletype`, whose `plain` reads the
+// content of a teletype that was BUILT structurally; `unstyled` starts from text in which the
+// escapes are already characters — a subprocess's output, or a diagnostic rendered before it was
+// captured.
+extension (text: Text)
+  def unstyled: Text = text.sub(csi.pattern, t"")
 
 object csi:
   val esc: Text = t"\e"
   val csi: Text = t"\e["
+
+  // An ANSI control sequence: the CSI introducer, its numeric parameters and the final byte that
+  // names the operation (`m` for SGR, `A`-`H` for cursor movement, `J`/`K` for erasure, …).
+  val pattern: Regex = r"\e\[[0-9;?]*[a-zA-Z]"
 
   def cuu(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}A"
   def cud(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}B"
