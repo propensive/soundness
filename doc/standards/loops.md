@@ -75,6 +75,13 @@ without any error — the read simply becomes `Optional` again. Such a name neve
 umbrella, so the compile error that normally catches a clash cannot fire; the fix is to rename
 the other method, as `hypotenuse.Bcd#each` became `eachNibble`.
 
+A name crossing into `package soundness` can fail in three ways, and only the first is the
+compile error that the naming philosophy describes as catching clashes. Two modules exporting
+one name silently drop one. An unbranded alternative reachable through implicit scope outranks
+a branded one and strips the brand with no error at all. And an `export` of an *overloaded*
+extension forwards only one overload, so the other vanishes — which is why `thru`, `till` and
+`each` are hand-written in their umbrella files rather than exported.
+
 Extension lookup on a branded ordinal is fragile where the brand is a lender's handle: `.n0`
 does not resolve on an `Ordinal in scribe.type` until the receiver is ascribed back to
 `Ordinal`, as `(i: Ordinal).n0`. Reach for the ascription when an ordinal is reported as

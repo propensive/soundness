@@ -47,7 +47,7 @@ lib/distillate/src/core/distillate.Decodable.scala	0	0	1
 lib/enigmatic/src/core/enigmatic.Pem.scala	2	0	0
 lib/escapade/src/core/escapade.Ansi.scala	2	0	2
 lib/escapade/src/core/escapade.Imprintable.scala	1	2	0
-lib/escapade/src/core/escapade.Teletype.scala	7	18	1
+lib/escapade/src/core/escapade.Teletype.scala	6	16	1
 lib/escapade/src/core/escapade.internal.scala	1	1	0
 lib/escritoire/src/core/escritoire.Grid.scala	0	2	0
 lib/escritoire/src/core/escritoire.Tabulation.scala	0	2	0

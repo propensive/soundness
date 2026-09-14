@@ -49,15 +49,22 @@ import vacuous.*
 // which check `more` and the predicate together, or through the branded products.
 //
 // The brand is sound for immutable receivers on stable paths, like `within` and `extent`.
+//
+// A surveyor spans a *window* of the collection: `size` is its exclusive limit and `start` the
+// position it begins at. `value.survey` opens one over everything; `value.survey(range)` opens
+// one over a branded sub-interval, which is what a scan bounded by anything other than the
+// collection's own length needs — a trailing element the scan must not reach, or a region
+// handed down by a caller.
 final class Surveyor[collection, brand, operand] @scala.annotation.publicInBinary private[rudiments]
-  ( value: collection, read: (collection, Int) => operand, size: Int ):
+  ( value: collection, read: (collection, Int) => operand, size: Int, start: Int ):
 
   // Untracked: the position is reached only through the surveyor, which the lender confines to
   // one lambda; `Stateful` would force capability typing onto a transient walker.
   @scala.caps.unsafe.untrackedCaptures
-  private var mark0: Int = 0
+  private var mark0: Int = start
 
-  // The number of elements already passed over.
+  // The position, counted from the start of the collection — so for a surveyor over everything
+  // it is the number of elements passed over.
   inline def passed: Int = mark0
 
   // Whether at least one element remains.
@@ -146,4 +153,23 @@ extension [collection](value: collection)
       new Surveyor
         ( value,
           (collection, index) => indexable.access(collection, Ordinal.zerary(index)),
-          countable.size(value) )
+          countable.size(value),
+          0 )
+
+  // Lend a surveyor confined to a branded sub-interval: it begins at the interval's start and
+  // is exhausted at its limit, so a scan cannot run past the window the caller proved. Every
+  // product still carries the collection's brand, since a sub-interval of a valid extent is
+  // itself valid.
+  inline def survey[result](range: Interval in value.type)
+    ( using indexable: (collection is Applicable by Ordinal), countable: collection is Countable )
+    ( inline lambda: Surveyor[collection, value.type, indexable.Result] => result )
+  :   result =
+
+    val interval: Interval = range
+
+    lambda:
+      new Surveyor
+        ( value,
+          (collection, index) => indexable.access(collection, Ordinal.zerary(index)),
+          interval.limit.n0,
+          interval.start.n0 )

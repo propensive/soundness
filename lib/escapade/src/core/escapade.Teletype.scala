@@ -574,16 +574,19 @@ case class Teletype
         prev = s
 
       if isDense then
-        // Dense: walk per char but coalesce consecutive equal styles into one emit.
-        var i = 0
+        // Dense: walk per char but coalesce consecutive equal styles into one emit. The
+        // surveyor is confined to the first `n` styles because `styles` carries one further
+        // entry, the trailing style, which this scan must not reach. `point` is present on
+        // every iteration, since `more` has just established that the cursor is not exhausted.
+        styles.survey(styles.extent.capped(n)): cursor =>
+          while cursor.more do
+            val from = cursor.passed
 
-        while i < n do
-          val s = styles.readUnchecked(i)
-          var j = i + 1
-          while j < n && styles.readUnchecked(j) == s do j += 1
-          emitRunStyle(s, i)
-          emitText(i, j)
-          i = j
+            cursor.point.let: position =>
+              val style = styles(position)
+              cursor.pace(_ == style)
+              emitRunStyle(style, from)
+              emitText(from, cursor.passed)
       else
         val k = boundaries.length
         var r = 0
