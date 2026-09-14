@@ -56,6 +56,19 @@ extension [value](value: value)
   def tabulation[text: Textual](using tabular: value is Tabular[text]): Tabulation[text] =
     tabular.tabulate(value)
 
+extension [text: Textual { type Result = Char }](items: List[text])
+  // The items arranged in as many columns as fit `width`, one line per row; see `Columnation`.
+  def columnate
+    ( width:    Int,
+      gap:      Int           = 2,
+      uniform:  Boolean       = false,
+      downward: Boolean       = false,
+      align:    TextAlignment = TextAlignment.Left )
+    ( using Text is Measurable )
+  :   List[text] =
+
+    Columnation.layout(items, width, gap, uniform, downward, align)
+
 // `failAttenuation` is a context function `Tactic[Table.Error] ?=> Attenuation^`: the returned
 // `Attenuation` captures the Tactic *parameter*, so the given value itself captures nothing from its
 // enclosing scope and these can stay package-level givens — accessing `failAttenuation` or
