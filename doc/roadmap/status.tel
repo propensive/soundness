@@ -48,8 +48,8 @@ item
   track core
   horizon mid
   status open
-  baseline  2244 while-do loops across 330 Scala files (2026-08-01)
-  criterion  no collection exposes a partial indexed apply (issue #1666); the indexing while-loop pattern is drained
+  baseline  1597 while loops, 482 readUnchecked, 509 charAt in lib core (2026-09-14)
+  criterion  no collection exposes a partial indexed apply (issue #1666); every remaining while is a shape doc/standards/loops.md sanctions, with a comment naming its invariant
 
 item
   id core-5

@@ -46,6 +46,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   `FLAME=/path/to/flame`; a full run takes a couple of hours (hung fences cost two minutes
   each), so run it in the background and read the summary from stderr. `HTTP 500` means flame
   itself crashed on the fence.
+- Loops and indexing are governed by `doc/standards/loops.md`: which shapes drain to which
+  combinator, which receivers can carry a confined index at all, and the three shapes where a
+  `while` may stay. `python3 etc/check-while-count.py` (run by `make build`) ratchets `while`,
+  `readUnchecked` and `.charAt(` per file against `etc/while-baseline.tsv`, and rejects an
+  `attested` with no comment naming its proof. Lower a row with `--update` when a change
+  removes uses; `--totals` prints the roadmap gauge.
 - `python3 etc/check-doc-coverage.py` (run by `make build`) maps every library to the tutorials
   that mention a name only it exports; a new library needs a tutorial, a section in an existing
   one, or an entry in the script's `INTERNAL` or `COVERED_BY` tables.
