@@ -34,6 +34,7 @@ package facsimile
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import hieroglyph.*
 import hypotenuse.*
 import rudiments.*
@@ -110,18 +111,15 @@ private[facsimile] object CosWriter:
   private def name(builder: DataBuilder, text: Text): Unit =
     builder += '/'.toByte
     val raw = charEncoders.utf8Encoder.encoded(text)
-    var i = 0
 
-    while i < raw.length do
-      val byte = raw.readUnchecked(i) & 0xff
+    raw.extent.each: i =>
+      val byte = raw(i) & 0xff
 
       if byte < 0x21 || byte > 0x7e || CosLexer.delimiter(byte) || byte == '#' then
         builder += '#'.toByte
         builder += hexDigit(byte >> 4)
         builder += hexDigit(byte & 0xf)
       else builder += byte.toByte
-
-      i += 1
 
   // A literal string with the mandatory escapes, and non-printable bytes as octal, so any
   // byte sequence round-trips.

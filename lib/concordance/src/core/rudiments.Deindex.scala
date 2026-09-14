@@ -100,15 +100,18 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
   // The universal deindexing `apply` (issue #1666), toward which `at` call sites are
   // migrating: identical compile-time dispatch — a confined index returns a bare `Result`
   // with no bounds check; any other index is checked and returns `Optional`.
+  // The index is coerced with a cast, not by applying `sub`: every `<:<` is `refl` at runtime,
+  // whose `apply` erases to `(Object)Object` and so boxes and unboxes an `Ordinal` on every
+  // read. The cast is a no-op at the same erasure, and `sub` still carries the proof.
   transparent inline def apply[index](ordinal: index)(using sub: index <:< applicable.Operand)
   :   Optional[applicable.Result] =
 
     summonFrom:
       case _: (`index` <:< (applicable.Operand in value.type)) =>
-        applicable.access(value, sub(ordinal))
+        applicable.access(value, ordinal.asInstanceOf[applicable.Operand])
 
       case _ =>
-        val key: applicable.Operand = sub(ordinal)
+        val key: applicable.Operand = ordinal.asInstanceOf[applicable.Operand]
 
         optimizable[applicable.Result]: default =>
           if applicable.contains(value, key) then applicable.access(value, key) else default
@@ -118,10 +121,10 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
 
     summonFrom:
       case _: (`index` <:< (applicable.Operand in value.type)) =>
-        applicable.access(value, sub(ordinal))
+        applicable.access(value, ordinal.asInstanceOf[applicable.Operand])
 
       case _ =>
-        val key: applicable.Operand = sub(ordinal)
+        val key: applicable.Operand = ordinal.asInstanceOf[applicable.Operand]
 
         optimizable[applicable.Result]: default =>
           if applicable.contains(value, key) then applicable.access(value, key) else default
