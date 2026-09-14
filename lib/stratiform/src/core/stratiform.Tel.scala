@@ -1423,10 +1423,8 @@ object Tel extends Tel2:
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       var currentMember = -1
       val seenMembers = scala.collection.mutable.HashSet.empty[Int]
-      var i = 0
-
-      while i < compounds.length do
-        val compound = compounds.readUnchecked(i)
+      compounds.extent.each: i =>
+        val compound = compounds(i)
 
         // Tag every error accrued for this compound (and its descendants) with
         // its keyword path — mirroring the decode derivation's per-field `focus`
@@ -1457,8 +1455,6 @@ object Tel extends Tel2:
               results += assignCompound(compound, entry, schema, depth)
 
             case _ => recoverNode(Reason.UnknownKeyword)(())
-
-        i += 1
 
       Array.from(results)
 

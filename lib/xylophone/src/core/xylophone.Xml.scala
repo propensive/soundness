@@ -4317,14 +4317,10 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
     while i < nodes.length do
       nodes.readUnchecked(i) match
         case Element(_, _, children) =>
-          var j = 0
-
-          while j < children.length do
-            children.readUnchecked(j) match
+          children.extent.each: j =>
+            children(j) match
               case child: Element if child.label == name.tt => buffer.append(child)
               case _                                        => ()
-
-            j += 1
 
         case _ =>
           ()

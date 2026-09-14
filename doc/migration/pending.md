@@ -167,3 +167,10 @@ format. Entries are grouped by module, most-recently-added last within a module.
   in the lambda resolves to the total `apply` and yields a bare element, not an `Optional`:
   `xs.extent.each { ordinal => xs(ordinal) }`. It supersedes `value.iterate` and
   `value.iterate(range)`, which are unchanged and still available.
+
+## hypotenuse
+
+- `hypotenuse.Bcd#each(action: Int => Unit): Unit` renamed to `eachNibble`; `each` removed.
+  Behaviour unchanged: it invokes `action` with each nibble value in left-to-right
+  (oldest-first) order. The old name collided with the collection `each`, which a file
+  importing `Bcd.*` would resolve to `Bcd`'s version for any receiver.

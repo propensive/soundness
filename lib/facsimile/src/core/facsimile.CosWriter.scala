@@ -125,10 +125,8 @@ private[facsimile] object CosWriter:
   // byte sequence round-trips.
   private def literal(builder: DataBuilder, data: Data): Unit =
     builder += '('.toByte
-    var i = 0
-
-    while i < data.length do
-      val byte = data.readUnchecked(i) & 0xff
+    data.extent.each: i =>
+      val byte = data(i) & 0xff
 
       byte match
         case '('  => bytes(builder, "\\(")
@@ -141,8 +139,6 @@ private[facsimile] object CosWriter:
             builder += ('0' + ((byte >> 6) & 0x7)).toByte
             builder += ('0' + ((byte >> 3) & 0x7)).toByte
             builder += ('0' + (byte & 0x7)).toByte
-
-      i += 1
 
     builder += ')'.toByte
 

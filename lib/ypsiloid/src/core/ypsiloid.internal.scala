@@ -599,11 +599,8 @@ object internal:
           else
             val elems = stripPad(arr)
             var c = 0
-            var k = 0
-
-            while k < elems.length do
-              c += countHolesIn(elems.readUnchecked(k))
-              k += 1
+            elems.extent.each: k =>
+              c += countHolesIn(elems(k))
 
             c
 

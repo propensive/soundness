@@ -1169,10 +1169,8 @@ object Tels extends Tels2:
       val selects  = scala.collection.mutable.ArrayBuffer.empty[SelectDefinition]
       val layers   = scala.collection.mutable.ArrayBuffer.empty[Layer]
 
-      var i = 0
-
-      while i < compounds.length do
-        val c = compounds.readUnchecked(i)
+      compounds.extent.each: i =>
+        val c = compounds(i)
 
         c.keyword.s match
           case "name"     => name = firstAtomText(c)
@@ -1187,8 +1185,6 @@ object Tels extends Tels2:
           case "document" => documentStruct = parseBody(c)
           case "layer"    => layers   += parseLayer(c)
           case _          => abort(Tel.Error(Reason.UnknownKeyword))
-
-        i += 1
 
       val builtinScalars =
         Array
@@ -1524,10 +1520,8 @@ object Tels extends Tels2:
 
       val members    = scala.collection.mutable.ArrayBuffer.empty[Member]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
-      var i = 0
-
-      while i < children.length do
-        val e = children.readUnchecked(i)
+      children.extent.each: i =>
+        val e = children(i)
 
         kidx(e) match
           case k if k == fieldIdx    => members += fieldFromElement(e)
@@ -1538,8 +1532,6 @@ object Tels extends Tels2:
             case _                          => ()
 
           case _ => ()
-
-        i += 1
 
       (Array.from(members), Array.from(validators))
 
@@ -1565,10 +1557,8 @@ object Tels extends Tels2:
       val variants   = scala.collection.mutable.ArrayBuffer.empty[Variant]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
       val excludes   = scala.collection.mutable.ArrayBuffer.empty[Text]
-      var i = 0
-
-      while i < ch.length do
-        val e = ch.readUnchecked(i)
+      ch.extent.each: i =>
+        val e = ch(i)
 
         kidx(e) match
           case 1 => variants += variantFromElement(e)
@@ -1582,8 +1572,6 @@ object Tels extends Tels2:
             case _                          => ()
 
           case _ => ()
-
-        i += 1
 
       SelectDefinition(textAt(ch, 0).or(t""), Array.from(variants), Array.from(validators),
           textAt(ch, 4), Array.from(excludes))
