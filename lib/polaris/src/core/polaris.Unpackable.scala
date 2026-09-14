@@ -32,6 +32,7 @@
                                                                                                   */
 package polaris
 
+import denominative.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -49,14 +50,10 @@ object Unpackable:
 
       count =>
         val local = Sextant(bytes, start)
-        val buffer = Array.allocate[pack](count)
-        var index = 0
 
-        while index < count do
-          buffer(index) = pack.debuffer(local)
-          index += 1
-
-        Array.freeze(buffer)
+        Array.scribe[pack](count): scribe => extent =>
+          extent.each: index =>
+            scribe(index) = pack.debuffer(local)
 
   given debufferable: [pack: Debufferable] => pack is Unpackable:
     type Wrap[Type] = Type

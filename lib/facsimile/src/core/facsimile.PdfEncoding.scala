@@ -33,6 +33,7 @@
 package facsimile
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
@@ -196,11 +197,6 @@ private[facsimile] object PdfEncoding:
   // Encodes text as bytes for a simple WinAnsi font; an unrepresentable character becomes a
   // question mark, as viewers do.
   private[facsimile] def winAnsiEncode(text: Text): Data =
-    val bytes = Array.allocate[Byte](text.s.length)
-    var i = 0
-
-    while i < text.s.length do
-      bytes(i) = winAnsiCodes.at(text.s.charAt(i)).or('?'.toInt).toByte
-      i += 1
-
-    Array.freeze(bytes)
+    Array.scribe[Byte](text.s.length): scribe => extent =>
+      extent.each: i =>
+        scribe(i) = winAnsiCodes.at(text.s.charAt((i: Ordinal).n0)).or('?'.toInt).toByte

@@ -62,7 +62,7 @@ the bound — "`n = min(a.length, b.length)`, checked at :117". The comment is t
 the ratchet rejects an `attested` without one. Prefer the block form, `xs.attested(i): i => …`,
 so the attestation's extent is visible.
 
-## Two traps
+## Traps
 
 A counter that outlives its loop cannot simply be deleted. It may be shared with a later loop
 that resumes from where the first stopped, in which case removing the declaration silently
@@ -74,5 +74,14 @@ companion of a type the file imports, outranks the interval `each` and strips th
 without any error — the read simply becomes `Optional` again. Such a name never reaches the
 umbrella, so the compile error that normally catches a clash cannot fire; the fix is to rename
 the other method, as `hypotenuse.Bcd#each` became `eachNibble`.
+
+Extension lookup on a branded ordinal is fragile where the brand is a lender's handle: `.n0`
+does not resolve on an `Ordinal in scribe.type` until the receiver is ascribed back to
+`Ordinal`, as `(i: Ordinal).n0`. Reach for the ascription when an ordinal is reported as
+`Required: Int` at its own position.
+
+`extent` and the interval combinators are package-level in `denominative`, so a file that
+reaches them for the first time needs `import denominative.*`; only the operations in the
+opaque types' own companions arrive through implicit scope.
 
 [#1666]: https://github.com/propensive/soundness/issues/1666

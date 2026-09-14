@@ -12,7 +12,7 @@ lib/aviation/src/core/aviation.timestampInternal.scala	1	0	0
 lib/bitumen/src/core/bitumen.Pax.scala	3	4	0
 lib/bitumen/src/core/bitumen.Tar.scala	3	0	0
 lib/bitumen/src/core/bitumen.Tarfile.scala	4	3	0
-lib/breviloquence/src/core/breviloquence.Cbor.scala	31	7	1
+lib/breviloquence/src/core/breviloquence.Cbor.scala	30	7	1
 lib/breviloquence/src/core/breviloquence_core.scala	1	1	0
 lib/burdock/src/core/burdock.internal.scala	1	0	0
 lib/cacophony/src/core/cacophony.Audio.scala	2	0	0
@@ -68,7 +68,7 @@ lib/facsimile/src/core/facsimile.FontEmbedder.scala	0	2	0
 lib/facsimile/src/core/facsimile.Gathering.scala	0	1	0
 lib/facsimile/src/core/facsimile.Guard.scala	3	2	0
 lib/facsimile/src/core/facsimile.Pdf.scala	5	6	2
-lib/facsimile/src/core/facsimile.PdfEncoding.scala	4	1	4
+lib/facsimile/src/core/facsimile.PdfEncoding.scala	3	1	4
 lib/facsimile/src/core/facsimile.Predictor.scala	9	2	0
 lib/facsimile/src/core/facsimile.Rc4.scala	3	0	0
 lib/facsimile/src/core/facsimile.Scan.scala	0	3	0
@@ -149,7 +149,6 @@ lib/plutocrat/src/core/plutocrat.internal.scala	1	0	6
 lib/pneumatic/src/core/pneumatic.Deflater.scala	40	20	0
 lib/pneumatic/src/core/pneumatic.Inflater.scala	48	17	0
 lib/polaris/src/core/polaris.Debufferable.scala	0	4	0
-lib/polaris/src/core/polaris.Unpackable.scala	1	0	0
 lib/polysyllabic/src/core/polysyllabic.Hyphenation.scala	8	1	2
 lib/polysyllabic/src/core/polysyllabic.TexPatterns.scala	7	0	8
 lib/polysyllabic/src/core/polysyllabic_core.scala	8	0	5
