@@ -131,13 +131,10 @@ trait Cbor2:
         active:     Boolean )
     :   derivation =
 
-      var failed = false
+      // `spot` stops at the first unready slot rather than scanning them all, and its index is
+      // confined to `slots`, so the read needs no bounds check.
+      val failed = active && slots.spot(slot => !slots(slot).ready).present
       var slot = 0
-
-      if active then
-        while slot < slots.length do
-          if !slots.readUnchecked(slot).ready then failed = true
-          slot += 1
 
       if failed then null.asInstanceOf[derivation]
       else

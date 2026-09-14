@@ -661,15 +661,9 @@ object Tel extends Tel2:
     // Linear keyword dispatch for the general step — an unpackable wire
     // keyword, or any keyword of a `@name`-annotated record.
     def keywordIndex(keys: Array[String]^{}, keyword: Text): Int =
-      val count = keys.length
       val name: String = keyword.s
-      var index = 0
 
-      while index < count do
-        if keys.readUnchecked(index) == name then return index
-        index += 1
-
-      -1
+      keys.spot(index => keys(index) == name).lay(-1) { ordinal => (ordinal: Ordinal).n0 }
 
     // The repeatable-field hooks, looking through the `Field.Adapter` — for
     // staged parsers, which cannot name the private `Gathering` trait. A
@@ -837,15 +831,10 @@ object Tel extends Tel2:
 
         private def indexOf(keyword: Text): Int =
           val named = keys
-          val count = named.length
           val name: String = keyword.s
-          var index = 0
 
-          while index < count do
-            if named.readUnchecked(index) == name then return index
-            index += 1
-
-          -1
+          named.spot(index => named(index) == name).lay(-1):
+            ordinal => (ordinal: Ordinal).n0
 
         // The value of a record field is its children, one level deeper than
         // its own entry line — after the entry line's own atoms fill fields

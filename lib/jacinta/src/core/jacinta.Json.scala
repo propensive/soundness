@@ -329,13 +329,10 @@ trait Json2 extends Json3:
         active:     Boolean )
     :   derivation =
 
-      var failed = false
+      // `spot` stops at the first unready slot rather than scanning them all, and its index is
+      // confined to `slots`, so the read needs no bounds check.
+      val failed = active && slots.spot(slot => !slots(slot).ready).present
       var slot = 0
-
-      if active then
-        while slot < slots.length do
-          if !slots.readUnchecked(slot).ready then failed = true
-          slot += 1
 
       if failed then null.asInstanceOf[derivation]
       else
@@ -1004,20 +1001,12 @@ object Json extends Json2, Dynamic:
         // cache evictions, longer keys and escaped keys.
         private def indexOf(key: String): Int =
           val named = keys
-          val count = named.length
-          var index = 0
+          val identical = named.spot(index => named(index) eq key)
 
-          while index < count do
-            if named.readUnchecked(index) eq key then return index
-            index += 1
+          val found =
+            if identical.present then identical else named.spot(index => named(index) == key)
 
-          index = 0
-
-          while index < count do
-            if named.readUnchecked(index) == key then return index
-            index += 1
-
-          -1
+          found.lay(-1) { ordinal => (ordinal: Ordinal).n0 }
 
         def parse(reader: Json.Reader^): derivation =
           val entries = fields
@@ -1227,19 +1216,12 @@ object Json extends Json2, Dynamic:
         KeyTable.Unknown
 
     def indexOfName(name: String): Int =
-      var index = 0
+      val identical = keys.spot(index => keys(index) eq name)
 
-      while index < count do
-        if keys.readUnchecked(index) eq name then return index
-        index += 1
+      val found =
+        if identical.present then identical else keys.spot(index => keys(index) == name)
 
-      index = 0
-
-      while index < count do
-        if keys.readUnchecked(index) == name then return index
-        index += 1
-
-      KeyTable.Unknown
+      found.lay(KeyTable.Unknown) { ordinal => (ordinal: Ordinal).n0 }
 
   object Field:
     // Adapts an opted-in nominal instance (or any other `Parsing`) for use
