@@ -59,7 +59,7 @@ lib/facsimile/src/core/facsimile.Ascii85.scala	3	0	0
 lib/facsimile/src/core/facsimile.CharMap.scala	3	0	1
 lib/facsimile/src/core/facsimile.ContentTokens.scala	1	0	0
 lib/facsimile/src/core/facsimile.ContentWriter.scala	2	2	0
-lib/facsimile/src/core/facsimile.Cos.scala	2	0	1
+lib/facsimile/src/core/facsimile.Cos.scala	1	0	1
 lib/facsimile/src/core/facsimile.CosLexer.scala	9	0	0
 lib/facsimile/src/core/facsimile.CosParser.scala	2	0	0
 lib/facsimile/src/core/facsimile.CosWriter.scala	1	0	1
