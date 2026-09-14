@@ -292,14 +292,10 @@ object internal:
 
     if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad) then arr.keep(n - 1) else arr
 
-  private def hasMarker(s: String): Boolean =
-    var i = 0
-
-    while i < s.length do
-      if s.charAt(i) == Marker then return true
-      i += 1
-
-    false
+  // `spot` finds the first index satisfying the predicate, confined to the text, so the read
+  // inside it is total and the search needs no bound of its own.
+  private def hasMarker(text: Text): Boolean =
+    text.spot(index => text(index) == Marker).present
 
   private def preprocess(parts: List[String]): (List[String], Set[Int]) =
     var spreads: Set[Int] = Set()
@@ -510,7 +506,7 @@ object internal:
                   expr.asTerm.underlyingArgument.pos )
 
       def serializeString(s: String): Expr[Json.Ast] =
-        if !hasMarker(s) then '{Json.Ast(${Expr(s)})}
+        if !hasMarker(s.tt) then '{Json.Ast(${Expr(s)})}
         else
           val parts: scala.Array[String | Null] = s.split(MarkerString, -1).nn
           var resultExpr: Expr[String] = Expr(parts(0).nn)
@@ -689,7 +685,7 @@ object internal:
             types ::= TypeRepr.of[Json]
             '{$accept && {$array(${Expr(idx)}) = Json.ast($scrutinee); true}}
 
-          case s: String if hasMarker(s) =>
+          case s: String if hasMarker(s.tt) =>
             // String-interior holes are not supported in extractors
             halt:
               m"""
@@ -869,11 +865,8 @@ object internal:
             // Heterogeneous array (with possible sentinel pad on the end).
             val elems = arrayElements(arr)
             var c = 0
-            var k = 0
-
-            while k < elems.length do
-              c += countHolesIn(elems.readUnchecked(k))
-              k += 1
+            elems.extent.each: k =>
+              c += countHolesIn(elems(k))
 
             c
 
@@ -987,11 +980,8 @@ object internal:
 
       val numberOfHoles =
         var c = 0
-        var k = 0
-
-        while k < parts2.size - 1 do
+        repeat(parts2.size - 1):
           c += 1
-          k += 1
 
         c
 

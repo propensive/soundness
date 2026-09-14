@@ -256,6 +256,21 @@ exactly as a collection does. `extent` gives the whole of a countable value as a
 is how a traversal states its bounds in terms of the value it is traversing rather than in raw
 integers.
 
+An interval obtained from `extent` carries the value it came from in its type, and iterating it
+hands the lambda ordinals that carry it too. An ordinal that a collection has already been proved
+to contain cannot be out of range, so reading with it is total: it yields an element, where an
+unproven index would yield an `Optional`. A counting loop over a collection is therefore written
+without a counter, and without a bounds check on either side:
+
+```scala
+val array = Array(10, 20, 30)
+var total = 0
+array.extent.each { ordinal => total += array(ordinal) }
+```
+
+`capped` narrows such an interval while preserving what it proves, so `array.extent.capped(2)`
+iterates the first two positions and its ordinals remain total to read.
+
 ### Bounded numbers
 
 A number can carry its permitted range in its type, written with `~`. A literal outside the

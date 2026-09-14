@@ -139,13 +139,10 @@ trait Yaml2:
         active:     Boolean )
     :   derivation =
 
-      var failed = false
+      // `spot` stops at the first unready slot rather than scanning them all, and its index is
+      // confined to `slots`, so the read needs no bounds check.
+      val failed = active && slots.spot(slot => !slots(slot).ready).present
       var slot = 0
-
-      if active then
-        while slot < slots.length do
-          if !slots.readUnchecked(slot).ready then failed = true
-          slot += 1
 
       if failed then null.asInstanceOf[derivation]
       else
@@ -3585,9 +3582,7 @@ object Yaml extends Yaml2, Dynamic:
 
     private update def readHex(count: Int)(using Tactic[Parse.Error]): Int =
       var acc = 0
-      var i = 0
-
-      while i < count do
+      repeat(count):
         if !more then errorAt(Issue.TruncatedHexEscape)
         val b = peek
 
@@ -3599,7 +3594,6 @@ object Yaml extends Yaml2, Dynamic:
 
         acc = (acc << 4) | digit
         advance()
-        i += 1
 
       acc
 

@@ -40,9 +40,11 @@ import prepositional.*
 // The write-side counterpart of confined reading (issue #1666), as a builder-lender: an
 // opaque handle over a freshly-allocated array that grants writes (and read-back) only
 // through `Ordinal`s branded to the handle's identity, so no index it accepts can be out of
-// range. `Array.build` allocates, lends the scribe with its branded extent, and freezes the
+// range. `Array.scribe` allocates, lends the scribe with its branded extent, and freezes the
 // result — the only writer is statically retired when the lender returns, so the freeze is
-// sound by construction, exactly as `Array.freeze`'s `consume` form.
+// sound by construction, exactly as `Array.freeze`'s `consume` form. Not to be confused with
+// gossamer's `Array.build`, which lends the raw mutable array instead: gossamer sits below
+// this module and cannot reach a `Scribe`, so it keeps a lender of its own.
 //
 // A `Scribe` is `Countable`, so the whole confined-scan family (`iterate`, `spot`, `lead`,
 // `pare`, `retrace`) applies to it directly: `scribe.iterate { i => scribe(i) = ... }`.

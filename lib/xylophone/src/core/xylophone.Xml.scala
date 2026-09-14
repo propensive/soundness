@@ -449,13 +449,10 @@ object Xml extends Tag.Container
         active:     Boolean )
     :   derivation =
 
-      var failed = false
+      // `spot` stops at the first unready slot rather than scanning them all, and its index is
+      // confined to `slots`, so the read needs no bounds check.
+      val failed = active && slots.spot(slot => !slots(slot).ready).present
       var slot = 0
-
-      if active then
-        while slot < slots.length do
-          if !slots.readUnchecked(slot).ready then failed = true
-          slot += 1
 
       if failed then null.asInstanceOf[derivation]
       else
@@ -1877,11 +1874,8 @@ object Xml extends Tag.Container
   private def newline(producer: (Producer[Text])^, formatting: Formatting, depth: Int): Unit =
     formatting.indent.let: unit =>
       producer.put("\n")
-      var i = 0
-
-      while i < depth do
+      repeat(depth):
         producer.put(unit)
-        i += 1
 
   given showable: [xml <: Xml] => (formatting: Formatting) => xml is Showable = node =>
     Producer.collect[Text](): producer =>
@@ -4320,14 +4314,10 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
     while i < nodes.length do
       nodes.readUnchecked(i) match
         case Element(_, _, children) =>
-          var j = 0
-
-          while j < children.length do
-            children.readUnchecked(j) match
+          children.extent.each: j =>
+            children(j) match
               case child: Element if child.label == name.tt => buffer.append(child)
               case _                                        => ()
-
-            j += 1
 
         case _ =>
           ()

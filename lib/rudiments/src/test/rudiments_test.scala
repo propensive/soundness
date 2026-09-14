@@ -737,6 +737,41 @@ object Tests extends Suite(m"Rudiments Tests"):
           (window, overrun, surveyor.passed)
       . assert(_ == ((3, Unset, 0)))
 
+      // A surveyor over a sub-interval begins at its start and is exhausted at its limit, so
+      // a scan bounded by anything but the collection's own length cannot overrun it.
+      test(m"a confined surveyor starts at its interval's start"):
+        val text = t"abcdef"
+        text.survey(text.extent.capped(4)) { surveyor => surveyor.passed }
+      . assert(_ == 0)
+
+      test(m"a confined surveyor is exhausted at its interval's limit"):
+        val text = t"abcdef"
+        val builder = java.lang.StringBuilder()
+
+        text.survey(text.extent.capped(4)): surveyor =>
+          while surveyor.more do surveyor.next(()) { char => builder.append(char) }
+
+        builder.toString.tt
+      . assert(_ == t"abcd")
+
+      test(m"a confined surveyor paces no further than its limit"):
+        val text = t"aaaaaa"
+
+        text.survey(text.extent.capped(4)): surveyor =>
+          (surveyor.pace(_ == 'a'): Interval).size
+
+      . assert(_ == 4)
+
+      test(m"a confined surveyor reads from a later start"):
+        val text = t"abcdef"
+        val builder = java.lang.StringBuilder()
+
+        text.survey(text.extent.beyond(2)): surveyor =>
+          while surveyor.more do surveyor.next(()) { char => builder.append(char) }
+
+        builder.toString.tt
+      . assert(_ == t"cdef")
+
       test(m"`next` consumes elements one at a time"):
         val text = t"ab"
         val builder = java.lang.StringBuilder()

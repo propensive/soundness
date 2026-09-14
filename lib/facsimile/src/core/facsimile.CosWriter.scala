@@ -34,6 +34,7 @@ package facsimile
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import hieroglyph.*
 import hypotenuse.*
 import rudiments.*
@@ -110,10 +111,9 @@ private[facsimile] object CosWriter:
   private def name(builder: DataBuilder, text: Text): Unit =
     builder += '/'.toByte
     val raw = charEncoders.utf8Encoder.encoded(text)
-    var i = 0
 
-    while i < raw.length do
-      val byte = raw.readUnchecked(i) & 0xff
+    raw.extent.each: i =>
+      val byte = raw(i) & 0xff
 
       if byte < 0x21 || byte > 0x7e || CosLexer.delimiter(byte) || byte == '#' then
         builder += '#'.toByte
@@ -121,16 +121,12 @@ private[facsimile] object CosWriter:
         builder += hexDigit(byte & 0xf)
       else builder += byte.toByte
 
-      i += 1
-
   // A literal string with the mandatory escapes, and non-printable bytes as octal, so any
   // byte sequence round-trips.
   private def literal(builder: DataBuilder, data: Data): Unit =
     builder += '('.toByte
-    var i = 0
-
-    while i < data.length do
-      val byte = data.readUnchecked(i) & 0xff
+    data.extent.each: i =>
+      val byte = data(i) & 0xff
 
       byte match
         case '('  => bytes(builder, "\\(")
@@ -143,8 +139,6 @@ private[facsimile] object CosWriter:
             builder += ('0' + ((byte >> 6) & 0x7)).toByte
             builder += ('0' + ((byte >> 3) & 0x7)).toByte
             builder += ('0' + (byte & 0x7)).toByte
-
-      i += 1
 
     builder += ')'.toByte
 

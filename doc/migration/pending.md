@@ -154,3 +154,45 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `FontMetric`'s default given is now `FontMetric.fromStyle`, deriving from the style's font: an
   embedded file's own metrics, else the average; formerly `FontMetric.average`, always the
   average. New: `FontMetric.of(font: Font)`.
+
+## denominative
+
+- `each` on an `Interval` moved from `denominative.internal` to the `denominative` package. It
+  is no longer in the opaque type's implicit scope, so a call site with no import of
+  `denominative` (or `soundness`) must add one. Signature and behaviour unchanged:
+  `extension (interval: Interval) inline def each(inline lambda: Ordinal => Unit): Unit`.
+- `thru` and `till` on `Ordinal` moved from `denominative.internal` to the `denominative`
+  package, so they are no longer in the opaque type's implicit scope: a call site with no
+  import of `denominative` (or `soundness`) must add one. Signatures and behaviour unchanged.
+  `span` is unmoved.
+- New overloads `extension [form](ordinal: Ordinal in form) inline infix def thru(right:
+  Ordinal in form): Interval in form` and the matching `till`, selected when both endpoints are
+  confined to the same value. They are the only way to build a branded interval that does not
+  begin at the start of the collection. Note that an ordinal obtained through `Optional#let`
+  carries a capture variable and will not match them; narrow with `beyond` instead.
+- New: `extension [form](range: Interval in form) inline def beyond(count: Int): Interval in
+  form`, the complement of `capped` — it drops the first `count` indexes, preserving the brand,
+  where `capped` keeps the first `count`. Together they bound a window at both ends.
+- New overload `extension [form](range: Interval in form) inline def each(inline lambda:
+  (Ordinal in form) => Unit): Unit`, selected for a confined interval such as `value.extent` or
+  `value.extent.capped(n)`. It supplies confined ordinals (`Ordinal in form`), so an indexed read
+  in the lambda resolves to the total `apply` and yields a bare element, not an `Optional`:
+  `xs.extent.each { ordinal => xs(ordinal) }`. It supersedes `value.iterate` and
+  `value.iterate(range)`, which are unchanged and still available.
+
+## concordance
+
+- New overload `extension [collection](value: collection) inline def survey[result](range:
+  Interval in value.type)(using indexable: collection is Applicable by Ordinal, countable:
+  collection is Countable)(inline lambda: Surveyor[collection, value.type, indexable.Result] =>
+  result): result`. The surveyor begins at the interval's start and is exhausted at its limit,
+  rather than spanning the whole collection, so a scan bounded by anything other than the
+  collection's own length cannot overrun its window. `surveyor.passed` is the position counted
+  from the start of the collection, which for a surveyor over everything is unchanged.
+
+## hypotenuse
+
+- `hypotenuse.Bcd#each(action: Int => Unit): Unit` renamed to `eachNibble`; `each` removed.
+  Behaviour unchanged: it invokes `action` with each nibble value in left-to-right
+  (oldest-first) order. The old name collided with the collection `each`, which a file
+  importing `Bcd.*` would resolve to `Bcd`'s version for any receiver.

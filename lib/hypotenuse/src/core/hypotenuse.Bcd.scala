@@ -108,7 +108,7 @@ object Bcd:
   inline def bcdLongNegative(value: Long): Boolean = value < 0L
 
   // Decode a single-Long BCD value to its canonical JSON-number text. The
-  // walk mirrors `Bcd.each` but operates on a single Long. The parser
+  // walk mirrors `Bcd.eachNibble` but operates on a single Long. The parser
   // omits the redundant leading "0" for "0.xxx" inputs, so this re-
   // inserts a "0" when the oldest nibble is "." (`0xA`) to keep the
   // output a valid JSON number.
@@ -343,7 +343,9 @@ object Bcd:
     // Iterate nibbles in left-to-right (oldest-first) order, invoking the
     // action for each. Used by the printer to emit a JSON-number string and
     // by conversion routines (`toBigDecimal`, `toDouble`, `toLong`).
-    inline def each(inline action: Int => Unit): Unit =
+    // Not `each`: a `Bcd` is a number, not a collection, and this yields nibble
+    // values rather than elements, so it takes a name of its own.
+    inline def eachNibble(inline action: Int => Unit): Unit =
       val total = bcd.nibbleCount
       val fullDoubles = total/NibblesPerDouble
       val partial = total - fullDoubles*NibblesPerDouble
@@ -378,7 +380,7 @@ object Bcd:
         if bcd.negative then sb.append('-')
         var first = true
 
-        bcd.each: nibble =>
+        bcd.eachNibble: nibble =>
           if first then
             first = false
             if nibble == 0xA then sb.append('0')

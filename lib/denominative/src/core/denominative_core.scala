@@ -181,12 +181,72 @@ extension [countable: Countable](value: countable)
       index -= 1
 
 
+// Iteration over an interval's ordinals. The two overloads live here, at package level, rather
+// than in `internal` beside `fuse`: inside `internal` the opaque `Interval` is transparently a
+// `Long`, so the refinement `Interval in form` collapses and the brand never reaches a caller
+// outside. They must also share one scope, or the unbranded alternative — reachable through the
+// opaque type's implicit scope — outranks the branded one and silently strips the brand.
+extension (interval: Interval)
+  inline def each(inline lambda: Ordinal => Unit): Unit =
+    var index: Int = interval.start.n0
+    val end: Int = interval.limit.n0
+
+    while index < end do
+      lambda(Ordinal.zerary(index))
+      index += 1
+
+// The branded twin: a confined interval yields confined ordinals, so a read inside the loop is
+// total and returns a bare element rather than an `Optional`. This is the combinator that
+// replaces `var i = 0; while i < xs.length do ... i += 1`.
+extension [form](range: Interval in form)
+  inline def each(inline lambda: (Ordinal in form) => Unit): Unit =
+    val interval: Interval = range
+    var index: Int = interval.start.n0
+    val end: Int = interval.limit.n0
+
+    while index < end do
+      lambda(Ordinal.zerary(index).asInstanceOf[Ordinal in form])
+      index += 1
+
+// `thru` and `till` bound an interval from two ordinals. Both overloads live here, at package
+// level, for the same reason `each` does: the unbranded alternative would otherwise be reached
+// through the opaque type's implicit scope and outrank the branded one, silently returning an
+// unbranded `Interval` and discarding the proof the caller had. Two ordinals confined to the
+// same value bound an interval confined to it too, since every ordinal between two valid
+// indexes is itself valid — which is the only way to build a branded interval that does not
+// start at the beginning.
+extension (ordinal: Ordinal)
+  inline infix def thru (right: Ordinal): Interval =
+    Interval.sized(ordinal.n0, right.n0 - ordinal.n0 + 1)
+
+  inline infix def till (right: Ordinal): Interval =
+    Interval.sized(ordinal.n0, right.n0 - ordinal.n0)
+
+extension [form](ordinal: Ordinal in form)
+  inline infix def thru (right: Ordinal in form): Interval in form =
+    Interval.sized(ordinal.n0, right.n0 - ordinal.n0 + 1).asInstanceOf[Interval in form]
+
+  inline infix def till (right: Ordinal in form): Interval in form =
+    Interval.sized(ordinal.n0, right.n0 - ordinal.n0).asInstanceOf[Interval in form]
+
 // Brand-preserving narrowing: a sub-interval of a valid extent is itself valid, so clamping
 // preserves the brand. `capped` keeps at most the first `count` indexes of the extent.
 extension [form](range: Interval in form)
   inline def capped(count: Int): Interval in form =
     val interval: Interval = range
     Interval.sized(interval.start.n0, interval.size.min(count.max(0))).asInstanceOf[Interval in form]
+
+  // The complement of `capped`: drop the first `count` indexes rather than keep them. Named
+  // `beyond` because `skip`, `keep` and `after` are rudiments' segment vocabulary, and a
+  // toplevel name in `package soundness` may be owned by only one module. Together the two
+  // bound a window at both ends without an `Optional` in the way, which is what a scan over
+  // part of a collection needs.
+  inline def beyond(count: Int): Interval in form =
+    val interval: Interval = range
+    val dropped: Int = count.max(0).min(interval.size)
+
+    Interval.sized(interval.start.n0 + dropped, interval.size - dropped)
+    . asInstanceOf[Interval in form]
 
 export denominative.internal.{Ordinal, Interval, Span}
 

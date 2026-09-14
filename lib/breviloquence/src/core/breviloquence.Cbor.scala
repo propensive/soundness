@@ -131,13 +131,10 @@ trait Cbor2:
         active:     Boolean )
     :   derivation =
 
-      var failed = false
+      // `spot` stops at the first unready slot rather than scanning them all, and its index is
+      // confined to `slots`, so the read needs no bounds check.
+      val failed = active && slots.spot(slot => !slots(slot).ready).present
       var slot = 0
-
-      if active then
-        while slot < slots.length do
-          if !slots.readUnchecked(slot).ready then failed = true
-          slot += 1
 
       if failed then null.asInstanceOf[derivation]
       else
@@ -953,14 +950,9 @@ object Cbor extends Cbor2, Dynamic:
     private inline val LongCacheSize = 65536
 
     private val longCache: Array[AnyRef]^{} =
-      val out = Array.allocate[AnyRef](LongCacheSize)
-      var index = 0
-
-      while index < LongCacheSize do
-        out(index) = java.lang.Long.valueOf(index.toLong).nn
-        index += 1
-
-      Array.freeze(out)
+      Array.scribe[AnyRef](LongCacheSize): scribe => extent =>
+        extent.each: index =>
+          scribe(index) = java.lang.Long.valueOf((index: Ordinal).n0.toLong).nn
 
     private inline def boxLong(value: Long): AnyRef =
       if value >= 0L && value < LongCacheSize then longCache.readUnchecked(value.toInt)
@@ -1610,11 +1602,8 @@ object Cbor extends Cbor2, Dynamic:
             if length < 0 || length > Int.MaxValue
             then abort(Cbor.Error(Reason.Overflow(pos.toLong)))
 
-            var index = 0
-
-            while index < length.toInt do
+            repeat(length.toInt):
               directSkipValue()
-              index += 1
 
         case 5 =>
           if info == 31 then
@@ -1627,12 +1616,9 @@ object Cbor extends Cbor2, Dynamic:
             if length < 0 || length > Int.MaxValue
             then abort(Cbor.Error(Reason.Overflow(pos.toLong)))
 
-            var index = 0
-
-            while index < length.toInt do
+            repeat(length.toInt):
               directSkipValue()
               directSkipValue()
-              index += 1
 
         case 6 =>
           if readLength(info, pos.toLong) < 0

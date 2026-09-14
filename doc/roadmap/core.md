@@ -56,7 +56,8 @@ Done when:
 ## core-4: indexed access is total by construction
 
 Horizon: mid
-Baseline: 2244 `while … do` loops across 330 Scala files (measured 2026-08-01)
+Baseline: 1597 `while` loops, 482 `readUnchecked` and 509 `.charAt(` in `lib/*/src/core`
+(comment- and string-stripped, measured 2026-09-14)
 
 The `var i = 0; while i < length` pattern is maximally efficient and maximally unsafe: the
 index is just an `Int`, unconstrained by the collection it indexes. The design in
@@ -67,10 +68,17 @@ the fallback `apply` returning `Optional`. Iteration then flows through inline c
 that supply dependently-typed ordinals, compiling to the same bytecode as the loops they
 replace.
 
-Done when: no collection in `lib/` exposes a partial indexed `apply`, and the indexing
-`while`-loop pattern is drained. Interim gauge:
+Done when: no collection in `lib/` exposes a partial indexed `apply`, and every `while` that
+remains is one of the three shapes [`doc/standards/loops.md`](../standards/loops.md) sanctions,
+carrying the comment that names its invariant. A literal zero is not the goal: index arithmetic
+derived from the data, and the combinators' own internals, stay as loops.
 
-    git grep -E 'while .* do( |$)' -- 'lib/**/*.scala' | wc -l    # 2244 and falling
+The drain is bounded by which receivers can carry a brand, not by how many loops there are. A
+loop over a mutable `scala.Array`, a `scala.IArray`, a varargs `Seq` or a capability-carrying
+`IndexedSeq` has no confined form at all, so the reachable corpus is smaller than the count
+suggests. Interim gauge, ratcheted per file by `make build`:
+
+    python3 etc/check-while-count.py --totals
 
 ## core-5: nothing Java-shaped at debug time
 

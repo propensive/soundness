@@ -35,7 +35,9 @@ package punctuation
 import java.util.regex as jur
 
 import anticipation.*
+import denominative.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 case class EntityMatch(decoded: String, end: Int)
@@ -128,7 +130,7 @@ private[punctuation] object InlineSupport:
           noNewlines.length >= 2 &&
             noNewlines.charAt(0) == ' ' &&
             noNewlines.charAt(noNewlines.length - 1) == ' ' &&
-            existsNonSpace(noNewlines)
+            existsNonSpace(noNewlines.tt)
 
         val stripped =
           if needsTrim then noNewlines.substring(1, noNewlines.length - 1).nn else noNewlines
@@ -137,15 +139,10 @@ private[punctuation] object InlineSupport:
 
     Unset
 
-  private def existsNonSpace(s: String): Boolean =
-    val n = s.length
-    var i = 0
-
-    while i < n do
-      if s.charAt(i) != ' ' then return true
-      i += 1
-
-    false
+  // `spot` finds the first index satisfying the predicate, confined to the text, so the read
+  // inside it is total and the search needs no bound of its own.
+  private def existsNonSpace(text: Text): Boolean =
+    text.spot(index => text(index) != ' ').present
 
   // Email autolink pattern from the CommonMark spec (§6.4)
   private val EmailRegex: jur.Pattern =

@@ -50,6 +50,19 @@ export
       mean2, unique, seek, reap, where,
       Populated, head, last, lead, reduce, populatedEquality }
 
+// The two interval `each` overloads are re-declared here, beside the exported collection `each`,
+// rather than exported from denominative: two toplevel definitions of one name in `package
+// soundness` do not overload — one is silently dropped — so a name must be owned by a single
+// compilation unit. Both overloads must also share one scope, or the unbranded alternative wins
+// for a branded receiver and silently strips the brand.
+extension (interval: denominative.Interval)
+  inline def each(inline lambda: denominative.Ordinal => Unit): Unit =
+    denominative.each(interval)(lambda)
+
+extension [form](range: prepositional.`in`[denominative.Interval, form])
+  inline def each(inline lambda: prepositional.`in`[denominative.Ordinal, form] => Unit): Unit =
+    denominative.each(range)(lambda)
+
 // The `Deindex` extension group (`apply`, `at`, `defines`, `confine`, `prim`, `sec`, `ter`) is
 // re-declared here rather than exported: its typeclass evidence is a dependent leading `using`
 // clause (required so a failed summon discards the candidate instead of erroring — see

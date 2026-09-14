@@ -56,8 +56,6 @@ object internal:
   opaque type Span = Long
 
   extension (ordinal: Ordinal)
-    inline infix def thru (right: Ordinal): Interval = Interval(ordinal, right)
-    inline infix def till (right: Ordinal): Interval = Interval(ordinal, right - 1)
     inline infix def span (right: Int): Interval = Interval(ordinal, ordinal + right - 1)
 
   extension (inline ordinal: Ordinal)
@@ -99,14 +97,6 @@ object internal:
     inline def previous: Ordinal = start - 1
     inline def subsequent(size: Int): Interval = end.subsequent(size)
     inline def preceding(size: Int): Interval = start.preceding(size)
-
-    inline def each(inline lambda: Ordinal => Unit): Unit =
-      var i: Ordinal = start
-
-      while i <= end do
-        lambda(i)
-        i = i.next
-
 
     inline def fuse[value](inline initial: value)
       ( inline lambda: (value aka "state", Ordinal aka "next") ?=> value )

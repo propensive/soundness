@@ -38,6 +38,7 @@ import scala.compiletime.*
 import scala.compiletime.ops.int.-
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
@@ -890,11 +891,8 @@ class Matrix[element, rows <: Int, columns <: Int]
     // Inlined `MurmurHash3.arrayHash`: `arrayHash` demands a pure `Array`, which the
     // capture-checked frozen form cannot supply without an unsafe cast.
     var hash = scala.util.hashing.MurmurHash3.arraySeed
-    var index = 0
-
-    while index < elements.length do
-      hash = scala.util.hashing.MurmurHash3.mix(hash, elements.readUnchecked(index).##)
-      index += 1
+    elements.extent.each: index =>
+      hash = scala.util.hashing.MurmurHash3.mix(hash, elements(index).##)
 
     scala.util.hashing.MurmurHash3.finalizeHash(hash, elements.length)
 

@@ -32,11 +32,15 @@ check-givens:
 check-stdlib:
 	./etc/check-stdlib-count.sh
 
+check-while:
+	python3 etc/check-while-count.py
+
 build:
 	./mill groupCheck.validate
 	python3 etc/check-given-uniqueness.py
 	python3 etc/check-doc-coverage.py
 	./etc/check-stdlib-count.sh
+	python3 etc/check-while-count.py
 	./mill soundness.all
 	./mill benches.compile
 
@@ -103,4 +107,4 @@ matrix:
 	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
-.PHONY: publishLocal build dev ci wasm-e2e doccheck test bench matrix attest verify-attest push release xeq-fetch
+.PHONY: publishLocal build dev ci check-givens check-stdlib check-while wasm-e2e doccheck test bench matrix attest verify-attest push release xeq-fetch

@@ -236,16 +236,12 @@ object XPath extends Format:
 
     private def accumulate(element: Element, builder: StringBuilder): Unit =
       val children = element.children
-      var i = 0
-
-      while i < children.length do
-        children.readUnchecked(i) match
+      children.extent.each: i =>
+        children(i) match
           case TextNode(text)   => builder.append(text.s)
           case Cdata(text)      => builder.append(text.s)
           case child: Element   => accumulate(child, builder)
           case _                => ()
-
-        i += 1
 
   // A located node: the evaluation subject plus the child-index path from the
   // virtual root (XPath's `/`, the node *above* the root element) down to the
