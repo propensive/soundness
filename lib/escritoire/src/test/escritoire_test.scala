@@ -73,6 +73,48 @@ object Tests extends Suite(m"Escritoire tests"):
       TextAlignment.Justify.pad(t"a b c", 9, true)
     . assert(_ == t"a b c    ")
 
+    // ─── Columnation ────────────────────────────────────────────────────────
+
+    test(m"Items fill as many columns as fit, reading across"):
+      List(t"a", t"bb", t"c", t"dd", t"e").columnate(11)
+    . assert(_ == List(t"a   bb  c", t"dd  e"))
+
+    test(m"A narrow column may be shrunk to fit one more column"):
+      List(t"aaaa", t"b", t"c", t"d").columnate(12)
+    . assert(_ == List(t"aaaa  b   c", t"d"))
+
+    test(m"Uniform columns are all as wide as the widest item"):
+      List(t"aaaa", t"b", t"c", t"d").columnate(12, uniform = true)
+    . assert(_ == List(t"aaaa  b", t"c     d"))
+
+    test(m"Spare width widens shrunk columns back towards equality"):
+      List(t"aaaa", t"b", t"c", t"d").columnate(16)
+    . assert(_ == List(t"aaaa  b   c   d"))
+
+    test(m"A downward layout reads down each column, dropping empty trailing columns"):
+      List(t"a", t"b", t"c", t"d", t"e").columnate(7, downward = true)
+    . assert(_ == List(t"a  c  e", t"b  d"))
+
+    test(m"Everything fits on one row when the width allows"):
+      List(t"a", t"b", t"c").columnate(80, gap = 1)
+    . assert(_ == List(t"a b c"))
+
+    test(m"An item wider than the width still occupies a single column"):
+      List(t"abcdef", t"g").columnate(4)
+    . assert(_ == List(t"abcdef", t"g"))
+
+    test(m"Right alignment pads the last column too"):
+      List(t"a", t"bb").columnate(10, align = TextAlignment.Right)
+    . assert(_ == List(t" a  bb"))
+
+    test(m"The documented example lays out as documented"):
+      List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum").columnate(24)
+    . assert(_ == List(t"apple  fig    kiwi  lime", t"pear   plum"))
+
+    test(m"No items make no lines"):
+      List[Text]().columnate(10)
+    . assert(_ == Nil)
+
     // ─── Column combinators ─────────────────────────────────────────────────
 
     test(m"Column retitle changes the title"):

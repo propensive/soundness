@@ -322,6 +322,32 @@ text renders as a one-column table without a wrapper type. That instance is also
 type whose columns are not its fields — a record read from a schema, or a value whose display
 columns are computed.
 
+### Lists in columns
+
+Not every arrangement of text in columns is a table. A list of short items — file names, the
+entries of a legend — reads best laid out the way `ls` lays out a directory: as many columns as
+the width allows, no titles and no rules. `columnate` does this for a list of textual values,
+returning one line per row:
+
+```scala
+List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum").columnate(24)
+```
+
+```mono
+apple  fig    kiwi  lime
+pear   plum
+```
+
+The column count is the greatest at which every column's content fits, with `gap` cells (two by
+default) between neighbours. Columns of equal width — each as wide as the widest item — are
+preferred, but a layout with one more column is admitted when the items which fall into some
+column happen to be narrower, and that column can shrink. Whatever width is then spare is shared
+back out among the shrunk columns, towards equality, without any column growing beyond the
+widest item. Passing `uniform = true` forgoes the compromise and considers only equal-width
+layouts, and `downward = true` reads the items down each column rather than across each row.
+An `align` chooses how each cell is padded within its column; a left-aligned row carries no
+trailing padding after its last item.
+
 ### When the table does not fit
 
 Below some width, no arrangement of columns is satisfactory, and what should happen then is a
