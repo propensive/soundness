@@ -375,11 +375,44 @@ object xeqRelease extends Module:
 // so exactly one must come back. `dev.propensive` artifacts published with `mill publishLocal`
 // land in `~/.ivy2/local`, which is in coursier's default resolver set.
 object consequentToolchain extends mill.javalib.CoursierModule:
-  val version = sys.env.getOrElse("SOUNDNESS_CONSEQUENT_VERSION", "0.1.0")
+  val version = sys.env.getOrElse("SOUNDNESS_CONSEQUENT_VERSION", "0.2.0")
   val compiler = "3.9.0-RC4"
 
   def plugin: T[PathRef] = Task:
     defaultResolver().classpath(Seq(mvn"dev.propensive:consequent_$compiler:$version"), false).head
+
+  // The identifiers the census counts by name, beyond the constructs it always
+  // counts and the `unsafe`-prefixed names it recognises unaided. Each is a way
+  // of telling the compiler to trust the author: a cast, a null assertion, a
+  // partial read, a suppressed exhaustivity check, or the stdlib bridge.
+  //
+  // Separated by `;` when passed: the compiler splits a `-P` argument on any
+  // comma before the plugin sees it.
+  val counted: Seq[String] =
+    Seq("asInstanceOf", "isInstanceOf", "nn", "get", "head", "last", "readUnchecked", "stdlib",
+        "unchecked", "uncheckedVariance", "untrackedCaptures", "???", "Unsafe")
+
+  // The checker options every checked component shares.
+  //
+  // `S1.1` — a method gated by `Unsafe` must say so in its name — is `strict`,
+  // because a gate nobody can see from the call site is a boundary that is not
+  // really there, and that is a soundness claim rather than a style one.
+  //
+  // `S1.2` — an `unsafe`-named method must take the token — stays advisory.
+  // `Array.unsafeFrozen` and `Array.unsafeJvm` are the two that break it, and
+  // each is a per-call claim checkable against one Javadoc rather than a scope
+  // the caller enters; gating them would thread `(using Unsafe)` through 343
+  // call sites in 170 files and say nothing the name does not already say. The
+  // census counts them either way.
+  //
+  // `metrics` names a per-module table under the calling task's own `dest`,
+  // which mill wipes exactly when the options change and a full recompile
+  // follows.
+  def soundnessOptions(dest: os.Path): Seq[String] =
+    Seq("-P:consequent:unsafeToken=Unsafe",
+        "-P:consequent:strict=S1.1",
+        s"-P:consequent:metrics=${dest / "unsafety.tsv"}",
+        s"-P:consequent:count=${counted.mkString(";")}")
 
 // Resolves the stock Scala Native artifacts from Maven Central (they are not fork-built, so no
 // local repository view is needed). `nscplugin` is the compiler plugin that lowers to NIR, added
@@ -599,9 +632,10 @@ extends BaseScalaModule, SonatypeCentralPublishModule, PlatformCross:
 
   override def scalacOptions = Task:
     settings.scalaOptions
-      :+ s"-Xplugin:${consequentToolchain.plugin().path}"
-      :+ "-P:consequent:umbrella=soundness"
-      :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
+      ++ Seq(s"-Xplugin:${consequentToolchain.plugin().path}",
+             "-P:consequent:umbrella=soundness")
+      ++ consequentToolchain.soundnessOptions(Task.dest)
+      ++ Seq(s"-Xplugin:${beneficence.plugin.assembly().path}")
 // A component whose sources are chosen by compiler stream. Soundness is written once and
 // compiles on every stream the fork carries, with one exception: the few modules that reach into
 // *compiler-internal* APIs, which upstream is free to reshape between major versions — 3.10 gave
@@ -637,9 +671,10 @@ trait Internal(dependencies: JavaModule*) extends BaseScalaModule:
 
   override def scalacOptions = Task:
     settings.scalaOptions
-      :+ s"-Xplugin:${consequentToolchain.plugin().path}"
-      :+ "-P:consequent:umbrella=soundness"
-      :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
+      ++ Seq(s"-Xplugin:${consequentToolchain.plugin().path}",
+             "-P:consequent:umbrella=soundness")
+      ++ consequentToolchain.soundnessOptions(Task.dest)
+      ++ Seq(s"-Xplugin:${beneficence.plugin.assembly().path}")
 trait Tests(dependencies: JavaModule*) extends BaseScalaModule:
   def enabled: Boolean = true
   def moduleId: String = moduleDir.last

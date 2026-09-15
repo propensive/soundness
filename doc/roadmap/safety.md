@@ -87,3 +87,30 @@ today, but the end-state has none: every component compiles with separation chec
 
 Done when: no component in `build.mill` overrides its settings to anything weaker than
 `settings.sep`.
+
+## safety-7: measure the whole escape surface, not one grep at a time
+
+Horizon: near
+
+The escape hatches this track burns down are counted by hand, from baselines that go stale
+between measurements: `safety-4`'s 929 was measured in August 2026 and had drifted past 1400
+before anyone recompiled the grep. Two ratchets cover a slice of the surface properly, per
+file and enforced — `etc/check-while-count.py` for `while`, `readUnchecked` and `charAt`, and
+`etc/check-stdlib-count.sh` for the `.stdlib` bridge — and the rest is unmeasured.
+
+The Consequent checker now writes a per-file census during every build
+(`-P:consequent:metrics=…`), counting the declared escapes (`unsafely`, the `caps.unsafe`
+family, every `unsafe`-prefixed name, every method gated by the token), the compiler-trust
+bypasses (`asInstanceOf`, `.nn`, `@unchecked`, `???`, catch-all clauses), the partial reads,
+and the imperative constructs the streaming kernel is meant to confine. `make unsafety`
+prints it; `etc/unsafety-report.py --record` appends the totals to `etc/unsafety-history.tsv`,
+so the trend lives in git rather than in a roadmap paragraph.
+
+It reports and does not gate: the counts must settle across a few clean builds before a
+number is worth failing a build over. The gate is the follow-up, and it should subsume the two
+existing ratchets rather than sit beside them — one per-file baseline covering every
+indicator, not a script per construct.
+
+Done when: the census is recorded on every release, `safety-1`, `safety-2` and `safety-4` read
+their baselines from it rather than from a hand-run grep, and the per-file gate has replaced
+`etc/check-while-count.py` and `etc/check-stdlib-count.sh`.
