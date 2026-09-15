@@ -62,18 +62,21 @@ object internal:
     private def encodeLatitude(latitude: Angle): Int =
       (latitude.radians*2*Int.MaxValue/math.Pi).toInt
 
+    // Longitude is stored in its canonical range, [-π, π), so that a western longitude keeps its
+    // sign; offsetting it by π instead pushed every negative longitude past `Int.MinValue`, where
+    // `toInt` saturates, and they all came back as zero.
     private def encodeLongitude(longitude: Angle): Int =
-      ((longitude.radians - math.Pi)*Int.MaxValue/math.Pi).toInt
+      (longitude.canonical.radians*Int.MaxValue/math.Pi).toInt
 
     def apply(latitude: Angle, longitude: Angle): Location = fromAngle(latitude, longitude)
 
     def apply(north: Int, east: Int): Location =
-      fromAngle(Degree*north.toDouble/1000000.0, Degree*((360.0 + east/1000000.0)%360.0))
+      fromAngle(Angle.degrees(north/1000000.0), Angle.degrees(east/1000000.0))
 
   extension (left: Location)
     def latitude: Angle = Angle(((left >>> 32) & 0xffffffffL).toInt.toDouble/2/Int.MaxValue*π)
 
-    def longitude: Angle = Angle((left & 0xffffffffL).toInt.toDouble/Int.MaxValue*π + π)
+    def longitude: Angle = Angle((left & 0xffffffffL).toInt.toDouble/Int.MaxValue*π)
     def pair: (Angle, Angle) = (latitude, longitude)
 
     def geohash(length: Int): Text =
@@ -81,10 +84,7 @@ object internal:
       val bits = length*5
       val lat: Int = ((left >>> 32)&0xffffffffL).toInt
 
-      val long: Int =
-        val long0 = left&0xffffffffL
-        if long0 < 0 then (long0 + Int.MaxValue).toInt else (long0 - Int.MaxValue).toInt
-
+      val long: Int = (left&0xffffffffL).toInt
 
       def recur(value: Long, latMin: Long, latMax: Long, longMin: Long, longMax: Long, count: Int)
       :   Long =
@@ -125,11 +125,11 @@ object internal:
     def bearing[compass: Directional](right: Location): compass =
       val lat0 = left.latitude.radians
       val lat1 = right.latitude.radians
-      val dLng = math.abs(left.longitude.radians - right.longitude.radians)
+      val dLng = right.longitude.radians - left.longitude.radians
 
       val result: Double =
         math.atan2
           ( math.sin(dLng)*math.cos(lat1),
             math.cos(lat0)*math.sin(lat1) - math.sin(lat0)*math.cos(lat1)*math.cos(dLng) )
 
-      compass.direction(Angle(result))
+      compass.direction(Angle(result).principal)

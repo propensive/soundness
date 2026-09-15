@@ -55,6 +55,28 @@ object Geolocation:
         case Nil | List(_)    => abort(Geolocation.Error(MissingEquals))
         case _                => abort(Geolocation.Error(MultipleEquals))
 
+  // RFC 5870: `geo:` latitude `,` longitude, an optional `,` altitude, then `;`-separated
+  // parameters, of which `crs` must come first and `u` next.
+  private def withParameters(location: Location, altitude: Optional[Double], text: Text)
+  :   Geolocation raises Geolocation.Error =
+
+    val (crs, params0) = parseParams(text) match
+      case (t"crs", crs) :: params => (crs, params)
+      case params                  => (Unset, params)
+
+    val (uncertainty, params) = params0 match
+      case (t"u", u) :: params =>
+        val uncertainty = safely(u.as[Double]).or:
+          raise(Geolocation.Error(BadUncertainty))
+          Unset
+
+        (uncertainty, params)
+
+      case params =>
+        (Unset, params)
+
+    Geolocation(location, altitude, crs, uncertainty, params.to[Map])
+
   given decoder: (tactic: Tactic[Geolocation.Error])
   =>  ((Geolocation is Decodable in Text)^{tactic}) =
     case r"geo:$latitude(-?[0-9]+(\.[0-9]+)?),$longitude(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
@@ -62,33 +84,16 @@ object Geolocation:
         unsafely(Location(latitude.as[Double].deg, longitude.as[Double].deg))
 
       more match
-        case t""           => Geolocation(location)
+        case t""             => Geolocation(location)
+        case r";$params(.*)" => withParameters(location, Unset, params)
 
         case r",$more(.*)" => more match
           case r"$altitude0(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
             val altitude = unsafely(altitude0.as[Double])
 
             more match
-              case t"" =>
-                Geolocation(location, altitude)
-
-              case r";.*" =>
-                val (crs, params0) = parseParams(more) match
-                  case (t"crs", crs) :: params => (crs, params)
-                  case params                  => (Unset, params)
-
-                val (uncertainty, params) = params0 match
-                  case (t"u", u) :: params =>
-                    val uncertainty = safely(u.as[Double]).or:
-                      raise(Geolocation.Error(BadUncertainty))
-                      Unset
-
-                    (uncertainty, params)
-
-                  case params =>
-                    (Unset, params)
-
-                Geolocation(location, altitude, crs, uncertainty, params.to[Map])
+              case t""             => Geolocation(location, altitude)
+              case r";$params(.*)" => withParameters(location, altitude, params)
 
               case other =>
                 raise(Geolocation.Error(ExpectedSemicolon))
@@ -111,10 +116,14 @@ object Geolocation:
       Geolocation(Location(0.deg, 0.deg))
 
   given encodable: Geolocation is Encodable in Text = geolocation =>
-    import geolocation.{location, altitude, uncertainty}
+    import geolocation.{location, altitude, crs, uncertainty, parameters}
 
     val alt = altitude.lay(t""): a => t",$a"
-    t"geo:${location.encode}$alt${uncertainty.lay(t"") { u => t";u=$u" }}"
+    val reference = crs.lay(t""): crs => t";crs=$crs"
+    val u = uncertainty.lay(t""): u => t";u=$u"
+    val rest = parameters.fold(t""): (text, parameter) => t"$text;${parameter(0)}=${parameter(1)}"
+
+    t"geo:${location.encode}$alt$reference$u$rest"
 
   // GeolocationError → Geolocation.Error
   object Error:
@@ -134,7 +143,7 @@ object Geolocation:
       case Reason.ExpectedSemicolon   => m"a `;` was expected after the altitude value"
       case Reason.UnexpectedSuffix    => m"a `,` or `;` was expected"
       case Reason.ExpectedCoordinates => m"latitude and longitude coordinates were expected"
-      case Reason.BadUncertainty      => m"the `uncertainty` parameter vas not a valid number"
+      case Reason.BadUncertainty      => m"the `uncertainty` parameter was not a valid number"
 
   case class Error(reason: Geolocation.Error.Reason)(using Diagnostics)
   extends fulminate.Error(420, reason.number)
