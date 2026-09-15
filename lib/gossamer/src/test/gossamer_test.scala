@@ -918,6 +918,52 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == t"0.0")
 
+      // Rounding which carries past the leading digit must add a digit, not drop the carry.
+      test(m"Round 9.96 up to 10.0"):
+        Decimalizer(decimalPlaces = 1).decimalize(9.96)
+
+      . assert(_ == t"10.0")
+
+      test(m"Round 99.96 up to 100.0"):
+        Decimalizer(decimalPlaces = 1).decimalize(99.96)
+
+      . assert(_ == t"100.0")
+
+      test(m"Round -9.96 down to -10.0"):
+        Decimalizer(decimalPlaces = 1).decimalize(-9.96)
+
+      . assert(_ == t"-10.0")
+
+      test(m"Round 0.96 up to 1.0"):
+        Decimalizer(decimalPlaces = 1).decimalize(0.96)
+
+      . assert(_ == t"1.0")
+
+      test(m"Round 9.995 to 2 decimal places"):
+        Decimalizer(decimalPlaces = 2).decimalize(9.9951)
+
+      . assert(_ == t"10.00")
+
+      test(m"Round 9.99 to 2 s.f."):
+        Decimalizer(2).decimalize(9.99)
+
+      . assert(_ == t"10")
+
+      test(m"Round 0.0999 to 2 s.f."):
+        Decimalizer(2).decimalize(0.0999)
+
+      . assert(_ == t"0.10")
+
+      test(m"Round 999.96 up into exponent notation"):
+        Decimalizer(4).decimalize(999.96)
+
+      . assert(_ == t"1.000×10³")
+
+      test(m"A carry which stops early is unchanged"):
+        Decimalizer(decimalPlaces = 1).decimalize(19.96)
+
+      . assert(_ == t"20.0")
+
     val words: List[Text] = List("ba", "baa", "baal", "baar", "baba", "babe", "babu",
       "baby", "bac", "bach", "back", "bad", "bade", "bae", "baff", "baft",
       "bag", "baga", "bago", "bah", "baho", "baht", "bail", "bain", "bait",
