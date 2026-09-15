@@ -78,3 +78,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `UnexpectedSuffix`. `Geolocation`'s `Encodable in Text` instance now writes `crs` and
   `parameters`, in the order `;crs=…`, `;u=…`, then each parameter, which it previously
   dropped. (#TBD)
+
+## gossamer
+
+- `gossamer.Decimalizer#decimalize` no longer drops a rounding carry out of the leading digit.
+  When every retained digit is 9 and the next rounds up, the output lost its leading `1`
+  (`Decimalizer(decimalPlaces = 1).decimalize(9.96)` gave `"0.0"`); it is now the next power
+  of ten at the same precision (`"10.0"`; `Decimalizer(2).decimalize(9.99)` gives `"10"`).
+  If the carry reaches `exponentThreshold`, the value is written in exponent form
+  (`Decimalizer(4).decimalize(999.96)` gives `"1.000×10³"`). Every `Showable` for `Double`
+  that goes through a `Decimalizer` changes the same way. Code that matched the old truncated
+  output must expect the corrected text. (#TBD)
