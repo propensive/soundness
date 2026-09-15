@@ -987,7 +987,7 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(_ == scala.Some(scala.List(t"a/A.sjsir", t"a/A.tasty")))
 
       test(m"a corrupted directive is L115"):
-        val data = makeLira().mutable(using Unsafe)
+        val data = makeLira().unsafeMutable(using Unsafe)
         data(0) = '?'.toByte
 
         capture[Lira.Error](Lira.read(Array.unsafeFrozen(data))).reason
@@ -1050,7 +1050,7 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(_ == Lira.Error.Reason.LineageMismatch)
 
       test(m"a corrupted compressed payload is rejected"):
-        val data = makeLira().mutable(using Unsafe)
+        val data = makeLira().unsafeMutable(using Unsafe)
         data(data.length - 1) = (data(data.length - 1) ^ 0x55).toByte
 
         capture[Lira.Error](Verification.install(Lira.read(Array.unsafeFrozen(data)))).reason match

@@ -65,7 +65,7 @@ object Writable:
           val interval: Interval = range
 
           try
-            outputStream.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0, interval.size)
+            outputStream.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0, interval.size)
             total += interval.size
           catch case error: ji.IOException => failed = true
 
@@ -140,7 +140,7 @@ object Writable:
         range =>
           if !failed then
             val interval: Interval = range
-            val buffer = jn.ByteBuffer.wrap(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0, interval.size).nn
+            val buffer = jn.ByteBuffer.wrap(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0, interval.size).nn
 
             try
               while buffer.hasRemaining do

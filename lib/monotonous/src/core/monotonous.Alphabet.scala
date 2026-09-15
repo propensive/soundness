@@ -111,11 +111,11 @@ object Alphabet:
             val targetInterval: Interval = space
             val targetOffset = targetInterval.start.n0
             val targetSpace = targetInterval.size
-            val bytes = unsafely(source.raw.asInstanceOf[scala.Array[Byte]])
+            val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
 
             // The stage's own buffer, asserted exclusive at the cast rim.
             val chars: scala.Array[Char]^ =
-              unsafely(target.raw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true
@@ -161,7 +161,7 @@ object Alphabet:
             val targetSpace = targetInterval.size
 
             val chars: scala.Array[Char]^ =
-              unsafely(target.raw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
             var produced: Int = 0
 
             if !flushing then
@@ -242,11 +242,11 @@ object Alphabet:
             val targetInterval: Interval = space
             val targetOffset = targetInterval.start.n0
             val targetSpace = targetInterval.size
-            val chars = unsafely(source.raw.asInstanceOf[scala.Array[Char]])
+            val chars = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Char]])
 
             // The stage's own buffer, asserted exclusive at the cast rim.
             val bytes: scala.Array[Byte]^ =
-              unsafely(target.raw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true

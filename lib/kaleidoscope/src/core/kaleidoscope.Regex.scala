@@ -257,7 +257,10 @@ object Regex:
         if quantifier.unitary then (index2, s"($groupName$subpattern)".tt)
         else (index2, s"($groupName($subpattern)${quantifier.serialize}${greed.serialize})".tt)
 
-  def apply(parts: List[String])(using erased unsafe: Unsafe): Regex =
+  // The gated construction: `parts` has already been validated by the macro that produced it, so
+  // the parse cannot fail -- an assertion the signature makes rather than the type system. An
+  // `apply` cannot carry the `unsafe` prefix its gate requires, so it is named instead.
+  def unsafeFrom(parts: List[String])(using erased unsafe: Unsafe): Regex =
     given tactic: (ThrowTactic[Hazard, Any]^) = strategies.throwUnsafely
     parse(parts.map(_.tt))
 

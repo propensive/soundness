@@ -179,7 +179,7 @@ extends Duct[Data, Data]:
     val targetInterval: Interval = space
     val targetOffset = targetInterval.start.n0
     val targetSpace = targetInterval.size
-    val bytes = unsafely(target.raw.asInstanceOf[scala.Array[Byte]])
+    val bytes = unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]])
 
     if offset < pending.length then Duct.Progress(0, deliver(bytes, targetOffset, targetSpace))
     else
@@ -193,7 +193,7 @@ extends Duct[Data, Data]:
     val targetInterval: Interval = space
     val targetOffset = targetInterval.start.n0
     val targetSpace = targetInterval.size
-    val bytes = unsafely(target.raw.asInstanceOf[scala.Array[Byte]])
+    val bytes = unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]])
 
     if offset < pending.length then deliver(bytes, targetOffset, targetSpace)
     else if !finished then
@@ -251,7 +251,7 @@ extends Duct[Data, Data]:
         val sourceInterval: Interval = range
         val take = sourceInterval.size.min(ivSize - headerFilled)
 
-        System.arraycopy(unsafely(source.raw.asInstanceOf[scala.Array[Byte]]),
+        System.arraycopy(unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
             sourceInterval.start.n0, header, headerFilled, take)
 
         headerFilled += take

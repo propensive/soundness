@@ -11,6 +11,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Compile every benchmark module: `mill benches.compile` (see "Benchmarks" below)
 - Run the full CI test suite from a clean build and sign the result: `make attest` (see "CI workflow" below)
 
+## Unsafety census
+
+- Every checked component compiles with the Consequent plugin's census enabled
+  (`-P:consequent:metrics=…`), leaving a per-module table of `file`, `indicator`, `count` under
+  `out/`. `make unsafety` (or `python3 etc/unsafety-report.py` after any build) prints the
+  totals; `--record` appends them to `etc/unsafety-history.tsv` and `--diff` compares with the
+  last recorded row. It reports only — nothing fails on a count.
+- The rule `S1.1` **is** strict: a method taking `(using Unsafe)` must be named `unsafe…`, or
+  the build fails. `S1.2` (an `unsafe…` name must take the token) is advisory; ten definitions
+  break it and are listed in `doc/standards/naming.md` with the follow-up that gates them.
+  Read them from the census as `unsafe-ungated`, not from the build log: a `S1.2` **warning**
+  is silently dropped when the compiler has already reported something at an enclosing
+  position in that file, which is why the count exists.
+- The gates that do fail are the older per-construct ratchets: `etc/check-while-count.py`
+  (per-file, for `while`/`readUnchecked`/`charAt`, and it requires a comment on every
+  `unsafeAttested` call) and `etc/check-stdlib-count.sh`. Roadmap item `safety-7` folds them
+  into the census.
+
 ## Benchmarks
 
 - Each library's benchmarks live in `lib/<name>/src/bench` and are declared as `object bench

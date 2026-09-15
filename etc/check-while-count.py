@@ -47,13 +47,13 @@ def counts(path):
 
 
 def attestations(path):
-  """Every `attested` call site must name the construction that proves the bound."""
+  """Every `unsafeAttested` call site must name the construction that proves the bound."""
   lines = open(path).read().split('\n')
   for index, line in enumerate(lines):
-    if '.attested(' not in line: continue
+    if '.unsafeAttested(' not in line: continue
     if '//' in line: continue
     if index > 0 and '//' in lines[index - 1]: continue
-    yield f'{path}:{index + 1}: `attested` without a comment naming the proof'
+    yield f'{path}:{index + 1}: `unsafeAttested` without a comment naming the proof'
 
 
 def baseline():

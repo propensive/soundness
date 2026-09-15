@@ -3554,7 +3554,7 @@ object Tel extends Tel2:
 
     update def syncFrom(): Unit =
       // The cast erases the buffer view's capture: it is confined to this parser.
-      bytes0 = cursor.buffer(using Unsafe).asInstanceOf[AnyRef]
+      bytes0 = cursor.unsafeDataBuffer(using Unsafe).asInstanceOf[AnyRef]
       pos    = cursor.unsafePos(using Unsafe)
       bufEnd = cursor.unsafeWriteEnd(using Unsafe)
 

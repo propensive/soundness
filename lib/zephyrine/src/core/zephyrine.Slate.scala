@@ -76,5 +76,5 @@ object Slate:
         lambda(Ordinal.zerary(index).asInstanceOf[Ordinal in slate.type])
         index += 1
 
-    inline def raw(using Unsafe): addressable.Storage^ =
+    inline def unsafeRaw(using Unsafe): addressable.Storage^ =
       slate.asInstanceOf[addressable.Storage^]

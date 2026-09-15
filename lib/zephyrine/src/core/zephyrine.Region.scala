@@ -154,7 +154,7 @@ object Region:
     // back-references and the like): the raw storage, behind `Unsafe`, with the caller taking
     // back responsibility for bounds. Unannotated, like `Stream.storage`: the cast launders
     // the capture, and the `Unsafe` gate marks the responsibility boundary.
-    inline def raw(using Unsafe): addressable.Storage =
+    inline def unsafeRaw(using Unsafe): addressable.Storage =
       region.asInstanceOf[addressable.Storage]
 
     // The only branded-ordinal producer, for the trusted combinators above.

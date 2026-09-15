@@ -234,7 +234,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // outruns the region combinators. Implementations provide the untyped
   // `storage0`; since `Addressable` instances are unique per medium, the cast
   // is sound.
-  final def storage(using Unsafe): addressable.Storage =
+  final def unsafeStorage(using Unsafe): addressable.Storage =
     storage0.asInstanceOf[addressable.Storage]
 
   protected def storage0: AnyRef

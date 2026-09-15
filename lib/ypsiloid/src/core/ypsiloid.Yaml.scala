@@ -2141,7 +2141,7 @@ object Yaml extends Yaml2, Dynamic:
     // a refill may have compacted the buffer (bytes 0..old-pos are
     // discarded; subsequent walks would read different data).
     private update inline def syncFrom(): Unit =
-      bytes1 = cursor.buffer(using Unsafe).asInstanceOf[AnyRef]
+      bytes1 = cursor.unsafeDataBuffer(using Unsafe).asInstanceOf[AnyRef]
       pos    = cursor.unsafePos(using Unsafe)
       bufEnd = cursor.unsafeWriteEnd(using Unsafe)
       lineationPos = pos
@@ -2662,9 +2662,9 @@ object Yaml extends Yaml2, Dynamic:
         val mk = cursor.mark
 
         val isBom =
-          cursor.more && cursor.datum(using Unsafe) == -17.toByte &&
-            { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -69.toByte } &&
-            { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -65.toByte }
+          cursor.more && cursor.unsafeDatum(using Unsafe) == -17.toByte &&
+            { cursor.next(); cursor.more && cursor.unsafeDatum(using Unsafe) == -69.toByte } &&
+            { cursor.next(); cursor.more && cursor.unsafeDatum(using Unsafe) == -65.toByte }
 
         if isBom then cursor.next() else cursor.cue(mk)
 

@@ -188,7 +188,7 @@ package socketBackends:
 
       def loop(): Unit = input.refill(Credit(Long.MaxValue)) match
         case count: Int =>
-          val chunk = input.addressable.materialize(input.storage(using Unsafe), input.start, count)
+          val chunk = input.addressable.materialize(input.unsafeStorage(using Unsafe), input.start, count)
           stream.`blocking-write-and-flush`(chunk).call[Unit]()
           input.skip(count)
           loop()

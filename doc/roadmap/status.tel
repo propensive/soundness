@@ -113,6 +113,13 @@ item
   criterion  no component in build.mill compiles with anything weaker than settings.sep
 
 item
+  id safety-7
+  track safety
+  horizon near
+  status open
+  criterion  the census is recorded per release and one per-file gate replaces check-while-count.py and check-stdlib-count.sh
+
+item
   id plat-1
   track platforms
   horizon near

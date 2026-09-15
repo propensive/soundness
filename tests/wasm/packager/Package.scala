@@ -58,7 +58,7 @@ object Package:
           target  = if found.exports.has(incomingHandler) then proxy else Unset )
 
     val archive = image.archive.source[Data].memoize
-    jnf.Files.write(out, archive.mutable(using Unsafe))
+    jnf.Files.write(out, archive.unsafeMutable(using Unsafe))
 
     val layer = image.manifest.layers.stdlib.head
 

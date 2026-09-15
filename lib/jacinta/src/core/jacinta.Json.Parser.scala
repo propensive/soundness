@@ -446,7 +446,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     val snapshot =
       locally:
         val current = cursor
-        current.buffer(using Unsafe)
+        current.unsafeDataBuffer(using Unsafe)
 
     val readPos =
       locally:
@@ -579,9 +579,9 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         val mk = current.mark
 
         val bom =
-          current.more && current.datum(using Unsafe) == -17.toByte &&
-            { current.next(); current.more && current.datum(using Unsafe) == -69.toByte } &&
-            { current.next(); current.more && current.datum(using Unsafe) == -65.toByte }
+          current.more && current.unsafeDatum(using Unsafe) == -17.toByte &&
+            { current.next(); current.more && current.unsafeDatum(using Unsafe) == -69.toByte } &&
+            { current.next(); current.more && current.unsafeDatum(using Unsafe) == -65.toByte }
 
         if bom then current.next() else current.cue(mk)
 

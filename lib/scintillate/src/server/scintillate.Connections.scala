@@ -150,7 +150,7 @@ private[scintillate] object Connections:
                     range =>
                       val interval: Interval = range
 
-                      responseBody.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]),
+                      responseBody.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
                           interval.start.n0, interval.size)
 
                   count += size

@@ -194,7 +194,7 @@ object Cursor:
             def fill(storage: addressable0.Storage, offset: Int, space: Int): Int =
               stream.refill(Credit(space.min(block))).lay(-1): count =>
                 val copied = count.min(space)
-                val source = stream.storage(using Unsafe).asInstanceOf[addressable0.Storage]
+                val source = stream.unsafeStorage(using Unsafe).asInstanceOf[addressable0.Storage]
                 addressable0.transfer(source, stream.start, storage, offset, copied)
                 stream.skip(copied)
                 copied
@@ -352,12 +352,12 @@ object Cursor:
   // the next cursor operation that may compact or grow the buffer.
   extension [cap^](cursor: Cursor[Data, cap])
     @targetName("dataBuffer")
-    inline def buffer(using erased unsafe: Unsafe): scala.Array[Byte] =
+    inline def unsafeDataBuffer(using erased unsafe: Unsafe): scala.Array[Byte] =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Byte]]
 
   extension [cap^](cursor: Cursor[Text, cap])
     @targetName("textBuffer")
-    inline def buffer(using erased unsafe: Unsafe): scala.Array[Char] =
+    inline def unsafeTextBuffer(using erased unsafe: Unsafe): scala.Array[Char] =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Char]]
 
 // BLOCKING-LOOKAHEAD HAZARD (issue #1301): every operation that asks whether data exists —
@@ -692,7 +692,7 @@ extends caps.Mutable:
 
   // ─── current element ──────────────────────────────────────────────────────
 
-  inline def datum(using erased unsafe: Unsafe): addressable.Operand =
+  inline def unsafeDatum(using erased unsafe: Unsafe): addressable.Operand =
     addressable.storageAddress(buffer, pos)
 
   inline update def lay[result](inline otherwise: => result)(inline lambda: addressable.Operand => result)
@@ -719,7 +719,7 @@ extends caps.Mutable:
     var continue = more
 
     while continue do
-      found = datum(using Unsafe) == target
+      found = unsafeDatum(using Unsafe) == target
       continue = !found && next()
 
     found

@@ -48,7 +48,7 @@ object Explorable:
     // thrown `Io.Error`s (the pre-backend per-platform instances did the same).
     path =>
       import strategies.throwUnsafely
-      backend.children(path).map: name => unsafely(path.child(name))
+      backend.children(path).map: name => unsafely(path.unsafeChild(name))
 
 trait Explorable extends Typeclass:
   def children(path: Path on Self): Chain[Path on Self]

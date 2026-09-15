@@ -172,7 +172,7 @@ extends RequestServable:
           val interval: Interval = range
 
           try
-            out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+            out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
                 interval.size)
             if flushEach then out.flush()
             count += interval.size

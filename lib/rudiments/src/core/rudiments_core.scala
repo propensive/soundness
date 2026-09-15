@@ -134,7 +134,7 @@ extension [value](value: value)
 
   inline def typed[ValueSubtype <: value]: Boolean = value.isInstanceOf[ValueSubtype]
 
-  transparent inline def matchable(using erased unsafe: Unsafe): value & Matchable =
+  transparent inline def unsafeMatchable(using erased unsafe: Unsafe): value & Matchable =
     value.asInstanceOf[value & Matchable]
 
   def give[result](block: value ?=> result): result = block(using value)
@@ -523,10 +523,12 @@ extension [value](iterable: Iterable[value])
 //     that returns exclusive key material.
 // When those three go, so should these two.
 extension [element](value: Array[element]^{})
-  inline def mutable(using erased unsafe: Unsafe): scala.Array[element] = value.asInstanceOf[scala.Array[element]]
+  inline def unsafeMutable(using erased unsafe: Unsafe): scala.Array[element] =
+    value.asInstanceOf[scala.Array[element]]
 
 extension [element](array: scala.Array[element])
-  inline def immutable(using erased unsafe: Unsafe): Array[element]^{} = array.asInstanceOf[Array[element]^{}]
+  inline def unsafeImmutable(using erased unsafe: Unsafe): Array[element]^{} =
+    array.asInstanceOf[Array[element]^{}]
 
   def snapshot(using ClassTag[element]): Array[element]^{} =
     val newArray = Array.allocate[element](array.length)

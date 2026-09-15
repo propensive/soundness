@@ -109,12 +109,12 @@ object Confluence:
               val start = source.start
 
               val storage =
-                if stable then source.storage(using Unsafe)
+                if stable then source.unsafeStorage(using Unsafe)
                 else
                   val fresh = addressable0.allocate(count)
 
                   addressable0.transfer
-                    ( source.storage(using Unsafe).asInstanceOf[addressable0.Storage],
+                    ( source.unsafeStorage(using Unsafe).asInstanceOf[addressable0.Storage],
                       source.start, fresh, 0, count )
 
                   fresh

@@ -767,7 +767,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"A tampered ML-DSA signature fails to verify"):
         val key = PrivateKey.generate[MlDsa[65]]()
-        val bytes = key.sign(pangram).bytes.mutable(using Unsafe)
+        val bytes = key.sign(pangram).bytes.unsafeMutable(using Unsafe)
         bytes(0) = (bytes(0) ^ 1).toByte
         key.public.verify(pangram, Signature(Array.unsafeFrozen(bytes)))
       . assert(!_)
@@ -816,7 +816,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       // `openssl verify` agree with it, but cannot be run from here.
       def parse(certificate: Certificate): jsc.X509Certificate =
         val factory = jsc.CertificateFactory.getInstance("X.509").nn
-        val bytes = ji.ByteArrayInputStream(certificate.in[Der].data.mutable(using Unsafe))
+        val bytes = ji.ByteArrayInputStream(certificate.in[Der].data.unsafeMutable(using Unsafe))
 
         factory.generateCertificate(bytes).nn.asInstanceOf[jsc.X509Certificate]
 
@@ -837,10 +837,10 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"A tampered certificate fails the JDK's signature check"):
         val certificate0 = certificate()
-        val bytes = certificate0.in[Der].data.mutable(using Unsafe).clone.nn
+        val bytes = certificate0.in[Der].data.unsafeMutable(using Unsafe).clone.nn
         // Flip a bit inside the signature, which the structure keeps well-formed.
         bytes(bytes.length - 1) = (bytes(bytes.length - 1) ^ 0xff.toByte).toByte
-        val tampered = Certificate(Der(bytes.immutable(using Unsafe)).as[Asn1])
+        val tampered = Certificate(Der(bytes.unsafeImmutable(using Unsafe)).as[Asn1])
 
         try
           parse(tampered).verify(publicKey(certificate0))

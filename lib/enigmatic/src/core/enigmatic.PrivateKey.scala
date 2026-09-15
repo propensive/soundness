@@ -52,7 +52,7 @@ object PrivateKey:
   private[enigmatic] def apply[cipher <: Cipher](data: Data)(using cloak: Cloak^)
   :   PrivateKey[cipher]^{cloak} =
 
-    new PrivateKey(cloak.cloak(data.mutable(using Unsafe)))
+    new PrivateKey(cloak.cloak(data.unsafeMutable(using Unsafe)))
 
   // Redacted. `showable` uncloaks the key to fingerprint it; an inspection is produced in far
   // more places (test output, a debugger's variable pane, a nested rendering of an enclosing

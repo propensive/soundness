@@ -72,3 +72,46 @@ Used only as an instance method that narrows a type to a phantom-parameterised
 form `X of Y`. The body is always a cast (`asInstanceOf`), and the return type
 is literally `this.type of topic`. These methods are private to their
 respective packages.
+
+## The `unsafe` prefix
+
+A method that takes `vacuous.Unsafe` as a `using` parameter is gated: its caller
+must hold the token, which in practice means writing `(using Unsafe)` or sitting
+inside an `unsafely` block. Every such method is named with an `unsafe` prefix
+followed by a capital letter — `unsafeBuffer`, `unsafeAttested`, `unsafeChild` —
+so that the boundary is visible at the call site and not only in the signature.
+
+This is checked. The Consequent rule `S1.1` is `strict` for every component, so a
+gated method with an ordinary name fails the build. Where the name cannot take a
+prefix, the method is renamed rather than exempted: `Regex.apply(parts)(using
+Unsafe)` became `Regex.unsafeFrom(parts)`.
+
+Two definitions are outside the rule because neither has a name to prefix: a
+constructor, and a `given`, which is summoned by type. Both are still gated, and
+the argument for why the gate is sound belongs in a comment beside them.
+
+The converse — an `unsafe`-prefixed method must be gated — is `S1.2`, and is
+advisory rather than strict for now. Ten definitions break it:
+`proscenium.Array.unsafeFrozen` and `unsafeJvm`, `vacuous.Optional.unsafeGet`,
+`archimedes.Ergo.unsafe` and `unsafeInterpolate`, and the `unsafe` factories on
+`urticose.Port`, `octogenarian.Refspec`, `Git.Tag`, `Git.Branch` and `Git.Hash`.
+
+Gating them is wanted and is tracked as a follow-up, not declined: a trial found
+the change reaches hundreds of call sites, a good share of which are colon-block
+calls (`Array.unsafeFrozen:` over an indented argument) that cannot take a
+further argument list without being restructured. `Optional.unsafeGet` needs its
+own change first: it sits in an extension group carrying a `using
+Optionality[optional.type]` clause, and an explicit `(using Unsafe)` binds to
+that leading clause instead, so the method has to leave the group before it can
+be gated.
+
+Until then the census counts them as `unsafe-ungated`, which is the reliable
+record: a `S1.2` warning is dropped whenever the compiler has already reported
+something at an enclosing position in the same file.
+
+The prefix is a marker, not a licence. It says a guarantee stops here, which is
+the beginning of an argument for why that is sound, not the end of one.
+
+`unsafely` itself is not covered: the prefix must be a whole word — `unsafe`
+alone, or `unsafe` then a capital — so the block that supplies the token is
+exempt by construction, while a method named plainly `unsafe` is not.
