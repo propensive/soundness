@@ -73,7 +73,7 @@ trait Intake[medium](using val addressable: medium is Addressable) extends Produ
   // `flush` or `finish` — single-owner discipline, as `Stream.lend`.
   // Implementations provide the untyped `buffer0`; since `Addressable`
   // instances are unique per medium, the cast in `buffer` is sound.
-  final def buffer(using Unsafe): addressable.Storage =
+  final def unsafeBuffer(using Unsafe): addressable.Storage =
     buffer0.asInstanceOf[addressable.Storage]
 
   protected def buffer0: AnyRef
@@ -100,7 +100,7 @@ trait Intake[medium](using val addressable: medium is Addressable) extends Produ
     while done < count do
       val free = reserve(count - done)
       val size = free.min(count - done)
-      addressable.transfer(source, offset + done, buffer(using Unsafe), mark, size)
+      addressable.transfer(source, offset + done, unsafeBuffer(using Unsafe), mark, size)
       commit(size)
       done += size
 
@@ -115,11 +115,11 @@ trait Intake[medium](using val addressable: medium is Addressable) extends Produ
     while done < size do
       val free = reserve(size - done)
       val count = free.min(size - done)
-      addressable.copyChunk(source, offset.n0 + done, buffer(using Unsafe), mark, count)
+      addressable.copyChunk(source, offset.n0 + done, unsafeBuffer(using Unsafe), mark, count)
       commit(count)
       done += count
 
   final update def push(operand: Operand): Unit =
     reserve(1)
-    addressable.storageUpdate(buffer(using Unsafe), mark, operand)
+    addressable.storageUpdate(unsafeBuffer(using Unsafe), mark, operand)
     commit(1)

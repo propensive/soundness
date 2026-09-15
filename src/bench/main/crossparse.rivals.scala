@@ -184,7 +184,7 @@ object protobufWalks:
   import com.google.protobuf.CodedInputStream
 
   private def stream(data: Data): CodedInputStream =
-    CodedInputStream.newInstance(data.mutable(using Unsafe)).nn
+    CodedInputStream.newInstance(data.unsafeMutable(using Unsafe)).nn
 
   private def walkParam(in: CodedInputStream): MParam =
     var key = ""

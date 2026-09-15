@@ -816,7 +816,7 @@ object Html extends Tag.Container
     // trips the separation checker's provenance rule (the lifted expansion
     // binding reads as "parameter x$0"). Called on slow paths only.
     private update def syncFrom(): Unit =
-      bytes  = cursor.buffer(using Unsafe)
+      bytes  = cursor.unsafeTextBuffer(using Unsafe)
       pos    = cursor.unsafePos(using Unsafe)
       bufEnd = cursor.unsafeWriteEnd(using Unsafe)
 

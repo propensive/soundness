@@ -94,7 +94,7 @@ object SumDerivation:
         choicesFold[derivation, Variants, Labels, Unit]((), 0): accumulator =>
           [variant <: derivation] => context ?=> array(index) = lambda[variant](context)
 
-        array.immutable(using Unsafe)
+        array.unsafeImmutable(using Unsafe)
 
 
     private transparent inline def choicesFold

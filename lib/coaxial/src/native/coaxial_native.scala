@@ -277,7 +277,7 @@ package socketBackends:
         caps.unsafe.unsafeAssumePure(input).drain: region =>
           range =>
             val interval: Interval = range
-            out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+            out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
                 interval.size)
             out.flush()
 
@@ -492,7 +492,7 @@ private[coaxial] def streamsDuplex(in: ji.InputStream, out: ji.OutputStream)(shu
       data.drain: region =>
         range =>
           val interval: Interval = range
-          out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+          out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
               interval.size)
           out.flush()
 
@@ -598,7 +598,7 @@ private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
           val interval: Interval = range
           val start = interval.start.n0
           val count = interval.size
-          val array = unsafely(region.raw.asInstanceOf[scala.Array[Byte]])
+          val array = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
           var written = 0
 
           while written < count do

@@ -128,7 +128,7 @@ object ociEdges:
 
       jnf.Files.write
         ( jnf.Paths.get(archive.encode.s).nn,
-          image.archive.source[Data].memoize.mutable(using Unsafe) )
+          image.archive.source[Data].memoize.unsafeMutable(using Unsafe) )
 
       archive
 

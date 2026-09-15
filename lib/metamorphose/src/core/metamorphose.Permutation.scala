@@ -98,7 +98,7 @@ case class Permutation(factoradic: Factoradic):
   lazy val lehmer: List[Int] = factoradic.expand
   lazy val expansion: List[Int] = unsafely(apply[Int](List.range(0, lehmer.size)))
 
-  def bytes: Data = unsafely(factoradic.number.toByteArray.immutable)
+  def bytes: Data = unsafely(factoradic.number.toByteArray.unsafeImmutable)
   def apply(n: Int): Int =
     // A permutation fixes every point outside its domain; `List` positional access is
     // O(n), accepted here explicitly through the asymptotic gate.

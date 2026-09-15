@@ -292,7 +292,7 @@ package socketBackends:
         input.drain: region =>
           range =>
             val interval: Interval = range
-            out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+            out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
                 interval.size)
             out.flush()
 
@@ -300,7 +300,7 @@ package socketBackends:
         input.drain: region =>
           range =>
             val interval: Interval = range
-            channel.write(ByteBuffer.wrap(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]),
+            channel.write(ByteBuffer.wrap(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
                 interval.start.n0, interval.size))
 
         channel.shutdownOutput()
@@ -528,7 +528,7 @@ private[coaxial] def streamsDuplex
       data.drain: region =>
         range =>
           val interval: Interval = range
-          out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+          out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
               interval.size)
           out.flush()
 
@@ -542,7 +542,7 @@ private[coaxial] def channelDuplex(socketChannel: jnc.SocketChannel): Duplex = n
       range =>
         val interval: Interval = range
 
-        val out = ByteBuffer.wrap(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]),
+        val out = ByteBuffer.wrap(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
             interval.start.n0, interval.size).nn
 
         while out.hasRemaining do socketChannel.write(out)

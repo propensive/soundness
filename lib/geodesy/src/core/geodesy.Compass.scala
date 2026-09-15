@@ -50,8 +50,11 @@ object Compass:
         SouthSoutheast, South, SouthSouthwest, Southwest, WestSouthwest, West, WestNorthwest,
         Northwest, NorthNorthwest )
 
+  // The principal value is in [0, 2π), so every index is non-negative.
   inline def apply[points <: 4 | 8 | 16](angle: Angle): Compass[points] =
+    val radians = angle.principal.radians
+
     inline !![points] match
-      case _: 4  => points4.readUnchecked((0.5 + 2*angle.radians/math.Pi).toInt%4)
-      case _: 8  => points8.readUnchecked((0.5 + 4*angle.radians/math.Pi).toInt%8)
-      case _: 16 => points16.readUnchecked((0.5 + 8*angle.radians/math.Pi).toInt%16)
+      case _: 4  => points4.readUnchecked((0.5 + 2*radians/math.Pi).toInt%4)
+      case _: 8  => points8.readUnchecked((0.5 + 4*radians/math.Pi).toInt%8)
+      case _: 16 => points16.readUnchecked((0.5 + 8*radians/math.Pi).toInt%16)

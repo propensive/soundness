@@ -186,7 +186,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
 
   // Walks `data10k` peeking each byte then advancing. Measures the safe
   // `peek` extension against the hand-rolled `if finished then -1 else
-  // datum(using Unsafe) & 0xff` pattern in `dataDatumLoop`; both should
+  // unsafeDatum(using Unsafe) & 0xff` pattern in `dataDatumLoop`; both should
   // produce the same inner loop.
   def dataPeekByteLoop(data: Data): Int =
     val c = Cursor[Data](Iterator(data))
@@ -198,7 +198,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
     val c = Cursor[Data](Iterator(data))
     var acc = 0
     while !c.finished do
-      val b = c.datum(using Unsafe).asInstanceOf[Byte] & 0xff
+      val b = c.unsafeDatum(using Unsafe).asInstanceOf[Byte] & 0xff
       acc ^= b
       c.advance()
     acc

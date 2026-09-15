@@ -40,13 +40,14 @@ export
   . { !!, &, all, also, and, annex, Atomic, b, bi, Bijection, bijection, Bytes, bytes, collate,
       DecimalConverter, Defaulting, Defaulting2, Digit, each, establish, Exit,
       Termination, fixpoint, fuse, gib,
-      give, immutable, indexBy, intercalate, javaInputStream, kib,
+      give, indexBy, intercalate, javaInputStream, kib,
       longestTrain,
-      Loop, loop, matchable, mean, mib, mutable, Mutex, next, ordinal, pipe, place, plus,
+      Loop, loop, mean, mib, Mutex, next, ordinal, pipe, place, plus,
       prior, probe, product, Fixpoint, reflectClass, repeat, runs, runsBy, segment, Segmentable,
       before, upto, from, after, snip, tail, Appendable, Prependable, `:+`, `+:`,
       indexed, sort, order, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
-      typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
+      typed, typeName, unit, unsafeImmutable, unsafeMatchable, unsafeMutable, unwind, upsert,
+      variance, waive, weave, when, yet, upon, context,
       mean2, unique, seek, reap, where,
       Populated, head, last, lead, reduce, populatedEquality }
 
@@ -70,7 +71,7 @@ extension [form](range: prepositional.`in`[denominative.Interval, form])
 // delegates to the `rudiments` original inline, so `summonFrom` dispatch and confined-index
 // narrowing behave identically.
 extension (interval: denominative.Interval)
-  inline def attested[within](within: within)(using erased vacuous.Unsafe)
+  inline def unsafeAttested[within](within: within)(using erased vacuous.Unsafe)
   :   prepositional.`in`[denominative.Interval, within.type] =
     interval.asInstanceOf[prepositional.`in`[denominative.Interval, within.type]]
 
@@ -86,12 +87,12 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
     then index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]]
     else vacuous.Unset
 
-  // Re-declared like the rest of the group; see `rudiments.attested` for the discipline.
-  def attested(index: applicable.Operand)(using erased vacuous.Unsafe)
+  // Re-declared like the rest of the group; see `rudiments.unsafeAttested` for the discipline.
+  def unsafeAttested(index: applicable.Operand)(using erased vacuous.Unsafe)
   :   prepositional.`in`[applicable.Operand, value.type] =
     index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]]
 
-  inline def attested[result](index: applicable.Operand)
+  inline def unsafeAttested[result](index: applicable.Operand)
     (inline lambda: prepositional.`in`[applicable.Operand, value.type] => result)
     (using erased vacuous.Unsafe)
   :   result =

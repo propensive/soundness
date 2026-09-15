@@ -1092,7 +1092,7 @@ object Tests extends Suite(m"Facsimile tests"):
         PdfFile(path).open(Read & Write): doc ?=>
           doc.set(Cos.Ref(1, 0), Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Catalog"))))
 
-        String(fileBytes(path).mutable(using Unsafe), "ISO-8859-1").nn.tt.skip(source.length)
+        String(fileBytes(path).unsafeMutable(using Unsafe), "ISO-8859-1").nn.tt.skip(source.length)
 
       test(m"an update over a cross-reference stream is itself a cross-reference stream"):
         val tail = appended(xrefStreamDocument())
@@ -1315,7 +1315,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         def recur(): Unit = stream.refill(Credit(4096)) match
           case count: Int =>
-            val window = unsafely(stream.storage).asInstanceOf[scala.Array[Byte]]
+            val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Byte]]
             var i = 0
 
             while i < count do

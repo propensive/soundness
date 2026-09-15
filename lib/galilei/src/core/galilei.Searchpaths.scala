@@ -58,7 +58,7 @@ object Searchpaths:
   // generate inline-accessor bridges whose fresh capability roots fail capture checking (as
   // documented on `Subtree`).
   def resolve[target <: Platform](stem: Path on target, path: Path on ?): Path on target =
-    path.descent.reverse.foldLeft(stem): (parent, name) => parent.child(name)(using Unsafe)
+    path.descent.reverse.foldLeft(stem): (parent, name) => parent.unsafeChild(name)(using Unsafe)
 
   def locateResolved[target <: Platform: Filesystem]
     ( stems: List[Path on target], path: Path on ? )
@@ -128,7 +128,7 @@ extension [plane <: Searchpath](path: Path on plane)
   :   List[Path on plane] =
 
     Searchpaths.entryNames[stems.Target](stems.stems, path).map: name =>
-      path.child(name)(using Unsafe)
+      path.unsafeChild(name)(using Unsafe)
 
   // The head-stem realization of the path — where the XDG spec directs writes. Creating any
   // missing intermediate directories is the caller's, e.g. through galilei's

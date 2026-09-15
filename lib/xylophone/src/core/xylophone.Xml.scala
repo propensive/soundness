@@ -2488,7 +2488,7 @@ object Xml extends Tag.Container
     // pattern): a typed array field's snapshot of the cursor's buffer trips both the
     // classifier and the consume checks.
     @scala.caps.unsafe.untrackedCaptures
-    private var bytes0: AnyRef = cursor.buffer(using Unsafe).asInstanceOf[AnyRef]
+    private var bytes0: AnyRef = cursor.unsafeTextBuffer(using Unsafe).asInstanceOf[AnyRef]
 
     private inline def bytes: scala.Array[Char]^ = bytes0.asInstanceOf[scala.Array[Char]^]
     @scala.caps.unsafe.untrackedCaptures
@@ -2500,7 +2500,7 @@ object Xml extends Tag.Container
       cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
     private inline def syncFrom(): Unit =
-      bytes0 = cursor.buffer(using Unsafe).asInstanceOf[AnyRef]
+      bytes0 = cursor.unsafeTextBuffer(using Unsafe).asInstanceOf[AnyRef]
       pos    = cursor.unsafePos(using Unsafe)
       bufEnd = cursor.unsafeWriteEnd(using Unsafe)
       lineationPos = pos
