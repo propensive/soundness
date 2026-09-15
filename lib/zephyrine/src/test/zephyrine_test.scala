@@ -871,7 +871,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
            stream.refill(Credit(8)) match
             case count: Int =>
-              val window = unsafely(stream.storage).asInstanceOf[scala.Array[Char]]
+              val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Char]]
               builder.append(String(window, stream.start, count))
               stream.skip(count)
               scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -905,7 +905,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
            stream.refill(Credit(8)) match
             case count: Int =>
-              val window = unsafely(stream.storage).asInstanceOf[scala.Array[Char]]
+              val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Char]]
               builder.append(String(window, stream.start, count))
               stream.skip(count)
               scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -924,7 +924,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
           def recur(): Unit = decoded.refill(Credit(4)) match
             case count: Int =>
-              val window = unsafely(decoded.storage).asInstanceOf[scala.Array[Char]]
+              val window = unsafely(decoded.unsafeStorage).asInstanceOf[scala.Array[Char]]
               builder.append(String(window, decoded.start, count))
               decoded.skip(count)
               scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -943,7 +943,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
            stream.refill(Credit(7)) match
             case count: Int =>
-              val window = unsafely(stream.storage).asInstanceOf[scala.Array[AnyRef]]
+              val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[AnyRef]]
 
               for index <- 0 until count
               do collected = window(stream.start + index).asInstanceOf[String] :: collected
@@ -1508,7 +1508,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
     protected def storage0: AnyRef =
       val current = underlying
-      unsafely(current.storage).asInstanceOf[AnyRef]
+      unsafely(current.unsafeStorage).asInstanceOf[AnyRef]
     def start: Int = underlying.start
     def limit: Int = underlying.limit
     update def skip(count: Int): Unit = underlying.skip(count)

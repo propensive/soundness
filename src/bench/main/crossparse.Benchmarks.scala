@@ -151,8 +151,8 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
   lazy val xmlText: Text = corpus.in[Xml].show
   lazy val yamlText: Text = corpus.in[Yaml].show
 
-  lazy val jsonData: Data = jsonText.s.getBytes("UTF-8").nn.immutable(using Unsafe)
-  lazy val telData: Data = telText.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+  lazy val jsonData: Data = jsonText.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
+  lazy val telData: Data = telText.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
   lazy val cborData: Data = Cbor.Ast.encodable.encoded(Cbor.unseal(corpus.in[Cbor]))
   lazy val protobufData: Data = corpus.in[Protobuf].encode
 
@@ -234,11 +234,11 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
 
   def decodeJsoniterDirect(): JsoniterOrders =
     com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[JsoniterOrders]
-      ( jsonData.mutable(using Unsafe) )(using jsoniterOrdersCodec)
+      ( jsonData.unsafeMutable(using Unsafe) )(using jsoniterOrdersCodec)
 
   def decodeJsoniterAst(): JsoniterOrders =
     val ast = com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[io.circe.Json]
-      ( jsonData.mutable(using Unsafe) )(using circeAstCodec)
+      ( jsonData.unsafeMutable(using Unsafe) )(using circeAstCodec)
 
     summon[io.circe.Decoder[JsoniterOrders]].decodeJson(ast) match
       case Right(orders) => orders

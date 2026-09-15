@@ -861,7 +861,7 @@ object Tests extends Suite(m"Vivisection tests"):
     test(m"a captured var is unboxed from its ref cell and marked mutable"):
       val tally = closures.get(t"tally")
       val value = tally.flatMap(_.value.option).getOrElse(Unset)
-      (value == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(100)), tally.map(_.unsafeMutable))
+      (value == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(100)), tally.map(_.mutable))
     . assert(_ == (true, scala.Some(true)))
 
     test(m"a binding captured through the outer chain is recovered"):

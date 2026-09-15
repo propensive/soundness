@@ -693,7 +693,7 @@ object Tests extends Suite(m"Turbulence tests"):
         def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
          stream.refill(Credit(64)) match
           case count: Int =>
-            val window = unsafely(stream.storage).asInstanceOf[scala.Array[Char]]
+            val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Char]]
             builder.append(String(window, stream.start, count))
             stream.skip(count)
             scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -1007,7 +1007,7 @@ extends Stream[Data]:
 
   protected def storage0: AnyRef =
     val current = underlying
-    unsafely(current.storage).asInstanceOf[AnyRef]
+    unsafely(current.unsafeStorage).asInstanceOf[AnyRef]
 
   def start: Int = underlying.start
   def limit: Int = underlying.limit
