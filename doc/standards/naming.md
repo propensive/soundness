@@ -91,14 +91,27 @@ constructor, and a `given`, which is summoned by type. Both are still gated, and
 the argument for why the gate is sound belongs in a comment beside them.
 
 The converse — an `unsafe`-prefixed method must be gated — is `S1.2`, and is
-advisory rather than strict. Three methods break it deliberately:
-`Array.unsafeFrozen`, `Array.unsafeJvm` and `Optional.unsafeGet`. Each is a claim
-about one call rather than a scope the caller enters, and each is named for what
-it does; gating them would thread the token through hundreds of call sites and
-say nothing the name does not.
+advisory rather than strict for now. Ten definitions break it:
+`proscenium.Array.unsafeFrozen` and `unsafeJvm`, `vacuous.Optional.unsafeGet`,
+`archimedes.Ergo.unsafe` and `unsafeInterpolate`, and the `unsafe` factories on
+`urticose.Port`, `octogenarian.Refspec`, `Git.Tag`, `Git.Branch` and `Git.Hash`.
+
+Gating them is wanted and is tracked as a follow-up, not declined: a trial found
+the change reaches hundreds of call sites, a good share of which are colon-block
+calls (`Array.unsafeFrozen:` over an indented argument) that cannot take a
+further argument list without being restructured. `Optional.unsafeGet` needs its
+own change first: it sits in an extension group carrying a `using
+Optionality[optional.type]` clause, and an explicit `(using Unsafe)` binds to
+that leading clause instead, so the method has to leave the group before it can
+be gated.
+
+Until then the census counts them as `unsafe-ungated`, which is the reliable
+record: a `S1.2` warning is dropped whenever the compiler has already reported
+something at an enclosing position in the same file.
 
 The prefix is a marker, not a licence. It says a guarantee stops here, which is
 the beginning of an argument for why that is sound, not the end of one.
 
-`unsafely` itself is not covered: the prefix must be a whole word, so the block
-that supplies the token is exempt by construction.
+`unsafely` itself is not covered: the prefix must be a whole word — `unsafe`
+alone, or `unsafe` then a capital — so the block that supplies the token is
+exempt by construction, while a method named plainly `unsafe` is not.

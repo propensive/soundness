@@ -398,12 +398,13 @@ object consequentToolchain extends mill.javalib.CoursierModule:
   // because a gate nobody can see from the call site is a boundary that is not
   // really there, and that is a soundness claim rather than a style one.
   //
-  // `S1.2` — an `unsafe`-named method must take the token — stays advisory.
-  // `Array.unsafeFrozen` and `Array.unsafeJvm` are the two that break it, and
-  // each is a per-call claim checkable against one Javadoc rather than a scope
-  // the caller enters; gating them would thread `(using Unsafe)` through 343
-  // call sites in 170 files and say nothing the name does not already say. The
-  // census counts them either way.
+  // `S1.2` — an `unsafe`-named method must take the token — stays advisory for
+  // now. Ten definitions break it, and gating them reaches hundreds of call
+  // sites, a good share of them colon-block calls that cannot take a further
+  // argument list without being restructured; `doc/standards/naming.md` lists
+  // them and the follow-up. The census counts them as `unsafe-ungated`, which
+  // is the record that survives: a warning at a position the compiler has
+  // already reported something enclosing is dropped.
   //
   // `metrics` names a per-module table under the calling task's own `dest`,
   // which mill wipes exactly when the options change and a full recompile

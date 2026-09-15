@@ -19,8 +19,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   totals; `--record` appends them to `etc/unsafety-history.tsv` and `--diff` compares with the
   last recorded row. It reports only — nothing fails on a count.
 - The rule `S1.1` **is** strict: a method taking `(using Unsafe)` must be named `unsafe…`, or
-  the build fails. `S1.2` (an `unsafe…` name must take the token) is advisory; three methods
-  break it deliberately. `doc/standards/naming.md` has the rule and the exceptions.
+  the build fails. `S1.2` (an `unsafe…` name must take the token) is advisory; ten definitions
+  break it and are listed in `doc/standards/naming.md` with the follow-up that gates them.
+  Read them from the census as `unsafe-ungated`, not from the build log: a `S1.2` **warning**
+  is silently dropped when the compiler has already reported something at an enclosing
+  position in that file, which is why the count exists.
 - The gates that do fail are the older per-construct ratchets: `etc/check-while-count.py`
   (per-file, for `while`/`readUnchecked`/`charAt`, and it requires a comment on every
   `unsafeAttested` call) and `etc/check-stdlib-count.sh`. Roadmap item `safety-7` folds them
