@@ -59,96 +59,117 @@ extends DecimalConverter:
       val abs: Double = double.abs
 
       val baseScale: Int = if double == 0 then 0 else log10(abs).floor.double.toInt
-      val exponentiate = exponentThreshold.lay(false)(baseScale.abs >= _)
-      val exponentValue = if exponentiate then (baseScale/exponentMultiple)*exponentMultiple else 0
 
-      val scale = baseScale - exponentValue
-
-      val norm: Double = abs*(10 ** -baseScale)
-      val digits: Int = significantFigures.or(decimalPlaces.let(1 + scale + _)).or(3)
-      // The sign character and its presence are one value: the flag previously implied
-      // plusSign's presence from sixty lines away, which the write below had to assert.
-      val signChar: Optional[Char] =
-        if double == 0.0 then Unset
-        else if negative then minusSign else plusSign
-
-      val sign = signChar.present
-
+      // Whether rounding `norm` to `digits` digits carries past its leading digit: every digit
+      // kept is a nine and the first digit dropped rounds up, as in 9.96 to one decimal place.
       @tailrec
-      def write
-        ( chars: scala.Array[Char]^, bcd: Long, index: Int, carry: Boolean, point: Int )
-      :   Unit =
-
-        if index >= 0 then
-          var digit = bcd & 15
-          var carry2 = carry
-
-          if index == point then chars(index) = decimalPoint else
-            if carry then digit += 1
-
-            if digit == 10 then chars(index) = '0' else
-              carry2 = false
-              chars(index) = (digit + '0').toChar
-
-          write(chars, if index != point then (bcd >> 4) else bcd, index - 1, carry2, point)
-
-      @tailrec
-      def recur(focus: Double, bcd: Long, index: Int): scala.Array[Char]^ =
+      def carries(focus: Double, index: Int, digits: Int): Boolean =
         val digit = focus.toLong
-        val next: Double = (focus - digit)*10
-        val bcd2 = (bcd << 4) + focus.toLong
+        val next = (focus - digit)*10
 
-        if digits <= index then
-          val shift = (scale - digits + 1).max(0)
-          val point = scale.max(0) + 1
-          val length = shift + index - scale.min(0)
+        if digit != 9 then false
+        else if digits <= index then next >= 5
+        else carries(next, index + 1, digits)
 
-          val suffix: Int =
-            if !exponentiate then 0 else
-              exponent.length + (if exponentValue < 0 then 1 else 0) +
-                exponentScale(exponentValue, 0)
+      // A carry past the leading digit makes the rounded value the next power of ten, which has
+      // one more integer digit and possibly an exponent, so it is rendered afresh at that scale.
+      def render(baseScale: Int, norm: Double): Text =
+        val exponentiate = exponentThreshold.lay(false)(baseScale.abs >= _)
 
-          val fullLength = (if sign then 1 else 0) + (if point < length then 1 else 0) + length
-          val array = new scala.Array[Char](fullLength + suffix)
+        val exponentValue =
+          if exponentiate then (baseScale/exponentMultiple)*exponentMultiple else 0
 
-          if exponentiate then
-            var index = 0
+        val scale = baseScale - exponentValue
 
-            while index < exponent.length do
-              array(index + fullLength) = exponent.s.charAt(index)
-              index += 1
+        val digits: Int = significantFigures.or(decimalPlaces.let(1 + scale + _)).or(3)
 
-            if exponentValue < 0 then array(index + fullLength) = if superscript then '¯' else '-'
-            index = fullLength + suffix - 1
-            var exp = exponentValue.abs
+        if carries(norm, 1, digits) then render(baseScale + 1, 1.0) else
+          // The sign character and its presence are one value: the flag previously implied
+          // plusSign's presence from sixty lines away, which the write below had to assert.
+          val signChar: Optional[Char] =
+            if double == 0.0 then Unset else if negative then minusSign else plusSign
 
-            while exp > 0 do
-              val digit = exp%10
+          val sign = signChar.present
 
-              array(index) = if !superscript then ('0' + digit).toChar else digit match
-                case 1     => '\u00b9'
-                case 2 | 3 => ('\u00b0' + digit).toChar
-                case digit => ('⁰' + digit).toChar
+          @tailrec
+          def write
+            ( chars: scala.Array[Char]^, bcd: Long, index: Int, carry: Boolean, point: Int )
+          :   Unit =
 
-              exp /= 10
-              index -= 1
+            if index >= 0 then
+              var digit = bcd & 15
+              var carry2 = carry
 
-          write
-            ( array,
-              bcd2 << shift*4,
-              fullLength - 1,
-              next >= 5,
-              if sign then point + 1 else point )
+              if index == point then chars(index) = decimalPoint else
+                if carry then digit += 1
 
-          array
+                if digit == 10 then chars(index) = '0' else
+                  carry2 = false
+                  chars(index) = (digit + '0').toChar
 
-        else
-          recur(next, bcd2, index + 1)
+              write(chars, if index != point then (bcd >> 4) else bcd, index - 1, carry2, point)
 
-      val chars: scala.Array[Char]^ = recur(norm, 0L, 1)
-      signChar.let(chars(0) = _)
+          @tailrec
+          def recur(focus: Double, bcd: Long, index: Int): scala.Array[Char]^ =
+            val digit = focus.toLong
+            val next: Double = (focus - digit)*10
+            val bcd2 = (bcd << 4) + focus.toLong
 
-      Text(new String(chars))
+            if digits <= index then
+              val shift = (scale - digits + 1).max(0)
+              val point = scale.max(0) + 1
+              val length = shift + index - scale.min(0)
+
+              val suffix: Int =
+                if !exponentiate then 0 else
+                  exponent.length + (if exponentValue < 0 then 1 else 0) +
+                    exponentScale(exponentValue, 0)
+
+              val fullLength = (if sign then 1 else 0) + (if point < length then 1 else 0) + length
+              val array = new scala.Array[Char](fullLength + suffix)
+
+              if exponentiate then
+                var index = 0
+
+                while index < exponent.length do
+                  array(index + fullLength) = exponent.s.charAt(index)
+                  index += 1
+
+                if exponentValue < 0
+                then array(index + fullLength) = if superscript then '¯' else '-'
+
+                index = fullLength + suffix - 1
+                var exp = exponentValue.abs
+
+                while exp > 0 do
+                  val digit = exp%10
+
+                  array(index) = if !superscript then ('0' + digit).toChar else digit match
+                    case 1     => '\u00b9'
+                    case 2 | 3 => ('\u00b0' + digit).toChar
+                    case digit => ('⁰' + digit).toChar
+
+                  exp /= 10
+                  index -= 1
+
+              write
+                ( array,
+                  bcd2 << shift*4,
+                  fullLength - 1,
+                  next >= 5,
+                  if sign then point + 1 else point )
+
+              array
+
+            else
+              recur(next, bcd2, index + 1)
+
+          val chars: scala.Array[Char]^ = recur(norm, 0L, 1)
+          signChar.let(chars(0) = _)
+
+          Text(new String(chars))
+
+      render(baseScale, abs*(10 ** -baseScale))
     else if double.isNaN then
       nan
     else if double.isNegInfinity then
