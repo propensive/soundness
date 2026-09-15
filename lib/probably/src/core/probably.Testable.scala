@@ -46,7 +46,7 @@ class Testable
   ( using codepoint: Codepoint )
 extends Findable:
 
-  override def equals(that: Any): Boolean = that.matchable(using Unsafe) match
+  override def equals(that: Any): Boolean = that.unsafeMatchable(using Unsafe) match
     case that: Testable => name == that.name && parent == that.parent
     case _              => false
 

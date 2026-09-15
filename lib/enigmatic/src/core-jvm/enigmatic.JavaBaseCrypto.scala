@@ -111,7 +111,7 @@ object JavaBaseCrypto extends Crypto:
         val generator = js.KeyPairGenerator.getInstance("RSA").nn
         generator.initialize(bits)
 
-        generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
+        generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn.unsafeImmutable(using Unsafe)
 
       def privateToPublic(privateKey: Data): Data = JavaBaseCrypto.rsa.privateToPublic(privateKey)
 
@@ -130,8 +130,8 @@ object JavaBaseCrypto extends Crypto:
         generator.initialize(jss.ECGenParameterSpec(curve), js.SecureRandom())
         val pair = generator.generateKeyPair().nn
 
-        val privateKey = pair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
-        val publicKey = pair.getPublic.nn.getEncoded.nn.immutable(using Unsafe)
+        val privateKey = pair.getPrivate.nn.getEncoded.nn.unsafeImmutable(using Unsafe)
+        val publicKey = pair.getPublic.nn.getEncoded.nn.unsafeImmutable(using Unsafe)
 
         embedPublicKey(privateKey, publicKey)
 
@@ -198,7 +198,7 @@ object JavaBaseCrypto extends Crypto:
       sig.initSign(keyFactory().generatePrivate(spec))
       sig.update(Array.unsafeJvm(data))
 
-      sig.sign().nn.immutable(using Unsafe)
+      sig.sign().nn.unsafeImmutable(using Unsafe)
 
     def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
       val sig = instance()
@@ -211,8 +211,8 @@ object JavaBaseCrypto extends Crypto:
       val generator = mlDsaAvailable(js.KeyPairGenerator.getInstance(name).nn)
       val pair = generator.generateKeyPair().nn
 
-      val privateKey = pair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
-      val publicKey = pair.getPublic.nn.getEncoded.nn.immutable(using Unsafe)
+      val privateKey = pair.getPrivate.nn.getEncoded.nn.unsafeImmutable(using Unsafe)
+      val publicKey = pair.getPublic.nn.getEncoded.nn.unsafeImmutable(using Unsafe)
 
       mlDsaEmbed(privateKey, publicKey)
 
@@ -282,7 +282,7 @@ object JavaBaseCrypto extends Crypto:
       sig.initSign(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(Array.unsafeJvm(privateKey))))
       sig.update(Array.unsafeJvm(data))
 
-      sig.sign().nn.immutable(using Unsafe)
+      sig.sign().nn.unsafeImmutable(using Unsafe)
 
     def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
       val sig = instance()

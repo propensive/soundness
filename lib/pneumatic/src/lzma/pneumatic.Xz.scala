@@ -206,9 +206,9 @@ private[pneumatic] class XzStage(engine0: => XzEngine^) extends Duct[Data, Data]
 
     val sourceInterval: Interval = range
     val targetInterval: Interval = space
-    val bytes = unsafely(source.raw.asInstanceOf[scala.Array[Byte]])
+    val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
     val out: scala.Array[Byte]^ =
-      unsafely(target.raw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+      unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
 
     engine.accept(bytes.asInstanceOf[Array[Byte]^{caps.any.rd}], sourceInterval.start.n0,
         sourceInterval.size)
@@ -224,7 +224,7 @@ private[pneumatic] class XzStage(engine0: => XzEngine^) extends Duct[Data, Data]
 
     val targetInterval: Interval = space
     val out: scala.Array[Byte]^ =
-      unsafely(target.raw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+      unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
     engine.deliver(out, targetInterval.start.n0, targetInterval.size)
 
 object Xz:

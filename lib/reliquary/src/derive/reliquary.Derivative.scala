@@ -86,7 +86,7 @@ object Derivative:
           val interval: Interval = range
 
           out.append
-           ( Array.unsafeFrozen(unsafely(region.raw.asInstanceOf[scala.Array[Byte]])),
+           ( Array.unsafeFrozen(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])),
              interval.start.n0,
              interval.size )
 

@@ -47,7 +47,7 @@ object SymmetricKey:
     // `Cloak.cloak` zeroes the array it is given, so this keeps the write launder rather than
     // a named read-only view: the freshly-generated key is nobody else's, but `genKey`'s
     // frozen `Data` result cannot say so, which is why the capability is still required here.
-    new SymmetricKey(cloak.cloak(cipher.genKey().mutable(using Unsafe)))
+    new SymmetricKey(cloak.cloak(cipher.genKey().unsafeMutable(using Unsafe)))
 
   // Adopt externally-supplied key material — for example a key produced by a key-
   // derivation function — as a symmetric key, in contrast to `generate`'s fresh random

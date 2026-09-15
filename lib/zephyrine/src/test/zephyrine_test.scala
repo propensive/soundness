@@ -219,7 +219,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val cursor = hello
           val builder = java.lang.StringBuilder()
           while
-            builder.append(cursor.datum(using Unsafe))
+            builder.append(cursor.unsafeDatum(using Unsafe))
             cursor.next()
           do ()
 
@@ -314,26 +314,26 @@ object Tests extends Suite(m"Zephyrine tests"):
           val iterator = Iterator[Text]("one", "two", "three", "four")
           val cursor = Cursor(iterator)
           val builder = new StringBuilder()
-          builder.append(cursor.datum(using Unsafe))
-          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+          builder.append(cursor.unsafeDatum(using Unsafe))
+          cursor.next().also(builder.append(cursor.unsafeDatum(using Unsafe)))
           cursor.hold:
-            cursor.next().also(builder.append(cursor.datum(using Unsafe)))
-            cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+            cursor.next().also(builder.append(cursor.unsafeDatum(using Unsafe)))
+            cursor.next().also(builder.append(cursor.unsafeDatum(using Unsafe)))
             val mark = cursor.mark
             cursor.next()
             cursor.next()
             cursor.next()
             cursor.next()
             cursor.cue(mark)
-            cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+            cursor.next().also(builder.append(cursor.unsafeDatum(using Unsafe)))
 
-          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
-          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
-          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
-          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
-          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
-          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
-          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+          cursor.next().also(builder.append(cursor.unsafeDatum(using Unsafe)))
+          cursor.next().also(builder.append(cursor.unsafeDatum(using Unsafe)))
+          cursor.next().also(builder.append(cursor.unsafeDatum(using Unsafe)))
+          cursor.next().also(builder.append(cursor.unsafeDatum(using Unsafe)))
+          cursor.next().also(builder.append(cursor.unsafeDatum(using Unsafe)))
+          cursor.next().also(builder.append(cursor.unsafeDatum(using Unsafe)))
+          cursor.next().also(builder.append(cursor.unsafeDatum(using Unsafe)))
           builder.toString
         . assert(_ == "onetwothreef")
 
@@ -347,7 +347,7 @@ object Tests extends Suite(m"Zephyrine tests"):
             for i <- 1 to 3 do cursor.next()
             cursor.cue(mark)
 
-          cursor.datum(using Unsafe)
+          cursor.unsafeDatum(using Unsafe)
         . assert(_ == '3')
 
         test(m"Rewinding and continuing"):
@@ -361,7 +361,7 @@ object Tests extends Suite(m"Zephyrine tests"):
             cursor.cue(mark)
 
           cursor.next()
-          cursor.datum(using Unsafe)
+          cursor.unsafeDatum(using Unsafe)
         . assert(_ == '4')
 
         test(m"Rewinding and continuing to next block"):
@@ -375,7 +375,7 @@ object Tests extends Suite(m"Zephyrine tests"):
             cursor.cue(mark)
 
           for i <- 1 to 2 do cursor.next()
-          cursor.datum(using Unsafe)
+          cursor.unsafeDatum(using Unsafe)
         . assert(_ == '5')
 
         test(m"Capture from start to end"):
@@ -428,14 +428,14 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"Cursor[Data] starts at first byte"):
           val cursor = byteCursor
-          cursor.datum(using Unsafe)
+          cursor.unsafeDatum(using Unsafe)
 
         . assert(_ == 0.toByte)
 
         test(m"Cursor[Data] second byte is 1"):
           val cursor = byteCursor
           cursor.next()
-          cursor.datum(using Unsafe)
+          cursor.unsafeDatum(using Unsafe)
 
         . assert(_ == 1.toByte)
 
@@ -465,7 +465,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"Cursor[Data] seek finds byte"):
           val cursor = byteCursor
           cursor.seek(15.toByte.asInstanceOf[cursor.addressable.Operand])
-          cursor.datum(using Unsafe)
+          cursor.unsafeDatum(using Unsafe)
 
         . assert(_ == 15.toByte)
 
@@ -1443,10 +1443,10 @@ object Tests extends Suite(m"Zephyrine tests"):
       val targetInterval: Interval = space
       val targetOffset = targetInterval.start.n0
       val targetSpace = targetInterval.size
-      val bytes = unsafely(source.raw.asInstanceOf[scala.Array[Byte]])
+      val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
 
       val out: scala.Array[Byte]^ =
-        unsafely(target.raw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+        unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
 
       var consumed: Int = 0
       var produced: Int = 0

@@ -82,7 +82,7 @@ object Creation:
   :   Unit =
 
     if backend.stat(path, false).entry == Directory
-    then backend.children(path).each { name => wipe(path.child(name)(using Unsafe)) }
+    then backend.children(path).each { name => wipe(path.unsafeChild(name)(using Unsafe)) }
     backend.delete(path)
 
   class DirectoryCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
@@ -168,7 +168,7 @@ object Creation:
       // `peer` needs a statically-known `Topic`, which an abstract `path` lacks, so the
       // temporary sibling is built through the parent instead.
       val temporary: Path on filesystem =
-        safely(value.parent).let(_.child(t".${value.name}.part")(using Unsafe))
+        safely(value.parent).let(_.unsafeChild(t".${value.name}.part")(using Unsafe))
           .or(abort(Io.Error(value, Operation.Create, Reason.Unsupported)))
 
       try

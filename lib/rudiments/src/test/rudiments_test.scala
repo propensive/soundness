@@ -399,13 +399,13 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == Unset)
 
     suite(m"Attested tests"):
-      test(m"an attested ordinal reads bare, with no Optional"):
+      test(m"an unsafeAttested ordinal reads bare, with no Optional"):
         import denominative.dysasymptotics.linearAccess
         val xs: proscenium.List[Int] = proscenium.List(10, 20, 30)
 
         unsafely:
           // In bounds by construction: the literal above has three elements.
-          val third: Int = xs(xs.attested(Ter))
+          val third: Int = xs(xs.unsafeAttested(Ter))
           third
       . assert(_ == 30)
 
@@ -414,27 +414,27 @@ object Tests extends Suite(m"Rudiments Tests"):
 
         unsafely:
           // In bounds by construction: the literal above has three elements.
-          xs.attested(Sec): ordinal =>
+          xs.unsafeAttested(Sec): ordinal =>
             val value: Int = xs(ordinal)
             value
       . assert(_ == 2)
 
-      test(m"an attested map key reads bare"):
+      test(m"an unsafeAttested map key reads bare"):
         val map: Map[Text, Int] = Map(t"one" -> 1, t"two" -> 2)
 
         unsafely:
           // Defined by construction: the literal above binds the key.
-          val value: Int = map(map.attested(t"two"))
+          val value: Int = map(map.unsafeAttested(t"two"))
           value
       . assert(_ == 2)
 
-      test(m"an attested interval drives iterate"):
+      test(m"an unsafeAttested interval drives iterate"):
         val xs: Sequence[Int] = Sequence(1, 2, 3, 4)
         var total = 0
 
         unsafely:
           // Valid by construction: [0, 2) lies within the four-element literal above.
-          xs.iterate(Interval.zerary(0, 2).attested(xs)): ordinal =>
+          xs.iterate(Interval.zerary(0, 2).unsafeAttested(xs)): ordinal =>
             total += xs(ordinal)
 
         total

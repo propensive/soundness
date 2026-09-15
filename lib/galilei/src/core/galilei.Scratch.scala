@@ -72,12 +72,12 @@ object Scratch:
       // A fresh name under `value`: no other scope can denote it, so unlike opening an
       // existing directory, a scratch scope needs no access-register arbitration.
       val name: Text = Uuid().show
-      val child: Path on filesystem = value.child(name)(using Unsafe)
+      val child: Path on filesystem = value.unsafeChild(name)(using Unsafe)
       backend.createDirectory(child)
 
       def wipe(path: Path on filesystem): Unit =
         if backend.stat(path, false).entry == Directory
-        then backend.children(path).each { name => wipe(path.child(name)(using Unsafe)) }
+        then backend.children(path).each { name => wipe(path.unsafeChild(name)(using Unsafe)) }
         backend.delete(path)
 
       try

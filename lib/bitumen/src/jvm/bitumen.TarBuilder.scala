@@ -269,7 +269,7 @@ object TarBuilder:
           stream.drain: region =>
             range =>
               val interval: Interval = range
-              out.write(unsafely(region.raw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
+              out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
                   interval.size)
         finally out.close()
 

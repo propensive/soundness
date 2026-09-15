@@ -189,15 +189,15 @@ object internal:
       case staged: Motif => Regex.Engine.install(staged)
       case _             => ()
 
-    def apply(): Regex in form = Regex(List(pattern))(using Unsafe).to[form]
+    def apply(): Regex in form = Regex.unsafeFrom(List(pattern))(using Unsafe).to[form]
 
     def unapply(scrutinee: Text)(using scanner: Scanner): Boolean =
       scanner.nextStart match
         case index: Int =>
-          engine.matches(Regex(List(pattern))(using Unsafe), scrutinee)
+          engine.matches(Regex.unsafeFrom(List(pattern))(using Unsafe), scrutinee)
 
         case _ =>
-          matcher.lay(engine.matches(Regex(List(pattern))(using Unsafe), scrutinee)): fsa =>
+          matcher.lay(engine.matches(Regex.unsafeFrom(List(pattern))(using Unsafe), scrutinee)): fsa =>
             fsa.matches(scrutinee)
 
   class RExtractor[result, form](parts: Seq[String], staged: Optional[Motif] = Unset)
@@ -208,7 +208,7 @@ object internal:
       case _             => ()
 
     def unapply(scrutinee: Text)(using scanner: Scanner): result =
-      val result = engine.matchGroups(Regex(List.from(parts))(using Unsafe), scrutinee)
+      val result = engine.matchGroups(Regex.unsafeFrom(List.from(parts))(using Unsafe), scrutinee)
       val result2 = result.asInstanceOf[Option[Array[List[Text | Char] | Optional[Text | Char]]^{}]]
 
       if parts.length == 2

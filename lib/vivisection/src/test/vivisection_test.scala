@@ -179,7 +179,7 @@ object Tests extends Suite(m"Vivisection tests"):
       val message = Json.make(seq = seq.incrementAndGet().in[Json], command = command.in[Json])
       val typed = message.updateDynamic("type")(t"request".in[Json])
       val full = typed.updateDynamic("arguments")(arguments)
-      toServer.write(DapTransport.frame(full.encode).mutable(using Unsafe))
+      toServer.write(DapTransport.frame(full.encode).unsafeMutable(using Unsafe))
       toServer.flush()
 
     private def awaitMatch(predicate: Json => Boolean): Json =
@@ -861,7 +861,7 @@ object Tests extends Suite(m"Vivisection tests"):
     test(m"a captured var is unboxed from its ref cell and marked mutable"):
       val tally = closures.get(t"tally")
       val value = tally.flatMap(_.value.option).getOrElse(Unset)
-      (value == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(100)), tally.map(_.mutable))
+      (value == Variable.Snapshot.Primitive(Jdwp.Value.OfInt(100)), tally.map(_.unsafeMutable))
     . assert(_ == (true, scala.Some(true)))
 
     test(m"a binding captured through the outer chain is recovered"):

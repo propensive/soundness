@@ -152,7 +152,7 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
         case count: Int =>
           if count > 0 then
             intake.absorb
-              ( stream.storage(using Unsafe).asInstanceOf[intake.addressable.Storage],
+              ( stream.unsafeStorage(using Unsafe).asInstanceOf[intake.addressable.Storage],
                 stream.start,
                 count )
 
@@ -491,7 +491,7 @@ private def recordIterator[record]
 
         stream.refill(Credit(block)) match
           case count: Int =>
-            storage = stream.storage(using Unsafe).asInstanceOf[scala.Array[AnyRef]]
+            storage = stream.unsafeStorage(using Unsafe).asInstanceOf[scala.Array[AnyRef]]
             index = stream.start
             limit = stream.start + count
             consumed = count
@@ -572,7 +572,7 @@ private def throughDuct[in, out, upTransport, downTransport]
                       // coincide, even though their paths differ.
                       val progress =
                         Region.over[in, Duct.Progress](using duct.input)
-                          ( stream.storage(using Unsafe).asInstanceOf[duct.input.Storage],
+                          ( stream.unsafeStorage(using Unsafe).asInstanceOf[duct.input.Storage],
                             stream.start, stream.start + count )
                           ( region => range =>
                               Slate.over[out, Duct.Progress](using duct.output)
@@ -605,7 +605,7 @@ private def truncateStream[medium](consume stream: (Stream[medium] over Credit)^
 
       private var remaining: Long = count.max(0)
 
-      protected def storage0: AnyRef = stream.storage(using Unsafe).asInstanceOf[AnyRef]
+      protected def storage0: AnyRef = stream.unsafeStorage(using Unsafe).asInstanceOf[AnyRef]
       def start: Int = stream.start
 
       def limit: Int =
@@ -633,7 +633,7 @@ private def discardStream[medium](consume stream: (Stream[medium] over Credit)^,
 
       private var pending: Long = count.max(0)
 
-      protected def storage0: AnyRef = stream.storage(using Unsafe).asInstanceOf[AnyRef]
+      protected def storage0: AnyRef = stream.unsafeStorage(using Unsafe).asInstanceOf[AnyRef]
       def start: Int = stream.start
       def limit: Int = stream.limit
       update def skip(elements: Int): Unit = stream.skip(elements)
@@ -690,7 +690,7 @@ private def intakeThroughDuct[in, out, upTransport, downTransport]
             Region.over[in, Duct.Progress](using duct.input)(storage, offset, mark0): region =>
               range =>
                 Slate.over[out, Duct.Progress](using duct.output)
-                  ( intake.buffer(using Unsafe).asInstanceOf[duct.output.Storage^],
+                  ( intake.unsafeBuffer(using Unsafe).asInstanceOf[duct.output.Storage^],
                     intake.mark, intake.mark + free )
                   ( slate => slateSpace => duct.step(region)(range)(slate)(slateSpace) )
 
@@ -709,7 +709,7 @@ private def intakeThroughDuct[in, out, upTransport, downTransport]
 
           produced =
             Slate.over[out, Int](using duct.output)
-              ( intake.buffer(using Unsafe).asInstanceOf[duct.output.Storage^],
+              ( intake.unsafeBuffer(using Unsafe).asInstanceOf[duct.output.Storage^],
                 intake.mark, intake.mark + free )
               ( slate => slateSpace => duct.flush(slate)(slateSpace) )
 

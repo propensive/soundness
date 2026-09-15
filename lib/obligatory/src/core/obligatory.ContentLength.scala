@@ -77,17 +77,17 @@ object ContentLength:
           while !blank do
             if cursor.finished then fail()
 
-            if cursor.datum(using Unsafe) == cr then
+            if cursor.unsafeDatum(using Unsafe) == cr then
               cursor.next()
-              if cursor.finished || cursor.datum(using Unsafe) != lf then fail()
+              if cursor.finished || cursor.unsafeDatum(using Unsafe) != lf then fail()
               cursor.next()
               blank = true
             else
               var matches = true
               var index = 0
 
-              while !cursor.finished && cursor.datum(using Unsafe) != colon do
-                val byte = lower(cursor.datum(using Unsafe).asInstanceOf[Byte])
+              while !cursor.finished && cursor.unsafeDatum(using Unsafe) != colon do
+                val byte = lower(cursor.unsafeDatum(using Unsafe).asInstanceOf[Byte])
                 if index >= name.length || byte != name.s.charAt(index).toByte then matches = false
                 index += 1
                 cursor.next()
@@ -96,13 +96,13 @@ object ContentLength:
               if cursor.finished then fail()
               cursor.next()
 
-              while !cursor.finished && cursor.datum(using Unsafe) == space do cursor.next()
+              while !cursor.finished && cursor.unsafeDatum(using Unsafe) == space do cursor.next()
 
               var value = 0
               var digits = false
 
-              while !cursor.finished && cursor.datum(using Unsafe) != cr do
-                val byte = cursor.datum(using Unsafe).asInstanceOf[Byte]
+              while !cursor.finished && cursor.unsafeDatum(using Unsafe) != cr do
+                val byte = cursor.unsafeDatum(using Unsafe).asInstanceOf[Byte]
 
                 if matches && byte >= 48 && byte <= 57 then
                   value = value*10 + (byte - 48)
@@ -112,7 +112,7 @@ object ContentLength:
 
               if cursor.finished then fail()
               cursor.next()
-              if cursor.finished || cursor.datum(using Unsafe) != lf then fail()
+              if cursor.finished || cursor.unsafeDatum(using Unsafe) != lf then fail()
               cursor.next()
 
               if matches && digits then length = value

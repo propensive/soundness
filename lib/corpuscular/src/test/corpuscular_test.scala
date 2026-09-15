@@ -70,7 +70,7 @@ object Tests extends Suite(m"Corpuscular tests"):
       test(m"The running form agrees with the one-shot form"):
         val bytes = t"123456789".in[Data]
         val crc = Crc32()
-        crc.update(bytes.mutable(using Unsafe), 0, bytes.length)
+        crc.update(bytes.unsafeMutable(using Unsafe), 0, bytes.length)
         crc.value == (Crc32.checksum(bytes).toLong & 0xffffffffL)
       . assert(_ == true)
 
@@ -79,15 +79,15 @@ object Tests extends Suite(m"Corpuscular tests"):
         val first = t"1234".in[Data]
         val rest = t"56789".in[Data]
         val crc = Crc32()
-        crc.update(first.mutable(using Unsafe), 0, first.length)
-        crc.update(rest.mutable(using Unsafe), 0, rest.length)
+        crc.update(first.unsafeMutable(using Unsafe), 0, first.length)
+        crc.update(rest.unsafeMutable(using Unsafe), 0, rest.length)
         crc.value == (Crc32.checksum(whole).toLong & 0xffffffffL)
       . assert(_ == true)
 
       test(m"Reset returns the running form to its initial value"):
         val bytes = t"123456789".in[Data]
         val crc = Crc32()
-        crc.update(bytes.mutable(using Unsafe), 0, bytes.length)
+        crc.update(bytes.unsafeMutable(using Unsafe), 0, bytes.length)
         crc.reset()
         crc.value
       . assert(_ == 0L)
@@ -97,7 +97,7 @@ object Tests extends Suite(m"Corpuscular tests"):
       test(m"The standard check vector"):
         val bytes = t"123456789".in[Data]
         val crc = Crc64()
-        crc.update(bytes.mutable(using Unsafe), 0, bytes.length)
+        crc.update(bytes.unsafeMutable(using Unsafe), 0, bytes.length)
         crc.value
       . assert(_ == 0x995dc9bbdf1939faL)
 
@@ -114,7 +114,7 @@ object Tests extends Suite(m"Corpuscular tests"):
       test(m"The standard check vector"):
         val bytes = t"123456789".in[Data]
         val adler = Adler32()
-        adler.update(bytes.mutable(using Unsafe), 0, bytes.length)
+        adler.update(bytes.unsafeMutable(using Unsafe), 0, bytes.length)
         adler.value
       . assert(_ == 0x091e01deL)
 
@@ -122,10 +122,10 @@ object Tests extends Suite(m"Corpuscular tests"):
         val first = t"1234".in[Data]
         val rest = t"56789".in[Data]
         val split = Adler32()
-        split.update(first.mutable(using Unsafe), 0, first.length)
-        split.update(rest.mutable(using Unsafe), 0, rest.length)
+        split.update(first.unsafeMutable(using Unsafe), 0, first.length)
+        split.update(rest.unsafeMutable(using Unsafe), 0, rest.length)
         val whole = t"123456789".in[Data]
         val once = Adler32()
-        once.update(whole.mutable(using Unsafe), 0, whole.length)
+        once.update(whole.unsafeMutable(using Unsafe), 0, whole.length)
         split.value == once.value
       . assert(_ == true)

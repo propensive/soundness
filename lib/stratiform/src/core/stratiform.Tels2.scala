@@ -31,7 +31,7 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package stratiform
-import rudiments.mutable
+import rudiments.unsafeMutable
 
 import adversaria.*
 import anticipation.*

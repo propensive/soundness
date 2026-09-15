@@ -145,7 +145,7 @@ object Asn1:
   // The content octets of a value: everything after its identifier and length.
   private def contentOf(value: Asn1): Data = value match
     case Asn1.Boolean(boolean)      => Array[Byte](if boolean then 0xff.toByte else 0.toByte)
-    case Asn1.Integer(integer)      => integer.toByteArray.immutable(using Unsafe)
+    case Asn1.Integer(integer)      => integer.toByteArray.unsafeImmutable(using Unsafe)
     case Asn1.OctetString(bytes)    => bytes
     case Asn1.Null                  => Array[Byte]()
     case Asn1.Utf8String(text)      => utf8(text)
@@ -195,7 +195,7 @@ object Asn1:
     if difference != 0 then difference < 0 else left.length <= right.length
 
   private def utf8(text: Text): Data =
-    text.s.getBytes(jnc.StandardCharsets.UTF_8).nn.immutable(using Unsafe)
+    text.s.getBytes(jnc.StandardCharsets.UTF_8).nn.unsafeImmutable(using Unsafe)
 
   private def identifier
     ( out: (Producer.Bytes)^, tagClass: Int, constructed: scala.Boolean, tag: Int )

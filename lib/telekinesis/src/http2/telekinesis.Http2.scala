@@ -814,7 +814,7 @@ object Http2:
 
           protected def storage0: AnyRef =
             val current = underlying
-            current.storage(using Unsafe).asInstanceOf[AnyRef]
+            current.unsafeStorage(using Unsafe).asInstanceOf[AnyRef]
 
           def start: Int = underlying.start
           def limit: Int = underlying.limit
