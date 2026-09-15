@@ -54,3 +54,27 @@ format. Entries are grouped by module, most-recently-added last within a module.
   overload, `Regex.apply(text: Text): Regex in JavaBaseRegex raises Regex.Error`, is
   unchanged; a call of the form `Regex(List(…))(using Unsafe)` must become
   `Regex.unsafeFrom(List(…))(using Unsafe)`. (#TBD)
+
+## geodesy
+
+- `geodesy.Location#longitude` now returns an angle in `[-π, π)` (−180° to 180°); it previously
+  returned `[0, 2π]`, so an eastern longitude of 10° is unchanged but a location built with
+  longitude 270° now reads back as −90°. `Location#encode` and the `geo:` URI encoding follow,
+  writing western longitudes as negative numbers. Code that assumed a non-negative longitude
+  should call `.principal` on the result. (#TBD)
+- `geodesy.Location(latitude: Angle, longitude: Angle)` no longer loses western longitudes: any
+  negative longitude previously saturated and read back as 0°. `Location(north: Int, east:
+  Int)` (microdegrees) previously returned a latitude of roughly 0° for every input; it now
+  returns the given latitude. Geohashes and `surfaceDistance` of such locations change
+  accordingly. Stored geohashes computed from western or microdegree locations were wrong and
+  should be recomputed. (#TBD)
+- `geodesy.Location#bearing` now distinguishes east from west (it took the absolute longitude
+  difference, so every westward bearing came out eastward), and returns a bearing normalised
+  to `[0, 2π)` before it reaches the `Directional` instance. `Compass[n](angle)` accepts any
+  angle, including negative ones, which previously threw `ArrayIndexOutOfBoundsException`. (#TBD)
+- `Geolocation`'s `Decodable in Text` instance now parses `;crs=…`, `;u=…` and further
+  parameters, which previously always raised `Geolocation.Error` with reason `MissingEquals`,
+  and accepts parameters directly after the longitude (`geo:1,2;u=3`), which previously raised
+  `UnexpectedSuffix`. `Geolocation`'s `Encodable in Text` instance now writes `crs` and
+  `parameters`, in the order `;crs=…`, `;u=…`, then each parameter, which it previously
+  dropped. (#TBD)
