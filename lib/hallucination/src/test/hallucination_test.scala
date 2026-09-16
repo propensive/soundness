@@ -215,6 +215,154 @@ object Tests extends Suite(m"Hallucination Tests"):
       (cropped.height, cropped(0, 0).red, cropped(0, 1).red)
     . assert(_ == (2, 10, 20))
 
+    // Each pixel carries its own coordinates: red is 40x, green is 40y, so any transposition,
+    // mirroring or crop can be read straight off the pixel it moved.
+    def grid: Raster = Raster(3, 2)((x, y) => Chroma(x*40, y*40, 0))
+
+    def coordinates(raster: Raster): List[(Int, Int)] =
+      (0 until raster.width*raster.height).map: index =>
+        val pixel = raster(index%raster.width, index/raster.width)
+        (pixel.red/40, pixel.green/40)
+
+      . to(List)
+
+    test(m"a fixture raster reads back the coordinates it was built from"):
+      coordinates(grid)
+    . assert(_ == List((0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1)))
+
+    test(m"flipX mirrors the columns and keeps the dimensions"):
+      val flipped = grid.flipX
+      (flipped.width, flipped.height, coordinates(flipped))
+    . assert(_ == (3, 2, List((2, 0), (1, 0), (0, 0), (2, 1), (1, 1), (0, 1))))
+
+    test(m"flipY mirrors the rows and keeps the dimensions"):
+      val flipped = grid.flipY
+      (flipped.width, flipped.height, coordinates(flipped))
+    . assert(_ == (3, 2, List((0, 1), (1, 1), (2, 1), (0, 0), (1, 0), (2, 0))))
+
+    test(m"flipping twice in either direction restores the raster"):
+      (coordinates(grid.flipX.flipX), coordinates(grid.flipY.flipY))
+    . assert: (horizontal, vertical) =>
+        horizontal == coordinates(grid) && vertical == coordinates(grid)
+
+    test(m"rotating by 90 degrees transposes the dimensions"):
+      val rotated = grid.rotate(90)
+      (rotated.width, rotated.height, coordinates(rotated))
+    . assert(_ == (2, 3, List((2, 0), (2, 1), (1, 0), (1, 1), (0, 0), (0, 1))))
+
+    test(m"rotating by 180 degrees keeps the dimensions"):
+      val rotated = grid.rotate(180)
+      (rotated.width, rotated.height, coordinates(rotated))
+    . assert(_ == (3, 2, List((2, 1), (1, 1), (0, 1), (2, 0), (1, 0), (0, 0))))
+
+    test(m"rotating by 270 degrees transposes the dimensions"):
+      val rotated = grid.rotate(270)
+      (rotated.width, rotated.height, coordinates(rotated))
+    . assert(_ == (2, 3, List((0, 1), (0, 0), (1, 1), (1, 0), (2, 1), (2, 0))))
+
+    test(m"a half turn is the same as mirroring both ways"):
+      coordinates(grid.rotate(180))
+    . assert(_ == coordinates(grid.flipX.flipY))
+
+    test(m"rotating by 90 then by 270 degrees restores the raster"):
+      val restored = grid.rotate(90).rotate(270)
+      (restored.width, restored.height, coordinates(restored))
+    . assert(_ == (3, 2, coordinates(grid)))
+
+    test(m"four quarter turns restore the raster"):
+      val restored = grid.rotate(90).rotate(90).rotate(90).rotate(90)
+      (restored.width, restored.height, coordinates(restored))
+    . assert(_ == (3, 2, coordinates(grid)))
+
+    test(m"crop(left = n) drops columns from the left"):
+      val cropped = grid.crop(left = 1)
+      (cropped.width, cropped.height, coordinates(cropped))
+    . assert(_ == (2, 2, List((1, 0), (2, 0), (1, 1), (2, 1))))
+
+    test(m"crop(right = n) drops columns from the right"):
+      val cropped = grid.crop(right = 1)
+      (cropped.width, cropped.height, coordinates(cropped))
+    . assert(_ == (2, 2, List((0, 0), (1, 0), (0, 1), (1, 1))))
+
+    test(m"crop with left and right keeps the middle column"):
+      val cropped = grid.crop(left = 1, right = 1)
+      (cropped.width, cropped.height, coordinates(cropped))
+    . assert(_ == (1, 2, List((1, 0), (1, 1))))
+
+    test(m"cropping on all four sides keeps a single pixel"):
+      val cropped = grid.crop(left = 1, right = 1, top = 1)
+      (cropped.width, cropped.height, coordinates(cropped))
+    . assert(_ == (1, 1, List((1, 1))))
+
+    test(m"cropping nothing keeps every pixel"):
+      val cropped = grid.crop()
+      (cropped.width, cropped.height, coordinates(cropped))
+    . assert(_ == (3, 2, coordinates(grid)))
+
+    test(m"a wide raster is landscape"):
+      (grid.landscape, grid.portrait, grid.square)
+    . assert(_ == (true, false, false))
+
+    test(m"a tall raster is portrait"):
+      val tall = grid.rotate(90)
+      (tall.landscape, tall.portrait, tall.square)
+    . assert(_ == (false, true, false))
+
+    test(m"an equal-sided raster is square"):
+      val raster = Raster(2, 2)((x, y) => Chroma(0, 0, 0))
+      (raster.landscape, raster.portrait, raster.square)
+    . assert(_ == (false, false, true))
+
+    // Format recognition reads only the opening magic bytes, and only among the formats the
+    // caller has linked and named.
+    def recognise(data: Data): Text =
+      Raster.Formats(Bmp(), Gif(), Jpeg(), Png(), Webp()).recognise(data).lay(t"none")(_.name)
+
+    test(m"a PNG is recognised by its signature"):
+      recognise(png)
+    . assert(_ == t"PNG")
+
+    test(m"a JPEG is recognised by its signature"):
+      recognise(jpeg)
+    . assert(_ == t"JPEG")
+
+    test(m"a GIF is recognised by its signature"):
+      recognise(png.read[Raster in Png].to[Gif].read[Data])
+    . assert(_ == t"GIF")
+
+    test(m"a BMP is recognised by its signature"):
+      recognise(png.read[Raster in Png].to[Bmp].read[Data])
+    . assert(_ == t"BMP")
+
+    test(m"data in no known format is not recognised"):
+      recognise(broken)
+    . assert(_ == t"none")
+
+    test(m"empty data is not recognised"):
+      recognise(Data())
+    . assert(_ == t"none")
+
+    test(m"a format which was not named is not recognised"):
+      Raster.Formats(Jpeg(), Gif()).recognise(png).lay(t"none")(_.name)
+    . assert(_ == t"none")
+
+    test(m"a WebP is recognised by its RIFF header"):
+      recognise(hex"""524946462e000000574542505650384c220000002f0fc00200b93244f43f7651ffe8""")
+    . assert(_ == t"WEBP")
+
+    test(m"sniffing is independent of decoding"):
+      (Png().sniff(png), Png().sniff(jpeg), Jpeg().sniff(jpeg), Jpeg().sniff(png))
+    . assert(_ == (true, false, true, false))
+
+    test(m"a raster decodes from data whose format was not stated"):
+      Raster(png).pipe: raster =>
+        (raster.width, raster.height)
+    . assert(_ == (1, 1))
+
+    test(m"decoding data in no known format raises an error"):
+      capture[Raster.Error](Raster(broken)).rasterizable
+    . assert(_ == Unset)
+
     test(m"a layout-typed raster gives typed pixel access"):
       val raster = Raster[Rgba](2, 2): (x, y) =>
         Pixel[Rgba](Srgb(x.toDouble, y.toDouble, 1.0))
@@ -355,6 +503,10 @@ object Tests extends Suite(m"Hallucination Tests"):
       (encoded.readable(0) & 0xff, encoded.readable(1) & 0xff)
     . assert(_ == (0xff, 0xd8))
 
+    test(m"the default JPEG quality round-trips through the pure codec"):
+      jpegClose(JpegCodec.decode(JpegEncoder.encode(gradient32)), gradient32, 4.0, 40)
+    . assert(_ == true)
+
     test(m"a high-quality (4:4:4) JPEG round-trips through the pure codec"):
       val encoded = JpegEncoder.encode(gradient32, 95)
       jpegClose(JpegCodec.decode(encoded), gradient32, 4.0, 40)
@@ -412,6 +564,28 @@ object Tests extends Suite(m"Hallucination Tests"):
     test(m"a pure-GIF round trip preserves 256 or fewer colours"):
       same(GifCodec.decode(GifCodec.encode(gradient)), gradient)
     . assert(_ == true)
+
+    // More distinct colours than a GIF palette holds, forcing the median-cut path in
+    // `Quantization`; the 256-colour tests above all take its pass-through branch.
+    def manyColours: Raster = Raster(32, 24)((x, y) => Chroma(x*7, y*10, (x + y)*4))
+
+    test(m"a raster with more colours than a palette holds still encodes as GIF"):
+      val decoded = GifCodec.decode(GifCodec.encode(manyColours))
+      (decoded.width, decoded.height)
+    . assert(_ == (32, 24))
+
+    test(m"median-cut quantization keeps the colours close"):
+      jpegClose(GifCodec.decode(GifCodec.encode(manyColours)), manyColours, 8.0, 48)
+    . assert(_ == true)
+
+    test(m"quantization uses at most 256 distinct colours"):
+      val decoded = GifCodec.decode(GifCodec.encode(manyColours))
+
+      (0 until decoded.width*decoded.height).map: index =>
+        decoded.descriptor.chroma(decoded.word(index))
+
+      . to(Set).size
+    . assert(_ <= 256)
 
     test(m"ImageIO reads what the pure GIF encoder writes"):
       same(GifCodec.encode(gradient).read[Raster in Gif], gradient)
