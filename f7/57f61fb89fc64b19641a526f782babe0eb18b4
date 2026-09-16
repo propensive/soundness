@@ -1,0 +1,33 @@
+{
+  "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAZcAAAAHc3NoLXJzYQAAAAMBAAEAAAGBANKeZiOgGy2ygR1XnKHjPk\nGD1dnDP8rPMDkaTfybosrPoQPXc6dnx28ZedTB+gQmW1RbBeFO4xOUWdP6MbJZbmQHko3e\n+OQAnqn8RD3zmJ4HYqG+OF1n9dS89tEG0yrlJaoMfWSm5uMK/iGeBVIAHPPPejKY41X0AP\nU/4G5o7+3Yv2JKcK/nB5vd1A0XBOnGJCOQGzOxxFAIX1t3btuEPyL04540eAOAtm6OxuMX\ntpy057iBQr89StE3OoQxU9Nxd8Qd0+6G1bqVjjdhhy+BU5D8Md3jkEyQP6Uan+nmcxA+TD\nG1m0ZNkusZqWtojXjgxqTCZqSiNO87JyyKtOpWLEeRlm9+hA7Xa8HPu8hsR+e0JhotXpLe\nxJvCBVK60ZTdzfmhCujT8GrXiRjMDMF7rHPyBaLIbUl5EuoU1yJyfu4pZdJgpxe1zHQX5I\nGGy8MXuOsJ9J2IqX9izuZINS5AsycfFX+Y1YvInzALxhAhEKjrsvyi/u3Kte/4hcoLvrbF\nwQAAAAxzb3VuZG5lc3MtY2kAAAAAAAAABnNoYTUxMgAAAZQAAAAMcnNhLXNoYTItNTEyAA\nABgCvOk6pHxIhWBREwDO6UUoywPHmZtV+/9nHtF01Ly1QbApF1dFxHlt/uBuYu9CGB78uC\ncGVHkpKm/V+AbaxBTkJ/KPCNmZbeoD/6YPCSKdaFrJOlKIOkItpPKNX1yNrqXXsa2oGvCi\nXmxg9DQabVT1b0tnMJeguPXIsNh/XUJIZ25NhVNymuBWNZc+fbQVqsR6QSkJKliExm3L2p\ngtyAT7vlTpuGuq0H3AFJawtiQHnBp03n2T225at0l/kaXum3HC7alS2tHIuOHJUqPLVUZE\nDBdp4JUrhavwU1ttc4XPHQ6hlZ9a8AuJ6vJP1Tdm1u1CHIxqBSQ/JfBji04uWFp+ajx1t/\nlaoMfquE5qEJPQDnCO6zwdRCLuQCTl7n/v/61gJIjLIUf4IKREN26+jrDgeuRXpHmWpZI3\nFWEgnmUZMR3yiL8c2G7x5pXDnFt8vnSARxlYDDws652FlkoRKH30qluVqwPkSd2H5Uttqe\nhz5+38iqy7+Y2Gi8jjdZ0/kyLg==\n-----END SSH SIGNATURE-----\n",
+  "statement": {
+    "_type": "https://in-toto.io/Statement/v1",
+    "predicate": {
+      "commands": [
+        "./mill --no-daemon -j 6 --ticker false soundness.all.compile",
+        "./mill --no-daemon -j 6 --ticker false soundness.js.compile",
+        "./mill --no-daemon -j 6 --ticker false soundness.native.compile",
+        "./mill --no-daemon -j 6 --ticker false test.assembly",
+        "make ci",
+        "make wasm-e2e"
+      ],
+      "commit": "bc53edd6393b5006fcffd02963ef17ec15581c48",
+      "ranAt": "2026-09-16T09:14:50Z",
+      "ranBy": "jon.pretty@propensive.com",
+      "result": "pass",
+      "tooling": {
+        "mill": "1.1.5"
+      }
+    },
+    "predicateType": "https://soundness.dev/local-ci/v1",
+    "subject": [
+      {
+        "digest": {
+          "gitTree": "f757f61fb89fc64b19641a526f782babe0eb18b4",
+          "sha256": "63c2414d8c4a6889d439cdedcca557445514fa1f4889e7222a0ee68b2b6d6df0"
+        },
+        "name": "soundness-ci-inputs"
+      }
+    ]
+  }
+}
