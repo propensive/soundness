@@ -137,6 +137,13 @@ object Reactor:
     // measure); `halted` records that read interest has been withdrawn until the
     // queue drains — the explicit backpressure a slow reader earns.
     private val outbound: java.util.ArrayDeque[jnio.ByteBuffer] = java.util.ArrayDeque()
+
+    // One static cursor per connection, re-pointed at the accumulator for every head (see
+    // `Cursor.repoint`): no cursor and no copy of the head per request. Cast-erased, as the
+    // key attachment is; re-asserted exclusive at its one use.
+    @scala.caps.unsafe.untrackedCaptures
+    private val cursor0: AnyRef =
+      Cursor[Data](new scala.Array[Byte](0).asInstanceOf[Data]).asInstanceOf[AnyRef]
     private var queued: Long = 0L
     private var halted: Boolean = false
 
@@ -216,16 +223,15 @@ object Reactor:
     // which provably cannot block: a preset cursor is `static` — its `refill` never
     // pulls. Requests the fast path cannot serve inline leave for the fallback.
     private update def parseHead(reactor: Reactor^): Unit =
-      // A `Data` is a frozen byte array; the cast freezes the freshly-copied range.
-      val headData: Data =
-        java.util.Arrays.copyOfRange(accumulator, 0, headEnd).nn.asInstanceOf[Data]
-
       recover:
         case error: Http.Request.Error =>
           refuse(SocketServer.errorStatus(error.reason))
 
       . protect:
-          val cursor = Cursor[Data](headData)
+          // The head is parsed in place: the cursor borrows the accumulator's first
+          // `headEnd` bytes, which nothing writes until the parse has returned.
+          val cursor = cursor0.asInstanceOf[Cursor[Data, {}]^]
+          cursor.repoint(accumulator.asInstanceOf[AnyRef], headEnd)
           val head = Http.Request.parseHead(cursor)
           val facts = SocketServer.factsOf(head)
 
@@ -479,7 +485,8 @@ final class Reactor
     val channel = jnc.ServerSocketChannel.open().nn
     channel.configureBlocking(true)
     val address = jn.InetAddress.getByName(if local then "localhost" else "0.0.0.0").nn
-    channel.bind(jn.InetSocketAddress(address, port), 128)
+    // The listen backlog, as `SocketServer`'s: the kernel caps it (128 on a default macOS).
+    channel.bind(jn.InetSocketAddress(address, port), 1024)
     channel
 
   private val fleet: scala.IArray[Lane] =

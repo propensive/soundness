@@ -214,6 +214,10 @@ extends Rig:
             val histograms = new scala.Array[scala.Array[Long] | Null](n)
             val threads = new scala.Array[java.lang.Thread | Null](n)
             val oom = new java.util.concurrent.atomic.AtomicBoolean(false)
+            // The first failure of a worker in this window, if any: a body that throws (a
+            // benchmark client whose server stopped answering, say) fails the window rather
+            // than dying as an uncaught exception, which would print a stack trace per worker.
+            val failure = new java.util.concurrent.atomic.AtomicReference[Throwable | Null](null)
             var k = 0
 
             while k < n do
@@ -270,7 +274,9 @@ extends Rig:
 
                   ops(slot) = count
 
-                catch case error: java.lang.OutOfMemoryError => oom.set(true)
+                catch
+                  case error: java.lang.OutOfMemoryError => oom.set(true)
+                  case error: Throwable                  => failure.compareAndSet(null, error)
 
               val thread =
                 if ${Expr(virtual2)} then java.lang.Thread.ofVirtual.nn.start(runnable).nn
@@ -367,7 +373,12 @@ extends Rig:
                 below*10000L/total
 
             val thrash = gcTime*2000000L > elapsed
-            val ok = !oom.get && !thrash && (!slo || compliantBp >= targetBp)
+            val failed = failure.get != null
+
+            if failed then
+              jl.System.err.nn.println(s"sedentary: a worker failed at N=$n: ${failure.get}")
+
+            val ok = !oom.get && !failed && !thrash && (!slo || compliantBp >= targetBp)
             val sustained = slo && phase == 2 && ok
 
             // A step which ran out of memory is not reported; every other window is,
