@@ -100,3 +100,17 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `hieroglyph.Chars.subscript` (reached as `char.subscript`) now maps `(`, `)`, `+`, `-` and
   `=` to U+208D, U+208E, U+208A, U+208B, U+208C; previously it mapped only digits and returned
   `Unset` for those five. Code relying on `Unset` for them must handle a present value. (#TBD)
+
+## gesticulate
+
+- `Media.Suffix`'s `Showable` instance now renders the suffix as it is written in a media type,
+  using `Suffix#name`: `JsonSeq` shows as `json-seq` (was `jsonseq`), `CborSeq` as `cbor-seq`
+  and `FastInfoset` as `fast-infoset`. The other twelve suffixes are unchanged. (#TBD)
+- `MediaType.parse` (and so `Text#as[MediaType]` and `media"…"`) now accepts the hyphenated
+  suffixes `+json-seq`, `+cbor-seq` and `+fast-infoset`, which previously always raised
+  `MediaType.Error` with reason `InvalidSuffix`, because the whole suffix was capitalized
+  (`Json-seq`) before the enum lookup rather than each hyphenated word. An `InvalidSuffix`
+  reason now reports the suffix as written, in lower case, rather than capitalized. (#TBD)
+- `MediaType.parse` now raises `MediaType.Error` with reason `MissingParam` for a parameter
+  with no `=` (`text/plain; foo`); it previously threw `IndexOutOfBoundsException`, which no
+  `Tactic` could catch. (#TBD)
