@@ -89,3 +89,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   (`Decimalizer(4).decimalize(999.96)` gives `"1.000×10³"`). Every `Showable` for `Double`
   that goes through a `Decimalizer` changes the same way. Code that matched the old truncated
   output must expect the corrected text. (#TBD)
+
+## gastronomy
+
+- `gastronomy.Feistel.apply(subkeys, round)(input)` no longer corrupts its result when a round
+  function returns a negative `Int`. The XOR of the high word with the round output was widened
+  with `.toLong`, which sign-extends, filling the high 32 bits of the result — the half just
+  shifted in — with ones; it is now masked to 32 bits. Any value derived from a `Feistel`
+  network whose round function could return a negative number changes, so persisted values must
+  be recomputed. (#TBD)
