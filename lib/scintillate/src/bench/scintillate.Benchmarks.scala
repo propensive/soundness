@@ -146,11 +146,13 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
   // compiler crash (wildApprox).
   private def sweep(stress: Stress)(using Testable): Unit =
     servers.each: (name, server) =>
-      stress(name)(target = 1*Second, sweep = 256)(roundtrip(server, HttpWorkload.Plaintext))
+      stress(name)(target = 1*Second, sweep = 256, refine = true):
+        roundtrip(server, HttpWorkload.Plaintext)
 
   private def capacity(stress: Stress, workload: Int, slo: Int)(using Testable): Unit =
     servers.each: (name, server) =>
-      stress(name)(target = 1*Second, threshold = slo*Milli(Second), compliance = 99):
+      stress(name)
+        ( target = 1*Second, threshold = slo*Milli(Second), compliance = 99, refine = true ):
         roundtrip(server, workload)
 
   def run(): Unit =
@@ -198,10 +200,11 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
     // virtual threads in every row — one cheap persistent connection each, identical
     // across servers — while scintillate's two `SocketServer` rows toggle the kind of
     // thread the *server* handles connections on. The sweep suite doubles the
-    // client-connection count from 1 to 256, reading as each server's
-    // throughput-vs-N curve; each capacity suite searches for the maximum sustained rate
-    // with 99% of requests answered within the SLO — each server's headline
-    // requests/sec figure for that workload. On loopback, an uncontended round-trip is
+    // client-connection count from 1 to 256, then refines around the fastest count, reading
+    // as each server's throughput-vs-N curve with its peak flagged `sustained`; each capacity
+    // suite searches for the highest sustained rate with 99% of requests answered within the
+    // SLO — each server's headline requests/sec figure for that workload — at whichever
+    // connection count achieves it, which need not be the largest compliant one. On loopback, an uncontended round-trip is
     // tens of microseconds, so a 5 ms SLO measures queuing, scheduling and GC under
     // load, not network noise; the two megabyte-scale workloads get 10 ms, since copying
     // their payloads alone approaches the tighter bound.

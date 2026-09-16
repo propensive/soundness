@@ -123,7 +123,9 @@ object Strain:
 // latency percentiles in nanoseconds, taken from a histogram accumulated across all workers.
 // In a capacity search, `compliance` is the measured fraction of operations completing
 // within the latency threshold, and `sustained` marks the winning row: the highest
-// concurrency whose (extended) window still met the compliance target.
+// concurrency whose (extended) window still met the compliance target. A refined search
+// (sedentary's `Stress(refine = true)`) instead marks the fastest confirmed row, with or
+// without a compliance target.
 case class Strain
   ( concurrency: Int,
     operations:  Long,

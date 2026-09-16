@@ -39,6 +39,7 @@ import soundness.*
 import soundness.{nominative, taggingNominative}
 
 import classloaders.threadContextClassloader
+import denominative.dysasymptotics.linearSize
 import environments.javaBaseEnvironment
 import strategies.throwUnsafely
 import superlunary.embeddings.automaticEmbedding
@@ -61,6 +62,34 @@ def listing(): Runner[Unit] =
     def complete(report: Unit): Unit = ()
 
   Runner(probably.Selection.parse(List(t"--list")))
+
+// One window of a simulated `StressSearch`: the worker count it ran at, and whether it was an
+// extended (confirmation) window.
+case class Window(count: Int, extended: Boolean)
+
+// What a simulated window measured: its throughput, whether it was feasible, and whether it
+// exhausted memory.
+case class Outcome(throughput: Double, ok: Boolean = true, exhausted: Boolean = false)
+
+// Drives `search` to completion against a simulated workload, returning every window it ran
+// and the winning one, if any. The cap on windows stops a broken search from looping forever.
+def drive(search: StressSearch)(workload: Window => Outcome): (List[Window], Optional[Window]) =
+  var windows: List[Window] = Nil
+  val byOrdinal = scala.collection.mutable.ArrayBuffer[Window]()
+
+  while !search.done && byOrdinal.length < 200 do
+    val window = Window(search.current, search.extended)
+    windows = windows :+ window
+    byOrdinal += window
+    val outcome = workload(window)
+    search.record(outcome.throughput, outcome.ok, outcome.exhausted)
+
+  (windows, if search.winner < 0 then Unset else byOrdinal(search.winner))
+
+// A throughput curve rising to a single peak at `peak` workers and falling beyond it.
+def humped(peak: Int)(window: Window): Outcome =
+  val distance = (window.count - peak).toDouble
+  Outcome(10000.0 - distance*distance)
 
 object Tests extends Suite(m"Sedentary Tests"):
   def run(): Unit =
@@ -97,6 +126,142 @@ object Tests extends Suite(m"Sedentary Tests"):
           row.tags.map(_.text),
           row.axes.map { axis => (axis.spec.label, axis.spec.emergent, axis.least, axis.most) } )
     . assert(_ == List((probably.Entry.Kind.Stress, List(t"heavy"), List((t"N", true, 2.0, 16.0)))))
+
+    suite(m"Choosing each window's worker count"):
+      def counts(windows: List[Window]): List[Int] = windows.map(_.count)
+
+      test(m"a plain sweep doubles up to its cap"):
+        counts(drive(StressSearch(1, 64, false, false))(humped(20))(0))
+      . assert(_ == List(1, 2, 4, 8, 16, 32, 64))
+
+      test(m"a plain sweep lands exactly on a cap which is not a power of two"):
+        counts(drive(StressSearch(1, 100, false, false))(humped(20))(0))
+      . assert(_ == List(1, 2, 4, 8, 16, 32, 64, 100))
+
+      test(m"a plain sweep stops at a window which exhausted memory"):
+        val (windows, _) = drive(StressSearch(1, 256, false, false)): window =>
+          Outcome(1.0, ok = window.count < 32, exhausted = window.count >= 32)
+
+        counts(windows)
+      . assert(_ == List(1, 2, 4, 8, 16, 32))
+
+      test(m"a plain sweep has no winner"):
+        drive(StressSearch(1, 64, false, false))(humped(20))(1)
+      . assert(_ == Unset)
+
+      // Compliant up to 50 workers: the ascent brackets the boundary between 32 and 64, and
+      // the boundary search narrows it to within 12% before confirming.
+      test(m"a capacity search confirms the largest compliant count"):
+        val (windows, winner) = drive(StressSearch(1, 1024, true, false)): window =>
+          Outcome(window.count.toDouble, ok = window.count <= 50)
+
+        (winner.let(_.count).or(-1), winner.let(_.extended).or(false), windows.last == winner)
+      . assert: (count, extended, last) =>
+          extended && last && count <= 50 && count >= 50 - 50/8
+
+      test(m"a capacity search with nothing compliant stops after one window"):
+        drive(StressSearch(1, 1024, true, false))(window => Outcome(1.0, ok = false))
+      . assert(_ == (List(Window(1, false)), Unset))
+
+      test(m"a capacity search steps down when its confirmation fails"):
+        val (windows, winner) = drive(StressSearch(1, 1024, true, false)): window =>
+          Outcome(window.count.toDouble, ok = window.count <= 50 && !window.extended)
+
+        (windows.filter(_.extended).size, winner)
+      . assert(_ == (3, Unset))
+
+      test(m"a refined sweep finds a peak between two powers of two"):
+        drive(StressSearch(1, 256, false, true))(humped(37))(1).let(_.count).or(-1)
+      . assert(count => Math.abs(count - 37) <= 3)
+
+      test(m"a refined sweep's winner is a confirmation window"):
+        drive(StressSearch(1, 256, false, true))(humped(37))(1).let(_.extended).or(false)
+      . assert(_ == true)
+
+      test(m"a refined sweep probes counts which are not powers of two"):
+        counts(drive(StressSearch(1, 256, false, true))(humped(37))(0))
+        . exists(count => Integer.bitCount(count) > 1)
+      . assert(_ == true)
+
+      test(m"a refined sweep with rising throughput chooses its cap"):
+        drive(StressSearch(1, 256, false, true))(window => Outcome(window.count.toDouble))(1)
+        . let(_.count).or(-1)
+      . assert(_ == 256)
+
+      test(m"a refined sweep with falling throughput chooses one worker"):
+        drive(StressSearch(1, 256, false, true))(window => Outcome(1000.0 - window.count))(1)
+        . let(_.count).or(-1)
+      . assert(_ == 1)
+
+      test(m"a refined sweep never probes beyond its cap"):
+        counts(drive(StressSearch(1, 256, false, true))(window => Outcome(window.count.toDouble))(0))
+        . all(_ <= 256)
+      . assert(_ == true)
+
+      test(m"a refined sweep never probes a count twice before confirming"):
+        val probes = drive(StressSearch(1, 256, false, true))(humped(37))(0).filter(!_.extended)
+        probes.map(_.count).to[Set].size
+      . assert(_ == drive(StressSearch(1, 256, false, true))(humped(37))(0).filter(!_.extended).size)
+
+      test(m"a refined sweep stays within its window budget"):
+        drive(StressSearch(1, 256, false, true))(humped(37))(0).size
+      . assert(_ <= 9 + StressSearch.MaxProbes + 3 + 3)
+
+      test(m"a refined sweep treats exhausted windows as a bound, not a candidate"):
+        val (windows, winner) = drive(StressSearch(1, 256, false, true)): window =>
+          if window.count >= 48 then Outcome(99999.0, ok = false, exhausted = true)
+          else Outcome(window.count.toDouble)
+
+        winner.let(_.count).or(-1)
+      . assert(count => count < 48 && count >= 48 - 48/16 - 1)
+
+      // Throughput peaks at 20 workers, but latency stays compliant up to 50: the best
+      // compliant throughput is at 20, not at the largest compliant count.
+      test(m"a refined capacity search prefers throughput to concurrency"):
+        drive(StressSearch(1, 1024, true, true)): window =>
+          humped(20)(window).copy(ok = window.count <= 50)
+
+        . apply(1).let(_.count).or(-1)
+      . assert(count => Math.abs(count - 20) <= 2)
+
+      test(m"a refined capacity search never chooses a non-compliant count"):
+        drive(StressSearch(1, 1024, true, true)): window =>
+          Outcome(window.count.toDouble, ok = window.count <= 50)
+
+        . apply(1).let(_.count).or(-1)
+      . assert(count => count <= 50 && count >= 50 - 50/16 - 1)
+
+      // One window at 64 workers reports ten times its real throughput. The search chases it,
+      // but the extended re-measurement sees the truth, so the winner is chosen by what the
+      // confirmation windows measured.
+      test(m"a lucky window does not decide the winner"):
+        val (windows, winner) = drive(StressSearch(1, 256, false, true)): window =>
+          if window.count == 64 && !window.extended then Outcome(100000.0)
+          else humped(37)(window)
+
+        val confirmed = windows.filter(_.extended).map(_.count)
+        val best = confirmed.stdlib.maxBy(count => humped(37)(Window(count, true)).throughput)
+        (winner.let(_.count).or(-1), best)
+      . assert(_ == _)
+
+      // Probes are compliant up to 50 workers, but extended windows only up to 45: none of the
+      // confirmations near 50 holds, and the first ~12% step down does.
+      test(m"a refined search falls back to stepping down when no confirmation holds"):
+        val (windows, winner) = drive(StressSearch(1, 1024, true, true)): window =>
+          val ok = if window.extended then window.count <= 45 else window.count <= 50
+          Outcome(window.count.toDouble, ok = ok)
+
+        winner.let { window => (window.count <= 45, window.count >= 40, window.extended) }
+        . or((false, false, false))
+      . assert(_ == (true, true, true))
+
+      test(m"a refined search gives up after three failed step-downs"):
+        drive(StressSearch(1, 1024, true, true)): window =>
+          val ok = if window.extended then window.count <= 30 else window.count <= 50
+          Outcome(window.count.toDouble, ok = ok)
+
+        . apply(1)
+      . assert(_ == Unset)
 
     // The run-length multiplier a host passes as `--scale=<factor>`, applied to a declared
     // target. Checked directly rather than through a measurement: what a scaled benchmark
