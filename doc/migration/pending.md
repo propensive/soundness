@@ -90,6 +90,31 @@ format. Entries are grouped by module, most-recently-added last within a module.
   that goes through a `Decimalizer` changes the same way. Code that matched the old truncated
   output must expect the corrected text. (#TBD)
 
+## hieroglyph
+
+- `hieroglyph.Chars.superscript` (reached as `char.superscript`) returned the **subscript**
+  characters for `(`, `)`, `+`, `-` and `=` — U+208D, U+208E, U+208A, U+208B, U+208C. It now
+  returns the superscript forms U+207D, U+207E, U+207A, U+207B, U+207C. Digits were and remain
+  correct. Code or test data pinning the old (wrong) characters for those five inputs must be
+  updated. (#TBD)
+- `hieroglyph.Chars.subscript` (reached as `char.subscript`) now maps `(`, `)`, `+`, `-` and
+  `=` to U+208D, U+208E, U+208A, U+208B, U+208C; previously it mapped only digits and returned
+  `Unset` for those five. Code relying on `Unset` for them must handle a present value. (#TBD)
+
+## gesticulate
+
+- `Media.Suffix`'s `Showable` instance now renders the suffix as it is written in a media type,
+  using `Suffix#name`: `JsonSeq` shows as `json-seq` (was `jsonseq`), `CborSeq` as `cbor-seq`
+  and `FastInfoset` as `fast-infoset`. The other twelve suffixes are unchanged. (#TBD)
+- `MediaType.parse` (and so `Text#as[MediaType]` and `media"…"`) now accepts the hyphenated
+  suffixes `+json-seq`, `+cbor-seq` and `+fast-infoset`, which previously always raised
+  `MediaType.Error` with reason `InvalidSuffix`, because the whole suffix was capitalized
+  (`Json-seq`) before the enum lookup rather than each hyphenated word. An `InvalidSuffix`
+  reason now reports the suffix as written, in lower case, rather than capitalized. (#TBD)
+- `MediaType.parse` now raises `MediaType.Error` with reason `MissingParam` for a parameter
+  with no `=` (`text/plain; foo`); it previously threw `IndexOutOfBoundsException`, which no
+  `Tactic` could catch. (#TBD)
+
 ## gastronomy
 
 - `gastronomy.Feistel.apply(subkeys, round)(input)` no longer corrupts its result when a round

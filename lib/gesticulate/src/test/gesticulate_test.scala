@@ -206,6 +206,68 @@ object Tests extends Suite(m"Gesticulate tests"):
     . assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json"),
         parameters = List((t"charset", t"UTF-8"))))
 
+    // Every suffix must survive being written and read back: the hyphenated ones did not,
+    // because the whole suffix was capitalized (`Json-seq`) rather than each word.
+    test(m"every suffix round-trips through its rendered form"):
+      Array.unsafeFrozen(Media.Suffix.values).readable.toList.map: suffix =>
+        t"application/thing+${suffix.name}".as[MediaType].suffixes
+    . assert(_ == Array.unsafeFrozen(Media.Suffix.values).readable.toList.map(List(_)))
+
+    test(m"parse a hyphenated suffix"):
+      t"application/thing+json-seq".as[MediaType].suffixes
+    . assert(_ == List(Media.Suffix.JsonSeq))
+
+    test(m"parse a multi-word suffix"):
+      t"application/thing+fast-infoset".as[MediaType].suffixes
+    . assert(_ == List(Media.Suffix.FastInfoset))
+
+    test(m"a suffix shows as it is written in a media type"):
+      (Media.Suffix.JsonSeq.show, Media.Suffix.FastInfoset.show, Media.Suffix.Zip.show)
+    . assert(_ == (t"json-seq", t"fast-infoset", t"zip"))
+
+    test(m"parse several suffixes"):
+      t"application/thing+xml+gzip".as[MediaType].suffixes
+    . assert(_ == List(Media.Suffix.Xml, Media.Suffix.Gzip))
+
+    test(m"an unknown suffix is rejected"):
+      capture[MediaType.Error](t"application/thing+wobble".as[MediaType]).reason
+    . assert(_ == MediaType.Error.Reason.InvalidSuffix(t"wobble"))
+
+    test(m"a parameter without a value is rejected"):
+      capture[MediaType.Error](t"text/plain; foo".as[MediaType]).reason
+    . assert(_ == MediaType.Error.Reason.MissingParam)
+
+    test(m"a media type with parameters round-trips"):
+      t"application/json; charset=UTF-8".as[MediaType].show
+    . assert(_ == t"application/json; charset=UTF-8")
+
+    test(m"a vendor subtype round-trips"):
+      t"application/vnd.api+json".as[MediaType].pipe: mediaType =>
+        (mediaType.subtype, mediaType.show)
+    . assert(_ == (Media.Subtype.Vendor(t"api"), t"application/vnd.api+json"))
+
+    test(m"a personal subtype round-trips"):
+      t"application/prs.thing".as[MediaType].subtype
+    . assert(_ == Media.Subtype.Personal(t"thing"))
+
+    test(m"an experimental subtype round-trips"):
+      t"application/x-tar".as[MediaType].pipe: mediaType =>
+        (mediaType.subtype, mediaType.show)
+    . assert(_ == (Media.Subtype.X(t"tar"), t"application/x-tar"))
+
+    suite(m"File extensions"):
+      test(m"a known extension is recognised"):
+        Extensions.guess(t"png")
+      . assert(_ == media"image/png")
+
+      test(m"an unknown extension falls back to octet-stream"):
+        Extensions.guess(t"wobble")
+      . assert(_ == media"application/octet-stream")
+
+      test(m"every extension maps to a parsable media type"):
+        Extensions.mediaTypes.values.map(_.show).map(_.as[MediaType])
+      . assert(_ == Extensions.mediaTypes.values)
+
     test(m"invalid media type"):
       capture(t"applicationjson".as[MediaType])
     . assert(_ == MediaType.Error(t"applicationjson",
