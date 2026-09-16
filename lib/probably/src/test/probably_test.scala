@@ -32,6 +32,8 @@
                                                                                                   */
 package probably
 
+import java.util.concurrent as juc
+
 import soundness.*
 
 enum Codec:
@@ -49,7 +51,71 @@ def listing(terms: List[Text] = Nil): Runner[Unit] =
   Runner(Selection.parse(terms).copy(listOnly = true))
 
 object Tests extends Suite(m"Probably Tests"):
+  // The event sequence of a suite invoked with `terms`, as `label`s, with the exit status.
+  def label(event: TestEvent): Text = event match
+    case TestEvent.SuiteStarted(ref, _)             => t"suite-started:${ref.name}"
+    case TestEvent.SuiteEnded(ref, _)               => t"suite-ended:${ref.name}"
+    case TestEvent.TestScheduled(ref, _, _, _, _)   => t"scheduled:${ref.name}"
+    case TestEvent.TestStarted(ref, _)              => t"started:${ref.name}"
+    case TestEvent.TestEnded(ref, _)                => t"ended:${ref.name}"
+    case TestEvent.TestCompleted(ref, _, _, outcome, _, _) => t"completed:${ref.name}:${outcome.outcome}"
+    case TestEvent.RunCompleted(passed, _)          => if passed then t"run-completed:true" else t"run-completed:false"
+    case TestEvent.RunTerminated(_, active, _)      => t"run-terminated:${active.map(_.name).join(t",")}"
+    case _                                          => t"other"
+
+  def invoked(suite: Suite, terms: Text): (Int, scala.List[Text]) =
+    val events: juc.ConcurrentLinkedQueue[TestEvent] = juc.ConcurrentLinkedQueue()
+    val exit = suite.invoke(terms, event => events.add(event))
+    val labels = scala.collection.mutable.ListBuffer[Text]()
+    events.forEach(event => labels.append(label(event.nn)))
+    (exit, labels.toList)
+
+  def index(labels: scala.List[Text], label: Text): Int = labels.indexOf(label)
+  def verdicts(labels: scala.List[Text]): scala.collection.immutable.Set[Text] = labels.filter(_.starts(t"completed:")).toSet
+
   def run(): Unit =
+    suite(m"Queued execution"):
+      test(m"--workers parses, and defaults to none"):
+        scala.List(t"--workers=2", t"--workers=0", t"--workers=-1", t"--workers=many", t"**")
+        . map(term => Selection.parse(List(term)).workers)
+      . assert(_ == scala.List(2, 0, 0, 0, 0))
+
+      test(m"an inline run queues nothing"):
+        invoked(Probe(), t"")(1).filter(_.starts(t"scheduled:"))
+      . assert(_ == scala.Nil)
+
+      test(m"queued and inline runs reach the same verdicts and exit status"):
+        val direct = invoked(Probe(), t"")
+        val queued = invoked(Probe(), t"--workers=1")
+        (direct(0), queued(0), verdicts(direct(1)) == verdicts(queued(1)))
+      . assert(_ == (1, 1, true))
+
+      test(m"every queued assertion is announced before it starts"):
+        val labels = invoked(Probe(), t"--workers=1")(1)
+        scala.List(t"one", t"three", t"four", t"five").map: name =>
+          index(labels, t"scheduled:$name") < index(labels, t"started:$name")
+      . assert(_ == scala.List(true, true, true, true))
+
+      test(m"a check runs inline and its value reaches a later assertion"):
+        invoked(Probe(), t"--workers=1")(1).filter(_.starts(t"completed:three"))
+      . assert(_ == scala.List(t"completed:three:pass"))
+
+      test(m"a suite ends only after its last queued assertion, and the run after every suite"):
+        val labels = invoked(Probe(), t"--workers=1")(1)
+        ( index(labels, t"suite-ended:inner") > index(labels, t"completed:five:fail"),
+          labels.last == t"run-completed:false",
+          index(labels, t"suite-ended:probe") > index(labels, t"completed:six:aspire-fail") )
+      . assert(_ == (true, true, true))
+
+      test(m"several workers reach the same verdicts"):
+        verdicts(invoked(Probe(), t"--workers=4")(1))
+      . assert(_ == verdicts(invoked(Probe(), t"")(1)))
+
+      test(m"an error escaping a worker terminates the run, after the traversal"):
+        val (exit, labels) = invoked(Escaping(), t"--workers=1")
+        (exit, labels.exists(_.starts(t"run-terminated:")), labels.contains(t"scheduled:after"))
+      . assert(_ == (2, true, true))
+
     test(n"square", m"square a number", n"quick")(3*3).assert(_ == 9)
 
     test(m"double every value").over(Axis(t"n")(1, 2, 3, 4)): n =>

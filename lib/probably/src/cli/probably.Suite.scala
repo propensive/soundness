@@ -73,6 +73,13 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
           if suite then TestEvent.SuiteEnded(TestEvent.Ref.of(id), jl.System.currentTimeMillis)
           else TestEvent.TestEnded(TestEvent.Ref.of(id), jl.System.currentTimeMillis)
 
+      // A queued assertion is announced as the listing announces a test, so a host can show
+      // the row before a worker reaches it; a plain check has no axes and no duration.
+      override def scheduled(report: Report, id: Test.Id): Unit =
+        report.emit:
+          TestEvent.TestScheduled
+            (TestEvent.Ref.of(id), TestEvent.kindName(Entry.Kind.Check), Unset, id.tags.map(_.text), Nil)
+
   private def makeRunner(selection: Selection, sink: Optional[TestEvent -> Unit])
   :   Runner[Report] =
 
@@ -138,6 +145,9 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
 
       try
         runner.suite(testableView, run())
+        // The traversal is done; the queued assertions, if any, are not. `passed` is decided
+        // by `complete` from what has been recorded, so every worker finishes first.
+        runner.drain()
         if runner.admitted == 0 && !selection.trivial then sink(TestEvent.NothingMatched(0))
         runner.complete()
         if runner.report.passed then 0 else 1

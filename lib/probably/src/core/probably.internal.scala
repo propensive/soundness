@@ -52,13 +52,15 @@ object internal:
       predicate:    Expr[test => Boolean],
       action:       Expr[Trial[test] => result],
       aspirational: Boolean,
-      discard:      Boolean )
+      discard:      Boolean,
+      verified:     Boolean )
   :   Macro[result] =
 
     import quotes.reflect.*
 
     val aspirationalExpr: Expr[Boolean] = Expr(aspirational)
     val discardExpr: Expr[Boolean] = Expr(discard)
+    val verifiedExpr: Expr[Boolean] = Expr(verified)
 
     Expr.summon[Runner[?]].getOrElse(halt(m"No `Runner` instance is available")).absolve match
       case '{$runner: Runner[report]} =>
@@ -114,7 +116,8 @@ object internal:
                   Decomposable.any[test],
                   $aspirationalExpr,
                   Nil,
-                  $discardExpr )
+                  $discardExpr,
+                  $verifiedExpr )
             }
 
         if analyse.or(false) then exp match
@@ -143,7 +146,8 @@ object internal:
                     decompose,
                     $aspirationalExpr,
                     Nil,
-                    $discardExpr )
+                    $discardExpr,
+                    $verifiedExpr )
               }
 
           case _ =>
@@ -156,7 +160,7 @@ object internal:
   // executes (it just records nothing); `assert` and `aspire` results are discardable, so
   // unselected ones never run at all.
   def check[test: Type](test: Expr[Test[test]^], predicate: Expr[test => Boolean]): Macro[test] =
-    handle[test, test](test, predicate, '{(t: Trial[test]) => t.get}, false, false)
+    handle[test, test](test, predicate, '{(t: Trial[test]) => t.get}, false, false, false)
 
   // `assert` takes a pure `Test` (see `Test.assert`); `handle` accepts a capturing one, to
   // which a pure one conforms, so the runtime path is shared with `check` and `aspire`. The
@@ -164,11 +168,20 @@ object internal:
   // hold an inline method's arguments to its parameter types (the call has been expanded by
   // then), so `assert`'s own signature would not reject a capturing test. A call to a plain
   // method inside the expansion does, at the assertion site.
+  //
+  // The gate only bites where the unit is capture checked. Whether it was is recorded in the
+  // expansion (`verified`): a runner defers only assertions the compiler has actually seen to
+  // be pure, so a suite compiled without capture checking keeps running inline, in order —
+  // its assertions may close over anything, and one queued past its scope could hang a run.
   def assert[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[Unit] =
-    handle[test, Unit]('{pure[test]($test)}, predicate, '{_ => ()}, false, true)
+    handle[test, Unit]('{pure[test]($test)}, predicate, '{_ => ()}, false, true, captureChecked)
 
   def aspire[test: Type](test: Expr[Test[test]^], predicate: Expr[test => Boolean]): Macro[Unit] =
-    handle[test, Unit](test, predicate, '{_ => ()}, true, true)
+    handle[test, Unit](test, predicate, '{_ => ()}, true, true, false)
+
+  private def captureChecked(using Quotes): Boolean =
+    val context = quotes.asInstanceOf[scala.quoted.runtime.impl.QuotesImpl].ctx
+    dotty.tools.dotc.config.Feature.ccEnabled(using context)
 
   def pure[test](test: Test[test]): Test[test] = test
 
@@ -186,7 +199,8 @@ object internal:
       decomposable: test is Decomposable,
       aspirational: Boolean,
       coordinates:  List[(Axis.Spec, Value)],
-      discard:      Boolean )
+      discard:      Boolean,
+      verified:     Boolean )
   :   result =
 
     val selected = !runner.skip(test.id, Entry.Kind.Check, coordinates)
@@ -194,7 +208,8 @@ object internal:
     // A discardable, unselected assertion never runs; an unselected `check` must still run
     // (its value flows onward) but records nothing. The cast is sound: `discard` is true
     // only for `assert`/`aspire`, whose `result` is `Unit`.
-    if discard && !selected then ().asInstanceOf[result] else
+    //
+    def execute(): result =
       runner.run(test).pipe: run =>
         val verdict = run match
           case Trial.Throws(err, duration, map) =>
@@ -233,3 +248,14 @@ object internal:
 
         if selected then inc.include(runner.report, test.id, coordinates, verdict)
         result(run)
+
+    // A selected, discardable, non-aspirational assertion — an `assert`, whose body the
+    // compiler has VERIFIED pure (see `Test.assert` and `internal.assert`) — is QUEUED when
+    // the runner has workers: the traversal carries on and a worker runs it later. `check`
+    // (its value flows onward), `aspire` (its body may capture) and an assertion from a unit
+    // compiled without capture checking always run inline.
+    if discard && !selected then ().asInstanceOf[result]
+    else if discard && !aspirational && verified && runner.queued then
+      runner.defer(test.id, () => execute())
+      ().asInstanceOf[result]
+    else execute()

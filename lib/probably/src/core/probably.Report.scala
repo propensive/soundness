@@ -192,6 +192,10 @@ final class Report():
   // adapted here rather than being one.
   private given ordering: Ordering[Test.Id] = Test.Id.comparable.ordering
 
+  // Written by whichever thread records a verdict — a queued runner's workers among them —
+  // so guarded, as the entries' cells are.
+  private val detailsMutex: Mutex = Mutex()
+
   private[probably] val details: scm.SortedMap[Test.Id, scm.ArrayBuffer[Verdict.Detail]] =
     scm.TreeMap[Test.Id, scm.ArrayBuffer[Verdict.Detail]]()
     . withDefault(_ => scm.ArrayBuffer[Verdict.Detail]())
@@ -246,7 +250,7 @@ final class Report():
           headline.let: metric => entry.headline = metric
 
   def addDetail(testId: Test.Id, info: Verdict.Detail): Report =
-    this.also(details(testId) = details(testId).append(info))
+    this.also(detailsMutex { details(testId) = details(testId).append(info) })
 
   // Sets the comparison anchor of a test's entry: the axis value against which its other
   // cells are compared. A no-op if the test recorded no cells at all.

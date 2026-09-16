@@ -119,7 +119,8 @@ object Spread:
             Decomposable.any[result],
             aspirational,
             coordinates,
-            true )
+            true,
+            false )
 
 // A test spread over the domains of two axes: one cell per combination the body defines,
 // rendered as a grid with gaps at undefined combinations.
@@ -200,4 +201,5 @@ object Spread2:
               Decomposable.any[result],
               aspirational,
               coordinates,
-              true )
+              true,
+              false )

@@ -32,30 +32,35 @@
                                                                                                   */
 package probably
 
-import beneficence.*
+import scala.language.experimental.captureChecking
 
-object Reporter:
-  given report: Reporter[Report]:
-    def report(): Report = Report()
-    def declare(report: Report, suite: Testable): Unit = report.declare(suite)
+import soundness.*
 
-    def fail(report: Report, error: Throwable, active: Set[Test.Id]): Unit =
-      report.fail(error, active)
+// Capture checked, so the assertions below are VERIFIED pure and a queued runner defers them;
+// the rest of this module is not, and its assertions run inline whatever the workers.
+// Suites driven by the tests below through `invoke`, with an event sink: classes, not
+// objects, so the suite index does not list them as suites of their own.
+class Probe extends Suite(m"probe"):
+  def run(): Unit =
+    test(m"one")(1).assert(_ == 1)
 
-    def complete(report: Report): Unit = report.complete()
+    // A `check` runs inline, and its value feeds an assertion queued later.
+    val value: Int = test(m"two")(21).check(_ == 21)
+    test(m"three")(value*2).assert(_ == 42)
 
-trait Reporter[report] extends Findable:
-  def report(): report
-  def fail(report: report, error: Throwable, active: Set[Test.Id]): Unit
-  def declare(report: report, suite: Testable): Unit
-  def complete(report: report): Unit
+    suite(m"inner"):
+      test(m"four")(4).assert(_ == 4)
+      test(m"five")(5).assert(_ == 6)
 
-  // Execution brackets, called by `Runner` as a test (or nested suite, when `suite`) begins
-  // and ends. Defaulted to nothing; an event-emitting reporter overrides them to produce
-  // progress events.
-  def started(report: report, id: Test.Id, suite: Boolean): Unit = ()
-  def ended(report: report, id: Test.Id, suite: Boolean): Unit = ()
+    test(m"six")(6).aspire(_ == 7)
 
-  // A test the runner has QUEUED for a worker (see `Runner.defer`): it will start and end
-  // later, in a worker's brackets, possibly after the suite that declared it has exited.
-  def scheduled(report: report, id: Test.Id): Unit = ()
+// An `Error` is not an `Exception`: it escapes the test's own bracket and, from a worker,
+// must surface as the run's termination.
+class Escaping extends Suite(m"escaping"):
+  def run(): Unit =
+    test(m"before")(1).assert(_ == 1)
+    test(m"boom"):
+      throw new java.lang.Error("escaped")
+    . assert(_ => true)
+    test(m"after")(2).assert(_ == 2)
+

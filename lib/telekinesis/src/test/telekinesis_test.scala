@@ -601,6 +601,8 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       import socketBackends.javaBaseSockets
 
+      // `check`s, not assertions: the server is a plain JDK object the capture checker does
+      // not track, stopped when this block exits, so a runner must not defer these past it.
       val backend: Http.Backend = httpBackends.soundnessHttp
 
       def fetchNative(target: Text, method: Http.Method = Http.Get, body: Text = t"")
@@ -616,34 +618,34 @@ object Tests extends Suite(m"Telekinesis tests"):
         val response = fetchNative(t"/fixed")
         (response.status, response.body.stream.memoize.utf8)
 
-      . assert(_ == (Http.Ok, t"Hello, native!"))
+      . check(_ == (Http.Ok, t"Hello, native!"))
 
       test(m"Fetch a chunked response over a raw TCP socket"):
         fetchNative(t"/chunked").body.stream.memoize.utf8
 
-      . assert(_ == t"HelloWorld")
+      . check(_ == t"HelloWorld")
 
       test(m"An error status is conveyed"):
         fetchNative(t"/missing").status
 
-      . assert(_ == Http.NotFound)
+      . check(_ == Http.NotFound)
 
       test(m"A response to HEAD has no body"):
         fetchNative(t"/fixed", Http.Head).body
 
-      . assert(_ == Http.Body.Empty)
+      . check(_ == Http.Body.Empty)
 
       test(m"A request body is transmitted"):
         fetchNative(t"/echo", Http.Post, t"ping-pong").body.stream.memoize.utf8
 
-      . assert(_ == t"ping-pong")
+      . check(_ == t"ping-pong")
 
       test(m"Sequential requests reuse a kept-alive connection"):
         val first = fetchNative(t"/port").body.stream.memoize.utf8
         val second = fetchNative(t"/port").body.stream.memoize.utf8
         first == second
 
-      . assert(_ == true)
+      . check(_ == true)
 
       test(m"A session pins one connection across its fetches"):
         val target = t"http://127.0.0.1:$port".as[HttpUrl]
@@ -656,7 +658,7 @@ object Tests extends Suite(m"Telekinesis tests"):
           val second = session.fetch(request).body.stream.memoize.utf8
           first == second
 
-      . assert(_ == true)
+      . check(_ == true)
 
       // A session survives an unconsumed streaming response: the next fetch
       // drains the previous body's remainder to reach the response boundary.
@@ -670,7 +672,7 @@ object Tests extends Suite(m"Telekinesis tests"):
           session.fetch(request) // never consumed
           session.fetch(request).body.stream.memoize.utf8
 
-      . assert(_ == t"Hello, native!")
+      . check(_ == t"Hello, native!")
 
       server.stop(0)
 
