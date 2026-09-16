@@ -31,33 +31,33 @@
                                                                                                   */
 package scintillate
 
-import contingency.*, strategies.throwUnsafely
-import eucalyptus.*, logging.silentLogging
-import gossamer.*
-import hieroglyph.charEncoders.utf8Encoder
-import parasite.*, probates.awaitProbate
-import proscenium.*
-import telekinesis.*
-import webserverErrorPages.minimalErrorPage
-
-// The real-socket HTTP requests-per-second comparison: scintillate's `SocketServer`
-// against the FS2 ecosystem's server (http4s ember, built directly on `fs2.io.net`)
-// and zio-http, with an in-process load generator. One stress operation is one
+// The real-socket HTTP comparison: scintillate's servers against the JVM's mainstream
+// (raw Netty, Undertow, Jetty), its virtual-thread servers (Helidon SE, the JDK's own
+// `HttpServer`) and the Scala ecosystems' (http4s ember, zio-http, Pekko HTTP, Cask,
+// Vert.x), with an in-process load generator. One stress operation is one
 // request/response round-trip on a per-worker persistent keep-alive socket, so the
 // harness's latency histogram and capacity search read directly as per-request
 // latency and sustained requests per second.
+//
+// Every server answers the five `HttpWorkload`s on its own port, written the way its
+// own users would write it: default runtime, keep-alive, logging silenced, and the JSON
+// library of its own ecosystem (circe for http4s, zio-json for zio-http, spray-json for
+// Pekko, upickle for Cask, jacinta for scintillate, Jackson for the Java servers). The
+// JSON row is therefore a comparison of stacks, not of servers alone — deliberately so,
+// since that is what a user of each stack would pay. Before a server's first row is
+// measured, `verify` sends each workload once and compares the whole response body
+// byte-for-byte with the expected one, so a server that answers wrongly fails the row
+// rather than skewing it.
 //
 // Server and clients share the measurement JVM: the client work steals server CPU,
 // but steals it identically for every server, so the figures are relative — a
 // two-machine harness would report higher absolute rates. Each stress row runs in
 // its own measurement JVM, so each server lives in a `lazy val` forced by the
 // warmup (outside every timed window) and is torn down by JVM exit: no stop logic,
-// no cross-row port conflicts, and never two servers alive at once. Every server
-// answers `GET /bench` with an identical 13-byte `text/plain` body over keep-alive,
-// with logging silenced.
+// no cross-row port conflicts, and never two servers alive at once.
 //
 // The client is deliberately dumber than any HTTP client library (which would be a
-// fourth variable): it writes pre-serialized request bytes and scans the response
+// further variable): it writes pre-serialized request bytes and scans the response
 // only for `Content-Length`, allocation-free, so the server under test remains the
 // bottleneck. A response without `Content-Length` (e.g. chunked) fails the run
 // rather than letting a rival serve cheaper framing. At high worker counts the
@@ -68,27 +68,58 @@ import webserverErrorPages.minimalErrorPage
 // stressed.
 object HttpRivals:
   // The client deliberately fails fast on any protocol violation (truncation, missing
-  // `Content-Length`) by throwing: a failed operation should crash the row, not skew it.
+  // `Content-Length`, a wrong body) by throwing: a failed operation should crash the row,
+  // not skew it.
   import unsafeExceptions.canThrowAny
 
-  val scintillateVirtualPort: Int = 18080
-  val scintillatePlatformPort: Int = 18081
-  val emberPort: Int = 18082
-  val zioPort: Int = 18083
-  val reactorPort: Int = 18084
+  // Server identifiers; each server listens on `port(id)`.
+  val Reactor: Int = 0
+  val SocketServerVirtual: Int = 1
+  val SocketServerPlatform: Int = 2
+  val Ember: Int = 3
+  val ZioHttp: Int = 4
+  val Netty: Int = 5
+  val Undertow: Int = 6
+  val Jetty: Int = 7
+  val Helidon: Int = 8
+  val JdkHttpServer: Int = 9
+  val PekkoHttp: Int = 10
+  val Cask: Int = 11
+  val Vertx: Int = 12
+
+  def port(server: Int): Int = 18080 + server
+
+  // Force the server's `lazy val`: the first call in a measurement JVM starts and verifies
+  // it (during warmup); every later call is a field read.
+  def ensure(server: Int): Unit =
+    watchdog
+
+    server match
+      case Reactor              => RivalScintillate.reactor
+      case SocketServerVirtual  => RivalScintillate.virtual
+      case SocketServerPlatform => RivalScintillate.platform
+      case Ember                => RivalEmber.server
+      case ZioHttp              => RivalZio.server
+      case Netty                => RivalNetty.server
+      case Undertow             => RivalUndertow.server
+      case Jetty                => RivalJetty.server
+      case Helidon              => RivalHelidon.server
+      case JdkHttpServer        => RivalJdk.server
+      case PekkoHttp            => RivalPekko.server
+      case Cask                 => RivalCask.server
+      case Vertx                => RivalVertx.server
+
+      case _ =>
+        throw new java.lang.IllegalArgumentException(s"no server numbered $server")
 
   // ── The client ─────────────────────────────────────────────────────────────
-
-  val requestBytes: scala.Array[Byte] =
-    "GET /bench HTTP/1.1\r\nHost: localhost\r\nAccept: text/plain\r\nUser-Agent: bench\r\n\r\n"
-    . getBytes("US-ASCII").nn
 
   private val contentLengthHeader: scala.Array[Byte] = "content-length:".getBytes("US-ASCII").nn
 
   final class Connection(val owner: Thread, val socket: java.net.Socket):
     val out: java.io.OutputStream = socket.getOutputStream.nn
     val in: java.io.BufferedInputStream =
-      new java.io.BufferedInputStream(socket.getInputStream.nn, 8192)
+      new java.io.BufferedInputStream(socket.getInputStream.nn, 65536)
     val line: scala.Array[Byte] = new scala.Array[Byte](1024)
 
   // Each stress window spawns fresh worker threads, so a plain `ThreadLocal` would
@@ -98,12 +129,7 @@ object HttpRivals:
   private val registry = new java.util.concurrent.ConcurrentLinkedQueue[Connection]()
   private val local = new java.lang.ThreadLocal[Connection]()
 
-  private def connect(port: Int): Connection =
-    registry.removeIf: connection =>
-      if connection.owner.isAlive then false else
-        try connection.socket.close() catch case _: java.io.IOException => ()
-        true
-
+  private def open(port: Int): Connection =
     var connection: Connection | Null = null
     var attempts = 0
 
@@ -119,25 +145,62 @@ object HttpRivals:
         then throw new java.lang.IllegalStateException(s"cannot connect to port $port")
         Thread.sleep(25)
 
-    val result = connection.nn
+    connection.nn
+
+  private def connect(port: Int): Connection =
+    registry.removeIf: connection =>
+      if connection.owner.isAlive then false else
+        try connection.socket.close() catch case _: java.io.IOException => ()
+        true
+
+    val result = open(port)
     local.set(result)
     registry.add(result)
     result
 
-  // One operation: write the request, read the response. A worker's first operation
-  // (per window) additionally pays for its connect, one inflated sample per worker
-  // per window; a broken connection is re-established once.
-  def roundtrip(port: Int): Int =
+  // One operation: write the workload's request, read the response. A worker's first
+  // operation (per window) additionally pays for its connect, one inflated sample per
+  // worker per window; a broken connection is re-established once.
+  def roundtrip(server: Int, workload: Int): Int =
     val connection = local.get() match
-      case null             => connect(port)
+      case null             => connect(port(server))
       case held: Connection => held
 
-    try exchange(connection) catch case _: java.io.IOException =>
+    try exchange(connection, workload, null) catch case _: java.io.IOException =>
       try connection.socket.close() catch case _: java.io.IOException => ()
-      exchange(connect(port))
+      exchange(connect(port(server)), workload, null)
 
-  private def exchange(connection: Connection): Int =
-    connection.out.write(requestBytes)
+  // Send every workload once over a fresh connection and compare each body in full with
+  // the expected one.
+  def verify(server: Int): Unit =
+    val connection = open(port(server))
+
+    try
+      var workload = 0
+
+      while workload < HttpWorkload.count do
+        val expected = HttpWorkload.expected(workload)
+        val body = new scala.Array[Byte](expected.length.max(1024))
+        val length = exchange(connection, workload, body)
+
+        if length != expected.length
+            || !java.util.Arrays.equals(body, 0, length, expected, 0, length)
+        then
+          val name = HttpWorkload.names(workload)
+          val text = if length > 1024 then "" else String(body, 0, length, "UTF-8")
+          throw new java.lang.IllegalStateException
+            ( s"server $server answered $name with a wrong $length-byte body: $text" )
+
+        workload += 1
+
+    finally connection.socket.close()
+
+  // Read the response; its body is skipped, or copied into `capture` when one is given and
+  // the body fits.
+  private def exchange(connection: Connection, workload: Int, capture: scala.Array[Byte] | Null)
+  :   Int =
+
+    connection.out.write(HttpWorkload.requests(workload))
     connection.out.flush()
 
     var contentLength = -1
@@ -151,15 +214,18 @@ object HttpRivals:
     if contentLength < 0
     then throw new java.io.IOException("response without Content-Length")
 
-    var remaining: Long = contentLength
+    if capture != null && contentLength <= capture.length
+    then connection.in.readNBytes(capture, 0, contentLength)
+    else
+      var remaining: Long = contentLength
 
-    while remaining > 0 do
-      val skipped = connection.in.skip(remaining)
+      while remaining > 0 do
+        val skipped = connection.in.skip(remaining)
 
-      if skipped > 0 then remaining -= skipped
-      else if connection.in.read() < 0
-      then throw new java.io.IOException("truncated response body")
-      else remaining -= 1
+        if skipped > 0 then remaining -= skipped
+        else if connection.in.read() < 0
+        then throw new java.io.IOException("truncated response body")
+        else remaining -= 1
 
     contentLength
 
@@ -200,97 +266,38 @@ object HttpRivals:
 
       value
 
-  // ── The servers ────────────────────────────────────────────────────────────
+  // ── Server plumbing ────────────────────────────────────────────────────────
 
-  // Counted down never: parked on to hold a server's `supervise` scope (and so its
-  // Monitor and daemons) open for the lifetime of the measurement JVM.
-  private val forever = new java.util.concurrent.CountDownLatch(1)
+  // Counted down never: parked on to hold a server's scope open for the lifetime of the
+  // measurement JVM.
+  val forever = new java.util.concurrent.CountDownLatch(1)
 
-  private def awaitReady(port: Int): Unit =
+  // Wait for the server to accept, then check its answers.
+  def ready(server: Int): Unit =
     var attempts = 0
-    var ready = false
+    var accepting = false
 
-    while !ready do
+    while !accepting do
       try
-        val socket = new java.net.Socket("localhost", port)
+        val socket = new java.net.Socket("localhost", port(server))
         socket.close()
-        ready = true
+        accepting = true
       catch case _: java.io.IOException =>
         attempts += 1
-        if attempts > 200
-        then throw new java.lang.IllegalStateException(s"server on port $port never became ready")
+        if attempts > 400
+        then throw new java.lang.IllegalStateException(s"server $server never became ready")
         Thread.sleep(25)
 
-  val okHandler: Http.Connection ?=> Http.Response = Http.Response(Http.Ok)(t"Hello, World!")
+    verify(server)
 
-  // The `Threading` in force here selects the kind of thread `SocketServer`'s
-  // per-connection daemons run on — independent of the harness workers' threading.
-  // The launcher thread is virtual, hence a daemon: it never obstructs JVM exit.
-  private def startScintillate(port: Int)(using Threading): Unit =
-    Thread.ofVirtual.nn.start: () =>
-      supervise:
-        val service = SocketServer(port).handle(okHandler)
-        forever.await()
-        service.cancel()
-
-    awaitReady(port)
-
-  lazy val scintillateVirtual: Unit =
-    startScintillate(scintillateVirtualPort)(using threading.virtualThreading)
-
-  // The event-loop front-end: handlers inline on the selector lanes.
-  lazy val scintillateReactor: Unit =
-    val server = Reactor(reactorPort)(okHandler)
-    awaitReady(reactorPort)
-
-  lazy val scintillatePlatform: Unit =
-    startScintillate(scintillatePlatformPort)(using threading.platformThreading)
-
-  // Ember runs on the global `IORuntime`, exactly as its own users run it; the
-  // `Resource` finalizer is deliberately discarded, since JVM exit is teardown.
-  lazy val emberServer: Unit =
-    import cats.effect.IO
-    import cats.effect.unsafe.implicits.global
-    import org.http4s.implicits.*
-    import org.http4s.dsl.io.*
-    import com.comcast.ip4s.*
-
-    val app = org.http4s.HttpRoutes.of[IO]:
-      case GET -> Root / "bench" => Ok("Hello, World!")
-
-    val server =
-      org.http4s.ember.server.EmberServerBuilder.default[IO]
-      . withHost(host"127.0.0.1")
-      . withPort(port"18082")
-      . withHttpApp(app.orNotFound)
-      . build.allocated.unsafeRunSync()
-
-    awaitReady(emberPort)
-
-  // zio-http's Netty event-loop threads are non-daemon (ZIO's own `ZScheduler` workers
-  // are daemon), so once the measurement JVM's `main` returns, the process would never
-  // exit and the harness would wait on it forever. The watchdog joins `main` from a
-  // daemon thread and halts the JVM the moment it finishes — by which point the
-  // results are already on stdout.
-  private def haltWhenMainExits(): Unit =
+  // Several rivals (zio-http's and Vert.x's Netty event loops, Pekko's dispatchers,
+  // Undertow's XNIO workers) run non-daemon threads, so once the measurement JVM's `main`
+  // returns, the process would never exit and the harness would wait on it forever. The
+  // watchdog joins `main` from a daemon thread and halts the JVM the moment it finishes —
+  // by which point the results are already on stdout.
+  private lazy val watchdog: Unit =
     Thread.getAllStackTraces.nn.keySet.nn.forEach: thread =>
       if thread.getName == "main" then
         Thread.ofVirtual.nn.start: () =>
           thread.join()
           java.lang.Runtime.getRuntime.nn.halt(0)
-
-  // zio-http on the default ZIO runtime, forked as a fiber; like ember, torn down
-  // only by JVM exit (which the watchdog above must force past Netty's non-daemon
-  // event loops).
-  lazy val zioServer: Unit =
-    import zio.http.*
-
-    haltWhenMainExits()
-
-    val routes = Routes(Method.GET / "bench" -> handler(Response.text("Hello, World!")))
-    val program = Server.serve(routes).provide(Server.defaultWithPort(zioPort))
-
-    zio.Unsafe.unsafe: (unsafe: zio.Unsafe) ?=>
-      zio.Runtime.default.unsafe.fork(program)
-
-    awaitReady(zioPort)

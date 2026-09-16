@@ -2940,14 +2940,29 @@ object scintillate extends Library:
   object test extends Tests(server, servlet, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
-  // The wire-codec benchmarks are dependency-free; the real-socket RPS comparison pulls the
-  // rival servers (http4s ember for the FS2 ecosystem, and zio-http) from Maven Central,
-  // exactly as `turbulence.bench` pulls its rival streaming libraries.
-  object bench extends Benchmarks(server, eucalyptus.core, quantitative.units):
+  // The real-socket comparison pulls its rival servers from Maven Central, exactly as
+  // `turbulence.bench` pulls its rival streaming libraries: http4s ember and zio-http, raw
+  // Netty, Undertow, Jetty, Helidon SE, Pekko HTTP, Cask and Vert.x, each with the JSON library
+  // its own users would reach for. Netty is pinned to the 4.2 line that both zio-http and
+  // Vert.x 5 build against, and Undertow to the 2.3 line Cask builds against.
+  object bench extends Benchmarks(server, eucalyptus.core, quantitative.units, jacinta.http):
     def mvnDeps = Seq(
       mvn"org.http4s::http4s-ember-server:0.23.30",
       mvn"org.http4s::http4s-dsl:0.23.30",
-      mvn"dev.zio::zio-http:3.3.3" )
+      mvn"org.http4s::http4s-circe:0.23.30",
+      mvn"io.circe::circe-generic:0.14.16",
+      mvn"dev.zio::zio-http:3.3.3",
+      mvn"dev.zio::zio-json:0.7.45",
+      mvn"io.netty:netty-codec-http:4.2.18.Final",
+      mvn"io.undertow:undertow-core:2.3.26.Final",
+      mvn"org.eclipse.jetty:jetty-server:12.1.13",
+      mvn"io.helidon.webserver:helidon-webserver:4.5.5",
+      mvn"org.apache.pekko::pekko-http:1.4.0",
+      mvn"org.apache.pekko::pekko-http-spray-json:1.4.0",
+      mvn"org.apache.pekko::pekko-stream:1.7.0",
+      mvn"com.lihaoyi::cask:0.11.3",
+      mvn"io.vertx:vertx-web:5.1.8",
+      mvn"com.fasterxml.jackson.core:jackson-databind:2.21.6" )
     // The rival servers' libraries don't build against explicit nulls and no-flexible-types;
     // drop just those two for the benchmark sources, mirroring `turbulence.bench`.
     override def scalacOptions = Task:
