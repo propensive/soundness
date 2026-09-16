@@ -77,193 +77,195 @@ object Tests extends Suite(m"Scintillate tests"):
       socket.close()
       response.tt
 
-    supervise:
-      // The reactor front-end: the HTTP fast path over real sockets — accumulation,
-      // end-of-head scanning, preset-cursor parsing, inline handlers and coalesced
-      // writes, across lanes.
-      suite(m"Reactor front-end"):
-        test(m"A GET is served by the reactor"):
-          val port = freePort()
-          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"from the reactor"))
-          try rawRequest(port, t"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
-          finally reactor.stop()
+    // The reactor front-end: the HTTP fast path over real sockets — accumulation,
+    // end-of-head scanning, preset-cursor parsing, inline handlers and coalesced
+    // writes, across lanes.
+    suite(m"Reactor front-end"):
+      test(m"A GET is served by the reactor"):
+        val port = freePort()
+        val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"from the reactor"))
+        try rawRequest(port, t"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        finally reactor.stop()
 
-        . assert(_.contains(t"from the reactor"))
+      . assert(_.contains(t"from the reactor"))
 
-        test(m"A fixed POST body reaches an inline handler"):
-          val port = freePort()
+      test(m"A fixed POST body reaches an inline handler"):
+        val port = freePort()
 
-          val reactor = Reactor(port, loops = 2):
-            Http.Response(Http.Ok)(request.body().memoize.utf8)
+        val reactor = Reactor(port, loops = 2):
+          Http.Response(Http.Ok)(request.body().memoize.utf8)
 
-          try
-            rawRequest(port, t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\n\r\nhello")
-          finally reactor.stop()
+        try
+          rawRequest(port, t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\n\r\nhello")
+        finally reactor.stop()
 
-        . assert(_.contains(t"hello"))
+      . assert(_.contains(t"hello"))
 
-        test(m"Two pipelined requests get two responses on one connection"):
-          val port = freePort()
-          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"pong"))
+      test(m"Two pipelined requests get two responses on one connection"):
+        val port = freePort()
+        val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"pong"))
 
-          try
-            val request = t"GET /a HTTP/1.1\r\nHost: x\r\n\r\nGET /b HTTP/1.1\r\nHost: x\r\n\r\n"
-            rawRequest(port, request)
-          finally reactor.stop()
+        try
+          val request = t"GET /a HTTP/1.1\r\nHost: x\r\n\r\nGET /b HTTP/1.1\r\nHost: x\r\n\r\n"
+          rawRequest(port, request)
+        finally reactor.stop()
 
-        . assert(_.s.split("200 OK").nn.length == 3)
+      . assert(_.s.split("200 OK").nn.length == 3)
 
-        test(m"A request split across many tiny writes is accumulated and served"):
-          val port = freePort()
-          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"assembled"))
+      test(m"A request split across many tiny writes is accumulated and served"):
+        val port = freePort()
+        val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"assembled"))
 
-          try
-            val socket = java.net.Socket("localhost", port)
-            val out = socket.getOutputStream.nn
-            val request = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes("US-ASCII").nn
+        try
+          val socket = java.net.Socket("localhost", port)
+          val out = socket.getOutputStream.nn
+          val request = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes("US-ASCII").nn
 
-            request.foreach: byte =>
-              out.write(scala.Array(byte))
-              out.flush()
-
-            socket.shutdownOutput()
-            val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII")
-            socket.close()
-            response.tt
-          finally reactor.stop()
-
-        . assert(_.contains(t"assembled"))
-
-        test(m"Concurrent connections across lanes are served independently"):
-          val port = freePort()
-
-          val reactor = Reactor(port, loops = 2):
-            Http.Response(Http.Ok)(request.target)
-
-          try
-            val results = scala.List.tabulate(8): index =>
-              rawRequest(port, t"GET /client-$index HTTP/1.1\r\nHost: x\r\n\r\n")
-
-            results.zipWithIndex.forall: (response, index) =>
-              response.contains(t"/client-$index")
-          finally reactor.stop()
-
-        . assert(_ == true)
-
-        test(m"A chunked request body escalates to the blocking path"):
-          val port = freePort()
-
-          val reactor = Reactor(port, loops = 2):
-            Http.Response(Http.Ok)(request.body().memoize.utf8)
-
-          try
-            rawRequest
-              ( port,
-                t"POST / HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n" )
-          finally reactor.stop()
-
-        . assert(_.contains(t"hello"))
-
-        test(m"A body above the inline limit escalates and reaches the handler"):
-          val port = freePort()
-
-          val reactor = Reactor(port, loops = 2):
-            Http.Response(Http.Ok)(t"length:${request.body().memoize.length}")
-
-          try
-            val body = String("x".repeat(100000).nn).tt
-            rawRequest(port, t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 100000\r\n\r\n$body")
-          finally reactor.stop()
-
-        . assert(_.contains(t"length:100000"))
-
-        test(m"Expect: 100-continue escalates and gets an interim response"):
-          val port = freePort()
-
-          val reactor = Reactor(port, loops = 2):
-            Http.Response(Http.Ok)(request.body().memoize.utf8)
-
-          try
-            rawRequest
-              ( port,
-                t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\nExpect: 100-continue\r\n\r\nworld" )
-          finally reactor.stop()
-
-        . assert: response =>
-            response.contains(t"100 Continue") && response.contains(t"world")
-
-        test(m"A slow reader is backpressured and still receives every response"):
-          val port = freePort()
-          val block = String("y".repeat(32768).nn).tt
-
-          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(block))
-
-          try
-            // Pipeline 64 requests (2 MiB of responses, far past the high-water mark)
-            // without reading a byte, so the connection's write queue fills, its read
-            // interest is withdrawn, and service resumes only as we drain.
-            val socket = java.net.Socket("localhost", port)
-            val out = socket.getOutputStream.nn
-            val request = "GET / HTTP/1.1\r\nHost: x\r\n\r\n".getBytes("US-ASCII").nn
-
-            var index = 0
-            while index < 64 do
-              out.write(request)
-              index += 1
-
+          request.foreach: byte =>
+            out.write(scala.Array(byte))
             out.flush()
-            Thread.sleep(200)
-            socket.shutdownOutput()
-            val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII")
-            socket.close()
-            response.tt
 
-          finally reactor.stop()
+          socket.shutdownOutput()
+          val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII")
+          socket.close()
+          response.tt
+        finally reactor.stop()
 
-        . assert(_.s.split("200 OK").nn.length == 65)
+      . assert(_.contains(t"assembled"))
 
-        test(m"SocketServer.handle serves through the reactor when selected"):
-          import frontends.reactiveFrontend
-          val port = freePort()
+      test(m"Concurrent connections across lanes are served independently"):
+        val port = freePort()
 
-          supervise:
-            val service = SocketServer(port).handle(Http.Response(Http.Ok)(t"via frontend"))
-            try rawRequest(port, t"GET / HTTP/1.1\r\nHost: x\r\n\r\n")
-            finally service.cancel()
+        val reactor = Reactor(port, loops = 2):
+          Http.Response(Http.Ok)(request.target)
 
-        . assert(_.contains(t"via frontend"))
+        try
+          val results = scala.List.tabulate(8): index =>
+            rawRequest(port, t"GET /client-$index HTTP/1.1\r\nHost: x\r\n\r\n")
 
-        test(m"An oversized head is refused with 431"):
-          val port = freePort()
-          val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"no"))
+          results.zipWithIndex.forall: (response, index) =>
+            response.contains(t"/client-$index")
+        finally reactor.stop()
 
-          try
-            val padding = String("x".repeat(80000).nn)
-            rawRequest(port, t"GET / HTTP/1.1\r\nHost: x\r\nPad: ${padding.tt}\r\n\r\n")
-          finally reactor.stop()
+      . assert(_ == true)
 
-        . assert(_.contains(t"431"))
+      test(m"A chunked request body escalates to the blocking path"):
+        val port = freePort()
 
-      suite(m"Native socket server"):
-        test(m"GET returns the handler's response body"):
+        val reactor = Reactor(port, loops = 2):
+          Http.Response(Http.Ok)(request.body().memoize.utf8)
+
+        try
+          rawRequest
+            ( port,
+              t"POST / HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n" )
+        finally reactor.stop()
+
+      . assert(_.contains(t"hello"))
+
+      test(m"A body above the inline limit escalates and reaches the handler"):
+        val port = freePort()
+
+        val reactor = Reactor(port, loops = 2):
+          Http.Response(Http.Ok)(t"length:${request.body().memoize.length}")
+
+        try
+          val body = String("x".repeat(100000).nn).tt
+          rawRequest(port, t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 100000\r\n\r\n$body")
+        finally reactor.stop()
+
+      . assert(_.contains(t"length:100000"))
+
+      test(m"Expect: 100-continue escalates and gets an interim response"):
+        val port = freePort()
+
+        val reactor = Reactor(port, loops = 2):
+          Http.Response(Http.Ok)(request.body().memoize.utf8)
+
+        try
+          rawRequest
+            ( port,
+              t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\nExpect: 100-continue\r\n\r\nworld" )
+        finally reactor.stop()
+
+      . assert: response =>
+          response.contains(t"100 Continue") && response.contains(t"world")
+
+      test(m"A slow reader is backpressured and still receives every response"):
+        val port = freePort()
+        val block = String("y".repeat(32768).nn).tt
+
+        val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(block))
+
+        try
+          // Pipeline 64 requests (2 MiB of responses, far past the high-water mark)
+          // without reading a byte, so the connection's write queue fills, its read
+          // interest is withdrawn, and service resumes only as we drain.
+          val socket = java.net.Socket("localhost", port)
+          val out = socket.getOutputStream.nn
+          val request = "GET / HTTP/1.1\r\nHost: x\r\n\r\n".getBytes("US-ASCII").nn
+
+          var index = 0
+          while index < 64 do
+            out.write(request)
+            index += 1
+
+          out.flush()
+          Thread.sleep(200)
+          socket.shutdownOutput()
+          val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII")
+          socket.close()
+          response.tt
+
+        finally reactor.stop()
+
+      . assert(_.s.split("200 OK").nn.length == 65)
+
+      test(m"SocketServer.handle serves through the reactor when selected"):
+        import frontends.reactiveFrontend
+        val port = freePort()
+
+        supervise:
+          val service = SocketServer(port).handle(Http.Response(Http.Ok)(t"via frontend"))
+          try rawRequest(port, t"GET / HTTP/1.1\r\nHost: x\r\n\r\n")
+          finally service.cancel()
+
+      . assert(_.contains(t"via frontend"))
+
+      test(m"An oversized head is refused with 431"):
+        val port = freePort()
+        val reactor = Reactor(port, loops = 2)(Http.Response(Http.Ok)(t"no"))
+
+        try
+          val padding = String("x".repeat(80000).nn)
+          rawRequest(port, t"GET / HTTP/1.1\r\nHost: x\r\nPad: ${padding.tt}\r\n\r\n")
+        finally reactor.stop()
+
+      . assert(_.contains(t"431"))
+
+    suite(m"Native socket server"):
+      test(m"GET returns the handler's response body"):
+        supervise:
           val port = freePort()
           val server = SocketServer(port).handle(Http.Response(Http.Ok)(t"hello from native"))
           val response = rawRequest(port, t"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
           server.cancel()
           response
 
-        . assert(_.contains(t"hello from native"))
+      . assert(_.contains(t"hello from native"))
 
-        test(m"Status line carries the handler's status"):
+      test(m"Status line carries the handler's status"):
+        supervise:
           val port = freePort()
           val server = SocketServer(port).handle(Http.Response(Http.NotFound)(t"nope"))
           val response = rawRequest(port, t"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
           server.cancel()
           response.cut(t"\r\n").stdlib.head
 
-        . assert(_ == t"HTTP/1.1 404 Not Found")
+      . assert(_ == t"HTTP/1.1 404 Not Found")
 
-        test(m"Request method and target reach the handler"):
+      test(m"Request method and target reach the handler"):
+        supervise:
           val port = freePort()
 
           val server = SocketServer(port).handle:
@@ -273,9 +275,10 @@ object Tests extends Suite(m"Scintillate tests"):
           server.cancel()
           response
 
-        . assert(_.contains(t"GET /foo/bar"))
+      . assert(_.contains(t"GET /foo/bar"))
 
-        test(m"A POST body is available to the handler"):
+      test(m"A POST body is available to the handler"):
+        supervise:
           val port = freePort()
 
           val server = SocketServer(port).handle:
@@ -287,9 +290,10 @@ object Tests extends Suite(m"Scintillate tests"):
           server.cancel()
           response
 
-        . assert(_.contains(t"hello"))
+      . assert(_.contains(t"hello"))
 
-        test(m"A chunked request body is decoded for the handler"):
+      test(m"A chunked request body is decoded for the handler"):
+        supervise:
           val port = freePort()
 
           val server = SocketServer(port).handle:
@@ -304,9 +308,10 @@ object Tests extends Suite(m"Scintillate tests"):
           server.cancel()
           response
 
-        . assert(_.contains(t"hello world"))
+      . assert(_.contains(t"hello world"))
 
-        test(m"Two pipelined requests get two responses on one connection"):
+      test(m"Two pipelined requests get two responses on one connection"):
+        supervise:
           val port = freePort()
           val server = SocketServer(port).handle(Http.Response(Http.Ok)(t"ok"))
 
@@ -318,9 +323,10 @@ object Tests extends Suite(m"Scintillate tests"):
           server.cancel()
           response.cut(t"HTTP/1.1 200 OK").size
 
-        . assert(_ == 3)
+      . assert(_ == 3)
 
-        test(m"Connection: close stops after one response"):
+      test(m"Connection: close stops after one response"):
+        supervise:
           val port = freePort()
           val server = SocketServer(port).handle(Http.Response(Http.Ok)(t"bye"))
 
@@ -330,9 +336,10 @@ object Tests extends Suite(m"Scintillate tests"):
           server.cancel()
           response
 
-        . assert(_.contains(t"connection: close"))
+      . assert(_.contains(t"connection: close"))
 
-        test(m"A 101 response upgrades to a raw bidirectional stream"):
+      test(m"A 101 response upgrades to a raw bidirectional stream"):
+        supervise:
           val port = freePort()
 
           // Echo upgrade: the response body is the post-handshake request stream,
@@ -351,9 +358,10 @@ object Tests extends Suite(m"Scintillate tests"):
           server.cancel()
           response
 
-        . assert(r => r.contains(t"101 Switching Protocols") && r.ends(t"PING"))
+      . assert(r => r.contains(t"101 Switching Protocols") && r.ends(t"PING"))
 
-        test(m"A streaming Text body via the char-encoder is returned (#1629)"):
+      test(m"A streaming Text body via the char-encoder is returned (#1629)"):
+        supervise:
           val port = freePort()
 
           // Serve a `Streamable by Text` value: `Servable` wraps it as an
@@ -378,9 +386,10 @@ object Tests extends Suite(m"Scintillate tests"):
           server.cancel()
           response
 
-        . assert(r => r.contains(t"line-0\n") && r.contains(t"line-3999\n"))
+      . assert(r => r.contains(t"line-0\n") && r.contains(t"line-3999\n"))
 
-        test(m"A streaming body from an async producer is fully returned"):
+      test(m"A streaming body from an async producer is fully returned"):
+        supervise:
           val port = freePort()
 
           // A body produced on a *separate fiber* and drained through the
@@ -425,13 +434,14 @@ object Tests extends Suite(m"Scintillate tests"):
           server.cancel()
           response
 
-        . assert(r => r.contains(t"line-0\n") && r.contains(t"line-3999\n"))
+      . assert(r => r.contains(t"line-0\n") && r.contains(t"line-3999\n"))
 
-      suite(m"Loopback load over real sockets"):
-        val clients = 32
-        val perClient = 300
+    suite(m"Loopback load over real sockets"):
+      val clients = 32
+      val perClient = 300
 
-        test(m"Concurrent clients pipelining keep-alive requests all succeed"):
+      test(m"Concurrent clients pipelining keep-alive requests all succeed"):
+        supervise:
           val port = freePort()
           val server = SocketServer(port).handle(Http.Response(Http.Ok)(t"pong"))
           val payload = (t"GET / HTTP/1.1\r\nHost: x\r\n\r\n"*perClient).s.getBytes("US-ASCII").nn
@@ -462,10 +472,11 @@ object Tests extends Suite(m"Scintillate tests"):
 
           total
 
-        . assert(_ == clients*perClient)
+      . assert(_ == clients*perClient)
 
-      suite(m"TLS"):
-        test(m"The server serves a request over TLS"):
+    suite(m"TLS"):
+      test(m"The server serves a request over TLS"):
+        supervise:
           // A throwaway self-signed certificate, generated with the JDK's keytool.
           val dir = java.nio.file.Files.createTempDirectory("scintillate-tls").nn
           val path = dir.resolve("test.p12").nn.toString.nn
@@ -513,46 +524,47 @@ object Tests extends Suite(m"Scintillate tests"):
           server.cancel()
           response
 
-        . assert(_.contains(t"secure"))
+      . assert(_.contains(t"secure"))
 
-      suite(m"Native HTTP/2 server"):
-        // A throwaway self-signed certificate, shared by the h2 tests below.
-        def serverContext(): javax.net.ssl.SSLContext =
-          val dir = java.nio.file.Files.createTempDirectory("scintillate-h2").nn
-          val path = dir.resolve("test.p12").nn.toString.nn
+    suite(m"Native HTTP/2 server"):
+      // A throwaway self-signed certificate, shared by the h2 tests below.
+      def serverContext(): javax.net.ssl.SSLContext =
+        val dir = java.nio.file.Files.createTempDirectory("scintillate-h2").nn
+        val path = dir.resolve("test.p12").nn.toString.nn
 
-          val keytool = java.lang.ProcessBuilder("keytool", "-genkeypair", "-alias", "test",
-              "-keyalg", "RSA", "-keysize", "2048", "-validity", "1", "-storetype", "PKCS12",
-              "-keystore", path, "-storepass", "changeit", "-dname", "CN=localhost")
+        val keytool = java.lang.ProcessBuilder("keytool", "-genkeypair", "-alias", "test",
+            "-keyalg", "RSA", "-keysize", "2048", "-validity", "1", "-storetype", "PKCS12",
+            "-keystore", path, "-storepass", "changeit", "-dname", "CN=localhost")
 
-          keytool.redirectErrorStream(true)
-          keytool.redirectOutput(java.lang.ProcessBuilder.Redirect.DISCARD)
-          keytool.start().nn.waitFor()
+        keytool.redirectErrorStream(true)
+        keytool.redirectOutput(java.lang.ProcessBuilder.Redirect.DISCARD)
+        keytool.start().nn.waitFor()
 
-          val password = "changeit".toCharArray.nn
-          val keystore = java.security.KeyStore.getInstance("PKCS12").nn
-          keystore.load(java.io.FileInputStream(path), password)
-          val keyManagers = javax.net.ssl.KeyManagerFactory.getInstance("SunX509").nn
-          keyManagers.init(keystore, password)
-          val context = javax.net.ssl.SSLContext.getInstance("TLS").nn
-          context.init(keyManagers.getKeyManagers, null, null)
-          context
+        val password = "changeit".toCharArray.nn
+        val keystore = java.security.KeyStore.getInstance("PKCS12").nn
+        keystore.load(java.io.FileInputStream(path), password)
+        val keyManagers = javax.net.ssl.KeyManagerFactory.getInstance("SunX509").nn
+        keyManagers.init(keystore, password)
+        val context = javax.net.ssl.SSLContext.getInstance("TLS").nn
+        context.init(keyManagers.getKeyManagers, null, null)
+        context
 
-        // A client SSL context that trusts any certificate.
-        def trustAllContext(): javax.net.ssl.SSLContext =
-          val trustManager = new javax.net.ssl.X509TrustManager:
-            type Certs = scala.Array[java.security.cert.X509Certificate | Null] | Null
-            def getAcceptedIssuers: Certs = scala.Array.empty[java.security.cert.X509Certificate | Null]
-            def checkClientTrusted(chain: Certs, kind: String | Null): Unit = ()
-            def checkServerTrusted(chain: Certs, kind: String | Null): Unit = ()
+      // A client SSL context that trusts any certificate.
+      def trustAllContext(): javax.net.ssl.SSLContext =
+        val trustManager = new javax.net.ssl.X509TrustManager:
+          type Certs = scala.Array[java.security.cert.X509Certificate | Null] | Null
+          def getAcceptedIssuers: Certs = scala.Array.empty[java.security.cert.X509Certificate | Null]
+          def checkClientTrusted(chain: Certs, kind: String | Null): Unit = ()
+          def checkServerTrusted(chain: Certs, kind: String | Null): Unit = ()
 
-          val context = javax.net.ssl.SSLContext.getInstance("TLS").nn
-          context.init(null, scala.Array(trustManager), java.security.SecureRandom())
-          context
+        val context = javax.net.ssl.SSLContext.getInstance("TLS").nn
+        context.init(null, scala.Array(trustManager), java.security.SecureRandom())
+        context
 
-        // The JDK HTTP client negotiates ALPN and speaks HTTP/2 automatically
-        // over TLS, so it exercises our server against a reference h2 client.
-        test(m"serves an HTTP/2 request negotiated by ALPN"):
+      // The JDK HTTP client negotiates ALPN and speaks HTTP/2 automatically
+      // over TLS, so it exercises our server against a reference h2 client.
+      test(m"serves an HTTP/2 request negotiated by ALPN"):
+        supervise:
           val port = freePort()
 
           val server =
@@ -571,9 +583,10 @@ object Tests extends Suite(m"Scintillate tests"):
           server.cancel()
           (response.version.nn.toString.nn.tt, response.body.nn.tt)
 
-        . assert(_ == (t"HTTP_2", t"h2-secure"))
+      . assert(_ == (t"HTTP_2", t"h2-secure"))
 
-        test(m"serves several HTTP/2 requests on one multiplexed connection"):
+      test(m"serves several HTTP/2 requests on one multiplexed connection"):
+        supervise:
           val port = freePort()
 
           val server = SocketServer(port, ssl = serverContext()).handle:
@@ -595,9 +608,10 @@ object Tests extends Suite(m"Scintillate tests"):
           server.cancel()
           results
 
-        . assert(_ == List(t"multiplexed", t"multiplexed", t"multiplexed"))
+      . assert(_ == List(t"multiplexed", t"multiplexed", t"multiplexed"))
 
-        test(m"a session shares per-connection state across its streams"):
+      test(m"a session shares per-connection state across its streams"):
+        supervise:
           val port = freePort()
 
           // The scope sets up a per-connection counter, shared by every stream
@@ -627,7 +641,7 @@ object Tests extends Suite(m"Scintillate tests"):
           server.cancel()
           results.sorted
 
-        . assert(_ == List(1, 2, 3))
+      . assert(_ == List(1, 2, 3))
 
     // Drive the connection loop entirely in memory — no socket, no threads — by
     // feeding request bytes through `serveConnection` and capturing the response.

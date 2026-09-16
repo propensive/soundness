@@ -1381,11 +1381,14 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == (t"again and again", t"again and again"))
 
     suite(m"Encryption"):
-      val padding: scala.Array[Byte] = scala.Array[Byte]
-        ( 0x28, 0xbf.toByte, 0x4e, 0x5e, 0x4e, 0x75, 0x8a.toByte, 0x41, 0x64, 0x00, 0x4e,
-          0x56, 0xff.toByte, 0xfa.toByte, 0x01, 0x08, 0x2e, 0x2e, 0x00, 0xb6.toByte,
-          0xd0.toByte, 0x68, 0x3e, 0x80.toByte, 0x2f, 0x0c, 0xa9.toByte, 0xfe.toByte,
-          0x64, 0x53, 0x69, 0x7a )
+      // Frozen: a suite-level JVM array charges every test closure that reads it with its
+      // `rd` capability, and an assertion's body must be pure.
+      val padding: Data = Array.unsafeFrozen:
+        scala.Array[Byte]
+          ( 0x28, 0xbf.toByte, 0x4e, 0x5e, 0x4e, 0x75, 0x8a.toByte, 0x41, 0x64, 0x00, 0x4e,
+            0x56, 0xff.toByte, 0xfa.toByte, 0x01, 0x08, 0x2e, 0x2e, 0x00, 0xb6.toByte,
+            0xd0.toByte, 0x68, 0x3e, 0x80.toByte, 0x2f, 0x0c, 0xa9.toByte, 0xfe.toByte,
+            0x64, 0x53, 0x69, 0x7a )
 
       def hexOf(bytes: scala.Array[Byte]): Text =
         val builder = StringBuilder()
@@ -1416,15 +1419,14 @@ object Tests extends Suite(m"Facsimile tests"):
       def rc4(key: scala.Array[Byte], data: scala.Array[Byte]): scala.Array[Byte] =
         Array.unsafeJvm(Rc4(Array.unsafeFrozen(key), Array.unsafeFrozen(data)))
 
-      // A PURE array type (the Java `copyOf` fluid result adapts): reads of a suite-level
-      // `rd`-charged array would otherwise be rejected inside the test closures.
-      val id: scala.Array[Byte] =
+      // Frozen, as `padding`.
+      val id: Data =
         val bytes = new scala.Array[Byte](16)
         var i = 0
         while i < 16 do
           bytes(i) = i.toByte
           i += 1
-        java.util.Arrays.copyOf(bytes, 16).nn
+        Array.unsafeFrozen(bytes)
 
       // Builds an RC4-encrypted document (revision 2 = 40-bit, revision 3 = 128-bit) of the
       // catalog plus one string-bearing object and one stream object.
@@ -1439,7 +1441,7 @@ object Tests extends Suite(m"Facsimile tests"):
           def stir(hash: scala.Array[Byte], count: Int): scala.Array[Byte] =
             if count >= 50 then hash
             else stir(md5(Array.unsafeFrozen(hash.take(keyBytes))), count + 1)
-          val hash = md5(Array.unsafeFrozen(padding))
+          val hash = md5(padding)
           (if revision >= 3 then stir(hash, 0) else hash).take(keyBytes)
 
         // The block reads `ownerKey`, whose Unscoped root is conflated with the fresh
@@ -1447,7 +1449,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val ownerEntry = scala.caps.unsafe.unsafeAssumeSeparate:
           def stir(value: scala.Array[Byte], i: Int): scala.Array[Byte] =
             if i > 19 then value else stir(rc4(xor(ownerKey, i), value), i + 1)
-          val value = rc4(ownerKey, padding)
+          val value = rc4(ownerKey, Array.unsafeJvm(padding))
           if revision >= 3 then stir(value, 1) else value
 
         val permBytes = scala.Array((permissions & 0xff).toByte, ((permissions >> 8) & 0xff).toByte,
@@ -1457,17 +1459,16 @@ object Tests extends Suite(m"Facsimile tests"):
           def stir(hash: scala.Array[Byte], count: Int): scala.Array[Byte] =
             if count >= 50 then hash
             else stir(md5(Array.unsafeFrozen(hash.take(keyBytes))), count + 1)
-          val hash = md5(Array.unsafeFrozen(padding), Array.unsafeFrozen(ownerEntry),
-              Array.unsafeFrozen(permBytes), Array.unsafeFrozen(id))
+          val hash = md5(padding, Array.unsafeFrozen(ownerEntry), Array.unsafeFrozen(permBytes), id)
           (if revision >= 3 then stir(hash, 0) else hash).take(keyBytes)
 
         // As `ownerEntry`: `fileKey` is read, never mutated.
         val userEntry = scala.caps.unsafe.unsafeAssumeSeparate:
-          if revision == 2 then rc4(fileKey, padding)
+          if revision == 2 then rc4(fileKey, Array.unsafeJvm(padding))
           else
             def stir(value: scala.Array[Byte], i: Int): scala.Array[Byte] =
               if i > 19 then value else stir(rc4(xor(fileKey, i), value), i + 1)
-            stir(rc4(fileKey, md5(Array.unsafeFrozen(padding), Array.unsafeFrozen(id))), 1)
+            stir(rc4(fileKey, md5(padding, id)), 1)
             ++ new scala.Array[Byte](16)
 
         def objectKey(number: Int, generation: Int): scala.Array[Byte] =
@@ -1507,7 +1508,7 @@ object Tests extends Suite(m"Facsimile tests"):
         offsets += out.length.toLong
         out = out ++ t"$encryptNumber 0 obj\n".in[Data] ++ encrypt.in[Data] ++ t"\nendobj\n".in[Data]
 
-        val idHex = hexOf(id)
+        val idHex = hexOf(Array.unsafeJvm(id))
         val xrefOffset = out.length
         out = out ++ t"xref\n0 ${encryptNumber + 1}\n0000000000 65535 f \n".in[Data]
 

@@ -50,9 +50,27 @@ import vacuous.*
 import symbolism.*
 
 object Test:
-  // The `Test` may capture (its block can close over a capability); the methods accept a capturing
-  // receiver so a test whose block uses a capability still type-checks, while `test` (the asserted
-  // result type) stays whatever the block produced — pure, when the block produces a pure value.
+  // An assertion's body must be PURE: it may close over no capability. The asserted result type
+  // is unaffected (a body that reads a `Text` through a decoder still asserts a plain `Text`);
+  // what the signature forbids is a body that reaches a capability declared around it — a
+  // `Monitor` from an enclosing `supervise`, an `Online`, a logger, a started server. Such a
+  // body is not deferrable: it could run after the block that scoped its capability has
+  // exited, or alongside a sibling sharing tracked mutable state. A body that needs one
+  // creates it inside itself (`supervise` within the test), or the test becomes a `check`,
+  // which accepts any body and runs it inline, its value flowing onward. `aspire` is likewise
+  // permissive: an aspiration is informational, so it runs inline, like a `check`.
+  //
+  // The purity is enforced in the macro (`internal.pure`), not by this signature alone: the
+  // capture checker does not hold an inline method's arguments to its parameter types.
+  extension [test](test: Test[test])
+    inline def assert(inline predicate: test => Boolean): Unit =
+      ${probably.internal.assert[test]('test, 'predicate)}
+
+    inline def assert(): Unit =
+      ${probably.internal.assert[test]('test, '{probably.internal.succeed})}
+
+    inline def matches(inline pf: test ~> Any): Unit = assert(pf.isDefinedAt(_))
+
   extension [test](test: Test[test]^)
     inline def aspire(inline predicate: test => Boolean): Unit =
       ${probably.internal.aspire[test]('test, 'predicate)}
@@ -60,19 +78,11 @@ object Test:
     inline def aspire(): Unit =
       ${probably.internal.aspire[test]('test, '{probably.internal.succeed})}
 
-    inline def assert(inline predicate: test => Boolean): Unit =
-      ${probably.internal.assert[test]('test, 'predicate)}
-
     inline def check(inline predicate: test => Boolean): test =
       ${probably.internal.check[test]('test, 'predicate)}
 
-    inline def assert(): Unit =
-      ${probably.internal.assert[test]('test, '{probably.internal.succeed})}
-
     inline def check(): test =
       ${probably.internal.check[test]('test, '{probably.internal.succeed})}
-
-    inline def matches(inline pf: test ~> Any): Unit = assert(pf.isDefinedAt(_))
 
   // TestId → Test.Id
   object Id:

@@ -77,9 +77,9 @@ object Tests extends Suite(m"Burdock Tests"):
 
     suite(m"Repackager partition"):
       val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
-      val resolve: Text => Optional[HttpUrl] = h => if h == t"aaa" then published else Unset
+      val resolve: Text -> Optional[HttpUrl] = h => if h == t"aaa" then published else Unset
       val classEntry = Zip.Entry(t"pkg/X.class".as[Path on Zip], t"bytes".in[Data])
-      val cached: Repackager.CacheReader =
+      val cached: Text -> Optional[List[Zip.Entry]] =
         h => if h == t"bbb" then (List(classEntry): List[Zip.Entry]) else Unset
 
       test(m"a published hash becomes a remote requirement"):
@@ -235,7 +235,7 @@ object Tests extends Suite(m"Burdock Tests"):
       val resolve: Repackager.Resolver =
         h => if h == t"aaa" then url"https://repo1.maven.org/maven2/g/a/1/a-1.jar" else Unset
 
-      val cached: Repackager.CacheReader =
+      val cached: Text -> Optional[List[Zip.Entry]] =
         h => if h == t"bbb" then (List(Zip.Entry(t"dep/Lib.class".as[Path on Zip], t"lib".in[Data])): List[Zip.Entry])
              else Unset
 
@@ -289,7 +289,7 @@ object Tests extends Suite(m"Burdock Tests"):
           #:: Chain() ).to[List]
 
       val resolve: Repackager.Resolver = _ => Unset
-      val cached: Repackager.CacheReader = _ => Unset
+      val cached: Text -> Optional[List[Zip.Entry]] = _ => Unset
 
       val summary =
         Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap".in[Data])
@@ -336,7 +336,7 @@ object Tests extends Suite(m"Burdock Tests"):
 
       val resolve: Repackager.Resolver = _ => Unset
 
-      val cached: Repackager.CacheReader = h =>
+      val cached: Text -> Optional[List[Zip.Entry]] = h =>
         if h == t"bbb"
         then proscenium.List
              ( Zip.Entry(t"dep/Lib.class".as[Path on Zip], t"cached-lib".in[Data]),
@@ -387,7 +387,7 @@ object Tests extends Suite(m"Burdock Tests"):
       val pubEntry = Zip.Entry(t"published/Lib.class".as[Path on Zip], t"x".in[Data])
       val unpubEntry = Zip.Entry(t"unpublished/Lib.class".as[Path on Zip], t"y".in[Data])
 
-      val cached: Repackager.CacheReader = h =>
+      val cached: Text -> Optional[List[Zip.Entry]] = h =>
         if h == t"pub" then (List(pubEntry): List[Zip.Entry])
         else if h == t"unpub" then (List(unpubEntry): List[Zip.Entry])
         else Unset

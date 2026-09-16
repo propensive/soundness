@@ -187,15 +187,17 @@ object Tests extends Suite(m"Anthology Tests"):
       val scratch: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
       test(m"Producing a format runs each path edge's tool in order"):
-        executionLog.entries = Nil
-        chain.produce(Deliverable.Product(scratch), a, c, scratch)
-        executionLog.entries
+        supervise:
+          executionLog.entries = Nil
+          chain.produce(Deliverable.Product(scratch), a, c, scratch)
+          executionLog.entries
       . assert(_ == List(t"second", t"first"))
 
       test(m"A setting applying to no path format is rejected"):
-        val inapplicable = Toolchain.Setting[Unit](_ => false)(settings => settings)
-        val production = Deliverable.Product(scratch)
-        capture[Link.Error](chain.produce(production, a, c, scratch, List(inapplicable))).reason
+        supervise:
+          val inapplicable = Toolchain.Setting[Unit](_ => false)(settings => settings)
+          val production = Deliverable.Product(scratch)
+          capture[Link.Error](chain.produce(production, a, c, scratch, List(inapplicable))).reason
       . assert(_ == Link.Error.Reason.InapplicableSetting)
 
       // Cross-family settings are rejected before any tool runs, so these paths are checkable
@@ -203,29 +205,32 @@ object Tests extends Suite(m"Anthology Tests"):
       val emission = Deliverable.Emission(scratch, LocalClasspath())
 
       test(m"A dex setting is not applicable on a JAR path"):
-        val settings = List(dexOptions.minApi(24))
-        val toolchain = Toolchain(jarEdges())
+        supervise:
+          val settings = List(dexOptions.minApi(24))
+          val toolchain = Toolchain(jarEdges())
 
-        capture[Link.Error]
-          ( toolchain.produce(emission, Universe.Classfile, anthology.Jar, scratch, settings) )
-        . reason
+          capture[Link.Error]
+            ( toolchain.produce(emission, Universe.Classfile, anthology.Jar, scratch, settings) )
+          . reason
       . assert(_ == Link.Error.Reason.InapplicableSetting)
 
       test(m"An sjs setting is not applicable on a dex path"):
-        val settings = List(linkerOptions.optimize.fast)
-        val toolchain = Toolchain(dexEdges())
+        supervise:
+          val settings = List(linkerOptions.optimize.fast)
+          val toolchain = Toolchain(dexEdges())
 
-        capture[Link.Error](toolchain.produce(emission, Universe.Classfile, Dex, scratch, settings))
-        . reason
+          capture[Link.Error](toolchain.produce(emission, Universe.Classfile, Dex, scratch, settings))
+          . reason
       . assert(_ == Link.Error.Reason.InapplicableSetting)
 
       test(m"A native setting is not applicable on a JavaScript path"):
-        val settings = List(nativeOptions.gc.immix)
-        val target = anthology.Js(anthology.Js.Module.Es)
-        val toolchain = Toolchain(sjsEdges())
+        supervise:
+          val settings = List(nativeOptions.gc.immix)
+          val target = anthology.Js(anthology.Js.Module.Es)
+          val toolchain = Toolchain(sjsEdges())
 
-        capture[Link.Error](toolchain.produce(emission, Universe.Sjsir, target, scratch, settings))
-        . reason
+          capture[Link.Error](toolchain.produce(emission, Universe.Sjsir, target, scratch, settings))
+          . reason
       . assert(_ == Link.Error.Reason.InapplicableSetting)
 
     test(m"JAR and library packaging edges need no evidence"):
@@ -375,12 +380,12 @@ object Tests extends Suite(m"Anthology Tests"):
 
         test(m"A portable compilation succeeds"):
           process.complete()
-        . assert(_ == CompileResult.Success)
+        . check(_ == CompileResult.Success)
 
         test(m"A portable compilation emits sjsir"):
           Files.list(Paths.get(out.encode.s)).nn.iterator.nn.asScala
           . exists(_.getFileName.nn.toString.endsWith(".sjsir"))
-        . assert(_ == true)
+        . check(_ == true)
 
         val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
@@ -394,7 +399,7 @@ object Tests extends Suite(m"Anthology Tests"):
               List(EntryPoint(Fqcn(t"Main"))) )
           . pipe: artifact =>
               Files.size(Paths.get(artifact.encode.s))
-        . assert(_ > 100L)
+        . check(_ > 100L)
 
         test(m"Packaging an sjsir library JAR produces a nonempty archive"):
           Toolchain(jarEdges()).produce
@@ -404,7 +409,7 @@ object Tests extends Suite(m"Anthology Tests"):
               linked )
           . pipe: artifact =>
               Files.size(Paths.get(artifact.encode.s))
-        . assert(_ > 100L)
+        . check(_ > 100L)
 
     // The packaging pipeline: compile against the fork standard library alone, link an
     // executable JAR, and run it under `java -jar`.
@@ -419,7 +424,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
         test(m"A classfile compilation succeeds"):
           process.complete()
-        . assert(_ == CompileResult.Success)
+        . check(_ == CompileResult.Success)
 
         val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
@@ -433,7 +438,7 @@ object Tests extends Suite(m"Anthology Tests"):
               List(EntryPoint(Fqcn(t"Main"))) )
           . pipe: artifact =>
               mute[Exec.Event](sh"java -jar $artifact".exec[Text]()).trim
-        . assert(_ == t"hello")
+        . check(_ == t"hello")
 
         // The whole point of source nodes: one path from `.scala` text to a runnable JAR, with
         // the compiler and the bundler both selected by the path rather than named by the caller.
@@ -451,7 +456,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
           . pipe: artifact =>
               mute[Exec.Event](sh"java -jar $artifact".exec[Text]()).trim
-        . assert(_ == t"hello")
+        . check(_ == t"hello")
 
         test(m"A compile edge reports a failing compilation as an error count"):
           val toolchain = Toolchain(List(scalacEdges.classfile(Scalac[3.8](Nil))))
@@ -468,7 +473,7 @@ object Tests extends Suite(m"Anthology Tests"):
           . reason match
               case Link.Error.Reason.CompilationFailed(errors) => errors > 0
               case _                                          => false
-        . assert(_ == true)
+        . check(_ == true)
 
         test(m"Linking as DEX produces an archive containing classes.dex"):
           Toolchain(dexEdges()).produce
@@ -478,7 +483,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
               try zipfile.entries.nn.asScala.exists(_.getName == "classes.dex")
               finally zipfile.close()
-        . assert(_ == true)
+        . check(_ == true)
 
         // Warm-session compilations: one retained compiler context across several compiles.
         val alpha = Map(t"alpha.scala" -> t"class Alpha:\n  def x: Int = 42\n")
@@ -488,21 +493,21 @@ object Tests extends Suite(m"Anthology Tests"):
           Scalac[3.8](Nil).on(classpath).session:
             alpha.compile().complete()
             compilation.compile(beta).complete()
-        . assert(_ == CompileResult.Success)
+        . check(_ == CompileResult.Success)
 
         test(m"A failed compile leaves the session usable"):
           Scalac[3.8](Nil).on(classpath).session:
             val bad = Map(t"gamma.scala" -> t"class Gamma:\n  def x: Int = \"nope\"\n")
             val failure = bad.compile().complete()
             (failure, alpha.compile().complete())
-        . assert(_ == (CompileResult.Failure, CompileResult.Success))
+        . check(_ == (CompileResult.Failure, CompileResult.Success))
 
         test(m"A session compile exposes its classfiles in memory"):
           Scalac[3.8](Nil).on(classpath).session:
             val process = alpha.compile()
             process.complete()
             process.classfiles.stdlib.contains(t"/Alpha.class".as[Path on Classpath])
-        . assert(_ == true)
+        . check(_ == true)
 
         test(m"A session compile's updates report progress and completion"):
           Scalac[3.8](Nil).on(classpath).session:
@@ -516,7 +521,7 @@ object Tests extends Suite(m"Anthology Tests"):
               case CompileProcess.Update.Noticed(_)    => ()
 
             progressed > 0
-        . assert(_ == true)
+        . check(_ == true)
 
         val saved: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
         Files.createDirectories(Paths.get(saved.encode.s))
@@ -529,7 +534,7 @@ object Tests extends Suite(m"Anthology Tests"):
             process.save(saved)
 
           Files.exists(Paths.get(saved.encode.s).nn.resolve("Beta.class"))
-        . assert(_ == true)
+        . check(_ == true)
 
     // The native counterpart—compile with the Scala Native plugin, link with clang, and run the
     // binary—which runs only when the plugin and runtime JARs are cached and clang is present.
@@ -545,7 +550,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
         test(m"A native compilation succeeds"):
           process.complete()
-        . assert(_ == CompileResult.Success)
+        . check(_ == CompileResult.Success)
 
         test(m"A native compilation emits nir"):
           Files.list(Paths.get(out.encode.s)).nn.iterator.nn.asScala
@@ -568,7 +573,7 @@ object Tests extends Suite(m"Anthology Tests"):
                 List(EntryPoint(Fqcn(t"Main"))) )
             . pipe: artifact =>
                 mute[Exec.Event](sh"$artifact".exec[Text]()).trim
-          . assert(_ == t"hello")
+          . check(_ == t"hello")
 
     // `Kotlinc` itself is not constructed here: linking it resolves the compiler classes, which
     // are a compile-only dependency, so the options are checked through the flags they carry.
@@ -600,7 +605,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
         test(m"A Kotlin compilation succeeds"):
           process.complete()
-        . assert(_ == CompileResult.Success)
+        . check(_ == CompileResult.Success)
 
         test(m"A Kotlin compilation emits classfiles"):
           Files.list(Paths.get(out.encode.s, "demo")).nn.iterator.nn.asScala
@@ -618,7 +623,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
         test(m"A Kotlin compilation with a type error fails"):
           failing.complete()
-        . assert(_ == CompileResult.Failure)
+        . check(_ == CompileResult.Failure)
 
         test(m"A Kotlin error is counted"):
           failing.errors

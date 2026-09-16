@@ -162,14 +162,14 @@ object Tests extends Suite(m"Profanity Tests"):
           test(m"a single keypress reaches the app before Enter is pressed"):
             runFixture(t"echo", marker = t"GOT:"):
               Tmux.enter('a')
-          . assert(_.contains(t"GOT:a"))
+          . check(_.contains(t"GOT:a"))
 
         suite(m"LineEditor"):
           test(m"submits accumulated text on Enter"):
             runFixture(t"line-editor"):
               Tmux.enter("hello")
               Tmux.enter('\r')
-          . assert(_.contains(t"RESULT:hello"))
+          . check(_.contains(t"RESULT:hello"))
 
           test(m"backspace removes characters"):
             runFixture(t"line-editor"):
@@ -177,7 +177,7 @@ object Tests extends Suite(m"Profanity Tests"):
               Tmux.enter('', '')
               Tmux.enter("lo")
               Tmux.enter('\r')
-          . assert(_.contains(t"RESULT:hello"))
+          . check(_.contains(t"RESULT:hello"))
 
           // Aspirational because, under Ethereal's daemon model, the socket round-trip
           // between consecutive bytes of \e[D can exceed Profanity's 30 ms ESC timeout in
@@ -208,7 +208,7 @@ object Tests extends Suite(m"Profanity Tests"):
                 Tmux.enter('\r')
                 waitFor(t"RESULT:")
                 Tmux.screenshot().screen.to[List].join
-          . assert(_.contains(t"RESULT:${t"X"*20}"))
+          . check(_.contains(t"RESULT:${t"X"*20}"))
 
           test(m"backspace clears characters wrapped onto the next visual line"):
             // Overlap false positive: the action closure mentions the enclosing
@@ -228,7 +228,7 @@ object Tests extends Suite(m"Profanity Tests"):
                 Tmux.enter('\r')
                 waitFor(t"RESULT:")
                 mid.screen.to[List].map(_.count(_ == 'X')).total
-          . assert(_ == 20)
+          . check(_ == 20)
 
           // SelectMenu wrap-aware redraw: an option longer than the terminal width must
           // occupy the right number of visual rows when computing the move-back-to-anchor.
@@ -252,7 +252,7 @@ object Tests extends Suite(m"Profanity Tests"):
                 // miscounts visual rows for the wrapped second option, the menu drifts
                 // on subsequent re-renders and stale copies of "third" pile up.
                 mid.screen.readable.toList.count(_.contains(t"third"))
-          . assert(_ == 1)
+          . check(_ == 1)
 
       // Pure state-transition tests, bypassing terminal IO. These exercise the
       // Iterator[Terminal.Event] -> recur path with synthetic events and a no-op

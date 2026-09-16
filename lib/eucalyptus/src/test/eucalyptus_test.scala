@@ -77,60 +77,65 @@ object Tests extends Suite(m"Eucalyptus tests"):
       case Net(text) => m"net: $text"
       case Fs(text)  => m"fs: $text"
 
-  def run(): Unit = supervise:
+  def run(): Unit =
     test(m"A Warn-threshold logger drops Fine and Info but keeps Warn and Fail"):
-      val capture = Capture()
-      // The test logger is this test's single owner; no aliased writer.
-      given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture, level = Level.Warn))
-      Log.fine(m"alpha")
-      Log.info(m"beta")
-      Log.warn(m"gamma")
-      Log.fail(m"delta")
-      List(capture.queue.take(), capture.queue.take())
+      supervise:
+        val capture = Capture()
+        // The test logger is this test's single owner; no aliased writer.
+        given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture, level = Level.Warn))
+        Log.fine(m"alpha")
+        Log.info(m"beta")
+        Log.warn(m"gamma")
+        Log.fail(m"delta")
+        List(capture.queue.take(), capture.queue.take())
 
     . assert(_ == List(t"[WARN] gamma\n", t"[FAIL] delta\n"))
 
     test(m"Two loggers in scope both receive the message"):
-      val first = Capture()
-      val second = Capture()
-      // The test logger is this test's single owner; no aliased writer.
-      given firstLog: Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(first))
-      // The test logger is this test's single owner; no aliased writer.
-      given secondLog: Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(second))
-      Log.info(m"hello")
-      List(first.queue.take(), second.queue.take())
+      supervise:
+        val first = Capture()
+        val second = Capture()
+        // The test logger is this test's single owner; no aliased writer.
+        given firstLog: Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(first))
+        // The test logger is this test's single owner; no aliased writer.
+        given secondLog: Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(second))
+        Log.info(m"hello")
+        List(first.queue.take(), second.queue.take())
 
     . assert(_ == List(t"[INFO] hello\n", t"[INFO] hello\n"))
 
     test(m"A write failure is handled by an enclosing handler"):
-      val errors: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
+      supervise:
+        val errors: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
 
-      handle:
-        case Truncation.Error(_) => errors.put(t"cut")
-      . protect:
-          // The test logger is this test's single owner; no aliased writer.
-          given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(Failing()))
-          Log.info(m"trigger")
-          errors.take()
+        handle:
+          case Truncation.Error(_) => errors.put(t"cut")
+        . protect:
+            // The test logger is this test's single owner; no aliased writer.
+            given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(Failing()))
+            Log.info(m"trigger")
+            errors.take()
 
     . assert(_ == t"cut")
 
     test(m"A category-filtered logger records only events in its categories"):
-      val capture = Capture()
-      // The test logger is this test's single owner; no aliased writer.
-      given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture, categories = Set(Log.Network)))
-      Log.info(Signal.Net(t"a"))
-      Log.info(Signal.Fs(t"b"))
-      capture.queue.take()
+      supervise:
+        val capture = Capture()
+        // The test logger is this test's single owner; no aliased writer.
+        given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture, categories = Set(Log.Network)))
+        Log.info(Signal.Net(t"a"))
+        Log.info(Signal.Fs(t"b"))
+        capture.queue.take()
 
     . assert(_ == t"[INFO] net: a\n")
 
     test(m"A logger with no categories records events of every category"):
-      val capture = Capture()
-      // The test logger is this test's single owner; no aliased writer.
-      given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture))
-      Log.info(Signal.Net(t"a"))
-      Log.info(Signal.Fs(t"b"))
-      List(capture.queue.take(), capture.queue.take())
+      supervise:
+        val capture = Capture()
+        // The test logger is this test's single owner; no aliased writer.
+        given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture))
+        Log.info(Signal.Net(t"a"))
+        Log.info(Signal.Fs(t"b"))
+        List(capture.queue.take(), capture.queue.take())
 
     . assert(_ == List(t"[INFO] net: a\n", t"[INFO] fs: b\n"))

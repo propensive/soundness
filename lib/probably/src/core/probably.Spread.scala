@@ -54,7 +54,8 @@ case class Spread[value, result]
   ( id: Test.Id, axis: Axis[value], action: Harness => (value ~> result) )
 
 object Spread:
-  extension [value, result](spread: Spread[value, result]^)
+  // Pure, as `Test.assert`: a spread's body may not close over a capability.
+  extension [value, result](spread: Spread[value, result])
     def assert[report]()
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Verdict],
@@ -129,7 +130,7 @@ case class Spread2[left, right, result]
     action: Harness => (((left, right)) ~> result) )
 
 object Spread2:
-  extension [left, right, result](spread: Spread2[left, right, result]^)
+  extension [left, right, result](spread: Spread2[left, right, result])
     def assert[report]()
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Verdict],

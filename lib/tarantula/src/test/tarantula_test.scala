@@ -388,28 +388,30 @@ object Tests extends Suite(m"Tarantula tests"):
       supervise:
 
         test(m"a wait returns as soon as the element appears"):
-          // Absent for the first two polls, then present: the retry must survive the empty answers
-          // and hand back the element, without the caller seeing a failure.
-          val fake = counting: (_, path, attempt) =>
-            if !path.ends(t"/elements") then none
-            else if attempt < 3 then value(t"[]")
-            else value(t"""[{"element-6066-11e4-a52e-4f735466cecf":"E4"}]""")
+          supervise:
+            // Absent for the first two polls, then present: the retry must survive the empty answers
+            // and hand back the element, without the caller seeing a failure.
+            val fake = counting: (_, path, attempt) =>
+              if !path.ends(t"/elements") then none
+              else if attempt < 3 then value(t"[]")
+              else value(t"""[{"element-6066-11e4-a52e-4f735466cecf":"E4"}]""")
 
-          given Http.Backend = fake
-          WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
-            browser.awaitElement(H1).elementId
+            given Http.Backend = fake
+            WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
+              browser.awaitElement(H1).elementId
 
         . assert(_ == t"E4")
 
         test(m"a wait gives up according to the retry policy"):
-          val fake = driver((_, path) => if path.ends(t"/elements") then value(t"[]") else none)
-          given Http.Backend = fake
+          supervise:
+            val fake = driver((_, path) => if path.ends(t"/elements") then value(t"[]") else none)
+            given Http.Backend = fake
 
-          capture[Tenacity.Error]:
-            WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
-              browser.awaitElement(H1)
+            capture[Tenacity.Error]:
+              WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
+                browser.awaitElement(H1)
 
-          . pipe(_ => fake.exchanges.stdlib.count(_.path.ends(t"/elements")))
+            . pipe(_ => fake.exchanges.stdlib.count(_.path.ends(t"/elements")))
 
         . assert(_ == 5)
 
@@ -509,21 +511,21 @@ object Tests extends Suite(m"Tarantula tests"):
                 browser.navigateTo(address)
                 browser.title()
 
-            . assert(_ == t"Tarantula")
+            . check(_ == t"Tarantula")
 
             test(m"an element's rendered text is read from the live page"):
               local.headless.on(freePort()).session: session ?=>
                 browser.navigateTo(address)
                 browser.element(Name[DomId](t"greeting")).innerText()
 
-            . assert(_ == t"Hello")
+            . check(_ == t"Hello")
 
             test(m"a locator matching nothing raises NoSuchElement"):
               local.headless.on(freePort()).session: session ?=>
                 browser.navigateTo(address)
                 capture[WebDriver.Error](browser.element(Name[DomId](t"absent"))).reason
 
-            . assert(_ == WebDriver.Error.Reason.NoSuchElement)
+            . check(_ == WebDriver.Error.Reason.NoSuchElement)
 
             test(m"typing into a field is read back as a property"):
               local.headless.on(freePort()).session: session ?=>
@@ -532,13 +534,13 @@ object Tests extends Suite(m"Tarantula tests"):
                 field.value(t"typed")
                 field.property(t"value")
 
-            . assert(_ == t"typed")
+            . check(_ == t"typed")
 
             test(m"a script's result crosses back as JSON"):
               local.headless.on(freePort()).session: session ?=>
                 browser.navigateTo(address)
                 WebDriver.Session.text(browser.execute(t"return document.title"))
 
-            . assert(_ == t"Tarantula")
+            . check(_ == t"Tarantula")
 
         finally server.cancel()

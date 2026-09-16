@@ -281,7 +281,7 @@ object Tests extends Suite(m"Yossarian Tests"):
     // Helpers below operate on a screen sized to suit each section.
     // ────────────────────────────────────────────────────────────────────────
 
-    val Pty24x80: () => Pty = () => Pty(80, 24)
+    val Pty24x80: () -> Pty = () => Pty(80, 24)
 
     def screen(pty: Pty): List[Text] =
       ((0 until pty.buffer.height).toList.map(y => row(pty, y.z))).to(List)

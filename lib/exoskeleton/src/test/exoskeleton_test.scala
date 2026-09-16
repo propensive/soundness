@@ -164,207 +164,207 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
           test(m"Test subcommands on bash"):
             scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t"")))
-          . assert(_ == t"alpha         beta          distribution")
+          . check(_ == t"alpha         beta          distribution")
 
           test(m"Test subcommands on zsh"):
             scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"")))
-          . assert(_ == t"alpha          -- a command to run\nbeta           -- another command to run\ndistribution   -- a different command to run")
+          . check(_ == t"alpha          -- a command to run\nbeta           -- another command to run\ndistribution   -- a different command to run")
 
           test(m"Test subcommands on fish"):
             scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux(width = 120)(Tmux.completions(t"")))
-          . assert(_ == t"alpha  (a command to run)  beta  (another command to run)  distribution  (a different command to run)")
+          . check(_ == t"alpha  (a command to run)  beta  (another command to run)  distribution  (a different command to run)")
 
           test(m"Test subcommands with spaces on bash"):
             scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t"distribution ")))
-          . assert(_ == t"gentoo   red hat  ubuntu")
+          . check(_ == t"gentoo   red hat  ubuntu")
 
           test(m"Test subcommands with spaces on zsh"):
             scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"distribution ")))
-          . assert(_ == t"gentoo    -- Gentoo Linux\nred hat   -- Red Hat Linux\nubuntu    -- Ubuntu")
+          . check(_ == t"gentoo    -- Gentoo Linux\nred hat   -- Red Hat Linux\nubuntu    -- Ubuntu")
 
           test(m"Test subcommands with spaces on fish"):
             scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux(width = 120)(Tmux.completions(t"distribution ")))
-          . assert(_ == t"gentoo  (Gentoo Linux)  red hat  (Red Hat Linux)  ubuntu  (Ubuntu)")
+          . check(_ == t"gentoo  (Gentoo Linux)  red hat  (Red Hat Linux)  ubuntu  (Ubuntu)")
 
           test(m"Test subcommands on powershell"):
             scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.completions(t"")))
-          . assert(_ == t"alpha  (a command to run)  beta  (another command to run)  distribution  (a different command to run)")
+          . check(_ == t"alpha  (a command to run)  beta  (another command to run)  distribution  (a different command to run)")
 
           test(m"Test subcommands with spaces on powershell"):
             scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.completions(t"distribution ")))
-          . assert(_ == t"gentoo  (Gentoo Linux)  red hat  (Red Hat Linux)  ubuntu  (Ubuntu)")
+          . check(_ == t"gentoo  (Gentoo Linux)  red hat  (Red Hat Linux)  ubuntu  (Ubuntu)")
 
           test(m"Test flags on bash"):
             scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t"distribution ubuntu ")))
-          . assert(_ == t"--one  --two")
+          . check(_ == t"--one  --two")
 
           test(m"Test flags on fish"):
             scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux(width = 120)(Tmux.completions(t"distribution ubuntu ")))
-          . assert(_ == t"--one  (the first one)  --two  (the second one)")
+          . check(_ == t"--one  (the first one)  --two  (the second one)")
 
           test(m"Test flags on powershell"):
             scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.completions(t"distribution ubuntu ")))
-          . assert(_ == t"--one  (the first one)  --two  (the second one)")
+          . check(_ == t"--one  (the first one)  --two  (the second one)")
 
           test(m"Autocomplete progress for flag in Fish"):
             scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux(width = 120)(Tmux.progress(t"distribution ubuntu ")))
-          . assert(_ == t"distribution ubuntu --^")
+          . check(_ == t"distribution ubuntu --^")
 
           test(m"Autocomplete progress for flag in Bash"):
             scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.progress(t"distribution ubuntu ")))
-          . assert(_ == t"distribution ubuntu --^")
+          . check(_ == t"distribution ubuntu --^")
 
           test(m"Autocomplete progress for flag in Zsh"):
             scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"distribution ubuntu ")))
-          . assert(_ == t"distribution ubuntu --^")
+          . check(_ == t"distribution ubuntu --^")
 
           test(m"Autocomplete progress for flag in Powershell"):
             scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.progress(t"distribution ubuntu ")))
-          . assert(_ == t"distribution ubuntu --^")
+          . check(_ == t"distribution ubuntu --^")
 
           test(m"Test flags on zsh"):
             scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"distribution ubuntu --")))
-          . assert(_ == t"--one   -- the first one\n--two   -- the second one")
+          . check(_ == t"--one   -- the first one\n--two   -- the second one")
 
           test(m"Test capture 1"):
             scala.caps.unsafe.unsafeAssumeSeparate:
               summon[Enclave.Tool].completions:
                 scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"distribution ubuntu ")))
 
-          . assert()
+          . check()
 
           test(m"Test capture 2"):
             scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"distribution ")))
 
-          . assert()
+          . check()
 
           test(m"flag parameter on zsh"):
             scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"distribution gentoo --color ")))
-          . assert(_ == t"blue   green  red")
+          . check(_ == t"blue   green  red")
 
           test(m"flag parameter on bash"):
             scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t"distribution gentoo --color ")))
-          . assert(_ == t"blue   green  red")
+          . check(_ == t"blue   green  red")
 
           test(m"flag parameter on fish"):
             scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.completions(t"distribution gentoo --color ")))
-          . assert(_ == t"blue  green  red")
+          . check(_ == t"blue  green  red")
 
           test(m"flag parameter on zsh is not repeatable"):
             scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"distribution gentoo --color red ")))
-          . assert(_ == t"distribution gentoo --color red ^")
+          . check(_ == t"distribution gentoo --color red ^")
 
           test(m"flag parameter on bash is not repeatable"):
             scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.progress(t"distribution gentoo --color red ")))
-          . assert(_ == t"distribution gentoo --color red ^")
+          . check(_ == t"distribution gentoo --color red ^")
 
           test(m"flag parameter on fish is not repeatable"):
             scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.progress(t"distribution gentoo --color red ")))
-          . assert(_ == t"distribution gentoo --color red ^")
+          . check(_ == t"distribution gentoo --color red ^")
 
           test(m"repeatable flag parameter on zsh is repeatable"):
             scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"gamma --colors red ")))
-          . assert(_ == t"gamma --colors red --colors ^")
+          . check(_ == t"gamma --colors red --colors ^")
 
           test(m"repeatable flag parameter on bash is repeatable"):
             scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.progress(t"gamma --colors red ")))
-          . assert(_ == t"gamma --colors red -^")
+          . check(_ == t"gamma --colors red -^")
 
           test(m"repeatable flag parameter on fish is repeatable"):
             scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.progress(t"gamma --colors red ")))
-          . assert(_ == t"gamma --colors red -^")
+          . check(_ == t"gamma --colors red -^")
 
           test(m"flag parameter with `=` on zsh"):
             scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"distribution gentoo --color=")))
-          . assert(_ == t"blue   green  red")
+          . check(_ == t"blue   green  red")
 
           test(m"flag parameter with `=` on bash"):
             scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t"distribution gentoo --color=")))
-          . assert(_ == t"blue   green  red")
+          . check(_ == t"blue   green  red")
 
           test(m"flag parameter with `=` on fish"):
             scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.completions(t"distribution gentoo --color=")))
-          . assert(_ == t"--color=blue  --color=green  --color=red")
+          . check(_ == t"--color=blue  --color=green  --color=red")
 
           test(m"completion of flag parameter with `=` on zsh"):
             scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"distribution gentoo --color=b")))
-          . assert(_ == t"distribution gentoo --color=blue ^")
+          . check(_ == t"distribution gentoo --color=blue ^")
 
           test(m"completion of flag parameter with `=` on bash"):
             scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.progress(t"distribution gentoo --color=b")))
-          . assert(_ == t"distribution gentoo --color=blue ^")
+          . check(_ == t"distribution gentoo --color=blue ^")
 
           test(m"completion of flag parameter with `=` on fish"):
             scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.progress(t"distribution gentoo --color=b")))
-          . assert(_ == t"distribution gentoo --color=blue ^")
+          . check(_ == t"distribution gentoo --color=blue ^")
 
           test(m"short flag options on zsh"):
             scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"distribution gentoo -")))
-          . assert(_ == t"distribution gentoo -f ^")
+          . check(_ == t"distribution gentoo -f ^")
 
           test(m"short flag options on fish"):
             scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.completions(t"distribution gentoo -")))
-          . assert(_ == t"-f  --color  (red, green or blue)")
+          . check(_ == t"-f  --color  (red, green or blue)")
 
           test(m"short flag options on bash"):
             scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t"distribution gentoo -")))
-          . assert(_ == t"--color  -f")
+          . check(_ == t"--color  -f")
 
           test(m"flag options on zsh"):
             scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"distribution gentoo --")))
-          . assert(_ == t"distribution gentoo --color ^")
+          . check(_ == t"distribution gentoo --color ^")
 
           test(m"flag options on fish"):
             scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.progress(t"distribution gentoo --")))
-          . assert(_ == t"distribution gentoo --color ^")
+          . check(_ == t"distribution gentoo --color ^")
 
           test(m"flag options on bash"):
             scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.progress(t"distribution gentoo --")))
-          . assert(_ == t"distribution gentoo --color ^")
+          . check(_ == t"distribution gentoo --color ^")
 
           test(m"completion of short flag parameter on zsh"):
             scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"distribution gentoo -fb")))
-          . assert(_ == t"distribution gentoo -fblue ^")
+          . check(_ == t"distribution gentoo -fblue ^")
 
           test(m"completion of short flag parameter on bash"):
             scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.progress(t"distribution gentoo -fb")))
-          . assert(_ == t"distribution gentoo -fblue ^")
+          . check(_ == t"distribution gentoo -fblue ^")
 
           test(m"completion of short flag parameter on fish"):
             scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.progress(t"distribution gentoo -fb")))
-          . assert(_ == t"distribution gentoo -fblue ^")
+          . check(_ == t"distribution gentoo -fblue ^")
 
           test(m"flag parameter on powershell"):
             scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.completions(t"distribution gentoo --color ")))
-          . assert(_ == t"red  green  blue")
+          . check(_ == t"red  green  blue")
 
           test(m"flag parameter on powershell is not repeatable"):
             scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.progress(t"distribution gentoo --color red ")))
-          . assert(_ == t"distribution gentoo --color red ^")
+          . check(_ == t"distribution gentoo --color red ^")
 
           test(m"repeatable flag parameter on powershell is repeatable"):
             scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.progress(t"gamma --colors red ")))
-          . assert(_ == t"gamma --colors red -^")
+          . check(_ == t"gamma --colors red -^")
 
           test(m"flag parameter with `=` on powershell"):
             scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.completions(t"distribution gentoo --color=")))
-          . assert(_ == t"--color=red  --color=green  --color=blue")
+          . check(_ == t"--color=red  --color=green  --color=blue")
 
           test(m"completion of flag parameter with `=` on powershell"):
             scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.progress(t"distribution gentoo --color=b")))
-          . assert(_ == t"distribution gentoo --color=blue ^")
+          . check(_ == t"distribution gentoo --color=blue ^")
 
           test(m"short flag options on powershell"):
             scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.completions(t"distribution gentoo -")))
-          . assert(_ == t"--color  (red, green or blue)  -f  (red, green or blue)")
+          . check(_ == t"--color  (red, green or blue)  -f  (red, green or blue)")
 
           test(m"flag options on powershell"):
             scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.progress(t"distribution gentoo --")))
-          . assert(_ == t"distribution gentoo --color ^")
+          . check(_ == t"distribution gentoo --color ^")
 
           test(m"completion of short flag parameter on powershell"):
             scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.progress(t"distribution gentoo -fb")))
-          . assert(_ == t"distribution gentoo -fblue ^")
+          . check(_ == t"distribution gentoo -fblue ^")
 
           suite(m"Admin commands"):
             val tool = summon[Enclave.Tool].path
@@ -395,10 +395,11 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             .assert(_ == true)
 
             test(m"'{admin}' kill terminates the daemon"):
-              val pid = sh"$tool '{admin}' pid".exec[Text]().trim
-              sh"$tool '{admin}' kill".exec[Unit]()
-              snooze(0.2*Second)
-              sh"kill -0 $pid".exec[Exit]()
+              supervise:
+                val pid = sh"$tool '{admin}' pid".exec[Text]().trim
+                sh"$tool '{admin}' kill".exec[Unit]()
+                snooze(0.2*Second)
+                sh"kill -0 $pid".exec[Exit]()
             .assert(_ == Exit.Fail(1))
 
           suite(m"Raw completion invocation"):
@@ -542,7 +543,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                   Tmux.enter(t"cd ${fixture.encode}")
                   Tmux.enter('\r')
                   Tmux.progress(t"files verify sr")
-            .assert(_ == t"files verify src/^")
+            .check(_ == t"files verify src/^")
 
             test(m"fish menu shows each path entry once"):
               scala.caps.unsafe.unsafeAssumeSeparate:
@@ -550,7 +551,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                   Tmux.enter(t"cd ${fixture.encode}")
                   Tmux.enter('\r')
                   Tmux.completions(t"files verify ")
-            .assert { out => out.cut(t"one.txt").stdlib.length == 2 && out.cut(t"src/").stdlib.length == 2 }
+            .check { out => out.cut(t"one.txt").stdlib.length == 2 && out.cut(t"src/").stdlib.length == 2 }
 
       object HelpApp:
         import interpreters.posixInterpreter
