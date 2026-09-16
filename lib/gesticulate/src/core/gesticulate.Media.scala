@@ -79,7 +79,9 @@ object Media:
       case X(value)        => t"x-$value"
 
   object Suffix:
-    given showable: Suffix is Showable = _.toString.tt.lower
+    // `name`, not the enum's own name: `JsonSeq` is written `json-seq`, and a rendering which
+    // dropped the hyphen could not be parsed back.
+    given showable: Suffix is Showable = _.name
 
   enum Suffix:
     case
@@ -101,11 +103,20 @@ object Media:
           ()
 
       ps.map((param: Text) => param.cut(t"=", 2)).map: (p: List[Text]) =>
-        p.stdlib(0).show -> p.stdlib(1).show
+        p.absolve match
+          case List(key, value) => key.show -> value.show
 
+          case _ =>
+            abort(MediaType.Error(string, MediaType.Error.Reason.MissingParam))
+
+    // Suffixes are written in kebab-case (`json-seq`, `fast-infoset`) but named in camel-case,
+    // so each hyphenated word is capitalized before the enum is looked up; capitalizing the
+    // whole suffix instead left `Json-seq`, which no enum case is called.
     def parseSuffixes(suffixes: List[Text]): List[Suffix] =
-      suffixes.map(_.lower.capitalize).bind: suffix =>
-        try List(Suffix.valueOf(suffix.s)) catch IllegalArgumentException =>
+      suffixes.bind: suffix =>
+        val name = suffix.lower.cut(t"-").map(_.capitalize).join
+
+        try List(Suffix.valueOf(name.s)) catch IllegalArgumentException =>
           abort(MediaType.Error(string, MediaType.Error.Reason.InvalidSuffix(suffix)))
 
     def parseInit(string: Text): (Subtype, List[Suffix]) =

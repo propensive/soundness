@@ -89,3 +89,17 @@ format. Entries are grouped by module, most-recently-added last within a module.
   (`Decimalizer(4).decimalize(999.96)` gives `"1.000×10³"`). Every `Showable` for `Double`
   that goes through a `Decimalizer` changes the same way. Code that matched the old truncated
   output must expect the corrected text. (#TBD)
+
+## gesticulate
+
+- `Media.Suffix`'s `Showable` instance now renders the suffix as it is written in a media type,
+  using `Suffix#name`: `JsonSeq` shows as `json-seq` (was `jsonseq`), `CborSeq` as `cbor-seq`
+  and `FastInfoset` as `fast-infoset`. The other twelve suffixes are unchanged. (#TBD)
+- `MediaType.parse` (and so `Text#as[MediaType]` and `media"…"`) now accepts the hyphenated
+  suffixes `+json-seq`, `+cbor-seq` and `+fast-infoset`, which previously always raised
+  `MediaType.Error` with reason `InvalidSuffix`, because the whole suffix was capitalized
+  (`Json-seq`) before the enum lookup rather than each hyphenated word. An `InvalidSuffix`
+  reason now reports the suffix as written, in lower case, rather than capitalized. (#TBD)
+- `MediaType.parse` now raises `MediaType.Error` with reason `MissingParam` for a parameter
+  with no `=` (`text/plain; foo`); it previously threw `IndexOutOfBoundsException`, which no
+  `Tactic` could catch. (#TBD)
