@@ -79,6 +79,16 @@ object Servable:
   given data: Data is Servable =
     Servable[Data](media"application/octet-stream")(Http.Body.Fixed(_))
 
+  // `Text` is served as the generic `media` instance below would serve it, but with its
+  // constant `content-type` header rendered once, here — outside the given, whose body is
+  // evaluated at every summons because of its context parameter. More specific than
+  // `media`, so it is the instance chosen for `Text`.
+  private val textHeaders: List[Http.Header] =
+    List(Http.Header(t"content-type", media"text/plain".show))
+
+  given text: (encoder: hieroglyph.CharEncoder) => Text is Servable =
+    text => Http.Ok(textHeaders, Http.Body.Fixed(text.in[Data]))
+
   inline given media: [media: Media] => media is Servable = compiletime.summonFrom:
     case encodable: (`media` is Encodable in Data) =>
       value =>
