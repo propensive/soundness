@@ -33,4 +33,4 @@
 package soundness
 
 export sedentary.{Bench, BenchmarkDevice, LocalhostDevice, NetworkDevice,
-    NetworkDeviceSessional, OperationSize, Profile, Stress}
+    NetworkDeviceSessional, OperationSize, Profile, Stress, StressSearch}

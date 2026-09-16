@@ -145,3 +145,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   worker failed at N=<n>: <throwable>` is printed to stderr. Previously such a window completed with
   the dead worker's operations missing and the exception printed per worker by the default
   uncaught-exception handler. (#TBD)
+
+## parasite
+
+- `snooze(duration)`, and so `sleep(instant)`, `delay` and `hibernate`, which are built on it,
+  now always wait out their duration unless the task is cancelled. Under the pooled supervisor
+  (`threading.pooledThreading`), a task handed to a carrier that was still spinning could find
+  a park permit left over from the hand-off, and its next `snooze` returned at once. The same
+  applies to any JVM `Supervisor` whose `sleep` comes from `ThreadSupervisor`: `sleep` now parks
+  repeatedly until its deadline, stopping early only if the thread is interrupted. Code that
+  relied on a `snooze` returning early without cancellation must use `park` and an `unpark`
+  instead. (#2006)

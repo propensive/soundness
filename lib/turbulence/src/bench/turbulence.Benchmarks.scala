@@ -1512,10 +1512,12 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // throughput/latency/memory-vs-N curve, and the sweep stops at the largest N
     // the heap sustains (OutOfMemoryError, or over half the window spent in GC) —
     // the bounded-buffer design should sustain more pipelines in the same heap.
+    // The sweep then refines between the powers of two for the optimum N (the
+    // smallest within 5% of the best throughput), flagged `sustained`.
     suite(m"Stress: constrained-heap scaling sweep (128 MB heap, N ≤ 64)"):
       import threading.platformThreading
 
-      constrained(m"Soundness  Conduit")(target = 1*Second, sweep = 64):
+      constrained(m"Soundness  Conduit")(target = 1*Second, sweep = 64, refine = true):
         '{
             val (intake, stream) = Conduit[Data]()
             val producer = Thread.ofVirtual.start(() =>
@@ -1533,7 +1535,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       // fiber runtimes (Kyo, ZIO) scale on. 2N virtual threads multiplex on
       // ~cores carriers, so pipeline count no longer oversubscribes the OS
       // scheduler.
-      constrained(m"Soundness  Conduit VT both")(target = 1*Second, sweep = 64):
+      constrained(m"Soundness  Conduit VT both")(target = 1*Second, sweep = 64, refine = true):
         '{
             val (intake, stream) = Conduit[Data]()
             val producer = Thread.ofVirtual.start(() =>
@@ -1547,7 +1549,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             total
         }
 
-      constrained(m"FS2  Channel.bounded")(target = 1*Second, sweep = 64):
+      constrained(m"FS2  Channel.bounded")(target = 1*Second, sweep = 64, refine = true):
         '{
             import cats.effect.unsafe.implicits.global
             import cats.effect.IO
@@ -1560,7 +1562,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             program.unsafeRunSync()
         }
 
-      constrained(m"ZIO  Queue.bounded")(target = 1*Second, sweep = 64):
+      constrained(m"ZIO  Queue.bounded")(target = 1*Second, sweep = 64, refine = true):
         '{
             turbulence.Benchmarks.runZio:
               import zio.*, zio.stream.*
@@ -1581,7 +1583,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // climbing; the unbounded models buffer each producer's entire 4 MB lead, so
     // their sweeps are expected to die early on OutOfMemoryError or GC thrash —
     // the largest N each row reaches is the finding.
-      constrained(m"Kyo  Channel")(target = 1*Second, sweep = 64):
+      constrained(m"Kyo  Channel")(target = 1*Second, sweep = 64, refine = true):
         '{
             import kyo.*
             import AllowUnsafe.embrace.danger
@@ -1602,7 +1604,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Stress: unbounded-model blowup (slow consumer, 128 MB heap, N ≤ 64)"):
       import threading.platformThreading
 
-      constrained(m"Soundness  Conduit depth 16")(target = 1*Second, sweep = 64):
+      constrained(m"Soundness  Conduit depth 16")(target = 1*Second, sweep = 64, refine = true):
         '{
             val (intake, stream) = Conduit[Data]()
 
@@ -1628,7 +1630,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             total
         }
 
-      constrained(m"Unbounded  LinkedBlockingQueue")(target = 1*Second, sweep = 64):
+      constrained(m"Unbounded  LinkedBlockingQueue")(target = 1*Second, sweep = 64, refine = true):
         '{
             val queue = new java.util.concurrent.LinkedBlockingQueue[AnyRef]()
             val end = new Object
@@ -1663,7 +1665,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             total
         }
 
-      constrained(m"Unbounded  Relay[Data]")(target = 1*Second, sweep = 64):
+      constrained(m"Unbounded  Relay[Data]")(target = 1*Second, sweep = 64, refine = true):
         '{
             val relay = Relay[Data]()
 
@@ -1696,7 +1698,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       // the allocation happens inside `send`'s effect on the calling fiber and
       // surfaces as the sweep's expected OOM; if this row ever wedges a run,
       // this is why.
-      constrained(m"FS2  Channel.unbounded")(target = 1*Second, sweep = 64):
+      constrained(m"FS2  Channel.unbounded")(target = 1*Second, sweep = 64, refine = true):
         '{
             import cats.effect.unsafe.implicits.global
             import cats.effect.IO, cats.syntax.all.*
@@ -1711,7 +1713,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             program.unsafeRunSync()
         }
 
-      constrained(m"ZIO  Queue.unbounded")(target = 1*Second, sweep = 64):
+      constrained(m"ZIO  Queue.unbounded")(target = 1*Second, sweep = 64, refine = true):
         '{
             turbulence.Benchmarks.runZio:
               import zio.*, zio.stream.*
@@ -1902,15 +1904,16 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // on 4 CPUs (advisory on macOS; see `BenchmarkDevice.invoke`). The search
     // doubles the pipeline count while each window meets the target,
     // binary-searches the compliant/non-compliant boundary to ~12% resolution,
-    // then confirms the winner over a window three times longer. The probes form
-    // the curve; the `(sustained, N = …)` row is the answer: each library's
-    // maximum sustained ops/sec under identical constraints.
+    // refines below it for the optimum N (the smallest within 5% of the best
+    // compliant throughput), then confirms the winner over windows three times
+    // longer. The probes form the curve; the `(sustained, N = …)` row is the
+    // answer: each library's best sustained ops/sec under identical constraints.
     suite(m"Stress: capacity search (99% ≤ 5 ms, 2 GB heap, 4 CPUs)"):
       locally:
         import threading.platformThreading
 
         gated(m"Soundness  Conduit")
-          ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+          ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99, refine = true ):
           '{
               val (intake, stream) = Conduit[Data]()
               val producer = Thread.ofVirtual.start(() =>
@@ -1923,7 +1926,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
           }
 
         gated(m"FS2  Channel.bounded")
-          ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+          ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99, refine = true ):
           '{
               import cats.effect.unsafe.implicits.global
               import cats.effect.IO
@@ -1937,7 +1940,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
           }
 
         gated(m"ZIO  Queue.bounded")
-          ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+          ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99, refine = true ):
           '{
               turbulence.Benchmarks.runZio:
                 import zio.*, zio.stream.*
@@ -1952,7 +1955,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
           }
 
         gated(m"Kyo  Channel")
-          ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+          ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99, refine = true ):
           '{
               import kyo.*
               import AllowUnsafe.embrace.danger
@@ -1977,7 +1980,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       // would use — and the fair comparison against the fiber runtimes'
       // sustained concurrency.
       gated(m"Soundness  Conduit (virtual workers)")
-        ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99, refine = true ):
         '{
             val (intake, stream) = Conduit[Data]()
             val producer = Thread.ofVirtual.start(() =>
@@ -1995,7 +1998,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // three-way rows, on all cores (no `cpus` gate: the machine itself is the resource
     // under test), in 256 KiB operations (see the small corpora). Each pipeline gets
     // two suites: a sweep, doubling the pipeline count from 1 to 128 so the table reads
-    // as each library's throughput-vs-N curve up to and past core count; and a capacity
+    // as each library's throughput-vs-N curve up to and past core count, then refining
+    // between the powers of two for the optimum N; and a capacity
     // search for the maximum sustained rate with 99% of operations within 10 ms — each
     // library's headline ops/sec figure on a saturated machine. One uniform SLO keeps
     // the pipelines comparable; 10 ms is roughly ten times a 256 KiB operation's serial
@@ -2010,7 +2014,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Stress: saturated gzip decompression sweep (256 KiB, N ≤ 128)"):
       import threading.platformThreading
 
-      saturated(m"Soundness  Stream.decompress[Gzip]")(target = 1*Second, sweep = 128):
+      saturated(m"Soundness  Stream.decompress[Gzip]")
+        ( target = 1*Second, sweep = 128, refine = true ):
         '{
             var total = 0L
 
@@ -2020,7 +2025,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             total
         }
 
-      saturated(m"FS2  Compression[IO].gunzip")(target = 1*Second, sweep = 128):
+      saturated(m"FS2  Compression[IO].gunzip")(target = 1*Second, sweep = 128, refine = true):
         '{
             import cats.effect.unsafe.implicits.global
             val comp = fs2.compression.Compression.forSync[cats.effect.IO]
@@ -2030,7 +2035,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             . compile.count.unsafeRunSync()
         }
 
-      saturated(m"ZIO  ZPipeline.gunzip")(target = 1*Second, sweep = 128):
+      saturated(m"ZIO  ZPipeline.gunzip")(target = 1*Second, sweep = 128, refine = true):
         '{
             turbulence.Benchmarks.runZio:
               zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallGzippedArray))
@@ -2043,7 +2048,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         import threading.platformThreading
 
         saturated(m"Soundness  Stream.decompress[Gzip]")
-          ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+          ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
           '{
               var total = 0L
 
@@ -2054,7 +2059,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
           }
 
         saturated(m"FS2  Compression[IO].gunzip")
-          ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+          ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
           '{
               import cats.effect.unsafe.implicits.global
               val comp = fs2.compression.Compression.forSync[cats.effect.IO]
@@ -2065,7 +2070,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
           }
 
         saturated(m"ZIO  ZPipeline.gunzip")
-          ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+          ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
           '{
               turbulence.Benchmarks.runZio:
                 zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallGzippedArray))
@@ -2078,7 +2083,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       // pool instead of one OS thread each — the fair comparison against the fiber
       // runtimes' sustained concurrency.
       saturated(m"Soundness  Stream.decompress[Gzip] (virtual workers)")
-        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
         '{
             var total = 0L
 
@@ -2092,21 +2097,21 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Stress: saturated line splitting sweep (256 KiB, N ≤ 128)"):
       import threading.platformThreading
 
-      saturated(m"Soundness  Stream.delineate")(target = 1*Second, sweep = 128):
+      saturated(m"Soundness  Stream.delineate")(target = 1*Second, sweep = 128, refine = true):
         '{
             var total = 0L
             turbulence.Benchmarks.smallText.stream.delineate.drain(region => range => total += (range: Interval).size)
             total
         }
 
-      saturated(m"FS2  text.lines")(target = 1*Second, sweep = 128):
+      saturated(m"FS2  text.lines")(target = 1*Second, sweep = 128, refine = true):
         '{
             import cats.effect.unsafe.implicits.global
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.smallTextArray)).covary[cats.effect.IO]
             . through(fs2.text.utf8.decode).through(fs2.text.lines).compile.count.unsafeRunSync()
         }
 
-      saturated(m"ZIO  ZPipeline.splitLines")(target = 1*Second, sweep = 128):
+      saturated(m"ZIO  ZPipeline.splitLines")(target = 1*Second, sweep = 128, refine = true):
         '{
             turbulence.Benchmarks.runZio:
               zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallTextArray))
@@ -2117,7 +2122,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       import threading.platformThreading
 
       saturated(m"Soundness  Stream.delineate")
-        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
         '{
             var total = 0L
             turbulence.Benchmarks.smallText.stream.delineate.drain(region => range => total += (range: Interval).size)
@@ -2125,7 +2130,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
       saturated(m"FS2  text.lines")
-        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
         '{
             import cats.effect.unsafe.implicits.global
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.smallTextArray)).covary[cats.effect.IO]
@@ -2133,7 +2138,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
       saturated(m"ZIO  ZPipeline.splitLines")
-        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
         '{
             turbulence.Benchmarks.runZio:
               zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallTextArray))
@@ -2146,7 +2151,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Stress: saturated transcode cascade sweep (256 KiB, N ≤ 128)"):
       import threading.platformThreading
 
-      saturated(m"Soundness  dec.enc.dec.enc.dec")(target = 1*Second, sweep = 128):
+      saturated(m"Soundness  dec.enc.dec.enc.dec")(target = 1*Second, sweep = 128, refine = true):
         '{
             var total = 0L
 
@@ -2159,7 +2164,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             total
         }
 
-      saturated(m"FS2  utf8 decode/encode x2.5")(target = 1*Second, sweep = 128):
+      saturated(m"FS2  utf8 decode/encode x2.5")(target = 1*Second, sweep = 128, refine = true):
         '{
             import cats.effect.unsafe.implicits.global
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.smallTextArray)).covary[cats.effect.IO]
@@ -2169,7 +2174,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             . map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
         }
 
-      saturated(m"ZIO  utfDecode/utf8Encode x2.5")(target = 1*Second, sweep = 128):
+      saturated(m"ZIO  utfDecode/utf8Encode x2.5")(target = 1*Second, sweep = 128, refine = true):
         '{
             turbulence.Benchmarks.runZio:
               zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallTextArray))
@@ -2183,7 +2188,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       import threading.platformThreading
 
       saturated(m"Soundness  dec.enc.dec.enc.dec")
-        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
         '{
             var total = 0L
 
@@ -2197,7 +2202,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
       saturated(m"FS2  utf8 decode/encode x2.5")
-        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
         '{
             import cats.effect.unsafe.implicits.global
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.smallTextArray)).covary[cats.effect.IO]
@@ -2208,7 +2213,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
       saturated(m"ZIO  utfDecode/utf8Encode x2.5")
-        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
         '{
             turbulence.Benchmarks.runZio:
               zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.smallTextArray))
@@ -2233,7 +2238,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Stress: saturated fan-in sweep (256 KiB over 4 streams, N ≤ 128)"):
       import threading.platformThreading
 
-      saturated(m"Soundness  Confluence")(target = 1*Second, sweep = 128):
+      saturated(m"Soundness  Confluence")(target = 1*Second, sweep = 128, refine = true):
         '{
             import threading.virtualThreading
             supervise:
@@ -2243,7 +2248,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               total
         }
 
-      saturated(m"FS2  parJoinUnbounded")(target = 1*Second, sweep = 128):
+      saturated(m"FS2  parJoinUnbounded")(target = 1*Second, sweep = 128, refine = true):
         '{
             import cats.effect.unsafe.implicits.global
             import cats.effect.IO
@@ -2253,7 +2258,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             fs2.Stream.emits(streams).parJoinUnbounded.compile.count.unsafeRunSync()
         }
 
-      saturated(m"ZIO  mergeAllUnbounded")(target = 1*Second, sweep = 128):
+      saturated(m"ZIO  mergeAllUnbounded")(target = 1*Second, sweep = 128, refine = true):
         '{
             turbulence.Benchmarks.runZio:
               import zio.*, zio.stream.*
@@ -2262,7 +2267,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               ZStream.mergeAllUnbounded()(streams*).runCount
         }
 
-      saturated(m"Kyo  Stream.collectAll")(target = 1*Second, sweep = 128):
+      saturated(m"Kyo  Stream.collectAll")(target = 1*Second, sweep = 128, refine = true):
         '{
             import kyo.*
             import AllowUnsafe.embrace.danger
@@ -2285,7 +2290,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       import threading.platformThreading
 
       saturated(m"Soundness  Confluence")
-        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
         '{
             import threading.virtualThreading
             supervise:
@@ -2296,7 +2301,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
       saturated(m"FS2  parJoinUnbounded")
-        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
         '{
             import cats.effect.unsafe.implicits.global
             import cats.effect.IO
@@ -2307,7 +2312,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
       saturated(m"ZIO  mergeAllUnbounded")
-        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
         '{
             turbulence.Benchmarks.runZio:
               import zio.*, zio.stream.*
@@ -2325,7 +2330,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // six-bit one does not — on tab-heavy text the biased variant would fare
     // relatively better than it does here.
       saturated(m"Kyo  Stream.collectAll")
-        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99 ):
+        ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
         '{
             import kyo.*
             import AllowUnsafe.embrace.danger
