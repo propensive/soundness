@@ -394,13 +394,18 @@ extends RequestServable:
   :   Service^ =
 
     val idleTimeout: Int = 30000
+    val backlog: Int = 1024
 
     def startServer(): jn.ServerSocket raises Httpd.Error =
       try
         val address = jn.InetAddress.getByName(if local then "localhost" else "0.0.0.0").nn
 
-        ssl.lay(jn.ServerSocket(port, 0, address)): context =>
-          val socket = context.getServerSocketFactory.nn.createServerSocket(port, 0, address).nn
+        // The listen backlog: a burst of connections beyond it has its SYNs dropped, and the
+        // clients wait out a retransmit or a connect timeout. `0` would mean the JDK's default
+        // of fifty — far below what a keep-alive fleet opens at once; the kernel caps it
+        // (macOS `kern.ipc.somaxconn`, 128 by default; Linux 4096).
+        ssl.lay(jn.ServerSocket(port, backlog, address)): context =>
+          val socket = context.getServerSocketFactory.nn.createServerSocket(port, backlog, address).nn
 
           // Offer `h2` then `http/1.1` by ALPN, so a client that speaks HTTP/2
           // negotiates it during the TLS handshake; accepted sockets inherit
