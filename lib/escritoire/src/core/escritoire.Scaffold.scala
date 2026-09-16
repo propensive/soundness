@@ -40,6 +40,7 @@ package escritoire
 import anticipation.*
 import denominative.*
 import gossamer.*
+import hieroglyph.*
 import rudiments.*
 import vacuous.*
 
@@ -65,6 +66,23 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
       List:
         Array.from[Array[text]^{}]:
           columns0.map { column => column.title.cut(t"\n").to[Array] }
+
+    // A row phrased through these columns, ahead of any layout.
+    def cells(row: row)
+      ( using metrics: Text is Measurable, textual0: text is Textual { type Result = Char } )
+    :   Cells[text] =
+
+      Cells.of(columns, row)
+
+    // The layout of the titles alone, for a table that admits its rows one at a time.
+    def layout(width: Int)
+      ( using style: TableStyle, metrics: Text is Measurable, attenuation: Attenuation^ )
+      ( using textual0: text is Textual { type Result = Char } )
+    :   Layout[row, text] =
+
+      val titleCells: List[Cells[text]] = titles.map(Cells.of(_))
+      val aggregates = titleCells.fold(Layout.nothing(columns))(Layout.aggregate(_, _))
+      Layout.solve(columns, titleCells, aggregates, width, style)
 
     def tabulate(data: List[row]): Tabulation[text] { type Row = row } = new Tabulation[text]:
       type Row = row
