@@ -123,3 +123,25 @@ format. Entries are grouped by module, most-recently-added last within a module.
   shifted in — with ones; it is now masked to 32 bits. Any value derived from a `Feistel`
   network whose round function could return a negative number changes, so persisted values must
   be recomputed. (#TBD)
+
+## scintillate
+
+- `scintillate.SocketServer`'s listening socket is now bound with a backlog of 1024
+  (`jn.ServerSocket(port, 1024, address)` and, for TLS, `createServerSocket(port, 1024, address)`),
+  and `scintillate.Reactor`'s with 1024 (was 128); previously `SocketServer` passed `0`, i.e. the
+  JDK default of 50. The kernel caps the value (`kern.ipc.somaxconn`, `net.core.somaxconn`).
+  Observable only as the number of simultaneous pending connections accepted before SYNs are
+  dropped. (#TBD)
+
+## sedentary
+
+- `sedentary.LocalhostDevice#invoke` launches the measurement JVM with its standard error inherited
+  from the harness (`ProcessBuilder.Redirect.INHERIT`) instead of piped and discarded, so the
+  child's stderr now appears on the harness's stderr; a non-zero exit of the child raises
+  `Bench.Error`. (#TBD)
+- In `sedentary.Stress`, a body that throws any `Throwable` other than `OutOfMemoryError` no longer
+  terminates its worker thread with an uncaught exception: the window is recorded as failed (`ok =
+  false`, ending a sweep or capacity search as an SLO failure would) and one line `sedentary: a
+  worker failed at N=<n>: <throwable>` is printed to stderr. Previously such a window completed with
+  the dead worker's operations missing and the exception printed per worker by the default
+  uncaught-exception handler. (#TBD)
