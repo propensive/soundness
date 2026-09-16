@@ -98,21 +98,8 @@ type VerticalAlignment = tessellate.Alignment.Vertical
 val VerticalAlignment: tessellate.Alignment.Vertical.type = tessellate.Alignment.Vertical
 
 package columnar:
-  private def columnMetrics[textual: Textual { type Result = Char }](lines: Array[textual]^{})
-    ( using Text is Measurable )
-  :   Metrics =
-
-    var metrics = Metrics(0, 0)
-    lines.each { line => metrics = metrics.max(Flow.metrics(line)) }
-    metrics
-
   object Paragraph extends Columnar:
-    def flex[textual: Textual { type Result = Char }](lines: Array[textual]^{}, maxWidth: Int)
-      ( using Text is Measurable )
-    :   Flex =
-
-      Flex.content(columnMetrics(lines))
-
+    def flex(metrics: Metrics, maxWidth: Int): Flex = Flex.content(metrics)
 
     def fit[textual: Textual { type Result = Char }]
       ( lines: Array[textual]^{}, width: Int, textAlign: TextAlignment )
@@ -129,11 +116,7 @@ package columnar:
   object ParagraphOrBreak extends Columnar:
     // Elastic between a single cell and its natural width: the strategy prefers word
     // wrapping but will chop mid-word rather than overflow, so it has no min-content floor.
-    def flex[textual: Textual { type Result = Char }](lines: Array[textual]^{}, maxWidth: Int)
-      ( using Text is Measurable )
-    :   Flex =
-
-      val metrics = columnMetrics(lines)
+    def flex(metrics: Metrics, maxWidth: Int): Flex =
       val floor = metrics.natural.min(1)
       Flex(Metrics(floor, metrics.natural), (metrics.natural - floor).max(0).toDouble, metrics.natural)
 
@@ -143,19 +126,17 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[textual] =
 
-      if columnMetrics(lines).min < width then Paragraph.fit(lines, width, textAlign)
+      if Columnar.metrics(lines).min < width then Paragraph.fit(lines, width, textAlign)
       else
         // As above: the block form, not an eta-expanded `pipe`.
         Sequence.from:
           lines.readable.to(IndexedSeq).bind(Flow.chop(_, width)).toVector
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
-    def flex[text: Textual { type Result = Char }](lines: Array[text]^{}, maxWidth: Int)
-      ( using Text is Measurable )
-    :   Flex =
+    def flex(metrics: Metrics, maxWidth: Int): Flex = Flex(Metrics(fixedWidth), 0.0, fixedWidth)
 
-      Flex(Metrics(fixedWidth), 0.0, fixedWidth)
-
+    // The width is the column's own, whatever its content: every cell is accommodated.
+    override def accommodates(aggregate: Metrics, cell: Metrics): Boolean = true
 
     def fit[text: Textual { type Result = Char }]
       ( lines: Array[text]^{}, width: Int, textAlign: TextAlignment )
@@ -167,11 +148,8 @@ package columnar:
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     // Elastic between one cell and its natural width, truncating whatever exceeds the
     // settled width with an ellipsis.
-    def flex[text: Textual { type Result = Char }](lines: Array[text]^{}, maxWidth: Int)
-      ( using Text is Measurable )
-    :   Flex =
-
-      val natural = columnMetrics(lines).natural
+    def flex(metrics: Metrics, maxWidth: Int): Flex =
+      val natural = metrics.natural
       val floor = natural.min(1)
       Flex(Metrics(floor, natural), (natural - floor).max(0).toDouble, natural)
 
@@ -186,12 +164,8 @@ package columnar:
   case class Collapsible(threshold: Double) extends Columnar:
     // Rigid at its natural width, but drops from the table entirely when space runs out;
     // a higher threshold collapses earlier (a lower rank collapses first).
-    def flex[text: Textual { type Result = Char }](lines: Array[text]^{}, maxWidth: Int)
-      ( using Text is Measurable )
-    :   Flex =
-
-      val natural = columnMetrics(lines).natural
-      Flex(Metrics(natural), 0.0, rank = ((1.0 - threshold)*1000).toInt, collapsible = true)
+    def flex(metrics: Metrics, maxWidth: Int): Flex =
+      Flex(Metrics(metrics.natural), 0.0, rank = ((1.0 - threshold)*1000).toInt, collapsible = true)
 
 
     def fit[text: Textual { type Result = Char }]

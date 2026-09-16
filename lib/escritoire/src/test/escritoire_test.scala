@@ -35,6 +35,7 @@ package escritoire
 import soundness.*
 
 import textMetrics.uniformMetric
+import denominative.dysasymptotics.linearSize
 
 case class Person(name: Text, age: Int)
 
@@ -345,6 +346,111 @@ object Tests extends Suite(m"Escritoire tests"):
             t"│ one   │   │",
             t"│ two   │ x │",
             t"╰───────┴───╯" )
+
+    // ─── Incremental layout ─────────────────────────────────────────────────
+
+    // The table rendered row by row against a layout the rows were admitted to one at a time:
+    // what a live view does, and what must match `grid.render` line for line.
+    def incremental[row](scaffold: Scaffold[row, Text], data: List[row], width: Int)
+       (using TableStyle, Attenuation^)
+    :   scala.collection.immutable.List[Text] =
+      val cells: List[Cells[Text]] = data.map(scaffold.cells(_))
+      val layout = cells.fold(scaffold.layout(width)) { (layout, cells) => layout.extend(cells) }
+      val body: List[Text] = cells.bind { (cells: Cells[Text]) => layout.lines(cells, Nil) }
+      (layout.topRule.let(List(_)).or(Nil) + layout.titleLines + List(layout.titleRule) + body
+          + layout.bottomRule.let(List(_)).or(Nil)).stdlib.to(List)
+
+    test(m"the metrics of lines are the widest word and the widest line"):
+      Columnar.metrics(Array(t"hello world", t"hi"))
+    . assert(_ == Metrics(5, 11))
+
+    test(m"a row within a layout's aggregates is accommodated, and extending with it is the identity"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      val layout = scaffold.layout(40).extend(scaffold.cells(Person(t"Alice", 30)))
+      val bob = scaffold.cells(Person(t"Bob", 5))
+      (layout.accommodates(bob), layout.extend(bob) eq layout)
+    . assert(_ == (true, true))
+
+    test(m"a wider row is not accommodated and widens the aggregates"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      val layout = scaffold.layout(40).extend(scaffold.cells(Person(t"Bob", 5)))
+      val alice = scaffold.cells(Person(t"Alexandra", 30))
+      val extended = layout.extend(alice)
+      (layout.accommodates(alice), extended eq layout, extended.aggregates.readable(0).natural)
+    . assert(_ == (false, false, 9))
+
+    test(m"a Fixed column accommodates any content"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      val layout = truncating.layout(40)
+      layout.accommodates(truncating.cells(Person(t"Alice", 30)))
+    . assert(_ == true)
+
+    test(m"a row that widens a stretched column's claim but not its width leaves the layout stable"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      // At 18 cells the phrase column is already pinned by the width, so a longer phrase
+      // re-solves to the same survivors.
+      val layout = wrapping.layout(18).extend(wrapping.cells(Person(t"Alice", 30)))
+      val longer = Scaffold[Person, Text](Column(t"Phrase", sizing = columnar.Paragraph)(_ => t"the quick brown fox jumps"), Column(t"Age")(_.age)).cells(Person(t"Bob", 5))
+      val extended = layout.extend(longer)
+      (extended eq layout, extended.stable(layout))
+    . assert(_ == (false, true))
+
+    test(m"rendering row by row against an incremental layout matches the grid, in every style"):
+      import columnAttenuation.ignoreAttenuation
+      val styles: List[TableStyle] =
+        List(tableStyles.thickTableStyle, tableStyles.horizontalTableStyle, tableStyles.midOnlyTableStyle,
+            tableStyles.minimalTableStyle, tableStyles.thinRoundedTableStyle, tableStyles.verticalTableStyle)
+
+      val collapsing =
+        Scaffold[Person, Text]
+          ( Column(t"Name")(_.name),
+            Column(t"Note", sizing = columnar.Collapsible(0.5))(_ => t"annotation") )
+
+      styles.all: style =>
+        given TableStyle = style
+        render(scaffold, people, 40) == incremental(scaffold, people, 40)
+        && render(wrapping, people, 18) == incremental(wrapping, people, 18)
+        && render(truncating, people, 40) == incremental(truncating, people, 40)
+        && render(collapsing, people, 14) == incremental(collapsing, people, 14)
+        && render(collapsing, people, 30) == incremental(collapsing, people, 30)
+    . assert(_ == true)
+
+    test(m"a row's height is its rendered line count, wrapped or not"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      val alice = wrapping.cells(Person(t"Alice", 30))
+      val narrow = wrapping.layout(18).extend(alice)
+      val wide = wrapping.layout(40).extend(alice)
+      val cut = truncating.layout(40).extend(truncating.cells(Person(t"Alice", 30)))
+      val empty = Scaffold[Person, Text](Column(t"Name")(_.name), Column(t"Note")(_ => t"")).pipe: blank =>
+        val cells = blank.cells(Person(t"Alice", 30))
+        val layout = blank.layout(40).extend(cells)
+        (layout.height(cells), layout.lines(cells, Nil).size)
+      ( (narrow.height(alice), narrow.lines(alice, Nil).size),
+        (wide.height(alice), wide.lines(alice, Nil).size),
+        (cut.height(truncating.cells(Person(t"Alice", 30))), cut.lines(truncating.cells(Person(t"Alice", 30)), Nil).size),
+        empty )
+    . assert(_ == ((4, 4), (1, 1), (1, 1), (1, 1)))
+
+    test(m"resizing a layout matches a fresh layout at the new width"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      val cells = people.map(scaffold.cells(_))
+      val layout = cells.fold(scaffold.layout(40)) { (layout, cells) => layout.extend(cells) }
+      val fresh = cells.fold(scaffold.layout(12)) { (layout, cells) => layout.extend(cells) }
+      layout.resize(12).survivors == fresh.survivors
+    . assert(_ == true)
+
+    test(m"a tabulation's layout has the widths its grid renders with"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      val tabulation = scaffold.tabulate(people)
+      tabulation.layout(40).widths.readable.to(List) == tabulation.grid(40).sections.prim.let(_.widths.readable.to(List)).or(Nil)
+    . assert(_ == true)
 
     // ─── Attenuation ────────────────────────────────────────────────────────
 
