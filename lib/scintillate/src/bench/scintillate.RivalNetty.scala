@@ -27,91 +27,78 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
-┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package scintillate
 
-import scala.compiletime
+import io.netty.bootstrap.ServerBootstrap
+import io.netty.buffer.{ByteBuf, Unpooled}
+import io.netty.channel.*
+import io.netty.channel.nio.NioIoHandler
+import io.netty.channel.socket.SocketChannel
+import io.netty.channel.socket.nio.NioServerSocketChannel
+import io.netty.handler.codec.http.*
 
-import anticipation.*
-import contingency.*
-import gesticulate.*
-import gossamer.*
-import prepositional.*
-import spectacular.*
-import turbulence.*
-import zephyrine.*
+// Raw Netty on NIO: `HttpServerCodec`, an aggregator for the echo body, and one handler
+// dispatching on the URI by hand, in the shape of TechEmpower's Netty entry.
+object RivalNetty:
+  @ChannelHandler.Sharable
+  final class Handler extends SimpleChannelInboundHandler[FullHttpRequest]:
+    override def channelRead0(context: ChannelHandlerContext, request: FullHttpRequest): Unit =
+      val uri = request.uri.nn
 
-object Servable:
-  def apply[response](mediaType: response => MediaType)(lambda: response => Http.Body)
-  :   ((response is Servable)^{mediaType, lambda}) =
+      def respond(status: HttpResponseStatus, body: ByteBuf, contentType: String): Unit =
+        val response = DefaultFullHttpResponse(request.protocolVersion, status, body)
+        response.headers.nn
+        . set(HttpHeaderNames.CONTENT_TYPE, contentType)
+        . set(HttpHeaderNames.CONTENT_LENGTH, body.readableBytes)
 
-    response =>
+        if HttpUtil.isKeepAlive(request) then context.writeAndFlush(response)
+        else context.writeAndFlush(response).nn.addListener(ChannelFutureListener.CLOSE)
 
-      val headers = List(Http.Header(t"content-type", mediaType(response).show))
-      Http.Ok(headers, lambda(response))
+      uri match
+        case "/bench" =>
+          respond(HttpResponseStatus.OK, Unpooled.wrappedBuffer(RivalJackson.hello), "text/plain")
 
-  // For a media type that does not depend on the value: the `content-type` header is
-  // rendered once here, not per response.
-  def apply[response](mediaType: MediaType)(lambda: response => Http.Body)
-  :   ((response is Servable)^{lambda}) =
+        case "/json" =>
+          respond
+            ( HttpResponseStatus.OK,
+              Unpooled.wrappedBuffer(RivalJackson.greeting()),
+              "application/json" )
 
-    val headers = List(Http.Header(t"content-type", mediaType.show))
-    response => Http.Ok(headers, lambda(response))
+        case "/large" =>
+          respond
+            ( HttpResponseStatus.OK,
+              Unpooled.wrappedBuffer(HttpWorkload.largeBody),
+              "application/octet-stream" )
 
+        case "/echo" =>
+          respond(HttpResponseStatus.OK, request.content.nn.retain(), "application/octet-stream")
 
-  given content: Content is Servable:
-    def serve(content: Content): Http.Response =
-      val headers = List(Http.Header(t"content-type", content.media.show))
+        case _ if uri.startsWith(RivalJackson.userPrefix) =>
+          val id = uri.substring(RivalJackson.userPrefix.length)
+          val requestId = request.headers.nn.get(HttpWorkload.requestIdHeader)
+          val body = s"$id:${if requestId == null then "" else requestId}"
+          respond(HttpResponseStatus.OK, Unpooled.copiedBuffer(body.getBytes("UTF-8")), "text/plain")
 
-      Http.Ok(headers, Http.Body.Flowing(() => Stream(content.stream)))
+        case _ =>
+          respond(HttpResponseStatus.NOT_FOUND, Unpooled.EMPTY_BUFFER, "text/plain")
 
-  given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
-  =>  response is Servable =
+  lazy val server: Unit =
+    val boss = MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory())
+    val workers = MultiThreadIoEventLoopGroup(NioIoHandler.newFactory())
+    val handler = Handler()
 
-    def mediaType(value: response): MediaType = unsafely(Media.parse(response.generic(value)(0)))
+    val initializer = new ChannelInitializer[SocketChannel]:
+      override def initChannel(channel: SocketChannel): Unit =
+        channel.pipeline.nn.addLast(HttpServerCodec(), HttpObjectAggregator(1 << 20), handler)
 
-    Servable[response](mediaType): value =>
-      Http.Body.Flowing: () =>
-        response.generic(value)(1).stream
+    ServerBootstrap()
+    . group(boss, workers).nn
+    . channel(classOf[NioServerSocketChannel]).nn
+    . childOption(ChannelOption.TCP_NODELAY, true).nn
+    . childHandler(initializer).nn
+    . bind(HttpRivals.port(HttpRivals.Netty)).nn
+    . sync()
 
-  given data: Data is Servable =
-    Servable[Data](media"application/octet-stream")(Http.Body.Fixed(_))
-
-  // `Text` is served as the generic `media` instance below would serve it, but with its
-  // constant `content-type` header rendered once, here — outside the given, whose body is
-  // evaluated at every summons because of its context parameter. More specific than
-  // `media`, so it is the instance chosen for `Text`.
-  private val textHeaders: List[Http.Header] =
-    List(Http.Header(t"content-type", media"text/plain".show))
-
-  given text: (encoder: hieroglyph.CharEncoder) => Text is Servable =
-    text => Http.Ok(textHeaders, Http.Body.Fixed(text.in[Data]))
-
-  inline given media: [media: Media] => media is Servable = compiletime.summonFrom:
-    case encodable: (`media` is Encodable in Data) =>
-      value =>
-        val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Fixed(encodable.encode(value)))
-
-    case streamable: (`media` is Streamable by Data over Credit) =>
-      value =>
-        val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Flowing(() => streamable.stream(value)))
-
-    case streamable: (`media` is Streamable by Text over Credit) =>
-      val encoder0: hieroglyph.CharEncoder = compiletime.summonInline[hieroglyph.CharEncoder]
-      val buffering0: zephyrine.Buffering = compiletime.summonInline[zephyrine.Buffering]
-
-      value =>
-        val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        given buffering: zephyrine.Buffering = buffering0
-
-        Http.Ok(headers, Http.Body.Flowing { () =>
-          streamable.stream(value).via(encoder0).asInstanceOf[(Stream[Data] over Credit)^]
-        })
-
-trait Servable extends Typeclass:
-  def serve(content: Self): Http.Response
-  def contramap[self2](lambda: self2 => Self): (self2 is Servable)^{this, lambda} = content => serve(lambda(content))
+    HttpRivals.ready(HttpRivals.Netty)

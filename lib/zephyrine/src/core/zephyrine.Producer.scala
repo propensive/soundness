@@ -66,7 +66,11 @@ object Producer:
 
   // Synchronous: run `body`, accumulating directly into a builder, and return the whole value. No
   // concurrency, no chunk buffer, and none of the streaming path's single-thread deadlock risk.
-  def collect[medium](using addressable: medium is Addressable)(hint: Int = 4096)
+  // The hint sizes the initial builder: small by default, since the builder doubles as it fills
+  // (the copying that costs for a large output is the same from any start), whereas a large
+  // start is paid in full by every small output — a 4096 default was the biggest single
+  // allocation of rendering a one-line JSON response.
+  def collect[medium](using addressable: medium is Addressable)(hint: Int = 256)
     ( body: ((Producer[medium] { type Operand = addressable.Operand })^) => Unit )
   :   medium =
 

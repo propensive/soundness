@@ -81,9 +81,11 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
   @scala.caps.unsafe.untrackedCaptures
   var runner0: Runner[Report] = makeRunner(Selection.all, Unset)
 
-  // An alias given is memoized on first use, which is safe here only because `invoke`
-  // replaces `runner0` with a selection-aware runner before anything summons it.
-  given runner: Runner[Report] = runner0
+  // Inline, so every summons reads the CURRENT runner: a memoized alias would keep the first
+  // runner a suite ever saw, which is wrong for a suite invoked more than once in one
+  // classloader — by a host running several suites through one loader, or by another suite
+  // that invokes this one as a nested suite before the host invokes it on its own.
+  inline given runner: Runner[Report] = runner0
 
   // A pure `Testable` view of this suite rather than `this`: the suite itself captures its
   // runner and deferred test blocks, so it is a capability, which `Testable`'s pure type
@@ -100,9 +102,11 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
 
   // Runs the suite with an EVENT SINK and RETURNS the exit status — 0 = passed, 1 = failures,
   // 2 = the suite threw — instead of terminating the JVM, so a host can invoke suites
-  // in-process without each one bringing the process down. The host is expected to load each
-  // suite in a FRESH classloader per invocation (the suite object holds per-run state in
-  // `runner0`). The arguments are selection terms, newline-separated in one `Text` (a term can
+  // in-process without each one bringing the process down. A host may invoke any number of
+  // suites, any number of times, through ONE classloader: the per-run state in `runner0` is
+  // replaced on every invocation and never memoized (see `runner`), which `Streamer.reentrant`
+  // advertises to hosts that must also handle suites built before this was so. The arguments
+  // are selection terms, newline-separated in one `Text` (a term can
   // never contain a newline), the empty `Text` meaning none. The report still accumulates
   // (for `passed` and selection accounting), but every result leaves as a `TestEvent`
   // through `sink`, ending with `RunCompleted`. A `--list` selection emits one

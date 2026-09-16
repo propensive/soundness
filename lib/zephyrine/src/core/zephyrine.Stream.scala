@@ -117,6 +117,12 @@ object Stream:
       private var start0: Int = 0
       private var limit0: Int = 0
       private var size: Int = 0
+      private var owned: Boolean = true
+
+      // Owned storage of at least `size`: the current one when it is ours and big enough.
+      private def scratch(size: Int): AnyRef =
+        if owned && addressable0.storageSize(storage) >= size then storage.asInstanceOf[AnyRef]
+        else addressable0.allocate(size).asInstanceOf[AnyRef]
 
       protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
@@ -138,11 +144,19 @@ object Stream:
                 size = addressable0.length(chunk)
 
                 if size == 0 then advance() else
-                  if addressable0.storageSize(storage) < size then
-                    storage = addressable0.allocate(size).asInstanceOf[addressable0.Storage]
+                  // A chunk exposing an immutable backing (`Data`) is lent by reference, as
+                  // the single-chunk factory lends its value; any other is copied into
+                  // owned scratch storage. A borrowed backing is never reused as scratch.
+                  val backing: Optional[AnyRef] =
+                    addressable0.backing(chunk).asInstanceOf[Optional[AnyRef]]
 
-                  addressable0.copyChunk
-                    (chunk, 0, storage.asInstanceOf[addressable0.Storage^], 0, size)
+                  storage = backing.or(scratch(size)).asInstanceOf[addressable0.Storage]
+                  owned = backing.absent
+
+                  if owned then
+                    addressable0.copyChunk
+                      ( chunk, 0, storage.asInstanceOf[addressable0.Storage^], 0, size )
+
                   start0 = 0
                   limit0 = size.min(granted)
                   limit0
@@ -170,6 +184,12 @@ object Stream:
       private var start0: Int = 0
       private var limit0: Int = 0
       private var size: Int = 0
+      private var owned: Boolean = true
+
+      // Owned storage of at least `size`: the current one when it is ours and big enough.
+      private def scratch(size: Int): AnyRef =
+        if owned && addressable0.storageSize(storage) >= size then storage.asInstanceOf[AnyRef]
+        else addressable0.allocate(size).asInstanceOf[AnyRef]
 
       protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
@@ -191,11 +211,19 @@ object Stream:
                 size = addressable0.length(chunk)
 
                 if size == 0 then advance() else
-                  if addressable0.storageSize(storage) < size then
-                    storage = addressable0.allocate(size).asInstanceOf[addressable0.Storage]
+                  // A chunk exposing an immutable backing (`Data`) is lent by reference, as
+                  // the single-chunk factory lends its value; any other is copied into
+                  // owned scratch storage. A borrowed backing is never reused as scratch.
+                  val backing: Optional[AnyRef] =
+                    addressable0.backing(chunk).asInstanceOf[Optional[AnyRef]]
 
-                  addressable0.copyChunk
-                    (chunk, 0, storage.asInstanceOf[addressable0.Storage^], 0, size)
+                  storage = backing.or(scratch(size)).asInstanceOf[addressable0.Storage]
+                  owned = backing.absent
+
+                  if owned then
+                    addressable0.copyChunk
+                      ( chunk, 0, storage.asInstanceOf[addressable0.Storage^], 0, size )
+
                   start0 = 0
                   limit0 = size.min(granted)
                   limit0

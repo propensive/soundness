@@ -137,6 +137,13 @@ object Reactor:
     // measure); `halted` records that read interest has been withdrawn until the
     // queue drains — the explicit backpressure a slow reader earns.
     private val outbound: java.util.ArrayDeque[jnio.ByteBuffer] = java.util.ArrayDeque()
+
+    // One static cursor per connection, re-pointed at the accumulator for every head (see
+    // `Cursor.repoint`): no cursor and no copy of the head per request. Cast-erased, as the
+    // key attachment is; re-asserted exclusive at its one use.
+    @scala.caps.unsafe.untrackedCaptures
+    private val cursor0: AnyRef =
+      Cursor[Data](new scala.Array[Byte](0).asInstanceOf[Data]).asInstanceOf[AnyRef]
     private var queued: Long = 0L
     private var halted: Boolean = false
 
@@ -216,16 +223,15 @@ object Reactor:
     // which provably cannot block: a preset cursor is `static` — its `refill` never
     // pulls. Requests the fast path cannot serve inline leave for the fallback.
     private update def parseHead(reactor: Reactor^): Unit =
-      // A `Data` is a frozen byte array; the cast freezes the freshly-copied range.
-      val headData: Data =
-        java.util.Arrays.copyOfRange(accumulator, 0, headEnd).nn.asInstanceOf[Data]
-
       recover:
         case error: Http.Request.Error =>
           refuse(SocketServer.errorStatus(error.reason))
 
       . protect:
-          val cursor = Cursor[Data](headData)
+          // The head is parsed in place: the cursor borrows the accumulator's first
+          // `headEnd` bytes, which nothing writes until the parse has returned.
+          val cursor = cursor0.asInstanceOf[Cursor[Data, {}]^]
+          cursor.repoint(accumulator.asInstanceOf[AnyRef], headEnd)
           val head = Http.Request.parseHead(cursor)
           val facts = SocketServer.factsOf(head)
 
@@ -272,14 +278,23 @@ object Reactor:
       val respond: Http.Connection.Respond^{this} = new Http.Connection.Respond:
         def apply(response: Http.Response^)(using Tactic[Truncation.Error]): Unit =
           val response2 = if keep0 then response else response + closeHeader
-          // `memoize` forces the whole serialized response, including a `Flowing`
-          // body, to completion on the lane: the reactive front-end's non-blocking
-          // handler contract. The result is one buffer, hence one channel write.
-          val bytes: Data =
-            Http.Response.serialize(response2, head.method != Http.Head, head.version)
-            . memoize
+          val includeBody = head.method != Http.Head
+          val upgrade = response2.status == Http.SwitchingProtocols
 
-          enqueue(bytes)
+          response2.body match
+            // The common case: the head and the handler's own frozen bytes go to the
+            // channel as two buffers in one gathering write, with neither copied.
+            case Http.Body.Fixed(data) if includeBody && !upgrade =>
+              enqueue(Http.Response.serializeHead(response2, head.version), data)
+
+            case Http.Body.Fixed(_) | Http.Body.Empty if !upgrade =>
+              enqueue(Http.Response.serializeHead(response2, head.version))
+
+            // `memoize` forces the whole serialized response, including a `Flowing`
+            // body, to completion on the lane: the reactive front-end's non-blocking
+            // handler contract. The result is one buffer, hence one channel write.
+            case _ =>
+              enqueue(Http.Response.serialize(response2, includeBody, head.version).memoize)
 
       val request =
         Http.Request
@@ -307,23 +322,52 @@ object Reactor:
       enqueue(Http.Response.serialize(response).memoize)
       closing = true
 
-    private update def enqueue(bytes: Data): Unit =
+    private update def queue(bytes: Data): Unit =
       outbound.add(jnio.ByteBuffer.wrap(bytes.asInstanceOf[scala.Array[Byte]]).nn)
       queued += bytes.asInstanceOf[scala.Array[Byte]].length
+
+    private update def enqueue(bytes: Data): Unit =
+      queue(bytes)
+      write()
+
+    private update def enqueue(head: Data, body: Data): Unit =
+      queue(head)
+      queue(body)
       write()
 
     update def writable(): Unit = write()
+
+    // The buffers of one gathering write: a head and its body, or several pipelined
+    // responses, in one syscall. Cleared after each write so that an idle keep-alive
+    // connection does not pin its last response's body.
+    // Untracked, as `Stream`'s storage: written only through the exclusive view below.
+    @scala.caps.unsafe.untrackedCaptures
+    private val gather: scala.Array[jnio.ByteBuffer | Null] =
+      new scala.Array[jnio.ByteBuffer | Null](16)
 
     private update def write(): Unit =
       var blocked = false
 
       try
         while !blocked && !outbound.isEmpty do
-          val pending = outbound.peek.nn
-          val before = pending.remaining
-          channel.write(pending)
-          queued -= before - pending.remaining
-          if pending.hasRemaining then blocked = true else outbound.poll()
+          val slots = gather.asInstanceOf[scala.Array[jnio.ByteBuffer | Null]^]
+          var count = 0
+          val pending = outbound.iterator.nn
+
+          while count < slots.length && pending.hasNext do
+            slots(count) = pending.next()
+            count += 1
+
+          queued -= channel.write(gather, 0, count)
+
+          // Discard the buffers written in full; the first left partial blocks the rest.
+          var index = 0
+
+          while index < count do
+            if !blocked && slots(index).nn.hasRemaining then blocked = true
+            if !blocked then outbound.poll()
+            slots(index) = null
+            index += 1
       catch case _: java.io.IOException =>
         outbound.clear()
         queued = 0L
@@ -441,7 +485,8 @@ final class Reactor
     val channel = jnc.ServerSocketChannel.open().nn
     channel.configureBlocking(true)
     val address = jn.InetAddress.getByName(if local then "localhost" else "0.0.0.0").nn
-    channel.bind(jn.InetSocketAddress(address, port), 128)
+    // The listen backlog, as `SocketServer`'s: the kernel caps it (128 on a default macOS).
+    channel.bind(jn.InetSocketAddress(address, port), 1024)
     channel
 
   private val fleet: scala.IArray[Lane] =

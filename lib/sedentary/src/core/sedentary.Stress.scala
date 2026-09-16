@@ -83,6 +83,16 @@ import workingDirectories.javaBaseWorkingDirectory
 // closed-loop search — operation latency includes queuing inside the body's own pipeline —
 // which honestly answers "how many concurrent pipelines, each completing promptly?".
 //
+// Setting `refine` looks for the optimum worker count rather than settling for a power of
+// two (in a sweep) or the largest compliant count (in a capacity search): the smallest count
+// whose throughput is within 5% of the highest — the peak of a peaked curve, or the knee of
+// one which flattens out. Once the ascent — and, with an SLO, the boundary search — is over,
+// the search probes to about 6% around the peak and then down to the knee, re-measures the
+// candidates over extended windows, and flags the winner `sustained`. The probes are extra
+// rows on the same `N` axis, so the curve is simply denser where it matters. It typically
+// costs up to twice `StressSearch.MaxProbes` more windows, plus three extended ones, and
+// more if a lucky window forces the search to start again. See `StressSearch`.
+//
 // `cpus` limits the measurement JVM's processors (see `BenchmarkDevice.invoke` for the
 // pinning caveat), and `heap` its memory, so the search runs under pinned resources. `gc`
 // selects its collector (`-XX:+Use<gc>GC`, default `Serial`): Serial keeps microbenchmark
@@ -113,7 +123,8 @@ extends Rig:
       concurrency: Optional[Int]      = Unset,
       sweep:       Optional[Int]      = Unset,
       threshold:   Optional[duration] = Unset,
-      compliance:  Optional[Int]      = Unset )
+      compliance:  Optional[Int]      = Unset,
+      refine:      Boolean            = false )
     ( body0: (References over Transport) ?=> Quotes ?=> Expr[Any] )
     ( using System, TemporaryDirectory, Stageable over Transport in Form )
     ( using runner:    Runner[report],
@@ -195,18 +206,16 @@ extends Rig:
           val targetBp: Long = ${Expr(complianceBp)}
           val slo = thresholdIndex2 >= 0
 
-          // Phases: 0 = growth (doubling; the whole run when there is no SLO), 1 = binary
-          // refinement of the compliant/non-compliant boundary, 2 = confirmation of the
-          // candidate over a 3x window, 9 = done.
-          var phase = 0
-          var currentN = startN
-          var low = 0
-          var high = 0
-          var confirmations = 0
+          // `StressSearch` chooses each window's worker count from the ones before it.
+          val search = new sedentary.StressSearch(startN, capN, slo, ${Expr(refine)})
 
-          while phase != 9 do
-            val n: Int = currentN
-            val window: Long = if phase == 2 then $target2*3L else $target2
+          // Where each window's `sustained` flag sits in `results`, or -1 for a window which
+          // was not reported; the winner is only known once the search is over.
+          val flags = scala.collection.mutable.ArrayBuffer[Int]()
+
+          while !search.done do
+            val n: Int = search.current
+            val window: Long = if search.extended then $target2*3L else $target2
 
             // Preallocate every measurement structure before the allocation snapshot, so none
             // of it pollutes the allocation-per-operation figure.
@@ -214,6 +223,10 @@ extends Rig:
             val histograms = new scala.Array[scala.Array[Long] | Null](n)
             val threads = new scala.Array[java.lang.Thread | Null](n)
             val oom = new java.util.concurrent.atomic.AtomicBoolean(false)
+            // The first failure of a worker in this window, if any: a body that throws (a
+            // benchmark client whose server stopped answering, say) fails the window rather
+            // than dying as an uncaught exception, which would print a stack trace per worker.
+            val failure = new java.util.concurrent.atomic.AtomicReference[Throwable | Null](null)
             var k = 0
 
             while k < n do
@@ -270,7 +283,9 @@ extends Rig:
 
                   ops(slot) = count
 
-                catch case error: java.lang.OutOfMemoryError => oom.set(true)
+                catch
+                  case error: java.lang.OutOfMemoryError => oom.set(true)
+                  case error: Throwable                  => failure.compareAndSet(null, error)
 
               val thread =
                 if ${Expr(virtual2)} then java.lang.Thread.ofVirtual.nn.start(runnable).nn
@@ -367,8 +382,12 @@ extends Rig:
                 below*10000L/total
 
             val thrash = gcTime*2000000L > elapsed
-            val ok = !oom.get && !thrash && (!slo || compliantBp >= targetBp)
-            val sustained = slo && phase == 2 && ok
+            val failed = failure.get != null
+
+            if failed then
+              jl.System.err.nn.println(s"sedentary: a worker failed at N=$n: ${failure.get}")
+
+            val ok = !oom.get && !failed && !thrash && (!slo || compliantBp >= targetBp)
 
             // A step which ran out of memory is not reported; every other window is,
             // including a failing confirmation — it is still a valid measurement at that N.
@@ -386,45 +405,16 @@ extends Rig:
               results += percentile(0.99)
               results += percentile(0.999)
               results += compliantBp
-              results += (if sustained then 1L else 0L)
-
-            if !slo then
-              // Plain sweep: keep doubling until the cap; stop on memory exhaustion or a
-              // window that spent more than half its time collecting garbage.
-              if oom.get || thrash || n >= capN then phase = 9
-              else currentN = if n >= capN/2 then capN else n*2
-            else if phase == 0 then
-              // Growth: double while compliant. The first failure brackets the boundary; a
-              // failure on the very first window means nothing is sustainable.
-              if ok then
-                low = n
-
-                if n >= capN then phase = 2 else currentN = if n >= capN/2 then capN else n*2
-              else if low == 0 then
-                phase = 9
-              else
-                high = n
-                phase = 1
-                currentN = low + (high - low)/2
-            else if phase == 1 then
-              // Refinement: binary-search between the largest compliant and the smallest
-              // failing worker count, to ~12% resolution.
-              if ok then low = n else high = n
-
-              if high - low <= (if low > 8 then low/8 else 1) then
-                phase = 2
-                currentN = low
-              else
-                currentN = low + (high - low)/2
+              flags += results.length
+              results += 0L
             else
-              // Confirmation: the candidate must also survive a window three times longer.
-              // On failure, step the candidate down ~12% and try again, a few times.
-              if ok then
-                phase = 9
-              else
-                confirmations += 1
-                currentN = n - (if n > 8 then n/8 else 1)
-                if confirmations >= 3 || currentN < startN then phase = 9
+              flags += -1
+
+            val throughput = if elapsed == 0L then 0.0 else total.toDouble/elapsed
+            search.record(throughput, ok, oom.get || thrash)
+
+          val winner = search.winner
+          if winner >= 0 && flags(winner) >= 0 then results(flags(winner)) = 1L
 
           if jl.System.nanoTime < 0L then jl.System.err.nn.println(sink.get)
 
@@ -451,8 +441,12 @@ extends Rig:
     // plus a binary search plus the sustained-confirmation windows — roughly logarithmic in
     // `limit`. A budgeting estimate, not a promise.
     val steps: Long =
-      if sweeping then 2L*(64 - java.lang.Long.numberOfLeadingZeros(limit.max(1).toLong)) + 6L
-      else 1L
+      if !sweeping then 1L else
+        val search = 2L*(64 - java.lang.Long.numberOfLeadingZeros(limit.max(1).toLong)) + 6L
+        // Peak and knee probes and three 3x confirmations, once and for each restart, then up
+        // to three 3x step-downs.
+        val cycle = 2L*StressSearch.MaxProbes + 9L
+        if refine then search + (StressSearch.Restarts + 1)*cycle + 9L else search
 
     if !runner.skip(testId, Entry.Kind.Stress, Nil, scaledTarget*steps) then
       dispatch(body).stdlib.grouped(14).toList.foreach: step =>

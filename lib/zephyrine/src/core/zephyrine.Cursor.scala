@@ -40,7 +40,7 @@ import anticipation.Data
 import anticipation.Text
 import contingency.*
 import denominative.*
-import fulminate.{Diagnostics, Hazard}
+import fulminate.{Diagnostics, Hazard, m, panic}
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -469,6 +469,26 @@ extends caps.Mutable:
           writeEnd = len
 
     if writeEnd == 0 then refill()
+
+  // Re-point a static cursor at another borrowed region, resetting every position: the
+  // one-cursor-per-connection idiom, where a server parses each request head straight out
+  // of its accumulator without allocating a cursor (two mark arrays and a dozen fields) or
+  // copying the head out. Only a static cursor may be re-pointed: it never writes its
+  // buffer, which is what makes borrowing the region sound. The region must stay unwritten
+  // until the parse that reads it has finished. The storage arrives as the same neutral
+  // carrier `preset` uses (a caller holding a `Cursor[data, {}]^` cannot name
+  // `addressable.Storage`); the cast is the same audited one as the constructor's.
+  update def repoint(storage: AnyRef, size: Int): Unit =
+    if !static then panic(m"only a static (preset) cursor may be re-pointed")
+    buffer = storage.asInstanceOf[addressable.Storage]
+    pos = 0
+    writeEnd = size
+    basePos = 0L
+    holdStart = -1
+    ended = false
+    marksSize = 0
+    lineNo = Prim
+    columnNo = Prim
 
   // ─── slow path: refill ────────────────────────────────────────────────────
   // Kept as a regular (non-inline) method so the slow path's bytecode bloat

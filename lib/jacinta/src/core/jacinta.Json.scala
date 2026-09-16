@@ -577,13 +577,19 @@ trait Json2 extends Json3:
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
+        // `@name[Json]` / bare `@name` renames: field name -> JSON key. Resolved once, on the
+        // first encode, not on every one — and not at derivation, when a directly-recursive
+        // type's field instances would re-enter this derivation without end. `arity` bounds
+        // the output arrays exactly, so an encode with no absent field allocates its two
+        // arrays once and copies nothing.
+        lazy val renames: Map[Text, Text] = relabelling[derivation, Json]
+        lazy val arity: Int = contexts[derivation]() { [field] => context => () }.length
+
         value =>
           provide[Foci[Json.Focus]]:
-            val labels: scm.ArrayBuffer[String] = scm.ArrayBuffer()
-            val values: scm.ArrayBuffer[Json.Ast] = scm.ArrayBuffer()
-
-            // `@name[Json]` / bare `@name` renames: field name -> JSON key.
-            val renames: Map[Text, Text] = relabelling[derivation, Json]
+            val labels: scala.Array[String] = new scala.Array[String](arity)
+            val values: scala.Array[Any] = new scala.Array[Any](arity)
+            var count: Int = 0
 
             fields(value): [field] =>
               field =>
@@ -602,12 +608,19 @@ trait Json2 extends Json3:
                 }):
                   contextual.encode(field).root.tap: encoded =>
                     if !encoded.isAbsent then
-                      labels += key.s
-                      values += encoded
+                      // Written through exclusive views: the arrays are captured by this
+                      // closure, which leaves the captured references read-only.
+                      labels.asInstanceOf[scala.Array[String]^](count) = key.s
+                      values.asInstanceOf[scala.Array[Any]^](count) = encoded
+                      count += 1
 
-            Json.ast
-              ( Json.Ast.obj
-                  ( Array.unsafeFrozen(labels.toArray), Array.unsafeFrozen(values.toArray[Any]) ) )
+            if count == arity then Json.ast(Json.Ast.obj(Array.unsafeFrozen(labels), Array.unsafeFrozen(values)))
+            else
+              val labels2 = new scala.Array[String](count)
+              val values2 = new scala.Array[Any](count)
+              java.lang.System.arraycopy(labels, 0, labels2, 0, count)
+              java.lang.System.arraycopy(values, 0, values2, 0, count)
+              Json.ast(Json.Ast.obj(Array.unsafeFrozen(labels2), Array.unsafeFrozen(values2)))
 
     inline def disjunction[derivation: SumReflection]: derivation is Json.Encodable =
       // See the decoder disjunction: the codec-carried sum shape is permissive

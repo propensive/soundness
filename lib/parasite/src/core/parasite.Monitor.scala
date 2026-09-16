@@ -166,7 +166,20 @@ trait ThreadSupervisor extends Supervisor:
   def park(blocker: AnyRef, deadline: Long): Unit =
     jucl.LockSupport.parkNanos(blocker, deadline - jl.System.nanoTime())
 
-  def sleep(nanoseconds: Long): Unit = jucl.LockSupport.parkNanos(nanoseconds)
+  // `parkNanos` may return early: spuriously, or at once on a permit left by an earlier
+  // `unpark` of this thread, which a pooled carrier handed a task while it was still spinning
+  // keeps. So it parks again until the deadline has passed or the thread is interrupted.
+  def sleep(nanoseconds: Long): Unit =
+    val deadline = jl.System.nanoTime() + nanoseconds
+
+    @tailrec
+    def recur(remaining: Long): Unit =
+      if remaining > 0L && !Thread.currentThread.nn.isInterrupted then
+        jucl.LockSupport.parkNanos(remaining)
+        recur(deadline - jl.System.nanoTime())
+
+    recur(nanoseconds)
+
   def interrupted(): Boolean = Thread.interrupted()
 
 // The local root of a supervision tree, created by `supervise`. A `Monitor` (hence a capability),

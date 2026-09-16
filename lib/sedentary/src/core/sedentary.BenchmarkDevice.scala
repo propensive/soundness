@@ -197,6 +197,20 @@ object LocalhostDevice extends BenchmarkDevice:
     val opts =
       sh"-XX:+AlwaysPreTouch -Xms$size -Xmx$size -XX:CICompilerCount=2 -XX:+Use${collector}GC"
     val cmd = sh"java $opts $processors -jar $path $input"
-    safely(cmd.exec[Text]()).lest(Bench.Error())
+
+    // Launched directly rather than through `exec`, with its standard error inherited: the
+    // measurement JVM's own diagnostics (a failed worker's stack trace, say) then reach the
+    // user as they happen, and a child that writes more than a pipe's worth of them cannot
+    // block on an undrained pipe and take the harness with it — which is what a burst of
+    // uncaught worker exceptions once did.
+    val arguments = java.util.ArrayList[String]()
+    cmd.arguments.ss.foreach(arguments.add(_))
+    val builder = ProcessBuilder(arguments).redirectError(ProcessBuilder.Redirect.INHERIT).nn
+
+    val process =
+      try builder.start().nn catch case _: java.io.IOException => abort(Bench.Error())
+
+    val output = String(process.getInputStream.nn.readAllBytes().nn, "UTF-8").nn.tt
+    if process.waitFor() != 0 then abort(Bench.Error()) else output
 
   def undeploy(path: Path on Linux, uuid: Uuid): Unit raises Bench.Error = ()

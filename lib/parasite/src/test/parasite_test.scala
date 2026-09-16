@@ -1306,6 +1306,20 @@ object Tests extends Suite(m"Parasite tests"):
           gate.apply().or(0L) >= 40L
         . assert(_ == true)
 
+        // A permit left by an earlier `unpark` of the thread makes `parkNanos` return at once,
+        // and a pooled carrier handed a task while it is still spinning keeps one. Only
+        // cancellation may cut a snooze short, so it must still last its full duration.
+        test(m"Snooze outlasts a stale park permit"):
+          val gate = Promise[Long]()
+          val task = async:
+            java.util.concurrent.locks.LockSupport.unpark(jl.Thread.currentThread)
+            val start = jl.System.currentTimeMillis
+            snooze(50.0*Milli(Second))
+            gate.fulfill(jl.System.currentTimeMillis - start)
+          task.await()
+          gate.apply().or(0L) >= 40L
+        . assert(_ == true)
+
         test(m"Delay sleeps for relative duration"):
           val gate = Promise[Long]()
           val task = async:

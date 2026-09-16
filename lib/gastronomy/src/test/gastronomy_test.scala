@@ -315,8 +315,53 @@ object Tests extends Suite(m"Gastronomy tests"):
       // provider arrangement BLAKE3 already relies on.
       test(m"CRC-64 digests under the Soundness provider"):
         import providers.soundnessProvider
-        t"123456789".digest[Crc64].serialize[Hex].length
-      . assert(_ == 16)
+        t"123456789".digest[Crc64].serialize[Hex].lower
+      . assert(_ == t"995dc9bbdf1939fa")
+
+    suite(m"Feistel networks"):
+      // A mixing round whose output is negative for most inputs, which is what the high word
+      // of the result depends on being masked rather than sign-extended.
+      def mix(value: Int, key: Int): Int = value*key + 0x9E3779B9
+
+      test(m"no subkeys leave the input alone"):
+        Feistel(Nil, mix)(0x0123456789abcdefL)
+      . assert(_ == 0x0123456789abcdefL)
+
+      // One round moves the low word up and leaves `high ^ round(low)` below it; with a round
+      // function of -1 the XOR is negative, so a sign-extending widening would fill the whole
+      // high word with ones and lose the word just shifted in.
+      test(m"a round with a negative result keeps the high word"):
+        Feistel(List(1), (_, _) => -1)(0x0000000100000002L)
+      . assert(_ == 0x00000002fffffffeL)
+
+      test(m"a round with a positive result keeps the high word"):
+        Feistel(List(1), (_, _) => 1)(0x0000000100000002L)
+      . assert(_ == 0x0000000200000000L)
+
+      test(m"four rounds mix the whole word"):
+        Feistel(List(3, 5, 7, 11), mix)(0x0123456789abcdefL)
+      . assert(_ == 0xa7e731b19c3aeda5L)
+
+      test(m"distinct inputs give distinct outputs"):
+        (0 until 3000).map(index => Feistel(List(3), mix)(index.toLong)).to(Set).size
+      . assert(_ == 3000)
+
+      // Each round sets the high word to the low word it was given, so the two halves of a
+      // round-tripped value can be recovered by running the rounds backwards.
+      test(m"the rounds are reversible"):
+        val keys = List(3, 5, 7, 11)
+
+        def unround(value: Long, key: Int): Long =
+          val low = (value >>> 32).toInt
+          val high = value.toInt ^ mix(low, key)
+          (high.toLong << 32) | (low.toLong & 0xffffffffL)
+
+        var value = Feistel(keys, mix)(0x0123456789abcdefL)
+        keys.reverse.each: key =>
+          value = unround(value, key)
+
+        value
+      . assert(_ == 0x0123456789abcdefL)
 
     suite(m"The non-cryptographic concession"):
       test(m"digesting with a checksum needs the permit"):

@@ -163,25 +163,39 @@ extends RequestServable:
     ( using Tactic[Truncation.Error] )
   :   Unit =
 
-    var count: Int = 0
-    var failed: Boolean = false
+    val block = summon[Buffering].transfer(Substrate.Bytes)
 
-    stream.drain: region =>
-      range =>
-        if !failed then
-          val interval: Interval = range
+    // `drain`'s loop, with the byte count and the failure flag threaded through the
+    // recursion: as captured `var`s they would box to an `IntRef` and a `BooleanRef` per
+    // response. After a failure the stream is still drained, but nothing more is written.
+    // Returns the bytes written, or `-1 - written` on failure.
+    @scala.annotation.tailrec
+    def loop(written: Int, failed: Boolean): Int = stream.refill(Credit(block)) match
+      case count: Int =>
+        val ok = !failed && stream.lend: region =>
+          range =>
+            val interval: Interval = range
 
-          try
-            out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
-                interval.size)
-            if flushEach then out.flush()
-            count += interval.size
-          catch case error: ji.IOException => failed = true
+            try
+              val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+              out.write(raw, interval.start.n0, interval.size)
+              if flushEach then out.flush()
+              true
+            catch case error: ji.IOException => false
 
-    if !flushEach && !failed then
-      try out.flush() catch case error: ji.IOException => failed = true
+        stream.skip(count)
+        loop(if ok then written + count else written, failed || !ok)
 
-    if failed then abort(Truncation.Error(count.b))
+      case _ =>
+        if failed then -1 - written else written
+
+    val result = try loop(0, false) finally stream.close()
+    val written = if result < 0 then -1 - result else result
+
+    val flushed = result >= 0 && locally:
+      flushEach || (try { out.flush(); true } catch case _: ji.IOException => false)
+
+    if !flushed then abort(Truncation.Error(written.b))
 
   // Frame the request body off the shared connection cursor: chunked decoding
   // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or empty
@@ -380,13 +394,18 @@ extends RequestServable:
   :   Service^ =
 
     val idleTimeout: Int = 30000
+    val backlog: Int = 1024
 
     def startServer(): jn.ServerSocket raises Httpd.Error =
       try
         val address = jn.InetAddress.getByName(if local then "localhost" else "0.0.0.0").nn
 
-        ssl.lay(jn.ServerSocket(port, 0, address)): context =>
-          val socket = context.getServerSocketFactory.nn.createServerSocket(port, 0, address).nn
+        // The listen backlog: a burst of connections beyond it has its SYNs dropped, and the
+        // clients wait out a retransmit or a connect timeout. `0` would mean the JDK's default
+        // of fifty — far below what a keep-alive fleet opens at once; the kernel caps it
+        // (macOS `kern.ipc.somaxconn`, 128 by default; Linux 4096).
+        ssl.lay(jn.ServerSocket(port, backlog, address)): context =>
+          val socket = context.getServerSocketFactory.nn.createServerSocket(port, backlog, address).nn
 
           // Offer `h2` then `http/1.1` by ALPN, so a client that speaks HTTP/2
           // negotiates it during the TLS handshake; accepted sockets inherit

@@ -51,6 +51,11 @@ import vacuous.*
 // changes the wire layout is detected before any event is decoded, rather than surfacing as a
 // baffling decode failure.
 object Streamer:
+  // Whether suites on this classpath may be invoked repeatedly through one classloader (see
+  // `Suite#invoke`). A host probes for this method reflectively: its absence means an older
+  // Probably, whose suites memoize their first runner and so need a fresh loader each time.
+  def reentrant: Boolean = true
+
   // The derived BinTEL schema for `TestEvent`, computed once; every event encodes under it.
   private lazy val schema: Tels = Tels.tels[TestEvent](t"test-event")
 

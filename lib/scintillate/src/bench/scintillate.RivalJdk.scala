@@ -27,91 +27,49 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
-┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package scintillate
 
-import scala.compiletime
+import com.sun.net.httpserver.{HttpExchange, HttpServer}
 
-import anticipation.*
-import contingency.*
-import gesticulate.*
-import gossamer.*
-import prepositional.*
-import spectacular.*
-import turbulence.*
-import zephyrine.*
+// The JDK's built-in `com.sun.net.httpserver`, handing each exchange to a virtual thread:
+// the zero-dependency baseline, with one context dispatching on the path by hand.
+object RivalJdk:
+  private def send(exchange: HttpExchange, status: Int, contentType: String, body: Array[Byte])
+  :   Unit =
 
-object Servable:
-  def apply[response](mediaType: response => MediaType)(lambda: response => Http.Body)
-  :   ((response is Servable)^{mediaType, lambda}) =
+    exchange.getResponseHeaders.nn.set("Content-Type", contentType)
+    exchange.sendResponseHeaders(status, if body.length == 0 then -1 else body.length)
+    exchange.getResponseBody.nn.write(body)
+    exchange.close()
 
-    response =>
+  private def handle(exchange: HttpExchange): Unit =
+    val path = exchange.getRequestURI.nn.getPath.nn
 
-      val headers = List(Http.Header(t"content-type", mediaType(response).show))
-      Http.Ok(headers, lambda(response))
+    path match
+      case "/bench" => send(exchange, 200, "text/plain", RivalJackson.hello)
+      case "/json"  => send(exchange, 200, "application/json", RivalJackson.greeting())
+      case "/large" => send(exchange, 200, "application/octet-stream", HttpWorkload.largeBody)
 
-  // For a media type that does not depend on the value: the `content-type` header is
-  // rendered once here, not per response.
-  def apply[response](mediaType: MediaType)(lambda: response => Http.Body)
-  :   ((response is Servable)^{lambda}) =
+      case "/echo" =>
+        val body = exchange.getRequestBody.nn.readAllBytes().nn
+        send(exchange, 200, "application/octet-stream", body)
 
-    val headers = List(Http.Header(t"content-type", mediaType.show))
-    response => Http.Ok(headers, lambda(response))
+      case _ if path.startsWith(RivalJackson.userPrefix) =>
+        val id = path.substring(RivalJackson.userPrefix.length)
+        val requestId = exchange.getRequestHeaders.nn.getFirst(HttpWorkload.requestIdHeader)
+        val body = s"$id:${if requestId == null then "" else requestId}"
+        send(exchange, 200, "text/plain", body.getBytes("UTF-8").nn)
 
+      case _ =>
+        send(exchange, 404, "text/plain", Array.emptyByteArray)
 
-  given content: Content is Servable:
-    def serve(content: Content): Http.Response =
-      val headers = List(Http.Header(t"content-type", content.media.show))
+  lazy val server: Unit =
+    val address = java.net.InetSocketAddress("127.0.0.1", HttpRivals.port(HttpRivals.JdkHttpServer))
+    val server = HttpServer.create(address, 1024).nn
+    server.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())
+    server.createContext("/", handle(_))
+    server.start()
 
-      Http.Ok(headers, Http.Body.Flowing(() => Stream(content.stream)))
-
-  given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
-  =>  response is Servable =
-
-    def mediaType(value: response): MediaType = unsafely(Media.parse(response.generic(value)(0)))
-
-    Servable[response](mediaType): value =>
-      Http.Body.Flowing: () =>
-        response.generic(value)(1).stream
-
-  given data: Data is Servable =
-    Servable[Data](media"application/octet-stream")(Http.Body.Fixed(_))
-
-  // `Text` is served as the generic `media` instance below would serve it, but with its
-  // constant `content-type` header rendered once, here — outside the given, whose body is
-  // evaluated at every summons because of its context parameter. More specific than
-  // `media`, so it is the instance chosen for `Text`.
-  private val textHeaders: List[Http.Header] =
-    List(Http.Header(t"content-type", media"text/plain".show))
-
-  given text: (encoder: hieroglyph.CharEncoder) => Text is Servable =
-    text => Http.Ok(textHeaders, Http.Body.Fixed(text.in[Data]))
-
-  inline given media: [media: Media] => media is Servable = compiletime.summonFrom:
-    case encodable: (`media` is Encodable in Data) =>
-      value =>
-        val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Fixed(encodable.encode(value)))
-
-    case streamable: (`media` is Streamable by Data over Credit) =>
-      value =>
-        val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Flowing(() => streamable.stream(value)))
-
-    case streamable: (`media` is Streamable by Text over Credit) =>
-      val encoder0: hieroglyph.CharEncoder = compiletime.summonInline[hieroglyph.CharEncoder]
-      val buffering0: zephyrine.Buffering = compiletime.summonInline[zephyrine.Buffering]
-
-      value =>
-        val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        given buffering: zephyrine.Buffering = buffering0
-
-        Http.Ok(headers, Http.Body.Flowing { () =>
-          streamable.stream(value).via(encoder0).asInstanceOf[(Stream[Data] over Credit)^]
-        })
-
-trait Servable extends Typeclass:
-  def serve(content: Self): Http.Response
-  def contramap[self2](lambda: self2 => Self): (self2 is Servable)^{this, lambda} = content => serve(lambda(content))
+    HttpRivals.ready(HttpRivals.JdkHttpServer)

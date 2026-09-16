@@ -135,3 +135,29 @@ the connection.
 Cleartext h2c with prior knowledge — the flavor used between services — is spoken over an
 `Http2.Endpoint`, which is also an [HTTP client](http-client.md) transport, and carries the
 [gRPC](rpc.md) support built on top of it.
+
+### Front-ends
+
+Cleartext HTTP/1.1 connections are served by one of two front-ends, selected by a `Frontend`
+given in scope when `handle` is called. The default, `frontends.threadPerConnectionFrontend`,
+runs each connection on its own virtual thread: a handler may block — on a database, a file,
+another service — and only its own connection waits. The alternative,
+`frontends.reactiveFrontend`, is an event loop: a fixed fleet of selector threads, each
+serving a batch of ready connections per wake-up, with the handler run inline on the loop:
+
+```scala
+import frontends.reactiveFrontend
+
+def reactive(): Unit = supervise:
+  SocketServer(8080).handle:
+    Http.Response(Http.Ok)(t"Hello, world!")
+```
+
+The reactive front-end serves small requests at about half again the rate of the default and
+allocates less per request, because nothing is scheduled per request; on a loopback benchmark
+it is level with Netty and Undertow. The price is its contract: a handler that blocks stalls
+every connection on that loop, so it suits handlers that compute their response from what
+they already have, or that hand off to other tasks and answer from memory. Requests the loop
+cannot serve inline — chunked or oversized bodies, `Expect: 100-continue`, protocol upgrades —
+are handed to a virtual thread and served by the default path, so a WebSocket handler works
+under either front-end.
