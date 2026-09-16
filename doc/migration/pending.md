@@ -90,6 +90,17 @@ format. Entries are grouped by module, most-recently-added last within a module.
   that goes through a `Decimalizer` changes the same way. Code that matched the old truncated
   output must expect the corrected text. (#TBD)
 
+## hieroglyph
+
+- `hieroglyph.Chars.superscript` (reached as `char.superscript`) returned the **subscript**
+  characters for `(`, `)`, `+`, `-` and `=` — U+208D, U+208E, U+208A, U+208B, U+208C. It now
+  returns the superscript forms U+207D, U+207E, U+207A, U+207B, U+207C. Digits were and remain
+  correct. Code or test data pinning the old (wrong) characters for those five inputs must be
+  updated. (#TBD)
+- `hieroglyph.Chars.subscript` (reached as `char.subscript`) now maps `(`, `)`, `+`, `-` and
+  `=` to U+208D, U+208E, U+208A, U+208B, U+208C; previously it mapped only digits and returned
+  `Unset` for those five. Code relying on `Unset` for them must handle a present value. (#TBD)
+
 ## gesticulate
 
 - `Media.Suffix`'s `Showable` instance now renders the suffix as it is written in a media type,

@@ -163,6 +163,62 @@ object Tests extends Suite(m"Hieroglyph tests"):
         text
       . assert(_ == t"-?1?0")
 
+    suite(m"Superscript and subscript characters"):
+      test(m"every digit has a superscript form"):
+        t"0123456789".s.map(_.superscript.or('?')).mkString.tt
+      . assert(_ == t"\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079")
+
+      test(m"every digit has a subscript form"):
+        t"0123456789".s.map(_.subscript.or('?')).mkString.tt
+      . assert(_ == t"\u2080\u2081\u2082\u2083\u2084\u2085\u2086\u2087\u2088\u2089")
+
+      // The superscript operators are U+207A-U+207E; their subscript counterparts at
+      // U+208A-U+208E differ only in the low nibble, which is how they came to be swapped.
+      test(m"the operators have superscript forms"):
+        t"()+-=".s.map(_.superscript.or('?')).mkString.tt
+      . assert(_ == t"\u207d\u207e\u207a\u207b\u207c")
+
+      test(m"the operators have subscript forms"):
+        t"()+-=".s.map(_.subscript.or('?')).mkString.tt
+      . assert(_ == t"\u208d\u208e\u208a\u208b\u208c")
+
+      test(m"every superscript form is distinct from its subscript form"):
+        t"0123456789()+-=".s.forall: char =>
+          char.superscript.or('?') != char.subscript.or('?')
+      . assert(_ == true)
+
+      test(m"a letter has no superscript or subscript form"):
+        ('z'.superscript, 'z'.subscript)
+      . assert(_ == (Unset, Unset))
+
+    // The mirror of the chunked decoding tests above: a surrogate pair split across two chunks
+    // must still encode as one astral character, which encoding each chunk alone would corrupt.
+    suite(m"Chunked encoding"):
+      val astral = t"\ud83d\ude00 smiles \ud83c\udf0d wide"
+
+      def joined(chunks: Chain[Data]): Data =
+        Array.unsafeFrozen(chunks.stdlib.flatMap(_.readable.toSeq).toArray)
+
+      test(m"encoding a whole text agrees with encoding it in one chunk"):
+        joined(charEncoders.utf8Encoder.encoded(Chain(astral))).to[List]
+      . assert(_ == charEncoders.utf8Encoder.encoded(astral).to[List])
+
+      for chunk <- 1 to 12 do
+        test(m"encode astral text in chunks of size $chunk"):
+          val chunks = astral.s.grouped(chunk).map(_.tt).to(Chain)
+          joined(charEncoders.utf8Encoder.encoded(chunks)).to[List]
+        . assert(_ == charEncoders.utf8Encoder.encoded(astral).to[List])
+
+      test(m"a chunked encoding round-trips through the decoder"):
+        import textSanitizers.skipSanitizer
+        val chunks = astral.s.grouped(3).map(_.tt).to(Chain)
+        charDecoders.utf8Decoder.decoded(joined(charEncoders.utf8Encoder.encoded(chunks)))
+      . assert(_ == astral)
+
+      test(m"an empty chain encodes to no data"):
+        joined(charEncoders.utf8Encoder.encoded(Chain())).to[List]
+      . assert(_ == Nil)
+
     suite(m"Compile-time tests"):
       test(m"Check that an invalid encoding produces an error"):
         demilitarize(enc"ABCDEF").map(_.message)
