@@ -52,6 +52,14 @@ object Servable:
       val headers = List(Http.Header(t"content-type", mediaType(response).show))
       Http.Ok(headers, lambda(response))
 
+  // For a media type that does not depend on the value: the `content-type` header is
+  // rendered once here, not per response.
+  def apply[response](mediaType: MediaType)(lambda: response => Http.Body)
+  :   ((response is Servable)^{lambda}) =
+
+    val headers = List(Http.Header(t"content-type", mediaType.show))
+    response => Http.Ok(headers, lambda(response))
+
 
   given content: Content is Servable:
     def serve(content: Content): Http.Response =
@@ -69,7 +77,7 @@ object Servable:
         response.generic(value)(1).stream
 
   given data: Data is Servable =
-    Servable[Data](_ => media"application/octet-stream")(Http.Body.Fixed(_))
+    Servable[Data](media"application/octet-stream")(Http.Body.Fixed(_))
 
   inline given media: [media: Media] => media is Servable = compiletime.summonFrom:
     case encodable: (`media` is Encodable in Data) =>

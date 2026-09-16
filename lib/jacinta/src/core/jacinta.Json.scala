@@ -1311,8 +1311,11 @@ object Json extends Json2, Dynamic:
     // synchronously and the result collected into one `Text`. Number nodes are emitted from their
     // BCD representation directly (preserving every digit the parser saw), and objects/heterogeneous
     // arrays are distinguished by the length parity of their boxed `Array[Any]^{}` backing.
+    // A small initial buffer: most documents rendered on a hot path (API responses) are a
+    // few hundred characters, and the builder doubles for the rest, whereas `collect`'s
+    // default 4096 was the single largest allocation of serving a small JSON response.
     given showable: (formatting: Json.Formatting) => Json.Ast is Showable = ast =>
-      Producer.collect[Text](): producer =>
+      Producer.collect[Text](256): producer =>
         def newlineIndent(level: Int): Unit = formatting.indent.let: unit =>
           producer.put("\n")
           repeat(level):
