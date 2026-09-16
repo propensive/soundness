@@ -27,81 +27,48 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
-┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package scintillate
 
-import scala.compiletime
+import io.vertx.core.Vertx
+import io.vertx.core.buffer.Buffer
+import io.vertx.core.json.JsonObject
+import io.vertx.ext.web.Router
+import io.vertx.ext.web.handler.BodyHandler
 
-import anticipation.*
-import contingency.*
-import gesticulate.*
-import gossamer.*
-import prepositional.*
-import spectacular.*
-import turbulence.*
-import zephyrine.*
+// Vert.x 5 with vertx-web's `Router`, handlers running on the event loop, and Vert.x's own
+// `JsonObject` for the JSON row.
+object RivalVertx:
+  private val hello = Buffer.buffer(RivalJackson.hello).nn
+  private val large = Buffer.buffer(HttpWorkload.largeBody).nn
 
-object Servable:
-  def apply[response](mediaType: response => MediaType)(lambda: response => Http.Body)
-  :   ((response is Servable)^{mediaType, lambda}) =
+  lazy val server: Unit =
+    java.util.logging.LogManager.getLogManager.nn.reset()
+    val vertx = Vertx.vertx().nn
+    val router = Router.router(vertx).nn
 
-    response =>
+    router.get("/bench").nn.handler: context =>
+      context.response.nn.putHeader("Content-Type", "text/plain").nn.end(hello)
 
-      val headers = List(Http.Header(t"content-type", mediaType(response).show))
-      Http.Ok(headers, lambda(response))
+    router.get("/json").nn.handler: context =>
+      context.json(JsonObject().put("message", HttpWorkload.hello))
 
-  // For a media type that does not depend on the value: the `content-type` header is
-  // rendered once here, not per response.
-  def apply[response](mediaType: MediaType)(lambda: response => Http.Body)
-  :   ((response is Servable)^{lambda}) =
+    router.get("/large").nn.handler: context =>
+      context.response.nn.putHeader("Content-Type", "application/octet-stream").nn.end(large)
 
-    val headers = List(Http.Header(t"content-type", mediaType.show))
-    response => Http.Ok(headers, lambda(response))
+    router.post("/echo").nn.handler(BodyHandler.create()).nn.handler: context =>
+      context.response.nn.putHeader("Content-Type", "application/octet-stream").nn
+      . end(context.body.nn.buffer)
 
+    router.get("/user/:id").nn.handler: context =>
+      val requestId = context.request.nn.getHeader(HttpWorkload.requestIdHeader)
+      context.response.nn.putHeader("Content-Type", "text/plain").nn
+      . end(s"${context.pathParam("id")}:${if requestId == null then "" else requestId}")
 
-  given content: Content is Servable:
-    def serve(content: Content): Http.Response =
-      val headers = List(Http.Header(t"content-type", content.media.show))
+    vertx.createHttpServer().nn
+    . requestHandler(router).nn
+    . listen(HttpRivals.port(HttpRivals.Vertx), "127.0.0.1").nn
+    . toCompletionStage.nn.toCompletableFuture.nn.get()
 
-      Http.Ok(headers, Http.Body.Flowing(() => Stream(content.stream)))
-
-  given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
-  =>  response is Servable =
-
-    def mediaType(value: response): MediaType = unsafely(Media.parse(response.generic(value)(0)))
-
-    Servable[response](mediaType): value =>
-      Http.Body.Flowing: () =>
-        response.generic(value)(1).stream
-
-  given data: Data is Servable =
-    Servable[Data](media"application/octet-stream")(Http.Body.Fixed(_))
-
-  inline given media: [media: Media] => media is Servable = compiletime.summonFrom:
-    case encodable: (`media` is Encodable in Data) =>
-      value =>
-        val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Fixed(encodable.encode(value)))
-
-    case streamable: (`media` is Streamable by Data over Credit) =>
-      value =>
-        val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Flowing(() => streamable.stream(value)))
-
-    case streamable: (`media` is Streamable by Text over Credit) =>
-      val encoder0: hieroglyph.CharEncoder = compiletime.summonInline[hieroglyph.CharEncoder]
-      val buffering0: zephyrine.Buffering = compiletime.summonInline[zephyrine.Buffering]
-
-      value =>
-        val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        given buffering: zephyrine.Buffering = buffering0
-
-        Http.Ok(headers, Http.Body.Flowing { () =>
-          streamable.stream(value).via(encoder0).asInstanceOf[(Stream[Data] over Credit)^]
-        })
-
-trait Servable extends Typeclass:
-  def serve(content: Self): Http.Response
-  def contramap[self2](lambda: self2 => Self): (self2 is Servable)^{this, lambda} = content => serve(lambda(content))
+    HttpRivals.ready(HttpRivals.Vertx)

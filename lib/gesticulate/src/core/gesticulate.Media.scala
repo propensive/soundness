@@ -44,9 +44,11 @@ import spectacular.*
 import vacuous.*
 
 object Media:
+  private val plain: MediaType = MediaType(Group.Text, Subtype.Standard(t"plain"))
+
   given text: Text is Media:
     extension (value: Text)
-      def mediaType: MediaType = MediaType(Group.Text, Subtype.Standard(t"plain"))
+      def mediaType: MediaType = plain
 
   given nominable: [nominable: Nominable] => nominable is Media:
     extension (value: nominable)

@@ -116,7 +116,20 @@ object Http:
 
     given showable: Method is Showable = _.toString.tt.upper
 
-    given decodable: Method is Decodable in Text = _.upper match
+    // The canonical spellings are matched first: upper-casing the text allocates, and a
+    // request's method is nearly always one of these already.
+    given decodable: Method is Decodable in Text =
+      case t"GET"     => Http.Get
+      case t"POST"    => Http.Post
+      case t"HEAD"    => Http.Head
+      case t"PUT"     => Http.Put
+      case t"DELETE"  => Http.Delete
+      case t"OPTIONS" => Http.Options
+      case t"PATCH"   => Http.Patch
+
+      case text => canonical(text.upper)
+
+    private def canonical(text: Text): Method = text match
       case t"HEAD"    => Http.Head
       case t"POST"    => Http.Post
       case t"PUT"     => Http.Put
@@ -125,7 +138,6 @@ object Http:
       case t"OPTIONS" => Http.Options
       case t"TRACE"   => Http.Trace
       case t"PATCH"   => Http.Patch
-      case t"GET"     => Http.Get
       case _          => Http.Get
 
   sealed trait Method:
@@ -388,6 +400,33 @@ object Http:
     @scala.caps.unsafe.untrackedCaptures @volatile
     private var hostMemo: (Text, Host) | Null = null
 
+    // The per-thread scratch into which `parseHead` collects a request's headers. Thread
+    // confinement is the exclusivity: each thread parses one request at a time. Held
+    // cast-erased, as `Stream` holds its storage: the array is reached only through
+    // `scratchHeaders`, which re-asserts the exclusive view.
+    private val scratchHeaders0: jl.ThreadLocal[AnyRef] =
+      jl.ThreadLocal.withInitial: () =>
+        new scala.Array[Http.Header | Null](32).asInstanceOf[AnyRef]
+
+      . nn
+
+    private def scratchHeaders(): scala.Array[Http.Header | Null]^ =
+      scratchHeaders0.get().nn.asInstanceOf[scala.Array[Http.Header | Null]^]
+
+    private def growScratch(scratch: scala.Array[Http.Header | Null]^)
+    :   scala.Array[Http.Header | Null]^ =
+
+      val grown: AnyRef = java.util.Arrays.copyOf(scratch, scratch.length*2).nn.asInstanceOf[AnyRef]
+      scratchHeaders0.set(grown)
+      grown.asInstanceOf[scala.Array[Http.Header | Null]^]
+
+    @scala.annotation.tailrec
+    private def listHeaders
+      ( scratch: scala.Array[Http.Header | Null]^, index: Int, headers: List[Http.Header] )
+    :   List[Http.Header] =
+
+      if index < 0 then headers else listHeaders(scratch, index - 1, scratch(index).nn :: headers)
+
     // `maxRequestLine` and `maxHeaders` bound how many bytes the request line and
     // the header block may occupy, yielding `414`/`431` (rather than reading an
     // unbounded amount) — the scan aborts mid-token once the cap is crossed.
@@ -430,7 +469,14 @@ object Http:
           cursor.unsafeAdvanceBy(index - from)(using Unsafe)
           found = index < end
 
-        Ascii(cursor.grab(start, cursor.mark)).show
+        // The token as one `String` straight off the buffer, not a `Data` copied out of it
+        // and then a `String` copied out of that.
+        cursor.slice(start, cursor.mark): (bytes, offset, length) =>
+          jl.String
+            ( bytes.asInstanceOf[scala.Array[Byte]], offset, length,
+              java.nio.charset.StandardCharsets.US_ASCII )
+
+          . nn.tt
 
       val lineLimit = cursor.position.n0 + maxRequestLine
 
@@ -446,7 +492,9 @@ object Http:
 
       val headerLimit = cursor.position.n0 + maxHeaders
 
-      def readHeaders(headers: List[Http.Header]): List[Http.Header] =
+      // Headers are collected into the thread's scratch array and listed in order once at
+      // the end, rather than consed in reverse and reversed: one list per request, not two.
+      def readHeaders(scratch: scala.Array[Http.Header | Null]^, count: Int): List[Http.Header] =
         if cursor.position.n0 > headerLimit then abort(Http.Request.Error(Reason.HeadersTooLarge))
 
         if cursor.peek == '\r' then
@@ -459,7 +507,7 @@ object Http:
           cursor.advance()
           if !(cursor.peek == '\n') then raise(expected('\n'))
           cursor.advance()
-          headers
+          listHeaders(scratch, count - 1, Nil)
 
         else
           val key: Text = upTo(':', headerLimit, Reason.HeadersTooLarge)
@@ -472,12 +520,12 @@ object Http:
           val value: Text = upTo('\r', headerLimit, Reason.HeadersTooLarge)
           cursor.next()
           cursor.expect('\n')(expected('\n'))
-          readHeaders(Http.Header(key, value) :: headers)
+          val scratch2 = if count < scratch.length then scratch else growScratch(scratch)
+          scratch2(count) = Http.Header(key, value)
+          readHeaders(scratch2, count + 1)
 
-      val headers = readHeaders(Nil).reverse
-
-      val hostText: Optional[Text] =
-        headers.filter(_.key.s.equalsIgnoreCase("host")).prim.let(_.value)
+      val headers = readHeaders(scratchHeaders(), 0)
+      val hostText: Optional[Text] = headers.seek(_.key.s.equalsIgnoreCase("host")).let(_.value)
 
       val host: Host = hostText.lay(abort(Http.Request.Error(Http.Request.Error.Reason.Host(t"")))):
         text =>
@@ -803,68 +851,8 @@ object Http:
 
       import charEncoders.asciiEncoder
 
-      // After `101 Switching Protocols` the bytes are no longer HTTP: the body is
-      // the upgraded protocol's raw stream (e.g. WebSocket frames), so suppress
-      // Content-Length / chunked framing and the headers that announce them.
       val upgrade: Boolean = response.status == Http.SwitchingProtocols
-
-      // Chunked transfer-encoding is an HTTP/1.1 feature; a streaming body to an
-      // HTTP/1.0 client must instead be delimited by closing the connection (the
-      // server adds `Connection: close`), so its body is written raw.
-      val chunkable: Boolean = version != 1.0 && version != 0.9
-
-      // Case-insensitive on the raw strings: `.lower` would allocate a fresh `Text` per
-      // header per response on this hot path.
-      val explicitChunked: Boolean = response.textHeaders.exists: header =>
-        header.key.s.equalsIgnoreCase("transfer-encoding")
-          && header.value.s.equalsIgnoreCase("chunked")
-
-      val hasContentLength: Boolean =
-        response.textHeaders.exists(_.key.s.equalsIgnoreCase("content-length"))
-
-      val (extraHeaders, chunked): (List[Header], Boolean) =
-        if upgrade then (Nil, false) else response.body match
-          case Body.Empty =>
-            (if hasContentLength then Nil else List(Header(t"content-length", t"0")), false)
-
-          case Body.Fixed(data) =>
-            val length = data.length.toString.tt
-            (if hasContentLength then Nil else List(Header(t"content-length", length)), false)
-
-          case Body.Flowing(_) =>
-            if explicitChunked && chunkable then (Nil, true)
-            else if hasContentLength then (Nil, false)
-            else if chunkable then (List(Header(t"transfer-encoding", t"chunked")), true)
-            else (Nil, false)
-
-      val headers: List[Header] =
-        if !upgrade then response.textHeaders + extraHeaders else
-          response.textHeaders.filter: header =>
-            val key = header.key.lower
-            key != t"transfer-encoding" && key != t"content-length"
-
-      // Built into a pre-sized buffer rather than through `Text.build`, whose
-      // builder starts at the default sixteen characters and reallocates its way
-      // up to the few hundred a head occupies: `AbstractStringBuilder.newCapacity`
-      // was 13% of this pipeline's profile, more than any other frame. The status
-      // code is appended as an `Int`, which also saves rendering it to a `Text`
-      // first.
-      val head: Text =
-        val builder = jl.StringBuilder(256)
-        builder.append("HTTP/1.1 ")
-        builder.append(response.status.code)
-        builder.append(' ')
-        builder.append(response.status.description.s)
-        builder.append("\r\n")
-
-        headers.each: header =>
-          builder.append(header.key.s)
-          builder.append(": ")
-          builder.append(header.value.s)
-          builder.append("\r\n")
-
-        builder.append("\r\n")
-        builder.toString.tt
+      val (head, chunked) = framing(response, version)
 
       // Materialize successive blocks off a pull endpoint as a chunk iterator.
       def pulls(endpoint: (Stream[Data] over Credit)^): Iterator[Data]^{endpoint} =
@@ -908,9 +896,120 @@ object Http:
             if chunked then pulls(source()).flatMap(frame) ++ Iterator(t"0\r\n\r\n".in[Data])
             else pulls(source())
 
-      // Hoisted: a by-name `++` operand may not mint a fresh capability.
-      val chunks = bodyBytes
-      Stream(Iterator(head.in[Data]) ++ chunks)
+      if !includeBody then Stream(head) else response.body match
+        case Body.Empty if !upgrade       => Stream(head)
+        case Body.Fixed(data) if !upgrade => Stream(Iterator(head, data))
+
+        case _ =>
+          // Hoisted: a by-name `++` operand may not mint a fresh capability.
+          val chunks = bodyBytes
+          Stream(Iterator(head) ++ chunks)
+
+    // The serialized head alone — the framing headers exactly as `serialize` writes them —
+    // for a server that delivers a fixed body straight from the handler's own frozen
+    // bytes, as a second buffer after this one, with no copy of either.
+    def serializeHead(response: Response^, version: Version = 1.1): Data =
+      framing(response, version)(0)
+
+    // Copy a string's characters into the array as bytes. Every string written into a head
+    // is ASCII by the protocol (status line, field names and values), for which the
+    // deprecated low-byte copy is exact — and, unlike `getBytes(Charset)`, allocates nothing.
+    @scala.annotation.nowarn("cat=deprecation")
+    private def put(bytes: scala.Array[Byte]^, at: Int, string: String): Int =
+      string.getBytes(0, string.length, bytes, at)
+      at + string.length
+
+    private def put(bytes: scala.Array[Byte]^, at: Int, byte: Byte): Int =
+      bytes(at) = byte
+      at + 1
+
+    private val crlf: String = "\r\n"
+    private val separator: String = ": "
+
+    @scala.annotation.tailrec
+    private def headersSize(headers: List[Header], size: Int): Int = headers match
+      case header :: rest =>
+        headersSize(rest, size + header.key.s.length + header.value.s.length + 4)
+
+      case _ =>
+        size
+
+    @scala.annotation.tailrec
+    private def putHeaders(bytes: scala.Array[Byte]^, at: Int, headers: List[Header]): Int =
+      headers match
+        case header :: rest =>
+          val at2 = put(bytes, put(bytes, at, header.key.s), separator)
+          putHeaders(bytes, put(bytes, put(bytes, at2, header.value.s), crlf), rest)
+
+        case _ =>
+          at
+
+    // The head's bytes, and whether the body is to be chunk-framed. The head is written once,
+    // as ASCII bytes, into an array sized exactly for it: not built as text, rendered to a
+    // `String` and then encoded, three copies of the same eighty bytes.
+    private def framing(response: Response^, version: Version): (Data, Boolean) =
+      // After `101 Switching Protocols` the bytes are no longer HTTP: the body is
+      // the upgraded protocol's raw stream (e.g. WebSocket frames), so suppress
+      // Content-Length / chunked framing and the headers that announce them.
+      val upgrade: Boolean = response.status == Http.SwitchingProtocols
+
+      // Chunked transfer-encoding is an HTTP/1.1 feature; a streaming body to an
+      // HTTP/1.0 client must instead be delimited by closing the connection (the
+      // server adds `Connection: close`), so its body is written raw.
+      val chunkable: Boolean = version != 1.0 && version != 0.9
+
+      // Case-insensitive on the raw strings: `.lower` would allocate a fresh `Text` per
+      // header per response on this hot path.
+      val explicitChunked: Boolean = response.textHeaders.exists: header =>
+        header.key.s.equalsIgnoreCase("transfer-encoding") &&
+          header.value.s.equalsIgnoreCase("chunked")
+
+      val hasContentLength: Boolean =
+        response.textHeaders.exists(_.key.s.equalsIgnoreCase("content-length"))
+
+      // The one framing header the server adds, as a name and value ("" for none), and
+      // whether the body is chunked.
+      val (extraName, extraValue, chunked) =
+        if upgrade then ("", "", false) else response.body match
+          case Body.Empty =>
+            (if hasContentLength then ("", "", false) else ("content-length", "0", false))
+
+          case Body.Fixed(data) =>
+            if hasContentLength then ("", "", false)
+            else ("content-length", jl.Integer.toString(data.length).nn, false)
+
+          case Body.Flowing(_) =>
+            if explicitChunked && chunkable then ("", "", true)
+            else if hasContentLength then ("", "", false)
+            else if chunkable then ("transfer-encoding", "chunked", true)
+            else ("", "", false)
+
+      val headers: List[Header] =
+        if !upgrade then response.textHeaders else
+          response.textHeaders.filter: header =>
+            val key = header.key.lower
+            key != t"transfer-encoding" && key != t"content-length"
+
+      val description: String = response.status.description.s
+      val extraSize: Int = if extraName.isEmpty then 0 else extraName.length + extraValue.length + 4
+      val size: Int = 9 + 3 + 1 + description.length + 2 + headersSize(headers, 0) + extraSize + 2
+      val bytes: scala.Array[Byte]^ = new scala.Array[Byte](size)
+      val code: Int = response.status.code
+
+      val at1 = put(bytes, 0, "HTTP/1.1 ")
+      val at2 = put(bytes, at1, ('0' + code/100).toByte)
+      val at3 = put(bytes, at2, ('0' + code/10%10).toByte)
+      val at4 = put(bytes, at3, ('0' + code%10).toByte)
+      val at5 = put(bytes, put(bytes, put(bytes, at4, ' '.toByte), description), crlf)
+      val at6 = putHeaders(bytes, at5, headers)
+
+      val at7 =
+        if extraName.isEmpty then at6 else
+          val at = put(bytes, put(bytes, at6, extraName), separator)
+          put(bytes, put(bytes, at, extraValue), crlf)
+
+      put(bytes, at7, crlf)
+      (bytes.asInstanceOf[Data], chunked)
 
     def parse(stream: Chain[Data], bodiless: Boolean = false)
     :   Response raises Http.Response.Error =

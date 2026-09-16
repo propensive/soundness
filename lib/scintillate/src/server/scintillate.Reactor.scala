@@ -272,14 +272,23 @@ object Reactor:
       val respond: Http.Connection.Respond^{this} = new Http.Connection.Respond:
         def apply(response: Http.Response^)(using Tactic[Truncation.Error]): Unit =
           val response2 = if keep0 then response else response + closeHeader
-          // `memoize` forces the whole serialized response, including a `Flowing`
-          // body, to completion on the lane: the reactive front-end's non-blocking
-          // handler contract. The result is one buffer, hence one channel write.
-          val bytes: Data =
-            Http.Response.serialize(response2, head.method != Http.Head, head.version)
-            . memoize
+          val includeBody = head.method != Http.Head
+          val upgrade = response2.status == Http.SwitchingProtocols
 
-          enqueue(bytes)
+          response2.body match
+            // The common case: the head and the handler's own frozen bytes go to the
+            // channel as two buffers in one gathering write, with neither copied.
+            case Http.Body.Fixed(data) if includeBody && !upgrade =>
+              enqueue(Http.Response.serializeHead(response2, head.version), data)
+
+            case Http.Body.Fixed(_) | Http.Body.Empty if !upgrade =>
+              enqueue(Http.Response.serializeHead(response2, head.version))
+
+            // `memoize` forces the whole serialized response, including a `Flowing`
+            // body, to completion on the lane: the reactive front-end's non-blocking
+            // handler contract. The result is one buffer, hence one channel write.
+            case _ =>
+              enqueue(Http.Response.serialize(response2, includeBody, head.version).memoize)
 
       val request =
         Http.Request
@@ -307,23 +316,52 @@ object Reactor:
       enqueue(Http.Response.serialize(response).memoize)
       closing = true
 
-    private update def enqueue(bytes: Data): Unit =
+    private update def queue(bytes: Data): Unit =
       outbound.add(jnio.ByteBuffer.wrap(bytes.asInstanceOf[scala.Array[Byte]]).nn)
       queued += bytes.asInstanceOf[scala.Array[Byte]].length
+
+    private update def enqueue(bytes: Data): Unit =
+      queue(bytes)
+      write()
+
+    private update def enqueue(head: Data, body: Data): Unit =
+      queue(head)
+      queue(body)
       write()
 
     update def writable(): Unit = write()
+
+    // The buffers of one gathering write: a head and its body, or several pipelined
+    // responses, in one syscall. Cleared after each write so that an idle keep-alive
+    // connection does not pin its last response's body.
+    // Untracked, as `Stream`'s storage: written only through the exclusive view below.
+    @scala.caps.unsafe.untrackedCaptures
+    private val gather: scala.Array[jnio.ByteBuffer | Null] =
+      new scala.Array[jnio.ByteBuffer | Null](16)
 
     private update def write(): Unit =
       var blocked = false
 
       try
         while !blocked && !outbound.isEmpty do
-          val pending = outbound.peek.nn
-          val before = pending.remaining
-          channel.write(pending)
-          queued -= before - pending.remaining
-          if pending.hasRemaining then blocked = true else outbound.poll()
+          val slots = gather.asInstanceOf[scala.Array[jnio.ByteBuffer | Null]^]
+          var count = 0
+          val pending = outbound.iterator.nn
+
+          while count < slots.length && pending.hasNext do
+            slots(count) = pending.next()
+            count += 1
+
+          queued -= channel.write(gather, 0, count)
+
+          // Discard the buffers written in full; the first left partial blocks the rest.
+          var index = 0
+
+          while index < count do
+            if !blocked && slots(index).nn.hasRemaining then blocked = true
+            if !blocked then outbound.poll()
+            slots(index) = null
+            index += 1
       catch case _: java.io.IOException =>
         outbound.clear()
         queued = 0L

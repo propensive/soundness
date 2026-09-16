@@ -27,81 +27,65 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
-┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
-
-import scala.compiletime
+package scintillate
 
 import anticipation.*
-import contingency.*
-import gesticulate.*
+import contingency.*, strategies.throwUnsafely
+import eucalyptus.*, logging.silentLogging
 import gossamer.*
-import prepositional.*
-import spectacular.*
-import turbulence.*
-import zephyrine.*
+import hieroglyph.charEncoders.utf8Encoder
+import jacinta.*, formatting.compactJsonFormatting, servables.jsonServable
+import parasite.*, probates.awaitProbate
+import proscenium.*
+import rudiments.*
+import telekinesis.*
+import vacuous.*
+import zephyrine.memoize
+import webserverErrorPages.minimalErrorPage
 
-object Servable:
-  def apply[response](mediaType: response => MediaType)(lambda: response => Http.Body)
-  :   ((response is Servable)^{mediaType, lambda}) =
+// Scintillate's three servers — the `Reactor` event loop and `SocketServer` on virtual and
+// on platform threads — all running the same handler.
+object RivalScintillate:
+  case class Greeting(message: Text)
 
-    response =>
+  val large: Data = HttpWorkload.largeBody.snapshot
+  val requestId: Text = HttpWorkload.requestIdHeader.tt.lower
 
-      val headers = List(Http.Header(t"content-type", mediaType(response).show))
-      Http.Ok(headers, lambda(response))
+  val handler: Http.Connection ?=> Http.Response =
+    request.location match
+      case t"/bench" => Http.Response(Http.Ok)(t"Hello, World!")
+      case t"/json"  => Http.Response(Http.Ok)(Greeting(t"Hello, World!").in[Json])
+      case t"/large" => Http.Response(Http.Ok)(large)
+      case t"/echo"  => Http.Response(Http.Ok)(request.body().memoize)
 
-  // For a media type that does not depend on the value: the `content-type` header is
-  // rendered once here, not per response.
-  def apply[response](mediaType: MediaType)(lambda: response => Http.Body)
-  :   ((response is Servable)^{lambda}) =
+      case location if location.starts(t"/user/") =>
+        val value = request.textHeaders.filter(_.key.lower == requestId).prim.lay(t"")(_.value)
+        Http.Response(Http.Ok)(t"${location.skip(6)}:$value")
 
-    val headers = List(Http.Header(t"content-type", mediaType.show))
-    response => Http.Ok(headers, lambda(response))
+      case _ =>
+        Http.Response(Http.NotFound)(t"")
 
+  // The `Threading` in force here selects the kind of thread `SocketServer`'s
+  // per-connection daemons run on — independent of the harness workers' threading.
+  // The launcher thread is virtual, hence a daemon: it never obstructs JVM exit.
+  private def socketServer(server: Int)(using Threading): Unit =
+    Thread.ofVirtual.nn.start: () =>
+      supervise:
+        val service = SocketServer(HttpRivals.port(server)).handle(handler)
+        HttpRivals.forever.await()
+        service.cancel()
 
-  given content: Content is Servable:
-    def serve(content: Content): Http.Response =
-      val headers = List(Http.Header(t"content-type", content.media.show))
+    HttpRivals.ready(server)
 
-      Http.Ok(headers, Http.Body.Flowing(() => Stream(content.stream)))
+  lazy val virtual: Unit =
+    socketServer(HttpRivals.SocketServerVirtual)(using threading.virtualThreading)
 
-  given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
-  =>  response is Servable =
+  lazy val platform: Unit =
+    socketServer(HttpRivals.SocketServerPlatform)(using threading.platformThreading)
 
-    def mediaType(value: response): MediaType = unsafely(Media.parse(response.generic(value)(0)))
-
-    Servable[response](mediaType): value =>
-      Http.Body.Flowing: () =>
-        response.generic(value)(1).stream
-
-  given data: Data is Servable =
-    Servable[Data](media"application/octet-stream")(Http.Body.Fixed(_))
-
-  inline given media: [media: Media] => media is Servable = compiletime.summonFrom:
-    case encodable: (`media` is Encodable in Data) =>
-      value =>
-        val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Fixed(encodable.encode(value)))
-
-    case streamable: (`media` is Streamable by Data over Credit) =>
-      value =>
-        val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Flowing(() => streamable.stream(value)))
-
-    case streamable: (`media` is Streamable by Text over Credit) =>
-      val encoder0: hieroglyph.CharEncoder = compiletime.summonInline[hieroglyph.CharEncoder]
-      val buffering0: zephyrine.Buffering = compiletime.summonInline[zephyrine.Buffering]
-
-      value =>
-        val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        given buffering: zephyrine.Buffering = buffering0
-
-        Http.Ok(headers, Http.Body.Flowing { () =>
-          streamable.stream(value).via(encoder0).asInstanceOf[(Stream[Data] over Credit)^]
-        })
-
-trait Servable extends Typeclass:
-  def serve(content: Self): Http.Response
-  def contramap[self2](lambda: self2 => Self): (self2 is Servable)^{this, lambda} = content => serve(lambda(content))
+  // The event-loop front-end: handlers inline on the selector lanes.
+  lazy val reactor: Unit =
+    Reactor(HttpRivals.port(HttpRivals.Reactor))(handler)
+    HttpRivals.ready(HttpRivals.Reactor)

@@ -34,7 +34,6 @@ package jacinta
 
 import anticipation.*
 import gesticulate.*
-import gossamer.*
 import hieroglyph.*
 import spectacular.*
 import telekinesis.*
@@ -45,6 +44,9 @@ package postables:
     Postable(media"application/json"(charset = "UTF-8"), value => value.show.in[Data].stream)
 
 package servables:
+  // The media type is built once: applying the charset parameter parses and re-renders the
+  // type, which is not something to repeat per response.
+  private val jsonMediaType: MediaType = media"application/json"(charset = "UTF-8")
+
   given jsonServable: (encoder: CharEncoder, formatting: Json.Formatting) => Json is Servable =
-    Servable[Json](_ => media"application/json"(charset = "UTF-8")): value =>
-      Http.Body.Fixed(value.show.in[Data])
+    Servable[Json](jsonMediaType): value => Http.Body.Fixed(value.show.in[Data])

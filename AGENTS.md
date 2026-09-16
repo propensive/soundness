@@ -73,8 +73,10 @@ A PR must add an entry for every change a consumer of a Soundness library could 
 
 No entry is needed for changes with no observable effect on consumers: formatting, comments,
 performance work that preserves behaviour, tests, benchmarks, internal refactoring, and CI or
-documentation changes. Purely additive API is optional; record it only when it supersedes an
-existing way of doing something.
+documentation changes. Purely additive API — a new method, type, given, package or module
+alongside the existing ones — is **not** recorded: downstream code that does not use it has
+nothing to change. When an addition supersedes an existing way of doing something, the entry
+belongs to the deprecation or removal of the old way, and names the addition as its replacement.
 
 ### How to write an entry
 
