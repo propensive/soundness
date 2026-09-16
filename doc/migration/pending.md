@@ -114,3 +114,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `MediaType.parse` now raises `MediaType.Error` with reason `MissingParam` for a parameter
   with no `=` (`text/plain; foo`); it previously threw `IndexOutOfBoundsException`, which no
   `Tactic` could catch. (#TBD)
+
+## gastronomy
+
+- `gastronomy.Feistel.apply(subkeys, round)(input)` no longer corrupts its result when a round
+  function returns a negative `Int`. The XOR of the high word with the round output was widened
+  with `.toLong`, which sign-extends, filling the high 32 bits of the result — the half just
+  shifted in — with ones; it is now masked to 32 bits. Any value derived from a `Feistel`
+  network whose round function could return a negative number changes, so persisted values must
+  be recomputed. (#TBD)
