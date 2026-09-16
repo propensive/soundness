@@ -803,6 +803,65 @@ object Http:
 
       import charEncoders.asciiEncoder
 
+      val upgrade: Boolean = response.status == Http.SwitchingProtocols
+      val (head, chunked) = framing(response, version)
+
+      // Materialize successive blocks off a pull endpoint as a chunk iterator.
+      def pulls(endpoint: (Stream[Data] over Credit)^): Iterator[Data]^{endpoint} =
+        val block = buffering.capacity(Substrate.Bytes)
+
+        Iterator.continually:
+          // See `Request.serialize`: empty chunks are retried, never framed, and
+          // the retry is a loop, not self-recursion.
+          var result: Optional[Data] = Unset
+          var continue = true
+
+          while continue do
+            endpoint.refill(Credit(block)) match
+              case 0 => ()
+
+              case count: Int =>
+                result =
+                  endpoint.lend { region => range => region.materialize(range.capped(count)) }
+
+                endpoint.skip(count)
+                continue = false
+
+              case _ =>
+                result = Unset
+                continue = false
+
+          result
+
+        . takeWhile(_.present).flatMap(_.lay(Iterator())(Iterator(_)))
+      def frame(data: Data): Iterator[Data] =
+        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
+
+      def bodyBytes: Iterator[Data]^ =
+        if !includeBody then Iterator.empty
+        else if upgrade then pulls(response.body.stream)
+        else response.body match
+          case Body.Empty       => Iterator.empty
+          case Body.Fixed(data) => Iterator(data)
+
+          case Body.Flowing(source) =>
+            if chunked then pulls(source()).flatMap(frame) ++ Iterator(t"0\r\n\r\n".in[Data])
+            else pulls(source())
+
+      // Hoisted: a by-name `++` operand may not mint a fresh capability.
+      val chunks = bodyBytes
+      Stream(Iterator(head) ++ chunks)
+
+    // The serialized head alone — the framing headers exactly as `serialize` writes them —
+    // for a server that delivers a fixed body straight from the handler's own frozen
+    // bytes, as a second buffer after this one, with no copy of either.
+    def serializeHead(response: Response^, version: Version = 1.1): Data =
+      framing(response, version)(0)
+
+    // The head's bytes, and whether the body is to be chunk-framed.
+    private def framing(response: Response^, version: Version): (Data, Boolean) =
+      import charEncoders.asciiEncoder
+
       // After `101 Switching Protocols` the bytes are no longer HTTP: the body is
       // the upgraded protocol's raw stream (e.g. WebSocket frames), so suppress
       // Content-Length / chunked framing and the headers that announce them.
@@ -849,68 +908,21 @@ object Http:
       // was 13% of this pipeline's profile, more than any other frame. The status
       // code is appended as an `Int`, which also saves rendering it to a `Text`
       // first.
-      val head: Text =
-        val builder = jl.StringBuilder(256)
-        builder.append("HTTP/1.1 ")
-        builder.append(response.status.code)
-        builder.append(' ')
-        builder.append(response.status.description.s)
+      val builder = jl.StringBuilder(256)
+      builder.append("HTTP/1.1 ")
+      builder.append(response.status.code)
+      builder.append(' ')
+      builder.append(response.status.description.s)
+      builder.append("\r\n")
+
+      headers.each: header =>
+        builder.append(header.key.s)
+        builder.append(": ")
+        builder.append(header.value.s)
         builder.append("\r\n")
 
-        headers.each: header =>
-          builder.append(header.key.s)
-          builder.append(": ")
-          builder.append(header.value.s)
-          builder.append("\r\n")
-
-        builder.append("\r\n")
-        builder.toString.tt
-
-      // Materialize successive blocks off a pull endpoint as a chunk iterator.
-      def pulls(endpoint: (Stream[Data] over Credit)^): Iterator[Data]^{endpoint} =
-        val block = buffering.capacity(Substrate.Bytes)
-
-        Iterator.continually:
-          // See `Request.serialize`: empty chunks are retried, never framed, and
-          // the retry is a loop, not self-recursion.
-          var result: Optional[Data] = Unset
-          var continue = true
-
-          while continue do
-            endpoint.refill(Credit(block)) match
-              case 0 => ()
-
-              case count: Int =>
-                result =
-                  endpoint.lend { region => range => region.materialize(range.capped(count)) }
-
-                endpoint.skip(count)
-                continue = false
-
-              case _ =>
-                result = Unset
-                continue = false
-
-          result
-
-        . takeWhile(_.present).flatMap(_.lay(Iterator())(Iterator(_)))
-      def frame(data: Data): Iterator[Data] =
-        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
-
-      def bodyBytes: Iterator[Data]^ =
-        if !includeBody then Iterator.empty
-        else if upgrade then pulls(response.body.stream)
-        else response.body match
-          case Body.Empty       => Iterator.empty
-          case Body.Fixed(data) => Iterator(data)
-
-          case Body.Flowing(source) =>
-            if chunked then pulls(source()).flatMap(frame) ++ Iterator(t"0\r\n\r\n".in[Data])
-            else pulls(source())
-
-      // Hoisted: a by-name `++` operand may not mint a fresh capability.
-      val chunks = bodyBytes
-      Stream(Iterator(head.in[Data]) ++ chunks)
+      builder.append("\r\n")
+      (builder.toString.tt.in[Data], chunked)
 
     def parse(stream: Chain[Data], bodiless: Boolean = false)
     :   Response raises Http.Response.Error =
