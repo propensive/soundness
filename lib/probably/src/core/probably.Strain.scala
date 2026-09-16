@@ -124,8 +124,8 @@ object Strain:
 // In a capacity search, `compliance` is the measured fraction of operations completing
 // within the latency threshold, and `sustained` marks the winning row: the highest
 // concurrency whose (extended) window still met the compliance target. A refined search
-// (sedentary's `Stress(refine = true)`) instead marks the fastest confirmed row, with or
-// without a compliance target.
+// (sedentary's `Stress(refine = true)`) instead marks the optimum confirmed row — the smallest
+// concurrency within 5% of the highest throughput — with or without a compliance target.
 case class Strain
   ( concurrency: Int,
     operations:  Long,

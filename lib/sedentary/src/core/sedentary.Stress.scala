@@ -83,15 +83,15 @@ import workingDirectories.javaBaseWorkingDirectory
 // closed-loop search — operation latency includes queuing inside the body's own pipeline —
 // which honestly answers "how many concurrent pipelines, each completing promptly?".
 //
-// Setting `refine` looks for the worker count with the highest throughput rather than
-// settling for a power of two (in a sweep) or the largest compliant count (in a capacity
-// search). Once the ascent — and, with an SLO, the boundary search — is over, the search
-// probes halfway between the fastest feasible count and its nearest measured neighbours
-// until both are within about 6%, then re-measures the fastest count and its feasible
-// neighbours over extended windows; the fastest of those is flagged `sustained`. The probes
-// are extra rows on the same `N` axis, so the curve is simply denser around its peak. It
-// costs up to `StressSearch.MaxProbes` more windows, plus three extended ones. See
-// `StressSearch` for the details.
+// Setting `refine` looks for the optimum worker count rather than settling for a power of
+// two (in a sweep) or the largest compliant count (in a capacity search): the smallest count
+// whose throughput is within 5% of the highest — the peak of a peaked curve, or the knee of
+// one which flattens out. Once the ascent — and, with an SLO, the boundary search — is over,
+// the search probes to about 6% around the peak and then down to the knee, re-measures the
+// candidates over extended windows, and flags the winner `sustained`. The probes are extra
+// rows on the same `N` axis, so the curve is simply denser where it matters. It typically
+// costs up to twice `StressSearch.MaxProbes` more windows, plus three extended ones, and
+// more if a lucky window forces the search to start again. See `StressSearch`.
 //
 // `cpus` limits the measurement JVM's processors (see `BenchmarkDevice.invoke` for the
 // pinning caveat), and `heap` its memory, so the search runs under pinned resources. `gc`
@@ -443,8 +443,10 @@ extends Rig:
     val steps: Long =
       if !sweeping then 1L else
         val search = 2L*(64 - java.lang.Long.numberOfLeadingZeros(limit.max(1).toLong)) + 6L
-        // Refinement probes, then up to three confirmations and three step-downs, each 3x.
-        if refine then search + StressSearch.MaxProbes + 18L else search
+        // Peak and knee probes and three 3x confirmations, once and for each restart, then up
+        // to three 3x step-downs.
+        val cycle = 2L*StressSearch.MaxProbes + 9L
+        if refine then search + (StressSearch.Restarts + 1)*cycle + 9L else search
 
     if !runner.skip(testId, Entry.Kind.Stress, Nil, scaledTarget*steps) then
       dispatch(body).stdlib.grouped(14).toList.foreach: step =>

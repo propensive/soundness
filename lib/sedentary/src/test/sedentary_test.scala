@@ -86,10 +86,16 @@ def drive(search: StressSearch)(workload: Window => Outcome): (List[Window], Opt
 
   (windows, if search.winner < 0 then Unset else byOrdinal(search.winner))
 
-// A throughput curve rising to a single peak at `peak` workers and falling beyond it.
+// A throughput curve with a single sharp peak at `peak` workers: every other count is more
+// than 5% slower, so the peak is also the optimum.
 def humped(peak: Int)(window: Window): Outcome =
   val distance = (window.count - peak).toDouble
-  Outcome(10000.0 - distance*distance)
+  Outcome(10000.0/(1.0 + distance*distance/4.0))
+
+// A throughput curve which rises linearly to `knee` workers and is flat beyond it, with a
+// little jitter on the plateau, as a server saturating its cores would show.
+def plateau(knee: Int)(window: Window): Outcome =
+  Outcome(100.0*window.count.min(knee) + (if window.count > knee then window.count%7 else 0))
 
 object Tests extends Suite(m"Sedentary Tests"):
   def run(): Unit =
@@ -183,10 +189,32 @@ object Tests extends Suite(m"Sedentary Tests"):
         . exists(count => Integer.bitCount(count) > 1)
       . assert(_ == true)
 
-      test(m"a refined sweep with rising throughput chooses its cap"):
+      // With throughput proportional to N there is no plateau, so the optimum is the smallest
+      // count within 5% of the cap's throughput: about 244, to the search's 6% resolution.
+      test(m"a refined sweep with rising throughput chooses a count near its cap"):
         drive(StressSearch(1, 256, false, true))(window => Outcome(window.count.toDouble))(1)
         . let(_.count).or(-1)
-      . assert(_ == 256)
+      . assert(count => count >= 243 - 16 && count <= 256)
+
+      test(m"a refined sweep reports the knee of a plateau"):
+        drive(StressSearch(1, 256, false, true))(plateau(12))(1).let(_.count).or(-1)
+      . assert(_ == 12)
+
+      test(m"a refined sweep finds a knee between two powers of two"):
+        drive(StressSearch(1, 256, false, true))(plateau(100))(1).let(_.count).or(-1)
+      . assert(count => count >= 95 - 6 && count <= 100)
+
+      test(m"a plateau reaching the first window chooses one worker"):
+        drive(StressSearch(1, 256, false, true))(window => Outcome(1000.0))(1)
+        . let(_.count).or(-1)
+      . assert(_ == 1)
+
+      test(m"a refined capacity search reports the knee below its SLO boundary"):
+        drive(StressSearch(1, 1024, true, true)): window =>
+          plateau(12)(window).copy(ok = window.count <= 50)
+
+        . apply(1).let(_.count).or(-1)
+      . assert(_ == 12)
 
       test(m"a refined sweep with falling throughput chooses one worker"):
         drive(StressSearch(1, 256, false, true))(window => Outcome(1000.0 - window.count))(1)
@@ -205,7 +233,7 @@ object Tests extends Suite(m"Sedentary Tests"):
 
       test(m"a refined sweep stays within its window budget"):
         drive(StressSearch(1, 256, false, true))(humped(37))(0).size
-      . assert(_ <= 9 + StressSearch.MaxProbes + 3 + 3)
+      . assert(_ <= 9 + 2*StressSearch.MaxProbes + 3)
 
       test(m"a refined sweep treats exhausted windows as a bound, not a candidate"):
         val (windows, winner) = drive(StressSearch(1, 256, false, true)): window =>
@@ -213,7 +241,7 @@ object Tests extends Suite(m"Sedentary Tests"):
           else Outcome(window.count.toDouble)
 
         winner.let(_.count).or(-1)
-      . assert(count => count < 48 && count >= 48 - 48/16 - 1)
+      . assert(count => count < 48 && count >= 42)
 
       // Throughput peaks at 20 workers, but latency stays compliant up to 50: the best
       // compliant throughput is at 20, not at the largest compliant count.
@@ -229,7 +257,7 @@ object Tests extends Suite(m"Sedentary Tests"):
           Outcome(window.count.toDouble, ok = window.count <= 50)
 
         . apply(1).let(_.count).or(-1)
-      . assert(count => count <= 50 && count >= 50 - 50/16 - 1)
+      . assert(count => count <= 50 && count >= 43)
 
       // One window at 64 workers reports ten times its real throughput. The search chases it,
       // but the extended re-measurement sees the truth, so the winner is chosen by what the
@@ -244,6 +272,20 @@ object Tests extends Suite(m"Sedentary Tests"):
         (winner.let(_.count).or(-1), best)
       . assert(_ == _)
 
+      // The same lucky window on a plateau steers the knee search towards 64; the extended
+      // re-measurement of 64 exposes it, and the search starts again from the truth.
+      test(m"a lucky window on a plateau does not move the knee"):
+        drive(StressSearch(1, 256, false, true)): window =>
+          if window.count == 64 && !window.extended then Outcome(100000.0)
+          else plateau(12)(window)
+
+        . apply(1).let(_.count).or(-1)
+      . assert(_ == 12)
+
+      test(m"a peak which reproduces does not restart the search"):
+        drive(StressSearch(1, 256, false, true))(plateau(12))(0).filter(_.extended).size
+      . assert(_ == 3)
+
       // Probes are compliant up to 50 workers, but extended windows only up to 45: none of the
       // confirmations near 50 holds, and the first ~12% step down does.
       test(m"a refined search falls back to stepping down when no confirmation holds"):
@@ -255,10 +297,19 @@ object Tests extends Suite(m"Sedentary Tests"):
         . or((false, false, false))
       . assert(_ == (true, true, true))
 
-      test(m"a refined search gives up after three failed step-downs"):
+      // Extended windows only hold up to 30 workers, well below where the probes put the knee:
+      // the failed confirmations are discarded and the search starts again lower down.
+      test(m"a refined search starts again when its confirmations all fail"):
         drive(StressSearch(1, 1024, true, true)): window =>
           val ok = if window.extended then window.count <= 30 else window.count <= 50
           Outcome(window.count.toDouble, ok = ok)
+
+        . apply(1).let { window => (window.count <= 30, window.extended) }.or((false, false))
+      . assert(_ == (true, true))
+
+      test(m"a refined search gives up when no extended window ever holds"):
+        drive(StressSearch(1, 1024, true, true)): window =>
+          Outcome(window.count.toDouble, ok = !window.extended && window.count <= 50)
 
         . apply(1)
       . assert(_ == Unset)
