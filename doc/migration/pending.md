@@ -156,3 +156,18 @@ format. Entries are grouped by module, most-recently-added last within a module.
   repeatedly until its deadline, stopping early only if the thread is interrupted. Code that
   relied on a `snooze` returning early without cancellation must use `park` and an `unpark`
   instead. (#2006)
+
+## escritoire
+
+- `escritoire.Columnar`'s abstract member is now `def flex(metrics: tessellate.Metrics,
+  maxWidth: Int): Flex`, which derives a column's claim from the aggregate intrinsic widths of
+  its lines. The former abstract `def flex[text: Textual { type Result = Char }](lines:
+  Array[text]^{}, maxWidth: Int)(using Text is Measurable): Flex` is now concrete and delegates
+  to it through `Columnar.metrics(lines)`. An external `Columnar` implementation must implement
+  `flex(metrics, maxWidth)` instead, computing from its `metrics` parameter where it previously
+  folded `Flow.metrics` over the lines; it no longer needs to override the `lines` form. (#2007)
+- `Columnar` gains `accommodates(aggregate: Metrics, cell: Metrics): Boolean`, true when a cell
+  cannot change the column's claim; it defaults to `cell.min <= aggregate.min &&
+  cell.natural <= aggregate.natural`. A strategy whose claim ignores its content should override
+  it to `true`, as `columnar.Fixed` does. `Columnar.metrics(lines): Metrics` is new: the max-fold
+  of each line's `Flow.metrics`. (#2007)
