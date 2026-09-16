@@ -1,0 +1,84 @@
+tel 1.0
+
+# Flair's configuration for Soundness: Consequent Style over every library, with the project's
+# unsafety gate, and the constructs the codebase watches the size of, defined as rules so that
+# `flair metrics` records their counts in git notes commit by commit.
+
+# ── Rules ────────────────────────────────────────────────────────────────────────────────────
+
+# Claims of unsafety: the `unsafely` block that supplies the token, every `unsafe`-prefixed
+# call (each backed by a `using erased Unsafe` gate, which S1 checks), and the capture-checking
+# escape hatches, which bypass a guarantee the same way a gate does but without a token.
+rule unsafe
+  invokes unsafely
+  invokes unsafe*
+  annotates unsafeAssumePure
+  annotates untrackedCaptures
+  message  This bypasses a guarantee the compiler would otherwise enforce
+
+# Casts, which bypass the type checker.
+rule cast
+  invokes asInstanceOf
+  invokes isInstanceOf
+  message  Casts bypass the type checker; prefer a pattern match or an extractor
+
+# Nullability: the `null` literal and the `.nn` assertion that unpacks it.
+rule nullable
+  uses null
+  invokes nn
+  message  Nullability is confined to the Java boundary
+
+# The imperative constructs the confined-indexing campaign is draining (etc/check-while-count.py).
+rule imperative
+  uses while
+  uses var
+  uses return
+  invokes readUnchecked
+
+# Exceptions: thrown, or caught wholesale.
+rule exceptional
+  uses throw
+  uses catch-all
+
+# Partial accessors that fail at runtime rather than in the type.
+rule partial
+  invokes get
+  invokes head
+  invokes apply
+
+# ── Profile ──────────────────────────────────────────────────────────────────────────────────
+
+profile default
+  source lib/*/src/**/*.scala
+
+  # The `-language` features every library compiles with, so flair parses the sources exactly
+  # as the build does (capture and separation checking are syntax, too).
+  language implicitConversions
+  language experimental.modularity
+  language experimental.dependent
+  language experimental.relaxedLambdaSyntax
+  language experimental.genericNumberLiterals
+  language experimental.into
+  language experimental.erasedDefinitions
+  language experimental.saferExceptions
+  language experimental.strictEqualityPatternMatching
+  language experimental.subCases
+  language experimental.multiSpreads
+  language experimental.captureChecking
+  language experimental.separationChecking
+
+  style consequent
+    header etc/header.txt
+    columns 100
+    umbrella soundness
+    module-root lib
+    interpolator m
+    interpolator j
+    interpolator x
+    interpolator y
+    interpolator tel
+    gate Unsafe
+      prefix unsafe
+
+  # The rules checked on every build; the rest are measured only.
+  enforce cast
