@@ -171,3 +171,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   cell.natural <= aggregate.natural`. A strategy whose claim ignores its content should override
   it to `true`, as `columnar.Fixed` does. `Columnar.metrics(lines): Metrics` is new: the max-fold
   of each line's `Flow.metrics`. (#2007)
+
+## tessellate
+
+- `tessellate.Flow.wrap` no longer strips trailing spaces from a line which ends at a hard break
+  (`\n` or `\r`) or at the end of the content; it drops them only as far as needed to keep the
+  line within `width`. A line ending at a soft break still loses the spaces the break absorbed.
+  Wrapped text, and tables rendered through `Flow.wrap` (such as escritoire's `Grid.render`),
+  therefore keep meaningful trailing spaces: a styled cell such as `e"$Bg(green)( ✓ )"` now
+  keeps its third, styled cell rather than being re-padded with an unstyled space. Code or test
+  fixtures which expected the trimmed lines must be updated. (#2000)

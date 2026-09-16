@@ -152,6 +152,26 @@ object Tests extends Suite(m"Tessellate tests"):
 
       . assert(_ == SList(t"abcdefghij"))
 
+      // Trailing spaces are dropped only when a soft break absorbed them. At the end of the
+      // content no break occurred, so they are content: a styled badge cell such as fume's
+      // `e"$Bg(green)( ✓ )"` needs all three cells, and stripping the last one left the
+      // background covering two cells while `Alignment.pad` refilled the third unstyled.
+      test(m"trailing spaces survive at the end of the content when they fit"):
+        wrapped(t" x ", 3)
+
+      . assert(_ == SList(t" x "))
+
+      // ...but only as far as the width, since `Alignment.pad` never truncates.
+      test(m"trailing spaces beyond the width are still clipped to the budget"):
+        wrapped(t"ab    ", 4)
+
+      . assert(_ == SList(t"ab  "))
+
+      test(m"trailing spaces survive before a hard break when they fit"):
+        wrapped(t"a \nb", 4)
+
+      . assert(_ == SList(t"a ", t"b"))
+
     suite(m"Flow.fit"):
       test(m"short content pads to the right under Left alignment"):
         Flow.fit(t"abc", 6)
