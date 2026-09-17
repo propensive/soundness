@@ -34,6 +34,7 @@ package tasseomancy
 
 import Framing.*
 import anticipation.*
+import cartouche.*
 import cataclysm.{Css, Web}
 import geodesy.*
 import gossamer.*
@@ -51,6 +52,30 @@ object Chart:
 
   enum Axis:
     case Abscissa, Ordinate
+
+  object Anchoring:
+    // The SVG alignment for each side a label may lie on: text to the east of its point starts
+    // there and is centred on it vertically; text to the north sits on it.
+    def of(position: Caption.Position): Anchoring =
+      import Caption.Attachment.*
+
+      val (anchor, baseline) = position.attachment match
+        case East      => (Lettering.Anchor.Start, Lettering.Baseline.Middle)
+        case West      => (Lettering.Anchor.End, Lettering.Baseline.Middle)
+        case North     => (Lettering.Anchor.Middle, Lettering.Baseline.Alphabetic)
+        case South     => (Lettering.Anchor.Middle, Lettering.Baseline.Hanging)
+        case Northeast => (Lettering.Anchor.Start, Lettering.Baseline.Alphabetic)
+        case Northwest => (Lettering.Anchor.End, Lettering.Baseline.Alphabetic)
+        case Southeast => (Lettering.Anchor.Start, Lettering.Baseline.Hanging)
+        case Southwest => (Lettering.Anchor.End, Lettering.Baseline.Hanging)
+        case Center    => (Lettering.Anchor.Middle, Lettering.Baseline.Middle)
+
+      Anchoring(point(position.x, position.y), anchor, baseline)
+
+  // Where a run of text is set, as the arrangement decided it: the point, and the alignment
+  // that puts the text on the right side of it. A style draws the text here; the position is
+  // not its to choose.
+  case class Anchoring(point: Point, anchor: Lettering.Anchor, baseline: Lettering.Baseline)
 
   object Style:
     given standard: Standard = Standard()
@@ -105,6 +130,10 @@ object Chart:
     def legendLabel(position: Point, name: Text, color: Color in Srgb): List[Figure] =
       List(lettering(position, name, Lettering.Anchor.Start, Lettering.Baseline.Middle, color))
 
+    // The line from a label that had to move away from its point back to that point.
+    def leader(from: Point, to: Point, color: Color in Srgb): List[Figure] =
+      List(Polyline(List(from, to), style = stroked(color, 1.0)))
+
   // What every chart with an abscissa and an ordinate shares: the axes and their gradations, the
   // grid, the titles, and the markers, error bars and point labels that lines and scatter plots
   // draw. Positions are given in the drawing's coordinates; the style decides the shape, the
@@ -138,16 +167,10 @@ object Chart:
 
       List(Polyline(List(at, far), style = stroked(color, 1.0)))
 
-    def tickLabel(at: Point, text: Text, axis: Axis, color: Color in Srgb): List[Figure] =
-      axis match
-        case Axis.Abscissa =>
-          val position = point(at.x, at.y + tickLength + gap)
-          val anchor = Lettering.Anchor.Middle
-          List(lettering(position, text, anchor, Lettering.Baseline.Hanging, color))
-
-        case Axis.Ordinate =>
-          val position = point(at.x - tickLength - gap, at.y)
-          List(lettering(position, text, Lettering.Anchor.End, Lettering.Baseline.Middle, color))
+    // A tick's label, set beyond its tick by `tickLength + gap`: below an abscissa's, beside an
+    // ordinate's. The arrangement hides a label that would overlap its neighbour.
+    def tickLabel(at: Anchoring, text: Text, axis: Axis, color: Color in Srgb): List[Figure] =
+      List(lettering(at.point, text, at.anchor, at.baseline, color))
 
     // The room an axis's ticks and labels take beyond its line, which the layout reserves: a
     // style that rotates or moves its labels overrides this to match.
@@ -189,10 +212,10 @@ object Chart:
           Polyline(List(point(x - cap, top), point(x + cap, top)), style = bar),
           Polyline(List(point(x - cap, bottom), point(x + cap, bottom)), style = bar) )
 
-    // The note an `Annotated` point carries, set beside its marker.
-    def pointLabel(at: Point, text: Text, color: Color in Srgb): List[Figure] =
-      val position = point(at.x + markerRadius + gap/2.0, at.y)
-      List(lettering(position, text, Lettering.Anchor.Start, Lettering.Baseline.Middle, color))
+    // The note an `Annotated` point carries, set beside its marker: to the right by default,
+    // or on whichever side the arrangement found clear of other labels, markers and lines.
+    def pointLabel(at: Anchoring, text: Text, color: Color in Srgb): List[Figure] =
+      List(lettering(at.point, text, at.anchor, at.baseline, color))
 
   // The default style of every chart kind, as a case class: its parameters are named
   // arguments, and any component's rendering is an override on an anonymous subclass.
@@ -238,12 +261,12 @@ object Chart:
 class Chart[data, form, fit, style <: Chart.Style](val data: data, val form: form, val fit: fit)
   ( using val plottable: data is Plottable in form to fit by style ):
 
-  def drawing(using style, ChartPalette, FontMetric): Chart.Drawing =
+  def drawing(using style, ChartPalette, FontMetric, Arranger): Chart.Drawing =
     plottable.draw(form, data, fit)
 
-  def svg(using style, ChartPalette, FontMetric): Svg = drawing.svg
+  def svg(using style, ChartPalette, FontMetric, Arranger): Svg = drawing.svg
 
-  def revise(data2: data)(using style, ChartPalette, FontMetric)
+  def revise(data2: data)(using style, ChartPalette, FontMetric, Arranger)
   :   (Chart[data, form, fit, style], List[Chart.Revision]) =
 
     if plottable.accommodates(form, fit, data2) then

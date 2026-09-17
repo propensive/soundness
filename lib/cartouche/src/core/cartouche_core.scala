@@ -30,24 +30,69 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package tasseomancy
+package cartouche
 
-import cartouche.Arranger
-import prepositional.*
+import scala.annotation.tailrec
 
-// The compatibility of a shape of data with a kind of chart, and what it takes to draw it. An
-// instance exists only where the kind can draw the data — a pie needs one categorical series, a
-// line needs numeric axes — so an unsuitable pairing does not compile. `fit` chooses the axes
-// from the data, `draw` renders against a fit, and `accommodates` says whether a fit still holds
-// new data, which is what lets a live chart replace one part rather than everything. The fit's
-// type is the instance's `Result`, bound with `to`, and the style it draws with is its
-// `Operand`, bound with `by` — `Series[x, y] is Plottable in Lines to Lines.Fit by Lines.Style` —
-// so a chart's fit is the kind's own, with its axes visible, and its style is the kind's own too.
-trait Plottable extends Typeclass.Pure, Formal, Resultant, Operable:
-  type Operand <: Chart.Style
-  def fit(form: Form, data: Self): Result
-  def accommodates(form: Form, fit: Result, data: Self): Boolean
+import rudiments.*
 
-  def draw(form: Form, data: Self, fit: Result)
-    ( using Operand, ChartPalette, FontMetric, Arranger )
-  :   Chart.Drawing
+// Runs `body` twice. The first run records every `position`, `avoid` and `canvas` call and
+// answers each `position` provisionally, with the label where it was asked for; its result is
+// discarded. The arranger in scope then solves the whole arrangement, and the second run answers
+// each `position` call with its solved position, matched to the first run's calls by their
+// order. The body therefore has to be repeatable: the same calls in the same order both times,
+// with no effects beyond them. Its second result is `arrange`'s.
+def arrange[result](body: (Arranger.Pass^) ?=> result)(using arranger: Arranger): result =
+  val first = Arranger.Pass(false, Sequence.empty)
+  body(using first)
+  val (captions, obstacles, canvas) = first.recorded
+  val positions = arranger.arrange(captions, obstacles, canvas)
+
+  @tailrec
+  def pair
+    ( captions:  List[Caption],
+      positions: List[Caption.Position],
+      acc:       List[(Caption, Caption.Position)] )
+  :   List[(Caption, Caption.Position)] =
+
+    captions match
+      case caption :: captions2 => positions match
+        case position :: positions2 => pair(captions2, positions2, (caption, position) :: acc)
+        case _                      => acc.reverse
+
+      case _ => acc.reverse
+
+  body(using Arranger.Pass(true, pair(captions, positions, Nil).to[Sequence]))
+
+// Asks for a place for a label. In the first pass of `arrange` the answer is provisional; in the
+// second it is the solved position.
+def position(caption: Caption)(using pass: Arranger.Pass^): Caption.Position = pass.record(caption)
+
+def position
+  ( width:       Double,
+    height:      Double,
+    x:           Double,
+    y:           Double,
+    attachments: List[Caption.Attachment] = Caption.Attachment.compass,
+    standoff:    Double                   = 0.0,
+    reach:       Double                   = 0.0,
+    padding:     Double                   = 0.0,
+    priority:    Int                      = 0,
+    fallback:    Caption.Fallback         = Caption.Fallback.Overlap )
+  ( using pass: Arranger.Pass^ )
+:   Caption.Position =
+
+  pass.record
+    ( Caption
+        ( width, height, x, y, attachments, standoff, reach, padding, priority, fallback ) )
+
+// Declares things that no label may be set over.
+def avoid(obstacles: Obstacle*)(using pass: Arranger.Pass^): Unit =
+  List.from(obstacles).each(pass.avoid(_))
+
+// Declares the area labels must stay within; the last declaration in a body wins.
+def canvas(box: Obstacle.Box)(using pass: Arranger.Pass^): Unit = pass.canvas(box)
+
+package arrangers:
+  given greedyArranger: Arranger = Arranger.Greedy()
+  given annealingArranger: Arranger = Arranger.Annealing()

@@ -33,6 +33,7 @@
 package tasseomancy
 
 import Framing.*
+import cartouche.*
 import iridescence.*
 import murmuration.Traversable
 import prepositional.*
@@ -98,7 +99,7 @@ object Bars:
             fit.bands.index(mark.category).present && fit.ordinate.accommodates(mark.y) && within
 
       def draw(form: Bars, data: data, fit: Bars.Fit)
-        ( using style: Bars.Style, palette: ChartPalette, metric: FontMetric )
+        ( using style: Bars.Style, palette: ChartPalette, metric: FontMetric, arranger: Arranger )
       :   Chart.Drawing =
 
         val all = columns(data)
@@ -109,30 +110,35 @@ object Bars:
         val groupWidth = frame.width*fit.bands.width*(1.0 - style.barGap)
         val barWidth = groupWidth/total
         val zero = frame.y(fit.ordinate.unit(0.0))
-        var index = 0
 
-        val seriesParts = all.map: column =>
-          val color = palette.color(index)
+        arrange:
+          canvas(page)
+          val axesParts = axes(frame, fit.bands, fit.ordinate)
+          var index = 0
 
-          val figures = column.marks.fold(List[Figure]()): (acc, mark) =>
-            fit.bands.index(mark.category).lay(acc): band =>
-              val x0 = frame.x(fit.bands.centre(band)) - groupWidth/2.0 + index*barWidth
-              val y = frame.y(fit.ordinate.unit(mark.y))
-              val bar = style.bar(point(x0, y.min(zero)), barWidth, (y - zero).abs, color, index)
+          val seriesParts = all.map: column =>
+            val color = palette.color(index)
 
-              val errors = mark.bounds.lay(Nil): (low, high) =>
-                val top = frame.y(fit.ordinate.unit(high))
-                val bottom = frame.y(fit.ordinate.unit(low))
-                style.errorBar(x0 + barWidth/2.0, top, bottom, barWidth/4.0, palette.axis)
+            val figures = column.marks.fold(List[Figure]()): (acc, mark) =>
+              fit.bands.index(mark.category).lay(acc): band =>
+                val x0 = frame.x(fit.bands.centre(band)) - groupWidth/2.0 + index*barWidth
+                val y = frame.y(fit.ordinate.unit(mark.y))
+                val bar = style.bar(point(x0, y.min(zero)), barWidth, (y - zero).abs, color, index)
+                avoid(Obstacle.Box(x0, y.min(zero), barWidth, (y - zero).abs))
 
-              errors.reverse + (bar.reverse + acc)
+                val errors = mark.bounds.lay(Nil): (low, high) =>
+                  val top = frame.y(fit.ordinate.unit(high))
+                  val bottom = frame.y(fit.ordinate.unit(low))
+                  style.errorBar(x0 + barWidth/2.0, top, bottom, barWidth/4.0, palette.axis)
 
-          val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
-          index += 1
-          part
+                errors.reverse + (bar.reverse + acc)
 
-        val legend = legendPart(layout.legend, names)
-        Framing.drawing(axes(frame, fit.bands, fit.ordinate) + seriesParts + legend)
+            val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
+            index += 1
+            part
+
+          val legend = legendPart(layout.legend, names)
+          Framing.drawing(axesParts + seriesParts + legend)
 
 // Bars grouped by category: one bar per series within each category's band, from zero to the
 // value, with error bars where the value carries an interval. The ordinate is anchored at zero,

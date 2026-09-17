@@ -181,3 +181,55 @@ format. Entries are grouped by module, most-recently-added last within a module.
   therefore keep meaningful trailing spaces: a styled cell such as `e"$Bg(green)( ✓ )"` now
   keeps its third, styled cell rather than being re-padded with an unstyled space. Code or test
   fixtures which expected the trimmed lines must be updated. (#2000)
+## cartouche
+
+- New library `cartouche`, a text-positioning engine: `def arrange[result](body:
+  (Arranger.Pass^) ?=> result)(using Arranger): result` runs its body twice, recording each
+  `position(...)` call in the first run and answering it from the solved arrangement in the
+  second. Also `def position(caption: Caption)(using Arranger.Pass^): Caption.Position`, `def
+  position(width: Double, height: Double, x: Double, y: Double, attachments:
+  List[Caption.Attachment] = Caption.Attachment.compass, standoff: Double = 0.0, reach: Double
+  = 0.0, padding: Double = 0.0, priority: Int = 0, fallback: Caption.Fallback =
+  Caption.Fallback.Overlap)(using Arranger.Pass^): Caption.Position`, `def avoid(obstacles:
+  Obstacle*)(using Arranger.Pass^): Unit`, `def canvas(box: Obstacle.Box)(using
+  Arranger.Pass^): Unit`, the types `Caption` (with `Caption.Attachment`, `Caption.Fallback`,
+  `Caption.Leader`, `Caption.Position`), `Obstacle` (with `Obstacle.Box`, `Obstacle.Line`,
+  `Obstacle.Disc`) and `Arranger` (with `Arranger.Greedy`, `Arranger.Annealing` and
+  `Arranger.Pass`), and the importable givens `arrangers.greedyArranger` and
+  `arrangers.annealingArranger`. All exported from the `soundness` umbrella. Additive: no
+  existing code changes. (#TBD)
+
+## tasseomancy
+
+- `tasseomancy.Plottable#draw` gains a required given: `def draw(form: Form, data: Self, fit:
+  Result)(using Operand, ChartPalette, FontMetric, Arranger): Chart.Drawing`, where `Arranger`
+  is `cartouche.Arranger`. `Chart#drawing`, `Chart#svg` and `Chart#revise` gain the same
+  `Arranger` given. `Arranger`'s companion supplies a default, so call sites that summon these
+  implicitly need no change; an implementation of `Plottable` must add the parameter. (#TBD)
+- `tasseomancy.Chart.Cartesian#tickLabel(at: Point, text: Text, axis: Axis, color: Color in
+  Srgb): List[Figure]` becomes `tickLabel(at: Chart.Anchoring, text: Text, axis: Axis, color:
+  Color in Srgb): List[Figure]`. `at` was the tick's position, from which the method offset the
+  label by `tickLength + gap`; it is now the label's own anchor point with its alignment,
+  already offset. An override that set the text at `at` with its own anchor and baseline should
+  set it at `at.point` with `at.anchor` and `at.baseline`; one that rotated or otherwise moved
+  the label applies the same transforms to `at.point`. (#TBD)
+- `tasseomancy.Chart.Cartesian#pointLabel(at: Point, text: Text, color: Color in Srgb):
+  List[Figure]` becomes `pointLabel(at: Chart.Anchoring, text: Text, color: Color in Srgb):
+  List[Figure]`. `at` was the marker's position, from which the method offset the label to the
+  right; it is now the label's own anchor point with its alignment, on whichever side the
+  arrangement chose. Overrides adapt as for `tickLabel`. (#TBD)
+- `tasseomancy.Pie.Style#wedgeLabel(at: Point, text: Text, color: Color in Srgb): List[Figure]`
+  becomes `wedgeLabel(at: Chart.Anchoring, text: Text, color: Color in Srgb): List[Figure]`,
+  with `at` the label's anchor point and alignment as above; it was the wedge's centre, with the
+  text centred on it. (#TBD)
+- New `case class Chart.Anchoring(point: Point, anchor: Lettering.Anchor, baseline:
+  Lettering.Baseline)` with `Chart.Anchoring.of(position: cartouche.Caption.Position):
+  Chart.Anchoring`, and a new hook `Chart.Style#leader(from: Point, to: Point, color: Color in
+  Srgb): List[Figure]`, drawn by default as a one-pixel stroked polyline; override it to style
+  or suppress leader lines. (#TBD)
+- Behaviour: chart labels are now arranged by cartouche. A point's note may be set on a side
+  other than the right, or moved off with a leader line, where it would otherwise overlap
+  another note, a marker, a line or the legend; a pie's percentage may be moved outward with a
+  leader; a tick label that would overlap its neighbour is omitted. A chart whose labels did not
+  overlap renders as before. The rendered SVG of a chart with overlapping labels therefore
+  changes, and may contain additional `polyline` elements for leaders. (#TBD)

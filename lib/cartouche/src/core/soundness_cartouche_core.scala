@@ -30,24 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package tasseomancy
+package soundness
 
-import cartouche.Arranger
-import prepositional.*
+export cartouche.{Arranger, Caption, Obstacle, arrange, avoid, canvas, position}
 
-// The compatibility of a shape of data with a kind of chart, and what it takes to draw it. An
-// instance exists only where the kind can draw the data — a pie needs one categorical series, a
-// line needs numeric axes — so an unsuitable pairing does not compile. `fit` chooses the axes
-// from the data, `draw` renders against a fit, and `accommodates` says whether a fit still holds
-// new data, which is what lets a live chart replace one part rather than everything. The fit's
-// type is the instance's `Result`, bound with `to`, and the style it draws with is its
-// `Operand`, bound with `by` — `Series[x, y] is Plottable in Lines to Lines.Fit by Lines.Style` —
-// so a chart's fit is the kind's own, with its axes visible, and its style is the kind's own too.
-trait Plottable extends Typeclass.Pure, Formal, Resultant, Operable:
-  type Operand <: Chart.Style
-  def fit(form: Form, data: Self): Result
-  def accommodates(form: Form, fit: Result, data: Self): Boolean
-
-  def draw(form: Form, data: Self, fit: Result)
-    ( using Operand, ChartPalette, FontMetric, Arranger )
-  :   Chart.Drawing
+package arrangers:
+  export cartouche.arrangers.{greedyArranger, annealingArranger}
