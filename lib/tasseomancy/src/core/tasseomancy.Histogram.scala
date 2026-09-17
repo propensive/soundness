@@ -34,6 +34,7 @@ package tasseomancy
 
 import Framing.*
 import anticipation.*
+import cartouche.*
 import denominative.*
 import gossamer.*
 import hypotenuse.*
@@ -139,7 +140,10 @@ object Histogram:
         within && mostCounted(fit, all).toDouble <= fit.ordinate.upper
 
       def draw(form: Histogram, data: data, fit: Histogram.Fit)
-        ( using style: Histogram.Style, palette: ChartPalette, metric: FontMetric )
+        ( using style:    Histogram.Style,
+                palette:  ChartPalette,
+                metric:   FontMetric,
+                arranger: Arranger )
       :   Chart.Drawing =
 
         val all = extract(data)
@@ -152,30 +156,36 @@ object Histogram:
         val groupWidth = binWidth*(1.0 - style.barGap)
         val barWidth = groupWidth/total
         val zero = frame.y(fit.ordinate.unit(0.0))
-        var index = 0
 
-        val seriesParts = all.map: entry =>
-          val tally = counts(fit, entry(1))
-          val color = palette.color(index)
-          var bin = 0
-          var figures: List[Figure] = Nil
+        arrange:
+          canvas(page)
+          val axesParts = axes(frame, fit.abscissa, fit.ordinate)
+          var index = 0
 
-          while bin < bins do
-            val height = Sequence.at(tally, bin)
+          val seriesParts = all.map: entry =>
+            val tally = counts(fit, entry(1))
+            val color = palette.color(index)
+            var bin = 0
+            var figures: List[Figure] = Nil
 
-            if height > 0 then
-              val x0 = frame.left + bin*binWidth + (binWidth - groupWidth)/2.0 + index*barWidth
-              val y = frame.y(fit.ordinate.unit(height.toDouble))
-              figures = style.bar(point(x0, y), barWidth, zero - y, color, index).reverse + figures
+            while bin < bins do
+              val height = Sequence.at(tally, bin)
 
-            bin += 1
+              if height > 0 then
+                val x0 = frame.left + bin*binWidth + (binWidth - groupWidth)/2.0 + index*barWidth
+                val y = frame.y(fit.ordinate.unit(height.toDouble))
+                avoid(Obstacle.Box(x0, y, barWidth, zero - y))
+                val bar = style.bar(point(x0, y), barWidth, zero - y, color, index)
+                figures = bar.reverse + figures
 
-          val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
-          index += 1
-          part
+              bin += 1
 
-        val legend = legendPart(layout.legend, names)
-        Framing.drawing(axes(frame, fit.abscissa, fit.ordinate) + seriesParts + legend)
+            val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
+            index += 1
+            part
+
+          val legend = legendPart(layout.legend, names)
+          Framing.drawing(axesParts + seriesParts + legend)
 
 // The distribution of samples: the range is cut into equal bins, and a bar per series in each
 // bin counts the samples that fall in it. Without a bin count, Sturges' rule chooses one.

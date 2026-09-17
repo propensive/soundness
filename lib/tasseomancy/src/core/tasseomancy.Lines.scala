@@ -33,6 +33,7 @@
 package tasseomancy
 
 import Framing.*
+import cartouche.*
 import denominative.*
 import iridescence.*
 import murmuration.Traversable
@@ -116,47 +117,54 @@ object Lines:
         accommodatesTraces(traces(data), fit.abscissa, fit.ordinate)
 
       def draw(form: Lines, data: data, fit: Lines.Fit)
-        ( using style: Lines.Style, palette: ChartPalette, metric: FontMetric )
+        ( using style: Lines.Style, palette: ChartPalette, metric: FontMetric, arranger: Arranger )
       :   Chart.Drawing =
 
         val all = traces(data)
         val names = all.map(_.name)
         val layout = Framing.layout(fit.abscissa, fit.ordinate, names)
         val frame = layout.frame
-        var index = 0
 
         def at(datum: Datum, value: Double): Point =
           point(frame.x(fit.abscissa.unit(datum.x)), frame.y(fit.ordinate.unit(value)))
 
-        val seriesParts = all.map: trace =>
-          val sorted: Sequence[Datum] = trace.data.order(_.x)
-          val color = palette.color(index)
+        arrange:
+          canvas(page)
+          val axesParts = axes(frame, fit.abscissa, fit.ordinate)
+          var index = 0
 
-          val points: List[Point] =
-            sorted.fold(List[Point]()) { (acc, datum) => at(datum, datum.y) :: acc }.reverse
+          val seriesParts = all.map: trace =>
+            val sorted: Sequence[Datum] = trace.data.order(_.x)
+            val color = palette.color(index)
 
-          val (highs, lows) = sorted.fold((List[Point](), List[Point]())): (acc, datum) =>
-            datum.bounds.lay(acc): (low, high) =>
-              (at(datum, high) :: acc(0), at(datum, low) :: acc(1))
+            val points: List[Point] =
+              sorted.fold(List[Point]()) { (acc, datum) => at(datum, datum.y) :: acc }.reverse
 
-          val band: List[Figure] =
-            if highs.nil then Nil else style.band(highs.reverse + lows, color, index)
+            segments(points, style.strokeWidth).each(avoid(_))
 
-          val line = style.line(points, color, index)
+            val (highs, lows) = sorted.fold((List[Point](), List[Point]())): (acc, datum) =>
+              datum.bounds.lay(acc): (low, high) =>
+                (at(datum, high) :: acc(0), at(datum, low) :: acc(1))
 
-          val decorations: List[Figure] = sorted.fold(List[Figure]()): (acc, datum) =>
-            val position = at(datum, datum.y)
-            val marker = style.lineMarker(position, color, index)
-            val note = datum.note.lay(Nil): text => style.pointLabel(position, text, palette.text)
-            note.reverse + (marker.reverse + acc)
+            val band: List[Figure] =
+              if highs.nil then Nil else style.band(highs.reverse + lows, color, index)
 
-          val figures = band + line + decorations.reverse
-          val part = seriesId(index) -> Group(figures, id = seriesId(index))
-          index += 1
-          part
+            val line = style.line(points, color, index)
 
-        val legend = legendPart(layout.legend, names)
-        Framing.drawing(axes(frame, fit.abscissa, fit.ordinate) + seriesParts + legend)
+            val decorations: List[Figure] = sorted.fold(List[Figure]()): (acc, datum) =>
+              val position = at(datum, datum.y)
+              val marker = style.lineMarker(position, color, index)
+              if style.markers then avoid(Obstacle.Disc(position.x, position.y, style.markerRadius))
+              val note = datum.note.lay(Nil): text => pointLabel(position.x, position.y, text)
+              note.reverse + (marker.reverse + acc)
+
+            val figures = band + line + decorations.reverse
+            val part = seriesId(index) -> Group(figures, id = seriesId(index))
+            index += 1
+            part
+
+          val legend = legendPart(layout.legend, names)
+          Framing.drawing(axesParts + seriesParts + legend)
 
 // A line per series through its points in abscissa order, with a translucent band where the
 // values carry intervals, and markers at the points if the style asks for them. Neither axis is

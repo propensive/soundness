@@ -941,7 +941,8 @@ object soundness extends Toolchain:
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, urticose.ansi, hallucination.core, phoenicia.core,
-    punctuation.core, savagery.core, tasseomancy.core, scintillate.server, scintillate.servlet,
+    punctuation.core, savagery.core, cartouche.core, tasseomancy.core, scintillate.server,
+    scintillate.servlet,
     telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
     legerdemain.core, legerdemain.query, telekinesis.forms, jacinta.optics, caduceus.core,
     caduceus.resend,
@@ -1555,6 +1556,14 @@ object clavichord extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
+
+object cartouche extends Library:
+  object core extends Component(rudiments.core, hypotenuse.core, capricious.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
@@ -3161,7 +3170,7 @@ object tasseomancy extends Library:
   // aviation and quantitative supply the time and unit axes, phoenicia measures text.
   object core extends Component(savagery.core, hypotenuse.core, gossamer.core, quantitative.core,
       quantitative.units, aviation.core, spectacular.core, phoenicia.core, distillate.core,
-      murmuration.core):
+      murmuration.core, cartouche.core):
     override def scalaNative = false // draws through savagery (cataclysm classpath resources, JVM/JS-only)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -3569,7 +3578,7 @@ val allLibraries: Seq[Library] = Seq(
   aperture, apoplexy, archimedes, austronesian, aviation, baroque, beneficence, bitumen,
   breviloquence,
   burdock,
-  cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm, clavichord,
+  cacophony, caduceus, caesura, camouflage, capricious, cardinality, cartouche, cataclysm, clavichord,
   charisma, chiaroscuro, coaxial, concordance, contextual, contingency, corpuscular,
   cosmopolite,
   degustation, delicious, dendrology, denominative, digression, dissonance, distillate, diuretic,
