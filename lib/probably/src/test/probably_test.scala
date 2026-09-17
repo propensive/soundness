@@ -111,6 +111,14 @@ object Tests extends Suite(m"Probably Tests"):
         verdicts(invoked(Probe(), t"--workers=4")(1))
       . assert(_ == verdicts(invoked(Probe(), t"")(1)))
 
+      test(m"a suite asking for workers runs its assertions beside one another"):
+        verdicts(invoked(Parallel(), t"--workers=1")(1))
+      . assert(_ == scala.collection.immutable.Set(t"completed:first:pass", t"completed:second:pass"))
+
+      test(m"a suite's workers count for nothing when the host does not queue"):
+        verdicts(invoked(Parallel(), t"")(1))
+      . assert(_ == scala.collection.immutable.Set(t"completed:first:fail", t"completed:second:fail"))
+
       test(m"an error escaping a worker terminates the run, after the traversal"):
         val (exit, labels) = invoked(Escaping(), t"--workers=1")
         (exit, labels.exists(_.starts(t"run-terminated:")), labels.contains(t"scheduled:after"))

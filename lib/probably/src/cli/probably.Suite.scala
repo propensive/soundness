@@ -80,10 +80,20 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
           TestEvent.TestScheduled
             (TestEvent.Ref.of(id), TestEvent.kindName(Entry.Kind.Check), Unset, id.tags.map(_.text), Nil)
 
+  // How many workers this suite's queued assertions may run on, when the host queues at all
+  // (`--workers=<n>`): the larger of the host's count and this. One, the default, keeps
+  // declaration order; more runs assertions beside one another. Only assertions the
+  // compiler has verified pure are queued (see `Test.assert`), so nothing scoped by the
+  // suite's blocks can be shared between workers; effects the checker does not track —
+  // raw JDK I/O, system properties, a thread-affine library — remain the suite's own
+  // responsibility, and a suite that depends on their order keeps the default.
+  def workers: Int = 1
+
   private def makeRunner(selection: Selection, sink: Optional[TestEvent -> Unit])
   :   Runner[Report] =
 
-    Runner(selection)(using sink.lay(Reporter.report)(eventReporter(_)))
+    val count: Int = if selection.workers > 0 then selection.workers.max(workers) else 0
+    Runner(selection, count)(using sink.lay(Reporter.report)(eventReporter(_)))
 
   @scala.caps.unsafe.untrackedCaptures
   var runner0: Runner[Report] = makeRunner(Selection.all, Unset)

@@ -64,3 +64,21 @@ class Escaping extends Suite(m"escaping"):
     . assert(_ => true)
     test(m"after")(2).assert(_ == 2)
 
+// Asks for four workers: two assertions that each wait for the other at a barrier can only
+// both pass when at least two run at once, and both fail (rather than hang) when one worker
+// serves them in turn.
+class Parallel extends Suite(m"parallel"):
+  override def workers: Int = 4
+
+  def run(): Unit =
+    val barrier: java.util.concurrent.CyclicBarrier = java.util.concurrent.CyclicBarrier(2)
+
+    def meet(): Boolean =
+      try
+        barrier.await(500L, java.util.concurrent.TimeUnit.MILLISECONDS)
+        true
+      catch case _: Exception => false
+
+    test(m"first")(meet()).assert(_ == true)
+    test(m"second")(meet()).assert(_ == true)
+
