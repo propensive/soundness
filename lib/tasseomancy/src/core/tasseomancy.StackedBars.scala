@@ -33,6 +33,7 @@
 package tasseomancy
 
 import Framing.*
+import cartouche.*
 import murmuration.Traversable
 import prepositional.*
 import rudiments.*
@@ -114,7 +115,10 @@ object StackedBars:
         known && within
 
       def draw(form: StackedBars, data: data, fit: StackedBars.Fit)
-        ( using style: StackedBars.Style, palette: ChartPalette, metric: FontMetric )
+        ( using style:    StackedBars.Style,
+                palette:  ChartPalette,
+                metric:   FontMetric,
+                arranger: Arranger )
       :   Chart.Drawing =
 
         val all = columns(data)
@@ -122,33 +126,39 @@ object StackedBars:
         val layout = Framing.layout(fit.bands, fit.ordinate, names)
         val frame = layout.frame
         val barWidth = frame.width*fit.bands.width*(1.0 - style.barGap)
-        var stacks = empty(fit.bands.count)
-        var index = 0
 
-        val seriesParts = all.map: column =>
-          val color = palette.color(index)
+        arrange:
+          canvas(page)
+          val axesParts = axes(frame, fit.bands, fit.ordinate)
+          var stacks = empty(fit.bands.count)
+          var index = 0
 
-          val figures = column.marks.fold(List[Figure]()): (acc, mark) =>
-            fit.bands.index(mark.category).lay(acc): band =>
-              val stack = Sequence.at(stacks, band)
-              val from = if mark.y >= 0.0 then stack.positive else stack.negative
-              val to = from + mark.y
+          val seriesParts = all.map: column =>
+            val color = palette.color(index)
 
-              val updated =
-                if mark.y >= 0.0 then Stack(to, stack.negative) else Stack(stack.positive, to)
+            val figures = column.marks.fold(List[Figure]()): (acc, mark) =>
+              fit.bands.index(mark.category).lay(acc): band =>
+                val stack = Sequence.at(stacks, band)
+                val from = if mark.y >= 0.0 then stack.positive else stack.negative
+                val to = from + mark.y
 
-              stacks = Sequence.define(stacks, band, updated)
-              val x0 = frame.x(fit.bands.centre(band)) - barWidth/2.0
-              val y0 = frame.y(fit.ordinate.unit(from))
-              val y1 = frame.y(fit.ordinate.unit(to))
-              style.bar(point(x0, y0.min(y1)), barWidth, (y1 - y0).abs, color, index).reverse + acc
+                val updated =
+                  if mark.y >= 0.0 then Stack(to, stack.negative) else Stack(stack.positive, to)
 
-          val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
-          index += 1
-          part
+                stacks = Sequence.define(stacks, band, updated)
+                val x0 = frame.x(fit.bands.centre(band)) - barWidth/2.0
+                val y0 = frame.y(fit.ordinate.unit(from))
+                val y1 = frame.y(fit.ordinate.unit(to))
+                avoid(Obstacle.Box(x0, y0.min(y1), barWidth, (y1 - y0).abs))
+                val bar = style.bar(point(x0, y0.min(y1)), barWidth, (y1 - y0).abs, color, index)
+                bar.reverse + acc
 
-        val legend = legendPart(layout.legend, names)
-        Framing.drawing(axes(frame, fit.bands, fit.ordinate) + seriesParts + legend)
+            val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
+            index += 1
+            part
+
+          val legend = legendPart(layout.legend, names)
+          Framing.drawing(axesParts + seriesParts + legend)
 
 // Bars stacked by category: each series' value sits on the total of those before it, so that a
 // bar's full height is the category's total. Positive and negative values stack apart, in

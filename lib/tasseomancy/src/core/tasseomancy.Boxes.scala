@@ -34,6 +34,7 @@ package tasseomancy
 
 import Framing.*
 import anticipation.*
+import cartouche.*
 import denominative.*
 import hypotenuse.*
 import iridescence.*
@@ -136,7 +137,7 @@ object Boxes:
         countOf(all) == fit.bands.count && known
 
       def draw(form: Boxes, data: data, fit: Boxes.Fit)
-        ( using style: Boxes.Style, palette: ChartPalette, metric: FontMetric )
+        ( using style: Boxes.Style, palette: ChartPalette, metric: FontMetric, arranger: Arranger )
       :   Chart.Drawing =
 
         val all = extract(data)
@@ -144,44 +145,54 @@ object Boxes:
         val layout = Framing.layout(fit.bands, fit.ordinate, names)
         val frame = layout.frame
         val boxWidth = frame.width*fit.bands.width*(1.0 - style.boxGap)
-        var index = 0
 
-        val seriesParts = all.map: entry =>
-          val summary = Summary.of(entry(1))
-          val color = palette.color(index)
-          val x = frame.x(fit.bands.centre(index))
-          val x0 = x - boxWidth/2.0
-          val x1 = x + boxWidth/2.0
-          val cap = boxWidth/4.0
+        arrange:
+          canvas(page)
+          val axesParts = axes(frame, fit.bands, fit.ordinate)
+          var index = 0
 
-          def y(value: Double): Double = frame.y(fit.ordinate.unit(value))
+          val seriesParts = all.map: entry =>
+            val summary = Summary.of(entry(1))
+            val color = palette.color(index)
+            val x = frame.x(fit.bands.centre(index))
+            val x0 = x - boxWidth/2.0
+            val x1 = x + boxWidth/2.0
+            val cap = boxWidth/4.0
 
-          val box =
-            style.box
-              ( point(x0, y(summary.upperQuartile)), boxWidth,
-                (y(summary.lowerQuartile) - y(summary.upperQuartile)).abs, color, index )
+            def y(value: Double): Double = frame.y(fit.ordinate.unit(value))
 
-          val top = y(summary.maximum)
-          val bottom = y(summary.minimum)
-          val axis = palette.axis
+            val box =
+              style.box
+                ( point(x0, y(summary.upperQuartile)), boxWidth,
+                  (y(summary.lowerQuartile) - y(summary.upperQuartile)).abs, color, index )
 
-          val parts: List[List[Figure]] =
-            List
-              ( style.whisker(point(x, top), point(x, y(summary.upperQuartile)), axis),
-                style.whisker(point(x, y(summary.lowerQuartile)), point(x, bottom), axis),
-                style.whiskerCap(point(x - cap, top), point(x + cap, top), axis),
-                style.whiskerCap(point(x - cap, bottom), point(x + cap, bottom), axis),
-                box,
-                style.median(point(x0, y(summary.median)), point(x1, y(summary.median)), axis) )
+            avoid
+              ( Obstacle.Box
+                  ( x0, y(summary.upperQuartile), boxWidth,
+                    (y(summary.lowerQuartile) - y(summary.upperQuartile)).abs ),
+                Obstacle.Line(x, y(summary.maximum), x, y(summary.minimum)) )
 
-          val figures: List[Figure] = parts.fold(List[Figure]())(_ + _)
+            val top = y(summary.maximum)
+            val bottom = y(summary.minimum)
+            val axis = palette.axis
 
-          val part = seriesId(index) -> Group(figures, id = seriesId(index))
-          index += 1
-          part
+            val parts: List[List[Figure]] =
+              List
+                ( style.whisker(point(x, top), point(x, y(summary.upperQuartile)), axis),
+                  style.whisker(point(x, y(summary.lowerQuartile)), point(x, bottom), axis),
+                  style.whiskerCap(point(x - cap, top), point(x + cap, top), axis),
+                  style.whiskerCap(point(x - cap, bottom), point(x + cap, bottom), axis),
+                  box,
+                  style.median(point(x0, y(summary.median)), point(x1, y(summary.median)), axis) )
 
-        val legend = legendPart(layout.legend, names)
-        Framing.drawing(axes(frame, fit.bands, fit.ordinate) + seriesParts + legend)
+            val figures: List[Figure] = parts.fold(List[Figure]())(_ + _)
+
+            val part = seriesId(index) -> Group(figures, id = seriesId(index))
+            index += 1
+            part
+
+          val legend = legendPart(layout.legend, names)
+          Framing.drawing(axesParts + seriesParts + legend)
 
 // A box per set of samples: the box spans the quartiles with the median across it, and the
 // whiskers reach the least and greatest sample. Each set is a category on the abscissa.

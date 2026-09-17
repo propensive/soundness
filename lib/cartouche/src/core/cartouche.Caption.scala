@@ -30,83 +30,91 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escritoire
+package cartouche
 
-import scala.collection.immutable.IndexedSeq
-
-import scala.language.experimental.pureFunctions
-
-import scala.collection.immutable as sci
-
-import anticipation.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*
 import rudiments.*
-import symbolism.*
-import tessellate.*
 import vacuous.*
-import denominative.*
-// Per-row decorations are a short `List` read by column position.
-import denominative.dysasymptotics.linearAccess
 
-object Tabulation:
-  given printable: [text]
-  =>  ( textual: text is Textual { type Result = Char }, printable: text is Printable )
-  =>  ( Text is Measurable, TableStyle, Attenuation, polysyllabic.Hyphenation )
-  =>  Tabulation[text] is Printable =
+object Caption:
+  object Attachment:
+    // The cartographic preference: right of the point, then left, then the diagonals, then
+    // directly above and below.
+    val compass: List[Attachment] =
+      List(East, West, Northeast, Northwest, Southeast, Southwest, North, South)
 
-    (tabulation, termcap) =>
-      tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
+    val cardinal: List[Attachment] = List(East, West, North, South)
 
-abstract class Tabulation[text: ClassTag]():
-  type Row
+  // Which side of its target a label lies on, in a y-down frame, so `North` is above. `dx` and
+  // `dy` are the unit offsets from the target to the label's near edge, which is what places
+  // the label's footprint around its anchor point.
+  enum Attachment(val dx: Int, val dy: Int):
+    case North     extends Attachment(0, -1)
+    case Northeast extends Attachment(1, -1)
+    case East      extends Attachment(1, 0)
+    case Southeast extends Attachment(1, 1)
+    case South     extends Attachment(0, 1)
+    case Southwest extends Attachment(-1, 1)
+    case West      extends Attachment(-1, 0)
+    case Northwest extends Attachment(-1, -1)
+    case Center    extends Attachment(0, 0)
 
-  def columns: Array[Column[Row, text]]^{}
-  def titles: List[Array[Array[text]^{}]^{}]
-  def rows: List[Array[Array[text]^{}]^{}]
-  def dataLength: Int
+  // What becomes of a label that overlaps something wherever it is put: drawn where it overlaps
+  // least, or not drawn at all.
+  enum Fallback:
+    case Overlap, Hide
 
-  // Per-row, per-column cell decorations, aligned with `rows`; empty means undecorated.
-  def decorations: List[List[Optional[text -> text]]] = Nil
+  // A line from a displaced label's edge back to the target it describes.
+  case class Leader(x1: Double, y1: Double, x2: Double, y2: Double)
 
+  // The engine's answer for a caption: the anchor point to set the text at, the side of the
+  // target it lies on (from which a renderer derives its own alignment), the footprint it
+  // occupies, a leader if the label was moved far enough to need one, and whether it is to be
+  // drawn at all.
+  case class Position
+    ( x:          Double,
+      y:          Double,
+      attachment: Attachment,
+      box:        Obstacle.Box,
+      leader:     Optional[Leader],
+      visible:    Boolean )
 
-  // The layout of every column at `width`, from the titles' and every row's claims.
-  def layout(width: Int)
-    ( using style: TableStyle, metrics: Text is Measurable )
-    ( using textual: text is Textual { type Result = Char } )
-    ( using attenuation: Attenuation^ )
-  :   Layout[Row, text] =
+  // The answer before any arrangement has happened: the label where it was asked for, on its
+  // first-choice side. This is what the first pass of an `arrange` body receives.
+  def provisional(caption: Caption): Position =
+    val attachment = caption.sides.prim.or(Attachment.East)
+    val (x, y) = caption.anchor(attachment, 0.0, 0.0)
+    Position(x, y, attachment, caption.footprint(x, y, attachment), Unset, true)
 
-    val titleCells: List[Cells[text]] = titles.map(Cells.of(_))
-    val rowCells: List[Cells[text]] = rows.map(Cells.of(_))
-    val aggregates = (titleCells + rowCells).fold(Layout.nothing(columns))(Layout.aggregate(_, _))
-    Layout.solve(columns, titleCells, aggregates, width, style)
+// A request to place a label: its measured size, the point it describes, and how it may be set
+// relative to that point. The engine sees only geometry; whoever draws the label measures it.
+//
+// `attachments` lists the sides the label may lie on, best first. `standoff` is the gap between
+// the target and the label's near edge. `reach` is how far the label's anchor may be moved from
+// its target when every side is blocked; zero pins it. `padding` is clearance demanded around
+// the label. Captions with a higher `priority` are placed first, so they keep their targets.
+case class Caption
+  ( width:       Double,
+    height:      Double,
+    x:           Double,
+    y:           Double,
+    attachments: List[Caption.Attachment] = Caption.Attachment.compass,
+    standoff:    Double                   = 0.0,
+    reach:       Double                   = 0.0,
+    padding:     Double                   = 0.0,
+    priority:    Int                      = 0,
+    fallback:    Caption.Fallback         = Caption.Fallback.Overlap ):
 
-  def grid(width: Int)
-    ( using style: TableStyle, metrics: Text is Measurable )
-    ( using textual: text is Textual { type Result = Char } )
-    ( using attenuation: Attenuation^, hyphenation: polysyllabic.Hyphenation )
-  :   Grid[text] =
+  // The sides to try; a caption with none is treated as one that may lie to the east.
+  def sides: List[Caption.Attachment] = attachments match
+    case Nil => List(Caption.Attachment.East)
+    case _   => attachments
 
-    val titleCells: List[Cells[text]] = titles.map(Cells.of(_))
-    val rowCells: List[Cells[text]] = rows.map(Cells.of(_))
-    val aggregates = (titleCells + rowCells).fold(Layout.nothing(columns))(Layout.aggregate(_, _))
-    val layout = Layout.solve(columns, titleCells, aggregates, width, style)
+  // The anchor point of the label on the `attachment` side, displaced by (`dx`, `dy`) from the
+  // target.
+  def anchor(attachment: Caption.Attachment, dx: Double, dy: Double): (Double, Double) =
+    (x + dx + attachment.dx*standoff, y + dy + attachment.dy*standoff)
 
-    def lines(data: List[Cells[text]], decorations2: List[List[Optional[text -> text]]])
-    :   Chain[TableRow[text]] =
+  def footprint(anchorX: Double, anchorY: Double, attachment: Caption.Attachment)
+  :   Obstacle.Box =
 
-      // No native iterator: the decorations are consumed one row at a time alongside `data`,
-      // which is shorter or longer at will, so this is a `zipAll`, not a `zip`.
-      val decorationIterator = decorations2.stdlib.iterator
-
-      data.to[Chain].map: cells =>
-        val rowDecorations: List[Optional[text -> text]] =
-          if decorationIterator.hasNext then decorationIterator.next() else Nil
-
-        layout.row(cells, rowDecorations)
-
-    Grid
-      ( List(TableSection(layout.widths, lines(titleCells, Nil)), TableSection(layout.widths, lines(rowCells, decorations))),
-        style )
+    Obstacle.Box.around(anchorX, anchorY, width, height, attachment)

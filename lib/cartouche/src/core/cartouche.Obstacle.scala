@@ -30,83 +30,108 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escritoire
+package cartouche
 
-import scala.collection.immutable.IndexedSeq
-
-import scala.language.experimental.pureFunctions
-
-import scala.collection.immutable as sci
-
-import anticipation.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*
 import rudiments.*
-import symbolism.*
-import tessellate.*
 import vacuous.*
-import denominative.*
-// Per-row decorations are a short `List` read by column position.
-import denominative.dysasymptotics.linearAccess
 
-object Tabulation:
-  given printable: [text]
-  =>  ( textual: text is Textual { type Result = Char }, printable: text is Printable )
-  =>  ( Text is Measurable, TableStyle, Attenuation, polysyllabic.Hyphenation )
-  =>  Tabulation[text] is Printable =
+object Obstacle:
+  object Box:
+    // The footprint of a label of `width`×`height` whose anchor point is (`x`, `y`) and which
+    // lies on the `attachment` side of it: for `East` the anchor is the label's left-middle, for
+    // `North` its bottom-centre, for `Center` its centre.
+    def around
+      ( x: Double, y: Double, width: Double, height: Double, attachment: Caption.Attachment )
+    :   Box =
 
-    (tabulation, termcap) =>
-      tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
+      Box(x - width*(1 - attachment.dx)/2.0, y - height*(1 - attachment.dy)/2.0, width, height)
 
-abstract class Tabulation[text: ClassTag]():
-  type Row
+  // An axis-aligned rectangle in a y-down frame, as SVG and every raster format has it.
+  case class Box(left: Double, top: Double, width: Double, height: Double) extends Obstacle:
+    def right: Double = left + width
+    def bottom: Double = top + height
+    def area: Double = width*height
+    def centerX: Double = left + width/2.0
+    def centerY: Double = top + height/2.0
 
-  def columns: Array[Column[Row, text]]^{}
-  def titles: List[Array[Array[text]^{}]^{}]
-  def rows: List[Array[Array[text]^{}]^{}]
-  def dataLength: Int
+    def pad(amount: Double): Box =
+      Box(left - amount, top - amount, width + 2.0*amount, height + 2.0*amount)
 
-  // Per-row, per-column cell decorations, aligned with `rows`; empty means undecorated.
-  def decorations: List[List[Optional[text -> text]]] = Nil
+    def overlap(box: Box): Double =
+      val across = (right.min(box.right) - left.max(box.left)).max(0.0)
+      val down = (bottom.min(box.bottom) - top.max(box.top)).max(0.0)
+      across*down
 
+    // How much of this box lies outside `canvas`.
+    def excess(canvas: Box): Double = area - overlap(canvas)
 
-  // The layout of every column at `width`, from the titles' and every row's claims.
-  def layout(width: Int)
-    ( using style: TableStyle, metrics: Text is Measurable )
-    ( using textual: text is Textual { type Result = Char } )
-    ( using attenuation: Attenuation^ )
-  :   Layout[Row, text] =
+    def contains(x: Double, y: Double): Boolean =
+      x >= left && x <= right && y >= top && y <= bottom
 
-    val titleCells: List[Cells[text]] = titles.map(Cells.of(_))
-    val rowCells: List[Cells[text]] = rows.map(Cells.of(_))
-    val aggregates = (titleCells + rowCells).fold(Layout.nothing(columns))(Layout.aggregate(_, _))
-    Layout.solve(columns, titleCells, aggregates, width, style)
+    // The point on the perimeter nearest to (`x`, `y`): where a leader line meets the label.
+    def nearest(x: Double, y: Double): (Double, Double) =
+      if !contains(x, y) then (x.max(left).min(right), y.max(top).min(bottom))
+      else
+        val toLeft = x - left
+        val toRight = right - x
+        val toTop = y - top
+        val toBottom = bottom - y
+        val least = toLeft.min(toRight).min(toTop).min(toBottom)
 
-  def grid(width: Int)
-    ( using style: TableStyle, metrics: Text is Measurable )
-    ( using textual: text is Textual { type Result = Char } )
-    ( using attenuation: Attenuation^, hyphenation: polysyllabic.Hyphenation )
-  :   Grid[text] =
+        if least == toLeft then (left, y)
+        else if least == toRight then (right, y)
+        else if least == toTop then (x, top)
+        else (x, bottom)
 
-    val titleCells: List[Cells[text]] = titles.map(Cells.of(_))
-    val rowCells: List[Cells[text]] = rows.map(Cells.of(_))
-    val aggregates = (titleCells + rowCells).fold(Layout.nothing(columns))(Layout.aggregate(_, _))
-    val layout = Layout.solve(columns, titleCells, aggregates, width, style)
+  // A stroked segment, such as one edge of a plotted polyline or a leader line. Its overlap with
+  // a box is the length of the segment inside the box (Liang–Barsky clipping) times its width.
+  case class Line(x1: Double, y1: Double, x2: Double, y2: Double, width: Double = 1.0)
+  extends Obstacle:
 
-    def lines(data: List[Cells[text]], decorations2: List[List[Optional[text -> text]]])
-    :   Chain[TableRow[text]] =
+    def length: Double =
+      val dx = x2 - x1
+      val dy = y2 - y1
+      scala.math.sqrt(dx*dx + dy*dy)
 
-      // No native iterator: the decorations are consumed one row at a time alongside `data`,
-      // which is shorter or longer at will, so this is a `zipAll`, not a `zip`.
-      val decorationIterator = decorations2.stdlib.iterator
+    def overlap(box: Box): Double =
+      val dx = x2 - x1
+      val dy = y2 - y1
 
-      data.to[Chain].map: cells =>
-        val rowDecorations: List[Optional[text -> text]] =
-          if decorationIterator.hasNext then decorationIterator.next() else Nil
+      // Each edge of the box constrains the parameter `t` of the segment to one side of a
+      // threshold; the segment is inside the box where every constraint holds.
+      val edges: List[(Double, Double)] =
+        List((-dx, x1 - box.left), (dx, box.right - x1), (-dy, y1 - box.top), (dy, box.bottom - y1))
 
-        layout.row(cells, rowDecorations)
+      val range: Optional[(Double, Double)] =
+        edges.fold[Optional[(Double, Double)]]((0.0, 1.0)): (acc, edge) =>
+          acc.let: span =>
+            val (p, q) = edge
 
-    Grid
-      ( List(TableSection(layout.widths, lines(titleCells, Nil)), TableSection(layout.widths, lines(rowCells, decorations))),
-        style )
+            if p == 0.0 then (if q < 0.0 then Unset else span)
+            else
+              val t = q/p
+
+              if p < 0.0 then (if t > span(1) then Unset else (t.max(span(0)), span(1)))
+              else (if t < span(0) then Unset else (span(0), t.min(span(1))))
+
+      range.lay(0.0): span => if span(1) <= span(0) then 0.0 else (span(1) - span(0))*length*width
+
+  // A filled circle, such as a scatter plot's marker. The zero test is exact: the box is clear
+  // when its nearest point is at least a radius from the centre. The magnitude is the box's
+  // overlap with the disc's bounding square scaled by the disc's share of that square.
+  case class Disc(x: Double, y: Double, radius: Double) extends Obstacle:
+    def overlap(box: Box): Double =
+      val nearestX = x.max(box.left).min(box.right)
+      val nearestY = y.max(box.top).min(box.bottom)
+      val dx = nearestX - x
+      val dy = nearestY - y
+
+      if dx*dx + dy*dy >= radius*radius then 0.0
+      else Box(x - radius, y - radius, 2.0*radius, 2.0*radius).overlap(box)*scala.math.Pi/4.0
+
+// Something a label must not be set over: another label's footprint, a plotted line, a marker.
+// Each shape answers with how much of a box it covers, in area units, and the answer is exactly
+// zero when the two are disjoint. The magnitude only has to rank candidates against each other,
+// so a disc's is an estimate; the zero is exact.
+sealed trait Obstacle:
+  def overlap(box: Obstacle.Box): Double

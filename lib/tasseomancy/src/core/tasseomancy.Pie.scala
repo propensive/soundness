@@ -34,6 +34,7 @@ package tasseomancy
 
 import Framing.*
 import anticipation.*
+import cartouche.*
 import cataclysm.Css
 import denominative.*
 import geodesy.*
@@ -59,8 +60,10 @@ object Pie:
     def wedge(ops: List[Stroke], color: Color in Srgb, index: Int): List[Figure] =
       List(Outline(ops, style = filled(color) + Css.Style.of(List(t"fill-rule" -> t"evenodd"))))
 
-    def wedgeLabel(at: Point, text: Text, color: Color in Srgb): List[Figure] =
-      List(lettering(at, text, Lettering.Anchor.Middle, Lettering.Baseline.Middle, color))
+    // A wedge's percentage, centred in the wedge when that is clear of other labels, or moved
+    // outward with a leader when it is not.
+    def wedgeLabel(at: Chart.Anchoring, text: Text, color: Color in Srgb): List[Figure] =
+      List(lettering(at.point, text, at.anchor, at.baseline, color))
 
   given series: [x: Categorical, y: Continuous as continuous]
   =>  Series[x, y] is Plottable in Pie to Pie.Fit by Pie.Style =
@@ -88,7 +91,7 @@ object Pie:
         same
 
       def draw(form: Pie, data: Series[x, y], fit: Pie.Fit)
-        ( using style: Pie.Style, palette: ChartPalette, metric: FontMetric )
+        ( using style: Pie.Style, palette: ChartPalette, metric: FontMetric, arranger: Arranger )
       :   Chart.Drawing =
 
         val marks = columnOf(data).marks
@@ -142,31 +145,41 @@ object Pie:
 
             inner + outer
 
-        var start = 0.0
-        var index = 0
+        arrange:
+          canvas(page)
+          var start = 0.0
+          var index = 0
 
-        val figures = marks.fold(List[Figure]()): (acc, mark) =>
-          val fraction = if fit.total <= 0.0 then 0.0 else mark.y.max(0.0)/fit.total
-          val sweep = fraction*2.0*π
-          val color = palette.color(index)
-          val end = start + sweep
-          val complete = fraction >= 1.0 - Scale.tolerance
-          val ops = if complete then whole else wedge(start, end, sweep > π)
-          val shape = style.wedge(ops, color, index)
+          val figures = marks.fold(List[Figure]()): (acc, mark) =>
+            val fraction = if fit.total <= 0.0 then 0.0 else mark.y.max(0.0)/fit.total
+            val sweep = fraction*2.0*π
+            val color = palette.color(index)
+            val end = start + sweep
+            val complete = fraction >= 1.0 - Scale.tolerance
+            val ops = if complete then whole else wedge(start, end, sweep > π)
+            val shape = style.wedge(ops, color, index)
 
-          val label: List[Figure] =
-            if fraction < style.labelThreshold then Nil else
-              val middle = (start + end)/2.0
-              val distance = if hole <= 0.0 then radius*0.65 else (radius + hole)/2.0
-              val text = t"${Scale.format(fraction*100.0, 0)}%"
-              style.wedgeLabel(rim(middle, distance), text, palette.text)
+            val label: List[Figure] =
+              if fraction < style.labelThreshold then Nil else
+                val middle = (start + end)/2.0
+                val distance = if hole <= 0.0 then radius*0.65 else (radius + hole)/2.0
+                val text = t"${Scale.format(fraction*100.0, 0)}%"
+                val target = rim(middle, distance)
+                val sides = List(Caption.Attachment.Center, outward(middle))
 
-          start = end
-          index += 1
-          label.reverse + (shape.reverse + acc)
+                val placed =
+                  caption
+                    ( text, target.x, target.y, sides, reach = radius*0.5,
+                      padding = style.gap/4.0 )
 
-        val wedges = Svg.Id(t"wedges") -> Group(figures.reverse, id = Svg.Id(t"wedges"))
-        Framing.drawing(wedges :: legendPart(legendFrame(names), names))
+                labelled(placed, palette.text): at => style.wedgeLabel(at, text, palette.text)
+
+            start = end
+            index += 1
+            label.reverse + (shape.reverse + acc)
+
+          val wedges = Svg.Id(t"wedges") -> Group(figures.reverse, id = Svg.Id(t"wedges"))
+          Framing.drawing(wedges :: legendPart(legendFrame(names), names))
 
       // A pie has no axes, so its frame is the canvas less the insets and the legend.
       private def pieFrame(names: List[Text])

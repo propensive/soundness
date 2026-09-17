@@ -141,14 +141,27 @@ object Flow:
       if fromCluster == toCluster then textual(t"")
       else content.segment(charStart(fromCluster).z thru charStart(toCluster).u)
 
-    // A line as emitted: trailing spaces are dropped, as at a soft break. The walk skips
-    // space clusters without a width check (correctly — a break there would absorb them),
-    // so a segment ending in spaces can exceed `width`; emitted at a hard break or at the
-    // end of the content, it would overflow the line's cell budget, which `Alignment.pad`
-    // cannot recover (padding never truncates).
+    // A line emitted at a SOFT break: the break absorbs the spaces it broke on, so they are
+    // dropped entirely. The walk skips space clusters without a width check (correctly — a
+    // break there would absorb them), so a segment ending in spaces can exceed `width`.
     def line(fromCluster: Int, toCluster: Int): textual =
       var end = toCluster
       while end > fromCluster && plain.charAt(charStart(end - 1)) == ' ' do end -= 1
+      segment(fromCluster, end)
+
+    // A line emitted at a hard break or at the end of the content, where no break consumed
+    // the trailing spaces and they are therefore meaningful — a styled badge cell such as
+    // `e"$Bg(green)( ✓ )"` depends on keeping all three cells, and the column was already
+    // sized to include them (`natural` measures the full width). Spaces are dropped only as
+    // far as the line's cell budget, which `Alignment.pad` cannot claw back afterwards
+    // (padding never truncates).
+    def budgeted(fromCluster: Int, toCluster: Int): textual =
+      var end = toCluster
+
+      while end > fromCluster && plain.charAt(charStart(end - 1)) == ' ' &&
+            widths.readable(end) - widths.readable(fromCluster) > width
+      do end -= 1
+
       segment(fromCluster, end)
 
     def hardBreak(cluster: Int): Boolean =
@@ -190,9 +203,9 @@ object Flow:
     // recent space cluster on the current line. Lines accumulate in reverse in `acc`.
     def recur(cluster: Int, lineStart: Int, lastSpace: Int, acc: List[textual]): List[textual] =
       if cluster >= clusters then
-        if lineStart == cluster then acc else line(lineStart, cluster) :: acc
+        if lineStart == cluster then acc else budgeted(lineStart, cluster) :: acc
       else if hardBreak(cluster) then
-        recur(cluster + 1, cluster + 1, cluster + 1, line(lineStart, cluster) :: acc)
+        recur(cluster + 1, cluster + 1, cluster + 1, budgeted(lineStart, cluster) :: acc)
       else if plain.charAt(charStart(cluster)) == ' ' then
         recur(cluster + 1, lineStart, cluster, acc)
       else

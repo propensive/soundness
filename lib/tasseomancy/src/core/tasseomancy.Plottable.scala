@@ -32,6 +32,7 @@
                                                                                                   */
 package tasseomancy
 
+import cartouche.Arranger
 import prepositional.*
 
 // The compatibility of a shape of data with a kind of chart, and what it takes to draw it. An
@@ -47,5 +48,6 @@ trait Plottable extends Typeclass.Pure, Formal, Resultant, Operable:
   def fit(form: Form, data: Self): Result
   def accommodates(form: Form, fit: Result, data: Self): Boolean
 
-  def draw(form: Form, data: Self, fit: Result)(using Operand, ChartPalette, FontMetric)
+  def draw(form: Form, data: Self, fit: Result)
+    ( using Operand, ChartPalette, FontMetric, Arranger )
   :   Chart.Drawing

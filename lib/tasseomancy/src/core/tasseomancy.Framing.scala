@@ -33,6 +33,7 @@
 package tasseomancy
 
 import anticipation.*
+import cartouche.*
 import cataclysm.Css
 import denominative.*
 import gossamer.*
@@ -135,6 +136,94 @@ private[tasseomancy] object Framing:
   def point(x: Double, y: Double): Point = Point(x.toFloat, y.toFloat)
   def seriesId(index: Int): Svg.Id = Svg.Id(t"series-$index")
 
+  // The whole drawing, which every label must stay within.
+  def page(using style: Chart.Style): Obstacle.Box =
+    Obstacle.Box(0.0, 0.0, style.width, style.height)
+
+  // A run of text as a caption for the arrangement: its measured width, a line's height, and
+  // the sides of its point it may lie on.
+  def caption
+    ( text:        Text,
+      x:           Double,
+      y:           Double,
+      attachments: List[Caption.Attachment],
+      standoff:    Double           = 0.0,
+      reach:       Double           = 0.0,
+      padding:     Double           = 0.0,
+      priority:    Int              = 0,
+      fallback:    Caption.Fallback = Caption.Fallback.Overlap )
+    ( using style: Chart.Style, metric: FontMetric, pass: Arranger.Pass^ )
+  :   Caption.Position =
+
+    position
+      ( textWidth(text), style.fontSize, x, y, attachments, standoff, reach, padding, priority,
+        fallback )
+
+  // Text that is not to be moved — a tick label, a title, a legend entry — which the
+  // arrangement places first and steers everything else around.
+  def fixture(text: Text, x: Double, y: Double, attachment: Caption.Attachment)
+    ( using Chart.Style, FontMetric, Arranger.Pass^ )
+  :   Caption.Position =
+
+    caption(text, x, y, List(attachment), priority = 2)
+
+  // The figures for a placed label: nothing if it is hidden; otherwise its leader, if it needed
+  // one, and the label itself drawn by `draw` at the anchoring the arrangement decided.
+  def labelled(placed: Caption.Position, color: Color in Srgb)
+    ( draw: Chart.Anchoring => List[Figure] )
+    ( using style: Chart.Style )
+  :   List[Figure] =
+
+    if !placed.visible then Nil else
+      val leader = placed.leader.lay(Nil): leader =>
+        style.leader(point(leader.x1, leader.y1), point(leader.x2, leader.y2), color)
+
+      leader + draw(Chart.Anchoring.of(placed))
+
+  // The note beside a marker at (`x`, `y`): to the right when that is clear, otherwise on
+  // another side, or moved off with a leader.
+  def pointLabel(x: Double, y: Double, text: Text)
+    ( using style:   Chart.Cartesian,
+            palette: ChartPalette,
+            metric:  FontMetric,
+            pass:    Arranger.Pass^ )
+  :   List[Figure] =
+
+    val placed =
+      caption
+        ( text, x, y, Caption.Attachment.compass, standoff = style.markerRadius + style.gap/2.0,
+          reach = style.fontSize*4.0, padding = style.gap/4.0 )
+
+    labelled(placed, palette.text): at => style.pointLabel(at, text, palette.text)
+
+  // The segments of a polyline, for the arrangement to keep labels off.
+  def segments(points: List[Point], width: Double): List[Obstacle.Line] =
+    points match
+      case first :: rest =>
+        val (lines, _) = rest.fold((List[Obstacle.Line](), first)): (acc, next) =>
+          val (lines, previous) = acc
+          val line = Obstacle.Line(previous.x, previous.y, next.x, next.y, width)
+          (line :: lines, next)
+
+        lines.reverse
+
+      case _ => Nil
+
+  // The side facing away from a pie's centre at `angle`, measured clockwise from north.
+  def outward(angle: Double): Caption.Attachment =
+    import Caption.Attachment.*
+    val eighth = ((angle/(π/4.0)).round.toInt%8 + 8)%8
+
+    eighth match
+      case 0 => North
+      case 1 => Northeast
+      case 2 => East
+      case 3 => Southeast
+      case 4 => South
+      case 5 => Southwest
+      case 6 => West
+      case _ => Northwest
+
   // An axis's title: the style's, if given, with the axis's unit appended; otherwise the name and
   // unit the axis's type supplies; a categorical axis has neither.
   def title(ruler: Ruler, supplied: Optional[Text]): Optional[Text] = ruler match
@@ -228,7 +317,10 @@ private[tasseomancy] object Framing:
 
   // The grid and both axes, as identified groups.
   def axes(frame: Frame, abscissa: Ruler, ordinate: Ruler)
-    ( using style: Chart.Cartesian, palette: ChartPalette, metric: FontMetric )
+    ( using style:   Chart.Cartesian,
+            palette: ChartPalette,
+            metric:  FontMetric,
+            pass:    Arranger.Pass^ )
   :   List[(Svg.Id, Figure)] =
 
     import Chart.Axis.*
@@ -254,16 +346,29 @@ private[tasseomancy] object Framing:
 
         case _ => horizontal
 
-    // The gradations of one axis: each tick and, for a major gradation, its label.
+    // The gradations of one axis: each tick and, for a major gradation, its label. A label is
+    // pinned beyond its tick, and hidden rather than set over its neighbour.
     def gradations(marks: Sequence[Gradation], axis: Chart.Axis, at: Gradation => Point)
     :   List[Figure] =
 
+      val side = axis match
+        case Abscissa => Caption.Attachment.South
+        case Ordinate => Caption.Attachment.West
+
       val figures = marks.fold(List[Figure]()): (acc, mark) =>
-        val position = at(mark)
-        val tick = style.tick(position, axis, mark.major, axisColor)
+        val tickAt = at(mark)
+        val tick = style.tick(tickAt, axis, mark.major, axisColor)
 
         val label =
-          if mark.major then style.tickLabel(position, mark.label, axis, palette.text) else Nil
+          if !mark.major then Nil else
+            val placed =
+              caption
+                ( mark.label, tickAt.x, tickAt.y, List(side),
+                  standoff = style.tickLength + style.gap, priority = 1,
+                  fallback = Caption.Fallback.Hide )
+
+            labelled(placed, palette.text): anchoring =>
+              style.tickLabel(anchoring, mark.label, axis, palette.text)
 
         label.reverse + (tick.reverse + acc)
 
@@ -274,6 +379,10 @@ private[tasseomancy] object Framing:
       val break = if broken(ruler) then style.axisBreak(origin, axis, axisColor) else Nil
       style.arrowhead(tip, axis, axisColor) + break
 
+    avoid
+      ( Obstacle.Line(frame.left, frame.bottom, frame.right, frame.bottom),
+        Obstacle.Line(frame.left, frame.top, frame.left, frame.bottom) )
+
     val abscissaFigures: List[Figure] =
       val line = style.axisLine(origin, point(frame.right, frame.bottom), Abscissa, axisColor)
       val marks = gradations(xs, Abscissa, mark => point(frame.x(mark.position), frame.bottom))
@@ -281,6 +390,7 @@ private[tasseomancy] object Framing:
       val titleFigures = title(abscissa, style.abscissaTitle).lay(Nil): text =>
         val room = style.labelRoom(Abscissa, xs.filter(_.major).map(_.label).to[List])
         val at = point(frame.left + frame.width/2.0, frame.bottom + room + style.gap)
+        fixture(text, at.x, at.y, Caption.Attachment.South)
         style.axisTitle(at, text, Abscissa, palette.text)
 
       line + marks + titleFigures + ends(abscissa, Abscissa, point(frame.right, frame.bottom))
@@ -291,6 +401,14 @@ private[tasseomancy] object Framing:
 
       val titleFigures = title(ordinate, style.ordinateTitle).lay(Nil): text =>
         val at = point(style.inset, frame.top + frame.height/2.0)
+
+        // The title stands on its side, so its footprint is a line's height wide and the
+        // text's width tall.
+        position
+          ( Caption
+              ( style.fontSize, textWidth(text), at.x, at.y, List(Caption.Attachment.East),
+                priority = 2 ) )
+
         style.axisTitle(at, text, Ordinate, palette.text)
 
       line + marks + titleFigures + ends(ordinate, Ordinate, point(frame.left, frame.top))
@@ -302,7 +420,7 @@ private[tasseomancy] object Framing:
 
   // The legend: a swatch and a name per series, stacked at the right or flowing along the bottom.
   def legend(frame: Frame, names: List[Text])
-    ( using style: Chart.Style, palette: ChartPalette, metric: FontMetric )
+    ( using style: Chart.Style, palette: ChartPalette, metric: FontMetric, pass: Arranger.Pass^ )
   :   (Svg.Id, Figure) =
 
     val vertical = style.legend == Chart.Legend.Right
@@ -316,6 +434,8 @@ private[tasseomancy] object Framing:
       val corner = point(x, y + (lineHeight - style.swatchSize)/2.0)
       val position = point(x + style.swatchSize + style.gap, y + lineHeight/2.0)
       val swatch = style.swatch(corner, palette.color(index), index)
+      avoid(Obstacle.Box(corner.x, corner.y, style.swatchSize, style.swatchSize))
+      fixture(name, position.x, position.y, Caption.Attachment.East)
       val entry = swatch + style.legendLabel(position, name, palette.text)
       figures = entry.reverse + figures
       if !vertical then x += style.swatchSize + style.gap + textWidth(name) + style.gap*3
@@ -325,7 +445,7 @@ private[tasseomancy] object Framing:
 
   // The parts of a chart whose legend, if any, occupies the given frame.
   def legendPart(frame: Optional[Frame], names: List[Text])
-    ( using Chart.Style, ChartPalette, FontMetric )
+    ( using Chart.Style, ChartPalette, FontMetric, Arranger.Pass^ )
   :   List[(Svg.Id, Figure)] =
 
     frame.lay(Nil): frame => List(legend(frame, names))

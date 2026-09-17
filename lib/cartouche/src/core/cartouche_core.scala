@@ -30,83 +30,69 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escritoire
+package cartouche
 
-import scala.collection.immutable.IndexedSeq
+import scala.annotation.tailrec
 
-import scala.language.experimental.pureFunctions
-
-import scala.collection.immutable as sci
-
-import anticipation.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*
 import rudiments.*
-import symbolism.*
-import tessellate.*
-import vacuous.*
-import denominative.*
-// Per-row decorations are a short `List` read by column position.
-import denominative.dysasymptotics.linearAccess
 
-object Tabulation:
-  given printable: [text]
-  =>  ( textual: text is Textual { type Result = Char }, printable: text is Printable )
-  =>  ( Text is Measurable, TableStyle, Attenuation, polysyllabic.Hyphenation )
-  =>  Tabulation[text] is Printable =
+// Runs `body` twice. The first run records every `position`, `avoid` and `canvas` call and
+// answers each `position` provisionally, with the label where it was asked for; its result is
+// discarded. The arranger in scope then solves the whole arrangement, and the second run answers
+// each `position` call with its solved position, matched to the first run's calls by their
+// order. The body therefore has to be repeatable: the same calls in the same order both times,
+// with no effects beyond them. Its second result is `arrange`'s.
+def arrange[result](body: (Arranger.Pass^) ?=> result)(using arranger: Arranger): result =
+  val first = Arranger.Pass(false, Sequence.empty)
+  body(using first)
+  val (captions, obstacles, canvas) = first.recorded
+  val positions = arranger.arrange(captions, obstacles, canvas)
 
-    (tabulation, termcap) =>
-      tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
+  @tailrec
+  def pair
+    ( captions:  List[Caption],
+      positions: List[Caption.Position],
+      acc:       List[(Caption, Caption.Position)] )
+  :   List[(Caption, Caption.Position)] =
 
-abstract class Tabulation[text: ClassTag]():
-  type Row
+    captions match
+      case caption :: captions2 => positions match
+        case position :: positions2 => pair(captions2, positions2, (caption, position) :: acc)
+        case _                      => acc.reverse
 
-  def columns: Array[Column[Row, text]]^{}
-  def titles: List[Array[Array[text]^{}]^{}]
-  def rows: List[Array[Array[text]^{}]^{}]
-  def dataLength: Int
+      case _ => acc.reverse
 
-  // Per-row, per-column cell decorations, aligned with `rows`; empty means undecorated.
-  def decorations: List[List[Optional[text -> text]]] = Nil
+  body(using Arranger.Pass(true, pair(captions, positions, Nil).to[Sequence]))
 
+// Asks for a place for a label. In the first pass of `arrange` the answer is provisional; in the
+// second it is the solved position.
+def position(caption: Caption)(using pass: Arranger.Pass^): Caption.Position = pass.record(caption)
 
-  // The layout of every column at `width`, from the titles' and every row's claims.
-  def layout(width: Int)
-    ( using style: TableStyle, metrics: Text is Measurable )
-    ( using textual: text is Textual { type Result = Char } )
-    ( using attenuation: Attenuation^ )
-  :   Layout[Row, text] =
+def position
+  ( width:       Double,
+    height:      Double,
+    x:           Double,
+    y:           Double,
+    attachments: List[Caption.Attachment] = Caption.Attachment.compass,
+    standoff:    Double                   = 0.0,
+    reach:       Double                   = 0.0,
+    padding:     Double                   = 0.0,
+    priority:    Int                      = 0,
+    fallback:    Caption.Fallback         = Caption.Fallback.Overlap )
+  ( using pass: Arranger.Pass^ )
+:   Caption.Position =
 
-    val titleCells: List[Cells[text]] = titles.map(Cells.of(_))
-    val rowCells: List[Cells[text]] = rows.map(Cells.of(_))
-    val aggregates = (titleCells + rowCells).fold(Layout.nothing(columns))(Layout.aggregate(_, _))
-    Layout.solve(columns, titleCells, aggregates, width, style)
+  pass.record
+    ( Caption
+        ( width, height, x, y, attachments, standoff, reach, padding, priority, fallback ) )
 
-  def grid(width: Int)
-    ( using style: TableStyle, metrics: Text is Measurable )
-    ( using textual: text is Textual { type Result = Char } )
-    ( using attenuation: Attenuation^, hyphenation: polysyllabic.Hyphenation )
-  :   Grid[text] =
+// Declares things that no label may be set over.
+def avoid(obstacles: Obstacle*)(using pass: Arranger.Pass^): Unit =
+  List.from(obstacles).each(pass.avoid(_))
 
-    val titleCells: List[Cells[text]] = titles.map(Cells.of(_))
-    val rowCells: List[Cells[text]] = rows.map(Cells.of(_))
-    val aggregates = (titleCells + rowCells).fold(Layout.nothing(columns))(Layout.aggregate(_, _))
-    val layout = Layout.solve(columns, titleCells, aggregates, width, style)
+// Declares the area labels must stay within; the last declaration in a body wins.
+def canvas(box: Obstacle.Box)(using pass: Arranger.Pass^): Unit = pass.canvas(box)
 
-    def lines(data: List[Cells[text]], decorations2: List[List[Optional[text -> text]]])
-    :   Chain[TableRow[text]] =
-
-      // No native iterator: the decorations are consumed one row at a time alongside `data`,
-      // which is shorter or longer at will, so this is a `zipAll`, not a `zip`.
-      val decorationIterator = decorations2.stdlib.iterator
-
-      data.to[Chain].map: cells =>
-        val rowDecorations: List[Optional[text -> text]] =
-          if decorationIterator.hasNext then decorationIterator.next() else Nil
-
-        layout.row(cells, rowDecorations)
-
-    Grid
-      ( List(TableSection(layout.widths, lines(titleCells, Nil)), TableSection(layout.widths, lines(rowCells, decorations))),
-        style )
+package arrangers:
+  given greedyArranger: Arranger = Arranger.Greedy()
+  given annealingArranger: Arranger = Arranger.Annealing()
