@@ -55,8 +55,13 @@ object Runner:
 
     def tags: List[Tag] = id.tags
 
-class Runner[report](selection: Selection = Selection.all)(using reporter: Reporter[report])
+// `workers` overrides the selection's count (see `Suite.workers`): a suite may ask for more
+// than the host offered, never for queueing the host did not ask for.
+class Runner[report](selection: Selection = Selection.all, workers0: Optional[Int] = Unset)
+  (using reporter: Reporter[report])
 extends Findable:
+  private val workerCount: Int = workers0.or(selection.workers)
+
   private val mutex: Mutex = Mutex()
   @scala.caps.unsafe.untrackedCaptures
   private var active: List[Test.Id] = Nil
@@ -100,7 +105,7 @@ extends Findable:
   private val pending: ju.HashMap[Test.Id, Int] = ju.HashMap()
   private val exited: ju.HashSet[Test.Id] = ju.HashSet()
 
-  def queued: Boolean = selection.workers > 0
+  def queued: Boolean = workerCount > 0
 
   // Queues `thunk` — the rest of an assertion, closing over its pure test — for a worker.
   // The workers start on the first deferral, so a run that queues nothing has no threads.
@@ -109,7 +114,7 @@ extends Findable:
 
     mutex:
       enclosing.each { suite => pending.put(suite, pending.getOrDefault(suite, 0).nn + 1) }
-      if workers.nil then workers = (0 until selection.workers).to(List).map(start(_))
+      if workers.nil then workers = (0 until workerCount).to(List).map(start(_))
 
     reporter.scheduled(report, id)
 
