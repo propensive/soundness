@@ -808,8 +808,13 @@ object Tests extends Suite(m"Ethereal Tests"):
           serves(dispV1.path, t"s1")
         .check(_ == t"s1")
 
+        // A rebuild lands at the launcher's own path, so the daemon's check of its launcher
+        // sees the new content. The second build is copied over the first rather than
+        // invoked from its own path: the two jars can be the same size, and a launcher
+        // elsewhere of the same size is not what the content check detects.
         test(m"a same-build-id rebuild displaces the resident daemon"):
-          serves(dispV2.path, t"s2")
+          sh"cp ${dispV2.path} ${dispV1.path}".exec[Unit]()
+          serves(dispV1.path, t"s2")
         .check(_ == t"s2")
 
       safely(sh"${dispV2.path} '{admin}' kill".exec[Exit]())
