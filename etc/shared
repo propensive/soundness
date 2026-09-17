@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+#
+# Run a script shared from propensive/.github, at the commit pinned in etc/github-ref.
+#
+# Usage: etc/shared <script> [argument …]    for example `etc/shared xeq-fetch.sh`
+#
+# The pin is a full commit SHA, so what runs is exactly what was reviewed when the pin was bumped;
+# a bump is a one-line commit. Scripts are fetched on first use and cached, per commit, under
+# ~/.cache/propensive/github/<sha>/, so the network is needed only once per pin. A shared script
+# runs in the calling repository (the working directory is left alone) and calls its siblings
+# through `$PROPENSIVE_SHARED`.
+#
+# Set PROPENSIVE_GITHUB=/path/to/a/.github/checkout to run a working copy instead, when changing
+# the shared scripts themselves.
+#
+# The canonical copy of this file is scripts/shared in propensive/.github; copy it from there.
+
+set -euo pipefail
+
+ROOT=$(git rev-parse --show-toplevel)
+
+if [[ $# -lt 1 || "$1" == */* ]]; then
+  echo "Usage: etc/shared <script> [argument …]" >&2; exit 1
+fi
+
+NAME=$1
+shift
+
+export PROPENSIVE_SHARED="$ROOT/etc/shared"
+
+if [[ -n "${PROPENSIVE_GITHUB:-}" ]]; then
+  exec "$PROPENSIVE_GITHUB/scripts/$NAME" "$@"
+fi
+
+REF=$(tr -d '[:space:]' < "$ROOT/etc/github-ref")
+if ! [[ "$REF" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "shared: etc/github-ref must hold a full commit SHA of propensive/.github" >&2; exit 1
+fi
+
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/propensive/github/$REF"
+SCRIPT="$CACHE/$NAME"
+
+if [[ ! -x "$SCRIPT" ]]; then
+  mkdir -p "$CACHE"
+  url="https://raw.githubusercontent.com/propensive/.github/$REF/scripts/$NAME"
+  if ! curl -fsSL -o "$SCRIPT.part" "$url"; then
+    rm -f "$SCRIPT.part"
+    echo "shared: could not fetch $url" >&2; exit 1
+  fi
+  chmod +x "$SCRIPT.part"
+  mv -f "$SCRIPT.part" "$SCRIPT"
+fi
+
+exec "$SCRIPT" "$@"

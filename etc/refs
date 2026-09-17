@@ -1,0 +1,7 @@
+# The propensive libraries this repository builds against: one per line, tab-separated, as
+# `repository  version  [commit]`. A version `X.Y.Z` is a GitHub Release; `X.Y.Z-<12 hex>` is a
+# snapshot of an unreleased build, published by `make snapshot` in that repository (the commit
+# column says which commit), and `make release` here refuses to run while one is pinned. The
+# build reads this file (`deps` in build.mill); `make sync-deps` and CI install what it names.
+# See propensive/.github for the whole flow.
+propensive/flair	0.1.0-03e2cf176702	ff03c6ca4a579638807bdb365bd644a9415af65c

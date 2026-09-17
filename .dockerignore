@@ -53,3 +53,6 @@ LICENSE
 
 # Test fixtures we don't track in git
 tests/JSONTestSuite
+
+# The pinned commit of propensive/.github runs the scripts around a build, not the build.
+etc/github-ref

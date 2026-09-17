@@ -370,50 +370,57 @@ object xeqRelease extends Module:
       os.perms.set(path, "rwxr-xr-x")
       path
 
-// `3.9.0-RC4` the fork is built from rather than derived from `settings.scalaVersion`. Resolved
-// intransitively for the same reason as `nscplugin` below: `-Xplugin:` rejects a non-plugin jar,
-// so exactly one must come back. `dev.propensive` artifacts published with `mill publishLocal`
-// land in `~/.ivy2/local`, which is in coursier's default resolver set.
-object consequentToolchain extends mill.javalib.CoursierModule:
-  val version = sys.env.getOrElse("SOUNDNESS_CONSEQUENT_VERSION", "0.2.0")
-  val compiler = "3.9.0-RC4"
+// The propensive libraries this build depends on, pinned in etc/refs (the format, the
+// snapshot flow and the shared scripts are documented in propensive/.github): each is a release
+// `X.Y.Z`, or a snapshot `X.Y.Z-<12 hex>` of an unreleased upstream build, published there by
+// `make snapshot` and installed here by `make sync-deps`. Soundness sits at the bottom of the
+// stack, so its one pin is the flair compiler plugin. Read through a `Task.Source`, not a `val`:
+// the Mill daemon evaluates the build script once and keeps the module tree until build.mill
+// itself changes, so a value read at evaluation time would not see the file edited.
+object deps extends Module:
+  def file = Task.Source(mill.api.BuildCtx.workspaceRoot / "etc" / "refs")
+
+  def pins: T[Map[String, String]] = Task:
+    os.read.lines(file().path).map(_.trim).filter(line => line.nonEmpty && !line.startsWith("#"))
+      .map(_.split("\t").map(_.trim).filter(_.nonEmpty))
+      .map(columns => columns(0).stripPrefix("propensive/") -> columns(1)).toMap
+
+  def version(name: String): Task[String] = Task.Anon:
+    pins().getOrElse(name, sys.error(s"etc/refs has no pin for $name"))
+
+  def flair: T[String] = Task(version("flair")())
+
+// The flair compiler plugin (https://github.com/propensive/flair), which checks every library
+// against Consequent Style as it compiles: `dev.propensive:flair-plugin` at the version pinned in
+// etc/refs, from `~/.ivy2/local` (`make sync-deps`, or `make publishLocal` in a flair
+// checkout). The plugin is built with the fork, so its POM names the fork's standard library,
+// which only the `toolchain` repository view serves. Only the first jar is taken, as for
+// `nscplugin` below: `-Xplugin:` rejects a non-plugin jar, so exactly one must be passed.
+object flairToolchain extends mill.javalib.CoursierModule:
+  override def repositories: T[Seq[String]] = Task:
+    super.repositories() :+ s"file://${toolchain.repo().path}"
 
   def plugin: T[PathRef] = Task:
-    defaultResolver().classpath(Seq(mvn"dev.propensive:consequent_$compiler:$version"), false).head
+    defaultResolver().classpath(Seq(mvn"dev.propensive:flair-plugin:${deps.flair()}"), false).head
 
-  // The identifiers the census counts by name, beyond the constructs it always
-  // counts and the `unsafe`-prefixed names it recognises unaided. Each is a way
-  // of telling the compiler to trust the author: a cast, a null assertion, a
-  // partial read, a suppressed exhaustivity check, or the stdlib bridge.
+  // The plugin has no TEL parser: it takes `-P:flair:` options, which `flair options` renders
+  // from the profile in .pyrocosm/flair/config.tel. These are that profile's STYLE settings,
+  // fixed here so the build needs no `flair` on the path; keep the two in step. The project's
+  // rules and the unsafety census are `flair check` and `flair metrics`, run over the sources,
+  // not the build.
   //
-  // Separated by `;` when passed: the compiler splits a `-P` argument on any
-  // comma before the plugin sees it.
-  val counted: Seq[String] =
-    Seq("asInstanceOf", "isInstanceOf", "nn", "get", "head", "last", "readUnchecked", "stdlib",
-        "unchecked", "uncheckedVariance", "untrackedCaptures", "???", "Unsafe")
-
-  // The checker options every checked component shares.
-  //
-  // `S1.1` — a method gated by `Unsafe` must say so in its name — is `strict`,
-  // because a gate nobody can see from the call site is a boundary that is not
-  // really there, and that is a soundness claim rather than a style one.
-  //
-  // `S1.2` — an `unsafe`-named method must take the token — stays advisory for
-  // now. Ten definitions break it, and gating them reaches hundreds of call
-  // sites, a good share of them colon-block calls that cannot take a further
-  // argument list without being restructured; `doc/standards/naming.md` lists
-  // them and the follow-up. The census counts them as `unsafe-ungated`, which
-  // is the record that survives: a warning at a position the compiler has
-  // already reported something enclosing is dropped.
-  //
-  // `metrics` names a per-module table under the calling task's own `dest`,
-  // which mill wipes exactly when the options change and a full recompile
-  // follows.
-  def soundnessOptions(dest: os.Path): Seq[String] =
-    Seq("-P:consequent:unsafeToken=Unsafe",
-        "-P:consequent:strict=S1.1",
-        s"-P:consequent:metrics=${dest / "unsafety.tsv"}",
-        s"-P:consequent:count=${counted.mkString(";")}")
+  // `S1.1` — a method gated by `Unsafe` must say so in its name — is `strict`, because a gate
+  // nobody can see from the call site is a boundary that is not really there, and that is a
+  // soundness claim rather than a style one. `S1.2` — an `unsafe`-named method must take the
+  // token — stays advisory; `doc/standards/naming.md` lists the definitions that break it.
+  def options: Seq[String] =
+    Seq(s"-P:flair:header=${mill.api.BuildCtx.workspaceRoot / "etc" / "header.txt"}",
+        "-P:flair:columns=100",
+        "-P:flair:umbrella=soundness",
+        "-P:flair:moduleRoot=lib",
+        "-P:flair:interpolators=m;j;x;y;tel",
+        "-P:flair:gate=Unsafe:unsafe",
+        "-P:flair:strict=S1.1")
 
 // Resolves the stock Scala Native artifacts from Maven Central (they are not fork-built, so no
 // local repository view is needed). `nscplugin` is the compiler plugin that lowers to NIR, added
@@ -633,9 +640,8 @@ extends BaseScalaModule, SonatypeCentralPublishModule, PlatformCross:
 
   override def scalacOptions = Task:
     settings.scalaOptions
-      ++ Seq(s"-Xplugin:${consequentToolchain.plugin().path}",
-             "-P:consequent:umbrella=soundness")
-      ++ consequentToolchain.soundnessOptions(Task.dest)
+      ++ Seq(s"-Xplugin:${flairToolchain.plugin().path}")
+      ++ flairToolchain.options
       ++ Seq(s"-Xplugin:${beneficence.plugin.assembly().path}")
 // A component whose sources are chosen by compiler stream. Soundness is written once and
 // compiles on every stream the fork carries, with one exception: the few modules that reach into
@@ -672,9 +678,8 @@ trait Internal(dependencies: JavaModule*) extends BaseScalaModule:
 
   override def scalacOptions = Task:
     settings.scalaOptions
-      ++ Seq(s"-Xplugin:${consequentToolchain.plugin().path}",
-             "-P:consequent:umbrella=soundness")
-      ++ consequentToolchain.soundnessOptions(Task.dest)
+      ++ Seq(s"-Xplugin:${flairToolchain.plugin().path}")
+      ++ flairToolchain.options
       ++ Seq(s"-Xplugin:${beneficence.plugin.assembly().path}")
 trait Tests(dependencies: JavaModule*) extends BaseScalaModule:
   def enabled: Boolean = true
