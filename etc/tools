@@ -4,4 +4,4 @@
 # of cycles. `make sync-deps` installs a tool's jars (the flair compiler plugin), `make tools`
 # installs its command (fume). See propensive/.github.
 propensive/flair	0.2.0
-propensive/fume	0.3.0
+propensive/fume	0.4.0
