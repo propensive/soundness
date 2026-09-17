@@ -268,146 +268,161 @@ object Tests extends Suite(m"Ethereal Tests"):
 
           suite(m"Interrupt forwarding"):
             test(m"SIGTERM causes the launcher to exit"):
-              val t0 = jl.System.currentTimeMillis
-              val proc = sh"$tool sleep 1".fork[Exit]()
-              snooze(0.1*Second)
-              sh"kill -TERM ${proc.pid.value}".exec[Unit]()
-              proc.await(3*Second)
-              jl.System.currentTimeMillis - t0
+              supervise:
+                val t0 = jl.System.currentTimeMillis
+                val proc = sh"$tool sleep 1".fork[Exit]()
+                snooze(0.1*Second)
+                sh"kill -TERM ${proc.pid.value}".exec[Unit]()
+                proc.await(3*Second)
+                jl.System.currentTimeMillis - t0
             .assert(_ < 750L)
 
             test(m"SIGWINCH is forwarded to the application"):
-              val proc = sh"$tool signal".fork[Text]()
-              snooze(0.1*Second)
-              sh"kill -WINCH ${proc.pid.value}".exec[Unit]()
-              proc.await(3*Second)
+              supervise:
+                val proc = sh"$tool signal".fork[Text]()
+                snooze(0.1*Second)
+                sh"kill -WINCH ${proc.pid.value}".exec[Unit]()
+                proc.await(3*Second)
             . assert(_ == t"WINCH")
 
             test(m"SIGUSR1 is forwarded to the application"):
-              val proc = sh"$tool signal".fork[Text]()
-              snooze(0.1*Second)
-              sh"kill -USR1 ${proc.pid.value}".exec[Unit]()
-              proc.await(3*Second)
+              supervise:
+                val proc = sh"$tool signal".fork[Text]()
+                snooze(0.1*Second)
+                sh"kill -USR1 ${proc.pid.value}".exec[Unit]()
+                proc.await(3*Second)
 
             . assert(_ == t"USR1")
 
             test(m"SIGUSR2 is forwarded to the application"):
-              val proc = sh"$tool signal".fork[Text]()
-              snooze(0.1*Second)
-              sh"kill -USR2 ${proc.pid.value}".exec[Unit]()
-              proc.await(3*Second)
+              supervise:
+                val proc = sh"$tool signal".fork[Text]()
+                snooze(0.1*Second)
+                sh"kill -USR2 ${proc.pid.value}".exec[Unit]()
+                proc.await(3*Second)
 
             . assert(_ == t"USR2")
 
             test(m"SIGHUP is forwarded to the application"):
-              val proc = sh"$tool signal".fork[Text]()
-              snooze(0.1*Second)
-              sh"kill -HUP ${proc.pid.value}".exec[Unit]()
-              proc.await(3*Second)
+              supervise:
+                val proc = sh"$tool signal".fork[Text]()
+                snooze(0.1*Second)
+                sh"kill -HUP ${proc.pid.value}".exec[Unit]()
+                proc.await(3*Second)
 
             . assert(_ == t"HUP")
 
             test(m"SIGINT is forwarded to the application"):
-              val proc = sh"$tool signal".fork[Text]()
-              snooze(0.1*Second)
-              sh"kill -INT ${proc.pid.value}".exec[Unit]()
-              proc.await(3*Second)
+              supervise:
+                val proc = sh"$tool signal".fork[Text]()
+                snooze(0.1*Second)
+                sh"kill -INT ${proc.pid.value}".exec[Unit]()
+                proc.await(3*Second)
 
             . assert(_ == t"INT")
 
             test(m"trap returning Reject lets the launcher fall back to OS default"):
-              val proc = sh"$tool trap-reject".fork[Exit]()
-              snooze(0.1*Second)
-              sh"kill -TERM ${proc.pid.value}".exec[Unit]()
-              proc.await(3*Second)
+              supervise:
+                val proc = sh"$tool trap-reject".fork[Exit]()
+                snooze(0.1*Second)
+                sh"kill -TERM ${proc.pid.value}".exec[Unit]()
+                proc.await(3*Second)
             . assert(_ != Exit.Ok)
 
             test(m"Defer cascades to a previously-defined trap"):
-              val proc = sh"$tool trap-defer".fork[Text]()
-              snooze(0.1*Second)
-              sh"kill -INT ${proc.pid.value}".exec[Unit]()
-              proc.await(3*Second)
+              supervise:
+                val proc = sh"$tool trap-defer".fork[Text]()
+                snooze(0.1*Second)
+                sh"kill -INT ${proc.pid.value}".exec[Unit]()
+                proc.await(3*Second)
 
             . assert(_ == t"outer")
 
             test(m"signal not matched by any trap PF causes launcher to fall back"):
-              val proc = sh"$tool trap-undefined".fork[Exit]()
-              snooze(0.1*Second)
-              sh"kill -INT ${proc.pid.value}".exec[Unit]()
-              proc.await(3*Second)
+              supervise:
+                val proc = sh"$tool trap-undefined".fork[Exit]()
+                snooze(0.1*Second)
+                sh"kill -INT ${proc.pid.value}".exec[Unit]()
+                proc.await(3*Second)
 
             . assert(_ != Exit.Ok)
 
             test(m"slow handler past timeout causes launcher to fall back"):
-              val t0 = jl.System.currentTimeMillis
-              val proc = sh"$tool trap-slow".fork[Exit]()
-              snooze(0.1*Second)
-              sh"kill -TERM ${proc.pid.value}".exec[Unit]()
-              proc.await(3*Second)
-              jl.System.currentTimeMillis - t0
+              supervise:
+                val t0 = jl.System.currentTimeMillis
+                val proc = sh"$tool trap-slow".fork[Exit]()
+                snooze(0.1*Second)
+                sh"kill -TERM ${proc.pid.value}".exec[Unit]()
+                proc.await(3*Second)
+                jl.System.currentTimeMillis - t0
 
             . assert(elapsed => elapsed > 200L && elapsed < 1500L)
 
             test(m"WINCH with no matching trap does not kill the launcher"):
-              val proc = sh"$tool trap-undefined".fork[Exit]()
-              snooze(0.1*Second)
-              sh"kill -WINCH ${proc.pid.value}".exec[Unit]()
-              snooze(0.3*Second)
-              val alive = safely(Process(proc.pid).alive).or(false)
-              safely(sh"kill -KILL ${proc.pid.value}".exec[Unit]())
-              safely(proc.await(2*Second))
-              alive
+              supervise:
+                val proc = sh"$tool trap-undefined".fork[Exit]()
+                snooze(0.1*Second)
+                sh"kill -WINCH ${proc.pid.value}".exec[Unit]()
+                snooze(0.3*Second)
+                val alive = safely(Process(proc.pid).alive).or(false)
+                safely(sh"kill -KILL ${proc.pid.value}".exec[Unit]())
+                safely(proc.await(2*Second))
+                alive
 
             . assert(_ == true)
 
           suite(m"State file monitoring"):
             test(m"daemon restarts after pid file is deleted"):
-              val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim
-              sh"rm -f $stateDir/pid".exec[Unit]()
-              snooze(0.1*Second)
-              val newPid = sh"$tool '{admin}' pid".fork[Text]().await().trim
-              newPid != oldPid
+              supervise:
+                val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim
+                sh"rm -f $stateDir/pid".exec[Unit]()
+                snooze(0.1*Second)
+                val newPid = sh"$tool '{admin}' pid".fork[Text]().await().trim
+                newPid != oldPid
 
             . assert(_ == true)
 
             test(m"daemon restarts after socket file is deleted"):
-              val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
-              sh"rm -f $stateDir/socket".exec[Unit]()
-              val deadline = jl.System.currentTimeMillis + 10000
-              while safely(Process(oldPid).alive).or(false) && jl.System.currentTimeMillis < deadline
-              do snooze(0.05*Second)
-              sh"rm -f $stateDir/fail".exec[Unit]()
-              val newPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
-              newPid != oldPid
+              supervise:
+                val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
+                sh"rm -f $stateDir/socket".exec[Unit]()
+                val deadline = jl.System.currentTimeMillis + 10000
+                while safely(Process(oldPid).alive).or(false) && jl.System.currentTimeMillis < deadline
+                do snooze(0.05*Second)
+                sh"rm -f $stateDir/fail".exec[Unit]()
+                val newPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
+                newPid != oldPid
 
             . assert(_ == true)
 
             test(m"metadata-only touch of the launcher does not restart the daemon"):
-              val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim
-              sh"touch $tool".exec[Unit]()
-              // Long enough for the pid-watcher to see the event and (correctly)
-              // ignore it, and for a subsequent launcher staleness check to run.
-              snooze(1*Second)
-              val newPid = sh"$tool '{admin}' pid".exec[Text]().trim
-              newPid == oldPid
+              supervise:
+                val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim
+                sh"touch $tool".exec[Unit]()
+                // Long enough for the pid-watcher to see the event and (correctly)
+                // ignore it, and for a subsequent launcher staleness check to run.
+                snooze(1*Second)
+                val newPid = sh"$tool '{admin}' pid".exec[Text]().trim
+                newPid == oldPid
 
             . assert(_ == true)
 
             test(m"daemon terminates when its launcher is rewritten in place"):
-              val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
-              val backup = temporaryDirectory[Path on Linux]/t"backup-$name"
-              sh"cp $tool $backup".exec[Unit]()
-              // Appending the launcher to itself changes its content in place, as a
-              // rebuild targeting the installed path would.
-              sh"sh -c 'cat $backup >> $tool'".exec[Unit]()
-              val deadline = jl.System.currentTimeMillis + 10000
-              while safely(Process(oldPid).alive).or(false) && jl.System.currentTimeMillis < deadline
-              do snooze(0.05*Second)
-              val died = !safely(Process(oldPid).alive).or(false)
-              sh"mv $backup $tool".exec[Unit]()
-              sh"rm -f $stateDir/fail".exec[Unit]()
-              val newPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
-              died && newPid != oldPid
+              supervise:
+                val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
+                val backup = temporaryDirectory[Path on Linux]/t"backup-$name"
+                sh"cp $tool $backup".exec[Unit]()
+                // Appending the launcher to itself changes its content in place, as a
+                // rebuild targeting the installed path would.
+                sh"sh -c 'cat $backup >> $tool'".exec[Unit]()
+                val deadline = jl.System.currentTimeMillis + 10000
+                while safely(Process(oldPid).alive).or(false) && jl.System.currentTimeMillis < deadline
+                do snooze(0.05*Second)
+                val died = !safely(Process(oldPid).alive).or(false)
+                sh"mv $backup $tool".exec[Unit]()
+                sh"rm -f $stateDir/fail".exec[Unit]()
+                val newPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
+                died && newPid != oldPid
 
             . assert(_ == true)
 
@@ -419,33 +434,36 @@ object Tests extends Suite(m"Ethereal Tests"):
             . assert(_ == Exit.Ok) // daemon persists between invocations
 
             test(m"recovery after daemon is killed with SIGKILL"):
-              sh"rm -f $stateDir/fail".exec[Unit]()
-              val pid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
-              Process(pid).abort()
-              snooze(0.1*Second)
-              sh"$tool echo recovered".exec[Text]()
+              supervise:
+                sh"rm -f $stateDir/fail".exec[Unit]()
+                val pid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
+                Process(pid).abort()
+                snooze(0.1*Second)
+                sh"$tool echo recovered".exec[Text]()
 
             . assert(_ == t"recovered")
 
             test(m"stale pid file is cleaned up"):
-              sh"$tool echo pretest".exec[Text]()
-              val daemonPid = sh"cat $stateDir/pid".exec[Text]().trim.as[Pid]
-              Process(daemonPid).abort()
-              val deadline = jl.System.currentTimeMillis + 3000
-              while safely(Process(daemonPid).alive).or(false)
-                && jl.System.currentTimeMillis < deadline
-              do snooze(0.05*Second)
-              sh"rm -f $stateDir/fail".exec[Unit]()
-              sh"$tool echo fresh".exec[Text]()
+              supervise:
+                sh"$tool echo pretest".exec[Text]()
+                val daemonPid = sh"cat $stateDir/pid".exec[Text]().trim.as[Pid]
+                Process(daemonPid).abort()
+                val deadline = jl.System.currentTimeMillis + 3000
+                while safely(Process(daemonPid).alive).or(false)
+                  && jl.System.currentTimeMillis < deadline
+                do snooze(0.05*Second)
+                sh"rm -f $stateDir/fail".exec[Unit]()
+                sh"$tool echo fresh".exec[Text]()
 
             . assert(_ == t"fresh")
 
             test(m"fail file is removed after 2 seconds"):
-              sh"mkdir -p $stateDir".exec[Unit]()
-              sh"touch $stateDir/fail".exec[Unit]()
-              sh"rm -f $stateDir/pid $stateDir/build $stateDir/socket".exec[Unit]()
-              snooze(2.5*Second)
-              sh"$tool echo after-fail".exec[Text]()
+              supervise:
+                sh"mkdir -p $stateDir".exec[Unit]()
+                sh"touch $stateDir/fail".exec[Unit]()
+                sh"rm -f $stateDir/pid $stateDir/build $stateDir/socket".exec[Unit]()
+                snooze(2.5*Second)
+                sh"$tool echo after-fail".exec[Text]()
 
             . assert(_ == t"after-fail")
 
@@ -470,22 +488,24 @@ object Tests extends Suite(m"Ethereal Tests"):
 
           suite(m"Forced kill and cleanup"):
             test(m"daemon survives launcher SIGKILL"):
-              val proc = sh"$tool sleep 30".fork[Exit]()
-              snooze(0.1*Second)
-              val launcherPid = proc.pid.value
-              sh"kill -9 $launcherPid".exec[Unit]()
-              snooze(0.1*Second)
-              sh"$tool echo still-alive".exec[Text]()
+              supervise:
+                val proc = sh"$tool sleep 30".fork[Exit]()
+                snooze(0.1*Second)
+                val launcherPid = proc.pid.value
+                sh"kill -9 $launcherPid".exec[Unit]()
+                snooze(0.1*Second)
+                sh"$tool echo still-alive".exec[Text]()
 
             . assert(_ == t"still-alive")
 
             test(m"launcher exits when daemon is killed"):
-              val proc = sh"$tool sleep 30".fork[Exit]()
-              snooze(0.1*Second)
-              val pid = sh"$tool '{admin}' pid".exec[Text]().trim
-              sh"kill -9 $pid".exec[Unit]()
-              val exit = proc.await()
-              exit != Exit.Ok
+              supervise:
+                val proc = sh"$tool sleep 30".fork[Exit]()
+                snooze(0.1*Second)
+                val pid = sh"$tool '{admin}' pid".exec[Text]().trim
+                sh"kill -9 $pid".exec[Unit]()
+                val exit = proc.await()
+                exit != Exit.Ok
 
             . assert(_ == true)
 
@@ -578,7 +598,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                   Tmux.enter(t"kestrel")
                   awaitScreen(_.contains(t"kestrel"))
 
-            . assert(_ == true)
+            . check(_ == true)
 
             test(m"a cooked line is delivered to the application"):
               sh"$tool echo probe".exec[Unit]()
@@ -594,7 +614,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                   Tmux.enter('\r')
                   awaitScreen(_.contains(t"[osprey]"))
 
-            . assert(_ == true)
+            . check(_ == true)
 
             test(m"backspace edits the line rather than reaching the application"):
               sh"$tool echo probe".exec[Unit]()
@@ -612,7 +632,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                   Tmux.enter('\r')
                   awaitScreen(_.contains(t"[merlin]"))
 
-            . assert(_ == true)
+            . check(_ == true)
 
             test(m"a command without a cooked block still gets raw, unechoed input"):
               sh"$tool echo probe".exec[Unit]()
@@ -628,7 +648,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                   snooze(0.5*Second)
                   Tmux.screenshot().screen.filter(_.contains(t"harrier")).readable.length > 0
 
-            . assert(_ == false)
+            . check(_ == false)
 
           suite(m"Process renaming"):
             // The JVM is still named `java`; the killable process is its parent
@@ -642,14 +662,15 @@ object Tests extends Suite(m"Ethereal Tests"):
             . assert(_ == name)
 
             test(m"killall on the client name terminates the daemon"):
-              sh"$tool".exec[Unit]()
-              val jvmPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
-              sh"killall $name".exec[Exit]()
-              val deadline = jl.System.currentTimeMillis + 3000
-              while safely(Process(jvmPid).alive).or(false)
-                && jl.System.currentTimeMillis < deadline
-              do snooze(0.05*Second)
-              safely(Process(jvmPid).alive).or(false)
+              supervise:
+                sh"$tool".exec[Unit]()
+                val jvmPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
+                sh"killall $name".exec[Exit]()
+                val deadline = jl.System.currentTimeMillis + 3000
+                while safely(Process(jvmPid).alive).or(false)
+                  && jl.System.currentTimeMillis < deadline
+                do snooze(0.05*Second)
+                safely(Process(jvmPid).alive).or(false)
 
             . assert(_ == false)
 
@@ -719,19 +740,19 @@ object Tests extends Suite(m"Ethereal Tests"):
       suite(m"Daemon upgrade"):
         test(m"v1 daemon starts and returns v1 output"):
           serves(toolV1, t"v1")
-        .assert(_ == t"v1")
+        .check(_ == t"v1")
 
         test(m"v1 daemon is still running before upgrade"):
           serves(toolV1, t"v1")
-        .assert(_ == t"v1")
+        .check(_ == t"v1")
 
         test(m"v2 launcher replaces v1 daemon and returns v2 output"):
           serves(toolV2, t"v2 (upgraded build)")
-        .assert(_ == t"v2 (upgraded build)")
+        .check(_ == t"v2 (upgraded build)")
 
         test(m"v1 daemon is no longer running after upgrade"):
           serves(toolV2, t"v2 (upgraded build)") == t"v2 (upgraded build)"
-        .assert(_ == true)
+        .check(_ == true)
 
       safely(sh"$toolV2 '{admin}' kill".exec[Exit]())
       snooze(0.2*Second)
@@ -785,11 +806,16 @@ object Tests extends Suite(m"Ethereal Tests"):
       suite(m"Content-based staleness"):
         test(m"first build's daemon starts and serves it"):
           serves(dispV1.path, t"s1")
-        .assert(_ == t"s1")
+        .check(_ == t"s1")
 
+        // A rebuild lands at the launcher's own path, so the daemon's check of its launcher
+        // sees the new content. The second build is copied over the first rather than
+        // invoked from its own path: the two jars can be the same size, and a launcher
+        // elsewhere of the same size is not what the content check detects.
         test(m"a same-build-id rebuild displaces the resident daemon"):
-          serves(dispV2.path, t"s2")
-        .assert(_ == t"s2")
+          sh"cp ${dispV2.path} ${dispV1.path}".exec[Unit]()
+          serves(dispV1.path, t"s2")
+        .check(_ == t"s2")
 
       safely(sh"${dispV2.path} '{admin}' kill".exec[Exit]())
       snooze(0.2*Second)
@@ -1033,7 +1059,7 @@ object Tests extends Suite(m"Ethereal Tests"):
         test(m"a daemon reporting progress may take longer than the idle limit to bind"):
           coldStart(t"prgrs", progressStateDir)
           sh"$progressExe hello".exec[Text]()
-        . assert(_ == t"$progressStateDir/progress")
+        . check(_ == t"$progressStateDir/progress")
 
         test(m"the progress file is gone once the daemon has started"):
           sh"test -e $progressStateDir/progress".exec[Exit]()
@@ -1042,7 +1068,7 @@ object Tests extends Suite(m"Ethereal Tests"):
         test(m"a daemon binding late without reporting progress is abandoned"):
           coldStart(t"stald", stalledStateDir)
           safely(sh"$stalledExe hello".exec[Exit]()).or(Exit.Fail(1))
-        . assert(_ != Exit.Ok)
+        . check(_ != Exit.Ok)
 
         test(m"the abandoned daemon leaves a fail file"):
           sh"test -f $stalledStateDir/fail".exec[Exit]()

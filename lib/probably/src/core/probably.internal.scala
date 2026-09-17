@@ -158,11 +158,19 @@ object internal:
   def check[test: Type](test: Expr[Test[test]^], predicate: Expr[test => Boolean]): Macro[test] =
     handle[test, test](test, predicate, '{(t: Trial[test]) => t.get}, false, false)
 
-  def assert[test: Type](test: Expr[Test[test]^], predicate: Expr[test => Boolean]): Macro[Unit] =
-    handle[test, Unit](test, predicate, '{_ => ()}, false, true)
+  // `assert` takes a pure `Test` (see `Test.assert`); `handle` accepts a capturing one, to
+  // which a pure one conforms, so the runtime path is shared with `check` and `aspire`. The
+  // receiver passes through `pure`, a method that is NOT inline: the capture checker does not
+  // hold an inline method's arguments to its parameter types (the call has been expanded by
+  // then), so `assert`'s own signature would not reject a capturing test. A call to a plain
+  // method inside the expansion does, at the assertion site.
+  def assert[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[Unit] =
+    handle[test, Unit]('{pure[test]($test)}, predicate, '{_ => ()}, false, true)
 
   def aspire[test: Type](test: Expr[Test[test]^], predicate: Expr[test => Boolean]): Macro[Unit] =
     handle[test, Unit](test, predicate, '{_ => ()}, true, true)
+
+  def pure[test](test: Test[test]): Test[test] = test
 
   def succeed: Any => Boolean = (value: Any) => true
 

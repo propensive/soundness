@@ -1279,7 +1279,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // Every design must render exactly the width it was given, at every width: a design that is
       // one cell out corrupts the row beside it, and there is no other way to catch that across a
       // catalogue this size.
-      val designs: scala.List[(Text, Int => Text)] =
+      val designs: scala.List[(Text, Int -> Text)] =
         scala.List
          ( (t"smoothBar", width => bars.smoothBar.rows(Fraction(0.37), Tick.zero, width)),
            (t"blockBar", width => bars.blockBar.rows(Fraction(0.37), Tick.zero, width)),
