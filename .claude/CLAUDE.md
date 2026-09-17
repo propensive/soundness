@@ -13,11 +13,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Unsafety census
 
-- Every checked component compiles with the Consequent plugin's census enabled
-  (`-P:consequent:metrics=…`), leaving a per-module table of `file`, `indicator`, `count` under
-  `out/`. `make unsafety` (or `python3 etc/unsafety-report.py` after any build) prints the
-  totals; `--record` appends them to `etc/unsafety-history.tsv` and `--diff` compares with the
-  last recorded row. It reports only — nothing fails on a count.
+- Every checked component compiles with the flair plugin (`dev.propensive:flair-plugin`, a tool pinned
+  in `etc/tools`; see AGENTS.md), configured by the `-P:flair:` options in `flairToolchain`. The
+  census of unsafety indicators is no longer written by the build: `make unsafety` runs
+  `flair metrics --dry-run`, which counts every rule in `.pyrocosm/flair/config.tel` over the
+  sources; `flair metrics` records the census in git notes, commit by commit. It reports only —
+  nothing fails on a count.
 - The rule `S1.1` **is** strict: a method taking `(using Unsafe)` must be named `unsafe…`, or
   the build fails. `S1.2` (an `unsafe…` name must take the token) is advisory; ten definitions
   break it and are listed in `doc/standards/naming.md` with the follow-up that gates them.
@@ -53,7 +54,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Every ` ```scala ` fence in `doc/modules/*.md` is checked by `make doccheck` (or `make doccheck
   DOC=<tutorial>`), which evaluates the fences in order through the flame REPL's JSON API
-  (`etc/doccheck.py`; needs the `flame` binary and the release synced into `~/.ivy2/local`) and
+  (`etc/doccheck.py`; needs the `flame` binary and the release installed into `~/.ivy2/local`, which pinning it in a consumer's `etc/refs` and running `make sync-deps` there does) and
   checks the names they use against the source (`etc/doccheck-names.py`). Run it after changing a
   tutorial or an API a tutorial documents. flame is built against the latest *release*, so a
   failure that names something renamed since (listed in `doc/migration/pending.md`) is reported
