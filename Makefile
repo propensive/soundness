@@ -35,11 +35,10 @@ check-stdlib:
 check-while:
 	python3 etc/check-while-count.py
 
-# Report the unsafety census the Consequent plugin wrote during the last build. Reports only:
-# nothing here fails. `--record` appends today's totals to etc/unsafety-history.tsv.
+# The unsafety census: the counts of every rule in .pyrocosm/flair/config.tel, over the sources,
+# as `flair metrics` records them in git notes commit by commit. Reports only: nothing here fails.
 unsafety:
-	./mill soundness.all.compile
-	python3 etc/unsafety-report.py
+	flair metrics --dry-run
 
 build:
 	./mill groupCheck.validate
@@ -48,7 +47,6 @@ build:
 	./etc/check-stdlib-count.sh
 	python3 etc/check-while-count.py
 	./mill soundness.all
-	python3 etc/unsafety-report.py
 	./mill benches.compile
 
 dev:
@@ -81,8 +79,26 @@ release:
 	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=X.Y.Z" >&2; exit 1; fi
 	./etc/ci/release.sh "$(VERSION)"
 
-sync-releases:
-	./etc/ci/sync-releases.sh $(VERSION)
+# Install every library pinned in etc/refs (none: Soundness depends on nothing propensive) and
+# the jars of every tool pinned in etc/tools (the flair compiler plugin) into the local ivy
+# repository, as CI does.
+sync-deps:
+	./etc/shared sync-deps.sh
+
+# Install the commands pinned in etc/tools (fume, flair) through their releases' installers.
+tools:
+	./etc/shared tools.sh
+
+# Publish HEAD's jars as a snapshot — a `snapshot-<hex>` pre-release named by the filtered tree
+# of the commit, at version `<next minor>-<hex>` — for Pyrocosm (or anything else) to pin in its
+# etc/refs before the next release. `LOCAL=1` stages and installs without publishing. The
+# last line printed is the pin. See snapshot.sh in propensive/.github.
+snapshot:
+	./etc/shared snapshot.sh soundness "$$(git describe --tags --abbrev=0 --match '[0-9]*.[0-9]*.[0-9]*' | awk -F. '{print $$1"."$$2+1".0"}')"
+
+# Delete snapshot pre-releases older than DAYS (default 60) days.
+snapshot-prune:
+	./etc/shared snapshot-prune.sh soundness $(DAYS)
 
 # Fetch the pinned `xeq` builder script (etc/xeq.tsv) from the propensive/xeq release into
 # dist/xeq, verified against its SHA-256. The build shells out to it for packaging.
@@ -114,4 +130,4 @@ matrix:
 	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
-.PHONY: publishLocal build dev ci check-givens check-stdlib check-while unsafety wasm-e2e doccheck test bench matrix attest verify-attest push release xeq-fetch
+.PHONY: publishLocal build dev ci check-givens check-stdlib check-while unsafety wasm-e2e doccheck test bench matrix attest verify-attest push release sync-deps tools snapshot snapshot-prune xeq-fetch
