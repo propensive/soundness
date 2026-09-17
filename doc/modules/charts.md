@@ -179,6 +179,29 @@ A `Duration` axis is titled `time`, and its gradations carry their own units —
 `1m30s` — since clock steps are not decimal.
 
 
+### Placing labels
+
+The text on a chart is placed by [cartouche](label-placement.md), so that labels do not collide.
+Tick labels, axis titles and legend entries hold still, and a tick label that would overlap its
+neighbour is left out. The note beside an `Annotated` point and the percentage in a pie's wedge
+move: a point's note is set to its right when that side is clear of other notes, markers and
+lines, on another side when it is not, and further off with a leader line back to the point when
+every side is taken. A wedge's percentage sits in its wedge, or is moved outward with a leader
+when a neighbouring wedge's label is in the way.
+
+The arrangement is decided by the `Arranger` in scope. The default places each label in turn;
+for a crowded chart, simulated annealing considers the labels together, and is chosen by
+importing it:
+
+```scala
+import arrangers.annealingArranger
+```
+
+A style draws each label where the arrangement put it: `tickLabel`, `pointLabel` and
+`wedgeLabel` take a `Chart.Anchoring`, the point and the alignment that sets the text on the
+right side of it, and `leader` draws the line from a moved label back to its point.
+
+
 ### Rendering
 
 A chart renders to a savagery `Svg`, which serializes to XML text like any other:

@@ -33,6 +33,7 @@
 package tasseomancy
 
 import Framing.*
+import cartouche.*
 import murmuration.Traversable
 import prepositional.*
 import rudiments.*
@@ -79,38 +80,46 @@ object Scatter:
         Lines.accommodatesTraces(traces(data), fit.abscissa, fit.ordinate)
 
       def draw(form: Scatter, data: data, fit: Scatter.Fit)
-        ( using style: Scatter.Style, palette: ChartPalette, metric: FontMetric )
+        ( using style:    Scatter.Style,
+                palette:  ChartPalette,
+                metric:   FontMetric,
+                arranger: Arranger )
       :   Chart.Drawing =
 
         val all = traces(data)
         val names = all.map(_.name)
         val layout = Framing.layout(fit.abscissa, fit.ordinate, names)
         val frame = layout.frame
-        var index = 0
 
-        val seriesParts = all.map: trace =>
-          val color = palette.color(index)
+        arrange:
+          canvas(page)
+          val axesParts = axes(frame, fit.abscissa, fit.ordinate)
+          var index = 0
 
-          val figures = trace.data.fold(List[Figure]()): (acc, datum) =>
-            val x = frame.x(fit.abscissa.unit(datum.x))
-            val y = frame.y(fit.ordinate.unit(datum.y))
-            val marker = style.marker(point(x, y), color, index)
+          val seriesParts = all.map: trace =>
+            val color = palette.color(index)
 
-            val errors = datum.bounds.lay(Nil): (low, high) =>
-              val top = frame.y(fit.ordinate.unit(high))
-              val bottom = frame.y(fit.ordinate.unit(low))
-              style.errorBar(x, top, bottom, style.markerRadius, palette.axis)
+            val figures = trace.data.fold(List[Figure]()): (acc, datum) =>
+              val x = frame.x(fit.abscissa.unit(datum.x))
+              val y = frame.y(fit.ordinate.unit(datum.y))
+              val marker = style.marker(point(x, y), color, index)
+              avoid(Obstacle.Disc(x, y, style.markerRadius))
 
-            val at = point(x, y)
-            val note = datum.note.lay(Nil): text => style.pointLabel(at, text, palette.text)
-            note.reverse + (errors.reverse + (marker.reverse + acc))
+              val errors = datum.bounds.lay(Nil): (low, high) =>
+                val top = frame.y(fit.ordinate.unit(high))
+                val bottom = frame.y(fit.ordinate.unit(low))
+                avoid(Obstacle.Line(x, top, x, bottom))
+                style.errorBar(x, top, bottom, style.markerRadius, palette.axis)
 
-          val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
-          index += 1
-          part
+              val note = datum.note.lay(Nil): text => pointLabel(x, y, text)
+              note.reverse + (errors.reverse + (marker.reverse + acc))
 
-        val legend = legendPart(layout.legend, names)
-        Framing.drawing(axes(frame, fit.abscissa, fit.ordinate) + seriesParts + legend)
+            val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
+            index += 1
+            part
+
+          val legend = legendPart(layout.legend, names)
+          Framing.drawing(axesParts + seriesParts + legend)
 
 // A marker per point, in no particular order, with error bars where the values carry intervals
 // and a label where a point carries a note. The same fit as a line chart; only the drawing

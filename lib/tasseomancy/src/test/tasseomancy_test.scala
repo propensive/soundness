@@ -418,6 +418,42 @@ object Tests extends Suite(m"Tasseomancy tests"):
         (text.contains(t">Paris<"), text.contains(t">Rome<"))
       . assert(_ == (true, true))
 
+    suite(m"Label placement"):
+      val apart = Series(t"cities")((1.0, Annotated(3.0, t"Paris")), (9.0, Annotated(9.0, t"Rome")))
+      val together = Series(t"cities")((5.0, Annotated(5.0, t"Paris")), (5.0, Annotated(5.0, t"Rome")))
+
+      test(m"notes at the same point are set on different sides"):
+        val ends = t"text-anchor=\"end\""
+        val spread = occurrences(rendered(apart.chart(Scatter())), ends)
+        val crowded = occurrences(rendered(together.chart(Scatter())), ends)
+        crowded - spread
+      . assert(_ == 1)
+
+      test(m"both notes at the same point are still drawn"):
+        val text = rendered(together.chart(Scatter()))
+        (text.contains(t">Paris<"), text.contains(t">Rome<"))
+      . assert(_ == (true, true))
+
+      test(m"a crowded pie moves a label outward with a leader"):
+        given Chart.Standard = Chart.Standard(width = 200.0, height = 200.0, legend = Chart.Legend.Hidden)
+        val slices = List.range(0, 24).map { n => (t"slice $n", 1.0) }
+        val text = rendered(Series(t"share")(slices*).chart(Pie()))
+        (text.contains(t"<polyline"), occurrences(text, t"%<"))
+      . assert(_ == (true, 24))
+
+      test(m"a tick label that would overlap its neighbour is left out"):
+        given Chart.Standard = Chart.Standard(width = 200.0, height = 160.0, legend = Chart.Legend.Hidden)
+        val names = List(t"one", t"two", t"three", t"four", t"five", t"six")
+        val narrow = Series(t"wide")(names.map { name => (t"category $name", 1.0) }*)
+        occurrences(rendered(narrow.chart(Bars())), t">category ")
+      . assert(_ < 6)
+
+      test(m"an arranger is chosen by importing it"):
+        import arrangers.annealingArranger
+        val text = rendered(together.chart(Scatter()))
+        (text.contains(t">Paris<"), text.contains(t">Rome<"))
+      . assert(_ == (true, true))
+
     suite(m"Names"):
       test(m"a series may be named by any showable value"):
         Series(2024)((t"jan", 1.0)).name
