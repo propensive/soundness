@@ -80,7 +80,8 @@ fi
 ./mill groupCheck.validate
 
 # A release may depend only on releases: every pin in etc/refs must be a published X.Y.Z (a
-# snapshot is an unreleased build that may be deleted; see propensive/.github).
+# snapshot is an unreleased build that may be deleted), and every tool in etc/tools a published
+# release too; see propensive/.github.
 ./etc/shared deps.py check
 
 # ---------------------------- STAGE ----------------------------

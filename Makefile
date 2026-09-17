@@ -79,10 +79,15 @@ release:
 	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=X.Y.Z" >&2; exit 1; fi
 	./etc/ci/release.sh "$(VERSION)"
 
-# Install every library pinned in etc/refs (the flair plugin) into the local ivy repository,
-# as CI does; a snapshot not yet on GitHub is built from the sibling checkout the pin names.
+# Install every library pinned in etc/refs (none: Soundness depends on nothing propensive) and
+# the jars of every tool pinned in etc/tools (the flair compiler plugin) into the local ivy
+# repository, as CI does.
 sync-deps:
 	./etc/shared sync-deps.sh
+
+# Install the commands pinned in etc/tools (fume, flair) through their releases' installers.
+tools:
+	./etc/shared tools.sh
 
 # Publish HEAD's jars as a snapshot — a `snapshot-<hex>` pre-release named by the filtered tree
 # of the commit, at version `<next minor>-<hex>` — for Pyrocosm (or anything else) to pin in its
@@ -125,4 +130,4 @@ matrix:
 	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
-.PHONY: publishLocal build dev ci check-givens check-stdlib check-while unsafety wasm-e2e doccheck test bench matrix attest verify-attest push release sync-deps snapshot snapshot-prune xeq-fetch
+.PHONY: publishLocal build dev ci check-givens check-stdlib check-while unsafety wasm-e2e doccheck test bench matrix attest verify-attest push release sync-deps tools snapshot snapshot-prune xeq-fetch

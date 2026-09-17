@@ -4,4 +4,6 @@
 # column says which commit), and `make release` here refuses to run while one is pinned. The
 # build reads this file (`deps` in build.mill); `make sync-deps` and CI install what it names.
 # See propensive/.github for the whole flow.
-propensive/flair	0.1.0-03e2cf176702	ff03c6ca4a579638807bdb365bd644a9415af65c
+#
+# Soundness depends on nothing propensive. The flair plugin it compiles with is a tool: see
+# etc/tools.

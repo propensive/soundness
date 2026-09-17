@@ -370,30 +370,40 @@ object xeqRelease extends Module:
       os.perms.set(path, "rwxr-xr-x")
       path
 
-// The propensive libraries this build depends on, pinned in etc/refs (the format, the
-// snapshot flow and the shared scripts are documented in propensive/.github): each is a release
-// `X.Y.Z`, or a snapshot `X.Y.Z-<12 hex>` of an unreleased upstream build, published there by
-// `make snapshot` and installed here by `make sync-deps`. Soundness sits at the bottom of the
-// stack, so its one pin is the flair compiler plugin. Read through a `Task.Source`, not a `val`:
-// the Mill daemon evaluates the build script once and keeps the module tree until build.mill
-// itself changes, so a value read at evaluation time would not see the file edited.
+// The propensive libraries this build depends on, pinned in etc/refs, and the propensive tools
+// it runs, pinned in etc/tools (both documented in propensive/.github). Soundness sits at the
+// bottom of the stack: it depends on nothing propensive, so etc/refs is empty; the one tool is
+// the flair compiler plugin, which every library compiles with. A tool is always a release —
+// the plugin never appears in a Soundness POM, and pinning a flair snapshot would make a cycle
+// of the release graph (flair depends on Pyrocosm, which depends on Soundness). Read through
+// `Task.Source`s, not `val`s: the Mill daemon evaluates the build script once and keeps the
+// module tree until build.mill itself changes, so a value read at evaluation time would not see
+// the file edited.
 object deps extends Module:
-  def file = Task.Source(mill.api.BuildCtx.workspaceRoot / "etc" / "refs")
+  def refsFile = Task.Source(mill.api.BuildCtx.workspaceRoot / "etc" / "refs")
+  def toolsFile = Task.Source(mill.api.BuildCtx.workspaceRoot / "etc" / "tools")
 
-  def pins: T[Map[String, String]] = Task:
-    os.read.lines(file().path).map(_.trim).filter(line => line.nonEmpty && !line.startsWith("#"))
+  private def parse(path: os.Path): Map[String, String] =
+    os.read.lines(path).map(_.trim).filter(line => line.nonEmpty && !line.startsWith("#"))
       .map(_.split("\t").map(_.trim).filter(_.nonEmpty))
       .map(columns => columns(0).stripPrefix("propensive/") -> columns(1)).toMap
+
+  def pins: T[Map[String, String]] = Task(parse(refsFile().path))
+  def tools: T[Map[String, String]] = Task(parse(toolsFile().path))
 
   def version(name: String): Task[String] = Task.Anon:
     pins().getOrElse(name, sys.error(s"etc/refs has no pin for $name"))
 
-  def flair: T[String] = Task(version("flair")())
+  def tool(name: String): Task[String] = Task.Anon:
+    val version = tools().getOrElse(name, sys.error(s"etc/tools has no pin for $name"))
+    if !version.matches("\\d+\\.\\d+\\.\\d+") then sys.error(s"tool $name must be a release, not $version")
+    version
+
+  def flair: T[String] = Task(tool("flair")())
 
 // The flair compiler plugin (https://github.com/propensive/flair), which checks every library
-// against Consequent Style as it compiles: `dev.propensive:flair-plugin` at the version pinned in
-// etc/refs, from `~/.ivy2/local` (`make sync-deps`, or `make publishLocal` in a flair
-// checkout). The plugin is built with the fork, so its POM names the fork's standard library,
+// against Consequent Style as it compiles: `dev.propensive:flair-plugin` at the release pinned in
+// etc/tools, from `~/.ivy2/local` (`make sync-deps`). The plugin is built with the fork, so its POM names the fork's standard library,
 // which only the `toolchain` repository view serves. Only the first jar is taken, as for
 // `nscplugin` below: `-Xplugin:` rejects a non-plugin jar, so exactly one must be passed.
 object flairToolchain extends mill.javalib.CoursierModule:
