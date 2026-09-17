@@ -2,7 +2,8 @@
 
 Read `.claude/CLAUDE.md` first: it covers the build, code style, the commit and PR workflow,
 and the local-CI attestation scheme. This file adds the rules for developing several PRs at
-once, and for recording every material change in the migration notes.
+once, for recording every material change in the migration notes, and for the pins in
+`etc/refs` and `etc/tools`.
 
 ## Stack concurrent PRs; never develop them side by side
 
@@ -121,3 +122,39 @@ A representative entry:
    fresh `pending.md` with a header naming the version it follows.
 4. Reviewing a PR includes checking that `pending.md` covers every observable change the diff
    makes.
+
+## Dependencies in `etc/refs`, tools in `etc/tools`
+
+Soundness sits at the bottom of the stack and depends on nothing propensive: `etc/refs`, where
+a repository pins the libraries its jars are compiled against, is empty here. What Soundness
+*runs* is pinned in `etc/tools`: the flair compiler plugin, `dev.propensive:flair-plugin`, which
+every library compiles with (`-P:flair:` options in `flairToolchain`), and fume, which runs the
+tests. The `xeq` *script* is pinned separately, by version and SHA-256, in `etc/xeq.tsv`.
+Downstream — Pyrocosm, then fume, flame and flair — pins Soundness in its `etc/refs`.
+
+A tool is always a **release**, never a snapshot. A tool appears in no POM, so it is not part
+of the transitive closure and does not gate a release; that is what keeps the release graph
+free of cycles (flair depends on Pyrocosm, which depends on Soundness — were the plugin a
+dependency of Soundness, none of the three could be released first).
+
+### Rules
+
+1. Never satisfy the plugin pin with a `publishLocal` or a snapshot from a flair checkout: the
+   build then compiles against bytes CI cannot see, and `deps.py` rejects a snapshot in
+   `etc/tools` anyway. A plugin change Soundness needs is *released* from flair first, and the
+   pin bumped to that release. `make sync-deps` installs the plugin's jars (and repairs a jar
+   whose digest differs); `make tools` installs the commands. Run `make sync-deps` after
+   editing either file.
+2. `etc/ci/release.sh` runs `deps.py check`, which confirms every pin in `etc/refs` is a
+   published release, transitively, and every tool in `etc/tools` a published release.
+3. `make snapshot` publishes *this* commit's jars (all six hundred, at `<next minor>-<hex>`)
+   for Pyrocosm to pin in its `etc/refs` when a Pyrocosm PR needs an unreleased Soundness. It
+   needs a clean checkout of a commit already on GitHub, and a full build: the same build
+   `make attest` does, so prefer running it right after attesting. It is not a release and
+   needs no migration notes; `make snapshot-prune` deletes old ones.
+4. `etc/github-ref` pins the commit of propensive/.github whose scripts run through
+   `etc/shared`; bump it deliberately, in a one-line commit. `etc/github-ref` is outside the
+   attestation input set, so the bump alone needs no re-attestation.
+
+The whole flow, and the scripts, are documented in the README of
+[propensive/.github](https://github.com/propensive/.github).
