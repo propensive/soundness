@@ -101,6 +101,8 @@ object Tests extends Suite(m"Sedentary Tests"):
   def run(): Unit =
     val bench = Bench()
 
+    // `check`s, not assertions: a staged benchmark compiles through a compiler context that
+    // is not thread-safe, so a runner must not defer these beside the benchmarks below.
     test(m"a listing reports a biaxial benchmark's tags and axis values"):
       given runner: Runner[Unit] = listing()
       given benchmarks: Inclusion[Unit, Benchmark] = (_, _, _, _) => ()
@@ -114,7 +116,7 @@ object Tests extends Suite(m"Sedentary Tests"):
         ( row.kind,
           row.tags.map(_.text),
           row.axes.map { axis => (axis.spec.label, axis.values.map(_.text)) } )
-    . assert:
+    . check:
         _ == List
           ( ( probably.Entry.Kind.Bench,
               List(t"slow"),
@@ -131,7 +133,7 @@ object Tests extends Suite(m"Sedentary Tests"):
         ( row.kind,
           row.tags.map(_.text),
           row.axes.map { axis => (axis.spec.label, axis.spec.emergent, axis.least, axis.most) } )
-    . assert(_ == List((probably.Entry.Kind.Stress, List(t"heavy"), List((t"N", true, 2.0, 16.0)))))
+    . check(_ == List((probably.Entry.Kind.Stress, List(t"heavy"), List((t"N", true, 2.0, 16.0)))))
 
     suite(m"Choosing each window's worker count"):
       def counts(windows: List[Window]): List[Int] = windows.map(_.count)

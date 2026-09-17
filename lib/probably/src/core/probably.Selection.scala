@@ -56,7 +56,7 @@ object Selection:
 
     def axis: Text
 
-  val all: Selection = Selection(Nil, Nil, Nil, Nil, Nil, false, 1.0)
+  val all: Selection = Selection(Nil, Nil, Nil, Nil, Nil, false, 1.0, 0)
 
   private def hex(text: Text): Boolean =
     text.length == 6 && text.s.forall: char => char.isDigit || (char >= 'a' && char <= 'f')
@@ -85,6 +85,13 @@ object Selection:
       else if argument.starts(t"--scale=") then
         number(argument.skip(8)).lay(selection): factor =>
           if factor > 0.0 then selection.copy(scale = factor) else selection
+      // `--workers=<n>` is not a selection either: it asks the runner to QUEUE the pure
+      // assertions it admits and execute them on `n` workers behind the traversal of the
+      // suite (see `Runner.defer`); 0, the default, runs everything inline. Unparseable or
+      // negative counts are ignored, as a mistyped `--scale=`.
+      else if argument.starts(t"--workers=") then
+        number(argument.skip(10)).lay(selection): count =>
+          if count >= 0.0 then selection.copy(workers = count.toInt) else selection
       else if argument.starts(t"kind:") then
         val kinds = argument.skip(5) match
           case t"test"    => List(Entry.Kind.Check)
@@ -159,7 +166,10 @@ case class Selection
     // overnight pass) or shorter (a quick check) without editing the suite. Geometric, and
     // 1.0 by default: 2.0 runs each measurement twice as long, 0.25 a quarter as long.
     // Latency thresholds are NOT scaled: they are pass/fail criteria, not durations.
-    scale:       Double ):
+    scale:       Double,
+    // How many workers execute the queued assertions, 0 meaning none are queued: every test
+    // runs inline, in declaration order, as the traversal reaches it.
+    workers:     Int ):
 
   def trivial: Boolean =
     terms.nil && kinds.nil && constraints.nil && tags.nil && exclusions.nil

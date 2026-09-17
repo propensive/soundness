@@ -32,6 +32,9 @@
                                                                                                   */
 package probably
 
+import java.util as ju
+import java.util.concurrent as juc
+
 import anticipation.*
 import rudiments.*
 import symbolism.*
@@ -65,6 +68,96 @@ extends Findable:
     Nil
   @scala.caps.unsafe.untrackedCaptures
   private var admitted0: Int = 0
+
+  // ---- Queued execution ----
+  //
+  // With `--workers=<n>`, a pure assertion is not run where the traversal meets it: its
+  // thunk is queued, announced (`Reporter.scheduled`), and run by one of `n` workers while the
+  // traversal carries on — so a suite's code between tests runs exactly once, and the
+  // schedule is known as fast as the suite bodies run. A `SuiteEnded` is held back until the
+  // last assertion queued within the suite's block (the traversal's stack of suites at the
+  // time, so a nested `Suite` counts too) has completed; `drain` waits for every worker before
+  // `complete` decides `passed`. Only assertions the compiler has verified pure are queued
+  // (see `Test.assert` and `internal.assert`), so a worker can never reach a resource the
+  // traversal has since released; everything else runs inline, as without workers.
+  private val stop: Runnable = () => ()
+
+  @scala.caps.unsafe.untrackedCaptures
+  private val queue: juc.LinkedBlockingQueue[Runnable] = juc.LinkedBlockingQueue()
+
+  @scala.caps.unsafe.untrackedCaptures
+  private var workers: List[Thread] = Nil
+
+  @scala.caps.unsafe.untrackedCaptures
+  @volatile private var failure: Optional[Throwable] = Unset
+
+  // The traversal's stack of suites, innermost first (traversal thread only).
+  @scala.caps.unsafe.untrackedCaptures
+  private var suites: List[Test.Id] = Nil
+
+  // Queued assertions not yet completed, per enclosing suite; and the suites whose block has
+  // exited with assertions still pending, whose `ended` the last completion emits.
+  private val pending: ju.HashMap[Test.Id, Int] = ju.HashMap()
+  private val exited: ju.HashSet[Test.Id] = ju.HashSet()
+
+  def queued: Boolean = selection.workers > 0
+
+  // Queues `thunk` — the rest of an assertion, closing over its pure test — for a worker.
+  // The workers start on the first deferral, so a run that queues nothing has no threads.
+  def defer(id: Test.Id, thunk: Runnable^): Unit =
+    val enclosing: List[Test.Id] = suites
+
+    mutex:
+      enclosing.each { suite => pending.put(suite, pending.getOrDefault(suite, 0).nn + 1) }
+      if workers.nil then workers = (0 until selection.workers).to(List).map(start(_))
+
+    reporter.scheduled(report, id)
+
+    // The thunk's captures are the assertion's pure test and the runner's own instances —
+    // nothing scoped by the traversal — so holding it beyond the block is sound.
+    val job: Runnable = scala.caps.unsafe.unsafeAssumePure(thunk)
+
+    queue.put: () =>
+      try job.run()
+      catch case error: Throwable => mutex { if failure.absent then failure = error }
+      finally settle(enclosing)
+
+  private def start(index: Int): Thread =
+    val thread = Thread.ofVirtual().nn.name(s"probably-worker-$index").nn.unstarted(() => work()).nn
+    thread.start()
+    thread
+
+  private def work(): Unit =
+    var running = true
+    while running do
+      val job: Runnable = queue.take().nn
+      if job eq stop then running = false else job.run()
+
+  // One queued assertion of each of `enclosing` has completed; a suite whose block has
+  // already exited and has nothing left pending ends now, innermost first.
+  private def settle(enclosing: List[Test.Id]): Unit =
+    val ending: List[Test.Id] = mutex:
+      enclosing.filter: suite =>
+        val left = pending.getOrDefault(suite, 0).nn - 1
+        pending.put(suite, left)
+        left == 0 && exited.remove(suite)
+
+    ending.each { suite => reporter.ended(report, suite, true) }
+
+  // Waits for every queued assertion; a worker's escaped `Throwable` (an `Error`, or a
+  // failure outside the test's own bracket) is rethrown here, on the traversal's thread.
+  def drain(): Unit =
+    val running: List[Thread] = mutex { workers.also { workers = Nil } }
+    running.each { _ => queue.put(stop) }
+    running.each(_.join())
+    failure.let { error => throw error }
+
+  // Abandons what is queued and waits for what is in flight, for a run that is terminating.
+  private def abort(): Unit =
+    queue.clear()
+    val running: List[Thread] = mutex { workers.also { workers = Nil } }
+    running.each { _ => queue.put(stop) }
+    running.each(_.join())
 
   def skip(id: Test.Id): Boolean = skip(id, Entry.Kind.Check, Nil)
 
@@ -166,14 +259,9 @@ extends Findable:
     val ns0 = System.nanoTime
 
     try
-      val ns0: Long = System.nanoTime
       val result: result = test.action(context)
       val ns: Long = System.nanoTime - ns0
-
-      Trial.Returns(result, ns, context.captured.toMap.to(Map)).also:
-        mutex { active = active.filter(_ != test.id) }
-
-        reporter.ended(report, test.id, false)
+      Trial.Returns(result, ns, context.captured.toMap.to(Map))
 
     catch case error: Exception =>
       val ns: Long = System.nanoTime - ns0
@@ -182,29 +270,43 @@ extends Findable:
         given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
         throw error
 
-      Trial.Throws(lazyException, ns, context.captured.toMap.to(Map)).also:
-        mutex { active = active.filter(_ != test.id) }
+      Trial.Throws(lazyException, ns, context.captured.toMap.to(Map))
 
-        reporter.ended(report, test.id, false)
-
+    // The bracket closes whatever escaped — an `Error` in the body must not leave the test
+    // among the active ones that a termination reports.
     finally
       Runner.harnessThreadLocal.set(None)
+      mutex { active = active.filter(_ != test.id) }
+      reporter.ended(report, test.id, false)
 
   // Suites are always entered, whatever the selection: their bodies are cheap, and pruning
   // by name would defeat hash- and moniker-based selection of the tests within them.
   def suite(suite: Testable, block: Testable ?=> Unit): Unit =
     mutex { active ::= suite.id }
+    suites ::= suite.id
 
     reporter.declare(report, suite)
     reporter.started(report, suite.id, true)
     block(using suite)
 
+    suites = suites.tail
     mutex { active = active.filter(_ != suite.id) }
 
-    reporter.ended(report, suite.id, true)
+    // With assertions still queued from within the block, the suite ends when the last of
+    // them completes (see `settle`).
+    val ended: Boolean = mutex:
+      if pending.getOrDefault(suite.id, 0).nn == 0 then true
+      else
+        exited.add(suite.id)
+        false
 
-  def terminate(error: Throwable): Unit = mutex:
-    reporter.fail(report, error, active.to[Set])
-    reporter.complete(report)
+    if ended then reporter.ended(report, suite.id, true)
+
+  def terminate(error: Throwable): Unit =
+    abort()
+
+    mutex:
+      reporter.fail(report, error, active.to[Set])
+      reporter.complete(report)
 
   def complete(): Unit = reporter.complete(report)

@@ -56,6 +56,11 @@ object Streamer:
   // Probably, whose suites memoize their first runner and so need a fresh loader each time.
   def reentrant: Boolean = true
 
+  // Whether suites on this classpath understand `--workers=<n>` (see `Runner.defer`). Probed
+  // reflectively like `reentrant`: to an older Probably the term is a name glob that admits
+  // nothing, so a host must not pass it blindly.
+  def queued: Boolean = true
+
   // The derived BinTEL schema for `TestEvent`, computed once; every event encodes under it.
   private lazy val schema: Tels = Tels.tels[TestEvent](t"test-event")
 
