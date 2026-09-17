@@ -181,3 +181,21 @@ format. Entries are grouped by module, most-recently-added last within a module.
   therefore keep meaningful trailing spaces: a styled cell such as `e"$Bg(green)( ✓ )"` now
   keeps its third, styled cell rather than being re-padded with an unstyled space. Code or test
   fixtures which expected the trimmed lines must be updated. (#2000)
+## cartouche
+
+- New library `cartouche`, a text-positioning engine: `def arrange[result](body:
+  (Arranger.Pass^) ?=> result)(using Arranger): result` runs its body twice, recording each
+  `position(...)` call in the first run and answering it from the solved arrangement in the
+  second. Also `def position(caption: Caption)(using Arranger.Pass^): Caption.Position`, `def
+  position(width: Double, height: Double, x: Double, y: Double, attachments:
+  List[Caption.Attachment] = Caption.Attachment.compass, standoff: Double = 0.0, reach: Double
+  = 0.0, padding: Double = 0.0, priority: Int = 0, fallback: Caption.Fallback =
+  Caption.Fallback.Overlap)(using Arranger.Pass^): Caption.Position`, `def avoid(obstacles:
+  Obstacle*)(using Arranger.Pass^): Unit`, `def canvas(box: Obstacle.Box)(using
+  Arranger.Pass^): Unit`, the types `Caption` (with `Caption.Attachment`, `Caption.Fallback`,
+  `Caption.Leader`, `Caption.Position`), `Obstacle` (with `Obstacle.Box`, `Obstacle.Line`,
+  `Obstacle.Disc`) and `Arranger` (with `Arranger.Greedy`, `Arranger.Annealing` and
+  `Arranger.Pass`), and the importable givens `arrangers.greedyArranger` and
+  `arrangers.annealingArranger`. All exported from the `soundness` umbrella. Additive: no
+  existing code changes. (#TBD)
+
