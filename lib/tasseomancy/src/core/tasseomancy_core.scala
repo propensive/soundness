@@ -56,6 +56,9 @@ package calibrations:
   given adaptiveCalibration: [value] => value is Calibration =
     Calibration(Calibration.Policy.Adaptive)
 
+  given exponentialCalibration: [value] => value is Calibration =
+    Calibration(Calibration.Policy.Exponential())
+
   given tightCalibration: [value] => value is Calibration = Calibration(Calibration.Policy.Tight)
 
 package palettes:
