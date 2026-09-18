@@ -32,4 +32,7 @@
                                                                                                   */
 package soundness
 
-export anticipation.{Chroma, Chromatic}
+// `Channel` clashes with perihelion's WebSocket `Channel` in the umbrella; reach the pixel
+// channel machinery via `anticipation.Channel`.
+export anticipation.{Alpha, Blue, Chroma, Chromatic, Cyan, Green, Grey, Key, Magenta, Red,
+    Yellow}

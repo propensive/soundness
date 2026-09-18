@@ -36,6 +36,7 @@ import scala.compiletime.*
 import scala.caps
 
 import aperture.*
+import anticipation.*
 import iridescence.*
 import prepositional.*
 

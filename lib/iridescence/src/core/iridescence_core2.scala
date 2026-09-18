@@ -34,6 +34,7 @@ package iridescence
 
 import scala.annotation.targetName
 
+import anticipation.*
 import prepositional.*
 
 export Rgb12Opaque.Rgb12

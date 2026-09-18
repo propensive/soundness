@@ -34,6 +34,7 @@ package hallucination
 
 import scala.compiletime.*
 
+import anticipation.*
 import iridescence.*
 import prepositional.*
 
