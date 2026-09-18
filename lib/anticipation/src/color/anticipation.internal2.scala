@@ -47,6 +47,10 @@ object internal2:
 
   extension(inline chroma: Chroma)
     inline def underlying: Int = chroma
-    inline def red: Int = chroma >> 16
+
+    // Masked like `green` and `blue`, and like `Chromatic`'s own `red`: the top eight bits of
+    // the packed `Int` are not part of the colour.
+    inline def red: Int = (chroma >> 16)&255
+
     inline def green: Int = (chroma >> 8)&255
     inline def blue: Int = chroma&255

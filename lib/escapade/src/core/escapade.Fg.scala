@@ -44,9 +44,9 @@ case class Fg(color: Chroma):
   def bg: Bg = Bg(color)
 
   def ansi(colorDepth: ColorDepth): Text =
-    val red = (color.underlying >> 16)&255
-    val green = (color.underlying >> 8)&255
-    val blue = color.underlying&255
+    val red = color.red
+    val green = color.green
+    val blue = color.blue
 
     colorDepth match
       case ColorDepth.TrueColor => t"\e[38;2;$red;$green;${blue}m"
