@@ -13,11 +13,11 @@ format. Entries are grouped by module, most-recently-added last within a module.
   negative `Int`), since `red` previously returned those bits and now discards them. `Chroma`
   values originating from `Chroma(red: Int, green: Int, blue: Int)`, the `rgb"…"` interpolator,
   `iridescence.Pixel#chroma`, `iridescence.Rgb12#chroma` or `iridescence.Rgb32#chroma` are
-  unaffected, as all of those already masked. (#TBD)
+  unaffected, as all of those already masked. (#2036)
 
 ## ultimatum
 
 - `ultimatum.GaugePalette.hue(chroma: anticipation.Chroma): iridescence.Color in
   iridescence.Srgb` removed. Replace `hue(c)` with `c.color`, the extension `extension (chroma:
   anticipation.Chroma) def color: Color in Srgb` declared in `iridescence` and exported by the
-  `soundness` umbrella as `color`. Results are identical. (#TBD)
+  `soundness` umbrella as `color`. Results are identical. (#2036)
