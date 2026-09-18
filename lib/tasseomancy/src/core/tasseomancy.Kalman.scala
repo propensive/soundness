@@ -32,88 +32,53 @@
                                                                                                   */
 package tasseomancy
 
-import hypotenuse.*
+import murmuration.fold
 import prepositional.*
+import vacuous.*
 
-object Calibration:
-  // The no-import default for an axis of any type: a linear scale, padded outward to whole
-  // gradation steps, and anchored at zero when the chart kind asks for it. Any
-  // `import calibrations.…` outranks this, because a lexically-scoped given beats a companion
-  // one.
-  given linear: [value] => value is Calibration = Calibration(Policy.Linear)
+// A Kalman smoother for a run of measurements in order: a random-walk model, in which each
+// value is the last plus process noise of unit variance, observed with measurement noise of
+// variance `ratio`, so a larger ratio trusts each measurement less and smooths more. The
+// forward filter is followed by the Rauch–Tung–Striebel backward pass, so the estimate at each
+// point draws on the points after it as well as those before, and the smoothed line neither
+// lags a rising curve nor overshoots a plateau.
+object Kalman:
+  def smooth(values: List[Double], ratio: Double): List[Double] = values match
+    case Nil => Nil
 
-  // The choices a calibration makes: linear or logarithmic positions (falling back to linear
-  // where a logarithm is undefined), adaptive between the two by the range's ratio, or linear
-  // over exactly the data's own extent.
-  enum Policy:
-    case Linear, Logarithmic, Adaptive, Tight
-    case Exponential(curvature: Double = Calibration.curvature)
+    case first :: rest =>
+      // Forward, latest first: each step's estimate, its variance, and the variance predicted
+      // for it before its measurement, which the backward pass needs.
+      type Step = (Double, Double, Double)
+      val start: List[Step] = List((first, ratio, ratio + 1.0))
 
-  // The curvature of an exponential axis unless a policy gives one: the top of the axis is
-  // stretched about twenty times as much as the bottom.
-  val curvature: Double = 3.0
+      val forward: List[Step] =
+        rest.fold(start): (acc, measured) =>
+          acc match
+            case previous :: _ =>
+              val predicted = previous(1) + 1.0
+              val gain = predicted/(predicted + ratio)
+              val estimate = previous(0) + gain*(measured - previous(0))
+              (estimate, (1.0 - gain)*predicted, predicted) :: acc
 
-  def apply[value](policy: Policy): value is Calibration = new Calibration:
-    type Self = value
+            case _ =>
+              acc
 
-    def scale(lower: Double, upper: Double, anchored: Boolean, notation: Scale.Notation): Scale =
-      policy match
-        case Policy.Linear      => Calibration.linear(lower, upper, anchored, notation, false)
-        case Policy.Tight       => Calibration.linear(lower, upper, anchored, notation, true)
-        case Policy.Logarithmic => Calibration.logarithmic(lower, upper, anchored, notation)
-        case Policy.Exponential(curvature) => Calibration.exponential(lower, upper, anchored, notation, curvature)
+      // Backward, from the latest: each estimate is corrected towards the smoothed estimate
+      // after it, in proportion to how much of that later prediction's variance was its own.
+      forward match
+        case latest :: earlier =>
+          val begin: (List[Double], Double, Double) = (List(latest(0)), latest(0), latest(2))
 
-        case Policy.Adaptive =>
-          if lower > 0.0 && upper/lower >= 1000.0
-          then Calibration.logarithmic(lower, upper, anchored, notation)
-          else Calibration.linear(lower, upper, anchored, notation, false)
+          val smoothed: (List[Double], Double, Double) =
+            earlier.fold(begin): (acc, step) =>
+              val laterSmoothed = acc(1)
+              val laterPredicted = acc(2)
+              val correction = if laterPredicted == 0.0 then 0.0 else step(1)/laterPredicted
+              val estimate = step(0) + correction*(laterSmoothed - step(0))
+              (estimate :: acc(0), estimate, step(2))
 
-  private[tasseomancy] def linear
-    ( lower0:   Double,
-      upper0:   Double,
-      anchored: Boolean,
-      notation: Scale.Notation,
-      tight:    Boolean )
-  :   Scale =
+          smoothed(0)
 
-    val lower1 = if anchored && lower0 > 0.0 then 0.0 else lower0
-    val upper1 = if anchored && upper0 < 0.0 then 0.0 else upper0
-
-    if tight then Scale(lower1, upper1, Scale.Transform.Linear, notation) else
-      val span0 = upper1 - lower1
-      val span = if span0 > 0.0 then span0 else if upper1 != 0.0 then upper1.abs else 1.0
-
-      val step = notation.spacing match
-        case Scale.Spacing.Decimal     => Scale.step(span/5.0)
-        case Scale.Spacing.Sexagesimal => Scale.sexagesimalStep(span/5.0)
-
-      val lower = (lower1/step + Scale.tolerance).floor*step
-      val upper = (upper1/step - Scale.tolerance).ceiling*step
-      val upper2 = if upper > lower then upper else lower + step
-      Scale(lower, upper2, Scale.Transform.Linear, notation)
-
-  // An exponential axis has a linear axis's range — padded to whole gradations — with the
-  // exponential transform for its positions.
-  private[tasseomancy] def exponential
-    ( lower0: Double, upper0: Double, anchored: Boolean, notation: Scale.Notation, curvature: Double )
-  :   Scale =
-
-    linear(lower0, upper0, anchored, notation, false).copy(transform = Scale.Transform.Exponential(curvature))
-
-  private[tasseomancy] def logarithmic
-    ( lower0: Double, upper0: Double, anchored: Boolean, notation: Scale.Notation )
-  :   Scale =
-
-    if lower0 <= 0.0 then linear(lower0, upper0, anchored, notation, false) else
-      val lower = 10.0 ** log10(lower0).double.floor
-      val upper = 10.0 ** log10(upper0).double.ceiling
-      val upper2 = if upper > lower then upper else lower*10.0
-      Scale(lower, upper2, Scale.Transform.Logarithmic, notation)
-
-// How the extent of the data becomes the range of an axis: whether positions are linear or
-// logarithmic, whether the range is padded out to whole gradations, and whether it must include
-// zero. Keyed on the type of the values on the axis, so that a scoped given for one type changes
-// one axis; the methods are independent of `Self`, so a calibration can also be passed explicitly
-// to a chart kind for one of its axes.
-trait Calibration extends Typeclass.Pure:
-  def scale(lower: Double, upper: Double, anchored: Boolean, notation: Scale.Notation): Scale
+        case _ =>
+          Nil

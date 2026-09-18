@@ -40,8 +40,15 @@ import rudiments.*
 import vacuous.*
 
 object Scale:
+  // How a value's position along an axis follows from the value: in proportion to it; to its
+  // logarithm; or to an exponential of it, which opens up the top of the range so that small
+  // differences among large values show. On an exponential axis the gradations still fall at
+  // regular intervals of value, as on a linear one; it is their spacing that grows. The
+  // `curvature` is the exponent's range across the axis: the top of the axis is stretched
+  // `e^curvature` times as much as the bottom.
   enum Transform:
     case Linear, Logarithmic
+    case Exponential(curvature: Double)
 
   // How gradations are spaced along a linear scale: at multiples of 1, 2 and 5 across the
   // decades, as numbers are read, or at the sexagesimal steps of clock time.
@@ -191,6 +198,12 @@ extends Ruler:
       if value <= 0.0 || lower <= 0.0 || upper <= lower then 0.0
       else (log10(value).double - log10(lower).double)/(log10(upper).double - log10(lower).double)
 
+    case Transform.Exponential(curvature) =>
+      if upper == lower then 0.5 else
+        val fraction = (value - lower)/(upper - lower)
+        if curvature == 0.0 then fraction
+        else (scala.math.exp(curvature*fraction) - 1.0)/(scala.math.exp(curvature) - 1.0)
+
   def accommodates(value: Double): Boolean = value >= lower && value <= upper
 
   def label(value: Double, step: Double): Text = labelling match
@@ -198,8 +211,11 @@ extends Ruler:
     case Labelling.Interval       => interval(value)
     case Labelling.Clock          => clock(value)
 
+  // An exponential axis is graduated as a linear one: at regular intervals of value, each
+  // positioned by the transform.
   def gradations(budget: Int): Sequence[Gradation] = transform match
     case Transform.Linear                     => linear(budget.max(1))
+    case Transform.Exponential(_)             => linear(budget.max(1))
     case Transform.Logarithmic if lower > 0.0 => logarithmic(budget.max(1))
     case Transform.Logarithmic                => linear(budget.max(1))
 

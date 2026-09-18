@@ -52,6 +52,10 @@ object Lines:
   trait Style extends Chart.Cartesian:
     def markers: Boolean
 
+    // How much the line through a series' points is smoothed, as the ratio of measurement
+    // noise to process noise in a Kalman smoother; zero draws the line through the points.
+    def smoothing: Double
+
     def line(points: List[Point], color: Color in Srgb, series: Int): List[Figure] =
       List(Polyline(points, style = stroked(color, strokeWidth)))
 
@@ -140,7 +144,24 @@ object Lines:
             val points: List[Point] =
               sorted.fold(List[Point]()) { (acc, datum) => at(datum, datum.y) :: acc }.reverse
 
-            segments(points, style.strokeWidth).each(avoid(_))
+            // The line's path: through the points, or, when the style smooths, through the
+            // Kalman-smoothed values; the markers stay at the points measured.
+            val path: List[Point] =
+              if style.smoothing <= 0.0 then points else
+                val values: List[Double] =
+                  sorted.fold(List[Double]()) { (acc, datum) => datum.y :: acc }.reverse
+
+                val smoothed: List[Double] = Kalman.smooth(values, style.smoothing)
+
+                val placed: (List[Point], List[Double]) =
+                  sorted.fold((List[Point](), smoothed)): (acc, datum) =>
+                    acc(1) match
+                      case value :: remaining => (at(datum, value) :: acc(0), remaining)
+                      case _                  => acc
+
+                placed(0).reverse
+
+            segments(path, style.strokeWidth).each(avoid(_))
 
             val (highs, lows) = sorted.fold((List[Point](), List[Point]())): (acc, datum) =>
               datum.bounds.lay(acc): (low, high) =>
@@ -149,7 +170,7 @@ object Lines:
             val band: List[Figure] =
               if highs.nil then Nil else style.band(highs.reverse + lows, color, index)
 
-            val line = style.line(points, color, index)
+            val line = style.line(path, color, index)
 
             val decorations: List[Figure] = sorted.fold(List[Figure]()): (acc, datum) =>
               val position = at(datum, datum.y)
@@ -166,7 +187,8 @@ object Lines:
           val legend = legendPart(layout.legend, names)
           Framing.drawing(axesParts + seriesParts + legend)
 
-// A line per series through its points in abscissa order, with a translucent band where the
-// values carry intervals, and markers at the points if the style asks for them. Neither axis is
-// anchored at zero: a line shows change, not magnitude.
+// A line per series through its points in abscissa order — or, when the style smooths, through
+// their Kalman-smoothed values — with a translucent band where the values carry intervals, and
+// markers at the points if the style asks for them. Neither axis is anchored at zero: a line
+// shows change, not magnitude.
 case class Lines(abscissa: Optional[Calibration] = Unset, ordinate: Optional[Calibration] = Unset)
