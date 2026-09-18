@@ -36,8 +36,6 @@ import anticipation.*
 import iridescence.*
 import prepositional.*
 
-import ultimatum.GaugePalette.hue
-
 // Which colours a gauge draws in — an axis entirely separate from which design it uses, so that
 // swapping either is one import and neither disturbs the other.
 // These merge into the umbrella's existing `palettes` block (iridescence contributes only traits
@@ -102,77 +100,77 @@ package palettes:
   // The house palette: the repackager's orange on its own deep brown, which is what a Soundness
   // progress bar has always looked like.
   given emberGaugePalette: GaugePalette:
-    val background  = hue(rgb"#1a0a00")
-    val foreground  = hue(rgb"#ffe6d0")
-    val track       = hue(rgb"#3b1700")
-    val fill        = hue(rgb"#ff7d26")
-    val leadingEdge = hue(rgb"#ffc16b")
-    val caption     = hue(rgb"#ffd9b3")
-    val muted       = hue(rgb"#8a5230")
-    val success     = hue(rgb"#8fd14f")
-    val warning     = hue(rgb"#ffc857")
-    val danger      = hue(rgb"#e5484d")
+    val background  = rgb"#1a0a00".color
+    val foreground  = rgb"#ffe6d0".color
+    val track       = rgb"#3b1700".color
+    val fill        = rgb"#ff7d26".color
+    val leadingEdge = rgb"#ffc16b".color
+    val caption     = rgb"#ffd9b3".color
+    val muted       = rgb"#8a5230".color
+    val success     = rgb"#8fd14f".color
+    val warning     = rgb"#ffc857".color
+    val danger      = rgb"#e5484d".color
 
   // Cool and low-contrast, for a gauge that will sit on screen for hours.
   given oceanicGaugePalette: GaugePalette:
-    val background  = hue(rgb"#0b1c22")
-    val foreground  = hue(rgb"#d6eef2")
-    val track       = hue(rgb"#123640")
-    val fill        = hue(rgb"#2aa9a3")
-    val leadingEdge = hue(rgb"#7fe3d8")
-    val caption     = hue(rgb"#9fc9d1")
-    val muted       = hue(rgb"#3f6b74")
-    val success     = hue(rgb"#4fd18b")
-    val warning     = hue(rgb"#e8b04b")
-    val danger      = hue(rgb"#ef5f6b")
+    val background  = rgb"#0b1c22".color
+    val foreground  = rgb"#d6eef2".color
+    val track       = rgb"#123640".color
+    val fill        = rgb"#2aa9a3".color
+    val leadingEdge = rgb"#7fe3d8".color
+    val caption     = rgb"#9fc9d1".color
+    val muted       = rgb"#3f6b74".color
+    val success     = rgb"#4fd18b".color
+    val warning     = rgb"#e8b04b".color
+    val danger      = rgb"#ef5f6b".color
 
   given verdantGaugePalette: GaugePalette:
-    val background  = hue(rgb"#0d1a0f")
-    val foreground  = hue(rgb"#e3f2e4")
-    val track       = hue(rgb"#1d3520")
-    val fill        = hue(rgb"#5ab552")
-    val leadingEdge = hue(rgb"#a4e05a")
-    val caption     = hue(rgb"#c2ddc3")
-    val muted       = hue(rgb"#456b47")
-    val success     = hue(rgb"#7ee081")
-    val warning     = hue(rgb"#e6c344")
-    val danger      = hue(rgb"#e05252")
+    val background  = rgb"#0d1a0f".color
+    val foreground  = rgb"#e3f2e4".color
+    val track       = rgb"#1d3520".color
+    val fill        = rgb"#5ab552".color
+    val leadingEdge = rgb"#a4e05a".color
+    val caption     = rgb"#c2ddc3".color
+    val muted       = rgb"#456b47".color
+    val success     = rgb"#7ee081".color
+    val warning     = rgb"#e6c344".color
+    val danger      = rgb"#e05252".color
 
   given plumGaugePalette: GaugePalette:
-    val background  = hue(rgb"#170f1f")
-    val foreground  = hue(rgb"#efe4f7")
-    val track       = hue(rgb"#2d1c3d")
-    val fill        = hue(rgb"#9a5cd0")
-    val leadingEdge = hue(rgb"#d79cf5")
-    val caption     = hue(rgb"#cbb4dc")
-    val muted       = hue(rgb"#5b4270")
-    val success     = hue(rgb"#6fd3a0")
-    val warning     = hue(rgb"#e2b23c")
-    val danger      = hue(rgb"#e2506b")
+    val background  = rgb"#170f1f".color
+    val foreground  = rgb"#efe4f7".color
+    val track       = rgb"#2d1c3d".color
+    val fill        = rgb"#9a5cd0".color
+    val leadingEdge = rgb"#d79cf5".color
+    val caption     = rgb"#cbb4dc".color
+    val muted       = rgb"#5b4270".color
+    val success     = rgb"#6fd3a0".color
+    val warning     = rgb"#e2b23c".color
+    val danger      = rgb"#e2506b".color
 
   // Cool greys with one blue accent: the fill is the only saturated colour on screen, so the eye
   // goes to the progress and to nothing else.
   given slateGaugePalette: GaugePalette:
-    val background  = hue(rgb"#14171c")
-    val foreground  = hue(rgb"#dfe3ea")
-    val track       = hue(rgb"#242a33")
-    val fill        = hue(rgb"#4c8ef7")
-    val leadingEdge = hue(rgb"#8fbcff")
-    val caption     = hue(rgb"#a7b0be")
-    val muted       = hue(rgb"#4a5261")
-    val success     = hue(rgb"#3ecf8e")
-    val warning     = hue(rgb"#e3b341")
-    val danger      = hue(rgb"#f0616d")
+    val background  = rgb"#14171c".color
+    val foreground  = rgb"#dfe3ea".color
+    val track       = rgb"#242a33".color
+    val fill        = rgb"#4c8ef7".color
+    val leadingEdge = rgb"#8fbcff".color
+    val caption     = rgb"#a7b0be".color
+    val muted       = rgb"#4a5261".color
+    val success     = rgb"#3ecf8e".color
+    val warning     = rgb"#e3b341".color
+    val danger      = rgb"#f0616d".color
 
   // Maximum separation between the three report colours, for CI logs read at a glance.
   given signalGaugePalette: GaugePalette:
-    val background  = hue(rgb"#000000")
-    val foreground  = hue(rgb"#ffffff")
-    val track       = hue(rgb"#333333")
-    val fill        = hue(rgb"#00b3ff")
-    val leadingEdge = hue(rgb"#7fdcff")
-    val caption     = hue(rgb"#ffffff")
-    val muted       = hue(rgb"#767676")
-    val success     = hue(rgb"#00c853")
-    val warning     = hue(rgb"#ffab00")
-    val danger      = hue(rgb"#ff1744")
+    val background  = rgb"#000000".color
+    val foreground  = rgb"#ffffff".color
+    val track       = rgb"#333333".color
+    val fill        = rgb"#00b3ff".color
+    val leadingEdge = rgb"#7fdcff".color
+    val caption     = rgb"#ffffff".color
+    val muted       = rgb"#767676".color
+    val success     = rgb"#00c853".color
+    val warning     = rgb"#ffab00".color
+    val danger      = rgb"#ff1744".color

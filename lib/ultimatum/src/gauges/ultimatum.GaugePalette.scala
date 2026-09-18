@@ -37,12 +37,6 @@ import iridescence.*
 import prepositional.*
 
 object GaugePalette:
-  // The `rgb"…"` interpolator yields a `Chroma` — a packed 24-bit integer — whereas a palette's
-  // roles are `Color in Srgb`, so hex literals are converted here rather than at every one of the
-  // hundred-odd places a palette names a colour.
-  def hue(chroma: Chroma): Color in Srgb =
-    Srgb(((chroma.red)&255)/255.0, chroma.green/255.0, chroma.blue/255.0)
-
   // The no-import default, chosen from what the terminal can actually render: a caller who imports
   // nothing gets colour that works where they are, and a caller who names a palette has asserted
   // they know what their terminal does. Any `import palettes.…` outranks this, because a
