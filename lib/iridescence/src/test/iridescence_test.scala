@@ -109,6 +109,27 @@ object Tests extends Suite(m"Iridescence tests"):
         rgb"#ffffff"
       . assert(_ == Chroma(255, 255, 255))
 
+      test(m"A hex colour converts directly to a colour in Srgb"):
+        rgb"#abcdef".color
+      . assert(_ == Srgb(171/255.0, 205/255.0, 239/255.0))
+
+      test(m"A hex colour agrees with the same colour through a pixel"):
+        rgb"#abcdef".color == rgb"#abcdef".packed.srgb
+      . assert(_ == true)
+
+    suite(m"Chroma channels"):
+      test(m"The red channel ignores bits above the low twenty-four"):
+        Chroma(0x7fabcdef).red
+      . assert(_ == 0xab)
+
+      test(m"An over-wide Chroma still converts to a colour in gamut"):
+        Chroma(0x7fabcdef).color
+      . assert(_ == Srgb(171/255.0, 205/255.0, 239/255.0))
+
+      test(m"A Chroma is its own Chromatic conversion"):
+        summon[Chroma is Chromatic].convert(rgb"#abcdef")
+      . assert(_ == rgb"#abcdef")
+
     suite(m"Hsl manipulation"):
       test(m"saturate stays in Hsl"):
         Hsl(180.deg, 0.3, 0.4).saturate
