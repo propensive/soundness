@@ -15,6 +15,17 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `iridescence.Pixel#chroma`, `iridescence.Rgb12#chroma` or `iridescence.Rgb32#chroma` are
   unaffected, as all of those already masked. (#2036)
 
+## iridescence
+
+- `iridescence.Channel`, and the channel traits `iridescence.Red`, `iridescence.Green`,
+  `iridescence.Blue`, `iridescence.Alpha`, `iridescence.Cyan`, `iridescence.Magenta`,
+  `iridescence.Yellow`, `iridescence.Key` and `iridescence.Grey`, moved to `anticipation`:
+  `anticipation.Channel`, `anticipation.Red`, and so on. All definitions, type parameters and
+  match types are unchanged. The `soundness` umbrella exports the same names, now from
+  `anticipation`, so code importing them through the umbrella needs no change; code importing
+  `iridescence.*` for them must import `anticipation.*`. `Channel` remains `@unexported` and is
+  reached as `anticipation.Channel`. (#2037)
+
 ## ultimatum
 
 - `ultimatum.GaugePalette.hue(chroma: anticipation.Chroma): iridescence.Color in

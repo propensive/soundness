@@ -32,14 +32,12 @@
                                                                                                   */
 package soundness
 
-// `Channel` clashes with perihelion's WebSocket `Channel` in the umbrella; reach the pixel
-// channel machinery via `iridescence.Channel`.
 export
   iridescence
-  . { Alpha, Blendable, Blue, Brightness, Cielab, Cmy, Cmyk, Cmyk8, Color, color, Colorimetry,
-      Cyan, dark, Daub, Green, Grey, Hsl, Hsv, Key, light, Magenta, Mixing, packed, Palette,
-      Perceptual, Pixel, PixelOpaque, Red, rgb, Rgb, Rgba, Rgb12, Rgb12Opaque, Rgb32, rgb32,
-      Rgb32Opaque, Solarized, Spectrum, Srgb, Theme, Tonal, WebColors, Xyz, Yellow }
+  . { Blendable, Brightness, Cielab, Cmy, Cmyk, Cmyk8, Color, color, Colorimetry, dark, Daub, Hsl,
+      Hsv, light, Mixing, packed, Palette, Perceptual, Pixel, PixelOpaque, rgb, Rgb, Rgba, Rgb12,
+      Rgb12Opaque, Rgb32, rgb32, Rgb32Opaque, Solarized, Spectrum, Srgb, Theme, Tonal, WebColors,
+      Xyz }
 
 package colorimetry:
   export

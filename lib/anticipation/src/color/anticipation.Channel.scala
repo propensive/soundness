@@ -30,17 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package iridescence
+package anticipation
 
 import scala.compiletime.ops.any.*
 import scala.compiletime.ops.int.*
 
 // A phantom description of one channel in a packed pixel layout, such as `Red[10]`: a colour
 // component with a bit depth, never instantiated. A pixel layout is a tuple of channels, most
-// significant first, e.g. `(Red[10], Green[12], Blue[10])`, which is exactly the packing of
-// `Rgb32`. The `label` singleton gives every channel family a key which the match types in the
-// companion use to locate a channel within a layout, without needing a match-type case for each
-// channel family. The hierarchy is open: domain-specific channels can be introduced downstream so
+// significant first, e.g. `(Red[10], Green[12], Blue[10])`. The `label` singleton gives every
+// channel family a key which the match types in the companion use to locate a channel within a
+// layout, without needing a match-type case for each channel family. The hierarchy is open: domain-specific channels can be introduced downstream so
 // long as their labels are distinct.
 object Channel:
   type Label[channel] <: String = channel match
@@ -82,7 +81,7 @@ object Channel:
         case false => Long
 
 // `@unexported`: `Channel` would clash with perihelion's WebSocket `Channel` in the `soundness`
-// umbrella; reach the pixel channel machinery via `iridescence.Channel`.
+// umbrella; reach the pixel channel machinery via `anticipation.Channel`.
 @unexported
 trait Channel[label <: String & Singleton, bits <: Int]
 
