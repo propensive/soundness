@@ -377,22 +377,22 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               val pid1 = sh"$tool '{admin}' pid".exec[Text]().trim
               val pid2 = sh"$tool '{admin}' pid".exec[Text]().trim
               pid1 == pid2
-            .assert(_ == true)
+            . check(_ == true)
 
             test(m"'{admin}' pid exits with status 0"):
               sh"$tool '{admin}' pid".exec[Exit]()
-            .assert(_ == Exit.Ok)
+            . check(_ == Exit.Ok)
 
             test(m"'{admin}' install exits with status 0"):
               sh"$tool '{admin}' install".exec[Exit]()
-            .assert(_ == Exit.Ok)
+            . check(_ == Exit.Ok)
 
             test(m"'{admin}' install output lines are existing files"):
               val output = sh"$tool '{admin}' install".exec[Text]()
               val paths = output.trim.lines.filter(_.length > 0)
               paths.all: path =>
                 safely(path.as[Path on Local]).let(_.existent()).or(false)
-            .assert(_ == true)
+            . check(_ == true)
 
             test(m"'{admin}' kill terminates the daemon"):
               supervise:
@@ -400,7 +400,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                 sh"$tool '{admin}' kill".exec[Unit]()
                 snooze(0.2*Second)
                 sh"kill -0 $pid".exec[Exit]()
-            .assert(_ == Exit.Fail(1))
+            . check(_ == Exit.Fail(1))
 
           suite(m"Raw completion invocation"):
             val tool = summon[Enclave.Tool].path
@@ -432,7 +432,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             // appear exactly once...
             test(m"fish slash-terminated incomplete suggestion is not duplicated"):
               sh"$tool '{completions}' fish 3 0 /dev/null -- abcd tree --at ".exec[Text]()
-            .assert(_.cut(t"\n").stdlib.count(_.starts(t"src/")) == 1)
+            . check(_.cut(t"\n").stdlib.count(_.starts(t"src/")) == 1)
 
             // ...and the twin survives only where fish needs it: a sole incomplete
             // candidate with no slash of its own.
@@ -450,7 +450,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             // cleanly.
             test(m"fish focus=0 exits cleanly"):
               sh"$tool '{completions}' fish 0 0 /dev/null -- abcd".exec[Exit]()
-            .assert(_ == Exit.Ok)
+            . check(_ == Exit.Ok)
 
           suite(m"Pathname completions"):
             import pathInterfaces.pathOnLinux
@@ -474,27 +474,27 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             // in the menu, and selecting the twin inserts a stray trailing space.
             test(m"fish lists a file candidate exactly once"):
               sh"$tool '{completions}' fish 3 0 /dev/null -- abcd files verify ''".exec[Text]()
-            .assert(_.cut(t"\n").stdlib.count(_.starts(t"one.txt")) == 1)
+            . check(_.cut(t"\n").stdlib.count(_.starts(t"one.txt")) == 1)
 
             test(m"fish lists a directory candidate exactly once"):
               sh"$tool '{completions}' fish 3 0 /dev/null -- abcd files verify ''".exec[Text]()
-            .assert(_.cut(t"\n").stdlib.count(_.starts(t"src/")) == 1)
+            . check(_.cut(t"\n").stdlib.count(_.starts(t"src/")) == 1)
 
             test(m"powershell lists a file candidate exactly once"):
               val line = t"abcd files verify "
               sh"$tool '{completions}' powershell ${line.length} 0 '' -- $line".exec[Text]()
-            .assert(_.cut(t"\n").stdlib.count(_.starts(t"one.txt")) == 1)
+            . check(_.cut(t"\n").stdlib.count(_.starts(t"one.txt")) == 1)
 
             // Issue #1783, `incomplete` too broad: `Pathname` marks every candidate that
             // differs from the argument as incomplete, so even plain files get zsh's
             // suffix-suppressing `compadd` twin; only directories should.
             test(m"zsh emits no suffix-suppressing twin for a plain file"):
               sh"$tool '{completions}' zsh 4 0 /dev/null -- abcd files verify ''".exec[Text]()
-            .assert(_.cut(t"\n").stdlib.count(_.contains(t"one.txt")) == 1)
+            . check(_.cut(t"\n").stdlib.count(_.contains(t"one.txt")) == 1)
 
             test(m"zsh still emits the suffix-suppressing twin for a directory"):
               sh"$tool '{completions}' zsh 4 0 /dev/null -- abcd files verify ''".exec[Text]()
-            .assert(_.cut(t"\n").stdlib.count(_.contains(t"src/")) == 2)
+            . check(_.cut(t"\n").stdlib.count(_.contains(t"src/")) == 2)
 
             // Issue #1782: `Pathname` discards the `prior` suggestions, so a subcommand and
             // a path matched against the same argument should offer the union, but the
@@ -512,11 +512,11 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             // directory, and offered no completions beneath it.
             test(m"a bare tilde resolves to the home directory"):
               sh"$tool files home '~'".exec[Exit]()
-            .assert(_ == Exit.Ok)
+            . check(_ == Exit.Ok)
 
             test(m"a tilde with a trailing slash resolves to the home directory"):
               sh"$tool files home '~/'".exec[Exit]()
-            .assert(_ == Exit.Ok)
+            . check(_ == Exit.Ok)
 
             test(m"tilde completions list the home directory and keep the tilde"):
               sh"$tool '{completions}' fish 3 0 /dev/null -- abcd files verify '~/'".exec[Text]()
@@ -532,7 +532,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             // subcommand it matches, not an empty list.
             test(m"a partial word matching no file still offers the subcommand"):
               sh"$tool '{completions}' fish 2 3 /dev/null -- abcd files ver".exec[Text]()
-            .assert(_.contains(t"verify"))
+            . check(_.contains(t"verify"))
 
             // Issue #1086 guard, end-to-end: a unique directory candidate must complete
             // progressively — inserted without a trailing space, not advancing to the next
@@ -642,74 +642,74 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
       test(m"Help root lists visible subcommands"):
         HelpApp.tree.subcommands.map(_.command)
-      .assert(_ == List(t"alpha", t"beta", t"distribution", t"useradd", t"userdel"))
+      . check(_ == List(t"alpha", t"beta", t"distribution", t"useradd", t"userdel"))
 
       test(m"Flags checked before subcommand dispatch are global root parameters"):
         HelpApp.tree.parameters
-      .assert(_ == List(Help.Param(t"--verbose", Nil, t"verbose output", false, true, t"value")))
+      . check(_ == List(Help.Param(t"--verbose", Nil, t"verbose output", false, true, t"value")))
 
       test(m"Operand placeholders are derived from the operand type"):
         HelpApp.tree.subcommands
          .filter(_.command == t"userdel").bind(_.parameters)
          .filter(_.name == t"--wait").map(_.operand)
-      .assert(_ == List(t"seconds"))
+      . check(_ == List(t"seconds"))
 
       test(m"Global flags are not repeated in subcommand nodes"):
         HelpApp.tree.subcommands.bind(_.parameters).map(_.name).has(t"--verbose")
-      .assert(_ == false)
+      . check(_ == false)
 
       test(m"Subcommands carry their command group"):
         HelpApp.tree.subcommands.filter(_.command == t"useradd").map(_.group)
-      .assert(_ == List(HelpApp.admin))
+      . check(_ == List(HelpApp.admin))
 
       test(m"Help excludes hidden subcommands"):
         HelpApp.tree.subcommands.map(_.command).has(t"gamma")
-      .assert(_ == false)
+      . check(_ == false)
 
       test(m"Help descends into nested subcommands"):
         HelpApp.tree.subcommands.filter(_.command == t"distribution").bind: distribution =>
           distribution.subcommands.map(_.command)
-      .assert(_ == List(t"red hat", t"ubuntu"))
+      . check(_ == List(t"red hat", t"ubuntu"))
 
       test(m"Help captures a leaf subcommand's flags"):
         HelpApp.tree.subcommands
          .filter(_.command == t"distribution").bind(_.subcommands)
          .filter(_.command == t"ubuntu").bind(_.parameters.map(_.name))
-      .assert(_ == List(t"--one", t"--two"))
+      . check(_ == List(t"--one", t"--two"))
 
       test(m"Statuses a subcommand can return are discovered from its execute block"):
         HelpApp.tree.subcommands.filter(_.command == t"useradd").bind(_.statuses).map(_.code)
          .order(identity)
-      .assert(_ == List(1, 2))
+      . check(_ == List(1, 2))
 
       test(m"A single status is discovered without widening to Status"):
         HelpApp.tree.subcommands.filter(_.command == t"userdel").bind(_.statuses).map(_.code)
-      .assert(_ == List(1))
+      . check(_ == List(1))
 
       test(m"A status unioned with a plain Exit is discovered, and the Exit is skipped"):
         HelpApp.tree.subcommands.filter(_.command == t"beta").bind(_.statuses).map(_.code)
-      .assert(_ == List(1))
+      . check(_ == List(1))
 
       test(m"A command returning a plain Exit contributes no statuses"):
         HelpApp.tree.subcommands.filter(_.command == t"alpha").bind(_.statuses)
-      .assert(_ == Nil)
+      . check(_ == Nil)
 
       test(m"Status descriptions are carried through to the help tree"):
         HelpApp.tree.subcommands.filter(_.command == t"userdel").bind(_.statuses)
          .map(_.description)
-      .assert(_ == List(t"the server could not be reached"))
+      . check(_ == List(t"the server could not be reached"))
 
       test(m"Environment variables read before execute are discovered"):
         HelpApp.tree.subcommands.filter(_.command == t"useradd").bind(_.variables)
-      .assert(_.has(t"MYTOOL_CONFIG"))
+      . check(_.has(t"MYTOOL_CONFIG"))
 
       test(m"Environment variables are attributed to the command that reads them"):
         HelpApp.tree.subcommands.filter(_.command == t"alpha").bind(_.variables)
-      .assert(_ == Nil)
+      . check(_ == Nil)
 
       test(m"Help renders as Printable text mentioning a subcommand"):
         summon[Help is Printable].print(HelpApp.tree, stdios.muteStdio.termcap)
-      .assert(_.contains(t"alpha"))
+      . check(_.contains(t"alpha"))
 
       test(m"Help wraps descriptions at the terminal width, aligned to the description column"):
         val narrow: Termcap = new Termcap:
@@ -763,49 +763,49 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
       test(m"A matched subcommand is recorded on the invocation"):
         HelpApp.invoke(t"useradd", t"--home", t"/home/x").matches
-      .assert(_ == List(t"useradd"))
+      . check(_ == List(t"useradd"))
 
       test(m"Nested matched subcommands are recorded in order"):
         HelpApp.invoke(t"distribution", t"ubuntu").matches
-      .assert(_ == List(t"distribution", t"ubuntu"))
+      . check(_ == List(t"distribution", t"ubuntu"))
 
       test(m"An unrecognized subcommand records no matches"):
         HelpApp.invoke(t"bogus").matches
-      .assert(_ == Nil)
+      . check(_ == Nil)
 
       test(m"An empty invocation records no matches"):
         HelpApp.invoke().matches
-      .assert(_ == Nil)
+      . check(_ == Nil)
 
       test(m"A local view selects the subtree for a matched prefix"):
         HelpApp.tree.local(List(t"useradd")).let(_.command)
-      .assert(_ == t"mytool useradd")
+      . check(_ == t"mytool useradd")
 
       test(m"A local view carries ancestor flags as global options"):
         HelpApp.tree.local(List(t"useradd")).let(_.parameters.filter(_.global).map(_.name))
          .or(Nil)
-      .assert(_ == List(t"--verbose"))
+      . check(_ == List(t"--verbose"))
 
       test(m"A local view keeps the subcommand's own flags local"):
         HelpApp.tree.local(List(t"useradd"))
          .let(_.parameters.filter(!_.global).map(_.name).sort).or(Nil)
-      .assert(_ == List(t"--force", t"--groups", t"--home"))
+      . check(_ == List(t"--force", t"--groups", t"--home"))
 
       test(m"A nested local view joins the full command path"):
         HelpApp.tree.local(List(t"distribution", t"ubuntu")).let(_.command)
-      .assert(_ == t"mytool distribution ubuntu")
+      . check(_ == t"mytool distribution ubuntu")
 
       test(m"A local view of an unknown path is unset"):
         HelpApp.tree.local(List(t"bogus"))
-      .assert(_ == Unset)
+      . check(_ == Unset)
 
       test(m"A local view of the empty path is the whole tree"):
         HelpApp.tree.local(Nil)
-      .assert(_ == HelpApp.tree)
+      . check(_ == HelpApp.tree)
 
       test(m"An invocation's matched prefix selects its local help"):
         HelpApp.tree.local(HelpApp.invoke(t"useradd", t"extra").matches).let(_.command)
-      .assert(_ == t"mytool useradd")
+      . check(_ == t"mytool useradd")
 
       test(m"Local help for a leaf renders its section with ancestor globals"):
         HelpApp.tree.local(List(t"useradd")).let: local =>
@@ -890,37 +890,37 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             // nor matched against, so the word grows by the single new character.
             test(m"zsh takes the typed cluster as a hidden prefix"):
               zsh(t"-ab").stdlib.exists(adjacent(_, t"-p", t"-ab"))
-            . assert(_ == true)
+            . check(_ == true)
 
             test(m"zsh inserts only the character being added"):
               zsh(t"-ab").stdlib.exists(adjacent(_, t"--", t"c"))
-            . assert(_ == true)
+            . check(_ == true)
 
             // The menu still names the flag, rather than showing the bare letter.
             test(m"zsh names the flag in full in the menu"):
               zsh(t"-ab").prim.let(_.prim).or(t"").starts(t"-c ")
-            . assert(_ == true)
+            . check(_ == true)
 
             test(m"zsh offers a no-trailing-space variant, so the cluster can grow"):
               zsh(t"-ab").stdlib.exists(adjacent(_, t"-S", t""))
-            . assert(_ == true)
+            . check(_ == true)
 
             // Fish and bash insert whole words, so the candidate is the extended cluster.
             test(m"fish offers the extended cluster"):
               sh"$tool '{completions}' fish 2 3 /dev/null -- clstr -ab".exec[Text]()
               . cut(t"\n").stdlib.to(List).map(_.cut(t"\t").prim.or(t""))
-            . assert(_.contains(t"-abc"))
+            . check(_.contains(t"-abc"))
 
             test(m"bash offers the extended cluster"):
               sh"$tool '{completions}' bash 2 3 /dev/null -- clstr -ab".exec[Text]()
               . cut(t"\n").stdlib.to(List)
-            . assert(_.contains(t"-abc"))
+            . check(_.contains(t"-abc"))
 
             // A two-character argument is not a cluster: the interpreter only expands beyond
             // two characters, so `-a` still completes as an ordinary short flag.
             test(m"a two-character flag is completed without a prefix"):
               zsh(t"-a").stdlib.exists(adjacent(_, t"-p", t"-a"))
-            . assert(_ == false)
+            . check(_ == false)
 
       suite(m"Manpage tests"):
         val manual = Manual
@@ -939,7 +939,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
         test(m"A leaf command renders as a complete manpage"):
           leafHelp.roff(using manual).serialize.cut(t"\n")
-        . assert(_ == List
+        . check(_ == List
                        (t".TH \"DEMO\" \"1\" \"\" \"demo 1.2.3\" \"User Commands\"",
                         t".SH \"NAME\"",
                         t"demo \\- a demonstration tool",
@@ -1001,11 +1001,11 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             Manual(environment = List(Manual.EnvironmentVariable(t"MYTOOL_HOME", t"the home dir")))
 
           HelpApp.tree.roff(using described).serialize.cut(t"\n")
-        . assert(_.has(t"the home dir"))
+        . check(_.has(t"the home dir"))
 
         test(m"The manpage synopsis matches the help text usage line"):
           HelpApp.tree.roff.serialize.cut(t"\n")
-        . assert(_.has(t"\\fBmytool\\fP [\\-\\-verbose <value>] <command> [options]"))
+        . check(_.has(t"\\fBmytool\\fP [\\-\\-verbose <value>] <command> [options]"))
 
       // A missing `Inspectable` is never a compile error — `derived` always succeeds and
       // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
@@ -1015,7 +1015,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           Inspectable.fallbacks
            ( Flag[Text](t"count").inspect,
              Flag[Text]('c', aliases = List(t"count"), description = t"how many").inspect )
-        . assert(_ == Nil)
+        . check(_ == Nil)
 
         test(m"a flag inspects with the state which governs its parsing"):
           Flag[Text](t"count", repeatable = true, aliases = List('c')).inspect
@@ -1048,7 +1048,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             execute(if count().let(_ == t"4").or(false) then Exit.Ok else Exit.Fail(1))
 
           invoke(app)(t"--count", t"4")(0)
-        .assert(_ == Exit.Ok)
+        . check(_ == Exit.Ok)
 
         test(m"A prospective flag's presence is visible in the pure section"):
           def app(using cli: Cli): Execution =
@@ -1056,7 +1056,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             if count.present then execute(Exit.Ok) else execute(Exit.Fail(1))
 
           invoke(app)(t"--count", t"4")(0)
-        .assert(_ == Exit.Ok)
+        . check(_ == Exit.Ok)
 
         test(m"A flag applied inside execute resolves directly to an optional value"):
           def app(using cli: Cli): Execution =
@@ -1065,7 +1065,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               if count == t"4" then Exit.Ok else Exit.Fail(1)
 
           invoke(app)(t"--count", t"4")(0)
-        .assert(_ == Exit.Ok)
+        . check(_ == Exit.Ok)
 
         test(m"A required flag which is present yields its value inside execute"):
           def app(using cli: Cli): Execution =
@@ -1073,7 +1073,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             execute(if count() == t"4" then Exit.Ok else Exit.Fail(1))
 
           invoke(app)(t"--count", t"4")(0)
-        .assert(_ == Exit.Ok)
+        . check(_ == Exit.Ok)
 
         test(m"A missing required flag precludes execution with a usage error"):
           def app(using cli: Cli): Execution =
@@ -1081,7 +1081,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             execute(Exit.Ok)
 
           invoke(app)()(0)
-        .assert(_ == Exit.Fail(2))
+        . check(_ == Exit.Fail(2))
 
         test(m"All missing required flags are accrued in order"):
           def app(using cli: Cli): Execution =
@@ -1090,7 +1090,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             execute(Exit.Ok)
 
           invoke(app)()(1).missingRequisites.map(_.name)
-        .assert(_ == List(t"alpha", t"beta"))
+        . check(_ == List(t"alpha", t"beta"))
 
         test(m"Requiring a present flag inside execute yields the value directly"):
           def app(using cli: Cli): Execution =
@@ -1099,14 +1099,14 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               if count == t"4" then Exit.Ok else Exit.Fail(1)
 
           invoke(app)(t"--count", t"4")(0)
-        .assert(_ == Exit.Ok)
+        . check(_ == Exit.Ok)
 
         test(m"Requiring a missing flag inside execute raises MissingFlagError"):
           def app(using cli: Cli): Execution =
             execute(Flag[Text](t"count").require() yet Exit.Ok)
 
           try invoke(app)() yet t"returned" catch case error: MissingFlagError => t"raised"
-        .assert(_ == t"raised")
+        . check(_ == t"raised")
 
         class Wait(val text: Text)
 
@@ -1130,19 +1130,19 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
         test(m"Required flags are marked in the help tree"):
           requiredTree.parameters.filter(_.name == t"--home").map(_.required)
-        .assert(_ == List(true))
+        . check(_ == List(true))
 
         test(m"Required flags are annotated in rendered help"):
           summon[Help is Printable].print(requiredTree, stdios.muteStdio.termcap)
-        .assert(_.contains(t"the home directory (required)"))
+        . check(_.contains(t"the home directory (required)"))
 
         test(m"A validated flag's operand placeholder is taken from its Interpretable"):
           requiredTree.parameters.filter(_.name == t"--wait").map(_.operand)
-        .assert(_ == List(t"seconds"))
+        . check(_ == List(t"seconds"))
 
         test(m"A validated flag is marked required in the help tree"):
           requiredTree.parameters.filter(_.name == t"--wait").map(_.required)
-        .assert(_ == List(true))
+        . check(_ == List(true))
 
         test(m"A validated flag with a well-formed value yields it inside execute"):
           def app(using cli: Cli): Execution =
@@ -1150,7 +1150,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             execute(if count() == 42 then Exit.Ok else Exit.Fail(1))
 
           invoke(app)(t"--count", t"42")(0)
-        .assert(_ == Exit.Ok)
+        . check(_ == Exit.Ok)
 
         test(m"A validated flag's decoded value is visible in the pure section"):
           def app(using cli: Cli): Execution =
@@ -1158,7 +1158,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             if count.value == 42 then execute(Exit.Ok) else execute(Exit.Fail(1))
 
           invoke(app)(t"--count", t"42")(0)
-        .assert(_ == Exit.Ok)
+        . check(_ == Exit.Ok)
 
         test(m"A malformed value precludes execution with a usage error"):
           def app(using cli: Cli): Execution =
@@ -1166,7 +1166,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             execute(Exit.Ok)
 
           invoke(app)(t"--count", t"4x")(0)
-        .assert(_ == Exit.Fail(2))
+        . check(_ == Exit.Fail(2))
 
         test(m"A malformed value accrues a fault with the decoder's explanation"):
           def app(using cli: Cli): Execution =
@@ -1174,7 +1174,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             execute(Exit.Ok)
 
           invoke(app)(t"--count", t"4x")(1).faults.map(_(1))
-        .assert(_.prim.let(_.contains(t"not a valid int")).or(false))
+        . check(_.prim.let(_.contains(t"not a valid int")).or(false))
 
         test(m"A missing validated flag is accrued as missing, not as a fault"):
           def app(using cli: Cli): Execution =
@@ -1183,7 +1183,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
           val (exit, invocation) = invoke(app)()
           (exit, invocation.missingRequisites.map(_.name), invocation.faults)
-        .assert(_ == (Exit.Fail(2), List(t"count"), Nil))
+        . check(_ == (Exit.Fail(2), List(t"count"), Nil))
 
         test(m"Validating a well-formed flag inside execute yields the value directly"):
           def app(using cli: Cli): Execution =
@@ -1192,7 +1192,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               if count == 42 then Exit.Ok else Exit.Fail(1)
 
           invoke(app)(t"--count", t"42")(0)
-        .assert(_ == Exit.Ok)
+        . check(_ == Exit.Ok)
 
         test(m"Validating a malformed flag inside execute raises InvalidFlagError"):
           def app(using cli: Cli): Execution =
@@ -1200,7 +1200,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
           try invoke(app)(t"--count", t"4x") yet t"returned"
           catch case error: InvalidFlagError => t"raised"
-        .assert(_ == t"raised")
+        . check(_ == t"raised")
 
         test(m"Validating a missing flag inside execute raises MissingFlagError"):
           def app(using cli: Cli): Execution =
@@ -1208,7 +1208,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
           try invoke(app)() yet t"returned"
           catch case error: MissingFlagError => t"raised"
-        .assert(_ == t"raised")
+        . check(_ == t"raised")
 
       suite(m"Pathname operand completion"):
         import pathInterfaces.pathOnLinux
@@ -1232,19 +1232,19 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
         test(m"An empty operand lists the working directory's visible entries"):
           Pathname.complete(t"", Prim).map(_.core).sort
-        .assert(_ == List(t"one.txt", t"src/", t"two.txt"))
+        . check(_ == List(t"one.txt", t"src/", t"two.txt"))
 
         test(m"A partial name narrows the candidates"):
           Pathname.complete(t"on", Prim).map(_.core)
-        .assert(_ == List(t"one.txt"))
+        . check(_ == List(t"one.txt"))
 
         test(m"A directory operand descends into the directory"):
           Pathname.complete(t"src/", Prim).map { s => t"${s.prefix}${s.core}" }
-        .assert(_ == List(t"src/inner.txt"))
+        . check(_ == List(t"src/inner.txt"))
 
         test(m"The pathname Discoverable offers the extractor's candidates for a flag operand"):
           pathnameDiscoverable.discover(t"src/", Prim).map(_.core)
-        .assert(_ == List(t"inner.txt"))
+        . check(_ == List(t"inner.txt"))
 
         test(m"A flag operand's partial text reaches its Discoverable"):
           val args = Cli.arguments(List(t"--hue", t"re"), 1, 2)
@@ -1268,4 +1268,4 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           def app(using cli: Cli): Unit = Flag[Text](t"hue")() yet ()
           app(using completion)
           completion.cursorSuggestions.map(_.core)
-        .assert(_ == List(t"[re]"))
+        . check(_ == List(t"[re]"))

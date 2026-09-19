@@ -573,50 +573,52 @@ object Tests extends Suite(m"Burdock Tests"):
 
       test(m"the application's main class runs after a cold fetch"):
         coldOutput
-      .assert(_ == t"probe")
+      . check(_ == t"probe")
 
       test(m"both requirements are fetched once"):
         coldRequests
-      .assert(_ == 2)
+      . check(_ == 2)
 
       test(m"the requirements are cached under XDG_CACHE_HOME"):
         (exists(t"$cache/burdock/$hashOne.jar"), exists(t"$cache/burdock/$hashTwo.jar"))
-      .assert(_ == (true, true))
+      . check(_ == (true, true))
 
       test(m"the downloads overlap"):
         peak.get()
-      .assert(_ >= 2)
+      . check(_ >= 2)
 
       test(m"no temporary file is left in the cache"):
         leftovers(cache)
-      .assert(_ == 0)
+      . check(_ == 0)
 
       test(m"the progress file is removed once fetching completes"):
         exists(progress)
-      .assert(_ == false)
+      . check(_ == false)
 
       val warmOutput: Text = launch(jar, cache)
 
       test(m"a warm cache makes no requests"):
         (warmOutput, requests.get() - coldRequests)
-      .assert(_ == (t"probe", 0))
+      . check(_ == (t"probe", 0))
 
       jnf.Files.write(jnf.Paths.get(t"$cache/burdock/$hashOne.jar".s), "corrupted".getBytes("UTF-8").nn)
 
       test(m"a corrupted cached requirement is rejected with status 1"):
         status(jar, cache)
-      .assert(_ == Exit.Fail(1))
+      . check(_ == Exit.Fail(1))
 
       test(m"a malformed requirement exits with status 2"):
         status(appJar(t"malformed.jar", t"not-a-requirement"), cache)
-      .assert(_ == Exit.Fail(2))
+      . check(_ == Exit.Fail(2))
 
       // With the server slowed down, the progress file can be watched from outside while the
       // bootstrap runs, which is exactly what Ethereal's launcher does. The two downloads are
       // staggered so that the position after the first completes persists long enough to be seen.
+      // The first delay is long enough that the position before any download completes is
+      // seen even when the fetching JVM is slow to start, or the watcher is scheduled late.
       val slowCache: Text = t"${root.show}/slow-cache"
-      delayOne.set(500)
-      delayTwo.set(2500)
+      delayOne.set(2000)
+      delayTwo.set(4000)
 
       val observed: List[Text] =
         supervise:
@@ -633,10 +635,10 @@ object Tests extends Suite(m"Burdock Tests"):
         observed match
           case first :: _ => first
           case _          => t""
-      .assert(_ == t"0 2 0")
+      . check(_ == t"0 2 0")
 
       test(m"the progress file reports the first requirement's completion"):
         observed.exists(_.starts(t"1 2 "))
-      .assert(_ == true)
+      . check(_ == true)
 
       server.stop(0)
