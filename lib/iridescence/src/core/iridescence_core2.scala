@@ -34,6 +34,8 @@ package iridescence
 
 import scala.annotation.targetName
 
+import prepositional.*
+
 export Rgb12Opaque.Rgb12
 export Rgb32Opaque.Rgb32
 export PixelOpaque.Pixel
@@ -48,6 +50,11 @@ type Cmyk8 = (Cyan[8], Magenta[8], Yellow[8], Key[8])
 // `(Red[10], Green[12], Blue[10])` respectively, so these conversions just retype the bits.
 extension (chroma: anticipation.Chroma)
   def packed: Pixel[Rgb] = Pixel.make(chroma.underlying&0xffffff)
+
+  // A `Chroma` is already sRGB, only with whole-number channels, so the conversion is one
+  // division per channel. Every perceptual conversion, `Palette` role and `Daub` takes a
+  // `Color in Srgb`, so this is the one step from a hex literal into the rest of the library.
+  def color: Color in Srgb = Srgb(chroma.red/255.0, chroma.green/255.0, chroma.blue/255.0)
 
 extension (rgb32: Rgb32)
   @targetName("rgb32Packed")

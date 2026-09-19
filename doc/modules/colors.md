@@ -192,13 +192,16 @@ The `rgb"…"` interpolator reads a [hexadecimal](https://en.wikipedia.org/wiki/
 color, with or without a leading hash, and checks it as the code compiles:
 
 ```scala
-rgb"#abcdef"   // Chroma(171, 205, 239)
-rgb"ffffff"    // Chroma(255, 255, 255)
+rgb"#abcdef"         // Chroma(171, 205, 239)
+rgb"ffffff"          // Chroma(255, 255, 255)
+rgb"#abcdef".color   // Srgb(0.671, 0.804, 0.937)
 ```
 
 The result is a `Chroma` — a color with whole-number channels from 0 to 255 — which is
 the form a terminal expects, so a color computed in any model renders as styled terminal
-output once converted.
+output once converted. `color` converts the other way, to the `Color in Srgb` that every
+perceptual conversion, `Palette` role and `Daub` accepts, so a hex literal is a starting
+point for everything above as well as an endpoint.
 
 ### Color profiles
 
@@ -230,6 +233,9 @@ summon[Theme].luminosity       // Brightness.Dark
 `luminosity.darkBrightness` and `luminosity.lightBrightness` select the variant of a theme
 that offers both, so terminal output styled through a palette adapts to the terminal's
 background.
+
+A palette's roles are `Color in Srgb`, so a palette written from hex literals gives each role
+a `rgb"…".color`.
 
 ### Pixel layouts
 

@@ -40,6 +40,10 @@ object internal2:
   object Chroma:
     erased given underlying: Underlying[Chroma, Int] = caps.unsafe.unsafeErasedValue
 
+    // A `Chroma` is the very representation `Chromatic` converts to, so the identity instance
+    // lets a packed colour stand wherever a `color is Chromatic` is asked for.
+    given chromatic: Chroma is Chromatic = chroma => chroma
+
     def apply(value: Int): Chroma = value
 
     def apply(red: Int, green: Int, blue: Int): Chroma =
@@ -47,6 +51,10 @@ object internal2:
 
   extension(inline chroma: Chroma)
     inline def underlying: Int = chroma
-    inline def red: Int = chroma >> 16
+
+    // Masked like `green` and `blue`, and like `Chromatic`'s own `red`: the top eight bits of
+    // the packed `Int` are not part of the colour.
+    inline def red: Int = (chroma >> 16)&255
+
     inline def green: Int = (chroma >> 8)&255
     inline def blue: Int = chroma&255
