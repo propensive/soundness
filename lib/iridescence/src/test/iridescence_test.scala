@@ -366,23 +366,23 @@ object Tests extends Suite(m"Iridescence tests"):
 
     suite(m"Pixel layouts"):
       test(m"a 24-bit RGB layout is stored in an Int"):
-        compiletime.constValue[Channel.TotalBits[Rgb]]
+        compiletime.constValue[anticipation.Channel.TotalBits[Rgb]]
       . assert(_ == 24)
 
       test(m"channels of an 8-bit greyscale layout fit a Byte"):
-        summon[Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
+        summon[anticipation.Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
       . assert(_ != null)
 
       test(m"a 16-bit RGB layout fits a Short"):
-        summon[Channel.Storage[(Red[5], Green[6], Blue[5])] =:= Short]
+        summon[anticipation.Channel.Storage[(Red[5], Green[6], Blue[5])] =:= Short]
       . assert(_ != null)
 
       test(m"a 32-bit RGBA layout fits an Int"):
-        summon[Channel.Storage[Rgba] =:= Int]
+        summon[anticipation.Channel.Storage[Rgba] =:= Int]
       . assert(_ != null)
 
       test(m"a 64-bit RGBA layout needs a Long"):
-        summon[Channel.Storage[(Red[16], Green[16], Blue[16], Alpha[16])] =:= Long]
+        summon[anticipation.Channel.Storage[(Red[16], Green[16], Blue[16], Alpha[16])] =:= Long]
       . assert(_ != null)
 
       test(m"channel accessors unpack a 10/12/10 pixel"):
