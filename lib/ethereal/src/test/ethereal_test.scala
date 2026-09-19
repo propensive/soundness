@@ -209,52 +209,52 @@ object Tests extends Suite(m"Ethereal Tests"):
           suite(m"Basic invocation"):
             test(m"first invocation prints expected output"):
               sh"$tool echo hello".exec[Text]()
-            .assert(_ == t"hello")
+            . check(_ == t"hello")
 
             test(m"second invocation reuses the daemon"):
               sh"$tool echo hello".exec[Text]()
               sh"$tool echo world".exec[Text]()
-            .assert(_ == t"world")
+            . check(_ == t"world")
 
             test(m"exit code 0 is returned on success"):
               sh"$tool".exec[Exit]()
-            .assert(_ == Exit.Ok)
+            . check(_ == Exit.Ok)
 
             test(m"nonzero exit code is forwarded"):
               sh"$tool exit 42".exec[Exit]()
-            .assert(_ == Exit.Fail(42))
+            . check(_ == Exit.Fail(42))
 
             test(m"exit code 1 is forwarded"):
               sh"$tool exit 1".exec[Exit]()
-            .assert(_ == Exit.Fail(1))
+            . check(_ == Exit.Fail(1))
 
           suite(m"Argument passing"):
             test(m"single argument is passed through"):
               sh"$tool args one".exec[Text]()
-            .assert(_ == t"one")
+            . check(_ == t"one")
 
             test(m"multiple arguments are passed through"):
               sh"$tool args one two three".exec[Text]()
-            .assert(_ == t"one\ntwo\nthree")
+            . check(_ == t"one\ntwo\nthree")
 
             test(m"argument with spaces is preserved"):
               val arg = t"hello world"
               sh"$tool args $arg".exec[Text]()
-            .assert(_ == t"hello world")
+            . check(_ == t"hello world")
 
             test(m"empty argument is preserved"):
               sh"$tool args '' something".exec[Text]()
-            .assert(_ == t"\nsomething")
+            . check(_ == t"\nsomething")
 
             test(m"trailing newline in output is preserved"):
               sh"$tool lines one two three".exec[Text]()
-            .assert(_ == t"one\ntwo\nthree\n")
+            . check(_ == t"one\ntwo\nthree\n")
 
           suite(m"Environment forwarding"):
             test(m"environment variable is forwarded"):
               val env = t"TEST_ETHEREAL_VAR=hello_ethereal"
               sh"env $env $tool env TEST_ETHEREAL_VAR".exec[Text]()
-            .assert(_ == t"hello_ethereal")
+            . check(_ == t"hello_ethereal")
 
           suite(m"Working directory"):
             test(m"working directory is forwarded"):
@@ -264,7 +264,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           suite(m"Stderr forwarding"):
             test(m"stderr output is forwarded"):
               sh"$tool stderr 'error message'".exec[Stderr]().text.trim
-            .assert(_ == t"error message")
+            . check(_ == t"error message")
 
           suite(m"Interrupt forwarding"):
             test(m"SIGTERM causes the launcher to exit"):
@@ -275,7 +275,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 sh"kill -TERM ${proc.pid.value}".exec[Unit]()
                 proc.await(3*Second)
                 jl.System.currentTimeMillis - t0
-            .assert(_ < 750L)
+            . check(_ < 750L)
 
             test(m"SIGWINCH is forwarded to the application"):
               supervise:
@@ -283,7 +283,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 snooze(0.1*Second)
                 sh"kill -WINCH ${proc.pid.value}".exec[Unit]()
                 proc.await(3*Second)
-            . assert(_ == t"WINCH")
+            . check(_ == t"WINCH")
 
             test(m"SIGUSR1 is forwarded to the application"):
               supervise:
@@ -292,7 +292,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 sh"kill -USR1 ${proc.pid.value}".exec[Unit]()
                 proc.await(3*Second)
 
-            . assert(_ == t"USR1")
+            . check(_ == t"USR1")
 
             test(m"SIGUSR2 is forwarded to the application"):
               supervise:
@@ -301,7 +301,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 sh"kill -USR2 ${proc.pid.value}".exec[Unit]()
                 proc.await(3*Second)
 
-            . assert(_ == t"USR2")
+            . check(_ == t"USR2")
 
             test(m"SIGHUP is forwarded to the application"):
               supervise:
@@ -310,7 +310,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 sh"kill -HUP ${proc.pid.value}".exec[Unit]()
                 proc.await(3*Second)
 
-            . assert(_ == t"HUP")
+            . check(_ == t"HUP")
 
             test(m"SIGINT is forwarded to the application"):
               supervise:
@@ -319,7 +319,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 sh"kill -INT ${proc.pid.value}".exec[Unit]()
                 proc.await(3*Second)
 
-            . assert(_ == t"INT")
+            . check(_ == t"INT")
 
             test(m"trap returning Reject lets the launcher fall back to OS default"):
               supervise:
@@ -327,7 +327,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 snooze(0.1*Second)
                 sh"kill -TERM ${proc.pid.value}".exec[Unit]()
                 proc.await(3*Second)
-            . assert(_ != Exit.Ok)
+            . check(_ != Exit.Ok)
 
             test(m"Defer cascades to a previously-defined trap"):
               supervise:
@@ -336,7 +336,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 sh"kill -INT ${proc.pid.value}".exec[Unit]()
                 proc.await(3*Second)
 
-            . assert(_ == t"outer")
+            . check(_ == t"outer")
 
             test(m"signal not matched by any trap PF causes launcher to fall back"):
               supervise:
@@ -345,7 +345,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 sh"kill -INT ${proc.pid.value}".exec[Unit]()
                 proc.await(3*Second)
 
-            . assert(_ != Exit.Ok)
+            . check(_ != Exit.Ok)
 
             test(m"slow handler past timeout causes launcher to fall back"):
               supervise:
@@ -356,7 +356,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 proc.await(3*Second)
                 jl.System.currentTimeMillis - t0
 
-            . assert(elapsed => elapsed > 200L && elapsed < 1500L)
+            . check(elapsed => elapsed > 200L && elapsed < 1500L)
 
             test(m"WINCH with no matching trap does not kill the launcher"):
               supervise:
@@ -369,7 +369,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 safely(proc.await(2*Second))
                 alive
 
-            . assert(_ == true)
+            . check(_ == true)
 
           suite(m"State file monitoring"):
             test(m"daemon restarts after pid file is deleted"):
@@ -380,7 +380,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 val newPid = sh"$tool '{admin}' pid".fork[Text]().await().trim
                 newPid != oldPid
 
-            . assert(_ == true)
+            . check(_ == true)
 
             test(m"daemon restarts after socket file is deleted"):
               supervise:
@@ -393,7 +393,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 val newPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
                 newPid != oldPid
 
-            . assert(_ == true)
+            . check(_ == true)
 
             test(m"metadata-only touch of the launcher does not restart the daemon"):
               supervise:
@@ -405,7 +405,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 val newPid = sh"$tool '{admin}' pid".exec[Text]().trim
                 newPid == oldPid
 
-            . assert(_ == true)
+            . check(_ == true)
 
             test(m"daemon terminates when its launcher is rewritten in place"):
               supervise:
@@ -424,14 +424,14 @@ object Tests extends Suite(m"Ethereal Tests"):
                 val newPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
                 died && newPid != oldPid
 
-            . assert(_ == true)
+            . check(_ == true)
 
           suite(m"Daemon lifecycle"):
             test(m"pid file is present while daemon is running"):
               sh"$tool".exec[Unit]()
               sh"test -f $stateDir/pid".exec[Exit]()
 
-            . assert(_ == Exit.Ok) // daemon persists between invocations
+            . check(_ == Exit.Ok) // daemon persists between invocations
 
             test(m"recovery after daemon is killed with SIGKILL"):
               supervise:
@@ -441,7 +441,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 snooze(0.1*Second)
                 sh"$tool echo recovered".exec[Text]()
 
-            . assert(_ == t"recovered")
+            . check(_ == t"recovered")
 
             test(m"stale pid file is cleaned up"):
               supervise:
@@ -455,7 +455,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 sh"rm -f $stateDir/fail".exec[Unit]()
                 sh"$tool echo fresh".exec[Text]()
 
-            . assert(_ == t"fresh")
+            . check(_ == t"fresh")
 
             test(m"fail file is removed after 2 seconds"):
               supervise:
@@ -465,7 +465,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 snooze(2.5*Second)
                 sh"$tool echo after-fail".exec[Text]()
 
-            . assert(_ == t"after-fail")
+            . check(_ == t"after-fail")
 
           suite(m"Concurrent invocations"):
             test(m"parallel invocations share the same daemon"):
@@ -477,14 +477,14 @@ object Tests extends Suite(m"Ethereal Tests"):
               val pid3 = proc3.await()
               Set(pid1, pid2, pid3).size
 
-            . assert(_ == 1)
+            . check(_ == 1)
 
             test(m"rapid sequential invocations succeed"):
               val results = (1 to 5).map: i =>
                 sh"$tool echo $i".exec[Text]()
               results.to(List).map(_.trim)
 
-            . assert(_ == List(t"1", t"2", t"3", t"4", t"5"))
+            . check(_ == List(t"1", t"2", t"3", t"4", t"5"))
 
           suite(m"Forced kill and cleanup"):
             test(m"daemon survives launcher SIGKILL"):
@@ -496,7 +496,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 snooze(0.1*Second)
                 sh"$tool echo still-alive".exec[Text]()
 
-            . assert(_ == t"still-alive")
+            . check(_ == t"still-alive")
 
             test(m"launcher exits when daemon is killed"):
               supervise:
@@ -507,12 +507,12 @@ object Tests extends Suite(m"Ethereal Tests"):
                 val exit = proc.await()
                 exit != Exit.Ok
 
-            . assert(_ == true)
+            . check(_ == true)
 
             test(m"new daemon starts after previous was killed"):
               sh"$tool echo restarted".exec[Text]()
 
-            . assert(_ == t"restarted")
+            . check(_ == t"restarted")
 
           suite(m"State file integrity"):
             test(m"build file records build id, size and mtime"):
@@ -525,20 +525,20 @@ object Tests extends Suite(m"Ethereal Tests"):
                 && safely(fields(1).as[Long]).let(_ => true).or(false)
                 && safely(fields(2).as[Long]).let(_ => true).or(false)
 
-            . assert(_ == true)
+            . check(_ == true)
 
             test(m"socket file is a UNIX domain socket"):
               sh"$tool echo probe".exec[Unit]()
               sh"test -S $stateDir/socket".exec[Exit]()
 
-            . assert(_ == Exit.Ok)
+            . check(_ == Exit.Ok)
 
             test(m"pid file contains a valid running PID"):
               sh"$tool".exec[Unit]()
               val pid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
               safely(Process(pid).alive).or(false)
 
-            . assert(_ == true)
+            . check(_ == true)
 
           suite(m"Installation"):
             val installDir: Path on Linux = temporaryDirectory[Path on Linux]/t"install-$name"
@@ -548,7 +548,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               sh"$tool install $installDir".exec[Text]()
               sh"cmp -s $tool $installDir/$name".exec[Exit]()
 
-            . assert(_ == Exit.Ok)
+            . check(_ == Exit.Ok)
 
             test(m"reinstallation replaces the target's inode"):
               val inode1 = sh"ls -i $installDir/$name".exec[Text]().trim.cut(t" ").stdlib.head
@@ -556,7 +556,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               val inode2 = sh"ls -i $installDir/$name".exec[Text]().trim.cut(t" ").stdlib.head
               inode1 != inode2
 
-            . assert(_ == true)
+            . check(_ == true)
 
             sh"rm -rf $installDir".exec[Unit]()
 
@@ -564,7 +564,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             test(m"pipe input is forwarded to the application"):
               (sh"echo 'piped input'" | sh"$tool cat").exec[Text]()
 
-            . assert(_ == t"piped input")
+            . check(_ == t"piped input")
 
           suite(m"Cooked terminal mode"):
             // These need a real terminal, so they run inside a tmux pane. The launcher
@@ -659,7 +659,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               val parent = sh"ps -p $jvmPid -o ppid=".exec[Text]().trim
               sh"ps -p $parent -o comm=".exec[Text]().trim.cut(t"/").stdlib.last
 
-            . assert(_ == name)
+            . check(_ == name)
 
             test(m"killall on the client name terminates the daemon"):
               supervise:
@@ -672,7 +672,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 do snooze(0.05*Second)
                 safely(Process(jvmPid).alive).or(false)
 
-            . assert(_ == false)
+            . check(_ == false)
 
       val upgradeStateDir: Path on Local =
         Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / upgradeName
@@ -875,12 +875,12 @@ object Tests extends Suite(m"Ethereal Tests"):
           sh"cp ${selfuV2.path} $selfuDataDir/.pending".exec[Unit]()
           sh"${selfuV1.path} version".exec[Text]()
 
-        .assert(_ == t"v1")
+        . check(_ == t"v1")
 
         test(m"rejected pending binary is deleted"):
           sh"test ! -e $selfuDataDir/.pending".exec[Exit]()
 
-        .assert(_ == Exit.Ok)
+        . check(_ == Exit.Ok)
 
       safely(sh"pkill $selfuName".exec[Exit]())
       sh"rm -rf $selfuStateDir $selfuDataDir".exec[Unit]()
@@ -895,19 +895,19 @@ object Tests extends Suite(m"Ethereal Tests"):
 
         test(m"the schema signature is pinned"):
           hex(Launcher.signature)
-        .assert(_ == signatureHex)
+        . check(_ == signatureHex)
 
         test(m"an exit request frames as the pinned bytes"):
           hex(Launcher.encode(Launcher.Message.Exit(42)))
-        .assert(_ == t"b2c4b5bb2921${signatureHex}01040100023432")
+        . check(_ == t"b2c4b5bb2921${signatureHex}01040100023432")
 
         test(m"a verify request is a variant with no fields"):
           hex(Launcher.encode(Launcher.Message.Verify))
-        .assert(_ == t"b2c4b5bb2521${signatureHex}010500")
+        . check(_ == t"b2c4b5bb2521${signatureHex}010500")
 
         test(m"a mode document carries the canonical flag"):
           hex(Launcher.encode(Launcher.Message.Mode(true)))
-        .assert(_ == t"b2c4b5bb2621${signatureHex}01080100")
+        . check(_ == t"b2c4b5bb2621${signatureHex}01080100")
 
         val init =
           Launcher.Message.Init
@@ -915,7 +915,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
         test(m"an init message frames as the pinned bytes"):
           hex(Launcher.encode(init))
-        .assert(_ == t"b2c4b5bb5221${signatureHex}010009000137010335303102036a6f6e030a2f7573722f62696e2f7804042f746d7005060161060362206307034b3d56")
+        . check(_ == t"b2c4b5bb5221${signatureHex}010009000137010335303102036a6f6e030a2f7573722f62696e2f7804042f746d7005060161060362206307034b3d56")
 
         test(m"every message round-trips"):
           val messages: List[Launcher.Message] =
@@ -933,7 +933,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 Launcher.Message.ExitStatus(3) )
 
           messages.map { message => Launcher.decode(Launcher.encode(message)) }
-        .assert(_ == List
+        . check(_ == List
           ( init,
             Launcher.Message.Stderr(7),
             Launcher.Message.Control(7),
@@ -950,7 +950,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           val bytes = Launcher.encode(Launcher.Message.Exit(7)).readable.toList.toArray
           bytes(6) = (bytes(6) ^ 0x01).toByte
           Launcher.decode(bytes.asInstanceOf[Array[Byte]]).absent
-        .assert(_ == true)
+        . check(_ == true)
 
         test(m"readDocument takes exactly one document from a stream"):
           val document = Launcher.encode(Launcher.Message.Exit(7))
@@ -958,7 +958,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           val in = ji.ByteArrayInputStream(stream.toArray)
           val read = Launcher.readDocument(in)
           (read.let(hex(_)), in.available())
-        .assert(_ == (hex(Launcher.encode(Launcher.Message.Exit(7))), 3))
+        . check(_ == (hex(Launcher.encode(Launcher.Message.Exit(7))), 3))
 
       val brokenStateDir: Path on Local =
         Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"brokn"
@@ -984,14 +984,14 @@ object Tests extends Suite(m"Ethereal Tests"):
           sh"rm -f $brokenStateDir/fail".exec[Unit]()
           safely(sh"$brokenExe echo hello".exec[Exit]()).or(Exit.Fail(1))
 
-        . assert(_ != Exit.Ok)
+        . check(_ != Exit.Ok)
 
         test(m"fail file exists after failed daemon start"):
           sh"rm -f $brokenStateDir/fail".exec[Unit]()
           safely(sh"$brokenExe echo hello".exec[Exit]())
           sh"test -f $brokenStateDir/fail".exec[Exit]()
 
-        . assert(_ == Exit.Ok)
+        . check(_ == Exit.Ok)
 
       sh"rm -rf $brokenStateDir".exec[Unit]()
 
@@ -1063,7 +1063,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
         test(m"the progress file is gone once the daemon has started"):
           sh"test -e $progressStateDir/progress".exec[Exit]()
-        . assert(_ != Exit.Ok)
+        . check(_ != Exit.Ok)
 
         test(m"a daemon binding late without reporting progress is abandoned"):
           coldStart(t"stald", stalledStateDir)
@@ -1072,7 +1072,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
         test(m"the abandoned daemon leaves a fail file"):
           sh"test -f $stalledStateDir/fail".exec[Exit]()
-        . assert(_ == Exit.Ok)
+        . check(_ == Exit.Ok)
 
       safely(sh"$progressExe '{admin}' kill".exec[Exit]())
       snooze(0.2*Second)
