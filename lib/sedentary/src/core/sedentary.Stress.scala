@@ -384,8 +384,13 @@ extends Rig:
             val thrash = gcTime*2000000L > elapsed
             val failed = failure.get != null
 
+            // Through the system stdio, never `java.lang.System.err` itself: a host running the
+            // suite in-process diverts the JVM's streams to keep its own display intact, and a
+            // diversion is reached only by way of a `Stdio` that reads them.
             if failed then
-              jl.System.err.nn.println(s"sedentary: a worker failed at N=$n: ${failure.get}")
+              import turbulence.stdios.javaLangSystemStdio
+              import termcapDefinitions.basicTermcap
+              turbulence.Err.println(s"sedentary: a worker failed at N=$n: ${failure.get}".tt)
 
             val ok = !oom.get && !failed && !thrash && (!slo || compliantBp >= targetBp)
 

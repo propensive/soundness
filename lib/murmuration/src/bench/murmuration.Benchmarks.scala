@@ -588,7 +588,10 @@ object Benchmarks extends Suite(m"Murmuration benchmarks"):
       orderByPairs(sample) == byLibrary && orderByInterleaving(sample) == byLibrary
       && orderByParallel(sample) == byLibrary && orderByRecomputing(sample) == byLibrary
 
-    java.lang.System.out.nn.println(s"layouts agree with the library: $agree")
+    // Through the system stdio, so a host running this suite in-process can catch the line.
+    import turbulence.stdios.javaLangSystemStdio
+    import termcapDefinitions.basicTermcap
+    turbulence.Out.println(s"layouts agree with the library: $agree".tt)
 
     val bench = Bench()
 

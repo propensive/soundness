@@ -77,6 +77,48 @@ object Stdio:
 
   lazy val MutePrintStream = ji.PrintStream(MuteOutputStream)
 
+  // What a block printed through the JVM's own streams while they were captured, beside the
+  // block's result. Both are decoded as UTF-8, the encoding the capturing streams wrote.
+  case class Capture[result](result: result, out: Text, err: Text)
+
+  // The JVM's own streams, `java.lang.System.out` and `System.err`, are the one route by which
+  // what is printed WITHOUT a `Stdio` — by a library, a `printStackTrace`, or anything holding
+  // `stdios.javaLangSystemStdio` — can be reached. `divert` rebinds them to `stdio`'s for the
+  // duration of `block` and restores them afterwards, whichever way the block ends, so a host
+  // running a guest in-process decides where the guest's stray output goes without naming
+  // `java.lang.System` itself. The binding is the JVM's, seen by every thread, so a host
+  // should not divert around two guests at once; and nothing reaches a diversion through
+  // `stdios.fileDescriptorStdio`, which names the process's own descriptors directly.
+  def divert[result](stdio: Stdio)(block: => result): result =
+    val out: ji.PrintStream = System.out.nn
+    val err: ji.PrintStream = System.err.nn
+    System.setOut(stdio.out)
+    System.setErr(stdio.err)
+
+    try block finally
+      // A guest's streams need not auto-flush; what it printed last must not stay buffered.
+      stdio.out.flush()
+      stdio.err.flush()
+      System.setOut(out)
+      System.setErr(err)
+
+  // Everything `block` prints through the JVM's streams, kept rather than shown: for a host
+  // whose terminal is spoken for (by a live display, say) while a guest runs, to present
+  // afterwards, or elsewhere.
+  def capture[result](block: => result): Capture[result] =
+    val out: ji.ByteArrayOutputStream = ji.ByteArrayOutputStream()
+    val err: ji.ByteArrayOutputStream = ji.ByteArrayOutputStream()
+
+    val stdio: Stdio =
+      Stdio
+        ( ji.PrintStream(out, true, "UTF-8"),
+          ji.PrintStream(err, true, "UTF-8"),
+          null,
+          termcapDefinitions.basicTermcap )
+
+    val result: result = divert(stdio)(block)
+    Capture(result, out.toString("UTF-8").nn.tt, err.toString("UTF-8").nn.tt)
+
   object MuteInputStream extends ji.InputStream:
     def read(): Int = -1
     override def read(array: scala.Array[Byte] | Null): Int = 0

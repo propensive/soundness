@@ -50,6 +50,34 @@ import scala.collection.mutable as scm
 
 object Tests extends Suite(m"Turbulence tests"):
   def run(): Unit =
+    suite(m"Stdio"):
+      test(m"a capture keeps what the JVM's streams were given, beside the result"):
+        Stdio.capture:
+          System.out.nn.print("shown")
+          System.err.nn.print("warned")
+          7
+      . assert(_ == Stdio.Capture(7, t"shown", t"warned"))
+
+      test(m"a diversion reaches what is printed through the system stdio"):
+        Stdio.capture:
+          import stdios.javaLangSystemStdio
+          import termcapDefinitions.basicTermcap
+          Out.print(t"routed")
+        . out
+      . assert(_ == t"routed")
+
+      test(m"the JVM's streams are restored after a diversion"):
+        val before = System.out
+        Stdio.capture(System.out.nn.print("gone"))
+        System.out.nn eq before.nn
+      . assert(_ == true)
+
+      test(m"the JVM's streams are restored when the block throws"):
+        val before = System.out
+        safely(Stdio.capture[Unit](throw Exception("boom")))
+        System.out.nn eq before.nn
+      . assert(_ == true)
+
 
     suite(m"Shredding"):
       given Seed = Seed(1L)

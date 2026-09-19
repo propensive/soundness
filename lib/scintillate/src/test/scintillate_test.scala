@@ -467,8 +467,12 @@ object Tests extends Suite(m"Scintillate tests"):
           server.cancel()
 
           val rate = (total/millis*1000).toLong
-          java.lang.System.out.nn.println:
-            t"Loopback: $total requests across $clients clients in ${millis.toLong}ms ($rate req/s)".s
+
+          // Through the system stdio, not `java.lang.System.out` directly, so a host running
+          // this suite in-process can catch the line and keep its display intact.
+          import stdios.javaLangSystemStdio
+          import termcapDefinitions.basicTermcap
+          Out.println(t"Loopback: $total requests across $clients clients in ${millis.toLong}ms ($rate req/s)")
 
           total
 
