@@ -35,6 +35,7 @@ package tasseomancy
 import soundness.*
 
 import strategies.throwUnsafely
+import denominative.dysasymptotics.{linearAccess, linearSize}
 
 // A minimal TrueType font, assembled the way phoenicia's own fixtures are: enough tables for the
 // character map and the horizontal metrics, which is all a width measurement reads.
@@ -194,6 +195,31 @@ object Tests extends Suite(m"Tasseomancy tests"):
         Calibration.linear(5.0, 9.0, true, decimal, false).lower
       . assert(_ == 0.0)
 
+      test(m"an exponential scale has a linear scale's range and gradations"):
+        val scale = Calibration.exponential(0.0, 97.0, false, decimal, 3.0)
+        (scale.lower, scale.upper, labels(scale, 5))
+      . assert(_ == (0.0, 100.0, List(t"0", t"20", t"40", t"60", t"80", t"100")))
+
+      test(m"an exponential scale's gradations spread out towards the top"):
+        val scale = Calibration.exponential(0.0, 100.0, false, decimal, 3.0)
+        val positions: List[Double] = scale.gradations(5).to[List].map(_.position)
+
+        // Each gap between neighbouring gradations is wider than the one before it.
+        def widening(rest: List[Double], gap: Double): Boolean = rest match
+          case a :: b :: tail => (b - a) > gap && widening(b :: tail, b - a)
+          case _              => true
+
+        (positions.prim.or(-1.0), positions.reverse.prim.or(-1.0), widening(positions, 0.0))
+      . assert(_ == (0.0, 1.0, true))
+
+      test(m"a value is placed exponentially along the axis"):
+        Calibration.exponential(0.0, 100.0, false, decimal, 3.0).unit(50.0)
+      . assert { unit => unit > 0.15 && unit < 0.2 }
+
+      test(m"the exponential policy is available as a calibration"):
+        Calibration[Double](Calibration.Policy.Exponential(2.0)).scale(0.0, 10.0, false, decimal).transform
+      . assert(_ == Scale.Transform.Exponential(2.0))
+
       test(m"a tight scale is exactly the data's extent"):
         val scale = Calibration.linear(5.0, 9.0, false, decimal, true)
         (scale.lower, scale.upper)
@@ -254,6 +280,37 @@ object Tests extends Suite(m"Tasseomancy tests"):
       test(m"a pie's total is the sum of its values"):
         Series(t"share")((t"a", 25.0), (t"b", 75.0)).chart(Pie()).fit.total
       . assert(_ == 100.0)
+
+    suite(m"Smoothing"):
+      test(m"a constant run is unchanged"):
+        Kalman.smooth(List(5.0, 5.0, 5.0, 5.0), 4.0)
+      . assert(_ == List(5.0, 5.0, 5.0, 5.0))
+
+      test(m"a single outlier is pulled towards its neighbours"):
+        val smoothed = Kalman.smooth(List(10.0, 10.0, 20.0, 10.0, 10.0), 4.0)
+        smoothed.at(Ter).or(0.0)
+      . assert { middle => middle < 20.0 && middle > 10.0 }
+
+      test(m"the smoother keeps the length and the order of its input"):
+        Kalman.smooth(List(1.0, 2.0, 3.0, 4.0, 5.0), 1.0).size
+      . assert(_ == 5)
+
+      test(m"a rising trend stays rising, within the data's range"):
+        val smoothed = Kalman.smooth(List(0.0, 10.0, 20.0, 30.0, 40.0), 2.0)
+
+        def rising(rest: List[Double]): Boolean = rest match
+          case a :: b :: tail => a < b && rising(b :: tail)
+          case _              => true
+
+        (rising(smoothed), smoothed.prim.or(-1.0) >= 0.0, smoothed.reverse.prim.or(99.0) <= 40.0)
+      . assert(_ == (true, true, true))
+
+      test(m"a smoothed line chart draws its markers at the measured points"):
+        given Chart.Standard = Chart.Standard(markers = true, smoothing = 4.0)
+        val series = Series(t"noisy")((0.0, 10.0), (1.0, 10.0), (2.0, 20.0), (3.0, 10.0), (4.0, 10.0))
+        val text = rendered(List(series).chart(Lines()))
+        occurrences(text, t"<circle")
+      . assert(_ == 5)
 
     suite(m"Drawing"):
       test(m"a chart's parts have stable identifiers"):

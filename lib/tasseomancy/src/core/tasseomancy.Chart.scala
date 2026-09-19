@@ -234,6 +234,7 @@ object Chart:
       strokeWidth:   Double         = 2.0,
       markerRadius:  Double         = 3.5,
       markers:       Boolean        = false,
+      smoothing:     Double         = 0.0,
       barGap:        Double         = 0.25,
       boxGap:        Double         = 0.25,
       hole:          Double         = 0.0 )

@@ -32,88 +32,91 @@
                                                                                                   */
 package tasseomancy
 
-import hypotenuse.*
+import murmuration.fold
 import prepositional.*
+import vacuous.*
 
-object Calibration:
-  // The no-import default for an axis of any type: a linear scale, padded outward to whole
-  // gradation steps, and anchored at zero when the chart kind asks for it. Any
-  // `import calibrations.…` outranks this, because a lexically-scoped given beats a companion
-  // one.
-  given linear: [value] => value is Calibration = Calibration(Policy.Linear)
+// A Kalman smoother for a run of measurements in order. The model is a constant velocity:
+// each value is the last plus its rate of change, both perturbed by process noise of unit
+// variance, and observed with measurement noise of variance `ratio`, so a larger ratio trusts
+// each measurement less and smooths more. The forward filter is followed by the
+// Rauch–Tung–Striebel backward pass, so the estimate at each point draws on the points after it
+// as well as those before, and a smoothed line follows a rise without lagging it and settles
+// on a plateau without overshooting.
+object Kalman:
+  // A two-by-two matrix and a two-vector, as tuples: the state is a value and its velocity.
+  private type Matrix = (Double, Double, Double, Double)
+  private type Vector = (Double, Double)
 
-  // The choices a calibration makes: linear or logarithmic positions (falling back to linear
-  // where a logarithm is undefined), adaptive between the two by the range's ratio, or linear
-  // over exactly the data's own extent.
-  enum Policy:
-    case Linear, Logarithmic, Adaptive, Tight
-    case Exponential(curvature: Double = Calibration.curvature)
+  private def multiply(m: Matrix, n: Matrix): Matrix =
+    ( m(0)*n(0) + m(1)*n(2), m(0)*n(1) + m(1)*n(3),
+      m(2)*n(0) + m(3)*n(2), m(2)*n(1) + m(3)*n(3) )
 
-  // The curvature of an exponential axis unless a policy gives one: the top of the axis is
-  // stretched about twenty times as much as the bottom.
-  val curvature: Double = 3.0
+  private def apply(m: Matrix, v: Vector): Vector = (m(0)*v(0) + m(1)*v(1), m(2)*v(0) + m(3)*v(1))
+  private def transpose(m: Matrix): Matrix = (m(0), m(2), m(1), m(3))
+  private def add(m: Matrix, n: Matrix): Matrix = (m(0) + n(0), m(1) + n(1), m(2) + n(2), m(3) + n(3))
 
-  def apply[value](policy: Policy): value is Calibration = new Calibration:
-    type Self = value
+  private def invert(m: Matrix): Matrix =
+    val determinant = m(0)*m(3) - m(1)*m(2)
+    if determinant == 0.0 then (0.0, 0.0, 0.0, 0.0)
+    else (m(3)/determinant, -m(1)/determinant, -m(2)/determinant, m(0)/determinant)
 
-    def scale(lower: Double, upper: Double, anchored: Boolean, notation: Scale.Notation): Scale =
-      policy match
-        case Policy.Linear      => Calibration.linear(lower, upper, anchored, notation, false)
-        case Policy.Tight       => Calibration.linear(lower, upper, anchored, notation, true)
-        case Policy.Logarithmic => Calibration.logarithmic(lower, upper, anchored, notation)
-        case Policy.Exponential(curvature) => Calibration.exponential(lower, upper, anchored, notation, curvature)
+  // The transition over one step, and the process noise of a unit white-noise acceleration.
+  private val transition: Matrix = (1.0, 1.0, 0.0, 1.0)
+  private val noise: Matrix = (0.25, 0.5, 0.5, 1.0)
 
-        case Policy.Adaptive =>
-          if lower > 0.0 && upper/lower >= 1000.0
-          then Calibration.logarithmic(lower, upper, anchored, notation)
-          else Calibration.linear(lower, upper, anchored, notation, false)
+  // One step of the forward filter: the estimate after the measurement, its covariance, and
+  // the prediction and its covariance from before it, which the backward pass needs.
+  private case class Step(estimate: Vector, covariance: Matrix, predicted: Vector, predictedCovariance: Matrix)
 
-  private[tasseomancy] def linear
-    ( lower0:   Double,
-      upper0:   Double,
-      anchored: Boolean,
-      notation: Scale.Notation,
-      tight:    Boolean )
-  :   Scale =
+  def smooth(values: List[Double], ratio: Double): List[Double] = values match
+    case Nil => Nil
 
-    val lower1 = if anchored && lower0 > 0.0 then 0.0 else lower0
-    val upper1 = if anchored && upper0 < 0.0 then 0.0 else upper0
+    case first :: rest =>
+      val initial: Step = Step((first, 0.0), (ratio, 0.0, 0.0, ratio), (first, 0.0), (ratio, 0.0, 0.0, ratio))
+      val start: List[Step] = List(initial)
 
-    if tight then Scale(lower1, upper1, Scale.Transform.Linear, notation) else
-      val span0 = upper1 - lower1
-      val span = if span0 > 0.0 then span0 else if upper1 != 0.0 then upper1.abs else 1.0
+      // Forward, latest first.
+      val forward: List[Step] =
+        rest.fold(start): (acc, measured) =>
+          acc match
+            case previous :: _ =>
+              val predicted = apply(transition, previous.estimate)
+              val predictedCovariance =
+                add(multiply(multiply(transition, previous.covariance), transpose(transition)), noise)
 
-      val step = notation.spacing match
-        case Scale.Spacing.Decimal     => Scale.step(span/5.0)
-        case Scale.Spacing.Sexagesimal => Scale.sexagesimalStep(span/5.0)
+              val innovation = predictedCovariance(0) + ratio
+              val gain: Vector = (predictedCovariance(0)/innovation, predictedCovariance(2)/innovation)
+              val residual = measured - predicted(0)
+              val estimate: Vector = (predicted(0) + gain(0)*residual, predicted(1) + gain(1)*residual)
 
-      val lower = (lower1/step + Scale.tolerance).floor*step
-      val upper = (upper1/step - Scale.tolerance).ceiling*step
-      val upper2 = if upper > lower then upper else lower + step
-      Scale(lower, upper2, Scale.Transform.Linear, notation)
+              val covariance: Matrix =
+                ( (1.0 - gain(0))*predictedCovariance(0), (1.0 - gain(0))*predictedCovariance(1),
+                  predictedCovariance(2) - gain(1)*predictedCovariance(0),
+                  predictedCovariance(3) - gain(1)*predictedCovariance(1) )
 
-  // An exponential axis has a linear axis's range — padded to whole gradations — with the
-  // exponential transform for its positions.
-  private[tasseomancy] def exponential
-    ( lower0: Double, upper0: Double, anchored: Boolean, notation: Scale.Notation, curvature: Double )
-  :   Scale =
+              Step(estimate, covariance, predicted, predictedCovariance) :: acc
 
-    linear(lower0, upper0, anchored, notation, false).copy(transform = Scale.Transform.Exponential(curvature))
+            case _ =>
+              acc
 
-  private[tasseomancy] def logarithmic
-    ( lower0: Double, upper0: Double, anchored: Boolean, notation: Scale.Notation )
-  :   Scale =
+      // Backward, from the latest: each estimate is corrected towards the smoothed estimate
+      // after it, through the gain that relates its covariance to the later prediction's.
+      forward match
+        case latest :: earlier =>
+          val begin: (List[Double], Vector, Step) = (List(latest.estimate(0)), latest.estimate, latest)
 
-    if lower0 <= 0.0 then linear(lower0, upper0, anchored, notation, false) else
-      val lower = 10.0 ** log10(lower0).double.floor
-      val upper = 10.0 ** log10(upper0).double.ceiling
-      val upper2 = if upper > lower then upper else lower*10.0
-      Scale(lower, upper2, Scale.Transform.Logarithmic, notation)
+          val smoothed: (List[Double], Vector, Step) =
+            earlier.fold(begin): (acc, step) =>
+              val later = acc(2)
+              val laterSmoothed = acc(1)
+              val gain = multiply(multiply(step.covariance, transpose(transition)), invert(later.predictedCovariance))
+              val difference: Vector = (laterSmoothed(0) - later.predicted(0), laterSmoothed(1) - later.predicted(1))
+              val correction = apply(gain, difference)
+              val estimate: Vector = (step.estimate(0) + correction(0), step.estimate(1) + correction(1))
+              (estimate(0) :: acc(0), estimate, step)
 
-// How the extent of the data becomes the range of an axis: whether positions are linear or
-// logarithmic, whether the range is padded out to whole gradations, and whether it must include
-// zero. Keyed on the type of the values on the axis, so that a scoped given for one type changes
-// one axis; the methods are independent of `Self`, so a calibration can also be passed explicitly
-// to a chart kind for one of its axes.
-trait Calibration extends Typeclass.Pure:
-  def scale(lower: Double, upper: Double, anchored: Boolean, notation: Scale.Notation): Scale
+          smoothed(0)
+
+        case _ =>
+          Nil
