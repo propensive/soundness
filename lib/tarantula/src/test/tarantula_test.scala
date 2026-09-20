@@ -45,7 +45,7 @@ import internetAccess.online
 import logging.silentLogging
 import environments.javaBaseEnvironment
 import probates.awaitProbate
-import stdios.fileDescriptorStdio
+import stdios.javaLangSystemStdio
 import systems.javaBaseSystem
 import termcaps.environmentTermcap
 import strategies.throwUnsafely

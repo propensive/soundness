@@ -2993,10 +2993,12 @@ object scintillate extends Library:
       super.scalacOptions().filterNot(Set("-Yexplicit-nulls", "-Yno-flexible-types"))
 
 object sedentary extends Library:
+  // `turbulence.stdio` for the one line a stress sweep prints, through the system stdio rather
+  // than `java.lang.System.err`, so a host can divert it.
   object core
   extends Component
     (superlunary.jvm, anthology.linker, diuretic.core, parasite.core, quantitative.units,
-     aperture.core):
+     aperture.core, turbulence.stdio):
     override def scalaJs = false // benchmarking via JVM-only `superlunary`/`anthology`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
