@@ -54,5 +54,7 @@ LICENSE
 # Test fixtures we don't track in git
 tests/JSONTestSuite
 
-# The pinned commit of propensive/.github runs the scripts around a build, not the build.
+# The pinned commit of propensive/.github runs the scripts around a build, not the build, and
+# etc/release configures the release rather than the build or the tests.
 etc/github-ref
+etc/release

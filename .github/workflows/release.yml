@@ -1,0 +1,27 @@
+name: Release
+
+# Cut a release by tagging, and nothing else:
+#
+#     git tag -s X.Y.Z && git push --tags
+#
+# Everything the release does lives in propensive/.github: the workflow called below, and
+# scripts/release.sh, which runs through etc/shared at the commit pinned in etc/github-ref.
+# What varies between repositories is declared in etc/release. The gates run before anything is
+# published — a signed tag, a green CI run on this very commit, released pins — and if a later
+# step fails, the release and the tag are both deleted from origin, so the retry is
+# `git tag -d X.Y.Z && git tag -s X.Y.Z && git push --tags`.
+#
+# The snapshot pre-release tags `make snapshot` creates (`snapshot-<hex>`) do not match the
+# filter below, and are unaffected.
+
+on:
+  push:
+    tags: ['[0-9]*.[0-9]*.[0-9]*']
+
+jobs:
+  release:
+    # The organisation default is read-only; a release writes assets and the release itself, and
+    # on failure deletes the tag that triggered it.
+    permissions:
+      contents: write
+    uses: propensive/.github/.github/workflows/scala-release.yml@main

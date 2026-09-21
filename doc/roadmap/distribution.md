@@ -28,8 +28,10 @@ Baseline: no changelog exists; release notes live in pull-request bodies (measur
 The release notes already written per pull request accumulate into a changelog, and the
 release script refuses to release without one.
 
-Done when: a changelog file exists, and `etc/ci/release.sh` fails when the version being
-released has no entry.
+Done when: a changelog file exists, and the release fails when the version being released
+has no entry. Partly done: `release_notes.py` (propensive/.github) assembles every release's
+**Changes** section from the body of each pull request merged since the previous tag, so the
+changelog is built rather than kept; nothing yet *refuses* a release for an empty one.
 
 ## dist-2: the migration convention
 
@@ -41,8 +43,8 @@ and how to verify it — and CI enforces that breaking-labelled pull requests ca
 in that format. Several tracks terminate here: it is what `api-6` flows through and what
 `tool-5` serves to agents.
 
-Done when: `doc/migration.md` defines the convention, `etc/ci/release.sh` refuses to tag
-without `doc/migration/<version>.md`, and a CI check fails any pull request that changes
+Done when: `doc/migration.md` defines the convention, the release refuses to run without
+`doc/migration/<version>.md` (it does — see `migration` in `etc/release`), and a CI check fails any pull request that changes
 `lib/**/src` without touching `doc/migration/pending.md`. The convention is not label-based:
 every material change records itself in `pending.md`, and the release renames the file.
 
