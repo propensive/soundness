@@ -75,9 +75,22 @@ push:
 	git push
 	git push origin refs/notes/ci-attestation
 
+# Releases are cut by tagging, not by make. There is no version to bump — `publishVersion` comes
+# from the tag — so the release PR is the one that renames doc/migration/pending.md to
+# doc/migration/<version>.md; merge that, then `git tag -s X.Y.Z && git push --tags`. The tag
+# fires .github/workflows/release.yml, which runs the shared release.sh in propensive/.github: it
+# gates on a signed tag, on CI already being green on that commit (which verifies the attestation
+# note), on the migration notes being finalised, on groupCheck, and on every pin being a release;
+# then drafts the release, uploads six hundred jars in batches, checks every digest, and
+# publishes. If anything fails, the release and the tag are both deleted. See etc/release. This
+# target survives only to say so.
 release:
-	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=X.Y.Z" >&2; exit 1; fi
-	./etc/ci/release.sh "$(VERSION)"
+	@echo "Releases are triggered by tags, not by make. Merge the migration-notes rename, then:" >&2
+	@echo "" >&2
+	@echo "    git tag -s X.Y.Z && git push --tags" >&2
+	@echo "" >&2
+	@echo "See propensive/.github." >&2
+	@exit 1
 
 # Install every library pinned in etc/refs (none: Soundness depends on nothing propensive) and
 # the jars of every tool pinned in etc/tools (the flair compiler plugin) into the local ivy

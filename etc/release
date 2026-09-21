@@ -1,0 +1,30 @@
+# What this repository's release needs that another's does not. See propensive/.github, which
+# holds the workflow and the script; a release is cut by `git tag -s X.Y.Z && git push --tags`.
+#
+# Soundness declares no `val soundnessVersion`: `publishVersion` is driven entirely by
+# SOUNDNESS_RELEASE_VERSION, which release.sh exports from the tag, so there is no pin to agree
+# with and no version to bump before tagging.
+
+name       soundness
+title      Soundness
+
+# The JVM surface first, then Scala.js, before `release.stage` runs. `release.stage` alone starts
+# the JVM, Scala.js and Native compilers of the root module simultaneously on a cold daemon, and
+# those three race on dotty's JVM-global jar-lookup cache: one can see a partial view of the
+# standard library and fail capture checking on a module that compiles cleanly a moment later.
+# Compiling the aggregates first leaves the caches warm before anything runs concurrently.
+build      soundness.all.compile soundness.js.compile
+
+# Every released module must resolve to the tag before anything leaves the machine. Both compiler
+# plugins (which shipped a stale 0.63.0 inside the 0.64.0 release), plus a component and its
+# crosses; the environment makes all modules resolve identically, so a few suffice.
+probes     beneficence.plugin larceny.plugin rudiments.core rudiments.core.js rudiments.core.native
+
+# The migration notes must be finalised: the release PR renames pending.md to <version>.md, and
+# the first change after the release starts a new pending.md. A surviving pending.md means that
+# PR has not merged, so the tag names a commit whose notes are still unreleased.
+migration  doc/migration
+
+# The trust boundary is the signed attestation note on refs/notes/ci-attestation, not the runner.
+verify     ./mill groupCheck.validate
+verify     ./etc/ci/verify-attest.sh

@@ -117,8 +117,8 @@ A representative entry:
    invalidate the PR's attestation.
 3. On release, the release PR renames `doc/migration/pending.md` to
    `doc/migration/<version>.md` (`git mv`) and does **not** create a new `pending.md`.
-   `etc/ci/release.sh` refuses to tag while `pending.md` exists or `<version>.md` is missing,
-   so this PR must merge before the release is cut. The first PR after the release creates a
+   The release refuses to run while `pending.md` exists or `<version>.md` is missing, so this
+   PR must merge before the tag is pushed. The first PR after the release creates a
    fresh `pending.md` with a header naming the version it follows.
 4. Reviewing a PR includes checking that `pending.md` covers every observable change the diff
    makes.
@@ -145,8 +145,8 @@ dependency of Soundness, none of the three could be released first).
    pin bumped to that release. `make sync-deps` installs the plugin's jars (and repairs a jar
    whose digest differs); `make tools` installs the commands. Run `make sync-deps` after
    editing either file.
-2. `etc/ci/release.sh` runs `deps.py check`, which confirms every pin in `etc/refs` is a
-   published release, transitively, and every tool in `etc/tools` a published release.
+2. The release runs `deps.py check`, which confirms every pin in `etc/refs` is a published
+   release, transitively, and every tool in `etc/tools` a published release.
 3. `make snapshot` publishes *this* commit's jars (all six hundred, at `<next minor>-<hex>`)
    for Pyrocosm to pin in its `etc/refs` when a Pyrocosm PR needs an unreleased Soundness. It
    needs a clean checkout of a commit already on GitHub, and a full build: the same build
@@ -158,3 +158,35 @@ dependency of Soundness, none of the three could be released first).
 
 The whole flow, and the scripts, are documented in the README of
 [propensive/.github](https://github.com/propensive/.github).
+
+## Releasing
+
+A release is cut by tagging, and by nothing else:
+
+```sh
+git tag -s X.Y.Z && git push --tags
+```
+
+There is no version to bump: `publishVersion` is driven from the tag through
+`SOUNDNESS_RELEASE_VERSION`. What must merge first is the pull request that renames
+`doc/migration/pending.md` to `doc/migration/<version>.md` (above). The tag then fires
+`.github/workflows/release.yml`, which runs the shared `release.sh` in propensive/.github.
+Never publish by hand, and never create a release or upload an asset with `gh`.
+
+It gates before anything is published: the tag must be signed and verified by GitHub; CI must
+*already* be green on that exact commit — which is what verifies the attestation note, so the
+trust boundary is unchanged, the runner only checks a signature it could not have produced;
+the migration notes must be finalised; `groupCheck.validate` and `verify-attest.sh` must pass;
+and `deps.py check` must find every pin a published release. Only then are the six hundred jars
+staged, uploaded into a draft in batches, checked digest by digest, and the draft published. If
+a later step fails, the release **and** the tag are deleted from origin, so the retry is
+`git tag -d X.Y.Z && git tag -s X.Y.Z && git push --tags`.
+
+What this repository needs beyond the common path — the two-step JVM-then-Scala.js compile, the
+`publishVersion` probes, the migration directory, the two gate commands — is declared in
+`etc/release`, which `.dockerignore` keeps out of the CI input set, as it does `etc/github-ref`:
+it configures the release, not the build. The release notes are generated: the **Changes**
+section is built from the body of every pull request merged since the previous tag, which is
+what `pull_request_template.md` asks each PR for, and a **Migration** section links
+`doc/migration/<version>.md`. A hand-written overview can be added as `doc/notes/<version>.md`,
+which is optional and ungated.
