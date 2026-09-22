@@ -43,8 +43,8 @@ import vacuous.*
 // property byte encodes the dictionary size), the LZMA2 payload, four-byte-aligned padding, and the
 // integrity check over the block's uncompressed data. Sizes are LEB128 variable-length integers.
 //
-// Decoding buffers the whole compressed stream, then walks the blocks. Only the single-LZMA2-filter
-// chain is understood; delta/BCJ filters and multi-filter chains are rejected.
+// Decoding is streamed by `XzDecompressorEngine`, which parses the framing from here as it
+// arrives and feeds each block's payload to an `Lzma2Decompressor` incrementally.
 private[pneumatic] object XzContainer:
   val magic: Array[Byte]^{} =
     Array.unsafeFrozen:
@@ -68,96 +68,59 @@ private[pneumatic] object XzContainer:
 
     (result, pos)
 
-  // Decode a complete `.xz` stream, appending its uncompressed bytes to `sink`.
-  def decode(buffer: scala.Array[Byte], sink: ByteSink^): Unit =
-    if buffer.length < 12 then
-      throw IllegalStateException("the XZ data is corrupt: truncated header")
-
+  // Validates the 12-byte stream header at `pos` and returns its check type.
+  def streamCheckType(buffer: scala.Array[Byte], pos: Int): Int =
     var i = 0
 
     while i < 6 do
-      if buffer(i) != magic.readUnchecked(i) then
+      if buffer(pos + i) != magic.readUnchecked(i) then
         throw IllegalStateException("the data is not in XZ format: bad magic bytes")
 
       i += 1
 
-    if buffer(6) != 0 then throw IllegalStateException("the XZ data is corrupt: reserved flag set")
-    val checkType = buffer(7) & 0xff
-    val checkSize = XzCheck.size(checkType)
+    if buffer(pos + 6) != 0 then
+      throw IllegalStateException("the XZ data is corrupt: reserved flag set")
 
-    var pos = 12
+    buffer(pos + 7) & 0xff
 
-    while pos < buffer.length && (buffer(pos) & 0xff) != IndexIndicator do
-      val headerSizeByte = buffer(pos) & 0xff
-      val headerSize = (headerSizeByte + 1)*4
-      val flags = buffer(pos + 1) & 0xff
-      val filterCount = (flags & 0x03) + 1
-      val compressedSizePresent = (flags & 0x40) != 0
-      val uncompressedSizePresent = (flags & 0x80) != 0
+  // Parses the block header at `pos` (whose size the caller has already read from its first
+  // byte) and returns the LZMA2 dictionary size its single filter names. Only the
+  // single-LZMA2-filter chain is understood; delta/BCJ filters and multi-filter chains are
+  // rejected.
+  def blockDictSize(buffer: scala.Array[Byte], pos: Int): Int =
+    val flags = buffer(pos + 1) & 0xff
+    val filterCount = (flags & 0x03) + 1
+    val compressedSizePresent = (flags & 0x40) != 0
+    val uncompressedSizePresent = (flags & 0x80) != 0
 
-      if (flags & 0x3c) != 0 then
-        throw IllegalStateException("the XZ data is corrupt: reserved block flags set")
+    if (flags & 0x3c) != 0 then
+      throw IllegalStateException("the XZ data is corrupt: reserved block flags set")
 
-      var cursor = pos + 2
-      if compressedSizePresent then cursor = readVli(buffer, cursor)(1)
-      if uncompressedSizePresent then cursor = readVli(buffer, cursor)(1)
+    var cursor = pos + 2
+    if compressedSizePresent then cursor = readVli(buffer, cursor)(1)
+    if uncompressedSizePresent then cursor = readVli(buffer, cursor)(1)
 
-      var dictSizeByte = -1
-      var filter = 0
+    var dictSizeByte = -1
+    var filter = 0
 
-      while filter < filterCount do
-        val (filterId, afterId) = readVli(buffer, cursor)
-        val (propsSize, afterProps) = readVli(buffer, afterId)
+    while filter < filterCount do
+      val (filterId, afterId) = readVli(buffer, cursor)
+      val (propsSize, afterProps) = readVli(buffer, afterId)
 
-        if filterId != Lzma2FilterId then
-          throw IllegalStateException("this XZ stream uses an unsupported filter")
+      if filterId != Lzma2FilterId then
+        throw IllegalStateException("this XZ stream uses an unsupported filter")
 
-        if propsSize != 1L then
-          throw IllegalStateException("the XZ data is corrupt: bad LZMA2 properties size")
+      if propsSize != 1L then
+        throw IllegalStateException("the XZ data is corrupt: bad LZMA2 properties size")
 
-        dictSizeByte = buffer(afterProps) & 0xff
-        cursor = afterProps + 1
-        filter += 1
+      dictSizeByte = buffer(afterProps) & 0xff
+      cursor = afterProps + 1
+      filter += 1
 
-      if dictSizeByte < 0 then
-        throw IllegalStateException("the XZ data is corrupt: missing LZMA2 filter")
+    if dictSizeByte < 0 then
+      throw IllegalStateException("the XZ data is corrupt: missing LZMA2 filter")
 
-      val blockDataStart = pos + headerSize
-      val dictSize = Lzma2Options.byteToDictSize(dictSizeByte)
-
-      val decompressor: Lzma2Decompressor^ = Lzma2Decompressor(dictSize)
-      // `buffer` reaches `decode` from `BufferedEngine.transform`, which builds it fresh from
-      // its accumulated input, so nothing else holds it.
-      decompressor.accept
-       ( Array.unsafeFrozen(buffer), blockDataStart, buffer.length - blockDataStart )
-      decompressor.finish()
-
-      if !decompressor.ended then
-        throw IllegalStateException("the XZ data is corrupt: block did not terminate")
-
-      val produced = decompressor.produced
-      sink.append(decompressor.output, 0, produced)
-      val compressedLength = decompressor.consumed
-      val padding = (-compressedLength) & 3
-      val checkStart = blockDataStart + compressedLength + padding
-
-      // Verify the block's integrity check over its uncompressed output, read straight from the
-      // decompressor's (pure, untracked) output array.
-      if checkSize > 0 then
-        val checker: XzChecker^ = XzCheck.checker(checkType)
-        checker.absorb(decompressor.output, 0, produced)
-        val expected: scala.Array[Byte]^ = checker.bytes
-        var c = 0
-
-        while c < checkSize do
-          if buffer(checkStart + c) != expected(c) then
-            throw IllegalStateException("the XZ data is corrupt: integrity check failed")
-
-          c += 1
-
-      pos = checkStart + checkSize
-
-    // The index and stream footer that follow are not needed to reproduce the payload.
+    Lzma2Options.byteToDictSize(dictSizeByte)
 
   private def crc32Bytes(bytes: scala.Array[Byte], offset: Int, length: Int): scala.Array[Byte] =
     val crc = Crc32()

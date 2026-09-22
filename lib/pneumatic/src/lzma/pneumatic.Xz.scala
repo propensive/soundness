@@ -141,13 +141,159 @@ private[pneumatic] final class XzCompressorEngine(preset: Int, checkType: Int) e
       emitSegment()
       emit(XzContainer.indexAndFooter(records, checkType))
 
-// The `.xz` container decoder.
-private[pneumatic] final class XzDecompressorEngine extends BufferedEngine:
-  protected def transform(bytes: scala.Array[Byte]): scala.Array[Byte] =
-    // Sized on the assumption of a modest ratio, capped: doubling covers the rest.
-    val out: ByteSink^ = ByteSink((bytes.length.toLong*4).min(1L << 24).toInt)
-    XzContainer.decode(bytes, out)
-    out.take()
+private enum XzPhase:
+  case StreamHeader, BlockHeader, BlockData, BlockCheck, Index
+
+// The `.xz` container decoder, streaming: framing is parsed from the compressed bytes as they
+// arrive, and each block's LZMA2 payload is fed to an `Lzma2Decompressor` incrementally, whose
+// output is checksummed and moved to `pending` as it is produced. Working memory is therefore a
+// dictionary plus whatever one `accept` decodes, not the whole stream — and the decoded bytes are
+// copied once, not staged whole and copied again. Offsets are stream-absolute (`Long`), with
+// `base` the stream offset of `buffer(0)`; parsed bytes are compacted away on each `accept`.
+private[pneumatic] final class XzDecompressorEngine extends XzEngine:
+  private var buffer: scala.Array[Byte]^ = new scala.Array[Byte](1 << 16)
+  private var end = 0
+  private var base = 0L
+  private var cursor = 0L         // the next byte to parse
+  private var fed = 0L            // the block decoder has been fed up to here
+  private var blockDataStart = 0L
+  private var phase = XzPhase.StreamHeader
+  private var checkType = 0
+  private var checkSize = 0
+  private var finished = false
+
+  // Replaced per block; the placeholders decode nothing.
+  private var decompressor: Lzma2Decompressor^ = Lzma2Decompressor(0)
+  private var checker: XzChecker^ = NoChecker()
+
+  private def available: Int = end - (cursor - base).toInt
+  private def at(offset: Long): Int = buffer((offset - base).toInt) & 0xff
+
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+    // Everything before `cursor` has been parsed or consumed by the block decoder.
+    val drop = (cursor - base).toInt
+
+    if drop > 0 then
+      System.arraycopy(buffer, drop, buffer, 0, end - drop)
+      end -= drop
+      base += drop
+
+    if end + length > buffer.length then
+      var size = buffer.length*2
+      while size < end + length do size *= 2
+      val grown: scala.Array[Byte]^ = new scala.Array[Byte](size)
+      System.arraycopy(buffer, 0, grown, 0, end)
+      buffer = grown
+
+    System.arraycopy(bytes.asInstanceOf[scala.Array[Byte]], offset, buffer, end, length)
+    end += length
+    process()
+
+  private update def process(): Unit =
+    var progressing = true
+
+    while progressing do
+      progressing = false
+
+      phase match
+        case XzPhase.StreamHeader =>
+          if available >= 12 then
+            checkType = XzContainer.streamCheckType(buffer, (cursor - base).toInt)
+            checkSize = XzCheck.size(checkType)
+            cursor += 12
+            phase = XzPhase.BlockHeader
+            progressing = true
+
+        case XzPhase.BlockHeader =>
+          if available >= 1 then
+            val first = at(cursor)
+
+            if first == XzContainer.IndexIndicator then phase = XzPhase.Index
+            else
+              val headerSize = (first + 1)*4
+
+              if available >= headerSize then
+                val dictSize = XzContainer.blockDictSize(buffer, (cursor - base).toInt)
+                decompressor = Lzma2Decompressor(dictSize)
+                checker = XzCheck.checker(checkType)
+                cursor += headerSize
+                blockDataStart = cursor
+                fed = cursor
+                phase = XzPhase.BlockData
+                progressing = true
+
+        case XzPhase.BlockData =>
+          val fresh = (base + end - fed).toInt
+
+          if fresh > 0 then
+            // The decoder retains what it does not consume, so it is fed each byte once; the
+            // buffer is read-only to it, hence the frozen view.
+            decompressor.accept(Array.unsafeFrozen(buffer), (fed - base).toInt, fresh)
+            fed += fresh
+            val produced = decompressor.produced
+
+            if produced > 0 then
+              if checkSize > 0 then checker.absorb(decompressor.output, 0, produced)
+              pending.append(decompressor.output, 0, produced)
+              decompressor.resetOutput()
+
+          cursor = blockDataStart + decompressor.consumed
+
+          if decompressor.ended then
+            cursor += (-decompressor.consumed) & 3 // four-byte alignment padding
+            phase = XzPhase.BlockCheck
+            progressing = true
+
+        case XzPhase.BlockCheck =>
+          if available >= checkSize then
+            if checkSize > 0 then
+              val expected: scala.Array[Byte]^ = checker.bytes
+              var c = 0
+
+              while c < checkSize do
+                if at(cursor + c) != (expected(c) & 0xff) then
+                  throw IllegalStateException("the XZ data is corrupt: integrity check failed")
+
+                c += 1
+
+            cursor += checkSize
+            phase = XzPhase.BlockHeader
+            progressing = true
+
+        // The index and stream footer that follow are not needed to reproduce the payload.
+        case XzPhase.Index => ()
+
+  update def finish(): Unit =
+    if !finished then
+      finished = true
+
+      if phase == XzPhase.BlockData then
+        decompressor.finish()
+        val produced = decompressor.produced
+
+        if produced > 0 then
+          if checkSize > 0 then checker.absorb(decompressor.output, 0, produced)
+          pending.append(decompressor.output, 0, produced)
+          decompressor.resetOutput()
+
+        if !decompressor.ended then
+          throw IllegalStateException("the XZ data is corrupt: block did not terminate")
+
+        cursor = blockDataStart + decompressor.consumed + ((-decompressor.consumed) & 3)
+        phase = XzPhase.BlockCheck
+        process()
+
+      phase match
+        case XzPhase.StreamHeader =>
+          throw IllegalStateException("the XZ data is corrupt: truncated header")
+
+        case XzPhase.BlockCheck | XzPhase.BlockData =>
+          throw IllegalStateException("the XZ data is corrupt: truncated")
+
+        case XzPhase.BlockHeader =>
+          if available > 0 then throw IllegalStateException("the XZ data is corrupt: truncated")
+
+        case XzPhase.Index => ()
 
 // The container-free raw-LZMA2 encoder.
 private[pneumatic] final class Lzma2CompressorEngine(preset: Int) extends BufferedEngine:
