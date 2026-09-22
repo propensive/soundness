@@ -85,12 +85,17 @@ object Launcher:
                             |  description
                             |      A new invocation: the connection then carries the client's
                             |      stdin to the daemon and the daemon's stdout to the client.
+                            |      The three tty flags say which of the client's streams are
+                            |      attached to a terminal; the daemon sees only sockets and
+                            |      cannot determine this for itself.
                             |  field pid String required
                             |  field uid String required
                             |  field username String required
                             |  field script String required
                             |  field pwd String required
-                            |  field tty Flag optional
+                            |  field stdin-tty Flag optional
+                            |  field stdout-tty Flag optional
+                            |  field stderr-tty Flag optional
                             |  field argument String optional repeatable
                             |  field environment String optional repeatable
                             |
@@ -147,7 +152,9 @@ object Launcher:
         username:    Text,
         script:      Text,
         pwd:         Text,
-        tty:         Boolean,
+        stdinTty:    Boolean,
+        stdoutTty:   Boolean,
+        stderrTty:   Boolean,
         arguments:   List[Text],
         environment: List[Text] )
 
@@ -192,16 +199,19 @@ object Launcher:
       ( Unset, schema.document, Array(Tel.Element.Node(variant, record(name), children)) )
 
   private def element(message: Message): Tel.Element = message match
-    case Message.Init(pid, uid, username, script, pwd, tty, arguments, environment) =>
+    case Message.Init(pid, uid, username, script, pwd, stdinTty, stdoutTty, stderrTty,
+                      arguments, environment) =>
       val children = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       children += value(0, pid.show)
       children += value(1, uid.show)
       children += value(2, username)
       children += value(3, script)
       children += value(4, pwd)
-      if tty then children += flag(5)
-      arguments.each { argument => children += value(6, argument) }
-      environment.each { variable => children += value(7, variable) }
+      if stdinTty then children += flag(5)
+      if stdoutTty then children += flag(6)
+      if stderrTty then children += flag(7)
+      arguments.each { argument => children += value(8, argument) }
+      environment.each { variable => children += value(9, variable) }
       node(Variant.init, t"Init", Array.from(children))
 
     case Message.Stderr(pid)       => node(Variant.stderr, t"Stderr", Array(value(0, pid.show)))
@@ -264,7 +274,8 @@ object Launcher:
         index.or(-1) match
           case Variant.init =>
             Message.Init
-              ( int(0), int(1), text(2), text(3), text(4), flag(5), texts(6), texts(7) )
+              ( int(0), int(1), text(2), text(3), text(4), flag(5), flag(6), flag(7),
+                texts(8), texts(9) )
 
           case Variant.stderr     => Message.Stderr(int(0))
           case Variant.control    => Message.Control(int(0))

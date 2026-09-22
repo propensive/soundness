@@ -52,7 +52,9 @@ import vacuous.*
 case class DaemonService[bus <: Matchable]
   ( pid:        Pid,
     shutdown:   () => Unit,
-    cliInput:   Stdin,
+    cliInput:   Terminus,
+    cliOutput:  Terminus,
+    cliError:   Terminus,
     executable: Path on Local,
     deliver:    bus => Unit,
     bus:        Chain[bus],
@@ -69,7 +71,7 @@ extends Entrypoint, caps.ExclusiveCapability:
   // silently ineffective (leaving today's raw-mode behaviour) if the launcher is too old to
   // offer a control channel.
   def cooked[result](block: => result): result =
-    if cliInput != Stdin.Terminal then block else
+    if cliInput != Terminus.Terminal then block else
       setMode(Tty.Canonical)
       try block finally setMode(Tty.Raw)
 

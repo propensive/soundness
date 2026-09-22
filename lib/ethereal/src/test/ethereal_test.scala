@@ -889,7 +889,7 @@ object Tests extends Suite(m"Ethereal Tests"):
         // The wire contract shared with the Rust runner: `bintel.rs` pins the same
         // signature and frames, so the two implementations cannot drift apart silently.
         val signatureHex =
-          t"4701ec19cd0fd3ecfc0e1b8a6525b4edc3a3b1deda370f681986db9aa39c1da692"
+          t"eeced165c15f73119cf7710812671924aa558722927d29f37538e7b3953296c2ce"
 
         def hex(data: Data): Text = Text(data.readable.map(b => f"${b & 0xff}%02x").mkString)
 
@@ -909,13 +909,17 @@ object Tests extends Suite(m"Ethereal Tests"):
           hex(Launcher.encode(Launcher.Message.Mode(true)))
         . check(_ == t"b2c4b5bb2621${signatureHex}01080100")
 
+        // stdout deliberately not a terminal while stdin and stderr are: `command > file`
+        // run from a terminal. An all-true fixture would not catch the three flags being
+        // written in the wrong order or under the wrong indices.
         val init =
           Launcher.Message.Init
-            ( 7, 501, t"jon", t"/usr/bin/x", t"/tmp", true, List(t"a", t"b c"), List(t"K=V") )
+            ( 7, 501, t"jon", t"/usr/bin/x", t"/tmp", true, false, true, List(t"a", t"b c"),
+              List(t"K=V") )
 
         test(m"an init message frames as the pinned bytes"):
           hex(Launcher.encode(init))
-        . check(_ == t"b2c4b5bb5221${signatureHex}010009000137010335303102036a6f6e030a2f7573722f62696e2f7804042f746d7005060161060362206307034b3d56")
+        . check(_ == t"b2c4b5bb5321${signatureHex}01000a000137010335303102036a6f6e030a2f7573722f62696e2f7804042f746d700507080161080362206309034b3d56")
 
         test(m"every message round-trips"):
           val messages: List[Launcher.Message] =

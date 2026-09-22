@@ -297,10 +297,18 @@ def cli[bus <: Matchable](using executive: Executive)
         Log.warn(DaemonLogEvent.UnrecognizedMessage)
         connection.close()
 
-      case Launcher.Message.Init(pid0, uid, username, script, directory, tty, textArguments, env) =>
+      case Launcher.Message.Init(pid0, uid, username, script, directory, stdinTty, stdoutTty,
+                                 stderrTty, textArguments, env) =>
         val pid = Pid(pid0)
         val login = Login(username, uid)
-        val shellInput: Stdin = if tty then Stdin.Terminal else Stdin.Pipe
+
+        // Each stream is reported separately by the launcher, and they genuinely differ:
+        // `command > file` run from a terminal has stdin on the terminal and stdout on a
+        // file. This is the only place the daemon can learn it.
+        def terminus(tty: Boolean): Terminus = if tty then Terminus.Terminal else Terminus.Pipe
+        val shellInput = terminus(stdinTty)
+        val shellOutput = terminus(stdoutTty)
+        val shellError = terminus(stderrTty)
         Log.fine(DaemonLogEvent.Init(pid))
         val clientState = client(pid)
         clientState.socket.fulfill(connection)
@@ -384,6 +392,8 @@ def cli[bus <: Matchable](using executive: Executive)
              ( pid,
                () => shutdown(pid),
                shellInput,
+               shellOutput,
+               shellError,
                script.as[Path on Local],
                deliver(pid, _),
                clientState.bus.chain,
