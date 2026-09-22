@@ -105,6 +105,39 @@ object Tests extends Suite(m"Corpuscular tests"):
         Crc64().value
       . assert(_ == 0L)
 
+      // The sliced eight-byte path must agree with the bytewise definition on every alignment,
+      // so a 1000-byte input is checked whole and in every prefix length under sixteen.
+      test(m"The sliced path agrees with the bytewise definition"):
+        val bytes: Data = Data.fill(1000)(i => ((i*131 + (i >> 3)) & 0xff).toByte)
+
+        def bytewise(length: Int): Long =
+          var c = -1L
+          var i = 0
+
+          while i < length do
+            c = Crc64.table.readable(((c ^ bytes.readable(i)) & 0xff).toInt) ^ (c >>> 8)
+            i += 1
+
+          ~c
+
+        def sliced(length: Int): Long =
+          val crc = Crc64()
+          crc.update(bytes.unsafeMutable(using Unsafe), 0, length)
+          crc.value
+
+        (0 to 16).forall(n => sliced(n) == bytewise(n)) && sliced(1000) == bytewise(1000)
+      . assert(_ == true)
+
+      test(m"Segmented updates accumulate as one stream"):
+        val bytes: Data = Data.fill(1000)(i => ((i*131 + (i >> 3)) & 0xff).toByte)
+        val whole = Crc64()
+        whole.update(bytes.unsafeMutable(using Unsafe), 0, 1000)
+        val parts = Crc64()
+        parts.update(bytes.unsafeMutable(using Unsafe), 0, 13)
+        parts.update(bytes.unsafeMutable(using Unsafe), 13, 987)
+        parts.value == whole.value
+      . assert(_ == true)
+
     suite(m"Adler-32"):
       test(m"The empty input checksums to one"):
         Adler32().value

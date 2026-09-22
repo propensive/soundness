@@ -115,6 +115,13 @@ object Benchmarks extends Suite(m"Pneumatic benchmarks: XZ, LZMA2, LZW, Gzip and
   lazy val xzPattern: Data = pattern.stream.compress[Xz].memoize
   lazy val xzPatternArray: scala.Array[Byte] = xzPattern.asInstanceOf[scala.Array[Byte]]
   lazy val xzText: Data = text.stream.compress[Xz].memoize
+
+  // The pattern corpus as an `.xz` stream with no integrity check, isolating the container
+  // framing and the LZMA2 decode from the CRC-64 pass the default stream also verifies.
+  lazy val xzPatternUnchecked: Data =
+    val chunks = Xz.drive(XzCompressorEngine(Xz.DefaultPreset, XzCheck.None), Chain(pattern))
+    Array.from(chunks.stdlib.map(_.readable).flatten)
+
   lazy val xzTextArray: scala.Array[Byte] = xzText.asInstanceOf[scala.Array[Byte]]
   lazy val lzma2Pattern: Data = pattern.stream.compress[Lzma2].memoize
   lazy val lzma2Text: Data = text.stream.compress[Lzma2].memoize
@@ -163,7 +170,7 @@ object Benchmarks extends Suite(m"Pneumatic benchmarks: XZ, LZMA2, LZW, Gzip and
     val textSize = text.length*Byte
 
     // Force the corpora and their compressed forms outside the timed regions.
-    xzPattern; xzText; lzma2Pattern; lzma2Text; lzwPattern; lzwText
+    xzPattern; xzText; xzPatternUnchecked; lzma2Pattern; lzma2Text; lzwPattern; lzwText
     gzipPattern; gzipText; brotliPattern; brotliText
 
     suite(m"XZ compression (4 MB pattern)"):
@@ -186,6 +193,10 @@ object Benchmarks extends Suite(m"Pneumatic benchmarks: XZ, LZMA2, LZW, Gzip and
 
       bench(m"xz-java  XZInputStream")(target = 2*Second, operationSize = patternSize):
         '{ pneumatic.Benchmarks.xzJavaDecompress(pneumatic.Benchmarks.xzPatternArray) }
+
+      bench(m"Soundness  Stream.decompress[Xz], no check")
+        ( target = 2*Second, operationSize = patternSize ):
+        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.xzPatternUnchecked.stream.decompress[Xz]) }
 
     suite(m"XZ decompression (4 MB text)"):
       bench(m"Soundness  Stream.decompress[Xz]")(target = 2*Second, operationSize = textSize):
