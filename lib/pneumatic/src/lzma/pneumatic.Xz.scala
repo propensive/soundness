@@ -55,61 +55,37 @@ import zephyrine.*
 // `Lzma2` (in `pneumatic.Lzma2.scala`) is the container-free counterpart, exposing the same LZMA2
 // codec without the `.xz` framing — analogous to raw `Deflate` beside `Gzip`/`Zlib`.
 
-// The output-draining half of an engine: mirrors `BrotliEngine`, staging bytes in `pending` and
-// handing them out in whatever space each `deliver` offers.
+// The output-draining half of an engine: mirrors `BrotliEngine`, staging bytes flat in `pending`
+// (a `ByteSink`) and handing them out in whatever space each `deliver` offers.
 private[pneumatic] trait XzEngine extends caps.Mutable:
-  protected val pending: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
-  private var delivered: Int = 0
+  protected val pending: ByteSink^ = ByteSink()
 
   update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
   update def finish(): Unit
 
   update def deliver(target: scala.Array[Byte]^, offset: Int, space: Int): Int =
-    var produced = 0
+    pending.drainInto(target, offset, space)
 
-    while delivered < pending.length && produced < space do
-      target(offset + produced) = pending(delivered)
-      delivered += 1
-      produced += 1
-
-    if delivered == pending.length then
-      pending.clear()
-      delivered = 0
-
-    produced
-
-  update def gather(): Data =
-    val result = Array.allocate[Byte](pending.length - delivered)
-    var i = 0
-
-    while delivered < pending.length do
-      result(i) = pending(delivered)
-      i += 1
-      delivered += 1
-
-    pending.clear()
-    delivered = 0
-    Array.freeze(result)
+  update def gather(): Data = Array.unsafeFrozen(pending.take())
 
 // Accumulates the whole input, then applies a one-shot byte transform (encode or container-decode).
 // The transform is a method (not a stored function value) so the engine carries no capability
 // capture, per this module's capture-checked discipline.
 private[pneumatic] abstract class BufferedEngine extends XzEngine:
-  private val input: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+  private val input: ByteSink^ = ByteSink()
   private var finished = false
 
   protected def transform(bytes: scala.Array[Byte]): scala.Array[Byte]
 
   update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
-    var i = 0
-    while i < length do { input += bytes.readUnchecked(offset + i); i += 1 }
+    input.append(Array.unsafeJvm(bytes), offset, length)
 
   update def finish(): Unit =
     if !finished then
       finished = true
-      val output = transform(input.toArray)
-      var i = 0
-      while i < output.length do { pending += output(i); i += 1 }
+      // `take()` yields a fresh exact-size array, which nothing else holds: the transform owns it.
+      val output = transform(input.take())
+      pending.append(output, 0, output.length)
 
 // The `.xz` container encoder, streaming with bounded memory: it buffers at most one dictionary's
 // worth of input, emits that as a complete block as soon as it fills, and closes with the index and
@@ -119,22 +95,24 @@ private[pneumatic] abstract class BufferedEngine extends XzEngine:
 private[pneumatic] final class XzCompressorEngine(preset: Int, checkType: Int) extends XzEngine:
   private val options = Lzma2Options.preset(preset)
   private val segmentSize = options.dictSize
-  private val segment: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+  private val segment: ByteSink^ =
+    ByteSink(if segmentSize < (1 << 20) then segmentSize else 1 << 20)
+
   private val records: scm.ArrayBuffer[(Long, Long)] = scm.ArrayBuffer()
   private var headerEmitted = false
   private var finished = false
 
-  private def emit(bytes: scala.Array[Byte]): Unit =
-    var i = 0
-    while i < bytes.length do { pending += bytes(i); i += 1 }
+  private update def emit(bytes: scala.Array[Byte]): Unit = pending.append(bytes, 0, bytes.length)
 
   private update def ensureHeader(): Unit =
     if !headerEmitted then
       emit(XzContainer.streamHeader(checkType))
       headerEmitted = true
 
-  private def emitSegment(): Unit =
-    if segment.nonEmpty then
+  // `toArray` then `clear()` rather than `take()`, so the segment keeps its capacity for the next
+  // block.
+  private update def emitSegment(): Unit =
+    if segment.length > 0 then
       val data = segment.toArray
       segment.clear()
       val (blockBytes, unpadded) = XzContainer.block(data, checkType, options)
@@ -143,11 +121,17 @@ private[pneumatic] final class XzCompressorEngine(preset: Int, checkType: Int) e
 
   update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     ensureHeader()
-    var i = 0
+    val raw = Array.unsafeJvm(bytes)
+    var position = offset
+    var remaining = length
 
-    while i < length do
-      segment += bytes.readUnchecked(offset + i)
-      i += 1
+    // Fill the segment in bulk, cutting a block at each dictionary-sized boundary.
+    while remaining > 0 do
+      val room = segmentSize - segment.length
+      val step = if remaining < room then remaining else room
+      segment.append(raw, position, step)
+      position += step
+      remaining -= step
       if segment.length >= segmentSize then emitSegment()
 
   update def finish(): Unit =
@@ -157,12 +141,159 @@ private[pneumatic] final class XzCompressorEngine(preset: Int, checkType: Int) e
       emitSegment()
       emit(XzContainer.indexAndFooter(records, checkType))
 
-// The `.xz` container decoder.
-private[pneumatic] final class XzDecompressorEngine extends BufferedEngine:
-  protected def transform(bytes: scala.Array[Byte]): scala.Array[Byte] =
-    val out = scm.ArrayBuffer[Byte]()
-    XzContainer.decode(bytes, out)
-    out.toArray
+private enum XzPhase:
+  case StreamHeader, BlockHeader, BlockData, BlockCheck, Index
+
+// The `.xz` container decoder, streaming: framing is parsed from the compressed bytes as they
+// arrive, and each block's LZMA2 payload is fed to an `Lzma2Decompressor` incrementally, whose
+// output is checksummed and moved to `pending` as it is produced. Working memory is therefore a
+// dictionary plus whatever one `accept` decodes, not the whole stream — and the decoded bytes are
+// copied once, not staged whole and copied again. Offsets are stream-absolute (`Long`), with
+// `base` the stream offset of `buffer(0)`; parsed bytes are compacted away on each `accept`.
+private[pneumatic] final class XzDecompressorEngine extends XzEngine:
+  private var buffer: scala.Array[Byte]^ = new scala.Array[Byte](1 << 16)
+  private var end = 0
+  private var base = 0L
+  private var cursor = 0L         // the next byte to parse
+  private var fed = 0L            // the block decoder has been fed up to here
+  private var blockDataStart = 0L
+  private var phase = XzPhase.StreamHeader
+  private var checkType = 0
+  private var checkSize = 0
+  private var finished = false
+
+  // Replaced per block; the placeholders decode nothing.
+  private var decompressor: Lzma2Decompressor^ = Lzma2Decompressor(0)
+  private var checker: XzChecker^ = NoChecker()
+
+  private def available: Int = end - (cursor - base).toInt
+  private def at(offset: Long): Int = buffer((offset - base).toInt) & 0xff
+
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+    // Everything before `cursor` has been parsed or consumed by the block decoder.
+    val drop = (cursor - base).toInt
+
+    if drop > 0 then
+      System.arraycopy(buffer, drop, buffer, 0, end - drop)
+      end -= drop
+      base += drop
+
+    if end + length > buffer.length then
+      var size = buffer.length*2
+      while size < end + length do size *= 2
+      val grown: scala.Array[Byte]^ = new scala.Array[Byte](size)
+      System.arraycopy(buffer, 0, grown, 0, end)
+      buffer = grown
+
+    System.arraycopy(bytes.asInstanceOf[scala.Array[Byte]], offset, buffer, end, length)
+    end += length
+    process()
+
+  private update def process(): Unit =
+    var progressing = true
+
+    while progressing do
+      progressing = false
+
+      phase match
+        case XzPhase.StreamHeader =>
+          if available >= 12 then
+            checkType = XzContainer.streamCheckType(buffer, (cursor - base).toInt)
+            checkSize = XzCheck.size(checkType)
+            cursor += 12
+            phase = XzPhase.BlockHeader
+            progressing = true
+
+        case XzPhase.BlockHeader =>
+          if available >= 1 then
+            val first = at(cursor)
+
+            if first == XzContainer.IndexIndicator then phase = XzPhase.Index
+            else
+              val headerSize = (first + 1)*4
+
+              if available >= headerSize then
+                val dictSize = XzContainer.blockDictSize(buffer, (cursor - base).toInt)
+                decompressor = Lzma2Decompressor(dictSize)
+                checker = XzCheck.checker(checkType)
+                cursor += headerSize
+                blockDataStart = cursor
+                fed = cursor
+                phase = XzPhase.BlockData
+                progressing = true
+
+        case XzPhase.BlockData =>
+          val fresh = (base + end - fed).toInt
+
+          if fresh > 0 then
+            // The decoder retains what it does not consume, so it is fed each byte once; the
+            // buffer is read-only to it, hence the frozen view.
+            decompressor.accept(Array.unsafeFrozen(buffer), (fed - base).toInt, fresh)
+            fed += fresh
+            val produced = decompressor.produced
+
+            if produced > 0 then
+              if checkSize > 0 then checker.absorb(decompressor.output, 0, produced)
+              pending.append(decompressor.output, 0, produced)
+              decompressor.resetOutput()
+
+          cursor = blockDataStart + decompressor.consumed
+
+          if decompressor.ended then
+            cursor += (-decompressor.consumed) & 3 // four-byte alignment padding
+            phase = XzPhase.BlockCheck
+            progressing = true
+
+        case XzPhase.BlockCheck =>
+          if available >= checkSize then
+            if checkSize > 0 then
+              val expected: scala.Array[Byte]^ = checker.bytes
+              var c = 0
+
+              while c < checkSize do
+                if at(cursor + c) != (expected(c) & 0xff) then
+                  throw IllegalStateException("the XZ data is corrupt: integrity check failed")
+
+                c += 1
+
+            cursor += checkSize
+            phase = XzPhase.BlockHeader
+            progressing = true
+
+        // The index and stream footer that follow are not needed to reproduce the payload.
+        case XzPhase.Index => ()
+
+  update def finish(): Unit =
+    if !finished then
+      finished = true
+
+      if phase == XzPhase.BlockData then
+        decompressor.finish()
+        val produced = decompressor.produced
+
+        if produced > 0 then
+          if checkSize > 0 then checker.absorb(decompressor.output, 0, produced)
+          pending.append(decompressor.output, 0, produced)
+          decompressor.resetOutput()
+
+        if !decompressor.ended then
+          throw IllegalStateException("the XZ data is corrupt: block did not terminate")
+
+        cursor = blockDataStart + decompressor.consumed + ((-decompressor.consumed) & 3)
+        phase = XzPhase.BlockCheck
+        process()
+
+      phase match
+        case XzPhase.StreamHeader =>
+          throw IllegalStateException("the XZ data is corrupt: truncated header")
+
+        case XzPhase.BlockCheck | XzPhase.BlockData =>
+          throw IllegalStateException("the XZ data is corrupt: truncated")
+
+        case XzPhase.BlockHeader =>
+          if available > 0 then throw IllegalStateException("the XZ data is corrupt: truncated")
+
+        case XzPhase.Index => ()
 
 // The container-free raw-LZMA2 encoder.
 private[pneumatic] final class Lzma2CompressorEngine(preset: Int) extends BufferedEngine:
@@ -174,19 +305,24 @@ private[pneumatic] final class Lzma2CompressorEngine(preset: Int) extends Buffer
 private[pneumatic] final class Lzma2DecompressorEngine(dictSize: Int) extends XzEngine:
   private val decompressor: Lzma2Decompressor^ = Lzma2Decompressor(dictSize)
 
+  // Move the decoder's freshly-produced bytes into `pending`. Written out in each caller rather
+  // than as an `update` helper: a call to a method updating `this` after `decompressor` has been
+  // touched in the same body is what the separation checker rejects as a hidden access.
   update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     decompressor.accept(bytes, offset, length)
-    drain()
+    val count = decompressor.produced
+
+    if count > 0 then
+      pending.append(decompressor.output, 0, count)
+      decompressor.resetOutput()
 
   update def finish(): Unit =
     decompressor.finish()
-    drain()
+    val count = decompressor.produced
 
-  private def drain(): Unit =
-    val output = decompressor.output
-    var i = 0
-    while i < output.length do { pending += output(i); i += 1 }
-    output.clear()
+    if count > 0 then
+      pending.append(decompressor.output, 0, count)
+      decompressor.resetOutput()
 
 // The `Duct` stage wrapping an engine, identical in shape to `BrotliStage`. The engine is
 // created by the by-name argument inside the stage, so the stage owns it exclusively.

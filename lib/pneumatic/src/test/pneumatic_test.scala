@@ -103,6 +103,12 @@ object Tests extends Suite(m"Pneumatic tests"):
         variedData.compress[Lzw].decompress[Lzw]
       . assert(_.stdlib.map(_.readable).flatten == variedData.stdlib.map(_.readable).flatten)
 
+      test(m"Roundtrip the 4 MB benchmark corpus through the stream path (LZW)"):
+        val corpus: Data = Data.fill(4 << 20)(i => ((i*31 + (i >> 6)) & 0xff).toByte)
+        val decoded = corpus.stream.compress[Lzw].memoize.stream.decompress[Lzw].memoize
+        decoded.to[List] == corpus.to[List]
+      . assert(_ == true)
+
       test(m"Roundtrip compress/decompress a long stream across LZW table clears"):
         longData.compress[Lzw].decompress[Lzw]
       . assert(_.stdlib.map(_.readable).flatten == longData.stdlib.map(_.readable).flatten)
@@ -520,6 +526,16 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       test(m"The xz binary decodes our output (varied)"):
         xzBinaryDecodes(xzVaried)
+      . assert(_ == true)
+
+      // The benchmark corpus, exactly as `pneumatic.Benchmarks` generates it, through the
+      // streaming path the benchmark rows measure (which only count the decoded length). This
+      // pins the content: a staging change that produced the right length of wrong bytes would
+      // score there and fail here. Compared as a boolean, as the Brotli suite does.
+      test(m"Roundtrip the 4 MB benchmark corpus through the stream path (Xz)"):
+        val corpus: Data = Data.fill(4 << 20)(i => ((i*31 + (i >> 6)) & 0xff).toByte)
+        val decoded = corpus.stream.compress[Xz].memoize.stream.decompress[Xz].memoize
+        decoded.to[List] == corpus.to[List]
       . assert(_ == true)
 
     suite(m"LZMA2 tests"):

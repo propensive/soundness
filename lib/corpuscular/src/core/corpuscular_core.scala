@@ -126,20 +126,38 @@ sealed trait Crc64 extends Algorithm:
   type Bits = 64
 
 object Crc64:
+  // Eight slicing tables, flattened as `table(k*256 + n)`: `table(n)` is the classic bytewise
+  // table, and slice `k` folds a byte that is `k` positions further into the word. The
+  // bytewise loop is a serial dependency chain of one table lookup per byte and runs at a few
+  // hundred MB/s; slicing-by-eight (Intel's method, which XZ Utils and xz-java both use)
+  // consumes eight bytes per step with eight independent lookups, three to four times faster.
   val table: Array[Long]^{} =
     val poly = 0xc96c5795d7870f42L
-    val result = Array.allocate[Long](256)
+    val result = Array.allocate[Long](8*256)
     var n = 0
 
     while n < 256 do
       var c = n.toLong
       var k = 8
+
       while k > 0 do
         k -= 1
         c = if (c & 1L) != 0 then (c >>> 1) ^ poly else c >>> 1
 
       result(n) = c
       n += 1
+
+    var k = 1
+
+    while k < 8 do
+      n = 0
+
+      while n < 256 do
+        val previous = result((k - 1)*256 + n)
+        result(k*256 + n) = (previous >>> 8) ^ result((previous & 0xff).toInt)
+        n += 1
+
+      k += 1
 
     Array.freeze(result)
 
@@ -162,6 +180,32 @@ object Crc64:
       var index = index0
       var length = length0
       var c = v
+
+      // Eight bytes at a time: fold the next little-endian word into the register, then
+      // resolve every byte of it through its own slice in one step.
+      while length >= 8 do
+        val low =
+          (buffer(index) & 0xff) | ((buffer(index + 1) & 0xff) << 8) |
+            ((buffer(index + 2) & 0xff) << 16) | ((buffer(index + 3) & 0xff) << 24)
+
+        val high =
+          (buffer(index + 4) & 0xff) | ((buffer(index + 5) & 0xff) << 8) |
+            ((buffer(index + 6) & 0xff) << 16) | ((buffer(index + 7) & 0xff) << 24)
+
+        c ^= (low.toLong & 0xffffffffL) | (high.toLong << 32)
+
+        c =
+          table.readable(7*256 + (c & 0xff).toInt) ^
+            table.readable(6*256 + ((c >>> 8) & 0xff).toInt) ^
+            table.readable(5*256 + ((c >>> 16) & 0xff).toInt) ^
+            table.readable(4*256 + ((c >>> 24) & 0xff).toInt) ^
+            table.readable(3*256 + ((c >>> 32) & 0xff).toInt) ^
+            table.readable(2*256 + ((c >>> 40) & 0xff).toInt) ^
+            table.readable(256 + ((c >>> 48) & 0xff).toInt) ^
+            table.readable((c >>> 56).toInt)
+
+        index += 8
+        length -= 8
 
       while length > 0 do
         length -= 1
