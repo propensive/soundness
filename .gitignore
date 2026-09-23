@@ -11,3 +11,6 @@ tests/JSONTestSuite
 lib/ethereal/target
 rep/_probe
 __pycache__/
+
+# flame keeps its prompt history here; the directory is tracked for its config.tel.
+.pyrocosm/flame/history

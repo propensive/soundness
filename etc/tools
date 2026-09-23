@@ -3,5 +3,6 @@
 # it appears in no POM — and does not gate a release; that is what keeps the release graph free
 # of cycles. `make sync-deps` installs a tool's jars (the flair compiler plugin), `make tools`
 # installs its command (fume). See propensive/.github.
-propensive/flair	0.2.0
-propensive/fume	0.4.0
+propensive/flair	0.3.0
+propensive/fume	0.4.1
+propensive/flame	0.3.0
