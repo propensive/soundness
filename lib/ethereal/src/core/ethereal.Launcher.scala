@@ -50,7 +50,8 @@ import stratiform.*
 import turbulence.*
 import vacuous.*
 
-// The contract between an Ethereal launcher (the Rust runner in `src/runner`) and its daemon.
+// The contract between an Ethereal launcher (the Rust runner published by `propensive/xeq`,
+// in its `src/runner`) and its daemon.
 // Every connection the launcher opens begins with exactly one BinTEL document — a `Message`
 // typed by the `schema` below — and the daemon answers, where the message calls for an
 // answer, with one or more BinTEL documents of the same schema. After the `init` message the
