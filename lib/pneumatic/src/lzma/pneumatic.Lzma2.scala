@@ -34,9 +34,6 @@ package pneumatic
 
 import scala.caps
 
-
-import scala.collection.mutable as scm
-
 import anticipation.*
 import rudiments.*
 import turbulence.*
@@ -51,7 +48,8 @@ import zephyrine.*
 // The decompressor is a streaming state machine: it accumulates just enough input to parse a chunk
 // header, then (for compressed chunks) buffers the ≤ 64 KiB compressed payload before handing to
 // the range decoder. Consumed input is compacted away, so buffered compressed data stays bounded to
-// roughly one chunk. Decoded bytes are appended to `output`, which the enclosing engine drains.
+// roughly one chunk. Decoded bytes are appended to a flat `output` array, which the enclosing
+// engine or the `.xz` container copies out in bulk and resets.
 
 object Lzma2:
   inline val UncompressedSizeMax = 1 << 21 // 2 MiB per chunk
@@ -487,7 +485,16 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
   private var uncompressedRemaining = 0
   private var dictResetPending = true
 
-  val output: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+  // Decoded bytes not yet taken by the enclosing engine or container: a flat, doubling array,
+  // untracked and written only by `System.arraycopy`, so `output` is a pure view (the shape of
+  // `BrotliAccumulator.accumulated`) that a consumer may hand to another tracked object.
+  private var outBuffer: scala.Array[Byte] = new scala.Array[Byte](1 << 16)
+  private var outCount = 0
+
+  // The decoded bytes, valid at indices `0 until produced`.
+  def output: scala.Array[Byte] = outBuffer
+  def produced: Int = outCount
+  update def resetOutput(): Unit = outCount = 0
 
   private var consumedTotal = 0
 
@@ -640,8 +647,15 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
   // Append the first `count` bytes of the flush scratch (passed in as `this`-scoped so the field
   // array flows through the exclusive-parameter shape) to the decoded output.
   private update def appendOutput(flushed: scala.Array[Byte]^{this}, count: Int): Unit =
-    var i = 0
-    while i < count do { output += flushed(i); i += 1 }
+    if outCount + count > outBuffer.length then
+      var size = outBuffer.length*2
+      while size < outCount + count do size *= 2
+      val grown = new scala.Array[Byte](size)
+      System.arraycopy(outBuffer, 0, grown, 0, outCount)
+      outBuffer = grown
+
+    System.arraycopy(flushed, 0, outBuffer, outCount, count)
+    outCount += count
 
   update def finish(): Unit =
     if stage != Lzma2State.Ended && available > 0 then process()
@@ -1302,9 +1316,9 @@ extends caps.Mutable:
   rcReset()
 
   update def compress(): scala.Array[Byte] =
-    val out = scm.ArrayBuffer[Byte]()
+    val out: ByteSink^ = ByteSink(if data.length < 256 then 256 else data.length/2)
 
-    if data.length == 0 then out += 0x00.toByte else
+    if data.length == 0 then out.append(0x00.toByte) else
       var firstChunk = true
 
       while hasMore do
@@ -1324,29 +1338,28 @@ extends caps.Mutable:
         val u = uncompressedSize - 1
         val c = compressedSize - 1
 
-        out += (0x80 | (reset << 5) | ((u >>> 16) & 0x1f)).toByte
-        out += ((u >>> 8) & 0xff).toByte
-        out += (u & 0xff).toByte
-        out += ((c >>> 8) & 0xff).toByte
-        out += (c & 0xff).toByte
+        out.append((0x80 | (reset << 5) | ((u >>> 16) & 0x1f)).toByte)
+        out.append(((u >>> 8) & 0xff).toByte)
+        out.append((u & 0xff).toByte)
+        out.append(((c >>> 8) & 0xff).toByte)
+        out.append((c & 0xff).toByte)
 
         if reset >= 2 then
-          out += Lzma2Options.propertiesByte(options.lc, options.lp, options.pb).toByte
+          out.append(Lzma2Options.propertiesByte(options.lc, options.lp, options.pb).toByte)
 
         appendPayload(rcBuffer, compressedSize, out)
         firstChunk = false
 
-      out += 0x00.toByte
+      out.append(0x00.toByte)
 
-    out.toArray
+    out.take()
 
   // Append the freshly-encoded chunk payload (passed in as `this`-scoped so the field array flows
   // through the exclusive-parameter shape) to the output.
   private update def appendPayload
-    ( payload: scala.Array[Byte]^{this}, count: Int, out: scm.ArrayBuffer[Byte] )
+    ( payload: scala.Array[Byte]^{this}, count: Int, out: ByteSink^ )
   :   Unit =
 
-    var i = 0
-    while i < count do { out += payload(i); i += 1 }
+    out.append(payload, 0, count)
 
 sealed trait Lzma2 extends Compressor
