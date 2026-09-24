@@ -1061,6 +1061,31 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           invoke(app)(t"--count", t"4")(0)
         . check(_ == Exit.Ok)
 
+        // Inside an `inline def`, `Flag#apply()` is not expanded when the body is typed, so
+        // `.present` on its result resolves against the declared union type and answers `true`
+        // for every handle (#2032). The plain `present` and `value` members read the flag
+        // directly, so they are what inline code must use.
+        inline def gated(using Cli): Execution =
+          if Flag[Text](t"count").present then execute(Exit.Ok) else execute(Exit.Fail(1))
+
+        inline def reading(using Cli): Execution =
+          execute(if Flag[Text](t"count").value == t"4" then Exit.Ok else Exit.Fail(1))
+
+        test(m"Flag#present in an inline body is true when the flag is given"):
+          def app(using cli: Cli): Execution = gated
+          invoke(app)(t"--count", t"4")(0)
+        . check(_ == Exit.Ok)
+
+        test(m"Flag#present in an inline body is false when the flag is absent"):
+          def app(using cli: Cli): Execution = gated
+          invoke(app)()(0)
+        . check(_ == Exit.Fail(1))
+
+        test(m"Flag#value in an inline body reads the operand inside execute"):
+          def app(using cli: Cli): Execution = reading
+          invoke(app)(t"--count", t"4")(0)
+        . check(_ == Exit.Ok)
+
         test(m"A flag applied inside execute resolves directly to an optional value"):
           def app(using cli: Cli): Execution =
             execute:

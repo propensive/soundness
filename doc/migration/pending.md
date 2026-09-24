@@ -78,6 +78,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   argument being completed, not when it is the flag preceding it. An application no longer
   needs a "flag-first" match arm ahead of its `Subcommand` patterns for `--fl<TAB>` to offer
   flags. (#2035)
+- `exoskeleton.Flag` gained `def present(using Cli, Interpreter, Topic is Interpretable, (? <:
+  Topic) is Discoverable): Boolean` and `def value(using Cli, Interpreter, Topic is
+  Interpretable, (? <: Topic) is Discoverable)(using erased Effectful): Optional[Topic]`, plain
+  (non-inline) readers which register the flag as `apply()` does. Code that reads
+  `flag().present` inside an `inline def` must use `flag.present` instead: there the transparent
+  `apply()` is not expanded and `.present` resolves against `Prospective[Topic] |
+  Optional[Topic]` through vacuous's `Optional` extension, answering `true` unconditionally.
+  (#2032)
 
 ## stratiform
 
