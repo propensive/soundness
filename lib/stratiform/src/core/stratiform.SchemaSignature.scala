@@ -33,13 +33,15 @@
 package stratiform
 
 import scala.language.unsafeNulls
+
 import murmuration.*
-import rudiments.{seek, to}
+import rudiments.{bind, each, seek, segment, to}
 
 import anticipation.*
 import contingency.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
+import fulminate.*
 import gastronomy.*
 import ulysses.*
 import vacuous.*
@@ -226,7 +228,182 @@ object SchemaSignature:
 
     safely(decode(signature, base :: hinted)).or(safely(decode(signature, base :: full)))
 
-  private def same(a: Data, b: Data): Boolean =
+
+  // The value hash (§3) of a rendered schema element: the BLAKE3-256 digest of its
+  // document-root encoding under `axiom`, as `componentsOf` hashes a parsed document's base and
+  // layers. A `Tels.Renderer` element hashes identically to the document it renders.
+  def hash(element: Tel.Element, axiom: Tels = Tels.Axiom.tels): Data raises Bintel.Error =
+    Blake3.hashOf(element.bintel(axiom), cadence.hashSize)
+
+  // The component hashes of a schema value — the base (the schema without its layers) and
+  // each layer in declaration order — rendered through `Tels.Renderer`.
+  def componentHashes(schema: Tels, axiom: Tels)
+    ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error] )
+  :   (Data, List[Data]) =
+
+    val base = hash(Tels.Renderer.element(schema.copy(layers = Array.empty), axiom), axiom)
+
+    val layers = schema.layers.readable.toList.to(List).map: layer =>
+      hash(Tels.Renderer.layer(layer, axiom), axiom)
+
+    (base, layers)
+
+  // The value hash of an atom (§20.3, BinTEL §8.1): its virtual single-atom layer, or for the
+  // head, the definition-less schema.
+  def atomHash(atom: Tels.Atoms.Atom, axiom: Tels = Tels.Axiom.tels)
+    ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error] )
+  :   Data =
+
+    hash(atom.element(axiom), axiom)
+
+  object Lineage:
+    // A layer or an atom of a lineage: its hash, its name (a layer's; an atom has none), and
+    // the layer that composes it.
+    case class Component(hash: Data, name: Optional[Text], layer: Tels.Layer):
+      def text: Text = Base256.encode(hash)
+
+    def apply(schema: Tels, axiom: Tels = Tels.Axiom.tels)
+      ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error] )
+    :   Lineage =
+
+      val base = hash(Tels.Renderer.element(schema.copy(layers = Array.empty), axiom), axiom)
+
+      val layers = schema.layers.readable.toList.to(List).map: layer =>
+        Component(hash(Tels.Renderer.layer(layer, axiom), axiom), layer.name, layer)
+
+      // Atoms are deduplicated by hash: an atom that occurs in two groups, or twice in one, is
+      // one component of the lineage.
+      val seen = scala.collection.mutable.HashSet.empty[Text]
+      val buffer = scala.collection.mutable.ListBuffer.empty[Component]
+
+      Tels.Atoms.decompose(schema).each: group =>
+        group.atoms.each:
+          case Tels.Atoms.Atom.Head(_, _) => ()
+
+          case atom @ Tels.Atoms.Atom.Part(_, layer) =>
+            val hash = atomHash(atom, axiom)
+            if seen.add(Base256.encode(hash)) then buffer += Component(hash, Unset, layer)
+
+      Lineage(schema, base, layers, buffer.toList.to(List))
+
+    // A lineage from a schema document, as parsed.
+    def of(document: Tel, axiom: Tels = Tels.Axiom.tels)
+      ( using Tactic[Tel.Error], Tactic[Bintel.Error], Tactic[Tels.Renderer.Error] )
+    :   Lineage =
+
+      apply(Tels.Reconstructor.fromTel(document), axiom)
+
+  // A base schema with every component of its lineage (§8.2, decoding step 3): its layers, and
+  // the atoms of the base and of each layer, each with its hash. A signature naming the base is
+  // decoded against exactly this set; a reader's or writer's library is a list of lineages.
+  case class Lineage
+    ( schema: Tels, base: Data, layers: List[Lineage.Component], atoms: List[Lineage.Component] ):
+
+    // Every component but the base: the layers, then the atoms.
+    def components: List[Lineage.Component] = List(layers, atoms).bind(identity)
+
+    // The candidate hashes a signature naming this base is decoded against.
+    def candidates: List[Data] = base :: components.map(_.hash)
+
+    // The composition of the base with the named layers, in declaration order, as a signature.
+    def signature(selection: List[Text])
+      ( using Tactic[Bintel.Error], Tactic[Tels.Resolution.Error] )
+    :   Data =
+
+      val chosen = selection.map: name =>
+        layers.seek(_.name == name).or:
+          abort(Tels.Resolution.Error(Tels.Resolution.Error.Reason.UnknownLayer(name)))
+
+        . hash
+
+      encode(base :: chosen)
+
+    // The component with exactly this hash.
+    def component(hash: Data): Optional[Lineage.Component] =
+      components.seek: component => same(component.hash, hash)
+
+    // The components whose hash begins with `prefix`: none, one (denoted), or several (which an
+    // acceptance treats as none, §8.4).
+    def matching(prefix: Data): List[Lineage.Component] =
+      components.filter(_.hash.readable.startsWith(prefix.readable))
+
+    // The shortest prefix of the named layer's hash, at least `minimum` bytes long, that no other
+    // component of this lineage shares — the form an acceptance names a further component by.
+    def prefix(name: Text, minimum: Int = 4): Data raises Tels.Resolution.Error =
+      val layer = layers.seek(_.name == name).or:
+        abort(Tels.Resolution.Error(Tels.Resolution.Error.Reason.UnknownLayer(name)))
+
+      // Lengthens the prefix one byte at a time until it denotes the layer alone; the full
+      // hash always does.
+      @scala.annotation.tailrec
+      def shortest(length: Int): Data =
+        val candidate = layer.hash.segment(0.z till length.z)
+
+        if length >= layer.hash.length || matching(candidate).size <= 1 then candidate
+        else shortest(length + 1)
+
+      val start =
+        if minimum < 1 then 1
+        else if minimum > layer.hash.length then layer.hash.length
+        else minimum
+
+      shortest(start)
+
+    // The composed schema a decoded hash sequence names: the base, then each component's layer
+    // in order. The first hash must be this base; an unknown hash, or a sequence that does not
+    // compose validly, is a resolution failure.
+    def compose(hashes: List[Data]): Tels raises Tels.Resolution.Error =
+      import Tels.Resolution.Error.Reason
+      import errorDiagnostics.emptyDiagnostics
+
+      hashes match
+        case first :: rest =>
+          if !same(first, base) then abort(Tels.Resolution.Error(Reason.BaseMismatch))
+
+          val layers0 = rest.map: hash =>
+            component(hash).or:
+              abort(Tels.Resolution.Error(Reason.Unresolved(Tels.Resolution.Step.Library,
+                  Base256.encode(hash))))
+
+            . layer
+
+          mitigate:
+            case error: Tel.Error => Tels.Resolution.Error(Reason.NotSchema(error.message.text))
+
+          . protect(Tels.Layers.composeComponents(schema, layers0))
+
+        case _ =>
+          abort(Tels.Resolution.Error(Reason.ComponentCount(1, 0)))
+
+  object Library:
+    val empty: Library = Library(List())
+    case class Decoded(lineage: Lineage, hashes: List[Data])
+
+  // A library of lineages, decoding signatures in two phases as §8.2 recommends: the base by the
+  // first four bytes of the body, which are its hash prefix uncontested, then the further
+  // components by the palimpsest search over that base's lineage alone, never over the whole
+  // library.
+  case class Library(lineages: List[Lineage]):
+    def byBase(prefix: Data): List[Lineage] =
+      lineages.filter(_.base.readable.startsWith(prefix.readable))
+
+    // The lineage and ordered component hashes a signature names, if some lineage of the
+    // library serves it.
+    def decode(signature: Data): Optional[Library.Decoded] =
+      if signature.length < 5 then Unset else
+        val prefix = signature.segment(0.z till 4.z)
+
+        def hashes(lineage: Lineage): Optional[List[Data]] =
+          safely(SchemaSignature.decode(signature, lineage.candidates))
+
+        byBase(prefix).seek(hashes(_).present).let: lineage =>
+          hashes(lineage).let(Library.Decoded(lineage, _))
+
+    // The composed schema a signature names.
+    def resolve(signature: Data): Optional[Tels] raises Tels.Resolution.Error =
+      decode(signature).let: decoded => decoded.lineage.compose(decoded.hashes)
+
+  private[stratiform] def same(a: Data, b: Data): Boolean =
     a.length == b.length && {
       var i  = 0
       var ok = true

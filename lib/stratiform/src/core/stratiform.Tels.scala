@@ -32,6 +32,7 @@
                                                                                                   */
 package stratiform
 
+import scala.collection.immutable as sci
 
 import anticipation.*
 import contingency.*
@@ -576,7 +577,17 @@ object Tels extends Tels2:
 
         composed
 
-    private def applyLayer(base: Tels, layer: Layer): Tels raises Tel.Error =
+    // Composes a base with an ordered sequence of components — whole layers or the virtual
+    // single-atom layers of `Atoms` — as §20.3 composes a component sequence: each is applied in
+    // turn, and the constraints that concern the composed schema as a whole are checked once on
+    // the result. Unlike `compose`, no name check applies: atoms carry no name, and an atom
+    // listed twice applies twice, harmlessly.
+    def composeComponents(base: Tels, components: List[Layer]): Tels raises Tel.Error =
+      var composed = base.copy(layers = Array.empty)
+      components.each { layer => composed = applyLayer(composed, layer) }
+      Validation.checkComposed(composed)
+
+    private[stratiform] def applyLayer(base: Tels, layer: Layer): Tels raises Tel.Error =
       val mergedRecords = mergeRecordList(base.records, layer.records, base.scalars, base.selects)
       val mergedScalars = mergeScalarList(base.scalars, layer.scalars, mergedRecords, base.selects)
       val mergedSelects = mergeSelectList(base.selects, layer.selects, mergedRecords, mergedScalars)
@@ -835,7 +846,7 @@ object Tels extends Tels2:
     // budget exhaustion (§21.8 requires exactly this), a word boundary the
     // analysis cannot model, or a pattern that does not compile — the last
     // being unreachable once `checkBase` has run, but fail-closed regardless.
-    private def contained(replacing: Array[Text]^{}, inherited: Array[Text]^{}): Boolean =
+    private[stratiform] def contained(replacing: Array[Text]^{}, inherited: Array[Text]^{}): Boolean =
       val motifs = scala.collection.mutable.ArrayBuffer.empty[Motif]
       var compiled = true
 
@@ -990,7 +1001,7 @@ object Tels extends Tels2:
         definition.patterns.each: pattern =>
           if Patterns.compile(pattern).absent then abort(Tel.Error(Reason.InvalidPattern))
 
-    private def checkComposed(composed: Tels): Tels raises Tel.Error =
+    private[stratiform] def checkComposed(composed: Tels): Tels raises Tel.Error =
       checkStruct(composed.document, composed)
 
       composed.records.each: record =>
@@ -1617,6 +1628,688 @@ object Tels extends Tels2:
           records = nodesAt(ch, 1).remap(recordFromElement),
           scalars = nodesAt(ch, 2).remap(scalarFromElement),
           selects = nodesAt(ch, 3).remap(selectFromElement) )
+
+  // Renders a schema value as the typed semantic model of its schema document under the `tels`
+  // axiom — the inverse of `SemanticReconstructor.fromElement` — so that a schema built in Scala
+  // (derived from a type, composed, or decomposed into atoms) is encoded, hashed and signed
+  // exactly as a parsed `.tel` document is. The keyword indices are the flat indices of the
+  // axiom's member layout, the same ones the reconstructor reads; `Bintel.encode` puts the
+  // children into §7.2 canonical order itself.
+  object Renderer:
+    // The four scalars every schema declares implicitly, which `Reconstructor` prepends and a
+    // canonical `.tel` source never declares, so a rendered document omits them too.
+    private val builtinNames: scala.collection.immutable.Set[Text] =
+      scala.collection.immutable.Set(t"Identifier", t"TypeName", t"Sigil", t"String")
+
+    private[Tels] def builtin(scalar: ScalarDefinition): Boolean =
+      builtinNames.contains(scalar.name) && scalar.encoding.absent && scalar.patterns.nil &&
+        scalar.description.absent
+
+    // The schema document's root element: `name`, `sigil`, the definitions, the `document` body
+    // and the layers, in the axiom's keyword order (name=0, sigil=1, record=2, scalar=3, select=4,
+    // document=5, layer=6).
+    def element(schema: Tels, axiom: Tels = Axiom.tels): Tel.Element.Node raises Error =
+      val context = Context(axiom)
+      import context.*
+
+      val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      buffer += value(0, "Identifier", schema.name)
+      schema.sigil.let: sigil => buffer += value(1, "Sigil", Text(sigil.toString))
+      schema.records.each: record => buffer += node(2, "Record", recordChildren(context, record))
+
+      schema.scalars.each: scalar =>
+        if !builtin(scalar) then buffer += node(3, "Scalar", scalarChildren(context, scalar))
+
+      schema.selects.each: select => buffer += node(4, "Select", selectChildren(context, select))
+      buffer += node(5, "Body", bodyChildren(context, schema.document, 0, 1, 2))
+      schema.layers.each: layer0 => buffer += node(6, "Layer", layerChildren(context, layer0))
+
+      Tel.Element.Node(Unset, axiom.document, Array.from(buffer))
+
+    // A layer as a document root of its own, under the axiom's `Layer` definition: the form BinTEL
+    // §8.1 hashes for a layer component, and — with an empty name and a single atom — for an atom.
+    def layer(layer: Layer, axiom: Tels = Axiom.tels): Tel.Element.Node raises Error =
+      val context = Context(axiom)
+      Tel.Element.Node(Unset, context.structOf("Layer"), layerChildren(context, layer))
+
+    // The axiom's definitions, resolved once per rendering: a Definition's struct for the nodes,
+    // and a scalar for the values.
+    private class Context(axiom: Tels):
+      def structOf(name: String): Struct =
+        val record = axiom.records.seek(_.name == Text(name)).or:
+          panic(m"the axiom declares no record ${Text(name)}")
+
+        Struct(record.members, record.validators)
+
+      def scalarOf(name: String): Scalar =
+        val definition = axiom.scalars.seek(_.name == Text(name)).or:
+          panic(m"the axiom declares no scalar ${Text(name)}")
+
+        Scalar(definition.validators, definition.encoding, definition.patterns)
+
+      def node(index: Int, record: String, children: Array[Tel.Element]^{}): Tel.Element =
+        Tel.Element.Node(index, structOf(record), children)
+
+      def value(index: Int, scalarName: String, text: Text): Tel.Element =
+        Tel.Element.Value(index, scalarOf(scalarName), text)
+
+      def flag(index: Int): Tel.Element = Tel.Element.Node(index, Flag, Array.empty)
+
+    // A member type's `TypeName`. Only a reference, `Flag`, or an inline scalar that is one of
+    // the built-in scalars can be written in a schema document; a derived schema's inline struct
+    // or constrained inline scalar has no textual form, and is `Error`.
+    private def typeName(fieldType: Type, keyword: Text): Text raises Error = fieldType match
+      case Reference(name) => name
+      case Flag            => t"Flag"
+
+      case Scalar(validators, encoding, patterns) =>
+        if encoding.present || !patterns.nil then abort(Error(Error.Reason.InlineScalar(keyword)))
+        else validators.readable.toList match
+          case scala.Nil => t"String"
+
+          case scala.List(single) => single.s match
+            case "identifier" => t"Identifier"
+            case "type-name"  => t"TypeName"
+            case "sigil"      => t"Sigil"
+            case "string"     => t"String"
+            case _            => abort(Error(Error.Reason.InlineScalar(keyword)))
+
+          case _ => abort(Error(Error.Reason.InlineScalar(keyword)))
+
+      case _: Struct => abort(Error(Error.Reason.InlineStruct(keyword)))
+
+    // Field meta: keyword=0, type=1, optional=2, required=3, repeatable=4, irrepeatable=5, key=6,
+    // default=7, description=8.
+    private def fieldChildren(context: Context, field: Field): Array[Tel.Element]^{} raises Error =
+      import context.*
+      val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      buffer += value(0, "Identifier", field.keyword)
+      buffer += value(1, "TypeName", typeName(field.fieldType, field.keyword))
+      polarityFlags(context, buffer, field.required, 2, 3)
+      polarityFlags(context, buffer, field.repeatable, 4, 5)
+      if field.key then buffer += flag(6)
+      field.default.let: default => buffer += value(7, "String", default)
+      field.description.let: description => buffer += value(8, "String", description)
+      Array.from(buffer)
+
+    private def polarityFlags
+      ( context: Context, buffer: scala.collection.mutable.ArrayBuffer[Tel.Element],
+        polarity: Polarity, looseIndex: Int, tightIndex: Int )
+    :   Unit =
+
+      polarity match
+        case Polarity.Implicit => ()
+        case Polarity.Loose    => buffer += context.flag(looseIndex)
+        case Polarity.Tight    => buffer += context.flag(tightIndex)
+
+    // SelectRef meta: reference=0, optional=1, required=2, repeatable=3, irrepeatable=4.
+    private def selectRefChildren(context: Context, select: SelectRef): Array[Tel.Element]^{} =
+      val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      buffer += context.value(0, "TypeName", select.reference)
+      polarityFlags(context, buffer, select.required, 1, 2)
+      polarityFlags(context, buffer, select.repeatable, 3, 4)
+      Array.from(buffer)
+
+    // Variant meta: keyword=0, type=1, description=2.
+    private def variantChildren(context: Context, variant: Variant)
+    :   Array[Tel.Element]^{} raises Error =
+
+      import context.*
+      val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      buffer += value(0, "Identifier", variant.keyword)
+      buffer += value(1, "TypeName", typeName(variant.variantType, variant.keyword))
+      variant.description.let: description => buffer += value(2, "String", description)
+      Array.from(buffer)
+
+    // A struct-shaped body's members and validators at the given flat indices.
+    private def bodyChildren
+      ( context: Context, struct: Struct, fieldIndex: Int, selectIndex: Int, validateIndex: Int )
+    :   Array[Tel.Element]^{} raises Error =
+
+      import context.*
+      val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+
+      struct.members.each:
+        case field: Field =>
+          buffer += node(fieldIndex, "Field", fieldChildren(context, field))
+
+        case select: SelectRef =>
+          buffer += node(selectIndex, "SelectRef", selectRefChildren(context, select))
+
+        case _: Exclude => ()
+
+      struct.validators.each: validator => buffer += value(validateIndex, "Identifier", validator)
+      Array.from(buffer)
+
+    // Record meta: name=0, Member{field=1, select=2, validate=3}, description=4.
+    private def recordChildren(context: Context, record: RecordDefinition)
+    :   Array[Tel.Element]^{} raises Error =
+
+      import context.*
+      val body = bodyChildren(context, Struct(record.members, record.validators), 1, 2, 3)
+      val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      buffer += value(0, "TypeName", record.name)
+      body.each: child => buffer += child
+      record.description.let: description => buffer += value(4, "String", description)
+      Array.from(buffer)
+
+    // Scalar meta: name=0, validate=1, pattern=2, encoding=3, description=4.
+    private def scalarChildren(context: Context, scalar: ScalarDefinition): Array[Tel.Element]^{} =
+      import context.*
+      val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      buffer += value(0, "TypeName", scalar.name)
+      scalar.validators.each: validator => buffer += value(1, "Identifier", validator)
+      scalar.patterns.each: pattern => buffer += value(2, "String", pattern)
+      scalar.encoding.let: encoding => buffer += value(3, "Identifier", encoding)
+      scalar.description.let: description => buffer += value(4, "String", description)
+      Array.from(buffer)
+
+    // Select meta: name=0, SelectChild{variant=1, exclude=2, validate=3}, description=4.
+    private def selectChildren(context: Context, select: SelectDefinition)
+    :   Array[Tel.Element]^{} raises Error =
+
+      import context.*
+      val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      buffer += value(0, "TypeName", select.name)
+
+      select.variants.each: variant =>
+        buffer += node(1, "Variant", variantChildren(context, variant))
+
+      select.excludes.each: exclude => buffer += value(2, "Identifier", exclude)
+      select.validators.each: validator => buffer += value(3, "Identifier", validator)
+      select.description.let: description => buffer += value(4, "String", description)
+      Array.from(buffer)
+
+    // Layer meta: name=0, record=1, scalar=2, select=3, overlay=4. An overlay with no members and
+    // no validators is not written, as a layer refining only definitions omits it.
+    private def layerChildren(context: Context, layer: Layer): Array[Tel.Element]^{} raises Error =
+      import context.*
+      val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      buffer += value(0, "Identifier", layer.name)
+      layer.records.each: record => buffer += node(1, "Record", recordChildren(context, record))
+      layer.scalars.each: scalar => buffer += node(2, "Scalar", scalarChildren(context, scalar))
+      layer.selects.each: select => buffer += node(3, "Select", selectChildren(context, select))
+
+      if !layer.overlay.members.nil || !layer.overlay.validators.nil
+      then buffer += node(4, "Body", bodyChildren(context, layer.overlay, 0, 1, 2))
+
+      Array.from(buffer)
+
+    object Error:
+      object Reason:
+        given communicable: Reason is Communicable =
+          case InlineStruct(keyword) =>
+            m"the member $keyword has an inline struct type, which a schema document cannot name"
+
+          case InlineScalar(keyword) =>
+            m"the member $keyword has a constrained inline scalar type, which no document can name"
+
+      enum Reason(val number: Int) extends Clarification:
+        case InlineStruct(keyword: Text) extends Reason(1)
+        case InlineScalar(keyword: Text) extends Reason(2)
+
+    case class Error(reason: Renderer.Error.Reason)(using Diagnostics)
+    extends fulminate.Error(613, reason.number)(m"the schema cannot be rendered because $reason")
+
+  // §20.3 atoms: the canonical decomposition of a schema's components into the smallest
+  // modifications that can appear on their own in a composition. Every atom but the base's head
+  // is represented as a virtual layer with an empty name containing exactly that atom under its
+  // path, which is both how BinTEL §8.1 hashes it and how composition applies it; the head atom
+  // (the base's `name` and `sigil`) is the schema document with every definition removed and an
+  // empty `document` body.
+  object Atoms:
+    enum Path:
+      case Body
+      case Record(name: Text)
+      case Scalar(name: Text)
+      case Select(name: Text)
+
+    enum Atom:
+      case Head(name: Text, sigil: Optional[Char])
+      case Part(path: Path, layer: Layer)
+
+      // The atom as the schema or layer it renders as: the head as a definition-less schema, a
+      // part as its virtual layer.
+      def element(axiom: Tels = Axiom.tels): Tel.Element.Node raises Renderer.Error = this match
+        case Head(name, sigil) =>
+          val head = Tels(name, Struct(Array.empty, Array.empty), Array.empty, sigil,
+              Array.empty, Array.empty, Array.empty)
+
+          Renderer.element(head, axiom)
+
+        case Part(_, layer) => Renderer.layer(layer, axiom)
+
+    // A group — the base (`name` absent) or a layer — with its atoms in canonical order: the
+    // head (base only); the atoms of each record, scalar and select in source order; then the
+    // body's members and validators in source order.
+    case class Group(name: Optional[Text], atoms: List[Atom])
+
+    // The schema's groups: the base, then each layer in declaration order.
+    def decompose(schema: Tels): List[Group] =
+      base(schema) :: schema.layers.readable.toList.to(List).map(layer)
+
+    def base(schema: Tels): Group =
+      val head = Atom.Head(schema.name, schema.sigil)
+      val rest = atomsOf(schema.records, schema.scalars, schema.selects, schema.document)
+      Group(Unset, head :: rest)
+
+    def layer(layer: Layer): Group =
+      Group(layer.name, atomsOf(layer.records, layer.scalars, layer.selects, layer.overlay))
+
+    // The atomic expansion of a component sequence: each group replaced by its atoms.
+    def expansion(groups: List[Group]): List[Atom] = groups.bind(_.atoms)
+
+    private def empty: Struct = Struct(Array.empty, Array.empty)
+
+    private def part(path: Path, records: Array[RecordDefinition]^{} = Array.empty,
+        scalars: Array[ScalarDefinition]^{} = Array.empty,
+        selects: Array[SelectDefinition]^{} = Array.empty, overlay: Struct = empty)
+    :   Atom =
+
+      Atom.Part(path, Layer(t"", overlay, records, scalars, selects))
+
+    private def atomsOf
+      ( records: Array[RecordDefinition]^{}, scalars: Array[ScalarDefinition]^{},
+        selects: Array[SelectDefinition]^{}, body: Struct )
+    :   List[Atom] =
+
+      val buffer = scala.collection.mutable.ListBuffer.empty[Atom]
+
+      // `record N`: description first, then each member and each validator; an empty record is
+      // itself one atom, so that a fresh, empty definition is not lost.
+
+      records.each: record =>
+        val path = Path.Record(record.name)
+
+        def at(members: Array[Member]^{}, validators: Array[Text]^{}, description: Optional[Text]) =
+          val definition = RecordDefinition(record.name, members, validators, description)
+          part(path, records = Array(definition))
+
+        if record.members.nil && record.validators.nil && record.description.absent
+        then buffer += at(Array.empty, Array.empty, Unset)
+        else
+          record.description.let: description => buffer += at(Array.empty, Array.empty, description)
+          record.members.each: member => buffer += at(Array(member), Array.empty, Unset)
+          record.validators.each: validator => buffer += at(Array.empty, Array(validator), Unset)
+
+      // `scalar N`: each validator; all patterns together; the encoding; the description. The
+      // four built-in scalars are never atoms, being declared by no document.
+
+      scalars.each: scalar =>
+        if !Renderer.builtin(scalar) then
+          val path = Path.Scalar(scalar.name)
+
+          def at
+            ( validators: Array[Text]^{}, description: Optional[Text], encoding: Optional[Text],
+              patterns: Array[Text]^{} )
+          :   Atom =
+
+            val definition =
+              ScalarDefinition(scalar.name, validators, description, encoding, patterns)
+
+            part(path, scalars = Array(definition))
+
+          if scalar.validators.nil && scalar.patterns.nil && scalar.encoding.absent &&
+            scalar.description.absent
+          then buffer += at(Array.empty, Unset, Unset, Array.empty)
+          else
+            scalar.validators.each: validator =>
+              buffer += at(Array(validator), Unset, Unset, Array.empty)
+
+            if !scalar.patterns.nil then buffer += at(Array.empty, Unset, Unset, scalar.patterns)
+            scalar.encoding.let: encoding => buffer += at(Array.empty, Unset, encoding, Array.empty)
+
+            scalar.description.let: description =>
+              buffer += at(Array.empty, description, Unset, Array.empty)
+
+      // `select N`: all variants together; each exclude; each validator; the description.
+
+      selects.each: select =>
+        val path = Path.Select(select.name)
+
+        def at
+          ( variants: Array[Variant]^{}, validators: Array[Text]^{}, description: Optional[Text],
+            excludes: Array[Text]^{} )
+        :   Atom =
+
+          val definition =
+            SelectDefinition(select.name, variants, validators, description, excludes)
+
+          part(path, selects = Array(definition))
+
+        if select.variants.nil && select.excludes.nil && select.validators.nil &&
+          select.description.absent
+        then buffer += at(Array.empty, Array.empty, Unset, Array.empty)
+        else
+          if !select.variants.nil
+          then buffer += at(select.variants, Array.empty, Unset, Array.empty)
+
+          select.excludes.each: exclude =>
+            buffer += at(Array.empty, Array.empty, Unset, Array(exclude))
+
+          select.validators.each: validator =>
+            buffer += at(Array.empty, Array(validator), Unset, Array.empty)
+
+          select.description.let: description =>
+            buffer += at(Array.empty, Array.empty, description, Array.empty)
+
+      // The body: each member and each validator.
+
+      body.members.each: member =>
+        buffer += part(Path.Body, overlay = Struct(Array(member), Array.empty))
+
+      body.validators.each: validator =>
+        buffer += part(Path.Body, overlay = Struct(Array.empty, Array(validator)))
+
+      buffer.toList.to(List)
+
+  // The subtype relation of §24.3, which §8.2 makes normative for compatibility: a document
+  // composed under `sub` can be read by a consumer expecting `sup` when `sub <: sup`. Records
+  // are subtyped by extension, selects by narrowing and scalars by tightening; references are
+  // unfolded coinductively, an assumption set of definition-name pairs cutting off repeated
+  // unfoldings, so the decision terminates over cyclic definitions. `check` reports the first
+  // premise that fails, as §8.2 says a resolution error SHOULD.
+  object Subtyping:
+    object Failure:
+      given communicable: Failure is Communicable = failure =>
+        def at(path: List[Text]): Text =
+          if path.nil then t"the document root" else path.reverse.join(t"/")
+
+        failure match
+          case MissingRequired(path, keyword) =>
+            m"${at(path)} lacks the required member $keyword"
+
+          case MemberOrder(path, keyword) =>
+            m"${at(path)} places the member $keyword out of order"
+
+          case MemberKind(path, keyword) =>
+            m"${at(path)} has a member $keyword of a different kind"
+
+          case Validators(path) =>
+            m"${at(path)} lacks a validator of the supertype"
+
+          case Patterns(path) =>
+            m"${at(path)} has a pattern language not within the supertype's"
+
+          case Encoding(path) =>
+            m"${at(path)} does not keep the supertype's encoding"
+
+          case Required(path, keyword) =>
+            m"${at(path)} does not require the member $keyword"
+
+          case Repeatable(path, keyword) =>
+            m"${at(path)} repeats the member $keyword"
+
+          case Key(path, keyword) =>
+            m"${at(path)} does not key the member $keyword"
+
+          case VariantMissing(path, keyword) =>
+            m"${at(path)} offers the variant $keyword, which the supertype does not"
+
+          case TypeKind(path) =>
+            m"${at(path)} has a type of a different kind"
+
+          case Unresolved(path, name) =>
+            m"${at(path)} references $name, which does not resolve"
+
+    enum Failure:
+      case MissingRequired(path: List[Text], keyword: Text)
+      case MemberOrder(path: List[Text], keyword: Text)
+      case MemberKind(path: List[Text], keyword: Text)
+      case Validators(path: List[Text])
+      case Patterns(path: List[Text])
+      case Encoding(path: List[Text])
+      case Required(path: List[Text], keyword: Text)
+      case Repeatable(path: List[Text], keyword: Text)
+      case Key(path: List[Text], keyword: Text)
+      case VariantMissing(path: List[Text], keyword: Text)
+      case TypeKind(path: List[Text])
+      case Unresolved(path: List[Text], name: Text)
+
+    def subtype(sub: Tels, sup: Tels): Boolean = check(sub, sup).absent
+
+    def check(sub: Tels, sup: Tels): Optional[Failure] =
+      Checker(sub, sup).struct(sub.document, sup.document, Nil, sci.Set())
+
+    // The always-valid built-in validator (§21.5): declared by the implicit `String` scalar of a
+    // parsed document but by no derived one, so it is disregarded when validator sets are
+    // compared.
+    private def constraining(validators: Array[Text]^{}): sci.Set[Text] =
+      validators.readable.toList.filter(_ != t"string").to(sci.Set)
+
+    private def required(polarity: Polarity): Boolean = polarity != Polarity.Loose
+    private def repeatable(polarity: Polarity): Boolean = polarity == Polarity.Loose
+
+    private class Checker(sub: Tels, sup: Tels):
+      // A member's keywords: a field's own, or every variant keyword of a select member.
+      private def keywords(member: Member, schema: Tels): sci.Set[Text] = member match
+        case field: Field => sci.Set(field.keyword)
+
+        case select: SelectRef =>
+          schema.selects.seek(_.name == select.reference).lay(sci.Set()): definition =>
+            definition.variants.readable.toList.map(_.keyword).to(sci.Set)
+
+        case _: Exclude => sci.Set()
+
+      // A type resolved through its schema's namespace: a record's struct, a scalar, or a
+      // built-in scalar; `Unset` when the name is unbound or names a select.
+      private def resolve(fieldType: Type, schema: Tels): Optional[Type] = fieldType match
+        case Reference(name) =>
+          schema.records.seek(_.name == name).lay(scalarOf(name, schema)): record =>
+            Struct(record.members, record.validators)
+
+        case other => other
+
+      private def scalarOf(name: Text, schema: Tels): Optional[Type] =
+        schema.scalars.seek(_.name == name).lay(builtinScalar(name)): definition =>
+          Scalar(definition.validators, definition.encoding, definition.patterns)
+
+      private def builtinScalar(name: Text): Optional[Type] =
+        if name == Builtin.String then Scalar(Array.empty)
+        else if name == Builtin.Identifier then Scalar(Array(t"identifier"))
+        else if name == Builtin.TypeName then Scalar(Array(t"type-name"))
+        else if name == Builtin.Sigil then Scalar(Array(t"sigil"))
+        else Unset
+
+      def struct(left: Struct, right: Struct, path: List[Text], assumed: sci.Set[(Text, Text)])
+      :   Optional[Failure] =
+
+        if !constraining(right.validators).subsetOf(constraining(left.validators))
+        then Failure.Validators(path)
+        else
+          val members = left.members.readable.toList.map: member => (member, keywords(member, sub))
+          var last = -1
+          var failure: Optional[Failure] = Unset
+
+          right.members.each: member =>
+            if failure.absent then
+              val keys = keywords(member, sup)
+              val index = members.indexWhere(_(1).exists(keys.contains))
+              val keyword = keys.headOption.getOrElse(t"")
+
+              if index < 0 then
+                if requiredMember(member) then failure = Failure.MissingRequired(path, keyword)
+              else if index <= last then
+                failure = Failure.MemberOrder(path, keyword)
+              else
+                last = index
+                failure = this.member(members(index)(0), member, path, assumed)
+
+          failure
+
+      private def requiredMember(member: Member): Boolean = member match
+        case field: Field       => required(field.required)
+        case select: SelectRef  => required(select.required)
+        case _: Exclude         => false
+
+      private def member
+        ( left: Member, right: Member, path: List[Text], assumed: sci.Set[(Text, Text)] )
+      :   Optional[Failure] =
+
+        (left, right) match
+          case (left: Field, right: Field) =>
+            val keyword = right.keyword
+
+            if required(right.required) && !required(left.required)
+            then Failure.Required(path, keyword)
+            else if repeatable(left.repeatable) && !repeatable(right.repeatable)
+            then Failure.Repeatable(path, keyword)
+            else if right.key && !left.key then Failure.Key(path, keyword)
+            else fieldType(left.fieldType, right.fieldType, keyword :: path, assumed)
+
+          case (left: SelectRef, right: SelectRef) =>
+            val keyword = right.reference
+
+            if required(right.required) && !required(left.required)
+            then Failure.Required(path, keyword)
+            else if repeatable(left.repeatable) && !repeatable(right.repeatable)
+            then Failure.Repeatable(path, keyword)
+            else select(left.reference, right.reference, keyword :: path, assumed)
+
+          case (_, right: Field)     => Failure.MemberKind(path, right.keyword)
+          case (_, right: SelectRef) => Failure.MemberKind(path, right.reference)
+          case _                     => Unset
+
+      // [Sub-Select]: every variant of the subtype's definition is a variant of the supertype's,
+      // with a subtype-compatible type.
+      private def select(left: Text, right: Text, path: List[Text], assumed: sci.Set[(Text, Text)])
+      :   Optional[Failure] =
+
+        val leftDefinition = sub.selects.seek(_.name == left)
+        val rightDefinition = sup.selects.seek(_.name == right)
+
+        (leftDefinition, rightDefinition) match
+          case (leftDefinition: SelectDefinition, rightDefinition: SelectDefinition) =>
+            val rightValidators = constraining(rightDefinition.validators)
+            val leftValidators = constraining(leftDefinition.validators)
+
+            if !rightValidators.subsetOf(leftValidators) then Failure.Validators(path)
+            else
+              var failure: Optional[Failure] = Unset
+
+              leftDefinition.variants.each: variant =>
+                if failure.absent then
+                  rightDefinition.variants.seek(_.keyword == variant.keyword) match
+                    case counterpart: Variant =>
+                      failure = fieldType(variant.variantType, counterpart.variantType,
+                          variant.keyword :: path, assumed)
+
+                    case _ =>
+                      failure = Failure.VariantMissing(path, variant.keyword)
+
+              failure
+
+          case (_: SelectDefinition, _) => Failure.Unresolved(path, right)
+          case _                        => Failure.Unresolved(path, left)
+
+      private def fieldType
+        ( left: Type, right: Type, path: List[Text], assumed: sci.Set[(Text, Text)] )
+      :   Optional[Failure] =
+
+        (left, right) match
+          case (Reference(l), Reference(r)) if assumed.contains((l, r)) => Unset
+
+          case _ =>
+            val assumed2 = (left, right) match
+              case (Reference(leftName), Reference(rightName)) => assumed + ((leftName, rightName))
+              case _                                           => assumed
+
+            (resolve(left, sub), resolve(right, sup)) match
+              case (Flag, Flag)                  => Unset
+              case (left: Scalar, right: Scalar) => scalar(left, right, path)
+              case (left: Struct, right: Struct) => struct(left, right, path, assumed2)
+              case (Unset, _)                    => Failure.Unresolved(path, nameOf(left))
+              case (_, Unset)                    => Failure.Unresolved(path, nameOf(right))
+              case _                             => Failure.TypeKind(path)
+
+      private def nameOf(fieldType: Type): Text = fieldType match
+        case Reference(name) => name
+        case _               => t""
+
+      // [Sub-Scalar]: the subtype has at least the supertype's validators, its pattern language
+      // lies within the supertype's (an empty pattern set denoting Σ*), and it keeps the
+      // supertype's encoding, or adds one where there was none.
+      private def scalar(left: Scalar, right: Scalar, path: List[Text]): Optional[Failure] =
+        val validators = constraining(right.validators).subsetOf(constraining(left.validators))
+
+        val patterns =
+          right.patterns.nil ||
+            (!left.patterns.nil && Layers.contained(left.patterns, right.patterns))
+
+        val encoding = right.encoding.absent || right.encoding == left.encoding
+
+        if !validators then Failure.Validators(path)
+        else if !patterns then Failure.Patterns(path)
+        else if !encoding then Failure.Encoding(path)
+        else Unset
+
+  // The projection of §24.5: an element valid under a subtype schema, restricted to the members
+  // its supertype can address. At every struct, children whose keyword the supertype's struct
+  // does not declare are dropped, and the rest are re-indexed to the supertype's flat keyword
+  // positions — BinTEL keyword indices are positional, so a projection that kept the subtype's
+  // indices would encode a different document — and typed by the supertype's member. Scalars and
+  // flags pass through unchanged. `from <: to` is the caller's responsibility (`Subtyping`); a
+  // member whose kinds disagree is dropped rather than mistyped.
+  object Projection:
+    def project(element: Tel.Element, from: Tels, to: Tels): Tel.Element raises Bintel.Error =
+      element match
+        case Tel.Element.Node(_, source: Struct, children) =>
+          val projected = projectChildren(children, source, from, to.document, to)
+          Tel.Element.Node(Unset, to.document, projected)
+
+        case other => other
+
+    private def projectChildren
+      ( children: Array[Tel.Element]^{}, source: Struct, from: Tels, target: Struct, to: Tels )
+    :   Array[Tel.Element]^{} raises Bintel.Error =
+
+      val sourceKeywords = Bintel.flattenKeywords(source, from)
+      val targetKeywords = Bintel.flattenKeywords(target, to)
+      val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+
+      def indexOf(element: Tel.Element): Int = element match
+        case Tel.Element.Node(index, _, _)  => index.or(0)
+        case Tel.Element.Value(index, _, _) => index
+
+      children.each: child =>
+        val index = indexOf(child)
+
+        if index >= 0 && index < sourceKeywords.length then
+          val keyword = sourceKeywords.readable(index)(0)
+          val position = targetKeywords.readable.indexWhere(_(0) == keyword)
+
+          if position >= 0 then
+            (child, resolve(targetKeywords.readable(position)(1), to)) match
+              case (Tel.Element.Value(_, _, text), scalar: Scalar) =>
+                buffer += Tel.Element.Value(position, scalar, text)
+
+              case (Tel.Element.Node(_, Flag, _), Flag) =>
+                buffer += Tel.Element.Node(position, Flag, Array.empty)
+
+              case (Tel.Element.Node(_, nested: Struct, grandchildren), struct: Struct) =>
+                buffer += Tel.Element.Node(position, struct,
+                    projectChildren(grandchildren, nested, from, struct, to))
+
+              case _ => ()
+
+      Array.from(buffer)
+
+    private def resolve(fieldType: Type, schema: Tels): Optional[Type] = fieldType match
+      case Reference(name) =>
+        schema.records.seek(_.name == name).lay(scalarOf(name, schema)): record =>
+          Struct(record.members, record.validators)
+
+      case other => other
+
+    private def scalarOf(name: Text, schema: Tels): Optional[Type] =
+      val builtinName =
+        name == Builtin.String || name == Builtin.Identifier || name == Builtin.TypeName ||
+          name == Builtin.Sigil
+
+      val builtin: Optional[Type] = if builtinName then Scalar(Array.empty) else Unset
+
+      schema.scalars.seek(_.name == name).lay(builtin): definition =>
+        Scalar(definition.validators, definition.encoding, definition.patterns)
 
 case class Tels
   ( name:     Text,

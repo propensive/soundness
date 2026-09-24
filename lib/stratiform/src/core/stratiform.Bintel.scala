@@ -676,7 +676,7 @@ object Bintel:
   // the name is unbound, or bound to a record or scalar — is B10 (§10):
   // silently contributing no slots would shift every later keyword index
   // and decode the document against the wrong members.
-  private def flattenKeywords(struct: Tels.Struct, schema: Tels)
+  private[stratiform] def flattenKeywords(struct: Tels.Struct, schema: Tels)
   :   Array[(Text, Tels.Type)]^{} raises Bintel.Error =
 
     flatten(struct, schema, strict = true)
