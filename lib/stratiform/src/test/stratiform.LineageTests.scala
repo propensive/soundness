@@ -105,6 +105,7 @@ object LineageTests extends Suite(m"Stratiform lineage tests"):
   case class Inner(count: Int)
   case class Outer(name: Text, inner: Inner)
   case class Flat(name: Text, count: Int, note: Optional[Text])
+  case class Mapped(prefs: Map[Text, Int])
 
   def run(): Unit =
     suite(m"Rendering a schema value"):
@@ -129,8 +130,12 @@ object LineageTests extends Suite(m"Stratiform lineage tests"):
       . assert(identity)
 
       test(m"a derived schema with an inline struct cannot be rendered"):
-        capture[Tels.Renderer.Error](Tels.Renderer.element(Tels.tels[Outer](t"outer"))).reason
-      . assert(_ == Tels.Renderer.Error.Reason.InlineStruct(t"inner"))
+        capture[Tels.Renderer.Error](Tels.Renderer.element(Tels.tels[Mapped](t"mapped"))).reason
+      . assert(_ == Tels.Renderer.Error.Reason.InlineStruct(t"prefs"))
+
+      test(m"a nested product renders as a named record"):
+        Tels.Renderer.element(Tels.tels[Outer](t"outer")).children.length
+      . assert(_ == 3)
 
       test(m"a derived flat schema renders and hashes"):
         SchemaSignature.hash(Tels.Renderer.element(Tels.tels[Flat](t"flat"))).length
