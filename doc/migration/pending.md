@@ -64,7 +64,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `SchemaResolver.acceptanceSignature` resolves to `Tels.Axiom.acceptance` with
   `Resolved.step == Tels.Resolution.Step.Builtin` and `Resolved.document == Unset`, where it
   previously fell through to the stores, the library and the delegate; a store or delegate
-  that served that coordinate or signature is no longer consulted for it. (#PR)
+  that served that coordinate or signature is no longer consulted for it. (#2051)
 - Module `stratiform.binary` removed; everything it provided — `stratiform.Bintel`,
   `stratiform.Varint`, `stratiform.BintelParser`, `stratiform.BintelReader`,
   `stratiform.SchemaSignature`, `stratiform.SchemaResolver`, and the extension methods
@@ -74,4 +74,4 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `stratiform.core` instead; `stratiform.binaryStaged` now depends on `stratiform.core`.
   `ulysses.core` and `stratiform.core` are unchanged for the JVM; `ulysses.core` additionally
   now publishes Scala.js and Scala Native artifacts, and `stratiform.core` now depends on
-  `gastronomy.core` and `ulysses.core`. (#PR)
+  `gastronomy.core` and `ulysses.core`. (#2051)
