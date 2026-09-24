@@ -39,6 +39,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   compare signatures on every document and refuse a mismatch, so a daemon built against this
   release will not communicate at all with a launcher from XEQ 0.6 or earlier: every executable
   packaged with an older `xeq` must be repackaged with `xeq` 0.7 or later. (#2046)
+- `ethereal.DaemonLogEvent.Failure`, previously a nullary case, is now
+  `case Failure(error: Text)`, carrying the `toString` of the throwable which failed the
+  invocation. Its `Communicable` rendering changed from "the connection handler failed" to
+  "the invocation failed: <error>". Pattern matches on `DaemonLogEvent.Failure` must bind or
+  ignore the parameter. Behaviour change: an invocation which throws a `java.lang.Throwable`
+  that is not an `Exception` now settles the client's exit status through the `Backstop`
+  (`Exit(2)` for every provided backstop), where it previously left the client waiting
+  indefinitely. (#2033)
 
 ## exoskeleton
 
