@@ -2745,6 +2745,10 @@ object pneumatic extends Library:
   object test extends Tests(core, flate, brotli, lzma, lzw):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
+  // Every codec on the same corpora, with xz-java (the reference Java XZ implementation) as
+  // the rival for the XZ rows. Run with `make bench.pneumatic`.
+  object bench extends Benchmarks(core, flate, brotli, lzma, lzw, quantitative.units):
+    def mvnDeps = Seq(mvn"org.tukaani:xz:1.10")
 
 object polaris extends Library:
   object core extends Component(hypotenuse.core, wisteria.core):

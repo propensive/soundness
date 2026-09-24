@@ -52,42 +52,18 @@ import zephyrine.*
 // clears) at a `nextCode` threshold one higher than the decoder's table-length threshold,
 // which is what keeps the two in step.
 private[pneumatic] trait LzwEngine extends caps.Mutable:
-  protected val pending: scala.collection.mutable.ArrayBuffer[Byte] =
-    scala.collection.mutable.ArrayBuffer()
-
-  private var delivered: Int = 0
+  // The engine's produced-but-undelivered output, staged flat (see `ByteSink`).
+  protected val pending: ByteSink^ = ByteSink()
 
   update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
   update def finish(): Unit
 
   update def deliver(target: scala.Array[Byte]^, offset: Int, space: Int): Int =
-    var produced = 0
-
-    while delivered < pending.length && produced < space do
-      target(offset + produced) = pending(delivered)
-      delivered += 1
-      produced += 1
-
-    if delivered == pending.length then
-      pending.clear()
-      delivered = 0
-
-    produced
+    pending.drainInto(target, offset, space)
 
   // Everything not yet delivered, drained in one immutable piece: the whole-value
   // counterpart of `deliver`.
-  update def gather(): Data =
-    val result = Array.allocate[Byte](pending.length - delivered)
-    var i = 0
-
-    while delivered < pending.length do
-      result(i) = pending(delivered)
-      i += 1
-      delivered += 1
-
-    pending.clear()
-    delivered = 0
-    Array.freeze(result)
+  update def gather(): Data = Array.unsafeFrozen(pending.take())
 
 private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
   private val codes: scala.collection.mutable.HashMap[(Int, Byte), Int] =
@@ -108,7 +84,7 @@ private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
     bitCount += width
 
     while bitCount >= 8 do
-      pending += ((bits >> (bitCount - 8)) & 0xff).toByte
+      pending.append(((bits >> (bitCount - 8)) & 0xff).toByte)
       bitCount -= 8
 
   update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
@@ -203,11 +179,7 @@ private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
           else if code == table.length && previous.length > 0 then previous :+ previous(0)
           else throw IllegalStateException("the LZW data is corrupt")
 
-        var i = 0
-
-        while i < entry.length do
-          pending += entry(i)
-          i += 1
+        pending.append(entry, 0, entry.length)
 
         if previous.length > 0 then table += previous :+ entry(0)
         previous = entry
