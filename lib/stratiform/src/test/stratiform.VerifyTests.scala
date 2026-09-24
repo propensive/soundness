@@ -118,12 +118,12 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
         keywords(Tels.tels[Worker](t"worker").document)
       . assert(_ == List(t"name", t"age"))
 
-      test(m"A required field has Tight polarity"):
+      test(m"A required field has implicit polarity, as a hand-written field does"):
 
           Tels.tels[Worker](t"worker").document.members.to[List].stdlib.collect:
             case field: Tels.Field if field.keyword == t"name" => field.required
           . to(List)
-      . assert(_ == List(Tels.Polarity.Tight))
+      . assert(_ == List(Tels.Polarity.Implicit))
 
       test(m"An Optional field loosens to Loose polarity"):
 
@@ -132,13 +132,17 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
           . to(List)
       . assert(_ == List(Tels.Polarity.Loose))
 
-      test(m"A collection field is repeatable, typed as the element struct"):
+      test(m"A collection field is repeatable, referencing the element's record"):
+          val schema = Tels.tels[Crew](t"crew")
 
-          Tels.tels[Crew](t"crew").document.members.to[List].stdlib.collect:
+          schema.document.members.to[List].stdlib.collect:
             case field: Tels.Field if field.keyword == t"members" =>
               field.repeatable -> field.fieldType
           . collect:
-              case (repeatable, struct: Tels.Struct) => repeatable -> keywords(struct)
+              case (repeatable, Tels.Reference(name)) =>
+                repeatable -> schema.records.readable.find(_.name == name).map: record =>
+                  keywords(Tels.Struct(record.members, record.validators))
+                . getOrElse(List())
           . to(List)
       . assert(_ == List(Tels.Polarity.Loose -> List(t"name", t"age")))
 

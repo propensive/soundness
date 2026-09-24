@@ -214,6 +214,24 @@ extension [value: Tel.Encodable](value: value)
 
     value.encode.bintel(Tels.tels[value](Text("root")))
 
+extension [value: Tel.Encodable](value: value)
+  // Fulfils an acceptance from this value (§8.4, writer obligations): the value is held under
+  // its type's derived schema — base, layers and optional-member atoms — and the first
+  // alternative that composition can serve is answered with the richest permitted composition,
+  // as a framed document. `Unset` when no alternative can be served. (`fulfil`, as `serve` is
+  // urticose's.)
+  inline def fulfil
+    ( acceptance: Tel.Acceptance, codecs: Tel.Codec.Bindings = Tel.Codec.Bindings.builtins )
+    ( using schematic: value is TelSchematic over Tels.Type )
+    ( using Tactic[Tel.Error], Tactic[Bintel.Error], Tactic[Tels.Resolution.Error],
+            Tactic[Tels.Renderer.Error] )
+  :   Optional[Tel.Acceptance.Served] =
+
+    val held = Tel.Acceptance.lineage[value](Tel.Acceptance.nameOf[value])
+    val composition = held.base :: held.offered.map(_.hash)
+    val element = Tel.Type.assign(value.encode, held.compose(composition))
+    Tel.Acceptance.serve(acceptance, held, composition, element, codecs)
+
 extension (acceptance: Tel.Acceptance)
   // The value hash (BinTEL §3) of an acceptance: the BLAKE3-256 digest of its bare form, the
   // same whichever of its forms is sent (§8.4).

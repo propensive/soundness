@@ -40,6 +40,7 @@ import scala.caps
 import java.nio.charset.StandardCharsets
 
 import scala.collection.Factory
+import scala.compiletime.{erasedValue, summonInline}
 import scala.language.dynamics
 
 import anticipation.*
@@ -2031,6 +2032,272 @@ object Tel extends Tel2:
     private def sameBytes(left: Data, right: Data): Boolean =
       java.util.Arrays.equals(Array.unsafeJvm(left), Array.unsafeJvm(right))
 
+    private def includes(hashes: List[Data], hash: Data): Boolean =
+      hashes.exists(sameBytes(_, hash))
+
+    // What a writer produced for an alternative (§8.4, writer obligations): the alternative
+    // served, the composition it chose — its component hashes, the base first, and their
+    // signature — the composed schema the document is encoded under, and the document itself,
+    // framed in external-schema mode, or self-contained when the alternative permits it and the
+    // composition includes a layer the reader did not name.
+    case class Served
+      ( alternative: Alternative,
+        hashes:      List[Data],
+        signature:   Data,
+        schema:      Tels,
+        document:    Data )
+
+    // The writer's side: the first alternative that can be served from a value held under the
+    // composition `composition` names in the lineage `held` (its base first), and its document.
+    //
+    // An alternative is served when its requirement decodes against the lineage and is a
+    // composition of it, and the value projects to some composition `S_doc` — the requirement,
+    // then each further component of the writer's own composition, in its order, that the
+    // alternative permits and that keeps the composition valid and a subtype of the requirement.
+    // A component is permitted when the requirement or a `component` prefix names it (a prefix
+    // matching several components names none), or, for a layer, when the alternative carries
+    // `any-published` (a layer being a published component) or `self-contained`; a writer's own
+    // atoms are never included unnamed. A composition permitted only by `self-contained` is
+    // sent self-contained, its schema embedded.
+    def serve
+      ( acceptance:  Acceptance,
+        held:        SchemaSignature.Lineage,
+        composition: List[Data],
+        element:     Tel.Element,
+        codecs:      Codec.Bindings = Codec.Bindings.builtins )
+      ( using Tactic[Tel.Error], Tactic[Bintel.Error], Tactic[Tels.Resolution.Error] )
+    :   Optional[Served] =
+
+      val source: Tels = held.compose(composition)
+
+      def isLayer(hash: Data): Boolean = held.layers.exists: layer => sameBytes(layer.hash, hash)
+
+      def serveOne(alternative: Alternative): Optional[Served] =
+        safely(SchemaSignature.decode(alternative.schema.data, held.candidates)).let: required =>
+          required match
+            case first :: _ if sameBytes(first, held.base) =>
+              safely(held.compose(required)).let: requirement =>
+                val named: List[Data] = alternative.components.bind: component =>
+                  held.matching(component.prefix) match
+                    case single :: Nil => List(single.hash)
+                    case _             => Nil
+
+                def external(hash: Data): Boolean =
+                  includes(required, hash) || includes(named, hash) ||
+                    (alternative.anyPublished && isLayer(hash))
+
+                def permitted(hash: Data): Boolean =
+                  external(hash) || (alternative.selfContained && isLayer(hash))
+
+                var chosen: List[Data] = required
+                var chosenSchema: Tels = requirement
+
+                composition match
+                  case _ :: further => further.each: hash =>
+                    if !includes(chosen, hash) && permitted(hash) then
+                      val candidate = chosen :+ hash
+
+                      safely(held.compose(candidate)).let: schema =>
+                        if Tels.Subtyping.subtype(schema, requirement) then
+                          chosen = candidate
+                          chosenSchema = schema
+
+                  case _ => ()
+
+                if !Tels.Subtyping.subtype(source, chosenSchema) then Unset else
+                  val projected = Tels.Projection.project(element, source, chosenSchema)
+                  val body = Bintel.encode(projected, chosenSchema, codecs)
+                  val signature = SchemaSignature.encode(chosen)
+
+                  if chosen.all(external(_)) then
+                    val framed = Bintel.frame(body, signature)
+                    Served(alternative, chosen, signature, chosenSchema, framed)
+                  else
+                    // Every component beyond the requirement is a layer here, so the composition
+                    // has a schema document to embed: the base with exactly those layers.
+                    val layers = chosen.bind: hash =>
+                      held.layers.filter { layer => sameBytes(layer.hash, hash) }.map(_.layer)
+
+                    val embedded = held.schema.copy(layers = layers.to[Array])
+
+                    safely(Tels.Renderer.element(embedded)).let: rendered =>
+                      val schemaBody = rendered.bintel(Tels.Axiom.tels)
+                      val document = Bintel.frameSelfContained(signature, schemaBody, body)
+                      Served(alternative, chosen, signature, chosenSchema, document)
+
+            case _ => Unset
+
+      def attempt(alternatives: List[Alternative]): Optional[Served] = alternatives match
+        case alternative :: rest => serveOne(alternative).or(attempt(rest))
+        case _                   => Unset
+
+      attempt(acceptance.alternatives)
+
+    // A reader's reading of a document (§8.4, reader obligations): the first alternative whose
+    // schema is a supertype of the document's composed schema, with that composed schema (to
+    // decode under) and the alternative's (the invocation schema, to project to).
+    case class Reading(alternative: Alternative, document: Tels, invocation: Tels)
+
+    def served(acceptance: Acceptance, library: SchemaSignature.Library, documentSignature: Data)
+    :   Optional[Reading] raises Tels.Resolution.Error =
+
+      library.resolve(documentSignature).let: composed =>
+        def attempt(alternatives: List[Alternative]): Optional[Reading] = alternatives match
+          case alternative :: rest =>
+            val reading = safely(library.resolve(alternative.schema.data)).let: invocation =>
+              if Tels.Subtyping.subtype(composed, invocation)
+              then Reading(alternative, composed, invocation)
+              else Unset
+
+            reading.or(attempt(rest))
+
+          case _ => Unset
+
+        attempt(acceptance.alternatives)
+
+    // ── Typed acceptances ───────────────────────────────────────────────────────
+
+    // An acceptance built from Scala types: one alternative per member of the tuple `formats`,
+    // in its order of preference, each requiring the member's derived base — its required
+    // members with the definitions they reach — and accepting its optional members, and the
+    // members of its `@layer` groups, as further components. A document read through it
+    // decodes to the union of the members: `Tel.Acceptance[(A, B)]().read(data)` is `A | B`,
+    // for the caller to match on. The tuple carries the order a union type cannot.
+    final class Typed[formats <: Tuple]
+      ( val acceptance:    Acceptance,
+        val lineages:      List[SchemaSignature.Lineage],
+        val selfContained: Boolean,
+        val anyPublished:  Boolean ):
+
+      // A further, less preferred format.
+      inline def otherwise[format]
+        ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error], Tactic[Tels.Resolution.Error],
+                Tactic[Error] )
+      :   Typed[Tuple.Append[formats, format]] =
+
+        val schematic = summonInline[format is TelSchematic over Tels.Type]
+        val extra = lineage[format](nameOf[format])(using schematic)
+        val added = alternative(extra, selfContained, anyPublished)
+
+        new Typed[Tuple.Append[formats, format]]
+          ( Acceptance(acceptance.alternatives :+ added),
+            lineages :+ extra,
+            selfContained,
+            anyPublished )
+
+      // Reads a framed document sent in reply to the acceptance, as the member whose
+      // alternative was served: the first alternative whose schema the document's composed
+      // schema is a subtype of, with every optional member and layer the writer included
+      // available to the decoder.
+      inline def read(data: Data)
+        ( using library: SchemaSignature.Library = SchemaSignature.Library.empty )
+        ( using Tactic[Tel.Error], Tactic[Bintel.Error], Tactic[Tels.Resolution.Error],
+                Tactic[Error] )
+      :   Tuple.Union[formats] =
+
+        val decoders = Acceptance.decoders[formats]
+        val (position, tel) = reading(data, library)
+        val decoder = nth(decoders, position).or(abort(Error(Error.Reason.Unread)))
+        decoder(tel).asInstanceOf[Tuple.Union[formats]]
+
+      // The position of the alternative served and the document presented under its composed
+      // schema — every optional member and layer the writer included still present — for the
+      // decoders `read` summons.
+      def reading(data: Data, library: SchemaSignature.Library)
+        ( using Tactic[Bintel.Error], Tactic[Tels.Resolution.Error], Tactic[Error] )
+      :   (Int, Tel) =
+
+        val framed = Bintel.unframe(data)
+        val all = SchemaSignature.Library(lineages.reverse.unwind(library.lineages))
+
+        val reading = served(acceptance, all, framed.signature).or:
+          abort(Error(Error.Reason.Unread))
+
+        val position = positionOf(acceptance.alternatives, reading.alternative, 0)
+        val element = Bintel.decode(framed.body, reading.document, Codec.Bindings.builtins)
+        (position, Bintel.present(element, reading.document))
+
+    private def positionOf(alternatives: List[Alternative], alternative: Alternative, index: Int)
+    :   Int =
+
+      alternatives match
+        case head :: tail =>
+          if head == alternative then index else positionOf(tail, alternative, index + 1)
+
+        case _            => 0
+
+    private def nth[element](list: List[element], index: Int): Optional[element] = list match
+      case head :: tail => if index == 0 then head else nth(tail, index - 1)
+      case _            => Unset
+
+    // The name a type's derived schema carries: the type's name in kebab case.
+    inline def nameOf[value]: Text = Tel.camelToKebab(wisteria.internal.sumName[value].s)
+
+    // The lineage a type's derived schema forms for acceptances (`Tels.Atoms.split`): the
+    // base is its required members, and its optional members are atoms of the lineage.
+    def lineage[value](name: Text)(using schematic: value is TelSchematic over Tels.Type)
+      ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error] )
+    :   SchemaSignature.Lineage =
+
+      val (base, atoms) = Tels.Atoms.split(Tels.tels[value](name))
+      SchemaSignature.Lineage(base).including(atoms)
+
+    // One alternative for a lineage: its base alone as the requirement, and every layer and
+    // atom it holds offered by the shortest prefix that denotes it.
+    def alternative
+      ( lineage: SchemaSignature.Lineage, selfContained: Boolean, anyPublished: Boolean )
+      ( using Tactic[Bintel.Error], Tactic[Tels.Resolution.Error], Tactic[Error] )
+    :   Alternative =
+
+      val components = lineage.offered.map: component => Component(lineage.prefixOf(component.hash))
+
+      Alternative(Signature(lineage.signature(List())), selfContained, anyPublished, components)
+
+    inline def apply[formats <: Tuple](selfContained: Boolean = false, anyPublished: Boolean = false)
+      ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error], Tactic[Tels.Resolution.Error],
+              Tactic[Error] )
+    :   Typed[formats] =
+
+      val lineages = Acceptance.lineages[formats]
+      val alternatives = lineages.map(alternative(_, selfContained, anyPublished))
+      new Typed[formats](Acceptance(alternatives), lineages, selfContained, anyPublished)
+
+    // The lineages of a tuple of types, in order.
+    inline def lineages[formats <: Tuple]
+      ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error] )
+    :   List[SchemaSignature.Lineage] =
+
+      inline erasedValue[formats] match
+        case _: EmptyTuple => Nil
+
+        case _: (head *: tail) =>
+          val schematic = summonInline[head is TelSchematic over Tels.Type]
+          lineage[head](nameOf[head])(using schematic) :: lineages[tail]
+
+    // The decoders of a tuple of types, in order, each from the presented document.
+    inline def decoders[formats <: Tuple](using Tactic[Tel.Error]): List[Tel => Any] =
+      inline erasedValue[formats] match
+        case _: EmptyTuple => Nil
+
+        case _: (head *: tail) =>
+          val decodable = summonInline[head is Tel.Decodable]
+          val decoder: Tel => Any = tel => decodable.decoded(tel)
+          decoder :: decoders[tail]
+
+    // Reads a framed, external-mode document sent in reply to an acceptance: resolved against
+    // the library, read under the alternative served, and projected to its invocation schema.
+    def receive
+      ( acceptance: Acceptance, library: SchemaSignature.Library, data: Data,
+        codecs: Codec.Bindings = Codec.Bindings.builtins )
+      ( using Tactic[Tel.Error], Tactic[Bintel.Error], Tactic[Tels.Resolution.Error] )
+    :   Optional[(Reading, Tel.Element)] =
+
+      val framed = Bintel.unframe(data)
+
+      served(acceptance, library, framed.signature).let: reading =>
+        val element = Bintel.decode(framed.body, reading.document, codecs)
+        (reading, Tels.Projection.project(element, reading.document, reading.invocation))
+
     // One composition the reader accepts: its invocation schema for this
     // alternative, whether it accepts self-contained mode, whether it can
     // resolve any published component of the base's lineage, and the further
@@ -2121,12 +2388,16 @@ object Tel extends Tel2:
           case Malformed =>
             m"the semantic model does not have the shape of an acceptance"
 
+          case Unread =>
+            m"no alternative's schema is a supertype of the document's composed schema"
+
       enum Reason(val number: Int) extends Clarification:
         // Not 33 or `37 + 2·(n − 2)` bytes, or not XORing to `0x79`.
         case MalformedSignature(length: Int) extends Reason(1)
         case ComponentLength(length: Int)    extends Reason(2)
         case WrongSchema(identifier: Text)   extends Reason(3)
         case Malformed                       extends Reason(4)
+        case Unread                          extends Reason(5)
 
     case class Error(reason: Acceptance.Error.Reason)(using Diagnostics)
     extends fulminate.Error(612, reason.number)(m"the acceptance is invalid because $reason")

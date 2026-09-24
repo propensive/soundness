@@ -30,16 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package stratiform
 
-export
-  stratiform
-  . { Bintel, DynamicTelEnabler, Revision, Mutation, SchemaResolver, SchemaSignature,
-      Stratiform, Tel, Telp, Tel2, Tel3, TelReader, Tels, Tels2, Varint, bintel, bintelDocument,
-      fulfil, layer, tel, valueHash }
+import anticipation.*
 
-package dynamicAccess:
-  export stratiform.dynamicAccess.dynamicTel
-
-package conversions:
-  export stratiform.conversions.encodableToTel
+// Groups a case-class field into a named schema layer (§20.3 of the TEL specification): the
+// derived schema's base omits the field, and a layer of that name declares it — refining the
+// record the field belongs to, or the document root's overlay — so that the field is a component
+// a reader can accept or decline by the layer's hash. Fields of one product annotated with the
+// same name form one layer; the annotation composes with `@name`.
+case class layer(name: Text) extends StaticAnnotation
