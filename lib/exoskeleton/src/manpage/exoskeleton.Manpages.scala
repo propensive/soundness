@@ -32,7 +32,7 @@
                                                                                                   */
 package exoskeleton
 
-import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
+import ambience.*
 import anticipation.*
 import aperture.*
 import contingency.*
@@ -69,9 +69,12 @@ object Manpages:
       case Installed(path)        => path
       case AlreadyInstalled(path) => path
 
+  // The environment and system are the *invocation's*: under a daemon, the JVM's own
+  // environment is whichever client's launcher started it, so `XDG_DATA_HOME` set for a later
+  // `install` would be ignored (#2034). A `Cli` in scope supplies the `Environment`.
   def install(page: Roff, force: Boolean = false)
     ( using erased effectful: Effectful )
-    ( using Diagnostics )
+    ( using Environment, System, Diagnostics )
   ( using (Io.Event is Loggable)^ )
   ( using Tactic[Install.Error] )
   :   InstallResult =

@@ -59,6 +59,25 @@ format. Entries are grouped by module, most-recently-added last within a module.
   completion scripts on every exit from the block, including an abort or a thrown exception;
   previously the teardown ran only when the block returned normally, leaving a daemon process
   alive after a failure. (#2046)
+- `exoskeleton.Manpages.install(page: Roff, force: Boolean = false)` gained the required
+  givens `ambience.Environment` and `ambience.System`, in the second `using` clause:
+  `(using erased effectful: Effectful)(using Environment, System, Diagnostics)(using (Io.Event
+  is Loggable)^)(using Tactic[Install.Error])`. It no longer imports
+  `environments.javaBaseEnvironment` or `systems.javaBaseSystem` itself. The XDG directories
+  are now resolved from the given `Environment`, not the JVM's. An `exoskeleton.Cli` in scope
+  supplies the `Environment` (through `Environment.Provider`); `systems.javaBaseSystem` supplies
+  the `System`. (#2034)
+- `exoskeleton.Completions.ensure(force: Boolean = false)` gained the required givens
+  `ambience.Environment` and `ambience.System`: `(using Entrypoint^, Environment, System,
+  WorkingDirectory, Diagnostics)(using (CliEvent is Loggable)^)`, previously
+  `(using Entrypoint^, WorkingDirectory, Diagnostics)(using (CliEvent is Loggable)^)`. Same
+  resolution and semantics as for `Manpages.install`. (#2034)
+- `exoskeleton.Completions.install(force: Boolean = false)` gained the required givens
+  `ambience.Environment` and `ambience.System`: `(using entrypoint: Entrypoint^)(using erased
+  effectful: Effectful)(using Environment, System, WorkingDirectory, Diagnostics)(using (CliEvent
+  is Loggable)^)(using Tactic[Install.Error])`, previously without `Environment, System`. The
+  overload `install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on
+  Linux])` is unchanged. (#2034)
 - `exoskeleton.Cli.arguments(textArguments: List[Text], focus: Optional[Int] = Unset, position:
   Optional[Int] = Unset, tab: Optional[Ordinal] = Unset)` changed semantics: the `Argument` at
   index `focus` now has `cursor = position.or(text.length)` where it previously had

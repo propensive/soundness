@@ -1010,6 +1010,24 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           HelpApp.tree.roff.serialize.cut(t"\n")
         . check(_.has(t"\\fBmytool\\fP [\\-\\-verbose <value>] <command> [options]"))
 
+        // The page lands where the environment *given* says — the invocation's, not the JVM's
+        // (#2034) — so two installs under different environments land in different places.
+        def installUnder(dataHome: Path on Linux): Optional[Text] =
+          import errorDiagnostics.stackTracesDiagnostics
+          given Environment = name => if name == t"XDG_DATA_HOME" then dataHome.encode else Unset
+          effectful(Manpages.install(leafHelp.roff(using manual))).pathname
+
+        def freshDataHome(): Path on Linux =
+          temporaryDirectory[Path on Linux]/t"exoskeleton-man-${Uuid()}"
+
+        test(m"Manpages.install follows the XDG_DATA_HOME of the given environment"):
+          val first = freshDataHome()
+          val second = freshDataHome()
+
+          List(installUnder(first), installUnder(second)) ==
+            List(first, second).map { dir => (dir/t"man"/t"man1"/t"demo.1").encode }
+        . check(_ == true)
+
       // A missing `Inspectable` is never a compile error — `derived` always succeeds and
       // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
       // only be held in place by asserting on the renderings themselves.
