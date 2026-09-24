@@ -137,6 +137,7 @@ tabulation-second-starts-new-block
 tabulation-terminated-by-blank
 tabulation-three-columns
 tel-header-then-garbage
+unconstrained-scalar
 unicode-keyword
 word-separation-resets-per-line
 zero-bytes

@@ -90,5 +90,3 @@ Document {
         },
     ],
 }
-errors:
-  E224 [0,0): Scalar declares neither `validate` nor `pattern`: scalar `Loose` declares neither `validate` nor `pattern`
