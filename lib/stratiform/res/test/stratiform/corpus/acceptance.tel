@@ -1,0 +1,54 @@
+tel 1.0
+
+# The TEL acceptance schema, published as `specification.tel/acceptance:1.0.0`
+# (the coordinate pinned in §8.4 of the BinTEL Specification). An acceptance
+# tells a writer which composed schemas a reader can consume, in decreasing
+# preference order, and which further components of each base's lineage it
+# can resolve and would like included if the writer holds them.
+#
+# Every alternative is one `accept` line: its first atom is the schema
+# signature (a palimpsest, BinTEL §8.2) the reader will use as its invocation
+# schema; the two optional flags follow; every remaining atom names a further
+# component by its hash or by a prefix of at least four bytes. The flag
+# keywords contain a hyphen, which is not in the BASE-256 alphabet, so a flag
+# can never be read as a component nor a component as a flag.
+#
+# Encodings. `schema-signature` and `base-256` are the two codecs BinTEL §8.4
+# defines; an implementation that supports acceptances binds both.
+
+name acceptance
+
+# A schema signature: a palimpsest of component hashes at the BinTEL-pinned
+# parameters. The codec rejects any byte sequence that is not structurally a
+# signature (a length other than 33, 37, 39, 41, …, or a cadence byte other
+# than 0x79), so a malformed signature is E312 at validation time.
+
+scalar Signature
+  description
+      A schema signature (BinTEL §8.2): a palimpsest of component hashes at the pinned parameters.
+  encoding schema-signature
+
+# A component hash — a layer or an atom of the required base's lineage — or a
+# prefix of one, at least four bytes long.
+
+scalar Component
+  description
+      A component hash, or a prefix of one at least four bytes long.
+  pattern .{4,32}
+  encoding base-256
+
+# One composition the reader accepts. Member order is load-bearing for inline
+# atoms (TEL §20.2): `schema` is the first atom, the optional flags are skipped
+# when the next atom does not match them, and `component` — a repeatable
+# Scalar — takes every atom that remains.
+
+record Alternative
+  description
+      One composition the reader accepts, with the further components it can resolve.
+  field schema Signature
+  field self-contained Flag optional
+  field any-published Flag optional
+  field component Component optional repeatable
+
+document
+  field accept Alternative repeatable

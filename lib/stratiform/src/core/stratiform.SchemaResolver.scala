@@ -27,6 +27,7 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package stratiform
@@ -65,6 +66,19 @@ object SchemaResolver:
   // tels.tel source. Pinned as a golden value, and recomputed from the
   // corpus by the test suite.
   val telsSignature: Text = t"ÔŀưḞ2żbτȚÆAĄſЬMẍỳϋῩJλḤӛ3ñẉḢkŻẋzǓĥ"
+
+  // The built-in `acceptance` schema's signature (BinTEL §8.4), pinned
+  // the same way over the canonical acceptance.tel; recognised at step 1
+  // alongside `tels`, so that a peer can parse an acceptance before any
+  // schema has been exchanged.
+  val acceptanceSignature: Text = Tel.Acceptance.signature
+
+  // The step-1 table: each built-in schema's pinned coordinate, its
+  // signature, and the `Tels` value that answers for it.
+  val builtins: List[(Tel.Pragma.Reference, Text, Tels)] =
+    List
+      ( (Tel.Pragma.Reference.tels, telsSignature, Tels.Axiom.tels),
+        (Tel.Pragma.Reference.acceptance, acceptanceSignature, Tels.Axiom.acceptance) )
 
   // A resolution outcome: the schema composed with the pragma's layer
   // selection; its source document (`Unset` for the built-in axiom);
@@ -122,23 +136,24 @@ object SchemaResolver:
       val matches = claimed.let(bytesEqual(_, pair(0))).or(true)
       if matches then result = accept(pair(1).read[Tel], Step.Embedded)
 
-    // Step 1: the built-in meta-schema, answering to its pinned
-    // coordinate (with or without the version pin) and to its
-    // signature, in both cases without network access.
-    if result.absent then
-      val builtinSignature = Base256.decode(telsSignature)
+    // Step 1: the built-in schemas — `tels` and `acceptance` — each
+    // answering to its pinned coordinate (with or without the version
+    // pin) and to its signature, in both cases without network access.
+    if result.absent then builtins.each: (reference, signature, schema) =>
+      if result.absent then
+        val builtinSignature = Base256.decode(signature)
 
-      val byCoordinate = pragma.reference.let: reference =>
-        reference.isTels && (reference.selector.absent || reference.selector.match
-          case Tel.Pragma.Reference.Selector.Version(2, 0, 0) => true
-          case _                                              => false)
-      . or(false)
+        val byCoordinate = pragma.reference.let: candidate =>
+          candidate.is(reference) &&
+            (candidate.selector.absent || candidate.selector == reference.selector)
 
-      val bySignature = claimed.let(bytesEqual(_, builtinSignature)).or(false)
+        . or(false)
 
-      if byCoordinate || bySignature then
-        val composed = Tels.Layers.compose(Tels.Axiom.tels, selection)
-        result = Resolved(composed, Unset, builtinSignature, Step.Builtin)
+        val bySignature = claimed.let(bytesEqual(_, builtinSignature)).or(false)
+
+        if byCoordinate || bySignature then
+          val composed = Tels.Layers.compose(schema, selection)
+          result = Resolved(composed, Unset, builtinSignature, Step.Builtin)
 
     // Steps 2–3, signature form: any content-addressed store, then the
     // library of schema documents in hand, with the layer selections as

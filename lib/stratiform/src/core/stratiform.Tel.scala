@@ -1823,6 +1823,69 @@ object Tel extends Tel2:
       def apply(name: Text): Optional[Tel.Codec] =
         cache.getOrElseUpdate(name, bindings(name))
 
+    object Bindings:
+      // No encoding name resolves: the configured-but-empty binding, under
+      // which every declared encoding is E313/B13.
+      val none: Bindings = _ => Unset
+
+      // The two codecs BinTEL §8.4 defines, which an implementation that
+      // supports acceptances binds by these names. Other schemas MAY use
+      // them too; compose with application codecs through `orElse`.
+      val builtins: Bindings = name => name.s match
+        case "base-256"         => base256
+        case "schema-signature" => schemaSignature
+        case _                  => Unset
+
+      extension (bindings: Bindings)
+        // The bindings resolving through `bindings` first, then `other`.
+        def orElse(other: Bindings): Bindings = name => bindings(name).or(other(name))
+
+    // BinTEL §8.4 `base-256`: the accepted texts are the BASE-256 strings
+    // (including the empty string); `encode` is the BASE-256 decoder and
+    // `decode` the BASE-256 encoder, so every byte sequence is the
+    // encoding of exactly one accepted text and laws C1–C4 hold by
+    // construction. A rejection names every offending character, as
+    // `Base256.decodeStrict` reports them.
+    val base256: Codec = new Codec:
+      def encode(text: Text): Encoded =
+        import errorDiagnostics.emptyDiagnostics
+
+        attempt[Base256.Error](Encoded.Bytes(Base256.decodeStrict(text)): Encoded).recover:
+          case error: Base256.Error => Encoded.Invalid(error.message.text)
+
+      def decode(bytes: Data): Decoded = Decoded.Value(Base256.encode(bytes))
+
+    // BinTEL §8.4 `schema-signature`: as `base-256`, except that `encode`
+    // additionally rejects any text whose bytes are not structurally a
+    // schema signature (§8.2 decoding steps 1 and 2), so a malformed
+    // signature is E312 at validation and a writer never runs the
+    // palimpsest search on bytes that fail the structural checks.
+    val schemaSignature: Codec = new Codec:
+      def encode(text: Text): Encoded = base256.encode(text) match
+        case Encoded.Bytes(data) =>
+          if signatureComponents(data).present then Encoded.Bytes(data)
+          else Encoded.Invalid(t"the bytes are not structurally a schema signature")
+
+        case invalid => invalid
+
+      def decode(bytes: Data): Decoded = base256.decode(bytes)
+
+    // The number of components a schema signature encodes, when `data` is
+    // structurally one at the BinTEL-pinned parameters (§8.2): the length
+    // is 33 or `37 + 2·(n − 2)` for some `n ≥ 2`, and the XOR of every
+    // byte is the pinned cadence byte `0x79`. `Unset` otherwise.
+    def signatureComponents(data: Data): Optional[Int] =
+      val length = data.length
+
+      val count: Optional[Int] =
+        if length == 33 then 1
+        else if length >= 37 && (length - 37) % 2 == 0 then 2 + (length - 37)/2
+        else Unset
+
+      count.let: n =>
+        val xor = data.readable.foldLeft(0) { (acc, byte) => acc ^ (byte & 0xff) }
+        if xor == 0x79 then n else Unset
+
   trait Codec:
     def encode(text: Text): Tel.Codec.Encoded
     def decode(bytes: Data): Tel.Codec.Decoded
@@ -1843,6 +1906,286 @@ object Tel extends Tel2:
       new Encoded[name] { type Self = self }
 
   open class Encoded[name <: Label] extends prepositional.Typeclass
+
+  object Acceptance:
+    def apply(first: Alternative, rest: Alternative*): Acceptance =
+      Acceptance(first :: List.from(rest))
+
+    // The pinned coordinate of the built-in schema, and its 33-byte
+    // signature: the BASE-256 palimpsest of the value hash of the canonical
+    // `acceptance.tel`, which `SchemaResolver` recognises at step 1.
+    val reference: Tel.Pragma.Reference = Tel.Pragma.Reference.acceptance
+    val signature: Text = t"íΎẘĜϗpҷϗPgàѝǽẇῘεÃžẗv8rþοQļĒZᾱƨβEX"
+    val signatureData: Data = Base256.decode(signature)
+
+    // Reads a binary form: a framed §6.1 document, recognised by its magic
+    // number and required to carry the built-in schema's signature, or
+    // otherwise the bare document root. Either is decoded with the two
+    // codecs bound, so an encoded signature or component arrives as its
+    // BASE-256 text.
+    def apply(data: Data)(using Tactic[Bintel.Error], Tactic[Error]): Acceptance =
+      val body: Data =
+        if data.readable.startsWith(Bintel.magic.readable) then
+          val framed = Bintel.unframe(data)
+
+          if !sameBytes(framed.signature, signatureData)
+          then abort(Error(Error.Reason.WrongSchema(Base256.encode(framed.signature))))
+
+          framed.body
+        else
+          data
+
+      val root: Tel.Element =
+        Bintel.decode(body, Tels.Axiom.acceptance, Tel.Codec.Bindings.builtins)
+      Acceptance(root)
+
+    // Reads the BASE-256 text of a binary form, strictly: a character outside
+    // the alphabet is a `Base256.Error` rather than a silently corrupted byte.
+    def apply(text: Text)(using Tactic[Base256.Error], Tactic[Bintel.Error], Tactic[Error])
+    :   Acceptance =
+
+      val data: Data = Base256.decodeStrict(text)
+      Acceptance(data)
+
+    // Reads a parsed TEL document. A pragma that identifies a schema must
+    // identify this one, by its coordinate (with or without the version pin)
+    // or by its signature; a document with no schema identification is taken
+    // to be an acceptance because the embedding says so.
+    def apply(tel: Tel)(using Tactic[Tel.Error], Tactic[Error]): Acceptance =
+      tel.document.let(_.pragma).let: pragma =>
+        pragma.reference.let: candidate =>
+          val pinned =
+            candidate.is(reference) &&
+              (candidate.selector.absent || candidate.selector == reference.selector)
+
+          if !pinned then abort(Error(Error.Reason.WrongSchema(candidate.text)))
+
+        pragma.signature.let: claimed =>
+          if claimed != signature then abort(Error(Error.Reason.WrongSchema(claimed)))
+
+      val root: Tel.Element =
+        Tel.Type.assign
+          ( tel,
+            Tels.Axiom.acceptance,
+            Tel.Validator.Registry.builtins,
+            Tel.Codec.Bindings.builtins )
+
+      Acceptance(root)
+
+    // Reads the semantic model of an acceptance, as `Tel.Type.assign` or
+    // `Bintel.decode` produce it under `Tels.Axiom.acceptance` with the
+    // codecs bound: each `accept` node's children are its `schema` value
+    // (keyword index 0), its two flags (1 and 2) and its `component` values
+    // (3), every scalar carrying BASE-256 text.
+    def apply(element: Tel.Element)(using Tactic[Error]): Acceptance = element match
+      case Tel.Element.Node(_, _, children) =>
+        Acceptance(children.readable.toList.to(List).map(alternative))
+
+      case _ =>
+        abort(Error(Error.Reason.Malformed))
+
+    private def alternative(element: Tel.Element)(using Tactic[Error]): Alternative = element match
+      case Tel.Element.Node(_, _, children) =>
+        var schema: Optional[Signature] = Unset
+        var selfContained = false
+        var anyPublished  = false
+        var components: List[Component] = Nil
+
+        children.each:
+          case Tel.Element.Value(0, _, text) =>
+            schema = Signature(Base256.decode(text))
+
+          case Tel.Element.Value(3, _, text) =>
+            components = Component(Base256.decode(text)) :: components
+
+          case Tel.Element.Node(index, Tels.Flag, _) if index.let(_ == 1).or(false) =>
+            selfContained = true
+
+          case Tel.Element.Node(index, Tels.Flag, _) if index.let(_ == 2).or(false) =>
+            anyPublished = true
+
+          case _ =>
+            abort(Error(Error.Reason.Malformed))
+
+        Alternative
+          ( schema.or(abort(Error(Error.Reason.Malformed))),
+            selfContained,
+            anyPublished,
+            components.reverse )
+
+      case _ =>
+        abort(Error(Error.Reason.Malformed))
+
+    // The text form is TEL: `text.decode[Acceptance]` parses a document and
+    // reads it as `Acceptance(tel)` does, and `acceptance.encode[Text]`
+    // renders `tel`.
+    given decodable: (tel: Tactic[Tel.Error], acceptance: Tactic[Error])
+    =>  ( (Acceptance is distillate.Decodable in Text)^{tel, acceptance} ) =
+      text =>
+        val bytes: Data = Array.unsafeFrozen(text.s.getBytes(StandardCharsets.UTF_8).nn)
+        val parsed: Tel = Tel.parse(bytes)
+        Acceptance(parsed)
+
+    given encodable: Acceptance is anticipation.Encodable in Text = _.encode
+
+    private def sameBytes(left: Data, right: Data): Boolean =
+      java.util.Arrays.equals(Array.unsafeJvm(left), Array.unsafeJvm(right))
+
+    // One composition the reader accepts: its invocation schema for this
+    // alternative, whether it accepts self-contained mode, whether it can
+    // resolve any published component of the base's lineage, and the further
+    // components it can resolve and would like included.
+    case class Alternative
+      ( schema:        Signature,
+        selfContained: Boolean         = false,
+        anyPublished:  Boolean         = false,
+        components:    List[Component] = Nil ):
+
+      // The `accept` line. Member order is load-bearing (§8.4): the schema
+      // is the first atom, the flags follow, and every remaining atom is a
+      // component — a flag written after a component would be consumed as a
+      // component and rejected by its codec.
+      def compound: Tel.Compound =
+        val named: List[Text] = components.map(_.text)
+        val withAny: List[Text] = if anyPublished then t"any-published" :: named else named
+        val withSelf: List[Text] = if selfContained then t"self-contained" :: withAny else withAny
+        val texts: List[Text] = schema.text :: withSelf
+
+        val atoms: Array[Tel.Atom]^{} =
+          texts.map { text => (Tel.Atom.Inline(text, 1): Tel.Atom) }.to[Array]
+
+        Tel.Compound(t"accept", atoms, Unset, Array.empty)
+
+    // A schema signature (§8.2): a palimpsest of component hashes at the
+    // BinTEL-pinned parameters, held as bytes that are structurally a
+    // signature — 33 or `37 + 2·(n − 2)` long, XORing to the cadence byte
+    // `0x79`. Which hashes it names is a question for a library holding
+    // them (`SchemaSignature.decode`), not for the value.
+    object Signature:
+      def parse(data: Data): Optional[Signature] =
+        Tel.Codec.signatureComponents(data).let: count => new Signature(data, count)
+
+      def apply(data: Data): Signature raises Error =
+        parse(data).or(abort(Error(Error.Reason.MalformedSignature(data.length))))
+
+    final class Signature private (val data: Data, val count: Int):
+      // The first four bytes of the body, which are the base component's hash
+      // prefix uncontested (§8.2, "Correctness property").
+      def basePrefix: Data = data.segment(0.z till 4.z)
+
+      def text: Text = Base256.encode(data)
+
+      override def equals(that: Any): Boolean = that match
+        case that: Signature => sameBytes(data, that.data)
+        case _               => false
+
+      override def hashCode: Int = java.util.Arrays.hashCode(Array.unsafeJvm(data))
+      override def toString: String = s"Signature(${text.s})"
+
+    // A further component of the base's lineage — a layer or an atom — named
+    // by its 32-byte hash or by a prefix of it at least four bytes long. A
+    // prefix denotes the one component of the writer's lineage whose hash
+    // begins with it; one matching none or several denotes nothing (§8.4).
+    object Component:
+      def parse(data: Data): Optional[Component] =
+        if data.length >= 4 && data.length <= 32 then new Component(data) else Unset
+
+      def apply(data: Data): Component raises Error =
+        parse(data).or(abort(Error(Error.Reason.ComponentLength(data.length))))
+
+    final class Component private (val prefix: Data):
+      // Whether this names a component by its full hash rather than a prefix.
+      def full: Boolean = prefix.length == 32
+
+      def text: Text = Base256.encode(prefix)
+
+      override def equals(that: Any): Boolean = that match
+        case that: Component => sameBytes(prefix, that.prefix)
+        case _               => false
+
+      override def hashCode: Int = java.util.Arrays.hashCode(Array.unsafeJvm(prefix))
+      override def toString: String = s"Component(${text.s})"
+
+    object Error:
+      object Reason:
+        given communicable: Reason is Communicable =
+          case MalformedSignature(length) =>
+            m"a ${length.toString}-byte value is not structurally a schema signature"
+
+          case ComponentLength(length) =>
+            m"a component must be four to thirty-two bytes long, not ${length.toString}"
+
+          case WrongSchema(identifier) =>
+            m"the document identifies its schema as $identifier, not the acceptance schema"
+
+          case Malformed =>
+            m"the semantic model does not have the shape of an acceptance"
+
+      enum Reason(val number: Int) extends Clarification:
+        // Not 33 or `37 + 2·(n − 2)` bytes, or not XORing to `0x79`.
+        case MalformedSignature(length: Int) extends Reason(1)
+        case ComponentLength(length: Int)    extends Reason(2)
+        case WrongSchema(identifier: Text)   extends Reason(3)
+        case Malformed                       extends Reason(4)
+
+    case class Error(reason: Acceptance.Error.Reason)(using Diagnostics)
+    extends fulminate.Error(612, reason.number)(m"the acceptance is invalid because $reason")
+
+  // An acceptance (BinTEL §8.4): a reader tells a writer which composed
+  // schemas it can consume, in decreasing order of preference, and which
+  // further components of each base's lineage it can resolve and would like
+  // included if the writer holds them. Each alternative carries the schema
+  // signature the reader will read under (its invocation schema), the two
+  // optional flags, and the further components as hash prefixes.
+  //
+  // The message is a TEL document under the built-in `acceptance` schema
+  // (`Tels.Axiom.acceptance`, pinned as `specification.tel/acceptance:1.0.0`)
+  // and has three interchangeable forms: TEL text, read through `Decodable
+  // in Text` and written through `Encodable in Text`; binary, either framed
+  // (§6.1, carrying the schema's 33-byte signature) or bare (the document
+  // root alone, for embeddings that already know the payload is an
+  // acceptance), read by `Acceptance(data)` and written by `framed`/`bintel`;
+  // and BASE-256 of the bare form, read by `Acceptance(text)` and written by
+  // `text`. Whichever form travels, `valueHash` is that of the bare form.
+  case class Acceptance(alternatives: List[Acceptance.Alternative]):
+
+    // The text form, rendered. A member rather than only the `Encodable`'s extension: nested in
+    // `Tel`, the type's implicit scope also holds `Tel`'s derived `Tel.Encodable` givens, whose
+    // own `encode` extension shadows the companion's for extension lookup.
+    def encode: Text = tel.show
+
+    // The text form: a document whose pragma names the pinned coordinate,
+    // with one `accept` line per alternative.
+    def tel: Tel =
+      val pragma = Tel.Pragma((1, 0), Acceptance.reference, List(), Unset, Unset)
+      val compounds: Array[Tel.Compound]^{} = alternatives.map(_.compound).to[Array]
+      val block = Tel.Block(Array.empty, Unset, compounds, 0)
+
+      Tel.make(Tel.Document(Unset, pragma, Tel.LineEndings.Lf, 0, Array(block)))
+
+    // The semantic model under the built-in schema, validated with its two
+    // codecs bound, so a signature that is not structurally one (E312) or a
+    // component outside four to thirty-two bytes (E315) is reported here.
+    def element(using Tactic[Tel.Error]): Tel.Element =
+      Tel.Type.assign
+        ( tel,
+          Tels.Axiom.acceptance,
+          Tel.Validator.Registry.builtins,
+          Tel.Codec.Bindings.builtins )
+
+    // The bare binary form: the document-root encoding alone (§7.1), which
+    // is not self-framing.
+    def bintel(using Tactic[Tel.Error], Tactic[Bintel.Error]): Data =
+      Bintel.encode(element, Tels.Axiom.acceptance, Tel.Codec.Bindings.builtins)
+
+    // The framed binary form (§6.1, external-schema mode), 39 bytes longer
+    // than the bare form and self-framing.
+    def framed(using Tactic[Tel.Error], Tactic[Bintel.Error]): Data =
+      Bintel.frame(bintel, Acceptance.signatureData)
+
+    // The bare form as BASE-256 text: a single word under Unicode word
+    // segmentation.
+    def text(using Tactic[Tel.Error], Tactic[Bintel.Error]): Text = Base256.encode(bintel)
 
   object Element:
     case class Node
@@ -1905,8 +2248,12 @@ object Tel extends Tel2:
 
       // Whether this is the built-in `tels` meta-schema's coordinate,
       // with or without its version pin.
-      def isTels: Boolean =
-        domain == Reference.tels.domain && name == Reference.tels.name
+      def isTels: Boolean = is(Reference.tels)
+
+      // Whether this names the same module as `other` — the same domain and
+      // module name — with or without a selector. A built-in schema is
+      // recognised by module, and its pin is checked separately.
+      def is(other: Reference): Boolean = domain == other.domain && name == other.name
 
     object Reference:
       enum Selector:
@@ -1922,6 +2269,12 @@ object Tel extends Tel2:
       // access.
       val tels: Reference =
         Reference(t"specification.tel", t"tels", Selector.Version(2, 0, 0))
+
+      // The canonical, version-pinned coordinate of the built-in `acceptance`
+      // schema (BinTEL §8.4), recognised at resolution step 1 exactly as
+      // `tels` is (§8.2 of the TEL specification).
+      val acceptance: Reference =
+        Reference(t"specification.tel", t"acceptance", Selector.Version(1, 0, 0))
 
       // Total form check: `Unset` for any grammar violation, so the
       // pragma parser (and later re-classification) chooses the error
