@@ -2170,7 +2170,7 @@ object Tel extends Tel2:
         val anyPublished:  Boolean ):
 
       // A further, less preferred format.
-      inline def or[format]
+      inline def otherwise[format]
         ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error], Tactic[Tels.Resolution.Error],
                 Tactic[Error] )
       :   Typed[Tuple.Append[formats, format]] =

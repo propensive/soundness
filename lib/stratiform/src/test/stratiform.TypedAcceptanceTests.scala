@@ -155,8 +155,8 @@ object TypedAcceptanceTests extends Suite(m"Stratiform typed acceptance tests"):
         acceptance.acceptance.alternatives.map(_.schema.count)
       . assert(_ == List(1, 1))
 
-      test(m"`or` appends a less preferred format"):
-        Tel.Acceptance[(ContactV2, Invoice)]().or[ContactV1].acceptance.alternatives.size
+      test(m"`otherwise` appends a less preferred format"):
+        Tel.Acceptance[(ContactV2, Invoice)]().otherwise[ContactV1].acceptance.alternatives.size
       . assert(_ == 3)
 
       test(m"the acceptance round-trips through its text form"):
