@@ -136,10 +136,8 @@ object LineageTests extends Suite(m"Stratiform lineage tests"):
         SchemaSignature.hash(Tels.Renderer.element(Tels.tels[Flat](t"flat"))).length
       . assert(_ == 32)
 
-      // A derived field is `Tight` where a hand-written one is implicitly required, so the
-      // equivalent source spells `required`; the two hash alike only with the flag written.
       test(m"a derived flat schema renders as its hand-written equivalent"):
-        val source = t"tel 1.0\n\nname flat\n\ndocument\n  field name String required\n  field count String required\n  field note String optional\n"
+        val source = t"tel 1.0\n\nname flat\n\ndocument\n  field name String\n  field count String\n  field note String optional\n"
         val handWritten = Tel.Type.assign(source.read[Tel], axiom).valueHash(axiom)
         hex(SchemaSignature.hash(Tels.Renderer.element(Tels.tels[Flat](t"flat")))) == hex(handWritten.data)
       . assert(identity)

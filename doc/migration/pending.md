@@ -75,3 +75,20 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `ulysses.core` and `stratiform.core` are unchanged for the JVM; `ulysses.core` additionally
   now publishes Scala.js and Scala Native artifacts, and `stratiform.core` now depends on
   `gastronomy.core` and `ulysses.core`. (#2051)
+- `stratiform.Tels.tels[T](name)` derives a schema of a different shape. A field whose type is a
+  case class was `Tels.Field(_, _, keyword, Tels.Struct(members, validators), _)`; it is now
+  `Tels.Field(_, _, keyword, Tels.Reference(typeName), _)` with `Tels.RecordDefinition(typeName,
+  members, Array.empty)` registered in `Tels#records` (`typeName` is the case class's simple
+  name; a root type's own record is registered only when a member references it). A variant of a
+  sealed type whose case is a product likewise carries `Tels.Reference(caseName)`. A sum-typed
+  field nested inside a product now registers its `Tels.SelectDefinition` in `Tels#selects`
+  (previously an unresolvable `Reference`). A required field's `required` polarity is now
+  `Tels.Polarity.Implicit` where it was `Tels.Polarity.Tight`, and a `Map` field's `key`/`value`
+  members are `Implicit` where they were `Tight`. The BinTEL wire form of a value is unchanged.
+  `stratiform.TelBlueprint` records built over a derived schema therefore expose a case-class
+  field as a nested `Record` (previously a `Tel`). (#PR5)
+- `stratiform.TelSchematic` gained members with defaults — `fieldType: Tels.Type`,
+  `definitions(seen: scala.collection.immutable.Set[Text]): TelSchematic.Definitions`,
+  `layers: List[Tels.Layer]`, `rootLayers: List[Tels.Layer]` — and its `polarity` default changed
+  from `Tels.Polarity.Tight` to `Tels.Polarity.Implicit`; an instance overriding `polarity` is
+  unaffected, one relying on the default now derives implicit polarity. (#PR5)

@@ -35,7 +35,7 @@ package stratiform
 import scala.language.unsafeNulls
 
 import murmuration.*
-import rudiments.{bind, each, seek, segment, to}
+import rudiments.{bind, each, seek, segment, to, unwind}
 
 import anticipation.*
 import contingency.*
@@ -284,7 +284,7 @@ object SchemaSignature:
             val hash = atomHash(atom, axiom)
             if seen.add(Base256.encode(hash)) then buffer += Component(hash, Unset, layer)
 
-      Lineage(schema, base, layers, buffer.toList.to(List))
+      Lineage(schema, base, layers, buffer.toList.to(List), Nil)
 
     // A lineage from a schema document, as parsed.
     def of(document: Tel, axiom: Tels = Tels.Axiom.tels)
@@ -297,10 +297,19 @@ object SchemaSignature:
   // the atoms of the base and of each layer, each with its hash. A signature naming the base is
   // decoded against exactly this set; a reader's or writer's library is a list of lineages.
   case class Lineage
-    ( schema: Tels, base: Data, layers: List[Lineage.Component], atoms: List[Lineage.Component] ):
+    ( schema: Tels,
+      base:   Data,
+      layers: List[Lineage.Component],
+      atoms:  List[Lineage.Component],
+      extras: List[Lineage.Component] ):
 
     // Every component but the base: the layers, then the atoms.
     def components: List[Lineage.Component] = List(layers, atoms).bind(identity)
+
+    // The components worth offering beyond the base: its layers, each standing for its atoms,
+    // and the atoms added by `including`, which belong to no layer. The base's own atoms are
+    // part of every composition naming it, and a layer's atoms are named by the layer.
+    def offered: List[Lineage.Component] = List(layers, extras).bind(identity)
 
     // The candidate hashes a signature naming this base is decoded against.
     def candidates: List[Data] = base :: components.map(_.hash)
@@ -333,21 +342,43 @@ object SchemaSignature:
       val layer = layers.seek(_.name == name).or:
         abort(Tels.Resolution.Error(Tels.Resolution.Error.Reason.UnknownLayer(name)))
 
-      // Lengthens the prefix one byte at a time until it denotes the layer alone; the full
+      prefixOf(layer.hash, minimum)
+
+    // The shortest prefix of a component's hash, at least `minimum` bytes long, that no other
+    // component of this lineage shares.
+    def prefixOf(hash: Data, minimum: Int = 4): Data =
+      // Lengthens the prefix one byte at a time until it denotes one component alone; the full
       // hash always does.
       @scala.annotation.tailrec
       def shortest(length: Int): Data =
-        val candidate = layer.hash.segment(0.z till length.z)
+        val candidate = hash.segment(0.z till length.z)
 
-        if length >= layer.hash.length || matching(candidate).size <= 1 then candidate
+        if length >= hash.length || matching(candidate).size <= 1 then candidate
         else shortest(length + 1)
 
-      val start =
-        if minimum < 1 then 1
-        else if minimum > layer.hash.length then layer.hash.length
-        else minimum
+      val start = if minimum < 1 then 1 else if minimum > hash.length then hash.length else minimum
 
       shortest(start)
+
+    // This lineage with further atoms — those a derived schema's optional members form — as
+    // components, each once by hash.
+    def including(atoms: List[Tels.Atoms.Atom], axiom: Tels = Tels.Axiom.tels)
+      ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error] )
+    :   Lineage =
+
+      val seen = scala.collection.mutable.HashSet.empty[Text]
+      this.atoms.each: component => seen.add(component.text)
+      val buffer = scala.collection.mutable.ListBuffer.empty[Lineage.Component]
+
+      atoms.each:
+        case Tels.Atoms.Atom.Head(_, _) => ()
+
+        case atom @ Tels.Atoms.Atom.Part(_, layer) =>
+          val hash = atomHash(atom, axiom)
+          if seen.add(Base256.encode(hash)) then buffer += Lineage.Component(hash, Unset, layer)
+
+      val added = proscenium.List.from(buffer)
+      copy(atoms = this.atoms.reverse.unwind(added), extras = extras.reverse.unwind(added))
 
     // The composed schema a decoded hash sequence names: the base, then each component's layer
     // in order. The first hash must be this base; an unknown hash, or a sequence that does not

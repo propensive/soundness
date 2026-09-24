@@ -1899,6 +1899,90 @@ object Tels extends Tels2:
     // The atomic expansion of a component sequence: each group replaced by its atoms.
     def expansion(groups: List[Group]): List[Atom] = groups.bind(_.atoms)
 
+    // A derived schema split for an acceptance: the base a reader requires — the root's required
+    // members with the definitions they reach — and, as atoms it can accept, each optional root
+    // member and each member of a definition only optional members reach. Two types with the
+    // same required members then share a base, however their optional members differ, and a
+    // writer of either serves a reader of the other with whatever optional members it holds.
+    // Layers are left on the base as they are, with the definitions they reach.
+    def split(schema: Tels): (Tels, List[Atom]) =
+      val members = schema.document.members.readable.toList
+      val required = members.filter(requiredMember)
+      val optional = members.filterNot(requiredMember)
+
+      // The member types a definition declares.
+      def declared(name: Text): List[Type] =
+        val fromRecord: List[Type] = schema.records.seek(_.name == name) match
+          case record: RecordDefinition =>
+            proscenium.List.from(record.members.readable.toList).bind(memberType)
+
+          case _ => Nil
+
+        val fromSelect: List[Type] = schema.selects.seek(_.name == name) match
+          case select: SelectDefinition =>
+            proscenium.List.from(select.variants.readable.toList).map(_.variantType)
+
+          case _ => Nil
+
+        fromRecord.reverse.unwind(fromSelect)
+
+      // The definitions reachable from a set of member types, transitively.
+      def reachable(types: List[Type], seen: sci.Set[Text]): sci.Set[Text] = types match
+        case Reference(name) :: rest =>
+          if seen.contains(name) then reachable(rest, seen)
+          else reachable(declared(name).reverse.unwind(rest), seen + name)
+
+        case (nested: Struct) :: rest =>
+          val inner = proscenium.List.from(nested.members.readable.toList).bind(memberType)
+          reachable(inner.reverse.unwind(rest), seen)
+
+        case _ :: rest => reachable(rest, seen)
+        case _         => seen
+
+      val fromLayers: List[Type] =
+        proscenium.List.from(schema.layers.readable.toList).bind: layer =>
+          val overlay = proscenium.List.from(layer.overlay.members.readable.toList).bind(memberType)
+
+          val records = proscenium.List.from(layer.records.readable.toList).bind: record =>
+            proscenium.List.from(record.members.readable.toList).bind(memberType)
+
+          overlay.reverse.unwind(records)
+
+      val fromRequired: List[Type] = proscenium.List.from(required).bind(memberType)
+      val roots: List[Type] = fromRequired.reverse.unwind(fromLayers)
+
+      val kept = reachable(roots, sci.Set())
+
+      val base =
+        schema.copy
+          ( document = Struct(Array.from(required), schema.document.validators),
+            records  = schema.records.filter { record => kept.contains(record.name) },
+            selects  = schema.selects.filter { select => kept.contains(select.name) } )
+
+      val optionalAtoms = proscenium.List.from(optional).map: member =>
+        part(Path.Body, overlay = Struct(Array(member), Array.empty))
+
+      val definitionAtoms =
+        atomsOf
+          ( schema.records.filter { record => !kept.contains(record.name) },
+            Array.empty,
+            schema.selects.filter { select => !kept.contains(select.name) },
+            empty )
+
+      // In canonical order — definitions before the body's members — so that a composition
+      // adding them one at a time resolves each member's reference when it reaches it.
+      (base, definitionAtoms.reverse.unwind(optionalAtoms))
+
+    private def requiredMember(member: Member): Boolean = member match
+      case field: Field      => field.required != Polarity.Loose
+      case select: SelectRef => select.required != Polarity.Loose
+      case _: Exclude        => false
+
+    private def memberType(member: Member): List[Type] = member match
+      case field: Field      => List(field.fieldType)
+      case select: SelectRef => List(Reference(select.reference))
+      case _: Exclude        => Nil
+
     private def empty: Struct = Struct(Array.empty, Array.empty)
 
     private def part(path: Path, records: Array[RecordDefinition]^{} = Array.empty,

@@ -40,6 +40,7 @@ import scala.caps
 import java.nio.charset.StandardCharsets
 
 import scala.collection.Factory
+import scala.compiletime.{erasedValue, summonInline}
 import scala.language.dynamics
 
 import anticipation.*
@@ -2154,6 +2155,135 @@ object Tel extends Tel2:
 
         attempt(acceptance.alternatives)
 
+    // ── Typed acceptances ───────────────────────────────────────────────────────
+
+    // An acceptance built from Scala types: one alternative per member of the tuple `formats`,
+    // in its order of preference, each requiring the member's derived base — its required
+    // members with the definitions they reach — and accepting its optional members, and the
+    // members of its `@layer` groups, as further components. A document read through it
+    // decodes to the union of the members: `Tel.Acceptance[(A, B)]().read(data)` is `A | B`,
+    // for the caller to match on. The tuple carries the order a union type cannot.
+    final class Typed[formats <: Tuple]
+      ( val acceptance:    Acceptance,
+        val lineages:      List[SchemaSignature.Lineage],
+        val selfContained: Boolean,
+        val anyPublished:  Boolean ):
+
+      // A further, less preferred format.
+      inline def or[format]
+        ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error], Tactic[Tels.Resolution.Error],
+                Tactic[Error] )
+      :   Typed[Tuple.Append[formats, format]] =
+
+        val schematic = summonInline[format is TelSchematic over Tels.Type]
+        val extra = lineage[format](nameOf[format])(using schematic)
+        val added = alternative(extra, selfContained, anyPublished)
+
+        new Typed[Tuple.Append[formats, format]]
+          ( Acceptance(acceptance.alternatives :+ added),
+            lineages :+ extra,
+            selfContained,
+            anyPublished )
+
+      // Reads a framed document sent in reply to the acceptance, as the member whose
+      // alternative was served: the first alternative whose schema the document's composed
+      // schema is a subtype of, with every optional member and layer the writer included
+      // available to the decoder.
+      inline def read(data: Data)
+        ( using library: SchemaSignature.Library = SchemaSignature.Library.empty )
+        ( using Tactic[Tel.Error], Tactic[Bintel.Error], Tactic[Tels.Resolution.Error],
+                Tactic[Error] )
+      :   Tuple.Union[formats] =
+
+        val decoders = Acceptance.decoders[formats]
+        val (position, tel) = reading(data, library)
+        val decoder = nth(decoders, position).or(abort(Error(Error.Reason.Unread)))
+        decoder(tel).asInstanceOf[Tuple.Union[formats]]
+
+      // The position of the alternative served and the document presented under its composed
+      // schema — every optional member and layer the writer included still present — for the
+      // decoders `read` summons.
+      def reading(data: Data, library: SchemaSignature.Library)
+        ( using Tactic[Bintel.Error], Tactic[Tels.Resolution.Error], Tactic[Error] )
+      :   (Int, Tel) =
+
+        val framed = Bintel.unframe(data)
+        val all = SchemaSignature.Library(lineages.reverse.unwind(library.lineages))
+
+        val reading = served(acceptance, all, framed.signature).or:
+          abort(Error(Error.Reason.Unread))
+
+        val position = positionOf(acceptance.alternatives, reading.alternative, 0)
+        val element = Bintel.decode(framed.body, reading.document, Codec.Bindings.builtins)
+        (position, Bintel.present(element, reading.document))
+
+    private def positionOf(alternatives: List[Alternative], alternative: Alternative, index: Int)
+    :   Int =
+
+      alternatives match
+        case head :: tail =>
+          if head == alternative then index else positionOf(tail, alternative, index + 1)
+
+        case _            => 0
+
+    private def nth[element](list: List[element], index: Int): Optional[element] = list match
+      case head :: tail => if index == 0 then head else nth(tail, index - 1)
+      case _            => Unset
+
+    // The name a type's derived schema carries: the type's name in kebab case.
+    inline def nameOf[value]: Text = Tel.camelToKebab(wisteria.internal.sumName[value].s)
+
+    // The lineage a type's derived schema forms for acceptances (`Tels.Atoms.split`): the
+    // base is its required members, and its optional members are atoms of the lineage.
+    def lineage[value](name: Text)(using schematic: value is TelSchematic over Tels.Type)
+      ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error] )
+    :   SchemaSignature.Lineage =
+
+      val (base, atoms) = Tels.Atoms.split(Tels.tels[value](name))
+      SchemaSignature.Lineage(base).including(atoms)
+
+    // One alternative for a lineage: its base alone as the requirement, and every layer and
+    // atom it holds offered by the shortest prefix that denotes it.
+    def alternative
+      ( lineage: SchemaSignature.Lineage, selfContained: Boolean, anyPublished: Boolean )
+      ( using Tactic[Bintel.Error], Tactic[Tels.Resolution.Error], Tactic[Error] )
+    :   Alternative =
+
+      val components = lineage.offered.map: component => Component(lineage.prefixOf(component.hash))
+
+      Alternative(Signature(lineage.signature(List())), selfContained, anyPublished, components)
+
+    inline def apply[formats <: Tuple](selfContained: Boolean = false, anyPublished: Boolean = false)
+      ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error], Tactic[Tels.Resolution.Error],
+              Tactic[Error] )
+    :   Typed[formats] =
+
+      val lineages = Acceptance.lineages[formats]
+      val alternatives = lineages.map(alternative(_, selfContained, anyPublished))
+      new Typed[formats](Acceptance(alternatives), lineages, selfContained, anyPublished)
+
+    // The lineages of a tuple of types, in order.
+    inline def lineages[formats <: Tuple]
+      ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error] )
+    :   List[SchemaSignature.Lineage] =
+
+      inline erasedValue[formats] match
+        case _: EmptyTuple => Nil
+
+        case _: (head *: tail) =>
+          val schematic = summonInline[head is TelSchematic over Tels.Type]
+          lineage[head](nameOf[head])(using schematic) :: lineages[tail]
+
+    // The decoders of a tuple of types, in order, each from the presented document.
+    inline def decoders[formats <: Tuple](using Tactic[Tel.Error]): List[Tel => Any] =
+      inline erasedValue[formats] match
+        case _: EmptyTuple => Nil
+
+        case _: (head *: tail) =>
+          val decodable = summonInline[head is Tel.Decodable]
+          val decoder: Tel => Any = tel => decodable.decoded(tel)
+          decoder :: decoders[tail]
+
     // Reads a framed, external-mode document sent in reply to an acceptance: resolved against
     // the library, read under the alternative served, and projected to its invocation schema.
     def receive
@@ -2258,12 +2388,16 @@ object Tel extends Tel2:
           case Malformed =>
             m"the semantic model does not have the shape of an acceptance"
 
+          case Unread =>
+            m"no alternative's schema is a supertype of the document's composed schema"
+
       enum Reason(val number: Int) extends Clarification:
         // Not 33 or `37 + 2·(n − 2)` bytes, or not XORing to `0x79`.
         case MalformedSignature(length: Int) extends Reason(1)
         case ComponentLength(length: Int)    extends Reason(2)
         case WrongSchema(identifier: Text)   extends Reason(3)
         case Malformed                       extends Reason(4)
+        case Unread                          extends Reason(5)
 
     case class Error(reason: Acceptance.Error.Reason)(using Diagnostics)
     extends fulminate.Error(612, reason.number)(m"the acceptance is invalid because $reason")
