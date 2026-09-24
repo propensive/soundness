@@ -905,14 +905,17 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               zsh(t"-ab").stdlib.exists(adjacent(_, t"-S", t""))
             . check(_ == true)
 
-            // Fish and bash insert whole words, so the candidate is the extended cluster.
+            // Fish and bash insert whole words, so the candidate is the extended cluster. Both
+            // shells index the current word without counting the command (`1` here), unlike
+            // zsh's `CURRENT`; a `2` would put the cursor on a new, empty word after `-ab`,
+            // which is not an extension of the cluster (#1964).
             test(m"fish offers the extended cluster"):
-              sh"$tool '{completions}' fish 2 3 /dev/null -- clstr -ab".exec[Text]()
+              sh"$tool '{completions}' fish 1 3 /dev/null -- clstr -ab".exec[Text]()
               . cut(t"\n").stdlib.to(List).map(_.cut(t"\t").prim.or(t""))
             . check(_.contains(t"-abc"))
 
             test(m"bash offers the extended cluster"):
-              sh"$tool '{completions}' bash 2 3 /dev/null -- clstr -ab".exec[Text]()
+              sh"$tool '{completions}' bash 1 3 /dev/null -- clstr -ab".exec[Text]()
               . cut(t"\n").stdlib.to(List)
             . check(_.contains(t"-abc"))
 
@@ -1007,6 +1010,24 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           HelpApp.tree.roff.serialize.cut(t"\n")
         . check(_.has(t"\\fBmytool\\fP [\\-\\-verbose <value>] <command> [options]"))
 
+        // The page lands where the environment *given* says — the invocation's, not the JVM's
+        // (#2034) — so two installs under different environments land in different places.
+        def installUnder(dataHome: Path on Linux): Optional[Text] =
+          import errorDiagnostics.stackTracesDiagnostics
+          given Environment = name => if name == t"XDG_DATA_HOME" then dataHome.encode else Unset
+          effectful(Manpages.install(leafHelp.roff(using manual))).pathname
+
+        def freshDataHome(): Path on Linux =
+          temporaryDirectory[Path on Linux]/t"exoskeleton-man-${Uuid()}"
+
+        test(m"Manpages.install follows the XDG_DATA_HOME of the given environment"):
+          val first = freshDataHome()
+          val second = freshDataHome()
+
+          List(installUnder(first), installUnder(second)) ==
+            List(first, second).map { dir => (dir/t"man"/t"man1"/t"demo.1").encode }
+        . check(_ == true)
+
       // A missing `Inspectable` is never a compile error — `derived` always succeeds and
       // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
       // only be held in place by asserting on the renderings themselves.
@@ -1055,6 +1076,31 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             val count = Flag[Text](t"count")()
             if count.present then execute(Exit.Ok) else execute(Exit.Fail(1))
 
+          invoke(app)(t"--count", t"4")(0)
+        . check(_ == Exit.Ok)
+
+        // Inside an `inline def`, `Flag#apply()` is not expanded when the body is typed, so
+        // `.present` on its result resolves against the declared union type and answers `true`
+        // for every handle (#2032). The plain `present` and `value` members read the flag
+        // directly, so they are what inline code must use.
+        inline def gated(using Cli): Execution =
+          if Flag[Text](t"count").present then execute(Exit.Ok) else execute(Exit.Fail(1))
+
+        inline def reading(using Cli): Execution =
+          execute(if Flag[Text](t"count").value == t"4" then Exit.Ok else Exit.Fail(1))
+
+        test(m"Flag#present in an inline body is true when the flag is given"):
+          def app(using cli: Cli): Execution = gated
+          invoke(app)(t"--count", t"4")(0)
+        . check(_ == Exit.Ok)
+
+        test(m"Flag#present in an inline body is false when the flag is absent"):
+          def app(using cli: Cli): Execution = gated
+          invoke(app)()(0)
+        . check(_ == Exit.Fail(1))
+
+        test(m"Flag#value in an inline body reads the operand inside execute"):
+          def app(using cli: Cli): Execution = reading
           invoke(app)(t"--count", t"4")(0)
         . check(_ == Exit.Ok)
 
@@ -1269,3 +1315,76 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           app(using completion)
           completion.cursorSuggestions.map(_.core)
         . check(_ == List(t"[re]"))
+
+      // Completions constructed in-process, so the focus and the candidates offered for it can
+      // be inspected directly rather than through a shell.
+      suite(m"Completion focus and flag fallback"):
+        import interpreters.posixInterpreter
+        import stdios.muteStdio
+
+        def completing(shell: Shell, texts: List[Text], focus: Int, position: Optional[Int])
+          ( app: Cli ?=> Unit )
+        :   Completion =
+
+          val args = Cli.arguments(texts, focus, position)
+
+          val completion =
+            Completion
+              ( args,
+                args,
+                summon[Environment],
+                summon[WorkingDirectory],
+                shell,
+                focus,
+                position,
+                summon[Stdio],
+                t"",
+                Prim,
+                Login(t"tester", Unset) )
+
+          app(using completion)
+          completion
+
+        // An application which tries its subcommands before it reads its flags: the shape that
+        // used to hide the flag list behind the subcommand names for a word typed as a flag
+        // (#2035).
+        val Run = Subcommand(t"run", t"run it")
+
+        def tool(using cli: Cli): Unit = cli.arguments match
+          case Run() :: _ => ()
+          case _          => Flag[Text](t"verbose")() yet Flag[Text](t"version")() yet ()
+
+        test(m"A word typed as a flag falls back to the flag list past subcommand candidates"):
+          completing(Shell.Bash, List(t"--ver"), 0, Unset)(tool).serialize.sort
+        . check(_ == List(t"--verbose", t"--version"))
+
+        test(m"A word not typed as a flag still offers the subcommand candidates"):
+          completing(Shell.Bash, List(t"r"), 0, Unset)(tool).serialize
+        . check(_ == List(t"run"))
+
+        // Two value-taking flags: the operand under the cursor must reach the Discoverable of
+        // the flag it belongs to, wherever that flag stands on the line (#1964).
+        given Text is Discoverable = (operand, _) => List(Suggestion(t"[$operand]"))
+
+        def suites(using cli: Cli): Unit = Flag[Text](t"suite")() yet Flag[Text]('c')() yet ()
+
+        test(m"A flag's operand completes when another flag follows it"):
+          completing(Shell.Zsh, List(t"list", t"--suite", t"su", t"-c", t"x"), 2, 2)(suites)
+          . cursorSuggestions.map(_.core)
+        . check(_ == List(t"[su]"))
+
+        test(m"A --flag=operand spelling completes when another flag follows it"):
+          completing(Shell.Zsh, List(t"list", t"--suite=su", t"-c", t"x"), 1, 10)(suites)
+          . cursorSuggestions.map(_.core)
+        . check(_ == List(t"[su]"))
+
+        test(m"A flag's operand completes when the flag is last"):
+          completing(Shell.Zsh, List(t"list", t"-c", t"x", t"--suite", t"su"), 4, 2)(suites)
+          . cursorSuggestions.map(_.core)
+        . check(_ == List(t"[su]"))
+
+        test(m"A flag's operand completes without a cursor position, as bash reports it"):
+          completing(Shell.Bash, List(t"list", t"--suite", t"su", t"-c", t"x"), 2, Unset)(suites)
+          . cursorSuggestions.map(_.core)
+        . check(_ == List(t"[su]"))
+

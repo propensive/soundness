@@ -107,6 +107,37 @@ extends Topical:
     flag == name || aliases.has(flag)
 
 
+  // Plain readers for code which cannot use `apply()`: inside another `inline def`, a
+  // `transparent inline` call is not expanded when the body is typed, so its result has the
+  // declared union type `Prospective[Topic] | Optional[Topic]`. That union has no `present`
+  // member, and vacuous's `present` extension on `Optional` accepts it — the union contains
+  // `Unset.type` — and answers `true` for every handle, whether or not the flag was given
+  // (#2032). Neither method is inline, so each reads the flag directly; both register it, as
+  // `apply()` does, so a flag read this way is still offered and documented. `value` is gated on
+  // `Effectful`, as applying a `Prospective` is: the value is for `execute` alone.
+  def present
+    ( using cli:           Cli,
+            interpreter:   Interpreter,
+            interpretable: Topic is Interpretable,
+            suggestions:   (? <: Topic) is Discoverable = Discoverable.noSuggestions )
+  :   Boolean =
+
+    cli.register(this, suggestions, interpretable.operandName)
+    cli.parameter[Topic](this).present
+
+
+  def value
+    ( using cli:           Cli,
+            interpreter:   Interpreter,
+            interpretable: Topic is Interpretable,
+            suggestions:   (? <: Topic) is Discoverable = Discoverable.noSuggestions )
+    ( using erased effectful: Effectful )
+  :   Optional[Topic] =
+
+    cli.register(this, suggestions, interpretable.operandName)
+    cli.parameter[Topic](this)
+
+
   // Both `apply` and `require` dispatch on the erased `Effectful` capability, which only an
   // `execute` block provides. In the pure section they return a handle — a `Prospective` or a
   // `Requisite` — resolved eagerly from the arguments; inside `execute` they resolve directly,

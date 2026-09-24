@@ -179,10 +179,31 @@ extends Cli:
     arguments.seek(_.position == currentArgument).lay(t"")(_.value)
 
   def serialize: List[Text] =
-    val items0 =
-      if cursorSuggestions.nil then flagSuggestions(focusText.starts(t"--")) else cursorSuggestions
+    val focus = interpreter.focus(parameters)
 
-    val items = interpreter.focus(parameters).lay(items0): focus => items0.map(focus.wrap(_))
+    // The text being completed: the piece of the focused word under the cursor, when the focus
+    // is that word; otherwise (the focus is the flag preceding an operand word) the whole word.
+    val typed: Text = focus.absolve match
+      case argument: Argument if argument.position == currentArgument => argument()
+      case _                                                          => focusText
+
+    // A word typed as a flag can only be extended by a flag. A subcommand or operand candidate
+    // offered at that position (an application may well try its subcommands before it reads
+    // its flags) cannot match it, and would otherwise hide the flag list (#2035).
+    val extending =
+      if typed.starts(t"-") then cursorSuggestions.filter(_.core.starts(t"-"))
+      else cursorSuggestions
+
+    val items0 = if extending.nil then flagSuggestions(typed.starts(t"--")) else extending
+
+    // Wrapping reshapes a candidate for the piece of the *focused word* it extends; a focus on
+    // the flag preceding that word has nothing to wrap.
+    val items = focus.absolve match
+      case argument: Argument if argument.position == currentArgument =>
+        items0.map(argument.wrap(_))
+
+      case _ =>
+        items0
 
     shell match
       case Shell.Zsh =>

@@ -77,9 +77,13 @@ object Cli:
       if textArguments.size >= target then textArguments
       else textArguments + List.fill(target - textArguments.size)(t"")
 
+    // The focused word always carries a cursor, so the interpreter can tell which word is being
+    // completed: at the end of the word when the shell does not say where (bash passes no
+    // position), which is where its whole-word prefix matching assumes it anyway.
     padded.indexed.map: (text, ordinal) =>
       val index = ordinal.n0
-      Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
+      val cursor = if focus == index then position.or(text.length) else Unset
+      Argument(index, text, cursor, tab, Argument.Format.Full)
 
 
 // A `Cli` is a *capability*: it carries the live stdio, signal-dispatch and completion state of

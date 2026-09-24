@@ -34,7 +34,7 @@ package exoskeleton
 
 import scala.collection.mutable as scm
 
-import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
+import ambience.*
 import anticipation.*
 import aperture.*
 import contingency.*
@@ -107,7 +107,11 @@ object Completions:
         case AlreadyInstalled(_, path) => path
 
 
-  def ensure(force: Boolean = false)(using Entrypoint^, WorkingDirectory, Diagnostics)
+  // The environment and system are the invocation's, not the daemon JVM's, so the XDG
+  // directories are those of the client asking for the install (#2034); a `Cli` in scope
+  // supplies the `Environment`.
+  def ensure(force: Boolean = false)
+    ( using Entrypoint^, Environment, System, WorkingDirectory, Diagnostics )
   ( using (CliEvent is Loggable)^ )
   :   List[Text] =
 
@@ -125,7 +129,7 @@ object Completions:
 
 
   def install(force: Boolean = false)(using entrypoint: Entrypoint^)(using erased effectful: Effectful)
-    ( using WorkingDirectory, Diagnostics )
+    ( using Environment, System, WorkingDirectory, Diagnostics )
   ( using (CliEvent is Loggable)^ )
   ( using Tactic[Install.Error] )
   :   Installation =
