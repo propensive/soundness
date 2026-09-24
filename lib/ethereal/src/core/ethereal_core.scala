@@ -258,12 +258,18 @@ def cli[bus <: Matchable](using executive: Executive)
       // launcher awaits this daemon's death and starts a fresh one).
       case Launcher.Message.Verify =>
         val fresh = verifyScript()
-        reply(Launcher.Message.Verdict(fresh))
-        connection.close()
 
-        if !fresh then
-          Log.warn(DaemonLogEvent.Termination)
-          termination
+        // A stale launcher means the jar has been rewritten underneath this JVM, so a class
+        // first touched here — the verdict's, or the log event's — may fail to load, with a
+        // linkage error. The termination must not depend on any of that succeeding: a
+        // daemon which survives its own displacement serves nothing, while the launcher,
+        // which awaits its death, fails every client that tries.
+        try
+          reply(Launcher.Message.Verdict(fresh))
+          connection.close()
+          if !fresh then Log.warn(DaemonLogEvent.Termination)
+        finally
+          if !fresh then termination
 
       case Launcher.Message.Exit(pid0) =>
         val pid = Pid(pid0)
@@ -428,12 +434,19 @@ def cli[bus <: Matchable](using executive: Executive)
           else
             clientState.exitPromise.fulfill(Exit.Ok)
 
+        // `Throwable`, not `Exception`: a `java.lang.Error` (a linkage error from a stale class
+        // file, say) would otherwise escape, and an unfulfilled exit promise parks the client's
+        // stderr and control connections, and so the launcher, forever (#2033). The backstop
+        // already distinguishes the two, exiting with status 2 for a non-exception throwable.
         catch
-          case exception: Exception =>
-            Log.fail(DaemonLogEvent.Failure)
-            clientState.exitPromise.fulfill(handler.handle(exception)(using stdio))
+          case throwable: Throwable =>
+            Log.fail(DaemonLogEvent.Failure(throwable.toString.tt))
+            clientState.exitPromise.fulfill(handler.handle(throwable)(using stdio))
 
         finally
+          // Whatever happened above — even the backstop itself throwing — the promise must be
+          // settled, or every awaiter of it parks forever. `offer` is a no-op if it already is.
+          clientState.exitPromise.offer(Exit(2))
           lazyStderr.close()
           connection.close()
           Log.info(DaemonLogEvent.CloseConnection(pid))
@@ -540,9 +553,10 @@ def cli[bus <: Matchable](using executive: Executive)
                     val benign = scriptPath.lay(false): script =>
                       eventFile == script.name && verifyScript()
 
+                    // As for a stale verdict above: the rewritten jar may make the log
+                    // event's class unloadable, and termination must not wait on it.
                     if !benign then
-                      Log.warn(DaemonLogEvent.Termination)
-                      termination
+                      try Log.warn(DaemonLogEvent.Termination) finally termination
 
                   case other =>
                     ()

@@ -91,6 +91,11 @@ package interpreters:
       commandline.read(flag)
 
   private def interpreter(arguments: List[Argument], clustering: Boolean): Commandline =
+    // The word the cursor is in, if any; only a completion has one. (Compared, not `present`:
+    // an extension search inside the lambda, under `seek`'s live type variables, trips dotc's
+    // `wildApprox` assertion, scala/scala3#24824.)
+    val cursorArgument: Optional[Argument] = arguments.seek(_.cursor != Unset)
+
     def recur
       ( todo:        List[Argument],
         arguments:   List[Argument],
@@ -130,13 +135,25 @@ package interpreters:
 
           . to[Map]
 
-        val focus2 = current.let: current =>
-          val focusCursor: Ordinal = current.cursor.or(current.value.length).z
+        // The flag the cursor belongs to: the cursor's own word when that is a flag, otherwise
+        // the flag preceding the cursor's word, as the walk recorded it — never simply the last
+        // flag seen, which is what made a flag's operand complete only when that flag was last
+        // (#1964). The focus is then the piece of that flag under the cursor, after reformatting:
+        // the `=`-split part, or the clustered character, that `register` matches against.
+        val anchor: Optional[Argument] = cursorArgument.absolve match
+          case argument: Argument if argument.value.starts(t"-") => argument
+          case _                                                 => commandline.focus
 
-          val candidates: Set[Argument] = parameters2.keys + parameters2.values.flat.to[Set]
+        val focus2: Optional[Argument] = anchor.absolve match
+          case anchor: Argument =>
+            val focusCursor: Ordinal = anchor.cursor.or(anchor.value.length).z
+            val candidates: Set[Argument] = parameters2.keys + parameters2.values.flat.to[Set]
 
-          candidates.seek: argument =>
-            current.position == argument.position && argument.contains(focusCursor)
+            candidates.seek: argument =>
+              anchor.position == argument.position && argument.contains(focusCursor)
+
+          case _ =>
+            Unset
 
         commandline.copy(parameters = parameters2, focus = focus2)
 
