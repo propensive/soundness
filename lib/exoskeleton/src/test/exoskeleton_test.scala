@@ -1302,6 +1302,23 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           app(using completion)
           completion
 
+        // An application which tries its subcommands before it reads its flags: the shape that
+        // used to hide the flag list behind the subcommand names for a word typed as a flag
+        // (#2035).
+        val Run = Subcommand(t"run", t"run it")
+
+        def tool(using cli: Cli): Unit = cli.arguments match
+          case Run() :: _ => ()
+          case _          => Flag[Text](t"verbose")() yet Flag[Text](t"version")() yet ()
+
+        test(m"A word typed as a flag falls back to the flag list past subcommand candidates"):
+          completing(Shell.Bash, List(t"--ver"), 0, Unset)(tool).serialize.sort
+        . check(_ == List(t"--verbose", t"--version"))
+
+        test(m"A word not typed as a flag still offers the subcommand candidates"):
+          completing(Shell.Bash, List(t"r"), 0, Unset)(tool).serialize
+        . check(_ == List(t"run"))
+
         // Two value-taking flags: the operand under the cursor must reach the Discoverable of
         // the flag it belongs to, wherever that flag stands on the line (#1964).
         given Text is Discoverable = (operand, _) => List(Suggestion(t"[$operand]"))

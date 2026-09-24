@@ -71,6 +71,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   flag preceding it — and is `Unset` when no argument carries a cursor. Previously it was
   always derived from the last flag on the command line. Consequently a `Discoverable` for a
   flag's operand is now consulted wherever the flag stands, not only when it is last. (#1964)
+- `exoskeleton.Completion#serialize` changed semantics: when the text being completed starts
+  with `-`, cursor suggestions whose `core` does not start with `-` are dropped, and if none
+  remain the flag list is offered, where previously any cursor suggestion suppressed the flag
+  list; and suggestions are wrapped by the focused argument's format only when the focus is the
+  argument being completed, not when it is the flag preceding it. An application no longer
+  needs a "flag-first" match arm ahead of its `Subcommand` patterns for `--fl<TAB>` to offer
+  flags. (#2035)
 
 ## stratiform
 
