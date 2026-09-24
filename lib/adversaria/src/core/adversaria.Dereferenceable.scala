@@ -52,7 +52,8 @@ trait Dereferenceable extends Typeclass, Resultant:
 
   // A panopticon `Lens` onto the named field, which is `select` plus the write half the read-only
   // accessors structurally lack — and, being an optic, composable with any other. `Unset` where
-  // the name is not a field, or names one which cannot be written (see the macro).
+  // the name is not a field, or names one which cannot be written: a `val` outside the primary
+  // constructor, or a field whose type is narrower than `Result` (see the macro).
   def lens(name: Text): Optional[Lens from Self onto Result] = Unset
 
   def update(entity: Self, name: Text, value: Result): Optional[Self] =

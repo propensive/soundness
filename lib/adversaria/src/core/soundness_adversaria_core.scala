@@ -32,4 +32,5 @@
                                                                                                   */
 package soundness
 
-export adversaria.{Annotated, Dereferenceable, membersOfType, name}
+export adversaria.{Annotated, Dereferenceable, fieldAnnotations, membersOfType, name, relabelling,
+    subtypeAnnotations, variantRelabelling}
