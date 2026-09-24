@@ -529,3 +529,108 @@ object Tests extends Suite(m"Zeppelin tests"):
         val zip = Zipfile.read(sfx)
         (zip.prefix.lay(List())(_.readable.to(List)), zip.entries.map(_.read[Text]).stdlib.to(List))
       . assert(_ == (t"STUB-PREFIX-DATA".in[Data].to[List], List(t"data", t"data")))
+
+    suite(m"Header fidelity"):
+      // The JDK writer sets the UTF-8 flag unconditionally, streams every entry behind a data
+      // descriptor with the local CRC and sizes zeroed, and records version 20 throughout —
+      // none of which zeppelin's defaults reproduce, so a byte-identical rebuild proves the
+      // header fields round-trip.
+      val foreign = writeRawZip(t"fidelity.zip", t"one.txt", t"dir/two.txt")
+
+      def rebuild(path: Path on Linux): List[Byte] = Zipfile.read(path).read[Data].to[List]
+
+      test(m"a JDK-written archive rebuilds byte-identically"):
+        rebuild(foreign) == bytesOf(foreign).to[List]
+      . assert(_ == true)
+
+      test(m"a parsed entry exposes the general-purpose flags"):
+        readEntries(foreign).stdlib.head.flags
+      . assert(_ == 0x808)
+
+      test(m"a parsed streamed entry records its zeroed local sizes"):
+        readEntries(foreign).stdlib.head.localSizes
+      . assert(_ == false)
+
+      test(m"a parsed entry exposes both version fields"):
+        val entry = readEntries(foreign).stdlib.head
+        (entry.versionMadeBy, entry.localVersion, entry.centralVersion)
+      . assert(_ == (20, 20, 20))
+
+      test(m"zeppelin's own archive rebuilds byte-identically"):
+        val own = workDir/t"own.zip"
+        val directory = Zip.Entry(zipRef(t"dir"), t"".in[Data]).asDirectory
+        val zipfile = Zipfile(List(entry(t"a.txt", t"alpha"), directory, entry(t"dir/b.txt", t"b"*100)), t"note")
+        writeBytes(t"own.zip", zipfile.read[Data])
+        rebuild(own) == bytesOf(own).to[List]
+      . assert(_ == true)
+
+      test(m"a streamed entry is followed by a data descriptor"):
+        val streamed = entry(t"s.txt", t"stream me "*16).withHeaders(flags = 0x808)
+        contains(bytesOf(writeZip(t"streamed.zip", streamed)), List(0x50, 0x4b, 0x07, 0x08))
+      . assert(_ == true)
+
+      test(m"the JDK reader reads a streamed entry"):
+        val streamed = entry(t"s.txt", t"stream me "*16).withHeaders(flags = 0x808)
+        jdkContent(writeZip(t"streamed2.zip", streamed), t"s.txt").to[List]
+      . assert(_ == (t"stream me "*16).in[Data].to[List])
+
+      test(m"a streamed entry without local sizes zeroes the local header's crc and sizes"):
+        val streamed = entry(t"s.txt", t"stream me "*16).withHeaders(flags = 0x808, localSizes = false)
+        val bytes = bytesOf(writeZip(t"streamed3.zip", streamed))
+        (14 until 26).forall(i => bytes.readUnchecked(i) == 0)
+      . assert(_ == true)
+
+      test(m"a streamed entry with local sizes keeps the local header's crc"):
+        val streamed = entry(t"s.txt", t"stream me "*16).withHeaders(flags = 0x808)
+        val bytes = bytesOf(writeZip(t"streamed4.zip", streamed))
+        (14 until 26).exists(i => bytes.readUnchecked(i) != 0)
+      . assert(_ == true)
+
+      test(m"a streamed entry without local sizes reads back through zeppelin"):
+        val streamed = entry(t"s.txt", t"stream me "*16).withHeaders(flags = 0x808, localSizes = false)
+        readEntries(writeZip(t"streamed5.zip", streamed)).stdlib.head.read[Text]
+      . assert(_ == t"stream me "*16)
+
+      test(m"Unix attributes and the version made by round-trip"):
+        val unix = entry(t"u.txt", t"unix").withHeaders(versionMadeBy = 0x314, externalAttributes = 0x81a40000L)
+        val read = readEntries(writeZip(t"unix.zip", unix)).stdlib.head
+        (read.versionMadeBy, read.externalAttributes, read.internalAttributes)
+      . assert(_ == (0x314, 0x81a40000L, 0))
+
+      test(m"the JDK reader lists an entry with Unix attributes"):
+        val unix = entry(t"u.txt", t"unix").withHeaders(versionMadeBy = 0x314, externalAttributes = 0x81a40000L)
+        jdkNames(writeZip(t"unix2.zip", unix))
+      . assert(_ == List(t"u.txt"))
+
+      // The executable-JAR marker some Ant-era tooling writes: header ID 0xCAFE, length 0.
+      val marked =
+        val path = workDir/t"marked.zip"
+        val out = juz.ZipOutputStream(ji.FileOutputStream(ji.File(path.encode.s)))
+        val zipEntry = juz.ZipEntry("META-INF/MANIFEST.MF")
+        zipEntry.setExtra(scala.Array[Byte](0xfe.toByte, 0xca.toByte, 0, 0))
+        out.putNextEntry(zipEntry)
+        out.write(Array.unsafeJvm(t"Manifest-Version: 1.0\r\n".in[Data]))
+        out.closeEntry()
+        out.close()
+        path
+
+      test(m"an extra field is read from both headers"):
+        val read = readEntries(marked).stdlib.head
+        (read.localExtra.lay(Nil)(_.to[List]), read.centralExtra.lay(Nil)(_.to[List]))
+      . assert(_ == (List(0xfe.toByte, 0xca.toByte, 0.toByte, 0.toByte), List(0xfe.toByte, 0xca.toByte, 0.toByte, 0.toByte)))
+
+      test(m"an archive with an extra field rebuilds byte-identically"):
+        rebuild(marked) == bytesOf(marked).to[List]
+      . assert(_ == true)
+
+      test(m"an entry with an extra field still aligns its data"):
+        given Zip.Compression = Zip.Compression.Stored
+        val extra: Data = Array[Byte](0xfe.toByte, 0xca.toByte, 0, 0)
+        val stored = Zip.Entry(zipRef(t"hello.txt"), t"Hello world".in[Data]).withHeaders(localExtra = extra).aligned(8)
+        val bytes = bytesOf(writeZip(t"aligned3.zip", stored))
+
+        def u16(offset: Int): Int =
+          (bytes.readUnchecked(offset).toInt & 0xff) | ((bytes.readUnchecked(offset + 1).toInt & 0xff) << 8)
+
+        ((30 + u16(26) + u16(28))%8, jdkContent(workDir/t"aligned3.zip", t"hello.txt").to[List])
+      . assert(_ == (0, t"Hello world".in[Data].to[List]))

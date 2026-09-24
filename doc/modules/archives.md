@@ -65,6 +65,14 @@ zipfile.entries.map(_.ref.encode)                  // List(t"hello.txt")
 zipfile.entry(t"hello.txt".as[Path on Zip]).read[Text]   // t"Hello world"
 ```
 
+An entry read from an archive carries the header metadata around its content as well — the
+general-purpose flags, the "version made by" and the two "version needed" fields, the internal
+and external attributes (where a Unix mode lives), and any extra field — so writing it back
+reproduces the original archive byte for byte, the ZIP64 records excepted, which are rebuilt.
+Every one of those fields defaults to `Unset` on a new entry, meaning the value zeppelin would
+choose itself. Bit 3 of `flags` marks an entry as *streamed*: its CRC and sizes are repeated in a
+data descriptor after the payload, which is how an archive is written to a sink that cannot seek.
+
 `write` also takes an optional `prefix` of raw bytes to place before the archive proper. The ZIP
 format locates its own directory from the end of the file rather than the start, so an archive
 concatenated onto arbitrary leading bytes still reads correctly — which is how a self-extracting
