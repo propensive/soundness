@@ -12,3 +12,10 @@ format. Entries are grouped by module, most-recently-added last within a module.
   table as before, so code that indexes it by a byte value is unaffected; code that relied on
   `table.length == 256` or iterated the whole table must use `table.readable.take(256)`.
   `Crc64.Accumulator`'s results are unchanged.
+
+## stratiform
+
+- `stratiform.Tel.Error.Reason.UnconstrainedScalar` (E224) removed: `Tels.Validation` no longer
+  rejects a `scalar` declaring neither `validate` nor `pattern`, so such a schema now validates
+  where it previously raised `Tel.Error(Reason.UnconstrainedScalar)`. Code matching on the case
+  must drop that branch; the error number 224 stays reserved and is not reused. (#2048)

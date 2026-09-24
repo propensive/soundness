@@ -139,8 +139,9 @@ object Tels extends Tels2:
       description: Optional[Text] = Unset )
 
   // §20: `validators` and `patterns` (§21.8) are each individually optional,
-  // but a declaration carrying neither is invalid (E224) — an unconstrained
-  // scalar names the built-in `String` instead.
+  // and a declaration carrying neither accepts every value, like the built-in
+  // `String` — still a distinct named type for generated code, diagnostics and
+  // later tightening (E224, which once forbade it, is withdrawn).
   case class ScalarDefinition
     ( name:        Text,
       validators:  Array[Text]^{},
@@ -289,9 +290,8 @@ object Tels extends Tels2:
         record("Scalar",
           "A scalar declaration: a named scalar definition constrained by validators and/or RE2 patterns, with an optional encoding.",
           field("name",        typeNameRef),
-          // §21.8 made `validate` optional and added `pattern`; the "at least
-          // one of the two" rule (E224) is not structurally expressible, so
-          // both members are optional here and the disjunction is checked.
+          // §21.8 made `validate` optional and added `pattern`; both members are
+          // optional, and a scalar may declare neither (E224 is withdrawn).
           field("validate",    identifierRef, required = Loose, repeatable = Loose),
           field("pattern",     stringRef,     required = Loose, repeatable = Loose),
           field("encoding",    identifierRef, required = Loose),
@@ -941,16 +941,6 @@ object Tels extends Tels2:
       checkPatterns(schema.scalars)
       schema.layers.each { layer => checkPatterns(layer.scalars) }
 
-      // E224: a `scalar` declaration must carry at least one `validate` or
-      // `pattern` line. The disjunction is not structurally expressible in the
-      // `tels` meta-schema (both members are optional there), so it is checked
-      // here. Layer scalars are exempt: a same-name layer scalar that only
-      // adds an `encoding` is legal refinement, and one that introduces a
-      // fresh definition is caught post-composition by `checkComposed`.
-      schema.scalars.each: definition =>
-        if definition.validators.nil && definition.patterns.nil
-        then abort(Tel.Error(Reason.UnconstrainedScalar))
-
     private def checkPatterns(scalars: Array[ScalarDefinition]^{}): Unit raises Tel.Error =
       scalars.each: definition =>
         definition.patterns.each: pattern =>
@@ -958,14 +948,6 @@ object Tels extends Tels2:
 
     private def checkComposed(composed: Tels): Tels raises Tel.Error =
       checkStruct(composed.document, composed)
-
-      // E224 again, post-composition, to catch a scalar a layer introduced
-      // with neither constraint. A same-name layer scalar merges into a base
-      // that `checkBase` already vetted, so only genuinely new definitions can
-      // fail here.
-      composed.scalars.each: definition =>
-        if definition.validators.nil && definition.patterns.nil
-        then abort(Tel.Error(Reason.UnconstrainedScalar))
 
       composed.records.each: record =>
         checkStruct(Struct(record.members, record.validators), composed)

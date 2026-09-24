@@ -328,9 +328,10 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
         schemaCode(coded(pattern(t"[A-Z]{2}-[0-9]{4}"), t""))
       . assert(_ == 0)
 
-      test(m"a scalar with neither validate nor pattern raises E224"):
+      // E224 is withdrawn: an unconstrained scalar accepts every value, like `String`.
+      test(m"a scalar with neither validate nor pattern is valid"):
         schemaCode(t"tel 1.0\n\nname u\n\nscalar Loose\n\ndocument\n  field x Loose\n")
-      . assert(_ == 224)
+      . assert(_ == 0)
 
       test(m"an unparseable pattern raises E222"):
         schemaCode(coded(pattern(t"[unclosed"), t""))
