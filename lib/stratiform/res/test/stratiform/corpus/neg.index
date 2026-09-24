@@ -59,7 +59,6 @@ e220-key-on-optional
 e221-two-key-fields
 e222-invalid-pattern
 e223-layer-pattern-not-contained
-e224-unconstrained-scalar
 e302-schema-too-many-atoms
 e306-schema-unknown-keyword
 e307-schema-missing-name

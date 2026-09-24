@@ -6744,9 +6744,6 @@ object Tel extends Tel2:
         case PatternNotContained =>
           m"a layer's patterns are not contained in the patterns they replace"
 
-        case UnconstrainedScalar =>
-          m"a ScalarDefinition declares neither `validate` nor `pattern`"
-
         case NonStructCompound =>
           m"the compound's type is not a Struct"
 
@@ -6813,7 +6810,7 @@ object Tel extends Tel2:
           | ExcludeEmptiesRequired | LayerVariantAddition | LayerLoosenRequired
           | LayerLoosenRepeatable | ExcludeOutsideSelect | ReferenceKindMismatch
           | EncodingConflict | KeyOnNonScalar | KeyOnLooseMember | MultipleKeyFields
-          | InvalidPattern | PatternNotContained | UnconstrainedScalar
+          | InvalidPattern | PatternNotContained
           | NonStructCompound | TooManyAtoms | AtomAtNonAssignablePos
           | AtomVariantUnmatched | AtomFlagKeywordMismatch | UnknownKeyword
           | RequiredMemberAbsent | NonRepeatableTooMany | MembersNonContiguous
@@ -6883,7 +6880,8 @@ object Tel extends Tel2:
       case MultipleKeyFields       extends Reason(221)
       case InvalidPattern          extends Reason(222)
       case PatternNotContained     extends Reason(223)
-      case UnconstrainedScalar     extends Reason(224)
+      // E224 (a scalar declaring neither `validate` nor `pattern`) is withdrawn and reserved:
+      // an unconstrained scalar is valid (TEL §20).
 
       // E3xx — validation errors per §19.3 / §21.
       case NonStructCompound       extends Reason(301)

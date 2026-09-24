@@ -51,3 +51,10 @@ format. Entries are grouped by module, most-recently-added last within a module.
   completion scripts on every exit from the block, including an abort or a thrown exception;
   previously the teardown ran only when the block returned normally, leaving a daemon process
   alive after a failure. (#2046)
+
+## stratiform
+
+- `stratiform.Tel.Error.Reason.UnconstrainedScalar` (E224) removed: `Tels.Validation` no longer
+  rejects a `scalar` declaring neither `validate` nor `pattern`, so such a schema now validates
+  where it previously raised `Tel.Error(Reason.UnconstrainedScalar)`. Code matching on the case
+  must drop that branch; the error number 224 stays reserved and is not reused. (#2048)
