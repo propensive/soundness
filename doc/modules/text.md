@@ -69,9 +69,10 @@ List(t"one", t"two", t"three").join(t", ", t" and ")  // t"one, two and three"
 
 `join` is the counterpart of the standard library's `mkString`, and differs in the way that
 matters: `mkString` calls `toString` on every element without saying so, so a collection of
-anything at all produces text of some kind. `join` requires the elements to be textual, so a
-collection whose elements have no meaningful rendering does not compile rather than rendering
-badly.
+anything at all produces text of some kind. `join` produces text only from textual elements,
+so a collection whose elements have no meaningful rendering does not render badly: it either
+does not compile or, if the elements are collections themselves, concatenates them, and the
+separator is then one of their elements, interleaved (see the collections tutorial).
 
 ### Slicing
 

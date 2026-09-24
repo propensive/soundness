@@ -157,6 +157,17 @@ List(1, 2, 3, 4, 5).batched(2)          // List(List(1, 2), List(3, 4), List(5))
 numbers.sweep { case n if n > 1 => n*10 }   // List(30, 20)
 ```
 
+`join` is the inverse of `batched`. Elements that are themselves joinable — collections, or
+text — concatenate, with an optional separator of the same type between them; elements that
+are not have the separator, an element, interleaved into a collection of the receiver's own
+shape:
+
+```scala
+List(List(1, 2), List(3), List(4, 5)).join             // List(1, 2, 3, 4, 5)
+List(List(1, 2), List(3), List(4, 5)).join(List(0))    // List(1, 2, 0, 3, 0, 4, 5)
+List(1, 2, 3).join(0)                                  // List(1, 0, 2, 0, 3)
+```
+
 ### Duplicates and order
 
 `distinct` drops repeated elements, keeping the first of each; `deduplicate` does the same by a

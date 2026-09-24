@@ -106,7 +106,34 @@ format. Entries are grouped by module, most-recently-added last within a module.
   Optional[Topic]` through vacuous's `Optional` extension, answering `true` unconditionally.
   (#2032)
 
-## stratiform
+## gossamer
+
+- The `join` extension methods (`join`, `join(separator)`, `join(left, separator, right)`,
+  `join(separator, penultimate)` and `join(left, separator, penultimate, right)`) no longer
+  require the joined type to be `gossamer.Textual`, only `gossamer.Joinable`. The extension's
+  type parameters changed from `[self, element, textual >: element]` with
+  `(using source: self is Joinable.Source by element)(using joinable: textual is Joinable,
+  textual0: textual is Textual)` and result type `textual`, to `[self, element, result]` with
+  `(using source: self is Joinable.Source by element)(using assembly: self is
+  Joinable.Assembly by element to result)` and result type `result`; every separator, prefix
+  and suffix parameter is now typed `assembly.Part` instead of `textual`. For textual and
+  `Message` elements the result and separator types are unchanged. Code that passed `join`'s
+  type arguments explicitly must be rewritten. (#2051)
+- New `gossamer.Joinable` givens `Joinable.list: [element] => List[element] is Joinable`,
+  `Joinable.chain: [element] => Chain[element] is Joinable`, `Joinable.sequence: [element] =>
+  Sequence[element] is Joinable` and `Joinable.set: [element] => Set[element] is Joinable`
+  (the `proscenium` shapes), joining by concatenation (union for `Set`), so `join` on a
+  collection of those collections, with an optional separator collection, now compiles:
+  `List(List(1), List(2)).join(List(0))` is `List(1, 0, 2)`. (#2051)
+- New `gossamer.Joinable.Assembly` typeclass (`self is Joinable.Assembly by element to result
+  { type Part >: element }`) with givens `Assembly.joinable` (elements that are `Joinable`;
+  `Part` and `Result` are that type) and, at lower priority, `Assembly.interleaving`
+  (`self is Reshapable by element to result`; `Part = element`). The latter gives `join` a
+  second meaning on collections whose elements are not `Joinable`: the separators are
+  elements, interleaved into a rebuilt collection of the receiver's shape, so
+  `List(1, 2, 3).join(0)` is `List(1, 0, 2, 0, 3)`, where previously it did not compile.
+  (#2051)
+
 
 - `stratiform.Tel.Error.Reason.UnconstrainedScalar` (E224) removed: `Tels.Validation` no longer
   rejects a `scalar` declaring neither `validate` nor `pattern`, so such a schema now validates
