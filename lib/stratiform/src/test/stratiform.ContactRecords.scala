@@ -81,3 +81,27 @@ object FeatureSchemaFixture:
 
 object FeatureRecords extends TelBlueprint(FeatureSchemaFixture.tels):
   transparent inline def record(tel: Tel): Record = ${build('tel)}
+
+// A layered schema for the layer-provenance records test: `name` in the base, `email` in the
+// layer `with-email`, so `email` reads as optional although the layer declares it required.
+object LayeredSchemaFixture:
+  val tels: Tels = Tels(
+    name     = t"layered",
+    document = Struct(
+      members    = Array(Field(Polarity.Implicit, Polarity.Implicit, t"name", Scalar(Array(t"string")), Unset)),
+      validators = Array.empty),
+    layers   = Array(
+      Tels.Layer(
+        t"with-email",
+        Struct(
+          members    = Array(Field(Polarity.Implicit, Polarity.Implicit, t"email", Scalar(Array(t"string")), Unset)),
+          validators = Array.empty),
+        Array.empty, Array.empty, Array.empty)),
+    sigil    = Unset,
+    records  = Array.empty,
+    scalars  = Array.empty,
+    selects  = Array.empty)
+
+object LayeredRecords extends TelBlueprint(LayeredSchemaFixture.tels):
+  transparent inline def record(tel: Tel): Record = ${build('tel)}
+
