@@ -59,6 +59,18 @@ format. Entries are grouped by module, most-recently-added last within a module.
   completion scripts on every exit from the block, including an abort or a thrown exception;
   previously the teardown ran only when the block returned normally, leaving a daemon process
   alive after a failure. (#2046)
+- `exoskeleton.Cli.arguments(textArguments: List[Text], focus: Optional[Int] = Unset, position:
+  Optional[Int] = Unset, tab: Optional[Ordinal] = Unset)` changed semantics: the `Argument` at
+  index `focus` now has `cursor = position.or(text.length)` where it previously had
+  `cursor = position`, so a focused argument always carries a cursor (at the end of the word
+  when `position` is `Unset`). Arguments at other indices, and every argument when `focus` is
+  `Unset`, are unchanged. (#1964)
+- `exoskeleton.Interpreter#focus` for `interpreters.posixInterpreter` and
+  `interpreters.posixClusteringInterpreter` changed semantics: the focus is now derived from the
+  argument carrying the cursor — that argument's own piece when it is a flag, otherwise the
+  flag preceding it — and is `Unset` when no argument carries a cursor. Previously it was
+  always derived from the last flag on the command line. Consequently a `Discoverable` for a
+  flag's operand is now consulted wherever the flag stands, not only when it is last. (#1964)
 
 ## stratiform
 

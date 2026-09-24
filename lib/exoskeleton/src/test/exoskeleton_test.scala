@@ -905,14 +905,17 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               zsh(t"-ab").stdlib.exists(adjacent(_, t"-S", t""))
             . check(_ == true)
 
-            // Fish and bash insert whole words, so the candidate is the extended cluster.
+            // Fish and bash insert whole words, so the candidate is the extended cluster. Both
+            // shells index the current word without counting the command (`1` here), unlike
+            // zsh's `CURRENT`; a `2` would put the cursor on a new, empty word after `-ab`,
+            // which is not an extension of the cluster (#1964).
             test(m"fish offers the extended cluster"):
-              sh"$tool '{completions}' fish 2 3 /dev/null -- clstr -ab".exec[Text]()
+              sh"$tool '{completions}' fish 1 3 /dev/null -- clstr -ab".exec[Text]()
               . cut(t"\n").stdlib.to(List).map(_.cut(t"\t").prim.or(t""))
             . check(_.contains(t"-abc"))
 
             test(m"bash offers the extended cluster"):
-              sh"$tool '{completions}' bash 2 3 /dev/null -- clstr -ab".exec[Text]()
+              sh"$tool '{completions}' bash 1 3 /dev/null -- clstr -ab".exec[Text]()
               . cut(t"\n").stdlib.to(List)
             . check(_.contains(t"-abc"))
 
@@ -1269,3 +1272,59 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           app(using completion)
           completion.cursorSuggestions.map(_.core)
         . check(_ == List(t"[re]"))
+
+      // Completions constructed in-process, so the focus and the candidates offered for it can
+      // be inspected directly rather than through a shell.
+      suite(m"Completion focus and flag fallback"):
+        import interpreters.posixInterpreter
+        import stdios.muteStdio
+
+        def completing(shell: Shell, texts: List[Text], focus: Int, position: Optional[Int])
+          ( app: Cli ?=> Unit )
+        :   Completion =
+
+          val args = Cli.arguments(texts, focus, position)
+
+          val completion =
+            Completion
+              ( args,
+                args,
+                summon[Environment],
+                summon[WorkingDirectory],
+                shell,
+                focus,
+                position,
+                summon[Stdio],
+                t"",
+                Prim,
+                Login(t"tester", Unset) )
+
+          app(using completion)
+          completion
+
+        // Two value-taking flags: the operand under the cursor must reach the Discoverable of
+        // the flag it belongs to, wherever that flag stands on the line (#1964).
+        given Text is Discoverable = (operand, _) => List(Suggestion(t"[$operand]"))
+
+        def suites(using cli: Cli): Unit = Flag[Text](t"suite")() yet Flag[Text]('c')() yet ()
+
+        test(m"A flag's operand completes when another flag follows it"):
+          completing(Shell.Zsh, List(t"list", t"--suite", t"su", t"-c", t"x"), 2, 2)(suites)
+          . cursorSuggestions.map(_.core)
+        . check(_ == List(t"[su]"))
+
+        test(m"A --flag=operand spelling completes when another flag follows it"):
+          completing(Shell.Zsh, List(t"list", t"--suite=su", t"-c", t"x"), 1, 10)(suites)
+          . cursorSuggestions.map(_.core)
+        . check(_ == List(t"[su]"))
+
+        test(m"A flag's operand completes when the flag is last"):
+          completing(Shell.Zsh, List(t"list", t"-c", t"x", t"--suite", t"su"), 4, 2)(suites)
+          . cursorSuggestions.map(_.core)
+        . check(_ == List(t"[su]"))
+
+        test(m"A flag's operand completes without a cursor position, as bash reports it"):
+          completing(Shell.Bash, List(t"list", t"--suite", t"su", t"-c", t"x"), 2, Unset)(suites)
+          . cursorSuggestions.map(_.core)
+        . check(_ == List(t"[su]"))
+
