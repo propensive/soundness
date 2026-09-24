@@ -248,6 +248,64 @@ change whenever someone reflowed it.
 document.valueHash(schema)   // deterministic; unchanged by presentation
 ```
 
+### Acceptances
+
+When two peers hold different schema libraries, a reader tells a writer what it can consume with
+an *acceptance*: a small TEL document listing, in order of preference, the compositions it
+accepts — each as a schema signature — with the further layers or atoms it can resolve and would
+like included if the writer holds them, named by a prefix of their hash. The message is itself
+TEL, so it travels as text, as BinTEL (framed, or the bare document root for an embedding that
+already knows what it is carrying), or as a single BASE-256 word:
+
+<!-- doccheck: skip -->
+```scala
+val acceptance = Tel.Acceptance
+  ( Tel.Acceptance.Alternative
+      ( Tel.Acceptance.Signature(contact.signature(List(t"with-address"))),
+        components = List(Tel.Acceptance.Component(contact.prefix(t"with-phone"))) ),
+    Tel.Acceptance.Alternative(Tel.Acceptance.Signature(contact.signature(List())), selfContained = true) )
+
+acceptance.encode        // the TEL text
+acceptance.framed        // a framed BinTEL document
+acceptance.text          // one BASE-256 word
+text.as[Tel.Acceptance]  // read back from any of them
+```
+
+Here `contact` is a `SchemaSignature.Lineage`: a base schema with its layers and atoms and their
+hashes, from which a signature for any selection of layers is computed, and against which a
+writer decodes the signatures a reader sends. A writer holding a value under some composition
+serves the first alternative it can, with the richest composition the alternative permits, and
+the reader takes the first alternative whose schema the arriving document's is a subtype of:
+
+<!-- doccheck: skip -->
+```scala
+val served = Tel.Acceptance.serve(acceptance, contact, composition, element)   // the writer
+Tel.Acceptance.receive(acceptance, library, served.document)                    // the reader
+```
+
+Compatibility is the subtype relation on composed schemas — records are subtyped by extension,
+selects by narrowing, scalars by tightening — decided by `Tels.Subtyping.subtype`, with `check`
+reporting the first premise that fails; `Tels.Projection` restricts a document to what a
+supertype can address.
+
+Where the formats are Scala types, the acceptance and its reading are derived. A tuple names the
+accepted types in order of preference, and what arrives decodes to their union:
+
+<!-- doccheck: skip -->
+```scala
+val accepting = Tel.Acceptance[(Contact, ContactV1)]()
+send(accepting.acceptance.framed)
+
+accepting.read(reply) match
+  case contact: Contact   => …
+  case contact: ContactV1 => …
+```
+
+Each type's required fields form the base a reader requires; its optional fields are offered as
+atoms, so two types that agree on their required fields interoperate however their optional
+fields differ, and a field annotated `@layer(t"with-phone")` is offered as a named layer instead.
+A writer answers from a value with `contact.fulfil(accepting.acceptance)`.
+
 Numbers in BinTEL are varint-encoded and values are typed by the schema rather than tagged in the
 stream, which is where the compactness comes from. Every framed document also declares its own
 length immediately after the magic number, so a reader can delimit, skip or forward documents
