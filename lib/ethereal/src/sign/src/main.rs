@@ -20,7 +20,7 @@ use std::path::PathBuf;
 use ml_dsa::{B32, Keypair, MlDsa44, Signature, SigningKey, signature::Signer};
 use rand::{TryRngCore, rngs::OsRng};
 
-// Layout — keep in sync with lib/ethereal/src/runner/src/config.rs.
+// Layout — keep in sync with `propensive/xeq`'s src/runner/src/config.rs.
 const MAGIC: [u8; 8]            = *b"ETHRCFG\x02";
 const RECORD_LEN: usize         = 3764;
 const SIGNATURE_OFFSET: usize   = 1344;

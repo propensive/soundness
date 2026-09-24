@@ -66,6 +66,18 @@ import workingDirectories.javaBaseWorkingDirectory
 import filesystemBackends.javaBaseFilesystem
 
 object Enclave:
+  // Raised when the daemon does not answer the `{admin} pid` request. Overwhelmingly the cause
+  // is a protocol mismatch: the launcher a tool was packaged with, and the daemon it starts,
+  // carry different `ethereal-launcher` schema signatures, so the daemon refuses the very first
+  // document and closes the connection, leaving `pid` with nothing to print.
+  case class Error(tool: Path on Linux)(using Diagnostics)
+  extends fulminate.Error(347, 0)
+    (m"""
+      the tool $tool did not report a process ID; its launcher and its daemon may disagree on the
+      launcher protocol schema, in which case the `xeq` version pinned in `etc/xeq.tsv` needs to
+      be one whose runner carries the signature in `ethereal.Launcher`
+    """)
+
   // A `Tool` is a *capability*: it references a live installed daemon process whose lifetime
   // is the `sandbox` block that spawns it (killed, and its files deleted, after the block).
   case class Tool(path: Path on Linux, pid: Pid) extends caps.ExclusiveCapability:
@@ -84,15 +96,25 @@ object Enclave:
     // Explicit `using` evidence instead of `raises` sugar: a context-function result would
     // hide the `block` parameter, which the separation checker rejects.
     def sandbox[result](block: (tool: Tool) ?=> result)
-      ( using Tactic[Exec.Error], Tactic[Number.Error], Tactic[Path.Error] )
+      ( using Tactic[Enclave.Error],
+              Tactic[Exec.Error],
+              Tactic[Number.Error],
+              Tactic[Path.Error] )
     :   result =
 
       val completionScripts = sh"$path '{admin}' install".exec[Text]()
-      val pid = Pid(sh"$path '{admin}' pid".exec[Text]().trim.as[Int])
-      val tool = Tool(path, pid)
 
-      block(using tool).also:
-        sh"$path '{admin}' kill".exec[Exit]()
+      // `finally`, not `also`: `install` has already started a daemon by this point, so every
+      // exit from here — including an abort before `block` is ever reached — must kill it. An
+      // abandoned daemon holds a JVM for the rest of the session, and enough of them starve the
+      // machine of the processes later suites need to fork.
+      try
+        val reported = sh"$path '{admin}' pid".exec[Text]().trim
+        if reported == t"" then abort(Enclave.Error(path))
+        block(using Tool(path, Pid(reported.as[Int])))
+
+      finally
+        safely(sh"$path '{admin}' kill".exec[Exit]())
 
         completionScripts.trim.lines.map(_.as[Path on Linux]).foreach: (item: Path on Linux) =>
           safely(item.delete())

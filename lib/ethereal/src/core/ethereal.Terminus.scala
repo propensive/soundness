@@ -37,9 +37,12 @@ import distillate.*
 import gossamer.*
 import prepositional.*
 
-object Stdin:
-  given decoder: Stdin is Decodable in Text = text => valueOf(text.lower.capitalize.s)
-  given encodable: Stdin is Encodable in Text = _.toString.tt.lower
+object Terminus:
+  given decoder: Terminus is Decodable in Text = text => valueOf(text.lower.capitalize.s)
+  given encodable: Terminus is Encodable in Text = _.toString.tt.lower
 
-enum Stdin:
+// What one of the invocation's standard streams is attached to. The daemon cannot tell:
+// its streams are the launcher's socket, not the client's terminal, so this is whatever
+// the launcher reported in the init document, and nothing else.
+enum Terminus:
   case Terminal, Pipe

@@ -35,7 +35,7 @@ package soundness
 export
   ethereal
   . { cli, Client, DaemonLogEvent, DaemonService, Installer, Launcher,
-      LazyEnvironment, service, Stdin, Tty, Upgrade }
+      LazyEnvironment, service, Terminus, Tty, Upgrade }
 
 package workingDirectories:
   export ambience.workingDirectories.daemonClientWorkingDirectory
