@@ -39,6 +39,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   compare signatures on every document and refuse a mismatch, so a daemon built against this
   release will not communicate at all with a launcher from XEQ 0.6 or earlier: every executable
   packaged with an older `xeq` must be repackaged with `xeq` 0.7 or later. (#2046)
+- `ethereal.DaemonLogEvent.Failure`, previously a nullary case, is now
+  `case Failure(error: Text)`, carrying the `toString` of the throwable which failed the
+  invocation. Its `Communicable` rendering changed from "the connection handler failed" to
+  "the invocation failed: <error>". Pattern matches on `DaemonLogEvent.Failure` must bind or
+  ignore the parameter. Behaviour change: an invocation which throws a `java.lang.Throwable`
+  that is not an `Exception` now settles the client's exit status through the `Backstop`
+  (`Exit(2)` for every provided backstop), where it previously left the client waiting
+  indefinitely. (#2033)
 
 ## exoskeleton
 
@@ -51,6 +59,52 @@ format. Entries are grouped by module, most-recently-added last within a module.
   completion scripts on every exit from the block, including an abort or a thrown exception;
   previously the teardown ran only when the block returned normally, leaving a daemon process
   alive after a failure. (#2046)
+- `exoskeleton.Manpages.install(page: Roff, force: Boolean = false)` gained the required
+  givens `ambience.Environment` and `ambience.System`, in the second `using` clause:
+  `(using erased effectful: Effectful)(using Environment, System, Diagnostics)(using (Io.Event
+  is Loggable)^)(using Tactic[Install.Error])`. It no longer imports
+  `environments.javaBaseEnvironment` or `systems.javaBaseSystem` itself. The XDG directories
+  are now resolved from the given `Environment`, not the JVM's. An `exoskeleton.Cli` in scope
+  supplies the `Environment` (through `Environment.Provider`); `systems.javaBaseSystem` supplies
+  the `System`. (#2034)
+- `exoskeleton.Completions.ensure(force: Boolean = false)` gained the required givens
+  `ambience.Environment` and `ambience.System`: `(using Entrypoint^, Environment, System,
+  WorkingDirectory, Diagnostics)(using (CliEvent is Loggable)^)`, previously
+  `(using Entrypoint^, WorkingDirectory, Diagnostics)(using (CliEvent is Loggable)^)`. Same
+  resolution and semantics as for `Manpages.install`. (#2034)
+- `exoskeleton.Completions.install(force: Boolean = false)` gained the required givens
+  `ambience.Environment` and `ambience.System`: `(using entrypoint: Entrypoint^)(using erased
+  effectful: Effectful)(using Environment, System, WorkingDirectory, Diagnostics)(using (CliEvent
+  is Loggable)^)(using Tactic[Install.Error])`, previously without `Environment, System`. The
+  overload `install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on
+  Linux])` is unchanged. (#2034)
+- `exoskeleton.Cli.arguments(textArguments: List[Text], focus: Optional[Int] = Unset, position:
+  Optional[Int] = Unset, tab: Optional[Ordinal] = Unset)` changed semantics: the `Argument` at
+  index `focus` now has `cursor = position.or(text.length)` where it previously had
+  `cursor = position`, so a focused argument always carries a cursor (at the end of the word
+  when `position` is `Unset`). Arguments at other indices, and every argument when `focus` is
+  `Unset`, are unchanged. (#1964)
+- `exoskeleton.Interpreter#focus` for `interpreters.posixInterpreter` and
+  `interpreters.posixClusteringInterpreter` changed semantics: the focus is now derived from the
+  argument carrying the cursor — that argument's own piece when it is a flag, otherwise the
+  flag preceding it — and is `Unset` when no argument carries a cursor. Previously it was
+  always derived from the last flag on the command line. Consequently a `Discoverable` for a
+  flag's operand is now consulted wherever the flag stands, not only when it is last. (#1964)
+- `exoskeleton.Completion#serialize` changed semantics: when the text being completed starts
+  with `-`, cursor suggestions whose `core` does not start with `-` are dropped, and if none
+  remain the flag list is offered, where previously any cursor suggestion suppressed the flag
+  list; and suggestions are wrapped by the focused argument's format only when the focus is the
+  argument being completed, not when it is the flag preceding it. An application no longer
+  needs a "flag-first" match arm ahead of its `Subcommand` patterns for `--fl<TAB>` to offer
+  flags. (#2035)
+- `exoskeleton.Flag` gained `def present(using Cli, Interpreter, Topic is Interpretable, (? <:
+  Topic) is Discoverable): Boolean` and `def value(using Cli, Interpreter, Topic is
+  Interpretable, (? <: Topic) is Discoverable)(using erased Effectful): Optional[Topic]`, plain
+  (non-inline) readers which register the flag as `apply()` does. Code that reads
+  `flag().present` inside an `inline def` must use `flag.present` instead: there the transparent
+  `apply()` is not expanded and `.present` resolves against `Prospective[Topic] |
+  Optional[Topic]` through vacuous's `Optional` extension, answering `true` unconditionally.
+  (#2032)
 
 ## stratiform
 

@@ -101,6 +101,13 @@ object Tests extends Suite(m"Ethereal Tests"):
                 case Argument("exit") :: Argument(As[Int](status)) :: Nil =>
                   execute(Exit.Fail(status))
 
+                // A `java.lang.Error`, not an `Exception`: the kind of failure a stale class
+                // file produces, which must settle the client's exit rather than hang it (#2033).
+                case Argument("error") :: Nil =>
+                  execute:
+                    throw jl.IllegalAccessError("stale class file")
+                    Exit.Ok
+
                 case Argument("stderr") :: text :: Nil =>
                   execute(Err.println(text()) yet Exit.Ok)
 
@@ -227,6 +234,14 @@ object Tests extends Suite(m"Ethereal Tests"):
             test(m"exit code 1 is forwarded"):
               sh"$tool exit 1".exec[Exit]()
             . check(_ == Exit.Fail(1))
+
+            test(m"a java.lang.Error in an invocation exits with status 2, not a hang"):
+              sh"$tool error".exec[Exit]()
+            . check(_ == Exit.Fail(2))
+
+            test(m"the daemon still serves after an invocation threw an Error"):
+              sh"$tool echo after".exec[Text]()
+            . check(_ == t"after")
 
           suite(m"Argument passing"):
             test(m"single argument is passed through"):
@@ -809,11 +824,14 @@ object Tests extends Suite(m"Ethereal Tests"):
         .check(_ == t"s1")
 
         // A rebuild lands at the launcher's own path, so the daemon's check of its launcher
-        // sees the new content. The second build is copied over the first rather than
+        // sees the new content. The second build is moved over the first rather than
         // invoked from its own path: the two jars can be the same size, and a launcher
-        // elsewhere of the same size is not what the content check detects.
+        // elsewhere of the same size is not what the content check detects. Moved, not
+        // copied: a rebuild replaces the file, and overwriting a Mach-O binary in place
+        // makes macOS kill every later exec of it (its cached code signature no longer
+        // matches), so with `cp` the outcome depended on the old daemon dying first.
         test(m"a same-build-id rebuild displaces the resident daemon"):
-          sh"cp ${dispV2.path} ${dispV1.path}".exec[Unit]()
+          sh"mv ${dispV2.path} ${dispV1.path}".exec[Unit]()
           serves(dispV1.path, t"s2")
         .check(_ == t"s2")
 

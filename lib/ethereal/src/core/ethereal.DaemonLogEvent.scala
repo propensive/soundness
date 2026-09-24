@@ -46,7 +46,7 @@ object DaemonLogEvent:
     case Shutdown                  => m"shutting down"
     case Termination               => m"terminating the client connection"
     case IdleTimeout               => m"shutting down after an idle timeout"
-    case Failure                   => m"the connection handler failed"
+    case Failure(error)            => m"the invocation failed: $error"
     case NewCli                    => m"instantiating a new CLI"
     case UnrecognizedMessage       => m"received an unrecognized message"
     case ProtocolMismatch          => m"received a document of another launcher protocol schema"
@@ -66,7 +66,7 @@ enum DaemonLogEvent:
   case Shutdown extends DaemonLogEvent, Log.Process
   case Termination extends DaemonLogEvent, Log.Network
   case IdleTimeout extends DaemonLogEvent, Log.Scheduler
-  case Failure extends DaemonLogEvent, Log.Runtime
+  case Failure(error: Text) extends DaemonLogEvent, Log.Runtime
   case NewCli extends DaemonLogEvent, Log.Process
   case UnrecognizedMessage extends DaemonLogEvent, Log.Protocol
   case ProtocolMismatch extends DaemonLogEvent, Log.Protocol

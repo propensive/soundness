@@ -343,7 +343,9 @@ package executives:
 
             case t"install" =>
               given entrypoint0: (Entrypoint^{entrypoint}) = entrypoint
+              given Environment = environment
               given WorkingDirectory = workingDirectory
+              import systems.javaBaseSystem
               import errorDiagnostics.stackTracesDiagnostics
               import logging.silentLogging
               Out.println(Completions.ensure(force = true).join(t"\n"))

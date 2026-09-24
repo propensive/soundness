@@ -289,6 +289,12 @@ branch checking for `--verbosity` runs too, so `--verbosity` becomes a candidate
 anywhere; the conditional structure of the code is the conditional structure of the completions,
 however complex it becomes.
 
+One caveat applies to `inline` code. `Flag#apply()` is a `transparent inline` method, and
+inside another `inline def` it is not expanded when that body is typed, so its result is not
+narrowed to a `Prospective`: `.present` on it would resolve against the declared union type and
+answer `true` for every flag. An inline method should read a flag with `Flag#present` (anywhere)
+or `Flag#value` (inside `execute`) instead, plain methods which read the flag directly.
+
 ### Required and validated flags
 
 A flag that must be present is declared with `require()` instead of `()`, and one whose value
