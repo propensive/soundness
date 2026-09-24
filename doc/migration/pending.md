@@ -140,10 +140,10 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Tels.Polarity.Implicit` where it was `Tels.Polarity.Tight`, and a `Map` field's `key`/`value`
   members are `Implicit` where they were `Tight`. The BinTEL wire form of a value is unchanged.
   `stratiform.TelBlueprint` records built over a derived schema therefore expose a case-class
-  field as a nested `Record` (previously a `Tel`). (#PR5)
+  field as a nested `Record` (previously a `Tel`). (#2056)
 - `stratiform.TelSchematic` gained members with defaults — `fieldType: Tels.Type`,
   `definitions(seen: scala.collection.immutable.Set[Text]): TelSchematic.Definitions`,
   `layers(seen: scala.collection.immutable.Set[Text]): List[Tels.Layer]`,
   `rootLayers: List[Tels.Layer]` — and its `polarity` default changed
   from `Tels.Polarity.Tight` to `Tels.Polarity.Implicit`; an instance overriding `polarity` is
-  unaffected, one relying on the default now derives implicit polarity. (#PR5)
+  unaffected, one relying on the default now derives implicit polarity. (#2056)
