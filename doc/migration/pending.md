@@ -58,3 +58,20 @@ format. Entries are grouped by module, most-recently-added last within a module.
   rejects a `scalar` declaring neither `validate` nor `pattern`, so such a schema now validates
   where it previously raised `Tel.Error(Reason.UnconstrainedScalar)`. Code matching on the case
   must drop that branch; the error number 224 stays reserved and is not reused. (#2048)
+- `stratiform.SchemaResolver.resolve` now answers the built-in `acceptance` schema (BinTEL
+  §8.4) at resolution step 1, as it does `tels`: a pragma whose reference is
+  `specification.tel/acceptance` (with no selector, or with `:1.0.0`) or whose signature is
+  `SchemaResolver.acceptanceSignature` resolves to `Tels.Axiom.acceptance` with
+  `Resolved.step == Tels.Resolution.Step.Builtin` and `Resolved.document == Unset`, where it
+  previously fell through to the stores, the library and the delegate; a store or delegate
+  that served that coordinate or signature is no longer consulted for it. (#PR)
+- Module `stratiform.binary` removed; everything it provided — `stratiform.Bintel`,
+  `stratiform.Varint`, `stratiform.BintelParser`, `stratiform.BintelReader`,
+  `stratiform.SchemaSignature`, `stratiform.SchemaResolver`, and the extension methods
+  `bintel`, `bintelDocument` and `valueHash` on `Tel`, `Tel.Element` and `Tel.Encodable`
+  values — is now in `stratiform.core` (artifact `stratiform-core`), unchanged in package and
+  signature. Build definitions depending on `stratiform.binary` must depend on
+  `stratiform.core` instead; `stratiform.binaryStaged` now depends on `stratiform.core`.
+  `ulysses.core` and `stratiform.core` are unchanged for the JVM; `ulysses.core` additionally
+  now publishes Scala.js and Scala Native artifacts, and `stratiform.core` now depends on
+  `gastronomy.core` and `ulysses.core`. (#PR)

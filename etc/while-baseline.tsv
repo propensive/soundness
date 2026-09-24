@@ -190,12 +190,17 @@ lib/sedentary/src/core/sedentary.Profile.scala	3	0	0
 lib/sedentary/src/core/sedentary.Stress.scala	15	0	0
 lib/sibylline/src/core/sibylline.Llm.scala	2	0	0
 lib/spectacular/src/core/spectacular.Inspectable.scala	1	0	2
+lib/stratiform/src/core/stratiform.Bintel.scala	15	0	0
+lib/stratiform/src/core/stratiform.BintelParser.scala	1	0	0
 lib/stratiform/src/core/stratiform.Mutation.scala	28	0	15
 lib/stratiform/src/core/stratiform.Positional.scala	3	0	0
+lib/stratiform/src/core/stratiform.SchemaResolver.scala	1	0	0
+lib/stratiform/src/core/stratiform.SchemaSignature.scala	5	0	0
 lib/stratiform/src/core/stratiform.Tel.scala	111	66	17
 lib/stratiform/src/core/stratiform.Tel2.scala	1	3	0
 lib/stratiform/src/core/stratiform.Telp.scala	4	5	2
 lib/stratiform/src/core/stratiform.Tels.scala	12	16	2
+lib/stratiform/src/core/stratiform.Varint.scala	2	0	0
 lib/stratiform/src/core/stratiform.internal.scala	6	0	2
 lib/superlunary/src/core/superlunary_core.scala	1	0	0
 lib/surveillance/src/core/surveillance.PollingWatcher.scala	1	0	0

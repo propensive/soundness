@@ -34,8 +34,9 @@ package soundness
 
 export
   stratiform
-  . { DynamicTelEnabler, Revision, Mutation, Stratiform, Tel, Telp, Tel2,
-      Tel3, TelReader, Tels, Tels2, tel }
+  . { Bintel, DynamicTelEnabler, Revision, Mutation, SchemaResolver, SchemaSignature,
+      Stratiform, Tel, Telp, Tel2, Tel3, TelReader, Tels, Tels2, Varint, bintel, bintelDocument,
+      tel, valueHash }
 
 package dynamicAccess:
   export stratiform.dynamicAccess.dynamicTel

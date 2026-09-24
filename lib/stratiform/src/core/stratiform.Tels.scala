@@ -331,6 +331,50 @@ object Tels extends Tels2:
           variant("exclude",  identifierRef),
           variant("validate", identifierRef))))
 
+    // The four scalars every schema document declares implicitly, in the
+    // order `Reconstructor` prepends them, so that a hand-written axiom
+    // is `Reconstructor.equivalent` to its reconstructed canonical source.
+    private val builtinScalars: Array[ScalarDefinition]^{} = Array(
+      scalar("Identifier", "identifier"),
+      scalar("TypeName",   "type-name"),
+      scalar("Sigil",      "sigil"),
+      scalar("String",     "string"))
+
+    // Hand-encoded `acceptance` schema per §8.4 of the BinTEL
+    // specification, mirroring the canonical `acceptance.tel` (saved at
+    // `res/test/stratiform/corpus/acceptance.tel`) verbatim. An
+    // implementation that supports acceptances holds it built in, so that
+    // a peer can parse an acceptance before any schema has been exchanged;
+    // its two encodings are bound by `Tel.Codec.Bindings.builtins`.
+    val acceptance: Tels = Tels(
+      name     = kebab("acceptance"),
+      document = Struct(
+        members    = Array(field("accept", Reference(kebab("Alternative")), repeatable = Loose)),
+        validators = Array.empty),
+      layers   = Array.empty,
+      sigil    = Unset,
+      records  = Array(
+        record("Alternative",
+          "One composition the reader accepts, with the further components it can resolve.",
+          field("schema",         Reference(kebab("Signature"))),
+          field("self-contained", Flag, required = Loose),
+          field("any-published",  Flag, required = Loose),
+          field("component",      Reference(kebab("Component")), required = Loose,
+            repeatable = Loose))),
+      scalars  = Array.frozen(builtinScalars.readable ++ Array(
+        ScalarDefinition
+          ( kebab("Signature"),
+            Array.empty,
+            describe("A schema signature (BinTEL §8.2): a palimpsest of component hashes at the pinned parameters."),
+            encoding = kebab("schema-signature") ),
+        ScalarDefinition
+          ( kebab("Component"),
+            Array.empty,
+            describe("A component hash, or a prefix of one at least four bytes long."),
+            encoding = kebab("base-256"),
+            patterns = Array(kebab(".{4,32}")) )).readable),
+      selects  = Array.empty)
+
   // Bridges the schema-aware semantic model into the existing
   // presentation-model-driven Tel.as[T] decoder.
   object Decoder:
