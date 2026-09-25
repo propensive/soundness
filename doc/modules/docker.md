@@ -54,7 +54,7 @@ def entry(name: Text, content: Text): Tar.Entry =
      user  = UnixUser(0),
      group = UnixGroup(0),
      mtime = 0.bits.u32,
-     data  = Tar.Body(content.in[Data]) )
+     data  = Archive.Body(content.in[Data]) )
 
 val layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
 ```

@@ -45,6 +45,12 @@ object Classloader:
   def threadContext: Classloader = new Classloader(Thread.currentThread.nn.getContextClassLoader.nn)
   inline def apply[template <: AnyKind]: Classloader = ClassRef[template].classloader
 
+  // How a classloader built over a classpath resolves a name which both it and its parent
+  // offer: the JVM's own order, deferring to the parent, or the reverse, preferring its own
+  // entries, so that a plugin's versions of shared libraries are isolated from its host's.
+  enum Delegation:
+    case Deferential, Preferential
+
 class Classloader(val java: ClassLoader) extends Findable:
   type Plane = Classpath
 
@@ -65,10 +71,22 @@ class Classloader(val java: ClassLoader) extends Findable:
 
   def on(name: Text): Optional[Class[?]] = Optional(Class.forName(name.s, true, java))
 
-  def apply(path: Text): Optional[Data] logs Classpath.Event =
+  // The bytes of a resource, or `Unset` if the classloader does not have it, read by a method
+  // which takes no capability: a frozen array in a union result freshens to an `any.rd` as
+  // soon as the method has a `^` parameter such as a logger, and that fresh capability then
+  // cannot enter an enclosing `safely` block. The logging `apply` below is therefore an
+  // `inline` shell over this (which stays public: a private helper would be reached through
+  // an inline accessor, reintroducing the fresh root).
+  def resource(path: Text): Optional[Data] =
     Optional(java.getResourceAsStream(path.s)).let: stream =>
-      Log.fine(Classpath.Event.ResourceLoaded(path))
-      Array.unsafeFrozen(stream.readAllBytes().nn)
+      try Array.unsafeFrozen(stream.readAllBytes().nn) finally stream.close()
+
+  // Logged `if data.present`, not `data.let(…)`: a lambda over the frozen bytes freshens
+  // them too.
+  inline def apply(path: Text)(using (Classpath.Event is Loggable)^): Optional[Data] =
+    val data = resource(path)
+    if data.present then Log.fine(Classpath.Event.ResourceLoaded(path))
+    data
 
   // A real `using` clause rather than the `logs` sugar: a context-function result would
   // hide the tactic parameter, which the separation checker rejects.

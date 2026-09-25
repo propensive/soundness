@@ -72,6 +72,20 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `monotonous.core` or `anticipation.url`; a consumer using any of these, or the fonts API, through
   `cataclysm.core` must declare `cataclysm.fonts` (savagery and tasseomancy now do). (#2082)
 
+## bitumen
+
+- `bitumen.Tar.Body` (the class, `Tar.Body.apply(chunks: Data*)` and `Tar.Body.empty`) renamed
+  to `bitumen.Archive.Body`, exported from `soundness` as `Archive`; `Tar.Body` no longer
+  exists. `Tar.Entry.File#data`, `Tar.Entry.Sparse#data` and the `data` argument of
+  `Tar.Entry.apply` are now typed `Archive.Body`. Behaviour unchanged. (#2080)
+- `bitumen.TarHeader` (the case class and its companion, with `blockSize`, `checksumOffset`,
+  `checksumLength`, `parse`, `verifyChecksum`, `decodeOctal`, `decodeNulText` and
+  `isZeroBlock`) renamed to `bitumen.Tar.Header`; the top-level name and its `soundness`
+  export are removed. Signatures and behaviour unchanged. (#2080)
+- `bitumen.TarDataOpenable` renamed to `bitumen.Tar.DataOpenable`; the top-level name and its
+  `soundness` export are removed. The `Tar.dataOpenable` given now yields
+  `Tar.DataOpenable^{tarTactic, streamTactic}`. Signatures and behaviour unchanged. (#2080)
+
 ## coaxial
 
 - `coaxial.Connection` gained a third constructor parameter, `peer: Optional[Text] = Unset`:
@@ -464,6 +478,28 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `octogenarian.core` depends on `enigmatic.asn1` instead of `enigmatic.core`; a consumer that
   reached `enigmatic.core` (or `gastronomy.core`, `aperture.core`) only through octogenarian must
   declare it. (#2082)
+
+## hellenism
+
+- `hellenism.Classpath#classloader` now takes a required first parameter, `delegation:
+  Classloader.Delegation`, before `parent: Classloader = classloaders.platformClassloader`.
+  `Classloader.Delegation` is a new enum with cases `Deferential` (parent-first, the JVM's
+  standard order) and `Preferential` (child-first). The former `classpath.classloader()`
+  (child-first over the given or platform parent) becomes
+  `classpath.classloader(Classloader.Delegation.Preferential)`, keeping its `parent` argument if
+  it passed one; the former nullary `classpath.classloader` (parent-first over the platform
+  loader) is removed and becomes `classpath.classloader(Classloader.Delegation.Deferential)`.
+  Behaviour change: a `Classpath.Entry.JavaRuntime` entry is no longer passed to the loader as
+  a `jrt:/` URL in either mode (the platform parent supplies the JDK), as the nullary form
+  already omitted it. (#2070)
+- `hellenism.Classloader#apply(path: Text)` is now `inline` and takes its logging context as a
+  `using` clause, `(using (Classpath.Event is Loggable)^)`, in place of the `logs
+  Classpath.Event` sugar; its result is still `Optional[Data]`, and a call with a `Loggable` in
+  scope is unchanged. The result now retains no capability, so a caller that cast it to
+  `Optional[scala.IArray[Byte]]` or read the resource through the raw `java.lang.ClassLoader`
+  to get a pure value can call `apply` directly, including inside `safely`. The new
+  `Classloader#resource(path: Text): Optional[Data]` is the same read without logging. Both
+  close the resource's stream after reading. (#2071)
 
 ## pneumatic
 

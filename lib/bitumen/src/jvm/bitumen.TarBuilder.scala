@@ -91,7 +91,7 @@ extends caps.ExclusiveCapability:
 
     insert(Tar.Entry.File
       ( name, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32,
-        Tar.Body.deferred(() => if iterator.hasNext then iterator.next() else Unset) ))
+        Archive.Body.deferred(() => if iterator.hasNext then iterator.next() else Unset) ))
 
   // Author one entry with a streamed, unknown-length body: the block writes
   // chunks through the lent `TarEntryWriter`. On an uncompressed target the
@@ -109,11 +109,11 @@ extends caps.ExclusiveCapability:
     sink.lay:
       val buffer = scm.ArrayBuffer[Data]()
       val outcome = block(using TarEntryWriter(buffer += _))
-      insert(Tar.Entry.File(name, mode, user, group, mtime, Tar.Body(buffer.toSeq*)))
+      insert(Tar.Entry.File(name, mode, user, group, mtime, Archive.Body(buffer.toSeq*)))
       outcome
 
     . apply: out =>
-        val probe = Tar.Entry.File(name, mode, user, group, mtime, Tar.Body.empty)
+        val probe = Tar.Entry.File(name, mode, user, group, mtime, Archive.Body.empty)
         Tarfile.preamble(probe, format).each { chunk => write(out, chunk) }
 
         val headerPosition = out.getFilePointer

@@ -35,6 +35,7 @@ package hellenism
 import soundness.*
 
 import classloaders.threadContextClassloader
+import logging.silentLogging
 
 trait TestService:
   def name: Text
@@ -73,6 +74,42 @@ object Tests extends Suite(m"Hellenism Tests"):
       val classpath = LocalClasspath.of(Classloader[Tests.type])
       classpath.services[TestService].stdlib.map(_.name).to(Set)
     . assert(_ == Set(t"A", t"B"))
+
+    suite(m"Resource reads"):
+      // The result of `Classloader#apply` retains nothing, so the read may sit inside a
+      // `safely` block, as a host such as fume reads a suite index (#2071).
+      test(m"read a resource's bytes inside safely"):
+        safely(threadContextClassloader(t"scala/Option.class")).let(_.readable.length)
+      . assert(_.let(_ > 0) == true)
+
+      test(m"a missing resource reads as Unset"):
+        threadContextClassloader(t"missing/resource.txt")
+      . assert(_ == Unset)
+
+    suite(m"Building classloaders"):
+      import systems.javaBaseSystem
+      val own = Classloader[Tests.type]
+      val classpath = LocalClasspath.of(own)
+      val name = t"hellenism.TestServiceA"
+
+      test(m"a preferential loader defines the class afresh"):
+        val loader = classpath.classloader(Classloader.Delegation.Preferential, parent = own)
+        loader.on(name).let: cls =>
+          cls.getClassLoader == loader.java && cls != classOf[TestServiceA]
+      . assert(_ == true)
+
+      test(m"a deferential loader defers to its parent's class"):
+        val loader = classpath.classloader(Classloader.Delegation.Deferential, parent = own)
+        loader.on(name).let(_ == classOf[TestServiceA])
+      . assert(_ == true)
+
+      test(m"a built loader's parent is the chosen one"):
+        classpath.classloader(Classloader.Delegation.Deferential, parent = own).parent.let(_.java)
+      . assert(_ == own.java)
+
+      test(m"the platform loader is the default parent"):
+        classpath.classloader(Classloader.Delegation.Preferential).parent.let(_.java)
+      . assert(_ == ClassLoader.getPlatformClassLoader.nn)
 
     suite(m"Native-rendering coverage"):
       val classpath = LocalClasspath(Classpath.Entry.Jar(t"/x.jar"),

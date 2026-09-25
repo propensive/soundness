@@ -102,6 +102,30 @@ returns them, typed to the service:
 classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme)   // Set("file", "jar", …)
 ```
 
+### Building a classloader
+
+A classpath builds a classloader over a chosen parent, which is the platform loader unless
+another is given. The loader's *delegation* says which side wins when it and its parent both
+offer a class of the same name, and is always spelled out: `Deferential` is the JVM's usual
+order, deferring to the parent, which shares the parent's classes with the code being loaded;
+`Preferential` prefers the classpath's own entries, which isolates a plugin's versions of its
+libraries from its host's:
+
+```scala
+val contract = LocalClasspath(Classpath.Entry.Jar(t"/lib/contract.jar"))
+val plugin = LocalClasspath(Classpath.Entry.Jar(t"/lib/plugin.jar"))
+val shared = contract.classloader(Classloader.Delegation.Deferential)
+val isolated = plugin.classloader(Classloader.Delegation.Preferential, parent = shared)
+```
+
+Here a plugin sees the contract it was written against through its parent, while everything
+else it bundles is its own. A resource is read from a loader directly, by its path, as an
+optional value that retains nothing, so the read can sit inside a `safely` block:
+
+```scala
+safely(isolated(t"META-INF/plugin.version"))
+```
+
 ### Running under a classloader
 
 A `Classloader` value runs a block with itself installed as the thread's context

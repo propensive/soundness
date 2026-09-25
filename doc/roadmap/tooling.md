@@ -8,21 +8,27 @@ fluence for finding APIs, the exegesis LSP server inside any editor, a debugger 
 Soundness rather than Java, and the synesthesia MCP server giving agents the same access
 programmatically.
 
-The pieces are in different states, and the roadmap is honest about which. exegesis and
-synesthesia are working modules in this repository. flame exists as a separate, active project
-pinned to an older Soundness. fume runs this repository's suites: a front-end and runner over the
-probably framework, which remains the library. fury and fluence do not exist as code. TEL — the
-configuration language the whole toolchain standardises on — is specified and implemented, with
-stratiform as its reference implementation. The bootstrap test for the entire track is fury
-building Soundness itself, attestation-equal to the Mill build it replaces.
+The pieces are in different states, and the roadmap is honest about which. exegesis,
+synesthesia and vivisection are working modules in this repository. flame, fume and fury are
+separate projects with their own repositories and roadmaps: this track records only what
+Soundness owes each of them, never their own progress. flame and fume are pinned as tools in
+`etc/tools` (0.3.0 and 0.4.1) and configured under `.pyrocosm/`; fume runs this repository's
+suites as a front-end and runner over the probably framework, which remains the library.
+fluence is not started. TEL — the configuration language the whole toolchain standardises on —
+is specified and implemented, with stratiform as its reference implementation. The bootstrap
+test for the entire track is Soundness being buildable by fury, attestation-equal to the Mill
+build.
 
 ## tool-1: flame tracks current releases
 
 Horizon: near
-Baseline: flame builds against Soundness 0.62.0; the current release is 0.64.0 (measured 2026-08-01)
+Baseline: flame 0.3.0 is pinned in `etc/tools`; the current Soundness release is 0.68.0 (measured 2026-09-25; on 2026-08-01 flame built against 0.62.0 while the release was 0.64.0)
 
 A REPL that lags the platform cannot be the platform's front door. flame builds against each
 release as it happens, and staying current becomes a checked property rather than an intention.
+Since #2044 flame is a pinned tool with its own `.pyrocosm/flame/config.tel`, and `make
+doccheck` runs every tutorial's examples through it; nothing yet ties a Soundness release to a
+green flame build.
 
 Done when: flame's CI builds it against every new Soundness release, and a release is not
 announced until that build is green.
@@ -30,7 +36,7 @@ announced until that build is green.
 ## tool-2: fume runs the suites
 
 Horizon: near → mid
-Baseline: fume does not exist; 3 test suites are disabled (measured 2026-08-01)
+Baseline: fume 0.4.1 runs the suite; 1 test suite (orthodoxy) is disabled (measured 2026-09-25; fume did not exist and 3 suites were disabled on 2026-08-01)
 
 fume is the testing tool over the probably framework: multiple report formats, live updates in
 the terminal, and results recorded as git notes alongside the existing attestation notes. Its
@@ -48,17 +54,26 @@ Horizon: near → mid
 
 exegesis provides the LSP framework; the criterion is lived experience made mechanical: a
 scripted editor session — open, diagnose, complete, navigate — runs against a Soundness project
-in CI.
+in CI. exegesis's own suite already drives an in-process server over JSON-RPC (initialize,
+open, diagnose, hover, incremental change); completion, navigation and a real transport are
+what separate it from the criterion.
 
 Done when: the scripted editor-session test passes in CI.
 
-## tool-4: fury builds Soundness
+## tool-4: Soundness builds with fury
 
 Horizon: mid
 
-The build tool is rebuilt, and the bootstrap is the criterion: `fury build` produces the same
-artifacts as the Mill build, verified by the same attestation input-digest discipline, on this
-repository — the hardest Scala build it will ever face.
+The bootstrap is the criterion: `fury build` produces the same artifacts as the Mill build,
+verified by the same attestation input-digest discipline, on this repository — the hardest
+Scala build it will ever face. fury itself is an [external gate](index.md#dependencies); what
+this item tracks is Soundness's side of the bootstrap — the things a build tool needs from this
+repository's own libraries, each filed as an issue: a compiler-version accessor (#2026),
+the diagnostics `ScalacEdges` drops (#2027), retained compiler sessions for a daemon (#2028),
+TASTy UUIDs against LIRA §17 determinism (#2029), the `Materializer` cache against the store's
+derivative tier (#2025), the manifest `source` record (#2022), section-scoped `Tool` records
+and `Setting` (#2023), the closed `Lira.Hash.Domain` (#2024) and `TelBlueprint` nesting with
+custom validators (#2030).
 
 Done when: `fury build` builds Soundness from a clean checkout, attestation-equal to the Mill
 build.
@@ -69,7 +84,8 @@ Horizon: mid
 
 synesthesia exposes the platform's knowledge to agents: module documentation, `SN-` error
 pages, roadmap status from `status.tel`, and migration instructions. An agent should never
-need to clone the repository to answer "what does SN-042 mean?"
+need to clone the repository to answer "what does SN-042 mean?" Today synesthesia is the
+generic MCP library — tools, resources and prompts — and none of those resources exists.
 
 Done when: a scripted MCP session resolves an `SN-` code to its page, a module to its topic
 guide, and a roadmap item to its status, in CI.
@@ -112,18 +128,26 @@ matches what was streamed.
 Horizon: long
 
 Every ecosystem tool that needs configuration reads TEL, with stratiform as the reference
-implementation. No tool in the ecosystem asks for YAML, JSON or HOCON configuration.
+implementation. No tool in the ecosystem asks for YAML, JSON or HOCON configuration. The three
+tools this repository runs — flair, flame and fume — already read theirs from
+`.pyrocosm/<tool>/config.tel`.
 
 Done when: no ecosystem tool's own configuration surface accepts any format but TEL.
 
 ## tool-10: a debugger that speaks Soundness
 
-Horizon: mid → long
+Horizon: near → mid
+Baseline: vivisection ships a JDWP core, an expression evaluator and a DAP server; its suite drives a live session end to end; an object still inspects as its JVM class name (measured 2026-09-25)
 
 Debugging a running application should feel native, not hosted: breakpoints, stepping and
 inspection through a Debug Adapter Protocol server, with inspected values rendered as their
 Soundness types — the same no-Java-encodings discipline `core-5` applies to traces, applied
-to live state.
+to live state. vivisection is that server: `vivisection.DapServer` handles the request set
+(launch, attach, breakpoints, threads, stack traces, scopes, variables, evaluate, stepping),
+and its suite's `DapClient` drives a live debuggee through breakpoints and inspection in the
+ordinary run. What separates it from the criterion is the rendering — an object snapshot
+inspects as, say, `scala.collection.immutable.List`, which is exactly the encoding `core-5`
+forbids — and a `doc/modules/` topic.
 
 Done when: a scripted DAP session — set a breakpoint, step, inspect a value rendered in
 Soundness terms — passes against a running Soundness application in CI.
@@ -134,8 +158,10 @@ Horizon: mid
 Needs: tool-2
 
 probably's own scoverage reader went with its report renderer when fume took over reporting;
-coverage returns as a fume concern, a tracked property rather than a one-off report: unit-test coverage recorded for every commit, stored in git notes alongside the test
-reports, so the trend is queryable and a regression is visible at review time.
+coverage returns as a fume concern, a tracked property rather than a one-off report: unit-test
+coverage recorded for every commit, stored in git notes alongside the test reports, so the
+trend is queryable and a regression is visible at review time. flair's unsafety census
+(`safety-7`) already keeps its record this way, and is the pattern to follow.
 
 Done when: every CI run records coverage in a git note, and a single command reports the
 coverage delta between any two commits.

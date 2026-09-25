@@ -2390,7 +2390,7 @@ object hellenism extends Library:
     override def scalaJs = false // depends on `galilei` (filesystem) and `ambience`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, jvm, turbulence.core):
+  object test extends Tests(core, jvm, turbulence.core, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

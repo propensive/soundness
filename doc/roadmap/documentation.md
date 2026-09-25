@@ -19,11 +19,11 @@ builds and deploys a working application.
 ## doc-1: every error type has a code and a page
 
 Horizon: near
-Baseline: 121 error types carry `SN-` codes, 39 do not; 233 error pages exist (measured 2026-08-01)
+Baseline: 40 error types carry no `SN-` code; 241 error pages exist (measured 2026-09-25; 39 and 233 on 2026-08-01)
 
 The `SN-` scheme covers the macro-raised compile errors; the remaining runtime error types get
 codes and pages under the same never-reuse discipline, and parity between types, codes and
-pages becomes a CI check so it cannot drift.
+pages becomes a CI check so it cannot drift. Nothing in `etc/` checks the parity yet.
 
 Done when: the parity check runs in CI and
 
@@ -35,7 +35,7 @@ Horizon: near
 
 `doc/standards/messages.md` is a self-declared stub, despite the message convention being
 load-bearing across every module. The standard gets written: register, structure, vocabulary
-and examples for `m"…"` messages and error text.
+and examples for `m"…"` messages and error text. One `Stub` marker remains (2026-09-25).
 
 Done when:
 
@@ -43,33 +43,31 @@ Done when:
 
 ## doc-3: the legacy documentation systems retire
 
-Horizon: near
-Baseline: 92 files still say "built by Fury"; 35 of 133 modules have no `lib/*/doc/` directory (measured 2026-08-01)
-
-The per-module readme boilerplate predates the monorepo and describes a build tool that does
-not yet exist again. Whatever in `lib/*/doc/` is worth keeping migrates into `doc/modules/`
-topics; the rest is deleted rather than left to mislead.
-
-Done when:
-
-    git grep -l 'built by Fury' -- lib web | wc -l    # 0
-
-and no `lib/*/doc/` directory remains.
+Done: #1791 (2026-08-14)
+Baseline was 92 files of per-module readme boilerplate, and 98 `lib/*/doc/` directories
+(measured 2026-08-01). The boilerplate predated the monorepo; whatever in `lib/*/doc/` was
+worth keeping moved into `doc/modules/` topics, and the rest was deleted rather than left to
+mislead. No `lib/*/doc/` directory remains, and the boilerplate phrase matches nothing.
 
 ## doc-4: every module is covered by a topic
 
 Horizon: mid
-Baseline: 91 topics in `doc/modules/`; 35 modules have no documentation anywhere (measured 2026-08-01)
+Baseline: 99 topics in `doc/modules/`; 1 of 144 libraries uncovered (measured 2026-09-25; 91 topics and 35 uncovered on 2026-08-01)
 
 Every published module is covered by at least one `doc/modules/` topic, and a coverage script
-maps modules to topics so orphans are visible.
+maps modules to topics so orphans are visible. The script exists — `etc/check-doc-coverage.py`,
+run by `make build` — and reports burdock as the one library no tutorial mentions, plus a
+`COVERED_BY` entry naming a `packaging.md` that has not been written; both make it exit
+non-zero today.
 
-Done when: the coverage script runs in the ordinary build and reports zero uncovered modules.
+Done when:
+
+    python3 etc/check-doc-coverage.py    # 144/144 libraries covered, exit 0
 
 ## doc-5: API documentation is generated and published
 
 Horizon: mid
-Baseline: every published `docJar` is empty (measured 2026-08-01)
+Baseline: every published `docJar` is empty — `build.mill` overrides the task to write an empty jar (measured 2026-09-25, unchanged since 2026-08-01)
 
 The extraction pipeline is the shared foundation: fluence searches it (`tool-7`) and
 API-derived versioning diffs it (`dist-4`). Published API documentation is the immediate
@@ -82,8 +80,9 @@ documentation is published for every release.
 
 Horizon: mid
 
-The prose under `web/res/content/` duplicates philosophy material by hand. The website renders
-from `doc/` — one source, no parallel copies.
+The prose under `web/res/content/` duplicates philosophy material by hand: ten pages, last
+touched in #801, each an older and shorter copy of a `doc/philosophy/` page. The website
+renders from `doc/` — one source, no parallel copies.
 
 Done when: `web/res/content/` contains no hand-maintained duplicate of any `doc/` page.
 

@@ -78,8 +78,124 @@ object Tar:
   // Anchored here so `data.open[Tar](...)` resolves with no import. Opening a filesystem
   // *path* as TAR (`path.open[Tar]`) lives in `bitumen.jvm`, alongside the disk backend.
   given dataOpenable: (tarTactic: Tactic[Tar.Error], streamTactic: Tactic[Truncation.Error])
-  =>  (TarDataOpenable^{tarTactic, streamTactic}) =
-    TarDataOpenable()
+  =>  (Tar.DataOpenable^{tarTactic, streamTactic}) =
+    Tar.DataOpenable()
+
+  // The 512-byte USTAR header, held as raw slices: nothing is decoded in the case class.
+  object Header:
+    val blockSize: Int = 512
+    val checksumOffset: Int = 148
+    val checksumLength: Int = 8
+
+    def parse(block: Data): Header raises Tar.Error =
+      if block.length < blockSize
+      then raise(Tar.Error(Tar.Error.Reason.TruncatedStream(blockSize, block.length)))
+
+      Header
+        ( name     = block.segment((0).z till (100).z),
+          mode     = block.segment((100).z till (108).z),
+          uid      = block.segment((108).z till (116).z),
+          gid      = block.segment((116).z till (124).z),
+          size     = block.segment((124).z till (136).z),
+          mtime    = block.segment((136).z till (148).z),
+          checksum = block.segment((148).z till (156).z),
+          // Total: after a raised `TruncatedStream` the header is parsed best-effort, so a
+          // short block yields the default (regular-file) flag rather than an overrun.
+          typeFlag = block.at((156).z).or(0),
+          linkName = block.segment((157).z till (257).z),
+          magic    = block.segment((257).z till (263).z),
+          version  = block.segment((263).z till (265).z),
+          uname    = block.segment((265).z till (297).z),
+          gname    = block.segment((297).z till (329).z),
+          devMajor = block.segment((329).z till (337).z),
+          devMinor = block.segment((337).z till (345).z),
+          prefix   = block.segment((345).z till (500).z) )
+
+    def verifyChecksum(block: Data, recorded: U32): Unit raises Tar.Error =
+      var sum: Long = 0L
+
+      // A short block sums fewer bytes and fails the comparison below, rather than overrunning.
+      block.iterate(block.extent.capped(blockSize)): index =>
+        val i: Int = (index: Ordinal).n0
+
+        val byte: Int =
+          if i >= checksumOffset && i < checksumOffset + checksumLength then 0x20
+          else block.at(index) & 0xff
+
+        sum = sum + byte
+
+      val actual: U32 = sum.toInt.bits.u32
+
+      if actual != recorded then raise(Tar.Error(Tar.Error.Reason.BadChecksum(recorded, actual)))
+
+    def decodeOctal(data: Data, field: Text): U32 raises Tar.Error =
+      // Two-stage scan: leading spaces, then the octal digit run. `prefix(after)` is
+      // cumulative, so `digits` spans both stages and its limit is the digit run's end.
+      val spaces = data.prefix: index => data.at(index) == ' '.toByte
+
+      val digits = data.prefix(spaces): index =>
+        val byte: Byte = data.at(index)
+        byte >= '0'.toByte && byte <= '7'.toByte
+
+      if (digits: Interval).size == (spaces: Interval).size
+      then raise(Tar.Error(Tar.Error.Reason.BadOctal(field, data)))
+
+      // The one genuinely checked access: the terminator position is one past the digit run,
+      // which may be one past the end of the field, so `at` returning `Unset` means a run
+      // flush to the field's end — valid, with nothing to check.
+      data.at((digits: Interval).limit).let: byte =>
+        if byte != 0 && byte != ' '.toByte
+        then raise(Tar.Error(Tar.Error.Reason.BadOctal(field, data)))
+
+      var n: Long = 0L
+
+      // `digits` includes the leading spaces (cumulative), which are skipped by value.
+      data.iterate(digits): index =>
+        val byte: Byte = data.at(index)
+        if byte != ' '.toByte then n = n*8L + (byte - '0'.toByte).toLong
+
+      n.toInt.bits.u32
+
+    def decodeNulText(data: Data): Text =
+      data.segment(data.prefix { index => data.at(index) != 0 }).utf8
+
+    def isZeroBlock(block: Data): Boolean =
+      val zeros: Interval = block.prefix: index => block.at(index) == 0.toByte
+      zeros.size >= block.length.min(blockSize)
+
+  case class Header
+    ( name:     Data,
+      mode:     Data,
+      uid:      Data,
+      gid:      Data,
+      size:     Data,
+      mtime:    Data,
+      checksum: Data,
+      typeFlag: Byte,
+      linkName: Data,
+      magic:    Data,
+      version:  Data,
+      uname:    Data,
+      gname:    Data,
+      devMajor: Data,
+      devMinor: Data,
+      prefix:   Data )
+
+  // Opens in-memory `Data` as a TAR archive: `data.open[Tar](flags*)`. Archives open read-only.
+  class DataOpenable(using Tactic[Tar.Error], Tactic[Truncation.Error]) extends Openable:
+    type Self = Data
+    type Form = Tar
+    type Operand = Tar.Flag
+    type Result = Tar.Handle
+
+    def open[grants <: Grant, result]
+      ( value: Data, mode: Mode granting grants, flags: List[Tar.Flag] )
+      ( block: ((Tar.Handle & Granting[grants])^) ?=> result )
+    :   result =
+
+      if mode.atoms.has(Write) then abort(Tar.Error(Tar.Error.Reason.WriteUnsupported))
+      val entries = Tar.Handle.entries(value.stream, flags)
+      block(using new Tar.Handle(entries) with Granting[grants] {})
 
   object Entry:
     def apply[data: Streamable by Data over Credit, instant: Abstractable across Instants to Long]
@@ -94,7 +210,7 @@ object Tar:
       val mtimeU32: U32 =
         (mtime.let(_.generic).or(System.currentTimeMillis)/1000).toInt.bits.u32
 
-      Entry.File(name, mode, user, group, mtimeU32, Tar.Body(data.source[Data].memoize))
+      Entry.File(name, mode, user, group, mtimeU32, Archive.Body(data.source[Data].memoize))
 
     private[bitumen] val paxRef: Tar.Ref =
       import strategies.throwUnsafely
@@ -161,7 +277,7 @@ object Tar:
         user:  UnixUser,
         group: UnixGroup,
         mtime: U32,
-        data:  Tar.Body,
+        data:  Archive.Body,
         pax:   Map[Text, Text] = Map.empty )
     extends Entry(path, mode, user, group, mtime)
 
@@ -237,7 +353,7 @@ object Tar:
         mtime:    U32,
         realSize: Long,
         segments: List[SparseSegment],
-        data:     Tar.Body,
+        data:     Archive.Body,
         pax:      Map[Text, Text] = Map.empty )
     extends Entry(path, mode, user, group, mtime)
 
@@ -420,86 +536,6 @@ object Tar:
 
   // TarCompression → Tar.Compression
   object Compression
-
-  // TarBody → Tar.Body
-  object Body:
-    // An in-memory body: its chunks are given up front, and nothing pulls lazily.
-    def apply(chunks: Data*): Tar.Body =
-      new Tar.Body(chunks.filter(_.length > 0).to(List), () => Unset)
-
-    val empty: Tar.Body = Tar.Body()
-
-    // A body fed lazily from a source the producer still owns (the shared cursor
-    // of a streaming read, or an unread source stream): `pull` yields the next
-    // chunk, or `Unset` when the body is complete. The producer's captures are
-    // erased at this audited point — exactly the laundering the memoizing
-    // `LazyList` chain this replaces performed implicitly through its cells —
-    // and the producer must remain valid until the body is drained.
-    private[bitumen] def deferred(pull: () => Optional[Data]): Tar.Body =
-      new Tar.Body(Nil, caps.unsafe.unsafeAssumePure(pull))
-
-  // The replayable body of an archive entry. Chunks pull lazily from the
-  // producer and memoize, so the underlying region is read exactly once however
-  // many consumers stream it, and each `stream` replays from the first chunk.
-  // An in-order consumer of a streaming read holds memory bounded by the entries
-  // it retains: a body's memoized chunks are reclaimed with its entry.
-  class Body private (initial: List[Data], pull: () -> Optional[Data]):
-    private val memo: scala.collection.mutable.ArrayBuffer[Data] =
-      // `ArrayBuffer.from` demands an `IterableOnce`, which the opaque `List` is not.
-      scala.collection.mutable.ArrayBuffer.from(initial.stdlib)
-
-    @scala.caps.unsafe.untrackedCaptures
-    private var exhausted: Boolean = false
-
-    // Extend the memo by one chunk, or record exhaustion.
-    private def fetch(): Boolean =
-      if exhausted then false else
-        pull() match
-          case Unset =>
-            exhausted = true
-            false
-
-          case chunk: Data =>
-            if chunk.length > 0 then memo += chunk
-            chunk.length > 0 || fetch()
-
-    // Read the remainder of the body from its producer, so the producer may move
-    // past it. Memoized chunks are never re-read.
-    private[bitumen] def drain(): Unit = while fetch() do ()
-
-    def size: Long =
-      drain()
-      memo.foldLeft(0L)(_ + _.length)
-
-    // The body's chunks, replayed from the start; unread chunks pull from the
-    // producer as the iterator advances.
-    def chunks: Iterator[Data] = new Iterator[Data]:
-      @scala.caps.unsafe.untrackedCaptures
-      private var index: Int = 0
-
-      def hasNext: Boolean = index < memo.length || fetch()
-
-      def next(): Data =
-        val chunk = memo(index)
-        index += 1
-        chunk
-
-    // A fresh stream over the body's chunks, replayed from the start.
-    def stream: (Stream[Data] over Credit)^ = Stream(chunks)
-
-    // The whole body as a single value.
-    def memoize: Data =
-      drain()
-
-      if memo.length == 1 then memo(0) else
-        val whole = Array.allocate[Byte](size.toInt)
-        var offset = 0
-
-        memo.each: chunk =>
-          whole.place(chunk, 0, offset, chunk.length)
-          offset += chunk.length
-
-        Array.freeze(whole)
 
   // TarFlag → Tar.Flag
   // Flags for opening a TAR archive: the compression wrapping the archive, if any. TAR has no

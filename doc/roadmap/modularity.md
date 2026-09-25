@@ -341,6 +341,12 @@ Horizon: near–mid
 - **gossamer.lexicon**: Dictionary.scala (434 lines) moves to a submodule; check overlap
   with nomenclature.lexicon first.
 
+Progress (2026-09-25): landed — legerdemain.query, the hypotenuse.Bcd de-jacinta,
+jacinta.optics, stratiform.optics, turbulence.stdio, concordance and gossamer.lexicon. Not
+landed — ethereal.dist, ypsiloid.pointer and stratiform.schema (blocked, as recorded above),
+jacinta.url (`JsonPointer` is still keyed by `HttpUrl`), stratiform.editing, and the
+stratiform.base256 move to monotonous.
+
 Done when: each split module is bundled and its parent's dependency list contains only edges
 its remaining code uses.
 
@@ -543,6 +549,14 @@ them depends on whether `java.util.UUID.randomUUID` is actually deficient on JS,
 it compiles on all of them, so this is a question about entropy quality, and wants measuring on
 those platforms rather than assuming.
 
+Progress (2026-09-25): the CRC and Adler tables are one implementation, in corpuscular —
+pneumatic, XZ's CRC-64 (#2043), gastronomy's Soundness hashing and hallucination's PNG codec
+delegate to it, and the two JVM-intrinsic users stay by design. corpuscular has no Huffman
+builder or varint yet: four Huffman decode-table builders (Brotli, Inflater, WebP, JPEG) plus
+the encoders' trees and HPACK's own table remain, and around sixteen varint loops —
+stratiform's five, locomotion's four, seven copies of `uvarint` across the xenophile, mandible
+and degustation atomizers, and gastronomy's multihash.
+
 Done when: each algorithm has exactly one implementation, verified by grep for the
 signature patterns (CRC tables, Huffman builders, varint loops).
 
@@ -567,6 +581,11 @@ dedup: ~1,600–1,800 lines.
 Migration is one format per PR — xylophone, locomotion, jacinta, breviloquence, then
 stratiform (staged and binaryStaged together) — each verified with `make attest`,
 `make build` and `make bench` for that format.
+
+Progress (2026-09-25): none. All six engines still define `macroClassloader`,
+`currentOutputDirectory`, `definedInCurrentRun`, `innerClasspath` and `summonViaStaging` in
+their own `*stagedInternal.scala` or `bintelInternal.scala`, prescience's proto-copy makes a
+seventh, and `prescience.staged` does not exist.
 
 Done when: no `.staged` module contains its own copy of the expansion environment, and the
 benchmark corpus shows performance parity per format.
@@ -842,7 +861,9 @@ After mod-8/9/10, this is the residual spine's only soft point.
 Done when: `parasite.core` declares no `mercator.core` edge and `turbulence.core` no
 `capricious.core` edge, and `gossamer.core`'s closure holds no more than 23 components. The
 gossamer, distillate and digression legs landed in #1760 (2026-08-10); the parasite and
-turbulence legs are what remain.
+turbulence legs are what remain, and both edges are still declared (2026-09-25).
+`gossamer.core`'s closure counts 25 by a hand parse of `build.mill` — distillate and wisteria
+still arrive through spectacular.
 
 ## Second-audit shape
 

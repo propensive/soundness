@@ -50,7 +50,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
          user  = UnixUser(0),
          group = UnixGroup(0),
          mtime = 0.bits.u32,
-         data  = Tar.Body(content.in[Data]) )
+         data  = Archive.Body(content.in[Data]) )
 
     
     val layerTar = Tarfile(List(fileEntry(t"hello.txt", t"hello world\n")))

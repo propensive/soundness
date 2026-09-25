@@ -12,8 +12,10 @@ Migration-first stability is the keystone. APIs change whenever a better or safe
 exists; what makes that tenable is that every breaking change ships with instructions precise
 enough for an agent to execute against a downstream codebase. Beyond it lies distribution
 itself: LIRA — one file per library release carrying every compiled representation, with a TEL
-manifest, API-derived versioning and verifiable signatures — is specified but unimplemented,
-and replaces Maven Central. Maven Central publishing has already been switched off: each tagged
+manifest, API-derived versioning and verifiable signatures — replaces Maven Central. Its
+implementation began here as the reliquary library, but LIRA is a format and a tool in its own
+right, like fury; it belongs in the `lira` repository, and this roadmap tracks only what
+Soundness must do to be published through it (`dist-10`). Maven Central publishing has already been switched off: each tagged
 version is published as a GitHub release whose assets are the individual component jars, an
 interim channel until LIRA is live. Each released jar embeds its POM and ivy.xml, and
 `make sync-releases` installs a release into `~/.ivy2/local`, from which Mill resolves the
@@ -26,7 +28,9 @@ Horizon: near
 Baseline: no changelog exists; release notes live in pull-request bodies (measured 2026-08-01)
 
 The release notes already written per pull request accumulate into a changelog, and the
-release script refuses to release without one.
+release refuses to run without one. A release is now cut by pushing a signed tag (#2040):
+`.github/workflows/release.yml` hands over to the shared `scala-release.yml` in
+propensive/.github, configured by `etc/release`.
 
 Done when: a changelog file exists, and the release fails when the version being released
 has no entry. Partly done: `release_notes.py` (propensive/.github) assembles every release's
@@ -44,17 +48,25 @@ in that format. Several tracks terminate here: it is what `api-6` flows through 
 `tool-5` serves to agents.
 
 Done when: `doc/migration.md` defines the convention, the release refuses to run without
-`doc/migration/<version>.md` (it does — see `migration` in `etc/release`), and a CI check fails any pull request that changes
-`lib/**/src` without touching `doc/migration/pending.md`. The convention is not label-based:
-every material change records itself in `pending.md`, and the release renames the file.
+`doc/migration/<version>.md`, and a CI check fails any pull request that changes `lib/**/src`
+without touching `doc/migration/pending.md`. The first two hold: the convention is written,
+`0.65.0.md` through `0.68.0.md` exist, and the `migration` directive in `etc/release` refuses
+a tag while `pending.md` survives or the version's notes are missing. The pull-request check
+is what remains: `main.yml` verifies the attestation and nothing else. The convention is not
+label-based: every material change records itself in `pending.md`, and the release renames
+the file.
 
 ## dist-3: LIRA exists
 
 Horizon: near → mid
+Baseline: reliquary reads and assembles `.lira` files, with unit round-trips of trees, atoms, deltas and manifests; no whole-release round-trip exists (measured 2026-09-25)
 
 The specification gets its reference implementation: a reader and writer for `.lira` files
 carrying classfiles, TASTy, Scala.js IR and Native IR with a TEL manifest, round-tripping the
-current Soundness artifacts.
+current Soundness artifacts. reliquary (`Lira`, `LiraAssembler`) is that implementation, and
+anthology, degustation, mandible and xenophile each carry a `lira` component; what the
+criterion still wants is the scripted test over a real release, run against the
+implementation wherever it lives after `dist-10`.
 
 Done when: the reference implementation round-trips a Soundness release — every published
 component packed into `.lira` files and unpacked byte-identically — in a scripted test.
@@ -123,3 +135,22 @@ verify any release's attestation from public information alone.
 
 Done when: the verification instructions are published, and a scripted third-party
 verification (no maintainer credentials, public data only) passes for the latest release.
+
+## dist-10: LIRA's implementation leaves this repository
+
+Horizon: near
+Baseline: `lib/reliquary` (7,387 lines in `core`, `derive` and `test`) plus the four `lira` adapter components — `anthology.lira`, `degustation.lira`, `mandible.lira`, `xenophile.lira` — and their tests (measured 2026-09-25)
+
+reliquary was written here (#1700) because the libraries it needed were here, but nothing in
+Soundness depends on it: its only in-tree consumers are the four adapter components that plug
+each language's atomizer and discipline into its SPI, the `soundness.tool` bundle that lists
+them, and the degustation and mandible suites that exercise those adapters. Developing LIRA is
+not Soundness work, any more than developing fury is. reliquary and the four adapters move to
+the `lira` repository, which pins Soundness as an ordinary consumer; the `library-archives`
+topic, the umbrella export, the compatibility row and the doc-coverage entry go with them.
+
+Done when:
+
+    test -d lib/reliquary || echo absent                          # absent
+    ls -d lib/*/src/lira 2>/dev/null | wc -l                      # 0
+    git grep -c reliquary -- build.mill etc doc/modules | wc -l   # 0

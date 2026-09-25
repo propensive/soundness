@@ -52,7 +52,8 @@ object Isolation extends Rig(using Classloader[Isolation.type]):
   type Target = Classloader
   type Transport = Pojo
 
-  def stage(out: Path on Linux): Classloader = classpath(out).classloader()
+  def stage(out: Path on Linux): Classloader =
+    classpath(out).classloader(Classloader.Delegation.Preferential)
 
   val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
 
