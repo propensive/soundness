@@ -233,11 +233,12 @@ package filesystemBackends:
 
           try block(directory, relative) finally descriptor.dispose()
 
-      def createDirectory(path: Path on Plane)(using Tactic[Io.Error]): Unit =
+      // `wasi:filesystem` has no permission bits, so a requested mode is ignored.
+      def createDirectory(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit =
         act(path, Operation.Create): (directory, relative) =>
           directory.`create-directory-at`(relative).call[Unit]()
 
-      def createFile(path: Path on Plane)(using Tactic[Io.Error]): Unit =
+      def createFile(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit =
         act(path, Operation.Create): (directory, relative) =>
           // open-flags: create (1) | exclusive (4); descriptor-flags: write (2)
           val created =
@@ -246,7 +247,7 @@ package filesystemBackends:
 
           created.dispose()
 
-      def createFifo(path: Path on Plane)(using Tactic[Io.Error]): Unit =
+      def createFifo(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit =
         abort(Io.Error(path, Operation.Create, Reason.Unsupported))
 
       def delete(path: Path on Plane)(using Tactic[Io.Error]): Unit =
@@ -283,10 +284,10 @@ package filesystemBackends:
         ( using Tactic[Io.Error] )
       :   Unit =
 
-        val content = open(source, List(OpenFlag.Read))(_.reader())
+        val content = open(source, List(OpenFlag.Read), Unset)(_.reader())
         val flags = List(OpenFlag.Write, OpenFlag.Create, OpenFlag.Truncate)
 
-        open(destination, flags): handle => handle.writer(content)
+        open(destination, flags, Unset): handle => handle.writer(content)
 
       def move
         ( source:      Path on Plane,
@@ -487,7 +488,8 @@ package filesystemBackends:
             lambda(view)
           finally opened.dispose()
 
-      def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
+      def open[result](path: Path on Plane, flags: List[OpenFlag], mode: Optional[Int])
+        ( lambda: Handle => result )
         ( using Tactic[Io.Error] )
       :   result =
 

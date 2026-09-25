@@ -58,7 +58,7 @@ object Creation:
   // `Parents` flag.
   private[galilei] def ensure[filesystem: Filesystem]
     ( path: Path on filesystem, flags: List[CreateFlag] )
-    ( using backend: FilesystemBackend on filesystem, tactic: Tactic[Io.Error] )
+    ( using backend: FilesystemBackend on filesystem, tactic: Tactic[Io.Error], umask: Umask )
   :   Unit =
 
     if flags.has(Parents) then
@@ -67,7 +67,8 @@ object Creation:
         . or(Nil)
 
       ancestors(path).reverse.each: ancestor =>
-        if !backend.exists(ancestor, true) then backend.createDirectory(ancestor)
+        if !backend.exists(ancestor, true)
+        then backend.createDirectory(ancestor, umask.mode(Umask.directoryBits))
 
   private[galilei] def replace[filesystem: Filesystem]
     ( path: Path on filesystem, flags: List[CreateFlag] )
@@ -88,7 +89,8 @@ object Creation:
   class DirectoryCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
     ( using backend: FilesystemBackend on filesystem,
             ioError: Tactic[Io.Error],
-            loggable: (Io.Event is Loggable)^ )
+            loggable: (Io.Event is Loggable)^,
+            umask: Umask )
   extends Creatable:
 
     type Self = path
@@ -101,7 +103,7 @@ object Creation:
       Log.info(Io.Event.Create((value: Path on filesystem).show))
       ensure(value, flags)
       replace(value, flags)
-      backend.createDirectory(value)
+      backend.createDirectory(value, umask.mode(Umask.directoryBits))
 
     def create[result]
       ( value: path, flags: List[CreateFlag] )
@@ -136,7 +138,8 @@ object Creation:
   class FileCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
     ( using backend: FilesystemBackend on filesystem,
             ioError: Tactic[Io.Error],
-            loggable: (Io.Event is Loggable)^ )
+            loggable: (Io.Event is Loggable)^,
+            umask: Umask )
   extends Creatable:
 
     type Self = path
@@ -149,7 +152,7 @@ object Creation:
       Log.info(Io.Event.Create((value: Path on filesystem).show))
       ensure(value, flags)
       replace(value, flags)
-      backend.createFile(value)
+      backend.createFile(value, umask.mode(Umask.fileBits))
 
     // The content is authored into a temporary sibling, moved onto the target only when the
     // scope completes: creation is the one moment atomic replacement is free, since nothing
@@ -173,7 +176,8 @@ object Creation:
 
       try
         val outcome =
-          backend.open(temporary, List(OpenFlag.Write, OpenFlag.Create)): handle =>
+          backend.open(temporary, List(OpenFlag.Write, OpenFlag.Create), umask.mode(Umask.fileBits)):
+            handle =>
             block(using handle.asInstanceOf[Handle & Granting[Grant.Read & Grant.Write]])
 
         backend.move(temporary, value, true, false)
@@ -185,7 +189,8 @@ object Creation:
   class FifoCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
     ( using backend: FilesystemBackend on filesystem,
             ioError: Tactic[Io.Error],
-            loggable: (Io.Event is Loggable)^ )
+            loggable: (Io.Event is Loggable)^,
+            umask: Umask )
   extends Creatable:
 
     type Self = path
@@ -198,7 +203,7 @@ object Creation:
       Log.info(Io.Event.Create((value: Path on filesystem).show))
       ensure(value, flags)
       replace(value, flags)
-      backend.createFifo(value)
+      backend.createFifo(value, umask.mode(Umask.fileBits))
 
     // Authoring a FIFO within its creation scope is refused: opening either end blocks
     // until a peer appears, so a scoped handle could never be provided safely.

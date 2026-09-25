@@ -48,7 +48,7 @@ import Io.Error.{Operation, Reason}
 // freshens `Handle`'s (capability) field types in the inferred `Result` member, which then
 // fails to conform to the declared `to Handle` refinement.
 class FileOpenable[filesystem: Filesystem, path <: Path on filesystem]
-  ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error] )
+  ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error], umask: Umask )
 extends Openable:
 
   type Self = path
@@ -92,7 +92,7 @@ extends Openable:
       then abort(Io.Error(value, Operation.Open, Reason.Busy))
 
     try
-      backend.open(value, modeFlags + flags): handle =>
+      backend.open(value, modeFlags + flags, umask.mode(Umask.fileBits)): handle =>
         // `Granting` is a phantom marker, so the cast only refines the static type with the
         // grants that `modeFlags` has just made true operationally.
         block(using handle.asInstanceOf[Handle & Granting[grants]])

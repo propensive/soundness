@@ -64,9 +64,13 @@ trait FilesystemBackend extends Planar:
   // The names (not paths) of the directory's immediate children.
   def children(path: Path on Plane)(using Tactic[Io.Error]): Chain[Text]
 
-  def createDirectory(path: Path on Plane)(using Tactic[Io.Error]): Unit
-  def createFile(path: Path on Plane)(using Tactic[Io.Error]): Unit
-  def createFifo(path: Path on Plane)(using Tactic[Io.Error]): Unit
+  // `mode`, where present, is the exact permission bits the new entry should have — an
+  // invocation's umask already applied to the conventional bits (`Umask.mode`) — and a backend
+  // whose platform has permission bits sets them on creation; `Unset` leaves the process's
+  // own mask to apply, and a platform without POSIX permissions ignores the request.
+  def createDirectory(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit
+  def createFile(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit
+  def createFifo(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit
   def delete(path: Path on Plane)(using Tactic[Io.Error]): Unit
   def deleteIfExists(path: Path on Plane)(using Tactic[Io.Error]): Unit
 
@@ -142,6 +146,9 @@ trait FilesystemBackend extends Planar:
         val available = (size - readOffset).max(0L).min(length.toLong).toInt
         view.read(offset + readOffset, available)
 
-  def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
+  // `mode` applies only when the open creates the file (`Create` or `Exclusive`), as for
+  // `createFile`.
+  def open[result](path: Path on Plane, flags: List[OpenFlag], mode: Optional[Int])
+    ( lambda: Handle => result )
     ( using Tactic[Io.Error] )
   :   result

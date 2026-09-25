@@ -174,16 +174,39 @@ package filesystemBackends:
                 . to(Chain)
             finally stream.close()
 
-      def createDirectory(path: Path on Plane)(using Tactic[Io.Error]): Unit =
-        protect(path, Operation.Create)(jnf.Files.createDirectory(javaPath(path)))
+      private def permissions(mode: Int): java.util.Set[jnfa.PosixFilePermission] =
+        val set = java.util.HashSet[jnfa.PosixFilePermission]()
+        val all = jnfa.PosixFilePermission.values.nn
 
-      def createFile(path: Path on Plane)(using Tactic[Io.Error]): Unit =
-        protect(path, Operation.Create)(jnf.Files.createFile(javaPath(path)))
+        // `PosixFilePermission`'s declaration order is owner, group, others, each read, write,
+        // execute: the bit order of the mode, from the most significant bit down.
+        for i <- 0 until 9 do if (mode & (1 << (8 - i))) != 0 then set.add(all(i).nn)
+        set
 
-      def createFifo(path: Path on Plane)(using Tactic[Io.Error]): Unit =
+      // Scala Native's javalib takes no creation attributes (its varargs formal is a pure
+      // Scala array), so the mode is set right after creation; a filesystem without POSIX
+      // permissions refuses, and the request is dropped.
+      private def apply(path: Path on Plane, mode: Optional[Int]): Unit = mode.let: mode =>
+        try jnf.Files.setPosixFilePermissions(javaPath(path), permissions(mode))
+        catch case _: UnsupportedOperationException => ()
+
+      def createDirectory(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit =
         protect(path, Operation.Create):
-          val process =
-            new ProcessBuilder("mkfifo", Path.encodable.encode(path).s).start().nn
+          jnf.Files.createDirectory(javaPath(path))
+          apply(path, mode)
+
+      def createFile(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit =
+        protect(path, Operation.Create):
+          jnf.Files.createFile(javaPath(path))
+          apply(path, mode)
+
+      def createFifo(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit =
+        protect(path, Operation.Create):
+          val command = java.util.ArrayList[String]()
+          command.add("mkfifo")
+          mode.let { mode => command.add("-m"); command.add(Integer.toOctalString(mode).nn) }
+          command.add(Path.encodable.encode(path).s)
+          val process = new ProcessBuilder(command).start().nn
 
           if process.waitFor() != 0 then abort(Io.Error(path, Operation.Create, Reason.Unsupported))
 
@@ -412,9 +435,15 @@ package filesystemBackends:
               try held.release() catch case _: jnc.ClosedChannelException => ()
         finally channel.close()
 
-      def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
+      def open[result](path: Path on Plane, flags: List[OpenFlag], mode: Optional[Int])
+        ( lambda: Handle => result )
         ( using Tactic[Io.Error] )
       :   result =
+
+        // The mode applies only when this open creates the file.
+        val creating: Boolean =
+          (flags.has(OpenFlag.Create) || flags.has(OpenFlag.Exclusive))
+          && !jnf.Files.exists(javaPath(path), jnf.LinkOption.NOFOLLOW_LINKS)
 
         val options: List[jnf.OpenOption] = flags.filter: flag =>
           flag != OpenFlag.Lock && flag != OpenFlag.LockShared && flag != OpenFlag.Await
@@ -442,7 +471,10 @@ package filesystemBackends:
           // the varargs formal is a pure Scala array, which no array value can satisfy.
           val optionSet = java.util.HashSet[jnf.OpenOption]()
           options2.foreach { option => optionSet.add(option); () }
-          protect(path, Operation.Open)(jnc.FileChannel.open(javaPath(path), optionSet).nn)
+          protect(path, Operation.Open):
+            val channel = jnc.FileChannel.open(javaPath(path), optionSet).nn
+            if creating then apply(path, mode)
+            channel
 
         try
           // The advisory lock for the duration of the open (issue #566): exclusive when the
