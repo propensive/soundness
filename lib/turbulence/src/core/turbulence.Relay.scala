@@ -35,6 +35,9 @@ package turbulence
 import scala.caps
 
 import java.util.concurrent as juc
+
+import anticipation.*
+import rudiments.reverse
 import vacuous.*
 import prepositional.*
 import zephyrine.*
@@ -78,6 +81,33 @@ class Relay[record]():
       case value             => value.asInstanceOf[record] #:: pull()
 
     Chain.defer(pull())
+
+  // The debounced view: records coalesced into batches by quiet period. The
+  // reader blocks for a first record, then every further arrival restarts a
+  // timer of `quiet`; when it expires with nothing new, the records gathered
+  // so far are delivered as one batch (oldest first) and the reader blocks
+  // again. This is the "changed, and then nothing for N ms" shape a tree
+  // rehash or a rebuild wants: one batch per burst of writes, not one wakeup
+  // per record. A stop found mid-burst still delivers the partial batch; the
+  // chain then ends. A zero `quiet` degrades to draining whatever has already
+  // arrived. Like `chain`, single-owner and lazy.
+  @scala.annotation.nowarn("msg=match may not be exhaustive")
+  def batches[duration: Abstractable across Durations to Long](quiet: duration)
+  :   Chain[List[record]] =
+
+    val nanos: Long = quiet.generic
+
+    def settle(batch: List[record]): Chain[List[record]] =
+      queue.poll(nanos, juc.TimeUnit.NANOSECONDS) match
+        case null              => batch.reverse #:: open()
+        case Relay.Termination => Chain(batch.reverse)
+        case value             => settle(value.asInstanceOf[record] :: batch)
+
+    def open(): Chain[List[record]] = queue.take().nn match
+      case Relay.Termination => Chain()
+      case value             => settle(List(value.asInstanceOf[record]))
+
+    Chain.defer(open())
 
   // The pull endpoint over this relay's records: single-owner, drained by one
   // thread; create it once. Records arriving after `stop` are not delivered.
