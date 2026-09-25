@@ -16,16 +16,17 @@ the manifest. When the only reasons left are inherent ones, the parity statement
 ## plat-1: the platform manifest is enforced
 
 Horizon: near
-Baseline: 94 of 132 modules build for JavaScript, 86 for Native (measured 2026-08-01)
+Baseline: 101 of 144 rows build for JavaScript; 35 are excluded, and every exclusion carries a reason (measured 2026-09-25; 94 of 132 on 2026-08-01)
 
-`doc/compatibility.tsv` already records the matrix; enforcement makes it a contract rather
-than a report: CI regenerates it and fails on any regression, and every exclusion carries a
-stated reason.
+`doc/compatibility.tsv` already records the matrix, and its header says it is generated from
+`build.mill` — but nothing in the build regenerates or checks it, so it is a report, and a
+stale one whenever a module is added. Enforcement makes it a contract: CI regenerates it and
+fails on any regression, and every exclusion carries a stated reason.
 
 Done when: the ordinary build regenerates the manifest, fails on divergence from the committed
 copy, and no exclusion row has an empty reason. Interim gauge:
 
-    grep -v '^#' doc/compatibility.tsv | awk -F'\t' '$3=="yes"{n++} END{print n}'    # 94 → 132 minus inherent exclusions
+    grep -v '^#' doc/compatibility.tsv | awk -F'\t' '$3=="yes"{n++} END{print n}'    # 101 → 144 minus inherent exclusions
 
 ## plat-2: Android in the ordinary build
 
@@ -52,7 +53,7 @@ and the Native link check covers every Native-capable module.
 ## plat-4: WASI beyond the first seven backends
 
 Horizon: mid → long
-Baseline: 7 WASI backends; HTTP is GET-only, sockets are TCP-only (measured 2026-08-01)
+Baseline: 7 WASI backends; HTTP sends any method with a body, sockets are TCP-only (measured 2026-09-25; HTTP was GET-only on 2026-08-01)
 
 The WASI slice — environment, clock, random, sockets, filesystem, HTTP, stdio — proves the WIT
 component-model approach; parity requires the full HTTP method set, UDP, and backends for every

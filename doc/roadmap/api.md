@@ -18,6 +18,7 @@ deleting it. The file's absence is the completion signal.
 ## api-1: multi-word names nest
 
 Horizon: near
+Baseline: 4 renamed names still defined at top level (`BlockCipherMode`, `BlockCipherPadding`, `SyntaxMatcher`, `TlsAcceptance`); 61 prefix families with 210 names, plus 216 singletons, still listed (measured 2026-09-25)
 
 The C1 candidates — multi-word names whose prefix already names a same-module type — move
 inside that type: `Foo.Bar`, not `FooBar`. Each move ships with migration instructions once
@@ -30,6 +31,7 @@ lists no name outside "Reviewed items which should not be moved".
 ## api-2: homonyms and synonyms resolve
 
 Horizon: near
+Baseline: 12 homonym pairs and 1 synonym family (`*Parser`) listed; `etc/check-given-uniqueness.py` checks given names only, not same-name-same-thing (measured 2026-09-25)
 
 Every C4-homonym pair either unifies into one declaration or one side renames; every C4-synonym
 family collapses onto a single term for the role. Same name, same thing; different name,
@@ -41,6 +43,7 @@ same-name-same-thing check runs in the ordinary build (extending `make check-giv
 ## api-3: the backing entities demote
 
 Horizon: mid
+Baseline: 3 C2 abbreviations listed (`AddOp`, `CellRef`, `Err`) (measured 2026-09-25)
 
 The C3 candidates — typeclass-backing entities and nested derivation objects that exist to be
 summoned, not named — are demoted, inlined or de-exported, and the C2 abbreviations are spelled
@@ -55,7 +58,8 @@ Horizon: mid
 
 The naming standards in `doc/standards/naming.md` and `doc/standards/given-naming.md` gain a
 conformance sweep, so that drift back into incoherence is caught mechanically rather than in
-review.
+review. `etc/check-given-uniqueness.py`, run by `make build`, covers the given-naming half;
+nothing checks `naming.md`, though flair's `S1.1` rule enforces its one `unsafe…` clause.
 
 Done when: a checked-in sweep script reports zero deviations from the naming standards, and
 runs in the ordinary build.

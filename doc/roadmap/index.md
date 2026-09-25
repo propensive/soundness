@@ -36,10 +36,12 @@ Everything on this roadmap serves one philosophy, elaborated in the
   instructions precise enough for an agent to execute.
 - **A trusted toolchain.** Building, testing, debugging, exploring and distributing Soundness
   code happens through its own tools — `fury`, `fume`, `flame`, `fluence`, the `exegesis` LSP
-  server, a Soundness-native debugger and the `synesthesia` MCP server — with releases that are
+  server, the `vivisection` debugger and the `synesthesia` MCP server — with releases that are
   attested, predictable and verifiable, and libraries distributed as LIRA files that are
   guaranteed to compose safely. TEL is the configuration language wherever configuration is
-  needed. Soundness is built with the Proscala compiler, which is modifiable whenever safety
+  needed. The tools that are not modules of this repository — fury, fume, flame, fluence — are
+  developed in their own repositories; this roadmap tracks only what Soundness must provide for
+  them. Soundness is built with the Proscala compiler, which is modifiable whenever safety
   demands it, under one constraint: published artifacts stay readable from the mainline Scala
   compiler.
 
@@ -100,7 +102,8 @@ The rules that keep this document trustworthy:
    an agent can follow.
 6. **[The toolchain](tooling.md)** (`tool`) — flame, fury, fume, fluence, the LSP server, the
    debugger and the MCP server together replace every Maven-era tool, with coverage and
-   benchmarks tracked for every commit in git notes.
+   benchmarks tracked for every commit in git notes. The tools built elsewhere appear here only
+   as what Soundness owes them.
 7. **[Distribution and release](distribution.md)** (`dist`) — attested, changelogged releases;
    the migration-instruction convention; LIRA from specification to sole channel, retiring
    Maven Central.
@@ -129,6 +132,12 @@ are listed here and never appear as items, because no `Done when:` command of ou
 them:
 
 - WASI's standard interfaces mature far enough to express full HTTP and UDP (gates `plat-4`).
+- fury, developed in its own repository, becomes able to build this repository (gates `tool-4`,
+  and through it `dist-5` and `doc-8`). Its progress is not tracked here; the Soundness side of
+  the bootstrap is.
+- LIRA's implementation, once it has moved to the `lira` repository (`dist-10`), round-trips
+  and publishes a Soundness release (gates `dist-3`, `dist-6`, `dist-7`). As with fury, only
+  what Soundness owes it is tracked here.
 
 The compiler is deliberately *not* on this list: Soundness is built with Proscala, and the
 freedom to modify it — for capture-checking fixes, for the Wasm backend, for whatever safety
