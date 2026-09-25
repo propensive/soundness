@@ -235,7 +235,7 @@ object Ar:
       t"$fields${mode.octal.fit(8)}${size.show.fit(10)}$terminator".in[Data]
 
   // The sixty-byte `ar` member header, held as raw slices: nothing is decoded in the case class, as
-  // in `TarHeader`. Every field is left-aligned ASCII padded with trailing spaces — the opposite of
+  // in `Tar.Header`. Every field is left-aligned ASCII padded with trailing spaces — the opposite of
   // TAR's right-aligned, space-led form — and every numeric field is decimal except `mode`, which
   // is octal.
   case class Header

@@ -17,6 +17,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   to `bitumen.Archive.Body`, exported from `soundness` as `Archive`; `Tar.Body` no longer
   exists. `Tar.Entry.File#data`, `Tar.Entry.Sparse#data` and the `data` argument of
   `Tar.Entry.apply` are now typed `Archive.Body`. Behaviour unchanged. (#2080)
+- `bitumen.TarHeader` (the case class and its companion, with `blockSize`, `checksumOffset`,
+  `checksumLength`, `parse`, `verifyChecksum`, `decodeOctal`, `decodeNulText` and
+  `isZeroBlock`) renamed to `bitumen.Tar.Header`; the top-level name and its `soundness`
+  export are removed. Signatures and behaviour unchanged. (#2080)
+- `bitumen.TarDataOpenable` renamed to `bitumen.Tar.DataOpenable`; the top-level name and its
+  `soundness` export are removed. The `Tar.dataOpenable` given now yields
+  `Tar.DataOpenable^{tarTactic, streamTactic}`. Signatures and behaviour unchanged. (#2080)
 
 ## coaxial
 

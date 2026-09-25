@@ -112,31 +112,31 @@ object Tarfile:
               raise(Tar.Error(Tar.Error.Reason.TruncatedStream(512, 0)))
               finish()
 
-            case head: Data if TarHeader.isZeroBlock(head) => finish()
+            case head: Data if Tar.Header.isZeroBlock(head) => finish()
 
             case head: Data =>
-              val header = TarHeader.parse(head)
+              val header = Tar.Header.parse(head)
 
               val checksummed: Venture[Unit] = venture:
-                TarHeader.verifyChecksum(head, TarHeader.decodeOctal(header.checksum, t"checksum"))
+                Tar.Header.verifyChecksum(head, Tar.Header.decodeOctal(header.checksum, t"checksum"))
 
               // A block that fails its checksum cannot be trusted for anything — including the
               // size that locates the next header — so parsing on would only manufacture
               // cascade errors from corrupt bytes. Record the checksum error and end the walk.
               if !checksummed.ready then finish() else
-                val size: Int = TarHeader.decodeOctal(header.size, t"size").long.toInt
-                val mtime: U32 = TarHeader.decodeOctal(header.mtime, t"mtime")
-                val mode = UnixMode.from(TarHeader.decodeOctal(header.mode, t"mode").long.toInt)
-                val uid = TarHeader.decodeOctal(header.uid, t"uid").long.toInt
-                val gid = TarHeader.decodeOctal(header.gid, t"gid").long.toInt
+                val size: Int = Tar.Header.decodeOctal(header.size, t"size").long.toInt
+                val mtime: U32 = Tar.Header.decodeOctal(header.mtime, t"mtime")
+                val mode = UnixMode.from(Tar.Header.decodeOctal(header.mode, t"mode").long.toInt)
+                val uid = Tar.Header.decodeOctal(header.uid, t"uid").long.toInt
+                val gid = Tar.Header.decodeOctal(header.gid, t"gid").long.toInt
 
                 val unameText =
                   paxOverlay.at("uname".tt).or(globalOverlay.at("uname".tt))
-                  . or(TarHeader.decodeNulText(header.uname))
+                  . or(Tar.Header.decodeNulText(header.uname))
 
                 val gnameText =
                   paxOverlay.at("gname".tt).or(globalOverlay.at("gname".tt))
-                  . or(TarHeader.decodeNulText(header.gname))
+                  . or(Tar.Header.decodeNulText(header.gname))
 
                 val user = UnixUser(uid, if unameText.s.isEmpty then Unset else unameText)
                 val group = UnixGroup(gid, if gnameText.s.isEmpty then Unset else gnameText)
@@ -149,10 +149,10 @@ object Tarfile:
                     globalOverlay = globalOverlay + Pax.parse(takeData(cursor, size))
 
                   case 'L' =>
-                    longName = TarHeader.decodeNulText(takeData(cursor, size))
+                    longName = Tar.Header.decodeNulText(takeData(cursor, size))
 
                   case 'K' =>
-                    longLink = TarHeader.decodeNulText(takeData(cursor, size))
+                    longLink = Tar.Header.decodeNulText(takeData(cursor, size))
 
                   case 'S' =>
                     val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
@@ -162,7 +162,7 @@ object Tarfile:
                     val isExtended: Boolean = head.readUnchecked(482) != 0.toByte
 
                     val realSize: Long =
-                      TarHeader.decodeOctal(head.segment((483).z till (495).z), t"realsize").long
+                      Tar.Header.decodeOctal(head.segment((483).z till (495).z), t"realsize").long
 
                     val extSegments = readSparseExtensions(cursor, isExtended)
                     val data = takeData(cursor, size)
@@ -227,7 +227,7 @@ object Tarfile:
       mtime:  U32,
       link:   Text,
       extras: Map[Text, Text],
-      header: TarHeader,
+      header: Tar.Header,
       data:   Data )
   :   Tar.Entry raises Tar.Error =
 
@@ -242,13 +242,13 @@ object Tarfile:
         Tar.Entry.Symlink(path, mode, user, group, mtime, link, extras)
 
       case '3' =>
-        val major = TarHeader.decodeOctal(header.devMajor, t"devmajor")
-        val minor = TarHeader.decodeOctal(header.devMinor, t"devminor")
+        val major = Tar.Header.decodeOctal(header.devMajor, t"devmajor")
+        val minor = Tar.Header.decodeOctal(header.devMinor, t"devminor")
         Tar.Entry.CharSpecial(path, mode, user, group, mtime, (major, minor), extras)
 
       case '4' =>
-        val major = TarHeader.decodeOctal(header.devMajor, t"devmajor")
-        val minor = TarHeader.decodeOctal(header.devMinor, t"devminor")
+        val major = Tar.Header.decodeOctal(header.devMajor, t"devmajor")
+        val minor = Tar.Header.decodeOctal(header.devMinor, t"devminor")
         Tar.Entry.BlockSpecial(path, mode, user, group, mtime, (major, minor), extras)
 
       case '6' =>
@@ -285,7 +285,7 @@ object Tarfile:
       if data.readUnchecked(i) != 0.toByte then allZero = false
       i = i + 1
 
-    if allZero then 0L else TarHeader.decodeOctal(data, t"sparse.field").long
+    if allZero then 0L else Tar.Header.decodeOctal(data, t"sparse.field").long
 
   private def readInlineSparseMap(headerBlock: Data): List[SparseSegment] raises Tar.Error =
     val builder = scala.collection.immutable.List.newBuilder[SparseSegment]
@@ -328,7 +328,7 @@ object Tarfile:
         builder.result().to(List) + readSparseExtensions(cursor, moreExtended)
 
   private def resolveName
-    ( header:        TarHeader,
+    ( header:        Tar.Header,
       paxOverlay:    Map[Text, Text],
       globalOverlay: Map[Text, Text],
       longName:      Optional[Text] )
@@ -336,14 +336,14 @@ object Tarfile:
 
     longName.or:
       paxOverlay.at("path".tt).or(globalOverlay.at("path".tt)).lay:
-        val name = TarHeader.decodeNulText(header.name)
-        val prefix = TarHeader.decodeNulText(header.prefix)
+        val name = Tar.Header.decodeNulText(header.name)
+        val prefix = Tar.Header.decodeNulText(header.prefix)
         stripTrailingSlash(if prefix.s.isEmpty then name else t"$prefix/$name")
       . apply: text =>
         stripTrailingSlash(text)
 
   private def resolveLink
-    ( header:        TarHeader,
+    ( header:        Tar.Header,
       paxOverlay:    Map[Text, Text],
       globalOverlay: Map[Text, Text],
       longLink:      Optional[Text] )
@@ -351,7 +351,7 @@ object Tarfile:
 
     longLink.or:
       paxOverlay.at("linkpath".tt).or(globalOverlay.at("linkpath".tt))
-      . or(TarHeader.decodeNulText(header.linkName))
+      . or(Tar.Header.decodeNulText(header.linkName))
 
   private def stripTrailingSlash(text: Text): Text =
     if text.s.endsWith("/") then text.s.dropRight(1).nn.tt else text
