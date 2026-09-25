@@ -94,7 +94,7 @@ object Tar:
       val mtimeU32: U32 =
         (mtime.let(_.generic).or(System.currentTimeMillis)/1000).toInt.bits.u32
 
-      Entry.File(name, mode, user, group, mtimeU32, Tar.Body(data.source[Data].memoize))
+      Entry.File(name, mode, user, group, mtimeU32, Archive.Body(data.source[Data].memoize))
 
     private[bitumen] val paxRef: Tar.Ref =
       import strategies.throwUnsafely
@@ -161,7 +161,7 @@ object Tar:
         user:  UnixUser,
         group: UnixGroup,
         mtime: U32,
-        data:  Tar.Body,
+        data:  Archive.Body,
         pax:   Map[Text, Text] = Map.empty )
     extends Entry(path, mode, user, group, mtime)
 
@@ -237,7 +237,7 @@ object Tar:
         mtime:    U32,
         realSize: Long,
         segments: List[SparseSegment],
-        data:     Tar.Body,
+        data:     Archive.Body,
         pax:      Map[Text, Text] = Map.empty )
     extends Entry(path, mode, user, group, mtime)
 
@@ -420,86 +420,6 @@ object Tar:
 
   // TarCompression → Tar.Compression
   object Compression
-
-  // TarBody → Tar.Body
-  object Body:
-    // An in-memory body: its chunks are given up front, and nothing pulls lazily.
-    def apply(chunks: Data*): Tar.Body =
-      new Tar.Body(chunks.filter(_.length > 0).to(List), () => Unset)
-
-    val empty: Tar.Body = Tar.Body()
-
-    // A body fed lazily from a source the producer still owns (the shared cursor
-    // of a streaming read, or an unread source stream): `pull` yields the next
-    // chunk, or `Unset` when the body is complete. The producer's captures are
-    // erased at this audited point — exactly the laundering the memoizing
-    // `LazyList` chain this replaces performed implicitly through its cells —
-    // and the producer must remain valid until the body is drained.
-    private[bitumen] def deferred(pull: () => Optional[Data]): Tar.Body =
-      new Tar.Body(Nil, caps.unsafe.unsafeAssumePure(pull))
-
-  // The replayable body of an archive entry. Chunks pull lazily from the
-  // producer and memoize, so the underlying region is read exactly once however
-  // many consumers stream it, and each `stream` replays from the first chunk.
-  // An in-order consumer of a streaming read holds memory bounded by the entries
-  // it retains: a body's memoized chunks are reclaimed with its entry.
-  class Body private (initial: List[Data], pull: () -> Optional[Data]):
-    private val memo: scala.collection.mutable.ArrayBuffer[Data] =
-      // `ArrayBuffer.from` demands an `IterableOnce`, which the opaque `List` is not.
-      scala.collection.mutable.ArrayBuffer.from(initial.stdlib)
-
-    @scala.caps.unsafe.untrackedCaptures
-    private var exhausted: Boolean = false
-
-    // Extend the memo by one chunk, or record exhaustion.
-    private def fetch(): Boolean =
-      if exhausted then false else
-        pull() match
-          case Unset =>
-            exhausted = true
-            false
-
-          case chunk: Data =>
-            if chunk.length > 0 then memo += chunk
-            chunk.length > 0 || fetch()
-
-    // Read the remainder of the body from its producer, so the producer may move
-    // past it. Memoized chunks are never re-read.
-    private[bitumen] def drain(): Unit = while fetch() do ()
-
-    def size: Long =
-      drain()
-      memo.foldLeft(0L)(_ + _.length)
-
-    // The body's chunks, replayed from the start; unread chunks pull from the
-    // producer as the iterator advances.
-    def chunks: Iterator[Data] = new Iterator[Data]:
-      @scala.caps.unsafe.untrackedCaptures
-      private var index: Int = 0
-
-      def hasNext: Boolean = index < memo.length || fetch()
-
-      def next(): Data =
-        val chunk = memo(index)
-        index += 1
-        chunk
-
-    // A fresh stream over the body's chunks, replayed from the start.
-    def stream: (Stream[Data] over Credit)^ = Stream(chunks)
-
-    // The whole body as a single value.
-    def memoize: Data =
-      drain()
-
-      if memo.length == 1 then memo(0) else
-        val whole = Array.allocate[Byte](size.toInt)
-        var offset = 0
-
-        memo.each: chunk =>
-          whole.place(chunk, 0, offset, chunk.length)
-          offset += chunk.length
-
-        Array.freeze(whole)
 
   // TarFlag → Tar.Flag
   // Flags for opening a TAR archive: the compression wrapping the archive, if any. TAR has no

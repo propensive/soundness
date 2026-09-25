@@ -174,7 +174,7 @@ object Image:
 
     // The body of the blob addressed by a canonical `sha256:<hex>` digest: its stored
     // (for layers: compressed) chunks — undecoded and unverified.
-    private def body(digest: Text)(using Tactic[Oci.Error]): Tar.Body =
+    private def body(digest: Text)(using Tactic[Oci.Error]): Archive.Body =
       if !digest.s.startsWith("sha256:")
       then abort(Oci.Error(Oci.Error.Reason.UnsupportedDigest(digest.cut(t":").prim.or(t""))))
 
@@ -354,7 +354,7 @@ case class Image
           user  = UnixUser(0),
           group = UnixGroup(0),
           mtime = 0.bits.u32,
-          data  = Tar.Body(content) )
+          data  = Archive.Body(content) )
 
     val layoutEntry = entry(t"oci-layout", t"""{"imageLayoutVersion":"1.0.0"}""".in[Data])
     val indexEntry  = entry(t"index.json", indexBytes)

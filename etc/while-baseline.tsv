@@ -9,8 +9,9 @@ lib/aviation/src/core/aviation.LeapSeconds.scala	3	0	0
 lib/aviation/src/core/aviation.Timespan.scala	2	0	0
 lib/aviation/src/core/aviation.internal.scala	1	0	1
 lib/aviation/src/core/aviation.timestampInternal.scala	1	0	0
+lib/bitumen/src/core/bitumen.Archive.scala	1	0	0
 lib/bitumen/src/core/bitumen.Pax.scala	3	4	0
-lib/bitumen/src/core/bitumen.Tar.scala	3	0	0
+lib/bitumen/src/core/bitumen.Tar.scala	2	0	0
 lib/bitumen/src/core/bitumen.Tarfile.scala	4	3	0
 lib/breviloquence/src/core/breviloquence.Cbor.scala	29	6	1
 lib/breviloquence/src/core/breviloquence_core.scala	1	1	0

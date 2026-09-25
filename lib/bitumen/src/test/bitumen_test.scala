@@ -52,7 +52,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                        user  = UnixUser(0),
                        group = UnixGroup(0),
                        mtime = 0.bits.u32,
-                       data  = Tar.Body(t"hello".in[Data]) )
+                       data  = Archive.Body(t"hello".in[Data]) )
 
     val emptyDir = Tar.Entry.Directory
                     ( path  = t"data".as[Relative on Tar],
@@ -112,7 +112,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                         user  = UnixUser(0),
                         group = UnixGroup(0),
                         mtime = 0.bits.u32,
-                        data  = Tar.Body() )
+                        data  = Archive.Body() )
       val blocks = Tarfile(List(longFile)).source[Data].chain.stdlib.toList
 
       test(m"long name: 5 blocks (PAX header/data, regular, 2 zero)"):
@@ -196,7 +196,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                        user  = UnixUser(0),
                        group = UnixGroup(0),
                        mtime = 0.bits.u32,
-                       data  = Tar.Body(big) )
+                       data  = Archive.Body(big) )
       val bytes: Data = Tarfile(List(bigFile)).source[Data].memoize
 
       test(m"a 200kB body arrives as multiple chunks"):
@@ -263,7 +263,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                         user  = UnixUser(0),
                         group = UnixGroup(0),
                         mtime = 0.bits.u32,
-                        data  = Tar.Body() )
+                        data  = Archive.Body() )
 
       val bytes = Tarfile(List(longFile)).source[Data].chain
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
@@ -306,7 +306,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                           user  = UnixUser(1000, t"alice"),
                           group = UnixGroup(1000, t"alice"),
                           mtime = 12345.bits.u32,
-                          data  = Tar.Body(t"#!/bin/sh\n".in[Data]) )
+                          data  = Archive.Body(t"#!/bin/sh\n".in[Data]) )
 
       val bytes = Tarfile(List(executable)).source[Data].chain
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
@@ -413,7 +413,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                     user  = UnixUser(1000, longName),
                     group = UnixGroup(1000, longGroup),
                     mtime = 0.bits.u32,
-                    data  = Tar.Body() )
+                    data  = Archive.Body() )
 
       val blocks = Tarfile(List(file)).source[Data].chain.stdlib.toList
 
@@ -451,7 +451,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                         user  = UnixUser(0),
                         group = UnixGroup(0),
                         mtime = 0.bits.u32,
-                        data  = Tar.Body() )
+                        data  = Archive.Body() )
 
       val tar = Tarfile(List(longFile), LongNameFormat.Gnu)
       val blocks = tar.source[Data].chain.stdlib.toList
@@ -506,7 +506,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                     user  = UnixUser(0),
                     group = UnixGroup(0),
                     mtime = 1234567890.bits.u32,
-                    data  = Tar.Body(),
+                    data  = Archive.Body(),
                     pax   = Map
                              ( t"atime"   -> t"1700000000.500000000",
                                t"ctime"   -> t"1700000001.250000000",
@@ -586,7 +586,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                          user  = UnixUser(0),
                          group = UnixGroup(0),
                          mtime = 0.bits.u32,
-                         data  = Tar.Body() )
+                         data  = Archive.Body() )
 
       val longFileB = Tar.Entry.File
                        ( path  = longPathB.as[Relative on Tar],
@@ -594,7 +594,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                          user  = UnixUser(0),
                          group = UnixGroup(0),
                          mtime = 0.bits.u32,
-                         data  = Tar.Body() )
+                         data  = Archive.Body() )
 
       test(m"long PAX path is readable by external tar"):
         listing(writeArchive(Tarfile(List(longFileA)), t"longpax.tar"))
@@ -837,7 +837,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            segments = List
                                        ( SparseSegment(0L, 100L),
                                          SparseSegment(5000L, 200L) ),
-                           data     = Tar.Body(Array.fill[Byte](300)('X'.toByte)) )
+                           data     = Archive.Body(Array.fill[Byte](300)('X'.toByte)) )
 
       val bytes = Tarfile(List(sparseEntry)).source[Data].chain
       val blocks = bytes.stdlib.toList
@@ -899,7 +899,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            mtime    = 0.bits.u32,
                            realSize = 10000L,
                            segments = manySegments.to(proscenium.List),
-                           data     = Tar.Body(Array.fill[Byte](500)('X'.toByte)) )
+                           data     = Archive.Body(Array.fill[Byte](500)('X'.toByte)) )
 
       val bytes = Tarfile(List(sparseEntry)).source[Data].chain
       val blocks = bytes.stdlib.toList

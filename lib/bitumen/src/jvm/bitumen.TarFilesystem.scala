@@ -66,7 +66,7 @@ private[bitumen] object TarFilesystem:
     path.entry() match
       case galilei.File =>
         val bytes = Array.unsafeFrozen(jnf.Files.readAllBytes(path.javaPath).nn)
-        Tar.Entry.File(ref, mode, user, group, mtime, Tar.Body(bytes))
+        Tar.Entry.File(ref, mode, user, group, mtime, Archive.Body(bytes))
 
       case galilei.Directory =>
         Tar.Entry.Directory(ref, mode, user, group, mtime)

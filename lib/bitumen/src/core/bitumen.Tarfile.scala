@@ -68,7 +68,7 @@ object Tarfile:
   // boundaries — the archive need never be materialized. The resulting
   // entries are single-owner: consume them in order, on one thread. Advancing
   // to the next entry first drains whatever of the previous entry's body was
-  // not yet read into its memoizing `Tar.Body` — an in-order consumer streams
+  // not yet read into its memoizing `Archive.Body` — an in-order consumer streams
   // with bounded memory, while listing entries before reading a body still
   // works, at the cost of buffering the passed-over bodies, which is what the
   // eager reader always did.
@@ -88,83 +88,31 @@ object Tarfile:
     scala.caps.unsafe.unsafeAssumeSeparate:
       Tarfile(read(stream).to(List).asInstanceOf[List[Tar.Entry]])
 
-  // Pulls an entry's `size` bytes off the shared cursor in bounded chunks,
-  // consuming the trailing block padding after the final one. The closure is
-  // handed to `Tar.Body.deferred`, whose memoization guarantees the region is
-  // read exactly once, in order.
-  private def bodyPull(cursor: Cursor[Data, {}]^, size: Int, padded: Int)
-    ( using tactic: Tactic[Tar.Error] )
-  :   () ->{cursor, tactic} Optional[Data] =
-
-    @caps.unsafe.untrackedCaptures
-    var consumed: Int = 0
-
-    val chunkSize: Int = 65536
-
-    () =>
-      if consumed >= size then
-        if consumed < padded then
-          cursor.take(abort(Tar.Error(Tar.Error.Reason.TruncatedStream(padded - consumed,
-              cursor.available))))(padded - consumed)
-          consumed = padded
-        Unset
-      else
-        val n = (size - consumed).min(chunkSize)
-
-        // The inline `take` expansion re-infers a fresh `any.rd` on the frozen chunk;
-        // the cast reasserts the frozen form, which `take` already guarantees.
-        val data =
-          cursor.take(abort(Tar.Error(Tar.Error.Reason.TruncatedStream(n, cursor.available))))(n)
-          . asInstanceOf[Data]
-
-        consumed += n
-        data
-
   private def entryIterator(cursor: Cursor[Data, {}]^)(using tactic: Tactic[Tar.Error])
   :   Iterator[Tar.Entry]^{cursor, tactic} =
 
-    new Iterator[Tar.Entry]:
-      // A stdlib class cannot extend `Stateful`, so its state is untracked
-      // (the record-iterator precedent).
-      @caps.unsafe.untrackedCaptures
-      private var lookahead: Optional[Tar.Entry] = Unset
-      @caps.unsafe.untrackedCaptures
-      private var unread: Optional[Tar.Body] = Unset
+    def truncated(needed: Int, got: Int): Nothing =
+      abort(Tar.Error(Tar.Error.Reason.TruncatedStream(needed, got)))
+
+    new Archive.Lookahead[Tar.Entry]:
       @caps.unsafe.untrackedCaptures
       private var globalOverlay: Map[Text, Text] = Map.empty
-      @caps.unsafe.untrackedCaptures
-      private var finished: Boolean = false
 
-      def hasNext: Boolean = !lookahead.absent || (!finished && advance())
-
-      def next(): Tar.Entry = lookahead match
-        case entry: Tar.Entry =>
-          lookahead = Unset
-          entry
-
-        case Unset =>
-          if !finished && advance() then next() else panic(m"the archive has no more entries")
-
-      // Parse forward to the next real entry, first draining whatever of the
-      // previous entry's body was not yet read, so the cursor stands at the
-      // next header. Metadata pseudo-entries (PAX and GNU long-name blocks)
-      // accumulate into the overlays consumed by the entry they precede.
-      private def advance(): Boolean =
-        unread.let(_.drain())
-        unread = Unset
-
+      // Parse forward to the next real entry. Metadata pseudo-entries (PAX and GNU long-name
+      // blocks) accumulate into the overlays consumed by the entry they precede.
+      protected def parse(): Unit =
         var paxOverlay: Map[Text, Text] = Map.empty
         var longName: Optional[Text] = Unset
         var longLink: Optional[Text] = Unset
 
-        while lookahead.absent && !finished do
+        while !pending && !done do
           takeBlock(cursor) match
             case Unset =>
               // The archive ended without its terminating zero blocks.
               raise(Tar.Error(Tar.Error.Reason.TruncatedStream(512, 0)))
-              finished = true
+              finish()
 
-            case head: Data if TarHeader.isZeroBlock(head) => finished = true
+            case head: Data if TarHeader.isZeroBlock(head) => finish()
 
             case head: Data =>
               val header = TarHeader.parse(head)
@@ -175,7 +123,7 @@ object Tarfile:
               // A block that fails its checksum cannot be trusted for anything — including the
               // size that locates the next header — so parsing on would only manufacture
               // cascade errors from corrupt bytes. Record the checksum error and end the walk.
-              if !checksummed.ready then finished = true else
+              if !checksummed.ready then finish() else
                 val size: Int = TarHeader.decodeOctal(header.size, t"size").long.toInt
                 val mtime: U32 = TarHeader.decodeOctal(header.mtime, t"mtime")
                 val mode = UnixMode.from(TarHeader.decodeOctal(header.mode, t"mode").long.toInt)
@@ -226,10 +174,10 @@ object Tarfile:
                     val extras: Map[Text, Text] = overlay.filter: (k, _) =>
                       !structuralPaxKeys.has(k)
 
-                    lookahead =
+                    emit:
                       Tar.Entry.Sparse
-                        ( path, mode, user, group, mtime, realSize, allSegments, Tar.Body(data),
-                          extras )
+                        ( path, mode, user, group, mtime, realSize, allSegments,
+                          Archive.Body(data), extras )
 
                   case flag if flag == 0 || flag == '0' || flag == '7' =>
                     val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
@@ -243,14 +191,13 @@ object Tarfile:
                     // The body pulls off the shared cursor; advancing to the
                     // next entry drains whatever of it remains unread.
                     val body =
-                      Tar.Body.deferred:
+                      Archive.Body.deferred:
                         // Erases the two independently-freshened `any.rd`s on the frozen
                         // chunk type (result position vs parameter position).
-                        bodyPull(cursor, size, ((size + 511)/512)*512)
+                        Archive.bodyPull(cursor, size, ((size + 511)/512)*512)(truncated)
                         . asInstanceOf[() => Optional[Data]]
 
-                    unread = body
-                    lookahead = Tar.Entry.File(path, mode, user, group, mtime, body, extras)
+                    emit(Tar.Entry.File(path, mode, user, group, mtime, body, extras), body)
 
                   case flag =>
                     val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
@@ -267,11 +214,9 @@ object Tarfile:
                     // declared payload, keeping the cursor synchronized with the next header.
                     val data = takeData(cursor, size)
 
-                    lookahead =
+                    emit:
                       buildEntry(flag, path, mode, user, group, mtime, linkText, extras,
                         header, data)
-
-        !lookahead.absent
 
   private def buildEntry
     ( flag:   Int,
@@ -314,7 +259,7 @@ object Tarfile:
         // prescribed treatment for unrecognised flags — never a directory, which would corrupt
         // the archive's tree (children attaching beneath it, and `TarFilesystem` creating it).
         raise(Tar.Error(Tar.Error.Reason.UnknownTypeFlag(other.toByte)))
-        Tar.Entry.File(path, mode, user, group, mtime, Tar.Body(data), extras)
+        Tar.Entry.File(path, mode, user, group, mtime, Archive.Body(data), extras)
 
   // The next 512-byte block, or `Unset` at clean end-of-archive; a partial
   // block raises. One allocation per header block.

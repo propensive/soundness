@@ -122,7 +122,7 @@ val script = Tar.Entry.File
     user  = UnixUser(1000, t"alice"),
     group = UnixGroup(1000, t"alice"),
     mtime = 0.bits.u32,
-    data  = Tar.Body(t"#!/bin/sh\necho hello\n".in[Data]) )
+    data  = Archive.Body(t"#!/bin/sh\necho hello\n".in[Data]) )
 ```
 
 A `Tarfile` of entries streams as tar blocks, or as the compressed forms the format usually
