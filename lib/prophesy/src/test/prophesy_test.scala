@@ -35,6 +35,7 @@ package prophesy
 import soundness.*
 
 import prophesy.KeywordPattern.{Element, Expectation}
+import prophesy.ScalaKeywords
 import prophesy.Lexeme.Bracket
 
 object Tests extends Suite(m"Prophesy tests"):
@@ -59,6 +60,19 @@ object Tests extends Suite(m"Prophesy tests"):
                 ( Element.Exact(Lexeme.Keyword(t"transparent")) -> KeywordPattern(definition),
                   Element.Exact(Lexeme.Open(Bracket.Round)) -> KeywordPattern(parameter) ) ),
            Element.ValueEnd -> KeywordPattern(Keywords(Set(t"match"))) ) )
+
+    suite(m"Keyword sets"):
+      test(m"hard and soft keywords are disjoint"):
+        ScalaKeywords.hard.filter(ScalaKeywords.soft.has(_))
+      . assert(_ == Set())
+
+      test(m"the full set is the union of hard and soft"):
+        ScalaKeywords.all
+      . assert(_ == ScalaKeywords.hard + ScalaKeywords.soft)
+
+      test(m"soft keywords are included"):
+        List(t"inline", t"using", t"extension", t"end").all { (word: Text) => ScalaKeywords.all.has(word) }
+      . assert(_ == true)
 
     suite(m"Pattern-tree lookup"):
       test(m"an empty context yields the empty result"):
