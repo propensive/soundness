@@ -798,7 +798,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // One launch of `Menagerie` captures every local at a single breakpoint; the cases below are
     // granular assertions over that one snapshot, so the whole width of value recovery costs one
     // debuggee.
-    val menagerie: scala.collection.immutable.Map[Text, Variable] =
+    lazy val menagerie: scala.collection.immutable.Map[Text, Variable] =
       supervise:
         debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(57)):
           stop ?=> named(stop.variables())
@@ -886,7 +886,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // ── Captured-state matrix ───────────────────────────────────────────────────────────────────
     // At a breakpoint inside a local class's method, nothing is an ordinary local slot: every
     // binding is recovered by un-flattening `this`'s captured fields and walking its `$outer` chain.
-    val closures: scala.collection.immutable.Map[Text, Variable] =
+    lazy val closures: scala.collection.immutable.Map[Text, Variable] =
       supervise:
         debugFixture(t"vivisection.Closures", t"vivisection.Closures.scala", Ordinal.uniary(56)):
           stop ?=> named(stop.variables())
@@ -919,7 +919,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // Three locals whose types render differently: a derived (real, pure) instance renders cleanly;
     // a Showable-only type is borrowed under `⸢…⸣`; a toString-only type falls to `“…”`. The
     // markers are how the debugger signals a value was not rendered through a verified-pure instance.
-    val renderings: (Text, Text, Text) =
+    lazy val renderings: (Text, Text, Text) =
       supervise:
         debugFixture(t"vivisection.Renderings", t"vivisection.Renderings.scala", Ordinal.uniary(62)):
           stop ?=>
@@ -940,7 +940,7 @@ object Tests extends Suite(m"Vivisection tests"):
 
     // ── Static-type matrix ──────────────────────────────────────────────────────────────────────
     // Richer declared types recovered from TASTy and rendered through stenography, keyed by name.
-    val typeShapes: scala.collection.immutable.Map[Text, Text] =
+    lazy val typeShapes: scala.collection.immutable.Map[Text, Text] =
       supervise:
         debugFixture(t"vivisection.Types", t"vivisection.Types.scala", Ordinal.uniary(48)):
           stop ?=>
@@ -969,7 +969,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // ── Evaluation matrix ───────────────────────────────────────────────────────────────────────
     // Compile-and-run expressions over the `Menagerie` locals: arithmetic, a comparison, a method
     // call, and array indexing, each producing a value read back as text.
-    val evaluations: (Text, Text, Text, Text) =
+    lazy val evaluations: (Text, Text, Text, Text) =
       supervise:
         debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(57)):
           stop ?=>

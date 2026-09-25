@@ -182,6 +182,33 @@ private[pneumatic] class BrotliStage(engine0: => BrotliEngine^) extends Duct[Dat
     engine.deliver(out, targetInterval.start.n0, targetInterval.size)
 
 object Brotli:
+  // The recommended parameters for `prefix` and `continuation`: the largest window and meta-block
+  // RFC 7932 allows, since the prefix is never transmitted and a wider window only widens what a
+  // continuation may reference.
+  final val Window: Int = 24
+  final val Block: Int = 1 << 24
+
+  // Encodes `next` against a window already holding `base`: the meta-block(s) for `next` alone,
+  // with no stream header, ending with ISLAST = 1 and byte-aligned, whose backward references may
+  // reach up to `2^window - 16` bytes back, into `base`. It is a valid tail of any stream which
+  // leaves `base` in the decoder's window, in particular of `prefix(base, window, block)`:
+  // `(prefix(base, window, block) ++ continuation(base, next, window)).decompress[Brotli]` is
+  // `base ++ next`. `window` is WBITS, from 10 to 24; an empty `next` yields the empty last
+  // meta-block. Only the encoder's own output is guaranteed to be independent of the prefix's
+  // decoder state beyond the window (see `BrotliEncoder`).
+  def continuation(base: Data, next: Data, window: Int = Window): Data =
+    Array.unsafeFrozen:
+      BrotliEncoder.continuation(Array.unsafeJvm(base), Array.unsafeJvm(next), window)
+
+  // The priming prefix which leaves `base` in a decoder's window: a stream header declaring
+  // `window` (WBITS, 10 to 24), `base` as uncompressed meta-blocks of at most `block` bytes (1 to
+  // 2^24), then the empty metadata meta-block (the byte 0x06). Its bytes are fixed by RFC 7932
+  // and the three parameters alone, so a sender and a receiver construct it identically without
+  // transmitting it. It is not a complete stream — it awaits a `continuation` — so decoding it
+  // alone fails.
+  def prefix(base: Data, window: Int = Window, block: Int = Block): Data =
+    Array.unsafeFrozen(BrotliEncoder.prefix(Array.unsafeJvm(base), window, block))
+
   given compression: Brotli is Compression:
     def compressor()(using Buffering): (Duct[Data, Data] {
       type Transport = Credit

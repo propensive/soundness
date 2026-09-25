@@ -87,6 +87,26 @@ encoding. Both directions need the whole value before producing output — the d
 backward references may reach across the entire window, the encoder because it chooses its
 framing from the total length — so a Brotli stage buffers where a DEFLATE stage does not.
 
+Brotli can also encode a value *relative to* another that the receiver already holds. A
+`continuation` is the tail of a Brotli stream whose window has been preloaded with a base: it
+carries only the new value's meta-blocks, no stream header, and its backward references reach
+into the base, so a successor differing from its predecessor by a few edits costs a few bytes.
+The receiver rebuilds the window from its own copy of the base with `prefix`, whose bytes are
+fixed by RFC 7932 and the window and block parameters alone, and decodes the prefix and the
+continuation as one stream:
+
+```scala
+val base: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
+val next: Data = t"the quick brown fox jumped over the lazy dog".in[Data]
+val continuation = Brotli.continuation(base, next)
+val decoded = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
+decoded.length == base.length + next.length   // true: the base, then the successor
+```
+
+Both take the window size as WBITS (10 to 24), and `prefix` the maximum uncompressed
+meta-block length, defaulting to the largest the format allows, `Brotli.Window` and
+`Brotli.Block`; both sides must use the same values.
+
 `Xz` is the high-ratio codec: LZMA2 inside the `.xz` container, with a CRC-64 check, matching
 what the `xz` command-line tool produces. `Lzma2` is the same codec without the container
 framing, standing to `Xz` as `Deflate` stands to `Gzip`. Both default to preset 6; presets 0 to

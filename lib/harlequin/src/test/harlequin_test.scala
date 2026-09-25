@@ -299,6 +299,94 @@ object Tests extends Suite(m"Harlequin Tests"):
         Fragment.expressionStart(t"a + foo.bar")
       . assert(_ == 4)
 
+      test(m"a soft modifier before the space is not a receiver"):
+        Fragment.infixBase(t"erased ab", 9)
+      . assert(_ == (Unset, t"ab"))
+
+      test(m"the identifier character test is shared"):
+        List('a', '_', '9', '-', ' ').map(Fragment.identifierChar(_))
+      . assert(_ == List(true, true, true, false, false))
+
+    // The bracket-depth scanners are text-only: no lexer, no compiler.
+    suite(m"Bracket-depth scanning"):
+      test(m"unclosed brackets are listed innermost first"):
+        Fragment.unclosed(t"foo(bar, List[Int")
+      . assert(_ == List(']', ')'))
+
+      test(m"a closed group leaves nothing unclosed"):
+        Fragment.unclosed(t"foo(bar)")
+      . assert(_ == Nil)
+
+      test(m"a bracket inside a string literal does not count"):
+        Fragment.unclosed(t"foo(\"(\", ")
+      . assert(_ == List(')'))
+
+      test(m"an escaped quote does not end a string literal"):
+        Fragment.unclosed(t"foo(\"\\\"(\", ")
+      . assert(_ == List(')'))
+
+      test(m"a bracket inside a triple-quoted string does not count"):
+        Fragment.unclosed(t"foo(\"\"\"a \" (\"\"\")")
+      . assert(_ == Nil)
+
+      test(m"a bracket inside a line comment does not count"):
+        Fragment.unclosed(t"foo( // (\nbar")
+      . assert(_ == List(')'))
+
+      test(m"a bracket inside a block comment does not count"):
+        Fragment.unclosed(t"foo( /* ( /* [ */ */ bar")
+      . assert(_ == List(')'))
+
+      test(m"a bracket character literal does not count"):
+        Fragment.unclosed(t"foo('(', '\\'')")
+      . assert(_ == Nil)
+
+      test(m"a quoted expression's brace counts"):
+        Fragment.unclosed(t"'{ foo")
+      . assert(_ == List('}'))
+
+      test(m"a stray closer is ignored"):
+        Fragment.unclosed(t"foo) + bar(")
+      . assert(_ == List(')'))
+
+      test(m"the return-type colon is at depth zero"):
+        Fragment.outermost(t"def f(a: Int)[T <: (X: Y)]: String", ':')
+      . assert(_ == 26)
+
+      test(m"a parameter colon is not at depth zero"):
+        Fragment.outermost(t"def f(a: Int)", ':')
+      . assert(_ == Unset)
+
+      test(m"a predicate sees the offset of each depth-zero character"):
+        val line = t"def f(a: Int = 1) => Int = a"
+        Fragment.outermost(line): offset =>
+          line.s.charAt(offset) == '=' && line.s.charAt(offset + 1) != '>'
+      . assert(_ == 25)
+
+      test(m"a split keeps commas inside groups"):
+        Fragment.split(t"a.*, b.{c, d}, e.given", ',').map(_.trim)
+      . assert(_ == List(t"a.*", t"b.{c, d}", t"e.given"))
+
+      test(m"a split without a separator is the whole input"):
+        Fragment.split(t"a.b", ',')
+      . assert(_ == List(t"a.b"))
+
+      test(m"a split keeps empty parts"):
+        Fragment.split(t"a,,b,", ',')
+      . assert(_ == List(t"a", t"", t"b", t""))
+
+      test(m"groups are the parameter clauses of a header"):
+        Fragment.groups(t"def f[T](a: T, b: (Int, Int))(using c: C): T")
+      . assert(_ == List(t"a: T, b: (Int, Int)", t"using c: C"))
+
+      test(m"square groups are the type parameter clauses"):
+        Fragment.groups(t"def f[T <: (A | B)](a: T)", '[')
+      . assert(_ == List(t"T <: (A | B)"))
+
+      test(m"an unfinished group is omitted"):
+        Fragment.groups(t"def f(a: Int)(b: ")
+      . assert(_ == List(t"a: Int"))
+
     // Keyword completions come from prophesy's curated pattern tree over the reversed lexeme
     // context at the caret; tokenized depth suffices, so no compiler givens are needed.
     suite(m"Keyword completions"):

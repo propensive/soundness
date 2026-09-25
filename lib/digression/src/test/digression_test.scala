@@ -303,3 +303,43 @@ object Tests extends Suite(m"Digression Tests"):
         . show.contains(t"↳ inlined from ThrowerA.fail (A.scala:3)")
 
       . assert(_ == true)
+
+    suite(m"Terminal rendering"):
+      import textMetrics.uniformMetric
+      import digression.teletypeables.stackTraceTeletype
+      import dysasymptotics.linearSize
+
+      def frame(cls: Text, method: Text, file: Text, line: Int): StackTrace.Frame =
+        StackTrace.Frame(StackTrace.Method(cls, method), file, line, false)
+
+      val stack =
+        StackTrace(t"scala", t"Exception", Message(t"boom"),
+            List(frame(t"pkg.ΞTests", t"run()", t"Tests.scala", 42),
+                 frame(t"pkg.ΞTests", t"main()", t"Tests.scala", 1234),
+                 frame(t"pkg.ΞMain", t"go()", t"Main.scala", 7)),
+            Unset)
+
+      // The first line is the message; the rest are frames.
+      val lines: List[Text] = stack.teletype.plain.cut(t"\n").skip(1)
+
+      test(m"A location renders contiguously, with no space around the colon"):
+        lines.exists(_.contains(t"Tests.scala:42"))
+
+      . assert(_ == true)
+
+      test(m"Successive locations stay aligned on the colon"):
+        lines.map(_.s.indexOf(":")).to[Set].size
+
+      . assert(_ == 1)
+
+      test(m"A class, its separator and its method render contiguously"):
+        lines.exists(_.contains(t"pkg.Main.go()"))
+
+      . assert(_ == true)
+
+      test(m"Successive methods stay aligned on their separator"):
+        // The dot immediately before the method name is the class/method separator.
+        lines.map { line => line.s.lastIndexOf(".", line.s.indexOf("()")) }
+        . to[Set].size
+
+      . assert(_ == 1)

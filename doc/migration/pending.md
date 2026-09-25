@@ -13,6 +13,17 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `table.length == 256` or iterated the whole table must use `table.readable.take(256)`.
   `Crc64.Accumulator`'s results are unchanged.
 
+## digression
+
+- Behaviour change: `digression.teletypeables.stackTraceTeletype` (and `exceptionTeletype`,
+  which delegates to it) now renders each frame's class, separator and method as one contiguous
+  word, and its file, colon and line as another (`pkg.Tests.run()  Tests.scala:42`), where
+  previously each was a separate table column with a blank cell between them
+  (`pkg.Tests . run()  Tests.scala : 42`). Rows remain aligned on the separator and on the
+  colon: the class and file are right-padded to the widest in the trace, and the method and
+  line are left-aligned. A frame with no line number renders no colon. Code that matched on the
+  rendered text (for instance, `Tests.scala : 42`) must expect the contiguous form. (#2052)
+
 ## ethereal
 
 - `ethereal.Stdin` renamed to `ethereal.Terminus`, with its cases `Terminal` and `Pipe` and its
@@ -105,6 +116,27 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `apply()` is not expanded and `.present` resolves against `Prospective[Topic] |
   Optional[Topic]` through vacuous's `Optional` extension, answering `true` unconditionally.
   (#2032)
+
+## harlequin
+
+- `harlequin.Fragment.infixBase` now rejects every Scala 3 keyword, hard and soft, as an infix
+  receiver, using the new `prophesy.ScalaKeywords.all` in place of its own private list, which
+  lacked `erased`, `macro`, `throws` and `tracked`. A fragment such as `erased x ma` (cursor at
+  the end) therefore yields `(Unset, t"ma")` where it previously yielded `(t"x.", t"ma")`.
+  Nothing else about its result changed.
+
+## pneumatic
+
+- New `pneumatic.Brotli.continuation(base: Data, next: Data, window: Int = Brotli.Window): Data`
+  and `pneumatic.Brotli.prefix(base: Data, window: Int = Brotli.Window, block: Int =
+  Brotli.Block): Data`, with the constants `Brotli.Window = 24` and `Brotli.Block = 1 << 24`.
+  `continuation` encodes `next` against an LZ77 window preloaded with `base`, producing the
+  meta-block(s) for `next` alone with no stream header, ending in ISLAST = 1; `prefix` builds the
+  RFC 7932-fixed priming stream (WBITS header, `base` as uncompressed meta-blocks of at most
+  `block` bytes, then the empty metadata meta-block `0x06`), so that
+  `(prefix(base, w, b) ++ continuation(base, next, w)).decompress[Brotli]` is `base ++ next`.
+  Code carrying its own port of the encoder for this purpose (`lira.Priming`) should call these
+  instead. Existing `compress[Brotli]` output is byte-for-byte unchanged. (#2047)
 
 ## stratiform
 
