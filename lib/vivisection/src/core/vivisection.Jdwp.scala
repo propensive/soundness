@@ -300,10 +300,12 @@ object Jdwp:
   case class Capabilities
     ( canWatchFieldModification:  Boolean,
       canWatchFieldAccess:        Boolean,
+      canGetBytecodes:            Boolean,
       canGetSyntheticAttribute:   Boolean,
       canPopFrames:               Boolean,
       canGetSourceDebugExtension: Boolean,
-      canUseSourceNameFilters:    Boolean )
+      canUseSourceNameFilters:    Boolean,
+      canGetConstantPool:         Boolean )
 
   // JDWP strings are JNI *modified* UTF-8: the null character is `C0 80`, and characters outside
   // the basic multilingual plane arrive as two three-byte sequences (a surrogate pair), which we
@@ -400,6 +402,15 @@ object Jdwp:
       val text = Jdwp.decodeModifiedUtf8(data, position, length)
       position += length
       text
+
+    // A modified-UTF-8 run whose length the caller has already read — the classfile constant
+    // pool's `u2`-prefixed form, as opposed to JDWP's own `int`-prefixed strings.
+    def modifiedUtf8(length: Int): Text =
+      val text = Jdwp.decodeModifiedUtf8(data, position, length)
+      position += length
+      text
+
+    def skip(length: Int): Unit = position += length
 
     def location(): Location =
       Location(TypeTag(byte()), referenceTypeId(), methodId(), long())
@@ -832,6 +843,7 @@ object Jdwp:
     private val handlers: scc.TrieMap[(Int, Int), Connection.Slot] = scc.TrieMap()
     private val preparers: scc.TrieMap[Int, Connection.PrepareSlot] = scc.TrieMap()
     private val smaps: scc.TrieMap[Long, Optional[digression.Smap]] = scc.TrieMap()
+    private val pools: scc.TrieMap[Long, Plumbing.Pool] = scc.TrieMap()
     private[vivisection] val unclaimed: Relay[Event.Composite] = Relay()
 
     @scala.caps.unsafe.untrackedCaptures
@@ -1083,29 +1095,35 @@ object Jdwp:
       val reader = request(1, 17)(_ => ())
       var canWatchFieldModification = false
       var canWatchFieldAccess = false
+      var canGetBytecodes = false
       var canGetSyntheticAttribute = false
       var canPopFrames = false
       var canGetSourceDebugExtension = false
       var canUseSourceNameFilters = false
+      var canGetConstantPool = false
       var index = 1
 
       while reader.remaining > 0 do
         val flag = reader.boolean()
         if index == 1 then canWatchFieldModification = flag
         if index == 2 then canWatchFieldAccess = flag
+        if index == 3 then canGetBytecodes = flag
         if index == 4 then canGetSyntheticAttribute = flag
         if index == 11 then canPopFrames = flag
         if index == 13 then canGetSourceDebugExtension = flag
         if index == 19 then canUseSourceNameFilters = flag
+        if index == 20 then canGetConstantPool = flag
         index += 1
 
       Capabilities
         ( canWatchFieldModification,
           canWatchFieldAccess,
+          canGetBytecodes,
           canGetSyntheticAttribute,
           canPopFrames,
           canGetSourceDebugExtension,
-          canUseSourceNameFilters )
+          canUseSourceNameFilters,
+          canGetConstantPool )
 
     // ReferenceType (command set 2).
     def signature(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): Text =
@@ -1140,6 +1158,26 @@ object Jdwp:
 
       list(reader.int()): () =>
         FieldInfo(reader.fieldId(), reader.string(), reader.string(), reader.int())
+
+    // The class's constant pool in classfile form, parsed for the names its method references
+    // carry, and memoized: the step filter consults it for every class it first lands in. Needs
+    // `canGetConstantPool`; without it the pool is empty and no forwarder is recognised.
+    def constantPool(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): Plumbing.Pool =
+      pools.getOrElseUpdate(cls.long, safely(constantPool0(cls)).or(Plumbing.Pool.empty))
+
+    private def constantPool0(cls: ReferenceTypeId)(using Tactic[Debugger.Error])
+    :   Plumbing.Pool =
+
+      val reader = request(2, 18)(_.referenceTypeId(cls))
+      val count = reader.int()
+      reader.int() // the byte length; the entries are self-delimiting
+      Plumbing.Pool.parse(count, reader)
+
+    // A method's bytecode, as a reader positioned at its first opcode. Needs `canGetBytecodes`.
+    def bytecodes(cls: ReferenceTypeId, method: MethodId)(using Tactic[Debugger.Error]): Reader =
+      val reader = request(6, 3)(_.referenceTypeId(cls).methodId(method))
+      reader.int() // the byte length, which is what remains of the reply
+      reader
 
     // ClassType (command set 3): the immediate superclass, or the empty reference for
     // `java.lang.Object`; walking it reaches inherited fields, which `referenceType.fields` omits.

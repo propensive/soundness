@@ -179,3 +179,22 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `rootLayers: List[Tels.Layer]` — and its `polarity` default changed
   from `Tels.Polarity.Tight` to `Tels.Polarity.Implicit`; an instance overriding `polarity` is
   unaffected, one relying on the default now derives implicit polarity. (#2056)
+
+## vivisection
+
+- `vivisection.Jdwp.Capabilities` gains two fields: `canGetBytecodes: Boolean` inserted as the
+  third parameter (after `canWatchFieldAccess`) and `canGetConstantPool: Boolean` appended last,
+  so the constructor is now `Capabilities(canWatchFieldModification, canWatchFieldAccess,
+  canGetBytecodes, canGetSyntheticAttribute, canPopFrames, canGetSourceDebugExtension,
+  canUseSourceNameFilters, canGetConstantPool)`. Positional construction and pattern matching
+  must add both. (#2059)
+- `vivisection.Debug#step(thread: ThreadId, depth: Jdwp.StepDepth)(handler: Debug.Handler): Unit`
+  (the logical step) no longer runs `handler` for a landing in a bridge method, a synthetic
+  method other than a lambda body (name containing `$anonfun$`), a lazy val's accessor, a
+  trivial getter, setter or same-name forwarder, or any class whose name matches `java.*`,
+  `javax.*`, `jdk.*`, `sun.*`, `com.sun.*` or `scala.runtime.*`; it re-steps instead
+  (`Into` for a step into, `Out` otherwise) until a landing outside those, or the existing
+  64-iteration cap. Its requests now also carry `ClassExclude` modifiers for those six
+  patterns. Code relying on a logical step stopping inside JDK classes or generated methods
+  must use the primitive `Debug#step(thread, depth, size): Int` and `Debug#events`, which are
+  unchanged. (#2059)
