@@ -35,11 +35,9 @@ package bitumen
 import scala.caps
 
 import anticipation.*
-import contingency.*
 import fulminate.*
 import prepositional.*
 import rudiments.*
-import turbulence.*
 import vacuous.*
 import zephyrine.*
 
@@ -83,6 +81,7 @@ object Archive:
         pull().lay:
           exhausted = true
           false
+
         . apply: chunk =>
           if chunk.length > 0 then memo += chunk
           chunk.length > 0 || fetch()
@@ -133,8 +132,10 @@ object Archive:
   private[bitumen] abstract class Lookahead[entry] extends Iterator[entry]:
     @caps.unsafe.untrackedCaptures
     private var lookahead: Optional[entry] = Unset
+
     @caps.unsafe.untrackedCaptures
     private var unread: Optional[Archive.Body] = Unset
+
     @caps.unsafe.untrackedCaptures
     private var finished: Boolean = false
 
@@ -159,10 +160,12 @@ object Archive:
 
     // `lay` rather than a type test: the entry type is erased.
     def next(): entry =
-      lookahead.lay(if !finished && advance() then next() else panic(m"the archive has no more entries")):
-        entry =>
-          lookahead = Unset
-          entry
+      def exhausted: entry =
+        if !finished && advance() then next() else panic(m"the archive has no more entries")
+
+      lookahead.lay(exhausted): entry =>
+        lookahead = Unset
+        entry
 
   // Exactly `count` bytes off the cursor, or the caller's abort.
   private[bitumen] def takeExactly(cursor: Cursor[Data, {}]^, count: Int)
