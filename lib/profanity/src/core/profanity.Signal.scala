@@ -30,141 +30,28 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ethereal
+package profanity
 
-import java.io as ji
-import java.lang as jl
-import java.util.concurrent as juc
+import beneficence.*
+import anticipation.*
+import quantitative.*
+import spectacular.*
+import vacuous.*
 
-import soundness.*
+// A signal as delivered to an invocation, with whatever its sender attached. A POSIX signal
+// has no payload of its own, but a launcher forwarding one can: `WINCH` and `CONT` carry
+// the terminal's current size, which the daemon on the far end of a socket cannot measure,
+// and a Windows close, logoff or shutdown event carries the time the system allows before it
+// ends the process regardless. A signal raised on the process itself carries nothing.
+object Signal:
+  given showable: Signal is Showable = signal => signal.interrupt match
+    case unix: UnixSignal       => unix.shortName
+    case windows: WindowsSignal => windows.shortName
 
-import backstops.silentBackstop
-import charDecoders.utf8Decoder
-import classloaders.threadContextClassloader
-import environments.daemonClientEnvironment
-import executives.completionsExecutive
-import interpreters.posixInterpreter
-import systems.javaBaseSystem
-import textSanitizers.strictSanitizer
-import threading.platformThreading
-import workingDirectories.systemWorkingDirectory
+case class Signal
+  ( interrupt: UnixSignal | WindowsSignal,
+    columns:   Optional[Int]                 = Unset,
+    rows:      Optional[Int]                 = Unset,
+    deadline:  Optional[Quantity[Seconds[1]]] = Unset ):
 
-@main
-def fixture(): Unit = cli:
-  arguments match
-    case Nil =>
-      execute(Out.print(t"ready") yet Exit.Ok)
-
-    case Argument("args") :: rest =>
-      execute(Out.print(rest.map(_()).join(t"\n")) yet Exit.Ok)
-
-    case Argument("lines") :: rest =>
-      execute(Out.print(rest.map(_()).join(t"\n") + t"\n") yet Exit.Ok)
-
-    case Argument("echo") :: text :: Nil =>
-      execute(Out.print(text()) yet Exit.Ok)
-
-    case Argument("exit") :: Argument(As[Int](status)) :: Nil =>
-      execute(Exit.Fail(status))
-
-    case Argument("stderr") :: text :: Nil =>
-      execute(Err.println(text()) yet Exit.Ok)
-
-    case Argument("sleep") :: Argument(As[Int](seconds)) :: Nil =>
-      execute:
-        Thread.sleep(seconds.toLong*1000L)
-        Exit.Ok
-
-    case Argument("env") :: Argument(variable) :: Nil =>
-      execute:
-        val value: Text = safely(Environment[Text](variable)).or(t"")
-        Out.print(value) yet Exit.Ok
-
-    case Argument("pid") :: Nil =>
-      execute(Out.print(Process().pid.value.show) yet Exit.Ok)
-
-    case Argument("pwd") :: Nil =>
-      execute:
-        val cwd: Text = safely(workingDirectory[Path on Local].encode).or:
-          jl.System.getProperty("user.dir").nn.tt
-
-        Out.print(cwd) yet Exit.Ok
-
-    case Argument("cat") :: Nil =>
-      execute:
-        val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
-        val line: Text = reader.readLine().nn.tt
-        Out.print(line) yet Exit.Ok
-
-    case Argument("cooked") :: Nil =>
-      execute:
-        service.cooked:
-          val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
-          val line: Text = reader.readLine().nn.tt
-          Out.print(t"[$line]")
-
-        Exit.Ok
-
-    case Argument("version") :: Nil =>
-      execute:
-        val id: Text = safely(System.properties.build.id[Text]()).or:
-          safely((Classpath/"build.id").read[Text].trim).or(t"unknown")
-
-        Out.print(t"v$id") yet Exit.Ok
-
-    case Argument("signal") :: Nil =>
-      execute:
-        val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
-
-        trap:
-          case Signal(sig: UnixSignal, _, _, _) =>
-            received.offer(sig.shortName)
-            SignalResponse.Accept
-
-          case Signal(sig: WindowsSignal, _, _, _) =>
-            received.offer(sig.shortName)
-            SignalResponse.Accept
-
-        val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
-        val text: Text = if raw == null then t"(timeout)" else raw
-        Out.print(text) yet Exit.Ok
-
-    case Argument("trap-reject") :: Nil =>
-      execute:
-        trap { case Signal(_: UnixSignal, _, _, _) => SignalResponse.Reject }
-        Thread.sleep(5000L)
-        Exit.Ok
-
-    case Argument("trap-defer") :: Nil =>
-      execute:
-        val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
-
-        trap:
-          case Signal(Interrupt.Int, _, _, _) =>
-            received.offer(t"outer")
-            SignalResponse.Accept
-
-        trap { case Signal(_: UnixSignal, _, _, _) => SignalResponse.Defer }
-
-        val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
-        val text: Text = if raw == null then t"(timeout)" else raw
-        Out.print(text) yet Exit.Ok
-
-    case Argument("trap-undefined") :: Nil =>
-      execute:
-        trap { case Signal(Interrupt.Winch, _, _, _) => SignalResponse.Accept }
-        Thread.sleep(5000L)
-        Exit.Ok
-
-    case Argument("trap-slow") :: Nil =>
-      execute:
-        trap:
-          case Signal(_: UnixSignal, _, _, _) =>
-            Thread.sleep(2000L)
-            SignalResponse.Accept
-
-        Thread.sleep(5000L)
-        Exit.Ok
-
-    case _ =>
-      execute(Exit.Fail(1))
+  def size: Optional[(Int, Int)] = columns.let { c => rows.let { r => (c, r) } }

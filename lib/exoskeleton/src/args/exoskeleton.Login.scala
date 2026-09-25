@@ -35,4 +35,4 @@ package exoskeleton
 import anticipation.*
 import vacuous.*
 
-case class Login(username: Text, id: Optional[Int])
+case class Login(username: Text, id: Optional[UserId])

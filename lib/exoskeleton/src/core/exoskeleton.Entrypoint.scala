@@ -41,3 +41,8 @@ import serpentine.*
 trait Entrypoint extends Findable:
   def script: Text
   def executable: Path on Local
+
+  // Asks the process serving this invocation to end once its work is done: a daemon stops
+  // accepting invocations, lets those in flight finish, and exits. Nothing, for a process
+  // that ends with its invocation anyway.
+  def retire(): Unit = ()

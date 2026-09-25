@@ -35,7 +35,7 @@ package soundness
 export
   profanity
   . { Board, Console, CtrlChar, Interaction, interactive, Interactivity, Keyboard,
-      LineEditor, Question, SelectMenu, Interrupt, SignalResponse,
+      LineEditor, Question, SelectMenu, Interrupt, Signal, SignalResponse,
       Terminal, TerminalBoard, InlineBoard, UnixSignal, WindowsSignal }
 
 package keyboards:

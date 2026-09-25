@@ -81,6 +81,8 @@ object Launcher:
                             |  variant verdict Verdict
                             |  variant mode Mode
                             |  variant exit-status ExitStatus
+                            |  variant closed Closed
+                            |  variant shutdown Shutdown
                             |
                             |record Init
                             |  description
@@ -88,7 +90,13 @@ object Launcher:
                             |      stdin to the daemon and the daemon's stdout to the client.
                             |      The three tty flags say which of the client's streams are
                             |      attached to a terminal; the daemon sees only sockets and
-                            |      cannot determine this for itself.
+                            |      cannot determine this for itself. The uid is the platform's
+                            |      identifier for the user: numeric on Unix, a SID on Windows.
+                            |      The invoked-as field is argv[0] as the caller supplied it,
+                            |      for a multi-call binary to dispatch on; script is the
+                            |      canonical path. The umask is octal; columns and rows are the
+                            |      terminal's size when stdout is a terminal; the code pages are
+                            |      the Windows console's input and output code pages.
                             |  field pid String required
                             |  field uid String required
                             |  field username String required
@@ -99,6 +107,12 @@ object Launcher:
                             |  field stderr-tty Flag optional
                             |  field argument String optional repeatable
                             |  field environment String optional repeatable
+                            |  field invoked-as String optional
+                            |  field umask String optional
+                            |  field columns String optional
+                            |  field rows String optional
+                            |  field input-codepage String optional
+                            |  field output-codepage String optional
                             |
                             |record Stderr
                             |  description
@@ -112,9 +126,16 @@ object Launcher:
                             |
                             |record Signal
                             |  description
-                            |      A signal the client received, named without its SIG prefix.
+                            |      A signal the client received, named without its SIG prefix,
+                            |      or a Windows console control event. WINCH and CONT carry the
+                            |      terminal's current size; a Windows close, logoff or shutdown
+                            |      carries the milliseconds the system allows before it ends
+                            |      the client regardless.
                             |  field pid String required
                             |  field name String required
+                            |  field columns String optional
+                            |  field rows String optional
+                            |  field deadline String optional
                             |
                             |record Exit
                             |  description
@@ -144,30 +165,63 @@ object Launcher:
                             |
                             |record ExitStatus
                             |  field code String required
+                            |
+                            |record Closed
+                            |  description
+                            |      The named output stream of the invocation, stdout or stderr,
+                            |      has lost its reader: the client could not write to it. Sent
+                            |      once, on its own connection, and not answered. The daemon
+                            |      should fail the invocation's further writes to that stream,
+                            |      as a broken pipe would.
+                            |  field pid String required
+                            |  field stream String required
+                            |
+                            |record Shutdown
+                            |  description
+                            |      Asks the daemon to exit: to accept no further invocations, to
+                            |      let those in flight finish, and then to end. Not answered; the
+                            |      connection is closed. A launcher whose daemon is gone starts a
+                            |      fresh one, so this reclaims a warm JVM without leaving anything
+                            |      broken.
                             |""".stripMargin)
 
   enum Message:
     case Init
-      ( pid:         Int,
-        uid:         Int,
-        username:    Text,
-        script:      Text,
-        pwd:         Text,
-        stdinTty:    Boolean,
-        stdoutTty:   Boolean,
-        stderrTty:   Boolean,
-        arguments:   List[Text],
-        environment: List[Text] )
+      ( pid:            Int,
+        uid:            Text,
+        username:       Text,
+        script:         Text,
+        pwd:            Text,
+        stdinTty:       Boolean,
+        stdoutTty:      Boolean,
+        stderrTty:      Boolean,
+        arguments:      List[Text],
+        environment:    List[Text],
+        invokedAs:      Optional[Text] = Unset,
+        umask:          Optional[Text] = Unset,
+        columns:        Optional[Int]  = Unset,
+        rows:           Optional[Int]  = Unset,
+        inputCodepage:  Optional[Int]  = Unset,
+        outputCodepage: Optional[Int]  = Unset )
 
     case Stderr(pid: Int)
     case Control(pid: Int)
-    case Signal(pid: Int, name: Text)
+
+    case Signal
+      ( pid:      Int,
+        name:     Text,
+        columns:  Optional[Int]  = Unset,
+        rows:     Optional[Int]  = Unset,
+        deadline: Optional[Long] = Unset )
+
     case Exit(pid: Int)
     case Verify
     case SignalAck(accept: Boolean)
     case Verdict(fresh: Boolean)
     case Mode(canonical: Boolean)
     case ExitStatus(code: Int)
+    case Closed(pid: Int, stream: Text)
+    case Shutdown
 
   // Parsed once; a malformed schema text is a programming error, not a runtime condition.
   lazy val schema: Tels =
@@ -181,10 +235,11 @@ object Launcher:
     SchemaSignature.fromDocument(schemaText.read[Tel], Tels.Axiom.tels)
 
   // The variant indices of `Message` in the document root's keyword order — a single
-  // `SelectRef`, so its variants occupy indices 0 to 9 in declaration order.
+  // `SelectRef`, so its variants occupy indices 0 to 11 in declaration order.
   private object Variant:
     val init = 0; val stderr = 1; val control = 2; val signal = 3; val exit = 4
     val verify = 5; val signalAck = 6; val verdict = 7; val mode = 8; val exitStatus = 9
+    val closed = 10; val shutdown = 11
 
   private val scalar: Tels.Scalar = Tels.Scalar(Array.empty)
 
@@ -201,10 +256,11 @@ object Launcher:
 
   private def element(message: Message): Tel.Element = message match
     case Message.Init(pid, uid, username, script, pwd, stdinTty, stdoutTty, stderrTty,
-                      arguments, environment) =>
+                      arguments, environment, invokedAs, umask, columns, rows, inputCodepage,
+                      outputCodepage) =>
       val children = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       children += value(0, pid.show)
-      children += value(1, uid.show)
+      children += value(1, uid)
       children += value(2, username)
       children += value(3, script)
       children += value(4, pwd)
@@ -213,6 +269,12 @@ object Launcher:
       if stderrTty then children += flag(7)
       arguments.each { argument => children += value(8, argument) }
       environment.each { variable => children += value(9, variable) }
+      invokedAs.let { name => children += value(10, name) }
+      umask.let { mask => children += value(11, mask) }
+      columns.let { count => children += value(12, count.show) }
+      rows.let { count => children += value(13, count.show) }
+      inputCodepage.let { page => children += value(14, page.show) }
+      outputCodepage.let { page => children += value(15, page.show) }
       node(Variant.init, t"Init", Array.from(children))
 
     case Message.Stderr(pid)       => node(Variant.stderr, t"Stderr", Array(value(0, pid.show)))
@@ -220,9 +282,19 @@ object Launcher:
     case Message.Exit(pid)         => node(Variant.exit, t"Exit", Array(value(0, pid.show)))
     case Message.Verify            => node(Variant.verify, t"Verify", Array.empty)
     case Message.ExitStatus(code)  => node(Variant.exitStatus, t"ExitStatus", Array(value(0, code.show)))
+    case Message.Shutdown          => node(Variant.shutdown, t"Shutdown", Array.empty)
 
-    case Message.Signal(pid, name) =>
-      node(Variant.signal, t"Signal", Array(value(0, pid.show), value(1, name)))
+    case Message.Closed(pid, stream) =>
+      node(Variant.closed, t"Closed", Array(value(0, pid.show), value(1, stream)))
+
+    case Message.Signal(pid, name, columns, rows, deadline) =>
+      val children = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      children += value(0, pid.show)
+      children += value(1, name)
+      columns.let { count => children += value(2, count.show) }
+      rows.let { count => children += value(3, count.show) }
+      deadline.let { millis => children += value(4, millis.show) }
+      node(Variant.signal, t"Signal", Array.from(children))
 
     case Message.SignalAck(accept) =>
       node(Variant.signalAck, t"SignalAck", if accept then Array(flag(0)) else Array.empty)
@@ -258,9 +330,11 @@ object Launcher:
 
     document.root match
       case Tel.Element.Node(_, _, Array(Tel.Element.Node(index, _, children))) =>
-        def text(field: Int): Text = children.readable.collectFirst:
+        def optional(field: Int): Optional[Text] = children.readable.collectFirst:
           case Tel.Element.Value(`field`, _, text) => text
-        . getOrElse(abort(Launcher.Mismatch()))
+        . getOrElse(Unset)
+
+        def text(field: Int): Text = optional(field).or(abort(Launcher.Mismatch()))
 
         def texts(field: Int): List[Text] =
           children.readable.toList.collect { case Tel.Element.Value(`field`, _, text) => text }
@@ -271,22 +345,30 @@ object Launcher:
           case _                                       => false
 
         def int(field: Int): Int = text(field).as[Int]
+        def optionalInt(field: Int): Optional[Int] = optional(field).let(_.as[Int])
+        def optionalLong(field: Int): Optional[Long] = optional(field).let(_.as[Long])
 
         index.or(-1) match
           case Variant.init =>
             Message.Init
-              ( int(0), int(1), text(2), text(3), text(4), flag(5), flag(6), flag(7),
-                texts(8), texts(9) )
+              ( int(0), text(1), text(2), text(3), text(4), flag(5), flag(6), flag(7),
+                texts(8), texts(9), optional(10), optional(11), optionalInt(12), optionalInt(13),
+                optionalInt(14), optionalInt(15) )
 
           case Variant.stderr     => Message.Stderr(int(0))
           case Variant.control    => Message.Control(int(0))
-          case Variant.signal     => Message.Signal(int(0), text(1))
           case Variant.exit       => Message.Exit(int(0))
           case Variant.verify     => Message.Verify
           case Variant.signalAck  => Message.SignalAck(flag(0))
           case Variant.verdict    => Message.Verdict(flag(0))
           case Variant.mode       => Message.Mode(flag(0))
           case Variant.exitStatus => Message.ExitStatus(int(0))
+          case Variant.closed     => Message.Closed(int(0), text(1))
+          case Variant.shutdown   => Message.Shutdown
+
+          case Variant.signal =>
+            Message.Signal(int(0), text(1), optionalInt(2), optionalInt(3), optionalLong(4))
+
           case _                  => abort(Launcher.Mismatch())
 
       case _ => abort(Launcher.Mismatch())

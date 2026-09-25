@@ -36,3 +36,4 @@ trait Termcap:
   def ansi: Boolean
   def color: ColorDepth
   def width: Int = Int.MaxValue
+  def height: Int = Int.MaxValue

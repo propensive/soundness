@@ -52,8 +52,11 @@ enum Interrupt:
   def id: Int = if ordinal < 15 then ordinal + 1 else ordinal + 2
 
 object WindowsSignal:
-  given decoder: WindowsSignal is Decodable in Text =
-    text => WindowsSignal.valueOf(text.lower.capitalize.s)
+  // Decoded by short name, which is how a launcher names a console control event; the
+  // `Ctrl…` case names cannot be recovered from `CTRL_C` by capitalisation.
+  given decoder: WindowsSignal is Decodable in Text = text =>
+    WindowsSignal.values.find(_.shortName == text.upper).getOrElse:
+      throw IllegalArgumentException(s"enum case not found: $text")
 
   given encodable: WindowsSignal is Encodable in Text = _.shortName
   given showable: WindowsSignal is Showable = _.shortName
@@ -64,9 +67,9 @@ enum WindowsSignal:
   def shortName: Text = this match
     case CtrlC     => t"CTRL_C"
     case CtrlBreak => t"CTRL_BREAK"
-    case Close     => t"CLOSE"
-    case Logoff    => t"LOGOFF"
-    case Shutdown  => t"SHUTDOWN"
+    case Close     => t"CTRL_CLOSE"
+    case Logoff    => t"CTRL_LOGOFF"
+    case Shutdown  => t"CTRL_SHUTDOWN"
 
 object CtrlChar:
   def unapply(code: Char)

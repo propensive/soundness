@@ -61,9 +61,20 @@ case class DaemonService[bus <: Matchable]
     script:     Text,
     startTime:  Long,
     helpThunk:  () => Optional[Help],
-    setMode:    Tty => Unit )
-extends Entrypoint, caps.ExclusiveCapability:
+    setMode:    Tty => Unit,
+    invokedAs:  Optional[Text],
+    sizeThunk:  () => Optional[(Int, Int)],
+    umask:      Optional[Umask] )
+extends Entrypoint, Umask.Provider, caps.ExclusiveCapability:
   def broadcast(message: bus): Unit = deliver(message)
+
+  // `{admin} shutdown`, and any invocation that wants the daemon gone once it has finished.
+  override def retire(): Unit = shutdown()
+
+  // The client terminal's current size, as (columns, rows), as the launcher last measured it:
+  // at connection, and again with every `WINCH` and `CONT`. `Unset` when the client's output
+  // is not a terminal, or its size is unknown.
+  def windowSize: Optional[(Int, Int)] = sizeThunk()
 
   // Run `block` with the client's terminal in cooked (canonical) mode, so the terminal driver
   // provides echo and line editing for a command that just wants to read lines, then put it

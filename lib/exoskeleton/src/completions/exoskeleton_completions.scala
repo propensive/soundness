@@ -332,8 +332,9 @@ package executives:
           given Stdio = stdio
 
           command match
-            case t"pid"     => Out.println(Process().pid.value.show) yet Exit.Ok
-            case t"kill"    => java.lang.System.exit(0) yet Exit.Ok
+            case t"pid"      => Out.println(Process().pid.value.show) yet Exit.Ok
+            case t"kill"     => java.lang.System.exit(0) yet Exit.Ok
+            case t"shutdown" => entrypoint.retire() yet Exit.Ok
 
             case t"await" =>
               Cli.prepare()

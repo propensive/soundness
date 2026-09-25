@@ -172,8 +172,16 @@ extends Interactivity[Terminal.Event], caps.ExclusiveCapability:
       case _ =>
         abort(Environment.Error(t"TERMINAL_BG"))
 
-  metrics.rows = safely(Environment.lines.as[Int])
-  metrics.columns = safely(Environment.columns.as[Int])
+  // The size the termcap carries, when it carries one — a daemon invocation's termcap is fed
+  // by the launcher, which measured the client's terminal — and otherwise whatever `LINES` and
+  // `COLUMNS` say.
+  metrics.rows =
+    if console.stdio.termcap.height != Int.MaxValue then console.stdio.termcap.height
+    else safely(Environment.lines.as[Int])
+
+  metrics.columns =
+    if console.stdio.termcap.width != Int.MaxValue then console.stdio.termcap.width
+    else safely(Environment.columns.as[Int])
 
   def mode: Optional[Brightness] = metrics.mode
   def mode_=(value: Optional[Brightness]): Unit = metrics.mode = value
@@ -221,22 +229,40 @@ extends Interactivity[Terminal.Event], caps.ExclusiveCapability:
   locally:
     val out0 = console.stdio.out
     val events0 = events
+    val metrics0 = metrics
     val reports0 = metrics.reports
 
     console.trap:
-      case Interrupt.Winch =>
-        // The anchor query goes FIRST — the cursor still sits wherever the last
-        // present parked it, and the size probe's corner-jam would move it. The
-        // expectations are queued before the write, so a reply can never arrive to
-        // find them missing; appends preserve arrival-order pairing across a burst.
+      // A resize, or a resumption after a stop during which the window may have been
+      // resized. The anchor query goes FIRST — the cursor still sits wherever the last
+      // present parked it, and a size probe's corner-jam would move it. The expectations
+      // are queued before the write, so a reply can never arrive to find them missing;
+      // appends preserve arrival-order pairing across a burst.
+      case Signal(interrupt@(Interrupt.Winch | Interrupt.Cont), columns, rows, _) =>
         reports0.add(Terminal.Report.Anchor)
-        reports0.add(Terminal.Report.Size)
-        out0.print(t"${Terminal.anchorQuery}${Terminal.reportSize}")
-        events0.put(Interrupt.Winch)
+
+        columns.let { columns => rows.let { rows => (columns, rows) } } match
+          // The signal carries the terminal's size — a launcher measured it with an ioctl —
+          // so no probe is needed: the size is recorded and announced directly, and only the
+          // anchor query is sent.
+          case (columns: Int, rows: Int) =>
+            out0.print(Terminal.anchorQuery)
+            metrics0.columns = columns
+            metrics0.rows = rows
+            events0.put(interrupt)
+            events0.put(Terminal.Info.WindowSize(rows, columns))
+
+          // No size on the signal: a process raised it on itself, or the terminal's size is
+          // unknown to the launcher. The escape-sequence probe remains as the fallback.
+          case _ =>
+            reports0.add(Terminal.Report.Size)
+            out0.print(t"${Terminal.anchorQuery}${Terminal.reportSize}")
+            events0.put(interrupt)
+
         SignalResponse.Accept
 
-      case signal =>
-        events0.put(signal)
+      case Signal(interrupt, _, _, _) =>
+        events0.put(interrupt)
         SignalResponse.Accept
 
   // The keyboard pump runs as a daemon under a trap: if reading or decoding stdin fails,
