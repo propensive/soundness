@@ -383,7 +383,30 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `rootLayers: List[Tels.Layer]` — and its `polarity` default changed
   from `Tels.Polarity.Tight` to `Tels.Polarity.Implicit`; an instance overriding `polarity` is
   unaffected, one relying on the default now derives implicit polarity. (#2056)
-
+- `stratiform.Tel.Error.Reason.ValidatorRejected` (E310), previously a nullary case, is now
+  `case ValidatorRejected(message: Text)`, carrying the message of the `Tel.Validator.Diagnostic`
+  the validator answered with. Its `Communicable` rendering changed from "a scalar value or
+  struct failed a named validator" to "a scalar value or struct failed a named validator:
+  <message>". Pattern matches and equality tests against `Reason.ValidatorRejected` must bind or
+  ignore the parameter (`case Reason.ValidatorRejected(_) =>`). (#2067)
+- `stratiform.Tel.Type.assign(tel, schema, validators)` and `assign(tel, schema, validators,
+  codecs)` now run the §21 checks (named validators, patterns, encodings) *during* the
+  assignment walk rather than after it, so under a `validate[Tel.Focus]` boundary an E310, E312,
+  E313 or E315 accrues with the `Tel.Focus` of the compound supplying the value — a pointer, and
+  a span when the document was parsed under `parsing.trackPositions` — where it previously
+  accrued with no focus (`prior == Unset`). The accrued errors are consequently interleaved with
+  the structural (E301–E311, E314) ones in document order rather than following them all; the
+  set of errors is unchanged. A value the parent line assigned positionally is focused on the
+  parent compound; a value supplied by a child compound is focused on that child. (#2067)
+- The `Tel.Focus` pointer accrued by `Tel.Type.assign` for a child of a *repeatable* member now
+  carries the child's zero-based occurrence index among its same-keyword siblings after the
+  keyword — `/module/1/source` where it was `/module/source` — so that it is a resolvable TELP
+  (telp.md §5) and locates the right compound; non-repeatable members and unknown keywords are
+  unchanged. Correspondingly, `Tel#locate(path)` and `Tel#locateKey(path)` (the
+  `Tel is Positionable by Telp` given) accept an all-digit component after a keyword as that
+  occurrence selector, where it previously matched no child; a keyword without one still selects
+  the first. Code comparing accrued pointers against literal paths must add the index for
+  repeatable members. (#2068)
 ## surveillance
 
 - `surveillance.Watch.Event#path[directory: Instantiable across Paths from Text]: directory` is

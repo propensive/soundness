@@ -93,6 +93,25 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         accrual + (prior.let(_.pointer.encode).or(t"/"), prior.lay(Span.empty)(_.span))
     . protect(Tel.Type.assign(tel, schema))
 
+  case class Rejected(items: List[(Text, Span, Tel.Error.Reason)] = Nil)(using Diagnostics)
+  extends Error(m"${items.size} rejections"):
+    def +(pointer: Text, span: Span, reason: Tel.Error.Reason): Rejected =
+      Rejected(items :+ (pointer, span, reason))
+
+  // As `assignPositions`, under the built-in validator registry, keeping each
+  // error's reason too: the §21 checks run inside the walk, so their foci are
+  // located like the structural violations'.
+  private def assignValidated(text: Text, schema: Tels): Rejected =
+    import parsing.trackPositions
+    val tel = text.read[Tel]
+
+    validate[Tel.Focus](Rejected()):
+      case error: Tel.Error =>
+        accrual + (prior.let(_.pointer.encode).or(t"/"),
+                   prior.lay(Span.empty)(_.span),
+                   error.reason)
+    . protect(Tel.Type.assign(tel, schema, Tel.Validator.Registry.builtins))
+
   // The decode-path counterpart: `Tel#as` locates its per-field foci against
   // the same tracked root. Inline for the same reason as `validateTel`.
   private inline def decodePositions[result](text: Text)
@@ -191,6 +210,51 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
          ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
            t"name", Tels.Scalar(Array(t"string")), Unset )),
       validators = Array.empty),
+    layers   = Array.empty,
+    sigil    = Unset,
+    records  = Array.empty,
+    scalars  = Array.empty,
+    selects  = Array.empty)
+
+  // A repeatable `module` record at the root, each with a required `name`
+  // identifier and optional repeatable `source`s — the shape of a build file.
+  // Two modules share a keyword, so a defect under the second must be told
+  // apart from the first (#2068), and a validator's rejection of a `name`
+  // must say which module and why (#2067).
+  private val repeatedRecordSchema: Tels = Tels(
+    name     = t"build",
+    document = Tels.Struct(
+      members = Array(
+        Tels.Field
+         ( Tels.Polarity.Loose, Tels.Polarity.Loose,
+           t"module", Tels.Reference(t"Module"), Unset )),
+      validators = Array.empty),
+    layers   = Array.empty,
+    sigil    = Unset,
+    records  = Array(
+      Tels.RecordDefinition
+       ( t"Module",
+         Array
+          ( Tels.Field
+             ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+               t"name", Tels.Scalar(Array(t"identifier")), Unset ),
+            Tels.Field
+             ( Tels.Polarity.Loose, Tels.Polarity.Loose,
+               t"source", Tels.Scalar(Array(t"string")), Unset ) ),
+         Array.empty )),
+    scalars  = Array.empty,
+    selects  = Array.empty)
+
+  // A document whose root struct names a validator the built-in registry
+  // cannot apply to a struct: every assignment under it rejects the root.
+  private val structValidatorSchema: Tels = Tels(
+    name     = t"checked",
+    document = Tels.Struct(
+      members = Array(
+        Tels.Field
+         ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+           t"name", Tels.Scalar(Array(t"string")), Unset )),
+      validators = Array(t"identifier")),
     layers   = Array.empty,
     sigil    = Unset,
     records  = Array.empty,
@@ -498,6 +562,46 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         assignPositions(t"item x y\nname n\n", atomAccrualSchema).items
         . map { case (pointer, span) => (pointer.s, span.startLine.lay(-1)(_.n1)) }.to[Set]
       . assert(_ == Set(("/item", 1)))
+
+      // The pointer to a repeatable member's child carries its occurrence index,
+      // so the second `module`'s unknown child is located under the second
+      // `module` — not under the first, which has no such child (#2068).
+      test(m"An unknown keyword under a repeated sibling is located at its own line"):
+        assignPositions(t"module api\n  source a\nmodule core\n  source b\n  bogus c\n",
+                        repeatedRecordSchema)
+        . items.to[Set]
+      . assert(_ == Set((t"/module/1/bogus", Tel.Error.spanAt(5, 3, 5))))
+
+      test(m"A missing member of a repeated sibling names that occurrence"):
+        assignPositions(t"module api\nmodule\n", repeatedRecordSchema).items
+        . map { case (p, span) => (p.s, span.exists) }.to[Set]
+      . assert(_ == Set(("/module/1/name", false)))
+
+      // E310 used to accrue after the walk, with neither a focus nor the
+      // validator's diagnostic (#2067); now it says which compound and why.
+      test(m"A rejected atom-assigned scalar is located at its compound with its message"):
+        assignValidated(t"module api\nmodule -bad\n", repeatedRecordSchema).items.to[Set]
+      . assert: items =>
+          items == Set
+           ( ( t"/module/1",
+               Tel.Error.spanAt(2, 1, 6),
+               Tel.Error.Reason.ValidatorRejected
+                ( t"the identifier must not begin with a hyphen" ) ) )
+
+      test(m"A rejected child-compound scalar is located at that child"):
+        assignValidated(t"module\n  name bad-\n", repeatedRecordSchema).items.to[Set]
+      . assert: items =>
+          items == Set
+           ( ( t"/module/0/name",
+               Tel.Error.spanAt(2, 3, 4),
+               Tel.Error.Reason.ValidatorRejected(t"the identifier must not end with a hyphen") ) )
+
+      test(m"A rejected struct carries the validator's message at its node"):
+        assignValidated(t"name x\n", structValidatorSchema).items.map(_(2)).to[Set]
+      . assert: reasons =>
+          reasons == Set
+           ( Tel.Error.Reason.ValidatorRejected
+              ( t"validator 'identifier' not applicable to struct values" ) )
 
       // E308 is a property of a member's whole run, not of one node, so it is
       // raised outside every `focus` block: the entry has no focus at all and

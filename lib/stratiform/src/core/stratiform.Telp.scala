@@ -248,8 +248,14 @@ object Telp:
 
       case _ => false
 
-  private def allDigits(component: Text): Boolean =
+  private[stratiform] def allDigits(component: Text): Boolean =
     component.s.forall { ch => ch >= '0' && ch <= '9' }
+
+  // The occurrence an all-digit component selects, saturating rather than
+  // wrapping on a run of digits too long for an `Int`: no occurrence sequence
+  // is that long, so the selection misses, as it should.
+  private[stratiform] def indexOf(component: Text): Int =
+    if component.s.length > 9 then Int.MaxValue else component.s.toInt
 
   private def childrenAt(node: Tel.Element.Node, flatIndex: Int): List[Tel.Element] =
 

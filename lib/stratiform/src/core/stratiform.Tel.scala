@@ -1051,9 +1051,13 @@ object Tel extends Tel2:
   // so record-and-continue under an accrual boundary, per §19.5; schema
   // errors (E210/E218) abort, because a malformed schema offers no document-
   // level recovery. Out of scope here: §20.1 schema-validity checking (E2xx
-  // beyond reference resolution), tabulation-aware column assignment, and
-  // diagnostic spans — a Tel.Error raised during assignment carries no
-  // position.
+  // beyond reference resolution) and tabulation-aware column assignment.
+  //
+  // A `Tel.Error` raised during assignment carries no span of its own: its
+  // location rides on the accrued `Tel.Focus`, whose pointer names the
+  // compound being assigned (with an occurrence index after a repeatable
+  // member's keyword, so that siblings sharing a keyword are told apart) and
+  // whose span `supplementKeyPositions` fills in at the end of the walk.
   object Type:
     import Tel.Error.Reason
 
@@ -1074,29 +1078,22 @@ object Tel extends Tel2:
     // of the document.
     private val nestingLimit = 256
 
+    // The §21 checks that accompany one assignment walk. The codec-free
+    // overloads run none (mirroring §21.4's no-callback rule, and so that a
+    // schema's own `tels` bootstrap never needs a registry); a registry brings
+    // the named validators and the declared patterns (§21.8); a resolver adds
+    // the encoding checks (§21.7).
+    private case class Checks
+      ( validators: Optional[Tel.Validator.Registry] = Unset,
+        codecs:     Optional[Tel.Codec.Resolver]     = Unset )
+
     def assign(tel: Tel, schema: Tels): Tel.Element raises Tel.Error tracks Tel.Focus =
-      val compounds: Array[Tel.Compound]^{} = tel.subtree.children.bind(_.compounds)
-      val rootChildren = assignChildren(compounds, schema.document, schema, 1)
-
-      val rootElements =
-        applyConstraints(schema.document, Array.empty[Tel.Element], rootChildren, schema)
-
-      // Locate every focus accrued by the walk against the root, at the
-      // *keyword*: schema violations are about a member, not about the text of
-      // its value, and an unknown keyword may have no value at all. Validator
-      // errors (E310) are registered by the three-argument overload *after*
-      // this runs, so they keep the pointer their element supplies but no
-      // position.
-      Tel.supplementKeyPositions(tel)
-
-      Tel.Element.Node(keywordIndex = Unset, elementType = schema.document, children = rootElements)
+      assign(tel, schema, Checks())
 
     def assign(tel: Tel, schema: Tels, validators: Tel.Validator.Registry)
     :   Tel.Element raises Tel.Error tracks Tel.Focus =
 
-      val element = assign(tel, schema)
-      validateElement(element, validators, Unset)
-      element
+      assign(tel, schema, Checks(validators))
 
     // As above, additionally checking each scalar's declared encoding
     // (§21.7) against `codecs`: the encoder must accept the value (E312)
@@ -1110,67 +1107,93 @@ object Tel extends Tel2:
         codecs:     Tel.Codec.Bindings )
     :   Tel.Element raises Tel.Error tracks Tel.Focus =
 
-      val element = assign(tel, schema)
-      validateElement(element, validators, Tel.Codec.Resolver(codecs))
-      element
+      assign(tel, schema, Checks(validators, Tel.Codec.Resolver(codecs)))
 
-    private def validateElement
-      ( element: Tel.Element,
-        registry: Tel.Validator.Registry,
-        codecs:   Optional[Tel.Codec.Resolver] )
+    private def assign(tel: Tel, schema: Tels, checks: Checks)
+    :   Tel.Element raises Tel.Error tracks Tel.Focus =
+
+      val compounds: Array[Tel.Compound]^{} = tel.subtree.children.bind(_.compounds)
+      val rootChildren = assignChildren(compounds, schema.document, schema, 1, checks)
+
+      val rootElements =
+        applyConstraints(schema.document, Array.empty[Tel.Element], rootChildren, schema, checks)
+
+      val root =
+        Tel.Element.Node(keywordIndex = Unset, elementType = schema.document, children = rootElements)
+
+      checkStruct(root, schema.document, checks)
+
+      // Locate every focus accrued by the walk against the root, at the
+      // *keyword*: schema violations are about a member, not about the text of
+      // its value, and an unknown keyword may have no value at all. The §21
+      // checks run inside the walk, under the same per-compound foci, so a
+      // rejected value or struct is located like any other violation.
+      Tel.supplementKeyPositions(tel)
+
+      root
+
+    // The message a validator's diagnostic carries, which E310 repeats: the
+    // field-wise detail of a `Diagnostic.Struct` and the intra-value span of a
+    // `Diagnostic.Scalar` have no place on a `Tel.Error` yet, and are dropped.
+    private def messageOf(diagnostic: Tel.Validator.Diagnostic): Text = diagnostic match
+      case Tel.Validator.Diagnostic.Scalar(message, _) => message
+      case Tel.Validator.Diagnostic.Struct(message, _) => message
+
+    // §21's checks on one scalar value, run where its `Value` element is built
+    // — under the focus of the compound supplying it, so that under a
+    // `validate[Tel.Focus]` boundary a rejection names that compound. Nothing
+    // runs without a registry.
+    private def checkScalar(scalarType: Tels.Scalar, text: Text, checks: Checks)
     :   Unit raises Tel.Error tracks Tel.Focus =
 
-      element match
-        case Tel.Element.Value(_, scalarType, text) =>
-          scalarType.validators.each: name =>
-            registry(Tel.Validator.Request.Scalar(name, text)) match
-              case Tel.Validator.Response.Valid      => ()
+      checks.validators.let: registry =>
+        scalarType.validators.each: name =>
+          registry(Tel.Validator.Request.Scalar(name, text)) match
+            case Tel.Validator.Response.Valid => ()
 
-              case Tel.Validator.Response.Invalid(_) =>
-                recoverNode(Reason.ValidatorRejected)(())
+            case Tel.Validator.Response.Invalid(diagnostic) =>
+              recoverNode(Reason.ValidatorRejected(messageOf(diagnostic)))(())
 
-          // §21.8: each declared pattern must match the *entire* value text,
-          // AND-conjoined, in declaration order. `Motif.matches` is already
-          // whole-input anchored, which is exactly the spec's `\A(?:p)\z`.
-          //
-          // A pattern that does not compile means assignment was asked of a
-          // schema that never passed `Tels.Validation` (which raises E222 for
-          // exactly this); report it as the schema fault it is rather than as
-          // a value mismatch, and never as satisfied.
-          scalarType.patterns.each: pattern =>
-            stratiform.Patterns.compile(pattern) match
-              case motif: praxinoscope.Motif =>
-                if !motif.matches(text) then recoverNode(Reason.PatternRejected)(())
+        // §21.8: each declared pattern must match the *entire* value text,
+        // AND-conjoined, in declaration order. `Motif.matches` is already
+        // whole-input anchored, which is exactly the spec's `\A(?:p)\z`.
+        //
+        // A pattern that does not compile means assignment was asked of a
+        // schema that never passed `Tels.Validation` (which raises E222 for
+        // exactly this); report it as the schema fault it is rather than as
+        // a value mismatch, and never as satisfied.
+        scalarType.patterns.each: pattern =>
+          stratiform.Patterns.compile(pattern) match
+            case motif: praxinoscope.Motif =>
+              if !motif.matches(text) then recoverNode(Reason.PatternRejected)(())
 
-              case _ =>
-                recoverNode(Reason.InvalidPattern)(())
+            case _ =>
+              recoverNode(Reason.InvalidPattern)(())
 
-          // §21.7: the encoding check runs after the declared validators and
-          // the declared patterns, in the same AND-conjunction.
-          scalarType.encoding.let: name =>
-            codecs.let: resolver =>
-              resolver(name) match
-                case codec: Tel.Codec => codec.encode(text) match
-                  case Tel.Codec.Encoded.Bytes(_)   => ()
-                  case Tel.Codec.Encoded.Invalid(_) => recoverNode(Reason.EncodingRejected)(())
+        // §21.7: the encoding check runs after the declared validators and
+        // the declared patterns, in the same AND-conjunction.
+        scalarType.encoding.let: name =>
+          checks.codecs.let: resolver =>
+            resolver(name) match
+              case codec: Tel.Codec => codec.encode(text) match
+                case Tel.Codec.Encoded.Bytes(_)   => ()
+                case Tel.Codec.Encoded.Invalid(_) => recoverNode(Reason.EncodingRejected)(())
 
-                case _ => recoverNode(Reason.EncodingUnresolved)(())
+              case _ => recoverNode(Reason.EncodingUnresolved)(())
 
-        case Tel.Element.Node(_, elementType, children) =>
-          children.each(validateElement(_, registry, codecs))
+    // The struct's named validators (§21), run once its `Node` is complete —
+    // children assigned and constraints applied — under the focus of the
+    // compound it was built from.
+    private def checkStruct(node: Tel.Element.Node, struct: Tels.Struct, checks: Checks)
+    :   Unit raises Tel.Error tracks Tel.Focus =
 
-          elementType match
-            case s: Tels.Struct =>
-              s.validators.each: name =>
-                registry(Tel.Validator.Request.Struct
-                         ( name, element.asInstanceOf[Tel.Element.Node] ))
-                match
-                  case Tel.Validator.Response.Valid      => ()
+      checks.validators.let: registry =>
+        struct.validators.each: name =>
+          registry(Tel.Validator.Request.Struct(name, node)) match
+            case Tel.Validator.Response.Valid => ()
 
-                  case Tel.Validator.Response.Invalid(_) =>
-                    recoverNode(Reason.ValidatorRejected)(())
-
-            case _ => ()
+            case Tel.Validator.Response.Invalid(diagnostic) =>
+              recoverNode(Reason.ValidatorRejected(messageOf(diagnostic)))(())
 
     private def resolveType(t: Tels.Type, schema: Tels): Tels.Type raises Tel.Error =
       t match
@@ -1301,7 +1324,8 @@ object Tel extends Tel2:
     private def assignAtoms
       ( atoms:  Array[Tel.Atom]^{},
        parent: Tels.Struct,
-       schema: Tels )
+       schema: Tels,
+       checks: Checks )
     :   Array[Tel.Element]^{} raises Tel.Error tracks Tel.Focus =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
@@ -1360,6 +1384,7 @@ object Tel extends Tel2:
               case f: Tels.Field =>
                 resolveType(f.fieldType, schema) match
                   case s: Tels.Scalar =>
+                    checkScalar(s, atomText, checks)
                     results += Tel.Element.Value(flatPos, s, atomText)
 
                     if f.repeatable != Tels.Polarity.Loose then
@@ -1406,28 +1431,53 @@ object Tel extends Tel2:
       ( compounds: Array[Tel.Compound]^{},
        parent:    Tels.Struct,
        schema:    Tels,
-       depth:     Int )
+       depth:     Int,
+       checks:    Checks )
     :   Array[Tel.Element]^{} raises Tel.Error tracks Tel.Focus =
 
       val km = keywordMap(parent, schema)
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       var currentMember = -1
       val seenMembers = scala.collection.mutable.HashSet.empty[Int]
+
+      // How many compounds of each keyword have been seen so far among these
+      // siblings, keyed by the keyword's flat index: the next one's occurrence
+      // index, when its member is repeatable.
+      val occurrences = scala.collection.mutable.HashMap.empty[Int, Int]
+
       compounds.extent.each: i =>
         val compound = compounds(i)
+        val entry = km.at(compound.keyword)
+
+        // A repeatable member's occurrences are told apart by a zero-based index
+        // component after the keyword, as TELP's shadowing rule reads one (§5):
+        // `/module/2/source`. It counts the compounds among these siblings with
+        // this keyword, which is what `locate` counts too; the semantic model's
+        // occurrence sequence additionally counts any atoms the parent line
+        // assigned to the member, so the two agree unless a repeatable member
+        // is filled both positionally and by children. A non-repeatable member's
+        // single occurrence, and an unknown keyword, take no index.
+        val occurrence: Optional[Int] = entry match
+          case entry: KeywordEntry if repeatableOf(entry.member) =>
+            val index = occurrences.getOrElse(entry.flatIndex, 0)
+            occurrences(entry.flatIndex) = index + 1
+            index
+
+          case _ => Unset
 
         // Tag every error accrued for this compound (and its descendants) with
         // its keyword path — mirroring the decode derivation's per-field `focus`
         // — so that under a `validate[Tel.Focus]` boundary schema-validation
         // errors carry a pointer (and, for a tracked root, a source position via
-        // `Focus.withPosition`) instead of the bare document root.
+        // `supplementKeyPositions`) instead of the bare document root.
         focus({
           val base = prior.let(_.pointer).or(Telp.Root)
-          Tel.Focus(base.prepend(compound.keyword))
+          val indexed = occurrence.lay(base) { index => base.prepend(t"$index") }
+          Tel.Focus(indexed.prepend(compound.keyword))
         }):
           // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it and
           // emit no element, so remaining siblings are still validated.
-          km.at(compound.keyword) match
+          entry match
             case entry: KeywordEntry =>
               // §20.2 step 4c: all children of one member must form a single
               // contiguous run; variants of one SelectRef share an ordinal and
@@ -1442,7 +1492,7 @@ object Tel extends Tel2:
 
                 currentMember = entry.ordinal
 
-              results += assignCompound(compound, entry, schema, depth)
+              results += assignCompound(compound, entry, schema, depth, checks)
 
             case _ => recoverNode(Reason.UnknownKeyword)(())
 
@@ -1452,7 +1502,8 @@ object Tel extends Tel2:
       ( parent:        Tels.Struct,
         atomElements:  Array[Tel.Element]^{},
         childElements: Array[Tel.Element]^{},
-        schema:        Tels )
+        schema:        Tels,
+        checks:        Checks )
     :   Array[Tel.Element]^{} raises Tel.Error tracks Tel.Focus =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
@@ -1496,8 +1547,11 @@ object Tel extends Tel2:
             }):
               resolveType(f.fieldType, schema) match
                 case s: Tels.Scalar => f.default match
-                  case t: Text => results += Tel.Element.Value(flatStart, s, t)
-                  case _       => recoverNode(Reason.RequiredMemberAbsent)(())
+                  case t: Text =>
+                    checkScalar(s, t, checks)
+                    results += Tel.Element.Value(flatStart, s, t)
+
+                  case _ => recoverNode(Reason.RequiredMemberAbsent)(())
 
                 case _ => recoverNode(Reason.RequiredMemberAbsent)(())
 
@@ -1631,7 +1685,8 @@ object Tel extends Tel2:
       ( compound: Tel.Compound,
        entry:    KeywordEntry,
        schema:   Tels,
-       depth:    Int )
+       depth:    Int,
+       checks:   Checks )
     :   Tel.Element raises Tel.Error tracks Tel.Focus =
 
       if depth > nestingLimit then abort(Tel.Error(Reason.NestingLimitExceeded))
@@ -1640,11 +1695,13 @@ object Tel extends Tel2:
 
       resolved match
         case s: Tels.Struct =>
-          val atomElements = assignAtoms(compound.atoms, s, schema)
+          val atomElements = assignAtoms(compound.atoms, s, schema, checks)
           val childCompounds: Array[Tel.Compound]^{} = compound.children.bind(_.compounds)
-          val childElements = assignChildren(childCompounds, s, schema, depth + 1)
-          val allElements = applyConstraints(s, atomElements, childElements, schema)
-          Tel.Element.Node(entry.flatIndex, s, allElements)
+          val childElements = assignChildren(childCompounds, s, schema, depth + 1, checks)
+          val allElements = applyConstraints(s, atomElements, childElements, schema, checks)
+          val node = Tel.Element.Node(entry.flatIndex, s, allElements)
+          checkStruct(node, s, checks)
+          node
 
         case s: Tels.Scalar =>
           // §20.2 step 1: a Scalar-typed compound is a leaf with at most one
@@ -1661,6 +1718,7 @@ object Tel extends Tel2:
             case Tel.Atom.Source(t)     => t
             case Tel.Atom.Literal(_, t) => t
 
+          checkScalar(s, text, checks)
           Tel.Element.Value(entry.flatIndex, s, text)
 
         case Tels.Flag =>
@@ -2907,6 +2965,12 @@ object Tel extends Tel2:
   // literal payload on later lines, which a `Line`-mode `Span` cannot express —
   // has no value region, and falls back to its keyword. The root has no keyword,
   // so `locateKey` yields `Unset` there.
+  //
+  // An all-digit segment after a keyword is a zero-based occurrence index among
+  // the siblings sharing that keyword — TELP's shadowing rule (§5), which is
+  // unambiguous because a keyword is kebab-case and so never all digits — and
+  // is how the focus pointers `Tel.Type.assign` accrues for a repeatable
+  // member's children name one of them. A keyword with no index takes the first.
   private def walkIndex
     ( node:     Tel.Subtree,
       data:     Array[Int]^{},
@@ -2932,13 +2996,24 @@ object Tel extends Tel2:
                 length = Optional(data.readUnchecked(offset + 5)) )
     else
       val children = node.children.bind(_.compounds)
+      val keyword = segments(denominative.Ordinal.zerary(i))
+
+      val selector: Optional[Int] =
+        segments(denominative.Ordinal.zerary(i + 1)).let: segment =>
+          if Telp.allDigits(segment) then Telp.indexOf(segment) else Unset
+
+      val wanted = selector.or(0)
+      var seen = 0
+
       val k =
         children.where: child =>
-          segments(denominative.Ordinal.zerary(i)).lay(false)(_ == child.keyword)
+          keyword.lay(false)(_ == child.keyword) && { seen += 1; seen - 1 == wanted }
+
+      val next = if selector.present then i + 2 else i + 1
 
       k.lay(Unset): ordinal =>
         val child = offset + data.readUnchecked(offset + descriptorHeader + ordinal.n0)
-        walkIndex(children.readUnchecked(ordinal.n0), data, child, segments, i + 1, keyMode)
+        walkIndex(children.readUnchecked(ordinal.n0), data, child, segments, next, keyMode)
 
   // The result of `tel.enclosing(line, column)` (#1463): the innermost compound
   // whose extent contains the coordinate, as the keyword path that reaches it
@@ -7379,7 +7454,8 @@ object Tel extends Tel2:
         case RequiredMemberAbsent     => m"a required member is absent and has no default"
         case NonRepeatableTooMany     => m"a non-repeatable member is filled more than once"
         case MembersNonContiguous     => m"compound children of the same member are not contiguous"
-        case ValidatorRejected        => m"a scalar value or struct failed a named validator"
+        case ValidatorRejected(message)  =>
+          m"a scalar value or struct failed a named validator: $message"
         case FlagWithContent          => m"the Flag-typed compound has atoms or compound children"
         case EncodingRejected         => m"a scalar value was rejected by its encoding's codec"
         case EncodingUnresolved       => m"a scalar's declared encoding is not bound to a codec"
@@ -7438,7 +7514,7 @@ object Tel extends Tel2:
           | NonStructCompound | TooManyAtoms | AtomAtNonAssignablePos
           | AtomVariantUnmatched | AtomFlagKeywordMismatch | UnknownKeyword
           | RequiredMemberAbsent | NonRepeatableTooMany | MembersNonContiguous
-          | ValidatorRejected | FlagWithContent | EncodingRejected | EncodingUnresolved
+          | ValidatorRejected(_) | FlagWithContent | EncodingRejected | EncodingUnresolved
           | DuplicateKeyValue | PatternRejected =>
           Recovery.IgnoreErroneousNode
 
@@ -7517,7 +7593,7 @@ object Tel extends Tel2:
       case RequiredMemberAbsent    extends Reason(307)
       case NonRepeatableTooMany    extends Reason(308)
       case MembersNonContiguous    extends Reason(309)
-      case ValidatorRejected       extends Reason(310)
+      case ValidatorRejected(message: Text) extends Reason(310)
       case FlagWithContent         extends Reason(311)
       case EncodingRejected        extends Reason(312)
       case EncodingUnresolved      extends Reason(313)

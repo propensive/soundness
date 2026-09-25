@@ -1356,8 +1356,10 @@ object Tests extends Suite(m"Stratiform Tests"):
         val doc = t"name -bad\n".read[Tel]
         capture[Tel.Error]:
           Tel.Type.assign(doc, schemaWithValidator, Tel.Validator.Registry.builtins)
-        .reason
-      . assert(_ == Tel.Error.Reason.ValidatorRejected)
+        .reason match
+          case Tel.Error.Reason.ValidatorRejected(_) => true
+          case _                                     => false
+      . assert(identity)
 
     suite(m"Layer composition"):
       test(m"a layer adding a field extends the document Struct"):
