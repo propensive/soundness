@@ -64,14 +64,14 @@ object Main extends Run:
 
     def path(parts: Text*): Path on Linux = Path[Linux, Text, Tuple](t"/", proscenium.List(parts.reverse*))
 
-    backend.createDirectory(path(t"work", t"sub"))
+    backend.createDirectory(path(t"work", t"sub"), Unset)
     val file = path(t"work", t"sub", t"probe.txt")
     val payload: Data = proscenium.Array.unsafeFrozen("wasm e2e probe".getBytes("UTF-8").nn)
 
-    backend.open(file, proscenium.List(OpenFlag.Write, OpenFlag.Create)): handle =>
+    backend.open(file, proscenium.List(OpenFlag.Write, OpenFlag.Create), Unset): handle =>
       handle.writer(proscenium.Chain(payload))
 
-    val content: Text = backend.open(file, proscenium.List(OpenFlag.Read)): handle =>
+    val content: Text = backend.open(file, proscenium.List(OpenFlag.Read), Unset): handle =>
       handle.reader().map(_.utf8).join
 
     System.out.nn.println("fs: " + content.s)
