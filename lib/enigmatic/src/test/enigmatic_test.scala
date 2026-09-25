@@ -951,6 +951,231 @@ object Tests extends Suite(m"Enigmatic tests"):
         identifiers
       . assert(_ == List(List(2, 5, 4, 6), List(2, 5, 4, 10), List(2, 5, 4, 3)))
 
+      test(m"The JDK checks an ML-DSA certificate's signature"):
+        val key = PrivateKey.generate[MlDsa[65]]()
+        val certificate0 = Certificate.selfSigned(subject, key, period, BigInt(5))
+        parse(certificate0).verify(publicKey(certificate0))
+        true
+      . assert(identity)
+
+      test(m"An ML-DSA certificate verifies against its own key"):
+        val key = PrivateKey.generate[MlDsa[65]]()
+        Certificate.selfSigned(subject, key, period, BigInt(5)).verify(key.public)
+      . assert(identity)
+
+      test(m"An ML-DSA certificate does not verify against another key"):
+        val key = PrivateKey.generate[MlDsa[65]]()
+        val other = PrivateKey.generate[MlDsa[65]]()
+        Certificate.selfSigned(subject, key, period, BigInt(5)).verify(other.public)
+      . assert(!_)
+
+      test(m"An ML-DSA signature algorithm identifier has no parameters"):
+        val key = PrivateKey.generate[MlDsa[65]]()
+
+        Certificate.selfSigned(subject, key, period, BigInt(5)).asn1 match
+          case Asn1.Sequence(List(_, algorithm, _)) => algorithm
+          case _                                    => Asn1.Null
+      . assert(_ == Asn1.Sequence(List(Asn1.ObjectId(List(2, 16, 840, 1, 101, 3, 4, 3, 18)))))
+
+      test(m"Each ML-DSA parameter set has its own signature algorithm identifier"):
+        def last(certificate: Certificate): Optional[Int] = certificate.asn1 match
+          case Asn1.Sequence(List(_, Asn1.Sequence(List(Asn1.ObjectId(arcs))), _)) => arcs.last
+          case _                                                                 => Unset
+
+        val level44 = PrivateKey.generate[MlDsa[44]]()
+        val level65 = PrivateKey.generate[MlDsa[65]]()
+        val level87 = PrivateKey.generate[MlDsa[87]]()
+
+        List
+         ( last(Certificate.selfSigned(subject, level44, period, BigInt(1))),
+           last(Certificate.selfSigned(subject, level65, period, BigInt(1))),
+           last(Certificate.selfSigned(subject, level87, period, BigInt(1))) )
+      . assert(_ == List(17, 18, 19))
+
+      // A service whose identity is an ML-DSA key, but whose TLS stack cannot handshake with one,
+      // presents a certificate over a classical key that the ML-DSA key issued, together with the
+      // ML-DSA key's own self-signed certificate.
+      val issuerName =
+        Distinguished(commonName = t"swarm.example.com", organization = t"Propensive")
+
+      def chain(): (PrivateKey[MlDsa[65]], PrivateKey[Ecdsa[256]], Certificate, Certificate) =
+        val root = PrivateKey.generate[MlDsa[65]]()
+        val leaf = PrivateKey.generate[Ecdsa[256]]()
+
+        val rootCertificate =
+          Certificate.selfSigned(issuerName, root, period, BigInt(1), authority = true)
+
+        val leafCertificate =
+          Certificate.issued
+            ( subject, leaf.public, issuerName, root, period, BigInt(2),
+              alternatives = List(t"localhost") )
+
+        (root, leaf, rootCertificate, leafCertificate)
+
+      test(m"A certificate issued by an ML-DSA key over an ECDSA key verifies"):
+        val (root, _, _, leaf) = chain()
+        leaf.verify(root.public)
+      . assert(identity)
+
+      test(m"The JDK checks an ML-DSA-issued certificate against the root"):
+        val (_, _, root, leaf) = chain()
+        parse(leaf).verify(publicKey(root))
+        true
+      . assert(identity)
+
+      test(m"An issued certificate names its issuer and carries the subject's key"):
+        val (_, _, root, leaf) = chain()
+        val parsed = parse(leaf)
+
+        ( parsed.getIssuerX500Principal == parse(root).getSubjectX500Principal,
+          parsed.getSubjectX500Principal == parse(certificate()).getSubjectX500Principal,
+          parsed.getPublicKey.nn.getAlgorithm.nn.tt,
+          parsed.getSigAlgName.nn.tt )
+      . assert(_ == (true, true, t"EC", t"ML-DSA-65"))
+
+      test(m"An issued certificate's authority key identifier is the issuer's"):
+        val (_, _, root, leaf) = chain()
+
+        // Each extension value is the DER of the extension wrapped in an OCTET STRING; inside, the
+        // subject key identifier is a bare OCTET STRING and the authority key identifier a
+        // SEQUENCE whose `[0]` element is the same twenty bytes.
+        def extension(certificate: jsc.X509Certificate, identifier: String): Data =
+          val value = certificate.getExtensionValue(identifier).nn.unsafeImmutable(using Unsafe)
+
+          Der(value).as[Asn1] match
+            case Asn1.OctetString(bytes) => Der(bytes).as[Asn1] match
+              case Asn1.OctetString(subject)                                  => subject
+              case Asn1.Sequence(List(Asn1.Unknown(2, 0, false, authority))) => authority
+              case _                                                          => Data()
+
+            case _ => Data()
+
+        ( extension(parse(leaf), "2.5.29.35").serialize[Hex],
+          extension(parse(root), "2.5.29.14").serialize[Hex] )
+      . assert { case (authority, subject) => authority == subject && authority.length == 40 }
+
+      test(m"A tampered issued certificate fails against the issuer's key"):
+        val (root, _, _, leaf) = chain()
+        val bytes = leaf.in[Der].data.unsafeMutable(using Unsafe).clone.nn
+        bytes(bytes.length - 1) = (bytes(bytes.length - 1) ^ 0xff.toByte).toByte
+        Certificate(Der(bytes.unsafeImmutable(using Unsafe)).as[Asn1]).verify(root.public)
+      . assert(!_)
+
+      test(m"An issued certificate round-trips through DER byte-exactly"):
+        val (_, _, _, leaf) = chain()
+        val der = leaf.in[Der]
+        der.as[Certificate].in[Der] == der
+      . assert(identity)
+
+      // Whether the JDK's TLS will present, and accept, an ECDSA leaf that an ML-DSA key issued:
+      // SunJSSE has no ML-DSA signature scheme, so it cannot handshake with an ML-DSA key, but
+      // the certificate signature is never used in the handshake itself. The `SunX509` key manager
+      // chooses its entry by key type alone (the `PKIX` one checks every signature in the chain
+      // against the client's advertised schemes, and would refuse), and an
+      // `X509ExtendedTrustManager` is consulted directly, where a plain `X509TrustManager` is
+      // wrapped in the same check.
+      test(m"The JDK's TLS presents and accepts an ECDSA chain that an ML-DSA key issued"):
+        import java.util.concurrent as juc
+        import javax.net.ssl as jns
+
+        val (_, leaf, rootCertificate, leafCertificate) = chain()
+        val password = "swarm".toCharArray.nn
+
+        val privateKey =
+          js.KeyFactory.getInstance("EC").nn.generatePrivate
+            ( js.spec.PKCS8EncodedKeySpec(leaf.pem(Divulgence).data.unsafeMutable(using Unsafe)) )
+
+        val keystore = js.KeyStore.getInstance("PKCS12").nn
+        keystore.load(null, null)
+
+        val certificates: scala.Array[jsc.Certificate | Null] =
+          scala.Array(parse(leafCertificate), parse(rootCertificate))
+
+        keystore.setKeyEntry("swarm", privateKey, password, certificates)
+
+        val keyManagers = jns.KeyManagerFactory.getInstance("SunX509").nn
+        keyManagers.init(keystore, password)
+        val serverContext = jns.SSLContext.getInstance("TLS").nn
+        serverContext.init(keyManagers.getKeyManagers, null, null)
+
+        type Chain = scala.Array[jsc.X509Certificate | Null] | Null
+        @volatile var presented: Chain = null
+
+        val trustManager = new jns.X509ExtendedTrustManager:
+          def getAcceptedIssuers: Chain = scala.Array.empty[jsc.X509Certificate | Null]
+          def checkClientTrusted(chain: Chain, kind: String | Null): Unit = ()
+          def checkServerTrusted(chain: Chain, kind: String | Null): Unit = presented = chain
+
+          def checkClientTrusted(chain: Chain, kind: String | Null, socket: java.net.Socket | Null)
+          :   Unit = ()
+
+          def checkServerTrusted(chain: Chain, kind: String | Null, socket: java.net.Socket | Null)
+          :   Unit = presented = chain
+
+          def checkClientTrusted(chain: Chain, kind: String | Null, engine: jns.SSLEngine | Null)
+          :   Unit = ()
+
+          def checkServerTrusted(chain: Chain, kind: String | Null, engine: jns.SSLEngine | Null)
+          :   Unit = presented = chain
+
+        val clientContext = jns.SSLContext.getInstance("TLS").nn
+        clientContext.init(null, scala.Array(trustManager), js.SecureRandom())
+
+        val loopback = java.net.InetAddress.getLoopbackAddress
+
+        val serverSocket =
+          serverContext.getServerSocketFactory.nn.createServerSocket(0, 1, loopback).nn
+          . asInstanceOf[jns.SSLServerSocket]
+
+        serverSocket.setSoTimeout(10000)
+        val failure = juc.CompletableFuture[Text]()
+
+        val runnable: Runnable = () =>
+          try
+            val socket = serverSocket.accept().nn.asInstanceOf[jns.SSLSocket]
+            try
+              socket.setSoTimeout(10000)
+              socket.startHandshake()
+              socket.getInputStream.nn.read()
+              failure.complete(t"")
+            finally socket.close()
+          catch case error: Exception => failure.complete(error.toString.tt)
+
+        val server = java.lang.Thread(runnable)
+        server.start()
+
+        val outcome: Text =
+          try
+            val socket =
+              clientContext.getSocketFactory.nn.createSocket(loopback, serverSocket.getLocalPort).nn
+              . asInstanceOf[jns.SSLSocket]
+
+            try
+              socket.setSoTimeout(10000)
+              socket.startHandshake()
+              socket.getOutputStream.nn.write(1)
+              socket.getOutputStream.nn.flush()
+              failure.get(10, juc.TimeUnit.SECONDS).nn
+            finally socket.close()
+          catch case error: Exception => error.toString.tt
+          finally
+            serverSocket.close()
+            server.join(10000)
+
+        val chainOk = presented match
+          case null => t"no chain was presented"
+          case chain =>
+            if chain.length != 2 then t"chain of ${chain.length}" else
+              val leaf0 = chain(0).nn
+              val root0 = chain(1).nn
+              leaf0.verify(root0.getPublicKey)
+              val leafDer = leaf0.getEncoded.nn.unsafeImmutable(using Unsafe).serialize[Hex]
+              val expected = leafCertificate.in[Der].data.serialize[Hex]
+              if leafDer == expected then t"" else t"a different leaf"
+
+        (outcome, chainOk)
+      . assert(_ == (t"", t""))
+
     suite(m"ASN.1 and DER"):
       // DER is canonical, so `encode` is the equality of record: the byte-carrying cases of `Asn1`
       // are case classes over `Array[Byte]`, whose synthesized `equals` compares arrays by

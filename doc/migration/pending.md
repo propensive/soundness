@@ -50,6 +50,26 @@ format. Entries are grouped by module, most-recently-added last within a module.
   line are left-aligned. A frame with no line number renders no colon. Code that matched on the
   rendered text (for instance, `Tests.scala : 42`) must expect the contiguous form. (#2052)
 
+## enigmatic
+
+- Additive, but changes which calls compile: the given `enigmatic.SignatureAlgorithm.mlDsa:
+  [level <: 44 | 65 | 87: ValueOf] => MlDsa[level] is SignatureAlgorithm` makes
+  `Certificate.selfSigned` accept a `PrivateKey[MlDsa[level]]` (previously a missing-given error).
+  It writes `id-ml-dsa-44/65/87` (`2.16.840.1.101.3.4.3.17/18/19`, no parameters) and ignores
+  the `Signature.Digest` in scope. Also new: `enigmatic.Certificate.issued[holder <: Cipher,
+  signer <: Cipher](subject: Distinguished, key: PublicKey[holder], issuer: Distinguished,
+  issuerKey: PrivateKey[signer], validity: Period[Instant over Unix], serial: BigInt, authority:
+  Boolean = false, alternatives: List[Text] = Nil)(using signer & Signing, signer is
+  SignatureAlgorithm, Signature.Digest, Hash in Sha2[256], erased Permit[Weakness[signer]])(using
+  Tactic[Certificate.Error], Tactic[Asn1.Error], Diagnostics): Certificate` (adds an
+  `AuthorityKeyIdentifier` extension; `selfSigned` output is unchanged) and
+  `enigmatic.Certificate#verify[cipher <: Cipher](issuer: PublicKey[cipher])(using cipher &
+  Signing, erased ProcessingPermit[Weakness[cipher]]): Boolean`. (#2073)
+- Behaviour change: `enigmatic.PublicKey#verify` through the JDK provider (`JavaBaseCrypto`:
+  RSA, ECDSA, DSA and ML-DSA) now returns `false` for a signature the JDK cannot decode (wrong
+  length, malformed DER, out-of-range ML-DSA hints), where previously a
+  `java.security.SignatureException` escaped. (#2073)
+
 ## ethereal
 
 - `ethereal.Stdin` renamed to `ethereal.Terminus`, with its cases `Terminal` and `Pipe` and its
