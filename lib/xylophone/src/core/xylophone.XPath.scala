@@ -52,6 +52,10 @@ import denominative.dysasymptotics.linearSize
 object XPath extends Format:
   def name: Text = t"XPath"
 
+  given pinpointable: XPath is Pinpointable:
+    def strategy: Text = t"xpath"
+    def pinpoint(xpath: XPath): Text = xpath.encode
+
   // An XPath is a line-less source, so the span is `Offset`-mode: a character index into
   // the expression text, which the `xp"…"` interpolator maps back onto a source-file caret.
   // `Location` is taken here for a node's place within a *document*, so this is `Position`,

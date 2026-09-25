@@ -30,10 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package enigmatic
+package revolution
 
-import anticipation.*
-
-trait Signing:
-  def sign(data: Data, privateKey: Data): Data
-  def verify(data: Data, signature: Data, publicKey: Data): Boolean
+extension (inline context: StringContext)
+  inline def v(): Semver = ${internal.semver('context)}

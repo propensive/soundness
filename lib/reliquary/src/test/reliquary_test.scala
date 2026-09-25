@@ -1061,7 +1061,8 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(identity)
 
     suite(m"Manifest signing"):
-      import enigmatic.{MlDsa, Signing}
+      import enigmatic.MlDsa
+      import gastronomy.Signing
       import gastronomy.providers.javaBaseProvider
 
       val mlDsa65: MlDsa[65] = summon[MlDsa[65]]
@@ -1148,7 +1149,8 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(_ == 1)
 
     suite(m"TEL schema resolution (LIRA-backed)"):
-      import enigmatic.{MlDsa, Signing}
+      import enigmatic.MlDsa
+      import gastronomy.Signing
       import gastronomy.providers.javaBaseProvider
 
       val mlDsa65: MlDsa[65] = summon[MlDsa[65]]

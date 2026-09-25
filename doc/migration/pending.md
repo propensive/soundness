@@ -18,6 +18,11 @@ format. Entries are grouped by module, most-recently-added last within a module.
   Chain[right]`) now requires the two chains to have the same length; previously it compared
   element-wise over the shorter chain, so `Chain(1, 2) === Chain(1)` was `true` and is now
   `false`. `anticipation.check` no longer depends on `rudiments.core`. (#PR-dead-edges)
+- New module `anticipation.locator` (in the `base` bundle) with `anticipation.Pinpointable`
+  (`Typeclass.Pure`; `def strategy: Text`, `def pinpoint(value: Self): Text`): a WebDriver-style
+  locator strategy and rendering. Additive, but `cataclysm.SelectorList` and `xylophone.XPath`
+  now provide instances in their companions and tarantula resolves them through it (see
+  tarantula). (#PR-dead-edges)
 
 ## caduceus
 
@@ -35,6 +40,23 @@ format. Entries are grouped by module, most-recently-added last within a module.
 
 - `cartouche.core` no longer declares a dependency on `hypotenuse.core` (it still arrives
   transitively through `capricious.core`). (#PR-dead-edges)
+
+## cataclysm
+
+- The givens `cataclysm.Css.Convertible.srgb: Srgb is Css.Convertible of "color"` and
+  `Css.Convertible.chroma: Chroma is Css.Convertible of "color"` replaced by one
+  `Css.Convertible.chromatic: [color] => ((? >: color) is Chromatic) => color is Css.Convertible of
+  "color"`, which renders any colour with a `Chromatic` instance for it or a supertype (every iridescence colour form, through
+  `Color.chromatic`, and `Chroma` itself) as a `#rrggbb` triplet. `Srgb` values render identically.
+  `cataclysm.core` depends on `anticipation.color` and no longer on `iridescence.core`; a consumer
+  that reached iridescence only through cataclysm must declare it. (#PR-dead-edges)
+- `cataclysm.core` no longer ships or reads the classpath resources `/cataclysm/properties.json`
+  and `/cataclysm/syntaxes.json`: the MDN property and syntax tables are compiled into string
+  tables (`cataclysm.CssData`, private) at build time from `lib/cataclysm/data`. Behaviour of
+  `PropertyDef` and `SyntaxMatcher` is unchanged. `cataclysm.core` no longer depends on
+  `jacinta.core` or `hellenism.core` and is no longer marked JVM/JS-only; `cataclysm.html` (which
+  reads stylesheets with `cp"…"`) declares `hellenism.core` itself. A consumer that reached jacinta
+  or hellenism only through `cataclysm.core` must declare it. (#PR-dead-edges)
 
 ## coaxial
 
@@ -123,6 +145,10 @@ format. Entries are grouped by module, most-recently-added last within a module.
   unchanged, and `enigmatic.core` still re-exports it transitively through its dependency on
   `enigmatic.asn1`. The `soundness` export of `Pem` moved from `soundness_enigmatic_core` to
   `soundness_enigmatic_asn1` (same name, `soundness.Pem`). (#PR-dead-edges)
+- `enigmatic.Signing` (`def sign(data: Data, privateKey: Data): Data`, `def verify(data: Data,
+  signature: Data, publicKey: Data): Boolean`) moved to `gastronomy.Signing` (module
+  `gastronomy.core`), and its `soundness` export moved with it (still `soundness.Signing`).
+  `Rsa`, `Dsa`, `Ecdsa`, `MlDsa` and `HmacCipher` still extend it. (#PR-dead-edges)
 
 ## escapade
 
@@ -324,6 +350,10 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - The givens `gesticulate.MediaType.formenctype`, `MediaType.media`, `MediaType.enctype` and
   `MediaType.htype` (each `("…" is GenericHtmlAttribute[MediaType])`) removed with
   `anticipation.GenericHtmlAttribute`. `gesticulate.core` no longer depends on `anticipation.html`. (#PR-dead-edges)
+- `gesticulate.core` no longer ships or reads the classpath resource `/gesticulate/media.types`:
+  the IANA registry is compiled into a string table (`gesticulate.MediaTypeData`, private) at
+  build time from `lib/gesticulate/data`. The `media"…"` macro's unregistered-type check is
+  unchanged. (#PR-dead-edges)
 
 ## gossamer
 
@@ -360,6 +390,24 @@ format. Entries are grouped by module, most-recently-added last within a module.
   lacked `erased`, `macro`, `throws` and `tracked`. A fragment such as `erased x ma` (cursor at
   the end) therefore yields `(Unset, t"ma")` where it previously yielded `(t"x.", t"ma")`.
   Nothing else about its result changed.
+
+## honeycomb
+
+- `honeycomb.core` no longer ships or reads the classpath resources `/honeycomb/entities-html4.tsv`
+  and `/honeycomb/entities-extra.tsv`: the named-character-reference tables are compiled into string
+  tables (`honeycomb.EntityData`, private) at build time from `lib/honeycomb/data`.
+  `Html4Transitional.entities` and `Whatwg.entities` are unchanged. `honeycomb.core` no longer
+  depends on `hellenism.core` and is no longer marked JVM/JS-only; a consumer that reached
+  hellenism only through honeycomb must declare it. (#PR-dead-edges)
+
+## hypotenuse
+
+- Module `anticipation.check` moved to `hypotenuse.check`, and its package from `anticipation` to
+  `hypotenuse`: `anticipation.Checkable`, `anticipation.Tolerance`, and the extensions `===`, `!==`,
+  `+/-` and `±` are now `hypotenuse.Checkable`, `hypotenuse.Tolerance`, `hypotenuse.===` etc.
+  The `soundness` exports and probably's re-exports (`import probably.*`) are unchanged; code
+  that imported them via `import anticipation.*` needs `import hypotenuse.*` instead. Members,
+  signatures and behaviour are unchanged. (#PR-dead-edges)
 
 ## iridescence
 
@@ -431,6 +479,22 @@ format. Entries are grouped by module, most-recently-added last within a module.
   anchor query rather than the cursor-position size probe; the probe is still sent when the
   signal carries no size. (#2064)
 
+## reliquary
+
+- `reliquary.core` depends on `gastronomy.core`'s `Signing` (unchanged name, see enigmatic) and on
+  `revolution.semver` instead of `enigmatic.core` and `revolution.core`; a consumer that reached
+  `enigmatic.core`, `aperture.core`, `revolution.core`'s manifest types or `turbulence` only
+  through reliquary must declare them. (#PR-dead-edges)
+
+## revolution
+
+- New module `revolution.semver` (in the `tool` bundle; dependencies `gossamer.core`,
+  `distillate.core`, cross-platform) holds `revolution.Semver`, `revolution.Compatibility`, the
+  `v"…"` interpolator and `revolution.internal.semver`; `revolution.core` depends on it and keeps
+  `Manifest`, `EncodableManifest`, `DecodableManifest` and `manifestAttributes`. Package and
+  names are unchanged. The `soundness` exports of `Semver`, `Compatibility` and `v` moved to
+  `soundness_revolution_semver`. (#PR-dead-edges)
+
 ## savagery
 
 - `savagery.core` depends on `geodesy.angle` instead of `geodesy.core`; a consumer that used
@@ -490,6 +554,15 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `surveillance.core` no longer declares a dependency on `gossamer.core` (it still arrives
   transitively through `turbulence.core`). (#PR-dead-edges)
 
+## tarantula
+
+- The givens `tarantula.Focusable.selector: SelectorList is Focusable` and `Focusable.xpath: XPath
+  is Focusable` replaced by `Focusable.pinpointable: [value: Pinpointable] => value is Focusable`,
+  which `SelectorList` and `XPath` satisfy through their companions' `Pinpointable` instances
+  (same strategies, `css selector` and `xpath`, same rendering). `tarantula.core` no longer
+  depends on `cataclysm.core` or `xylophone.core`; a consumer that used either (or jacinta,
+  hellenism, phoenicia, quantitative through cataclysm) only through tarantula must declare it. (#PR-dead-edges)
+
 ## telekinesis
 
 - The givens `telekinesis.Http.Method.formmethod` and `Http.Method.method` (each
@@ -523,6 +596,10 @@ format. Entries are grouped by module, most-recently-added last within a module.
   patterns. Code relying on a logical step stopping inside JDK classes or generated methods
   must use the primitive `Debug#step(thread, depth, size): Int` and `Debug#events`, which are
   unchanged. (#2059)
+
+## xylophone
+
+- `xylophone.core` now depends on `anticipation.locator` (additive: `XPath.pinpointable`). (#PR-dead-edges)
 
 ## ypsiloid
 

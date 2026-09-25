@@ -33,6 +33,7 @@
 package enigmatic
 
 import scala.annotation.targetName
+import gastronomy.Signing
 
 import anticipation.*
 import gastronomy.ProcessingPermit

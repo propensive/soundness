@@ -36,20 +36,13 @@ import scala.language.dynamics
 
 import adversaria.*
 import anticipation.*
-import fulminate.*
 import gossamer.*
-import hellenism.*
 import hieroglyph.*
 import prepositional.*
 import rudiments.*
-import turbulence.*
 import typonym.*
 import vacuous.*
-import symbolism.*
 
-import charDecoders.utf8Decoder
-import classloaders.threadContextClassloader
-import textSanitizers.skipSanitizer
 
 object Whatwg:
   // Attribute types
@@ -680,15 +673,13 @@ class Whatwg() extends Dom:
     Dictionary(this.membersOfType[Tag].map { tag => tag.label -> tag }*)
 
   val entities: Dictionary[Text] =
-    val html4 = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n")
-    . map(_.cut(t"\t")).sweep:
-        case List(key, value) => (key, value)
+    val html4 = EntityData.html4Names.length
 
-    val extra = cp"/honeycomb/entities-extra.tsv".read[Text].cut(t"\n")
-    . map(_.cut(t"\t")).sweep:
-        case List(key, value) => (key, value)
+    val pairs = List.tabulate(html4 + EntityData.extraNames.length): index =>
+      if index < html4 then (EntityData.html4Names(index).tt, EntityData.html4Values(index).tt)
+      else (EntityData.extraNames(index - html4).tt, EntityData.extraValues(index - html4).tt)
 
-    Dictionary((html4 + extra)*)
+    Dictionary(pairs*)
 
   val attributes: Dictionary[Attribute] =
     val list: List[(Text, Attribute)] =

@@ -46,3 +46,5 @@ package cryptoPermits:
       permitDisallowedCrypto, permitCryptoThrough2014, permitCryptoThrough2024,
       permitCryptoThrough2030, permitLegacyTls, permitUntrustedCertificates,
       permitUncheckedRevocation, permitNonCryptographicHashes}
+
+export gastronomy.Signing

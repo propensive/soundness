@@ -53,7 +53,6 @@ import vacuous.*
 import zephyrine.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
-import iridescence.*
 import phoenicia.*
 import quantitative.*
 
@@ -312,11 +311,14 @@ object Css:
     given percents: (Quantity[Percents[1]] is Css.Convertible of "percentage") =
       q => t"${number(q.value)}%"
 
-    given srgb: (Srgb is Css.Convertible of "color") =
-      color => hex((color.red*255).toInt, (color.green*255).toInt, (color.blue*255).toInt)
-
-    given chroma: (Chroma is Css.Convertible of "color") =
-      color => hex(color.red, color.green, color.blue)
+    // Any colour with a `Chromatic` instance (anticipation's own `Chroma`, and every iridescence
+    // colour form through `Color.chromatic`) renders as a hex triplet. The instance is sought for
+    // any supertype of the colour, not the colour's own type: iridescence provides its instances
+    // for `Color in form`, of which each colour class is a subtype, and the `Css.Style` macro
+    // asks for the value's exact type, where the typer could infer a supertype.
+    given chromatic: [color] => (chromatic: (? >: color) is Chromatic)
+    =>  (color is Css.Convertible of "color") =
+      color => hex(chromatic.red(color), chromatic.green(color), chromatic.blue(color))
 
     // Likewise any time (Quantitative's `Seconds`) renders in `ms`; `q.value` is in
     // seconds, hence the factor of 1000.

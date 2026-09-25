@@ -33,6 +33,7 @@
 package enigmatic
 
 import anticipation.*
+import gastronomy.Signing
 
 object Rsa:
   given value: [bits <: 1024 | 2048 | 3072 | 4096: ValueOf]

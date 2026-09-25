@@ -32,9 +32,6 @@
                                                                                                   */
 package revolution
 
-extension (inline context: StringContext)
-  inline def v(): Semver = ${internal.semver('context)}
-
 package manifestAttributes:
   object ManifestVersion       extends Manifest.Attribute["Manifest-Version"]()
   object MainClass             extends Manifest.Attribute["Main-Class"]()

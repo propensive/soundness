@@ -30,33 +30,53 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package enigmatic
+package hypotenuse
 
-import gastronomy.Signing
-import scala.reflect.Selectable.reflectiveSelectable
+import prepositional.*
 
-import anticipation.*
+object Checkable:
+  // The cast fixes the invariant element type only: `sameElements` compares via `equals`,
+  // which is safe across element types.
+  given iarray: [left, right] => (Array[left]^{}) is Checkable against (Array[right]^{}) =
+    (left, right) => left.readable.sameElements(right.asInstanceOf[Array[left]^{}].readable)
 
-// ML-DSA (FIPS 204), the module-lattice signature scheme standardized from CRYSTALS-Dilithium,
-// in its three parameter sets: 44, 65 and 87 (the dimensions of the matrix A, e.g. 6×5 for
-// ML-DSA-65). It signs the message directly (the "pure" variant), so no `Signature.Digest`
-// participates. Like `Ecdsa`, it is not part of the mandatory provider baseline, so it is
-// reached through a structural refinement, and a provider that does not offer it is a compile
-// error at the use site rather than a failure at run time.
-object MlDsa:
-  given value: [level <: 44 | 65 | 87: ValueOf]
-  =>  ( crypto: Crypto { def mlDsa(level: Int): Crypto.SignatureScheme } )
-  =>  MlDsa[level] =
-    MlDsa(crypto.mlDsa(valueOf[level]))
+  given stream: [left, right] => (left is Checkable against right)
+  =>  Chain[left] is Checkable against Chain[right] =
 
-class MlDsa[level <: 44 | 65 | 87: ValueOf](scheme: Crypto.SignatureScheme)
-extends Cipher, Signing:
-  type Size = level
+    (lefts, rights) =>
+      val leftIterator = Chain.iterator(lefts)
+      val rightIterator = Chain.iterator(rights)
 
-  def keySize: level = valueOf[level]
-  def genKey(): Data = scheme.generateKeyPair(keySize)
-  def privateToPublic(keyData: Data): Data = scheme.privateToPublic(keyData)
-  def sign(data: Data, keyData: Data): Data = scheme.sign(data, keyData)
+      // Element by element, and the lengths must agree: a shorter chain is not a prefix match.
+      def recur(): Boolean =
+        if leftIterator.hasNext && rightIterator.hasNext
+        then leftIterator.next() === rightIterator.next() && recur()
+        else !leftIterator.hasNext && !rightIterator.hasNext
 
-  def verify(data: Data, signature: Data, keyData: Data): Boolean =
-    scheme.verify(data, signature, keyData)
+      recur()
+
+  given tolerance2: [value] => value is Checkable against Tolerance[value] =
+    (value, tolerance) => tolerance.covers(value)
+
+  inline given commensurable: [value: Commensurable against value]
+  =>  value is Checkable against value =
+
+    apply[value, value]: (left, right) => left <= right && right <= left
+
+
+  def apply[self, contrast](lambda: (self, contrast) -> Boolean)
+  :   self is Checkable against contrast =
+
+    new Checkable:
+      type Self = self
+      type Contrast = contrast
+
+      def check(self: Self, contrast: Contrast): Boolean = lambda(self, contrast)
+
+
+trait Checkable extends Typeclass, Contrastive:
+  def check(left: Self, right: Contrast): Boolean
+
+  def contramap[self2](lambda: self2 => Self)
+  :   (self2 is Checkable against Contrast)^{this, lambda} =
+    (left, right) => check(lambda(left), right)
