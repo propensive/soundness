@@ -585,8 +585,9 @@ no-semantic-change line or carries real regression risk.
   identity-sensitive `arrayPad` sentinel (compared with `eq`), deliberately divergent
   descriptor layouts, and hot-parser performance risk. If approved: extract from jacinta
   verbatim with jacinta delegating (bench-compared), then retarget ypsiloid separately.
-- **Folding anticipation.html** (after mod-1 it holds only `GenericHtmlAttribute`, with two
-  consumers).
+- ~~**Folding anticipation.html**~~ Done: `anticipation.html` and `GenericHtmlAttribute` were
+  deleted outright once its only two consumers (gesticulate, telekinesis) turned out to have no
+  consumers of their own.
 
 ## Rejected, with reasons — recorded so they are not re-litigated
 

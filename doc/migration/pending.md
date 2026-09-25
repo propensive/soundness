@@ -10,6 +10,15 @@ format. Entries are grouped by module, most-recently-added last within a module.
   meaning for rows that `width` has for columns: `Int.MaxValue` when the height is unknown or
   unbounded. An implementation that already declares a member named `height` must mark it
   `override`. (#2064)
+- Module `anticipation.html` removed, with `anticipation.GenericHtmlAttribute[-value]` (members
+  `type Self <: String & Singleton`, `def name: Text`, `def serialize(value: value): Text`) and its
+  `soundness.GenericHtmlAttribute` export. Nothing consumed the typeclass; honeycomb's
+  `Attribute` is the HTML attribute typeclass. (#PR-dead-edges)
+
+## cartouche
+
+- `cartouche.core` no longer declares a dependency on `hypotenuse.core` (it still arrives
+  transitively through `capricious.core`). (#PR-dead-edges)
 
 ## coaxial
 
@@ -38,6 +47,11 @@ format. Entries are grouped by module, most-recently-added last within a module.
   table as before, so code that indexes it by a byte value is unaffected; code that relied on
   `table.length == 256` or iterated the whole table must use `table.readable.take(256)`.
   `Crc64.Accumulator`'s results are unchanged.
+
+## dendrology
+
+- `dendrology.dag` no longer depends on `tessellate.core`; a consumer of `dendrology.dag` that used
+  tessellate names without depending on `tessellate.core` or `dendrology.tree` must declare it. (#PR-dead-edges)
 
 ## digression
 
@@ -69,6 +83,11 @@ format. Entries are grouped by module, most-recently-added last within a module.
   RSA, ECDSA, DSA and ML-DSA) now returns `false` for a signature the JDK cannot decode (wrong
   length, malformed DER, out-of-range ML-DSA hints), where previously a
   `java.security.SignatureException` escaped. (#2073)
+
+## escapade
+
+- `escapade.core` no longer depends on `mercator.core` or `zephyrine.core`; a consumer that reached
+  either only through escapade must declare it. (#PR-dead-edges)
 
 ## ethereal
 
@@ -149,6 +168,8 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Refused(pid: Pid)` and `Closed(pid: Pid, stream: Text)`; an exhaustive match must handle
   them. (#2064)
 - The `soundness` umbrella additionally exports `ethereal.Outlet` and `ethereal.Transcoder`. (#2064)
+- `ethereal.core` no longer depends on `telekinesis.jvm` or `urticose.url`; a consumer that reached
+  telekinesis, urticose or `legerdemain.query` only through ethereal must declare it. (#PR-dead-edges)
 
 ## exoskeleton
 
@@ -240,6 +261,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   directory created through `create[File]`, `create[Directory]`, `create[Fifo]` and
   `open[File](…, OpenFlag.Create)`. (#2064)
 
+## gesticulate
+
+- The givens `gesticulate.MediaType.formenctype`, `MediaType.media`, `MediaType.enctype` and
+  `MediaType.htype` (each `("…" is GenericHtmlAttribute[MediaType])`) removed with
+  `anticipation.GenericHtmlAttribute`. `gesticulate.core` no longer depends on `anticipation.html`. (#PR-dead-edges)
+
 ## gossamer
 
 - The `join` extension methods (`join`, `join(separator)`, `join(left, separator, right)`,
@@ -276,6 +303,31 @@ format. Entries are grouped by module, most-recently-added last within a module.
   the end) therefore yields `(Unset, t"ma")` where it previously yielded `(t"x.", t"ma")`.
   Nothing else about its result changed.
 
+## iridescence
+
+- `iridescence.core` no longer depends on `contextual.core`; a consumer that reached contextual only
+  through iridescence must declare it. (#PR-dead-edges)
+
+## jacinta
+
+- `jacinta.JsonPointer(url: Optional[HttpUrl] = Unset, path: Path on JsonPointer = JsonPointer)`
+  became `JsonPointer(path: Path on JsonPointer = JsonPointer)`: the `url` field, which no code
+  path ever set (the decoder rejects any reference not beginning with `#`), is gone. Pattern
+  matches `JsonPointer(url, path)` become `JsonPointer(path)`; `pointer.url` no longer exists.
+  `JsonPointer is Encodable in Text` therefore always renders `#` or `#/…`, as it always did in
+  practice. (#PR-dead-edges)
+- `jacinta.JsonPointer.Registry` (a `beneficence.Findable` with `update(url: HttpUrl, document:
+  Json): Unit`, `apply(url: HttpUrl): Optional[Json]` and `protected def lookup(url: HttpUrl):
+  Optional[Json]`), `JsonPointer#apply(using registry: JsonPointer.Registry^)(document: Json)(using
+  Tactic[JsonPointer.Error]): Json` (which always returned `document`), and the givens
+  `jacinta.jsonPointerRegistries.standaloneRegistry` and `jsonPointerRegistries.fetchingRegistry`
+  (module `jacinta.schema`, also exported as `soundness.jsonPointerRegistries.*`) removed. No
+  replacement: `JsonPointer` addresses the current document only. (#PR-dead-edges)
+- `jacinta.JsonPointer.Error.Reason.UnknownDocument` (`SN-415.1`) removed; `ExpectedHash`,
+  `ExpectedSlash` and `BadEscape` keep numbers 2, 3 and 4. (#PR-dead-edges)
+- `jacinta.core` depends on `serpentine.core` directly and no longer on `urticose.url`; a consumer
+  that reached urticose only through jacinta must declare it. (#PR-dead-edges)
+
 ## pneumatic
 
 - New `pneumatic.Brotli.continuation(base: Data, next: Data, window: Int = Brotli.Window): Data`
@@ -288,6 +340,15 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `(prefix(base, w, b) ++ continuation(base, next, w)).decompress[Brotli]` is `base ++ next`.
   Code carrying its own port of the encoder for this purpose (`lira.Priming`) should call these
   instead. Existing `compress[Brotli]` output is byte-for-byte unchanged. (#2047)
+- `pneumatic.core` no longer depends on `turbulence.stdio`; a consumer of any pneumatic module that
+  used turbulence names without depending on turbulence must declare `turbulence.core` or
+  `turbulence.stdio`. (#PR-dead-edges)
+
+## praxinoscope
+
+- `praxinoscope.core` no longer depends on `contextual.core`; a consumer that reached contextual
+  only through praxinoscope must declare it. (#PR-dead-edges)
+
 ## profanity
 
 - New `profanity.Signal(interrupt: UnixSignal | WindowsSignal, columns: Optional[Int] = Unset,
@@ -356,6 +417,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   unchanged; an explicit `using` argument that was previously rejected for capturing is now
   accepted. (#2076)
 
+- `surveillance.core` no longer declares a dependency on `gossamer.core` (it still arrives
+  transitively through `turbulence.core`). (#PR-dead-edges)
+
+## telekinesis
+
+- The givens `telekinesis.Http.Method.formmethod` and `Http.Method.method` (each
+  `("…" is GenericHtmlAttribute[Method])`) removed with `anticipation.GenericHtmlAttribute`. (#PR-dead-edges)
+
 ## vivisection
 
 - `vivisection.Jdwp.Capabilities` gains two fields: `canGetBytecodes: Boolean` inserted as the
@@ -374,6 +443,20 @@ format. Entries are grouped by module, most-recently-added last within a module.
   patterns. Code relying on a logical step stopping inside JDK classes or generated methods
   must use the primitive `Debug#step(thread, depth, size): Int` and `Debug#events`, which are
   unchanged. (#2059)
+
+## ypsiloid
+
+- `ypsiloid.YamlPath(url: Optional[HttpUrl] = Unset, path: Path on YamlPath = YamlPath)` became
+  `YamlPath(path: Path on YamlPath = YamlPath)`: the `url` field, which no code path ever set, is
+  gone. Pattern matches `YamlPath(url, path)` become `YamlPath(path)`; `path.url` no longer exists.
+  `YamlPath is Encodable in Text` always renders `#…`, as it always did in practice. (#PR-dead-edges)
+- `ypsiloid.YamlPath.Registry` (a `beneficence.Findable` with `update`, `apply` and `protected def
+  lookup`, all keyed by `HttpUrl`) and `YamlPath#apply(using registry: YamlPath.Registry)(document:
+  Yaml): Yaml raises YamlPath.Error` (which always returned `document`) removed. No replacement. (#PR-dead-edges)
+- `ypsiloid.YamlPath.Error.Reason.UnknownDocument` (`SN-546.1`) removed; `ExpectedHash`,
+  `ExpectedSlash` and `BadEscape` keep numbers 2, 3 and 4. (#PR-dead-edges)
+- `ypsiloid.core` no longer depends on `urticose.url`; a consumer that reached urticose only
+  through ypsiloid must declare it. (#PR-dead-edges)
 
 ## zeppelin
 

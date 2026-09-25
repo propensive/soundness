@@ -34,7 +34,6 @@ package pneumatic
 
 import anticipation.*
 import rudiments.*
-import turbulence.*
 import vacuous.*
 import zephyrine.*
 

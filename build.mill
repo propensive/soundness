@@ -902,7 +902,7 @@ object soundness extends Toolchain:
     prophesy.core, murmuration.core, beneficence.core, proscenium.core, prescience.core,
     prescience.leaves,
     anticipation.check, anticipation.codec, anticipation.color, anticipation.generic,
-    anticipation.gfx, anticipation.html, anticipation.http, anticipation.log,
+    anticipation.gfx, anticipation.http, anticipation.log,
     anticipation.opaque, anticipation.path, anticipation.print, anticipation.text,
     anticipation.time, anticipation.url):
     def summary = "Core Soundness abstractions: text, collections, effects and interfaces"
@@ -1344,9 +1344,6 @@ object anticipation extends Library:
   object url extends Component(text, generic):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object html extends Component(text, generic):
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object print extends Component(text):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -1576,7 +1573,7 @@ object clavichord extends Library:
       settings.sep(super.scalacOptions())
 
 object cartouche extends Library:
-  object core extends Component(rudiments.core, hypotenuse.core, capricious.core):
+  object core extends Component(rudiments.core, capricious.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -1712,7 +1709,7 @@ object dendrology extends Library:
   object tree extends Component(anticipation.print, gossamer.core, tessellate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object dag extends Component(acyclicity.core, anticipation.print, tessellate.core):
+  object dag extends Component(acyclicity.core, anticipation.print):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object demo extends Internal(dag, turbulence.stdio, ambience.core):
@@ -1892,7 +1889,7 @@ object escapade extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object core extends Component(csi, gossamer.core, anticipation.print, anticipation.url,
-      iridescence.core, mercator.core, zephyrine.core):
+      iridescence.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Writing streams of `Teletype` records to the standard streams: escapade's only use of
@@ -1952,7 +1949,7 @@ object espionage extends Library:
       settings.maxInlines(settings.sep(super.scalacOptions()), "48")
 
 object ethereal extends Library:
-  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.jvm, quantitative.units, telekinesis.jvm, urticose.url, gastronomy.core, zeppelin.core, stratiform.core):
+  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.jvm, quantitative.units, gastronomy.core, zeppelin.core, stratiform.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2172,9 +2169,8 @@ object geodesy extends Library:
       settings.sep(super.scalacOptions())
 
 object gesticulate extends Library:
-  object core extends Component(gossamer.core, contextual.core, anticipation.html,
-      anticipation.path,
-    turbulence.core, zephyrine.core):
+  object core extends Component(gossamer.core, contextual.core, anticipation.path,
+      turbulence.core, zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2421,7 +2417,7 @@ object inimitable extends Library:
 
 object iridescence extends Library:
   object core extends
-    Component(contextual.core, anticipation.color, hypotenuse.core, geodesy.angle):
+    Component(anticipation.color, hypotenuse.core, geodesy.angle):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2429,7 +2425,7 @@ object iridescence extends Library:
       settings.sep(super.scalacOptions())
 
 object jacinta extends Library:
-  object core extends Component(zephyrine.core, turbulence.core, urticose.url, adversaria.core, hypotenuse.core):
+  object core extends Component(zephyrine.core, turbulence.core, serpentine.core, adversaria.core, hypotenuse.core):
     // The parser's SWAR word reads: the JVM variant is a byte-array view `VarHandle`, which
     // neither Scala.js nor Scala Native provides, so the crosses compile the portable
     // shift-and-or variant instead (the split `jslink.fastLinkJS` enforces).
@@ -2453,7 +2449,7 @@ object jacinta extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object records extends Component(core, polyvinyl.core):
+  object records extends Component(core, polyvinyl.core, urticose.url):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   // The Expr-level `Json.Inlinable` typeclass and its expansion-time instance
@@ -2719,7 +2715,7 @@ object pneumatic extends Library:
   // enabled it. `FlateChecksum` is now a `caps.Mutable` trait whose implementations delegate to
   // `corpuscular`, which needed the fields holding one to be declared `FlateChecksum^` and two
   // reads in `Inflater` to be marked separate by hand.
-  object core extends Component(turbulence.stdio, corpuscular.core, zephyrine.core):
+  object core extends Component(corpuscular.core, zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The `Deflate`/`Gzip`/`Zlib` formats, compiled twice against platform backends: over
@@ -2797,7 +2793,7 @@ object prescience extends Library:
       super.scalacOptions()
 
 object praxinoscope extends Library:
-  object core extends Component(contingency.core, contextual.core):
+  object core extends Component(contingency.core):
     // Not capture-checked: the Pike VM's hot paths are built on locally-mutated arrays and
     // swapped thread lists, which the separation checker cannot yet express efficiently.
     override def scalacOptions = Task:
@@ -3002,7 +2998,7 @@ object sedentary extends Library:
   object core
   extends Component
     (superlunary.jvm, anthology.linker, diuretic.core, parasite.core, quantitative.units,
-     aperture.core, turbulence.stdio):
+     aperture.core, turbulence.stdio, urticose.core):
     override def scalaJs = false // benchmarking via JVM-only `superlunary`/`anthology`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
@@ -3129,8 +3125,7 @@ object superlunary extends Library:
   object test extends Tests(jvm)
 
 object surveillance extends Library:
-  object core extends Component(anticipation.path, aperture.core, turbulence.core,
-      gossamer.core):
+  object core extends Component(anticipation.path, aperture.core, turbulence.core):
     override def scalaJs = false // file watching (`java.nio.file` WatchService)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -3532,7 +3527,7 @@ object yossarian extends Library:
       settings.sep(super.scalacOptions())
 
 object ypsiloid extends Library:
-  object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core, zephyrine.core, panopticon.core, urticose.url, serpentine.core, beneficence.core, gigantism.core, contextual.core, hypotenuse.core, adversaria.core):
+  object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core, zephyrine.core, panopticon.core, serpentine.core, gigantism.core, contextual.core, hypotenuse.core, adversaria.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
