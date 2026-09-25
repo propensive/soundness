@@ -419,9 +419,11 @@ object Tests extends Suite(m"Zeppelin tests"):
 
     suite(m"ZIP64"):
       // More than 0xFFFF entries forces ZIP64 end-of-central-directory records.
-      val many = (0 until 66000).map { i => entry(t"e$i", t"") }
-      val path = workDir/t"zip64.zip"
-      Zipfile.write(path)(many.to(List))
+      lazy val path: Path on Linux =
+        val many = (0 until 66000).map { i => entry(t"e$i", t"") }
+        val path = workDir/t"zip64.zip"
+        Zipfile.write(path)(many.to(List))
+        path
 
       test(m"a ZIP64 end-of-central-directory record is emitted"):
         contains(bytesOf(path), List(0x50, 0x4b, 0x06, 0x06))
