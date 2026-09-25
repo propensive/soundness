@@ -13,11 +13,11 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - Module `anticipation.html` removed, with `anticipation.GenericHtmlAttribute[-value]` (members
   `type Self <: String & Singleton`, `def name: Text`, `def serialize(value: value): Text`) and its
   `soundness.GenericHtmlAttribute` export. Nothing consumed the typeclass; honeycomb's
-  `Attribute` is the HTML attribute typeclass. (#PR-dead-edges)
+  `Attribute` is the HTML attribute typeclass. (#2082)
 - Behaviour change: the given `anticipation.Checkable.stream` (`Chain[left] is Checkable against
   Chain[right]`) now requires the two chains to have the same length; previously it compared
   element-wise over the shorter chain, so `Chain(1, 2) === Chain(1)` was `true` and is now
-  `false`. `anticipation.check` no longer depends on `rudiments.core`. (#PR-dead-edges)
+  `false`. `anticipation.check` no longer depends on `rudiments.core`. (#2082)
 - `tarantula.Focusable` moved to `anticipation.Focusable` (new module `anticipation.focus`, in the
   `base` bundle; `soundness.Focusable` now comes from anticipation). Members are unchanged
   (`def strategy: Text`, `def focus(value: Self): Text`, the `Focusable(strategy, focus)` factory),
@@ -26,7 +26,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `honeycomb.ClassList.focusable: [classes <: ClassList] => classes is Focusable`,
   `nomenclature.DomId.focusable: Name[DomId] is Focusable`, `cataclysm.SelectorList.focusable`
   and `xylophone.XPath.focusable`; `tarantula.Focusable.{text, tag, domId, cssClass, selector,
-  xpath}` no longer exist. Strategies and renderings are unchanged. (#PR-dead-edges)
+  xpath}` no longer exist. Strategies and renderings are unchanged. (#2082)
 
 ## caduceus
 
@@ -38,12 +38,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   latter needing a `Monitor` and `Probate` at the use site, as before); a `Dom` is no longer
   required. `caduceus.core` now depends on `gesticulate.core` and `turbulence.core` instead of
   `honeycomb.core`, so a consumer that reached honeycomb (or parasite) only through caduceus must
-  declare it. (#PR-dead-edges)
+  declare it. (#2082)
 
 ## cartouche
 
 - `cartouche.core` no longer declares a dependency on `hypotenuse.core` (it still arrives
-  transitively through `capricious.core`). (#PR-dead-edges)
+  transitively through `capricious.core`). (#2082)
 
 ## cataclysm
 
@@ -53,14 +53,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   "color"`, which renders any colour with a `Chromatic` instance for it or a supertype (every iridescence colour form, through
   `Color.chromatic`, and `Chroma` itself) as a `#rrggbb` triplet. `Srgb` values render identically.
   `cataclysm.core` depends on `anticipation.color` and no longer on `iridescence.core`; a consumer
-  that reached iridescence only through cataclysm must declare it. (#PR-dead-edges)
+  that reached iridescence only through cataclysm must declare it. (#2082)
 - `cataclysm.core` no longer ships or reads the classpath resources `/cataclysm/properties.json`
   and `/cataclysm/syntaxes.json`: the MDN property and syntax tables are compiled into string
   tables (`cataclysm.CssData`, private) at build time from `lib/cataclysm/data`. Behaviour of
   `PropertyDef` and `SyntaxMatcher` is unchanged. `cataclysm.core` no longer depends on
   `jacinta.core` or `hellenism.core` and is no longer marked JVM/JS-only; `cataclysm.html` (which
   reads stylesheets with `cp"…"`) declares `hellenism.core` itself. A consumer that reached jacinta
-  or hellenism only through `cataclysm.core` must declare it. (#PR-dead-edges)
+  or hellenism only through `cataclysm.core` must declare it. (#2082)
 - New module `cataclysm.fonts` (in the `web` bundle; dependencies `cataclysm.core`, `phoenicia.core`,
   `monotonous.core`, `anticipation.url`) now holds the font half of cataclysm: `cataclysm.Web` (with
   its generic-family `Typesettable` givens), `cataclysm.FontFace`, the `style` extensions on
@@ -70,7 +70,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   unchanged; the `soundness` exports of `Web`, `FontFace` and `style` moved to
   `soundness_cataclysm_fonts`. `cataclysm.core` no longer depends on `phoenicia.core`,
   `monotonous.core` or `anticipation.url`; a consumer using any of these, or the fonts API, through
-  `cataclysm.core` must declare `cataclysm.fonts` (savagery and tasseomancy now do). (#PR-dead-edges)
+  `cataclysm.core` must declare `cataclysm.fonts` (savagery and tasseomancy now do). (#2082)
 
 ## coaxial
 
@@ -105,12 +105,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - The extension `delicious.semantic` on `anthology.Notice` (`def semantic:
   Optional[SemanticMessage]`, exported as `soundness.semantic`) removed; write
   `notice.markup.let(SemanticMessage.parse(_))`. `delicious.scala` no longer depends on
-  `anthology.core`. (#PR-dead-edges)
+  `anthology.core`. (#2082)
 
 ## dendrology
 
 - `dendrology.dag` no longer depends on `tessellate.core`; a consumer of `dendrology.dag` that used
-  tessellate names without depending on `tessellate.core` or `dendrology.tree` must declare it. (#PR-dead-edges)
+  tessellate names without depending on `tessellate.core` or `dendrology.tree` must declare it. (#2082)
 
 ## digression
 
@@ -122,6 +122,15 @@ format. Entries are grouped by module, most-recently-added last within a module.
   colon: the class and file are right-padded to the widest in the trace, and the method and
   line are left-aligned. A frame with no line number renders no colon. Code that matched on the
   rendered text (for instance, `Tests.scala : 42`) must expect the contiguous form. (#2052)
+
+## distillate
+
+- `distillate.Decodable.enumeration` (the `enumeration is Decodable in Text` given for
+  `reflect.Enum` subtypes) now raises `distillate.Enumerable.Error(inputLabel: Text, sum: Text,
+  validVariants: List[Text])` (`SN-900`) where it previously raised `wisteria.Variant.Error` with the
+  same three fields; its `Tactic` requirement changed accordingly. `distillate.core` now depends on
+  `contingency.core` instead of `wisteria.core`, so a consumer that reached wisteria (or vicarious)
+  only through distillate must declare it. (#2082)
 
 ## enigmatic
 
@@ -142,32 +151,20 @@ format. Entries are grouped by module, most-recently-added last within a module.
   RSA, ECDSA, DSA and ML-DSA) now returns `false` for a signature the JDK cannot decode (wrong
   length, malformed DER, out-of-range ML-DSA hints), where previously a
   `java.security.SignatureException` escaped. (#2073)
-
-## distillate
-
-- `distillate.Decodable.enumeration` (the `enumeration is Decodable in Text` given for
-  `reflect.Enum` subtypes) now raises `distillate.Enumerable.Error(inputLabel: Text, sum: Text,
-  validVariants: List[Text])` (`SN-900`) where it previously raised `wisteria.Variant.Error` with the
-  same three fields; its `Tactic` requirement changed accordingly. `distillate.core` now depends on
-  `contingency.core` instead of `wisteria.core`, so a consumer that reached wisteria (or vicarious)
-  only through distillate must declare it. (#PR-dead-edges)
-
-## enigmatic
-
 - `enigmatic.Pem` (with `Pem.Label`, `Pem.Error`, `SN-389`, and its `Decodable`/`Aggregable`
   givens) moved from module `enigmatic.core` to `enigmatic.asn1`; the package and names are
   unchanged, and `enigmatic.core` still re-exports it transitively through its dependency on
   `enigmatic.asn1`. The `soundness` export of `Pem` moved from `soundness_enigmatic_core` to
-  `soundness_enigmatic_asn1` (same name, `soundness.Pem`). (#PR-dead-edges)
+  `soundness_enigmatic_asn1` (same name, `soundness.Pem`). (#2082)
 - `enigmatic.Signing` (`def sign(data: Data, privateKey: Data): Data`, `def verify(data: Data,
   signature: Data, publicKey: Data): Boolean`) moved to `gastronomy.Signing` (module
   `gastronomy.core`), and its `soundness` export moved with it (still `soundness.Signing`).
-  `Rsa`, `Dsa`, `Ecdsa`, `MlDsa` and `HmacCipher` still extend it. (#PR-dead-edges)
+  `Rsa`, `Dsa`, `Ecdsa`, `MlDsa` and `HmacCipher` still extend it. (#2082)
 
 ## escapade
 
 - `escapade.core` no longer depends on `mercator.core` or `zephyrine.core`; a consumer that reached
-  either only through escapade must declare it. (#PR-dead-edges)
+  either only through escapade must declare it. (#2082)
 
 ## ethereal
 
@@ -249,7 +246,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   them. (#2064)
 - The `soundness` umbrella additionally exports `ethereal.Outlet` and `ethereal.Transcoder`. (#2064)
 - `ethereal.core` no longer depends on `telekinesis.jvm` or `urticose.url`; a consumer that reached
-  telekinesis, urticose or `legerdemain.query` only through ethereal must declare it. (#PR-dead-edges)
+  telekinesis, urticose or `legerdemain.query` only through ethereal must declare it. (#2082)
 
 ## exoskeleton
 
@@ -323,7 +320,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `exoskeleton.Entrypoint` gained `def retire(): Unit = ()`, and the `{admin}` subcommand of the
   completions executive gained `shutdown`, which calls it. (#2064)
 - `exoskeleton.core` depends on `galilei.core` instead of `galilei.jvm`; a consumer that reached
-  `galilei.jvm` or `guillotine.core` only through exoskeleton must declare it. (#PR-dead-edges)
+  `galilei.jvm` or `guillotine.core` only through exoskeleton must declare it. (#2082)
 
 ## galilei
 
@@ -351,23 +348,23 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Reason.Unsupported`. `galilei.jvm` no longer depends on `guillotine.core`; a consumer that
   reached guillotine only through `galilei.jvm` (or through `hellenism.jvm`, `zeppelin.core`,
   `exoskeleton.core`, `octogenarian.core`, `bitumen.jvm`, `facsimile.file`, `hyperbole.stacks`,
-  `reliquary.derive`) must declare it. (#PR-dead-edges)
+  `reliquary.derive`) must declare it. (#2082)
 - The given `serpentine.Navigable.uuid: [plane, uuid <: Uuid] => uuid is Navigable on plane`
   moved to `galilei.Platform.uuidNavigable: [uuid <: Uuid, filesystem <: Platform] => uuid is
   Navigable on filesystem`: a `Uuid` is still a path segment on every OS filesystem plane
   (`Local`, `Linux`, `MacOs`, `Posix`, `Windows`), but no longer on other planes (URLs, JSON
   pointers, YAML paths, classpaths). `serpentine.core` no longer depends on `inimitable.core`,
-  and `galilei.core` now does. (#PR-dead-edges)
+  and `galilei.core` now does. (#2082)
 
 ## gesticulate
 
 - The givens `gesticulate.MediaType.formenctype`, `MediaType.media`, `MediaType.enctype` and
   `MediaType.htype` (each `("…" is GenericHtmlAttribute[MediaType])`) removed with
-  `anticipation.GenericHtmlAttribute`. `gesticulate.core` no longer depends on `anticipation.html`. (#PR-dead-edges)
+  `anticipation.GenericHtmlAttribute`. `gesticulate.core` no longer depends on `anticipation.html`. (#2082)
 - `gesticulate.core` no longer ships or reads the classpath resource `/gesticulate/media.types`:
   the IANA registry is compiled into a string table (`gesticulate.MediaTypeData`, private) at
   build time from `lib/gesticulate/data`. The `media"…"` macro's unregistered-type check is
-  unchanged. (#PR-dead-edges)
+  unchanged. (#2082)
 
 ## gossamer
 
@@ -412,12 +409,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   and `highlighting.compiledScala` (each `(using Scalac[?, ?], LocalClasspath): Highlight`, unchanged
   signatures) moved to the new module `harlequin.typed` (in the `tool` bundle; dependencies
   `harlequin.core`, `anthology.scala`, `hellenism.jvm`). `import highlighting.typecheckedScala` and
-  `harlequin.highlighting.typecheckedScala` still resolve given that module. (#PR-dead-edges)
+  `harlequin.highlighting.typecheckedScala` still resolve given that module. (#2082)
 - `harlequin.Diagnostic#importance` is now typed `harlequin.Diagnostic.Importance` (a new enum with
-  the same cases `Info`, `Warning`, `Error`) instead of `anthology.Importance`. (#PR-dead-edges)
+  the same cases `Info`, `Warning`, `Error`) instead of `anthology.Importance`. (#2082)
 - `harlequin.core` no longer depends on `anthology.scala` or `hellenism.jvm` (nor, through them, on
   `anthology.core`, `hellenism.core`, `galilei`, `ambience`, `guillotine`, `aperture`); a consumer
-  that reached any of these only through `harlequin.core` must declare it, or `harlequin.typed`. (#PR-dead-edges)
+  that reached any of these only through `harlequin.core` must declare it, or `harlequin.typed`. (#2082)
 
 ## honeycomb
 
@@ -426,7 +423,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   tables (`honeycomb.EntityData`, private) at build time from `lib/honeycomb/data`.
   `Html4Transitional.entities` and `Whatwg.entities` are unchanged. `honeycomb.core` no longer
   depends on `hellenism.core` and is no longer marked JVM/JS-only; a consumer that reached
-  hellenism only through honeycomb must declare it. (#PR-dead-edges)
+  hellenism only through honeycomb must declare it. (#2082)
 
 ## hypotenuse
 
@@ -435,12 +432,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `+/-` and `±` are now `hypotenuse.Checkable`, `hypotenuse.Tolerance`, `hypotenuse.===` etc.
   The `soundness` exports and probably's re-exports (`import probably.*`) are unchanged; code
   that imported them via `import anticipation.*` needs `import hypotenuse.*` instead. Members,
-  signatures and behaviour are unchanged. (#PR-dead-edges)
+  signatures and behaviour are unchanged. (#2082)
 
 ## iridescence
 
 - `iridescence.core` no longer depends on `contextual.core`; a consumer that reached contextual only
-  through iridescence must declare it. (#PR-dead-edges)
+  through iridescence must declare it. (#2082)
 
 ## jacinta
 
@@ -449,24 +446,24 @@ format. Entries are grouped by module, most-recently-added last within a module.
   path ever set (the decoder rejects any reference not beginning with `#`), is gone. Pattern
   matches `JsonPointer(url, path)` become `JsonPointer(path)`; `pointer.url` no longer exists.
   `JsonPointer is Encodable in Text` therefore always renders `#` or `#/…`, as it always did in
-  practice. (#PR-dead-edges)
+  practice. (#2082)
 - `jacinta.JsonPointer.Registry` (a `beneficence.Findable` with `update(url: HttpUrl, document:
   Json): Unit`, `apply(url: HttpUrl): Optional[Json]` and `protected def lookup(url: HttpUrl):
   Optional[Json]`), `JsonPointer#apply(using registry: JsonPointer.Registry^)(document: Json)(using
   Tactic[JsonPointer.Error]): Json` (which always returned `document`), and the givens
   `jacinta.jsonPointerRegistries.standaloneRegistry` and `jsonPointerRegistries.fetchingRegistry`
   (module `jacinta.schema`, also exported as `soundness.jsonPointerRegistries.*`) removed. No
-  replacement: `JsonPointer` addresses the current document only. (#PR-dead-edges)
+  replacement: `JsonPointer` addresses the current document only. (#2082)
 - `jacinta.JsonPointer.Error.Reason.UnknownDocument` (`SN-415.1`) removed; `ExpectedHash`,
-  `ExpectedSlash` and `BadEscape` keep numbers 2, 3 and 4. (#PR-dead-edges)
+  `ExpectedSlash` and `BadEscape` keep numbers 2, 3 and 4. (#2082)
 - `jacinta.core` depends on `serpentine.core` directly and no longer on `urticose.url`; a consumer
-  that reached urticose only through jacinta must declare it. (#PR-dead-edges)
+  that reached urticose only through jacinta must declare it. (#2082)
 
 ## octogenarian
 
 - `octogenarian.core` depends on `enigmatic.asn1` instead of `enigmatic.core`; a consumer that
   reached `enigmatic.core` (or `gastronomy.core`, `aperture.core`) only through octogenarian must
-  declare it. (#PR-dead-edges)
+  declare it. (#2082)
 
 ## pneumatic
 
@@ -482,12 +479,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   instead. Existing `compress[Brotli]` output is byte-for-byte unchanged. (#2047)
 - `pneumatic.core` no longer depends on `turbulence.stdio`; a consumer of any pneumatic module that
   used turbulence names without depending on turbulence must declare `turbulence.core` or
-  `turbulence.stdio`. (#PR-dead-edges)
+  `turbulence.stdio`. (#2082)
 
 ## praxinoscope
 
 - `praxinoscope.core` no longer depends on `contextual.core`; a consumer that reached contextual
-  only through praxinoscope must declare it. (#PR-dead-edges)
+  only through praxinoscope must declare it. (#2082)
 
 ## profanity
 
@@ -512,7 +509,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `reliquary.core` depends on `gastronomy.core`'s `Signing` (unchanged name, see enigmatic) and on
   `revolution.semver` instead of `enigmatic.core` and `revolution.core`; a consumer that reached
   `enigmatic.core`, `aperture.core`, `revolution.core`'s manifest types or `turbulence` only
-  through reliquary must declare them. (#PR-dead-edges)
+  through reliquary must declare them. (#2082)
 
 ## revolution
 
@@ -521,13 +518,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `v"…"` interpolator and `revolution.internal.semver`; `revolution.core` depends on it and keeps
   `Manifest`, `EncodableManifest`, `DecodableManifest` and `manifestAttributes`. Package and
   names are unchanged. The `soundness` exports of `Semver`, `Compatibility` and `v` moved to
-  `soundness_revolution_semver`. (#PR-dead-edges)
+  `soundness_revolution_semver`. (#2082)
 
 ## savagery
 
 - `savagery.core` depends on `geodesy.angle` instead of `geodesy.core`; a consumer that used
   `Geolocation`, `Compass` or the other `geodesy.core` types through savagery must declare
-  `geodesy.core`. (#PR-dead-edges)
+  `geodesy.core`. (#2082)
 
 ## stratiform
 
@@ -580,18 +577,18 @@ format. Entries are grouped by module, most-recently-added last within a module.
   accepted. (#2076)
 
 - `surveillance.core` no longer declares a dependency on `gossamer.core` (it still arrives
-  transitively through `turbulence.core`). (#PR-dead-edges)
+  transitively through `turbulence.core`). (#2082)
 
 ## tarantula
 
 - `tarantula.core` no longer depends on `cataclysm.core` or `xylophone.core` (see anticipation:
   `Focusable` and its instances moved out of tarantula); a consumer that used either (or jacinta,
-  hellenism, phoenicia, quantitative through cataclysm) only through tarantula must declare it. (#PR-dead-edges)
+  hellenism, phoenicia, quantitative through cataclysm) only through tarantula must declare it. (#2082)
 
 ## telekinesis
 
 - The givens `telekinesis.Http.Method.formmethod` and `Http.Method.method` (each
-  `("…" is GenericHtmlAttribute[Method])`) removed with `anticipation.GenericHtmlAttribute`. (#PR-dead-edges)
+  `("…" is GenericHtmlAttribute[Method])`) removed with `anticipation.GenericHtmlAttribute`. (#2082)
 
 ## turbulence
 
@@ -601,7 +598,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   old behaviour is `given Distribution = Gamma.approximate(mean, variance)` followed by
   `stream.shred(arbitrary[Double]().toInt)` under a `Random`. `turbulence.core` no longer depends
   on `capricious.core`, so a consumer that reached capricious (or wisteria, hypotenuse) only
-  through turbulence must declare it. (#PR-dead-edges)
+  through turbulence must declare it. (#2082)
 - New module `turbulence.async` (in the `base` bundle; dependencies `turbulence.core`,
   `parasite.core`) holds `turbulence.Confluence`, `turbulence.Divergence` and the detached pump,
   and `turbulence.core` no longer depends on `parasite.core`. The pump extension
@@ -613,7 +610,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   nomenclature, spectacular, hypotenuse, anticipation.time) only through `turbulence.core` must
   declare it — within this repository that was anthology, cataclysm, coaxial, ethereal,
   eucalyptus, exoskeleton.args, graffiti, guillotine, honeycomb, locomotion, mandible, profanity,
-  revolution, surveillance, ultimatum and xylophone. (#PR-dead-edges)
+  revolution, surveillance, ultimatum and xylophone. (#2082)
 
 ## vivisection
 
@@ -633,25 +630,25 @@ format. Entries are grouped by module, most-recently-added last within a module.
   patterns. Code relying on a logical step stopping inside JDK classes or generated methods
   must use the primitive `Debug#step(thread, depth, size): Int` and `Debug#events`, which are
   unchanged. (#2059)
-- `vivisection.dap` depends on `harlequin.typed` instead of `harlequin.core`. (#PR-dead-edges)
+- `vivisection.dap` depends on `harlequin.typed` instead of `harlequin.core`. (#2082)
 
 ## xylophone
 
-- `xylophone.core` now depends on `anticipation.focus` (additive: `XPath.focusable`). (#PR-dead-edges)
+- `xylophone.core` now depends on `anticipation.focus` (additive: `XPath.focusable`). (#2082)
 
 ## ypsiloid
 
 - `ypsiloid.YamlPath(url: Optional[HttpUrl] = Unset, path: Path on YamlPath = YamlPath)` became
   `YamlPath(path: Path on YamlPath = YamlPath)`: the `url` field, which no code path ever set, is
   gone. Pattern matches `YamlPath(url, path)` become `YamlPath(path)`; `path.url` no longer exists.
-  `YamlPath is Encodable in Text` always renders `#…`, as it always did in practice. (#PR-dead-edges)
+  `YamlPath is Encodable in Text` always renders `#…`, as it always did in practice. (#2082)
 - `ypsiloid.YamlPath.Registry` (a `beneficence.Findable` with `update`, `apply` and `protected def
   lookup`, all keyed by `HttpUrl`) and `YamlPath#apply(using registry: YamlPath.Registry)(document:
-  Yaml): Yaml raises YamlPath.Error` (which always returned `document`) removed. No replacement. (#PR-dead-edges)
+  Yaml): Yaml raises YamlPath.Error` (which always returned `document`) removed. No replacement. (#2082)
 - `ypsiloid.YamlPath.Error.Reason.UnknownDocument` (`SN-546.1`) removed; `ExpectedHash`,
-  `ExpectedSlash` and `BadEscape` keep numbers 2, 3 and 4. (#PR-dead-edges)
+  `ExpectedSlash` and `BadEscape` keep numbers 2, 3 and 4. (#2082)
 - `ypsiloid.core` no longer depends on `urticose.url`; a consumer that reached urticose only
-  through ypsiloid must declare it. (#PR-dead-edges)
+  through ypsiloid must declare it. (#2082)
 
 ## zeppelin
 
