@@ -9,19 +9,19 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `anticipation.Termcap` gained `def height: Int = Int.MaxValue` beside `width`, with the same
   meaning for rows that `width` has for columns: `Int.MaxValue` when the height is unknown or
   unbounded. An implementation that already declares a member named `height` must mark it
-  `override`. (#0000)
+  `override`. (#2064)
 
 ## coaxial
 
 - `coaxial.Connection` gained a third constructor parameter, `peer: Optional[Text] = Unset`:
   the connecting user's principal name as the kernel reports it (`SO_PEERCRED`), or `Unset`
   where the platform or transport offers none. `Connection(in, out)` still compiles; pattern
-  matches on `Connection(in, out)` must bind the third field. (#0000)
+  matches on `Connection(in, out)` must bind the third field. (#2064)
 - The JVM `DomainSocket#listenConnections` extension gained a second parameter in its handler
   list, `ownerOnly: Boolean = false`: `listenConnections(handler, ownerOnly = true)` sets the
   socket file's mode to `0600` immediately after binding (on a filesystem with POSIX
   permissions), where previously the bound socket always took the process umask. Existing
-  calls `listenConnections(handler)` are unchanged. (#0000)
+  calls `listenConnections(handler)` are unchanged. (#2064)
 
 ## corpuscular
 
@@ -87,7 +87,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `eeced165c15f73119cf7710812671924aa558722927d29f37538e7b3953296c2ce`, so a daemon built
   against this release communicates only with a launcher from XEQ 0.8 or later: every
   executable packaged with an older `xeq` must be repackaged. The `xeq` pin in `etc/xeq.tsv` is
-  0.8. (#0000)
+  0.8. (#2064)
 - `ethereal.Launcher.Message.Init` is now `Init(pid: Int, uid: Text, username: Text, script:
   Text, pwd: Text, stdinTty: Boolean, stdoutTty: Boolean, stderrTty: Boolean, arguments:
   List[Text], environment: List[Text], invokedAs: Optional[Text] = Unset, umask: Optional[Text]
@@ -97,7 +97,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   columns: Optional[Int] = Unset, rows: Optional[Int] = Unset, deadline: Optional[Long] =
   Unset)`, previously `Signal(pid: Int, name: Text)`. Pattern matches on either case must bind
   or ignore the new fields. New cases `Message.Closed(pid: Int, stream: Text)` and
-  `Message.Shutdown` were added; an exhaustive match on `Message` must handle them. (#0000)
+  `Message.Shutdown` were added; an exhaustive match on `Message` must handle them. (#2064)
 - `ethereal.DaemonService` gained three trailing constructor parameters, so it is now
   `DaemonService[bus <: Matchable](pid: Pid, shutdown: () => Unit, cliInput: Terminus,
   cliOutput: Terminus, cliError: Terminus, executable: Path on Local, deliver: bus => Unit,
@@ -107,21 +107,21 @@ format. Entries are grouped by module, most-recently-added last within a module.
   scope makes the invocation's `Umask` summonable, and overrides `Entrypoint#retire()`. Its
   `shutdown` thunk now *drains* the daemon — no further invocation is served, those in flight
   finish, then the process exits — where it previously exited as soon as the calling invocation
-  ended, cutting short any other in flight. (#0000)
+  ended, cutting short any other in flight. (#2064)
 - The daemon now sets its socket to mode `0600` and refuses a connection whose peer user, as
   the kernel reports it, is not the socket's owner, or whose `init` document claims a `uid`
   other than the daemon's own `ethereal.user.id` (read as text, previously as `Int`); a
   refused invocation exits with status 2. A daemon answering `verify` with a stale verdict now
-  drains as for `shutdown` instead of exiting immediately, for at most 30 seconds. (#0000)
+  drains as for `shutdown` instead of exiting immediately, for at most 30 seconds. (#2064)
 - Behaviour change: after the launcher reports that the client's stdout or stderr has lost its
   reader (`closed`), the invocation's next write to that stream raises the new
   `ethereal.Outlet.Error(stream: Text)`, and an invocation that lets it escape ends with exit
   status 141 without consulting the `Backstop`; previously such writes were silently
-  discarded and the invocation ran on. (#0000)
+  discarded and the invocation ran on. (#2064)
 - `ethereal.DaemonLogEvent` gained the cases `PeerRefused(user: Text)`, `Draining`,
   `Refused(pid: Pid)` and `Closed(pid: Pid, stream: Text)`; an exhaustive match must handle
-  them. (#0000)
-- The `soundness` umbrella additionally exports `ethereal.Outlet` and `ethereal.Transcoder`. (#0000)
+  them. (#2064)
+- The `soundness` umbrella additionally exports `ethereal.Outlet` and `ethereal.Transcoder`. (#2064)
 
 ## exoskeleton
 
@@ -185,15 +185,15 @@ format. Entries are grouped by module, most-recently-added last within a module.
   user identifier as text — a numeric uid on Unix, a SID on Windows — with `text`, `unix:
   Optional[Int]` and `sid: Optional[Text]`. Code reading `login.id` as an `Int` must use
   `login.id.let(_.unix)`; code constructing a `Login` with a numeric id must wrap it,
-  `Login(name, UserId(t"501"))`. (#0000)
+  `Login(name, UserId(t"501"))`. (#2064)
 - `exoskeleton.Cli#trap` and the top-level `exoskeleton.trap` now take
   `PartialFunction[Signal, SignalResponse]`, previously `PartialFunction[UnixSignal |
   WindowsSignal, SignalResponse]`, and `Cli#dispatchSignal` takes a `profanity.Signal` rather
   than a `UnixSignal | WindowsSignal`. A handler `case Interrupt.Int => …` becomes `case
   Signal(Interrupt.Int, _, _, _) => …`, and `case _: UnixSignal => …` becomes `case Signal(_:
-  UnixSignal, _, _, _) => …`. (#0000)
+  UnixSignal, _, _, _) => …`. (#2064)
 - `exoskeleton.Entrypoint` gained `def retire(): Unit = ()`, and the `{admin}` subcommand of the
-  completions executive gained `shutdown`, which calls it. (#0000)
+  completions executive gained `shutdown`, which calls it. (#2064)
 
 ## galilei
 
@@ -203,7 +203,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   exact POSIX permission bits to create with, or `Unset` to leave the process umask to apply.
   Every `FilesystemBackend` implementation must add the parameter (and may ignore it where
   the platform has no permission bits, as the WASI backend does); every direct call must pass
-  it. (#0000)
+  it. (#2064)
 - `galilei.Creation.DirectoryCreatable`, `FileCreatable` and `FifoCreatable`, and
   `galilei.FileOpenable`, take one more context parameter, `umask: Umask`, as do the givens
   `Platform.directoryCreatable`, `fileCreatable`, `fifoCreatable` and `File.openable` that
@@ -211,7 +211,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   given `inherited: Umask` equal to `Umask.process`, so code that summons none is unchanged in
   behaviour; a `Umask` given, or a `Umask.Provider` in scope, is applied to every file and
   directory created through `create[File]`, `create[Directory]`, `create[Fifo]` and
-  `open[File](…, OpenFlag.Create)`. (#0000)
+  `open[File](…, OpenFlag.Create)`. (#2064)
 
 ## gossamer
 
@@ -268,16 +268,16 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `soundness`, is what `Console#trap` handlers now receive: `Console#trap` takes
   `PartialFunction[Signal, SignalResponse]`, previously `PartialFunction[UnixSignal |
   WindowsSignal, SignalResponse]`. See the `exoskeleton` entry for the rewrite of a handler.
-  (#0000)
+  (#2064)
 - `profanity.WindowsSignal`'s `Close`, `Logoff` and `Shutdown` cases now have the short names
   `CTRL_CLOSE`, `CTRL_LOGOFF` and `CTRL_SHUTDOWN`, previously `CLOSE`, `LOGOFF` and `SHUTDOWN`,
   and its `Decodable in Text` given decodes by short name (`CTRL_C`, `CTRL_BREAK`, …), where
-  it previously required the case name (`Ctrlc`) and so could decode none of them. (#0000)
+  it previously required the case name (`Ctrlc`) and so could decode none of them. (#2064)
 - `profanity.Terminal` takes its initial size from the stdio's `Termcap` (`width`/`height`)
   when that carries one, before `LINES`/`COLUMNS`, and on a `WINCH` or `CONT` that carries a
   size it records the size and emits `Terminal.Info.WindowSize` directly, sending only the
   anchor query rather than the cursor-position size probe; the probe is still sent when the
-  signal carries no size. (#0000)
+  signal carries no size. (#2064)
 
 ## stratiform
 
