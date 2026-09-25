@@ -30,15 +30,68 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package cataclysm
 
-export cataclysm.{Css, SelectorList, Selector, Compound,
-    Simple, Combinator, AttributeMatcher, AttributeTest, Prefix, PseudoArgument,
-    Outcome, PropertyDef, SyntaxMatcher, ValueToken, Pixels, Rems, Exs, Chs,
-    ViewportWidths,
-    ViewportHeights, ViewportMins, ViewportMaxes, Percents, Degrees, Radians, Turns, Flexes, Px,
-    Rem, Ex, Ch, Vw, Vh, Vmin, Vmax, Cm, Mm, Pt, Pc, Pct, S, Ms, Deg, Rad, Turn, Fr, css, classes,
-    ids}
+import anticipation.*
+import denominative.*
+import gossamer.*
+import phoenicia.*
+import prepositional.*
+import rudiments.*
+import spectacular.*
+import symbolism.*
 
-package formatting:
-  export cataclysm.formatting.{indentedCssFormatting, compactCssFormatting}
+// The CSS generic family keywords, which `font-family` takes unquoted; any other name is quoted.
+private val genericFamilies: List[Text] =
+  List
+    ( t"serif", t"sans-serif", t"monospace", t"cursive", t"fantasy", t"system-ui", t"ui-serif",
+      t"ui-sans-serif", t"ui-monospace", t"ui-rounded", t"math", t"emoji", t"fangsong" )
+
+extension (face: Face)
+  // The declarations that select this face: `font-family`, `font-weight`, and — only when they
+  // differ from the defaults — `font-style`, `font-stretch`, `font-variation-settings` for the
+  // face's own axes, and `font-feature-settings`. The registered weight, width and italic axes
+  // go through the high-level properties, so a static and a variable font are asked for alike.
+  def style: Css.Style =
+    val name = face.typeface.name
+    val family = if genericFamilies.has(name) then name else t"\"$name\""
+
+    val slant: List[(Text, Text)] = face.slant match
+      case Slant.Upright        => Nil
+      case Slant.Italic         => List(t"font-style" -> t"italic")
+      case Slant.Oblique(angle) => List(t"font-style" -> t"oblique ${angle.toString}deg")
+
+    val stretch: List[(Text, Text)] =
+      if face.stretch == Stretch.Normal then Nil else List(t"font-stretch" -> face.stretch.show)
+
+    val variations: List[(Text, Text)] =
+      if face.variations.nil then Nil
+      else
+        def variation(variation: Variation): Text =
+          t"\"${variation.axis.tag}\" ${variation.value.toString}"
+
+        List(t"font-variation-settings" -> face.variations.map(variation).join(t", "))
+
+    val features: List[(Text, Text)] =
+      if face.features.nil then Nil
+      else
+        def setting(setting: Face.Feature.Setting): Text =
+          t"\"${setting.feature.tag}\" ${setting.value.show}"
+
+        List(t"font-feature-settings" -> face.features.map(setting).join(t", "))
+
+    Css.Style.of
+      ( List(t"font-family" -> family, t"font-weight" -> face.weight.show) + slant + stretch +
+        variations + features )
+
+extension (font: Font) def style: Css.Style = font.face.style
+
+// The font at-rules, as methods of `Css`'s companion (`Css.fontFace(font)`), from this module.
+extension (css: Css.type)
+    // The at-rules a page needs for a font's typeface: an `@font-face` for each file or local
+    // font of its provision, an `@import` for a stylesheet, nothing for a generic family. Joined
+    // to a stylesheet's own rules with `+`, so a page carries the fonts its styles name.
+    def fontFace(font: Font in (? >: Web)): Css = Css(FontFace.rules(font))
+
+    // The rules for several fonts, each typeface once, with any `@import`s first as CSS requires.
+    def fontFaces(fonts: (Font in (? >: Web))*): Css = FontFace.stylesheet(List.from(fonts))

@@ -57,6 +57,16 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `jacinta.core` or `hellenism.core` and is no longer marked JVM/JS-only; `cataclysm.html` (which
   reads stylesheets with `cp"…"`) declares `hellenism.core` itself. A consumer that reached jacinta
   or hellenism only through `cataclysm.core` must declare it. (#PR-dead-edges)
+- New module `cataclysm.fonts` (in the `web` bundle; dependencies `cataclysm.core`, `phoenicia.core`,
+  `monotonous.core`, `anticipation.url`) now holds the font half of cataclysm: `cataclysm.Web` (with
+  its generic-family `Typesettable` givens), `cataclysm.FontFace`, the `style` extensions on
+  `phoenicia.Face` and `Font`, and `Css.fontFace(font)`/`Css.fontFaces(fonts*)`, which are now
+  extensions on `Css.type` defined in that module rather than methods of `object Css` (call sites
+  are unchanged given `import cataclysm.*` or `import soundness.*`). Package and names are
+  unchanged; the `soundness` exports of `Web`, `FontFace` and `style` moved to
+  `soundness_cataclysm_fonts`. `cataclysm.core` no longer depends on `phoenicia.core`,
+  `monotonous.core` or `anticipation.url`; a consumer using any of these, or the fonts API, through
+  `cataclysm.core` must declare `cataclysm.fonts` (savagery and tasseomancy now do). (#PR-dead-edges)
 
 ## coaxial
 

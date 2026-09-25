@@ -974,7 +974,7 @@ object soundness extends Toolchain:
     vivisection.core, vivisection.eval, vivisection.dap):
     def summary = "Developer tools: compilers, build tooling, source analysis and version control"
 
-  object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
+  object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, cataclysm.fonts, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, urticose.ansi, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, cartouche.core, tasseomancy.core, scintillate.server,
     scintillate.servlet,
@@ -1606,7 +1606,7 @@ object cataclysm extends Library:
   object core extends Component(zephyrine.core, gossamer.core, gossamer.lexicon, turbulence.core,
       contingency.core, vacuous.core, fulminate.core, denominative.core,
       quantitative.units, iridescence.core, gesticulate.core, rudiments.core,
-      contextual.core, nomenclature.core, phoenicia.core, monotonous.core, anticipation.url,
+      contextual.core, nomenclature.core,
       anticipation.color, anticipation.locator):
     // The MDN `css/properties.json` and `syntaxes.json` datasets (CC0), compiled into string
     // tables: only each entry's `syntax` is used, by the `css"…"` macro and at run time alike.
@@ -1627,11 +1627,17 @@ object cataclysm extends Library:
       Seq(PathRef(Task.dest))
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+  // The `@font-face`/`@import` rules and the `Web` typesetting medium: the font half of CSS,
+  // for the pages that embed fonts; phoenicia supplies the typeface vocabulary and monotonous
+  // encodes an embedded font as a base-64 data URI.
+  object fonts extends Component(core, phoenicia.core, monotonous.core, anticipation.url):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   object html extends Component(core, honeycomb.core, gigantism.core, hellenism.core):
     override def scalaNative = false // reads stylesheets from the classpath with hellenism's `cp"…"`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, html, iridescence.core):
+  object test extends Tests(core, html, fonts, iridescence.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -3009,8 +3015,8 @@ object archimedes extends Library:
       settings.sep(super.scalacOptions())
 
 object savagery extends Library:
-  object core extends Component(cataclysm.core, xylophone.core, geodesy.angle, iridescence.core,
-    cardinality.core, mosquito.core):
+  object core extends Component(cataclysm.core, cataclysm.fonts, xylophone.core, geodesy.angle,
+    iridescence.core, cardinality.core, mosquito.core):
     override def scalaNative = false // not yet verified on Scala Native
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -3249,7 +3255,7 @@ object tarantula extends Library:
 object tasseomancy extends Library:
   // SVG charts in four layers — data shape, chart kind, fit and style — drawn through savagery;
   // aviation and quantitative supply the time and unit axes, phoenicia measures text.
-  object core extends Component(savagery.core, hypotenuse.core, gossamer.core, quantitative.core,
+  object core extends Component(savagery.core, cataclysm.fonts, hypotenuse.core, gossamer.core, quantitative.core,
       quantitative.units, aviation.core, spectacular.core, phoenicia.core, distillate.core,
       murmuration.core, cartouche.core):
     override def scalaNative = false // not yet verified on Scala Native

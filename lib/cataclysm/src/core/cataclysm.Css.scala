@@ -53,7 +53,6 @@ import vacuous.*
 import zephyrine.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
-import phoenicia.*
 import quantitative.*
 
 object Css:
@@ -356,13 +355,6 @@ object Css:
   trait Convertible extends Typeclass, Topical:
     def value(self: Self): Text
 
-  // The at-rules a page needs for a font's typeface: an `@font-face` for each file or local
-  // font of its provision, an `@import` for a stylesheet, nothing for a generic family. Joined
-  // to a stylesheet's own rules with `+`, so a page carries the fonts its styles name.
-  def fontFace(font: Font in (? >: Web)): Css = Css(FontFace.rules(font))
-
-  // The rules for several fonts, each typeface once, with any `@import`s first as CSS requires.
-  def fontFaces(fonts: (Font in (? >: Web))*): Css = FontFace.stylesheet(List.from(fonts))
 
   // Syntax → Css.Syntax
   // The CSS Value Definition Syntax (VDS) — the grammar notation in which every
