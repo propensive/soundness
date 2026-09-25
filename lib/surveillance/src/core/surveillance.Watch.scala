@@ -39,6 +39,7 @@ import aperture.*
 import contingency.*
 import fulminate.*
 import prepositional.*
+import rudiments.*
 import scala.caps
 import spectacular.*
 import turbulence.*
@@ -105,14 +106,25 @@ object Watch:
 
     def dir: Text
 
-    def path[directory: Instantiable across Paths from Text]: directory = unsafely:
+    // `Instantiable` instances retain their filesystem evidence, which a pure context bound
+    // cannot accept (as ambience's `Home` documents).
+    def path[directory](using instantiable: (directory is Instantiable across Paths from Text)^)
+    :   directory = unsafely:
       val relPath = this match
         case NewFile(_, file)      => file
         case NewDirectory(_, path) => path
         case Modify(_, file)       => file
         case Delete(_, path)       => path
 
-        directory(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
+        instantiable(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
+
+  // One quiet period's worth of events, oldest first: what `batches` yields once the watched
+  // tree has stopped changing for the requested interval.
+  case class Batch(events: List[Watch.Event]):
+    // Every path touched in the batch, once each, in first-occurrence order.
+    def paths[directory](using (directory is Instantiable across Paths from Text)^)
+    :   List[directory] =
+      events.map(_.path[directory]).distinct
 
   // WatchHandle → Watch.Handle
   // The scoped capability provided by opening a path (or several) as `Watch`:
@@ -122,6 +134,10 @@ object Watch:
   // irrelevant, and `Read` (the default) describes it best.
   class Handle private[surveillance] (watch: Watch) extends caps.ExclusiveCapability:
     def stream: Chain[Watch.Event] = watch.stream
+
+    def batches[duration: Abstractable across Durations to Long](quiet: duration)
+    :   Chain[Watch.Batch] =
+      watch.batches(quiet)
 
   // A named class rather than an anonymous given instance, for the reasons documented on
   // galilei's `FileOpenable`.
@@ -170,6 +186,12 @@ class Watch(spool: Relay[Watch.Event], registration: Watcher.Registration):
   // The legacy view of the event relay (the audited bridge): one lazy,
   // single-owner drain of the shared queue, as before.
   def stream: Chain[Watch.Event] = Chain.from(spool.stream.records)
+
+  // The debounced view: events coalesced into a `Batch` whenever no event has arrived for
+  // `quiet`, so a burst of editor saves is reported once, after it has settled.
+  def batches[duration: Abstractable across Durations to Long](quiet: duration)
+  :   Chain[Watch.Batch] =
+    spool.batches(quiet).map(Watch.Batch(_))
 
   def unregister(): Unit =
     registration.cancel()

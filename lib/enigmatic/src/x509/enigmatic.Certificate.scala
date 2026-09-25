@@ -67,11 +67,12 @@ object Certificate:
   private val KeyUsage: List[Int] = List(2, 5, 29, 15)
   private val SubjectAltName: List[Int] = List(2, 5, 29, 17)
   private val BasicConstraints: List[Int] = List(2, 5, 29, 19)
+  private val AuthorityKeyIdentifier: List[Int] = List(2, 5, 29, 35)
 
   // A self-signed certificate: the subject is its own issuer, and the signature is made with the
   // private key whose public half the certificate carries. That is the whole of a root certificate
   // authority, and of the throwaway certificate a test server or a development tool mints for
-  // itself.
+  // itself. A certificate over one key signed by another is `issued`.
   //
   // `authority` decides both the basic constraints and the key usage: a certificate authority
   // signs certificates and revocation lists, while an end-entity certificate signs and encrypts.
@@ -92,6 +93,62 @@ object Certificate:
     ( using Tactic[Certificate.Error], Tactic[Asn1.Error], Diagnostics )
   :   Certificate =
 
+    build(subject, key.public.bytes, subject, key, validity, serial, authority, alternatives)(Unset)
+
+  // A certificate over `key`, signed by a different key: the issuer's. This is what a certificate
+  // authority does, and what a service whose identity is a key its TLS stack cannot handshake
+  // with — an ML-DSA key, on today's JDK — does to bind a classical key it can present to the
+  // identity it wants to be known by: the leaf certificate over the classical key is issued by the
+  // ML-DSA key, and presented alongside that key's own self-signed certificate.
+  //
+  // RFC 5280 §4.2.1.1 requires an issued certificate to carry an authority key identifier, which
+  // is the issuer's subject key identifier, so a verifier can find the certificate that signed it.
+  def issued[holder <: Cipher, signer <: Cipher]
+    ( subject:      Distinguished,
+      key:          PublicKey[holder],
+      issuer:       Distinguished,
+      issuerKey:    PrivateKey[signer],
+      validity:     Period[Instant over Unix],
+      serial:       BigInt,
+      authority:    Boolean = false,
+      alternatives: List[Text] = Nil )
+    ( using algorithm:     signer & Signing,
+            signature:     signer is SignatureAlgorithm,
+            digest:        Signature.Digest,
+            hash:          Hash in Sha2[256],
+            erased permit: Permit[Weakness[signer]] )
+    ( using Tactic[Certificate.Error], Tactic[Asn1.Error], Diagnostics )
+  :   Certificate =
+
+    val authorityBits = Der(issuerKey.public.bytes).as[Asn1] match
+      case Asn1.Sequence(List(_, bits: Asn1.BitString)) => bits
+      case _                                            => abort(Error(Reason.BadPublicKey))
+
+    // `AuthorityKeyIdentifier ::= SEQUENCE { keyIdentifier [0] IMPLICIT KeyIdentifier OPTIONAL … }`
+    val authority0 = Asn1.OctetString(keyIdentifier(authorityBits.bytes))
+    val authorityKey: Asn1 = Asn1.Sequence(List(Asn1.Tagged(0, false, authority0)))
+
+    build(subject, key.bytes, issuer, issuerKey, validity, serial, authority, alternatives)
+      ( authorityKey )
+
+  private def build[signer <: Cipher]
+    ( subject:      Distinguished,
+      publicKey0:   Data,
+      issuer:       Distinguished,
+      issuerKey:    PrivateKey[signer],
+      validity:     Period[Instant over Unix],
+      serial:       BigInt,
+      authority:    Boolean,
+      alternatives: List[Text] )
+    ( authorityKey: Optional[Asn1] )
+    ( using algorithm:     signer & Signing,
+            signature:     signer is SignatureAlgorithm,
+            digest:        Signature.Digest,
+            hash:          Hash in Sha2[256],
+            erased permit: Permit[Weakness[signer]] )
+    ( using Tactic[Certificate.Error], Tactic[Asn1.Error], Diagnostics )
+  :   Certificate =
+
     if serial <= 0 then abort(Certificate.Error(Reason.BadSerialNumber))
     if validity.finish.long <= validity.start.long then abort(Certificate.Error(Reason.BadValidity))
 
@@ -100,15 +157,13 @@ object Certificate:
 
     // `PublicKey#bytes` is already a DER `SubjectPublicKeyInfo`, so it is decoded rather than
     // rebuilt, and embedded in the certificate exactly as the provider wrote it.
-    val publicKey = Der(key.public.bytes).as[Asn1]
+    val publicKey = Der(publicKey0).as[Asn1]
 
     val publicBits = publicKey match
       case Asn1.Sequence(List(_, bits: Asn1.BitString)) => bits
 
       case _ =>
         abort(Certificate.Error(Reason.BadPublicKey))
-
-    val name = Distinguished.sequence(subject)
 
     val period: Asn1 =
       Asn1.Sequence(List(instant(validity.start), instant(validity.finish)))
@@ -140,6 +195,7 @@ object Certificate:
         ( entry(BasicConstraints, true, constraints),
           entry(KeyUsage, true, usage),
           entry(SubjectKeyIdentifier, false, identity0),
+          authorityKey.let(entry(AuthorityKeyIdentifier, false, _)),
           alternativeNames )
 
     val fields =
@@ -147,16 +203,16 @@ object Certificate:
         ( Asn1.Tagged(0, true, Asn1.Integer(BigInt(2))),
           Asn1.Integer(serial),
           identifier,
-          name,
+          Distinguished.sequence(issuer),
           period,
-          name,
+          Distinguished.sequence(subject),
           publicKey,
           Asn1.Tagged
             ( 3, true, Asn1.Sequence(extensions.sweep { case extension: Asn1 => extension }) ) )
 
     val tbs: Asn1 = Asn1.Sequence(fields)
 
-    val signed = key.sign(tbs.in[Der].data)
+    val signed = issuerKey.sign(tbs.in[Der].data)
 
     Certificate(Asn1.Sequence(List(tbs, identifier, Asn1.BitString(signed.bytes, 0))))
 
@@ -201,3 +257,18 @@ object Certificate:
 case class Certificate(asn1: Asn1):
   // The armored form, which is how certificates are almost always exchanged.
   def pem: Pem = Pem(Pem.Label.Certificate, asn1.in[Der])
+
+  // Whether the signature was made over this certificate's `TBSCertificate` by the private half of
+  // `issuer` — the certificate's own public key, if it is self-signed. For a digest-taking scheme
+  // (RSA, ECDSA) the digest is the `Signature.Digest` in scope, not the one the certificate's
+  // algorithm identifier names, so the two must agree; ML-DSA has no digest to agree on. A
+  // certificate that is not the three-element structure a signed certificate is cannot verify.
+  def verify[cipher <: Cipher](issuer: PublicKey[cipher])
+    ( using algorithm: cipher & Signing, erased weakness: ProcessingPermit[Weakness[cipher]] )
+  :   Boolean =
+
+    asn1 match
+      case Asn1.Sequence(List(tbs, _, Asn1.BitString(bytes, 0))) =>
+        issuer.verify(tbs.in[Der].data, Signature[cipher](bytes))
+
+      case _ => false

@@ -44,6 +44,7 @@ import threading.platformThreading
 import strategies.throwUnsafely
 import probates.panicProbate
 import errorDiagnostics.emptyDiagnostics
+import abstractables.millisecondsAbstractable
 
 import scala.collection.immutable as sci
 import scala.collection.mutable as scm
@@ -490,6 +491,44 @@ object Tests extends Suite(m"Turbulence tests"):
         relay.put(t"after")
         relay.stream.records.to(List)
       . assert(_ == List(t"before"))
+
+      test(m"records queued before draining form one batch"):
+        val relay = Relay[Text]()
+        relay.put(t"a")
+        relay.put(t"b")
+        relay.put(t"c")
+        relay.stop()
+        relay.batches(50L).stdlib.to(List)
+      . assert(_ == List(List(t"a", t"b", t"c")))
+
+      test(m"a stop mid-burst delivers the partial batch"):
+        val relay = Relay[Text]()
+        relay.put(t"a")
+        relay.stop()
+        relay.batches(50L).stdlib.to(List)
+      . assert(_ == List(List(t"a")))
+
+      test(m"an immediately-stopped relay yields no batches"):
+        val relay = Relay[Text]()
+        relay.stop()
+        relay.batches(50L).stdlib.to(List)
+      . assert(_ == List())
+
+      test(m"a gap longer than the quiet period splits batches"):
+        supervise:
+          val relay = Relay[Text]()
+
+          val producer = caps.unsafe.unsafeAssumePure:
+            async:
+              relay.put(t"a")
+              snooze(300L)
+              relay.put(t"b")
+              relay.stop()
+
+          val batches = relay.batches(50L).stdlib.to(List)
+          producer.await()
+          batches
+      . assert(_ == List(List(t"a"), List(t"b")))
 
       test(m"the reader blocks for records from concurrent producers"):
         supervise:
