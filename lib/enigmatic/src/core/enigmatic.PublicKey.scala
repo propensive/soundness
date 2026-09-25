@@ -33,6 +33,7 @@
 package enigmatic
 
 import anticipation.*
+import gastronomy.Signing
 import gastronomy.ProcessingPermit
 import gossamer.*
 import monotonous.*

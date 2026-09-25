@@ -1337,25 +1337,6 @@ object Tests extends Suite(m"Jacinta Tests"):
         p.contains(t"0")
       . assert(identity)
 
-      test(m"JsonPointer.Error reason describes itself"):
-        val err = JsonPointer.Error(JsonPointer.Error.Reason.UnknownDocument, 0)
-        err.message.text.s.contains("registry")
-      . assert(identity)
-
-      test(m"Standalone registry returns Unset for unknown URLs"):
-        import jsonPointerRegistries.standaloneRegistry
-        val registry = summon[JsonPointer.Registry]
-        registry(url"http://example.com/")
-      . assert(_ == Unset)
-
-      test(m"Standalone registry returns updated values"):
-        import jsonPointerRegistries.standaloneRegistry
-        val registry = summon[JsonPointer.Registry]
-        val doc = t"""{"a": 1}""".read[Json]
-        registry(url"http://example.com/doc") = doc
-        registry(url"http://example.com/doc") == doc
-      . assert(identity)
-
     suite(m"Time encodables/decodables"):
       import encodables.instantJsonEncodable
       import encodables.durationJsonEncodable

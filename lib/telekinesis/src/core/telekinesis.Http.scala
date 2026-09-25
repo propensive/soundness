@@ -106,14 +106,6 @@ object Http:
   case class Header(key: Text, value: Text)
 
   object Method:
-    given formmethod: ("formmethod" is GenericHtmlAttribute[Method]):
-      def name: Text = t"formmethod"
-      def serialize(method: Method): Text = method.show
-
-    given method: ("method" is GenericHtmlAttribute[Method]):
-      def name: Text = t"method"
-      def serialize(method: Method): Text = method.show
-
     given showable: Method is Showable = _.toString.tt.upper
 
     // The canonical spellings are matched first: upper-casing the text allocates, and a

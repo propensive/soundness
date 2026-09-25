@@ -35,6 +35,7 @@ package honeycomb
 import anticipation.*
 import beneficence.*
 import contingency.*
+import gossamer.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
@@ -42,6 +43,11 @@ import symbolism.*
 import typonym.*
 
 object ClassList:
+  // Polymorphic for the same reason as `Tag.focusable`: `ClassList["checkbox"]()` has the refined
+  // type `ClassList of "checkbox"`, which an instance fixed at `ClassList` cannot match.
+  given focusable: [classes <: ClassList] => classes is Focusable =
+    Focusable(t"css selector", _.classes.join(t".", t".", t""))
+
   def apply[name <: Label: Reifiable to List[String]](): ClassList of name =
     // A named method rather than a lambda: `Name`'s construction runs an implicit search, and
     // doing that inside a lambda passed to a collection combinator, while the combinator's

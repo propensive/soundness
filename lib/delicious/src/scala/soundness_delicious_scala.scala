@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export delicious.{Reifier, render, semantic}
+export delicious.{Reifier, render}

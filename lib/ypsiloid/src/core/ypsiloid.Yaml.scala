@@ -64,10 +64,8 @@ import zephyrine.*
 
 import Yaml.Error.Reason
 import spectacular.*
-import beneficence.*
 import serpentine.*
 import symbolism.*
-import urticose.*
 import denominative.dysasymptotics.linearSize
 
 // `Yaml2` is only ever mixed into the `Yaml` object; pinning its self type to `Yaml.type` makes

@@ -38,6 +38,7 @@ import scala.language.experimental.pureFunctions
 import anticipation.*
 import fulminate.*
 import gossamer.*
+import hypotenuse.*
 import prepositional.*
 import probably.*
 import spectacular.*

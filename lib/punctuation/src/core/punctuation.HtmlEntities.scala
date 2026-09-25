@@ -33,43 +33,21 @@
 package punctuation
 
 import anticipation.*
-import hellenism.*, classloaders.threadContextClassloader
-import hieroglyph.*, charDecoders.utf8Decoder, textSanitizers.skipSanitizer
 import rudiments.at
-import turbulence.*
 import vacuous.*
 
-// HTML5 named character references, loaded once from the entity TSV resources
-// shipped by Honeycomb (`entities-html4.tsv` for the legacy HTML4 set and
-// `entities-extra.tsv` for the HTML5 additions). Only entries with a
-// trailing semicolon are kept, since CommonMark requires the `;` terminator
-// for named entities to be valid.
+// HTML5 named character references, taken from honeycomb's tables (the legacy HTML 4 set and
+// the HTML 5 additions, as the `whatwg` DOM's `entities` holds them). Only entries with a trailing semicolon
+// are kept, since CommonMark requires the `;` terminator for named entities to be valid.
 private[punctuation] object HtmlEntities:
   private lazy val table: Map[String, String] =
     val builder = scala.collection.immutable.Map.newBuilder[String, String]
-    loadInto(cp"/honeycomb/entities-html4.tsv".read[Text].s, builder)
-    loadInto(cp"/honeycomb/entities-extra.tsv".read[Text].s, builder)
+
+    honeycomb.htmlDoms.whatwg.entities.entries.foreach: (name, value) =>
+      val string = name.s
+      if string.endsWith(";") then builder += (string.substring(0, string.length - 1).nn -> value.s)
+
     builder.result().to(Map)
-
-  private def loadInto
-    ( tsv:     String,
-      builder: scala.collection.mutable.Builder
-                 [(String, String), scala.collection.immutable.Map[String, String]] )
-  :   Unit =
-
-    val lines = tsv.split("\n").nn
-    var i = 0
-
-    while i < lines.length do
-      val line = lines(i).nn
-      val tab = line.indexOf('\t')
-
-      if tab > 0 && line.charAt(tab - 1) == ';' then
-        val name = line.substring(0, tab - 1).nn
-        val value = line.substring(tab + 1).nn
-        builder += (name -> value)
-
-      i += 1
 
   // Returns the decoded text for a named entity (without `&` or `;`), or
   // `Unset` if no such entity exists.

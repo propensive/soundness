@@ -49,9 +49,10 @@ machinery.
 
 ### Types and diagnostics
 
-With a compiler and classpath in scope, `typecheckedScala` runs the frontend, and each identifier
-carries the type the compiler gave it — the difference between coloring `xs` as an identifier and
-knowing it is a `List[Int]`:
+With a compiler and classpath in scope, `typecheckedScala` (from the `harlequin.typed` module, the
+only part of harlequin that depends on the compiler wrapper) runs the frontend, and each
+identifier carries the type the compiler gave it — the difference between coloring `xs` as an
+identifier and knowing it is a `List[Int]`:
 
 <!-- doccheck: skip -->
 ```scala

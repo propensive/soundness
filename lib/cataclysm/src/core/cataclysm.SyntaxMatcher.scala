@@ -33,7 +33,7 @@
 package cataclysm
 
 // Deliberate stdlib opt-out: internal keyword tables used as predicates.
-import scala.collection.immutable.{Map, Set}
+import scala.collection.immutable.Set
 
 import anticipation.*
 import contingency.*
@@ -42,12 +42,8 @@ import gossamer.*
 
 import rudiments.*
 import symbolism.*
-import hellenism.*
-import jacinta.*
-import turbulence.*
 import vacuous.*
 
-import hellenism.classloaders.threadContextClassloader
 
 // Checks a CSS property value against its `Css.Syntax` grammar. Composite `<type>`s
 // are resolved lazily from the bundled `syntaxes.json` (which expand to keywords,
@@ -58,24 +54,19 @@ import hellenism.classloaders.threadContextClassloader
 // numeric primitive is expected. Any `<type>` that is neither resolvable nor an
 // implemented primitive yields `Outcome.Unsupported`.
 object SyntaxMatcher:
-  private object Entry:
-    given decodable: Tactic[Json.Error] => Entry is Json.Decodable = Json.DecodableDerivation.derived
+  // The composite syntaxes, from the string tables compiled from the bundled dataset at build
+  // time (`CssData`).
+  private lazy val rawComposites: Dictionary[Text] =
+    val pairs = List.tabulate(CssData.syntaxNames.length): index =>
+      (CssData.syntaxNames(index).tt, CssData.syntaxSyntaxes(index).tt)
 
-  private case class Entry(syntax: Text)
-
-  private lazy val rawComposites: proscenium.Map[Text, Text] =
-    import contingency.strategies.throwUnsafely
-
-    val entries = cp"/cataclysm/syntaxes.json".read[Json].as[proscenium.Map[Text, Entry]]
-
-    // `Map`'s `map` transforms the values, keeping the keys.
-    entries.map(_.syntax)
+    Dictionary(pairs*)
 
   private val cache: scala.collection.mutable.HashMap[Text, Optional[Css.Syntax]] =
     scala.collection.mutable.HashMap()
 
   private def composite(name: Text): Optional[Css.Syntax] =
-    cache.getOrElseUpdate(name, rawComposites.at(name).let(parsed))
+    cache.getOrElseUpdate(name, rawComposites(name).let(parsed))
 
   private def parsed(raw: Text): Optional[Css.Syntax] = safely(SyntaxParser.parse(raw))
 

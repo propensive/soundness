@@ -58,14 +58,10 @@ object internal:
   // sibling class. Keep this self-contained: only depend on classes from
   // other modules (anticipation/gossamer/fulminate/vacuous), never on
   // gesticulate's own types.
+  // The registered media types, from the string table compiled from the IANA registry at build
+  // time (`MediaTypeData`).
   private lazy val systemMediaTypes: Set[Text] =
-    Optional(getClass.getResourceAsStream("/gesticulate/media.types")).lay(Set()): stream =>
-
-        scala.io.Source.fromInputStream(stream)
-        . getLines()
-        . map(Text(_))
-        . map(_.cut(t"\t").prim.or(t"").lower)
-        . to(Set)
+    scala.Range(0, MediaTypeData.registered.length).map(MediaTypeData.registered(_).tt).to(Set)
 
   private val validGroups: Set[Text] =
     Set

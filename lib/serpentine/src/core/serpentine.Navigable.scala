@@ -33,7 +33,6 @@
 package serpentine
 
 import anticipation.*
-import inimitable.*
 import nomenclature.*
 import prepositional.*
 
@@ -41,7 +40,6 @@ object Navigable:
   given label: [plane, string <: Label] => string is Navigable on plane = _.tt
   given text: [plane, text <: Text] => text is Navigable on plane = identity(_)
   given name: [plane, name <: Name[plane]] => name is Navigable on plane = identity(_)
-  given uuid: [plane, uuid <: Uuid] => uuid is Navigable on plane = _.text
 
 trait Navigable extends Typeclass, Planar:
   def follow(name: Self): Text

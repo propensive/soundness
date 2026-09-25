@@ -42,13 +42,11 @@ import gossamer.*
 import gossamer.collationComparable
 import gossamer.collations.codepointCollation
 import hieroglyph.*
-import mercator.*
 import prepositional.*
 import rudiments.*
 import scala.collection.mutable as scm
 import spectacular.*
 import symbolism.*
-import zephyrine.*
 import vacuous.*
 
 object Teletype:

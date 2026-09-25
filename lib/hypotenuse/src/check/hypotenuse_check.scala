@@ -30,45 +30,40 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+package hypotenuse
 
-import hypotenuse.*
+import scala.annotation.*
+
 import prepositional.*
-import rudiments.*
+import symbolism.*
 
-object Checkable:
-  // The cast fixes the invariant element type only: `sameElements` compares via `equals`,
-  // which is safe across element types.
-  given iarray: [left, right] => (Array[left]^{}) is Checkable against (Array[right]^{}) =
-    (left, right) => left.readable.sameElements(right.asInstanceOf[Array[left]^{}].readable)
+extension [left](left: left)
+  infix def === [right](right: right)(using checkable: left is Checkable against right): Boolean =
+    checkable.check(left, right)
 
-  given stream: [left, right] => (left is Checkable against right)
-  =>  Chain[left] is Checkable against Chain[right] =
+  infix def !== [right](right: right)(using checkable: left is Checkable against right): Boolean =
+    !checkable.check(left, right)
 
-    _.zip(_).all(_ === _)
+extension [value](value: value)
+  @targetName("plusOrMinus")
+  inline infix def +/- (tolerance: value)
+  ( using inline commensurable: value is Commensurable against value,
+          addable:              value is Addable by value,
+          equality:             addable.Result =:= value,
+          subtractable:         value is Subtractable by value,
+          equality2:            subtractable.Result =:= value )
+  :   Tolerance[value] =
 
-  given tolerance2: [value] => value is Checkable against Tolerance[value] =
-    (value, tolerance) => tolerance.covers(value)
-
-  inline given commensurable: [value: Commensurable against value]
-  =>  value is Checkable against value =
-
-    apply[value, value]: (left, right) => left <= right && right <= left
-
-
-  def apply[self, contrast](lambda: (self, contrast) -> Boolean)
-  :   self is Checkable against contrast =
-
-    new Checkable:
-      type Self = self
-      type Contrast = contrast
-
-      def check(self: Self, contrast: Contrast): Boolean = lambda(self, contrast)
+    Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
 
 
-trait Checkable extends Typeclass, Contrastive:
-  def check(left: Self, right: Contrast): Boolean
+  @targetName("plusOrMinus2")
+  inline infix def ± (tolerance: value)
+    ( using inline commensurable: value is Commensurable against value,
+            addable:              value is Addable by value,
+            equality:             addable.Result =:= value,
+            subtractable:         value is Subtractable by value,
+            equality2:            subtractable.Result =:= value )
+  :   Tolerance[value] =
 
-  def contramap[self2](lambda: self2 => Self)
-  :   (self2 is Checkable against Contrast)^{this, lambda} =
-    (left, right) => check(lambda(left), right)
+    value +/- (tolerance)

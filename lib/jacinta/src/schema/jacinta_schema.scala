@@ -48,26 +48,6 @@ import zephyrine.*
 import httpBackends.javaNetHttp
 import Json.Error.Reason
 
-package jsonPointerRegistries:
-  given standaloneRegistry: JsonPointer.Registry:
-    protected def lookup(url: HttpUrl): Optional[Json] = Unset
-
-  // The registry retains the HTTP client it fetches through, so the instance is a
-  // capability — a given constructed from capabilities produces a capability (Jon,
-  // 2026-07-06; see rep/DECISIONS.md).
-  given fetchingRegistry: (online: Online, loggable: Http.Event is Loggable, client: Http.Client)
-  =>  (JsonPointer.Registry^{online, client}) =
-    new JsonPointer.Registry:
-      protected def lookup(url: HttpUrl): Optional[Json] =
-        recover:
-          case wisteria.Variant.Error(_, _, _) => Unset
-          case Connect.Error(_)       => Unset
-          case Http.Error(_, _)       => Unset
-          case Parse.Error(_, _, _)   => Unset
-          case Json.Error(_)          => Unset
-
-        . protect(url.fetch().receive[Json])
-
 extension (json: Json)
   // Runtime-checks `json` against the schema for `topic`, then re-types it as a
   // schema-typed `Json of topic from topic`. The phantom `Topic` records the

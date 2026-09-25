@@ -34,7 +34,7 @@ package reliquary
 
 import anticipation.*
 import contingency.*
-import enigmatic.Signing
+import gastronomy.Signing
 import fulminate.*
 import gossamer.*
 import hieroglyph.*

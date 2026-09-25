@@ -41,8 +41,8 @@ export
       Des, Divulgence,
       Dsa, Ecb, Ecdsa, encrypt, Encryptor, Encryption,
       Hmac, hmac, InitializationVector, Iso10126, JavaBaseCrypto,
-      MlDsa, NoPadding, Ofb, Pem, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
+      MlDsa, NoPadding, Ofb, Password,
+      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature,
       Symmetric, SymmetricKey, TripleDes, uncloak }
 
 package signatureDigests:
