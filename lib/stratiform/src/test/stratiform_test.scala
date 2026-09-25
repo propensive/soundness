@@ -404,11 +404,13 @@ object Tests extends Suite(m"Stratiform Tests"):
         Tels.tels[Tests.Shape2](t"shape").selects.bind(_.variants).readable.map(_.keyword).to(List)
       . assert(_ == List(t"circle", t"rectangle", t"dot"))
 
-      test(m"each variant's fields are derived into its struct"):
-        val select = Tels.tels[Tests.Shape2](t"shape").selects.readable.head
+      test(m"each product variant references its registered record"):
+        val schema = Tels.tels[Tests.Shape2](t"shape")
+        val select = schema.selects.readable.head
         select.variants.readable.find(_.keyword == t"rectangle").get.variantType match
-          case struct: Tels.Struct => struct.members.readable.length
-          case _                   => -1
+          case Tels.Reference(name) =>
+            schema.records.readable.find(_.name == name).map(_.members.readable.length).getOrElse(-1)
+          case _ => -1
       . assert(_ == 2)
 
       test(m"the document root references the select"):

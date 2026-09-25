@@ -101,6 +101,49 @@ object Tests extends Suite(m"Vivisection tests"):
       debug.resume()
       outcome.await()
 
+  // Launches a fixture, breaks once at `source`:`line`, takes `count` logical steps of `depth`
+  // from there, and returns the last landing: the display name of its method and its logical
+  // positions. The shape behind the step-filtering cases, each of which asks where one step
+  // from a particular line arrives.
+  def stepFixture
+    ( fixtureClass: Text,
+      source:       Text,
+      line:         Ordinal,
+      depth:        Jdwp.StepDepth,
+      count:        Int = 1 )
+    ( using Monitor )
+  :   (Text, scala.List[(Optional[Text], Int, Boolean)]) =
+
+    val classpathText = fixtureClasspath()
+    val command: Command = sh"java -classpath $classpathText $fixtureClass"
+    val debuggee: Debuggee = Debuggee(command, freePort())
+
+    debuggee.session:
+      val stopped = Promise[ThreadId]()
+
+      debug.breakpoint(source, line): stop ?=>
+        stopped.offer(stop.thread)
+        stop.remain()
+
+      debug.resume()
+      val thread = stopped.await()
+
+      def recur(remaining: Int): (Text, scala.List[(Optional[Text], Int, Boolean)]) =
+        val landing = Promise[(Text, scala.List[(Optional[Text], Int, Boolean)])]()
+
+        debug.step(thread, depth): step ?=>
+          val positions = step.positions(step.location).stdlib.map: position =>
+            (position.source, position.line, position.inlined)
+
+          landing.offer((step.describe(step.location)(0), positions))
+          step.remain()
+
+        debug.resume()
+        val result = landing.await()
+        if remaining <= 1 then result else recur(remaining - 1)
+
+      recur(count)
+
   // The visible variables at a stop, keyed by name, for concise assertions.
   def named(variables: List[Variable]): scala.collection.immutable.Map[Text, Variable] =
     variables.stdlib.groupBy(_.name).view.mapValues(_.head).toMap
@@ -755,7 +798,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // One launch of `Menagerie` captures every local at a single breakpoint; the cases below are
     // granular assertions over that one snapshot, so the whole width of value recovery costs one
     // debuggee.
-    val menagerie: scala.collection.immutable.Map[Text, Variable] =
+    lazy val menagerie: scala.collection.immutable.Map[Text, Variable] =
       supervise:
         debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(57)):
           stop ?=> named(stop.variables())
@@ -843,7 +886,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // ── Captured-state matrix ───────────────────────────────────────────────────────────────────
     // At a breakpoint inside a local class's method, nothing is an ordinary local slot: every
     // binding is recovered by un-flattening `this`'s captured fields and walking its `$outer` chain.
-    val closures: scala.collection.immutable.Map[Text, Variable] =
+    lazy val closures: scala.collection.immutable.Map[Text, Variable] =
       supervise:
         debugFixture(t"vivisection.Closures", t"vivisection.Closures.scala", Ordinal.uniary(56)):
           stop ?=> named(stop.variables())
@@ -876,7 +919,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // Three locals whose types render differently: a derived (real, pure) instance renders cleanly;
     // a Showable-only type is borrowed under `⸢…⸣`; a toString-only type falls to `“…”`. The
     // markers are how the debugger signals a value was not rendered through a verified-pure instance.
-    val renderings: (Text, Text, Text) =
+    lazy val renderings: (Text, Text, Text) =
       supervise:
         debugFixture(t"vivisection.Renderings", t"vivisection.Renderings.scala", Ordinal.uniary(62)):
           stop ?=>
@@ -897,7 +940,7 @@ object Tests extends Suite(m"Vivisection tests"):
 
     // ── Static-type matrix ──────────────────────────────────────────────────────────────────────
     // Richer declared types recovered from TASTy and rendered through stenography, keyed by name.
-    val typeShapes: scala.collection.immutable.Map[Text, Text] =
+    lazy val typeShapes: scala.collection.immutable.Map[Text, Text] =
       supervise:
         debugFixture(t"vivisection.Types", t"vivisection.Types.scala", Ordinal.uniary(48)):
           stop ?=>
@@ -926,7 +969,7 @@ object Tests extends Suite(m"Vivisection tests"):
     // ── Evaluation matrix ───────────────────────────────────────────────────────────────────────
     // Compile-and-run expressions over the `Menagerie` locals: arithmetic, a comparison, a method
     // call, and array indexing, each producing a value read back as text.
-    val evaluations: (Text, Text, Text, Text) =
+    lazy val evaluations: (Text, Text, Text, Text) =
       supervise:
         debugFixture(t"vivisection.Menagerie", t"vivisection.Menagerie.scala", Ordinal.uniary(57)):
           stop ?=>
@@ -1313,6 +1356,54 @@ object Tests extends Suite(m"Vivisection tests"):
     . assert(_ == scala.List(
           (t"vivisection.Doubling.scala", 41, true),
           (t"vivisection.Paced.scala", 41, false)))
+
+    // A mixin forwarder — `Robot.greet`, delegating to the trait's static implementation — is
+    // plumbing: a step into the call arrives at the first line of `Greeter.greet`'s body.
+    test(m"stepping into a mixin forwarder arrives in the trait method"):
+      supervise:
+        stepFixture(t"vivisection.Forwarded", t"vivisection.Forwarded.scala", Ordinal.uniary(65),
+            Jdwp.StepDepth.Into)
+
+    . assert(_(1) == scala.List((t"vivisection.Forwarded.scala", 47, false)))
+
+    // A field accessor is plumbing with nothing beneath it: a step into `robot.serial` passes
+    // through the getter, back to the unchanged line, and on to the next.
+    test(m"stepping into a field accessor passes over it"):
+      supervise:
+        stepFixture(t"vivisection.Forwarded", t"vivisection.Forwarded.scala", Ordinal.uniary(66),
+            Jdwp.StepDepth.Into)
+
+    . assert(_(1) == scala.List((t"vivisection.Forwarded.scala", 67, false)))
+
+    // A bridge (`combine(Object, Object)`, generated for the `Combiner[Int]` view) is plumbing:
+    // a step into the call passes through it and its unboxing to the typed implementation.
+    test(m"stepping into a bridge arrives at the typed implementation"):
+      supervise:
+        stepFixture(t"vivisection.Forwarded", t"vivisection.Forwarded.scala", Ordinal.uniary(68),
+            Jdwp.StepDepth.Into)
+
+    . assert(_(1) == scala.List((t"vivisection.Forwarded.scala", 58, false)))
+
+    // A lazy val's accessor is plumbing, but its initializer is the programmer's own code: a
+    // step into a first access arrives at the initializer's line.
+    test(m"stepping into a lazy val arrives at its initializer"):
+      supervise:
+        stepFixture(t"vivisection.Forwarded", t"vivisection.Forwarded.scala", Ordinal.uniary(69),
+            Jdwp.StepDepth.Into)
+
+    . assert(_(1) == scala.List((t"vivisection.Forwarded.scala", 55, false)))
+
+    // A lambda's body is user code, lifted into a synthetic method and reached through the
+    // JDK's lambda machinery: from `twice`'s body, a step into `f(x)` passes through all of it
+    // and arrives in the lambda, on the line it was written.
+    test(m"stepping into a lambda call arrives in its body"):
+      supervise:
+        stepFixture(t"vivisection.Forwarded", t"vivisection.Forwarded.scala", Ordinal.uniary(71),
+            Jdwp.StepDepth.Into, 2)
+
+    . assert: (name, positions) =>
+        name.contains(t"anonfun")
+        && positions == scala.List((t"vivisection.Forwarded.scala", 70, false))
 
     // The SMAP path end to end: a breakpoint on the body of an inline method — in a file whose
     // class never loads at runtime — binds at the inlined copy inside the caller's class, and

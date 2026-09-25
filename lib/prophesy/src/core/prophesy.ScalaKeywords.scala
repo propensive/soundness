@@ -58,6 +58,27 @@ import Lexeme.Bracket
 // same-line type ascription, say — the union is offered: a keyword offered where it is not
 // strictly valid is harmless, whereas a missing one is a failure.
 object ScalaKeywords:
+  // The alphanumeric hard keywords of Scala 3: reserved everywhere, so never an identifier.
+  val hard: Set[Text] =
+    Set(t"abstract", t"case", t"catch", t"class", t"def", t"do", t"else", t"enum", t"export",
+        t"extends", t"false", t"final", t"finally", t"for", t"given", t"if", t"implicit",
+        t"import", t"lazy", t"macro", t"match", t"new", t"null", t"object", t"override",
+        t"package", t"private", t"protected", t"return", t"sealed", t"super", t"then", t"this",
+        t"throw", t"trait", t"true", t"try", t"type", t"val", t"var", t"while", t"with",
+        t"yield")
+
+  // The alphanumeric soft keywords: identifiers the parser reads as keywords in particular
+  // positions (`inline def`, `extension (x: T)`, `import a.b as c`, …), which a lexer without
+  // that lookahead tags as plain identifiers. A completion host that must decide whether a
+  // word is a name — a binding to mint, an infix receiver — needs them alongside the hard set.
+  val soft: Set[Text] =
+    Set(t"as", t"derives", t"end", t"erased", t"extension", t"infix", t"inline", t"opaque",
+        t"open", t"throws", t"tracked", t"transparent", t"using")
+
+  // Every Scala 3 keyword, hard and soft. The one copy shared by harlequin's `Fragment` and
+  // any host that rejects a keyword as a fresh name.
+  val all: Set[Text] = hard + soft
+
   private val expression: Set[Text] =
     Set(t"new", t"if", t"for", t"while", t"try", t"throw", t"return", t"super", t"this",
         t"true", t"false", t"null")

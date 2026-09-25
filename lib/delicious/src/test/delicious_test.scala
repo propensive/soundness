@@ -237,7 +237,7 @@ object Tests extends Suite(m"Delicious Tests"):
     proscalaLibrary().let: lib =>
       val jars = List("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
       val classpath = LocalClasspath(jars.map { jar => Classpath.Entry.Jar(jar.toString.tt) }*)
-      val reifier = Reifier(classpath)
+      lazy val reifier = Reifier(classpath)
       given Imports = Imports.empty
 
       test(m"A pickled type payload reifies to a stenography rendering"):
@@ -324,7 +324,7 @@ object Tests extends Suite(m"Delicious Tests"):
     // The running JVM's own classpath carries stenography's classes together with its
     // `soundness` export file, so under `import soundness.*` the alias `soundness.Syntax`
     // re-exports `stenography.Syntax` — the same shape as `jacinta.Json` in a REPL session.
-    val ownClasspath: LocalClasspath =
+    lazy val ownClasspath: LocalClasspath =
       val entries: List[Classpath.Entry.Directory | Classpath.Entry.Jar] =
         LocalClasspath.of(Classloader[Tests.type])()
         . cut(java.io.File.pathSeparator.nn.tt)
@@ -334,7 +334,7 @@ object Tests extends Suite(m"Delicious Tests"):
 
       LocalClasspath(entries*)
 
-    val ownReifier = Reifier(ownClasspath)
+    lazy val ownReifier = Reifier(ownClasspath)
     val soundnessScope: sci.Set[Designator] = sci.Set(Designator(t"soundness"))
     val syntaxType: Designator = Designator(t"stenography#Syntax")
 

@@ -87,8 +87,15 @@ private[pneumatic] final class BrotliBitWriter extends caps.Mutable:
 // literal / insert-and-copy / distance Huffman code. It emits valid Brotli any decoder accepts,
 // at a ratio between raw deflate and full-quality brotli. Incompressible or oversized inputs fall
 // back to stored (uncompressed) meta-blocks. The parameters (single block type, no context
-// modelling, no distance
-// cache, NPOSTFIX/NDIRECT = 0) keep the meta-block structure simple while remaining spec-compliant.
+// modelling, no distance cache, NPOSTFIX/NDIRECT = 0) keep the meta-block structure simple while
+// remaining spec-compliant.
+//
+// Those parameters also give the encoder a property that `continuation` relies on and that must
+// be kept: its output depends on the LZ77 window alone. It codes no distance through the
+// last-distances ring buffer and uses no context modelling, so a meta-block it produces is valid
+// after *any* prefix that leaves the same bytes in the window — in particular after the RFC-fixed
+// uncompressed encoding of a base that `prefix` builds. An encoder that used the distance cache
+// would additionally depend on the ring buffer's state at the end of that prefix.
 private[pneumatic] object BrotliEncoder:
   import BrotliTables.*
 
@@ -104,35 +111,97 @@ private[pneumatic] object BrotliEncoder:
     if length == 0 then
       val writer: BrotliBitWriter^ = BrotliBitWriter()
       writer.writeBits(0, 1) // WBITS = 16
-      writer.writeBits(1, 1) // ISLAST = 1
-      writer.writeBits(1, 1) // ISLASTEMPTY = 1
-      writer.align()
+      lastEmpty(writer)
       writer.result()
-    else if length > MaxMetaBlock then
+    else
+      // Larger inputs get the widest window, so that references may reach across all of them.
+      val windowBits = if length <= (1 << 22) then 22 else 24
+      encodeTail(input, 0, length, windowBits, true, MaxMetaBlock)
+
+  // The continuation of a stream whose window already holds `base`: the meta-block(s) encoding
+  // `next`, with no stream header, ending with ISLAST = 1 and byte-aligned. LZ77 runs from
+  // position `base.length` of the concatenation with distances reaching back into `base`, bounded
+  // by the declared `window` (WBITS, 10 to 24, as in the receiver's stream header). Every
+  // position of `base` enters the hash chains without emitting a command; that offset is the
+  // whole of the difference from `encode`. An empty `next` yields the empty last meta-block.
+  def continuation(base: scala.Array[Byte], next: scala.Array[Byte], window: Int)
+  :   scala.Array[Byte] =
+
+    if next.length == 0 then
+      val writer: BrotliBitWriter^ = BrotliBitWriter()
+      lastEmpty(writer)
+      writer.result()
+    else
+      val start = base.length
+      val length = start + next.length
+      val input: scala.Array[Byte]^ = new scala.Array[Byte](length)
+      System.arraycopy(base, 0, input, 0, start)
+      System.arraycopy(next, 0, input, start, next.length)
+      encodeTail(input, start, length, window, false, MaxMetaBlock)
+
+  // The priming prefix for `base`: the stream header declaring `window`, then `base` as
+  // uncompressed meta-blocks of at most `block` bytes (1 to 2^24), then the empty metadata
+  // meta-block a flush emits (the byte 0x06). It is a stream in want of its last meta-block: the
+  // receiver of a `continuation` builds this prefix from its own copy of `base`, appends the
+  // continuation, and decodes the whole, so the two sides must construct it identically.
+  def prefix(base: scala.Array[Byte], window: Int, block: Int): scala.Array[Byte] =
+    val writer: BrotliBitWriter^ = BrotliBitWriter()
+    writeWindowBits(writer, window)
+    storeBlocks(writer, base, 0, base.length, block)
+    // ISLAST = 0, MNIBBLES = 0 (`11`), the reserved bit, MSKIPBYTES = 0, then padding to the byte.
+    writer.writeBits(0, 1)
+    writer.writeBits(3, 2)
+    writer.writeBits(0, 1)
+    writer.writeBits(0, 2)
+    writer.align()
+    writer.result()
+
+  // Encodes `input(start until length)`, the window being `input(0 until start)`, as the closing
+  // meta-block(s) of a stream: one compressed meta-block, or stored meta-blocks when the payload
+  // is too long for one meta-block or compression would not pay. With `header`, the stream header
+  // declaring `windowBits` precedes them.
+  private def encodeTail
+    ( input:      scala.Array[Byte],
+      start:      Int,
+      length:     Int,
+      windowBits: Int,
+      header:     Boolean,
+      block:      Int )
+  :   scala.Array[Byte] =
+
+    val payload = length - start
+
+    if payload > MaxMetaBlock then
       val storedWriter: BrotliBitWriter^ = BrotliBitWriter()
-      storeAll(storedWriter, input, length)
+      storeAll(storedWriter, input, start, length, header, block)
       storedWriter.result()
     else
       val writer: BrotliBitWriter^ = BrotliBitWriter()
-      compressBlock(writer, input, length)
+      compressBlock(writer, input, start, length, windowBits, header)
       val compressed = writer.result()
 
       // Never expand beyond the stored framing: for tiny or incompressible inputs the
       // Huffman-tree headers can cost more than they save. The stored size is computed
       // analytically, so the stored form is only materialized when it wins.
-      if compressed.length < storedSize(length) then compressed
+      if compressed.length < storedSize(payload, header, block) then compressed
       else
         val storedWriter: BrotliBitWriter^ = BrotliBitWriter()
-        storeAll(storedWriter, input, length)
+        storeAll(storedWriter, input, start, length, header, block)
         storedWriter.result()
 
+  // The empty last meta-block: ISLAST = 1, ISLASTEMPTY = 1, padded to the byte.
+  private def lastEmpty(writer: BrotliBitWriter^): Unit =
+    writer.writeBits(1, 1)
+    writer.writeBits(1, 1)
+    writer.align()
+
   // The exact byte length `storeAll` would produce, without producing it.
-  private def storedSize(length: Int): Int =
-    var bits = 1 // WBITS
+  private def storedSize(length: Int, header: Boolean, block: Int): Int =
+    var bits = if header then 1 else 0 // WBITS
     var pos = 0
 
     while pos < length do
-      val chunk = Math.min(length - pos, MaxMetaBlock)
+      val chunk = Math.min(length - pos, block)
       val value = chunk - 1
       val nibbles = if value < (1 << 16) then 4 else if value < (1 << 20) then 5 else 6
       bits += 1 + 2 + nibbles*4 + 1
@@ -145,27 +214,44 @@ private[pneumatic] object BrotliEncoder:
 
     bits >>> 3
 
-  // Fallback: frame the payload as uncompressed meta-blocks (see the class comment on RFC framing).
-  private def storeAll(writer: BrotliBitWriter^, input: scala.Array[Byte], length: Int): Unit =
-    writer.writeBits(0, 1) // WBITS = 16
-    var pos = 0
+  // Fallback: frame the payload as uncompressed meta-blocks, then the empty last meta-block. A
+  // stored stream makes no backward references, so its header declares the smallest window.
+  private def storeAll
+    ( writer:  BrotliBitWriter^,
+      input:   scala.Array[Byte],
+      start:   Int,
+      length:  Int,
+      header:  Boolean,
+      block:   Int )
+  :   Unit =
+
+    if header then writer.writeBits(0, 1) // WBITS = 16
+    storeBlocks(writer, input, start, length, block)
+    lastEmpty(writer)
+
+  // `input(start until length)` as uncompressed meta-blocks (ISLAST = 0) of at most `block` bytes.
+  private def storeBlocks
+    ( writer: BrotliBitWriter^, input: scala.Array[Byte], start: Int, length: Int, block: Int )
+  :   Unit =
+
+    var pos = start
 
     while pos < length do
-      val chunk = Math.min(length - pos, MaxMetaBlock)
+      val chunk = Math.min(length - pos, block)
       writer.writeBits(0, 1) // ISLAST = 0
-      val value = chunk - 1
-      val nibbles = if value < (1 << 16) then 4 else if value < (1 << 20) then 5 else 6
-      writer.writeBits(nibbles - 4, 2)
-      var i = 0
-      while i < nibbles do { writer.writeBits((value >>> (i*4)) & 0xf, 4); i += 1 }
+      writeLength(writer, chunk)
       writer.writeBits(1, 1) // ISUNCOMPRESSED = 1
       writer.align()
       writer.writeBytes(input, pos, chunk)
       pos += chunk
 
-    writer.writeBits(1, 1) // ISLAST = 1
-    writer.writeBits(1, 1) // ISLASTEMPTY = 1
-    writer.align()
+  // MNIBBLES and MLEN - 1, in the fewest nibbles that hold it.
+  private def writeLength(writer: BrotliBitWriter^, length: Int): Unit =
+    val value = length - 1
+    val nibbles = if value < (1 << 16) then 4 else if value < (1 << 20) then 5 else 6
+    writer.writeBits(nibbles - 4, 2)
+    var i = 0
+    while i < nibbles do { writer.writeBits((value >>> (i*4)) & 0xf, 4); i += 1 }
 
   // --- Huffman construction, ported from the reference C encoder (entropy_encode.c) --------------
   private def reverseBits(nBits: Int, value: Int): Int =
@@ -388,8 +474,17 @@ private[pneumatic] object BrotliEncoder:
     ((16 + j).toLong << 40) | (n.toLong << 32) | (extra.toLong & 0xffffffffL)
 
   // --- Compressed meta-block ---------------------------------------------------------------------
-  private def compressBlock(writer: BrotliBitWriter^, input: scala.Array[Byte], length: Int): Unit =
-    val windowBits = if length <= (1 << 22) then 22 else 24
+  // One compressed meta-block with ISLAST = 1 for `input(start until length)`, the window being
+  // `input(0 until start)`; with `header`, the stream header declaring `windowBits` precedes it.
+  private def compressBlock
+    ( writer:     BrotliBitWriter^,
+      input:      scala.Array[Byte],
+      start:      Int,
+      length:     Int,
+      windowBits: Int,
+      header:     Boolean )
+  :   Unit =
+
     val maxDistance = (1 << windowBits) - 16
 
     // LZ77 command generation: greedy hash-chain search over 4-byte prefixes. The chain links
@@ -433,8 +528,19 @@ private[pneumatic] object BrotliEncoder:
 
       (v*0x1e35a7bd) >>> (32 - HashBits)
 
+    // Preload the window: every position before `start` enters the hash chains, and none emits a
+    // command. (For `encode`, `start` is 0 and this loop does nothing.)
     var pos = 0
-    var literalStart = 0
+
+    while pos < start do
+      if pos + MinMatch <= length then
+        val hv = hashAt(pos)
+        chain(pos & ringMask) = head(hv)
+        head(hv) = pos
+
+      pos += 1
+
+    var literalStart = start
 
     while pos < length do
       var matched = false
@@ -525,14 +631,10 @@ private[pneumatic] object BrotliEncoder:
     convertBitDepthsToSymbols(distDepth, 64, distCodes)
 
     // --- Write the meta-block ---
-    writeWindowBits(writer, windowBits)
+    if header then writeWindowBits(writer, windowBits)
     writer.writeBits(1, 1) // ISLAST = 1
     writer.writeBits(0, 1) // ISLASTEMPTY = 0
-    val value = length - 1
-    val nibbles = if value < (1 << 16) then 4 else if value < (1 << 20) then 5 else 6
-    writer.writeBits(nibbles - 4, 2)
-    var nb = 0
-    while nb < nibbles do { writer.writeBits((value >>> (nb*4)) & 0xf, 4); nb += 1 }
+    writeLength(writer, length - start)
     // ISUNCOMPRESSED is absent because ISLAST = 1.
     writer.writeBits(0, 1) // NBLTYPESL = 1
     writer.writeBits(0, 1) // NBLTYPESI = 1

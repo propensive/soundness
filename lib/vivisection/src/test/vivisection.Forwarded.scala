@@ -30,78 +30,43 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package stratiform
+package vivisection
 
-import scala.quoted.*
+// A debuggee for stepping tests: a marker line, then a line whose whole computation is an
 
-import anticipation.*
-import gossamer.*
-import polyvinyl.*
-import vacuous.*
+// A debuggee for step-filtering tests: each line of `main` calls through a different kind of
+// method the programmer never wrote, so a logical step into it must pass through the plumbing
+// and arrive in — or beyond — the code they did. `greet` reaches `Robot` through a mixin
+// forwarder; `serial` is a field accessor; `combine` on the `Combiner[Int]` view goes through a
+// bridge; `squared` is a lazy val's accessor; and `twice` invokes a lambda, whose body is lifted
+// into a synthetic method and called through the JDK's lambda machinery. The lambda is defined on
+// its own line, since a breakpoint on a line binds in every method whose line table contains it.
+object Forwarded:
+  trait Greeter:
+    def greet(name: String): String =
+      val greeting = "hi " + name
+      greeting
 
-import Tels.{Field, Polarity, Scalar, Struct}
+  trait Combiner[value]:
+    def combine(left: value, right: value): value
 
-// Hand-built TEL schema for the Polyvinyl `TelBlueprint` tests:
-// a `Contact` record with a required `name` (String scalar), an
-// optional `email` (String scalar), and a required `age` (identifier).
-object ContactSchemaFixture:
-  val tels: Tels = Tels(
-    name     = t"contact",
-    document = Struct(
-      members = Array(
-        Field(Polarity.Implicit, Polarity.Implicit, t"name",  Scalar(Array(t"string")),     Unset),
-        Field(Polarity.Loose,    Polarity.Implicit, t"email", Scalar(Array(t"string")),     Unset),
-        Field(Polarity.Implicit, Polarity.Implicit, t"age",   Scalar(Array(t"identifier")), Unset)),
-      validators = Array.empty),
-    layers   = Array.empty,
-    sigil    = Unset,
-    records  = Array.empty,
-    scalars  = Array.empty,
-    selects  = Array.empty)
+  class Robot(val serial: Int) extends Greeter, Combiner[Int]:
+    lazy val squared: Int =
+      serial*serial
 
-// User-defined TelBlueprint with the polyvinyl `record` inline-macro
-// entry point. Lives in its own file so its macro can be expanded
-// without a cyclic dependency from the call-site test file.
-object ContactRecords extends TelBlueprint(ContactSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
+    def combine(left: Int, right: Int): Int =
+      left + right
 
-// A second schema with a Flag-typed field for the boolean records test.
-object FeatureSchemaFixture:
-  val tels: Tels = Tels(
-    name     = t"feature",
-    document = Struct(
-      members    = Array
-                    (Field(Polarity.Loose, Polarity.Implicit, t"enabled", Tels.Flag, Unset)),
-      validators = Array.empty),
-    layers   = Array.empty,
-    sigil    = Unset,
-    records  = Array.empty,
-    scalars  = Array.empty,
-    selects  = Array.empty)
+  def twice(f: Int => Int, x: Int): Int =
+    f(f(x))
 
-object FeatureRecords extends TelBlueprint(FeatureSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
-
-// A layered schema for the layer-provenance records test: `name` in the base, `email` in the
-// layer `with-email`, so `email` reads as optional although the layer declares it required.
-object LayeredSchemaFixture:
-  val tels: Tels = Tels(
-    name     = t"layered",
-    document = Struct(
-      members    = Array(Field(Polarity.Implicit, Polarity.Implicit, t"name", Scalar(Array(t"string")), Unset)),
-      validators = Array.empty),
-    layers   = Array(
-      Tels.Layer(
-        t"with-email",
-        Struct(
-          members    = Array(Field(Polarity.Implicit, Polarity.Implicit, t"email", Scalar(Array(t"string")), Unset)),
-          validators = Array.empty),
-        Array.empty, Array.empty, Array.empty)),
-    sigil    = Unset,
-    records  = Array.empty,
-    scalars  = Array.empty,
-    selects  = Array.empty)
-
-object LayeredRecords extends TelBlueprint(LayeredSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
-
+  def main(args: Array[String]): Unit =
+    val robot = Robot(7)
+    val greeting = robot.greet("bob")
+    val serial = robot.serial + 1
+    val combiner: Combiner[Int] = robot
+    val sum = combiner.combine(2, 3)
+    val squared = robot.squared
+    val double = (x: Int) => x*2
+    val doubled = twice(double, sum)
+    System.out.nn.println(greeting + serial + sum + squared + doubled)

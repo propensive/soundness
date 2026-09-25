@@ -33,6 +33,7 @@
 package vivisection
 
 import scala.caps
+import scala.collection.concurrent as scc
 
 import anticipation.*
 import contingency.*
@@ -87,6 +88,8 @@ extends caps.ExclusiveCapability:
   @scala.caps.unsafe.untrackedCaptures
   private var capabilities0: Optional[Jdwp.Capabilities] = Unset
 
+  private val plumbing0: scc.TrieMap[(Long, Long), Boolean] = scc.TrieMap()
+
   // The VM's advertised capabilities, fetched once and memoized; a frontend forwards several of
   // these flags when it announces what it supports.
   def capabilities()(using Tactic[Debugger.Error]): Jdwp.Capabilities =
@@ -136,17 +139,53 @@ extends caps.ExclusiveCapability:
     connection.eventRequestSet(Jdwp.EventKind.ClassPrepare, policy, modifiers)
 
   // Requests a single step on a thread; the VM reports it as a `SingleStep` event on `events`.
+  // Classes matching an `excluding` pattern (JDWP class-match form) are excluded at the VM,
+  // which steps through them rather than reporting a landing there. The exclusions precede the
+  // count, which JDWP applies only to events that pass the modifiers before it.
   def step
-    ( thread: ThreadId,
-      depth:  Jdwp.StepDepth = Jdwp.StepDepth.Over,
-      size:   Jdwp.StepSize = Jdwp.StepSize.Line )
+    ( thread:    ThreadId,
+      depth:     Jdwp.StepDepth = Jdwp.StepDepth.Over,
+      size:      Jdwp.StepSize = Jdwp.StepSize.Line,
+      excluding: List[Text] = Nil )
     ( using Tactic[Debugger.Error] )
   :   Int =
 
+    val exclusions: List[Jdwp.Modifier] = excluding.map(Jdwp.Modifier.ClassExclude(_))
+
     val modifiers: List[Jdwp.Modifier] =
-      List(Jdwp.Modifier.Step(thread, size, depth), Jdwp.Modifier.Count(1))
+      Jdwp.Modifier.Step(thread, size, depth) :: exclusions + List(Jdwp.Modifier.Count(1))
 
     connection.eventRequestSet(Jdwp.EventKind.SingleStep, Jdwp.SuspendPolicy.EventThread, modifiers)
+
+  // Whether a location lies in a method the programmer never wrote — see `Plumbing` — memoized
+  // per method, since a loop steps through the same accessor on every iteration. A method's
+  // flags and name settle most cases; a method carrying neither mark but a single line-table
+  // entry (the shape of every generated accessor and forwarder) is settled by its bytecode,
+  // when the VM can supply it.
+  private def plumbing(location: Jdwp.Location)(using Tactic[Debugger.Error]): Boolean =
+    def trivial(info: Jdwp.MethodInfo): Boolean =
+      val entries = safely(connection.lineTable(location.cls, location.method))
+        . let(_.lines.size).or(0)
+
+      val readable = capabilities().canGetBytecodes && capabilities().canGetConstantPool
+
+      def shaped(): Boolean =
+        Plumbing.trivial
+          ( info.name,
+            connection.bytecodes(location.cls, location.method),
+            connection.constantPool(location.cls) )
+
+      entries == 1 && readable && shaped()
+
+    def classify(): Boolean =
+      Plumbing.noisy(connection.signature(location.cls)) || {
+        val methods = connection.methods(location.cls)
+
+        methods.seek(_.method == location.method).lay(false): info =>
+          Plumbing.flagged(info) || Plumbing.lazyAccessor(info.name, methods) || trivial(info)
+      }
+
+    plumbing0.getOrElseUpdate((location.cls.long, location.method.long), classify())
 
   // The logical reading of a location: the source position it stands for — the innermost
   // inline origin for a synthetic line, or the raw position for a real one — and, for
@@ -195,18 +234,24 @@ extends caps.ExclusiveCapability:
         case (_, location: Jdwp.Location) => logical(location)
         case _                            => Unset
 
-    stepUntil(thread, depth, start, 0)(handler)
+    stepUntil(thread, depth, start, 0, depth)(handler)
 
+  // One iteration of a logical step: `depth` is what the caller asked for, and `via` the depth
+  // this iteration's request is issued at, which differs only when stepping out of plumbing.
   private def stepUntil
     ( thread:    ThreadId,
       depth:     Jdwp.StepDepth,
       start:     Optional[((Text, Int), Optional[(Text, Int)])],
-      iteration: Int )
+      iteration: Int,
+      via:       Jdwp.StepDepth )
     ( handler: Debug.Handler )
     ( using Tactic[Debugger.Error] )
   :   Unit =
 
-    val request = step(thread, depth, Jdwp.StepSize.Line)
+    // The runtime's own classes are excluded at the VM — far cheaper than a round trip per line
+    // of class loading or a lambda metafactory's bootstrap — and anything that slips past that
+    // is classified as plumbing on landing, below.
+    val request = step(thread, via, Jdwp.StepSize.Line, Plumbing.excluded)
 
     // Laundered like the prepare handlers: the closure captures this session, which the
     // connection's registry cannot name, but it dies with it.
@@ -220,24 +265,35 @@ extends caps.ExclusiveCapability:
         cleared.let(identity)
         connection.unregister(Jdwp.EventKind.SingleStep, request)
 
+        // A landing in plumbing — a bridge, forwarder, accessor or runtime frame — is never
+        // shown. Stepping *into* continues inward, so the step passes through the bridge or
+        // forwarder to the method it delegates to (or, for an accessor, back out to the
+        // caller, whose unchanged line is then stepped through by the rule below); any other
+        // step has returned into plumbing, and steps out of it.
+        val noise: Boolean = safely[Debugger.Error](plumbing(halt.location)).or(false)
+
         val landing: Optional[((Text, Int), Optional[(Text, Int)])] =
-          safely[Debugger.Error](logical(halt.location))
+          if noise then Unset else safely[Debugger.Error](logical(halt.location))
 
         // Stepping *over* advances the real (outermost) source line — the call-site line when
         // inside inlining — so the whole of a line, inlined expansions included, is one step.
         // Stepping *into* (or out) advances the logical (innermost) line, so entering an
         // inline body stops at its first line, and stepping within a body moves line by line.
-        val skip = start.lay(false): (startPosition, startCall) =>
+        val skip = noise || start.lay(false): (startPosition, startCall) =>
           landing.lay(false): (position, callSite) =>
             if depth == Jdwp.StepDepth.Over
             then callSite.or(position) == startCall.or(startPosition)
             else position == startPosition
 
+        val next: Jdwp.StepDepth =
+          if noise && depth != Jdwp.StepDepth.Into then Jdwp.StepDepth.Out else depth
+
         if skip && iteration < 64 then
-          // Still on the same logical line: request the next step and return without running
-          // the user handler — the dispatcher's auto-resume continues the thread.
+          // Still on the same logical line, or in plumbing: request the next step and return
+          // without running the user handler — the dispatcher's auto-resume continues the
+          // thread.
           val stepped: Optional[Unit] = safely[Debugger.Error]:
-            stepUntil(thread, depth, start, iteration + 1)(handler)
+            stepUntil(thread, depth, start, iteration + 1, next)(handler)
 
           stepped.let(identity)
         else

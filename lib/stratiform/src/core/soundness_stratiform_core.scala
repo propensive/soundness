@@ -36,7 +36,7 @@ export
   stratiform
   . { Bintel, DynamicTelEnabler, Revision, Mutation, SchemaResolver, SchemaSignature,
       Stratiform, Tel, Telp, Tel2, Tel3, TelReader, Tels, Tels2, Varint, bintel, bintelDocument,
-      tel, valueHash }
+      fulfil, layer, tel, valueHash }
 
 package dynamicAccess:
   export stratiform.dynamicAccess.dynamicTel

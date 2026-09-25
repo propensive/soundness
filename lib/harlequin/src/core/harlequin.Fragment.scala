@@ -33,9 +33,10 @@
 package harlequin
 
 import anticipation.*
-import denominative.nil
+import denominative.{Ordinal, nil}
 import denominative.dysasymptotics.linearSize
 import gossamer.*
+import prophesy.ScalaKeywords
 import proscenium.*
 import rudiments.*
 import vacuous.*
@@ -46,7 +47,8 @@ import vacuous.*
 // infix method. Lifted from the Flame REPL, so any completion host — a REPL, a debugger
 // console — shares one implementation.
 object Fragment:
-  private def identifierChar(char: Char): Boolean = char.isLetterOrDigit || char == '_'
+  // A character which may form part of an alphanumeric identifier.
+  def identifierChar(char: Char): Boolean = char.isLetterOrDigit || char == '_'
 
   // The offset at which the partial identifier ending at `offset` begins.
   def identifierStart(code: Text, offset: Int): Int =
@@ -67,24 +69,12 @@ object Fragment:
 
   // Keywords that make a following identifier a name, type or path rather than a value, so it
   // is not an infix receiver (`val x`, `def f`, `import p`, `case P`, `new T`, …).
-  private val infixExcluded: Set[Text] =
+  val introducers: Set[Text] =
     Set(t"val", t"var", t"def", t"type", t"class", t"object", t"trait", t"enum", t"given",
         t"package", t"import", t"export", t"case", t"extension", t"new")
 
   private val valueAccents: Set[Accent] =
     Set(Accent.Term, Accent.Number, Accent.String, Accent.Typal)
-
-  // Every Scala 3 keyword, hard and soft. The standalone lexer tags soft keywords (`inline`,
-  // `transparent`, `opaque`, `open`, `using`, `extension`, …) as identifiers — as Scala does —
-  // so they would otherwise pass as infix receivers; this set excludes them all.
-  private val allKeywords: Set[Text] =
-    Set(t"abstract", t"case", t"catch", t"class", t"def", t"do", t"else", t"enum", t"export",
-        t"extends", t"false", t"final", t"finally", t"for", t"given", t"if", t"implicit",
-        t"import", t"lazy", t"match", t"new", t"null", t"object", t"override", t"package",
-        t"private", t"protected", t"return", t"sealed", t"super", t"then", t"this", t"throw",
-        t"trait", t"true", t"try", t"type", t"val", t"var", t"while", t"with", t"yield",
-        t"as", t"derives", t"end", t"extension", t"infix", t"inline", t"opaque", t"open",
-        t"transparent", t"using")
 
   // The lexer tags a symbolic operator (`+`, `::`, `<=`, …) as an identifier, just as Scala
   // treats it, and a closing bracket as a symbol — so accent alone cannot tell an operator
@@ -107,8 +97,9 @@ object Fragment:
   // The infix-completion receiver: when the cursor sits at `<value-expr> <space> <partial>` — a
   // value followed by whitespace, not a member selection — the value expression with a
   // synthetic trailing `.` (so the member-completion path serves it) and the partial method
-  // name. `Unset` when there is no value receiver: the token before the space is a keyword,
-  // operator, comma or open bracket, or a name in a definition or import position.
+  // name. `Unset` when there is no value receiver: the token before the space is a keyword
+  // (hard or soft: the standalone lexer tags `inline`, `using`, … as identifiers, as Scala
+  // does), an operator, comma or open bracket, or a name in a definition or import position.
   def infixBase(code: Text, offset: Int): (Optional[Text], Text) =
     val s = code.s
     val start: Int = identifierStart(code, offset)
@@ -123,7 +114,7 @@ object Fragment:
         val closeBracket = text == t")" || text == t"]" || text == t"}"
 
         val valueEnding =
-          !allKeywords.has(text)
+          !ScalaKeywords.all.has(text)
           && (closeBracket || text == t"_" || (valueAccents.has(last.accent) && !symbolic(text)))
 
         if !valueEnding then (Unset, prefix) else
@@ -135,7 +126,7 @@ object Fragment:
           val preceding: Text =
             tokens(code.keep(baseStart)).last.let(_.text).or(t"")
 
-          if infixExcluded.has(preceding) then (Unset, prefix) else (t"$base.", prefix)
+          if introducers.has(preceding) then (Unset, prefix) else (t"$base.", prefix)
 
   // The character index where the value expression ending at the last character of `text`
   // begins: scans back over identifiers, `.` and balanced bracket groups, stopping at an
@@ -156,3 +147,153 @@ object Fragment:
       else { i += 1; scanning = false }
 
     if i < 0 then 0 else i
+
+  // The closing bracket that matches an opening one.
+  private def closer(bracket: Char): Char = bracket match
+    case '(' => ')'
+    case '[' => ']'
+    case _   => '}'
+
+  // Walks the lexical skeleton of `code`: every character outside a string or character
+  // literal and outside a comment, in order, with the bracket nesting at which it sits — an
+  // opening bracket sits outside the group it opens, as does its closer, so `(` and `)` are
+  // both reported at the depth of the surrounding code. The walk is an approximation good
+  // enough for an unfinished line: it knows `"…"` with escapes, `"""…"""`, `'x'` and `'\x'`,
+  // `//` to the end of the line, and `/* … */` with nesting, but not the code inside an
+  // interpolation's `${…}`, which passes as string. A closing bracket with nothing open is
+  // ignored, so a fragment cut from inside a group still scans. `step` folds the state over
+  // each reported character, given its offset, the character and its depth; `settled` ends
+  // the walk early once the state holds what the caller needs.
+  private def walk[state](code: Text)(initial: state)(settled: state => Boolean)
+    ( step: (state, Int, Char, Int) => state )
+  :   state =
+
+    val length: Int = code.length
+
+    // NUL for a read past the end, which no clause below matches, so every lookahead is total.
+    def at(offset: Int): Char = code(Ordinal.zerary(offset)).or('\u0000')
+
+    // The offset just past the `"` closing a string literal opened before `offset`, or past
+    // the end for an unterminated one.
+    def string(offset: Int): Int =
+      if offset >= length then length
+      else at(offset) match
+        case '"'  => offset + 1
+        case '\\' => string(offset + 2)
+        case _    => string(offset + 1)
+
+    // The offset just past the `"""` (plus any further `"`s, which belong to the content)
+    // closing a triple-quoted string opened before `offset`.
+    def multiline(offset: Int): Int =
+      if offset >= length then length
+      else if at(offset) == '"' && at(offset + 1) == '"' && at(offset + 2) == '"' then
+        quotes(offset + 3)
+      else multiline(offset + 1)
+
+    // The offset past a run of `"`s.
+    def quotes(offset: Int): Int =
+      if offset < length && at(offset) == '"' then quotes(offset + 1) else offset
+
+    // The offset of the newline ending a line comment (which is then reported as a character
+    // in its own right), or the end.
+    def line(offset: Int): Int =
+      if offset >= length || at(offset) == '\n' then offset else line(offset + 1)
+
+    // The offset just past the `*/` closing a block comment, honouring Scala's nesting.
+    def block(offset: Int, nesting: Int): Int =
+      if offset >= length then length
+      else if at(offset) == '*' && at(offset + 1) == '/' then
+        if nesting == 1 then offset + 2 else block(offset + 2, nesting - 1)
+      else if at(offset) == '/' && at(offset + 1) == '*' then block(offset + 2, nesting + 1)
+      else block(offset + 1, nesting)
+
+    def recur(offset: Int, depth: Int, state: state): state =
+      if settled(state) || offset >= length then state
+      else at(offset) match
+        case '"' if at(offset + 1) == '"' && at(offset + 2) == '"' =>
+          recur(multiline(offset + 3), depth, state)
+
+        case '"' =>
+          recur(string(offset + 1), depth, state)
+
+        // A character literal, plain or escaped; any other `'` (a quote, `'{…}`) is reported
+        // as itself, so the bracket following it counts.
+        case '\'' if at(offset + 2) == '\'' =>
+          recur(offset + 3, depth, state)
+
+        case '\'' if at(offset + 1) == '\\' && at(offset + 3) == '\'' =>
+          recur(offset + 4, depth, state)
+
+        case '/' if at(offset + 1) == '/' =>
+          recur(line(offset + 2), depth, state)
+
+        case '/' if at(offset + 1) == '*' =>
+          recur(block(offset + 2, 1), depth, state)
+
+        case char @ ('(' | '[' | '{') =>
+          recur(offset + 1, depth + 1, step(state, offset, char, depth))
+
+        case char @ (')' | ']' | '}') =>
+          val outer: Int = if depth > 0 then depth - 1 else 0
+          recur(offset + 1, outer, step(state, offset, char, outer))
+
+        case char =>
+          recur(offset + 1, depth, step(state, offset, char, depth))
+
+    recur(0, 0, initial)
+
+  // The closing delimiters for the brackets left open in `code`, innermost first, so that
+  // appending them in order completes the fragment: `foo(bar, List[Int` yields `]` then `)`.
+  // String literals and comments are skipped (see `walk`), so a bracket inside either does
+  // not count. A closer with nothing open is ignored; a closer of the wrong kind closes the
+  // innermost open bracket regardless, as the depth-zero scanners assume.
+  def unclosed(code: Text): List[Char] =
+    walk(code)(Nil: List[Char])(_ => false): (stack, _, char, _) =>
+      char match
+        case '(' | '[' | '{'       => closer(char) :: stack
+        case ')' | ']' | '}'       => if stack.nil then stack else stack.tail
+        case _                     => stack
+
+  // The offset of the first character of `code` at bracket depth zero — outside every
+  // `(…)`, `[…]` and `{…}`, and outside any string literal or comment — which satisfies
+  // `predicate`, given its offset; `Unset` if there is none. The scanner behind "the `:` of a
+  // return type, not of a parameter" and "the `=` opening a body, not of a default argument".
+  def outermost(code: Text)(predicate: Int => Boolean): Optional[Int] =
+    walk(code)(Unset: Optional[Int])(_.present): (found, offset, _, depth) =>
+      if depth == 0 && predicate(offset) then offset else found
+
+  // The offset of the first `char` at bracket depth zero in `code`, or `Unset`.
+  def outermost(code: Text, char: Char): Optional[Int] =
+    walk(code)(Unset: Optional[Int])(_.present): (found, offset, current, depth) =>
+      if depth == 0 && current == char then offset else found
+
+  // The parts of `code` between its occurrences of `separator` at bracket depth zero, in
+  // order: `a.*, b.{c, d}, e.given` split on `,` yields `a.*`, ` b.{c, d}` and ` e.given`.
+  // Parts are neither trimmed nor dropped when empty, so the separators' positions can be
+  // recovered, and `code` without a top-level separator is returned as its single part.
+  def split(code: Text, separator: Char): List[Text] =
+    val cuts: List[Int] =
+      walk(code)(Nil: List[Int])(_ => false): (cuts, offset, char, depth) =>
+        if depth == 0 && char == separator then offset :: cuts else cuts
+
+    val (parts, start) =
+      cuts.reverse.fuse((Nil: List[Text], 0)):
+        val (parts, start) = state
+        (code.keep(next).skip(start) :: parts, next + 1)
+
+    (code.skip(start) :: parts).reverse
+
+  // The contents of each bracket group opened at depth zero by `bracket`, in order, each
+  // without its brackets: the parameter clauses of `def f(a: Int)(using b: B)` are `a: Int`
+  // and `using b: B`, and its type parameters are its `[` groups. A group opened at depth
+  // zero and never closed is omitted, being unfinished.
+  def groups(code: Text, bracket: Char = '('): List[Text] =
+    val (found, _) =
+      walk(code)((Nil: List[Text], Unset: Optional[Int]))(_ => false):
+        case ((found, open), offset, char, depth) =>
+          if depth == 0 && char == bracket then (found, offset + 1)
+          else if depth == 0 && open.present && (char == ')' || char == ']' || char == '}') then
+            (open.let { start => code.keep(offset).skip(start) :: found }.or(found), Unset)
+          else (found, open)
+
+    found.reverse

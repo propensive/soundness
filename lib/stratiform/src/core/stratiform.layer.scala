@@ -32,76 +32,11 @@
                                                                                                   */
 package stratiform
 
-import scala.quoted.*
-
 import anticipation.*
-import gossamer.*
-import polyvinyl.*
-import vacuous.*
 
-import Tels.{Field, Polarity, Scalar, Struct}
-
-// Hand-built TEL schema for the Polyvinyl `TelBlueprint` tests:
-// a `Contact` record with a required `name` (String scalar), an
-// optional `email` (String scalar), and a required `age` (identifier).
-object ContactSchemaFixture:
-  val tels: Tels = Tels(
-    name     = t"contact",
-    document = Struct(
-      members = Array(
-        Field(Polarity.Implicit, Polarity.Implicit, t"name",  Scalar(Array(t"string")),     Unset),
-        Field(Polarity.Loose,    Polarity.Implicit, t"email", Scalar(Array(t"string")),     Unset),
-        Field(Polarity.Implicit, Polarity.Implicit, t"age",   Scalar(Array(t"identifier")), Unset)),
-      validators = Array.empty),
-    layers   = Array.empty,
-    sigil    = Unset,
-    records  = Array.empty,
-    scalars  = Array.empty,
-    selects  = Array.empty)
-
-// User-defined TelBlueprint with the polyvinyl `record` inline-macro
-// entry point. Lives in its own file so its macro can be expanded
-// without a cyclic dependency from the call-site test file.
-object ContactRecords extends TelBlueprint(ContactSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
-
-// A second schema with a Flag-typed field for the boolean records test.
-object FeatureSchemaFixture:
-  val tels: Tels = Tels(
-    name     = t"feature",
-    document = Struct(
-      members    = Array
-                    (Field(Polarity.Loose, Polarity.Implicit, t"enabled", Tels.Flag, Unset)),
-      validators = Array.empty),
-    layers   = Array.empty,
-    sigil    = Unset,
-    records  = Array.empty,
-    scalars  = Array.empty,
-    selects  = Array.empty)
-
-object FeatureRecords extends TelBlueprint(FeatureSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
-
-// A layered schema for the layer-provenance records test: `name` in the base, `email` in the
-// layer `with-email`, so `email` reads as optional although the layer declares it required.
-object LayeredSchemaFixture:
-  val tels: Tels = Tels(
-    name     = t"layered",
-    document = Struct(
-      members    = Array(Field(Polarity.Implicit, Polarity.Implicit, t"name", Scalar(Array(t"string")), Unset)),
-      validators = Array.empty),
-    layers   = Array(
-      Tels.Layer(
-        t"with-email",
-        Struct(
-          members    = Array(Field(Polarity.Implicit, Polarity.Implicit, t"email", Scalar(Array(t"string")), Unset)),
-          validators = Array.empty),
-        Array.empty, Array.empty, Array.empty)),
-    sigil    = Unset,
-    records  = Array.empty,
-    scalars  = Array.empty,
-    selects  = Array.empty)
-
-object LayeredRecords extends TelBlueprint(LayeredSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
-
+// Groups a case-class field into a named schema layer (§20.3 of the TEL specification): the
+// derived schema's base omits the field, and a layer of that name declares it — refining the
+// record the field belongs to, or the document root's overlay — so that the field is a component
+// a reader can accept or decline by the layer's hash. Fields of one product annotated with the
+// same name form one layer; the annotation composes with `@name`.
+case class layer(name: Text) extends StaticAnnotation
