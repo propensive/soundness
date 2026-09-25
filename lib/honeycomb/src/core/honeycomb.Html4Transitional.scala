@@ -36,19 +36,13 @@ import scala.language.dynamics
 
 import adversaria.*
 import anticipation.*
-import fulminate.*
 import gossamer.*
-import hellenism.*
 import hieroglyph.*
 import prepositional.*
 import rudiments.*
-import turbulence.*
 import typonym.*
 import vacuous.*
 
-import charDecoders.utf8Decoder
-import classloaders.threadContextClassloader
-import textSanitizers.skipSanitizer
 
 object Html4Transitional:
   // Reuse WHATWG attribute value type markers (Textual, Url, Color, Presence, etc.)
@@ -513,11 +507,10 @@ class Html4Transitional() extends Dom:
     Dictionary(this.membersOfType[Tag].map { tag => tag.label -> tag }*)
 
   val entities: Dictionary[Text] =
-    val list = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n")
-    . map(_.cut(t"\t")).sweep:
-        case List(key, value) => (key, value)
+    val pairs = List.tabulate(EntityData.html4Names.length): index =>
+      (EntityData.html4Names(index).tt, EntityData.html4Values(index).tt)
 
-    Dictionary(list*)
+    Dictionary(pairs*)
 
   val attributes: Dictionary[Attribute] =
     val list: List[(Text, Attribute)] =

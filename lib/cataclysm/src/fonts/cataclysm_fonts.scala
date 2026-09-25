@@ -30,33 +30,68 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package enigmatic
-
-import gastronomy.Signing
-import scala.reflect.Selectable.reflectiveSelectable
+package cataclysm
 
 import anticipation.*
+import denominative.*
+import gossamer.*
+import phoenicia.*
+import prepositional.*
+import rudiments.*
+import spectacular.*
+import symbolism.*
 
-// ML-DSA (FIPS 204), the module-lattice signature scheme standardized from CRYSTALS-Dilithium,
-// in its three parameter sets: 44, 65 and 87 (the dimensions of the matrix A, e.g. 6×5 for
-// ML-DSA-65). It signs the message directly (the "pure" variant), so no `Signature.Digest`
-// participates. Like `Ecdsa`, it is not part of the mandatory provider baseline, so it is
-// reached through a structural refinement, and a provider that does not offer it is a compile
-// error at the use site rather than a failure at run time.
-object MlDsa:
-  given value: [level <: 44 | 65 | 87: ValueOf]
-  =>  ( crypto: Crypto { def mlDsa(level: Int): Crypto.SignatureScheme } )
-  =>  MlDsa[level] =
-    MlDsa(crypto.mlDsa(valueOf[level]))
+// The CSS generic family keywords, which `font-family` takes unquoted; any other name is quoted.
+private val genericFamilies: List[Text] =
+  List
+    ( t"serif", t"sans-serif", t"monospace", t"cursive", t"fantasy", t"system-ui", t"ui-serif",
+      t"ui-sans-serif", t"ui-monospace", t"ui-rounded", t"math", t"emoji", t"fangsong" )
 
-class MlDsa[level <: 44 | 65 | 87: ValueOf](scheme: Crypto.SignatureScheme)
-extends Cipher, Signing:
-  type Size = level
+extension (face: Face)
+  // The declarations that select this face: `font-family`, `font-weight`, and — only when they
+  // differ from the defaults — `font-style`, `font-stretch`, `font-variation-settings` for the
+  // face's own axes, and `font-feature-settings`. The registered weight, width and italic axes
+  // go through the high-level properties, so a static and a variable font are asked for alike.
+  def style: Css.Style =
+    val name = face.typeface.name
+    val family = if genericFamilies.has(name) then name else t"\"$name\""
 
-  def keySize: level = valueOf[level]
-  def genKey(): Data = scheme.generateKeyPair(keySize)
-  def privateToPublic(keyData: Data): Data = scheme.privateToPublic(keyData)
-  def sign(data: Data, keyData: Data): Data = scheme.sign(data, keyData)
+    val slant: List[(Text, Text)] = face.slant match
+      case Slant.Upright        => Nil
+      case Slant.Italic         => List(t"font-style" -> t"italic")
+      case Slant.Oblique(angle) => List(t"font-style" -> t"oblique ${angle.toString}deg")
 
-  def verify(data: Data, signature: Data, keyData: Data): Boolean =
-    scheme.verify(data, signature, keyData)
+    val stretch: List[(Text, Text)] =
+      if face.stretch == Stretch.Normal then Nil else List(t"font-stretch" -> face.stretch.show)
+
+    val variations: List[(Text, Text)] =
+      if face.variations.nil then Nil
+      else
+        def variation(variation: Variation): Text =
+          t"\"${variation.axis.tag}\" ${variation.value.toString}"
+
+        List(t"font-variation-settings" -> face.variations.map(variation).join(t", "))
+
+    val features: List[(Text, Text)] =
+      if face.features.nil then Nil
+      else
+        def setting(setting: Face.Feature.Setting): Text =
+          t"\"${setting.feature.tag}\" ${setting.value.show}"
+
+        List(t"font-feature-settings" -> face.features.map(setting).join(t", "))
+
+    Css.Style.of
+      ( List(t"font-family" -> family, t"font-weight" -> face.weight.show) + slant + stretch +
+        variations + features )
+
+extension (font: Font) def style: Css.Style = font.face.style
+
+// The font at-rules, as methods of `Css`'s companion (`Css.fontFace(font)`), from this module.
+extension (css: Css.type)
+    // The at-rules a page needs for a font's typeface: an `@font-face` for each file or local
+    // font of its provision, an `@import` for a stylesheet, nothing for a generic family. Joined
+    // to a stylesheet's own rules with `+`, so a page carries the fonts its styles name.
+    def fontFace(font: Font in (? >: Web)): Css = Css(FontFace.rules(font))
+
+    // The rules for several fonts, each typeface once, with any `@import`s first as CSS requires.
+    def fontFaces(fonts: (Font in (? >: Web))*): Css = FontFace.stylesheet(List.from(fonts))

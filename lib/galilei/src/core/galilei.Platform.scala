@@ -59,6 +59,9 @@ object Platform:
   given uuid: [uuid <: Uuid, filesystem <: Platform] => uuid is Admissible on filesystem =
     Admissible.unchecked[uuid, filesystem]
 
+  given uuidNavigable: [uuid <: Uuid, filesystem <: Platform] => uuid is Navigable on filesystem =
+    _.text
+
   // Read a path in its entirety as a single, direct operation: the whole file is read into memory
   // at once, holding no handle and needing no scope — unlike streaming a path, which must be
   // `open`ed and consumed within a scope. The whole `Data` is handed to a `Data is Readable to

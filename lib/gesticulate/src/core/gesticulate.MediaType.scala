@@ -62,22 +62,6 @@ object MediaType:
   =>  MediaType is Decodable in Text =
     caps.unsafe.unsafeAssumePure(Media.parse(_))
 
-  given formenctype: ("formenctype" is GenericHtmlAttribute[MediaType]):
-    def name: Text = t"formenctype"
-    def serialize(mediaType: MediaType): Text = mediaType.show
-
-  given media: ("media" is GenericHtmlAttribute[MediaType]):
-    def name: Text = t"media"
-    def serialize(mediaType: MediaType): Text = mediaType.show
-
-  given enctype: ("enctype" is GenericHtmlAttribute[MediaType]):
-    def name: Text = t"enctype"
-    def serialize(mediaType: MediaType): Text = mediaType.show
-
-  given htype: ("htype" is GenericHtmlAttribute[MediaType]):
-    def name: Text = t"type"
-    def serialize(mediaType: MediaType): Text = mediaType.show
-
   def unapply(value: Text): Option[MediaType] = safely(Media.parse(value)).let(Some(_)).or(None)
 
   inline given interpolable: MediaType is Interpolable:

@@ -33,10 +33,8 @@
 package jacinta
 
 import scala.annotation.*
-import scala.collection.mutable as scm
 
 import anticipation.*
-import beneficence.*
 import contextual.*
 import contingency.*
 import denominative.*
@@ -47,18 +45,10 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import symbolism.*
-import urticose.*
 import vacuous.*
 
 object JsonPointer extends Root(""):
   type Plane = JsonPointer
-
-  trait Registry extends Findable:
-    private val documents: scm.HashMap[HttpUrl, Json] = scm.HashMap()
-
-    def update(url: HttpUrl, document: Json): Unit = documents(url) = document
-    def apply(url: HttpUrl): Optional[Json] = documents.at(url).or(lookup(url))
-    protected def lookup(url: HttpUrl): Optional[Json]
 
   given navigable: [ordinal <: Ordinal] => ordinal is Navigable on JsonPointer =
     // `(ordinal: Ordinal)` widens the singleton-bounded parameter (case-2 pure-value box).
@@ -76,9 +66,7 @@ object JsonPointer extends Root(""):
     val separator: Text = "/"
 
   given JsonPointer is Encodable in Text = pointer =>
-    val url = pointer.url.let(_.encode).or(t"")
-
-    if pointer.path.descent.length == 0 then t"$url#" else t"$url#/${pointer.path}"
+    if pointer.path.descent.length == 0 then t"#" else t"#/${pointer.path}"
 
   inline given interpolable: JsonPointer is Interpolable:
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
@@ -115,7 +103,7 @@ object JsonPointer extends Root(""):
         (pointer, segment) => pointer(filesystem.unescape(segment))
 
   given divisible: JsonPointer is Divisible by Text to JsonPointer =
-    Divisible: (pointer, segment) => JsonPointer(pointer.url, pointer.path / segment)
+    Divisible: (pointer, segment) => JsonPointer(pointer.path / segment)
 
   given divisible2: JsonPointer is Divisible by Ordinal to JsonPointer =
     // An explicit anonymous class rather than the `Divisible:` factory: under capture checking
@@ -128,18 +116,16 @@ object JsonPointer extends Root(""):
       type Operand = Ordinal
 
       def divide(pointer: JsonPointer, segment: Ordinal): JsonPointer =
-        JsonPointer(pointer.url, pointer.path / segment)
+        JsonPointer(pointer.path / segment)
 
   // JsonPointerError → JsonPointer.Error
   object Error:
     enum Reason(val number: Int) extends Clarification:
-      case UnknownDocument extends Reason(1)
       case ExpectedHash    extends Reason(2)
       case ExpectedSlash   extends Reason(3)
       case BadEscape       extends Reason(4)
 
     given communicable: Reason is Communicable =
-      case Reason.UnknownDocument => m"the registry contains no document at the reference's URL"
       case Reason.ExpectedHash    => m"a JSON reference must begin with '#'"
       case Reason.ExpectedSlash   => m"a JSON reference fragment must begin with '/'"
       case Reason.BadEscape       => m"a '~' in a JSON reference must be followed by '0' or '1'"
@@ -150,12 +136,6 @@ object JsonPointer extends Root(""):
   case class Error(reason: JsonPointer.Error.Reason, offset: Int)(using Diagnostics)
   extends fulminate.Error(415, reason.number)(m"the JSON reference was not valid because $reason")
 
-case class JsonPointer(url: Optional[HttpUrl] = Unset, path: Path on JsonPointer = JsonPointer):
-  def apply(using registry: (JsonPointer.Registry)^)(document: Json)
-    ( using Tactic[JsonPointer.Error] )
-  :   Json =
-    url.let(registry(_).lest(JsonPointer.Error(JsonPointer.Error.Reason.UnknownDocument, 0)))
-    . or(document)
-
-  def apply(ordinal: Ordinal): JsonPointer = JsonPointer(url, path / ordinal)
-  def apply(text: Text): JsonPointer = JsonPointer(url, path / text)
+case class JsonPointer(path: Path on JsonPointer = JsonPointer):
+  def apply(ordinal: Ordinal): JsonPointer = JsonPointer(path / ordinal)
+  def apply(text: Text): JsonPointer = JsonPointer(path / text)

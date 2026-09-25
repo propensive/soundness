@@ -30,41 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+package turbulence
 
-import scala.annotation.*
+import scala.language.adhocExtensions
 
-import hypotenuse.*
+import anticipation.*
+import parasite.*
 import prepositional.*
-import symbolism.*
+import zephyrine.*
 
-extension [left](left: left)
-  infix def === [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    checkable.check(left, right)
+import probates.awaitProbate
 
-  infix def !== [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    !checkable.check(left, right)
+extension [medium, transport](consume stream: (Stream[medium] over transport)^)
+  // The detached pump: `pump` on its own parasite task, for fire-and-forget
+  // transfers and genuinely concurrent pipeline halves. This is the "one
+  // pumping thread" of a pipeline with an asynchronous boundary.
+  def convey(consume intake: (Intake[medium] over transport)^)(using Monitor, Probate): Task[Unit] =
+    // Both endpoints move onto the pump fiber as neutral carriers (a consume parameter
+    // cannot be consumed from inside the spawned closure); single ownership transfers
+    // with the spawn.
+    val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
+    val intakeRef: AnyRef = intake.asInstanceOf[AnyRef]
 
-extension [value](value: value)
-  @targetName("plusOrMinus")
-  inline infix def +/- (tolerance: value)
-  ( using inline commensurable: value is Commensurable against value,
-          addable:              value is Addable by value,
-          equality:             addable.Result =:= value,
-          subtractable:         value is Subtractable by value,
-          equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
+    async:
+      streamRef.asInstanceOf[(Stream[medium] over transport)^]
+      . pump(intakeRef.asInstanceOf[(Intake[medium] over transport)^])
 
-    Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
-
-
-  @targetName("plusOrMinus2")
-  inline infix def ± (tolerance: value)
-    ( using inline commensurable: value is Commensurable against value,
-            addable:              value is Addable by value,
-            equality:             addable.Result =:= value,
-            subtractable:         value is Subtractable by value,
-            equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
-
-    value +/- (tolerance)

@@ -32,8 +32,7 @@
                                                                                                   */
 package harlequin
 
-import anthology.*
-import hellenism.*
+import anticipation.*
 import vacuous.*
 
 enum Depth:
@@ -42,25 +41,19 @@ enum Depth:
 object Highlight:
   given default: Highlight = highlighting.tokenizedScala
 
+  // What typechecked or compiled highlighting needs of a compiler: its command-line arguments, a
+  // classpath string and the compiler instance to run. `harlequin.typed` builds one from an
+  // anthology `Scalac` and a hellenism `LocalClasspath`; this module knows neither.
+  trait Compilation:
+    def arguments: List[Text]
+    def classpath: Text
+    def compiler(): dotty.tools.dotc.Compiler
+
 trait Highlight:
   def depth: Depth
-  def scalac: Optional[Scalac[?, ?]]
-  def classpath: Optional[LocalClasspath]
+  def compilation: Optional[Highlight.Compilation]
 
-object highlighting:
+package highlighting:
   given tokenizedScala: Highlight = new Highlight:
     def depth: Depth = Depth.Tokenized
-    def scalac: Optional[Scalac[?, ?]] = Unset
-    def classpath: Optional[LocalClasspath] = Unset
-
-  given typecheckedScala(using scalac0: Scalac[?, ?], classpath0: LocalClasspath): Highlight =
-    new Highlight:
-      def depth: Depth = Depth.Typechecked
-      def scalac: Optional[Scalac[?, ?]] = scalac0
-      def classpath: Optional[LocalClasspath] = classpath0
-
-  given compiledScala(using scalac0: Scalac[?, ?], classpath0: LocalClasspath): Highlight =
-    new Highlight:
-      def depth: Depth = Depth.Compiled
-      def scalac: Optional[Scalac[?, ?]] = scalac0
-      def classpath: Optional[LocalClasspath] = classpath0
+    def compilation: Optional[Highlight.Compilation] = Unset

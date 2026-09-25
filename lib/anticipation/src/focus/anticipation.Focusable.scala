@@ -30,10 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package enigmatic
+package anticipation
 
-import anticipation.*
+import prepositional.*
 
-trait Signing:
-  def sign(data: Data, privateKey: Data): Data
-  def verify(data: Data, signature: Data, publicKey: Data): Boolean
+// A way of focusing on an element within a document, as a browser driver understands one:
+// `strategy` names the locating scheme in WebDriver's vocabulary (`css selector`, `xpath`, `link
+// text`, `tag name`) and `focus` renders a value in that scheme. Selector, path, tag and name
+// types provide instances in their own companions, so a driver can accept them without depending
+// on the libraries which define them.
+object Focusable:
+  // A pure (`->`) focus lambda: every instance is built from a pure rendering function, and the
+  // factory result must stay pure for the bare-typed givens built from it.
+  def apply[element](strategy0: Text, focus0: element -> Text): element is Focusable =
+    new Focusable:
+      type Self = element
+      def strategy: Text = strategy0
+      def focus(value: Self): Text = focus0(value)
+
+  given text: Text is Focusable = Focusable("link text".tt, identity(_))
+
+trait Focusable extends Typeclass.Pure:
+  def strategy: Text
+  def focus(value: Self): Text

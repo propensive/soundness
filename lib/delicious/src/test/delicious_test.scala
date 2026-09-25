@@ -313,7 +313,7 @@ object Tests extends Suite(m"Delicious Tests"):
           . assert(_ == true)
 
           test(m"A semantic notice renders its types through stenography"):
-            marked.map { notice => notice.semantic.let(_.render(reifier)).or(t"") }
+            marked.map { notice => notice.markup.let(SemanticMessage.parse(_)).let(_.render(reifier)).or(t"") }
             . join(t"\n")
           . assert { rendered =>
               // `java.lang.String` (not the compiler-printed `String`) proves the type

@@ -35,7 +35,7 @@ import anticipation.*
 import contingency.*
 import denominative.nil
 import distillate.*
-import enigmatic.Signing
+import gastronomy.Signing
 import gossamer.*
 // By-name rather than `rudiments.*`: this file indexes a frozen `Data` array by `Int`
 // (`bytesEqual` below), which the wildcard's `Deindex` extension makes unresolvable.

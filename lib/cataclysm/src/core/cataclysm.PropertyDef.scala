@@ -36,32 +36,16 @@ package cataclysm
 import anticipation.*
 import contingency.*
 import gossamer.*
-import hellenism.*
-import jacinta.*
 import rudiments.*
-import turbulence.*
 import vacuous.*
 
-import hellenism.classloaders.threadContextClassloader
 
 object PropertyDef:
-  // One entry of the bundled `properties.json`. Only `syntax` is read; jacinta
-  // ignores the dataset's other fields (initial, inherited, …).
-  private object Entry:
-    given decodable: Tactic[Json.Error] => Entry is Json.Decodable = Json.DecodableDerivation.derived
-
-  private case class Entry(syntax: Text)
-
-  // Every known CSS property. Read lazily from the classpath resource the first
-  // time a property is resolved; a malformed resource is a packaging error,
-  // hence `throwUnsafely`.
+  // Every known CSS property, from the string tables compiled from the bundled dataset at build
+  // time (`CssData`); only each entry's `syntax` is kept.
   lazy val list: List[PropertyDef] =
-    import contingency.strategies.throwUnsafely
-
-    val entries = cp"/cataclysm/properties.json".read[Json].as[Map[Text, Entry]]
-
-
-     entries.to[List].map: (name, entry) => PropertyDef(name, entry.syntax)
+    List.tabulate(CssData.propertyNames.length): index =>
+      PropertyDef(CssData.propertyNames(index).tt, CssData.propertySyntaxes(index).tt)
 
   // The same properties keyed by name in a `Dictionary` for fast lookup.
   lazy val all: Dictionary[PropertyDef] =

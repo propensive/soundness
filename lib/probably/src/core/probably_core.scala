@@ -59,10 +59,10 @@ export Baseline.Mode.{Arithmetic, Geometric}
 export Probing.nominative
 export Tagging.{nominative as taggingNominative}
 
-// The checking vocabulary now lives in `anticipation.check`, so that modules which only need to
+// The checking vocabulary now lives in `hypotenuse.check`, so that modules which only need to
 // compare values (notably `quantitative`) do not depend on the test framework. It is re-exported
 // here so that `import probably.*` still provides it.
-export anticipation.{!==, +/-, ===, Checkable, Tolerance, ±}
+export hypotenuse.{!==, +/-, ===, Checkable, Tolerance, ±}
 
 
 // Declares a test by its description, optionally with tags (`test(m"…", n"slow", n"network")`)

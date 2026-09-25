@@ -40,12 +40,10 @@ import java.io as ji
 import java.lang as jl
 
 import anticipation.*
-import capricious.*
 import contingency.*
 import denominative.*
 import hieroglyph.*
 import hypotenuse.*
-import parasite.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
@@ -54,7 +52,6 @@ import zephyrine.*
 
 import LineSeparation.*
 import abstractables.epochMillisecondsAbstractable
-import probates.awaitProbate
 
 inline def more[value](using value: value aka "more"): value =
   // The explicit import outranks the deindexing `apply`, which would otherwise shadow the
@@ -90,21 +87,6 @@ extension [value](value: value)
             loadable:   (result is Loadable by Text)^ )
   :   Document[result] =
     loadable.load(streamable.stream(value))
-
-extension [medium, transport](consume stream: (Stream[medium] over transport)^)
-  // The detached pump: `pump` on its own parasite task, for fire-and-forget
-  // transfers and genuinely concurrent pipeline halves. This is the "one
-  // pumping thread" of a pipeline with an asynchronous boundary.
-  def flow(consume intake: (Intake[medium] over transport)^)(using Monitor, Probate): Task[Unit] =
-    // Both endpoints move onto the pump fiber as neutral carriers (a consume parameter
-    // cannot be consumed from inside the spawned closure); single ownership transfers
-    // with the spawn.
-    val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
-    val intakeRef: AnyRef = intake.asInstanceOf[AnyRef]
-
-    async:
-      streamRef.asInstanceOf[(Stream[medium] over transport)^]
-      . pump(intakeRef.asInstanceOf[(Intake[medium] over transport)^])
 
 extension (consume stream: (Stream[Text] over Credit)^)
   // Split a character stream into a record stream of its lines (each `Text`,
@@ -325,12 +307,12 @@ extension (stream: Chain[Data])
 
     recur(stream, bytes)
 
-  def shred(mean: Double, variance: Double)(using Random): Chain[Data] =
-    given gamma: Distribution = Gamma.approximate(mean, variance)
-
+  // Re-chunk the stream into buffers whose sizes are drawn from `chunkSize`, evaluated afresh for
+  // each buffer (so a caller may sample a distribution, or hand in a constant).
+  def shred(chunkSize: => Int): Chain[Data] =
     // The size is drawn separately so that each fresh buffer can go straight into `recur`'s
     // `consume` parameter: binding it to a `val` first would alias the exclusive reference.
-    def newSize(): Int = arbitrary[Double]().toInt.max(1)
+    def newSize(): Int = chunkSize.max(1)
     def newArray(size: Int): Array[Byte]^ = Array.allocate[Byte](size)
 
     // The buffer is threaded through `consume`, so each chunk emitted downstream is frozen

@@ -1053,11 +1053,6 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         p.contains(t"0")
       . assert(identity)
 
-      test(m"YamlPath.Error reason describes itself"):
-        val err = YamlPath.Error(YamlPath.Error.Reason.UnknownDocument, 0)
-        err.message.text.s.contains("registry")
-      . assert(identity)
-
     suite(m"yp\"...\" interpolator"):
       test(m"a same-document path parses"):
         yp"#/foo/bar".encode

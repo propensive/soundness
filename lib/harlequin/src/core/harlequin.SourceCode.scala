@@ -43,11 +43,9 @@ import dotty.tools.dotc.reporting.HideNonSensicalMessages
 import dotty.tools.dotc.reporting.Reporter
 import dotty.tools.dotc.reporting.UniqueMessagePositions
 
-import anthology.*
 import anticipation.*
 import denominative.*
 import gossamer.*
-import hellenism.*
 import rudiments.*
 import denominative.dysasymptotics.{linearSize, unboundedSize}
 import stenography.*
@@ -87,13 +85,8 @@ object SourceCode:
               Optional[Completions] ) ] =
 
       if highlighting.depth == Depth.Tokenized then Unset else
-        (highlighting.scalac, highlighting.classpath) match
-          case (scalac: Scalac[?, ?], classpath: LocalClasspath) =>
-            resolveTypes
-              ( text, scalac, classpath, highlighting.depth == Depth.Compiled, caret )
-
-          case _ =>
-            Unset
+        highlighting.compilation.let: compilation =>
+          resolveTypes(text, compilation, highlighting.depth == Depth.Compiled, caret)
 
     val metaMap: Map[(Int, Int), Syntax] = resolved.lay(Map())(_(0))
     val elaborations: Map[(Int, Int), prophesy.Elaboration] = resolved.lay(Map())(_(1))
@@ -389,31 +382,20 @@ object SourceCode:
 
   // Render a classpath to the `-classpath` argument string without needing an
   // ambient `System` capability (we only have directory and jar entries here).
-  private def classpathText(classpath: LocalClasspath): Text =
-    classpath.entries.flatMap:
-      case Classpath.Entry.Directory(directory) => List(directory)
-      case Classpath.Entry.Jar(jar)             => List(jar)
-      case _                                   => Nil
-
-    . join(java.io.File.pathSeparator.nn.tt)
-
   private def resolveTypes
-    ( text:      Text,
-      scalac:    Scalac[?, ?],
-      classpath: LocalClasspath,
-      full:      Boolean,
-      caret:     Optional[Ordinal] )
+    ( text:        Text,
+      compilation: Highlight.Compilation,
+      full:        Boolean,
+      caret:       Optional[Ordinal] )
   :   ( Map[(Int, Int), Syntax],
         Map[(Int, Int), prophesy.Elaboration],
         List[Diagnostic],
         Optional[Completions] ) =
 
-    val cp = classpathText(classpath)
-
     // Types always come from a typer-stopped run, so they are source-level even
     // in `Compiled` mode (later phases such as erasure would rewrite them).
     val (typerRun, _, typerDiagnostics) =
-      frontend(text, scalac, cp): context =>
+      frontend(text, compilation): context =>
         context.setSetting(context.settings.YstopAfter, scala.collection.immutable.List("typer"))
 
     val metaMap = collectTypes(typerRun)
@@ -425,16 +407,16 @@ object SourceCode:
       // very name being completed — still has a tree at the caret to complete against. The
       // batch run remains as the fallback if the driver fails outright.
       val standard =
-        interactiveCompletions(text, scalac, cp, caret).or(collectCompletions(typerRun, caret))
+        interactiveCompletions(text, compilation, caret).or(collectCompletions(typerRun, caret))
 
-      dynamicCompletions(text, scalac, cp, caret).lay(standard): dynamic =>
+      dynamicCompletions(text, compilation, caret).lay(standard): dynamic =>
         Completions(dynamic.replace, dynamic.items + standard.items)
 
     // `Compiled` runs the post-typer phases (stopping before bytecode generation,
     // so nothing is written to disk) purely to surface later diagnostics.
     val diagnostics =
       if !full then typerDiagnostics else
-        frontend(text, scalac, cp): context =>
+        frontend(text, compilation): context =>
           context.setSetting(context.settings.YstopBefore, scala.collection.immutable.List("genBCode"))
 
         ._3
@@ -442,7 +424,7 @@ object SourceCode:
     (metaMap, elaborations, diagnostics, completions)
 
   private def frontend
-    ( text: Text, scalac: Scalac[?, ?], cp: Text )
+    ( text: Text, compilation: Highlight.Compilation )
     ( stop: Contexts.FreshContext => Contexts.FreshContext )
   :   (Run, Contexts.Context, List[Diagnostic]) =
 
@@ -454,9 +436,9 @@ object SourceCode:
 
         if pos.exists then
           val importance = diagnostic.level match
-            case dotty.tools.dotc.interfaces.Diagnostic.ERROR   => Importance.Error
-            case dotty.tools.dotc.interfaces.Diagnostic.WARNING => Importance.Warning
-            case _                                              => Importance.Info
+            case dotty.tools.dotc.interfaces.Diagnostic.ERROR   => Diagnostic.Importance.Error
+            case dotty.tools.dotc.interfaces.Diagnostic.WARNING => Diagnostic.Importance.Warning
+            case _                                              => Diagnostic.Importance.Info
 
           val span = Span.offset(pos.start.z, pos.end - pos.start)
           collected += Diagnostic(span, diagnostic.message.tt, importance)
@@ -471,7 +453,7 @@ object SourceCode:
         // carries a read capability the pure formal rejects.
         val args = java.util.ArrayList[String]()
 
-        (t"-classpath" :: cp :: scalac.commandLineArguments + List(t"")).each: argument =>
+        (t"-classpath" :: compilation.classpath :: compilation.arguments + List(t"")).each: argument =>
           args.add(argument.s)
           ()
 
@@ -483,7 +465,7 @@ object SourceCode:
     given context: Contexts.Context = stop(base)
 
     val source = SourceFile.virtual("<highlighting>", text.s)
-    val run = Scalac.compiler().newRun
+    val run = compilation.compiler().newRun
     run.compileSources(scala.collection.immutable.List(source))
 
     (run, context, collected.to(List))
@@ -505,11 +487,11 @@ object SourceCode:
   // work for bare (necessarily unresolved) identifiers in both term and type position — the
   // batch run destroys the enclosing statement's tree in exactly those cases. Any failure
   // degrades to `Unset` and the batch route below takes over.
-  private def interactiveCompletions(text: Text, scalac: Scalac[?, ?], cp: Text, caret: Ordinal)
+  private def interactiveCompletions(text: Text, compilation: Highlight.Compilation, caret: Ordinal)
   :   Optional[Completions] =
 
     try
-      val settings = ("-classpath" :: cp.s :: scalac.commandLineArguments.map(_.s)).map(_.nn)
+      val settings = ("-classpath" :: compilation.classpath.s :: compilation.arguments.map(_.s)).map(_.nn)
       // stdlib bridge: the presentation compiler's own API takes a `scala.List[String]`.
       val driver = Shim.interactiveDriver(settings.stdlib)
       // The driver resolves the URI as a path, so it must use the `file` scheme, though no
@@ -572,7 +554,7 @@ object SourceCode:
   // statement is just the qualifier expression, which types. Any failure — an untyped
   // qualifier, no companion, a companion that is not `Completable`, a provider exception —
   // degrades to `Unset`, never an error.
-  private def dynamicCompletions(text: Text, scalac: Scalac[?, ?], cp: Text, caret: Ordinal)
+  private def dynamicCompletions(text: Text, compilation: Highlight.Compilation, caret: Ordinal)
   :   Optional[Completions] =
 
     val content = text.s.toCharArray.nn
@@ -587,7 +569,7 @@ object SourceCode:
         t"${String(content, 0, start - 1)}${String(content, point, content.length - point)}"
 
       val (run, _, _) =
-        frontend(truncated, scalac, cp): context =>
+        frontend(truncated, compilation): context =>
           // stdlib bridge: dotc's `setSetting` takes a `scala.List[String]`.
           context.setSetting(context.settings.YstopAfter, List("typer").stdlib)
 

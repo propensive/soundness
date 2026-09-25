@@ -30,10 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+package gastronomy
 
-trait GenericHtmlAttribute[-value]:
-  type Self <: String & Singleton
+import anticipation.*
 
-  def name: Text
-  def serialize(value: value): Text
+trait Signing:
+  def sign(data: Data, privateKey: Data): Data
+  def verify(data: Data, signature: Data, publicKey: Data): Boolean

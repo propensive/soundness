@@ -30,12 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+package soundness
 
-case class Tolerance[value](base: value, tolerance: value)
-  ( greaterThan: (value, value) => Boolean,
-    add:         (value, value) => value,
-    subtract:    (value, value) => value ):
-
-  def covers(right: value): Boolean =
-    greaterThan(right, subtract(base, tolerance)) && greaterThan(add(base, tolerance), right)
+export hypotenuse.{!==, +/-, ===, Checkable, Tolerance, ±}

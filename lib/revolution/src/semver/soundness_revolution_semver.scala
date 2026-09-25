@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anticipation.{!==, +/-, ===, Checkable, Tolerance, ±}
+export revolution.{Compatibility, Semver, v}

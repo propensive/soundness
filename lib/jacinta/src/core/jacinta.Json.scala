@@ -350,8 +350,7 @@ trait Json2 extends Json3:
 
       val pointer =
         JsonPointer
-          ( base.url,
-            Path[JsonPointer, JsonPointer.type, Tuple]
+          ( Path[JsonPointer, JsonPointer.type, Tuple]
               ( base.path.root, (base.path.descent :+ key).to(List) ) )
 
       Json.Focus(pointer)
@@ -600,8 +599,7 @@ trait Json2 extends Json3:
 
                   val newPointer =
                     JsonPointer
-                      ( base.url,
-                        Path[JsonPointer, JsonPointer.type, Tuple]
+                      ( Path[JsonPointer, JsonPointer.type, Tuple]
                           ( base.path.root, (base.path.descent :+ key).to(List) ) )
 
                   Json.Focus(newPointer)
@@ -926,8 +924,7 @@ object Json extends Json2, Dynamic:
 
       val pointer =
         JsonPointer
-          ( base.url,
-            Path[JsonPointer, JsonPointer.type, Tuple]
+          ( Path[JsonPointer, JsonPointer.type, Tuple]
               ( base.path.root, (base.path.descent :+ key).to(List) ) )
 
       Json.Focus(pointer)
@@ -2356,8 +2353,7 @@ object Json extends Json2, Dynamic:
 
             val newPointer =
               JsonPointer
-                ( base.url,
-                  Path[JsonPointer, JsonPointer.type, Tuple]
+                ( Path[JsonPointer, JsonPointer.type, Tuple]
                     ( base.path.root, (base.path.descent :+ ordinal.n0.toString.tt).to(List) ) )
 
             Json.Focus(newPointer)

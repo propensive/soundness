@@ -46,6 +46,11 @@ import typonym.*
 import vacuous.*
 
 object Tag:
+  // Polymorphic in the tag type, not `Tag is Focusable`: every tag in a vocabulary has a singleton
+  // type of its own (`H1` is a `Tag.Container of "h1" over Phrasing in Whatwg`), and a typeclass's
+  // `Self` member is invariant, so an instance fixed at `Tag` matches no actual tag.
+  given focusable: [tag <: Tag] => tag is Focusable = Focusable(t"tag name", _.label)
+
   given optical: [html <: Html] => Tag is Optical from html onto Node = tag =>
     Optic: (origin, lambda) =>
       origin match

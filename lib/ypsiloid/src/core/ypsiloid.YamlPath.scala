@@ -32,10 +32,8 @@
                                                                                                   */
 package ypsiloid
 
-import scala.collection.mutable as scm
 
 import anticipation.*
-import beneficence.*
 import contextual.*
 import contingency.*
 import denominative.*
@@ -46,7 +44,6 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import symbolism.*
-import urticose.*
 import vacuous.*
 
 // A YAML Path identifies a node within a YAML document. Modelled on
@@ -56,13 +53,6 @@ import vacuous.*
 // not addressable; attempting to navigate through one is undefined.
 object YamlPath extends Root(""):
   type Plane = YamlPath
-
-  trait Registry extends Findable:
-    private val documents: scm.HashMap[HttpUrl, Yaml] = scm.HashMap()
-
-    def update(url: HttpUrl, document: Yaml): Unit = documents(url) = document
-    def apply(url: HttpUrl): Optional[Yaml] = documents.at(url).or(lookup(url))
-    protected def lookup(url: HttpUrl): Optional[Yaml]
 
   given navigable: [ordinal <: Ordinal] => ordinal is Navigable on YamlPath =
     // `(ordinal: Ordinal)` widens the singleton-bounded parameter (case-2 pure-value box).
@@ -79,8 +69,7 @@ object YamlPath extends Root(""):
     val self: Text = "#"
     val separator: Text = "/"
 
-  given YamlPath is Encodable in Text = path =>
-    t"${path.url.let(_.encode).or(t"")}#${path.path}"
+  given YamlPath is Encodable in Text = path => t"#${path.path}"
 
   inline given interpolable: YamlPath is Interpolable:
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
@@ -120,10 +109,10 @@ object YamlPath extends Root(""):
       if segments.nil then YamlPath()
       else
         val descent = segments.reverse.map(filesystem.unescape)
-        YamlPath(Unset, Path[YamlPath, YamlPath.type, Tuple]("/", descent))
+        YamlPath(Path[YamlPath, YamlPath.type, Tuple]("/", descent))
 
   given divisible: YamlPath is Divisible by Text to YamlPath =
-    Divisible: (path, segment) => YamlPath(path.url, path.path / segment)
+    Divisible: (path, segment) => YamlPath(path.path / segment)
 
   given divisible2: YamlPath is Divisible by Ordinal to YamlPath =
     // An explicit anonymous class rather than the `Divisible:` factory: under capture checking
@@ -136,18 +125,16 @@ object YamlPath extends Root(""):
       type Operand = Ordinal
 
       def divide(path: YamlPath, segment: Ordinal): YamlPath =
-        YamlPath(path.url, path.path / segment)
+        YamlPath(path.path / segment)
 
   // YamlPathError → YamlPath.Error
   object Error:
     enum Reason(val number: Int) extends Clarification:
-      case UnknownDocument extends Reason(1)
       case ExpectedHash    extends Reason(2)
       case ExpectedSlash   extends Reason(3)
       case BadEscape       extends Reason(4)
 
     given communicable: Reason is Communicable =
-      case Reason.UnknownDocument => m"the registry contains no document at the path's URL"
       case Reason.ExpectedHash    => m"a YAML path must begin with '#'"
       case Reason.ExpectedSlash   => m"a YAML path fragment must begin with '/'"
       case Reason.BadEscape       => m"a '~' in a YAML path must be followed by '0' or '1'"
@@ -158,13 +145,9 @@ object YamlPath extends Root(""):
   case class Error(reason: YamlPath.Error.Reason, offset: Int)(using Diagnostics)
   extends fulminate.Error(546, reason.number)(m"the YAML path was not valid because $reason")
 
-case class YamlPath(url: Optional[HttpUrl] = Unset, path: Path on YamlPath = YamlPath):
-  def apply(using registry: YamlPath.Registry)(document: Yaml): Yaml raises YamlPath.Error =
-    url.let(registry(_).lest(YamlPath.Error(YamlPath.Error.Reason.UnknownDocument, 0)))
-    . or(document)
-
-  def apply(ordinal: Ordinal): YamlPath = YamlPath(url, path / ordinal)
-  def apply(text: Text): YamlPath = YamlPath(url, path / text)
+case class YamlPath(path: Path on YamlPath = YamlPath):
+  def apply(ordinal: Ordinal): YamlPath = YamlPath(path / ordinal)
+  def apply(text: Text): YamlPath = YamlPath(path / text)
 
   // Append `segment` at the root end of the path, leaving the rest of
   // the descent intact. Used by `Yaml`'s Wisteria derivation: each
@@ -175,7 +158,7 @@ case class YamlPath(url: Optional[HttpUrl] = Unset, path: Path on YamlPath = Yam
   // Serpentine's `/`, which adds at the leaf side — the wrong
   // direction for focus supplementing.
   private[ypsiloid] def prepend(segment: Text): YamlPath =
-    YamlPath(url, Path[YamlPath, YamlPath.type, Tuple]("/", (path.descent :+ segment).to(List)))
+    YamlPath(Path[YamlPath, YamlPath.type, Tuple]("/", (path.descent :+ segment).to(List)))
 
   private[ypsiloid] def prepend(ordinal: Ordinal): YamlPath =
-    YamlPath(url, Path[YamlPath, YamlPath.type, Tuple]("/", (path.descent :+ ordinal.n0.toString.tt).to(List)))
+    YamlPath(Path[YamlPath, YamlPath.type, Tuple]("/", (path.descent :+ ordinal.n0.toString.tt).to(List)))

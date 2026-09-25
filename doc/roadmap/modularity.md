@@ -116,7 +116,8 @@ noted.
   :64 (which routes through `Url`'s `abstractable = _.show`). Add a rendering test proving
   identical output, delete :67, and swap honeycomb.core's dep from urticose.url to
   anticipation.url.
-- **anticipation.check**: a new anticipation submodule (in the `base` bundle with its
+- **anticipation.check** (since moved to `hypotenuse.check`, package `hypotenuse`, because its
+  `Commensurable` bound made it depend on hypotenuse anyway): a new anticipation submodule (in the `base` bundle with its
   siblings) holding probably's `Checkable` typeclass; probably.core re-exports it, and
   quantitative.core swaps its probably.core dep for anticipation.check (the macro sites are
   quantitative.internal.scala:208 and protointernal.scala:790). This frees ~40 modules —
@@ -604,8 +605,9 @@ no-semantic-change line or carries real regression risk.
   identity-sensitive `arrayPad` sentinel (compared with `eq`), deliberately divergent
   descriptor layouts, and hot-parser performance risk. If approved: extract from jacinta
   verbatim with jacinta delegating (bench-compared), then retarget ypsiloid separately.
-- **Folding anticipation.html** (after mod-1 it holds only `GenericHtmlAttribute`, with two
-  consumers).
+- ~~**Folding anticipation.html**~~ Done: `anticipation.html` and `GenericHtmlAttribute` were
+  deleted outright once its only two consumers (gesticulate, telekinesis) turned out to have no
+  consumers of their own.
 
 ## Rejected, with reasons — recorded so they are not re-litigated
 
