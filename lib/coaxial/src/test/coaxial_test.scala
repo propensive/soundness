@@ -288,6 +288,77 @@ object Tests extends Suite(m"Coaxial tests"):
               bytes(data)
         . assert(_ == bytes(ascii(t"ping")))
 
+    supervise:
+      suite(m"TLS server and client"):
+        import internetAccess.online
+
+        // A throwaway self-signed identity from the JDK's own `keytool`, so the test needs no
+        // checked-in key material. PKCS#12 bytes, password `secret`.
+        val password: Text = t"secret"
+
+        val keystore: Data =
+          val file = java.nio.file.Files.createTempFile("coaxial-", ".p12").nn
+          java.nio.file.Files.delete(file)
+          val keytool = java.lang.System.getProperty("java.home").nn+"/bin/keytool"
+
+          val process =
+            ProcessBuilder
+              ( keytool, "-genkeypair", "-alias", "peer", "-keyalg", "EC", "-groupname",
+                "secp256r1", "-dname", "CN=coaxial-test", "-validity", "1", "-storetype",
+                "PKCS12", "-keystore", file.toString, "-storepass", password.s, "-keypass",
+                password.s )
+            . redirectErrorStream(true).nn.start().nn
+
+          process.getInputStream.nn.readAllBytes()
+          process.waitFor()
+          val bytes = Array.unsafeFrozen(java.nio.file.Files.readAllBytes(file).nn)
+          java.nio.file.Files.delete(file)
+          bytes
+
+        val certificate: Data = Tls.certificate(keystore, password).or(Data())
+        val fingerprint: Data = Tls.fingerprint(certificate)
+
+        // One refill window is the peer's single message (no half-close on a duplex).
+        def message(duplex: Duplex): Data =
+          val source = duplex.source
+          val count = source.refill(zephyrine.Credit(64)).or(0)
+          source.lend { region => range => region.materialize(range.capped(count)) }
+
+        def exchange(acceptance: TlsAcceptance): List[Byte] =
+          val port = Port[Tcp]()
+          val secure: SecurePort = SecurePort(port)
+          given server: Tls = Tls.keyed(keystore, password)
+
+          secure.listen[Data](message(_)):
+            given client: Tls = acceptance.tls()
+
+            SecureEndpoint(t"127.0.0.1", port.number).duplex: duplex =>
+              duplex.send(zephyrine.Stream(ascii(t"ping")))
+              bytes(message(duplex))
+
+        test(m"the keystore's certificate is found and fingerprinted"):
+          (certificate.length > 0, fingerprint.length)
+        . assert(_ == (true, 32))
+
+        test(m"a client pinning the server's certificate completes an exchange"):
+          exchange(TlsAcceptance().pinning(fingerprint))
+        . assert(_ == bytes(ascii(t"ping")))
+
+        test(m"a client pinning a different fingerprint is refused"):
+          val wrong: Data = Data.fill(32) { index => index.toByte }
+          try
+            exchange(TlsAcceptance().pinning(wrong))
+            t"connected"
+          catch case error: Exception => t"refused"
+        . assert(_ == t"refused")
+
+        test(m"a strict client rejects the self-signed server"):
+          try
+            exchange(TlsAcceptance())
+            t"connected"
+          catch case error: Exception => t"refused"
+        . assert(_ == t"refused")
+
     suite(m"Socket options"):
       test(m"reuseAddress sets SO_REUSEADDR on a configured TCP server socket"):
         import socketOptions.reuseAddressSocketOption

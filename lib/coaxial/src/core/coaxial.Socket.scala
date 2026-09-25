@@ -201,11 +201,13 @@ object Socket:
       case Accept   extends Reason(1)
       case Transmit extends Reason(2)
       case Close    extends Reason(3)
+      case Handshake extends Reason(4)
 
     given communicable: Reason is Communicable =
-      case Reason.Accept   => m"a new connection could not be accepted"
-      case Reason.Transmit => m"data could not be transmitted to the connection"
-      case Reason.Close    => m"the connection could not be closed cleanly"
+      case Reason.Accept    => m"a new connection could not be accepted"
+      case Reason.Transmit  => m"data could not be transmitted to the connection"
+      case Reason.Close     => m"the connection could not be closed cleanly"
+      case Reason.Handshake => m"the TLS handshake with the peer failed"
 
   case class Error(reason: Socket.Error.Reason)(using Diagnostics)
   extends fulminate.Error(266, reason.number)(m"the connection failed because $reason")
