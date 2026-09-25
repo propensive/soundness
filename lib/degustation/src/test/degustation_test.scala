@@ -119,8 +119,8 @@ object Tests extends Suite(m"Degustation Tests"):
       . map { atom => (atom.key, atom.encoding.serialize[Hex]) }
       . sortBy(_(0).s)
 
-    val baseline = listing(fixture)
-    val keys = baseline.map(_(0).s).toSet
+    lazy val baseline = listing(fixture)
+    lazy val keys = baseline.map(_(0).s).toSet
 
     test(m"the fixture yields a nonempty atom listing"):
       baseline.size
