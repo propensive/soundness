@@ -2163,7 +2163,7 @@ object galilei extends Library:
     override def scalaNative = false // declares its WIT `Interface` with hellenism's JVM/JS-only `cp"…"`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, jvm):
+  object test extends Tests(core, jvm, parasite.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
