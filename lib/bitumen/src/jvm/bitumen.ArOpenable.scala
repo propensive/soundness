@@ -32,39 +32,42 @@
                                                                                                   */
 package bitumen
 
+import java.io as ji
+
 import anticipation.*
+import aperture.*
 import contingency.*
-import denominative.*
-import distillate.*
-import galilei.*
-import gossamer.*
-import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric
-import hypotenuse.*, arithmeticOptions.uncheckedOverflow
-import nomenclature.*
 import prepositional.*
 import rudiments.*
-import serpentine.*
-import spectacular.*
 import turbulence.*
-import vacuous.*
 import zephyrine.*
-import fulminate.*
-import hypotenuse.*
-import scala.caps
-import aperture.*
-import pneumatic.*
 
-class TarDataOpenable(using Tactic[Tar.Error], Tactic[Truncation.Error]) extends Openable:
-  type Self = Data
-  type Form = Tar
-  type Operand = Tar.Flag
-  type Result = Tar.Handle
+// A named class rather than an anonymous given instance, for the reasons documented on galilei's
+// `FileOpenable`. Archives open read-only: a `Write` mode is refused with
+// `Ar.Error.Reason.WriteUnsupported`. There are no flags — a `.deb` is plain `ar`; it is the
+// members inside that are compressed — so the operand is uninhabited.
+class ArOpenable[path: Abstractable across Paths to Text]
+  ( using Tactic[Ar.Error], Tactic[Truncation.Error] )
+extends Openable:
+
+  type Self = path
+  type Form = Ar
+  type Operand = Nothing
+  type Result = Ar.Handle
 
   def open[grants <: Grant, result]
-    ( value: Data, mode: Mode granting grants, flags: List[Tar.Flag] )
-    ( block: ((Tar.Handle & Granting[grants])^) ?=> result )
+    ( value: path, mode: Mode granting grants, flags: List[Nothing] )
+    ( block: ((Ar.Handle & Granting[grants])^) ?=> result )
   :   result =
 
-    if mode.atoms.has(Write) then abort(Tar.Error(Tar.Error.Reason.WriteUnsupported))
-    val entries = Tar.Handle.entries(value.stream, flags)
-    block(using new Tar.Handle(entries) with Granting[grants] {})
+    if mode.atoms.has(Write) then abort(Ar.Error(Ar.Error.Reason.WriteUnsupported))
+
+    val in = ji.BufferedInputStream(ji.FileInputStream(value.generic.s))
+
+    try
+      // Entries parse lazily straight off the live stream, held open for the scope's duration;
+      // member payloads stream in bounded chunks as they are read, and are drained when a later
+      // entry is forced.
+      val entries = Ar.Handle.entries(in.source[Data])
+      block(using new Ar.Handle(entries) with Granting[grants] {})
+    finally in.close()

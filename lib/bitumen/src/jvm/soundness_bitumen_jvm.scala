@@ -32,4 +32,5 @@
                                                                                                   */
 package soundness
 
-export bitumen.{TarBuilder, TarOpenable, tarPathOpenable, tarPathCreatable, from, extractTo}
+export bitumen.{ArOpenable, arPathOpenable, TarBuilder, TarOpenable, tarPathOpenable,
+  tarPathCreatable, from, extractTo}

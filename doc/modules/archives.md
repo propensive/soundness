@@ -122,7 +122,7 @@ val script = Tar.Entry.File
     user  = UnixUser(1000, t"alice"),
     group = UnixGroup(1000, t"alice"),
     mtime = 0.bits.u32,
-    data  = Tar.Body(t"#!/bin/sh\necho hello\n".in[Data]) )
+    data  = Archive.Body(t"#!/bin/sh\necho hello\n".in[Data]) )
 ```
 
 A `Tarfile` of entries streams as tar blocks, or as the compressed forms the format usually
@@ -172,3 +172,42 @@ Long names are handled in POSIX's pax form by default, or GNU's, chosen when the
 (`Tarfile(entries, LongNameFormat.Gnu)`); sparse files and pax extended headers round-trip
 faithfully. A malformed archive raises a `Tar.Error` naming the fault — a bad checksum, an
 unparseable header field, a truncated body.
+
+### Ar
+
+`ar` is the container of every `.deb` package and every `.a` static library: an eight-byte magic,
+then a flat run of members, each a sixty-byte header followed inline by its payload. It carries no
+entry types, no checksum and no end-of-archive marker, so a member is just a name, its Unix
+metadata and a body. `Ar.Entry` builds one; the `mode` is the raw octal field (`100644`), since
+`ar` stores the file-type bits alongside the permissions:
+
+```scala
+val control =
+  Ar.Entry(t"control.tar.xz", Archive.Body(t"...".in[Data]), 0L, UnixUser(0), UnixGroup(0), 33188)
+val deb = Arfile(List(control))
+deb.source[Data]
+```
+
+Reading mirrors `Tarfile.read`: entries parse lazily off a byte stream, single-pass and in
+order, with each member's body streamed in bounded chunks and memoized if the sequence advances
+past it. Opening as `Ar` scopes the source in the same way as `Tar`, with `ar` as the handle;
+there are no flags, because a `.deb` is plain `ar` and only its members are compressed:
+
+```scala
+Arfile.read(deb.source[Data]).map(_.name)    // List(t"control.tar.xz")
+
+val debPath = work / "hello.deb"
+debPath.create[File](): handle ?=>
+  handle.write(deb.source[Data])
+
+debPath.open[Ar]():
+  ar.entries.map(_.name)
+```
+
+A GNU archive stores names longer than fifteen characters in a `//` name-table member and
+refers to them by offset; the reader resolves those, and strips the SysV terminating `/`, into
+`name`, while `rawName` keeps the literal field so a parsed archive re-serializes byte for byte
+(`Arfile.from(stream).source[Data]`). Each entry's `role` says whether it is a `Regular` member,
+the `NameTable`, or a `SymbolTable` (`/` or `/SYM64/`). A malformed archive raises an `Ar.Error`:
+a missing magic, a corrupt header terminator, a non-numeric field, a truncated stream, or a
+long-name reference that does not resolve.

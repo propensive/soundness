@@ -52,6 +52,11 @@ given tarPathOpenable: [path: Abstractable across Paths to Text]
 =>  ( TarOpenable[path]^{tarTactic, streamTactic} ) =
   TarOpenable[path]
 
+given arPathOpenable: [path: Abstractable across Paths to Text]
+=>  ( arTactic: Tactic[Ar.Error], streamTactic: Tactic[Truncation.Error] )
+=>  ( ArOpenable[path]^{arTactic, streamTactic} ) =
+  ArOpenable[path]
+
 given tarPathCreatable: [path: Abstractable across Paths to Text]
 =>  (tactic: Tactic[Tar.Error])
 =>  ( TarBuilder.TarCreatable[path]^{tactic} ) =

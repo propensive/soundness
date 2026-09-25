@@ -52,7 +52,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                        user  = UnixUser(0),
                        group = UnixGroup(0),
                        mtime = 0.bits.u32,
-                       data  = Tar.Body(t"hello".in[Data]) )
+                       data  = Archive.Body(t"hello".in[Data]) )
 
     val emptyDir = Tar.Entry.Directory
                     ( path  = t"data".as[Relative on Tar],
@@ -112,7 +112,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                         user  = UnixUser(0),
                         group = UnixGroup(0),
                         mtime = 0.bits.u32,
-                        data  = Tar.Body() )
+                        data  = Archive.Body() )
       val blocks = Tarfile(List(longFile)).source[Data].chain.stdlib.toList
 
       test(m"long name: 5 blocks (PAX header/data, regular, 2 zero)"):
@@ -196,7 +196,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                        user  = UnixUser(0),
                        group = UnixGroup(0),
                        mtime = 0.bits.u32,
-                       data  = Tar.Body(big) )
+                       data  = Archive.Body(big) )
       val bytes: Data = Tarfile(List(bigFile)).source[Data].memoize
 
       test(m"a 200kB body arrives as multiple chunks"):
@@ -263,7 +263,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                         user  = UnixUser(0),
                         group = UnixGroup(0),
                         mtime = 0.bits.u32,
-                        data  = Tar.Body() )
+                        data  = Archive.Body() )
 
       val bytes = Tarfile(List(longFile)).source[Data].chain
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
@@ -306,7 +306,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                           user  = UnixUser(1000, t"alice"),
                           group = UnixGroup(1000, t"alice"),
                           mtime = 12345.bits.u32,
-                          data  = Tar.Body(t"#!/bin/sh\n".in[Data]) )
+                          data  = Archive.Body(t"#!/bin/sh\n".in[Data]) )
 
       val bytes = Tarfile(List(executable)).source[Data].chain
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
@@ -413,7 +413,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                     user  = UnixUser(1000, longName),
                     group = UnixGroup(1000, longGroup),
                     mtime = 0.bits.u32,
-                    data  = Tar.Body() )
+                    data  = Archive.Body() )
 
       val blocks = Tarfile(List(file)).source[Data].chain.stdlib.toList
 
@@ -451,7 +451,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                         user  = UnixUser(0),
                         group = UnixGroup(0),
                         mtime = 0.bits.u32,
-                        data  = Tar.Body() )
+                        data  = Archive.Body() )
 
       val tar = Tarfile(List(longFile), LongNameFormat.Gnu)
       val blocks = tar.source[Data].chain.stdlib.toList
@@ -506,7 +506,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                     user  = UnixUser(0),
                     group = UnixGroup(0),
                     mtime = 1234567890.bits.u32,
-                    data  = Tar.Body(),
+                    data  = Archive.Body(),
                     pax   = Map
                              ( t"atime"   -> t"1700000000.500000000",
                                t"ctime"   -> t"1700000001.250000000",
@@ -586,7 +586,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                          user  = UnixUser(0),
                          group = UnixGroup(0),
                          mtime = 0.bits.u32,
-                         data  = Tar.Body() )
+                         data  = Archive.Body() )
 
       val longFileB = Tar.Entry.File
                        ( path  = longPathB.as[Relative on Tar],
@@ -594,7 +594,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                          user  = UnixUser(0),
                          group = UnixGroup(0),
                          mtime = 0.bits.u32,
-                         data  = Tar.Body() )
+                         data  = Archive.Body() )
 
       test(m"long PAX path is readable by external tar"):
         listing(writeArchive(Tarfile(List(longFileA)), t"longpax.tar"))
@@ -837,7 +837,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            segments = List
                                        ( SparseSegment(0L, 100L),
                                          SparseSegment(5000L, 200L) ),
-                           data     = Tar.Body(Array.fill[Byte](300)('X'.toByte)) )
+                           data     = Archive.Body(Array.fill[Byte](300)('X'.toByte)) )
 
       val bytes = Tarfile(List(sparseEntry)).source[Data].chain
       val blocks = bytes.stdlib.toList
@@ -899,7 +899,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            mtime    = 0.bits.u32,
                            realSize = 10000L,
                            segments = manySegments.to(proscenium.List),
-                           data     = Tar.Body(Array.fill[Byte](500)('X'.toByte)) )
+                           data     = Archive.Body(Array.fill[Byte](500)('X'.toByte)) )
 
       val bytes = Tarfile(List(sparseEntry)).source[Data].chain
       val blocks = bytes.stdlib.toList
@@ -917,3 +917,211 @@ object Tests extends Suite(m"Bitumen Tests"):
           case sp: Tar.Entry.Sparse => sp.segments.stdlib.length
           case _                   => 0
       . assert(_ == 10)
+
+    // The `ar` reader and writer, the container of `.deb` packages and `.a` static libraries.
+    def arBytes(text: Text): Data = text.in[Data]
+
+    def arArchive(entries: List[Ar.Entry]): Data = Arfile(entries).source[Data].memoize
+
+    def arEntry(name: Text, content: Text): Ar.Entry =
+      Ar.Entry(name, Archive.Body(arBytes(content)), 1716989111L, UnixUser(0), UnixGroup(0), 33188)
+
+    suite(m"AR: header fields"):
+      import errorDiagnostics.emptyDiagnostics
+
+      test(m"decimal field with trailing spaces decodes"):
+        Ar.Header.decodeDecimal(arBytes(t"1716989111  "), t"mtime")
+      . assert(_ == 1716989111L)
+
+      test(m"an entirely blank field decodes as zero"):
+        Ar.Header.decodeDecimal(arBytes(t"      "), t"uid")
+      . assert(_ == 0L)
+
+      test(m"mode is octal, not decimal"):
+        Ar.Header.decodeOctal(arBytes(t"100644  "), t"mode")
+      . assert(_ == 33188L)
+
+      // Compared by shape, not equality: the reason carries the offending `Data`, which is an
+      // array and so compares by reference.
+      test(m"a non-numeric field raises"):
+        capture[Ar.Error](Ar.Header.decodeDecimal(arBytes(t"12x4  "), t"size")).reason
+      . assert(_.isInstanceOf[Ar.Error.Reason.BadDecimal])
+
+      test(m"a digit resuming after padding raises"):
+        capture[Ar.Error](Ar.Header.decodeDecimal(arBytes(t"12 4  "), t"size")).reason
+      . assert(_.isInstanceOf[Ar.Error.Reason.BadDecimal])
+
+      test(m"trailing name padding is stripped but the SysV slash is kept"):
+        Ar.Header.decodeName(arBytes(t"SAX.o/          "))
+      . assert(_ == t"SAX.o/")
+
+      test(m"a formatted header is sixty bytes ending in the terminator"):
+        val header = Ar.Header.format(t"a.txt/", 1716989111L, 0, 0, 33188, 3L)
+        (header.length, header.segment((58).z till (60).z).utf8)
+      . assert(_ == (60, t"`\n"))
+
+      test(m"a formatted header lays its fields out left-aligned"):
+        Ar.Header.format(t"a.txt/", 1716989111L, 0, 0, 33188, 3L).utf8
+      . assert(_ == t"a.txt/          1716989111  0     0     100644  3         `\n")
+
+    suite(m"AR: round-tripping"):
+      test(m"an archive begins with the ar magic"):
+        arArchive(List(arEntry(t"hello.txt", t"hello"))).segment((0).z till (8).z).utf8
+      . assert(_ == t"!<arch>\n")
+
+      test(m"a single member round-trips its name"):
+        Arfile.read(arArchive(List(arEntry(t"hello.txt", t"hello"))).source[Data]).toList
+        . map(_.name)
+      . assert(_ == List(t"hello.txt"))
+
+      test(m"a single member round-trips its body"):
+        Arfile.read(arArchive(List(arEntry(t"hello.txt", t"hello"))).source[Data]).toList
+        . map(_.data.memoize.utf8)
+      . assert(_ == List(t"hello"))
+
+      test(m"member metadata round-trips"):
+        val read = Arfile.read(arArchive(List(arEntry(t"a.txt", t"xy"))).source[Data]).toList.head
+        (read.mtime, read.user, read.group, read.mode)
+      . assert(_ == (1716989111L, UnixUser(0), UnixGroup(0), 33188))
+
+      test(m"several members round-trip in order"):
+        val original =
+          List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb"), arEntry(t"c.txt", t"c"))
+
+        Arfile.read(arArchive(original).source[Data]).toList.map(_.name)
+      . assert(_ == List(t"a.txt", t"b.txt", t"c.txt"))
+
+      test(m"an odd-sized member is padded so the next header is even-aligned"):
+        // "aaa" is three bytes, so a pad byte must follow: 8 magic + 60 + 4 + 60 + 2 = 134.
+        arArchive(List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb"))).length
+      . assert(_ == 134)
+
+      test(m"re-serialising a parsed archive reproduces the original bytes"):
+        val original = arArchive(List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb")))
+        Arfile.from(original.source[Data]).source[Data].memoize.readable.to(List)
+      . assert(_ == arArchive(List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb"))).readable
+          .to(List))
+
+    suite(m"AR: chunk boundaries"):
+      // The reader pulls off a shared cursor, so a chunking that splits headers and bodies at
+      // arbitrary points must be absorbed rather than merely tolerated at the edges.
+      val original = arArchive(List(arEntry(t"a.txt", t"aaa"), arEntry(t"bee.txt", t"bbbb")))
+
+      for size <- List(1, 3, 7, 64) do
+        test(m"members parse when the stream arrives in chunks of $size"):
+          Arfile.read(original.readable.grouped(size).map(Array.frozen(_)).iterator.stream).toList
+          . map(_.name)
+        . assert(_ == List(t"a.txt", t"bee.txt"))
+
+        test(m"bodies survive chunking by $size"):
+          Arfile.read(original.readable.grouped(size).map(Array.frozen(_)).iterator.stream).toList
+          . map(_.data.memoize.utf8)
+        . assert(_ == List(t"aaa", t"bbbb"))
+
+    suite(m"AR: malformed archives"):
+      import errorDiagnostics.emptyDiagnostics
+
+      test(m"a stream without the magic raises BadMagic"):
+        capture[Ar.Error](Arfile.read(arBytes(t"not an archive!!").source[Data]).toList).reason
+      . assert(_.isInstanceOf[Ar.Error.Reason.BadMagic])
+
+      test(m"a truncated header raises TruncatedStream"):
+        val original = arArchive(List(arEntry(t"a.txt", t"aaa")))
+        val short = original.segment((0).z till (40).z)
+        capture[Ar.Error](Arfile.read(short.source[Data]).toList).reason
+      . assert(_.isInstanceOf[Ar.Error.Reason.TruncatedStream])
+
+      test(m"a truncated body raises TruncatedStream"):
+        val original = arArchive(List(arEntry(t"a.txt", t"aaaaaaaa")))
+        val short = original.segment((0).z till (original.length - 4).z)
+        capture[Ar.Error](Arfile.read(short.source[Data]).toList.map(_.data.memoize)).reason
+      . assert(_.isInstanceOf[Ar.Error.Reason.TruncatedStream])
+
+      test(m"a corrupt header terminator raises BadTerminator"):
+        val original = arArchive(List(arEntry(t"a.txt", t"aaa")))
+        val corrupt = Array.frozen(original.readable.updated(8 + 58, ('X'.toByte: Byte)))
+        capture[Ar.Error](Arfile.read(corrupt.source[Data]).toList).reason
+      . assert(_.isInstanceOf[Ar.Error.Reason.BadTerminator])
+
+    suite(m"AR: GNU extensions"):
+      import errorDiagnostics.emptyDiagnostics
+
+      // A name longer than fifteen characters is held in a `//` member and referred to by byte
+      // offset. The table's own header leaves mtime, uid, gid and mode blank, which is why a
+      // parsed entry keeps its verbatim header rather than reformatting one.
+      val table: Data = arBytes(t"parserInternals.o/\nxmlschemastypes.o/\n")
+
+      val gnu: Data =
+        val nameTable =
+          Ar.Entry(t"//", t"//", 0L, UnixUser(0), UnixGroup(0), 0, Archive.Body(table))
+
+        val first =
+          Ar.Entry(t"parserInternals.o", t"/0", 1L, UnixUser(0), UnixGroup(0), 33188,
+            Archive.Body(arBytes(t"aa")))
+
+        val second =
+          Ar.Entry(t"xmlschemastypes.o", t"/19", 1L, UnixUser(0), UnixGroup(0), 33188,
+            Archive.Body(arBytes(t"bb")))
+
+        arArchive(List(nameTable, first, second))
+
+      test(m"long names resolve through the name table"):
+        Arfile.read(gnu.source[Data]).toList.filter(_.role == Ar.Role.Regular).map(_.name)
+      . assert(_ == List(t"parserInternals.o", t"xmlschemastypes.o"))
+
+      test(m"the name table member is recognised by role"):
+        Arfile.read(gnu.source[Data]).toList.map(_.role)
+      . assert(_ == List(Ar.Role.NameTable, Ar.Role.Regular, Ar.Role.Regular))
+
+      test(m"the 64-bit symbol table is a symbol table, not a long-name reference"):
+        val symbols =
+          Ar.Entry(t"/SYM64/", t"/SYM64/", 0L, UnixUser(0), UnixGroup(0), 0,
+            Archive.Body(arBytes(t"xy")))
+
+        Arfile.read(arArchive(List(symbols)).source[Data]).toList.map(_.role)
+      . assert(_ == List(Ar.Role.SymbolTable))
+
+      test(m"an unresolvable long-name reference raises"):
+        val orphan =
+          Ar.Entry(t"whatever", t"/7", 1L, UnixUser(0), UnixGroup(0), 33188,
+            Archive.Body(arBytes(t"zz")))
+
+        capture[Ar.Error](Arfile.read(arArchive(List(orphan)).source[Data]).toList).reason
+      . assert(_.isInstanceOf[Ar.Error.Reason.BadLongNameRef])
+
+      test(m"the BSD length-prefixed name form is rejected as unsupported"):
+        val bsd =
+          Ar.Entry(t"whatever", t"#1/9", 1L, UnixUser(0), UnixGroup(0), 33188,
+            Archive.Body(arBytes(t"zz")))
+
+        capture[Ar.Error](Arfile.read(arArchive(List(bsd)).source[Data]).toList).reason
+      . assert(_.isInstanceOf[Ar.Error.Reason.UnsupportedNameFormat])
+
+    suite(m"AR: scoped opening"):
+      import systems.javaBaseSystem
+      import temporaryDirectories.systemTemporaryDirectory
+      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.overwritePreexisting
+      import filesystemOptions.deleteRecursively
+
+      val deb = Arfile(List(arEntry(t"debian-binary", t"2.0\n"), arEntry(t"control.tar", t"cc")))
+
+      test(m"in-memory data opens as Ar"):
+        deb.source[Data].memoize.open[Ar]():
+          bitumen.ar.entries.to(List).map(_.name)
+      . assert(_ == List(t"debian-binary", t"control.tar"))
+
+      test(m"an archive file opens as Ar"):
+        val workDir: Path on Linux = temporaryDirectory[Path on Linux] / Uuid().show
+        workDir.create[Directory]()
+        val path: Path on Linux = workDir / "scoped.deb"
+        path.open[File](Write, OpenFlag.Create) { handle ?=> handle.write(deb) }
+
+        path.open[Ar]():
+          bitumen.ar.entries.to(List).map(_.name)
+      . assert(_ == List(t"debian-binary", t"control.tar"))
+
+      test(m"opening for writing is refused"):
+        import errorDiagnostics.emptyDiagnostics
+        capture[Ar.Error](deb.source[Data].memoize.open[Ar](Write) { () }).reason
+      . assert(_ == Ar.Error.Reason.WriteUnsupported)
