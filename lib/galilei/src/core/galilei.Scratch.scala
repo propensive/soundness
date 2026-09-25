@@ -73,7 +73,7 @@ object Scratch:
       // existing directory, a scratch scope needs no access-register arbitration.
       val name: Text = Uuid().show
       val child: Path on filesystem = value.unsafeChild(name)(using Unsafe)
-      backend.createDirectory(child)
+      backend.createDirectory(child, Unset)
 
       def wipe(path: Path on filesystem): Unit =
         if backend.stat(path, false).entry == Directory

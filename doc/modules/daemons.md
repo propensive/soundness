@@ -67,12 +67,46 @@ answers in milliseconds.
 Output must go through `Out` and `Err`. Scala's own `println` writes to the JVM's global
 `System.out`, which belongs to the *daemon* process rather than to any client — so whatever it
 prints reaches no user and, in the ordinary case, is simply lost. `Out` and `Err` resolve the
-`Stdio` of the current invocation, which is the client's.
+`Stdio` of the current invocation, which is the client's. When the reader of that stream goes
+away — `mytool | head -1`, once `head` has exited — the launcher says so, and the invocation's
+next write to it raises `Outlet.Error`, ending the invocation with status 141 as `SIGPIPE`
+would end a process writing a pipe.
+
+Arguments and environment values arrive as text. A byte sequence that is not valid UTF-8 in
+either is delivered with U+FFFD in its place, which is the substitution the JVM itself makes
+for its own argument vector, so an application sees what it would have seen if run directly.
+
+### What the invocation knows about its client
+
+The daemon holds a socket, not the client's process, so everything it knows about the
+invocation is what the launcher told it, and `service` is where that knowledge is read.
+`service.cliInput`, `cliOutput` and `cliError` say whether each standard stream is a terminal.
+`service.invokedAs` is the name the executable was invoked by — `argv[0]` as the caller
+supplied it — so one executable installed under several names by symbolic links can dispatch
+on the name, while every alias shares one warm daemon:
+
+```scala
+def multicall(): Unit = cli:
+  execute:
+    service.invokedAs.let(_.cut(t"/").last) match
+      case t"gunzip" => Out.println(t"decompressing")
+      case _         => Out.println(t"compressing")
+    Exit.Ok
+```
+
+`service.umask` is the invocation's file-creation mask, which the [filesystem](filesystem.md)
+library applies to whatever the invocation creates; and `service.windowSize` is the client
+terminal's size, measured by the launcher when the invocation began and again on every resize.
+The invocation's `Termcap` reads the same measurement, so tables and wrapped text fit the
+terminal as it is now.
 
 ### Signals and shutdown
 
 An invocation traps the signals it cares about, and the response reaches the code of that
-invocation, not the shared process:
+invocation, not the shared process. A trap sees a `Signal`: the interrupt itself, and whatever
+the launcher attached to it — the terminal's new size with `WINCH` and `CONT`, and on Windows
+the time the system allows after a close, logoff or shutdown event before it ends the client
+regardless:
 
 ```scala
 def longRunningWork(): Exit = Exit.Ok
@@ -80,12 +114,24 @@ def longRunningWork(): Exit = Exit.Ok
 def watch(): Unit = cli:
   execute:
     trap:
-      case signal: UnixSignal => SignalResponse.Accept
+      case Signal(Interrupt.Winch, columns, rows, _) =>
+        Out.println(t"now ${columns.or(0)}×${rows.or(0)}")
+        SignalResponse.Accept
+
+      case Signal(WindowsSignal.Close, _, _, deadline) =>
+        SignalResponse.Accept
+
+      case Signal(_: UnixSignal, _, _, _) =>
+        SignalResponse.Accept
+
     longRunningWork()
 ```
 
-The daemon retires itself after six idle hours, when its state files are removed, or on demand —
-the built-in `'{admin}'` subcommand reports the daemon's pid and kills it.
+The daemon retires itself after six idle hours, when its state files are removed, or on demand.
+The built-in `'{admin}'` subcommand reports the daemon's pid (`pid`), ends it at once (`kill`),
+or asks it to go gracefully (`shutdown`): no further invocation is served, those in flight
+finish, and then the process exits, so a warm JVM held for a command run rarely can be
+reclaimed without finding its pid. A rebuilt executable displaces its daemon the same way.
 
 ### Asking for a cooked terminal
 

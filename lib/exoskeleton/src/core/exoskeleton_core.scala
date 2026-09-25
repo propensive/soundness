@@ -125,10 +125,7 @@ package executives:
       try exitStatus(using invocation)
       catch case error: Throwable => backstop.handle(error)(using invocation.stdio)
 
-inline def trap(handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse])
-  ( using cli: Cli )
-:   Unit =
-
+inline def trap(handler: PartialFunction[Signal, SignalResponse])(using cli: Cli): Unit =
   cli.trap(handler)
 
 def application(using executive: Executive, interpreter: Interpreter, system: System)
@@ -155,6 +152,6 @@ def application(using executive: Executive, interpreter: Interpreter, system: Sy
         Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset) )
 
   signals.each: signal =>
-    sm.Signal.handle(sm.Signal(signal.shortName.s), _ => cli.dispatchSignal(signal))
+    sm.Signal.handle(sm.Signal(signal.shortName.s), _ => cli.dispatchSignal(Signal(signal)))
 
   jl.System.exit(executive.process(cli)(block)())

@@ -92,7 +92,8 @@ object Platform:
   // no import, and while `File` is a path's only form, `path.open(...)` can infer it.
   given openable: [filesystem: Filesystem, path <: Path on filesystem]
   =>  ( backend: FilesystemBackend on filesystem,
-        tactic:  Tactic[Io.Error] )
+        tactic:  Tactic[Io.Error],
+        umask:   Umask )
   =>  ( FileOpenable[filesystem, path]^{tactic} ) =
     FileOpenable[filesystem, path]
 
@@ -111,21 +112,24 @@ object Platform:
   given directoryCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
   =>  ( backend:  FilesystemBackend on filesystem,
         tactic:   Tactic[Io.Error],
-        loggable: (Io.Event is Loggable)^ )
+        loggable: (Io.Event is Loggable)^,
+        umask:    Umask )
   =>  ( Creation.DirectoryCreatable[filesystem, path]^{tactic, loggable} ) =
     Creation.DirectoryCreatable[filesystem, path]
 
   given fileCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
   =>  ( backend:  FilesystemBackend on filesystem,
         tactic:   Tactic[Io.Error],
-        loggable: (Io.Event is Loggable)^ )
+        loggable: (Io.Event is Loggable)^,
+        umask:    Umask )
   =>  ( Creation.FileCreatable[filesystem, path]^{tactic, loggable} ) =
     Creation.FileCreatable[filesystem, path]
 
   given fifoCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
   =>  ( backend:  FilesystemBackend on filesystem,
         tactic:   Tactic[Io.Error],
-        loggable: (Io.Event is Loggable)^ )
+        loggable: (Io.Event is Loggable)^,
+        umask:    Umask )
   =>  ( Creation.FifoCreatable[filesystem, path]^{tactic, loggable} ) =
     Creation.FifoCreatable[filesystem, path]
 

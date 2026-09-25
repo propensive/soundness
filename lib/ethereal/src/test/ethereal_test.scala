@@ -111,6 +111,27 @@ object Tests extends Suite(m"Ethereal Tests"):
                 case Argument("stderr") :: text :: Nil =>
                   execute(Err.println(text()) yet Exit.Ok)
 
+                // Writes until it cannot: with its reader gone (`| head -1`) the invocation
+                // must end, as a process writing a pipe would, rather than run forever.
+                case Argument("spew") :: Nil =>
+                  execute:
+                    def spew(count: Int): Exit =
+                      Out.println(t"line $count")
+                      spew(count + 1)
+
+                    spew(0)
+
+                case Argument("invoked") :: Nil =>
+                  execute(Out.print(service.invokedAs.or(t"(unset)")) yet Exit.Ok)
+
+                case Argument("umask") :: Nil =>
+                  execute(Out.print(service.umask.let(_.octal).or(t"(unset)")) yet Exit.Ok)
+
+                case Argument("size") :: Nil =>
+                  execute:
+                    Out.print(service.windowSize.let(size => t"${size(0)}x${size(1)}").or(t"(unset)"))
+                    Exit.Ok
+
                 case Argument("sleep") :: Argument(As[Int](seconds)) :: Nil =>
                   execute:
                     snooze(seconds*Second) yet Exit.Ok
@@ -147,11 +168,11 @@ object Tests extends Suite(m"Ethereal Tests"):
                     val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
 
                     trap:
-                      case sig: UnixSignal =>
+                      case Signal(sig: UnixSignal, _, _, _) =>
                         received.offer(sig.shortName)
                         SignalResponse.Accept
 
-                      case sig: WindowsSignal =>
+                      case Signal(sig: WindowsSignal, _, _, _) =>
                         received.offer(sig.shortName)
                         SignalResponse.Accept
 
@@ -161,7 +182,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
                 case Argument("trap-reject") :: Nil =>
                   execute:
-                    trap { case _: UnixSignal => SignalResponse.Reject }
+                    trap { case Signal(_: UnixSignal, _, _, _) => SignalResponse.Reject }
                     snooze(5*Second) yet Exit.Ok
 
                 case Argument("trap-defer") :: Nil =>
@@ -169,11 +190,11 @@ object Tests extends Suite(m"Ethereal Tests"):
                     val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
 
                     trap:
-                      case Interrupt.Int =>
+                      case Signal(Interrupt.Int, _, _, _) =>
                         received.offer(t"outer")
                         SignalResponse.Accept
 
-                    trap { case _: UnixSignal => SignalResponse.Defer }
+                    trap { case Signal(_: UnixSignal, _, _, _) => SignalResponse.Defer }
 
                     val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
                     val text: Text = if raw == null then t"(timeout)" else raw
@@ -181,13 +202,13 @@ object Tests extends Suite(m"Ethereal Tests"):
 
                 case Argument("trap-undefined") :: Nil =>
                   execute:
-                    trap { case Interrupt.Winch => SignalResponse.Accept }
+                    trap { case Signal(Interrupt.Winch, _, _, _) => SignalResponse.Accept }
                     snooze(5*Second) yet Exit.Ok
 
                 case Argument("trap-slow") :: Nil =>
                   execute:
                     trap:
-                      case _: UnixSignal =>
+                      case Signal(_: UnixSignal, _, _, _) =>
                         snooze(2*Second)
                         SignalResponse.Accept
 
@@ -280,6 +301,33 @@ object Tests extends Suite(m"Ethereal Tests"):
             test(m"stderr output is forwarded"):
               sh"$tool stderr 'error message'".exec[Stderr]().text.trim
             . check(_ == t"error message")
+
+          suite(m"Invocation context"):
+            test(m"a write to stdout with no reader ends the invocation"):
+              supervise:
+                val t0 = jl.System.currentTimeMillis
+                sh"sh -c '$tool spew | head -1'".exec[Text]()
+                jl.System.currentTimeMillis - t0
+            . check(_ < 5000L)
+
+            test(m"the daemon still serves after an invocation lost its reader"):
+              sh"$tool echo after".exec[Text]()
+            . check(_ == t"after")
+
+            val alias = temporaryDirectory[Path on Linux]/t"alias-$name"
+
+            test(m"the name the executable was invoked as is reported"):
+              sh"ln -sf $tool $alias".exec[Unit]()
+              try sh"$alias invoked".exec[Text]() finally safely(sh"rm -f $alias".exec[Unit]())
+            . check(_ == alias.encode)
+
+            test(m"the invocation's umask is reported"):
+              sh"sh -c 'umask 027; $tool umask'".exec[Text]()
+            . check(_ == t"027")
+
+            test(m"no terminal size is reported when no stream is a terminal"):
+              sh"$tool size".exec[Text]()
+            . check(_ == t"(unset)")
 
           suite(m"Interrupt forwarding"):
             test(m"SIGTERM causes the launcher to exit"):
@@ -447,6 +495,26 @@ object Tests extends Suite(m"Ethereal Tests"):
               sh"test -f $stateDir/pid".exec[Exit]()
 
             . check(_ == Exit.Ok) // daemon persists between invocations
+
+            test(m"'{admin}' shutdown ends the daemon once the invocation is done"):
+              supervise:
+                val pid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
+                sh"$tool '{admin}' shutdown".exec[Exit]()
+                val deadline = jl.System.currentTimeMillis + 5000
+                while safely(Process(pid).alive).or(false) && jl.System.currentTimeMillis < deadline
+                do snooze(0.05*Second)
+                !safely(Process(pid).alive).or(false)
+
+            . check(_ == true)
+
+            test(m"the next invocation after a shutdown starts a fresh daemon"):
+              sh"rm -f $stateDir/fail".exec[Unit]()
+              sh"$tool echo fresh".exec[Text]()
+            . check(_ == t"fresh")
+
+            test(m"the socket admits only its owner"):
+              sh"stat -f %Lp $stateDir/socket".exec[Text]().trim
+            . check(_ == t"600")
 
             test(m"recovery after daemon is killed with SIGKILL"):
               supervise:
@@ -907,7 +975,7 @@ object Tests extends Suite(m"Ethereal Tests"):
         // The wire contract shared with the Rust runner: `bintel.rs` pins the same
         // signature and frames, so the two implementations cannot drift apart silently.
         val signatureHex =
-          t"eeced165c15f73119cf7710812671924aa558722927d29f37538e7b3953296c2ce"
+          t"e50b7e82c11b06783dafa8a2ecc4e35f7ba31044ecd38fc5d9fe9e47a7c11e59e5"
 
         def hex(data: Data): Text = Text(data.readable.map(b => f"${b & 0xff}%02x").mkString)
 
@@ -932,41 +1000,70 @@ object Tests extends Suite(m"Ethereal Tests"):
         // written in the wrong order or under the wrong indices.
         val init =
           Launcher.Message.Init
-            ( 7, 501, t"jon", t"/usr/bin/x", t"/tmp", true, false, true, List(t"a", t"b c"),
-              List(t"K=V") )
+            ( 7, t"501", t"jon", t"/usr/bin/x", t"/tmp", true, false, true, List(t"a", t"b c"),
+              List(t"K=V"), invokedAs = t"x", umask = t"022" )
 
         test(m"an init message frames as the pinned bytes"):
           hex(Launcher.encode(init))
-        . check(_ == t"b2c4b5bb5321${signatureHex}01000a000137010335303102036a6f6e030a2f7573722f62696e2f7804042f746d700507080161080362206309034b3d56")
+        . check(_ == t"b2c4b5bb5b21${signatureHex}01000c000137010335303102036a6f6e030a2f7573722f62696e2f7804042f746d700507080161080362206309034b3d560a01780b03303232")
+
+        // A WINCH carries the terminal's size (fields 2 and 3); a Windows close, its deadline.
+        test(m"a sized signal frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.Signal(7, t"WINCH", 80, 24)))
+        . check(_ == t"b2c4b5bb3721${signatureHex}010304000137010557494e43480202383003023234")
+
+        test(m"a signal with a deadline frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.Signal(7, t"CTRL_CLOSE", deadline = 5000L)))
+        . check(_ == t"b2c4b5bb3a21${signatureHex}010303000137010a4354524c5f434c4f5345040435303030")
+
+        test(m"a closed document frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.Closed(7, t"stdout")))
+        . check(_ == t"b2c4b5bb3021${signatureHex}010a0200013701067374646f7574")
+
+        // Every optional field of `Init` set, so a field decoded under the wrong index shows.
+        val fullInit =
+          Launcher.Message.Init
+            ( 7, t"S-1-5-21-1", t"jon", t"C:\\x.exe", t"C:\\", false, true, false, Nil, Nil,
+              t"x", Unset, 132, 43, 437, 65001 )
 
         test(m"every message round-trips"):
           val messages: List[Launcher.Message] =
             List
               ( init,
+                fullInit,
                 Launcher.Message.Stderr(7),
                 Launcher.Message.Control(7),
                 Launcher.Message.Signal(7, t"INT"),
+                Launcher.Message.Signal(7, t"CONT", 80, 24),
+                Launcher.Message.Signal(7, t"CTRL_LOGOFF", deadline = 5000L),
                 Launcher.Message.Exit(7),
                 Launcher.Message.Verify,
                 Launcher.Message.SignalAck(true),
                 Launcher.Message.SignalAck(false),
                 Launcher.Message.Verdict(true),
                 Launcher.Message.Mode(false),
-                Launcher.Message.ExitStatus(3) )
+                Launcher.Message.ExitStatus(3),
+                Launcher.Message.Closed(7, t"stderr"),
+                Launcher.Message.Shutdown )
 
           messages.map { message => Launcher.decode(Launcher.encode(message)) }
         . check(_ == List
           ( init,
+            fullInit,
             Launcher.Message.Stderr(7),
             Launcher.Message.Control(7),
             Launcher.Message.Signal(7, t"INT"),
+            Launcher.Message.Signal(7, t"CONT", 80, 24),
+            Launcher.Message.Signal(7, t"CTRL_LOGOFF", deadline = 5000L),
             Launcher.Message.Exit(7),
             Launcher.Message.Verify,
             Launcher.Message.SignalAck(true),
             Launcher.Message.SignalAck(false),
             Launcher.Message.Verdict(true),
             Launcher.Message.Mode(false),
-            Launcher.Message.ExitStatus(3) ))
+            Launcher.Message.ExitStatus(3),
+            Launcher.Message.Closed(7, t"stderr"),
+            Launcher.Message.Shutdown ))
 
         test(m"a document of another schema is rejected"):
           val bytes = Launcher.encode(Launcher.Message.Exit(7)).readable.toList.toArray

@@ -245,6 +245,49 @@ object Tests extends Suite(m"Galilei tests"):
           target.existent()
       . assert(_ == false)
 
+    suite(m"Creation masks"):
+      import errorDiagnostics.emptyDiagnostics
+
+      val maskLeaf: Text = Uuid().show
+      val base: Path on Linux = unsafely((% / "tmp" / maskLeaf).on[Linux])
+      unsafely(base.create[Directory]())
+
+      def mode(path: Path on Linux): Text =
+        val permissions = java.nio.file.Files.getPosixFilePermissions(path.nioPath).nn
+        java.nio.file.attribute.PosixFilePermissions.toString(permissions).nn.tt
+
+      test(m"a file created under a mask withholds the masked bits"):
+        unsafely:
+          given Umask = galilei.Umask(0x3f)
+          val target: Path on Linux = base / "private.txt"
+          target.create[File]()
+          mode(target)
+      . assert(_ == t"rw-------")
+
+      test(m"a directory created under a mask withholds the masked bits"):
+        unsafely:
+          given Umask = galilei.Umask(0x17)
+          val target: Path on Linux = base / "group"
+          target.create[Directory]()
+          mode(target)
+      . assert(_ == t"rwxr-x---")
+
+      test(m"a file authored in a creation scope keeps the mask"):
+        unsafely:
+          given Umask = galilei.Umask(0x3f)
+          val target: Path on Linux = base / "authored.txt"
+          target.create[File](): handle ?=> handle.write(Chain(t"content".in[Data]))
+          mode(target)
+      . assert(_ == t"rw-------")
+
+      test(m"a mask renders in octal"):
+        galilei.Umask.parse(t"22").let(_.octal)
+      . assert(_ == t"022")
+
+      test(m"the process mask requests no mode"):
+        galilei.Umask.process.mode(galilei.Umask.fileBits)
+      . assert(_ == Unset)
+
     suite(m"Scratch directories"):
       import filesystemOptions.createNonexistentParents
       import filesystemOptions.overwritePreexisting

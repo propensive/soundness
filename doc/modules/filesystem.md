@@ -154,6 +154,27 @@ directory.open[Scratch](Read & Write): scratch ?=>
   (scratch / "file.txt").overwrite(t"data")
 ```
 
+### Creation masks
+
+A process creates files under its *umask*, the permission bits the operating system withholds
+from everything it creates, and ordinarily that is the end of the matter. A process serving
+several callers at once — a [daemon](daemons.md) — has one umask but many invocations, each
+with its own, so galilei lets the mask be a contextual value: a `Umask` in scope is applied to
+every file and directory created while it applies, requested at creation so that the entry
+never exists more permissive than asked. Where none is in scope, `Umask.process` — the
+operating system's own — applies, exactly as before:
+
+```scala
+def privately(): Unit =
+  given Umask = Umask(0x3f) // 077: readable and writable by the owner alone
+  (directory / "secret.txt").create[File](): handle ?=>
+    handle.write(Chain(t"payload".in[Data]))
+```
+
+A mask is parsed from the octal form `umask` prints, `Umask.parse(t"022")`, and renders back
+the same way with `octal`. A daemon's service handle is a `Umask.Provider`, so within a `cli`
+block the invocation's mask is already in scope with no further declaration.
+
 ### The opening pattern, generally
 
 `open` is not specific to files. A great many things share the same shape: a value says *where*

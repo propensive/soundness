@@ -48,7 +48,7 @@ export
       Scratch, Searchpaths, searchpathCompliant, Shared, Slice, Substantiable, Subtree, subvolume,
       subvolumeRoot, Symlink, symlinkInto, symlinkTo, touch,
       TraversalOrder,
-      UnixEntry, Volume, volume, Windows, WindowsEntry, wipe, writable, write }
+      Umask, UnixEntry, Volume, volume, Windows, WindowsEntry, wipe, writable, write }
 
 package pathInterfaces:
   export

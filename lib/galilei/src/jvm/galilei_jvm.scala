@@ -34,7 +34,7 @@ package galilei
 
 import java.io as ji
 
-import murmuration.{has, filter, map}
+import murmuration.{has, filter, map, foreach}
 import symbolism.*
 import java.nio.channels as jnc
 import java.nio.file as jnf
@@ -158,16 +158,50 @@ package filesystemBackends:
               . to(Chain)
             finally stream.close()
 
-      def createDirectory(path: Path on Plane)(using Tactic[Io.Error]): Unit =
-        protect(path, Operation.Create)(jnf.Files.createDirectory(javaPath(path)))
+      // Whether the default filesystem has POSIX permission bits at all (it does not on
+      // Windows), in which case a requested mode is ignored.
+      private lazy val posix: Boolean =
+        jnf.FileSystems.getDefault.nn.supportedFileAttributeViews.nn.contains("posix")
 
-      def createFile(path: Path on Plane)(using Tactic[Io.Error]): Unit =
-        protect(path, Operation.Create)(jnf.Files.createFile(javaPath(path)))
+      private def permissions(mode: Int): java.util.Set[jnfa.PosixFilePermission] =
+        val set = java.util.HashSet[jnfa.PosixFilePermission]()
+        val all = jnfa.PosixFilePermission.values.nn
 
-      def createFifo(path: Path on Plane)(using Tactic[Io.Error]): Unit =
+        // `PosixFilePermission`'s declaration order is owner, group, others, each read, write,
+        // execute: the bit order of the mode, from the most significant bit down.
+        for i <- 0 until 9 do if (mode & (1 << (8 - i))) != 0 then set.add(all(i).nn)
+        set
+
+      // The mode is requested at creation, so the entry never exists more permissive than
+      // asked; the process's own mask is applied on top by the operating system, which cannot
+      // be disabled, so the exact bits are set afterwards — which can only widen what
+      // creation withheld, never widen beyond the request.
+      private def attributes(mode: Optional[Int]): Array[jnfa.FileAttribute[?]] =
+        mode.let: mode =>
+          if posix then Array[jnfa.FileAttribute[?]](jnfa.PosixFilePermissions.asFileAttribute(permissions(mode)).nn)
+          else Array[jnfa.FileAttribute[?]]()
+        . or(Array[jnfa.FileAttribute[?]]())
+
+      private def apply(path: Path on Plane, mode: Optional[Int]): Unit =
+        mode.let { mode => if posix then jnf.Files.setPosixFilePermissions(javaPath(path), permissions(mode)) }
+
+      def createDirectory(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit =
         protect(path, Operation.Create):
-          val process =
-            new ProcessBuilder("mkfifo", Path.encodable.encode(path).s).start().nn
+          jnf.Files.createDirectory(javaPath(path), attributes(mode)*)
+          apply(path, mode)
+
+      def createFile(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit =
+        protect(path, Operation.Create):
+          jnf.Files.createFile(javaPath(path), attributes(mode)*)
+          apply(path, mode)
+
+      def createFifo(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit =
+        protect(path, Operation.Create):
+          val command = java.util.ArrayList[String]()
+          command.add("mkfifo")
+          mode.let { mode => command.add("-m"); command.add(Integer.toOctalString(mode).nn) }
+          command.add(Path.encodable.encode(path).s)
+          val process = new ProcessBuilder(command).start().nn
 
           if process.waitFor() != 0 then abort(Io.Error(path, Operation.Create, Reason.Unsupported))
 
@@ -402,9 +436,15 @@ package filesystemBackends:
               try held.release() catch case _: jnc.ClosedChannelException => ()
         finally channel.close()
 
-      def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
+      def open[result](path: Path on Plane, flags: List[OpenFlag], mode: Optional[Int])
+        ( lambda: Handle => result )
         ( using Tactic[Io.Error] )
       :   result =
+
+        // The mode applies only when this open creates the file.
+        val creating: Boolean =
+          (flags.has(OpenFlag.Create) || flags.has(OpenFlag.Exclusive))
+          && !jnf.Files.exists(javaPath(path), jnf.LinkOption.NOFOLLOW_LINKS)
 
         val options: List[jnf.OpenOption] = flags.filter: flag =>
           flag != OpenFlag.Lock && flag != OpenFlag.LockShared && flag != OpenFlag.Await
@@ -428,7 +468,15 @@ package filesystemBackends:
           else options
 
         val channel =
-          protect(path, Operation.Open)(jnc.FileChannel.open(javaPath(path), options2*).nn)
+          protect(path, Operation.Open):
+            val optionSet = java.util.HashSet[jnf.OpenOption]()
+            options2.foreach { option => optionSet.add(option); () }
+
+            val channel =
+              jnc.FileChannel.open(javaPath(path), optionSet, attributes(if creating then mode else Unset)*).nn
+
+            if creating then apply(path, mode)
+            channel
 
         try
           // The advisory lock for the duration of the open (issue #566): exclusive when the

@@ -125,20 +125,15 @@ extends Console, caps.ExclusiveCapability, WorkingDirectory.Provider, Environmen
   // `Atomic.Ref`, not `Atomic[…]`: the match type does not reduce over an opaque type such as
   // `proscenium.List`, because its final arm needs the scrutinee proved distinct from `Int`,
   // `Long` and `Boolean`, and an opaque type's representation is not visible here to prove it.
-  private val signalHandlers:
-  Atomic.Ref[List[PartialFunction[UnixSignal | WindowsSignal, SignalResponse]]] =
+  private val signalHandlers: Atomic.Ref[List[PartialFunction[Signal, SignalResponse]]] =
     Atomic.Ref(Nil)
 
-  override def trap
-    ( handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse] )
-  :   Unit =
-
+  override def trap(handler: PartialFunction[Signal, SignalResponse]): Unit =
     signalHandlers.since(handler :: _)
 
 
-  def dispatchSignal(signal: UnixSignal | WindowsSignal): SignalResponse =
-    def loop(handlers: List[PartialFunction[UnixSignal | WindowsSignal, SignalResponse]])
-    :   SignalResponse =
+  def dispatchSignal(signal: Signal): SignalResponse =
+    def loop(handlers: List[PartialFunction[Signal, SignalResponse]]): SignalResponse =
 
       handlers match
         case Nil =>

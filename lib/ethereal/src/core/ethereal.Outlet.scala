@@ -32,139 +32,44 @@
                                                                                                   */
 package ethereal
 
+// The mode of the client's terminal. The Ethereal launcher raw-modes a terminal stdin so it
 import java.io as ji
-import java.lang as jl
-import java.util.concurrent as juc
 
-import soundness.*
+import anticipation.*
+import contingency.*
+import fulminate.*
+import rudiments.*
 
-import backstops.silentBackstop
-import charDecoders.utf8Decoder
-import classloaders.threadContextClassloader
-import environments.daemonClientEnvironment
-import executives.completionsExecutive
-import interpreters.posixInterpreter
-import systems.javaBaseSystem
-import textSanitizers.strictSanitizer
-import threading.platformThreading
-import workingDirectories.systemWorkingDirectory
+import errorDiagnostics.emptyDiagnostics
 
-@main
-def fixture(): Unit = cli:
-  arguments match
-    case Nil =>
-      execute(Out.print(t"ready") yet Exit.Ok)
+object Outlet:
+  // Raised by a write to an invocation's stdout or stderr after the launcher has reported
+  // that the stream's reader is gone — `mytool | head -1`, once `head` has exited — the
+  // daemon's equivalent of the `EPIPE` a process writing a pipe would get. Deliberately not
+  // an `IOException`, which `java.io.PrintStream` would swallow: it must reach the invocation.
+  case class Error(stream: Text)(using Diagnostics)
+  extends fulminate.Error(m"the invocation's $stream has no reader")
 
-    case Argument("args") :: rest =>
-      execute(Out.print(rest.map(_()).join(t"\n")) yet Exit.Ok)
+// An invocation's stdout or stderr: a stream that delegates to the connection until the
+// launcher sends `closed` for it, after which every write raises `Outlet.Error`, so that a
+// program which writes until it cannot ends, as it would were it writing a pipe.
+class Outlet(stream: Text, underlying: ji.OutputStream, severed: Atomic.Bool)
+extends ji.OutputStream:
+  private def check(): Unit =
+    import strategies.throwUnsafely
+    if severed() then abort(Outlet.Error(stream))
 
-    case Argument("lines") :: rest =>
-      execute(Out.print(rest.map(_()).join(t"\n") + t"\n") yet Exit.Ok)
+  def write(byte: Int): Unit =
+    check()
+    underlying.write(byte)
 
-    case Argument("echo") :: text :: Nil =>
-      execute(Out.print(text()) yet Exit.Ok)
+  override def write(bytes: scala.Array[Byte] | Null): Unit =
+    check()
+    underlying.write(bytes)
 
-    case Argument("exit") :: Argument(As[Int](status)) :: Nil =>
-      execute(Exit.Fail(status))
+  override def write(bytes: scala.Array[Byte] | Null, offset: Int, length: Int): Unit =
+    check()
+    underlying.write(bytes, offset, length)
 
-    case Argument("stderr") :: text :: Nil =>
-      execute(Err.println(text()) yet Exit.Ok)
-
-    case Argument("sleep") :: Argument(As[Int](seconds)) :: Nil =>
-      execute:
-        Thread.sleep(seconds.toLong*1000L)
-        Exit.Ok
-
-    case Argument("env") :: Argument(variable) :: Nil =>
-      execute:
-        val value: Text = safely(Environment[Text](variable)).or(t"")
-        Out.print(value) yet Exit.Ok
-
-    case Argument("pid") :: Nil =>
-      execute(Out.print(Process().pid.value.show) yet Exit.Ok)
-
-    case Argument("pwd") :: Nil =>
-      execute:
-        val cwd: Text = safely(workingDirectory[Path on Local].encode).or:
-          jl.System.getProperty("user.dir").nn.tt
-
-        Out.print(cwd) yet Exit.Ok
-
-    case Argument("cat") :: Nil =>
-      execute:
-        val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
-        val line: Text = reader.readLine().nn.tt
-        Out.print(line) yet Exit.Ok
-
-    case Argument("cooked") :: Nil =>
-      execute:
-        service.cooked:
-          val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
-          val line: Text = reader.readLine().nn.tt
-          Out.print(t"[$line]")
-
-        Exit.Ok
-
-    case Argument("version") :: Nil =>
-      execute:
-        val id: Text = safely(System.properties.build.id[Text]()).or:
-          safely((Classpath/"build.id").read[Text].trim).or(t"unknown")
-
-        Out.print(t"v$id") yet Exit.Ok
-
-    case Argument("signal") :: Nil =>
-      execute:
-        val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
-
-        trap:
-          case Signal(sig: UnixSignal, _, _, _) =>
-            received.offer(sig.shortName)
-            SignalResponse.Accept
-
-          case Signal(sig: WindowsSignal, _, _, _) =>
-            received.offer(sig.shortName)
-            SignalResponse.Accept
-
-        val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
-        val text: Text = if raw == null then t"(timeout)" else raw
-        Out.print(text) yet Exit.Ok
-
-    case Argument("trap-reject") :: Nil =>
-      execute:
-        trap { case Signal(_: UnixSignal, _, _, _) => SignalResponse.Reject }
-        Thread.sleep(5000L)
-        Exit.Ok
-
-    case Argument("trap-defer") :: Nil =>
-      execute:
-        val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
-
-        trap:
-          case Signal(Interrupt.Int, _, _, _) =>
-            received.offer(t"outer")
-            SignalResponse.Accept
-
-        trap { case Signal(_: UnixSignal, _, _, _) => SignalResponse.Defer }
-
-        val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
-        val text: Text = if raw == null then t"(timeout)" else raw
-        Out.print(text) yet Exit.Ok
-
-    case Argument("trap-undefined") :: Nil =>
-      execute:
-        trap { case Signal(Interrupt.Winch, _, _, _) => SignalResponse.Accept }
-        Thread.sleep(5000L)
-        Exit.Ok
-
-    case Argument("trap-slow") :: Nil =>
-      execute:
-        trap:
-          case Signal(_: UnixSignal, _, _, _) =>
-            Thread.sleep(2000L)
-            SignalResponse.Accept
-
-        Thread.sleep(5000L)
-        Exit.Ok
-
-    case _ =>
-      execute(Exit.Fail(1))
+  override def flush(): Unit = if !severed() then underlying.flush()
+  override def close(): Unit = underlying.close()

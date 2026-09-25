@@ -30,141 +30,63 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ethereal
+package galilei
 
-import java.io as ji
-import java.lang as jl
-import java.util.concurrent as juc
+import anticipation.*
+import contingency.*
+import distillate.*
+import gossamer.*
+import prepositional.*
+import spectacular.*
+import vacuous.*
 
-import soundness.*
+// A file-creation mask, as POSIX `umask(2)` defines it: the permission bits withheld from
+// every file and directory created while it applies, so that `Umask(0o077)` yields files
+// readable by their owner alone. It is process-wide state for an ordinary process, which is
+// why the operating system applies it for free; a daemon serving several invocations, each
+// with its own mask, cannot rely on the process's, and applies the invocation's explicitly
+// to what it creates. The mask reaches galilei as a contextual value: a `Provider` — a
+// daemon's service handle, say — makes the invocation's mask summonable with no import, and
+// where none is in scope the operating system's own mask applies, as it always did.
+object Umask extends UmaskPriority:
+  trait Provider:
+    def umask: Optional[Umask]
 
-import backstops.silentBackstop
-import charDecoders.utf8Decoder
-import classloaders.threadContextClassloader
-import environments.daemonClientEnvironment
-import executives.completionsExecutive
-import interpreters.posixInterpreter
-import systems.javaBaseSystem
-import textSanitizers.strictSanitizer
-import threading.platformThreading
-import workingDirectories.systemWorkingDirectory
+  // The process's own mask, whatever it is, applied by the operating system at creation.
+  val process: Umask = -1
 
-@main
-def fixture(): Unit = cli:
-  arguments match
-    case Nil =>
-      execute(Out.print(t"ready") yet Exit.Ok)
+  // The conventional bits an entry is created with before any mask applies (Scala has no
+  // octal literals): `0o666` for a file or FIFO, `0o777` for a directory.
+  val fileBits: Int = 0x1b6
+  val directoryBits: Int = 0x1ff
 
-    case Argument("args") :: rest =>
-      execute(Out.print(rest.map(_()).join(t"\n")) yet Exit.Ok)
+  def apply(bits: Int): Umask = bits & directoryBits
 
-    case Argument("lines") :: rest =>
-      execute(Out.print(rest.map(_()).join(t"\n") + t"\n") yet Exit.Ok)
+  // The conventional octal rendering, as `umask` prints it: `022`, `077`.
+  def parse(text: Text): Optional[Umask] =
+    try Umask(Integer.parseInt(text.s, 8)) catch case _: NumberFormatException => Unset
 
-    case Argument("echo") :: text :: Nil =>
-      execute(Out.print(text()) yet Exit.Ok)
+  given provided: (provider: Provider^) => Umask = provider.umask.or(process)
+  given showable: Umask is Showable = _.octal
+  given encodable: Umask is Encodable in Text = _.octal
+  given decodable: Umask is Decodable in Text = text => parse(text).or(process)
 
-    case Argument("exit") :: Argument(As[Int](status)) :: Nil =>
-      execute(Exit.Fail(status))
+  extension (umask: Umask)
+    def octal: Text =
+      if umask == -1 then t"" else
+        val digits: String = Integer.toOctalString(umask).nn
+        ("000".substring(digits.length).nn + digits).tt
 
-    case Argument("stderr") :: text :: Nil =>
-      execute(Err.println(text()) yet Exit.Ok)
+    def bits: Int = umask
 
-    case Argument("sleep") :: Argument(As[Int](seconds)) :: Nil =>
-      execute:
-        Thread.sleep(seconds.toLong*1000L)
-        Exit.Ok
+    // The mode a creation should request for an entry that would conventionally be created
+    // with `bits` (`fileBits` or `directoryBits`), or `Unset` when the process's own mask is
+    // to apply.
+    def mode(bits: Int): Optional[Int] = if umask == -1 then Unset else bits & ~umask
 
-    case Argument("env") :: Argument(variable) :: Nil =>
-      execute:
-        val value: Text = safely(Environment[Text](variable)).or(t"")
-        Out.print(value) yet Exit.Ok
+// Lower priority than the companion's `provided` (a class's givens take precedence over its
+// parent's), so a `Provider` in scope wins and, absent one, nothing changes.
+private[galilei] trait UmaskPriority:
+  given inherited: Umask = Umask.process
 
-    case Argument("pid") :: Nil =>
-      execute(Out.print(Process().pid.value.show) yet Exit.Ok)
-
-    case Argument("pwd") :: Nil =>
-      execute:
-        val cwd: Text = safely(workingDirectory[Path on Local].encode).or:
-          jl.System.getProperty("user.dir").nn.tt
-
-        Out.print(cwd) yet Exit.Ok
-
-    case Argument("cat") :: Nil =>
-      execute:
-        val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
-        val line: Text = reader.readLine().nn.tt
-        Out.print(line) yet Exit.Ok
-
-    case Argument("cooked") :: Nil =>
-      execute:
-        service.cooked:
-          val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
-          val line: Text = reader.readLine().nn.tt
-          Out.print(t"[$line]")
-
-        Exit.Ok
-
-    case Argument("version") :: Nil =>
-      execute:
-        val id: Text = safely(System.properties.build.id[Text]()).or:
-          safely((Classpath/"build.id").read[Text].trim).or(t"unknown")
-
-        Out.print(t"v$id") yet Exit.Ok
-
-    case Argument("signal") :: Nil =>
-      execute:
-        val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
-
-        trap:
-          case Signal(sig: UnixSignal, _, _, _) =>
-            received.offer(sig.shortName)
-            SignalResponse.Accept
-
-          case Signal(sig: WindowsSignal, _, _, _) =>
-            received.offer(sig.shortName)
-            SignalResponse.Accept
-
-        val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
-        val text: Text = if raw == null then t"(timeout)" else raw
-        Out.print(text) yet Exit.Ok
-
-    case Argument("trap-reject") :: Nil =>
-      execute:
-        trap { case Signal(_: UnixSignal, _, _, _) => SignalResponse.Reject }
-        Thread.sleep(5000L)
-        Exit.Ok
-
-    case Argument("trap-defer") :: Nil =>
-      execute:
-        val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
-
-        trap:
-          case Signal(Interrupt.Int, _, _, _) =>
-            received.offer(t"outer")
-            SignalResponse.Accept
-
-        trap { case Signal(_: UnixSignal, _, _, _) => SignalResponse.Defer }
-
-        val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
-        val text: Text = if raw == null then t"(timeout)" else raw
-        Out.print(text) yet Exit.Ok
-
-    case Argument("trap-undefined") :: Nil =>
-      execute:
-        trap { case Signal(Interrupt.Winch, _, _, _) => SignalResponse.Accept }
-        Thread.sleep(5000L)
-        Exit.Ok
-
-    case Argument("trap-slow") :: Nil =>
-      execute:
-        trap:
-          case Signal(_: UnixSignal, _, _, _) =>
-            Thread.sleep(2000L)
-            SignalResponse.Accept
-
-        Thread.sleep(5000L)
-        Exit.Ok
-
-    case _ =>
-      execute(Exit.Fail(1))
+opaque type Umask = Int

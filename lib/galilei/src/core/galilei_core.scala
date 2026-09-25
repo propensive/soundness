@@ -466,7 +466,7 @@ package filesystemOptions:
       def ensure(directory: Path on plane): Unit =
         if !backend.exists(directory, true) then
           safely(directory.parent).let(ensure(_))
-          backend.createDirectory(directory)
+          backend.createDirectory(directory, Unset)
 
       safely(path.parent).let(ensure(_))
       operation

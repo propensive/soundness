@@ -34,6 +34,7 @@ package coaxial
 
 import java.net as jn
 import java.nio.channels as jnc
+import java.nio.file as jnf
 
 import anticipation.*
 import beneficence.*
@@ -54,7 +55,12 @@ import vacuous.*
 extension (domainSocket: DomainSocket)
   // A loan, like `Bindable.listen`: the running server is lent to `block` as a
   // `Socket.Service` capability and always stopped afterwards.
-  def listenConnections[result](using Monitor, Probate)(handler: Connection => Unit)
+  // With `ownerOnly`, the socket file is made mode 0600 as soon as it is bound (a bound socket
+  // otherwise takes the process umask, typically 0755), so that only this user can connect;
+  // a filesystem without POSIX permissions (Windows) is left as it is. Each accepted
+  // connection carries the peer's user, where the platform reports one, in `Connection.peer`.
+  def listenConnections[result](using Monitor, Probate)
+    ( handler: Connection => Unit, ownerOnly: Boolean = false )
     ( using (Socket.Event is Loggable)^ )
     ( block: Socket.Service ?=> result )
   :   result =
@@ -62,12 +68,26 @@ extension (domainSocket: DomainSocket)
     val channel = jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
     channel.configureBlocking(true)
     channel.bind(jn.UnixDomainSocketAddress.of(domainSocket.address.s))
+
+    if ownerOnly && jnf.FileSystems.getDefault.nn.supportedFileAttributeViews.nn.contains("posix")
+    then
+      jnf.Files.setPosixFilePermissions
+        ( jnf.Path.of(domainSocket.address.s),
+          jnf.attribute.PosixFilePermissions.fromString("rw-------") )
+
     Log.info(Socket.Event.Listening(domainSocket.address))
+
+    def peer(client: jnc.SocketChannel): Optional[Text] = safely:
+      client.getOption(jdk.net.ExtendedSocketOptions.SO_PEERCRED).nn.user().nn.getName().nn.tt
 
     val bindLoop = loop:
       safely:
         val client = channel.accept().nn
-        Connection(jnc.Channels.newInputStream(client).nn, jnc.Channels.newOutputStream(client).nn)
+
+        Connection
+          ( jnc.Channels.newInputStream(client).nn,
+            jnc.Channels.newOutputStream(client).nn,
+            peer(client) )
 
       . let: connection =>
           // Fire-and-forget: the fresh task handle is discarded (a lambda result may not

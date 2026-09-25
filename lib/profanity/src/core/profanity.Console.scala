@@ -45,4 +45,4 @@ object Console:
 trait Console extends Findable:
   val stdio: Stdio
 
-  def trap(handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse]): Unit = ()
+  def trap(handler: PartialFunction[Signal, SignalResponse]): Unit = ()

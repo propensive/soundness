@@ -512,6 +512,29 @@ object Tests extends Suite(m"Profanity Tests"):
           rendered(clavichord.Keypress.Ctrl(clavichord.Keypress.Shift(clavichord.Keypress.Enter)))
         . assert(_ == t"[⌃]+[⇧]+[↵]")
 
+      suite(m"Windows console events"):
+        test(m"every event decodes from its short name"):
+          Array.unsafeFrozen(WindowsSignal.values).readable.toList.map: signal =>
+            safely(signal.shortName.as[WindowsSignal])
+        . assert(_ == Array.unsafeFrozen(WindowsSignal.values).readable.toList)
+
+        test(m"the close event is named as the launcher names it"):
+          WindowsSignal.Close.shortName
+        . assert(_ == t"CTRL_CLOSE")
+
+      suite(m"Signals with payloads"):
+        test(m"a signal with both dimensions has a size"):
+          Signal(Interrupt.Winch, 80, 24).size
+        . assert(_ == (80, 24))
+
+        test(m"a signal with one dimension has no size"):
+          Signal(Interrupt.Winch, 80).size
+        . assert(_ == Unset)
+
+        test(m"a plain signal shows as its short name"):
+          Signal(WindowsSignal.Logoff).show
+        . assert(_ == t"CTRL_LOGOFF")
+
       suite(m"Interrupt POSIX numbering"):
         test(m"SIGHUP is 1")  (Interrupt.Hup.id)   .assert(_ == 1)
         test(m"SIGINT is 2")  (Interrupt.Int.id)   .assert(_ == 2)
