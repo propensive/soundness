@@ -328,6 +328,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   from `Tels.Polarity.Tight` to `Tels.Polarity.Implicit`; an instance overriding `polarity` is
   unaffected, one relying on the default now derives implicit polarity. (#2056)
 
+## surveillance
+
+- `surveillance.Watch.Event#path[directory: Instantiable across Paths from Text]: directory` is
+  now `path[directory](using (directory is Instantiable across Paths from Text)^): directory`: the
+  path evidence may capture (as `Path on Local`'s does, through its filesystem). Call sites are
+  unchanged; an explicit `using` argument that was previously rejected for capturing is now
+  accepted. (#2076)
+
 ## vivisection
 
 - `vivisection.Jdwp.Capabilities` gains two fields: `canGetBytecodes: Boolean` inserted as the

@@ -85,3 +85,24 @@ object Tests extends Suite(m"Surveillance tests"):
           case _                => false
 
     . assert(_ == true)
+
+    test(m"A batch reports each affected path once"):
+      val batch = Watch.Batch(List(NewFile(t"/x", t"a"), Modify(t"/x", t"a"), NewFile(t"/x", t"b")))
+      batch.paths[Path on Local]
+
+    . assert(_ == List(t"/x/a".as[Path on Local], t"/x/b".as[Path on Local]))
+
+    val burstDirectory = temporaryDirectory[Path on Local]/Uuid().show
+    burstDirectory.create[Directory]()
+
+    val leaves: List[Path on Local] =
+      List(burstDirectory/Uuid().show, burstDirectory/Uuid().show, burstDirectory/Uuid().show)
+
+    test(m"A burst of creations coalesces into one batch"):
+      given Watcher = watchers.polling(0.05*Second)
+
+      burstDirectory.open[Watch](): watcher ?=>
+        leaves.each(_.create[File]())
+        watcher.batches(0.5*Second).stdlib.head.paths[Path on Local].to[Set]
+
+    . assert(_ == leaves.to[Set])

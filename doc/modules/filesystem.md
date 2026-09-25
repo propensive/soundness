@@ -337,6 +337,19 @@ def observe(): Unit =
 Several paths are watched together by opening a list of them, which yields one event stream
 across all of them.
 
+Editors save in bursts, and a rebuild wants one notification per burst rather than one per
+event. `batches` yields a `Watch.Batch` each time no event has arrived for the given quiet
+period; its `paths` lists every changed path once:
+
+```scala
+def rebuild(changed: List[Path on Linux]): Unit = ()
+
+def observeBatches(): Unit =
+  directory.open[Watch](): watcher ?=>
+    watcher.batches(0.2*Second).each: batch =>
+      rebuild(batch.paths[Path on Linux])
+```
+
 The default watcher uses the operating system's own file-change notifications; where those are
 unavailable, `watchers.polling` checks at an interval instead.
 
