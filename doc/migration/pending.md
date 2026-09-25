@@ -13,6 +13,17 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `table.length == 256` or iterated the whole table must use `table.readable.take(256)`.
   `Crc64.Accumulator`'s results are unchanged.
 
+## digression
+
+- Behaviour change: `digression.teletypeables.stackTraceTeletype` (and `exceptionTeletype`,
+  which delegates to it) now renders each frame's class, separator and method as one contiguous
+  word, and its file, colon and line as another (`pkg.Tests.run()  Tests.scala:42`), where
+  previously each was a separate table column with a blank cell between them
+  (`pkg.Tests . run()  Tests.scala : 42`). Rows remain aligned on the separator and on the
+  colon: the class and file are right-padded to the widest in the trace, and the method and
+  line are left-aligned. A frame with no line number renders no colon. Code that matched on the
+  rendered text (for instance, `Tests.scala : 42`) must expect the contiguous form. (#2052)
+
 ## ethereal
 
 - `ethereal.Stdin` renamed to `ethereal.Terminus`, with its cases `Terminal` and `Pipe` and its
