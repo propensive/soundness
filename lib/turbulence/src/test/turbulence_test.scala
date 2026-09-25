@@ -889,7 +889,7 @@ object Tests extends Suite(m"Turbulence tests"):
           Conduit[Data]() match
            case (intake, stream) =>
             val gather = Gather2()
-            val pump = stream.flow(gather)
+            val pump = stream.convey(gather)
             pump.cancel()
             true
       . assert(identity)

@@ -3337,7 +3337,7 @@ object turbulence extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   // The test suite exercises fan-out/merge over compression ducts, so it depends on `pneumatic`.
-  object test extends Tests(core, pneumatic.flate, capricious.core, parasite.core):
+  object test extends Tests(core, async, pneumatic.flate, capricious.core, parasite.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
   // Comparative streaming benchmarks against the effect-based streaming libraries. External,
