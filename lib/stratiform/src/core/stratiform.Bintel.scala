@@ -676,7 +676,7 @@ object Bintel:
   // the name is unbound, or bound to a record or scalar — is B10 (§10):
   // silently contributing no slots would shift every later keyword index
   // and decode the document against the wrong members.
-  private def flattenKeywords(struct: Tels.Struct, schema: Tels)
+  private[stratiform] def flattenKeywords(struct: Tels.Struct, schema: Tels)
   :   Array[(Text, Tels.Type)]^{} raises Bintel.Error =
 
     flatten(struct, schema, strict = true)
@@ -724,7 +724,7 @@ object Bintel:
   // `Tel.Type.assign`. Each element's keyword comes from its parent struct's flattened
   // keyword sequence (looked up by the index BinTEL stored), so a decoded element can be
   // re-decoded to a typed value through `Tel.Decodable`.
-  private def present(element: Tel.Element, schema: Tels): Tel = element match
+  private[stratiform] def present(element: Tel.Element, schema: Tels): Tel = element match
     case Tel.Element.Node(_, struct: Tels.Struct, children) =>
       val flat = flattenKeywordsLenient(struct, schema)
       val blk = blocks(children.remap(presentCompound(_, flat, schema)))

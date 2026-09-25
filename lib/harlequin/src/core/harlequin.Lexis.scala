@@ -52,9 +52,6 @@ object Lexis:
     Set(t"inline", t"opaque", t"open", t"transparent", t"infix", t"update", t"erased",
         t"tracked", t"using")
 
-  private[harlequin] def identifierChar(char: Char): Boolean =
-    char.isLetterOrDigit || char == '_'
-
   // True of a token whose text is pure punctuation: no identifier characters and no quotes.
   // Such a token is classified by its text alone, never by its accent: the parse-tree overlay
   // that refines accents works from error-recovery trees on incomplete input — the norm at a
@@ -126,9 +123,7 @@ object Lexis:
   // statement is typed.
   def context(text: Text, caret: Ordinal, limit: Int = 8): (Optional[Text], List[Lexeme]) =
     val point = caret.n0.min(text.length)
-    var start = point
-
-    while start > 0 && identifierChar(text.s.charAt(start - 1)) do start -= 1
+    val start = Fragment.identifierStart(text, point)
 
     val prefix: Optional[Text] =
       if start == point then Unset else text.s.substring(start, point).nn.tt

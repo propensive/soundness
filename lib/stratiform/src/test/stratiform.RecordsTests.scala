@@ -37,12 +37,15 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import murmuration.*
+import denominative.*
 import probably.*
 import turbulence.*
 import vacuous.*
 
 import strategies.throwUnsafely
 import charEncoders.utf8Encoder
+import denominative.dysasymptotics.linearSize
 
 object RecordsTests extends Suite(m"Stratiform Records tests"):
   def run(): Unit =
@@ -84,3 +87,34 @@ object RecordsTests extends Suite(m"Stratiform Records tests"):
         val record = FeatureRecords.record(t"".read[Tel])
         record.enabled
       . assert(_ == false)
+
+    suite(m"TelBlueprint layers"):
+      test(m"a member a layer introduces reads as optional, absent without the layer"):
+        LayeredRecords.record(t"name Alice\n".read[Tel]).email
+      . assert(_ == Unset)
+
+      test(m"and present with it"):
+        LayeredRecords.record(t"name Alice\nemail alice@example.com\n".read[Tel]).email
+      . assert(_ == (t"alice@example.com": Optional[Text]))
+
+      test(m"the layers a document carries are named"):
+        LayeredRecords.layersOf(t"name Alice\nemail alice@example.com\n".read[Tel])
+      . assert(_ == List(t"with-email"))
+
+      test(m"the acceptance requires the base and offers the layer"):
+        val lineage = SchemaSignature.Lineage(LayeredSchemaFixture.tels)
+        val acceptance = LayeredRecords.acceptance(lineage)
+        acceptance.alternatives.map { alternative => (alternative.schema.count, alternative.components.size, alternative.selfContained) }
+      . assert(_ == List((1, 1, false), (1, 0, true)))
+
+      test(m"a document served with the layer is received with its member"):
+        val lineage = SchemaSignature.Lineage(LayeredSchemaFixture.tels)
+        val acceptance = LayeredRecords.acceptance(lineage)
+        val composition = lineage.base :: lineage.layers.map(_.hash)
+        val held = Tel.Type.assign(t"name Alice\nemail alice@example.com\n".read[Tel], lineage.compose(composition))
+
+        Tel.Acceptance.serve(acceptance, lineage, composition, held).let: served =>
+          LayeredRecords.receive(acceptance, SchemaSignature.Library(List(lineage)), served.document).let: tel =>
+            LayeredRecords.record(tel).email
+      . assert(_ == (t"alice@example.com": Optional[Text]))
+
