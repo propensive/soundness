@@ -921,7 +921,7 @@ object soundness extends Toolchain:
     prophesy.core, murmuration.core, beneficence.core, proscenium.core, prescience.core,
     prescience.leaves,
     hypotenuse.check, anticipation.codec, anticipation.color, anticipation.generic,
-    anticipation.locator,
+    anticipation.focus,
     anticipation.gfx, anticipation.http, anticipation.log,
     anticipation.opaque, anticipation.path, anticipation.print, anticipation.text,
     anticipation.time, anticipation.url):
@@ -1358,7 +1358,7 @@ object anticipation extends Library:
   object opaque extends Component(text):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object locator extends Component(text):
+  object focus extends Component(text):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object gfx extends Component(prepositional.core, color):
@@ -1607,7 +1607,7 @@ object cataclysm extends Library:
       contingency.core, vacuous.core, fulminate.core, denominative.core,
       quantitative.units, iridescence.core, gesticulate.core, rudiments.core,
       contextual.core, nomenclature.core,
-      anticipation.color, anticipation.locator):
+      anticipation.color, anticipation.focus):
     // The MDN `css/properties.json` and `syntaxes.json` datasets (CC0), compiled into string
     // tables: only each entry's `syntax` is used, by the `css"…"` macro and at run time alike.
     def cssData = Task.Sources(moduleDir / os.up / os.up / "data")
@@ -2390,7 +2390,7 @@ object hellenism extends Library:
 
 object honeycomb extends Library:
   object core extends Component(panopticon.core, gesticulate.core, typonym.core, adversaria.core,
-      anticipation.url, nomenclature.core, gossamer.lexicon):
+      anticipation.url, nomenclature.core, gossamer.lexicon, anticipation.focus):
     // The HTML 4 and WHATWG named character references, compiled into string tables.
     def entityData = Task.Sources(moduleDir / os.up / os.up / "data")
     def generatedSources = Task:
@@ -2672,7 +2672,7 @@ object urticose extends Library:
       settings.sep(super.scalacOptions())
 
 object nomenclature extends Library:
-  object core extends Component(gossamer.core, distillate.core):
+  object core extends Component(gossamer.core, distillate.core, anticipation.focus):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -3234,7 +3234,7 @@ object synesthesia extends Library:
 
 object tarantula extends Library:
   object core extends Component(jacinta.core, telekinesis.jvm, guillotine.core, honeycomb.core,
-      aperture.core, anticipation.locator, clavichord.core, quantitative.units):
+      aperture.core, anticipation.focus, clavichord.core, quantitative.units):
     override def scalaJs = false // browser automation; depends on JVM-only `guillotine`/`telekinesis.jvm`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -3574,7 +3574,7 @@ object querencia extends Library:
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, wisteria.core,
       contextual.core,
-      panopticon.core, turbulence.core, gossamer.lexicon, anticipation.locator):
+      panopticon.core, turbulence.core, gossamer.lexicon, anticipation.focus):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The Expr-level `Inlinable` typeclass and its expansion-time instance

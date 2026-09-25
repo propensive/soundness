@@ -32,6 +32,7 @@
                                                                                                   */
 package nomenclature
 
+import anticipation.*
 import prepositional.*
 import rudiments.*
 
@@ -39,5 +40,8 @@ import rudiments.*
 // valid HTML ids (see `DomIdentifier`).
 object DomId:
   inline given nominative: DomId is Nominative under DomIdentifier["a valid DOM id"] = !!
+
+  // A DOM id focuses on its element as the CSS selector `#id`.
+  given focusable: Name[DomId] is Focusable = Focusable("css selector".tt, id => ("#"+id.s).tt)
 
 sealed trait DomId

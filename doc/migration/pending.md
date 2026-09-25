@@ -18,11 +18,15 @@ format. Entries are grouped by module, most-recently-added last within a module.
   Chain[right]`) now requires the two chains to have the same length; previously it compared
   element-wise over the shorter chain, so `Chain(1, 2) === Chain(1)` was `true` and is now
   `false`. `anticipation.check` no longer depends on `rudiments.core`. (#PR-dead-edges)
-- New module `anticipation.locator` (in the `base` bundle) with `anticipation.Pinpointable`
-  (`Typeclass.Pure`; `def strategy: Text`, `def pinpoint(value: Self): Text`): a WebDriver-style
-  locator strategy and rendering. Additive, but `cataclysm.SelectorList` and `xylophone.XPath`
-  now provide instances in their companions and tarantula resolves them through it (see
-  tarantula). (#PR-dead-edges)
+- `tarantula.Focusable` moved to `anticipation.Focusable` (new module `anticipation.focus`, in the
+  `base` bundle; `soundness.Focusable` now comes from anticipation). Members are unchanged
+  (`def strategy: Text`, `def focus(value: Self): Text`, the `Focusable(strategy, focus)` factory),
+  and it is now a `Typeclass.Pure`. Its instances moved into the subject types' companions:
+  `Text` (`Focusable.text`), `honeycomb.Tag.focusable: [tag <: Tag] => tag is Focusable`,
+  `honeycomb.ClassList.focusable: [classes <: ClassList] => classes is Focusable`,
+  `nomenclature.DomId.focusable: Name[DomId] is Focusable`, `cataclysm.SelectorList.focusable`
+  and `xylophone.XPath.focusable`; `tarantula.Focusable.{text, tag, domId, cssClass, selector,
+  xpath}` no longer exist. Strategies and renderings are unchanged. (#PR-dead-edges)
 
 ## caduceus
 
@@ -566,11 +570,8 @@ format. Entries are grouped by module, most-recently-added last within a module.
 
 ## tarantula
 
-- The givens `tarantula.Focusable.selector: SelectorList is Focusable` and `Focusable.xpath: XPath
-  is Focusable` replaced by `Focusable.pinpointable: [value: Pinpointable] => value is Focusable`,
-  which `SelectorList` and `XPath` satisfy through their companions' `Pinpointable` instances
-  (same strategies, `css selector` and `xpath`, same rendering). `tarantula.core` no longer
-  depends on `cataclysm.core` or `xylophone.core`; a consumer that used either (or jacinta,
+- `tarantula.core` no longer depends on `cataclysm.core` or `xylophone.core` (see anticipation:
+  `Focusable` and its instances moved out of tarantula); a consumer that used either (or jacinta,
   hellenism, phoenicia, quantitative through cataclysm) only through tarantula must declare it. (#PR-dead-edges)
 
 ## telekinesis
@@ -609,7 +610,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
 
 ## xylophone
 
-- `xylophone.core` now depends on `anticipation.locator` (additive: `XPath.pinpointable`). (#PR-dead-edges)
+- `xylophone.core` now depends on `anticipation.focus` (additive: `XPath.focusable`). (#PR-dead-edges)
 
 ## ypsiloid
 

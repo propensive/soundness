@@ -48,9 +48,9 @@ import vacuous.*
 object SelectorList:
   given showable: SelectorList is Showable = selectorList => selectorList.selectors.map(_.show).join(t", ")
 
-  given pinpointable: SelectorList is Pinpointable:
+  given focusable: SelectorList is Focusable:
     def strategy: Text = t"css selector"
-    def pinpoint(selectorList: SelectorList): Text = selectorList.show
+    def focus(selectorList: SelectorList): Text = selectorList.show
 
   // A non-raising parse of already-validated selector text, used by the `css"…"`
   // interpolator to rebuild a rule's selector at runtime.

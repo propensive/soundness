@@ -30,40 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package tarantula
+package soundness
 
-import anticipation.*
-import gossamer.*
-import honeycomb.*
-import nomenclature.*
-import prepositional.*
-import spectacular.*
-
-object Focusable:
-  // A pure (`->`) focus lambda: every instance is built from a pure selector-rendering
-  // function, and the factory result must stay pure for the bare-typed givens below.
-  def apply[element](strategy0: Text, focus0: element -> Text): element is Focusable =
-    new Focusable:
-      type Self = element
-      def strategy: Text = strategy0
-      def focus(value: Self): Text = focus0(value)
-
-  given text: Text is Focusable = Focusable(t"link text", identity(_))
-  // Anything with a `Pinpointable` instance: cataclysm's `SelectorList` and xylophone's `XPath` provide
-  // theirs in their companions, so neither library is a dependency of the driver.
-  given pinpointable: [value: Pinpointable as pinpointable] => value is Focusable =
-    Focusable(pinpointable.strategy, pinpointable.pinpoint(_))
-  // Polymorphic in the tag type, not `Tag is Focusable`: every tag in a vocabulary has a
-  // singleton type of its own (`H1` is a `Tag.Container of "h1" over Phrasing in Whatwg`), and a
-  // typeclass's `Self` member is invariant, so an instance fixed at `Tag` matches no actual tag.
-  given tag: [tag <: Tag] => tag is Focusable = Focusable(t"tag name", _.label)
-  given domId: Name[DomId] is Focusable = Focusable(t"css selector", v => t"#$v")
-
-  // Polymorphic for the same reason as `tag`: `ClassList["checkbox"]()` has the refined type
-  // `ClassList of "checkbox"`, which an instance fixed at `ClassList` cannot match.
-  given cssClass: [classes <: ClassList] => classes is Focusable =
-    Focusable(t"css selector", _.classes.join(t".", t".", t""))
-
-trait Focusable extends Typeclass:
-  def strategy: Text
-  def focus(value: Self): Text
+export anticipation.Focusable
