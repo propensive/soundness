@@ -16,7 +16,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `bitumen.Tar.Body` (the class, `Tar.Body.apply(chunks: Data*)` and `Tar.Body.empty`) renamed
   to `bitumen.Archive.Body`, exported from `soundness` as `Archive`; `Tar.Body` no longer
   exists. `Tar.Entry.File#data`, `Tar.Entry.Sparse#data` and the `data` argument of
-  `Tar.Entry.apply` are now typed `Archive.Body`. Behaviour unchanged. (#PR)
+  `Tar.Entry.apply` are now typed `Archive.Body`. Behaviour unchanged. (#2080)
 
 ## coaxial
 
