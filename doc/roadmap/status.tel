@@ -21,7 +21,7 @@ item
   track core
   horizon near
   status open
-  baseline  16 files use sorted/ordered stdlib collections (2026-08-01)
+  baseline  32 files use sorted/ordered stdlib collections (2026-09-25; 16 on 2026-08-01)
   criterion  git grep -lE 'TreeMap|TreeSet|TrieMap|SortedMap|SortedSet' -- lib | grep -v '^lib/proscenium/' | wc -l == 0
 
 item
@@ -40,7 +40,7 @@ item
   horizon near-mid
   status open
   needs core-1
-  baseline  219 files import scala.collection, 170 of them scala.collection.mutable (2026-08-01)
+  baseline  228 files import scala.collection, 106 of them scala.collection.mutable (2026-09-25; 219 and 170 on 2026-08-01)
   criterion  git grep -l 'import scala.collection' -- lib | grep -v '^lib/proscenium/' | wc -l == 0
 
 item
@@ -48,7 +48,7 @@ item
   track core
   horizon mid
   status open
-  baseline  1597 while loops, 482 readUnchecked, 509 charAt in lib core (2026-09-14)
+  baseline  1606 while loops, 476 readUnchecked, 507 charAt in lib core (2026-09-25; 1597, 482, 509 on 2026-09-14)
   criterion  no collection exposes a partial indexed apply (issue #1666); every remaining while is a shape doc/standards/loops.md sanctions, with a comment naming its invariant
 
 item
@@ -70,7 +70,7 @@ item
   track safety
   horizon near
   status open
-  baseline  288 untrackedCaptures occurrences (2026-08-01)
+  baseline  468 untrackedCaptures occurrences (2026-09-25; 288 on 2026-08-01)
   criterion  git grep -o untrackedCaptures -- lib | wc -l == 0
 
 item
@@ -78,7 +78,7 @@ item
   track safety
   horizon near
   status open
-  baseline  323 unsafeAssumeSeparate, 273 unsafeAssumePure, 45 unsafeErasedValue (2026-08-01)
+  baseline  416 unsafeAssumeSeparate, 502 unsafeAssumePure, 50 unsafeErasedValue (2026-09-25; 323, 273, 45 on 2026-08-01)
   criterion  every remaining caps.unsafe occurrence names a rep/ case; script reports zero unannotated
 
 item
@@ -94,7 +94,7 @@ item
   horizon mid-long
   status open
   needs safety-3
-  baseline  929 caps.unsafe occurrences in total (2026-08-01)
+  baseline  1436 caps.unsafe occurrences in total (2026-09-25; 929 on 2026-08-01)
   criterion  git grep -oE 'unsafeAssumeSeparate|untrackedCaptures|unsafeAssumePure|unsafeErasedValue' -- lib | wc -l == 0
 
 item
@@ -109,7 +109,7 @@ item
   track safety
   horizon long
   status open
-  baseline  3 components compile without full separation checking (2026-08-01)
+  baseline  87 of 424 modules compile without separation checking: 40 components, 27 test suites, 20 benchmark modules; 2 opt for settings.cc alone (2026-09-25; "3 components" on 2026-08-01 counted only downward overrides)
   criterion  no component in build.mill compiles with anything weaker than settings.sep
 
 item
@@ -124,7 +124,7 @@ item
   track platforms
   horizon near
   status open
-  baseline  94 of 132 modules build for JavaScript, 86 for Native (2026-08-01)
+  baseline  101 of 144 rows build for JavaScript, 35 excluded with reasons; nothing regenerates or checks the file (2026-09-25; 94 of 132 on 2026-08-01)
   criterion  CI regenerates doc/compatibility.tsv, fails on divergence, and no exclusion lacks a reason
 
 item
@@ -147,7 +147,7 @@ item
   track platforms
   horizon mid-long
   status open
-  baseline  7 WASI backends; HTTP GET-only; sockets TCP-only (2026-08-01)
+  baseline  7 WASI backends; HTTP any method; sockets TCP-only (2026-09-25; HTTP was GET-only on 2026-08-01)
   criterion  the manifest WASI column matches the JavaScript column except where the reason names a missing WASI capability
 
 item
@@ -170,6 +170,7 @@ item
   track api
   horizon near
   status open
+  baseline  4 renamed names still at top level; 61 prefix families with 210 names plus 216 singletons listed (2026-09-25)
   criterion  the rename table in doc/api-nesting-proposal.md is fully applied, and the 'Remaining names by prefix family' section of doc/api-reduction-candidates.md lists no name outside 'Reviewed items which should not be moved'
 
 item
@@ -177,6 +178,7 @@ item
   track api
   horizon near
   status open
+  baseline  12 homonym pairs, 1 synonym family; check-given-uniqueness.py checks given names only (2026-09-25)
   criterion  the C4-homonym and C4-synonym sections are empty; a same-name-same-thing check runs in the ordinary build
 
 item
@@ -184,6 +186,7 @@ item
   track api
   horizon mid
   status open
+  baseline  3 C2 abbreviations listed (2026-09-25)
   criterion  the C2 section of doc/api-reduction-candidates.md is empty (C3 and C3b were superseded by doc/api-nesting-proposal.md and closed with it)
 
 item
@@ -216,7 +219,7 @@ item
   track documentation
   horizon near
   status open
-  baseline  121 error types carry SN codes, 39 do not; 233 error pages (2026-08-01)
+  baseline  40 error types carry no SN code; 241 error pages; no parity script (2026-09-25; 39 and 233 on 2026-08-01)
   criterion  parity check in CI; git grep -hE 'extends +Error\((m"|[a-z])' -- lib | wc -l == 0
 
 item
@@ -224,30 +227,32 @@ item
   track documentation
   horizon near
   status open
+  baseline  1 Stub marker remains (2026-09-25)
   criterion  grep -c 'Stub' doc/standards/messages.md == 0
 
 item
   id doc-3
   track documentation
   horizon near
-  status open
-  baseline  92 files say "built by Fury"; 35 of 133 modules have no lib/*/doc/ (2026-08-01)
-  criterion  git grep -l 'built by Fury' -- lib web | wc -l == 0, and no lib/*/doc/ directory remains
+  status done
+  done  #1791 (2026-08-14)
+  baseline  92 files of per-module readme boilerplate; 98 lib/*/doc/ directories (2026-08-01)
+  criterion  no file matches the legacy readme boilerplate, and no lib/*/doc/ directory remains
 
 item
   id doc-4
   track documentation
   horizon mid
   status open
-  baseline  91 topics in doc/modules/; 35 modules undocumented (2026-08-01)
-  criterion  coverage script in the ordinary build reports zero uncovered modules
+  baseline  99 topics in doc/modules/; 1 of 144 libraries (burdock) uncovered, and the script exits non-zero (2026-09-25; 91 topics and 35 uncovered on 2026-08-01)
+  criterion  python3 etc/check-doc-coverage.py reports 144/144 libraries covered and exits 0
 
 item
   id doc-5
   track documentation
   horizon mid
   status open
-  baseline  every published docJar is empty (2026-08-01)
+  baseline  every published docJar is empty; build.mill stubs the task (2026-09-25, unchanged since 2026-08-01)
   criterion  every published component has non-empty API documentation, published per release
 
 item
@@ -278,7 +283,7 @@ item
   track tooling
   horizon near
   status open
-  baseline  flame builds against 0.62.0; current release 0.64.0 (2026-08-01)
+  baseline  flame 0.3.0 pinned in etc/tools; current release 0.68.0; no per-release flame build (2026-09-25)
   criterion  flame CI builds against every new release before it is announced
 
 item
@@ -286,7 +291,7 @@ item
   track tooling
   horizon near-mid
   status open
-  baseline  fume runs the suite in CI; 1 suite disabled: orthodoxy (2026-09-06)
+  baseline  fume 0.4.1 runs the suite in CI; 1 suite disabled: orthodoxy (2026-09-25)
   criterion  fume runs the full suite in CI; grep -c 'enabled = false' build.mill == 0
 
 item
@@ -294,6 +299,7 @@ item
   track tooling
   horizon near-mid
   status open
+  baseline  exegesis's suite drives an in-process server over JSON-RPC: initialize, open, diagnose, hover, change; no completion, navigation or transport (2026-09-25)
   criterion  scripted LSP editor-session test passes in CI
 
 item
@@ -308,6 +314,7 @@ item
   track tooling
   horizon mid
   status open
+  baseline  synesthesia is the generic MCP library; none of the SN, topic, roadmap or migration resources exists (2026-09-25)
   criterion  scripted MCP session resolves an SN code, a module topic and a roadmap item status, in CI
 
 item
@@ -337,13 +344,15 @@ item
   track tooling
   horizon long
   status open
+  baseline  flair, flame and fume read .pyrocosm/<tool>/config.tel (2026-09-25)
   criterion  no ecosystem tool accepts any configuration format but TEL
 
 item
   id tool-10
   track tooling
-  horizon mid-long
+  horizon near-mid
   status open
+  baseline  vivisection ships a JDWP core, evaluator and DAP server with a scripted live-session suite; objects inspect as JVM class names; no topic (2026-09-25)
   criterion  scripted DAP session (breakpoint, step, inspect with Soundness-rendered values) passes against a running application in CI
 
 item
@@ -367,21 +376,23 @@ item
   track distribution
   horizon near
   status open
-  baseline  no changelog; release notes live in pull-request bodies (2026-08-01)
-  criterion  changelog exists; release.sh fails when the released version has no entry
+  baseline  no changelog; release_notes.py (propensive/.github) assembles the Changes section from merged pull-request bodies; releases are cut by signed tag (2026-09-25)
+  criterion  changelog exists; the shared release (configured by etc/release) fails when the released version has no entry
 
 item
   id dist-2
   track distribution
   horizon near
   status open
-  criterion  doc/migration.md exists; etc/ci/release.sh refuses to tag without doc/migration/<version>.md; a CI check fails any pull request that changes lib/**/src without touching doc/migration/pending.md
+  baseline  doc/migration.md and 0.65.0.md–0.68.0.md exist; the migration directive in etc/release gates the release; no pull-request check (2026-09-25)
+  criterion  doc/migration.md exists; the release (the migration directive in etc/release) refuses to tag without doc/migration/<version>.md; a CI check fails any pull request that changes lib/**/src without touching doc/migration/pending.md
 
 item
   id dist-3
   track distribution
   horizon near-mid
   status open
+  baseline  reliquary reads and assembles .lira files with unit round-trips; no whole-release round-trip (2026-09-25)
   criterion  the LIRA reference implementation round-trips a Soundness release byte-identically in a scripted test
 
 item
@@ -431,6 +442,14 @@ item
   horizon long
   status open
   criterion  a scripted third-party verification with public data only passes for the latest release
+
+item
+  id dist-10
+  track distribution
+  horizon near
+  status open
+  baseline  lib/reliquary (7387 lines) plus anthology.lira, degustation.lira, mandible.lira, xenophile.lira and their tests (2026-09-25)
+  criterion  lib/reliquary is absent, no lib/*/src/lira directory remains, and build.mill, etc/ and doc/modules do not mention reliquary
 
 item
   id brd-1
