@@ -51,7 +51,8 @@ import vacuous.*
 // classpath whose TASTy disagrees with the SMAP-recorded source path yields nothing, and every
 // absence degrades to the caller's fallback name.
 class Namer(classpath: LocalClasspath):
-  private lazy val classloader: Classloader = classpath.classloader()
+  private lazy val classloader: Classloader =
+    classpath.classloader(Classloader.Delegation.Preferential)
   private val files: scc.TrieMap[Text, Optional[Tasty.File]] = scc.TrieMap()
 
   def define(cls: Text, path: Text, line: Int): Optional[Text] =

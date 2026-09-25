@@ -290,6 +290,28 @@ format. Entries are grouped by module, most-recently-added last within a module.
   the end) therefore yields `(Unset, t"ma")` where it previously yielded `(t"x.", t"ma")`.
   Nothing else about its result changed.
 
+## hellenism
+
+- `hellenism.Classpath#classloader` now takes a required first parameter, `delegation:
+  Classloader.Delegation`, before `parent: Classloader = classloaders.platformClassloader`.
+  `Classloader.Delegation` is a new enum with cases `Deferential` (parent-first, the JVM's
+  standard order) and `Preferential` (child-first). The former `classpath.classloader()`
+  (child-first over the given or platform parent) becomes
+  `classpath.classloader(Classloader.Delegation.Preferential)`, keeping its `parent` argument if
+  it passed one; the former nullary `classpath.classloader` (parent-first over the platform
+  loader) is removed and becomes `classpath.classloader(Classloader.Delegation.Deferential)`.
+  Behaviour change: a `Classpath.Entry.JavaRuntime` entry is no longer passed to the loader as
+  a `jrt:/` URL in either mode (the platform parent supplies the JDK), as the nullary form
+  already omitted it. (#2070)
+- `hellenism.Classloader#apply(path: Text)` is now `inline` and takes its logging context as a
+  `using` clause, `(using (Classpath.Event is Loggable)^)`, in place of the `logs
+  Classpath.Event` sugar; its result is still `Optional[Data]`, and a call with a `Loggable` in
+  scope is unchanged. The result now retains no capability, so a caller that cast it to
+  `Optional[scala.IArray[Byte]]` or read the resource through the raw `java.lang.ClassLoader`
+  to get a pure value can call `apply` directly, including inside `safely`. The new
+  `Classloader#resource(path: Text): Optional[Data]` is the same read without logging. Both
+  close the resource's stream after reading. (#2071)
+
 ## pneumatic
 
 - New `pneumatic.Brotli.continuation(base: Data, next: Data, window: Int = Brotli.Window): Data`

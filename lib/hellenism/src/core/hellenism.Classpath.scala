@@ -126,29 +126,33 @@ object Classpath extends Root(t""):
   // Defined here, rather than inline in `Classpath#classloader`, so the anonymous
   // `URLClassLoader` subclass carries no outer reference to a `Classpath` instance and so
   // does not spuriously capture it under capture checking.
-  private[hellenism] def delegatingClassloader(urls: scala.Array[jn.URL | Null], parent: ClassLoader)
+  private[hellenism] def delegatingClassloader
+    ( urls: scala.Array[jn.URL | Null], parent: ClassLoader, delegation: Classloader.Delegation )
   :   jn.URLClassLoader =
 
-    // The anonymous classloader's only capture is the read view of the freshly-built URL
-    // array, laundered here.
-    //
-    // Child-first delegation must still honour the `ClassLoader` contract: consult
-    // `findLoadedClass` under the per-name loading lock before defining. Without the check, a
-    // second request for an already-loaded class — or two threads racing on the same name, as
-    // concurrent test workers routinely do — reaches `defineClass` twice and dies with a
-    // `LinkageError: attempted duplicate class definition`.
+    // The loader's only capture is the read view of the freshly-built URL array, laundered
+    // here.
     scala.caps.unsafe.unsafeAssumePure:
-     new jn.URLClassLoader(urls, parent):
-      override def loadClass(name: String | Null, resolve: Boolean): Class[?] | Null =
-        getClassLoadingLock(name).nn.synchronized:
-          val loaded = findLoadedClass(name)
+      delegation match
+        case Classloader.Delegation.Deferential => new jn.URLClassLoader(urls, parent)
 
-          if loaded != null then
-            if resolve then resolveClass(loaded)
-            loaded
-          else
-            try findClass(name) catch case error: ClassNotFoundException =>
-              super.loadClass(name, resolve)
+        // Child-first delegation must still honour the `ClassLoader` contract: consult
+        // `findLoadedClass` under the per-name loading lock before defining. Without the
+        // check, a second request for an already-loaded class — or two threads racing on the
+        // same name, as concurrent test workers routinely do — reaches `defineClass` twice and
+        // dies with a `LinkageError: attempted duplicate class definition`.
+        case Classloader.Delegation.Preferential =>
+          new jn.URLClassLoader(urls, parent):
+            override def loadClass(name: String | Null, resolve: Boolean): Class[?] | Null =
+              getClassLoadingLock(name).nn.synchronized:
+                val loaded = findLoadedClass(name)
+
+                if loaded != null then
+                  if resolve then resolveClass(loaded)
+                  loaded
+                else
+                  try findClass(name) catch case error: ClassNotFoundException =>
+                    super.loadClass(name, resolve)
 
   // ClasspathEntry → Classpath.Entry
   object Entry:
@@ -198,24 +202,22 @@ object Classpath extends Root(t""):
 trait Classpath:
   def entries: List[Classpath.Entry]
 
+  // The Java runtime is omitted: a `jrt:/` URL means nothing to a `URLClassLoader`, and the
+  // platform loader, at the root of every parent chain, supplies the JDK's classes anyway.
   private def array: scala.Array[jn.URL | Null] =
-    val urls: List[jn.URL] = entries.map(_.javaUrl)
-
-    // `scala.Array.from` demands an `IterableOnce`, which the opaque `List` is not.
-    scala.Array.from(urls.stdlib)
-
-  def classloader(parent: Classloader = classloaders.platformClassloader): Classloader =
-    new Classloader(Classpath.delegatingClassloader(array, parent.java))
-
-  def classloader: Classloader =
     val urls: List[jn.URL] = entries.flatMap:
       case Classpath.Entry.JavaRuntime => Nil
       case other                       => List(other.javaUrl)
 
     // `scala.Array.from` demands an `IterableOnce`, which the opaque `List` is not.
-    new Classloader
-      ( new jn.URLClassLoader
-          ( scala.Array.from(urls.stdlib), ClassLoader.getPlatformClassLoader().nn ) )
+    scala.Array.from(urls.stdlib)
+
+  def classloader
+    ( delegation: Classloader.Delegation,
+      parent: Classloader = classloaders.platformClassloader )
+  :   Classloader =
+
+    new Classloader(Classpath.delegatingClassloader(array, parent.java, delegation))
 
   inline def services[service]: Set[service] =
     Classpath.servicesFor[service](this, reflectClass[service])

@@ -55,16 +55,12 @@ object Classfile:
   given aggregable: Classfile is Aggregable by Data = stream => new Classfile(stream.read[Data].readable)
 
   def apply(name: Text)(using classloader: Classloader): Optional[Classfile] =
-    // Cast to the pure stdlib view (same erasure): the frozen member of the `Optional`
-    // union freshens to an `any.rd` the enclosing object cannot admit.
-    classloader(name).asInstanceOf[Optional[scala.IArray[Byte]]].let(new Classfile(_))
+    classloader(name).let(data => new Classfile(data.readable))
 
   def apply[classtype: ClassTag](using classloader: Classloader): Optional[Classfile] =
     val cls = classtype.runtimeClass
     val name = t"${cls.getName().nn.replace('.', '/').nn}.class"
-    // Cast to the pure stdlib view (same erasure): the frozen member of the `Optional`
-    // union freshens to an `any.rd` the enclosing object cannot admit.
-    classloader(name).asInstanceOf[Optional[scala.IArray[Byte]]].let(new Classfile(_))
+    classloader(name).let(data => new Classfile(data.readable))
 
 // `data` is the stdlib immutable array, not the frozen `Data`: a frozen-array constructor
 // field would make `Classfile` itself a capability. Conversion happens in the companion.
