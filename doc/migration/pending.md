@@ -23,6 +23,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   permissions), where previously the bound socket always took the process umask. Existing
   calls `listenConnections(handler)` are unchanged. (#2064)
 
+- `coaxial.Trust` gained a fifth constructor parameter, `pinned: Optional[Data] = Unset`: the
+  SHA-256 digest of the one peer certificate a connection accepts (see
+  `TlsAcceptance#pinning`). `Trust(expired, selfSigned, hostname, anchors)` still compiles;
+  pattern matches on `Trust(expired, selfSigned, hostname, anchors)` must bind the fifth
+  field. `coaxial.Socket.Error.Reason` gained a variant `Handshake` (number 4); exhaustive
+  matches over `Reason` must handle it. (#TBD)
+
 ## corpuscular
 
 - `corpuscular.Crc64.table: Array[Long]^{}` changed shape: it now holds eight slicing tables

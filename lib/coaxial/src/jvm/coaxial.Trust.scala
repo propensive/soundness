@@ -106,11 +106,17 @@ object Trust:
 
 // Which certificate chains to trust beyond an intact, current chain to a
 // platform anchor.
+// `pinned` names the one peer certificate accepted, by the SHA-256 digest of its DER encoding
+// (`Tls.fingerprint`): the SSH known-hosts model, for a peer whose self-signed certificate was
+// exchanged out of band. A pinned chain is accepted on its leaf's digest alone — no anchor,
+// validity or hostname check, since the pin identifies the peer more precisely than any of
+// them could — and every other chain is rejected.
 case class Trust
   ( expired:    Boolean = false,
     selfSigned: Boolean = false,
     hostname:   Boolean = true,
-    anchors:    List[jsc.X509Certificate] = Nil )
+    anchors:    List[jsc.X509Certificate] = Nil,
+    pinned:     Optional[Data] = Unset )
 
 // The runtime acceptance value, resolved contextually wherever a TLS
 // connection is made. The companion default is strict; relaxed instances are
@@ -222,6 +228,17 @@ object TlsAcceptance:
           case _ =>
             tolerable(error.getCause)
 
+    // Whether `chain`'s leaf is the pinned certificate; `Unset` when nothing is pinned, so the
+    // platform's own check decides.
+    def pinned(chain: scala.Array[jsc.X509Certificate | Null] | Null): Optional[Boolean] =
+      acceptance.trust.pinned.let: fingerprint =>
+        chain match
+          case null => false
+          case chain =>
+            chain.headOption.flatMap(Option(_)).exists: leaf =>
+              val digest: Data = Tls.fingerprint(Array.unsafeFrozen(leaf.getEncoded.nn))
+              digest.readable.sameElements(fingerprint.readable)
+
     new jns.X509ExtendedTrustManager:
       import unsafeExceptions.canThrowAny
 
@@ -229,6 +246,16 @@ object TlsAcceptance:
         try check catch
           case error: jsc.CertificateException =>
             if !tolerable(error) then throw error
+
+      // A pinned acceptance answers from the pin alone; an unpinned one defers to the
+      // platform, tolerating what the acceptance tolerates.
+      private def server(chain: scala.Array[jsc.X509Certificate | Null] | Null)(check: => Unit)
+      :   Unit =
+
+        pinned(chain) match
+          case true  => ()
+          case false => throw jsc.CertificateException("the peer's certificate is not the pinned one")
+          case _     => attempt(check)
 
       def getAcceptedIssuers(): scala.Array[jsc.X509Certificate | Null] | Null =
         platform.getAcceptedIssuers()
@@ -259,7 +286,7 @@ object TlsAcceptance:
         ( chain: scala.Array[jsc.X509Certificate | Null] | Null, authType: String | Null )
       :   Unit =
 
-        attempt(platform.checkServerTrusted(chain, authType))
+        server(chain)(platform.checkServerTrusted(chain, authType))
 
       def checkServerTrusted
         ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
@@ -267,7 +294,7 @@ object TlsAcceptance:
           socket:   java.net.Socket | Null )
       :   Unit =
 
-        attempt(platform.checkServerTrusted(chain, authType, socket))
+        server(chain)(platform.checkServerTrusted(chain, authType, socket))
 
       def checkServerTrusted
         ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
@@ -275,7 +302,7 @@ object TlsAcceptance:
           engine:   jns.SSLEngine | Null )
       :   Unit =
 
-        attempt(platform.checkServerTrusted(chain, authType, engine))
+        server(chain)(platform.checkServerTrusted(chain, authType, engine))
 
 case class TlsAcceptance
   ( versions:   List[Trust.Version] = Nil, // Nil selects the platform default set
@@ -298,3 +325,9 @@ case class TlsAcceptance
 
   def trusting(anchors: List[jsc.X509Certificate]): TlsAcceptance =
     copy(trust = trust.copy(anchors = anchors))
+
+  // Accept exactly the peer whose certificate has this `Tls.fingerprint`, and no other. Needs
+  // no permit: a pin is a stronger identity check than a chain to a public anchor, not a
+  // weaker one. Hostname verification is turned off, since the pin already names the peer.
+  def pinning(fingerprint: Data): TlsAcceptance =
+    copy(trust = trust.copy(pinned = fingerprint, hostname = false))

@@ -42,6 +42,7 @@ import javax.net.ssl as jns
 
 import anticipation.*
 import gigantism.*
+import spectacular.*
 import urticose.*
 import vacuous.*
 
@@ -50,6 +51,8 @@ import vacuous.*
 // from `Tls.context`, or the system default), sets SNI to `host`, verifies the peer
 // hostname unless `Tls.verify` is off, then presents the socket's streams as a `Duplex`.
 object SecureEndpoint:
+  given showable: SecureEndpoint is Showable = endpoint => Text(s"${endpoint.host}:${endpoint.port}")
+
   // Honestly tracked, like `Connectable.tcpEndpoint`: the instance is resolvable only with
   // `Online` permission, so it is a capability carrying that evidence in its capture set.
   given connectable: (online: Online)
