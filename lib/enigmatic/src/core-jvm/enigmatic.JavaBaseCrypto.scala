@@ -205,7 +205,7 @@ object JavaBaseCrypto extends Crypto:
       sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey))))
       sig.update(Array.unsafeJvm(data))
 
-      sig.verify(Array.unsafeJvm(signature0))
+      verified(sig, Array.unsafeJvm(signature0))
 
     def generateKeyPair(bits: Int): Data =
       val generator = mlDsaAvailable(js.KeyPairGenerator.getInstance(name).nn)
@@ -217,6 +217,13 @@ object JavaBaseCrypto extends Crypto:
       mlDsaEmbed(privateKey, publicKey)
 
     def privateToPublic(privateKey: Data): Data = mlDsaExtract(privateKey)
+
+  // A signature that is not even well-formed — the wrong length, a DER structure that does not
+  // parse, an ML-DSA hint encoding that is out of range — makes the JDK throw where a merely wrong
+  // one returns `false`. To a caller asking whether the signature verifies, both are simply "no":
+  // a tampered signature is the case being asked about, not an exceptional one.
+  private def verified(sig: js.Signature, signature: scala.Array[Byte]): Boolean =
+    try sig.verify(signature) catch case _: js.SignatureException => false
 
   // The JDK grew ML-DSA at 24; on earlier releases `getInstance` is the single point of failure,
   // so it is the one place the version requirement is reported.
@@ -289,7 +296,7 @@ object JavaBaseCrypto extends Crypto:
       sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey))))
       sig.update(Array.unsafeJvm(data))
 
-      sig.verify(Array.unsafeJvm(signature0))
+      verified(sig, Array.unsafeJvm(signature0))
 
   def dsa: Crypto.SignatureScheme = new Crypto.SignatureScheme:
     private def signature(): js.Signature = js.Signature.getInstance("DSA").nn
@@ -305,7 +312,7 @@ object JavaBaseCrypto extends Crypto:
       val sig = signature()
       sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.readable.to(scala.Array))))
       sig.update(data.readable.to(scala.Array))
-      sig.verify(signature0.readable.to(scala.Array))
+      verified(sig, signature0.readable.to(scala.Array))
 
     def generateKeyPair(bits: Int): Data =
       val generator = js.KeyPairGenerator.getInstance("DSA").nn
