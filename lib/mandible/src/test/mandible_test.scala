@@ -241,8 +241,8 @@ object Tests extends Suite(m"Mandible tests"):
       . map { atom => (atom.key, atom.valueHash.serialize[Hex]) }
       . sortBy(_(0).s)
 
-    val baseline = atomize(base, derived, api)
-    val keys = listing(baseline).map(_(0).s).toSet
+    lazy val baseline = atomize(base, derived, api)
+    lazy val keys = listing(baseline).map(_(0).s).toSet
 
     test(m"a compiled fixture yields a nonempty atom listing"):
       baseline.atoms.stdlib.size

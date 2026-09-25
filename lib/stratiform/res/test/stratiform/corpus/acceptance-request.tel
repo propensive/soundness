@@ -1,0 +1,23 @@
+tel 1.0 specification.tel/acceptance:1.0.0
+
+# An acceptance (§8.4 of the BinTEL Specification): a reader tells a writer
+# which composed schemas it can consume, in decreasing preference order, and
+# which further components it would like included if the writer holds them.
+#
+# The reader here is a client of the contact service whose schema is
+# `contact-layered-schema.tel`. Each `accept` line is one alternative: its
+# first atom is the schema signature the reader will use as its invocation
+# schema (a palimpsest, §8.2), optional flags follow, and every remaining
+# atom names a further component of that base's lineage by a prefix of its
+# hash.
+#
+# First choice: the base composed with the `with-address` layer, and — if the
+# writer holds them — the `with-phone` and `with-status` layers too, named by
+# the first four bytes of their hashes. A writer without those layers simply
+# leaves them out.
+accept KḠĻåѝƟңӝÃψȉşMϕĘqPFyàsӝRĥXῩćήTǓṛǒwӝUûẘ ÇῚỳǒ ƜґȚϏ
+
+# Fallback: the base schema alone, and the reader is happy to receive the
+# document in self-contained mode, so the writer may compose it with any
+# components at all — the reader will project the result to the base.
+accept KḠĻåǒåḣZOẗǼẀǿңḤẅǣẙSxṽḠĘi6ƕÆᾸῩίÃơş self-contained

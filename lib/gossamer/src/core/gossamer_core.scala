@@ -544,35 +544,58 @@ extension (iarray: Array[Char]^{}) def text: Text = String(Array.unsafeJvm(iarra
 // competing receiver-specific block of the same name would make every receiver ambiguous,
 // because overload specificity cannot compare extension alternatives whose clause shapes
 // differ. Joining forces the whole stream, which is the caller's intent here, and a `Set`'s
-// join order is its iteration order, which the caller accepts by joining. The lower-bounded
-// `textual >: element` recovers the widening the old covariant `List[textual]` receiver
-// performed (joining a `List[Name[CssClass]]` as `Text`), and the elementwise evidence stays
-// on the *extension* clause so its search pins `textual` from the element alone, before a call
-// site's expected type can over-widen it (`join` in `Optional[Text]` position must not infer
-// `textual := Unset | Text`). It follows `source` as a `using` clause, not a context bound: a
-// context bound is committed before `source` has pinned the element, mis-selecting a given.
-extension [self, element, textual >: element](values: self)
+// join order is its iteration order, which the caller accepts by joining.
+//
+// What `join` produces is decided by `Joinable.Assembly`: elements that are themselves
+// `Joinable` (text, messages, collections) join into one of them, with separators of that
+// type, and anything else has its separators interleaved into a rebuilt collection of the
+// receiver's shape. The assembly's `textual >: element` recovers the widening the old
+// covariant `List[textual]` receiver performed (joining a `List[Name[CssClass]]` as `Text`),
+// and the evidence stays on the *extension* clause so its search pins the result from the
+// element alone, before a call site's expected type can over-widen it (`join` in
+// `Optional[Text]` position must not infer `Unset | Text`). It follows `source` as a `using`
+// clause, not a context bound: a context bound is committed before `source` has pinned the
+// element, mis-selecting a given.
+extension [self, element, result](values: self)
   (using source: self is Joinable.Source by element)
-  (using joinable: textual is Joinable, textual0: textual is Textual)
-  def join: textual = joinable.join(source.traverse(values).to(Iterable))
+  (using assembly: self is Joinable.Assembly by element to result)
+  def join: result = assembly.assemble(source.traverse(values))
 
-  def join(separator: textual): textual =
-    joinable.join(source.traverse(values).flatMap(Iterable(separator, _)).drop(1).to(Iterable))
+  def join(separator: assembly.Part): result =
+    assembly.assemble(source.traverse(values).flatMap(Iterator(separator, _)).drop(1))
 
-  def join(left: textual, separator: textual, right: textual): textual =
-    joinable.join(Iterable(left, values.join(separator), right))
+  def join(left: assembly.Part, separator: assembly.Part, right: assembly.Part): result =
+    val parts: Iterator[assembly.Part] =
+      source.traverse(values).flatMap(Iterator(separator, _)).drop(1)
 
-  def join(separator: textual, penultimate: textual): textual =
-    val elements = source.traverse(values).to(Iterable)
+    assembly.assemble(Iterator(left) ++ parts ++ Iterator(right))
+
+  def join(separator: assembly.Part, penultimate: assembly.Part): result =
+    assembly.assemble(penultimately(separator, penultimate))
+
+  def join
+    ( left:        assembly.Part,
+      separator:   assembly.Part,
+      penultimate: assembly.Part,
+      right:       assembly.Part )
+  :   result =
+
+    assembly.assemble(Iterator(left) ++ penultimately(separator, penultimate) ++ Iterator(right))
+
+  // The parts of the receiver with `separator` between each pair of elements except the
+  // last, which `penultimate` precedes: `one, two and three`.
+  private def penultimately(separator: assembly.Part, penultimate: assembly.Part)
+  :   Iterator[assembly.Part] =
+
+    val elements = source.traverse(values).to(scala.collection.immutable.Vector)
 
     elements.size match
-      case 0 => joinable.join(Iterable())
-      case 1 => elements.head
-      case _ =>
-        joinable.join(Iterable(elements.init.join(separator), penultimate, elements.last))
+      case 0 => Iterator.empty
+      case 1 => elements.iterator
 
-  def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
-    joinable.join(Iterable(left, values.join(separator, penultimate), right))
+      case n =>
+        val initial = elements.iterator.take(n - 1).flatMap(Iterator(separator, _)).drop(1)
+        initial ++ Iterator(penultimate, elements.last)
 
 extension (builder: StringBuilder)
   def add(text: Text): Unit = builder.append(text.s)

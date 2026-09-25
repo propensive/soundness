@@ -165,6 +165,83 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == t"(one, two)")
 
+      test(m"join a native List with a separator"):
+        List(t"one", t"two", t"three").join(t", ")
+
+      . assert(_ == t"one, two, three")
+
+      test(m"join a native List without a separator"):
+        List(t"one", t"two", t"three").join
+
+      . assert(_ == t"onetwothree")
+
+      test(m"join a native List with separator and penultimate"):
+        List(t"one", t"two", t"three").join(t", ", t" and ")
+
+      . assert(_ == t"one, two and three")
+
+      test(m"join a native List with prefix, separator and suffix"):
+        List(t"one", t"two").join(t"(", t", ", t")")
+
+      . assert(_ == t"(one, two)")
+
+      test(m"kebab a native List of words"):
+        List(t"one", t"two", t"three").kebab
+
+      . assert(_ == t"one-two-three")
+
+    suite(m"Joining collections"):
+      test(m"join a List of Lists with a separator List"):
+        List(List(1, 2), List(3), List(4, 5)).join(List(0, 0))
+
+      . assert(_ == List(1, 2, 0, 0, 3, 0, 0, 4, 5))
+
+      test(m"join a List of Lists without a separator"):
+        List(List(1, 2), List(3), List(4, 5)).join
+
+      . assert(_ == List(1, 2, 3, 4, 5))
+
+      test(m"join a List of Lists with prefix, separator and suffix"):
+        List(List(1), List(2)).join(List(9), List(0), List(8))
+
+      . assert(_ == List(9, 1, 0, 2, 8))
+
+      test(m"join a List of Sets by union"):
+        List(Set(1, 2), Set(2, 3)).join
+
+      . assert(_ == Set(1, 2, 3))
+
+      test(m"interleave a separator element into a List"):
+        List(1, 2, 3).join(0)
+
+      . assert(_ == List(1, 0, 2, 0, 3))
+
+      test(m"interleave a separator element into an empty List"):
+        proscenium.List[Int]().join(0)
+
+      . assert(_ == List())
+
+      test(m"interleave a separator element into a single-element List"):
+        List(1).join(0)
+
+      . assert(_ == List(1))
+
+      test(m"interleave a separator with a distinct penultimate"):
+        List(1, 2, 3).join(0, 9)
+
+      . assert(_ == List(1, 0, 2, 9, 3))
+
+      test(m"interleave into a Sequence keeps its shape"):
+        Sequence(1, 2, 3).join(0)
+
+      . assert(_ == Sequence(1, 0, 2, 0, 3))
+
+      test(m"join in an Optional[Text] position still yields Text"):
+        val result: Optional[Text] = List(t"a", t"b").join(t",")
+        result
+
+      . assert(_ == t"a,b")
+
     suite(m"txt interpolator"):
       test(m"multiline collapses to space-delimited"):
         txt"""Hello

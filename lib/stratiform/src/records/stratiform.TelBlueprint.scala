@@ -139,15 +139,30 @@ object TelBlueprint:
 
   // Walk a Tels.Struct to produce the polyvinyl `Member` map. Each
   // Field at the top level contributes one entry whose `fieldType`
-  // names the Intensional instance to look up.
-  def fieldsOf(struct: Tels.Struct, schema: Tels): List[(Text, Member)] =
+  // names the Intensional instance to look up. A member absent from
+  // `base` — the struct as the schema's base declares it, before any
+  // layer — was introduced by a layer, and is optional whatever the
+  // layer declares: a document composed without that layer omits it.
+  def fieldsOf
+    ( struct: Tels.Struct, schema: Tels, base: Optional[Tels] = Unset,
+      baseStruct: Optional[Tels.Struct] = Unset )
+  :   List[(Text, Member)] =
+
+    val declared: scala.collection.immutable.Set[Text] =
+      baseStruct.lay(scala.collection.immutable.Set()): struct =>
+        struct.members.readable.toList.collect { case field: Tels.Field => field.keyword }
+        . to(scala.collection.immutable.Set)
+
     val builder = scala.collection.mutable.ListBuffer.empty[(Text, Member)]
     var i = 0
 
     while i < struct.members.length do
       struct.members.readable(i) match
-        case f: Tels.Field => builder += f.keyword -> memberOf(f, schema)
-        case _             => ()
+        case f: Tels.Field =>
+          val layered = base.present && !declared.contains(f.keyword)
+          builder += f.keyword -> memberOf(f, schema, base, layered)
+
+        case _ => ()
 
       i += 1
 
@@ -162,8 +177,10 @@ object TelBlueprint:
   // patterns alone; it then has no validator name to key on and falls back to
   // `string`, which is right — a pattern narrows the accepted text but does not
   // change its Scala representation.
-  private def memberOf(field: Tels.Field, schema: Tels): Member =
-    val optional = field.required == Tels.Polarity.Loose
+  private def memberOf(field: Tels.Field, schema: Tels, base: Optional[Tels], layered: Boolean)
+  :   Member =
+
+    val optional = layered || field.required == Tels.Polarity.Loose
     val suffix   = if optional then "?" else ""
 
     field.fieldType match
@@ -176,7 +193,15 @@ object TelBlueprint:
       case Tels.Reference(name) =>
         schema.scalars.seek(_.name == name).lay:
           schema.records.seek(_.name == name).lay(Member.Value(t"tel")): rec =>
-            Member.Record(t"object", fieldsOf(Tels.Struct(rec.members, rec.validators), schema))
+            // The record as the base declares it, if it does: a record a layer introduced
+            // has every member optional, and one a layer refined has its additions optional.
+            val baseRecord: Optional[Tels.Struct] = base.let: base =>
+              base.records.seek(_.name == name)
+              . let { record => Tels.Struct(record.members, record.validators) }
+              . or(Tels.Struct(Array.empty, Array.empty))
+
+            val members = Tels.Struct(rec.members, rec.validators)
+            Member.Record(t"object", fieldsOf(members, schema, base, baseRecord))
         . apply: sc =>
           Member.Value(Text(sc.validators.prim.or(t"string").s + suffix))
 
@@ -187,7 +212,48 @@ abstract class TelBlueprint(val tels: Tels) extends Specification:
   type Origin = Tel
   type Form = TelBlueprint
 
-  def fields: List[(Text, Member)] = TelBlueprint.fieldsOf(tels.document, tels)
+  // The schema's base — before any layer — and its full composition. A member the full
+  // composition declares and the base does not was introduced by a layer, and reads as optional.
+  private lazy val base: Tels = Tels.Layers.compose(tels, List())
+  private lazy val composed: Tels = Tels.Layers.compose(tels)
+
+  def fields: List[(Text, Member)] =
+    TelBlueprint.fieldsOf(composed.document, composed, base, base.document)
+
+  // The layers whose root members a document carries — the layers a value built from it was
+  // composed with, for a writer serving an acceptance.
+  def layersOf(tel: Tel): List[Text] =
+    proscenium.List.from(tels.layers.readable.toList).filter: layer =>
+      layer.overlay.members.readable.exists:
+        case field: Tels.Field => tel.field(field.keyword).present
+        case _                 => false
+    . map(_.name)
+
+  // The acceptance a reader of these records sends (BinTEL §8.4): the base alone is the
+  // requirement, every layer is offered, and the base in self-contained mode is the fallback.
+  def acceptance(lineage: SchemaSignature.Lineage)
+    ( using Tactic[Bintel.Error], Tactic[Tels.Resolution.Error], Tactic[Tel.Acceptance.Error] )
+  :   Tel.Acceptance =
+
+    val components = lineage.layers.map { layer => Tel.Acceptance.Component(lineage.prefixOf(layer.hash)) }
+    val requirement = Tel.Acceptance.Signature(lineage.signature(List()))
+
+    Tel.Acceptance
+      ( Tel.Acceptance.Alternative(requirement, components = components),
+        Tel.Acceptance.Alternative(requirement, selfContained = true) )
+
+  // A document received in reply to `acceptance`, presented for `record` with every layer the
+  // writer included: resolved against the library, decoded under its composed schema. `Unset`
+  // when no alternative's schema is a supertype of the document's.
+  def receive(acceptance: Tel.Acceptance, library: SchemaSignature.Library, data: Data)
+    ( using Tactic[Bintel.Error], Tactic[Tels.Resolution.Error] )
+  :   Optional[Tel] =
+
+    val framed = Bintel.unframe(data)
+
+    Tel.Acceptance.served(acceptance, library, framed.signature).let: reading =>
+      val element = Bintel.decode(framed.body, reading.document, Tel.Codec.Bindings.builtins)
+      Bintel.present(element, reading.document)
 
   def access(name: Text, tel: Tel): Tel = tel.field(name).or(Tel.empty)
 

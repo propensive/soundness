@@ -927,7 +927,7 @@ object soundness extends Toolchain:
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
     stratiform.core, stratiform.time, vexillology.core, enigmatic.cose, enigmatic.openssl,
     enigmatic.x509,
-    stratiform.binary, stratiform.records, bitumen.core, bitumen.jvm, breviloquence.core, distillate.core,
+    stratiform.records, bitumen.core, bitumen.jvm, breviloquence.core, distillate.core,
     embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256):
     def summary = "Data formats, serialization, cryptography and persistence"
 
@@ -1952,7 +1952,7 @@ object espionage extends Library:
       settings.maxInlines(settings.sep(super.scalacOptions()), "48")
 
 object ethereal extends Library:
-  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.jvm, quantitative.units, telekinesis.jvm, urticose.url, gastronomy.core, zeppelin.core, stratiform.binary):
+  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.jvm, quantitative.units, telekinesis.jvm, urticose.url, gastronomy.core, zeppelin.core, stratiform.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2837,8 +2837,8 @@ object probably extends Library:
   // The BinTEL serialization bridge for the `TestEvent` stream: `Streamer` runs a suite with an
   // event sink and writes a schema fingerprint plus length-prefixed BinTEL frames to a host's
   // `OutputStream` -- the API an in-process (or, later, forked) test runner such as fume calls.
-  // JVM-only, because `stratiform.binary` is.
-  object events extends Component(cli, stratiform.core, stratiform.binary, stratiform.base256):
+  // JVM-only: it writes to a host `java.io.OutputStream`.
+  object events extends Component(cli, stratiform.core, stratiform.base256):
     override def scalaJs = false
     // Not `sep`-checked: the module's whole job is driving stratiform's inline schema/codec
     // derivations, whose generated code is not separation-clean (the same reason the `Tests`
@@ -2889,9 +2889,9 @@ object quantitative extends Library:
       settings.sep(super.scalacOptions())
 
 object reliquary extends Library:
-  object core extends Component(pneumatic.brotli, stratiform.core, stratiform.binary, stratiform.base256,
+  object core extends Component(pneumatic.brotli, stratiform.core, stratiform.base256,
       gastronomy.core, pneumatic.core, enigmatic.core, revolution.core):
-    override def scalaJs = false // stratiform.binary is transitively JVM-only
+    override def scalaJs = false // transitively JVM-only (`revolution.core`: JAR manifests)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   object derive extends Component(core, zeppelin.core, hellenism.jvm, galilei.jvm):
@@ -3061,24 +3061,20 @@ object stratiform extends Library:
   object core extends Component(zephyrine.core, turbulence.core, gossamer.core, contingency.core,
       anticipation.codec, distillate.core, wisteria.core, prepositional.core, contextual.core,
       gigantism.core, fulminate.core, adversaria.core, aperture.core, praxinoscope.core,
-      base256):
+      base256, gastronomy.core, ulysses.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The panopticon lens/optic instances for `Tel`, and stratiform's only use of panopticon.
   object optics extends Component(core, panopticon.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object binary extends Component(core, base256, gastronomy.core, ulysses.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object records extends Component(core, polyvinyl.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // `BintelInlinable`, whose entry macro needs expansion-time instance
-  // evaluation (an in-macro staging compiler), kept out of `binary` so
+  // evaluation (an in-macro staging compiler), kept out of `core` so
   // BinTEL users don't inherit the compiler jars unless they opt in.
-  object binaryStaged extends Component(binary):
+  object binaryStaged extends Component(core):
     override def scalaJs = false // expansion-time instance evaluation via staging
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
@@ -3104,9 +3100,9 @@ object stratiform extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, base256, binary, binaryStaged, records, staged, optics, time, http,
+  object test extends Tests(core, base256, binaryStaged, records, staged, optics, time, http,
       eucalyptus.core, galilei.jvm)
-  object bench extends Benchmarks(core, base256, binary, binaryStaged, quantitative.units,
+  object bench extends Benchmarks(core, base256, binaryStaged, quantitative.units,
       hellenism.core, ambience.core)
 
 object superlunary extends Library:
@@ -3326,7 +3322,6 @@ object ultimatum extends Library:
 
 object ulysses extends Library:
   object core extends Component(gastronomy.core, cardinality.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):

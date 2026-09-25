@@ -168,6 +168,23 @@ object Tests extends Suite(m"Adversaria tests"):
         summon[Example1.type is Dereferenceable to Int].lens(t"foo")
       . assert(_ == Unset)
 
+      // A heterogeneous record dereferenced `to Any` (#1954): every field is readable, but none
+      // can be written, since a `Person` or a `Long` field cannot accept an arbitrary `Any`.
+      val heterogeneous = summon[Employee is Dereferenceable to Any]
+      val employee = Employee(Person(t"Jack", t"jack@example.com"), 7L)
+
+      test(m"a heterogeneous record dereferences to Any"):
+        heterogeneous.members(employee)
+      . assert(_ == Map(t"person" -> employee.person, t"code" -> 7L))
+
+      test(m"a field narrower than the yield type has no lens"):
+        heterogeneous.lens(t"code")
+      . assert(_ == Unset)
+
+      test(m"a field narrower than the yield type is not updated"):
+        heterogeneous.update(employee, t"code", 8L)
+      . assert(_ == Unset)
+
       // Finding an annotated field and then writing through it, which is what the name alone
       // could not do.
       test(m"an annotated field yields a lens onto itself"):

@@ -577,9 +577,7 @@ object SourceCode:
 
     val content = text.s.toCharArray.nn
     val point = caret.n0.min(content.length)
-    var start = point
-
-    while start > 0 && Lexis.identifierChar(content(start - 1)) do start -= 1
+    val start = Fragment.identifierStart(text, point)
 
     // A member selection needs a `.` before the partial name, and a qualifier before that.
     if start < 2 || content(start - 1) != '.' then Unset else

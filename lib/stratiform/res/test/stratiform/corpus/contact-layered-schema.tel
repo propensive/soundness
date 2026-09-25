@@ -1,0 +1,114 @@
+tel 1.0 specification.tel/tels:2.0.0
+
+# A contact schema with six layers, demonstrating §20.3 of the TEL
+# Specification (Schema Layering under Subtyping).
+#
+# Each layer applies one or more subtype-preserving operations to the
+# composition so far. Per §20.3 (v1.0), the permitted operations are:
+#
+#   1. Add a Field or SelectRef member to a Struct.
+#   2. Add a new record, scalar, or select to the Definition namespace.
+#   3. Merge a Field+Struct into an existing same-keyword Field+Struct
+#      (recursive Struct subtyping).
+#   4. Merge a record into an existing same-name record (extension).
+#   5. Merge a select into an existing same-name select to remove
+#      variants via `exclude K` inside the select body (the sum-side
+#      subtype-producing operation).
+#
+# Names of records, scalars, and selects are PascalCase (TypeName);
+# keywords on fields, variants, and validators are kebab-case.
+#
+# Composed-schema identity (per §20.3) is the base name plus the
+# ordered sequence of layer names:
+#
+#   contact + with-address + extended-address + with-phone
+#           + with-status + with-business + read-only-status
+
+name contact
+
+document
+  field name String
+  field email String optional
+
+
+# ── Layer 1: with-address ─────────────────────────────────────────────────
+# Introduces a record `Address` and a Field `address` whose type
+# references it. Two additive operations: add a new record, add a new
+# Field. Neither collides with anything in the base.
+
+layer
+  name with-address
+  record Address
+    field street String
+    field city String
+    field country String
+  overlay
+    field address Address optional
+
+
+# ── Layer 2: extended-address ─────────────────────────────────────────────
+# Adds a `postcode` Field to the existing `Address` record by implicit
+# merge: the `record Address` block here has the same name as the one
+# introduced by Layer 1, so its members are merged into the existing
+# record. After this layer, `Address` has four Fields: street, city,
+# country, postcode.
+
+layer
+  name extended-address
+  record Address
+    field postcode String optional
+
+
+# ── Layer 3: with-phone ───────────────────────────────────────────────────
+# Introduces a record `PhoneNumber` and a repeatable Field `phone`
+# whose type references it. Same shape as `with-address`.
+
+layer
+  name with-phone
+  record PhoneNumber
+    field country-code String
+    field number String
+  overlay
+    field phone PhoneNumber optional repeatable
+
+
+# ── Layer 4: with-status ──────────────────────────────────────────────────
+# Introduces a top-level SelectDefinition `Status` with two Flag
+# variants, plus a SelectRef in the overlay so the Status appears at
+# the document root. Two additive operations: add a fresh select, add
+# a SelectRef.
+
+layer
+  name with-status
+  select Status
+    variant active Flag
+    variant archived Flag
+  overlay
+    select Status optional
+
+
+# ── Layer 5: with-business ────────────────────────────────────────────────
+# A second independent layer that introduces a record and a Field
+# referencing it. Demonstrates that multiple layers can each contribute
+# records to the composed namespace.
+
+layer
+  name with-business
+  record Organization
+    field name String
+    field role String optional
+  overlay
+    field business Organization optional
+
+
+# ── Layer 6: read-only-status ─────────────────────────────────────────────
+# Narrows the `Status` SelectDefinition introduced by Layer 4 by
+# excluding the `archived` variant. The composed Status now permits
+# only `active`. This is the sum-type subtyping operation: fewer
+# alternatives. `exclude` is layer-only and lives inside the layer's
+# `select Status` body, not in `overlay`.
+
+layer
+  name read-only-status
+  select Status
+    exclude archived
