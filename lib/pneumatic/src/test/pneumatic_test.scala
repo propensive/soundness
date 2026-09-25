@@ -366,6 +366,92 @@ object Tests extends Suite(m"Pneumatic tests"):
         Data(42).compress[Brotli].decompress[Brotli].to[List]
       . assert(_ == List(42.toByte))
 
+    suite(m"Brotli continuation tests"):
+      def pattern(length: Int, seed: Int): Data =
+        Data.fill(length)(i => ((i*seed + (i >> 4)) & 0xff).toByte)
+
+      def join(left: Data, right: Data): Data = Array.frozen(left.readable ++ right.readable)
+
+      // A successor differing from its predecessor by two edits and an insertion.
+      val base = pattern(4096, 7)
+      val edited = Data.fill(base.length): i =>
+        if i == 100 then 42.toByte else if i == 2000 then 43.toByte else base.readable(i)
+      val inserted = pattern(64, 99)
+      val next = Data.fill(edited.length + inserted.length): i =>
+        if i < 1500 then edited.readable(i)
+        else if i < 1500 + inserted.length then inserted.readable(i - 1500)
+        else edited.readable(i - inserted.length)
+
+      val prefix = Brotli.prefix(base)
+      val continuation = Brotli.continuation(base, next)
+
+      // Three header bytes, the base, then the empty metadata meta-block's `06`.
+      test(m"A 4,096-byte base primes in 3 + 4096 + 1 bytes by default"):
+        prefix.length
+      . assert(_ == 4100)
+
+      test(m"The prefix opens with WBITS 24, ISLAST 0, MNIBBLES 4 and the low bit of MLEN - 1"):
+        prefix.readable(0) & 0xff
+      . assert(_ == 0x8f)
+
+      test(m"The prefix ends with the empty metadata meta-block"):
+        prefix.readable(prefix.length - 1) & 0xff
+      . assert(_ == 0x06)
+
+      test(m"An empty base primes to two bytes"):
+        Brotli.prefix(Data()).to[List].map(_ & 0xff)
+      . assert(_ == List(0x6f, 0x00))
+
+      test(m"A base longer than the block splits into meta-blocks of the block size"):
+        // Three stored meta-blocks (5, 5 and 2 bytes), each preceded by 20 bits of framing (the
+        // first also by the 1-bit WBITS 16 header) padded to 3 bytes, then the metadata byte.
+        Brotli.prefix(pattern(12, 3), 16, 5).length
+      . assert(_ == 3*3 + 12 + 1)
+
+      // The prefix is not a stream of its own: it ends with ISLAST 0, awaiting a continuation, so
+      // it is closed here with the empty last meta-block (ISLAST 1, ISLASTEMPTY 1: the byte `03`).
+      test(m"The prefix, closed by an empty last meta-block, decodes to the base"):
+        join(prefix, Data(3)).decompress[Brotli].to[List] == base.to[List]
+      . assert(_ == true)
+
+      test(m"An empty successor continues with the empty last meta-block alone"):
+        Brotli.continuation(base, Data()).to[List]
+      . assert(_ == List(3.toByte))
+
+      test(m"A continuation decodes against its base to the base then the successor"):
+        join(prefix, continuation).decompress[Brotli].to[List] == join(base, next).to[List]
+      . assert(_ == true)
+
+      test(m"A continuation is far smaller than the successor it carries"):
+        continuation.length*8 < next.length
+      . assert(_ == true)
+
+      // RFC 7932 cannot tell a wrong base from the right one: the copies land at the same
+      // distances and yield the wrong bytes, so a consumer verifies the result by hash.
+      test(m"A continuation against the wrong base decodes to the wrong bytes"):
+        val wrong = pattern(4096, 8)
+        join(Brotli.prefix(wrong), continuation).decompress[Brotli].to[List]
+        == join(wrong, next).to[List]
+      . assert(_ == false)
+
+      test(m"A continuation against an empty base is a headerless encoding of the successor"):
+        join(Brotli.prefix(Data()), Brotli.continuation(Data(), next)).decompress[Brotli].to[List]
+        == next.to[List]
+      . assert(_ == true)
+
+      test(m"A continuation respects a narrower declared window"):
+        val far = pattern(1 << 17, 5)
+        val cont = Brotli.continuation(far, far, 16)
+        join(Brotli.prefix(far, 16, 1 << 16), cont).decompress[Brotli].to[List]
+        == join(far, far).to[List]
+      . assert(_ == true)
+
+      test(m"An incompressible successor falls back to stored meta-blocks"):
+        val tiny = Data(9, 8, 7)
+        join(prefix, Brotli.continuation(base, tiny)).decompress[Brotli].to[List]
+        == join(base, tiny).to[List]
+      . assert(_ == true)
+
 
     suite(m"XZ tests"):
       // Golden vectors: real `xz` command-line output, decoded here — validating the decoder against

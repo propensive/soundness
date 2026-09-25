@@ -192,15 +192,30 @@ package teletypeables:
       case origin: Inlined => e"${palette.subdue(palette.line, 0.5)}(${origin.line})"
       case _ => e"${palette.line}(${row.frame.line.let(_.show).or(t"")})"
 
+    // The class, its separator and the method (and likewise the file, the colon and the line)
+    // read as one contiguous word, so they share a column: under a `padding = 0` style, every
+    // column boundary is still drawn as a blank cell, which would put a space either side of the
+    // separator. Padding the left-hand part to the widest in the trace keeps the separators
+    // aligned down the column, as three right-aligned columns did.
+    def widest(cell: Row => Teletype): Int =
+      rows.fold(0): (width, row) => width.max(cell(row).plain.metrics)
+
+    val classWidth = widest(classCell)
+    val fileWidth = widest(fileCell)
+
+    def methodColumn(row: Row): Teletype =
+      e"${classCell(row).pad(classWidth, Rtl)}${dotCell(row)}${methodCell(row)}"
+
+    def locationColumn(row: Row): Teletype =
+      val located = row.frame.line.present || row.inlined.present
+      val colon = if located then e"${palette.separator}(:)" else e""
+      e"${fileCell(row).pad(fileWidth, Rtl)}$colon${lineCell(row)}"
+
     val scaffold =
       Scaffold[Row]
         ( Column(e"")(row => e"${palette.separator}(${if row.inlined.present then t" ↳" else t"at"})"),
-          Column(e"", textAlign = TextAlignment.Right)(classCell),
-          Column(e"")(dotCell),
-          Column(e"")(methodCell),
-          Column(e"", textAlign = TextAlignment.Right)(fileCell),
-          Column(e"")(_ => e"${palette.separator}(:)"),
-          Column(e"", textAlign = TextAlignment.Right)(lineCell),
+          Column(e"")(methodColumn),
+          Column(e"")(locationColumn),
           // The quoted source is the first thing to go when the terminal is too narrow for it:
           // everything else in the row is needed to identify the frame at all.
           Column(e"", sizing = columnar.Collapsible(0.5))(codeCell) )
