@@ -174,7 +174,10 @@ object internal:
     // that it can be written as well as read: the setter rebuilds the entity from its own fields
     // with one replaced. A field which is not a constructor parameter — a `val` computed in the
     // body — remains readable through `select` but has no lens, since there is nothing to write.
-    // The lens's `Self` is the field-name singleton, matching panopticon's own `deref`.
+    // Nor does a field whose type is narrower than `value` (#1954): the setter would have to put
+    // an arbitrary `value` into it, so a heterogeneous record dereferenced `to Any` reads every
+    // field but writes none, rather than failing to derive at all. The lens's `Self` is the
+    // field-name singleton, matching panopticon's own `deref`.
     def lensMap: Expr[List[(Text, Lens from entity onto value)]] =
       val symbol = TypeRepr.of[entity].typeSymbol
       val parameters = symbol.primaryConstructor.paramSymss.flatten.filter(!_.isTypeParam)
@@ -183,6 +186,7 @@ object internal:
       Expr.ofList:
         symbol.fieldMembers
         . filter(_.info <:< TypeRepr.of[value])
+        . filter(TypeRepr.of[value] <:< _.info)
         . filter { field => names.contains(field.name) }
         . map: field =>
             val name = '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}

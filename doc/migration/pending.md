@@ -339,3 +339,25 @@ format. Entries are grouped by module, most-recently-added last within a module.
   patterns. Code relying on a logical step stopping inside JDK classes or generated methods
   must use the primitive `Debug#step(thread, depth, size): Int` and `Debug#events`, which are
   unchanged. (#2059)
+
+## zeppelin
+
+- `zeppelin.Zip.Entry` gained nine trailing parameters after `alignment: Int = 1`:
+  `flags: Optional[Int] = Unset`, `versionMadeBy: Optional[Int] = Unset`,
+  `localVersion: Optional[Int] = Unset`, `centralVersion: Optional[Int] = Unset`,
+  `internalAttributes: Optional[Int] = Unset`, `externalAttributes: Optional[Long] = Unset`,
+  `localExtra: Optional[Data] = Unset`, `centralExtra: Optional[Data] = Unset` and
+  `localSizes: Boolean = true`. Construction by name or with the first six positional
+  parameters is unaffected; `Zip.Entry.unapply` now yields twenty fields instead of eleven, so
+  a pattern `Zip.Entry(a, b, c, d, e, f, g, h, i, j, k)` no longer matches. (#2045)
+- `zeppelin.Zipfile.read` and `zeppelin.Zipfile.parse` (and so `path.open[Zip]()`) now
+  populate those nine fields from the archive's headers, and `zeppelin.Zipfile#serialize`
+  writes a set field verbatim where it previously derived the value: the general-purpose
+  flags were `0x800` for a non-ASCII name and `0` otherwise, both version fields `20` (`45`
+  for ZIP64), both attribute fields `0` (external `0x10` for a directory), the extra fields
+  empty. An entry read from an archive and written back therefore reproduces the original's
+  header values and, when bit 3 of `flags` is set, a data descriptor after its payload, rather
+  than being normalised to zeppelin's defaults. Code that relied on that normalisation must
+  reset the fields (with `Zip.Entry#withHeaders`, to `Unset` and `localSizes = true`) before
+  writing. `Zipfile.read` also now reads every entry's local header eagerly, where it
+  previously deferred that read to the entry's content. (#2045)

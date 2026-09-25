@@ -143,9 +143,8 @@ these, returning only the fields or variants that carry the annotation in questi
 Alongside annotations, a case class's fields can be reached by name at runtime, with the mapping
 generated as the code compiles rather than by reflection. A `Dereferenceable` gives the field
 names, one field's value by name, and the whole record as a map. The instance is parameterized
-by the type the fields yield, so a record whose fields are all `Int` dereferences to `Int` — and
-the same instance can put a value back by name, which is why the yield type must be one every
-field accepts:
+by the type the fields yield, so a record whose fields are all `Int` dereferences to `Int`, and
+any record dereferences to `Any`, covering every field:
 
 ```scala
 case class Letters(alpha: Int, beta: Int, gamma: Int)
@@ -167,7 +166,9 @@ letters.membersOfType[Int]   // List(1, 2, 3)
 
 Each accessor is a [lens](optics.md), so a field found by name can be written as well as read;
 `update` replaces the named field and `modify` applies a function to it, each yielding a new
-record, or `Unset` where the name is not a constructor parameter:
+record, or `Unset` where the name is not a constructor parameter. A field is only writable where
+its type accepts every value the instance yields, so the fields of a record dereferenced `to Any`
+can be read but not written:
 
 ```scala
 val numbers = summon[Letters is Dereferenceable to Int]
@@ -175,6 +176,10 @@ val numbers = summon[Letters is Dereferenceable to Int]
 numbers.update(letters, t"beta", 20)        // Letters(1, 20, 3)
 numbers.modify(letters, t"gamma")(_*10)     // Letters(1, 2, 30)
 numbers.lens(t"epsilon")                    // Unset: not a field
+
+val anything = summon[Employee is Dereferenceable to Any]
+anything.select(Employee(person, 7L), t"code")  // 7L
+anything.lens(t"code")                          // Unset: an `Any` cannot be put into a `Long`
 ```
 
 Because the mapping is a compiled table of accessors, reaching a field costs a method call, and a

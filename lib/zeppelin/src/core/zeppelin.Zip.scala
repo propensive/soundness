@@ -156,26 +156,57 @@ object Zip:
        dosTime:          Int,
        dosDate:          Int,
        directory:        Boolean,
-       comment:          Optional[Text] )
+       comment:          Optional[Text],
+       flags:            Optional[Int],
+       versionMadeBy:    Optional[Int],
+       localVersion:     Optional[Int],
+       centralVersion:   Optional[Int],
+       internalAttributes: Optional[Int],
+       externalAttributes: Optional[Long],
+       localExtra:       Optional[Data],
+       centralExtra:     Optional[Data],
+       localSizes:       Boolean )
     :   Entry =
 
       Entry(ref, method, crc32, uncompressedSize, compressedSize, storedBytes, dosTime, dosDate,
-          directory, comment)
+          directory, comment, 1, flags, versionMadeBy, localVersion, centralVersion,
+          internalAttributes, externalAttributes, localExtra, centralExtra, localSizes)
 
     given streamable: Entry is Streamable by Data over Credit = entry => entry.contents
 
+  // The header fields after `alignment` exist so that an archive read apart can be written back
+  // byte for byte: `Unset` means the value zeppelin derives itself (the UTF-8 flag exactly when
+  // the name needs it; version 20, or 45 for a ZIP64 entry; external attribute 0x10 for a
+  // directory and 0 otherwise; no extra field), and a value is written verbatim. Bit 3 of
+  // `flags` (`Zip.streamedFlag`) makes the writer emit a data descriptor after the payload,
+  // which is also how an archive is written to a non-seekable sink; `localSizes` then says
+  // whether the local header carries the CRC and sizes as well (writers differ), and is
+  // ignored otherwise. The two extra fields exclude the ZIP64 record, which is reconstructed
+  // on write.
   case class Entry
-    ( ref:              Path on Zip,
-     method:           Method,
-     crc32:            Int,
-     uncompressedSize: Long,
-     compressedSize:   Long,
-     storedBytes:      () => Stream[Data] over Credit,
-     dosTime:          Int               = Zip.epochTime,
-     dosDate:          Int               = Zip.epochDate,
-     directory:        Boolean           = false,
-     comment:          Optional[Text]    = Unset,
-     alignment:        Int               = 1 ):
+    ( ref:                Path on Zip,
+     method:             Method,
+     crc32:              Int,
+     uncompressedSize:   Long,
+     compressedSize:     Long,
+     storedBytes:        () => Stream[Data] over Credit,
+     dosTime:            Int            = Zip.epochTime,
+     dosDate:            Int            = Zip.epochDate,
+     directory:          Boolean        = false,
+     comment:            Optional[Text] = Unset,
+     alignment:          Int            = 1,
+     flags:              Optional[Int]  = Unset,
+     versionMadeBy:      Optional[Int]  = Unset,
+     localVersion:       Optional[Int]  = Unset,
+     centralVersion:     Optional[Int]  = Unset,
+     internalAttributes: Optional[Int]  = Unset,
+     externalAttributes: Optional[Long] = Unset,
+     localExtra:         Optional[Data] = Unset,
+     centralExtra:       Optional[Data] = Unset,
+     localSizes:         Boolean        = true ):
+
+    // Whether a data descriptor follows the payload when the entry is written.
+    def streamed: Boolean = flags.lay(false)(flag => (flag & Zip.streamedFlag) != 0)
 
     // The decompressed content of the entry: a fresh stream per call, inflated
     // incrementally through the `Deflate` duct, so a payload of any size is read,
@@ -198,9 +229,33 @@ object Zip:
     // parameter; transforms belong here, beside `aligned`.)
     def asDirectory: Entry = copy(directory = true)
 
+    // The same entry with its header fields replaced; each defaults to its present value, so a
+    // call names only the fields it sets. Capture-checked callers reach the fields this way.
+    def withHeaders
+      ( flags:              Optional[Int]  = this.flags,
+        versionMadeBy:      Optional[Int]  = this.versionMadeBy,
+        localVersion:       Optional[Int]  = this.localVersion,
+        centralVersion:     Optional[Int]  = this.centralVersion,
+        internalAttributes: Optional[Int]  = this.internalAttributes,
+        externalAttributes: Optional[Long] = this.externalAttributes,
+        localExtra:         Optional[Data] = this.localExtra,
+        centralExtra:       Optional[Data] = this.centralExtra,
+        localSizes:         Boolean        = this.localSizes )
+    :   Entry =
+
+      copy(flags = flags, versionMadeBy = versionMadeBy, localVersion = localVersion,
+          centralVersion = centralVersion, internalAttributes = internalAttributes,
+          externalAttributes = externalAttributes, localExtra = localExtra,
+          centralExtra = centralExtra, localSizes = localSizes)
+
   // 00:00:00, 1 January 1980 — the minimum value representable in a DOS timestamp.
   private[zeppelin] val epochTime: Int = 0x0000
   private[zeppelin] val epochDate: Int = 0x0021
+
+  // General-purpose bit flags: bit 3, a data descriptor follows the payload; bit 11, the name
+  // is UTF-8.
+  private[zeppelin] val streamedFlag: Int = 0x0008
+  private[zeppelin] val utf8Flag:     Int = 0x0800
 
   private[zeppelin] val localHeaderSig:   Int = 0x04034b50
   private[zeppelin] val dataDescriptorSig:Int = 0x08074b50

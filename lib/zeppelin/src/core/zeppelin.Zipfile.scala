@@ -257,6 +257,9 @@ object Zipfile:
       if Zip.u32(central, p) != (Zip.centralHeaderSig.toLong & 0xffffffffL)
       then raise(Zip.Error(Zip.Error.Reason.BadSignature(Zip.centralHeaderSig)))
 
+      val versionMadeBy = Zip.u16(central, p + 4)
+      val centralVersion = Zip.u16(central, p + 6)
+      val flags = Zip.u16(central, p + 8)
       val methodId = Zip.u16(central, p + 10)
       val dosTime = Zip.u16(central, p + 12)
       val dosDate = Zip.u16(central, p + 14)
@@ -266,6 +269,8 @@ object Zipfile:
       val nameLength = Zip.u16(central, p + 28)
       val extraLength = Zip.u16(central, p + 30)
       val entryCommentLength = Zip.u16(central, p + 32)
+      val internalAttributes = Zip.u16(central, p + 36)
+      val externalAttributes = Zip.u32(central, p + 38)
       var localOffset = Zip.u32(central, p + 42)
 
       val nameStart = p + 46
@@ -326,19 +331,39 @@ object Zipfile:
       if payloadOffset < earliestEntry then earliestEntry = payloadOffset
       val payloadSize = compressedSize
 
-      // Payloads stream in bounded chunks from the source; the local header is
-      // re-read per invocation to find the payload's true start, so an entry
-      // stays detached and reusable — and a payload larger than 2 GiB, which a
-      // single read could not represent, streams like any other.
-      val storedBytes: () => Stream[Data] over Credit = () =>
-        val header = source.read(payloadOffset, 30)
-        val headerNameLength = Zip.u16(header, 26)
-        val headerExtraLength = Zip.u16(header, 28)
-        val start = payloadOffset + 30 + headerNameLength + headerExtraLength
-        streamOf(source, start, payloadSize)
+      // The local header is read now, for the fields only it holds: its own "version needed",
+      // its extra field, and — under the streaming flag — whether it repeats the CRC and sizes
+      // that the data descriptor carries, or leaves them zero.
+      val header = source.read(payloadOffset, 30)
+      if header.length < 30 then raise(Zip.Error(Zip.Error.Reason.TruncatedArchive))
+
+      if Zip.u32(header, 0) != (Zip.localHeaderSig.toLong & 0xffffffffL)
+      then raise(Zip.Error(Zip.Error.Reason.BadSignature(Zip.localHeaderSig)))
+
+      val localVersion = Zip.u16(header, 4)
+      val headerNameLength = Zip.u16(header, 26)
+      val headerExtraLength = Zip.u16(header, 28)
+      val extraOffset = payloadOffset + 30 + headerNameLength
+
+      val localExtra: Data =
+        if headerExtraLength == 0 then Array.empty[Byte]
+        else source.read(extraOffset, headerExtraLength)
+
+      val localSizes =
+        (flags & Zip.streamedFlag) == 0
+        || Zip.u32(header, 14) != 0 || Zip.u32(header, 18) != 0 || Zip.u32(header, 22) != 0
+
+      val start = extraOffset + headerExtraLength
+
+      // Payloads stream in bounded chunks from the source, opened afresh per invocation, so an
+      // entry stays detached and reusable — and a payload larger than 2 GiB, which a single
+      // read could not represent, streams like any other.
+      val storedBytes: () => Stream[Data] over Credit = () => streamOf(source, start, payloadSize)
 
       builder += Zip.Entry.precompressed(ref, method, crc, uncompressedSize, compressedSize,
-          storedBytes, dosTime, dosDate, directory, entryComment)
+          storedBytes, dosTime, dosDate, directory, entryComment, flags, versionMadeBy,
+          localVersion, centralVersion, internalAttributes, externalAttributes,
+          withoutZip64(localExtra), withoutZip64(extra), localSizes)
 
       p = commentStart + entryCommentLength
       count += 1
@@ -364,12 +389,45 @@ object Zipfile:
 
   private def textBytes(text: Text): Data = text.in[Data]
 
-  private def utf8Flag(name: Data): Int = if name.exists(_ < 0) then 0x800 else 0
+  private def defaultFlags(name: Data): Int = if name.exists(_ < 0) then Zip.utf8Flag else 0
+
+  // An extra field with its ZIP64 record (header ID 1) removed, since the writer reconstructs
+  // that record from the entry's sizes; `Unset` when nothing remains.
+  private def withoutZip64(extra: Data): Optional[Data] =
+    if extra.length == 0 then Unset else
+      val kept = Array.collect[Byte](): out =>
+        def walk(q: Int): Unit = if q + 4 <= extra.length then
+          val id = Zip.u16(extra, q)
+          val end = math.min(q + 4 + Zip.u16(extra, q + 2), extra.length)
+          if id != 1 then out.append(extra, q, end - q)
+          walk(end)
+
+        walk(0)
+
+      if kept.length == 0 then Unset else kept
+
+  private def zip64Sizes(entry: Zip.Entry): Boolean =
+    entry.uncompressedSize > u32Max || entry.compressedSize > u32Max
+
+  // The data descriptor written after a streamed entry's payload: the CRC and sizes, behind
+  // the signature every writer in practice emits; eight-byte sizes for a ZIP64 entry.
+  private def dataDescriptor(entry: Zip.Entry): Optional[Data] =
+    if !entry.streamed then Unset
+    else if zip64Sizes(entry) then Data.build(24): array =>
+      Zip.putU32(array, 0, Zip.dataDescriptorSig.toLong & 0xffffffffL)
+      Zip.putU32(array, 4, entry.crc32 & 0xffffffffL)
+      Zip.putU64(array, 8, entry.compressedSize)
+      Zip.putU64(array, 16, entry.uncompressedSize)
+    else Data.build(16): array =>
+      Zip.putU32(array, 0, Zip.dataDescriptorSig.toLong & 0xffffffffL)
+      Zip.putU32(array, 4, entry.crc32 & 0xffffffffL)
+      Zip.putU32(array, 8, entry.compressedSize)
+      Zip.putU32(array, 12, entry.uncompressedSize)
 
   // The base (non-padding) extra-field length of an entry's local header: the ZIP64 record
-  // when the entry's sizes overflow 32 bits, otherwise nothing.
+  // when the entry's sizes overflow 32 bits, then any extra field the entry carries.
   private def baseExtraLength(entry: Zip.Entry): Int =
-    if entry.uncompressedSize > u32Max || entry.compressedSize > u32Max then 20 else 0
+    (if zip64Sizes(entry) then 20 else 0) + entry.localExtra.lay(0)(_.length)
 
   // The number of padding bytes to append to a local header's extra field so that the entry's
   // data — which begins immediately after the header — starts at a multiple of the entry's
@@ -380,34 +438,41 @@ object Zipfile:
       ((entry.alignment - dataStart%entry.alignment)%entry.alignment).toInt
 
   private def localHeader(entry: Zip.Entry, name: Data, padding: Int = 0): Data =
-    val zip64 = entry.uncompressedSize > u32Max || entry.compressedSize > u32Max
+    val zip64 = zip64Sizes(entry)
 
-    val extra: Data =
+    val zip64Record: Data =
       if !zip64 then Array.empty[Byte] else Data.build(20): array =>
         Zip.putU16(array, 0, 1)
         Zip.putU16(array, 2, 16)
         Zip.putU64(array, 4, entry.uncompressedSize)
         Zip.putU64(array, 12, entry.compressedSize)
 
-    // Alignment padding follows any ZIP64 record as trailing zero bytes (the same padding
-    // classic `zipalign` emits): a reader takes the extra field's total length from offset 28
-    // and skips it, so the padding is inert, and the entry's data lands on its boundary.
-    val extraLength = extra.length + padding
+    val verbatim: Data = entry.localExtra.or(Array.empty[Byte])
+
+    // Alignment padding follows the ZIP64 record and the entry's own extra field as trailing
+    // zero bytes (the same padding classic `zipalign` emits): a reader takes the extra field's
+    // total length from offset 28 and skips it, so the padding is inert, and the entry's data
+    // lands on its boundary.
+    val extraLength = zip64Record.length + verbatim.length + padding
+
+    // A streamed entry may leave the CRC and sizes for its data descriptor.
+    val blank = entry.streamed && !entry.localSizes
 
     Data.build(30 + name.length + extraLength): array =>
       Zip.putU32(array, 0, Zip.localHeaderSig.toLong & 0xffffffffL)
-      Zip.putU16(array, 4, if zip64 then 45 else 20)
-      Zip.putU16(array, 6, utf8Flag(name))
+      Zip.putU16(array, 4, entry.localVersion.or(if zip64 then 45 else 20))
+      Zip.putU16(array, 6, entry.flags.or(defaultFlags(name)))
       Zip.putU16(array, 8, entry.method.id)
       Zip.putU16(array, 10, entry.dosTime)
       Zip.putU16(array, 12, entry.dosDate)
-      Zip.putU32(array, 14, entry.crc32 & 0xffffffffL)
-      Zip.putU32(array, 18, if zip64 then u32Max else entry.compressedSize)
-      Zip.putU32(array, 22, if zip64 then u32Max else entry.uncompressedSize)
+      Zip.putU32(array, 14, if blank then 0L else entry.crc32 & 0xffffffffL)
+      Zip.putU32(array, 18, if blank then 0L else if zip64 then u32Max else entry.compressedSize)
+      Zip.putU32(array, 22, if blank then 0L else if zip64 then u32Max else entry.uncompressedSize)
       Zip.putU16(array, 26, name.length)
       Zip.putU16(array, 28, extraLength)
       array.place(name, 30.z)
-      if extra.length > 0 then array.place(extra, (30 + name.length).z)
+      if zip64Record.length > 0 then array.place(zip64Record, (30 + name.length).z)
+      if verbatim.length > 0 then array.place(verbatim, (30 + name.length + zip64Record.length).z)
 
   private def centralHeader(entry: Zip.Entry, name: Data, localOffset: Long): Data =
     val needUncompressed = entry.uncompressedSize > u32Max
@@ -434,12 +499,14 @@ object Zipfile:
 
     val commentBytes: Data = entry.comment.lay(Array.empty[Byte])(textBytes)
     val version = if zip64 then 45 else 20
+    val verbatim: Data = entry.centralExtra.or(Array.empty[Byte])
+    val extraLength = extra.length + verbatim.length
 
-    Data.build(46 + name.length + extra.length + commentBytes.length): array =>
+    Data.build(46 + name.length + extraLength + commentBytes.length): array =>
       Zip.putU32(array, 0, Zip.centralHeaderSig.toLong & 0xffffffffL)
-      Zip.putU16(array, 4, version)
-      Zip.putU16(array, 6, version)
-      Zip.putU16(array, 8, utf8Flag(name))
+      Zip.putU16(array, 4, entry.versionMadeBy.or(version))
+      Zip.putU16(array, 6, entry.centralVersion.or(version))
+      Zip.putU16(array, 8, entry.flags.or(defaultFlags(name)))
       Zip.putU16(array, 10, entry.method.id)
       Zip.putU16(array, 12, entry.dosTime)
       Zip.putU16(array, 14, entry.dosDate)
@@ -447,11 +514,11 @@ object Zipfile:
       Zip.putU32(array, 20, if needCompressed then u32Max else entry.compressedSize)
       Zip.putU32(array, 24, if needUncompressed then u32Max else entry.uncompressedSize)
       Zip.putU16(array, 28, name.length)
-      Zip.putU16(array, 30, extra.length)
+      Zip.putU16(array, 30, extraLength)
       Zip.putU16(array, 32, commentBytes.length)
       Zip.putU16(array, 34, 0)
-      Zip.putU16(array, 36, 0)
-      Zip.putU32(array, 38, if entry.directory then 0x10L else 0L)
+      Zip.putU16(array, 36, entry.internalAttributes.or(0))
+      Zip.putU32(array, 38, entry.externalAttributes.or(if entry.directory then 0x10L else 0L))
       Zip.putU32(array, 42, if needOffset then u32Max else localOffset)
       array.place(name, 46.z)
       var pos = 46 + name.length
@@ -459,6 +526,10 @@ object Zipfile:
       if extra.length > 0 then
         array.place(extra, pos.z)
         pos += extra.length
+
+      if verbatim.length > 0 then
+        array.place(verbatim, pos.z)
+        pos += verbatim.length
 
       if commentBytes.length > 0 then array.place(commentBytes, pos.z)
 
@@ -513,18 +584,20 @@ case class Zipfile
     // any reader sees standard entries and the prefix as leading, otherwise-unassigned data.
     val prefixBytes: Data = prefix.or(Array.empty[Byte])
     var offset = prefixBytes.length.toLong
-    val builder = scala.collection.immutable.List.newBuilder[(Zip.Entry, Data, Data, Long)]
+    val builder =
+      scala.collection.immutable.List.newBuilder[(Zip.Entry, Data, Data, Optional[Data], Long)]
 
     entries.foreach: entry =>
       val name = Zipfile.nameBytes(entry)
       val padding = Zipfile.alignmentPadding(entry, name, offset)
       val header = Zipfile.localHeader(entry, name, padding)
-      builder += ((entry, name, header, offset))
-      offset += header.length + entry.compressedSize
+      val descriptor = Zipfile.dataDescriptor(entry)
+      builder += ((entry, name, header, descriptor, offset))
+      offset += header.length + entry.compressedSize + descriptor.lay(0)(_.length)
 
     val records = builder.result().to(List)
     val cdStart = offset
-    val central = records.map: (entry, name, _, off) => Zipfile.centralHeader(entry, name, off)
+    val central = records.map: (entry, name, _, _, off) => Zipfile.centralHeader(entry, name, off)
     val cdSize = central.fold(0L)(_ + _.length)
     val tail = Zipfile.endRecords(records.size.toLong, cdStart, cdSize, comment)
 
@@ -536,7 +609,7 @@ case class Zipfile
     // The archive is serialized through stdlib `Iterator`s, which the opaque `List` cannot
     // yield; each of the four `stdlib` bridges below is that crossing.
     val local: Iterator[Data] =
-      records.stdlib.iterator.flatMap: (entry, _, header, _) =>
-        Iterator(header) ++ entry.storedBytes().chunks
+      records.stdlib.iterator.flatMap: (entry, _, header, descriptor, _) =>
+        Iterator(header) ++ entry.storedBytes().chunks ++ descriptor.lay(Iterator.empty)(Iterator(_))
 
     (prefixIterator ++ local ++ central.stdlib.iterator ++ tail.stdlib.iterator).stream
