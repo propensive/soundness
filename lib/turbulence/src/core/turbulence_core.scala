@@ -44,7 +44,6 @@ import contingency.*
 import denominative.*
 import hieroglyph.*
 import hypotenuse.*
-import parasite.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
@@ -53,7 +52,6 @@ import zephyrine.*
 
 import LineSeparation.*
 import abstractables.epochMillisecondsAbstractable
-import probates.awaitProbate
 
 inline def more[value](using value: value aka "more"): value =
   // The explicit import outranks the deindexing `apply`, which would otherwise shadow the
@@ -89,21 +87,6 @@ extension [value](value: value)
             loadable:   (result is Loadable by Text)^ )
   :   Document[result] =
     loadable.load(streamable.stream(value))
-
-extension [medium, transport](consume stream: (Stream[medium] over transport)^)
-  // The detached pump: `pump` on its own parasite task, for fire-and-forget
-  // transfers and genuinely concurrent pipeline halves. This is the "one
-  // pumping thread" of a pipeline with an asynchronous boundary.
-  def flow(consume intake: (Intake[medium] over transport)^)(using Monitor, Probate): Task[Unit] =
-    // Both endpoints move onto the pump fiber as neutral carriers (a consume parameter
-    // cannot be consumed from inside the spawned closure); single ownership transfers
-    // with the spawn.
-    val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
-    val intakeRef: AnyRef = intake.asInstanceOf[AnyRef]
-
-    async:
-      streamRef.asInstanceOf[(Stream[medium] over transport)^]
-      . pump(intakeRef.asInstanceOf[(Intake[medium] over transport)^])
 
 extension (consume stream: (Stream[Text] over Credit)^)
   // Split a character stream into a record stream of its lines (each `Text`,

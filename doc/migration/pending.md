@@ -588,6 +588,18 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `stream.shred(arbitrary[Double]().toInt)` under a `Random`. `turbulence.core` no longer depends
   on `capricious.core`, so a consumer that reached capricious (or wisteria, hypotenuse) only
   through turbulence must declare it. (#PR-dead-edges)
+- New module `turbulence.async` (in the `base` bundle; dependencies `turbulence.core`,
+  `parasite.core`) holds `turbulence.Confluence`, `turbulence.Divergence` and the detached pump,
+  and `turbulence.core` no longer depends on `parasite.core`. The pump extension
+  `(Stream[medium] over transport)^ # flow(intake: (Intake[medium] over transport)^)(using Monitor,
+  Probate): Task[Unit]` is renamed `convey` (the `Chain` pattern helper `flow[result](termination)
+  (proceed)` keeps its name); the `soundness` exports of `Confluence`, `Divergence` and `convey`
+  come from `soundness_turbulence_async`. A consumer of `Confluence`, `Divergence` or `convey`
+  must declare `turbulence.async`; a consumer that reached parasite (or digression, mercator,
+  nomenclature, spectacular, hypotenuse, anticipation.time) only through `turbulence.core` must
+  declare it — within this repository that was anthology, cataclysm, coaxial, ethereal,
+  eucalyptus, exoskeleton.args, graffiti, guillotine, honeycomb, locomotion, mandible, profanity,
+  revolution, surveillance, ultimatum and xylophone. (#PR-dead-edges)
 
 ## vivisection
 

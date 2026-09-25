@@ -30,20 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package turbulence
 
-export
-  turbulence
-  . { Aggregable, condense,
-      delineate, Document, Documentary, drop, Eof, inputStream,
-      Line, LineSeparation, load, Loadable, more, read, Relay, shred, source,
-      Readable, Sink, Streamable, Truncation,
-      StreamOutputStream, strict, take, Writable, writeTo, flow }
+import scala.language.adhocExtensions
 
-package lineSeparation:
-  export
-    turbulence.lineSeparation
-    . { adaptiveLinefeedLineSeparation, carriageReturnLineSeparation,
-        carriageReturnLinefeedLineSeparation, linefeedLineSeparation,
-        strictCarriageReturnLineSeparation, strictLinefeedsLineSeparation,
-        javaBaseLineSeparation }
+import anticipation.*
+import parasite.*
+import prepositional.*
+import zephyrine.*
+
+import probates.awaitProbate
+
+extension [medium, transport](consume stream: (Stream[medium] over transport)^)
+  // The detached pump: `pump` on its own parasite task, for fire-and-forget
+  // transfers and genuinely concurrent pipeline halves. This is the "one
+  // pumping thread" of a pipeline with an asynchronous boundary.
+  def convey(consume intake: (Intake[medium] over transport)^)(using Monitor, Probate): Task[Unit] =
+    // Both endpoints move onto the pump fiber as neutral carriers (a consume parameter
+    // cannot be consumed from inside the spawned closure); single ownership transfers
+    // with the spawn.
+    val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
+    val intakeRef: AnyRef = intake.asInstanceOf[AnyRef]
+
+    async:
+      streamRef.asInstanceOf[(Stream[medium] over transport)^]
+      . pump(intakeRef.asInstanceOf[(Intake[medium] over transport)^])
+

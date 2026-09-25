@@ -32,18 +32,4 @@
                                                                                                   */
 package soundness
 
-export
-  turbulence
-  . { Aggregable, condense,
-      delineate, Document, Documentary, drop, Eof, inputStream,
-      Line, LineSeparation, load, Loadable, more, read, Relay, shred, source,
-      Readable, Sink, Streamable, Truncation,
-      StreamOutputStream, strict, take, Writable, writeTo, flow }
-
-package lineSeparation:
-  export
-    turbulence.lineSeparation
-    . { adaptiveLinefeedLineSeparation, carriageReturnLineSeparation,
-        carriageReturnLinefeedLineSeparation, linefeedLineSeparation,
-        strictCarriageReturnLineSeparation, strictLinefeedsLineSeparation,
-        javaBaseLineSeparation }
+export turbulence.{Confluence, Divergence, convey}
