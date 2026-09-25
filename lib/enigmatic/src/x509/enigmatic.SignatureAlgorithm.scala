@@ -39,7 +39,8 @@ import vacuous.*
 
 // The `AlgorithmIdentifier` that names a cipher-and-digest pair in a certificate. It is a property
 // of the pair, not of either alone: `sha256WithRSAEncryption` and `sha384WithRSAEncryption` are
-// different object identifiers over the same key type.
+// different object identifiers over the same key type — except for a scheme like ML-DSA which
+// takes no digest, whose identifier names the cipher alone.
 object SignatureAlgorithm:
   // RSASSA-PKCS1-v1_5 identifiers live under the PKCS#1 arc, and RFC 3279 requires the parameters
   // field to be present and NULL — not absent.
@@ -52,6 +53,17 @@ object SignatureAlgorithm:
   given ecdsa: [bits <: 256 | 384 | 521] => Ecdsa[bits] is SignatureAlgorithm = digest =>
     arc(digest, t"SHA256" -> 2, t"SHA384" -> 3, t"SHA512" -> 4).let: last =>
       Asn1.Sequence(List(Asn1.ObjectId(List(1, 2, 840, 10045, 4, 3, last))))
+
+  // ML-DSA identifiers live under the NIST signature-algorithm arc (RFC 9881), one per parameter
+  // set, and the parameters field is absent. ML-DSA signs the message itself rather than a digest
+  // of it, so the digest plays no part in the identifier and is ignored.
+  given mlDsa: [level <: 44 | 65 | 87: ValueOf] => MlDsa[level] is SignatureAlgorithm = _ =>
+    val last = valueOf[level] match
+      case 44 => 17
+      case 65 => 18
+      case _  => 19
+
+    Asn1.Sequence(List(Asn1.ObjectId(List(2, 16, 840, 1, 101, 3, 4, 3, last))))
 
   private def arc(digest: Signature.Digest, entries: (Text, Int)*): Optional[Int] =
     entries.find(_(0) == digest.token).map(_(1)).getOrElse(Unset)

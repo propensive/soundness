@@ -203,7 +203,31 @@ certificate.pem.serialize   // t"-----BEGIN CERTIFICATE-----…"
 ```
 
 A certificate is an `Asn1` value underneath, so its fields are readable through the same
-structure, and `authority = true` marks it as one that may sign others.
+structure, and `authority = true` marks it as one that may sign others. `verify` checks the
+signature against the issuer's public key — the certificate's own, when it is self-signed.
+
+An ML-DSA key signs a certificate the same way, with the FIPS 204 algorithm identifiers. But a
+TLS stack may not be able to handshake with a post-quantum key — the JDK's cannot — so a service
+whose identity is an ML-DSA key instead has that key *issue* a certificate over a classical key
+it can present, and presents it together with the ML-DSA key's own self-signed certificate. A
+peer that knows the ML-DSA key verifies the leaf against it:
+
+```scala
+val swarmKey = PrivateKey.generate[MlDsa[65]]()
+val tlsKey = PrivateKey.generate[Ecdsa[256]]()
+val identity = Distinguished(commonName = t"swarm.example.com")
+
+val root = Certificate.selfSigned(identity, swarmKey, validity, BigInt(1), authority = true)
+
+val leaf =
+  Certificate.issued(subject, tlsKey.public, identity, swarmKey, validity, BigInt(2), alternatives = List(t"example.com"))
+
+leaf.verify(swarmKey.public)   // true
+root.verify(swarmKey.public)   // true
+```
+
+An issued certificate carries an authority key identifier naming the key that signed it, which
+is how a verifier finds the root in a chain.
 
 ### Keystores
 
