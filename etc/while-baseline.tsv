@@ -97,8 +97,7 @@ lib/guillotine/src/core/guillotine.internal.scala	2	0	0
 lib/hallucination/src/core/hallucination.Quantization.scala	2	0	0
 lib/hallucination/src/core/hallucination.Raster.scala	6	0	0
 lib/harlequin/src/core/harlequin.Fragment.scala	3	0	5
-lib/harlequin/src/core/harlequin.Lexis.scala	1	0	1
-lib/harlequin/src/core/harlequin.SourceCode.scala	1	1	1
+lib/harlequin/src/core/harlequin.SourceCode.scala	0	1	1
 lib/hieroglyph/src/core/hieroglyph.CollationTable.scala	16	0	1
 lib/hieroglyph/src/core/hieroglyph.GraphemeBreak.scala	2	0	0
 lib/hieroglyph/src/core/hieroglyph.Normalization.scala	7	0	0

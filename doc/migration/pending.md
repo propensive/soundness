@@ -117,6 +117,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   Optional[Topic]` through vacuous's `Optional` extension, answering `true` unconditionally.
   (#2032)
 
+## harlequin
+
+- `harlequin.Fragment.infixBase` now rejects every Scala 3 keyword, hard and soft, as an infix
+  receiver, using the new `prophesy.ScalaKeywords.all` in place of its own private list, which
+  lacked `erased`, `macro`, `throws` and `tracked`. A fragment such as `erased x ma` (cursor at
+  the end) therefore yields `(Unset, t"ma")` where it previously yielded `(t"x.", t"ma")`.
+  Nothing else about its result changed.
+
 ## pneumatic
 
 - New `pneumatic.Brotli.continuation(base: Data, next: Data, window: Int = Brotli.Window): Data`
