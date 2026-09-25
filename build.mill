@@ -3248,7 +3248,7 @@ object tarantula extends Library:
   // The offline suite fakes an `Http.Backend`; the live suite additionally serves a real page
   // from a local `scintillate` server for a real browser to fetch.
   object test extends Tests(core, image, eucalyptus.core, ambience.core, honeycomb.core,
-      cataclysm.core, scintillate.server):
+      cataclysm.core, scintillate.server, xylophone.core, cataclysm.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
