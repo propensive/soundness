@@ -20,10 +20,13 @@ proscenium itself.
 ## core-1: sorted and ordered collections have Soundness equivalents
 
 Horizon: near
-Baseline: 16 files (measured 2026-08-01)
+Baseline: 32 files (measured 2026-09-25; 16 on 2026-08-01)
 
 Files using `TreeMap`, `TreeSet`, `TrieMap`, `SortedMap` or `SortedSet` have no opaque type to
-drain to; the equivalents must exist before the drain can take them.
+drain to; the equivalents must exist before the drain can take them. The count doubled in
+seven weeks because new modules — vivisection, praxinoscope, mandible, sedentary — were written
+against the stdlib sorted types for want of an alternative, which is the case for the
+equivalents existing first.
 
 Done when:
 
@@ -43,7 +46,7 @@ follow the program — quote boundaries and index arithmetic — through `attest
 
 Horizon: near → mid
 Needs: core-1
-Baseline: 219 files, of which 170 import `scala.collection.mutable` (measured 2026-08-01)
+Baseline: 228 files, of which 106 import `scala.collection.mutable` (measured 2026-09-25; 219 and 170 on 2026-08-01)
 
 Importing `scala.collection` bypasses the prelude's curation entirely. The mutable imports are
 the larger share, and their replacement is not immutability but *safe* mutability:
@@ -56,8 +59,8 @@ Done when:
 ## core-4: indexed access is total by construction
 
 Horizon: mid
-Baseline: 1597 `while` loops, 482 `readUnchecked` and 509 `.charAt(` in `lib/*/src/core`
-(comment- and string-stripped, measured 2026-09-14)
+Baseline: 1606 `while` loops, 476 `readUnchecked` and 507 `.charAt(` in `lib/*/src/core`
+(comment- and string-stripped, measured 2026-09-25; 1597, 482 and 509 on 2026-09-14)
 
 The `var i = 0; while i < length` pattern is maximally efficient and maximally unsafe: the
 index is just an `Int`, unconstrained by the collection it indexes. The design in
@@ -87,6 +90,9 @@ Horizon: mid → long
 A stack trace, a rendered value or a reported type name never exposes a Java encoding:
 digression renders traces in Soundness terms, and displayed values are the opaque types, not
 their underlying representations. This is what makes debugging feel native rather than hosted.
+digression already demangles names and, since #2063, renders each frame's location as one
+contiguous, colon-aligned column; what is missing is the suite that asserts the absence of
+encodings rather than the presence of particular renderings.
 
 Done when: a test suite asserts the rendering of representative stack traces, values and type
 names contains no Java encodings, and runs in the ordinary suite.
