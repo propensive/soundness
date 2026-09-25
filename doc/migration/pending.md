@@ -404,6 +404,20 @@ format. Entries are grouped by module, most-recently-added last within a module.
   lacked `erased`, `macro`, `throws` and `tracked`. A fragment such as `erased x ma` (cursor at
   the end) therefore yields `(Unset, t"ma")` where it previously yielded `(t"x.", t"ma")`.
   Nothing else about its result changed.
+- `harlequin.Highlight` changed shape: `def scalac: Optional[Scalac[?, ?]]` and `def classpath:
+  Optional[LocalClasspath]` replaced by `def compilation: Optional[Highlight.Compilation]`, where the
+  new `Highlight.Compilation` trait has `def arguments: List[Text]`, `def classpath: Text` and
+  `def compiler(): dotty.tools.dotc.Compiler`. `harlequin.highlighting` is now a package (was an
+  object): `highlighting.tokenizedScala` stays in `harlequin.core`; `highlighting.typecheckedScala`
+  and `highlighting.compiledScala` (each `(using Scalac[?, ?], LocalClasspath): Highlight`, unchanged
+  signatures) moved to the new module `harlequin.typed` (in the `tool` bundle; dependencies
+  `harlequin.core`, `anthology.scala`, `hellenism.jvm`). `import highlighting.typecheckedScala` and
+  `harlequin.highlighting.typecheckedScala` still resolve given that module. (#PR-dead-edges)
+- `harlequin.Diagnostic#importance` is now typed `harlequin.Diagnostic.Importance` (a new enum with
+  the same cases `Info`, `Warning`, `Error`) instead of `anthology.Importance`. (#PR-dead-edges)
+- `harlequin.core` no longer depends on `anthology.scala` or `hellenism.jvm` (nor, through them, on
+  `anthology.core`, `hellenism.core`, `galilei`, `ambience`, `guillotine`, `aperture`); a consumer
+  that reached any of these only through `harlequin.core` must declare it, or `harlequin.typed`. (#PR-dead-edges)
 
 ## honeycomb
 
@@ -619,6 +633,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   patterns. Code relying on a logical step stopping inside JDK classes or generated methods
   must use the primitive `Debug#step(thread, depth, size): Int` and `Debug#events`, which are
   unchanged. (#2059)
+- `vivisection.dap` depends on `harlequin.typed` instead of `harlequin.core`. (#PR-dead-edges)
 
 ## xylophone
 

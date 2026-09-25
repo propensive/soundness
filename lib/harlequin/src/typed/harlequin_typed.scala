@@ -32,28 +32,35 @@
                                                                                                   */
 package harlequin
 
+import anthology.*
 import anticipation.*
+import gossamer.*
+import hellenism.*
+import rudiments.*
 import vacuous.*
 
-enum Depth:
-  case Tokenized, Typechecked, Compiled
+// The compiler an anthology `Scalac` and a hellenism `LocalClasspath` describe, as typechecked
+// and compiled highlighting run it.
+private[harlequin] class ScalacCompilation(scalac: Scalac[?, ?], localClasspath: LocalClasspath)
+extends Highlight.Compilation:
+  def arguments: List[Text] = scalac.commandLineArguments
+  def compiler(): dotty.tools.dotc.Compiler = Scalac.compiler()
 
-object Highlight:
-  given default: Highlight = highlighting.tokenizedScala
+  lazy val classpath: Text =
+    localClasspath.entries.flatMap:
+      case Classpath.Entry.Directory(directory) => List(directory)
+      case Classpath.Entry.Jar(jar)             => List(jar)
+      case _                                   => Nil
 
-  // What typechecked or compiled highlighting needs of a compiler: its command-line arguments, a
-  // classpath string and the compiler instance to run. `harlequin.typed` builds one from an
-  // anthology `Scalac` and a hellenism `LocalClasspath`; this module knows neither.
-  trait Compilation:
-    def arguments: List[Text]
-    def classpath: Text
-    def compiler(): dotty.tools.dotc.Compiler
-
-trait Highlight:
-  def depth: Depth
-  def compilation: Optional[Highlight.Compilation]
+    . join(java.io.File.pathSeparator.nn.tt)
 
 package highlighting:
-  given tokenizedScala: Highlight = new Highlight:
-    def depth: Depth = Depth.Tokenized
-    def compilation: Optional[Highlight.Compilation] = Unset
+  given typecheckedScala(using scalac: Scalac[?, ?], classpath: LocalClasspath): Highlight =
+    new Highlight:
+      def depth: Depth = Depth.Typechecked
+      val compilation: Optional[Highlight.Compilation] = ScalacCompilation(scalac, classpath)
+
+  given compiledScala(using scalac: Scalac[?, ?], classpath: LocalClasspath): Highlight =
+    new Highlight:
+      def depth: Depth = Depth.Compiled
+      val compilation: Optional[Highlight.Compilation] = ScalacCompilation(scalac, classpath)

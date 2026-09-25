@@ -962,7 +962,7 @@ object soundness extends Toolchain:
     def summary = "Testing: suites, assertions, generators and browser automation"
 
   object tool extends Bundle(anthology.core, degustation.core,
-    degustation.lira, mandible.lira, xenophile.lira, harlequin.core, hellenism.core,
+    degustation.lira, mandible.lira, xenophile.lira, harlequin.core, harlequin.typed, hellenism.core,
     hyperbole.tasty, hyperbole.core, octogenarian.core, reliquary.core, reliquary.derive,
     revolution.core, revolution.semver,
     anthology.java,
@@ -2351,12 +2351,18 @@ object harlequin extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
-  object core extends Component(compiler, anthology.scala, stenography.core, hellenism.jvm,
-      prophesy.core):
-    override def scalaJs = false // syntax highlighting via `anthology.scala` (the compiler)
+  object core extends Component(compiler, stenography.core, prophesy.core):
+    override def scalaJs = false // tokenizes through the Scala compiler (dotty)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+  // Typechecked and compiled highlighting: the same pipeline run through an anthology `Scalac`
+  // against a hellenism classpath, for the tools that already have a compiler to hand.
+  object typed extends Component(core, anthology.scala, hellenism.jvm):
+    override def scalaJs = false // runs the Scala compiler
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object ansi extends Component(core, escapade.core):
     override def scalaJs = false // depends on JVM-only `harlequin.core`
@@ -2366,7 +2372,7 @@ object harlequin extends Library:
     override def scalaJs = false // depends on JVM-only `harlequin.core`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(ansi, md):
+  object test extends Tests(ansi, md, harlequin.typed):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -3468,7 +3474,7 @@ object vivisection extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The Debug Adapter Protocol transport: Content-Length-framed JSON over stdio, adapting a
   // debug session to the requests and events a DAP frontend (such as VS Code) speaks.
-  object dap extends Component(eval, harlequin.core, jacinta.core, obligatory.core):
+  object dap extends Component(eval, harlequin.typed, jacinta.core, obligatory.core):
     override def scalaJs = false // serves a JVM debug session
     override def scalaNative = false
     override def scalacOptions = Task:
@@ -3558,7 +3564,7 @@ object xenophile extends Library:
   // Every backend at once — which only typechecks because they now share the single `invoke` in
   // `core` rather than exporting one apiece into `soundness`.
   object test extends Tests(typescript, native, wit, webidl, wasm, kotlin, js, scalanative,
-      lira, hellenism.core, harlequin.core):
+      lira, hellenism.core, harlequin.core, harlequin.typed):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
     // kotlin-stdlib is the Kotlin-classfile fixture: its `@Metadata`-annotated classes let the

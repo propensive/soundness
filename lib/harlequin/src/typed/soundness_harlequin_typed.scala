@@ -30,30 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package harlequin
-
-import anticipation.*
-import vacuous.*
-
-enum Depth:
-  case Tokenized, Typechecked, Compiled
-
-object Highlight:
-  given default: Highlight = highlighting.tokenizedScala
-
-  // What typechecked or compiled highlighting needs of a compiler: its command-line arguments, a
-  // classpath string and the compiler instance to run. `harlequin.typed` builds one from an
-  // anthology `Scalac` and a hellenism `LocalClasspath`; this module knows neither.
-  trait Compilation:
-    def arguments: List[Text]
-    def classpath: Text
-    def compiler(): dotty.tools.dotc.Compiler
-
-trait Highlight:
-  def depth: Depth
-  def compilation: Optional[Highlight.Compilation]
+package soundness
 
 package highlighting:
-  given tokenizedScala: Highlight = new Highlight:
-    def depth: Depth = Depth.Tokenized
-    def compilation: Optional[Highlight.Compilation] = Unset
+  export harlequin.highlighting.{typecheckedScala, compiledScala}

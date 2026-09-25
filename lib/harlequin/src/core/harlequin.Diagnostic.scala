@@ -32,7 +32,6 @@
                                                                                                   */
 package harlequin
 
-import anthology.*
 import anticipation.*
 import denominative.*
 
@@ -40,4 +39,9 @@ import denominative.*
 // `span` is an `Offset`-mode `Span` (source offset + length); because a diagnostic
 // may cover part of a token or several tokens, it is kept separate from the token
 // stream and reapplied by the caller.
-case class Diagnostic(span: Span, message: Text, importance: Importance)
+object Diagnostic:
+  // Severity, named as anthology's `Importance` and larceny's are.
+  enum Importance:
+    case Info, Warning, Error
+
+case class Diagnostic(span: Span, message: Text, importance: Diagnostic.Importance)
