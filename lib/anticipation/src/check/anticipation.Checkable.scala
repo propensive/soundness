@@ -34,7 +34,6 @@ package anticipation
 
 import hypotenuse.*
 import prepositional.*
-import rudiments.*
 
 object Checkable:
   // The cast fixes the invariant element type only: `sameElements` compares via `equals`,
@@ -45,7 +44,17 @@ object Checkable:
   given stream: [left, right] => (left is Checkable against right)
   =>  Chain[left] is Checkable against Chain[right] =
 
-    _.zip(_).all(_ === _)
+    (lefts, rights) =>
+      val leftIterator = Chain.iterator(lefts)
+      val rightIterator = Chain.iterator(rights)
+
+      // Element by element, and the lengths must agree: a shorter chain is not a prefix match.
+      def recur(): Boolean =
+        if leftIterator.hasNext && rightIterator.hasNext
+        then leftIterator.next() === rightIterator.next() && recur()
+        else !leftIterator.hasNext && !rightIterator.hasNext
+
+      recur()
 
   given tolerance2: [value] => value is Checkable against Tolerance[value] =
     (value, tolerance) => tolerance.covers(value)

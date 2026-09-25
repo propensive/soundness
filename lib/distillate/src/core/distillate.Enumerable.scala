@@ -38,12 +38,21 @@ import scala.deriving.*
 
 import anticipation.*
 import denominative.*
+import fulminate.*
 import rudiments.*
 import vacuous.*
 
 object Enumerable:
   inline given derived: [enumeration <: reflect.Enum: Mirror.SumOf] => enumeration is Enumerable =
     ${distillate.internal.enumerable[enumeration]}
+
+  // Raised when a text is decoded as an enumeration but names none of its values.
+  case class Error(inputLabel: Text, sum: Text, validVariants: List[Text])(using Diagnostics)
+  extends fulminate.Error(900, 0)
+    ( m"""
+        the specified variant ($inputLabel) is not one of the valid variants
+        (${validVariants.stdlib.mkString(", ").tt}) of the enumeration $sum
+      """ )
 
 trait Enumerable:
   type Self <: reflect.Enum

@@ -39,7 +39,6 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import gossamer.*
-import guillotine.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -56,26 +55,23 @@ object Device:
   def create[plane <: Posix: Filesystem]
     ( path: Path on plane, kind: Kind, major: Int, minor: Int )
     ( using createNonexistentParents: CreateNonexistentParents on plane,
-            overwritePreexisting:     OverwritePreexisting on plane,
-            working:                  WorkingDirectory,
-            loggable:                 guillotine.Exec.Event is Loggable )
+            overwritePreexisting:     OverwritePreexisting on plane )
   :   Path on plane raises Io.Error =
 
     createNonexistentParents(path):
       overwritePreexisting(path):
-        mitigate:
-          case guillotine.Exec.Error(_, _, _) =>
-            import errorDiagnostics.stackTracesDiagnostics
-            Io.Error(path, Io.Error.Operation.Create, Io.Error.Reason.Unsupported)
+        // A raw `ProcessBuilder`, as `createFifo` uses: `mknod` is the only way to make a device
+        // node from the JVM, and shelling out through guillotine would make a filesystem backend
+        // depend on the process library for this one call.
+        val command = java.util.ArrayList[String]()
+        command.add("mknod")
+        command.add(Path.encodable.encode(path).s)
+        command.add(kind.flag.s)
+        command.add(major.toString)
+        command.add(minor.toString)
+        val process = new ProcessBuilder(command).start().nn
 
-        . protect:
-            // `exec[Exit]()` rather than `()`: the inline `apply()` binds an erased proxy for
-            // `Exec is Intelligible` with a compiler-generated skolem cast, which Scala 3.10 no
-            // longer accepts as pure (scala/scala3#24990, re-opened by scala/scala3#26813).
-            sh"mknod $path ${kind.flag} $major $minor".exec[Exit]() match
-              case Exit.Ok => ()
-
-              case _ =>
-                raise(Io.Error(path, Io.Error.Operation.Create, Io.Error.Reason.PermissionDenied))
+        if process.waitFor() != 0
+        then raise(Io.Error(path, Io.Error.Operation.Create, Io.Error.Reason.PermissionDenied))
 
     path

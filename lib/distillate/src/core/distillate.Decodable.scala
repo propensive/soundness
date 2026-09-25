@@ -41,7 +41,6 @@ import contingency.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import wisteria.*
 
 trait Decodable2:
   given generic: [value] => value is Decodable in value = identity(_)
@@ -96,13 +95,13 @@ object Decodable extends Decodable2:
   given char: Char is Decodable in Text = _.s.charAt(0)
 
   given enumeration: [enumeration <: reflect.Enum: {Enumerable, Identifiable as identifiable}]
-  =>  (tactic: Tactic[Variant.Error]^)
+  =>  (tactic: Tactic[Enumerable.Error]^)
   =>  ((enumeration is Decodable in Text)^{tactic, caps.any}) =
     value =>
 
       enumeration.value(identifiable.decode(value)).or:
         val names = enumeration.values.to[List].map(enumeration.name(_)).map(enumeration.encode(_))
-        abort(Variant.Error(value, enumeration.name, names))
+        abort(Enumerable.Error(value, enumeration.name, names))
 
 trait Decodable extends Typeclass, Formal, Locative:
   inline def decodable: this.type = this

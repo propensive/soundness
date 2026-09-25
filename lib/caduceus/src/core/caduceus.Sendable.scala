@@ -33,20 +33,29 @@
 package caduceus
 
 import anticipation.*
-import honeycomb.*
-import parasite.*
+import gesticulate.*
+import gossamer.*
 import prepositional.*
 import turbulence.*
+import zephyrine.*
 
 object Sendable:
   given text: Text is Sendable =
     text => Email(Map(), Email.Message(Email.Content(Email.Body(text))))
 
-  // `^{monitor}` only: neither `Dom` nor `Probate` is capture-tracked.
-  given htmlDoc: (dom: Dom, monitor: Monitor, probate: Probate)
-  =>  ((Document[Html] is Sendable)^{monitor}) =
-    html =>
-      Email(Map(), Email.Message(Email.Content(Email.Body.HtmlOnly(html.read[Text]))))
+  // Any document with a media type that streams as text: an HTML document (honeycomb's
+  // `Document[Html]` supplies both instances) becomes an HTML-only body, anything else a text
+  // body. The `Streamable` instance is retained, so this is a capability whenever it is one.
+  given document: [document: Media]
+  =>  (streamable: (document is Streamable by Text over Credit)^)
+  =>  ((document is Sendable)^{streamable}) = document =>
+    val content = document.read[Text]
+
+    val body =
+      if document.mediaType.basic == t"text/html" then Email.Body.HtmlOnly(content)
+      else Email.Body(content)
+
+    Email(Map(), Email.Message(Email.Content(body)))
 
   given email: Email is Sendable = identity(_)
 

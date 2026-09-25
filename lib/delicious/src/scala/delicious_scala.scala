@@ -38,11 +38,6 @@ import gossamer.*
 import stenography.*
 import vacuous.*
 
-extension (notice: anthology.Notice)
-  /** The message's semantic structure, when it was compiled under
-   *  `-Zsemantic-diagnostics`. */
-  def semantic: Optional[SemanticMessage] = notice.markup.let(SemanticMessage.parse(_))
-
 extension (message: SemanticMessage)
   /** Render the message with every type re-rendered through stenography,
    *  abbreviated according to the given `Imports`; anything that cannot be

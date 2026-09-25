@@ -87,7 +87,8 @@ object Tests extends Suite(m"Turbulence tests"):
       val stream: Chain[Data] = Chain(data)
       val shredded: Iterable[Chain[Data]] = stochastic:
         (0 until 100).map: index =>
-          stream.shred(20.0, 10.0)
+          given Distribution = Gamma.approximate(20.0, 10.0)
+          stream.shred(arbitrary[Double]().toInt)
 
       shredded.each: stream =>
         test(m"correct length after shredding"):

@@ -14,6 +14,22 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `type Self <: String & Singleton`, `def name: Text`, `def serialize(value: value): Text`) and its
   `soundness.GenericHtmlAttribute` export. Nothing consumed the typeclass; honeycomb's
   `Attribute` is the HTML attribute typeclass. (#PR-dead-edges)
+- Behaviour change: the given `anticipation.Checkable.stream` (`Chain[left] is Checkable against
+  Chain[right]`) now requires the two chains to have the same length; previously it compared
+  element-wise over the shorter chain, so `Chain(1, 2) === Chain(1)` was `true` and is now
+  `false`. `anticipation.check` no longer depends on `rudiments.core`. (#PR-dead-edges)
+
+## caduceus
+
+- The given `caduceus.Sendable.htmlDoc: (dom: Dom, monitor: Monitor, probate: Probate) =>
+  (Document[Html] is Sendable)^{monitor}` replaced by `Sendable.document: [document: Media] =>
+  (streamable: (document is Streamable by Text over Credit)^) => (document is Sendable)^{streamable}`,
+  which sends a `text/html` document as `Email.Body.HtmlOnly` and any other as `Email.Body(text)`.
+  `Document[Html]` still resolves through honeycomb's `Html.media` and `Html.streamable` (the
+  latter needing a `Monitor` and `Probate` at the use site, as before); a `Dom` is no longer
+  required. `caduceus.core` now depends on `gesticulate.core` and `turbulence.core` instead of
+  `honeycomb.core`, so a consumer that reached honeycomb (or parasite) only through caduceus must
+  declare it. (#PR-dead-edges)
 
 ## cartouche
 
@@ -47,6 +63,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   table as before, so code that indexes it by a byte value is unaffected; code that relied on
   `table.length == 256` or iterated the whole table must use `table.readable.take(256)`.
   `Crc64.Accumulator`'s results are unchanged.
+
+## delicious
+
+- The extension `delicious.semantic` on `anthology.Notice` (`def semantic:
+  Optional[SemanticMessage]`, exported as `soundness.semantic`) removed; write
+  `notice.markup.let(SemanticMessage.parse(_))`. `delicious.scala` no longer depends on
+  `anthology.core`. (#PR-dead-edges)
 
 ## dendrology
 
@@ -83,6 +106,23 @@ format. Entries are grouped by module, most-recently-added last within a module.
   RSA, ECDSA, DSA and ML-DSA) now returns `false` for a signature the JDK cannot decode (wrong
   length, malformed DER, out-of-range ML-DSA hints), where previously a
   `java.security.SignatureException` escaped. (#2073)
+
+## distillate
+
+- `distillate.Decodable.enumeration` (the `enumeration is Decodable in Text` given for
+  `reflect.Enum` subtypes) now raises `distillate.Enumerable.Error(inputLabel: Text, sum: Text,
+  validVariants: List[Text])` (`SN-900`) where it previously raised `wisteria.Variant.Error` with the
+  same three fields; its `Tactic` requirement changed accordingly. `distillate.core` now depends on
+  `contingency.core` instead of `wisteria.core`, so a consumer that reached wisteria (or vicarious)
+  only through distillate must declare it. (#PR-dead-edges)
+
+## enigmatic
+
+- `enigmatic.Pem` (with `Pem.Label`, `Pem.Error`, `SN-389`, and its `Decodable`/`Aggregable`
+  givens) moved from module `enigmatic.core` to `enigmatic.asn1`; the package and names are
+  unchanged, and `enigmatic.core` still re-exports it transitively through its dependency on
+  `enigmatic.asn1`. The `soundness` export of `Pem` moved from `soundness_enigmatic_core` to
+  `soundness_enigmatic_asn1` (same name, `soundness.Pem`). (#PR-dead-edges)
 
 ## escapade
 
@@ -242,6 +282,8 @@ format. Entries are grouped by module, most-recently-added last within a module.
   UnixSignal, _, _, _) => …`. (#2064)
 - `exoskeleton.Entrypoint` gained `def retire(): Unit = ()`, and the `{admin}` subcommand of the
   completions executive gained `shutdown`, which calls it. (#2064)
+- `exoskeleton.core` depends on `galilei.core` instead of `galilei.jvm`; a consumer that reached
+  `galilei.jvm` or `guillotine.core` only through exoskeleton must declare it. (#PR-dead-edges)
 
 ## galilei
 
@@ -260,6 +302,22 @@ format. Entries are grouped by module, most-recently-added last within a module.
   behaviour; a `Umask` given, or a `Umask.Provider` in scope, is applied to every file and
   directory created through `create[File]`, `create[Directory]`, `create[Fifo]` and
   `open[File](…, OpenFlag.Create)`. (#2064)
+- `galilei.Device.create[plane <: Posix: Filesystem](path: Path on plane, kind: Kind, major: Int,
+  minor: Int)(using CreateNonexistentParents on plane, OverwritePreexisting on plane,
+  WorkingDirectory, guillotine.Exec.Event is Loggable): Path on plane raises Io.Error` lost its
+  last two `using` parameters: it now runs `mknod` through a raw `ProcessBuilder` in the JVM's
+  working directory and no longer logs the command, and a failure to start the process raises
+  `Io.Error(path, Operation.Create, Reason.PermissionDenied)` where it previously raised
+  `Reason.Unsupported`. `galilei.jvm` no longer depends on `guillotine.core`; a consumer that
+  reached guillotine only through `galilei.jvm` (or through `hellenism.jvm`, `zeppelin.core`,
+  `exoskeleton.core`, `octogenarian.core`, `bitumen.jvm`, `facsimile.file`, `hyperbole.stacks`,
+  `reliquary.derive`) must declare it. (#PR-dead-edges)
+- The given `serpentine.Navigable.uuid: [plane, uuid <: Uuid] => uuid is Navigable on plane`
+  moved to `galilei.Platform.uuidNavigable: [uuid <: Uuid, filesystem <: Platform] => uuid is
+  Navigable on filesystem`: a `Uuid` is still a path segment on every OS filesystem plane
+  (`Local`, `Linux`, `MacOs`, `Posix`, `Windows`), but no longer on other planes (URLs, JSON
+  pointers, YAML paths, classpaths). `serpentine.core` no longer depends on `inimitable.core`,
+  and `galilei.core` now does. (#PR-dead-edges)
 
 ## gesticulate
 
@@ -328,6 +386,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `jacinta.core` depends on `serpentine.core` directly and no longer on `urticose.url`; a consumer
   that reached urticose only through jacinta must declare it. (#PR-dead-edges)
 
+## octogenarian
+
+- `octogenarian.core` depends on `enigmatic.asn1` instead of `enigmatic.core`; a consumer that
+  reached `enigmatic.core` (or `gastronomy.core`, `aperture.core`) only through octogenarian must
+  declare it. (#PR-dead-edges)
+
 ## pneumatic
 
 - New `pneumatic.Brotli.continuation(base: Data, next: Data, window: Int = Brotli.Window): Data`
@@ -366,6 +430,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   size it records the size and emits `Terminal.Info.WindowSize` directly, sending only the
   anchor query rather than the cursor-position size probe; the probe is still sent when the
   signal carries no size. (#2064)
+
+## savagery
+
+- `savagery.core` depends on `geodesy.angle` instead of `geodesy.core`; a consumer that used
+  `Geolocation`, `Compass` or the other `geodesy.core` types through savagery must declare
+  `geodesy.core`. (#PR-dead-edges)
 
 ## stratiform
 
@@ -424,6 +494,16 @@ format. Entries are grouped by module, most-recently-added last within a module.
 
 - The givens `telekinesis.Http.Method.formmethod` and `Http.Method.method` (each
   `("…" is GenericHtmlAttribute[Method])`) removed with `anticipation.GenericHtmlAttribute`. (#PR-dead-edges)
+
+## turbulence
+
+- `turbulence.shred(mean: Double, variance: Double)(using Random): Chain[Data]` (on `Chain[Data]`)
+  became `shred(chunkSize: => Int): Chain[Data]`: the caller now supplies each chunk's size
+  (evaluated afresh per chunk, floored at 1) instead of a gamma distribution's parameters. The
+  old behaviour is `given Distribution = Gamma.approximate(mean, variance)` followed by
+  `stream.shred(arbitrary[Double]().toInt)` under a `Random`. `turbulence.core` no longer depends
+  on `capricious.core`, so a consumer that reached capricious (or wisteria, hypotenuse) only
+  through turbulence must declare it. (#PR-dead-edges)
 
 ## vivisection
 

@@ -40,7 +40,6 @@ import java.io as ji
 import java.lang as jl
 
 import anticipation.*
-import capricious.*
 import contingency.*
 import denominative.*
 import hieroglyph.*
@@ -325,12 +324,12 @@ extension (stream: Chain[Data])
 
     recur(stream, bytes)
 
-  def shred(mean: Double, variance: Double)(using Random): Chain[Data] =
-    given gamma: Distribution = Gamma.approximate(mean, variance)
-
+  // Re-chunk the stream into buffers whose sizes are drawn from `chunkSize`, evaluated afresh for
+  // each buffer (so a caller may sample a distribution, or hand in a constant).
+  def shred(chunkSize: => Int): Chain[Data] =
     // The size is drawn separately so that each fresh buffer can go straight into `recur`'s
     // `consume` parameter: binding it to a `val` first would alias the exclusive reference.
-    def newSize(): Int = arbitrary[Double]().toInt.max(1)
+    def newSize(): Int = chunkSize.max(1)
     def newArray(size: Int): Array[Byte]^ = Array.allocate[Byte](size)
 
     // The buffer is threaded through `consume`, so each chunk emitted downstream is frozen

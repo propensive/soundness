@@ -433,7 +433,9 @@ object Tests extends Suite(m"Zephyrine tests"):
     suite(m"Cursor[Data] tests"):
       // Shredded once, into a plain list: a lazily-shredded stream would close over the
       // suite's `Random`, and an assertion's body must be pure.
-      val blocks: scala.List[Data] = Chain(bytes).shred(10.0, 10.0).filter(!_.nil).stdlib.toList
+      given Distribution = Gamma.approximate(10.0, 10.0)
+      val blocks: scala.List[Data] =
+        Chain(bytes).shred(arbitrary[Double]().toInt).filter(!_.nil).stdlib.toList
       def byteCursor = Cursor[Data](blocks.iterator)
 
       test(m"Cursor[Data] starts at first byte"):
