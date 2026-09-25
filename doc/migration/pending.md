@@ -117,6 +117,19 @@ format. Entries are grouped by module, most-recently-added last within a module.
   Optional[Topic]` through vacuous's `Optional` extension, answering `true` unconditionally.
   (#2032)
 
+## pneumatic
+
+- New `pneumatic.Brotli.continuation(base: Data, next: Data, window: Int = Brotli.Window): Data`
+  and `pneumatic.Brotli.prefix(base: Data, window: Int = Brotli.Window, block: Int =
+  Brotli.Block): Data`, with the constants `Brotli.Window = 24` and `Brotli.Block = 1 << 24`.
+  `continuation` encodes `next` against an LZ77 window preloaded with `base`, producing the
+  meta-block(s) for `next` alone with no stream header, ending in ISLAST = 1; `prefix` builds the
+  RFC 7932-fixed priming stream (WBITS header, `base` as uncompressed meta-blocks of at most
+  `block` bytes, then the empty metadata meta-block `0x06`), so that
+  `(prefix(base, w, b) ++ continuation(base, next, w)).decompress[Brotli]` is `base ++ next`.
+  Code carrying its own port of the encoder for this purpose (`lira.Priming`) should call these
+  instead. Existing `compress[Brotli]` output is byte-for-byte unchanged. (#2047)
+
 ## stratiform
 
 - `stratiform.Tel.Error.Reason.UnconstrainedScalar` (E224) removed: `Tels.Validation` no longer
