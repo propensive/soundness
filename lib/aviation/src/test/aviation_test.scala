@@ -1980,15 +1980,15 @@ object Tests extends Suite(m"Aviation Tests"):
       import calendars.gregorianCalendar
 
       test(m"by iterates a period's points at a step"):
-        (Instant(0L) ~ Instant(3_600_000L)).by(15*Minute).map(_.long).stdlib.to(List)
+        (Instant(0L) ~ Instant(3_600_000L)).by(15*Minute).map(_.long).to[List]
       . assert(_ == List(0L, 900_000L, 1_800_000L, 2_700_000L))
 
       test(m"by excludes the finish (half-open)"):
-        (Instant(0L) ~ Instant(1000L)).by(Quantity[Seconds[1]](1.0)).map(_.long).stdlib.to(List)
+        (Instant(0L) ~ Instant(1000L)).by(Quantity[Seconds[1]](1.0)).map(_.long).to[List]
       . assert(_ == List(0L))
 
       test(m"by over a Date period yields each date"):
-        Period(2024-Jan-1, 2024-Jan-5).by(1*Day).stdlib.to(List)
+        Period(2024-Jan-1, 2024-Jan-5).by(1*Day).to[List]
       . assert(_ == List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3, 2024-Jan-4))
 
       test(m"by is lazy, so a vast range can be sampled cheaply"):
@@ -2019,20 +2019,20 @@ object Tests extends Suite(m"Aviation Tests"):
       import calendars.gregorianCalendar
 
       test(m"A bounded daily recurrence yields its occurrences"):
-        Recurrence(2024-Jan-1, 1*Day, 3).occurrences.stdlib.to(List)
+        Recurrence(2024-Jan-1, 1*Day, 3).occurrences.to[List]
       . assert(_ == List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3))
 
       test(m"A monthly recurrence advances by calendar months"):
         import monthEnds.clampMonthEnd
-        Recurrence(2024-Jan-15, 1*Month, 4).occurrences.stdlib.to(List)
+        Recurrence(2024-Jan-15, 1*Month, 4).occurrences.to[List]
       . assert(_ == List(2024-Jan-15, 2024-Feb-15, 2024-Mar-15, 2024-Apr-15))
 
       test(m"An unbounded recurrence is bounded by until"):
-        Recurrence(2024-Jan-1, 1*Week).until(2024-Jan-22).stdlib.to(List)
+        Recurrence(2024-Jan-1, 1*Week).until(2024-Jan-22).to[List]
       . assert(_ == List(2024-Jan-1, 2024-Jan-8, 2024-Jan-15))
 
       test(m"within filters occurrences to a window"):
-        Recurrence(2024-Jan-1, 1*Week).within(Period(2024-Jan-5, 2024-Jan-20)).stdlib.to(List)
+        Recurrence(2024-Jan-1, 1*Week).within(Period(2024-Jan-5, 2024-Jan-20)).to[List]
       . assert(_ == List(2024-Jan-8, 2024-Jan-15))
 
       test(m"A bounded recurrence renders in ISO 8601 repeating-interval form"):
@@ -2045,17 +2045,17 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"A recurrence round-trips from ISO 8601"):
         import monthEnds.clampMonthEnd
-        t"R3/2024-01-01/P1M".as[Recurrence of Date by (Timespan of Month.type)].occurrences.stdlib.to(List)
+        t"R3/2024-01-01/P1M".as[Recurrence of Date by (Timespan of Month.type)].occurrences.to[List]
       . assert(_ == List(2024-Jan-1, 2024-Feb-1, 2024-Mar-1))
 
       test(m"A rec literal builds a date recurrence at compile time"):
         import monthEnds.clampMonthEnd
-        rec"R3/2024-01-01/P1M".occurrences.stdlib.to(List)
+        rec"R3/2024-01-01/P1M".occurrences.to[List]
       . assert(_ == List(2024-Jan-1, 2024-Feb-1, 2024-Mar-1))
 
       test(m"A rec literal with a time builds a Timestamp recurrence"):
         import monthEnds.clampMonthEnd
-        rec"R2/2024-01-01T09:00:00/P1D".occurrences.stdlib.to(List).length
+        rec"R2/2024-01-01T09:00:00/P1D".occurrences.to[List].size
       . assert(_ == 2)
 
       test(m"A bounded rec literal round-trips its encoding"):
@@ -2074,53 +2074,53 @@ object Tests extends Suite(m"Aviation Tests"):
       import calendars.gregorianCalendar
 
       test(m"Monthly on the 15th yields the 15th of each month"):
-        Rrule(2024-Jan-15, Frequency.Monthly, count = 4).occurrences.stdlib.to(List)
+        Rrule(2024-Jan-15, Frequency.Monthly, count = 4).occurrences.to[List]
       . assert(_ == List(2024-Jan-15, 2024-Feb-15, 2024-Mar-15, 2024-Apr-15))
 
       test(m"Monthly from the 31st skips months without a 31st (no drift)"):
-        Rrule(2024-Jan-31, Frequency.Monthly, count = 3).occurrences.stdlib.to(List)
+        Rrule(2024-Jan-31, Frequency.Monthly, count = 3).occurrences.to[List]
       . assert(_ == List(2024-Jan-31, 2024-Mar-31, 2024-May-31))
 
       test(m"The 3rd Monday of each month"):
         Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3)), count = 2)
-        . occurrences.stdlib.to(List)
+        . occurrences.to[List]
       . assert(_ == List(2024-Jan-15, 2024-Feb-19))
 
       test(m"The last Friday of each month"):
         Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Fri, -1)), count = 2)
-        . occurrences.stdlib.to(List)
+        . occurrences.to[List]
       . assert(_ == List(2024-Jan-26, 2024-Feb-23))
 
       test(m"Thanksgiving: the 4th Thursday of November each year"):
         Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov), byDay = List(WeekdayOrdinal(Thu, 4)),
-            count = 2).occurrences.stdlib.to(List)
+            count = 2).occurrences.to[List]
       . assert(_ == List(2024-Nov-28, 2025-Nov-27))
 
       test(m"Weekly on Monday, Wednesday and Friday"):
         Rrule(2024-Jan-1, Frequency.Weekly, byDay = List(WeekdayOrdinal(Mon), WeekdayOrdinal(Wed),
-            WeekdayOrdinal(Fri)), count = 4).occurrences.stdlib.to(List)
+            WeekdayOrdinal(Fri)), count = 4).occurrences.to[List]
       . assert(_ == List(2024-Jan-1, 2024-Jan-3, 2024-Jan-5, 2024-Jan-8))
 
       test(m"Every other week on the start's weekday"):
-        Rrule(2024-Jan-1, Frequency.Weekly, interval = 2, count = 3).occurrences.stdlib.to(List)
+        Rrule(2024-Jan-1, Frequency.Weekly, interval = 2, count = 3).occurrences.to[List]
       . assert(_ == List(2024-Jan-1, 2024-Jan-15, 2024-Jan-29))
 
       test(m"Daily every third day"):
-        Rrule(2024-Jan-1, Frequency.Daily, interval = 3, count = 3).occurrences.stdlib.to(List)
+        Rrule(2024-Jan-1, Frequency.Daily, interval = 3, count = 3).occurrences.to[List]
       . assert(_ == List(2024-Jan-1, 2024-Jan-4, 2024-Jan-7))
 
       test(m"The last weekday of the month via BYSETPOS"):
         Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon), WeekdayOrdinal(Tue),
             WeekdayOrdinal(Wed), WeekdayOrdinal(Thu), WeekdayOrdinal(Fri)), bySetPos = List(-1),
-            count = 2).occurrences.stdlib.to(List)
+            count = 2).occurrences.to[List]
       . assert(_ == List(2024-Jan-31, 2024-Feb-29))
 
       test(m"UNTIL bounds the occurrences inclusively"):
-        Rrule(2024-Jan-1, Frequency.Monthly, until = 2024-Mar-1).occurrences.stdlib.to(List)
+        Rrule(2024-Jan-1, Frequency.Monthly, until = 2024-Mar-1).occurrences.to[List]
       . assert(_ == List(2024-Jan-1, 2024-Feb-1, 2024-Mar-1))
 
       test(m"A yearly rule repeats the start's date"):
-        Rrule(2024-Feb-29, Frequency.Yearly, count = 2).occurrences.stdlib.to(List)
+        Rrule(2024-Feb-29, Frequency.Yearly, count = 2).occurrences.to[List]
       . assert(_ == List(2024-Feb-29, 2028-Feb-29))
 
     suite(m"Rrule RFC 5545 text"):
@@ -2152,13 +2152,13 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"A set unions a rule and rdates, minus exdates"):
         val weekly = Rrule(2024-Jan-1, Frequency.Weekly, count = 4)
         RecurrenceSet(include = List(weekly.occurrences), rdates = List(2024-Jan-10),
-            exdates = List(2024-Jan-15)).occurrences.stdlib.to(List)
+            exdates = List(2024-Jan-15)).occurrences.to[List]
       . assert(_ == List(2024-Jan-1, 2024-Jan-8, 2024-Jan-10, 2024-Jan-22))
 
       test(m"A set merges two rules into one ascending stream"):
         val a = Rrule(2024-Jan-1, Frequency.Weekly, count = 2)
         val b = Rrule(2024-Jan-3, Frequency.Weekly, count = 2)
-        RecurrenceSet(include = List(a.occurrences, b.occurrences)).occurrences.stdlib.to(List)
+        RecurrenceSet(include = List(a.occurrences, b.occurrences)).occurrences.to[List]
       . assert(_ == List(2024-Jan-1, 2024-Jan-3, 2024-Jan-8, 2024-Jan-10))
 
     suite(m"Rrule sub-day, time and zones"):
@@ -2166,37 +2166,37 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"An hourly rule steps the clock"):
         Rrule(Timestamp(2024-Jan-1, Clockface(0, 0, 0)), Frequency.Hourly, interval = 6, count = 3)
-        . occurrences.stdlib.to(List)
+        . occurrences.to[List]
       . assert(_ == List(Timestamp(2024-Jan-1, Clockface(0, 0, 0)),
             Timestamp(2024-Jan-1, Clockface(6, 0, 0)), Timestamp(2024-Jan-1, Clockface(12, 0, 0))))
 
       test(m"An hourly rule carries into the next day"):
         Rrule(Timestamp(2024-Jan-1, Clockface(22, 0, 0)), Frequency.Hourly, interval = 3, count = 2)
-        . occurrences.stdlib.to(List)
+        . occurrences.to[List]
       . assert(_ == List(Timestamp(2024-Jan-1, Clockface(22, 0, 0)),
             Timestamp(2024-Jan-2, Clockface(1, 0, 0))))
 
       test(m"A daily rule with byHour expands to several times a day"):
         Rrule(Timestamp(2024-Jan-1, Clockface(0, 0, 0)), Frequency.Daily, byHour = List(9, 17),
-            count = 3).occurrences.stdlib.to(List)
+            count = 3).occurrences.to[List]
       . assert(_ == List(Timestamp(2024-Jan-1, Clockface(9, 0, 0)),
             Timestamp(2024-Jan-1, Clockface(17, 0, 0)), Timestamp(2024-Jan-2, Clockface(9, 0, 0))))
 
       test(m"Yearly byYearDay selects the day of the year"):
-        Rrule(2024-Jan-1, Frequency.Yearly, byYearDay = List(100), count = 1).occurrences.stdlib.to(List)
+        Rrule(2024-Jan-1, Frequency.Yearly, byYearDay = List(100), count = 1).occurrences.to[List]
       . assert(_ == List(2024-Apr-9))
 
       test(m"Yearly byYearDay counts back from the end"):
-        Rrule(2024-Jan-1, Frequency.Yearly, byYearDay = List(-1), count = 1).occurrences.stdlib.to(List)
+        Rrule(2024-Jan-1, Frequency.Yearly, byYearDay = List(-1), count = 1).occurrences.to[List]
       . assert(_ == List(2024-Dec-31))
 
       test(m"Yearly byWeekNo with byDay selects that weekday of the ISO week"):
         Rrule(2024-Jan-1, Frequency.Yearly, byWeekNo = List(20), byDay = List(WeekdayOrdinal(Mon)),
-            count = 1).occurrences.stdlib.to(List)
+            count = 1).occurrences.to[List]
       . assert(_ == List(2024-May-13))
 
       test(m"Yearly byWeekNo defaults to the start's weekday"):
-        Rrule(2024-Jan-1, Frequency.Yearly, byWeekNo = List(20), count = 1).occurrences.stdlib.to(List)
+        Rrule(2024-Jan-1, Frequency.Yearly, byWeekNo = List(20), count = 1).occurrences.to[List]
       . assert(_ == List(2024-May-13))
 
       test(m"byWeekNo round-trips through RFC 5545"):
@@ -2207,7 +2207,7 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"A Moment rule grounds its occurrences in the timezone"):
         Rrule(Moment(2024-Jan-1, Clockface(9, 0, 0), tz"Europe/London"), Frequency.Daily, count = 2)
-        . occurrences.stdlib.to(List).map(_.date)
+        . occurrences.to[List].map(_.date)
       . assert(_ == List(2024-Jan-1, 2024-Jan-2))
 
       test(m"Sub-day and time fields round-trip through RFC 5545"):

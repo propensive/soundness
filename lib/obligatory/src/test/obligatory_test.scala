@@ -325,7 +325,7 @@ object Tests extends Suite(m"Obligatory Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
-          channel.serverStreaming[Ping, Pong](method, Ping(t"ping")).map(_.message).stdlib.to(List)
+          channel.serverStreaming[Ping, Pong](method, Ping(t"ping")).map(_.message).to[List]
       . assert(_ == List(t"a", t"b", t"c"))
 
       test(m"a derived @rpc client stub round-trips a unary call"):
