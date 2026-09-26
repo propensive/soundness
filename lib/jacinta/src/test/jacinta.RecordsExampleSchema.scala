@@ -85,7 +85,4 @@ object RecordsExampleSchema extends Json.Provider(t"""{
       }
     }
   }
-}""".read[Json]):
-
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+}""".read[Json])

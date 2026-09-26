@@ -54,7 +54,6 @@ object Catalogue extends Json.Provider(t"""{
     }
   }
 }""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
 ```
 
 <!-- doccheck: skip -->
@@ -76,14 +75,7 @@ guarantee a hand-written class would give, without the class.
 
 The same schema object can produce a [named
 tuple](https://docs.scala-lang.org/scala3/reference/other-new-features/named-tuples.html) instead
-of a record, through a second one-line macro beside `record`:
-
-<!-- doccheck: skip -->
-```scala
-object Catalogue extends Json.Provider(schema):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
-```
+of a record, through its `tuple` method, the twin of `record`:
 
 For the schema above, `Catalogue.tuple(input)` has the type
 `(name: Text, age: Optional[Int], children: List[(weight: Double)])`: one element per field, named
@@ -145,33 +137,19 @@ instances live in the provider's companion, so they are found without an import.
 over XML, for instance, would fetch a child element by its label, find a field absent where no
 such child exists, and repeat over every child with the label.
 
-The schema object then exposes the one-line macro that makes it usable:
-
-<!-- doccheck: skip -->
-```scala
-transparent inline def record(json: Json): Record = ${build('json)}
-```
-
-From that point, every caller gets records typed by whatever the specification said at the moment
-the calling code was compiled.
-
-`record` (and likewise `tuple`) must be `transparent inline` for any of this to work. Its declared return type is
-`Record`, but what it actually returns is a *structural refinement* of it — for a schema of three
-fields, the type
+Every specification object has `record` and `tuple` from `Specification` itself: nothing need
+be declared in the object beyond its schema. Both are `transparent inline`, expanded where they
+are called with the receiver — the specification object — known, so the macro can find that
+object by its type and evaluate its `fields`. The declared return type of `record` is `Record`,
+but what a call actually has is a *structural refinement* of it — for a schema of three fields,
+the type
 
 <!-- doccheck: skip -->
 ```scala
 Record { def age: Double; def name: Text; def employed: Boolean }
 ```
 
-— and only a transparent method lets that more precise type reach the call site. Declared as an
-ordinary `inline def`, every field access would fail to compile against the bare `Record`, which
-is the whole point lost.
-
-A record's underlying data is `record.data`, an extension rather than a member, so that a
-schema may declare a field named `data`; the members `Record` itself declares are `recordData`,
-`recordAccess` and `selectDynamic`, and a field whose name is a method of every JVM object
-(`toString`, `notify`, …) is reachable only through `selectDynamic`.
+— and only a transparent method lets that more precise type reach the call site.
 
 ### Compilation order
 

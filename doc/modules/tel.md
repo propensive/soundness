@@ -207,8 +207,7 @@ reads through a given of the same label in scope where `record` is called, such 
 
 <!-- doccheck: skip -->
 ```scala
-object ContactRecords extends Tel.Provider(Tels.tels[Person](t"person")):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
+object ContactRecords extends Tel.Provider(Tels.tels[Person](t"person"))
 ```
 
 <!-- doccheck: skip -->

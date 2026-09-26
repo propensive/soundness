@@ -44,126 +44,64 @@ import strategies.throwUnsafely
 // before the tests, so that the `record` macro can evaluate it while the test call sites are
 // being compiled; the resource is read then, from the compilation classpath.
 
-object AddressSchema extends Json.Provider(cp"/schemas/address.schema.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object AddressSchema extends Json.Provider(cp"/schemas/address.schema.json")
 
-object GeographicalLocationSchema extends Json.Provider(cp"/schemas/geographical-location.schema.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object GeographicalLocationSchema extends Json.Provider(cp"/schemas/geographical-location.schema.json")
 
-object CalendarSchema extends Json.Provider(cp"/schemas/calendar.schema.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object CalendarSchema extends Json.Provider(cp"/schemas/calendar.schema.json")
 
-object CardSchema extends Json.Provider(cp"/schemas/card.schema.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object CardSchema extends Json.Provider(cp"/schemas/card.schema.json")
 
-object GeoJsonPointSchema extends Json.Provider(cp"/schemas/geojson-point.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object GeoJsonPointSchema extends Json.Provider(cp"/schemas/geojson-point.json")
 
-object GeoJsonFeatureSchema extends Json.Provider(cp"/schemas/geojson-feature.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object GeoJsonFeatureSchema extends Json.Provider(cp"/schemas/geojson-feature.json")
 
-object LernaSchema extends Json.Provider(cp"/schemas/lerna.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object LernaSchema extends Json.Provider(cp"/schemas/lerna.json")
 
-object NycrcSchema extends Json.Provider(cp"/schemas/nycrc.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object NycrcSchema extends Json.Provider(cp"/schemas/nycrc.json")
 
-object VsconfigSchema extends Json.Provider(cp"/schemas/vsconfig.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object VsconfigSchema extends Json.Provider(cp"/schemas/vsconfig.json")
 
-object GlobalJsonSchema extends Json.Provider(cp"/schemas/global.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object GlobalJsonSchema extends Json.Provider(cp"/schemas/global.json")
 
-object NodemonSchema extends Json.Provider(cp"/schemas/nodemon.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object NodemonSchema extends Json.Provider(cp"/schemas/nodemon.json")
 
-object BowerrcSchema extends Json.Provider(cp"/schemas/bowerrc.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object BowerrcSchema extends Json.Provider(cp"/schemas/bowerrc.json")
 
-object LintStagedSchema extends Json.Provider(cp"/schemas/lintstagedrc.schema.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object LintStagedSchema extends Json.Provider(cp"/schemas/lintstagedrc.schema.json")
 
-object CommitlintSchema extends Json.Provider(cp"/schemas/commitlintrc.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object CommitlintSchema extends Json.Provider(cp"/schemas/commitlintrc.json")
 
-object ResumeSchema extends Json.Provider(cp"/schemas/jsonresume.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object ResumeSchema extends Json.Provider(cp"/schemas/jsonresume.json")
 
-object LaunchSettingsSchema extends Json.Provider(cp"/schemas/launchsettings.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object LaunchSettingsSchema extends Json.Provider(cp"/schemas/launchsettings.json")
 
-object HuskySchema extends Json.Provider(cp"/schemas/huskyrc.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object HuskySchema extends Json.Provider(cp"/schemas/huskyrc.json")
 
-object DotnetCliHostSchema extends Json.Provider(cp"/schemas/dotnetcli.host.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object DotnetCliHostSchema extends Json.Provider(cp"/schemas/dotnetcli.host.json")
 
-object JsdocSchema extends Json.Provider(cp"/schemas/jsdoc-1.0.0.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object JsdocSchema extends Json.Provider(cp"/schemas/jsdoc-1.0.0.json")
 
-object WebManifestCombinedSchema extends Json.Provider(cp"/schemas/web-manifest-combined.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object WebManifestCombinedSchema extends Json.Provider(cp"/schemas/web-manifest-combined.json")
 
-object PrettierSchema extends Json.Provider(cp"/schemas/prettierrc.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object PrettierSchema extends Json.Provider(cp"/schemas/prettierrc.json")
 
-object MochaSchema extends Json.Provider(cp"/schemas/mocharc.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object MochaSchema extends Json.Provider(cp"/schemas/mocharc.json")
 
-object CoffeelintSchema extends Json.Provider(cp"/schemas/coffeelint.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object CoffeelintSchema extends Json.Provider(cp"/schemas/coffeelint.json")
 
-object CodecovSchema extends Json.Provider(cp"/schemas/codecov.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object CodecovSchema extends Json.Provider(cp"/schemas/codecov.json")
 
-object CloudBuildSchema extends Json.Provider(cp"/schemas/cloudbuild.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object CloudBuildSchema extends Json.Provider(cp"/schemas/cloudbuild.json")
 
-object StaticWebAppSchema extends Json.Provider(cp"/schemas/staticwebapp.config.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object StaticWebAppSchema extends Json.Provider(cp"/schemas/staticwebapp.config.json")
 
-object BabelSchema extends Json.Provider(cp"/schemas/babelrc.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object BabelSchema extends Json.Provider(cp"/schemas/babelrc.json")
 
-object OpenWeatherRoadRiskSchema extends Json.Provider(cp"/schemas/openweather.roadrisk.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object OpenWeatherRoadRiskSchema extends Json.Provider(cp"/schemas/openweather.roadrisk.json")
 
-object RenovateSchema extends Json.Provider(cp"/schemas/renovate.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object RenovateSchema extends Json.Provider(cp"/schemas/renovate.json")
 
-object PackageJsonSchema extends Json.Provider(cp"/schemas/package.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object PackageJsonSchema extends Json.Provider(cp"/schemas/package.json")
 
-object EslintrcSchema extends Json.Provider(cp"/schemas/eslintrc.json"):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+object EslintrcSchema extends Json.Provider(cp"/schemas/eslintrc.json")

@@ -58,8 +58,7 @@ object DefinitionsSchema extends Json.Provider(t"""{
   "$$defs": {
     "address2": { "type": "object", "properties": { "building": { "type": "string" } } }
   }
-}""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
+}""".read[Json])
 
 // A recursive definition: a tree whose children are trees. The recursion reads as raw JSON.
 object RecursiveSchema extends Json.Provider(t"""{
@@ -69,8 +68,7 @@ object RecursiveSchema extends Json.Provider(t"""{
     "label": { "type": "string" },
     "children": { "type": "array", "items": { "$$ref": "#" } }
   }
-}""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
+}""".read[Json])
 
 // An `allOf` merging a referenced base object with the node's own properties
 object AllOfSchema extends Json.Provider(t"""{
@@ -86,8 +84,7 @@ object AllOfSchema extends Json.Provider(t"""{
       "properties": { "name": { "type": "string" } }
     }
   }
-}""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
+}""".read[Json])
 
 // Nullable and union types, `enum` and `const`, with and without a `type`
 object VariantsSchema extends Json.Provider(t"""{
@@ -107,8 +104,7 @@ object VariantsSchema extends Json.Provider(t"""{
     "anything": true,
     "unknown": { "not": { "type": "string" } }
   }
-}""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
+}""".read[Json])
 
 // Numeric and string bounds, in draft 4's boolean form and in the later numeric form
 object BoundsSchema extends Json.Provider(t"""{
@@ -122,9 +118,7 @@ object BoundsSchema extends Json.Provider(t"""{
     "below": { "type": "number", "exclusiveMaximum": 10 },
     "score": { "type": "integer", "exclusiveMinimum": 0, "exclusiveMaximum": 100 }
   }
-}""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+}""".read[Json])
 
 // Containers the provider cannot type further: dictionaries, untyped arrays, tuple-typed arrays
 object ContainersSchema extends Json.Provider(t"""{
@@ -142,8 +136,7 @@ object ContainersSchema extends Json.Provider(t"""{
       "type": "object", "required": ["name"], "properties": { "name": { "type": "string" } }
     }
   }
-}""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
+}""".read[Json])
 
 // Property names which are Scala keywords, symbols, or members of `Record` itself
 object AwkwardNamesSchema extends Json.Provider(t"""{
@@ -157,24 +150,19 @@ object AwkwardNamesSchema extends Json.Provider(t"""{
     "$$id": { "type": "string" },
     "toString": { "type": "boolean" }
   }
-}""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+}""".read[Json])
 
 // Roots the provider cannot use: an array, a bare string, and a reference it cannot follow
 object ArrayRootSchema extends Json.Provider(t"""{
   "type": "array",
   "items": { "type": "object", "properties": { "name": { "type": "string" } } }
-}""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
+}""".read[Json])
 
-object StringRootSchema extends Json.Provider(t"""{ "type": "string" }""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
+object StringRootSchema extends Json.Provider(t"""{ "type": "string" }""".read[Json])
 
 object ExternalRootSchema extends Json.Provider(t"""{
   "$$ref": "https://example.com/schemas/other.json"
-}""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
+}""".read[Json])
 
 // A root which may be an object or a string: the provider reads the object form
 object ObjectOrStringRootSchema extends Json.Provider(t"""{
@@ -182,8 +170,7 @@ object ObjectOrStringRootSchema extends Json.Provider(t"""{
     { "type": "string" },
     { "type": "object", "required": ["name"], "properties": { "name": { "type": "string" } } }
   ]
-}""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
+}""".read[Json])
 
 // Unions of different types, chosen by the value's kind, including fallible alternatives
 object UnionsSchema extends Json.Provider(t"""{
@@ -218,9 +205,7 @@ object UnionsSchema extends Json.Provider(t"""{
       ]
     }
   }
-}""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+}""".read[Json])
 
 // Dictionaries: objects whose values one schema describes
 object DictionariesSchema extends Json.Provider(t"""{
@@ -252,5 +237,4 @@ object DictionariesSchema extends Json.Provider(t"""{
       "type": "object", "required": ["name"], "properties": { "name": { "type": "string" } }
     }
   }
-}""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
+}""".read[Json])

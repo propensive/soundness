@@ -46,21 +46,15 @@ object PersonRecords extends TreeProvider(List(
   t"active" -> Member.Value(t"flag"),
   t"raw"    -> Member.Value(t"tree"),
   t"extras" -> Member.Value(t"params", List(t"alpha", t"beta")),
-  t"count"  -> Member.Value(t"counted"))):
-  transparent inline def record(tree: Tree): Record = ${build('tree)}
-  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
+  t"count"  -> Member.Value(t"counted")))
 
 object NestedRecords extends TreeProvider(List(
   t"owner" -> Member.Record(List(
     t"name"    -> Member.Value(t"text"),
     t"address" -> Member.Record(List(t"city" -> Member.Value(t"text"))))),
-  t"tags"  -> Member.Record(List(t"label" -> Member.Value(t"text"))).many)):
-  transparent inline def record(tree: Tree): Record = ${build('tree)}
-  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
+  t"tags"  -> Member.Record(List(t"label" -> Member.Value(t"text"))).many))
 
-object TitleRecords extends TreeProvider(List(t"title" -> Member.Value(t"text"))):
-  transparent inline def record(tree: Tree): Record = ${build('tree)}
-  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
+object TitleRecords extends TreeProvider(List(t"title" -> Member.Value(t"text")))
 
 // Unions chosen by the value's kind, and keyed members read as maps
 object ShapeRecords extends TreeProvider(List(
@@ -75,27 +69,19 @@ object ShapeRecords extends TreeProvider(List(
     t"items" -> Member.Value(t"length").many)).optional,
   t"labels" -> Member.Value(t"text").keyed,
   t"owners" -> Member.Record(List(t"name" -> Member.Value(t"text"))).keyed,
-  t"rows"   -> Member.Union(List(t"items" -> Member.Value(t"text").many)).many)):
-  transparent inline def record(tree: Tree): Record = ${build('tree)}
-  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
+  t"rows"   -> Member.Union(List(t"items" -> Member.Value(t"text").many)).many))
 
 // The remaining specifications are ill-formed: each compiles, but expanding its `record` macro
 // fails, which the compiletime tests check.
 
-object UnknownValueRecords extends TreeProvider(List(t"mystery" -> Member.Value(t"mystery"))):
-  transparent inline def record(tree: Tree): Record = ${build('tree)}
-  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
+object UnknownValueRecords extends TreeProvider(List(t"mystery" -> Member.Value(t"mystery")))
 
 // A member under each multiplicity, scalar and record
 object MultiplicityRecords extends TreeProvider(List(
   t"nickname" -> Member.Value(t"text").optional,
   t"aliases"  -> Member.Value(t"text").many,
   t"partner"  -> Member.Record(List(t"name" -> Member.Value(t"text"))).optional,
-  t"pets"     -> Member.Record(List(t"name" -> Member.Value(t"text"))).many)):
-  transparent inline def record(tree: Tree): Record = ${build('tree)}
-  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
+  t"pets"     -> Member.Record(List(t"name" -> Member.Value(t"text"))).many))
 
 // Instances are keyed by the exact label: `"Text"` is not `"text"`
-object MiscasedRecords extends TreeProvider(List(t"name" -> Member.Value(t"Text"))):
-  transparent inline def record(tree: Tree): Record = ${build('tree)}
-  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
+object MiscasedRecords extends TreeProvider(List(t"name" -> Member.Value(t"Text")))

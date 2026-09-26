@@ -62,9 +62,7 @@ object ContactSchemaFixture:
 // User-defined Tel.Provider with the polyvinyl `record` inline-macro
 // entry point. Lives in its own file so its macro can be expanded
 // without a cyclic dependency from the call-site test file.
-object ContactRecords extends Tel.Provider(ContactSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
-  transparent inline def tuple(tel: Tel): NamedTuple.AnyNamedTuple = ${tuple('tel)}
+object ContactRecords extends Tel.Provider(ContactSchemaFixture.tels)
 
 // A second schema with a Flag-typed field for the boolean records test.
 object FeatureSchemaFixture:
@@ -80,8 +78,7 @@ object FeatureSchemaFixture:
     scalars  = Array.empty,
     selects  = Array.empty)
 
-object FeatureRecords extends Tel.Provider(FeatureSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
+object FeatureRecords extends Tel.Provider(FeatureSchemaFixture.tels)
 
 // A layered schema for the layer-provenance records test: `name` in the base, `email` in the
 // layer `with-email`, so `email` reads as optional although the layer declares it required.
@@ -103,8 +100,7 @@ object LayeredSchemaFixture:
     scalars  = Array.empty,
     selects  = Array.empty)
 
-object LayeredRecords extends Tel.Provider(LayeredSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
+object LayeredRecords extends Tel.Provider(LayeredSchemaFixture.tels)
 
 
 // Nested and repeatable members: a required `name`, a repeatable `tag` scalar, a required and an
@@ -133,9 +129,7 @@ object TeamSchemaFixture:
     scalars  = Array.empty,
     selects  = Array.empty)
 
-object TeamRecords extends Tel.Provider(TeamSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
-  transparent inline def tuple(tel: Tel): NamedTuple.AnyNamedTuple = ${tuple('tel)}
+object TeamRecords extends Tel.Provider(TeamSchemaFixture.tels)
 
 // Kebab-case names, a custom validator, an inline struct, and a select member
 object ProfileSchemaFixture:
@@ -165,8 +159,7 @@ object ProfileSchemaFixture:
         Tels.Variant(t"note",     Scalar(Array(t"string")))),
       validators = Array.empty)))
 
-object ProfileRecords extends Tel.Provider(ProfileSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
+object ProfileRecords extends Tel.Provider(ProfileSchemaFixture.tels)
 
 // A user type for the custom `handle` validator, read through a given at the call site
 case class Handle(name: Text)

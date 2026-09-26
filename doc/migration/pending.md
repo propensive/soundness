@@ -624,6 +624,17 @@ format. Entries are grouped by module, most-recently-added last within a module.
   macro reads an `Optional` member as `Optional[T]` (`Unset` where the specification's `absent`
   holds) and a `Many` member as `List[T]`; a fallible `T = S raises E` becomes `Optional[S]
   raises E` / `List[S] raises E`. The `"…?"` label convention is gone. (#pending)
+- `polyvinyl.Specification` now declares `transparent inline def record(inline value: Origin):
+  Record` and `transparent inline def tuple(inline value: Origin): NamedTuple.AnyNamedTuple`,
+  inherited by every specification object, so the per-object `transparent inline def record(…)
+  = ${build('…)}` and `tuple` declarations are no longer needed and must be removed (they now
+  clash with the inherited members). `Specification#build(value: Expr[Origin])` and
+  `#tuple(value: Expr[Origin])` (the macro halves) removed; the macros are
+  `Specification.record[self, origin, form]` and `Specification.tuple[self, origin, form]`.
+  `build(data: Origin, transform: Text -> Origin -> Any): Record` remains. The specification
+  object is now loaded by reflection at expansion time (by its binary name, through the macro
+  classloader), so it must still be compiled before its call sites, and must be an `object`.
+  (#pending)
 - `polyvinyl.Structural[constructor[_]]` removed, with its `soundness.Structural` export. Nested
   records are `Member.Record`; repetition is `Multiplicity.Many`. (#pending)
 - New `polyvinyl.Multiplicity.Keyed` (a field read as `Map[Text, T]`) and `polyvinyl.Member.Union(alternatives:

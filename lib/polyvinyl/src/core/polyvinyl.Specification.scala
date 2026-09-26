@@ -41,105 +41,95 @@ import prepositional.*
 import rudiments.map
 import vacuous.*
 
-// A type provider over one document format: a schema, as `fields`, and the format's reading
-// primitives. The `build` and `tuple` macros manufacture a record or named tuple type from the
-// fields, applying each member's multiplicity themselves, so a concrete specification supplies
-// only single-value `Intensional` instances and the three primitives, `access`, `absent` and
-// `repeated`.
-trait Specification extends Original:
-  type Origin
-  protected type Origin0 = Origin
-  type Form <: { type Origin = Origin0 }
+object Specification:
+  def record[self: Type, origin: Type, form: Type](value: Expr[origin])(using Quotes)
+  :   Expr[Record] =
 
-  // The fields in order: a record's members are unordered, but a named tuple's elements follow
-  // this order.
-  def fields: List[(Text, Member)]
-
-  // The field's own value within a document, which may be a sentinel for a missing field
-  def access(name: Text, value: Origin): Origin
-
-  // Whether a value `access` returned stands for a missing field
-  def absent(value: Origin): Boolean
-
-  // Every value of a field carrying any number of them, in document order: the elements of a
-  // JSON array, or every sibling with the field's keyword in a format which repeats the field.
-  def repeated(name: Text, value: Origin): List[Origin]
-
-  // The value of a field which must be present, read under `Multiplicity.One`: a specification
-  // may fail here, in its own way, when the value is absent. By default the value is returned
-  // as it is, and the field's `Intensional` meets the absent value.
-  def required(name: Text, value: Origin): Origin = value
-
-  // The remaining hooks serve features a format may lack; each fails unless the specification
-  // provides it. `entries` gives a keyed field's values by name, for `Multiplicity.Keyed`.
-  def entries(name: Text, value: Origin): List[(Text, Origin)] =
-    panic(m"this specification has no keyed fields")
-
-  // The kind of a value, by which a `Member.Union` chooses its alternative
-  def kind(value: Origin): Text = panic(m"this specification has no unions")
-
-  // The elements of a value which is itself a sequence, for a `Many` alternative of a union
-  def elements(value: Origin): List[Origin] = panic(m"this specification has no unions")
-
-  // The named values within a value which is itself a dictionary, for a `Keyed` alternative
-  def pairs(value: Origin): List[(Text, Origin)] = panic(m"this specification has no unions")
-
-  // A pure function (`->`): the built Record retains the transform, and a capturing one would
-  // make the record itself a capability, which Record's pure self type (rightly) forbids.
-  def build(data: Origin, transform: Text -> Origin -> Any): Record = Record(data, transform)
-
-  // Builds a `Record` refined with one member per field, read lazily: each access runs the
-  // field's accessor on the record's data.
-  def build(value: Expr[Origin])(using Type[Origin], Type[Form])(using thisType: Type[this.type])
-  :   Quotes ?->{this} Expr[Record] =
-
-    val (refined, transform) = Expansion(target).record(fields)
+    val (target, specification) = locate[self, origin, form]
+    val (refined, transform) = Expansion[origin, form](target).record(specification.fields)
 
     refined.absolve match
       case '[type refined <: Record; refined] =>
         '{$target.build($value, $transform).asInstanceOf[refined]}
 
-  // Builds a named tuple with one element per field, in the specification's order, read eagerly:
-  // every field's accessor runs when the tuple is built, so a fallible field fails then, and its
-  // element has the successful type, with its `raises` clause discharged by a `Tactic` at the
-  // call site.
-  def tuple(value: Expr[Origin])(using Type[Origin], Type[Form])(using thisType: Type[this.type])
-  :   Quotes ?->{this} Expr[NamedTuple.AnyNamedTuple] =
+  def tuple[self: Type, origin: Type, form: Type](value: Expr[origin])(using Quotes)
+  :   Expr[NamedTuple.AnyNamedTuple] =
 
-    val (tuple, make) = Expansion(target).tuple(fields)
+    val (target, specification) = locate[self, origin, form]
+    val (tuple, make) = Expansion[origin, form](target).tuple(specification.fields)
 
     tuple.absolve match
       case '[type tuple <: NamedTuple.AnyNamedTuple; tuple] => '{$make($value).asInstanceOf[tuple]}
 
-  private def target(using Type[Origin], Type[Form])(using thisType: Type[this.type])
-  :   Quotes ?->{this} Expr[Specification in Form from Origin] =
+  // The specification object whose type is `self`: as a reference for the generated code, and as
+  // an instance, loaded through the macro's own classloader, for its `fields`
+  private def locate[self: Type, origin: Type, form: Type](using Quotes)
+  :   (Expr[Specification in form from origin], Specification) =
 
     import quotes.reflect.*
 
-    thisType.absolve match
-      case '[thisType] =>
-        Ref(TypeRepr.of[thisType].typeSymbol.companionModule)
-        . asExprOf[Specification in Form from Origin]
+    // `self` is the receiver's type: a reference to the object itself, or — the inliner binds
+    // the receiver to a proxy — a reference to a value of the object's module class
+    val repr = TypeRepr.of[self]
+    val widened = repr.widenTermRefByName
+
+    def isModule(symbol: Symbol): Boolean = symbol.exists && symbol.flags.is(Flags.Module)
+
+    val module =
+      if isModule(repr.termSymbol) then repr.termSymbol
+      else if isModule(widened.typeSymbol) then widened.typeSymbol.companionModule
+      else Symbol.noSymbol
+
+    if !isModule(module) then
+      val shown = repr.show.tt
+      halt(m"record and tuple can only be called on a specification object, not $shown")
+
+    val target = Ref(module).asExprOf[Specification in form from origin]
+
+    // The object's binary name: `pkg.Outer$Inner$`
+    def binaryName(symbol: Symbol): String =
+      val owner = symbol.owner
+      val simple = symbol.name.stripSuffix("$")
+      if owner.isPackageDef then s"${owner.fullName}.$simple" else s"${binaryName(owner)}$$$simple"
+
+    val name = binaryName(module) + "$"
+
+    // The macro's own classloader sees the compilation classpath, including the output of the
+    // files already compiled. When the object is defined in the current run, its class does not
+    // exist yet: the `ClassNotFoundException` is left to propagate, since the compiler answers
+    // one naming a class of the current run by suspending this unit and compiling it again once
+    // the others are emitted — the ordering the "compilation order" note describes.
+    val classloader = Specification.getClass.getClassLoader
+
+    val instance =
+      Class.forName(name, true, classloader).nn.getField("MODULE$").nn.get(null)
+      . asInstanceOf[Specification]
+
+    (target, instance)
 
   // The macro expansion shared by both modes. Each field becomes an accessor from the origin
   // value to the field's value, and a type; the modes differ only in how the accessors and types
   // are assembled, and in what a nested `Member.Record` becomes. Its `Quotes` is its own path, so
   // the types it produces leave as `Type[?]`s; internally, the lists are the compiler's own.
-  private class Expansion(target: Expr[Specification in Form from Origin])
-    ( using Quotes, Type[Origin], Type[Form] ):
+  private class Expansion[origin: Type, form: Type]
+    ( target: Expr[Specification in form from origin] )
+    ( using Quotes ):
 
     import quotes.reflect.*
 
-    private case class Field(name: Text, tpe: TypeRepr, accessor: Expr[Origin -> Any])
+    private case class Field(name: Text, tpe: TypeRepr, accessor: Expr[origin -> Any])
+
+    private type Instance = Intensional in form from origin
+    private type FallibleInstance = Intensional.Fallible in form from origin
 
     private def missing(name: Text, label: Text): Nothing =
       halt(m"could not find an Intensional instance for the field $name with type $label")
 
-    def record(fields: List[(Text, Member)]): (Type[?], Expr[Text -> Origin -> Any]) =
+    def record(fields: List[(Text, Member)]): (Type[?], Expr[Text -> origin -> Any]) =
       val (refined, transform) = expandRecord(fields)
       (refined.asType, transform)
 
-    def tuple(fields: List[(Text, Member)]): (Type[?], Expr[Origin -> Any]) =
+    def tuple(fields: List[(Text, Member)]): (Type[?], Expr[origin -> Any]) =
       val (tuple, make) = expandTuple(fields)
       (tuple.asType, make)
 
@@ -153,12 +143,12 @@ trait Specification extends Original:
         consCtor.appliedTo(scala.List(head, tail))
 
     private def expandRecord(fields: List[(Text, Member)])
-    :   (TypeRepr, Expr[Text -> Origin -> Any]) =
+    :   (TypeRepr, Expr[Text -> origin -> Any]) =
 
       val members = fields.stdlib.map(expand(_, eager = false, nested))
 
-      // The record's `Origin` is fixed too, so its `data` has the origin type at the call site
-      val refined = members.foldLeft(TypeRepr.of[Record from Origin]): (refined, field) =>
+      // The record's `origin` is fixed too, so its `data` has the origin type at the call site
+      val refined = members.foldLeft(TypeRepr.of[Record from origin]): (refined, field) =>
         Refinement(refined, field.name.s, field.tpe)
 
       val caseDefs = members.map: field =>
@@ -175,29 +165,29 @@ trait Specification extends Original:
 
         CaseDef(Wildcard(), None, missing.asTerm)
 
-      val transform: Expr[Text -> Origin -> Any] =
+      val transform: Expr[Text -> origin -> Any] =
         ' {
             (name: Text) =>
-              ${Match('name.asTerm, caseDefs :+ fallback('name)).asExprOf[Origin => Any]}
+              ${Match('name.asTerm, caseDefs :+ fallback('name)).asExprOf[origin => Any]}
           }
 
       (refined, transform)
 
     // A nested record: built like a top-level one, from the nested origin value
-    private def nested(fields: List[(Text, Member)]): (TypeRepr, Expr[Origin -> Any]) =
+    private def nested(fields: List[(Text, Member)]): (TypeRepr, Expr[origin -> Any]) =
       val (refined, transform) = expandRecord(fields)
       (refined, '{field => $target.build(field, $transform)})
 
-    private def expandTuple(fields: List[(Text, Member)]): (TypeRepr, Expr[Origin -> Any]) =
+    private def expandTuple(fields: List[(Text, Member)]): (TypeRepr, Expr[origin -> Any]) =
       val members = fields.stdlib.map(expand(_, eager = true, expandTuple))
       val names = tupleType(members.map { field => ConstantType(StringConstant(field.name.s)) })
       val values = tupleType(members.map(_.tpe))
       val tuple = TypeRepr.of[NamedTuple.NamedTuple].appliedTo(scala.List(names, values))
 
-      val elements: scala.List[Expr[Origin -> Object]] = members.map: field =>
+      val elements: scala.List[Expr[origin -> Object]] = members.map: field =>
         '{data => ${field.accessor}(data).asInstanceOf[Object]}
 
-      val make: Expr[Origin -> Any] =
+      val make: Expr[origin -> Any] =
         ' {
             data =>
               val array: scala.Array[Object] =
@@ -214,7 +204,7 @@ trait Specification extends Original:
       case Named(name: Text)
       case Held
 
-    private def fetch(source: Source, data: Expr[Origin], required: Boolean): Expr[Origin] =
+    private def fetch(source: Source, data: Expr[origin], required: Boolean): Expr[origin] =
       source match
         case Source.Named(name) =>
           val nameExpr = Expr(name)
@@ -224,11 +214,11 @@ trait Specification extends Original:
 
         case Source.Held => data
 
-    private def fetchMany(source: Source, data: Expr[Origin]): Expr[List[Origin]] = source match
+    private def fetchMany(source: Source, data: Expr[origin]): Expr[List[origin]] = source match
       case Source.Named(name) => '{$target.repeated(${Expr(name)}, $data)}
       case Source.Held        => '{$target.elements($data)}
 
-    private def fetchKeyed(source: Source, data: Expr[Origin]): Expr[List[(Text, Origin)]] =
+    private def fetchKeyed(source: Source, data: Expr[origin]): Expr[List[(Text, origin)]] =
       source match
         case Source.Named(name) => '{$target.entries(${Expr(name)}, $data)}
         case Source.Held        => '{$target.pairs($data)}
@@ -240,7 +230,7 @@ trait Specification extends Original:
     private def expand
       ( field:  (Text, Member),
         eager:  Boolean,
-        nested: List[(Text, Member)] => (TypeRepr, Expr[Origin -> Any]) )
+        nested: List[(Text, Member)] => (TypeRepr, Expr[origin -> Any]) )
     :   Field =
 
       val (name, member) = field
@@ -256,8 +246,8 @@ trait Specification extends Original:
     private def single
       ( name:   Text,
         member: Member,
-        nested: List[(Text, Member)] => (TypeRepr, Expr[Origin -> Any]) )
-    :   (TypeRepr, Expr[Origin -> Any]) =
+        nested: List[(Text, Member)] => (TypeRepr, Expr[origin -> Any]) )
+    :   (TypeRepr, Expr[origin -> Any]) =
 
       member match
         case Member.Value(label, params, _) =>
@@ -265,16 +255,16 @@ trait Specification extends Original:
             case '[type label <: Label; label] =>
               val paramsExpr: Expr[List[Text]] = '{List.from(${Expr(params.stdlib)})}
 
-              Expr.summon[label is Intensional in Form from Origin].absolve match
+              Expr.summon[label is Instance].absolve match
                 case
-                  Some('{$accessor: label `is` Intensional `in` Form `from` Origin `to` result}) =>
-                    val transform: Expr[Origin -> result] =
+                  Some('{$accessor: label `is` Instance `to` result}) =>
+                    val transform: Expr[origin -> result] =
                       '{value => $accessor.transform(value, $paramsExpr)}
 
                     (TypeRepr.of[result], transform)
 
                 case _ =>
-                  Expr.summon[label is Intensional.Fallible in Form from Origin].absolve match
+                  Expr.summon[label is FallibleInstance].absolve match
                     case None => missing(name, label)
 
                     // A fallible instance reads under a `Tactic` supplied when the field is read
@@ -283,11 +273,11 @@ trait Specification extends Original:
                         ( ' {
                               type error <: Hazard
 
-                              $fallible: ((`label` `is` Intensional.Fallible `in` Form `from` Origin
-                                  `to` result) { type Error = error })
+                              $fallible: ((`label` `is` FallibleInstance `to` result)
+                                  { type Error = error })
                             } ) =>
 
-                      val transform: Expr[Origin -> Any] =
+                      val transform: Expr[origin -> Any] =
                         ' {
                             value =>
                               (tactic: Tactic[error]) ?=>
@@ -301,7 +291,7 @@ trait Specification extends Original:
 
         case Member.Union(alternatives, _) =>
           // Each alternative, read under its own multiplicity from the value in hand
-          val read: scala.List[(Text, TypeRepr, Expr[Origin -> Any])] =
+          val read: scala.List[(Text, TypeRepr, Expr[origin -> Any])] =
             alternatives.stdlib.map: (kind, alternative) =>
               val (result, transform) = single(name, alternative, nested)
               val (tpe, read) = multiply(Source.Held, alternative.multiplicity, result, transform)
@@ -313,7 +303,7 @@ trait Specification extends Original:
 
           if errors.isEmpty then
             val plain = read.map: (kind, _, read) => (kind, read)
-            val transform: Expr[Origin -> Any] = '{(value: Origin) => ${dispatch('value, plain)}}
+            val transform: Expr[origin -> Any] = '{(value: origin) => ${dispatch('value, plain)}}
 
             (union, transform)
           else
@@ -325,13 +315,13 @@ trait Specification extends Original:
                 // Each fallible alternative is applied to the union's tactic, which serves its
                 // own error type by contravariance; the cast states that relation, which the
                 // types at this level cannot
-                def cases(tactic: Expr[Tactic[error]]): scala.List[(Text, Expr[Origin -> Any])] =
+                def cases(tactic: Expr[Tactic[error]]): scala.List[(Text, Expr[origin -> Any])] =
                   read.map: (kind, tpe, read) =>
                     fallible(tpe) match
                       case Some((success, alternativeError)) =>
                         (success.asType, strip(alternativeError).asType).absolve match
                           case ('[success], '[type alternativeError <: Hazard; alternativeError]) =>
-                            val applied: Expr[Origin -> Any] =
+                            val applied: Expr[origin -> Any] =
                               ' {
                                   value =>
                                     val own = $tactic.asInstanceOf[Tactic[alternativeError]]
@@ -343,16 +333,16 @@ trait Specification extends Original:
 
                       case None => (kind, read)
 
-                val transform: Expr[Origin -> Any] =
+                val transform: Expr[origin -> Any] =
                   ' {
-                      (value: Origin) =>
+                      (value: origin) =>
                         (tactic: Tactic[error]) ?=> ${dispatch('value, cases('tactic))}
                     }
 
                 (raising(union, error), transform)
 
     // A match on the kind of `value`, reading it with the alternative of that kind
-    private def dispatch(value: Expr[Origin], cases: scala.List[(Text, Expr[Origin -> Any])])
+    private def dispatch(value: Expr[origin], cases: scala.List[(Text, Expr[origin -> Any])])
     :   Expr[Any] =
 
       val caseDefs = cases.map: (kind, read) =>
@@ -377,8 +367,8 @@ trait Specification extends Original:
       ( source:       Source,
         multiplicity: Multiplicity,
         result:       TypeRepr,
-        transform:    Expr[Origin -> Any] )
-    :   (TypeRepr, Expr[Origin -> Any]) =
+        transform:    Expr[origin -> Any] )
+    :   (TypeRepr, Expr[origin -> Any]) =
 
       multiplicity match
         case Multiplicity.One =>
@@ -388,7 +378,7 @@ trait Specification extends Original:
           case Some((success, error)) =>
             (success.asType, strip(error).asType).absolve match
               case ('[success], '[type error <: Hazard; error]) =>
-                val accessor: Expr[Origin -> Any] =
+                val accessor: Expr[origin -> Any] =
                   ' {
                       data =>
                         (tactic: Tactic[error]) ?=>
@@ -403,7 +393,7 @@ trait Specification extends Original:
 
           case None => result.asType.absolve match
             case '[result] =>
-              val accessor: Expr[Origin -> Any] =
+              val accessor: Expr[origin -> Any] =
                 ' {
                     data =>
                       val value = ${fetch(source, 'data, required = false)}
@@ -418,7 +408,7 @@ trait Specification extends Original:
           case Some((success, error)) =>
             (success.asType, strip(error).asType).absolve match
               case ('[success], '[type error <: Hazard; error]) =>
-                val accessor: Expr[Origin -> Any] =
+                val accessor: Expr[origin -> Any] =
                   ' {
                       data =>
                         (tactic: Tactic[error]) ?=>
@@ -432,7 +422,7 @@ trait Specification extends Original:
 
           case None => result.asType.absolve match
             case '[result] =>
-              val accessor: Expr[Origin -> Any] =
+              val accessor: Expr[origin -> Any] =
                 ' {
                     data =>
                       ${fetchMany(source, 'data)}.map: value =>
@@ -445,7 +435,7 @@ trait Specification extends Original:
           case Some((success, error)) =>
             (success.asType, strip(error).asType).absolve match
               case ('[success], '[type error <: Hazard; error]) =>
-                val accessor: Expr[Origin -> Any] =
+                val accessor: Expr[origin -> Any] =
                   ' {
                       data =>
                         (tactic: Tactic[error]) ?=>
@@ -462,7 +452,7 @@ trait Specification extends Original:
 
           case None => result.asType.absolve match
             case '[result] =>
-              val accessor: Expr[Origin -> Any] =
+              val accessor: Expr[origin -> Any] =
                 ' {
                     data =>
                       val pairs = ${fetchKeyed(source, 'data)}.stdlib.map: (key, value) =>
@@ -521,7 +511,7 @@ trait Specification extends Original:
                 case Some(tactic) =>
                   val read = field.accessor
 
-                  val accessor: Expr[Origin -> Any] =
+                  val accessor: Expr[origin -> Any] =
                     ' {
                         data =>
                           given Tactic[error] = $tactic
@@ -531,3 +521,64 @@ trait Specification extends Original:
                   Field(field.name, TypeRepr.of[success], accessor)
 
       case None => field
+
+// A type provider over one document format: a schema, as `fields`, and the format's reading
+// primitives. The `build` and `tuple` macros manufacture a record or named tuple type from the
+// fields, applying each member's multiplicity themselves, so a concrete specification supplies
+// only single-value `Intensional` instances and the three primitives, `access`, `absent` and
+// `repeated`.
+trait Specification extends Original:
+  type Origin
+  protected type Origin0 = Origin
+  type Form <: { type Origin = Origin0 }
+
+  // The fields in order: a record's members are unordered, but a named tuple's elements follow
+  // this order.
+  def fields: List[(Text, Member)]
+
+  // The field's own value within a document, which may be a sentinel for a missing field
+  def access(name: Text, value: Origin): Origin
+
+  // Whether a value `access` returned stands for a missing field
+  def absent(value: Origin): Boolean
+
+  // Every value of a field carrying any number of them, in document order: the elements of a
+  // JSON array, or every sibling with the field's keyword in a format which repeats the field.
+  def repeated(name: Text, value: Origin): List[Origin]
+
+  // The value of a field which must be present, read under `Multiplicity.One`: a specification
+  // may fail here, in its own way, when the value is absent. By default the value is returned
+  // as it is, and the field's `Intensional` meets the absent value.
+  def required(name: Text, value: Origin): Origin = value
+
+  // The remaining hooks serve features a format may lack; each fails unless the specification
+  // provides it. `entries` gives a keyed field's values by name, for `Multiplicity.Keyed`.
+  def entries(name: Text, value: Origin): List[(Text, Origin)] =
+    panic(m"this specification has no keyed fields")
+
+  // The kind of a value, by which a `Member.Union` chooses its alternative
+  def kind(value: Origin): Text = panic(m"this specification has no unions")
+
+  // The elements of a value which is itself a sequence, for a `Many` alternative of a union
+  def elements(value: Origin): List[Origin] = panic(m"this specification has no unions")
+
+  // The named values within a value which is itself a dictionary, for a `Keyed` alternative
+  def pairs(value: Origin): List[(Text, Origin)] = panic(m"this specification has no unions")
+
+  // A pure function (`->`): the built Record retains the transform, and a capturing one would
+  // make the record itself a capability, which Record's pure self type (rightly) forbids.
+  def build(data: Origin, transform: Text -> Origin -> Any): Record = Record(data, transform)
+
+  // The typed record over `value`, refined with one member per field, read lazily: each access
+  // runs the field's accessor on the record's data. Inlined at the call site, where the receiver
+  // is the specification object, so the macro can find that object by its type and evaluate its
+  // `fields` — which is why the object must be compiled before the calling code.
+  transparent inline def record(inline value: Origin): Record =
+    ${Specification.record[this.type, Origin, Form]('value)}
+
+  // A named tuple with one element per field, in the specification's order, read eagerly: every
+  // field's accessor runs when the tuple is built, so a fallible field fails then, and its
+  // element has the successful type, with its `raises` clause discharged by a `Tactic` at the
+  // call site.
+  transparent inline def tuple(inline value: Origin): NamedTuple.AnyNamedTuple =
+    ${Specification.tuple[this.type, Origin, Form]('value)}

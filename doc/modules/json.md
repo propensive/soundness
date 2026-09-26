@@ -605,7 +605,6 @@ object Catalogue extends Json.Provider(t"""{
     }
   }
 }""".read[Json]):
-  transparent inline def record(json: Json): Record = ${build('json)}
 
 val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
 
