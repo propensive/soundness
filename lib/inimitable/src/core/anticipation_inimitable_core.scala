@@ -30,9 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anticipation
 
-export inimitable.{jvmInstanceId, Uuid, uuid}
+import contingency.*
+import inimitable.*
+import prepositional.*
 
+// The `Instantiable` instance which makes `Uuid` the representative of the `Uuids` domain,
+// imported by name since a consumer bounded `[uuid: Instantiable across Uuids from Text]` names
+// no type whose companion could hold it.
 package uuidInterfaces:
-  export anticipation.uuidInterfaces.soundnessUuid
+  given soundnessUuid: (tactic: Tactic[Uuid.Error])
+  =>  ((Uuid is Instantiable across Uuids from Text)^{tactic}) =
+    Uuid.parse(_)

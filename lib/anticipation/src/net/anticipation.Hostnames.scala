@@ -30,9 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anticipation
 
-export inimitable.{jvmInstanceId, Uuid, uuid}
-
-package uuidInterfaces:
-  export anticipation.uuidInterfaces.soundnessUuid
+sealed trait Hostnames

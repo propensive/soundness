@@ -30,9 +30,32 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anticipation
 
-export inimitable.{jvmInstanceId, Uuid, uuid}
+import contingency.*
+import distillate.*
+import prepositional.*
+import urticose.*
 
-package uuidInterfaces:
-  export anticipation.uuidInterfaces.soundnessUuid
+// The `Instantiable` instances which make urticose's types the representatives of the network
+// domains: a consumer declaring a type parameter `[email: Instantiable across EmailAddresses
+// from Text]` names no concrete type, so the instance cannot be found through the type's
+// companion and is imported by name instead, as `instantInterfaces.aviationInstant` is.
+package emailAddressInterfaces:
+  given soundnessEmailAddress: (tactic: Tactic[EmailAddress.Error])
+  =>  ((EmailAddress is Instantiable across EmailAddresses from Text)^{tactic}) =
+    EmailAddress.parse(_)
+
+package hostnameInterfaces:
+  given soundnessHostname: (tactic: Tactic[Hostname.Error])
+  =>  ((Hostname is Instantiable across Hostnames from Text)^{tactic}) =
+    _.as[Hostname]
+
+package ipAddressInterfaces:
+  given soundnessIpv4: (tactic: Tactic[IpAddress.Error])
+  =>  ((Ipv4 is Instantiable across IpAddresses from Text)^{tactic}) =
+    _.as[Ipv4]
+
+  given soundnessIpv6: (tactic: Tactic[IpAddress.Error])
+  =>  ((Ipv6 is Instantiable across IpAddresses from Text)^{tactic}) =
+    _.as[Ipv6]

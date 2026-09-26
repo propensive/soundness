@@ -41,3 +41,12 @@ export
 
 package internetAccess:
   export urticose.internetAccess.{offline, online}
+
+package emailAddressInterfaces:
+  export anticipation.emailAddressInterfaces.soundnessEmailAddress
+
+package hostnameInterfaces:
+  export anticipation.hostnameInterfaces.soundnessHostname
+
+package ipAddressInterfaces:
+  export anticipation.ipAddressInterfaces.{soundnessIpv4, soundnessIpv6}

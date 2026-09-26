@@ -30,9 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anticipation
 
-export inimitable.{jvmInstanceId, Uuid, uuid}
+import contingency.*
+import prepositional.*
+import urticose.*
 
-package uuidInterfaces:
-  export anticipation.uuidInterfaces.soundnessUuid
+// `Url.instantiable` is in `Url`'s companion, but a consumer whose type parameter is bounded
+// `[url: Instantiable across Urls from Text]` names no `Url`, so the same instance is offered
+// here by name.
+package urlInterfaces:
+  given soundnessUrl: (tactic: Tactic[Url.Error])
+  =>  ((HttpUrl is Instantiable across Urls from Text)^{tactic}) =
+    Url.instantiable

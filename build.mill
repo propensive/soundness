@@ -924,7 +924,7 @@ object soundness extends Toolchain:
     anticipation.focus,
     anticipation.gfx, anticipation.http, anticipation.log,
     anticipation.opaque, anticipation.path, anticipation.print, anticipation.text,
-    anticipation.time, anticipation.url):
+    anticipation.time, anticipation.url, anticipation.net, anticipation.uuid):
     def summary = "Core Soundness abstractions: text, collections, effects and interfaces"
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
@@ -1365,6 +1365,14 @@ object anticipation extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object url extends Component(text, generic):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The network domains (`EmailAddresses`, `Hostnames`, `IpAddresses`), represented by urticose
+  object net extends Component(text, generic):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The `Uuids` domain, represented by inimitable
+  object uuid extends Component(text, generic):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object print extends Component(text):
@@ -2486,7 +2494,8 @@ object imperial extends Library:
       settings.sep(super.scalacOptions())
 
 object inimitable extends Library:
-  object core extends Component(distillate.core, contingency.core, spectacular.core):
+  object core extends Component(distillate.core, contingency.core, spectacular.core,
+      anticipation.uuid):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2663,7 +2672,7 @@ object mosquito extends Library:
       settings.sep(super.scalacOptions())
 
 object urticose extends Library:
-  object core extends Component(distillate.core, gossamer.core):
+  object core extends Component(distillate.core, gossamer.core, anticipation.net):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object url extends Component(anticipation.url, serpentine.core, contextual.core, core):

@@ -32,7 +32,4 @@
                                                                                                   */
 package soundness
 
-export inimitable.{jvmInstanceId, Uuid, uuid}
-
-package uuidInterfaces:
-  export anticipation.uuidInterfaces.soundnessUuid
+export anticipation.{EmailAddresses, Hostnames, IpAddresses}

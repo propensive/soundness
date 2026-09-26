@@ -35,3 +35,6 @@ package soundness
 export
   urticose
   . { Authority, email, host, HttpUrl, Origin, Scheme, Url, url, Www }
+
+package urlInterfaces:
+  export anticipation.urlInterfaces.soundnessUrl
