@@ -87,7 +87,7 @@ kinds, none of which is a simple rename.
 | render palettes                           | `MarkdownPalette`, `StackTracePalette`                                                                                                     | cross-component by design                                                                                          |
 | specification concepts (R2)               | `JsonPointer`, `YamlPath`, `TelPath`, `JsonSchema`, `XmlSchema`, `MediaType`, `SymmetricKey`, `BlockCipher`, `CompileError` | the compound names a thing with its own specification — the test is whether it would appear as a heading in a spec |
 | ~~reflectively loaded~~ (disproved) | `TypescriptDialect`, `WebIdlDialect`, `WitDialect`                                                                                        | **no longer excluded.** `CHeaderDialect` became `CHeader.Dialect` in the seventh pass; the loader derived the class name from `fullName`, which is dotted between owners — see "No longer blocked" |
-| component-blocked (R6)                    | `TarOpenable`, `PdfFile`, `ImageRecord`, `HmacCipher`, `JsonSchema`, `JsonBlueprint`, `LiraBundle`, `KotlinMetadataAtomizer`              | outer companion is in another component                                                                            |
+| component-blocked (R6)                    | `TarOpenable`, `PdfFile`, `ImageRecord`, `HmacCipher`, `JsonSchema`, `LiraBundle`, `KotlinMetadataAtomizer`              | outer companion is in another component                                                                            |
 
 ## Tried and reverted, with the reason
 
@@ -187,7 +187,7 @@ with it: `HttpServerFor`, `stdlibHttpServer` and `jdkHttpserverPublic` are `Http
 `jdkHttpserver` and `jdkHttpserverPublic`.
 
 `BoundsError` was **deleted** rather than renamed. It duplicated
-`JsonBlueprint.Error`'s `IntOutOfRange` reason — the same failure, the same three fields,
+`Json.Provider.Error`'s `IntOutOfRange` reason — the same failure, the same three fields,
 raised from the same object — and the duplicate was the cruder of the two, modelling an
 absent bound as `Double.MinValue`/`Double.MaxValue` where `IntOutOfRange` uses
 `Optional[Int]`. It was declared and exported by gossamer, which never used it. Worth
@@ -291,7 +291,7 @@ ultimatum's is the likelier one to rename.
 | `Image*` | embarcadero | 2 | `ImageOpenable`, `ImageRecord` |
 | `Inline*` | profanity, ultimatum | 5 | `InlineAnchoring`, `InlineBoard`, `InlineGrowth`, `InlineRoot`, `InlineShrink` |
 | `Java*` | anthology, diuretic, enigmatic, gastronomy, scintillate | 11 | `JavaIoFile`, `JavaLongDuration`, `JavaLongInstant`, `JavaNetUrl`, `JavaNioPath`, `JavaServlet`, `JavaBaseCrypto`, `JavaBaseHashing`, `JavaTimeInstant`, `JavaUtilDate`, `JavaVersion` |
-| `Json*` | jacinta, obligatory | 4 | `JsonBlueprint`, `JsonPointer`, `JsonRpc`, `JsonSchema` |
+| `Json*` | jacinta, obligatory | 3 | `JsonPointer`, `JsonRpc`, `JsonSchema` (`JsonBlueprint` is now `Json.Provider`) |
 | `Kotlin*` | xenophile | 5 | `KotlinDialect`, `KotlinFacade`, `KotlinInvoke`, `KotlinMetadataAtomizer`, `KotlinMetadataDiscipline` |
 | `Lane*` | dendrology | 2 | `LaneDagDiagram`, `LaneDagStyle` |
 | `Larceny*` | larceny | 2 | `LarcenyPlugin`, `LarcenyTransformer` |
@@ -312,7 +312,7 @@ ultimatum's is the likelier one to rename.
 | `Table*` | escritoire, ultimatum | 6 | `TableCell`, `TableFixture`, `TableRelabelling`, `TableRow`, `TableSection`, `TableStyle` |
 | `Tar*` | bitumen | 4 | `TarBuilder`, `TarDataOpenable`, `TarHeader`, `TarOpenable` |
 | `Tasty*` | degustation, hyperbole | 2 | `TastyDiscipline`, `TastyPalette` |
-| `Tel*` | stratiform | 3 | `TelBlueprint`, `TelPath`, `TelReader` |
+| `Tel*` | stratiform | 2 | `TelPath`, `TelReader` (`TelBlueprint` is now `Tel.Provider`) |
 | `Text*` | escapade, escritoire, facsimile, fulminate, gossamer, hieroglyph, honeycomb | 7 | `TextAlignment`, `TextBuilder`, `TextEscapes`, `TextNode`, `TextRun`, `TextSanitizer`, `TextStyle` |
 | `Textual*` | dendrology | 3 | `TextualDagStyle`, `TextualLaneDagStyle`, `TextualTreeStyle` |
 | `Thread*` | vivisection | 2 | `ThreadGroupId`, `ThreadId` |

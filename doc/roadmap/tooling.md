@@ -72,8 +72,8 @@ repository's own libraries, each filed as an issue: a compiler-version accessor 
 the diagnostics `ScalacEdges` drops (#2027), retained compiler sessions for a daemon (#2028),
 TASTy UUIDs against LIRA §17 determinism (#2029), the `Materializer` cache against the store's
 derivative tier (#2025), the manifest `source` record (#2022), section-scoped `Tool` records
-and `Setting` (#2023), the closed `Lira.Hash.Domain` (#2024) and `TelBlueprint` nesting with
-custom validators (#2030).
+and `Setting` (#2023), the closed `Lira.Hash.Domain` (#2024) and `Tel.Provider` records over
+custom validators (#2030; nested and repeatable compounds are done).
 
 Done when: `fury build` builds Soundness from a clean checkout, attestation-equal to the Mill
 build.

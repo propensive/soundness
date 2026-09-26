@@ -26,7 +26,7 @@ does not split at all — it becomes a namespace for its own satellites.
   `JsonPointerError → JsonPointer.Error`. Likewise `MediaType`, `JsonSchema` and
   `XmlSchema` (external standards), `Httpd`, `BlockCipher`, `CompileError`,
   `WebDriver`, `WorkingDirectory`, `DomainSocket`, `JsonRpc`, `OAuth`, `StackTrace`,
-  `JsonBlueprint`, `SymmetricKey` (parallel with `PrivateKey`/`PublicKey`; the
+  `SymmetricKey` (parallel with `PrivateKey`/`PublicKey`; the
   `Symmetric` trait is a separate abstraction). This resolves July's internal conflict:
   it proposed both `MediaType → Media.Type` and `MediaTypeError → MediaType.Error`.
 
@@ -180,7 +180,6 @@ name differs from the error's prefix, before recording anything as blocked.
 | name | member component | outer (component) |
 |---|---|---|
 | `JsonSchema` | jacinta.schema | `Json` (core) — also R2: external standard |
-| `JsonBlueprint` | jacinta.records | `Json` (core) — nests its own satellites instead |
 | `TarOpenable`, `TarBuilder` | bitumen.jvm | `Tar` (core) |
 | `PdfFile` | facsimile.file | `Pdf` (core) — keeps its own `PdfFile.Origin` |
 | `RasterOpenable`, `CanvasHandle` | hallucination.canvas | `Raster`/`Canvas` (core) |
@@ -190,7 +189,6 @@ name differs from the error's prefix, before recording anything as blocked.
 | `MarkdownPalette`, `StackTracePalette` | ansi components | core types (also R5 palette family) |
 | `ClasspathJvm` | hellenism.jvm | `Classpath` (core) |
 | `BintelInlinable` | stratiform.binaryStaged | `Bintel` (binary) |
-| `TelBlueprint` | stratiform.records | `Tel` (core) |
 | `ForeignLibrary`, `ForeignBuffer` | xenophile native + nativeruntime | `Foreign` (core) — dual definitions |
 | `WitCase`, `WitError`, `WitHandle`, `WitVariant` | xenophile.wasm | `Wit` (wit) |
 | `*Atomizer`, `*Discipline` (Wit/WebIdl/Kotlin/CHeader/Classfile/Dts) | xenophile.lira / mandible.lira | respective dialect components |
@@ -608,3 +606,10 @@ Eight passes have run this shape to completion; the rename table above is exhaus
 recorded under "Next actions" in `api-reduction-candidates.md`. `TarHeader` is named there
 for a reason worth repeating: `readUnchecked` clears the capture-checking blocker, but two of
 its sites rely on the bounds check it removes, so that one waits on tightening the guards.
+
+## Resolved since: `Tel.Provider` and `Json.Provider`
+
+`TelBlueprint` and `JsonBlueprint` were recorded above as component-blocked; both now nest as
+`Tel.Provider` and `Json.Provider`, by moving them into `core` (which gained the `polyvinyl.core`
+edge) and dropping the `records` components. `JsonBlueprint.{Doc, Property, Error}` became
+`Json.Provider.{Doc, Property, Error}`.

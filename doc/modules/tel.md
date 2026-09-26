@@ -193,15 +193,16 @@ source.read[List[Tel]]
 
 ### Typed records from a schema
 
-Where the schema is authoritative, a `TelBlueprint` — an object declared in a file of its own,
+Where the schema is authoritative, a `Tel.Provider` — an object declared in a file of its own,
 holding the schema and the one-line `record` macro — reads it at compiletime and produces typed
 records from matching documents. Each field reads at the type the schema declares, an optional
-field is absent where the document omits it, and a *flag* field — a keyword with no value —
-reads as a boolean, `true` where present and `false` where not:
+field is absent where the document omits it, a repeatable field reads every occurrence as a
+`List`, a field referring to a record definition reads as a nested record, and a *flag* field — a
+keyword with no value — reads as a boolean, `true` where present and `false` where not:
 
 <!-- doccheck: skip -->
 ```scala
-object ContactRecords extends TelBlueprint(Tels.tels[Person](t"person")):
+object ContactRecords extends Tel.Provider(Tels.tels[Person](t"person")):
   transparent inline def record(tel: Tel): Record = ${build('tel)}
 ```
 
