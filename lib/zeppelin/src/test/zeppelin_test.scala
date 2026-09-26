@@ -69,7 +69,7 @@ object Tests extends Suite(m"Zeppelin tests"):
 
     def bytesOf(path: Path on Linux): Data = path.read[Data]
 
-    def readEntries(path: Path on Linux): List[Zip.Entry] = Zipfile.read(path).entries.stdlib.to(List)
+    def readEntries(path: Path on Linux): List[Zip.Entry] = Zipfile.read(path).entries
 
     def names(entries: List[Zip.Entry]): List[Text] = entries.map(_.ref.encode)
 
@@ -280,7 +280,7 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"an archive opened as Zip lists its entries"):
         archive.open[Zip]():
-          zip.entries.stdlib.to(List).map(_.ref.encode)
+          zip.entries.map(_.ref.encode)
       . assert(_ == List(t"a.txt", t"b/c.txt"))
 
       test(m"entry content resolves within the scope"):
@@ -290,7 +290,7 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"in-memory data opens as Zip"):
         bytesOf(archive).open[Zip]():
-          zip.entries.stdlib.to(List).map(_.ref.encode)
+          zip.entries.map(_.ref.encode)
       . assert(_ == List(t"a.txt", t"b/c.txt"))
 
       test(m"opening for writing is refused"):
@@ -317,7 +317,7 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"A JAR handle still lists entries like a Zip"):
         jarArchive.open[Jar]():
-          zip.entries.stdlib.to(List).map(_.ref.encode).to(Set)
+          zip.entries.map(_.ref.encode).to[Set]
       . assert(_ == Set(t"META-INF/MANIFEST.MF", t"com/example/Main.class"))
 
       test(m"An archive without a manifest has no attributes"):
@@ -334,7 +334,7 @@ object Tests extends Suite(m"Zeppelin tests"):
           builder.insert(zipRef(t"b.txt"), t"beta")
 
         target.open[Zip]():
-          zip.entries.stdlib.to(List).map { entry => (entry.ref.encode, entry.read[Text]) }
+          zip.entries.map { entry => (entry.ref.encode, entry.read[Text]) }
       . assert(_ == List((t"a.txt", t"alpha"), (t"b.txt", t"beta")))
 
       test(m"A discarded builder writes a valid empty archive"):
@@ -499,7 +499,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       test(m"entries in a prefixed archive remain readable"):
         val path = workDir/t"prefixed2.zip"
         Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha"), entry(t"b.txt", t"beta")))
-        Zipfile.read(path).entries.map(_.read[Text]).stdlib.to(List)
+        Zipfile.read(path).entries.map(_.read[Text])
       . assert(_ == List(t"alpha", t"beta"))
 
       test(m"the prefix precedes the first local header"):
@@ -529,7 +529,7 @@ object Tests extends Suite(m"Zeppelin tests"):
         out.write(Array.unsafeJvm(inner))
         out.close()
         val zip = Zipfile.read(sfx)
-        (zip.prefix.lay(List())(_.readable.to(List)), zip.entries.map(_.read[Text]).stdlib.to(List))
+        (zip.prefix.lay(List())(_.readable.to(List)), zip.entries.map(_.read[Text]))
       . assert(_ == (t"STUB-PREFIX-DATA".in[Data].to[List], List(t"data", t"data")))
 
     suite(m"Header fidelity"):

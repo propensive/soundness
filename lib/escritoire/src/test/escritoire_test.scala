@@ -36,6 +36,7 @@ import soundness.*
 
 import textMetrics.uniformMetric
 import denominative.dysasymptotics.linearSize
+import denominative.dysasymptotics.linearAccess
 
 case class Person(name: Text, age: Int)
 
@@ -44,8 +45,8 @@ object Tests extends Suite(m"Escritoire tests"):
 
   def render[row](scaffold: Scaffold[row, Text], data: List[row], width: Int)
      (using TableStyle, Attenuation^)
-  :   scala.collection.immutable.List[Text] =
-    scaffold.tabulate(data).grid(width).render.stdlib.to(List)
+  :   List[Text] =
+    scaffold.tabulate(data).grid(width).render.to[List]
 
   def run(): Unit =
     // ─── TextAlignment ──────────────────────────────────────────────────────
@@ -195,7 +196,7 @@ object Tests extends Suite(m"Escritoire tests"):
     test(m"Number column right-aligns its values"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      render(scaffold, people, 40)(3)
+      render(scaffold, people, 40).at(Quat).or(t"")
     . assert(_ == t"│ Alice │  30 │")
 
     // ─── Paragraph wrapping ─────────────────────────────────────────────────
@@ -223,7 +224,7 @@ object Tests extends Suite(m"Escritoire tests"):
     test(m"A wrapped cell increases the height of its whole row"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      render(wrapping, List(Person(t"Alice", 30)), 18).length
+      render(wrapping, List(Person(t"Alice", 30)), 18).size
     . assert(_ == 8)
 
     // ─── Fixed-width truncation ─────────────────────────────────────────────
@@ -235,7 +236,7 @@ object Tests extends Suite(m"Escritoire tests"):
     test(m"A Fixed column truncates over-long cells with an ellipsis"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      render(truncating, List(Person(t"Alice", 30)), 40)(3)
+      render(truncating, List(Person(t"Alice", 30)), 40).at(Quat).or(t"")
     . assert(_ == t"│ abcde… │")
 
     // ─── Derivation ─────────────────────────────────────────────────────────
@@ -243,7 +244,7 @@ object Tests extends Suite(m"Escritoire tests"):
     test(m"A case class table is derived with capitalized field-name titles"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.stdlib.to(List)
+      summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.to[List]
     . assert:
         _ == List
           ( t"╭───────┬─────╮",
@@ -257,13 +258,13 @@ object Tests extends Suite(m"Escritoire tests"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
       given TableRelabelling[Person] = () => Map(t"name" -> t"Full Name")
-      summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.stdlib.to(List).head
+      summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.to[List].prim.or(t"")
     . assert(_ == t"╭───────────┬─────╮")
 
     test(m"A sequence of integers can be tabulated directly"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      List(1, 22, 333).tabulation.grid(20).render.stdlib.to(List)
+      List(1, 22, 333).tabulation.grid(20).render.to[List]
     . assert:
         _ == List
           ( t"╭─────╮",
@@ -281,7 +282,7 @@ object Tests extends Suite(m"Escritoire tests"):
       import columnAttenuation.ignoreAttenuation
       import hieroglyph.textMetrics.wideCharacterWidthMetric
       val cjk = Scaffold[Person, Text](Column(t"N")(_ => t"日本"))
-      cjk.tabulate(List(Person(t"Alice", 30))).grid(40).render.stdlib.to(List)
+      cjk.tabulate(List(Person(t"Alice", 30))).grid(40).render.to[List]
     . assert:
         _ == List
           ( t"╭──────╮",
@@ -353,12 +354,12 @@ object Tests extends Suite(m"Escritoire tests"):
     // what a live view does, and what must match `grid.render` line for line.
     def incremental[row](scaffold: Scaffold[row, Text], data: List[row], width: Int)
        (using TableStyle, Attenuation^)
-    :   scala.collection.immutable.List[Text] =
+    :   List[Text] =
       val cells: List[Cells[Text]] = data.map(scaffold.cells(_))
       val layout = cells.fold(scaffold.layout(width)) { (layout, cells) => layout.extend(cells) }
       val body: List[Text] = cells.bind { (cells: Cells[Text]) => layout.lines(cells, Nil) }
       (layout.topRule.let(List(_)).or(Nil) + layout.titleLines + List(layout.titleRule) + body
-          + layout.bottomRule.let(List(_)).or(Nil)).stdlib.to(List)
+          + layout.bottomRule.let(List(_)).or(Nil))
 
     test(m"the metrics of lines are the widest word and the widest line"):
       Columnar.metrics(Array(t"hello world", t"hi"))
@@ -458,12 +459,12 @@ object Tests extends Suite(m"Escritoire tests"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.failAttenuation
       val wide = Scaffold[Person, Text](Column(t"Name", sizing = columnar.Fixed(20))(_.name))
-      safely(wide.tabulate(people).grid(5).render.stdlib.to(List)).absent
+      safely(wide.tabulate(people).grid(5).render.to[List]).absent
     . assert(_ == true)
 
     test(m"ignoreAttenuation renders without raising when the table is too wide"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
       val wide = Scaffold[Person, Text](Column(t"Name", sizing = columnar.Fixed(20))(_.name))
-      safely(wide.tabulate(people).grid(5).render.stdlib.to(List)).absent
+      safely(wide.tabulate(people).grid(5).render.to[List]).absent
     . assert(_ == false)

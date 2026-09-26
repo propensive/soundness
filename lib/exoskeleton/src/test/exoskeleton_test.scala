@@ -880,7 +880,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             def zsh(text: Text): List[List[Text]] =
               sh"$tool '{completions}' zsh 2 3 /dev/null -- clstr $text".exec[Text]()
               . cut(t"\n").stdlib.filter(_.length > 0)
-              . map(_.cut(t"\u0000").stdlib.to(List)).to(List)
+              . map(_.cut(t"\u0000")).to(List)
 
             def adjacent(line: List[Text], first: Text, second: Text): Boolean =
               line.stdlib.sliding(2).exists: pair =>
@@ -911,13 +911,13 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             // which is not an extension of the cluster (#1964).
             test(m"fish offers the extended cluster"):
               sh"$tool '{completions}' fish 1 3 /dev/null -- clstr -ab".exec[Text]()
-              . cut(t"\n").stdlib.to(List).map(_.cut(t"\t").prim.or(t""))
-            . check(_.contains(t"-abc"))
+              . cut(t"\n").map(_.cut(t"\t").prim.or(t""))
+            . check(_.has(t"-abc"))
 
             test(m"bash offers the extended cluster"):
               sh"$tool '{completions}' bash 1 3 /dev/null -- clstr -ab".exec[Text]()
-              . cut(t"\n").stdlib.to(List)
-            . check(_.contains(t"-abc"))
+              . cut(t"\n")
+            . check(_.has(t"-abc"))
 
             // A two-character argument is not a cluster: the interpreter only expands beyond
             // two characters, so `-a` still completes as an ordinary short flag.

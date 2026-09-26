@@ -170,7 +170,7 @@ object Tests extends Suite(m"Mosquito tests"):
       . assert(_ != Unset)
 
       test(m"List.slide produces a stream of 2-tensors"):
-        List(1, 2, 3, 4).slide(2).stdlib.to(List)
+        List(1, 2, 3, 4).slide(2).to[List]
       . assert(_ == List(Vector(1, 2), Vector(2, 3), Vector(3, 4)))
 
     suite(m"Tensors of various sizes"):

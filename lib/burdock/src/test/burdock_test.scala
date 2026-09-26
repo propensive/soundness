@@ -294,8 +294,8 @@ object Tests extends Suite(m"Burdock Tests"):
       val summary =
         Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap".in[Data])
 
-      val entries = Zipfile.read(outputJar).entries.stdlib.to(List)
-      val names: List[Text] = entries.map(_.ref.show).to(List)
+      val entries = Zipfile.read(outputJar).entries
+      val names: List[Text] = entries.map(_.ref.show)
 
       test(m"the output contains no directory entries"):
         entries.all(!_.directory)

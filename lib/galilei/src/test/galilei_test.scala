@@ -116,7 +116,7 @@ object Tests extends Suite(m"Galilei tests"):
         unsafely:
           scala.caps.unsafe.unsafeAssumeSeparate:
            root.open[Directory](): dir ?=>
-            dir.base.entries.stdlib.to(List).map(_.name)
+            dir.base.entries.to[List].map(_.name)
       . assert(_ == List(t"greeting.txt"))
 
       test(m"A removed entry is no longer extant"):

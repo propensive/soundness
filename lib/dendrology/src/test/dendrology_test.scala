@@ -87,14 +87,14 @@ object Tests extends Suite(m"Dendrology tests"):
       import treeStyles.squareTreeStyle
       TreeDiagram.by[Tree](_.children)
         ( Tree(t"the quick brown fox"), Tree(t"leaf") )
-      . flow(11)(_.value).stdlib.to(List)
+      . flow(11)(_.value).to[List]
     . assert(_ == List(t"├─the quick", t"│ brown fox", t"└─leaf"))
 
     test(m"Tree flow: follow-on rows under a last child use space, not an extender"):
       import treeStyles.squareTreeStyle
       TreeDiagram.by[Tree](_.children)
         ( Tree(t"parent", List(Tree(t"the quick brown fox"))) )
-      . flow(13)(_.value).stdlib.to(List)
+      . flow(13)(_.value).to[List]
     . assert(_ == List(t"└─parent", t"  └─the quick", t"    brown fox"))
 
     test(m"Tree flow: wider follow-on tiles never overflow the width"):
@@ -105,7 +105,7 @@ object Tests extends Suite(m"Dendrology tests"):
 
       TreeDiagram.by[Tree](_.children)
         ( Tree(t"parent", List(Tree(t"ab abcdef ghi jklmno"))) )
-      . flow(13)(_.value).stdlib.to(List)
+      . flow(13)(_.value).to[List]
     . assert(_ == List(t"└parent", t"  └ab abcdef", t"    ghi", t"    jklmno"))
 
     test(m"Lane DAG: a wide glyph's column measures display cells, not chars"):

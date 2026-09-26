@@ -48,7 +48,7 @@ export
       indexed, sort, order, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
       typed, typeName, unit, unsafeImmutable, unsafeMatchable, unsafeMutable, unwind, upsert,
       variance, waive, weave, when, yet, upon, context,
-      mean2, unique, seek, reap, where,
+      mean2, unique, seek, reap, where, Scoped, unused,
       Populated, head, last, lead, reduce, populatedEquality }
 
 // The two interval `each` overloads are re-declared here, beside the exported collection `each`,

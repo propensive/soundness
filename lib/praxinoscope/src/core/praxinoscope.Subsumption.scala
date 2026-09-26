@@ -209,7 +209,7 @@ object Subsumption:
 
     val covering = Analysis(cover)
     val candidacy = candidates.stdlib.map(Analysis(_)).toArray
-    val reps = representatives(cover :: candidates.stdlib.to(scala.List))
+    val reps = representatives(cover :: candidates.stdlib)
     val width = candidacy.length
 
     def everyCandidateAccepts(raw: scala.Array[List[Int]]): Boolean =
@@ -236,7 +236,7 @@ object Subsumption:
 
       val coverStart = covering.symbols(0 :: Nil, true)
 
-      combinations(candidacy.map(_.symbols(0 :: Nil, true).stdlib.to(scala.List))).foreach: pcs =>
+      combinations(candidacy.map(_.symbols(0 :: Nil, true).stdlib)).foreach: pcs =>
         if visited.add((pcs, coverStart)) then queue += ((pcs, coverStart))
 
       while result && head < queue.size do
@@ -271,7 +271,7 @@ object Subsumption:
               val coverNext = covering.symbols(coverRaw, false)
 
               val onward = scala.Array.tabulate(width): index =>
-                candidacy(index).symbols(nextRaw(index), false).stdlib.to(scala.List)
+                candidacy(index).symbols(nextRaw(index), false).stdlib
 
               combinations(onward).foreach: pcs2 =>
                 if visited.add((pcs2, coverNext)) then queue += ((pcs2, coverNext))

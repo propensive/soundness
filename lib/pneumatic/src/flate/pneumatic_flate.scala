@@ -43,7 +43,7 @@ extension (bytes: Data)
   def gunzip: Data = concatenate(Gzip.compression.decompress(Chain(bytes)))
 
 private def concatenate(stream: Chain[Data]): Data =
-  val chunks = stream.stdlib.to(List)
+  val chunks: List[Data] = stream.to[List]
   var total = 0
 
   chunks.each: chunk => total += chunk.length
