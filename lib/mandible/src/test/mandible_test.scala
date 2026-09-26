@@ -600,7 +600,7 @@ object Tests extends Suite(m"Mandible tests"):
     // --- used-set extraction ------------------------------------------------------------------
 
     def encode(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
-    def blob(data: Data): Data = Lira.Hash(Lira.Hash.Domain.Blob, data)
+    def blob(data: Data): Lira.Hash = Lira.Hash(Lira.Hash.Domain.Blob, data)
 
     // Package-private: the source compiles in the `Holder.java` fixture slot, where a public
     // class of another name could not.
@@ -670,7 +670,7 @@ object Tests extends Suite(m"Mandible tests"):
       val markerOld = blob(encode(t"uses-old"))
       val markerNew = blob(encode(t"uses-new"))
 
-      def library(marker: Data): Lira.Manifest =
+      def library(marker: Lira.Hash): Lira.Manifest =
         Lira.Manifest(
           module  = t"consumer",
           lineage = List(Lira.Hash(Lira.Hash.Domain.Snapshot, encode(t"consumer"))),
@@ -694,8 +694,8 @@ object Tests extends Suite(m"Mandible tests"):
         else Unset
       }
 
-      def lookup(marker: Data, set: scala.collection.immutable.Set[Text]) =
-        { (data: Data) => if Blob.compare(data, marker) == 0 then set else Unset }
+      def lookup(marker: Lira.Hash, set: scala.collection.immutable.Set[Text]) =
+        { (data: Data) => if Blob.compare(data, marker.bytes) == 0 then set else Unset }
 
       // The old-surface consumer spans back to v1 by set inclusion; the one that calls the
       // v2-only method provably does not.

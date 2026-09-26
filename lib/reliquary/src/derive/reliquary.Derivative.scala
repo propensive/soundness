@@ -90,7 +90,7 @@ object Derivative:
              interval.start.n0,
              interval.size )
 
-  def hash(tree: Lira.Tree, store: Blobstore): Data raises Lira.Error =
+  def hash(tree: Lira.Tree, store: Blobstore): Lira.Hash raises Lira.Error =
     Lira.Hash(Lira.Hash.Domain.Derivative, jar(tree, store))
 
   // §16 step 3 (L138): every declared derivative hash must recompute from the section's
@@ -100,9 +100,9 @@ object Derivative:
     manifest.section.each: section =>
       // The `Optional` field is bound to a typed local as the lambda's first statement: reading
       // it directly inside a combinator lambda trips the `wildApprox` assertion.
-      val derivative: Optional[Data] = section.derivative
+      val derivative: Optional[Lira.Hash] = section.derivative
 
       derivative.let: declared =>
         report.tree(section.realm, section.integration).let: tree =>
-          if Blob.compare(hash(tree, report.blobstore), declared) != 0
+          if Blob.compare(hash(tree, report.blobstore).bytes, declared.bytes) != 0
           then abort(Lira.Error(Reason.BadDerivative(section.realm)))

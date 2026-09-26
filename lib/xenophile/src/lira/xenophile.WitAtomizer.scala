@@ -88,7 +88,7 @@ object WitAtomizer:
     if value then out.append(1) else out.append(0)
 
   private def hash(encode: Scribe[Byte] => Unit): Data =
-    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.collect[Byte]()(encode))
+    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.collect[Byte]()(encode)).bytes
 
   private val primitives: Set[Text] =
     Set(t"bool", t"u8", t"u16", t"u32", t"u64", t"s8", t"s16", t"s32", t"s64", t"f32", t"f64",

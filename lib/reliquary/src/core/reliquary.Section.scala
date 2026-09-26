@@ -44,9 +44,9 @@ import vacuous.*
 case class Section
   ( realm:       Text,
     integration: Optional[Text] = Unset,
-    tree:        Data,
+    tree:        Lira.Hash,
     delete:      List[TreePath] = List(),
-    derivative:  Optional[Data] = Unset,
+    derivative:  Optional[Lira.Hash] = Unset,
     requires:    List[Lira.Manifest.Requires] = List() ):
 
   def known: Optional[Lira.Realm] = Lira.Realm.parse(realm)

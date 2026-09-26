@@ -73,17 +73,17 @@ object Tests extends Suite(m"Reliquary Tests"):
     val tastyA = encode(t"class A tasty")
     val sjsirA = encode(t"class A sjsir")
 
-    def blob(data: Data): Data = Lira.Hash(Lira.Hash.Domain.Blob, data)
+    def blob(data: Data): Lira.Hash = Lira.Hash(Lira.Hash.Domain.Blob, data)
 
     def makeLira(): Data =
       val context = Discipline.Context(t"jvm")
       val registry = Discipline.Registry(List())
 
       val rootTree = Lira.Tree.of(List(
-        TreeEntry(TreePath(t"a/A.class"), blob(classA)),
-        TreeEntry(TreePath(t"a/A.tasty"), blob(tastyA))))
+        TreeEntry(TreePath(t"a/A.class"), blob(classA).bytes),
+        TreeEntry(TreePath(t"a/A.tasty"), blob(tastyA).bytes)))
 
-      val overlayTree = Lira.Tree.of(List(TreeEntry(TreePath(t"a/A.sjsir"), blob(sjsirA))))
+      val overlayTree = Lira.Tree.of(List(TreeEntry(TreePath(t"a/A.sjsir"), blob(sjsirA).bytes)))
 
       val atomizations = registry.atomize(
         List((TreePath(t"a/A.class"), classA), (TreePath(t"a/A.tasty"), tastyA)), context)
@@ -143,7 +143,7 @@ object Tests extends Suite(m"Reliquary Tests"):
       val sample: Data = encode(t"sample content")
 
       test(m"a domain-separated hash is 32 bytes"):
-        Lira.Hash(Lira.Hash.Domain.Blob, sample).length
+        Lira.Hash(Lira.Hash.Domain.Blob, sample).bytes.length
       . assert(_ == 32)
 
       test(m"distinct domains separate hashes of equal content"):
@@ -253,7 +253,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
         List(blobA, blobB, blobC).map: blob =>
           val hash = Lira.Hash(Lira.Hash.Domain.Blob, blob)
-          blobHash(store.resolve(hash)) == blobHash(blob)
+          blobHash(store.resolve(hash.bytes)) == blobHash(blob)
       . assert(_ == List(true, true, true))
 
       test(m"any permutation of the same blobs serializes identically"):
@@ -275,7 +275,7 @@ object Tests extends Suite(m"Reliquary Tests"):
       test(m"records out of hash order are rejected"):
         val hashA = Lira.Hash(Lira.Hash.Domain.Blob, blobA)
         val hashB = Lira.Hash(Lira.Hash.Domain.Blob, blobB)
-        val (low, high) = if Blob.compare(hashA, hashB) < 0 then (blobA, blobB) else (blobB, blobA)
+        val (low, high) = if Blob.compare(hashA.bytes, hashB.bytes) < 0 then (blobA, blobB) else (blobB, blobA)
         val stream = concat(BlobStream.write(List(high)), BlobStream.write(List(low)))
 
         capture[Lira.Error](BlobStream.read(stream)).reason match
@@ -304,7 +304,7 @@ object Tests extends Suite(m"Reliquary Tests"):
       test(m"resolving an absent hash is an L104 error"):
         val store = BlobStream.read(BlobStream.write(List(blobA)))
 
-        capture[Lira.Error](store.resolve(Lira.Hash(Lira.Hash.Domain.Blob, blobB))).reason match
+        capture[Lira.Error](store.resolve(Lira.Hash(Lira.Hash.Domain.Blob, blobB).bytes)).reason match
           case Lira.Error.Reason.MissingBlob(_) => true
           case _                               => false
       . assert(identity)
@@ -344,7 +344,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
     suite(m"Trees and overlays"):
       def entry(path: Text, content: Text): TreeEntry =
-        TreeEntry(TreePath(path), Lira.Hash(Lira.Hash.Domain.Blob, encode(content)))
+        TreeEntry(TreePath(path), Lira.Hash(Lira.Hash.Domain.Blob, encode(content)).bytes)
 
       def same(left: Lira.Tree, right: Lira.Tree): Boolean =
         left.encode.serialize[Hex] == right.encode.serialize[Hex]
@@ -476,7 +476,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         :   Atomization raises Discipline.Error =
 
           val atoms = content.map: (path, data) =>
-            Atom(path.text, Atom.Class.Replaceable, Lira.Hash(Lira.Hash.Domain.Atom(id), data))
+            Atom(path.text, Atom.Class.Replaceable, Lira.Hash(Lira.Hash.Domain.Atom(id), data).bytes)
 
           Atomization.of(id, atoms)
 
@@ -524,7 +524,7 @@ object Tests extends Suite(m"Reliquary Tests"):
       test(m"atoms blob rows out of hash order are rejected"):
         val one = Lira.Hash(Lira.Hash.Domain.Atom(t"opaque/1"), encode(t"1"))
         val two = Lira.Hash(Lira.Hash.Domain.Atom(t"opaque/1"), encode(t"2"))
-        val (low, high) = if Blob.compare(one, two) < 0 then (one, two) else (two, one)
+        val (low, high) = if Blob.compare(one.bytes, two.bytes) < 0 then (one, two) else (two, one)
 
         val rowOne = t"atom rigid  ${Lira.Hash.text(high)}  key-one"
         val rowTwo = t"atom rigid  ${Lira.Hash.text(low)}  key-two"
@@ -548,8 +548,8 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(identity)
 
       test(m"duplicate keys within a discipline are rejected"):
-        val atom = Atom(t"same", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"1")))
-        val other = Atom(t"same", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"2")))
+        val atom = Atom(t"same", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"1")).bytes)
+        val other = Atom(t"same", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"2")).bytes)
 
         capture[Discipline.Error](Atomization.of(t"x/1", List(atom, other))).reason match
           case Discipline.Error.Reason.Duplicate(_) => true
@@ -581,7 +581,7 @@ object Tests extends Suite(m"Reliquary Tests"):
       import revolution.Semver
 
       def atom(key: Text, atomClass: Atom.Class, content: Text): Atom =
-        Atom(key, atomClass, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(content)))
+        Atom(key, atomClass, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(content)).bytes)
 
       def release(atoms: Atom*): List[Atomization] =
         List(Atomization.of(t"x/1", atoms.to(List)))
@@ -871,8 +871,8 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(_ == Lira.Error.Reason.IneffectiveResource(t"r/taken.conf"))
 
       test(m"a manifest with profiles and integrations round-trips through its rendering"):
-        val rootTree = Lira.Tree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA))))
-        val altTree = Lira.Tree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(sjsirA))))
+        val rootTree = Lira.Tree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA).bytes)))
+        val altTree = Lira.Tree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(sjsirA).bytes)))
 
         val context = Discipline.Context(t"jvm")
         val atomizations = Discipline.Registry(List()).atomize(
@@ -916,7 +916,7 @@ object Tests extends Suite(m"Reliquary Tests"):
           t"built against the rudiments 0.x line"))
 
       test(m"two sections sharing a universe and integration are L131"):
-        val tree = Lira.Tree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA))))
+        val tree = Lira.Tree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA).bytes)))
 
         val manifest = Lira.Manifest(
           module      = t"example-core",
@@ -1060,6 +1060,117 @@ object Tests extends Suite(m"Reliquary Tests"):
           case _                                    => false
       . assert(identity)
 
+    suite(m"Manifest decoding"):
+      val hash = Lira.Hash.text(Lira.Hash(Lira.Hash.Domain.Blob, encode(t"content")))
+
+      // A manifest body for the derived decoder alone: `decode` runs after `read` has validated
+      // the document against the schema, so these documents carry no pragma and are not validated.
+      def manifest(body: String): Tel = encode(Text(body.stripMargin.stripLeading)).read[Tel]
+
+      val complete = manifest(s"""
+        |module example
+        |lineage $hash
+        |resource export
+        |  path r/exported.conf
+        |api
+        |  discipline opaque/1
+        |  atoms $hash
+        |section jvm
+        |  tree $hash
+        |  requires
+        |    module host
+        |    api $hash
+        |payload
+        |  compression brotli
+        |  length 0
+        |  hash $hash
+        |""")
+
+      def invalid(tel: Tel): Boolean =
+        capture[Lira.Error](Lira.Manifest.decode(tel)).reason match
+          case Lira.Error.Reason.InvalidManifest(_) => true
+          case _                                    => false
+
+      test(m"top-level scalars and records decode"):
+        val decoded = Lira.Manifest.decode(complete)
+        (decoded.module, decoded.lineage.map { hash => Lira.Hash.text(hash.bytes) }, decoded.payload.length)
+      . assert(_ == (t"example", List(hash), 0L))
+
+      test(m"a section's realm is read from its inline atom"):
+        Lira.Manifest.decode(complete).section.map(_.realm)
+      . assert(_ == List(t"jvm"))
+
+      test(m"a resource's mode is read from its inline atom"):
+        Lira.Manifest.decode(complete).resource.map(_.mode)
+      . assert(_ == List(Lira.Manifest.ResourceMode.Export))
+
+      test(m"a nested requires record decodes"):
+        Lira.Manifest.decode(complete).section.flatMap(_.requires).map(_.module)
+      . assert(_ == List(t"host"))
+
+      test(m"a missing payload is an invalid manifest"):
+        invalid(manifest(s"""
+          |module example
+          |lineage $hash
+          |api
+          |  discipline opaque/1
+          |  atoms $hash
+          |section jvm
+          |  tree $hash
+          |"""))
+      . assert(identity)
+
+      test(m"a malformed hash is an invalid manifest"):
+        invalid(manifest(s"""
+          |module example
+          |lineage not-a-hash
+          |api
+          |  discipline opaque/1
+          |  atoms $hash
+          |section jvm
+          |  tree $hash
+          |payload
+          |  compression brotli
+          |  length 0
+          |  hash $hash
+          |"""))
+      . assert(identity)
+
+      test(m"an unknown resource mode is an invalid manifest"):
+        invalid(manifest(s"""
+          |module example
+          |lineage $hash
+          |resource keep
+          |  path r/exported.conf
+          |api
+          |  discipline opaque/1
+          |  atoms $hash
+          |section jvm
+          |  tree $hash
+          |payload
+          |  compression brotli
+          |  length 0
+          |  hash $hash
+          |"""))
+      . assert(identity)
+
+      test(m"a malformed version is an invalid manifest"):
+        invalid(manifest(s"""
+          |module example
+          |version 1.x
+          |lineage $hash
+          |api
+          |  discipline opaque/1
+          |  atoms $hash
+          |section jvm
+          |  tree $hash
+          |payload
+          |  compression brotli
+          |  length 0
+          |  hash $hash
+          |"""))
+      . assert(identity)
+
     suite(m"Manifest signing"):
       import enigmatic.MlDsa
       import gastronomy.Signing
@@ -1186,7 +1297,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
         val context = Discipline.Context(t"jvm")
         val registry = Discipline.Registry(List())
-        val tree = Lira.Tree.of(List(TreeEntry(TreePath(t"schema.tel"), blob(schemaBytes))))
+        val tree = Lira.Tree.of(List(TreeEntry(TreePath(t"schema.tel"), blob(schemaBytes).bytes)))
         val atomizations = registry.atomize(List((TreePath(t"schema.tel"), schemaBytes)), context)
         val atomsData = AtomsBlob.encode(atomizations.stdlib.head)
         val snapshot = Snapshot(atomizations)
@@ -1320,7 +1431,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
       def stub
         ( module:       Text,
-          lineage:      List[Data],
+          lineage:      List[Lira.Hash],
           owns:         List[Text]                     = List(),
           resources:    List[Lira.Manifest.Resource]    = List(),
           deps:         List[Lira.Manifest.Dependency]  = List(),
@@ -1624,7 +1735,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         val snapshot = Snapshot(atomizations)
 
         val entries = (apiItems ++ extraItems).map: pair =>
-          TreeEntry(pair(0), blob(pair(1)))
+          TreeEntry(pair(0), blob(pair(1)).bytes)
 
         val tree = Lira.Tree.of(entries.to(List))
 
@@ -1690,10 +1801,10 @@ object Tests extends Suite(m"Reliquary Tests"):
 
       test(m"a used-set closes over replaceable references"):
         val rigid = Atom(t"target", Atom.Class.Rigid,
-          Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"rigid")))
+          Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"rigid")).bytes)
 
         val inline = Atom(t"caller[inline]", Atom.Class.Replaceable,
-          Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"body")),
+          Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"body")).bytes,
           references = List(Atom.Reference.Own(t"target")))
 
         val dependency = Atomization.of(t"x/1", List(rigid, inline))
@@ -1706,22 +1817,22 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(identity)
 
       test(m"a uses blob round-trips"):
-        val atoms = List(blob(encode(t"u1")), blob(encode(t"u2")))
+        val atoms = List(blob(encode(t"u1")).bytes, blob(encode(t"u2")).bytes)
         val (module, back) = UsesBlob.decode(UsesBlob.encode(t"dep", atoms))
         (module, back.stdlib.size)
       . assert(_ == (t"dep", 2))
 
       test(m"spanning holds iff the candidate carries every used atom"):
-        val one = Atom(t"a", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"1")))
-        val two = Atom(t"b", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"2")))
+        val one = Atom(t"a", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"1")).bytes)
+        val two = Atom(t"b", Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(t"x/1"), encode(t"2")).bytes)
 
         (UsesBlob.spanning(List(one.valueHash), List(one, two)),
          UsesBlob.spanning(List(one.valueHash, two.valueHash), List(one)))
       . assert(_ == (true, false))
 
       test(m"staleness detects replaced atoms in the used-set"):
-        val old = blob(encode(t"old"))
-        val neo = blob(encode(t"new"))
+        val old = blob(encode(t"old")).bytes
+        val neo = blob(encode(t"new")).bytes
 
         (UsesBlob.staleness(List(old), List(Replacement(old, neo))),
          UsesBlob.staleness(List(neo), List(Replacement(old, neo))))
@@ -1733,7 +1844,7 @@ object Tests extends Suite(m"Reliquary Tests"):
 
       def stub
         ( module:    Text,
-          lineage:   List[Data],
+          lineage:   List[Lira.Hash],
           deps:      List[Lira.Manifest.Dependency] = List(),
           section:   List[Section]                 = List(),
           profiles:  List[Lira.Manifest.Profile]    = List(),
@@ -1872,8 +1983,8 @@ object Tests extends Suite(m"Reliquary Tests"):
       def store(datas: List[Data]): Blobstore = BlobStream.read(BlobStream.write(datas))
 
       val tree = Lira.Tree.of(List(
-        TreeEntry(TreePath(t"a/A.class"), blob(classA)),
-        TreeEntry(TreePath(t"a/A.tasty"), blob(tastyA))))
+        TreeEntry(TreePath(t"a/A.class"), blob(classA).bytes),
+        TreeEntry(TreePath(t"a/A.tasty"), blob(tastyA).bytes)))
 
       test(m"derivation is byte-deterministic"):
         val blobstore = store(List(classA, tastyA))
@@ -1937,7 +2048,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         :   Atomization raises Discipline.Error =
 
           val atoms = content.map: (path, data) =>
-            Atom(path.text, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), data))
+            Atom(path.text, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), data).bytes)
 
           Atomization.of(id, atoms)
 
@@ -2018,7 +2129,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         val registry = Discipline.Registry(List())
         val wrong = List((TreePath(t"a/A.class"), sjsirA))
 
-        val tree = Lira.Tree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA))))
+        val tree = Lira.Tree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA).bytes)))
         val listing = AtomsBlob.encode(registry.atomize(wrong, context).stdlib.head)
         val snapshot = Snapshot(registry.atomize(wrong, context))
 
@@ -2063,7 +2174,7 @@ object Tests extends Suite(m"Reliquary Tests"):
           :   Atomization raises Discipline.Error =
 
             val atoms = content.map: (path, data) =>
-              Atom(path.text, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), data))
+              Atom(path.text, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), data).bytes)
 
             Atomization.of(id, atoms)
 
@@ -2144,14 +2255,14 @@ object Tests extends Suite(m"Reliquary Tests"):
           extraSection:  Boolean                        = false )
       :   Data =
 
-        val tree = Lira.Tree.of(List(TreeEntry(TreePath(t"capabilities"), blob(gitOnly))))
+        val tree = Lira.Tree.of(List(TreeEntry(TreePath(t"capabilities"), blob(gitOnly).bytes)))
 
         val atomization =
           CapabilityDiscipline.atomize(List((TreePath(t"capabilities"), gitOnly)), hostContext)
 
         val atomsData = AtomsBlob.encode(atomization)
         val snapshot = Snapshot(List(atomization))
-        val jvmTree = Lira.Tree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA))))
+        val jvmTree = Lira.Tree.of(List(TreeEntry(TreePath(t"a/A.class"), blob(classA).bytes)))
 
         val sections =
           val host = Section(t"host", integrationId, blob(tree.encode), requires = requires)
@@ -2234,7 +2345,7 @@ object Tests extends Suite(m"Reliquary Tests"):
           section = List(Section(t"jvm", tree = blob(encode(t"tree")), requires = requires)),
           payload = payloadStub(module))
 
-      def contractStub(module: Text, lineage: List[Data]): Lira.Manifest =
+      def contractStub(module: Text, lineage: List[Lira.Hash]): Lira.Manifest =
         Lira.Manifest(
           module  = module,
           lineage = lineage,
@@ -2299,7 +2410,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         }
 
         val used = { (data: Data) =>
-          if Blob.compare(data, usesHash) == 0
+          if Blob.compare(data, usesHash.bytes) == 0
           then scala.collection.immutable.Set(t"h1")
           else Unset
         }
@@ -2320,7 +2431,7 @@ object Tests extends Suite(m"Reliquary Tests"):
         }
 
         val used = { (data: Data) =>
-          if Blob.compare(data, usesHash) == 0
+          if Blob.compare(data, usesHash.bytes) == 0
           then scala.collection.immutable.Set(t"h1")
           else Unset
         }

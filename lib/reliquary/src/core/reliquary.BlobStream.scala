@@ -51,7 +51,7 @@ object BlobStream:
     val distinct = scala.collection.mutable.LinkedHashMap[Text, Blob]()
 
     blobs.each: data =>
-      val hash = Lira.Hash(Lira.Hash.Domain.Blob, data)
+      val hash = Lira.Hash(Lira.Hash.Domain.Blob, data).bytes
       distinct.getOrElseUpdate(Lira.Hash.text(hash), Blob(hash, data))
 
     val sorted = distinct.values.toList.sortWith: (a, b) => Blob.compare(a.hash, b.hash) < 0
@@ -91,7 +91,7 @@ object BlobStream:
       val content = Array.allocate[Byte](length.toInt)
       System.arraycopy(Array.unsafeJvm(data), decoded.next, content.raw, 0, length.toInt)
       val bytes = Array.freeze(content)
-      val hash = Lira.Hash(Lira.Hash.Domain.Blob, bytes)
+      val hash = Lira.Hash(Lira.Hash.Domain.Blob, bytes).bytes
 
       if previous != null then
         val order = Blob.compare(previous.nn, hash)

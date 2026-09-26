@@ -71,7 +71,7 @@ object CHeaderAtomizer:
     if value then out.append(1) else out.append(0)
 
   private def hash(encode: Scribe[Byte] => Unit): Data =
-    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.collect[Byte]()(encode))
+    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.collect[Byte]()(encode)).bytes
 
   private def encode(out: Scribe[Byte], typed: Foreign.Type): Unit =
     typed match

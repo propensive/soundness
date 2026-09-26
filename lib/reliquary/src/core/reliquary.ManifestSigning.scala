@@ -60,13 +60,13 @@ object ManifestSigning:
   // is out of band (§15.3); keys are in the algorithm's standard encoding as produced by
   // enigmatic (SPKI for ML-DSA).
   case class Keyring(keys: List[Data]):
-    def find(fingerprint: Data): Optional[Data] =
+    def find(fingerprint: Lira.Hash): Optional[Data] =
       def matches(key: Data): Boolean =
-        Blob.compare(fingerprint, ManifestSigning.fingerprint(key)) == 0
+        Blob.compare(fingerprint.bytes, ManifestSigning.fingerprint(key).bytes) == 0
 
       keys.seek(matches)
 
-  def fingerprint(publicKey: Data): Data = Lira.Hash(Lira.Hash.Domain.Key, publicKey)
+  def fingerprint(publicKey: Data): Lira.Hash = Lira.Hash(Lira.Hash.Domain.Key, publicKey)
 
   // The signing input: the manifest's semantic model, minus signatures, canonically encoded.
   // The typed manifest is re-rendered and re-assigned rather than mutated as presentation —
@@ -88,7 +88,7 @@ object ManifestSigning:
           val element = Tel.Type.assign(document.root, Lira.Schemas.lira)
           Bintel.encode(element, Lira.Schemas.lira)
 
-    Lira.Hash(Lira.Hash.Domain.Manifest, bytes)
+    Lira.Hash(Lira.Hash.Domain.Manifest, bytes).bytes
 
   // Appends one signature record; the existing records are untouched, so co-signing is stable.
   def sign

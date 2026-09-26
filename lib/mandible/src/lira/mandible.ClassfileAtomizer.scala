@@ -123,7 +123,7 @@ object ClassfileAtomizer:
     values.each(utf8(out, _))
 
   private def hash(encode: Scribe[Byte] => Unit): Data =
-    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.collect[Byte]()(encode))
+    Lira.Hash(Lira.Hash.Domain.Atom(id), Array.collect[Byte]()(encode)).bytes
 
   // --- the presented member set -----------------------------------------------------------------
 
