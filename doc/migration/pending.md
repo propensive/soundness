@@ -546,6 +546,40 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `revolution.semver` instead of `enigmatic.core` and `revolution.core`; a consumer that reached
   `enigmatic.core`, `aperture.core`, `revolution.core`'s manifest types or `turbulence` only
   through reliquary must declare them. (#2082)
+- `reliquary.Lira.Hash`, previously only an object, is now also `case class Hash private(bytes:
+  Data)`, with equality by content (`Blob.compare(bytes, that.bytes) == 0`) and a matching
+  `hashCode`. The companion keeps `epoch`, `size`, `Domain`, `text(hash: Data): Text` and
+  `emptyBlob`, and gains `text(hash: Lira.Hash): Text`. `Lira.Hash.apply(domain: Lira.Hash.Domain,
+  content: Data)` returns `Lira.Hash` instead of `Data`; the bytes it used to return are
+  `Lira.Hash(domain, content).bytes`. A `Lira.Hash` is not a `Data`: pass `hash.bytes` where bytes
+  are required (blob-store lookups, `Blob.compare`, `Atom#valueHash`, `TreeEntry#blob`,
+  `Blob#hash`, `serialize`). Fields retyped from `Data` to `Lira.Hash` (with `Optional[Data]` →
+  `Optional[Lira.Hash]` and `List[Data]` → `List[Lira.Hash]`): `Lira.Manifest#lineage`,
+  `Lira.Manifest#delta`, `Lira.Manifest.Api#atoms`, `Lira.Manifest.Dependency#api`, `#build`,
+  `#uses`, `#spans`, `Lira.Manifest.Requires#api`, `#uses`, `Lira.Manifest.Payload#hash`,
+  `Lira.Manifest.Signature#key`, `reliquary.Section#tree`, `Section#derivative`. Result types
+  retyped from `Data` to `Lira.Hash`: `reliquary.Snapshot.apply(atomizations: List[Atomization])`,
+  `reliquary.Lira.Payload.hash(blobStream: Data)`, `reliquary.ManifestSigning.fingerprint(publicKey:
+  Data)`, `reliquary.Derivative.hash(tree: Lira.Tree, store: Blobstore)`. Parameters retyped from
+  `Data` to `Lira.Hash`: `reliquary.Lira.Payload.decompress(compressed: Data, length: Long,
+  declaredHash: Lira.Hash)`, `reliquary.Lineage.check(lineage: List[Lira.Hash], snapshot:
+  Lira.Hash)`, `reliquary.Lineage.contains(lineage: List[Lira.Hash], required: Lira.Hash)`,
+  `reliquary.ManifestSigning.Keyring#find(fingerprint: Lira.Hash)`,
+  `reliquary.Buildpath#byDerivative(hash: Lira.Hash)`, `reliquary.Versioning.extendLineage(lineage:
+  List[Lira.Hash], snapshot: Lira.Hash, grade: Grade, forceMajor: Boolean = false): List[Lira.Hash]`
+  and `reliquary.LiraAssembler.assemble`'s `lineage: List[Lira.Hash] = List()`. Unchanged:
+  `reliquary.Lira.Delta`, `reliquary.Lira.Tree`, `TreeEntry`, `Atom` and `Blob` still carry their
+  hashes as `Data`, and `Buildpath#hostRequirements`'s `used: Data => …` still receives bytes. (#PR)
+- `reliquary.Lira.Manifest.decode(tel: Tel): Lira.Manifest raises Lira.Error` is now derived
+  from the manifest case classes by stratiform's `Tel.Decodable`. The result for a valid manifest
+  is unchanged. For an invalid one the `Lira.Error.Reason.InvalidManifest(detail)` detail text
+  changed: it is the rendering of the underlying `stratiform.Tel.Error.Reason` (for example
+  `Absent` for a missing required field, `NotScalar(value, expected)` for a hash, tree path,
+  guarantee or resource mode that does not parse) or `bad version <text>` for a version
+  `revolution.Semver` rejects, where previously it was prose such as `the payload record is
+  missing or repeated` or `a hash is malformed`. A non-repeatable field that appears twice is no
+  longer rejected by `decode` itself (the first occurrence is read); `Lira.read` still rejects it
+  through schema validation before decoding. (#PR)
 
 ## revolution
 

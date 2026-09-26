@@ -121,7 +121,7 @@ object CapabilityDiscipline extends Discipline:
         predicate.lay(out.append(0)): text =>
           out.append(1)
           out.append(Array.unsafeFrozen(text.s.getBytes("UTF-8").nn))
-      Atom(name, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), encoding))
+      Atom(name, Atom.Class.Rigid, Lira.Hash(Lira.Hash.Domain.Atom(id), encoding).bytes)
 
     // `entries` is the stdlib `Vector` the TEL reader hands back; the listing crosses to the
     // native `List` here, at the boundary.

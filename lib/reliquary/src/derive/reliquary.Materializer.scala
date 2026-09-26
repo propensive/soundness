@@ -75,7 +75,7 @@ object Materializer:
       path.serving(universe, lira.manifest.module) == universe
 
     val jars = serving.map: lira =>
-      val identity = lira.manifest.payload.hash.serialize[Hex]
+      val identity = lira.manifest.payload.hash.bytes.serialize[Hex]
       val integration = assignment(lira.manifest.module)
 
       // The cache slot is per (release, universe, integration): integrations share a payload

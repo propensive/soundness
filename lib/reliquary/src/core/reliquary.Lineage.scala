@@ -46,13 +46,13 @@ import Lira.Error.Reason
 object Lineage:
 
   // L109: the final entry must equal the release's own snapshot.
-  def check(lineage: List[Data], snapshot: Data): Unit raises Lira.Error =
+  def check(lineage: List[Lira.Hash], snapshot: Lira.Hash): Unit raises Lira.Error =
     // `last` on a linked list is linear (hence the `linearSize` import above); a lineage is a
     // module's release history, walked once per verification.
     lineage.last.lay(abort(Lira.Error(Reason.LineageMismatch))): entry =>
-      if Blob.compare(entry, snapshot) != 0 then abort(Lira.Error(Reason.LineageMismatch))
+      if Blob.compare(entry.bytes, snapshot.bytes) != 0 then abort(Lira.Error(Reason.LineageMismatch))
 
   // §13.2: a candidate release satisfies a requirement iff the required snapshot appears in the
   // candidate's lineage.
-  def contains(lineage: List[Data], required: Data): Boolean =
-    lineage.exists: snapshot => Blob.compare(snapshot, required) == 0
+  def contains(lineage: List[Lira.Hash], required: Lira.Hash): Boolean =
+    lineage.exists: snapshot => Blob.compare(snapshot.bytes, required.bytes) == 0

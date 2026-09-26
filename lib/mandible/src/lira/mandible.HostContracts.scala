@@ -73,12 +73,12 @@ object HostContracts:
     val results = scala.collection.mutable.ListBuffer[(Text, Data)]()
 
     var previous: Optional[List[Atomization]] = Unset
-    var lineage: List[Data] = List()
+    var lineage: List[Lira.Hash] = List()
     var version: Semver = Semver(0, 1, 0)
 
     releases.each: release =>
       val atomizations = registry.atomize(release.content, context)
-      val snapshot = Snapshot(atomizations)
+      val snapshot: Lira.Hash = Snapshot(atomizations)
 
       // Bound before the lambda reads it: an `Optional`-typed capture read inside a combinator's
       // lambda is the `wildApprox` crash's trigger.
@@ -91,9 +91,7 @@ object HostContracts:
 
           case Grade.Minor =>
             version = Semver(version.major, version.minor + 1, 0)
-            // stdlib bridge: the `Concatenable` result freshens the frozen array behind `Data`,
-            // and `lineage`'s declared `List[Data]` cannot admit the new capability.
-            lineage = (lineage.stdlib :+ snapshot).to(List)
+            lineage = List.append(lineage, snapshot)
 
           case Grade.Major =>
             if !allowMajor(release.tag)

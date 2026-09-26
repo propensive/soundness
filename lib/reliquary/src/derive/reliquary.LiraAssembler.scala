@@ -67,7 +67,7 @@ object LiraAssembler:
       disciplines: Discipline.Registry,
       version:     Optional[Semver]              = Unset,
       tag:         List[Text]                    = List(),
-      lineage:     List[Data]                    = List(),
+      lineage:     List[Lira.Hash]               = List(),
       toolchain:   List[Lira.Manifest.Tool]       = List(),
       owns:        List[Text]                    = List(),
       profile:     List[Lira.Manifest.Profile]     = List(),
@@ -93,7 +93,7 @@ object LiraAssembler:
 
     def treeOf(input: SectionInput): Lira.Tree =
       Lira.Tree.of:
-        input.content.map: pair => TreeEntry(pair(0), Lira.Hash(Lira.Hash.Domain.Blob, pair(1)))
+        input.content.map: pair => TreeEntry(pair(0), Lira.Hash(Lira.Hash.Domain.Blob, pair(1)).bytes)
 
     // Each section's content is atomized independently; the atom sets must be identical, as
     // (discipline, key, class, value hash), for the release to present one API on every universe
@@ -186,7 +186,7 @@ object LiraAssembler:
       datas
 
     val store = Blobstore:
-      contentBlobs.map: data => Blob(Lira.Hash(Lira.Hash.Domain.Blob, data), data)
+      contentBlobs.map: data => Blob(Lira.Hash(Lira.Hash.Domain.Blob, data).bytes, data)
 
     val atomsBlobs: List[Data] = rootAtoms.map: atomization => AtomsBlob.encode(atomization)
     val listings: List[(Atomization, Data)] = rootAtoms.zip(atomsBlobs)

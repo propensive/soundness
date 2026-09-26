@@ -396,6 +396,35 @@ object Lira:
   extends fulminate.Error(640, reason.number)(m"the LIRA operation failed because $reason")
 
   // LiraHash → Lira.Hash
+  // A LIRA hash: `Hash.size` frozen bytes. The class gives the manifest's hash fields a type of
+  // their own — with a companion to carry their TEL decoder, which a bare `Data` field has none to
+  // hold — and keeps an arbitrary `Data` from standing in for a hash. A class rather than an opaque
+  // alias over the bytes: an alias bounded by `Data` makes every capture-checked consumer stamp a
+  // fresh read capability on the abstract type (`Array` is a mutable class), and the extension
+  // method an alias would need for its bytes trips the compiler's `wildApprox` assertion when it
+  // is applied inside a lambda under live type variables, which is where hashes are mostly read.
+  // Equality is by content, as `Blob.compare` defines it.
+  case class Hash private(bytes: Data):
+    override def equals(that: Any): Boolean = that.asInstanceOf[Matchable] match
+      case that: Hash => Blob.compare(bytes, that.bytes) == 0
+      case _          => false
+
+    override def hashCode: Int = java.util.Arrays.hashCode(Array.unsafeJvm(bytes))
+
+  // A scalar codec for the derived manifest decoder: a field's single atom, converted by `parse`,
+  // which yields `Unset` for text the schema's validator would have rejected. An empty field is
+  // absent; unconvertible text is a malformed scalar, named by `expected`.
+  private[reliquary] def scalar[value](expected: Text)(parse: Text => Optional[value])
+    ( using Tactic[Tel.Error] )
+  :   value is Tel.Decodable =
+
+    Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar): tel =>
+      import errorDiagnostics.emptyDiagnostics
+
+      if tel.atomTexts.nil then abort(Tel.Error(Tel.Error.Reason.Absent))
+      else parse(tel.primaryAtom).or:
+        abort(Tel.Error(Tel.Error.Reason.NotScalar(tel.primaryAtom, expected)))
+
   // Domain-separated hashing per §7.1 of the LIRA specification: every hash the format defines is
   // `BLAKE3-256(utf8(domain) ++ 0x00 ++ content)`, with the domain string carrying the `lira/1`
   // format epoch. Atom domains additionally carry the full discipline identifier, so atoms from
@@ -403,6 +432,22 @@ object Lira:
   object Hash:
     val epoch: Text = t"lira/1"
     val size: Int = 32
+
+    // Reads a hash from its 32-character BASE-256 spelling (§7); `Unset` for anything else.
+    def parse(text: Text): Optional[Hash] =
+      // Bound to a typed local before it is read: `Data` is capture-annotated, and reading such a
+      // union inside a lambda whose caller still has live type variables crashes the compiler's
+      // implicit-scope collection.
+      val decoded: Optional[Data] = safely(Base256.decodeStrict(text))
+
+      decoded.lay[Optional[Hash]](Unset): data =>
+        if data.length == size then new Hash(data) else Unset
+
+    // The derived manifest decoder reads a hash from a field's atom. `read` has already run the
+    // schema's `base-256-hash` validator over the text, so a failure here means the codec was
+    // used on an unvalidated document; it is reported as a malformed scalar.
+    given decodable: Tactic[Tel.Error] => Hash is Tel.Decodable =
+      Lira.scalar[Hash](t"Hash")(parse)
 
     // The `0x00` byte separating the domain from the content; a fresh byte array is
     // zero-initialized, so freezing a unit array yields it directly.
@@ -420,15 +465,17 @@ object Lira:
         case Derivative       => t"$epoch:derivative"
         case Atom(discipline) => t"$epoch:atom:$discipline"
 
-    def apply(domain: Domain, content: Data): Data =
+    def apply(domain: Domain, content: Data): Hash =
       val prefix: Data = charEncoders.utf8Encoder.encoded(domain.text)
       val buffer = Array.allocate[Byte](prefix.length + 1 + content.length)
       System.arraycopy(Array.unsafeJvm(prefix), 0, buffer.raw, 0, prefix.length)
       System.arraycopy(Array.unsafeJvm(content), 0, buffer.raw, prefix.length + 1, content.length)
 
-      Blake3.hashOf(Array.freeze(buffer))
+      new Hash(Blake3.hashOf(Array.freeze(buffer)))
 
-    // The textual form of any LIRA hash: 32 BASE-256 characters (§7).
+    // The textual form of any LIRA hash: 32 BASE-256 characters (§7). The `Data` form serves the
+    // hashes the blobs carry as bare bytes (atom value hashes, tree rows).
+    def text(hash: Hash): Text = Base256.encode(hash.bytes)
     def text(hash: Data): Text = Base256.encode(hash)
 
     // The hash of the empty byte string in the blob domain, pinned as a golden value guarding the
@@ -438,7 +485,7 @@ object Lira:
   // LiraManifest → Lira.Manifest
   object Manifest:
     case class Tool(name: Text, version: Text, flag: List[Text] = List())
-    case class Api(discipline: Text, atoms: Data)
+    case class Api(discipline: Text, atoms: Lira.Hash)
 
     // The guarantee levels of §11.5 that can be claimed or broken. Behavior is absent by design:
     // no hash scheme certifies it (§18), so it is not expressible in a `breaks` field.
@@ -454,6 +501,9 @@ object Lira:
         case "linkage"       => Linkage
         case "recompilation" => Recompilation
         case _               => Unset
+
+      given decodable: Tactic[Tel.Error] => Guarantee is Tel.Decodable =
+        Lira.scalar[Guarantee](t"Guarantee")(parse)
 
     // An ecosystem profile this release claims to satisfy (§11.6), with the guarantee levels its
     // lineage step did not preserve (§12.4). `breaks` being empty means the step preserved every
@@ -477,14 +527,14 @@ object Lira:
     // satisfied in the same universe it applies to.
     case class Dependency
       ( module:      Text,
-        api:         Data,
-        version:     Optional[Semver] = Unset,
-        build:       Optional[Data]   = Unset,
-        universe:    List[Text]       = List(),
-        serves:      Optional[Text]   = Unset,
-        integration: List[Text]       = List(),
-        uses:        Optional[Data]   = Unset,
-        spans:       List[Data]       = List() ):
+        api:         Lira.Hash,
+        version:     Optional[Semver]    = Unset,
+        build:       Optional[Lira.Hash] = Unset,
+        universe:    List[Text]          = List(),
+        serves:      Optional[Text]      = Unset,
+        integration: List[Text]          = List(),
+        uses:        Optional[Lira.Hash] = Unset,
+        spans:       List[Lira.Hash]     = List() ):
 
       // §13.2: the two scopes are independent and conjunctive. An empty list on either axis means
       // "every value of that axis", which is how a dependency common to all of them is declared
@@ -503,9 +553,9 @@ object Lira:
     // declares (§16), which is why the environment itself is probed at a third moment.
     case class Requires
       ( module:  Text,
-        api:     Data,
-        version: Optional[Semver] = Unset,
-        uses:    Optional[Data]   = Unset )
+        api:     Lira.Hash,
+        version: Optional[Semver]    = Unset,
+        uses:    Optional[Lira.Hash] = Unset )
 
     // How a declared resource participates in the algebra (§11.4). `Export` guarantees the name is
     // present; `Track` additionally tracks the bytes as replaceable churn; `Scan` claims a whole
@@ -525,187 +575,30 @@ object Lira:
         case "scan"   => Scan
         case _        => Unset
 
+      given decodable: Tactic[Tel.Error] => ResourceMode is Tel.Decodable =
+        Lira.scalar[ResourceMode](t"ResourceMode")(parse)
+
     // One resource claim (§11.4): an authorial statement, like `owns`, that parameterizes the
     // `resource/1` discipline's claiming.
     case class Resource(mode: ResourceMode, path: TreePath)
 
-    case class Payload(compression: Text, length: Long, hash: Data)
-    case class Signature(signer: Text, algorithm: Text, key: Data, value: Text)
+    case class Payload(compression: Text, length: Long, hash: Lira.Hash)
+    case class Signature(signer: Text, algorithm: Text, key: Lira.Hash, value: Text)
 
-    private def bad(detail: Text): Lira.Error =
-      import errorDiagnostics.emptyDiagnostics
-      Lira.Error(Reason.InvalidManifest(detail))
-
-    private def texts(compound: Tel.Compound): scala.collection.immutable.Vector[Text] =
-      compound.atoms.readable.collect:
-        case Tel.Atom.Inline(text, _)  => text
-        case Tel.Atom.Source(text)     => text
-        case Tel.Atom.Literal(_, text) => text
-
-      . toVector
-
-    private def one(compound: Tel.Compound): Text raises Lira.Error =
-      val atoms = texts(compound)
-      if atoms.length != 1 then abort(bad(t"the ${compound.keyword} field needs exactly one atom"))
-      atoms(0)
-
-    private def hash(text: Text): Data raises Lira.Error =
+    // The typed view of a type-assigned manifest document, derived from the case classes by
+    // stratiform's `Tel.Decodable`: a record is a child compound, a repeated field is repeated
+    // compounds, and the inline atom of `section <realm>` and `resource <mode>` fills the
+    // record's first field positionally. Every scalar's text was accepted by the schema's
+    // validators in `read`, so the field codecs only convert. The `Semver` codec is revolution's
+    // own, which reports through its own error type; it is caught here alongside the TEL one.
+    def decode(tel: Tel): Lira.Manifest raises Lira.Error =
       import errorDiagnostics.emptyDiagnostics
 
       mitigate:
-        case Base256.Error(_) => bad(t"a hash is malformed")
+        case Tel.Error(reason, _)     => Lira.Error(Reason.InvalidManifest(t"$reason"))
+        case Semver.Error(version, _) => Lira.Error(Reason.InvalidManifest(t"bad version $version"))
 
-      . protect(Base256.decodeStrict(text))
-
-    private def semver(text: Text): Semver raises Lira.Error =
-      val parts = text.s.split("\\.", -1).nn
-      if parts.length != 3 then abort(bad(t"the version is not `major.minor.patch`"))
-      Semver(parts(0).nn.toLong, parts(1).nn.toLong, parts(2).nn.toLong)
-
-    private def children(compound: Tel.Compound): scala.collection.immutable.Vector[Tel.Compound] =
-      compound.children.readable.flatMap(_.compounds.readable).toVector
-
-    private def field(compounds: scala.collection.immutable.Vector[Tel.Compound], keyword: Text)
-    :   Optional[Text] raises Lira.Error =
-
-      compounds.filter(_.keyword == keyword) match
-        case scala.collection.immutable.Vector()         => Unset
-        case scala.collection.immutable.Vector(compound) => one(compound)
-
-        case _ =>
-          abort(bad(t"the $keyword field appears more than once"))
-
-    private def required(compounds: scala.collection.immutable.Vector[Tel.Compound], keyword: Text)
-    :   Text raises Lira.Error =
-
-      field(compounds, keyword).or(abort(bad(t"the $keyword field is missing")))
-
-    private def repeated(compounds: scala.collection.immutable.Vector[Tel.Compound], keyword: Text)
-    :   scala.collection.immutable.Vector[Text] raises Lira.Error =
-
-      compounds.filter(_.keyword == keyword).flatMap: compound =>
-        val atoms = texts(compound)
-        if atoms.isEmpty then abort(bad(t"the $keyword field needs at least one atom"))
-        atoms
-
-    // Extracts the typed view from a type-assigned manifest document.
-    def decode(tel: Tel): Lira.Manifest raises Lira.Error =
-      val top = tel.childCompounds.readable.toVector
-
-      val toolchain = top.filter(_.keyword == t"toolchain").map: compound =>
-        val fields = children(compound)
-
-        Tool
-          ( required(fields, t"name"),
-            required(fields, t"version"),
-            repeated(fields, t"flag").to(List) )
-
-      val api = top.filter(_.keyword == t"api").map: compound =>
-        val fields = children(compound)
-        Api(required(fields, t"discipline"), hash(required(fields, t"atoms")))
-
-      val dependency = top.filter(_.keyword == t"dependency").map: compound =>
-        val fields = children(compound)
-
-        Dependency
-          ( module      = required(fields, t"module"),
-            api         = hash(required(fields, t"api")),
-            version     = field(fields, t"version").let(semver(_)),
-            build       = field(fields, t"build").let(hash(_)),
-            universe    = repeated(fields, t"universe").to(List),
-            serves      = field(fields, t"serves"),
-            integration = repeated(fields, t"integration").to(List),
-            uses        = field(fields, t"uses").let(hash(_)),
-            spans       = (repeated(fields, t"spans").map(hash(_))).to(List) )
-
-      val resource = top.filter(_.keyword == t"resource").map: compound =>
-        val mode = texts(compound) match
-          case scala.collection.immutable.Vector(mode) =>
-            ResourceMode.parse(mode).or(abort(bad(t"$mode is not a resource mode")))
-
-          case _ =>
-            abort(bad(t"a resource needs exactly one mode"))
-
-        Resource(mode, TreePath(required(children(compound), t"path")))
-
-      val profile = top.filter(_.keyword == t"profile").map: compound =>
-        val fields = children(compound)
-
-        val breaks = repeated(fields, t"breaks").map: keyword =>
-          Guarantee.parse(keyword).or(abort(bad(t"$keyword is not a guarantee level")))
-
-        Profile(required(fields, t"id"), breaks.to(List))
-
-      val integration = top.filter(_.keyword == t"integration").map: compound =>
-        val fields = children(compound)
-
-        Integration
-          ( id    = required(fields, t"id"),
-            rank  = field(fields, t"rank").let { text => text.s.toLong },
-            label = field(fields, t"label") )
-
-      val section = top.filter(_.keyword == t"section").map: compound =>
-        val realm = texts(compound) match
-          case scala.collection.immutable.Vector(realm) => realm
-
-          case _ =>
-            abort(bad(t"a section needs exactly one realm"))
-
-        val fields = children(compound)
-
-        val requires = fields.filter(_.keyword == t"requires").map: requirement =>
-          val subfields = children(requirement)
-
-          Requires
-            ( module  = required(subfields, t"module"),
-              api     = hash(required(subfields, t"api")),
-              version = field(subfields, t"version").let(semver(_)),
-              uses    = field(subfields, t"uses").let(hash(_)) )
-
-        Section
-          ( realm       = realm,
-            integration = field(fields, t"integration"),
-            tree        = hash(required(fields, t"tree")),
-            delete      = (repeated(fields, t"delete").map(TreePath(_))).to(List),
-            derivative  = field(fields, t"derivative").let(hash(_)),
-            requires    = requires.to(List) )
-
-      val payload = top.filter(_.keyword == t"payload").toList match
-        case scala.List(compound) =>
-          val fields = children(compound)
-
-          Payload
-            ( required(fields, t"compression"),
-              required(fields, t"length").s.toLong,
-              hash(required(fields, t"hash")) )
-
-        case _ => abort(bad(t"the payload record is missing or repeated"))
-
-      val signature = top.filter(_.keyword == t"signature").map: compound =>
-        val fields = children(compound)
-
-        Signature
-          ( required(fields, t"signer"),
-            required(fields, t"algorithm"),
-            hash(required(fields, t"key")),
-            required(fields, t"value") )
-
-      Lira.Manifest
-        ( module      = required(top, t"module"),
-          version     = field(top, t"version").let(semver(_)),
-          tag         = repeated(top, t"tag").to(List),
-          lineage     = (repeated(top, t"lineage").map(hash(_))).to(List),
-          toolchain   = toolchain.to(List),
-          owns        = repeated(top, t"owns").to(List),
-          resource    = resource.to(List),
-          api         = api.to(List),
-          profile     = profile.to(List),
-          integration = integration.to(List),
-          dependency  = dependency.to(List),
-          delta       = field(top, t"delta").let(hash(_)),
-          section     = section.to(List),
-          payload     = payload,
-          signature   = signature.to(List) )
+      . protect(tel.as[Lira.Manifest])
 
   // The typed view of a `.lira` manifest (§14). Decoding always retains the parsed `Tel` alongside
   // (in `Lira`): signing and reserialization operate on the TEL semantic model; this class is the
@@ -715,7 +608,7 @@ object Lira:
     ( module:      Text,
       version:     Optional[Semver]                = Unset,
       tag:         List[Text]                      = List(),
-      lineage:     List[Data],
+      lineage:     List[Lira.Hash],
       toolchain:   List[Lira.Manifest.Tool]         = List(),
       owns:        List[Text]                      = List(),
       resource:    List[Lira.Manifest.Resource]     = List(),
@@ -723,7 +616,7 @@ object Lira:
       profile:     List[Lira.Manifest.Profile]      = List(),
       integration: List[Lira.Manifest.Integration]  = List(),
       dependency:  List[Lira.Manifest.Dependency]   = List(),
-      delta:       Optional[Data]                  = Unset,
+      delta:       Optional[Lira.Hash]             = Unset,
       section:     List[Section],
       payload:     Lira.Manifest.Payload,
       signature:   List[Lira.Manifest.Signature]    = List() ):
@@ -789,9 +682,9 @@ object Lira:
 
       dependency.each: dependency =>
         val version: Optional[Semver] = dependency.version
-        val build: Optional[Data] = dependency.build
+        val build: Optional[Lira.Hash] = dependency.build
         val serves: Optional[Text] = dependency.serves
-        val uses: Optional[Data] = dependency.uses
+        val uses: Optional[Lira.Hash] = dependency.uses
 
         lines += "dependency"
         lines += s"  module ${dependency.module}"
@@ -811,7 +704,7 @@ object Lira:
 
       section.each: section =>
         val integration: Optional[Text] = section.integration
-        val derivative: Optional[Data] = section.derivative
+        val derivative: Optional[Lira.Hash] = section.derivative
 
         lines += s"section ${section.realm}"
         integration.let: id => lines += s"  integration $id"
@@ -821,7 +714,7 @@ object Lira:
 
         section.requires.each: requirement =>
           val version: Optional[Semver] = requirement.version
-          val uses: Optional[Data] = requirement.uses
+          val uses: Optional[Lira.Hash] = requirement.uses
 
           lines += "  requires"
           lines += s"    module ${requirement.module}"
@@ -860,15 +753,15 @@ object Lira:
 
     def compress(blobStream: Data): Data = blobStream.compress[Brotli]
 
-    def hash(blobStream: Data): Data = Lira.Hash(Lira.Hash.Domain.Blob, blobStream)
+    def hash(blobStream: Data): Lira.Hash = Lira.Hash(Lira.Hash.Domain.Blob, blobStream)
 
-    def decompress(compressed: Data, length: Long, declaredHash: Data): Data raises Lira.Error =
+    def decompress(compressed: Data, length: Long, declaredHash: Lira.Hash): Data raises Lira.Error =
       val result =
         try compressed.decompress[Brotli] catch case error: Exception =>
           abort(Lira.Error(Reason.MalformedPayload(t"the payload does not decompress")))
 
       if result.length.toLong != length then abort(Lira.Error(Reason.PayloadLength(length)))
-      if Blob.compare(hash(result), declaredHash) != 0 then abort(Lira.Error(Reason.PayloadHash))
+      if hash(result) != declaredHash then abort(Lira.Error(Reason.PayloadHash))
 
       result
 

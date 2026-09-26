@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import hieroglyph.*
+import stratiform.*
 import vacuous.*
 
 import Lira.Error.Reason
@@ -56,6 +57,12 @@ object TreePath:
   def apply(text: Text): TreePath raises Lira.Error =
     check(text).let: detail => abort(Lira.Error(Reason.InvalidTree(detail)))
     new TreePath(text)
+
+  // The derived manifest decoder's codec: the schema's `tree-path` validator (the same L106
+  // rules) has already accepted the text, so a rejection here is a malformed scalar.
+  given decodable: Tactic[Tel.Error] => TreePath is Tel.Decodable =
+    Lira.scalar[TreePath](t"TreePath"): text =>
+      if check(text).present then Unset else new TreePath(text)
 
   // Tree rows sort in ascending bytewise UTF-8 order of path (§9.2). UTF-8 preserves code-point
   // order, so the encoded comparison is also the code-point comparison.

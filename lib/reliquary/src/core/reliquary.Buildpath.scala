@@ -62,21 +62,21 @@ object Buildpath:
 
     manifest.tag.each: tag =>
       val elsewhere = siblings.exists: sibling =>
-        sibling.tag.has(tag) && Blob.compare(sibling.payload.hash, manifest.payload.hash) != 0
+        sibling.tag.has(tag) && Blob.compare(sibling.payload.hash.bytes, manifest.payload.hash.bytes) != 0
 
       if elsewhere then abort(Lira.Error(Reason.TagReassigned(tag)))
 
-    siblings.filter { sibling => Blob.compare(sibling.payload.hash, manifest.payload.hash) == 0 }
+    siblings.filter { sibling => sibling.payload.hash == manifest.payload.hash }
     . each: sibling =>
         sibling.tag.each: tag =>
           if !manifest.tag.has(tag) then abort(Lira.Error(Reason.TagReassigned(tag)))
 
     manifest.dependency.each: dependency =>
       // L118: build pins are development-only; publication requires snapshot requirements. The
-      // pin is bound to a typed local first: reading `Optional[Data]` — a union over a
-      // capture-annotated type — directly inside a lambda whose enclosing call still has live
-      // type variables crashes the compiler's implicit-scope collection.
-      val build: Optional[Data] = dependency.build
+      // pin is bound to a typed local first: reading an `Optional` directly inside a lambda whose
+      // enclosing call still has live type variables has crashed the compiler's implicit-scope
+      // collection.
+      val build: Optional[Lira.Hash] = dependency.build
       build.let: _ => abort(Lira.Error(Reason.BuildPinned(dependency.module)))
 
       // L119: every dependency snapshot must appear in the lineage of a published release.
@@ -116,10 +116,10 @@ case class Buildpath(releases: List[Lira.Manifest]):
   // JAR), find the release and the section declaring it — the section, not just the release,
   // because a derivative belongs to one (universe, integration) cell, so the hash identifies
   // which integration the artifact is (§13.6).
-  def byDerivative(hash: Data): Optional[(Lira.Manifest, Section)] =
+  def byDerivative(hash: Lira.Hash): Optional[(Lira.Manifest, Section)] =
     val found = releases.flatMap: manifest =>
       manifest.section.sweep:
-        case section if section.derivative.let(Blob.compare(_, hash) == 0).or(false) =>
+        case section if section.derivative.let(_ == hash).or(false) =>
           (manifest, section)
 
     found.prim
@@ -220,10 +220,10 @@ case class Buildpath(releases: List[Lira.Manifest]):
         apply(dependency.module) match
           case candidate: Lira.Manifest =>
             // Bound to a typed local for the same reason as the build pin in `publishable`.
-            val build: Optional[Data] = dependency.build
+            val build: Optional[Lira.Hash] = dependency.build
 
             requirementMet(dependency, candidate)
-            && build.let(Blob.compare(_, candidate.payload.hash) == 0).or(true)
+            && build.let(_ == candidate.payload.hash).or(true)
 
           case _ => false
 
@@ -306,7 +306,7 @@ case class Buildpath(releases: List[Lira.Manifest]):
           then abort(Lira.Error(Reason.Unsatisfiable(dependency.module)))
 
           dependency.build.let: build =>
-            if Blob.compare(build, candidate.payload.hash) != 0
+            if build != candidate.payload.hash
             then abort(Lira.Error(Reason.Unsatisfiable(dependency.module)))
 
           // The decorative version hint has no authority; disagreement is advisory.
@@ -366,7 +366,7 @@ case class Buildpath(releases: List[Lira.Manifest]):
           Lineage.contains(contract.lineage, requirement.api)
 
         val bySpanning = requirement.uses.let: usesHash =>
-          used(usesHash).let: usedSet =>
+          used(usesHash.bytes).let: usedSet =>
             contracts.exists: contract => atoms(contract.module).let(usedSet.subsetOf(_)).or(false)
 
           . or(false)

@@ -132,21 +132,22 @@ object Verification:
 
     // Step 4's input: the declared atom listings must at least resolve and parse; comparing
     // them against re-atomized content is the publish-time extension.
-    val atomizations = manifest.api.map: api => AtomsBlob.decode(resolve(api.atoms))
+    val atomizations = manifest.api.map: api => AtomsBlob.decode(resolve(api.atoms.bytes))
 
-    manifest.delta.let: hash => Lira.Delta.decode(resolve(hash))
+    manifest.delta.let: hash => Lira.Delta.decode(resolve(hash.bytes))
 
     manifest.dependency.each: dependency =>
       // Bound to a typed local before the `Optional` is read: `Data` is capture-annotated, and
       // reading such a union inside a lambda whose caller still has live type variables crashes
       // the compiler's implicit-scope collection.
-      val uses: Optional[Data] = dependency.uses
-      uses.let(resolve(_))
+      val uses: Optional[Lira.Hash] = dependency.uses
+      uses.let { hash => resolve(hash.bytes) }
 
     // Step 3: tree path rules (L106) on every section; every tree blob and content blob must
     // resolve (L104); overlays of known universes materialize against the root under the
     // minimality rules (L107). Unknown universes stay opaque (§9.4).
-    val trees = manifest.section.map: section => (section, Lira.Tree.decode(resolve(section.tree)))
+    val trees = manifest.section.map: section =>
+      (section, Lira.Tree.decode(resolve(section.tree.bytes)))
 
     trees.each: pair => pair(1).entries.each: entry => resolve(entry.blob)
 

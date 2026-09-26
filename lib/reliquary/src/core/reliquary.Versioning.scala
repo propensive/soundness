@@ -62,8 +62,9 @@ object Versioning:
 
   // L110: a lineage may be extended only by a patch (unchanged) or minor (appended snapshot)
   // successor; a major successor begins a fresh lineage, and only on explicit request.
-  def extendLineage(lineage: List[Data], snapshot: Data, grade: Grade, forceMajor: Boolean = false)
-  :   List[Data] raises Lira.Error =
+  def extendLineage
+    ( lineage: List[Lira.Hash], snapshot: Lira.Hash, grade: Grade, forceMajor: Boolean = false )
+  :   List[Lira.Hash] raises Lira.Error =
 
     grade match
       case Grade.Patch => lineage

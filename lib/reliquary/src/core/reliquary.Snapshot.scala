@@ -41,7 +41,7 @@ import rudiments.*
 // hashes, sorted ascending bytewise and concatenated as raw 32-byte values.
 object Snapshot:
 
-  def apply(atomizations: List[Atomization]): Data =
+  def apply(atomizations: List[Atomization]): Lira.Hash =
     // The intermediate is annotated so `flatMap`'s inferred result type is pinned before `map`'s
     // implicit search runs over it; an uninstantiated shape there trips `wildApprox`.
     val atoms: List[Atom] = atomizations.flatMap(_.atoms)
