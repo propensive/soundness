@@ -1293,6 +1293,83 @@ object Tests extends Suite(m"Rudiments Tests"):
         map.confine(9).let(map(_))
       . assert(_ == Unset)
 
+    suite(m"Scoped tests"):
+      test(m"an unbound scoped value reads as Unset"):
+        Scoped[Int]()()
+      . assert(_ == Unset)
+
+      test(m"a scoped value is readable inside its block"):
+        val scoped = Scoped[Int]()
+        scoped(7)(scoped())
+      . assert(_ == 7)
+
+      test(m"a block returns its result"):
+        val scoped = Scoped[Text]()
+        scoped(t"x")(t"result")
+      . assert(_ == t"result")
+
+      test(m"a scoped value is unbound again after its block"):
+        val scoped = Scoped[Int]()
+        scoped(7)(())
+        scoped()
+      . assert(_ == Unset)
+
+      test(m"a nested block sees the innermost binding"):
+        val scoped = Scoped[Int]()
+        scoped(1)(scoped(2)(scoped()))
+      . assert(_ == 2)
+
+      test(m"the outer binding is restored after a nested block"):
+        val scoped = Scoped[Int]()
+        scoped(1):
+          scoped(2)(())
+          scoped()
+      . assert(_ == 1)
+
+      test(m"the previous binding is restored when the block throws"):
+        val scoped = Scoped[Int]()
+        scoped(1):
+          try scoped(2)(throw Exception()) catch case _: Exception => ()
+          scoped()
+      . assert(_ == 1)
+
+      test(m"a binding is not visible from another thread"):
+        val scoped = Scoped[Int]()
+        val seen: Atomic.Ref[Optional[Int]] = Atomic.Ref(Unset)
+        scoped(7):
+          val runnable: Runnable = () => seen() = scoped()
+          val thread = Thread(runnable)
+          thread.start()
+          thread.join()
+        seen()
+      . assert(_ == Unset)
+
+    suite(m"unused tests"):
+      test(m"a free base name is returned as it is"):
+        unused(t"name")(_ => false)
+      . assert(_ == t"name")
+
+      test(m"a taken base name gets the suffix 2"):
+        unused(t"name")(_ == t"name")
+      . assert(_ == t"name2")
+
+      test(m"the suffix counts up past every taken name"):
+        val taken = Set(t"name", t"name2", t"name3")
+        unused(t"name")(taken.has(_))
+      . assert(_ == t"name4")
+
+      test(m"the suffix 1 is never proposed"):
+        unused(t"name")(_ == t"name1")
+      . assert(_ == t"name")
+
+      test(m"candidates are tried in order"):
+        var tried: List[Text] = Nil
+        unused(t"name"): candidate =>
+          tried ::= candidate
+          candidate != t"name3"
+        tried.reverse
+      . assert(_ == List(t"name", t"name2", t"name3"))
+
     suite(m"Atomic tests"):
       test(m"a count reads back its initial value"):
         Atomic.Int(7)()

@@ -45,7 +45,7 @@ import denominative.*
 import denominative.dysasymptotics.linearSize
 
 object Runner:
-  private[probably] val harnessThreadLocal: ThreadLocal[Option[Harness]] = ThreadLocal()
+  private[probably] val harness: Scoped[Harness] = Scoped()
 
   // One row of a listing: a test the selection admits, its kind, the expected measuring
   // time summed over its admitted cells (absent for untimed kinds), and its axes with the
@@ -260,29 +260,28 @@ extends Findable:
     reporter.started(report, test.id, false)
 
     val context = Harness()
-    Runner.harnessThreadLocal.set(Some(context))
     val ns0 = System.nanoTime
 
-    try
-      val result: result = test.action(context)
-      val ns: Long = System.nanoTime - ns0
-      Trial.Returns(result, ns, context.captured.toMap.to(Map))
+    Runner.harness(context):
+      try
+        val result: result = test.action(context)
+        val ns: Long = System.nanoTime - ns0
+        Trial.Returns(result, ns, context.captured.toMap.to(Map))
 
-    catch case error: Exception =>
-      val ns: Long = System.nanoTime - ns0
+      catch case error: Exception =>
+        val ns: Long = System.nanoTime - ns0
 
-      def lazyException(): Nothing =
-        given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
-        throw error
+        def lazyException(): Nothing =
+          given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
+          throw error
 
-      Trial.Throws(lazyException, ns, context.captured.toMap.to(Map))
+        Trial.Throws(lazyException, ns, context.captured.toMap.to(Map))
 
-    // The bracket closes whatever escaped — an `Error` in the body must not leave the test
-    // among the active ones that a termination reports.
-    finally
-      Runner.harnessThreadLocal.set(None)
-      mutex { active = active.filter(_ != test.id) }
-      reporter.ended(report, test.id, false)
+      // The bracket closes whatever escaped — an `Error` in the body must not leave the test
+      // among the active ones that a termination reports.
+      finally
+        mutex { active = active.filter(_ != test.id) }
+        reporter.ended(report, test.id, false)
 
   // Suites are always entered, whatever the selection: their bodies are cheap, and pruning
   // by name would defeat hash- and moniker-based selection of the tests within them.
