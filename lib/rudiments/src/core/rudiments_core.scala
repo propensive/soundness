@@ -557,6 +557,16 @@ extension [key, value](map: Map[key, List[value]])
 extension [value](list: List[value])
   def unwind(tail: List[value]): List[value] = list.reverse + tail
 
+// The first name in the series `base`, `base2`, `base3`, ... that `taken` does not reject. The
+// suffixes start at 2: an unadorned `base` is the first candidate, so `base1` is never produced.
+def unused(base: Text)(taken: Text => Boolean): Text =
+  @tailrec
+  def recur(n: Int): Text =
+    val candidate: Text = (base.s+n.toString).tt
+    if taken(candidate) then recur(n + 1) else candidate
+
+  if taken(base) then recur(2) else base
+
 extension [element](sequence: List[element])
   def unique: Optional[element] = sequence match
     case element :: Nil => element
