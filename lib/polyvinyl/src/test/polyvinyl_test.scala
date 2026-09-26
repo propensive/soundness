@@ -46,6 +46,14 @@ object Tests extends Suite(m"Polyvinyl tests"):
 
   val bob: Tree = Tree.Node(Map(t"name" -> Tree.Leaf(t"Bob")))
 
+  val dave: Tree = Tree.Node(Map(
+    t"nickname" -> Tree.Leaf(t"Dai"),
+    t"aliases"  -> Tree.Items(List(Tree.Leaf(t"D"), Tree.Leaf(t"Davey"))),
+    t"partner"  -> Tree.Node(Map(t"name" -> Tree.Leaf(t"Eve"))),
+    t"pets"     -> Tree.Items(List(
+      Tree.Node(Map(t"name" -> Tree.Leaf(t"Rex"))),
+      Tree.Node(Map(t"name" -> Tree.Leaf(t"Tom")))))))
+
   val estate: Tree = Tree.Node(Map(
     t"owner" -> Tree.Node(Map(
       t"name"    -> Tree.Leaf(t"Carol"),
@@ -92,14 +100,14 @@ object Tests extends Suite(m"Polyvinyl tests"):
 
       test(m"a record evaluates a field on every access"):
         val record = PersonRecords.record(alice)
-        val before = TreeBlueprint.evaluations.get
+        val before = TreeProvider.evaluations.get
         record.count
         record.count
-        TreeBlueprint.evaluations.get - before
+        TreeProvider.evaluations.get - before
       . assert(_ == 2)
 
     suite(m"Nested records"):
-      test(m"an identity Structural yields a nested record"):
+      test(m"a nested member yields a nested record"):
         NestedRecords.record(estate).owner.name
       . assert(_ == t"Carol")
 
@@ -107,13 +115,117 @@ object Tests extends Suite(m"Polyvinyl tests"):
         NestedRecords.record(estate).owner.address.city
       . assert(_ == t"Tallinn")
 
-      test(m"a List Structural yields a list of records"):
+      test(m"a repeated record member yields a list of records"):
         NestedRecords.record(estate).tags.map(_.label)
       . assert(_ == List(t"old", t"large"))
 
       test(m"an absent list member yields an empty list"):
         NestedRecords.record(Tree.Node(Map())).tags
       . assert(_ == List())
+
+    suite(m"Multiplicity"):
+      test(m"an optional field is Unset when absent"):
+        MultiplicityRecords.record(bob).nickname
+      . assert(_ == Unset)
+
+      test(m"an optional field is present when supplied"):
+        MultiplicityRecords.record(dave).nickname
+      . assert(_ == t"Dai")
+
+      test(m"an optional field has an Optional type"):
+        val nickname: Optional[Text] = MultiplicityRecords.record(dave).nickname
+        nickname
+      . assert(_ == t"Dai")
+
+      test(m"a repeated scalar field is a list"):
+        MultiplicityRecords.record(dave).aliases
+      . assert(_ == List(t"D", t"Davey"))
+
+      test(m"an absent repeated field is an empty list"):
+        MultiplicityRecords.record(bob).aliases
+      . assert(_ == List())
+
+      test(m"an optional record is Unset when absent"):
+        MultiplicityRecords.record(bob).partner
+      . assert(_ == Unset)
+
+      test(m"an optional record is read when present"):
+        MultiplicityRecords.record(dave).partner.let(_.name)
+      . assert(_ == t"Eve")
+
+      test(m"a repeated record is a list of records"):
+        MultiplicityRecords.record(dave).pets.map(_.name)
+      . assert(_ == List(t"Rex", t"Tom"))
+
+      test(m"a tuple carries optional and repeated elements"):
+        val tuple = MultiplicityRecords.tuple(dave)
+        (tuple.nickname, tuple.aliases, tuple.partner.let(_.name), tuple.pets.map(_.name))
+      . assert(_ == (t"Dai", List(t"D", t"Davey"), t"Eve", List(t"Rex", t"Tom")))
+
+    suite(m"Unions and keyed members"):
+      val shapes: Tree = Tree.Node(Map(
+        t"id"     -> Tree.Leaf(t"x1"),
+        t"tags"   -> Tree.Items(List(Tree.Leaf(t"a"), Tree.Leaf(t"b"))),
+        t"sizes"  -> Tree.Leaf(t"four"),
+        t"labels" -> Tree.Node(Map(t"k" -> Tree.Leaf(t"v"))),
+        t"owners" -> Tree.Node(Map(t"o" -> Tree.Node(Map(t"name" -> Tree.Leaf(t"Olga"))))),
+        t"rows"   -> Tree.Items(List(Tree.Items(List(Tree.Leaf(t"r1"))), Tree.Items(List())))))
+
+      val shapes2: Tree = Tree.Node(Map(
+        t"id"   -> Tree.Node(Map(t"name" -> Tree.Leaf(t"n1"))),
+        t"tags" -> Tree.Leaf(t"solo")))
+
+      test(m"a union reads the alternative matching the value's kind"):
+        ShapeRecords.record(shapes).id
+      . assert(_ == t"x1")
+
+      test(m"a union's other alternative is a nested record"):
+        ShapeRecords.record(shapes2).id match
+          case text: Text => text
+          case record: Record => record.selectDynamic("name")
+      . assert(_ == t"n1")
+
+      test(m"a union has the union of its alternatives' types"):
+        val id: Text | Record = ShapeRecords.record(shapes).id
+        id
+      . assert(_ == t"x1")
+
+      test(m"a repeated alternative reads as a list"):
+        ShapeRecords.record(shapes).tags
+      . assert(_ == List(t"a", t"b"))
+
+      test(m"a single alternative reads as one value"):
+        ShapeRecords.record(shapes2).tags
+      . assert(_ == t"solo")
+
+      test(m"an optional union reads Unset when absent"):
+        ShapeRecords.record(shapes2).sizes
+      . assert(_ == Unset)
+
+      test(m"an optional union reads its alternative when present"):
+        ShapeRecords.record(shapes).sizes
+      . assert(_ == (4: Optional[Int | List[Int]]))
+
+      test(m"a keyed value member reads as a map"):
+        ShapeRecords.record(shapes).labels
+      . assert(_ == Map(t"k" -> t"v"))
+
+      test(m"a keyed record member reads as a map of records"):
+        ShapeRecords.record(shapes).owners.stdlib.map { (key, owner) => (key, owner.name) }
+      . assert(_ == scala.collection.immutable.Map(t"o" -> t"Olga"))
+
+      test(m"an absent keyed member reads as an empty map"):
+        ShapeRecords.record(shapes2).labels
+      . assert(_ == Map())
+
+      test(m"a single-alternative union nests a multiplicity"):
+        ShapeRecords.record(shapes).rows.stdlib.map(_.stdlib)
+      . assert(_ == scala.collection.immutable.List(scala.collection.immutable.List(t"r1"), Nil))
+
+      test(m"a tuple reads unions and maps too"):
+        val tuple = ShapeRecords.tuple(shapes)
+        (tuple.id, tuple.tags, tuple.labels)
+      . assert(_ == (t"x1", List(t"a", t"b"), Map(t"k" -> t"v")))
 
     suite(m"Independence"):
       test(m"records from the same specification are independent"):
@@ -158,11 +270,11 @@ object Tests extends Suite(m"Polyvinyl tests"):
       . assert(_ == List(t"old", t"large"))
 
       test(m"a tuple evaluates each field once, when it is built"):
-        val before = TreeBlueprint.evaluations.get
+        val before = TreeProvider.evaluations.get
         val tuple = PersonRecords.tuple(alice)
         tuple.count
         tuple.count
-        TreeBlueprint.evaluations.get - before
+        TreeProvider.evaluations.get - before
       . assert(_ == 1)
 
       test(m"an undeclared tuple element does not compile"):
@@ -182,10 +294,6 @@ object Tests extends Suite(m"Polyvinyl tests"):
       test(m"a missing Intensional instance is a compile error"):
         demilitarize(UnknownValueRecords.record(Tree.Absent))
       . assert(_.exists(_.message.contains("could not find an Intensional instance")))
-
-      test(m"a missing Structural instance is a compile error"):
-        demilitarize(UnknownRecordRecords.record(Tree.Absent))
-      . assert(_.exists(_.message.contains("could not find a Structural instance")))
 
       test(m"an instance is chosen by its exact label"):
         demilitarize(MiscasedRecords.record(Tree.Absent))

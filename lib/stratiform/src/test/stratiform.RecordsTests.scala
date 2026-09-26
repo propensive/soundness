@@ -37,6 +37,7 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import larceny.*
 import murmuration.*
 import denominative.*
 import probably.*
@@ -49,7 +50,7 @@ import denominative.dysasymptotics.linearSize
 
 object RecordsTests extends Suite(m"Stratiform Records tests"):
   def run(): Unit =
-    suite(m"TelBlueprint field access"):
+    suite(m"Tel.Provider field access"):
       test(m"required String field is accessed as Text"):
         val record = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
         record.name
@@ -77,7 +78,72 @@ object RecordsTests extends Suite(m"Stratiform Records tests"):
         (a.name, b.name)
       . assert(_ == (t"Alice", t"Bob"))
 
-    suite(m"TelBlueprint flag fields"):
+    suite(m"Tel.Provider nested and repeatable fields"):
+      val team: Tel =
+        t"""name Core
+           |tag alpha
+           |tag beta
+           |lead
+           |  name Alice
+           |  role lead
+           |member
+           |  name Bob
+           |member
+           |  name Carol
+           |  role tester
+           |""".s.stripMargin.tt.read[Tel]
+
+      test(m"a repeatable scalar field reads as a list"):
+        TeamRecords.record(team).tag
+      . assert(_ == List(t"alpha", t"beta"))
+
+      test(m"an absent repeatable field reads as an empty list"):
+        TeamRecords.record(t"name Solo\nlead\n  name Alice\n".read[Tel]).tag
+      . assert(_ == List())
+
+      test(m"a reference to a record reads as a nested record"):
+        TeamRecords.record(team).lead.name
+      . assert(_ == t"Alice")
+
+      test(m"an optional member of a nested record is read"):
+        TeamRecords.record(team).lead.role
+      . assert(_ == (t"lead": Optional[Text]))
+
+      test(m"an optional nested record is Unset when absent"):
+        TeamRecords.record(team).deputy.let(_.name)
+      . assert(_ == Unset)
+
+      test(m"a repeatable reference reads as a list of records"):
+        TeamRecords.record(team).member.map(_.name)
+      . assert(_ == List(t"Bob", t"Carol"))
+
+      test(m"each repeated record reads its own optional members"):
+        TeamRecords.record(team).member.map(_.role)
+      . assert(_ == List(Unset, t"tester"))
+
+      test(m"a tuple carries nested and repeated elements"):
+        val tuple = TeamRecords.tuple(team)
+        (tuple.name, tuple.tag, tuple.lead.name, tuple.member.map(_.name))
+      . assert(_ == (t"Core", List(t"alpha", t"beta"), t"Alice", List(t"Bob", t"Carol")))
+
+    suite(m"Tel.Provider compiletime checks"):
+      test(m"a field the schema does not declare does not compile"):
+        demilitarize(ContactRecords.record(Tel.empty).nope)
+      . assert(_.exists(_.reason == CompileError.Reason.NotAMember))
+
+      test(m"a field cannot be read at the wrong type"):
+        demilitarize:
+          val name: Int = ContactRecords.record(Tel.empty).name
+      . assert(_.exists(_.reason == CompileError.Reason.TypeMismatch))
+
+      test(m"a tuple has the schema's names and types"):
+        val tuple: (name: Text, email: Optional[Text], age: Text) =
+          ContactRecords.tuple(t"name Alice\nage 30\n".read[Tel])
+
+        tuple.age
+      . assert(_ == t"30")
+
+    suite(m"Tel.Provider flag fields"):
       test(m"present flag reads as true"):
         val record = FeatureRecords.record(t"enabled\n".read[Tel])
         record.enabled
@@ -88,7 +154,7 @@ object RecordsTests extends Suite(m"Stratiform Records tests"):
         record.enabled
       . assert(_ == false)
 
-    suite(m"TelBlueprint layers"):
+    suite(m"Tel.Provider layers"):
       test(m"a member a layer introduces reads as optional, absent without the layer"):
         LayeredRecords.record(t"name Alice\n".read[Tel]).email
       . assert(_ == Unset)

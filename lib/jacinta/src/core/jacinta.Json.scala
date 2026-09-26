@@ -88,7 +88,7 @@ private[jacinta] trait JsonDecodable[T] extends Decodable:
 // `at Json.Focus` form. Deliberately broad (`Decodable in Json`, not
 // `Json.Decodable`) so generic `as[T]` callers bounded on `Decodable in Json`
 // still resolve.
-trait Json3:
+trait Json3 extends Json4:
   // The universal fallback for `Json.Field` — the typeclass the product
   // derivation resolves per field — mirroring `Json2.decodable`'s dispatch
   // order so a field's wire format is identical on both paths: an explicit

@@ -53,7 +53,7 @@ import wisteria.*
 // Lowest priority so `Tel2`'s element-wise field givens match collection and
 // `Optional` types first (a `List`'s own `Mirror` would otherwise derive it
 // as a sum).
-trait Tel3:
+trait Tel3 extends Tel4:
   inline given field: [value] => value is Tel.Field = summonFrom:
     case parsable: (`value` is Tel.Parsable) =>
       Tel.Field(parsable)
