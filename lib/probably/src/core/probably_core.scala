@@ -99,11 +99,8 @@ def suite[report](name: Name[Probing], description: Message)
 
 package harnesses:
   given threadLocalHarness: Harness:
-    private val delegate: Option[Harness] =
-      Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
-
     override def capture[value: Decomposable](name: Text, value: value): value =
-      delegate.map(_.capture[value](name, value)).getOrElse(value)
+      Runner.harness().let(_.capture[value](name, value)).or(value)
 
 package autopsies:
   given contrastAutopsy: Autopsy:
