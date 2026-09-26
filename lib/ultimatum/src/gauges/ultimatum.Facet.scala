@@ -72,7 +72,7 @@ object Facet:
 
     // The stdlib view feeds `shed`, which drops one facet at a time by position and needs the
     // stdlib `indexWhere`/`patch` pair.
-    val kept = shed(facets.stdlib.toList)
+    val kept = shed(facets.stdlib)
 
     if kept.isEmpty || extent(kept) > width then Teletype(t" "*width.max(0)) else
       val surplus = width - extent(kept)

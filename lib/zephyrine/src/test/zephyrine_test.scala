@@ -435,7 +435,7 @@ object Tests extends Suite(m"Zephyrine tests"):
       // suite's `Random`, and an assertion's body must be pure.
       given Distribution = Gamma.approximate(10.0, 10.0)
       val blocks: scala.List[Data] =
-        Chain(bytes).shred(arbitrary[Double]().toInt).filter(!_.nil).stdlib.toList
+        Chain(bytes).shred(arbitrary[Double]().toInt).filter(!_.nil).to[List].stdlib
       def byteCursor = Cursor[Data](blocks.iterator)
 
       test(m"Cursor[Data] starts at first byte"):
@@ -1068,12 +1068,12 @@ object Tests extends Suite(m"Zephyrine tests"):
       . assert(_ == bytes.to[List].map(_ & 0xff).total.toLong)
 
       test(m"chain yields the stream's chunks in order"):
-        Stream(Iterator(Array[Byte](1, 2, 3), Array[Byte](4, 5))).chain.stdlib.to(List)
-        . map(_.to[List])
-      . assert(_ == List(List(1, 2, 3).map(_.toByte), List(4, 5).map(_.toByte)))
+        val chunks: List[Data] = Stream(Iterator(Array[Byte](1, 2, 3), Array[Byte](4, 5))).chain.to[List]
+        chunks.map(_.to[List].map(_.toInt))
+      . assert(_ == List(List(1, 2, 3), List(4, 5)))
 
       test(m"chain of an empty stream is empty"):
-        Iterator.empty[Data].stream.chain.stdlib.to(List)
+        Iterator.empty[Data].stream.chain.to[List]
       . assert(_ == List())
 
       test(m"chain construction pulls nothing"):
@@ -1093,7 +1093,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
       test(m"chain reassembles a transformed pipeline"):
         val text = Stream(Iterator(Array[Byte](104, 105))).via(summon[CharDecoder]).chain
-        text.stdlib.to(List).map(_.s).mkString
+        text.to[List].join.s
       . assert(_ == "hi")
 
       test(m"records iterates across chunks in order"):
@@ -1122,7 +1122,8 @@ object Tests extends Suite(m"Zephyrine tests"):
       test(m"the lent cursor resumes at the boundary"):
         val cursor = Cursor(Data.fill(10)(_.toByte))
         scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 4).memoize)
-        cursor.remainder.stdlib.to(List).flatMap(_.readable.to(List))
+        val remainder: List[Data] = cursor.remainder.to[List]
+        remainder.bind(_.to[List])
       . assert(_.map(_.toInt) == List(4, 5, 6, 7, 8, 9))
 
       test(m"streamOf without a length lends the whole remainder"):
@@ -1138,7 +1139,8 @@ object Tests extends Suite(m"Zephyrine tests"):
       test(m"a lent sub-stream and the resumed cursor partition the input"):
         val cursor = Cursor(Iterator(Array[Byte](0, 1, 2), Array[Byte](3, 4, 5), Array[Byte](6.toByte)))
         val lent = scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 5).memoize.to[List])
-        val rest = cursor.remainder.stdlib.to(List).flatMap(_.readable.to(List))
+        val remainder: List[Data] = cursor.remainder.to[List]
+        val rest = remainder.bind(_.to[List])
         (lent, rest)
       . assert { v => (v(0).map(_.toInt), v(1).map(_.toInt)) == (List(0, 1, 2, 3, 4), List(5, 6)) }
 

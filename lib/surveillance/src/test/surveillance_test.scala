@@ -67,7 +67,7 @@ object Tests extends Suite(m"Surveillance tests"):
       // `Watch` layer directly.
       val watchSet = Watch(List(directory))
       watchSet.unregister()
-      watchSet.stream.stdlib.to(List)
+      watchSet.stream.to[List]
 
     . assert(_ == Nil)
 

@@ -148,7 +148,7 @@ object Tests extends Suite(m"Dissonance tests"):
 
       test(m"Apply parsed diff to source to get result"):
         diffStream.read[Diff[Text]].patch(List(t"foo", t"bar", t"baz"))
-      . assert(_.stdlib.toList == end.stdlib.toList)
+      . assert(_.to[List] == end.to[List])
 
       test(m"Parse reverse diff file"):
         reverseStream.read[Diff[Text]]
@@ -156,42 +156,42 @@ object Tests extends Suite(m"Dissonance tests"):
 
       test(m"Apply parsed reverse diff to get source"):
         reverseStream.read[Diff[Text]].patch(List(t"foo", t"quux", t"bop", t"baz"))
-      . assert(_.stdlib.toList == start.stdlib.toList)
+      . assert(_.to[List] == start.to[List])
 
     suite(m"Diff serialization tests"):
       val changes = diff(start, end)
       val reverseChanges = diff(end, start)
 
       test(m"Serialize a trivial diff"):
-        diff(Sequence(), Sequence(t"a")).serialize.stdlib.to(List)
+        diff(Sequence(), Sequence(t"a")).serialize.to[List]
       . assert(_ == List(t"0a1", t"> a"))
 
       test(m"Serialize a trivial deletion diff"):
-        diff(Sequence(t"a", t"b", t"c", t"d"), Sequence(t"a", t"d")).serialize.stdlib.to(List)
+        diff(Sequence(t"a", t"b", t"c", t"d"), Sequence(t"a", t"d")).serialize.to[List]
       . assert(_ == List(t"2,3d1", t"< b", t"< c"))
 
       test(m"Serialize another trivial diff"):
-        diff(Sequence(t"a"), Sequence()).serialize.stdlib.to(List)
+        diff(Sequence(t"a"), Sequence()).serialize.to[List]
       . assert(_ == List(t"1d0", t"< a"))
 
       test(m"Serialize a simple diff"):
-        changes.serialize.stdlib.to(List)
+        changes.serialize.to[List]
       . assert(_ == List(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop"))
 
       test(m"Serialize the reverse diff"):
-        reverseChanges.serialize.stdlib.to(List)
+        reverseChanges.serialize.to[List]
       . assert(_ == List(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar"))
 
       test(m"Experimental diff"):
-        diff(Sequence(t"one"), Sequence(t"two")).serialize.stdlib.to(List)
+        diff(Sequence(t"one"), Sequence(t"two")).serialize.to[List]
       . assert(_ == List(t"1c1", t"< one", t"---", t"> two"))
 
       test(m"Experimental diff 2"):
-        diff(Sequence(t"zero", t"one"), Sequence(t"two")).serialize.stdlib.to(List)
+        diff(Sequence(t"zero", t"one"), Sequence(t"two")).serialize.to[List]
       . assert(_ == List(t"1,2c1", t"< zero", t"< one", t"---", t"> two"))
 
       test(m"Experimental diff 3"):
-        diff(Sequence(t"zero", t"one"), Sequence(t"zero", t"two")).serialize.stdlib.to(List)
+        diff(Sequence(t"zero", t"one"), Sequence(t"zero", t"two")).serialize.to[List]
       . assert(_ == List(t"2c2", t"< one", t"---", t"> two"))
 
     val italian = Sequence(t"zero", t"uno", t"due", t"tre", t"quattro", t"cinque", t"sei", t"sette")
@@ -275,7 +275,7 @@ object Tests extends Suite(m"Dissonance tests"):
       . assert(_ == Redraft(D.Cut(t"forced"), D.Add(t"add"), D.Keep(t"- escaped")))
 
       test(m"Serialize round-trips through parse"):
-        Redraft.parse(roundtrip).serialize.stdlib.to(List)
+        Redraft.parse(roundtrip).serialize.to[List]
       . assert(_ == roundtrip.to(List))
 
     suite(m"Redraft application tests"):
@@ -328,11 +328,11 @@ object Tests extends Suite(m"Dissonance tests"):
       val target = Sequence(t"line1", t"new", t"line3")
 
       test(m"Render a minimal redraft, dropping all context"):
-        diff(source, Sequence(t"line1", t"new line 2a", t"line3")).redraft().serialize.stdlib.to(List)
+        diff(source, Sequence(t"line1", t"new line 2a", t"line3")).redraft().serialize.to[List]
       . assert(_ == List(t"- line2", t"+ new line 2a"))
 
       test(m"Render minimal context to anchor an ambiguous deletion"):
-        diff(dup, Sequence(t"a", t"b")).redraft().serialize.stdlib.to(List)
+        diff(dup, Sequence(t"a", t"b")).redraft().serialize.to[List]
       . assert(_ == List(t"b", t"- a"))
 
       test(m"A rendered redraft reproduces the target when applied"):

@@ -769,16 +769,16 @@ enum Syntax:
     // the render-time counterpart of the alias preference applied when a `Syntax` is built
     // inside a macro, for a `Syntax` built elsewhere and rendered against a scope.
     case Structural(base, members, defs) =>
-      val entries = members.stdlib.toList
+      val entries = members.to[List]
 
       val aliased: Boolean =
-        defs.stdlib.isEmpty && entries.nonEmpty && entries.forall: (name, syntax) =>
+        defs.nil && !entries.nil && entries.all: (name, syntax) =>
           imports.aliases.contains(name.s) && (syntax match
             case Declaration(_, _, _) => false
             case _                    => true)
 
       if aliased then
-        entries.foldLeft(base) { case (left, (name, syntax)) => Infix(left, imports.aliases(name.s), syntax) }.text
+        entries.fold(base) { case (left, (name, syntax)) => Infix(left, imports.aliases(name.s), syntax) }.text
       else
         val members2: List[Text] = members.remap: (name, syntax) => s"type $name = ${syntax.text}".tt
         val defs2: List[Text] = defs.remap: (name, syntax) => s"def $name${syntax.text}".tt

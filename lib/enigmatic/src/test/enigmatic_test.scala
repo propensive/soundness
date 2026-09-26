@@ -157,11 +157,11 @@ object Tests extends Suite(m"Enigmatic tests"):
       val example = t"-----BEGIN EXAMPLE-----\nAAAA\n-----END EXAMPLE-----\n"
       val chain = t"subject=/CN=example\n$example\nissuer comment\n$example$example"
       val stream = chain.s.grouped(11).map(_.tt).stream
-      summon[Chain[Pem] is Aggregable by Text].accept(stream).map(_.label).stdlib.to(List)
+      summon[Chain[Pem] is Aggregable by Text].accept(stream).map(_.label).to[List]
     . assert(_ == List.fill(3)(Pem.Label.Proprietary(t"EXAMPLE")))
 
     test(m"PEM chain of an input without blocks is empty"):
-      summon[Chain[Pem] is Aggregable by Text].accept(t"no blocks here\n".stream).stdlib.to(List)
+      summon[Chain[Pem] is Aggregable by Text].accept(t"no blocks here\n".stream).to[List]
     . assert(_ == List())
 
     test(m"PEM streams its armored form"):

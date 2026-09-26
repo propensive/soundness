@@ -134,9 +134,9 @@ object Tests extends Suite(m"Turbulence tests"):
         val high = gothic.s.charAt(0).toString.tt
         val low = gothic.s.charAt(1).toString.tt
 
-        summon[CharEncoder].encoded(Chain(t"a", high, low, t"b"))
-        . stdlib.to(List).map(_.readable).reduce(_ ++ _).to(List)
-      . assert(_ == t"a𐍈b".in[Data].readable.to(List))
+        val chunks: List[Data] = summon[CharEncoder].encoded(Chain(t"a", high, low, t"b")).to[List]
+        chunks.bind(_.to[List])
+      . assert(_ == t"a𐍈b".in[Data].to[List])
 
       test(m"per-char-chunk streams roundtrip through encode and decode"):
         val string = "aë€𐍈z"
@@ -145,7 +145,7 @@ object Tests extends Suite(m"Turbulence tests"):
           (0 until string.length).map { index => string.charAt(index).toString.tt }.to(Chain)
 
         summon[CharDecoder].decoded(summon[CharEncoder].encoded(chunks))
-        . stdlib.to(List).map(_.s).mkString
+        . to[List].join.s
       . assert(_ == "aë€𐍈z")
 
     val qbf = t"The quick brown fox\njumps over the lazy dog"
@@ -499,20 +499,20 @@ object Tests extends Suite(m"Turbulence tests"):
         relay.put(t"b")
         relay.put(t"c")
         relay.stop()
-        relay.batches(50L).stdlib.to(List)
+        relay.batches(50L).to[List]
       . assert(_ == List(List(t"a", t"b", t"c")))
 
       test(m"a stop mid-burst delivers the partial batch"):
         val relay = Relay[Text]()
         relay.put(t"a")
         relay.stop()
-        relay.batches(50L).stdlib.to(List)
+        relay.batches(50L).to[List]
       . assert(_ == List(List(t"a")))
 
       test(m"an immediately-stopped relay yields no batches"):
         val relay = Relay[Text]()
         relay.stop()
-        relay.batches(50L).stdlib.to(List)
+        relay.batches(50L).to[List]
       . assert(_ == List())
 
       test(m"a gap longer than the quiet period splits batches"):
@@ -526,7 +526,7 @@ object Tests extends Suite(m"Turbulence tests"):
               relay.put(t"b")
               relay.stop()
 
-          val batches = relay.batches(50L).stdlib.to(List)
+          val batches = relay.batches(50L).to[List]
           producer.await()
           batches
       . assert(_ == List(List(t"a"), List(t"b")))
