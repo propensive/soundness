@@ -196,9 +196,14 @@ source.read[List[Tel]]
 Where the schema is authoritative, a `Tel.Provider` — an object declared in a file of its own,
 holding the schema and the one-line `record` macro — reads it at compiletime and produces typed
 records from matching documents. Each field reads at the type the schema declares, an optional
-field is absent where the document omits it, a repeatable field reads every occurrence as a
-`List`, a field referring to a record definition reads as a nested record, and a *flag* field — a
-keyword with no value — reads as a boolean, `true` where present and `false` where not:
+field is absent where the document omits it, a required one fails with a `Tel.Error` when it is
+missing, a repeatable field reads every occurrence as a `List`, a field declared as a struct or
+referring to a record definition reads as a nested record, a select member reads as one optional
+field per variant, and a *flag* field — a keyword with no value — reads as a boolean, `true`
+where present and `false` where not. A scalar's validator names the type it reads as: the
+built-in `String`, `Identifier`, `TypeName` and `Sigil` are provided, and a custom validator
+reads through a given of the same label in scope where `record` is called, such as
+`given ("handle" is Intensional in Tel.Provider from Tel to Handle) = Intensional(…)`:
 
 <!-- doccheck: skip -->
 ```scala

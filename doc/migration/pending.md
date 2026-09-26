@@ -482,6 +482,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `ExpectedSlash` and `BadEscape` keep numbers 2, 3 and 4. (#2082)
 - `jacinta.core` depends on `serpentine.core` directly and no longer on `urticose.url`; a consumer
   that reached urticose only through jacinta must declare it. (#2082)
+- `jacinta.Json.Provider`'s constructor parameter is `into[Json.Provider.Schema]`, with given
+  conversions `Json.Provider.Schema.json: Conversion[Json, Schema]` and `Schema.readable:
+  [source] => (source is Readable to Json) => Conversion[source, Schema]`, so a provider may be
+  declared over parsed JSON, a classpath resource (`Json.Provider(cp"/schema.json")`, with a
+  `Classloader` given in scope), a file, or JSON text. `Provider#schema: Json` is unchanged.
+  (#pending)
 - `jacinta.JsonBlueprint` (module `jacinta.records`) moved to `jacinta.Json.Provider` (module
   `jacinta.core`, which now depends on `polyvinyl.core`, `anticipation.url`, `anticipation.time`,
   `anticipation.net` and `anticipation.uuid`); module `jacinta.records` and its export
@@ -812,6 +818,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   find a Structural instance`), and a field with `repeatable` polarity `Loose` reads as `List[T]`
   of every occurrence (previously the first occurrence alone). `Tel.Provider` gained
   `absent(tel: Tel): Boolean` and `repeated(name: Text, tel: Tel): List[Tel]`. (#pending)
+- Behaviour change: a `Tel.Provider` record's field whose type is an inline `Tels.Struct` now
+  reads as a nested `Record` (previously as the raw `Tel`, label `"tel"`); a `Tels.SelectRef`
+  member now contributes one field per variant of its `Tels.SelectDefinition`, each `Optional`
+  (or `List` when the select is repeatable; a `Flag` variant reads as `Boolean`), where
+  previously select members were ignored; and a required field which is absent now raises
+  `Tel.Error(Tel.Error.Reason.Absent)` as it is read (previously a `String` field read as
+  `t""`). (#pending)
 
 ## surveillance
 

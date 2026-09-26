@@ -107,17 +107,31 @@ trait Tel4:
           struct.members.readable.toList.collect { case field: Tels.Field => field.keyword }
           . to(scala.collection.immutable.Set)
 
-      struct.members.readable.toList.collect:
+      struct.members.readable.toList.flatMap:
         case field: Tels.Field =>
           val layered = base.present && !declared.contains(field.keyword)
-          field.keyword -> memberOf(field, schema, base, layered)
+          scala.List(field.keyword -> memberOf(field, schema, base, layered))
+
+        // A select member is one of its definition's variants, each a field of its own
+        // keyword, optional since any one of them may be the one present
+        case select: Tels.SelectRef =>
+          schema.selects.seek(_.name == select.reference).lay(scala.Nil): definition =>
+            definition.variants.readable.toList.map: variant =>
+              val multiplicity =
+                if select.repeatable == Tels.Polarity.Loose then Multiplicity.Many
+                else Multiplicity.Optional
+
+              variant.keyword -> typeMember(variant.variantType, schema, base, multiplicity)
+
+        case _ => scala.Nil
+
       . to(List)
 
-    // Map a single Tels.Field to its polyvinyl Member representation. Scalar / Flag / Reference
-    // types are translated to a Value member with the validator name (or built-in tag) used as
-    // the Intensional lookup key; a reference to a record definition becomes a nested Record.
-    // A repeatable field (`repeatable` = Loose) reads every occurrence; otherwise an optional
-    // one (`required` = Loose, or introduced by a layer) reads as `Optional`.
+    // Map a single Tels.Field to its polyvinyl Member representation. A repeatable field
+    // (`repeatable` = Loose) reads every occurrence; otherwise an optional one (`required` =
+    // Loose, or introduced by a layer) reads as `Optional`. A scalar's first validator name is
+    // the label its `Intensional` is found by, so a custom validator reads through a given of
+    // that label in scope where `record` is called.
     //
     // Since §21.8 made `validate` optional, a scalar may be constrained by patterns alone; it
     // then has no validator name to key on and falls back to `string`, which is right — a
@@ -130,10 +144,18 @@ trait Tel4:
         else if layered || field.required == Tels.Polarity.Loose then Multiplicity.Optional
         else Multiplicity.One
 
+      typeMember(field.fieldType, schema, base, multiplicity)
+
+    // The member reading a value of a TEL type. A flag is never optional: it reads `false` when
+    // absent. An inline struct, or a reference to a record definition, is a nested record.
+    private def typeMember
+      ( fieldType: Tels.Type, schema: Tels, base: Optional[Tels], multiplicity: Multiplicity )
+    :   Member =
+
       def scalar(validators: Array[Text]^{}): Member =
         Member.Value(validators.prim.or(t"string"), Nil, multiplicity)
 
-      field.fieldType match
+      fieldType match
         case s: Tels.Scalar => scalar(s.validators)
         case Tels.Flag      => Member.Value(t"flag")
 
@@ -145,14 +167,15 @@ trait Tel4:
                 // has every member optional, and one a layer refined has its additions optional.
                 val baseRecord: Optional[Tels.Struct] = base.let: base =>
                   base.records.seek(_.name == name)
-                  . let { record => Tels.Struct(record.members, record.validators) }
+                  . let: record => Tels.Struct(record.members, record.validators)
                   . or(Tels.Struct(Array.empty, Array.empty))
 
                 val members = Tels.Struct(rec.members, rec.validators)
                 Member.Record(fieldsOf(members, schema, base, baseRecord), multiplicity)
-          . apply { sc => scalar(sc.validators) }
 
-        case _: Tels.Struct => Member.Value(t"tel", Nil, multiplicity)
+          . apply: sc => scalar(sc.validators)
+
+        case struct: Tels.Struct => Member.Record(fieldsOf(struct, schema, base), multiplicity)
 
   abstract class Provider(val tels: Tels) extends Specification:
     type Origin = Tel
@@ -174,6 +197,7 @@ trait Tel4:
         layer.overlay.members.readable.exists:
           case field: Tels.Field => tel.field(field.keyword).present
           case _                 => false
+
       . map(_.name)
 
     // The acceptance a reader of these records sends (BinTEL §8.4): the base alone is the
@@ -183,7 +207,7 @@ trait Tel4:
     :   Tel.Acceptance =
 
       val components =
-        lineage.layers.map { layer => Tel.Acceptance.Component(lineage.prefixOf(layer.hash)) }
+        lineage.layers.map: layer => Tel.Acceptance.Component(lineage.prefixOf(layer.hash))
 
       val requirement = Tel.Acceptance.Signature(lineage.signature(List()))
 
@@ -206,4 +230,28 @@ trait Tel4:
 
     def access(name: Text, tel: Tel): Tel = tel.field(name).or(Tel.empty)
     def absent(tel: Tel): Boolean = tel.keyword.s.isEmpty
+
+    // Every keyword the composed schema declares as a flag, anywhere: a flag is never absent,
+    // since its absence reads as `false`
+    private lazy val flags: scala.collection.immutable.Set[Text] =
+      def within(members: Array[Tels.Member]^{}): scala.List[Text] =
+        members.readable.toList.flatMap:
+          case Tels.Field(_, _, keyword, Tels.Flag, _, _, _)     => scala.List(keyword)
+          case Tels.Field(_, _, _, struct: Tels.Struct, _, _, _) => within(struct.members)
+          case _                                                 => scala.Nil
+
+      val variants = composed.selects.readable.toList.flatMap: select =>
+        select.variants.readable.toList.collect:
+          case Tels.Variant(keyword, Tels.Flag, _) => keyword
+
+      val records = composed.records.readable.toList.flatMap: record => within(record.members)
+
+      (within(composed.document.members) ++ records ++ variants).toSet
+
+    // A required field which is absent fails as it is read, rather than reading as empty text;
+    // a flag's absence is its `false`
+    override def required(name: Text, tel: Tel): Tel =
+      if absent(tel) && !flags.contains(name) then abort(Tel.Error(Tel.Error.Reason.Absent))
+      else tel
+
     def repeated(name: Text, tel: Tel): List[Tel] = tel.fields(name).readable.toList.to(List)

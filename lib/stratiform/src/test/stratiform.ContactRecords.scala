@@ -136,3 +136,37 @@ object TeamSchemaFixture:
 object TeamRecords extends Tel.Provider(TeamSchemaFixture.tels):
   transparent inline def record(tel: Tel): Record = ${build('tel)}
   transparent inline def tuple(tel: Tel): NamedTuple.AnyNamedTuple = ${tuple('tel)}
+
+// Kebab-case names, a custom validator, an inline struct, and a select member
+object ProfileSchemaFixture:
+  val bio: Struct =
+    Struct
+      ( Array(Field(Polarity.Implicit, Polarity.Loose, t"line", Scalar(Array(t"string")), Unset)),
+        Array.empty )
+
+  val tels: Tels = Tels(
+    name     = t"profile",
+    document = Struct(
+      members = Array(
+        Field(Polarity.Implicit, Polarity.Implicit, t"first-name", Scalar(Array(t"string")), Unset),
+        Field(Polarity.Implicit, Polarity.Implicit, t"handle",     Scalar(Array(t"handle")), Unset),
+        Field(Polarity.Loose,    Polarity.Implicit, t"bio",        bio,                      Unset),
+        Tels.SelectRef(Polarity.Loose, Polarity.Implicit, t"Status")),
+      validators = Array.empty),
+    layers   = Array.empty,
+    sigil    = Unset,
+    records  = Array.empty,
+    scalars  = Array.empty,
+    selects  = Array(Tels.SelectDefinition(
+      name       = t"Status",
+      variants   = Array(
+        Tels.Variant(t"active",   Tels.Flag),
+        Tels.Variant(t"archived", Tels.Flag),
+        Tels.Variant(t"note",     Scalar(Array(t"string")))),
+      validators = Array.empty)))
+
+object ProfileRecords extends Tel.Provider(ProfileSchemaFixture.tels):
+  transparent inline def record(tel: Tel): Record = ${build('tel)}
+
+// A user type for the custom `handle` validator, read through a given at the call site
+case class Handle(name: Text)

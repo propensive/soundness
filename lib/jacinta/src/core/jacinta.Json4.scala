@@ -32,6 +32,8 @@
                                                                                                   */
 package jacinta
 
+import scala.language.experimental.into
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -41,6 +43,7 @@ import kaleidoscope.*
 import polyvinyl.*
 import prepositional.*
 import rudiments.*
+import turbulence.read
 import vacuous.*
 
 import strategies.throwUnsafely
@@ -54,7 +57,7 @@ trait Json4:
   // read at the type the property's schema declares.
   //
   // Usage:
-  //   object Catalogue extends Json.Provider(schemaText.read[Json]):
+  //   object Catalogue extends Json.Provider(cp"/schemas/catalogue.json"):
   //     transparent inline def record(json: Json): Record = ${build('json)}
   //
   // A property named in `required` reads as its type; any other, or one whose type admits
@@ -647,6 +650,20 @@ trait Json4:
         else
           deref(target).let(member(_, seen.incl(target))).or(any)
 
+    // The schema a provider is built from: JSON already parsed, or — through the conversions in
+    // the companion, applied at the `into` parameter — anything readable as JSON, such as a
+    // classpath resource (`cp"/x.json"`), a file, or JSON text. A conversion rather than a second
+    // constructor, so that no source type need be named here.
+    class Schema(val json: Json)
+
+    trait Schema2:
+      given readable: [source] => (readable: (source is turbulence.Readable to Json)^)
+      =>  (Conversion[source, Schema]^{readable}) =
+        source => Schema(source.read[Json](using readable))
+
+    object Schema extends Schema2:
+      given json: Conversion[Json, Schema] = Schema(_)
+
     object Error:
       object Reason:
         given Reason is Communicable =
@@ -696,9 +713,11 @@ trait Json4:
     extends fulminate.Error(624, reason.number)
       ( m"the JSON was not valid according to the schema because $reason" )
 
-  abstract class Provider(val schema: Json) extends Specification:
+  abstract class Provider(schema0: into[Json.Provider.Schema]) extends Specification:
     type Origin = Json
     type Form = Json.Provider
+
+    val schema: Json = schema0.json
 
     def fields: List[(Text, Member)] = Json.Provider.fieldsOf(schema)
 

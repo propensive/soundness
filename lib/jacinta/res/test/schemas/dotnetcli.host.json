@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://json.schemastore.org/dotnetcli.host.json",
+  "definitions": {
+    "symbolInfo": {
+      "type": "object",
+      "properties": {
+        "isHidden": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "pattern": "^(?:true|false)$"
+            }
+          ]
+        },
+        "longName": {
+          "type": "string"
+        },
+        "shortName": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "properties": {
+    "symbolInfo": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/symbolInfo"
+      }
+    },
+    "usageExamples": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "title": "JSON schema for .NET CLI template host files",
+  "type": "object"
+}

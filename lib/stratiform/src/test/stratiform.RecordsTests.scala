@@ -38,12 +38,15 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import larceny.*
+import polyvinyl.*
+import prepositional.*
 import murmuration.*
 import denominative.*
 import probably.*
 import turbulence.*
 import vacuous.*
 
+import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import charEncoders.utf8Encoder
 import denominative.dysasymptotics.linearSize
@@ -125,6 +128,48 @@ object RecordsTests extends Suite(m"Stratiform Records tests"):
         val tuple = TeamRecords.tuple(team)
         (tuple.name, tuple.tag, tuple.lead.name, tuple.member.map(_.name))
       . assert(_ == (t"Core", List(t"alpha", t"beta"), t"Alice", List(t"Bob", t"Carol")))
+
+    suite(m"Tel.Provider names, structs, selects and validators"):
+      given handle: ("handle" is Intensional in Tel.Provider from Tel to Handle) =
+        Intensional { tel => Handle(tel.primaryAtom) }
+
+      val profile: Tel =
+        t"""first-name Ada
+           |handle @ada
+           |bio
+           |  line one
+           |  line two
+           |note hello
+           |""".s.stripMargin.tt.read[Tel]
+
+      test(m"a kebab-case field is read through a backticked name"):
+        ProfileRecords.record(profile).`first-name`
+      . assert(_ == t"Ada")
+
+      test(m"a custom validator reads through a given at the call site"):
+        ProfileRecords.record(profile).handle
+      . assert(_ == Handle(t"@ada"))
+
+      test(m"an inline struct reads as a nested record"):
+        ProfileRecords.record(profile).bio.let(_.line)
+      . assert(_ == (List(t"one", t"two"): Optional[List[Text]]))
+
+      test(m"a select's scalar variant reads when present"):
+        ProfileRecords.record(profile).note
+      . assert(_ == (t"hello": Optional[Text]))
+
+      test(m"a select's flag variants read as booleans"):
+        val record = ProfileRecords.record(t"first-name Bo\nhandle @bo\narchived\n".read[Tel])
+        (record.active, record.archived, record.note)
+      . assert(_ == (false, true, Unset))
+
+      test(m"a missing required field fails when read"):
+        capture[Tel.Error](ProfileRecords.record(t"handle @x\n".read[Tel]).`first-name`).reason
+      . assert(_ == Tel.Error.Reason.Absent)
+
+      test(m"a missing required nested record fails when read"):
+        capture[Tel.Error](TeamRecords.record(t"name Solo\n".read[Tel]).lead).reason
+      . assert(_ == Tel.Error.Reason.Absent)
 
     suite(m"Tel.Provider compiletime checks"):
       test(m"a field the schema does not declare does not compile"):

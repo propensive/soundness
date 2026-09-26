@@ -2550,7 +2550,7 @@ object jacinta extends Library:
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
   object test extends Tests(time, http, schema, staged, optics, sedentary.core,
-    diuretic.core, galilei.jvm, octogenarian.core, eucalyptus.core)
+    diuretic.core, galilei.jvm, octogenarian.core, eucalyptus.core, hellenism.core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
       mvn"org.typelevel::jawn-ast:1.6.0",

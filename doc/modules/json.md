@@ -614,6 +614,11 @@ record.name                       // t"Bicycle", a Text per the schema
 record.children.prim.let(_.weight)   // 9.5, a Double per the schema
 ```
 
+The provider takes its schema as anything readable as JSON, so a schema kept as a classpath
+resource is bound directly, `object Catalogue extends Json.Provider(cp"/schemas/catalogue.json")`
+(with a `Classloader` in scope, such as `classloaders.threadContextClassloader`), and read as
+the code compiles.
+
 A property named in the schema's `required` list reads at its type, and fails with a
 `Json.Error` when the document omits it; any other property, or one whose type admits
 `null`, reads as an `Optional`, `Unset` where the document omits it or gives `null`. An
