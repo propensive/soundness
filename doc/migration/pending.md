@@ -30,7 +30,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - New modules `anticipation.net` (`anticipation.EmailAddresses`, `anticipation.Hostnames`,
   `anticipation.IpAddresses`, sealed domain markers like `anticipation.Urls`) and
   `anticipation.uuid` (`anticipation.Uuids`), both in the `base` bundle and exported from
-  `soundness`. (#pending)
+  `soundness`. (#2089)
 
 ## caduceus
 
@@ -456,7 +456,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
 
 - `inimitable.core` now depends on `anticipation.uuid`. New choice package
   `uuidInterfaces` with `given soundnessUuid: (tactic: Tactic[Uuid.Error]) => ((Uuid is
-  Instantiable across Uuids from Text)^{tactic})`, mirrored in `soundness`. (#pending)
+  Instantiable across Uuids from Text)^{tactic})`, mirrored in `soundness`. (#2089)
 
 ## iridescence
 
@@ -487,7 +487,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   [source] => (source is Readable to Json) => Conversion[source, Schema]`, so a provider may be
   declared over parsed JSON, a classpath resource (`Json.Provider(cp"/schema.json")`, with a
   `Classloader` given in scope), a file, or JSON text. `Provider#schema: Json` is unchanged.
-  (#pending)
+  (#2089)
 - `jacinta.JsonBlueprint` (module `jacinta.records`) moved to `jacinta.Json.Provider` (module
   `jacinta.core`, which now depends on `polyvinyl.core`, `anticipation.url`, `anticipation.time`,
   `anticipation.net` and `anticipation.uuid`); module `jacinta.records` and its export
@@ -500,7 +500,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `JsonBlueprint.Error.Reason` are `Json.Provider.Error` (still `SN-624`) and
   `Json.Provider.Error.Reason`. `JsonBlueprint.intensional`, `JsonBlueprint.structural` and
   `JsonBlueprint.record` removed: use `polyvinyl.Intensional(accessor)` and
-  `polyvinyl.Record(data, access)`. (#pending)
+  `polyvinyl.Record(data, access)`. (#2089)
 - `Json.Provider`'s optional givens `optionalBoolean` (`"boolean?"`), `optionalText`
   (`"string?"`), `optionalInteger`, `optionalNumber`, `optionalDateTime`, `optionalDate`,
   `optionalTime`, `optionalDuration`, `optionalUriReference`, `optionalEmail`,
@@ -512,13 +512,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Multiplicity`. A property not named in `required` still reads as `Optional[T]`; a property
   whose `type` includes `"null"`, whose `enum` includes `null`, or with an `anyOf`/`oneOf`
   alternative of type `null`, now reads as `Optional[T]` even when required, and a `null`
-  value reads as `Unset`. (#pending)
+  value reads as `Unset`. (#2089)
 - `Json.Provider` reads an `array` property's `items` as a schema (`{"type": "string"}`,
   `{"type": "object", "properties": {…}}`), the field reading as `List[T]` of the item type,
   and an absent array as `List()` (previously `items` was read as a property map, the field as
   `List[Record]`, and a non-required array as `Optional[List[…]]`). An array without an
   `items` schema, with a tuple-form `items` list, or whose items are arrays reads as
-  `List[Json]`. (#pending)
+  `List[Json]`. (#2089)
 - `Json.Provider` now follows a local `$ref` (`#`, `#/definitions/…`, `#/$defs/…`, any JSON
   pointer), merges an `allOf` of objects, reads an `enum`/`const` (inferring the type from the
   values when `type` is absent, and unifying `anyOf`/`oneOf` alternatives which are all
@@ -532,15 +532,15 @@ format. Entries are grouped by module, most-recently-added last within a module.
   same kind or of no one kind, `not`, an object with neither `properties` nor a value schema,
   a reference to another document, a recursive reference — the field reads as `Json` (new
   label `"json"`, given `Json.Provider.json`). Previously any of these decoded as its literal
-  `type` label or failed. (#pending)
+  `type` label or failed. (#2089)
 - `Json.Provider.fieldsOf` (and so expanding a provider's `record`) now fails with
   `fulminate.Panic("the schema's root does not describe an object with properties…")` for a
   schema whose root is an array, a scalar, or reachable only through a reference to another
   document, and reads the object alternative of a root `anyOf`/`oneOf`. Previously such a root
-  failed decoding `JsonBlueprint.Doc`. (#pending)
+  failed decoding `JsonBlueprint.Doc`. (#2089)
 - A required property which is absent now raises `Json.Error(Json.Error.Reason.Absent)` as
   soon as the field is read, including for an `object` property (previously an absent required
-  object produced a record whose every field was absent). (#pending)
+  object produced a record whose every field was absent). (#2089)
 - `Json.Provider`'s `email`, `idnEmail`, `hostname`, `ipv4`, `ipv6` and `uuid` givens are now
   polymorphic over the anticipation domains (`[email: Instantiable across EmailAddresses from
   Text] => ("email" is Intensional in Json.Provider from Json to email)`, and likewise
@@ -552,7 +552,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   were `EmailAddress raises EmailAddress.Error`, `Hostname raises Hostname.Error`, `Ipv4 raises
   IpAddress.Error`, `Ipv6 raises IpAddress.Error` and `Uuid raises Uuid.Error`. A `format` the
   provider does not know now reads as `Text` (previously it failed to find an instance).
-  (#pending)
+  (#2089)
 - `Json.Provider`'s `boundedInteger` (`"integer!"`) and `pattern` givens are now the classes
   `Json.Provider.BoundedInteger` and `Json.Provider.Pattern`, `polyvinyl.Intensional.Fallible`
   instances with `Result = Int` / `Text` and `Error = Json.Provider.Error`; a record's field
@@ -565,9 +565,9 @@ format. Entries are grouped by module, most-recently-added last within a module.
   Optional[Int], maximum: Optional[Int])` (`SN-624.6`) and `NotPermitted(value: Text,
   permitted: List[Text])` (`SN-624.7`). A bounded integer property not named in `required` now
   reads as `Optional[Int] raises Json.Provider.Error` (previously always `Int raises …`).
-  (#pending)
+  (#2089)
 - `Json.Provider.duration` (`"duration"`) is now declared `from Json` as every other instance is
-  (previously `to duration` alone). (#pending)
+  (previously `to duration` alone). (#2089)
 
 ## octogenarian
 
@@ -623,7 +623,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Member#multiplicity`, `Member#of(multiplicity)`, `Member#optional`, `Member#many`. The
   macro reads an `Optional` member as `Optional[T]` (`Unset` where the specification's `absent`
   holds) and a `Many` member as `List[T]`; a fallible `T = S raises E` becomes `Optional[S]
-  raises E` / `List[S] raises E`. The `"…?"` label convention is gone. (#pending)
+  raises E` / `List[S] raises E`. The `"…?"` label convention is gone. (#2089)
 - `polyvinyl.Specification` now declares `transparent inline def record(inline value: Origin):
   Record` and `transparent inline def tuple(inline value: Origin): NamedTuple.AnyNamedTuple`,
   inherited by every specification object, so the per-object `transparent inline def record(…)
@@ -634,9 +634,9 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `build(data: Origin, transform: Text -> Origin -> Any): Record` remains. The specification
   object is now loaded by reflection at expansion time (by its binary name, through the macro
   classloader), so it must still be compiled before its call sites, and must be an `object`.
-  (#pending)
+  (#2089)
 - `polyvinyl.Structural[constructor[_]]` removed, with its `soundness.Structural` export. Nested
-  records are `Member.Record`; repetition is `Multiplicity.Many`. (#pending)
+  records are `Member.Record`; repetition is `Multiplicity.Many`. (#2089)
 - New `polyvinyl.Multiplicity.Keyed` (a field read as `Map[Text, T]`) and `polyvinyl.Member.Union(alternatives:
   List[(Text, Member)], multiplicity: Multiplicity = One)` (a field read as the union of its
   alternatives' types, the alternative chosen by the specification's `kind` of the value; a
@@ -644,16 +644,16 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `polyvinyl.Specification` gained the hooks `def entries(name: Text, value: Origin):
   List[(Text, Origin)]`, `def kind(value: Origin): Text`, `def elements(value: Origin):
   List[Origin]` and `def pairs(value: Origin): List[(Text, Origin)]`, each with a default which
-  panics; a specification which uses `Keyed` or `Union` members must override them. (#pending)
+  panics; a specification which uses `Keyed` or `Union` members must override them. (#2089)
 - New `polyvinyl.Intensional.Fallible` (`type Self <: Label; type Error <: Hazard; def
   transform(data: Origin, params: List[Text])(using Tactic[Error]): Result`): the macro summons
   `label is Intensional in Form from Origin` first, then `label is Intensional.Fallible …`, and
   reads a fallible field as `Result raises Error`. An `Intensional` whose `Result` is itself
-  `S raises E` is still read as before. (#pending)
+  `S raises E` is still read as before. (#2089)
 - `polyvinyl.Specification` gained the abstract members `def absent(value: Origin): Boolean`
   and `def repeated(name: Text, value: Origin): List[Origin]`; `def build(data: Origin,
   transform: Text -> Origin -> Any): Record` now has a default (`Record(data, transform)`).
-  (#pending)
+  (#2089)
 - `polyvinyl.Record`'s members `val data: Origin` and `def access: Text => Origin => Any` are
   now `val recordData: Origin` and `def recordAccess: Text -> Origin -> Any`, so that a
   specification may declare a field named `data` or `access`; `record.data` remains available
@@ -664,14 +664,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   (previously `NotImplementedError`). New factories `polyvinyl.Record(data, access)`,
   `polyvinyl.Intensional[name <: Label, form, origin, value](accessor: origin => value): (name
   is Intensional in form from origin to value)^{accessor}` and
-  `Intensional.parametric(accessor: (origin, List[Text]) => value)`. (#pending)
+  `Intensional.parametric(accessor: (origin, List[Text]) => value)`. (#2089)
 - A record's refined type now fixes `Origin` (`Record { type Origin = Json; … }`), so
-  `record.data` has the origin type rather than an abstract `record.Origin`. (#pending)
+  `record.data` has the origin type rather than an abstract `record.Origin`. (#2089)
 - `polyvinyl.Specification` gained `def required(name: Text, value: Origin): Origin = value`,
   applied by the macro to every field read under `Multiplicity.One` before its `Intensional`;
-  a specification overrides it to fail on an absent value. (#pending)
+  a specification overrides it to fail on an absent value. (#2089)
 - Macro error `could not find a Structural instance for the field …` no longer occurs; an
-  unknown label is always `could not find an Intensional instance …`. (#pending)
+  unknown label is always `could not find an Intensional instance …`. (#2089)
 
 ## praxinoscope
 
@@ -823,19 +823,19 @@ format. Entries are grouped by module, most-recently-added last within a module.
   is `Tel.Provider.fieldsOf`; `TelBlueprint.intensional` and `TelBlueprint.record` removed (use
   `polyvinyl.Intensional(accessor)` and `polyvinyl.Record(data, access)`); the givens
   `optionalString`, `optionalIdentifier`, `optionalTypeName` and `optionalSigil` removed
-  (optionality is applied by the macro). (#pending)
+  (optionality is applied by the macro). (#2089)
 - Behaviour change: a `Tel.Provider` record's field whose schema type is a `Tels.Reference` to a
   record definition now reads as a nested `Record` (previously the macro failed with `could not
   find a Structural instance`), and a field with `repeatable` polarity `Loose` reads as `List[T]`
   of every occurrence (previously the first occurrence alone). `Tel.Provider` gained
-  `absent(tel: Tel): Boolean` and `repeated(name: Text, tel: Tel): List[Tel]`. (#pending)
+  `absent(tel: Tel): Boolean` and `repeated(name: Text, tel: Tel): List[Tel]`. (#2089)
 - Behaviour change: a `Tel.Provider` record's field whose type is an inline `Tels.Struct` now
   reads as a nested `Record` (previously as the raw `Tel`, label `"tel"`); a `Tels.SelectRef`
   member now contributes one field per variant of its `Tels.SelectDefinition`, each `Optional`
   (or `List` when the select is repeatable; a `Flag` variant reads as `Boolean`), where
   previously select members were ignored; and a required field which is absent now raises
   `Tel.Error(Tel.Error.Reason.Absent)` as it is read (previously a `String` field read as
-  `t""`). (#pending)
+  `t""`). (#2089)
 
 ## surveillance
 
@@ -889,7 +889,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `hostnameInterfaces.soundnessHostname` (`Hostname`, `Hostnames`, `Hostname.Error`),
   `ipAddressInterfaces.soundnessIpv4` and `soundnessIpv6` (`IpAddresses`, `IpAddress.Error`), and
   in `urticose.url` `urlInterfaces.soundnessUrl` (`HttpUrl is Instantiable across Urls from
-  Text`, the same instance as `Url.instantiable`). (#pending)
+  Text`, the same instance as `Url.instantiable`). (#2089)
 
 ## vivisection
 
