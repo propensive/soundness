@@ -295,7 +295,7 @@ object Tests extends Suite(m"Delicious Tests"):
             (classpath)(Map(t"bad.scala" -> source), out)
 
         process.complete()
-        val notices = process.notices.stdlib.toList
+        val notices = process.notices.to[List]
 
         test(m"A failed compilation produces at least one error notice"):
           notices.count(_.importance == Importance.Error)
@@ -303,13 +303,13 @@ object Tests extends Suite(m"Delicious Tests"):
 
         val marked = notices.filter(_.markup.present)
 
-        if marked.isEmpty then
+        if marked.nil then
           test(m"Without semdiag support, messages are plain and unmarked"):
-            notices.forall { notice => !SemanticMessage.marked(notice.message) }
+            notices.all { notice => !SemanticMessage.marked(notice.message) }
           . assert(_ == true)
         else
           test(m"Semantic notices strip markers from the plain message"):
-            marked.forall { notice => !SemanticMessage.marked(notice.message) }
+            marked.all { notice => !SemanticMessage.marked(notice.message) }
           . assert(_ == true)
 
           test(m"A semantic notice renders its types through stenography"):

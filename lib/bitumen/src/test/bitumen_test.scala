@@ -62,7 +62,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                       mtime = 0.bits.u32 )
 
     suite(m"USTAR header writing"):
-      val blocks = Tarfile(List(helloFile)).source[Data].chain.stdlib.toList
+      val blocks = Tarfile(List(helloFile)).source[Data].chain.to[List].stdlib
       val header = blocks.head
 
       test(m"USTAR magic at offset 257"):
@@ -90,7 +90,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       . assert(_ == 2048)
 
     suite(m"Multi-entry archive"):
-      val blocks = Tarfile(List(helloFile, emptyDir)).source[Data].chain.stdlib.toList
+      val blocks = Tarfile(List(helloFile, emptyDir)).source[Data].chain.to[List].stdlib
 
       test(m"file + directory + two trailing zero blocks = 5 blocks"):
         blocks.size
@@ -113,7 +113,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                         group = UnixGroup(0),
                         mtime = 0.bits.u32,
                         data  = Archive.Body() )
-      val blocks = Tarfile(List(longFile)).source[Data].chain.stdlib.toList
+      val blocks = Tarfile(List(longFile)).source[Data].chain.to[List].stdlib
 
       test(m"long name: 5 blocks (PAX header/data, regular, 2 zero)"):
         blocks.size
@@ -152,7 +152,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            group  = UnixGroup(0),
                            mtime  = 0.bits.u32,
                            target = longTarget )
-      val blocks = Tarfile(List(longSymlink)).source[Data].chain.stdlib.toList
+      val blocks = Tarfile(List(longSymlink)).source[Data].chain.to[List].stdlib
 
       test(m"long linkpath: 5 blocks (PAX header/data, symlink, 2 zero)"):
         blocks.size
@@ -339,7 +339,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       import errorDiagnostics.emptyDiagnostics
 
       test(m"bad checksum is detected"):
-        val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.stdlib.toList.asInstanceOf[List[Data]]
+        val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]]
         val corrupted: List[Data] = Array.frozen(good.stdlib.head.readable.updated(0, ('Z'.toByte: Byte))) :: good.stdlib.tail.to(proscenium.List)
         capture[Tar.Error](Tarfile.read(corrupted.stdlib.iterator.stream).toList).reason
       . assert: r =>
@@ -359,14 +359,14 @@ object Tests extends Suite(m"Bitumen Tests"):
       test(m"a bad checksum accrues exactly one error, with no parse cascade"):
         // A corrupt block cannot be trusted for anything, so nothing in it is parsed: no
         // BadName/BadOctal cascade follows the checksum failure.
-        val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.stdlib.toList.asInstanceOf[List[Data]]
+        val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]]
         val corrupted: List[Data] = Array.frozen(good.stdlib.head.readable.updated(0, ('Z'.toByte: Byte))) :: good.stdlib.tail.to(proscenium.List)
         collectTar { Tarfile.read(corrupted.stdlib.iterator.stream).toList; () }.reasons
       . assert: reasons =>
           reasons.size == 1 && reasons.prim.lay(false)(_.isInstanceOf[Tar.Error.Reason.BadChecksum])
 
       test(m"an unknown type flag degrades to a file, never a directory"):
-        val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.stdlib.toList.asInstanceOf[List[Data]]
+        val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]]
         // Patch the type flag to an unrecognised value and restamp the checksum
         // (bytes 148-156 count as spaces; "%06o\0 " format).
         val flagged = good.stdlib.head.readable.updated(156, 'q'.toByte)
@@ -415,7 +415,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                     mtime = 0.bits.u32,
                     data  = Archive.Body() )
 
-      val blocks = Tarfile(List(file)).source[Data].chain.stdlib.toList
+      val blocks = Tarfile(List(file)).source[Data].chain.to[List].stdlib
 
       test(m"long uname triggers a PAX header (extra block emitted)"):
         blocks.size
@@ -454,7 +454,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                         data  = Archive.Body() )
 
       val tar = Tarfile(List(longFile), LongNameFormat.Gnu)
-      val blocks = tar.source[Data].chain.stdlib.toList
+      val blocks = tar.source[Data].chain.to[List].stdlib
 
       test(m"first block has 'L' type flag at offset 156"):
         blocks(0).readable(156).toChar
@@ -487,7 +487,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            target = longTarget )
 
       val tar = Tarfile(List(longSymlink), LongNameFormat.Gnu)
-      val blocks = tar.source[Data].chain.stdlib.toList
+      val blocks = tar.source[Data].chain.to[List].stdlib
 
       test(m"first block has 'K' type flag"):
         blocks(0).readable(156).toChar
@@ -840,7 +840,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            data     = Archive.Body(Array.fill[Byte](300)('X'.toByte)) )
 
       val bytes = Tarfile(List(sparseEntry)).source[Data].chain
-      val blocks = bytes.stdlib.toList
+      val blocks = bytes.to[List].stdlib
 
       test(m"header type flag is 'S'"):
         blocks.head.readable(156).toChar
@@ -902,7 +902,7 @@ object Tests extends Suite(m"Bitumen Tests"):
                            data     = Archive.Body(Array.fill[Byte](500)('X'.toByte)) )
 
       val bytes = Tarfile(List(sparseEntry)).source[Data].chain
-      val blocks = bytes.stdlib.toList
+      val blocks = bytes.to[List].stdlib
 
       test(m"header isExtended byte is 1"):
         blocks.head.readable(482).toInt

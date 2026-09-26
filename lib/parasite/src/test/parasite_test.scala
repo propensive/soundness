@@ -801,11 +801,11 @@ object Tests extends Suite(m"Parasite tests"):
 
       suite(m"Concurrent stream"):
         test(m"Concurrent on a complete stream returns same elements"):
-          Chain(1, 2, 3, 4, 5).concurrent.stdlib.to(List)
+          Chain(1, 2, 3, 4, 5).concurrent.to[List]
         . assert(_ == List(1, 2, 3, 4, 5))
 
         test(m"Concurrent on empty stream is empty"):
-          Chain[Int]().concurrent.stdlib.to(List)
+          Chain[Int]().concurrent.to[List]
         . assert(_ == List())
 
       suite(m"Bounded concurrency"):

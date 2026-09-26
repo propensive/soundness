@@ -1531,7 +1531,8 @@ object Tests extends Suite(m"Vivisection tests"):
 
           debug.console.let: console =>
             // The agent's own "Listening for transport" banner precedes the program's output.
-            val text = console.stdout.stdlib.toList.map(_.utf8).mkString.tt.trim
+            val chunks: List[Data] = console.stdout.to[List]
+            val text = chunks.map(_.utf8).join.trim
             (text.ends(t"mark"), console.exited.await())
 
     . assert(_ == (true, Exit.Ok))

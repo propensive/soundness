@@ -446,5 +446,5 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
         . protect:
             Tel.Type.assign(t"code -Bad\n".read[Tel], schema, Tel.Validator.Registry.builtins)
             ()
-        . codes.stdlib.toList.reverse
-      . assert(_ == scala.List(310, 315))
+        . codes.to[List].reverse
+      . assert(_ == List(310, 315))

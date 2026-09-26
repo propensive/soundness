@@ -82,7 +82,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         . filter(_.name.starts(t"y_"))
         . map: file =>
             (file.name, file.read[Data])
-        . stdlib.to(List)
+        . to[List]
 
     val negativeCases: List[(Text, Data)] =
       tests.children
@@ -90,7 +90,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         . filter { file => !deeplyNested.has(file.name) }
         . map: file =>
             (file.name, file.read[Data])
-        . stdlib.to(List)
+        . to[List]
 
     suite(m"Positive tests"):
       positiveCases.each: (name, data) =>

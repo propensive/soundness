@@ -127,7 +127,7 @@ def repackage(arguments: List[Text]): Unit = application(arguments):
           Zipfile.read(cacheJar).entries.filter: entry =>
             !entry.directory && entry.ref.show != t"META-INF/MANIFEST.MF"
 
-          . stdlib.to(List)
+          . to[List]
 
       val tmpFile: Path on Linux =
         inputJar.parent.or(panic(m"a jar file always has a parent directory"))

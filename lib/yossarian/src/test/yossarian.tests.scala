@@ -52,7 +52,7 @@ object Tests extends Suite(m"Yossarian Tests"):
 
     def drainOutput(pty: Pty): Text =
       pty.output.stop()
-      pty.stream.stdlib.to(List).map(_.s).mkString.tt
+      pty.stream.to[List].join
 
     suite(m"Plain text"):
       test(m"writing text places characters in cells"):

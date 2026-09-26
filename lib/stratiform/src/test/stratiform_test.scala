@@ -277,7 +277,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         // `Chain[Tel]` is proscenium's `Chain[Tel]`; this file doesn't
         // import the predef alias, so spell it out.
         test(m"read[Chain[Tel]] parses ${testcase.stem}"):
-          testcase.source.read[Chain[Tel]].map(TelCheckTree.of).stdlib.to(List)
+          testcase.source.read[Chain[Tel]].map(TelCheckTree.of).to[List]
         . assert(_ == CheckFormat.parseStream(testcase.check).map(_.tree))
 
       test(m"two documents yield a list of two"):
