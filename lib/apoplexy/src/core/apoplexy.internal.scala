@@ -46,6 +46,7 @@ import gossamer.*
 import hellenism.*
 import hieroglyph.*
 import jacinta.*
+import polyvinyl.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -748,17 +749,88 @@ object Apoplexy:
         specJsons(key(source, content)) = json
         json
 
-  // Resolve the response-schema `JsonSchema` at a JSON-pointer into the spec.
-  private def resolveSchema(using Quotes)(source: Text, pointer: Text): JsonSchema =
+  // The raw JSON of the response schema at a JSON pointer into the spec
+  private def schemaNode(using Quotes)(source: Text, pointer: Text): Json =
     val segments = pointer.cut(t"/").skip(1)
 
-    val node =
-      segments.fold(specJson(source)): (node, segment) =>
-        try node(segment.sub(t"~1", t"/").sub(t"~0", t"~"))
-        catch case error: Exception => halt(m"apoplexy: could not resolve the schema at $pointer")
+    segments.fold(specJson(source)): (node, segment) =>
+      try node(segment.sub(t"~1", t"/").sub(t"~0", t"~"))
+      catch case error: Exception => halt(m"apoplexy: could not resolve the schema at $pointer")
 
-    try node.as[JsonSchema]
+  // Resolve the response-schema `JsonSchema` at a JSON-pointer into the spec.
+  private def resolveSchema(using Quotes)(source: Text, pointer: Text): JsonSchema =
+    try schemaNode(source, pointer).as[JsonSchema]
     catch case error: Exception => halt(m"apoplexy: the response schema at $pointer is not valid")
+
+  // The response's schema pointer and spec source, from its refinements, once the response is
+  // known to be JSON
+  private def jsonResponse(using Quotes)(self: Expr[Api.Response], what: Text): (Text, Text) =
+    import quotes.reflect.*
+
+    val members = (refinements(self.asTerm.tpe) ++ refinements(self.asTerm.tpe.widen)).to(Map)
+
+    val transport = members(t"Transport").or:
+      halt(m"apoplexy: $what needs a response whose transport is known")
+
+    if !(transport =:= TypeRepr.of[Json]) then
+      val shown = transport.show
+      halt(m"apoplexy: $what reads a JSON response, but this response is construed as $shown")
+
+    val pointer = members(t"Result").lay(halt(m"apoplexy: missing response schema pointer"))(stringOf(_))
+    val source = members(t"Form").lay(halt(m"apoplexy: missing spec source"))(stringOf(_))
+
+    (pointer, source)
+
+  // The polyvinyl member the response schema describes, which must be an object or an array
+  // of objects; its `$ref`s resolve against the whole spec
+  private def responseMember(using Quotes)(source: Text, pointer: Text, what: Text)
+  :   (List[(Text, Member)], Boolean) =
+
+    Json.Provider.memberOf(specJson(source), schemaNode(source, pointer)) match
+      case Member.Record(fields, Multiplicity.One)  => (fields, false)
+      case Member.Record(fields, Multiplicity.Many) => (fields, true)
+
+      case _ =>
+        val advice = t"use `call[T]()` for this response"
+        halt(m"apoplexy: $what needs a schema describing an object or an array of objects; $advice")
+
+  // The inline entry points called from `Api.Response.record()`/`tuple()`, which supply the
+  // response body already read as JSON, with the givens the send needs bound at the call site
+  transparent inline def record(inline self: Api.Response, json: Json): Any =
+    ${recordMacro('self, 'json)}
+
+  transparent inline def tuple(inline self: Api.Response, json: Json): Any =
+    ${tupleMacro('self, 'json)}
+
+  // `Api.Response.record()`: the response, read as JSON by `call`, becomes a `Record` refined
+  // with the schema's properties, built over `Api.Records` with the expansion polyvinyl makes
+  // of the schema's fields
+  def recordMacro(self: Expr[Api.Response], json: Expr[Json]): Macro[Any] =
+    import quotes.reflect.*
+
+    val (pointer, source) = jsonResponse(self, t"record()")
+    val (fields, many) = responseMember(source, pointer, t"record()")
+    val target = '{Api.Records}
+    val (refined, transform) = Specification.recordExpansion[Json, Json.Provider](target, fields)
+
+    refined.absolve match
+      case '[type refined <: Record; refined] =>
+        if many then '{Api.Records.list($json, $transform).asInstanceOf[List[refined]]}
+        else '{Api.Records.build($json, $transform).asInstanceOf[refined]}
+
+  // `Api.Response.tuple()`: as `record()`, as a named tuple read eagerly
+  def tupleMacro(self: Expr[Api.Response], json: Expr[Json]): Macro[Any] =
+    import quotes.reflect.*
+
+    val (pointer, source) = jsonResponse(self, t"tuple()")
+    val (fields, many) = responseMember(source, pointer, t"tuple()")
+    val target = '{Api.Records}
+    val (tuple, make) = Specification.tupleExpansion[Json, Json.Provider](target, fields)
+
+    tuple.absolve match
+      case '[type tuple <: NamedTuple.AnyNamedTuple; tuple] =>
+        if many then '{Api.Records.repeated(t"", $json).map($make(_)).asInstanceOf[List[tuple]]}
+        else '{$make($json).asInstanceOf[tuple]}
 
   // Compile-time check that `value` structurally matches the response schema.
   private def conformsTo(using quotes: Quotes)(value: quotes.reflect.TypeRepr, schema: JsonSchema)

@@ -343,6 +343,35 @@ object ApiTests extends Suite(m"Api client tests"):
         (recorder.lastHeaders.filter(_.key == t"content-type").map(_.value), recorder.lastBody.present)
       . assert(_ == (List(t"application/x-www-form-urlencoded"), true))
 
+      test(m"record() reads a JSON object response as a schema-typed record"):
+        given Http.Backend = Recorder(() => ok(petJson))
+        val pet = api.pets(42).get.record()
+        (pet.id, pet.name, pet.tag)
+      . assert(_ == (42, t"Milo", t"cat"))
+
+      test(m"record() reads an array response as a list of records"):
+        given Http.Backend = Recorder(() => ok(petsJson))
+        api.pets.get(limit = 10).record().map(_.name)
+      . assert(_ == List(t"Ada", t"Bea"))
+
+      test(m"record() reads an int64 property as a Long"):
+        given Http.Backend = Recorder(() => ok(itemJson))
+        val id: Long = refs.items(7).get.record().id
+        id
+      . assert(_ == 7L)
+
+      test(m"tuple() reads the response as a named tuple"):
+        given Http.Backend = Recorder(() => ok(petJson))
+        api.pets(42).get.tuple().name
+      . assert(_ == t"Milo")
+
+      test(m"record() is refused for a response that is not JSON"):
+        demilitarize:
+          given Http.Backend = Recorder(() => Http.Response(Http.Ok)(t"Spoon"))
+          refs.items(7).label.get.record()
+        . length
+      . assert(_ > 0)
+
       test(m"a JSON endpoint cannot be read as a Raster"):
         demilitarize:
           given Http.Backend = Recorder(() => ok(itemJson))

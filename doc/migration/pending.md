@@ -116,6 +116,9 @@ format. Entries are grouped by module, most-recently-added last within a module.
   was treated as JSON. (#pending)
 - Module `apoplexy.core` now depends on `xylophone.http` and `ypsiloid.http` (new modules, both in
   the `web` bundle) in place of `xylophone.core` and `ypsiloid.core`. (#pending)
+- Module `apoplexy.core` now also depends on `polyvinyl.core`; new `apoplexy.Api.Records` (a
+  `Json.Provider.Primitives`) and `Api.json(request: Api.Request)(using …): Json` support the new
+  `Api.Response#record()` and `#tuple()`. (#pending)
 
 ## caduceus
 
@@ -678,6 +681,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   into `exclusiveMinimum`/`exclusiveMaximum`; a keyword of an unexpected JSON type is ignored
   rather than raising `Json.Error`. A `"null"` type reads as `Null(description, optional =
   true)` (previously `optional = false`). (#pending)
+- `jacinta.Json.Provider` now extends the new `Json.Provider.Primitives` (a `polyvinyl.
+  Specification` with `Origin = Json`, `Form = Json.Provider` and the reading primitives
+  `access`, `absent`, `required`, `kind`, `elements`, `pairs`, `entries`, `repeated`, but no
+  schema); `Provider` itself keeps `schema` and `fields`. Behaviour change in the schema walk: a
+  property of `type: integer` with `format: int64` and no bounds now reads through the new
+  `Json.Provider.long` instance (`"long"`, to `Long`) rather than `integer` (to `Int`); a
+  bounded int64 still reads as `"integer!"`. New `Json.Provider.memberOf(document: Json, node:
+  Json): polyvinyl.Member` walks a schema node within a larger document. (#pending)
 
 ## octogenarian
 

@@ -44,6 +44,7 @@ import gossamer.*
 import hellenism.*
 import hieroglyph.*
 import jacinta.*
+import polyvinyl.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -67,6 +68,31 @@ object Api:
 
   def make(apiRequest: Api.Request): Api = new Api:
     def request: Api.Request = apiRequest
+
+  // The specification `record()` and `tuple()` build their values over: JSON's reading
+  // primitives, with the fields supplied per response by the macro
+  object Records extends Json.Provider.Primitives:
+    def fields: List[(Text, Member)] = Nil
+
+    // The records of an array response, one per element
+    def list(json: Json, transform: Text => Json => Any): List[Record] =
+      repeated(t"", json).map(build(_, transform))
+
+  // The JSON body of a successful response, for `record()` and `tuple()`
+  def json(request: Api.Request)
+    ( using Online,
+            Http.Event is Loggable,
+            Tactic[Connect.Error],
+            Tactic[Url.Error],
+            Tactic[Parse.Error],
+            Tactic[Api.Error] )
+    ( using client: Http.Client onto Origin["http" | "https"] )
+  :   Json =
+
+    val response = send(request)
+    Conformant.successful(response)
+    val data: Data = response.body.stream.memoize
+    summon[Json is Aggregable by Data].aggregate(Chain(data))
 
   // The runtime send (invoked by the code `.call` emits): assemble the URL (base +
   // substituted path + query), set the `accept` header to the media type the spec
@@ -189,6 +215,42 @@ object Api:
       Apoplexy.check[value](this)
       val response = Api.send(request)(using online, loggable, connect, urlError)(using client)
       compiletime.summonInline[(value is Conformant) over Transport].read(response)
+
+    // Performs the request and reads the JSON response as a record typed by its schema: one
+    // member per property, nested objects and `$ref`s to component schemas as nested records,
+    // an array of objects as a `List` of them, each read at the type its schema declares (see
+    // `Json.Provider`). Only for a JSON response; the schema must describe an object or an array
+    // of objects.
+    transparent inline def record()
+      ( using online:   Online,
+              loggable: Http.Event is Loggable,
+              connect:  Tactic[Connect.Error],
+              urlError: Tactic[Url.Error],
+              parse:    Tactic[Parse.Error],
+              apiError: Tactic[Api.Error],
+              client:   Http.Client onto Origin["http" | "https"] )
+    :   Any =
+
+      val json =
+        Api.json(request)(using online, loggable, connect, urlError, parse, apiError)(using client)
+
+      Apoplexy.record(this, json)
+
+    // As `record()`, but an eagerly-read named tuple, in the schema's property order
+    transparent inline def tuple()
+      ( using online:   Online,
+              loggable: Http.Event is Loggable,
+              connect:  Tactic[Connect.Error],
+              urlError: Tactic[Url.Error],
+              parse:    Tactic[Parse.Error],
+              apiError: Tactic[Api.Error],
+              client:   Http.Client onto Origin["http" | "https"] )
+    :   Any =
+
+      val json =
+        Api.json(request)(using online, loggable, connect, urlError, parse, apiError)(using client)
+
+      Apoplexy.tuple(this, json)
 
   // ApiError → Api.Error
   object Error:
