@@ -32,7 +32,8 @@
                                                                                                   */
 package soundness
 
-export hallucination.Bmp
-
 package construables:
-  export hallucination.construables.bmpConstruable
+  export xylophone.construables.{xmlConstruable, textXmlConstruable}
+
+package postables:
+  export xylophone.postables.xmlPostable

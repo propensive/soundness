@@ -36,6 +36,7 @@ import anticipation.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*
+import prepositional.*
 import spectacular.*
 import telekinesis.*
 import zephyrine.*
@@ -50,3 +51,6 @@ package postables:
 package servables:
   given telServable: (encoder: CharEncoder) => Tel is Servable =
     Servable[Tel](_ => telMediaType): value => Http.Body.Fixed(encoder.encoded(value.show))
+
+package construables:
+  given telConstruable: ("application/vnd.tel" is Construable to Tel) = Construable()

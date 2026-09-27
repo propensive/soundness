@@ -33,3 +33,6 @@
 package soundness
 
 export hallucination.Gif
+
+package construables:
+  export hallucination.construables.gifConstruable

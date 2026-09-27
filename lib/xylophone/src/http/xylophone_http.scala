@@ -30,9 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xylophone
 
-export hallucination.Bmp
+import anticipation.*
+import gesticulate.*
+import hieroglyph.*
+import prepositional.*
+import spectacular.*
+import telekinesis.*
+import zephyrine.*
 
 package construables:
-  export hallucination.construables.bmpConstruable
+  given xmlConstruable: ("application/xml" is Construable to Xml) = Construable()
+  given textXmlConstruable: ("text/xml" is Construable to Xml) = Construable()
+
+package postables:
+  private val xmlMediaType: MediaType = media"application/xml"(charset = "UTF-8")
+
+  given xmlPostable: (encoder: CharEncoder) => Xml is Postable =
+    Postable(xmlMediaType, value => Stream(encoder.encoded(value.show)))

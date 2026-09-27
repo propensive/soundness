@@ -30,9 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ypsiloid
 
-export hallucination.Bmp
+import gesticulate.*
+import prepositional.*
 
 package construables:
-  export hallucination.construables.bmpConstruable
+  given yamlConstruable: ("application/yaml" is Construable to Yaml) = Construable()

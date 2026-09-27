@@ -30,9 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package hallucination
 
-export hallucination.Bmp
+import gesticulate.*
+import prepositional.*
 
 package construables:
-  export hallucination.construables.bmpConstruable
+  given pngConstruable: ("image/png" is Construable to (Raster in Png)) = Construable()

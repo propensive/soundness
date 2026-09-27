@@ -32,7 +32,5 @@
                                                                                                   */
 package soundness
 
-export hallucination.Bmp
-
 package construables:
-  export hallucination.construables.bmpConstruable
+  export ypsiloid.construables.yamlConstruable

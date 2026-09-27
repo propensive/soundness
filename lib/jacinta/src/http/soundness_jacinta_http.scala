@@ -37,3 +37,6 @@ package postables:
 
 package servables:
   export jacinta.servables.jsonServable
+
+package construables:
+  export jacinta.construables.jsonConstruable
