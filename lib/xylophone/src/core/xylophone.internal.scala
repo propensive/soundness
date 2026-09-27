@@ -1312,6 +1312,176 @@ object internal:
   private enum StagedKind:
     case IntK, LongK, DoubleK, FloatK, BooleanK, TextK, StringK, InstanceK
 
+  // The namespace bindings in scope at an element: prefixes paired with URIs, interleaved
+  // `[p0, u0, p1, u1, ...]`, with `""` as the prefix of the default namespace and `""` as the URI
+  // of an undeclared namespace (`xmlns=""`). A later binding of a prefix shadows an earlier
+  // one, so a child's scope is its parent's with its own declarations appended, and a scope
+  // resolves by searching from the end. A stdlib `IArray` for the same reason as `Attributes`:
+  // it is pure, so the field it backs on `Element` adds no capture. Reached as `Xml.Scope`
+  // outside the package, since the umbrella already exports orthodoxy's `Scope`.
+  opaque type Scope = scala.IArray[String]
+
+  object Scope:
+    val xmlNamespace: Text = t"http://www.w3.org/XML/1998/namespace"
+    val xmlnsNamespace: Text = t"http://www.w3.org/2000/xmlns/"
+
+    val empty: Scope = scala.IArray.empty[String]
+
+    // The reserved `xml` prefix is bound in every document without a declaration
+    val xml: Scope = scala.IArray("xml", xmlNamespace.s)
+
+    // The scope a document is parsed in, and in which a prefixed name is selected, unless
+    // another is in scope: only the reserved binding.
+    given default: Scope = xml
+
+    given inspectable: [scope <: Scope] => scope is Inspectable = scope =>
+      val array = storage(scope)
+      val builder: StringBuilder = new StringBuilder("xmlns{")
+
+      array.indices.by(2).foreach: index =>
+        if index > 0 then builder.append(", ")
+        val prefix = array(index)
+        builder.append(if prefix.isEmpty then "\"\"" else prefix)
+        builder.append("=\"")
+        builder.append(array(index + 1))
+        builder.append('"')
+
+      builder.append('}').toString.tt
+
+    def apply(bindings: (Text, Text)*): Scope =
+      if bindings.isEmpty then empty else
+        val buffer = Array.allocate[String](bindings.length*2)
+
+        bindings.zipWithIndex.foreach: (binding, index) =>
+          buffer(index*2) = binding(0).s
+          buffer(index*2 + 1) = binding(1).s
+
+        Array.freeze(buffer).readable
+
+    // The scope binding each prefix in the tuple through its `Namespace` given, over the
+    // reserved binding: `Scope["svg", "xlink"]`.
+    inline def apply[prefixes <: Tuple]: Scope = bindAll[prefixes](xml)
+
+    private inline def bindAll[prefixes <: Tuple](scope: Scope): Scope =
+      inline scala.compiletime.erasedValue[prefixes] match
+        case _: EmptyTuple => scope
+
+        case _: (head *: tail) =>
+          val namespace = scala.compiletime.summonInline[Namespace { type Self = head }]
+          bindAll[tail](scope.bind(namespace.prefix, namespace.uri))
+
+    private[xylophone] inline def fromInterleaved(array: Array[String]^{}): Scope = array.readable
+
+    // The parent scope extended by the `xmlns` and `xmlns:prefix` declarations among the
+    // attributes, in their order
+    private[xylophone] def declared(parent: Scope, attributes: Attributes): Scope =
+      import Attributes.eachPair
+      val buffer = scala.collection.mutable.ArrayBuffer[String]()
+
+      attributes.eachPair: (key, value) =>
+        val keyStr = key.s
+
+        if keyStr == "xmlns" then
+          buffer += ""
+          buffer += value.s
+        else if keyStr.startsWith("xmlns:") then
+          buffer += keyStr.substring(6).nn
+          buffer += value.s
+
+      if buffer.isEmpty then parent
+      else parent ++ (scala.IArray.from(buffer): Scope)
+
+    // The first prefix used by the label or, if `checkAttributes`, by an attribute, which the
+    // scope does not bind; `xmlns` is not a prefix
+    private[xylophone] def unbound
+      ( scope: Scope, label: Text, attributes: Attributes, checkAttributes: Boolean )
+    :   Optional[Text] =
+
+      import Attributes.eachPair
+
+      def check(name: String): Optional[Text] =
+        val colon = name.indexOf(':')
+
+        if colon < 0 then Unset else
+          val prefix = name.substring(0, colon).nn
+          if prefix == "xmlns" || scope.binds(prefix.tt) then Unset else prefix.tt
+
+      check(label.s).or:
+        if !checkAttributes then Unset else
+          var found: Optional[Text] = Unset
+          attributes.eachPair: (key, _) => if found.absent then found = check(key.s)
+          found
+
+    private[xylophone] inline def storage(scope: Scope): scala.Array[String] =
+      scope.asInstanceOf[scala.Array[String]]
+
+    // The index of the last key slot holding `prefix`, or -1; searched from the end so that
+    // a later binding shadows an earlier one.
+    private def lastIndex(array: scala.Array[String], prefix: String): Int =
+      def recur(index: Int): Int =
+        if index < 0 then -1 else if array(index) == prefix then index else recur(index - 2)
+
+      recur(array.length - 2)
+
+    extension (scope: Scope)
+      def isEmpty: Boolean = storage(scope).length == 0
+      def size: Int = storage(scope).length/2
+
+      // The URI bound to the prefix (`Unset` for the default namespace), or `Unset` if it is
+      // unbound or has been undeclared with an empty URI.
+      def resolve(prefix: Optional[Text]): Optional[Text] =
+        val array = storage(scope)
+        val index = lastIndex(array, prefix.let(_.s).or(""))
+
+        if index < 0 then Unset else
+          val uri = array(index + 1)
+          if uri.isEmpty then Unset else uri.tt
+
+      // Whether the prefix has a binding, including an undeclaring one
+      def binds(prefix: Optional[Text]): Boolean =
+        lastIndex(storage(scope), prefix.let(_.s).or("")) >= 0
+
+      // The most recently bound prefix for the URI (`Unset` for the default namespace), or
+      // `Unset` if no prefix is bound to it; used to write a name in a namespace.
+      def prefixOf(uri: Text): Optional[Optional[Text]] =
+        val array = storage(scope)
+
+        def recur(index: Int): Optional[Optional[Text]] =
+          if index < 0 then Unset
+          else if array(index + 1) == uri.s then
+            val prefix = array(index)
+            if prefix.isEmpty then Optional(Unset) else Optional(prefix.tt)
+          else recur(index - 2)
+
+        recur(array.length - 2)
+
+      def bind(prefix: Optional[Text], uri: Text): Scope =
+        val array = storage(scope)
+        val buffer = Array.allocate[String](array.length + 2)
+        if array.length > 0 then buffer.place(Array.frozen(scope), 0, 0, array.length)
+        buffer(array.length) = prefix.let(_.s).or("")
+        buffer(array.length + 1) = uri.s
+        Array.freeze(buffer).readable
+
+      // This scope with the other's bindings appended, so the other's shadow this one's
+      def ++(that: Scope): Scope =
+        if that.isEmpty then scope else if scope.isEmpty then that else
+          val left = storage(scope)
+          val right = storage(that)
+          val buffer = Array.allocate[String](left.length + right.length)
+          buffer.place(Array.frozen(scope), 0, 0, left.length)
+          buffer.place(Array.frozen(that), 0, left.length, right.length)
+          Array.freeze(buffer).readable
+
+      // The bindings in order, later bindings shadowing earlier ones of the same prefix
+      def bindings: List[(Optional[Text], Text)] =
+        val array = storage(scope)
+
+        List.from:
+          array.indices.by(2).map: index =>
+            val prefix = array(index)
+            ((if prefix.isEmpty then Unset else prefix.tt): Optional[Text], array(index + 1).tt)
+
   def stagedParsable[value: Type](renames: Expr[Map[Text, Text]])(using Quotes)
   :   Expr[value is Xml.Parsable] =
 

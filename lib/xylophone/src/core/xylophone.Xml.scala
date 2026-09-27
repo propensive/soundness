@@ -1484,6 +1484,25 @@ object Xml extends Tag.Container
     def merge(that: XmlAttribute): XmlAttribute =
       XmlAttribute(label, elements + that.elements, global || that.global)
 
+  // A resolved name: the namespace URI, if any, and the local part, as the pair by which
+  // elements and attributes are identified once prefixes have been resolved. `Name("a")` is
+  // an unqualified name; `Name.of(label)` splits a raw `prefix:local` label without resolving it.
+  case class Name(namespace: Optional[Text], local: Text)
+
+  object Name:
+    def apply(local: Text): Name = Name(Unset, local)
+
+    // The prefix and local part of a raw label; a label with no colon has no prefix
+    def split(label: Text): (Optional[Text], Text) =
+      val colon = label.s.indexOf(':')
+      if colon < 0 then (Unset, label) else (label.s.substring(0, colon).nn.tt, label.s.substring(colon + 1).nn.tt)
+
+    // Clark notation, `{uri}local`, or the bare local part
+    given showable: Name is Showable = name =>
+      name.namespace.lay(name.local)(uri => t"{$uri}${name.local}")
+
+    given inspectable: Name is Inspectable = name => t"Name(${name.show.inspect})"
+
   def header: Header = Header("1.0", Unset, Unset)
 
   extension (xml: List[Xml])
@@ -4378,10 +4397,25 @@ case class TextNode(text: Text) extends Node:
     case TextNode(text0)             => text0 == text
     case _                           => false
 
-case class Element
-  ( label:      Text,
-    attributes: Attributes,
-    children:   Array[Node]^{} )
+// A plain class rather than a case class: the `scope` — the namespace bindings in force at the
+// element, filled by the parser, an interpolated literal or a derived encoder — is provenance,
+// like `Header.positionIndex`, and takes no part in equality, hashing or the extractor, so a
+// parsed element equals the same element built by hand, and `Element(label, attributes,
+// children)` patterns see the three fields they always did.
+object Element:
+  def apply(label: Text, attributes: Attributes, children: Array[Node]^{}, scope: Scope = Scope.empty)
+  :   Element =
+
+    new Element(label, attributes, children, scope)
+
+  def unapply(element: Element): Some[(Text, Attributes, Array[Node]^{})] =
+    Some((element.label, element.attributes, element.children))
+
+class Element
+  ( val label:      Text,
+    val attributes: Attributes,
+    val children:   Array[Node]^{},
+    val scope:      Scope = Scope.empty )
 extends Node, Topical, Transportive:
   override def toString(): String =
     s"<$label>${children.readable.mkString}</$label>"

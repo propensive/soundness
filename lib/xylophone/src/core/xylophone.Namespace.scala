@@ -32,100 +32,37 @@
                                                                                                   */
 package xylophone
 
-
-import scala.language.dynamics
-
-import scala.annotation.*
-import scala.collection.mutable as scm
+import scala.compiletime.*
 
 import anticipation.*
-import contextual.*
-import denominative.*
-import panopticon.*
+import gossamer.*
 import prepositional.*
-import rudiments.*
-import vacuous.{Unset, or}
+import spectacular.*
+import vacuous.*
 
-export xylophone.internal.{Attributes, Scope}
+// A namespace binding as a contextual value: a prefix, the `Self`, bound to a URI, the `Topic`,
+// both singleton types, so that `given svg: ("svg" is Namespace of "http://www.w3.org/2000/svg")
+// = Namespace()` binds the prefix wherever it is in scope. The `x""` and `xp""` interpolators
+// consult the bindings for prefixes their literals use but do not declare; a parse or a prefixed
+// selection reads them through the `Scope` given. Prefixes are lexical conveniences: two names
+// are the same name when their URIs and local parts agree, whatever prefixes bind them.
+object Namespace:
+  class Bound[prefix <: Label, uri <: Label](val prefix: Text, val uri: Text) extends Namespace:
+    type Self = prefix
+    type Topic = uri
 
-export Xml.attribute
+  inline def apply[prefix <: Label, uri <: Label](): Bound[prefix, uri] =
+    Bound[prefix, uri](constValue[prefix].tt, constValue[uri].tt)
 
-extension (inline context: StringContext)
-  transparent inline def x: Interpolation = interpolation[Xml](context)
-  transparent inline def xp: Interpolation = interpolation[XPath](context)
+  // The reserved prefix, bound in every document without a declaration
+  given xml: ("xml" is Namespace of "http://www.w3.org/XML/1998/namespace") = Namespace()
 
-// Panopticon optics over an XML element's children. `lens` navigates to the first
-// child element with the given name — replacing it on update, or appending if
-// absent — so `xml.lens(_.book.title = …)` works. `ordinalOptical` and `eachOptical`
-// address the n-th, or every, child element of a node. All rebuild the element
-// immutably; non-element nodes (text, comments) are preserved in place.
-private def xmlNodes(xml: Xml): Array[Node]^{} = xml match
-  case Fragment(nodes*) => Array.from(nodes)
-  case node: Node       => Array(node)
+  given inspectable: [namespace <: Namespace] => namespace is Inspectable = namespace =>
+    t"Namespace[${namespace.prefix.inspect} -> ${namespace.uri.inspect}]"
 
-private def firstNode(xml: Xml, fallback: Node): Node =
-  val nodes = xmlNodes(xml)
-  nodes.prim.or(fallback)
+trait Namespace extends Typeclass.Pure, Topical:
+  type Self <: Label
+  type Topic <: Label
 
-private def replaceNamedChild(xml: Xml, name: String, value: Xml): Xml = xml match
-  case Element(label, attributes, children) =>
-    val replacement = xmlNodes(value)
-    val buffer = scm.ArrayBuffer[Node]()
-    var done = false
-
-    children.iterate: index =>
-      children.at(index) match
-        case element: Element if !done && element.label == name.tt =>
-          buffer ++= replacement.readable.toSeq
-          done = true
-
-        case other =>
-          buffer += other
-
-    if !done then buffer ++= replacement.readable.toSeq
-    Element(label, attributes, Array.from(buffer))
-
-  case Fragment(node: Element) =>
-    Fragment(replaceNamedChild(node, name, value).asInstanceOf[Node])
-
-  case other =>
-    other
-
-private def updateChildElements(xml: Xml, select: Int => Boolean, lambda: Xml => Xml): Xml =
-  xml match
-    case Element(label, attributes, children) =>
-      var index = 0
-
-      val out = children.remap:
-        case element: Element =>
-          val here = index
-          index += 1
-          if select(here) then firstNode(lambda(element), element) else element
-
-        case other =>
-          other
-
-      Element(label, attributes, out)
-
-    case Fragment(node: Element) =>
-      Fragment(updateChildElements(node, select, lambda).asInstanceOf[Node])
-
-    case other =>
-      other
-
-package optics:
-  given xmlLens: [name <: Label: ValueOf] => (erased dynamicXmlEnabler: DynamicXmlEnabler)
-  =>  name is Lens from Xml onto Xml =
-    Lens(_.applyDynamic(valueOf[name])(Prim), replaceNamedChild(_, valueOf[name], _))
-
-  given xmlOrdinalOptical: [element] => Ordinal is Optical from Xml onto Xml = ordinal =>
-    Optic: (origin, lambda) => updateChildElements(origin, _ == ordinal.n0, lambda)
-
-  given xmlEachOptical: Each.type is Optical from Xml onto Xml = _ =>
-    Optic: (origin, lambda) => updateChildElements(origin, _ => true, lambda)
-
-package formatting:
-  given compactXmlFormatting: Xml.Formatting = Xml.Formatting(Unset, trailingNewline = false)
-
-  given indentedXmlFormatting: Xml.Formatting =
-    Xml.Formatting(Text("  "), trailingNewline = true)
+  def prefix: Text
+  def uri: Text
