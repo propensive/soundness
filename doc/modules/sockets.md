@@ -30,7 +30,7 @@ import strategies.throwUnsafely
 import threading.platformThreading
 import probates.awaitProbate
 import logging.silentLogging
-import charDecoders.utf8Decoder
+import charsets.utf8Charset
 ```
 
 ### Serving

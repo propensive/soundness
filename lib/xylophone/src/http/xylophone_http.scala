@@ -47,5 +47,5 @@ package construables:
 package postables:
   private val xmlMediaType: MediaType = media"application/xml"(charset = "UTF-8")
 
-  given xmlPostable: (encoder: CharEncoder) => Xml is Postable =
+  given xmlPostable: (encoder: Codepage) => Xml is Postable =
     Postable(xmlMediaType, value => Stream(encoder.encoded(value.show)))

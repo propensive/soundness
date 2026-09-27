@@ -3345,7 +3345,7 @@ object Tel extends Tel2:
     // non-consume `load` crosses to `memoize` as a neutral reference.
     val bytes: Data =
       stream.asInstanceOf[AnyRef].asInstanceOf[(zephyrine.Stream[Text] over zephyrine.Credit)^]
-      . via(hieroglyph.charEncoders.utf8Encoder)
+      . via(hieroglyph.codepages.utf8Codepage)
       . asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^]
       . memoize
 

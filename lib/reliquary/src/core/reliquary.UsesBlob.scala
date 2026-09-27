@@ -69,7 +69,7 @@ object UsesBlob:
     val header = s"tel 1.0 ${Lira.Schemas.usesSignature}\n\nmodule $module"
     val body = rows.join(t"\n")
     val text = Text(if rows.nil then s"$header\n" else s"$header\n\n$body\n")
-    charEncoders.utf8Encoder.encoded(text)
+    codepages.utf8Codepage.encoded(text)
 
   def decode(data: Data): (Text, List[Data]) raises Lira.Error =
     import Tels.Decoder.validate

@@ -39,7 +39,7 @@ import java.io as ji
 
 import soundness.*
 
-import charEncoders.utf8Encoder, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
+import codepages.utf8Codepage, charsets.utf8Charset, textSanitizers.strictSanitizer
 import threading.platformThreading
 import strategies.throwUnsafely
 import probates.panicProbate

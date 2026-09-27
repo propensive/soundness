@@ -212,7 +212,7 @@ A("- **KEEP (false positives — public framework or user-facing, not backing en
   "`wisteria.{Derivation,ProductDerivation,SumDerivation}` (the derivation framework users "
   "`extends`), `gossamer.{Builder,TextBuilder,AsciiBuilder}` + `escapade.TeletypeBuilder` "
   "(user-instantiated builders), `punctuation.{Parser,Renderer}` and `savagery.SvgParser` "
-  "(documented public entry points), `hieroglyph.{CharDecoder,CharEncoder}` (these *are* the "
+  "(documented public entry points), `hieroglyph.{Charset,Codepage}` (these *are* the "
   "summoned typeclass, named in `using` clauses across modules), `decorum.Tokenizer`, "
   "`cordillera.FrameReader` (plain utilities, no typeclass).")
 A("- **GENUINE but already `private[module]`** (not in the `soundness` surface — legitimately "

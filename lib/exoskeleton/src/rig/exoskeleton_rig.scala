@@ -133,7 +133,7 @@ extension (shell: Shell)
 
             import filesystemOptions.requireParents
             import filesystemOptions.dereferenceSymlinks
-            import charEncoders.utf8Encoder
+            import codepages.utf8Codepage
 
             val tmpDir: Path on Linux = temporaryDirectory[Path on Linux]
             val file: Path on Linux = unsafely(tmpDir/t"exoskeleton-${Uuid()}.ps1")

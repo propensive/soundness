@@ -40,7 +40,7 @@ import java.nio.file as jnf
 
 import galilei.javaPath
 
-import charEncoders.asciiEncoder
+import codepages.asciiCodepage
 import strategies.throwUnsafely
 import denominative.dysasymptotics.linearSize
 

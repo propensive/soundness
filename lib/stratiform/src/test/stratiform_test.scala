@@ -65,7 +65,7 @@ import zephyrine.lineation.linefeedByte
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import Tel.given
 
 object Tests extends Suite(m"Stratiform Tests"):
@@ -180,7 +180,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"the streaming parser agrees on a blank-then-deeper document"):
         val source = t"parent\n\n  child value\n"
-        val bytes: Data = summon[CharEncoder].encoded(source)
+        val bytes: Data = summon[Codepage].encoded(source)
         TelCheckTree.of(Tel.make(Tel.Parser.parse(Cursor[Data](bytes))))
         == TelCheckTree.of(source.read[Tel])
       . assert(identity)
@@ -208,7 +208,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         test(m"streaming round-trip ${testcase.stem}"):
           val first = Tel.Parser.parse(Cursor[Data](testcase.source))
           val printed = Tel.make(first).show
-          val bytes: Data = summon[CharEncoder].encoded(printed)
+          val bytes: Data = summon[Codepage].encoded(printed)
           val reparsed = Tel.Parser.parse(Cursor[Data](bytes))
           TelCheckTree.of(Tel.make(reparsed)) == TelCheckTree.of(Tel.make(first))
         . assert(identity)
@@ -817,7 +817,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         // sibling but valid as a child of `parent`; the parser
         // recovers to the deeper interpretation, and the printer
         // re-emits at the canonical two-space indent.
-        val src = summon[CharEncoder].encoded(t"parent\n child Alice\n")
+        val src = summon[Codepage].encoded(t"parent\n child Alice\n")
         val tel = Tel.parse(src, recoverSchema)
         tel.show
       . assert(_ == t"parent\n  child Alice\n")
@@ -846,7 +846,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         // Open one level (`thing`), then an odd-indented `thing`.
         // Both depths admit `thing`; shallower wins per the
         // tie-breaker.
-        val src = summon[CharEncoder].encoded(t"thing\n thing\n")
+        val src = summon[Codepage].encoded(t"thing\n thing\n")
         val tel = Tel.parse(src, tieSchema)
         // The output's child compound is the shallower interpretation
         // (sibling at root) — its keyword is "thing".
@@ -2343,12 +2343,12 @@ object Tests extends Suite(m"Stratiform Tests"):
         dest.open[Tel](Read & Write): handle ?=>
           handle.update(Tel.Pointer.of(t"name"), t"Bob")
 
-        // The decoder is scoped to the read alone: an ambient `CharDecoder`
-        // alongside the file-level `CharEncoder` would make turbulence's
+        // The decoder is scoped to the read alone: an ambient `Charset`
+        // alongside the file-level `Codepage` would make turbulence's
         // codec adapters compete with galilei's direct `pathWritable` when
         // the `open` above resolves its write-back instance.
         val result = locally:
-          import charDecoders.utf8Decoder
+          import charsets.utf8Charset
           import textSanitizers.skipSanitizer
           dest.read[Text]
 

@@ -43,7 +43,7 @@ import prepositional.*
 import turbulence.*
 import zephyrine.*
 
-import charDecoders.utf8Decoder
+import charsets.utf8Charset
 import textSanitizers.skipSanitizer
 import denominative.*
 import denominative.dysasymptotics.linearSize

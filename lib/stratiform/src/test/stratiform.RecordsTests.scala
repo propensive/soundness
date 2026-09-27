@@ -48,7 +48,7 @@ import vacuous.*
 
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import denominative.dysasymptotics.linearSize
 
 object RecordsTests extends Suite(m"Stratiform Records tests"):

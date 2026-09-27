@@ -46,8 +46,8 @@ import prepositional.*
 // text.
 
 // Character decoding as a `Decodable`, so `data.as[Text]` decodes bytes to text through the
-// `CharDecoder` in scope — the counterpart of `Text is Encodable in Data` (a `CharEncoder`).
-given textDecodable: (decoder: CharDecoder) => Text is Decodable in Data = decoder.decoded(_)
+// `Charset` in scope — the counterpart of `Text is Encodable in Data` (a `Codepage`).
+given textDecodable: (decoder: Charset) => Text is Decodable in Data = decoder.decoded(_)
 
 package enumIdentification:
   given kebabCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =

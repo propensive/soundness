@@ -34,7 +34,7 @@ package soundness
 
 export
   hieroglyph
-  . { Bel, Bs, Bsl, CharDecoder, CharEncoder, Chars, Cr,
+  . { Bel, Bs, Bsl, Charset, Codepage, Chars, Cr,
       description, Dqt, enc, Encoding, Esc, Ff, GraphemeBreak, Ht, Lf, majuscule, Measurable,
       metrics, minuscule, Normalization, Nul, Sqt, subscript, superscript, TextSanitizer, ucs,
       Unicode, WideCharacterWidth, whitespace, control, designation, printable, unicode, letter,
@@ -47,13 +47,13 @@ package textSanitizers:
 package textMetrics:
   export hieroglyph.textMetrics.{eastAsianScriptsMetric, wideCharacterWidthMetric, uniformMetric}
 
-package charDecoders:
-  export hieroglyph.charDecoders.{asciiDecoder, utf16Decoder, utf16BeDecoder, utf16LeDecoder,
-      utf8Decoder}
+package charsets:
+  export hieroglyph.charsets.{asciiCharset, utf16Charset, utf16BeCharset, utf16LeCharset,
+      utf8Charset}
 
-package charEncoders:
-  export hieroglyph.charEncoders.{asciiEncoder, utf16Encoder, utf16BeEncoder, utf16LeEncoder,
-      utf8Encoder}
+package codepages:
+  export hieroglyph.codepages.{asciiCodepage, utf16Codepage, utf16BeCodepage, utf16LeCodepage,
+      utf8Codepage}
 
 package communication:
   export hieroglyph.communication.unicodeCharNamesCommunicable

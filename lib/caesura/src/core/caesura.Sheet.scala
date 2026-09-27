@@ -59,7 +59,7 @@ object Sheet:
   private enum State:
     case Fresh, Quoted, DoubleQuoted
 
-  given abstractable: (CharEncoder, Dsv.Format)
+  given abstractable: (Codepage, Dsv.Format)
   =>  Sheet is Abstractable across HttpStreams to HttpStreams.Content =
 
     new Abstractable:
@@ -74,7 +74,7 @@ object Sheet:
             case _    => t"text/csv"
 
         val stream: (Stream[Data] over Credit)^ =
-          dsv.source[Text].via(summon[CharEncoder]).asInstanceOf[(Stream[Data] over Credit)^]
+          dsv.source[Text].via(summon[Codepage]).asInstanceOf[(Stream[Data] over Credit)^]
 
         (mediaType, HttpStreams.Body(stream.chain))
 

@@ -2,7 +2,7 @@ package jslink
 
 import soundness.*
 
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 
 // A Scala.js entry point that exercises a representative slice of the JS-capable
 // modules, so `jslink.fastLinkJS` forces their code reachable and the linker

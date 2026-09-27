@@ -32,81 +32,80 @@
                                                                                                   */
 package hieroglyph
 
-import fulminate.*
+import scala.language.experimental.pureFunctions
 
 import java.nio as jn, jn.charset as jnc
 
 import anticipation.*
 import beneficence.*
 import denominative.*
+import fulminate.*
 import rudiments.*
 import vacuous.*
 
-object CharEncoder:
-  def system: CharEncoder = unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get
+object Charset:
+  case class Focus(position: Int) derives CanEqual
 
-  def unapply(name: Text): Option[CharEncoder] =
-    Encoding.codecs.at(name.s.toLowerCase.nn.tt).let(CharEncoder(_)).option
+  def system(using sanitizer: TextSanitizer): Charset =
+    unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get
 
-  // CharEncodeError → CharEncoder.Error
-  case class Error(char: Char, encoding: Encoding)(using Diagnostics)
-  extends fulminate.Error(282, 0)
-    ( m"character $char cannot be encoded with the encoding $encoding" )
+  def unapply(name: Text)(using sanitizer: TextSanitizer): Option[Charset] =
+    Encoding.unapply(name).map(Charset(_))
 
-class CharEncoder(val encoding: Encoding { type CanEncode = true })
-extends Encodable, Findable:
+  // CharsetError → Charset.Error
+  case class Error(position: Int, encoding: Encoding)(using Diagnostics)
+  extends fulminate.Error
+    ( m"The byte sequence at position $position could not be decoded with the encoding $encoding" )
+
+class Charset(val encoding: Encoding)(using val sanitizer: TextSanitizer) extends Findable:
   type Self = Text
   type Form = Data
 
-  // The `Charset` itself, not its name: `getBytes(String)` looks the charset up
-  // by name on every call, which showed as 4.7% of an HTTP pipeline's profile.
-  // `encoding.charset` resolves once, being a `lazy val`.
-  def encoded(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(encoding.charset).nn)
+  def decoded(bytes: Data, omit: Boolean): Text =
+    val buffer: StringBuilder = StringBuilder()
+    decoded(Chain(bytes)).each: text => buffer.append(text.s)
+    buffer.toString.tt
 
-  // Chunk boundaries are not character boundaries: a surrogate pair may be
-  // split across two chunks, so encoding each chunk independently (as this
-  // method formerly did) corrupts any astral character on a boundary. Chars
-  // stage through a `CharBuffer` — the mirror of `CharDecoder.decoded` — so
-  // pairs carry whole across chunks; malformed and unmappable input is
-  // replaced, matching `getBytes` on the whole-value path above.
-  def encoded(stream: Chain[Text]): Chain[Data] =
-    val encoder =
-      encoding.charset.newEncoder().nn
-      . onMalformedInput(jnc.CodingErrorAction.REPLACE).nn
-      . onUnmappableCharacter(jnc.CodingErrorAction.REPLACE).nn
+  def decoded(bytes: Data): Text = decoded(bytes, false)
 
-    val in = jn.CharBuffer.allocate(4096).nn
-    val out = jn.ByteBuffer.allocate(4096).nn
+  def decoded(stream: Chain[Data]): Chain[Text] =
+    val decoder = encoding.charset.newDecoder().nn
+    val out = jn.CharBuffer.allocate(4096).nn
+    val in = jn.ByteBuffer.allocate(4096).nn
 
-    def recur(todo: Chain[Text], offset: Int = 0): Chain[Data] =
+    // The stream stays `Data` (pure): mapping it to mutable arrays up front
+    // would give every element a reach capability that leaks into `recur`. The
+    // JVM view is taken at the single `put` site, which only reads from it.
+    def recur(todo: Chain[Data], offset: Int = 0, total: Int = 0): Chain[Text] =
       val count = in.remaining
 
-      // `Chain`'s companion primitives: this loop runs once per buffer-load on the encoding
+      // `Chain`'s companion primitives: this loop runs once per buffer-load on the decoding
       // hot path, where the typeclass route is overkill.
       if !todo.nil then
-        val head = Chain.head(todo).s
-        in.put(head, offset, offset + count.min(head.length - offset))
+        val head = Chain.head(todo)
+        in.put(Array.unsafeJvm(head), offset, in.remaining.min(head.length - offset))
 
       in.flip()
-      val status = encoder.encode(in, out, todo.nil).nn
 
-      // An overflowed final round loops to drain; `flush` (significant only
-      // for stateful charsets) happens on the true final round.
-      if todo.nil && !status.isOverflow then encoder.flush(out)
+      def decode(): jnc.CoderResult =
+        val result = decoder.decode(in, out, todo.nil).nn
 
-      out.flip()
-      val array = Array.allocate[Byte](out.remaining)
-      out.get(array.raw)
-      val data: Data = Array.freeze(array)
-      out.clear()
+        if !result.isMalformed then result else
+          sanitizer.sanitize(total + in.position, encoding).let(out.put(_))
+          in.position(in.position + result.length)
+          decode()
+
+      val status = decode()
+      val text = out.flip().nn.toString.tt
       in.compact()
+      out.clear()
 
       def continue =
         if todo.nil && !status.isOverflow then Chain()
-        else if !todo.nil && count >= Chain.head(todo).s.length - offset
-        then recur(Chain.tail(todo), 0)
-        else recur(todo, offset + count)
+        else if !todo.nil && count >= Chain.head(todo).length - offset
+        then recur(Chain.tail(todo), 0, total + Chain.head(todo).length - offset)
+        else recur(todo, offset + count, total + count)
 
-      if data.length == 0 then continue else data #:: continue
+      if text.nil then continue else text #:: continue
 
     recur(stream)

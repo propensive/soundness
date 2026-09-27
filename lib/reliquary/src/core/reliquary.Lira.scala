@@ -57,9 +57,9 @@ object Lira:
   val directive: Text = t"/usr/bin/env lira"
 
   private val directiveBytes: Data =
-    charEncoders.utf8Encoder.encoded(t"#!/usr/bin/env lira\n")
+    codepages.utf8Codepage.encoded(t"#!/usr/bin/env lira\n")
 
-  private val separatorBytes: Data = charEncoders.utf8Encoder.encoded(t"\n##\n")
+  private val separatorBytes: Data = codepages.utf8Codepage.encoded(t"\n##\n")
 
   // Locates the document separator: the first line that is exactly `##`. §5.2 fixes the byte
   // layout so this split needs no TEL parsing — which is essential, since everything after the
@@ -138,7 +138,7 @@ object Lira:
       Lira.Manifest.Payload(t"brotli", stream.length.toLong, Lira.Payload.hash(stream))
 
     val text = manifest.copy(payload = payload).render
-    val manifestData = charEncoders.utf8Encoder.encoded(text)
+    val manifestData = codepages.utf8Codepage.encoded(text)
     val buffer = Array.allocate[Byte](manifestData.length + 3 + compressed.length)
     System.arraycopy(Array.unsafeJvm(manifestData), 0, buffer.raw, 0, manifestData.length)
     buffer(manifestData.length) = '#'.toByte
@@ -271,7 +271,7 @@ object Lira:
       val header = s"tel 1.0 ${Lira.Schemas.deltaSignature}"
       val body = rows.join(t"\n")
       val text = Text(if rows.nil then s"$header\n" else s"$header\n\n$body\n")
-      charEncoders.utf8Encoder.encoded(text)
+      codepages.utf8Codepage.encoded(text)
 
   // LiraError → Lira.Error
   // The validity rules of the LIRA specification, one `Reason` per L-code. Warn-only findings
@@ -466,7 +466,7 @@ object Lira:
         case Atom(discipline) => t"$epoch:atom:$discipline"
 
     def apply(domain: Domain, content: Data): Hash =
-      val prefix: Data = charEncoders.utf8Encoder.encoded(domain.text)
+      val prefix: Data = codepages.utf8Codepage.encoded(domain.text)
       val buffer = Array.allocate[Byte](prefix.length + 1 + content.length)
       System.arraycopy(Array.unsafeJvm(prefix), 0, buffer.raw, 0, prefix.length)
       System.arraycopy(Array.unsafeJvm(content), 0, buffer.raw, prefix.length + 1, content.length)
@@ -1159,7 +1159,7 @@ object Lira:
 
       val body = rows.join(t"\n")
       val text = Text(s"tel 1.0 ${Lira.Schemas.treeSignature}\n\n$body\n")
-      charEncoders.utf8Encoder.encoded(text)
+      codepages.utf8Codepage.encoded(text)
 
   // LiraValidators → Lira.Validators
   // Scalar validators for the `lira` schema family, composed over the TEL built-ins. Each grammar

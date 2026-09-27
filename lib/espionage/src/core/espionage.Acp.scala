@@ -1210,7 +1210,7 @@ object Acp:
     // A message with its terminator. Encoded compactly at the write site: an indented encoding
     // would embed the newlines the framing forbids.
     def frame(body: Text): Data =
-      import charEncoders.utf8Encoder
+      import codepages.utf8Codepage
       t"$body\n".in[Data]
 
     // Reads framed messages from a channel until it is exhausted, handing each to `receive`. A

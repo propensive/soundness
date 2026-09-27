@@ -31,8 +31,8 @@ transport chosen by import — the JVM's own `java.net.http` here, and the alter
 ```scala
 import soundness.*
 
-import charEncoders.utf8Encoder
-import charDecoders.utf8Decoder
+import codepages.utf8Codepage
+import charsets.utf8Charset
 import errorDiagnostics.stackTracesDiagnostics
 import httpBackends.javaNetHttp
 import internetAccess.online

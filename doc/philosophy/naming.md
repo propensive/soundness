@@ -45,7 +45,7 @@ than for their type, since the import is what a reader sees:
 
 ```scala
 import strategies.throwUnsafely
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import dateFormats.iso8601DateFormat
 import probates.cancelProbate
 ```

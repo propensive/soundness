@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import Tel.given
 
 // Positional-assignment fixtures (§19.2, issue #1694). The positional cases

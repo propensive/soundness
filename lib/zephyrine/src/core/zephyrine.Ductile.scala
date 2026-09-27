@@ -62,16 +62,16 @@ object Ductile:
   // Character decoding as a pipeline stage. Bytes are staged internally (so
   // multi-byte characters split across refills are carried, and `step`
   // always consumes what it is offered), and malformed input is substituted
-  // through the decoder's `TextSanitizer`, exactly as `CharDecoder.decoded`.
-  given charDecoder: Instance[CharDecoder, Data, Text, Credit, Credit] =
+  // through the decoder's `TextSanitizer`, exactly as `Charset.decoded`.
+  given charset: Instance[Charset, Data, Text, Credit, Credit] =
     new Ductile:
-      type Self = CharDecoder
+      type Self = Charset
       type Operand = Data
       type Result = Text
       type Transport = Credit
       type Upstream = Credit
 
-      def duct(consume stage: CharDecoder^)(using buffering: Buffering)
+      def duct(consume stage: Charset^)(using buffering: Buffering)
       :   Duct[Data, Text] { type Transport = Credit; type Upstream = Credit } =
 
         new Duct[Data, Text]:
@@ -326,16 +326,16 @@ object Ductile:
 
   // Character encoding as a pipeline stage. Malformed input (a split
   // surrogate pair at end-of-stream) and unmappable characters are replaced,
-  // mirroring the replacement semantics of `CharEncoder.encoded`.
-  given charEncoder: Instance[CharEncoder, Text, Data, Credit, Credit] =
+  // mirroring the replacement semantics of `Codepage.encoded`.
+  given codepage: Instance[Codepage, Text, Data, Credit, Credit] =
     new Ductile:
-      type Self = CharEncoder
+      type Self = Codepage
       type Operand = Text
       type Result = Data
       type Transport = Credit
       type Upstream = Credit
 
-      def duct(consume stage: CharEncoder^)(using buffering: Buffering)
+      def duct(consume stage: Codepage^)(using buffering: Buffering)
       :   Duct[Text, Data] { type Transport = Credit; type Upstream = Credit } =
 
         new Duct[Text, Data]:

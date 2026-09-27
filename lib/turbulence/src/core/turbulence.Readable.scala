@@ -41,7 +41,7 @@ import zephyrine.*
 
 // `Readable` composes a `Source` for the source type and an `Aggregable` for
 // the result type into a single resolvable instance, bridging with a
-// `CharDecoder`/`CharEncoder` duct when the two operate on different operands
+// `Charset`/`Codepage` duct when the two operate on different operands
 // (`Data` vs `Text`) — so a bridged read transcodes incrementally, in bounded
 // buffers, on the reading thread. Expressing the four pipelines as
 // prioritised `given`s (rather than a macro that summons combinations) means
@@ -56,7 +56,7 @@ trait Readable3:
   given textToData: [source, result]
   =>  ( source0: (source is Streamable by Text over Credit)^ )
   =>  ( aggregable: (result is Aggregable by Data)^ )
-  =>  ( encoder: CharEncoder, buffering: Buffering )
+  =>  ( encoder: Codepage, buffering: Buffering )
   =>  ((source is Readable to result)^{source0, aggregable}) =
     value => aggregable.accept(source0.stream(value).via(encoder))
 
@@ -64,7 +64,7 @@ trait Readable2 extends Readable3:
   given dataToText: [source, result]
   =>  ( source0: (source is Streamable by Data over Credit)^ )
   =>  ( aggregable: (result is Aggregable by Text)^ )
-  =>  ( decoder: CharDecoder, buffering: Buffering )
+  =>  ( decoder: Charset, buffering: Buffering )
   =>  ((source is Readable to result)^{source0, aggregable}) =
     value => aggregable.accept(source0.stream(value).via(decoder))
 
@@ -82,7 +82,7 @@ object Readable extends Readable1:
   // by specificity — a whole-file `path.read[Text]` is then a genuinely direct read.
   given dataData: Data is Readable to Data = identity(_)
 
-  given dataText: (decoder: CharDecoder) => ((Data is Readable to Text)) =
+  given dataText: (decoder: Charset) => ((Data is Readable to Text)) =
     decoder.decoded(_)
 
   given dataToData: [source, result]
@@ -93,6 +93,6 @@ object Readable extends Readable1:
 
 @implicitNotFound("turbulence: the source cannot be read as the target type; this needs a "+
     "`Source` instance for the source and an `Aggregable` instance for the target, plus a "+
-    "`CharDecoder` or `CharEncoder` if their operands (Data/Text) differ")
+    "`Charset` or `Codepage` if their operands (Data/Text) differ")
 trait Readable extends Typeclass, Resultant:
   def read(value: Self): Result

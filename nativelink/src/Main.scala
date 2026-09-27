@@ -75,7 +75,7 @@ object Main:
     out.println("fs: exists after delete = "+fs.exists(dir, false))
 
     // Write a file through the backend's `open`, then read it back — real file-content I/O.
-    import charEncoders.utf8Encoder
+    import codepages.utf8Codepage
     val file: Path on Linux = unsafely((% / "var" / "tmp" / "soundness-native-file").on[Linux])
     if fs.exists(file, false) then unsafely(fs.delete(file))
     unsafely:

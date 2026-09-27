@@ -3,8 +3,8 @@
 ### About
 
 The boundary between text and bytes is a [character encoding](https://en.wikipedia.org/wiki/Character_encoding),
-and Soundness makes the choice of encoding explicit and typed. A `CharEncoder` turns text into
-bytes, a `CharDecoder` turns bytes back into text, and each is a contextual value chosen by
+and Soundness makes the choice of encoding explicit and typed. A `Codepage` turns text into
+bytes, a `Charset` turns bytes back into text, and each is a contextual value chosen by
 import, so no conversion happens under an assumed default. What to do with bytes that cannot be
 decoded is a separate, equally explicit choice.
 
@@ -38,8 +38,8 @@ An encoding is brought into scope by import, and the conversion happens where te
 explicitly, or implicitly wherever a [stream](streams.md) operation crosses the boundary:
 
 ```scala
-import charEncoders.utf8Encoder
-import charDecoders.utf8Decoder
+import codepages.utf8Codepage
+import charsets.utf8Charset
 import textSanitizers.strictSanitizer
 
 val bytes = t"café".in[Data]   // UTF-8 bytes
@@ -58,7 +58,7 @@ enc"ABCDEF"   // does not compile: no such encoding
 ### Bad input
 
 A decoder consults the `TextSanitizer` in scope when it meets bytes that are not valid in its
-encoding. The strict sanitizer raises a `CharDecoder.Error` naming the position of the fault; the
+encoding. The strict sanitizer raises a `Charset.Error` naming the position of the fault; the
 skip sanitizer drops the bad bytes; and the substitute sanitizer replaces them with `?`:
 
 ```scala
@@ -69,16 +69,16 @@ val badUtf8 = Data(45, -62, 49, 48)   // a truncated two-byte sequence
 
 locally:
   import textSanitizers.skipSanitizer
-  charDecoders.utf8Decoder.decoded(badUtf8)   // t"-10"
+  charsets.utf8Charset.decoded(badUtf8)   // t"-10"
 
 locally:
   import textSanitizers.substituteSanitizer
-  charDecoders.utf8Decoder.decoded(badUtf8)   // t"-?10"
+  charsets.utf8Charset.decoded(badUtf8)   // t"-?10"
 
 locally:
   import textSanitizers.strictSanitizer
-  capture[CharDecoder.Error](charDecoders.utf8Decoder.decoded(badUtf8))
-  // CharDecoder.Error(1, enc"UTF-8")
+  capture[Charset.Error](charsets.utf8Charset.decoded(badUtf8))
+  // Charset.Error(1, enc"UTF-8")
 ```
 
 Which behavior is right depends on the data: strictness for input that should be trusted
@@ -93,16 +93,16 @@ caller's choosing — here, an [error](errors.md) that collects positions and fa
 block does the decoding:
 
 ```scala
-case class DecodeIssues(items: List[(Int, CharDecoder.Error)] = Nil)(using Diagnostics)
+case class DecodeIssues(items: List[(Int, Charset.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.size} decoding issues"):
-  def +(position: Int, error: CharDecoder.Error): DecodeIssues =
+  def +(position: Int, error: Charset.Error): DecodeIssues =
     DecodeIssues(items :+ (position, error))
 
-validate[CharDecoder.Focus](DecodeIssues()):
-  case error: CharDecoder.Error => accrual + (prior.let(_.position).or(0), error)
+validate[Charset.Focus](DecodeIssues()):
+  case error: Charset.Error => accrual + (prior.let(_.position).or(0), error)
 . protect:
     import textSanitizers.accrueSanitizer
-    charDecoders.utf8Decoder.decoded(badUtf8)   // t"-10", and one recorded issue at position 1
+    charsets.utf8Charset.decoded(badUtf8)   // t"-10", and one recorded issue at position 1
 ```
 
 This is what a tool importing a file of uncertain provenance wants: the text, plus a list of
@@ -110,14 +110,14 @@ where it was wrong, rather than a choice between the two.
 
 ### Encodings
 
-`charEncoders` and `charDecoders` provide the encodings a program is likely to need — `utf8`,
+`codepages` and `charsets` provide the encodings a program is likely to need — `utf8`,
 `utf16` with its explicit little- and big-endian forms, `ascii` and `iso88591` — each as a named
 given, so the encoding a piece of code uses is stated at its import rather than defaulted from the
 platform. An encoding named at runtime is looked up with the `enc"…"` interpolator, which checks
 the name as the code compiles:
 
 ```scala
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 
 enc"UTF-8".encoder
 ```

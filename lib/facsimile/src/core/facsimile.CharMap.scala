@@ -62,7 +62,7 @@ private[facsimile] object CharMap:
       result
 
     def target(value: Cos): Optional[Text] = value.chars.let: bytes =>
-      charDecoders.utf16BeDecoder.decoded(bytes)
+      charsets.utf16BeCharset.decoded(bytes)
 
     def increment(text: Text, by: Int): Text =
       if text.s.isEmpty then text

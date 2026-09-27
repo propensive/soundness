@@ -36,7 +36,7 @@ import soundness.*
 import apoplexy.OpenApi.*
 
 import classloaders.threadContextClassloader
-import charDecoders.utf8Decoder
+import charsets.utf8Charset
 import errorDiagnostics.emptyDiagnostics
 import strategies.throwUnsafely
 import textSanitizers.skipSanitizer

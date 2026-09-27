@@ -59,7 +59,7 @@ object Streamable:
   given text: [textual <: Text] => textual is Streamable by Text over Credit = value => Stream(value)
 
   // A `Text` value streamed as bytes, through the encoder duct.
-  given textData: (encoder: CharEncoder, buffering: Buffering)
+  given textData: (encoder: Codepage, buffering: Buffering)
   =>  Text is Streamable by Data over Credit =
     value => Stream(value).via(encoder).asInstanceOf[(Stream[Data] over Credit)^]
 

@@ -35,7 +35,7 @@ package jacinta
 import soundness.*
 
 
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import strategies.throwUnsafely
 
 // NB: `dynamicAccess.dynamicJson` is deliberately *not* imported here — verified

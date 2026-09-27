@@ -66,6 +66,6 @@ def run(): Unit =
   val response =
     unsafely(DomainSocket(% / "var" / "run" / "docker.sock"))(t"/images/json").fetch()
 
-  import hieroglyph.*, charEncoders.utf8Encoder
+  import hieroglyph.*, codepages.utf8Codepage
 
   println(response.receive[Json].as[List[Container]])

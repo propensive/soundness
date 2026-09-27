@@ -31,7 +31,7 @@ import httpBackends.javaNetHttp
 import internetAccess.online
 import logging.silentLogging
 import strategies.throwUnsafely
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 ```
 
 ### Providers and models

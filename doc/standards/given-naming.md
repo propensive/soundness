@@ -46,7 +46,7 @@ already implies it:
 import probates.cancelProbate           // cancel + Probate
 import textSanitizers.strictSanitizer   // strict + Sanitizer
 import sortingAlgorithms.quicksort      // "quicksort" is already a sorting algorithm
-import charEncoders.utf8Encoder         // UTF-8 could be a decoder; say which
+import codepages.utf8Codepage         // UTF-8 could be a charset; say which
 import regexBackends.re2                // RE2 is a regex engine; nothing to add
 ```
 

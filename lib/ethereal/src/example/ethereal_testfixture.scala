@@ -39,7 +39,7 @@ import java.util.concurrent as juc
 import soundness.*
 
 import backstops.silentBackstop
-import charDecoders.utf8Decoder
+import charsets.utf8Charset
 import classloaders.threadContextClassloader
 import environments.daemonClientEnvironment
 import executives.completionsExecutive

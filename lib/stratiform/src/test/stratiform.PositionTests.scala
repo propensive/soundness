@@ -34,7 +34,7 @@ package stratiform
 
 import soundness.*
 
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import parsing.trackPositions
 import strategies.throwUnsafely
 

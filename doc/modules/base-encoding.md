@@ -30,7 +30,7 @@ the `soundness` package:
 
 ```scala
 import soundness.*
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 ```
 
 Naming the alphabet as a type parameter, rather than passing a flag, is the [declarative context](../philosophy/declarative-context.md) style used throughout.

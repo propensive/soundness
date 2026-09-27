@@ -40,7 +40,7 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric
+import hieroglyph.*, codepages.asciiCodepage, textMetrics.uniformMetric
 import hypotenuse.*
 import prepositional.*
 import rudiments.*

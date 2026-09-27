@@ -14,7 +14,7 @@ import gastronomy.*
 object Main:
   def main(args: Array[String]): Unit =
     val out = java.lang.System.out.nn
-    import charEncoders.utf8Encoder
+    import codepages.utf8Codepage
 
     // HMAC-SHA256 against a known vector — the same assertion the JVM suite makes, here proving
     // libcrypto was loaded and its symbols resolved at run time with nothing else linking it.

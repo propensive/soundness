@@ -44,7 +44,7 @@ import soundness.*
 // collision exists — only this shadowing). Naming it explicitly outranks the wildcard.
 import facsimile.Filter
 
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import cloaks.heapCloak

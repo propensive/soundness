@@ -35,7 +35,7 @@ package stratiform
 import soundness.*
 
 import strategies.throwUnsafely
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import denominative.dysasymptotics.linearSize
 
 // The writer and reader obligations of BinTEL §8.4 (`Tel.Acceptance.serve`, `served` and

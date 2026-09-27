@@ -79,7 +79,7 @@ object Process:
       (stdin, stream) =>
         summon[(ji.OutputStream is Writable by Data)^].write(stdin.outputStream, stream)
 
-    given text: (streamCut: Emit[Truncation.Error], encoder: CharEncoder)
+    given text: (streamCut: Emit[Truncation.Error], encoder: Codepage)
     =>  ((Process.Input is Writable by Text)^{streamCut}) =
       (stdin, stream) =>
         summon[(ji.OutputStream is Writable by Text)^].write(stdin.outputStream, stream)

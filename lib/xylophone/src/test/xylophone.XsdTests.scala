@@ -34,7 +34,7 @@ package xylophone
 
 import soundness.*
 
-import charDecoders.utf8Decoder
+import charsets.utf8Charset
 import classloaders.threadContextClassloader
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely

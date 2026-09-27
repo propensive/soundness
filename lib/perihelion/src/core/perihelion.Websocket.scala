@@ -53,7 +53,7 @@ import zephyrine.*
 
 import Control.*
 import alphabets.base64Standard
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import cryptoPermits.permitDeprecatedCrypto
 import providers.javaBaseProvider
 

@@ -41,7 +41,7 @@ import distillate.*
 import fulminate.*
 import gesticulate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8Encoder
+import hieroglyph.*, codepages.utf8Codepage
 import jacinta.*, formatting.compactJsonFormatting, dynamicAccess.dynamicJson
 import monotonous.*, alphabets.base64Standard
 import obligatory.*

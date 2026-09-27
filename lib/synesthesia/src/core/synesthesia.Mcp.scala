@@ -94,7 +94,7 @@ object Mcp:
   :   Http.Response =
 
     import formatting.compactJsonFormatting
-    import charEncoders.utf8Encoder
+    import codepages.utf8Codepage
 
     given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
     given mcpProtocolVersion: ("mcpProtocolVersion" is Directive of Text) = identity(_)
@@ -900,7 +900,7 @@ object Mcp:
 
       recover:
         case error @ JsonRpc.Error(_, _, _) =>
-          import hieroglyph.charEncoders.utf8Encoder
+          import hieroglyph.codepages.utf8Codepage
           Http.Response(Unfulfilled(t"JSON-RPC error: ${error.message.text}"))
 
       . protect:

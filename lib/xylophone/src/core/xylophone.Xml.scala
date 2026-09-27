@@ -1700,7 +1700,7 @@ object Xml extends Tag.Container
   // `Xml` value usable as an HTTP request/response body (telekinesis derives
   // `Postable`/`Servable` from it); `Instantiable across HttpRequests` reads a
   // request/response body back into `Xml`.
-  given abstractable: (encoder: CharEncoder)
+  given abstractable: (encoder: Codepage)
   =>  Xml is Abstractable across HttpStreams to HttpStreams.Content =
 
     new Abstractable:

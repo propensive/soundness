@@ -44,7 +44,7 @@ import denominative.*
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
-import hieroglyph.*, charDecoders.utf8Decoder, charEncoders.utf8Encoder,
+import hieroglyph.*, charsets.utf8Charset, codepages.utf8Codepage,
     textSanitizers.strictSanitizer
 import lineSeparation.adaptiveLinefeedLineSeparation
 import monotonous.*, alphabets.base64Standard, alphabets.hexLowerCase, alphabets.base32LowerCase
@@ -413,17 +413,17 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
     // Example 2: UTF-8 decode (count decoded characters).
     suite(m"UTF-8 decode (4 MB)"):
-      bench(m"Soundness  via(CharDecoder)")
+      bench(m"Soundness  via(Charset)")
         ( target = 1*Second, operationSize = textSize ):
-        '{ turbulence.Benchmarks.textData.stream.via(summon[CharDecoder]).memoize.s.length }
+        '{ turbulence.Benchmarks.textData.stream.via(summon[Charset]).memoize.s.length }
 
       // The memoize row above concatenates the full 5 MB Text; this row counts
       // chars per window, the same aggregation shape as the FS2/ZIO rows.
-      bench(m"Soundness  via(CharDecoder) fold")(target = 1*Second, operationSize = textSize):
+      bench(m"Soundness  via(Charset) fold")(target = 1*Second, operationSize = textSize):
         '{
             var total = 0L
 
-            turbulence.Benchmarks.textData.stream.via(summon[CharDecoder])
+            turbulence.Benchmarks.textData.stream.via(summon[Charset])
             . drain(region => range => total += (range: Interval).size)
 
             total
@@ -536,7 +536,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             turbulence.Benchmarks.count:
               turbulence.Benchmarks.textData.stream
-              . via(summon[CharDecoder]).via(summon[CharEncoder])
+              . via(summon[Charset]).via(summon[Codepage])
         }
 
       bench(m"FS2  utf8.decode.encode")(target = 1*Second, operationSize = textSize):
@@ -557,12 +557,12 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
     // Chained example C: gunzip -> UTF-8 decode -> count characters.
     suite(m"Chained: gunzip -> UTF-8 decode -> count (gzipped text)"):
-      bench(m"Soundness  decompress.via(summon[CharDecoder])")
+      bench(m"Soundness  decompress.via(summon[Charset])")
         ( target = 1*Second, operationSize = textSize ):
         '{
             turbulence.Benchmarks.count:
               turbulence.Benchmarks.gzippedText.stream.decompress[Gzip]
-              . via(summon[CharDecoder])
+              . via(summon[Charset])
         }
 
       bench(m"FS2  gunzip.utf8.decode")(target = 1*Second, operationSize = textSize):
@@ -700,9 +700,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             turbulence.Benchmarks.count:
               turbulence.Benchmarks.textData.stream
-              . via(summon[CharDecoder]).via(summon[CharEncoder])
-              . via(summon[CharDecoder]).via(summon[CharEncoder])
-              . via(summon[CharDecoder])
+              . via(summon[Charset]).via(summon[Codepage])
+              . via(summon[Charset]).via(summon[Codepage])
+              . via(summon[Charset])
         }
 
       bench(m"FS2  utf8 decode/encode x2.5")(target = 1*Second, operationSize = textSize):
@@ -734,9 +734,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             turbulence.Benchmarks.count:
               turbulence.Benchmarks.textData.stream
-              . via(summon[CharDecoder]).via(summon[CharEncoder])
+              . via(summon[Charset]).via(summon[Codepage])
               . serialize[Base64].deserialize[Base64]
-              . via(summon[CharDecoder])
+              . via(summon[Charset])
         }
 
       bench(m"FS2  utf8/base64 chain")(target = 1*Second, operationSize = textSize):
@@ -758,7 +758,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         ( target = 1*Second, operationSize = textSize ):
         '{
             turbulence.Benchmarks.textData.stream.discard(turbulence.Benchmarks.dropBytes)
-            . via(summon[CharDecoder]).via(summon[CharEncoder])
+            . via(summon[Charset]).via(summon[Codepage])
             . truncate(turbulence.Benchmarks.takeBytes)
             . gather(0L)(_ => (total, range) => total + (range: Interval).size)
         }
@@ -1874,12 +1874,12 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Stress: UTF-8 decode memory (4 MB, N=8)"):
       import threading.platformThreading
 
-      stress(m"Soundness  via(CharDecoder)")
+      stress(m"Soundness  via(Charset)")
         ( target = 2*Second, concurrency = 8 ):
         '{
             var total = 0L
 
-            turbulence.Benchmarks.textData.stream.via(summon[CharDecoder])
+            turbulence.Benchmarks.textData.stream.via(summon[Charset])
             . drain(region => range => total += (range: Interval).size)
 
             total
@@ -2156,9 +2156,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             var total = 0L
 
             turbulence.Benchmarks.smallText.stream
-            . via(summon[CharDecoder]).via(summon[CharEncoder])
-            . via(summon[CharDecoder]).via(summon[CharEncoder])
-            . via(summon[CharDecoder])
+            . via(summon[Charset]).via(summon[Codepage])
+            . via(summon[Charset]).via(summon[Codepage])
+            . via(summon[Charset])
             . drain(region => range => total += (range: Interval).size)
 
             total
@@ -2193,9 +2193,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             var total = 0L
 
             turbulence.Benchmarks.smallText.stream
-            . via(summon[CharDecoder]).via(summon[CharEncoder])
-            . via(summon[CharDecoder]).via(summon[CharEncoder])
-            . via(summon[CharDecoder])
+            . via(summon[Charset]).via(summon[Codepage])
+            . via(summon[Charset]).via(summon[Codepage])
+            . via(summon[Charset])
             . drain(region => range => total += (range: Interval).size)
 
             total

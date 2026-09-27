@@ -57,7 +57,7 @@ import galilei.*
 import gossamer.*
 import guillotine.*
 import hellenism.*, classloaders.threadContextClassloader
-import hieroglyph.*, charEncoders.utf8Encoder, charDecoders.utf8Decoder
+import hieroglyph.*, codepages.utf8Codepage, charsets.utf8Charset
 import textSanitizers.strictSanitizer
 import nomenclature.*
 import parasite.*, Async.nominative
@@ -234,7 +234,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
 
   def makeClient(connection: Connection)(using Monitor, Stdio, Probate)
-    ( using Tactic[Truncation.Error], Tactic[CharDecoder.Error], Tactic[Number.Error],
+    ( using Tactic[Truncation.Error], Tactic[Charset.Error], Tactic[Number.Error],
             (DaemonLogEvent is Loggable)^ )
   :   Unit =
 

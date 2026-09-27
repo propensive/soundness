@@ -77,7 +77,7 @@ object Git:
         previous.lay(true)(_ != progress).also { previous = progress }
 
   def progress(process: Job[?, ?]): Iterator[Progress] =
-    import hieroglyph.charDecoders.utf8Decoder, hieroglyph.textSanitizers.substituteSanitizer
+    import hieroglyph.charsets.utf8Charset, hieroglyph.textSanitizers.substituteSanitizer
     import turbulence.lineSeparation.adaptiveLinefeedLineSeparation
 
     // `delineate` splits on `\n`, `\r\n` and `\r`, so git's carriage-return

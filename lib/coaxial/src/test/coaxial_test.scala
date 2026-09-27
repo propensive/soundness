@@ -43,8 +43,8 @@ import java.nio.channels as jnc
 import soundness.{transmit as _, listen as _, react as _, duplex as _, *}
 import denominative.capped
 
-import charEncoders.utf8Encoder
-import charDecoders.utf8Decoder
+import codepages.utf8Codepage
+import charsets.utf8Charset
 import textSanitizers.skipSanitizer
 import errorDiagnostics.stackTracesDiagnostics
 import threading.platformThreading

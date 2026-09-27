@@ -55,14 +55,14 @@ import scala.Predef
 import anticipation.Text
 import contingency.strategies
 import gossamer.t
-import hieroglyph.charEncoders
+import hieroglyph.codepages
 import jacinta.Json
 import rudiments.*
 import rudiments.sortingAlgorithms.timsort
 import turbulence.read
 
 import strategies.throwUnsafely
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 
 import denominative.*
 import denominative.dysasymptotics.linearSize

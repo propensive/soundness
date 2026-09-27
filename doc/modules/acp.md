@@ -110,8 +110,8 @@ its requests to write one. A read handler sees the `path`, and optionally a star
 `limit` on the number of lines; a write handler sees the `path` and the `content`:
 
 ```scala
-import charEncoders.utf8Encoder
-import charDecoders.utf8Decoder
+import codepages.utf8Codepage
+import charsets.utf8Charset
 import filesystemOptions.createNonexistentParents
 
 def files(using Acp.Registry^): Unit =

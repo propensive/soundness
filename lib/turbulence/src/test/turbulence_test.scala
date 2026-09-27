@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import soundness.*
 
-import charEncoders.utf8Encoder, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
+import codepages.utf8Codepage, charsets.utf8Charset, textSanitizers.strictSanitizer
 import threading.platformThreading
 import strategies.throwUnsafely
 import probates.panicProbate
@@ -134,7 +134,7 @@ object Tests extends Suite(m"Turbulence tests"):
         val high = gothic.s.charAt(0).toString.tt
         val low = gothic.s.charAt(1).toString.tt
 
-        val chunks: List[Data] = summon[CharEncoder].encoded(Chain(t"a", high, low, t"b")).to[List]
+        val chunks: List[Data] = summon[Codepage].encoded(Chain(t"a", high, low, t"b")).to[List]
         chunks.bind(_.to[List])
       . assert(_ == t"a𐍈b".in[Data].to[List])
 
@@ -144,7 +144,7 @@ object Tests extends Suite(m"Turbulence tests"):
         val chunks =
           (0 until string.length).map { index => string.charAt(index).toString.tt }.to(Chain)
 
-        summon[CharDecoder].decoded(summon[CharEncoder].encoded(chunks))
+        summon[Charset].decoded(summon[Codepage].encoded(chunks))
         . to[List].join.s
       . assert(_ == "aë€𐍈z")
 

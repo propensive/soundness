@@ -41,7 +41,7 @@ import scala.language.experimental.captureChecking
 import soundness.*
 
 import strategies.throwUnsafely
-import charDecoders.utf8Decoder, charEncoders.utf8Encoder, textSanitizers.skipSanitizer
+import charsets.utf8Charset, codepages.utf8Codepage, textSanitizers.skipSanitizer
 import gossamer.textDecodable
 import providers.javaBaseProvider
 import cryptoPermits.permitDisallowedCrypto   // RSA-1024 below is weak; AES-CBC is unauthenticated

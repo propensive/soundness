@@ -45,7 +45,7 @@ import contingency.*
 import distillate.*
 import gesticulate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8Encoder
+import hieroglyph.*, codepages.utf8Codepage
 import hypotenuse.*
 import prepositional.*
 import rudiments.map

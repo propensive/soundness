@@ -42,7 +42,7 @@ import distillate.*
 import fulminate.*
 import gesticulate.*
 import gossamer.*
-import hieroglyph.*, charDecoders.utf8Decoder, charEncoders.utf8Encoder,
+import hieroglyph.*, charsets.utf8Charset, codepages.utf8Codepage,
     textSanitizers.strictSanitizer
 import jacinta.*
 import obligatory.*
@@ -294,10 +294,10 @@ object Llm:
     ( using tactic: Tactic[Error], diagnostics: Diagnostics )
   :   Iterator[Text]^ =
 
-    given decodeTactic: (Tactic[CharDecoder.Error]^) = tactic.contramap: _ =>
+    given decodeTactic: (Tactic[Charset.Error]^) = tactic.contramap: _ =>
       Error(Error.Reason.Malformed, t"the stream was not valid UTF-8")
 
-    response.body.stream.via(summon[CharDecoder]).chunks.frames[Sse]
+    response.body.stream.via(summon[Charset]).chunks.frames[Sse]
 
   // A frame no server can send — `data:` lines never contain a NUL — marking the end of the
   // frame stream to the translation.

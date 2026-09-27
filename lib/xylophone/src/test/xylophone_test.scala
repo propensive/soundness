@@ -1278,7 +1278,7 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_ == XPath.deep(t"button").where(XPath.textual === t"Submit"))
 
     suite(m"HTTP content-type integration"):
-      import charEncoders.utf8Encoder
+      import codepages.utf8Codepage
 
       test(m"serialises with an application/xml media type"):
         x"<doc/>".generic(0)

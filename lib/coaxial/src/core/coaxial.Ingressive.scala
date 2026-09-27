@@ -40,9 +40,9 @@ import prepositional.*
 
 object Ingressive:
   given bytes: Data is Ingressive = identity(_)
-  given text: CharDecoder => Text is Ingressive = summon[CharDecoder].decoded(_)
+  given text: Charset => Text is Ingressive = summon[Charset].decoded(_)
 
-  given decoder: [message: Decodable in Text] => CharDecoder => message is Ingressive =
+  given decoder: [message: Decodable in Text] => Charset => message is Ingressive =
     text.map(_.as[message])
 
 trait Ingressive extends Typeclass:

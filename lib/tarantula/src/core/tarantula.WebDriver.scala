@@ -46,7 +46,7 @@ import fulminate.*
 import gesticulate.*
 import gossamer.*
 import guillotine.*
-import hieroglyph.*, charEncoders.utf8Encoder, charDecoders.utf8Decoder,
+import hieroglyph.*, codepages.utf8Codepage, charsets.utf8Charset,
     textSanitizers.strictSanitizer
 import jacinta.*, formatting.compactJsonFormatting, dynamicAccess.dynamicJson
 import monotonous.*, alphabets.base64Standard
@@ -769,7 +769,7 @@ object WebDriver:
     private given base64Tactic: (Tactic[Serialization.Error]^) =
       tactic.contramap(_ => Session.malformed(t"the screenshot was not valid Base64")(using note))
 
-    private given decodeTactic: (Tactic[CharDecoder.Error]^) =
+    private given decodeTactic: (Tactic[Charset.Error]^) =
       tactic.contramap(_ => Session.malformed(t"the reply was not valid UTF-8")(using note))
 
     // The `using`/`value` pair the specification requires, rendered by the `Focusable` instance.

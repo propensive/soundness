@@ -81,7 +81,7 @@ object Pdf:
       t"xref\n0 3\n0000000000 65535 f \n${pad(offset1)} 00000 n \n${pad(offset2)} 00000 n \n"
 
     val trailer = t"trailer\n<< /Size 3 /Root 1 0 R >>\nstartxref\n$xrefOffset\n%%EOF"
-    val bytes = charEncoders.iso88591Encoder.encoded(t"$body$table$trailer")
+    val bytes = codepages.iso88591Codepage.encoded(t"$body$table$trailer")
     val source = DataSource(bytes)
     Pdf(source, Xref.load(source), Version(1, 7))
 

@@ -41,7 +41,7 @@ import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 import logging.silentLogging
 import strategies.throwUnsafely
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 
 case class Address(house: Int, street: Text, city: Text, country: Text)
 case class Person(name: Text, address: Address)

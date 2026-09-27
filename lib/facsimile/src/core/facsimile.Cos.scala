@@ -59,7 +59,7 @@ object Cos:
         extent.each: i =>
           scribe(i) = text.s.charAt((i: Ordinal).n0).toByte
     else
-      val body = charEncoders.utf16BeEncoder.encoded(text)
+      val body = codepages.utf16BeCodepage.encoded(text)
       val bytes = Array.allocate[Byte](body.length + 2)
       bytes(0) = 0xfe.toByte
       bytes(1) = 0xff.toByte
@@ -70,10 +70,10 @@ object Cos:
   // PDFDocEncoding.
   private[facsimile] def decodeText(bytes: Data): Text =
     if bytes.length >= 2 && (bytes.readable(0) & 0xff) == 0xfe && (bytes.readable(1) & 0xff) == 0xff
-    then charDecoders.utf16BeDecoder.decoded(bytes.skip(2))
+    then charsets.utf16BeCharset.decoded(bytes.skip(2))
     else if bytes.length >= 3
             && (bytes.readable(0) & 0xff) == 0xef && (bytes.readable(1) & 0xff) == 0xbb && (bytes.readable(2) & 0xff) == 0xbf
-    then charDecoders.utf8Decoder.decoded(bytes.skip(3))
+    then charsets.utf8Charset.decoded(bytes.skip(3))
     else
       val chars = Array.allocate[Char](bytes.length)
       var i = 0

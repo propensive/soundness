@@ -55,7 +55,7 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import charDecoders.utf8Decoder
+import charsets.utf8Charset
 import textSanitizers.skipSanitizer
 
 import filesystemBackends.javaBaseFilesystem

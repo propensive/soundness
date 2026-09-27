@@ -36,7 +36,7 @@ hashing provider and an alphabet in scope:
 import soundness.*
 
 import alphabets.hexLowerCase
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import providers.javaBaseProvider
 import strategies.throwUnsafely
 ```

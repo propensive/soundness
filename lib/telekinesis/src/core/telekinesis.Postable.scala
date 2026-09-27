@@ -80,10 +80,10 @@ object Postable:
       def stream(response: response): (Stream[Data] over Credit)^ = stream0.stream(response)
 
 
-  given text: (encoder: CharEncoder) => Text is Postable =
+  given text: (encoder: Codepage) => Text is Postable =
     Postable(media"text/plain", value => Stream(value.in[Data]))
 
-  given textStream: (encoder: CharEncoder) => Chain[Text] is Postable =
+  given textStream: (encoder: Codepage) => Chain[Text] is Postable =
     Postable(media"application/octet-stream", chain => Stream(chain.map(_.in[Data])))
 
   given unit: Unit is Postable = Postable(media"text/plain", _ => Iterator.empty[Data].stream)
@@ -93,7 +93,7 @@ object Postable:
     Postable(media"application/octet-stream", chain => Stream(chain))
 
   given query: Query is Postable =
-    import charEncoders.utf8Encoder
+    import codepages.utf8Codepage
     Postable(media"application/x-www-form-urlencoded", query => query.queryString.in[Data].stream)
 
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]

@@ -46,7 +46,7 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
-import hieroglyph.*, charEncoders.utf8Encoder
+import hieroglyph.*, codepages.utf8Codepage
 import symbolism.*
 import turbulence.*
 import vacuous.*
