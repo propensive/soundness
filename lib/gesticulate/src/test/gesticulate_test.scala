@@ -56,7 +56,7 @@ object Tests extends Suite(m"Gesticulate tests"):
             Array.frozen(data.readable.slice(offset, end)) #:: go(end)
         go(0)
 
-      def bodyText(part: Part): Text = part.body.read[Data].utf8
+      def bodyText(part: Part): Text = part.read[Data].utf8
 
       val blockSizes = List(1, 2, 3, 7, 13, 32, 4096)
 
@@ -184,6 +184,88 @@ object Tests extends Suite(m"Gesticulate tests"):
         capture[Multipart.Error](Multipart.parse(Chain(body.in[Data]))).reason
 
       . assert(_ == Multipart.Error.Reason.Expected('-'))
+
+      // Binary bodies larger than the cursor's buffer: emitted as several blocks, each
+      // found by the bulk delimiter search, with pseudo-random content that contains `\r`,
+      // `\r\n` and `\r\n--` fragments for it to reject.
+      def binary(size: Int, seed: Int): Data =
+        val bytes = new scala.Array[Byte](size)
+        java.util.Random(seed).nextBytes(bytes)
+        Array.unsafeFrozen(bytes)
+
+      def bytesChunks(data: Data, size: Int): Chain[Data] =
+        def go(offset: Int): Chain[Data] =
+          if offset >= data.length then Chain() else
+            val end = math.min(offset + size, data.length)
+            Array.frozen(data.readable.slice(offset, end)) #:: go(end)
+        go(0)
+
+      def binaryWire(body: Data, rest: Text = t"--xyz--\r\n"): Data =
+        val head =
+          t"--xyz\r\nContent-Disposition: form-data; name=\"file\"; filename=\"f.bin\"\r\n\r\n"
+          . in[Data]
+
+        val tail = (t"\r\n" + rest).in[Data]
+        val wire = new scala.Array[Byte](head.length + body.length + tail.length)
+        System.arraycopy(Array.unsafeJvm(head), 0, wire, 0, head.length)
+        System.arraycopy(Array.unsafeJvm(body), 0, wire, head.length, body.length)
+        System.arraycopy(Array.unsafeJvm(tail), 0, wire, head.length + body.length, tail.length)
+        Array.unsafeFrozen(wire)
+
+      def same(left: Data, right: Data): Boolean =
+        java.util.Arrays.equals(Array.unsafeJvm(left), Array.unsafeJvm(right))
+
+      val large = binary(100000, 1)
+
+      for blockSize <- List(1, 7, 50, 4095, 4096, 65536) do
+        test(m"100 KB binary body round-trips at block size $blockSize"):
+          val part = Multipart.parse(bytesChunks(binaryWire(large), blockSize)).parts.stdlib.head
+          same(part.read[Data], large)
+
+        . assert(_ == true)
+
+      test(m"A body larger than the cursor's window is lent as several regions"):
+        var regions = 0
+        val upload = Multipart.parse(bytesChunks(binaryWire(large), 4096))
+        upload.parts.stdlib.head.body().drain { region => range => regions += 1 }
+        regions
+
+      . assert(_ > 1)
+
+      test(m"A part's body reads as empty once the next part has been read"):
+        val parts = Multipart.parse(chunks(twoParts, 4096)).parts
+        parts.stdlib.length
+        bodyText(parts.stdlib.head)
+
+      . assert(_ == t"")
+
+      test(m"A body may be read in two pieces"):
+        val part = Multipart.parse(bytesChunks(binaryWire(large), 4096)).parts.stdlib.head
+        val first = part.body()
+        val piece = first.refill(Credit(1000)).or(0)
+        first.skip(piece)
+        piece + part.read[Data].length
+
+      . assert(_ == 100000)
+
+      test(m"A field after a 100 KB binary body is still read"):
+        val rest =
+          t"--xyz\r\nContent-Disposition: form-data; name=\"after\"\r\n\r\nvalue2\r\n--xyz--\r\n"
+        Multipart.parse(bytesChunks(binaryWire(large, rest), 4096)).parts.map(bodyText).stdlib.last
+
+      . assert(_ == t"value2")
+
+      // Bodies whose delimiter lands on or straddles a window edge: multiples of the cursor's
+      // 4 KiB fill, give or take the delimiter's length.
+      for base <- List(4096, 8192); delta <- -16 to 16 do
+        val size = base + delta
+
+        test(m"Body of $size bytes, delimiter at a window edge, round-trips"):
+          val body = binary(size, size)
+          val part = Multipart.parse(bytesChunks(binaryWire(body), 4096)).parts.stdlib.head
+          same(part.read[Data], body)
+
+        . assert(_ == true)
 
     test(m"parse media type's type"):
       t"application/json".as[MediaType].group

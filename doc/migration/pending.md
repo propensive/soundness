@@ -524,6 +524,22 @@ format. Entries are grouped by module, most-recently-added last within a module.
   the IANA registry is compiled into a string table (`gesticulate.MediaTypeData`, private) at
   build time from `lib/gesticulate/data`. The `media"…"` macro's unregistered-type check is
   unchanged. (#2082)
+- `gesticulate.Part#body` is now a `zephyrine.Spring[Data]` (call `body()` for a fresh
+  `Stream[Data] over Credit`) instead of a `Chain[Data]`, and `Multipart.parse` no longer
+  materialises bodies: each part's body is lent zero-copy from the input being parsed, and is
+  readable only while that part is the current one. Forcing the next part of `Multipart#parts`
+  (or `Multipart#at`, which forces every part before the match) skips whatever remains of the
+  earlier body, after which it reads as empty. Read a body before moving on: `part.read[Data]`
+  and `Part is Streamable` are unchanged; code that held `part.body` as a value and read it
+  later, or iterated its blocks, must read through `part.body()` (a stream) while the part is
+  current. `Part(disposition, headers, name, filename, body)` takes a `Spring[Data]` in the
+  last position. (#2098)
+- A `zephyrine.Cursor` over a stream, or over a chain of `Data` chunks, now reads a region
+  its source lends in place whenever nothing of its own is live, rather than copying every
+  region into its buffer; while a hold spans a fill it copies as before. The buffer a parser
+  observes through `unsafeBuffer`/`unsafeDataBuffer` may therefore be a different array after
+  any refill, not just a grown one — which the existing "valid only until the next cursor
+  operation" contract already required callers to assume. (#2098)
 
 ## gossamer
 
@@ -955,7 +971,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   List[Lira.Hash], snapshot: Lira.Hash, grade: Grade, forceMajor: Boolean = false): List[Lira.Hash]`
   and `reliquary.LiraAssembler.assemble`'s `lineage: List[Lira.Hash] = List()`. Unchanged:
   `reliquary.Lira.Delta`, `reliquary.Lira.Tree`, `TreeEntry`, `Atom` and `Blob` still carry their
-  hashes as `Data`, and `Buildpath#hostRequirements`'s `used: Data => …` still receives bytes. (#PR)
+  hashes as `Data`, and `Buildpath#hostRequirements`'s `used: Data => …` still receives bytes. (#2098)
 - `reliquary.Lira.Manifest.decode(tel: Tel): Lira.Manifest raises Lira.Error` is now derived
   from the manifest case classes by stratiform's `Tel.Decodable`. The result for a valid manifest
   is unchanged. For an invalid one the `Lira.Error.Reason.InvalidManifest(detail)` detail text
@@ -965,7 +981,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `revolution.Semver` rejects, where previously it was prose such as `the payload record is
   missing or repeated` or `a hash is malformed`. A non-repeatable field that appears twice is no
   longer rejected by `decode` itself (the first occurrence is read); `Lira.read` still rejects it
-  through schema validation before decoding. (#PR)
+  through schema validation before decoding. (#2098)
 
 ## revolution
 

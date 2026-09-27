@@ -72,6 +72,68 @@ object Cursor:
     def block: Int
     def fill(storage: storage, offset: Int, space: Int): Int
 
+  // A filler whose source can also lend: `borrow` exposes the source's next region — its
+  // storage, start and count — for the cursor to read in place, with no copy, which the
+  // cursor does whenever nothing in its own buffer is live. The region stays valid until the
+  // next `borrow` or `fill`, which releases it, so a source that recycles its blocks never
+  // overwrites one the cursor is still reading. Returns the count, `0` when nothing was
+  // granted (the cursor retries), or `-1` at end-of-stream.
+  trait Lender[storage] extends Filler[storage]:
+    def borrow(): Int
+    def lentStorage: storage
+    def lentStart: Int
+
+  // A byte sequence to be found in bulk — a multipart boundary, an archive signature — with
+  // its Horspool skip table computed once. `find` probes the last byte of each candidate
+  // window and shifts by the table, so on data unlike the delimiter it visits about one byte
+  // in `length` instead of every byte, and a partial match costs a few comparisons rather
+  // than a lookahead. Searched for with `Cursor[Data]`'s `distance`.
+  object Delimiter:
+    def apply(bytes: Data): Delimiter = new Delimiter(bytes)
+
+  final class Delimiter private (data: Data):
+    // Untracked, as the cursor's own buffer is: both arrays are written only here, during
+    // construction, and are reached only through this instance.
+    @caps.unsafe.untrackedCaptures
+    private val bytes: scala.Array[Byte] = Array.unsafeJvm(data)
+
+    val length: Int = bytes.length
+
+    // For each byte value, how far the window shifts when that byte is the last one probed:
+    // to align it with its last occurrence inside the delimiter, or past the window if none.
+    // Chars, not ints: half a kilobyte of table for a delimiter of up to 65535 bytes.
+    @caps.unsafe.untrackedCaptures
+    private val shifts: scala.Array[Char] =
+      val table = scala.Array.fill(256)(length.min(Char.MaxValue.toInt).toChar)
+      var index = 0
+
+      while index < length - 1 do
+        table(bytes(index) & 0xff) = (length - 1 - index).min(Char.MaxValue.toInt).toChar
+        index += 1
+
+      table
+
+    // The index at which the delimiter first begins in `buffer`, wholly within `from` until
+    // `end`, or `-1` if it does not.
+    def find(buffer: scala.Array[Byte], from: Int, end: Int): Int =
+      if length == 0 then from else
+        val last = length - 1
+        var index = from
+        var found = -1
+
+        // Horspool: `index + last < end` keeps every probe inside the window.
+        while found < 0 && index + last < end do
+          val probe = buffer(index + last)
+
+          if probe == bytes(last) then
+            var offset = 0
+            while offset < last && buffer(index + offset) == bytes(offset) do offset += 1
+            if offset == last then found = index
+
+          if found < 0 then index += shifts(probe & 0xff)
+
+        found
+
   object Mark:
     final val Initial: Mark = 0L
 
@@ -161,13 +223,16 @@ object Cursor:
     cursor
 
 
-  // Build a Cursor over a pull endpoint: each fill refills the stream with a credit
-  // bounded by the ambient `Buffering` block size and transfers the delivered region
-  // straight into the cursor's buffer — a single copy, with no intermediate chunk
-  // allocation. The credit bounds how much any upstream stage produces per fill, so
-  // memory stays bounded through a parse of an arbitrarily large input. The region is
-  // read and skipped within the fill, before the stream can refill again — the borrow
-  // discipline `Stream.lend` documents, applied at the one place a cursor touches it.
+  // Build a Cursor over a pull endpoint. When nothing of its own is live, the cursor reads
+  // the stream's next region in place — no copy at all, with a credit of the ambient
+  // `Buffering`'s window — and releases it at the next fill. Otherwise (a hold spans the
+  // fill) each fill refills the stream with a credit bounded by the `Buffering` block size
+  // and transfers the delivered region straight into the cursor's buffer — a single copy,
+  // with no intermediate chunk allocation. The credit bounds how much any upstream stage
+  // produces per fill, so memory stays bounded through a parse of an arbitrarily large
+  // input. A copied region is read and skipped within the fill, before the stream can
+  // refill again — the borrow discipline `Stream.lend` documents, applied at the one place
+  // a cursor touches it.
   def apply[data](consume stream: (Stream[data] over Credit)^)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand,
@@ -188,10 +253,42 @@ object Cursor:
         // this factory — sole ownership), and Cursor's Unscoped classification cannot
         // hold a non-Unscoped capture.
         locally:
-          val filler = new Filler[addressable0.Storage]:
+          val filler = new Lender[addressable0.Storage]:
             val block: Int = buffering.capacity(addressable0.substrate)
+            private val window: Int = buffering.window(addressable0.substrate)
+
+            // The region last lent, released at the next borrow or fill. Untracked: a filler
+            // is reached only through its cursor, which alone calls it, from `refill`.
+            @caps.unsafe.untrackedCaptures
+            private var lentStorage0: addressable0.Storage =
+              addressable0.allocate(0).asInstanceOf[addressable0.Storage]
+
+            @caps.unsafe.untrackedCaptures
+            private var lentStart0: Int = 0
+
+            @caps.unsafe.untrackedCaptures
+            private var lent: Int = 0
+
+            def lentStorage: addressable0.Storage = lentStorage0
+            def lentStart: Int = lentStart0
+
+            private def release(): Unit =
+              if lent > 0 then
+                stream.skip(lent)
+                lent = 0
+
+            def borrow(): Int =
+              release()
+
+              stream.refill(Credit(window)).lay(-1): count =>
+                lentStorage0 = stream.unsafeStorage(using Unsafe).asInstanceOf[addressable0.Storage]
+                lentStart0 = stream.start
+                lent = count
+                count
 
             def fill(storage: addressable0.Storage, offset: Int, space: Int): Int =
+              release()
+
               stream.refill(Credit(space.min(block))).lay(-1): count =>
                 val copied = count.min(space)
                 val source = stream.unsafeStorage(using Unsafe).asInstanceOf[addressable0.Storage]
@@ -355,6 +452,21 @@ object Cursor:
     inline def unsafeDataBuffer(using erased unsafe: Unsafe): scala.Array[Byte] =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Byte]]
 
+    // How far ahead of the cursor `delimiter` first begins, wholly within the buffered
+    // region, or `-1` if it does not. The buffer is searched in bulk; the cursor is not
+    // moved and nothing is refilled, so unlike `seek` this cannot block on a live stream
+    // (see the hazard note). A scan that finds nothing should consume all but the last
+    // `delimiter.length - 1` buffered bytes — a possible prefix of a delimiter straddling
+    // the refill — and search again once more has arrived.
+    inline def distance(delimiter: Cursor.Delimiter): Int =
+      val position = cursor.unsafePos(using Unsafe)
+
+      val index =
+        delimiter.find
+          ( cursor.unsafeDataBuffer(using Unsafe), position, cursor.unsafeWriteEnd(using Unsafe) )
+
+      if index < 0 then -1 else index - position
+
   extension [cap^](cursor: Cursor[Text, cap])
     @targetName("textBuffer")
     inline def unsafeTextBuffer(using erased unsafe: Unsafe): scala.Array[Char] =
@@ -418,12 +530,19 @@ extends caps.Mutable:
   // factory cast below is the audited point.
   private val static: Boolean = preset.present
 
-  // Untracked, with cast-erased assignments: the buffer is reached only through
-  // this (exclusive) cursor.
+  // `owned` is the buffer this cursor allocates and writes; `buffer` is the storage it is
+  // currently reading: `owned`, or — after a fill made while nothing of its own was live — a
+  // region its source lent (a `Data` chunk's own array, a `Lender`'s region), read in place
+  // and never written, which `borrowed` records. Untracked, with cast-erased assignments:
+  // both are reached only through this (exclusive) cursor.
   @caps.unsafe.untrackedCaptures
-  private var buffer:    addressable.Storage =
+  private var owned:     addressable.Storage =
     preset.lay(addressable.allocate(initialSize).asInstanceOf[addressable.Storage]): storage =>
       storage.asInstanceOf[addressable.Storage]
+
+  @caps.unsafe.untrackedCaptures
+  private var buffer:    addressable.Storage = owned
+  private var borrowed:  Boolean = false
 
   private var pos:       Int = 0
   private var writeEnd:  Int = 0
@@ -462,8 +581,9 @@ extends caps.Mutable:
         val len = addressable.length(chunk)
 
         if len > 0 then
-          if len > addressable.storageSize(buffer) then
-            buffer = addressable.allocate(len).asInstanceOf[addressable.Storage]
+          if len > addressable.storageSize(owned) then
+            owned = addressable.allocate(len).asInstanceOf[addressable.Storage]
+            buffer = owned
 
           addressable.copyChunk(chunk, 0, buffer, 0, len)
           writeEnd = len
@@ -504,13 +624,19 @@ extends caps.Mutable:
       // everything before `pos` is dead; inside a hold, everything before
       // `holdStart` is dead. `keep` is capped at `writeEnd` because `pos` may
       // sit one past the last loaded byte after a `next()` that consumed the
-      // tail of the buffer.
+      // tail of the buffer. What is live moves to the start of the owned
+      // buffer — out of a borrowed region too, whose loan this ends.
       val rawKeep = if holdStart >= 0 then holdStart else pos
       val keep = rawKeep.min(writeEnd)
+      val live = writeEnd - keep
 
-      if keep > 0 then
-        val live = writeEnd - keep
-        if live > 0 then addressable.transfer(buffer, keep, buffer, 0, live)
+      if keep > 0 || borrowed then
+        if borrowed && live > addressable.storageSize(owned) then
+          owned = addressable.allocate(live).asInstanceOf[addressable.Storage]
+
+        if live > 0 then addressable.transfer(buffer, keep, owned, 0, live)
+        buffer = owned
+        borrowed = false
         basePos += keep
         pos -= keep
         writeEnd = live
@@ -518,23 +644,47 @@ extends caps.Mutable:
 
       // Pull until we either receive non-empty data or hit EOF: directly into the
       // buffer when a `Filler` was provided (single copy), otherwise through the
-      // chunk-materializing `Loader` protocol.
+      // chunk-materializing `Loader` protocol — or, when nothing is live, in place:
+      // the buffer is re-pointed at a region the source lends, with no copy at all.
       filler.lay(pullChunks())(pullDirect(_))
 
-  // The single-copy path: grow towards a full block of space, then let the filler
-  // transfer straight into the buffer at `writeEnd`.
+  // Re-point the buffer at a lent region. Nothing is buffered (`writeEnd == 0`), so
+  // `basePos` is the absolute position of the region's first element, which lies at
+  // `start` in `storage`.
+  private update def adopt(storage: addressable.Storage, start: Int, count: Int): Unit =
+    buffer = storage
+    borrowed = true
+    basePos -= start
+    pos = start
+    writeEnd = start + count
+    if holdStart >= 0 then holdStart = start
+
+  // The direct path: a region lent by a `Lender` is adopted in place; otherwise grow
+  // towards a full block of space, then let the filler transfer straight into the buffer
+  // at `writeEnd` — the single-copy path.
   private update def pullDirect(filler: Cursor.Filler[addressable.Storage]): Unit =
     var loaded = false
 
-    while !loaded && !ended do
-      ensureCapacity(writeEnd + filler.block)
-      val space = addressable.storageSize(buffer) - writeEnd
-      val count = filler.fill(buffer, writeEnd, space)
+    filler match
+      case lender: Cursor.Lender[addressable.Storage @unchecked] if writeEnd == 0 =>
+        while !loaded && !ended do
+          val count = lender.borrow()
 
-      if count < 0 then ended = true
-      else if count > 0 then
-        writeEnd += count
-        loaded = true
+          if count < 0 then ended = true
+          else if count > 0 then
+            adopt(lender.lentStorage, lender.lentStart, count)
+            loaded = true
+
+      case _ =>
+        while !loaded && !ended do
+          ensureCapacity(writeEnd + filler.block)
+          val space = addressable.storageSize(buffer) - writeEnd
+          val count = filler.fill(buffer, writeEnd, space)
+
+          if count < 0 then ended = true
+          else if count > 0 then
+            writeEnd += count
+            loaded = true
 
   private update def pullChunks(): Unit =
     var loaded = false
@@ -544,11 +694,25 @@ extends caps.Mutable:
         val len = addressable.length(data)
 
         if len > 0 then
-          ensureCapacity(writeEnd + len)
-          addressable.copyChunk(data, 0, buffer, writeEnd, len)
-          writeEnd += len
+          // A chunk exposing its own immutable backing is read in place when nothing is
+          // buffered; otherwise it is copied in.
+          val backing: Optional[addressable.Storage] =
+            if writeEnd == 0
+            then addressable.backing(data).asInstanceOf[Optional[addressable.Storage]]
+            else Unset
+
+          backing.lay:
+            ensureCapacity(writeEnd + len)
+            addressable.copyChunk(data, 0, buffer, writeEnd, len)
+            writeEnd += len
+
+          . apply: storage =>
+              adopt(storage, 0, len)
+
           loaded = true
 
+  // Grows the owned buffer, which is the one being read: `refill` has already moved any
+  // live data out of a borrowed region before it pulls.
   private update def ensureCapacity(needed: Int): Unit =
     val cap = addressable.storageSize(buffer)
 
@@ -557,7 +721,8 @@ extends caps.Mutable:
       while newCap < needed do newCap *= 2
       val newBuf = addressable.allocate(newCap)
       if writeEnd > 0 then addressable.transfer(buffer, 0, newBuf, 0, writeEnd)
-      buffer = newBuf.asInstanceOf[addressable.Storage]
+      owned = newBuf.asInstanceOf[addressable.Storage]
+      buffer = owned
 
   // ─── core navigation ──────────────────────────────────────────────────────
 

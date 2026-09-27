@@ -74,6 +74,13 @@ trait Buffering extends caps.Pure:
   // larger: the default is sixteen staging blocks.
   def transfer(substrate: Substrate): Int = capacity(substrate)*16
 
+  // The credit a cursor asks of the stream it reads in place: the largest region it borrows
+  // at once when nothing of its own is live. A borrowed region costs no buffer, so a larger
+  // window means only fewer fills, larger lent regions and longer bulk scans between them —
+  // bounded by what the credit lets an upstream stage produce. The default is the staging
+  // block.
+  def window(substrate: Substrate): Int = capacity(substrate)
+
   // Whether a `Conduit` recycles the transfer blocks its reader drains, handing
   // them back to the writer for reuse rather than minting a fresh (zero-filled)
   // block per hand-off. On by default; override to `false` to isolate the pool's

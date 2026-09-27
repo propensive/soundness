@@ -63,10 +63,9 @@ object Acceptable:
           val boundary = contentType.at(t"boundary").or:
             abort(Multipart.Error(Multipart.Error.Reason.MediaType))
 
-          // Interim: `Multipart.parse` is still `Streamable`-typed; the whole body is
-          // materialized (as its parts already were). Cursor-based parsing comes with
-          // the Streamable-tail conversion (see rep/DECISIONS.md).
-          Multipart.parse(request.body().memoize, boundary)
+          // The parts are lent from the request body as it arrives: a handler reads each
+          // part's body before moving on to the next (see `gesticulate.Part`).
+          Multipart.parse(request.body, boundary)
         else
           abort(Multipart.Error(Multipart.Error.Reason.MediaType))
 

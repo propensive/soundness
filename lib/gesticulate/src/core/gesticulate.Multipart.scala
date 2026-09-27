@@ -32,6 +32,7 @@
                                                                                                   */
 package gesticulate
 
+import scala.caps
 import scala.reflect.*
 
 import anticipation.*
@@ -50,6 +51,18 @@ import zephyrine.*
 object Multipart:
   enum Disposition:
     case Inline, Attachment, FormData
+
+  // A multipart body is bulk by nature: let the cursor's fills grow from the staging block
+  // towards 64 KiB once the input has proved long (see `Buffering#window`), so a large upload
+  // is scanned and lent in large regions while a small form stays at the staging size. Lexical
+  // to this object, so it applies to `parse`'s cursor and nothing else.
+  private given multipartBuffering: Buffering = new Buffering:
+    def capacity(substrate: Substrate): Int = Buffering.standard.capacity(substrate)
+    def depth: Int = Buffering.standard.depth
+
+    override def window(substrate: Substrate): Int = substrate match
+      case Substrate.Bytes => 65536
+      case _               => capacity(substrate)
 
 
   def parse[input: Streamable by Data over Credit](input: input, boundary0: Optional[Text] = Unset)
@@ -70,6 +83,15 @@ object Multipart:
     cursor.next()
     cursor.expect('\n')(expected('\n'))
 
+    // The token as one `String` straight off the buffer, as telekinesis reads a request head:
+    // not a `Data` copied out of it and then a `String` copied out of that.
+    def ascii(start: Cursor.Mark, end: Cursor.Mark): Text =
+      cursor.slice(start, end): (bytes, offset, length) =>
+        Text
+          ( java.lang.String
+              ( bytes.asInstanceOf[scala.Array[Byte]], offset, length,
+                java.nio.charset.StandardCharsets.US_ASCII ) )
+
     def headers(list: List[(Text, Text)]): Map[Text, Text] =
       if cursor.peek == '\r' then
         cursor.next()
@@ -80,7 +102,7 @@ object Multipart:
         val key: Text = cursor.hold:
           val start = cursor.mark
           cursor.seek(':'.toByte.asInstanceOf[cursor.addressable.Operand])
-          Text.ascii(cursor.grab(start, cursor.mark))
+          ascii(start, cursor.mark)
 
         cursor.next()
         cursor.expect(' ')(expected(' '))
@@ -88,74 +110,76 @@ object Multipart:
         val value: Text = cursor.hold:
           val start = cursor.mark
           cursor.seek('\r'.toByte.asInstanceOf[cursor.addressable.Operand])
-          Text.ascii(cursor.grab(start, cursor.mark))
+          ascii(start, cursor.mark)
 
         cursor.next()
         cursor.expect('\n')(expected('\n'))
         // A tail-recursive re-entry over the same single-owner cursor; no aliased writer.
         scala.caps.unsafe.unsafeAssumeSeparate(headers((key, value) :: list))
 
-    inline def skipBytes(count: Int): Unit =
-      var i = 0
-      while i < count && cursor.next() do i += 1
+    // What ends every body: a line break followed by the boundary line. Its skip table is
+    // built once per message.
+    val delimiter: Cursor.Delimiter =
+      val bytes = new scala.Array[Byte](boundary.length + 2)
+      bytes(0) = '\r'.toByte
+      bytes(1) = '\n'.toByte
+      System.arraycopy(Array.unsafeJvm(boundary), 0, bytes, 2, boundary.length)
+      Cursor.Delimiter(Array.unsafeFrozen(bytes))
 
-    def body(): Chain[Data] = cursor.hold:
-      val bodyStart = cursor.mark
-      var bodyEnd: Optional[Cursor.Mark] = Unset
-      var continue = true
+    // Sealed as telekinesis seals a request's body: the cursor is single-owner and reachable
+    // only through each part's spring, and the neutral carrier keeps the spring's result from
+    // naming the non-local cursor.
+    val cursorRef: AnyRef = cursor.asInstanceOf[AnyRef]
 
-      while continue do
-        if cursor.finished then continue = false
-        else if cursor.peek != '\r' then
-          if !cursor.next() then continue = false
-        else
-          val matched = cursor.lookahead:
-            var ok = cursor.next() && cursor.peek == '\n'
-            var i = 0
+    // A part's body, lent from the cursor up to the delimiter (`streamOf`) for as long as
+    // the part is the current one. Forcing the tail of the parts chain closes it: whatever
+    // remains is skipped, and it reads as empty thereafter.
+    final class Body extends Spring[Data], caps.Mutable:
+      private var open: Boolean = true
+      update def close(): Unit = open = false
 
-            while ok && i < boundary.length do
-              ok = cursor.next() && cursor.peek == boundary.readUnchecked(i)
-              i += 1
+      // The one stream over this body, which every `body()` continues — the consumer's
+      // reads and then the parse's own drain when the next part is forced. A fresh stream
+      // per call would not do: a finished stream has stepped over the delimiter, and a new
+      // one would take the next part for the rest of this body. Cast-erased like the cursor
+      // it lends; the calls are sequential.
+      @caps.unsafe.untrackedCaptures
+      private val stream: AnyRef =
+        streamOf(cursorRef.asInstanceOf[Cursor[Data, {}]^], delimiter).asInstanceOf[AnyRef]
 
-            ok
+      def apply(): (Stream[Data] over Credit)^ =
+        if open then stream.asInstanceOf[(Stream[Data] over Credit)^] else Stream(Chain[Data]())
 
-          if matched then
-            bodyEnd = cursor.mark
-            continue = false
-          else if !cursor.next() then
-            continue = false
-
-      bodyEnd.let: end =>
-        val out = cursor.grab(bodyStart, end)
-        // Position is at the body-ending '\r'. Skip past "\r\n<boundary>" which
-        // is boundary.length + 2 bytes total.
-        skipBytes(boundary.length + 2)
-        Chain(out)
-
-      . or(Chain(cursor.grab(bodyStart, cursor.mark)))
-
-    def parsePart(headers: Map[Text, Text], stream: Chain[Data])
+    def parsePart(headers: Map[Text, Text], stream: Spring[Data])
     :   Part =
       headers.at(t"Content-Disposition").let: disposition =>
-        val parts = disposition.cut(t";").map(_.trim)
+        // `form-data; name="field"; filename="f.bin"`: the token, then `key=value`
+        // parameters, read in place rather than cut, trimmed and mapped. A quoted value loses
+        // its quotes only when it has both, so a lone `"` is left as it is.
+        val text: String = disposition.s
+        val first = text.indexOf(';')
+        val token = Text((if first < 0 then text else text.substring(0, first).nn).trim.nn)
 
-        val params: Map[Text, Text] =
-          parts.skip(1).map: param =>
-            param.cut(t"=", 2) match
-              case List(key, value) =>
-                // `pen` is present only when `value` has at least two characters, so a lone
-                // `"` (which starts and ends with a quote) is left unstripped rather than
-                // miscomputed.
-                if value.starts(t"\"") && value.ends(t"\"")
-                then key -> value.pen.lay(value)((pen: Ordinal) => value.segment(Sec thru pen))
-                else key -> value
+        def params(from: Int, list: List[(Text, Text)]): Map[Text, Text] =
+          if from < 0 then list.to[Map] else
+            val next = text.indexOf(';', from)
+            val param =
+              (if next < 0 then text.substring(from).nn else text.substring(from, next).nn).trim.nn
 
-              case _ =>
-                abort(Multipart.Error(Multipart.Error.Reason.BadDisposition))
+            val equals = param.indexOf('=')
+            if equals < 0 then abort(Multipart.Error(Multipart.Error.Reason.BadDisposition))
+            val value = param.substring(equals + 1).nn
 
-          . to[Map]
+            val unquoted =
+              if value.length >= 2 && value.startsWith("\"") && value.endsWith("\"")
+              then value.substring(1, value.length - 1).nn
+              else value
 
-        val dispositionValue = parts.prim match
+            params
+              ( if next < 0 then -1 else next + 1,
+                (Text(param.substring(0, equals).nn), Text(unquoted)) :: list )
+
+        val dispositionValue = token match
           case t"inline"     => Multipart.Disposition.Inline
           case t"form-data"  => Multipart.Disposition.FormData
           case t"attachment" => Multipart.Disposition.Attachment
@@ -163,37 +187,47 @@ object Multipart:
           case _ =>
             abort(Multipart.Error(Multipart.Error.Reason.BadDisposition))
 
-        val filename = params.at(t"filename")
-        val name = params.at(t"name")
+        val parameters = params(if first < 0 then -1 else first + 1, Nil)
+        val filename = parameters.at(t"filename")
+        val name = parameters.at(t"name")
 
         Part(dispositionValue, headers, name, filename, stream)
 
       . or(Part(Multipart.Disposition.FormData, Map(), Unset, Unset, stream))
 
     def parts(): Chain[Part] =
-      val part = parsePart(headers(Nil), body())
+      val body: Body^ = Body()
+      val part = parsePart(headers(Nil), caps.unsafe.unsafeAssumePure(body))
 
-      if cursor.finished then
-        raise(expected('-'))
-        Chain()
-      else if cursor.peek == '\r' then
-        cursor.next()
-        cursor.expect('\n')(expected('\n'))
+      // Forced once the consumer has read the body, or chosen not to: skip what remains of
+      // it, close it, consume the boundary and read what follows — the next part's headers
+      // or the closing `--`.
+      def rest(): Chain[Part] =
+        body().drain(region => range => ())
+        body.close()
 
-        // Lazy continuation over the same single-owner cursor; no aliased writer.
-        scala.caps.unsafe.unsafeAssumeSeparate(part #:: { part.body.strict; parts() })
+        // The body's stream leaves the cursor after the delimiter, or exhausted if the input
+        // ended first.
+        if cursor.finished then
+          raise(expected('-'))
+          Chain()
+        else if cursor.peek == '\r' then
+          cursor.next()
+          cursor.expect('\n')(expected('\n'))
+          // A re-entry over the same single-owner cursor; no aliased writer.
+          scala.caps.unsafe.unsafeAssumeSeparate(parts())
+        else if cursor.peek == '-' then
+          cursor.next()
+          cursor.expect('-')(expected('-'))
+          cursor.expect('\r')(expected('\r'))
+          cursor.expect('\n')(expected('\n'))
+          Chain()
+        else
+          raise(expected('-'))
+          Chain()
 
-      else if cursor.peek == '-' then
-        cursor.next()
-        cursor.expect('-')(expected('-'))
-        cursor.expect('\r')(expected('\r'))
-        cursor.expect('\n')(expected('\n'))
-
-        Chain(part)
-
-      else
-        raise(expected('-'))
-        Chain()
+      // Lazy continuation over the same single-owner cursor; no aliased writer.
+      scala.caps.unsafe.unsafeAssumeSeparate(part #:: rest())
 
     Multipart(parts())
 

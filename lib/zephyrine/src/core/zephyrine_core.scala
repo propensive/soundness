@@ -373,6 +373,173 @@ def streamOf[data](cursor: Cursor[data, {}]^, length: Optional[Long] = Unset)
       // Deliberately not overridden: `close()` must leave the lent cursor open
       // for the caller to resume.
 
+// A pull endpoint lending a cursor up to a delimiter: the bytes before the next occurrence
+// of `delimiter`, exposed zero-copy from the cursor's buffer and found in bulk (`distance`).
+// A region is what the buffer holds before the delimiter or, while it has not been found,
+// all but the last `delimiter.length - 1` bytes, which might begin a delimiter that
+// straddles the next fill. Those are carried in a private scratch — not held in the cursor,
+// which would force it to copy its next region rather than read it in place — and searched
+// joined with the start of the next region; content that turns out to have been carried is
+// exposed from the scratch. Demand does not bound exposure: the cursor's window does. At
+// end-of-stream the cursor stands after the delimiter, or is exhausted if the input ended
+// first; the caller tells the two apart with `finished`. Lent, not consumed, under the
+// discipline the length-bounded factory above states.
+def streamOf(cursor: Cursor[Data, {}]^, delimiter: Cursor.Delimiter)
+:   (Stream[Data] over Credit)^{cursor, caps.any} =
+
+    new Stream[Data]:
+      type Transport = Credit
+
+      private val length: Int = delimiter.length
+
+      // The carried bytes (at most `length - 1`), and the scratch they are joined in with
+      // the start of the next region. Both are written only here and reached only through
+      // this endpoint.
+      @caps.unsafe.untrackedCaptures
+      private val carry: scala.Array[Byte] = new scala.Array[Byte]((length - 1).max(0))
+
+      @caps.unsafe.untrackedCaptures
+      private val joined: scala.Array[Byte] = new scala.Array[Byte]((2*length - 2).max(0))
+
+      private var carried: Int = 0
+
+      // The region: over the cursor's buffer, or over `joined` when its content was carried.
+      private var storage: AnyRef = ""
+      private var start0: Int = 0
+      private var limit0: Int = 0
+      private var fromCursor: Boolean = false
+
+      // Owed once the current region has been consumed: bytes at the cursor to carry, then
+      // a found delimiter to step over.
+      private var toCarry: Int = 0
+      private var toStep: Int = 0
+      private var ended: Boolean = false
+
+      protected def storage0: AnyRef = storage
+      def start: Int = start0
+      def limit: Int = limit0
+
+      update def skip(count: Int): Unit =
+        start0 += count
+        if fromCursor then cursor.unsafeAdvanceBy(count)(using Unsafe)
+
+      private update def expose(buffer: AnyRef, from: Int, count: Int, cursorBacked: Boolean)
+      :   Int =
+
+        storage = buffer
+        start0 = from
+        limit0 = from + count
+        fromCursor = cursorBacked
+        count
+
+      // Cast-erased, as the length-bounded factory's snapshot is: the scratch is reached only
+      // through this endpoint.
+      private update def exposeJoined(count: Int): Int =
+        expose(joined.asInstanceOf[AnyRef], 0, count, false)
+
+      private update def exposeCursor(count: Int): Int =
+        expose
+          ( cursor.unsafeBuffer(using Unsafe).asInstanceOf[AnyRef],
+            cursor.unsafePos(using Unsafe),
+            count,
+            true )
+
+      private update def finish(step: Int): Optional[Int] =
+        cursor.unsafeAdvanceBy(step)(using Unsafe)
+        ended = true
+        Unset
+
+      // Move the bytes owed to the carry out of the cursor.
+      private update def absorb(count: Int): Unit =
+        System.arraycopy
+          ( cursor.unsafeDataBuffer(using Unsafe), cursor.unsafePos(using Unsafe), carry, carried,
+            count )
+
+        carried += count
+        cursor.unsafeAdvanceBy(count)(using Unsafe)
+
+      update def refill(demand: Credit): Optional[Int] =
+        if limit0 > start0 then limit0 - start0
+        else if ended then Unset
+        else
+          if toCarry > 0 then
+            absorb(toCarry)
+            toCarry = 0
+
+          if toStep > 0 then finish(toStep) else next()
+
+      // The next region, with nothing carried: up to the delimiter if the buffer holds it,
+      // otherwise all but a possible prefix of it — or, when the buffer holds less than a
+      // delimiter, nothing yet: carry it all and look at the next fill.
+      private update def next(): Optional[Int] =
+        if carried > 0 then straddle()
+        else if !cursor.more then finish(0)
+        else
+          val distance = cursor.distance(delimiter)
+
+          if distance == 0 then finish(length)
+          else if distance > 0 then
+            toStep = length
+            exposeCursor(distance)
+          else
+            val available = cursor.available
+
+            if available >= length then
+              toCarry = length - 1
+              exposeCursor(available - (length - 1))
+            else
+              absorb(available)
+              straddle()
+
+      // With bytes carried: join them with the start of the next region and search across
+      // the edge. A delimiter found there began in the carry; otherwise the carry is content
+      // as far as every start in it has been tested, which is all of it once `length - 1`
+      // bytes of the region were joined, and less when the region is shorter than that —
+      // the undecided rest, with the whole short region, is carried on.
+      private update def straddle(): Optional[Int] =
+        if !cursor.more then
+          // The input ended: the carry was content after all.
+          System.arraycopy(carry, 0, joined, 0, carried)
+          val content = carried
+          carried = 0
+          exposeJoined(content)
+        else
+          val head = cursor.available.min(length - 1)
+          val total = carried + head
+          System.arraycopy(carry, 0, joined, 0, carried)
+
+          System.arraycopy
+            ( cursor.unsafeDataBuffer(using Unsafe), cursor.unsafePos(using Unsafe), joined, carried,
+              head )
+
+          if total < length then
+            absorb(head)
+            straddle()
+          else
+            val found = delimiter.find(joined, 0, total)
+
+            if found >= 0 then
+              // `found` lies in the carry: the rest of the delimiter is at the cursor.
+              val step = length - (carried - found)
+              carried = 0
+
+              if found == 0 then finish(step) else
+                toStep = step
+                exposeJoined(found)
+
+            else if head == length - 1 then
+              val content = carried
+              carried = 0
+              exposeJoined(content)
+            else
+              val content = total - (length - 1)
+              System.arraycopy(joined, content, carry, 0, total - content)
+              carried = total - content
+              cursor.unsafeAdvanceBy(head)(using Unsafe)
+              exposeJoined(content)
+
+      // Not overridden, as above: `close()` leaves the lent cursor open after the delimiter.
+
 // A pull endpoint over a bounded range of an `Expanse`: each refill reads the
 // next chunk of the range — sized by the buffering policy's transfer block — and
 // exposes the freshly-read buffer as the region, zero-copy. Reads are issued
