@@ -32,29 +32,12 @@
                                                                                                   */
 package orthodoxy
 
-import scala.collection.mutable as scm
-
 import anticipation.*
-import beneficence.*
-import inimitable.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
+import fulminate.*
 import telekinesis.*
 import urticose.*
-import vacuous.*
-import fulminate.*
 
 object OAuth:
-  case class State
-    ( redirect: Path on Www,
-      uuid:     Uuid                    = Uuid(),
-      access:   Optional[Authorization] = Unset,
-      refresh:  Optional[Text]          = Unset,
-      expiry:   Optional[Long]          = Unset ):
-
-    def expired: Boolean = expiry.let(System.currentTimeMillis > _).or(false)
-
   // OAuthError → OAuth.Error
   object Error:
     enum Reason(val number: Int) extends Clarification:
@@ -64,24 +47,20 @@ object OAuth:
       case InsufficientPrivileges(scope: Text)                   extends Reason(4)
       case Unauthorized                                          extends Reason(5)
       case Other                                                 extends Reason(6)
+      case Misconfigured(detail: Text)                           extends Reason(7)
 
     import Reason.*
 
     given Reason is Communicable =
-      case InvalidJsonResponse           => m"Invalid JSON response"
-      case UnexpectedHttpStatus(status)  => m"the provider returne an unexpected HTTP status: $status"
+      case InvalidJsonResponse           => m"the token response was not valid JSON"
+      case UnexpectedHttpStatus(status)  => m"the provider returned an unexpected status: $status"
       case InsufficientPrivileges(scope) => m"the user has not granted access to $scope"
       case Unauthorized                  => m"authorization was not granted"
       case Other                         => m"an unexpected error occurred"
+      case Misconfigured(detail)         => m"the issuer is not configured for this: $detail"
 
       case Connection(url, reason) =>
         m"could not connect to the OAuth provider at $url because $reason"
 
   case class Error(reason: OAuth.Error.Reason)(using Diagnostics)
   extends fulminate.Error(840, reason.number)(m"OAuth failed because $reason")
-
-class OAuth() extends Findable:
-  private val data: scm.HashMap[Session, OAuth.State] = scm.HashMap()
-
-  def update(session: Session, state: OAuth.State): Unit = data(session) = state
-  def apply(session: Session): Optional[OAuth.State] = data.at(session)

@@ -32,90 +32,73 @@
                                                                                                   */
 package apoplexy
 
-import contingency.*
+import anticipation.*
 import distillate.*
-import fulminate.*
 import hieroglyph.*
-import jacinta.*
 import prepositional.*
 import telekinesis.*
 import turbulence.*
-import xylophone.*
 
-import errorDiagnostics.emptyDiagnostics
 import zephyrine.{Parse, memoize}
 
-// Interprets an `Http.Response` as a value of `Self`, reading the body in the wire
-// format `Transport` (`jacinta.Json` or `xylophone.Xml`) the spec dictates.
-// `Api.Response.call[T]()` checks at compile time that `T` conforms to the response
-// schema, then summons `(T is Conformant) over <Transport>` at the concrete call
-// site — so only the matching format's givens are demanded, and `List[T]`-style
-// collection decoders resolve.
-// The decodable instances are lower priority so that the exact-type givens
-// (`Http.Response`, `Unit`, raw `Json`, raw `Xml`) win — `Unit` and `Json` are
-// themselves `Decodable in Json`, so they would otherwise be ambiguous.
-trait LowPriorityConformant:
-  // A 2xx JSON body decoded to any JSON-decodable type. Resolving `Decodable in
-  // Json` here, at the concrete call site, lets jacinta pick the collection
-  // decoder for `List[T]` etc.
-  given jsonDecodable: [value: Decodable in Json] => Tactic[Api.Error]
-  =>  (value is Conformant) over Json =
+// Interprets an `Http.Response` as a value of `Self`, reading the body as the carrier type
+// `Transport` the spec's media type construes (see `gesticulate.Construable`). It reads only:
+// the status is checked by `Api.Response.call` beforehand, which raises `Api.Error` with the
+// failure body construed by the same means.
+// `Api.Response.call[T]()` checks at compile time that `T` conforms to the response schema,
+// then summons `(T is Conformant) over <Transport>` at the concrete call site — so only the
+// carrier's own `Aggregable`, and the value's `Decodable` in it, are demanded, and
+// `List[T]`-style collection decoders resolve.
+//
+// The instances are layered by priority: the raw response and `Unit` first; then the carrier
+// itself, read from bytes; then the carrier read from text (for carriers such as `Xml` whose
+// `Aggregable` is by `Text`); then any value decodable from a carrier, by bytes and by text.
+// The layering keeps a carrier which is both `Aggregable by Data` and `by Text` (`Text` is)
+// from being ambiguous, and keeps a carrier from decoding through its own identity `Decodable`.
+trait Conformant3:
+  // A body decoded to any value decodable from a text-read carrier
+  given decodableText: [value, carrier]
+  =>  ( aggregable: carrier is Aggregable by Text,
+        decodable:  value is Decodable in carrier,
+        decoder:    CharDecoder )
+  =>  (value is Conformant) over carrier =
     response =>
-      Conformant.successful(response)
+      val data: Data = response.body.stream.memoize
+      decodable.decoded(aggregable.aggregate(Chain(decoder.decoded(data))))
 
-      mitigate:
-        case Parse.Error(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
-        case Json.Error(_)        => Api.Error(Api.Error.Reason.Malformed)
-
-      . protect(response.body.stream.memoize.read[Json].as[value])
-
-  // A 2xx XML body decoded to any XML-decodable type.
-  given xmlDecodable: [value: Decodable in Xml]
-  =>  ( CharDecoder, XmlSchema, Tactic[Api.Error] ) => (value is Conformant) over Xml =
+trait Conformant2 extends Conformant3:
+  // A body decoded to any value decodable from a byte-read carrier
+  given decodable: [value, carrier]
+  =>  ( aggregable: carrier is Aggregable by Data, decodable: value is Decodable in carrier )
+  =>  (value is Conformant) over carrier =
     response =>
-      Conformant.successful(response)
+      val data: Data = response.body.stream.memoize
+      decodable.decoded(aggregable.aggregate(Chain(data)))
 
-      mitigate:
-        case Parse.Error(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
-        case _: Xml.Error         => Api.Error(Api.Error.Reason.Malformed)
+  // The body as a carrier read from text. The bytes are decoded to `Text` (through the
+  // `CharDecoder`) before the carrier's parser sees them.
+  given carrierText: [carrier]
+  =>  ( aggregable: carrier is Aggregable by Text, decoder: CharDecoder )
+  =>  (carrier is Conformant) over carrier =
+    response =>
+      val data: Data = response.body.stream.memoize
+      aggregable.aggregate(Chain(decoder.decoded(data)))
 
-      . protect(summon[CharDecoder].decoded(response.body.stream.memoize).read[Xml].as[value])
-
-object Conformant extends LowPriorityConformant:
-  // Raise `Api.Error` unless the response status is in the 2xx range.
-  def successful(response: Http.Response)(using Tactic[Api.Error]): Unit =
-    if response.status.category != Http.Status.Category.Successful
-    then abort(Api.Error(Api.Error.Reason.Status(response.status.code)))
-
-  // The escape hatch: the raw response, with no status check (any transport).
+object Conformant extends Conformant2:
+  // The escape hatch: the raw response (any transport)
   given response: [transport] => (Http.Response is Conformant) over transport =
     response => response
 
-  // Just check for success and discard the body — for no-content (204) endpoints
-  // such as `delete`, and the default target of a bare `.call()`. Never reads the
-  // body, so an empty one is fine; transport-agnostic.
-  given unit: [transport] => Tactic[Api.Error] => (Unit is Conformant) over transport =
-    response => successful(response)
+  // Discard the body — for no-content (204) endpoints such as `delete`, and the default target
+  // of a bare `.call()` on them; transport-agnostic.
+  given unit: [transport] => (Unit is Conformant) over transport = response => ()
 
-  // The raw 2xx body as JSON.
-  given json: Tactic[Api.Error] => (Json is Conformant) over Json = response =>
-    successful(response)
-
-    mitigate:
-      case Parse.Error(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
-
-    . protect(response.body.stream.memoize.read[Json])
-
-  // The raw 2xx body as XML. The body bytes are decoded to `Text` (via the
-  // `CharDecoder`) before xylophone parses them.
-  given xml: (CharDecoder, XmlSchema, Tactic[Api.Error]) => (Xml is Conformant) over Xml =
+  // The body as a carrier read from bytes
+  given carrier: [carrier] => (aggregable: carrier is Aggregable by Data)
+  =>  (carrier is Conformant) over carrier =
     response =>
-      successful(response)
-
-      mitigate:
-        case Parse.Error(_, _, _) => Api.Error(Api.Error.Reason.Malformed)
-
-      . protect(summon[CharDecoder].decoded(response.body.stream.memoize).read[Xml])
+      val data: Data = response.body.stream.memoize
+      aggregable.aggregate(Chain(data))
 
 trait Conformant extends Typeclass, Transportive:
   def read(response: Http.Response): Self

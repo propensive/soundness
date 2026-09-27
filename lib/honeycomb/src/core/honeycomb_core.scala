@@ -38,8 +38,10 @@ import scala.util.NotGiven
 
 import anticipation.*
 import contextual.*
+import gesticulate.*
 import gossamer.*
 import prepositional.*
+import turbulence.*
 
 export honeycomb.internal.Attributes
 
@@ -70,3 +72,6 @@ package stylesheets:
 
 package recoveries:
   given permissiveRecovery: Html.Recovery.Permissive = new Html.Recovery.Permissive
+
+package construables:
+  given htmlConstruable: ("text/html" is Construable to Document[Html]) = Construable()

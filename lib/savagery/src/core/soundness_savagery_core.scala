@@ -37,3 +37,6 @@ export
   . { Circle, Delta, Down, Ellipse, Figure, Group, Left, Lettering, Orientation, Outline, Point,
       Polyline, Rectangle, Right, Segment, Stop, Stroke, Svg, Sweep, Transform, Transformable, Up,
       unary_+, transform, translate, scale, rotate, skew }
+
+package construables:
+  export savagery.construables.svgConstruable

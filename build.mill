@@ -948,7 +948,8 @@ object soundness extends Toolchain:
     stratiform.core, stratiform.time, vexillology.core, enigmatic.cose, enigmatic.openssl,
     enigmatic.x509,
     bitumen.core, bitumen.jvm, breviloquence.core, distillate.core,
-    embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256):
+    embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256, caesura.http,
+    breviloquence.http, locomotion.http):
     def summary = "Data formats, serialization, cryptography and persistence"
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
@@ -981,8 +982,8 @@ object soundness extends Toolchain:
     telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
     legerdemain.core, legerdemain.query, telekinesis.forms, jacinta.optics, caduceus.core,
     caduceus.resend,
-    orthodoxy.core,
-    jacinta.http,
+    orthodoxy.core, orthodoxy.server,
+    jacinta.http, xylophone.http, ypsiloid.http,
     stratiform.http, stratiform.optics, obligatory.core, obligatory.json, sibylline.core,
     synesthesia.content,
     synesthesia.core, apoplexy.core,
@@ -1411,12 +1412,12 @@ object aperture extends Library:
       settings.sep(super.scalacOptions())
 
 object apoplexy extends Library:
-  object core extends Component(jacinta.schema, jacinta.http, ypsiloid.core, telekinesis.core,
-    urticose.core, hellenism.core, fulminate.core, xylophone.core):
+  object core extends Component(jacinta.schema, jacinta.http, ypsiloid.http, telekinesis.core,
+    urticose.core, hellenism.core, fulminate.core, xylophone.http, orthodoxy.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  object test extends Tests(core, eucalyptus.core):
+  object test extends Tests(core, eucalyptus.core, hallucination.png):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -1491,6 +1492,10 @@ object breviloquence extends Library:
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
+  // The media type `Cbor` construes
+  object http extends Component(core, gesticulate.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, staged, sedentary.core, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units):
     // The benchmark sources annotate the `Array[Byte]^{}` payloads they hold, matching the
@@ -1544,6 +1549,10 @@ object caduceus extends Library:
 
 object caesura extends Library:
   object core extends Component(turbulence.core, escritoire.core, panopticon.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The media types `Sheet` construes
+  object http extends Component(core, gesticulate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2632,6 +2641,10 @@ object locomotion extends Library:
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
+  // The media type `Protobuf` construes
+  object http extends Component(core, gesticulate.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, staged):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
@@ -2708,14 +2721,19 @@ object octogenarian extends Library:
       settings.sep(super.scalacOptions())
 
 object orthodoxy extends Library:
-  object core extends Component(scintillate.server, jacinta.core, telekinesis.jvm, inimitable.core):
+  // The client side of OAuth 2: token grants, PKCE, credentials for an API's security schemes
+  object core extends Component(telekinesis.core, jacinta.core, inimitable.core, gastronomy.core):
+    override def scalaJs = false // SecureRandom
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The authorization-code flow as scintillate middleware
+  object server extends Component(core, scintillate.server, telekinesis.jvm):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  object test extends Tests(core, telekinesis.jvm, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
-    override def enabled = false
 
 object obligatory extends Library:
   object core extends Component(zephyrine.core, gossamer.core, contingency.core, anticipation.codec, fulminate.core, prepositional.core):
@@ -3592,6 +3610,11 @@ object xylophone extends Library:
       parasite.core, polyvinyl.core, anticipation.time, anticipation.url):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The HTTP-facing contextual values: the media types `Xml` construes, and its `Postable`
+  object http extends Component(core, telekinesis.core):
+    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The Expr-level `Inlinable` typeclass and its expansion-time instance
   // evaluation (an in-macro staging compiler), kept out of `core` so
   // xylophone users don't inherit the compiler jars unless they opt in.
@@ -3621,6 +3644,10 @@ object ypsiloid extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
+  // The media type `Yaml` construes
+  object http extends Component(core, gesticulate.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, jacinta.core):
     def yamlTestSuiteCommit = "6ad3d2c62885d82fc349026c136ef560838fdf3d"
 

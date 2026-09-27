@@ -33,3 +33,6 @@
 package soundness
 
 export hallucination.Jpeg
+
+package construables:
+  export hallucination.construables.jpegConstruable

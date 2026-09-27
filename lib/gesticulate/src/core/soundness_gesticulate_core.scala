@@ -34,5 +34,8 @@ package soundness
 
 export
   gesticulate
-  . { ascribe, Asset, Content, Extensions, Media, media, MediaType, Multipart,
+  . { ascribe, Asset, Construable, Content, Extensions, Media, media, MediaType, Multipart,
       Part }
+
+package construables:
+  export gesticulate.construables.{plainTextConstruable, octetStreamConstruable}

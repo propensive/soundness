@@ -61,6 +61,24 @@ object Specification:
     tuple.absolve match
       case '[type tuple <: NamedTuple.AnyNamedTuple; tuple] => '{$make($value).asInstanceOf[tuple]}
 
+  // The expansions over an explicit field list, for a macro which has the fields of a part of a
+  // document in hand — a response schema within an OpenAPI document, say — and a specification
+  // object supplying only the format's primitives. `recordExpansion` yields the refined `Record`
+  // type and the transform `build` takes; `tupleExpansion` the named-tuple type and its maker.
+  def recordExpansion[origin: Type, form: Type]
+    ( target: Expr[Specification in form from origin], fields: List[(Text, Member)] )
+    ( using Quotes )
+  :   (Type[?], Expr[Text -> origin -> Any]) =
+
+    Expansion[origin, form](target).record(fields)
+
+  def tupleExpansion[origin: Type, form: Type]
+    ( target: Expr[Specification in form from origin], fields: List[(Text, Member)] )
+    ( using Quotes )
+  :   (Type[?], Expr[origin -> Any]) =
+
+    Expansion[origin, form](target).tuple(fields)
+
   // The specification object whose type is `self`: as a reference for the generated code, and as
   // an instance, loaded through the macro's own classloader, for its `fields`
   private def locate[self: Type, origin: Type, form: Type](using Quotes)

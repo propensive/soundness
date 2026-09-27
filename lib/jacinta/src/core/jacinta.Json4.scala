@@ -85,6 +85,10 @@ trait Json4:
     given integer: ("integer" is Intensional in Json.Provider from Json to Int) =
       Intensional(_.as[Int])
 
+    // An `integer` whose `format` is `int64`
+    given long: ("long" is Intensional in Json.Provider from Json to Long) =
+      Intensional(_.as[Long])
+
     given number: ("number" is Intensional in Json.Provider from Json to Double) =
       Intensional(_.as[Double])
 
@@ -285,6 +289,48 @@ trait Json4:
 
     given enumeration: Enumeration = Enumeration()
 
+    // The format's reading primitives, without a schema: what a `Json.Provider` adds its `fields`
+    // to, and what a macro with fields of its own (apoplexy's `record()`) builds records over
+    trait Primitives extends Specification:
+      type Origin = Json
+      type Form = Json.Provider
+
+      // `Json.apply` yields an absent JSON value, rather than failing, for a key the object lacks;
+      // a `null` value is read as absent too, since the schema's `null` type marks a field optional.
+      def access(name: Text, json: Json): Json = json(name)
+      def absent(json: Json): Boolean = json.root.isAbsent || json.root.isNull
+
+      // A required field which is absent fails as it is read, whether it is a value or an object
+      override def required(name: Text, json: Json): Json =
+        if absent(json) then abort(Json.Error(Json.Error.Reason.Absent)) else json
+
+      // The kind of a JSON value, by which a union chooses its alternative
+      override def kind(json: Json): Text =
+        if json.root.isString then t"string"
+        else if json.root.isBoolean then t"boolean"
+        else if json.root.isNumber then t"number"
+        else if json.root.isObject then t"object"
+        else if json.root.isArray then t"array"
+        else t"null"
+
+      override def elements(json: Json): List[Json] = repeated(t"", json)
+
+      override def pairs(json: Json): List[(Text, Json)] =
+        if !json.root.isObject then List()
+        else
+          val ast = json.root
+
+          val entries = scala.collection.immutable.List.tabulate(ast.objectSize): index =>
+            ast.objectKey(index).tt -> Json.ast(ast.objectValue(index))
+
+          List.from(entries)
+
+      override def entries(name: Text, json: Json): List[(Text, Json)] = pairs(json(name))
+
+      def repeated(name: Text, json: Json): List[Json] =
+        val value = if name.s.isEmpty then json else json(name)
+        if absent(value) then List() else value.as[List[Json]]
+
     // The fields of a schema's root object, as the provider's specification. The root must
     // describe an object with properties, possibly through a `$ref` or an `allOf`.
     // The root must describe an object with properties, possibly through a `$ref` or an `allOf`;
@@ -305,11 +351,23 @@ trait Json4:
 
           panic(m"the schema's root does not describe an object with properties$reason")
 
+    // The member reading the values a node within a larger document describes: its `$ref`s
+    // resolve against the document, so a schema embedded in one — a response schema within an
+    // OpenAPI document, referring to `#/components/schemas/…` — reads as it would alone. An
+    // object reads as a `Member.Record`, an array of objects as one of `Multiplicity.Many`.
+    def memberOf(document: Json, node: Json, limit: Int = Int.MaxValue): Member =
+      Walk(document, limit).member(node, scala.collection.immutable.Set())
+
     // The walk from a schema node to the `Member` reading a value it describes. `seen` holds
     // the `$ref` targets on the path to the node, so a recursive schema reads as raw `Json` at
     // the point of recursion rather than expanding without end. The walk keeps to the standard
     // library's lists internally and converts at its boundary.
-    private class Walk(root: Json):
+    // `limit` bounds how many `$ref`s deep the walk follows before reading a reference as raw
+    // `Json`: an API's error schema may refer into a graph of thousands of properties, of which
+    // a caller wants the first level or two as a record. References already followed are
+    // memoised, so a graph is walked once, not once per path into it.
+    private class Walk(root: Json, limit: Int = Int.MaxValue):
+      private val followed = scala.collection.mutable.HashMap[Text, Member]()
       private type Sl[element] = scala.collection.immutable.List[element]
       private type SSet[element] = scala.collection.immutable.Set[element]
       private val Sl = scala.collection.immutable.List
@@ -529,7 +587,11 @@ trait Json4:
 
         case "integer" =>
           val limits = bounds(node)
-          if limits.forall(_.s.isEmpty) then value(t"integer") else value(t"integer!", limits)
+          val wide = text(node, t"format") == t"int64"
+
+          if !limits.forall(_.s.isEmpty) then value(t"integer!", limits)
+          else if wide then value(t"long")
+          else value(t"integer")
 
         case "number" =>
           val limits = bounds(node)
@@ -645,10 +707,10 @@ trait Json4:
         if !target.s.startsWith("#") then
           externalRefs.set(true)
           any
-        else if seen.contains(target) then
+        else if seen.contains(target) || seen.size >= limit then
           any
         else
-          deref(target).let(member(_, seen.incl(target))).or(any)
+          followed.getOrElseUpdate(target, deref(target).let(member(_, seen.incl(target))).or(any))
 
     // The schema a provider is built from: JSON already parsed, or — through the conversions in
     // the companion, applied at the `into` parameter — anything readable as JSON, such as a
@@ -713,46 +775,8 @@ trait Json4:
     extends fulminate.Error(624, reason.number)
       ( m"the JSON was not valid according to the schema because $reason" )
 
-  abstract class Provider(schema0: into[Json.Provider.Schema]) extends Specification:
-    type Origin = Json
-    type Form = Json.Provider
-
+  abstract class Provider(schema0: into[Json.Provider.Schema]) extends Provider.Primitives:
     val schema: Json = schema0.json
 
     def fields: List[(Text, Member)] = Json.Provider.fieldsOf(schema)
 
-    // `Json.apply` yields an absent JSON value, rather than failing, for a key the object lacks;
-    // a `null` value is read as absent too, since the schema's `null` type marks a field optional.
-    def access(name: Text, json: Json): Json = json(name)
-    def absent(json: Json): Boolean = json.root.isAbsent || json.root.isNull
-
-    // A required field which is absent fails as it is read, whether it is a value or an object
-    override def required(name: Text, json: Json): Json =
-      if absent(json) then abort(Json.Error(Json.Error.Reason.Absent)) else json
-
-    // The kind of a JSON value, by which a union chooses its alternative
-    override def kind(json: Json): Text =
-      if json.root.isString then t"string"
-      else if json.root.isBoolean then t"boolean"
-      else if json.root.isNumber then t"number"
-      else if json.root.isObject then t"object"
-      else if json.root.isArray then t"array"
-      else t"null"
-
-    override def elements(json: Json): List[Json] = repeated(t"", json)
-
-    override def pairs(json: Json): List[(Text, Json)] =
-      if !json.root.isObject then List()
-      else
-        val ast = json.root
-
-        val entries = scala.collection.immutable.List.tabulate(ast.objectSize): index =>
-          ast.objectKey(index).tt -> Json.ast(ast.objectValue(index))
-
-        List.from(entries)
-
-    override def entries(name: Text, json: Json): List[(Text, Json)] = pairs(json(name))
-
-    def repeated(name: Text, json: Json): List[Json] =
-      val value = if name.s.isEmpty then json else json(name)
-      if absent(value) then List() else value.as[List[Json]]

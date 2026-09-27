@@ -43,3 +43,6 @@ package queryParameters:
 
 package httpRedirections:
   export telekinesis.httpRedirections.doNotFollowRedirects
+
+package construables:
+  export telekinesis.construables.formConstruable

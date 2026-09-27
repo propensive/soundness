@@ -47,3 +47,7 @@ extension [media](value: media)
   :   Content =
 
     Content(media, streamable.stream(value).chain)
+
+package construables:
+  given plainTextConstruable: ("text/plain" is Construable to Text) = Construable()
+  given octetStreamConstruable: ("application/octet-stream" is Construable to Data) = Construable()

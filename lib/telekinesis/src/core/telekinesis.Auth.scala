@@ -42,11 +42,14 @@ import kaleidoscope.*
 import monotonous.*
 import prepositional.*
 import spectacular.*
+import vacuous.*
 
 object Auth:
   import alphabets.base64Standard
 
-  given showable: Auth is Showable =
+  // Over any subtype, so that a value typed as a case (`Auth.Bearer`) renders as the header
+  // value rather than through the generic enumeration instance
+  given showable: [auth <: Auth] => auth is Showable =
     case Basic(username, password) => t"Basic ${t"$username:$password".in[Data].serialize[Base64]}"
     case Bearer(token)             => t"Bearer $token"
     case Digest(digest)            => t"Digest $digest"
@@ -59,7 +62,7 @@ object Auth:
     case Vapid(text)               => t"vapid $text"
 
   given decodable: (tactic: Tactic[Auth.Error])
-  =>  ((Auth is Decodable in Text)^{tactic}) = value => value match
+  =>  ( (Auth is Decodable in Text)^{tactic} ) = value => value match
     case r"Bearer $token(.*)"        => Bearer(token)
     case r"Digest $digest(.*)"       => Digest(digest)
     case r"HOBA $value(.*)"          => Hoba(value)
@@ -70,9 +73,17 @@ object Auth:
     case r"SCRAM-SHA-256 $value(.*)" => ScramSha256(value)
     case r"vapid $value(.*)"         => Vapid(value)
 
-    case r"Basic $username(.*):$password(.*)" =>
-      safely(Basic(username.deserialize[Base64].utf8, password.deserialize[Base64].utf8)).lest:
-        Auth.Error(value)
+    // The credentials are one base64 text, `username:password`, split at the first colon after
+    // decoding (a password may itself contain colons; a username may not)
+    case r"Basic $encoded(.*)" =>
+      val decoded: Optional[Text] = safely(encoded.deserialize[Base64].utf8)
+
+      decoded.let: text =>
+        text.s.indexOf(':') match
+          case -1    => Unset
+          case colon => Basic(text.s.substring(0, colon).nn.tt, text.s.substring(colon + 1).nn.tt)
+
+      . lest(Auth.Error(value))
 
     case value =>
       abort(Auth.Error(value))

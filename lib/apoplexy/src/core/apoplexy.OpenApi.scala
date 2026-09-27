@@ -37,6 +37,7 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import hypotenuse.*
 import jacinta.*
 import prepositional.*
 import rudiments.*
@@ -51,7 +52,88 @@ import zephyrine.Parse
 
 object OpenApi:
   case class Info(title: Text, version: Text, description: Optional[Text] = Unset)
-  case class Server(url: Text, description: Optional[Text] = Unset)
+
+  object ServerVariable:
+    given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    =>  ServerVariable is Json.Decodable = Json.DecodableDerivation.derived
+
+  case class ServerVariable
+    ( default:     Text,
+      `enum`:      Optional[List[Text]] = Unset,
+      description: Optional[Text]       = Unset )
+
+  object Server:
+    given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    =>  Server is Json.Decodable = Json.DecodableDerivation.derived
+
+  case class Server
+    ( url:         Text,
+      description: Optional[Text]           = Unset,
+      variables:   Map[Text, ServerVariable] = Map() ):
+
+    // The URL with every `{variable}` replaced by its default
+    def resolved: Text = variables.fold(url): (url, entry) =>
+      url.sub(t"{${entry(0)}}", entry(1).default)
+
+  // A reference to a component, by JSON pointer (`#/components/parameters/limit`), left
+  // unresolved where the document uses one; `apply()` resolves it against the document.
+  case class Ref(pointer: JsonPointer)
+
+  // A component object may be written in place or referred to by a `$ref`
+  type Referable[value] = value | Ref
+
+  // The decoder of a place-or-reference position: a `$ref` key marks a `Ref`, anything else
+  // is decoded as the component itself
+  private def referable[value](inner: value is Json.Decodable)
+    ( using Tactic[Json.Error], Tactic[JsonPointer.Error] )
+  :   Referable[value] is Json.Decodable =
+
+    Json.Decodable(Morphology.Any): json =>
+      json("$ref".tt).as[Optional[Text]].lay(inner.decoded(json)): reference =>
+        Ref(reference.as[JsonPointer])
+
+  object Componental:
+    given parameter: Parameter is Componental = Componental(t"parameters", _.parameters)
+    given response: Response is Componental = Componental(t"responses", _.responses)
+    given requestBody: RequestBody is Componental = Componental(t"requestBodies", _.requestBodies)
+
+    def apply[value](kind0: Text, map: Components => Map[Text, Referable[value]])
+    :   value is Componental =
+
+      new Componental:
+        type Self = value
+        def kind: Text = kind0
+
+        def lookup(components: Components, name: Text): Optional[value] =
+          map(components).at(name) match
+            case found: Ref => Unset
+            case found      => found.asInstanceOf[Optional[value]]
+
+  // Which map in `Components` holds a kind of component, and under what pointer prefix
+  trait Componental extends Typeclass.Pure:
+    def kind: Text
+    def lookup(components: Components, name: Text): Optional[Self]
+
+  // Resolves a place-or-reference position to the component: the value itself, or the
+  // component named by the reference. Only references into the document's own components
+  // are supported.
+  // The bound keeps `apply` from being tried on every application of a value without one.
+  extension [value <: Parameter | Response | RequestBody: Componental](referable: Referable[value])
+    def apply()(using doc: OpenApi): value raises OpenApi.Error = referable match
+      case Ref(pointer) =>
+        val reference = pointer.encode
+        val prefix = t"#/components/${value.kind}/"
+
+        if reference.starts(prefix) then
+          val name = reference.skip(prefix.length)
+
+          doc.components.let(value.lookup(_, name)).or:
+            abort(OpenApi.Error(OpenApi.Error.Reason.UnresolvableRef(reference)))
+        else
+          abort(OpenApi.Error(OpenApi.Error.Reason.UnsupportedRef(reference)))
+
+      case value =>
+        value.asInstanceOf[value]
 
   object Parameter:
     object In:
@@ -70,8 +152,8 @@ object OpenApi:
     given decodableJson: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Parameter is Json.Decodable = Json.DecodableDerivation.derived
 
-    given decodableYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
-    =>  Parameter is Decodable in Yaml = Yaml.DecodableDerivation.derived
+    given referable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    =>  Referable[Parameter] is Json.Decodable = OpenApi.referable(decodableJson)
 
     enum In:
       case Path, Query, Header, Cookie
@@ -92,8 +174,11 @@ object OpenApi:
   case class MediaTypeObject(schema: Optional[JsonSchema] = Unset)
 
   object RequestBody:
-    given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  RequestBody is Json.Decodable = Json.DecodableDerivation.derived
+
+    given referable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    =>  Referable[RequestBody] is Json.Decodable = OpenApi.referable(decodable)
 
   case class RequestBody
     ( description: Optional[Text]             = Unset,
@@ -101,8 +186,11 @@ object OpenApi:
       content:     Map[Text, MediaTypeObject] = Map() )
 
   object Response:
-    given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Response is Json.Decodable = Json.DecodableDerivation.derived
+
+    given referable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    =>  Referable[Response] is Json.Decodable = OpenApi.referable(decodable)
 
   case class Response
     ( description: Optional[Text]             = Unset,
@@ -117,16 +205,14 @@ object OpenApi:
     given decodableJson: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Operation is Json.Decodable = Json.DecodableDerivation.derived
 
-    given decodableYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
-    =>  Operation is Decodable in Yaml = Yaml.DecodableDerivation.derived
-
   case class Operation
-    ( operationId: Optional[Text]        = Unset,
-      summary:     Optional[Text]        = Unset,
-      description: Optional[Text]        = Unset,
-      parameters:  List[Parameter]       = Nil,
-      requestBody: Optional[RequestBody] = Unset,
-      responses:   Map[Text, Response]   = Map() )
+    ( operationId: Optional[Text]                    = Unset,
+      summary:     Optional[Text]                    = Unset,
+      description: Optional[Text]                    = Unset,
+      parameters:  List[Referable[Parameter]]        = Nil,
+      requestBody: Optional[Referable[RequestBody]]  = Unset,
+      responses:   Map[Text, Referable[Response]]    = Map(),
+      security:    Optional[List[Requirement]]       = Unset )
 
   object PathItem:
     given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
@@ -146,7 +232,7 @@ object OpenApi:
       head:        Optional[Operation] = Unset,
       patch:       Optional[Operation] = Unset,
       trace:       Optional[Operation] = Unset,
-      parameters:  List[Parameter]     = Nil ):
+      parameters:  List[Referable[Parameter]] = Nil ):
 
     def operations: Map[Http.Method, Operation] =
       val verbs =
@@ -163,13 +249,72 @@ object OpenApi:
     given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Components is Json.Decodable = Json.DecodableDerivation.derived
 
-  case class Components(schemas: Map[Text, JsonSchema] = Map())
+  case class Components
+    ( schemas:         Map[Text, JsonSchema]              = Map(),
+      parameters:      Map[Text, Referable[Parameter]]    = Map(),
+      responses:       Map[Text, Referable[Response]]     = Map(),
+      requestBodies:   Map[Text, Referable[RequestBody]]  = Map(),
+      securitySchemes: Map[Text, SecurityScheme]          = Map() )
+
+  object SecurityScheme:
+    given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    =>  SecurityScheme is Json.Decodable = Json.DecodableDerivation.derived
+
+    enum Kind:
+      case ApiKey, Http, OAuth2, OpenIdConnect, MutualTls, Unknown
+
+    object Flow:
+      given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+      =>  Flow is Json.Decodable = Json.DecodableDerivation.derived
+
+    // One OAuth 2 flow: its endpoints and the scopes it can grant, each with a description
+    case class Flow
+      ( authorizationUrl: Optional[Text]  = Unset,
+        tokenUrl:         Optional[Text]  = Unset,
+        refreshUrl:       Optional[Text]  = Unset,
+        scopes:           Map[Text, Text] = Map() )
+
+    object Flows:
+      given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+      =>  Flows is Json.Decodable = Json.DecodableDerivation.derived
+
+    case class Flows
+      ( `implicit`:        Optional[Flow] = Unset,
+        password:          Optional[Flow] = Unset,
+        clientCredentials: Optional[Flow] = Unset,
+        authorizationCode: Optional[Flow] = Unset )
+
+  // A security scheme (OpenAPI 3 §4.8.27): an API key sent in a header, query parameter or
+  // cookie; HTTP authentication by a named scheme; OAuth 2, with its flows; OpenID Connect; or
+  // mutual TLS. The fields not belonging to the scheme's `type` stay absent.
+  case class SecurityScheme
+    ( `type`:           Text,
+      description:      Optional[Text]                 = Unset,
+      name:             Optional[Text]                 = Unset,
+      `in`:             Optional[Text]                 = Unset,
+      scheme:           Optional[Text]                 = Unset,
+      bearerFormat:     Optional[Text]                 = Unset,
+      flows:            Optional[SecurityScheme.Flows] = Unset,
+      openIdConnectUrl: Optional[Text]                 = Unset ):
+
+    def kind: SecurityScheme.Kind = `type` match
+      case t"apiKey"        => SecurityScheme.Kind.ApiKey
+      case t"http"          => SecurityScheme.Kind.Http
+      case t"oauth2"        => SecurityScheme.Kind.OAuth2
+      case t"openIdConnect" => SecurityScheme.Kind.OpenIdConnect
+      case t"mutualTLS"     => SecurityScheme.Kind.MutualTls
+      case _                => SecurityScheme.Kind.Unknown
+
+  // A security requirement (§4.8.30): the schemes which must all be satisfied, each with the
+  // scopes it needs; an operation's (or the document's) `security` lists alternatives, any one of
+  // which suffices, an empty requirement meaning that no credentials are needed.
+  type Requirement = Map[Text, List[Text]]
 
   // The `responses` map is keyed by status text (`"200"`, `"2XX"`, `"default"`),
   // not all of which are valid `Http.Status` codes; `response` interprets a
   // concrete status against those keys.
   extension (operation: Operation)
-    def response(status: Http.Status): Optional[Response] =
+    def response(status: Http.Status): Optional[Referable[Response]] =
       operation.responses.at(status.code.show)
       . or(operation.responses.at(t"${status.code/100}XX"))
       . or(operation.responses.at(t"default"))
@@ -195,82 +340,45 @@ object OpenApi:
       case other =>
         other
 
-  // Mirror of jacinta's `JsonSchema is Decodable in Json`, over the `Yaml` AST.
-  // jacinta cannot depend on ypsiloid, so the YAML decoder for `JsonSchema`
-  // lives here, in scope of the model's own decoders. Kept distinct from the
-  // private method so that recursive summons for nested schemas (`items`,
-  // `properties`, …) resolve to this fully-defined given rather than to the
-  // instance currently being initialised.
-  given jsonSchemaYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error])
-  =>  JsonSchema is Decodable in Yaml = decodeYamlSchema(_)
+  // A YAML document as JSON. The model has one decoder, over `Json`; a document written as
+  // YAML reaches it by translating the tree, so the two forms cannot drift apart. Both ASTs are
+  // flat arrays of the same shape, so the walk is shallow. A mapping key which YAML wrote as a
+  // number or boolean (`200:`, `default:` is already a string) becomes the string JSON requires.
+  def json(yaml: Yaml): Json = Json.ast(translate(yaml.root))
 
-  private def decodeYamlSchema(yaml: Yaml)(using Tactic[Yaml.Error], Tactic[JsonPointer.Error])
-  :   JsonSchema =
+  private def translate(node: Yaml.Ast): Json.Ast =
+    if node.isNull || node.isAbsent then Json.Ast(Json.JsonNull)
+    else if node.isBoolean then Json.Ast(node.asInstanceOf[Boolean])
+    else if node.isLong then Json.Ast(node.asInstanceOf[Long])
+    else if node.isDouble then Json.Ast(node.asInstanceOf[Double])
+    else if node.isBcd then Json.Ast(Bcd.adopt(node.asInstanceOf[scala.Array[Double]]))
+    else if node.isString then Json.Ast(node.asInstanceOf[String])
+    else if node.isArray then
+      val elements = Array.tabulate[Any](node.arrayLength): index =>
+        translate(node.arrayElement(index))
 
-    def field[value: Decodable in Yaml](name: Text): Optional[value] =
-      yaml(name).as[Optional[value]]
+      Json.Ast.arr(elements)
+    else
+      val entries = node.asInstanceOf[Array[Any]]
+      val size = node.objectSize
 
-    field[Text]("$ref".tt).let: reference =>
-      JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"))
+      def key(index: Int): String = (entries.readable(index*2): Matchable) match
+        case string: String   => string
+        case long: Long       => long.toString
+        case double: Double   => double.toString
+        case boolean: Boolean => boolean.toString
+        case _                => "null"
 
-    . or:
-        field[Text](t"type") match
-          case t"array" =>
-            JsonSchema.Array
-              ( field[Text](t"description"),
-                field[JsonSchema](t"items"),
-                field[Int](t"minItems"),
-                field[Int](t"maxItems"),
-                false,
-                field[Int](t"maxContains"),
-                field[Int](t"minContains") )
+      Json.Ast.obj
+        ( Array.tabulate[String](size)(key),
+          Array.tabulate[Any](size) { index => translate(node.objectValue(index)) } )
 
-          case t"string" =>
-            JsonSchema.String
-              ( field[Text](t"description"),
-                field[Int](t"minLength"),
-                field[Int](t"maxLength"),
-                field[Text](t"pattern"),
-                field[JsonSchema.Format](t"format"),
-                false )
+  // The document's JSON, whether it was written as JSON or YAML: JSON begins with `{`
+  private[apoplexy] def sourceJson(text: Text)
+    ( using Tactic[Parse.Error], Tactic[Yaml.Error], Yaml.Tracking )
+  :   Json =
 
-          case t"number" =>
-            JsonSchema.Number
-              ( field[Text](t"description"),
-                field[Double](t"multipleOf"),
-                field[Double](t"maximum"),
-                field[Double](t"minimum"),
-                field[Double](t"exclusiveMinimum"),
-                field[Double](t"exclusiveMaximum"),
-                false )
-
-          case t"integer" =>
-            JsonSchema.Integer
-              ( field[Text](t"description"),
-                field[Int](t"maximum"),
-                field[Int](t"minimum"),
-                field[Int](t"exclusiveMinimum"),
-                field[Int](t"exclusiveMaximum"),
-                false )
-
-          case t"boolean" =>
-            JsonSchema.Boolean(field[Text](t"description"), false)
-
-          case t"null" =>
-            JsonSchema.Null(field[Text](t"description"), false)
-
-          case _ =>
-            JsonSchema.Object
-              ( field[Text](t"description"),
-                field[Map[Text, JsonSchema]](t"properties").or(Map()),
-                false,
-                field[List[Text]](t"required"),
-                // `enum` holds raw `Json` values, and there is no `Yaml`->`Json`
-                // bridge, so enum constraint values are not carried through the YAML
-                // path; they do not affect endpoint structure.
-                Unset,
-                yaml(t"additionalProperties").as[Optional[scala.Boolean]].or(false),
-                field[List[JsonSchema]](t"oneOf") )
+    if text.trim.starts(t"{") then text.as[Json] else json(text.as[Yaml])
 
   // Anchor the top-level model so `as[OpenApi]` (below) materialises its decoder
   // once — with each nested type resolving to its own anchor — rather than inlining
@@ -291,10 +399,7 @@ object OpenApi:
           case Yaml.Error(_)           => OpenApi.Error(OpenApi.Error.Reason.Malformed)
           case JsonPointer.Error(_, _) => OpenApi.Error(OpenApi.Error.Reason.Malformed)
 
-        . protect:
-            if text.trim.starts(t"{") || text.trim.starts(t"[")
-            then text.as[Json].as[OpenApi]
-            else text.as[Yaml].as[OpenApi]
+        . protect(sourceJson(text).as[OpenApi])
 
       if document.openapi.starts(t"3.") then document
       else abort(OpenApi.Error(OpenApi.Error.Reason.UnsupportedVersion(document.openapi)))
@@ -331,6 +436,7 @@ object OpenApi:
 case class OpenApi
   ( openapi:    Text,
     info:       OpenApi.Info,
-    servers:    List[OpenApi.Server]        = Nil,
-    paths:      Map[Text, OpenApi.PathItem] = Map(),
-    components: Optional[OpenApi.Components] = Unset )
+    servers:    List[OpenApi.Server]          = Nil,
+    paths:      Map[Text, OpenApi.PathItem]   = Map(),
+    components: Optional[OpenApi.Components]  = Unset,
+    security:   List[OpenApi.Requirement]     = Nil )

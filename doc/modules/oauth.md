@@ -1,73 +1,76 @@
-## OAuth
+## OAuth 2
 
 ### About
 
-[OAuth 2.0](https://en.wikipedia.org/wiki/OAuth) lets an application act on a user's behalf at
-another service, with the user's consent and without the user's password. Soundness implements the
-authorization-code flow as a wrapper around an [HTTP](http-server.md) handler: code that requires
-an authorization simply declares the scopes it needs, and the redirect dance — sending the user to
-the provider, exchanging the returned code for tokens, refreshing an expired access token —
-happens around it.
+[OAuth 2](https://www.rfc-editor.org/rfc/rfc6749) is how a client is authorized to call an API on
+a user's behalf, or on its own: it obtains an access token from the API's authorization server
+and presents it with each request. Orthodoxy provides the client side — the grants which obtain a
+token, PKCE for the authorization-code flow, and the `Credential` by which a scheme's token or key
+reaches a typed client — and, for a web application, the authorization-code flow as
+[scintillate](http-server.md) middleware.
 
-An `Authorization` carries its scopes in its type, so a handler that requires a scope cannot run
-without an authorization that grants it, and the access token flows into outgoing requests as a
-standard bearer header.
+### On tokens
 
-### On OAuth
-
-The protocol is a chain of redirects and exchanges, each with its own failure modes: the initial
-redirect with the right parameters, the callback carrying a single-use code, the back-channel
-exchange of code for tokens, expiry tracking, and the refresh exchange when an access token ages
-out. Implemented ad hoc, the steps scatter across handlers, and the question "is this request
-authorized for what it is about to do?" is answered by convention.
-
-Each step of the flow as a typed value, with the wrong sequence unrepresentable, is [impossible states](../philosophy/impossible-states.md) applied to a protocol.
-
-Soundness structures the flow around the handler that needs it. The provider is an `Issuer` value;
-sessions carry the per-user state; and scope requirements are types, checked where the protected
-code is written. Everything comes from the `soundness` package:
+A token is more than a string: it grants particular scopes, it expires, and it may come with a
+refresh token. `Authorization` carries all four, so that what a token can do is known, and a
+`Scope` can be checked against it. Everything comes from the `soundness` package:
 
 ```scala
 import soundness.*
+import strategies.throwUnsafely
+import internetAccess.online
+import httpBackends.javaNetHttp
+import logging.silentLogging
 ```
 
-### Defining an issuer
+### Obtaining a token
 
-An `Issuer` names the provider's endpoints — where users authorize, where codes are exchanged —
-and the application's client credentials and callback:
+An `Issuer` is an authorization server as one client sees it: its token endpoint, the client's
+identity and secret, and — for the authorization-code flow — its authorization endpoint and the
+client's redirect URI. Each grant posts to the token endpoint and reads the `Authorization` it
+returns; a refusal raises `OAuth.Error`.
 
+<!-- doccheck: skip -->
 ```scala
-val issuer = Issuer
-  ( init     = url"https://provider.example/oauth/authorize",
-    exchange = url"https://provider.example/oauth/token",
-    redirect = url"https://app.example/callback",
-    client   = t"my-app",
-    secret   = t"s3cr3t" )
+val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+
+val token: Authorization = issuer.clientCredentials(t"read", t"write")
+token.key                                   // the access token
+token.grants(List(t"read"))                 // true
+val fresh = issuer.refresh(token)           // through its refresh token
 ```
 
-### Protecting a handler
+For the authorization-code flow, `authorizationUrl` builds the URL a user is sent to, with the
+scopes, a `state` to check on return and, with a `Pkce`, the S256 challenge; `exchangeCode`
+then exchanges the code the user brings back:
 
-`oauth` wraps an HTTP handler, intercepting the provider's callback and performing the exchanges;
-inside it, `require` states the scopes a block needs. A request without a valid authorization is
-redirected to the provider; one with it runs the block, the `Authorization` in scope:
-
+<!-- doccheck: skip -->
 ```scala
-val readUser = Scope(t"read:user")
-val profilePage = t"<h1>Your profile</h1>"
+val flow = Issuer(url"https://issuer.example/token", t"client-1", Unset,
+                  url"https://issuer.example/authorize", url"https://app.example/callback")
 
-def profile()(using Http.Request): Http.Response = issuer.oauth:
-  issuer.require(readUser):
-    Http.Response(Http.Ok)(profilePage)
+val pkce = Pkce()
+flow.authorizationUrl(List(t"read"), state, pkce)   // send the user here
+flow.exchangeCode(code, pkce)                       // when they come back
 ```
 
-An expired access token refreshes automatically through the refresh token, so a long-lived session
-does not send its user back through the consent screen.
+### Credentials for a typed client
 
-### Using the authorization
+A `Credential` names a security scheme, as an API's specification names it, and holds the value
+the scheme calls for: a `Text` for an API key, an `Auth` for HTTP authentication, an
+`Authorization` for OAuth 2. The [OpenAPI client](openapi.md) finds the credential for each
+scheme an operation requires by its name, and presents it as the scheme dictates:
 
-The `Authorization` in scope carries the access token and granted scopes, and supplies the
-standard `Authorization: Bearer …` header to outgoing [HTTP](http-client.md) requests, so calling
-the provider's API on the user's behalf is an ordinary fetch with the authorization applied.
-Asking an authorization for a scope it does not hold raises an `OAuth.Error`, whose reasons also
-cover the flow's other failures — a denied consent, an unexpected status from the provider, a
-response that would not parse — each named for diagnosis.
+<!-- doccheck: skip -->
+```scala
+given key: ("api_key" is Credential to Text) = Credential(t"…")
+given token: ("petstore_auth" is Credential to Authorization) = issuer.clientCredentials()
+```
+
+### In a web application
+
+For an application which acts for its users, the `orthodoxy.server` module wraps a request
+handler in the authorization-code flow: `issuer.oauth { … }` handles the redirect back from the
+issuer, exchanging the code (or refreshing an expired token), and `issuer.require(scope) { … }`
+sends a user who has not yet authorized the application to the issuer, and otherwise runs the
+handler with an `Authorization of scope` in scope. An `Authorizations` holds each session's state.

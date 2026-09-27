@@ -37,3 +37,6 @@ package postables:
 
 package servables:
   export stratiform.servables.telServable
+
+package construables:
+  export stratiform.construables.telConstruable

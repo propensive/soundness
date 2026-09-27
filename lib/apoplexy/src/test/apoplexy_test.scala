@@ -35,8 +35,11 @@ package apoplexy
 import soundness.*
 import apoplexy.OpenApi.*
 
+import classloaders.threadContextClassloader
+import charDecoders.utf8Decoder
 import errorDiagnostics.emptyDiagnostics
 import strategies.throwUnsafely
+import textSanitizers.skipSanitizer
 
 object Tests extends Suite(m"OpenAPI tests"):
   val jsonSpec: Text =
@@ -166,14 +169,16 @@ components:
     .assert(_ == t"listPets")
 
     test(m"the path parameter location is decoded as Path"):
-      fromJson.paths(t"/pets/{id}").let(_.get).let(_.parameters.stdlib.head.in)
-    .assert(_ == OpenApi.Parameter.In.Path)
+      fromJson.paths(t"/pets/{id}").let(_.get).let(_.parameters.prim)
+    .assert:
+      case parameter: OpenApi.Parameter => parameter.in == OpenApi.Parameter.In.Path
+      case _                            => false
 
     test(m"a reference property is kept lazy"):
       fromJson.components.let(_.schemas(t"Pet"))
     .assert:
-      case JsonSchema.Object(_, properties, _, _, _, _, _) =>
-        properties(t"owner") match
+      case schema: JsonSchema.Object =>
+        schema.properties(t"owner") match
           case JsonSchema.Ref(pointer, _, _) => pointer.encode == t"#/components/schemas/Owner"
           case _                             => false
       case _ => false
@@ -191,6 +196,40 @@ components:
     .assert:
       case _: JsonSchema.Object => true
       case _                    => false
+
+    val refstore = cp"/openapi/local/refstore.json".read[Text].read[OpenApi]
+
+    test(m"a referenced parameter decodes as a Ref"):
+      refstore.paths(t"/items").let(_.get).let(_.parameters.prim)
+    .assert:
+      case OpenApi.Ref(pointer) => pointer.encode == t"#/components/parameters/limit"
+      case _                    => false
+
+    test(m"a referenced parameter resolves through the components"):
+      given OpenApi = refstore
+      refstore.paths(t"/items").let(_.get).let(_.parameters.prim).let(_()).let(_.name)
+    .assert(_ == t"limit")
+
+    test(m"a referenced response resolves through the components"):
+      given OpenApi = refstore
+      refstore.paths(t"/items/{itemId}").let(_.get).let(_.responses(t"200")).let(_()).let(_.description)
+    .assert(_ == t"an item")
+
+    test(m"a reference outside the components is an error"):
+      given OpenApi = refstore
+      capture[OpenApi.Error](OpenApi.Ref(t"#/paths/x".as[JsonPointer]).asInstanceOf[OpenApi.Referable[OpenApi.Parameter]]())
+    .assert(_.reason == OpenApi.Error.Reason.UnsupportedRef(t"#/paths/x"))
+
+    test(m"a server URL resolves its variables to their defaults"):
+      refstore.servers.prim.let(_.resolved)
+    .assert(_ == t"/v2")
+
+    test(m"an operation requiring a credential nobody provides does not compile"):
+      demilitarize:
+        val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
+        refs.items(7).get
+      . length
+    .assert(_ > 0)
 
     test(m"an unsupported OpenAPI version is rejected"):
       capture[OpenApi.Error]:

@@ -35,6 +35,7 @@ package jacinta
 import anticipation.*
 import gesticulate.*
 import hieroglyph.*
+import prepositional.*
 import spectacular.*
 import telekinesis.*
 import zephyrine.*
@@ -50,3 +51,6 @@ package servables:
 
   given jsonServable: (encoder: CharEncoder, formatting: Json.Formatting) => Json is Servable =
     Servable[Json](jsonMediaType): value => Http.Body.Fixed(value.show.in[Data])
+
+package construables:
+  given jsonConstruable: ("application/json" is Construable to Json) = Construable()

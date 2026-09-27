@@ -33,3 +33,6 @@
 package soundness
 
 export hallucination.Webp
+
+package construables:
+  export hallucination.construables.webpConstruable

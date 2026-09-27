@@ -37,6 +37,7 @@ import anticipation.*
 import contextual.*
 import contingency.*
 import fulminate.*
+import gesticulate.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
@@ -93,3 +94,6 @@ private def argumentSimples(argument: Optional[PseudoArgument]): List[Simple] =
 package formatting:
   given indentedCssFormatting: Css.Formatting = Css.Formatting(newlines = true, spaces = true)
   given compactCssFormatting: Css.Formatting = Css.Formatting(newlines = false, spaces = false)
+
+package construables:
+  given cssConstruable: ("text/css" is Construable to Css) = Construable()

@@ -36,6 +36,9 @@ import soundness.*
 
 import strategies.throwUnsafely
 import logging.silentLogging
+import construables.{jsonConstruable, xmlConstruable, plainTextConstruable, pngConstruable, formConstruable}
+import postables.{jsonPostable, xmlPostable}
+import classloaders.threadContextClassloader
 import internetAccess.online
 import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder
@@ -49,6 +52,8 @@ case class Photo(url: Text, width: Optional[Int] = Unset, height: Optional[Int] 
 case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
 case class Note(id: Int, text: Text)
 case class NewNote(text: Text)
+case class Item(id: Long, name: Text)
+case class NewItem(name: Text)
 
 // A test `Http.Backend` that captures the request it is given and replies with a
 // canned response, so `.call` can be exercised without any network access.
@@ -78,7 +83,7 @@ object ApiTests extends Suite(m"Api client tests"):
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
 
-    val api = Api(cp"/apoplexy/petstore.json")
+    val api = Api(cp"/openapi/local/petstore.json")
 
     val petJson  = t"""{"id": 42, "name": "Milo", "tag": "cat"}"""
     val petsJson = t"""[{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]"""
@@ -108,7 +113,7 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert: request =>
           request.method == Http.Get && request.path == t"/pets/{petId}/photos"
           && request.substitutions == Map(t"petId" -> t"42")
-          && request.query == List(t"width" -> t"10", t"height" -> t"20")
+          && request.query.values == List(t"width" -> t"10", t"height" -> t"20")
 
       test(m"POST sole method with a positional body"):
         api.login(Credentials(t"jon", t"pw")).request
@@ -128,13 +133,14 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(_ == Http.Put)
 
       test(m"an optional query parameter may be omitted"):
-        api.pets(42).photos(width = 10).request.query
+        api.pets(42).photos(width = 10).request.query.values
       . assert(_ == List(t"width" -> t"10"))
 
     suite(m"explicit terminals for multi-method endpoints"):
       test(m"GET /pets via explicit .get with a query parameter"):
         api.pets.get(limit = 10).request
-      . assert(request => request.method == Http.Get && request.query == List(t"limit" -> t"10"))
+      . assert: request =>
+          request.method == Http.Get && request.query.values == List(t"limit" -> t"10")
 
       test(m"POST /pets via explicit .post with a body"):
         api.pets.post(NewPet(t"Milo", tag = t"cat")).request
@@ -239,10 +245,10 @@ object ApiTests extends Suite(m"Api client tests"):
         (recorder.lastMethod, recorder.lastBody.present)
       . assert(_ == (Http.Post, true))
 
-      test(m"a non-2xx response raises Api.Error"):
-        given Http.Backend = Recorder(() => Http.Response(Http.NotFound)(t"{}"))
-        capture[Api.Error](api.pets(42).get.call[Pet]()).reason
-      . assert(_ == Api.Error.Reason.Status(404))
+      test(m"a status the spec does not declare raises Api.Violation"):
+        given Http.Backend = Recorder(() => Http.Response(Http.NotFound)(t"gone"))
+        capture[Api.Violation](api.pets(42).get.call[Pet]()).status
+      . assert(_ == Http.NotFound)
 
       test(m"a type that does not conform to the schema is rejected"):
         demilitarize:
@@ -251,8 +257,207 @@ object ApiTests extends Suite(m"Api client tests"):
         . length
       . assert(_ > 0)
 
+    // The refstore spec requires `queryKey` (an API key in the query) for every operation but
+    // `GET /items`, and `cookieKey` for `/items/{itemId}/notes`
+    given queryKey: ("queryKey" is Credential to Text) = Credential(t"q-1")
+    given cookieKey: ("cookieKey" is Credential to Text) = Credential(t"s-1")
+
+    suite(m"references, path-level parameters, headers and servers"):
+      val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
+      val itemJson = t"""{"id": 7, "name": "spoon"}"""
+
+      test(m"a relative server URL, with its variable at its default, extends the base"):
+        refs.request.base.show
+      . assert(_ == t"https://ref.example.com/v2")
+
+      test(m"a path-level int64 parameter accepts a Long"):
+        refs.items(7L).request.substitutions
+      . assert(_ == Map(t"itemId" -> t"7"))
+
+      test(m"a path-level int64 parameter accepts an Int"):
+        refs.items(7).request.substitutions
+      . assert(_ == Map(t"itemId" -> t"7"))
+
+      test(m"a referenced query parameter is recognised"):
+        refs.items.get(limit = 5, `X-Request-Id` = t"r1").request.query.values
+      . assert(_ == List(t"limit" -> t"5"))
+
+      test(m"a path-level header parameter is sent as a header"):
+        refs.items.get(`X-Request-Id` = t"r1").request.headers
+      . assert(_ == List(Http.Header(t"X-Request-Id", t"r1")))
+
+      test(m"omitting a required header parameter is rejected"):
+        demilitarize(refs.items.get(limit = 5)).length
+      . assert(_ > 0)
+
+      test(m"HEAD is a verb"):
+        refs.items.head(`X-Request-Id` = t"r1").request.method
+      . assert(_ == Http.Head)
+
+      test(m"a referenced response schema types the call"):
+        given Http.Backend = Recorder(() => ok(itemJson))
+        refs.items(7).get.call[Item]()
+      . assert(_ == Item(7L, t"spoon"))
+
+      test(m"a referenced request body is accepted, and 201 is preferred to 202"):
+        val recorder = Recorder(() => Http.Response(Http.Created, contentType = media"application/json")(itemJson))
+        given Http.Backend = recorder
+        refs.items.post(NewItem(t"spoon"), `X-Request-Id` = t"r1").call[Item]()
+        recorder.lastHeaders.filter(_.key.lower == t"x-request-id").map(_.value)
+      . assert(_ == List(t"r1"))
+
+      test(m"a type that does not conform to a referenced schema is rejected"):
+        demilitarize:
+          given Http.Backend = Recorder(() => ok(itemJson))
+          refs.items(7).get.call[Note]()
+        . length
+      . assert(_ > 0)
+
+    suite(m"media types construe their carriers"):
+      val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
+      val itemJson = t"""{"id": 7, "name": "spoon"}"""
+
+      val problemJson = t"""{"message": "no spoon"}"""
+
+      def problem(status: Http.Status): Http.Response =
+        Http.Response(status, contentType = media"application/json")(problemJson)
+
+      test(m"a declared 404 raises Api.NotFound, its payload a record of the error schema"):
+        given Http.Backend = Recorder(() => problem(Http.NotFound))
+
+        refs.items(7).get.attempt[Item]() match
+          case Attempt.Failure(Api.NotFound(problem)) => problem.message
+          case _                                      => t"?"
+      . assert(_ == t"no spoon")
+
+      test(m"a status the default response covers raises Api.OtherError with the status"):
+        given Http.Backend = Recorder(() => problem(Http.InternalServerError))
+
+        refs.items(7).get.attempt[Item]() match
+          case Attempt.Failure(Api.OtherError(status, problem)) => (status, problem.message)
+          case _                                                => (Http.Ok, t"?")
+      . assert(_ == (Http.InternalServerError, t"no spoon"))
+
+      test(m"the declared errors are matched exhaustively as a union"):
+        given Http.Backend = Recorder(() => problem(Http.NotFound))
+        val outcome = refs.items(7).get.attempt[Item]()
+
+        outcome.recover:
+          case Api.NotFound(problem)      => Item(0L, problem.message)
+          case Api.OtherError(_, problem) => Item(1L, problem.message)
+      . assert(_ == Item(0L, t"no spoon"))
+
+      test(m"an operation declaring no errors raises only Api.Violation"):
+        given Http.Backend = Recorder(() => Http.Response(Http.Conflict)(t"busy"))
+        capture[Api.Violation](refs.items(7).label.get.call()).status
+      . assert(_ == Http.Conflict)
+
+      test(m"a case for an undeclared error does not compile"):
+        demilitarize:
+          given Http.Backend = Recorder(() => problem(Http.NotFound))
+
+          refs.items(7).get.attempt[Item]() match
+            case Attempt.Failure(Api.Conflict(problem)) => t"?"
+            case _                                      => t"?"
+        . length
+      . assert(_ > 0)
+
+      test(m"a path substitution is percent-encoded"):
+        val recorder = Recorder(() => Http.Response(Http.Ok, contentType = media"text/plain")(t"x"))
+        given Http.Backend = recorder
+        refs.items(7).label.get.call()
+        recorder.lastUrl
+      . assert(_ == t"https://ref.example.com/v2/items/7/label?token=q-1")
+
+      test(m"a bare call() on a JSON endpoint yields the Json"):
+        given Http.Backend = Recorder(() => ok(itemJson))
+        refs.items(7).get.call().as[Item]
+      . assert(_ == Item(7L, t"spoon"))
+
+      test(m"a text/plain response is construed as Text"):
+        val recorder = Recorder(() => Http.Response(Http.Ok, contentType = media"text/plain")(t"Spoon"))
+        given Http.Backend = recorder
+        val label: Text = refs.items(7).label.get.call()
+        (label, recorder.lastHeaders.filter(_.key == t"accept").map(_.value))
+      . assert(_ == (t"Spoon", List(t"text/plain")))
+
+      test(m"an image/png response is construed as a Raster in Png"):
+        val png = cp"/openapi/local/pixel.png".read[Data]
+        given Http.Backend = Recorder(() => Http.Response(Http.Ok, contentType = media"image/png")(png))
+        val icon: Raster in Png = refs.items(7).icon.get.call()
+        icon.width
+      . assert(_ == 1)
+
+      test(m"a response nothing construes is the raw Http.Response"):
+        given Http.Backend = Recorder(() => Http.Response(Http.Ok)(t"a: 1"))
+        val raw: Http.Response = refs.items(7).notes.get.call()
+        raw.status
+      . assert(_ == Http.Ok)
+
+      test(m"a form-encoded request body takes a Query"):
+        val recorder = Recorder(() => ok(t"[]"))
+        given Http.Backend = recorder
+        refs.lookup(Query(List(t"q" -> t"spoon"))).call[List[Item]]()
+        (recorder.lastHeaders.filter(_.key == t"content-type").map(_.value), recorder.lastBody.present)
+      . assert(_ == (List(t"application/x-www-form-urlencoded"), true))
+
+      test(m"record() reads a JSON object response as a schema-typed record"):
+        given Http.Backend = Recorder(() => ok(petJson))
+        val pet = api.pets(42).get.record()
+        (pet.id, pet.name, pet.tag)
+      . assert(_ == (42, t"Milo", t"cat"))
+
+      test(m"record() reads an array response as a list of records"):
+        given Http.Backend = Recorder(() => ok(petsJson))
+        api.pets.get(limit = 10).record().map(_.name)
+      . assert(_ == List(t"Ada", t"Bea"))
+
+      test(m"record() reads an int64 property as a Long"):
+        given Http.Backend = Recorder(() => ok(itemJson))
+        val id: Long = refs.items(7).get.record().id
+        id
+      . assert(_ == 7L)
+
+      test(m"tuple() reads the response as a named tuple"):
+        given Http.Backend = Recorder(() => ok(petJson))
+        api.pets(42).get.tuple().name
+      . assert(_ == t"Milo")
+
+      test(m"record() is refused for a response that is not JSON"):
+        demilitarize:
+          given Http.Backend = Recorder(() => Http.Response(Http.Ok)(t"Spoon"))
+          refs.items(7).label.get.record()
+        . length
+      . assert(_ > 0)
+
+    suite(m"security schemes"):
+      val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
+
+      test(m"an API key in the query is sent as a query parameter"):
+        refs.items(7).get.request.query.values
+      . assert(_ == List(t"token" -> t"q-1"))
+
+      test(m"an operation whose security is empty needs no credential"):
+        refs.items.get(`X-Request-Id` = t"r1").request.query.values
+      . assert(_ == List())
+
+      test(m"an API key in a cookie is sent in the cookie header"):
+        val recorder = Recorder(() => Http.Response(Http.Ok)(t"a: 1"))
+        given Http.Backend = recorder
+        refs.items(7).notes.get.call()
+        recorder.lastHeaders.filter(_.key == t"cookie").map(_.value)
+      . assert(_ == List(t"session=s-1"))
+
+    suite(m"construables"):
+      test(m"a JSON endpoint cannot be read as a Raster"):
+        demilitarize:
+          given Http.Backend = Recorder(() => ok(itemJson))
+          val icon: Raster in Png = refs.items(7).get.call()
+        . length
+      . assert(_ > 0)
+
     suite(m"the spec decides the wire format (Api over Json / over Xml)"):
-      val xmlApi = Api(cp"/apoplexy/xmlstore.json")
+      val xmlApi = Api(cp"/openapi/local/xmlstore.json")
       val noteXml = t"<Note><id>1</id><text>hello</text></Note>"
 
       def okXml(body: Text): Http.Response =
@@ -288,8 +493,8 @@ object ApiTests extends Suite(m"Api client tests"):
 
       test(m"the request body is encoded as XML"):
         xmlApi.notes.post(NewNote(t"hi")).request.body match
-          case Api.Body.Xml(_) => true
-          case _               => false
+          case Api.Body.Content(media, _) => media == media"application/xml"
+          case _                          => false
       . assert(_ == true)
 
       test(m"an XML POST sends an XML body and content-type"):

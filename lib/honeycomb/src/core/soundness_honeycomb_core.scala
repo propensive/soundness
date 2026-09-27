@@ -54,3 +54,6 @@ package stylesheets:
 
 package recoveries:
   export honeycomb.recoveries.permissiveRecovery
+
+package construables:
+  export honeycomb.construables.htmlConstruable

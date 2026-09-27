@@ -35,6 +35,7 @@ package savagery
 import scala.math.Numeric
 
 import geodesy.*
+import gesticulate.*
 import prepositional.*
 import symbolism.*
 import vacuous.*
@@ -70,3 +71,6 @@ extension [figure: Transformable as transformable](figure: figure)
 
   def skew(angle: Angle, orientation: Orientation = Orientation.Horizontal): figure =
     appended(Transform.Skew(angle, orientation))
+
+package construables:
+  given svgConstruable: ("image/svg+xml" is Construable to Svg) = Construable()

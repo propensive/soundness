@@ -32,7 +32,13 @@
                                                                                                   */
 package punctuation
 
+import gesticulate.*
+import prepositional.*
 import vacuous.Unset
 
 package formatting:
   given unboundedMarkdownFormatting: Markdown.Formatting = Markdown.Formatting(Unset)
+
+package construables:
+  given markdownConstruable: ("text/markdown" is Construable to (Markdown of Layout)) =
+    Construable()

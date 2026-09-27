@@ -32,6 +32,147 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `anticipation.uuid` (`anticipation.Uuids`), both in the `base` bundle and exported from
   `soundness`. (#2089)
 
+## apoplexy
+
+- The givens `apoplexy.OpenApi.Parameter.decodableYaml: (Tactic[Yaml.Error],
+  Tactic[JsonPointer.Error], Tactic[OpenApi.Error]) => Parameter is Decodable in Yaml`,
+  `apoplexy.OpenApi.Operation.decodableYaml` (likewise, for `Operation`) and
+  `apoplexy.OpenApi.jsonSchemaYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error]) =>
+  JsonSchema is Decodable in Yaml` removed. A YAML document is read by translating it to JSON
+  with the new `apoplexy.OpenApi.json(yaml: Yaml): Json` and decoding that; consequently the
+  `enum` values of a schema in a YAML document are now retained (previously dropped). (#2091)
+- `apoplexy.OpenApi.Operation.parameters: List[OpenApi.Parameter]` became
+  `List[OpenApi.Referable[OpenApi.Parameter]]`, `Operation.requestBody: Optional[RequestBody]`
+  became `Optional[Referable[RequestBody]]`, `Operation.responses: Map[Text, Response]` became
+  `Map[Text, Referable[Response]]`, and `OpenApi.PathItem.parameters: List[Parameter]` became
+  `List[Referable[Parameter]]`, where `type Referable[value] = value | OpenApi.Ref` and
+  `case class Ref(pointer: JsonPointer)` is a `$ref` left unresolved. The extension
+  `Operation#response(status: Http.Status)` now returns `Optional[Referable[Response]]`. A new
+  extension `[value <: Parameter | Response | RequestBody: OpenApi.Componental]
+  (referable: Referable[value]) def apply()(using OpenApi): value raises OpenApi.Error` resolves
+  a reference into `#/components/{parameters,responses,requestBodies}/…` (raising
+  `Reason.UnresolvableRef` or `Reason.UnsupportedRef` otherwise). Previously a `$ref` parameter
+  failed to decode and a `$ref` response or request body decoded as an empty object. (#2091)
+- `apoplexy.OpenApi.Components(schemas: Map[Text, JsonSchema])` gained trailing fields
+  `parameters: Map[Text, Referable[Parameter]] = Map()`, `responses: Map[Text,
+  Referable[Response]] = Map()`, `requestBodies: Map[Text, Referable[RequestBody]] = Map()`;
+  `OpenApi.Server(url, description)` gained `variables: Map[Text, OpenApi.ServerVariable] =
+  Map()` (new `case class ServerVariable(default: Text, enum: Optional[List[Text]] = Unset,
+  description: Optional[Text] = Unset)`) and a method `resolved: Text` (the URL with each
+  `{variable}` at its default); `apoplexy.Api.Request(method, base, path, substitutions, query,
+  body)` gained a trailing `headers: List[(Text, Text)] = Nil`. Positional patterns gain
+  elements. (#2091)
+- Behaviour change in the `apoplexy.Api` macros: a path item's own `parameters` now apply to
+  every operation on it (previously ignored, so a path-level path parameter was typed `Text`
+  and a path-level query parameter was rejected as unknown); a named argument may fill an
+  `in: header` parameter, which is sent as a request header (previously rejected); `head`,
+  `options` and `trace` are navigable verbs like `get`; among several 2xx responses `200` is
+  preferred, then `201`, then the lowest (previously the lexicographically smallest); a
+  parameter or response schema of `type: integer` with `format: int64` is typed `Long` (an
+  `Int` argument is still accepted; `call[T]()` accepts `Long` or `Int` fields for any integer
+  schema, and `Float` or `Double` for a number); the spec's first `servers` URL has its
+  `{variables}` replaced by their defaults. New `Api(resource, base: Text)`: `base` is prefixed
+  to a relative server URL (`/api/v3`) and replaces an absolute one. (#2091)
+- `apoplexy.Api.Body.Json(value: jacinta.Json)` and `Api.Body.Xml(value: xylophone.Xml)` removed;
+  `Api.Body` is now `Empty | Content(mediaType: Text, spring: Spring[Data])`, built by
+  `Api.Body.content[carrier](mediaType: Text, value: carrier)(using carrier is Postable)`. The
+  request body's format comes from the media type the specification declares, through the
+  `gesticulate.Construable` in scope for it (see below), and its bytes from that carrier's
+  `telekinesis.Postable`, which must be in scope where the call is written (`import
+  postables.jsonPostable` for JSON, with the `CharEncoder` and `Json.Formatting` it needs;
+  `postables.xmlPostable`, new in module `xylophone.http`, for XML). Previously JSON and XML
+  bodies were serialised with built-in defaults and no imports. (#2091)
+- `apoplexy.Api.send(request: Api.Request, accept: Text)(…)` became `send(request: Api.Request)(…)`;
+  the `accept` header comes from the new field `Api.Request.accept: Optional[Text] = Unset`
+  (a trailing field; positional patterns gain an element), which the `invoke` macro sets to the
+  media type the response is construed as. (#2091)
+- The givens `apoplexy.Conformant.json: (Json is Conformant) over Json`, `Conformant.xml: (Xml is
+  Conformant) over Xml`, `LowPriorityConformant.jsonDecodable: [value: Decodable in Json] =>
+  (value is Conformant) over Json` and `LowPriorityConformant.xmlDecodable` removed, and the trait
+  `apoplexy.LowPriorityConformant` with them. Replacements, generic in the carrier:
+  `Conformant.carrier: [carrier: Aggregable by Data] => (carrier is Conformant) over carrier`,
+  `Conformant2.carrierText: [carrier: Aggregable by Text] => CharDecoder => …`,
+  `Conformant2.decodable: [value, carrier] => (carrier is Aggregable by Data, value is Decodable in
+  carrier) => (value is Conformant) over carrier` and `Conformant3.decodableText` (the `by Text`
+  twin). A malformed body now raises the carrier's own parse error (e.g. `zephyrine.Parse.Error`
+  or `jacinta.Json.Error`) rather than `Api.Error(Reason.Malformed)`. (#2091)
+- Behaviour change: `apoplexy.Api.Response#call()` with no type argument previously always
+  returned `Unit`; it now returns the response's `Transport`: the carrier type the
+  specification's response media type construes (`Json` for `application/json`, `Raster in Png`
+  for `image/png`, …), `Unit` when the operation's success response declares no content, or the
+  raw `Http.Response` (with a compile-time warning) when nothing in scope construes the media
+  type. Its context parameter `value is Defaulting to Unit` became `value is Defaulting to
+  Transport`. `Api.Response`'s `Transport` member is now that carrier type rather than only
+  `Json` or `Xml`; `Api over Json`/`over Xml` on the navigation types are unchanged. (#2091)
+- The `apoplexy.Api` macros now decide an operation's media type by which
+  `gesticulate.Construable` givens are in scope: for each media type the specification offers
+  (`application/json` first, then by name; a structured-syntax suffix such as
+  `application/problem+json` falls back to `application/json`) the macro looks for a
+  `(<media> is Construable)` given. Code that calls a JSON API must therefore `import
+  construables.jsonConstruable` (module `jacinta.http`), an XML API `construables.xmlConstruable`
+  or `textXmlConstruable` (module `xylophone.http`); without one, a response reads as the raw
+  `Http.Response` and a request body is a compile error. Previously `application/json`,
+  `application/xml` and `text/xml` were recognised unconditionally and every other media type
+  was treated as JSON. (#2091)
+- Module `apoplexy.core` now depends on `xylophone.http` and `ypsiloid.http` (new modules, both in
+  the `web` bundle) in place of `xylophone.core` and `ypsiloid.core`. (#2091)
+- Module `apoplexy.core` now also depends on `polyvinyl.core`; new `apoplexy.Api.Records` (a
+  `Json.Provider.Primitives`) and `Api.jsonOf(response: Http.Response)(using Tactic[Parse.Error]):
+  Json` support the new `Api.Response#record()` and `#tuple()`. (#2091)
+- `apoplexy.Api.Request(method: Http.Method, base: Text, path: Text, substitutions: Map[Text, Text],
+  query: List[(Text, Text)], body: Api.Body, headers: List[(Text, Text)], accept: Optional[Text])`
+  became `Request(method: Http.Method, base: HttpUrl, path: Text, substitutions: Map[Text, Text] =
+  Map(), query: legerdemain.Query = Query(), body: Api.Body = Api.Body.Empty, headers:
+  List[Http.Header] = Nil, accept: Optional[MediaType] = Unset)`; `Api.Body.Content(mediaType:
+  Text, spring)` became `Content(mediaType: MediaType, spring)` and `Api.Body.content` takes a
+  `MediaType`; `Api(resource, base: Text)` became `Api(resource, base: HttpUrl)`; `Api.send(request)
+  (using Online, Http.Event is Loggable, Tactic[Connect.Error], Tactic[Url.Error])(using client)`
+  lost its `Tactic[Url.Error]` (the URL is built, not parsed). New `Api.extend(base: HttpUrl,
+  server: Text): HttpUrl`. Behaviour: a spec whose first server URL is absent, relative or not a
+  valid URL is now a compile error at `Api(resource)` unless `base` is given (previously the base
+  was the raw text and failed at send time); a path substitution is now percent-encoded (a space
+  as `%20`). (#2091)
+- `apoplexy.Api.Error(reason: Api.Error.Reason)`, with `Reason.Status(code: Int)` and
+  `Reason.Malformed`, replaced by a sealed hierarchy: `sealed abstract class Api.Error[+payload]
+  (val status: Http.Status, val payload: payload)(using Diagnostics)` (`SN-914.1`) with one case
+  class per status telekinesis names outside the 2xx range — `Api.BadRequest[+payload](payload)`,
+  `Api.NotFound[+payload](payload)`, … `Api.NetworkAuthenticationRequired[+payload](payload)`,
+  each fixing `status` — plus `Api.Informational[+payload](status, payload)`, `Api.Redirection`,
+  `Api.ClientError`, `Api.ServerError` (the `1XX`–`5XX` range keys, and a numbered status
+  telekinesis does not name) and `Api.OtherError[+payload](status, payload)` (`default`); the
+  payload is covariant so that the compiler's exhaustiveness check covers a union of them; and
+  `case class Api.Violation(status: Http.Status, body: Data)(using Diagnostics)` (`SN-914.2`) for
+  a status the operation does not declare. `Api.Response` gained type members `Locus`, `Verb` and
+  `Failure <: Hazard`, the last set per operation by the macros to the union of the error types
+  its declared error responses raise (`Nothing` where it declares none); the payload of each is
+  a polyvinyl `Record` typed by the error schema (references followed two levels deep;
+  constrained members relaxed to their plain types) for a JSON object or array of objects, else
+  the media type's carrier, else `Text`, or `Unit` for a response without a body. `call()`,
+  `record()` and `tuple()` summon, where they are written, a `Tactic` for each member of
+  `Failure` and a `Tactic[Api.Violation]`, plus a `Diagnostics`, and raise the error for the
+  response's status (exact status first, then range, then `default`, else `Violation`); a missing
+  `Tactic` is a compile error naming the error type. New `Api.Response#attempt[value]()`, an
+  `Attempt[value, Failure]` over the declared errors, and `Api.Response#ensure(response)`. The
+  `Conformant` givens (`carrier`, `carrierText`, `decodable`, `decodableText`, `unit`) no longer
+  take a `Tactic[Api.Error]` and no longer check the status; `Conformant.successful` removed.
+  (#2091)
+- `apoplexy.OpenApi.Components` gained `securitySchemes: Map[Text, OpenApi.SecurityScheme] =
+  Map()`, `OpenApi.Operation` gained `security: Optional[List[OpenApi.Requirement]] = Unset` and
+  `OpenApi` gained `security: List[OpenApi.Requirement] = Nil`, where `type Requirement =
+  Map[Text, List[Text]]` and `case class SecurityScheme(type: Text, description, name, in,
+  scheme, bearerFormat, flows: Optional[SecurityScheme.Flows], openIdConnectUrl)` with `def kind:
+  SecurityScheme.Kind` (`ApiKey | Http | OAuth2 | OpenIdConnect | MutualTls | Unknown`). Positional
+  patterns gain elements. Behaviour change in the `Api` macros: an operation with security
+  requirements (its own, else the document's) now needs, where it is invoked, an
+  `orthodoxy.Credential` given named for each scheme of one alternative — `("name" is Credential
+  to Text)` for an `apiKey` scheme, `to Auth` for `http`, `to Authorization` (or `Auth`) for
+  `oauth2`/`openIdConnect` — else it does not compile; the credential is presented as the scheme
+  dictates (header, query parameter, cookie, or the `authorization` header), and a token is checked
+  against the requirement's scopes as the request is built, raising `OAuth.Error` (requiring a
+  `Tactic[OAuth.Error]` at the call site for a scoped requirement). Previously security was
+  ignored. New `Api.apiKey`, `Api.cookieKey`, `Api.httpAuth`, `Api.tokenAuth`. Module
+  `apoplexy.core` now depends on `orthodoxy.core`. (#2091)
+
 ## caduceus
 
 - The given `caduceus.Sendable.htmlDoc: (dom: Dom, monitor: Monitor, probate: Probate) =>
@@ -568,6 +709,41 @@ format. Entries are grouped by module, most-recently-added last within a module.
   (#2089)
 - `Json.Provider.duration` (`"duration"`) is now declared `from Json` as every other instance is
   (previously `to duration` alone). (#2089)
+- `jacinta.JsonSchema.Format` gained cases `Int32, Int64, Float, Double, Byte, Binary, Password`
+  and `Other(name: Text)`; the enum is no longer a pure enumeration, so `Format.values` and
+  `Format.valueOf` no longer exist, and a `match` over `Format` needs an `Other` case.
+  `Format is Decodable in Text` is now total: a name outside the enum decodes as `Other(name)`
+  (previously threw `IllegalArgumentException`); `Other(name)` encodes as `name`. (#2091)
+- `jacinta.JsonSchema.Integer(description, maximum: Optional[Int], minimum: Optional[Int],
+  exclusiveMinimum: Optional[Int], exclusiveMaximum: Optional[Int], optional)` became
+  `Integer(description, maximum: Optional[Long], minimum: Optional[Long], exclusiveMinimum:
+  Optional[Long], exclusiveMaximum: Optional[Long], optional, format: Optional[JsonSchema.Format]
+  = Unset)`: the four bounds are `Long`, and a seventh field `format` (read from the schema's
+  `format` keyword) is appended. Positional patterns gain an element. (#2091)
+- `jacinta.JsonSchema.Object` gained five trailing fields, all defaulting to `Unset`:
+  `additionalSchema: Optional[JsonSchema]`, `allOf: Optional[List[JsonSchema]]`,
+  `anyOf: Optional[List[JsonSchema]]`, `not: Optional[JsonSchema]`, `const: Optional[Json]`.
+  Positional patterns gain five elements. `additionalProperties: Boolean` is now also `true`
+  when the keyword's value is a schema, which `additionalSchema` then carries (previously a
+  schema-valued `additionalProperties` failed to decode). (#2091)
+- Behaviour change: `jacinta.JsonSchema is Json.Decodable` is total over any JSON Schema
+  document. A `type` given as an array reads its first non-`"null"` entry; a `"null"` entry,
+  or OpenAPI 3.0's `nullable: true`, sets the schema's `optional` to `true`; a boolean schema
+  `true`/`false` reads as `Object(additionalProperties = true/false)`; a boolean
+  `exclusiveMinimum`/`exclusiveMaximum` (draft 4 and OpenAPI 3.0) moves `minimum`/`maximum`
+  into `exclusiveMinimum`/`exclusiveMaximum`; a keyword of an unexpected JSON type is ignored
+  rather than raising `Json.Error`. A `"null"` type reads as `Null(description, optional =
+  true)` (previously `optional = false`). (#2091)
+- `jacinta.Json.Provider` now extends the new `Json.Provider.Primitives` (a `polyvinyl.
+  Specification` with `Origin = Json`, `Form = Json.Provider` and the reading primitives
+  `access`, `absent`, `required`, `kind`, `elements`, `pairs`, `entries`, `repeated`, but no
+  schema); `Provider` itself keeps `schema` and `fields`. Behaviour change in the schema walk: a
+  property of `type: integer` with `format: int64` and no bounds now reads through the new
+  `Json.Provider.long` instance (`"long"`, to `Long`) rather than `integer` (to `Int`); a
+  bounded int64 still reads as `"integer!"`. New `Json.Provider.memberOf(document: Json, node:
+  Json, limit: Int = Int.MaxValue): polyvinyl.Member` walks a schema node within a larger
+  document, following at most `limit` references deep (a reference beyond reads as raw `Json`)
+  and memoising each reference followed. (#2091)
 
 ## octogenarian
 
@@ -596,6 +772,38 @@ format. Entries are grouped by module, most-recently-added last within a module.
   to get a pure value can call `apply` directly, including inside `safely`. The new
   `Classloader#resource(path: Text): Optional[Data]` is the same read without logging. Both
   close the resource's stream after reading. (#2071)
+
+## orthodoxy
+
+- Module `orthodoxy.core` no longer depends on `scintillate.server` or `telekinesis.jvm`; the
+  scintillate middleware moved to the new module `orthodoxy.server` (in the `web` bundle, exported
+  as `soundness.{Authorizations, oauth, require}`). `orthodoxy.Issuer#oauth(…)` and
+  `Issuer#require(…)` are now extension methods in `orthodoxy.server` with the same parameters,
+  except that `require` additionally takes `(using Tactic[OAuth.Error])`. (#2091)
+- `orthodoxy.Issuer(init: HttpUrl, exchange: HttpUrl, redirect: HttpUrl, client: Text, secret:
+  Optional[Text] = Unset)` became `Issuer(exchange: HttpUrl, client: Text, secret: Optional[Text]
+  = Unset, init: Optional[HttpUrl] = Unset, redirect: Optional[HttpUrl] = Unset)`, its fields now
+  public `val`s; new client-side grants `grant(parameters: Query)`, `clientCredentials(scopes:
+  Text*)`, `refresh(token: Text)`, `refresh(authorization: Authorization)`, `exchangeCode(code:
+  Text, pkce: Optional[Pkce] = Unset)`, each `(using Online, (Http.Event is Loggable)^, Http.Client
+  onto Origin["http" | "https"])(using Tactic[OAuth.Error]): Authorization`, and
+  `authorizationUrl(scopes: List[Text], state: Text, pkce: Optional[Pkce] = Unset)(using
+  Tactic[OAuth.Error]): HttpUrl`. The grants use the `Http.Client` in scope rather than a
+  built-in `javaNetHttp` backend. (#2091)
+- `orthodoxy.OAuth` (the class, a per-`Session` store with `update`/`apply`) renamed
+  `orthodoxy.Authorizations` (module `orthodoxy.server`), backed by a `ConcurrentHashMap`;
+  `orthodoxy.OAuth.State(redirect, uuid, access, refresh, expiry)` became
+  `Authorizations.State(redirect: Path on Www, uuid: Uuid = Uuid(), access:
+  Optional[Authorization] = Unset)`, its `expired` now reading the authorization's expiry (the
+  old `refresh`/`expiry` fields were never set). `OAuth.Error.Reason` gained `Misconfigured(detail:
+  Text)` (`SN-840.7`). (#2091)
+- `orthodoxy.Authorization` gained `bearer: Auth`, `expired: Boolean`, `grants(required:
+  List[Text]): Boolean` and the companion `Authorization.parse(json: Json)(using
+  Tactic[OAuth.Error]): Authorization` (RFC 6749 §5.1; `scope`, `expires_in` and `refresh_token`
+  optional — previously a token response without `scope` was `InvalidJsonResponse`). New
+  `orthodoxy.Pkce(verifier: Text)` with `challenge` (S256) and `Pkce()`; new typeclass
+  `orthodoxy.Credential` (`type Self <: Label; type Result; def value: Result`, constructor
+  `Credential[name, result](value)`). (#2091)
 
 ## pneumatic
 
@@ -858,6 +1066,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
 
 - The givens `telekinesis.Http.Method.formmethod` and `Http.Method.method` (each
   `("…" is GenericHtmlAttribute[Method])`) removed with `anticipation.GenericHtmlAttribute`. (#2082)
+- `telekinesis.Auth.showable: Auth is Showable` became `[auth <: Auth] => auth is Showable`, so
+  a value typed as a case (`Auth.Bearer`) renders as its header value; previously it fell to the
+  generic `reflect.Enum` instance and rendered as `Bearer(…)`. `Auth is Decodable in Text` now
+  decodes `Basic` credentials correctly: the single base64 text is decoded and split at its first
+  colon (previously the encoded text was split at a colon before decoding, so no real `Basic`
+  header decoded; a password may now contain colons). (#2091)
 
 ## turbulence
 
