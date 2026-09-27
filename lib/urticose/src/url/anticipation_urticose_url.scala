@@ -30,93 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package polyvinyl
+package anticipation
 
-import anticipation.*
-import gossamer.*
+import contingency.*
 import prepositional.*
-import rudiments.*
+import urticose.*
 
-// A `Specification` over `Tree`, exercising every kind of member polyvinyl supports: scalar
-// fields with and without parameters, and nested and repeated records.
-object TreeBlueprint:
-  // How many times the `"counted"` field has been evaluated: records evaluate a field on every
-  // access, whereas a tuple evaluates each field once, when it is built.
-  val evaluations: java.util.concurrent.atomic.AtomicInteger =
-    java.util.concurrent.atomic.AtomicInteger(0)
-
-  private def leaf(tree: Tree): Text = tree match
-    case Tree.Leaf(text) => text
-    case _               => t""
-
-  given text: ("text" is Intensional in TreeBlueprint from Tree to Text) =
-    TreeBlueprint.intensional(leaf(_))
-
-  // A result type which is neither the origin type nor `Text`
-  given length: ("length" is Intensional in TreeBlueprint from Tree to Int) =
-    TreeBlueprint.intensional(leaf(_).s.length)
-
-  given flag: ("flag" is Intensional in TreeBlueprint from Tree to Boolean) =
-    TreeBlueprint.intensional(_ != Tree.Absent)
-
-  given tree: ("tree" is Intensional in TreeBlueprint from Tree to Tree) =
-    TreeBlueprint.intensional: tree => tree
-
-  // Returns the member's parameters verbatim, to show that they reach the instance
-  given params: ("params" is Intensional in TreeBlueprint from Tree to List[Text]) =
-    new Intensional:
-      type Self = "params"
-      type Origin = Tree
-      type Form = TreeBlueprint
-      type Result = List[Text]
-
-      def transform(tree: Tree, params: List[Text]): List[Text] = params
-
-  given counted: ("counted" is Intensional in TreeBlueprint from Tree to Int) =
-    TreeBlueprint.intensional: tree => evaluations.incrementAndGet()
-
-  given node: ("node" is Structural[[value] =>> value] in TreeBlueprint from Tree) =
-    new Structural[[value] =>> value]:
-      type Self = "node"
-      type Origin = Tree
-      type Form = TreeBlueprint
-
-      def transform[value](tree: Tree, make: Tree => value): value = make(tree)
-
-  given items: ("items" is Structural[List] in TreeBlueprint from Tree) =
-    new Structural[List]:
-      type Self = "items"
-      type Origin = Tree
-      type Form = TreeBlueprint
-
-      def transform[value](tree: Tree, make: Tree => value): List[value] = tree match
-        case Tree.Items(items) => items.map(make)
-        case _                 => List()
-
-  // A pure function (`->`): the instance retains it, and a capturing accessor would make the
-  // instance itself a capability, which its pure self type forbids.
-  def intensional[name <: Label, value](accessor: Tree -> value)
-  :   name is Intensional in TreeBlueprint from Tree to value =
-
-    new Intensional:
-      type Self = name
-      type Origin = Tree
-      type Form = TreeBlueprint
-      type Result = value
-
-      def transform(tree: Tree, params: List[Text]): value = accessor(tree)
-
-  def record(data0: Tree, access0: Text -> Tree -> Any): Record = new Record:
-    type Origin = Tree
-    val data: Tree = data0
-    def access: Text -> Tree -> Any = access0
-
-abstract class TreeBlueprint(val fields: List[(Text, Member)]) extends Specification:
-  type Origin = Tree
-  type Form = TreeBlueprint
-
-  def access(name: Text, tree: Tree): Tree = tree match
-    case Tree.Node(children) if Map.defines(children, name) => Map.at(children, name)
-    case _                                                  => Tree.Absent
-
-  def build(data: Tree, access: Text -> Tree -> Any): Record = TreeBlueprint.record(data, access)
+// `Url.instantiable` is in `Url`'s companion, but a consumer whose type parameter is bounded
+// `[url: Instantiable across Urls from Text]` names no `Url`, so the same instance is offered
+// here by name.
+package urlInterfaces:
+  given soundnessUrl: (tactic: Tactic[Url.Error])
+  =>  ((HttpUrl is Instantiable across Urls from Text)^{tactic}) =
+    Url.instantiable

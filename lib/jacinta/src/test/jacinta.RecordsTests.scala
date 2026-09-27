@@ -37,6 +37,7 @@ import soundness.*
 
 
 import charEncoders.utf8Encoder
+import emailAddressInterfaces.soundnessEmailAddress
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 
@@ -55,11 +56,43 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
           ],
           "pattern": "a.b",
           "domain": "example.com",
-          "email": "test@example.com"
+          "email": "test@example.com",
+          "tags": ["red", "green"],
+          "address": { "city": "Tallinn" }
         }""".read[Json]
 
       RecordsExampleSchema.record(spec)
     .check()
+
+    test(m"An array of strings is a list of Text"):
+      record.tags
+    . assert(_ == List(t"red", t"green"))
+
+    test(m"An absent array is an empty list"):
+      RecordsExampleSchema.record(t"""{"name": "Jo"}""".read[Json]).tags
+    . assert(_ == List())
+
+    test(m"A nested object is a record"):
+      record.address.let(_.city)
+    . assert(_ == t"Tallinn")
+
+    test(m"An optional member of a nested object is Unset when absent"):
+      record.address.let(_.postcode)
+    . assert(_ == Unset)
+
+    test(m"A record's data has the origin type"):
+      val data: Json = record.data
+      data(t"name").as[Text]
+    . assert(_ == t"Jim")
+
+    test(m"A field the schema does not declare does not compile"):
+      demilitarize(RecordsExampleSchema.record(t"{}".read[Json]).nope)
+    . assert(_.exists(_.reason == CompileError.Reason.NotAMember))
+
+    test(m"A field cannot be read at the wrong type"):
+      demilitarize:
+        val name: Int = RecordsExampleSchema.record(t"{}".read[Json]).name
+    . assert(_.exists(_.reason == CompileError.Reason.TypeMismatch))
 
     test(m"Get a text value"):
       record.name
@@ -79,15 +112,15 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
 
     test(m"Get a nested value"):
       record.children.prim.let(_.weight)
-    . assert(_ == 0.8)
+    . assert(_ == (0.8: Optional[Double]))
 
     test(m"A bad pattern-checked value throws an exception"):
-      capture[JsonBlueprint.Error]:
+      capture[Json.Provider.Error]:
         // The blueprint error escapes `let`: the lambda runs eagerly on a present value.
         record.children.prim.let(_.color)
     . assert
-        ( _ == JsonBlueprint.Error
-                  ( JsonBlueprint.Error.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}") ) )
+        ( _ == Json.Provider.Error
+                  ( Json.Provider.Error.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}") ) )
 
     test(m"Get a color"):
       record.children.stdlib(1).color
@@ -104,7 +137,7 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
     test(m"Get some values in a list"):
       capture:
         record.children.map { elem => elem.height }
-    . assert(_ == JsonBlueprint.Error(JsonBlueprint.Error.Reason.IntOutOfRange(100, 1, 99)))
+    . assert(_ == Json.Provider.Error(Json.Provider.Error.Reason.IntOutOfRange(100, 1, 99)))
 
     test(m"Get a boolean value"):
       record.active
@@ -142,7 +175,7 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
       }""".read[Json]
 
     test(m"A tuple's elements follow the schema's order"):
-      val (name, active, _, _, _, _, _, _, _, _, _, _) = RecordsExampleSchema.tuple(valid)
+      val (name, active, _, _, _, _, _, _, _, _, _, _, _, _) = RecordsExampleSchema.tuple(valid)
       (name, active)
     . assert(_ == (t"Jim", true))
 
@@ -167,5 +200,5 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
           "email": "test@example.com"
         }""".read[Json]
 
-      capture[JsonBlueprint.Error](RecordsExampleSchema.tuple(invalid))
-    . assert(_ == JsonBlueprint.Error(JsonBlueprint.Error.Reason.IntOutOfRange(100, 1, 99)))
+      capture[Json.Provider.Error](RecordsExampleSchema.tuple(invalid))
+    . assert(_ == Json.Provider.Error(Json.Provider.Error.Reason.IntOutOfRange(100, 1, 99)))

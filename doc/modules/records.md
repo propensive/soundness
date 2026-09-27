@@ -8,9 +8,9 @@ configuration format — yet the program should still access its fields with sta
 compiles, so `record.name` typechecks as `Text` and `record.nope` does not compile, without any
 Scala class mirroring the schema by hand.
 
-This is the machinery beneath the [JSON](json.md) blueprint feature, where a JSON Schema document
-produces typed records, and it is open to any source of schemas a program can read at
-compiletime.
+This is the machinery beneath the [JSON](json.md), [XML](xml.md) and [TEL](tel.md) *providers*,
+where a JSON Schema, an XML Schema or a TEL schema document produces typed records, and it is open to any source of schemas a
+program can read at compiletime.
 
 ### On external schemas
 
@@ -33,12 +33,12 @@ A record typed by its schema at compiletime is [safety by construction](../philo
 
 ### Using records
 
-A schema object — here a `JsonBlueprint` built from a JSON Schema document, declared in a file of
-its own — offers a `record` method that turns raw data into a typed record:
+A provider object — here a `Json.Provider` built from a JSON Schema document, declared in a file
+of its own — offers a `record` method that turns raw data into a typed record:
 
 <!-- doccheck: skip -->
 ```scala
-object Catalogue extends JsonBlueprint(t"""{
+object Catalogue extends Json.Provider(t"""{
   "type": "object",
   "required": ["name", "children"],
   "properties": {
@@ -46,10 +46,14 @@ object Catalogue extends JsonBlueprint(t"""{
     "age": { "type": "integer" },
     "children": {
       "type": "array",
-      "items": { "weight": { "type": "number", "minimum": 0 } }
+      "items": {
+        "type": "object",
+        "required": ["weight"],
+        "properties": { "weight": { "type": "number", "minimum": 0 } }
+      }
     }
   }
-}""".read[Json].as[JsonBlueprint.Doc])
+}""".read[Json]):
 ```
 
 <!-- doccheck: skip -->
@@ -58,25 +62,20 @@ val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
 val record = Catalogue.record(input)
 
 record.name                  // Text, because the schema says string
-record.children.head.weight  // Double, because the schema says number
-record.age                   // does not compile if the schema has no age
+record.children.prim.let(_.weight)  // Double, because the schema says number
+record.age                   // Optional[Int]: not required by the schema
+record.nope                  // does not compile: the schema has no nope
 ```
 
-Nested objects become nested records, arrays become lists of records, and every access is checked
-against the specification — the same guarantee a hand-written class would give, without the class.
+Nested objects become nested records, arrays become lists, a field the schema does not require
+becomes an `Optional`, and every access is checked against the specification — the same
+guarantee a hand-written class would give, without the class.
 
 ### Tuples instead of records
 
 The same schema object can produce a [named
 tuple](https://docs.scala-lang.org/scala3/reference/other-new-features/named-tuples.html) instead
-of a record, through a second one-line macro beside `record`:
-
-<!-- doccheck: skip -->
-```scala
-object Catalogue extends JsonBlueprint(schema):
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
-```
+of a record, through its `tuple` method, the twin of `record`:
 
 For the schema above, `Catalogue.tuple(input)` has the type
 `(name: Text, age: Optional[Int], children: List[(weight: Double)])`: one element per field, named
@@ -101,7 +100,7 @@ field is read once, when the tuple is built, and the tuple holds the converted v
 field therefore fails the construction of the tuple, whether or not the program ever reads it.
 
 This changes how fallible fields are typed. A specification may declare a field's type as, say,
-`Int raises JsonBlueprint.Error`, meaning reading it can fail. In a record, that is the field's
+`Int raises Json.Provider.Error`, meaning reading it can fail. In a record, that is the field's
 type, and each access needs a handler in scope. In a tuple, the failure can only happen during
 construction, so the element's type is plainly `Int`, and the handler must be in scope where the
 tuple is built: a `raises` clause is discharged there, by whichever `Tactic` the call site
@@ -109,37 +108,48 @@ provides, and the call does not compile without one.
 
 ### Defining a specification
 
-A new source of schemas — a database's table definitions, a proprietary format — plugs in by
-implementing `Specification`: it supplies the field names and types as an ordered list of
-`Member`s (a tuple's elements follow that order), and how a field's value is fetched from the
-underlying data at runtime. Two typeclasses complete the picture: an `Intensional` instance for
-each scalar type name the schema can declare, saying what Scala type it becomes and how to read
-it, and a `Structural` instance for the container shapes — nested objects, arrays. A `Structural`
-instance is polymorphic in the element type, since it places nested records and nested tuples
-alike, so it is written as an explicit instance rather than a lambda.
+A new source of schemas — a database's table definitions, an XML Schema, a proprietary format —
+plugs in by implementing `Specification`: a *provider*. It supplies the field names and types as
+an ordered list of `Member`s (a tuple's elements follow that order), and three primitives over
+the underlying data: `access`, fetching a named field's value from a value; `absent`, whether a
+fetched value stands for a missing field; and `repeated`, every value of a field which occurs
+many times — the elements of a JSON array, or every sibling with the field's keyword in a format
+which repeats the field. A `Member` is a `Value`, naming the scalar type the schema declared, a
+`Record` of further members, or a `Union` of alternatives each keyed by the *kind* of value
+which selects it, and each carries a `Multiplicity`: `One`, `Optional` (read as `Optional`,
+`Unset` where `absent`), `Many` (read as a `List`, through `repeated`) or `Keyed` (read as a
+`Map[Text, _]`, through `entries`). The provider says nothing further about optionality or
+repetition; the macro applies the multiplicity itself, and a union's alternative may carry its
+own, so a single-alternative union nests one multiplicity inside another. A format which has
+unions or dictionaries provides the further hooks `kind`, `elements`, `pairs` and `entries`;
+one which does not leaves their defaults.
 
-The schema object then exposes the one-line macro that makes it usable:
+A fourth primitive, `required`, has a default: it is applied to the value of a field read under
+`Multiplicity.One`, and a provider overrides it to fail in its own way when the value is absent.
+One typeclass completes the picture: an `Intensional` instance for each scalar type name the
+schema can declare, saying what Scala type it becomes and how to read a single value of it.
+`Intensional(accessor)` makes one from a function; `Intensional.parametric` from a function
+which also takes the member's parameters, for a type such as a bounded integer. A reading which
+can fail — a value outside its bounds, a string not matching its pattern — is an
+`Intensional.Fallible`, whose `transform` takes the `Tactic` for its `Error`: the field then
+reads as `Result raises Error`, and the tactic is supplied where the field is read. The
+instances live in the provider's companion, so they are found without an import. A provider
+over XML, for instance, would fetch a child element by its label, find a field absent where no
+such child exists, and repeat over every child with the label.
 
-<!-- doccheck: skip -->
-```scala
-transparent inline def record(json: Json): Record = ${build('json)}
-```
-
-From that point, every caller gets records typed by whatever the specification said at the moment
-the calling code was compiled.
-
-`record` (and likewise `tuple`) must be `transparent inline` for any of this to work. Its declared return type is
-`Record`, but what it actually returns is a *structural refinement* of it — for a schema of three
-fields, the type
+Every specification object has `record` and `tuple` from `Specification` itself: nothing need
+be declared in the object beyond its schema. Both are `transparent inline`, expanded where they
+are called with the receiver — the specification object — known, so the macro can find that
+object by its type and evaluate its `fields`. The declared return type of `record` is `Record`,
+but what a call actually has is a *structural refinement* of it — for a schema of three fields,
+the type
 
 <!-- doccheck: skip -->
 ```scala
 Record { def age: Double; def name: Text; def employed: Boolean }
 ```
 
-— and only a transparent method lets that more precise type reach the call site. Declared as an
-ordinary `inline def`, every field access would fail to compile against the bare `Record`, which
-is the whole point lost.
+— and only a transparent method lets that more precise type reach the call site.
 
 ### Compilation order
 

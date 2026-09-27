@@ -39,9 +39,9 @@ import gossamer.*
 import polyvinyl.*
 import vacuous.*
 
-import Tels.{Field, Polarity, Scalar, Struct}
+import Tels.{Field, Polarity, Reference, Scalar, Struct}
 
-// Hand-built TEL schema for the Polyvinyl `TelBlueprint` tests:
+// Hand-built TEL schema for the Polyvinyl `Tel.Provider` tests:
 // a `Contact` record with a required `name` (String scalar), an
 // optional `email` (String scalar), and a required `age` (identifier).
 object ContactSchemaFixture:
@@ -59,11 +59,10 @@ object ContactSchemaFixture:
     scalars  = Array.empty,
     selects  = Array.empty)
 
-// User-defined TelBlueprint with the polyvinyl `record` inline-macro
+// User-defined Tel.Provider with the polyvinyl `record` inline-macro
 // entry point. Lives in its own file so its macro can be expanded
 // without a cyclic dependency from the call-site test file.
-object ContactRecords extends TelBlueprint(ContactSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
+object ContactRecords extends Tel.Provider(ContactSchemaFixture.tels)
 
 // A second schema with a Flag-typed field for the boolean records test.
 object FeatureSchemaFixture:
@@ -79,8 +78,7 @@ object FeatureSchemaFixture:
     scalars  = Array.empty,
     selects  = Array.empty)
 
-object FeatureRecords extends TelBlueprint(FeatureSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
+object FeatureRecords extends Tel.Provider(FeatureSchemaFixture.tels)
 
 // A layered schema for the layer-provenance records test: `name` in the base, `email` in the
 // layer `with-email`, so `email` reads as optional although the layer declares it required.
@@ -102,6 +100,66 @@ object LayeredSchemaFixture:
     scalars  = Array.empty,
     selects  = Array.empty)
 
-object LayeredRecords extends TelBlueprint(LayeredSchemaFixture.tels):
-  transparent inline def record(tel: Tel): Record = ${build('tel)}
+object LayeredRecords extends Tel.Provider(LayeredSchemaFixture.tels)
 
+
+// Nested and repeatable members: a required `name`, a repeatable `tag` scalar, a required and an
+// optional reference to the `Person` record, and a repeatable one.
+object TeamSchemaFixture:
+  val person: Tels.RecordDefinition = Tels.RecordDefinition(
+    t"Person",
+    Array(
+      Field(Polarity.Implicit, Polarity.Implicit, t"name", Scalar(Array(t"string")),     Unset),
+      Field(Polarity.Loose,    Polarity.Implicit, t"role", Scalar(Array(t"identifier")), Unset)),
+    Array.empty)
+
+  val tels: Tels = Tels(
+    name     = t"team",
+    document = Struct(
+      members = Array(
+        Field(Polarity.Implicit, Polarity.Implicit, t"name",   Scalar(Array(t"string")), Unset),
+        Field(Polarity.Implicit, Polarity.Loose,    t"tag",    Scalar(Array(t"string")), Unset),
+        Field(Polarity.Implicit, Polarity.Implicit, t"lead",   Reference(t"Person"),     Unset),
+        Field(Polarity.Loose,    Polarity.Implicit, t"deputy", Reference(t"Person"),     Unset),
+        Field(Polarity.Implicit, Polarity.Loose,    t"member", Reference(t"Person"),     Unset)),
+      validators = Array.empty),
+    layers   = Array.empty,
+    sigil    = Unset,
+    records  = Array(person),
+    scalars  = Array.empty,
+    selects  = Array.empty)
+
+object TeamRecords extends Tel.Provider(TeamSchemaFixture.tels)
+
+// Kebab-case names, a custom validator, an inline struct, and a select member
+object ProfileSchemaFixture:
+  val bio: Struct =
+    Struct
+      ( Array(Field(Polarity.Implicit, Polarity.Loose, t"line", Scalar(Array(t"string")), Unset)),
+        Array.empty )
+
+  val tels: Tels = Tels(
+    name     = t"profile",
+    document = Struct(
+      members = Array(
+        Field(Polarity.Implicit, Polarity.Implicit, t"first-name", Scalar(Array(t"string")), Unset),
+        Field(Polarity.Implicit, Polarity.Implicit, t"handle",     Scalar(Array(t"handle")), Unset),
+        Field(Polarity.Loose,    Polarity.Implicit, t"bio",        bio,                      Unset),
+        Tels.SelectRef(Polarity.Loose, Polarity.Implicit, t"Status")),
+      validators = Array.empty),
+    layers   = Array.empty,
+    sigil    = Unset,
+    records  = Array.empty,
+    scalars  = Array.empty,
+    selects  = Array(Tels.SelectDefinition(
+      name       = t"Status",
+      variants   = Array(
+        Tels.Variant(t"active",   Tels.Flag),
+        Tels.Variant(t"archived", Tels.Flag),
+        Tels.Variant(t"note",     Scalar(Array(t"string")))),
+      validators = Array.empty)))
+
+object ProfileRecords extends Tel.Provider(ProfileSchemaFixture.tels)
+
+// A user type for the custom `handle` validator, read through a given at the call site
+case class Handle(name: Text)

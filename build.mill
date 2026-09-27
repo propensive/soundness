@@ -924,7 +924,7 @@ object soundness extends Toolchain:
     anticipation.focus,
     anticipation.gfx, anticipation.http, anticipation.log,
     anticipation.opaque, anticipation.path, anticipation.print, anticipation.text,
-    anticipation.time, anticipation.url):
+    anticipation.time, anticipation.url, anticipation.net, anticipation.uuid):
     def summary = "Core Soundness abstractions: text, collections, effects and interfaces"
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
@@ -944,10 +944,10 @@ object soundness extends Toolchain:
     chiaroscuro.render, jacinta.core,
     monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
-    xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
+    xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core,
     stratiform.core, stratiform.time, vexillology.core, enigmatic.cose, enigmatic.openssl,
     enigmatic.x509,
-    stratiform.records, bitumen.core, bitumen.jvm, breviloquence.core, distillate.core,
+    bitumen.core, bitumen.jvm, breviloquence.core, distillate.core,
     embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256):
     def summary = "Data formats, serialization, cryptography and persistence"
 
@@ -1365,6 +1365,14 @@ object anticipation extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object url extends Component(text, generic):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The network domains (`EmailAddresses`, `Hostnames`, `IpAddresses`), represented by urticose
+  object net extends Component(text, generic):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The `Uuids` domain, represented by inimitable
+  object uuid extends Component(text, generic):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object print extends Component(text):
@@ -2486,7 +2494,8 @@ object imperial extends Library:
       settings.sep(super.scalacOptions())
 
 object inimitable extends Library:
-  object core extends Component(distillate.core, contingency.core, spectacular.core):
+  object core extends Component(distillate.core, contingency.core, spectacular.core,
+      anticipation.uuid):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2503,7 +2512,9 @@ object iridescence extends Library:
       settings.sep(super.scalacOptions())
 
 object jacinta extends Library:
-  object core extends Component(zephyrine.core, turbulence.core, serpentine.core, adversaria.core, hypotenuse.core):
+  object core extends Component(zephyrine.core, turbulence.core, serpentine.core, adversaria.core,
+      hypotenuse.core, polyvinyl.core, anticipation.url, anticipation.time, anticipation.net,
+      anticipation.uuid):
     // The parser's SWAR word reads: the JVM variant is a byte-array view `VarHandle`, which
     // neither Scala.js nor Scala Native provides, so the crosses compile the portable
     // shift-and-or variant instead (the split `jslink.fastLinkJS` enforces).
@@ -2527,9 +2538,6 @@ object jacinta extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object records extends Component(core, polyvinyl.core, urticose.url, inimitable.core):
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   // The Expr-level `Json.Inlinable` typeclass and its expansion-time instance
   // evaluation (an in-macro staging compiler), kept out of `core` so jacinta
   // users don't inherit the compiler jars unless they opt in.
@@ -2541,8 +2549,8 @@ object jacinta extends Library:
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
-  object test extends Tests(time, http, schema, records, staged, optics, sedentary.core,
-    diuretic.core, galilei.jvm, octogenarian.core, eucalyptus.core)
+  object test extends Tests(time, http, schema, staged, optics, sedentary.core,
+    diuretic.core, galilei.jvm, octogenarian.core, eucalyptus.core, hellenism.core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
       mvn"org.typelevel::jawn-ast:1.6.0",
@@ -2663,7 +2671,7 @@ object mosquito extends Library:
       settings.sep(super.scalacOptions())
 
 object urticose extends Library:
-  object core extends Component(distillate.core, gossamer.core):
+  object core extends Component(distillate.core, gossamer.core, anticipation.net):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object url extends Component(anticipation.url, serpentine.core, contextual.core, core):
@@ -3137,14 +3145,11 @@ object stratiform extends Library:
   object core extends Component(zephyrine.core, turbulence.core, gossamer.core, contingency.core,
       anticipation.codec, distillate.core, wisteria.core, prepositional.core, contextual.core,
       gigantism.core, fulminate.core, adversaria.core, aperture.core, praxinoscope.core,
-      base256, gastronomy.core, ulysses.core):
+      base256, gastronomy.core, ulysses.core, polyvinyl.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The panopticon lens/optic instances for `Tel`, and stratiform's only use of panopticon.
   object optics extends Component(core, panopticon.core):
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object records extends Component(core, polyvinyl.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // `BintelInlinable`, whose entry macro needs expansion-time instance
@@ -3176,7 +3181,7 @@ object stratiform extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, base256, binaryStaged, records, staged, optics, time, http,
+  object test extends Tests(core, base256, binaryStaged, staged, optics, time, http,
       eucalyptus.core, galilei.jvm)
   object bench extends Benchmarks(core, base256, binaryStaged, quantitative.units,
       hellenism.core, ambience.core)
@@ -3583,8 +3588,8 @@ object querencia extends Library:
 
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, wisteria.core,
-      contextual.core,
-      panopticon.core, turbulence.core, gossamer.lexicon, anticipation.focus, parasite.core):
+      contextual.core, panopticon.core, turbulence.core, gossamer.lexicon, anticipation.focus,
+      parasite.core, polyvinyl.core, anticipation.time, anticipation.url):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The Expr-level `Inlinable` typeclass and its expansion-time instance
@@ -3599,7 +3604,7 @@ object xylophone extends Library:
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
   // The tests decode an `EmailAddress`, which `core` itself never mentions.
-  object test extends Tests(core, staged, urticose.core)
+  object test extends Tests(core, staged, urticose.core, hellenism.core)
   object bench extends Benchmarks(core, quantitative.units, hellenism.core):
     def mvnDeps = Seq(mvn"org.scala-lang.modules::scala-xml:2.4.0")
 

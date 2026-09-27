@@ -88,6 +88,10 @@ object internal:
           case Apply(fn, arguments) =>
             Apply(transformTerm(fn)(sym), transformTerms(arguments)(sym))
 
+          // A named argument, `@xmlns("urn:x", qualified = false)`
+          case NamedArg(name, argument) =>
+            NamedArg(name, transformTerm(argument)(sym))
+
           case _ =>
             throw jl.Error()
 

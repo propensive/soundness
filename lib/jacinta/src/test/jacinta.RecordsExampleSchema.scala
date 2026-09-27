@@ -38,7 +38,7 @@ import soundness.*
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely
 
-object RecordsExampleSchema extends JsonBlueprint(t"""{
+object RecordsExampleSchema extends Json.Provider(t"""{
   "$$id": "abc",
   "$$schema": "schema",
   "title": "Title",
@@ -66,13 +66,23 @@ object RecordsExampleSchema extends JsonBlueprint(t"""{
       "description": "Children",
       "type": "array",
       "items": {
-        "height": { "type": "integer", "description": "Height", "minimum": 1, "maximum": 99 },
-        "weight": { "type": "number", "description": "Weight" },
-        "color": { "type": "string", "description": "Colour", "pattern": "#[0-9a-f]{6}" }
+        "type": "object",
+        "required": ["height", "weight", "color"],
+        "properties": {
+          "height": { "type": "integer", "description": "Height", "minimum": 1, "maximum": 99 },
+          "weight": { "type": "number", "description": "Weight" },
+          "color": { "type": "string", "description": "Colour", "pattern": "#[0-9a-f]{6}" }
+        }
+      }
+    },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "address": {
+      "type": "object",
+      "required": ["city"],
+      "properties": {
+        "city": { "type": "string" },
+        "postcode": { "type": "string" }
       }
     }
   }
-}""".read[Json].as[JsonBlueprint.Doc]):
-
-  transparent inline def record(json: Json): Record = ${build('json)}
-  transparent inline def tuple(json: Json): NamedTuple.AnyNamedTuple = ${tuple('json)}
+}""".read[Json])

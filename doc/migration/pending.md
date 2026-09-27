@@ -27,6 +27,10 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `nomenclature.DomId.focusable: Name[DomId] is Focusable`, `cataclysm.SelectorList.focusable`
   and `xylophone.XPath.focusable`; `tarantula.Focusable.{text, tag, domId, cssClass, selector,
   xpath}` no longer exist. Strategies and renderings are unchanged. (#2082)
+- New modules `anticipation.net` (`anticipation.EmailAddresses`, `anticipation.Hostnames`,
+  `anticipation.IpAddresses`, sealed domain markers like `anticipation.Urls`) and
+  `anticipation.uuid` (`anticipation.Uuids`), both in the `base` bundle and exported from
+  `soundness`. (#2089)
 
 ## caduceus
 
@@ -448,6 +452,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   that imported them via `import anticipation.*` needs `import hypotenuse.*` instead. Members,
   signatures and behaviour are unchanged. (#2082)
 
+## inimitable
+
+- `inimitable.core` now depends on `anticipation.uuid`. New choice package
+  `uuidInterfaces` with `given soundnessUuid: (tactic: Tactic[Uuid.Error]) => ((Uuid is
+  Instantiable across Uuids from Text)^{tactic})`, mirrored in `soundness`. (#2089)
+
 ## iridescence
 
 - `iridescence.core` no longer depends on `contextual.core`; a consumer that reached contextual only
@@ -472,6 +482,92 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `ExpectedSlash` and `BadEscape` keep numbers 2, 3 and 4. (#2082)
 - `jacinta.core` depends on `serpentine.core` directly and no longer on `urticose.url`; a consumer
   that reached urticose only through jacinta must declare it. (#2082)
+- `jacinta.Json.Provider`'s constructor parameter is `into[Json.Provider.Schema]`, with given
+  conversions `Json.Provider.Schema.json: Conversion[Json, Schema]` and `Schema.readable:
+  [source] => (source is Readable to Json) => Conversion[source, Schema]`, so a provider may be
+  declared over parsed JSON, a classpath resource (`Json.Provider(cp"/schema.json")`, with a
+  `Classloader` given in scope), a file, or JSON text. `Provider#schema: Json` is unchanged.
+  (#2089)
+- `jacinta.JsonBlueprint` (module `jacinta.records`) moved to `jacinta.Json.Provider` (module
+  `jacinta.core`, which now depends on `polyvinyl.core`, `anticipation.url`, `anticipation.time`,
+  `anticipation.net` and `anticipation.uuid`); module `jacinta.records` and its export
+  `soundness.JsonBlueprint` removed. The constructor now takes the schema document itself:
+  `abstract class Json.Provider(val schema: Json)` (was `JsonBlueprint(val doc:
+  JsonBlueprint.Doc)`), so `object X extends JsonBlueprint(text.read[Json].as[JsonBlueprint.Doc])`
+  becomes `object X extends Json.Provider(text.read[Json])`. `JsonBlueprint.Doc`,
+  `JsonBlueprint.Property` and `JsonBlueprint.entries` removed; the schema walk is
+  `Json.Provider.fieldsOf(schema: Json): List[(Text, Member)]`. `JsonBlueprint.Error` and
+  `JsonBlueprint.Error.Reason` are `Json.Provider.Error` (still `SN-624`) and
+  `Json.Provider.Error.Reason`. `JsonBlueprint.intensional`, `JsonBlueprint.structural` and
+  `JsonBlueprint.record` removed: use `polyvinyl.Intensional(accessor)` and
+  `polyvinyl.Record(data, access)`. (#2089)
+- `Json.Provider`'s optional givens `optionalBoolean` (`"boolean?"`), `optionalText`
+  (`"string?"`), `optionalInteger`, `optionalNumber`, `optionalDateTime`, `optionalDate`,
+  `optionalTime`, `optionalDuration`, `optionalUriReference`, `optionalEmail`,
+  `optionalIdnEmail`, `optionalHostname`, `optionalIpv4`, `optionalIpv6`, `optionalUri`,
+  `optionalIri`, `optionalIriReference`, `optionalUuid`, `optionalUriTemplate`,
+  `optionalJsonPointer`, `optionalRegex`, `optionalPattern`, and the `Structural` givens
+  `array`, `optionalArray`, `module` (`"object"`) and `optionalModule` (`"object?"`) removed:
+  optionality and repetition are applied by polyvinyl's macro from the member's
+  `Multiplicity`. A property not named in `required` still reads as `Optional[T]`; a property
+  whose `type` includes `"null"`, whose `enum` includes `null`, or with an `anyOf`/`oneOf`
+  alternative of type `null`, now reads as `Optional[T]` even when required, and a `null`
+  value reads as `Unset`. (#2089)
+- `Json.Provider` reads an `array` property's `items` as a schema (`{"type": "string"}`,
+  `{"type": "object", "properties": {…}}`), the field reading as `List[T]` of the item type,
+  and an absent array as `List()` (previously `items` was read as a property map, the field as
+  `List[Record]`, and a non-required array as `Optional[List[…]]`). An array without an
+  `items` schema, with a tuple-form `items` list, or whose items are arrays reads as
+  `List[Json]`. (#2089)
+- `Json.Provider` now follows a local `$ref` (`#`, `#/definitions/…`, `#/$defs/…`, any JSON
+  pointer), merges an `allOf` of objects, reads an `enum`/`const` (inferring the type from the
+  values when `type` is absent, and unifying `anyOf`/`oneOf` alternatives which are all
+  strings), and honours `minLength`, `maxLength`, `exclusiveMinimum` and `exclusiveMaximum`
+  (boolean or numeric) on top of `pattern`, `minimum` and `maximum`. A `type` naming several
+  types, or `anyOf`/`oneOf` alternatives of distinct JSON kinds (string, number, boolean,
+  object, array), reads as a Scala union of the alternatives' types (`Text | Record {…}`,
+  `Text | List[Text]`), chosen by the value's kind; an object with `additionalProperties`
+  holding a schema, or `patternProperties` all of one type, and no `properties`, reads as
+  `Map[Text, T]` (empty when absent). Where it cannot settle on one type — alternatives of the
+  same kind or of no one kind, `not`, an object with neither `properties` nor a value schema,
+  a reference to another document, a recursive reference — the field reads as `Json` (new
+  label `"json"`, given `Json.Provider.json`). Previously any of these decoded as its literal
+  `type` label or failed. (#2089)
+- `Json.Provider.fieldsOf` (and so expanding a provider's `record`) now fails with
+  `fulminate.Panic("the schema's root does not describe an object with properties…")` for a
+  schema whose root is an array, a scalar, or reachable only through a reference to another
+  document, and reads the object alternative of a root `anyOf`/`oneOf`. Previously such a root
+  failed decoding `JsonBlueprint.Doc`. (#2089)
+- A required property which is absent now raises `Json.Error(Json.Error.Reason.Absent)` as
+  soon as the field is read, including for an `object` property (previously an absent required
+  object produced a record whose every field was absent). (#2089)
+- `Json.Provider`'s `email`, `idnEmail`, `hostname`, `ipv4`, `ipv6` and `uuid` givens are now
+  polymorphic over the anticipation domains (`[email: Instantiable across EmailAddresses from
+  Text] => ("email" is Intensional in Json.Provider from Json to email)`, and likewise
+  `Hostnames`, `IpAddresses`, `Uuids`), so a record's field has the representing type, with no
+  `raises` clause (the `Tactic` is captured where the record is built), and the instance must
+  be in scope at the call site: `import emailAddressInterfaces.soundnessEmailAddress`,
+  `hostnameInterfaces.soundnessHostname`, `ipAddressInterfaces.{soundnessIpv4, soundnessIpv6}`,
+  `uuidInterfaces.soundnessUuid`, `urlInterfaces.soundnessUrl`. Previously the result types
+  were `EmailAddress raises EmailAddress.Error`, `Hostname raises Hostname.Error`, `Ipv4 raises
+  IpAddress.Error`, `Ipv6 raises IpAddress.Error` and `Uuid raises Uuid.Error`. A `format` the
+  provider does not know now reads as `Text` (previously it failed to find an instance).
+  (#2089)
+- `Json.Provider`'s `boundedInteger` (`"integer!"`) and `pattern` givens are now the classes
+  `Json.Provider.BoundedInteger` and `Json.Provider.Pattern`, `polyvinyl.Intensional.Fallible`
+  instances with `Result = Int` / `Text` and `Error = Json.Provider.Error`; a record's field
+  still reads as `Int raises Json.Provider.Error` / `Text raises …`. `BoundedInteger`'s
+  parameters are now four (`minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, each
+  possibly empty) rather than two. New fallible classes and givens `BoundedNumber`
+  (`"number!"`), `BoundedString` (`"string!"`) and `Enumeration` (`"enum"`), with new reasons
+  `Json.Provider.Error.Reason.NumberOutOfRange(value: Double, minimum: Optional[Double],
+  maximum: Optional[Double])` (`SN-624.5`), `LengthOutOfRange(value: Text, minimum:
+  Optional[Int], maximum: Optional[Int])` (`SN-624.6`) and `NotPermitted(value: Text,
+  permitted: List[Text])` (`SN-624.7`). A bounded integer property not named in `required` now
+  reads as `Optional[Int] raises Json.Provider.Error` (previously always `Int raises …`).
+  (#2089)
+- `Json.Provider.duration` (`"duration"`) is now declared `from Json` as every other instance is
+  (previously `to duration` alone). (#2089)
 
 ## octogenarian
 
@@ -516,6 +612,66 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `pneumatic.core` no longer depends on `turbulence.stdio`; a consumer of any pneumatic module that
   used turbulence names without depending on turbulence must declare `turbulence.core` or
   `turbulence.stdio`. (#2082)
+
+## polyvinyl
+
+- `polyvinyl.Member.Value(fieldType: Text, params: Text*)` is now `Member.Value(fieldType:
+  Text, params: List[Text] = Nil, multiplicity: Multiplicity = Multiplicity.One)`, and
+  `Member.Record(fieldType: Text, fields: List[(Text, Member)])` is `Member.Record(fields:
+  List[(Text, Member)], multiplicity: Multiplicity = Multiplicity.One)`: a nested record is no
+  longer keyed by a label. New `enum polyvinyl.Multiplicity { One, Optional, Many }` and
+  `Member#multiplicity`, `Member#of(multiplicity)`, `Member#optional`, `Member#many`. The
+  macro reads an `Optional` member as `Optional[T]` (`Unset` where the specification's `absent`
+  holds) and a `Many` member as `List[T]`; a fallible `T = S raises E` becomes `Optional[S]
+  raises E` / `List[S] raises E`. The `"…?"` label convention is gone. (#2089)
+- `polyvinyl.Specification` now declares `transparent inline def record(inline value: Origin):
+  Record` and `transparent inline def tuple(inline value: Origin): NamedTuple.AnyNamedTuple`,
+  inherited by every specification object, so the per-object `transparent inline def record(…)
+  = ${build('…)}` and `tuple` declarations are no longer needed and must be removed (they now
+  clash with the inherited members). `Specification#build(value: Expr[Origin])` and
+  `#tuple(value: Expr[Origin])` (the macro halves) removed; the macros are
+  `Specification.record[self, origin, form]` and `Specification.tuple[self, origin, form]`.
+  `build(data: Origin, transform: Text -> Origin -> Any): Record` remains. The specification
+  object is now loaded by reflection at expansion time (by its binary name, through the macro
+  classloader), so it must still be compiled before its call sites, and must be an `object`.
+  (#2089)
+- `polyvinyl.Structural[constructor[_]]` removed, with its `soundness.Structural` export. Nested
+  records are `Member.Record`; repetition is `Multiplicity.Many`. (#2089)
+- New `polyvinyl.Multiplicity.Keyed` (a field read as `Map[Text, T]`) and `polyvinyl.Member.Union(alternatives:
+  List[(Text, Member)], multiplicity: Multiplicity = One)` (a field read as the union of its
+  alternatives' types, the alternative chosen by the specification's `kind` of the value; a
+  single-alternative union nests its alternative's multiplicity). `Member#keyed` added.
+  `polyvinyl.Specification` gained the hooks `def entries(name: Text, value: Origin):
+  List[(Text, Origin)]`, `def kind(value: Origin): Text`, `def elements(value: Origin):
+  List[Origin]` and `def pairs(value: Origin): List[(Text, Origin)]`, each with a default which
+  panics; a specification which uses `Keyed` or `Union` members must override them. (#2089)
+- New `polyvinyl.Intensional.Fallible` (`type Self <: Label; type Error <: Hazard; def
+  transform(data: Origin, params: List[Text])(using Tactic[Error]): Result`): the macro summons
+  `label is Intensional in Form from Origin` first, then `label is Intensional.Fallible …`, and
+  reads a fallible field as `Result raises Error`. An `Intensional` whose `Result` is itself
+  `S raises E` is still read as before. (#2089)
+- `polyvinyl.Specification` gained the abstract members `def absent(value: Origin): Boolean`
+  and `def repeated(name: Text, value: Origin): List[Origin]`; `def build(data: Origin,
+  transform: Text -> Origin -> Any): Record` now has a default (`Record(data, transform)`).
+  (#2089)
+- `polyvinyl.Record`'s members `val data: Origin` and `def access: Text => Origin => Any` are
+  now `val recordData: Origin` and `def recordAccess: Text -> Origin -> Any`, so that a
+  specification may declare a field named `data` or `access`; `record.data` remains available
+  as an extension (`Record.data`) on any record. `Record#selectDynamic(name)` now decodes a
+  JVM-encoded name (`street$$minusaddress`) before dispatching, so a field named with
+  symbols (`street-address`, `+to`, `$$schema`) is selected through a backticked name; an
+  undeclared name now fails with `fulminate.Panic("the record has no field named …")`
+  (previously `NotImplementedError`). New factories `polyvinyl.Record(data, access)`,
+  `polyvinyl.Intensional[name <: Label, form, origin, value](accessor: origin => value): (name
+  is Intensional in form from origin to value)^{accessor}` and
+  `Intensional.parametric(accessor: (origin, List[Text]) => value)`. (#2089)
+- A record's refined type now fixes `Origin` (`Record { type Origin = Json; … }`), so
+  `record.data` has the origin type rather than an abstract `record.Origin`. (#2089)
+- `polyvinyl.Specification` gained `def required(name: Text, value: Origin): Origin = value`,
+  applied by the macro to every field read under `Multiplicity.One` before its `Intensional`;
+  a specification overrides it to fail on an absent value. (#2089)
+- Macro error `could not find a Structural instance for the field …` no longer occurs; an
+  unknown label is always `could not find an Intensional instance …`. (#2089)
 
 ## praxinoscope
 
@@ -661,6 +817,26 @@ format. Entries are grouped by module, most-recently-added last within a module.
   occurrence selector, where it previously matched no child; a keyword without one still selects
   the first. Code comparing accrued pointers against literal paths must add the index for
   repeatable members. (#2068)
+- `stratiform.TelBlueprint` (module `stratiform.records`) moved to `stratiform.Tel.Provider`
+  (module `stratiform.core`, which now depends on `polyvinyl.core`); module
+  `stratiform.records` and its export `soundness.TelBlueprint` removed. `TelBlueprint.fieldsOf`
+  is `Tel.Provider.fieldsOf`; `TelBlueprint.intensional` and `TelBlueprint.record` removed (use
+  `polyvinyl.Intensional(accessor)` and `polyvinyl.Record(data, access)`); the givens
+  `optionalString`, `optionalIdentifier`, `optionalTypeName` and `optionalSigil` removed
+  (optionality is applied by the macro). (#2089)
+- Behaviour change: a `Tel.Provider` record's field whose schema type is a `Tels.Reference` to a
+  record definition now reads as a nested `Record` (previously the macro failed with `could not
+  find a Structural instance`), and a field with `repeatable` polarity `Loose` reads as `List[T]`
+  of every occurrence (previously the first occurrence alone). `Tel.Provider` gained
+  `absent(tel: Tel): Boolean` and `repeated(name: Text, tel: Tel): List[Tel]`. (#2089)
+- Behaviour change: a `Tel.Provider` record's field whose type is an inline `Tels.Struct` now
+  reads as a nested `Record` (previously as the raw `Tel`, label `"tel"`); a `Tels.SelectRef`
+  member now contributes one field per variant of its `Tels.SelectDefinition`, each `Optional`
+  (or `List` when the select is repeatable; a `Flag` variant reads as `Boolean`), where
+  previously select members were ignored; and a required field which is absent now raises
+  `Tel.Error(Tel.Error.Reason.Absent)` as it is read (previously a `String` field read as
+  `t""`). (#2089)
+
 ## surveillance
 
 - `surveillance.Watch.Event#path[directory: Instantiable across Paths from Text]: directory` is
@@ -705,6 +881,16 @@ format. Entries are grouped by module, most-recently-added last within a module.
   eucalyptus, exoskeleton.args, graffiti, guillotine, honeycomb, locomotion, mandible, profanity,
   revolution, surveillance, ultimatum and xylophone. (#2082)
 
+## urticose
+
+- `urticose.core` now depends on `anticipation.net`. New choice packages, mirrored in
+  `soundness`: `emailAddressInterfaces.soundnessEmailAddress: (tactic: Tactic[EmailAddress.Error])
+  => ((EmailAddress is Instantiable across EmailAddresses from Text)^{tactic})`,
+  `hostnameInterfaces.soundnessHostname` (`Hostname`, `Hostnames`, `Hostname.Error`),
+  `ipAddressInterfaces.soundnessIpv4` and `soundnessIpv6` (`IpAddresses`, `IpAddress.Error`), and
+  in `urticose.url` `urlInterfaces.soundnessUrl` (`HttpUrl is Instantiable across Urls from
+  Text`, the same instance as `Url.instantiable`). (#2089)
+
 ## vivisection
 
 - `vivisection.Jdwp.Capabilities` gains two fields: `canGetBytecodes: Boolean` inserted as the
@@ -728,6 +914,56 @@ format. Entries are grouped by module, most-recently-added last within a module.
 ## xylophone
 
 - `xylophone.core` now depends on `anticipation.focus` (additive: `XPath.focusable`). (#2082)
+- `xylophone.Element` is no longer a `case class`: it is `class Element(val label: Text, val
+  attributes: Attributes, val children: Array[Node]^{}, val scope: Xml.Scope = Xml.Scope.empty)`
+  with a companion `apply(label, attributes, children, scope = Xml.Scope.empty)` and `unapply`
+  yielding `(Text, Attributes, Array[Node]^{})`. Construction and three-field patterns are
+  unchanged; `copy`, `productArity`, `productIterator`, `productElement` and `Element.tupled`
+  are gone. `equals`/`hashCode` ignore `scope`. (#2089)
+- The XML parser now resolves namespace prefixes. An element or attribute name whose prefix
+  (other than `xml` and `xmlns`) has no `xmlns:prefix` declaration in scope now fails with
+  `Parse.Error` whose issue is the new `Xml.Issue.UnboundPrefix(prefix: Text)`, where it
+  previously parsed. Import `xylophone.namespaceOptions.lenientNamespaces` (also under
+  `soundness.namespaceOptions`) for the previous behaviour; `strictNamespaces` is the default.
+  Declarations remain attributes and serialization of a parsed document is unchanged. (#2089)
+- The parse givens `Xml.aggregable`, `Xml.aggregable2`, `Xml.instantiable`, `Xml.loadable`,
+  `Xml.aggregableParsed`, `Xml.readableParsed` and `Xml2.aggregableIn` take two further context
+  parameters, `(scope: Xml.Scope, namespacing: Xml.Namespacing)`, alongside `schema: XmlSchema`;
+  both have companion defaults (`Xml.Scope.xml`, `Xml.Namespacing.Strict`), so call sites need
+  no change unless they name these givens' types. `Xml.XmlParser.from*` likewise take
+  `(using XmlSchema, Xml.Scope, Xml.Namespacing)`. (#2089)
+- `Xml#selectDynamic(name)` and `Xml#applyDynamic(name)(ordinal)` gain a `scope: Xml.Scope`
+  context parameter beside the erased `DynamicXmlEnabler`, and a prefixed `name` whose prefix
+  is bound (in the scope, or at the parent element) now matches children by resolved namespace
+  and local name rather than by raw label; an unbound prefix still matches the raw label.
+  `optics.xmlLens` gains the same `scope: Xml.Scope` context parameter. (#2089)
+- `xylophone.XPath` gains a second parameter, `scope: Xml.Scope = Xml.Scope.xml`; a
+  `NodeTest.Name(prefix, local)` or `NodeTest.PrefixWildcard(prefix)` whose prefix the scope
+  binds matches by resolved name, and `namespace-uri()` returns the resolved URI instead of
+  the empty string. The `xp""` interpolator binds the prefixes its path uses through `Namespace`
+  givens in scope. `XPathEngine.evaluate` takes a fourth `scope: Xml.Scope = Xml.Scope.xml`
+  parameter. (#2089)
+- `Xml.xmlDiscriminable.discriminate` now returns the element's local name rather than its
+  label, so a prefixed element such as `<s:Book>` selects the `Book` variant. (#2089)
+- The `x""` interpolator now fails to compile when a literal uses a prefix that neither an
+  ancestor within the literal declares nor a `Namespace` given in scope binds (unless
+  `namespaceOptions.lenientNamespaces` is in scope), and gives each lifted `Element` the scope
+  those bindings and declarations imply. (#2089)
+- Serialization (`Xml#show`, `Xml.writeXml`) now writes an `xmlns`/`xmlns:prefix` declaration
+  for an element whose `scope` binds a prefix it or its attributes use, or its default
+  namespace, differently from what the output has declared above it and which its own
+  attributes do not declare. Parsed documents, and elements built with the default empty scope,
+  are written as before. (#2089)
+- Derived `Encodable in Xml`/`Decodable in Xml` honour the new `Xml.xmlns(uri: Text,
+  qualified: Boolean = true)` and `Xml.unqualified()` annotations and the new `Xml.Namespaced`
+  typeclass (`given T is Xml.Namespaced = Xml.Namespaced(uri, qualified = true)`); a derived
+  decoder for an unannotated type now also matches a child element by local name when no child
+  has the raw label. (#2089)
+- `adversaria`: annotations written with a named argument (`@xmlns("u", qualified = false)`)
+  are now reported by `Annotated`; they were previously dropped silently. (#2089)
+- `xylophone.core` now depends on `polyvinyl.core`, `anticipation.time` and `anticipation.url`
+  (additive: `Xsd` and `Xml.Provider`); `xylophone.Xml3` now extends the new `xylophone.Xml4`,
+  which holds `Xml.Provider`. (#2089)
 
 ## ypsiloid
 

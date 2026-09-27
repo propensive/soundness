@@ -528,8 +528,15 @@ object XPath extends Format:
       case UnexpectedEnd        => m"the XPath ends prematurely"
       case UnexpectedToken      => m"the token was not expected at this position"
 
-case class XPath(expression: XPath.Expression = XPath.Expression.Route(XPath.Origin.Root, Nil))
+// `scope` binds the prefixes the path uses to namespaces: a prefixed name test matches by
+// resolved name when its prefix is bound here, and by raw label otherwise. An `xp""` literal
+// binds its prefixes through the `Namespace` givens at its call site; `in` rebinds them.
+case class XPath
+  ( expression: XPath.Expression = XPath.Expression.Route(XPath.Origin.Root, Nil),
+    scope:      Scope = Scope.xml )
 derives CanEqual:
+
+  def in(scope: Scope): XPath = copy(scope = scope)
 
   // Appends a step to the path. On a non-path expression, the expression
   // becomes the head of a filter path, per the `FilterExpr '/'

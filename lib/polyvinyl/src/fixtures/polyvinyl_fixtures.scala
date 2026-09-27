@@ -40,41 +40,48 @@ import gossamer.*
 // Specification objects for the tests. Each lives in this module, compiled before `test`, so the
 // `record` macro can evaluate it while the call sites are being compiled.
 
-object PersonRecords extends TreeBlueprint(List(
+object PersonRecords extends TreeProvider(List(
   t"name"   -> Member.Value(t"text"),
   t"size"   -> Member.Value(t"length"),
   t"active" -> Member.Value(t"flag"),
   t"raw"    -> Member.Value(t"tree"),
-  t"extras" -> Member.Value(t"params", t"alpha", t"beta"),
-  t"count"  -> Member.Value(t"counted"))):
-  transparent inline def record(tree: Tree): Record = ${build('tree)}
-  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
+  t"extras" -> Member.Value(t"params", List(t"alpha", t"beta")),
+  t"count"  -> Member.Value(t"counted")))
 
-object NestedRecords extends TreeBlueprint(List(
-  t"owner" -> Member.Record(t"node", List(
+object NestedRecords extends TreeProvider(List(
+  t"owner" -> Member.Record(List(
     t"name"    -> Member.Value(t"text"),
-    t"address" -> Member.Record(t"node", List(t"city" -> Member.Value(t"text"))))),
-  t"tags"  -> Member.Record(t"items", List(t"label" -> Member.Value(t"text"))))):
-  transparent inline def record(tree: Tree): Record = ${build('tree)}
-  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
+    t"address" -> Member.Record(List(t"city" -> Member.Value(t"text"))))),
+  t"tags"  -> Member.Record(List(t"label" -> Member.Value(t"text"))).many))
 
-object TitleRecords extends TreeBlueprint(List(t"title" -> Member.Value(t"text"))):
-  transparent inline def record(tree: Tree): Record = ${build('tree)}
-  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
+object TitleRecords extends TreeProvider(List(t"title" -> Member.Value(t"text")))
+
+// Unions chosen by the value's kind, and keyed members read as maps
+object ShapeRecords extends TreeProvider(List(
+  t"id"     -> Member.Union(List(
+    t"leaf" -> Member.Value(t"text"),
+    t"node" -> Member.Record(List(t"name" -> Member.Value(t"text"))))),
+  t"tags"   -> Member.Union(List(
+    t"leaf"  -> Member.Value(t"text"),
+    t"items" -> Member.Value(t"text").many)),
+  t"sizes"  -> Member.Union(List(
+    t"leaf"  -> Member.Value(t"length"),
+    t"items" -> Member.Value(t"length").many)).optional,
+  t"labels" -> Member.Value(t"text").keyed,
+  t"owners" -> Member.Record(List(t"name" -> Member.Value(t"text"))).keyed,
+  t"rows"   -> Member.Union(List(t"items" -> Member.Value(t"text").many)).many))
 
 // The remaining specifications are ill-formed: each compiles, but expanding its `record` macro
 // fails, which the compiletime tests check.
 
-object UnknownValueRecords extends TreeBlueprint(List(t"mystery" -> Member.Value(t"mystery"))):
-  transparent inline def record(tree: Tree): Record = ${build('tree)}
-  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
+object UnknownValueRecords extends TreeProvider(List(t"mystery" -> Member.Value(t"mystery")))
 
-object UnknownRecordRecords
-extends TreeBlueprint(List(t"mystery" -> Member.Record(t"mystery", List()))):
-  transparent inline def record(tree: Tree): Record = ${build('tree)}
-  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
+// A member under each multiplicity, scalar and record
+object MultiplicityRecords extends TreeProvider(List(
+  t"nickname" -> Member.Value(t"text").optional,
+  t"aliases"  -> Member.Value(t"text").many,
+  t"partner"  -> Member.Record(List(t"name" -> Member.Value(t"text"))).optional,
+  t"pets"     -> Member.Record(List(t"name" -> Member.Value(t"text"))).many))
 
 // Instances are keyed by the exact label: `"Text"` is not `"text"`
-object MiscasedRecords extends TreeBlueprint(List(t"name" -> Member.Value(t"Text"))):
-  transparent inline def record(tree: Tree): Record = ${build('tree)}
-  transparent inline def tuple(tree: Tree): NamedTuple.AnyNamedTuple = ${tuple('tree)}
+object MiscasedRecords extends TreeProvider(List(t"name" -> Member.Value(t"Text")))

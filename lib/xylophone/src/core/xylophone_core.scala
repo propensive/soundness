@@ -46,9 +46,9 @@ import prepositional.*
 import rudiments.*
 import vacuous.{Unset, or}
 
-export xylophone.internal.Attributes
+export xylophone.internal.{Attributes, Scope}
 
-export Xml.attribute
+export Xml.{attribute, xmlns, unqualified}
 
 extension (inline context: StringContext)
   transparent inline def x: Interpolation = interpolation[Xml](context)
@@ -67,15 +67,16 @@ private def firstNode(xml: Xml, fallback: Node): Node =
   val nodes = xmlNodes(xml)
   nodes.prim.or(fallback)
 
-private def replaceNamedChild(xml: Xml, name: String, value: Xml): Xml = xml match
-  case Element(label, attributes, children) =>
+private def replaceNamedChild(xml: Xml, name: String, value: Xml)(using Xml.Scope): Xml =
+  xml match
+  case parent @ Element(label, attributes, children) =>
     val replacement = xmlNodes(value)
     val buffer = scm.ArrayBuffer[Node]()
     var done = false
 
     children.iterate: index =>
       children.at(index) match
-        case element: Element if !done && element.label == name.tt =>
+        case element: Element if !done && parent.selects(element, name.tt) =>
           buffer ++= replacement.readable.toSeq
           done = true
 
@@ -114,7 +115,8 @@ private def updateChildElements(xml: Xml, select: Int => Boolean, lambda: Xml =>
       other
 
 package optics:
-  given xmlLens: [name <: Label: ValueOf] => (erased dynamicXmlEnabler: DynamicXmlEnabler)
+  given xmlLens: [name <: Label: ValueOf]
+  =>  ( erased dynamicXmlEnabler: DynamicXmlEnabler, scope: Xml.Scope )
   =>  name is Lens from Xml onto Xml =
     Lens(_.applyDynamic(valueOf[name])(Prim), replaceNamedChild(_, valueOf[name], _))
 
@@ -123,6 +125,11 @@ package optics:
 
   given xmlEachOptical: Each.type is Optical from Xml onto Xml = _ =>
     Optic: (origin, lambda) => updateChildElements(origin, _ => true, lambda)
+
+// Whether a parse treats a prefix with no binding as an error (the default) or as no namespace
+package namespaceOptions:
+  inline given strictNamespaces: Xml.Namespacing = Xml.Namespacing.Strict
+  inline given lenientNamespaces: Xml.Namespacing = Xml.Namespacing.Lenient
 
 package formatting:
   given compactXmlFormatting: Xml.Formatting = Xml.Formatting(Unset, trailingNewline = false)

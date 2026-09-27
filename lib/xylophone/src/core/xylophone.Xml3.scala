@@ -50,7 +50,7 @@ import wisteria.*
 // both a `Reflection` and a custom hand-written `Decodable in Xml` derives
 // here, diverging from its custom decoder — the documented remedy is one
 // line: `given MyType is Xml.Parsable = Xml.Parsable.fromDecodable(...)`.
-trait Xml3:
+trait Xml3 extends Xml4:
   inline given field: [value] => value is Xml.Field = summonFrom:
     case parsable: (`value` is Xml.Parsable) =>
       Xml.Field(parsable)

@@ -36,8 +36,11 @@ package soundness
 // reach xylophone's via `xylophone.Attributive` etc.
 export
   xylophone
-  . { Xml, Xml2, Xml3, XmlSchema, DynamicXmlEnabler, x, xp,
+  . { Xml, Xml2, Xml3, Xml4, XmlSchema, Xsd, DynamicXmlEnabler, Namespace, x, xp,
       XPath }
+
+package namespaceOptions:
+  export xylophone.namespaceOptions.{lenientNamespaces, strictNamespaces}
 
 package formatting:
   export xylophone.formatting.{compactXmlFormatting, indentedXmlFormatting}

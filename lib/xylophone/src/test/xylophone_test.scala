@@ -55,6 +55,12 @@ case class Pixel(x: Int, y: Int, color: ColorVal)
 
 object Tests extends Suite(m"Xylophone tests"):
 
+  // The document element of a parse result
+  def root(xml: Xml): Element = xml match
+    case element: Element             => element
+    case Fragment(element: Element)   => element
+    case _                            => elem(t"none")
+
   def elem(label: Text, children: Node*): Element =
     Element(label, Attributes.empty, Array.from(children))
 
@@ -782,17 +788,64 @@ object Tests extends Suite(m"Xylophone tests"):
         t"""<a xmlns:p="http://example.com"/>""".read[Xml]
       . assert(_ == elem(t"a", Map(t"xmlns:p" -> t"http://example.com")))
 
+      test(m"Prefixed element name is an error when the prefix is unbound"):
+        capture[Parse.Error](t"<p:a/>".read[Xml]).issue
+      . assert(_ == Xml.Issue.UnboundPrefix(t"p"))
+
+      test(m"Prefixed attribute name is an error when the prefix is unbound"):
+        capture[Parse.Error](t"""<a p:b="c"/>""".read[Xml]).issue
+      . assert(_ == Xml.Issue.UnboundPrefix(t"p"))
+
       test(m"Prefixed element name"):
+        import namespaceOptions.lenientNamespaces
         t"<p:a/>".read[Xml]
       . assert(_ == elem(t"p:a"))
 
       test(m"Prefixed element with prefixed close"):
+        import namespaceOptions.lenientNamespaces
         t"<p:a></p:a>".read[Xml]
       . assert(_ == elem(t"p:a"))
 
       test(m"Prefixed attribute name"):
+        import namespaceOptions.lenientNamespaces
         t"""<a p:b="c"/>""".read[Xml]
       . assert(_ == elem(t"a", Map(t"p:b" -> t"c")))
+
+      test(m"A prefix bound by a Scope given needs no declaration"):
+        given Xml.Scope = Xml.Scope(t"p" -> t"http://example.com")
+        t"<p:a/>".read[Xml]
+      . assert(_ == elem(t"p:a"))
+
+      test(m"A prefix bound by a Scope given resolves in the element's scope"):
+        given Xml.Scope = Xml.Scope(t"p" -> t"http://example.com")
+        root(t"<p:a/>".read[Xml]).scope.resolve(t"p")
+      . assert(_ == t"http://example.com")
+
+      test(m"A declared prefix resolves in a child's scope"):
+        root(t"""<a xmlns:p="http://example.com"><p:b/></a>""".read[Xml]) match
+          case Element(_, _, Array(child: Element)) => child.scope.resolve(t"p")
+          case _                                    => Unset
+      . assert(_ == t"http://example.com")
+
+      test(m"The default namespace is in a child's scope"):
+        root(t"""<a xmlns="http://example.com"><b/></a>""".read[Xml]) match
+          case Element(_, _, Array(child: Element)) => child.scope.resolve(Unset)
+          case _                                    => t"none"
+      . assert(_ == t"http://example.com")
+
+      test(m"An empty declaration undeclares the default namespace"):
+        root(t"""<a xmlns="http://example.com"><b xmlns=""/></a>""".read[Xml]) match
+          case Element(_, _, Array(child: Element)) => child.scope.resolve(Unset)
+          case _                                    => t"none"
+      . assert(_ == Unset)
+
+      test(m"The reserved xml prefix is bound in every scope"):
+        root(t"<a/>".read[Xml]).scope.resolve(t"xml")
+      . assert(_ == t"http://www.w3.org/XML/1998/namespace")
+
+      test(m"The scope takes no part in equality"):
+        t"""<a xmlns:p="http://example.com"><p:b/></a>""".read[Xml]
+      . assert(_ == elem(t"a", Map(t"xmlns:p" -> t"http://example.com"), elem(t"p:b")))
 
       test(m"Element with namespace declaration and prefixed attribute"):
         t"""<a xmlns:p="http://example.com" p:b="c"/>""".read[Xml]
@@ -1058,10 +1111,12 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_ == elem(t"a", Map(t"xml:space" -> t"preserve")))
 
       test(m"Element with prefixed name preserves case"):
+        import namespaceOptions.lenientNamespaces
         t"<P:Tag/>".read[Xml]
       . assert(_ == elem(t"P:Tag"))
 
       test(m"Mismatched prefixed close tag"):
+        import namespaceOptions.lenientNamespaces
         capture[Parse.Error](t"<p:a></q:a>".read[Xml]).issue
       . assert: issue =>
           issue match

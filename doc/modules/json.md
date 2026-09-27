@@ -580,16 +580,16 @@ given (Crew is Specific over Json.Encodable) =
 ### Typed records from a schema
 
 Where a schema is given as a JSON Schema document rather than a Scala type, a
-`JsonBlueprint` parses it at compiletime and produces typed records from matching
-JSON. A blueprint object — here `Catalogue` — holds the schema, and its `record`
+`Json.Provider` reads it at compiletime and produces typed records from matching
+JSON. A provider object — here `Catalogue` — holds the schema, and its `record`
 method turns a `Json` value into a typed record. Each field reads at the type the
 schema declares — a string as `Text`, a number as `Double`, a `format: "email"` field
-as an `EmailAddress`, a `pattern` field as a `Regex` — and a field the schema does not
-describe is a compile error:
+as an email address, a `pattern` field as a checked `Text` — and a field the schema does
+not describe is a compile error:
 
 <!-- doccheck: skip -->
 ```scala
-object Catalogue extends JsonBlueprint(t"""{
+object Catalogue extends Json.Provider(t"""{
   "type": "object",
   "required": ["name", "children"],
   "properties": {
@@ -597,10 +597,14 @@ object Catalogue extends JsonBlueprint(t"""{
     "email": { "type": "string", "format": "email" },
     "children": {
       "type": "array",
-      "items": { "weight": { "type": "number", "minimum": 0 } }
+      "items": {
+        "type": "object",
+        "required": ["weight"],
+        "properties": { "weight": { "type": "number", "minimum": 0 } }
+      }
     }
   }
-}""".read[Json].as[JsonBlueprint.Doc])
+}""".read[Json]):
 
 val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
 
@@ -609,12 +613,52 @@ record.name                       // t"Bicycle", a Text per the schema
 record.children.prim.let(_.weight)   // 9.5, a Double per the schema
 ```
 
-Constraints in the schema are enforced as the values are read: a value failing a
-`pattern` raises a `JsonBlueprint.Error`, and a number outside a declared `minimum` and
-`maximum` raises a bounds error. The shape of the data is taken from the schema and
-checked by the compiler, without a Scala type mirroring it.
+The provider takes its schema as anything readable as JSON, so a schema kept as a classpath
+resource is bound directly, `object Catalogue extends Json.Provider(cp"/schemas/catalogue.json")`
+(with a `Classloader` in scope, such as `classloaders.threadContextClassloader`), and read as
+the code compiles.
 
-A blueprint can equally produce a named tuple, `(name: Text, children: List[(weight:
+A property named in the schema's `required` list reads at its type, and fails with a
+`Json.Error` when the document omits it; any other property, or one whose type admits
+`null`, reads as an `Optional`, `Unset` where the document omits it or gives `null`. An
+`array` property reads as a `List` of its `items` schema's type, an `object` property with
+`properties` as a nested record, and a property named with a hyphen or a keyword through a
+backticked name, `record.\`content-type\``.
+
+The provider follows the schema's own structure. A `$ref` into the same document —
+`#/definitions/…`, `#/$defs/…`, or any JSON pointer — reads the definition it names, and an
+`allOf` of objects merges their properties. A string's `enum` (or `const`), `pattern`,
+`minLength` and `maxLength`, and a number's `minimum`, `maximum`, `exclusiveMinimum` and
+`exclusiveMaximum` (in draft 4's boolean form or the later numeric one) are checked as the
+field is read, raising a `Json.Provider.Error`. An `enum` without a `type` is read at the
+type of its values, and a `oneOf` or `anyOf` whose alternatives are all strings reads as one
+string — an `enum` of all their values, where each alternative is one.
+
+Where a property admits several types, the field has the union of them, read by the kind of
+the value found: `anyOf`/`oneOf` alternatives and a `type` naming several, so `"exec":
+string | object` reads as `Text | Record { … }` and `"ignore": string | array` as
+`Text | List[Text]`, and each alternative keeps its own checks. An object whose values a single
+schema describes — `additionalProperties`, or `patternProperties` all of one type — reads as a
+`Map[Text, T]`, empty where absent, and nests freely: a dictionary of lists, a list of
+dictionaries, an array of arrays.
+
+What remains raw `Json`, to be read by hand: alternatives the value's kind cannot tell apart
+(two object shapes in a `oneOf`, or an alternative typed as anything), a `not` or `if`, an
+object with neither `properties` nor a value schema, an array with no `items` schema or a
+tuple-form `items` list, `patternProperties` of differing types, a reference to another
+document, and a recursive reference at the point of recursion — a record type cannot contain
+itself. A schema whose root is not an object with properties — an array, a bare string, a
+reference to another document — is a compile error; where the root offers alternatives of
+which one is such an object, the provider reads that object form. A property whose name is a
+method of every JVM object (`notify`, `wait`, `toString`, `hashCode`, …) cannot be selected by
+name and is read through `record.selectDynamic("notify")`.
+
+A format naming a network or identity type — `email`, `hostname`, `ipv4`, `ipv6`, `uri`,
+`uuid` — reads as whichever type represents that domain at the call site, chosen by importing
+its interface: `emailAddressInterfaces.soundnessEmailAddress` makes `record.email` an
+`EmailAddress`, and `uuidInterfaces.soundnessUuid` makes a `uuid` field a `Uuid`.
+
+A provider can equally produce a named tuple, `(name: Text, children: List[(weight:
 Double)])`, whose elements are all read when it is built, by declaring a `tuple` method
 beside `record`; the [records](records.md) tutorial describes both forms and how they
 differ.

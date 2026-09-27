@@ -35,8 +35,28 @@ package polyvinyl
 import anticipation.*
 import prepositional.*
 
-trait Record extends Selectable, Original:
-  val data: Origin
+object Record:
+  // Pure functions (`->`): the record retains the accessor, and a capturing one would make the
+  // record itself a capability, which its pure self type (rightly) forbids.
+  def apply[origin](data0: origin, access0: Text -> origin -> Any): Record from origin =
+    new Record:
+      type Origin = origin
+      val recordData: origin = data0
+      def recordAccess: Text -> origin -> Any = access0
 
-  def access: Text => Origin => Any
-  def selectDynamic(name: String): Any = access(name)(data)
+  // The record's underlying data. An extension rather than a member, so that a specification
+  // may declare a field named `data` — a common name — without clashing with it: a refinement's
+  // member is selected before an extension is tried.
+  extension (record: Record) def data: record.Origin = record.recordData
+
+// The members are named to avoid a specification's field names: a refinement cannot redeclare
+// a member of `Record` at another type.
+trait Record extends Selectable, Original:
+  val recordData: Origin
+
+  def recordAccess: Text -> Origin -> Any
+
+  // The compiler passes a field's name as it is encoded for the JVM — `street$minusaddress` for
+  // `street-address` — so it is decoded before it is looked up.
+  def selectDynamic(name: String): Any =
+    recordAccess(scala.reflect.NameTransformer.decode(name).tt)(recordData)

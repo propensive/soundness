@@ -115,6 +115,7 @@ lib/hypotenuse/src/core/hypotenuse.rationalInternal.scala	33	0	19
 lib/hypotenuse/src/core/hypotenuse_core.scala	4	0	0
 lib/jacinta/src/core/jacinta.Json.Parser.scala	57	12	0
 lib/jacinta/src/core/jacinta.Json.scala	32	41	3
+lib/jacinta/src/core/jacinta.Json4.scala	0	0	0
 lib/jacinta/src/core/jacinta.JsonPointer.scala	1	0	4
 lib/jacinta/src/core/jacinta.internal.scala	12	20	2
 lib/kaleidoscope/src/core/kaleidoscope.JavaBaseRegex.scala	1	0	0
@@ -198,6 +199,7 @@ lib/stratiform/src/core/stratiform.SchemaResolver.scala	1	0	0
 lib/stratiform/src/core/stratiform.SchemaSignature.scala	5	0	0
 lib/stratiform/src/core/stratiform.Tel.scala	111	66	17
 lib/stratiform/src/core/stratiform.Tel2.scala	1	3	0
+lib/stratiform/src/core/stratiform.Tel4.scala	0	0	2
 lib/stratiform/src/core/stratiform.Telp.scala	4	5	2
 lib/stratiform/src/core/stratiform.Tels.scala	12	16	2
 lib/stratiform/src/core/stratiform.Varint.scala	2	0	0

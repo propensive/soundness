@@ -30,15 +30,38 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package polyvinyl
+package xylophone
 
+import scala.compiletime.*
+
+import anticipation.*
+import gossamer.*
 import prepositional.*
+import spectacular.*
 
-// How a container-shaped member (a nested object, an array) is read: `make` turns each element's
-// origin value into the nested record or named tuple, and the instance places the results in the
-// container. It is polymorphic in the element type because one instance serves both records and
-// named tuples, so it cannot be written as a lambda.
-trait Structural[constructor[_]] extends Original, Formal:
+// A namespace binding as a contextual value: a prefix, the `Self`, bound to a URI, the `Topic`,
+// both singleton types, so that `given svg: ("svg" is Namespace of "http://www.w3.org/2000/svg")
+// = Namespace()` binds the prefix wherever it is in scope. The `x""` and `xp""` interpolators
+// consult the bindings for prefixes their literals use but do not declare; a parse or a prefixed
+// selection reads them through the `Scope` given. Prefixes are lexical conveniences: two names
+// are the same name when their URIs and local parts agree, whatever prefixes bind them.
+object Namespace:
+  class Bound[prefix <: Label, uri <: Label](val prefix: Text, val uri: Text) extends Namespace:
+    type Self = prefix
+    type Topic = uri
+
+  inline def apply[prefix <: Label, uri <: Label](): Bound[prefix, uri] =
+    Bound[prefix, uri](constValue[prefix].tt, constValue[uri].tt)
+
+  // The reserved prefix, bound in every document without a declaration
+  given xml: ("xml" is Namespace of "http://www.w3.org/XML/1998/namespace") = Namespace()
+
+  given inspectable: [namespace <: Namespace] => namespace is Inspectable = namespace =>
+    t"Namespace[${namespace.prefix.inspect} -> ${namespace.uri.inspect}]"
+
+trait Namespace extends Typeclass.Pure, Topical:
   type Self <: Label
+  type Topic <: Label
 
-  def transform[value](data: Origin, make: Origin => value): constructor[value]
+  def prefix: Text
+  def uri: Text
