@@ -248,7 +248,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `TlsAcceptance#pinning`). `Trust(expired, selfSigned, hostname, anchors)` still compiles;
   pattern matches on `Trust(expired, selfSigned, hostname, anchors)` must bind the fifth
   field. `coaxial.Socket.Error.Reason` gained a variant `Handshake` (number 4); exhaustive
-  matches over `Reason` must handle it. (#TBD)
+  matches over `Reason` must handle it. (#2092)
 
 ## corpuscular
 
@@ -959,6 +959,32 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `savagery.core` depends on `geodesy.angle` instead of `geodesy.core`; a consumer that used
   `Geolocation`, `Compass` or the other `geodesy.core` types through savagery must declare
   `geodesy.core`. (#2082)
+
+## sibylline
+
+- `sibylline.Llm.Reply#id` and `sibylline.Llm.Event.Started#id` are now
+  `Optional[Llm.Id[Llm.Reply]]` rather than `Optional[Text]`. `Llm.Id` is an opaque type over
+  `Text`, typed by what it identifies; read the text with `id.text`, or compare with
+  `reply.id.let(_.text) == t"msg_1"`. It is `Showable`, `Inspectable`, and encodable and
+  decodable in `Text` and therefore in JSON. (#2092)
+- `sibylline.Llm.Exchange` gained a fifth parameter, `format: Optional[JsonSchema] = Unset`;
+  positional construction with four arguments is unaffected, but a pattern
+  `Exchange(system, history, tools, settings)` no longer matches. `Llm.Dialect` gained
+  `def structured: Boolean = false`; a dialect overrides it to `true` when its wire honours
+  `format`. (#2092)
+- `session.elicit[value](prompt)` now sends the derived schema as the reply's `format` on a
+  structured dialect (Anthropic), decoding the reply's text, and keeps the forced-tool path on
+  the others. Behaviour is the same for callers; a `Scripted` test dialect must return the JSON
+  document as reply text if it overrides `structured` to `true`. (#2092)
+- New: `sibylline.Llm.Request(id: Llm.Id[Llm.Request], prompt: Text)`,
+  `sibylline.Llm.Outcome[value](id, result: value | Llm.Error)`, `Llm.Id.request(text)` (raises
+  `Llm.Error` with reason `Invalid` for an identifier outside `[A-Za-z0-9_-]{1,64}`),
+  `Anthropic#elicitAll[value](requests): Anthropic.Batch[value]`, `Anthropic#batch[value](id)`,
+  `Anthropic.Batch[value]` with `id`, `status`, `counts`, `refresh()`, `await(seconds = 30)` and
+  `outcomes()`, `Anthropic.Batch.Status` and `Anthropic.Batch.Counts`, and `Anthropic#caching`
+  (a prompt-cache breakpoint on the system prompt). Additive. (#2092)
+- `sibylline.Anthropic`'s private constructor gained a trailing `cached: Boolean`; only
+  `Anthropic.apply` calls it. (#2092)
 
 ## stratiform
 

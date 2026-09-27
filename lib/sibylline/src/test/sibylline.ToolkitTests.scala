@@ -165,6 +165,17 @@ object ToolkitTests extends Suite(m"Toolkit and tool-loop tests"):
       (turn.tools.map(_.name), turn.settings.toolChoice)
     . assert(_ == (List(t"answer"), Llm.ToolChoice.Named(t"answer")))
 
+    test(m"elicit uses the native format on a structured dialect"):
+      val dialect =
+        new Scripted(List(Scripted.reply(t"""{"ticker": "AAPL", "rating": "sell"}"""))):
+          override def structured: Boolean = true
+
+      val handle = session(dialect)
+      val verdict = handle.elicit[Verdict](t"Summarise.")
+      val turn = dialect.calls.head
+      (verdict, turn.tools.map(_.name), turn.format.present, turn.settings.toolChoice)
+    . assert(_ == (Verdict(t"AAPL", t"sell"), List(), true, Unset))
+
     test(m"a reply that ignores the forced tool raises Malformed"):
       val dialect = Scripted(List(Scripted.reply(t"I refuse to be structured.")))
       capture[Llm.Error](session(dialect).elicit[Verdict](t"Summarise.")).reason

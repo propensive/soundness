@@ -47,20 +47,25 @@ import vacuous.*
 def llm(using session: Llm.Session^): Llm.Session^{session} = session
 
 extension (session: Llm.Session^)
-  // A structured answer: the model is forced to call one synthetic tool, `answer`, whose
-  // argument schema is derived from `value`, and the arguments it supplies are decoded as the
-  // result.
+  // A structured answer of the named type. Its JSON schema is derived from `value` and, on a
+  // dialect whose wire constrains replies natively, sent as the reply's format; elsewhere the
+  // model is forced to call one synthetic tool, `answer`, taking that schema as its arguments.
+  // Either way the document the model supplies is decoded as the result: the caller names a
+  // type and receives a value.
   def elicit[value]
     ( prompt: Text )
     ( using schematic: value is Schematic over JsonSchema )
     ( using decodable: (value is distillate.Decodable in Json at Json.Focus)^ )
   :   value =
 
-    val answer: Llm.Tool =
-      Llm.Tool(t"answer", t"The structured answer to the question.", schematic.schema())
+    val message = Llm.Message(Llm.Role.User, prompt)
+    val schema: JsonSchema = schematic.schema()
 
-    val reply = session.forced(Llm.Message(Llm.Role.User, prompt), answer)
-    val arguments: Json = session.arguments(reply)
+    val document: Json =
+      if session.structured then session.structure(session.shaped(message, schema))
+      else
+        val answer = Llm.Tool(t"answer", t"The structured answer to the question.", schema)
+        session.arguments(session.forced(message, answer))
 
     caps.unsafe.unsafeAssumeSeparate:
-      safely(arguments.as[value]).or(session.malformed())
+      safely(document.as[value]).or(session.malformed())
