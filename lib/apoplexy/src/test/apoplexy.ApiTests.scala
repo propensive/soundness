@@ -36,6 +36,9 @@ import soundness.*
 
 import strategies.throwUnsafely
 import logging.silentLogging
+import construables.{jsonConstruable, xmlConstruable, plainTextConstruable, pngConstruable, formConstruable}
+import postables.{jsonPostable, xmlPostable}
+import classloaders.threadContextClassloader
 import internetAccess.online
 import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder
@@ -304,6 +307,49 @@ object ApiTests extends Suite(m"Api client tests"):
         . length
       . assert(_ > 0)
 
+    suite(m"media types construe their carriers"):
+      val refs = Api(cp"/apoplexy/refstore.json", base = t"https://ref.example.com")
+      val itemJson = t"""{"id": 7, "name": "spoon"}"""
+
+      test(m"a bare call() on a JSON endpoint yields the Json"):
+        given Http.Backend = Recorder(() => ok(itemJson))
+        refs.items(7).get.call().as[Item]
+      . assert(_ == Item(7L, t"spoon"))
+
+      test(m"a text/plain response is construed as Text"):
+        val recorder = Recorder(() => Http.Response(Http.Ok, contentType = media"text/plain")(t"Spoon"))
+        given Http.Backend = recorder
+        val label: Text = refs.items(7).label.get.call()
+        (label, recorder.lastHeaders.filter(_.key == t"accept").map(_.value))
+      . assert(_ == (t"Spoon", List(t"text/plain")))
+
+      test(m"an image/png response is construed as a Raster in Png"):
+        val png = cp"/apoplexy/pixel.png".read[Data]
+        given Http.Backend = Recorder(() => Http.Response(Http.Ok, contentType = media"image/png")(png))
+        val icon: Raster in Png = refs.items(7).icon.get.call()
+        icon.width
+      . assert(_ == 1)
+
+      test(m"a response nothing construes is the raw Http.Response"):
+        given Http.Backend = Recorder(() => Http.Response(Http.Ok)(t"a: 1"))
+        val raw: Http.Response = refs.items(7).notes.get.call()
+        raw.status
+      . assert(_ == Http.Ok)
+
+      test(m"a form-encoded request body takes a Query"):
+        val recorder = Recorder(() => ok(t"[]"))
+        given Http.Backend = recorder
+        refs.lookup(Query(List(t"q" -> t"spoon"))).call[List[Item]]()
+        (recorder.lastHeaders.filter(_.key == t"content-type").map(_.value), recorder.lastBody.present)
+      . assert(_ == (List(t"application/x-www-form-urlencoded"), true))
+
+      test(m"a JSON endpoint cannot be read as a Raster"):
+        demilitarize:
+          given Http.Backend = Recorder(() => ok(itemJson))
+          val icon: Raster in Png = refs.items(7).get.call()
+        . length
+      . assert(_ > 0)
+
     suite(m"the spec decides the wire format (Api over Json / over Xml)"):
       val xmlApi = Api(cp"/apoplexy/xmlstore.json")
       val noteXml = t"<Note><id>1</id><text>hello</text></Note>"
@@ -341,8 +387,8 @@ object ApiTests extends Suite(m"Api client tests"):
 
       test(m"the request body is encoded as XML"):
         xmlApi.notes.post(NewNote(t"hi")).request.body match
-          case Api.Body.Xml(_) => true
-          case _               => false
+          case Api.Body.Content(media, _) => media == t"application/xml"
+          case _                          => false
       . assert(_ == true)
 
       test(m"an XML POST sends an XML body and content-type"):

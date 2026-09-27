@@ -73,6 +73,49 @@ format. Entries are grouped by module, most-recently-added last within a module.
   schema, and `Float` or `Double` for a number); the spec's first `servers` URL has its
   `{variables}` replaced by their defaults. New `Api(resource, base: Text)`: `base` is prefixed
   to a relative server URL (`/api/v3`) and replaces an absolute one. (#pending)
+- `apoplexy.Api.Body.Json(value: jacinta.Json)` and `Api.Body.Xml(value: xylophone.Xml)` removed;
+  `Api.Body` is now `Empty | Content(mediaType: Text, spring: Spring[Data])`, built by
+  `Api.Body.content[carrier](mediaType: Text, value: carrier)(using carrier is Postable)`. The
+  request body's format comes from the media type the specification declares, through the
+  `gesticulate.Construable` in scope for it (see below), and its bytes from that carrier's
+  `telekinesis.Postable`, which must be in scope where the call is written (`import
+  postables.jsonPostable` for JSON, with the `CharEncoder` and `Json.Formatting` it needs;
+  `postables.xmlPostable`, new in module `xylophone.http`, for XML). Previously JSON and XML
+  bodies were serialised with built-in defaults and no imports. (#pending)
+- `apoplexy.Api.send(request: Api.Request, accept: Text)(…)` became `send(request: Api.Request)(…)`;
+  the `accept` header comes from the new field `Api.Request.accept: Optional[Text] = Unset`
+  (a trailing field; positional patterns gain an element), which the `invoke` macro sets to the
+  media type the response is construed as. (#pending)
+- The givens `apoplexy.Conformant.json: (Json is Conformant) over Json`, `Conformant.xml: (Xml is
+  Conformant) over Xml`, `LowPriorityConformant.jsonDecodable: [value: Decodable in Json] =>
+  (value is Conformant) over Json` and `LowPriorityConformant.xmlDecodable` removed, and the trait
+  `apoplexy.LowPriorityConformant` with them. Replacements, generic in the carrier:
+  `Conformant.carrier: [carrier: Aggregable by Data] => (carrier is Conformant) over carrier`,
+  `Conformant2.carrierText: [carrier: Aggregable by Text] => CharDecoder => …`,
+  `Conformant2.decodable: [value, carrier] => (carrier is Aggregable by Data, value is Decodable in
+  carrier) => (value is Conformant) over carrier` and `Conformant3.decodableText` (the `by Text`
+  twin). A malformed body now raises the carrier's own parse error (e.g. `zephyrine.Parse.Error`
+  or `jacinta.Json.Error`) rather than `Api.Error(Reason.Malformed)`. (#pending)
+- Behaviour change: `apoplexy.Api.Response#call()` with no type argument previously always
+  returned `Unit`; it now returns the response's `Transport`: the carrier type the
+  specification's response media type construes (`Json` for `application/json`, `Raster in Png`
+  for `image/png`, …), `Unit` when the operation's success response declares no content, or the
+  raw `Http.Response` (with a compile-time warning) when nothing in scope construes the media
+  type. Its context parameter `value is Defaulting to Unit` became `value is Defaulting to
+  Transport`. `Api.Response`'s `Transport` member is now that carrier type rather than only
+  `Json` or `Xml`; `Api over Json`/`over Xml` on the navigation types are unchanged. (#pending)
+- The `apoplexy.Api` macros now decide an operation's media type by which
+  `gesticulate.Construable` givens are in scope: for each media type the specification offers
+  (`application/json` first, then by name; a structured-syntax suffix such as
+  `application/problem+json` falls back to `application/json`) the macro looks for a
+  `(<media> is Construable)` given. Code that calls a JSON API must therefore `import
+  construables.jsonConstruable` (module `jacinta.http`), an XML API `construables.xmlConstruable`
+  or `textXmlConstruable` (module `xylophone.http`); without one, a response reads as the raw
+  `Http.Response` and a request body is a compile error. Previously `application/json`,
+  `application/xml` and `text/xml` were recognised unconditionally and every other media type
+  was treated as JSON. (#pending)
+- Module `apoplexy.core` now depends on `xylophone.http` and `ypsiloid.http` (new modules, both in
+  the `web` bundle) in place of `xylophone.core` and `ypsiloid.core`. (#pending)
 
 ## caduceus
 

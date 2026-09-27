@@ -43,6 +43,74 @@
         "operationId": "getItem",
         "responses": { "200": { "$ref": "#/components/responses/Item" } }
       }
+    },
+    "/items/{itemId}/label": {
+      "parameters": [
+        { "name": "itemId", "in": "path", "required": true,
+          "schema": { "type": "integer", "format": "int64" } }
+      ],
+      "get": {
+        "operationId": "getLabel",
+        "responses": {
+          "200": {
+            "description": "the label",
+            "content": { "text/plain": { "schema": { "type": "string" } } }
+          }
+        }
+      }
+    },
+    "/items/{itemId}/icon": {
+      "parameters": [
+        { "name": "itemId", "in": "path", "required": true,
+          "schema": { "type": "integer", "format": "int64" } }
+      ],
+      "get": {
+        "operationId": "getIcon",
+        "responses": {
+          "200": {
+            "description": "the icon",
+            "content": { "image/png": { "schema": { "type": "string", "format": "binary" } } }
+          }
+        }
+      }
+    },
+    "/items/{itemId}/notes": {
+      "parameters": [
+        { "name": "itemId", "in": "path", "required": true,
+          "schema": { "type": "integer", "format": "int64" } }
+      ],
+      "get": {
+        "operationId": "getNotes",
+        "responses": {
+          "200": {
+            "description": "the notes",
+            "content": { "application/yaml": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    },
+    "/lookup": {
+      "post": {
+        "operationId": "lookup",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": { "type": "object", "properties": { "q": { "type": "string" } } }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "matches",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Item" } }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
