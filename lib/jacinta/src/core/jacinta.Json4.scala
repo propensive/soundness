@@ -149,7 +149,7 @@ trait Json4:
       Intensional(_.as[Text])
 
     given jsonPointer: ("json-pointer" is Intensional in Json.Provider from Json to JsonPointer) =
-      Intensional(_.as[JsonPointer])
+      Intensional(_.as[Text].as[JsonPointer])
 
     given regex: ("regex" is Intensional in Json.Provider from Json to (Regex in JavaBaseRegex)) =
       Intensional: json => Regex(json.as[Text])
