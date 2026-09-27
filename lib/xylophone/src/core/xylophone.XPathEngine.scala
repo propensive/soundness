@@ -56,13 +56,45 @@ private[xylophone] object XPathEngine:
   import Error.Reason
 
   private case class Context
-    ( locus: Locus, position: Int, size: Int, variables: Map[Text, Value] )
+    ( locus: Locus, position: Int, size: Int, variables: Map[Text, Value], scope: Scope )
 
-  def evaluate(xml: Xml, expression: Expression, variables: Map[Text, Value])
+  def evaluate
+    ( xml: Xml, expression: Expression, variables: Map[Text, Value], scope: Scope = Scope.xml )
     ( using Tactic[Error] )
   :   Value =
 
-    evaluate(expression, Context(Locus.root(xml), 1, 1, variables))
+    evaluate(expression, Context(Locus.root(xml), 1, 1, variables, scope))
+
+  // The resolved name of an element locus. An element resolves its own prefix through its
+  // scope and declarations; one built in code under ancestors declaring namespaces only as
+  // attributes resolves through them.
+  private def qualifiedName(locus: Locus): Optional[Xml.Name] = locus.subject match
+    case element: Element =>
+      val (prefix, local) = Xml.Name.split(element.label)
+
+      element.bindings.resolve(prefix).lay(Xml.Name(ancestralScope(locus).resolve(prefix), local)):
+        uri => Xml.Name(uri, local)
+
+    case _ =>
+      Unset
+
+  private def ancestralScope(locus: Locus): Scope =
+    ancestorLoci(locus).reverse.fold(Scope.xml): (scope, ancestor) =>
+      ancestor.subject match
+        case element: Element => scope ++ element.bindings
+        case _                => scope
+
+  // The namespace of an attribute locus: an unprefixed attribute is in none
+  private def attributeNamespace(locus: Locus): Optional[Text] = locus.attributeName.let: key =>
+    val (prefix, _) = Xml.Name.split(key)
+
+    prefix.let: prefix =>
+      locus.subject match
+        case element: Element =>
+          element.bindings.resolve(prefix).or(ancestralScope(locus).resolve(prefix))
+
+        case _ =>
+          Unset
 
   private def evaluate(expression: Expression, context: Context)(using Tactic[Error])
   :   Value =
@@ -356,23 +388,32 @@ private[xylophone] object XPathEngine:
 
   // Node tests, with the principal node type of the axis (§2.3): a name or
   // wildcard on the attribute axis matches attributes; on every other axis,
-  // elements. Names match the raw label — this model performs no namespace
-  // processing, so `svg:rect` matches the literal label `svg:rect`.
-  private def testLocus(test: NodeTest, axis: Axis, locus: Locus): Boolean =
+  // elements. A prefixed name whose prefix the path's scope binds matches by
+  // resolved name, whatever prefix the document uses; otherwise names match
+  // the raw label, so `svg:rect` matches the literal label `svg:rect`.
+  private def testLocus(test: NodeTest, axis: Axis, locus: Locus, scope: Scope): Boolean =
     val attributeAxis = axis == Axis.Attribute
     val isAttribute = attributeIndexOf(locus) >= 0
 
     test match
       case NodeTest.Name(prefix, local) =>
         val qname = XPath.qualify(prefix, local)
+        val uri = prefix.let(scope.resolve(_))
 
         if attributeAxis then locus.attributeName match
-          case name: Text => name.s == qname.s
-          case _          => false
+          case name: Text =>
+            uri.lay(name.s == qname.s): uri =>
+              Xml.Name.split(name)(1) == local && attributeNamespace(locus) == uri
+
+          case _ =>
+            false
         else if isAttribute then false
         else locus.subject match
-          case element: Element => element.label.s == qname.s
-          case _                => false
+          case element: Element =>
+            uri.lay(element.label.s == qname.s): uri => qualifiedName(locus) == Xml.Name(uri, local)
+
+          case _ =>
+            false
 
       case NodeTest.Wildcard =>
         if attributeAxis then isAttribute
@@ -420,7 +461,7 @@ private[xylophone] object XPathEngine:
   private def filterPredicates
     ( candidates: List[Locus],
       predicates: List[Expression],
-      variables:  Map[Text, Value] )
+      context:    Context )
     ( using Tactic[Error] )
   :   List[Locus] =
 
@@ -429,20 +470,23 @@ private[xylophone] object XPathEngine:
       val size = current.size
 
       current.indexed.filter: (locus, ordinal) =>
-        evaluate(predicate, Context(locus, ordinal.n1, size, variables)) match
+        val inner = Context(locus, ordinal.n1, size, context.variables, context.scope)
+
+        evaluate(predicate, inner) match
           case Value.Numeric(value) => value == ordinal.n1
           case value                => value.truth
 
       . map(_(0))
 
-  private def evaluateStep
-    ( step: Step, inputs: List[Locus], variables: Map[Text, Value] )
+  private def evaluateStep(step: Step, inputs: List[Locus], context: Context)
     ( using Tactic[Error] )
   :   List[Locus] =
 
     val collected = inputs.flatMap: input =>
-      val candidates = axisLoci(step.axis, input).filter(testLocus(step.test, step.axis, _))
-      filterPredicates(candidates, step.predicates, variables)
+      val candidates =
+        axisLoci(step.axis, input).filter(testLocus(step.test, step.axis, _, context.scope))
+
+      filterPredicates(candidates, step.predicates, context)
 
     sortDedup(collected)
 
@@ -457,12 +501,12 @@ private[xylophone] object XPathEngine:
       case Origin.Filter(expression, predicates) =>
         evaluate(expression, context) match
           case Value.NodeSet(loci) =>
-            filterPredicates(sortDedup(loci), predicates, context.variables)
+            filterPredicates(sortDedup(loci), predicates, context)
 
           case _ =>
             abort(Error(Reason.NotNodeSet))
 
-    steps.fold(start) { (loci, step) => evaluateStep(step, loci, context.variables) }
+    steps.fold(start): (loci, step) => evaluateStep(step, loci, context)
 
   // The name of a node, as `name()` reports it: an element's label, an
   // attribute's key, a processing instruction's target; empty otherwise.
@@ -522,10 +566,16 @@ private[xylophone] object XPathEngine:
       case "local-name" | "name" | "namespace-uri" =>
         arity(0, 1)
 
-        if name.s == "namespace-uri" then Value.Textual(t"") else
-          val loci =
-            if arguments.nil then List(context.locus) else nodeSetArgument(args.head)
+        val loci =
+          if arguments.nil then List(context.locus) else nodeSetArgument(args.head)
 
+        if name.s == "namespace-uri" then
+          val uri = loci.prim.let: locus =>
+            if attributeIndexOf(locus) >= 0 then attributeNamespace(locus)
+            else qualifiedName(locus).let(_.namespace)
+
+          Value.Textual(uri.or(t""))
+        else
           val qualified = loci.prim.let(nodeNameOf(_)).or(t"")
 
           if name.s == "name" then Value.Textual(qualified) else

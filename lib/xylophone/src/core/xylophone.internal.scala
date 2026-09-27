@@ -357,6 +357,41 @@ object internal:
   // expression: each one becomes a NUL-marker hole in the parsed text, and
   // the parsed AST — with insertions grafted in place of the holes — is
   // lifted wholesale into the tree, so nothing is re-parsed at runtime.
+  // The URI bound to each prefix by a `Namespace` given at the expansion site, for those
+  // prefixes that have one; the reserved `xml` prefix is always bound.
+  private type SSet[element] = scala.collection.immutable.Set[element]
+  private val SSet = scala.collection.immutable.Set
+  private type SList[element] = scala.collection.immutable.List[element]
+
+  private def summonBindings(prefixes: SSet[Text])(using Quotes): SList[(Text, Text)] =
+    import quotes.reflect.*
+
+    prefixes.toList.sortBy(_.s).flatMap: prefix =>
+      if prefix == t"xml" then Nil else
+        ConstantType(StringConstant(prefix.s)).asType.absolve match
+          case '[prefix] => Expr.summon[Namespace { type Self = prefix }] match
+            case Some('{type uri <: Label; $namespace: Namespace { type Topic = uri }}) =>
+              TypeRepr.of[uri].dealias match
+                case ConstantType(StringConstant(uri)) => List((prefix, uri.tt))
+                case _                                 => Nil
+
+            case _ =>
+              Nil
+
+  private def liftScope(bindings: SList[(Text, Text)])(using Quotes): Expr[Scope] =
+    val pairs = bindings.map: (prefix, uri) => '{(${Expr(prefix.s)}.tt, ${Expr(uri.s)}.tt)}
+
+    '{Scope(${Expr.ofList(pairs)}*)}
+
+  // Whether `namespaceOptions.lenientNamespaces` is in scope at the expansion site
+  private def lenient(using Quotes): Boolean =
+    import quotes.reflect.*
+
+    Expr.summon[Xml.Namespacing] match
+      case Some('{Xml.Namespacing.Lenient}) => true
+      case Some(expr)                       => expr.asTerm.symbol.name == "lenientNamespaces"
+      case _                                => false
+
   def xpath[parts <: Tuple: Type, origins <: Tuple: Type](insertions0: Expr[Seq[Any]])
   :   Macro[XPath] =
 
@@ -531,7 +566,46 @@ object internal:
       try unsafely(XPathReader.parse(joined.tt, holes = true)) catch
         case error: Parse.Error => halt(error.message, translate(error.span.offset.lay(0)(_.n0)))
 
-    '{XPath(${liftExpression(expression)})}
+    // The prefixes of every name test in the path, bound through the `Namespace` givens here
+    def prefixesOf(expression: Expression): SSet[Text] = expression match
+      case Expression.Route(origin, steps) =>
+        val originPrefixes: SSet[Text] = origin match
+          case Origin.Filter(filtered, predicates) =>
+            prefixesOf(filtered) ++ predicates.stdlib.flatMap(prefixesOf(_))
+
+          case _ =>
+            SSet()
+
+        originPrefixes ++ steps.stdlib.flatMap: step =>
+          val own: SSet[Text] = step.test match
+            case NodeTest.Name(prefix, _)        => prefix.let(SSet(_)).or(SSet())
+            case NodeTest.PrefixWildcard(prefix) => SSet(prefix)
+            case _                               => SSet()
+
+          own ++ step.predicates.stdlib.flatMap(prefixesOf(_))
+
+      case Expression.Or(l, r)             => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.And(l, r)            => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.Equal(l, r)          => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.Unequal(l, r)        => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.Less(l, r)           => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.LessOrEqual(l, r)    => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.Greater(l, r)        => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.GreaterOrEqual(l, r) => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.Add(l, r)            => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.Subtract(l, r)       => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.Multiply(l, r)       => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.Divide(l, r)         => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.Modulo(l, r)         => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.Union(l, r)          => prefixesOf(l) ++ prefixesOf(r)
+      case Expression.Negate(operand)      => prefixesOf(operand)
+      case Expression.Call(_, _, args)     => args.stdlib.flatMap(prefixesOf(_)).toSet
+      case _                               => SSet()
+
+    val bindings = summonBindings(prefixesOf(expression))
+
+    if bindings.isEmpty then '{XPath(${liftExpression(expression)})}
+    else '{XPath(${liftExpression(expression)}, ${liftScope(bindings)})}
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
     ( insertions0: Expr[Seq[Any]] )
@@ -743,8 +817,48 @@ object internal:
 
         . iterator
 
-      def serialize(xml: Xml): Seq[Expr[Node]] = xml match
-        case fragment: Fragment => fragment.nodes.flatMap(serialize(_))
+      // The prefixes the literal's elements and attributes use without a declaration on an
+      // ancestor within the literal, which the `Namespace` givens at the call site must bind
+      import Scope.{binds, bindings}
+
+      def undeclaredPrefixes(node: Xml, scope: Scope): SSet[Text] = node match
+        case fragment: Fragment =>
+          fragment.nodes.toList.flatMap(undeclaredPrefixes(_, scope)).toSet
+
+        case element: Element =>
+          val inner =
+            if element.attributes.declaresNamespace then Scope.declared(scope, element.attributes)
+            else scope
+
+          val (prefix, _) = Xml.Name.split(element.label)
+          val used: SSet[Text] = prefix.let(SSet(_)).or(SSet())
+
+          val attributePrefixes = Attributes.toList(element.attributes).flatMap: (key, _) =>
+            val (prefix, _) = Xml.Name.split(key)
+            prefix.let(scala.collection.immutable.List(_)).or(scala.collection.immutable.Nil)
+
+          val here = (used ++ attributePrefixes).filter: prefix =>
+            prefix != t"xmlns" && !inner.binds(prefix)
+
+          val children = scala.collection.immutable.ArraySeq
+          . unsafeWrapArray(element.children.asInstanceOf[scala.Array[Node]]).toList
+
+          here ++ children.flatMap(undeclaredPrefixes(_, inner))
+
+        case _ =>
+          SSet()
+
+      val undeclared = undeclaredPrefixes(xml, Scope.xml)
+      val bindings = summonBindings(undeclared)
+      val bound = bindings.map(_(0)).toSet
+
+      if !lenient then (undeclared -- bound).toList.sortBy(_.s).headOption.foreach: prefix =>
+        halt(m"the prefix $prefix is not bound to a namespace here", macroPos)
+
+      val literalScope: Scope = Scope.xml ++ Scope(bindings*)
+
+      def serialize(xml: Xml, scope: Scope = literalScope): Seq[Expr[Node]] = xml match
+        case fragment: Fragment => fragment.nodes.flatMap(serialize(_, scope))
 
         case Header(version, encoding, standalone, _) =>
           val encoding2: Expr[Optional[Text]] =
@@ -768,13 +882,24 @@ object internal:
             . asExprOf[(Text, Text)]
 
           val map = '{Map(${Expr.ofList(exprs)}*)}
+
+          // The element's scope: the literal's bindings, extended by declarations on the
+          // element and its ancestors within the literal, as the parser would have recorded
+          val own =
+            if attributes.declaresNamespace then Scope.declared(scope, attributes) else scope
+
           val elements =
             val serialized = scala.collection.immutable.ArraySeq
-            . unsafeWrapArray(children.asInstanceOf[scala.Array[Node]]).flatMap(serialize(_)).toList
+            . unsafeWrapArray(children.asInstanceOf[scala.Array[Node]]).flatMap(serialize(_, own))
+            . toList
 
             '{Array.frozen(scala.IArray(${Expr.ofList(serialized)}*))}
 
-          List('{Element(${Expr(label)}, Attributes.from($map), $elements)})
+          val scopeExpr: Expr[Scope] =
+            if own.bindings.isEmpty then '{Scope.empty}
+            else liftScope(own.bindings.map { (prefix, uri) => (prefix.or(t""), uri) })
+
+          List('{Element(${Expr(label)}, Attributes.from($map), $elements, $scopeExpr)})
 
         case Comment(text) =>
           val parts = text.cut(t"\u0000").stdlib.map(_.s)
@@ -1048,6 +1173,15 @@ object internal:
           i += 2
 
         Unset
+
+      // Whether any attribute is an `xmlns` or `xmlns:prefix` declaration
+      def declaresNamespace: Boolean =
+        val a = storage(attrs)
+
+        def recur(i: Int): Boolean =
+          if i >= a.length then false else if a(i).startsWith("xmlns") then true else recur(i + 2)
+
+        recur(0)
 
       def contains(key: Text): Boolean =
         val a = storage(attrs)
@@ -1372,6 +1506,12 @@ object internal:
 
     private[xylophone] inline def fromInterleaved(array: Array[String]^{}): Scope = array.readable
 
+    // Bindings from attribute pairs keyed by prefix, the empty prefix for the default namespace
+    private[xylophone] def fromAttributes(attributes: Attributes): Scope =
+      import Attributes.toList
+      val pairs = attributes.toList
+      Scope(pairs*)
+
     // The parent scope extended by the `xmlns` and `xmlns:prefix` declarations among the
     // attributes, in their order
     private[xylophone] def declared(parent: Scope, attributes: Attributes): Scope =
@@ -1448,10 +1588,10 @@ object internal:
 
         def recur(index: Int): Optional[Optional[Text]] =
           if index < 0 then Unset
-          else if array(index + 1) == uri.s then
+          else if array(index + 1) != uri.s then recur(index - 2)
+          else
             val prefix = array(index)
             if prefix.isEmpty then Optional(Unset) else Optional(prefix.tt)
-          else recur(index - 2)
 
         recur(array.length - 2)
 

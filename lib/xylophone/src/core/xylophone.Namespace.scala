@@ -38,7 +38,6 @@ import anticipation.*
 import gossamer.*
 import prepositional.*
 import spectacular.*
-import vacuous.*
 
 // A namespace binding as a contextual value: a prefix, the `Self`, bound to a URI, the `Topic`,
 // both singleton types, so that `given svg: ("svg" is Namespace of "http://www.w3.org/2000/svg")
