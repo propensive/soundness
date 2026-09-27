@@ -40,7 +40,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `apoplexy.OpenApi.jsonSchemaYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error]) =>
   JsonSchema is Decodable in Yaml` removed. A YAML document is read by translating it to JSON
   with the new `apoplexy.OpenApi.json(yaml: Yaml): Json` and decoding that; consequently the
-  `enum` values of a schema in a YAML document are now retained (previously dropped). (#pending)
+  `enum` values of a schema in a YAML document are now retained (previously dropped). (#2091)
 - `apoplexy.OpenApi.Operation.parameters: List[OpenApi.Parameter]` became
   `List[OpenApi.Referable[OpenApi.Parameter]]`, `Operation.requestBody: Optional[RequestBody]`
   became `Optional[Referable[RequestBody]]`, `Operation.responses: Map[Text, Response]` became
@@ -52,7 +52,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   (referable: Referable[value]) def apply()(using OpenApi): value raises OpenApi.Error` resolves
   a reference into `#/components/{parameters,responses,requestBodies}/…` (raising
   `Reason.UnresolvableRef` or `Reason.UnsupportedRef` otherwise). Previously a `$ref` parameter
-  failed to decode and a `$ref` response or request body decoded as an empty object. (#pending)
+  failed to decode and a `$ref` response or request body decoded as an empty object. (#2091)
 - `apoplexy.OpenApi.Components(schemas: Map[Text, JsonSchema])` gained trailing fields
   `parameters: Map[Text, Referable[Parameter]] = Map()`, `responses: Map[Text,
   Referable[Response]] = Map()`, `requestBodies: Map[Text, Referable[RequestBody]] = Map()`;
@@ -61,7 +61,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   description: Optional[Text] = Unset)`) and a method `resolved: Text` (the URL with each
   `{variable}` at its default); `apoplexy.Api.Request(method, base, path, substitutions, query,
   body)` gained a trailing `headers: List[(Text, Text)] = Nil`. Positional patterns gain
-  elements. (#pending)
+  elements. (#2091)
 - Behaviour change in the `apoplexy.Api` macros: a path item's own `parameters` now apply to
   every operation on it (previously ignored, so a path-level path parameter was typed `Text`
   and a path-level query parameter was rejected as unknown); a named argument may fill an
@@ -72,7 +72,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Int` argument is still accepted; `call[T]()` accepts `Long` or `Int` fields for any integer
   schema, and `Float` or `Double` for a number); the spec's first `servers` URL has its
   `{variables}` replaced by their defaults. New `Api(resource, base: Text)`: `base` is prefixed
-  to a relative server URL (`/api/v3`) and replaces an absolute one. (#pending)
+  to a relative server URL (`/api/v3`) and replaces an absolute one. (#2091)
 - `apoplexy.Api.Body.Json(value: jacinta.Json)` and `Api.Body.Xml(value: xylophone.Xml)` removed;
   `Api.Body` is now `Empty | Content(mediaType: Text, spring: Spring[Data])`, built by
   `Api.Body.content[carrier](mediaType: Text, value: carrier)(using carrier is Postable)`. The
@@ -81,11 +81,11 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `telekinesis.Postable`, which must be in scope where the call is written (`import
   postables.jsonPostable` for JSON, with the `CharEncoder` and `Json.Formatting` it needs;
   `postables.xmlPostable`, new in module `xylophone.http`, for XML). Previously JSON and XML
-  bodies were serialised with built-in defaults and no imports. (#pending)
+  bodies were serialised with built-in defaults and no imports. (#2091)
 - `apoplexy.Api.send(request: Api.Request, accept: Text)(…)` became `send(request: Api.Request)(…)`;
   the `accept` header comes from the new field `Api.Request.accept: Optional[Text] = Unset`
   (a trailing field; positional patterns gain an element), which the `invoke` macro sets to the
-  media type the response is construed as. (#pending)
+  media type the response is construed as. (#2091)
 - The givens `apoplexy.Conformant.json: (Json is Conformant) over Json`, `Conformant.xml: (Xml is
   Conformant) over Xml`, `LowPriorityConformant.jsonDecodable: [value: Decodable in Json] =>
   (value is Conformant) over Json` and `LowPriorityConformant.xmlDecodable` removed, and the trait
@@ -95,7 +95,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Conformant2.decodable: [value, carrier] => (carrier is Aggregable by Data, value is Decodable in
   carrier) => (value is Conformant) over carrier` and `Conformant3.decodableText` (the `by Text`
   twin). A malformed body now raises the carrier's own parse error (e.g. `zephyrine.Parse.Error`
-  or `jacinta.Json.Error`) rather than `Api.Error(Reason.Malformed)`. (#pending)
+  or `jacinta.Json.Error`) rather than `Api.Error(Reason.Malformed)`. (#2091)
 - Behaviour change: `apoplexy.Api.Response#call()` with no type argument previously always
   returned `Unit`; it now returns the response's `Transport`: the carrier type the
   specification's response media type construes (`Json` for `application/json`, `Raster in Png`
@@ -103,7 +103,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   raw `Http.Response` (with a compile-time warning) when nothing in scope construes the media
   type. Its context parameter `value is Defaulting to Unit` became `value is Defaulting to
   Transport`. `Api.Response`'s `Transport` member is now that carrier type rather than only
-  `Json` or `Xml`; `Api over Json`/`over Xml` on the navigation types are unchanged. (#pending)
+  `Json` or `Xml`; `Api over Json`/`over Xml` on the navigation types are unchanged. (#2091)
 - The `apoplexy.Api` macros now decide an operation's media type by which
   `gesticulate.Construable` givens are in scope: for each media type the specification offers
   (`application/json` first, then by name; a structured-syntax suffix such as
@@ -113,12 +113,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   or `textXmlConstruable` (module `xylophone.http`); without one, a response reads as the raw
   `Http.Response` and a request body is a compile error. Previously `application/json`,
   `application/xml` and `text/xml` were recognised unconditionally and every other media type
-  was treated as JSON. (#pending)
+  was treated as JSON. (#2091)
 - Module `apoplexy.core` now depends on `xylophone.http` and `ypsiloid.http` (new modules, both in
-  the `web` bundle) in place of `xylophone.core` and `ypsiloid.core`. (#pending)
+  the `web` bundle) in place of `xylophone.core` and `ypsiloid.core`. (#2091)
 - Module `apoplexy.core` now also depends on `polyvinyl.core`; new `apoplexy.Api.Records` (a
   `Json.Provider.Primitives`) and `Api.json(request: Api.Request)(using …): Json` support the new
-  `Api.Response#record()` and `#tuple()`. (#pending)
+  `Api.Response#record()` and `#tuple()`. (#2091)
 
 ## caduceus
 
@@ -660,19 +660,19 @@ format. Entries are grouped by module, most-recently-added last within a module.
   and `Other(name: Text)`; the enum is no longer a pure enumeration, so `Format.values` and
   `Format.valueOf` no longer exist, and a `match` over `Format` needs an `Other` case.
   `Format is Decodable in Text` is now total: a name outside the enum decodes as `Other(name)`
-  (previously threw `IllegalArgumentException`); `Other(name)` encodes as `name`. (#pending)
+  (previously threw `IllegalArgumentException`); `Other(name)` encodes as `name`. (#2091)
 - `jacinta.JsonSchema.Integer(description, maximum: Optional[Int], minimum: Optional[Int],
   exclusiveMinimum: Optional[Int], exclusiveMaximum: Optional[Int], optional)` became
   `Integer(description, maximum: Optional[Long], minimum: Optional[Long], exclusiveMinimum:
   Optional[Long], exclusiveMaximum: Optional[Long], optional, format: Optional[JsonSchema.Format]
   = Unset)`: the four bounds are `Long`, and a seventh field `format` (read from the schema's
-  `format` keyword) is appended. Positional patterns gain an element. (#pending)
+  `format` keyword) is appended. Positional patterns gain an element. (#2091)
 - `jacinta.JsonSchema.Object` gained five trailing fields, all defaulting to `Unset`:
   `additionalSchema: Optional[JsonSchema]`, `allOf: Optional[List[JsonSchema]]`,
   `anyOf: Optional[List[JsonSchema]]`, `not: Optional[JsonSchema]`, `const: Optional[Json]`.
   Positional patterns gain five elements. `additionalProperties: Boolean` is now also `true`
   when the keyword's value is a schema, which `additionalSchema` then carries (previously a
-  schema-valued `additionalProperties` failed to decode). (#pending)
+  schema-valued `additionalProperties` failed to decode). (#2091)
 - Behaviour change: `jacinta.JsonSchema is Json.Decodable` is total over any JSON Schema
   document. A `type` given as an array reads its first non-`"null"` entry; a `"null"` entry,
   or OpenAPI 3.0's `nullable: true`, sets the schema's `optional` to `true`; a boolean schema
@@ -680,7 +680,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `exclusiveMinimum`/`exclusiveMaximum` (draft 4 and OpenAPI 3.0) moves `minimum`/`maximum`
   into `exclusiveMinimum`/`exclusiveMaximum`; a keyword of an unexpected JSON type is ignored
   rather than raising `Json.Error`. A `"null"` type reads as `Null(description, optional =
-  true)` (previously `optional = false`). (#pending)
+  true)` (previously `optional = false`). (#2091)
 - `jacinta.Json.Provider` now extends the new `Json.Provider.Primitives` (a `polyvinyl.
   Specification` with `Origin = Json`, `Form = Json.Provider` and the reading primitives
   `access`, `absent`, `required`, `kind`, `elements`, `pairs`, `entries`, `repeated`, but no
@@ -688,7 +688,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   property of `type: integer` with `format: int64` and no bounds now reads through the new
   `Json.Provider.long` instance (`"long"`, to `Long`) rather than `integer` (to `Int`); a
   bounded int64 still reads as `"integer!"`. New `Json.Provider.memberOf(document: Json, node:
-  Json): polyvinyl.Member` walks a schema node within a larger document. (#pending)
+  Json): polyvinyl.Member` walks a schema node within a larger document. (#2091)
 
 ## octogenarian
 
