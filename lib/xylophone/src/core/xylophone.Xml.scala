@@ -92,6 +92,19 @@ object Xml extends Tag.Container
   type Topic = "xml"
   type Transport = "head" | "body"
 
+  // The namespace bindings in scope at an element; `internal.Scope`, reached here because the
+  // umbrella already exports a `Scope` of its own.
+  export xylophone.internal.Scope
+
+  // Whether a prefix with no binding in scope is a parse error, as the Namespaces
+  // recommendation requires, or resolves to no namespace: strict unless
+  // `namespaceOptions.lenientNamespaces` is in scope.
+  enum Namespacing:
+    case Strict, Lenient
+
+  object Namespacing:
+    given default: Namespacing = Strict
+
   sealed trait Integral
   sealed trait Decimal
   sealed trait Id
@@ -1548,13 +1561,15 @@ object Xml extends Tag.Container
       ${xylophone.internal.extractor[parts, origins]('scrutinee)}
 
 
-  given aggregable: [content <: Label: Reifiable to List[String]] => (schema: XmlSchema)
+  given aggregable: [content <: Label: Reifiable to List[String]]
+  =>  (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
   =>  (tactic: Tactic[Parse.Error])
   =>  (((Xml of content) is Aggregable by Text)^{tactic}) =
 
     input => XmlParser.fromChain(input).parseXml(headers0 = false).of[content]
 
-  given aggregable2: (schema: XmlSchema) => (tactic: Tactic[Parse.Error])
+  given aggregable2: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
+  =>  (tactic: Tactic[Parse.Error])
   =>  ((Xml is Aggregable by Text)^{tactic}) =
     input => XmlParser.fromChain(input).parseXml(headers0 = false)
 
@@ -1573,7 +1588,8 @@ object Xml extends Tag.Container
       def genericize(xml: Xml): HttpStreams.Content =
         (t"application/xml; charset=${encoder.encoding.name}", HttpStreams.Body(xml.show.in[Data]))
 
-  given instantiable: (schema: XmlSchema) => (tactic: Tactic[Parse.Error])
+  given instantiable: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
+  =>  (tactic: Tactic[Parse.Error])
   =>  ((Xml is Instantiable across HttpRequests from Text)^{tactic}) =
 
     text => Chain(text).read[Xml]
@@ -1587,7 +1603,7 @@ object Xml extends Tag.Container
   // path's.
   given aggregableParsed: [value]
   =>  ( parsable: (value is Xml.Parsable)^ )
-  =>  ( schema: XmlSchema )
+  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
   =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
   =>  ( ((value in Xml) is Aggregable by Text)^{parsable, tactic, xmlTactic} ) =
 
@@ -1599,7 +1615,7 @@ object Xml extends Tag.Container
   // the composed pipeline by specificity.
   given readableParsed: [value]
   =>  ( parsable: (value is Xml.Parsable)^ )
-  =>  ( schema: XmlSchema )
+  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
   =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
   =>  ( (Text is Readable to (value in Xml))^{parsable, tactic, xmlTactic} ) =
 
@@ -1623,20 +1639,24 @@ object Xml extends Tag.Container
   // instead report a `Parse.Error`; the divergence is confined to inputs
   // that fail on both paths.)
   private def parseDirect[value](input: Chain[Text], parsable: (value is Xml.Parsable)^)
-    ( using schema:    XmlSchema,
-            tactic:    Tactic[Parse.Error],
-            xmlTactic: Tactic[Xml.Error],
-            foci:      Foci[Xml.Focus] )
+    ( using schema:      XmlSchema,
+            scope:       Scope,
+            namespacing: Namespacing,
+            tactic:      Tactic[Parse.Error],
+            xmlTactic:   Tactic[Xml.Error],
+            foci:        Foci[Xml.Focus] )
   :   value =
 
     parseWith(XmlParser.fromChain(input), parsable)
 
   // The legacy interoperation shape: a stdlib `Iterator` of chunks.
   private def parseDirect[value](input: Iterator[Text], parsable: (value is Xml.Parsable)^)
-    ( using schema:    XmlSchema,
-            tactic:    Tactic[Parse.Error],
-            xmlTactic: Tactic[Xml.Error],
-            foci:      Foci[Xml.Focus] )
+    ( using schema:      XmlSchema,
+            scope:       Scope,
+            namespacing: Namespacing,
+            tactic:      Tactic[Parse.Error],
+            xmlTactic:   Tactic[Xml.Error],
+            foci:        Foci[Xml.Focus] )
   :   value =
 
     parseWith(XmlParser.fromIterator(input), parsable)
@@ -1644,19 +1664,23 @@ object Xml extends Tag.Container
   // Whole-`Text` form: a pre-filled single-chunk cursor, no iterator
   // plumbing (the `readableParsed` entry).
   private def parseDirect[value](input: Text, parsable: (value is Xml.Parsable)^)
-    ( using schema:    XmlSchema,
-            tactic:    Tactic[Parse.Error],
-            xmlTactic: Tactic[Xml.Error],
-            foci:      Foci[Xml.Focus] )
+    ( using schema:      XmlSchema,
+            scope:       Scope,
+            namespacing: Namespacing,
+            tactic:      Tactic[Parse.Error],
+            xmlTactic:   Tactic[Xml.Error],
+            foci:        Foci[Xml.Focus] )
   :   value =
 
     parseWith(XmlParser.fromText(input), parsable)
 
   private def parseWith[value](parser: XmlParser^, parsable: (value is Xml.Parsable)^)
-    ( using schema:    XmlSchema,
-            tactic:    Tactic[Parse.Error],
-            xmlTactic: Tactic[Xml.Error],
-            foci:      Foci[Xml.Focus] )
+    ( using schema:      XmlSchema,
+            scope:       Scope,
+            namespacing: Namespacing,
+            tactic:      Tactic[Parse.Error],
+            xmlTactic:   Tactic[Xml.Error],
+            foci:        Foci[Xml.Focus] )
   :   value =
 
     // The session body and its prefix share the same single-owner parser; no aliased writer.
@@ -1682,7 +1706,8 @@ object Xml extends Tag.Container
   // into the metadata `Header` and dropped from the tree, so the tracked value has
   // the same shape as a header-less load (keeping it aligned with the index, which
   // is built from the root element alone).
-  given loadable: (schema: XmlSchema) => (tactic: Tactic[Parse.Error], tracking: PositionTracking)
+  given loadable: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
+  =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ((Xml is Loadable by Text)^{tactic}) = stream =>
     // The chunk chain view of the pull endpoint (the audited bridge; the
     // DOM loader's parser is chain-fed).
@@ -1975,9 +2000,11 @@ object Xml extends Tag.Container
     case UnknownAttribute(name: Text)
     case UnknownAttributeStart(name: Text)
     case InvalidAttributeUse(attribute: Text, element: Text)
+    case UnboundPrefix(prefix: Text)
 
     def describe: Message = this match
       case BadInsertion                   => m"a value cannot be inserted into XML at this point"
+      case UnboundPrefix(prefix)          => m"the prefix $prefix is not bound to a namespace"
       case ExpectedMore                   => m"the content ended prematurely"
       case BadDocument                    => m"the document did not contain a single root tag"
       case UnquotedAttribute              => m"the attribute value must be single- or double-quoted"
@@ -2245,16 +2272,16 @@ object Xml extends Tag.Container
     // pinpoint the failure), but `line` / `column` stay at 1/1. Acceptable
     // trade: error quality remains useful while parsing-throughput improves.
 
-    def fromText(text: Text)(using XmlSchema): XmlParser =
+    def fromText(text: Text)(using XmlSchema, Scope, Namespacing): XmlParser =
       new XmlParser(Cursor[Text](text), tracking = false)
 
     // Native `Chain` sibling of `fromIterator`: same cursor construction, no
     // stdlib hop.
-    def fromChain(input: Chain[Text])(using XmlSchema): XmlParser =
+    def fromChain(input: Chain[Text])(using XmlSchema, Scope, Namespacing): XmlParser =
       new XmlParser(Cursor[Text](input), tracking = false)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
-    def fromIterator(input: Iterator[Text])(using XmlSchema): XmlParser =
+    def fromIterator(input: Iterator[Text])(using XmlSchema, Scope, Namespacing): XmlParser =
       new XmlParser(Cursor[Text](input), tracking = false)
 
     // Tracking-mode constructors build the cursor with a `\n`-aware
@@ -2263,17 +2290,19 @@ object Xml extends Tag.Container
     // The parser's hot loop still bypasses lineation via `unsafeAdvanceBy`;
     // reconciliation happens only at element / attribute capture points
     // and before any refill in `moreSlow`.
-    def fromTextTracked(text: Text)(using XmlSchema): XmlParser =
+    def fromTextTracked(text: Text)(using XmlSchema, Scope, Namespacing): XmlParser =
       import zephyrine.lineation.linefeedChar
       new XmlParser(Cursor[Text](text), tracking = true)
 
     // Native `Chain` sibling of `fromIteratorTracked`.
-    def fromChainTracked(input: Chain[Text])(using XmlSchema): XmlParser =
+    def fromChainTracked(input: Chain[Text])(using XmlSchema, Scope, Namespacing): XmlParser =
       import zephyrine.lineation.linefeedChar
       new XmlParser(Cursor[Text](input), tracking = true)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
-    def fromIteratorTracked(input: Iterator[Text])(using XmlSchema): XmlParser =
+    def fromIteratorTracked(input: Iterator[Text])(using XmlSchema, Scope, Namespacing)
+    :   XmlParser =
+
       import zephyrine.lineation.linefeedChar
       new XmlParser(Cursor[Text](input), tracking = true)
 
@@ -2281,12 +2310,38 @@ object Xml extends Tag.Container
     ( val cursor:               Cursor[Text, ?]^,
      protected[xylophone] val tracking: Boolean,
      callback:                  (Ordinal, Hole) => Unit = (_, _) => () )
-    ( using schema: XmlSchema )
+    ( using schema: XmlSchema, scope0: Scope, namespacing: Namespacing )
   extends caps.ExclusiveCapability:
     type Region = Cursor.Mark
 
     @scala.caps.unsafe.untrackedCaptures
     private var heldToken: Cursor.Held | Null = null
+
+    // The namespace bindings: the document's root scope is the given one, always with the
+    // reserved `xml` prefix; `scope` is the scope of the element being read, set on opening
+    // an element and restored on closing it, so that every `Element` carries its own.
+    private val rootScope: Scope = if scope0.binds(t"xml") then scope0 else Scope.xml ++ scope0
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var scope: Scope = rootScope
+
+    // Whether the attributes just read declared a namespace, or used a prefix — set by the
+    // attribute readers so that an element without either costs no scan
+    @scala.caps.unsafe.untrackedCaptures
+    private var attrXmlns: Boolean = false
+    @scala.caps.unsafe.untrackedCaptures
+    private var attrPrefixed: Boolean = false
+
+    // The scope of the element just opened: its parent's, extended by its own declarations,
+    // and checked under strict namespacing for a prefix it uses without a binding
+    private def openScope(name: Text, attributes: Attributes)(using Tactic[Parse.Error]): Scope =
+      val own = if attrXmlns then Scope.declared(scope, attributes) else scope
+
+      if namespacing == Namespacing.Strict then
+        Scope.unbound(own, name, attributes, attrPrefixed).let: prefix =>
+          fail(Issue.UnboundPrefix(prefix))
+
+      own
 
     // Parser-shared scratch buffer for attribute accumulation (lifetime of
     // the `XmlParser` instance). Stores key/value pairs interleaved as
@@ -2807,6 +2862,8 @@ object Xml extends Tag.Container
       var n = 0
       var done = false
       var hashOr = 0
+      attrXmlns = false
+      attrPrefixed = false
 
       inline def ensureCapacity(): Unit =
         if 2*n >= attrBuf.length then
@@ -2835,6 +2892,8 @@ object Xml extends Tag.Container
           val key = readName()
           val keyStr: String = key.s
           val h: Int = keyStr.hashCode
+          if keyStr.startsWith("xmlns") then attrXmlns = true
+          else if keyStr.indexOf(':') >= 0 then attrPrefixed = true
 
           if (hashOr | h) == hashOr then
             var dup = 0
@@ -3112,18 +3171,22 @@ object Xml extends Tag.Container
         val name = readName()
         val attrs = readAttributes(name)
         if !more then fail(Issue.ExpectedMore)
+        val parent = scope
+        val own = openScope(name, attrs)
 
         if peek == '/' then
           advance()
           if !more then fail(Issue.ExpectedMore)
           if peek != '>' then fail(Issue.Unexpected(peek))
           advance()
-          Element(name, attrs, Array.empty[Node])
+          Element(name, attrs, Array.empty[Node], own)
         else
           if peek != '>' then fail(Issue.Unexpected(peek))
           advance()
+          scope = own
           val children = readChildren(name)
-          Element(name, attrs, children)
+          scope = parent
+          Element(name, attrs, children, own)
 
     protected def readChildren(parentName: Text)(using Tactic[Parse.Error]): Array[Node]^{} =
       val children = getNodeBuffer()
@@ -3318,6 +3381,8 @@ object Xml extends Tag.Container
         val name = readName()
         val attrs = readAttributesTracked(name, attrDescs, attrEnds)
         if !more then fail(Issue.ExpectedMore)
+        val parent = scope
+        val own = openScope(name, attrs)
 
         val result =
           if peek == '/' then
@@ -3325,12 +3390,14 @@ object Xml extends Tag.Container
             if !more then fail(Issue.ExpectedMore)
             if peek != '>' then fail(Issue.Unexpected(peek))
             advance()
-            Element(name, attrs, Array.empty[Node])
+            Element(name, attrs, Array.empty[Node], own)
           else
             if peek != '>' then fail(Issue.Unexpected(peek))
             advance()
+            scope = own
             val children = readChildrenTracked(name, childDescs, childEnds)
-            Element(name, attrs, children)
+            scope = parent
+            Element(name, attrs, children, own)
 
         emitElementDescriptor
           ( out, attrDescs, attrEnds, childDescs, childEnds, startLine, startColumn, startMark )
@@ -3351,6 +3418,8 @@ object Xml extends Tag.Container
       var n = 0
       var done = false
       var hashOr = 0
+      attrXmlns = false
+      attrPrefixed = false
 
       inline def ensureCapacity(): Unit =
         if 2*n >= attrBuf.length then
@@ -3386,6 +3455,8 @@ object Xml extends Tag.Container
           val key = readName()
           val keyStr: String = key.s
           val h: Int = keyStr.hashCode
+          if keyStr.startsWith("xmlns") then attrXmlns = true
+          else if keyStr.indexOf(':') >= 0 then attrPrefixed = true
 
           if (hashOr | h) == hashOr then
             var dup = 0
@@ -3624,7 +3695,19 @@ object Xml extends Tag.Container
     @scala.caps.unsafe.untrackedCaptures
     private var directChildName:     Text = t""
 
-    private inline def directPop(): Text = directNames.remove(directNames.length - 1)
+    // The scopes of the open elements, parallel to `directNames`
+    private val directScopes: scala.collection.mutable.ArrayBuffer[Scope] =
+      scala.collection.mutable.ArrayBuffer.empty
+
+    private def directPop(): Text =
+      directScopes.remove(directScopes.length - 1)
+      scope = if directScopes.isEmpty then rootScope else directScopes(directScopes.length - 1)
+      directNames.remove(directNames.length - 1)
+
+    // The resolved name of the element opened most recently
+    private[xylophone] def directName(): Xml.Name =
+      val (prefix, local) = Xml.Name.split(directNames(directNames.length - 1))
+      Xml.Name(scope.resolve(prefix), local)
 
     // Establishes the cursor hold for a whole direct-parsing session,
     // exactly as `parseXml` does for one tree-building parse: every rim
@@ -3688,6 +3771,7 @@ object Xml extends Tag.Container
       directChildPackable = namePackable
       directAttributes1 = readAttributes(name)
       if !more then fail(Issue.ExpectedMore)
+      val own = openScope(name, directAttributes1)
 
       if peek == '/' then
         advance()
@@ -3701,6 +3785,8 @@ object Xml extends Tag.Container
         directEmpty = false
 
       directNames += name
+      directScopes += own
+      scope = own
       name
 
     // Consumes and validates the current element's close tag; the position
@@ -4048,7 +4134,9 @@ object Xml extends Tag.Container
     // read with `readChildren`, so the materialized subtree (and its
     // close-tag validation) is exactly what `readElement` would have built.
     private[xylophone] def directElement()(using Tactic[Parse.Error]): Element =
+      val own = scope
       val name = directPop()
+      val parent = scope
       val attributes = directAttributes1
 
       val children =
@@ -4056,9 +4144,12 @@ object Xml extends Tag.Container
           directEmpty = false
           Array.empty[Node]
         else
-          readChildren(name)
+          scope = own
+          val children = readChildren(name)
+          scope = parent
+          children
 
-      Element(name, attributes, children)
+      Element(name, attributes, children, own)
 
   // ───────────────────────────────────────────────────────────────────────
   // Public entry points.
@@ -4073,7 +4164,11 @@ object Xml extends Tag.Container
     ( using schema: XmlSchema )
   :   (Tactic[Parse.Error]^) ?->{callback} Xml =
 
-    new XmlParser(Cursor[Text](input), tracking = false, callback).parseXml(headers0)
+    // Lenient: a literal may use a prefix bound only by a `Namespace` given at its call site,
+    // which the interpolator checks after parsing
+    new XmlParser(Cursor[Text](input), tracking = false, callback)
+      (using schema, Scope.xml, Namespacing.Lenient)
+    . parseXml(headers0)
 
   // Selects the nodes matching an XPath: `//div[@id='x']` and friends,
   // evaluated against this tree. The result is a `Fragment` of the matching
@@ -4223,6 +4318,10 @@ object Xml extends Tag.Container
     // is opened. The derived product parser reads them before its child loop,
     // so `@attribute` fields are filled before any child is consumed.
     update def attributes(): Attributes = parser.directAttributes()
+
+    // The resolved name of the just-opened element: its namespace, through the bindings in
+    // scope, and its local part
+    update def name(): Xml.Name = parser.directName()
 
     // Steps within the current element: the name of the next child element
     // (opened — its name and attributes consumed), or `Unset` once the close

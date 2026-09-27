@@ -124,6 +124,11 @@ package optics:
   given xmlEachOptical: Each.type is Optical from Xml onto Xml = _ =>
     Optic: (origin, lambda) => updateChildElements(origin, _ => true, lambda)
 
+// Whether a parse treats a prefix with no binding as an error (the default) or as no namespace
+package namespaceOptions:
+  given strictNamespaces: Xml.Namespacing = Xml.Namespacing.Strict
+  given lenientNamespaces: Xml.Namespacing = Xml.Namespacing.Lenient
+
 package formatting:
   given compactXmlFormatting: Xml.Formatting = Xml.Formatting(Unset, trailingNewline = false)
 
