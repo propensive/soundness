@@ -37,6 +37,7 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import hypotenuse.*
 import jacinta.*
 import prepositional.*
 import rudiments.*
@@ -69,9 +70,6 @@ object OpenApi:
     // so a plain-typed anchor would be bypassed and the type re-derived inline.
     given decodableJson: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Parameter is Json.Decodable = Json.DecodableDerivation.derived
-
-    given decodableYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
-    =>  Parameter is Decodable in Yaml = Yaml.DecodableDerivation.derived
 
     enum In:
       case Path, Query, Header, Cookie
@@ -116,9 +114,6 @@ object OpenApi:
     // simply reference it.
     given decodableJson: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Operation is Json.Decodable = Json.DecodableDerivation.derived
-
-    given decodableYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
-    =>  Operation is Decodable in Yaml = Yaml.DecodableDerivation.derived
 
   case class Operation
     ( operationId: Optional[Text]        = Unset,
@@ -195,82 +190,45 @@ object OpenApi:
       case other =>
         other
 
-  // Mirror of jacinta's `JsonSchema is Decodable in Json`, over the `Yaml` AST.
-  // jacinta cannot depend on ypsiloid, so the YAML decoder for `JsonSchema`
-  // lives here, in scope of the model's own decoders. Kept distinct from the
-  // private method so that recursive summons for nested schemas (`items`,
-  // `properties`, …) resolve to this fully-defined given rather than to the
-  // instance currently being initialised.
-  given jsonSchemaYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error])
-  =>  JsonSchema is Decodable in Yaml = decodeYamlSchema(_)
+  // A YAML document as JSON. The model has one decoder, over `Json`; a document written as
+  // YAML reaches it by translating the tree, so the two forms cannot drift apart. Both ASTs are
+  // flat arrays of the same shape, so the walk is shallow. A mapping key which YAML wrote as a
+  // number or boolean (`200:`, `default:` is already a string) becomes the string JSON requires.
+  def json(yaml: Yaml): Json = Json.ast(translate(yaml.root))
 
-  private def decodeYamlSchema(yaml: Yaml)(using Tactic[Yaml.Error], Tactic[JsonPointer.Error])
-  :   JsonSchema =
+  private def translate(node: Yaml.Ast): Json.Ast =
+    if node.isNull || node.isAbsent then Json.Ast(Json.JsonNull)
+    else if node.isBoolean then Json.Ast(node.asInstanceOf[Boolean])
+    else if node.isLong then Json.Ast(node.asInstanceOf[Long])
+    else if node.isDouble then Json.Ast(node.asInstanceOf[Double])
+    else if node.isBcd then Json.Ast(Bcd.adopt(node.asInstanceOf[scala.Array[Double]]))
+    else if node.isString then Json.Ast(node.asInstanceOf[String])
+    else if node.isArray then
+      val elements = Array.tabulate[Any](node.arrayLength): index =>
+        translate(node.arrayElement(index))
 
-    def field[value: Decodable in Yaml](name: Text): Optional[value] =
-      yaml(name).as[Optional[value]]
+      Json.Ast.arr(elements)
+    else
+      val entries = node.asInstanceOf[Array[Any]]
+      val size = node.objectSize
 
-    field[Text]("$ref".tt).let: reference =>
-      JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"))
+      def key(index: Int): String = (entries.readable(index*2): Matchable) match
+        case string: String   => string
+        case long: Long       => long.toString
+        case double: Double   => double.toString
+        case boolean: Boolean => boolean.toString
+        case _                => "null"
 
-    . or:
-        field[Text](t"type") match
-          case t"array" =>
-            JsonSchema.Array
-              ( field[Text](t"description"),
-                field[JsonSchema](t"items"),
-                field[Int](t"minItems"),
-                field[Int](t"maxItems"),
-                false,
-                field[Int](t"maxContains"),
-                field[Int](t"minContains") )
+      Json.Ast.obj
+        ( Array.tabulate[String](size)(key),
+          Array.tabulate[Any](size) { index => translate(node.objectValue(index)) } )
 
-          case t"string" =>
-            JsonSchema.String
-              ( field[Text](t"description"),
-                field[Int](t"minLength"),
-                field[Int](t"maxLength"),
-                field[Text](t"pattern"),
-                field[JsonSchema.Format](t"format"),
-                false )
+  // The document's JSON, whether it was written as JSON or YAML: JSON begins with `{`
+  private[apoplexy] def sourceJson(text: Text)
+    ( using Tactic[Parse.Error], Tactic[Yaml.Error], Yaml.Tracking )
+  :   Json =
 
-          case t"number" =>
-            JsonSchema.Number
-              ( field[Text](t"description"),
-                field[Double](t"multipleOf"),
-                field[Double](t"maximum"),
-                field[Double](t"minimum"),
-                field[Double](t"exclusiveMinimum"),
-                field[Double](t"exclusiveMaximum"),
-                false )
-
-          case t"integer" =>
-            JsonSchema.Integer
-              ( field[Text](t"description"),
-                field[Int](t"maximum"),
-                field[Int](t"minimum"),
-                field[Int](t"exclusiveMinimum"),
-                field[Int](t"exclusiveMaximum"),
-                false )
-
-          case t"boolean" =>
-            JsonSchema.Boolean(field[Text](t"description"), false)
-
-          case t"null" =>
-            JsonSchema.Null(field[Text](t"description"), false)
-
-          case _ =>
-            JsonSchema.Object
-              ( field[Text](t"description"),
-                field[Map[Text, JsonSchema]](t"properties").or(Map()),
-                false,
-                field[List[Text]](t"required"),
-                // `enum` holds raw `Json` values, and there is no `Yaml`->`Json`
-                // bridge, so enum constraint values are not carried through the YAML
-                // path; they do not affect endpoint structure.
-                Unset,
-                yaml(t"additionalProperties").as[Optional[scala.Boolean]].or(false),
-                field[List[JsonSchema]](t"oneOf") )
+    if text.trim.starts(t"{") then text.as[Json] else json(text.as[Yaml])
 
   // Anchor the top-level model so `as[OpenApi]` (below) materialises its decoder
   // once — with each nested type resolving to its own anchor — rather than inlining
@@ -291,10 +249,7 @@ object OpenApi:
           case Yaml.Error(_)           => OpenApi.Error(OpenApi.Error.Reason.Malformed)
           case JsonPointer.Error(_, _) => OpenApi.Error(OpenApi.Error.Reason.Malformed)
 
-        . protect:
-            if text.trim.starts(t"{") || text.trim.starts(t"[")
-            then text.as[Json].as[OpenApi]
-            else text.as[Yaml].as[OpenApi]
+        . protect(sourceJson(text).as[OpenApi])
 
       if document.openapi.starts(t"3.") then document
       else abort(OpenApi.Error(OpenApi.Error.Reason.UnsupportedVersion(document.openapi)))

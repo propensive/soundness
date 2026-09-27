@@ -172,8 +172,8 @@ components:
     test(m"a reference property is kept lazy"):
       fromJson.components.let(_.schemas(t"Pet"))
     .assert:
-      case JsonSchema.Object(_, properties, _, _, _, _, _) =>
-        properties(t"owner") match
+      case schema: JsonSchema.Object =>
+        schema.properties(t"owner") match
           case JsonSchema.Ref(pointer, _, _) => pointer.encode == t"#/components/schemas/Owner"
           case _                             => false
       case _ => false

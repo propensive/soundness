@@ -223,90 +223,159 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     :   Optional[value] =
       json(name).as[Optional[value]]
 
-    val reference = json("$ref".tt)
+    // The collection reads take their element codecs explicitly, as sealed-pure vals: resolved
+    // implicitly, the synthesized by-name codec thunks re-evaluate tactic-capturing given
+    // expansions at the application, aliasing the collection givens' capture-polymorphic tactic
+    // parameter — a separation failure. A reference to a pure local val carries no hidden set.
+    // The seals are consistent with (and no stronger than) the enclosing whole-instance seal on
+    // `decodable`.
+    val self: JsonSchema is Json.Decodable =
+      caps.unsafe.unsafeAssumePure(Json.Decodable(Morphology.Any)(decodeSchema(_)))
 
-    if !reference.root.isAbsent
-    then JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"))
-    else field[Text](t"type") match
-      case t"array" =>
-        JsonSchema.Array
-          ( field[Text](t"description"),
-            field[JsonSchema](t"items"),
-            field[Int](t"minItems"),
-            field[Int](t"maxItems"),
-            false,
-            field[Int](t"maxContains"),
-            field[Int](t"minContains") )
+    // A plain val, not the `textDecodable` given alias: a given alias re-evaluates its
+    // (tactic-applying) right-hand side inside the synthesized thunk.
+    val textDecodable0: Text is Json.Decodable = textDecodable
 
-      case t"string" =>
-        JsonSchema.String
-          ( field[Text](t"description"),
-            field[Int](t"minLength"),
-            field[Int](t"maxLength"),
-            field[Text](t"pattern"),
-            field[JsonSchema.Format](t"format"),
-            false )
+    val textList: List[Text] is Json.Decodable =
+      caps.unsafe.unsafeAssumePure
+        (Json.listDecodable[List, Text](using jsonError, summon)(using textDecodable0))
 
-      case t"number" =>
-        JsonSchema.Number
-          ( field[Text](t"description"),
-            field[Double](t"multipleOf"),
-            field[Double](t"maximum"),
-            field[Double](t"minimum"),
-            field[Double](t"exclusiveMinimum"),
-            field[Double](t"exclusiveMaximum"),
-            false )
+    val schemaList: List[JsonSchema] is Json.Decodable =
+      caps.unsafe.unsafeAssumePure
+        (Json.listDecodable[List, JsonSchema](using jsonError, summon)(using self))
 
-      case t"integer" =>
-        JsonSchema.Integer
-          ( field[Text](t"description"),
-            field[Int](t"maximum"),
-            field[Int](t"minimum"),
-            field[Int](t"exclusiveMinimum"),
-            field[Int](t"exclusiveMaximum"),
-            false )
+    val schemaMap: Map[Text, JsonSchema] is Json.Decodable =
+      caps.unsafe.unsafeAssumePure
+        (Json.map[Text, JsonSchema](using self)(using summon, jsonError))
 
-      case t"boolean" =>
-        JsonSchema.Boolean(field[Text](t"description"), false)
+    // Every read below inspects the node's kind first, so that a document written to another
+    // draft or dialect — a boolean `exclusiveMinimum`, a schema-valued `additionalProperties`,
+    // a `type` array — is read for what it says rather than rejected. The decoder is total.
+    def numeric(name: Text): Optional[Double] =
+      val node = json(name)
+      if node.root.isNumber then node.as[Double] else Unset
 
-      case t"null" =>
-        JsonSchema.Null(field[Text](t"description"), false)
+    def flag(name: Text): scala.Boolean =
+      val node = json(name)
+      node.root.isBoolean && node.as[scala.Boolean]
 
-      case _ =>
-        // `object`, or an untyped schema (treated as an object). The collection reads
-        // take their element codecs explicitly, as sealed-pure vals: resolved
-        // implicitly, the synthesized by-name codec thunks re-evaluate tactic-capturing
-        // given expansions at the application, aliasing the collection givens'
-        // capture-polymorphic tactic parameter — a separation failure. A reference to a
-        // pure local val carries no hidden set. The seals are consistent with (and no
-        // stronger than) the enclosing whole-instance seal on `decodable`.
-        val self: JsonSchema is Json.Decodable =
-          caps.unsafe.unsafeAssumePure(Json.Decodable(Morphology.Any)(decodeSchema(_)))
+    def schema(name: Text): Optional[JsonSchema] =
+      val node = json(name)
 
-        // A plain val, not the `textDecodable` given alias: a given alias re-evaluates
-        // its (tactic-applying) right-hand side inside the synthesized thunk.
-        val textDecodable0: Text is Json.Decodable = textDecodable
+      if node.root.isObject || node.root.isBoolean then field[JsonSchema](name)(using self)
+      else Unset
 
-        val textList: List[Text] is Json.Decodable =
-          caps.unsafe.unsafeAssumePure
-            (Json.listDecodable[List, Text](using jsonError, summon)(using textDecodable0))
+    def schemas(name: Text): Optional[List[JsonSchema]] =
+      val node = json(name)
+      if node.root.isArray then field[List[JsonSchema]](name)(using schemaList) else Unset
 
-        val schemaList: List[JsonSchema] is Json.Decodable =
-          caps.unsafe.unsafeAssumePure
-            (Json.listDecodable[List, JsonSchema](using jsonError, summon)(using self))
+    // A boolean schema: `true` admits anything, `false` nothing
+    if json.root.isBoolean then JsonSchema.Object(additionalProperties = json.as[scala.Boolean])
+    else
+      val reference = json("$ref".tt)
 
-        val schemaMap: Map[Text, JsonSchema] is Json.Decodable =
-          caps.unsafe.unsafeAssumePure
-            (Json.map[Text, JsonSchema](using self)(using summon, jsonError))
+      // `type` may be one name or (since draft 2019-09, and OpenAPI 3.1) several; a `"null"`
+      // among them, or OpenAPI 3.0's `nullable`, admits `null`, which the model records as
+      // `optional`.
+      val typeNode = json(t"type")
 
-        JsonSchema.Object
-          ( field[Text](t"description"),
-            field[Map[Text, JsonSchema]](t"properties")(using schemaMap).or(Map()),
-            false,
-            field[List[Text]](t"required")(using textList),
-            field[List[Json]](t"enum"),
-            field[scala.Boolean](t"additionalProperties").or(false),
-            field[List[JsonSchema]](t"oneOf")(using schemaList) )
+      val types: List[Text] =
+        if typeNode.root.isArray then field[List[Text]](t"type")(using textList).or(Nil)
+        else if typeNode.root.isString then List(typeNode.as[Text])
+        else Nil
+
+      val nullable: scala.Boolean = flag(t"nullable") || types.has(t"null")
+      val kind: Optional[Text] = types.filter(_ != t"null").prim
+
+      // Draft 4 (and OpenAPI 3.0) write `exclusiveMinimum: true` to qualify `minimum`; later
+      // drafts give it a number of its own. Both read to the same model.
+      val exclusiveMinimumFlag = flag(t"exclusiveMinimum")
+      val exclusiveMaximumFlag = flag(t"exclusiveMaximum")
+      val minimum = if exclusiveMinimumFlag then Unset else numeric(t"minimum")
+      val maximum = if exclusiveMaximumFlag then Unset else numeric(t"maximum")
+
+      val exclusiveMinimum =
+        if exclusiveMinimumFlag then numeric(t"minimum") else numeric(t"exclusiveMinimum")
+
+      val exclusiveMaximum =
+        if exclusiveMaximumFlag then numeric(t"maximum") else numeric(t"exclusiveMaximum")
+
+      val format: Optional[JsonSchema.Format] =
+        val node = json(t"format")
+        if node.root.isString then node.as[Text].as[JsonSchema.Format] else Unset
+
+      if !reference.root.isAbsent
+      then JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"), nullable)
+      else kind match
+        case t"array" =>
+          JsonSchema.Array
+            ( field[Text](t"description"),
+              schema(t"items"),
+              numeric(t"minItems").let(_.toInt),
+              numeric(t"maxItems").let(_.toInt),
+              nullable,
+              numeric(t"maxContains").let(_.toInt),
+              numeric(t"minContains").let(_.toInt) )
+
+        case t"string" =>
+          JsonSchema.String
+            ( field[Text](t"description"),
+              numeric(t"minLength").let(_.toInt),
+              numeric(t"maxLength").let(_.toInt),
+              field[Text](t"pattern"),
+              format,
+              nullable )
+
+        case t"number" =>
+          JsonSchema.Number
+            ( field[Text](t"description"),
+              numeric(t"multipleOf"),
+              maximum,
+              minimum,
+              exclusiveMinimum,
+              exclusiveMaximum,
+              nullable )
+
+        case t"integer" =>
+          JsonSchema.Integer
+            ( field[Text](t"description"),
+              maximum.let(_.toLong),
+              minimum.let(_.toLong),
+              exclusiveMinimum.let(_.toLong),
+              exclusiveMaximum.let(_.toLong),
+              nullable,
+              format )
+
+        case t"boolean" =>
+          JsonSchema.Boolean(field[Text](t"description"), nullable)
+
+        case t"null" =>
+          JsonSchema.Null(field[Text](t"description"), true)
+
+        case _ =>
+          // `object`, or an untyped schema (treated as an object)
+          val additional = json(t"additionalProperties")
+
+          val additionalSchema =
+            if additional.root.isObject then schema(t"additionalProperties") else Unset
+
+          val additionalProperties =
+            if additional.root.isBoolean then additional.as[scala.Boolean]
+            else additionalSchema.present
+
+          JsonSchema.Object
+            ( field[Text](t"description"),
+              field[Map[Text, JsonSchema]](t"properties")(using schemaMap).or(Map()),
+              nullable,
+              field[List[Text]](t"required")(using textList),
+              field[List[Json]](t"enum"),
+              additionalProperties,
+              schemas(t"oneOf"),
+              additionalSchema,
+              schemas(t"allOf"),
+              schemas(t"anyOf"),
+              schema(t"not"),
+              field[Json](t"const") )
 
   given discriminatedUnion: JsonSchema is Discriminable:
     type Form = Json
@@ -369,12 +438,44 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
       JsonSchema.Object(oneOf = schemas, required = List("kind"))
 
   object Format:
-    given encodable: Format is Encodable in Text = _.toString.tt.uncamel.kebab
-    given decodable: Format is Decodable in Text = value => Format.valueOf(value.unkebab.pascal.s)
+    given encodable: Format is Encodable in Text =
+      case Other(name) => name
+      case format      => format.toString.tt.uncamel.kebab
+
+    // A schema's `format` is an open vocabulary: JSON Schema's own names, OpenAPI's additions
+    // (`int64`, `binary`, `password`), and whatever a document invents (`snowflake`,
+    // `unix-time`). Decoding is therefore total, keeping an unknown name as `Other`.
+    given decodable: Format is Decodable in Text = value => value.s match
+      case "date-time"             => DateTime
+      case "date"                  => Date
+      case "time"                  => Time
+      case "duration"              => Duration
+      case "email"                 => Email
+      case "hostname"              => Hostname
+      case "ipv4"                  => Ipv4
+      case "ipv6"                  => Ipv6
+      case "uri"                   => Uri
+      case "uri-reference"         => UriReference
+      case "uri-template"          => UriTemplate
+      case "uuid"                  => Uuid
+      case "json-pointer"          => JsonPointer
+      case "relative-json-pointer" => RelativeJsonPointer
+      case "regex"                 => Regex
+      case "int32"                 => Int32
+      case "int64"                 => Int64
+      case "float"                 => Float
+      case "double"                => Double
+      case "byte"                  => Byte
+      case "binary"                => Binary
+      case "password"              => Password
+      case other                   => Other(other.tt)
 
   enum Format:
     case DateTime, Date, Time, Duration, Email, Hostname, Ipv4, Ipv6, Uri, UriReference,
-      UriTemplate, Uuid, JsonPointer, RelativeJsonPointer, Regex
+      UriTemplate, Uuid, JsonPointer, RelativeJsonPointer, Regex, Int32, Int64, Float, Double,
+      Byte, Binary, Password
+
+    case Other(name: Text)
 
 enum JsonSchema extends Documentary:
   def optional: scala.Boolean
@@ -390,6 +491,8 @@ enum JsonSchema extends Documentary:
     case entity: Null    => entity.copy(description = description)
     case entity: Ref     => entity.copy(description = description)
 
+  // `additionalProperties` is `true` when the schema admits further properties, whether by a
+  // bare `true` or by a schema for them, which `additionalSchema` then carries.
   case Object
     ( description:          Optional[Text]             = Unset,
       properties:           Map[Text, JsonSchema]      = Map(),
@@ -397,7 +500,12 @@ enum JsonSchema extends Documentary:
       required:             Optional[List[Text]]       = Unset,
       `enum`:               Optional[List[Json]]       = Unset,
       additionalProperties: scala.Boolean              = false,
-      oneOf:                Optional[List[JsonSchema]] = Unset )
+      oneOf:                Optional[List[JsonSchema]] = Unset,
+      additionalSchema:     Optional[JsonSchema]       = Unset,
+      allOf:                Optional[List[JsonSchema]] = Unset,
+      anyOf:                Optional[List[JsonSchema]] = Unset,
+      not:                  Optional[JsonSchema]       = Unset,
+      const:                Optional[Json]             = Unset )
 
   case Array
     ( description: Optional[Text]       = Unset,
@@ -426,12 +534,13 @@ enum JsonSchema extends Documentary:
       optional:         scala.Boolean    = false )
 
   case Integer
-    ( description:      Optional[Text] = Unset,
-      maximum:          Optional[Int]  = Unset,
-      minimum:          Optional[Int]  = Unset,
-      exclusiveMinimum: Optional[Int]  = Unset,
-      exclusiveMaximum: Optional[Int]  = Unset,
-      optional:         scala.Boolean  = false )
+    ( description:      Optional[Text]              = Unset,
+      maximum:          Optional[Long]              = Unset,
+      minimum:          Optional[Long]              = Unset,
+      exclusiveMinimum: Optional[Long]              = Unset,
+      exclusiveMaximum: Optional[Long]              = Unset,
+      optional:         scala.Boolean               = false,
+      format:           Optional[JsonSchema.Format] = Unset )
 
   case Boolean(description: Optional[Text] = Unset, optional: scala.Boolean = false)
   case Null(description: Optional[Text] = Unset, optional: scala.Boolean = false)

@@ -573,7 +573,7 @@ object Apoplexy:
         val content = scala.io.Source.fromInputStream(stream).mkString.tt
 
         val json =
-          try content.read[Json]
+          try OpenApi.sourceJson(content)
           catch case error: Exception => halt(m"apoplexy: the OpenAPI spec at $source is not valid")
 
         specJsons(source) = json

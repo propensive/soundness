@@ -1400,14 +1400,14 @@ object Tests extends Suite(m"Jacinta Tests"):
       test(m"Schematic for List[Int] is an Array of Integers"):
         infer[List[Int] is Schematic over JsonSchema].schema()
       . assert:
-          case JsonSchema.Array(_, JsonSchema.Integer(_, _, _, _, _, _), _, _, _, _, _) => true
-          case _                                                                         => false
+          case JsonSchema.Array(_, _: JsonSchema.Integer, _, _, _, _, _) => true
+          case _                                                          => false
 
       test(m"Schematic for Set[Text] is an Array of Strings"):
         infer[Set[Text] is Schematic over JsonSchema].schema()
       . assert:
-          case JsonSchema.Array(_, JsonSchema.String(_, _, _, _, _, _), _, _, _, _, _) => true
-          case _                                                                         => false
+          case JsonSchema.Array(_, _: JsonSchema.String, _, _, _, _, _) => true
+          case _                                                         => false
 
       test(m"Schematic for Map[Text, Int] is an object with additionalProperties"):
         infer[Map[Text, Int] is Schematic over JsonSchema].schema()
@@ -1497,6 +1497,50 @@ object Tests extends Suite(m"Jacinta Tests"):
       test(m"JsonSchema Format roundtrips Email"):
         JsonSchema.Format.Email.encode.as[JsonSchema.Format]
       . assert(_ == JsonSchema.Format.Email)
+
+      test(m"an unregistered format decodes as Other"):
+        t"snowflake".as[JsonSchema.Format]
+      . assert(_ == JsonSchema.Format.Other(t"snowflake"))
+
+      test(m"OpenAPI's integer formats decode"):
+        t"int64".as[JsonSchema.Format]
+      . assert(_ == JsonSchema.Format.Int64)
+
+      test(m"a nullable type array reads as an optional schema"):
+        t"""{"type": ["string", "null"]}""".as[Json].as[JsonSchema]
+      . assert(_ == JsonSchema.String(optional = true))
+
+      test(m"a boolean exclusiveMinimum qualifies the minimum"):
+        t"""{"type": "number", "minimum": 3, "exclusiveMinimum": true}""".as[Json].as[JsonSchema]
+      . assert(_ == JsonSchema.Number(minimum = Unset, exclusiveMinimum = 3.0))
+
+      test(m"a schema-valued additionalProperties is kept"):
+        t"""{"type": "object", "additionalProperties": {"type": "string"}}""".as[Json].as[JsonSchema]
+      . assert(_ == JsonSchema.Object(additionalProperties = true, additionalSchema = JsonSchema.String()))
+
+      test(m"an int64 bound survives, with its format"):
+        t"""{"type": "integer", "format": "int64", "maximum": 9223372036854775807}""".as[Json].as[JsonSchema]
+      . assert(_ == JsonSchema.Integer(maximum = Long.MaxValue, format = JsonSchema.Format.Int64))
+
+      test(m"the boolean schema true admits anything"):
+        t"true".as[Json].as[JsonSchema]
+      . assert(_ == JsonSchema.Object(additionalProperties = true))
+
+      test(m"allOf, anyOf, not and const are read"):
+        t"""{"allOf": [{"type": "string"}], "anyOf": [{"type": "null"}], "not": {"type": "integer"}, "const": 1}"""
+        . as[Json].as[JsonSchema]
+      . assert:
+          case schema: JsonSchema.Object =>
+            schema.allOf.let(_.size) == 1 && schema.anyOf.let(_.size) == 1
+            && schema.not.present && schema.const.present
+
+          case _ =>
+            false
+
+      test(m"an encoded Object schema omits the unset keywords"):
+        val schema: JsonSchema = JsonSchema.Object(properties = Map(t"a" -> JsonSchema.String()))
+        schema.in[Json].show
+      . assert(text => !text.contains(t"allOf") && !text.contains(t"additionalSchema"))
 
     suite(m"Newline-delimited JSON"):
       import lineSeparation.adaptiveLinefeedLineSeparation

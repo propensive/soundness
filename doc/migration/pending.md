@@ -32,6 +32,16 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `anticipation.uuid` (`anticipation.Uuids`), both in the `base` bundle and exported from
   `soundness`. (#2089)
 
+## apoplexy
+
+- The givens `apoplexy.OpenApi.Parameter.decodableYaml: (Tactic[Yaml.Error],
+  Tactic[JsonPointer.Error], Tactic[OpenApi.Error]) => Parameter is Decodable in Yaml`,
+  `apoplexy.OpenApi.Operation.decodableYaml` (likewise, for `Operation`) and
+  `apoplexy.OpenApi.jsonSchemaYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error]) =>
+  JsonSchema is Decodable in Yaml` removed. A YAML document is read by translating it to JSON
+  with the new `apoplexy.OpenApi.json(yaml: Yaml): Json` and decoding that; consequently the
+  `enum` values of a schema in a YAML document are now retained (previously dropped). (#pending)
+
 ## caduceus
 
 - The given `caduceus.Sendable.htmlDoc: (dom: Dom, monitor: Monitor, probate: Probate) =>
@@ -568,6 +578,31 @@ format. Entries are grouped by module, most-recently-added last within a module.
   (#2089)
 - `Json.Provider.duration` (`"duration"`) is now declared `from Json` as every other instance is
   (previously `to duration` alone). (#2089)
+- `jacinta.JsonSchema.Format` gained cases `Int32, Int64, Float, Double, Byte, Binary, Password`
+  and `Other(name: Text)`; the enum is no longer a pure enumeration, so `Format.values` and
+  `Format.valueOf` no longer exist, and a `match` over `Format` needs an `Other` case.
+  `Format is Decodable in Text` is now total: a name outside the enum decodes as `Other(name)`
+  (previously threw `IllegalArgumentException`); `Other(name)` encodes as `name`. (#pending)
+- `jacinta.JsonSchema.Integer(description, maximum: Optional[Int], minimum: Optional[Int],
+  exclusiveMinimum: Optional[Int], exclusiveMaximum: Optional[Int], optional)` became
+  `Integer(description, maximum: Optional[Long], minimum: Optional[Long], exclusiveMinimum:
+  Optional[Long], exclusiveMaximum: Optional[Long], optional, format: Optional[JsonSchema.Format]
+  = Unset)`: the four bounds are `Long`, and a seventh field `format` (read from the schema's
+  `format` keyword) is appended. Positional patterns gain an element. (#pending)
+- `jacinta.JsonSchema.Object` gained five trailing fields, all defaulting to `Unset`:
+  `additionalSchema: Optional[JsonSchema]`, `allOf: Optional[List[JsonSchema]]`,
+  `anyOf: Optional[List[JsonSchema]]`, `not: Optional[JsonSchema]`, `const: Optional[Json]`.
+  Positional patterns gain five elements. `additionalProperties: Boolean` is now also `true`
+  when the keyword's value is a schema, which `additionalSchema` then carries (previously a
+  schema-valued `additionalProperties` failed to decode). (#pending)
+- Behaviour change: `jacinta.JsonSchema is Json.Decodable` is total over any JSON Schema
+  document. A `type` given as an array reads its first non-`"null"` entry; a `"null"` entry,
+  or OpenAPI 3.0's `nullable: true`, sets the schema's `optional` to `true`; a boolean schema
+  `true`/`false` reads as `Object(additionalProperties = true/false)`; a boolean
+  `exclusiveMinimum`/`exclusiveMaximum` (draft 4 and OpenAPI 3.0) moves `minimum`/`maximum`
+  into `exclusiveMinimum`/`exclusiveMaximum`; a keyword of an unexpected JSON type is ignored
+  rather than raising `Json.Error`. A `"null"` type reads as `Null(description, optional =
+  true)` (previously `optional = false`). (#pending)
 
 ## octogenarian
 

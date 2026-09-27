@@ -6036,7 +6036,9 @@ object Yaml extends Yaml2, Dynamic:
 
 class Yaml(rootValue: Yaml.Ast, positions: Optional[Yaml.PositionIndex] = Unset)
 extends Dynamic derives CanEqual:
-  private[ypsiloid] def root: Yaml.Ast = rootValue
+  // The document's tree, for the accessors in `Yaml.Ast`'s companion and for bridges to other
+  // tree formats (as jacinta's `Json.root` is public for the same reason)
+  def root: Yaml.Ast = rootValue
 
   // The flat position-descriptor index produced alongside the AST when this
   // `Yaml` was parsed under `Tracking.On`. `Unset` for non-tracking parses
