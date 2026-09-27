@@ -1,0 +1,44 @@
+# Hand-labelled candidates for calibrating etc/find-plumbing.py against doc/standards/plumbing.md.
+# Re-score with `--ids etc/plumbing-calibration.tsv --runner realtime --out /tmp/calibration.tsv`
+# whenever the rubric or the model changes; every `definite` should land at 10 or above and no
+# `legitimate` above 4. Columns: id, label, note.
+lib/aviation/src/core/aviation.Calendar.scala:monthName:16a2c4c0	definite	toString.tt where Showable exists
+lib/stratiform/src/core/stratiform.Tels.scala:kebab:4409410b	definite	alias for Text(s)
+lib/mandible/src/lira/mandible.ClassfileAtomizer.scala:tag:33f6c06b	definite	same byte adapter in six files
+lib/telekinesis/src/wasi/telekinesis_wasi.scala:bytes:3f2dbf32	definite	hand-rolled UTF-8 encoding
+lib/vivisection/src/eval/vivisection.Purview.scala:normalise:faabb6fd	definite	Text→String→Text round trip
+lib/mandible/src/core/mandible.ClasspathIndex.scala:url:7fde31d8	definite	Text→File→URI→URL chain
+lib/mandible/src/core/mandible.ClassSurface.scala:text:a80d35bb	definite	Java entry to Text via .nn.tt
+lib/cataclysm/src/core/cataclysm.SyntaxMatcher.scala:lower:99f45fc7	definite	text.s.toLowerCase.nn; gossamer has lower
+lib/archimedes/src/core/archimedes.Mathml.scala:at:9c5f15d4	likely	stdlib.lift for an indexed read with default
+lib/enigmatic/src/core/enigmatic.BlockCipher.scala:detail:428a73f7	likely	null ladder to Optional[Text]
+lib/hallucination/src/webp/hallucination.WebpEncoder.scala:fourcc:5bd76171	likely	writes a String's chars as bytes
+lib/xylophone/src/core/xylophone.Xml4.scala:attributeOf:6caf1019	likely	stdlib.get then Some/None match
+lib/aviation/src/core/aviation.internal.scala:int:339e27ff	weak	null-guarded toInt
+lib/enigmatic/src/core-jvm/enigmatic.JavaBaseCrypto.scala:keyFactory:a9d800b4	weak	forwarder wrapping a JCE lookup
+lib/galilei/src/native/galilei_native.scala:javaPath:993196df	weak	names a boundary crossed 45 times
+lib/pneumatic/src/lzma/pneumatic.Lzma2.scala:priceBit:0e998825	weak	forwarder with one toInt
+lib/xylophone/src/core/xylophone.Xsd.scala:isAttributeUse:f11f2bfc	weak	string membership test
+lib/xylophone/src/staged/xylophone.stagedInternal.scala:unwrap:843bc43c	weak	cast ladder
+lib/sibylline/src/core/sibylline.Anthropic.scala:text:b88ad667	weak	commented capture-checking workaround
+lib/cataclysm/src/core/cataclysm.SyntaxMatcher.scala:comma:c22ae099	weak	token-list match
+lib/breviloquence/src/core/breviloquence.Cbor.scala:boxLong:54af3002	legitimate	cache lookup with arithmetic
+lib/caesura/src/core/caesura_core.scala:withCell:6661d621	legitimate	update logic
+lib/cataclysm/src/core/cataclysm.SelectorParser.scala:boundary:2e7bb2ae	legitimate	parser predicate
+lib/cataclysm/src/core/cataclysm.SyntaxMatcher.scala:timeLeaf:3d747bb0	legitimate	guarded match
+lib/cataclysm/src/core/cataclysm.internal.scala:lineStart:99bdf1b2	legitimate	recursion
+lib/digression/src/core/digression.Smap.scala:close:a033d02b	legitimate	stateful side effects
+lib/hallucination/src/jpeg/hallucination.JpegIdct.scala:clamp:209ab61d	legitimate	arithmetic clamp
+lib/honeycomb/src/core/honeycomb.internal.scala:next:b4072600	legitimate	iterator step
+lib/jacinta/src/core/jacinta.Json.scala:escape:7a117129	legitimate	buffer logic
+lib/probably/src/core/probably.Selection.scala:hex:b4e6321a	legitimate	validation
+lib/probably/src/core/probably.Selection.scala:number:00967d45	legitimate	parse to Optional
+lib/reliquary/src/core/reliquary.TreePath.scala:segment:7151faa7	legitimate	validation
+lib/spectacular/src/core/spectacular.Inspectable.scala:recur:97372017	legitimate	rendering recursion
+lib/tasseomancy/src/core/tasseomancy.Framing.scala:channel:ad8e2bd6	legitimate	arithmetic
+lib/xenophile/src/lira/xenophile.KotlinMetadataAtomizer.scala:variants:4bb59fb1	legitimate	logic
+lib/xenophile/src/nativeruntime/xenophile.ForeignLibrary.scala:register:7cd1d486	legitimate	logic with panic
+lib/xylophone/src/core/xylophone.Xml4.scala:access:4d217423	legitimate	logic
+lib/mandible/src/core/mandible.Bytecode.scala:typeKindToFrame:99ca01d1	likely	one-to-one enum ladder
+lib/aviation/src/core/aviation.Vernacular.scala:unitOf:e9080782	likely	one-to-one enum ladder
+lib/archimedes/src/core/archimedes.Mathml.scala:toXmlNode:6044eeca	likely	node-tree ladder with a dropping catch-all

@@ -40,6 +40,12 @@ check-while:
 unsafety:
 	flair metrics --dry-run
 
+# The coercion-helper census: small defs that only re-wrap a value, found by regex and scored by a
+# language model against doc/standards/plumbing.md, ranked worst first in etc/plumbing-ranked.tsv.
+# Needs the anthropic SDK (a venv under ~/.cache/soundness) and an API key; nothing here fails.
+plumbing:
+	$(PLUMBING_PYTHON) etc/find-plumbing.py $(PLUMBING_ARGS)
+
 build:
 	./mill groupCheck.validate
 	python3 etc/check-given-uniqueness.py
@@ -64,6 +70,8 @@ wasm-e2e:
 doccheck:
 	python3 etc/doccheck-names.py $(DOC)
 	python3 etc/doccheck.py $(DOC)
+
+PLUMBING_PYTHON ?= $(HOME)/.cache/soundness/plumbing-venv/bin/python
 
 attest:
 	./etc/ci/attest.sh
