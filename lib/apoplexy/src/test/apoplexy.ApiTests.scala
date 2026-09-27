@@ -37,6 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import logging.silentLogging
 import construables.{jsonConstruable, xmlConstruable, plainTextConstruable, pngConstruable, formConstruable}
+import construables.{multipartConstruable, multipartMixedConstruable}
 import postables.{jsonPostable, xmlPostable}
 import classloaders.threadContextClassloader
 import internetAccess.online
@@ -388,6 +389,39 @@ object ApiTests extends Suite(m"Api client tests"):
         icon.width
       . assert(_ == 1)
 
+      test(m"a text response is decoded with the charset its content-type names"):
+        val latin1: Data = Array.unsafeFrozen("café".getBytes("ISO-8859-1").nn)
+
+        given Http.Backend =
+          Recorder(() => Http.Response(Http.Ok, contentType = media"text/plain"(charset = "ISO-8859-1"))(latin1))
+
+        val label: Text = refs.items(7).label.get.call()
+        label
+      . assert(_ == t"café")
+
+      test(m"a multipart request body is written between its boundary"):
+        val recorder = Recorder(() => Http.Response(Http.Created, contentType = media"application/json")(itemJson))
+        given Http.Backend = recorder
+        val file = Part(Multipart.Disposition.FormData, Map(), t"file", t"a.txt", Chain(t"hello".in[Data]))
+        refs.items(7).attachments.post(Multipart(Chain(file), t"b0")).call()
+        val contentType = recorder.lastHeaders.filter(_.key == t"content-type").map(_.value)
+        (contentType, recorder.lastBody.let(_.utf8))
+      . assert: result =>
+          result(0) == List(t"multipart/form-data; boundary=b0")
+          && result(1) == t"--b0\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.txt\"\r\n\r\nhello\r\n--b0--\r\n"
+
+      test(m"a multipart response is split at the boundary its content-type names"):
+        val body = Multipart(Chain(Part(Multipart.Disposition.FormData, Map(), t"a", Unset, Chain(t"1".in[Data])),
+          Part(Multipart.Disposition.FormData, Map(), t"b", Unset, Chain(t"2".in[Data]))), t"b1")
+        val bytes: Data = body.source[Data].memoize
+
+        given Http.Backend =
+          Recorder(() => Http.Response(Http.Ok, contentType = media"multipart/mixed"(boundary = "b1"))(bytes))
+
+        val received: Multipart = refs.items(7).bundle.get.call()
+        received.at(t"b").let(_.source[Data].memoize.utf8)
+      . assert(_ == t"2")
+
       test(m"a response nothing construes is the raw Http.Response"):
         given Http.Backend = Recorder(() => Http.Response(Http.Ok)(t"a: 1"))
         val raw: Http.Response = refs.items(7).notes.get.call()
@@ -493,7 +527,7 @@ object ApiTests extends Suite(m"Api client tests"):
 
       test(m"the request body is encoded as XML"):
         xmlApi.notes.post(NewNote(t"hi")).request.body match
-          case Api.Body.Content(media, _) => media == media"application/xml"
+          case Api.Body.Content(media, _) => media.base == media"application/xml"
           case _                          => false
       . assert(_ == true)
 
@@ -502,4 +536,4 @@ object ApiTests extends Suite(m"Api client tests"):
         given Http.Backend = recorder
         xmlApi.notes.post(NewNote(t"hi")).call[Note]()
         (recorder.lastHeaders.filter(_.key == t"content-type").map(_.value), recorder.lastBody.present)
-      . assert(_ == (List(t"application/xml"), true))
+      . assert(_ == (List(t"application/xml; charset=UTF-8"), true))

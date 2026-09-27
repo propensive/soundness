@@ -172,6 +172,15 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Tactic[OAuth.Error]` at the call site for a scoped requirement). Previously security was
   ignored. New `Api.apiKey`, `Api.cookieKey`, `Api.httpAuth`, `Api.tokenAuth`. Module
   `apoplexy.core` now depends on `orthodoxy.core`. (#2091)
+- Behaviour change: the `Conformant` instances reading a text carrier (`carrierText`,
+  `decodableText`) now decode the body with the charset the response's `content-type` names,
+  where hieroglyph knows it, and only otherwise with the `CharDecoder` in scope (previously
+  always the latter); new `Api.decoderFor(response)(using CharDecoder): CharDecoder`. New
+  `Conformant.multipart: Tactic[Multipart.Error] => (Multipart is Conformant) over Multipart`,
+  splitting the body at the `boundary` the `content-type` names. `Api.Body.content` now carries
+  the parameters of the carrier's `Postable` media type (a charset, a boundary) onto the spec's
+  media type where the spec names none, so an XML body is sent as `application/xml;
+  charset=UTF-8` (previously `application/xml`). (#2091)
 
 ## caduceus
 
@@ -524,6 +533,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   the IANA registry is compiled into a string table (`gesticulate.MediaTypeData`, private) at
   build time from `lib/gesticulate/data`. The `media"…"` macro's unregistered-type check is
   unchanged. (#2082)
+- `gesticulate.Multipart(parts: Chain[Part])` gained a second field, `boundary: Text =
+  Multipart.boundary()` (a random `soundness-<uuid>`); `Multipart.parse` sets it from the
+  stream's boundary (without the leading `--`). Positional patterns gain an element. New
+  `Multipart.streamable: Multipart is Streamable by Data over Credit`, writing the parts
+  between `--boundary` lines with their `Content-Disposition` (rebuilt from `disposition`,
+  `name` and `filename`) and other headers, per RFC 2046 §5.1.1, and `Multipart.boundary()`.
+  (#2091)
 
 ## gossamer
 
@@ -1072,6 +1088,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   decodes `Basic` credentials correctly: the single base64 text is decoded and split at its first
   colon (previously the encoded text was split at a colon before decoding, so no real `Basic`
   header decoded; a password may now contain colons). (#2091)
+- `telekinesis.Directive.contentType: ("contentType" is Directive of MediaType)` now encodes the
+  full media type (`MediaType.show`, with its parameters), so `Http.Response(…, contentType =
+  media"text/plain"(charset = "UTF-8"))` sends `content-type: text/plain; charset=UTF-8`
+  (previously `_.basic`, which dropped every parameter, so a charset or multipart `boundary`
+  set this way never reached the wire). New `telekinesis.Http.Response#contentType: Optional[MediaType]`
+  (as `Request` already had) and `telekinesis.Postable.multipart: Multipart is Postable`
+  (`multipart/form-data` with the multipart's `boundary`). (#2091)
 
 ## turbulence
 

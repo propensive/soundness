@@ -163,15 +163,19 @@ val label: Text = api.items(7).label.get.call()
 ```
 
 A `Construable` is provided for JSON, XML (`application/xml` and `text/xml`), YAML, HTML, CSS,
-SVG, Markdown, TEL, CSV, plain text, octet streams, form-encoded queries and the raster image
-formats. A structured-syntax suffix falls back to the type it names, so `application/problem+json`
+SVG, MathML, Markdown, TEL, CSV, CBOR, Protobuf, plain text, octet streams, form-encoded
+queries, multipart bodies (`multipart/form-data` and `multipart/mixed`, as a `Multipart`), the
+raster image formats and the audio formats (WAV, AIFF, AIFC and AU, as an `Audio in Wave` and
+so on). A text carrier is decoded with the charset the response's `content-type` names, else
+the `CharDecoder` in scope. A structured-syntax suffix falls back to the type it names, so `application/problem+json`
 is construed by the JSON mapping. Where an operation offers several media types, the first with a
 mapping in scope is chosen, `application/json` first.
 
 A request body is encoded to the media type's carrier and written by that carrier's `Postable`,
 which is likewise imported by name (`postables.jsonPostable`, `postables.xmlPostable`); a value
 which already *is* the carrier — a `Query` for `application/x-www-form-urlencoded`, `Data` for
-`application/octet-stream` — is sent as it is.
+`application/octet-stream`, a `Multipart` for `multipart/form-data`, whose boundary joins the
+`content-type` — is sent as it is.
 
 ### Records from a response
 
@@ -210,6 +214,6 @@ Stripe — checked in under `lib/apoplexy/res/test/openapi` with their provenanc
 
 ### Limitations
 
-Cookie parameters, `callbacks`, `links`, `security` requirements, `webhooks` and references into
-other documents are read into the model where the model has a place for them but are not acted
-on by the client; a `multipart/form-data` body is not yet construed.
+Cookie parameters, `callbacks`, `links`, `webhooks` and references into other documents are read
+into the model where the model has a place for them but are not acted on by the client; mutual
+TLS is not supported.

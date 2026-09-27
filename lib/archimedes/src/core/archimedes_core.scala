@@ -36,6 +36,7 @@ import scala.math
 
 import anticipation.*
 import contextual.*
+import gesticulate.*
 import gossamer.*
 import prepositional.*
 
@@ -66,3 +67,6 @@ extension (node: Mathml)
 extension (math: Math)
   def cell: Cell = Cell.of(Mrow(math.contents))
   def draw: Text = math.cell.render
+
+package construables:
+  given mathmlConstruable: ("application/mathml+xml" is Construable to Math) = Construable()

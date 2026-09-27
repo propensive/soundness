@@ -99,6 +99,44 @@
         }
       }
     },
+    "/items/{itemId}/attachments": {
+      "parameters": [
+        { "name": "itemId", "in": "path", "required": true,
+          "schema": { "type": "integer", "format": "int64" } }
+      ],
+      "post": {
+        "operationId": "attach",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": { "type": "object", "properties": { "file": { "type": "string", "format": "binary" } } }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "attached",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }
+          }
+        }
+      }
+    },
+    "/items/{itemId}/bundle": {
+      "parameters": [
+        { "name": "itemId", "in": "path", "required": true,
+          "schema": { "type": "integer", "format": "int64" } }
+      ],
+      "get": {
+        "operationId": "bundle",
+        "responses": {
+          "200": {
+            "description": "the item's files",
+            "content": { "multipart/mixed": { "schema": { "type": "string", "format": "binary" } } }
+          }
+        }
+      }
+    },
     "/lookup": {
       "post": {
         "operationId": "lookup",

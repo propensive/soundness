@@ -115,6 +115,13 @@ object Api:
   // A response body's bytes, for a violation's payload
   def dataOf(response: Http.Response): Data = response.body.stream.memoize
 
+  // The decoder for a response's text: the `charset` its `content-type` names, where it names one
+  // hieroglyph knows, else the decoder in scope
+  def decoderFor(response: Http.Response)(using fallback: CharDecoder): CharDecoder =
+    response.contentType.let(_.at(t"charset")).let(Encoding.unapply(_)) match
+      case Some(encoding: Encoding) => encoding.decoder(using fallback.sanitizer)
+      case _                        => fallback
+
   // The runtime send (invoked by the code `.call` emits): the URL is the base with the
   // substituted path template appended and the query attached; the `accept` header names the
   // media type the spec says the response has, the `content-type` the body's, and the header
@@ -182,7 +189,11 @@ object Api:
     def content[carrier](mediaType: MediaType, value: carrier)(using postable: carrier is Postable)
     :   Body =
 
-      Body.Content(mediaType, () => postable.stream(value))
+      // The spec's media type, with the parameters the carrier's `Postable` adds (a multipart
+      // boundary, a charset) where the spec names none
+      val parameters = postable.mediaType(value).parameters
+      val media = if mediaType.parameters.nil then mediaType.copy(parameters = parameters) else mediaType
+      Body.Content(media, () => postable.stream(value))
 
   enum Body derives CanEqual:
     case Empty

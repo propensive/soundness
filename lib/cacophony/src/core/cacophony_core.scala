@@ -30,14 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package cacophony
 
-// The MathML element types (`Mi`, `Mrow`, `Token`, `Layout`, `Ms`, …) are nested inside the
-// `Mathml` object (as `Mathml.Mi`, `Mathml.Mrow`, …) rather than exported flat, so their generic
-// names do not collide with unrelated modules in the `soundness` namespace. Import
-// `soundness.Mathml.*` for the bare element names where MathML is being authored by hand.
-export archimedes.{Math, Mathml, Display, mathmlNamespace,
-    Ergo, ergo, mathml, math, Cell, cell, draw}
+import gesticulate.*
+import prepositional.*
 
 package construables:
-  export archimedes.construables.mathmlConstruable
+  given waveConstruable: ("audio/x-wav" is Construable to (Audio in Wave)) = Construable()
+  given wavConstruable: ("audio/wav" is Construable to (Audio in Wave)) = Construable()
+  given waveAlternativeConstruable: ("audio/wave" is Construable to (Audio in Wave)) = Construable()
+  given vndWaveConstruable: ("audio/vnd.wave" is Construable to (Audio in Wave)) = Construable()
+  given aiffConstruable: ("audio/x-aiff" is Construable to (Audio in Aiff)) = Construable()
+  given aiffAlternativeConstruable: ("audio/aiff" is Construable to (Audio in Aiff)) = Construable()
+  given aifcConstruable: ("audio/x-aifc" is Construable to (Audio in Aifc)) = Construable()
+  given auConstruable: ("audio/basic" is Construable to (Audio in Au)) = Construable()

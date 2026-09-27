@@ -36,3 +36,8 @@ export cacophony
 . { Audio, Audible, Wave, Aiff, Aifc, Au, Snd, ChannelLayout, Monaural, Stereo,
     Surround, Sonation, Configuration, Feed, Pcm, PcmFlag, Recording, Outlet,
     Playback }
+
+package construables:
+  export cacophony.construables.{waveConstruable, wavConstruable, waveAlternativeConstruable,
+      vndWaveConstruable, aiffConstruable, aiffAlternativeConstruable, aifcConstruable,
+      auConstruable}

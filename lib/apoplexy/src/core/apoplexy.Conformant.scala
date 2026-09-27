@@ -33,13 +33,19 @@
 package apoplexy
 
 import anticipation.*
+import contingency.*
 import distillate.*
+import fulminate.*
+import gesticulate.*
+import gossamer.*
 import hieroglyph.*
 import prepositional.*
 import telekinesis.*
 import turbulence.*
+import vacuous.*
 
-import zephyrine.{Parse, memoize}
+import errorDiagnostics.emptyDiagnostics
+import zephyrine.memoize
 
 // Interprets an `Http.Response` as a value of `Self`, reading the body as the carrier type
 // `Transport` the spec's media type construes (see `gesticulate.Construable`). It reads only:
@@ -56,7 +62,8 @@ import zephyrine.{Parse, memoize}
 // The layering keeps a carrier which is both `Aggregable by Data` and `by Text` (`Text` is)
 // from being ambiguous, and keeps a carrier from decoding through its own identity `Decodable`.
 trait Conformant3:
-  // A body decoded to any value decodable from a text-read carrier
+  // A body decoded to any value decodable from a text-read carrier. The text is decoded with the
+  // charset the response's `content-type` names, else the `CharDecoder` in scope.
   given decodableText: [value, carrier]
   =>  ( aggregable: carrier is Aggregable by Text,
         decodable:  value is Decodable in carrier,
@@ -64,7 +71,8 @@ trait Conformant3:
   =>  (value is Conformant) over carrier =
     response =>
       val data: Data = response.body.stream.memoize
-      decodable.decoded(aggregable.aggregate(Chain(decoder.decoded(data))))
+      val text = Api.decoderFor(response)(using decoder).decoded(data)
+      decodable.decoded(aggregable.aggregate(Chain(text)))
 
 trait Conformant2 extends Conformant3:
   // A body decoded to any value decodable from a byte-read carrier
@@ -75,14 +83,14 @@ trait Conformant2 extends Conformant3:
       val data: Data = response.body.stream.memoize
       decodable.decoded(aggregable.aggregate(Chain(data)))
 
-  // The body as a carrier read from text. The bytes are decoded to `Text` (through the
-  // `CharDecoder`) before the carrier's parser sees them.
+  // The body as a carrier read from text, decoded with the charset the response's `content-type`
+  // names, else the `CharDecoder` in scope
   given carrierText: [carrier]
   =>  ( aggregable: carrier is Aggregable by Text, decoder: CharDecoder )
   =>  (carrier is Conformant) over carrier =
     response =>
       val data: Data = response.body.stream.memoize
-      aggregable.aggregate(Chain(decoder.decoded(data)))
+      aggregable.aggregate(Chain(Api.decoderFor(response)(using decoder).decoded(data)))
 
 object Conformant extends Conformant2:
   // The escape hatch: the raw response (any transport)
@@ -92,6 +100,20 @@ object Conformant extends Conformant2:
   // Discard the body — for no-content (204) endpoints such as `delete`, and the default target
   // of a bare `.call()` on them; transport-agnostic.
   given unit: [transport] => (Unit is Conformant) over transport = response => ()
+
+  // The body as text, decoded with the charset the response's `content-type` names, else the
+  // `CharDecoder` in scope. Ahead of `carrier`, which would read `Text` through its byte
+  // aggregable with the decoder in scope alone.
+  given text: (decoder: CharDecoder) => (Text is Conformant) over Text =
+    response => Api.decoderFor(response)(using decoder).decoded(response.body.stream.memoize)
+
+  // A multipart body, split at the boundary the response's `content-type` names
+  given multipart: Tactic[Multipart.Error] => (Multipart is Conformant) over Multipart =
+    response =>
+      val boundary = response.contentType.let(_.at(t"boundary")).or:
+        abort(Multipart.Error(Multipart.Error.Reason.MediaType))
+
+      Multipart.parse(response.body.stream.memoize, boundary)
 
   // The body as a carrier read from bytes
   given carrier: [carrier] => (aggregable: carrier is Aggregable by Data)
