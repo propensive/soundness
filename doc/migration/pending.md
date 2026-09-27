@@ -524,6 +524,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   the IANA registry is compiled into a string table (`gesticulate.MediaTypeData`, private) at
   build time from `lib/gesticulate/data`. The `media"…"` macro's unregistered-type check is
   unchanged. (#2082)
+- `gesticulate.Multipart.parse` now emits a part's body as it scans it, so `Part#body` (a
+  `Chain[Data]`) may hold several blocks for one part — roughly one per 4 KiB of a large body —
+  where it previously always held exactly one. Reading the body through `read[Data]`,
+  `Part is Streamable`, or anything else that concatenates the chain is unaffected; code that
+  took `body.head` (or a `Chain(single)` pattern) as the whole body must concatenate instead.
+  The bytes, the parts and their order are unchanged. (#PR)
 
 ## gossamer
 

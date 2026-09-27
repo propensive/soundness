@@ -85,7 +85,7 @@ lib/gastronomy/src/core/gastronomy.Digest.scala	1	0	2
 lib/gastronomy/src/core/gastronomy.PureHashes.scala	23	0	0
 lib/geodesy/src/core/geodesy.Compass.scala	0	3	0
 lib/geodesy/src/core/geodesy.internal.scala	0	0	1
-lib/gesticulate/src/core/gesticulate.Multipart.scala	3	1	0
+lib/gesticulate/src/core/gesticulate.Multipart.scala	1	0	0
 lib/gossamer/src/core/gossamer.Cuttable.scala	1	0	0
 lib/gossamer/src/core/gossamer.Decimalizer.scala	2	0	1
 lib/gossamer/src/core/gossamer.Pue.scala	1	0	1
@@ -248,7 +248,7 @@ lib/ypsiloid/src/core/ypsiloid.internal.scala	12	13	0
 lib/ypsiloid/src/core/ypsiloid_core.scala	5	0	3
 lib/zephyrine/src/core/zephyrine.Addressable.scala	8	7	1
 lib/zephyrine/src/core/zephyrine.Conduit.scala	2	0	0
-lib/zephyrine/src/core/zephyrine.Cursor.scala	6	0	0
+lib/zephyrine/src/core/zephyrine.Cursor.scala	9	0	0
 lib/zephyrine/src/core/zephyrine.Duct.scala	2	0	0
 lib/zephyrine/src/core/zephyrine.Ductile.scala	3	0	0
 lib/zephyrine/src/core/zephyrine.Handoff.scala	5	0	0

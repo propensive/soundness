@@ -95,44 +95,67 @@ object Multipart:
         // A tail-recursive re-entry over the same single-owner cursor; no aliased writer.
         scala.caps.unsafe.unsafeAssumeSeparate(headers((key, value) :: list))
 
-    inline def skipBytes(count: Int): Unit =
-      var i = 0
-      while i < count && cursor.next() do i += 1
+    // What ends every body: a line break followed by the boundary line. Its skip table is
+    // built once per message.
+    val delimiter: Cursor.Delimiter =
+      val bytes = new scala.Array[Byte](boundary.length + 2)
+      bytes(0) = '\r'.toByte
+      bytes(1) = '\n'.toByte
+      System.arraycopy(Array.unsafeJvm(boundary), 0, bytes, 2, boundary.length)
+      Cursor.Delimiter(Array.unsafeFrozen(bytes))
 
-    def body(): Chain[Data] = cursor.hold:
-      val bodyStart = cursor.mark
-      var bodyEnd: Optional[Cursor.Mark] = Unset
-      var continue = true
+    // The body is emitted as it is scanned, one block per buffered window, so that no hold
+    // spans more than a window and the cursor's buffer stays a few kilobytes however large
+    // the body. Each window is searched in bulk for the delimiter. When a window has none,
+    // everything but its last `delimiter.length - 1` bytes — a possible prefix of a
+    // delimiter straddling the refill — is emitted, and only that tail is held while the
+    // next window arrives. A body the stream ends before terminating is emitted whole;
+    // `parts()` then reports the missing boundary.
+    def body(): Chain[Data] =
+      var blocks: List[Data] = Nil
+      var scanning = true
 
-      while continue do
-        if cursor.finished then continue = false
-        else if cursor.peek != '\r' then
-          if !cursor.next() then continue = false
+      // Terminates by state: each pass either finds the delimiter, consumes at least one byte
+      // from a refill, or exhausts the stream.
+      while scanning do
+        if cursor.finished then scanning = false
         else
-          val matched = cursor.lookahead:
-            var ok = cursor.next() && cursor.peek == '\n'
-            var i = 0
+          val found = cursor.hold:
+            val start = cursor.mark
+            val distance = cursor.distance(delimiter)
 
-            while ok && i < boundary.length do
-              ok = cursor.next() && cursor.peek == boundary.readUnchecked(i)
-              i += 1
+            val emitted =
+              if distance >= 0 then distance
+              else cursor.available - (delimiter.length - 1).min(cursor.available)
 
-            ok
+            if emitted > 0 then
+              cursor.unsafeAdvanceBy(emitted)(using Unsafe)
+              blocks = cursor.grab(start, cursor.mark) :: blocks
 
-          if matched then
-            bodyEnd = cursor.mark
-            continue = false
-          else if !cursor.next() then
-            continue = false
+            distance >= 0
 
-      bodyEnd.let: end =>
-        val out = cursor.grab(bodyStart, end)
-        // Position is at the body-ending '\r'. Skip past "\r\n<boundary>" which
-        // is boundary.length + 2 bytes total.
-        skipBytes(boundary.length + 2)
-        Chain(out)
+          if found then
+            // The delimiter lies wholly within the buffer, so this stays within it.
+            cursor.unsafeAdvanceBy(delimiter.length)(using Unsafe)
+            scanning = false
+          else
+            // Hold the tail through the refill: step to the buffer's end, ask for more (which
+            // compacts down to the held tail before pulling), then return to the tail's start.
+            cursor.hold:
+              val tail = cursor.mark
+              cursor.unsafeAdvanceBy(cursor.available)(using Unsafe)
 
-      . or(Chain(cursor.grab(bodyStart, cursor.mark)))
+              if cursor.more then cursor.cue(tail)
+              else
+                if cursor.mark != tail then blocks = cursor.grab(tail, cursor.mark) :: blocks
+                scanning = false
+
+      // `blocks` holds the newest block first; prepending them in turn restores the order.
+      def chain(rest: List[Data], result: Chain[Data]): Chain[Data] = rest match
+        case block :: earlier => chain(earlier, block #:: result)
+        case _                => result
+
+      chain(blocks, Chain())
 
     def parsePart(headers: Map[Text, Text], stream: Chain[Data])
     :   Part =

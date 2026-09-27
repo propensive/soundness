@@ -72,6 +72,56 @@ object Cursor:
     def block: Int
     def fill(storage: storage, offset: Int, space: Int): Int
 
+  // A byte sequence to be found in bulk — a multipart boundary, an archive signature — with
+  // its Horspool skip table computed once. `find` probes the last byte of each candidate
+  // window and shifts by the table, so on data unlike the delimiter it visits about one byte
+  // in `length` instead of every byte, and a partial match costs a few comparisons rather
+  // than a lookahead. Searched for with `Cursor[Data]`'s `distance`.
+  object Delimiter:
+    def apply(bytes: Data): Delimiter = new Delimiter(bytes)
+
+  final class Delimiter private (data: Data):
+    // Untracked, as the cursor's own buffer is: both arrays are written only here, during
+    // construction, and are reached only through this instance.
+    @caps.unsafe.untrackedCaptures
+    private val bytes: scala.Array[Byte] = Array.unsafeJvm(data)
+
+    val length: Int = bytes.length
+
+    // For each byte value, how far the window shifts when that byte is the last one probed:
+    // to align it with its last occurrence inside the delimiter, or past the window if none.
+    @caps.unsafe.untrackedCaptures
+    private val shifts: scala.Array[Int] =
+      val table = scala.Array.fill(256)(length)
+      var index = 0
+
+      while index < length - 1 do
+        table(bytes(index) & 0xff) = length - 1 - index
+        index += 1
+
+      table
+
+    // The index at which the delimiter first begins in `buffer`, wholly within `from` until
+    // `end`, or `-1` if it does not.
+    def find(buffer: scala.Array[Byte], from: Int, end: Int): Int =
+      if length == 0 then from else
+        val last = length - 1
+        var index = from
+        var found = -1
+
+        // Horspool: `index + last < end` keeps every probe inside the window.
+        while found < 0 && index + last < end do
+          val probe = buffer(index + last)
+
+          if probe == bytes(last) then
+            var offset = 0
+            while offset < last && buffer(index + offset) == bytes(offset) do offset += 1
+            if offset == last then found = index
+
+          if found < 0 then index += shifts(probe & 0xff)
+
+        found
+
   object Mark:
     final val Initial: Mark = 0L
 
@@ -354,6 +404,21 @@ object Cursor:
     @targetName("dataBuffer")
     inline def unsafeDataBuffer(using erased unsafe: Unsafe): scala.Array[Byte] =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Byte]]
+
+    // How far ahead of the cursor `delimiter` first begins, wholly within the buffered
+    // region, or `-1` if it does not. The buffer is searched in bulk; the cursor is not
+    // moved and nothing is refilled, so unlike `seek` this cannot block on a live stream
+    // (see the hazard note). A scan that finds nothing should consume all but the last
+    // `delimiter.length - 1` buffered bytes — a possible prefix of a delimiter straddling
+    // the refill — and search again once more has arrived.
+    inline def distance(delimiter: Cursor.Delimiter): Int =
+      val position = cursor.unsafePos(using Unsafe)
+
+      val index =
+        delimiter.find
+          ( cursor.unsafeDataBuffer(using Unsafe), position, cursor.unsafeWriteEnd(using Unsafe) )
+
+      if index < 0 then -1 else index - position
 
   extension [cap^](cursor: Cursor[Text, cap])
     @targetName("textBuffer")
