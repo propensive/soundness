@@ -155,6 +155,15 @@ object Apoplexy:
 
   private def escape(text: Text): Text = text.sub(t"~", t"~0").sub(t"/", t"~1")
 
+  // The specification's own key for a path, which may carry a trailing slash the navigation
+  // does not (`/apis/rbac.authorization.k8s.io/v1/`), and its item
+  private def pathItem(doc: OpenApi, locus: Text): Optional[(Text, OpenApi.PathItem)] =
+    doc.paths(locus).let((locus, _)).or:
+      val target = segments(locus)
+
+      doc.paths.keys.to[List].seek(key => segments(key) == target).let: key =>
+        doc.paths(key).let((key, _))
+
   // --- HTTP method helpers -------------------------------------------------
 
   private val verbs: Map[Text, Http.Method] =
@@ -201,7 +210,7 @@ object Apoplexy:
   private def parameters(using Quotes)(doc: OpenApi, locus: Text, method: Http.Method)
   :   List[OpenApi.Parameter] =
 
-    val item = doc.paths(locus)
+    val item = pathItem(doc, locus).let(_(1))
     def resolved(referables: List[OpenApi.Referable[OpenApi.Parameter]])
     :   List[OpenApi.Parameter] =
 
@@ -224,6 +233,20 @@ object Apoplexy:
     import quotes.reflect.*
 
     schema match
+      // A reference to a component schema is followed, so a `$ref` to a string type reads as
+      // `Text`; a chain deeper than a few hops (or a cycle) reads as `Json`
+      case ref: JsonSchema.Ref =>
+        def follow(schema: JsonSchema, depth: Int): JsonSchema = schema match
+          case ref: JsonSchema.Ref if depth < 8 =>
+            given OpenApi = doc
+            try follow(OpenApi.apply(ref: JsonSchema)(), depth + 1)
+            catch case error: OpenApi.Error => ref
+          case other => other
+
+        follow(ref, 0) match
+          case _: JsonSchema.Ref => TypeRepr.of[Json]
+          case other             => schemaType(doc, other)
+
       case integer: JsonSchema.Integer =>
         if integer.format == JsonSchema.Format.Int64 then TypeRepr.of[Long] else TypeRepr.of[Int]
 
@@ -252,7 +275,10 @@ object Apoplexy:
     val fractional = integral || actual <:< TypeRepr.of[Float]
     val widensToDouble = expected =:= TypeRepr.of[Double] && fractional
 
-    actual <:< expected || widensToLong || widensToDouble
+    // A parameter whose schema names no one type (`oneOf`, an object) takes any argument
+    val untyped = expected =:= TypeRepr.of[Json]
+
+    actual <:< expected || widensToLong || widensToDouble || untyped
 
   private def pathParamType(using quotes: Quotes)(doc: OpenApi, path: Text, parameter: Text)
   :   quotes.reflect.TypeRepr =
@@ -260,7 +286,7 @@ object Apoplexy:
     import quotes.reflect.*
 
     val params =
-      doc.paths(path).lay(List[OpenApi.Parameter]()): item =>
+      pathItem(doc, path).lay(List[OpenApi.Parameter]()): (_, item) =>
         item.operations.keys.to[List].bind(parameters(doc, path, _))
 
     def matches(param: OpenApi.Parameter): Boolean =
@@ -384,7 +410,7 @@ object Apoplexy:
 
     val verb = methodName(method)
 
-    val operation = doc.paths(locus).let(_.operations(method)).or:
+    val (key, operation) = pathItem(doc, locus).let { (key, item) => item.operations(method).let((key, _)) }.or:
       halt(m"apoplexy: $locus defines no $verb operation")
 
     val params = parameters(doc, locus, method)
@@ -493,10 +519,10 @@ object Apoplexy:
         t"${reference.encode}/content/$mediaContent/schema"
 
       case _ =>
-        t"#/paths/${escape(locus)}/$verb/responses/$status/content/$mediaContent/schema"
+        t"#/paths/${escape(key)}/$verb/responses/$status/content/$mediaContent/schema"
 
     val mExpr = methodExpr(method)
-    val locusExpr = Expr(locus.s)
+    val locusExpr = Expr(key.s)
 
     val responseType =
       Refinement
@@ -531,7 +557,7 @@ object Apoplexy:
   :   Expr[Any] =
 
     val methods =
-      doc.paths(locus).lay(List[Http.Method]()): item =>
+      pathItem(doc, locus).lay(List[Http.Method]()): (_, item) =>
         item.operations.keys.filter(_ != Http.Delete).to[List]
 
     methods match
@@ -562,7 +588,7 @@ object Apoplexy:
         halt(m"apoplexy: arguments must be passed directly")
 
   private def defines(using Quotes)(doc: OpenApi, locus: Text, method: Http.Method): Boolean =
-    doc.paths(locus).let(_.operations.defines(method)).or(false)
+    pathItem(doc, locus).let(_(1).operations.defines(method)).or(false)
 
   // --- macros --------------------------------------------------------------
 
@@ -727,7 +753,7 @@ object Apoplexy:
 
         if !keys.exists(isPrefix(newSegs, _)) then halt(m"apoplexy: no path begins with $newLocus")
 
-        if doc.paths(newLocus).absent
+        if pathItem(doc, newLocus).absent
         then halt(m"apoplexy: $newLocus is not a complete endpoint")
 
         shortcut(self, doc, source, newLocus, named, positional)

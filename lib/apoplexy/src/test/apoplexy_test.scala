@@ -197,7 +197,7 @@ components:
       case _: JsonSchema.Object => true
       case _                    => false
 
-    val refstore = cp"/apoplexy/refstore.json".read[Text].read[OpenApi]
+    val refstore = cp"/openapi/local/refstore.json".read[Text].read[OpenApi]
 
     test(m"a referenced parameter decodes as a Ref"):
       refstore.paths(t"/items").let(_.get).let(_.parameters.prim)

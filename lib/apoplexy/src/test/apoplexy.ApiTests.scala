@@ -83,7 +83,7 @@ object ApiTests extends Suite(m"Api client tests"):
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
 
-    val api = Api(cp"/apoplexy/petstore.json")
+    val api = Api(cp"/openapi/local/petstore.json")
 
     val petJson  = t"""{"id": 42, "name": "Milo", "tag": "cat"}"""
     val petsJson = t"""[{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]"""
@@ -257,7 +257,7 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(_ > 0)
 
     suite(m"references, path-level parameters, headers and servers"):
-      val refs = Api(cp"/apoplexy/refstore.json", base = t"https://ref.example.com")
+      val refs = Api(cp"/openapi/local/refstore.json", base = t"https://ref.example.com")
       val itemJson = t"""{"id": 7, "name": "spoon"}"""
 
       test(m"a relative server URL, with its variable at its default, extends the base"):
@@ -308,7 +308,7 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(_ > 0)
 
     suite(m"media types construe their carriers"):
-      val refs = Api(cp"/apoplexy/refstore.json", base = t"https://ref.example.com")
+      val refs = Api(cp"/openapi/local/refstore.json", base = t"https://ref.example.com")
       val itemJson = t"""{"id": 7, "name": "spoon"}"""
 
       test(m"a bare call() on a JSON endpoint yields the Json"):
@@ -324,7 +324,7 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(_ == (t"Spoon", List(t"text/plain")))
 
       test(m"an image/png response is construed as a Raster in Png"):
-        val png = cp"/apoplexy/pixel.png".read[Data]
+        val png = cp"/openapi/local/pixel.png".read[Data]
         given Http.Backend = Recorder(() => Http.Response(Http.Ok, contentType = media"image/png")(png))
         val icon: Raster in Png = refs.items(7).icon.get.call()
         icon.width
@@ -380,7 +380,7 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(_ > 0)
 
     suite(m"the spec decides the wire format (Api over Json / over Xml)"):
-      val xmlApi = Api(cp"/apoplexy/xmlstore.json")
+      val xmlApi = Api(cp"/openapi/local/xmlstore.json")
       val noteXml = t"<Note><id>1</id><text>hello</text></Note>"
 
       def okXml(body: Text): Http.Response =
