@@ -8,8 +8,8 @@ configuration format — yet the program should still access its fields with sta
 compiles, so `record.name` typechecks as `Text` and `record.nope` does not compile, without any
 Scala class mirroring the schema by hand.
 
-This is the machinery beneath the [JSON](json.md) and [TEL](tel.md) *providers*, where a JSON
-Schema or TEL schema document produces typed records, and it is open to any source of schemas a
+This is the machinery beneath the [JSON](json.md), [XML](xml.md) and [TEL](tel.md) *providers*,
+where a JSON Schema, an XML Schema or a TEL schema document produces typed records, and it is open to any source of schemas a
 program can read at compiletime.
 
 ### On external schemas

@@ -289,6 +289,61 @@ page.evaluate(xp"count(//li)")                               // XPath.Value.Nume
 An expression the engine does not support, or a variable it was not given, raises an
 `XPath.Error` saying so.
 
+### Typed records from an XML Schema
+
+Where a document's shape is given as an XML Schema (XSD) rather than a Scala type, an
+`Xml.Provider` reads the schema at compiletime and produces typed records from matching XML. A
+provider object holds the schema, and its `record` method turns an `Xml` value into a record with
+one member per child element and attribute of the schema's root element, each read at the type the
+schema declares:
+
+<!-- doccheck: skip -->
+```scala
+import classloaders.threadContextClassloader
+
+object PurchaseOrder extends Xml.Provider(cp"/xsd/po.xsd")
+
+val order = PurchaseOrder.record(document)
+order.shipTo.city                          // Text
+order.items.item.map(_.quantity)           // List[Long], a restriction of xs:positiveInteger
+order.comment                              // Optional[Text], from minOccurs="0"
+order.items.item.map(_.partNum)            // Text, checked against the SKU pattern as it is read
+```
+
+The schema may be an `Xsd` value, an `Xml` document, the schema's text, or anything readable as
+text, such as a classpath resource. Where a schema declares several global elements the root is
+the one with complex content, or is chosen with `root = t"Envelope"`.
+
+Child elements and attributes become fields by local name. A field is `Optional` when its element
+has `minOccurs="0"` or is `nillable`, and a `List` when `maxOccurs` allows more than one; each
+alternative of a `choice` is `Optional`. An attribute that shares a name with a child element is
+reached as `` `@name` ``, and the text of an element with simple content and attributes as `text`
+(`` `#text` `` if an attribute is called `text`). An extension's base type contributes its fields
+first.
+
+| XSD type | Scala type |
+|---|---|
+| `xs:string` and the token, name and identifier types, `xs:QName`, the binary types, `xs:gYear` and relatives | `Text` |
+| `xs:boolean` | `Boolean` |
+| `xs:int`, `xs:short`, `xs:byte` | `Int`, `Short`, `Byte` |
+| `xs:integer`, `xs:long` and the unsigned, positive and negative integer types | `Long`, with the implied bounds checked |
+| `xs:decimal`, `xs:double`, `xs:float` | `Double`, `Double`, `Float` |
+| `xs:dateTime`, `xs:date`, `xs:time`, `xs:duration`, `xs:anyURI` | the type an interface in scope instantiates, else `Text` |
+| `xs:NMTOKENS`, `xs:IDREFS` and any `xs:list` | `List[Text]` |
+| `xs:anyType`, `xs:any`, a recursive type, an unresolved reference | `Xml` |
+
+A restriction's facets — `enumeration`, `pattern`, the inclusive and exclusive bounds, the length
+facets and the digit facets — are checked as the field is read, raising `Xml.Provider.Error` with
+the reason. The provider matches a document's elements by resolved name: a child is expected in the
+schema's target namespace when the schema qualifies it (`elementFormDefault`, a `form`, or a `ref`
+to a global element) and in no namespace otherwise, whatever prefixes the document uses; an element
+in another namespace is absent.
+
+Substitution groups, `xsi:type`, identity constraints and mixed content are read as the schema
+declares without them; an `import` or `include` is recorded in the `Xsd` but not fetched, so a
+type from another schema reads as raw `Xml`. The provider does not validate documents: it checks
+what a program reads.
+
 ### Positions and errors
 
 A malformed document raises a `ParseError` whose position is not merely a line number but a range:

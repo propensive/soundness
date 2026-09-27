@@ -3588,8 +3588,8 @@ object querencia extends Library:
 
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, wisteria.core,
-      contextual.core,
-      panopticon.core, turbulence.core, gossamer.lexicon, anticipation.focus, parasite.core):
+      contextual.core, panopticon.core, turbulence.core, gossamer.lexicon, anticipation.focus,
+      parasite.core, polyvinyl.core, anticipation.time, anticipation.url):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The Expr-level `Inlinable` typeclass and its expansion-time instance
@@ -3604,7 +3604,7 @@ object xylophone extends Library:
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
   // The tests decode an `EmailAddress`, which `core` itself never mentions.
-  object test extends Tests(core, staged, urticose.core)
+  object test extends Tests(core, staged, urticose.core, hellenism.core)
   object bench extends Benchmarks(core, quantitative.units, hellenism.core):
     def mvnDeps = Seq(mvn"org.scala-lang.modules::scala-xml:2.4.0")
 

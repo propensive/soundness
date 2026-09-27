@@ -961,6 +961,9 @@ format. Entries are grouped by module, most-recently-added last within a module.
   has the raw label. (#pending)
 - `adversaria`: annotations written with a named argument (`@xmlns("u", qualified = false)`)
   are now reported by `Annotated`; they were previously dropped silently. (#pending)
+- `xylophone.core` now depends on `polyvinyl.core`, `anticipation.time` and `anticipation.url`
+  (additive: `Xsd` and `Xml.Provider`); `xylophone.Xml3` now extends the new `xylophone.Xml4`,
+  which holds `Xml.Provider`. (#pending)
 
 ## ypsiloid
 

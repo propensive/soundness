@@ -32,39 +32,25 @@
                                                                                                   */
 package xylophone
 
-import scala.caps
+import soundness.*
 
-import scala.compiletime.*
+import charDecoders.utf8Decoder
+import classloaders.threadContextClassloader
+import strategies.throwUnsafely
+import textSanitizers.skipSanitizer
 
-import anticipation.*
-import distillate.*
-import prepositional.*
-import wisteria.*
+// XML Schemas, as published, under `res/test/xsd`, each bound to an `Xml.Provider` for the
+// provider tests: the W3C Schema Primer's purchase order, the Maven POM, GPX 1.1, NuGet's nuspec,
+// the SOAP 1.1 envelope, Spring's beans schema and OASIS XLIFF 2.0, and a shipping-order schema
+// written for the tests. Each provider lives in this file, compiled before the tests, so that the
+// `record` macro can evaluate it while the test call sites are being compiled; the resource is
+// read then, from the compilation classpath.
 
-// Lowest-priority layer (extended by `Xml2`), holding the universal fallback
-// for `Xml.Field` — the typeclass the product derivation resolves per field —
-// mirroring `Xml.decodable`'s dispatch order so a field's wire format is
-// identical on both the direct and the AST paths: an explicit (or derived)
-// direct parser; a text codec; structural derivation; or the AST bridge over
-// any remaining `Decodable in Xml` (opaque leaf types). A case class with
-// both a `Reflection` and a custom hand-written `Decodable in Xml` derives
-// here, diverging from its custom decoder — the documented remedy is one
-// line: `given MyType is Xml.Parsable = Xml.Parsable.fromDecodable(...)`.
-trait Xml3 extends Xml4:
-  inline given field: [value] => value is Xml.Field = summonFrom:
-    case parsable: (`value` is Xml.Parsable) =>
-      Xml.Field(parsable)
-
-    case given (`value` is distillate.Decodable in Text) =>
-      // Laundered pure per the codec-thunk seal pattern (see
-      // rep/DECISIONS.md): the parser closes over the resolution-scoped
-      // text codec.
-      caps.unsafe.unsafeAssumePure:
-        Xml.Field(Xml.textCodecParsable[value])
-
-    case given Reflection[`value`] =>
-      Xml.ParsableDerivation.derived
-
-    case given (`value` is Decodable in Xml) =>
-      caps.unsafe.unsafeAssumePure:
-        Xml.Field(Xml.Parsable.fromDecodable(infer[`value` is Decodable in Xml]))
+object PurchaseOrder extends Xml.Provider(cp"/xsd/po.xsd")
+object ShipOrder extends Xml.Provider(cp"/xsd/shiporder.xsd")
+object MavenProject extends Xml.Provider(cp"/xsd/maven-4.0.0.xsd")
+object Gpx extends Xml.Provider(cp"/xsd/gpx.xsd")
+object Nuspec extends Xml.Provider(cp"/xsd/nuspec.xsd")
+object SoapEnvelope extends Xml.Provider(cp"/xsd/soap-envelope.xsd", root = t"Envelope")
+object Xliff extends Xml.Provider(cp"/xsd/xliff-core-2.0.xsd", root = t"xliff")
+object SpringBeans extends Xml.Provider(cp"/xsd/spring-beans.xsd", root = t"beans")
