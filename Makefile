@@ -40,11 +40,12 @@ check-while:
 unsafety:
 	flair metrics --dry-run
 
-# The coercion-helper census: small defs that only re-wrap a value, found by regex and scored by a
-# language model against doc/standards/plumbing.md, ranked worst first in etc/plumbing-ranked.tsv.
-# Needs the anthropic SDK (a venv under ~/.cache/soundness) and an API key; nothing here fails.
+# The coercion-helper census: small defs that only re-wrap a value, found from the parse tree and
+# judged by a model against doc/standards/plumbing.md, recorded in git notes under
+# refs/notes/flair-assess/plumbing (rule `plumbing` in .pyrocosm/flair/config.tel). Needs the
+# `anthropic` credential in Pyrocosm's cascade; nothing here fails.
 plumbing:
-	$(PLUMBING_PYTHON) etc/find-plumbing.py $(PLUMBING_ARGS)
+	flair assess plumbing $(PLUMBING_ARGS)
 
 build:
 	./mill groupCheck.validate
@@ -70,8 +71,6 @@ wasm-e2e:
 doccheck:
 	python3 etc/doccheck-names.py $(DOC)
 	python3 etc/doccheck.py $(DOC)
-
-PLUMBING_PYTHON ?= $(HOME)/.cache/soundness/plumbing-venv/bin/python
 
 attest:
 	./etc/ci/attest.sh

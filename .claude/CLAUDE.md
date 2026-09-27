@@ -91,8 +91,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - No coercion helpers: a small private or local `def` (or a `given Conversion`) that only
   re-wraps a value into the type the next line wants is a missing abstraction, not a fix; use the
   typeclass or bridge, or add one. `doc/standards/plumbing.md` has the rubric and the replacement
-  table; `make plumbing` scores the candidates with a language model into
-  `etc/plumbing-ranked.tsv`, worst first.
+  table; `make plumbing` (`flair assess plumbing`) has a model score the candidates and records
+  the verdicts in git notes under `refs/notes/flair-assess/plumbing`, keyed by each definition's
+  locus and digest rather than by line.
 
 ### Given placement (issue #1632)
 

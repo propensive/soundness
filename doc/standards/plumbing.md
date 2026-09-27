@@ -9,10 +9,14 @@ is missing, insufficient, or present but unused, and it is where a simplistic or
 (a `toString` where a `show` was meant, a round trip through `String` that drops an encoding)
 creeps in unreviewed. The same is true of a `given Conversion` written to paper over a mismatch.
 
-`etc/find-plumbing.py` finds them. A regex pass gathers the candidates, a language model scores
-each against the rubric below, and the ranked result is committed as `etc/plumbing-ranked.tsv`,
-worst first. `make plumbing` runs it; the rubric the model sees is read from this file, so the
-standard and the prompt cannot drift apart.
+`flair assess plumbing` finds them. The rule `plumbing` in `.pyrocosm/flair/config.tel` names
+the model, the criteria below with their weights, and this file as the rubric; flair gathers the
+candidate definitions from the parse tree, has the model answer the criteria in batches, and
+records each verdict as BinTEL in git notes under `refs/notes/flair-assess/plumbing`. A
+definition is identified by its *locus* — path, enclosing definitions and signature, never a
+line — and its verdict is keyed by a digest of its normalised text, so a definition is judged
+once for as long as its text, this rubric, the criteria and the model stand. `make plumbing`
+runs it; `flair assess plumbing --show HEAD` prints the ranking recorded for a commit.
 
 ## What replaces what
 
@@ -111,11 +115,11 @@ Return a JSON array, one object per candidate, in the order given, and nothing e
 ```
 <!-- rubric:end -->
 
-The driver recomputes the score from the booleans (a small model's arithmetic is not trusted),
-adds its own signals, and validates `replacement` against the vocabulary, so a hallucinated API
-cannot enter the census. The driver's signals are: local `def` +2, `private` +1; one call site in
-the file +2, two +1, four or more −1; a body duplicated verbatim (parameters renamed) in another
-definition +3; the whole definition on one line +1.
+flair recomputes the score from the booleans (a small model's arithmetic is not trusted), adds
+its own signals, and validates `replacement` against the vocabulary, so a hallucinated API cannot
+enter the census. The signals are the rule's `signal` lines: local `def` +2, `private` +1; one
+call site in scope +2, two +1, four or more −1; a body duplicated verbatim (parameters renamed)
+in another definition +3; the whole definition on one line +1.
 
 Bands on the total: **definite** at 10 or more, **likely** from 5 to 9, **weak** from 0 to 4,
 **legitimate** below 0. The census is worked from the top.
@@ -147,9 +151,11 @@ A private forwarder that exists to give an internal name to a public function (`
 number = Css.number`) scores as a pure forwarder. It usually is one; the exceptions are worth a
 comment, which then trips X3.
 
-The prefilter reads one line per signature. A definition whose parameter list spans lines is not
-a candidate, whatever its body. Keep an eye on the yield after a reformatting sweep.
+The extractor admits a public definition only as a `given Conversion`, a round trip, or a
+one-line adapter chain with no logic in it; a private or local definition also by a coercion
+verb or an adapter call in a short body. Widen or narrow with the rule's `gate` lines.
 
 The model is nondeterministic. The census is a ranking to work from, not a count to defend; the
-booleans are recorded so a surprising score can be audited against the code, and the response
-cache under `etc/.plumbing-cache/` makes a re-run free for unchanged candidates.
+booleans are recorded so a surprising score can be audited against the code, and a judgement
+is kept by the definition's digest, so a re-run asks the model only about definitions that have
+changed — or every one, once, after the rubric has.

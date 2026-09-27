@@ -14,7 +14,3 @@ __pycache__/
 
 # flame keeps its prompt history here; the directory is tracked for its config.tel.
 .pyrocosm/flame/history
-
-# find-plumbing.py caches model responses here; the census itself (etc/plumbing-ranked.tsv) is tracked.
-etc/.plumbing-cache
-etc/plumbing-raw.json

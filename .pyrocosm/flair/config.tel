@@ -46,10 +46,69 @@ rule partial
   invokes head
   invokes apply
 
+# The model `flair assess` consults, and where its credential comes from: the Pyrocosm cascade
+# (`credential anthropic` in ~/.config/pyrocosm/credentials.tel, or ANTHROPIC_API_KEY).
+model haiku
+  provider   anthropic
+  model      claude-haiku-4-5
+  credential anthropic
+  batch      20
+  limit      4096
+  mode       batches
+
+# The coercion-helper census (doc/standards/plumbing.md): small definitions that only re-wrap a
+# value, judged by the model against the rubric there. `flair assess plumbing` records the
+# verdicts under refs/notes/flair-assess/plumbing; nothing here fails.
+rule plumbing
+  assess def
+  model  haiku
+  rubric doc/standards/plumbing.md
+  criterion S1 +2 single expression
+  criterion S2 +3 adapters only
+  criterion S3 +3 round trip
+  criterion S4 +1 coercion verb
+  criterion S5 +2 synonym of an existing operation
+  criterion S6 +3 pure forwarder
+  criterion S7 +2 one-to-one ladder
+  criterion S8 +1 shape-only return type
+  criterion S9 +1 one parameter
+  criterion S10 +3 conversion given
+  criterion X1 -3 handles failure
+  criterion X2 -3 computes
+  criterion X3 -2 justified by a comment
+  criterion X4 -2 codec-family name
+  vocabulary .tt .s .show .as[T] .in[Text] .in[Data] .to[List] .to[Map] .stdlib .puncture
+  vocabulary .optional safely Enumerable Extractable Conversion→method extension
+  vocabulary inline at call site none
+  band definite 10
+  band likely 5
+  band weak 0
+  lines 12
+  exclude-name read* write* parse* decode* encode* serialize* deserialize* apply unapply
+  exclude-body '{ Expr
+  no-using
+  gate conversion
+  gate ladder 2
+  gate round-trip
+  gate adapter 3
+  gate verb 3
+  signal local +2
+  signal private +1
+  signal calls 1 +2
+  signal calls 2 +1
+  signal calls 4+ -1
+  signal duplicate +3
+  signal one-liner +1
+
 # ── Profile ──────────────────────────────────────────────────────────────────────────────────
 
 profile default
   source lib/*/src/**/*.scala
+  exclude lib/*/src/test/**
+  exclude lib/*/src/bench/**
+  exclude lib/proscenium/**
+  exclude lib/anticipation/src/text/**
+  assess plumbing
 
   # The `-language` features every library compiles with, so flair parses the sources exactly
   # as the build does (capture and separation checking are syntax, too).
@@ -58,6 +117,14 @@ profile default
   language experimental.dependent
   language experimental.relaxedLambdaSyntax
   language experimental.genericNumberLiterals
+  language experimental.into
+  language experimental.erasedDefinitions
+  language experimental.packageObjectValues
+  language experimental.saferExceptions
+  language experimental.strictEqualityPatternMatching
+  language experimental.subCases
+  language experimental.multiSpreads
+  language experimental.captureChecking
   language experimental.into
   language experimental.erasedDefinitions
   language experimental.saferExceptions
