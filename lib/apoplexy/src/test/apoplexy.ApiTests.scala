@@ -257,6 +257,11 @@ object ApiTests extends Suite(m"Api client tests"):
         . length
       . assert(_ > 0)
 
+    // The refstore spec requires `queryKey` (an API key in the query) for every operation but
+    // `GET /items`, and `cookieKey` for `/items/{itemId}/notes`
+    given queryKey: ("queryKey" is Credential to Text) = Credential(t"q-1")
+    given cookieKey: ("cookieKey" is Credential to Text) = Credential(t"s-1")
+
     suite(m"references, path-level parameters, headers and servers"):
       val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
       val itemJson = t"""{"id": 7, "name": "spoon"}"""
@@ -362,7 +367,7 @@ object ApiTests extends Suite(m"Api client tests"):
         given Http.Backend = recorder
         refs.items(7).label.get.call()
         recorder.lastUrl
-      . assert(_ == t"https://ref.example.com/v2/items/7/label")
+      . assert(_ == t"https://ref.example.com/v2/items/7/label?token=q-1")
 
       test(m"a bare call() on a JSON endpoint yields the Json"):
         given Http.Backend = Recorder(() => ok(itemJson))
@@ -425,6 +430,25 @@ object ApiTests extends Suite(m"Api client tests"):
         . length
       . assert(_ > 0)
 
+    suite(m"security schemes"):
+      val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
+
+      test(m"an API key in the query is sent as a query parameter"):
+        refs.items(7).get.request.query.values
+      . assert(_ == List(t"token" -> t"q-1"))
+
+      test(m"an operation whose security is empty needs no credential"):
+        refs.items.get(`X-Request-Id` = t"r1").request.query.values
+      . assert(_ == List())
+
+      test(m"an API key in a cookie is sent in the cookie header"):
+        val recorder = Recorder(() => Http.Response(Http.Ok)(t"a: 1"))
+        given Http.Backend = recorder
+        refs.items(7).notes.get.call()
+        recorder.lastHeaders.filter(_.key == t"cookie").map(_.value)
+      . assert(_ == List(t"session=s-1"))
+
+    suite(m"construables"):
       test(m"a JSON endpoint cannot be read as a Raster"):
         demilitarize:
           given Http.Backend = Recorder(() => ok(itemJson))

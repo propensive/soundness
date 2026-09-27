@@ -224,6 +224,13 @@ components:
       refstore.servers.prim.let(_.resolved)
     .assert(_ == t"/v2")
 
+    test(m"an operation requiring a credential nobody provides does not compile"):
+      demilitarize:
+        val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
+        refs.items(7).get
+      . length
+    .assert(_ > 0)
+
     test(m"an unsupported OpenAPI version is rejected"):
       capture[OpenApi.Error]:
         """{"openapi": "2.0", "info": {"title": "x", "version": "1"}}""".tt.read[OpenApi]

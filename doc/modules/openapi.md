@@ -119,6 +119,32 @@ Servers do not always keep to their specifications. A response with an undeclare
 `Api.Violation`, carrying the status and the body's bytes, which every call may meet and which is
 handled apart from the declared errors: the contract's breach, not one of its cases.
 
+### Security
+
+An API's specification names its security schemes — an API key in a header, query parameter or
+cookie; HTTP authentication; OAuth 2; OpenID Connect — and which of them each operation
+requires. The credentials come from [orthodoxy](oauth.md): a `Credential` is a contextual value
+named for the scheme, holding the value the scheme's kind calls for, and an operation which
+requires credentials nobody has provided does not compile, the error naming the givens which
+would satisfy each alternative:
+
+<!-- doccheck: skip -->
+```scala
+given apiKey: ("api_key" is Credential to Text) = Credential(t"…")
+given basic: ("basicAuth" is Credential to Auth) = Credential(Auth.Basic(t"user", t"pass"))
+given oauth: ("petstore_auth" is Credential to Authorization) = issuer.clientCredentials(t"read:pets")
+
+api.pet(42L).get.call()           // `api_key: …` sent as the spec dictates
+```
+
+An API key is a `Credential to Text`, sent in the header, query parameter or cookie the scheme
+names; HTTP authentication a `Credential to Auth`, sent in the `Authorization` header; an OAuth 2
+or OpenID Connect scheme a `Credential to Authorization` (or an `Auth`, for a token obtained
+elsewhere), sent as a `Bearer` authorization and checked, before the request goes, against the
+scopes the requirement names — a token lacking one raises `OAuth.Error`. Where an operation
+offers alternative requirements, the first every scheme of which has a credential in scope is
+used; an operation whose `security` is empty needs none. Mutual TLS is not supported.
+
 ### Media types and their carriers
 
 The specification names each body's media type, and a `Construable` names the Soundness type

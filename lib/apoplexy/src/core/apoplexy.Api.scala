@@ -46,6 +46,7 @@ import hellenism.*
 import hieroglyph.*
 import jacinta.*
 import legerdemain.*
+import orthodoxy.*
 import polyvinyl.*
 import prepositional.*
 import rudiments.*
@@ -83,6 +84,29 @@ object Api:
     // The records of an array response, one per element
     def list(json: Json, transform: Text => Json => Any): List[Record] =
       repeated(t"", json).map(build(_, transform))
+
+  // The presentations of credentials, as an operation's security schemes dictate (the `invoke`
+  // macro summons each `Credential` and emits the call). An API key goes in the header, query
+  // parameter or cookie the scheme names; HTTP authentication and a token in the `authorization`
+  // header. A token is checked, before the request is sent, against the scopes the requirement
+  // names: one it does not grant raises `OAuth.Error`.
+  def apiKey(credential: Credential { type Result = Text }, name: Text): Http.Header =
+    Http.Header(name, credential.value)
+
+  def cookieKey(credential: Credential { type Result = Text }, name: Text): Http.Header =
+    Http.Header(t"cookie", t"$name=${credential.value}")
+
+  def httpAuth(credential: Credential { type Result <: Auth }): Http.Header =
+    Http.Header(t"authorization", (credential.value: Auth).show)
+
+  def tokenAuth(credential: Credential { type Result = Authorization }, scopes: List[Text])
+    ( using Tactic[OAuth.Error], Diagnostics )
+  :   Http.Header =
+
+    scopes.seek(scope => !credential.value.grants(List(scope))).let: scope =>
+      abort(OAuth.Error(OAuth.Error.Reason.InsufficientPrivileges(scope)))
+
+    Http.Header(t"authorization", credential.value.bearer.show)
 
   // A response body read as JSON, for `record()` and `tuple()`
   def jsonOf(response: Http.Response)(using Tactic[Parse.Error]): Json =
@@ -126,8 +150,17 @@ object Api:
     val acceptHeader: List[Http.Header] = request.accept.lay(Nil): media =>
       List(Http.Header(t"accept", media.show))
 
+    // One `cookie` header carries every cookie (RFC 6265 §5.4); the API keys sent as cookies
+    // arrive as separate headers and are joined here
+    val cookies = request.headers.filter(_.key == t"cookie").map(_.value)
+
+    val cookieHeader: List[Http.Header] =
+      if cookies.nil then Nil else List(Http.Header(t"cookie", cookies.join(t"; ")))
+
+    val others = request.headers.filter(_.key != t"cookie")
+
     val headers: List[Http.Header] =
-      List.concat(acceptHeader, List.concat(contentTypeHeader, request.headers))
+      List.concat(acceptHeader, List.concat(contentTypeHeader, List.concat(others, cookieHeader)))
 
     val httpRequest =
       Http.Request

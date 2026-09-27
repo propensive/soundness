@@ -211,7 +211,8 @@ object OpenApi:
       description: Optional[Text]                    = Unset,
       parameters:  List[Referable[Parameter]]        = Nil,
       requestBody: Optional[Referable[RequestBody]]  = Unset,
-      responses:   Map[Text, Referable[Response]]    = Map() )
+      responses:   Map[Text, Referable[Response]]    = Map(),
+      security:    Optional[List[Requirement]]       = Unset )
 
   object PathItem:
     given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
@@ -249,10 +250,65 @@ object OpenApi:
     =>  Components is Json.Decodable = Json.DecodableDerivation.derived
 
   case class Components
-    ( schemas:       Map[Text, JsonSchema]              = Map(),
-      parameters:    Map[Text, Referable[Parameter]]    = Map(),
-      responses:     Map[Text, Referable[Response]]     = Map(),
-      requestBodies: Map[Text, Referable[RequestBody]]  = Map() )
+    ( schemas:         Map[Text, JsonSchema]              = Map(),
+      parameters:      Map[Text, Referable[Parameter]]    = Map(),
+      responses:       Map[Text, Referable[Response]]     = Map(),
+      requestBodies:   Map[Text, Referable[RequestBody]]  = Map(),
+      securitySchemes: Map[Text, SecurityScheme]          = Map() )
+
+  object SecurityScheme:
+    given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    =>  SecurityScheme is Json.Decodable = Json.DecodableDerivation.derived
+
+    enum Kind:
+      case ApiKey, Http, OAuth2, OpenIdConnect, MutualTls, Unknown
+
+    object Flow:
+      given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+      =>  Flow is Json.Decodable = Json.DecodableDerivation.derived
+
+    // One OAuth 2 flow: its endpoints and the scopes it can grant, each with a description
+    case class Flow
+      ( authorizationUrl: Optional[Text]  = Unset,
+        tokenUrl:         Optional[Text]  = Unset,
+        refreshUrl:       Optional[Text]  = Unset,
+        scopes:           Map[Text, Text] = Map() )
+
+    object Flows:
+      given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+      =>  Flows is Json.Decodable = Json.DecodableDerivation.derived
+
+    case class Flows
+      ( `implicit`:        Optional[Flow] = Unset,
+        password:          Optional[Flow] = Unset,
+        clientCredentials: Optional[Flow] = Unset,
+        authorizationCode: Optional[Flow] = Unset )
+
+  // A security scheme (OpenAPI 3 §4.8.27): an API key sent in a header, query parameter or
+  // cookie; HTTP authentication by a named scheme; OAuth 2, with its flows; OpenID Connect; or
+  // mutual TLS. The fields not belonging to the scheme's `type` stay absent.
+  case class SecurityScheme
+    ( `type`:           Text,
+      description:      Optional[Text]                 = Unset,
+      name:             Optional[Text]                 = Unset,
+      `in`:             Optional[Text]                 = Unset,
+      scheme:           Optional[Text]                 = Unset,
+      bearerFormat:     Optional[Text]                 = Unset,
+      flows:            Optional[SecurityScheme.Flows] = Unset,
+      openIdConnectUrl: Optional[Text]                 = Unset ):
+
+    def kind: SecurityScheme.Kind = `type` match
+      case t"apiKey"        => SecurityScheme.Kind.ApiKey
+      case t"http"          => SecurityScheme.Kind.Http
+      case t"oauth2"        => SecurityScheme.Kind.OAuth2
+      case t"openIdConnect" => SecurityScheme.Kind.OpenIdConnect
+      case t"mutualTLS"     => SecurityScheme.Kind.MutualTls
+      case _                => SecurityScheme.Kind.Unknown
+
+  // A security requirement (§4.8.30): the schemes which must all be satisfied, each with the
+  // scopes it needs; an operation's (or the document's) `security` lists alternatives, any one of
+  // which suffices, an empty requirement meaning that no credentials are needed.
+  type Requirement = Map[Text, List[Text]]
 
   // The `responses` map is keyed by status text (`"200"`, `"2XX"`, `"default"`),
   // not all of which are valid `Http.Status` codes; `response` interprets a
@@ -380,6 +436,7 @@ object OpenApi:
 case class OpenApi
   ( openapi:    Text,
     info:       OpenApi.Info,
-    servers:    List[OpenApi.Server]        = Nil,
-    paths:      Map[Text, OpenApi.PathItem] = Map(),
-    components: Optional[OpenApi.Components] = Unset )
+    servers:    List[OpenApi.Server]          = Nil,
+    paths:      Map[Text, OpenApi.PathItem]   = Map(),
+    components: Optional[OpenApi.Components]  = Unset,
+    security:   List[OpenApi.Requirement]     = Nil )

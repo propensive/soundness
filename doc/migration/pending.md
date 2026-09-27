@@ -156,6 +156,22 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Conformant` givens (`carrier`, `carrierText`, `decodable`, `decodableText`, `unit`) no longer
   take a `Tactic[Api.Error]` and no longer check the status; `Conformant.successful` removed.
   (#2091)
+- `apoplexy.OpenApi.Components` gained `securitySchemes: Map[Text, OpenApi.SecurityScheme] =
+  Map()`, `OpenApi.Operation` gained `security: Optional[List[OpenApi.Requirement]] = Unset` and
+  `OpenApi` gained `security: List[OpenApi.Requirement] = Nil`, where `type Requirement =
+  Map[Text, List[Text]]` and `case class SecurityScheme(type: Text, description, name, in,
+  scheme, bearerFormat, flows: Optional[SecurityScheme.Flows], openIdConnectUrl)` with `def kind:
+  SecurityScheme.Kind` (`ApiKey | Http | OAuth2 | OpenIdConnect | MutualTls | Unknown`). Positional
+  patterns gain elements. Behaviour change in the `Api` macros: an operation with security
+  requirements (its own, else the document's) now needs, where it is invoked, an
+  `orthodoxy.Credential` given named for each scheme of one alternative — `("name" is Credential
+  to Text)` for an `apiKey` scheme, `to Auth` for `http`, `to Authorization` (or `Auth`) for
+  `oauth2`/`openIdConnect` — else it does not compile; the credential is presented as the scheme
+  dictates (header, query parameter, cookie, or the `authorization` header), and a token is checked
+  against the requirement's scopes as the request is built, raising `OAuth.Error` (requiring a
+  `Tactic[OAuth.Error]` at the call site for a scoped requirement). Previously security was
+  ignored. New `Api.apiKey`, `Api.cookieKey`, `Api.httpAuth`, `Api.tokenAuth`. Module
+  `apoplexy.core` now depends on `orthodoxy.core`. (#2091)
 
 ## caduceus
 
@@ -757,6 +773,38 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Classloader#resource(path: Text): Optional[Data]` is the same read without logging. Both
   close the resource's stream after reading. (#2071)
 
+## orthodoxy
+
+- Module `orthodoxy.core` no longer depends on `scintillate.server` or `telekinesis.jvm`; the
+  scintillate middleware moved to the new module `orthodoxy.server` (in the `web` bundle, exported
+  as `soundness.{Authorizations, oauth, require}`). `orthodoxy.Issuer#oauth(…)` and
+  `Issuer#require(…)` are now extension methods in `orthodoxy.server` with the same parameters,
+  except that `require` additionally takes `(using Tactic[OAuth.Error])`. (#2091)
+- `orthodoxy.Issuer(init: HttpUrl, exchange: HttpUrl, redirect: HttpUrl, client: Text, secret:
+  Optional[Text] = Unset)` became `Issuer(exchange: HttpUrl, client: Text, secret: Optional[Text]
+  = Unset, init: Optional[HttpUrl] = Unset, redirect: Optional[HttpUrl] = Unset)`, its fields now
+  public `val`s; new client-side grants `grant(parameters: Query)`, `clientCredentials(scopes:
+  Text*)`, `refresh(token: Text)`, `refresh(authorization: Authorization)`, `exchangeCode(code:
+  Text, pkce: Optional[Pkce] = Unset)`, each `(using Online, (Http.Event is Loggable)^, Http.Client
+  onto Origin["http" | "https"])(using Tactic[OAuth.Error]): Authorization`, and
+  `authorizationUrl(scopes: List[Text], state: Text, pkce: Optional[Pkce] = Unset)(using
+  Tactic[OAuth.Error]): HttpUrl`. The grants use the `Http.Client` in scope rather than a
+  built-in `javaNetHttp` backend. (#2091)
+- `orthodoxy.OAuth` (the class, a per-`Session` store with `update`/`apply`) renamed
+  `orthodoxy.Authorizations` (module `orthodoxy.server`), backed by a `ConcurrentHashMap`;
+  `orthodoxy.OAuth.State(redirect, uuid, access, refresh, expiry)` became
+  `Authorizations.State(redirect: Path on Www, uuid: Uuid = Uuid(), access:
+  Optional[Authorization] = Unset)`, its `expired` now reading the authorization's expiry (the
+  old `refresh`/`expiry` fields were never set). `OAuth.Error.Reason` gained `Misconfigured(detail:
+  Text)` (`SN-840.7`). (#2091)
+- `orthodoxy.Authorization` gained `bearer: Auth`, `expired: Boolean`, `grants(required:
+  List[Text]): Boolean` and the companion `Authorization.parse(json: Json)(using
+  Tactic[OAuth.Error]): Authorization` (RFC 6749 §5.1; `scope`, `expires_in` and `refresh_token`
+  optional — previously a token response without `scope` was `InvalidJsonResponse`). New
+  `orthodoxy.Pkce(verifier: Text)` with `challenge` (S256) and `Pkce()`; new typeclass
+  `orthodoxy.Credential` (`type Self <: Label; type Result; def value: Result`, constructor
+  `Credential[name, result](value)`). (#2091)
+
 ## pneumatic
 
 - New `pneumatic.Brotli.continuation(base: Data, next: Data, window: Int = Brotli.Window): Data`
@@ -1018,6 +1066,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
 
 - The givens `telekinesis.Http.Method.formmethod` and `Http.Method.method` (each
   `("…" is GenericHtmlAttribute[Method])`) removed with `anticipation.GenericHtmlAttribute`. (#2082)
+- `telekinesis.Auth.showable: Auth is Showable` became `[auth <: Auth] => auth is Showable`, so
+  a value typed as a case (`Auth.Bearer`) renders as its header value; previously it fell to the
+  generic `reflect.Enum` instance and rendered as `Bearer(…)`. `Auth is Decodable in Text` now
+  decodes `Basic` credentials correctly: the single base64 text is decoded and split at its first
+  colon (previously the encoded text was split at a colon before decoding, so no real `Basic`
+  header decoded; a password may now contain colons). (#2091)
 
 ## turbulence
 

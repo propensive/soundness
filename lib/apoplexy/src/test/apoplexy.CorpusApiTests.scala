@@ -64,6 +64,11 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
     suite(m"Swagger Petstore v3"):
       val api = Api(cp"/openapi/swagger/petstore3.json", base = url"https://petstore3.swagger.io")
 
+      given apiKey: ("api_key" is Credential to Text) = Credential(t"key-1")
+
+      given petstoreAuth: ("petstore_auth" is Credential to Authorization) =
+        Credential(Authorization(t"tok-1", List(t"write:pets", t"read:pets"), Unset, Unset))
+
       val petJson =
         t"""{"id": 42, "name": "Milo", "photoUrls": ["a"], "status": "available",
              "tags": [{"id": 1, "name": "cat"}]}"""
@@ -117,6 +122,25 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
         (recorder.lastMethod, recorder.lastHeaders.filter(_.key == t"content-type").map(_.value))
       . assert(_ == (Http.Post, List(t"application/octet-stream")))
 
+      test(m"the first satisfiable alternative, an API key header, is sent"):
+        api.pet(42L).get.request.headers
+      . assert(_ == List(Http.Header(t"api_key", t"key-1")))
+
+      test(m"an OAuth 2 token is sent as a Bearer authorization"):
+        api.pet.findByStatus.get(status = t"sold").request.headers
+      . assert(_ == List(Http.Header(t"authorization", t"Bearer tok-1")))
+
+      test(m"a token lacking a required scope is refused before the request"):
+        given narrower: ("petstore_auth" is Credential to Authorization) =
+          Credential(Authorization(t"tok-2", List(t"read:pets"), Unset, Unset))
+
+        capture[OAuth.Error](api.pet.findByStatus.get(status = t"sold")).reason
+      . assert(_ == OAuth.Error.Reason.InsufficientPrivileges(t"write:pets"))
+
+      test(m"an operation without security sends no credential"):
+        api.user.login.get(username = t"u").request.headers
+      . assert(_ == List())
+
       test(m"a declared 404 without a body raises Api.NotFound[Unit]"):
         given Http.Backend = Recorder(() => Http.Response(Http.NotFound)())
 
@@ -135,6 +159,12 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
 
     suite(m"Redocly Museum (YAML, OpenAPI 3.1)"):
       val api = Api(cp"/openapi/redocly/museum.yaml")
+      given museumAuth: ("MuseumPlaceholderAuth" is Credential to Auth) =
+        Credential(Auth.Basic(t"curator", t"pw"))
+
+      test(m"the document's HTTP basic scheme is sent on every operation"):
+        api.`museum-hours`.get(limit = 1).request.headers
+      . assert(_ == List(Http.Header(t"authorization", t"Basic Y3VyYXRvcjpwdw==")))
 
       test(m"the server URL is read from YAML"):
         api.request.base.show
@@ -175,6 +205,11 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
 
     suite(m"Discord (OpenAPI 3.1)"):
       val api = Api(cp"/openapi/discord/openapi.json")
+      given botToken: ("BotToken" is Credential to Text) = Credential(t"Bot abc")
+
+      test(m"a bot token is an API key in the Authorization header"):
+        api.channels(t"1").messages.get(limit = 10).request.headers
+      . assert(_ == List(Http.Header(t"Authorization", t"Bot abc")))
 
       test(m"an @me segment navigates"):
         api.users.`@me`.get.request.path
@@ -190,6 +225,11 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
 
     suite(m"Stripe"):
       val api = Api(cp"/openapi/stripe/spec3.json")
+      given bearerAuth: ("bearerAuth" is Credential to Auth) = Credential(Auth.Bearer(t"sk_test_1"))
+
+      test(m"the second alternative of the document's security is used when the first has no credential"):
+        api.v1.customers.get(limit = 3).request.headers
+      . assert(_ == List(Http.Header(t"authorization", t"Bearer sk_test_1")))
 
       test(m"customers are listed with a limit"):
         val request = api.v1.customers.get(limit = 3).request
@@ -211,6 +251,8 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
 
     suite(m"Twilio"):
       val api = Api(cp"/openapi/twilio/accounts_v1.json")
+      given twilioAuth: ("accountSid_authToken" is Credential to Auth) =
+        Credential(Auth.Basic(t"AC1", t"tok"))
 
       test(m"an int64 query parameter takes a Long"):
         api.v1.Credentials.AWS.get(PageSize = 5L).request.query.values

@@ -48,6 +48,7 @@ import hellenism.*
 import hieroglyph.*
 import jacinta.*
 import legerdemain.*
+import orthodoxy.*
 import polyvinyl.*
 import prepositional.*
 import rudiments.*
@@ -228,6 +229,188 @@ object Apoplexy:
       own.exists: param => param.name == parameter.name && param.`in` == parameter.`in`
 
     List.concat(own, shared.filter(!overridden(_)))
+
+  // --- security ----------------------------------------------------------------
+
+  // The credential in scope for a security scheme, by the scheme's name, and the type of its
+  // value
+  private def credentialFor(using quotes: Quotes)(scheme: Text)
+  :   Optional[(Expr[Any], quotes.reflect.TypeRepr)] =
+
+    import quotes.reflect.*
+
+    val target = Refinement(TypeRepr.of[Credential], "Self", bounds(literalType(scheme)))
+
+    Implicits.search(target) match
+      case success: ImplicitSearchSuccess =>
+        refinements(success.tree.tpe.widen).get(t"Result") match
+          case Some(result) => (success.tree.asExpr, result)
+          case None         => Unset
+
+      case _ =>
+        Unset
+
+  // The header, or query parameter, presenting one credential, for one scheme of a requirement;
+  // `Unset` when no credential of a fitting type is in scope
+  private def presentation(using quotes: Quotes)
+    ( doc: OpenApi, verb: Text, key: Text, scheme: Text, scopes: List[Text] )
+  :   Optional[Either[Expr[Http.Header], Expr[(Text, Text)]]] =
+
+    import quotes.reflect.*
+
+    val definition = doc.components.let(_.securitySchemes(scheme)).or:
+      halt(m"apoplexy: $verb $key requires the security scheme $scheme, which the spec does not define")
+
+    credentialFor(scheme) match
+      case Unset => Unset
+
+      case (credential: Expr[Any] @unchecked, result: TypeRepr @unchecked) =>
+        def text: Boolean = result <:< TypeRepr.of[Text]
+        def auth: Boolean = result <:< TypeRepr.of[Auth]
+        def token: Boolean = result <:< TypeRepr.of[Authorization]
+
+        definition.kind match
+          case OpenApi.SecurityScheme.Kind.ApiKey if text =>
+            val name = Expr(definition.name.or(scheme).s)
+            val typed = '{$credential.asInstanceOf[Credential { type Result = Text }]}
+
+            definition.`in`.or(t"header") match
+              case t"query"  => Right('{($name.tt, $typed.value)})
+              case t"cookie" => Left('{Api.cookieKey($typed, $name.tt)})
+              case _         => Left('{Api.apiKey($typed, $name.tt)})
+
+          case OpenApi.SecurityScheme.Kind.Http | OpenApi.SecurityScheme.Kind.OAuth2
+              | OpenApi.SecurityScheme.Kind.OpenIdConnect if auth =>
+            Left('{Api.httpAuth($credential.asInstanceOf[Credential { type Result <: Auth }])})
+
+          case OpenApi.SecurityScheme.Kind.Http | OpenApi.SecurityScheme.Kind.OAuth2
+              | OpenApi.SecurityScheme.Kind.OpenIdConnect if token =>
+            val typed = '{$credential.asInstanceOf[Credential { type Result = Authorization }]}
+            val strings: Expr[scala.collection.immutable.List[String]] =
+              Expr(scopes.map(_.s).stdlib)
+
+            val scopesExpr: Expr[List[Text]] = '{List.from($strings).map(_.tt)}
+
+            val tactic = Expr.summon[Tactic[OAuth.Error]].getOrElse:
+              val advice = t"a `Tactic[OAuth.Error]` is needed, for a token lacking a scope"
+              halt(m"apoplexy: $verb $key requires the scopes ${scopes.join(t", ")} of $scheme; $advice")
+
+            val diagnostics = Expr.summon[Diagnostics].getOrElse:
+              halt(m"apoplexy: a `Diagnostics` is needed where an API is called")
+
+            Left('{Api.tokenAuth($typed, $scopesExpr)(using $tactic, $diagnostics)})
+
+          case OpenApi.SecurityScheme.Kind.MutualTls =>
+            halt(m"apoplexy: $verb $key requires $scheme, a mutual-TLS scheme, which is not supported")
+
+          case kind =>
+            val shown = result.show
+            val kindName = kind.toString.tt
+            val advice = t"an API key is a `Credential to Text`, HTTP authentication a `Credential to Auth`, a token a `Credential to Authorization`"
+            halt(m"apoplexy: the credential for $scheme (a $kindName scheme) has the type $shown; $advice")
+
+  private type Presentation = Either[Expr[Http.Header], Expr[(Text, Text)]]
+  private type Presentations = scala.collection.immutable.List[Presentation]
+
+  // The presentations of every scheme of one requirement, when each has a credential in scope;
+  // `Unset` otherwise. Explicit recursion over the standard library's list, typed at each step:
+  // lambdas over `Optional` results here trip the compiler's `wildApprox` assertion.
+  private def satisfy(using Quotes)
+    ( doc:         OpenApi,
+      verb:        Text,
+      key:         Text,
+      requirement: OpenApi.Requirement,
+      schemes:     scala.collection.immutable.List[Text] )
+  :   Optional[Presentations] =
+
+    schemes match
+      case scala.collection.immutable.Nil => scala.collection.immutable.Nil
+
+      case scala.collection.immutable.::(scheme, rest) =>
+        val scopes: List[Text] = requirement(scheme).or(Nil)
+        val found: Optional[Presentation] = presentation(doc, verb, key, scheme, scopes)
+
+        found match
+          case Unset => Unset
+
+          case found: Presentation @unchecked =>
+            val more: Optional[Presentations] = satisfy(doc, verb, key, requirement, rest)
+
+            more match
+              case Unset                          => Unset
+              case more: Presentations @unchecked => scala.collection.immutable.::(found, more)
+
+  // The first alternative every scheme of which is satisfied
+  private def firstSatisfied(using Quotes)
+    ( doc:          OpenApi,
+      verb:         Text,
+      key:          Text,
+      alternatives: scala.collection.immutable.List[OpenApi.Requirement] )
+  :   Optional[Presentations] =
+
+    alternatives match
+      case scala.collection.immutable.Nil => Unset
+
+      case scala.collection.immutable.::(requirement, rest) =>
+        val schemes: scala.collection.immutable.List[Text] =
+          Map.keys(requirement).to[List].order(_.s).stdlib
+
+        val found: Optional[Presentations] = satisfy(doc, verb, key, requirement, schemes)
+
+        found match
+          case Unset                           => firstSatisfied(doc, verb, key, rest)
+          case found: Presentations @unchecked => found
+
+  private def empty(requirement: OpenApi.Requirement): Boolean =
+    Map.keys(requirement).to[List].stdlib.isEmpty
+
+  // The presentations of the first requirement alternative every scheme of which has a
+  // credential in scope; none when the operation requires no credentials (or offers an empty
+  // alternative); a compile error, naming each alternative and the givens which would satisfy
+  // it, when no alternative is met
+  private def credentials(using Quotes)
+    ( doc: OpenApi, verb: Text, key: Text, operation: OpenApi.Operation )
+  :   Presentations =
+
+    val alternatives: scala.collection.immutable.List[OpenApi.Requirement] =
+      operation.security.or(doc.security).stdlib
+
+    if alternatives.isEmpty || alternatives.exists(empty) then scala.collection.immutable.Nil
+    else
+      val found: Optional[Presentations] = firstSatisfied(doc, verb, key, alternatives)
+
+      found match
+        case Unset                           => unsatisfied(doc, verb, key, List.from(alternatives))
+        case found: Presentations @unchecked => found
+
+  private def describe(doc: OpenApi, scheme: Text): Text =
+    val kind = doc.components.let(_.securitySchemes(scheme)).let(_.kind)
+
+    val result = kind.or(OpenApi.SecurityScheme.Kind.Unknown) match
+      case OpenApi.SecurityScheme.Kind.ApiKey => t"Text"
+      case OpenApi.SecurityScheme.Kind.Http   => t"Auth"
+      case _                                  => t"Authorization"
+
+    t"""("$scheme" is Credential to $result)"""
+
+  private def describeAll(doc: OpenApi, schemes: scala.collection.immutable.List[Text])
+  :   scala.collection.immutable.List[Text] =
+
+    schemes match
+      case scala.collection.immutable.Nil               => scala.collection.immutable.Nil
+      case scala.collection.immutable.::(scheme, rest)  =>
+        scala.collection.immutable.::(describe(doc, scheme), describeAll(doc, rest))
+
+  private def unsatisfied(using Quotes)
+    ( doc: OpenApi, verb: Text, key: Text, alternatives: List[OpenApi.Requirement] )
+  :   Nothing =
+
+    val described: List[Text] = alternatives.map: requirement =>
+      val schemes = Map.keys(requirement).to[List].order(_.s).stdlib
+      List.from(describeAll(doc, schemes)).join(t" and ")
+
+    val listed = described.join(t"; or ")
+    halt(m"apoplexy: $verb $key requires credentials; provide a given for $listed")
 
   // --- schema → Scala type -------------------------------------------------
 
@@ -600,10 +783,22 @@ object Apoplexy:
       if !named.exists(_(0) == param.name)
       then halt(m"apoplexy: required parameter ${param.name} is missing")
 
-    val queryExpr: Expr[Query] = '{Query(${Lifts.list(queryEntries)})}
+    val presented: Presentations = credentials(doc, verb, key, operation)
+
+    val credentialHeaders: List[Expr[Http.Header]] =
+      List.from(presented.collect { case Left(header) => header })
+
+    val credentialQueries: List[Expr[(Text, Text)]] =
+      List.from(presented.collect { case Right(entry) => entry })
+
+    val queryExpr: Expr[Query] =
+      '{Query(${Lifts.list(List.concat(queryEntries, credentialQueries))})}
+
+    val paramHeaders: List[Expr[Http.Header]] =
+      headerEntries.map { entry => '{Http.Header($entry(0), $entry(1))} }
 
     val headersExpr: Expr[List[Http.Header]] =
-      Lifts.list(headerEntries.map { entry => '{Http.Header($entry(0), $entry(1))} })
+      Lifts.list(List.concat(paramHeaders, credentialHeaders))
 
     val status = successStatus(operation).or(t"200")
 

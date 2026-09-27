@@ -4,11 +4,13 @@
   "servers": [
     { "url": "/v{version}", "variables": { "version": { "default": "2", "enum": ["1", "2"] } } }
   ],
+  "security": [{ "queryKey": [] }],
   "paths": {
     "/items": {
       "parameters": [{ "$ref": "#/components/parameters/requestId" }],
       "get": {
         "operationId": "listItems",
+        "security": [],
         "parameters": [{ "$ref": "#/components/parameters/limit" }],
         "responses": {
           "200": {
@@ -88,6 +90,7 @@
       ],
       "get": {
         "operationId": "getNotes",
+        "security": [{ "cookieKey": [] }],
         "responses": {
           "200": {
             "description": "the notes",
@@ -156,6 +159,10 @@
         "description": "an item",
         "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }
       }
+    },
+    "securitySchemes": {
+      "queryKey": { "type": "apiKey", "name": "token", "in": "query" },
+      "cookieKey": { "type": "apiKey", "name": "session", "in": "cookie" }
     },
     "requestBodies": {
       "NewItem": {
