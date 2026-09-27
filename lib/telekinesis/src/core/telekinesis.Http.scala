@@ -1258,6 +1258,9 @@ object Http:
         val name2 = name.tt.uncamel.kebab.lower
         textHeaders.filter(_.key.lower == name2).map(_.value.as)
 
+    // The media type of the body, from the `content-type` header, with its parameters (a
+    // `charset`, a multipart `boundary`)
+    lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 
     @targetName("add")
     infix def + [value: Encodable in Http.Header](value: value): Response^{this} =

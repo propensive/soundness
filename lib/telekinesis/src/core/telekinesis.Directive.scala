@@ -53,7 +53,8 @@ object Directive:
   given cacheControl: ("cacheControl" is Directive of Text) = identity(_)
   given connection: ("connection" is Directive of Text) = identity(_)
   given contentMd5: ("contentMd5" is Directive of Text) = identity(_)
-  given contentType: ("contentType" is Directive of MediaType) = _.basic
+  // The full media type, with its parameters: a `charset`, a multipart `boundary`
+  given contentType: ("contentType" is Directive of MediaType) = _.show
   given contentLength: ("contentLength" is Directive of Bytes) = _.long.toString.tt
   given cookie: ("cookie" is Directive of List[Cookie.Value]) = _.map(_.show).join(t"; ")
   given date: ("date" is Directive of Text) = identity(_)

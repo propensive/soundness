@@ -96,6 +96,18 @@ object Postable:
     import charEncoders.utf8Encoder
     Postable(media"application/x-www-form-urlencoded", query => query.queryString.in[Data].stream)
 
+  // A multipart body: `multipart/form-data` with the boundary its parts are written between
+  given multipart: Multipart is Postable = new Postable:
+    type Self = Multipart
+
+    def mediaType(content: Multipart): MediaType =
+      MediaType(Media.Group.Multipart, Media.Subtype.Standard(t"form-data"), Nil,
+        List(t"boundary" -> content.boundary))
+
+    def stream(content: Multipart): (Stream[Data] over Credit)^ = content.source[Data]
+
+    override def preview(value: Multipart): Text = t"<multipart, ${value.boundary}>"
+
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  ( tactic: Tactic[MediaType.Error] )
   =>  ((response is Postable)^{tactic, caps.any}) =

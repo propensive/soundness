@@ -51,3 +51,5 @@ extension [media](value: media)
 package construables:
   given plainTextConstruable: ("text/plain" is Construable to Text) = Construable()
   given octetStreamConstruable: ("application/octet-stream" is Construable to Data) = Construable()
+  given multipartConstruable: ("multipart/form-data" is Construable to Multipart) = Construable()
+  given multipartMixedConstruable: ("multipart/mixed" is Construable to Multipart) = Construable()

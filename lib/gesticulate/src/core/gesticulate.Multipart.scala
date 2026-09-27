@@ -67,6 +67,9 @@ object Multipart:
       cursor.seek('\r'.toByte.asInstanceOf[cursor.addressable.Operand])
       cursor.grab(start, cursor.mark)
 
+    // The boundary as it appears in a `content-type` parameter: without the leading `--`
+    val boundaryText: Text = Text.ascii(boundary).skip(2)
+
     cursor.next()
     cursor.expect('\n')(expected('\n'))
 
@@ -195,7 +198,7 @@ object Multipart:
         raise(expected('-'))
         Chain()
 
-    Multipart(parts())
+    Multipart(parts(), boundaryText)
 
   // MultipartError → Multipart.Error
   object Error:
@@ -218,5 +221,36 @@ object Multipart:
   case class Error(reason: Multipart.Error.Reason)(using Diagnostics)
   extends fulminate.Error(937, reason.number)(m"multipart data could not be read because $reason")
 
-case class Multipart(parts: Chain[Part]):
+  // A boundary for a new body: random, and of characters no part is likely to contain
+  def boundary(): Text = t"soundness-${java.util.UUID.randomUUID.nn.toString.nn}"
+
+  // The body of a multipart, written out: each part between boundary lines, with its
+  // `Content-Disposition` (rebuilt from the part's disposition, name and filename) and other
+  // headers, and the closing boundary (RFC 2046 §5.1.1)
+  given streamable: Multipart is Streamable by Data over Credit = multipart =>
+    def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
+
+    def disposition(part: Part): Text =
+      val kind = part.disposition.or(Multipart.Disposition.FormData) match
+        case Multipart.Disposition.Inline     => t"inline"
+        case Multipart.Disposition.Attachment => t"attachment"
+        case Multipart.Disposition.FormData   => t"form-data"
+
+      val name = part.name.lay(t""): name => t"""; name="$name""""
+      val filename = part.filename.lay(t""): filename => t"""; filename="$filename""""
+      t"Content-Disposition: $kind$name$filename\r\n"
+
+    def headers(part: Part): Text =
+      part.headers.to[List].filter(_(0).lower != t"content-disposition").map: (key, value) =>
+        t"$key: $value\r\n"
+      . join
+
+    def encoded(part: Part): Chain[Data] =
+      val opening = ascii(t"--${multipart.boundary}\r\n${disposition(part)}${headers(part)}\r\n")
+      Chain.concat(Chain.concat(Chain(opening), part.body), Chain(ascii(t"\r\n")))
+
+    val closing = Chain(ascii(t"--${multipart.boundary}--\r\n"))
+    zephyrine.Stream(Chain.concat(multipart.parts.bind(encoded(_)), closing))
+
+case class Multipart(parts: Chain[Part], boundary: Text = Multipart.boundary()):
   def at(name: Text): Optional[Part] = parts.seek(_.name == name).or(Unset)

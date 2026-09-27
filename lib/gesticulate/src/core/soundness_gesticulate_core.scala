@@ -38,4 +38,5 @@ export
       Part }
 
 package construables:
-  export gesticulate.construables.{plainTextConstruable, octetStreamConstruable}
+  export gesticulate.construables.{plainTextConstruable, octetStreamConstruable,
+      multipartConstruable, multipartMixedConstruable}
