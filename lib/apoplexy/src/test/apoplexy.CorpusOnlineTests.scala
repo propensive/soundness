@@ -34,12 +34,10 @@ package apoplexy
 
 import soundness.*
 
-import charDecoders.utf8Decoder
 import errorDiagnostics.emptyDiagnostics
 import internetAccess.online
 import logging.silentLogging
 import strategies.throwUnsafely
-import textSanitizers.skipSanitizer
 
 // The descriptions too large to check in, fetched at a pinned commit. Attestation runs offline,
 // so the suite runs only when `SOUNDNESS_CI_ONLINE=1`.

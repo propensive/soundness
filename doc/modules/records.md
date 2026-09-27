@@ -9,8 +9,9 @@ compiles, so `record.name` typechecks as `Text` and `record.nope` does not compi
 Scala class mirroring the schema by hand.
 
 This is the machinery beneath the [JSON](json.md), [XML](xml.md) and [TEL](tel.md) *providers*,
-where a JSON Schema, an XML Schema or a TEL schema document produces typed records, and it is open to any source of schemas a
-program can read at compiletime.
+where a JSON Schema, an XML Schema or a TEL schema document produces typed records, and beneath
+the [OpenAPI](openapi.md) client's `record()`, where an operation's response schema does. It is
+open to any source of schemas a program can read at compiletime.
 
 ### On external schemas
 

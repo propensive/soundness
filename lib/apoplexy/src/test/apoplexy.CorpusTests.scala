@@ -35,11 +35,8 @@ package apoplexy
 import soundness.*
 import apoplexy.OpenApi.*
 
-import charDecoders.utf8Decoder
-import classloaders.threadContextClassloader
 import errorDiagnostics.emptyDiagnostics
 import strategies.throwUnsafely
-import textSanitizers.skipSanitizer
 
 // The offline corpus: every real-world document in `res/test/openapi` loads, with the shape its
 // upstream has, and the JSON and YAML forms of a document decode to the same model.
