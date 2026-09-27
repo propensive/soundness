@@ -148,7 +148,7 @@ object Tests extends Suite(m"Sibylline tests"):
 
     suite(m"Streaming tests"):
       def script(chunks: Text*): List[Event] =
-        val head = scala.Seq(Event.Started(t"msg_1", t"scripted-1"), Event.Opened(0, Content.Textual(t"")))
+        val head = scala.Seq(Event.Started(Llm.Id(t"msg_1"), t"scripted-1"), Event.Opened(0, Content.Textual(t"")))
         val tail = scala.Seq(Event.Closed(0), Event.Update(Stop.Ended, Usage(2, 9)), Event.Finished)
         ((head ++ chunks.map { chunk => Event.Delta(0, Increment.Textual(chunk)) } ++ tail).toList).to(List)
 
@@ -198,7 +198,7 @@ object Tests extends Suite(m"Sibylline tests"):
         val dialect = Scripted(scripts = List(script(t"fjord")))
         val handle = session(dialect)
         val reply = handle.stream(t"go").reply()
-        (reply.id, reply.model)
+        (reply.id.let(_.text), reply.model)
       . assert(_ == (t"msg_1", t"scripted-1"))
 
       test(m"streamed tool arguments parse when the block closes"):
