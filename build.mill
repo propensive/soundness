@@ -2247,6 +2247,16 @@ object gesticulate extends Library:
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
+  // The rivals: Jetty's push-style `MultiPart.Parser` (the version `scintillate.bench` pins) and
+  // commons-fileupload's pull-style `MultipartInput`.
+  object bench extends Benchmarks(core, quantitative.units):
+    def mvnDeps = Seq(
+      mvn"org.eclipse.jetty:jetty-http:12.1.13",
+      mvn"org.apache.commons:commons-fileupload2-core:2.0.0-M5" )
+    // The rivals' Java APIs don't build against explicit nulls and no-flexible-types; drop just
+    // those two for the benchmark sources, mirroring `turbulence.bench`.
+    override def scalacOptions = Task:
+      super.scalacOptions().filterNot(Set("-Yexplicit-nulls", "-Yno-flexible-types"))
 
 object gigantism extends Library:
   object core extends Component():
