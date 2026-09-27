@@ -1,0 +1,20 @@
+<sh:shiporder xmlns:sh="urn:example:shipping" orderid="889923" priority="high">
+  <sh:orderperson>John Smith</sh:orderperson>
+  <sh:shipto>
+    <sh:name>Ola Nordmann</sh:name>
+    <sh:address>Langgt 23</sh:address>
+    <sh:city>4000 Stavanger</sh:city>
+    <sh:country>Norway</sh:country>
+  </sh:shipto>
+  <sh:item>
+    <sh:title>Empire Burlesque</sh:title>
+    <sh:note>Special Edition</sh:note>
+    <sh:quantity>1</sh:quantity>
+    <sh:price>10.90</sh:price>
+  </sh:item>
+  <sh:item>
+    <sh:title>Hide your heart</sh:title>
+    <sh:quantity>1</sh:quantity>
+    <sh:price>9.90</sh:price>
+  </sh:item>
+</sh:shiporder>
