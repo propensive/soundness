@@ -949,7 +949,8 @@ object soundness extends Toolchain:
     enigmatic.x509,
     bitumen.core, bitumen.jvm, breviloquence.core, distillate.core,
     embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256, caesura.http,
-    breviloquence.http, locomotion.http):
+    breviloquence.http, locomotion.http, zeppelin.http, bitumen.http, facsimile.http,
+    enigmatic.http):
     def summary = "Data formats, serialization, cryptography and persistence"
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
@@ -959,7 +960,8 @@ object soundness extends Toolchain:
 
   object test extends Bundle(capricious.core, sedentary.core, tarantula.core,
     tarantula.image,
-    superlunary.core, yossarian.core, probably.core, probably.cli, probably.events, superlunary.jvm, mandible.core):
+    superlunary.core, yossarian.core, probably.core, probably.cli, probably.events, superlunary.jvm, mandible.core,
+    mandible.http):
     def summary = "Testing: suites, assertions, generators and browser automation"
 
   object tool extends Bundle(anthology.core, degustation.core,
@@ -983,7 +985,7 @@ object soundness extends Toolchain:
     legerdemain.core, legerdemain.query, telekinesis.forms, jacinta.optics, caduceus.core,
     caduceus.resend,
     orthodoxy.core, orthodoxy.server,
-    jacinta.http, xylophone.http, ypsiloid.http,
+    jacinta.http, xylophone.http, ypsiloid.http, phoenicia.http,
     stratiform.http, stratiform.optics, obligatory.core, obligatory.json, sibylline.core,
     synesthesia.content,
     synesthesia.core, apoplexy.core,
@@ -1417,7 +1419,8 @@ object apoplexy extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  object test extends Tests(core, eucalyptus.core, hallucination.png):
+  object test extends Tests(core, eucalyptus.core, hallucination.png, zeppelin.http, bitumen.http,
+      facsimile.http, enigmatic.http):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -1469,6 +1472,10 @@ object bitumen extends Library:
   // extracting one to disk — which read and write an actual filesystem through galilei's JVM backend.
   object jvm extends Component(core, galilei.jvm):
     override def scalaJs = false
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The media types `Tarfile` and `Arfile` construe
+  object http extends Component(core, gesticulate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, jvm, galilei.jvm, guillotine.core, eucalyptus.core):
@@ -1900,6 +1907,10 @@ object enigmatic extends Library:
     zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The media types `Der` and `Pem` construe
+  object http extends Component(asn1, gesticulate.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The platform split mirrors gastronomy's: the cipher/key/PEM model is platform-neutral, while
   // the `JavaBaseCrypto` provider and PKCS#12 keystores compile against `javax.crypto`/
   // `java.security` on the JVM (`core-jvm`) and against panicking stubs on native (`core-native`,
@@ -2126,6 +2137,11 @@ object facsimile extends Library:
   object file extends Component(core, galilei.core, galilei.jvm, ambience.core,
       eucalyptus.core):
     override def scalaJs = false // memory-mapped random-access reads (galilei.jvm `Ram`)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The media type `PdfFile` construes
+  object http extends Component(file, gesticulate.core):
+    override def scalaJs = false
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, file):
@@ -2612,6 +2628,12 @@ object mandible extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
+  // The media type `Classfile` construes
+  object http extends Component(core, gesticulate.core):
+    override def scalaJs = false
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+
   object lira extends Component(core, reliquary.core, reliquary.derive):
     override def scalaJs = false // adapts the discipline to reliquary's JVM-only SPI
     override def scalacOptions = Task:
@@ -2796,6 +2818,10 @@ object perihelion extends Library:
 
 object phoenicia extends Library:
   object core extends Component(quantitative.units, polaris.core, turbulence.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The media types `Sfnt` construes
+  object http extends Component(core, gesticulate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // hellenism supplies `cp"…"` for the compile-time coverage tests over the fonts in `res/test`.
@@ -3689,6 +3715,11 @@ object zeppelin extends Library:
     override def scalaJs = false // zip archives (`java.util.zip`, `galilei`)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+  // The media types `Zipfile` construes
+  object http extends Component(core, gesticulate.core):
+    override def scalaJs = false
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, imperial.core, diuretic.core, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())

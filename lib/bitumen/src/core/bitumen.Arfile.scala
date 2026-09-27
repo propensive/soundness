@@ -48,6 +48,11 @@ import zephyrine.*
 object Arfile:
   given streamable: Arfile is Streamable by Data over Credit = arfile => Stream(arfile.blocks)
 
+  // As `Tarfile.aggregable`: a detached archive read whole from bytes, sealed per the
+  // codec-thunk pattern.
+  given aggregable: (tactic: Tactic[Ar.Error]) => Arfile is Aggregable by Data =
+    caps.unsafe.unsafeAssumePure(Aggregable.bytesData.map(data => Arfile.from(Stream(data))))
+
   // The endpoint form, as `Tarfile.read`: entries parse lazily straight off a pull endpoint,
   // absorbing arbitrary chunk boundaries, and are single-owner — consume them in order, on one
   // thread. An explicit `Tactic` rather than `raises` sugar: a fresh capability in a

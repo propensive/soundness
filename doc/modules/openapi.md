@@ -165,8 +165,13 @@ val label: Text = api.items(7).label.get.call()
 A `Construable` is provided for JSON, XML (`application/xml` and `text/xml`), YAML, HTML, CSS,
 SVG, MathML, Markdown, TEL, CSV, CBOR, Protobuf, plain text, octet streams, form-encoded
 queries, multipart bodies (`multipart/form-data` and `multipart/mixed`, as a `Multipart`), the
-raster image formats and the audio formats (WAV, AIFF, AIFC and AU, as an `Audio in Wave` and
-so on). A text carrier is decoded with the charset the response's `content-type` names, else
+raster image formats, the audio formats (WAV, AIFF, AIFC and AU, as an `Audio in Wave` and
+so on), PDF (as a `PdfFile`, to be opened as a `Pdf`), ZIP and JAR archives (as a `Zipfile`),
+TAR, `ar` and Debian-package archives (`Tarfile` and `Arfile`), SFNT fonts (`font/ttf`,
+`font/otf` and `font/sfnt`, as an `Sfnt`), DER documents (`application/pkix-cert`,
+`application/x-x509-ca-cert` and `application/pkcs8`, as a `Der`, from which a `Certificate`
+decodes), PEM files (a `Pem`, or a `Chain[Pem]` for `application/pem-certificate-chain`) and JVM
+class files (a `Classfile`). Each lives in its library's `http` module. A text carrier is decoded with the charset the response's `content-type` names, else
 the `CharDecoder` in scope. A structured-syntax suffix falls back to the type it names, so `application/problem+json`
 is construed by the JSON mapping. Where an operation offers several media types, the first with a
 mapping in scope is chosen, `application/json` first.

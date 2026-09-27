@@ -61,6 +61,10 @@ object Sfnt:
   def apply[source: Streamable by Data over Credit](source: source): Sfnt =
     Sfnt(source.read[Data])
 
+  // A font received as bytes — a `font/ttf` or `font/otf` body, say — wraps totally, as
+  // `Sfnt(data)` does; its tables are parsed on demand thereafter.
+  given aggregable: Sfnt is Aggregable by Data = Aggregable.bytesData.map(data => Sfnt(data))
+
   enum PlatformId:
     case Unicode, Macintosh, Windows, Custom
 

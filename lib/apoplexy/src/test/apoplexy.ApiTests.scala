@@ -38,6 +38,7 @@ import strategies.throwUnsafely
 import logging.silentLogging
 import construables.{jsonConstruable, xmlConstruable, plainTextConstruable, pngConstruable, formConstruable}
 import construables.{multipartConstruable, multipartMixedConstruable}
+import construables.{zipConstruable, tarConstruable, pdfConstruable, pemConstruable}
 import postables.{jsonPostable, xmlPostable}
 import classloaders.threadContextClassloader
 import internetAccess.online
@@ -81,6 +82,29 @@ class Recorder(canned: () => Http.Response) extends Http.Backend:
     canned()
 
 object ApiTests extends Suite(m"Api client tests"):
+  // A complete classic-xref PDF from pre-rendered object bodies, numbered from 1 with correct
+  // byte offsets; object 1 is the catalog. After facsimile's own test helper, assembled as text
+  // since every byte of such a document is ASCII.
+  def pdfDocument(bodies: Text*): Data =
+    def pad10(value: Int): Text =
+      val digits = value.toString
+      ("0".repeat(10 - digits.length).nn + digits).tt
+
+    var out: Text = t"%PDF-1.7\n"
+    val offsets = scala.collection.immutable.List.newBuilder[Int]
+
+    bodies.zipWithIndex.each: (body, index) =>
+      offsets += out.length
+      out = t"$out${index + 1} 0 obj\n$body\nendobj\n"
+
+    val xrefOffset = out.length
+    out = t"${out}xref\n0 ${bodies.length + 1}\n0000000000 65535 f \n"
+
+    offsets.result().each: offset =>
+      out = t"$out${pad10(offset)} 00000 n \n"
+
+    t"${out}trailer\n<< /Size ${bodies.length + 1} /Root 1 0 R >>\nstartxref\n$xrefOffset\n%%EOF".in[Data]
+
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
 
@@ -421,6 +445,44 @@ object ApiTests extends Suite(m"Api client tests"):
         val received: Multipart = refs.items(7).bundle.get.call()
         received.at(t"b").let(_.source[Data].memoize.utf8)
       . assert(_ == t"2")
+
+      test(m"an application/zip response is construed as a Zipfile"):
+        val entry = Zip.Entry(t"a.txt".as[Path on Zip], t"hello".in[Data])
+        val bytes: Data = Zipfile(List(entry), Unset, Unset).source[Data].memoize
+        given Http.Backend = Recorder(() => Http.Response(Http.Ok, contentType = media"application/zip")(bytes))
+        val archive: Zipfile = refs.items(7).archive.get.call()
+        archive.entries.map(_.ref.encode)
+      . assert(_ == List(t"a.txt"))
+
+      test(m"an application/x-tar response is construed as a Tarfile"):
+        val file = Tar.Entry.File(path = t"hello.txt".as[Relative on Tar], mode = UnixMode(),
+            user = UnixUser(0), group = UnixGroup(0), mtime = 0.bits.u32,
+            data = Archive.Body(t"hello".in[Data]))
+
+        val bytes: Data = Tarfile(List(file), LongNameFormat.Pax).source[Data].memoize
+        val tar = t"application/x-tar".as[MediaType]
+        given Http.Backend = Recorder(() => Http.Response(Http.Ok, contentType = tar)(bytes))
+        val backup: Tarfile = refs.items(7).backup.get.call()
+
+        backup.entries.map:
+          case file: Tar.Entry.File => file.path.show
+          case _                    => t"?"
+      . assert(_ == List(t"hello.txt"))
+
+      test(m"an application/pdf response is construed as a PdfFile"):
+        val bytes: Data = pdfDocument(t"<< /Type /Catalog >>")
+        given Http.Backend = Recorder(() => Http.Response(Http.Ok, contentType = media"application/pdf")(bytes))
+        val manual: PdfFile = refs.items(7).manual.get.call()
+        manual.open[Pdf]()(pdf.version.major)
+      . assert(_ == 1)
+
+      test(m"an application/x-pem-file response is construed as a Pem"):
+        val armored = t"-----BEGIN CERTIFICATE-----\nAAEC\n-----END CERTIFICATE-----\n"
+        val pemFile = t"application/x-pem-file".as[MediaType]
+        given Http.Backend = Recorder(() => Http.Response(Http.Ok, contentType = pemFile)(armored))
+        val certificate: Pem = refs.items(7).certificate.get.call()
+        (certificate.label, certificate.data.length)
+      . assert(_ == (Pem.Label.Certificate, 3))
 
       test(m"a response nothing construes is the raw Http.Response"):
         given Http.Backend = Recorder(() => Http.Response(Http.Ok)(t"a: 1"))

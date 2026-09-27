@@ -63,6 +63,13 @@ object Tarfile:
   given streamable: Tarfile is Streamable by Data over Credit = tarfile =>
     Stream(tarfile.blocks)
 
+  // An archive read whole from bytes — a body whose media type names a TAR file, say — is a
+  // detached `Tarfile`, unlike the scoped `Tar.Handle` that `data.open[Tar]()` provides.
+  // Sealed per the codec-thunk pattern (see rep/DECISIONS.md): the resolution-scoped tactic
+  // shares the instance's given-resolution lifetime.
+  given aggregable: (tactic: Tactic[Tar.Error]) => Tarfile is Aggregable by Data =
+    caps.unsafe.unsafeAssumePure(Aggregable.bytesData.map(data => Tarfile.from(Stream(data))))
+
   // The endpoint form: entries parse lazily straight off a pull endpoint (one
   // consumed entry advances the cursor past it), absorbing arbitrary chunk
   // boundaries — the archive need never be materialized. The resulting

@@ -181,6 +181,8 @@ format. Entries are grouped by module, most-recently-added last within a module.
   the parameters of the carrier's `Postable` media type (a charset, a boundary) onto the spec's
   media type where the spec names none, so an XML body is sent as `application/xml;
   charset=UTF-8` (previously `application/xml`). (#2091)
+- Module `apoplexy.test` (tests only) now also depends on `zeppelin.http`, `bitumen.http`,
+  `facsimile.http` and `enigmatic.http`. (#2091)
 
 ## caduceus
 
@@ -239,6 +241,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `bitumen.TarDataOpenable` renamed to `bitumen.Tar.DataOpenable`; the top-level name and its
   `soundness` export are removed. The `Tar.dataOpenable` given now yields
   `Tar.DataOpenable^{tarTactic, streamTactic}`. Signatures and behaviour unchanged. (#2080)
+- New module `bitumen.http` (depends on `bitumen.core` and `gesticulate.core`) with the
+  `construables` givens `tarConstruable: ("application/x-tar" is Construable to Tarfile)`,
+  `arConstruable: ("application/x-archive" is Construable to Arfile)` and `debConstruable:
+  ("application/vnd.debian.binary-package" is Construable to Arfile)`. New givens
+  `bitumen.Tarfile.aggregable: Tactic[Tar.Error] => Tarfile is Aggregable by Data` and
+  `bitumen.Arfile.aggregable: Tactic[Ar.Error] => Arfile is Aggregable by Data`, reading a
+  whole archive from bytes as a detached `Tarfile`/`Arfile` (`bytes.read[Tarfile]`), where
+  previously only the scoped `data.open[Tar]()`/`open[Ar]()` handles read one. (#2091)
 
 ## coaxial
 
@@ -328,6 +338,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   signature: Data, publicKey: Data): Boolean`) moved to `gastronomy.Signing` (module
   `gastronomy.core`), and its `soundness` export moved with it (still `soundness.Signing`).
   `Rsa`, `Dsa`, `Ecdsa`, `MlDsa` and `HmacCipher` still extend it. (#2082)
+- New module `enigmatic.http` (depends on `enigmatic.asn1` and `gesticulate.core`) with the
+  `construables` givens `pkixCertConstruable` (`application/pkix-cert`), `x509CaCertConstruable`
+  (`application/x-x509-ca-cert`) and `pkcs8Construable` (`application/pkcs8`), each `Construable
+  to Der`, `pemConstruable: ("application/x-pem-file" is Construable to Pem)` and
+  `pemChainConstruable: ("application/pem-certificate-chain" is Construable to Chain[Pem])`.
+  New givens `enigmatic.Pem.dataAggregable: (Diagnostics, Tactic[Pem.Error]) => Pem is
+  Aggregable by Data` and `Pem.dataAggregableAll` (for `Chain[Pem]`), decoding the bytes as
+  UTF-8 (PEM is ASCII) before the existing `Aggregable by Text` parsers. (#2091)
 
 ## escapade
 
@@ -489,6 +507,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   completions executive gained `shutdown`, which calls it. (#2064)
 - `exoskeleton.core` depends on `galilei.core` instead of `galilei.jvm`; a consumer that reached
   `galilei.jvm` or `guillotine.core` only through exoskeleton must declare it. (#2082)
+
+## facsimile
+
+- New module `facsimile.http` (depends on `facsimile.file` and `gesticulate.core`) with the
+  `construables` given `pdfConstruable: ("application/pdf" is Construable to PdfFile)`. New
+  given `facsimile.PdfFile.aggregable: PdfFile is Aggregable by Data`, wrapping bytes as an
+  in-memory `PdfFile` (`bytes.read[PdfFile]`), to be opened with `open[Pdf]()`. (#2091)
 
 ## galilei
 
@@ -761,6 +786,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   document, following at most `limit` references deep (a reference beyond reads as raw `Json`)
   and memoising each reference followed. (#2091)
 
+## mandible
+
+- New module `mandible.http` (depends on `mandible.core` and `gesticulate.core`) with the
+  `construables` given `classfileConstruable: ("application/java-vm" is Construable to
+  Classfile)`. (#2091)
+
 ## octogenarian
 
 - `octogenarian.core` depends on `enigmatic.asn1` instead of `enigmatic.core`; a consumer that
@@ -820,6 +851,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `orthodoxy.Pkce(verifier: Text)` with `challenge` (S256) and `Pkce()`; new typeclass
   `orthodoxy.Credential` (`type Self <: Label; type Result; def value: Result`, constructor
   `Credential[name, result](value)`). (#2091)
+
+## phoenicia
+
+- New module `phoenicia.http` (depends on `phoenicia.core` and `gesticulate.core`) with the
+  `construables` givens `ttfConstruable` (`font/ttf`), `otfConstruable` (`font/otf`) and
+  `sfntConstruable` (`font/sfnt`), each `Construable to Sfnt`. New given
+  `phoenicia.Sfnt.aggregable: Sfnt is Aggregable by Data`, wrapping bytes as `Sfnt(data)` does
+  (`bytes.read[Sfnt]`). (#2091)
 
 ## pneumatic
 
@@ -1237,3 +1276,8 @@ format. Entries are grouped by module, most-recently-added last within a module.
   reset the fields (with `Zip.Entry#withHeaders`, to `Unset` and `localSizes = true`) before
   writing. `Zipfile.read` also now reads every entry's local header eagerly, where it
   previously deferred that read to the entry's content. (#2045)
+- New module `zeppelin.http` (depends on `zeppelin.core` and `gesticulate.core`) with the
+  `construables` givens `zipConstruable: ("application/zip" is Construable to Zipfile)` and
+  `jarConstruable: ("application/java-archive" is Construable to Zipfile)`. New given
+  `zeppelin.Zipfile.aggregable: Tactic[Zip.Error] => Zipfile is Aggregable by Data`, reading a
+  whole archive from bytes as a detached `Zipfile` (`bytes.read[Zipfile]`). (#2091)

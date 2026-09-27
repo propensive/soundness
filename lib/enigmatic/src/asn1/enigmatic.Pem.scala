@@ -200,6 +200,16 @@ object Pem:
           // See `aggregable` above.
           parseAll(Cursor(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
 
+  // The armored form is ASCII by definition, so bytes decode as UTF-8 without a `CharDecoder`
+  // in scope; these read a PEM body received as bytes, as an `application/x-pem-file` response
+  // is. Sealed like the text forms above.
+  given dataAggregable: (Diagnostics, Tactic[Pem.Error]) => Pem is Aggregable by Data =
+    caps.unsafe.unsafeAssumePure(Aggregable.bytesData.map(bytes => parse(bytes.utf8)))
+
+  given dataAggregableAll: (Diagnostics, Tactic[Pem.Error]) => Chain[Pem] is Aggregable by Data =
+    caps.unsafe.unsafeAssumePure:
+      Aggregable.bytesData.map(bytes => parseAll(Cursor(Chain(bytes.utf8))))
+
   // The armored form is multi-line and base64-encoded, so it is not what an inspection shows:
   // the label identifies the block, and the payload is rendered as full-width hexadecimal, on
   // one line and with nothing dropped.

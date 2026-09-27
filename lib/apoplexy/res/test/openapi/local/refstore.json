@@ -137,6 +137,66 @@
         }
       }
     },
+    "/items/{itemId}/archive": {
+      "parameters": [
+        { "name": "itemId", "in": "path", "required": true,
+          "schema": { "type": "integer", "format": "int64" } }
+      ],
+      "get": {
+        "operationId": "getArchive",
+        "responses": {
+          "200": {
+            "description": "the item's files, zipped",
+            "content": { "application/zip": { "schema": { "type": "string", "format": "binary" } } }
+          }
+        }
+      }
+    },
+    "/items/{itemId}/backup": {
+      "parameters": [
+        { "name": "itemId", "in": "path", "required": true,
+          "schema": { "type": "integer", "format": "int64" } }
+      ],
+      "get": {
+        "operationId": "getBackup",
+        "responses": {
+          "200": {
+            "description": "the item's files, as a tarball",
+            "content": { "application/x-tar": { "schema": { "type": "string", "format": "binary" } } }
+          }
+        }
+      }
+    },
+    "/items/{itemId}/manual": {
+      "parameters": [
+        { "name": "itemId", "in": "path", "required": true,
+          "schema": { "type": "integer", "format": "int64" } }
+      ],
+      "get": {
+        "operationId": "getManual",
+        "responses": {
+          "200": {
+            "description": "the item's manual",
+            "content": { "application/pdf": { "schema": { "type": "string", "format": "binary" } } }
+          }
+        }
+      }
+    },
+    "/items/{itemId}/certificate": {
+      "parameters": [
+        { "name": "itemId", "in": "path", "required": true,
+          "schema": { "type": "integer", "format": "int64" } }
+      ],
+      "get": {
+        "operationId": "getCertificate",
+        "responses": {
+          "200": {
+            "description": "the item's certificate, PEM-armored",
+            "content": { "application/x-pem-file": { "schema": { "type": "string", "format": "binary" } } }
+          }
+        }
+      }
+    },
     "/lookup": {
       "post": {
         "operationId": "lookup",

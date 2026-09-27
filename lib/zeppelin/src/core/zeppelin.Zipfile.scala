@@ -63,6 +63,13 @@ object Zipfile:
 
   given streamable: Zipfile is Streamable by Data over Credit = zipfile => zipfile.serialize
 
+  // An archive read whole from bytes — a body whose media type names a ZIP file, say — is a
+  // detached `Zipfile`: its entries resolve against the buffered bytes and need no scope, unlike
+  // the channel-backed `Zip.Handle` that `path.open[Zip]()` provides. The tactic shares the
+  // instance's given-resolution lifetime, as every fallible `Aggregable` does.
+  given aggregable: (tactic: Tactic[Zip.Error]) => Zipfile is Aggregable by Data =
+    Aggregable.bytesData.map(data => Zipfile.parse(Zipfile.DataSource(data)))
+
   def write[path: Abstractable across Paths to Text]
     (path: path, prefix: Optional[Data] = Unset)(entries: List[Zip.Entry])
   :   Unit logs Zip.Event raises Zip.Error =

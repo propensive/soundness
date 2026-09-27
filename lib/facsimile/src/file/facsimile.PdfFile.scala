@@ -66,6 +66,10 @@ object PdfFile:
 
   def apply(data: Data): PdfFile = new PdfFile(Origin.InMemory(data))
 
+  // A document received as bytes — an `application/pdf` body, say — is an in-memory `PdfFile`,
+  // to be opened with `file.open[Pdf]()`; wrapping is total, and the bytes are parsed on opening.
+  given aggregable: PdfFile is Aggregable by Data = Aggregable.bytesData.map(data => PdfFile(data))
+
   private enum Origin:
     case OnDisk(filename: Text)
     case InMemory(data: Data)
