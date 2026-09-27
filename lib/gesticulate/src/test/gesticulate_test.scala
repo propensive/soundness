@@ -217,7 +217,7 @@ object Tests extends Suite(m"Gesticulate tests"):
 
       val large = binary(100000, 1)
 
-      for blockSize <- List(1, 7, 4096, 65536) do
+      for blockSize <- List(1, 7, 50, 4095, 4096, 65536) do
         test(m"100 KB binary body round-trips at block size $blockSize"):
           val part = Multipart.parse(bytesChunks(binaryWire(large), blockSize)).parts.stdlib.head
           same(part.read[Data], large)

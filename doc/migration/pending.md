@@ -534,9 +534,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   later, or iterated its blocks, must read through `part.body()` (a stream) while the part is
   current. `Part(disposition, headers, name, filename, body)` takes a `Spring[Data]` in the
   last position. (#PR)
-- `gesticulate.Multipart.parse` fills its cursor in blocks that grow from 4 KiB towards 64 KiB
-  once an input proves long (`zephyrine.Buffering#window`, new, default `capacity`), so a parse
-  of a large body holds a buffer of up to about 128 KiB where it previously held 8 KiB. (#PR)
+- A `zephyrine.Cursor` over a stream, or over a chain of `Data` chunks, now reads a region
+  its source lends in place whenever nothing of its own is live, rather than copying every
+  region into its buffer; while a hold spans a fill it copies as before. The buffer a parser
+  observes through `unsafeBuffer`/`unsafeDataBuffer` may therefore be a different array after
+  any refill, not just a grown one — which the existing "valid only until the next cursor
+  operation" contract already required callers to assume. (#PR)
 
 ## gossamer
 
