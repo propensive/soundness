@@ -49,7 +49,8 @@ trait Xml2 extends Xml3:
   // Mirrors `jacinta`'s `aggregableDirect` for `value in Json`. The `Form`
   // type-tag is added by an `asInstanceOf` cast — `value in Xml` is just
   // `value { type Form = Xml }` so the cast is a no-op at runtime.
-  given aggregableIn: [value: Decodable in Xml] => (schema: XmlSchema)
+  given aggregableIn: [value: Decodable in Xml]
+  =>  ( schema: XmlSchema, scope: Xml.Scope, namespacing: Xml.Namespacing )
   =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error] )
   =>  ( ((value in Xml) is Aggregable by Text)^{tactic, xmlTactic} ) =
 

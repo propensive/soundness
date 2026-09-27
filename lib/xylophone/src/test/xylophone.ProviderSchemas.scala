@@ -32,107 +32,25 @@
                                                                                                   */
 package xylophone
 
+import soundness.*
 
-import scala.language.dynamics
+import charDecoders.utf8Decoder
+import classloaders.threadContextClassloader
+import strategies.throwUnsafely
+import textSanitizers.skipSanitizer
 
-import scala.annotation.*
-import scala.collection.mutable as scm
+// XML Schemas, as published, under `res/test/xsd`, each bound to an `Xml.Provider` for the
+// provider tests: the W3C Schema Primer's purchase order, the Maven POM, GPX 1.1, NuGet's nuspec,
+// the SOAP 1.1 envelope, Spring's beans schema and OASIS XLIFF 2.0, and a shipping-order schema
+// written for the tests. Each provider lives in this file, compiled before the tests, so that the
+// `record` macro can evaluate it while the test call sites are being compiled; the resource is
+// read then, from the compilation classpath.
 
-import anticipation.*
-import contextual.*
-import denominative.*
-import panopticon.*
-import prepositional.*
-import rudiments.*
-import vacuous.{Unset, or}
-
-export xylophone.internal.{Attributes, Scope}
-
-export Xml.{attribute, xmlns, unqualified}
-
-extension (inline context: StringContext)
-  transparent inline def x: Interpolation = interpolation[Xml](context)
-  transparent inline def xp: Interpolation = interpolation[XPath](context)
-
-// Panopticon optics over an XML element's children. `lens` navigates to the first
-// child element with the given name — replacing it on update, or appending if
-// absent — so `xml.lens(_.book.title = …)` works. `ordinalOptical` and `eachOptical`
-// address the n-th, or every, child element of a node. All rebuild the element
-// immutably; non-element nodes (text, comments) are preserved in place.
-private def xmlNodes(xml: Xml): Array[Node]^{} = xml match
-  case Fragment(nodes*) => Array.from(nodes)
-  case node: Node       => Array(node)
-
-private def firstNode(xml: Xml, fallback: Node): Node =
-  val nodes = xmlNodes(xml)
-  nodes.prim.or(fallback)
-
-private def replaceNamedChild(xml: Xml, name: String, value: Xml)(using Xml.Scope): Xml =
-  xml match
-  case parent @ Element(label, attributes, children) =>
-    val replacement = xmlNodes(value)
-    val buffer = scm.ArrayBuffer[Node]()
-    var done = false
-
-    children.iterate: index =>
-      children.at(index) match
-        case element: Element if !done && parent.selects(element, name.tt) =>
-          buffer ++= replacement.readable.toSeq
-          done = true
-
-        case other =>
-          buffer += other
-
-    if !done then buffer ++= replacement.readable.toSeq
-    Element(label, attributes, Array.from(buffer))
-
-  case Fragment(node: Element) =>
-    Fragment(replaceNamedChild(node, name, value).asInstanceOf[Node])
-
-  case other =>
-    other
-
-private def updateChildElements(xml: Xml, select: Int => Boolean, lambda: Xml => Xml): Xml =
-  xml match
-    case Element(label, attributes, children) =>
-      var index = 0
-
-      val out = children.remap:
-        case element: Element =>
-          val here = index
-          index += 1
-          if select(here) then firstNode(lambda(element), element) else element
-
-        case other =>
-          other
-
-      Element(label, attributes, out)
-
-    case Fragment(node: Element) =>
-      Fragment(updateChildElements(node, select, lambda).asInstanceOf[Node])
-
-    case other =>
-      other
-
-package optics:
-  given xmlLens: [name <: Label: ValueOf]
-  =>  ( erased dynamicXmlEnabler: DynamicXmlEnabler, scope: Xml.Scope )
-  =>  name is Lens from Xml onto Xml =
-    Lens(_.applyDynamic(valueOf[name])(Prim), replaceNamedChild(_, valueOf[name], _))
-
-  given xmlOrdinalOptical: [element] => Ordinal is Optical from Xml onto Xml = ordinal =>
-    Optic: (origin, lambda) => updateChildElements(origin, _ == ordinal.n0, lambda)
-
-  given xmlEachOptical: Each.type is Optical from Xml onto Xml = _ =>
-    Optic: (origin, lambda) => updateChildElements(origin, _ => true, lambda)
-
-// Whether a parse treats a prefix with no binding as an error (the default) or as no namespace
-package namespaceOptions:
-  inline given strictNamespaces: Xml.Namespacing = Xml.Namespacing.Strict
-  inline given lenientNamespaces: Xml.Namespacing = Xml.Namespacing.Lenient
-
-package formatting:
-  given compactXmlFormatting: Xml.Formatting = Xml.Formatting(Unset, trailingNewline = false)
-
-  given indentedXmlFormatting: Xml.Formatting =
-    Xml.Formatting(Text("  "), trailingNewline = true)
+object PurchaseOrder extends Xml.Provider(cp"/xsd/po.xsd")
+object ShipOrder extends Xml.Provider(cp"/xsd/shiporder.xsd")
+object MavenProject extends Xml.Provider(cp"/xsd/maven-4.0.0.xsd")
+object Gpx extends Xml.Provider(cp"/xsd/gpx.xsd")
+object Nuspec extends Xml.Provider(cp"/xsd/nuspec.xsd")
+object SoapEnvelope extends Xml.Provider(cp"/xsd/soap-envelope.xsd", root = t"Envelope")
+object Xliff extends Xml.Provider(cp"/xsd/xliff-core-2.0.xsd", root = t"xliff")
+object SpringBeans extends Xml.Provider(cp"/xsd/spring-beans.xsd", root = t"beans")

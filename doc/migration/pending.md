@@ -914,6 +914,56 @@ format. Entries are grouped by module, most-recently-added last within a module.
 ## xylophone
 
 - `xylophone.core` now depends on `anticipation.focus` (additive: `XPath.focusable`). (#2082)
+- `xylophone.Element` is no longer a `case class`: it is `class Element(val label: Text, val
+  attributes: Attributes, val children: Array[Node]^{}, val scope: Xml.Scope = Xml.Scope.empty)`
+  with a companion `apply(label, attributes, children, scope = Xml.Scope.empty)` and `unapply`
+  yielding `(Text, Attributes, Array[Node]^{})`. Construction and three-field patterns are
+  unchanged; `copy`, `productArity`, `productIterator`, `productElement` and `Element.tupled`
+  are gone. `equals`/`hashCode` ignore `scope`. (#pending)
+- The XML parser now resolves namespace prefixes. An element or attribute name whose prefix
+  (other than `xml` and `xmlns`) has no `xmlns:prefix` declaration in scope now fails with
+  `Parse.Error` whose issue is the new `Xml.Issue.UnboundPrefix(prefix: Text)`, where it
+  previously parsed. Import `xylophone.namespaceOptions.lenientNamespaces` (also under
+  `soundness.namespaceOptions`) for the previous behaviour; `strictNamespaces` is the default.
+  Declarations remain attributes and serialization of a parsed document is unchanged. (#pending)
+- The parse givens `Xml.aggregable`, `Xml.aggregable2`, `Xml.instantiable`, `Xml.loadable`,
+  `Xml.aggregableParsed`, `Xml.readableParsed` and `Xml2.aggregableIn` take two further context
+  parameters, `(scope: Xml.Scope, namespacing: Xml.Namespacing)`, alongside `schema: XmlSchema`;
+  both have companion defaults (`Xml.Scope.xml`, `Xml.Namespacing.Strict`), so call sites need
+  no change unless they name these givens' types. `Xml.XmlParser.from*` likewise take
+  `(using XmlSchema, Xml.Scope, Xml.Namespacing)`. (#pending)
+- `Xml#selectDynamic(name)` and `Xml#applyDynamic(name)(ordinal)` gain a `scope: Xml.Scope`
+  context parameter beside the erased `DynamicXmlEnabler`, and a prefixed `name` whose prefix
+  is bound (in the scope, or at the parent element) now matches children by resolved namespace
+  and local name rather than by raw label; an unbound prefix still matches the raw label.
+  `optics.xmlLens` gains the same `scope: Xml.Scope` context parameter. (#pending)
+- `xylophone.XPath` gains a second parameter, `scope: Xml.Scope = Xml.Scope.xml`; a
+  `NodeTest.Name(prefix, local)` or `NodeTest.PrefixWildcard(prefix)` whose prefix the scope
+  binds matches by resolved name, and `namespace-uri()` returns the resolved URI instead of
+  the empty string. The `xp""` interpolator binds the prefixes its path uses through `Namespace`
+  givens in scope. `XPathEngine.evaluate` takes a fourth `scope: Xml.Scope = Xml.Scope.xml`
+  parameter. (#pending)
+- `Xml.xmlDiscriminable.discriminate` now returns the element's local name rather than its
+  label, so a prefixed element such as `<s:Book>` selects the `Book` variant. (#pending)
+- The `x""` interpolator now fails to compile when a literal uses a prefix that neither an
+  ancestor within the literal declares nor a `Namespace` given in scope binds (unless
+  `namespaceOptions.lenientNamespaces` is in scope), and gives each lifted `Element` the scope
+  those bindings and declarations imply. (#pending)
+- Serialization (`Xml#show`, `Xml.writeXml`) now writes an `xmlns`/`xmlns:prefix` declaration
+  for an element whose `scope` binds a prefix it or its attributes use, or its default
+  namespace, differently from what the output has declared above it and which its own
+  attributes do not declare. Parsed documents, and elements built with the default empty scope,
+  are written as before. (#pending)
+- Derived `Encodable in Xml`/`Decodable in Xml` honour the new `Xml.xmlns(uri: Text,
+  qualified: Boolean = true)` and `Xml.unqualified()` annotations and the new `Xml.Namespaced`
+  typeclass (`given T is Xml.Namespaced = Xml.Namespaced(uri, qualified = true)`); a derived
+  decoder for an unannotated type now also matches a child element by local name when no child
+  has the raw label. (#pending)
+- `adversaria`: annotations written with a named argument (`@xmlns("u", qualified = false)`)
+  are now reported by `Annotated`; they were previously dropped silently. (#pending)
+- `xylophone.core` now depends on `polyvinyl.core`, `anticipation.time` and `anticipation.url`
+  (additive: `Xsd` and `Xml.Provider`); `xylophone.Xml3` now extends the new `xylophone.Xml4`,
+  which holds `Xml.Provider`. (#pending)
 
 ## ypsiloid
 

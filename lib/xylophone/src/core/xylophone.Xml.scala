@@ -92,6 +92,46 @@ object Xml extends Tag.Container
   type Topic = "xml"
   type Transport = "head" | "body"
 
+  // The namespace bindings in scope at an element; `internal.Scope`, reached here because the
+  // umbrella already exports a `Scope` of its own.
+  export xylophone.internal.Scope
+
+  // Whether a prefix with no binding in scope is a parse error, as the Namespaces
+  // recommendation requires, or resolves to no namespace: strict unless
+  // `namespaceOptions.lenientNamespaces` is in scope.
+  object Namespacing:
+    given default: Namespacing = Strict
+
+  enum Namespacing:
+    case Strict, Lenient
+
+  // The bindings an element's scope makes for the prefixes it and its attributes use (and for
+  // its default namespace) which differ from what `declared` binds — as attribute pairs, the
+  // default namespace keyed by the empty prefix. An element declaring nothing of its own has
+  // an empty scope, and needs nothing.
+  private[xylophone] def undeclared(element: Element, declared: Scope): Attributes =
+    val scope = element.scope
+
+    if scope.isEmpty then Attributes.empty else
+      val buffer = scm.ArrayBuffer[(Text, Text)]()
+
+      def consider(prefix: Optional[Text]): Unit =
+        if scope.binds(prefix) then
+          val uri = scope.resolve(prefix)
+          val key = prefix.or(t"")
+
+          if uri != declared.resolve(prefix) && !buffer.exists(_(0) == key)
+          then buffer += ((key, uri.or(t"")))
+
+      val (prefix, _) = Xml.Name.split(element.label)
+      consider(prefix)
+
+      element.attributes.eachPair: (key, _) =>
+        val (attributePrefix, _) = Xml.Name.split(key)
+        if attributePrefix.present && attributePrefix != t"xmlns" then consider(attributePrefix)
+
+      Attributes(buffer.toSeq*)
+
   sealed trait Integral
   sealed trait Decimal
   sealed trait Id
@@ -104,10 +144,11 @@ object Xml extends Tag.Container
     type Form = Xml
     type Self = value
 
+    // The local name: a prefix is lexical, so `<s:Book>` is the `Book` variant
     def discriminate(xml: Xml): Optional[Text] = xml match
-      case Element(label, _, _)           => label
-      case Fragment(Element(label, _, _)) => label
-      case _                              => Unset
+      case element: Element           => element.localName
+      case Fragment(element: Element) => element.localName
+      case _                          => Unset
 
     def rewrite(kind: Text, xml: Xml): Xml = xml match
       case Element(_, attrs, children)           => Element(kind, attrs, children)
@@ -474,20 +515,48 @@ object Xml extends Tag.Container
       // rather than its child elements, mirroring the encoder.
       val attributeFields: Map[Text, Set[attribute]] = fieldAnnotations[derivation, attribute]
 
+      val unqualifiedFields: Map[Text, Set[unqualified]] =
+        fieldAnnotations[derivation, unqualified]
+
+      // A namespaced type's fields are matched by resolved name, so a document may use any
+      // prefix for the namespace; an unqualified field, or a type with no namespace, matches
+      // the raw label.
+      val namespace: Optional[Text] = namespaceOf[derivation].let: (uri, qualified) =>
+        if qualified then uri else Unset
+
+      def qualifiedField(fieldLabel: Text): Boolean =
+        namespace.present && !unqualifiedFields.defines(fieldLabel)
+
+      // A type with no namespace of its own has no opinion about prefixes, so a field matches
+      // a child by raw label or, failing that, by local name
+      def matches(child: Element, fieldLabel: Text, wireName: Text): Boolean =
+        if qualifiedField(fieldLabel) then child.qualified == Xml.Name(namespace, wireName)
+        else child.label == wireName || child.localName == wireName
+
       // `@name[Xml]` / bare `@name` renames: field name -> element/attribute
       // name on the wire. Read back the same way they are written.
       val renames: Map[Text, Text] = relabelling[derivation, Xml]
 
+      // The first child by raw label, and — for a namespaced type — by local name among the
+      // children in the namespace
       val children: scm.HashMap[String, Element] = scm.HashMap.empty
+      val localChildren: scm.HashMap[String, Element] = scm.HashMap.empty
+      val namespacedChildren: scm.HashMap[String, Element] = scm.HashMap.empty
       var i = 0
 
       while i < element.children.length do
         element.children.readUnchecked(i) match
           case child: Element =>
             val childLabel = child.label.s
+            val local = child.localName.s
 
             if !children.contains(childLabel) then
               children.update(childLabel, child)
+
+            if !localChildren.contains(local) then localChildren.update(local, child)
+
+            if namespace.present && child.namespace == namespace then
+              if !namespacedChildren.contains(local) then namespacedChildren.update(local, child)
 
           case _ => ()
 
@@ -536,15 +605,22 @@ object Xml extends Tag.Container
 
                     while child < element.children.length do
                       element.children.readUnchecked(child) match
-                        case node: Element => if node.label == wireName then gathered += node
-                        case _             => ()
+                        case node: Element =>
+                          if matches(node, fieldLabel, wireName) then gathered += node
+
+                        case _ =>
+                          ()
 
                       child += 1
 
                     context.decoded(Fragment(gathered.toSeq*))
 
                   case _ =>
-                    children.get(wireName.s) match
+                    val found =
+                      if qualifiedField(fieldLabel) then namespacedChildren.get(wireName.s)
+                      else children.get(wireName.s).orElse(localChildren.get(wireName.s))
+
+                    found match
                       case Some(child) => context.decoded(child)
                       // Missing field: fall back to the case-class declared
                       // default (Wisteria's `default`); if absent, hand the
@@ -673,21 +749,38 @@ object Xml extends Tag.Container
 
     // Relabel an encoded field value to its field name and guarantee an
     // `Element` wrapper, so it decodes back from `<fieldName>…</fieldName>`.
-    private def wrap(fieldName: Text, encoded: Xml): Node = encoded match
-      case Element(_, attributes, children)           => Element(fieldName, attributes, children)
-      case Fragment(Element(_, attributes, children)) => Element(fieldName, attributes, children)
+    private def wrap(fieldName: Text, encoded: Xml, scope: Optional[Scope]): Node =
+      // The encoded element keeps the scope its own encoder gave it, unless the field is
+      // unqualified, whose element is in no namespace
+      def relabel(element: Element): Element =
+        Element(fieldName, element.attributes, element.children, scope.or(element.scope))
 
-      case Fragment(nodes*) =>
-        Element(fieldName, Attributes.empty, Array.unsafeFrozen(nodes.toArray))
+      encoded match
+        case element: Element           => relabel(element)
+        case Fragment(element: Element) => relabel(element)
 
-      case node: Node =>
-        Element(fieldName, Attributes.empty, Array(node))
+        case Fragment(nodes*) =>
+          val children = Array.unsafeFrozen(nodes.toArray)
+          Element(fieldName, Attributes.empty, children, scope.or(Scope.empty))
+
+        case node: Node =>
+          Element(fieldName, Attributes.empty, Array(node), scope.or(Scope.empty))
 
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Xml =
 
       value =>
         val attributeFields: Map[Text, Set[attribute]] = fieldAnnotations[derivation, attribute]
+
+        val unqualifiedFields: Map[Text, Set[unqualified]] =
+          fieldAnnotations[derivation, unqualified]
+
+        val namespaced: Optional[(Text, Boolean)] = namespaceOf[derivation]
+
+        // The element's scope binds its namespace as the default; a field's element in no
+        // namespace, under a namespaced type, undeclares it
+        val scope: Scope = namespaced.lay(Scope.empty): (uri, _) => Scope(t"" -> uri)
+        val undeclaring: Scope = Scope(t"" -> t"")
 
         // `@name[Xml]` / bare `@name` renames: field name -> element/attribute
         // name on the wire.
@@ -702,6 +795,9 @@ object Xml extends Tag.Container
             val wireName: Text = renames(fieldLabel).or(fieldLabel)
             val encoder: field is Encodable in Xml = wisteria.contextual
             val encoded: Xml = encoder.encoded(field)
+
+            val fieldScope: Optional[Scope] = namespaced.let: (_, qualified) =>
+              if !qualified || unqualifiedFields.defines(fieldLabel) then undeclaring else Unset
 
             // `@attribute` fields become attributes carrying the encoded leaf's
             // text; every other field becomes a child element via `wrap`.
@@ -721,18 +817,19 @@ object Xml extends Tag.Container
                   encoded match
                     case Fragment(nodes*) =>
                       nodes.each: node =>
-                        children += wrap(wireName, node)
+                        children += wrap(wireName, node, fieldScope)
 
                     case other =>
-                      children += wrap(wireName, other)
+                      children += wrap(wireName, other, fieldScope)
 
                 case _ =>
-                  children += wrap(wireName, encoded)
+                  children += wrap(wireName, encoded, fieldScope)
 
         Element
           ( typeName,
             Attributes(attributes.toSeq*),
-            Array.unsafeFrozen(children.toArray) )
+            Array.unsafeFrozen(children.toArray),
+            scope )
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Xml =
       value =>
@@ -1474,6 +1571,43 @@ object Xml extends Tag.Container
 
   case class attribute() extends StaticAnnotation
 
+  // The namespace of a derived type's elements: `@xmlns("urn:x") case class Order(...)` encodes
+  // as `<Order xmlns="urn:x">` with its fields' elements in the same namespace, and decodes
+  // from any document whose elements resolve to that namespace, whatever prefixes it uses.
+  // `qualified = false` (or `@unqualified` on a field) leaves the fields' elements in no
+  // namespace, as an XML Schema with `elementFormDefault="unqualified"` has them.
+  case class xmlns(uri: Text, qualified: Boolean = true) extends StaticAnnotation
+  case class unqualified() extends StaticAnnotation
+
+  // The namespace of a type which cannot be annotated: `given Rect is Xml.Namespaced =
+  // Xml.Namespaced("http://www.w3.org/2000/svg")` takes precedence over an `@xmlns`.
+  object Namespaced:
+    def apply[value](uri: Text, qualified: Boolean = true): value is Namespaced =
+      Bound[value](uri, qualified)
+
+    class Bound[value](val namespace: Text, val qualified: Boolean) extends Namespaced:
+      type Self = value
+
+  trait Namespaced extends Typeclass.Pure:
+    def namespace: Text
+    def qualified: Boolean
+
+  // The namespace a derived codec puts a type's elements in, and whether its fields' elements
+  // share it: from a `Namespaced` given, else from the type's `@xmlns`, else none
+  private[xylophone] inline def namespaceOf[derivation]: Optional[(Text, Boolean)] = summonFrom:
+    case namespaced: (`derivation` is Namespaced) =>
+      (namespaced.namespace, namespaced.qualified)
+
+    case _ =>
+      summonInline[derivation is Annotated by xmlns] match
+        case fields: Annotated.AnnotatedFields[Xml.xmlns, ?, ?, ?] @unchecked =>
+          fields.annotations.stdlib.headOption match
+            case Some(annotation) => (annotation.uri, annotation.qualified)
+            case None             => Unset
+
+        case _ =>
+          Unset
+
   case class XmlAttribute(label: Text, elements: Set[Text], global: Boolean):
     type Self <: Label
     type Topic
@@ -1483,6 +1617,27 @@ object Xml extends Tag.Container
 
     def merge(that: XmlAttribute): XmlAttribute =
       XmlAttribute(label, elements + that.elements, global || that.global)
+
+  // A resolved name: the namespace URI, if any, and the local part, as the pair by which
+  // elements and attributes are identified once prefixes have been resolved. `Name("a")` is
+  // an unqualified name; `Name.of(label)` splits a raw `prefix:local` label without resolving it.
+  object Name:
+    def apply(local: Text): Name = Name(Unset, local)
+
+    // The prefix and local part of a raw label; a label with no colon has no prefix
+    def split(label: Text): (Optional[Text], Text) =
+      val colon = label.s.indexOf(':')
+
+      if colon < 0 then (Unset, label)
+      else (label.s.substring(0, colon).nn.tt, label.s.substring(colon + 1).nn.tt)
+
+    // Clark notation, `{uri}local`, or the bare local part
+    given showable: Name is Showable = name =>
+      name.namespace.lay(name.local)(uri => t"{$uri}${name.local}")
+
+    given inspectable: Name is Inspectable = name => t"Name(${name.show.inspect})"
+
+  case class Name(namespace: Optional[Text], local: Text)
 
   def header: Header = Header("1.0", Unset, Unset)
 
@@ -1529,13 +1684,15 @@ object Xml extends Tag.Container
       ${xylophone.internal.extractor[parts, origins]('scrutinee)}
 
 
-  given aggregable: [content <: Label: Reifiable to List[String]] => (schema: XmlSchema)
+  given aggregable: [content <: Label: Reifiable to List[String]]
+  =>  (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
   =>  (tactic: Tactic[Parse.Error])
   =>  (((Xml of content) is Aggregable by Text)^{tactic}) =
 
     input => XmlParser.fromChain(input).parseXml(headers0 = false).of[content]
 
-  given aggregable2: (schema: XmlSchema) => (tactic: Tactic[Parse.Error])
+  given aggregable2: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
+  =>  (tactic: Tactic[Parse.Error])
   =>  ((Xml is Aggregable by Text)^{tactic}) =
     input => XmlParser.fromChain(input).parseXml(headers0 = false)
 
@@ -1554,7 +1711,8 @@ object Xml extends Tag.Container
       def genericize(xml: Xml): HttpStreams.Content =
         (t"application/xml; charset=${encoder.encoding.name}", HttpStreams.Body(xml.show.in[Data]))
 
-  given instantiable: (schema: XmlSchema) => (tactic: Tactic[Parse.Error])
+  given instantiable: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
+  =>  (tactic: Tactic[Parse.Error])
   =>  ((Xml is Instantiable across HttpRequests from Text)^{tactic}) =
 
     text => Chain(text).read[Xml]
@@ -1568,7 +1726,7 @@ object Xml extends Tag.Container
   // path's.
   given aggregableParsed: [value]
   =>  ( parsable: (value is Xml.Parsable)^ )
-  =>  ( schema: XmlSchema )
+  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
   =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
   =>  ( ((value in Xml) is Aggregable by Text)^{parsable, tactic, xmlTactic} ) =
 
@@ -1580,7 +1738,7 @@ object Xml extends Tag.Container
   // the composed pipeline by specificity.
   given readableParsed: [value]
   =>  ( parsable: (value is Xml.Parsable)^ )
-  =>  ( schema: XmlSchema )
+  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
   =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
   =>  ( (Text is Readable to (value in Xml))^{parsable, tactic, xmlTactic} ) =
 
@@ -1604,20 +1762,24 @@ object Xml extends Tag.Container
   // instead report a `Parse.Error`; the divergence is confined to inputs
   // that fail on both paths.)
   private def parseDirect[value](input: Chain[Text], parsable: (value is Xml.Parsable)^)
-    ( using schema:    XmlSchema,
-            tactic:    Tactic[Parse.Error],
-            xmlTactic: Tactic[Xml.Error],
-            foci:      Foci[Xml.Focus] )
+    ( using schema:      XmlSchema,
+            scope:       Scope,
+            namespacing: Namespacing,
+            tactic:      Tactic[Parse.Error],
+            xmlTactic:   Tactic[Xml.Error],
+            foci:        Foci[Xml.Focus] )
   :   value =
 
     parseWith(XmlParser.fromChain(input), parsable)
 
   // The legacy interoperation shape: a stdlib `Iterator` of chunks.
   private def parseDirect[value](input: Iterator[Text], parsable: (value is Xml.Parsable)^)
-    ( using schema:    XmlSchema,
-            tactic:    Tactic[Parse.Error],
-            xmlTactic: Tactic[Xml.Error],
-            foci:      Foci[Xml.Focus] )
+    ( using schema:      XmlSchema,
+            scope:       Scope,
+            namespacing: Namespacing,
+            tactic:      Tactic[Parse.Error],
+            xmlTactic:   Tactic[Xml.Error],
+            foci:        Foci[Xml.Focus] )
   :   value =
 
     parseWith(XmlParser.fromIterator(input), parsable)
@@ -1625,19 +1787,23 @@ object Xml extends Tag.Container
   // Whole-`Text` form: a pre-filled single-chunk cursor, no iterator
   // plumbing (the `readableParsed` entry).
   private def parseDirect[value](input: Text, parsable: (value is Xml.Parsable)^)
-    ( using schema:    XmlSchema,
-            tactic:    Tactic[Parse.Error],
-            xmlTactic: Tactic[Xml.Error],
-            foci:      Foci[Xml.Focus] )
+    ( using schema:      XmlSchema,
+            scope:       Scope,
+            namespacing: Namespacing,
+            tactic:      Tactic[Parse.Error],
+            xmlTactic:   Tactic[Xml.Error],
+            foci:        Foci[Xml.Focus] )
   :   value =
 
     parseWith(XmlParser.fromText(input), parsable)
 
   private def parseWith[value](parser: XmlParser^, parsable: (value is Xml.Parsable)^)
-    ( using schema:    XmlSchema,
-            tactic:    Tactic[Parse.Error],
-            xmlTactic: Tactic[Xml.Error],
-            foci:      Foci[Xml.Focus] )
+    ( using schema:      XmlSchema,
+            scope:       Scope,
+            namespacing: Namespacing,
+            tactic:      Tactic[Parse.Error],
+            xmlTactic:   Tactic[Xml.Error],
+            foci:        Foci[Xml.Focus] )
   :   value =
 
     // The session body and its prefix share the same single-owner parser; no aliased writer.
@@ -1663,7 +1829,8 @@ object Xml extends Tag.Container
   // into the metadata `Header` and dropped from the tree, so the tracked value has
   // the same shape as a header-less load (keeping it aligned with the index, which
   // is built from the root element alone).
-  given loadable: (schema: XmlSchema) => (tactic: Tactic[Parse.Error], tracking: PositionTracking)
+  given loadable: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
+  =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ((Xml is Loadable by Text)^{tactic}) = stream =>
     // The chunk chain view of the pull endpoint (the audited bridge; the
     // DOM loader's parser is chain-fed).
@@ -1786,12 +1953,19 @@ object Xml extends Tag.Container
   // `showable` through a synchronous one, so the two never drift. When the `Formatting` carries
   // an `indent`, element-only content is laid out one child per indented line; an element that
   // contains any character data is kept inline so its text is never altered.
-  private def writeXml(producer: (Producer[Text])^, formatting: Formatting, node: Xml, depth: Int)
+  // `declared` holds the bindings the output has declared above this node. An element whose
+  // scope binds a prefix it uses (or its default namespace) differently from what is declared,
+  // and does not declare it among its own attributes, has the declaration written for it, so a
+  // subtree built in code or cut from a document serializes namespace-well-formed; a parsed
+  // document carries its declarations as attributes, and is written back exactly as read.
+  private def writeXml
+    ( producer: (Producer[Text])^, formatting: Formatting, node: Xml, depth: Int,
+      declared: Scope = Scope.xml )
   :   Unit =
 
     node match
       case Fragment(nodes*) =>
-        nodes.each(writeXml(producer, formatting, _, depth))
+        nodes.each(writeXml(producer, formatting, _, depth, declared))
 
       case TextNode(text) =>
         writeEscapedText(producer, text)
@@ -1836,9 +2010,23 @@ object Xml extends Tag.Container
 
         producer.put("?>")
 
-      case Element(label, attributes, children) =>
+      case element: Element =>
+        val label = element.label
+        val attributes = element.attributes
+        val children = element.children
         producer.put("<")
         producer.put(label)
+
+        val own =
+          if attributes.declaresNamespace then Scope.declared(declared, attributes) else declared
+
+        // The declarations the element's scope implies but nothing has written
+        val missing = Xml.undeclared(element, own)
+
+        missing.eachPair: (prefix, uri) =>
+          producer.put(if prefix.nil then t" xmlns=\"" else t" xmlns:$prefix=\"")
+          writeEscapedAttribute(producer, uri)
+          producer.put("\"")
 
         if !attributes.nil then attributes.eachPair: (key, value) =>
           producer.put(" ")
@@ -1847,17 +2035,19 @@ object Xml extends Tag.Container
           writeEscapedAttribute(producer, value)
           producer.put("\"")
 
+        val inner = if missing.nil then own else own ++ Scope.fromAttributes(missing)
+
         if children.nil then producer.put("/>") else
           producer.put(">")
 
           if formatting.indent.present && !children.exists(textual) then
             children.each: child =>
               newline(producer, formatting, depth + 1)
-              writeXml(producer, formatting, child, depth + 1)
+              writeXml(producer, formatting, child, depth + 1, inner)
 
             newline(producer, formatting, depth)
           else
-            children.each(writeXml(producer, formatting, _, depth))
+            children.each(writeXml(producer, formatting, _, depth, inner))
 
           producer.put("</")
           producer.put(label)
@@ -1956,9 +2146,11 @@ object Xml extends Tag.Container
     case UnknownAttribute(name: Text)
     case UnknownAttributeStart(name: Text)
     case InvalidAttributeUse(attribute: Text, element: Text)
+    case UnboundPrefix(prefix: Text)
 
     def describe: Message = this match
       case BadInsertion                   => m"a value cannot be inserted into XML at this point"
+      case UnboundPrefix(prefix)          => m"the prefix $prefix is not bound to a namespace"
       case ExpectedMore                   => m"the content ended prematurely"
       case BadDocument                    => m"the document did not contain a single root tag"
       case UnquotedAttribute              => m"the attribute value must be single- or double-quoted"
@@ -2226,16 +2418,16 @@ object Xml extends Tag.Container
     // pinpoint the failure), but `line` / `column` stay at 1/1. Acceptable
     // trade: error quality remains useful while parsing-throughput improves.
 
-    def fromText(text: Text)(using XmlSchema): XmlParser =
+    def fromText(text: Text)(using XmlSchema, Scope, Namespacing): XmlParser =
       new XmlParser(Cursor[Text](text), tracking = false)
 
     // Native `Chain` sibling of `fromIterator`: same cursor construction, no
     // stdlib hop.
-    def fromChain(input: Chain[Text])(using XmlSchema): XmlParser =
+    def fromChain(input: Chain[Text])(using XmlSchema, Scope, Namespacing): XmlParser =
       new XmlParser(Cursor[Text](input), tracking = false)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
-    def fromIterator(input: Iterator[Text])(using XmlSchema): XmlParser =
+    def fromIterator(input: Iterator[Text])(using XmlSchema, Scope, Namespacing): XmlParser =
       new XmlParser(Cursor[Text](input), tracking = false)
 
     // Tracking-mode constructors build the cursor with a `\n`-aware
@@ -2244,17 +2436,19 @@ object Xml extends Tag.Container
     // The parser's hot loop still bypasses lineation via `unsafeAdvanceBy`;
     // reconciliation happens only at element / attribute capture points
     // and before any refill in `moreSlow`.
-    def fromTextTracked(text: Text)(using XmlSchema): XmlParser =
+    def fromTextTracked(text: Text)(using XmlSchema, Scope, Namespacing): XmlParser =
       import zephyrine.lineation.linefeedChar
       new XmlParser(Cursor[Text](text), tracking = true)
 
     // Native `Chain` sibling of `fromIteratorTracked`.
-    def fromChainTracked(input: Chain[Text])(using XmlSchema): XmlParser =
+    def fromChainTracked(input: Chain[Text])(using XmlSchema, Scope, Namespacing): XmlParser =
       import zephyrine.lineation.linefeedChar
       new XmlParser(Cursor[Text](input), tracking = true)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
-    def fromIteratorTracked(input: Iterator[Text])(using XmlSchema): XmlParser =
+    def fromIteratorTracked(input: Iterator[Text])(using XmlSchema, Scope, Namespacing)
+    :   XmlParser =
+
       import zephyrine.lineation.linefeedChar
       new XmlParser(Cursor[Text](input), tracking = true)
 
@@ -2262,12 +2456,38 @@ object Xml extends Tag.Container
     ( val cursor:               Cursor[Text, ?]^,
      protected[xylophone] val tracking: Boolean,
      callback:                  (Ordinal, Hole) => Unit = (_, _) => () )
-    ( using schema: XmlSchema )
+    ( using schema: XmlSchema, scope0: Scope, namespacing: Namespacing )
   extends caps.ExclusiveCapability:
     type Region = Cursor.Mark
 
     @scala.caps.unsafe.untrackedCaptures
     private var heldToken: Cursor.Held | Null = null
+
+    // The namespace bindings: the document's root scope is the given one, always with the
+    // reserved `xml` prefix; `scope` is the scope of the element being read, set on opening
+    // an element and restored on closing it, so that every `Element` carries its own.
+    private val rootScope: Scope = if scope0.binds(t"xml") then scope0 else Scope.xml ++ scope0
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var scope: Scope = rootScope
+
+    // Whether the attributes just read declared a namespace, or used a prefix — set by the
+    // attribute readers so that an element without either costs no scan
+    @scala.caps.unsafe.untrackedCaptures
+    private var attrXmlns: Boolean = false
+    @scala.caps.unsafe.untrackedCaptures
+    private var attrPrefixed: Boolean = false
+
+    // The scope of the element just opened: its parent's, extended by its own declarations,
+    // and checked under strict namespacing for a prefix it uses without a binding
+    private def openScope(name: Text, attributes: Attributes)(using Tactic[Parse.Error]): Scope =
+      val own = if attrXmlns then Scope.declared(scope, attributes) else scope
+
+      if namespacing == Namespacing.Strict then
+        Scope.unbound(own, name, attributes, attrPrefixed).let: prefix =>
+          fail(Issue.UnboundPrefix(prefix))
+
+      own
 
     // Parser-shared scratch buffer for attribute accumulation (lifetime of
     // the `XmlParser` instance). Stores key/value pairs interleaved as
@@ -2788,6 +3008,8 @@ object Xml extends Tag.Container
       var n = 0
       var done = false
       var hashOr = 0
+      attrXmlns = false
+      attrPrefixed = false
 
       inline def ensureCapacity(): Unit =
         if 2*n >= attrBuf.length then
@@ -2816,6 +3038,8 @@ object Xml extends Tag.Container
           val key = readName()
           val keyStr: String = key.s
           val h: Int = keyStr.hashCode
+          if keyStr.startsWith("xmlns") then attrXmlns = true
+          else if keyStr.indexOf(':') >= 0 then attrPrefixed = true
 
           if (hashOr | h) == hashOr then
             var dup = 0
@@ -3093,18 +3317,22 @@ object Xml extends Tag.Container
         val name = readName()
         val attrs = readAttributes(name)
         if !more then fail(Issue.ExpectedMore)
+        val parent = scope
+        val own = openScope(name, attrs)
 
         if peek == '/' then
           advance()
           if !more then fail(Issue.ExpectedMore)
           if peek != '>' then fail(Issue.Unexpected(peek))
           advance()
-          Element(name, attrs, Array.empty[Node])
+          Element(name, attrs, Array.empty[Node], own)
         else
           if peek != '>' then fail(Issue.Unexpected(peek))
           advance()
+          scope = own
           val children = readChildren(name)
-          Element(name, attrs, children)
+          scope = parent
+          Element(name, attrs, children, own)
 
     protected def readChildren(parentName: Text)(using Tactic[Parse.Error]): Array[Node]^{} =
       val children = getNodeBuffer()
@@ -3299,6 +3527,8 @@ object Xml extends Tag.Container
         val name = readName()
         val attrs = readAttributesTracked(name, attrDescs, attrEnds)
         if !more then fail(Issue.ExpectedMore)
+        val parent = scope
+        val own = openScope(name, attrs)
 
         val result =
           if peek == '/' then
@@ -3306,12 +3536,14 @@ object Xml extends Tag.Container
             if !more then fail(Issue.ExpectedMore)
             if peek != '>' then fail(Issue.Unexpected(peek))
             advance()
-            Element(name, attrs, Array.empty[Node])
+            Element(name, attrs, Array.empty[Node], own)
           else
             if peek != '>' then fail(Issue.Unexpected(peek))
             advance()
+            scope = own
             val children = readChildrenTracked(name, childDescs, childEnds)
-            Element(name, attrs, children)
+            scope = parent
+            Element(name, attrs, children, own)
 
         emitElementDescriptor
           ( out, attrDescs, attrEnds, childDescs, childEnds, startLine, startColumn, startMark )
@@ -3332,6 +3564,8 @@ object Xml extends Tag.Container
       var n = 0
       var done = false
       var hashOr = 0
+      attrXmlns = false
+      attrPrefixed = false
 
       inline def ensureCapacity(): Unit =
         if 2*n >= attrBuf.length then
@@ -3367,6 +3601,8 @@ object Xml extends Tag.Container
           val key = readName()
           val keyStr: String = key.s
           val h: Int = keyStr.hashCode
+          if keyStr.startsWith("xmlns") then attrXmlns = true
+          else if keyStr.indexOf(':') >= 0 then attrPrefixed = true
 
           if (hashOr | h) == hashOr then
             var dup = 0
@@ -3605,7 +3841,19 @@ object Xml extends Tag.Container
     @scala.caps.unsafe.untrackedCaptures
     private var directChildName:     Text = t""
 
-    private inline def directPop(): Text = directNames.remove(directNames.length - 1)
+    // The scopes of the open elements, parallel to `directNames`
+    private val directScopes: scala.collection.mutable.ArrayBuffer[Scope] =
+      scala.collection.mutable.ArrayBuffer.empty
+
+    private def directPop(): Text =
+      directScopes.remove(directScopes.length - 1)
+      scope = if directScopes.isEmpty then rootScope else directScopes(directScopes.length - 1)
+      directNames.remove(directNames.length - 1)
+
+    // The resolved name of the element opened most recently
+    private[xylophone] def directName(): Xml.Name =
+      val (prefix, local) = Xml.Name.split(directNames(directNames.length - 1))
+      Xml.Name(scope.resolve(prefix), local)
 
     // Establishes the cursor hold for a whole direct-parsing session,
     // exactly as `parseXml` does for one tree-building parse: every rim
@@ -3669,6 +3917,7 @@ object Xml extends Tag.Container
       directChildPackable = namePackable
       directAttributes1 = readAttributes(name)
       if !more then fail(Issue.ExpectedMore)
+      val own = openScope(name, directAttributes1)
 
       if peek == '/' then
         advance()
@@ -3682,6 +3931,8 @@ object Xml extends Tag.Container
         directEmpty = false
 
       directNames += name
+      directScopes += own
+      scope = own
       name
 
     // Consumes and validates the current element's close tag; the position
@@ -4029,7 +4280,9 @@ object Xml extends Tag.Container
     // read with `readChildren`, so the materialized subtree (and its
     // close-tag validation) is exactly what `readElement` would have built.
     private[xylophone] def directElement()(using Tactic[Parse.Error]): Element =
+      val own = scope
       val name = directPop()
+      val parent = scope
       val attributes = directAttributes1
 
       val children =
@@ -4037,9 +4290,12 @@ object Xml extends Tag.Container
           directEmpty = false
           Array.empty[Node]
         else
-          readChildren(name)
+          scope = own
+          val children = readChildren(name)
+          scope = parent
+          children
 
-      Element(name, attributes, children)
+      Element(name, attributes, children, own)
 
   // ───────────────────────────────────────────────────────────────────────
   // Public entry points.
@@ -4054,7 +4310,11 @@ object Xml extends Tag.Container
     ( using schema: XmlSchema )
   :   (Tactic[Parse.Error]^) ?->{callback} Xml =
 
-    new XmlParser(Cursor[Text](input), tracking = false, callback).parseXml(headers0)
+    // Lenient: a literal may use a prefix bound only by a `Namespace` given at its call site,
+    // which the interpolator checks after parsing
+    new XmlParser(Cursor[Text](input), tracking = false, callback)
+      (using schema, Scope.xml, Namespacing.Lenient)
+    . parseXml(headers0)
 
   // Selects the nodes matching an XPath: `//div[@id='x']` and friends,
   // evaluated against this tree. The result is a `Fragment` of the matching
@@ -4063,7 +4323,7 @@ object Xml extends Tag.Container
   // attributes are not tree nodes.
   extension (xml: Xml)
     def select(xpath: XPath)(using Tactic[XPath.Error]): Fragment =
-      XPathEngine.evaluate(xml, xpath.expression, Map()) match
+      XPathEngine.evaluate(xml, xpath.expression, Map(), xpath.scope) match
         case XPath.Value.NodeSet(loci) =>
           val nodes = loci.bind: locus =>
             locus.attributeIndex match
@@ -4082,7 +4342,7 @@ object Xml extends Tag.Container
     // matches), or of the expression's value for non-node-set results. This is
     // the way to read an attribute selected by path: `xml.selectText(xp"//a/@href")`.
     def selectText(xpath: XPath)(using Tactic[XPath.Error]): Optional[Text] =
-      XPathEngine.evaluate(xml, xpath.expression, Map()) match
+      XPathEngine.evaluate(xml, xpath.expression, Map(), xpath.scope) match
         case XPath.Value.NodeSet(loci) => loci.prim.let(_.stringValue)
 
         case value =>
@@ -4095,7 +4355,7 @@ object Xml extends Tag.Container
       ( using Tactic[XPath.Error] )
     :   XPath.Value =
 
-      XPathEngine.evaluate(xml, xpath.expression, variables)
+      XPathEngine.evaluate(xml, xpath.expression, variables, xpath.scope)
 
   // XmlError → Xml.Error
   //
@@ -4205,6 +4465,10 @@ object Xml extends Tag.Container
     // so `@attribute` fields are filled before any child is consumed.
     update def attributes(): Attributes = parser.directAttributes()
 
+    // The resolved name of the just-opened element: its namespace, through the bindings in
+    // scope, and its local part
+    update def name(): Xml.Name = parser.directName()
+
     // Steps within the current element: the name of the next child element
     // (opened — its name and attributes consumed), or `Unset` once the close
     // tag is consumed and validated. Character data, comments, CDATA sections
@@ -4306,18 +4570,30 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
     case Fragment(nodes*) => Array.from(nodes)
     case node: Node       => Array(node)
 
-  private def childElements(name: String): Array[Node]^{} =
+  // The child elements the name selects: a prefixed name whose prefix is bound in the scope, or
+  // at the parent, selects by resolved name, whatever prefix the child uses; otherwise the raw
+  // label is matched.
+  private def childElements(name: String)(using scope: Scope): Array[Node]^{} =
+    matchingElements(_.selects(_, name.tt))
+
+  private def namedElements(name: Xml.Name): Array[Node]^{} =
+    matchingElements { (_, child) => child.qualified == name }
+
+  // The child elements, of every element node here, which the predicate admits given their parent
+  private def matchingElements(admits: (Element, Element) => Boolean): Array[Node]^{} =
     val buffer = scm.ArrayBuffer[Node]()
     val nodes = selfNodes
     var i = 0
 
     while i < nodes.length do
       nodes.readUnchecked(i) match
-        case Element(_, _, children) =>
+        case parent: Element =>
+          val children = parent.children
+
           children.extent.each: j =>
             children(j) match
-              case child: Element if child.label == name.tt => buffer.append(child)
-              case _                                        => ()
+              case child: Element if admits(parent, child) => buffer.append(child)
+              case _                                       => ()
 
         case _ =>
           ()
@@ -4326,10 +4602,19 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
 
     Array.from(buffer)
 
-  def selectDynamic(name: String)(using erased dynamicXmlEnabler: DynamicXmlEnabler): Fragment =
+  // Every child element with the resolved name, and the one at the ordinal
+  def elements(name: Xml.Name): Fragment = new Fragment(namedElements(name)*)
+
+  def element(name: Xml.Name, ordinal: Ordinal = Prim): Fragment =
+    namedElements(name).at(ordinal).lay(new Fragment())(new Fragment(_))
+
+  def selectDynamic(name: String)(using erased dynamicXmlEnabler: DynamicXmlEnabler, scope: Scope)
+  :   Fragment =
+
     new Fragment(childElements(name)*)
 
-  def applyDynamic(name: String)(ordinal: Ordinal = Prim)(using erased dynamicXmlEnabler: DynamicXmlEnabler)
+  def applyDynamic(name: String)(ordinal: Ordinal = Prim)
+    ( using erased dynamicXmlEnabler: DynamicXmlEnabler, scope: Scope )
   :   Fragment =
 
     childElements(name).at(ordinal).lay(new Fragment())(new Fragment(_))
@@ -4378,13 +4663,72 @@ case class TextNode(text: Text) extends Node:
     case TextNode(text0)             => text0 == text
     case _                           => false
 
-case class Element
-  ( label:      Text,
-    attributes: Attributes,
-    children:   Array[Node]^{} )
+// A plain class rather than a case class: the `scope` — the namespace bindings in force at the
+// element, filled by the parser, an interpolated literal or a derived encoder — is provenance,
+// like `Header.positionIndex`, and takes no part in equality, hashing or the extractor, so a
+// parsed element equals the same element built by hand, and `Element(label, attributes,
+// children)` patterns see the three fields they always did.
+object Element:
+  def apply(label: Text, attributes: Attributes, children: Array[Node]^{}, scope: Scope = Scope.empty)
+  :   Element =
+
+    new Element(label, attributes, children, scope)
+
+  def unapply(element: Element): Some[(Text, Attributes, Array[Node]^{})] =
+    Some((element.label, element.attributes, element.children))
+
+class Element
+  ( val label:      Text,
+    val attributes: Attributes,
+    val children:   Array[Node]^{},
+    val scope:      Scope = Scope.empty )
 extends Node, Topical, Transportive:
   override def toString(): String =
     s"<$label>${children.readable.mkString}</$label>"
+
+  // The bindings in force at this element: its scope, extended by any declarations among its
+  // own attributes — which are all a hand-built element has
+  def bindings: Scope =
+    if attributes.declaresNamespace then Scope.declared(scope, attributes) else scope
+
+  def prefix: Optional[Text] = Xml.Name.split(label)(0)
+  def localName: Text = Xml.Name.split(label)(1)
+
+  // The URI bound to the prefix at this element, or `Unset` if it is unbound
+  def resolve(prefix: Optional[Text]): Optional[Text] = bindings.resolve(prefix)
+
+  def namespace: Optional[Text] = resolve(prefix)
+
+  // The resolved name: the namespace URI, if any, and the local part. (`name` is taken: the
+  // typed tags, which are elements, are `Format`s with a `name`.)
+  def qualified: Xml.Name =
+    val (prefix, local) = Xml.Name.split(label)
+    Xml.Name(bindings.resolve(prefix), local)
+
+  // The value of the attribute with the resolved name; an unprefixed attribute is in no
+  // namespace, whatever the default namespace
+  def attribute(name: Xml.Name): Optional[Text] = name.namespace.lay(attributes.fetch(name.local)):
+    uri =>
+      var found: Optional[Text] = Unset
+      val bindings0 = bindings
+
+      attributes.eachPair: (key, value) =>
+        if found.absent then
+          val (prefix, local) = Xml.Name.split(key)
+
+          if prefix.present && local == name.local && bindings0.resolve(prefix) == uri
+          then found = value
+
+      found
+
+  // Whether a child of this element with the label is the one `name` selects: by resolved
+  // name when the name's prefix is bound in the scope or at this element, else by raw label
+  private[xylophone] def selects(child: Element, name: Text)(using scope: Scope): Boolean =
+    val (prefix, local) = Xml.Name.split(name)
+
+    if prefix.absent then child.label == name else
+      scope.resolve(prefix).or(resolve(prefix)).lay(child.label == name): uri =>
+        child.qualified == Xml.Name(uri, local)
 
   override def equals(that: Any): Boolean = that match
     case Fragment(node: Element) => this == node

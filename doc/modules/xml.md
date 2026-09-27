@@ -78,18 +78,59 @@ hexadecimal.
 
 ### Namespaces
 
-Namespace declarations are attributes, and prefixed names are names, so both survive parsing
-unaltered:
+The parser resolves namespaces as it reads. A declaration, `xmlns="…"` or `xmlns:p="…"`, is kept
+as an attribute, so a document writes back exactly as it was read, and it also binds the prefix for
+the element and its descendants. Every `Element` carries the bindings in force at it as its
+`scope`, and resolves its own name through them:
 
 ```scala
-t"""<a xmlns="http://example.com"/>""".read[Xml]
-t"""<a xmlns:p="http://example.com"/>""".read[Xml]
-t"<p:a/>".read[Xml]
+val doc = t"""<r xmlns:a="urn:a"><a:x>1</a:x></r>""".read[Xml]
+doc.`a:x`().namespace   // urn:a
+doc.`a:x`().localName   // x
+doc.`a:x`().qualified   // Xml.Name(urn:a, x), shown as {urn:a}x
 ```
 
-Nothing is rewritten into a resolved form, so a document written with prefixes is written back
-with the same prefixes — which is what matters where the document's exact bytes are covered by a
-signature, or where a downstream consumer matches on the prefix.
+Two names are the same name when their namespace URIs and local parts agree, whatever prefixes
+bind them. A prefixed name selects by resolved name when its prefix is bound, whether by a
+declaration in the document or by a `Namespace` given in scope, so the prefix the code uses need
+not be the one the document used:
+
+```scala
+given svg: ("svg" is Namespace of "http://www.w3.org/2000/svg") = Namespace()
+picture.`svg:rect`()                                   // every rect in the SVG namespace
+picture.elements(Xml.Name(t"http://www.w3.org/2000/svg", t"rect"))
+```
+
+A `Namespace` binds a prefix, its `Self`, to a URI, its `Topic`, both as singleton types, so the
+binding is checked wherever it is used. An `x"…"` literal that uses a prefix it does not declare
+takes the binding from the givens in scope, and an `xp"…"` path does the same for its name tests,
+so `xp"//svg:rect"` matches by namespace. `XPath#in(scope)` rebinds a path's prefixes.
+
+A prefix with no binding is an error, as the Namespaces recommendation requires: parsing `<p:a/>`
+without a declaration of `p` raises a `Parse.Error`, and writing `x"<p:a/>"` without a
+`Namespace` given for `p` does not compile. Import `namespaceOptions.lenientNamespaces` to have an
+unbound prefix resolve to no namespace instead.
+
+When an `Xml` tree is written, an element whose scope binds a prefix it uses (or its default
+namespace) which nothing above it has declared gets the declaration written for it, so a subtree
+built in code, or cut from a document with a selection, serializes namespace-well-formed. The
+scope takes no part in equality: a parsed element equals the same element built by hand.
+
+A derived codec puts a case class in a namespace with an annotation:
+
+```scala
+@xmlns("urn:shop")
+case class Order(id: Int, item: Item)
+```
+
+`Order(1, Item(t"a", 2)).in[Xml]` writes `<Order xmlns="urn:shop">` with its fields' elements in
+the same namespace, and `as[Order]` reads a document whose elements resolve to that namespace,
+however it prefixes them. `@xmlns("urn:shop", qualified = false)` on the class, or `@unqualified`
+on a field, keeps the fields' elements in no namespace, as a schema with
+`elementFormDefault="unqualified"` has them. A type which cannot be annotated takes its namespace
+from a given: `given Rect is Xml.Namespaced = Xml.Namespaced(t"http://www.w3.org/2000/svg")`.
+A type with no namespace of its own matches its fields' elements by name alone, whatever
+namespace the document puts them in.
 
 ### Reading values
 
@@ -247,6 +288,61 @@ page.evaluate(xp"count(//li)")                               // XPath.Value.Nume
 
 An expression the engine does not support, or a variable it was not given, raises an
 `XPath.Error` saying so.
+
+### Typed records from an XML Schema
+
+Where a document's shape is given as an XML Schema (XSD) rather than a Scala type, an
+`Xml.Provider` reads the schema at compiletime and produces typed records from matching XML. A
+provider object holds the schema, and its `record` method turns an `Xml` value into a record with
+one member per child element and attribute of the schema's root element, each read at the type the
+schema declares:
+
+<!-- doccheck: skip -->
+```scala
+import classloaders.threadContextClassloader
+
+object PurchaseOrder extends Xml.Provider(cp"/xsd/po.xsd")
+
+val order = PurchaseOrder.record(document)
+order.shipTo.city                          // Text
+order.items.item.map(_.quantity)           // List[Long], a restriction of xs:positiveInteger
+order.comment                              // Optional[Text], from minOccurs="0"
+order.items.item.map(_.partNum)            // Text, checked against the SKU pattern as it is read
+```
+
+The schema may be an `Xsd` value, an `Xml` document, the schema's text, or anything readable as
+text, such as a classpath resource. Where a schema declares several global elements the root is
+the one with complex content, or is chosen with `root = t"Envelope"`.
+
+Child elements and attributes become fields by local name. A field is `Optional` when its element
+has `minOccurs="0"` or is `nillable`, and a `List` when `maxOccurs` allows more than one; each
+alternative of a `choice` is `Optional`. An attribute that shares a name with a child element is
+reached as `` `@name` ``, and the text of an element with simple content and attributes as `text`
+(`` `#text` `` if an attribute is called `text`). An extension's base type contributes its fields
+first.
+
+| XSD type | Scala type |
+|---|---|
+| `xs:string` and the token, name and identifier types, `xs:QName`, the binary types, `xs:gYear` and relatives | `Text` |
+| `xs:boolean` | `Boolean` |
+| `xs:int`, `xs:short`, `xs:byte` | `Int`, `Short`, `Byte` |
+| `xs:integer`, `xs:long` and the unsigned, positive and negative integer types | `Long`, with the implied bounds checked |
+| `xs:decimal`, `xs:double`, `xs:float` | `Double`, `Double`, `Float` |
+| `xs:dateTime`, `xs:date`, `xs:time`, `xs:duration`, `xs:anyURI` | the type an interface in scope instantiates, else `Text` |
+| `xs:NMTOKENS`, `xs:IDREFS` and any `xs:list` | `List[Text]` |
+| `xs:anyType`, `xs:any`, a recursive type, an unresolved reference | `Xml` |
+
+A restriction's facets — `enumeration`, `pattern`, the inclusive and exclusive bounds, the length
+facets and the digit facets — are checked as the field is read, raising `Xml.Provider.Error` with
+the reason. The provider matches a document's elements by resolved name: a child is expected in the
+schema's target namespace when the schema qualifies it (`elementFormDefault`, a `form`, or a `ref`
+to a global element) and in no namespace otherwise, whatever prefixes the document uses; an element
+in another namespace is absent.
+
+Substitution groups, `xsi:type`, identity constraints and mixed content are read as the schema
+declares without them; an `import` or `include` is recorded in the `Xsd` but not fetched, so a
+type from another schema reads as raw `Xml`. The provider does not validate documents: it checks
+what a program reads.
 
 ### Positions and errors
 
