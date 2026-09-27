@@ -982,7 +982,7 @@ object soundness extends Toolchain:
     telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
     legerdemain.core, legerdemain.query, telekinesis.forms, jacinta.optics, caduceus.core,
     caduceus.resend,
-    orthodoxy.core,
+    orthodoxy.core, orthodoxy.server,
     jacinta.http, xylophone.http, ypsiloid.http,
     stratiform.http, stratiform.optics, obligatory.core, obligatory.json, sibylline.core,
     synesthesia.content,
@@ -1413,7 +1413,7 @@ object aperture extends Library:
 
 object apoplexy extends Library:
   object core extends Component(jacinta.schema, jacinta.http, ypsiloid.http, telekinesis.core,
-    urticose.core, hellenism.core, fulminate.core, xylophone.http):
+    urticose.core, hellenism.core, fulminate.core, xylophone.http, orthodoxy.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
@@ -2721,14 +2721,19 @@ object octogenarian extends Library:
       settings.sep(super.scalacOptions())
 
 object orthodoxy extends Library:
-  object core extends Component(scintillate.server, jacinta.core, telekinesis.jvm, inimitable.core):
+  // The client side of OAuth 2: token grants, PKCE, credentials for an API's security schemes
+  object core extends Component(telekinesis.core, jacinta.core, inimitable.core, gastronomy.core):
+    override def scalaJs = false // SecureRandom
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The authorization-code flow as scintillate middleware
+  object server extends Component(core, scintillate.server, telekinesis.jvm):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  object test extends Tests(core, telekinesis.jvm, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
-    override def enabled = false
 
 object obligatory extends Library:
   object core extends Component(zephyrine.core, gossamer.core, contingency.core, anticipation.codec, fulminate.core, prepositional.core):

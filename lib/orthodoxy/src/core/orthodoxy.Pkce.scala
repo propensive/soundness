@@ -33,65 +33,26 @@
 package orthodoxy
 
 import anticipation.*
-import beneficence.*
-import contingency.*
-import denominative.*
-import fulminate.*
-import gossamer.*
-import jacinta.*
-import prepositional.*
-import rudiments.*
-import telekinesis.*
-import vacuous.*
+import gastronomy.*
+import hieroglyph.*
+import monotonous.*
+import proscenium.*
 
-import errorDiagnostics.stackTracesDiagnostics
+import alphabets.base64Url
+import charEncoders.utf8Encoder
+import providers.javaBaseProvider
 
-object Authorization:
-  given authorization: ("authorization" is Directive of Authorization) =
-    authorization => t"Bearer ${authorization.key}"
+// Proof Key for Code Exchange (RFC 7636): a verifier the client keeps, and the `S256` challenge
+// it sends with the authorization request, so that an intercepted authorization code cannot be
+// exchanged without the verifier
+object Pkce:
+  private val random: java.security.SecureRandom = java.security.SecureRandom()
 
-  // The authorization an OAuth 2 token response grants (RFC 6749 §5.1): the access token, the
-  // scopes (absent when the server granted exactly those requested), the lifetime as an expiry
-  // instant, and a refresh token if one was issued
-  def parse(json: Json)(using Tactic[OAuth.Error]): Authorization =
-    mitigate:
-      case Json.Error(_) => OAuth.Error(OAuth.Error.Reason.InvalidJsonResponse)
+  // A fresh verifier: 32 random octets, as 43 characters of the unpadded URL-safe alphabet
+  def apply(): Pkce =
+    val bytes = new scala.Array[Byte](32)
+    random.nextBytes(bytes)
+    Pkce(Array.unsafeFrozen(bytes).serialize[Base64])
 
-    . protect(read(json))
-
-  private def read(json: Json)(using Tactic[Json.Error]): Authorization =
-    import dynamicAccess.dynamicJson
-
-    // The field decodings share only the resolution-scoped tactic; no aliased writer.
-    val key = scala.caps.unsafe.unsafeAssumeSeparate(json.access_token.as[Text])
-
-    val scopes: List[Text] = scala.caps.unsafe.unsafeAssumeSeparate:
-      safely(json.scope.as[Text]).let(_.cut(t" ")).or(Nil)
-
-    val expiry: Optional[Long] = scala.caps.unsafe.unsafeAssumeSeparate:
-      safely(System.currentTimeMillis + json.expires_in.as[Long]*1000L)
-
-    val refresh: Optional[Text] =
-      scala.caps.unsafe.unsafeAssumeSeparate(safely(json.refresh_token.as[Text]))
-
-    Authorization(key, scopes, expiry, refresh)
-
-// An access token and what it grants: the scopes, its expiry (an instant in milliseconds, absent
-// for a token without a stated lifetime) and a refresh token where one was issued
-case class Authorization
-  ( key:     Text,
-    scopes:  List[Text],
-    expiry:  Optional[Long],
-    refresh: Optional[Text] )
-extends Topical, Findable:
-  private[orthodoxy] def of[scope <: Scope]: Authorization of scope =
-    this.asInstanceOf[Authorization of scope]
-
-  // The token as a `Bearer` authorization, as the `Authorization` header carries it
-  def bearer: Auth = Auth.Bearer(key)
-
-  def expired: Boolean = expiry.let(System.currentTimeMillis > _).or(false)
-
-  // Whether every one of the scopes is granted. A token whose response named no scopes is taken
-  // to grant those requested, as RFC 6749 §5.1 has it, so an empty list grants everything.
-  def grants(required: List[Text]): Boolean = scopes.nil || required.all(scopes.has(_))
+case class Pkce(verifier: Text):
+  def challenge: Text = verifier.in[Data].digest[Sha2[256]].data.serialize[Base64]

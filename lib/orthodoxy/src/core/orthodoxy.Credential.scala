@@ -32,66 +32,21 @@
                                                                                                   */
 package orthodoxy
 
-import anticipation.*
-import beneficence.*
-import contingency.*
-import denominative.*
-import fulminate.*
-import gossamer.*
-import jacinta.*
 import prepositional.*
-import rudiments.*
-import telekinesis.*
-import vacuous.*
 
-import errorDiagnostics.stackTracesDiagnostics
+// A credential for a named security scheme, as an API's specification names it: `("api_key" is
+// Credential to Text)` for an API key, `("basicAuth" is Credential to Auth)` for HTTP
+// authentication, `("oauth" is Credential to Authorization)` for an OAuth 2 token. A client which
+// reads the specification (apoplexy's `Api`) finds the credential for each scheme an operation
+// requires by name, checks that its `Result` fits the scheme's kind, and presents it as the
+// scheme dictates: as a header, a query parameter or a cookie.
+object Credential:
+  class Bound[name <: Label, result](val value: result) extends Credential:
+    type Self = name
+    type Result = result
 
-object Authorization:
-  given authorization: ("authorization" is Directive of Authorization) =
-    authorization => t"Bearer ${authorization.key}"
+  def apply[name <: Label, result](value: result): Bound[name, result] = Bound[name, result](value)
 
-  // The authorization an OAuth 2 token response grants (RFC 6749 §5.1): the access token, the
-  // scopes (absent when the server granted exactly those requested), the lifetime as an expiry
-  // instant, and a refresh token if one was issued
-  def parse(json: Json)(using Tactic[OAuth.Error]): Authorization =
-    mitigate:
-      case Json.Error(_) => OAuth.Error(OAuth.Error.Reason.InvalidJsonResponse)
-
-    . protect(read(json))
-
-  private def read(json: Json)(using Tactic[Json.Error]): Authorization =
-    import dynamicAccess.dynamicJson
-
-    // The field decodings share only the resolution-scoped tactic; no aliased writer.
-    val key = scala.caps.unsafe.unsafeAssumeSeparate(json.access_token.as[Text])
-
-    val scopes: List[Text] = scala.caps.unsafe.unsafeAssumeSeparate:
-      safely(json.scope.as[Text]).let(_.cut(t" ")).or(Nil)
-
-    val expiry: Optional[Long] = scala.caps.unsafe.unsafeAssumeSeparate:
-      safely(System.currentTimeMillis + json.expires_in.as[Long]*1000L)
-
-    val refresh: Optional[Text] =
-      scala.caps.unsafe.unsafeAssumeSeparate(safely(json.refresh_token.as[Text]))
-
-    Authorization(key, scopes, expiry, refresh)
-
-// An access token and what it grants: the scopes, its expiry (an instant in milliseconds, absent
-// for a token without a stated lifetime) and a refresh token where one was issued
-case class Authorization
-  ( key:     Text,
-    scopes:  List[Text],
-    expiry:  Optional[Long],
-    refresh: Optional[Text] )
-extends Topical, Findable:
-  private[orthodoxy] def of[scope <: Scope]: Authorization of scope =
-    this.asInstanceOf[Authorization of scope]
-
-  // The token as a `Bearer` authorization, as the `Authorization` header carries it
-  def bearer: Auth = Auth.Bearer(key)
-
-  def expired: Boolean = expiry.let(System.currentTimeMillis > _).or(false)
-
-  // Whether every one of the scopes is granted. A token whose response named no scopes is taken
-  // to grant those requested, as RFC 6749 §5.1 has it, so an empty list grants everything.
-  def grants(required: List[Text]): Boolean = scopes.nil || required.all(scopes.has(_))
+trait Credential extends Typeclass, Resultant:
+  type Self <: Label
+  def value: Result

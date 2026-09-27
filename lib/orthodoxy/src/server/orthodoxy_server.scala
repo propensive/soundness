@@ -33,65 +33,77 @@
 package orthodoxy
 
 import anticipation.*
-import beneficence.*
 import contingency.*
-import denominative.*
+import distillate.*
 import fulminate.*
 import gossamer.*
-import jacinta.*
+import inimitable.*
+import legerdemain.*
 import prepositional.*
-import rudiments.*
+import scintillate.*
+import serpentine.*
+import spectacular.*
 import telekinesis.*
+import urticose.*
 import vacuous.*
 
 import errorDiagnostics.stackTracesDiagnostics
+import httpBackends.javaNetHttp
+import queryParameters.arbitraryQueryParameter
 
-object Authorization:
-  given authorization: ("authorization" is Directive of Authorization) =
-    authorization => t"Bearer ${authorization.key}"
+// The authorization-code flow (RFC 6749 §4.1) as scintillate middleware: `oauth` handles the
+// redirect back from the issuer, exchanging the code for an authorization (or refreshing an
+// expired one), and `require` sends a user without one to the issuer.
+extension (issuer: Issuer)
+  def oauth(using Http.Request, Online, (Http.Event is Loggable)^)
+    ( lambda: (Issuer.Context of issuer.type) ?=> Http.Response )
+    ( using store: Authorizations, session: Session )
+    ( using Tactic[OAuth.Error] )
+  :   Http.Response =
 
-  // The authorization an OAuth 2 token response grants (RFC 6749 §5.1): the access token, the
-  // scopes (absent when the server granted exactly those requested), the lifetime as an expiry
-  // instant, and a refresh token if one was issued
-  def parse(json: Json)(using Tactic[OAuth.Error]): Authorization =
-    mitigate:
-      case Json.Error(_) => OAuth.Error(OAuth.Error.Reason.InvalidJsonResponse)
+    val redirect = issuer.redirect.or:
+      abort(OAuth.Error(OAuth.Error.Reason.Misconfigured(t"the flow needs a redirect URI")))
 
-    . protect(read(json))
+    if request.path != redirect.path then lambda(using Issuer.Context[issuer.type]())
+    else
+      mitigate:
+        case error@Path.Error(reason, path) => OAuth.Error(OAuth.Error.Reason.Other)
+        case error@Uuid.Error(_)            => OAuth.Error(OAuth.Error.Reason.Other)
+        case error@Query.Error(_)           => OAuth.Error(OAuth.Error.Reason.Other)
 
-  private def read(json: Json)(using Tactic[Json.Error]): Authorization =
-    import dynamicAccess.dynamicJson
+        case error@Connect.Error(reason) =>
+          OAuth.Error(OAuth.Error.Reason.Connection(issuer.exchange, reason))
 
-    // The field decodings share only the resolution-scoped tactic; no aliased writer.
-    val key = scala.caps.unsafe.unsafeAssumeSeparate(json.access_token.as[Text])
+      . protect:
+          store(session).let: state =>
+            val code: Text = request.query.code
 
-    val scopes: List[Text] = scala.caps.unsafe.unsafeAssumeSeparate:
-      safely(json.scope.as[Text]).let(_.cut(t" ")).or(Nil)
+            if state.uuid != request.query.state[Uuid]
+            then abort(OAuth.Error(OAuth.Error.Reason.Other))
 
-    val expiry: Optional[Long] = scala.caps.unsafe.unsafeAssumeSeparate:
-      safely(System.currentTimeMillis + json.expires_in.as[Long]*1000L)
+            // A held authorization which has expired is refreshed rather than exchanged anew
+            val authorization =
+              state.access match
+                case access: Authorization if access.expired && access.refresh.present =>
+                  issuer.refresh(access)
 
-    val refresh: Optional[Text] =
-      scala.caps.unsafe.unsafeAssumeSeparate(safely(json.refresh_token.as[Text]))
+                case _ =>
+                  issuer.exchangeCode(code)
 
-    Authorization(key, scopes, expiry, refresh)
+            store(session) = state.copy(access = authorization)
+            Http.Response(new Redirect(state.redirect.show, false))
 
-// An access token and what it grants: the scopes, its expiry (an instant in milliseconds, absent
-// for a token without a stated lifetime) and a refresh token where one was issued
-case class Authorization
-  ( key:     Text,
-    scopes:  List[Text],
-    expiry:  Optional[Long],
-    refresh: Optional[Text] )
-extends Topical, Findable:
-  private[orthodoxy] def of[scope <: Scope]: Authorization of scope =
-    this.asInstanceOf[Authorization of scope]
+          . or(lambda(using Issuer.Context[issuer.type]()))
 
-  // The token as a `Bearer` authorization, as the `Authorization` header carries it
-  def bearer: Auth = Auth.Bearer(key)
+  def require[scope <: Scope & Singleton: scala.Precise](scopes: scope*)
+    ( using store: Authorizations, session: Session, request: Http.Request )
+    ( using Issuer.Context of issuer.type )
+    ( using Tactic[OAuth.Error] )
+    ( lambda: Authorization of scope ?=> Http.Response )
+  :   Http.Response =
 
-  def expired: Boolean = expiry.let(System.currentTimeMillis > _).or(false)
-
-  // Whether every one of the scopes is granted. A token whose response named no scopes is taken
-  // to grant those requested, as RFC 6749 §5.1 has it, so an empty list grants everything.
-  def grants(required: List[Text]): Boolean = scopes.nil || required.all(scopes.has(_))
+    store(session).let(_.access).let(_.of[scope]).letGiven(lambda).or:
+      val state = Authorizations.State(request.path)
+      store(session) = state
+      val names = scopes.flatMap(_.names).distinct.to(List)
+      Redirect(issuer.authorizationUrl(names, state.uuid.show))
