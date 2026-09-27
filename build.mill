@@ -948,7 +948,8 @@ object soundness extends Toolchain:
     stratiform.core, stratiform.time, vexillology.core, enigmatic.cose, enigmatic.openssl,
     enigmatic.x509,
     bitumen.core, bitumen.jvm, breviloquence.core, distillate.core,
-    embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256):
+    embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256, caesura.http,
+    breviloquence.http, locomotion.http):
     def summary = "Data formats, serialization, cryptography and persistence"
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
@@ -1491,6 +1492,10 @@ object breviloquence extends Library:
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
+  // The media type `Cbor` construes
+  object http extends Component(core, gesticulate.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, staged, sedentary.core, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units):
     // The benchmark sources annotate the `Array[Byte]^{}` payloads they hold, matching the
@@ -1544,6 +1549,10 @@ object caduceus extends Library:
 
 object caesura extends Library:
   object core extends Component(turbulence.core, escritoire.core, panopticon.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The media types `Sheet` construes
+  object http extends Component(core, gesticulate.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2632,6 +2641,10 @@ object locomotion extends Library:
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
+  // The media type `Protobuf` construes
+  object http extends Component(core, gesticulate.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, staged):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
